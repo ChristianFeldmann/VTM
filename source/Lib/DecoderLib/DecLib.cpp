@@ -179,7 +179,6 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   pcEncPic->copySAO( *pic, 1 );
                 }
 
-#if JVET_K0371_ALF
                 if( pic->cs->sps->getUseALF() )
                 {
                   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
@@ -192,7 +191,6 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                     pcEncPic->slices[i]->getAlfSliceParam() = pic->slices[i]->getAlfSliceParam();
                   }
                 }
-#endif
 
                 pcEncPic->cs->copyStructure( *pic->cs, CH_L, true, true );
 
@@ -429,9 +427,7 @@ void DecLib::deletePicBuffer ( )
     delete pcPic;
     pcPic = NULL;
   }
-#if JVET_K0371_ALF
   m_cALF.destroy();
-#endif
   m_cSAO.destroy();
   m_cLoopFilter.destroy();
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
@@ -524,12 +520,10 @@ void DecLib::executeLoopFilters()
     m_cSAO.SAOProcess( cs, cs.picture->getSAO() );
   }
 
-#if JVET_K0371_ALF
   if( cs.sps->getUseALF() )
   {
     m_cALF.ALFProcess( cs, cs.slice->getAlfSliceParam() );
   }
-#endif
 }
 
 void DecLib::finishPictureLight(int& poc, PicList*& rpcListPic )
@@ -783,12 +777,10 @@ void DecLib::xActivateParameterSets()
 
     m_cSliceDecoder.create();
 
-#if JVET_K0371_ALF
     if( sps->getUseALF() )
     {
       m_cALF.create( sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), sps->getBitDepths().recon );
     }
-#endif
   }
   else
   {

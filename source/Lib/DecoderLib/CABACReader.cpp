@@ -147,7 +147,6 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 
   sao( cs, ctuRsAddr );
 
-#if JVET_K0371_ALF
   AlfSliceParam& alfSliceParam = cs.slice->getAlfSliceParam();
 
   if( cs.sps->getUseALF() && ( alfSliceParam.enabledFlag[COMPONENT_Y] || alfSliceParam.enabledFlag[COMPONENT_Cb] || alfSliceParam.enabledFlag[COMPONENT_Cr] ) )
@@ -192,7 +191,6 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
       }
     }
   }
-#endif
 
 #if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
   bool isLast = false;

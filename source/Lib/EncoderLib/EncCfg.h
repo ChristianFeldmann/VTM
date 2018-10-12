@@ -535,9 +535,7 @@ protected:
   bool        m_ensureWppBitEqual;
 #endif
 
-#if JVET_K0371_ALF
   bool        m_alf;                                          ///< Adaptive Loop Filter
-#endif
 
 public:
   EncCfg()
@@ -1353,10 +1351,8 @@ public:
   void         setEnsureWppBitEqual( bool b)                         { m_ensureWppBitEqual = b; }
   bool         getEnsureWppBitEqual()                          const { return m_ensureWppBitEqual; }
 #endif
-#if JVET_K0371_ALF
   void        setUseALF( bool b ) { m_alf = b; }
   bool        getUseALF()                                      const { return m_alf; }
-#endif
 };
 
 //! \}

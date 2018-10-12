@@ -184,11 +184,9 @@ public:
   // cross component prediction (clause 7.3.8.12)
   void        cross_comp_pred           ( const TransformUnit&          tu,       ComponentID       compID );
 
-#if JVET_K0371_ALF
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ChannelType channel, AlfSliceParam* alfParam);
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ComponentID compID, AlfSliceParam* alfParam);
   void        codeAlfCtuEnableFlag      ( CodingStructure& cs, uint32_t ctuRsAddr, const int compIdx, AlfSliceParam* alfParam = NULL );
-#endif
 
 private:
   void        unary_max_symbol          ( unsigned symbol, unsigned ctxId0, unsigned ctxIdN, unsigned maxSymbol );

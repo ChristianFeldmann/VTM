@@ -133,12 +133,10 @@ void EncLib::create ()
 
   m_cLoopFilter.create( m_maxTotalCUDepth );
 
-#if JVET_K0371_ALF
   if( m_alf )
   {
     m_cEncALF.create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );
   }
-#endif
 
   if ( m_RCEnableRateControl )
   {
@@ -166,12 +164,10 @@ void EncLib::destroy ()
 #else
   m_cCuEncoder.         destroy();
 #endif
-#if JVET_K0371_ALF
   if( m_alf )
   {
     m_cEncALF.destroy();
   }
-#endif
   m_cEncSAO.            destroyEncData();
   m_cEncSAO.            destroy();
   m_cLoopFilter.        destroy();
@@ -971,9 +967,7 @@ void EncLib::xInitSPS(SPS &sps)
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
   sps.setUseStrongIntraSmoothing( m_useStrongIntraSmoothing );
 #endif
-#if JVET_K0371_ALF
   sps.setUseALF( m_alf );
-#endif
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
   if (sps.getVuiParametersPresentFlag())

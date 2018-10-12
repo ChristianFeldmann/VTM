@@ -36,7 +36,6 @@
  */
 #include "EncAdaptiveLoopFilter.h"
 
-#if JVET_K0371_ALF
 #include "CommonLib/Picture.h"
 #include "CommonLib/CodingStructure.h"
 
@@ -1717,5 +1716,4 @@ void EncAdaptiveLoopFilter::setCtuEnableFlag( uint8_t** ctuFlags, ChannelType ch
     memset( ctuFlags[COMPONENT_Cr], val, sizeof( uint8_t ) * m_numCTUsInPic );
   }
 }
-#endif
 

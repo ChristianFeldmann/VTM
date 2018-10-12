@@ -104,9 +104,7 @@ enum CodingStatisticsType
 #if JVET_K0072
   STATS__CABAC_BITS__PAR_FLAG,
 #endif
-#if JVET_K0371_ALF
   STATS__CABAC_BITS__ALF,
-#endif
 #if JVET_K0357_AMVR
   STATS__CABAC_BITS__IMV_FLAG,
 #endif
@@ -174,9 +172,7 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__SIGN_BIT",
     "CABAC_BITS__ESCAPE_BITS",
     "CABAC_BITS__SAO",
-#if JVET_K0371_ALF
     "CABAC_BITS__ALF",
-#endif
     "CABAC_TRM_BITS",
     "CABAC_FIXED_BITS",
     "CABAC_PCM_ALIGN_BITS",

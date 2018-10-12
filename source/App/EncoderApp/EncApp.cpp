@@ -533,9 +533,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setEnsureWppBitEqual                                 ( m_ensureWppBitEqual );
 
 #endif
-#if JVET_K0371_ALF
   m_cEncLib.setUseALF                                            ( m_alf );
-#endif
 }
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList

@@ -814,9 +814,6 @@ private:
 #endif
 #endif
   bool              m_DisableMotionCompression;   // 13
-#if !JVET_K0371_ALF
-  bool              m_ALFEnabled;                 // 16
-#endif
 #if JVET_K0190
   bool              m_LMChroma;                   // 17
 #endif
@@ -1048,9 +1045,7 @@ private:
   static const int  m_winUnitY[NUM_CHROMA_FORMAT];
   PTL               m_pcPTL;
 
-#if JVET_K0371_ALF
   bool              m_useALF;
-#endif
 
 public:
 
@@ -1184,10 +1179,8 @@ public:
   const SPSNext&          getSpsNext() const                                                              { return m_spsNextExtension;                                           }
   SPSNext&                getSpsNext()                                                                    { return m_spsNextExtension;                                           }
 
-#if JVET_K0371_ALF
   bool                    getUseALF() const { return m_useALF; }
   void                    setUseALF( bool b ) { m_useALF = b; }
-#endif
 };
 
 
@@ -1617,9 +1610,7 @@ private:
   double                     m_dProcessingTime;
   uint32_t                       m_uiMaxBTSize;
 
-#if JVET_K0371_ALF
   AlfSliceParam              m_alfSliceParam;
-#endif
 
 public:
                               Slice();
@@ -1881,10 +1872,8 @@ public:
   void resetProcessingTime()       { m_dProcessingTime = m_iProcessingStartTime = 0; }
   double getProcessingTime() const { return m_dProcessingTime; }
 
-#if JVET_K0371_ALF
   void                        setAlfSliceParam( AlfSliceParam& alfSliceParam ) { m_alfSliceParam = alfSliceParam; }
   AlfSliceParam&              getAlfSliceParam() { return m_alfSliceParam; }
-#endif
 
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);

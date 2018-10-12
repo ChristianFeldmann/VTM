@@ -520,9 +520,7 @@ protected:
   bool        m_bs2ModPOCAndType;
   bool        m_forceDecodeBitstream1;
 
-#if JVET_K0371_ALF
   bool        m_alf;                                          ///> Adaptive Loop Filter
-#endif
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;

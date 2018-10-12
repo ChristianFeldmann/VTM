@@ -137,7 +137,6 @@ public:
   void  codeScalingList         ( const ScalingList &scalingList );
 #endif
 
-#if JVET_K0371_ALF
   void alf( const AlfSliceParam& alfSliceParam );
   void alfFilter( const AlfSliceParam& alfSliceParam, const bool isChroma );
 
@@ -145,7 +144,6 @@ private:
   void xWriteTruncBinCode( uint32_t uiSymbol, const int uiMaxSymbol );
   void alfGolombEncode( const int coeff, const int k );
   void truncatedUnaryEqProb( int symbol, int maxSymbol );
-#endif
 
 };
 

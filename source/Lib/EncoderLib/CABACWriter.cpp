@@ -168,12 +168,10 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
     sao( *cs.slice, ctuRsAddr );
   }
 
-#if JVET_K0371_ALF
   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
   {
     codeAlfCtuEnableFlag( cs, ctuRsAddr, compIdx );
   }
-#endif
 
 #if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
   if ( CS::isDualITree(cs) && cs.pcv->chrFormat != CHROMA_400 && cs.pcv->maxCUWidth > 64 )
@@ -2709,7 +2707,6 @@ void CABACWriter::encode_sparse_dt( DecisionTree& dt, unsigned toCodeId )
   return;
 }
 
-#if JVET_K0371_ALF
 void CABACWriter::codeAlfCtuEnableFlags( CodingStructure& cs, ChannelType channel, AlfSliceParam* alfParam)
 {
   if( isLuma( channel ) )
@@ -2776,6 +2773,5 @@ void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr,
     }
   }
 }
-#endif
 
 //! \}

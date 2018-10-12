@@ -48,9 +48,7 @@
 #include "CommonLib/AffineGradientSearch.h"
 #endif
 
-#if JVET_K0371_ALF
 #include "CommonLib/AdaptiveLoopFilter.h"
-#endif
 
 #ifdef TARGET_SIMD_X86
 

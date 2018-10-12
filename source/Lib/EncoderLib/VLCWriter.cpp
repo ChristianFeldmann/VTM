@@ -42,10 +42,8 @@
 #include "CommonLib/Unit.h"
 #include "CommonLib/Picture.h" // th remove this
 #include "CommonLib/dtrace_next.h"
-#if JVET_K0371_ALF
 #include "EncAdaptiveLoopFilter.h"
 #include "CommonLib/AdaptiveLoopFilter.h"
-#endif
 
 //! \ingroup EncoderLib
 //! \{
@@ -682,9 +680,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_UVLC( pcSPS->getQuadtreeTULog2MaxSize() - pcSPS->getQuadtreeTULog2MinSize(), "log2_diff_max_min_luma_transform_block_size" );
   WRITE_UVLC( pcSPS->getQuadtreeTUMaxDepthInter() - 1,                               "max_transform_hierarchy_depth_inter" );
   WRITE_UVLC( pcSPS->getQuadtreeTUMaxDepthIntra() - 1,                               "max_transform_hierarchy_depth_intra" );
-#if JVET_K0371_ALF
   WRITE_FLAG( pcSPS->getUseALF(), "sps_alf_enable_flag" );
-#endif
 #if HEVC_USE_SCALING_LISTS
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "scaling_list_enabled_flag" );
   if(pcSPS->getScalingListFlag())
@@ -1085,12 +1081,10 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
     }
 
-#if JVET_K0371_ALF
     if( pcSlice->getSPS()->getUseALF() )
     {
       alf( pcSlice->getAlfSliceParam() );
     }
-#endif
 
     //check if numrefidxes match the defaults. If not, override
 
@@ -1600,7 +1594,6 @@ bool HLSWriter::xFindMatchingLTRP(Slice* pcSlice, uint32_t *ltrpsIndex, int ltrp
   return false;
 }
 
-#if JVET_K0371_ALF
 void HLSWriter::alf( const AlfSliceParam& alfSliceParam )
 {
   WRITE_FLAG( alfSliceParam.enabledFlag[COMPONENT_Y], "alf_slice_enable_flag" );
@@ -1800,6 +1793,5 @@ void HLSWriter::truncatedUnaryEqProb( int symbol, const int maxSymbol )
   CHECK( !( numBins <= 32 ), "Unspecified error" );
   xWriteCode( bins, numBins );
 }
-#endif
 
 //! \}

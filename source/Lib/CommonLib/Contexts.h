@@ -210,9 +210,7 @@ public:
 #if JVET_K0357_AMVR
   static const CtxSet   ImvFlag;
 #endif
-#if JVET_K0371_ALF
   static const CtxSet   ctbAlfFlag;
-#endif
   static const unsigned NumberOfContexts;
 
   // combined sets for less complex copying

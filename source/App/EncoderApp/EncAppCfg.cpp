@@ -1278,9 +1278,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #else
   ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                      false, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
 #endif
-#if JVET_K0371_ALF
   ( "ALF",                                             m_alf,                                    true, "Adpative Loop Filter\n" )
-#endif
     ;
 
 #if EXTENSION_360_VIDEO
@@ -3144,9 +3142,7 @@ void EncAppCfg::xPrintParameter()
 #endif
   msg( VERBOSE, "CIP:%d ", m_bUseConstrainedIntraPred);
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));
-#if JVET_K0371_ALF
   msg( VERBOSE, "ALF:%d ", m_alf ? 1 : 0 );
-#endif
   msg( VERBOSE, "PCM:%d ", (m_usePCM && (1<<m_uiPCMLog2MinSize) <= m_uiMaxCUWidth)? 1 : 0);
 
   if (m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce)

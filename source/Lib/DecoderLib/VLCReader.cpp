@@ -45,9 +45,7 @@
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
 #include "CommonLib/CodingStatistics.h"
 #endif
-#if JVET_K0371_ALF
 #include "CommonLib/AdaptiveLoopFilter.h"
-#endif
 
 
 #if ENABLE_TRACING
@@ -1009,9 +1007,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   int addCuDepth = std::max (0, log2MinCUSize - (int)pcSPS->getQuadtreeTULog2MinSize() );
   pcSPS->setMaxCodingDepth( maxCUDepthDelta + addCuDepth );
 
-#if JVET_K0371_ALF
   READ_FLAG( uiCode, "sps_alf_enable_flag" ); pcSPS->setUseALF( uiCode );
-#endif
 
 #if HEVC_USE_SCALING_LISTS
   READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
@@ -1512,12 +1508,10 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
-#if JVET_K0371_ALF
     if( sps->getUseALF() )
     {
       alf( pcSlice->getAlfSliceParam() );
     }
-#endif
 
     if (pcSlice->getIdrPicFlag())
     {
@@ -2294,7 +2288,6 @@ bool HLSyntaxReader::xMoreRbspData()
   return (cnt>0);
 }
 
-#if JVET_K0371_ALF
 void HLSyntaxReader::alf( AlfSliceParam& alfSliceParam )
 {
   uint32_t code;
@@ -2516,7 +2509,6 @@ void HLSyntaxReader::xReadTruncBinCode( uint32_t& ruiSymbol, const int uiMaxSymb
     ruiSymbol -= ( uiVal - b );
   }
 }
-#endif
 
 //! \}
 

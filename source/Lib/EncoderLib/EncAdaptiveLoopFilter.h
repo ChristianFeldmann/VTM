@@ -40,7 +40,6 @@
 
 #include "CommonLib/AdaptiveLoopFilter.h"
 
-#if JVET_K0371_ALF
 #include "CABACWriter.h"
 
 struct AlfCovariance
@@ -235,6 +234,5 @@ private:
 };
 
 
-#endif
 
 #endif

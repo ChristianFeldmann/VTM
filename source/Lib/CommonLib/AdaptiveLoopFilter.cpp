@@ -37,7 +37,6 @@
 
 #include "AdaptiveLoopFilter.h"
 
-#if JVET_K0371_ALF
 #include "CodingStructure.h"
 #include "Picture.h"
 
@@ -648,4 +647,3 @@ void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf
     pImgYPad6 += srcStride2;
   }
 }
-#endif

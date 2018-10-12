@@ -40,7 +40,6 @@
 
 #include "CommonDef.h"
 
-#if JVET_K0371_ALF
 #include "Unit.h"
 
 struct AlfClassifier
@@ -116,6 +115,5 @@ protected:
   ChromaFormat                 m_chromaFormat;
   ClpRngs                      m_clpRngs;
 };
-#endif
 
 #endif

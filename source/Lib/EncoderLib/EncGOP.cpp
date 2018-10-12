@@ -174,9 +174,7 @@ void EncGOP::init ( EncLib* pcEncLib )
   m_HLSWriter            = pcEncLib->getHLSWriter();
   m_pcLoopFilter         = pcEncLib->getLoopFilter();
   m_pcSAO                = pcEncLib->getSAO();
-#if JVET_K0371_ALF
   m_pcALF = pcEncLib->getALF();
-#endif
   m_pcRateCtrl           = pcEncLib->getRateCtrl();
   m_lastBPSEI          = 0;
   m_totalCoded         = 0;
@@ -1996,14 +1994,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcPic->resizeSAO( numberOfCtusInFrame, 1 );
     }
 
-#if JVET_K0371_ALF
     // it is used for signalling during CTU mode decision, i.e. before ALF processing
     if( pcSlice->getSPS()->getUseALF() )
     {
       pcPic->resizeAlfCtuEnableFlag( numberOfCtusInFrame );
       std::memset( pcSlice->getAlfSliceParam().enabledFlag, false, sizeof( pcSlice->getAlfSliceParam().enabledFlag ) );
     }
-#endif
 
     bool decPic = false;
     bool encPic = false;
@@ -2144,7 +2140,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
 
-#if JVET_K0371_ALF
       if( pcSlice->getSPS()->getUseALF() )
       {
         AlfSliceParam alfSliceParam;
@@ -2156,7 +2151,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           pcPic->slices[s]->setAlfSliceParam( alfSliceParam );
         }
       }
-#endif
 #if JVET_K0157
       if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && getPrepareLTRef())
       {

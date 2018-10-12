@@ -54,7 +54,6 @@
 
 
 
-#define JVET_K0371_ALF                                    1
 
 #define DEBLOCKING_GRID_8x8                               1
 #define DB_TU_FIX                                         1 // fix in JVET_K0307, JVET-K0237, JVET-K0369, JVET-K0232, JVET-K0315
@@ -288,9 +287,7 @@
 #if JVET_K0367_AFFINE_FIX_POINT
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
 #endif
-#if JVET_K0371_ALF
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
-#endif
 // End of SIMD optimizations
 
 
@@ -1410,7 +1407,6 @@ struct XUCache
 
 #define SIGN(x) ( (x) >= 0 ? 1 : -1 )
 
-#if JVET_K0371_ALF
 #define MAX_NUM_ALF_CLASSES             25
 #define MAX_NUM_ALF_LUMA_COEFF          13
 #define MAX_NUM_ALF_CHROMA_COEFF        7
@@ -1543,7 +1539,6 @@ struct AlfSliceParam
     return *this;
   }
 };
-#endif
 
 //! \}
 

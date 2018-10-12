@@ -758,7 +758,6 @@ const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
 });
 #endif
 
-#if JVET_K0371_ALF
 const CtxSet ContextSetCfg::ctbAlfFlag =
 {
   ContextSetCfg::addCtxSet
@@ -768,7 +767,6 @@ const CtxSet ContextSetCfg::ctbAlfFlag =
     { 200, 200, 200, 200, 200, 200, 200, 200, 200 },
     } )
 };
-#endif
 
 
 const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_InitTables[0].size();

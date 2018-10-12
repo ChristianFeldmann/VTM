@@ -79,8 +79,6 @@ public:
 #endif
                     const bool bEnc                 = false,
                     const bool useTransformSkipFast = false,
-#if !INTRA67_3MPM
-#endif
                     const bool rectTUs              = false
   );
 
@@ -123,8 +121,6 @@ protected:
   bool     m_bEnc;
   bool     m_useTransformSkipFast;
 
-#if !INTRA67_3MPM
-#endif
   bool     m_rectTUs;
 
   bool     m_scalingListEnabledFlag;

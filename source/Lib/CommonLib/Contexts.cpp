@@ -313,21 +313,9 @@ const CtxSet ContextSetCfg::IPredMode[] =
 {
   ContextSetCfg::addCtxSet
   ({
-#if INTRA67_3MPM
     { 183 },
     { 154 },
     { 184 },
-#else
-#if JVET_B0051_NON_MPM_MODE
-    {  183, CNU, CNU, CNU, 184 },
-    {  154, CNU, CNU, CNU, 184 },
-    {  184, CNU, CNU, CNU, 184 },
-#else
-    {  183, CNU, CNU, CNU,  },
-    {  154, CNU, CNU, CNU,  },
-    {  184, CNU, CNU, CNU,  },
-#endif
-#endif
   }),
   ContextSetCfg::addCtxSet
   ({

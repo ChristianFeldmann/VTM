@@ -2106,11 +2106,7 @@ public:
     , lumaWidth           ( sps.getPicWidthInLumaSamples() )
     , lumaHeight          ( sps.getPicHeightInLumaSamples() )
     , fastDeltaQPCuMaxSize( Clip3(sps.getMaxCUHeight() >> (sps.getLog2DiffMaxMinCodingBlockSize()), sps.getMaxCUHeight(), 32u) )
-#if INTRA67_3MPM
     , numMPMs             (NUM_MOST_PROBABLE_MODES)
-#else
-    , numMPMs             ( NUM_MOST_PROBABLE_MODES )
-#endif
     , noRQT               (  sps.getSpsNext().getUseQTBT() )
     , rectCUs             (  sps.getSpsNext().getUseQTBT() )
     , only2Nx2N           (  sps.getSpsNext().getUseQTBT() )

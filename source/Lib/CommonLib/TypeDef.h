@@ -57,9 +57,6 @@
 
 
 
-#ifndef INTRA67_3MPM  // JVET-K0529
-#define INTRA67_3MPM                                      1
-#endif
 
 #define JVET_K0500_WAIP                                   1 // Wide-Angle Intra Prediction
 

@@ -769,8 +769,6 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
   unsigned ipred_modes [4];
 
   const PredictionUnit* pu = cu.firstPU;
-#if !INTRA67_3MPM
-#endif
 
   // prev_intra_luma_pred_flag
   for( int k = 0; k < numBlocks; k++ )
@@ -805,8 +803,6 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
     const unsigned& mpm_idx = mpm_idxs[k];
     if( mpm_idx < numMPMs )
     {
-#if !INTRA67_3MPM
-#endif
       {
         m_BinEncoder.encodeBinEP( mpm_idx > 0 );
         if( mpm_idx )
@@ -823,10 +819,7 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
       // sorting of MPMs
       std::sort( mpm_pred, mpm_pred + numMPMs );
 
-#if !INTRA67_3MPM
-#endif
       {
-#if INTRA67_3MPM
         for (int idx = int(numMPMs) - 1; idx >= 0; idx--)
         {
           if (ipred_mode > mpm_pred[idx])
@@ -837,22 +830,6 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
         CHECK(ipred_mode >= 64, "Incorrect mode");
 
         m_BinEncoder.encodeBinsEP(ipred_mode, 6);
-#else
-        CHECK( g_intraMode33to65AngMapping[g_intraMode65to33AngMapping[ipred_mode]] != ipred_mode, "Using an extended intra mode, although not enabled" );
-
-        ipred_mode = g_intraMode65to33AngMapping[ipred_mode];
-        for( int idx = int( numMPMs ) - 1; idx >= 0; idx-- )
-        {
-          if( ipred_mode > g_intraMode65to33AngMapping[mpm_pred[idx]] )
-          {
-            ipred_mode--;
-          }
-        }
-
-        CHECK( ipred_mode >= 32, "Incorrect mode" );
-
-        m_BinEncoder.encodeBinsEP( ipred_mode, 5 );
-#endif
       }
     }
 
@@ -869,8 +846,6 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
   unsigned  numMPMs  = pu.cs->pcv->numMPMs;
   unsigned *mpm_pred = ( unsigned* ) alloca( numMPMs * sizeof( unsigned ) );
 
-#if !INTRA67_3MPM
-#endif
   PU::getIntraMPMs( pu, mpm_pred );
 
   unsigned ipred_mode = pu.intraDir[0];
@@ -889,8 +864,6 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
   // mpm_idx / rem_intra_luma_pred_mode
   if( mpm_idx < numMPMs )
   {
-#if !INTRA67_3MPM
-#endif
     {
       m_BinEncoder.encodeBinEP( mpm_idx > 0 );
       if( mpm_idx )
@@ -902,10 +875,7 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
   else
   {
     std::sort( mpm_pred, mpm_pred + numMPMs );
-#if !INTRA67_3MPM
-#endif
     {
-#if INTRA67_3MPM
       for (int idx = int(numMPMs) - 1; idx >= 0; idx--)
       {
         if (ipred_mode > mpm_pred[idx])
@@ -914,20 +884,6 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
         }
       }
       m_BinEncoder.encodeBinsEP(ipred_mode, 6);
-#else
-      CHECK( g_intraMode33to65AngMapping[g_intraMode65to33AngMapping[ipred_mode]] != ipred_mode, "Using an extended intra mode, although not enabled" );
-
-      ipred_mode = g_intraMode65to33AngMapping[ipred_mode];
-      for( int idx = int( numMPMs ) - 1; idx >= 0; idx-- )
-      {
-        if( ipred_mode > g_intraMode65to33AngMapping[mpm_pred[idx]] )
-        {
-          ipred_mode--;
-        }
-      }
-
-      m_BinEncoder.encodeBinsEP( ipred_mode, 5 );
-#endif
     }
   }
 }

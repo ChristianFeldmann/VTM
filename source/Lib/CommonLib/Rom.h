@@ -108,17 +108,6 @@ extern const uint8_t  g_aucIntraModeNumFast_UseMPM   [MAX_CU_DEPTH];
 extern const uint8_t  g_aucIntraModeNumFast_NotUseMPM[MAX_CU_DEPTH];
 
 extern const uint8_t  g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE];
-#if !INTRA67_3MPM
-extern const uint8_t  g_intraMode65to33AngMapping[NUM_INTRA_MODE];
-
-extern const uint8_t  g_intraMode33to65AngMapping[36];
-
-static const unsigned mpmCtx[NUM_INTRA_MODE] =
-{ 1, 1,                                                                                              // PLANAR, DC
-  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // HOR domain
-  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3     // VER domain
-};
-#endif
 
 
 // ====================================================================================================================

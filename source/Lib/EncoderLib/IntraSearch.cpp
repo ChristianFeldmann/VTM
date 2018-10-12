@@ -357,10 +357,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     else
     {
       numModesForFullRD = m_pcEncCfg->getFastUDIUseMPMEnabled() ? g_aucIntraModeNumFast_UseMPM[uiWidthBit] : g_aucIntraModeNumFast_NotUseMPM[uiWidthBit];
-#if INTRA67_3MPM
       numModesForFullRD -= 1;
-#else
-#endif
     }
 
 #if INTRA_FULL_SEARCH
@@ -442,7 +439,6 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
         // forget the extra modes
         uiRdModeList.resize( numModesForFullRD );
-#if INTRA67_3MPM
         static_vector<unsigned, FAST_UDI_MAX_RDMODE_NUM> parentCandList(FAST_UDI_MAX_RDMODE_NUM);
         std::copy_n(uiRdModeList.begin(), numModesForFullRD, parentCandList.begin());
 
@@ -488,8 +484,6 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
             }
           }
         }
-#else
-#endif
         if( m_pcEncCfg->getFastUDIUseMPMEnabled() )
         {
           unsigned  numMPMs = pu.cs->pcv->numMPMs;

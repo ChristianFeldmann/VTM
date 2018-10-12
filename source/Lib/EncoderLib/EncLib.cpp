@@ -294,8 +294,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
                           true,
                           m_useTransformSkipFast
-#if !INTRA67_3MPM
-#endif
                           , m_QTBT
     );
 
@@ -332,8 +330,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
                    true,
                    m_useTransformSkipFast
-#if !INTRA67_3MPM
-#endif
                    , m_QTBT
   );
 

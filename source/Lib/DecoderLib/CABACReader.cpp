@@ -885,8 +885,6 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
   }
 
   PredictionUnit *pu = cu.firstPU;
-#if !INTRA67_3MPM
-#endif
 
   // mpm_idx / rem_intra_luma_pred_mode
   for( int k = 0; k < numBlocks; k++ )
@@ -897,8 +895,6 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
     if( mpmFlag[k] )
     {
       unsigned ipred_idx = 0;
-#if !INTRA67_3MPM
-#endif
       {
         ipred_idx = m_BinDecoder.decodeBinEP();
         if( ipred_idx )
@@ -912,32 +908,18 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
     {
       unsigned ipred_mode = 0;
 
-#if !INTRA67_3MPM
-#endif
       {
-#if INTRA67_3MPM
         ipred_mode = m_BinDecoder.decodeBinsEP(6);
-#else
-        ipred_mode = m_BinDecoder.decodeBinsEP( 5 );
-#endif
       }
       //postponed sorting of MPMs (only in remaining branch)
       std::sort( mpm_pred, mpm_pred + cu.cs->pcv->numMPMs );
 
       for( unsigned i = 0; i < cu.cs->pcv->numMPMs; i++ )
       {
-#if !INTRA67_3MPM
-        ipred_mode += ipred_mode >= g_intraMode65to33AngMapping[mpm_pred[i]];
-#else
         ipred_mode += (ipred_mode >= mpm_pred[i]);
-#endif
       }
 
-#if !INTRA67_3MPM
-      pu->intraDir[0] = g_intraMode33to65AngMapping[ipred_mode];
-#else
       pu->intraDir[0] = ipred_mode;
-#endif
     }
 
     DTRACE( g_trace_ctx, D_SYNTAX, "intra_luma_pred_modes() idx=%d pos=(%d,%d) mode=%d\n", k, pu->lumaPos().x, pu->lumaPos().y, pu->intraDir[0] );

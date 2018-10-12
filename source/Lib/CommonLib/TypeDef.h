@@ -53,7 +53,6 @@
 
 
 
-#define JVET_K1000_SIMPLIFIED_EMT                         1 // EMT with only DCT-2, DCT-8 and DST-7
 
 #define JVET_K0371_ALF                                    1
 
@@ -404,20 +403,10 @@ enum QuantFlags
 enum TransType
 {
   DCT2 = 0,
-#if JVET_K1000_SIMPLIFIED_EMT
   DCT8 = 1,
   DST7 = 2,
   NUM_TRANS_TYPE = 3,
   DCT2_EMT = 4
-#else
-  DCT5 = 1,
-  DCT8 = 2,
-  DST1 = 3,
-  DST7 = 4,
-  NUM_TRANS_TYPE = 5,
-  DCT2_HEVC = 6,
-  DCT2_EMT = 7
-#endif
 };
 
 enum RDPCMMode

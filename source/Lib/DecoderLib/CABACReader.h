@@ -138,17 +138,15 @@ public:
 #endif
   void        cu_qp_delta               ( CodingUnit&                   cu,     int             predQP, int8_t& qp );
   void        cu_chroma_qp_offset       ( CodingUnit&                   cu );
-#if JVET_K1000_SIMPLIFIED_EMT && !HM_EMT_NSST_AS_IN_JEM
+#if !HM_EMT_NSST_AS_IN_JEM
   void        cu_emt_pertu_idx          ( CodingUnit&                   cu );
 #endif
 
   // residual coding (clause 7.3.8.11)
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID );
   void        transform_skip_flag       ( TransformUnit&                tu,     ComponentID     compID );
-#if JVET_K1000_SIMPLIFIED_EMT
   void        emt_tu_index              ( TransformUnit&                tu );
   void        emt_cu_flag               ( CodingUnit&                   cu );
-#endif
   void        explicit_rdpcm_mode       ( TransformUnit&                tu,     ComponentID     compID );
   int         last_sig_coeff            ( CoeffCodingContext&           cctx );
 #if JVET_K0072

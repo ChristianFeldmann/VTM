@@ -187,12 +187,10 @@ protected:
 #if JVET_K0190
   int       m_LMChroma;
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   int       m_IntraEMT;
   int       m_InterEMT;
   int       m_FastIntraEMT;
   int       m_FastInterEMT;
-#endif
   bool      m_LargeCTU;
 #if JVET_K0346
   int       m_SubPuMvpMode;
@@ -661,7 +659,6 @@ public:
   bool      getUseAltDQPCoding              ()         const { return m_AltDQPCoding; }
 #endif
 
-#if JVET_K1000_SIMPLIFIED_EMT
   void      setFastIntraEMT                 ( bool b )       { m_FastIntraEMT = b; }
   bool      getFastIntraEMT                 ()         const { return m_FastIntraEMT; }
   void      setFastInterEMT                 ( bool b )       { m_FastInterEMT = b; }
@@ -670,7 +667,6 @@ public:
   bool      getIntraEMT                     ()         const { return m_IntraEMT; }
   void      setInterEMT                     ( bool b )       { m_InterEMT = b; }
   bool      getInterEMT                     ()         const { return m_InterEMT; }
-#endif
 
 
 

@@ -844,7 +844,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t1:  Enable LMChroma\n")
 #else
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   ("EMT,-emt",                                        m_EMT,                                                0, "Enhanced Multiple Transform (EMT)\n"
     "\t0:  Disable EMT\n"
     "\t1:  Enable only Intra EMT\n"
@@ -855,7 +854,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     "\t1:  Enable fast methods only for Intra EMT\n"
     "\t2:  Enable fast methods only for Inter EMT\n"
     "\t3:  Enable fast methods for both Intra & Inter EMT\n")
-#endif
 #if JVET_K0157
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
 #endif
@@ -1956,10 +1954,8 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_useSaveLoadEncInfo, "Encoder decision saving can only be applied when encoding with NEXT profile" );
     xConfirmPara( m_useSaveLoadSplitDecision, "Encoder split decision saving can only be applied when encoding with NEXT profile" );
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
     xConfirmPara( m_EMT, "EMT only allowed with NEXT profile" );
     xConfirmPara( m_FastEMT, "EMT only allowed with NEXT profile" );
-#endif
 #if JVET_K0157
     xConfirmPara(m_compositeRefEnabled, "Composite Reference Frame is only allowed with NEXT profile");
 #endif
@@ -2341,10 +2337,8 @@ bool EncAppCfg::xCheckParameter()
   {
     xConfirmPara( m_maxNumMergeCand > 5, "MaxNumMergeCand must be 5 or smaller." );
   }
-#if JVET_K1000_SIMPLIFIED_EMT
   xConfirmPara( m_EMT < 0 || m_EMT >3, "EMT must be 0, 1, 2 or 3" );
   xConfirmPara( m_FastEMT < 0 || m_FastEMT >3, "FEMT must be 0, 1, 2 or 3" );
-#endif
   if( m_usePCM)
   {
     for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
@@ -3226,9 +3220,7 @@ void EncAppCfg::xPrintParameter()
 #if JVET_K0190
     msg( VERBOSE, "LMChroma:%d ", m_LMChroma );
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
     msg( VERBOSE, "EMT: %1d(intra) %1d(inter) ", m_EMT & 1, ( m_EMT >> 1 ) & 1 );
-#endif
 #if JVET_K0157
     msg(VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
 #endif
@@ -3252,9 +3244,7 @@ void EncAppCfg::xPrintParameter()
 #if JVET_K0357_AMVR
   if( m_ImvMode == 2 ) msg( VERBOSE, "IMV4PelFast:%d ", m_Imv4PelFast );
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   if( m_EMT ) msg( VERBOSE, "EMTFast: %1d(intra) %1d(inter) ", ( m_FastEMT & m_EMT & 1 ), ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
-#endif
   if( m_QTBT ) msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
   if( m_QTBT ) msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
   if( m_QTBT ) msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );

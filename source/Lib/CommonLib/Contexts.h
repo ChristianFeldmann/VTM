@@ -202,10 +202,8 @@ public:
   static const CtxSet   TransquantBypassFlag;
   static const CtxSet   RdpcmFlag;
   static const CtxSet   RdpcmDir;
-#if JVET_K1000_SIMPLIFIED_EMT
   static const CtxSet   EMTTuIndex;
   static const CtxSet   EMTCuFlag;
-#endif
   static const CtxSet   CrossCompPred;
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;

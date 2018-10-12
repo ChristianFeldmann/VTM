@@ -110,13 +110,9 @@ enum CodingStatisticsType
 #if JVET_K0357_AMVR
   STATS__CABAC_BITS__IMV_FLAG,
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   STATS__CABAC_BITS__EMT_CU_FLAG,
   STATS__CABAC_BITS__EMT_TU_INDEX,
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
   STATS__TOOL_EMT,
-#endif
   STATS__TOOL_TOTAL,
   STATS__NUM_STATS
 };
@@ -194,10 +190,8 @@ static inline const char* getName(CodingStatisticsType name)
 #if JVET_K0357_AMVR
     "CABAC_BITS__IMV_FLAG",
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
     "CABAC_BITS__EMT_CU_FLAG",
     "CABAC_BITS__EMT_TU_INDX",
-#endif
     "CABAC_BITS__OTHER",
     "CABAC_BITS__INVALID",
     "TOOL_FRAME",

@@ -556,10 +556,8 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
 #if JVET_K0190
   WRITE_FLAG( spsNext.getUseLMChroma() ? 1 : 0,                                                 "lm_chroma_enabled_flag" );
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   WRITE_FLAG( spsNext.getUseIntraEMT() ? 1 : 0,                                                 "emt_intra_enabled_flag" );
   WRITE_FLAG( spsNext.getUseInterEMT() ? 1 : 0,                                                 "emt_inter_enabled_flag" );
-#endif
 #if JVET_K_AFFINE
   WRITE_FLAG( spsNext.getUseAffine() ? 1 : 0,                                                   "affine_flag" );
 #if JVET_K0337_AFFINE_6PARA

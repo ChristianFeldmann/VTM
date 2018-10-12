@@ -242,12 +242,10 @@ void EncApp::xInitLibCfg()
 #if ENABLE_WPP_PARALLELISM
   m_cEncLib.setUseAltDQPCoding                                   ( m_AltDQPCoding );
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   m_cEncLib.setIntraEMT                                          ( m_EMT & 1 );
   m_cEncLib.setFastIntraEMT                                      ( m_FastEMT & m_EMT & 1 );
   m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
-#endif
 #if JVET_K0157
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
 #endif

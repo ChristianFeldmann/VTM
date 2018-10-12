@@ -297,9 +297,7 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
 #if JVET_K0072
 #else
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   , m_emtNumSigCoeff            (0)
-#endif
 {
   // LOGTODO
   unsigned log2sizeX = m_log2BlockWidth;

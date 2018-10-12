@@ -913,10 +913,8 @@ void EncLib::xInitSPS(SPS &sps)
 #if ENABLE_WPP_PARALLELISM
   sps.getSpsNext().setUseNextDQP            ( m_AltDQPCoding );
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
-#endif
 #if JVET_K0157
   sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
 #endif

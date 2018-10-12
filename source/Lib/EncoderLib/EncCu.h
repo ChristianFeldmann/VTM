@@ -204,9 +204,7 @@ protected:
 #if JVET_K0357_AMVR
     , CodingStructure* imvCS = NULL
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
     , int emtMode = 1
-#endif
     , bool* bestHasNonResi = NULL
   );
 #if REUSE_CU_RESULTS

@@ -62,9 +62,7 @@ enum class BlockStatistic {
   QP,
   SplitSeries,
   TransQuantBypassFlag,
-#if JVET_K1000_SIMPLIFIED_EMT
   EMTFlag,
-#endif
   TransformSkipFlag_Y,
   TransformSkipFlag_Cb,
   TransformSkipFlag_Cr,
@@ -115,9 +113,7 @@ enum class BlockStatistic {
   QP_Chroma,
   SplitSeries_Chroma,
   TransQuantBypassFlag_Chroma,
-#if JVET_K1000_SIMPLIFIED_EMT
   EMTFlag_Chroma, // this is called flag, though the type is UChar ?!
-#endif
 
   // intra
   IPCM_Chroma,
@@ -180,9 +176,7 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::AffineType,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineType",                  BlockStatisticType::Flag,                   ""} },
 #endif
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   { BlockStatistic::EMTFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"EMTFlag",                     BlockStatisticType::Flag,                   ""}},
-#endif
 
   // for dual tree
   { BlockStatistic::PartSize_Chroma,               std::tuple<std::string, BlockStatisticType, std::string>{"PartSize_Chroma",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_PART_SIZES) + "]"}},
@@ -194,9 +188,7 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::QP_Chroma,                     std::tuple<std::string, BlockStatisticType, std::string>{"QP_Chroma",                          BlockStatisticType::Integer,                "[0, 51]"}},
   { BlockStatistic::SplitSeries_Chroma,            std::tuple<std::string, BlockStatisticType, std::string>{"SplitSeries_Chroma",                 BlockStatisticType::Integer,                "[0, " + std::to_string(std::numeric_limits<SplitSeries>::max()) + "]"}},
   { BlockStatistic::TransQuantBypassFlag_Chroma,   std::tuple<std::string, BlockStatisticType, std::string>{"TransQuantBypassFlag_Chroma",        BlockStatisticType::Flag,                   ""}},
-#if JVET_K1000_SIMPLIFIED_EMT
   { BlockStatistic::EMTFlag_Chroma,                std::tuple<std::string, BlockStatisticType, std::string>{"EMTFlag_Chroma",                     BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
-#endif
   { BlockStatistic::IPCM_Chroma,                   std::tuple<std::string, BlockStatisticType, std::string>{"IPCM_Chroma",                        BlockStatisticType::Flag,                   ""}},
 
 };

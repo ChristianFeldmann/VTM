@@ -164,17 +164,15 @@ public:
 #endif
   void        cu_qp_delta               ( const CodingUnit&             cu,       int               predQP, const int8_t qp );
   void        cu_chroma_qp_offset       ( const CodingUnit&             cu );
-#if JVET_K1000_SIMPLIFIED_EMT && !HM_EMT_NSST_AS_IN_JEM
+#if !HM_EMT_NSST_AS_IN_JEM
   void        cu_emt_pertu_idx          ( const CodingUnit&             cu );
 #endif
 
   // residual coding (clause 7.3.8.11)
   void        residual_coding           ( const TransformUnit&          tu,       ComponentID       compID );
   void        transform_skip_flag       ( const TransformUnit&          tu,       ComponentID       compID );
-#if JVET_K1000_SIMPLIFIED_EMT
   void        emt_tu_index              ( const TransformUnit&          tu );
   void        emt_cu_flag               ( const CodingUnit&             cu );
-#endif
   void        explicit_rdpcm_mode       ( const TransformUnit&          tu,       ComponentID       compID );
   void        last_sig_coeff            ( CoeffCodingContext&           cctx );
 #if JVET_K0072

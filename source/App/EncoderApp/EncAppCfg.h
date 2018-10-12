@@ -225,10 +225,8 @@ protected:
 #if JVET_K0190
   int       m_LMChroma;
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
-#endif
 
 #if JVET_K0157
   bool      m_compositeRefEnabled;

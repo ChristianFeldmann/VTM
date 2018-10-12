@@ -264,9 +264,7 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
-#if JVET_K1000_SIMPLIFIED_EMT
   emtFlag           = other.emtFlag;
-#endif
 #if HEVC_TILES_WPP
   tileIdx           = other.tileIdx;
 #endif
@@ -298,9 +296,7 @@ void CodingUnit::initData()
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
-#if JVET_K1000_SIMPLIFIED_EMT
   emtFlag           = 0;
-#endif
 #if HEVC_TILES_WPP
   tileIdx           = 0;
 #endif
@@ -481,9 +477,7 @@ void TransformUnit::initData()
 #if ENABLE_BMS
   depth              = 0;
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   emtIdx             = 0;
-#endif
 
 }
 
@@ -520,9 +514,7 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
 #if ENABLE_BMS
   depth              = other.depth;
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   emtIdx             = other.emtIdx;
-#endif
   return *this;
 }
 
@@ -548,9 +540,7 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 #endif
   if( isLuma( i ) )
   {
-#if JVET_K1000_SIMPLIFIED_EMT
     emtIdx         = other.emtIdx;
-#endif
   }
 }
 

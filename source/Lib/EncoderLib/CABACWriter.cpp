@@ -1034,12 +1034,12 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
   ChromaCbfs chromaCbfs;
   transform_tree( *cu.cs, partitioner, cuCtx, chromaCbfs );
 
-#if JVET_K1000_SIMPLIFIED_EMT && !HM_EMT_NSST_AS_IN_JEM
+#if !HM_EMT_NSST_AS_IN_JEM
   cu_emt_pertu_idx( cu );
 #endif
 }
 
-#if JVET_K1000_SIMPLIFIED_EMT && !HM_EMT_NSST_AS_IN_JEM
+#if !HM_EMT_NSST_AS_IN_JEM
 void CABACWriter::cu_emt_pertu_idx( const CodingUnit& cu )
 {
   bool anyCbf = false, anyNonTs = false;
@@ -1570,7 +1570,7 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
       chromaCbfs.Cb        = TU::getCbfAtDepth( tu, COMPONENT_Cb,  trDepth );
       chromaCbfs.Cr        = TU::getCbfAtDepth( tu, COMPONENT_Cr,  trDepth );
     }
-#if JVET_K1000_SIMPLIFIED_EMT && HM_EMT_NSST_AS_IN_JEM
+#if HM_EMT_NSST_AS_IN_JEM
     if( trDepth == 0 ) emt_cu_flag( cu );
 #endif
 
@@ -1628,7 +1628,7 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
       }
     }
 
-#if JVET_K1000_SIMPLIFIED_EMT && HM_EMT_NSST_AS_IN_JEM
+#if HM_EMT_NSST_AS_IN_JEM
 #if ENABLE_BMS
     if( trDepth == 0 && TU::getCbfAtDepth( tu, COMPONENT_Y, 0 ) ) emt_cu_flag( cu );
 #else
@@ -1882,7 +1882,7 @@ void CABACWriter::transform_unit_qtbt( const TransformUnit& tu, CUCtx& cuCtx, Ch
 
     if( tu.cbf[0] )
     {
-#if JVET_K1000_SIMPLIFIED_EMT && HM_EMT_NSST_AS_IN_JEM
+#if HM_EMT_NSST_AS_IN_JEM
       emt_cu_flag( cu );
 #endif
       residual_coding( tu, COMPONENT_Y );
@@ -1969,9 +1969,7 @@ void CABACWriter::cu_chroma_qp_offset( const CodingUnit& cu )
 
 void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 {
-#if ENABLE_TRACING || HEVC_USE_SIGN_HIDING || JVET_K1000_SIMPLIFIED_EMT
   const CodingUnit& cu = *tu.cu;
-#endif
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_coding() etype=%d pos=(%d,%d) size=%dx%d predMode=%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height, cu.predMode );
 
   // code transform skip and explicit rdpcm mode
@@ -2007,9 +2005,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 #else
   unsigned&           GRStats = m_BinEncoder.getCtx().getGRAdaptStats( TU::getGolombRiceStatisticsIndex( tu, compID ) );
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   unsigned            numSig  = 0;
-#endif
 
   // determine and set last coeff position and sig group flags
   int                      scanPosLast = -1;
@@ -2036,10 +2032,8 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 #else
   cctx.setGoRiceStats( GRStats );
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   bool useEmt = ( cu.cs->sps->getSpsNext().getUseIntraEMT() && cu.predMode == MODE_INTRA ) || ( cu.cs->sps->getSpsNext().getUseInterEMT() && cu.predMode != MODE_INTRA );
   useEmt = useEmt && isLuma(compID);
-#endif
 
   for( int subSetId = ( cctx.scanPosLast() >> cctx.log2CGSize() ); subSetId >= 0; subSetId--)
   {
@@ -2050,13 +2044,11 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
     residual_coding_subblock( cctx, coeff );
 #endif
 
-#if JVET_K1000_SIMPLIFIED_EMT
     if (useEmt)
     {
       numSig += cctx.emtNumSigCoeff();
       cctx.setEmtNumSigCoeff( 0 );
     }
-#endif
   }
 
 #if JVET_K0072
@@ -2064,7 +2056,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
   GRStats = cctx.currGoRiceStats();
 #endif
 
-#if JVET_K1000_SIMPLIFIED_EMT && HM_EMT_NSST_AS_IN_JEM
+#if HM_EMT_NSST_AS_IN_JEM
   if( useEmt && !tu.transformSkip[compID] && compID == COMPONENT_Y && tu.cu->emtFlag )
   {
     if( CU::isIntra( *tu.cu ) )
@@ -2089,7 +2081,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 
 void CABACWriter::transform_skip_flag( const TransformUnit& tu, ComponentID compID )
 {
-#if HM_EMT_NSST_AS_IN_JEM && JVET_K1000_SIMPLIFIED_EMT
+#if HM_EMT_NSST_AS_IN_JEM
   if( !tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag( *tu.cs, tu.blocks[compID] ) || ( isLuma( compID ) && tu.cu->emtFlag ) )
 #else
   if( !tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag( *tu.cs, tu.blocks[compID] ) )
@@ -2102,7 +2094,6 @@ void CABACWriter::transform_skip_flag( const TransformUnit& tu, ComponentID comp
   DTRACE( g_trace_ctx, D_SYNTAX, "transform_skip_flag() etype=%d pos=(%d,%d) trSkip=%d\n", compID, tu.blocks[compID].x, tu.blocks[compID].y, (int)tu.transformSkip[compID] );
 }
 
-#if JVET_K1000_SIMPLIFIED_EMT
 void CABACWriter::emt_tu_index( const TransformUnit& tu )
 {
   int maxSizeEmtIntra, maxSizeEmtInter;
@@ -2172,7 +2163,6 @@ void CABACWriter::emt_cu_flag( const CodingUnit& cu )
     DTRACE( g_trace_ctx, D_SYNTAX, "emt_cu_flag() etype=%d pos=(%d,%d) emtCuFlag=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), ( int ) cu.emtFlag );
   }
 }
-#endif
 
 
 
@@ -2377,9 +2367,7 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
 #else
   m_BinEncoder.encodeBinsEP( signPattern, numNonZero );
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   cctx.setEmtNumSigCoeff(numNonZero);
-#endif
 }
 
 #else

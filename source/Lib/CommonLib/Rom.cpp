@@ -257,9 +257,6 @@ void initROM()
       case 3: iT = g_aiTr16[0][0]; break;
       case 4: iT = g_aiTr32[0][0]; break;
       case 5: iT = g_aiTr64[0][0]; break;
-#if !JVET_K1000_SIMPLIFIED_EMT
-      case 6: iT = g_aiTr128[0][0]; break;
-#endif
       default: exit(0); break;
     }
 
@@ -282,17 +279,6 @@ void initROM()
         v = sin(PI*(k + 0.5)*(n + 1) / (c + 0.5)) * sqrt(2.0 / (c + 0.5));
         iT[DST7*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
 
-#if !JVET_K1000_SIMPLIFIED_EMT
-        // DCT-V
-        w0 = (k == 0) ? sqrt(0.5) : 1.0;
-        double w1 = (n == 0) ? sqrt(0.5) : 1.0;
-        v = cos(PI*n*k / (c - 0.5)) * w0 * w1 * sqrt(2.0 / (c - 0.5));
-        iT[DCT5*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-        // DST-I
-        v = sin(PI*(n + 1)*(k + 1) / (c + 1)) * sqrt(2.0 / (c + 1));
-        iT[DST1*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-#endif
       }
     }
     c <<= 1;
@@ -474,13 +460,8 @@ const int g_invQuantScales[SCALING_LIST_REM_NUM] =
 
 //--------------------------------------------------------------------------------------------------
 //structures
-#if JVET_K1000_SIMPLIFIED_EMT
 //EMT transform sets
-#if JVET_K1000_SIMPLIFIED_EMT
 const int g_aiTrSubsetIntra[3][2] = { { DST7, DCT8 }, { DST7, DCT8 }, { DST7, DCT8 } };
-#else
-const int g_aiTrSubsetIntra[3][2] = { { DST7, DCT8 }, { DST7, DST1 }, { DST7, DCT5 } };
-#endif
 const int g_aiTrSubsetInter[4] = { DCT8, DST7 };
 
 const uint8_t g_aucTrSetVert[NUM_INTRA_MODE - 1] =
@@ -503,7 +484,6 @@ const uint8_t g_aucTrSetHorz35[35] =
 //EMT threshold
 const uint32_t g_EmtSigNumThr = 2;
 
-#endif
 
 //EMT transform coeficient variable
 TMatrixCoeff g_aiTr2  [NUM_TRANS_TYPE][  2][  2];
@@ -512,9 +492,6 @@ TMatrixCoeff g_aiTr8  [NUM_TRANS_TYPE][  8][  8];
 TMatrixCoeff g_aiTr16 [NUM_TRANS_TYPE][ 16][ 16];
 TMatrixCoeff g_aiTr32 [NUM_TRANS_TYPE][ 32][ 32];
 TMatrixCoeff g_aiTr64 [NUM_TRANS_TYPE][ 64][ 64];
-#if !JVET_K1000_SIMPLIFIED_EMT
-TMatrixCoeff g_aiTr128[NUM_TRANS_TYPE][128][128];
-#endif
 
 //--------------------------------------------------------------------------------------------------
 //coefficients

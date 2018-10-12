@@ -189,12 +189,10 @@ struct ComprCUCtx
     , extraFeatures (            )
     , extraFeaturesd(            )
     , bestInterCost ( MAX_DOUBLE )
-#if JVET_K1000_SIMPLIFIED_EMT
     , bestEmtSize2Nx2N1stPass
                     ( MAX_DOUBLE )
     , skipSecondEMTPass
                     ( false   )
-#endif
 #if DISTORTION_TYPE_BUGFIX
     , interHad      (std::numeric_limits<Distortion>::max())
 #else
@@ -227,10 +225,8 @@ struct ComprCUCtx
   static_vector<int64_t,  30>         extraFeatures;
   static_vector<double, 30>         extraFeaturesd;
   double                            bestInterCost;
-#if JVET_K1000_SIMPLIFIED_EMT
   double                            bestEmtSize2Nx2N1stPass;
   bool                              skipSecondEMTPass;
-#endif
   Distortion                        interHad;
 #if ENABLE_SPLIT_PARALLELISM
   bool                              isLevelSplitParallel;
@@ -314,11 +310,9 @@ public:
   double getBestInterCost             ()                  const { return m_ComprCUCtxList.back().bestInterCost;           }
   Distortion getInterHad              ()                  const { return m_ComprCUCtxList.back().interHad;                }
   void enforceInterHad                ( Distortion had )        {        m_ComprCUCtxList.back().interHad = had;          }
-#if JVET_K1000_SIMPLIFIED_EMT
   double getEmtSize2Nx2NFirstPassCost ()                  const { return m_ComprCUCtxList.back().bestEmtSize2Nx2N1stPass; }
   bool getSkipSecondEMTPass           ()                  const { return m_ComprCUCtxList.back().skipSecondEMTPass;       }
   void setSkipSecondEMTPass           ( bool b )                {        m_ComprCUCtxList.back().skipSecondEMTPass = b;   }
-#endif
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );

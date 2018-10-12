@@ -1858,10 +1858,8 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         {
         }
 
-#if JVET_K1000_SIMPLIFIED_EMT
         sls.emtCuFlag  = bestCU->emtFlag;
         sls.emtTuIndex = bestCU->firstTU->emtIdx; //since this is the QTBT path, there is only one TU
-#endif
 
         sls.tag = LOAD_ENC_INFO;
         CHECK( sls.partIdx != cuECtx.partIdx, "partidx is not consistent" );
@@ -1901,7 +1899,6 @@ bool EncModeCtrlMTnoRQT::useModeResult( const EncTestMode& encTestmode, CodingSt
   {
     cuECtx.set( BEST_TRIV_SPLIT_COST, tempCS->cost );
   }
-#if JVET_K1000_SIMPLIFIED_EMT
   else if( encTestmode.type == ETM_INTRA && encTestmode.partSize == SIZE_2Nx2N )
   {
     const CodingUnit cu = *tempCS->getCU( partitioner.chType );
@@ -1911,7 +1908,6 @@ bool EncModeCtrlMTnoRQT::useModeResult( const EncTestMode& encTestmode, CodingSt
       cuECtx.bestEmtSize2Nx2N1stPass = tempCS->cost;
     }
   }
-#endif
 
 #if JVET_K0357_AMVR
   if( m_pcEncCfg->getIMV4PelFast() && m_pcEncCfg->getIMV() && encTestmode.type == ETM_INTER_ME )

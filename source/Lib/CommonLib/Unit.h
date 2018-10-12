@@ -310,9 +310,7 @@ struct CodingUnit : public UnitArea
 #if HEVC_TILES_WPP
   uint32_t           tileIdx;
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   uint8_t          emtFlag;
-#endif
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
 
@@ -412,9 +410,7 @@ struct TransformUnit : public UnitArea
 #if ENABLE_BMS
   uint8_t        depth;
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   uint8_t        emtIdx;
-#endif
   uint8_t        cbf          [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];
   bool         transformSkip[ MAX_NUM_TBLOCKS ];

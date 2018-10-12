@@ -820,10 +820,8 @@ private:
 #if JVET_K0190
   bool              m_LMChroma;                   // 17
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   bool              m_IntraEMT;                   // 18
   bool              m_InterEMT;                   // 19
-#endif
 #if JVET_K_AFFINE
   bool              m_Affine;
 #if JVET_K0337_AFFINE_6PARA
@@ -916,12 +914,10 @@ public:
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   void      setUseIntraEMT        ( bool b )                                        { m_IntraEMT = b; }
   bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
   void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
   bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
-#endif
   //=====  additional parameters  =====
   // qtbt
   void      setCTUSize            ( unsigned    ctuSize )                           { m_CTUSize = ctuSize; }

@@ -1669,10 +1669,8 @@ SPSNext::SPSNext( SPS& sps )
 #if JVET_K0190
   , m_LMChroma                  ( false )
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   , m_IntraEMT                  ( false )
   , m_InterEMT                  ( false )
-#endif
 #if JVET_K_AFFINE
   , m_Affine                    ( false )
 #if JVET_K0337_AFFINE_6PARA

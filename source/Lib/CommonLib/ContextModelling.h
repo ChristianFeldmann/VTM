@@ -431,10 +431,8 @@ public:
   }
 #endif
 
-#if JVET_K1000_SIMPLIFIED_EMT
   unsigned        emtNumSigCoeff()                          const { return m_emtNumSigCoeff; }
   void            setEmtNumSigCoeff( unsigned val )               { m_emtNumSigCoeff = val; }
-#endif
 
 private:
   // constant
@@ -516,9 +514,7 @@ private:
 #if JVET_K0072
 #else
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   unsigned                  m_emtNumSigCoeff;
-#endif
 };
 
 

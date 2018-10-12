@@ -310,7 +310,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
   const unsigned shiftFactor  = edgeDir == EDGE_VER ? ::getComponentScaleX( COMPONENT_Cb, pcv.chrFormat ) : ::getComponentScaleY( COMPONENT_Cb, pcv.chrFormat );
   const bool bAlwaysDoChroma  = pcv.chrFormat == CHROMA_444 || pcv.noRQT;
 
-#if DEBLOCKING_GRID_8x8
   if (edgeDir == EDGE_HOR)
   {
     if (!((cu.block(COMPONENT_Y).y % 8) == 0))
@@ -321,7 +320,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     if (!((cu.block(COMPONENT_Y).x % 8) == 0))
       return;
   }
-#endif
 
 #if DB_TU_FIX
   unsigned int orthogonalLength = 1;

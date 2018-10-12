@@ -79,10 +79,8 @@ protected:
 
   ChromaFormat  m_currChromaFormat;
 
-#if JVET_K0500_WAIP
   int m_topRefLength;
   int m_leftRefLength;
-#endif
   // prediction
   void xPredIntraPlanar           ( const CPelBuf &pSrc, PelBuf &pDst,                                                                                                         const SPS& sps );
   void xPredIntraDc               ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType,                                                                                          const bool enableBoundaryFilter = true );
@@ -100,10 +98,8 @@ protected:
   // dc filtering
   void xDCPredFiltering           ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType &channelType );
 #endif
-#if JVET_K0500_WAIP
   static int getWideAngle         ( int width, int height, int predMode );
   void setReferenceArrayLengths   ( const CompArea &area );
-#endif
 
   void destroy                    ();
 

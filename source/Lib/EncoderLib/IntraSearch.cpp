@@ -1854,13 +1854,8 @@ void IntraSearch::encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, Pel
 {
   CHECK( pOrg.buf == 0, "Encoder DPCM called without original buffer" );
 
-#if JVET_K0500_WAIP
   const int srcStride = m_topRefLength + 1;
   CPelBuf   pSrc = CPelBuf(getPredictorPtr(compID), srcStride, m_leftRefLength + 1);
-#else
-  const int srcStride = (pDst.width + pDst.height + 1);
-  CPelBuf   pSrc      = CPelBuf( getPredictorPtr( compID ), srcStride, srcStride );
-#endif
 
   // Sample Adaptive intra-Prediction (SAP)
   if( uiDirMode == HOR_IDX )

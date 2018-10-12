@@ -58,7 +58,6 @@
 
 
 
-#define JVET_K0500_WAIP                                   1 // Wide-Angle Intra Prediction
 
 #define JVET_K0072                                        1
 

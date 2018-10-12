@@ -1327,7 +1327,6 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 }
 
 
-#if JVET_K0337_AFFINE_MVP_IMPROVE
 const int getAvailableAffineNeighbours( const PredictionUnit &pu, const PredictionUnit* npu[] )
 {
   const Position posLT = pu.Y().topLeft();
@@ -1367,7 +1366,6 @@ const int getAvailableAffineNeighbours( const PredictionUnit &pu, const Predicti
 
   return num;
 }
-#endif
 
 void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puNeighbour, RefPicList eRefPicList, Mv rcMv[3] )
 {
@@ -1452,36 +1450,6 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
 #endif
 }
 
-#if !JVET_K0337_AFFINE_MVP_IMPROVE
-bool isValidAffineCandidate( const PredictionUnit &pu, Mv cMv0, Mv cMv1, Mv cMv2, int& riDV )
-{
-  Mv zeroMv(0, 0);
-  Mv deltaHor = cMv1 - cMv0;
-  Mv deltaVer = cMv2 - cMv0;
-
-  // same motion vector, translation model
-  if ( deltaHor == zeroMv )
-    return false;
-#if !REMOVE_MV_ADAPT_PREC
-  deltaHor.setHighPrec();
-  deltaVer.setHighPrec();
-#endif
-
-  // S/8, but the Mv is 4 precision, so change to S/2
-  int width = pu.Y().width;
-  int height = pu.Y().height;
-  int iDiffHor = width>>1;
-  int iDiffVer = height>>1;
-
-  if ( deltaHor.getAbsHor() > iDiffHor || deltaHor.getAbsVer() > iDiffVer || deltaVer.getAbsHor() > iDiffHor || deltaVer.getAbsVer() > iDiffVer )
-  {
-    return false;
-  }
-  // Calculate DV
-  riDV = abs( deltaHor.getHor() * height - deltaVer.getVer() * width ) + abs( deltaHor.getVer() * height + deltaVer.getHor() * width );
-  return true;
-}
-#endif
 
 void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AffineAMVPInfo &affiAMVPInfo)
 {
@@ -1496,7 +1464,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
     return;
   }
 
-#if JVET_K0337_AFFINE_MVP_IMPROVE
   const int curWidth = pu.Y().width;
   const int curHeight = pu.Y().height;
 
@@ -1661,155 +1628,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       affiAMVPInfo.numCand++;
     }
   }
-#else
-  //-- Get Spatial MV
-  Position posLT = pu.Y().topLeft();
-  Position posRT = pu.Y().topRight();
-  Position posLB = pu.Y().bottomLeft();
-
-
-  //-------------------  V0 (START) -------------------//
-  AMVPInfo amvpInfo0;
-  amvpInfo0.numCand = 0;
-
-  // A->C: Above Left, Above, Left
-  addMVPCandUnscaled( pu, eRefPicList, refIdx, posLT, MD_ABOVE_LEFT, amvpInfo0, true );
-  addMVPCandUnscaled( pu, eRefPicList, refIdx, posLT, MD_ABOVE,      amvpInfo0, true );
-  addMVPCandUnscaled( pu, eRefPicList, refIdx, posLT, MD_LEFT,       amvpInfo0, true );
-
-  if( amvpInfo0.numCand < AFFINE_MAX_NUM_V0 )
-  {
-    addMVPCandWithScaling( pu, eRefPicList, refIdx, posLT, MD_ABOVE_LEFT, amvpInfo0, true );
-    if ( amvpInfo0.numCand < AFFINE_MAX_NUM_V0 )
-    {
-      addMVPCandWithScaling( pu, eRefPicList, refIdx, posLT, MD_ABOVE, amvpInfo0, true );
-      if ( amvpInfo0.numCand < AFFINE_MAX_NUM_V0 )
-      {
-        addMVPCandWithScaling( pu, eRefPicList, refIdx, posLT, MD_LEFT, amvpInfo0, true );
-      }
-    }
-  }
-
-  //-------------------  V1 (START) -------------------//
-  AMVPInfo amvpInfo1;
-  amvpInfo1.numCand = 0;
-
-  // D->E: Above, Above Right
-  addMVPCandUnscaled( pu, eRefPicList, refIdx, posRT, MD_ABOVE,       amvpInfo1, true );
-  addMVPCandUnscaled( pu, eRefPicList, refIdx, posRT, MD_ABOVE_RIGHT, amvpInfo1, true );
-  if( amvpInfo1.numCand < AFFINE_MAX_NUM_V1 )
-  {
-    addMVPCandWithScaling( pu, eRefPicList, refIdx, posRT, MD_ABOVE, amvpInfo1, true );
-    if( amvpInfo1.numCand < AFFINE_MAX_NUM_V1 )
-    {
-      addMVPCandWithScaling( pu, eRefPicList, refIdx, posRT, MD_ABOVE_RIGHT, amvpInfo1, true );
-    }
-  }
-
-  //-------------------  V2 (START) -------------------//
-  AMVPInfo amvpInfo2;
-  amvpInfo2.numCand = 0;
-
-  // F->G: Left, Below Left
-  addMVPCandUnscaled( pu, eRefPicList, refIdx, posLB, MD_LEFT,       amvpInfo2, true );
-  addMVPCandUnscaled( pu, eRefPicList, refIdx, posLB, MD_BELOW_LEFT, amvpInfo2, true );
-  if( amvpInfo2.numCand < AFFINE_MAX_NUM_V2 )
-  {
-    addMVPCandWithScaling( pu, eRefPicList, refIdx, posLB, MD_LEFT, amvpInfo2, true );
-    if( amvpInfo2.numCand < AFFINE_MAX_NUM_V2 )
-    {
-      addMVPCandWithScaling( pu, eRefPicList, refIdx, posLB, MD_BELOW_LEFT, amvpInfo2, true );
-    }
-  }
-
-#if !REMOVE_MV_ADAPT_PREC
-  for (int i = 0; i < amvpInfo0.numCand; i++)
-  {
-    amvpInfo0.mvCand[i].setHighPrec();
-  }
-  for (int i = 0; i < amvpInfo1.numCand; i++)
-  {
-    amvpInfo1.mvCand[i].setHighPrec();
-  }
-  for (int i = 0; i < amvpInfo2.numCand; i++)
-  {
-    amvpInfo2.mvCand[i].setHighPrec();
-  }
-#endif
-
-  // Check Valid Candidates and Sort through DV
-  int   iRecord[AFFINE_MAX_NUM_COMB][3];
-  int   iDV[AFFINE_MAX_NUM_COMB];
-  int   iTempDV;
-  int   iCount = 0;
-  for ( int i = 0; i < amvpInfo0.numCand; i++ )
-  {
-    for ( int j = 0; j < amvpInfo1.numCand; j++ )
-    {
-      for ( int k = 0; k < amvpInfo2.numCand; k++ )
-      {
-        bool bValid = isValidAffineCandidate( pu, amvpInfo0.mvCand[i], amvpInfo1.mvCand[j], amvpInfo2.mvCand[k], iDV[iCount] );
-        if ( bValid )
-        {
-          // Sort
-          if ( iCount==0 || iDV[iCount]>=iDV[iCount-1] )
-          {
-            iRecord[iCount][0] = i;
-            iRecord[iCount][1] = j;
-            iRecord[iCount][2] = k;
-          }
-          else
-          {
-            // save last element
-            iTempDV = iDV[iCount];
-            // find position and move back record
-            int m = 0;
-            for ( m = iCount - 1; m >= 0 && iTempDV < iDV[m]; m-- )
-            {
-              iDV[m+1] = iDV[m];
-              memcpy( iRecord[m+1], iRecord[m], sizeof(int) * 3 );
-            }
-            // insert
-            iDV[m+1] = iTempDV;
-            iRecord[m+1][0] = i;
-            iRecord[m+1][1] = j;
-            iRecord[m+1][2] = k;
-          }
-          iCount++;
-        }
-      }
-    }
-  }
-
-  affiAMVPInfo.numCand = std::min<int>(iCount, AMVP_MAX_NUM_CANDS);
-
-  int iWidth = pu.Y().width;
-  int iHeight = pu.Y().height;
-
-  for ( int i = 0; i < affiAMVPInfo.numCand; i++ )
-  {
-    affiAMVPInfo.mvCandLT[i] = amvpInfo0.mvCand[ iRecord[i][0] ];
-    affiAMVPInfo.mvCandRT[i] = amvpInfo1.mvCand[ iRecord[i][1] ];
-    affiAMVPInfo.mvCandLB[i] = amvpInfo2.mvCand[ iRecord[i][2] ];
-
-    affiAMVPInfo.mvCandLT[i].roundMV2SignalPrecision();
-    affiAMVPInfo.mvCandRT[i].roundMV2SignalPrecision();
-
-    clipMv( affiAMVPInfo.mvCandLT[i], pu.cu->lumaPos(), *pu.cs->sps );
-    clipMv( affiAMVPInfo.mvCandRT[i], pu.cu->lumaPos(), *pu.cs->sps );
-
-    int vx2 =  - ( affiAMVPInfo.mvCandRT[i].getVer() - affiAMVPInfo.mvCandLT[i].getVer() ) * iHeight / iWidth + affiAMVPInfo.mvCandLT[i].getHor();
-    int vy2 =    ( affiAMVPInfo.mvCandRT[i].getHor() - affiAMVPInfo.mvCandLT[i].getHor() ) * iHeight / iWidth + affiAMVPInfo.mvCandLT[i].getVer();
-
-    affiAMVPInfo.mvCandLB[i] = Mv( vx2, vy2, true );
-    if( !pu.cu->cs->pcv->only2Nx2N )
-    {
-      affiAMVPInfo.mvCandLB[i].roundMV2SignalPrecision();
-    }
-
-    clipMv( affiAMVPInfo.mvCandLB[i], pu.cu->lumaPos(), *pu.cs->sps );
-  }
-#endif
 #if REMOVE_MV_ADAPT_PREC
   for (int i = 0; i < affiAMVPInfo.numCand; i++)
   {

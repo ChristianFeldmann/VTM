@@ -85,7 +85,6 @@
 #define JVET_K0251_QP_EXT                                 1 // Extending the QP parameter value range for coarse quantization
 
 
-#define JVET_K0337_AFFINE_MVP_IMPROVE                     1 // CE4.1.3 Affine MVP construction
 #define JVET_K0337_AFFINE_MVD_PREDICTION                  1 // CE4.1.3 Affine MVD prediction
 #define JVET_K0337_AFFINE_6PARA                           1 // CE4.1.3 CU level 4-para/6-para switching
 #define JVET_K0185_AFFINE_6PARA_ENC                       1 // CE4.1.5 Affine 6-para encoder

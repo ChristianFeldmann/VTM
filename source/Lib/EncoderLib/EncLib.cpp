@@ -875,9 +875,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
 #endif
   sps.getSpsNext().setUseAffine             ( m_Affine );
-#if JVET_K0337_AFFINE_6PARA
   sps.getSpsNext().setUseAffineType         ( m_AffineType );
-#endif
   sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );
   sps.getSpsNext().setMTTMode               ( m_MTTMode );
   sps.getSpsNext().setUseLMChroma           ( m_LMChroma ? true : false );

@@ -519,7 +519,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #endif
 
               Mv mvLB;
-#if JVET_K0337_AFFINE_6PARA
               if ( cu.affineType == AFFINEMODEL_6PARAM )
               {
                 mvLB = affineAMVPInfo.mvCandLB[mvp_idx] + pu.mvdAffi[eRefList][2];
@@ -531,7 +530,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
                 CHECK(!mvLB.highPrec, "unexpected lp mv");
 #endif
               }
-#endif
               PU::setAllAffineMv( pu, mvLT, mvRT, mvLB, eRefList );
             }
           }

@@ -109,14 +109,12 @@ inline int64_t abs (int64_t x) { return _abs64(x); };
 #define NULL              0
 #endif
 
-#if JVET_K0337_AFFINE_6PARA
 typedef enum
 {
   AFFINEMODEL_4PARAM,
   AFFINEMODEL_6PARAM,
   AFFINE_MODEL_NUM
 } EAffineModel;
-#endif
 
 // ====================================================================================================================
 // Common constants

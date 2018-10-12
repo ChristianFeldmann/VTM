@@ -167,9 +167,7 @@ public:
   static const CtxSet   InterDir;
   static const CtxSet   RefPic;
   static const CtxSet   AffineFlag;
-#if JVET_K0337_AFFINE_6PARA
   static const CtxSet   AffineType;
-#endif
   static const CtxSet   Mvd;
   static const CtxSet   TransSubdivFlag;
   static const CtxSet   QtRootCbf;

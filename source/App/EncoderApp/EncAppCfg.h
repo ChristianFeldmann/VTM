@@ -209,9 +209,7 @@ protected:
   unsigned  m_SubPuMvpLog2Size;
 #endif
   bool      m_Affine;
-#if JVET_K0337_AFFINE_6PARA
   bool      m_AffineType;
-#endif
 #if !REMOVE_MV_ADAPT_PREC
   bool      m_highPrecisionMv;
 #endif

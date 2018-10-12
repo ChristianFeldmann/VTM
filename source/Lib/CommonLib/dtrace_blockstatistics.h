@@ -96,9 +96,7 @@ enum class BlockStatistic {
   AffineFlag,
   AffineMVL0,
   AffineMVL1,
-#if JVET_K0337_AFFINE_6PARA
   AffineType,
-#endif
 
 // for dual tree
   // general
@@ -169,9 +167,7 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::AffineFlag,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineFlag",                  BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::AffineMVL0,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineMVL0",                  BlockStatisticType::AffineTFVectors,        "Scale: 4"}},
   { BlockStatistic::AffineMVL1,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineMVL1",                  BlockStatisticType::AffineTFVectors,        "Scale: 4"}},
-#if JVET_K0337_AFFINE_6PARA
   { BlockStatistic::AffineType,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineType",                  BlockStatisticType::Flag,                   ""} },
-#endif
   { BlockStatistic::EMTFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"EMTFlag",                     BlockStatisticType::Flag,                   ""}},
 
   // for dual tree

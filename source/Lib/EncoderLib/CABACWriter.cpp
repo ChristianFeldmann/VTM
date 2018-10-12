@@ -1121,7 +1121,6 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
         mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][0]);
         mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][1]);
 #endif
-#if JVET_K0337_AFFINE_6PARA
         if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
         {
 #if JVET_K0357_AMVR
@@ -1130,7 +1129,6 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
           mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][2]);
 #endif
         }
-#endif
       }
       else
       {
@@ -1156,7 +1154,6 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
           mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][0]);
           mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][1]);
 #endif
-#if JVET_K0337_AFFINE_6PARA
           if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
           {
 #if JVET_K0357_AMVR
@@ -1165,7 +1162,6 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
             mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][2]);
 #endif
           }
-#endif
         }
         else
         {
@@ -1206,7 +1202,6 @@ void CABACWriter::affine_flag( const CodingUnit& cu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "affine_flag() affine=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
 
-#if JVET_K0337_AFFINE_6PARA
   if ( cu.affine && !cu.firstPU->mergeFlag && cu.cs->sps->getSpsNext().getUseAffineType() )
   {
     unsigned ctxId = 0;
@@ -1215,7 +1210,6 @@ void CABACWriter::affine_flag( const CodingUnit& cu )
     DTRACE( g_trace_ctx, D_COMMON, " (%d) affine_type() affine_type=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_COMMON ), cu.affineType ? 1 : 0 );
     DTRACE( g_trace_ctx, D_SYNTAX, "affine_type() affine_type=%d ctx=%d pos=(%d,%d)\n", cu.affineType ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
   }
-#endif
 }
 
 void CABACWriter::merge_flag( const PredictionUnit& pu )

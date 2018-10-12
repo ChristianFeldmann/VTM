@@ -821,9 +821,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
 #endif
   ("Affine",                                          m_Affine,                                        false, "Enable affine prediction (0:off, 1:on)  [default: off]")
-#if JVET_K0337_AFFINE_6PARA
   ( "AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
-#endif
   ("DisableMotCompression",                           m_DisableMotionCompression,                       false, "Disable motion data compression for all modes")
 #if JVET_K0357_AMVR
   ("IMV",                                             m_ImvMode,                                            2, "Adaptive MV precision Mode (IMV)\n"
@@ -3150,12 +3148,10 @@ void EncAppCfg::xPrintParameter()
   {
     msg( VERBOSE, "\nNEXT TOOL CFG: " );
     msg( VERBOSE, "Affine:%d ", m_Affine );
-#if JVET_K0337_AFFINE_6PARA
     if ( m_Affine )
     {
       msg( VERBOSE, "AffineType:%d ", m_AffineType );
     }
-#endif
 #if JVET_K0346
     msg(VERBOSE, "SubPuMvp:%d+%d ", m_SubPuMvpMode & 1, (m_SubPuMvpMode & 2) == 2);
     if (m_SubPuMvpMode != 0)

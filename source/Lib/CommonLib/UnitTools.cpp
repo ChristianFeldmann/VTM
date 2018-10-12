@@ -1376,10 +1376,8 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
 
   int neiW = puNeighbour->Y().width;
   int curW = pu.Y().width;
-#if JVET_K0337_AFFINE_6PARA
   int neiH = puNeighbour->Y().height;
   int curH = pu.Y().height;
-#endif
   
   Mv mvLT, mvRT, mvLB;
   const Position posLT = puNeighbour->Y().topLeft();
@@ -1394,14 +1392,12 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
 
   iDMvHorX = (mvRT - mvLT).getHor() << (shift - g_aucLog2[neiW]);
   iDMvHorY = (mvRT - mvLT).getVer() << (shift - g_aucLog2[neiW]);
-#if JVET_K0337_AFFINE_6PARA
   if ( puNeighbour->cu->affineType == AFFINEMODEL_6PARAM )
   {
     iDMvVerX = (mvLB - mvLT).getHor() << (shift - g_aucLog2[neiH]);
     iDMvVerY = (mvLB - mvLT).getVer() << (shift - g_aucLog2[neiH]);
   }
   else
-#endif
   {
     iDMvVerX = -iDMvHorY;
     iDMvVerY = iDMvHorX;
@@ -1434,7 +1430,6 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
 #endif
 
   // v2
-#if JVET_K0337_AFFINE_6PARA
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
     horTmp = iMvScaleHor + iDMvHorX * (posCurX - posNeiX) + iDMvVerX * (posCurY + curH - posNeiY);
@@ -1447,7 +1442,6 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
     rcMv[2] = Mv(horTmp, verTmp, true);
 #endif
   }
-#endif
 }
 
 
@@ -1491,7 +1485,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 
       outputAffineMv[0].roundMV2SignalPrecision();
       outputAffineMv[1].roundMV2SignalPrecision();
-#if JVET_K0337_AFFINE_6PARA
       if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
       {
         outputAffineMv[2].roundMV2SignalPrecision();
@@ -1501,9 +1494,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
         || (pu.cu->affineType == AFFINEMODEL_4PARAM && (outputAffineMv[0] != affiAMVPInfo.mvCandLT[0] || outputAffineMv[1] != affiAMVPInfo.mvCandRT[0]))
         || (pu.cu->affineType == AFFINEMODEL_6PARAM && (outputAffineMv[0] != affiAMVPInfo.mvCandLT[0] || outputAffineMv[1] != affiAMVPInfo.mvCandRT[0] || outputAffineMv[2] != affiAMVPInfo.mvCandLB[0]))
         )
-#else
-      if ( affiAMVPInfo.numCand == 0 || outputAffineMv[0] != affiAMVPInfo.mvCandLT[0] || outputAffineMv[1] != affiAMVPInfo.mvCandRT[0] )
-#endif
       {
         affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = outputAffineMv[0];
         affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = outputAffineMv[1];
@@ -1591,7 +1581,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 
   if ( cornerMVPattern == 7 || cornerMVPattern == 3 || cornerMVPattern == 5 )
   {
-#if JVET_K0337_AFFINE_6PARA
     if ( cornerMVPattern == 3 && pu.cu->affineType == AFFINEMODEL_6PARAM ) // V0 V1 are available, derived V2 for 6-para
     {
       int shift = MAX_CU_DEPTH;
@@ -1601,7 +1590,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       outputAffineMv[2].set( vx2, vy2 );
       outputAffineMv[2].roundMV2SignalPrecision();
     }
-#endif
 
     if ( cornerMVPattern == 5 ) // V0 V2 are available, derived V1
     {
@@ -1613,14 +1601,10 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       outputAffineMv[1].roundMV2SignalPrecision();
     }
 
-#if JVET_K0337_AFFINE_6PARA
     if ( affiAMVPInfo.numCand == 0
       || (pu.cu->affineType == AFFINEMODEL_4PARAM && (outputAffineMv[0] != affiAMVPInfo.mvCandLT[0] || outputAffineMv[1] != affiAMVPInfo.mvCandRT[0]))
       || (pu.cu->affineType == AFFINEMODEL_6PARAM && (outputAffineMv[0] != affiAMVPInfo.mvCandLT[0] || outputAffineMv[1] != affiAMVPInfo.mvCandRT[0] || outputAffineMv[2] != affiAMVPInfo.mvCandLB[0]))
       )
-#else
-    if ( affiAMVPInfo.numCand == 0 || outputAffineMv[0] != affiAMVPInfo.mvCandLT[0] || outputAffineMv[1] != affiAMVPInfo.mvCandRT[0] )
-#endif
     {
       affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = outputAffineMv[0];
       affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = outputAffineMv[1];
@@ -1927,9 +1911,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, MvField (*mvFieldNeighbou
   // get Inter Dir
   interDirNeighbours = puFirstNeighbour->getMotionInfo().interDir;
 
-#if JVET_K0337_AFFINE_6PARA // inherit affine type
   pu.cu->affineType = puFirstNeighbour->cu->affineType;
-#endif
 
   // derive Mv from neighbor affine block
   Mv cMv[3];
@@ -1996,7 +1978,6 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
   int deltaMvHorX, deltaMvHorY, deltaMvVerX, deltaMvVerY;
   deltaMvHorX = (affRT - affLT).getHor() << (shift - g_aucLog2[width]);
   deltaMvHorY = (affRT - affLT).getVer() << (shift - g_aucLog2[width]);
-#if JVET_K0337_AFFINE_6PARA
   int height = pu.Y().height;
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
@@ -2008,10 +1989,6 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
     deltaMvVerX = -deltaMvHorY;
     deltaMvVerY = deltaMvHorX;
   }
-#else
-  deltaMvVerX = -deltaMvHorY;
-  deltaMvVerY = deltaMvHorX;
-#endif
 
   int mvScaleHor = affLT.getHor() << shift;
   int mvScaleVer = affLT.getVer() << shift;
@@ -2050,12 +2027,10 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
   mb.at(            0,             0 ).mv[eRefList] = affLT;
   mb.at( mb.width - 1,             0 ).mv[eRefList] = affRT;
 
-#if JVET_K0337_AFFINE_6PARA
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
     mb.at( 0, mb.height - 1 ).mv[eRefList] = affLB;
   }
-#endif
 }
 
 #if JVET_K0346

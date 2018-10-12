@@ -1136,12 +1136,10 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
       {
         mvd_coding( pu.mvdAffi[REF_PIC_LIST_0][0] );
         mvd_coding( pu.mvdAffi[REF_PIC_LIST_0][1] );
-#if JVET_K0337_AFFINE_6PARA
         if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
         {
           mvd_coding( pu.mvdAffi[REF_PIC_LIST_0][2] );
         }
-#endif
       }
       else
       {
@@ -1164,12 +1162,10 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
       {
         mvd_coding( pu.mvdAffi[REF_PIC_LIST_1][0] );
         mvd_coding( pu.mvdAffi[REF_PIC_LIST_1][1] );
-#if JVET_K0337_AFFINE_6PARA
         if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
         {
           mvd_coding( pu.mvdAffi[REF_PIC_LIST_1][2] );
         }
-#endif
       }
       else
       {
@@ -1214,7 +1210,6 @@ void CABACReader::affine_flag( CodingUnit& cu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "affine_flag() affine=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
 
-#if JVET_K0337_AFFINE_6PARA
   if ( cu.affine && !cu.firstPU->mergeFlag && cu.cs->sps->getSpsNext().getUseAffineType() )
   {
     ctxId = 0;
@@ -1225,7 +1220,6 @@ void CABACReader::affine_flag( CodingUnit& cu )
   {
     cu.affineType = AFFINEMODEL_4PARAM;
   }
-#endif
 }
 
 void CABACReader::merge_flag( PredictionUnit& pu )

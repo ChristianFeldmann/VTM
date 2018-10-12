@@ -254,9 +254,7 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   splitSeries       = other.splitSeries;
   skip              = other.skip;
   affine            = other.affine;
-#if JVET_K0337_AFFINE_6PARA
   affineType        = other.affineType;
-#endif
   transQuantBypass  = other.transQuantBypass;
   ipcm              = other.ipcm;
   qp                = other.qp;
@@ -284,9 +282,7 @@ void CodingUnit::initData()
   splitSeries       = 0;
   skip              = false;
   affine            = false;
-#if JVET_K0337_AFFINE_6PARA
   affineType        = 0;
-#endif
   transQuantBypass  = false;
   ipcm              = false;
   qp                = 0;

@@ -296,9 +296,7 @@ struct CodingUnit : public UnitArea
   SplitSeries    splitSeries;
   bool           skip;
   bool           affine;
-#if JVET_K0337_AFFINE_6PARA
   int            affineType;
-#endif
   bool           transQuantBypass;
   bool           ipcm;
 #if JVET_K0357_AMVR

@@ -1660,9 +1660,7 @@ SPSNext::SPSNext( SPS& sps )
   , m_IntraEMT                  ( false )
   , m_InterEMT                  ( false )
   , m_Affine                    ( false )
-#if JVET_K0337_AFFINE_6PARA
   , m_AffineType                ( false )
-#endif
   , m_MTTEnabled                ( false )
 #if ENABLE_WPP_PARALLELISM
   , m_NextDQP                   ( false )

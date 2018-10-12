@@ -96,9 +96,7 @@ enum CodingStatisticsType
   STATS__TOOL_TOTAL_FRAME,// This is a special case and is not included in the report.
   STATS__CABAC_BITS__AFFINE_FLAG,
   STATS__TOOL_AFF,
-#if JVET_K0337_AFFINE_6PARA
   STATS__CABAC_BITS__AFFINE_TYPE,
-#endif
   STATS__CABAC_BITS__PAR_FLAG,
   STATS__CABAC_BITS__ALF,
 #if JVET_K0357_AMVR
@@ -145,9 +143,7 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__MVD",
     "CABAC_BITS__MVD_EP",
     "CABAC_BITS__AFFINE_FLAG",
-#if JVET_K0337_AFFINE_6PARA
     "CABAC_BITS__AFFINE_TYPE",
-#endif
     "CABAC_BITS__TRANSFORM_SUBDIV_FLAG",
     "CABAC_BITS__QT_ROOT_CBF",
     "CABAC_BITS__DELTA_QP_EP",

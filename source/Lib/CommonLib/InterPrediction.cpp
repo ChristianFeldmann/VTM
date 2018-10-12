@@ -180,12 +180,8 @@ bool checkIdenticalMotion( const PredictionUnit &pu, bool checkAffine )
         {
           CHECK( !checkAffine, "In this case, checkAffine should be on." );
           const CMotionBuf &mb = pu.getMotionBuf();
-#if JVET_K0337_AFFINE_6PARA
           if ( (pu.cu->affineType == AFFINEMODEL_4PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]))
             || (pu.cu->affineType == AFFINEMODEL_6PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) && (mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1])) )
-#else
-          if ( (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) )
-#endif
           {
             return true;
           }
@@ -224,12 +220,8 @@ bool InterPrediction::xCheckIdenticalMotion( const PredictionUnit &pu )
         else
         {
           const CMotionBuf &mb = pu.getMotionBuf();
-#if JVET_K0337_AFFINE_6PARA
           if ( (pu.cu->affineType == AFFINEMODEL_4PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]))
             || (pu.cu->affineType == AFFINEMODEL_6PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) && (mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1])) )
-#else
-          if ( (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) )
-#endif
           {
             return true;
           }
@@ -511,13 +503,9 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 
 void InterPrediction::xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng )
 {
-#if JVET_K0337_AFFINE_6PARA
   if ( (pu.cu->affineType == AFFINEMODEL_6PARAM && _mv[0] == _mv[1] && _mv[0] == _mv[2])
     || (pu.cu->affineType == AFFINEMODEL_4PARAM && _mv[0] == _mv[1])
     )
-#else
-  if( _mv[0] == _mv[1] )
-#endif
   {
     Mv mvTemp = _mv[0];
     clipMv( mvTemp, pu.cu->lumaPos(), *pu.cs->sps );
@@ -557,7 +545,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   int iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY;
   iDMvHorX = (mvRT - mvLT).getHor() << (iBit - g_aucLog2[cxWidth]);
   iDMvHorY = (mvRT - mvLT).getVer() << (iBit - g_aucLog2[cxWidth]);
-#if JVET_K0337_AFFINE_6PARA
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
     iDMvVerX = (mvLB - mvLT).getHor() << (iBit - g_aucLog2[cxHeight]);
@@ -568,10 +555,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     iDMvVerX = -iDMvHorY;
     iDMvVerY = iDMvHorX;
   }
-#else
-  iDMvVerX = -iDMvHorY;
-  iDMvVerY = iDMvHorX;
-#endif
 
   int iMvScaleHor = mvLT.getHor() << iBit;
   int iMvScaleVer = mvLT.getVer() << iBit;

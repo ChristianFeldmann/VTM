@@ -353,7 +353,6 @@ const CtxSet ContextSetCfg::RefPic = ContextSetCfg::addCtxSet
   {  CNU, CNU,},
 });
 
-#if JVET_K_AFFINE
 const CtxSet ContextSetCfg::AffineFlag = ContextSetCfg::addCtxSet
 ({
   {  197, 185, 201,},
@@ -368,7 +367,6 @@ const CtxSet ContextSetCfg::AffineType = ContextSetCfg::addCtxSet
   { 77,  },
   { CNU, },
 });
-#endif
 #endif
 
 

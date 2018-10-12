@@ -295,11 +295,9 @@ struct CodingUnit : public UnitArea
   int8_t          qp;
   SplitSeries    splitSeries;
   bool           skip;
-#if JVET_K_AFFINE
   bool           affine;
 #if JVET_K0337_AFFINE_6PARA
   int            affineType;
-#endif
 #endif
   bool           transQuantBypass;
   bool           ipcm;
@@ -358,9 +356,7 @@ struct InterPredictionData
   Mv        mv      [NUM_REF_PIC_LIST_01];
   int16_t     refIdx  [NUM_REF_PIC_LIST_01];
   MergeType mergeType;
-#if JVET_K_AFFINE
   Mv        mvdAffi [NUM_REF_PIC_LIST_01][3];
-#endif
 };
 
 struct PredictionUnit : public UnitArea, public IntraPredictionData, public InterPredictionData

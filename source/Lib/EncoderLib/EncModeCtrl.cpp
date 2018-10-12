@@ -864,7 +864,6 @@ unsigned SaveLoadEncInfoCtrl::getSaveLoadInterDir( const UnitArea& area )
 }
 
 
-#if JVET_K_AFFINE
 unsigned SaveLoadEncInfoCtrl::getSaveLoadAffineFlag( const UnitArea& area )
 {
   unsigned idx1, idx2, idx3, idx4;
@@ -872,7 +871,6 @@ unsigned SaveLoadEncInfoCtrl::getSaveLoadAffineFlag( const UnitArea& area )
 
   return m_saveLoadInfo[idx3][idx4].affineFlag;
 }
-#endif
 #endif
 
 static bool interHadActive( const ComprCUCtx& ctx )
@@ -1203,12 +1201,10 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       if( m_pcEncCfg->getUseEarlySkipDetection() )
       {
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  SIZE_2Nx2N, ETO_STANDARD, qp, lossless } );
-#if JVET_K_AFFINE
         if( cs.sps->getSpsNext().getUseAffine() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,      SIZE_2Nx2N, ETO_STANDARD, qp, lossless } );
         }
-#endif
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME,    SIZE_2Nx2N, ETO_STANDARD, qp, lossless } );
       }
       else
@@ -1216,12 +1212,10 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME,    SIZE_2Nx2N, ETO_STANDARD, qp, lossless } );
 
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  SIZE_2Nx2N, ETO_STANDARD, qp, lossless } );
-#if JVET_K_AFFINE
         if( cs.sps->getSpsNext().getUseAffine() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,      SIZE_2Nx2N, ETO_STANDARD, qp, lossless } );
         }
-#endif
       }
     }
   }
@@ -1522,7 +1516,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
 #endif
     }
 
-#if JVET_K_AFFINE
 #if JVET_K0220_ENC_CTRL
     if ( encTestmode.type == ETM_AFFINE && relatedCU.isIntra )
 #else
@@ -1531,7 +1524,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
-#endif
     return true;
   }
   else if( isModeSplit( encTestmode ) )
@@ -1850,9 +1842,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
 #if JVET_K0357_AMVR
           sls.imv        = bestCU->imv;
 #endif
-#if JVET_K_AFFINE
           sls.affineFlag = bestCU->affine;
-#endif
         }
         else
         {

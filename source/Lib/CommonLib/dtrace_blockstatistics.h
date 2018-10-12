@@ -93,13 +93,11 @@ enum class BlockStatistic {
   MVDL1,
   RefIdxL0,
   RefIdxL1,
-#if JVET_K_AFFINE
   AffineFlag,
   AffineMVL0,
   AffineMVL1,
 #if JVET_K0337_AFFINE_6PARA
   AffineType,
-#endif
 #endif
 
 // for dual tree
@@ -168,13 +166,11 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
 #if JVET_K0357_AMVR
   { BlockStatistic::IMVMode,                std::tuple<std::string, BlockStatisticType, std::string>{"IMVMode",                     BlockStatisticType::Integer,                "[0, 2]"}},
 #endif
-#if JVET_K_AFFINE
   { BlockStatistic::AffineFlag,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineFlag",                  BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::AffineMVL0,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineMVL0",                  BlockStatisticType::AffineTFVectors,        "Scale: 4"}},
   { BlockStatistic::AffineMVL1,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineMVL1",                  BlockStatisticType::AffineTFVectors,        "Scale: 4"}},
 #if JVET_K0337_AFFINE_6PARA
   { BlockStatistic::AffineType,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineType",                  BlockStatisticType::Flag,                   ""} },
-#endif
 #endif
   { BlockStatistic::EMTFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"EMTFlag",                     BlockStatisticType::Flag,                   ""}},
 

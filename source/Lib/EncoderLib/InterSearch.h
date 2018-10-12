@@ -327,7 +327,6 @@ protected:
                                     Distortion&           ruiCost
                                   );
 
-#if JVET_K_AFFINE
   void xPredAffineInterSearch     ( PredictionUnit&       pu,
                                     PelUnitBuf&           origBuf,
                                     int                   puIdx,
@@ -370,7 +369,6 @@ protected:
   void xCopyAffineAMVPInfo        ( AffineAMVPInfo& src, AffineAMVPInfo& dst );
   void xCheckBestAffineMVP        ( PredictionUnit &pu, AffineAMVPInfo &affineAMVPInfo, RefPicList eRefPicList, Mv acMv[3], Mv acMvPred[3], int& riMVPIdx, uint32_t& ruiBits, Distortion& ruiCost );
 
-#endif
 
 
   void xExtDIFUpSamplingH         ( CPelBuf* pcPattern );

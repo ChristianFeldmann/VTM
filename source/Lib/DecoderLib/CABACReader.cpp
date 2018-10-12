@@ -1121,22 +1121,17 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
   }
   if( pu.mergeFlag )
   {
-#if JVET_K_AFFINE
     affine_flag  ( *pu.cu );
-#endif
     merge_data   ( pu );
   }
   else
   {
     inter_pred_idc( pu );
-#if JVET_K_AFFINE
     affine_flag   ( *pu.cu );
-#endif
 
     if( pu.interDir != 2 /* PRED_L1 */ )
     {
       ref_idx     ( pu, REF_PIC_LIST_0 );
-#if JVET_K_AFFINE
       if( pu.cu->affine )
       {
         mvd_coding( pu.mvdAffi[REF_PIC_LIST_0][0] );
@@ -1149,7 +1144,6 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
 #endif
       }
       else
-#endif
       {
         mvd_coding( pu.mvd[REF_PIC_LIST_0] );
       }
@@ -1162,13 +1156,10 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
       if( pu.cu->cs->slice->getMvdL1ZeroFlag() && pu.interDir == 3 /* PRED_BI */ )
       {
         pu.mvd[ REF_PIC_LIST_1 ] = Mv();
-#if JVET_K_AFFINE
         pu.mvdAffi[REF_PIC_LIST_1][0] = Mv();
         pu.mvdAffi[REF_PIC_LIST_1][1] = Mv();
         pu.mvdAffi[REF_PIC_LIST_1][2] = Mv();
-#endif
       }
-#if JVET_K_AFFINE
       else if( pu.cu->affine )
       {
         mvd_coding( pu.mvdAffi[REF_PIC_LIST_1][0] );
@@ -1180,7 +1171,6 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
         }
 #endif
       }
-#endif
       else
       {
         mvd_coding( pu.mvd[REF_PIC_LIST_1] );
@@ -1198,7 +1188,6 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
   PU::spanMotionInfo( pu, mrgCtx );
 }
 
-#if JVET_K_AFFINE
 void CABACReader::affine_flag( CodingUnit& cu )
 {
   if( cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() || cu.partSize != SIZE_2Nx2N )
@@ -1238,7 +1227,6 @@ void CABACReader::affine_flag( CodingUnit& cu )
   }
 #endif
 }
-#endif
 
 void CABACReader::merge_flag( PredictionUnit& pu )
 {
@@ -1252,12 +1240,10 @@ void CABACReader::merge_flag( PredictionUnit& pu )
 
 void CABACReader::merge_data( PredictionUnit& pu )
 {
-#if JVET_K_AFFINE
   if ( pu.cu->affine )
   {
     return;
   }
-#endif
 
   merge_idx( pu );
 }

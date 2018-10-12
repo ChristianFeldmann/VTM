@@ -1102,21 +1102,16 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   }
   if( pu.mergeFlag )
   {
-#if JVET_K_AFFINE
     affine_flag  ( *pu.cu );
-#endif
     merge_idx    ( pu );
   }
   else
   {
     inter_pred_idc( pu );
-#if JVET_K_AFFINE
     affine_flag   ( *pu.cu );
-#endif
     if( pu.interDir != 2 /* PRED_L1 */ )
     {
       ref_idx     ( pu, REF_PIC_LIST_0 );
-#if JVET_K_AFFINE
       if ( pu.cu->affine )
       {
 #if JVET_K0357_AMVR
@@ -1138,7 +1133,6 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
 #endif
       }
       else
-#endif
       {
 #if JVET_K0357_AMVR
         mvd_coding( pu.mvd[REF_PIC_LIST_0], pu.cu->imv );
@@ -1153,7 +1147,6 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       ref_idx     ( pu, REF_PIC_LIST_1 );
       if( !pu.cs->slice->getMvdL1ZeroFlag() || pu.interDir != 3 /* PRED_BI */ )
       {
-#if JVET_K_AFFINE
         if ( pu.cu->affine )
         {
 #if JVET_K0357_AMVR
@@ -1175,7 +1168,6 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
 #endif
         }
         else
-#endif
         {
 #if JVET_K0357_AMVR
           mvd_coding( pu.mvd[REF_PIC_LIST_1], pu.cu->imv );
@@ -1189,7 +1181,6 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   }
 }
 
-#if JVET_K_AFFINE
 void CABACWriter::affine_flag( const CodingUnit& cu )
 {
   if( cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() || cu.partSize != SIZE_2Nx2N )
@@ -1226,7 +1217,6 @@ void CABACWriter::affine_flag( const CodingUnit& cu )
   }
 #endif
 }
-#endif
 
 void CABACWriter::merge_flag( const PredictionUnit& pu )
 {
@@ -1267,12 +1257,10 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
 
 void CABACWriter::merge_idx( const PredictionUnit& pu )
 {
-#if JVET_K_AFFINE
   if ( pu.cu->affine )
   {
     return;
   }
-#endif
 
   int numCandminus1 = int( pu.cs->slice->getMaxNumMergeCand() ) - 1;
   if( numCandminus1 > 0 )
@@ -1634,7 +1622,7 @@ void CABACWriter::mvd_coding( const Mv &rMvd )
   unsigned  horAbs  = unsigned( horMvd < 0 ? -horMvd : horMvd );
   unsigned  verAbs  = unsigned( verMvd < 0 ? -verMvd : verMvd );
 
-#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
+#if !REMOVE_MV_ADAPT_PREC
   if (rMvd.highPrec)
   {
     CHECK(horAbs & ((1 << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE) - 1), "mvd-x has high precision fractional part.");

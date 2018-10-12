@@ -254,7 +254,6 @@ unsigned DeriveCtx::CtxInterDir( const PredictionUnit& pu )
   return pu.cu->qtDepth;
 }
 
-#if JVET_K_AFFINE
 unsigned DeriveCtx::CtxAffineFlag( const CodingUnit& cu )
 {
   const CodingStructure *cs = cu.cs;
@@ -268,7 +267,6 @@ unsigned DeriveCtx::CtxAffineFlag( const CodingUnit& cu )
 
   return ctxId;
 }
-#endif
 unsigned DeriveCtx::CtxSkipFlag( const CodingUnit& cu )
 {
   const CodingStructure *cs = cu.cs;

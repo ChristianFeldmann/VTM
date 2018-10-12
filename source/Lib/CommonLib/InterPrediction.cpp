@@ -156,11 +156,7 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
 #endif
 }
 
-#if JVET_K_AFFINE
 bool checkIdenticalMotion( const PredictionUnit &pu, bool checkAffine )
-#else
-bool checkIdenticalMotion( const PredictionUnit &pu )
-#endif
 {
   const Slice &slice = *pu.cs->slice;
 
@@ -173,16 +169,13 @@ bool checkIdenticalMotion( const PredictionUnit &pu )
 
       if( RefPOCL0 == RefPOCL1 )
       {
-#if JVET_K_AFFINE
         if( !pu.cu->affine )
-#endif
         {
           if( pu.mv[0] == pu.mv[1] )
           {
             return true;
           }
         }
-#if JVET_K_AFFINE
         else
         {
           CHECK( !checkAffine, "In this case, checkAffine should be on." );
@@ -201,7 +194,6 @@ bool checkIdenticalMotion( const PredictionUnit &pu )
             return true;
           }
         }
-#endif
       }
     }
   }
@@ -226,16 +218,13 @@ bool InterPrediction::xCheckIdenticalMotion( const PredictionUnit &pu )
 
       if( RefPOCL0 == RefPOCL1 )
       {
-#if JVET_K_AFFINE
         if( !pu.cu->affine )
-#endif
         {
           if( pu.mv[0] == pu.mv[1] )
           {
             return true;
           }
         }
-#if JVET_K_AFFINE
         else
         {
           const CMotionBuf &mb = pu.getMotionBuf();
@@ -253,7 +242,6 @@ bool InterPrediction::xCheckIdenticalMotion( const PredictionUnit &pu )
             return true;
           }
         }
-#endif
       }
     }
   }
@@ -373,7 +361,6 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   int iRefIdx = pu.refIdx[eRefPicList];
   Mv mv[3];
 
-#if JVET_K_AFFINE
   if( pu.cu->affine )
   {
     CHECK( iRefIdx < 0, "iRefIdx incorrect." );
@@ -388,11 +375,10 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
 #endif
   }
   else
-#endif
   {
     mv[0] = pu.mv[eRefPicList];
   }
-#if JVET_K_AFFINE && JVET_K_AFFINE_BUG_FIXES
+#if JVET_K_AFFINE_BUG_FIXES
   if ( !pu.cu->affine )
 #endif
   clipMv(mv[0], pu.cu->lumaPos(), sps);
@@ -401,13 +387,11 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   for( uint32_t comp = COMPONENT_Y; comp < pcYuvPred.bufs.size() && comp <= m_maxCompIDToPred; comp++ )
   {
     const ComponentID compID = ComponentID( comp );
-#if JVET_K_AFFINE
     if ( pu.cu->affine )
     {
       xPredAffineBlk( compID, pu, pu.cu->slice->getRefPic( eRefPicList, iRefIdx ), mv, pcYuvPred, bi, pu.cu->slice->clpRng( compID ) );
     }
     else
-#endif
     {
       xPredInterBlk( compID, pu, pu.cu->slice->getRefPic( eRefPicList, iRefIdx ), mv[0], pcYuvPred, bi, pu.cu->slice->clpRng( compID )
                     );
@@ -481,7 +465,6 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
                                     )
 {
   JVET_J0090_SET_REF_PICTURE( refPic, compID );
-#if JVET_K0346 || JVET_K_AFFINE
   const ChromaFormat  chFmt = pu.chromaFormat;
   const bool          rndRes = !bi;
 
@@ -508,16 +491,6 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 #if !REMOVE_MV_ADAPT_PREC
   CHECKD(!pu.cs->sps->getSpsNext().getUseHighPrecMv() && ((xFrac & 3) != 0), "Invalid fraction");
   CHECKD(!pu.cs->sps->getSpsNext().getUseHighPrecMv() && ((yFrac & 3) != 0), "Invalid fraction");
-#endif
-#else
-  const ChromaFormat  chFmt  = pu.chromaFormat;
-  const bool          rndRes = !bi;
-
-  int shiftHor = 2 + ::getComponentScaleX( compID, chFmt );
-  int shiftVer = 2 + ::getComponentScaleY( compID, chFmt );
-  
-  int xFrac = _mv.hor & ( ( 1 << shiftHor ) - 1 );
-  int yFrac = _mv.ver & ( ( 1 << shiftVer ) - 1 );
 #endif
 
   PelBuf &dstBuf  = dstPic.bufs[compID];
@@ -550,7 +523,6 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   }
 }
 
-#if JVET_K_AFFINE
 void InterPrediction::xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng )
 {
 #if JVET_K0337_AFFINE_6PARA
@@ -726,7 +698,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     }
   }
 }
-#endif
 
 int getMSB( unsigned x )
 {

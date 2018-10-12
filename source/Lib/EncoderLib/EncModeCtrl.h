@@ -56,9 +56,7 @@ enum EncTestModeType
 {
   ETM_MERGE_SKIP,
   ETM_INTER_ME,
-#if JVET_K_AFFINE
   ETM_AFFINE,
-#endif
   ETM_INTRA,
   ETM_IPCM,
   ETM_SPLIT_QT,
@@ -139,9 +137,7 @@ inline bool isModeInter( const EncTestMode& encTestmode ) // perhaps remove
 {
   return (   encTestmode.type == ETM_INTER_ME
           || encTestmode.type == ETM_MERGE_SKIP
-#if JVET_K_AFFINE
           || encTestmode.type == ETM_AFFINE
-#endif
          );
 }
 
@@ -336,9 +332,7 @@ struct SaveLoadStruct
   unsigned        imv;
 #endif
   unsigned        partIdx;
-#if JVET_K_AFFINE
   bool            affineFlag;
-#endif
 };
 
 class SaveLoadEncInfoCtrl

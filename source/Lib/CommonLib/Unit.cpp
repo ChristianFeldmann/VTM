@@ -253,11 +253,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   mtDepth           = other.mtDepth;
   splitSeries       = other.splitSeries;
   skip              = other.skip;
-#if JVET_K_AFFINE
   affine            = other.affine;
 #if JVET_K0337_AFFINE_6PARA
   affineType        = other.affineType;
-#endif
 #endif
   transQuantBypass  = other.transQuantBypass;
   ipcm              = other.ipcm;
@@ -285,11 +283,9 @@ void CodingUnit::initData()
   mtDepth           = 0;
   splitSeries       = 0;
   skip              = false;
-#if JVET_K_AFFINE
   affine            = false;
 #if JVET_K0337_AFFINE_6PARA
   affineType        = 0;
-#endif
 #endif
   transQuantBypass  = false;
   ipcm              = false;
@@ -332,12 +328,10 @@ void PredictionUnit::initData()
     refIdx[i] = -1;
     mv[i]     .setZero();
     mvd[i]    .setZero();
-#if JVET_K_AFFINE
     for( uint32_t j = 0; j < 3; j++ )
     {
       mvdAffi[i][j].setZero();
     }
-#endif
   }
 }
 
@@ -364,12 +358,10 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
     mv[i]       = predData.mv[i];
     mvd[i]      = predData.mvd[i];
     refIdx[i]   = predData.refIdx[i];
-#if JVET_K_AFFINE
     for( uint32_t j = 0; j < 3; j++ )
     {
       mvdAffi[i][j] = predData.mvdAffi[i][j];
     }
-#endif
   }
 
   return *this;
@@ -393,12 +385,10 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
     mv[i]       = other.mv[i];
     mvd[i]      = other.mvd[i];
     refIdx[i]   = other.refIdx[i];
-#if JVET_K_AFFINE
     for( uint32_t j = 0; j < 3; j++ )
     {
       mvdAffi[i][j] = other.mvdAffi[i][j];
     }
-#endif
   }
 
   return *this;

@@ -194,16 +194,12 @@ protected:
   int       m_SubPuMvpMode;
   unsigned  m_SubPuMvpLog2Size;
 #endif
-#if JVET_K_AFFINE
   bool      m_Affine;
 #if JVET_K0337_AFFINE_6PARA
   bool      m_AffineType;
 #endif
-#endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   bool      m_highPrecMv;
-#endif
 #endif
   bool      m_DisableMotionCompression;
   unsigned  m_MTTMode;
@@ -626,19 +622,15 @@ public:
   unsigned  getSubPuMvpLog2Size()      const { return m_SubPuMvpLog2Size; }
 #endif
 
-#if JVET_K_AFFINE
   void      setAffine                       ( bool b )       { m_Affine = b; }
   bool      getAffine                       ()         const { return m_Affine; }
 #if JVET_K0337_AFFINE_6PARA
   void      setAffineType( bool b )                          { m_AffineType = b; }
   bool      getAffineType()                            const { return m_AffineType; }
 #endif
-#endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   void      setHighPrecisionMv              ( bool b )       { m_highPrecMv = b; }
   bool      getHighPrecisionMv              ()               { return m_highPrecMv; }
-#endif
 #endif
   void      setDisableMotionCompression     ( bool b )       { m_DisableMotionCompression = b; }
   bool      getDisableMotionCompression     ()         const { return m_DisableMotionCompression; }

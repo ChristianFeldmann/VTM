@@ -225,13 +225,11 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setSubPuMvpLog2Size                                  ( m_SubPuMvpLog2Size );
 #endif
-#if JVET_K_AFFINE
   m_cEncLib.setAffine                                            ( m_Affine );
 #if JVET_K0337_AFFINE_6PARA
   m_cEncLib.setAffineType                                        ( m_AffineType );
 #endif
-#endif
-#if (JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
+#if !REMOVE_MV_ADAPT_PREC
   m_cEncLib.setHighPrecisionMv                                   (m_highPrecisionMv);
 #endif
   m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );

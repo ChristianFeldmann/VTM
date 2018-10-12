@@ -96,9 +96,7 @@ public:
   void        prediction_unit           ( PredictionUnit&               pu,     MergeCtx&       mrgCtx );
   void        merge_flag                ( PredictionUnit&               pu );
   void        merge_data                ( PredictionUnit&               pu );
-#if JVET_K_AFFINE
   void        affine_flag               ( CodingUnit&                   cu );
-#endif
   void        merge_idx                 ( PredictionUnit&               pu );
 #if JVET_K0357_AMVR
   void        imv_mode                  ( CodingUnit&                   cu,     MergeCtx&       mrgCtx );

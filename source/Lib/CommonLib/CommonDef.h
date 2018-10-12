@@ -239,9 +239,7 @@ static const int CABAC_INIT_PRESENT_FLAG =                          1;
 
 static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS   = 4;
 static const int CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 8;
-#if JVET_K0346 || JVET_K_AFFINE
 static const int VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE         = 2;   ///< additional precision bit for MV storage
-#endif
 
 static const int MAX_NUM_LONG_TERM_REF_PICS =                      33;
 static const int NUM_LONG_TERM_REF_PIC_SPS =                        0;
@@ -300,13 +298,11 @@ static const int CONTEXT_STATE_BITS =                               6;
 static const int LAST_SIGNIFICANT_GROUPS =                         14;
 static const int MAX_GR_ORDER_RESIDUAL =                           10;
 
-#if JVET_K_AFFINE
 static const int AFFINE_MAX_NUM_V0 =                                3; ///< max number of motion candidates in top-left corner
 static const int AFFINE_MAX_NUM_V1 =                                2; ///< max number of motion candidates in top-right corner
 static const int AFFINE_MAX_NUM_V2 =                                2; ///< max number of motion candidates in left-bottom corner
 static const int AFFINE_MAX_NUM_COMB =                             12; ///< max number of combined motion candidates
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
-#endif
 
 
 #if W0038_DB_OPT

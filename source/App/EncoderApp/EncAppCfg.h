@@ -208,13 +208,11 @@ protected:
   int       m_SubPuMvpMode;
   unsigned  m_SubPuMvpLog2Size;
 #endif
-#if JVET_K_AFFINE
   bool      m_Affine;
 #if JVET_K0337_AFFINE_6PARA
   bool      m_AffineType;
 #endif
-#endif
-#if (JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
+#if !REMOVE_MV_ADAPT_PREC
   bool      m_highPrecisionMv;
 #endif
   bool      m_DisableMotionCompression;

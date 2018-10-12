@@ -292,9 +292,7 @@ unsigned CtxSkipFlag  ( const CodingUnit& cu );
 #if JVET_K0357_AMVR
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
 #endif
-#if JVET_K_AFFINE
 unsigned CtxAffineFlag( const CodingUnit& cu );
-#endif
 }
 
 #endif // __CONTEXTMODELLING__

@@ -1652,20 +1652,16 @@ SPSNext::SPSNext( SPS& sps )
 #if JVET_K0357_AMVR
   , m_IMV                       ( false )
 #endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   , m_highPrecMv                ( false )
-#endif
 #endif
   , m_DisableMotionCompression  ( false )
   , m_LMChroma                  ( false )
   , m_IntraEMT                  ( false )
   , m_InterEMT                  ( false )
-#if JVET_K_AFFINE
   , m_Affine                    ( false )
 #if JVET_K0337_AFFINE_6PARA
   , m_AffineType                ( false )
-#endif
 #endif
   , m_MTTEnabled                ( false )
 #if ENABLE_WPP_PARALLELISM

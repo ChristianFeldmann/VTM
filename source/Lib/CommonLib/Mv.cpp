@@ -65,7 +65,7 @@ void roundAffineMv( int& mvx, int& mvy, int nShift )
 
 void clipMv( Mv& rcMv, const Position& pos, const SPS& sps )
 {
-#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
+#if !REMOVE_MV_ADAPT_PREC
   int iMvShift = 2 + (rcMv.highPrec ? VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : 0);
 #else
   int iMvShift = 2;

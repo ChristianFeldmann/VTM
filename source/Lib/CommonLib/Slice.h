@@ -805,20 +805,16 @@ private:
 #if JVET_K0357_AMVR
   bool              m_IMV;                        // 9
 #endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   bool              m_highPrecMv;
-#endif
 #endif
   bool              m_DisableMotionCompression;   // 13
   bool              m_LMChroma;                   // 17
   bool              m_IntraEMT;                   // 18
   bool              m_InterEMT;                   // 19
-#if JVET_K_AFFINE
   bool              m_Affine;
 #if JVET_K0337_AFFINE_6PARA
   bool              m_AffineType;
-#endif
 #endif
   bool              m_MTTEnabled;                 //
 #if ENABLE_WPP_PARALLELISM
@@ -875,19 +871,15 @@ public:
   void      setUseIMV             ( bool b )                                        { m_IMV = b; }
   bool      getUseIMV             ()                                      const     { return m_IMV; }
 #endif
-#if JVET_K_AFFINE
   void      setUseAffine          ( bool b )                                        { m_Affine = b; }
   bool      getUseAffine          ()                                      const     { return m_Affine; }
 #if JVET_K0337_AFFINE_6PARA
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
 #endif
-#endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   void      setUseHighPrecMv(bool b) { m_highPrecMv = b; }
   bool      getUseHighPrecMv()                                      const { return m_highPrecMv; }
-#endif
 #endif
   void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
   bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }

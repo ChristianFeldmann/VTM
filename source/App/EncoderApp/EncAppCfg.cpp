@@ -817,14 +817,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
 #endif
 #endif
-#if JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC 
   ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
 #endif
   ("Affine",                                          m_Affine,                                        false, "Enable affine prediction (0:off, 1:on)  [default: off]")
 #if JVET_K0337_AFFINE_6PARA
   ( "AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
-#endif
 #endif
   ("DisableMotCompression",                           m_DisableMotionCompression,                       false, "Disable motion data compression for all modes")
 #if JVET_K0357_AMVR
@@ -1924,12 +1922,9 @@ bool EncAppCfg::xCheckParameter()
 #if JVET_K0346
     xConfirmPara( m_SubPuMvpMode != 0, "Sub-PU motion vector prediction is only allowed with NEXT profile" );
 #endif
-#if JVET_K_AFFINE && !REMOVE_MV_ADAPT_PREC
+#if !REMOVE_MV_ADAPT_PREC
     xConfirmPara( m_highPrecisionMv, "High precision MV for temporal merging can only be used with NEXT profile" );
     xConfirmPara( m_Affine, "Affine is only allowed with NEXT profile" );
-#endif
-#if JVET_K0346 && !JVET_K_AFFINE && !REMOVE_MV_ADAPT_PREC
-    xConfirmPara(m_highPrecisionMv, "High precision MV for temporal merging can only be used with NEXT profile");
 #endif
     xConfirmPara( m_DisableMotionCompression, "Disable motion data compression only allowed with NEXT profile" );
     xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
@@ -1976,10 +1971,8 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_useSaveLoadSplitDecision && !m_QTBT, "Encoder split decision saving can only be applied with QTBT" );
 
 #endif
-#if JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC 
     xConfirmPara(m_Affine && !m_highPrecisionMv, "Affine is not yet implemented for HighPrecMv off.");
-#endif
 #endif
 
   }
@@ -3156,14 +3149,12 @@ void EncAppCfg::xPrintParameter()
   if( m_profile == Profile::NEXT )
   {
     msg( VERBOSE, "\nNEXT TOOL CFG: " );
-#if JVET_K_AFFINE
     msg( VERBOSE, "Affine:%d ", m_Affine );
 #if JVET_K0337_AFFINE_6PARA
     if ( m_Affine )
     {
       msg( VERBOSE, "AffineType:%d ", m_AffineType );
     }
-#endif
 #endif
 #if JVET_K0346
     msg(VERBOSE, "SubPuMvp:%d+%d ", m_SubPuMvpMode & 1, (m_SubPuMvpMode & 2) == 2);
@@ -3179,10 +3170,8 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
     if( !m_QTBT ) msg( VERBOSE, "IMVMaxCand:%d ", m_ImvMaxCand );
 #endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC 
     msg(VERBOSE, "HighPrecMv:%d ", m_highPrecisionMv);
-#endif
 #endif
     msg( VERBOSE, "DisMDC:%d ", m_DisableMotionCompression );
     msg( VERBOSE, "MTT:%d ", m_MTT );

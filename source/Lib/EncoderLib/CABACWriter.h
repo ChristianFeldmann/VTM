@@ -117,9 +117,7 @@ public:
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( const PredictionUnit&         pu );
   void        merge_flag                ( const PredictionUnit&         pu );
-#if JVET_K_AFFINE
   void        affine_flag               ( const CodingUnit&             cu );
-#endif
   void        merge_idx                 ( const PredictionUnit&         pu );
 #if JVET_K0357_AMVR
   void        imv_mode                  ( const CodingUnit&             cu );

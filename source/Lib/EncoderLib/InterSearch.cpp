@@ -2849,14 +2849,12 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 #else
             const int shift = cMvTemp[1][iRefIdxTemp][iVerIdx].highPrec ? VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : 0;
 #endif
-#if JVET_K0337_AFFINE_MVD_PREDICTION
             Mv secondPred;
             if ( iVerIdx != 0 )
             {
               secondPred = cMvPred[iRefList][iRefIdxTemp][iVerIdx] + (cMvTemp[1][iRefIdxTemp][0] - cMvPred[1][iRefIdxTemp][0]);
               m_pcRdCost->setPredictor( secondPred );
             }
-#endif
 #if JVET_K0357_AMVR
             uiBitsTemp += m_pcRdCost->getBitsOfVectorWithPredictor( cMvTemp[1][iRefIdxTemp][iVerIdx].getHor()>>shift, cMvTemp[1][iRefIdxTemp][iVerIdx].getVer()>>shift, 0 );
 #else
@@ -3150,13 +3148,11 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
     {
       pu.mvdAffi[REF_PIC_LIST_0][verIdx] = cMvBi[0][verIdx] - cMvPredBi[0][iRefIdxBi[0]][verIdx];
       pu.mvdAffi[REF_PIC_LIST_1][verIdx] = cMvBi[1][verIdx] - cMvPredBi[1][iRefIdxBi[1]][verIdx];
-#if JVET_K0337_AFFINE_MVD_PREDICTION
       if ( verIdx != 0 )
       {
         pu.mvdAffi[0][verIdx] = pu.mvdAffi[0][verIdx] - pu.mvdAffi[0][0];
         pu.mvdAffi[1][verIdx] = pu.mvdAffi[1][verIdx] - pu.mvdAffi[1][0];
       }
-#endif
     }
 
     pu.interDir = 3;
@@ -3181,12 +3177,10 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
     for ( int verIdx = 0; verIdx < mvNum; verIdx++ )
     {
       pu.mvdAffi[REF_PIC_LIST_0][verIdx] = aacMv[0][verIdx] - cMvPred[0][iRefIdx[0]][verIdx];
-#if JVET_K0337_AFFINE_MVD_PREDICTION
       if ( verIdx != 0 )
       {
         pu.mvdAffi[0][verIdx] = pu.mvdAffi[0][verIdx] - pu.mvdAffi[0][0];
       }
-#endif
     }
     pu.interDir = 1;
 
@@ -3208,12 +3202,10 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
     for ( int verIdx = 0; verIdx < mvNum; verIdx++ )
     {
       pu.mvdAffi[REF_PIC_LIST_1][verIdx] = aacMv[1][verIdx] - cMvPred[1][iRefIdx[1]][verIdx];
-#if JVET_K0337_AFFINE_MVD_PREDICTION
       if ( verIdx != 0 )
       {
         pu.mvdAffi[1][verIdx] = pu.mvdAffi[1][verIdx] - pu.mvdAffi[1][0];
       }
-#endif
     }
     pu.interDir = 2;
 
@@ -3324,14 +3316,12 @@ void InterSearch::xCheckBestAffineMVP( PredictionUnit &pu, AffineAMVPInfo &affin
     const int shift = acMv[iVerIdx].highPrec ? VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : 0;
 #endif
 
-#if JVET_K0337_AFFINE_MVD_PREDICTION
     Mv secondPred;
     if ( iVerIdx != 0 )
     {
       secondPred = acMvPred[iVerIdx] + (acMv[0] - acMvPred[0]);
       m_pcRdCost->setPredictor( secondPred );
     }
-#endif
 #if JVET_K0357_AMVR
     iOrgMvBits += m_pcRdCost->getBitsOfVectorWithPredictor( acMv[iVerIdx].getHor()>>shift, acMv[iVerIdx].getVer()>>shift, 0 );
 #else
@@ -3367,7 +3357,6 @@ void InterSearch::xCheckBestAffineMVP( PredictionUnit &pu, AffineAMVPInfo &affin
       const int shift = acMv[iVerIdx].highPrec ? VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : 0;
 #endif
 
-#if JVET_K0337_AFFINE_MVD_PREDICTION
       Mv secondPred;
       if ( iVerIdx != 0 )
       {
@@ -3378,7 +3367,6 @@ void InterSearch::xCheckBestAffineMVP( PredictionUnit &pu, AffineAMVPInfo &affin
 #endif
         m_pcRdCost->setPredictor( secondPred );
       }
-#endif
 #if JVET_K0357_AMVR
       iMvBits += m_pcRdCost->getBitsOfVectorWithPredictor( acMv[iVerIdx].getHor()>>shift, acMv[iVerIdx].getVer()>>shift, 0 );
 #else
@@ -3520,7 +3508,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
 #else
     const int shift = acMvTemp[i].highPrec ? VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : 0;
 #endif
-#if JVET_K0337_AFFINE_MVD_PREDICTION
     Mv secondPred;
     if ( i != 0 )
     {
@@ -3532,7 +3519,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
 #endif
       m_pcRdCost->setPredictor( secondPred );
     }
-#endif
 #if JVET_K0357_AMVR
     uiBitsBest += m_pcRdCost->getBitsOfVectorWithPredictor( acMvTemp[i].getHor()>>shift, acMvTemp[i].getVer()>>shift, 0 );
 #else
@@ -3742,7 +3728,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
 #else
       const int shift = acMvTemp[i].highPrec ? VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : 0;
 #endif
-#if JVET_K0337_AFFINE_MVD_PREDICTION
       Mv secondPred;
       if ( i != 0 )
       {
@@ -3754,7 +3739,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
 #endif
         m_pcRdCost->setPredictor( secondPred );
       }
-#endif
 #if JVET_K0357_AMVR
       uiBitsTemp += m_pcRdCost->getBitsOfVectorWithPredictor( acMvTemp[i].getHor()>>shift, acMvTemp[i].getVer()>>shift, 0 );
 #else

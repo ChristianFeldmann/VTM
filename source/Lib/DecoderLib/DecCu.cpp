@@ -507,9 +507,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 
               Mv mvLT = affineAMVPInfo.mvCandLT[mvp_idx] + pu.mvdAffi[eRefList][0];
               Mv mvRT = affineAMVPInfo.mvCandRT[mvp_idx] + pu.mvdAffi[eRefList][1];
-#if JVET_K0337_AFFINE_MVD_PREDICTION
               mvRT += pu.mvdAffi[eRefList][0];
-#endif
 #if REMOVE_MV_ADAPT_PREC
               mvLT.hor = mvLT.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
               mvLT.ver = mvLT.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
@@ -525,9 +523,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               if ( cu.affineType == AFFINEMODEL_6PARAM )
               {
                 mvLB = affineAMVPInfo.mvCandLB[mvp_idx] + pu.mvdAffi[eRefList][2];
-#if JVET_K0337_AFFINE_MVD_PREDICTION
                 mvLB += pu.mvdAffi[eRefList][0];
-#endif
 #if REMOVE_MV_ADAPT_PREC
                 mvLB.hor = mvLB.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
                 mvLB.ver = mvLB.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;

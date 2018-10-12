@@ -548,7 +548,9 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
 #else
 #endif
 #if JVET_K0346 || JVET_K_AFFINE
-  WRITE_FLAG(spsNext.getUseHighPrecMv() ? 1 : 0,                                                "high_precision_motion_vectors");
+#if !REMOVE_MV_ADAPT_PREC
+  WRITE_FLAG( spsNext.getUseHighPrecMv() ? 1 : 0,                                               "high_precision_motion_vectors");
+#endif
 #endif
   WRITE_FLAG( spsNext.getDisableMotCompress() ? 1 : 0,                                          "disable_motion_compression_flag" );
 #if JVET_K0190

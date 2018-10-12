@@ -889,14 +889,18 @@ void EncLib::xInitSPS(SPS &sps)
 #else
 #endif
 #if JVET_K_AFFINE
+#if !REMOVE_MV_ADAPT_PREC
   sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
+#endif
   sps.getSpsNext().setUseAffine             ( m_Affine );
 #if JVET_K0337_AFFINE_6PARA
   sps.getSpsNext().setUseAffineType         ( m_AffineType );
 #endif
 #endif
 #if JVET_K0346 && !JVET_K_AFFINE
-  sps.getSpsNext().setUseHighPrecMv(m_highPrecMv);
+#if !REMOVE_MV_ADAPT_PREC
+  sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
+#endif
 #endif
   sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );
   sps.getSpsNext().setMTTMode               ( m_MTTMode );

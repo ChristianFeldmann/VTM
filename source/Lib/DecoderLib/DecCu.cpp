@@ -520,9 +520,15 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #if JVET_K0337_AFFINE_MVD_PREDICTION
               mvRT += pu.mvdAffi[eRefList][0];
 #endif
-
-              CHECK( !mvLT.highPrec, "unexpected lp mv" );
-              CHECK( !mvRT.highPrec, "unexpected lp mv" );
+#if REMOVE_MV_ADAPT_PREC
+              mvLT.hor = mvLT.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+              mvLT.ver = mvLT.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+              mvRT.hor = mvRT.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+              mvRT.ver = mvRT.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#else
+              CHECK(!mvLT.highPrec, "unexpected lp mv");
+              CHECK(!mvRT.highPrec, "unexpected lp mv");
+#endif
 
 #if JVET_K_AFFINE_BUG_FIXES
               Mv mvLB;
@@ -533,7 +539,12 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #if JVET_K0337_AFFINE_MVD_PREDICTION
                 mvLB += pu.mvdAffi[eRefList][0];
 #endif
-                CHECK( !mvLB.highPrec, "unexpected lp mv" );
+#if REMOVE_MV_ADAPT_PREC
+                mvLB.hor = mvLB.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+                mvLB.ver = mvLB.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#else
+                CHECK(!mvLB.highPrec, "unexpected lp mv");
+#endif
               }
 #endif
 #else
@@ -568,7 +579,12 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #if JVET_K_AFFINE
               if( pu.cs->sps->getSpsNext().getUseAffine() )
               {
+#if REMOVE_MV_ADAPT_PREC
+                pu.mv[eRefList].hor = pu.mv[eRefList].hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+                pu.mv[eRefList].ver = pu.mv[eRefList].ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#else
                 pu.mv[eRefList].setHighPrec();
+#endif
               }
 #endif
             }

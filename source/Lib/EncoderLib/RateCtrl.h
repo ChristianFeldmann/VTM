@@ -243,17 +243,17 @@ public:
   int    estimatePicQP    ( double lambda, list<EncRCPic*>& listPreviousPictures );
   int    getRefineBitsForIntra(int orgBits);
   double calculateLambdaIntra(double alpha, double beta, double MADPerPixel, double bitsPerPixel);
-  double estimatePicLambda( list<EncRCPic*>& listPreviousPictures, SliceType eSliceType);
+  double estimatePicLambda( list<EncRCPic*>& listPreviousPictures, bool isIRAP);
 
   void   updateAlphaBetaIntra(double *alpha, double *beta);
 
-  double getLCUTargetBpp(SliceType eSliceType);
+  double getLCUTargetBpp(bool isIRAP);
   double getLCUEstLambdaAndQP(double bpp, int clipPicQP, int *estQP);
   double getLCUEstLambda( double bpp );
   int    getLCUEstQP( double lambda, int clipPicQP );
 
   void updateAfterCTU( int LCUIdx, int bits, int QP, double lambda, bool updateLCUParameter = true );
-  void updateAfterPicture( int actualHeaderBits, int actualTotalBits, double averageQP, double averageLambda, SliceType eSliceType);
+  void updateAfterPicture( int actualHeaderBits, int actualTotalBits, double averageQP, double averageLambda, bool isIRAP);
 
   void addToPictureLsit( list<EncRCPic*>& listPreviousPictures );
   double calAverageQP();

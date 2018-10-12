@@ -809,7 +809,9 @@ private:
 #else
 #endif
 #if JVET_K0346 || JVET_K_AFFINE
+#if !REMOVE_MV_ADAPT_PREC
   bool              m_highPrecMv;
+#endif
 #endif
   bool              m_DisableMotionCompression;   // 13
 #if !JVET_K0371_ALF
@@ -898,8 +900,10 @@ public:
 #else
 #endif
 #if JVET_K0346 || JVET_K_AFFINE
+#if !REMOVE_MV_ADAPT_PREC
   void      setUseHighPrecMv(bool b) { m_highPrecMv = b; }
   bool      getUseHighPrecMv()                                      const { return m_highPrecMv; }
+#endif
 #endif
   void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
   bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }

@@ -1250,8 +1250,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #if JVET_K0346
   if (pcSlice->getSPS()->getSpsNext().getUseSubPuMvp())
   {
-    if (!pcSlice->isIntra()
-       )
+    if (!pcSlice->isIRAP() )
     {
       if (pcSlice->getPOC() > m_pcCuEncoder->getPrevPOC() && m_pcCuEncoder->getClearSubMergeStatic())
       {
@@ -1641,14 +1640,14 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       double estLambda = -1.0;
       double bpp       = -1.0;
 
-      if( ( pcPic->slices[0]->getSliceType() == I_SLICE && pCfg->getForceIntraQP() ) || !pCfg->getLCULevelRC() )
+      if( ( pcPic->slices[0]->isIRAP() && pCfg->getForceIntraQP() ) || !pCfg->getLCULevelRC() )
       {
         estQP = pcSlice->getSliceQp();
       }
       else
       {
-        bpp = pRateCtrl->getRCPic()->getLCUTargetBpp(pcSlice->getSliceType());
-        if ( pcPic->slices[0]->getSliceType() == I_SLICE)
+        bpp = pRateCtrl->getRCPic()->getLCUTargetBpp(pcSlice->isIRAP());
+        if ( pcPic->slices[0]->isIRAP())
         {
           estLambda = pRateCtrl->getRCPic()->getLCUEstLambdaAndQP(bpp, pcSlice->getSliceQp(), &estQP);
         }
@@ -1792,7 +1791,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       }
       pRdCost->setLambda(oldLambda, pcSlice->getSPS()->getBitDepths());
       pRateCtrl->getRCPic()->updateAfterCTU( pRateCtrl->getRCPic()->getLCUCoded(), actualBits, actualQP, actualLambda,
-                                             pcSlice->getSliceType() == I_SLICE ? 0 : pCfg->getLCULevelRC() );
+                                             pcSlice->isIRAP() ? 0 : pCfg->getLCULevelRC() );
     }
 #if ENABLE_QPA
     else if (pCfg->getUsePerceptQPA() && pcSlice->getPPS()->getUseDQP())

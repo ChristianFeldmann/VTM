@@ -156,13 +156,27 @@ void CDTrace::dtrace_block_scalar( int k, const PredictionUnit &pu, std::string 
 #endif
 }
 
-void CDTrace::dtrace_block_vector( int k, const PredictionUnit &pu, std::string stat_type, signed val_x, signed val_y )
+void CDTrace::dtrace_block_vector( int k, const PredictionUnit &pu, std::string stat_type, signed val_x, signed val_y, bool isChroma /*= false*/  )
 {
   const CodingStructure& cs = *pu.cs;
 #if BLOCK_STATS_AS_CSV
-  dtrace<false>( k, "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n", cs.picture->poc, pu.lx(), pu.ly(), pu.lwidth(), pu.lheight(), stat_type.c_str(), val_x, val_y );
+  if(isChroma)
+  {
+    dtrace<false>( k, "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n", cs.picture->poc,  pu.Cb().x*2, pu.Cb().y*2, pu.Cb().width*2, pu.Cb().height*2, stat_type.c_str(), val_x*2, val_y*2 );
+  }
+  else
+  {
+    dtrace<false>( k, "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n", cs.picture->poc, pu.lx(), pu.ly(), pu.lwidth(), pu.lheight(), stat_type.c_str(), val_x, val_y );
+  }
 #else
-  dtrace<false>( k, "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n", cs.picture->poc, pu.lx(), pu.ly(), pu.lwidth(), pu.lheight(), stat_type.c_str(), val_x, val_y );
+  if(isChroma)
+  {
+    dtrace<false>( k, "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n", cs.picture->poc, pu.Cb().x*2, pu.Cb().y*2, pu.Cb().width*2, pu.Cb().height*2, stat_type.c_str(), val_x*2, val_y*2 );
+  }
+  else
+  {
+    dtrace<false>( k, "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n", cs.picture->poc, pu.lx(), pu.ly(), pu.lwidth(), pu.lheight(), stat_type.c_str(), val_x, val_y );
+  }
 #endif
 }
 
@@ -264,7 +278,10 @@ void getAndStoreBlockStatistics(const CodingStructure& cs, const UnitArea& ctuAr
 void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
 {
   const int maxNumChannelType = cs.pcv->chrFormat != CHROMA_400 && CS::isDualITree( cs ) ? 2 : 1;
-
+#if REMOVE_MV_ADAPT_PREC
+  const int nShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  const int nOffset = 1 << (nShift - 1);
+#endif
   for( int ch = 0; ch < maxNumChannelType; ch++ )
   {
     const ChannelType chType = ChannelType( ch );
@@ -294,12 +311,12 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::SkipFlag), cu.skip);
         }
 
-  #if JVET_K1000_SIMPLIFIED_EMT && HM_EMT_NSST_AS_IN_JEM
+#if JVET_K1000_SIMPLIFIED_EMT && HM_EMT_NSST_AS_IN_JEM
         if (!(!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && CU::isInter(cu))) || isChroma(cu.chType)))
         {
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::EMTFlag), cu.emtFlag);
         }
-  #endif
+#endif
       }
       else if( chType == CHANNEL_TYPE_CHROMA )
       {
@@ -317,12 +334,12 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::TransQuantBypassFlag_Chroma), cu.transQuantBypass);
         }
 
-  #if JVET_K1000_SIMPLIFIED_EMT && HM_EMT_NSST_AS_IN_JEM
+#if JVET_K1000_SIMPLIFIED_EMT && HM_EMT_NSST_AS_IN_JEM
         if (!(!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && CU::isInter(cu))) || isChroma(cu.chType)))
         {
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::EMTFlag_Chroma), cu.emtFlag);
         }
-  #endif
+#endif
       }
 
 
@@ -368,8 +385,15 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 Mv mv = pu.mv[REF_PIC_LIST_0];
                 Mv mvd = pu.mvd[REF_PIC_LIST_0];
 #if JVET_K0346 || JVET_K_AFFINE
+#if REMOVE_MV_ADAPT_PREC
+                mv.hor = mv.hor >= 0 ? (mv.hor + nOffset) >> nShift : -((-mv.hor + nOffset) >> nShift);
+                mv.ver = mv.ver >= 0 ? (mv.ver + nOffset) >> nShift : -((-mv.ver + nOffset) >> nShift);
+                mvd.hor = mvd.hor >= 0 ? (mvd.hor + nOffset) >> nShift : -((-mvd.hor + nOffset) >> nShift);
+                mvd.ver = mvd.ver >= 0 ? (mvd.ver + nOffset) >> nShift : -((-mvd.ver + nOffset) >> nShift);
+#else
                 mv.setLowPrec();
                 mvd.setLowPrec();
+#endif
 #endif
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVDL0), mvd.hor, mvd.ver);
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVL0), mv.hor, mv.ver);
@@ -379,8 +403,15 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 Mv mv = pu.mv[REF_PIC_LIST_1];
                 Mv mvd = pu.mvd[REF_PIC_LIST_1];
 #if JVET_K0346 || JVET_K_AFFINE
+#if REMOVE_MV_ADAPT_PREC
+                mv.hor = mv.hor >= 0 ? (mv.hor + nOffset) >> nShift : -((-mv.hor + nOffset) >> nShift);
+                mv.ver = mv.ver >= 0 ? (mv.ver + nOffset) >> nShift : -((-mv.ver + nOffset) >> nShift);
+                mvd.hor = mvd.hor >= 0 ? (mvd.hor + nOffset) >> nShift : -((-mvd.hor + nOffset) >> nShift);
+                mvd.ver = mvd.ver >= 0 ? (mvd.ver + nOffset) >> nShift : -((-mvd.ver + nOffset) >> nShift);
+#else
                 mv.setLowPrec();
                 mvd.setLowPrec();
+#endif
 #endif
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVDL1), mvd.hor, mvd.ver);
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVL1), mv.hor, mv.ver);
@@ -398,9 +429,18 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 mv[2] = mb.at(0, mb.height - 1).mv[REF_PIC_LIST_0];
 #if JVET_K0346 || JVET_K_AFFINE
                 // motion vectors should use low precision or they will appear to large
+#if REMOVE_MV_ADAPT_PREC
+                mv[0].hor = mv[0].hor >= 0 ? (mv[0].hor + nOffset) >> nShift : -((-mv[0].hor + nOffset) >> nShift);
+                mv[0].ver = mv[0].ver >= 0 ? (mv[0].ver + nOffset) >> nShift : -((-mv[0].ver + nOffset) >> nShift);
+                mv[1].hor = mv[1].hor >= 0 ? (mv[1].hor + nOffset) >> nShift : -((-mv[1].hor + nOffset) >> nShift);
+                mv[1].ver = mv[1].ver >= 0 ? (mv[1].ver + nOffset) >> nShift : -((-mv[1].ver + nOffset) >> nShift);
+                mv[2].hor = mv[2].hor >= 0 ? (mv[2].hor + nOffset) >> nShift : -((-mv[2].hor + nOffset) >> nShift);
+                mv[2].ver = mv[2].ver >= 0 ? (mv[2].ver + nOffset) >> nShift : -((-mv[2].ver + nOffset) >> nShift);
+#else
                 mv[0].setLowPrec();
                 mv[1].setLowPrec();
                 mv[2].setLowPrec();
+#endif
 #endif
                 DTRACE_BLOCK_AFFINETF(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineMVL0), mv[0].hor, mv[0].ver, mv[1].hor, mv[1].ver, mv[2].hor, mv[2].ver);
               }
@@ -413,9 +453,18 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 mv[2] = mb.at(0, mb.height - 1).mv[REF_PIC_LIST_1];
 #if JVET_K0346 || JVET_K_AFFINE
                 // motion vectors should use low precision or they will appear to large
+#if REMOVE_MV_ADAPT_PREC
+                mv[0].hor = mv[0].hor >= 0 ? (mv[0].hor + nOffset) >> nShift : -((-mv[0].hor + nOffset) >> nShift);
+                mv[0].ver = mv[0].ver >= 0 ? (mv[0].ver + nOffset) >> nShift : -((-mv[0].ver + nOffset) >> nShift);
+                mv[1].hor = mv[1].hor >= 0 ? (mv[1].hor + nOffset) >> nShift : -((-mv[1].hor + nOffset) >> nShift);
+                mv[1].ver = mv[1].ver >= 0 ? (mv[1].ver + nOffset) >> nShift : -((-mv[1].ver + nOffset) >> nShift);
+                mv[2].hor = mv[2].hor >= 0 ? (mv[2].hor + nOffset) >> nShift : -((-mv[2].hor + nOffset) >> nShift);
+                mv[2].ver = mv[2].ver >= 0 ? (mv[2].ver + nOffset) >> nShift : -((-mv[2].ver + nOffset) >> nShift);
+#else
                 mv[0].setLowPrec();
                 mv[1].setLowPrec();
                 mv[2].setLowPrec();
+#endif
 #endif
                 DTRACE_BLOCK_AFFINETF(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineMVL1), mv[0].hor, mv[0].ver, mv[1].hor, mv[1].ver, mv[2].hor, mv[2].ver);
               }
@@ -426,6 +475,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
 #endif
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::RootCbf), cu.rootCbf);
+
         }
         break;
       case MODE_INTRA:
@@ -457,10 +507,10 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 {
                   const uint32_t uiChFinalMode  = PU::getFinalIntraMode( pu, ChannelType( chType ) );
                   DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::Chroma_IntraMode), uiChFinalMode);
-            #if ENABLE_CHROMA_422
+#if ENABLE_CHROMA_422
                     assert(0);
-            #endif
-                  }
+#endif
+                }
               }
             }
           }
@@ -492,6 +542,10 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
 
 void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
 {
+#if REMOVE_MV_ADAPT_PREC
+  const int nShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  const int nOffset = 1 << (nShift - 1);
+#endif
   const int maxNumChannelType = cs.pcv->chrFormat != CHROMA_400 && CS::isDualITree(cs) ? 2 : 1;
 
   for (int ch = 0; ch < maxNumChannelType; ch++)
@@ -558,7 +612,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
         }
       }
 
-      for (auto &pu : CU::traversePUs(cu))
+      for (const PredictionUnit &pu : CU::traversePUs(cu))
       {
         switch (pu.cu->predMode)
         {
@@ -583,7 +637,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
             if (pu.mergeFlag)
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MergeType), pu.mergeType);
-  #if JVET_K_AFFINE
+#if JVET_K_AFFINE
               if (!(cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() || cu.partSize != SIZE_2Nx2N)
                 && !(!cu.firstPU->mergeFlag && !(cu.lumaSize().width > 8 && cu.lumaSize().height > 8))
                 && !(cu.firstPU->mergeFlag && !PU::isAffineMrgFlagCoded(*cu.firstPU)))
@@ -594,10 +648,10 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                   DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineType), pu.cu->affineType);
                 }
               }
-  #endif
-  #if JVET_K_AFFINE
+#endif
+#if JVET_K_AFFINE
               if (!(pu.cu->affine))
-  #endif
+#endif
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MergeIdx), pu.mergeIdx);
               }
@@ -608,7 +662,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::InterDir), pu.interDir);
               }
-  #if JVET_K_AFFINE
+#if JVET_K_AFFINE
               if (!(cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() || cu.partSize != SIZE_2Nx2N)
                 && !(!cu.firstPU->mergeFlag && !(cu.lumaSize().width > 8 && cu.lumaSize().height > 8))
                 && !(cu.firstPU->mergeFlag && !PU::isAffineMrgFlagCoded(*cu.firstPU)))
@@ -619,7 +673,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                   DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineType), pu.cu->affineType);
                 }
               }
-  #endif
+#endif
             }
             if (pu.interDir != 2 /* PRED_L1 */)
             {
@@ -632,18 +686,25 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::RefIdxL1), pu.refIdx[REF_PIC_LIST_1]);
             }
 
-  #if JVET_K_AFFINE
+#if JVET_K_AFFINE
             if (!pu.cu->affine)
             {
-  #endif
+#endif
               if (pu.interDir != 2 /* PRED_L1 */)
               {
                 Mv mv = pu.mv[REF_PIC_LIST_0];
                 Mv mvd = pu.mvd[REF_PIC_LIST_0];
-  #if JVET_K0346 || JVET_K_AFFINE
+#if JVET_K0346 || JVET_K_AFFINE
+#if REMOVE_MV_ADAPT_PREC
+                mv.hor = mv.hor >= 0 ? (mv.hor + nOffset) >> nShift : -((-mv.hor + nOffset) >> nShift);
+                mv.ver = mv.ver >= 0 ? (mv.ver + nOffset) >> nShift : -((-mv.ver + nOffset) >> nShift);
+                mvd.hor = mvd.hor >= 0 ? (mvd.hor + nOffset) >> nShift : -((-mvd.hor + nOffset) >> nShift);
+                mvd.ver = mvd.ver >= 0 ? (mvd.ver + nOffset) >> nShift : -((-mvd.ver + nOffset) >> nShift);
+#else
                 mv.setLowPrec();
                 mvd.setLowPrec();
-  #endif
+#endif
+#endif
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVDL0), mvd.hor, mvd.ver);
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVL0), mv.hor, mv.ver);
               }
@@ -651,14 +712,21 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               {
                 Mv mv = pu.mv[REF_PIC_LIST_1];
                 Mv mvd = pu.mvd[REF_PIC_LIST_1];
-  #if JVET_K0346 || JVET_K_AFFINE
+#if JVET_K0346 || JVET_K_AFFINE
+#if REMOVE_MV_ADAPT_PREC
+                mv.hor = mv.hor >= 0 ? (mv.hor + nOffset) >> nShift : -((-mv.hor + nOffset) >> nShift);
+                mv.ver = mv.ver >= 0 ? (mv.ver + nOffset) >> nShift : -((-mv.ver + nOffset) >> nShift);
+                mvd.hor = mvd.hor >= 0 ? (mvd.hor + nOffset) >> nShift : -((-mvd.hor + nOffset) >> nShift);
+                mvd.ver = mvd.ver >= 0 ? (mvd.ver + nOffset) >> nShift : -((-mvd.ver + nOffset) >> nShift);
+#else
                 mv.setLowPrec();
                 mvd.setLowPrec();
-  #endif
-                DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVDL0), mvd.hor, mvd.ver);
+#endif
+#endif
+                DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVDL1), mvd.hor, mvd.ver);
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVL1), mv.hor, mv.ver);
               }
-  #if JVET_K_AFFINE
+#if JVET_K_AFFINE
             }
             else
             {
@@ -669,11 +737,20 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 mv[0] = mb.at(0, 0).mv[REF_PIC_LIST_0];
                 mv[1] = mb.at(mb.width - 1, 0).mv[REF_PIC_LIST_0];
                 mv[2] = mb.at(0, mb.height - 1).mv[REF_PIC_LIST_0];
-  #if JVET_K0346 || JVET_K_AFFINE
+#if JVET_K0346 || JVET_K_AFFINE
                 // motion vectors should use low precision or they will appear to large
+#if REMOVE_MV_ADAPT_PREC
+                mv[0].hor = mv[0].hor >= 0 ? (mv[0].hor + nOffset) >> nShift : -((-mv[0].hor + nOffset) >> nShift);
+                mv[0].ver = mv[0].ver >= 0 ? (mv[0].ver + nOffset) >> nShift : -((-mv[0].ver + nOffset) >> nShift);
+                mv[1].hor = mv[1].hor >= 0 ? (mv[1].hor + nOffset) >> nShift : -((-mv[1].hor + nOffset) >> nShift);
+                mv[1].ver = mv[1].ver >= 0 ? (mv[1].ver + nOffset) >> nShift : -((-mv[1].ver + nOffset) >> nShift);
+                mv[2].hor = mv[2].hor >= 0 ? (mv[2].hor + nOffset) >> nShift : -((-mv[2].hor + nOffset) >> nShift);
+                mv[2].ver = mv[2].ver >= 0 ? (mv[2].ver + nOffset) >> nShift : -((-mv[2].ver + nOffset) >> nShift);
+#else
                 mv[0].setLowPrec();
                 mv[1].setLowPrec();
                 mv[2].setLowPrec();
+#endif
   #endif
                 DTRACE_BLOCK_AFFINETF(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineMVL0), mv[0].hor, mv[0].ver, mv[1].hor, mv[1].ver, mv[2].hor, mv[2].ver);
               }
@@ -684,22 +761,32 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 mv[0] = mb.at(0, 0).mv[REF_PIC_LIST_1];
                 mv[1] = mb.at(mb.width - 1, 0).mv[REF_PIC_LIST_1];
                 mv[2] = mb.at(0, mb.height - 1).mv[REF_PIC_LIST_1];
-  #if JVET_K0346 || JVET_K_AFFINE
+#if JVET_K0346 || JVET_K_AFFINE
                 // motion vectors should use low precision or they will appear to large
+#if REMOVE_MV_ADAPT_PREC
+                mv[0].hor = mv[0].hor >= 0 ? (mv[0].hor + nOffset) >> nShift : -((-mv[0].hor + nOffset) >> nShift);
+                mv[0].ver = mv[0].ver >= 0 ? (mv[0].ver + nOffset) >> nShift : -((-mv[0].ver + nOffset) >> nShift);
+                mv[1].hor = mv[1].hor >= 0 ? (mv[1].hor + nOffset) >> nShift : -((-mv[1].hor + nOffset) >> nShift);
+                mv[1].ver = mv[1].ver >= 0 ? (mv[1].ver + nOffset) >> nShift : -((-mv[1].ver + nOffset) >> nShift);
+                mv[2].hor = mv[2].hor >= 0 ? (mv[2].hor + nOffset) >> nShift : -((-mv[2].hor + nOffset) >> nShift);
+                mv[2].ver = mv[2].ver >= 0 ? (mv[2].ver + nOffset) >> nShift : -((-mv[2].ver + nOffset) >> nShift);
+#else
                 mv[0].setLowPrec();
                 mv[1].setLowPrec();
                 mv[2].setLowPrec();
+#endif
   #endif
                 DTRACE_BLOCK_AFFINETF(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineMVL1), mv[0].hor, mv[0].ver, mv[1].hor, mv[1].ver, mv[2].hor, mv[2].ver);
               }
             }
-  #endif
-  #if JVET_K0357_AMVR
+#endif
+#if JVET_K0357_AMVR
             if (cu.cs->sps->getSpsNext().getUseIMV() && CU::hasSubCUNonZeroMVd(cu))
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
             }
-  #endif
+#endif
+
             break;
           }
           default:

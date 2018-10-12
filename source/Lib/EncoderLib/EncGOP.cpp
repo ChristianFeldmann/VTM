@@ -1671,8 +1671,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     if( m_pcCfg->getUseAMaxBT() )
     {
-      if( !pcSlice->isIntra() 
-        )
+      if( !pcSlice->isIRAP() )
       {
         int refLayer = pcSlice->getDepth();
         if( refLayer > 9 ) refLayer = 9; // Max layer is 10
@@ -1808,7 +1807,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
 
     // set adaptive search range for non-intra-slices
-    if (m_pcCfg->getUseASR() && pcSlice->getSliceType()!=I_SLICE)
+    if (m_pcCfg->getUseASR() && !pcSlice->isIRAP())
     {
       m_pcSliceEncoder->setSearchRange(pcSlice);
     }
@@ -1851,7 +1850,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if ( m_pcCfg->getUseRateCtrl() ) // TODO: does this work with multiple slices and slice-segments?
     {
       int frameLevel = m_pcRateCtrl->getRCSeq()->getGOPID2Level( iGOPid );
-      if ( pcPic->slices[0]->getSliceType() == I_SLICE )
+      if ( pcPic->slices[0]->isIRAP() )
       {
         frameLevel = 0;
       }
@@ -1954,13 +1953,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         list<EncRCPic*> listPreviousPicture = m_pcRateCtrl->getPicList();
         m_pcRateCtrl->getRCPic()->getLCUInitTargetBits();
-        lambda  = m_pcRateCtrl->getRCPic()->estimatePicLambda( listPreviousPicture, pcSlice->getSliceType());
+        lambda  = m_pcRateCtrl->getRCPic()->estimatePicLambda( listPreviousPicture, pcSlice->isIRAP());
         sliceQP = m_pcRateCtrl->getRCPic()->estimatePicQP( lambda, listPreviousPicture );
       }
       else    // normal case
       {
         list<EncRCPic*> listPreviousPicture = m_pcRateCtrl->getPicList();
-        lambda  = m_pcRateCtrl->getRCPic()->estimatePicLambda( listPreviousPicture, pcSlice->getSliceType());
+        lambda  = m_pcRateCtrl->getRCPic()->estimatePicLambda( listPreviousPicture, pcSlice->isIRAP());
         sliceQP = m_pcRateCtrl->getRCPic()->estimatePicQP( lambda, listPreviousPicture );
       }
 
@@ -2179,8 +2178,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       for( const CodingUnit *cu : pcPic->cs->cus )
       {
-        if( !pcSlice->isIntra() 
-          )
+        if( !pcSlice->isIRAP() )
         {
           m_uiBlkSize[pcSlice->getDepth()] += cu->Y().area();
           m_uiNumBlk [pcSlice->getDepth()]++;
@@ -2384,11 +2382,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           avgLambda = lambda;
         }
 
-        m_pcRateCtrl->getRCPic()->updateAfterPicture( actualHeadBits, actualTotalBits, avgQP, avgLambda, pcSlice->getSliceType());
+        m_pcRateCtrl->getRCPic()->updateAfterPicture( actualHeadBits, actualTotalBits, avgQP, avgLambda, pcSlice->isIRAP());
         m_pcRateCtrl->getRCPic()->addToPictureLsit( m_pcRateCtrl->getPicList() );
 
         m_pcRateCtrl->getRCSeq()->updateAfterPic( actualTotalBits );
-        if ( pcSlice->getSliceType() != I_SLICE )
+        if ( !pcSlice->isIRAP() )
         {
           m_pcRateCtrl->getRCGOP()->updateAfterPicture( actualTotalBits );
         }
@@ -3583,7 +3581,7 @@ void EncGOP::arrangeCompositeReference(Slice* pcSlice, PicList& rcListPic, int p
       break;
     }
   }
-  if (pcSlice->getSliceType() == I_SLICE)
+  if (pcSlice->isIRAP())
   {
     return;
   }
@@ -3726,7 +3724,7 @@ void EncGOP::updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int po
   int maxCuHeight = pcv->maxCUHeight;
 
   // Update background reference
-  if (pcSlice->getSliceType() == I_SLICE)//(pocCurr == 0)
+  if (pcSlice->isIRAP())//(pocCurr == 0)
   {
     curPic->extendPicBorder();
     curPic->setBorderExtension(true);
@@ -3923,7 +3921,7 @@ void EncGOP::applyDeblockingFilterParameterSelection( Picture* pcPic, const uint
 
   PelUnitBuf reco = pcPic->getRecoBuf();
 
-  const int currQualityLayer = (pcPic->slices[0]->getSliceType() != I_SLICE) ? m_pcCfg->getGOPEntry(gopID).m_temporalId+1 : 0;
+  const int currQualityLayer = (!pcPic->slices[0]->isIRAP()) ? m_pcCfg->getGOPEntry(gopID).m_temporalId+1 : 0;
   CHECK(!(currQualityLayer <MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS), "Unspecified error");
 
   CodingStructure& cs = *pcPic->cs;

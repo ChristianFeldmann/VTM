@@ -132,7 +132,7 @@ public:
     void dtrace_block_vector( int k, const CodingUnit &cu, std::string stat_type, signed val_x, signed val_y );
     // PU
     void dtrace_block_scalar( int k, const PredictionUnit &pu, std::string stat_type, signed value, bool isChroma = false );
-    void dtrace_block_vector( int k, const PredictionUnit &pu, std::string stat_type, signed val_x, signed val_y );
+    void dtrace_block_vector( int k, const PredictionUnit &pu, std::string stat_type, signed val_x, signed val_y, bool isChroma = false );
     void dtrace_block_affinetf( int k, const PredictionUnit &pu, std::string stat_type, signed val_x0, signed val_y0, signed val_x1, signed val_y1, signed val_x2, signed val_y2 );
     // TU
     void dtrace_block_scalar(int k, const TransformUnit &tu, std::string stat_type, signed value, bool isChroma = false );

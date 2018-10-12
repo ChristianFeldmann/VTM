@@ -58,7 +58,7 @@ uint64_t CS::getEstBits(const CodingStructure &cs)
 
 bool CS::isDualITree( const CodingStructure &cs )
 {
-  return cs.slice->isIntra() && !cs.pcv->ISingleTree;
+  return cs.slice->isIRAP() && !cs.pcv->ISingleTree;
 }
 
 UnitArea CS::getArea( const CodingStructure &cs, const UnitArea &area, const ChannelType chType )
@@ -1204,7 +1204,7 @@ bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList
     }
     else
     {
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
       if( pu.cs->sps->getSpsNext().getUseHighPrecMv() )
       {
         // allow extended precision for temporal scaling
@@ -1333,6 +1333,9 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
   if( pu.cu->imv != 0)
   {
     unsigned imvShift = pu.cu->imv << 1;
+#if REMOVE_MV_ADAPT_PREC
+    imvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#endif
     for( int i = 0; i < pInfo->numCand; i++ )
     {
       roundMV( pInfo->mvCand[i], imvShift );
@@ -1402,7 +1405,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 
   while (pInfo->numCand < AMVP_MAX_NUM_CANDS)
   {
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
     const bool prec = pInfo->mvCand[pInfo->numCand].highPrec;
     pInfo->mvCand[pInfo->numCand] = Mv( 0, 0, prec );
 #else
@@ -1410,14 +1413,24 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 #endif
     pInfo->numCand++;
   }
-
-  if( pu.cs->sps->getSpsNext().getUseHighPrecMv() )
+#if !REMOVE_MV_ADAPT_PREC
+  if (pu.cs->sps->getSpsNext().getUseHighPrecMv())
   {
-    for( Mv &mv : pInfo->mvCand )
+#endif
+    for (Mv &mv : pInfo->mvCand)
     {
-      if( mv.highPrec ) mv.setLowPrec();
+#if REMOVE_MV_ADAPT_PREC
+      const int nShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+      const int nOffset = 1 << (nShift - 1);
+      mv.hor = mv.hor >= 0 ? (mv.hor + nOffset) >> nShift : -((-mv.hor + nOffset) >> nShift);
+      mv.ver = mv.ver >= 0 ? (mv.ver + nOffset) >> nShift : -((-mv.ver + nOffset) >> nShift);
+#else
+      if (mv.highPrec) mv.setLowPrec();
+#endif
     }
+#if !REMOVE_MV_ADAPT_PREC
   }
+#endif
 #if JVET_K0357_AMVR
   if (pu.cu->imv != 0)
   {
@@ -1428,7 +1441,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     }
   }
 #endif
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
   if (pu.cs->sps->getSpsNext().getUseHighPrecMv())
   {
     for (Mv &mv : pInfo->mvCand)
@@ -1532,13 +1545,23 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
   horTmp = iMvScaleHor + iDMvHorX * (posCurX - posNeiX) + iDMvVerX * (posCurY - posNeiY);
   verTmp = iMvScaleVer + iDMvHorY * (posCurX - posNeiX) + iDMvVerY * (posCurY - posNeiY);
   roundAffineMv( horTmp, verTmp, shift );
-  rcMv[0] = Mv( horTmp, verTmp, true );
+#if REMOVE_MV_ADAPT_PREC
+  rcMv[0].hor = horTmp;
+  rcMv[0].ver = verTmp;
+#else
+  rcMv[0] = Mv(horTmp, verTmp, true);
+#endif
 
   // v1
   horTmp = iMvScaleHor + iDMvHorX * (posCurX + curW - posNeiX) + iDMvVerX * (posCurY - posNeiY);
   verTmp = iMvScaleVer + iDMvHorY * (posCurX + curW - posNeiX) + iDMvVerY * (posCurY - posNeiY);
   roundAffineMv( horTmp, verTmp, shift );
-  rcMv[1] = Mv( horTmp, verTmp, true );
+#if REMOVE_MV_ADAPT_PREC
+  rcMv[1].hor = horTmp;
+  rcMv[1].ver = verTmp;
+#else
+  rcMv[1] = Mv(horTmp, verTmp, true);
+#endif
 
   // v2
 #if JVET_K0337_AFFINE_6PARA
@@ -1547,7 +1570,12 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
     horTmp = iMvScaleHor + iDMvHorX * (posCurX - posNeiX) + iDMvVerX * (posCurY + curH - posNeiY);
     verTmp = iMvScaleVer + iDMvHorY * (posCurX - posNeiX) + iDMvVerY * (posCurY + curH - posNeiY);
     roundAffineMv( horTmp, verTmp, shift );
-    rcMv[2] = Mv( horTmp, verTmp, true );
+#if REMOVE_MV_ADAPT_PREC
+    rcMv[2].hor = horTmp;
+    rcMv[2].ver = verTmp;
+#else
+    rcMv[2] = Mv(horTmp, verTmp, true);
+#endif
   }
 #endif
 #else
@@ -1558,9 +1586,11 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
   rcMv[2].hor = int( rcMv[0].hor + 1.0 * (mvLB.hor - mvLT.hor) * curH / neiH );
   rcMv[2].ver = int( rcMv[0].ver + 1.0 * (mvLB.ver - mvLT.ver) * curH / neiH );
 
+#if !REMOVE_MV_ADAPT_PREC
   rcMv[0].highPrec = true;
   rcMv[1].highPrec = true;
   rcMv[2].highPrec = true;
+#endif
 #endif
 }
 
@@ -1574,9 +1604,10 @@ bool isValidAffineCandidate( const PredictionUnit &pu, Mv cMv0, Mv cMv1, Mv cMv2
   // same motion vector, translation model
   if ( deltaHor == zeroMv )
     return false;
-
+#if !REMOVE_MV_ADAPT_PREC
   deltaHor.setHighPrec();
   deltaVer.setHighPrec();
+#endif
 
   // S/8, but the Mv is 4 precision, so change to S/2
   int width = pu.Y().width;
@@ -1596,6 +1627,10 @@ bool isValidAffineCandidate( const PredictionUnit &pu, Mv cMv0, Mv cMv1, Mv cMv2
 
 void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AffineAMVPInfo &affiAMVPInfo)
 {
+#if REMOVE_MV_ADAPT_PREC
+  const int nShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  const int nOffset = 1 << (nShift - 1);
+#endif
   affiAMVPInfo.numCand = 0;
 
   if (refIdx < 0)
@@ -1655,6 +1690,17 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 
   if ( affiAMVPInfo.numCand >= AMVP_MAX_NUM_CANDS )
   {
+#if REMOVE_MV_ADAPT_PREC
+    for (int i = 0; i < affiAMVPInfo.numCand; i++)
+    {
+      affiAMVPInfo.mvCandLT[i].hor = affiAMVPInfo.mvCandLT[i].hor >= 0 ? (affiAMVPInfo.mvCandLT[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLT[i].hor + nOffset) >> nShift);
+      affiAMVPInfo.mvCandLT[i].ver = affiAMVPInfo.mvCandLT[i].ver >= 0 ? (affiAMVPInfo.mvCandLT[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLT[i].ver + nOffset) >> nShift);
+      affiAMVPInfo.mvCandRT[i].hor = affiAMVPInfo.mvCandRT[i].hor >= 0 ? (affiAMVPInfo.mvCandRT[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandRT[i].hor + nOffset) >> nShift);
+      affiAMVPInfo.mvCandRT[i].ver = affiAMVPInfo.mvCandRT[i].ver >= 0 ? (affiAMVPInfo.mvCandRT[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandRT[i].ver + nOffset) >> nShift);
+      affiAMVPInfo.mvCandLB[i].hor = affiAMVPInfo.mvCandLB[i].hor >= 0 ? (affiAMVPInfo.mvCandLB[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLB[i].hor + nOffset) >> nShift);
+      affiAMVPInfo.mvCandLB[i].ver = affiAMVPInfo.mvCandLB[i].ver >= 0 ? (affiAMVPInfo.mvCandLB[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLB[i].ver + nOffset) >> nShift);
+    }
+#endif
     return;
   }
 
@@ -1708,9 +1754,11 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   outputAffineMv[1] = amvpInfo1.mvCand[0];
   outputAffineMv[2] = amvpInfo2.mvCand[0];
 
+#if !REMOVE_MV_ADAPT_PREC
   outputAffineMv[0].setHighPrec();
   outputAffineMv[1].setHighPrec();
   outputAffineMv[2].setHighPrec();
+#endif
 
   outputAffineMv[0].roundMV2SignalPrecision();
   outputAffineMv[1].roundMV2SignalPrecision();
@@ -1816,18 +1864,20 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
     }
   }
 
-  for ( int i = 0; i < amvpInfo0.numCand; i++ )
+#if !REMOVE_MV_ADAPT_PREC
+  for (int i = 0; i < amvpInfo0.numCand; i++)
   {
     amvpInfo0.mvCand[i].setHighPrec();
   }
-  for ( int i = 0; i < amvpInfo1.numCand; i++ )
+  for (int i = 0; i < amvpInfo1.numCand; i++)
   {
     amvpInfo1.mvCand[i].setHighPrec();
   }
-  for ( int i = 0; i < amvpInfo2.numCand; i++ )
+  for (int i = 0; i < amvpInfo2.numCand; i++)
   {
     amvpInfo2.mvCand[i].setHighPrec();
   }
+#endif
 
   // Check Valid Candidates and Sort through DV
   int   iRecord[AFFINE_MAX_NUM_COMB][3];
@@ -1902,7 +1952,17 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
     clipMv( affiAMVPInfo.mvCandLB[i], pu.cu->lumaPos(), *pu.cs->sps );
   }
 #endif
-
+#if REMOVE_MV_ADAPT_PREC
+  for (int i = 0; i < affiAMVPInfo.numCand; i++)
+  {
+    affiAMVPInfo.mvCandLT[i].hor = affiAMVPInfo.mvCandLT[i].hor >= 0 ? (affiAMVPInfo.mvCandLT[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLT[i].hor + nOffset) >> nShift);
+    affiAMVPInfo.mvCandLT[i].ver = affiAMVPInfo.mvCandLT[i].ver >= 0 ? (affiAMVPInfo.mvCandLT[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLT[i].ver + nOffset) >> nShift);
+    affiAMVPInfo.mvCandRT[i].hor = affiAMVPInfo.mvCandRT[i].hor >= 0 ? (affiAMVPInfo.mvCandRT[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandRT[i].hor + nOffset) >> nShift);
+    affiAMVPInfo.mvCandRT[i].ver = affiAMVPInfo.mvCandRT[i].ver >= 0 ? (affiAMVPInfo.mvCandRT[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandRT[i].ver + nOffset) >> nShift);
+    affiAMVPInfo.mvCandLB[i].hor = affiAMVPInfo.mvCandLB[i].hor >= 0 ? (affiAMVPInfo.mvCandLB[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLB[i].hor + nOffset) >> nShift);
+    affiAMVPInfo.mvCandLB[i].ver = affiAMVPInfo.mvCandLB[i].ver >= 0 ? (affiAMVPInfo.mvCandLB[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLB[i].ver + nOffset) >> nShift);
+  }
+#endif
   if ( affiAMVPInfo.numCand < 2 )
   {
     AMVPInfo amvpInfo;
@@ -1911,7 +1971,9 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
     int iAdd = amvpInfo.numCand - affiAMVPInfo.numCand;
     for ( int i = 0; i < iAdd; i++ )
     {
+#if !REMOVE_MV_ADAPT_PREC
       amvpInfo.mvCand[i].setHighPrec();
+#endif
 #if !JVET_K_AFFINE_BUG_FIXES
       clipMv( amvpInfo.mvCand[i], pu.cu->lumaPos(), *pu.cs->sps );
 #endif
@@ -1988,8 +2050,10 @@ bool PU::addMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &eRefPic
         if( i == info.numCand )
         {
           info.mvCand[info.numCand++] = neibMi.mv[eRefPicListIndex];
+#if !REMOVE_MV_ADAPT_PREC
           Mv cMvHigh = neibMi.mv[eRefPicListIndex];
           cMvHigh.setHighPrec();
+#endif
 //          CHECK( !neibMi.mv[eRefPicListIndex].highPrec, "Unexpected low precision mv.");
           return true;
         }
@@ -2082,7 +2146,7 @@ bool PU::addMVPCandWithScaling( const PredictionUnit &pu, const RefPicList &eRef
 
           if( scale != 4096 )
           {
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
             if( slice.getSPS()->getSpsNext().getUseHighPrecMv() )
             {
               cMv.setHighPrec();
@@ -2251,14 +2315,29 @@ void PU::setAllAffineMvField( PredictionUnit &pu, MvField *mvField, RefPicList e
   pu.refIdx[eRefList] = mvField[0].refIdx;
 }
 
-void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList )
+void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList 
+#if REMOVE_MV_ADAPT_PREC
+  , bool setHighPrec
+#endif
+)
 {
   int width  = pu.Y().width;
   int shift = MAX_CU_DEPTH;
-
+#if REMOVE_MV_ADAPT_PREC
+  if (setHighPrec)
+  {
+    affLT.hor = affLT.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+    affLT.ver = affLT.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+    affRT.hor = affRT.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+    affRT.ver = affRT.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+    affLB.hor = affLB.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+    affLB.ver = affLB.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  }
+#else
   affLT.setHighPrec();
   affRT.setHighPrec();
   affLB.setHighPrec();
+#endif
   int deltaMvHorX, deltaMvHorY, deltaMvVerX, deltaMvVerY;
   deltaMvHorX = (affRT - affLT).getHor() << (shift - g_aucLog2[width]);
   deltaMvHorY = (affRT - affLT).getVer() << (shift - g_aucLog2[width]);
@@ -2306,7 +2385,12 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
       {
         for ( int x = (w >> MIN_CU_LOG2); x < ((w + blockHeight) >> MIN_CU_LOG2); x++ )
         {
-          mb.at( x, y ).mv[eRefList] = Mv( mvScaleTmpHor, mvScaleTmpVer, true );
+#if REMOVE_MV_ADAPT_PREC
+          mb.at(x, y).mv[eRefList].hor = mvScaleTmpHor;
+          mb.at(x, y).mv[eRefList].ver = mvScaleTmpVer;
+#else
+          mb.at(x, y).mv[eRefList] = Mv(mvScaleTmpHor, mvScaleTmpVer, true);
+#endif
         }
       }
     }
@@ -2398,10 +2482,12 @@ static bool deriveScaledMotionTemporal( const Slice&      slice,
 
     if (iScale != 4096)
     {
+#if !REMOVE_MV_ADAPT_PREC
       if (slice.getSPS()->getSpsNext().getUseHighPrecMv())
       {
         cColMv.setHighPrec();
       }
+#endif
 
       cColMv = cColMv.scaleMv(iScale);
     }
@@ -2495,11 +2581,15 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   ////////          GET Initial Temporal Vector                  ////////
   ///////////////////////////////////////////////////////////////////////
   int mvPrec = 2;
+#if !REMOVE_MV_ADAPT_PREC
   if (pu.cs->sps->getSpsNext().getUseHighPrecMv())
   {
     cTMv.setHighPrec();
+#endif
     mvPrec += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#if !REMOVE_MV_ADAPT_PREC
   }
+#endif
   int mvRndOffs = (1 << mvPrec) >> 1;
 
   Mv cTempVector = cTMv;
@@ -2846,7 +2936,9 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
     {
       if (pu.cu->imv)
       {
-        CHECK( pu.mvd[0].highPrec, "Motion vector difference should never be high precision" );
+#if !REMOVE_MV_ADAPT_PREC
+        CHECK(pu.mvd[0].highPrec, "Motion vector difference should never be high precision");
+#endif
         pu.mvd[0] = Mv( pu.mvd[0].hor << imvShift, pu.mvd[0].ver << imvShift );
       }
       unsigned mvp_idx = pu.mvpIdx[0];
@@ -2855,13 +2947,19 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
       pu.mvpNum[0] = amvpInfo.numCand;
       pu.mvpIdx[0] = mvp_idx;
       pu.mv    [0] = amvpInfo.mvCand[mvp_idx] + pu.mvd[0];
+#if REMOVE_MV_ADAPT_PREC
+      pu.mv[0].hor = pu.mv[0].hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+      pu.mv[0].ver = pu.mv[0].ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#endif
     }
 
     if (pu.interDir != 1 /* PRED_L0 */)
     {
       if( !( pu.cu->cs->slice->getMvdL1ZeroFlag() && pu.interDir == 3 ) && pu.cu->imv )/* PRED_BI */
       {
-        CHECK( pu.mvd[1].highPrec, "Motion vector difference should never be high precision" );
+#if !REMOVE_MV_ADAPT_PREC
+        CHECK(pu.mvd[1].highPrec, "Motion vector difference should never be high precision");
+#endif
         pu.mvd[1] = Mv( pu.mvd[1].hor << imvShift, pu.mvd[1].ver << imvShift );
       }
       unsigned mvp_idx = pu.mvpIdx[1];
@@ -2870,6 +2968,10 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
       pu.mvpNum[1] = amvpInfo.numCand;
       pu.mvpIdx[1] = mvp_idx;
       pu.mv    [1] = amvpInfo.mvCand[mvp_idx] + pu.mvd[1];
+#if REMOVE_MV_ADAPT_PREC
+      pu.mv[1].hor = pu.mv[1].hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+      pu.mv[1].ver = pu.mv[1].ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#endif
     }
   }
   else

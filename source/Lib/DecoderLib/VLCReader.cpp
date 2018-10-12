@@ -808,7 +808,9 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
 #else
 #endif
 #if JVET_K0346 || JVET_K_AFFINE
-  READ_FLAG( symbol,    "high_precision_motion_vectors"    );       spsNext.setUseHighPrecMv(symbol != 0);
+#if !REMOVE_MV_ADAPT_PREC
+  READ_FLAG( symbol, "high_precision_motion_vectors" );             spsNext.setUseHighPrecMv(symbol != 0);
+#endif
 #endif
   READ_FLAG( symbol,    "disable_motion_compression_flag" );        spsNext.setDisableMotCompress     ( symbol != 0 );
 #if JVET_K0190

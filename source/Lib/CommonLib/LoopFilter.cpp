@@ -467,14 +467,18 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
 
     int nThreshold = 4;
 #if JVET_K0346 || JVET_K_AFFINE
-    if( cu.cs->sps->getSpsNext().getUseHighPrecMv() )
+#if !REMOVE_MV_ADAPT_PREC
+    if (cu.cs->sps->getSpsNext().getUseHighPrecMv())
     {
       mvP0.setHighPrec();
       mvP1.setHighPrec();
       mvQ0.setHighPrec();
       mvQ1.setHighPrec();
+#endif
       nThreshold = 4 << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-    }
+#if !REMOVE_MV_ADAPT_PREC
+  }
+#endif
 #endif
     unsigned uiBs = 0;
 
@@ -530,12 +534,16 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
 
   int nThreshold = 4;
 #if JVET_K0346 || JVET_K_AFFINE
-  if( cu.cs->sps->getSpsNext().getUseHighPrecMv() )
+#if !REMOVE_MV_ADAPT_PREC
+  if (cu.cs->sps->getSpsNext().getUseHighPrecMv())
   {
     mvP0.setHighPrec();
     mvQ0.setHighPrec();
+#endif
     nThreshold = 4 << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#if !REMOVE_MV_ADAPT_PREC
   }
+#endif
 #endif
   return ( ( abs( mvQ0.getHor() - mvP0.getHor() ) >= nThreshold ) || ( abs( mvQ0.getVer() - mvP0.getVer() ) >= nThreshold ) ) ? 1 : 0;
 }

@@ -1709,11 +1709,11 @@ void CABACWriter::mvd_coding( const Mv &rMvd )
   unsigned  horAbs  = unsigned( horMvd < 0 ? -horMvd : horMvd );
   unsigned  verAbs  = unsigned( verMvd < 0 ? -verMvd : verMvd );
 
-#if JVET_K0346 || JVET_K_AFFINE
-  if( rMvd.highPrec )
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
+  if (rMvd.highPrec)
   {
-    CHECK( horAbs & ((1<<VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE)-1), "mvd-x has high precision fractional part." );
-    CHECK( verAbs & ((1<<VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE)-1), "mvd-y has high precision fractional part." );
+    CHECK(horAbs & ((1 << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE) - 1), "mvd-x has high precision fractional part.");
+    CHECK(verAbs & ((1 << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE) - 1), "mvd-y has high precision fractional part.");
     horAbs >>= VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
     verAbs >>= VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
   }
@@ -1969,7 +1969,7 @@ void CABACWriter::cu_chroma_qp_offset( const CodingUnit& cu )
 
 void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 {
-#if ENABLE_TRACING || HEVC_USE_SIGN_HIDING
+#if ENABLE_TRACING || HEVC_USE_SIGN_HIDING || JVET_K1000_SIMPLIFIED_EMT
   const CodingUnit& cu = *tu.cu;
 #endif
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_coding() etype=%d pos=(%d,%d) size=%dx%d predMode=%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height, cu.predMode );

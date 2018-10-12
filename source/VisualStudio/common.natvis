@@ -2,15 +2,14 @@
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
   <Type Name="Area">
-    <DisplayString>{{(Y) x = {x}, y = {y}, width = {width}, height = {height}}}</DisplayString>
+    <DisplayString>{{x = {x}, y = {y}, width = {width}, height = {height}}}</DisplayString>
   </Type>
 
   <Type Name="CompArea">
     <DisplayString Condition="compID == COMPONENT_Y">{{(Y) x = {x}, y = {y}, width = {width}, height = {height}}}</DisplayString>
     <DisplayString Condition="compID == COMPONENT_Cb">{{(Cb) x = {x}, y = {y}, width = {width}, height = {height}}}</DisplayString>
     <DisplayString Condition="compID == COMPONENT_Cr">{{(Cr) x = {x}, y = {y}, width = {width}, height = {height}}}</DisplayString>
-    <DisplayString Condition="compID == COMPONENT_Cb2">{{(Cb2) x = {x}, y = {y}, width = {width}, height = {height}}}</DisplayString>
-    <DisplayString Condition="compID == COMPONENT_Cr2">{{(Cr2) x = {x}, y = {y}, width = {width}, height = {height}}}</DisplayString>
+    <DisplayString Condition="compID >= MAX_NUM_COMPONENT">invalid</DisplayString>
   </Type>
   
   <Type Name="UnitArea">

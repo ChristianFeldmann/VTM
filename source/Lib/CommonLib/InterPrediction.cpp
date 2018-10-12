@@ -487,12 +487,15 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 
   int iAddPrecShift = 0;
 
+#if !REMOVE_MV_ADAPT_PREC
   if (_mv.highPrec)
   {
     CHECKD(!pu.cs->sps->getSpsNext().getUseHighPrecMv(), "Found a high-precision motion vector, but the high-precision MV extension is disabled!");
-
+#endif
     iAddPrecShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#if !REMOVE_MV_ADAPT_PREC
   }
+#endif
 
   int shiftHor = 2 + iAddPrecShift + ::getComponentScaleX(compID, chFmt);
   int shiftVer = 2 + iAddPrecShift + ::getComponentScaleY(compID, chFmt);
@@ -502,9 +505,10 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 
   xFrac <<= VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE - iAddPrecShift;
   yFrac <<= VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE - iAddPrecShift;
-
+#if !REMOVE_MV_ADAPT_PREC
   CHECKD(!pu.cs->sps->getSpsNext().getUseHighPrecMv() && ((xFrac & 3) != 0), "Invalid fraction");
   CHECKD(!pu.cs->sps->getSpsNext().getUseHighPrecMv() && ((yFrac & 3) != 0), "Invalid fraction");
+#endif
 #else
   const ChromaFormat  chFmt  = pu.chromaFormat;
   const bool          rndRes = !bi;
@@ -576,9 +580,11 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   Mv mvRT =_mv[1];
   Mv mvLB =_mv[2];
 
+#if !REMOVE_MV_ADAPT_PREC
   mvLT.setHighPrec();
   mvRT.setHighPrec();
   mvLB.setHighPrec();
+#endif
 
   // get affine sub-block width and height
   const int width  = pu.Y().width;

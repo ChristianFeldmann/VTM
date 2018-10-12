@@ -53,7 +53,7 @@ class Mv
 public:
   int   hor;     ///< horizontal component of motion vector
   int   ver;     ///< vertical component of motion vector
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
   bool  highPrec;///< true if the vector is high precision
 #endif
 
@@ -61,7 +61,7 @@ public:
   // constructors
   // ------------------------------------------------------------------------------------------------------------------
 
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
   Mv(                                            ) : hor( 0    ), ver( 0    ), highPrec( false     ) {}
   Mv( int iHor, int iVer, bool _highPrec = false ) : hor( iHor ), ver( iVer ), highPrec( _highPrec ) {}
 #else
@@ -93,7 +93,7 @@ public:
 
   const Mv& operator += (const Mv& _rcMv)
   {
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
     if( highPrec == _rcMv.highPrec )
     {
       hor += _rcMv.hor;
@@ -104,7 +104,7 @@ public:
     {
       Mv rcMv = _rcMv;
 
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
       if( highPrec && !rcMv.highPrec ) rcMv.setHighPrec();
       if( !highPrec && rcMv.highPrec )      setHighPrec();
 #endif
@@ -116,7 +116,7 @@ public:
 
   const Mv& operator-= (const Mv& _rcMv)
   {
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
     if( highPrec == _rcMv.highPrec )
     {
       hor -= _rcMv.hor;
@@ -127,7 +127,7 @@ public:
     {
       Mv rcMv = _rcMv;
 
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
       if( highPrec && !rcMv.highPrec ) rcMv.setHighPrec();
       if( !highPrec && rcMv.highPrec )      setHighPrec();
 #endif
@@ -166,7 +166,7 @@ public:
 
   const Mv operator - ( const Mv& rcMv ) const
   {
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
     if( rcMv.highPrec == highPrec )
     {
       return Mv( hor - rcMv.hor, ver - rcMv.ver, highPrec );
@@ -185,7 +185,7 @@ public:
 
   const Mv operator + ( const Mv& rcMv ) const
   {
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
     if( rcMv.highPrec == highPrec )
     {
       return Mv( hor + rcMv.hor, ver + rcMv.ver, highPrec );
@@ -204,7 +204,7 @@ public:
 
   bool operator== ( const Mv& rcMv ) const
   {
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
     if( rcMv.highPrec == highPrec )
     {
       return ( hor == rcMv.hor && ver == rcMv.ver );
@@ -231,7 +231,7 @@ public:
   {
     const int mvx = Clip3( -32768, 32767, (iScale * getHor() + 127 + (iScale * getHor() < 0)) >> 8 );
     const int mvy = Clip3( -32768, 32767, (iScale * getVer() + 127 + (iScale * getVer() < 0)) >> 8 );
-#if JVET_K0346 || JVET_K_AFFINE
+#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
     return Mv( mvx, mvy, highPrec );
 #else
     return Mv( mvx, mvy );
@@ -241,11 +241,20 @@ public:
 #if JVET_K0346 || JVET_K_AFFINE
   void roundMV2SignalPrecision()
   {
+#if REMOVE_MV_ADAPT_PREC
+    const int nShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+    const int nOffset = 1 << (nShift - 1);
+    hor = hor >= 0 ? (hor + nOffset) >> nShift : -((-hor + nOffset) >> nShift);
+    ver = ver >= 0 ? (ver + nOffset) >> nShift : -((-ver + nOffset) >> nShift);
+    hor = hor >= 0 ? (hor) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : -((-hor) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE);
+    ver = ver >= 0 ? (ver) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : -((-ver) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE);
+#else
     const bool isHP = highPrec;
     setLowPrec();
     if( isHP ) setHighPrec();
+#endif
   }
-
+#if !REMOVE_MV_ADAPT_PREC
   void setLowPrec()
   {
     if( !highPrec ) return;
@@ -263,6 +272,7 @@ public:
     ver = ver >= 0 ? ( ver ) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : -( ( -ver ) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE );
     highPrec = true;
   }
+#endif
 #endif
 };// END CLASS DEFINITION MV
 #if JVET_K0357_AMVR

@@ -71,10 +71,6 @@ ifneq ($(enable-tracing),)
 CONFIG_OPTIONS += -DSET_ENABLE_TRACING=ON -DENABLE_TRACING=$(enable-tracing)
 endif
 
-ifneq ($(skip-svn-info),)
-CONFIG_OPTIONS += -DSKIP_SVN_REVISION=$(skip-svn-info)
-endif
-
 ifneq ($(parallel-split),)
 CONFIG_OPTIONS += -DSET_ENABLE_SPLIT_PARALLELISM=ON -DENABLE_SPLIT_PARALLELISM=$(parallel-split)
 endif

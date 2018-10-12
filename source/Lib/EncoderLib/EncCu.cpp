@@ -321,9 +321,7 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1 && KEEP_PRED_AND_RESI_SIGNALS;
   cs.useSubStructure( *bestCS, partitioner->chType, CS::getArea( *bestCS, area, partitioner->chType ), copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals );
 
-  if( !cs.pcv->ISingleTree && 
-    cs.slice->isIntra() 
-    && cs.pcv->chrFormat != CHROMA_400 )
+  if( !cs.pcv->ISingleTree && cs.slice->isIRAP() && cs.pcv->chrFormat != CHROMA_400 )
   {
     m_CABACEstimator->getCtx() = m_CurrCtx->start;
 

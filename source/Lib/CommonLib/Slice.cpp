@@ -1658,7 +1658,9 @@ SPSNext::SPSNext( SPS& sps )
 #else
 #endif
 #if JVET_K0346 || JVET_K_AFFINE
+#if !REMOVE_MV_ADAPT_PREC
   , m_highPrecMv                ( false )
+#endif
 #endif
   , m_DisableMotionCompression  ( false )
 #if !JVET_K0371_ALF
@@ -2493,7 +2495,7 @@ void calculateParameterSetChangedFlag(bool &bChanged, const std::vector<uint8_t>
 
 uint32_t PreCalcValues::getValIdx( const Slice &slice, const ChannelType chType ) const
 {
-  return slice.isIntra() ? ( ISingleTree ? 0 : ( chType << 1 ) ) : 1;
+  return slice.isIRAP() ? ( ISingleTree ? 0 : ( chType << 1 ) ) : 1;
 }
 
 uint32_t PreCalcValues::getMaxBtDepth( const Slice &slice, const ChannelType chType ) const
@@ -2508,7 +2510,7 @@ uint32_t PreCalcValues::getMinBtSize( const Slice &slice, const ChannelType chTy
 
 uint32_t PreCalcValues::getMaxBtSize( const Slice &slice, const ChannelType chType ) const
 {
-  return ( !slice.isIntra() || isLuma( chType ) || ISingleTree ) ? slice.getMaxBTSize() : MAX_BT_SIZE_C;
+  return ( !slice.isIRAP() || isLuma( chType ) || ISingleTree ) ? slice.getMaxBTSize() : MAX_BT_SIZE_C;
 }
 
 uint32_t PreCalcValues::getMinTtSize( const Slice &slice, const ChannelType chType ) const

@@ -205,7 +205,9 @@ protected:
 #endif
 #endif
 #if JVET_K0346 || JVET_K_AFFINE
+#if !REMOVE_MV_ADAPT_PREC
   bool      m_highPrecMv;
+#endif
 #endif
   bool      m_DisableMotionCompression;
   unsigned  m_MTTMode;
@@ -643,8 +645,10 @@ public:
 #endif
 #endif
 #if JVET_K0346 || JVET_K_AFFINE
-  void      setHighPrecisionMv(bool b) { m_highPrecMv = b; }
-  bool      getHighPrecisionMv()       { return m_highPrecMv; }
+#if !REMOVE_MV_ADAPT_PREC
+  void      setHighPrecisionMv              ( bool b )       { m_highPrecMv = b; }
+  bool      getHighPrecisionMv              ()               { return m_highPrecMv; }
+#endif
 #endif
   void      setDisableMotionCompression     ( bool b )       { m_DisableMotionCompression = b; }
   bool      getDisableMotionCompression     ()         const { return m_DisableMotionCompression; }

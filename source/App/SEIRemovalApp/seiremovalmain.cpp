@@ -41,8 +41,6 @@
 #include "SEIRemovalApp.h"
 #include "program_options_lite.h"
 
-#include "svnrevision.h"
-
 //! \ingroup DecoderApp
 //! \{
 
@@ -56,11 +54,7 @@ int main(int argc, char* argv[])
 
   // print information
   fprintf( stdout, "\n" );
-#ifdef SVNREVISION
-  fprintf( stdout, "VVCSoftware: VTM Decoder Version %s (%s@r%s) ", NEXT_SOFTWARE_VERSION, SVNRELATIVEURL, SVNREVISION /*NV_VERSION*/ );
-#else
-  fprintf( stdout, "VVCSoftware: VTM Decoder Version %s ", NEXT_SOFTWARE_VERSION /*NV_VERSION*/ );
-#endif
+  fprintf( stdout, "VVCSoftware: BMS Decoder Version %s ", NEXT_SOFTWARE_VERSION /*NV_VERSION*/ );
   fprintf( stdout, NVM_ONOS );
   fprintf( stdout, NVM_COMPILEDBY );
   fprintf( stdout, NVM_BITS );

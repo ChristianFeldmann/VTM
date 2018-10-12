@@ -231,7 +231,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setAffineType                                        ( m_AffineType );
 #endif
 #endif
-#if JVET_K0346 || JVET_K_AFFINE
+#if (JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
   m_cEncLib.setHighPrecisionMv                                   (m_highPrecisionMv);
 #endif
   m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );

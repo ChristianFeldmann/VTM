@@ -28,7 +28,6 @@ if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
 endif()
 
 set( EXTENSION_360_VIDEO OFF CACHE BOOL "If EXTENSION_360_VIDEO is on, 360Lib will be added" )
-set( SKIP_SVN_REVISION OFF CACHE BOOL "Don't add SVN path and revision info to the encoder and decoder output" )
 set( SET_ENABLE_TRACING OFF CACHE BOOL "Set ENABLE_TRACING as a compiler flag" )
 set( ENABLE_TRACING OFF CACHE BOOL "If SET_ENABLE_TRACING is on, it will be set to this value" )
 set( ENABLE_VTM OFF CACHE BOOL "If ENABLE_VTM is on, the software will be compiled as VTM" )

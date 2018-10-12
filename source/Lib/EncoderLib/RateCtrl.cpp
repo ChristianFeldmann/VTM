@@ -807,7 +807,7 @@ void EncRCPic::destroy()
 }
 
 
-double EncRCPic::estimatePicLambda( list<EncRCPic*>& listPreviousPictures, SliceType eSliceType)
+double EncRCPic::estimatePicLambda( list<EncRCPic*>& listPreviousPictures, bool isIRAP)
 {
   double alpha         = m_encRCSeq->getPicPara( m_frameLevel ).m_alpha;
   double beta          = m_encRCSeq->getPicPara( m_frameLevel ).m_beta;
@@ -826,7 +826,7 @@ double EncRCPic::estimatePicLambda( list<EncRCPic*>& listPreviousPictures, Slice
 #endif
 
   double estLambda;
-  if (eSliceType == I_SLICE)
+  if (isIRAP)
   {
     estLambda = calculateLambdaIntra(alpha, beta, pow(m_totalCostIntra/(double)m_numberOfPixel, BETA1), bpp);
   }
@@ -973,13 +973,13 @@ int EncRCPic::estimatePicQP( double lambda, list<EncRCPic*>& listPreviousPicture
   return QP;
 }
 
-double EncRCPic::getLCUTargetBpp(SliceType eSliceType)
+double EncRCPic::getLCUTargetBpp(bool isIRAP)
 {
   int   LCUIdx    = getLCUCoded();
   double bpp      = -1.0;
   int avgBits     = 0;
 
-  if (eSliceType == I_SLICE)
+  if (isIRAP)
   {
     int noOfLCUsLeft = m_numberOfLCU - LCUIdx + 1;
     int bitrateWindow = min(4,noOfLCUsLeft);
@@ -1316,7 +1316,7 @@ double EncRCPic::calAverageLambda()
 }
 
 
-void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, double averageQP, double averageLambda, SliceType eSliceType)
+void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, double averageQP, double averageLambda, bool isIRAP)
 {
   m_picActualHeaderBits = actualHeaderBits;
   m_picActualBits       = actualTotalBits;
@@ -1333,7 +1333,7 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
   double alpha = m_encRCSeq->getPicPara( m_frameLevel ).m_alpha;
   double beta  = m_encRCSeq->getPicPara( m_frameLevel ).m_beta;
 
-  if (eSliceType == I_SLICE)
+  if (isIRAP)
   {
     updateAlphaBetaIntra(&alpha, &beta);
   }

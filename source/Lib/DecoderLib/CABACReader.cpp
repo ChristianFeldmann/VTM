@@ -1969,7 +1969,7 @@ void CABACReader::cu_chroma_qp_offset( CodingUnit& cu )
 
 void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
 {
-#if ENABLE_TRACING || HEVC_USE_SIGN_HIDING
+#if ENABLE_TRACING || HEVC_USE_SIGN_HIDING || JVET_K1000_SIMPLIFIED_EMT
   const CodingUnit& cu = *tu.cu;
 #endif
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_coding() etype=%d pos=(%d,%d) size=%dx%d predMode=%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height, cu.predMode );

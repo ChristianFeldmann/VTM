@@ -56,7 +56,6 @@
 
 
 
-#define JVET_K0190                                        1 //Only Keep CCLM
 
 #ifndef INTRA67_3MPM  // JVET-K0529
 #define INTRA67_3MPM                                      1

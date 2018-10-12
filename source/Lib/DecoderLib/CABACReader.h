@@ -86,9 +86,7 @@ public:
   void        cu_pred_data              ( CodingUnit&                   cu );
   void        intra_luma_pred_modes     ( CodingUnit&                   cu );
   void        intra_chroma_pred_modes   ( CodingUnit&                   cu );
-#if JVET_K0190
   bool        intra_chroma_lmc_mode     ( PredictionUnit&               pu );
-#endif
   void        intra_chroma_pred_mode    ( PredictionUnit&               pu );
   void        cu_residual               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );
   void        rqt_root_cbf              ( CodingUnit&                   cu );

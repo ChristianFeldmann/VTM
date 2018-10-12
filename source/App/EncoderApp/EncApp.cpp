@@ -236,9 +236,7 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );
   m_cEncLib.setMTTMode                                           ( m_MTT );
-#if JVET_K0190
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
-#endif
 #if ENABLE_WPP_PARALLELISM
   m_cEncLib.setUseAltDQPCoding                                   ( m_AltDQPCoding );
 #endif

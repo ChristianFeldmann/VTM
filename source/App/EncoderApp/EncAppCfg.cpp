@@ -838,12 +838,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if ENABLE_WPP_PARALLELISM
   ("AltDQPCoding",                                    m_AltDQPCoding,                                   false, "Improved predictive delta-QP coding (0:off, 1:on)  [default: off]")
 #endif
-#if JVET_K0190
   ("LMChroma",                                        m_LMChroma,                                           1, " LMChroma prediction "
                                                                                                                "\t0:  Disable LMChroma\n"
                                                                                                                "\t1:  Enable LMChroma\n")
-#else
-#endif
   ("EMT,-emt",                                        m_EMT,                                                0, "Enhanced Multiple Transform (EMT)\n"
     "\t0:  Disable EMT\n"
     "\t1:  Enable only Intra EMT\n"
@@ -1928,9 +1925,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_numWppThreads > 1, "WPP-style parallelization only supported with NEXT profile" );
 #endif
     xConfirmPara( m_QTBT, "QTBT only allowed with NEXT profile" );
-#if JVET_K0190
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
-#endif
     xConfirmPara( m_LargeCTU, "Large CTU is only allowed with NEXT profile" );
 #if JVET_K0346
     xConfirmPara( m_SubPuMvpMode != 0, "Sub-PU motion vector prediction is only allowed with NEXT profile" );
@@ -2942,10 +2937,7 @@ bool EncAppCfg::xCheckParameter()
 #endif
   xConfirmPara( m_decodeBitstreams[0] == m_bitstreamFileName, "Debug bitstream and the output bitstream cannot be equal.\n" );
   xConfirmPara( m_decodeBitstreams[1] == m_bitstreamFileName, "Decode2 bitstream and the output bitstream cannot be equal.\n" );
-#if JVET_K0190
   xConfirmPara(unsigned(m_LMChroma) > 1, "LMMode exceeds range (0 to 1)");
-#else
-#endif
 #if EXTENSION_360_VIDEO
   check_failed |= m_ext360.verifyParameters();
 #endif
@@ -3213,9 +3205,7 @@ void EncAppCfg::xPrintParameter()
 #if ENABLE_WPP_PARALLELISM
     msg( VERBOSE, "AltDQPCoding:%d ", m_AltDQPCoding );
 #endif
-#if JVET_K0190
     msg( VERBOSE, "LMChroma:%d ", m_LMChroma );
-#endif
     msg( VERBOSE, "EMT: %1d(intra) %1d(inter) ", m_EMT & 1, ( m_EMT >> 1 ) & 1 );
 #if JVET_K0157
     msg(VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);

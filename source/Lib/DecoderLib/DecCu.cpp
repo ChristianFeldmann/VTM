@@ -135,9 +135,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
         PelBuf piPred       = cs.getPredBuf( area );
 
   const PredictionUnit &pu  = *tu.cs->getPU( area.pos(), chType );
-#if JVET_K0190
   const uint32_t uiChFinalMode  = PU::getFinalIntraMode( pu, chType );
-#endif
 
   //===== init availability pattern =====
 
@@ -145,7 +143,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   m_pcIntraPred->initIntraPatternChType( *tu.cu, area, bUseFilteredPredictions );
 
   //===== get prediction signal =====
-#if JVET_K0190
   if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
   {
     const PredictionUnit& pu = cs.pcv->noRQT && cs.pcv->only2Nx2N ? *tu.cu->firstPU : *tu.cs->getPU( tu.block( compID ), CHANNEL_TYPE_CHROMA );
@@ -153,7 +150,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
     m_pcIntraPred->predIntraChromaLM( compID, piPred, pu, area, uiChFinalMode );
   }
   else
-#endif
   {
     m_pcIntraPred->predIntraAng( compID, piPred, pu, bUseFilteredPredictions );
   }

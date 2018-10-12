@@ -1663,9 +1663,7 @@ SPSNext::SPSNext( SPS& sps )
 #endif
 #endif
   , m_DisableMotionCompression  ( false )
-#if JVET_K0190
   , m_LMChroma                  ( false )
-#endif
   , m_IntraEMT                  ( false )
   , m_InterEMT                  ( false )
 #if JVET_K_AFFINE

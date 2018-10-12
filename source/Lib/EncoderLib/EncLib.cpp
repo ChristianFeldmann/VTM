@@ -900,12 +900,7 @@ void EncLib::xInitSPS(SPS &sps)
 #endif
   sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );
   sps.getSpsNext().setMTTMode               ( m_MTTMode );
-#if JVET_K0190
   sps.getSpsNext().setUseLMChroma           ( m_LMChroma ? true : false );
-#if !JVET_K0190
-  sps.getSpsNext().setELMMode               ( m_LMChroma > 1 ? m_LMChroma - 1 : 0 );
-#endif
-#endif
 #if ENABLE_WPP_PARALLELISM
   sps.getSpsNext().setUseNextDQP            ( m_AltDQPCoding );
 #endif

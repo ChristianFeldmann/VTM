@@ -72,13 +72,9 @@ private:
 
   static const uint8_t m_aucIntraFilter[MAX_NUM_CHANNEL_TYPE][MAX_INTRA_FILTER_DEPTHS];
 
-#if JVET_K0190
   unsigned m_auShiftLM[32]; // Table for substituting division operation by multiplication
 
-#endif
   Pel* m_piTemp;
-#if !JVET_K0190
-#endif
 protected:
 
   ChromaFormat  m_currChromaFormat;
@@ -112,10 +108,7 @@ protected:
   void destroy                    ();
 
   void xFilterGroup               ( Pel* pMulDst[], int i, Pel const* const piSrc, int iRecStride, bool bAboveAvaillable, bool bLeftAvaillable);
-#if !JVET_K0190
-#else
   void xGetLMParameters(const PredictionUnit &pu, const ComponentID compID, const CompArea& chromaArea, int& a, int& b, int& iShift);
-#endif
 public:
   IntraPrediction();
   virtual ~IntraPrediction();
@@ -125,12 +118,9 @@ public:
   // Angular Intra
   void predIntraAng               ( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu, const bool useFilteredPredSamples );
   Pel*  getPredictorPtr           (const ComponentID compID, const bool bUseFilteredPredictions = false) { return m_piYuvExt[compID][bUseFilteredPredictions?PRED_BUF_FILTERED:PRED_BUF_UNFILTERED]; }
-#if JVET_K0190
   // Cross-component Chroma
   void predIntraChromaLM(const ComponentID compID, PelBuf &piPred, const PredictionUnit &pu, const CompArea& chromaArea, int intraDir);
   void xGetLumaRecPixels(const PredictionUnit &pu, CompArea chromaArea);
-#else
-#endif
   /// set parameters from CU data for accessing intra data
   void initIntraPatternChType     (const CodingUnit &cu, const CompArea &area, const bool bFilterRefSamples = false );
 

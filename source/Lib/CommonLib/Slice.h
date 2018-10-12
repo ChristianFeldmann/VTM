@@ -814,9 +814,7 @@ private:
 #endif
 #endif
   bool              m_DisableMotionCompression;   // 13
-#if JVET_K0190
   bool              m_LMChroma;                   // 17
-#endif
   bool              m_IntraEMT;                   // 18
   bool              m_InterEMT;                   // 19
 #if JVET_K_AFFINE
@@ -907,10 +905,8 @@ public:
   void      setUseNextDQP         ( bool b )                                        { m_NextDQP = b; }
   bool      getUseNextDQP         ()                                      const     { return m_NextDQP; }
 #endif
-#if JVET_K0190
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
-#endif
   void      setUseIntraEMT        ( bool b )                                        { m_IntraEMT = b; }
   bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
   void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }

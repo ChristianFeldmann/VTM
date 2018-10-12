@@ -184,9 +184,7 @@ protected:
   unsigned  m_maxTotalCUDepth;
   unsigned  m_log2DiffMaxMinCodingBlockSize;
 
-#if JVET_K0190
   int       m_LMChroma;
-#endif
   int       m_IntraEMT;
   int       m_InterEMT;
   int       m_FastIntraEMT;
@@ -620,10 +618,8 @@ public:
   void      setLargeCTU                     ( bool b )       { m_LargeCTU = b; }
   bool      getLargeCTU                     ()         const { return m_LargeCTU; }
 
-#if JVET_K0190
   void      setUseLMChroma                  ( int n )        { m_LMChroma = n; }
   int       getUseLMChroma()                           const { return m_LMChroma; }
-#endif
 
 #if JVET_K0346
   void      setSubPuMvpMode(int n)          { m_SubPuMvpMode = n; }

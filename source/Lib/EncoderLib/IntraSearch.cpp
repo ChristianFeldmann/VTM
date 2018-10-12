@@ -755,12 +755,10 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
       for (uint32_t uiMode = uiMinMode; uiMode < uiMaxMode; uiMode++)
       {
         const int chromaIntraMode = chromaCandModes[uiMode];
-#if JVET_K0190
         if( PU::isLMCMode( chromaIntraMode ) && ! PU::isLMCModeEnabled( pu, chromaIntraMode ) )
         {
           continue;
         }
-#endif
 
         cs.setDecomp( pu.Cb(), false );
         cs.dist = baseDist;
@@ -1149,10 +1147,8 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   PelBuf         piReco                     = cs.getRecoBuf   (area);
 
   const PredictionUnit &pu                  = *cs.getPU(area.pos(), chType);
-#if ENABLE_TRACING||JVET_K0190
   const uint32_t           uiChFinalMode        = PU::getFinalIntraMode(pu, chType);
 
-#endif
   const bool           bUseCrossCPrediction = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isChroma( compID ) && PU::isChromaIntraModeCrossCheckMode( pu ) && checkCrossCPrediction;
   const bool           ccUseRecoResi        = m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate();
 
@@ -1166,7 +1162,6 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     initIntraPatternChType( *tu.cu, area, bUseFilteredPredictions );
 
     //===== get prediction signal =====
-#if JVET_K0190
     if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
     {
 #if !ENABLE_BMS
@@ -1178,7 +1173,6 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
       predIntraChromaLM( compID, piPred, pu, area, uiChFinalMode );
     }
     else
-#endif
     {
       predIntraAng( compID, piPred, pu, bUseFilteredPredictions );
     }
@@ -1605,11 +1599,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partitioner& partitioner)
 {
   UnitArea currArea                   = partitioner.currArea();
-#if JVET_K0190
   const bool keepResi                 = cs.sps->getSpsNext().getUseLMChroma() || KEEP_PRED_AND_RESI_SIGNALS;
-#else
-  const bool keepResi                 = KEEP_PRED_AND_RESI_SIGNALS;
-#endif
   if( !currArea.Cb().valid() ) return ChromaCbfs( false );
 
 

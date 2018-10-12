@@ -945,7 +945,6 @@ void CABACWriter::intra_chroma_pred_modes( const CodingUnit& cu )
   intra_chroma_pred_mode( *pu );
 }
 
-#if JVET_K0190
 void CABACWriter::intra_chroma_lmc_mode( const PredictionUnit& pu )
 {
   const unsigned intraDir = pu.intraDir[1];
@@ -964,7 +963,6 @@ void CABACWriter::intra_chroma_lmc_mode( const PredictionUnit& pu )
 
     unary_max_symbol( symbol, Ctx::IPredMode[1]( 2 ), Ctx::IPredMode[1]( 3 ), maxSymbol - 1 );
 }
-#endif
 
 
 void CABACWriter::intra_chroma_pred_mode( const PredictionUnit& pu )
@@ -979,7 +977,6 @@ void CABACWriter::intra_chroma_pred_mode( const PredictionUnit& pu )
     m_BinEncoder.encodeBin( 1, Ctx::IPredMode[1]( 1 ) );
   }
 
-#if JVET_K0190
   // LM chroma mode
   if( pu.cs->sps->getSpsNext().getUseLMChroma() )
   {
@@ -990,7 +987,6 @@ void CABACWriter::intra_chroma_pred_mode( const PredictionUnit& pu )
     }
   }
 
-#endif
   // chroma candidate index
   unsigned chromaCandModes[ NUM_CHROMA_MODE ];
   PU::getIntraChromaCandModes( pu, chromaCandModes );

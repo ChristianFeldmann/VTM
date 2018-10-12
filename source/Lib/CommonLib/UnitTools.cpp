@@ -470,12 +470,8 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
     modeList[  1 ] = VER_IDX;
     modeList[  2 ] = HOR_IDX;
     modeList[  3 ] = DC_IDX;
-#if JVET_K0190
     modeList[4] = LM_CHROMA_IDX;
     modeList[5] = DM_CHROMA_IDX;
-#else
-    modeList[  4 ] = DM_CHROMA_IDX;
-#endif
 
     const PredictionUnit *lumaPU = CS::isDualITree( *pu.cs ) ? pu.cs->picture->cs->getPU( pu.blocks[pu.chType].lumaPos(), CHANNEL_TYPE_LUMA ) : &pu;
     const uint32_t lumaMode = lumaPU->intraDir[CHANNEL_TYPE_LUMA];
@@ -491,33 +487,15 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
 }
 
 
-#if JVET_K0190
 bool PU::isLMCMode(unsigned mode)
 {
-#if JVET_K0190
   return (mode == LM_CHROMA_IDX);
-#else
-  return (mode >= LM_CHROMA_IDX && mode <= LM_CHROMA_F4_IDX);
-#endif
 }
-#endif
-#if JVET_K0190
 bool PU::isLMCModeEnabled(const PredictionUnit &pu, unsigned mode)
 {
   if ( pu.cs->sps->getSpsNext().getUseLMChroma() )
   {
-#if JVET_K0190
     return true;
-#else
-    if ( mode == LM_CHROMA_IDX )
-    {
-      return true;
-    }
-    else if ( ( mode == MMLM_CHROMA_IDX && PU::isMMLMEnabled( pu ) ) || ( mode >= LM_CHROMA_F1_IDX && mode <= LM_CHROMA_F4_IDX && PU::isMFLMEnabled( pu ) ) )
-    {
-      return true;
-    }
-#endif
   }
   return false;
 }
@@ -561,32 +539,12 @@ int PU::getLMSymbolList(const PredictionUnit &pu, int *pModeList)
     pModeList[ iIdx++ ] = -1;
     bNonLMInsert = true;
   }
-#if !JVET_K0190
-  if ( PU::isMMLMEnabled( pu ) )
-  {
-    pModeList[ iIdx++ ] = MMLM_CHROMA_IDX;
-  }
-#endif
 
   if ( iCount >= g_aiNonLMPosThrs[1] && ! bNonLMInsert )
   {
     pModeList[ iIdx++ ] = -1;
     bNonLMInsert = true;
   }
-#if !JVET_K0190
-  if ( PU::isMFLMEnabled( pu ) )
-  {
-    pModeList[ iIdx++ ] = LM_CHROMA_F1_IDX;
-    pModeList[ iIdx++ ] = LM_CHROMA_F2_IDX;
-    if ( iCount >= g_aiNonLMPosThrs[2] && ! bNonLMInsert )
-    {
-      pModeList[ iIdx++ ] = -1;
-      bNonLMInsert = true;
-    }
-    pModeList[ iIdx++ ] = LM_CHROMA_F3_IDX;
-    pModeList[ iIdx++ ] = LM_CHROMA_F4_IDX;
-  }
-#endif
   if ( ! bNonLMInsert )
   {
     pModeList[ iIdx++ ] = -1;
@@ -596,7 +554,6 @@ int PU::getLMSymbolList(const PredictionUnit &pu, int *pModeList)
   return iIdx;
 }
 
-#endif
 
 
 bool PU::isChromaIntraModeCrossCheckMode( const PredictionUnit &pu )

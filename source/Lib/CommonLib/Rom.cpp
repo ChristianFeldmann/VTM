@@ -181,9 +181,7 @@ public:
   }
 };
 
-#if JVET_K0190
 const int g_aiNonLMPosThrs[] = {  3,  1,  0 };
-#endif
 
 
 

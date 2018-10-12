@@ -147,20 +147,14 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
     }
   }
 
-#if JVET_K0190
   int shift = bitDepthY + 4;
   for (int i = 32; i < 64; i++)
   {
     m_auShiftLM[i - 32] = ((1 << shift) + i / 2) / i;
   }
-#endif
   if (m_piTemp == nullptr)
   {
-#if JVET_K0190
     m_piTemp = new Pel[(MAX_CU_SIZE + 1) * (MAX_CU_SIZE + 1)];
-#else
-    m_piTemp = new Pel[ MAX_CU_SIZE * MAX_CU_SIZE ];
-#endif
   }
 }
 
@@ -386,7 +380,6 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   }
 #endif
 }
-#if JVET_K0190
 void IntraPrediction::predIntraChromaLM(const ComponentID compID, PelBuf &piPred, const PredictionUnit &pu, const CompArea& chromaArea, int intraDir)
 {
   int  iLumaStride = 0;
@@ -400,8 +393,6 @@ void IntraPrediction::predIntraChromaLM(const ComponentID compID, PelBuf &piPred
   piPred.copyFrom(Temp);
   piPred.linearTransform(a, iShift, b, true, pu.cs->slice->clpRng(compID));
 }
-#else
-#endif
 
 void IntraPrediction::xFilterGroup(Pel* pMulDst[], int i, Pel const * const piSrc, int iRecStride, bool bAboveAvaillable, bool bLeftAvaillable)
 {
@@ -1278,35 +1269,16 @@ int isBelowLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const 
 
   return iNumIntra;
 }
-#if JVET_K0190
 // LumaRecPixels
 void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chromaArea)
 {
   int iDstStride = 0;
   Pel* pDst0 = 0;
-#if JVET_K0190
   iDstStride = MAX_CU_SIZE + 1;
   pDst0 = m_piTemp + iDstStride + 1; //MMLM_SAMPLE_NEIGHBOR_LINES;
-#else
-  int MMLM_Lines = pu.cs->sps->getSpsNext().isELMModeMMLM() ? 2 : 1;
-  iDstStride = MAX_CU_SIZE + MMLM_Lines; //MMLM_SAMPLE_NEIGHBOR_LINES;
-  pDst0 = m_piTemp + (iDstStride + 1) * MMLM_Lines; //MMLM_SAMPLE_NEIGHBOR_LINES;
-#endif
   //assert 420 chroma subsampling
   CompArea lumaArea = CompArea( COMPONENT_Y, pu.chromaFormat, chromaArea.lumaPos(), recalcSize( pu.chromaFormat, CHANNEL_TYPE_CHROMA, CHANNEL_TYPE_LUMA, chromaArea.size() ) );//needed for correct pos/size (4x4 Tus)
 
-#if !JVET_K0190
-  Pel *pMulDst0[LM_FILTER_NUM];
-  int  iBufStride = pu.cs->sps->getSpsNext().isELMModeMMLM() ? MAX_CU_SIZE + MMLM_Lines : MAX_CU_SIZE; //MMLM_SAMPLE_NEIGHBOR_LINES
-  Pel* pMulDst[LM_FILTER_NUM];
-  if (pu.cs->sps->getSpsNext().isELMModeMFLM())
-  {
-    for (int i = 0; i < LM_FILTER_NUM; i++)
-    {
-      pMulDst0[i] = m_pLumaRecBufferMul[i] + (iBufStride + 1) * MMLM_Lines;
-    }
-  }
-#endif
 
   CHECK( lumaArea.width  == chromaArea.width, "" );
   CHECK( lumaArea.height == chromaArea.height, "" );
@@ -1393,65 +1365,6 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
                   + 4 ) >> 3;
       }
     }
-#if !JVET_K0190
-    if (pu.cs->sps->getSpsNext().isELMModeMMLM())
-    {
-      for (int line = 2; line <= MMLM_Lines; line++)
-      {
-        pDst  = pDst0    - iDstStride  * line;
-        piSrc = pRecSrc0 - iRecStride2 * line;
-
-        for (int i = 0; i < uiCWidth; i++)
-        {
-          if (i == 0 && !bLeftAvaillable)
-          {
-            pDst[i] = (piSrc[2 * i] + piSrc[2 * i + iRecStride] + 1) >> 1;
-          }
-          else
-          {
-            pDst[i] = ( ( (piSrc[2 * i             ] * 2 ) + piSrc[2 * i - 1             ] + piSrc[2 * i + 1             ] )
-                      + ( (piSrc[2 * i + iRecStride] * 2 ) + piSrc[2 * i - 1 + iRecStride] + piSrc[2 * i + 1 + iRecStride] )
-                      + 4 ) >> 3;
-          }
-        }
-      }
-    }
-
-    if (pu.cs->sps->getSpsNext().isELMModeMFLM())
-    {
-      for (int i = 0; i < LM_FILTER_NUM; i++)
-      {
-        pMulDst[i] = pMulDst0[i] - iDstStride;
-      }
-
-      piSrc = pRecSrc0 - iRecStride2;
-
-      for (int i = 0; i < uiCWidth; i++)
-      {
-
-        xFilterGroup(pMulDst, i, &piSrc[2 * i], iRecStride, bAboveAvaillable, i != 0 || bLeftAvaillable);
-      }
-
-      if (pu.cs->sps->getSpsNext().isELMModeMMLM())
-      {
-        for (int line = 2; line <= MMLM_Lines; line++)
-
-        {
-          for (int i = 0; i < LM_FILTER_NUM; i++)
-          {
-            pMulDst[i] = pMulDst0[i] - iDstStride * line;
-          }
-
-          piSrc = pRecSrc0 - iRecStride2 * line;
-
-          for (int i = 0; i < uiCWidth; i++)
-          {
-            xFilterGroup(pMulDst, i, &piSrc[2 * i], iRecStride, bAboveAvaillable, i != 0 || bLeftAvaillable);
-          }
-        }
-      }
-    }
-#endif
   }
 
   if( bLeftAvaillable )
@@ -1468,73 +1381,6 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
       piSrc += iRecStride2;
       pDst  += iDstStride;
     }
-#if !JVET_K0190
-    if (pu.cs->sps->getSpsNext().isELMModeMMLM())
-    {
-      for (int line = 2; line <= MMLM_Lines; line++)
-      {
-        pDst  = pDst0    - line;
-        piSrc = pRecSrc0 - 2 * line - 1;
-
-        for (int j = 0; j < uiCHeight; j++)
-        {
-          pDst[0] = ( ( piSrc[1             ] * 3 + piSrc[2             ] )
-                    + ( piSrc[1 + iRecStride] * 3 + piSrc[2 + iRecStride] )
-                    + 4 ) >> 3;
-          piSrc += iRecStride2;
-          pDst  += iDstStride;
-        }
-      }
-    }
-
-    if (pu.cs->sps->getSpsNext().isELMModeMFLM())
-    {
-      for (int i = 0; i < LM_FILTER_NUM; i++)
-      {
-        pMulDst[i] = pMulDst0[i] - 1;
-      }
-
-      piSrc = pRecSrc0 - 2;
-      for (int j = 0; j < uiCHeight; j++)
-      {
-        //Filter group 1
-
-        xFilterGroup(pMulDst, 0, piSrc, iRecStride, j != 0 || bAboveAvaillable, bLeftAvaillable);
-
-        piSrc += iRecStride2;
-
-        for (int i = 0; i < LM_FILTER_NUM; i++)
-        {
-          pMulDst[i] += iDstStride;
-        }
-      }
-
-      if (pu.cs->sps->getSpsNext().isELMModeMMLM())
-      {
-        for (int line = 2; line <= MMLM_Lines; line++)
-        {
-          for (int i = 0; i < LM_FILTER_NUM; i++)
-          {
-            pMulDst[i] = pMulDst0[i] - line;
-          }
-          piSrc = pRecSrc0 - 2 * line;
-
-          for (int j = 0; j < uiCHeight; j++)
-          {
-
-            xFilterGroup(pMulDst, 0, piSrc, iRecStride, j != 0 || bAboveAvaillable, bLeftAvaillable);
-
-            piSrc += iRecStride2;
-
-            for (int i = 0; i < LM_FILTER_NUM; i++)
-            {
-              pMulDst[i] += iDstStride;
-            }
-          }
-        }
-      }
-    }
-#endif
   }
 
 
@@ -1558,26 +1404,6 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     pDst0    += iDstStride;
     pRecSrc0 += iRecStride2;
   }
-#if !JVET_K0190
-  if (pu.cs->sps->getSpsNext().isELMModeMFLM())
-  {
-    pRecSrc0 = Src.bufAt(0, 0);
-
-    for (int j = 0; j < uiCHeight; j++)
-    {
-      for (int i = 0; i < uiCWidth; i++)
-      {
-        xFilterGroup(pMulDst0, i, &pRecSrc0[2 * i], iRecStride, j != 0 || bAboveAvaillable, i != 0 || bLeftAvaillable);
-      }
-      for (int i = 0; i < LM_FILTER_NUM; i++)
-      {
-        pMulDst0[i] += iDstStride;
-      }
-
-      pRecSrc0 += iRecStride2;
-    }
-  }
-#endif
 }
 
 static int GetFloorLog2( unsigned x )
@@ -1590,14 +1416,9 @@ static int GetFloorLog2( unsigned x )
   }
   return bits;
 }
-#endif
 
 
-#if JVET_K0190
 void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const ComponentID compID, const CompArea& chromaArea,
-#if !JVET_K0190
-  int iPredType,
-#endif
   int& a, int&  b, int& iShift)
 {
   CHECK( compID == COMPONENT_Y, "" );
@@ -1640,7 +1461,6 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   Pel *pSrcColor0, *pCurChroma0;
   int  iSrcStride,  iCurStride;
 
-#if JVET_K0190
   PelBuf Temp;  
   iSrcStride = MAX_CU_SIZE + 1;
   Temp = PelBuf(m_piTemp + iSrcStride + 1, iSrcStride, Size(chromaArea));
@@ -1652,40 +1472,6 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   iCurStride = uiCWidth + uiCHeight + 1;
 #endif
   pCurChroma0 += iCurStride + 1;
-#else
-  if( iPredType == 0 ) //chroma from luma
-  {
-    PelBuf Temp;
-    int MMLM_Lines = pu.cs->sps->getSpsNext().isELMModeMMLM() ? 2 : 1;
-    iSrcStride = MAX_CU_SIZE + MMLM_Lines; //MMLM_SAMPLE_NEIGHBOR_LINES;
-    Temp = PelBuf(m_piTemp + (iSrcStride + 1) * MMLM_Lines, iSrcStride, Size(chromaArea)); //MMLM_SAMPLE_NEIGHBOR_LINES
-    pSrcColor0 = Temp.bufAt(0, 0);
-    pCurChroma0   = getPredictorPtr( compID );
-#if JVET_K0500_WAIP
-    iCurStride    = m_topRefLength + 1;
-#else
-    iCurStride    = uiCWidth + uiCHeight + 1;
-#endif
-    pCurChroma0  += iCurStride + 1;
-  }
-  else
-  {
-    CHECK( !( compID == COMPONENT_Cr ), "called for incorrect color channel" );
-
-    pSrcColor0   = getPredictorPtr( COMPONENT_Cb );
-    pCurChroma0  = getPredictorPtr( COMPONENT_Cr );
-
-#if JVET_K0500_WAIP
-    iSrcStride   = m_topRefLength + 1;
-#else
-    iSrcStride   = ( uiCWidth + uiCHeight + 1 );
-#endif
-    iCurStride   = iSrcStride;
-
-    pSrcColor0  += iSrcStride + 1;
-    pCurChroma0 += iCurStride + 1;
-  }
-#endif
   int x = 0, y = 0, xx = 0, xy = 0;
   int iCountShift = 0;
   unsigned uiInternalBitDepth = sps.getBitDepth( CHANNEL_TYPE_CHROMA );
@@ -1732,19 +1518,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   if( !bLeftAvaillable && !bAboveAvaillable )
   {
     a = 0;
-#if !JVET_K0190
-
-    if( iPredType == 0 )
-    {
-#endif
       b = 1 << ( uiInternalBitDepth - 1 );
-#if !JVET_K0190
-    }
-    else
-    {
-      b = 0;
-    }
-#endif
     iShift = 0;
     return;
   }
@@ -1783,13 +1557,6 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   {
     int a1 = xy - ( avgX * avgY << iCountShift ) -     avgX * RErrY - avgY * RErrX;
     int a2 = xx - ( avgX * avgX << iCountShift ) - 2 * avgX * RErrX;
-#if !JVET_K0190
-    if( iPredType == 1 ) // Cr residual predicted from Cb residual, Cr from Cb
-    {
-      a1 += -1 * ( xx >> ( CR_FROM_CB_REG_COST_SHIFT + 1 ) );
-      a2 +=        xx >>   CR_FROM_CB_REG_COST_SHIFT;
-    }
-#endif
     const int iShiftA1 = uiInternalBitDepth - 2;
     const int iShiftA2 = 5;
     const int iAccuracyShift = uiInternalBitDepth + 4;
@@ -1852,6 +1619,5 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   }
 }
 
-#endif
 
 //! \}

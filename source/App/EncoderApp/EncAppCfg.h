@@ -222,9 +222,7 @@ protected:
 #if ENABLE_WPP_PARALLELISM
   bool      m_AltDQPCoding;
 #endif
-#if JVET_K0190
   int       m_LMChroma;
-#endif
   int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
 

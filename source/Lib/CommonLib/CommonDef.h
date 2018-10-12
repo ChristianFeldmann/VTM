@@ -198,12 +198,8 @@ static const int ADJ_DEQUANT_SHIFT =            ( ADJ_QUANT_SHIFT + 1 );
 static const int RVM_VCEGAM10_M =                                   4;
 
 static const int NUM_LUMA_MODE =                                   67; ///< Planar + DC + 65 directional mode (4*16 + 1)
-#if JVET_K0190
 static const int NUM_LMC_MODE = 1; ///< LMC
 static const int NUM_INTRA_MODE = (NUM_LUMA_MODE + NUM_LMC_MODE);
-#else
-static const int NUM_INTRA_MODE =                   NUM_LUMA_MODE + 1;
-#endif
 
 static const int NUM_DIR =           (((NUM_LUMA_MODE - 3) >> 2) + 1);
 static const int PLANAR_IDX =                                       0; ///< index for intra PLANAR mode
@@ -214,12 +210,8 @@ static const int VER_IDX =                    (3 * (NUM_DIR - 1) + 2); ///< inde
 static const int VDIA_IDX =                   (4 * (NUM_DIR - 1) + 2); ///< index for intra VDIAGONAL  mode
 static const int NOMODE_IDX =                               MAX_UCHAR; ///< indicating uninitialized elements
 
-#if JVET_K0190
 static const int NUM_CHROMA_MODE = (5 + NUM_LMC_MODE); ///< total number of chroma modes
 static const int LM_CHROMA_IDX = NUM_LUMA_MODE; ///< chroma mode index for derived from LM mode
-#else
-static const int NUM_CHROMA_MODE =                                  5; ///< total number of chroma modes
-#endif
 static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chroma mode index for derived from luma intra mode
 
 static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes
@@ -235,10 +227,7 @@ static const int NUM_MOST_PROBABLE_MODES = 3;
 static const int NUM_MOST_PROBABLE_MODES = 3;
 static const int NUM_MOST_PROBABLE_MODES_67 = 6;
 #endif
-#if JVET_K0190
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
-#else
-#endif
 
 static const int FAST_UDI_MAX_RDMODE_NUM =              NUM_LUMA_MODE; ///< maximum number of RD comparison in fast-UDI estimation loop
 

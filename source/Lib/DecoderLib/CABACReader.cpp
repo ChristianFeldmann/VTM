@@ -959,7 +959,6 @@ void CABACReader::intra_chroma_pred_modes( CodingUnit& cu )
     intra_chroma_pred_mode( *pu );
   }
 }
-#if JVET_K0190
 bool CABACReader::intra_chroma_lmc_mode( PredictionUnit& pu )
 {
     int lmModeList[10];
@@ -972,7 +971,6 @@ bool CABACReader::intra_chroma_lmc_mode( PredictionUnit& pu )
     }
   return false;
 }
-#endif
 
 void CABACReader::intra_chroma_pred_mode( PredictionUnit& pu )
 {
@@ -986,7 +984,6 @@ void CABACReader::intra_chroma_pred_mode( PredictionUnit& pu )
     }
   }
 
-#if JVET_K0190
   // LM chroma mode
   if( pu.cs->sps->getSpsNext().getUseLMChroma() )
   {
@@ -995,16 +992,13 @@ void CABACReader::intra_chroma_pred_mode( PredictionUnit& pu )
       return;
     }
   }
-#endif
   unsigned candId = m_BinDecoder.decodeBinsEP( 2 );
 
   unsigned chromaCandModes[ NUM_CHROMA_MODE ];
   PU::getIntraChromaCandModes( pu, chromaCandModes );
 
   CHECK( candId >= NUM_CHROMA_MODE, "Chroma prediction mode index out of bounds" );
-#if JVET_K0190
   CHECK( PU::isLMCMode( chromaCandModes[ candId ] ), "The intra dir cannot be LM_CHROMA for this path" );
-#endif
   CHECK( chromaCandModes[ candId ] == DM_CHROMA_IDX, "The intra dir cannot be DM_CHROMA for this path" );
 
   pu.intraDir[1] = chromaCandModes[ candId ];

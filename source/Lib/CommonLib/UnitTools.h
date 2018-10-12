@@ -101,12 +101,8 @@ namespace CU
 // PU tools
 namespace PU
 {
-#if JVET_K0190
   int  getLMSymbolList(const PredictionUnit &pu, int *pModeList);
   int  getIntraMPMs(const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA);
-#else
-  int  getIntraMPMs                   (const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA);
-#endif
   void getIntraChromaCandModes        (const PredictionUnit &pu, unsigned modeList[NUM_CHROMA_MODE]);
   uint32_t getFinalIntraMode              (const PredictionUnit &pu, const ChannelType &chType);
 
@@ -149,12 +145,8 @@ namespace PU
   bool isBiPredFromDifferentDir       (const PredictionUnit &pu);
   void restrictBiPredMergeCands       (const PredictionUnit &pu, MergeCtx& mrgCtx);
 
-#if JVET_K0190
   bool isLMCMode                      (                          unsigned mode);
-#endif
-#if JVET_K0190
   bool isLMCModeEnabled               (const PredictionUnit &pu, unsigned mode);
-#endif
   bool isChromaIntraModeCrossCheckMode(const PredictionUnit &pu);
 }
 

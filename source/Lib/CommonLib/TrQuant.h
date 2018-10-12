@@ -74,9 +74,6 @@ public:
 #if T0196_SELECTIVE_RDOQ
                     const bool useSelectiveRDOQ     = false,
 #endif
-#if JVET_K0072
-#else
-#endif
                     const bool bEnc                 = false,
                     const bool useTransformSkipFast = false,
                     const bool rectTUs              = false

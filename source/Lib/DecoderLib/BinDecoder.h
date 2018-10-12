@@ -71,11 +71,7 @@ public:
 public:
   unsigned          decodeBinEP         ();
   unsigned          decodeBinsEP        ( unsigned numBins  );
-#if JVET_K0072
   unsigned          decodeRemAbsEP      ( unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange );
-#else
-  unsigned          decodeRemAbsEP      ( unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange, bool altRC = false );
-#endif
   unsigned          decodeBinTrm        ();
   unsigned          decodeBinsPCM       ( unsigned numBins  );
   void              align               ();

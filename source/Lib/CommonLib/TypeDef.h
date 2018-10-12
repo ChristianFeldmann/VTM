@@ -59,7 +59,6 @@
 
 
 
-#define JVET_K0072                                        1
 
 #define JVET_K0122                                        1 // CE3-related: Alternative techniques for DC mode without division
                                                             // Test 2: Samples are taken only along with a longer side
@@ -182,7 +181,7 @@
 #define HEVC_VPS                                          1
 #define HEVC_DEPENDENT_SLICES                             1
 #define HEVC_TILES_WPP                                    1
-#elif JVET_K0072
+#else
 #define HEVC_USE_SIGN_HIDING                              1
 #endif
 

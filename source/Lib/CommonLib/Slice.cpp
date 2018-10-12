@@ -68,11 +68,9 @@ Slice::Slice()
 , m_deblockingFilterBetaOffsetDiv2( 0 )
 , m_deblockingFilterTcOffsetDiv2  ( 0 )
 , m_pendingRasInit                ( false )
-#if JVET_K0072 
 , m_depQuantEnabledFlag           ( false )
 #if HEVC_USE_SIGN_HIDING
 , m_signDataHidingEnabledFlag     ( false )
-#endif
 #endif
 , m_bCheckLDC                     ( false )
 , m_iSliceQpDelta                 ( 0 )
@@ -1654,9 +1652,6 @@ SPSNext::SPSNext( SPS& sps )
 #if JVET_K0357_AMVR
   , m_IMV                       ( false )
 #endif
-#if JVET_K0072
-#else
-#endif
 #if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   , m_highPrecMv                ( false )
@@ -1688,9 +1683,6 @@ SPSNext::SPSNext( SPS& sps )
 #endif
 #if JVET_K0357_AMVR
   , m_ImvMode                   ( IMV_OFF )
-#endif
-#if JVET_K0072
-#else
 #endif
   , m_MTTMode                   ( 0 )
 #if JVET_K0157
@@ -1815,12 +1807,6 @@ PPS::PPS()
 , m_uniformSpacingFlag               (false)
 , m_numTileColumnsMinus1             (0)
 , m_numTileRowsMinus1                (0)
-#endif
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-, m_signDataHidingEnabledFlag        (false)
-#endif
 #endif
 , m_cabacInitPresentFlag             (false)
 , m_sliceHeaderExtensionPresentFlag  (false)

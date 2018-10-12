@@ -113,17 +113,9 @@ public:
   // transform tree (clause 7.3.8.8)
   void        transform_tree            ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx,  ChromaCbfs& chromaCbfs );
 #if ENABLE_BMS
-#if JVET_K0072
   bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     unsigned depth, const bool prevCbCbf = false );
 #else
-  bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     unsigned depth );
-#endif
-#else
-#if JVET_K0072
   bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     const bool prevCbCbf = false );
-#else
-  bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area );
-#endif
 #endif
 
   // mvd coding (clause 7.3.8.9)
@@ -147,11 +139,7 @@ public:
   void        emt_cu_flag               ( CodingUnit&                   cu );
   void        explicit_rdpcm_mode       ( TransformUnit&                tu,     ComponentID     compID );
   int         last_sig_coeff            ( CoeffCodingContext&           cctx );
-#if JVET_K0072
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff, const int stateTransTable, int& state );
-#else
-  void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff  );
-#endif
 
   // cross component prediction (clause 7.3.8.12)
   void        cross_comp_pred           ( TransformUnit&                tu,     ComponentID     compID );

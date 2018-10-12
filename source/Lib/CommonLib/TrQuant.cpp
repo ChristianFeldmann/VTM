@@ -51,9 +51,7 @@
 #include <memory.h>
 
 #include "QuantRDOQ.h"
-#if JVET_K0072
 #include "DepQuant.h"
-#endif
 
 #if RExt__DECODER_DEBUG_TOOL_STATISTICS
 #include "CommonLib/CodingStatistics.h"
@@ -271,9 +269,6 @@ void TrQuant::init( const Quant* otherQuant,
 #if T0196_SELECTIVE_RDOQ
                     const bool useSelectiveRDOQ,
 #endif
-#if JVET_K0072
-#else
-#endif
                     const bool bEnc,
                     const bool useTransformSkipFast,
                     const bool rectTUs
@@ -287,27 +282,16 @@ void TrQuant::init( const Quant* otherQuant,
   delete m_quant;
   m_quant = nullptr;
 
-#if JVET_K0072
   if( bUseRDOQ || !bEnc )
   {
     m_quant = new DepQuant( otherQuant, bEnc );
   }
-#else
-  if( bUseRDOQ )
-  {
-    m_quant = new QuantRDOQ( otherQuant );
-  }
-#endif
   else
     m_quant = new Quant( otherQuant );
 
   if( m_quant )
   {
-#if JVET_K0072
     m_quant->init( uiMaxTrSize, bUseRDOQ, bUseRDOQTS, useSelectiveRDOQ );
-#else
-    m_quant->init( uiMaxTrSize, bUseRDOQ, bUseRDOQTS, useSelectiveRDOQ );
-#endif
   }
 }
 

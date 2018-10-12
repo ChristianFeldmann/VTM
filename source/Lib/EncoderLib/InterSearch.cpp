@@ -4402,11 +4402,7 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
         if( firstCbfOfCU || TU::getCbfAtDepth( currTU, COMPONENT_Cr, currDepth - 1 ) )
         {
           const bool  chroma_cbf = TU::getCbfAtDepth( currTU, COMPONENT_Cr, currDepth );
-#if JVET_K0072
           m_CABACEstimator->cbf_comp( cs, chroma_cbf, currArea.blocks[COMPONENT_Cr], currDepth, TU::getCbfAtDepth( currTU, COMPONENT_Cb, currDepth ) );
-#else
-          m_CABACEstimator->cbf_comp( cs, chroma_cbf, currArea.blocks[COMPONENT_Cr], currDepth );
-#endif
         }
       }
     }
@@ -4417,11 +4413,7 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
     }
 #else
       m_CABACEstimator->cbf_comp( cs, TU::getCbf( currTU, COMPONENT_Cb ), currArea.blocks[COMPONENT_Cb] );
-#if JVET_K0072
       m_CABACEstimator->cbf_comp( cs, TU::getCbf( currTU, COMPONENT_Cr ), currArea.blocks[COMPONENT_Cr], TU::getCbf( currTU, COMPONENT_Cb ) );
-#else
-      m_CABACEstimator->cbf_comp( cs, TU::getCbf( currTU, COMPONENT_Cr ), currArea.blocks[COMPONENT_Cr] );
-#endif
     }
 
     m_CABACEstimator->cbf_comp( cs, TU::getCbf( currTU, COMPONENT_Y ), currArea.Y() );
@@ -4635,19 +4627,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
               nonCoeffDist = m_pcRdCost->getDistPart( zeroBuf, orgResi, channelBitDepth, compID, DF_SSE ); // initialized with zero residual distortion
             }
 
-#if JVET_K0072
             const bool prevCbf = ( compID == COMPONENT_Cr ? tu.cbf[COMPONENT_Cb] : false );
 #if ENABLE_BMS
             m_CABACEstimator->cbf_comp( *csFull, false, compArea, currDepth, prevCbf );
 #else
             m_CABACEstimator->cbf_comp( *csFull, false, compArea, prevCbf );
-#endif
-#else
-#if ENABLE_BMS
-            m_CABACEstimator->cbf_comp( *csFull, false, compArea, currDepth );
-#else
-            m_CABACEstimator->cbf_comp( *csFull, false, compArea );
-#endif
 #endif
 
             if( isCrossCPredictionAvailable )
@@ -4679,19 +4663,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
               m_CABACEstimator->resetBits();
             }
 
-#if JVET_K0072
             const bool prevCbf = ( compID == COMPONENT_Cr ? tu.cbf[COMPONENT_Cb] : false );
 #if ENABLE_BMS
             m_CABACEstimator->cbf_comp( *csFull, true, compArea, currDepth, prevCbf );
 #else
             m_CABACEstimator->cbf_comp( *csFull, true, compArea, prevCbf );
-#endif
-#else
-#if ENABLE_BMS
-            m_CABACEstimator->cbf_comp( *csFull, true, compArea, currDepth );
-#else
-            m_CABACEstimator->cbf_comp( *csFull, true, compArea );
-#endif
 #endif
 
             if( isCrossCPredictionAvailable )
@@ -4798,19 +4774,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       if( tu.blocks[compID].valid() )
       {
 #if ENABLE_BMS
-#if JVET_K0072
         const bool prevCbf = ( compID == COMPONENT_Cr ? TU::getCbfAtDepth( tu, COMPONENT_Cb, currDepth ) : false );
         m_CABACEstimator->cbf_comp( *csFull, TU::getCbfAtDepth( tu, compID, currDepth ), tu.blocks[compID], currDepth, prevCbf );
 #else
-        m_CABACEstimator->cbf_comp( *csFull, TU::getCbfAtDepth( tu, compID, currDepth ), tu.blocks[compID], currDepth );
-#endif
-#else
-#if JVET_K0072
         const bool prevCbf = ( compID == COMPONENT_Cr ? TU::getCbf( tu, COMPONENT_Cb ) : false );
         m_CABACEstimator->cbf_comp( *csFull, TU::getCbf( tu, compID ), tu.blocks[compID], prevCbf );
-#else
-        m_CABACEstimator->cbf_comp( *csFull, TU::getCbf( tu, compID ), tu.blocks[compID] );
-#endif
 #endif
       }
     }

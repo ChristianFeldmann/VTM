@@ -805,9 +805,6 @@ private:
 #if JVET_K0357_AMVR
   bool              m_IMV;                        // 9
 #endif
-#if JVET_K0072
-#else
-#endif
 #if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   bool              m_highPrecMv;
@@ -848,9 +845,6 @@ private:
   //imv
   ImvMode     m_ImvMode;
 #endif
-#if JVET_K0072
-#else
-#endif
   // multi type tree (QTBT + triple split)
   unsigned    m_MTTMode;
 
@@ -888,9 +882,6 @@ public:
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
 #endif
-#endif
-#if JVET_K0072
-#else
 #endif
 #if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
@@ -945,9 +936,6 @@ public:
   ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
 #endif
 
-#if JVET_K0072
-#else
-#endif
 
 
   // multi type tree
@@ -1307,12 +1295,6 @@ private:
   std::vector<int> m_tileRowHeight;
 #endif
 
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-  bool             m_signDataHidingEnabledFlag;
-#endif
-#endif
   bool             m_cabacInitPresentFlag;
 
   bool             m_sliceHeaderExtensionPresentFlag;
@@ -1420,13 +1402,6 @@ public:
   uint32_t                   getTileRowHeight(uint32_t rowIdx) const                              { return m_tileRowHeight[rowIdx];               }
 #endif
 
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-  void                   setSignDataHidingEnabledFlag( bool b )                           { m_signDataHidingEnabledFlag = b;              }
-  bool                   getSignDataHidingEnabledFlag() const                             { return m_signDataHidingEnabledFlag;           }
-#endif
-#endif
   void                   setCabacInitPresentFlag( bool flag )                             { m_cabacInitPresentFlag = flag;                }
   bool                   getCabacInitPresentFlag() const                                  { return m_cabacInitPresentFlag;                }
   void                   setDeblockingFilterControlPresentFlag( bool val )                { m_deblockingFilterControlPresentFlag = val;   }
@@ -1518,11 +1493,9 @@ private:
   int                        m_aiNumRefIdx   [NUM_REF_PIC_LIST_01];    //  for multiple reference of current slice
   bool                       m_pendingRasInit;
 
-#if JVET_K0072 
   bool                       m_depQuantEnabledFlag;
 #if HEVC_USE_SIGN_HIDING
   bool                       m_signDataHidingEnabledFlag;
-#endif
 #endif
   bool                       m_bCheckLDC;
 
@@ -1717,13 +1690,11 @@ public:
   void                        setMaxBTSize(int i)                                    { m_uiMaxBTSize = i; }
   uint32_t                        getMaxBTSize() const                                   { return m_uiMaxBTSize; }
 
-#if JVET_K0072
   void                        setDepQuantEnabledFlag( bool b )                       { m_depQuantEnabledFlag = b; }
   bool                        getDepQuantEnabledFlag() const                         { return m_depQuantEnabledFlag; }
 #if HEVC_USE_SIGN_HIDING
   void                        setSignDataHidingEnabledFlag( bool b )                 { m_signDataHidingEnabledFlag = b;              }
   bool                        getSignDataHidingEnabledFlag() const                   { return m_signDataHidingEnabledFlag;           }
-#endif
 #endif
 
   void                        initEqualRef();

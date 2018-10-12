@@ -437,9 +437,7 @@ protected:
   std::string m_scalingListFileName;              ///< quantization matrix file name
 #endif
   int       m_TMVPModeId;
-#if JVET_K0072
   bool      m_DepQuantEnabledFlag;
-#endif
   bool      m_SignDataHidingEnabledFlag;
   bool      m_RCEnableRateControl;
   int       m_RCTargetBitrate;
@@ -1147,10 +1145,8 @@ public:
   int          getTMVPModeId ()                                      { return m_TMVPModeId; }
   WeightedPredictionMethod getWeightedPredictionMethod() const       { return m_weightedPredictionMethod; }
   void         setWeightedPredictionMethod( WeightedPredictionMethod m ) { m_weightedPredictionMethod = m; }
-#if JVET_K0072
   void         setDepQuantEnabledFlag( bool b )                      { m_DepQuantEnabledFlag = b;    }
   bool         getDepQuantEnabledFlag()                              { return m_DepQuantEnabledFlag; }
-#endif
 #if HEVC_USE_SIGN_HIDING
   void         setSignDataHidingEnabledFlag( bool b )                { m_SignDataHidingEnabledFlag = b;    }
   bool         getSignDataHidingEnabledFlag()                        { return m_SignDataHidingEnabledFlag; }

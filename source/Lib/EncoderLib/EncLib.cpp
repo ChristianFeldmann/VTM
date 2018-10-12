@@ -289,9 +289,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if T0196_SELECTIVE_RDOQ
                           m_useSelectiveRDOQ,
 #endif
-#if JVET_K0072
-#else
-#endif
                           true,
                           m_useTransformSkipFast
                           , m_QTBT
@@ -324,9 +321,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                    m_useRDOQTS,
 #if T0196_SELECTIVE_RDOQ
                    m_useSelectiveRDOQ,
-#endif
-#if JVET_K0072
-#else
 #endif
                    true,
                    m_useTransformSkipFast
@@ -877,9 +871,6 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
   sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
 #endif
-#if JVET_K0072
-#else
-#endif
 #if JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
@@ -1347,12 +1338,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setUseWP( m_useWeightedPred );
   pps.setWPBiPred( m_useWeightedBiPred );
   pps.setOutputFlagPresentFlag( false );
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-  pps.setSignDataHidingEnabledFlag(getSignDataHidingEnabledFlag());
-#endif
-#endif
 
   if ( getDeblockingFilterMetric() )
   {

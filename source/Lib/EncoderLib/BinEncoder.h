@@ -116,18 +116,10 @@ public:
   virtual void      encodeBin         ( unsigned bin,   unsigned ctxId    ) = 0;
   virtual void      encodeBinEP       ( unsigned bin                      ) = 0;
   virtual void      encodeBinsEP      ( unsigned bins,  unsigned numBins  ) = 0;
-#if JVET_K0072
   virtual void      encodeRemAbsEP    ( unsigned bins,
                                         unsigned goRicePar,
                                         bool     useLimitedPrefixLength,
                                         int      maxLog2TrDynamicRange    ) = 0;
-#else
-  virtual void      encodeRemAbsEP    ( unsigned bins,
-                                        unsigned goRicePar,
-                                        bool     useLimitedPrefixLength,
-                                        int      maxLog2TrDynamicRange,
-                                        bool     altResiComp = false      ) = 0;
-#endif
   virtual void      encodeBinTrm      ( unsigned bin                      ) = 0;
   virtual void      encodeBinsPCM     ( unsigned bins,  unsigned numBins  ) = 0;
   virtual void      align             ()                                    = 0;
@@ -189,18 +181,10 @@ public:
 public:
   void      encodeBinEP         ( unsigned bin                      );
   void      encodeBinsEP        ( unsigned bins,  unsigned numBins  );
-#if JVET_K0072
   void      encodeRemAbsEP      ( unsigned bins,
                                   unsigned goRicePar,
                                   bool     useLimitedPrefixLength,
                                   int      maxLog2TrDynamicRange    );
-#else
-  void      encodeRemAbsEP      ( unsigned bins,
-                                  unsigned goRicePar,
-                                  bool     useLimitedPrefixLength,
-                                  int      maxLog2TrDynamicRange,
-                                  bool     altResiComp = false      );
-#endif
   void      encodeBinTrm        ( unsigned bin                      );
   void      encodeBinsPCM       ( unsigned bins,  unsigned numBins  );
   void      align               ();
@@ -265,18 +249,10 @@ public:
 public:
   void      encodeBinEP         ( unsigned bin                      ) { m_EstFracBits += BinProbModelBase::estFracBitsEP (); }
   void      encodeBinsEP        ( unsigned bins,  unsigned numBins  ) { m_EstFracBits += BinProbModelBase::estFracBitsEP ( numBins ); }
-#if JVET_K0072
   void      encodeRemAbsEP      ( unsigned bins,
                                   unsigned goRicePar,
                                   bool     useLimitedPrefixLength,
                                   int      maxLog2TrDynamicRange    );
-#else
-  void      encodeRemAbsEP      ( unsigned bins,
-                                  unsigned goRicePar,
-                                  bool     useLimitedPrefixLength,
-                                  int      maxLog2TrDynamicRange,
-                                  bool     altResiComp = false      );
-#endif
   void      encodeBinsPCM       ( unsigned bins,  unsigned numBins  ) { m_EstFracBits += BinProbModelBase::estFracBitsEP ( numBins ); }
   void      align               ();
   void      pcmAlignBits        ();

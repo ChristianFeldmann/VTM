@@ -94,9 +94,7 @@ extern const uint32_t   ctxIndMap4x4[4*4];
 
 extern const uint32_t   g_uiGroupIdx[ MAX_TU_SIZE ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
-#if JVET_K0072
 extern const uint32_t   g_auiGoRicePars [ 32 ];
-#endif
 extern const uint32_t   g_auiGoRiceRange[ MAX_GR_ORDER_RESIDUAL ];                  //!< maximum value coded with Rice codes
 
 // ====================================================================================================================

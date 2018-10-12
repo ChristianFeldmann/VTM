@@ -82,7 +82,6 @@ private:
   // RDOQ functions
   void xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx &ctx);
 
-#if JVET_K0072
   inline uint32_t xGetCodedLevel( double&            rd64CodedCost,
                               double&            rd64CodedCost0,
                               double&            rd64CodedCostSig,
@@ -105,34 +104,6 @@ private:
                               const uint16_t       ui16AbsGoRice,
                               const bool         useLimitedPrefixLength,
                               const int          maxLog2TrDynamicRange  ) const;
-#else
-  inline uint32_t xGetCodedLevel  ( double&             rd64CodedCost,
-                                double&             rd64CodedCost0,
-                                double&             rd64CodedCostSig,
-                                Intermediate_Int    lLevelDouble,
-                                uint32_t                uiMaxAbsLevel,
-                                const BinFracBits*  fracBitsSig,
-                                const BinFracBits&  fracBitsOne,
-                                const BinFracBits&  fracBitsAbs,
-                                uint16_t              ui16AbsGoRice,
-                                uint32_t                c1Idx,
-                                uint32_t                c2Idx,
-                                int                 iQBits,
-                                double              errorScale,
-                                bool                bLast,
-                                bool                useLimitedPrefixLength,
-                                const int           maxLog2TrDynamicRange
-                              ) const;
-  inline int xGetICRate  ( const uint32_t         uiAbsLevel,
-                           const BinFracBits& fracBitsOne,
-                           const BinFracBits& fracBitsAbs,
-                           const uint16_t       ui16AbsGoRice,
-                           const uint32_t         c1Idx,
-                           const uint32_t         c2Idx,
-                           const bool         useLimitedPrefixLength,
-                           const int          maxLog2TrDynamicRange
-                         ) const;
-#endif
   inline double xGetRateLast         ( const int* lastBitsX, const int* lastBitsY,
                                        unsigned        PosX, unsigned   PosY                              ) const;
 

@@ -394,12 +394,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 
   READ_CODE(3, uiCode, "num_extra_slice_header_bits");                pcPPS->setNumExtraSliceHeaderBits(uiCode);
 
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-  READ_FLAG ( uiCode, "sign_data_hiding_enabled_flag" );              pcPPS->setSignDataHidingEnabledFlag( uiCode );
-#endif
-#endif
 
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
 
@@ -802,9 +796,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
 #if JVET_K0357_AMVR
   READ_FLAG( symbol,    "imv_enable_flag" );                        spsNext.setUseIMV                 ( symbol != 0 );
 #endif
-#if JVET_K0072
-#else
-#endif
 #if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   READ_FLAG( symbol, "high_precision_motion_vectors" );             spsNext.setUseHighPrecMv(symbol != 0);
@@ -885,9 +876,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
     READ_UVLC( symbol,  "mtt_mode_minus1" );                        spsNext.setMTTMode( symbol + 1 );
   }
 
-#if JVET_K0072
-#else
-#endif
 
   // ADD_NEW_TOOL : (sps extension parser) read tool enabling flags and associated parameters here
 }
@@ -1673,7 +1661,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       parsePredWeightTable(pcSlice, sps);
       pcSlice->initWpScaling(sps);
     }
-#if JVET_K0072 
     READ_FLAG( uiCode, "dep_quant_enable_flag" );
     pcSlice->setDepQuantEnabledFlag( uiCode != 0 );
 #if HEVC_USE_SIGN_HIDING
@@ -1682,7 +1669,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       READ_FLAG( uiCode, "sign_data_hiding_enable_flag" );
       pcSlice->setSignDataHidingEnabledFlag( uiCode != 0 );
     }
-#endif
 #endif
     if( sps->getSpsNext().getUseQTBT() )
     {

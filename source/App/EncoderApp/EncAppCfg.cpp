@@ -1057,15 +1057,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
 #endif
-#if JVET_K0072
   ("DepQuant",                                        m_depQuantEnabledFlag,                                          true )
 #if HEVC_USE_SIGN_HIDING
   ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    false )
-#endif
-#else
-#if HEVC_USE_SIGN_HIDING
-  ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    true)
-#endif
 #endif
   ("MaxNumMergeCand",                                 m_maxNumMergeCand,                                   5u, "Maximum number of merge candidates")
   /* Misc. */
@@ -1963,7 +1957,6 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_SubPuMvpLog2Size < MIN_CU_LOG2,      "SubPuMvpLog2Size must be 2 or greater." );
     xConfirmPara( m_SubPuMvpLog2Size > 6,                "SubPuMvpLog2Size must be 6 or smaller." );
 #endif
-#if JVET_K0072
     if( m_depQuantEnabledFlag )
     {
       xConfirmPara( !m_useRDOQ || !m_useRDOQTS, "RDOQ and RDOQTS must be equal to 1 if dependent quantization is enabled" );
@@ -1971,7 +1964,6 @@ bool EncAppCfg::xCheckParameter()
       xConfirmPara( m_signDataHidingEnabledFlag, "SignHideFlag must be equal to 0 if dependent quantization is enabled" );
 #endif
     }
-#endif
 #if !JVET_K0220_ENC_CTRL
     xConfirmPara( m_useSaveLoadEncInfo && !m_QTBT,       "Encoder decision saving can only be applied with QTBT" );
 #endif
@@ -2029,9 +2021,6 @@ bool EncAppCfg::xCheckParameter()
   }
 #endif
 
-#if JVET_K0072
-#else
-#endif
 
   xConfirmPara( m_useAMaxBT && !m_QTBT, "AMaxBT can only be used with QTBT!" );
 
@@ -3158,9 +3147,7 @@ void EncAppCfg::xPrintParameter()
 #endif
   msg( VERBOSE, "TMVPMode:%d ", m_TMVPModeId     );
 
-#if JVET_K0072
   msg( VERBOSE, " DQ:%d ", m_depQuantEnabledFlag);
-#endif
 #if HEVC_USE_SIGN_HIDING
   msg( VERBOSE, " SignBitHidingFlag:%d ", m_signDataHidingEnabledFlag);
 #endif
@@ -3191,9 +3178,6 @@ void EncAppCfg::xPrintParameter()
 #if JVET_K0357_AMVR
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
     if( !m_QTBT ) msg( VERBOSE, "IMVMaxCand:%d ", m_ImvMaxCand );
-#endif
-#if JVET_K0072
-#else
 #endif
 #if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC 

@@ -429,11 +429,9 @@ protected:
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
 
   int       m_TMVPModeId;
-#if JVET_K0072
   bool      m_depQuantEnabledFlag;
 #if HEVC_USE_SIGN_HIDING
   bool      m_signDataHidingEnabledFlag;
-#endif
 #endif
   bool      m_RCEnableRateControl;                ///< enable rate control or not
   int       m_RCTargetBitrate;                    ///< target bitrate when rate control is enabled

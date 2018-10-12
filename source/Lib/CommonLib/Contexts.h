@@ -175,26 +175,13 @@ public:
   static const CtxSet   Mvd;
   static const CtxSet   TransSubdivFlag;
   static const CtxSet   QtRootCbf;
-#if JVET_K0072
   static const CtxSet   QtCbf           [3];    // [ channel ]
-#else
-  static const CtxSet   QtCbf           [2];    // [ ChannelType ]
-#endif
   static const CtxSet   SigCoeffGroup   [4];    // [ ChannelType ]
-#if JVET_K0072
-#else
-  static const CtxSet   SigFlag         [4];    // [ ChannelType ]
-#endif
   static const CtxSet   LastX           [2];    // [ ChannelType ]
   static const CtxSet   LastY           [2];    // [ ChannelType ]
-#if JVET_K0072
   static const CtxSet   SigFlag         [6];    // [ ChannelType + State ]
   static const CtxSet   ParFlag         [2];    // [ ChannelType ]
   static const CtxSet   GtxFlag         [4];    // [ ChannelType + x ]
-#else
-  static const CtxSet   GreaterOneFlag  [8];    // [ ContextSet  ]
-  static const CtxSet   GreaterTwoFlag;
-#endif
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;
   static const CtxSet   SaoTypeIdx;

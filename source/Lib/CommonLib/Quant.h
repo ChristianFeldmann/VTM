@@ -92,9 +92,6 @@ public:
   virtual void init( uint32_t uiMaxTrSize,
                      bool useRDOQ = false,
                      bool useRDOQTS = false,
-#if JVET_K0072
-#else
-#endif
 #if T0196_SELECTIVE_RDOQ
                      bool useSelectiveRDOQ = false
 #endif
@@ -149,9 +146,6 @@ protected:
   bool     m_useRDOQTS;
 #if T0196_SELECTIVE_RDOQ
   bool     m_useSelectiveRDOQ;
-#endif
-#if JVET_K0072
-#else
 #endif
 #if HEVC_USE_SCALING_LISTS
 private:

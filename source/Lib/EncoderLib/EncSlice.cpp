@@ -119,12 +119,10 @@ EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
     int chromaQPOffset       = slice->getPPS()->getQpOffset( compID ) + slice->getSliceChromaQpDelta( compID );
     int qpc                  = ( iQP + chromaQPOffset < 0 ) ? iQP : getScaledChromaQP( iQP + chromaQPOffset, m_pcCfg->getChromaFormatIdc() );
     double tmpWeight         = pow( 2.0, ( iQP - qpc ) / 3.0 );  // takes into account of the chroma qp mapping and chroma qp Offset
-#if JVET_K0072
     if( m_pcCfg->getDepQuantEnabledFlag() )
     {
       tmpWeight *= ( m_pcCfg->getGOPSize() >= 8 ? pow( 2.0, 0.1/3.0 ) : pow( 2.0, 0.2/3.0 ) );  // increase chroma weight for dependent quantization (in order to reduce bit rate shift from chroma to luma)
     }
-#endif
     m_pcRdCost->setDistortionWeight( compID, tmpWeight );
 #if ENABLE_WPP_PARALLELISM
     for( int jId = 1; jId < ( m_pcLib->getNumWppThreads() + m_pcLib->getNumWppExtraLines() ); jId++ )
@@ -302,11 +300,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setPicOutputFlag( true );
 #endif
   rpcSlice->setPOC( pocCurr );
-#if JVET_K0072
   rpcSlice->setDepQuantEnabledFlag( m_pcCfg->getDepQuantEnabledFlag() );
 #if HEVC_USE_SIGN_HIDING
   rpcSlice->setSignDataHidingEnabledFlag( m_pcCfg->getSignDataHidingEnabledFlag() );
-#endif
 #endif
 
 #if SHARP_LUMA_DELTA_QP
@@ -826,12 +822,10 @@ double EncSlice::calculateLambda( const Slice*     slice,
 
   iQP = Clip3( -slice->getSPS()->getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, (int) floor( dQP + 0.5 ) );
 
-#if JVET_K0072
   if( m_pcCfg->getDepQuantEnabledFlag() )
   {
     dLambda *= pow( 2.0, 0.25/3.0 ); // slight lambda adjustment for dependent quantization (due to different slope of quantizer)
   }
-#endif
 
   // NOTE: the lambda modifiers that are sometimes applied later might be best always applied in here.
   return dLambda;

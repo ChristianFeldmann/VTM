@@ -430,9 +430,6 @@ void Quant::dequant(const TransformUnit &tu,
 void Quant::init( uint32_t uiMaxTrSize,
                   bool bUseRDOQ,
                   bool bUseRDOQTS,
-#if JVET_K0072
-#else
-#endif
 #if T0196_SELECTIVE_RDOQ
                   bool useSelectiveRDOQ
 #endif
@@ -447,9 +444,6 @@ void Quant::init( uint32_t uiMaxTrSize,
   m_useRDOQTS    = bUseRDOQTS;
 #if T0196_SELECTIVE_RDOQ
   m_useSelectiveRDOQ     = useSelectiveRDOQ;
-#endif
-#if JVET_K0072
-#else
 #endif
 }
 
@@ -721,12 +715,6 @@ void Quant::xDestroyScalingList()
 void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx)
 {
   const SPS &sps            = *tu.cs->sps;
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-  const PPS &pps            = *tu.cs->pps;
-#endif
-#endif
   const CompArea &rect      = tu.blocks[compID];
 #if HEVC_USE_SCALING_LISTS || HEVC_USE_SIGN_HIDING
   const uint32_t uiWidth        = rect.width;
@@ -742,11 +730,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 
   {
 #if HEVC_USE_SIGN_HIDING
-#if JVET_K0072
     CoeffCodingContext cctx(tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag());
-#else
-    CoeffCodingContext cctx(tu, compID, pps.getSignDataHidingEnabledFlag());
-#endif
 #else
     CoeffCodingContext cctx(tu, compID);
 #endif

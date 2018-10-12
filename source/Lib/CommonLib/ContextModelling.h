@@ -62,13 +62,6 @@ public:
   void  resetSigGroup   ()                      { m_sigCoeffGroupFlag.reset( m_subSetPos ); }
   void  setSigGroup     ()                      { m_sigCoeffGroupFlag.set( m_subSetPos ); }
   void  setScanPosLast  ( int       posLast )   { m_scanPosLast = posLast; }
-#if JVET_K0072
-#else
-  void  setGt2Flag      ( bool      gt2Flag )   { m_prevGt2 = gt2Flag; }
-  void  setGoRiceStats  ( unsigned  GRStats )   { m_currentGolombRiceStatistic = GRStats; }
-  void  incGoRiceStats  ()                      { m_currentGolombRiceStatistic++; }
-  void  decGoRiceStats  ()                      { m_currentGolombRiceStatistic--; }
-#endif
 public:
   ComponentID     compID          ()                        const { return m_compID; }
   int             subSetId        ()                        const { return m_subSetId; }
@@ -81,18 +74,9 @@ public:
   unsigned        log2BlockWidth  ()                        const { return m_log2BlockWidth; }
   unsigned        log2BlockHeight ()                        const { return m_log2BlockHeight; }
   unsigned        log2BlockSize   ()                        const { return m_log2BlockSize; }
-#if JVET_K0072
-#else
-  bool            updGoRiceStats  ()                        const { return m_useGoRiceParAdapt; }
-#endif
   bool            extPrec         ()                        const { return m_extendedPrecision; }
   int             maxLog2TrDRange ()                        const { return m_maxLog2TrDynamicRange; }
   unsigned        maxNumCoeff     ()                        const { return m_maxNumCoeff; }
-#if JVET_K0072
-#else
-  unsigned        currGoRiceStats ()                        const { return m_currentGolombRiceStatistic; }
-  bool            alignFlag       ()                        const { return m_AlignFlag; }
-#endif
   int             scanPosLast     ()                        const { return m_scanPosLast; }
   int             minSubPos       ()                        const { return m_minSubPos; }
   int             maxSubPos       ()                        const { return m_maxSubPos; }
@@ -114,24 +98,7 @@ public:
   unsigned        lastXCtxId      ( unsigned  posLastX  )   const { return m_CtxSetLastX( m_lastOffsetX + ( posLastX >> m_lastShiftX ) ); }
   unsigned        lastYCtxId      ( unsigned  posLastY  )   const { return m_CtxSetLastY( m_lastOffsetY + ( posLastY >> m_lastShiftY ) ); }
   unsigned        sigGroupCtxId   ()                        const { return m_sigGroupCtxId; }
-#if JVET_K0072
-#else
-#if HM_QTBT_AS_IN_JEM_CONTEXT // ctx modeling for subblocks != 4x4
-  unsigned        sigCtxId        ( int       scanPos   )   const;
-#else
-  unsigned        sigCtxId        ( int       scanPos   )   const { return m_sigCtxSet( m_sigScanCtxId[ scanPos ] ); }
-#endif
-  unsigned        greater1CtxId   ( int       gt1Ctx    )   const { return m_gt1FlagCtxSet( gt1Ctx ); }
-  unsigned        greater2CtxId   ()                        const { return m_gt2FlagCtxId; }
 
-
-  unsigned        sigGroupCtxIdOfs() const
-  {
-    return Ctx::SigCoeffGroup[ m_chType + 2 ]( 0 );
-  }
-#endif
-
-#if JVET_K0072
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
     const uint32_t    posY      = m_scanPosY[ scanPos ];
@@ -219,217 +186,6 @@ public:
     return  r;
   }
 
-#else
-  unsigned        sigCtxId        ( int       scanPos,
-                              const TCoeff*   coeff,
-                                    int       strd = 0  )
-  {
-    const uint32_t posY = m_scanPosY[scanPos];
-    const uint32_t posX = m_scanPosX[scanPos];
-
-    strd = strd == 0 ? m_width : strd;
-    const TCoeff *pData = coeff + posX + posY * strd;
-    const int   widthM1 = m_width - 1;
-    const int  heightM1 = m_height - 1;
-    const int      diag = posX + posY;
-
-    int numPos = 0;
-
-    if( posX < widthM1 )
-    {
-      numPos += pData[ 1 ] != 0;
-      if( posX < widthM1 - 1 )
-      {
-        numPos += pData[ 2 ] != 0;
-      }
-      if( posY < heightM1 )
-      {
-        numPos += pData[ m_width + 1 ] != 0;
-      }
-    }
-    if( posY < heightM1 )
-    {
-      numPos += pData[ m_width ] != 0;
-      if( posY < heightM1 - 1 )
-      {
-        numPos += pData[ 2 * m_width ] != 0;
-      }
-    }
-
-    const int ctxIdx = std::min( numPos, 5 );
-          int ctxOfs = diag < 2 ? 6 : 0;
-
-    if( m_chType == CHANNEL_TYPE_LUMA )
-    {
-      ctxOfs += diag < 5 ? 6 : 0;
-    }
-
-    if( m_log2BlockSize > 2 && m_chType == CHANNEL_TYPE_LUMA )
-    {
-      ctxOfs += 18 << std::min( 1, ( (int)m_log2BlockSize - 3 ) );
-    }
-
-    return m_sigCtxSet( ctxOfs + ctxIdx );
-  }
-
-  unsigned        sigCtxIdOfs() const
-  {
-    return m_sigCtxSet( 0 );
-  }
-
-  unsigned        greater1CtxId(    int       scanPos,
-                              const TCoeff*   coeff,
-                                    int       strd = 0  )
-  {
-    const uint32_t posY = m_scanPosY[scanPos];
-    const uint32_t posX = m_scanPosX[scanPos];
-
-    strd = strd == 0 ? m_width : strd;
-    const TCoeff *pData = coeff + posX + posY * strd;
-    const int   widthM1 = m_width - 1;
-    const int  heightM1 = m_height - 1;
-    const int      diag = posX + posY;
-
-    int numPos = 0;
-
-    if( posX < widthM1 )
-    {
-      numPos += abs( pData[ 1 ] ) > 1;
-      if( posX < widthM1 - 1 )
-      {
-        numPos += abs( pData[ 2 ] ) > 1;
-      }
-      if( posY < heightM1 )
-      {
-        numPos += abs( pData[ m_width + 1 ] ) > 1;
-      }
-    }
-    if( posY < heightM1 )
-    {
-      numPos += abs( pData[ m_width ] ) > 1;
-      if( posY < heightM1 - 1 )
-      {
-        numPos += abs( pData[ 2 * m_width ] ) > 1;
-      }
-    }
-
-    const int ctxIdx = std::min( numPos, 4 ) + 1;
-          int ctxOfs = 0;
-
-    if( m_chType == CHANNEL_TYPE_LUMA )
-    {
-      ctxOfs += diag < 3 ? 10 : ( diag < 10 ? 5 : 0 );
-    }
-
-    return m_gt1FlagCtxSet( ctxOfs + ctxIdx );
-  }
-
-  unsigned        greater1CtxIdOfs() const
-  {
-    return m_gt1FlagCtxSet( 0 );
-  }
-
-  unsigned        greater2CtxId(    int       scanPos,
-                              const TCoeff*   coeff,
-                                    int       strd = 0  )
-  {
-    const uint32_t posY = m_scanPosY[ scanPos ];
-    const uint32_t posX = m_scanPosX[ scanPos ];
-
-    strd = strd == 0 ? m_width : strd;
-    const TCoeff *pData = coeff + posX + posY * strd;
-    const int   widthM1 = m_width - 1;
-    const int  heightM1 = m_height - 1;
-    const int      diag = posX + posY;
-
-    int numPos = 0;
-
-    if( posX < widthM1 )
-    {
-      numPos += abs( pData[ 1 ] ) > 2;
-      if( posX < widthM1 - 1 )
-      {
-        numPos += abs( pData[ 2 ] ) > 2;
-      }
-      if( posY < heightM1 )
-      {
-        numPos += abs( pData[ m_width + 1 ] ) > 2;
-      }
-    }
-    if( posY < heightM1 )
-    {
-      numPos += abs( pData[ m_width ] ) > 2;
-      if( posY < heightM1 - 1 )
-      {
-        numPos += abs( pData[ 2 * m_width ] ) > 2;
-      }
-    }
-
-    const int ctxIdx = std::min( numPos, 4 ) + 1;
-          int ctxOfs = 0;
-
-    if( m_chType == CHANNEL_TYPE_LUMA )
-    {
-      ctxOfs += diag < 3 ? 10 : ( diag < 10 ? 5 : 0 );
-    }
-
-    return m_gt1FlagCtxSet( ctxOfs + ctxIdx );
-  }
-
-  unsigned        GoRicePar       ( int       scanPos,
-                              const TCoeff*   coeff,
-                                    int       strd = 0  )
-  {
-    const uint32_t posY = m_scanPosY[ scanPos ];
-    const uint32_t posX = m_scanPosX[ scanPos ];
-
-    strd = strd == 0 ? m_width : strd;
-    const TCoeff *pData = coeff + posX + posY * strd;
-    const int   widthM1 = m_width - 1;
-    const int  heightM1 = m_height - 1;
-//    const int      diag = posX + posY;
-
-    int numPos = 0;
-    int sumAbs = 0;
-
-    if( posX < widthM1 )
-    {
-      sumAbs += abs( pData[ 1 ] );
-      numPos += pData[ 1 ] != 0;
-      if( posX < widthM1 - 1 )
-      {
-        sumAbs += abs( pData[ 2 ] );
-        numPos += pData[ 2 ] != 0;
-      }
-      if( posY < heightM1 )
-      {
-        sumAbs += abs( pData[ m_width + 1 ] );
-        numPos += pData[ m_width + 1 ] != 0;
-      }
-    }
-    if( posY < heightM1 )
-    {
-      sumAbs += abs( pData[ m_width ] );
-      numPos += pData[ m_width ] != 0;
-      if( posY < heightM1 - 1 )
-      {
-        sumAbs += abs( pData[ 2 * m_width ] );
-        numPos += pData[ 2 * m_width ] != 0;
-      }
-    }
-
-    unsigned val   = sumAbs - numPos;
-    unsigned order = 0;
-    for( order = 0; order < MAX_GR_ORDER_RESIDUAL; order++ )
-    {
-      if( ( 1 << ( order + 3 ) ) > ( val + 4 ) )
-      {
-        break;
-      }
-    }
-    return ( order == MAX_GR_ORDER_RESIDUAL ? ( MAX_GR_ORDER_RESIDUAL - 1 ) : order );
-  }
-#endif
 
   unsigned        emtNumSigCoeff()                          const { return m_emtNumSigCoeff; }
   void            setEmtNumSigCoeff( unsigned val )               { m_emtNumSigCoeff = val; }
@@ -449,16 +205,8 @@ private:
   const unsigned            m_log2BlockHeight;
   const unsigned            m_log2BlockSize;
   const unsigned            m_maxNumCoeff;
-#if JVET_K0072
-#else
-  const bool                m_AlignFlag;
-#endif
 #if HEVC_USE_SIGN_HIDING
   const bool                m_signHiding;
-#endif
-#if JVET_K0072
-#else
-  const bool                m_useGoRiceParAdapt;
 #endif
   const bool                m_extendedPrecision;
   const int                 m_maxLog2TrDynamicRange;
@@ -476,14 +224,6 @@ private:
   const int                 m_lastShiftX;
   const int                 m_lastShiftY;
   const bool                m_TrafoBypass;
-#if JVET_K0072
-#else
-  const int                 m_SigBlockType;
-#if !HM_QTBT_AS_IN_JEM_CONTEXT
-  const uint8_t**           m_SigScanPatternBase;
-#endif
-  CtxSet                    m_sigCtxSet;
-#endif
   // modified
   int                       m_scanPosLast;
   int                       m_subSetId;
@@ -493,27 +233,12 @@ private:
   int                       m_minSubPos;
   int                       m_maxSubPos;
   unsigned                  m_sigGroupCtxId;
-#if JVET_K0072
   int                       m_tmplCpSum1;
   int                       m_tmplCpDiag;
   CtxSet                    m_sigFlagCtxSet[3];
   CtxSet                    m_parFlagCtxSet;
   CtxSet                    m_gtxFlagCtxSet[2];
-#else
-#if HM_QTBT_AS_IN_JEM_CONTEXT
-  int                       m_sigCGPattern;
-#else
-  const uint8_t*            m_sigScanCtxId;
-#endif
-  CtxSet                    m_gt1FlagCtxSet;
-  unsigned                  m_gt2FlagCtxId;
-  unsigned                  m_currentGolombRiceStatistic;
-  bool                      m_prevGt2;
-#endif
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
-#if JVET_K0072
-#else
-#endif
   unsigned                  m_emtNumSigCoeff;
 };
 
@@ -558,17 +283,9 @@ namespace DeriveCtx
 unsigned CtxCUsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 unsigned CtxBTsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 #if ENABLE_BMS
-#if JVET_K0072
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf );
 #else
-unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth );
-#endif
-#else
-#if JVET_K0072
 unsigned CtxQtCbf     ( const ComponentID compID, const bool prevCbCbf );
-#else
-unsigned CtxQtCbf     ( const ComponentID compID );
-#endif
 #endif
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );

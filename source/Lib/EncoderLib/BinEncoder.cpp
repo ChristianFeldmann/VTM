@@ -205,17 +205,9 @@ void BinEncoderBase::encodeBinsEP( unsigned bins, unsigned numBins )
   }
 }
 
-#if JVET_K0072
 void BinEncoderBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange )
-#else
-void BinEncoderBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange, bool altRC )
-#endif
 {
-#if JVET_K0072
   const unsigned threshold = g_auiGoRiceRange[ goRicePar ] << goRicePar;
-#else
-  const unsigned threshold = ( altRC ? g_auiGoRiceRange[ goRicePar ] : COEF_REMAIN_BIN_REDUCTION ) << goRicePar;
-#endif
   if( bins < threshold )
   {
     const unsigned bitMask  = ( 1 << goRicePar ) - 1;
@@ -259,11 +251,7 @@ void BinEncoderBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool use
       bins -= delta;
       delta = 1 << (++length);
     }
-#if JVET_K0072
     unsigned numBin = g_auiGoRiceRange[ goRicePar ] + length + 1 - goRicePar;
-#else
-    unsigned numBin = ( altRC ? g_auiGoRiceRange[ goRicePar ] : COEF_REMAIN_BIN_REDUCTION ) + length + 1 - goRicePar;
-#endif
     encodeBinsEP( ( 1 << numBin ) - 2, numBin );
     encodeBinsEP( bins,                length );
   }
@@ -448,17 +436,9 @@ BitEstimatorBase::BitEstimatorBase( const BinProbModel* dummy )
   m_EstFracBits = 0;
 }
 
-#if JVET_K0072
 void BitEstimatorBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange )
-#else
-void BitEstimatorBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange, bool altRC )
-#endif
 {
-#if JVET_K0072
   const unsigned threshold = g_auiGoRiceRange[ goRicePar ] << goRicePar;
-#else
-  const unsigned threshold = ( altRC ? g_auiGoRiceRange[ goRicePar ] : COEF_REMAIN_BIN_REDUCTION ) << goRicePar;
-#endif
   if( bins < threshold )
   {
     m_EstFracBits += BinProbModelBase::estFracBitsEP( ( bins >> goRicePar ) + 1 + goRicePar );
@@ -494,11 +474,7 @@ void BitEstimatorBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool u
       bins -= delta;
       delta = 1 << (++length);
     }
-#if JVET_K0072
     m_EstFracBits += BinProbModelBase::estFracBitsEP( g_auiGoRiceRange[ goRicePar ] + 1 + ( length << 1 ) - goRicePar );
-#else
-    m_EstFracBits += BinProbModelBase::estFracBitsEP( ( altRC ? g_auiGoRiceRange[ goRicePar ] : COEF_REMAIN_BIN_REDUCTION ) + 1 + ( length << 1 ) - goRicePar );
-#endif
   }
 }
 

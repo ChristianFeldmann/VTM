@@ -223,12 +223,6 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 #endif
   WRITE_FLAG( pcPPS->getOutputFlagPresentFlag() ? 1 : 0,     "output_flag_present_flag" );
   WRITE_CODE( pcPPS->getNumExtraSliceHeaderBits(), 3,        "num_extra_slice_header_bits");
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-  WRITE_FLAG( pcPPS->getSignDataHidingEnabledFlag(),         "sign_data_hiding_enabled_flag" );
-#endif
-#endif
   WRITE_FLAG( pcPPS->getCabacInitPresentFlag() ? 1 : 0,   "cabac_init_present_flag" );
   WRITE_UVLC( pcPPS->getNumRefIdxL0DefaultActive()-1,     "num_ref_idx_l0_default_active_minus1");
   WRITE_UVLC( pcPPS->getNumRefIdxL1DefaultActive()-1,     "num_ref_idx_l1_default_active_minus1");
@@ -542,9 +536,6 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
 #if JVET_K0357_AMVR
   WRITE_FLAG( spsNext.getUseIMV() ? 1 : 0,                                                      "imv_enable_flag" );
 #endif
-#if JVET_K0072
-#else
-#endif
 #if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   WRITE_FLAG( spsNext.getUseHighPrecMv() ? 1 : 0,                                               "high_precision_motion_vectors");
@@ -612,9 +603,6 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   {
     WRITE_UVLC( spsNext.getMTTMode() - 1,                                                       "mtt_mode_minus1" );
   }
-#if JVET_K0072
-#else
-#endif
   // ADD_NEW_TOOL : (sps extension writer) write tool enabling flags and associated parameters here
 }
 
@@ -1191,7 +1179,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     {
       xCodePredWeightTable( pcSlice );
     }
-#if JVET_K0072
     WRITE_FLAG( pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enable_flag" );
 #if HEVC_USE_SIGN_HIDING
     if( !pcSlice->getDepQuantEnabledFlag() )
@@ -1202,7 +1189,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     {
       CHECK( pcSlice->getSignDataHidingEnabledFlag(), "sign data hiding not supported when dependent quantization is enabled" );
     }
-#endif
 #endif
     if( pcSlice->getSPS()->getSpsNext().getUseQTBT() )
     {

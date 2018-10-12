@@ -41,7 +41,6 @@
 
 
 
-#if JVET_K0072
 
 
 namespace DQIntern
@@ -1432,6 +1431,5 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
   }
 }
 
-#endif
 
 

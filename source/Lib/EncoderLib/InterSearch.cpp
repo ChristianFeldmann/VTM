@@ -1308,7 +1308,6 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       cHevcMvField[1].setMvField( pu.mv[REF_PIC_LIST_1], pu.refIdx[REF_PIC_LIST_1] );
 
       // do affine ME & Merge
-#if JVET_K0185_AFFINE_6PARA_ENC
       cu.affineType = AFFINEMODEL_4PARAM;
       Mv acMvAffine4Para[2][33][3];
       int refIdx4Para[2] = { -1, -1 };
@@ -1395,13 +1394,6 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
         uiAffineCost += m_pcRdCost->getCost( 1 ); // add one bit for affine_type
       }
-#else
-#if JVET_K0220_ENC_CTRL
-      xPredAffineInterSearch( pu, origBuf, puIdx, uiLastModeTemp, uiAffineCost, cMvHevcTemp );
-#else
-      xPredAffineInterSearch( pu, origBuf, puIdx, uiLastModeTemp, uiAffineCost, cMvHevcTemp, bFastSkipBi );
-#endif
-#endif
 
       if ( uiHevcCost <= uiAffineCost )
       {
@@ -2632,10 +2624,8 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
                                           Mv                    hevcMv[2][33],
                                           bool                  bFastSkipBi
 #endif
-#if JVET_K0185_AFFINE_6PARA_ENC
                                         , Mv                    mvAffine4Para[2][33][3]
                                         , int                   refIdx4Para[2]
-#endif
                                          )
 {
   const Slice &slice = *pu.cu->slice;
@@ -2650,9 +2640,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   int       iNumPredDir = slice.isInterP() ? 1 : 2;
 
   int mvNum = 2;
-#if JVET_K0185_AFFINE_6PARA_ENC
   mvNum = pu.cu->affineType ? 3 : 2;
-#endif
 
   // Mvp
   Mv        cMvPred[2][33][3];
@@ -2737,13 +2725,11 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
       xEstimateAffineAMVP( pu, affiAMVPInfoTemp[eRefPicList], origBuf, eRefPicList, iRefIdxTemp, cMvPred[iRefList][iRefIdxTemp], &biPDistTemp );
       aaiMvpIdx[iRefList][iRefIdxTemp] = pu.mvpIdx[eRefPicList];
       aaiMvpNum[iRefList][iRefIdxTemp] = pu.mvpNum[eRefPicList];;
-#if JVET_K0185_AFFINE_6PARA_ENC // reuse refidx of 4-para
       if ( pu.cu->affineType == AFFINEMODEL_6PARAM && refIdx4Para[iRefList] != iRefIdxTemp )
       {
         xCopyAffineAMVPInfo( affiAMVPInfoTemp[eRefPicList], aacAffineAMVPInfo[iRefList][iRefIdxTemp] );
         continue;
       }
-#endif
 
       // set hevc ME result as start search position when it is best than mvp
       for ( int i=0; i<3; i++ )
@@ -2758,7 +2744,6 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 #else
       uint32_t uiCandCost = xGetAffineTemplateCost( pu, origBuf, predBuf, mvHevc, aaiMvpIdx[iRefList][iRefIdxTemp], AMVP_MAX_NUM_CANDS, eRefPicList, iRefIdxTemp );
 #endif
-#if JVET_K0185_AFFINE_6PARA_ENC // use 4-parameter results as start point
       if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
       {
         Mv mvFour[3];
@@ -2806,7 +2791,6 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
           }
         }
       }
-#endif
 
       if ( uiCandCost < biPDistTemp )
       {
@@ -2830,11 +2814,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 
       if ( m_pcEncCfg->getFastMEForGenBLowDelayEnabled() && iRefList == 1 )   // list 1
       {
-#if JVET_K0185_AFFINE_6PARA_ENC
         if ( slice.getList1IdxToList0Idx( iRefIdxTemp ) >= 0 && (pu.cu->affineType != AFFINEMODEL_6PARAM || slice.getList1IdxToList0Idx( iRefIdxTemp ) == refIdx4Para[0]) )
-#else
-        if ( slice.getList1IdxToList0Idx( iRefIdxTemp ) >= 0 )
-#endif
         {
           int iList1ToList0Idx = slice.getList1IdxToList0Idx( iRefIdxTemp );
           ::memcpy( cMvTemp[1][iRefIdxTemp], cMvTemp[0][iList1ToList0Idx], sizeof(Mv)*3 );
@@ -2906,12 +2886,10 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
     } // End refIdx loop
   } // end Uni-prediction
 
-#if JVET_K0185_AFFINE_6PARA_ENC // save 4-parameter UNI-ME results
   if ( pu.cu->affineType == AFFINEMODEL_4PARAM )
   {
     ::memcpy( mvAffine4Para, cMvTemp, sizeof( cMvTemp ) );
   }
-#endif
 
   // Bi-directional prediction
 #if JVET_K0220_ENC_CTRL
@@ -3034,12 +3012,10 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
       iRefEnd   = slice.getNumRefIdx(eRefPicList) - 1;
       for ( int iRefIdxTemp = iRefStart; iRefIdxTemp <= iRefEnd; iRefIdxTemp++ )
       {
-#if JVET_K0185_AFFINE_6PARA_ENC // reuse refidx of 4-para
         if ( pu.cu->affineType == AFFINEMODEL_6PARAM && refIdx4Para[iRefList] != iRefIdxTemp )
         {
           continue;
         }
-#endif
 
         // update bits
         uiBitsTemp = uiMbBits[2] + uiMotBits[1-iRefList];
@@ -3292,9 +3268,7 @@ void InterSearch::xCheckBestAffineMVP( PredictionUnit &pu, AffineAMVPInfo &affin
     return;
   }
 
-#if JVET_K0185_AFFINE_6PARA_ENC
   int mvNum = pu.cu->affineType ? 3 : 2;
-#endif
 
   m_pcRdCost->selectMotionLambda( pu.cu->transQuantBypass );
   m_pcRdCost->setCostScale ( 0 );
@@ -3303,11 +3277,7 @@ void InterSearch::xCheckBestAffineMVP( PredictionUnit &pu, AffineAMVPInfo &affin
 
   // Get origin MV bits
   int iOrgMvBits = 0;
-#if JVET_K0185_AFFINE_6PARA_ENC
   for ( int iVerIdx = 0; iVerIdx < mvNum; iVerIdx++ )
-#else
-  for ( int iVerIdx=0; iVerIdx<2; iVerIdx++ )
-#endif
   {
     m_pcRdCost->setPredictor ( acMvPred[iVerIdx] );
 #if REMOVE_MV_ADAPT_PREC
@@ -3339,18 +3309,10 @@ void InterSearch::xCheckBestAffineMVP( PredictionUnit &pu, AffineAMVPInfo &affin
     }
 
     int iMvBits = 0;
-#if JVET_K0185_AFFINE_6PARA_ENC
     for ( int iVerIdx = 0; iVerIdx < mvNum; iVerIdx++ )
-#else
-    for ( int iVerIdx=0; iVerIdx<2; iVerIdx++ )
-#endif
     {
-#if JVET_K0185_AFFINE_6PARA_ENC
       m_pcRdCost->setPredictor( iVerIdx == 2 ? affineAMVPInfo.mvCandLB[iMVPIdx] :
         (iVerIdx == 1 ? affineAMVPInfo.mvCandRT[iMVPIdx] : affineAMVPInfo.mvCandLT[iMVPIdx]) );
-#else
-      m_pcRdCost->setPredictor ( iVerIdx ? affineAMVPInfo.mvCandRT[iMVPIdx] : affineAMVPInfo.mvCandLT[iMVPIdx] );
-#endif
 #if REMOVE_MV_ADAPT_PREC
       const int shift = 0;
 #else
@@ -3360,11 +3322,7 @@ void InterSearch::xCheckBestAffineMVP( PredictionUnit &pu, AffineAMVPInfo &affin
       Mv secondPred;
       if ( iVerIdx != 0 )
       {
-#if JVET_K0185_AFFINE_6PARA_ENC
         secondPred = (iVerIdx == 1 ? affineAMVPInfo.mvCandRT[iMVPIdx] : affineAMVPInfo.mvCandLB[iMVPIdx]) + (acMv[0] - affineAMVPInfo.mvCandLT[iMVPIdx]);
-#else
-        secondPred = affineAMVPInfo.mvCandRT[iMVPIdx] + (acMv[0] - affineAMVPInfo.mvCandLT[iMVPIdx]);
-#endif
         m_pcRdCost->setPredictor( secondPred );
       }
 #if JVET_K0357_AMVR
@@ -3450,13 +3408,9 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
 
   // Set delta mv
   // malloc buffer
-#if JVET_K0185_AFFINE_6PARA_ENC
   int iParaNum = pu.cu->affineType ? 7 : 5;
   int affineParaNum = iParaNum - 1;
   int mvNum = pu.cu->affineType ? 3 : 2;
-#else
-  static const int iParaNum = 5;
-#endif
   double **pdEqualCoeff;
   pdEqualCoeff = new double *[iParaNum];
   for ( int i = 0; i < iParaNum; i++ )
@@ -3476,12 +3430,10 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
   // do motion compensation with origin mv
   clipMv( acMvTemp[0], pu.cu->lumaPos(), *pu.cs->sps );
   clipMv( acMvTemp[1], pu.cu->lumaPos(), *pu.cs->sps );
-#if JVET_K0185_AFFINE_6PARA_ENC
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
     clipMv( acMvTemp[2], pu.cu->lumaPos(), *pu.cs->sps );
   }
-#endif
   xPredAffineBlk( COMPONENT_Y, pu, refPic, acMvTemp, predBuf, false, pu.cs->slice->clpRng( COMPONENT_Y ) );
 
   // get error
@@ -3491,11 +3443,7 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
   m_pcRdCost->setCostScale(0);
   uiBitsBest = ruiBits;
   DTRACE( g_trace_ctx, D_COMMON, " (%d) xx uiBitsBest=%d\n", DTRACE_GET_COUNTER(g_trace_ctx,D_COMMON), uiBitsBest );
-#if JVET_K0185_AFFINE_6PARA_ENC
   for ( int i = 0; i < mvNum; i++ )
-#else
-  for ( int i=0; i<2; i++ )
-#endif
   {
     DTRACE( g_trace_ctx, D_COMMON, "#mvPredForBits=(%d,%d) \n", acMvPred[i].getHor(), acMvPred[i].getVer() );
     m_pcRdCost->setPredictor( acMvPred[i] );
@@ -3535,7 +3483,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
   const int bufStride = pBuf->Y().stride;
   const int predBufStride = predBuf.Y().stride;
 
-#if JVET_K0185_AFFINE_6PARA_ENC
   int iIterTime;
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
@@ -3550,9 +3497,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
   {
     iIterTime = bBi ? 5 : 7;
   }
-#else
-  int iIterTime = bBi ? 5 : 7;
-#endif
   for ( int iter=0; iter<iIterTime; iter++ )    // iterate loop
   {
     /*********************************************************************************
@@ -3591,11 +3535,7 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
     }
 
     m_EqualCoeffComputer( piError, width, pdDerivate, width, i64EqualCoeff, width, height
-#if JVET_K0185_AFFINE_6PARA_ENC
       , (pu.cu->affineType == AFFINEMODEL_6PARAM)
-#else
-      , false
-#endif
     );
 
     for ( int row = 0; row < iParaNum; row++ )
@@ -3606,7 +3546,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
       }
     }
 
-#if JVET_K0185_AFFINE_6PARA_ENC
     double dAffinePara[6];
     double dDeltaMv[6];
     Mv acDeltaMv[3];
@@ -3648,37 +3587,9 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
 #endif
       );
     }
-#else
-    double dAffinePara[4];
-    solveEqual( pdEqualCoeff, 4, dAffinePara );
-
-    // convert to delta mv
-    double dDeltaMv[4];
-    dDeltaMv[0] = dAffinePara[0];
-    dDeltaMv[2] = dAffinePara[2];
-
-    dDeltaMv[1] =   dAffinePara[1] * width + dAffinePara[0];
-    dDeltaMv[3] = - dAffinePara[3] * width + dAffinePara[2];
-
-    Mv acDeltaMv[3];
-    acDeltaMv[0] = Mv( (int)(dDeltaMv[0] * 4 + SIGN(dDeltaMv[0]) * 0.5 ) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE, (int)(dDeltaMv[2] * 4 + SIGN(dDeltaMv[2]) * 0.5 ) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE
-#if !REMOVE_MV_ADAPT_PREC         
-      , true
-#endif
-    );
-    acDeltaMv[1] = Mv( (int)(dDeltaMv[1] * 4 + SIGN(dDeltaMv[1]) * 0.5 ) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE, (int)(dDeltaMv[3] * 4 + SIGN(dDeltaMv[3]) * 0.5 ) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE
-#if !REMOVE_MV_ADAPT_PREC   
-      , true
-#endif
-    );
-#endif
 
     bool bAllZero = false;
-#if JVET_K0185_AFFINE_6PARA_ENC
     for ( int i = 0; i < mvNum; i++ )
-#else
-    for ( int i=0; i<2; i++ )
-#endif
     {
       if ( acDeltaMv[i].getHor() != 0 || acDeltaMv[i].getVer() != 0 )
       {
@@ -3692,11 +3603,7 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
       break;
 
     // do motion compensation with updated mv
-#if JVET_K0185_AFFINE_6PARA_ENC
     for ( int i = 0; i < mvNum; i++ )
-#else
-    for ( int i=0; i<2; i++ )
-#endif
     {
       acMvTemp[i] += acDeltaMv[i];
       acMvTemp[i].hor = Clip3( -32768, 32767, acMvTemp[i].hor );
@@ -3713,11 +3620,7 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
     // get cost with mv
     m_pcRdCost->setCostScale(0);
     uint32_t uiBitsTemp = ruiBits;
-#if JVET_K0185_AFFINE_6PARA_ENC
     for ( int i = 0; i < mvNum; i++ )
-#else
-    for ( int i=0; i<2; i++ )
-#endif
     {
       m_pcRdCost->setPredictor( acMvPred[i] );
 #if REMOVE_MV_ADAPT_PREC

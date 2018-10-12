@@ -85,7 +85,6 @@
 #define JVET_K0251_QP_EXT                                 1 // Extending the QP parameter value range for coarse quantization
 
 
-#define JVET_K0185_AFFINE_6PARA_ENC                       1 // CE4.1.5 Affine 6-para encoder
 
 #define JVET_K0357_AMVR                                   1 // Adaptive motion vector resolution separated from JEM_TOOLS macro
 

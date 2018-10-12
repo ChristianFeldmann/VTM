@@ -327,10 +327,8 @@ protected:
                                     Mv                    hevcMv[2][33],
                                     bool                  bFastSkipBi
 #endif
-#if JVET_K0185_AFFINE_6PARA_ENC
                                   , Mv                    mvAffine4Para[2][33][3]
                                   , int                   refIdx4Para[2]
-#endif
                                   );
 
   void xAffineMotionEstimation    ( PredictionUnit& pu,

@@ -303,10 +303,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     }
   }
 
-#if DB_TU_FIX==0
-  const unsigned PartIdxIncr  = ( cu.cs->pcv->noRQT && cu.cs->pcv->only2Nx2N ? 1 : ( DEBLOCK_SMALLEST_BLOCK / uiPelsInPart ? DEBLOCK_SMALLEST_BLOCK / uiPelsInPart : 1 ) );
-  const unsigned uiSizeInPU   = ( cu.cs->pcv->noRQT && cu.cs->pcv->only2Nx2N ? 1 : pcv.partsInCtuWidth >> cu.qtDepth );
-#endif
   const unsigned shiftFactor  = edgeDir == EDGE_VER ? ::getComponentScaleX( COMPONENT_Cb, pcv.chrFormat ) : ::getComponentScaleY( COMPONENT_Cb, pcv.chrFormat );
   const bool bAlwaysDoChroma  = pcv.chrFormat == CHROMA_444 || pcv.noRQT;
 
@@ -321,7 +317,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       return;
   }
 
-#if DB_TU_FIX
   unsigned int orthogonalLength = 1;
   unsigned int orthogonalIncrement = 1;
 
@@ -350,20 +345,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       xEdgeFilterChroma(cu, edgeDir, edge);
     }
   }
-#else
-  for( int iEdge = 0; iEdge < uiSizeInPU; iEdge += PartIdxIncr )
-  {
-    if( cu.blocks[COMPONENT_Y].valid() )
-    {
-      xEdgeFilterLuma  ( cu, edgeDir, iEdge );
-    }
-
-    if( cu.blocks[COMPONENT_Cb].valid() && pcv.chrFormat != CHROMA_400 && ( bAlwaysDoChroma || ( uiPelsInPart > DEBLOCK_SMALLEST_BLOCK ) || ( iEdge % ( ( DEBLOCK_SMALLEST_BLOCK << shiftFactor ) / uiPelsInPart ) ) == 0 ) )
-    {
-      xEdgeFilterChroma( cu, edgeDir, iEdge );
-    }
-  }
-#endif
 }
 
 

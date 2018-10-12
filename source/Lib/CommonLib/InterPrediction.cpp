@@ -543,37 +543,8 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   // get affine sub-block width and height
   const int width  = pu.Y().width;
   const int height = pu.Y().height;
-#if JVET_K0184_AFFINE_4X4
   int blockWidth = AFFINE_MIN_BLOCK_SIZE;
   int blockHeight = AFFINE_MIN_BLOCK_SIZE;
-#else
-  int blockWidth   = width;
-  int blockHeight  = height;
-  int mvWx = std::max<int>( abs((mvRT - mvLT).getHor()), abs((mvRT - mvLT).getVer()) );
-  int mvWy = std::max<int>( abs((mvLB - mvLT).getHor()), abs((mvLB - mvLT).getVer()) );
-
-  int iMvPrecision = 4;
-  iMvPrecision -= VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-
-  if (mvWx)
-  {
-    blockWidth = std::max<int>( (int)( ( width >> iMvPrecision ) / mvWx ), 1 );
-    while (width % blockWidth)
-    {
-      blockWidth--;
-    }
-    blockWidth = std::max<int>( AFFINE_MIN_BLOCK_SIZE, blockWidth );
-  }
-  if (mvWy)
-  {
-    blockHeight = std::max<int>( (int)( ( height >> iMvPrecision ) / mvWy ), 1 );
-    while (height % blockHeight)
-    {
-      blockHeight--;
-    }
-    blockHeight = std::max<int>( AFFINE_MIN_BLOCK_SIZE, blockHeight );
-  }
-#endif
 
   blockWidth  >>= iScaleX;
   blockHeight >>= iScaleY;

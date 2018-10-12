@@ -172,34 +172,26 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
   Pel dcVal;
   const int width  = dstSize.width;
   const int height = dstSize.height;
-#if JVET_K0122
   const auto denom     = (width == height) ? (width << 1) : std::max(width,height);
   const auto divShift  = g_aucLog2[denom];
   const auto divOffset = (denom >> 1);
 
   if ( width >= height )
   {
-#endif
   for( idx = 0; idx < width; idx++ )
   {
     sum += pSrc.at( 1 + idx, 0 );
   }
-#if JVET_K0122
   }
   if ( width <= height )
   {   
-#endif
   for( idx = 0; idx < height; idx++ )
   {
     sum += pSrc.at( 0, 1 + idx );
   }  
-#if JVET_K0122
   }
 
   dcVal = (sum + divOffset) >> divShift;
-#else
-  dcVal = ( sum + ( ( width + height ) >> 1 ) ) / ( width + height );
-#endif
   return dcVal;
 }
 

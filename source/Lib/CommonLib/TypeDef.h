@@ -60,7 +60,6 @@
 
 
 
-#define JVET_K0122                                        1 // CE3-related: Alternative techniques for DC mode without division
                                                             // Test 2: Samples are taken only along with a longer side
 
 #define JVET_K0220_ENC_CTRL                               1 // remove HM_NO_ADDITIONAL_SPEEDUPS when adopting

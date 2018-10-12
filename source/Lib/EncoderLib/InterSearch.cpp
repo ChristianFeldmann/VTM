@@ -231,15 +231,9 @@ void InterSearch::init( EncCfg*        pcEncCfg,
   }
   m_tmpStorageLCU.create( UnitArea( cform, Area( 0, 0, MAX_CU_SIZE, MAX_CU_SIZE ) ) );
   m_tmpAffiStorage.create( UnitArea( cform, Area( 0, 0, MAX_CU_SIZE, MAX_CU_SIZE ) ) );
-#if JVET_K0367_AFFINE_FIX_POINT
   m_tmpAffiError = new Pel[MAX_CU_SIZE * MAX_CU_SIZE];
   m_tmpAffiDeri[0] = new int[MAX_CU_SIZE * MAX_CU_SIZE];
   m_tmpAffiDeri[1] = new int[MAX_CU_SIZE * MAX_CU_SIZE];
-#else
-  m_tmpAffiError   = new int   [MAX_CU_SIZE * MAX_CU_SIZE];
-  m_tmpAffiDeri[0] = new double[MAX_CU_SIZE * MAX_CU_SIZE];
-  m_tmpAffiDeri[1] = new double[MAX_CU_SIZE * MAX_CU_SIZE];
-#endif
   m_pTempPel = new Pel[maxCUWidth*maxCUHeight];
 
   m_isInitialized = true;
@@ -3490,14 +3484,9 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
     pdEqualCoeff[i] = new double[iParaNum];
   }
 
-#if JVET_K0367_AFFINE_FIX_POINT
   int64_t  i64EqualCoeff[7][7];
   Pel    *piError = m_tmpAffiError;
   int    *pdDerivate[2];
-#else
-  int    *piError = m_tmpAffiError;
-  double *pdDerivate[2];
-#endif
   pdDerivate[0] = m_tmpAffiDeri[0];
   pdDerivate[1] = m_tmpAffiDeri[1];
 
@@ -3615,68 +3604,15 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
     // -2 0 2
     // -1 0 1
     pPred = predBuf.Y().buf;
-#if JVET_K0367_AFFINE_FIX_POINT
     m_HorizontalSobelFilter( pPred, predBufStride, pdDerivate[0], width, width, height );
-#else
-    for ( int j = 1; j < height-1; j++ )
-    {
-      for ( int k = 1; k < width-1; k++ )
-      {
-        int iCenter = j*predBufStride + k;
-        pdDerivate[0][j*width + k] = (double)( pPred[iCenter + 1 - predBufStride] - pPred[iCenter - 1 - predBufStride]
-                                                  + ( pPred[iCenter + 1] << 1 )      - ( pPred[iCenter - 1] << 1 )
-                                                  + pPred[iCenter + 1 + predBufStride] - pPred[iCenter - 1 + predBufStride] ) / 8 ;
-      }
-      pdDerivate[0][ j*width ]             = pdDerivate[0][ j*width + 1 ];
-      pdDerivate[0][ j*width + width - 1 ] = pdDerivate[0][ j*width + width - 2 ];
-    }
-
-    pdDerivate[0][0]                        = pdDerivate[0][width+1];
-    pdDerivate[0][width-1]                  = pdDerivate[0][width+width-2];
-    pdDerivate[0][(height-1)*width]         = pdDerivate[0][(height-2)*width+1];
-    pdDerivate[0][(height-1)*width+width-1] = pdDerivate[0][(height-2)*width+width-2];
-
-    for ( int j = 1; j < width - 1; j++ )
-    {
-      pdDerivate[0][j] = pdDerivate[0][width+j];
-      pdDerivate[0][(height-1)*width+j] = pdDerivate[0][(height-2)*width+j];
-    }
-#endif
 
     // sobel y direction
     // -1 -2 -1
     //  0  0  0
     //  1  2  1
-#if JVET_K0367_AFFINE_FIX_POINT
     m_VerticalSobelFilter( pPred, predBufStride, pdDerivate[1], width, width, height );
-#else
-    for ( int k=1; k < width-1; k++ )
-    {
-      for ( int j = 1; j < height-1; j++ )
-      {
-        int iCenter = j*predBufStride + k;
-        pdDerivate[1][j*width + k] = (double)( pPred[iCenter + predBufStride - 1]    -   pPred[iCenter - predBufStride - 1]
-                                           + ( pPred[iCenter + predBufStride] << 1 ) - ( pPred[iCenter - predBufStride] << 1 )
-                                           +   pPred[iCenter + predBufStride + 1]    -   pPred[iCenter - predBufStride + 1] ) / 8;
-      }
-      pdDerivate[1][k] = pdDerivate[1][ width + k ];
-      pdDerivate[1][ (height - 1) * width + k ] = pdDerivate[1][ (height - 2) * width + k ];
-    }
-
-    pdDerivate[1][0]           = pdDerivate[1][width+1];
-    pdDerivate[1][width-1] = pdDerivate[1][width + width-2];
-    pdDerivate[1][(height-1)*width]         = pdDerivate[1][(height-2)*width+1];
-    pdDerivate[1][(height-1)*width+width-1] = pdDerivate[1][(height-2)*width+(width-2)];
-
-    for ( int j=1; j < height-1; j++ )
-    {
-      pdDerivate[1][j*width] = pdDerivate[1][j*width+1];
-      pdDerivate[1][j*width+width-1] = pdDerivate[1][j*width+width-2];
-    }
-#endif
 
     // solve delta x and y
-#if JVET_K0367_AFFINE_FIX_POINT
     for ( int row = 0; row < iParaNum; row++ )
     {
       memset( &i64EqualCoeff[row][0], 0, iParaNum * sizeof( int64_t ) );
@@ -3697,66 +3633,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
         pdEqualCoeff[row][i] = (double)i64EqualCoeff[row][i];
       }
     }
-#else
-    for ( int m = 0; m != iParaNum; m++ )
-    {
-      for ( int n = 0; n != iParaNum; n++ )
-      {
-        pdEqualCoeff[m][n] = 0.0;
-      }
-    }
-
-    for ( int j = 0; j != height; j++ )
-    {
-      for ( int k = 0; k != width; k++ )
-      {
-        int iIdx = j * width + k;
-#if JVET_K0185_AFFINE_6PARA_ENC
-        double dC[6];
-        if ( pu.cu->affineType )
-        {
-          dC[0] = pdDerivate[0][iIdx];
-          dC[1] = k * pdDerivate[0][iIdx];
-          dC[2] = pdDerivate[1][iIdx];
-          dC[3] = k * pdDerivate[1][iIdx];
-          dC[4] = j * pdDerivate[0][iIdx];
-          dC[5] = j * pdDerivate[1][iIdx];
-        }
-        else
-        {
-          dC[0] = pdDerivate[0][iIdx];
-          dC[1] = k * pdDerivate[0][iIdx] + j * pdDerivate[1][iIdx];
-          dC[2] = pdDerivate[1][iIdx];
-          dC[3] = j * pdDerivate[0][iIdx] - k * pdDerivate[1][iIdx];
-        }
-
-        for ( int col = 0; col < affineParaNum; col++ )
-        {
-          for ( int row = 0; row < affineParaNum; row++ )
-          {
-            pdEqualCoeff[col + 1][row] += dC[col] * dC[row];
-          }
-          pdEqualCoeff[col + 1][affineParaNum] += (double)(piError[iIdx] * dC[col]);
-        }
-#else
-        double dC[4];
-        dC[0] = pdDerivate[0][iIdx];
-        dC[1] = k * pdDerivate[0][iIdx] + j * pdDerivate[1][iIdx];
-        dC[2] = pdDerivate[1][iIdx];
-        dC[3] = j * pdDerivate[0][iIdx] - k * pdDerivate[1][iIdx];
-
-        for ( int col=0; col<4; col++ )
-        {
-          for ( int row=0; row<4; row++ )
-          {
-            pdEqualCoeff[col+1][row] += dC[col] * dC[row];
-          }
-          pdEqualCoeff[col+1][4] += (double)( piError[iIdx] * dC[col] );
-        }
-#endif
-      }
-    }
-#endif
 
 #if JVET_K0185_AFFINE_6PARA_ENC
     double dAffinePara[6];

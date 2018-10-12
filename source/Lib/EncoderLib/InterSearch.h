@@ -50,9 +50,7 @@
 #include "CommonLib/UnitPartitioner.h"
 #include "CommonLib/RdCost.h"
 
-#if JVET_K0367_AFFINE_FIX_POINT
 #include "CommonLib/AffineGradientSearch.h"
-#endif
 //! \ingroup EncoderLib
 //! \{
 
@@ -66,11 +64,7 @@ static const uint32_t NUM_MV_PREDICTORS         = 3;
 class EncModeCtrl;
 
 /// encoder search class
-#if JVET_K0367_AFFINE_FIX_POINT
 class InterSearch : public InterPrediction, CrossComponentPrediction, AffineGradientSearch
-#else
-class InterSearch : public InterPrediction, CrossComponentPrediction
-#endif
 {
 private:
   EncModeCtrl     *m_modeCtrl;
@@ -78,13 +72,8 @@ private:
   PelStorage      m_tmpPredStorage              [NUM_REF_PIC_LIST_01];
   PelStorage      m_tmpStorageLCU;
   PelStorage      m_tmpAffiStorage;
-#if JVET_K0367_AFFINE_FIX_POINT
   Pel*            m_tmpAffiError;
   int*            m_tmpAffiDeri[2];
-#else
-  int*            m_tmpAffiError;
-  double*         m_tmpAffiDeri[2];
-#endif
 
   CodingStructure ****m_pSplitCS;
   CodingStructure ****m_pFullCS;

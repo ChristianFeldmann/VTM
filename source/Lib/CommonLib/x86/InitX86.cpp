@@ -44,9 +44,7 @@
 #include "CommonLib/RdCost.h"
 #include "CommonLib/Buffer.h"
 
-#if JVET_K0367_AFFINE_FIX_POINT
 #include "CommonLib/AffineGradientSearch.h"
-#endif
 
 #include "CommonLib/AdaptiveLoopFilter.h"
 

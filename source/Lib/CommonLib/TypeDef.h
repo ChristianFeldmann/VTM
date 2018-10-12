@@ -84,7 +84,6 @@
 
 #define JVET_K0251_QP_EXT                                 1 // Extending the QP parameter value range for coarse quantization
 
-#define JVET_K_AFFINE_BUG_FIXES                           1 // several affine bug fixes from JVET-K0052, JVET-K0103, JVET-K0367
 
 #define JVET_K0184_AFFINE_4X4                             1 // CE4.1.1 fixed 4x4 sub-block size
 #define JVET_K0337_AFFINE_MVP_IMPROVE                     1 // CE4.1.3 Affine MVP construction

@@ -54,14 +54,12 @@ void roundMV( Mv & rMV, unsigned imvShift )
 }
 #endif
 
-#if JVET_K_AFFINE_BUG_FIXES
 void roundAffineMv( int& mvx, int& mvy, int nShift )
 {
   const int nOffset = 1 << (nShift - 1);
   mvx = mvx >= 0 ? (mvx + nOffset) >> nShift : -((-mvx + nOffset) >> nShift);
   mvy = mvy >= 0 ? (mvy + nOffset) >> nShift : -((-mvy + nOffset) >> nShift);
 }
-#endif
 
 void clipMv( Mv& rcMv, const Position& pos, const SPS& sps )
 {

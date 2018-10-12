@@ -3224,12 +3224,10 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 
 void solveEqual( double** dEqualCoeff, int iOrder, double* dAffinePara )
 {
-#if JVET_K_AFFINE_BUG_FIXES
   for ( int k = 0; k < iOrder; k++ )
   {
     dAffinePara[k] = 0.;
   }
-#endif
 
   // row echelon
   for ( int i = 1; i < iOrder; i++ )
@@ -3258,12 +3256,10 @@ void solveEqual( double** dEqualCoeff, int iOrder, double* dAffinePara )
     }
 
     // elimination first column
-#if JVET_K_AFFINE_BUG_FIXES
     if ( dEqualCoeff[i][i - 1] == 0. )
     {
       return;
     }
-#endif
     for ( int j = i+1; j < iOrder+1; j++ )
     {
       for ( int k = i; k < iOrder+1; k++ )
@@ -3273,16 +3269,13 @@ void solveEqual( double** dEqualCoeff, int iOrder, double* dAffinePara )
     }
   }
 
-#if JVET_K_AFFINE_BUG_FIXES
   if ( dEqualCoeff[iOrder][iOrder - 1] == 0. )
   {
     return;
   }
-#endif
   dAffinePara[iOrder-1] = dEqualCoeff[iOrder][iOrder] / dEqualCoeff[iOrder][iOrder-1];
   for ( int i = iOrder-2; i >= 0; i-- )
   {
-#if JVET_K_AFFINE_BUG_FIXES
     if ( dEqualCoeff[i + 1][i] == 0. )
     {
       for ( int k = 0; k < iOrder; k++ )
@@ -3291,7 +3284,6 @@ void solveEqual( double** dEqualCoeff, int iOrder, double* dAffinePara )
       }
       return;
     }
-#endif
     double temp = 0;
     for ( int j = i+1; j < iOrder; j++ )
     {
@@ -3501,12 +3493,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
   {
     clipMv( acMvTemp[2], pu.cu->lumaPos(), *pu.cs->sps );
   }
-#endif
-#if !JVET_K_AFFINE_BUG_FIXES
-  int vx2 =  - ( acMvTemp[1].getVer() - acMvTemp[0].getVer() ) * height / width + acMvTemp[0].getHor();
-  int vy2 =    ( acMvTemp[1].getHor() - acMvTemp[0].getHor() ) * height / width + acMvTemp[0].getVer();
-  acMvTemp[2] = Mv( vx2, vy2, true );
-  clipMv( acMvTemp[2], pu.cu->lumaPos(), *pu.cs->sps );
 #endif
   xPredAffineBlk( COMPONENT_Y, pu, refPic, acMvTemp, predBuf, false, pu.cs->slice->clpRng( COMPONENT_Y ) );
 
@@ -3727,20 +3713,11 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
 #endif
     {
       acMvTemp[i] += acDeltaMv[i];
-#if JVET_K_AFFINE_BUG_FIXES
       acMvTemp[i].hor = Clip3( -32768, 32767, acMvTemp[i].hor );
       acMvTemp[i].ver = Clip3( -32768, 32767, acMvTemp[i].ver );
       acMvTemp[i].roundMV2SignalPrecision();
-#endif
       clipMv(acMvTemp[i], pu.cu->lumaPos(), *pu.cs->sps);
     }
-#if !JVET_K_AFFINE_BUG_FIXES
-    int vx2, vy2;
-    vx2 =  - ( acMvTemp[1].getVer() - acMvTemp[0].getVer() ) * height / width + acMvTemp[0].getHor();
-    vy2 =    ( acMvTemp[1].getHor() - acMvTemp[0].getHor() ) * height / width + acMvTemp[0].getVer();
-    acMvTemp[2].set( vx2, vy2 );
-    clipMv(acMvTemp[2], pu.cu->lumaPos(), *pu.cs->sps);
-#endif
     xPredAffineBlk( COMPONENT_Y, pu, refPic, acMvTemp, predBuf, false, pu.cu->slice->clpRng( COMPONENT_Y ) );
 
     // get error

@@ -278,9 +278,7 @@ void roundMV( Mv& rcMv, unsigned imvShift );
 #endif
 void clipMv ( Mv& rcMv, const struct Position& pos, const class SPS& sps );
 
-#if JVET_K_AFFINE_BUG_FIXES
 void roundAffineMv( int& mvx, int& mvy, int nShift );
-#endif
 
 //! \}
 

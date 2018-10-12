@@ -520,7 +520,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               CHECK(!mvRT.highPrec, "unexpected lp mv");
 #endif
 
-#if JVET_K_AFFINE_BUG_FIXES
               Mv mvLB;
 #if JVET_K0337_AFFINE_6PARA
               if ( cu.affineType == AFFINEMODEL_6PARAM )
@@ -536,18 +535,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
                 CHECK(!mvLB.highPrec, "unexpected lp mv");
 #endif
               }
-#endif
-#else
-              int iWidth = pu.Y().width;
-              int iHeight = pu.Y().height;
-              int vx2 =  - ( mvRT.getVer() - mvLT.getVer() ) * iHeight / iWidth + mvLT.getHor();
-              int vy2 =    ( mvRT.getHor() - mvLT.getHor() ) * iHeight / iWidth + mvLT.getVer();
-              //    Mv mvLB( vx2, vy2 );
-              Mv mvLB( vx2, vy2, true );
-
-              clipMv(mvLT, pu.cu->lumaPos(), *pu.cs->sps);
-              clipMv(mvRT, pu.cu->lumaPos(), *pu.cs->sps);
-              clipMv(mvLB, pu.cu->lumaPos(), *pu.cs->sps);
 #endif
               PU::setAllAffineMv( pu, mvLT, mvRT, mvLB, eRefList );
             }

@@ -1378,7 +1378,7 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
 
   int neiW = puNeighbour->Y().width;
   int curW = pu.Y().width;
-#if JVET_K0337_AFFINE_6PARA || !JVET_K_AFFINE_BUG_FIXES
+#if JVET_K0337_AFFINE_6PARA
   int neiH = puNeighbour->Y().height;
   int curH = pu.Y().height;
 #endif
@@ -1391,7 +1391,6 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
   mvRT = puNeighbour->getMotionInfo( posRT ).mv[eRefPicList];
   mvLB = puNeighbour->getMotionInfo( posLB ).mv[eRefPicList];
 
-#if JVET_K_AFFINE_BUG_FIXES
   int shift = MAX_CU_DEPTH;
   int iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY;
 
@@ -1450,20 +1449,6 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
     rcMv[2] = Mv(horTmp, verTmp, true);
 #endif
   }
-#endif
-#else
-  rcMv[0].hor = int( mvLT.hor + 1.0 * (mvRT.hor - mvLT.hor) * (posCurX - posNeiX) / neiW + 1.0 * (mvLB.hor - mvLT.hor) * (posCurY - posNeiY) / neiH );
-  rcMv[0].ver = int( mvLT.ver + 1.0 * (mvRT.ver - mvLT.ver) * (posCurX - posNeiX) / neiW + 1.0 * (mvLB.ver - mvLT.ver) * (posCurY - posNeiY) / neiH );
-  rcMv[1].hor = int( rcMv[0].hor + 1.0 * (mvRT.hor - mvLT.hor) * curW / neiW );
-  rcMv[1].ver = int( rcMv[0].ver + 1.0 * (mvRT.ver - mvLT.ver) * curW / neiW );
-  rcMv[2].hor = int( rcMv[0].hor + 1.0 * (mvLB.hor - mvLT.hor) * curH / neiH );
-  rcMv[2].ver = int( rcMv[0].ver + 1.0 * (mvLB.ver - mvLT.ver) * curH / neiH );
-
-#if !REMOVE_MV_ADAPT_PREC
-  rcMv[0].highPrec = true;
-  rcMv[1].highPrec = true;
-  rcMv[2].highPrec = true;
-#endif
 #endif
 }
 
@@ -1847,9 +1832,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 #if !REMOVE_MV_ADAPT_PREC
       amvpInfo.mvCand[i].setHighPrec();
 #endif
-#if !JVET_K_AFFINE_BUG_FIXES
-      clipMv( amvpInfo.mvCand[i], pu.cu->lumaPos(), *pu.cs->sps );
-#endif
       affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = amvpInfo.mvCand[i];
       affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = amvpInfo.mvCand[i];
       affiAMVPInfo.mvCandLB[affiAMVPInfo.numCand] = amvpInfo.mvCand[i];
@@ -2099,11 +2081,7 @@ const PredictionUnit* getFirstAvailableAffineNeighbour( const PredictionUnit &pu
 
 bool PU::isAffineMrgFlagCoded( const PredictionUnit &pu )
 {
-#if JVET_K_AFFINE_BUG_FIXES
   if ( pu.cu->lumaSize().width < 8 || pu.cu->lumaSize().height < 8 )
-#else
-  if( ( pu.cs->sps->getSpsNext().getUseQTBT() ) && pu.cu->lumaSize().area() < 64 )
-#endif
   {
     return false;
   }
@@ -2233,12 +2211,7 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
     {
       mvScaleTmpHor = mvScaleHor + deltaMvHorX * (halfBW + w) + deltaMvVerX * (halfBH + h);
       mvScaleTmpVer = mvScaleVer + deltaMvHorY * (halfBW + w) + deltaMvVerY * (halfBH + h);
-#if JVET_K_AFFINE_BUG_FIXES
       roundAffineMv( mvScaleTmpHor, mvScaleTmpVer, shift );
-#else
-      mvScaleTmpHor >>= shift;
-      mvScaleTmpVer >>= shift;
-#endif
 
       for ( int y = (h >> MIN_CU_LOG2); y < ((h + blockHeight) >> MIN_CU_LOG2); y++ )
       {
@@ -2256,15 +2229,8 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
   }
 
   // Set AffineMvField for affine motion compensation LT, RT, LB and RB
-#if !JVET_K_AFFINE_BUG_FIXES
-  Mv mv = affRT + affLB - affLT;
-#endif
   mb.at(            0,             0 ).mv[eRefList] = affLT;
   mb.at( mb.width - 1,             0 ).mv[eRefList] = affRT;
-#if !JVET_K_AFFINE_BUG_FIXES
-  mb.at(            0, mb.height - 1 ).mv[eRefList] = affLB;
-  mb.at( mb.width - 1, mb.height - 1 ).mv[eRefList] = mv;
-#endif
 
 #if JVET_K0337_AFFINE_6PARA
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )

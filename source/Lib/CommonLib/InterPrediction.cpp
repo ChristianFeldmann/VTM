@@ -180,15 +180,11 @@ bool checkIdenticalMotion( const PredictionUnit &pu, bool checkAffine )
         {
           CHECK( !checkAffine, "In this case, checkAffine should be on." );
           const CMotionBuf &mb = pu.getMotionBuf();
-#if JVET_K_AFFINE_BUG_FIXES
 #if JVET_K0337_AFFINE_6PARA
           if ( (pu.cu->affineType == AFFINEMODEL_4PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]))
             || (pu.cu->affineType == AFFINEMODEL_6PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) && (mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1])) )
 #else
           if ( (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) )
-#endif
-#else
-          if( ( mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1] ) && ( mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1] ) && ( mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1] ) )
 #endif
           {
             return true;
@@ -228,15 +224,11 @@ bool InterPrediction::xCheckIdenticalMotion( const PredictionUnit &pu )
         else
         {
           const CMotionBuf &mb = pu.getMotionBuf();
-#if JVET_K_AFFINE_BUG_FIXES
 #if JVET_K0337_AFFINE_6PARA
           if ( (pu.cu->affineType == AFFINEMODEL_4PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]))
             || (pu.cu->affineType == AFFINEMODEL_6PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) && (mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1])) )
 #else
           if ( (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) )
-#endif
-#else
-          if( ( mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1] ) && ( mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1] ) && ( mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1] ) )
 #endif
           {
             return true;
@@ -369,18 +361,12 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
     mv[0] = mb.at( 0,            0             ).mv[eRefPicList];
     mv[1] = mb.at( mb.width - 1, 0             ).mv[eRefPicList];
     mv[2] = mb.at( 0,            mb.height - 1 ).mv[eRefPicList];
-#if !JVET_K_AFFINE_BUG_FIXES
-    clipMv(mv[1], pu.cu->lumaPos(), sps);
-    clipMv(mv[2], pu.cu->lumaPos(), sps);
-#endif
   }
   else
   {
     mv[0] = pu.mv[eRefPicList];
   }
-#if JVET_K_AFFINE_BUG_FIXES
   if ( !pu.cu->affine )
-#endif
   clipMv(mv[0], pu.cu->lumaPos(), sps);
 
 
@@ -533,13 +519,9 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   if( _mv[0] == _mv[1] )
 #endif
   {
-#if JVET_K_AFFINE_BUG_FIXES
     Mv mvTemp = _mv[0];
     clipMv( mvTemp, pu.cu->lumaPos(), *pu.cs->sps );
     xPredInterBlk( compID, pu, refPic, mvTemp, dstPic, bi, clpRng );
-#else
-    xPredInterBlk( compID, pu, refPic, _mv[0], dstPic, bi, clpRng );
-#endif
     return;
   }
 
@@ -642,12 +624,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     {
       int iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
       int iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
-#if JVET_K_AFFINE_BUG_FIXES
       roundAffineMv( iMvScaleTmpHor, iMvScaleTmpVer, shift );
-#else
-      iMvScaleTmpHor >>= shift;
-      iMvScaleTmpVer >>= shift;
-#endif
 
       // clip and scale
       iMvScaleTmpHor = std::min<int>( iHorMax, std::max<int>( iHorMin, iMvScaleTmpHor ) );

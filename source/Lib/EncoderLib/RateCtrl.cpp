@@ -70,9 +70,7 @@ EncRCSeq::EncRCSeq()
   m_useLCUSeparateModel = false;
   m_adaptiveBit         = 0;
   m_lastLambda          = 0.0;
-#if RATECTRL_FIX_FULLNBIT
   m_bitDepth          = 0;
-#endif
 }
 
 EncRCSeq::~EncRCSeq()
@@ -230,7 +228,6 @@ void EncRCSeq::initPicPara( TRCParameter* picPara )
     {
       if (i>0)
       {
-#if RATECTRL_FIX_FULLNBIT
 #if DISTORTION_LAMBDA_BUGFIX
         int bitdepth_luma_scale =
           2
@@ -245,14 +242,9 @@ void EncRCSeq::initPicPara( TRCParameter* picPara )
 #endif
         m_picPara[i].m_alpha = 3.2003 * pow(2.0, bitdepth_luma_scale);
         m_picPara[i].m_beta = -1.367;
-#else
-        m_picPara[i].m_alpha = 3.2003;
-        m_picPara[i].m_beta  = -1.367;
-#endif
       }
       else
       {
-#if RATECTRL_FIX_FULLNBIT
 #if DISTORTION_LAMBDA_BUGFIX
         int bitdepth_luma_scale =
           2
@@ -267,10 +259,6 @@ void EncRCSeq::initPicPara( TRCParameter* picPara )
 #endif
         m_picPara[i].m_alpha = pow(2.0, bitdepth_luma_scale) * ALPHA;
         m_picPara[i].m_beta = BETA2;
-#else
-        m_picPara[i].m_alpha = ALPHA;
-        m_picPara[i].m_beta  = BETA2;
-#endif
       }
     }
   }
@@ -408,7 +396,6 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
     else if (encRCSeq->getAdaptiveBits() == 3)  // for GOP size = 16, random access case
     {
       {
-#if RATECTRL_FIX_FULLNBIT
 #if DISTORTION_LAMBDA_BUGFIX
         int bitdepth_luma_scale =
           2
@@ -433,19 +420,6 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
         double lambdaLev3 = exp((qpLev3 - 13.7122) / 4.2005) * pow(2.0, bitdepth_luma_scale);
         double lambdaLev4 = exp((qpLev4 - 13.7122) / 4.2005) * pow(2.0, bitdepth_luma_scale);
         double lambdaLev5 = exp((qpLev5 - 13.7122) / 4.2005) * pow(2.0, bitdepth_luma_scale);
-#else
-        double hierarQp = 4.2005 * log(encRCSeq->getLastLambda()) + 13.7122;  //  the qp of POC16
-        double qpLev2 = (hierarQp + 0.0) + 0.2016    * (hierarQp + 0.0) - 4.8848;
-        double qpLev3 = (hierarQp + 3.0) + 0.22286 * (hierarQp + 3.0) - 5.7476;
-        double qpLev4 = (hierarQp + 4.0) + 0.2333    * (hierarQp + 4.0) - 5.9;
-        double qpLev5 = (hierarQp + 5.0) + 0.3            * (hierarQp + 5.0) - 7.1444;
-
-        double lambdaLev1 = exp((hierarQp - 13.7122) / 4.2005);
-        double lambdaLev2 = exp((qpLev2   - 13.7122) / 4.2005);
-        double lambdaLev3 = exp((qpLev3   - 13.7122) / 4.2005);
-        double lambdaLev4 = exp((qpLev4   - 13.7122) / 4.2005);
-        double lambdaLev5 = exp((qpLev5   - 13.7122) / 4.2005);
-#endif
 
         lambdaRatio[0] = 1.0;
         lambdaRatio[1] = lambdaLev2 / lambdaLev1;
@@ -920,7 +894,6 @@ double EncRCPic::estimatePicLambda( list<EncRCPic*>& listPreviousPictures, bool 
 
 int EncRCPic::estimatePicQP( double lambda, list<EncRCPic*>& listPreviousPictures )
 {
-#if RATECTRL_FIX_FULLNBIT
 #if DISTORTION_LAMBDA_BUGFIX
   int bitdepth_luma_scale =
     2
@@ -935,9 +908,6 @@ int EncRCPic::estimatePicQP( double lambda, list<EncRCPic*>& listPreviousPicture
 #endif
 
   int QP = int(4.2005 * log(lambda / pow(2.0, bitdepth_luma_scale)) + 13.7122 + 0.5);
-#else
-  int QP = int( 4.2005 * log( lambda ) + 13.7122 + 0.5 );
-#endif
 
   int lastLevelQP = g_RCInvalidQPValue;
   int lastPicQP   = g_RCInvalidQPValue;
@@ -1078,7 +1048,6 @@ double EncRCPic::getLCUEstLambda( double bpp )
 int EncRCPic::getLCUEstQP( double lambda, int clipPicQP )
 {
   int LCUIdx = getLCUCoded();
-#if RATECTRL_FIX_FULLNBIT
 #if DISTORTION_LAMBDA_BUGFIX
   int bitdepth_luma_scale =
     2
@@ -1093,9 +1062,6 @@ int EncRCPic::getLCUEstQP( double lambda, int clipPicQP )
 #endif
 
   int estQP = int(4.2005 * log(lambda / pow(2.0, bitdepth_luma_scale)) + 13.7122 + 0.5);
-#else
-  int estQP = int( 4.2005 * log( lambda ) + 13.7122 + 0.5 );
-#endif
 
   //for Lambda clip, LCU level clip
   int clipNeighbourQP = g_RCInvalidQPValue;
@@ -1506,7 +1472,6 @@ double EncRCPic::getLCUEstLambdaAndQP(double bpp, int clipPicQP, int *estQP)
     minQP = max(clipNeighbourQP - 1, minQP);
   }
 
-#if RATECTRL_FIX_FULLNBIT
 #if DISTORTION_LAMBDA_BUGFIX
   int bitdepth_luma_scale =
     2
@@ -1522,10 +1487,6 @@ double EncRCPic::getLCUEstLambdaAndQP(double bpp, int clipPicQP, int *estQP)
 
   double maxLambda = exp(((double)(maxQP + 0.49) - 13.7122) / 4.2005) * pow(2.0, bitdepth_luma_scale);
   double minLambda = exp(((double)(minQP - 0.49) - 13.7122) / 4.2005) * pow(2.0, bitdepth_luma_scale);
-#else
-  double maxLambda=exp(((double)(maxQP+0.49)-13.7122)/4.2005);
-  double minLambda=exp(((double)(minQP-0.49)-13.7122)/4.2005);
-#endif
 
   estLambda = Clip3(minLambda, maxLambda, estLambda);
 
@@ -1533,11 +1494,7 @@ double EncRCPic::getLCUEstLambdaAndQP(double bpp, int clipPicQP, int *estQP)
   //Avoid different results in different platforms. The problem is caused by the different results of pow() in different platforms.
   estLambda = double(int64_t(estLambda * (double)LAMBDA_PREC + 0.5)) / (double)LAMBDA_PREC;
 #endif
-#if RATECTRL_FIX_FULLNBIT
   *estQP = int(4.2005 * log(estLambda / pow(2.0, bitdepth_luma_scale)) + 13.7122 + 0.5);
-#else
-  *estQP = int( 4.2005 * log(estLambda) + 13.7122 + 0.5 );
-#endif
   *estQP = Clip3(minQP, maxQP, *estQP);
 
   return estLambda;
@@ -1575,11 +1532,7 @@ void RateCtrl::destroy()
   }
 }
 
-#if RATECTRL_FIX_FULLNBIT
 void RateCtrl::init(int totalFrames, int targetBitrate, int frameRate, int GOPSize, int picWidth, int picHeight, int LCUWidth, int LCUHeight, int bitDepth, int keepHierBits, bool useLCUSeparateModel, GOPEntry  GOPList[MAX_GOP])
-#else
-void RateCtrl::init( int totalFrames, int targetBitrate, int frameRate, int GOPSize, int picWidth, int picHeight, int LCUWidth, int LCUHeight, int keepHierBits, bool useLCUSeparateModel, GOPEntry  GOPList[MAX_GOP] )
-#endif
 {
   destroy();
 
@@ -1895,9 +1848,7 @@ void RateCtrl::init( int totalFrames, int targetBitrate, int frameRate, int GOPS
   m_encRCSeq->create( totalFrames, targetBitrate, frameRate, GOPSize, picWidth, picHeight, LCUWidth, LCUHeight, numberOfLevel, useLCUSeparateModel, adaptiveBit );
   m_encRCSeq->initBitsRatio( bitsRatio );
   m_encRCSeq->initGOPID2Level( GOPID2Level );
-#if RATECTRL_FIX_FULLNBIT
   m_encRCSeq->setBitDepth(bitDepth);
-#endif
   m_encRCSeq->initPicPara();
   if ( useLCUSeparateModel )
   {

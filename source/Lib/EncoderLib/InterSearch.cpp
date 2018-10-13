@@ -826,22 +826,6 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
     m_pcRdCost->selectMotionLambda( cu.transQuantBypass );
 
-#if !JVET_K0220_ENC_CTRL
-    bool bFastSkipBi = false;
-    if( auto slsCtrl = dynamic_cast< SaveLoadEncInfoCtrl* >( m_modeCtrl ) )
-    {
-      bFastSkipBi = ( LOAD_ENC_INFO == slsCtrl->getSaveLoadTag( pu ) && 3 != slsCtrl->getSaveLoadInterDir( pu ) );
-    }
-
-#endif
-#if !JVET_K0220_ENC_CTRL
-    bool bFastSkipAffine = false;
-    if( pu.cs->sps->getSpsNext().getUseQTBT() && m_pcEncCfg->getUseSaveLoadEncInfo() )
-    {
-      SaveLoadEncInfoCtrl* modeCtrl = dynamic_cast<SaveLoadEncInfoCtrl*>( m_modeCtrl );
-      bFastSkipAffine = modeCtrl && LOAD_ENC_INFO == modeCtrl->getSaveLoadTag( pu ) && !modeCtrl->getSaveLoadAffineFlag( pu );
-    }
-#endif
     unsigned imvShift = pu.cu->imv << 1;
       //  Uni-directional prediction
       for ( int iRefList = 0; iRefList < iNumPredDir; iRefList++ )
@@ -925,32 +909,18 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         }
       }
 
-#if JVET_K0220_ENC_CTRL
       if (cu.Y().width > 8 && cu.Y().height > 8 && cu.partSize == SIZE_2Nx2N && cu.slice->getSPS()->getSpsNext().getUseAffine() 
         && cu.imv == 0
         )
-#else
-      if (cu.Y().width > 8 && cu.Y().height > 8 && cu.partSize == SIZE_2Nx2N && cu.slice->getSPS()->getSpsNext().getUseAffine() 
-        && cu.imv == 0
-        && !bFastSkipAffine)
-#endif
       {
         ::memcpy( cMvHevcTemp, cMvTemp, sizeof( cMvTemp ) );
       }
-#if JVET_K0220_ENC_CTRL
       if ( cu.Y().width > 8 && cu.Y().height > 8 && cu.partSize == SIZE_2Nx2N && cu.slice->getSPS()->getSpsNext().getUseAffine() )
-#else
-      if ( cu.Y().width > 8 && cu.Y().height > 8 && cu.partSize == SIZE_2Nx2N && cu.slice->getSPS()->getSpsNext().getUseAffine() && !bFastSkipAffine )
-#endif
       {
         ::memcpy( cMvHevcTemp, cMvTemp, sizeof( cMvTemp ) );
       }
       //  Bi-predictive Motion estimation
-#if JVET_K0220_ENC_CTRL
       if( ( cs.slice->isInterB() ) && ( PU::isBipredRestriction( pu ) == false ) )
-#else
-      if ( (cs.slice->isInterB()) && ( PU::isBipredRestriction(pu) == false)  && !bFastSkipBi )
-#endif
       {
         cMvBi[0] = cMv[0];
         cMvBi[1] = cMv[1];
@@ -1235,11 +1205,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       uiHevcCost = ( uiCostBi <= uiCost[0] && uiCostBi <= uiCost[1] ) ? uiCostBi : ( ( uiCost[0] <= uiCost[1] ) ? uiCost[0] : uiCost[1] );
     }
     CHECK( !( !cu.cs->pcv->only2Nx2N || cu.partSize == SIZE_2Nx2N ), "Unexpected part size for QTBT." );
-#if JVET_K0220_ENC_CTRL
     if (cu.Y().width > 8 && cu.Y().height > 8 && cu.partSize == SIZE_2Nx2N && cu.slice->getSPS()->getSpsNext().getUseAffine() && cu.imv == 0)
-#else
-    if (cu.Y().width > 8 && cu.Y().height > 8 && cu.partSize == SIZE_2Nx2N && cu.slice->getSPS()->getSpsNext().getUseAffine() && cu.imv == 0 && !bFastSkipAffine)
-#endif
     {
       // save normal hevc result
       uint32_t uiMRGIndex = pu.mergeIdx;
@@ -1264,11 +1230,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       Mv acMvAffine4Para[2][33][3];
       int refIdx4Para[2] = { -1, -1 };
 
-#if JVET_K0220_ENC_CTRL
       xPredAffineInterSearch(pu, origBuf, puIdx, uiLastModeTemp, uiAffineCost, cMvHevcTemp, acMvAffine4Para, refIdx4Para);
-#else
-      xPredAffineInterSearch(pu, origBuf, puIdx, uiLastModeTemp, uiAffineCost, cMvHevcTemp, bFastSkipBi, acMvAffine4Para, refIdx4Para);
-#endif
       if ( cu.slice->getSPS()->getSpsNext().getUseAffineType() )
       {
         if ( uiAffineCost < uiHevcCost * 1.05 ) ///< condition for 6 parameter affine ME
@@ -1303,11 +1265,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
           Distortion uiAffine6Cost = std::numeric_limits<Distortion>::max();
           cu.affineType = AFFINEMODEL_6PARAM;
-#if JVET_K0220_ENC_CTRL
           xPredAffineInterSearch(pu, origBuf, puIdx, uiLastModeTemp, uiAffine6Cost, cMvHevcTemp, acMvAffine4Para, refIdx4Para);
-#else
-          xPredAffineInterSearch(pu, origBuf, puIdx, uiLastModeTemp, uiAffine6Cost, cMvHevcTemp, bFastSkipBi, acMvAffine4Para, refIdx4Para);
-#endif
 
           // reset to 4 parameter affine inter mode
           if ( uiAffineCost <= uiAffine6Cost )
@@ -2524,12 +2482,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
                                           int                   puIdx,
                                           uint32_t&                 lastMode,
                                           Distortion&           affineCost,
-#if JVET_K0220_ENC_CTRL
                                           Mv                    hevcMv[2][33]
-#else
-                                          Mv                    hevcMv[2][33],
-                                          bool                  bFastSkipBi
-#endif
                                         , Mv                    mvAffine4Para[2][33][3]
                                         , int                   refIdx4Para[2]
                                          )
@@ -2794,11 +2747,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   }
 
   // Bi-directional prediction
-#if JVET_K0220_ENC_CTRL
   if ( slice.isInterB() && !PU::isBipredRestriction(pu) )
-#else
-  if ( slice.isInterB() && !PU::isBipredRestriction(pu) && !bFastSkipBi )
-#endif
   {
     // Set as best list0 and list1
     iRefIdxBi[0] = iRefIdx[0];

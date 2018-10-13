@@ -235,10 +235,6 @@ protected:
   bool      m_usePbIntraFast;
   bool      m_useAMaxBT;
   bool      m_useFastMrg;
-#if !JVET_K0220_ENC_CTRL
-  bool      m_useSaveLoadEncInfo;
-  bool      m_useSaveLoadSplitDecision;
-#endif
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
 

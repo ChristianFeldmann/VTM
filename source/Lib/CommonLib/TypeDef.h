@@ -62,10 +62,7 @@
 
                                                             // Test 2: Samples are taken only along with a longer side
 
-#define JVET_K0220_ENC_CTRL                               1 // remove HM_NO_ADDITIONAL_SPEEDUPS when adopting
-#if JVET_K0220_ENC_CTRL
 #define REUSE_CU_RESULTS                                  1
-#endif
 
 #define JVET_K0390_RATECTRL                               1
 
@@ -169,11 +166,7 @@
 #define ENABLE_BMS                                        1
 
 #if QTBT_AS_IN_JEM // macros which will cause changes in the decoder behavior ara marked with *** - keep them on to retain compatibility with JEM-toolcheck
-#if JVET_K0220_ENC_CTRL
 #define HM_NO_ADDITIONAL_SPEEDUPS                         0
-#else
-#define HM_NO_ADDITIONAL_SPEEDUPS                         1
-#endif
 #define HM_QTBT_AS_IN_JEM                                 1   // ***
 #if     HM_QTBT_AS_IN_JEM
 #define HM_QTBT_AS_IN_JEM_CONTEXT                         1   // ***

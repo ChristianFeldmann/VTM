@@ -317,12 +317,7 @@ protected:
                                     int                   puIdx,
                                     uint32_t&                 lastMode,
                                     Distortion&           affineCost,
-#if JVET_K0220_ENC_CTRL
                                     Mv                    hevcMv[2][33]
-#else
-                                    Mv                    hevcMv[2][33],
-                                    bool                  bFastSkipBi
-#endif
                                   , Mv                    mvAffine4Para[2][33][3]
                                   , int                   refIdx4Para[2]
                                   );

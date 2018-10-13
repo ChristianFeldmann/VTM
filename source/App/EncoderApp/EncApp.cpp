@@ -260,10 +260,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseFastMerge                                      ( m_useFastMrg );
   m_cEncLib.setUsePbIntraFast                                    ( m_usePbIntraFast );
   m_cEncLib.setUseAMaxBT                                         ( m_useAMaxBT );
-#if !JVET_K0220_ENC_CTRL
-  m_cEncLib.setUseSaveLoadEncInfo                                ( m_useSaveLoadEncInfo );
-  m_cEncLib.setUseSaveLoadSplitDecision                          ( m_useSaveLoadSplitDecision );
-#endif
   m_cEncLib.setUseE0023FastEnc                                   ( m_e0023FastEnc );
   m_cEncLib.setUseContentBasedFastQtbt                           ( m_contentBasedFastQtbt );
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );

@@ -54,12 +54,7 @@
  //! \{
 
 IntraSearch::IntraSearch()
-#if JVET_K0220_ENC_CTRL
   : m_pSplitCS      (nullptr)
-#else
-  : m_modeCtrl      (nullptr)
-  , m_pSplitCS      (nullptr)
-#endif
   , m_pFullCS       (nullptr)
   , m_pBestCS       (nullptr)
   , m_pcEncCfg      (nullptr)
@@ -277,8 +272,6 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
   const SPS             &sps           = *cs.sps;
   const uint32_t             uiWidthBit    = cs.pcv->rectCUs ? g_aucLog2[partitioner.currArea().lwidth() ] : CU::getIntraSizeIdx(cu);
   const uint32_t             uiHeightBit   =                   g_aucLog2[partitioner.currArea().lheight()];
-#if !JVET_K0220_ENC_CTRL
-#endif
 
   // Lambda calculation at equivalent Qp of 4 is recommended because at that Qp, the quantization divisor is 1.
   const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda(cu.transQuantBypass) / double(1 << SCALE_BITS);
@@ -314,23 +307,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
   if( cs.pcv->rectCUs )
   {
-#if JVET_K0220_ENC_CTRL
     if( width * height < 64 && !isAllIntra )
     {
       emtUsageFlag = 0; //this forces the recalculation of the candidates list. Why is this necessary? (to be checked)
     }
-#else
-    if( ( width * height < 64 && !isAllIntra ) || ( slsCtrl && m_pcEncCfg->getUseSaveLoadEncInfo() && m_pcEncCfg->getIntraEMT() && LOAD_ENC_INFO == slsCtrl->getSaveLoadTag( cu ) /*&& m_modeCtrl->getSaveLoadEmtCuFlag(cu.cs->area)==0*/ ) )
-    {
-      emtUsageFlag = 0; //this forces the recalculation of the candidates list. Why is this necessary? (to be checked)
-    }
-    //not very sure about this command. It should be further checked when the EMT and the NSST are combined!!!
-    NSSTSaveFlag |= m_pcEncCfg->getNSST() && m_pcEncCfg->getIntraEMT() && slsCtrl && m_pcEncCfg->getUseSaveLoadEncInfo() && LOAD_ENC_INFO == slsCtrl->getSaveLoadTag( cu );
-#endif
   }
-#if !JVET_K0220_ENC_CTRL
-  NSSTLoadFlag &= !(m_pcEncCfg->getNSST() && m_pcEncCfg->getUseSaveLoadEncInfo() && (LOAD_ENC_INFO == slsCtrl->getSaveLoadTag(cu)));
-#endif
 
   static_vector<uint32_t,   FAST_UDI_MAX_RDMODE_NUM> uiHadModeList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandCostList;
@@ -1284,8 +1265,6 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
   bCheckFull               = cs.pcv->noRQT && !partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
   bCheckSplit              = cs.pcv->noRQT &&  partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
 #endif
-#if !JVET_K0220_ENC_CTRL
-#endif
 
   uint32_t    numSig           = 0;
 
@@ -1391,13 +1370,6 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         {
           continue;
         }
-#if !JVET_K0220_ENC_CTRL
-        //SaveLoadTag check for EMT
-        if( cs.sps->getSpsNext().getUseQTBT() && m_pcEncCfg->getUseSaveLoadEncInfo() && slsCtrl && m_pcEncCfg->getIntraEMT() && LOAD_ENC_INFO == slsCtrl->getSaveLoadTag( cu.cs->area ) && transformIndex && transformIndex != slsCtrl->getSaveLoadEmtTuIndex( cu.cs->area ) )
-        {
-          continue;
-        }
-#endif
       }
 
       if ((modeId != firstCheckId) && isNotOnlyOneMode)

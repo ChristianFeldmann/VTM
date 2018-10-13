@@ -254,9 +254,6 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   m_modeCtrl->init( m_pcEncCfg, m_pcRateCtrl, m_pcRdCost );
 
   m_pcInterSearch->setModeCtrl( m_modeCtrl );
-#if !JVET_K0220_ENC_CTRL
-  m_pcIntraSearch->setModeCtrl( m_modeCtrl );
-#endif
   ::memset(m_subMergeBlkSize, 0, sizeof(m_subMergeBlkSize));
   ::memset(m_subMergeBlkNum, 0, sizeof(m_subMergeBlkNum));
   m_prevPOC = MAX_UINT;
@@ -920,12 +917,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
   tempCS->initStructData( qp, bIsLosslessMode );
 
-#if !JVET_K0220_ENC_CTRL
-  partitioner.splitCurrArea( split, *tempCS );
-
-#endif
   m_CABACEstimator->getCtx() = m_CurrCtx->start;
-#if JVET_K0220_ENC_CTRL
 
   if( tempCS->sps->getSpsNext().getUseQTBT() )
   {
@@ -961,7 +953,6 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
   partitioner.splitCurrArea( split, *tempCS );
 
-#endif
   m_CurrCtx++;
 
   tempCS->getRecoBuf().fill( 0 );
@@ -1129,16 +1120,6 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
   for( uint8_t emtCuFlag = 0; emtCuFlag <= considerEmtSecondPass; emtCuFlag++ )
   {
     //Possible early EMT tests interruptions
-#if !JVET_K0220_ENC_CTRL
-    //1) saveLoadTag code for EMT
-    if( sps.getSpsNext().getUseQTBT() && slsCtrl && m_pcEncCfg->getUseSaveLoadEncInfo() )
-    {
-      if( m_pcEncCfg->getIntraEMT() && LOAD_ENC_INFO == slsCtrl->getSaveLoadTag( tempCS->area ) && ( emtCuFlag > 0 ) != slsCtrl->getSaveLoadEmtCuFlag( tempCS->area ) )
-      {
-        continue;
-      }
-    }
-#endif
     //2) Second EMT pass. This "if clause" is necessary because of the NSST and PDPC "for loops".
     if( emtCuFlag && skipSecondEmtPass )
     {
@@ -1251,11 +1232,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
 
     //now we check whether the second pass of SIZE_2Nx2N and the whole Intra SIZE_NxN should be skipped or not
-#if JVET_K0220_ENC_CTRL
     if( !emtCuFlag && !tempCS->slice->isIntra() && bestCU && bestCU->predMode != MODE_INTRA && cu.partSize == SIZE_2Nx2N && m_pcEncCfg->getFastInterEMT() )
-#else
-    if( !emtCuFlag && !tempCS->slice->isIntra() && bestCU && bestCU->predMode != MODE_INTRA && cu.partSize == SIZE_2Nx2N && m_pcEncCfg->getFastInterEMT() && ( m_pcEncCfg->getUseSaveLoadEncInfo() ? ( bestInterCost < MAX_DOUBLE ) : true ) )
-#endif
     {
       const double thEmtInterFastSkipIntra = 1.4; // Skip checking Intra if "2Nx2N using DCT2" is worse than best Inter mode
       if( costSize2Nx2NemtFirstPass > thEmtInterFastSkipIntra * bestInterCost )

@@ -62,9 +62,6 @@ class EncModeCtrl;
 class IntraSearch : public IntraPrediction, CrossComponentPrediction
 {
 private:
-#if !JVET_K0220_ENC_CTRL
-  EncModeCtrl    *m_modeCtrl; //we need this to call the saveLoadTag functions for the EMT
-#endif
   Pel*            m_pSharedPredTransformSkip[MAX_NUM_TBLOCKS];
 
   XUCache         m_unitCache;
@@ -117,10 +114,6 @@ public:
   CodingStructure****getFullCSBuf () { return m_pFullCS; }
   CodingStructure  **getSaveCSBuf () { return m_pSaveCS; }
 
-#if !JVET_K0220_ENC_CTRL
-  void setModeCtrl                (EncModeCtrl *modeCtrl) { m_modeCtrl = modeCtrl; }
-
-#endif
 public:
 
   void estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm );

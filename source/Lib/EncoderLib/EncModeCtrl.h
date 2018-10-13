@@ -285,9 +285,6 @@ public:
   EncTestMode  lastTestMode         () const;
   void         setEarlySkipDetected ();
   virtual void setBest              ( CodingStructure& cs );
-#if !JVET_K0220_ENC_CTRL
-  bool         hasOnlySplitModes    () const;
-#endif
   bool         anyMode              () const;
 
   const ComprCUCtx& getComprCUCtx   () { CHECK( m_ComprCUCtxList.empty(), "Accessing empty list!"); return m_ComprCUCtxList.back(); }
@@ -317,46 +314,6 @@ protected:
 // some utility interfaces that expose some functionality that can be used without concerning about which particular controller is used
 //////////////////////////////////////////////////////////////////////////
 
-#if !JVET_K0220_ENC_CTRL
-struct SaveLoadStruct
-{
-  unsigned        split;
-  SaveLoadTag     tag;
-  unsigned        interDir;
-  bool            mergeFlag;
-  unsigned        imv;
-  unsigned        partIdx;
-  bool            affineFlag;
-};
-
-class SaveLoadEncInfoCtrl
-{
-protected:
-
-  SaveLoadStruct& getSaveLoadStruct    ( const UnitArea& area );
-  SaveLoadStruct& getSaveLoadStructQuad( const UnitArea& area );
-
-  void create   ();
-  void destroy  ();
-  void init     ( const Slice &slice );
-#if ENABLE_SPLIT_PARALLELISM
-  void copyState( const SaveLoadEncInfoCtrl &other, const UnitArea& area );
-#endif
-
-private:
-
-  Slice const     *m_slice_sls;
-  SaveLoadStruct **m_saveLoadInfo;
-
-public:
-
-  virtual ~SaveLoadEncInfoCtrl() { }
-
-  SaveLoadTag getSaveLoadTag    ( const UnitArea& area );
-  unsigned getSaveLoadInterDir  ( const UnitArea& area );
-};
-
-#endif
 static const int MAX_STORED_CU_INFO_REFS = 4;
 
 struct CodedCUInfo
@@ -466,11 +423,7 @@ public:
 //                    - only 2Nx2N, no RQT, additional binary/triary CU splits
 //////////////////////////////////////////////////////////////////////////
 
-#if JVET_K0220_ENC_CTRL
 class EncModeCtrlMTnoRQT : public EncModeCtrl, public CacheBlkInfoCtrl
-#else
-class EncModeCtrlMTnoRQT : public EncModeCtrl, public SaveLoadEncInfoCtrl, public CacheBlkInfoCtrl
-#endif
 #if REUSE_CU_RESULTS
   , public BestEncInfoCache
 #endif
@@ -479,9 +432,7 @@ class EncModeCtrlMTnoRQT : public EncModeCtrl, public SaveLoadEncInfoCtrl, publi
   {
     DID_HORZ_SPLIT = 0,
     DID_VERT_SPLIT,
-#if !HM_NO_ADDITIONAL_SPEEDUPS || JVET_K0220_ENC_CTRL
     DID_QUAD_SPLIT,
-#endif
     BEST_HORZ_SPLIT_COST,
     BEST_VERT_SPLIT_COST,
     BEST_TRIH_SPLIT_COST,
@@ -489,18 +440,11 @@ class EncModeCtrlMTnoRQT : public EncModeCtrl, public SaveLoadEncInfoCtrl, publi
     DO_TRIH_SPLIT,
     DO_TRIV_SPLIT,
     BEST_NON_SPLIT_COST,
-#if !JVET_K0220_ENC_CTRL
-    HISTORY_NEED_TO_SAVE,
-    HISTORY_DO_SAVE,
-    SAVE_LOAD_TAG,
-#endif
     BEST_NO_IMV_COST,
     BEST_IMV_COST,
-#if !HM_NO_ADDITIONAL_SPEEDUPS || JVET_K0220_ENC_CTRL
     QT_BEFORE_BT,
     IS_BEST_NOSPLIT_SKIP,
     MAX_QT_SUB_DEPTH,
-#endif
 #if REUSE_CU_RESULTS
     IS_REUSING_CU,
 #endif

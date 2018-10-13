@@ -93,18 +93,10 @@ inline void dtraceModeCost(CodingStructure &cs, double lambda)
   bool isIntra = CU::isIntra( *cs.cus.front() );
   int intraModeL = isIntra ? cs.pus.front()->intraDir[0] : 0;
   int intraModeC = isIntra ? cs.pus.front()->intraDir[1] : 0;
-#if INTRA67_3MPM
   if (isIntra && intraModeC == DM_CHROMA_IDX)
     intraModeC = 68;
-#else
-  if( isIntra ) intraModeL = g_intraMode65to33AngMapping[intraModeL];
-  if( isIntra && intraModeC == DM_CHROMA_IDX ) intraModeC = 36;
-  else if( isIntra ) intraModeC = g_intraMode65to33AngMapping[intraModeC];
-#endif
   int imvVal = 0;
-#if JVET_K0357_AMVR
   imvVal = cs.cus[0]->imv;
-#endif
   DTRACE( g_trace_ctx, D_MODE_COST, "ModeCost: %6lld %3d @(%4d,%4d) [%2dx%2d] %d (qp%d,pm%d,ptSize%d,skip%d,mrg%d,fruc%d,obmc%d,ic%d,imv%d,affn%d,%d,%d) tempCS = %lld (%d,%d)\n",
     DTRACE_GET_COUNTER( g_trace_ctx, D_MODE_COST ),
     cs.slice->getPOC(),
@@ -155,11 +147,6 @@ inline void dtraceBestMode(CodingStructure *&tempCS, CodingStructure *&bestCS, d
   bool isIntra = CU::isIntra( *tempCS->cus[0] );
   int intraModeL = isIntra ? tempCS->pus[0]->intraDir[0] : 0;
   int intraModeC = isIntra ? tempCS->pus[0]->intraDir[1] : 0;
-#if !INTRA67_3MPM
-  if( isIntra ) intraModeL = g_intraMode65to33AngMapping[intraModeL];
-  if( isIntra && intraModeC == DM_CHROMA_IDX ) intraModeC = 36;
-  else if( isIntra ) intraModeC = g_intraMode65to33AngMapping[intraModeC];
-#endif
 
   if(!bSplitCS)
   {

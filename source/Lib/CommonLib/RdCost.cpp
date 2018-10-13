@@ -78,20 +78,12 @@ void RdCost::setLambda( double dLambda, const BitDepths &bitDepths )
   m_dLambda             = dLambda;
   m_DistScale           = double(1<<SCALE_BITS) / m_dLambda;
   m_dLambdaMotionSAD[0] = sqrt(m_dLambda);
-#if DISTORTION_LAMBDA_BUGFIX
   dLambda = 0.57
             * pow(2.0, ((LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME - 12
                          + 6
                              * ((bitDepths.recon[CHANNEL_TYPE_LUMA] - 8)
                                 - DISTORTION_PRECISION_ADJUSTMENT(bitDepths.recon[CHANNEL_TYPE_LUMA])))
                         / 3.0));
-#else
-#if FULL_NBIT
-  dLambda = 0.57 * pow(2.0, ((LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME - 12) / 3.0));
-#else
-  dLambda = 0.57 * pow(2.0, ((LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME - 12 - 6 * (bitDepths.recon[CHANNEL_TYPE_LUMA] - 8)) / 3.0));
-#endif
-#endif
   m_dLambdaMotionSAD[1] = sqrt(dLambda);
 }
 
@@ -462,11 +454,7 @@ Distortion RdCost::xGetSAD( const DistParam& rcDtParam )
   const int  iSubStep        = ( 1 << iSubShift );
   const int  iStrideCur      = rcDtParam.cur.stride * iSubStep;
   const int  iStrideOrg      = rcDtParam.org.stride * iSubStep;
-#if DISTORTION_LAMBDA_BUGFIX
   const uint32_t distortionShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
-#else
-  const uint32_t distortionShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8);
-#endif
 
   Distortion uiSum = 0;
 
@@ -517,11 +505,7 @@ Distortion RdCost::xGetSAD4( const DistParam& rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetSAD8( const DistParam& rcDtParam )
@@ -557,11 +541,7 @@ Distortion RdCost::xGetSAD8( const DistParam& rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetSAD16( const DistParam& rcDtParam )
@@ -605,11 +585,7 @@ Distortion RdCost::xGetSAD16( const DistParam& rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetSAD12( const DistParam& rcDtParam )
@@ -649,11 +625,7 @@ Distortion RdCost::xGetSAD12( const DistParam& rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetSAD16N( const DistParam &rcDtParam )
@@ -695,11 +667,7 @@ Distortion RdCost::xGetSAD16N( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetSAD32( const DistParam &rcDtParam )
@@ -759,11 +727,7 @@ Distortion RdCost::xGetSAD32( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetSAD24( const DistParam &rcDtParam )
@@ -815,11 +779,7 @@ Distortion RdCost::xGetSAD24( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetSAD64( const DistParam &rcDtParam )
@@ -911,11 +871,7 @@ Distortion RdCost::xGetSAD64( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetSAD48( const DistParam &rcDtParam )
@@ -991,11 +947,7 @@ Distortion RdCost::xGetSAD48( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 
@@ -1015,11 +967,7 @@ Distortion RdCost::xGetMRSAD( const DistParam& rcDtParam )
   const int  iSubStep        = ( 1 << iSubShift );
   const int  iStrideCur      = rcDtParam.cur.stride * iSubStep;
   const int  iStrideOrg      = rcDtParam.org.stride * iSubStep;
-#if DISTORTION_LAMBDA_BUGFIX
   const uint32_t distortionShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
-#else
-  const uint32_t distortionShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8);
-#endif
 
   int32_t deltaSum = 0;
   for( int r = iRows; r != 0; r-=iSubStep, piOrg += iStrideOrg, piCur += iStrideCur )
@@ -1087,11 +1035,7 @@ Distortion RdCost::xGetMRSAD4( const DistParam& rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 
@@ -1138,11 +1082,7 @@ Distortion RdCost::xGetMRSAD8( const DistParam& rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetMRSAD16( const DistParam& rcDtParam )
@@ -1204,11 +1144,7 @@ Distortion RdCost::xGetMRSAD16( const DistParam& rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetMRSAD12( const DistParam& rcDtParam )
@@ -1262,11 +1198,7 @@ Distortion RdCost::xGetMRSAD12( const DistParam& rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetMRSAD16N( const DistParam &rcDtParam )
@@ -1334,11 +1266,7 @@ Distortion RdCost::xGetMRSAD16N( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetMRSAD32( const DistParam &rcDtParam )
@@ -1432,11 +1360,7 @@ Distortion RdCost::xGetMRSAD32( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetMRSAD24( const DistParam &rcDtParam )
@@ -1514,11 +1438,7 @@ Distortion RdCost::xGetMRSAD24( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetMRSAD64( const DistParam &rcDtParam )
@@ -1676,11 +1596,7 @@ Distortion RdCost::xGetMRSAD64( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 Distortion RdCost::xGetMRSAD48( const DistParam &rcDtParam )
@@ -1806,11 +1722,7 @@ Distortion RdCost::xGetMRSAD48( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -1832,11 +1744,7 @@ Distortion RdCost::xGetSSE( const DistParam &rcDtParam )
   int  iStrideOrg       = rcDtParam.org.stride;
 
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t       uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth-8) << 1);
-#endif
 
   Intermediate_Int iTemp;
 
@@ -1869,11 +1777,7 @@ Distortion RdCost::xGetSSE4( const DistParam &rcDtParam )
   int  iStrideCur    = rcDtParam.cur.stride;
 
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t       uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth - 8) << 1);
-#endif
 
   Intermediate_Int  iTemp;
 
@@ -1907,11 +1811,7 @@ Distortion RdCost::xGetSSE8( const DistParam &rcDtParam )
   int  iStrideCur    = rcDtParam.cur.stride;
 
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t       uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth - 8) << 1);
-#endif
 
   Intermediate_Int  iTemp;
 
@@ -1948,11 +1848,7 @@ Distortion RdCost::xGetSSE16( const DistParam &rcDtParam )
   int  iStrideCur    = rcDtParam.cur.stride;
 
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t       uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth-8) << 1);
-#endif
 
   Intermediate_Int  iTemp;
 
@@ -1997,11 +1893,7 @@ Distortion RdCost::xGetSSE16N( const DistParam &rcDtParam )
   int  iStrideCur    = rcDtParam.cur.stride;
 
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t       uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth-8) << 1);
-#endif
 
   Intermediate_Int  iTemp;
 
@@ -2050,11 +1942,7 @@ Distortion RdCost::xGetSSE32( const DistParam &rcDtParam )
   int  iStrideCur    = rcDtParam.cur.stride;
 
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t       uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth-8) << 1);
-#endif
 
   Intermediate_Int  iTemp;
 
@@ -2116,11 +2004,7 @@ Distortion RdCost::xGetSSE64( const DistParam &rcDtParam )
   int  iStrideCur    = rcDtParam.cur.stride;
 
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t       uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth-8) << 1);
-#endif
 
   Intermediate_Int  iTemp;
 
@@ -2966,11 +2850,7 @@ Distortion RdCost::xGetHADs( const DistParam &rcDtParam )
     THROW( "Invalid size" );
   }
 
-#if DISTORTION_LAMBDA_BUGFIX
   return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth));
-#else
-  return (uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8));
-#endif
 }
 
 
@@ -3042,11 +2922,7 @@ Distortion RdCost::xGetSSE_WTD( const DistParam &rcDtParam )
   const int  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
 
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth - 8) << 1);
-#endif
   for( ; iRows != 0; iRows-- )
   {
     for (int n = 0; n < iCols; n++ )
@@ -3077,11 +2953,7 @@ Distortion RdCost::xGetSSE2_WTD( const DistParam &rcDtParam )
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth - 8) << 1);
-#endif
   for( ; iRows != 0; iRows-- )
   {
     uiSum += getWeightedMSE(rcDtParam.compID, piOrg[0  ], piCur[0  ], uiShift, piOrgLuma[size_t(0)<<cShift]);   // piOrg[0] - piCur[0]; uiSum += Distortion(( iTemp * iTemp ) >> uiShift);
@@ -3110,11 +2982,7 @@ Distortion RdCost::xGetSSE4_WTD( const DistParam &rcDtParam )
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth - 8) << 1);
-#endif
   for( ; iRows != 0; iRows-- )
   {
     uiSum += getWeightedMSE(rcDtParam.compID, piOrg[0  ], piCur[0  ], uiShift, piOrgLuma[size_t(0)<<cShift]);   // piOrg[0] - piCur[0]; uiSum += Distortion(( iTemp * iTemp ) >> uiShift);
@@ -3146,11 +3014,7 @@ Distortion RdCost::xGetSSE8_WTD( const DistParam &rcDtParam )
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
  
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth - 8) << 1);
-#endif
   for( ; iRows != 0; iRows-- )
   {
     uiSum += getWeightedMSE(rcDtParam.compID, piOrg[0  ], piCur[0  ], uiShift, piOrgLuma[0  ]);   // piOrg[0] - piCur[0]; uiSum += Distortion(( iTemp * iTemp ) >> uiShift);
@@ -3185,11 +3049,7 @@ Distortion RdCost::xGetSSE16_WTD( const DistParam &rcDtParam )
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
   
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth - 8) << 1);
-#endif
   for( ; iRows != 0; iRows-- )
   {
     uiSum += getWeightedMSE(rcDtParam.compID, piOrg[0  ], piCur[0  ], uiShift, piOrgLuma[0  ]);  // piOrg[ 0] - piCur[ 0]; uiSum += Distortion(( iTemp * iTemp ) >> uiShift);
@@ -3231,11 +3091,7 @@ Distortion RdCost::xGetSSE16N_WTD( const DistParam &rcDtParam )
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth - 8) << 1);
-#endif
   for( ; iRows != 0; iRows-- )
   {
     for (int n = 0; n < iCols; n+=16 )
@@ -3281,11 +3137,7 @@ Distortion RdCost::xGetSSE32_WTD( const DistParam &rcDtParam )
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
   
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth - 8) << 1);
-#endif
   for( ; iRows != 0; iRows-- )
   {
     uiSum += getWeightedMSE(rcDtParam.compID, piOrg[0 ], piCur[0 ], uiShift, piOrgLuma[size_t(0) ]);  // iTemp = piOrg[ 0] - piCur[ 0]; uiSum += Distortion(( iTemp * iTemp ) >> uiShift);
@@ -3344,11 +3196,7 @@ Distortion RdCost::xGetSSE64_WTD( const DistParam &rcDtParam )
   const size_t cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
  
   Distortion uiSum   = 0;
-#if DISTORTION_LAMBDA_BUGFIX
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth)) << 1;
-#else
-  uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth - 8) << 1);
-#endif
   for( ; iRows != 0; iRows-- )
   {
     uiSum += getWeightedMSE(rcDtParam.compID, piOrg[0 ], piCur[0 ], uiShift, piOrgLuma[size_t(0) ]);  // iTemp = piOrg[ 0] - piCur[ 0]; uiSum += Distortion(( iTemp * iTemp ) >> uiShift);

@@ -56,9 +56,7 @@ enum EncTestModeType
 {
   ETM_MERGE_SKIP,
   ETM_INTER_ME,
-#if JVET_K_AFFINE
   ETM_AFFINE,
-#endif
   ETM_INTRA,
   ETM_IPCM,
   ETM_SPLIT_QT,
@@ -70,9 +68,7 @@ enum EncTestModeType
 #if REUSE_CU_RESULTS
   ETM_RECO_CACHED,
 #endif
-#if JVET_K0357_AMVR
   ETM_TRIGGER_IMV_LIST,
-#endif
   ETM_INVALID
 };
 
@@ -80,10 +76,8 @@ enum EncTestModeOpts
 {
   ETO_STANDARD    =  0,                   // empty      (standard option)
   ETO_FORCE_MERGE =  1<<0,                // bit   0    (indicates forced merge)
-#if JVET_K0357_AMVR
   ETO_IMV_SHIFT   =     1,                // bits  1-3  (imv parameter starts at bit 1)
   ETO_IMV         =  7<<ETO_IMV_SHIFT,    // bits  1-3  (imv parameter uses 3 bits)
-#endif
   ETO_DUMMY       =  1<<5,                // bit   5    (dummy)
   ETO_INVALID     = 0xffffffff            // bits 0-31  (invalid option)
 };
@@ -139,9 +133,7 @@ inline bool isModeInter( const EncTestMode& encTestmode ) // perhaps remove
 {
   return (   encTestmode.type == ETM_INTER_ME
           || encTestmode.type == ETM_MERGE_SKIP
-#if JVET_K_AFFINE
           || encTestmode.type == ETM_AFFINE
-#endif
          );
 }
 
@@ -189,17 +181,11 @@ struct ComprCUCtx
     , extraFeatures (            )
     , extraFeaturesd(            )
     , bestInterCost ( MAX_DOUBLE )
-#if JVET_K1000_SIMPLIFIED_EMT
     , bestEmtSize2Nx2N1stPass
                     ( MAX_DOUBLE )
     , skipSecondEMTPass
                     ( false   )
-#endif
-#if DISTORTION_TYPE_BUGFIX
     , interHad      (std::numeric_limits<Distortion>::max())
-#else
-    , interHad      ( MAX_UINT   )
-#endif
 #if ENABLE_SPLIT_PARALLELISM
     , isLevelSplitParallel
                     ( false )
@@ -227,10 +213,8 @@ struct ComprCUCtx
   static_vector<int64_t,  30>         extraFeatures;
   static_vector<double, 30>         extraFeaturesd;
   double                            bestInterCost;
-#if JVET_K1000_SIMPLIFIED_EMT
   double                            bestEmtSize2Nx2N1stPass;
   bool                              skipSecondEMTPass;
-#endif
   Distortion                        interHad;
 #if ENABLE_SPLIT_PARALLELISM
   bool                              isLevelSplitParallel;
@@ -297,9 +281,6 @@ public:
   EncTestMode  lastTestMode         () const;
   void         setEarlySkipDetected ();
   virtual void setBest              ( CodingStructure& cs );
-#if !JVET_K0220_ENC_CTRL
-  bool         hasOnlySplitModes    () const;
-#endif
   bool         anyMode              () const;
 
   const ComprCUCtx& getComprCUCtx   () { CHECK( m_ComprCUCtxList.empty(), "Accessing empty list!"); return m_ComprCUCtxList.back(); }
@@ -314,11 +295,9 @@ public:
   double getBestInterCost             ()                  const { return m_ComprCUCtxList.back().bestInterCost;           }
   Distortion getInterHad              ()                  const { return m_ComprCUCtxList.back().interHad;                }
   void enforceInterHad                ( Distortion had )        {        m_ComprCUCtxList.back().interHad = had;          }
-#if JVET_K1000_SIMPLIFIED_EMT
   double getEmtSize2Nx2NFirstPassCost ()                  const { return m_ComprCUCtxList.back().bestEmtSize2Nx2N1stPass; }
   bool getSkipSecondEMTPass           ()                  const { return m_ComprCUCtxList.back().skipSecondEMTPass;       }
   void setSkipSecondEMTPass           ( bool b )                {        m_ComprCUCtxList.back().skipSecondEMTPass = b;   }
-#endif
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );
@@ -331,50 +310,6 @@ protected:
 // some utility interfaces that expose some functionality that can be used without concerning about which particular controller is used
 //////////////////////////////////////////////////////////////////////////
 
-#if !JVET_K0220_ENC_CTRL
-struct SaveLoadStruct
-{
-  unsigned        split;
-  SaveLoadTag     tag;
-  unsigned        interDir;
-  bool            mergeFlag;
-#if JVET_K0357_AMVR
-  unsigned        imv;
-#endif
-  unsigned        partIdx;
-#if JVET_K_AFFINE
-  bool            affineFlag;
-#endif
-};
-
-class SaveLoadEncInfoCtrl
-{
-protected:
-
-  SaveLoadStruct& getSaveLoadStruct    ( const UnitArea& area );
-  SaveLoadStruct& getSaveLoadStructQuad( const UnitArea& area );
-
-  void create   ();
-  void destroy  ();
-  void init     ( const Slice &slice );
-#if ENABLE_SPLIT_PARALLELISM
-  void copyState( const SaveLoadEncInfoCtrl &other, const UnitArea& area );
-#endif
-
-private:
-
-  Slice const     *m_slice_sls;
-  SaveLoadStruct **m_saveLoadInfo;
-
-public:
-
-  virtual ~SaveLoadEncInfoCtrl() { }
-
-  SaveLoadTag getSaveLoadTag    ( const UnitArea& area );
-  unsigned getSaveLoadInterDir  ( const UnitArea& area );
-};
-
-#endif
 static const int MAX_STORED_CU_INFO_REFS = 4;
 
 struct CodedCUInfo
@@ -484,11 +419,7 @@ public:
 //                    - only 2Nx2N, no RQT, additional binary/triary CU splits
 //////////////////////////////////////////////////////////////////////////
 
-#if JVET_K0220_ENC_CTRL
 class EncModeCtrlMTnoRQT : public EncModeCtrl, public CacheBlkInfoCtrl
-#else
-class EncModeCtrlMTnoRQT : public EncModeCtrl, public SaveLoadEncInfoCtrl, public CacheBlkInfoCtrl
-#endif
 #if REUSE_CU_RESULTS
   , public BestEncInfoCache
 #endif
@@ -497,9 +428,7 @@ class EncModeCtrlMTnoRQT : public EncModeCtrl, public SaveLoadEncInfoCtrl, publi
   {
     DID_HORZ_SPLIT = 0,
     DID_VERT_SPLIT,
-#if !HM_NO_ADDITIONAL_SPEEDUPS || JVET_K0220_ENC_CTRL
     DID_QUAD_SPLIT,
-#endif
     BEST_HORZ_SPLIT_COST,
     BEST_VERT_SPLIT_COST,
     BEST_TRIH_SPLIT_COST,
@@ -507,20 +436,11 @@ class EncModeCtrlMTnoRQT : public EncModeCtrl, public SaveLoadEncInfoCtrl, publi
     DO_TRIH_SPLIT,
     DO_TRIV_SPLIT,
     BEST_NON_SPLIT_COST,
-#if !JVET_K0220_ENC_CTRL
-    HISTORY_NEED_TO_SAVE,
-    HISTORY_DO_SAVE,
-    SAVE_LOAD_TAG,
-#endif
-#if JVET_K0357_AMVR
     BEST_NO_IMV_COST,
     BEST_IMV_COST,
-#endif
-#if !HM_NO_ADDITIONAL_SPEEDUPS || JVET_K0220_ENC_CTRL
     QT_BEFORE_BT,
     IS_BEST_NOSPLIT_SKIP,
     MAX_QT_SUB_DEPTH,
-#endif
 #if REUSE_CU_RESULTS
     IS_REUSING_CU,
 #endif

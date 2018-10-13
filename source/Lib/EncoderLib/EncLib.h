@@ -53,9 +53,7 @@
 #include "InterSearch.h"
 #include "IntraSearch.h"
 #include "EncSampleAdaptiveOffset.h"
-#if JVET_K0371_ALF
 #include "EncAdaptiveLoopFilter.h"
-#endif
 #include "RateCtrl.h"
 
 
@@ -92,9 +90,7 @@ private:
 #endif
   LoopFilter                m_cLoopFilter;                        ///< deblocking filter class
   EncSampleAdaptiveOffset   m_cEncSAO;                            ///< sample adaptive offset class
-#if JVET_K0371_ALF
   EncAdaptiveLoopFilter     m_cEncALF;
-#endif
   HLSWriter                 m_HLSWriter;                          ///< CAVLC encoder
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   CABACEncoder             *m_CABACEncoder;
@@ -150,9 +146,7 @@ protected:
 #if HEVC_USE_SCALING_LISTS
   void  xInitScalingLists (SPS &sps, PPS &pps);   ///< initialize scaling lists
 #endif
-#if JVET_K0157
   void  xInitPPSforLT(PPS& pps);
-#endif
   void  xInitHrdParameters(SPS &sps);                 ///< initialize HRD parameters
 
 #if HEVC_TILES_WPP
@@ -188,9 +182,7 @@ public:
 #endif
   LoopFilter*             getLoopFilter         ()              { return  &m_cLoopFilter;          }
   EncSampleAdaptiveOffset* getSAO               ()              { return  &m_cEncSAO;              }
-#if JVET_K0371_ALF
   EncAdaptiveLoopFilter*  getALF                ()              { return  &m_cEncALF;              }
-#endif
   EncGOP*                 getGOPEncoder         ()              { return  &m_cGOPEncoder;          }
   EncSlice*               getSliceEncoder       ()              { return  &m_cSliceEncoder;        }
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
@@ -214,9 +206,7 @@ public:
 
 
   void selectReferencePictureSet(Slice* slice, int POCCurr, int GOPid
-#if JVET_K0157
     , int ltPoc
-#endif
   );
   int getReferencePictureSetIdxForSOP(int POCCurr, int GOPid );
 

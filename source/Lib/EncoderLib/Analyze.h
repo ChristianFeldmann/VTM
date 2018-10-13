@@ -86,16 +86,12 @@ public:
   Analyze() { clear(); }
 
   void  addResult( double psnr[MAX_NUM_COMPONENT], double bits, const double MSEyuvframe[MAX_NUM_COMPONENT]
-#if JVET_K0157
     , bool isEncodeLtRef
-#endif
   )
   {
     m_dAddBits  += bits;
-#if JVET_K0157
     if (isEncodeLtRef)
       return;
-#endif
     for(uint32_t i=0; i<MAX_NUM_COMPONENT; i++)
     {
       m_dPSNRSum[i] += psnr[i];

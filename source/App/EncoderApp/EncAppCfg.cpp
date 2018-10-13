@@ -806,7 +806,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxBTDepthISliceC",                               m_uiMaxBTDepthIChroma,                               3u, "MaxBTDepthISliceC")
   ("DualITree",                                       m_dualTree,                                       false, "Use separate QTBT trees for intra slice luma and chroma channel types")
   ("LargeCTU",                                        m_LargeCTU,                                       false, "Enable large CTU (0:off, 1:on)  [default: off]")
-#if JVET_K0346
 #if ENABLE_BMS
   ("SubPuMvp",                                       m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:ATMVP, 2:STMVP, 3:ATMVP+STMVP)  [default: off]")
 #else
@@ -816,35 +815,24 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if !REMOVE_MV_ADAPT_PREC 
   ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
 #endif
-#endif
-#if JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC 
   ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
 #endif
   ("Affine",                                          m_Affine,                                        false, "Enable affine prediction (0:off, 1:on)  [default: off]")
-#if JVET_K0337_AFFINE_6PARA
   ( "AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
-#endif
-#endif
   ("DisableMotCompression",                           m_DisableMotionCompression,                       false, "Disable motion data compression for all modes")
-#if JVET_K0357_AMVR
   ("IMV",                                             m_ImvMode,                                            2, "Adaptive MV precision Mode (IMV)\n"
                                                                                                                "\t0: disabled IMV\n"
                                                                                                                "\t1: IMV default (Full-Pel)\n"
                                                                                                                "\t2: IMV Full-Pel and 4-PEL\n")
   ("IMV4PelFast",                                     m_Imv4PelFast,                                        1, "Fast 4-Pel Adaptive MV precision Mode 0:disabled, 1:enabled)  [default: 1]")
   ("IMVMaxCand",                                      m_ImvMaxCand,                                         4, "max IMV cand (QTBF off only)")
-#endif
 #if ENABLE_WPP_PARALLELISM
   ("AltDQPCoding",                                    m_AltDQPCoding,                                   false, "Improved predictive delta-QP coding (0:off, 1:on)  [default: off]")
 #endif
-#if JVET_K0190
   ("LMChroma",                                        m_LMChroma,                                           1, " LMChroma prediction "
                                                                                                                "\t0:  Disable LMChroma\n"
                                                                                                                "\t1:  Enable LMChroma\n")
-#else
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
   ("EMT,-emt",                                        m_EMT,                                                0, "Enhanced Multiple Transform (EMT)\n"
     "\t0:  Disable EMT\n"
     "\t1:  Enable only Intra EMT\n"
@@ -855,20 +843,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     "\t1:  Enable fast methods only for Intra EMT\n"
     "\t2:  Enable fast methods only for Inter EMT\n"
     "\t3:  Enable fast methods for both Intra & Inter EMT\n")
-#endif
-#if JVET_K0157
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
-#endif
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
 
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
   ("FastMrg",                                         m_useFastMrg,                                     false, "Fast methods for inter merge")
   ("PBIntraFast",                                     m_usePbIntraFast,                                 false, "Fast assertion if the intra mode is probable")
   ("AMaxBT",                                          m_useAMaxBT,                                      false, "Adaptive maximal BT-size")
-#if !JVET_K0220_ENC_CTRL
-  ("SaveLoadEncInfo",                                 m_useSaveLoadEncInfo,                             false, "Reuse of previous encoder decision for same block generated by different partition methods")
-  ("SaveLoadSplitDecision",                           m_useSaveLoadSplitDecision,                       false, "Reuse of previous split decision for same block generated by different partition methods")
-#endif
   ("E0023FastEnc",                                    m_e0023FastEnc,                                    true, "Fast encoding setting for QTBT (proposal E0023)")
   ("ContentBasedFastQtbt",                            m_contentBasedFastQtbt,                           false, "Signal based QTBT speed-up")
   // Unit definition parameters
@@ -1062,15 +1043,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
 #endif
-#if JVET_K0072
   ("DepQuant",                                        m_depQuantEnabledFlag,                                          true )
 #if HEVC_USE_SIGN_HIDING
   ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    false )
-#endif
-#else
-#if HEVC_USE_SIGN_HIDING
-  ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    true)
-#endif
 #endif
   ("MaxNumMergeCand",                                 m_maxNumMergeCand,                                   5u, "Maximum number of merge candidates")
   /* Misc. */
@@ -1280,9 +1255,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #else
   ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                      false, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
 #endif
-#if JVET_K0371_ALF
   ( "ALF",                                             m_alf,                                    true, "Adpative Loop Filter\n" )
-#endif
     ;
 
 #if EXTENSION_360_VIDEO
@@ -1300,7 +1273,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   po::ErrorReporter err;
   const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
 
-#if JVET_K0157
   if (m_compositeRefEnabled) 
   {
     for (int i = 0; i < m_iGOPSize; i++) 
@@ -1313,7 +1285,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       }
     }
   }
-#endif
 
   for (list<const char*>::const_iterator it = argv_unhandled.begin(); it != argv_unhandled.end(); it++)
   {
@@ -1932,37 +1903,20 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_numWppThreads > 1, "WPP-style parallelization only supported with NEXT profile" );
 #endif
     xConfirmPara( m_QTBT, "QTBT only allowed with NEXT profile" );
-#if JVET_K0190
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
-#endif
     xConfirmPara( m_LargeCTU, "Large CTU is only allowed with NEXT profile" );
-#if JVET_K0346
     xConfirmPara( m_SubPuMvpMode != 0, "Sub-PU motion vector prediction is only allowed with NEXT profile" );
-#endif
-#if JVET_K_AFFINE && !REMOVE_MV_ADAPT_PREC
+#if !REMOVE_MV_ADAPT_PREC
     xConfirmPara( m_highPrecisionMv, "High precision MV for temporal merging can only be used with NEXT profile" );
     xConfirmPara( m_Affine, "Affine is only allowed with NEXT profile" );
 #endif
-#if JVET_K0346 && !JVET_K_AFFINE && !REMOVE_MV_ADAPT_PREC
-    xConfirmPara(m_highPrecisionMv, "High precision MV for temporal merging can only be used with NEXT profile");
-#endif
     xConfirmPara( m_DisableMotionCompression, "Disable motion data compression only allowed with NEXT profile" );
     xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
-#if JVET_K0357_AMVR
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
-#endif
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
-#if !JVET_K0220_ENC_CTRL
-    xConfirmPara( m_useSaveLoadEncInfo, "Encoder decision saving can only be applied when encoding with NEXT profile" );
-    xConfirmPara( m_useSaveLoadSplitDecision, "Encoder split decision saving can only be applied when encoding with NEXT profile" );
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
     xConfirmPara( m_EMT, "EMT only allowed with NEXT profile" );
     xConfirmPara( m_FastEMT, "EMT only allowed with NEXT profile" );
-#endif
-#if JVET_K0157
     xConfirmPara(m_compositeRefEnabled, "Composite Reference Frame is only allowed with NEXT profile");
-#endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
   else
@@ -1970,11 +1924,8 @@ bool EncAppCfg::xCheckParameter()
 #if ENABLE_WPP_PARALLELISM
     xConfirmPara( !m_AltDQPCoding && ( m_numWppThreads + m_numWppExtraLines ) > 1, "Wavefront parallel encoding only supported with AltDQPCoding" );
 #endif
-#if JVET_K0346
     xConfirmPara( m_SubPuMvpLog2Size < MIN_CU_LOG2,      "SubPuMvpLog2Size must be 2 or greater." );
     xConfirmPara( m_SubPuMvpLog2Size > 6,                "SubPuMvpLog2Size must be 6 or smaller." );
-#endif
-#if JVET_K0072
     if( m_depQuantEnabledFlag )
     {
       xConfirmPara( !m_useRDOQ || !m_useRDOQTS, "RDOQ and RDOQTS must be equal to 1 if dependent quantization is enabled" );
@@ -1982,23 +1933,10 @@ bool EncAppCfg::xCheckParameter()
       xConfirmPara( m_signDataHidingEnabledFlag, "SignHideFlag must be equal to 0 if dependent quantization is enabled" );
 #endif
     }
-#endif
-#if !JVET_K0220_ENC_CTRL
-    xConfirmPara( m_useSaveLoadEncInfo && !m_QTBT,       "Encoder decision saving can only be applied with QTBT" );
-#endif
     xConfirmPara( !m_QTBT && m_MTT,                      "Multi type tree is an extension of QTBT, thus QTBT has to be enabled for MTT" );
 
-#if !JVET_K0220_ENC_CTRL
-#if !HM_QTBT_AS_IN_JEM_QUANT
-#endif
-
-    xConfirmPara( m_useSaveLoadSplitDecision && !m_QTBT, "Encoder split decision saving can only be applied with QTBT" );
-
-#endif
-#if JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC 
     xConfirmPara(m_Affine && !m_highPrecisionMv, "Affine is not yet implemented for HighPrecMv off.");
-#endif
 #endif
 
   }
@@ -2040,9 +1978,6 @@ bool EncAppCfg::xCheckParameter()
   }
 #endif
 
-#if JVET_K0072
-#else
-#endif
 
   xConfirmPara( m_useAMaxBT && !m_QTBT, "AMaxBT can only be used with QTBT!" );
 
@@ -2225,7 +2160,6 @@ bool EncAppCfg::xCheckParameter()
   }
 
 #endif
-#if JVET_K0346
   if( m_SubPuMvpMode == 3 && m_maxNumMergeCand < 7 )
   {
     msg( WARNING, "****************************************************************************\n" );
@@ -2240,12 +2174,7 @@ bool EncAppCfg::xCheckParameter()
     msg( WARNING, "**          an advanced sup-pu temporal merging mode is enabled.          **\n" );
     msg( WARNING, "****************************************************************************\n" );
   }
-#endif
-#if  JVET_K0251_QP_EXT
   xConfirmPara( m_iQP < -6 * (m_internalBitDepth[CHANNEL_TYPE_LUMA] - 8) || m_iQP > MAX_QP, "QP exceeds supported range (-QpBDOffsety to 63)" );
-#else
-  xConfirmPara( m_iQP < -6 * (m_internalBitDepth[CHANNEL_TYPE_LUMA] - 8) || m_iQP > MAX_QP, "QP exceeds supported range (-QpBDOffsety to 51)" );
-#endif
 #if W0038_DB_OPT
   xConfirmPara( m_deblockingFilterMetric!=0 && (m_bLoopFilterDisable || m_loopFilterOffsetInPPS), "If DeblockingFilterMetric is non-zero then both LoopFilterDisable and LoopFilterOffsetInPPS must be 0");
 #else
@@ -2331,20 +2260,16 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_uiMaxCUWidth < ( 1 << (m_quadtreeTULog2MinSize + m_uiQuadtreeTUMaxDepthIntra - 1) ), "QuadtreeTUMaxDepthInter must be less than or equal to the difference between log2(maxCUSize) and QuadtreeTULog2MinSize plus 1" );
 
   xConfirmPara(  m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
-#if JVET_K0346
   if( m_SubPuMvpMode != 0 )
   {
     xConfirmPara( m_maxNumMergeCand > 7, "MaxNumMergeCand must be 7 or smaller." );
   }
   else
-#endif
   {
     xConfirmPara( m_maxNumMergeCand > 5, "MaxNumMergeCand must be 5 or smaller." );
   }
-#if JVET_K1000_SIMPLIFIED_EMT
   xConfirmPara( m_EMT < 0 || m_EMT >3, "EMT must be 0, 1, 2 or 3" );
   xConfirmPara( m_FastEMT < 0 || m_FastEMT >3, "FEMT must be 0, 1, 2 or 3" );
-#endif
   if( m_usePCM)
   {
     for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
@@ -2434,9 +2359,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_intraConstraintFlag, "IntraConstraintFlag cannot be 1 for inter sequences");
   }
 
-#if JVET_K0157
   int multipleFactor = m_compositeRefEnabled ? 2 : 1;
-#endif
   bool verifiedGOP=false;
   bool errorGOP=false;
   int checkGOP=1;
@@ -2457,11 +2380,7 @@ bool EncAppCfg::xCheckParameter()
 
   for(int i=0; i<m_iGOPSize; i++)
   {
-#if JVET_K0157
     if (m_GOPList[i].m_POC == m_iGOPSize * multipleFactor)
-#else
-    if(m_GOPList[i].m_POC==m_iGOPSize)
-#endif
     {
       xConfirmPara( m_GOPList[i].m_temporalId!=0 , "The last frame in each GOP must have temporal ID = 0 " );
     }
@@ -2495,11 +2414,7 @@ bool EncAppCfg::xCheckParameter()
   while(!verifiedGOP&&!errorGOP)
   {
     int curGOP = (checkGOP-1)%m_iGOPSize;
-#if JVET_K0157
     int curPOC = ((checkGOP - 1) / m_iGOPSize)*m_iGOPSize * multipleFactor + m_GOPList[curGOP].m_POC;
-#else
-    int curPOC = ((checkGOP-1)/m_iGOPSize)*m_iGOPSize + m_GOPList[curGOP].m_POC;
-#endif
     if(m_GOPList[curGOP].m_POC<0)
     {
       msg( WARNING, "\nError: found fewer Reference Picture Sets than GOPSize\n");
@@ -2526,11 +2441,7 @@ bool EncAppCfg::xCheckParameter()
               found=true;
               for(int k=0; k<m_iGOPSize; k++)
               {
-#if JVET_K0157
                 if (absPOC % (m_iGOPSize * multipleFactor) == m_GOPList[k].m_POC % (m_iGOPSize * multipleFactor))
-#else
-                if(absPOC%m_iGOPSize == m_GOPList[k].m_POC%m_iGOPSize)
-#endif
                 {
                   if(m_GOPList[k].m_temporalId==m_GOPList[curGOP].m_temporalId)
                   {
@@ -2582,11 +2493,7 @@ bool EncAppCfg::xCheckParameter()
         {
           //step backwards in coding order and include any extra available pictures we might find useful to replace the ones with POC < 0.
           int offGOP = (checkGOP-1+offset)%m_iGOPSize;
-#if JVET_K0157
           int offPOC = ((checkGOP - 1 + offset) / m_iGOPSize)*(m_iGOPSize * multipleFactor) + m_GOPList[offGOP].m_POC;
-#else
-          int offPOC = ((checkGOP-1+offset)/m_iGOPSize)*m_iGOPSize + m_GOPList[offGOP].m_POC;
-#endif
           if(offPOC>=0&&m_GOPList[offGOP].m_temporalId<=m_GOPList[curGOP].m_temporalId)
           {
             bool newRef=false;
@@ -2945,15 +2852,10 @@ bool EncAppCfg::xCheckParameter()
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   xConfirmPara(m_preferredTransferCharacteristics > 255, "transfer_characteristics_idc should not be greater than 255.");
 #endif
-#if JVET_K0357_AMVR
   xConfirmPara( unsigned(m_ImvMode) > 2, "ImvMode exceeds range (0 to 2)" );
-#endif
   xConfirmPara( m_decodeBitstreams[0] == m_bitstreamFileName, "Debug bitstream and the output bitstream cannot be equal.\n" );
   xConfirmPara( m_decodeBitstreams[1] == m_bitstreamFileName, "Decode2 bitstream and the output bitstream cannot be equal.\n" );
-#if JVET_K0190
   xConfirmPara(unsigned(m_LMChroma) > 1, "LMMode exceeds range (0 to 1)");
-#else
-#endif
 #if EXTENSION_360_VIDEO
   check_failed |= m_ext360.verifyParameters();
 #endif
@@ -3150,9 +3052,7 @@ void EncAppCfg::xPrintParameter()
 #endif
   msg( VERBOSE, "CIP:%d ", m_bUseConstrainedIntraPred);
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));
-#if JVET_K0371_ALF
   msg( VERBOSE, "ALF:%d ", m_alf ? 1 : 0 );
-#endif
   msg( VERBOSE, "PCM:%d ", (m_usePCM && (1<<m_uiPCMLog2MinSize) <= m_uiMaxCUWidth)? 1 : 0);
 
   if (m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce)
@@ -3176,9 +3076,7 @@ void EncAppCfg::xPrintParameter()
 #endif
   msg( VERBOSE, "TMVPMode:%d ", m_TMVPModeId     );
 
-#if JVET_K0072
   msg( VERBOSE, " DQ:%d ", m_depQuantEnabledFlag);
-#endif
 #if HEVC_USE_SIGN_HIDING
   msg( VERBOSE, " SignBitHidingFlag:%d ", m_signDataHidingEnabledFlag);
 #endif
@@ -3187,51 +3085,32 @@ void EncAppCfg::xPrintParameter()
   if( m_profile == Profile::NEXT )
   {
     msg( VERBOSE, "\nNEXT TOOL CFG: " );
-#if JVET_K_AFFINE
     msg( VERBOSE, "Affine:%d ", m_Affine );
-#if JVET_K0337_AFFINE_6PARA
     if ( m_Affine )
     {
       msg( VERBOSE, "AffineType:%d ", m_AffineType );
     }
-#endif
-#endif
-#if JVET_K0346
     msg(VERBOSE, "SubPuMvp:%d+%d ", m_SubPuMvpMode & 1, (m_SubPuMvpMode & 2) == 2);
     if (m_SubPuMvpMode != 0)
     {
       msg(VERBOSE, "SubPuMvpLog2Size:%d ", m_SubPuMvpLog2Size);
   }
-#endif
     msg( VERBOSE, "QTBT:%d ", m_QTBT );
     if( m_QTBT ) msg( VERBOSE, "DualITree:%d ", m_dualTree );
     msg( VERBOSE, "LargeCTU:%d ", m_LargeCTU );
-#if JVET_K0357_AMVR
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
     if( !m_QTBT ) msg( VERBOSE, "IMVMaxCand:%d ", m_ImvMaxCand );
-#endif
-#if JVET_K0072
-#else
-#endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC 
     msg(VERBOSE, "HighPrecMv:%d ", m_highPrecisionMv);
-#endif
 #endif
     msg( VERBOSE, "DisMDC:%d ", m_DisableMotionCompression );
     msg( VERBOSE, "MTT:%d ", m_MTT );
 #if ENABLE_WPP_PARALLELISM
     msg( VERBOSE, "AltDQPCoding:%d ", m_AltDQPCoding );
 #endif
-#if JVET_K0190
     msg( VERBOSE, "LMChroma:%d ", m_LMChroma );
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
     msg( VERBOSE, "EMT: %1d(intra) %1d(inter) ", m_EMT & 1, ( m_EMT >> 1 ) & 1 );
-#endif
-#if JVET_K0157
     msg(VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
-#endif
   }
   // ADD_NEW_TOOL (add some output indicating the usage of tools)
 
@@ -3240,21 +3119,10 @@ void EncAppCfg::xPrintParameter()
   {
     msg( VERBOSE, "LCTUFast:%d ", m_useFastLCTU );
   }
-#if !JVET_K0220_ENC_CTRL
-  if( m_QTBT )
-  {
-    msg( VERBOSE, "SaveLoadEncInfo:%d ", m_useSaveLoadEncInfo );
-    msg( VERBOSE, "SaveLoadSplitDecision:%d ", m_useSaveLoadSplitDecision );
-  }
-#endif
   msg( VERBOSE, "FastMrg:%d ", m_useFastMrg );
   msg( VERBOSE, "PBIntraFast:%d ", m_usePbIntraFast );
-#if JVET_K0357_AMVR
   if( m_ImvMode == 2 ) msg( VERBOSE, "IMV4PelFast:%d ", m_Imv4PelFast );
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
   if( m_EMT ) msg( VERBOSE, "EMTFast: %1d(intra) %1d(inter) ", ( m_FastEMT & m_EMT & 1 ), ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
-#endif
   if( m_QTBT ) msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
   if( m_QTBT ) msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
   if( m_QTBT ) msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );

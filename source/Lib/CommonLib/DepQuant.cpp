@@ -41,7 +41,6 @@
 
 
 
-#if JVET_K0072
 
 
 namespace DQIntern
@@ -681,19 +680,11 @@ namespace DQIntern
     // distortion calculation parameters
     const int64_t qScale        = g_quantScales[ qpRem ];
 #if HM_QTBT_AS_IN_JEM_QUANT
-#if DISTORTION_LAMBDA_BUGFIX
     const int nomDShift =
       SCALE_BITS - 2 * (nomTransformShift + DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth)) + m_QShift;
 #else
-    const int     nomDShift     = SCALE_BITS - 2 * ( nomTransformShift + channelBitDepth - 8 ) + m_QShift;
-#endif
-#else
-#if DISTORTION_LAMBDA_BUGFIX
     const int nomDShift = SCALE_BITS - 2 * (nomTransformShift + DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth))
                           + m_QShift + (TU::needsQP3Offset(tu, compID) ? 1 : 0);
-#else
-    const int     nomDShift     = SCALE_BITS - 2 * ( nomTransformShift + channelBitDepth - 8 ) + m_QShift + ( TU::needsQP3Offset( tu, compID ) ? 1 : 0 );
-#endif
 #endif
     const double  qScale2       = double( qScale * qScale );
     const double  nomDistFactor = ( nomDShift < 0 ? 1.0/(double(int64_t(1)<<(-nomDShift))*qScale2*lambda) : double(int64_t(1)<<nomDShift)/(qScale2*lambda) );
@@ -1432,6 +1423,5 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
   }
 }
 
-#endif
 
 

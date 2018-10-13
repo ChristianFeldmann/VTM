@@ -50,9 +50,7 @@
 #include "CommonLib/UnitPartitioner.h"
 #include "CommonLib/RdCost.h"
 
-#if JVET_K0367_AFFINE_FIX_POINT
 #include "CommonLib/AffineGradientSearch.h"
-#endif
 //! \ingroup EncoderLib
 //! \{
 
@@ -66,11 +64,7 @@ static const uint32_t NUM_MV_PREDICTORS         = 3;
 class EncModeCtrl;
 
 /// encoder search class
-#if JVET_K0367_AFFINE_FIX_POINT
 class InterSearch : public InterPrediction, CrossComponentPrediction, AffineGradientSearch
-#else
-class InterSearch : public InterPrediction, CrossComponentPrediction
-#endif
 {
 private:
   EncModeCtrl     *m_modeCtrl;
@@ -78,13 +72,8 @@ private:
   PelStorage      m_tmpPredStorage              [NUM_REF_PIC_LIST_01];
   PelStorage      m_tmpStorageLCU;
   PelStorage      m_tmpAffiStorage;
-#if JVET_K0367_AFFINE_FIX_POINT
   Pel*            m_tmpAffiError;
   int*            m_tmpAffiDeri[2];
-#else
-  int*            m_tmpAffiError;
-  double*         m_tmpAffiDeri[2];
-#endif
 
   CodingStructure ****m_pSplitCS;
   CodingStructure ****m_pFullCS;
@@ -171,13 +160,9 @@ protected:
     Distortion  uiBestSad;
     uint8_t       ucPointNr;
     int         subShiftMode;
-#if JVET_K0357_AMVR
     unsigned    imvShift;
-#endif
-#if JVET_K0157
     bool        inCtuSearch;
     bool        zeroMV;
-#endif
   } IntTZSearchStruct;
 
   // sub-functions for ME
@@ -221,10 +206,8 @@ protected:
                                     AMVPInfo&   amvpInfo,
                                     uint32_t&       ruiBits,
                                     Distortion& ruiCost
-#if JVET_K0357_AMVR
                                     ,
                                     const uint8_t  imv
-#endif
                                   );
 
   Distortion xGetTemplateCost     ( const PredictionUnit& pu,
@@ -289,9 +272,7 @@ protected:
                                     const Mv&             cMvPred,
                                     const int             iSrchRng,
                                     SearchRange&          sr
-#if JVET_K0157
                                   , IntTZSearchStruct &  cStruct
-#endif
                                   );
 
   void xPatternSearchFast         ( const PredictionUnit& pu,
@@ -327,22 +308,14 @@ protected:
                                     Distortion&           ruiCost
                                   );
 
-#if JVET_K_AFFINE
   void xPredAffineInterSearch     ( PredictionUnit&       pu,
                                     PelUnitBuf&           origBuf,
                                     int                   puIdx,
                                     uint32_t&                 lastMode,
                                     Distortion&           affineCost,
-#if JVET_K0220_ENC_CTRL
                                     Mv                    hevcMv[2][33]
-#else
-                                    Mv                    hevcMv[2][33],
-                                    bool                  bFastSkipBi
-#endif
-#if JVET_K0185_AFFINE_6PARA_ENC
                                   , Mv                    mvAffine4Para[2][33][3]
                                   , int                   refIdx4Para[2]
-#endif
                                   );
 
   void xAffineMotionEstimation    ( PredictionUnit& pu,
@@ -370,7 +343,6 @@ protected:
   void xCopyAffineAMVPInfo        ( AffineAMVPInfo& src, AffineAMVPInfo& dst );
   void xCheckBestAffineMVP        ( PredictionUnit &pu, AffineAMVPInfo &affineAMVPInfo, RefPicList eRefPicList, Mv acMv[3], Mv acMvPred[3], int& riMVPIdx, uint32_t& ruiBits, Distortion& ruiCost );
 
-#endif
 
 
   void xExtDIFUpSamplingH         ( CPelBuf* pcPattern );

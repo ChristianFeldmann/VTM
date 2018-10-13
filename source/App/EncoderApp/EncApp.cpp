@@ -217,40 +217,28 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMaxBTDepth                                        ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   m_cEncLib.setDualITree                                         ( m_dualTree );
   m_cEncLib.setLargeCTU                                          ( m_LargeCTU );
-#if JVET_K0346
 #if ENABLE_BMS
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode );
 #else
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode > 0 ? 3 : 0 );
 #endif
   m_cEncLib.setSubPuMvpLog2Size                                  ( m_SubPuMvpLog2Size );
-#endif
-#if JVET_K_AFFINE
   m_cEncLib.setAffine                                            ( m_Affine );
-#if JVET_K0337_AFFINE_6PARA
   m_cEncLib.setAffineType                                        ( m_AffineType );
-#endif
-#endif
-#if (JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
+#if !REMOVE_MV_ADAPT_PREC
   m_cEncLib.setHighPrecisionMv                                   (m_highPrecisionMv);
 #endif
   m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );
   m_cEncLib.setMTTMode                                           ( m_MTT );
-#if JVET_K0190
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
-#endif
 #if ENABLE_WPP_PARALLELISM
   m_cEncLib.setUseAltDQPCoding                                   ( m_AltDQPCoding );
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   m_cEncLib.setIntraEMT                                          ( m_EMT & 1 );
   m_cEncLib.setFastIntraEMT                                      ( m_FastEMT & m_EMT & 1 );
   m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
-#endif
-#if JVET_K0157
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
-#endif
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
 
   m_cEncLib.setMaxCUWidth                                        ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );
@@ -270,10 +258,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseFastMerge                                      ( m_useFastMrg );
   m_cEncLib.setUsePbIntraFast                                    ( m_usePbIntraFast );
   m_cEncLib.setUseAMaxBT                                         ( m_useAMaxBT );
-#if !JVET_K0220_ENC_CTRL
-  m_cEncLib.setUseSaveLoadEncInfo                                ( m_useSaveLoadEncInfo );
-  m_cEncLib.setUseSaveLoadSplitDecision                          ( m_useSaveLoadSplitDecision );
-#endif
   m_cEncLib.setUseE0023FastEnc                                   ( m_e0023FastEnc );
   m_cEncLib.setUseContentBasedFastQtbt                           ( m_contentBasedFastQtbt );
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );
@@ -449,11 +433,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
   m_cEncLib.setScalingListFileName                               ( m_scalingListFileName );
 #endif
-#if JVET_K0072
   m_cEncLib.setDepQuantEnabledFlag                               ( m_depQuantEnabledFlag);
 #if HEVC_USE_SIGN_HIDING
   m_cEncLib.setSignDataHidingEnabledFlag                         ( m_signDataHidingEnabledFlag);
-#endif
 #endif
   m_cEncLib.setUseRateCtrl                                       ( m_RCEnableRateControl );
   m_cEncLib.setTargetBitrate                                     ( m_RCTargetBitrate );
@@ -512,11 +494,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSummaryOutFilename                                ( m_summaryOutFilename );
   m_cEncLib.setSummaryPicFilenameBase                            ( m_summaryPicFilenameBase );
   m_cEncLib.setSummaryVerboseness                                ( m_summaryVerboseness );
-#if JVET_K0357_AMVR
   m_cEncLib.setIMV                                               ( m_ImvMode );
   m_cEncLib.setIMV4PelFast                                       ( m_Imv4PelFast );
   m_cEncLib.setIMVMaxCand                                        ( m_ImvMaxCand );
-#endif
   m_cEncLib.setDecodeBitstream                                   ( 0, m_decodeBitstreams[0] );
   m_cEncLib.setDecodeBitstream                                   ( 1, m_decodeBitstreams[1] );
   m_cEncLib.setSwitchPOC                                         ( m_switchPOC );
@@ -535,9 +515,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setEnsureWppBitEqual                                 ( m_ensureWppBitEqual );
 
 #endif
-#if JVET_K0371_ALF
   m_cEncLib.setUseALF                                            ( m_alf );
-#endif
 }
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList

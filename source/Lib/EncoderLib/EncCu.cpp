@@ -74,9 +74,7 @@ void EncCu::create( EncCfg* encCfg )
 
   unsigned      numWidths     = gp_sizeIdxInfo->numWidths();
   unsigned      numHeights    = gp_sizeIdxInfo->numHeights();
-#if JVET_K0357_AMVR
   unsigned      maxMEPart     = BTnoRQT ? 1 : NUMBER_OF_PART_SIZES;
-#endif
   m_pTempCS = new CodingStructure**  [numWidths];
   m_pBestCS = new CodingStructure**  [numWidths];
 
@@ -106,7 +104,6 @@ void EncCu::create( EncCfg* encCfg )
     }
   }
 
-#if JVET_K0357_AMVR
   // WIA: only the weight==height case is relevant without QTBT
   m_pImvTempCS = nullptr;
 
@@ -135,7 +132,6 @@ void EncCu::create( EncCfg* encCfg )
       }
     }
   }
-#endif
 
 
   m_cuChromaQpOffsetIdxPlus1 = 0;
@@ -168,9 +164,7 @@ void EncCu::create( EncCfg* encCfg )
 void EncCu::destroy()
 {
   bool          BTnoRQT   = m_pcEncCfg->getQTBT();
-#if JVET_K0357_AMVR
   unsigned      maxMEPart = BTnoRQT ? 1 : NUMBER_OF_PART_SIZES;
-#endif
 
   unsigned numWidths  = gp_sizeIdxInfo->numWidths();
   unsigned numHeights = gp_sizeIdxInfo->numHeights();
@@ -203,7 +197,6 @@ void EncCu::destroy()
   delete m_modeCtrl;
   m_modeCtrl = nullptr;
 
-#if JVET_K0357_AMVR
   // WIA: only the weight==height case is relevant without QTBT
   if( m_pImvTempCS )
   {
@@ -221,7 +214,6 @@ void EncCu::destroy()
     m_pImvTempCS = nullptr;
   }
 
-#endif
   for( unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++ )
   {
     m_acMergeBuffer[ui].destroy();
@@ -246,9 +238,7 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   m_pcTrQuant          = pcEncLib->getTrQuant( PARL_PARAM0( tId ) );
   m_pcRdCost           = pcEncLib->getRdCost ( PARL_PARAM0( tId ) );
   m_CABACEstimator     = pcEncLib->getCABACEncoder( PARL_PARAM0( tId ) )->getCABACEstimator( &sps );
-#if JVET_K0346
   m_CABACEstimator->setEncCu(this);
-#endif
   m_CtxCache           = pcEncLib->getCtxCache( PARL_PARAM0( tId ) );
   m_pcRateCtrl         = pcEncLib->getRateCtrl();
   m_pcSliceEncoder     = pcEncLib->getSliceEncoder();
@@ -264,15 +254,10 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   m_modeCtrl->init( m_pcEncCfg, m_pcRateCtrl, m_pcRdCost );
 
   m_pcInterSearch->setModeCtrl( m_modeCtrl );
-#if !JVET_K0220_ENC_CTRL
-  m_pcIntraSearch->setModeCtrl( m_modeCtrl );
-#endif
-#if JVET_K0346
   ::memset(m_subMergeBlkSize, 0, sizeof(m_subMergeBlkSize));
   ::memset(m_subMergeBlkNum, 0, sizeof(m_subMergeBlkNum));
   m_prevPOC = MAX_UINT;
   m_clearSubMergeStatic = false;
-#endif
 }
 
 // ====================================================================================================================
@@ -339,12 +324,10 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
     cs.useSubStructure( *bestCS, partitioner->chType, CS::getArea( *bestCS, area, partitioner->chType ), copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals );
   }
 
-#if JVET_K0390_RATECTRL
   if (m_pcEncCfg->getUseRateCtrl())
   {
     (m_pcRateCtrl->getRCPic()->getLCU(ctuRsAddr)).m_actualMSE = (double)bestCS->dist / (double)m_pcRateCtrl->getRCPic()->getLCU(ctuRsAddr).m_numberOfPixel;
   }
-#endif
   // reset context states and uninit context pointer
   m_CABACEstimator->getCtx() = m_CurrCtx->start;
   m_CurrCtx                  = 0;
@@ -544,12 +527,9 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   const uint32_t uiLPelX  = tempCS->area.Y().lumaPos().x;
   const uint32_t uiTPelY  = tempCS->area.Y().lumaPos().y;
 
-#if JVET_K0357_AMVR
   const unsigned wIdx = gp_sizeIdxInfo->idxFrom( partitioner.currArea().lwidth()  );
-#endif
 
   const UnitArea currCsArea = clipArea( CS::getArea( *bestCS, bestCS->area, partitioner.chType ), *tempCS->picture );
-#if JVET_K0357_AMVR
   if( m_pImvTempCS && !slice.isIntra() )
   {
     const unsigned maxMEPart = tempCS->pcv->only2Nx2N ? 1 : NUMBER_OF_PART_SIZES;
@@ -558,7 +538,6 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
       tempCS->initSubStructure( *m_pImvTempCS[wIdx][p], partitioner.chType, partitioner.currArea(), false );
     }
   }
-#endif
 
   m_modeCtrl->initCULevel( partitioner, *tempCS );
 
@@ -604,24 +583,20 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 
     if( currTestMode.type == ETM_INTER_ME )
     {
-#if JVET_K0357_AMVR
       if( ( currTestMode.opts & ETO_IMV ) != 0 )
       {
         xCheckRDCostInterIMV(tempCS, bestCS, partitioner, currTestMode);
       }
       else
-#endif
       {
         xCheckRDCostInter( tempCS, bestCS, partitioner, currTestMode );
       }
 
     }
-#if JVET_K_AFFINE
     else if( currTestMode.type == ETM_AFFINE )
     {
       xCheckRDCostAffineMerge2Nx2N( tempCS, bestCS, partitioner, currTestMode );
     }
-#endif
 #if REUSE_CU_RESULTS
     else if( currTestMode.type == ETM_RECO_CACHED )
     {
@@ -696,17 +671,9 @@ void EncCu::updateLambda( Slice* slice, double dQP )
   int    SHIFT_QP = 12;
   double dLambda_scale = 1.0 - Clip3( 0.0, 0.5, 0.05*(double)(slice->getPic()->fieldPic ? NumberBFrames/2 : NumberBFrames) );
 
-#if DISTORTION_LAMBDA_BUGFIX
   int bitdepth_luma_qp_scale = 6
                                * (slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
                                   - DISTORTION_PRECISION_ADJUSTMENT(slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-#else
-#if FULL_NBIT
-  int bitdepth_luma_qp_scale = 6 * (slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8);
-#else
-  int    bitdepth_luma_qp_scale = 0;
-#endif
-#endif
   double qp_temp = (double) dQP + bitdepth_luma_qp_scale - SHIFT_QP;
 
   double dQPFactor = m_pcEncCfg->getGOPEntry( m_pcSliceEncoder->getGopId() ).m_QPFactor;
@@ -940,12 +907,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
   tempCS->initStructData( qp, bIsLosslessMode );
 
-#if !JVET_K0220_ENC_CTRL
-  partitioner.splitCurrArea( split, *tempCS );
-
-#endif
   m_CABACEstimator->getCtx() = m_CurrCtx->start;
-#if JVET_K0220_ENC_CTRL
 
   if( tempCS->sps->getSpsNext().getUseQTBT() )
   {
@@ -981,7 +943,6 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
   partitioner.splitCurrArea( split, *tempCS );
 
-#endif
   m_CurrCtx++;
 
   tempCS->getRecoBuf().fill( 0 );
@@ -1064,11 +1025,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       {
         m_CABACEstimator->split_cu_flag( split == CU_QUAD_SPLIT, *tempCS, partitioner );
       }
-#if JVET_K0554
       if( split != CU_QUAD_SPLIT )
-#else
-      if( split != CU_QUAD_SPLIT && implicitSplit == CU_DONT_SPLIT )
-#endif
       {
         m_CABACEstimator->split_cu_mode_mt( split, *tempCS, partitioner );
       }
@@ -1132,54 +1089,32 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
 void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
-#if JVET_K1000_SIMPLIFIED_EMT
   double bestInterCost             = m_modeCtrl->getBestInterCost();
   double costSize2Nx2NemtFirstPass = m_modeCtrl->getEmtSize2Nx2NFirstPassCost();
   double costSizeNxNemtFirstPass   = MAX_DOUBLE;
   bool skipSecondEmtPass           = m_modeCtrl->getSkipSecondEMTPass();
   const SPS &sps                   = *tempCS->sps;
-#endif
   const PPS &pps              = *tempCS->pps;
   const CodingUnit *bestCU    = bestCS->getCU( partitioner.chType );
-#if JVET_K1000_SIMPLIFIED_EMT
   const int maxSizeEMT        = pps.pcv->noRQT ? EMT_INTRA_MAX_CU_WITH_QTBT : EMT_INTRA_MAX_CU;
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
 #if HM_EMT_NSST_AS_IN_JEM
   uint8_t considerEmtSecondPass = ( sps.getSpsNext().getUseIntraEMT() && isLuma( partitioner.chType ) && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT ) ? 1 : 0;
 #else
   uint8_t considerEmtSecondPass = ( sps.getSpsNext().getUseIntraEMT() && isLuma( partitioner.chType ) && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT && nsstIdx == 0 ) ? 1 : 0;
-#endif
 #endif
 
   Distortion interHad = m_modeCtrl->getInterHad();
 
 
 
-#if JVET_K1000_SIMPLIFIED_EMT
   for( uint8_t emtCuFlag = 0; emtCuFlag <= considerEmtSecondPass; emtCuFlag++ )
-#else
-  for( uint8_t numPasses = 0; numPasses < 1; numPasses++ )
-#endif
   {
-#if JVET_K1000_SIMPLIFIED_EMT
     //Possible early EMT tests interruptions
-#if !JVET_K0220_ENC_CTRL
-    //1) saveLoadTag code for EMT
-    if( sps.getSpsNext().getUseQTBT() && slsCtrl && m_pcEncCfg->getUseSaveLoadEncInfo() )
-    {
-      if( m_pcEncCfg->getIntraEMT() && LOAD_ENC_INFO == slsCtrl->getSaveLoadTag( tempCS->area ) && ( emtCuFlag > 0 ) != slsCtrl->getSaveLoadEmtCuFlag( tempCS->area ) )
-      {
-        continue;
-      }
-    }
-#endif
     //2) Second EMT pass. This "if clause" is necessary because of the NSST and PDPC "for loops".
     if( emtCuFlag && skipSecondEmtPass )
     {
       continue;
     }
-#endif
     //3) if interHad is 0, only try further modes if some intra mode was already better than inter
     if( m_pcEncCfg->getUsePbIntraFast() && !tempCS->slice->isIntra() && bestCU && CU::isInter( *bestCS->getCU( partitioner.chType ) ) && interHad == 0 )
     {
@@ -1202,9 +1137,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
     cu.qp               = encTestMode.qp;
   //cu.ipcm             = false;
-#if JVET_K1000_SIMPLIFIED_EMT
     cu.emtFlag          = emtCuFlag;
-#endif
 
     CU::addPUs( cu );
 
@@ -1214,12 +1147,8 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     {
       m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner );
 
-#if DISTORTION_TYPE_BUGFIX
       if (m_pcEncCfg->getUsePbIntraFast() && tempCS->dist == std::numeric_limits<Distortion>::max()
           && tempCS->interHad == 0)
-#else
-      if (m_pcEncCfg->getUsePbIntraFast() && tempCS->dist == MAX_UINT && tempCS->interHad == 0)
-#endif
       {
         interHad = 0;
         // JEM assumes only perfect reconstructions can from now on beat the inter mode
@@ -1277,10 +1206,8 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     xCheckDQP( *tempCS, partitioner );
 
 
-#if JVET_K1000_SIMPLIFIED_EMT
     // we save the cost of the modes for the first EMT pass
     if( !emtCuFlag ) static_cast< double& >( cu.partSize == SIZE_2Nx2N ? costSize2Nx2NemtFirstPass : costSizeNxNemtFirstPass ) = tempCS->cost;
-#endif
 
 #if WCG_EXT
     DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda( true ) );
@@ -1290,13 +1217,8 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
 
-#if JVET_K1000_SIMPLIFIED_EMT
     //now we check whether the second pass of SIZE_2Nx2N and the whole Intra SIZE_NxN should be skipped or not
-#if JVET_K0220_ENC_CTRL
     if( !emtCuFlag && !tempCS->slice->isIntra() && bestCU && bestCU->predMode != MODE_INTRA && cu.partSize == SIZE_2Nx2N && m_pcEncCfg->getFastInterEMT() )
-#else
-    if( !emtCuFlag && !tempCS->slice->isIntra() && bestCU && bestCU->predMode != MODE_INTRA && cu.partSize == SIZE_2Nx2N && m_pcEncCfg->getFastInterEMT() && ( m_pcEncCfg->getUseSaveLoadEncInfo() ? ( bestInterCost < MAX_DOUBLE ) : true ) )
-#endif
     {
       const double thEmtInterFastSkipIntra = 1.4; // Skip checking Intra if "2Nx2N using DCT2" is worse than best Inter mode
       if( costSize2Nx2NemtFirstPass > thEmtInterFastSkipIntra * bestInterCost )
@@ -1307,7 +1229,6 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
       }
     }
 
-#endif
   } //for emtCuFlag
 }
 
@@ -1472,13 +1393,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   MergeCtx mergeCtx;
   const SPS &sps = *tempCS->sps;
 
-#if JVET_K0346
   if( sps.getSpsNext().getUseSubPuMvp() )
   {
     Size bufSize = g_miScaling.scale( tempCS->area.lumaSize() );
     mergeCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
   }
-#endif
 
   {
     // first get merge candidates
@@ -1584,11 +1503,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #endif
         }
 
-#if DISTORTION_TYPE_BUGFIX
         Distortion uiSad = distParam.distFunc(distParam);
-#else
-        uint32_t uiSad = distParam.distFunc(distParam);
-#endif
         uint32_t uiBitsCand = uiMergeCand + 1;
         if( uiMergeCand == tempCS->slice->getMaxNumMergeCand() - 1 )
         {
@@ -1611,12 +1526,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
       tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
     }
-#if JVET_K0352_MERGE_ENCOPT
     else
     {
       uiNumMrgSATDCand = mergeCtx.numValidMergeCand;
     }
-#endif
   }
 
   const uint32_t iteration = encTestMode.lossless ? 1 : 2;
@@ -1668,12 +1581,8 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       }
 
       xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, uiNoResidualPass
-#if JVET_K0357_AMVR
         , NULL
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
         , 1
-#endif
         , uiNoResidualPass == 0 ? &candHasNoResidual[uiMergeCand] : NULL );
 
       if( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip )
@@ -1716,7 +1625,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   }
 }
 
-#if JVET_K_AFFINE
 void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
   if( m_modeCtrl->getFastDeltaQp() )
@@ -1724,11 +1632,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     return;
   }
 
-#if JVET_K_AFFINE_BUG_FIXES
   if ( bestCS->area.lumaSize().width < 8 || bestCS->area.lumaSize().height < 8 )
-#else
-  if( tempCS->pcv->rectCUs && bestCS->area.lumaSize().area() < 64 )
-#endif
   {
     return;
   }
@@ -1775,12 +1679,8 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
   m_pcInterSearch->motionCompensation( cu );
 
   xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, 0
-#if JVET_K0357_AMVR
     , NULL
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
     , 1
-#endif
     , &hasNoResidual);
 
   if( ! (encTestMode.lossless || hasNoResidual) )
@@ -1790,16 +1690,11 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     tempCS->getPredBuf().copyFrom( bestCS->getPredBuf() );
 
     xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, 1
-#if JVET_K0357_AMVR
       , NULL
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
       , 1
-#endif
       , &hasNoResidual);
   }
 }
-#endif
 void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
@@ -1824,18 +1719,12 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 
   m_pcInterSearch->predInterSearch( cu, partitioner );
 
-#if JVET_K0357_AMVR
   const unsigned wIdx = gp_sizeIdxInfo->idxFrom( tempCS->area.lwidth () );
-#endif
 
 
   xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, 0
-#if JVET_K0357_AMVR
     , m_pImvTempCS ? m_pImvTempCS[wIdx][encTestMode.partSize] : NULL
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
     , 1
-#endif
     , 0
   );
 
@@ -1845,7 +1734,6 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 
 
 
-#if JVET_K0357_AMVR
 bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
   int iIMV = int( ( encTestMode.opts & ETO_IMV ) >> ETO_IMV_SHIFT );
@@ -1905,9 +1793,7 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   }
 
   cu.imv      = iIMV > 1 ? 2 : 1;
-#if JVET_K1000_SIMPLIFIED_EMT
   cu.emtFlag  = false;
-#endif
 
   
   if( pcCUInfo2Reuse != nullptr )
@@ -1941,26 +1827,17 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   }
 
   xEncodeInterResidual( tempCS, bestCS, partitioner, encTestModeBase, 0
-#if JVET_K0357_AMVR
     , NULL
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
     , true
-#endif
     , 0
   );
 
   return true;
 }
-#endif
 
 void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, int residualPass
-#if JVET_K0357_AMVR
   , CodingStructure* imvCS
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
   , int emtMode
-#endif
   , bool* bestHasNonResi
   )
 {
@@ -1971,7 +1848,6 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
 
   CodingUnit*            cu        = tempCS->getCU( partitioner.chType );
   double   bestCostInternal        = MAX_DOUBLE;
-#if JVET_K1000_SIMPLIFIED_EMT
   double           bestCost        = bestCS->cost;
   const SPS&            sps        = *tempCS->sps;
   const int      maxSizeEMT        = tempCS->pcv->noRQT ? EMT_INTER_MAX_CU_WITH_QTBT : EMT_INTER_MAX_CU;
@@ -1988,9 +1864,7 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
   }
 
   for( int curEmtMode = minEMTMode; curEmtMode <= maxEMTMode; curEmtMode++ )
-#endif
   {
-#if JVET_K1000_SIMPLIFIED_EMT
     if( reloadCU )
     {
       if( bestCost == bestCS->cost ) //The first EMT pass didn't become the bestCS, so we clear the TUs generated
@@ -2020,11 +1894,8 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
     }
 
     reloadCU    = true; // enable cu reloading
-#endif
     cu->skip    = false;
-#if JVET_K1000_SIMPLIFIED_EMT
     cu->emtFlag = curEmtMode;
-#endif
 
     const bool skipResidual = residualPass == 1;
     m_pcInterSearch->encodeResAndCalcRdInterCU( *tempCS, partitioner, skipResidual );
@@ -2034,10 +1905,7 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
     xCheckDQP( *tempCS, partitioner );
 
 
-#if JVET_K1000_SIMPLIFIED_EMT
     double emtFirstPassCost = tempCS->cost;
-#endif
-#if JVET_K0357_AMVR
     if( imvCS && (tempCS->cost < imvCS->cost) )
     {
       if( imvCS->cost != MAX_DOUBLE )
@@ -2046,7 +1914,6 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
       }
       imvCS->copyStructure( *tempCS, partitioner.chType );
     }
-#endif
     if( NULL != bestHasNonResi && (bestCostInternal > tempCS->cost) )
     {
       bestCostInternal = tempCS->cost;
@@ -2060,7 +1927,6 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
 #endif
     xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
-#if JVET_K1000_SIMPLIFIED_EMT
     //now we check whether the second pass should be skipped or not
     if( !curEmtMode && maxEMTMode )
     {
@@ -2074,7 +1940,6 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
         maxEMTMode = 0; // do not test EMT
       }
     }
-#endif
   } //end emt loop
 }
 
@@ -2141,11 +2006,7 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
 #if WCG_EXT
       if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() )
       {
-#if WCG_EXT_BUGFIX
         const CPelBuf orgLuma = tempCS->getOrgBuf(tempCS->area.blocks[COMPONENT_Y]);
-#else
-        const CPelBuf orgLuma = tempCS->getOrgBuf(cs.area.blocks[COMPONENT_Y]);
-#endif
         finalDistortion += m_pcRdCost->getDistPart( org, reco, sps.getBitDepth( toChannelType( compID ) ), compID, DF_SSE_WTD, &orgLuma );
       }
       else

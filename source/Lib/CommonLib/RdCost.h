@@ -161,7 +161,7 @@ public:
   void           setPredictor             ( const Mv& rcMv )
   {
     m_mvPredictor = rcMv;
-#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
+#if !REMOVE_MV_ADAPT_PREC
     if( m_mvPredictor.highPrec )
     {
       m_mvPredictor = Mv( m_mvPredictor.hor >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE, m_mvPredictor.ver >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE, false );
@@ -190,13 +190,8 @@ public:
 
     return uiLength2 + ( g_aucPrevLog2[uiTemp2] << 1 );
   }
-#if JVET_K0357_AMVR
   Distortion     getCostOfVectorWithPredictor( const int x, const int y, const unsigned imvShift )  { return Distortion( m_motionLambda * getBitsOfVectorWithPredictor(x, y, imvShift )); }
   uint32_t           getBitsOfVectorWithPredictor( const int x, const int y, const unsigned imvShift )  { return xGetExpGolombNumberOfBits(((x << m_iCostScale) - m_mvPredictor.getHor())>>imvShift) + xGetExpGolombNumberOfBits(((y << m_iCostScale) - m_mvPredictor.getVer())>>imvShift); }
-#else
-  Distortion     getCostOfVectorWithPredictor( const int x, const int y )  { return Distortion( m_motionLambda * getBitsOfVectorWithPredictor(x, y )); }
-  uint32_t           getBitsOfVectorWithPredictor( const int x, const int y )  { return xGetExpGolombNumberOfBits(((x << m_iCostScale) - m_mvPredictor.getHor())) + xGetExpGolombNumberOfBits(((y << m_iCostScale) - m_mvPredictor.getVer())); }
-#endif
 #if WCG_EXT
          void    saveUnadjustedLambda       ();
          void    initLumaLevelToWeightTable ();

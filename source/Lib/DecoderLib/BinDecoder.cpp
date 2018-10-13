@@ -180,17 +180,9 @@ unsigned BinDecoderBase::decodeBinsEP( unsigned numBins )
   return bins;
 }
 
-#if JVET_K0072
 unsigned BinDecoderBase::decodeRemAbsEP( unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange )
-#else
-unsigned BinDecoderBase::decodeRemAbsEP( unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange, bool altRC )
-#endif
 {
-#if JVET_K0072
   unsigned cutoff = g_auiGoRiceRange[ goRicePar ];
-#else
-  unsigned cutoff = altRC ? g_auiGoRiceRange[ goRicePar ] : COEF_REMAIN_BIN_REDUCTION;
-#endif
   unsigned prefix = 0;
   if( useLimitedPrefixLength )
   {

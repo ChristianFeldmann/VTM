@@ -95,9 +95,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 
   cs.picture->resizeSAO(cs.pcv->sizeInCtus, 0);
 
-#if JVET_K0371_ALF
   cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
-#endif
 
   const unsigned numSubstreams = slice->getNumberOfSubstreamSizes() + 1;
 

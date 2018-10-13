@@ -109,14 +109,12 @@ inline int64_t abs (int64_t x) { return _abs64(x); };
 #define NULL              0
 #endif
 
-#if JVET_K0337_AFFINE_6PARA
 typedef enum
 {
   AFFINEMODEL_4PARAM,
   AFFINEMODEL_6PARAM,
   AFFINE_MODEL_NUM
 } EAffineModel;
-#endif
 
 // ====================================================================================================================
 // Common constants
@@ -136,20 +134,12 @@ static const double MAX_DOUBLE =                             1.7e+308; ///< max.
 static const int MAX_GOP =                                         64; ///< max. value of hierarchical GOP size
 static const int MAX_NUM_REF_PICS =                                16; ///< max. number of pictures used for reference
 static const int MAX_NUM_REF =                                     16; ///< max. number of entries in picture reference list
-#if JVET_K0251_QP_EXT
 static const int MAX_QP =                                          63;
-#else
-static const int MAX_QP =                                          51;
-#endif
 static const int NOT_VALID =                                       -1;
 
 static const int AMVP_MAX_NUM_CANDS =                               2; ///< AMVP: advanced motion vector prediction - max number of final candidates
 static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP: advanced motion vector prediction - max number of candidates
-#if JVET_K0346
 static const int AMVP_DECIMATION_FACTOR =                           2;
-#else
-static const int AMVP_DECIMATION_FACTOR =                           4;
-#endif
 static const int MRG_MAX_NUM_CANDS =                                7; ///< MERGE
 
 static const int MAX_TLAYER =                                       7; ///< Explicit temporal layer QP offset - max number of temporal layer
@@ -198,12 +188,8 @@ static const int ADJ_DEQUANT_SHIFT =            ( ADJ_QUANT_SHIFT + 1 );
 static const int RVM_VCEGAM10_M =                                   4;
 
 static const int NUM_LUMA_MODE =                                   67; ///< Planar + DC + 65 directional mode (4*16 + 1)
-#if JVET_K0190
 static const int NUM_LMC_MODE = 1; ///< LMC
 static const int NUM_INTRA_MODE = (NUM_LUMA_MODE + NUM_LMC_MODE);
-#else
-static const int NUM_INTRA_MODE =                   NUM_LUMA_MODE + 1;
-#endif
 
 static const int NUM_DIR =           (((NUM_LUMA_MODE - 3) >> 2) + 1);
 static const int PLANAR_IDX =                                       0; ///< index for intra PLANAR mode
@@ -214,38 +200,19 @@ static const int VER_IDX =                    (3 * (NUM_DIR - 1) + 2); ///< inde
 static const int VDIA_IDX =                   (4 * (NUM_DIR - 1) + 2); ///< index for intra VDIAGONAL  mode
 static const int NOMODE_IDX =                               MAX_UCHAR; ///< indicating uninitialized elements
 
-#if JVET_K0190
 static const int NUM_CHROMA_MODE = (5 + NUM_LMC_MODE); ///< total number of chroma modes
 static const int LM_CHROMA_IDX = NUM_LUMA_MODE; ///< chroma mode index for derived from LM mode
-#else
-static const int NUM_CHROMA_MODE =                                  5; ///< total number of chroma modes
-#endif
 static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chroma mode index for derived from luma intra mode
 
 static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes
 
-#if JVET_K1000_SIMPLIFIED_EMT
 static const uint32_t  EMT_INTRA_MAX_CU =                              32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  EMT_INTER_MAX_CU =                              32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
-#if JVET_K1000_SIMPLIFIED_EMT
 static const uint32_t  EMT_INTRA_MAX_CU_WITH_QTBT =                    32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  EMT_INTER_MAX_CU_WITH_QTBT =                    32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
-#else
-static const uint32_t  EMT_INTRA_MAX_CU_WITH_QTBT =                    64; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
-static const uint32_t  EMT_INTER_MAX_CU_WITH_QTBT =                    64; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
-#endif
-#endif
 
-#if INTRA67_3MPM
 static const int NUM_MOST_PROBABLE_MODES = 3;
-#else
-static const int NUM_MOST_PROBABLE_MODES = 3;
-static const int NUM_MOST_PROBABLE_MODES_67 = 6;
-#endif
-#if JVET_K0190
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
-#else
-#endif
 
 static const int FAST_UDI_MAX_RDMODE_NUM =              NUM_LUMA_MODE; ///< maximum number of RD comparison in fast-UDI estimation loop
 
@@ -262,9 +229,7 @@ static const int CABAC_INIT_PRESENT_FLAG =                          1;
 
 static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS   = 4;
 static const int CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 8;
-#if JVET_K0346 || JVET_K_AFFINE
 static const int VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE         = 2;   ///< additional precision bit for MV storage
-#endif
 
 static const int MAX_NUM_LONG_TERM_REF_PICS =                      33;
 static const int NUM_LONG_TERM_REF_PIC_SPS =                        0;
@@ -299,9 +264,6 @@ static const int MAX_CU_TILING_PARTITIONS = 1 << ( MAX_LOG2_DIFF_CU_TR_SIZE << 1
 #endif
 
 static const int JVET_C0024_ZERO_OUT_TH =                          32;
-#if !JVET_K0220_ENC_CTRL
-static const double JVET_D0077_SPLIT_DECISION_COST_SCALE =       1.05;
-#endif
 
 static const int MAX_NUM_PART_IDXS_IN_CTU_WIDTH = MAX_CU_SIZE/MIN_PU_SIZE; ///< maximum number of partition indices across the width of a CTU (or height of a CTU)
 static const int SCALING_LIST_REM_NUM =                             6;
@@ -323,13 +285,11 @@ static const int CONTEXT_STATE_BITS =                               6;
 static const int LAST_SIGNIFICANT_GROUPS =                         14;
 static const int MAX_GR_ORDER_RESIDUAL =                           10;
 
-#if JVET_K_AFFINE
 static const int AFFINE_MAX_NUM_V0 =                                3; ///< max number of motion candidates in top-left corner
 static const int AFFINE_MAX_NUM_V1 =                                2; ///< max number of motion candidates in top-right corner
 static const int AFFINE_MAX_NUM_V2 =                                2; ///< max number of motion candidates in left-bottom corner
 static const int AFFINE_MAX_NUM_COMB =                             12; ///< max number of combined motion candidates
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
-#endif
 
 
 #if W0038_DB_OPT
@@ -340,9 +300,7 @@ static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;
 static const uint32_t LUMA_LEVEL_TO_DQP_LUT_MAXSIZE =                1024; ///< max LUT size for QP offset based on luma
 
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
 static const int NUM_EMT_CU_FLAG_CTX =                              6;      ///< number of context models for EMT CU-level flag
-#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.
@@ -364,11 +322,7 @@ static const int    MAX_BT_DEPTH_C      =                           0;      ///<
 static const int    MAX_BT_SIZE_C       =                          64;      ///< [1<<MIN_QT_SIZE_C, 1<<CTU_LOG2], in luma samples
 static const int    MIN_BT_SIZE_C       =                           4;      ///< can be set down to 4, in luma samples
 
-#if JVET_K0556_MAX_TT_SIZE_64
 static const int    MAX_TT_SIZE_INTER  =                           64;      ///< for initialization, [1<<MIN_CU_LOG2, 64]
-#else
-static const int    MAX_TT_SIZE_INTER  =                          128;      ///< for initialization, [1<<MIN_CU_LOG2, 1<<CTU_LOG2]
-#endif
 static const int    MIN_TT_SIZE_INTER  =                            4;      ///<
 
 static const SplitSeries SPLIT_BITS         =                       5;
@@ -376,9 +330,6 @@ static const SplitSeries SPLIT_DMULT        =                       5;
 static const SplitSeries SPLIT_MASK         =                      31;      ///< = (1 << SPLIT_BITS) - 1
 
 static const int    SKIP_DEPTH =                                    3;
-#if !JVET_K0220_ENC_CTRL
-static const int    SKIPHORNOVERQT_DEPTH_TH =                       2;
-#endif
 static const int    PICTURE_DISTANCE_TH =                           1;
 static const int    FAST_SKIP_DEPTH =                               2;
 

@@ -311,7 +311,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::SkipFlag), cu.skip);
         }
 
-#if JVET_K1000_SIMPLIFIED_EMT && HM_EMT_NSST_AS_IN_JEM
+#if HM_EMT_NSST_AS_IN_JEM
         if (!(!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && CU::isInter(cu))) || isChroma(cu.chType)))
         {
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::EMTFlag), cu.emtFlag);
@@ -334,7 +334,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::TransQuantBypassFlag_Chroma), cu.transQuantBypass);
         }
 
-#if JVET_K1000_SIMPLIFIED_EMT && HM_EMT_NSST_AS_IN_JEM
+#if HM_EMT_NSST_AS_IN_JEM
         if (!(!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && CU::isInter(cu))) || isChroma(cu.chType)))
         {
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::EMTFlag_Chroma), cu.emtFlag);
@@ -358,12 +358,8 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MergeIdx),  pu.mergeIdx);
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MergeType), pu.mergeType);
             }
-#if JVET_K_AFFINE
             DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineFlag), pu.cu->affine);
-#if JVET_K0337_AFFINE_6PARA
             DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineType), pu.cu->affineType);
-#endif
-#endif
             DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::InterDir), pu.interDir);
 
             if (pu.interDir != 2 /* PRED_L1 */)
@@ -376,15 +372,12 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVPIdxL1), pu.mvpIdx[REF_PIC_LIST_1]);
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::RefIdxL1), pu.refIdx[REF_PIC_LIST_1]);
             }
-#if JVET_K_AFFINE
             if (!pu.cu->affine)
             {
-#endif
               if (pu.interDir != 2 /* PRED_L1 */)
               {
                 Mv mv = pu.mv[REF_PIC_LIST_0];
                 Mv mvd = pu.mvd[REF_PIC_LIST_0];
-#if JVET_K0346 || JVET_K_AFFINE
 #if REMOVE_MV_ADAPT_PREC
                 mv.hor = mv.hor >= 0 ? (mv.hor + nOffset) >> nShift : -((-mv.hor + nOffset) >> nShift);
                 mv.ver = mv.ver >= 0 ? (mv.ver + nOffset) >> nShift : -((-mv.ver + nOffset) >> nShift);
@@ -393,7 +386,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
 #else
                 mv.setLowPrec();
                 mvd.setLowPrec();
-#endif
 #endif
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVDL0), mvd.hor, mvd.ver);
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVL0), mv.hor, mv.ver);
@@ -402,7 +394,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               {
                 Mv mv = pu.mv[REF_PIC_LIST_1];
                 Mv mvd = pu.mvd[REF_PIC_LIST_1];
-#if JVET_K0346 || JVET_K_AFFINE
 #if REMOVE_MV_ADAPT_PREC
                 mv.hor = mv.hor >= 0 ? (mv.hor + nOffset) >> nShift : -((-mv.hor + nOffset) >> nShift);
                 mv.ver = mv.ver >= 0 ? (mv.ver + nOffset) >> nShift : -((-mv.ver + nOffset) >> nShift);
@@ -412,11 +403,9 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 mv.setLowPrec();
                 mvd.setLowPrec();
 #endif
-#endif
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVDL1), mvd.hor, mvd.ver);
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVL1), mv.hor, mv.ver);
               }
-#if JVET_K_AFFINE
             }
             else
             {
@@ -427,7 +416,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 mv[0] = mb.at(0, 0).mv[REF_PIC_LIST_0];
                 mv[1] = mb.at(mb.width - 1, 0).mv[REF_PIC_LIST_0];
                 mv[2] = mb.at(0, mb.height - 1).mv[REF_PIC_LIST_0];
-#if JVET_K0346 || JVET_K_AFFINE
                 // motion vectors should use low precision or they will appear to large
 #if REMOVE_MV_ADAPT_PREC
                 mv[0].hor = mv[0].hor >= 0 ? (mv[0].hor + nOffset) >> nShift : -((-mv[0].hor + nOffset) >> nShift);
@@ -440,7 +428,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 mv[0].setLowPrec();
                 mv[1].setLowPrec();
                 mv[2].setLowPrec();
-#endif
 #endif
                 DTRACE_BLOCK_AFFINETF(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineMVL0), mv[0].hor, mv[0].ver, mv[1].hor, mv[1].ver, mv[2].hor, mv[2].ver);
               }
@@ -451,7 +438,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 mv[0] = mb.at(0, 0).mv[REF_PIC_LIST_1];
                 mv[1] = mb.at(mb.width - 1, 0).mv[REF_PIC_LIST_1];
                 mv[2] = mb.at(0, mb.height - 1).mv[REF_PIC_LIST_1];
-#if JVET_K0346 || JVET_K_AFFINE
                 // motion vectors should use low precision or they will appear to large
 #if REMOVE_MV_ADAPT_PREC
                 mv[0].hor = mv[0].hor >= 0 ? (mv[0].hor + nOffset) >> nShift : -((-mv[0].hor + nOffset) >> nShift);
@@ -465,15 +451,11 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 mv[1].setLowPrec();
                 mv[2].setLowPrec();
 #endif
-#endif
                 DTRACE_BLOCK_AFFINETF(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineMVL1), mv[0].hor, mv[0].ver, mv[1].hor, mv[1].ver, mv[2].hor, mv[2].ver);
               }
             }
-#endif        
           }
-#if JVET_K0357_AMVR
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
-#endif
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::RootCbf), cu.rootCbf);
 
         }
@@ -637,7 +619,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
             if (pu.mergeFlag)
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MergeType), pu.mergeType);
-#if JVET_K_AFFINE
               if (!(cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() || cu.partSize != SIZE_2Nx2N)
                 && !(!cu.firstPU->mergeFlag && !(cu.lumaSize().width > 8 && cu.lumaSize().height > 8))
                 && !(cu.firstPU->mergeFlag && !PU::isAffineMrgFlagCoded(*cu.firstPU)))
@@ -648,10 +629,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                   DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineType), pu.cu->affineType);
                 }
               }
-#endif
-#if JVET_K_AFFINE
               if (!(pu.cu->affine))
-#endif
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MergeIdx), pu.mergeIdx);
               }
@@ -662,7 +640,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::InterDir), pu.interDir);
               }
-#if JVET_K_AFFINE
               if (!(cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() || cu.partSize != SIZE_2Nx2N)
                 && !(!cu.firstPU->mergeFlag && !(cu.lumaSize().width > 8 && cu.lumaSize().height > 8))
                 && !(cu.firstPU->mergeFlag && !PU::isAffineMrgFlagCoded(*cu.firstPU)))
@@ -673,7 +650,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                   DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineType), pu.cu->affineType);
                 }
               }
-#endif
             }
             if (pu.interDir != 2 /* PRED_L1 */)
             {
@@ -686,15 +662,12 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::RefIdxL1), pu.refIdx[REF_PIC_LIST_1]);
             }
 
-#if JVET_K_AFFINE
             if (!pu.cu->affine)
             {
-#endif
               if (pu.interDir != 2 /* PRED_L1 */)
               {
                 Mv mv = pu.mv[REF_PIC_LIST_0];
                 Mv mvd = pu.mvd[REF_PIC_LIST_0];
-#if JVET_K0346 || JVET_K_AFFINE
 #if REMOVE_MV_ADAPT_PREC
                 mv.hor = mv.hor >= 0 ? (mv.hor + nOffset) >> nShift : -((-mv.hor + nOffset) >> nShift);
                 mv.ver = mv.ver >= 0 ? (mv.ver + nOffset) >> nShift : -((-mv.ver + nOffset) >> nShift);
@@ -703,7 +676,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
 #else
                 mv.setLowPrec();
                 mvd.setLowPrec();
-#endif
 #endif
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVDL0), mvd.hor, mvd.ver);
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVL0), mv.hor, mv.ver);
@@ -712,7 +684,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               {
                 Mv mv = pu.mv[REF_PIC_LIST_1];
                 Mv mvd = pu.mvd[REF_PIC_LIST_1];
-#if JVET_K0346 || JVET_K_AFFINE
 #if REMOVE_MV_ADAPT_PREC
                 mv.hor = mv.hor >= 0 ? (mv.hor + nOffset) >> nShift : -((-mv.hor + nOffset) >> nShift);
                 mv.ver = mv.ver >= 0 ? (mv.ver + nOffset) >> nShift : -((-mv.ver + nOffset) >> nShift);
@@ -722,11 +693,9 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 mv.setLowPrec();
                 mvd.setLowPrec();
 #endif
-#endif
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVDL1), mvd.hor, mvd.ver);
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVL1), mv.hor, mv.ver);
               }
-#if JVET_K_AFFINE
             }
             else
             {
@@ -737,7 +706,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 mv[0] = mb.at(0, 0).mv[REF_PIC_LIST_0];
                 mv[1] = mb.at(mb.width - 1, 0).mv[REF_PIC_LIST_0];
                 mv[2] = mb.at(0, mb.height - 1).mv[REF_PIC_LIST_0];
-#if JVET_K0346 || JVET_K_AFFINE
                 // motion vectors should use low precision or they will appear to large
 #if REMOVE_MV_ADAPT_PREC
                 mv[0].hor = mv[0].hor >= 0 ? (mv[0].hor + nOffset) >> nShift : -((-mv[0].hor + nOffset) >> nShift);
@@ -751,7 +719,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 mv[1].setLowPrec();
                 mv[2].setLowPrec();
 #endif
-  #endif
                 DTRACE_BLOCK_AFFINETF(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineMVL0), mv[0].hor, mv[0].ver, mv[1].hor, mv[1].ver, mv[2].hor, mv[2].ver);
               }
               if (pu.interDir != 1 /* PRED_L1 */)
@@ -761,7 +728,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 mv[0] = mb.at(0, 0).mv[REF_PIC_LIST_1];
                 mv[1] = mb.at(mb.width - 1, 0).mv[REF_PIC_LIST_1];
                 mv[2] = mb.at(0, mb.height - 1).mv[REF_PIC_LIST_1];
-#if JVET_K0346 || JVET_K_AFFINE
                 // motion vectors should use low precision or they will appear to large
 #if REMOVE_MV_ADAPT_PREC
                 mv[0].hor = mv[0].hor >= 0 ? (mv[0].hor + nOffset) >> nShift : -((-mv[0].hor + nOffset) >> nShift);
@@ -775,17 +741,13 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 mv[1].setLowPrec();
                 mv[2].setLowPrec();
 #endif
-  #endif
                 DTRACE_BLOCK_AFFINETF(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineMVL1), mv[0].hor, mv[0].ver, mv[1].hor, mv[1].ver, mv[2].hor, mv[2].ver);
               }
             }
-#endif
-#if JVET_K0357_AMVR
             if (cu.cs->sps->getSpsNext().getUseIMV() && CU::hasSubCUNonZeroMVd(cu))
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
             }
-#endif
 
             break;
           }
@@ -811,7 +773,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
           if (tu.Y().valid())
           {
             DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, tu, GetBlockStatisticName(BlockStatistic::Cbf_Y), tu.cbf[COMPONENT_Y]);
-#if HM_EMT_NSST_AS_IN_JEM && JVET_K1000_SIMPLIFIED_EMT
+#if HM_EMT_NSST_AS_IN_JEM
             if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Y]) || (isLuma(COMPONENT_Y) && tu.cu->emtFlag)))
 #else
             if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Y])))
@@ -824,7 +786,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
           {
             DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, tu, GetBlockStatisticName(BlockStatistic::Cbf_Cb), tu.cbf[COMPONENT_Cb]);
             DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, tu, GetBlockStatisticName(BlockStatistic::Cbf_Cr), tu.cbf[COMPONENT_Cr]);
-#if HM_EMT_NSST_AS_IN_JEM && JVET_K1000_SIMPLIFIED_EMT
+#if HM_EMT_NSST_AS_IN_JEM
             if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Cb]) || (isLuma(COMPONENT_Cb) && tu.cu->emtFlag)))
 #else
             if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Cb])))
@@ -832,7 +794,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
             {
               DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, tu, GetBlockStatisticName(BlockStatistic::TransformSkipFlag_Cb), tu.transformSkip[COMPONENT_Cb]);
             }
-#if HM_EMT_NSST_AS_IN_JEM && JVET_K1000_SIMPLIFIED_EMT
+#if HM_EMT_NSST_AS_IN_JEM
             if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Cr]) || (isLuma(COMPONENT_Cr) && tu.cu->emtFlag)))
 #else
             if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Cr])))
@@ -843,7 +805,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
           }
         }
       }
-#if JVET_K1000_SIMPLIFIED_EMT && HM_EMT_NSST_AS_IN_JEM
+#if HM_EMT_NSST_AS_IN_JEM
       if (!(!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && CU::isInter(cu))) || isChroma(cu.chType)))
       {
         if( isLuma( ChannelType( chType ) ) )

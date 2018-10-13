@@ -87,9 +87,7 @@ void EncLib::create ()
 
 
 
-#if JVET_K0157
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
-#endif
   // create processing unit classes
   m_cGOPEncoder.        create( );
   m_cSliceEncoder.      create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth );
@@ -133,22 +131,15 @@ void EncLib::create ()
 
   m_cLoopFilter.create( m_maxTotalCUDepth );
 
-#if JVET_K0371_ALF
   if( m_alf )
   {
     m_cEncALF.create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );
   }
-#endif
 
   if ( m_RCEnableRateControl )
   {
-#if RATECTRL_FIX_FULLNBIT
     m_cRateCtrl.init(m_framesToBeEncoded, m_RCTargetBitrate, (int)((double)m_iFrameRate / m_temporalSubsampleRatio + 0.5), m_iGOPSize, m_iSourceWidth, m_iSourceHeight,
       m_maxCUWidth, m_maxCUHeight, getBitDepth(CHANNEL_TYPE_LUMA), m_RCKeepHierarchicalBit, m_RCUseLCUSeparateModel, m_GOPList);
-#else
-    m_cRateCtrl.init( m_framesToBeEncoded, m_RCTargetBitrate, (int)( (double)m_iFrameRate/m_temporalSubsampleRatio + 0.5), m_iGOPSize, m_iSourceWidth, m_iSourceHeight,
-                      m_maxCUWidth, m_maxCUHeight,m_RCKeepHierarchicalBit, m_RCUseLCUSeparateModel, m_GOPList );
-#endif
   }
 
 }
@@ -166,12 +157,10 @@ void EncLib::destroy ()
 #else
   m_cCuEncoder.         destroy();
 #endif
-#if JVET_K0371_ALF
   if( m_alf )
   {
     m_cEncALF.destroy();
   }
-#endif
   m_cEncSAO.            destroyEncData();
   m_cEncSAO.            destroy();
   m_cLoopFilter.        destroy();
@@ -226,12 +215,10 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   omp_set_nested( true );
 #endif
 
-#if JVET_K0157
   if (sps0.getSpsNext().getUseCompositeRef()) 
   {
     sps0.setLongTermRefsPresent(true);
   }
-#endif
 
 #if U0132_TARGET_BITS_SATURATION
   if (m_RCCpbSaturationEnabled)
@@ -261,14 +248,12 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     xInitPPS(pps1, sps0);
   }
 #endif
-#if JVET_K0157
   if (sps0.getSpsNext().getUseCompositeRef())
   {
     PPS &pps2 = *(m_ppsMap.allocatePS(2));
     xInitPPS(pps2, sps0);
     xInitPPSforLT(pps2);
   }
-#endif
 
   // initialize processing unit classes
   m_cGOPEncoder.  init( this );
@@ -293,13 +278,8 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if T0196_SELECTIVE_RDOQ
                           m_useSelectiveRDOQ,
 #endif
-#if JVET_K0072
-#else
-#endif
                           true,
                           m_useTransformSkipFast
-#if !INTRA67_3MPM
-#endif
                           , m_QTBT
     );
 
@@ -331,13 +311,8 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if T0196_SELECTIVE_RDOQ
                    m_useSelectiveRDOQ,
 #endif
-#if JVET_K0072
-#else
-#endif
                    true,
                    m_useTransformSkipFast
-#if !INTRA67_3MPM
-#endif
                    , m_QTBT
   );
 
@@ -377,7 +352,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if ENABLE_WPP_PARALLELISM
   m_entropyCodingSyncContextStateVec.resize( pps0.pcv->heightInCtus );
 #endif
-#if JVET_K0157
   if (sps0.getSpsNext().getUseCompositeRef()) 
   {
     Picture *picBg = new Picture;
@@ -392,7 +366,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     picOrig->getOrigBuf().fill(0);
     m_cGOPEncoder.setPicOrig(picOrig);
   }
-#endif
 }
 
 #if HEVC_USE_SCALING_LISTS
@@ -478,14 +451,12 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
 }
 #endif
 
-#if JVET_K0157
 void EncLib::xInitPPSforLT(PPS& pps)
 {
   pps.setOutputFlagPresentFlag(true);
   pps.setDeblockingFilterControlPresentFlag(true);
   pps.setPPSDeblockingFilterDisabledFlag(true);
 }
-#endif
 
 // ====================================================================================================================
 // Public member functions
@@ -529,7 +500,6 @@ void EncLib::deletePicBuffer()
 void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                      int& iNumEncoded )
 {
-#if JVET_K0157
   if (m_compositeRefEnabled && m_cGOPEncoder.getPicBg()->getSpliceFull() && m_iPOCLast >= 10 && m_iNumPicRcvd == 0 && m_cGOPEncoder.getEncodedLTRef() == false)
   {
     Picture* picCurr = NULL;
@@ -560,7 +530,6 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     iNumEncoded = 0;
     m_iNumPicRcvd = 0;
   }
-#endif
   //PROF_ACCUM_AND_START_NEW_SET( getProfilerPic(), P_GOP_LEVEL );
   if (pcPicYuvOrg != NULL)
   {
@@ -571,11 +540,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     int ppsID=-1; // Use default PPS ID
     if (getWCGChromaQPControl().isEnabled())
     {
-#if JVET_K0157
       ppsID = getdQPs()[m_iPOCLast / (m_compositeRefEnabled ? 2 : 1) + 1];
-#else
-      ppsID=getdQPs()[ m_iPOCLast+1 ];
-#endif
       ppsID+=(getSwitchPOC() != -1 && (m_iPOCLast+1 >= getSwitchPOC())?1:0);
     }
     xGetNewPicBuffer( rcListPicYuvRecOut,
@@ -617,9 +582,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
   // compress GOP
   m_cGOPEncoder.compressGOP(m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut,
                             false, false, snrCSC, m_printFrameMSE
-#if JVET_K0157
     , false
-#endif
   );
 
   if ( m_RCEnableRateControl )
@@ -709,9 +672,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
     {
       // compress GOP
       m_cGOPEncoder.compressGOP(m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut, true, isTff, snrCSC, m_printFrameMSE
-#if JVET_K0157
                               , false
-#endif
       );
 
       iNumEncoded += m_iNumPicRcvd;
@@ -800,11 +761,7 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   rpcPic->reconstructed = false;
   rpcPic->referenced = true;
 
-#if JVET_K0157
   m_iPOCLast += (m_compositeRefEnabled ? 2 : 1);
-#else
-  m_iPOCLast++;
-#endif
   m_iNumPicRcvd++;
 }
 
@@ -877,49 +834,24 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseLargeCTU           ( m_LargeCTU );
   sps.getSpsNext().setMaxBTDepth            ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   sps.getSpsNext().setUseDualITree          ( m_dualITree );
-#if JVET_K0346
   sps.getSpsNext().setSubPuMvpMode(m_SubPuMvpMode);
   sps.getSpsNext().setSubPuMvpLog2Size(m_SubPuMvpLog2Size);
-#endif
-#if JVET_K0357_AMVR
   sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
   sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
-#endif
-#if JVET_K0072
-#else
-#endif
-#if JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
 #endif
   sps.getSpsNext().setUseAffine             ( m_Affine );
-#if JVET_K0337_AFFINE_6PARA
   sps.getSpsNext().setUseAffineType         ( m_AffineType );
-#endif
-#endif
-#if JVET_K0346 && !JVET_K_AFFINE
-#if !REMOVE_MV_ADAPT_PREC
-  sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
-#endif
-#endif
   sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );
   sps.getSpsNext().setMTTMode               ( m_MTTMode );
-#if JVET_K0190
   sps.getSpsNext().setUseLMChroma           ( m_LMChroma ? true : false );
-#if !JVET_K0190
-  sps.getSpsNext().setELMMode               ( m_LMChroma > 1 ? m_LMChroma - 1 : 0 );
-#endif
-#endif
 #if ENABLE_WPP_PARALLELISM
   sps.getSpsNext().setUseNextDQP            ( m_AltDQPCoding );
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
-#endif
-#if JVET_K0157
   sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
-#endif
 
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 
@@ -973,9 +905,7 @@ void EncLib::xInitSPS(SPS &sps)
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
   sps.setUseStrongIntraSmoothing( m_useStrongIntraSmoothing );
 #endif
-#if JVET_K0371_ALF
   sps.setUseALF( m_alf );
-#endif
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
   if (sps.getVuiParametersPresentFlag())
@@ -1364,12 +1294,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setUseWP( m_useWeightedPred );
   pps.setWPBiPred( m_useWeightedBiPred );
   pps.setOutputFlagPresentFlag( false );
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-  pps.setSignDataHidingEnabledFlag(getSignDataHidingEnabledFlag());
-#endif
-#endif
 
   if ( getDeblockingFilterMetric() )
   {
@@ -1601,19 +1525,15 @@ void EncLib::xInitRPS(SPS &sps, bool isFieldCoding)
    // determines what Reference Picture Set to use
    // for a specific slice (with POC = POCCurr)
 void EncLib::selectReferencePictureSet(Slice* slice, int POCCurr, int GOPid
-#if JVET_K0157
                                       , int ltPoc
-#endif
 )
 {
-#if JVET_K0157
   bool isEncodeLtRef = (POCCurr == ltPoc);
   if (m_compositeRefEnabled && isEncodeLtRef)
   {
     POCCurr++;
   }
   int rIdx = GOPid;
-#endif
   slice->setRPSidx(GOPid);
 
   for(int extraNum=m_iGOPSize; extraNum<m_extraRPSs+m_iGOPSize; extraNum++)
@@ -1628,9 +1548,7 @@ void EncLib::selectReferencePictureSet(Slice* slice, int POCCurr, int GOPid
       if(POCIndex == m_GOPList[extraNum].m_POC)
       {
         slice->setRPSidx(extraNum);
-#if JVET_K0157
         rIdx = extraNum;
-#endif
       }
     }
     else
@@ -1638,9 +1556,7 @@ void EncLib::selectReferencePictureSet(Slice* slice, int POCCurr, int GOPid
       if(POCCurr==m_GOPList[extraNum].m_POC)
       {
         slice->setRPSidx(extraNum);
-#if JVET_K0157
         rIdx = extraNum;
-#endif
       }
     }
   }
@@ -1648,12 +1564,9 @@ void EncLib::selectReferencePictureSet(Slice* slice, int POCCurr, int GOPid
   if(POCCurr == 1 && slice->getPic()->fieldPic)
   {
     slice->setRPSidx(m_iGOPSize+m_extraRPSs);
-#if JVET_K0157
     rIdx = m_iGOPSize + m_extraRPSs;
-#endif
   }
 
-#if JVET_K0157
   ReferencePictureSet *rps = const_cast<ReferencePictureSet *>(slice->getSPS()->getRPSList()->getReferencePictureSet(slice->getRPSidx()));
   if (m_compositeRefEnabled && ltPoc != -1 && !isEncodeLtRef)
   {
@@ -1716,9 +1629,6 @@ void EncLib::selectReferencePictureSet(Slice* slice, int POCCurr, int GOPid
     slice->setRPSidx(-1);
     return;
   }
-#else
-  const ReferencePictureSet *rps = (slice->getSPS()->getRPSList()->getReferencePictureSet(slice->getRPSidx()));
-#endif
   slice->setRPS(rps);
 }
 
@@ -1869,11 +1779,7 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
     const int* pdQPs = getdQPs();
     if ( pdQPs )
     {
-#if JVET_K0157
       qp += pdQPs[pSlice->getPOC() / (m_compositeRefEnabled ? 2 : 1)];
-#else
-      qp += pdQPs[ pSlice->getPOC() ];
-#endif
     }
 #endif
 

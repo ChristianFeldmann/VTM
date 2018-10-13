@@ -50,81 +50,18 @@
 #include <assert.h>
 #include <cassert>
 
-
-
-
-#define JVET_K1000_SIMPLIFIED_EMT                         1 // EMT with only DCT-2, DCT-8 and DST-7
-
-#define JVET_K0371_ALF                                    1
-
-#define DEBLOCKING_GRID_8x8                               1
-#define DB_TU_FIX                                         1 // fix in JVET_K0307, JVET-K0237, JVET-K0369, JVET-K0232, JVET-K0315
-
-#define JVET_K0190                                        1 //Only Keep CCLM
-
-#ifndef INTRA67_3MPM  // JVET-K0529
-#define INTRA67_3MPM                                      1
-#endif
-
-#define JVET_K0500_WAIP                                   1 // Wide-Angle Intra Prediction
-
-#define JVET_K0072                                        1
-
-#define JVET_K0122                                        1 // CE3-related: Alternative techniques for DC mode without division
-                                                            // Test 2: Samples are taken only along with a longer side
-
-#define JVET_K0220_ENC_CTRL                               1 // remove HM_NO_ADDITIONAL_SPEEDUPS when adopting
-#if JVET_K0220_ENC_CTRL
 #define REUSE_CU_RESULTS                                  1
-#endif
-
-#define JVET_K0390_RATECTRL                               1
-#define RATECTRL_FIX_FULLNBIT                             1  //fix the QP-lambda relationship in rate control if JVET-K0154 for FULL_NBIT is enabled
-
-#define JVET_K0352_MERGE_ENCOPT                           1 // encoder optimization for merge
-#define JVET_K0556_MAX_TT_SIZE_64                         1 // Maximum TT size is set to 64x64 for P/B-slice
-
-#define JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK     1 // Dual coding tree is enabled under 64x64 block level instead of CTU level
-#define JVET_K0554                                        1 // when adopting, also remove the macro HM_QTBT_ONLY_QT_IMPLICIT (keep the case for value 0)
-
-#define JVET_K0346                                        1 // simplifications on ATMVP
-
-#define JVET_K0063_PDPC_SIMP                              1 // Simplified PDPC
-
-#define JVET_K0351_LESS_CONSTRAINT                        1 // Only disallow binary split with same orientation in center partition of the ternary split and release the other constraints in K0351.
-
-#define JVET_K0251_QP_EXT                                 1 // Extending the QP parameter value range for coarse quantization
-
-#define JVET_K_AFFINE                                     1
-#if JVET_K_AFFINE
-#define JVET_K0367_AFFINE_FIX_POINT                       1 // bit-exact SIMD optimization for affine ME
-#define JVET_K_AFFINE_BUG_FIXES                           1 // several affine bug fixes from JVET-K0052, JVET-K0103, JVET-K0367
-
-#define JVET_K0184_AFFINE_4X4                             1 // CE4.1.1 fixed 4x4 sub-block size
-#define JVET_K0337_AFFINE_MVP_IMPROVE                     1 // CE4.1.3 Affine MVP construction
-#define JVET_K0337_AFFINE_MVD_PREDICTION                  1 // CE4.1.3 Affine MVD prediction
-#define JVET_K0337_AFFINE_6PARA                           1 // CE4.1.3 CU level 4-para/6-para switching
-#if JVET_K0337_AFFINE_6PARA
-#define JVET_K0185_AFFINE_6PARA_ENC                       1 // CE4.1.5 Affine 6-para encoder
-#endif
-#endif
-
-#define JVET_K0357_AMVR                                   1 // Adaptive motion vector resolution separated from JEM_TOOLS macro
 
 #define REMOVE_MV_ADAPT_PREC                              1 // remove the high precision flag in the MV class
 
-
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )
-
 #endif
 #ifndef QTBT_AS_IN_JEM
 #define QTBT_AS_IN_JEM                                    1
-
 #endif
 #ifndef HEVC_TOOLS
 #define HEVC_TOOLS                                        0
-
 #endif
 
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
@@ -156,9 +93,6 @@
 
 #endif
 
-#define DISTORTION_LAMBDA_BUGFIX                          1   // JVET-K0154 for FULL_NBIT
-#define DISTORTION_TYPE_BUGFIX                            1   // JVET-K0154 for FULL_NBIT
-#define WCG_EXT_BUGFIX                                    1
 
 // ====================================================================================================================
 // NEXT software switches
@@ -191,33 +125,24 @@
 #define HEVC_VPS                                          1
 #define HEVC_DEPENDENT_SLICES                             1
 #define HEVC_TILES_WPP                                    1
-#elif JVET_K0072
+#else
 #define HEVC_USE_SIGN_HIDING                              1
 #endif
 
-#define JVET_K0157                                        1
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
 
 #define ENABLE_BMS                                        1
 
 #if QTBT_AS_IN_JEM // macros which will cause changes in the decoder behavior ara marked with *** - keep them on to retain compatibility with JEM-toolcheck
-#if JVET_K0220_ENC_CTRL
 #define HM_NO_ADDITIONAL_SPEEDUPS                         0
-#else
-#define HM_NO_ADDITIONAL_SPEEDUPS                         1
-#endif
 #define HM_QTBT_AS_IN_JEM                                 1   // ***
 #if     HM_QTBT_AS_IN_JEM
 #define HM_QTBT_AS_IN_JEM_CONTEXT                         1   // ***
 #define HM_QTBT_AS_IN_JEM_SYNTAX                        ( 1 && !( ENABLE_BMS ) ) // *** -- cannot be enabled if ENABLE_BMS is on
 #define HM_QTBT_AS_IN_JEM_QUANT                           1   // ***
 #define HM_QTBT_REPRODUCE_FAST_LCTU_BUG                   1
-#if JVET_K0554
 #define HM_QTBT_ONLY_QT_IMPLICIT                          0   // ***
-#else
-#define HM_QTBT_ONLY_QT_IMPLICIT                          1   // ***
-#endif
 #endif
 #define HM_CODED_CU_INFO                                  1   // like in JEM, when related CU is skipped, it stays like this even if a non skip mode wins...
 #define HM_4TAPIF_AS_IN_JEM                               1   // *** - PM: condition not well suited for 4-tap interpolation filters
@@ -286,12 +211,8 @@
 #define ENABLE_SIMD_OPT_MCIF                            ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for the interpolation filter, no impact on RD performance
 #define ENABLE_SIMD_OPT_BUFFER                          ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for the buffer operations, no impact on RD performance
 #define ENABLE_SIMD_OPT_DIST                            ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for the distortion calculations(SAD,SSE,HADAMARD), no impact on RD performance
-#if JVET_K0367_AFFINE_FIX_POINT
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
-#endif
-#if JVET_K0371_ALF
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
-#endif
 // End of SIMD optimizations
 
 
@@ -334,19 +255,11 @@
 #define RExt__HIGH_PRECISION_FORWARD_TRANSFORM            0 ///< 0 (default) use original 6-bit transform matrices for both forward and inverse transform, 1 = use original matrices for inverse transform and high precision matrices for forward transform
 #endif
 
-#if DISTORTION_LAMBDA_BUGFIX
 #if FULL_NBIT
 #define DISTORTION_PRECISION_ADJUSTMENT(x)                0
 #else
 #define DISTORTION_ESTIMATION_BITS                        8
 #define DISTORTION_PRECISION_ADJUSTMENT(x)                ((x>DISTORTION_ESTIMATION_BITS)? ((x)-DISTORTION_ESTIMATION_BITS) : 0)
-#endif
-#else
-#if FULL_NBIT
-# define DISTORTION_PRECISION_ADJUSTMENT(x)  0
-#else
-# define DISTORTION_PRECISION_ADJUSTMENT(x) (x)
-#endif
 #endif
 
 // ====================================================================================================================
@@ -379,15 +292,7 @@ typedef       uint32_t            Intermediate_UInt; ///< used as intermediate v
 
 typedef       uint64_t          SplitSeries;       ///< used to encoded the splits that caused a particular CU size
 
-#if DISTORTION_TYPE_BUGFIX
 typedef       uint64_t        Distortion;        ///< distortion measurement
-#else
-#if FULL_NBIT
-typedef       uint64_t          Distortion;        ///< distortion measurement
-#else
-typedef       uint32_t            Distortion;        ///< distortion measurement
-#endif
-#endif
 
 // ====================================================================================================================
 // Enumeration
@@ -404,20 +309,10 @@ enum QuantFlags
 enum TransType
 {
   DCT2 = 0,
-#if JVET_K1000_SIMPLIFIED_EMT
   DCT8 = 1,
   DST7 = 2,
   NUM_TRANS_TYPE = 3,
   DCT2_EMT = 4
-#else
-  DCT5 = 1,
-  DCT8 = 2,
-  DST1 = 3,
-  DST7 = 4,
-  NUM_TRANS_TYPE = 5,
-  DCT2_HEVC = 6,
-  DCT2_EMT = 7
-#endif
 };
 
 enum RDPCMMode
@@ -959,9 +854,7 @@ enum SaveLoadTag
 enum MergeType
 {
   MRG_TYPE_DEFAULT_N        = 0, // 0
-#if JVET_K0346
   MRG_TYPE_SUBPU_ATMVP,
-#endif
   NUM_MRG_TYPE                   // 5
 };
 
@@ -1421,7 +1314,6 @@ struct XUCache
 
 #define SIGN(x) ( (x) >= 0 ? 1 : -1 )
 
-#if JVET_K0371_ALF
 #define MAX_NUM_ALF_CLASSES             25
 #define MAX_NUM_ALF_LUMA_COEFF          13
 #define MAX_NUM_ALF_CHROMA_COEFF        7
@@ -1554,7 +1446,6 @@ struct AlfSliceParam
     return *this;
   }
 };
-#endif
 
 //! \}
 

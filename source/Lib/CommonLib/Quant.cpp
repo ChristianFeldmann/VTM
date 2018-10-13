@@ -342,11 +342,7 @@ void Quant::dequant(const TransformUnit &tu,
 
     if(rightShift > 0)
     {
-#if DISTORTION_TYPE_BUGFIX
       const Intermediate_Int iAdd = (Intermediate_Int) 1 << (rightShift - 1);
-#else
-      const Intermediate_Int iAdd = 1 << (rightShift - 1);
-#endif
 
       for( int n = 0; n < numSamplesInBlock; n++ )
       {
@@ -396,11 +392,7 @@ void Quant::dequant(const TransformUnit &tu,
 
     if (rightShift > 0)
     {
-#if DISTORTION_TYPE_BUGFIX
       const Intermediate_Int iAdd = (Intermediate_Int) 1 << (rightShift - 1);
-#else
-      const Intermediate_Int iAdd = 1 << (rightShift - 1);
-#endif
 
       for( int n = 0; n < numSamplesInBlock; n++ )
       {
@@ -430,9 +422,6 @@ void Quant::dequant(const TransformUnit &tu,
 void Quant::init( uint32_t uiMaxTrSize,
                   bool bUseRDOQ,
                   bool bUseRDOQTS,
-#if JVET_K0072
-#else
-#endif
 #if T0196_SELECTIVE_RDOQ
                   bool useSelectiveRDOQ
 #endif
@@ -447,9 +436,6 @@ void Quant::init( uint32_t uiMaxTrSize,
   m_useRDOQTS    = bUseRDOQTS;
 #if T0196_SELECTIVE_RDOQ
   m_useSelectiveRDOQ     = useSelectiveRDOQ;
-#endif
-#if JVET_K0072
-#else
 #endif
 }
 
@@ -721,12 +707,6 @@ void Quant::xDestroyScalingList()
 void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx)
 {
   const SPS &sps            = *tu.cs->sps;
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-  const PPS &pps            = *tu.cs->pps;
-#endif
-#endif
   const CompArea &rect      = tu.blocks[compID];
 #if HEVC_USE_SCALING_LISTS || HEVC_USE_SIGN_HIDING
   const uint32_t uiWidth        = rect.width;
@@ -742,11 +722,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 
   {
 #if HEVC_USE_SIGN_HIDING
-#if JVET_K0072
     CoeffCodingContext cctx(tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag());
-#else
-    CoeffCodingContext cctx(tu, compID, pps.getSignDataHidingEnabledFlag());
-#endif
 #else
     CoeffCodingContext cctx(tu, compID);
 #endif
@@ -1021,11 +997,7 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
 
     if (rightShift > 0)
     {
-#if DISTORTION_TYPE_BUGFIX
       const Intermediate_Int iAdd = (Intermediate_Int) 1 << (rightShift - 1);
-#else
-      const Intermediate_Int iAdd = 1 << (rightShift - 1);
-#endif
       const TCoeff           clipQCoef = TCoeff(Clip3<Intermediate_Int>(inputMinimum, inputMaximum, inSample));
       const Intermediate_Int iCoeffQ = ((Intermediate_Int(clipQCoef) * piDequantCoef[uiPos]) + iAdd) >> rightShift;
 
@@ -1052,11 +1024,7 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
 
     if (rightShift > 0)
     {
-#if DISTORTION_TYPE_BUGFIX
       const Intermediate_Int iAdd = (Intermediate_Int) 1 << (rightShift - 1);
-#else
-      const Intermediate_Int iAdd = 1 << (rightShift - 1);
-#endif
       const TCoeff           clipQCoef = TCoeff(Clip3<Intermediate_Int>(inputMinimum, inputMaximum, inSample));
       const Intermediate_Int iCoeffQ = (Intermediate_Int(clipQCoef) * scale + iAdd) >> rightShift;
 

@@ -164,7 +164,6 @@ public:
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t sizeId, uint32_t listId);
 #endif
 
-#if JVET_K0371_ALF
   void alf( AlfSliceParam& alfSliceParam );
   void alfFilter( AlfSliceParam& alfSliceParam, const bool isChroma );
 
@@ -172,7 +171,6 @@ private:
   int truncatedUnaryEqProb( const int maxSymbol );
   void xReadTruncBinCode( uint32_t& ruiSymbol, const int uiMaxSymbol );
   int  alfGolombDecode( const int k );
-#endif
 
 protected:
   bool  xMoreRbspData();

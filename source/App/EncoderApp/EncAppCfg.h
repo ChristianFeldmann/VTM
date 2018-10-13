@@ -204,17 +204,11 @@ protected:
   unsigned  m_uiMaxBTDepthIChroma;
   bool      m_dualTree;
   bool      m_LargeCTU;
-#if JVET_K0346
   int       m_SubPuMvpMode;
   unsigned  m_SubPuMvpLog2Size;
-#endif
-#if JVET_K_AFFINE
   bool      m_Affine;
-#if JVET_K0337_AFFINE_6PARA
   bool      m_AffineType;
-#endif
-#endif
-#if (JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
+#if !REMOVE_MV_ADAPT_PREC
   bool      m_highPrecisionMv;
 #endif
   bool      m_DisableMotionCompression;
@@ -222,17 +216,11 @@ protected:
 #if ENABLE_WPP_PARALLELISM
   bool      m_AltDQPCoding;
 #endif
-#if JVET_K0190
   int       m_LMChroma;
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
   int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
-#endif
 
-#if JVET_K0157
   bool      m_compositeRefEnabled;
-#endif
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
 
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
@@ -245,10 +233,6 @@ protected:
   bool      m_usePbIntraFast;
   bool      m_useAMaxBT;
   bool      m_useFastMrg;
-#if !JVET_K0220_ENC_CTRL
-  bool      m_useSaveLoadEncInfo;
-  bool      m_useSaveLoadSplitDecision;
-#endif
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
 
@@ -433,11 +417,9 @@ protected:
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
 
   int       m_TMVPModeId;
-#if JVET_K0072
   bool      m_depQuantEnabledFlag;
 #if HEVC_USE_SIGN_HIDING
   bool      m_signDataHidingEnabledFlag;
-#endif
 #endif
   bool      m_RCEnableRateControl;                ///< enable rate control or not
   int       m_RCTargetBitrate;                    ///< target bitrate when rate control is enabled
@@ -501,11 +483,9 @@ protected:
   int       m_maxBitsPerMinCuDenom;                           ///< Indicates an upper bound for the number of bits of coding_unit() data
   int       m_log2MaxMvLengthHorizontal;                      ///< Indicate the maximum absolute value of a decoded horizontal MV component in quarter-pel luma units
   int       m_log2MaxMvLengthVertical;                        ///< Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units
-#if JVET_K0357_AMVR
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
   int       m_ImvMaxCand;                                     ///< imv max num cand for test (QTBT off only)
-#endif
   std::string m_colourRemapSEIFileRoot;
 
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.
@@ -522,9 +502,7 @@ protected:
   bool        m_bs2ModPOCAndType;
   bool        m_forceDecodeBitstream1;
 
-#if JVET_K0371_ALF
   bool        m_alf;                                          ///> Adaptive Loop Filter
-#endif
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;

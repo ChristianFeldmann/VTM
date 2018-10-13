@@ -46,9 +46,7 @@
 #include "CommonLib/LoopFilter.h"
 #include "CommonLib/NAL.h"
 #include "EncSampleAdaptiveOffset.h"
-#if JVET_K0371_ALF
 #include "EncAdaptiveLoopFilter.h"
-#endif
 #include "EncSlice.h"
 #include "VLCWriter.h"
 #include "CABACWriter.h"
@@ -131,7 +129,6 @@ private:
 
   SEIWriter               m_seiWriter;
 
-#if JVET_K0157
   Picture *               m_picBg;
   Picture *               m_picOrig;
   int                     m_bgPOC;
@@ -139,12 +136,9 @@ private:
   bool                    m_isPrepareLTRef;
   bool                    m_isUseLTRef;
   int                     m_lastLTRefPoc;
-#endif
   //--Adaptive Loop filter
   EncSampleAdaptiveOffset*  m_pcSAO;
-#if JVET_K0371_ALF
   EncAdaptiveLoopFilter*    m_pcALF;
-#endif
   RateCtrl*                 m_pcRateCtrl;
   // indicate sequence first
   bool                    m_bSeqFirst;
@@ -183,9 +177,7 @@ public:
   void  init        ( EncLib* pcEncLib );
   void  compressGOP ( int iPOCLast, int iNumPicRcvd, PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRec,
                       bool isField, bool isTff, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE
-#if JVET_K0157
                     , bool isEncodeLtRef
-#endif
   );
   void  xAttachSliceDataToNalUnit (OutputNALUnit& rNalu, OutputBitstream* pcBitstreamRedirect);
 
@@ -193,7 +185,6 @@ public:
   int   getGOPSize()          { return  m_iGopSize;  }
 
   PicList*   getListPic()      { return m_pcListPic; }
-#if JVET_K0157
   void      setPicBg(Picture* tmpPicBg) { m_picBg = tmpPicBg; }
   Picture*  getPicBg() const { return m_picBg; }
   void      setPicOrig(Picture* tmpPicBg) { m_picOrig = tmpPicBg; }
@@ -209,7 +200,6 @@ public:
   void      setLastLTRefPoc(int iLastLTRefPoc) { m_lastLTRefPoc = iLastLTRefPoc; }
   int       getLastLTRefPoc() const { return m_lastLTRefPoc; }
 
-#endif
   void  printOutSummary      ( uint32_t uiNumAllPicCoded, bool isField, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths );
 #if W0038_DB_OPT
   uint64_t  preLoopFilterPicAndCalcDist( Picture* pcPic );
@@ -217,10 +207,8 @@ public:
   EncSlice*  getSliceEncoder()   { return m_pcSliceEncoder; }
   NalUnitType getNalUnitType( int pocCurr, int lastIdr, bool isField );
   void arrangeLongtermPicturesInRPS(Slice *, PicList& );
-#if JVET_K0157
   void arrangeCompositeReference(Slice* pcSlice, PicList& rcListPic, int pocCurr);
   void updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int pocCurr);
-#endif
 
 #if EXTENSION_360_VIDEO
   Analyze& getAnalyzeAllData() { return m_gcAnalyzeAll; }
@@ -235,29 +223,21 @@ protected:
 protected:
 
   void  xInitGOP          ( int iPOCLast, int iNumPicRcvd, bool isField
-#if JVET_K0157
     , bool isEncodeLtRef
-#endif
   );
   void  xGetBuffer        ( PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                             int iNumPicRcvd, int iTimeOffset, Picture*& rpcPic, int pocCurr, bool isField );
 
   void  xCalculateAddPSNRs(const bool isField, const bool isFieldTopFieldFirst, const int iGOPid, Picture* pcPic, const AccessUnit&accessUnit, PicList &rcListPic, int64_t dEncTime, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE, double* PSNR_Y
-#if JVET_K0157
     , bool isEncodeLtRef
-#endif
   );
   void  xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUnit&, double dEncTime, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE, double* PSNR_Y
-#if JVET_K0157
     , bool isEncodeLtRef
-#endif
   );
   void  xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* pcPicOrgSecondField,
                                      PelUnitBuf cPicRecFirstField, PelUnitBuf cPicRecSecondField,
                                      const InputColourSpaceConversion snr_conversion, const bool printFrameMSE, double* PSNR_Y
-#if JVET_K0157
                                     , bool isEncodeLtRef
-#endif
   );
 
   uint64_t xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, const uint32_t rshift

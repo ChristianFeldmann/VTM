@@ -41,7 +41,6 @@
 //! \{
 
 #ifdef TARGET_SIMD_X86
-#if JVET_K0371_ALF
 #if defined _MSC_VER
 #include <tmmintrin.h>
 #else
@@ -781,6 +780,5 @@ void AdaptiveLoopFilter::_initAdaptiveLoopFilterX86()
 }
 
 template void AdaptiveLoopFilter::_initAdaptiveLoopFilterX86<SIMDX86>();
-#endif //#if ALF_K0371_ALF
 #endif //#ifdef TARGET_SIMD_X86
 //! \}

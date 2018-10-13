@@ -94,29 +94,15 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__OTHER,
   STATS__CABAC_BITS__INVALID,
   STATS__TOOL_TOTAL_FRAME,// This is a special case and is not included in the report.
-#if JVET_K_AFFINE
   STATS__CABAC_BITS__AFFINE_FLAG,
   STATS__TOOL_AFF,
-#if JVET_K0337_AFFINE_6PARA
   STATS__CABAC_BITS__AFFINE_TYPE,
-#endif
-#endif
-#if JVET_K0072
   STATS__CABAC_BITS__PAR_FLAG,
-#endif
-#if JVET_K0371_ALF
   STATS__CABAC_BITS__ALF,
-#endif
-#if JVET_K0357_AMVR
   STATS__CABAC_BITS__IMV_FLAG,
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
   STATS__CABAC_BITS__EMT_CU_FLAG,
   STATS__CABAC_BITS__EMT_TU_INDEX,
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
   STATS__TOOL_EMT,
-#endif
   STATS__TOOL_TOTAL,
   STATS__NUM_STATS
 };
@@ -154,12 +140,8 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__REF_FRM_IDX",
     "CABAC_BITS__MVD",
     "CABAC_BITS__MVD_EP",
-#if JVET_K_AFFINE
     "CABAC_BITS__AFFINE_FLAG",
-#if JVET_K0337_AFFINE_6PARA
     "CABAC_BITS__AFFINE_TYPE",
-#endif
-#endif
     "CABAC_BITS__TRANSFORM_SUBDIV_FLAG",
     "CABAC_BITS__QT_ROOT_CBF",
     "CABAC_BITS__DELTA_QP_EP",
@@ -170,17 +152,13 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__LAST_SIG_X_Y",
     "CABAC_BITS__SIG_COEFF_GROUP_FLAG",
     "CABAC_BITS__SIG_COEFF_MAP_FLAG",
-#if JVET_K0072
     "CABAC_BITS__PAR_FLAG",
-#endif
     "CABAC_BITS__GT1_FLAG",
     "CABAC_BITS__GT2_FLAG",
     "CABAC_BITS__SIGN_BIT",
     "CABAC_BITS__ESCAPE_BITS",
     "CABAC_BITS__SAO",
-#if JVET_K0371_ALF
     "CABAC_BITS__ALF",
-#endif
     "CABAC_TRM_BITS",
     "CABAC_FIXED_BITS",
     "CABAC_PCM_ALIGN_BITS",
@@ -191,13 +169,9 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_EP_BIT_ALIGNMENT",
     "CABAC_BITS__ALIGNED_SIGN_BIT",
     "CABAC_BITS__ALIGNED_ESCAPE_BITS",
-#if JVET_K0357_AMVR
     "CABAC_BITS__IMV_FLAG",
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
     "CABAC_BITS__EMT_CU_FLAG",
     "CABAC_BITS__EMT_TU_INDX",
-#endif
     "CABAC_BITS__OTHER",
     "CABAC_BITS__INVALID",
     "TOOL_FRAME",

@@ -68,11 +68,9 @@ Slice::Slice()
 , m_deblockingFilterBetaOffsetDiv2( 0 )
 , m_deblockingFilterTcOffsetDiv2  ( 0 )
 , m_pendingRasInit                ( false )
-#if JVET_K0072 
 , m_depQuantEnabledFlag           ( false )
 #if HEVC_USE_SIGN_HIDING
 , m_signDataHidingEnabledFlag     ( false )
-#endif
 #endif
 , m_bCheckLDC                     ( false )
 , m_iSliceQpDelta                 ( 0 )
@@ -121,10 +119,8 @@ Slice::Slice()
 , m_temporalLayerNonReferenceFlag ( false )
 , m_LFCrossSliceBoundaryFlag      ( false )
 , m_enableTMVPFlag                ( true )
-#if JVET_K0346
 , m_subPuMvpSubBlkSizeSliceEnable(false)
 , m_subPuMvpSubBlkLog2Size       (2)
-#endif
 , m_encCABACTableIdx              (I_SLICE)
 , m_iProcessingStartTime          ( 0 )
 , m_dProcessingTime               ( 0 )
@@ -199,10 +195,8 @@ void Slice::initSlice()
   m_cabacInitFlag        = false;
   m_cabacWinUpdateMode   = 0;
   m_enableTMVPFlag       = true;
-#if JVET_K0346
   m_subPuMvpSubBlkSizeSliceEnable = false;
   m_subPuMvpSubBlkLog2Size        = 2;
-#endif
 }
 
 void Slice::setDefaultClpRng( const SPS& sps )
@@ -817,10 +811,8 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_bLMvdL1Zero                   = pSrc->m_bLMvdL1Zero;
   m_LFCrossSliceBoundaryFlag      = pSrc->m_LFCrossSliceBoundaryFlag;
   m_enableTMVPFlag                = pSrc->m_enableTMVPFlag;
-#if JVET_K0346
   m_subPuMvpSubBlkSizeSliceEnable = pSrc->m_subPuMvpSubBlkSizeSliceEnable;
   m_subPuMvpSubBlkLog2Size        = pSrc->m_subPuMvpSubBlkLog2Size;
-#endif
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
   m_uiMaxBTSize                   = pSrc->m_uiMaxBTSize;
@@ -1311,9 +1303,7 @@ int Slice::checkThatAllRefPicsAreAvailable( PicList& rcListPic, const ReferenceP
 /** Function for constructing an explicit Reference Picture Set out of the available pictures in a referenced Reference Picture Set
 */
 void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet, bool isRAP, int pocRandomAccess, bool bUseRecoveryPoint, const bool bEfficientFieldIRAPEnabled
-#if JVET_K0157
                                                          , bool isEncodeLtRef, bool isCompositeRefEnable
-#endif
 )
 {
   Picture* rpcPic;
@@ -1354,11 +1344,7 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
         }
         else
         {
-#if JVET_K0157
           if (bEfficientFieldIRAPEnabled && rpcPic->getPOC() == this->getAssociatedIRAPPOC() && this->getAssociatedIRAPPOC() == this->getPOC() + (isCompositeRefEnable ? 2 : 1))
-#else
-          if(bEfficientFieldIRAPEnabled && rpcPic->getPOC() == this->getAssociatedIRAPPOC() && this->getAssociatedIRAPPOC() == this->getPOC()+1)
-#endif
           {
             irapIsInRPS = true;
           }
@@ -1377,11 +1363,7 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
     while ( iterPic != rcListPic.end())
     {
       rpcPic = *(iterPic++);
-#if JVET_K0157
       if (rpcPic->getPOC() == this->getAssociatedIRAPPOC() && this->getAssociatedIRAPPOC() == this->getPOC() + (isCompositeRefEnable ? 2 : 1))
-#else
-      if(rpcPic->getPOC() == this->getAssociatedIRAPPOC() && this->getAssociatedIRAPPOC() == this->getPOC()+1)
-#endif
       {
         pLocalRPS->setDeltaPOC(k, 1);
         pLocalRPS->setUsed(k, true);
@@ -1391,7 +1373,6 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
       }
     }
   }
-#if JVET_K0157
   if (isCompositeRefEnable && isEncodeLtRef)
   {
     useNewRPS = true;
@@ -1437,7 +1418,6 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
       }
     }
   }
-#endif
   pLocalRPS->setNumberOfNegativePictures(nrOfNegativePictures);
   pLocalRPS->setNumberOfPositivePictures(nrOfPositivePictures);
   pLocalRPS->setNumberOfPictures(nrOfNegativePictures+nrOfPositivePictures);
@@ -1648,37 +1628,17 @@ SPSNext::SPSNext( SPS& sps )
   // disable all tool enabling flags by default
   , m_QTBT                      ( false )
   , m_LargeCTU                  ( false )
-#if JVET_K0346
   , m_SubPuMvp                  ( false )
-#endif
-#if JVET_K0357_AMVR
   , m_IMV                       ( false )
-#endif
-#if JVET_K0072
-#else
-#endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   , m_highPrecMv                ( false )
 #endif
-#endif
   , m_DisableMotionCompression  ( false )
-#if !JVET_K0371_ALF
-  , m_ALFEnabled                ( false )
-#endif
-#if JVET_K0190
   , m_LMChroma                  ( false )
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
   , m_IntraEMT                  ( false )
   , m_InterEMT                  ( false )
-#endif
-#if JVET_K_AFFINE
   , m_Affine                    ( false )
-#if JVET_K0337_AFFINE_6PARA
   , m_AffineType                ( false )
-#endif
-#endif
   , m_MTTEnabled                ( false )
 #if ENABLE_WPP_PARALLELISM
   , m_NextDQP                   ( false )
@@ -1689,20 +1649,11 @@ SPSNext::SPSNext( SPS& sps )
   , m_minQT                     { 0, 0 }
   , m_maxBTDepth                { MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
   , m_maxBTSize                 { MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
-#if JVET_K0346
   , m_subPuLog2Size             ( 0 )
   , m_subPuMrgMode              ( 0 )
-#endif
-#if JVET_K0357_AMVR
   , m_ImvMode                   ( IMV_OFF )
-#endif
-#if JVET_K0072
-#else
-#endif
   , m_MTTMode                   ( 0 )
-#if JVET_K0157
     , m_compositeRefEnabled     ( false )
-#endif
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags here (with "false" as default values)
 {
 }
@@ -1822,12 +1773,6 @@ PPS::PPS()
 , m_uniformSpacingFlag               (false)
 , m_numTileColumnsMinus1             (0)
 , m_numTileRowsMinus1                (0)
-#endif
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-, m_signDataHidingEnabledFlag        (false)
-#endif
 #endif
 , m_cabacInitPresentFlag             (false)
 , m_sliceHeaderExtensionPresentFlag  (false)

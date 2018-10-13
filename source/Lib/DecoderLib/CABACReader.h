@@ -69,11 +69,7 @@ public:
   void        sao                       ( CodingStructure&              cs,     unsigned        ctuRsAddr );
 
   // coding (quad)tree (clause 7.3.8.4)
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
   bool        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
-#else
-  bool        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx );
-#endif
   bool        split_cu_flag             ( CodingStructure&              cs,     Partitioner&    pm );
   PartSplit   split_cu_mode_mt          ( CodingStructure&              cs,     Partitioner&    pm );
 
@@ -86,9 +82,7 @@ public:
   void        cu_pred_data              ( CodingUnit&                   cu );
   void        intra_luma_pred_modes     ( CodingUnit&                   cu );
   void        intra_chroma_pred_modes   ( CodingUnit&                   cu );
-#if JVET_K0190
   bool        intra_chroma_lmc_mode     ( PredictionUnit&               pu );
-#endif
   void        intra_chroma_pred_mode    ( PredictionUnit&               pu );
   void        cu_residual               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );
   void        rqt_root_cbf              ( CodingUnit&                   cu );
@@ -98,13 +92,9 @@ public:
   void        prediction_unit           ( PredictionUnit&               pu,     MergeCtx&       mrgCtx );
   void        merge_flag                ( PredictionUnit&               pu );
   void        merge_data                ( PredictionUnit&               pu );
-#if JVET_K_AFFINE
   void        affine_flag               ( CodingUnit&                   cu );
-#endif
   void        merge_idx                 ( PredictionUnit&               pu );
-#if JVET_K0357_AMVR
   void        imv_mode                  ( CodingUnit&                   cu,     MergeCtx&       mrgCtx );
-#endif
   void        inter_pred_idc            ( PredictionUnit&               pu );
   void        ref_idx                   ( PredictionUnit&               pu,     RefPicList      eRefList );
   void        mvp_flag                  ( PredictionUnit&               pu,     RefPicList      eRefList );
@@ -115,17 +105,9 @@ public:
   // transform tree (clause 7.3.8.8)
   void        transform_tree            ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx,  ChromaCbfs& chromaCbfs );
 #if ENABLE_BMS
-#if JVET_K0072
   bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     unsigned depth, const bool prevCbCbf = false );
 #else
-  bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     unsigned depth );
-#endif
-#else
-#if JVET_K0072
   bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     const bool prevCbCbf = false );
-#else
-  bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area );
-#endif
 #endif
 
   // mvd coding (clause 7.3.8.9)
@@ -138,24 +120,18 @@ public:
 #endif
   void        cu_qp_delta               ( CodingUnit&                   cu,     int             predQP, int8_t& qp );
   void        cu_chroma_qp_offset       ( CodingUnit&                   cu );
-#if JVET_K1000_SIMPLIFIED_EMT && !HM_EMT_NSST_AS_IN_JEM
+#if !HM_EMT_NSST_AS_IN_JEM
   void        cu_emt_pertu_idx          ( CodingUnit&                   cu );
 #endif
 
   // residual coding (clause 7.3.8.11)
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID );
   void        transform_skip_flag       ( TransformUnit&                tu,     ComponentID     compID );
-#if JVET_K1000_SIMPLIFIED_EMT
   void        emt_tu_index              ( TransformUnit&                tu );
   void        emt_cu_flag               ( CodingUnit&                   cu );
-#endif
   void        explicit_rdpcm_mode       ( TransformUnit&                tu,     ComponentID     compID );
   int         last_sig_coeff            ( CoeffCodingContext&           cctx );
-#if JVET_K0072
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff, const int stateTransTable, int& state );
-#else
-  void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff  );
-#endif
 
   // cross component prediction (clause 7.3.8.12)
   void        cross_comp_pred           ( TransformUnit&                tu,     ComponentID     compID );

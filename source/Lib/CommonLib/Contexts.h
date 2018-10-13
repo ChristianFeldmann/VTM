@@ -166,35 +166,18 @@ public:
   static const CtxSet   DeltaQP;
   static const CtxSet   InterDir;
   static const CtxSet   RefPic;
-#if JVET_K_AFFINE
   static const CtxSet   AffineFlag;
-#if JVET_K0337_AFFINE_6PARA
   static const CtxSet   AffineType;
-#endif
-#endif
   static const CtxSet   Mvd;
   static const CtxSet   TransSubdivFlag;
   static const CtxSet   QtRootCbf;
-#if JVET_K0072
   static const CtxSet   QtCbf           [3];    // [ channel ]
-#else
-  static const CtxSet   QtCbf           [2];    // [ ChannelType ]
-#endif
   static const CtxSet   SigCoeffGroup   [4];    // [ ChannelType ]
-#if JVET_K0072
-#else
-  static const CtxSet   SigFlag         [4];    // [ ChannelType ]
-#endif
   static const CtxSet   LastX           [2];    // [ ChannelType ]
   static const CtxSet   LastY           [2];    // [ ChannelType ]
-#if JVET_K0072
   static const CtxSet   SigFlag         [6];    // [ ChannelType + State ]
   static const CtxSet   ParFlag         [2];    // [ ChannelType ]
   static const CtxSet   GtxFlag         [4];    // [ ChannelType + x ]
-#else
-  static const CtxSet   GreaterOneFlag  [8];    // [ ContextSet  ]
-  static const CtxSet   GreaterTwoFlag;
-#endif
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;
   static const CtxSet   SaoTypeIdx;
@@ -202,19 +185,13 @@ public:
   static const CtxSet   TransquantBypassFlag;
   static const CtxSet   RdpcmFlag;
   static const CtxSet   RdpcmDir;
-#if JVET_K1000_SIMPLIFIED_EMT
   static const CtxSet   EMTTuIndex;
   static const CtxSet   EMTCuFlag;
-#endif
   static const CtxSet   CrossCompPred;
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;
-#if JVET_K0357_AMVR
   static const CtxSet   ImvFlag;
-#endif
-#if JVET_K0371_ALF
   static const CtxSet   ctbAlfFlag;
-#endif
   static const unsigned NumberOfContexts;
 
   // combined sets for less complex copying

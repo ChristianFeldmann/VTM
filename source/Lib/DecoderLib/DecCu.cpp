@@ -135,9 +135,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
         PelBuf piPred       = cs.getPredBuf( area );
 
   const PredictionUnit &pu  = *tu.cs->getPU( area.pos(), chType );
-#if JVET_K0190
   const uint32_t uiChFinalMode  = PU::getFinalIntraMode( pu, chType );
-#endif
 
   //===== init availability pattern =====
 
@@ -145,7 +143,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   m_pcIntraPred->initIntraPatternChType( *tu.cu, area, bUseFilteredPredictions );
 
   //===== get prediction signal =====
-#if JVET_K0190
   if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
   {
     const PredictionUnit& pu = cs.pcv->noRQT && cs.pcv->only2Nx2N ? *tu.cu->firstPU : *tu.cs->getPU( tu.block( compID ), CHANNEL_TYPE_CHROMA );
@@ -153,7 +150,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
     m_pcIntraPred->predIntraChromaLM( compID, piPred, pu, area, uiChFinalMode );
   }
   else
-#endif
   {
     m_pcIntraPred->predIntraAng( compID, piPred, pu, bUseFilteredPredictions );
   }
@@ -399,7 +395,6 @@ void DecCu::xDecodeInterTexture(CodingUnit &cu)
   }
 }
 
-#if JVET_K0346 || JVET_K_AFFINE
 void DecCu::xDeriveCUMV( CodingUnit &cu )
 {
   for( auto &pu : CU::traversePUs( cu ) )
@@ -407,17 +402,14 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     MergeCtx mrgCtx;
 
 #if RExt__DECODER_DEBUG_TOOL_STATISTICS
-#if JVET_K_AFFINE
     if( pu.cu->affine )
     {
       CodingStatistics::IncrementStatisticTool( CodingStatisticsClassType{ STATS__TOOL_AFF, pu.Y().width, pu.Y().height } );
     }
 #endif
-#endif
     if( pu.mergeFlag )
     {
       {
-#if JVET_K_AFFINE
         if( pu.cu->affine )
         {
           pu.mergeIdx = 0;
@@ -441,15 +433,12 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           PU::spanMotionInfo( pu, mrgCtx );
         }
         else
-#endif
         {
-#if JVET_K0346
           if( pu.cs->sps->getSpsNext().getUseSubPuMvp() )
           {
             Size bufSize = g_miScaling.scale( pu.lumaSize() );
             mrgCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
           }
-#endif
 
           if( cu.cs->pps->getLog2ParallelMergeLevelMinus2() && cu.partSize != SIZE_2Nx2N && cu.lumaSize().width <= 8 )
           {
@@ -485,7 +474,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     }
     else
     {
-#if JVET_K0357_AMVR
 #if REUSE_CU_RESULTS
         if (cu.imv && !cu.cs->pcv->isEncoder)
 #else
@@ -495,9 +483,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           PU::applyImv(pu, mrgCtx, m_pcInterPred);
         }
         else
-#endif
       {
-#if JVET_K_AFFINE
         if( pu.cu->affine )
         {
           for ( uint32_t uiRefListIdx = 0; uiRefListIdx < 2; uiRefListIdx++ )
@@ -517,9 +503,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 
               Mv mvLT = affineAMVPInfo.mvCandLT[mvp_idx] + pu.mvdAffi[eRefList][0];
               Mv mvRT = affineAMVPInfo.mvCandRT[mvp_idx] + pu.mvdAffi[eRefList][1];
-#if JVET_K0337_AFFINE_MVD_PREDICTION
               mvRT += pu.mvdAffi[eRefList][0];
-#endif
 #if REMOVE_MV_ADAPT_PREC
               mvLT.hor = mvLT.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
               mvLT.ver = mvLT.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
@@ -530,15 +514,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               CHECK(!mvRT.highPrec, "unexpected lp mv");
 #endif
 
-#if JVET_K_AFFINE_BUG_FIXES
               Mv mvLB;
-#if JVET_K0337_AFFINE_6PARA
               if ( cu.affineType == AFFINEMODEL_6PARAM )
               {
                 mvLB = affineAMVPInfo.mvCandLB[mvp_idx] + pu.mvdAffi[eRefList][2];
-#if JVET_K0337_AFFINE_MVD_PREDICTION
                 mvLB += pu.mvdAffi[eRefList][0];
-#endif
 #if REMOVE_MV_ADAPT_PREC
                 mvLB.hor = mvLB.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
                 mvLB.ver = mvLB.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
@@ -546,25 +526,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
                 CHECK(!mvLB.highPrec, "unexpected lp mv");
 #endif
               }
-#endif
-#else
-              int iWidth = pu.Y().width;
-              int iHeight = pu.Y().height;
-              int vx2 =  - ( mvRT.getVer() - mvLT.getVer() ) * iHeight / iWidth + mvLT.getHor();
-              int vy2 =    ( mvRT.getHor() - mvLT.getHor() ) * iHeight / iWidth + mvLT.getVer();
-              //    Mv mvLB( vx2, vy2 );
-              Mv mvLB( vx2, vy2, true );
-
-              clipMv(mvLT, pu.cu->lumaPos(), *pu.cs->sps);
-              clipMv(mvRT, pu.cu->lumaPos(), *pu.cs->sps);
-              clipMv(mvLB, pu.cu->lumaPos(), *pu.cs->sps);
-#endif
               PU::setAllAffineMv( pu, mvLT, mvRT, mvLB, eRefList );
             }
           }
         }
         else
-#endif
         {
           for ( uint32_t uiRefListIdx = 0; uiRefListIdx < 2; uiRefListIdx++ )
           {
@@ -576,7 +542,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               pu.mvpNum [eRefList] = amvpInfo.numCand;
               pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx [eRefList]] + pu.mvd[eRefList];
 
-#if JVET_K_AFFINE
               if( pu.cs->sps->getSpsNext().getUseAffine() )
               {
 #if REMOVE_MV_ADAPT_PREC
@@ -586,7 +551,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
                 pu.mv[eRefList].setHighPrec();
 #endif
               }
-#endif
             }
           }
         }
@@ -595,75 +559,4 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     }
   }
 }
-#else
-void DecCu::xDeriveCUMV( CodingUnit &cu )
-{
-  for( auto &pu : CU::traversePUs( cu ) )
-  {
-    MergeCtx mrgCtx;
-
-    if( pu.mergeFlag )
-    {
-      if( cu.cs->pps->getLog2ParallelMergeLevelMinus2() && cu.partSize != SIZE_2Nx2N && cu.lumaSize().width <= 8 )
-      {
-        if( !mrgCtx.hasMergedCandList )
-        {
-          // temporarily set size to 2Nx2N
-          PartSize                 tmpPS    = SIZE_2Nx2N;
-          PredictionUnit           tmpPU    = pu;
-          static_cast<UnitArea&> ( tmpPU )  = cu;
-          std::swap( tmpPS, cu.partSize );
-          PU::getInterMergeCandidates( tmpPU, mrgCtx, pu.mergeIdx );
-          std::swap( tmpPS, cu.partSize );
-          mrgCtx.hasMergedCandList          = true;
-        }
-      }
-      else
-      {
-        PU::getInterMergeCandidates( pu, mrgCtx, pu.mergeIdx );
-      }
-          
-      mrgCtx.setMergeInfo( pu, pu.mergeIdx );
-          
-      if( pu.interDir == 3 /* PRED_BI */ && PU::isBipredRestriction(pu) )
-      {
-        pu.mv    [REF_PIC_LIST_1] = Mv(0, 0);
-        pu.refIdx[REF_PIC_LIST_1] = -1;
-        pu.interDir               =  1;
-      }
-      PU::spanMotionInfo( pu, mrgCtx );      
-    }
-    else
-    {
-#if JVET_K0357_AMVR
-#if REUSE_CU_RESULTS
-      if (cu.imv && !cu.cs->pcv->isEncoder)
-#else
-      if (cu.imv)
-#endif
-      {
-        PU::applyImv(pu, mrgCtx, m_pcInterPred);
-      }
-      else
-      {
-#endif
-        for ( uint32_t uiRefListIdx = 0; uiRefListIdx < 2; uiRefListIdx++ )
-        {
-          RefPicList eRefList = RefPicList( uiRefListIdx );
-          if ( pu.cs->slice->getNumRefIdx( eRefList ) > 0 && ( pu.interDir & ( 1 << uiRefListIdx ) ) )
-          {
-            AMVPInfo amvpInfo;
-            PU::fillMvpCand( pu, eRefList, pu.refIdx[eRefList], amvpInfo );
-            pu.mvpNum [eRefList] = amvpInfo.numCand;
-            pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx [eRefList]] + pu.mvd[eRefList];
-          }
-        }
-        PU::spanMotionInfo( pu, mrgCtx );
-      }
-#if JVET_K0357_AMVR
-    }
-#endif
-  }
-}
-#endif
 //! \}

@@ -992,11 +992,7 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
   fracBits = 0;
   dist     = 0;
   cost     = MAX_DOUBLE;
-#if DISTORTION_TYPE_BUGFIX
   interHad = std::numeric_limits<Distortion>::max();
-#else
-  interHad = MAX_UINT;
-#endif
 }
 
 

@@ -226,12 +226,10 @@ struct Picture : public UnitArea
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
   Pel* getOrigin( const PictureType &type, const ComponentID compID ) const;
 
-#if JVET_K0157
   int           getSpliceIdx(uint32_t idx) const { return m_spliceIdx[idx]; }
   void          setSpliceIdx(uint32_t idx, int poc) { m_spliceIdx[idx] = poc; }
   void          createSpliceIdx(int nums);
   bool          getSpliceFull();
-#endif
 
 public:
   bool m_bIsBorderExtended;
@@ -248,10 +246,8 @@ public:
   uint32_t layer;
   uint32_t depth;
 
-#if JVET_K0157
   int* m_spliceIdx;
   int  m_ctuNums;
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 #if ENABLE_WPP_PARALLELISM
@@ -305,7 +301,6 @@ public:
 
   std::vector<SAOBlkParam> m_sao[2];
 
-#if JVET_K0371_ALF
   std::vector<uint8_t> m_alfCtuEnableFlag[MAX_NUM_COMPONENT];
   uint8_t* getAlfCtuEnableFlag( int compIdx ) { return m_alfCtuEnableFlag[compIdx].data(); }
   std::vector<uint8_t>* getAlfCtuEnableFlag() { return m_alfCtuEnableFlag; }
@@ -317,7 +312,6 @@ public:
       std::fill( m_alfCtuEnableFlag[compIdx].begin(), m_alfCtuEnableFlag[compIdx].end(), 0 );
     }
   }
-#endif
 };
 
 int calcAndPrintHashStatus(const CPelUnitBuf& pic, const class SEIDecodedPictureHash* pictureHashSEI, const BitDepths &bitDepths, const MsgLevel msgl);

@@ -129,9 +129,6 @@ enum DTRACE_CHANNEL
   D_DQP,                  // Delta QP read/write
   D_QP,                   // final CU QP at reading/writing stage
   D_QP_PER_CTU,           // final QP per CTU at reading
-#if !JVET_K0220_ENC_CTRL
-  D_SAVE_LOAD,            // save load encoder info
-#endif
   D_MISC,                 // Miscellaneous
   D_DECISIONTREE,         // decision tree tracing
   D_TU_ABS_SUM,
@@ -233,9 +230,6 @@ inline CDTrace* tracing_init( std::string& sTracingFile, std::string& sTracingRu
     _CNL_DEF( D_DQP ),
     _CNL_DEF( D_QP ),
     _CNL_DEF( D_QP_PER_CTU ),
-#if !JVET_K0220_ENC_CTRL
-    _CNL_DEF( D_SAVE_LOAD ),
-#endif
     _CNL_DEF( D_MISC ),
     _CNL_DEF( D_DECISIONTREE ),
     _CNL_DEF( D_TU_ABS_SUM ),

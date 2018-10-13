@@ -45,7 +45,6 @@
 
 
 
-#if JVET_K0072
 
 
 class DepQuant : public QuantRDOQ
@@ -62,7 +61,6 @@ private:
 };
 
 
-#endif
 
 #endif // __DEPQUANT__
 

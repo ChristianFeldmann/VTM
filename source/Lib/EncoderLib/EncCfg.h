@@ -184,30 +184,18 @@ protected:
   unsigned  m_maxTotalCUDepth;
   unsigned  m_log2DiffMaxMinCodingBlockSize;
 
-#if JVET_K0190
   int       m_LMChroma;
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
   int       m_IntraEMT;
   int       m_InterEMT;
   int       m_FastIntraEMT;
   int       m_FastInterEMT;
-#endif
   bool      m_LargeCTU;
-#if JVET_K0346
   int       m_SubPuMvpMode;
   unsigned  m_SubPuMvpLog2Size;
-#endif
-#if JVET_K_AFFINE
   bool      m_Affine;
-#if JVET_K0337_AFFINE_6PARA
   bool      m_AffineType;
-#endif
-#endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   bool      m_highPrecMv;
-#endif
 #endif
   bool      m_DisableMotionCompression;
   unsigned  m_MTTMode;
@@ -215,19 +203,13 @@ protected:
 #if ENABLE_WPP_PARALLELISM
   bool      m_AltDQPCoding;
 #endif
-#if JVET_K0157
   bool      m_compositeRefEnabled;        //composite reference
-#endif
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
 
   bool      m_useFastLCTU;
   bool      m_useFastMrg;
   bool      m_usePbIntraFast;
   bool      m_useAMaxBT;
-#if !JVET_K0220_ENC_CTRL
-  bool      m_useSaveLoadEncInfo;
-  bool      m_useSaveLoadSplitDecision;
-#endif
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
 
@@ -441,9 +423,7 @@ protected:
   std::string m_scalingListFileName;              ///< quantization matrix file name
 #endif
   int       m_TMVPModeId;
-#if JVET_K0072
   bool      m_DepQuantEnabledFlag;
-#endif
   bool      m_SignDataHidingEnabledFlag;
   bool      m_RCEnableRateControl;
   int       m_RCTargetBitrate;
@@ -512,11 +492,9 @@ protected:
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.
   std::string m_summaryPicFilenameBase;                       ///< Base filename to use for producing summary picture output files. The actual filenames used will have I.txt, P.txt and B.txt appended.
   uint32_t        m_summaryVerboseness;                           ///< Specifies the level of the verboseness of the text output.
-#if JVET_K0357_AMVR
   int       m_ImvMode;
   int       m_Imv4PelFast;
   int       m_ImvMaxCand;
-#endif
   std::string m_decodeBitstreams[2];                          ///< filename for decode bitstreams.
   bool        m_forceDecodeBitstream1;                        ///< guess what it means
   int         m_switchPOC;                                    ///< dbg poc.
@@ -537,9 +515,7 @@ protected:
   bool        m_ensureWppBitEqual;
 #endif
 
-#if JVET_K0371_ALF
   bool        m_alf;                                          ///< Adaptive Loop Filter
-#endif
 
 public:
   EncCfg()
@@ -624,31 +600,21 @@ public:
   void      setLargeCTU                     ( bool b )       { m_LargeCTU = b; }
   bool      getLargeCTU                     ()         const { return m_LargeCTU; }
 
-#if JVET_K0190
   void      setUseLMChroma                  ( int n )        { m_LMChroma = n; }
   int       getUseLMChroma()                           const { return m_LMChroma; }
-#endif
 
-#if JVET_K0346
   void      setSubPuMvpMode(int n)          { m_SubPuMvpMode = n; }
   bool      getSubPuMvpMode()         const { return m_SubPuMvpMode; }
   void      setSubPuMvpLog2Size(unsigned n) { m_SubPuMvpLog2Size = n; }
   unsigned  getSubPuMvpLog2Size()      const { return m_SubPuMvpLog2Size; }
-#endif
 
-#if JVET_K_AFFINE
   void      setAffine                       ( bool b )       { m_Affine = b; }
   bool      getAffine                       ()         const { return m_Affine; }
-#if JVET_K0337_AFFINE_6PARA
   void      setAffineType( bool b )                          { m_AffineType = b; }
   bool      getAffineType()                            const { return m_AffineType; }
-#endif
-#endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   void      setHighPrecisionMv              ( bool b )       { m_highPrecMv = b; }
   bool      getHighPrecisionMv              ()               { return m_highPrecMv; }
-#endif
 #endif
   void      setDisableMotionCompression     ( bool b )       { m_DisableMotionCompression = b; }
   bool      getDisableMotionCompression     ()         const { return m_DisableMotionCompression; }
@@ -661,7 +627,6 @@ public:
   bool      getUseAltDQPCoding              ()         const { return m_AltDQPCoding; }
 #endif
 
-#if JVET_K1000_SIMPLIFIED_EMT
   void      setFastIntraEMT                 ( bool b )       { m_FastIntraEMT = b; }
   bool      getFastIntraEMT                 ()         const { return m_FastIntraEMT; }
   void      setFastInterEMT                 ( bool b )       { m_FastInterEMT = b; }
@@ -670,15 +635,12 @@ public:
   bool      getIntraEMT                     ()         const { return m_IntraEMT; }
   void      setInterEMT                     ( bool b )       { m_InterEMT = b; }
   bool      getInterEMT                     ()         const { return m_InterEMT; }
-#endif
 
 
 
 
-#if JVET_K0157
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }
-#endif
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 
@@ -699,13 +661,6 @@ public:
   void      setUseAMaxBT                    ( bool  n )      { m_useAMaxBT = n; }
   bool      getUseAMaxBT                    () const         { return m_useAMaxBT; }
 
-#if !JVET_K0220_ENC_CTRL
-  void      setUseSaveLoadEncInfo           ( bool  b )      { m_useSaveLoadEncInfo = b; }
-  void      setUseSaveLoadSplitDecision     ( bool  b )      { m_useSaveLoadSplitDecision = b; }
-  bool      getUseSaveLoadEncInfo           () const         { return m_useSaveLoadEncInfo; }
-  bool      getUseSaveLoadSplitDecision     () const         { return m_useSaveLoadSplitDecision; }
-
-#endif
   void      setUseE0023FastEnc              ( bool b )       { m_e0023FastEnc = b; }
   bool      getUseE0023FastEnc              () const         { return m_e0023FastEnc; }
   void      setUseContentBasedFastQtbt      ( bool b )       { m_contentBasedFastQtbt = b; }
@@ -1157,10 +1112,8 @@ public:
   int          getTMVPModeId ()                                      { return m_TMVPModeId; }
   WeightedPredictionMethod getWeightedPredictionMethod() const       { return m_weightedPredictionMethod; }
   void         setWeightedPredictionMethod( WeightedPredictionMethod m ) { m_weightedPredictionMethod = m; }
-#if JVET_K0072
   void         setDepQuantEnabledFlag( bool b )                      { m_DepQuantEnabledFlag = b;    }
   bool         getDepQuantEnabledFlag()                              { return m_DepQuantEnabledFlag; }
-#endif
 #if HEVC_USE_SIGN_HIDING
   void         setSignDataHidingEnabledFlag( bool b )                { m_SignDataHidingEnabledFlag = b;    }
   bool         getSignDataHidingEnabledFlag()                        { return m_SignDataHidingEnabledFlag; }
@@ -1318,14 +1271,12 @@ public:
 
   void         setSummaryVerboseness(uint32_t v)                         { m_summaryVerboseness = v; }
   uint32_t         getSummaryVerboseness( ) const                        { return m_summaryVerboseness; }
-#if JVET_K0357_AMVR
   void         setIMV(int n)                                         { m_ImvMode = n; }
   int          getIMV() const                                        { return m_ImvMode; }
   void         setIMV4PelFast(int n)                                 { m_Imv4PelFast = n; }
   int          getIMV4PelFast() const                                { return m_Imv4PelFast; }
   void         setIMVMaxCand(int n)                                  { m_ImvMaxCand = n; }
   int          getIMVMaxCand() const                                 { return m_ImvMaxCand; }
-#endif
   void         setDecodeBitstream( int i, const std::string& s )     { m_decodeBitstreams[i] = s; }
   const std::string& getDecodeBitstream( int i )               const { return m_decodeBitstreams[i]; }
   bool         getForceDecodeBitstream1()                      const { return m_forceDecodeBitstream1; }
@@ -1357,10 +1308,8 @@ public:
   void         setEnsureWppBitEqual( bool b)                         { m_ensureWppBitEqual = b; }
   bool         getEnsureWppBitEqual()                          const { return m_ensureWppBitEqual; }
 #endif
-#if JVET_K0371_ALF
   void        setUseALF( bool b ) { m_alf = b; }
   bool        getUseALF()                                      const { return m_alf; }
-#endif
 };
 
 //! \}

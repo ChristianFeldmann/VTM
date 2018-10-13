@@ -156,11 +156,7 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
 #endif
 }
 
-#if JVET_K_AFFINE
 bool checkIdenticalMotion( const PredictionUnit &pu, bool checkAffine )
-#else
-bool checkIdenticalMotion( const PredictionUnit &pu )
-#endif
 {
   const Slice &slice = *pu.cs->slice;
 
@@ -173,35 +169,23 @@ bool checkIdenticalMotion( const PredictionUnit &pu )
 
       if( RefPOCL0 == RefPOCL1 )
       {
-#if JVET_K_AFFINE
         if( !pu.cu->affine )
-#endif
         {
           if( pu.mv[0] == pu.mv[1] )
           {
             return true;
           }
         }
-#if JVET_K_AFFINE
         else
         {
           CHECK( !checkAffine, "In this case, checkAffine should be on." );
           const CMotionBuf &mb = pu.getMotionBuf();
-#if JVET_K_AFFINE_BUG_FIXES
-#if JVET_K0337_AFFINE_6PARA
           if ( (pu.cu->affineType == AFFINEMODEL_4PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]))
             || (pu.cu->affineType == AFFINEMODEL_6PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) && (mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1])) )
-#else
-          if ( (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) )
-#endif
-#else
-          if( ( mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1] ) && ( mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1] ) && ( mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1] ) )
-#endif
           {
             return true;
           }
         }
-#endif
       }
     }
   }
@@ -226,34 +210,22 @@ bool InterPrediction::xCheckIdenticalMotion( const PredictionUnit &pu )
 
       if( RefPOCL0 == RefPOCL1 )
       {
-#if JVET_K_AFFINE
         if( !pu.cu->affine )
-#endif
         {
           if( pu.mv[0] == pu.mv[1] )
           {
             return true;
           }
         }
-#if JVET_K_AFFINE
         else
         {
           const CMotionBuf &mb = pu.getMotionBuf();
-#if JVET_K_AFFINE_BUG_FIXES
-#if JVET_K0337_AFFINE_6PARA
           if ( (pu.cu->affineType == AFFINEMODEL_4PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]))
             || (pu.cu->affineType == AFFINEMODEL_6PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) && (mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1])) )
-#else
-          if ( (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) )
-#endif
-#else
-          if( ( mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1] ) && ( mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1] ) && ( mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1] ) )
-#endif
           {
             return true;
           }
         }
-#endif
       }
     }
   }
@@ -261,35 +233,20 @@ bool InterPrediction::xCheckIdenticalMotion( const PredictionUnit &pu )
   return false;
 }
 
-#if JVET_K0346
 void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList /*= REF_PIC_LIST_X*/ )
 {
-#if !JVET_K0346
-  const SPSNext& spsNext  = pu.cs->sps->getSpsNext();
-#endif
 
   // compute the location of the current PU
   Position puPos    = pu.lumaPos();
   Size puSize       = pu.lumaSize();
 
-#if JVET_K0346
   int numPartLine, numPartCol, puHeight, puWidth;
-#else
-  int iNumPartLine, iNumPartCol, iPUHeight, iPUWidth;
-#endif
   {
-#if JVET_K0346
     const Slice& slice = *pu.cs->slice;
     numPartLine = std::max(puSize.width >> slice.getSubPuMvpSubblkLog2Size(), 1u);
     numPartCol  = std::max(puSize.height >> slice.getSubPuMvpSubblkLog2Size(), 1u);
     puHeight    = numPartCol == 1 ? puSize.height : 1 << slice.getSubPuMvpSubblkLog2Size();
     puWidth     = numPartLine == 1 ? puSize.width : 1 << slice.getSubPuMvpSubblkLog2Size();
-#else
-    iNumPartLine  = std::max( puSize.width  >> spsNext.getSubPuMvpLog2Size(), 1u );
-    iNumPartCol   = std::max( puSize.height >> spsNext.getSubPuMvpLog2Size(), 1u );
-    iPUHeight     = iNumPartCol  == 1 ? puSize.height : 1 << spsNext.getSubPuMvpLog2Size();
-    iPUWidth      = iNumPartLine == 1 ? puSize.width  : 1 << spsNext.getSubPuMvpLog2Size();
-#endif
   }
 
   PredictionUnit subPu;
@@ -299,7 +256,6 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   subPu.mergeType = MRG_TYPE_DEFAULT_N;
 
   // join sub-pus containing the same motion
-#if JVET_K0346
   bool verMC = puSize.height > puSize.width;
   int  fstStart = (!verMC ? puPos.y : puPos.x);
   int  secStart = (!verMC ? puPos.x : puPos.y);
@@ -343,26 +299,7 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
       secDim = later - secStep;
     }
   }
-#else
-  for( int y = puPos.y; y < puPos.y + puSize.height; y += iPUHeight )
-  {
-    for( int x = puPos.x; x < puPos.x + puSize.width; x += iPUWidth )
-    {
-      const MotionInfo &curMi = pu.getMotionInfo( Position{ x, y } );
-
-      int dx = iPUWidth;
-      int dy = iPUHeight;
-
-      subPu.UnitArea::operator=( UnitArea( pu.chromaFormat, Area( x, y, dx, dy ) ) );
-      subPu                   = curMi;
-      PelUnitBuf subPredBuf   = predBuf.subBuf( UnitAreaRelative( pu, subPu ) );
-
-      motionCompensation( subPu, subPredBuf, eRefPicList );
-    }
-  }
-#endif
 }
-#endif
 
 
 void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
@@ -373,7 +310,6 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   int iRefIdx = pu.refIdx[eRefPicList];
   Mv mv[3];
 
-#if JVET_K_AFFINE
   if( pu.cu->affine )
   {
     CHECK( iRefIdx < 0, "iRefIdx incorrect." );
@@ -382,32 +318,23 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
     mv[0] = mb.at( 0,            0             ).mv[eRefPicList];
     mv[1] = mb.at( mb.width - 1, 0             ).mv[eRefPicList];
     mv[2] = mb.at( 0,            mb.height - 1 ).mv[eRefPicList];
-#if !JVET_K_AFFINE_BUG_FIXES
-    clipMv(mv[1], pu.cu->lumaPos(), sps);
-    clipMv(mv[2], pu.cu->lumaPos(), sps);
-#endif
   }
   else
-#endif
   {
     mv[0] = pu.mv[eRefPicList];
   }
-#if JVET_K_AFFINE && JVET_K_AFFINE_BUG_FIXES
   if ( !pu.cu->affine )
-#endif
   clipMv(mv[0], pu.cu->lumaPos(), sps);
 
 
   for( uint32_t comp = COMPONENT_Y; comp < pcYuvPred.bufs.size() && comp <= m_maxCompIDToPred; comp++ )
   {
     const ComponentID compID = ComponentID( comp );
-#if JVET_K_AFFINE
     if ( pu.cu->affine )
     {
       xPredAffineBlk( compID, pu, pu.cu->slice->getRefPic( eRefPicList, iRefIdx ), mv, pcYuvPred, bi, pu.cu->slice->clpRng( compID ) );
     }
     else
-#endif
     {
       xPredInterBlk( compID, pu, pu.cu->slice->getRefPic( eRefPicList, iRefIdx ), mv[0], pcYuvPred, bi, pu.cu->slice->clpRng( compID )
                     );
@@ -481,7 +408,6 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
                                     )
 {
   JVET_J0090_SET_REF_PICTURE( refPic, compID );
-#if JVET_K0346 || JVET_K_AFFINE
   const ChromaFormat  chFmt = pu.chromaFormat;
   const bool          rndRes = !bi;
 
@@ -508,16 +434,6 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 #if !REMOVE_MV_ADAPT_PREC
   CHECKD(!pu.cs->sps->getSpsNext().getUseHighPrecMv() && ((xFrac & 3) != 0), "Invalid fraction");
   CHECKD(!pu.cs->sps->getSpsNext().getUseHighPrecMv() && ((yFrac & 3) != 0), "Invalid fraction");
-#endif
-#else
-  const ChromaFormat  chFmt  = pu.chromaFormat;
-  const bool          rndRes = !bi;
-
-  int shiftHor = 2 + ::getComponentScaleX( compID, chFmt );
-  int shiftVer = 2 + ::getComponentScaleY( compID, chFmt );
-  
-  int xFrac = _mv.hor & ( ( 1 << shiftHor ) - 1 );
-  int yFrac = _mv.ver & ( ( 1 << shiftVer ) - 1 );
 #endif
 
   PelBuf &dstBuf  = dstPic.bufs[compID];
@@ -550,24 +466,15 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   }
 }
 
-#if JVET_K_AFFINE
 void InterPrediction::xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng )
 {
-#if JVET_K0337_AFFINE_6PARA
   if ( (pu.cu->affineType == AFFINEMODEL_6PARAM && _mv[0] == _mv[1] && _mv[0] == _mv[2])
     || (pu.cu->affineType == AFFINEMODEL_4PARAM && _mv[0] == _mv[1])
     )
-#else
-  if( _mv[0] == _mv[1] )
-#endif
   {
-#if JVET_K_AFFINE_BUG_FIXES
     Mv mvTemp = _mv[0];
     clipMv( mvTemp, pu.cu->lumaPos(), *pu.cs->sps );
     xPredInterBlk( compID, pu, refPic, mvTemp, dstPic, bi, clpRng );
-#else
-    xPredInterBlk( compID, pu, refPic, _mv[0], dstPic, bi, clpRng );
-#endif
     return;
   }
 
@@ -589,37 +496,8 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   // get affine sub-block width and height
   const int width  = pu.Y().width;
   const int height = pu.Y().height;
-#if JVET_K0184_AFFINE_4X4
   int blockWidth = AFFINE_MIN_BLOCK_SIZE;
   int blockHeight = AFFINE_MIN_BLOCK_SIZE;
-#else
-  int blockWidth   = width;
-  int blockHeight  = height;
-  int mvWx = std::max<int>( abs((mvRT - mvLT).getHor()), abs((mvRT - mvLT).getVer()) );
-  int mvWy = std::max<int>( abs((mvLB - mvLT).getHor()), abs((mvLB - mvLT).getVer()) );
-
-  int iMvPrecision = 4;
-  iMvPrecision -= VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-
-  if (mvWx)
-  {
-    blockWidth = std::max<int>( (int)( ( width >> iMvPrecision ) / mvWx ), 1 );
-    while (width % blockWidth)
-    {
-      blockWidth--;
-    }
-    blockWidth = std::max<int>( AFFINE_MIN_BLOCK_SIZE, blockWidth );
-  }
-  if (mvWy)
-  {
-    blockHeight = std::max<int>( (int)( ( height >> iMvPrecision ) / mvWy ), 1 );
-    while (height % blockHeight)
-    {
-      blockHeight--;
-    }
-    blockHeight = std::max<int>( AFFINE_MIN_BLOCK_SIZE, blockHeight );
-  }
-#endif
 
   blockWidth  >>= iScaleX;
   blockHeight >>= iScaleY;
@@ -632,7 +510,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   int iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY;
   iDMvHorX = (mvRT - mvLT).getHor() << (iBit - g_aucLog2[cxWidth]);
   iDMvHorY = (mvRT - mvLT).getVer() << (iBit - g_aucLog2[cxWidth]);
-#if JVET_K0337_AFFINE_6PARA
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
     iDMvVerX = (mvLB - mvLT).getHor() << (iBit - g_aucLog2[cxHeight]);
@@ -643,10 +520,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     iDMvVerX = -iDMvHorY;
     iDMvVerY = iDMvHorX;
   }
-#else
-  iDMvVerX = -iDMvHorY;
-  iDMvVerY = iDMvHorX;
-#endif
 
   int iMvScaleHor = mvLT.getHor() << iBit;
   int iMvScaleVer = mvLT.getVer() << iBit;
@@ -670,12 +543,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     {
       int iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
       int iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
-#if JVET_K_AFFINE_BUG_FIXES
       roundAffineMv( iMvScaleTmpHor, iMvScaleTmpVer, shift );
-#else
-      iMvScaleTmpHor >>= shift;
-      iMvScaleTmpVer >>= shift;
-#endif
 
       // clip and scale
       iMvScaleTmpHor = std::min<int>( iHorMax, std::max<int>( iHorMin, iMvScaleTmpHor ) );
@@ -726,7 +594,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     }
   }
 }
-#endif
 
 int getMSB( unsigned x )
 {
@@ -786,15 +653,11 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   }
   else
   {
-#if JVET_K0346
     if( pu.mergeType != MRG_TYPE_DEFAULT_N )
     {
       xSubPuMC( pu, predBuf, eRefPicList );
     }
     else if( xCheckIdenticalMotion( pu ) )
-#else
-    if( xCheckIdenticalMotion( pu ) )
-#endif
     {
       xPredInterUni( pu, REF_PIC_LIST_0, predBuf, false );
     }

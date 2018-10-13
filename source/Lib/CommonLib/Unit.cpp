@@ -253,27 +253,19 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   mtDepth           = other.mtDepth;
   splitSeries       = other.splitSeries;
   skip              = other.skip;
-#if JVET_K_AFFINE
   affine            = other.affine;
-#if JVET_K0337_AFFINE_6PARA
   affineType        = other.affineType;
-#endif
-#endif
   transQuantBypass  = other.transQuantBypass;
   ipcm              = other.ipcm;
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
-#if JVET_K1000_SIMPLIFIED_EMT
   emtFlag           = other.emtFlag;
-#endif
 #if HEVC_TILES_WPP
   tileIdx           = other.tileIdx;
 #endif
-#if JVET_K0357_AMVR
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
-#endif
   return *this;
 }
 
@@ -287,27 +279,19 @@ void CodingUnit::initData()
   mtDepth           = 0;
   splitSeries       = 0;
   skip              = false;
-#if JVET_K_AFFINE
   affine            = false;
-#if JVET_K0337_AFFINE_6PARA
   affineType        = 0;
-#endif
-#endif
   transQuantBypass  = false;
   ipcm              = false;
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
-#if JVET_K1000_SIMPLIFIED_EMT
   emtFlag           = 0;
-#endif
 #if HEVC_TILES_WPP
   tileIdx           = 0;
 #endif
-#if JVET_K0357_AMVR
   imv               = 0;
   imvNumCand        = 0;
-#endif
 }
 
 
@@ -336,12 +320,10 @@ void PredictionUnit::initData()
     refIdx[i] = -1;
     mv[i]     .setZero();
     mvd[i]    .setZero();
-#if JVET_K_AFFINE
     for( uint32_t j = 0; j < 3; j++ )
     {
       mvdAffi[i][j].setZero();
     }
-#endif
   }
 }
 
@@ -368,12 +350,10 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
     mv[i]       = predData.mv[i];
     mvd[i]      = predData.mvd[i];
     refIdx[i]   = predData.refIdx[i];
-#if JVET_K_AFFINE
     for( uint32_t j = 0; j < 3; j++ )
     {
       mvdAffi[i][j] = predData.mvdAffi[i][j];
     }
-#endif
   }
 
   return *this;
@@ -397,12 +377,10 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
     mv[i]       = other.mv[i];
     mvd[i]      = other.mvd[i];
     refIdx[i]   = other.refIdx[i];
-#if JVET_K_AFFINE
     for( uint32_t j = 0; j < 3; j++ )
     {
       mvdAffi[i][j] = other.mvdAffi[i][j];
     }
-#endif
   }
 
   return *this;
@@ -481,9 +459,7 @@ void TransformUnit::initData()
 #if ENABLE_BMS
   depth              = 0;
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   emtIdx             = 0;
-#endif
 
 }
 
@@ -520,9 +496,7 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
 #if ENABLE_BMS
   depth              = other.depth;
 #endif
-#if JVET_K1000_SIMPLIFIED_EMT
   emtIdx             = other.emtIdx;
-#endif
   return *this;
 }
 
@@ -548,9 +522,7 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 #endif
   if( isLuma( i ) )
   {
-#if JVET_K1000_SIMPLIFIED_EMT
     emtIdx         = other.emtIdx;
-#endif
   }
 }
 

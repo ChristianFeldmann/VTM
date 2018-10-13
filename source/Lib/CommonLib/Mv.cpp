@@ -40,7 +40,6 @@
 #include "Common.h"
 #include "Slice.h"
 
-#if JVET_K0357_AMVR
 void roundMV( Mv & rMV, unsigned imvShift )
 {
   CHECK( imvShift == 0, "roundMV called for imvShift=0" );
@@ -52,20 +51,17 @@ void roundMV( Mv & rMV, unsigned imvShift )
   rMV.setHor( ( ( rMV.getHor() + offset ) >> imvShift ) << imvShift );
   rMV.setVer( ( ( rMV.getVer() + offset ) >> imvShift ) << imvShift );
 }
-#endif
 
-#if JVET_K_AFFINE_BUG_FIXES
 void roundAffineMv( int& mvx, int& mvy, int nShift )
 {
   const int nOffset = 1 << (nShift - 1);
   mvx = mvx >= 0 ? (mvx + nOffset) >> nShift : -((-mvx + nOffset) >> nShift);
   mvy = mvy >= 0 ? (mvy + nOffset) >> nShift : -((-mvy + nOffset) >> nShift);
 }
-#endif
 
 void clipMv( Mv& rcMv, const Position& pos, const SPS& sps )
 {
-#if ( JVET_K0346 || JVET_K_AFFINE) && !REMOVE_MV_ADAPT_PREC
+#if !REMOVE_MV_ADAPT_PREC
   int iMvShift = 2 + (rcMv.highPrec ? VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : 0);
 #else
   int iMvShift = 2;

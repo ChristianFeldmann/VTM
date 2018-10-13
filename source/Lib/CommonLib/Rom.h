@@ -70,35 +70,14 @@ extern       uint32_t*  g_scanOrderPosXY[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER
 extern const int g_quantScales   [SCALING_LIST_REM_NUM];          // Q(QP%6)
 extern const int g_invQuantScales[SCALING_LIST_REM_NUM];          // IQ(QP%6)
 
-#if JVET_K1000_SIMPLIFIED_EMT
 static const int g_numTransformMatrixSizes = 6;
 static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
-#else
-static const int g_numTransformMatrixSizes = 7;
-#if RExt__HIGH_PRECISION_FORWARD_TRANSFORM
-static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = { 14, 6 };
-#else
-static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
-#endif
-
-extern const TMatrixCoeff g_aiT2  [TRANSFORM_NUMBER_OF_DIRECTIONS][  2][  2];
-extern const TMatrixCoeff g_aiT4  [TRANSFORM_NUMBER_OF_DIRECTIONS][  4][  4];
-extern const TMatrixCoeff g_aiT8  [TRANSFORM_NUMBER_OF_DIRECTIONS][  8][  8];
-extern const TMatrixCoeff g_aiT16 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 16][ 16];
-extern const TMatrixCoeff g_aiT32 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 32][ 32];
-extern const TMatrixCoeff g_aiT64 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 64][ 64];
-extern const TMatrixCoeff g_aiT128[TRANSFORM_NUMBER_OF_DIRECTIONS][128][128];
-#endif
 
 
 // ====================================================================================================================
 // Luma QP to Chroma QP mapping
 // ====================================================================================================================
-#if JVET_K0251_QP_EXT
 static const int chromaQPMappingTableSize = (MAX_QP + 7);
-#else
-static const int chromaQPMappingTableSize = 58;
-#endif
 
 extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSize];
 
@@ -111,9 +90,7 @@ extern const uint32_t   ctxIndMap4x4[4*4];
 
 extern const uint32_t   g_uiGroupIdx[ MAX_TU_SIZE ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
-#if JVET_K0072
 extern const uint32_t   g_auiGoRicePars [ 32 ];
-#endif
 extern const uint32_t   g_auiGoRiceRange[ MAX_GR_ORDER_RESIDUAL ];                  //!< maximum value coded with Rice codes
 
 // ====================================================================================================================
@@ -125,17 +102,6 @@ extern const uint8_t  g_aucIntraModeNumFast_UseMPM   [MAX_CU_DEPTH];
 extern const uint8_t  g_aucIntraModeNumFast_NotUseMPM[MAX_CU_DEPTH];
 
 extern const uint8_t  g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE];
-#if !INTRA67_3MPM
-extern const uint8_t  g_intraMode65to33AngMapping[NUM_INTRA_MODE];
-
-extern const uint8_t  g_intraMode33to65AngMapping[36];
-
-static const unsigned mpmCtx[NUM_INTRA_MODE] =
-{ 1, 1,                                                                                              // PLANAR, DC
-  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // HOR domain
-  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3     // VER domain
-};
-#endif
 
 
 // ====================================================================================================================
@@ -146,7 +112,6 @@ static const unsigned mpmCtx[NUM_INTRA_MODE] =
 extern const TMatrixCoeff g_as_DST_MAT_4 [TRANSFORM_NUMBER_OF_DIRECTIONS][4][4];
 #endif
 
-#if JVET_K1000_SIMPLIFIED_EMT
 extern const int g_aiTrSubsetIntra[3][2];
 extern const int g_aiTrSubsetInter[4];
 
@@ -157,7 +122,6 @@ extern const uint8_t g_aucTrSetVert35[35];
 extern const uint8_t g_aucTrSetHorz35[35];
 
 extern const uint32_t g_EmtSigNumThr;
-#endif
 
 extern TMatrixCoeff g_aiTr2   [NUM_TRANS_TYPE][  2][  2];
 extern TMatrixCoeff g_aiTr4   [NUM_TRANS_TYPE][  4][  4];
@@ -165,9 +129,6 @@ extern TMatrixCoeff g_aiTr8   [NUM_TRANS_TYPE][  8][  8];
 extern TMatrixCoeff g_aiTr16  [NUM_TRANS_TYPE][ 16][ 16];
 extern TMatrixCoeff g_aiTr32  [NUM_TRANS_TYPE][ 32][ 32];
 extern TMatrixCoeff g_aiTr64  [NUM_TRANS_TYPE][ 64][ 64];
-#if !JVET_K1000_SIMPLIFIED_EMT
-extern TMatrixCoeff g_aiTr128 [NUM_TRANS_TYPE][128][128];
-#endif
 
 
 // ====================================================================================================================
@@ -249,11 +210,8 @@ extern const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
 extern MsgLevel g_verbosity;
 
 
-#if JVET_K0190
 extern const int g_aiNonLMPosThrs[];
-#endif
 
-#if JVET_K0371_ALF
 constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
@@ -264,7 +222,6 @@ constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
-#endif
 
 //! \}
 

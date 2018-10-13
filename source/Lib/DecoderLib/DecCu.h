@@ -91,9 +91,7 @@ private:
   InterPrediction*  m_pcInterPred;
 
 
-#if JVET_K0346
   MotionInfo        m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
-#endif
 };
 
 //! \}

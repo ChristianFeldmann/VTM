@@ -119,12 +119,10 @@ EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
     int chromaQPOffset       = slice->getPPS()->getQpOffset( compID ) + slice->getSliceChromaQpDelta( compID );
     int qpc                  = ( iQP + chromaQPOffset < 0 ) ? iQP : getScaledChromaQP( iQP + chromaQPOffset, m_pcCfg->getChromaFormatIdc() );
     double tmpWeight         = pow( 2.0, ( iQP - qpc ) / 3.0 );  // takes into account of the chroma qp mapping and chroma qp Offset
-#if JVET_K0072
     if( m_pcCfg->getDepQuantEnabledFlag() )
     {
       tmpWeight *= ( m_pcCfg->getGOPSize() >= 8 ? pow( 2.0, 0.1/3.0 ) : pow( 2.0, 0.2/3.0 ) );  // increase chroma weight for dependent quantization (in order to reduce bit rate shift from chroma to luma)
     }
-#endif
     m_pcRdCost->setDistortionWeight( compID, tmpWeight );
 #if ENABLE_WPP_PARALLELISM
     for( int jId = 1; jId < ( m_pcLib->getNumWppThreads() + m_pcLib->getNumWppExtraLines() ); jId++ )
@@ -276,9 +274,7 @@ static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, 
  \param isField       true for field coding
  */
 void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr, const int iGOPid, Slice*& rpcSlice, const bool isField
-#if JVET_K0157
   , bool isEncodeLtRef
-#endif
 )
 {
   double dQP;
@@ -288,7 +284,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setSliceBits(0);
   rpcSlice->setPic( pcPic );
   rpcSlice->initSlice();
-#if JVET_K0157
   int multipleFactor = pcPic->cs->sps->getSpsNext().getUseCompositeRef() ? 2 : 1;
   if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && isEncodeLtRef)
   {
@@ -298,15 +293,10 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   {
     rpcSlice->setPicOutputFlag(true);
   }
-#else
-  rpcSlice->setPicOutputFlag( true );
-#endif
   rpcSlice->setPOC( pocCurr );
-#if JVET_K0072
   rpcSlice->setDepQuantEnabledFlag( m_pcCfg->getDepQuantEnabledFlag() );
 #if HEVC_USE_SIGN_HIDING
   rpcSlice->setSignDataHidingEnabledFlag( m_pcCfg->getSignDataHidingEnabledFlag() );
-#endif
 #endif
 
 #if SHARP_LUMA_DELTA_QP
@@ -324,11 +314,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     }
     else
     {
-#if JVET_K0157
       poc = poc % (m_pcCfg->getGOPSize() * multipleFactor);
-#else
-      poc = poc % m_pcCfg->getGOPSize();
-#endif
     }
 
     if ( poc == 0 )
@@ -337,19 +323,11 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     }
     else
     {
-#if JVET_K0157
       int step = m_pcCfg->getGOPSize() * multipleFactor;
-#else
-      int step = m_pcCfg->getGOPSize();
-#endif
       depth    = 0;
       for( int i=step>>1; i>=1; i>>=1 )
       {
-#if JVET_K0157
         for (int j = i; j<(m_pcCfg->getGOPSize() * multipleFactor); j += step)
-#else
-        for ( int j=i; j<m_pcCfg->getGOPSize(); j+=step )
-#endif
         {
           if ( j == poc )
           {
@@ -379,19 +357,11 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   {
     if(m_pcCfg->getDecodingRefreshType() == 3)
     {
-#if JVET_K0157
       eSliceType = (pocLast == 0 || pocCurr % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
-#else
-      eSliceType = (pocLast == 0 || pocCurr % m_pcCfg->getIntraPeriod() == 0             || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
-#endif
     }
     else
     {
-#if JVET_K0157
       eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
-#else
-      eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % m_pcCfg->getIntraPeriod() == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
-#endif
     }
   }
 
@@ -470,18 +440,10 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     int    NumberBFrames = ( m_pcCfg->getGOPSize() - 1 );
     int    SHIFT_QP = 12;
 
-#if DISTORTION_LAMBDA_BUGFIX
     int    bitdepth_luma_qp_scale =
       6
       * (rpcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
          - DISTORTION_PRECISION_ADJUSTMENT(rpcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-#else
-#if FULL_NBIT
-    int    bitdepth_luma_qp_scale = 6 * (rpcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8);
-#else
-    int    bitdepth_luma_qp_scale = 0;
-#endif
-#endif
     double qp_temp = (double) dQP + bitdepth_luma_qp_scale - SHIFT_QP;
 #if FULL_NBIT
     double qp_temp_orig = (double) dQP - SHIFT_QP;
@@ -634,19 +596,11 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     {
       if(m_pcCfg->getDecodingRefreshType() == 3)
       {
-#if JVET_K0157
         eSliceType = (pocLast == 0 || (pocCurr) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
-#else
-        eSliceType = (pocLast == 0 || (pocCurr)                     % m_pcCfg->getIntraPeriod() == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
-#endif
       }
       else
       {
-#if JVET_K0157
         eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
-#else
-        eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % m_pcCfg->getIntraPeriod() == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
-#endif
       }
     }
 
@@ -739,17 +693,9 @@ double EncSlice::calculateLambda( const Slice*     slice,
   const std::vector<double> &intraLambdaModifiers=m_pcCfg->getIntraLambdaModifier();
 #endif
 
-#if DISTORTION_LAMBDA_BUGFIX
   int bitdepth_luma_qp_scale = 6
                                * (slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
                                   - DISTORTION_PRECISION_ADJUSTMENT(slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-#else
-#if FULL_NBIT
-  int    bitdepth_luma_qp_scale = 6 * (slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8);
-#else
-  int    bitdepth_luma_qp_scale = 0;
-#endif
-#endif
   double qp_temp = dQP + bitdepth_luma_qp_scale - SHIFT_QP;
   // Case #1: I or P-slices (key-frame)
   double dQPFactor = m_pcCfg->getGOPEntry(GOPid).m_QPFactor;
@@ -791,18 +737,8 @@ double EncSlice::calculateLambda( const Slice*     slice,
   if ( depth>0 )
 #endif
   {
-#if DISTORTION_LAMBDA_BUGFIX
     double qp_temp_ref = refQP + bitdepth_luma_qp_scale - SHIFT_QP;
     dLambda *= Clip3(2.00, 4.00, (qp_temp_ref / 6.0));   // (j == B_SLICE && p_cur_frm->layer != 0 )
-#else
-#if FULL_NBIT
-      double qp_temp_ref_orig = refQP - SHIFT_QP;
-      dLambda *= Clip3( 2.00, 4.00, (qp_temp_ref_orig / 6.0) ); // (j == B_SLICE && p_cur_frm->layer != 0 )
-#else
-      double qp_temp_ref = refQP + bitdepth_luma_qp_scale - SHIFT_QP;
-      dLambda *= Clip3( 2.00, 4.00, (qp_temp_ref / 6.0) ); // (j == B_SLICE && p_cur_frm->layer != 0 )
-#endif
-#endif
   }
 
   // if hadamard is used in ME process
@@ -826,12 +762,10 @@ double EncSlice::calculateLambda( const Slice*     slice,
 
   iQP = Clip3( -slice->getSPS()->getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, (int) floor( dQP + 0.5 ) );
 
-#if JVET_K0072
   if( m_pcCfg->getDepQuantEnabledFlag() )
   {
     dLambda *= pow( 2.0, 0.25/3.0 ); // slight lambda adjustment for dependent quantization (due to different slope of quantizer)
   }
-#endif
 
   // NOTE: the lambda modifiers that are sometimes applied later might be best always applied in here.
   return dLambda;
@@ -1105,18 +1039,10 @@ void EncSlice::precompressSlice( Picture* pcPic )
   uint32_t       uiQpIdxBest = 0;
 
   double dFrameLambda;
-#if DISTORTION_LAMBDA_BUGFIX
   int SHIFT_QP = 12
                  + 6
                      * (pcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
                         - DISTORTION_PRECISION_ADJUSTMENT(pcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-#else
-#if FULL_NBIT
-  int    SHIFT_QP = 12 + 6 * (pcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8);
-#else
-  int    SHIFT_QP = 12;
-#endif
-#endif
 
   // set frame lambda
   if (m_pcCfg->getGOPSize() > 1)
@@ -1247,7 +1173,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #endif
   m_pcCuEncoder->getModeCtrl()->setFastDeltaQp(bFastDeltaQP);
 
-#if JVET_K0346
   if (pcSlice->getSPS()->getSpsNext().getUseSubPuMvp())
   {
     if (!pcSlice->isIRAP() )
@@ -1305,7 +1230,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
       }
     }
   }
-#endif
 
   //------------------------------------------------------------------------------
   //  Weighted Prediction parameters estimation.

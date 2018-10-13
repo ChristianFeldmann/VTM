@@ -799,37 +799,17 @@ private:
   //=====  tool enabling flags (4 bytes - NOTE: last flag must be used for new extensions) =====
   bool              m_QTBT;                       // 1
   bool              m_LargeCTU;                   // 5
-#if JVET_K0346
   bool              m_SubPuMvp;
-#endif
-#if JVET_K0357_AMVR
   bool              m_IMV;                        // 9
-#endif
-#if JVET_K0072
-#else
-#endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   bool              m_highPrecMv;
 #endif
-#endif
   bool              m_DisableMotionCompression;   // 13
-#if !JVET_K0371_ALF
-  bool              m_ALFEnabled;                 // 16
-#endif
-#if JVET_K0190
   bool              m_LMChroma;                   // 17
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
   bool              m_IntraEMT;                   // 18
   bool              m_InterEMT;                   // 19
-#endif
-#if JVET_K_AFFINE
   bool              m_Affine;
-#if JVET_K0337_AFFINE_6PARA
   bool              m_AffineType;
-#endif
-#endif
   bool              m_MTTEnabled;                 //
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
@@ -846,24 +826,15 @@ private:
   unsigned    m_maxBTDepth[3];
   unsigned    m_maxBTSize[3];
   unsigned    m_dualITree;
-#if JVET_K0346
   // sub-pu merging
   unsigned    m_subPuLog2Size;
   int         m_subPuMrgMode;
-#endif
-#if JVET_K0357_AMVR
   //imv
   ImvMode     m_ImvMode;
-#endif
-#if JVET_K0072
-#else
-#endif
   // multi type tree (QTBT + triple split)
   unsigned    m_MTTMode;
 
-#if JVET_K0157
   bool              m_compositeRefEnabled;        //composite longterm reference
-#endif
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags and associated parameters here
 
 public:
@@ -879,31 +850,18 @@ public:
   bool      getUseQTBT            ()                                      const     { return m_QTBT; }
   void      setUseLargeCTU        ( bool b )                                        { m_LargeCTU = b; }
   bool      getUseLargeCTU        ()                                      const     { return m_LargeCTU; }
-#if JVET_K0346
   bool      getUseSubPuMvp()                                   const { return m_SubPuMvp; }
   void      setSubPuMvpMode(int n)                             { m_subPuMrgMode = n; m_SubPuMvp = n != 0; }
   bool      getUseATMVP()                                      const { return (m_subPuMrgMode & 1) == 1; }
-#endif
-#if JVET_K0357_AMVR
   void      setUseIMV             ( bool b )                                        { m_IMV = b; }
   bool      getUseIMV             ()                                      const     { return m_IMV; }
-#endif
-#if JVET_K_AFFINE
   void      setUseAffine          ( bool b )                                        { m_Affine = b; }
   bool      getUseAffine          ()                                      const     { return m_Affine; }
-#if JVET_K0337_AFFINE_6PARA
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
-#endif
-#endif
-#if JVET_K0072
-#else
-#endif
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   void      setUseHighPrecMv(bool b) { m_highPrecMv = b; }
   bool      getUseHighPrecMv()                                      const { return m_highPrecMv; }
-#endif
 #endif
   void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
   bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }
@@ -912,16 +870,12 @@ public:
   void      setUseNextDQP         ( bool b )                                        { m_NextDQP = b; }
   bool      getUseNextDQP         ()                                      const     { return m_NextDQP; }
 #endif
-#if JVET_K0190
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
   void      setUseIntraEMT        ( bool b )                                        { m_IntraEMT = b; }
   bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
   void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
   bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
-#endif
   //=====  additional parameters  =====
   // qtbt
   void      setCTUSize            ( unsigned    ctuSize )                           { m_CTUSize = ctuSize; }
@@ -946,29 +900,20 @@ public:
   void      setUseDualITree       ( bool b )                                        { m_dualITree = b; }
   bool      getUseDualITree       ()                                      const     { return m_dualITree; }
 
-#if JVET_K0346
   // sub pu tmvp
   void      setSubPuMvpLog2Size   ( unsigned    log2Size )                          { m_subPuLog2Size = log2Size; }
   unsigned  getSubPuMvpLog2Size   ()                                      const     { return m_subPuLog2Size; }
-#endif
-#if JVET_K0357_AMVR
   void      setImvMode(ImvMode m) { m_ImvMode = m; m_IMV = m != 0;  }
   ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
-#endif
 
-#if JVET_K0072
-#else
-#endif
 
 
   // multi type tree
   unsigned  getMTTMode            ()                                      const     { return m_MTTMode; }
   void      setMTTMode            ( unsigned    mode )                              { m_MTTMode = mode; m_MTTEnabled = ( m_MTTMode != 0 ); }
 
-#if JVET_K0157
   void      setUseCompositeRef(bool b) { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef()                                      const { return m_compositeRefEnabled; }
-#endif
   // ADD_NEW_TOOL : (sps extension) add access functions for tool enabling flags and associated parameters here
 
 };
@@ -1052,9 +997,7 @@ private:
   static const int  m_winUnitY[NUM_CHROMA_FORMAT];
   PTL               m_pcPTL;
 
-#if JVET_K0371_ALF
   bool              m_useALF;
-#endif
 
 public:
 
@@ -1188,10 +1131,8 @@ public:
   const SPSNext&          getSpsNext() const                                                              { return m_spsNextExtension;                                           }
   SPSNext&                getSpsNext()                                                                    { return m_spsNextExtension;                                           }
 
-#if JVET_K0371_ALF
   bool                    getUseALF() const { return m_useALF; }
   void                    setUseALF( bool b ) { m_useALF = b; }
-#endif
 };
 
 
@@ -1322,12 +1263,6 @@ private:
   std::vector<int> m_tileRowHeight;
 #endif
 
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-  bool             m_signDataHidingEnabledFlag;
-#endif
-#endif
   bool             m_cabacInitPresentFlag;
 
   bool             m_sliceHeaderExtensionPresentFlag;
@@ -1435,13 +1370,6 @@ public:
   uint32_t                   getTileRowHeight(uint32_t rowIdx) const                              { return m_tileRowHeight[rowIdx];               }
 #endif
 
-#if JVET_K0072
-#else
-#if HEVC_USE_SIGN_HIDING
-  void                   setSignDataHidingEnabledFlag( bool b )                           { m_signDataHidingEnabledFlag = b;              }
-  bool                   getSignDataHidingEnabledFlag() const                             { return m_signDataHidingEnabledFlag;           }
-#endif
-#endif
   void                   setCabacInitPresentFlag( bool flag )                             { m_cabacInitPresentFlag = flag;                }
   bool                   getCabacInitPresentFlag() const                                  { return m_cabacInitPresentFlag;                }
   void                   setDeblockingFilterControlPresentFlag( bool val )                { m_deblockingFilterControlPresentFlag = val;   }
@@ -1533,11 +1461,9 @@ private:
   int                        m_aiNumRefIdx   [NUM_REF_PIC_LIST_01];    //  for multiple reference of current slice
   bool                       m_pendingRasInit;
 
-#if JVET_K0072 
   bool                       m_depQuantEnabledFlag;
 #if HEVC_USE_SIGN_HIDING
   bool                       m_signDataHidingEnabledFlag;
-#endif
 #endif
   bool                       m_bCheckLDC;
 
@@ -1610,10 +1536,8 @@ private:
 
   bool                       m_enableTMVPFlag;
 
-#if JVET_K0346
   bool                       m_subPuMvpSubBlkSizeSliceEnable;
   int                        m_subPuMvpSubBlkLog2Size;
-#endif
 
   SliceType                  m_encCABACTableIdx;           // Used to transmit table selection across slices.
 
@@ -1621,9 +1545,7 @@ private:
   double                     m_dProcessingTime;
   uint32_t                       m_uiMaxBTSize;
 
-#if JVET_K0371_ALF
   AlfSliceParam              m_alfSliceParam;
-#endif
 
 public:
                               Slice();
@@ -1734,13 +1656,11 @@ public:
   void                        setMaxBTSize(int i)                                    { m_uiMaxBTSize = i; }
   uint32_t                        getMaxBTSize() const                                   { return m_uiMaxBTSize; }
 
-#if JVET_K0072
   void                        setDepQuantEnabledFlag( bool b )                       { m_depQuantEnabledFlag = b; }
   bool                        getDepQuantEnabledFlag() const                         { return m_depQuantEnabledFlag; }
 #if HEVC_USE_SIGN_HIDING
   void                        setSignDataHidingEnabledFlag( bool b )                 { m_signDataHidingEnabledFlag = b;              }
   bool                        getSignDataHidingEnabledFlag() const                   { return m_signDataHidingEnabledFlag;           }
-#endif
 #endif
 
   void                        initEqualRef();
@@ -1775,9 +1695,7 @@ public:
   bool                        isStepwiseTemporalLayerSwitchingPointCandidate( PicList& rcListPic )                          const;
   int                         checkThatAllRefPicsAreAvailable( PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet, bool printErrors, int pocRandomAccess = 0, bool bUseRecoveryPoint = false) const;
   void                        createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet, bool isRAP, int pocRandomAccess, bool bUseRecoveryPoint, const bool bEfficientFieldIRAPEnabled
-#if JVET_K0157
                               , bool isEncodeLtRef, bool isCompositeRefEnable
-#endif
   );
   void                        setMaxNumMergeCand(uint32_t val )                          { m_maxNumMergeCand = val;                                      }
   uint32_t                    getMaxNumMergeCand() const                             { return m_maxNumMergeCand;                                     }
@@ -1865,12 +1783,10 @@ public:
   void                        setEncCABACTableIdx( SliceType idx )                   { m_encCABACTableIdx = idx;                                     }
   SliceType                   getEncCABACTableIdx() const                            { return m_encCABACTableIdx;                                    }
 
-#if JVET_K0346
   void                        setSubPuMvpSliceSubblkSizeEnable(bool b) { m_subPuMvpSubBlkSizeSliceEnable = b; }
   bool                        getSubPuMvpSliceSubblkSizeEnable()                  const { return m_subPuMvpSubBlkSizeSliceEnable; }
   void                        setSubPuMvpSubblkLog2Size(int n) { m_subPuMvpSubBlkLog2Size = n; }
   int                         getSubPuMvpSubblkLog2Size()                         const { return m_subPuMvpSubBlkLog2Size; }
-#endif
 
   void                        setSliceQpBase( int i )                                { m_iSliceQpBase = i;                                           }
   int                         getSliceQpBase()                                 const { return m_iSliceQpBase;                                        }
@@ -1885,10 +1801,8 @@ public:
   void resetProcessingTime()       { m_dProcessingTime = m_iProcessingStartTime = 0; }
   double getProcessingTime() const { return m_dProcessingTime; }
 
-#if JVET_K0371_ALF
   void                        setAlfSliceParam( AlfSliceParam& alfSliceParam ) { m_alfSliceParam = alfSliceParam; }
   AlfSliceParam&              getAlfSliceParam() { return m_alfSliceParam; }
-#endif
 
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
@@ -2125,11 +2039,7 @@ public:
     , lumaWidth           ( sps.getPicWidthInLumaSamples() )
     , lumaHeight          ( sps.getPicHeightInLumaSamples() )
     , fastDeltaQPCuMaxSize( Clip3(sps.getMaxCUHeight() >> (sps.getLog2DiffMaxMinCodingBlockSize()), sps.getMaxCUHeight(), 32u) )
-#if INTRA67_3MPM
     , numMPMs             (NUM_MOST_PROBABLE_MODES)
-#else
-    , numMPMs             ( NUM_MOST_PROBABLE_MODES )
-#endif
     , noRQT               (  sps.getSpsNext().getUseQTBT() )
     , rectCUs             (  sps.getSpsNext().getUseQTBT() )
     , only2Nx2N           (  sps.getSpsNext().getUseQTBT() )

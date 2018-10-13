@@ -105,22 +105,16 @@ private:
 
   CABACWriter*          m_CABACEstimator;
   RateCtrl*             m_pcRateCtrl;
-#if JVET_K0357_AMVR
   CodingStructure    ***m_pImvTempCS;
-#endif
   EncModeCtrl          *m_modeCtrl;
 
   PelStorage            m_acMergeBuffer[MRG_MAX_NUM_CANDS];
 
-#if JVET_K0346
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];
-#endif
-#if JVET_K0346
   unsigned int          m_subMergeBlkSize[10];
   unsigned int          m_subMergeBlkNum[10];
   unsigned int          m_prevPOC;
   bool                  m_clearSubMergeStatic;
-#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   EncLib*               m_pcEncLib;
 #endif
@@ -146,7 +140,6 @@ public:
 
   EncModeCtrl* getModeCtrl  () { return m_modeCtrl; }
 
-#if JVET_K0346
   void clearSubMergeStatics()
   {
     ::memset(m_subMergeBlkSize, 0, sizeof(m_subMergeBlkSize));
@@ -166,7 +159,6 @@ public:
   unsigned int getPrevPOC() { return m_prevPOC; }
   void setClearSubMergeStatic(bool b) { m_clearSubMergeStatic = b; }
   bool getClearSubMergeStatic() { return m_clearSubMergeStatic; }
-#endif
 
   ~EncCu();
 
@@ -188,25 +180,17 @@ protected:
   void xCheckDQP              ( CodingStructure& cs, Partitioner& partitioner, bool bKeepCtx = false);
   void xFillPCMBuffer         ( CodingUnit &cu);
 
-#if JVET_K_AFFINE
   void xCheckRDCostAffineMerge2Nx2N
                               ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
-#endif
   void xCheckRDCostInter      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
-#if JVET_K0357_AMVR
   bool xCheckRDCostInterIMV   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
-#endif
   void xEncodeDontSplit       ( CodingStructure &cs, Partitioner &partitioner);
 
   void xCheckRDCostMerge2Nx2N ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
 
   void xEncodeInterResidual   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, int residualPass = 0
-#if JVET_K0357_AMVR
     , CodingStructure* imvCS = NULL
-#endif
-#if JVET_K1000_SIMPLIFIED_EMT
     , int emtMode = 1
-#endif
     , bool* bestHasNonResi = NULL
   );
 #if REUSE_CU_RESULTS

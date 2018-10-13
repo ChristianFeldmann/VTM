@@ -66,17 +66,13 @@
 const uint8_t LoopFilter::sm_tcTable[MAX_QP + 1 + DEFAULT_INTRA_TC_OFFSET] =
 {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,5,5,6,6,7,8,9,10,11,13,14,16,18,20,22,24
-#if JVET_K0251_QP_EXT
   , 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48
-#endif
 };
 
 const uint8_t LoopFilter::sm_betaTable[MAX_QP + 1] =
 {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,7,8,9,10,11,12,13,14,15,16,17,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64
-#if JVET_K0251_QP_EXT
   , 66, 68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88
-#endif
 };
 
 inline static uint32_t getRasterIdx(const Position& pos, const PreCalcValues& pcv)
@@ -265,7 +261,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 
   }
 
-#if JVET_K_AFFINE
   if ( cu.affine )
   {
     const int widthInBaseUnits = cu.Y().width >> pcv.minCUWidthLog2;
@@ -281,7 +276,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       xSetEdgefilterMultiple( cu, EDGE_HOR, affiBlockH, m_stLFCUParam.internalEdge, 1 );
     }
   }
-#endif
   const unsigned uiPelsInPart = pcv.minCUWidth;
 
   for( int y = 0; y < area.height; y += uiPelsInPart )
@@ -303,14 +297,9 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     }
   }
 
-#if DB_TU_FIX==0
-  const unsigned PartIdxIncr  = ( cu.cs->pcv->noRQT && cu.cs->pcv->only2Nx2N ? 1 : ( DEBLOCK_SMALLEST_BLOCK / uiPelsInPart ? DEBLOCK_SMALLEST_BLOCK / uiPelsInPart : 1 ) );
-  const unsigned uiSizeInPU   = ( cu.cs->pcv->noRQT && cu.cs->pcv->only2Nx2N ? 1 : pcv.partsInCtuWidth >> cu.qtDepth );
-#endif
   const unsigned shiftFactor  = edgeDir == EDGE_VER ? ::getComponentScaleX( COMPONENT_Cb, pcv.chrFormat ) : ::getComponentScaleY( COMPONENT_Cb, pcv.chrFormat );
   const bool bAlwaysDoChroma  = pcv.chrFormat == CHROMA_444 || pcv.noRQT;
 
-#if DEBLOCKING_GRID_8x8
   if (edgeDir == EDGE_HOR)
   {
     if (!((cu.block(COMPONENT_Y).y % 8) == 0))
@@ -321,9 +310,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     if (!((cu.block(COMPONENT_Y).x % 8) == 0))
       return;
   }
-#endif
 
-#if DB_TU_FIX
   unsigned int orthogonalLength = 1;
   unsigned int orthogonalIncrement = 1;
 
@@ -352,20 +339,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       xEdgeFilterChroma(cu, edgeDir, edge);
     }
   }
-#else
-  for( int iEdge = 0; iEdge < uiSizeInPU; iEdge += PartIdxIncr )
-  {
-    if( cu.blocks[COMPONENT_Y].valid() )
-    {
-      xEdgeFilterLuma  ( cu, edgeDir, iEdge );
-    }
-
-    if( cu.blocks[COMPONENT_Cb].valid() && pcv.chrFormat != CHROMA_400 && ( bAlwaysDoChroma || ( uiPelsInPart > DEBLOCK_SMALLEST_BLOCK ) || ( iEdge % ( ( DEBLOCK_SMALLEST_BLOCK << shiftFactor ) / uiPelsInPart ) ) == 0 ) )
-    {
-      xEdgeFilterChroma( cu, edgeDir, iEdge );
-    }
-  }
-#endif
 }
 
 
@@ -466,7 +439,6 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     if( 0 <= miQ.refIdx[1] ) { mvQ1 = miQ.mv[1]; }
 
     int nThreshold = 4;
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
     if (cu.cs->sps->getSpsNext().getUseHighPrecMv())
     {
@@ -478,7 +450,6 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
       nThreshold = 4 << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
 #if !REMOVE_MV_ADAPT_PREC
   }
-#endif
 #endif
     unsigned uiBs = 0;
 
@@ -533,7 +504,6 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   Mv mvQ0 = miQ.mv[0];
 
   int nThreshold = 4;
-#if JVET_K0346 || JVET_K_AFFINE
 #if !REMOVE_MV_ADAPT_PREC
   if (cu.cs->sps->getSpsNext().getUseHighPrecMv())
   {
@@ -543,7 +513,6 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     nThreshold = 4 << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
 #if !REMOVE_MV_ADAPT_PREC
   }
-#endif
 #endif
   return ( ( abs( mvQ0.getHor() - mvP0.getHor() ) >= nThreshold ) || ( abs( mvQ0.getVer() - mvP0.getVer() ) >= nThreshold ) ) ? 1 : 0;
 }

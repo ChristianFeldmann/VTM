@@ -70,7 +70,6 @@
 #define JVET_K0390_RATECTRL                               1
 #define RATECTRL_FIX_FULLNBIT                             1  //fix the QP-lambda relationship in rate control if JVET-K0154 for FULL_NBIT is enabled
 
-#define JVET_K0352_MERGE_ENCOPT                           1 // encoder optimization for merge
 
 
 

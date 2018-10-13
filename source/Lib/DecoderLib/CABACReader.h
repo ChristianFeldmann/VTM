@@ -69,11 +69,7 @@ public:
   void        sao                       ( CodingStructure&              cs,     unsigned        ctuRsAddr );
 
   // coding (quad)tree (clause 7.3.8.4)
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
   bool        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
-#else
-  bool        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx );
-#endif
   bool        split_cu_flag             ( CodingStructure&              cs,     Partitioner&    pm );
   PartSplit   split_cu_mode_mt          ( CodingStructure&              cs,     Partitioner&    pm );
 

@@ -371,22 +371,18 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
     {
       return false;
     }
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
     if (CS::isDualITree(cs) && (area.width > 64 || area.height > 64))
     {
       return false;
     }
-#endif
   }
   case CU_TRIH_SPLIT:
   case CU_TRIV_SPLIT:
   {
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
     if (CS::isDualITree(cs) && (area.width > 64 || area.height > 64))
     {
       return false;
     }
-#endif
   }
     if( implicitSplit == split )                                   return true;
     if( implicitSplit != CU_DONT_SPLIT && implicitSplit != split ) return false;
@@ -399,12 +395,10 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
         && ( ( area.width <= minTtSize && area.height <= minTtSize ) || cs.sps->getSpsNext().getMTTMode() == 0 ) ) return false;
     if(      ( area.width > maxBtSize || area.height > maxBtSize )
         && ( ( area.width > maxTtSize || area.height > maxTtSize ) || cs.sps->getSpsNext().getMTTMode() == 0 ) ) return false;
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
     if (CS::isDualITree(cs) && (area.width > 64 || area.height > 64))
     {
       return false;
     }
-#endif
   }
   break;
   default:
@@ -485,12 +479,10 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
     {
       split = CU_QUAD_SPLIT;
     }
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
     if (CS::isDualITree(cs) && (currArea().Y().width > 64 || currArea().Y().height > 64))
     {
       split = CU_QUAD_SPLIT;
     }
-#endif
   }
 
   m_partStack.back().checkdIfImplicit = true;

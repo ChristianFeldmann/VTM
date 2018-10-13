@@ -173,7 +173,6 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
     codeAlfCtuEnableFlag( cs, ctuRsAddr, compIdx );
   }
 
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
   if ( CS::isDualITree(cs) && cs.pcv->chrFormat != CHROMA_400 && cs.pcv->maxCUWidth > 64 )
   {
     CUCtx chromaCuCtx(qps[CH_C]);
@@ -187,7 +186,6 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
   }
   else
   {
-#endif
   coding_tree( cs, *partitioner, cuCtx );
   qps[CH_L] = cuCtx.qp;
   if( CS::isDualITree( cs ) && cs.pcv->chrFormat != CHROMA_400 )
@@ -197,9 +195,7 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
     coding_tree( cs, *partitioner, cuCtxChroma );
     qps[CH_C] = cuCtxChroma.qp;
   }
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
   }
-#endif
 
   delete partitioner;
 }
@@ -372,11 +368,7 @@ void CABACWriter::sao_offset_pars( const SAOOffset& ctbPars, ComponentID compID,
 //    void  split_cu_mode_mt  ( split, cs, partitioner )
 //================================================================================
 
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
 void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitioner, CUCtx& cuCtx, Partitioner* pPartitionerChroma, CUCtx* pCuCtxChroma)
-#else
-void CABACWriter::coding_tree( const CodingStructure& cs, Partitioner& partitioner, CUCtx& cuCtx )
-#endif
 {
   const PPS      &pps         = *cs.pps;
   const UnitArea &currArea    = partitioner.currArea();
@@ -391,7 +383,6 @@ void CABACWriter::coding_tree( const CodingStructure& cs, Partitioner& partition
   {
     cuCtx.isChromaQpAdjCoded  = false;
   }
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
   // Reset delta QP coding flag and ChromaQPAdjustemt coding flag
   if (CS::isDualITree(cs) && pPartitionerChroma != nullptr)
   {
@@ -404,7 +395,6 @@ void CABACWriter::coding_tree( const CodingStructure& cs, Partitioner& partition
       pCuCtxChroma->isChromaQpAdjCoded = false;
     }
   }
-#endif
 
   const PartSplit implicitSplit = partitioner.getImplicitSplit( cs );
 
@@ -425,7 +415,6 @@ void CABACWriter::coding_tree( const CodingStructure& cs, Partitioner& partition
     // quad-tree split
     if( qtSplit )
     {
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
       if (CS::isDualITree(cs) && pPartitionerChroma != nullptr && (partitioner.currArea().lwidth() >= 64 || partitioner.currArea().lheight() >= 64))
       {
         partitioner.splitCurrArea(CU_QUAD_SPLIT, cs);
@@ -470,7 +459,6 @@ void CABACWriter::coding_tree( const CodingStructure& cs, Partitioner& partition
       }
       else
       {
-#endif
       partitioner.splitCurrArea( CU_QUAD_SPLIT, cs );
 
       do
@@ -482,9 +470,7 @@ void CABACWriter::coding_tree( const CodingStructure& cs, Partitioner& partition
       } while( partitioner.nextPart( cs ) );
 
       partitioner.exitCurrSplit();
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
       }
-#endif
       return;
     }
   }

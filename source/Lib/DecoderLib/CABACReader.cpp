@@ -192,7 +192,6 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
     }
   }
 
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
   bool isLast = false;
 
   if ( CS::isDualITree(cs) && cs.pcv->chrFormat != CHROMA_400 && cs.pcv->maxCUWidth > 64 )
@@ -208,9 +207,6 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
   else
   {
     isLast = coding_tree(cs, *partitioner, cuCtx);
-#else
-  bool isLast = coding_tree( cs, *partitioner, cuCtx );
-#endif
   qps[CH_L] = cuCtx.qp;
   if( !isLast && CS::isDualITree( cs ) && cs.pcv->chrFormat != CHROMA_400 )
   {
@@ -219,9 +215,7 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
     isLast = coding_tree( cs, *partitioner, cuCtxChroma );
     qps[CH_C] = cuCtxChroma.qp;
   }
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
   }
-#endif
 
   DTRACE_COND( ctuRsAddr == 0, g_trace_ctx, D_QP_PER_CTU, "\n%4d %2d", cs.picture->poc, cs.slice->getSliceQpBase() );
   DTRACE     (                 g_trace_ctx, D_QP_PER_CTU, " %3d",           qps[CH_L] - cs.slice->getSliceQpBase() );
@@ -404,11 +398,7 @@ void CABACReader::sao( CodingStructure& cs, unsigned ctuRsAddr )
 //    split split_cu_mode_mt  ( cs, partitioner )
 //================================================================================
 
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
 bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CUCtx& cuCtx, Partitioner* pPartitionerChroma, CUCtx* pCuCtxChroma)
-#else
-bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CUCtx& cuCtx )
-#endif
 {
   const PPS      &pps         = *cs.pps;
   const UnitArea &currArea    = partitioner.currArea();
@@ -424,7 +414,6 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     cuCtx.isChromaQpAdjCoded  = false;
   }
 
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
   // Reset delta QP coding flag and ChromaQPAdjustemt coding flag
   if (CS::isDualITree(cs) && pPartitionerChroma != nullptr)
   {
@@ -438,7 +427,6 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       pCuCtxChroma->isChromaQpAdjCoded = false;
     }
   }
-#endif
 
   const PartSplit implicitSplit = partitioner.getImplicitSplit( cs );
 
@@ -459,7 +447,6 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     // quad-tree split
     if( qtSplit )
     {
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
       if (CS::isDualITree(cs) && pPartitionerChroma != nullptr && (partitioner.currArea().lwidth() >= 64 || partitioner.currArea().lheight() >= 64))
       {
         partitioner.splitCurrArea(CU_QUAD_SPLIT, cs);
@@ -539,7 +526,6 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       }
       else
       {
-#endif
       partitioner.splitCurrArea( CU_QUAD_SPLIT, cs );
       do
       {
@@ -550,9 +536,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       } while( partitioner.nextPart( cs ) );
 
       partitioner.exitCurrSplit();
-#if JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK
       }
-#endif
       return lastSegment;
     }
   }

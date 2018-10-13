@@ -50,44 +50,18 @@
 #include <assert.h>
 #include <cassert>
 
-
-
-
-
-
-
-
-
-
-
-                                                            // Test 2: Samples are taken only along with a longer side
-
 #define REUSE_CU_RESULTS                                  1
-
-
-
-
-
-
-
-
-
-
 
 #define REMOVE_MV_ADAPT_PREC                              1 // remove the high precision flag in the MV class
 
-
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )
-
 #endif
 #ifndef QTBT_AS_IN_JEM
 #define QTBT_AS_IN_JEM                                    1
-
 #endif
 #ifndef HEVC_TOOLS
 #define HEVC_TOOLS                                        0
-
 #endif
 
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE

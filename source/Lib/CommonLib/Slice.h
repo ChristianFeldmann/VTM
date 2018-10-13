@@ -834,9 +834,7 @@ private:
   // multi type tree (QTBT + triple split)
   unsigned    m_MTTMode;
 
-#if JVET_K0157
   bool              m_compositeRefEnabled;        //composite longterm reference
-#endif
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags and associated parameters here
 
 public:
@@ -914,10 +912,8 @@ public:
   unsigned  getMTTMode            ()                                      const     { return m_MTTMode; }
   void      setMTTMode            ( unsigned    mode )                              { m_MTTMode = mode; m_MTTEnabled = ( m_MTTMode != 0 ); }
 
-#if JVET_K0157
   void      setUseCompositeRef(bool b) { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef()                                      const { return m_compositeRefEnabled; }
-#endif
   // ADD_NEW_TOOL : (sps extension) add access functions for tool enabling flags and associated parameters here
 
 };
@@ -1699,9 +1695,7 @@ public:
   bool                        isStepwiseTemporalLayerSwitchingPointCandidate( PicList& rcListPic )                          const;
   int                         checkThatAllRefPicsAreAvailable( PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet, bool printErrors, int pocRandomAccess = 0, bool bUseRecoveryPoint = false) const;
   void                        createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet, bool isRAP, int pocRandomAccess, bool bUseRecoveryPoint, const bool bEfficientFieldIRAPEnabled
-#if JVET_K0157
                               , bool isEncodeLtRef, bool isCompositeRefEnable
-#endif
   );
   void                        setMaxNumMergeCand(uint32_t val )                          { m_maxNumMergeCand = val;                                      }
   uint32_t                    getMaxNumMergeCand() const                             { return m_maxNumMergeCand;                                     }

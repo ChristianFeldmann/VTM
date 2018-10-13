@@ -826,15 +826,11 @@ void EncModeCtrlMTnoRQT::initCTUEncoding( const Slice &slice )
 
   if( m_pcEncCfg->getUseE0023FastEnc() )
   {
-#if JVET_K0157
     if (m_pcEncCfg->getUseCompositeRef())
       m_skipThreshold = ( ( slice.getMinPictureDistance() <= PICTURE_DISTANCE_TH * 2 ) ? FAST_SKIP_DEPTH : SKIP_DEPTH );
     else
       m_skipThreshold = ((slice.getMinPictureDistance() <= PICTURE_DISTANCE_TH) ? FAST_SKIP_DEPTH : SKIP_DEPTH);
 
-#else
-    m_skipThreshold = ((slice.getMinPictureDistance() <= PICTURE_DISTANCE_TH) ? FAST_SKIP_DEPTH : SKIP_DEPTH);
-#endif
   }
   else
   {

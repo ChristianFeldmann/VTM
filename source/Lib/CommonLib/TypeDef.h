@@ -159,7 +159,6 @@
 #define HEVC_USE_SIGN_HIDING                              1
 #endif
 
-#define JVET_K0157                                        1
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
 

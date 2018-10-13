@@ -110,7 +110,6 @@ EncGOP::EncGOP()
 #endif
 
   m_bInitAMaxBT         = true;
-#if JVET_K0157
   m_bgPOC = -1;
   m_picBg = NULL;
   m_picOrig = NULL;
@@ -118,7 +117,6 @@ EncGOP::EncGOP()
   m_isUseLTRef = false;
   m_isPrepareLTRef = true;
   m_lastLTRefPoc = 0;
-#endif
 }
 
 EncGOP::~EncGOP()
@@ -148,7 +146,6 @@ void  EncGOP::destroy()
     m_pcDeblockingTempPicYuv = NULL;
   }
 #endif
-#if JVET_K0157
   if (m_picBg)
   {
     m_picBg->destroy();
@@ -161,7 +158,6 @@ void  EncGOP::destroy()
     delete m_picOrig;
     m_picOrig = NULL;
   }
-#endif
 }
 
 void EncGOP::init ( EncLib* pcEncLib )
@@ -1308,9 +1304,7 @@ void trySkipOrDecodePicture( bool& decPic, bool& encPic, const EncCfg& cfg, Pict
 void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
                           std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                           bool isField, bool isTff, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE
-#if JVET_K0157
                         , bool isEncodeLtRef
-#endif
 )
 {
   // TODO: Split this function up.
@@ -1322,9 +1316,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
   AccessUnit::iterator  itLocationToPushSliceHeaderNALU; // used to store location where NALU containing slice header is to be inserted
 
   xInitGOP(iPOCLast, iNumPicRcvd, isField
-#if JVET_K0157
          , isEncodeLtRef
-#endif
   );
 
   m_iNumPicCoded = 0;
@@ -1364,18 +1356,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     /////////////////////////////////////////////////////////////////////////////////////////////////// Initial to start encoding
     int iTimeOffset;
     int pocCurr;
-#if JVET_K0157
     int multipleFactor = m_pcCfg->getUseCompositeRef() ? 2 : 1;
-#endif
 
     if(iPOCLast == 0) //case first frame or first top field
     {
       pocCurr=0;
-#if JVET_K0157
       iTimeOffset = multipleFactor;
-#else
-      iTimeOffset = 1;
-#endif
     }
     else if(iPOCLast == 1 && isField) //case first bottom field, just like the first frame, the poc computation is not right anymore, we set the right value
     {
@@ -1384,24 +1370,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
     else
     {
-#if JVET_K0157
       pocCurr = iPOCLast - iNumPicRcvd * multipleFactor + m_pcCfg->getGOPEntry(iGOPid).m_POC - ((isField && m_iGopSize>1) ? 1 : 0);
-#else
-      pocCurr = iPOCLast - iNumPicRcvd + m_pcCfg->getGOPEntry(iGOPid).m_POC - ((isField && m_iGopSize>1) ? 1:0);
-#endif
       iTimeOffset = m_pcCfg->getGOPEntry(iGOPid).m_POC;
     }
 
-#if JVET_K0157
     if (m_pcCfg->getUseCompositeRef() && isEncodeLtRef)
     {
       pocCurr++;
       iTimeOffset--;
     }
     if (pocCurr / multipleFactor >= m_pcCfg->getFramesToBeEncoded())
-#else
-    if(pocCurr>=m_pcCfg->getFramesToBeEncoded())
-#endif
     {
       if (m_pcCfg->getEfficientFieldIRAPEnabled())
       {
@@ -1449,9 +1427,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     m_pcSliceEncoder->setSliceSegmentIdx(0);
 
     m_pcSliceEncoder->initEncSlice(pcPic, iPOCLast, pocCurr, iGOPid, pcSlice, isField
-#if JVET_K0157
       , isEncodeLtRef
-#endif
     );
 
     DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
@@ -1515,7 +1491,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
 
     pcSlice->decodingRefreshMarking(m_pocCRA, m_bRefreshPending, rcListPic, m_pcCfg->getEfficientFieldIRAPEnabled());
-#if JVET_K0157
     if (m_pcCfg->getUseCompositeRef() && isEncodeLtRef)
     {
       setUseLTRef(true);
@@ -1540,9 +1515,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       m_pcEncLib->selectReferencePictureSet(pcSlice, pocCurr, iGOPid, -1);
     }
-#else
-    m_pcEncLib->selectReferencePictureSet(pcSlice, pocCurr, iGOPid);
-#endif
     if (!m_pcCfg->getEfficientFieldIRAPEnabled())
     {
       if ( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
@@ -1564,9 +1536,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       )
     {
       pcSlice->createExplicitReferencePictureSetFromReference(rcListPic, pcSlice->getRPS(), pcSlice->isIRAP(), m_iLastRecoveryPicPOC, m_pcCfg->getDecodingRefreshType() == 3, m_pcCfg->getEfficientFieldIRAPEnabled()
-#if JVET_K0157
                                                             , isEncodeLtRef, m_pcCfg->getUseCompositeRef()
-#endif
       );
     }
 
@@ -1635,17 +1605,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
     }
-#if JVET_K0157
     if (pcSlice->getRPSidx() == -1)
       arrangeLongtermPicturesInRPS(pcSlice, rcListPic);
-#else
-    arrangeLongtermPicturesInRPS(pcSlice, rcListPic);
-#endif
     RefPicListModification* refPicListModification = pcSlice->getRefPicListModification();
     refPicListModification->setRefPicListModificationFlagL0(0);
     refPicListModification->setRefPicListModificationFlagL1(0);
 
-#if JVET_K0157
     if (m_pcCfg->getUseCompositeRef() && getUseLTRef() && (pocCurr > getLastLTRefPoc()))
     {
       pcSlice->setNumRefIdx(REF_PIC_LIST_0, min(m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive + 1, pcSlice->getRPS()->getNumberOfPictures()));
@@ -1659,10 +1624,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && getPrepareLTRef()) {
       arrangeCompositeReference(pcSlice, rcListPic, pocCurr);
     }
-#else
-    pcSlice->setNumRefIdx(REF_PIC_LIST_0,min(m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive,pcSlice->getRPS()->getNumberOfPictures()));
-    pcSlice->setNumRefIdx(REF_PIC_LIST_1,min(m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive,pcSlice->getRPS()->getNumberOfPictures()));
-#endif
 
     //  Set reference list
     pcSlice->setRefPicList ( rcListPic );
@@ -2151,12 +2112,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           pcPic->slices[s]->setAlfSliceParam( alfSliceParam );
         }
       }
-#if JVET_K0157
       if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && getPrepareLTRef())
       {
         updateCompositeReference(pcSlice, rcListPic, pocCurr);
       }
-#endif
     }
     else // skip enc picture
     {
@@ -2350,9 +2309,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       double PSNR_Y;
       xCalculateAddPSNRs(isField, isTff, iGOPid, pcPic, accessUnit, rcListPic, encTime, snr_conversion, printFrameMSE, &PSNR_Y
-#if JVET_K0157
                        , isEncodeLtRef
-#endif
       );
 
       // Only produce the Green Metadata SEI message with the last picture.
@@ -2417,9 +2374,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->reconstructed = true;
     m_bFirst = false;
     m_iNumPicCoded++;
-#if JVET_K0157
     if (!(pcPic->cs->sps->getSpsNext().getUseCompositeRef() && isEncodeLtRef))
-#endif
       m_totalCoded ++;
     /* logging: insert a newline at end of picture period */
 
@@ -2569,18 +2524,12 @@ uint64_t EncGOP::preLoopFilterPicAndCalcDist( Picture* pcPic )
 // Protected member functions
 // ====================================================================================================================
 void EncGOP::xInitGOP( int iPOCLast, int iNumPicRcvd, bool isField
-#if JVET_K0157
   , bool isEncodeLtRef
-#endif
 )
 {
   CHECK(!( iNumPicRcvd > 0 ), "Unspecified error");
   //  Exception for the first frames
-#if JVET_K0157
   if ((isField && (iPOCLast == 0 || iPOCLast == 1)) || (!isField && (iPOCLast == 0)) || isEncodeLtRef)
-#else
-  if ( ( isField && (iPOCLast == 0 || iPOCLast == 1) ) || (!isField  && (iPOCLast == 0))  )
-#endif
   {
     m_iGopSize    = 1;
   }
@@ -2611,12 +2560,8 @@ void EncGOP::xGetBuffer( PicList&                  rcListPic,
     iTimeOffset--;
   }
 
-#if JVET_K0157
   int multipleFactor = m_pcCfg->getUseCompositeRef() ? 2 : 1;
   for (i = 0; i < (iNumPicRcvd * multipleFactor - iTimeOffset + 1); i += multipleFactor)
-#else
-  for ( i = 0; i < (iNumPicRcvd - iTimeOffset + 1); i++ )
-#endif
   {
     iterPicYuvRec--;
   }
@@ -2873,15 +2818,11 @@ double EncGOP::xFindDistortionPlaneWPSNR(const CPelBuf& pic0, const CPelBuf& pic
 #endif
 
 void EncGOP::xCalculateAddPSNRs( const bool isField, const bool isFieldTopFieldFirst, const int iGOPid, Picture* pcPic, const AccessUnit&accessUnit, PicList &rcListPic, const int64_t dEncTime, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE, double* PSNR_Y
-#if JVET_K0157
                                , bool isEncodeLtRef
-#endif
 )
 {
   xCalculateAddPSNR(pcPic, pcPic->getRecoBuf(), accessUnit, (double)dEncTime, snr_conversion, printFrameMSE, PSNR_Y
-#if JVET_K0157
                   , isEncodeLtRef
-#endif
   );
 
   //In case of field coding, compute the interlaced PSNR for both fields
@@ -2938,17 +2879,13 @@ void EncGOP::xCalculateAddPSNRs( const bool isField, const bool isFieldTopFieldF
       if ((pcPic->topField && isFieldTopFieldFirst) || (!pcPic->topField && !isFieldTopFieldFirst))
       {
         xCalculateInterlacedAddPSNR(pcPic, correspondingFieldPic, pcPic->getRecoBuf(), correspondingFieldPic->getRecoBuf(), snr_conversion, printFrameMSE, PSNR_Y
-#if JVET_K0157
           , isEncodeLtRef
-#endif
         );
       }
       else
       {
         xCalculateInterlacedAddPSNR(correspondingFieldPic, pcPic, correspondingFieldPic->getRecoBuf(), pcPic->getRecoBuf(), snr_conversion, printFrameMSE, PSNR_Y
-#if JVET_K0157
           , isEncodeLtRef
-#endif
         );
       }
     }
@@ -2956,9 +2893,7 @@ void EncGOP::xCalculateAddPSNRs( const bool isField, const bool isFieldTopFieldF
 }
 
 void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUnit& accessUnit, double dEncTime, const InputColourSpaceConversion conversion, const bool printFrameMSE, double* PSNR_Y
-#if JVET_K0157
                               , bool isEncodeLtRef
-#endif
 )
 {
   const SPS&         sps = *pcPic->cs->sps;
@@ -3089,9 +3024,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   //===== add PSNR =====
   m_gcAnalyzeAll.addResult(dPSNR, (double)uibits, MSEyuvframe
-#if JVET_K0157
     , isEncodeLtRef
-#endif
   );
 #if EXTENSION_360_VIDEO
   m_ext360.addResult(m_gcAnalyzeAll);
@@ -3099,9 +3032,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
   if (pcSlice->isIntra())
   {
     m_gcAnalyzeI.addResult(dPSNR, (double)uibits, MSEyuvframe
-#if JVET_K0157
       , isEncodeLtRef
-#endif
     );
     *PSNR_Y = dPSNR[COMPONENT_Y];
 #if EXTENSION_360_VIDEO
@@ -3111,9 +3042,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
   if (pcSlice->isInterP())
   {
     m_gcAnalyzeP.addResult(dPSNR, (double)uibits, MSEyuvframe
-#if JVET_K0157
       , isEncodeLtRef
-#endif
     );
     *PSNR_Y = dPSNR[COMPONENT_Y];
 #if EXTENSION_360_VIDEO
@@ -3123,9 +3052,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
   if (pcSlice->isInterB())
   {
     m_gcAnalyzeB.addResult(dPSNR, (double)uibits, MSEyuvframe
-#if JVET_K0157
       , isEncodeLtRef
-#endif
     );
     *PSNR_Y = dPSNR[COMPONENT_Y];
 #if EXTENSION_360_VIDEO
@@ -3210,9 +3137,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 void EncGOP::xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* pcPicOrgSecondField,
                                           PelUnitBuf cPicRecFirstField, PelUnitBuf cPicRecSecondField,
                                           const InputColourSpaceConversion conversion, const bool printFrameMSE, double* PSNR_Y
-#if JVET_K0157
                                         , bool isEncodeLtRef
-#endif
 )
 {
   const SPS &sps = *pcPicOrgFirstField->cs->sps;
@@ -3290,9 +3215,7 @@ void EncGOP::xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* 
 
   //===== add PSNR =====
   m_gcAnalyzeAll_in.addResult (dPSNR, (double)uibits, MSEyuvframe
-#if JVET_K0157
     , isEncodeLtRef
-#endif
   );
 
   *PSNR_Y = dPSNR[COMPONENT_Y];
@@ -3323,21 +3246,13 @@ NalUnitType EncGOP::getNalUnitType(int pocCurr, int lastIDR, bool isField)
     return NAL_UNIT_CODED_SLICE_IDR_W_RADL;
   }
 
-#if JVET_K0157
   if (m_pcCfg->getEfficientFieldIRAPEnabled() && isField && pocCurr == (m_pcCfg->getUseCompositeRef() ? 2: 1))
-#else
-  if (m_pcCfg->getEfficientFieldIRAPEnabled() && isField && pocCurr == 1)
-#endif
   {
     // to avoid the picture becoming an IRAP
     return NAL_UNIT_CODED_SLICE_TRAIL_R;
   }
 
-#if JVET_K0157
   if (m_pcCfg->getDecodingRefreshType() != 3 && (pocCurr - isField) % (m_pcCfg->getIntraPeriod() * (m_pcCfg->getUseCompositeRef() ? 2 : 1)) == 0)
-#else
-  if (m_pcCfg->getDecodingRefreshType() != 3 && (pocCurr - isField) % m_pcCfg->getIntraPeriod() == 0)
-#endif
   {
     if (m_pcCfg->getDecodingRefreshType() == 1)
     {
@@ -3556,7 +3471,6 @@ void EncGOP::arrangeLongtermPicturesInRPS(Slice *pcSlice, PicList& rcListPic)
   }
 }
 
-#if JVET_K0157
 void EncGOP::arrangeCompositeReference(Slice* pcSlice, PicList& rcListPic, int pocCurr)
 {
   Picture* curPic = NULL;
@@ -3771,7 +3685,6 @@ void EncGOP::updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int po
     m_picBg->setBorderExtension(true);
   }
 }
-#endif
 
 void EncGOP::applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices )
 {

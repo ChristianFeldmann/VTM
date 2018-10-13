@@ -1615,7 +1615,6 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
   cStruct.iRefStride    = buf.stride;
   cStruct.piRefY        = buf.buf;
   cStruct.imvShift      = pu.cu->imv << 1;
-#if JVET_K0157
   cStruct.inCtuSearch = false;
   cStruct.zeroMV = false;
   {
@@ -1624,7 +1623,6 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
       cStruct.inCtuSearch = true;
     }
   }
-#endif
 
   auto blkCache = dynamic_cast<CacheBlkInfoCtrl*>( m_modeCtrl );
 
@@ -1656,9 +1654,7 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
     if( !bQTBTMV )
     {
       xSetSearchRange(pu, (bBi ? rcMv : rcMvPred), iSrchRng, cStruct.searchRange
-#if JVET_K0157
         , cStruct
-#endif
       );
     }
     cStruct.subShiftMode = m_pcEncCfg->getFastInterSearchMode() == FASTINTERSEARCH_MODE1 || m_pcEncCfg->getFastInterSearchMode() == FASTINTERSEARCH_MODE3 ? 2 : 0;
@@ -1723,9 +1719,7 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
                                     const Mv& cMvPred,
                                     const int iSrchRng,
                                     SearchRange& sr
-#if JVET_K0157
                                   , IntTZSearchStruct& cStruct
-#endif
 )
 {
 #if !REMOVE_MV_ADAPT_PREC
@@ -1763,7 +1757,6 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
   sr.right  = mvBR.hor;
   sr.bottom = mvBR.ver;
 
-#if JVET_K0157
   if (pu.cs->sps->getSpsNext().getUseCompositeRef() && cStruct.inCtuSearch)
   {
     Position posRB = pu.Y().bottomRight();
@@ -1790,7 +1783,6 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
       cStruct.zeroMV = 1;
     }
   }
-#endif
 }
 
 
@@ -1969,9 +1961,7 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
     Mv currBestMv(cStruct.iBestX, cStruct.iBestY );
     currBestMv <<= 2;
     xSetSearchRange(pu, currBestMv, m_iSearchRange >> (bFastSettings ? 1 : 0), sr
-#if JVET_K0157
       , cStruct
-#endif
     );
   }
 
@@ -2243,9 +2233,7 @@ void InterSearch::xTZSearchSelective( const PredictionUnit& pu,
     Mv currBestMv(cStruct.iBestX, cStruct.iBestY );
     currBestMv <<= 2;
     xSetSearchRange( pu, currBestMv, m_iSearchRange, sr
-#if JVET_K0157
       , cStruct
-#endif
     );
   }
 
@@ -2445,11 +2433,7 @@ void InterSearch::xPatternSearchFracDIF(
   CPelBuf cPatternRoi(cStruct.piRefY + iOffset, cStruct.iRefStride, *cStruct.pcPatternKey);
 
 
-#if JVET_K0157
   if (cStruct.imvShift || (pu.cs->sps->getSpsNext().getUseCompositeRef() && cStruct.zeroMV))
-#else
-  if( cStruct.imvShift )
-#endif
   {
     m_pcRdCost->setDistParam( m_cDistParam, *cStruct.pcPatternKey, cStruct.piRefY + iOffset, cStruct.iRefStride, m_lumaClpRng.bd, COMPONENT_Y, 0, 1, m_pcEncCfg->getUseHADME() && !bIsLosslessCoded );
     ruiCost = m_cDistParam.distFunc( m_cDistParam );

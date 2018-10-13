@@ -1303,9 +1303,7 @@ int Slice::checkThatAllRefPicsAreAvailable( PicList& rcListPic, const ReferenceP
 /** Function for constructing an explicit Reference Picture Set out of the available pictures in a referenced Reference Picture Set
 */
 void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet, bool isRAP, int pocRandomAccess, bool bUseRecoveryPoint, const bool bEfficientFieldIRAPEnabled
-#if JVET_K0157
                                                          , bool isEncodeLtRef, bool isCompositeRefEnable
-#endif
 )
 {
   Picture* rpcPic;
@@ -1346,11 +1344,7 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
         }
         else
         {
-#if JVET_K0157
           if (bEfficientFieldIRAPEnabled && rpcPic->getPOC() == this->getAssociatedIRAPPOC() && this->getAssociatedIRAPPOC() == this->getPOC() + (isCompositeRefEnable ? 2 : 1))
-#else
-          if(bEfficientFieldIRAPEnabled && rpcPic->getPOC() == this->getAssociatedIRAPPOC() && this->getAssociatedIRAPPOC() == this->getPOC()+1)
-#endif
           {
             irapIsInRPS = true;
           }
@@ -1369,11 +1363,7 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
     while ( iterPic != rcListPic.end())
     {
       rpcPic = *(iterPic++);
-#if JVET_K0157
       if (rpcPic->getPOC() == this->getAssociatedIRAPPOC() && this->getAssociatedIRAPPOC() == this->getPOC() + (isCompositeRefEnable ? 2 : 1))
-#else
-      if(rpcPic->getPOC() == this->getAssociatedIRAPPOC() && this->getAssociatedIRAPPOC() == this->getPOC()+1)
-#endif
       {
         pLocalRPS->setDeltaPOC(k, 1);
         pLocalRPS->setUsed(k, true);
@@ -1383,7 +1373,6 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
       }
     }
   }
-#if JVET_K0157
   if (isCompositeRefEnable && isEncodeLtRef)
   {
     useNewRPS = true;
@@ -1429,7 +1418,6 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
       }
     }
   }
-#endif
   pLocalRPS->setNumberOfNegativePictures(nrOfNegativePictures);
   pLocalRPS->setNumberOfPositivePictures(nrOfPositivePictures);
   pLocalRPS->setNumberOfPictures(nrOfNegativePictures+nrOfPositivePictures);
@@ -1665,9 +1653,7 @@ SPSNext::SPSNext( SPS& sps )
   , m_subPuMrgMode              ( 0 )
   , m_ImvMode                   ( IMV_OFF )
   , m_MTTMode                   ( 0 )
-#if JVET_K0157
     , m_compositeRefEnabled     ( false )
-#endif
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags here (with "false" as default values)
 {
 }

@@ -2006,11 +2006,7 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
 #if WCG_EXT
       if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() )
       {
-#if WCG_EXT_BUGFIX
         const CPelBuf orgLuma = tempCS->getOrgBuf(tempCS->area.blocks[COMPONENT_Y]);
-#else
-        const CPelBuf orgLuma = tempCS->getOrgBuf(cs.area.blocks[COMPONENT_Y]);
-#endif
         finalDistortion += m_pcRdCost->getDistPart( org, reco, sps.getBitDepth( toChannelType( compID ) ), compID, DF_SSE_WTD, &orgLuma );
       }
       else

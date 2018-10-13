@@ -78,9 +78,7 @@ enum class BlockStatistic {
   Cbf_Y,
   Cbf_Cb,
   Cbf_Cr,
-#if  JVET_K0357_AMVR
   IMVMode,
-#endif
   InterDir,
   MergeFlag,
   MergeIdx,
@@ -161,9 +159,7 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::MVPIdxL1,               std::tuple<std::string, BlockStatisticType, std::string>{"MVPIdxL1",                    BlockStatisticType::Integer,                "[0, 1]"}}, 
   { BlockStatistic::MVDL1,                  std::tuple<std::string, BlockStatisticType, std::string>{"MVDL1",                       BlockStatisticType::Vector,                 "Scale: 4"}},
   { BlockStatistic::RefIdxL1,               std::tuple<std::string, BlockStatisticType, std::string>{"RefIdxL1",                    BlockStatisticType::Integer,                "[0, 4]"}}, 
-#if JVET_K0357_AMVR
   { BlockStatistic::IMVMode,                std::tuple<std::string, BlockStatisticType, std::string>{"IMVMode",                     BlockStatisticType::Integer,                "[0, 2]"}},
-#endif
   { BlockStatistic::AffineFlag,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineFlag",                  BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::AffineMVL0,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineMVL0",                  BlockStatisticType::AffineTFVectors,        "Scale: 4"}},
   { BlockStatistic::AffineMVL1,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineMVL1",                  BlockStatisticType::AffineTFVectors,        "Scale: 4"}},

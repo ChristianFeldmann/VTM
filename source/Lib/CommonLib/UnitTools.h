@@ -90,11 +90,9 @@ namespace CU
   cPUTraverser traversePUs            (const CodingUnit& cu);
   cTUTraverser traverseTUs            (const CodingUnit& cu);
 
-#if JVET_K0357_AMVR
   bool  hasSubCUNonZeroMVd            (const CodingUnit& cu);
   int   getMaxNeighboriMVCandNum      (const CodingStructure& cs, const Position& pos);
   void  resetMVDandMV2Int             (      CodingUnit& cu, InterPrediction *interPred );
-#endif
 
 
 }
@@ -116,9 +114,7 @@ namespace PU
   void xInheritedAffineMv             ( const PredictionUnit &pu, const PredictionUnit* puNeighbour, RefPicList eRefPicList, Mv rcMv[3] );
   bool isBipredRestriction            (const PredictionUnit &pu);
   void spanMotionInfo                 (      PredictionUnit &pu, const MergeCtx &mrgCtx = MergeCtx() );
-#if JVET_K0357_AMVR
   void applyImv                       (      PredictionUnit &pu, MergeCtx &mrgCtx, InterPrediction *interPred = NULL );
-#endif
   void getAffineMergeCand             (const PredictionUnit &pu, MvField (*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, int &numValidMergeCand );
   bool isAffineMrgFlagCoded           (const PredictionUnit &pu );
   void getAffineMergeCand             (const PredictionUnit &pu, MvField (*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, int &numValidMergeCand );

@@ -299,9 +299,7 @@ struct CodingUnit : public UnitArea
   int            affineType;
   bool           transQuantBypass;
   bool           ipcm;
-#if JVET_K0357_AMVR
   uint8_t          imv;
-#endif
   bool           rootCbf;
 #if HEVC_TILES_WPP
   uint32_t           tileIdx;

@@ -68,9 +68,7 @@ enum EncTestModeType
 #if REUSE_CU_RESULTS
   ETM_RECO_CACHED,
 #endif
-#if JVET_K0357_AMVR
   ETM_TRIGGER_IMV_LIST,
-#endif
   ETM_INVALID
 };
 
@@ -78,10 +76,8 @@ enum EncTestModeOpts
 {
   ETO_STANDARD    =  0,                   // empty      (standard option)
   ETO_FORCE_MERGE =  1<<0,                // bit   0    (indicates forced merge)
-#if JVET_K0357_AMVR
   ETO_IMV_SHIFT   =     1,                // bits  1-3  (imv parameter starts at bit 1)
   ETO_IMV         =  7<<ETO_IMV_SHIFT,    // bits  1-3  (imv parameter uses 3 bits)
-#endif
   ETO_DUMMY       =  1<<5,                // bit   5    (dummy)
   ETO_INVALID     = 0xffffffff            // bits 0-31  (invalid option)
 };
@@ -328,9 +324,7 @@ struct SaveLoadStruct
   SaveLoadTag     tag;
   unsigned        interDir;
   bool            mergeFlag;
-#if JVET_K0357_AMVR
   unsigned        imv;
-#endif
   unsigned        partIdx;
   bool            affineFlag;
 };
@@ -500,10 +494,8 @@ class EncModeCtrlMTnoRQT : public EncModeCtrl, public SaveLoadEncInfoCtrl, publi
     HISTORY_DO_SAVE,
     SAVE_LOAD_TAG,
 #endif
-#if JVET_K0357_AMVR
     BEST_NO_IMV_COST,
     BEST_IMV_COST,
-#endif
 #if !HM_NO_ADDITIONAL_SPEEDUPS || JVET_K0220_ENC_CTRL
     QT_BEFORE_BT,
     IS_BEST_NOSPLIT_SKIP,

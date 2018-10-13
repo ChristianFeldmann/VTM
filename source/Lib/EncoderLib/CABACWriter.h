@@ -119,9 +119,7 @@ public:
   void        merge_flag                ( const PredictionUnit&         pu );
   void        affine_flag               ( const CodingUnit&             cu );
   void        merge_idx                 ( const PredictionUnit&         pu );
-#if JVET_K0357_AMVR
   void        imv_mode                  ( const CodingUnit&             cu );
-#endif
   void        inter_pred_idc            ( const PredictionUnit&         pu );
   void        ref_idx                   ( const PredictionUnit&         pu,       RefPicList        eRefList );
   void        mvp_flag                  ( const PredictionUnit&         pu,       RefPicList        eRefList );
@@ -138,12 +136,8 @@ public:
   void        cbf_comp                  ( const CodingStructure&        cs,       bool              cbf,    const CompArea& area, const bool prevCbCbf = false );
 #endif
 
-#if JVET_K0357_AMVR
   // mvd coding (clause 7.3.8.9)
   void        mvd_coding                ( const Mv &rMvd, uint8_t imv );
-#else
-  void        mvd_coding                ( const Mv &rMvd );
-#endif
 
   // transform unit (clause 7.3.8.10)
   void        transform_unit            ( const TransformUnit&          tu,       CUCtx&            cuCtx,  ChromaCbfs& chromaCbfs );

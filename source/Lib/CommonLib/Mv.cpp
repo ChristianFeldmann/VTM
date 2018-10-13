@@ -40,7 +40,6 @@
 #include "Common.h"
 #include "Slice.h"
 
-#if JVET_K0357_AMVR
 void roundMV( Mv & rMV, unsigned imvShift )
 {
   CHECK( imvShift == 0, "roundMV called for imvShift=0" );
@@ -52,7 +51,6 @@ void roundMV( Mv & rMV, unsigned imvShift )
   rMV.setHor( ( ( rMV.getHor() + offset ) >> imvShift ) << imvShift );
   rMV.setVer( ( ( rMV.getVer() + offset ) >> imvShift ) << imvShift );
 }
-#endif
 
 void roundAffineMv( int& mvx, int& mvy, int nShift )
 {

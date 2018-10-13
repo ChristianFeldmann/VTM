@@ -793,9 +793,7 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
 #if JVET_K0346
   READ_FLAG( symbol,    "subpu_tmvp_flag" );                        spsNext.setSubPuMvpMode           (symbol);
 #endif
-#if JVET_K0357_AMVR
   READ_FLAG( symbol,    "imv_enable_flag" );                        spsNext.setUseIMV                 ( symbol != 0 );
-#endif
 #if !REMOVE_MV_ADAPT_PREC
   READ_FLAG( symbol, "high_precision_motion_vectors" );             spsNext.setUseHighPrecMv(symbol != 0);
 #endif
@@ -859,12 +857,10 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
 #endif
 
 
-#if JVET_K0357_AMVR
   if( spsNext.getUseIMV() )
   {
     READ_UVLC( symbol, "imv_mode_minus1" );                         spsNext.setImvMode( ImvMode( symbol + 1 ) );
   }
-#endif
   if( spsNext.getMTTEnabled() )
   {
     READ_UVLC( symbol,  "mtt_mode_minus1" );                        spsNext.setMTTMode( symbol + 1 );

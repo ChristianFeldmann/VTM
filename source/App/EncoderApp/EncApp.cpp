@@ -502,11 +502,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSummaryOutFilename                                ( m_summaryOutFilename );
   m_cEncLib.setSummaryPicFilenameBase                            ( m_summaryPicFilenameBase );
   m_cEncLib.setSummaryVerboseness                                ( m_summaryVerboseness );
-#if JVET_K0357_AMVR
   m_cEncLib.setIMV                                               ( m_ImvMode );
   m_cEncLib.setIMV4PelFast                                       ( m_Imv4PelFast );
   m_cEncLib.setIMVMaxCand                                        ( m_ImvMaxCand );
-#endif
   m_cEncLib.setDecodeBitstream                                   ( 0, m_decodeBitstreams[0] );
   m_cEncLib.setDecodeBitstream                                   ( 1, m_decodeBitstreams[1] );
   m_cEncLib.setSwitchPOC                                         ( m_switchPOC );

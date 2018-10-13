@@ -491,11 +491,9 @@ protected:
   int       m_maxBitsPerMinCuDenom;                           ///< Indicates an upper bound for the number of bits of coding_unit() data
   int       m_log2MaxMvLengthHorizontal;                      ///< Indicate the maximum absolute value of a decoded horizontal MV component in quarter-pel luma units
   int       m_log2MaxMvLengthVertical;                        ///< Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units
-#if JVET_K0357_AMVR
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
   int       m_ImvMaxCand;                                     ///< imv max num cand for test (QTBT off only)
-#endif
   std::string m_colourRemapSEIFileRoot;
 
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.

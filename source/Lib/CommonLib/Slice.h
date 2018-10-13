@@ -802,9 +802,7 @@ private:
 #if JVET_K0346
   bool              m_SubPuMvp;
 #endif
-#if JVET_K0357_AMVR
   bool              m_IMV;                        // 9
-#endif
 #if !REMOVE_MV_ADAPT_PREC
   bool              m_highPrecMv;
 #endif
@@ -835,10 +833,8 @@ private:
   unsigned    m_subPuLog2Size;
   int         m_subPuMrgMode;
 #endif
-#if JVET_K0357_AMVR
   //imv
   ImvMode     m_ImvMode;
-#endif
   // multi type tree (QTBT + triple split)
   unsigned    m_MTTMode;
 
@@ -865,10 +861,8 @@ public:
   void      setSubPuMvpMode(int n)                             { m_subPuMrgMode = n; m_SubPuMvp = n != 0; }
   bool      getUseATMVP()                                      const { return (m_subPuMrgMode & 1) == 1; }
 #endif
-#if JVET_K0357_AMVR
   void      setUseIMV             ( bool b )                                        { m_IMV = b; }
   bool      getUseIMV             ()                                      const     { return m_IMV; }
-#endif
   void      setUseAffine          ( bool b )                                        { m_Affine = b; }
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
@@ -919,10 +913,8 @@ public:
   void      setSubPuMvpLog2Size   ( unsigned    log2Size )                          { m_subPuLog2Size = log2Size; }
   unsigned  getSubPuMvpLog2Size   ()                                      const     { return m_subPuLog2Size; }
 #endif
-#if JVET_K0357_AMVR
   void      setImvMode(ImvMode m) { m_ImvMode = m; m_IMV = m != 0;  }
   ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
-#endif
 
 
 

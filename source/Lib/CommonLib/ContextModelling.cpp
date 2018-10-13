@@ -284,7 +284,6 @@ unsigned DeriveCtx::CtxSkipFlag( const CodingUnit& cu )
 }
 
 
-#if JVET_K0357_AMVR
 unsigned DeriveCtx::CtxIMVFlag( const CodingUnit& cu )
 {
   const CodingStructure *cs = cu.cs;
@@ -300,7 +299,6 @@ unsigned DeriveCtx::CtxIMVFlag( const CodingUnit& cu )
 
   return ctxId;
 }
-#endif
 
 unsigned DeriveCtx::CtxBTsplit(const CodingStructure& cs, Partitioner& partitioner)
 {

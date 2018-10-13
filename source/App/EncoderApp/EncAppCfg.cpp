@@ -823,14 +823,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("Affine",                                          m_Affine,                                        false, "Enable affine prediction (0:off, 1:on)  [default: off]")
   ( "AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
   ("DisableMotCompression",                           m_DisableMotionCompression,                       false, "Disable motion data compression for all modes")
-#if JVET_K0357_AMVR
   ("IMV",                                             m_ImvMode,                                            2, "Adaptive MV precision Mode (IMV)\n"
                                                                                                                "\t0: disabled IMV\n"
                                                                                                                "\t1: IMV default (Full-Pel)\n"
                                                                                                                "\t2: IMV Full-Pel and 4-PEL\n")
   ("IMV4PelFast",                                     m_Imv4PelFast,                                        1, "Fast 4-Pel Adaptive MV precision Mode 0:disabled, 1:enabled)  [default: 1]")
   ("IMVMaxCand",                                      m_ImvMaxCand,                                         4, "max IMV cand (QTBF off only)")
-#endif
 #if ENABLE_WPP_PARALLELISM
   ("AltDQPCoding",                                    m_AltDQPCoding,                                   false, "Improved predictive delta-QP coding (0:off, 1:on)  [default: off]")
 #endif
@@ -1926,9 +1924,7 @@ bool EncAppCfg::xCheckParameter()
 #endif
     xConfirmPara( m_DisableMotionCompression, "Disable motion data compression only allowed with NEXT profile" );
     xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
-#if JVET_K0357_AMVR
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
-#endif
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
 #if !JVET_K0220_ENC_CTRL
     xConfirmPara( m_useSaveLoadEncInfo, "Encoder decision saving can only be applied when encoding with NEXT profile" );
@@ -2912,9 +2908,7 @@ bool EncAppCfg::xCheckParameter()
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   xConfirmPara(m_preferredTransferCharacteristics > 255, "transfer_characteristics_idc should not be greater than 255.");
 #endif
-#if JVET_K0357_AMVR
   xConfirmPara( unsigned(m_ImvMode) > 2, "ImvMode exceeds range (0 to 2)" );
-#endif
   xConfirmPara( m_decodeBitstreams[0] == m_bitstreamFileName, "Debug bitstream and the output bitstream cannot be equal.\n" );
   xConfirmPara( m_decodeBitstreams[1] == m_bitstreamFileName, "Decode2 bitstream and the output bitstream cannot be equal.\n" );
   xConfirmPara(unsigned(m_LMChroma) > 1, "LMMode exceeds range (0 to 1)");
@@ -3162,10 +3156,8 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "QTBT:%d ", m_QTBT );
     if( m_QTBT ) msg( VERBOSE, "DualITree:%d ", m_dualTree );
     msg( VERBOSE, "LargeCTU:%d ", m_LargeCTU );
-#if JVET_K0357_AMVR
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
     if( !m_QTBT ) msg( VERBOSE, "IMVMaxCand:%d ", m_ImvMaxCand );
-#endif
 #if !REMOVE_MV_ADAPT_PREC 
     msg(VERBOSE, "HighPrecMv:%d ", m_highPrecisionMv);
 #endif
@@ -3196,9 +3188,7 @@ void EncAppCfg::xPrintParameter()
 #endif
   msg( VERBOSE, "FastMrg:%d ", m_useFastMrg );
   msg( VERBOSE, "PBIntraFast:%d ", m_usePbIntraFast );
-#if JVET_K0357_AMVR
   if( m_ImvMode == 2 ) msg( VERBOSE, "IMV4PelFast:%d ", m_Imv4PelFast );
-#endif
   if( m_EMT ) msg( VERBOSE, "EMTFast: %1d(intra) %1d(inter) ", ( m_FastEMT & m_EMT & 1 ), ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
   if( m_QTBT ) msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
   if( m_QTBT ) msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );

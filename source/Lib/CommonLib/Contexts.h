@@ -190,9 +190,7 @@ public:
   static const CtxSet   CrossCompPred;
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;
-#if JVET_K0357_AMVR
   static const CtxSet   ImvFlag;
-#endif
   static const CtxSet   ctbAlfFlag;
   static const unsigned NumberOfContexts;
 

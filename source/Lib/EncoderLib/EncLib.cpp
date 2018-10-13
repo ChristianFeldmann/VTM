@@ -867,10 +867,8 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setSubPuMvpMode(m_SubPuMvpMode);
   sps.getSpsNext().setSubPuMvpLog2Size(m_SubPuMvpLog2Size);
 #endif
-#if JVET_K0357_AMVR
   sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
   sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
-#endif
 #if !REMOVE_MV_ADAPT_PREC
   sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
 #endif

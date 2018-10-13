@@ -1203,7 +1203,6 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     }
   }
 
-#if JVET_K0357_AMVR
   if( pu.cu->imv != 0)
   {
     unsigned imvShift = pu.cu->imv << 1;
@@ -1215,7 +1214,6 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
       roundMV( pInfo->mvCand[i], imvShift );
     }
   }
-#endif
 
   if( pInfo->numCand == 2 )
   {
@@ -1305,7 +1303,6 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 #if !REMOVE_MV_ADAPT_PREC
   }
 #endif
-#if JVET_K0357_AMVR
   if (pu.cu->imv != 0)
   {
     unsigned imvShift = pu.cu->imv << 1;
@@ -1314,7 +1311,6 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
       roundMV(pInfo->mvCand[i], imvShift);
     }
   }
-#endif
 #if !REMOVE_MV_ADAPT_PREC
   if (pu.cs->sps->getSpsNext().getUseHighPrecMv())
   {
@@ -2541,7 +2537,6 @@ void PU::spanMotionInfo( PredictionUnit &pu, const MergeCtx &mrgCtx )
   }
 }
 
-#if JVET_K0357_AMVR
 void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interPred )
 {
   if( !pu.mergeFlag )
@@ -2601,7 +2596,6 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
 
   PU::spanMotionInfo( pu, mrgCtx );
 }
-#endif
 
 bool PU::isBiPredFromDifferentDir( const PredictionUnit& pu )
 {
@@ -2634,7 +2628,6 @@ void PU::restrictBiPredMergeCands( const PredictionUnit &pu, MergeCtx& mergeCtx 
   }
 }
 
-#if JVET_K0357_AMVR
 void CU::resetMVDandMV2Int( CodingUnit& cu, InterPrediction *interPred )
 {
   for( auto &pu : CU::traversePUs( cu ) )
@@ -2745,7 +2738,6 @@ int CU::getMaxNeighboriMVCandNum( const CodingStructure& cs, const Position& pos
 
   return maxImvNumCand;
 }
-#endif
 
 
 

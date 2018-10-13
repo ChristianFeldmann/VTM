@@ -747,9 +747,7 @@ void CABACWriter::cu_pred_data( const CodingUnit& cu )
     prediction_unit( pu );
   }
 
-#if JVET_K0357_AMVR
   imv_mode   ( cu );
-#endif
 
 }
 
@@ -1114,29 +1112,16 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       ref_idx     ( pu, REF_PIC_LIST_0 );
       if ( pu.cu->affine )
       {
-#if JVET_K0357_AMVR
         mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][0], 0);
         mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][1], 0);
-#else
-        mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][0]);
-        mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][1]);
-#endif
         if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
         {
-#if JVET_K0357_AMVR
           mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][2], 0);
-#else
-          mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][2]);
-#endif
         }
       }
       else
       {
-#if JVET_K0357_AMVR
         mvd_coding( pu.mvd[REF_PIC_LIST_0], pu.cu->imv );
-#else
-        mvd_coding( pu.mvd[REF_PIC_LIST_0] );
-#endif
       }
       mvp_flag    ( pu, REF_PIC_LIST_0 );
     }
@@ -1147,29 +1132,16 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       {
         if ( pu.cu->affine )
         {
-#if JVET_K0357_AMVR
           mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][0], 0);
           mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][1], 0);
-#else
-          mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][0]);
-          mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][1]);
-#endif
           if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
           {
-#if JVET_K0357_AMVR
             mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][2], 0);
-#else
-            mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][2]);
-#endif
           }
         }
         else
         {
-#if JVET_K0357_AMVR
           mvd_coding( pu.mvd[REF_PIC_LIST_1], pu.cu->imv );
-#else
-          mvd_coding( pu.mvd[REF_PIC_LIST_1] );
-#endif
         }
       }
       mvp_flag    ( pu, REF_PIC_LIST_1 );
@@ -1219,7 +1191,6 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_flag() merge=%d pos=(%d,%d) size=%dx%d\n", pu.mergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
 }
 
-#if JVET_K0357_AMVR
 void CABACWriter::imv_mode( const CodingUnit& cu )
 {
   const SPSNext& spsNext = cu.cs->sps->getSpsNext();
@@ -1247,7 +1218,6 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() IMVFlag=%d\n", cu.imv );
 }
-#endif
 
 void CABACWriter::merge_idx( const PredictionUnit& pu )
 {
@@ -1591,15 +1561,10 @@ void CABACWriter::cbf_comp( const CodingStructure& cs, bool cbf, const CompArea&
 //    void  mvd_coding( pu, refList )
 //================================================================================
 
-#if JVET_K0357_AMVR
 void CABACWriter::mvd_coding( const Mv &rMvd, uint8_t imv )
-#else
-void CABACWriter::mvd_coding( const Mv &rMvd )
-#endif
 {
   int       horMvd = rMvd.getHor();
   int       verMvd = rMvd.getVer();
-#if JVET_K0357_AMVR
   if( imv )
   {
     CHECK( (horMvd % 4) != 0 && (verMvd % 4) != 0, "IMV: MVD is not a multiple of 4" );
@@ -1612,7 +1577,6 @@ void CABACWriter::mvd_coding( const Mv &rMvd )
       verMvd >>= 2;
     }
   }
-#endif
   unsigned  horAbs  = unsigned( horMvd < 0 ? -horMvd : horMvd );
   unsigned  verAbs  = unsigned( verMvd < 0 ? -verMvd : verMvd );
 

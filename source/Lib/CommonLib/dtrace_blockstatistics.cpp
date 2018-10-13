@@ -455,9 +455,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               }
             }
           }
-#if JVET_K0357_AMVR
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
-#endif
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::RootCbf), cu.rootCbf);
 
         }
@@ -746,12 +744,10 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 DTRACE_BLOCK_AFFINETF(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineMVL1), mv[0].hor, mv[0].ver, mv[1].hor, mv[1].ver, mv[2].hor, mv[2].ver);
               }
             }
-#if JVET_K0357_AMVR
             if (cu.cs->sps->getSpsNext().getUseIMV() && CU::hasSubCUNonZeroMVd(cu))
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
             }
-#endif
 
             break;
           }

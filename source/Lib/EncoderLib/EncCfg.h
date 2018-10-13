@@ -500,11 +500,9 @@ protected:
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.
   std::string m_summaryPicFilenameBase;                       ///< Base filename to use for producing summary picture output files. The actual filenames used will have I.txt, P.txt and B.txt appended.
   uint32_t        m_summaryVerboseness;                           ///< Specifies the level of the verboseness of the text output.
-#if JVET_K0357_AMVR
   int       m_ImvMode;
   int       m_Imv4PelFast;
   int       m_ImvMaxCand;
-#endif
   std::string m_decodeBitstreams[2];                          ///< filename for decode bitstreams.
   bool        m_forceDecodeBitstream1;                        ///< guess what it means
   int         m_switchPOC;                                    ///< dbg poc.
@@ -1292,14 +1290,12 @@ public:
 
   void         setSummaryVerboseness(uint32_t v)                         { m_summaryVerboseness = v; }
   uint32_t         getSummaryVerboseness( ) const                        { return m_summaryVerboseness; }
-#if JVET_K0357_AMVR
   void         setIMV(int n)                                         { m_ImvMode = n; }
   int          getIMV() const                                        { return m_ImvMode; }
   void         setIMV4PelFast(int n)                                 { m_Imv4PelFast = n; }
   int          getIMV4PelFast() const                                { return m_Imv4PelFast; }
   void         setIMVMaxCand(int n)                                  { m_ImvMaxCand = n; }
   int          getIMVMaxCand() const                                 { return m_ImvMaxCand; }
-#endif
   void         setDecodeBitstream( int i, const std::string& s )     { m_decodeBitstreams[i] = s; }
   const std::string& getDecodeBitstream( int i )               const { return m_decodeBitstreams[i]; }
   bool         getForceDecodeBitstream1()                      const { return m_forceDecodeBitstream1; }

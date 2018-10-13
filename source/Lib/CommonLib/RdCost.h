@@ -190,13 +190,8 @@ public:
 
     return uiLength2 + ( g_aucPrevLog2[uiTemp2] << 1 );
   }
-#if JVET_K0357_AMVR
   Distortion     getCostOfVectorWithPredictor( const int x, const int y, const unsigned imvShift )  { return Distortion( m_motionLambda * getBitsOfVectorWithPredictor(x, y, imvShift )); }
   uint32_t           getBitsOfVectorWithPredictor( const int x, const int y, const unsigned imvShift )  { return xGetExpGolombNumberOfBits(((x << m_iCostScale) - m_mvPredictor.getHor())>>imvShift) + xGetExpGolombNumberOfBits(((y << m_iCostScale) - m_mvPredictor.getVer())>>imvShift); }
-#else
-  Distortion     getCostOfVectorWithPredictor( const int x, const int y )  { return Distortion( m_motionLambda * getBitsOfVectorWithPredictor(x, y )); }
-  uint32_t           getBitsOfVectorWithPredictor( const int x, const int y )  { return xGetExpGolombNumberOfBits(((x << m_iCostScale) - m_mvPredictor.getHor())) + xGetExpGolombNumberOfBits(((y << m_iCostScale) - m_mvPredictor.getVer())); }
-#endif
 #if WCG_EXT
          void    saveUnadjustedLambda       ();
          void    initLumaLevelToWeightTable ();

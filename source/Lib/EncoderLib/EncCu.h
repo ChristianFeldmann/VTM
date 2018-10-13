@@ -105,9 +105,7 @@ private:
 
   CABACWriter*          m_CABACEstimator;
   RateCtrl*             m_pcRateCtrl;
-#if JVET_K0357_AMVR
   CodingStructure    ***m_pImvTempCS;
-#endif
   EncModeCtrl          *m_modeCtrl;
 
   PelStorage            m_acMergeBuffer[MRG_MAX_NUM_CANDS];
@@ -191,17 +189,13 @@ protected:
   void xCheckRDCostAffineMerge2Nx2N
                               ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
   void xCheckRDCostInter      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
-#if JVET_K0357_AMVR
   bool xCheckRDCostInterIMV   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
-#endif
   void xEncodeDontSplit       ( CodingStructure &cs, Partitioner &partitioner);
 
   void xCheckRDCostMerge2Nx2N ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
 
   void xEncodeInterResidual   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, int residualPass = 0
-#if JVET_K0357_AMVR
     , CodingStructure* imvCS = NULL
-#endif
     , int emtMode = 1
     , bool* bestHasNonResi = NULL
   );

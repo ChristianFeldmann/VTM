@@ -1649,9 +1649,7 @@ SPSNext::SPSNext( SPS& sps )
 #if JVET_K0346
   , m_SubPuMvp                  ( false )
 #endif
-#if JVET_K0357_AMVR
   , m_IMV                       ( false )
-#endif
 #if !REMOVE_MV_ADAPT_PREC
   , m_highPrecMv                ( false )
 #endif
@@ -1675,9 +1673,7 @@ SPSNext::SPSNext( SPS& sps )
   , m_subPuLog2Size             ( 0 )
   , m_subPuMrgMode              ( 0 )
 #endif
-#if JVET_K0357_AMVR
   , m_ImvMode                   ( IMV_OFF )
-#endif
   , m_MTTMode                   ( 0 )
 #if JVET_K0157
     , m_compositeRefEnabled     ( false )

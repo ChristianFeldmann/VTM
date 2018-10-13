@@ -476,7 +476,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     }
     else
     {
-#if JVET_K0357_AMVR
 #if REUSE_CU_RESULTS
         if (cu.imv && !cu.cs->pcv->isEncoder)
 #else
@@ -486,7 +485,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           PU::applyImv(pu, mrgCtx, m_pcInterPred);
         }
         else
-#endif
       {
         if( pu.cu->affine )
         {

@@ -160,9 +160,7 @@ protected:
     Distortion  uiBestSad;
     uint8_t       ucPointNr;
     int         subShiftMode;
-#if JVET_K0357_AMVR
     unsigned    imvShift;
-#endif
 #if JVET_K0157
     bool        inCtuSearch;
     bool        zeroMV;
@@ -210,10 +208,8 @@ protected:
                                     AMVPInfo&   amvpInfo,
                                     uint32_t&       ruiBits,
                                     Distortion& ruiCost
-#if JVET_K0357_AMVR
                                     ,
                                     const uint8_t  imv
-#endif
                                   );
 
   Distortion xGetTemplateCost     ( const PredictionUnit& pu,

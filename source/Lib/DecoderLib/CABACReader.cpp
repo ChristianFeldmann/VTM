@@ -779,7 +779,6 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
   }
 }
 
-#if JVET_K0357_AMVR
 void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__OTHER );
@@ -812,7 +811,6 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
   cu.imv = value;
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() IMVFlag=%d\n", cu.imv );
 }
-#endif
 
 void CABACReader::pred_mode( CodingUnit& cu )
 {
@@ -856,9 +854,7 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
     prediction_unit( pu, mrgCtx );
   }
 
-#if JVET_K0357_AMVR
   imv_mode   ( cu, mrgCtx );
-#endif
 
 }
 

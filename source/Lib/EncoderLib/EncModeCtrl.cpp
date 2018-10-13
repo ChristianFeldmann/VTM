@@ -1019,10 +1019,8 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   cuECtx.set( SAVE_LOAD_TAG,        sls.partIdx == cuECtx.partIdx  ? sls.tag  : SAVE_LOAD_INIT );
   cuECtx.set( HISTORY_NEED_TO_SAVE, m_pcEncCfg->getUseSaveLoadEncInfo() && cs.area.lwidth() > ( 1 << MIN_CU_LOG2 ) && cs.area.lheight() > ( 1 << MIN_CU_LOG2 ) );
 #endif
-#if JVET_K0357_AMVR
   cuECtx.set( BEST_IMV_COST,        MAX_DOUBLE * .5 );
   cuECtx.set( BEST_NO_IMV_COST,     MAX_DOUBLE * .5 );
-#endif
 #if !HM_NO_ADDITIONAL_SPEEDUPS || JVET_K0220_ENC_CTRL
   cuECtx.set( QT_BEFORE_BT,         qtBeforeBt );
   cuECtx.set( DID_QUAD_SPLIT,       false );
@@ -1186,7 +1184,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       const int  qp       = std::max( qpLoop, lowestQP );
       const bool lossless = useLossless && qpLoop == minQP;
 
-#if JVET_K0357_AMVR
       if( m_pcEncCfg->getIMV() )
       {
         if( m_pcEncCfg->getIMV() == IMV_4PEL )
@@ -1196,7 +1193,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
         }
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME, SIZE_2Nx2N, EncTestModeOpts( 1 << ETO_IMV_SHIFT ), qp, lossless } );
       }
-#endif
       // add inter modes
       if( m_pcEncCfg->getUseEarlySkipDetection() )
       {
@@ -1503,7 +1499,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         return false;
       }
 #endif
-#if JVET_K0357_AMVR
       else if ((encTestmode.opts & ETO_IMV) != 0)
       {
         int imvOpt = (encTestmode.opts & ETO_IMV) >> ETO_IMV_SHIFT;
@@ -1513,7 +1508,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           return false;
         }
       }
-#endif
     }
 
 #if JVET_K0220_ENC_CTRL
@@ -1839,9 +1833,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         {
           sls.mergeFlag  = bestCU->firstPU->mergeFlag;
           sls.interDir   = bestCU->firstPU->interDir;
-#if JVET_K0357_AMVR
           sls.imv        = bestCU->imv;
-#endif
           sls.affineFlag = bestCU->affine;
         }
         else
@@ -1899,7 +1891,6 @@ bool EncModeCtrlMTnoRQT::useModeResult( const EncTestMode& encTestmode, CodingSt
     }
   }
 
-#if JVET_K0357_AMVR
   if( m_pcEncCfg->getIMV4PelFast() && m_pcEncCfg->getIMV() && encTestmode.type == ETM_INTER_ME )
   {
     int imvMode = ( encTestmode.opts & ETO_IMV ) >> ETO_IMV_SHIFT;
@@ -1919,7 +1910,6 @@ bool EncModeCtrlMTnoRQT::useModeResult( const EncTestMode& encTestmode, CodingSt
       }
     }
   }
-#endif
 
 #if !HM_NO_ADDITIONAL_SPEEDUPS || JVET_K0220_ENC_CTRL
   if( encTestmode.type == ETM_SPLIT_QT )

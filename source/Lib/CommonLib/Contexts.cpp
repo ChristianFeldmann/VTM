@@ -641,14 +641,12 @@ const CtxSet ContextSetCfg::ChromaQpAdjIdc = ContextSetCfg::addCtxSet
   {  154,},
 });
 
-#if JVET_K0357_AMVR
 const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
 ({
   {  197, 185, 201, 185,},
   {  197, 185, 201, 185,},
   {  CNU, CNU, CNU, CNU,},
 });
-#endif
 
 const CtxSet ContextSetCfg::ctbAlfFlag =
 {

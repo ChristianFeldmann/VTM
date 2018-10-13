@@ -273,9 +273,7 @@ public:
   }
 #endif
 };// END CLASS DEFINITION MV
-#if JVET_K0357_AMVR
 void roundMV( Mv& rcMv, unsigned imvShift );
-#endif
 void clipMv ( Mv& rcMv, const struct Position& pos, const class SPS& sps );
 
 void roundAffineMv( int& mvx, int& mvy, int nShift );

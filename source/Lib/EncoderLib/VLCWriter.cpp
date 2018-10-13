@@ -533,9 +533,7 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
 #if JVET_K0346
   WRITE_FLAG(spsNext.getUseSubPuMvp() ? 1 : 0,                                                  "subpu_tmvp_flag");
 #endif
-#if JVET_K0357_AMVR
   WRITE_FLAG( spsNext.getUseIMV() ? 1 : 0,                                                      "imv_enable_flag" );
-#endif
 #if !REMOVE_MV_ADAPT_PREC
   WRITE_FLAG( spsNext.getUseHighPrecMv() ? 1 : 0,                                               "high_precision_motion_vectors");
 #endif
@@ -586,12 +584,10 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   }
 #endif
 
-#if JVET_K0357_AMVR
   if( spsNext.getUseIMV() )
   {
     WRITE_UVLC( spsNext.getImvMode()-1,                                                         "imv_mode_minus1" );
   }
-#endif
 
   if( spsNext.getMTTEnabled() )
   {

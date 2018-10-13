@@ -47,24 +47,16 @@
 //! \{
 
 
-#if JVET_K0346
 class EncCu;
-#endif
 class CABACWriter
 {
 public:
-#if JVET_K0346
   CABACWriter(BinEncIf& binEncoder)   : m_BinEncoder(binEncoder), m_Bitstream(0) { m_TestCtx = m_BinEncoder.getCtx(); m_EncCu = NULL; }
-#else
-  CABACWriter( BinEncIf& binEncoder ) : m_BinEncoder( binEncoder ), m_Bitstream( 0 ) { m_TestCtx = m_BinEncoder.getCtx(); }
-#endif
   virtual ~CABACWriter() {}
 
 public:
   void        initCtxModels             ( const Slice&                  slice );
-#if JVET_K0346
   void        setEncCu(EncCu* pcEncCu) { m_EncCu = pcEncCu; }
-#endif
   SliceType   getCtxInitId              ( const Slice&                  slice );
   void        initBitstream             ( OutputBitstream*              bitstream )           { m_Bitstream = bitstream; m_BinEncoder.init( m_Bitstream ); }
 
@@ -179,9 +171,7 @@ private:
   BinEncIf&         m_BinEncoder;
   OutputBitstream*  m_Bitstream;
   Ctx               m_TestCtx;
-#if JVET_K0346
   EncCu*            m_EncCu;
-#endif
 };
 
 

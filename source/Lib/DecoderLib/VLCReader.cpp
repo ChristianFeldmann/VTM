@@ -790,9 +790,7 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   // tool enabling flags
   READ_FLAG( symbol,    "qtbt_flag" );                              spsNext.setUseQTBT                ( symbol != 0 );
   READ_FLAG( symbol,    "large_ctu_flag" );                         spsNext.setUseLargeCTU            ( symbol != 0 );
-#if JVET_K0346
   READ_FLAG( symbol,    "subpu_tmvp_flag" );                        spsNext.setSubPuMvpMode           (symbol);
-#endif
   READ_FLAG( symbol,    "imv_enable_flag" );                        spsNext.setUseIMV                 ( symbol != 0 );
 #if !REMOVE_MV_ADAPT_PREC
   READ_FLAG( symbol, "high_precision_motion_vectors" );             spsNext.setUseHighPrecMv(symbol != 0);
@@ -842,7 +840,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
     spsNext.setMaxBTDepth( maxBTD[0], maxBTD[1], maxBTD[2] );
   }
 
-#if JVET_K0346
   if( spsNext.getUseSubPuMvp() )
   {
     READ_CODE( 3, symbol, "log2_sub_pu_tmvp_size_minus2" );         spsNext.setSubPuMvpLog2Size( symbol + MIN_CU_LOG2 );
@@ -854,7 +851,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
     spsNext.setSubPuMvpMode( 3 );
 #endif
   }
-#endif
 
 
   if( spsNext.getUseIMV() )
@@ -1675,13 +1671,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
     if (!pcSlice->isIntra())
     {
-#if JVET_K0346
       READ_UVLC( uiCode, sps->getSpsNext().getUseSubPuMvp() ? "seven_minus_max_num_merge_cand" : "five_minus_max_num_merge_cand");
       pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode - ( sps->getSpsNext().getUseSubPuMvp() ? 0 : 2 ) );
-#else
-      READ_UVLC( uiCode, "five_minus_max_num_merge_cand");
-      pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode - 2 );
-#endif
     }
 
     READ_SVLC( iCode, "slice_qp_delta" );
@@ -1779,7 +1770,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   if( firstSliceSegmentInPic )
   {
     pcSlice->setDefaultClpRng( *sps );
-#if JVET_K0346
     if (sps->getSpsNext().getUseSubPuMvp() && !pcSlice->isIntra())
     {
       READ_FLAG(uiCode, "slice_atmvp_subblk_size_enable_flag");
@@ -1794,7 +1784,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setSubPuMvpSubblkLog2Size(sps->getSpsNext().getSubPuMvpLog2Size());
       }
     }
-#endif
   }
 
   if(pps->getSliceHeaderExtensionPresentFlag())

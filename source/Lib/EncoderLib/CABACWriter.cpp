@@ -537,7 +537,6 @@ void CABACWriter::coding_tree( const CodingStructure& cs, Partitioner& partition
     cuCtx.qp = CU::predictQP( cu, cuCtx.qp );
   }
 
-#if JVET_K0346
   if (!cs.slice->isIntra() && m_EncCu)
   {
     PredictionUnit& pu = *cu.firstPU;
@@ -548,7 +547,6 @@ void CABACWriter::coding_tree( const CodingStructure& cs, Partitioner& partition
       m_EncCu->incrementSubMergeBlkNum(layerId, 1);
     }
   }
-#endif
 
   // coding unit
   coding_unit( cu, partitioner, cuCtx );
@@ -1237,19 +1235,15 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
     }
     else
     {
-#if JVET_K0346
       bool useExtCtx = pu.cs->sps->getSpsNext().getUseSubPuMvp();
-#endif
       m_BinEncoder.encodeBin( 1, Ctx::MergeIdx() );
       for( unsigned idx = 1; idx < numCandminus1; idx++ )
       {
-#if JVET_K0346
         if( useExtCtx )
         {
           m_BinEncoder.encodeBin( pu.mergeIdx == idx ? 0 : 1, Ctx::MergeIdx( std::min<int>( idx, NUM_MERGE_IDX_EXT_CTX - 1 ) ) );
         }
         else
-#endif
         {
           m_BinEncoder.encodeBinEP( pu.mergeIdx == idx ? 0 : 1 );
         }
@@ -1269,11 +1263,7 @@ void CABACWriter::inter_pred_idc( const PredictionUnit& pu )
   {
     return;
   }
-#if JVET_K0346
   if( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 )
-#else
-  if( pu.cu->partSize == SIZE_2Nx2N || pu.cu->lumaSize().width != 8 )
-#endif
   {
     unsigned ctxId = DeriveCtx::CtxInterDir(pu);
     if( pu.interDir == 3 )

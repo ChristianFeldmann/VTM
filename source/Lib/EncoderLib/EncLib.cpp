@@ -863,10 +863,8 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseLargeCTU           ( m_LargeCTU );
   sps.getSpsNext().setMaxBTDepth            ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   sps.getSpsNext().setUseDualITree          ( m_dualITree );
-#if JVET_K0346
   sps.getSpsNext().setSubPuMvpMode(m_SubPuMvpMode);
   sps.getSpsNext().setSubPuMvpLog2Size(m_SubPuMvpLog2Size);
-#endif
   sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
   sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
 #if !REMOVE_MV_ADAPT_PREC

@@ -806,7 +806,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxBTDepthISliceC",                               m_uiMaxBTDepthIChroma,                               3u, "MaxBTDepthISliceC")
   ("DualITree",                                       m_dualTree,                                       false, "Use separate QTBT trees for intra slice luma and chroma channel types")
   ("LargeCTU",                                        m_LargeCTU,                                       false, "Enable large CTU (0:off, 1:on)  [default: off]")
-#if JVET_K0346
 #if ENABLE_BMS
   ("SubPuMvp",                                       m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:ATMVP, 2:STMVP, 3:ATMVP+STMVP)  [default: off]")
 #else
@@ -815,7 +814,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SubPuMvpLog2Size",                               m_SubPuMvpLog2Size,                                   2u, "Sub-PU TMVP size index: 2^n")
 #if !REMOVE_MV_ADAPT_PREC 
   ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
-#endif
 #endif
 #if !REMOVE_MV_ADAPT_PREC 
   ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
@@ -1915,9 +1913,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_QTBT, "QTBT only allowed with NEXT profile" );
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_LargeCTU, "Large CTU is only allowed with NEXT profile" );
-#if JVET_K0346
     xConfirmPara( m_SubPuMvpMode != 0, "Sub-PU motion vector prediction is only allowed with NEXT profile" );
-#endif
 #if !REMOVE_MV_ADAPT_PREC
     xConfirmPara( m_highPrecisionMv, "High precision MV for temporal merging can only be used with NEXT profile" );
     xConfirmPara( m_Affine, "Affine is only allowed with NEXT profile" );
@@ -1942,10 +1938,8 @@ bool EncAppCfg::xCheckParameter()
 #if ENABLE_WPP_PARALLELISM
     xConfirmPara( !m_AltDQPCoding && ( m_numWppThreads + m_numWppExtraLines ) > 1, "Wavefront parallel encoding only supported with AltDQPCoding" );
 #endif
-#if JVET_K0346
     xConfirmPara( m_SubPuMvpLog2Size < MIN_CU_LOG2,      "SubPuMvpLog2Size must be 2 or greater." );
     xConfirmPara( m_SubPuMvpLog2Size > 6,                "SubPuMvpLog2Size must be 6 or smaller." );
-#endif
     if( m_depQuantEnabledFlag )
     {
       xConfirmPara( !m_useRDOQ || !m_useRDOQTS, "RDOQ and RDOQTS must be equal to 1 if dependent quantization is enabled" );
@@ -2190,7 +2184,6 @@ bool EncAppCfg::xCheckParameter()
   }
 
 #endif
-#if JVET_K0346
   if( m_SubPuMvpMode == 3 && m_maxNumMergeCand < 7 )
   {
     msg( WARNING, "****************************************************************************\n" );
@@ -2205,7 +2198,6 @@ bool EncAppCfg::xCheckParameter()
     msg( WARNING, "**          an advanced sup-pu temporal merging mode is enabled.          **\n" );
     msg( WARNING, "****************************************************************************\n" );
   }
-#endif
   xConfirmPara( m_iQP < -6 * (m_internalBitDepth[CHANNEL_TYPE_LUMA] - 8) || m_iQP > MAX_QP, "QP exceeds supported range (-QpBDOffsety to 63)" );
 #if W0038_DB_OPT
   xConfirmPara( m_deblockingFilterMetric!=0 && (m_bLoopFilterDisable || m_loopFilterOffsetInPPS), "If DeblockingFilterMetric is non-zero then both LoopFilterDisable and LoopFilterOffsetInPPS must be 0");
@@ -2292,13 +2284,11 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_uiMaxCUWidth < ( 1 << (m_quadtreeTULog2MinSize + m_uiQuadtreeTUMaxDepthIntra - 1) ), "QuadtreeTUMaxDepthInter must be less than or equal to the difference between log2(maxCUSize) and QuadtreeTULog2MinSize plus 1" );
 
   xConfirmPara(  m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
-#if JVET_K0346
   if( m_SubPuMvpMode != 0 )
   {
     xConfirmPara( m_maxNumMergeCand > 7, "MaxNumMergeCand must be 7 or smaller." );
   }
   else
-#endif
   {
     xConfirmPara( m_maxNumMergeCand > 5, "MaxNumMergeCand must be 5 or smaller." );
   }
@@ -3142,13 +3132,11 @@ void EncAppCfg::xPrintParameter()
     {
       msg( VERBOSE, "AffineType:%d ", m_AffineType );
     }
-#if JVET_K0346
     msg(VERBOSE, "SubPuMvp:%d+%d ", m_SubPuMvpMode & 1, (m_SubPuMvpMode & 2) == 2);
     if (m_SubPuMvpMode != 0)
     {
       msg(VERBOSE, "SubPuMvpLog2Size:%d ", m_SubPuMvpLog2Size);
   }
-#endif
     msg( VERBOSE, "QTBT:%d ", m_QTBT );
     if( m_QTBT ) msg( VERBOSE, "DualITree:%d ", m_dualTree );
     msg( VERBOSE, "LargeCTU:%d ", m_LargeCTU );

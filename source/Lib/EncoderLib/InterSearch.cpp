@@ -791,13 +791,11 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
     CHECK(pu.cu != &cu, "PU is contained in another CU");
 
-#if JVET_K0346
     if (cu.cs->sps->getSpsNext().getUseSubPuMvp())
     {
       Size bufSize = g_miScaling.scale(pu.lumaSize());
       mergeCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);
     }
-#endif
 
     PU::spanMotionInfo( pu );
     Distortion   uiHevcCost = std::numeric_limits<Distortion>::max();

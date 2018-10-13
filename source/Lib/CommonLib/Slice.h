@@ -799,9 +799,7 @@ private:
   //=====  tool enabling flags (4 bytes - NOTE: last flag must be used for new extensions) =====
   bool              m_QTBT;                       // 1
   bool              m_LargeCTU;                   // 5
-#if JVET_K0346
   bool              m_SubPuMvp;
-#endif
   bool              m_IMV;                        // 9
 #if !REMOVE_MV_ADAPT_PREC
   bool              m_highPrecMv;
@@ -828,11 +826,9 @@ private:
   unsigned    m_maxBTDepth[3];
   unsigned    m_maxBTSize[3];
   unsigned    m_dualITree;
-#if JVET_K0346
   // sub-pu merging
   unsigned    m_subPuLog2Size;
   int         m_subPuMrgMode;
-#endif
   //imv
   ImvMode     m_ImvMode;
   // multi type tree (QTBT + triple split)
@@ -856,11 +852,9 @@ public:
   bool      getUseQTBT            ()                                      const     { return m_QTBT; }
   void      setUseLargeCTU        ( bool b )                                        { m_LargeCTU = b; }
   bool      getUseLargeCTU        ()                                      const     { return m_LargeCTU; }
-#if JVET_K0346
   bool      getUseSubPuMvp()                                   const { return m_SubPuMvp; }
   void      setSubPuMvpMode(int n)                             { m_subPuMrgMode = n; m_SubPuMvp = n != 0; }
   bool      getUseATMVP()                                      const { return (m_subPuMrgMode & 1) == 1; }
-#endif
   void      setUseIMV             ( bool b )                                        { m_IMV = b; }
   bool      getUseIMV             ()                                      const     { return m_IMV; }
   void      setUseAffine          ( bool b )                                        { m_Affine = b; }
@@ -908,11 +902,9 @@ public:
   void      setUseDualITree       ( bool b )                                        { m_dualITree = b; }
   bool      getUseDualITree       ()                                      const     { return m_dualITree; }
 
-#if JVET_K0346
   // sub pu tmvp
   void      setSubPuMvpLog2Size   ( unsigned    log2Size )                          { m_subPuLog2Size = log2Size; }
   unsigned  getSubPuMvpLog2Size   ()                                      const     { return m_subPuLog2Size; }
-#endif
   void      setImvMode(ImvMode m) { m_ImvMode = m; m_IMV = m != 0;  }
   ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
 
@@ -1548,10 +1540,8 @@ private:
 
   bool                       m_enableTMVPFlag;
 
-#if JVET_K0346
   bool                       m_subPuMvpSubBlkSizeSliceEnable;
   int                        m_subPuMvpSubBlkLog2Size;
-#endif
 
   SliceType                  m_encCABACTableIdx;           // Used to transmit table selection across slices.
 
@@ -1799,12 +1789,10 @@ public:
   void                        setEncCABACTableIdx( SliceType idx )                   { m_encCABACTableIdx = idx;                                     }
   SliceType                   getEncCABACTableIdx() const                            { return m_encCABACTableIdx;                                    }
 
-#if JVET_K0346
   void                        setSubPuMvpSliceSubblkSizeEnable(bool b) { m_subPuMvpSubBlkSizeSliceEnable = b; }
   bool                        getSubPuMvpSliceSubblkSizeEnable()                  const { return m_subPuMvpSubBlkSizeSliceEnable; }
   void                        setSubPuMvpSubblkLog2Size(int n) { m_subPuMvpSubBlkLog2Size = n; }
   int                         getSubPuMvpSubblkLog2Size()                         const { return m_subPuMvpSubBlkLog2Size; }
-#endif
 
   void                        setSliceQpBase( int i )                                { m_iSliceQpBase = i;                                           }
   int                         getSliceQpBase()                                 const { return m_iSliceQpBase;                                        }

@@ -76,7 +76,6 @@
 #define JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK     1 // Dual coding tree is enabled under 64x64 block level instead of CTU level
 #define JVET_K0554                                        1 // when adopting, also remove the macro HM_QTBT_ONLY_QT_IMPLICIT (keep the case for value 0)
 
-#define JVET_K0346                                        1 // simplifications on ATMVP
 
 
 
@@ -918,9 +917,7 @@ enum SaveLoadTag
 enum MergeType
 {
   MRG_TYPE_DEFAULT_N        = 0, // 0
-#if JVET_K0346
   MRG_TYPE_SUBPU_ATMVP,
-#endif
   NUM_MRG_TYPE                   // 5
 };
 

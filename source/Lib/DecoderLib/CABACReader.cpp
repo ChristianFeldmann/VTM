@@ -1249,13 +1249,10 @@ void CABACReader::merge_idx( PredictionUnit& pu )
   {
     if( m_BinDecoder.decodeBin( Ctx::MergeIdx() ) )
     {
-#if JVET_K0346
       bool useExtCtx = pu.cs->sps->getSpsNext().getUseSubPuMvp();
-#endif
       pu.mergeIdx++;
       for( ; pu.mergeIdx < numCandminus1; pu.mergeIdx++ )
       {
-#if JVET_K0346
         if( useExtCtx )
         {
           if( !m_BinDecoder.decodeBin( Ctx::MergeIdx( std::min<int>( pu.mergeIdx, NUM_MERGE_IDX_EXT_CTX - 1 ) ) ) )
@@ -1264,7 +1261,6 @@ void CABACReader::merge_idx( PredictionUnit& pu )
           }
         }
         else
-#endif
         {
           if( !m_BinDecoder.decodeBinEP() )
           {
@@ -1287,11 +1283,7 @@ void CABACReader::inter_pred_idc( PredictionUnit& pu )
     pu.interDir = 1;
     return;
   }
-#if JVET_K0346
   if( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 )
-#else
-  if( pu.cu->partSize == SIZE_2Nx2N || pu.cu->lumaSize().width != 8 )
-#endif
   {
     unsigned ctxId = DeriveCtx::CtxInterDir(pu);
     if( m_BinDecoder.decodeBin( Ctx::InterDir(ctxId) ) )

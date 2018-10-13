@@ -434,13 +434,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         }
         else
         {
-#if JVET_K0346
           if( pu.cs->sps->getSpsNext().getUseSubPuMvp() )
           {
             Size bufSize = g_miScaling.scale( pu.lumaSize() );
             mrgCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
           }
-#endif
 
           if( cu.cs->pps->getLog2ParallelMergeLevelMinus2() && cu.partSize != SIZE_2Nx2N && cu.lumaSize().width <= 8 )
           {

@@ -93,15 +93,11 @@ protected:
 
   static bool xCheckIdenticalMotion( const PredictionUnit& pu );
 
-#if JVET_K0346
   void xSubPuMC(PredictionUnit& pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X);
-#endif
   void destroy();
 
 
-#if JVET_K0346
   MotionInfo      m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
-#endif
 
 public:
   InterPrediction();

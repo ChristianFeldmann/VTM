@@ -1241,7 +1241,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #endif
   m_pcCuEncoder->getModeCtrl()->setFastDeltaQp(bFastDeltaQP);
 
-#if JVET_K0346
   if (pcSlice->getSPS()->getSpsNext().getUseSubPuMvp())
   {
     if (!pcSlice->isIRAP() )
@@ -1299,7 +1298,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
       }
     }
   }
-#endif
 
   //------------------------------------------------------------------------------
   //  Weighted Prediction parameters estimation.

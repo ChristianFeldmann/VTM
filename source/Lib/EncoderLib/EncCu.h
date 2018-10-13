@@ -110,15 +110,11 @@ private:
 
   PelStorage            m_acMergeBuffer[MRG_MAX_NUM_CANDS];
 
-#if JVET_K0346
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];
-#endif
-#if JVET_K0346
   unsigned int          m_subMergeBlkSize[10];
   unsigned int          m_subMergeBlkNum[10];
   unsigned int          m_prevPOC;
   bool                  m_clearSubMergeStatic;
-#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   EncLib*               m_pcEncLib;
 #endif
@@ -144,7 +140,6 @@ public:
 
   EncModeCtrl* getModeCtrl  () { return m_modeCtrl; }
 
-#if JVET_K0346
   void clearSubMergeStatics()
   {
     ::memset(m_subMergeBlkSize, 0, sizeof(m_subMergeBlkSize));
@@ -164,7 +159,6 @@ public:
   unsigned int getPrevPOC() { return m_prevPOC; }
   void setClearSubMergeStatic(bool b) { m_clearSubMergeStatic = b; }
   bool getClearSubMergeStatic() { return m_clearSubMergeStatic; }
-#endif
 
   ~EncCu();
 

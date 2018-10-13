@@ -190,10 +190,8 @@ protected:
   int       m_FastIntraEMT;
   int       m_FastInterEMT;
   bool      m_LargeCTU;
-#if JVET_K0346
   int       m_SubPuMvpMode;
   unsigned  m_SubPuMvpLog2Size;
-#endif
   bool      m_Affine;
   bool      m_AffineType;
 #if !REMOVE_MV_ADAPT_PREC
@@ -611,12 +609,10 @@ public:
   void      setUseLMChroma                  ( int n )        { m_LMChroma = n; }
   int       getUseLMChroma()                           const { return m_LMChroma; }
 
-#if JVET_K0346
   void      setSubPuMvpMode(int n)          { m_SubPuMvpMode = n; }
   bool      getSubPuMvpMode()         const { return m_SubPuMvpMode; }
   void      setSubPuMvpLog2Size(unsigned n) { m_SubPuMvpLog2Size = n; }
   unsigned  getSubPuMvpLog2Size()      const { return m_SubPuMvpLog2Size; }
-#endif
 
   void      setAffine                       ( bool b )       { m_Affine = b; }
   bool      getAffine                       ()         const { return m_Affine; }

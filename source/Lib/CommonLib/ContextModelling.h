@@ -270,10 +270,8 @@ public:
   int           numValidMergeCand;
   bool          hasMergedCandList;
 
-#if JVET_K0346
   MotionBuf     subPuMvpMiBuf;
   MotionBuf     subPuMvpExtMiBuf;
-#endif
   void setMergeInfo( PredictionUnit& pu, int candIdx );
 };
 

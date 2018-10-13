@@ -119,10 +119,8 @@ Slice::Slice()
 , m_temporalLayerNonReferenceFlag ( false )
 , m_LFCrossSliceBoundaryFlag      ( false )
 , m_enableTMVPFlag                ( true )
-#if JVET_K0346
 , m_subPuMvpSubBlkSizeSliceEnable(false)
 , m_subPuMvpSubBlkLog2Size       (2)
-#endif
 , m_encCABACTableIdx              (I_SLICE)
 , m_iProcessingStartTime          ( 0 )
 , m_dProcessingTime               ( 0 )
@@ -197,10 +195,8 @@ void Slice::initSlice()
   m_cabacInitFlag        = false;
   m_cabacWinUpdateMode   = 0;
   m_enableTMVPFlag       = true;
-#if JVET_K0346
   m_subPuMvpSubBlkSizeSliceEnable = false;
   m_subPuMvpSubBlkLog2Size        = 2;
-#endif
 }
 
 void Slice::setDefaultClpRng( const SPS& sps )
@@ -815,10 +811,8 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_bLMvdL1Zero                   = pSrc->m_bLMvdL1Zero;
   m_LFCrossSliceBoundaryFlag      = pSrc->m_LFCrossSliceBoundaryFlag;
   m_enableTMVPFlag                = pSrc->m_enableTMVPFlag;
-#if JVET_K0346
   m_subPuMvpSubBlkSizeSliceEnable = pSrc->m_subPuMvpSubBlkSizeSliceEnable;
   m_subPuMvpSubBlkLog2Size        = pSrc->m_subPuMvpSubBlkLog2Size;
-#endif
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
   m_uiMaxBTSize                   = pSrc->m_uiMaxBTSize;
@@ -1646,9 +1640,7 @@ SPSNext::SPSNext( SPS& sps )
   // disable all tool enabling flags by default
   , m_QTBT                      ( false )
   , m_LargeCTU                  ( false )
-#if JVET_K0346
   , m_SubPuMvp                  ( false )
-#endif
   , m_IMV                       ( false )
 #if !REMOVE_MV_ADAPT_PREC
   , m_highPrecMv                ( false )
@@ -1669,10 +1661,8 @@ SPSNext::SPSNext( SPS& sps )
   , m_minQT                     { 0, 0 }
   , m_maxBTDepth                { MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
   , m_maxBTSize                 { MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
-#if JVET_K0346
   , m_subPuLog2Size             ( 0 )
   , m_subPuMrgMode              ( 0 )
-#endif
   , m_ImvMode                   ( IMV_OFF )
   , m_MTTMode                   ( 0 )
 #if JVET_K0157

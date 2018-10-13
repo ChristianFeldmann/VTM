@@ -204,10 +204,8 @@ protected:
   unsigned  m_uiMaxBTDepthIChroma;
   bool      m_dualTree;
   bool      m_LargeCTU;
-#if JVET_K0346
   int       m_SubPuMvpMode;
   unsigned  m_SubPuMvpLog2Size;
-#endif
   bool      m_Affine;
   bool      m_AffineType;
 #if !REMOVE_MV_ADAPT_PREC

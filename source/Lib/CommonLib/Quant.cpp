@@ -342,11 +342,7 @@ void Quant::dequant(const TransformUnit &tu,
 
     if(rightShift > 0)
     {
-#if DISTORTION_TYPE_BUGFIX
       const Intermediate_Int iAdd = (Intermediate_Int) 1 << (rightShift - 1);
-#else
-      const Intermediate_Int iAdd = 1 << (rightShift - 1);
-#endif
 
       for( int n = 0; n < numSamplesInBlock; n++ )
       {
@@ -396,11 +392,7 @@ void Quant::dequant(const TransformUnit &tu,
 
     if (rightShift > 0)
     {
-#if DISTORTION_TYPE_BUGFIX
       const Intermediate_Int iAdd = (Intermediate_Int) 1 << (rightShift - 1);
-#else
-      const Intermediate_Int iAdd = 1 << (rightShift - 1);
-#endif
 
       for( int n = 0; n < numSamplesInBlock; n++ )
       {
@@ -1005,11 +997,7 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
 
     if (rightShift > 0)
     {
-#if DISTORTION_TYPE_BUGFIX
       const Intermediate_Int iAdd = (Intermediate_Int) 1 << (rightShift - 1);
-#else
-      const Intermediate_Int iAdd = 1 << (rightShift - 1);
-#endif
       const TCoeff           clipQCoef = TCoeff(Clip3<Intermediate_Int>(inputMinimum, inputMaximum, inSample));
       const Intermediate_Int iCoeffQ = ((Intermediate_Int(clipQCoef) * piDequantCoef[uiPos]) + iAdd) >> rightShift;
 
@@ -1036,11 +1024,7 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
 
     if (rightShift > 0)
     {
-#if DISTORTION_TYPE_BUGFIX
       const Intermediate_Int iAdd = (Intermediate_Int) 1 << (rightShift - 1);
-#else
-      const Intermediate_Int iAdd = 1 << (rightShift - 1);
-#endif
       const TCoeff           clipQCoef = TCoeff(Clip3<Intermediate_Int>(inputMinimum, inputMaximum, inSample));
       const Intermediate_Int iCoeffQ = (Intermediate_Int(clipQCoef) * scale + iAdd) >> rightShift;
 

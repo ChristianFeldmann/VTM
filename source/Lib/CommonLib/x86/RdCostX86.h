@@ -1037,11 +1037,7 @@ static uint32_t xCalcHAD16x8_SSE( const Torg *piOrg, const Tcur *piCur, const in
 
   uint32_t sad = _mm_cvtsi128_si32( iSum );
 
-#if DISTORTION_TYPE_BUGFIX
   sad = (uint32_t)(sad / sqrt(16.0 * 8) * 2);
-#else
-  sad = (int)(sad / sqrt( 16.0 * 8 ) * 2);
-#endif
 
   return sad;
 }
@@ -1272,11 +1268,7 @@ static uint32_t xCalcHAD8x16_SSE( const Torg *piOrg, const Tcur *piCur, const in
 
   uint32_t sad = _mm_cvtsi128_si32( iSum );
 
-#if DISTORTION_TYPE_BUGFIX
   sad = (uint32_t)(sad / sqrt(16.0 * 8) * 2);
-#else
-  sad        = (int)(sad / sqrt(16.0 * 8) * 2);
-#endif
 
   return sad;
 }
@@ -1419,11 +1411,7 @@ static uint32_t xCalcHAD8x4_SSE( const Torg *piOrg, const Tcur *piCur, const int
 
   uint32_t sad = _mm_cvtsi128_si32( iSum );
   //sad = ((sad + 2) >> 2);
-#if DISTORTION_TYPE_BUGFIX
   sad = (uint32_t)(sad / sqrt(4.0 * 8) * 2);
-#else
-  sad        = (int)(sad / sqrt(4.0 * 8) * 2);
-#endif
   return sad;
 }
 
@@ -1554,11 +1542,7 @@ static uint32_t xCalcHAD4x8_SSE( const Torg *piOrg, const Tcur *piCur, const int
   uint32_t sad = _mm_cvtsi128_si32( iSum );
 
   //sad = ((sad + 2) >> 2);
-#if DISTORTION_TYPE_BUGFIX
   sad = (uint32_t)(sad / sqrt(4.0 * 8) * 2);
-#else
-  sad        = (int)(sad / sqrt(4.0 * 8) * 2);
-#endif
 
   return sad;
 }
@@ -1948,11 +1932,7 @@ static uint32_t xCalcHAD16x8_AVX2( const Torg *piOrg, const Tcur *piCur, const i
 
     sad = _mm_cvtsi128_si32( _mm256_castsi256_si128( iSum ) );
 
-#if DISTORTION_TYPE_BUGFIX
     sad = (uint32_t)(sad / sqrt(16.0 * 8) * 2);
-#else
-    sad = (int)(sad / sqrt(16.0 * 8) * 2);
-#endif
   }
 
 #endif //USE_AVX2
@@ -2260,11 +2240,7 @@ static uint32_t xCalcHAD8x16_AVX2( const Torg *piOrg, const Tcur *piCur, const i
 
     int sad2 = _mm_cvtsi128_si32( _mm256_castsi256_si128( iSum ) );
 
-#if DISTORTION_TYPE_BUGFIX
     sad = (uint32_t)(sad2 / sqrt(16.0 * 8) * 2);
-#else
-    sad = (int)(sad2 / sqrt(16.0 * 8) * 2);
-#endif
   }
 
 #endif //USE_AVX2
@@ -2290,11 +2266,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
   const int iBitDepth  = rcDtParam.bitDepth;
 
   int  x, y;
-#if DISTORTION_TYPE_BUGFIX
   Distortion uiSum = 0;
-#else
-  uint32_t uiSum = 0;
-#endif
 
   if( rcDtParam.isQtbt && iCols > iRows && ( iCols & 15 ) == 0 && ( iRows & 7 ) == 0 )
   {

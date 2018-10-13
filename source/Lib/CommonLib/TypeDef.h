@@ -93,7 +93,6 @@
 
 #endif
 
-#define DISTORTION_TYPE_BUGFIX                            1   // JVET-K0154 for FULL_NBIT
 #define WCG_EXT_BUGFIX                                    1
 
 // ====================================================================================================================
@@ -294,15 +293,7 @@ typedef       uint32_t            Intermediate_UInt; ///< used as intermediate v
 
 typedef       uint64_t          SplitSeries;       ///< used to encoded the splits that caused a particular CU size
 
-#if DISTORTION_TYPE_BUGFIX
 typedef       uint64_t        Distortion;        ///< distortion measurement
-#else
-#if FULL_NBIT
-typedef       uint64_t          Distortion;        ///< distortion measurement
-#else
-typedef       uint32_t            Distortion;        ///< distortion measurement
-#endif
-#endif
 
 // ====================================================================================================================
 // Enumeration

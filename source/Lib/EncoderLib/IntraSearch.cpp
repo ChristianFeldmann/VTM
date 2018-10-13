@@ -410,11 +410,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
             DTRACE( g_trace_ctx, D_INTRA_COST, "IntraHAD: %u, %llu, %f (%d)\n", uiSad, fracModeBits, cost, uiMode );
 
             updateCandList( uiMode, cost,  uiRdModeList, CandCostList, numModesForFullRD + extraModes );
-#if DISTORTION_TYPE_BUGFIX
             updateCandList(uiMode, (double) uiSad, uiHadModeList, CandHadList, 3 + extraModes);
-#else
-            updateCandList( uiMode, uiSad, uiHadModeList, CandHadList, 3                 + extraModes );
-#endif
           }
         } // NSSTFlag
 
@@ -564,11 +560,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
       }
       if( CandHadList.size() < 1 || CandHadList[0] > cs.interHad * PBINTRA_RATIO )
       {
-#if DISTORTION_TYPE_BUGFIX
         cs.dist = std::numeric_limits<Distortion>::max();
-#else
-        cs.dist = MAX_UINT;
-#endif
         cs.interHad = 0;
 
         //===== reset context models =====

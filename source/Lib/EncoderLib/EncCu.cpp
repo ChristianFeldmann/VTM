@@ -1147,12 +1147,8 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     {
       m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner );
 
-#if DISTORTION_TYPE_BUGFIX
       if (m_pcEncCfg->getUsePbIntraFast() && tempCS->dist == std::numeric_limits<Distortion>::max()
           && tempCS->interHad == 0)
-#else
-      if (m_pcEncCfg->getUsePbIntraFast() && tempCS->dist == MAX_UINT && tempCS->interHad == 0)
-#endif
       {
         interHad = 0;
         // JEM assumes only perfect reconstructions can from now on beat the inter mode
@@ -1507,11 +1503,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #endif
         }
 
-#if DISTORTION_TYPE_BUGFIX
         Distortion uiSad = distParam.distFunc(distParam);
-#else
-        uint32_t uiSad = distParam.distFunc(distParam);
-#endif
         uint32_t uiBitsCand = uiMergeCand + 1;
         if( uiMergeCand == tempCS->slice->getMaxNumMergeCand() - 1 )
         {

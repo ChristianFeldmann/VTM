@@ -64,7 +64,6 @@
 
 #define REUSE_CU_RESULTS                                  1
 
-#define JVET_K0390_RATECTRL                               1
 
 
 

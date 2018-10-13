@@ -39,9 +39,7 @@
 
 #include <cmath>
 
-#if JVET_K0390_RATECTRL
 #define LAMBDA_PREC                                           1000000
-#endif
 
 using namespace std;
 
@@ -143,9 +141,7 @@ void EncRCSeq::create( int totalFrames, int targetBitrate, int frameRate, int GO
   {
     m_picPara[i].m_alpha = 0.0;
     m_picPara[i].m_beta  = 0.0;
-#if JVET_K0390_RATECTRL
     m_picPara[i].m_validPix = -1;
-#endif
   }
 
   if ( m_useLCUSeparateModel )
@@ -158,9 +154,7 @@ void EncRCSeq::create( int totalFrames, int targetBitrate, int frameRate, int GO
       {
         m_LCUPara[i][j].m_alpha = 0.0;
         m_LCUPara[i][j].m_beta  = 0.0;
-#if JVET_K0390_RATECTRL
         m_LCUPara[i][j].m_validPix = -1;
-#endif
       }
     }
   }
@@ -311,11 +305,7 @@ void EncRCSeq::setAllBitRatio( double basicLambda, double* equaCoeffA, double* e
   int* bitsRatio = new int[m_GOPSize];
   for ( int i=0; i<m_GOPSize; i++ )
   {
-#if JVET_K0390_RATECTRL
     bitsRatio[i] = (int)(equaCoeffA[i] * pow(basicLambda, equaCoeffB[i]) * (double)getPicPara(getGOPID2Level(i)).m_validPix);
-#else
-    bitsRatio[i] = (int)( equaCoeffA[i] * pow( basicLambda, equaCoeffB[i] ) * m_numberOfPixel );
-#endif
   }
   initBitsRatio( bitsRatio );
   delete[] bitsRatio;
@@ -392,7 +382,6 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
         lambdaRatio[7] = 12.3;
       }
     }
-#if JVET_K0390_RATECTRL
     else if (encRCSeq->getAdaptiveBits() == 3)  // for GOP size = 16, random access case
     {
       {
@@ -439,14 +428,9 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
         lambdaRatio[15] = lambdaLev5 / lambdaLev1;
       }
     }
-#endif
 
     xCalEquaCoeff( encRCSeq, lambdaRatio, equaCoeffA, equaCoeffB, encRCSeq->getGOPSize() );
-#if JVET_K0390_RATECTRL
     basicLambda = xSolveEqua(encRCSeq, targetBpp, equaCoeffA, equaCoeffB, encRCSeq->getGOPSize());
-#else
-    basicLambda = xSolveEqua( targetBpp, equaCoeffA, equaCoeffB, encRCSeq->getGOPSize() );
-#endif
     encRCSeq->setAllBitRatio( basicLambda, equaCoeffA, equaCoeffB );
 
     delete []lambdaRatio;
@@ -487,11 +471,7 @@ void EncRCGOP::xCalEquaCoeff( EncRCSeq* encRCSeq, double* lambdaRatio, double* e
   }
 }
 
-#if JVET_K0390_RATECTRL
 double EncRCGOP::xSolveEqua(EncRCSeq* encRCSeq, double targetBpp, double* equaCoeffA, double* equaCoeffB, int GOPSize)
-#else
-double EncRCGOP::xSolveEqua( double targetBpp, double* equaCoeffA, double* equaCoeffB, int GOPSize )
-#endif
 {
   double solution = 100.0;
   double minNumber = 0.1;
@@ -501,13 +481,9 @@ double EncRCGOP::xSolveEqua( double targetBpp, double* equaCoeffA, double* equaC
     double fx = 0.0;
     for ( int j=0; j<GOPSize; j++ )
     {
-#if JVET_K0390_RATECTRL
       double tmpBpp = equaCoeffA[j] * pow(solution, equaCoeffB[j]);
       double actualBpp = tmpBpp * (double)encRCSeq->getPicPara(encRCSeq->getGOPID2Level(j)).m_validPix / (double)encRCSeq->getNumPixel();
       fx += actualBpp;
-#else
-      fx += equaCoeffA[j] * pow( solution, equaCoeffB[j] );
-#endif
     }
 
     if ( fabs( fx - targetBpp ) < 0.000001 )
@@ -585,10 +561,8 @@ EncRCPic::EncRCPic()
   m_picActualBits       = 0;
   m_picQP               = 0;
   m_picLambda           = 0.0;
-#if JVET_K0390_RATECTRL
   m_picMSE              = 0.0;
   m_validPixelsInPic    = 0;
-#endif
 }
 
 EncRCPic::~EncRCPic()
@@ -746,10 +720,8 @@ void EncRCPic::create( EncRCSeq* encRCSeq, EncRCGOP* encRCGOP, int frameLevel, l
     {
       LCUIdx = j*picWidthInLCU + i;
       m_LCUs[LCUIdx].m_actualBits = 0;
-#if JVET_K0390_RATECTRL
       m_LCUs[LCUIdx].m_actualSSE  = 0.0;
       m_LCUs[LCUIdx].m_actualMSE  = 0.0;
-#endif
       m_LCUs[LCUIdx].m_QP         = 0;
       m_LCUs[LCUIdx].m_lambda     = 0.0;
       m_LCUs[LCUIdx].m_targetBits = 0;
@@ -763,10 +735,8 @@ void EncRCPic::create( EncRCSeq* encRCSeq, EncRCGOP* encRCGOP, int frameLevel, l
   m_picActualBits       = 0;
   m_picQP               = 0;
   m_picLambda           = 0.0;
-#if JVET_K0390_RATECTRL
   m_validPixelsInPic    = 0;
   m_picMSE              = 0.0;
-#endif
 }
 
 void EncRCPic::destroy()
@@ -787,7 +757,6 @@ double EncRCPic::estimatePicLambda( list<EncRCPic*>& listPreviousPictures, bool 
   double beta          = m_encRCSeq->getPicPara( m_frameLevel ).m_beta;
   double bpp       = (double)m_targetBits/(double)m_numberOfPixel;
 
-#if JVET_K0390_RATECTRL
   int lastPicValPix = 0;
   if (listPreviousPictures.size() > 0)
   {
@@ -797,7 +766,6 @@ double EncRCPic::estimatePicLambda( list<EncRCPic*>& listPreviousPictures, bool 
   {
     bpp = (double)m_targetBits / (double)lastPicValPix;
   }
-#endif
 
   double estLambda;
   if (isIRAP)
@@ -853,10 +821,8 @@ double EncRCPic::estimatePicLambda( list<EncRCPic*>& listPreviousPictures, bool 
     estLambda = 0.1;
   }
 
-#if JVET_K0390_RATECTRL
   //Avoid different results in different platforms. The problem is caused by the different results of pow() in different platforms.
   estLambda = double(int64_t(estLambda * (double)LAMBDA_PREC + 0.5)) / (double)LAMBDA_PREC;
-#endif
   m_estPicLambda = estLambda;
 
   double totalWeight = 0.0;
@@ -1038,10 +1004,8 @@ double EncRCPic::getLCUEstLambda( double bpp )
     estLambda = 0.1;
   }
 
-#if JVET_K0390_RATECTRL
   //Avoid different results in different platforms. The problem is caused by the different results of pow() in different platforms.
   estLambda = double(int64_t(estLambda * (double)LAMBDA_PREC + 0.5)) / (double)LAMBDA_PREC;
-#endif
   return estLambda;
 }
 
@@ -1089,9 +1053,7 @@ void EncRCPic::updateAfterCTU( int LCUIdx, int bits, int QP, double lambda, bool
   m_LCUs[LCUIdx].m_actualBits = bits;
   m_LCUs[LCUIdx].m_QP         = QP;
   m_LCUs[LCUIdx].m_lambda     = lambda;
-#if JVET_K0390_RATECTRL
   m_LCUs[LCUIdx].m_actualSSE  = m_LCUs[LCUIdx].m_actualMSE * m_LCUs[LCUIdx].m_numberOfPixel;
-#endif
 
   m_LCULeft--;
   m_bitsLeft   -= bits;
@@ -1127,7 +1089,6 @@ void EncRCPic::updateAfterCTU( int LCUIdx, int bits, int QP, double lambda, bool
     TRCParameter rcPara;
     rcPara.m_alpha = alpha;
     rcPara.m_beta  = beta;
-#if JVET_K0390_RATECTRL
     if (QP == g_RCInvalidQPValue && m_encRCSeq->getAdaptiveBits() == 1)
     {
       rcPara.m_validPix = 0;
@@ -1152,9 +1113,6 @@ void EncRCPic::updateAfterCTU( int LCUIdx, int bits, int QP, double lambda, bool
       rcPara.m_alpha = Clip3(0.0001, g_RCAlphaMaxValue, rcPara.m_alpha);
       m_encRCSeq->setLCUPara(m_frameLevel, LCUIdx, rcPara);
     }
-#else
-    m_encRCSeq->setLCUPara( m_frameLevel, LCUIdx, rcPara );
-#endif
 
     return;
   }
@@ -1171,7 +1129,6 @@ void EncRCPic::updateAfterCTU( int LCUIdx, int bits, int QP, double lambda, bool
   TRCParameter rcPara;
   rcPara.m_alpha = alpha;
   rcPara.m_beta  = beta;
-#if JVET_K0390_RATECTRL
   if (QP == g_RCInvalidQPValue && m_encRCSeq->getAdaptiveBits() == 1)
   {
     rcPara.m_validPix = 0;
@@ -1196,9 +1153,6 @@ void EncRCPic::updateAfterCTU( int LCUIdx, int bits, int QP, double lambda, bool
     rcPara.m_alpha = Clip3(0.0001, g_RCAlphaMaxValue, rcPara.m_alpha);
     m_encRCSeq->setLCUPara(m_frameLevel, LCUIdx, rcPara);
   }
-#else
-  m_encRCSeq->setLCUPara( m_frameLevel, LCUIdx, rcPara );
-#endif
 
 }
 
@@ -1234,16 +1188,13 @@ double EncRCPic::calAverageLambda()
   double totalLambdas = 0.0;
   int numTotalLCUs = 0;
 
-#if JVET_K0390_RATECTRL
   double totalSSE = 0.0;
   int totalPixels = 0;
-#endif
   int i;
   for ( i=0; i<m_numberOfLCU; i++ )
   {
     if ( m_LCUs[i].m_lambda > 0.01 )
     {
-#if JVET_K0390_RATECTRL
       if (m_LCUs[i].m_QP > 0 || m_encRCSeq->getAdaptiveBits() != 1)
       {
         m_validPixelsInPic += m_LCUs[i].m_numberOfPixel;
@@ -1251,24 +1202,16 @@ double EncRCPic::calAverageLambda()
         totalLambdas += log(m_LCUs[i].m_lambda);
         numTotalLCUs++;
       }
-#else
-      totalLambdas += log( m_LCUs[i].m_lambda );
-      numTotalLCUs++;
-#endif
 
-#if JVET_K0390_RATECTRL
       if (m_LCUs[i].m_QP > 0 || m_encRCSeq->getAdaptiveBits() != 1)
       {
         totalSSE += m_LCUs[i].m_actualSSE;
         totalPixels += m_LCUs[i].m_numberOfPixel;
        }
-#endif
     }
   }
 
-#if JVET_K0390_RATECTRL
   setPicMSE(totalPixels > 0 ? totalSSE / (double)totalPixels : 1.0); //1.0 is useless in the following process, just to make sure the divisor not be 0
-#endif
   double avgLambda;
   if( numTotalLCUs == 0 )
   {
@@ -1307,11 +1250,7 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
   {
     // update parameters
     double picActualBits = ( double )m_picActualBits;
-#if JVET_K0390_RATECTRL
     double picActualBpp = picActualBits / (double)m_validPixelsInPic;
-#else
-    double picActualBpp  = picActualBits/(double)m_numberOfPixel;
-#endif
     double calLambda     = alpha * pow( picActualBpp, beta );
     double inputLambda   = m_picLambda;
 
@@ -1326,7 +1265,6 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
       TRCParameter rcPara;
       rcPara.m_alpha = alpha;
       rcPara.m_beta  = beta;
-#if JVET_K0390_RATECTRL
       double avgMSE = getPicMSE();
       double updatedK = picActualBpp * averageLambda / avgMSE;
       double updatedC = avgMSE / pow(picActualBpp, -updatedK);
@@ -1343,9 +1281,6 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
       {
         m_encRCSeq->setPicPara(m_frameLevel, rcPara);
       }
-#else
-      m_encRCSeq->setPicPara( m_frameLevel, rcPara );
-#endif
 
       return;
     }
@@ -1364,7 +1299,6 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
   TRCParameter rcPara;
   rcPara.m_alpha = alpha;
   rcPara.m_beta  = beta;
-#if JVET_K0390_RATECTRL
   double picActualBpp = (double)m_picActualBits / (double)m_validPixelsInPic;
 
   double avgMSE = getPicMSE();
@@ -1382,9 +1316,6 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
   {
     m_encRCSeq->setPicPara(m_frameLevel, rcPara);
   }
-#else
-  m_encRCSeq->setPicPara( m_frameLevel, rcPara );
-#endif
 
   if ( m_frameLevel == 1 )
   {
@@ -1490,10 +1421,8 @@ double EncRCPic::getLCUEstLambdaAndQP(double bpp, int clipPicQP, int *estQP)
 
   estLambda = Clip3(minLambda, maxLambda, estLambda);
 
-#if JVET_K0390_RATECTRL
   //Avoid different results in different platforms. The problem is caused by the different results of pow() in different platforms.
   estLambda = double(int64_t(estLambda * (double)LAMBDA_PREC + 0.5)) / (double)LAMBDA_PREC;
-#endif
   *estQP = int(4.2005 * log(estLambda / pow(2.0, bitdepth_luma_scale)) + 13.7122 + 0.5);
   *estQP = Clip3(minQP, maxQP, *estQP);
 
@@ -1552,11 +1481,7 @@ void RateCtrl::init(int totalFrames, int targetBitrate, int frameRate, int GOPSi
   {
     numberOfLevel = int( log((double)GOPSize)/log(2.0) + 0.5 ) + 1;
   }
-#if JVET_K0390_RATECTRL
   if (!isLowdelay && (GOPSize == 16 || GOPSize == 8))
-#else
-  if ( !isLowdelay && GOPSize == 8 )
-#endif
   {
     numberOfLevel = int( log((double)GOPSize)/log(2.0) + 0.5 ) + 1;
   }
@@ -1666,7 +1591,6 @@ void RateCtrl::init(int totalFrames, int targetBitrate, int frameRate, int GOPSi
         adaptiveBit = 2;
       }
     }
-#if JVET_K0390_RATECTRL
     else if (GOPSize == 16 && !isLowdelay)
     {
       if (bpp > 0.2)
@@ -1751,7 +1675,6 @@ void RateCtrl::init(int totalFrames, int targetBitrate, int frameRate, int GOPSi
         adaptiveBit = 3;
       }
     }
-#endif
     else
     {
       msg( WARNING, "\n hierarchical bit allocation is not support for the specified coding structure currently.\n" );
@@ -1788,7 +1711,6 @@ void RateCtrl::init(int totalFrames, int targetBitrate, int frameRate, int GOPSi
       GOPID2Level[6] = 4;
       GOPID2Level[7] = 4;
     }
-#if JVET_K0390_RATECTRL
     else if (GOPSize == 16 && !isLowdelay)
     {
       GOPID2Level[0] = 1;
@@ -1808,7 +1730,6 @@ void RateCtrl::init(int totalFrames, int targetBitrate, int frameRate, int GOPSi
       GOPID2Level[14] = 5;
       GOPID2Level[15] = 5;
     }
-#endif
   }
 
   if ( !isLowdelay && GOPSize == 8 )
@@ -1822,7 +1743,6 @@ void RateCtrl::init(int totalFrames, int targetBitrate, int frameRate, int GOPSi
     GOPID2Level[6] = 4;
     GOPID2Level[7] = 4;
   }
-#if JVET_K0390_RATECTRL
   else if (GOPSize == 16 && !isLowdelay)
   {
     GOPID2Level[0] = 1;
@@ -1842,7 +1762,6 @@ void RateCtrl::init(int totalFrames, int targetBitrate, int frameRate, int GOPSi
     GOPID2Level[14] = 5;
     GOPID2Level[15] = 5;
   }
-#endif
 
   m_encRCSeq = new EncRCSeq;
   m_encRCSeq->create( totalFrames, targetBitrate, frameRate, GOPSize, picWidth, picHeight, LCUWidth, LCUHeight, numberOfLevel, useLCUSeparateModel, adaptiveBit );

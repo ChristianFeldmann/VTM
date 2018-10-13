@@ -80,7 +80,6 @@
 
 #define JVET_K0063_PDPC_SIMP                              1 // Simplified PDPC
 
-#define JVET_K0351_LESS_CONSTRAINT                        1 // Only disallow binary split with same orientation in center partition of the ternary split and release the other constraints in K0351.
 
 
 

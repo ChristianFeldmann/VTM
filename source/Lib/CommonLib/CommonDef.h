@@ -134,11 +134,7 @@ static const double MAX_DOUBLE =                             1.7e+308; ///< max.
 static const int MAX_GOP =                                         64; ///< max. value of hierarchical GOP size
 static const int MAX_NUM_REF_PICS =                                16; ///< max. number of pictures used for reference
 static const int MAX_NUM_REF =                                     16; ///< max. number of entries in picture reference list
-#if JVET_K0251_QP_EXT
 static const int MAX_QP =                                          63;
-#else
-static const int MAX_QP =                                          51;
-#endif
 static const int NOT_VALID =                                       -1;
 
 static const int AMVP_MAX_NUM_CANDS =                               2; ///< AMVP: advanced motion vector prediction - max number of final candidates

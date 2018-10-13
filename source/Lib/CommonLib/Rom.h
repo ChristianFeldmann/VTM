@@ -77,11 +77,7 @@ static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 
 // ====================================================================================================================
 // Luma QP to Chroma QP mapping
 // ====================================================================================================================
-#if JVET_K0251_QP_EXT
 static const int chromaQPMappingTableSize = (MAX_QP + 7);
-#else
-static const int chromaQPMappingTableSize = 58;
-#endif
 
 extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSize];
 

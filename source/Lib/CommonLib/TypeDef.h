@@ -82,7 +82,6 @@
 
 #define JVET_K0351_LESS_CONSTRAINT                        1 // Only disallow binary split with same orientation in center partition of the ternary split and release the other constraints in K0351.
 
-#define JVET_K0251_QP_EXT                                 1 // Extending the QP parameter value range for coarse quantization
 
 
 

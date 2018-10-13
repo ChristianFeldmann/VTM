@@ -1773,11 +1773,7 @@ void CABACWriter::cu_qp_delta( const CodingUnit& cu, int predQP, const int8_t qp
   CHECK(!( predQP != std::numeric_limits<int>::max()), "Unspecified error");
   int       DQp         = qp - predQP;
   int       qpBdOffsetY = cu.cs->sps->getQpBDOffset( CHANNEL_TYPE_LUMA );
-#if JVET_K0251_QP_EXT
   DQp                   = ( DQp + (MAX_QP + 1) + (MAX_QP + 1) / 2 + qpBdOffsetY + (qpBdOffsetY / 2)) % ((MAX_QP + 1) + qpBdOffsetY) - (MAX_QP + 1) / 2 - (qpBdOffsetY / 2);
-#else
-  DQp                   = ( DQp + 78 + qpBdOffsetY + ( qpBdOffsetY / 2 ) ) % ( 52 + qpBdOffsetY ) - 26 - ( qpBdOffsetY / 2 );
-#endif
   unsigned  absDQP      = unsigned( DQp < 0 ? -DQp : DQp );
   unsigned  unaryDQP    = std::min<unsigned>( absDQP, CU_DQP_TU_CMAX );
 

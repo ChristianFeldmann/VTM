@@ -671,17 +671,9 @@ void EncCu::updateLambda( Slice* slice, double dQP )
   int    SHIFT_QP = 12;
   double dLambda_scale = 1.0 - Clip3( 0.0, 0.5, 0.05*(double)(slice->getPic()->fieldPic ? NumberBFrames/2 : NumberBFrames) );
 
-#if DISTORTION_LAMBDA_BUGFIX
   int bitdepth_luma_qp_scale = 6
                                * (slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
                                   - DISTORTION_PRECISION_ADJUSTMENT(slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-#else
-#if FULL_NBIT
-  int bitdepth_luma_qp_scale = 6 * (slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8);
-#else
-  int    bitdepth_luma_qp_scale = 0;
-#endif
-#endif
   double qp_temp = (double) dQP + bitdepth_luma_qp_scale - SHIFT_QP;
 
   double dQPFactor = m_pcEncCfg->getGOPEntry( m_pcSliceEncoder->getGopId() ).m_QPFactor;

@@ -70,11 +70,7 @@ Distortion RdCostWeightPrediction::xGetSADw( const DistParam &rcDtParam )
   const int             offset     = wpCur.offset;
   const int             shift      = wpCur.shift;
   const int             round      = wpCur.round;
-#if DISTORTION_LAMBDA_BUGFIX
   const int distortionShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
-#else
-  const int distortionShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8);
-#endif
 
   Distortion uiSum = 0;
 
@@ -257,11 +253,7 @@ Distortion RdCostWeightPrediction::xGetSSEw( const DistParam &rcDtParam )
   const int             offset          = wpCur.offset;
   const int             shift           = wpCur.shift;
   const int             round           = wpCur.round;
-#if DISTORTION_LAMBDA_BUGFIX
   const uint32_t distortionShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  const uint32_t            distortionShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth-8) << 1);
-#endif
 
   Distortion sum = 0;
 
@@ -646,9 +638,5 @@ Distortion RdCostWeightPrediction::xGetHADsw( const DistParam &rcDtParam )
     }
   }
 
-#if DISTORTION_LAMBDA_BUGFIX
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
-#else
-  return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8);
-#endif
 }

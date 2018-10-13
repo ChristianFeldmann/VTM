@@ -56,11 +56,7 @@ Distortion RdCost::xGetSSE_SIMD( const DistParam &rcDtParam )
   const int iStrideSrc1 = rcDtParam.org.stride;
   const int iStrideSrc2 = rcDtParam.cur.stride;
 
-#if DISTORTION_LAMBDA_BUGFIX
   const uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  const uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT( ( rcDtParam.bitDepth-8 ) << 1 );
-#endif
   unsigned int uiRet = 0;
 
   if( vext >= AVX2 && ( iCols & 15 ) == 0 )
@@ -141,11 +137,7 @@ Distortion RdCost::xGetSSE_NxN_SIMD( const DistParam &rcDtParam )
   const int iStrideSrc1 = rcDtParam.org.stride;
   const int iStrideSrc2 = rcDtParam.cur.stride;
 
-#if DISTORTION_LAMBDA_BUGFIX
   const uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
-#else
-  const uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT( ( rcDtParam.bitDepth-8 ) << 1 );
-#endif
   unsigned int uiRet = 0;
 
   if( 4 == iWidth )
@@ -302,11 +294,7 @@ Distortion RdCost::xGetSAD_SIMD( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
-#else
-  return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8);
-#endif
 }
 
 
@@ -424,11 +412,7 @@ Distortion RdCost::xGetSAD_NxN_SIMD( const DistParam &rcDtParam )
   }
 
   uiSum <<= iSubShift;
-#if DISTORTION_LAMBDA_BUGFIX
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
-#else
-  return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth - 8);
-#endif
 }
 
 
@@ -2428,11 +2412,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
     THROW( "Unsupported size" );
   }
 
-#if DISTORTION_LAMBDA_BUGFIX
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
-#else
-  return uiSum >> DISTORTION_PRECISION_ADJUSTMENT( rcDtParam.bitDepth - 8 );
-#endif
 }
 
 template <X86_VEXT vext>

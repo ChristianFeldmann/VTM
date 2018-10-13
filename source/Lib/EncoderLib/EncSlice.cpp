@@ -440,18 +440,10 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     int    NumberBFrames = ( m_pcCfg->getGOPSize() - 1 );
     int    SHIFT_QP = 12;
 
-#if DISTORTION_LAMBDA_BUGFIX
     int    bitdepth_luma_qp_scale =
       6
       * (rpcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
          - DISTORTION_PRECISION_ADJUSTMENT(rpcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-#else
-#if FULL_NBIT
-    int    bitdepth_luma_qp_scale = 6 * (rpcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8);
-#else
-    int    bitdepth_luma_qp_scale = 0;
-#endif
-#endif
     double qp_temp = (double) dQP + bitdepth_luma_qp_scale - SHIFT_QP;
 #if FULL_NBIT
     double qp_temp_orig = (double) dQP - SHIFT_QP;
@@ -701,17 +693,9 @@ double EncSlice::calculateLambda( const Slice*     slice,
   const std::vector<double> &intraLambdaModifiers=m_pcCfg->getIntraLambdaModifier();
 #endif
 
-#if DISTORTION_LAMBDA_BUGFIX
   int bitdepth_luma_qp_scale = 6
                                * (slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
                                   - DISTORTION_PRECISION_ADJUSTMENT(slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-#else
-#if FULL_NBIT
-  int    bitdepth_luma_qp_scale = 6 * (slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8);
-#else
-  int    bitdepth_luma_qp_scale = 0;
-#endif
-#endif
   double qp_temp = dQP + bitdepth_luma_qp_scale - SHIFT_QP;
   // Case #1: I or P-slices (key-frame)
   double dQPFactor = m_pcCfg->getGOPEntry(GOPid).m_QPFactor;
@@ -753,18 +737,8 @@ double EncSlice::calculateLambda( const Slice*     slice,
   if ( depth>0 )
 #endif
   {
-#if DISTORTION_LAMBDA_BUGFIX
     double qp_temp_ref = refQP + bitdepth_luma_qp_scale - SHIFT_QP;
     dLambda *= Clip3(2.00, 4.00, (qp_temp_ref / 6.0));   // (j == B_SLICE && p_cur_frm->layer != 0 )
-#else
-#if FULL_NBIT
-      double qp_temp_ref_orig = refQP - SHIFT_QP;
-      dLambda *= Clip3( 2.00, 4.00, (qp_temp_ref_orig / 6.0) ); // (j == B_SLICE && p_cur_frm->layer != 0 )
-#else
-      double qp_temp_ref = refQP + bitdepth_luma_qp_scale - SHIFT_QP;
-      dLambda *= Clip3( 2.00, 4.00, (qp_temp_ref / 6.0) ); // (j == B_SLICE && p_cur_frm->layer != 0 )
-#endif
-#endif
   }
 
   // if hadamard is used in ME process
@@ -1065,18 +1039,10 @@ void EncSlice::precompressSlice( Picture* pcPic )
   uint32_t       uiQpIdxBest = 0;
 
   double dFrameLambda;
-#if DISTORTION_LAMBDA_BUGFIX
   int SHIFT_QP = 12
                  + 6
                      * (pcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
                         - DISTORTION_PRECISION_ADJUSTMENT(pcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-#else
-#if FULL_NBIT
-  int    SHIFT_QP = 12 + 6 * (pcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8);
-#else
-  int    SHIFT_QP = 12;
-#endif
-#endif
 
   // set frame lambda
   if (m_pcCfg->getGOPSize() > 1)

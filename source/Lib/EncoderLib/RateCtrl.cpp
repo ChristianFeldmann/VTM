@@ -222,35 +222,19 @@ void EncRCSeq::initPicPara( TRCParameter* picPara )
     {
       if (i>0)
       {
-#if DISTORTION_LAMBDA_BUGFIX
         int bitdepth_luma_scale =
           2
           * (m_bitDepth - 8
             - DISTORTION_PRECISION_ADJUSTMENT(m_bitDepth));
-#else
-#if FULL_NBIT
-        int bitdepth_luma_scale = 2 * (m_bitDepth - 8);
-#else
-        int    bitdepth_luma_scale = 0;
-#endif
-#endif
         m_picPara[i].m_alpha = 3.2003 * pow(2.0, bitdepth_luma_scale);
         m_picPara[i].m_beta = -1.367;
       }
       else
       {
-#if DISTORTION_LAMBDA_BUGFIX
         int bitdepth_luma_scale =
           2
           * (m_bitDepth - 8
             - DISTORTION_PRECISION_ADJUSTMENT(m_bitDepth));
-#else
-#if FULL_NBIT
-        int bitdepth_luma_scale = 2 * (m_bitDepth - 8);
-#else
-        int    bitdepth_luma_scale = 0;
-#endif
-#endif
         m_picPara[i].m_alpha = pow(2.0, bitdepth_luma_scale) * ALPHA;
         m_picPara[i].m_beta = BETA2;
       }
@@ -385,18 +369,10 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
     else if (encRCSeq->getAdaptiveBits() == 3)  // for GOP size = 16, random access case
     {
       {
-#if DISTORTION_LAMBDA_BUGFIX
         int bitdepth_luma_scale =
           2
           * (encRCSeq->getbitDepth() - 8
             - DISTORTION_PRECISION_ADJUSTMENT(encRCSeq->getbitDepth()));
-#else
-#if FULL_NBIT
-        int bitdepth_luma_scale = 2 * (encRCSeq->getbitDepth() - 8);
-#else
-        int    bitdepth_luma_scale = 0;
-#endif
-#endif
 
         double hierarQp = 4.2005 * log(encRCSeq->getLastLambda() / pow(2.0, bitdepth_luma_scale)) + 13.7122;  //  the qp of POC16
         double qpLev2 = (hierarQp + 0.0) + 0.2016    * (hierarQp + 0.0) - 4.8848;
@@ -860,18 +836,10 @@ double EncRCPic::estimatePicLambda( list<EncRCPic*>& listPreviousPictures, bool 
 
 int EncRCPic::estimatePicQP( double lambda, list<EncRCPic*>& listPreviousPictures )
 {
-#if DISTORTION_LAMBDA_BUGFIX
   int bitdepth_luma_scale =
     2
     * (m_encRCSeq->getbitDepth() - 8
       - DISTORTION_PRECISION_ADJUSTMENT(m_encRCSeq->getbitDepth()));
-#else
-#if FULL_NBIT
-  int bitdepth_luma_scale = 2 * (m_encRCSeq->getbitDepth() - 8);
-#else
-  int    bitdepth_luma_scale = 0;
-#endif
-#endif
 
   int QP = int(4.2005 * log(lambda / pow(2.0, bitdepth_luma_scale)) + 13.7122 + 0.5);
 
@@ -1012,18 +980,10 @@ double EncRCPic::getLCUEstLambda( double bpp )
 int EncRCPic::getLCUEstQP( double lambda, int clipPicQP )
 {
   int LCUIdx = getLCUCoded();
-#if DISTORTION_LAMBDA_BUGFIX
   int bitdepth_luma_scale =
     2
     * (m_encRCSeq->getbitDepth() - 8
       - DISTORTION_PRECISION_ADJUSTMENT(m_encRCSeq->getbitDepth()));
-#else
-#if FULL_NBIT
-  int bitdepth_luma_scale = 2 * (m_encRCSeq->getbitDepth() - 8);
-#else
-  int    bitdepth_luma_scale = 0;
-#endif
-#endif
 
   int estQP = int(4.2005 * log(lambda / pow(2.0, bitdepth_luma_scale)) + 13.7122 + 0.5);
 
@@ -1403,18 +1363,10 @@ double EncRCPic::getLCUEstLambdaAndQP(double bpp, int clipPicQP, int *estQP)
     minQP = max(clipNeighbourQP - 1, minQP);
   }
 
-#if DISTORTION_LAMBDA_BUGFIX
   int bitdepth_luma_scale =
     2
     * (m_encRCSeq->getbitDepth() - 8
       - DISTORTION_PRECISION_ADJUSTMENT(m_encRCSeq->getbitDepth()));
-#else
-#if FULL_NBIT
-  int bitdepth_luma_scale = 2 * (m_encRCSeq->getbitDepth() - 8);
-#else
-  int    bitdepth_luma_scale = 0;
-#endif
-#endif
 
   double maxLambda = exp(((double)(maxQP + 0.49) - 13.7122) / 4.2005) * pow(2.0, bitdepth_luma_scale);
   double minLambda = exp(((double)(minQP - 0.49) - 13.7122) / 4.2005) * pow(2.0, bitdepth_luma_scale);

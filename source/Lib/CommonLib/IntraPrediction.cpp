@@ -248,7 +248,6 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const int  srcStride  = m_topRefLength  + 1;
   const int  srcHStride = m_leftRefLength + 1;
 
-#if JVET_K0063_PDPC_SIMP
   Pel *ptrSrc = getPredictorPtr(compID, useFilteredPredSamples);
   const ClpRng& clpRng(pu.cu->cs->slice->clpRng(compID));
 
@@ -326,27 +325,6 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
       }
     }
   }
-#else
-#if HEVC_USE_HOR_VER_PREDFILTERING
-  const bool enableEdgeFilters = !(CU::isRDPCMEnabled( *pu.cu ) && pu.cu->transQuantBypass);
-#endif
-  Pel *ptrSrc = getPredictorPtr( compID, useFilteredPredSamples );
-
-  {
-    switch( uiDirMode )
-    {
-    case(DC_IDX):       xPredIntraDc    ( CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType );            break; // including DCPredFiltering
-    case(PLANAR_IDX):   xPredIntraPlanar( CPelBuf(ptrSrc, srcStride, srcHStride), piPred, *pu.cs->sps );            break;
-#if HEVC_USE_HOR_VER_PREDFILTERING
-    default:            xPredIntraAng   ( CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode,
-                                          pu.cs->slice->clpRng(compID), enableEdgeFilters, *pu.cs->sps );           break;
-#else
-    default:            xPredIntraAng   ( CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode,
-                                          pu.cs->slice->clpRng(compID), *pu.cs->sps );            break;
-#endif
-    }
-  }
-#endif
 }
 void IntraPrediction::predIntraChromaLM(const ComponentID compID, PelBuf &piPred, const PredictionUnit &pu, const CompArea& chromaArea, int intraDir)
 {
@@ -632,7 +610,6 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
           pDsty[x] = refMain[x + deltaInt + 1];
         }
       }
-#if JVET_K0063_PDPC_SIMP
       const int numModes = 8;
       const int scale = ((g_aucLog2[width] - 2 + g_aucLog2[height] - 2 + 2) >> 2);
       CHECK(scale < 0 || scale > 31, "PDPC: scale < 0 || scale > 31");
@@ -674,7 +651,6 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
           pDsty[x] = ClipPel((wL * left + (64 - wL) * pDsty[x] + 32) >> 6, clpRng);
         }
       }
-#endif
     }
 #if HEVC_USE_HOR_VER_PREDFILTERING
     if( edgeFilter && absAng <= 1 )
@@ -993,15 +969,11 @@ bool IntraPrediction::useFilteredIntraRefSamples( const ComponentID &compID, con
   const int dirMode = PU::getFinalIntraMode( pu, chType );
   int predMode = getWideAngle(tuArea.blocks[compID].width, tuArea.blocks[compID].height, dirMode);
   if (predMode != dirMode && (predMode < 2 || predMode > VDIA_IDX))                                      { return true; }
-#if JVET_K0063_PDPC_SIMP
   if (dirMode == DC_IDX)                                                                                 { return false; }
   if (dirMode == PLANAR_IDX)
   {
     return tuArea.blocks[compID].width * tuArea.blocks[compID].height > 32 ? true : false;
   }
-#else
-  if( dirMode == DC_IDX || (sps.getSpsNext().isPlanarPDPC() && dirMode == PLANAR_IDX) )                  { return false; }
-#endif
 
   int diff = std::min<int>( abs( dirMode - HOR_IDX ), abs( dirMode - VER_IDX ) );
   int log2Size = ((g_aucLog2[tuArea.blocks[compID].width] + g_aucLog2[tuArea.blocks[compID].height]) >> 1);

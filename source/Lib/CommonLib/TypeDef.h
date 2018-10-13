@@ -78,7 +78,6 @@
 
 #define JVET_K0346                                        1 // simplifications on ATMVP
 
-#define JVET_K0063_PDPC_SIMP                              1 // Simplified PDPC
 
 
 

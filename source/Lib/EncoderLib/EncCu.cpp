@@ -1044,11 +1044,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       {
         m_CABACEstimator->split_cu_flag( split == CU_QUAD_SPLIT, *tempCS, partitioner );
       }
-#if JVET_K0554
       if( split != CU_QUAD_SPLIT )
-#else
-      if( split != CU_QUAD_SPLIT && implicitSplit == CU_DONT_SPLIT )
-#endif
       {
         m_CABACEstimator->split_cu_mode_mt( split, *tempCS, partitioner );
       }

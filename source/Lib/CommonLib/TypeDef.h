@@ -74,7 +74,6 @@
 #define JVET_K0556_MAX_TT_SIZE_64                         1 // Maximum TT size is set to 64x64 for P/B-slice
 
 #define JVET_K0230_DUAL_CODING_TREE_UNDER_64x64_BLOCK     1 // Dual coding tree is enabled under 64x64 block level instead of CTU level
-#define JVET_K0554                                        1 // when adopting, also remove the macro HM_QTBT_ONLY_QT_IMPLICIT (keep the case for value 0)
 
 
 
@@ -185,11 +184,7 @@
 #define HM_QTBT_AS_IN_JEM_SYNTAX                        ( 1 && !( ENABLE_BMS ) ) // *** -- cannot be enabled if ENABLE_BMS is on
 #define HM_QTBT_AS_IN_JEM_QUANT                           1   // ***
 #define HM_QTBT_REPRODUCE_FAST_LCTU_BUG                   1
-#if JVET_K0554
 #define HM_QTBT_ONLY_QT_IMPLICIT                          0   // ***
-#else
-#define HM_QTBT_ONLY_QT_IMPLICIT                          1   // ***
-#endif
 #endif
 #define HM_CODED_CU_INFO                                  1   // like in JEM, when related CU is skipped, it stays like this even if a non skip mode wins...
 #define HM_4TAPIF_AS_IN_JEM                               1   // *** - PM: condition not well suited for 4-tap interpolation filters

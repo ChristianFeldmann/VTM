@@ -490,29 +490,13 @@ void CABACWriter::coding_tree( const CodingStructure& cs, Partitioner& partition
   }
 
   {
-#if !JVET_K0554
-    //// MT
-    //bool mtSplit = partitioner.canSplit( CU_MT_SPLIT, cs );
-
-    //if( mtSplit )
-    // MT
-#endif
     bool mtSplit = partitioner.canSplit( CU_MT_SPLIT, cs );
 
     if( mtSplit )
     {
       const PartSplit splitMode = CU::getSplitAtDepth( cu, partitioner.currDepth );
 
-#if JVET_K0554
       split_cu_mode_mt( splitMode, cs, partitioner );
-#else
-      CHECK( implicitSplit != CU_DONT_SPLIT && implicitSplit != splitMode, "Different split found than the implicit split" );
-
-      if( implicitSplit == CU_DONT_SPLIT )
-      {
-        split_cu_mode_mt( splitMode, cs, partitioner );
-      }
-#endif
 
       if( splitMode != CU_DONT_SPLIT )
       {
@@ -560,13 +544,6 @@ void CABACWriter::split_cu_flag( bool split, const CodingStructure& cs, Partitio
   unsigned maxQTDepth = ( cs.sps->getSpsNext().getUseQTBT()
     ? g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize( cs.slice->getSliceType(), partitioner.chType )]
     : cs.sps->getLog2DiffMaxMinCodingBlockSize() );
-#if !JVET_K0554
-//#else
-//  unsigned maxQTDepth = ( cs.sps->getSpsNext().getUseQTBT()
-//    ? g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize( cs.slice->getSliceType(), partitioner.chType )]
-//    : cs.sps->getLog2DiffMaxMinCodingBlockSize() );
-//#endif
-#endif
   if( partitioner.currDepth == maxQTDepth )
   {
     return;
@@ -598,9 +575,7 @@ void CABACWriter::split_cu_mode_mt(const PartSplit split, const CodingStructure&
 
   dt.setAvail( DTT_SPLIT_TT_HORZ,  partitioner.canSplit( CU_TRIH_SPLIT, cs ) );
   dt.setAvail( DTT_SPLIT_TT_VERT,  partitioner.canSplit( CU_TRIV_SPLIT, cs ) );
-#if JVET_K0554
   dt.setAvail( DTT_SPLIT_NO_SPLIT, partitioner.canSplit( CU_DONT_SPLIT, cs ) );
-#endif
 
   unsigned btSCtxId = width == height ? 0 : ( width > height ? 1 : 2 );
   dt.setCtxId( DTT_SPLIT_DO_SPLIT_DECISION,   Ctx::BTSplitFlag( ctxIdBT ) );

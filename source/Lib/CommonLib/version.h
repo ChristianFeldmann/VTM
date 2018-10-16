@@ -1,3 +1,3 @@
 #if ! defined( NEXT_SOFTWARE_VERSION )
-#define NEXT_SOFTWARE_VERSION "2.1"
+#define NEXT_SOFTWARE_VERSION "2.2"
 #endif

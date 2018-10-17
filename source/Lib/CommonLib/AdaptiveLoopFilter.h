@@ -66,7 +66,11 @@ enum Direction
 class AdaptiveLoopFilter
 {
 public:
+#if JVET_L0083_ALF_FRAC_BIT
+  static constexpr int   m_NUM_BITS = 8;
+#else
   static constexpr int   m_NUM_BITS = 10;
+#endif
   static constexpr int   m_CLASSIFICATION_BLK_SIZE = 32;  //non-normative, local buffer size
 
   AdaptiveLoopFilter();

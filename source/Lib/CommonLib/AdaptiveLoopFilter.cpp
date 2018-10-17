@@ -489,7 +489,12 @@ void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf
 
   short *coef = filterSet;
 
+#if JVET_L0083_ALF_FRAC_BIT
+  const int shift = m_NUM_BITS - 1;
+#else
   const int shift = 9;
+#endif
+
   const int offset = 1 << ( shift - 1 );
 
   int transposeIdx = 0;

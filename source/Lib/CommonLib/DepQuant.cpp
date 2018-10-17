@@ -69,9 +69,497 @@ namespace DQIntern
 #else
     int32_t   bits[7];
 #endif
-
   };
 
+
+#if JVET_L0274_ENCODER_SPEED_UP
+  enum ScanPosType { SCAN_ISCSBB = 0, SCAN_SOCSBB = 1, SCAN_EOCSBB = 2 };
+
+  struct ScanInfo
+  {
+    ScanInfo() {}
+    int           sbbSize;
+    int           numSbb;
+    int           scanIdx;
+    int           rasterPos;
+    int           sbbPos;
+    int           insidePos;
+    bool          eosbb;
+    ScanPosType   spt;
+    unsigned      sigCtxOffsetNext;
+    unsigned      gtxCtxOffsetNext;
+    int           nextInsidePos;
+    NbInfoSbb     nextNbInfoSbb;
+    int           nextSbbRight;
+    int           nextSbbBelow;
+  };
+
+  class Rom;
+  struct TUParameters
+  {
+    TUParameters ( const Rom& rom, const unsigned width, const unsigned height, const ChannelType chType );
+    ~TUParameters()
+    {
+      delete [] m_scanInfo;
+    }
+
+    ChannelType       m_chType;
+    unsigned          m_width;
+    unsigned          m_height;
+    unsigned          m_numCoeff;
+    unsigned          m_numSbb;
+    unsigned          m_log2SbbWidth;
+    unsigned          m_log2SbbHeight;
+    unsigned          m_log2SbbSize;
+    unsigned          m_sbbSize;
+    unsigned          m_sbbMask;
+    unsigned          m_widthInSbb;
+    unsigned          m_heightInSbb;
+    CoeffScanType     m_scanType;
+    const unsigned*   m_scanSbbId2SbbPos;
+    const unsigned*   m_scanId2BlkPos;
+    const unsigned*   m_scanId2PosX;
+    const unsigned*   m_scanId2PosY;
+    const NbInfoSbb*  m_scanId2NbInfoSbb;
+    const NbInfoOut*  m_scanId2NbInfoOut;
+    ScanInfo*         m_scanInfo;
+  private:
+    void xSetScanInfo( ScanInfo& scanInfo, int scanIdx );
+  };
+
+  class Rom
+  {
+  public:
+    Rom() : m_scansInitialized(false) {}
+    ~Rom() { xUninitScanArrays(); }
+    void                init        ()                       { xInitScanArrays(); }
+    const NbInfoSbb*    getNbInfoSbb( int hd, int vd ) const { return m_scanId2NbInfoSbbArray[hd][vd]; }
+    const NbInfoOut*    getNbInfoOut( int hd, int vd ) const { return m_scanId2NbInfoOutArray[hd][vd]; }
+    const TUParameters* getTUPars   ( const CompArea& area, const ComponentID compID ) const
+    {
+      return m_tuParameters[g_aucLog2[area.width]][g_aucLog2[area.height]][toChannelType(compID)];
+    }
+  private:
+    void  xInitScanArrays   ();
+    void  xUninitScanArrays ();
+  private:
+    bool          m_scansInitialized;
+    NbInfoSbb*    m_scanId2NbInfoSbbArray[ MAX_CU_DEPTH+1 ][ MAX_CU_DEPTH+1 ];
+    NbInfoOut*    m_scanId2NbInfoOutArray[ MAX_CU_DEPTH+1 ][ MAX_CU_DEPTH+1 ];
+    TUParameters* m_tuParameters         [ MAX_CU_DEPTH+1 ][ MAX_CU_DEPTH+1 ][ MAX_NUM_CHANNEL_TYPE ];
+  };
+
+  void Rom::xInitScanArrays()
+  {
+    if( m_scansInitialized )
+    {
+      return;
+    }
+    ::memset( m_scanId2NbInfoSbbArray, 0, sizeof(m_scanId2NbInfoSbbArray) );
+    ::memset( m_scanId2NbInfoOutArray, 0, sizeof(m_scanId2NbInfoOutArray) );
+    ::memset( m_tuParameters,          0, sizeof(m_tuParameters) );
+
+    uint32_t raster2id[ MAX_CU_SIZE * MAX_CU_SIZE ];
+
+    for( int hd = 1; hd <= MAX_CU_DEPTH; hd++ )
+    {
+      for( int vd = 1; vd <= MAX_CU_DEPTH; vd++ )
+      {
+        const uint32_t      blockWidth    = (1 << hd);
+        const uint32_t      blockHeight   = (1 << vd);
+        const uint32_t      totalValues   = blockWidth * blockHeight;
+        const uint32_t      log2CGWidth   = (blockWidth & 3) + (blockHeight & 3) > 0 ? 1 : 2;
+        const uint32_t      log2CGHeight  = (blockWidth & 3) + (blockHeight & 3) > 0 ? 1 : 2;
+        const uint32_t      groupWidth    = 1 << log2CGWidth;
+        const uint32_t      groupHeight   = 1 << log2CGHeight;
+        const uint32_t      groupSize     = groupWidth * groupHeight;
+        const CoeffScanType scanType      = SCAN_DIAG;
+        const SizeType      blkWidthIdx   = gp_sizeIdxInfo->idxFrom( blockWidth  );
+        const SizeType      blkHeightIdx  = gp_sizeIdxInfo->idxFrom( blockHeight );
+        const uint32_t*     scanId2RP     = g_scanOrder     [SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx];
+        const uint32_t*     scanId2X      = g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx][0];
+        const uint32_t*     scanId2Y      = g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx][1];
+        NbInfoSbb*&         sId2NbSbb     = m_scanId2NbInfoSbbArray[hd][vd];
+        NbInfoOut*&         sId2NbOut     = m_scanId2NbInfoOutArray[hd][vd];
+
+        sId2NbSbb = new NbInfoSbb[ totalValues ];
+        sId2NbOut = new NbInfoOut[ totalValues ];
+
+        for( uint32_t scanId = 0; scanId < totalValues; scanId++ )
+        {
+          raster2id[ scanId2RP[ scanId ] ] = scanId;
+        }
+
+        for( unsigned scanId = 0; scanId < totalValues; scanId++ )
+        {
+          const int posX = scanId2X [ scanId ];
+          const int posY = scanId2Y [ scanId ];
+          const int rpos = scanId2RP[ scanId ];
+          {
+            //===== inside subband neighbours =====
+            NbInfoSbb&     nbSbb  = sId2NbSbb[ scanId ];
+            const int      begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
+            int            cpos[5];
+            cpos[0] = ( posX < blockWidth -1                         ? ( raster2id[rpos+1           ] - begSbb < groupSize ? raster2id[rpos+1           ] - begSbb : 0 ) : 0 );
+            cpos[1] = ( posX < blockWidth -2                         ? ( raster2id[rpos+2           ] - begSbb < groupSize ? raster2id[rpos+2           ] - begSbb : 0 ) : 0 );
+            cpos[2] = ( posX < blockWidth -1 && posY < blockHeight-1 ? ( raster2id[rpos+1+blockWidth] - begSbb < groupSize ? raster2id[rpos+1+blockWidth] - begSbb : 0 ) : 0 );
+            cpos[3] = ( posY < blockHeight-1                         ? ( raster2id[rpos+  blockWidth] - begSbb < groupSize ? raster2id[rpos+  blockWidth] - begSbb : 0 ) : 0 );
+            cpos[4] = ( posY < blockHeight-2                         ? ( raster2id[rpos+2*blockWidth] - begSbb < groupSize ? raster2id[rpos+2*blockWidth] - begSbb : 0 ) : 0 );
+            for( nbSbb.num = 0; true; )
+            {
+              int nk = -1;
+              for( int k = 0; k < 5; k++ )
+              {
+                if( cpos[k] != 0 && ( nk < 0 || cpos[k] < cpos[nk] ) )
+                {
+                  nk = k;
+                }
+              }
+              if( nk < 0 )
+              {
+                break;
+              }
+              nbSbb.inPos[ nbSbb.num++ ] = uint8_t( cpos[nk] );
+              cpos[nk] = 0;
+            }
+            for( int k = nbSbb.num; k < 5; k++ )
+            {
+              nbSbb.inPos[k] = 0;
+            }
+          }
+          {
+            //===== outside subband neighbours =====
+            NbInfoOut&     nbOut  = sId2NbOut[ scanId ];
+            const int      begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
+            int            cpos[5];
+            cpos[0] = ( posX < blockWidth -1                         ? ( raster2id[rpos+1           ] - begSbb >= groupSize ? raster2id[rpos+1           ] : 0 ) : 0 );
+            cpos[1] = ( posX < blockWidth -2                         ? ( raster2id[rpos+2           ] - begSbb >= groupSize ? raster2id[rpos+2           ] : 0 ) : 0 );
+            cpos[2] = ( posX < blockWidth -1 && posY < blockHeight-1 ? ( raster2id[rpos+1+blockWidth] - begSbb >= groupSize ? raster2id[rpos+1+blockWidth] : 0 ) : 0 );
+            cpos[3] = ( posY < blockHeight-1                         ? ( raster2id[rpos+  blockWidth] - begSbb >= groupSize ? raster2id[rpos+  blockWidth] : 0 ) : 0 );
+            cpos[4] = ( posY < blockHeight-2                         ? ( raster2id[rpos+2*blockWidth] - begSbb >= groupSize ? raster2id[rpos+2*blockWidth] : 0 ) : 0 );
+            for( nbOut.num = 0; true; )
+            {
+              int nk = -1;
+              for( int k = 0; k < 5; k++ )
+              {
+                if( cpos[k] != 0 && ( nk < 0 || cpos[k] < cpos[nk] ) )
+                {
+                  nk = k;
+                }
+              }
+              if( nk < 0 )
+              {
+                break;
+              }
+              nbOut.outPos[ nbOut.num++ ] = uint16_t( cpos[nk] );
+              cpos[nk] = 0;
+            }
+            for( int k = nbOut.num; k < 5; k++ )
+            {
+              nbOut.outPos[k] = 0;
+            }
+            nbOut.maxDist = ( scanId == 0 ? 0 : sId2NbOut[scanId-1].maxDist );
+            for( int k = 0; k < nbOut.num; k++ )
+            {
+              if( nbOut.outPos[k] > nbOut.maxDist )
+              {
+                nbOut.maxDist = nbOut.outPos[k];
+              }
+            }
+          }
+        }
+
+        // make it relative
+        for( unsigned scanId = 0; scanId < totalValues; scanId++ )
+        {
+          NbInfoOut& nbOut  = sId2NbOut[scanId];
+          const int  begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
+          for( int k = 0; k < nbOut.num; k++ )
+          {
+            nbOut.outPos[k] -= begSbb;
+          }
+          nbOut.maxDist -= scanId;
+        }
+
+        for( int chId = 0; chId < MAX_NUM_CHANNEL_TYPE; chId++ )
+        {
+          m_tuParameters[hd][vd][chId] = new TUParameters( *this, blockWidth, blockHeight, ChannelType(chId) );
+        }
+      }
+    }
+    m_scansInitialized = true;
+  }
+
+  void Rom::xUninitScanArrays()
+  {
+    if( !m_scansInitialized )
+    {
+      return;
+    }
+    for( int hd = 0; hd <= MAX_CU_DEPTH; hd++ )
+    {
+      for( int vd = 0; vd <= MAX_CU_DEPTH; vd++ )
+      {
+        NbInfoSbb*& sId2NbSbb = m_scanId2NbInfoSbbArray[hd][vd];
+        NbInfoOut*& sId2NbOut = m_scanId2NbInfoOutArray[hd][vd];
+        if( sId2NbSbb )
+        {
+          delete [] sId2NbSbb;
+        }
+        if( sId2NbOut )
+        {
+          delete [] sId2NbOut;
+        }
+        for( int chId = 0; chId < MAX_NUM_CHANNEL_TYPE; chId++ )
+        {
+          TUParameters*& tuPars = m_tuParameters[hd][vd][chId];
+          if( tuPars )
+          {
+            delete tuPars;
+          }
+        }
+      }
+    }
+    m_scansInitialized = false;
+  }
+
+
+  static Rom g_Rom;
+
+
+  TUParameters::TUParameters( const Rom& rom, const unsigned width, const unsigned height, const ChannelType chType )
+  {
+    m_chType              = chType;
+    m_width               = width;
+    m_height              = height;
+    m_numCoeff            = m_width * m_height;
+    const bool      no4x4 = ( ( m_width & 3 ) != 0 || ( m_height & 3 ) != 0 );
+    m_log2SbbWidth        = ( no4x4 ? 1 : 2 );
+    m_log2SbbHeight       = ( no4x4 ? 1 : 2 );
+    m_log2SbbSize         = m_log2SbbWidth + m_log2SbbHeight;
+    m_sbbSize             = ( 1 << m_log2SbbSize );
+    m_sbbMask             = m_sbbSize - 1;
+    m_widthInSbb          = m_width  >> m_log2SbbWidth;
+    m_heightInSbb         = m_height >> m_log2SbbHeight;
+    m_numSbb              = m_widthInSbb * m_heightInSbb;
+#if HEVC_USE_MDCS
+#error "MDCS is not supported" // use different function...
+    //  m_scanType            = CoeffScanType( TU::getCoefScanIdx( tu, m_compID ) );
+#else
+    m_scanType            = SCAN_DIAG;
+#endif
+    SizeType        hsbb  = gp_sizeIdxInfo->idxFrom( m_widthInSbb  );
+    SizeType        vsbb  = gp_sizeIdxInfo->idxFrom( m_heightInSbb );
+    SizeType        hsId  = gp_sizeIdxInfo->idxFrom( m_width  );
+    SizeType        vsId  = gp_sizeIdxInfo->idxFrom( m_height );
+    m_scanSbbId2SbbPos    = g_scanOrder     [ SCAN_UNGROUPED   ][ m_scanType ][ hsbb ][ vsbb ];
+    m_scanId2BlkPos       = g_scanOrder     [ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ];
+    m_scanId2PosX         = g_scanOrderPosXY[ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ][ 0 ];
+    m_scanId2PosY         = g_scanOrderPosXY[ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ][ 1 ];
+    int log2W             = g_aucLog2[ m_width  ];
+    int log2H             = g_aucLog2[ m_height ];
+    m_scanId2NbInfoSbb    = rom.getNbInfoSbb( log2W, log2H );
+    m_scanId2NbInfoOut    = rom.getNbInfoOut( log2W, log2H );
+    m_scanInfo            = new ScanInfo[ m_numCoeff ];
+    for( int scanIdx = 0; scanIdx < m_numCoeff; scanIdx++ )
+    {
+      xSetScanInfo( m_scanInfo[scanIdx], scanIdx );
+    }
+  }
+
+
+  void TUParameters::xSetScanInfo( ScanInfo& scanInfo, int scanIdx )
+  {
+    scanInfo.sbbSize    = m_sbbSize;
+    scanInfo.numSbb     = m_numSbb;
+    scanInfo.scanIdx    = scanIdx;
+    scanInfo.rasterPos  = m_scanId2BlkPos[ scanIdx ];
+    scanInfo.sbbPos     = m_scanSbbId2SbbPos[ scanIdx >> m_log2SbbSize ];
+    scanInfo.insidePos  = scanIdx & m_sbbMask;
+    scanInfo.eosbb      = ( scanInfo.insidePos == 0 );
+    scanInfo.spt        = SCAN_ISCSBB;
+    if(  scanInfo.insidePos == m_sbbMask && scanIdx > scanInfo.sbbSize && scanIdx < m_numCoeff - 1 )
+      scanInfo.spt      = SCAN_SOCSBB;
+    else if( scanInfo.eosbb && scanIdx > 0 && scanIdx < m_numCoeff - m_sbbSize )
+      scanInfo.spt      = SCAN_EOCSBB;
+    if( scanIdx )
+    {
+      const int nextScanIdx = scanIdx - 1;
+      const int diag        = m_scanId2PosX[ nextScanIdx ] + m_scanId2PosY[ nextScanIdx ];
+      if( m_chType == CHANNEL_TYPE_LUMA )
+      {
+        scanInfo.sigCtxOffsetNext = ( diag < 2 ? 12 : diag < 5 ?  6 : 0 );
+        scanInfo.gtxCtxOffsetNext = ( diag < 1 ? 16 : diag < 3 ? 11 : diag < 10 ? 6 : 1 );
+      }
+      else
+      {
+        scanInfo.sigCtxOffsetNext = ( diag < 2 ? 6 : 0 );
+        scanInfo.gtxCtxOffsetNext = ( diag < 1 ? 6 : 1 );
+      }
+      scanInfo.nextInsidePos      = nextScanIdx & m_sbbMask;
+      scanInfo.nextNbInfoSbb      = m_scanId2NbInfoSbb[ nextScanIdx ];
+      if( scanInfo.eosbb )
+      {
+        const int nextSbbPos  = m_scanSbbId2SbbPos[ nextScanIdx >> m_log2SbbSize ];
+        const int nextSbbPosY = nextSbbPos               / m_widthInSbb;
+        const int nextSbbPosX = nextSbbPos - nextSbbPosY * m_widthInSbb;
+        scanInfo.nextSbbRight = ( nextSbbPosX < m_widthInSbb  - 1 ? nextSbbPos + 1            : 0 );
+        scanInfo.nextSbbBelow = ( nextSbbPosY < m_heightInSbb - 1 ? nextSbbPos + m_widthInSbb : 0 );
+      }
+    }
+  }
+
+
+
+  class RateEstimator
+  {
+  public:
+    RateEstimator () {}
+    ~RateEstimator() {}
+    void initCtx  ( const TUParameters& tuPars, const TransformUnit& tu, const ComponentID compID, const FracBitsAccess& fracBitsAccess );
+
+    inline const BinFracBits *sigSbbFracBits() const { return m_sigSbbFracBits; }
+    inline const BinFracBits *sigFlagBits(unsigned stateId) const
+    {
+      return m_sigFracBits[std::max(((int) stateId) - 1, 0)];
+    }
+    inline const CoeffFracBits *gtxFracBits(unsigned stateId) const { return m_gtxFracBits; }
+    inline int32_t              lastOffset(unsigned scanIdx) const
+    {
+      return m_lastBitsX[m_scanId2PosX[scanIdx]] + m_lastBitsY[m_scanId2PosY[scanIdx]];
+    }
+
+  private:
+    void  xSetLastCoeffOffset ( const FracBitsAccess& fracBitsAccess, const TUParameters& tuPars, const TransformUnit& tu, const ComponentID compID );
+    void  xSetSigSbbFracBits  ( const FracBitsAccess& fracBitsAccess, ChannelType chType );
+    void  xSetSigFlagBits     ( const FracBitsAccess& fracBitsAccess, ChannelType chType );
+    void  xSetGtxFlagBits     ( const FracBitsAccess& fracBitsAccess, ChannelType chType );
+
+  private:
+    static const unsigned sm_numCtxSetsSig    = 3;
+    static const unsigned sm_numCtxSetsGtx    = 2;
+    static const unsigned sm_maxNumSigSbbCtx  = 2;
+    static const unsigned sm_maxNumSigCtx     = 18;
+    static const unsigned sm_maxNumGtxCtx     = 21;
+
+  private:
+    const unsigned*     m_scanId2PosX;
+    const unsigned*     m_scanId2PosY;
+    int32_t             m_lastBitsX      [ MAX_TU_SIZE ];
+    int32_t             m_lastBitsY      [ MAX_TU_SIZE ];
+    BinFracBits         m_sigSbbFracBits [ sm_maxNumSigSbbCtx ];
+    BinFracBits         m_sigFracBits    [ sm_numCtxSetsSig   ][ sm_maxNumSigCtx ];
+    CoeffFracBits       m_gtxFracBits                          [ sm_maxNumGtxCtx ];
+  };
+
+  void RateEstimator::initCtx( const TUParameters& tuPars, const TransformUnit& tu, const ComponentID compID, const FracBitsAccess& fracBitsAccess )
+  {
+    m_scanId2PosX       = tuPars.m_scanId2PosX;
+    m_scanId2PosY       = tuPars.m_scanId2PosY;
+    xSetSigSbbFracBits  ( fracBitsAccess, tuPars.m_chType );
+    xSetSigFlagBits     ( fracBitsAccess, tuPars.m_chType );
+    xSetGtxFlagBits     ( fracBitsAccess, tuPars.m_chType );
+    xSetLastCoeffOffset ( fracBitsAccess, tuPars, tu, compID );
+  }
+
+  void RateEstimator::xSetLastCoeffOffset( const FracBitsAccess& fracBitsAccess, const TUParameters& tuPars, const TransformUnit& tu, const ComponentID compID )
+  {
+    const ChannelType chType = ( compID == COMPONENT_Y ? CHANNEL_TYPE_LUMA : CHANNEL_TYPE_CHROMA );
+    int32_t cbfDeltaBits = 0;
+    if( compID == COMPONENT_Y && !CU::isIntra(*tu.cu) && !tu.depth )
+    {
+      const BinFracBits bits  = fracBitsAccess.getFracBitsArray( Ctx::QtRootCbf() );
+      cbfDeltaBits            = int32_t( bits.intBits[1] ) - int32_t( bits.intBits[0] );
+    }
+    else
+    {
+#if ENABLE_BMS
+      BinFracBits bits = fracBitsAccess.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( compID, tu.depth, tu.cbf[COMPONENT_Cb] ) ) );
+#else
+      BinFracBits bits = fracBitsAccess.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( compID, tu.cbf[COMPONENT_Cb] ) ) );
+#endif
+      cbfDeltaBits = int32_t( bits.intBits[1] ) - int32_t( bits.intBits[0] );
+    }
+
+    static const unsigned prefixCtx[] = { 0, 0, 0, 3, 6, 10, 15, 21 };
+    uint32_t              ctxBits  [ LAST_SIGNIFICANT_GROUPS ];
+    for( unsigned xy = 0; xy < 2; xy++ )
+    {
+      int32_t             bitOffset   = ( xy ? cbfDeltaBits : 0 );
+      int32_t*            lastBits    = ( xy ? m_lastBitsY : m_lastBitsX );
+      const unsigned      size        = ( xy ? tuPars.m_height : tuPars.m_width );
+      const unsigned      log2Size    = g_aucNextLog2[ size ];
+#if HEVC_USE_MDCS
+      const bool          useYCtx     = ( m_scanType == SCAN_VER ? ( xy == 0 ) : ( xy != 0 ) );
+#else
+      const bool          useYCtx     = ( xy != 0 );
+#endif
+      const CtxSet&       ctxSetLast  = ( useYCtx ? Ctx::LastY : Ctx::LastX )[ chType ];
+      const unsigned      lastShift   = ( compID == COMPONENT_Y ? (log2Size+1)>>2 : ( tu.cs->pcv->rectCUs ? Clip3<unsigned>(0,2,size>>3) : log2Size-2 ) );
+      const unsigned      lastOffset  = ( compID == COMPONENT_Y ? ( tu.cs->pcv->rectCUs ? prefixCtx[log2Size] : 3*(log2Size-2)+((log2Size-1)>>2) ) : 0 );
+      uint32_t            sumFBits    = 0;
+      unsigned            maxCtxId    = g_uiGroupIdx[ size - 1 ];
+      for( unsigned ctxId = 0; ctxId < maxCtxId; ctxId++ )
+      {
+        const BinFracBits bits  = fracBitsAccess.getFracBitsArray( ctxSetLast( lastOffset + ( ctxId >> lastShift ) ) );
+        ctxBits[ ctxId ]        = sumFBits + bits.intBits[0] + ( ctxId>3 ? ((ctxId-2)>>1)<<SCALE_BITS : 0 ) + bitOffset;
+        sumFBits               +=            bits.intBits[1];
+      }
+      ctxBits  [ maxCtxId ]     = sumFBits + ( maxCtxId>3 ? ((maxCtxId-2)>>1)<<SCALE_BITS : 0 ) + bitOffset;
+      for( unsigned pos = 0; pos < size; pos++ )
+      {
+        lastBits[ pos ]         = ctxBits[ g_uiGroupIdx[ pos ] ];
+      }
+    }
+  }
+
+  void RateEstimator::xSetSigSbbFracBits( const FracBitsAccess& fracBitsAccess, ChannelType chType )
+  {
+    const CtxSet& ctxSet = Ctx::SigCoeffGroup[ chType ];
+    for( unsigned ctxId = 0; ctxId < sm_maxNumSigSbbCtx; ctxId++ )
+    {
+      m_sigSbbFracBits[ ctxId ] = fracBitsAccess.getFracBitsArray( ctxSet( ctxId ) );
+    }
+  }
+
+  void RateEstimator::xSetSigFlagBits( const FracBitsAccess& fracBitsAccess, ChannelType chType )
+  {
+    for( unsigned ctxSetId = 0; ctxSetId < sm_numCtxSetsSig; ctxSetId++ )
+    {
+      BinFracBits*    bits    = m_sigFracBits [ ctxSetId ];
+      const CtxSet&   ctxSet  = Ctx::SigFlag  [ chType + 2*ctxSetId ];
+      const unsigned  numCtx  = ( chType == CHANNEL_TYPE_LUMA ? 18 : 12 );
+      for( unsigned ctxId = 0; ctxId < numCtx; ctxId++ )
+      {
+        bits[ ctxId ] = fracBitsAccess.getFracBitsArray( ctxSet( ctxId ) );
+      }
+    }
+  }
+
+  void RateEstimator::xSetGtxFlagBits( const FracBitsAccess& fracBitsAccess, ChannelType chType )
+  {
+    const CtxSet&   ctxSetPar   = Ctx::ParFlag [     chType ];
+    const CtxSet&   ctxSetGt1   = Ctx::GtxFlag [ 2 + chType ];
+    const CtxSet&   ctxSetGt2   = Ctx::GtxFlag [     chType ];
+    const unsigned  numCtx      = ( chType == CHANNEL_TYPE_LUMA ? 21 : 11 );
+    for( unsigned ctxId = 0; ctxId < numCtx; ctxId++ )
+    {
+      BinFracBits     fbPar = fracBitsAccess.getFracBitsArray( ctxSetPar( ctxId ) );
+      BinFracBits     fbGt1 = fracBitsAccess.getFracBitsArray( ctxSetGt1( ctxId ) );
+      BinFracBits     fbGt2 = fracBitsAccess.getFracBitsArray( ctxSetGt2( ctxId ) );
+      CoeffFracBits&  cb    = m_gtxFracBits[ ctxId ];
+      int32_t         par0  = (1<<SCALE_BITS) + int32_t(fbPar.intBits[0]);
+      int32_t         par1  = (1<<SCALE_BITS) + int32_t(fbPar.intBits[1]);
+      cb.bits[0] = 0;
+      cb.bits[1] = fbGt1.intBits[0] + (1 << SCALE_BITS);
+      cb.bits[2] = fbGt1.intBits[1] + par0 + fbGt2.intBits[0];
+      cb.bits[3] = fbGt1.intBits[1] + par1 + fbGt2.intBits[0];
+      cb.bits[4] = fbGt1.intBits[1] + par0 + fbGt2.intBits[1];
+      cb.bits[5] = fbGt1.intBits[1] + par1 + fbGt2.intBits[1];
+    }
+  }
+
+#else
 
   class Rom
   {
@@ -484,7 +972,7 @@ namespace DQIntern
 #endif
     }
   }
-
+#endif
 
 
 
@@ -495,6 +983,8 @@ namespace DQIntern
   /*=====                                                                      =====*/
   /*================================================================================*/
 
+#if JVET_L0274_ENCODER_SPEED_UP
+#else
   enum ScanPosType { SCAN_ISCSBB = 0, SCAN_SOCSBB = 1, SCAN_EOCSBB = 2 };
 
   struct ScanInfo
@@ -603,7 +1093,7 @@ namespace DQIntern
     const int            m_numCoeffMinus1;
     const int            m_numCoeffMinusSbb;
   };
-
+#endif
 
   struct PQData
   {
@@ -850,6 +1340,21 @@ namespace DQIntern
 
     inline void swap() { std::swap(m_currSbbCtx, m_prevSbbCtx); }
 
+#if JVET_L0274_ENCODER_SPEED_UP
+    inline void reset( const TUParameters& tuPars, const RateEstimator &rateEst)
+    {
+      m_nbInfo = tuPars.m_scanId2NbInfoOut;
+      ::memcpy( m_sbbFlagBits, rateEst.sigSbbFracBits(), 2*sizeof(BinFracBits) );
+      const int numSbb    = tuPars.m_numSbb;
+      const int chunkSize = numSbb + tuPars.m_numCoeff;
+      uint8_t*  nextMem   = m_memory;
+      for( int k = 0; k < 8; k++, nextMem += chunkSize )
+      {
+        m_allSbbCtx[k].sbbFlags = nextMem;
+        m_allSbbCtx[k].levels   = nextMem + numSbb;
+      }
+    }
+#else
     inline void reset(const RateEstimator &rateEst)
     {
       m_nbInfo = rateEst.nbInfoOut();
@@ -863,6 +1368,7 @@ namespace DQIntern
         m_allSbbCtx[k].levels   = nextMem + numSbb;
       }
     }
+#endif
 
     inline void update(const ScanInfo &scanInfo, const State *prevState, State &currState);
 
@@ -1616,7 +2122,11 @@ namespace DQIntern
 #endif
 
     //===== reset / pre-init =====
+#if JVET_L0274_ENCODER_SPEED_UP
+    const TUParameters& tuPars  = *g_Rom.getTUPars( tu.blocks[compID], compID );
+#else
     RateEstimator::initBlock  ( tu, compID );
+#endif
     m_quant.initQuantBlock    ( tu, compID, cQP, lambda );
     TCoeff*       qCoeff      = tu.getCoeffs( compID ).buf;
     const TCoeff* tCoeff      = srcCoeff.buf;
@@ -1629,7 +2139,11 @@ namespace DQIntern
     const TCoeff thres = m_quant.getLastThreshold();
     for( ; firstTestPos >= 0; firstTestPos-- )
     {
+#if JVET_L0274_ENCODER_SPEED_UP
+      if( abs( tCoeff[ tuPars.m_scanId2BlkPos[firstTestPos] ] ) > thres )
+#else
       if( abs( tCoeff[ rasterPos(firstTestPos) ] ) > thres )
+#endif
       {
         break;
       }
@@ -1640,8 +2154,13 @@ namespace DQIntern
     }
 
     //===== real init =====
+#if JVET_L0274_ENCODER_SPEED_UP
+    RateEstimator::initCtx( tuPars, tu, compID, ctx.getFracBitsAcess() );
+    m_commonCtx.reset( tuPars, *this );
+#else
     RateEstimator::initCtx( tu, ctx.getFracBitsAcess() );
     m_commonCtx.reset( *this );
+#endif
     for( int k = 0; k < 12; k++ )
     {
       m_allStates[k].init();
@@ -1650,10 +2169,18 @@ namespace DQIntern
 
 
     //===== populate trellis =====
+#if JVET_L0274_ENCODER_SPEED_UP
+    for( int scanIdx = firstTestPos; scanIdx >= 0; scanIdx-- )
+    {
+      const ScanInfo& scanInfo = tuPars.m_scanInfo[ scanIdx ];
+      xDecideAndUpdate( abs( tCoeff[ scanInfo.rasterPos ] ), scanInfo );
+    }
+#else
     for( ScanData scanData(*this,firstTestPos); scanData.valid(); scanData.next() )
     {
       xDecideAndUpdate( abs( tCoeff[ scanData.rasterPos ] ), scanData );
     }
+#endif
 
     //===== find best path =====
     Decision  decision    = { std::numeric_limits<int64_t>::max(), -1, -2 };
@@ -1673,7 +2200,11 @@ namespace DQIntern
     for( ; decision.prevId >= 0; scanIdx++ )
     {
       decision          = m_trellis[ scanIdx ][ decision.prevId ];
+#if JVET_L0274_ENCODER_SPEED_UP
+      int32_t blkpos    = tuPars.m_scanId2BlkPos[ scanIdx ];
+#else
       int32_t blkpos    = rasterPos( scanIdx );
+#endif
       qCoeff[ blkpos ]  = ( tCoeff[ blkpos ] < 0 ? -decision.absLevel : decision.absLevel );
       absSum           += decision.absLevel;
     }

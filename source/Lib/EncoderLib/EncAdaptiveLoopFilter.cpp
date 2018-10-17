@@ -1126,9 +1126,15 @@ double EncAdaptiveLoopFilter::deriveCoeffQuant( int *filterCoeffQuant, double **
     memset( filterCoeffQuant, 0, sizeof( int ) * numCoeff );
   }
 
+#if JVET_L0082_ALF_COEF_BITS
+  int max_value = factor - 1;
+  int min_value = -factor;
+#else
   //512 -> 1, (64+32+4+2)->0.199
   int max_value = 512 + 64 + 32 + 4 + 2;  
   int min_value = -max_value;             
+#endif 
+
   for ( int i = 0; i < numCoeff - 1; i++ )
   {
     filterCoeffQuant[i] = std::min( max_value, std::max( min_value, filterCoeffQuant[i] ) );
@@ -1143,6 +1149,74 @@ double EncAdaptiveLoopFilter::deriveCoeffQuant( int *filterCoeffQuant, double **
   }
   filterCoeffQuant[numCoeff - 1] = -quantCoeffSum;
   filterCoeff[numCoeff - 1] = filterCoeffQuant[numCoeff - 1] / double(factor);
+
+#if JVET_L0082_ALF_COEF_BITS
+  
+  //Restrict the range of the center coefficient
+  int max_value_center = (2 * factor - 1) - factor;
+  int min_value_center = 0 - factor;
+
+  filterCoeffQuant[numCoeff - 1] = std::min(max_value_center, std::max(min_value_center, filterCoeffQuant[numCoeff - 1]));
+  filterCoeff[numCoeff - 1] = filterCoeffQuant[numCoeff - 1] / double(factor);
+
+  int coeffQuantAdjust[MAX_NUM_ALF_LUMA_COEFF];
+  int adjustedTotalCoeff = (numCoeff - 1) << 1;
+
+  count = 0;
+  quantCoeffSum += filterCoeffQuant[numCoeff - 1];
+  while (quantCoeffSum != targetCoeffSumInt && count < 15)
+  {
+    int sign = quantCoeffSum > targetCoeffSumInt ? 1 : -1;
+    int diff = (quantCoeffSum - targetCoeffSumInt) * sign;
+
+    if (diff > 4 * adjustedTotalCoeff)     sign = sign * 8;
+    else if (diff > 2 * adjustedTotalCoeff)     sign = sign * 4;
+    else if (diff >     adjustedTotalCoeff)     sign = sign * 2;
+
+    double errMin = MAX_DOUBLE;
+    int    minInd = -1;
+
+    for (int k = 0; k < numCoeff - 1; k++)
+    {
+      memcpy(coeffQuantAdjust, filterCoeffQuant, sizeof(int) * numCoeff);
+
+      coeffQuantAdjust[k] -= sign;
+
+      if (coeffQuantAdjust[k] <= max_value && coeffQuantAdjust[k] >= min_value)
+      {
+        double error = calcErrorForCoeffs(E, y, coeffQuantAdjust, numCoeff, bitDepth);
+
+        if (error < errMin)
+        {
+          errMin = error;
+          minInd = k;
+        }
+      }
+    }
+
+    if (minInd != -1)
+    {
+      filterCoeffQuant[minInd] -= sign;
+      quantCoeffSum -= (weights[minInd] * sign);
+    }
+
+    ++count;
+  }
+
+  if (quantCoeffSum != targetCoeffSumInt)
+  {
+    memset(filterCoeffQuant, 0, sizeof(int) * numCoeff);
+  }
+
+  for (int i = 0; i < numCoeff - 1; i++)
+  {
+    CHECK(filterCoeffQuant[i] > max_value || filterCoeffQuant[i] < min_value, "filterCoeffQuant[i]>max_value || filterCoeffQuant[i]<min_value");
+    filterCoeff[i] = filterCoeffQuant[i] / double(factor);
+  }
+  CHECK(filterCoeffQuant[numCoeff - 1] > max_value_center || filterCoeffQuant[numCoeff - 1] < min_value_center, "filterCoeffQuant[numCoeff-1]>max_value_center || filterCoeffQuant[numCoeff-1]<min_value_center");
+  filterCoeff[numCoeff - 1] = filterCoeffQuant[numCoeff - 1] / double(factor);
+
+#endif
 
   double error = calcErrorForCoeffs( E, y, filterCoeffQuant, numCoeff, bitDepth );
   return error;

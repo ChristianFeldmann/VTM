@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0082_ALF_COEF_BITS                          1 // ALF filter coefficient bitwidth constraints: 10-bit
+
 #define REUSE_CU_RESULTS                                  1
 
 #define REMOVE_MV_ADAPT_PREC                              1 // remove the high precision flag in the MV class

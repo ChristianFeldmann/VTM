@@ -149,7 +149,7 @@
 #define HM_EMT_NSST_AS_IN_JEM                             1   //
 #define HM_MDIS_AS_IN_JEM                                 1   // *** - PM: not filtering ref. samples for 64xn case and using Planar MDIS condition at encoder
 #define HM_JEM_CLIP_PEL                                   1   // ***
-#define HM_JEM_MERGE_CANDS                                1   // ***
+#define HM_JEM_MERGE_CANDS                                0   // ***
 
 #endif//JEM_COMP
 

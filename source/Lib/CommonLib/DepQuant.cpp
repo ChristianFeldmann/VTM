@@ -64,7 +64,12 @@ namespace DQIntern
   };
   struct CoeffFracBits
   {
+#if JVET_L0274
+    int32_t   bits[6];
+#else
     int32_t   bits[7];
+#endif
+
   };
 
 
@@ -463,12 +468,20 @@ namespace DQIntern
       int32_t         par0  = (1<<SCALE_BITS) + int32_t(fbPar.intBits[0]);
       int32_t         par1  = (1<<SCALE_BITS) + int32_t(fbPar.intBits[1]);
       cb.bits[0]  = 0;
+#if JVET_L0274
+      cb.bits[1]  = fbGt1.intBits[0] + (1 << SCALE_BITS);
+      cb.bits[2]  = fbGt1.intBits[1] + par0 + fbGt2.intBits[0];
+      cb.bits[3]  = fbGt1.intBits[1] + par1 + fbGt2.intBits[0];
+      cb.bits[4]  = fbGt1.intBits[1] + par0 + fbGt2.intBits[1];
+      cb.bits[5]  = fbGt1.intBits[1] + par1 + fbGt2.intBits[1];
+#else
       cb.bits[1]  = par0 + fbGt1.intBits[0];
       cb.bits[2]  = par1 + fbGt1.intBits[0];
       cb.bits[3]  = par0 + fbGt1.intBits[1] + fbGt2.intBits[0];
       cb.bits[4]  = par1 + fbGt1.intBits[1] + fbGt2.intBits[0];
       cb.bits[5]  = par0 + fbGt1.intBits[1] + fbGt2.intBits[1];
       cb.bits[6]  = par1 + fbGt1.intBits[1] + fbGt2.intBits[1];
+#endif
     }
   }
 
@@ -496,10 +509,15 @@ namespace DQIntern
     int           insidePos;
     int           nextInsidePos;
     NbInfoSbb     nextNbInfoSbb;
+#if JVET_L0274
+    bool          eosbb;
+    ScanPosType   spt;
+#else
     bool          sosbb;
     bool          eosbb;
     bool          socsbb;
     bool          eocsbb;
+#endif
     int           sbbPos;
     int           nextSbbRight;
     int           nextSbbBelow;
@@ -536,10 +554,19 @@ namespace DQIntern
         sbbPos                  = m_rateEst.sbbPos      ( scanIdx );
         lastOffset              = m_rateEst.lastOffset  ( scanIdx );
         insidePos               = scanIdx & m_sbbMask;
+#if JVET_L0274
+        eosbb                   = ( insidePos == 0 );
+        spt                     = SCAN_ISCSBB;
+        if( insidePos == m_sbbMask && scanIdx > sbbSize && scanIdx < m_numCoeffMinus1 )
+          spt                   = SCAN_SOCSBB;
+        else if( eosbb && scanIdx > 0 && scanIdx < m_numCoeffMinusSbb )
+          spt                   = SCAN_EOCSBB;
+#else
         sosbb                   = ( insidePos == m_sbbMask );
         eosbb                   = ( insidePos == 0 );
         socsbb                  = ( sosbb && scanIdx > sbbSize && scanIdx < m_numCoeffMinus1   );
         eocsbb                  = ( eosbb && scanIdx > 0       && scanIdx < m_numCoeffMinusSbb );
+#endif
         if( scanIdx )
         {
           const int nextScanIdx = scanIdx - 1;
@@ -848,6 +875,16 @@ namespace DQIntern
     uint8_t                     m_memory[ 8 * ( MAX_TU_SIZE * MAX_TU_SIZE + MLS_GRP_NUM ) ];
   };
 
+#if JVET_L0274
+#define RICEMAX 32
+  const int32_t g_goRiceBits[4][RICEMAX] =
+  {
+    {  32768,  65536,  98304, 131072, 163840, 196608, 229376, 294912, 294912, 360448, 360448, 360448, 360448, 425984, 425984, 425984, 425984, 425984, 425984, 425984, 425984, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520 },
+    {  65536,  65536,  98304,  98304, 131072, 131072, 163840, 163840, 196608, 196608, 229376, 229376, 294912, 294912, 294912, 294912, 360448, 360448, 360448, 360448, 360448, 360448, 360448, 360448, 425984, 425984, 425984, 425984, 425984, 425984, 425984, 425984 },
+    {  98304,  98304,  98304,  98304, 131072, 131072, 131072, 131072, 163840, 163840, 163840, 163840, 196608, 196608, 196608, 196608, 229376, 229376, 229376, 229376, 262144, 262144, 262144, 262144, 294912, 294912, 294912, 294912, 360448, 360448, 360448, 360448 },
+    { 131072, 131072, 131072, 131072, 131072, 131072, 131072, 131072, 163840, 163840, 163840, 163840, 163840, 163840, 163840, 163840, 196608, 196608, 196608, 196608, 196608, 196608, 196608, 196608, 229376, 229376, 229376, 229376, 229376, 229376, 229376, 229376 }
+  };
+#endif
 
   class State
   {
@@ -864,12 +901,90 @@ namespace DQIntern
     {
       m_rdCost        = std::numeric_limits<int64_t>::max()>>1;
       m_numSigSbb     = 0;
+#if JVET_L0274
+      m_remRegBins    = 3;  // just large enough for last scan pos
+#endif
       m_refSbbCtxId   = -1;
       m_sigFracBits   = m_sigFracBitsArray[ 0 ];
       m_coeffFracBits = m_gtxFracBitsArray[ 0 ];
       m_goRicePar     = 0;
+#if JVET_L0274
+      m_goRiceZero    = 0;
+#endif
     }
 
+#if JVET_L0274
+    void checkRdCosts( const ScanPosType spt, const PQData& pqDataA, const PQData& pqDataB, Decision& decisionA, Decision& decisionB) const
+    {
+      const int32_t*  goRiceTab = g_goRiceBits[m_goRicePar];
+      int64_t         rdCostA   = m_rdCost + pqDataA.deltaDist;
+      int64_t         rdCostB   = m_rdCost + pqDataB.deltaDist;
+      int64_t         rdCostZ   = m_rdCost;
+      if( m_remRegBins >= 3 )
+      {
+        if( pqDataA.absLevel < 4 )
+          rdCostA += m_coeffFracBits.bits[pqDataA.absLevel];
+        else
+        {
+          const unsigned value = (pqDataA.absLevel - 4) >> 1;
+          rdCostA += m_coeffFracBits.bits[pqDataA.absLevel - (value << 1)] + goRiceTab[value<RICEMAX ? value : RICEMAX-1];
+        }
+        if( pqDataB.absLevel < 4 )
+          rdCostB += m_coeffFracBits.bits[pqDataB.absLevel];
+        else
+        {
+          const unsigned value = (pqDataB.absLevel - 4) >> 1;
+          rdCostB += m_coeffFracBits.bits[pqDataB.absLevel - (value << 1)] + goRiceTab[value<RICEMAX ? value : RICEMAX-1];
+        }
+        if( spt == SCAN_ISCSBB )
+        {
+          rdCostA += m_sigFracBits.intBits[1];
+          rdCostB += m_sigFracBits.intBits[1];
+          rdCostZ += m_sigFracBits.intBits[0];
+        }
+        else if( spt == SCAN_SOCSBB )
+        {
+          rdCostA += m_sbbFracBits.intBits[1] + m_sigFracBits.intBits[1];
+          rdCostB += m_sbbFracBits.intBits[1] + m_sigFracBits.intBits[1];
+          rdCostZ += m_sbbFracBits.intBits[1] + m_sigFracBits.intBits[0];
+        }
+        else if( m_numSigSbb )
+        {
+          rdCostA += m_sigFracBits.intBits[1];
+          rdCostB += m_sigFracBits.intBits[1];
+          rdCostZ += m_sigFracBits.intBits[0];
+        }
+        else
+        {
+          rdCostZ = decisionA.rdCost;
+        }
+      }
+      else
+      {
+        rdCostA += (1 << SCALE_BITS) + goRiceTab[pqDataA.absLevel <= m_goRiceZero ? pqDataA.absLevel - 1 : (pqDataA.absLevel<RICEMAX ? pqDataA.absLevel : RICEMAX-1)];
+        rdCostB += (1 << SCALE_BITS) + goRiceTab[pqDataB.absLevel <= m_goRiceZero ? pqDataB.absLevel - 1 : (pqDataB.absLevel<RICEMAX ? pqDataB.absLevel : RICEMAX-1)];
+        rdCostZ += goRiceTab[m_goRiceZero];
+      }
+      if( rdCostA < decisionA.rdCost )
+      {
+        decisionA.rdCost   = rdCostA;
+        decisionA.absLevel = pqDataA.absLevel;
+        decisionA.prevId   = m_stateId;
+      }
+      if( rdCostZ < decisionA.rdCost )
+      {
+        decisionA.rdCost   = rdCostZ;
+        decisionA.absLevel = 0;
+        decisionA.prevId   = m_stateId;
+      }
+      if( rdCostB < decisionB.rdCost )
+      {
+        decisionB.rdCost   = rdCostB;
+        decisionB.absLevel = pqDataB.absLevel;
+        decisionB.prevId   = m_stateId;
+      }
+    }
+#else
     template<ScanPosType spt> inline void checkRdCostZero(Decision &decision) const
     {
       int64_t rdCost = m_rdCost;
@@ -943,10 +1058,24 @@ namespace DQIntern
         decision.prevId   = m_stateId;
       }
     }
+#endif
 
     inline void checkRdCostStart(int32_t lastOffset, const PQData &pqData, Decision &decision) const
     {
+#if JVET_L0274
+      int64_t rdCost = pqData.deltaDist + lastOffset;
+      if (pqData.absLevel < 4)
+      {
+        rdCost += m_coeffFracBits.bits[pqData.absLevel];
+      }
+      else
+      {
+        const unsigned value = (pqData.absLevel - 4) >> 1;
+        rdCost += m_coeffFracBits.bits[pqData.absLevel - (value << 1)] + g_goRiceBits[m_goRicePar][value < RICEMAX ? value : RICEMAX-1];
+      }
+#else
       int64_t rdCost = pqData.deltaDist + lastOffset + getLevelBits( pqData.absLevel );
+#endif
       if( rdCost < decision.rdCost )
       {
         decision.rdCost   = rdCost;
@@ -969,15 +1098,30 @@ namespace DQIntern
   private:
     int64_t                   m_rdCost;
     uint16_t                  m_absLevelsAndCtxInit[24];  // 16x8bit for abs levels + 16x16bit for ctx init id
+#if JVET_L0274
+    int8_t                    m_numSigSbb;
+    int8_t                    m_remRegBins;
+    int8_t                    m_refSbbCtxId;
+#else
     int32_t                   m_numSigSbb;
     int32_t                   m_refSbbCtxId;
+#endif
     BinFracBits               m_sbbFracBits;
     BinFracBits               m_sigFracBits;
     CoeffFracBits             m_coeffFracBits;
+#if JVET_L0274
+    int8_t                    m_goRicePar;
+    int8_t                    m_goRiceZero;
+    const int8_t              m_stateId;
+#else
     int                       m_goRicePar;
     const int                 m_stateId;
+#endif
     const BinFracBits*const   m_sigFracBitsArray;
     const CoeffFracBits*const m_gtxFracBitsArray;
+#if JVET_L0274
+    const uint32_t*const      m_goRiceZeroArray;
+#endif
     CommonCtx&                m_commonCtx;
   };
 
@@ -987,6 +1131,9 @@ namespace DQIntern
     , m_stateId         ( stateId )
     , m_sigFracBitsArray( rateEst.sigFlagBits(stateId) )
     , m_gtxFracBitsArray( rateEst.gtxFracBits(stateId) )
+#if JVET_L0274
+    , m_goRiceZeroArray ( g_auiGoRicePosCoeff0[std::max(0,stateId-1)] )
+#endif
     , m_commonCtx       ( commonCtx )
   {
   }
@@ -1003,18 +1150,124 @@ namespace DQIntern
         m_numSigSbb             = prvState->m_numSigSbb + !!decision.absLevel;
         m_refSbbCtxId           = prvState->m_refSbbCtxId;
         m_sbbFracBits           = prvState->m_sbbFracBits;
+#if JVET_L0274
+        m_remRegBins            = prvState->m_remRegBins - 1;
+        m_goRicePar             = prvState->m_goRicePar;
+        if( m_remRegBins >= 3 )
+        {
+          TCoeff rem = (decision.absLevel - 4) >> 1;
+          if( m_goRicePar < 3 && rem > (3<<m_goRicePar)-1 )
+          {
+            m_goRicePar++;
+          }
+          m_remRegBins -= std::min<TCoeff>( decision.absLevel, 2 );
+        }
+#endif
         ::memcpy( m_absLevelsAndCtxInit, prvState->m_absLevelsAndCtxInit, 48*sizeof(uint8_t) );
       }
       else
       {
         m_numSigSbb     =  1;
         m_refSbbCtxId   = -1;
+#if JVET_L0274
+        if ( scanInfo.sbbSize == 4 )
+        {
+          m_remRegBins  = MAX_NUM_REG_BINS_2x2SUBBLOCK - MAX_NUM_GT2_BINS_2x2SUBBLOCK - std::min<TCoeff>( decision.absLevel, 2 );
+        }
+        else
+        {
+          m_remRegBins  = MAX_NUM_REG_BINS_4x4SUBBLOCK - MAX_NUM_GT2_BINS_4x4SUBBLOCK - std::min<TCoeff>( decision.absLevel, 2 );
+        }
+        m_goRicePar     = ( ((decision.absLevel - 4) >> 1) > (3<<0)-1 ? 1 : 0 );
+#endif
         ::memset( m_absLevelsAndCtxInit, 0, 48*sizeof(uint8_t) );
       }
 
       uint8_t* levels               = reinterpret_cast<uint8_t*>(m_absLevelsAndCtxInit);
       levels[ scanInfo.insidePos ]  = (uint8_t)std::min<TCoeff>( 255, decision.absLevel );
 
+#if JVET_L0274
+      if (m_remRegBins >= 3)
+      {
+        TCoeff  tinit = m_absLevelsAndCtxInit[8 + scanInfo.nextInsidePos];
+        TCoeff  sumAbs1 = (tinit >> 3) & 31;
+        TCoeff  sumNum = tinit & 7;
+#define UPDATE(k) {TCoeff t=levels[scanInfo.nextNbInfoSbb.inPos[k]]; sumAbs1+=std::min<TCoeff>(2+(t&1),t); sumNum+=!!t; }
+        if (numIPos == 1)
+        {
+          UPDATE(0);
+        }
+        else if (numIPos == 2)
+        {
+          UPDATE(0);
+          UPDATE(1);
+        }
+        else if (numIPos == 3)
+        {
+          UPDATE(0);
+          UPDATE(1);
+          UPDATE(2);
+        }
+        else if (numIPos == 4)
+        {
+          UPDATE(0);
+          UPDATE(1);
+          UPDATE(2);
+          UPDATE(3);
+        }
+        else if (numIPos == 5)
+        {
+          UPDATE(0);
+          UPDATE(1);
+          UPDATE(2);
+          UPDATE(3);
+          UPDATE(4);
+        }
+#undef UPDATE
+        TCoeff sumGt1 = sumAbs1 - sumNum;
+        m_sigFracBits = m_sigFracBitsArray[scanInfo.sigCtxOffsetNext + (sumAbs1 < 5 ? sumAbs1 : 5)];
+        m_coeffFracBits = m_gtxFracBitsArray[scanInfo.gtxCtxOffsetNext + (sumGt1 < 4 ? sumGt1 : 4)];
+      }
+      else
+      {
+        TCoeff  sumAbs = m_absLevelsAndCtxInit[8 + scanInfo.nextInsidePos] >> 8;
+#define UPDATE(k) {TCoeff t=levels[scanInfo.nextNbInfoSbb.inPos[k]]; sumAbs+=t; }
+        if (numIPos == 1)
+        {
+          UPDATE(0);
+        }
+        else if (numIPos == 2)
+        {
+          UPDATE(0);
+          UPDATE(1);
+        }
+        else if (numIPos == 3)
+        {
+          UPDATE(0);
+          UPDATE(1);
+          UPDATE(2);
+        }
+        else if (numIPos == 4)
+        {
+          UPDATE(0);
+          UPDATE(1);
+          UPDATE(2);
+          UPDATE(3);
+        }
+        else if (numIPos == 5)
+        {
+          UPDATE(0);
+          UPDATE(1);
+          UPDATE(2);
+          UPDATE(3);
+          UPDATE(4);
+        }
+#undef UPDATE
+        sumAbs = std::min(31, sumAbs);
+        m_goRicePar = g_auiGoRiceParsCoeff[sumAbs];
+        m_goRiceZero = m_goRiceZeroArray[sumAbs];
+      }
+#else
       TCoeff  tinit   = m_absLevelsAndCtxInit[ 8 + scanInfo.nextInsidePos ];
       TCoeff  sumAbs  =   tinit >> 8;
       TCoeff  sumAbs1 = ( tinit >> 3 ) & 31;
@@ -1056,6 +1309,7 @@ namespace DQIntern
       m_sigFracBits   = m_sigFracBitsArray[ scanInfo.sigCtxOffsetNext + ( sumAbs1 < 5 ? sumAbs1 : 5 ) ];
       m_coeffFracBits = m_gtxFracBitsArray[ scanInfo.gtxCtxOffsetNext + ( sumGt1  < 4 ? sumGt1  : 4 ) ];
       m_goRicePar     = g_auiGoRicePars   [ sumAbs < 31 ? sumAbs : 31 ];
+#endif
     }
   }
 
@@ -1084,11 +1338,17 @@ namespace DQIntern
       TCoeff  tinit   = m_absLevelsAndCtxInit[ 8 + scanInfo.nextInsidePos ];
       TCoeff  sumNum  =   tinit        & 7;
       TCoeff  sumAbs1 = ( tinit >> 3 ) & 31;
+#if JVET_L0274
+#else
       TCoeff  sumAbs  = ( tinit >> 8 ) - sumNum;
+#endif
       TCoeff  sumGt1  = sumAbs1        - sumNum;
       m_sigFracBits   = m_sigFracBitsArray[ scanInfo.sigCtxOffsetNext + ( sumAbs1 < 5 ? sumAbs1 : 5 ) ];
       m_coeffFracBits = m_gtxFracBitsArray[ scanInfo.gtxCtxOffsetNext + ( sumGt1  < 4 ? sumGt1  : 4 ) ];
+#if JVET_L0274
+#else
       m_goRicePar     = g_auiGoRicePars   [ sumAbs < 31 ? sumAbs : 31 ];
+#endif
     }
   }
 
@@ -1112,6 +1372,17 @@ namespace DQIntern
 
     const int       sigNSbb   = ( ( scanInfo.nextSbbRight ? sbbFlags[ scanInfo.nextSbbRight ] : false ) || ( scanInfo.nextSbbBelow ? sbbFlags[ scanInfo.nextSbbBelow ] : false ) ? 1 : 0 );
     currState.m_numSigSbb     = 0;
+#if JVET_L0274
+    if (scanInfo.sbbSize == 4)
+    {
+      currState.m_remRegBins  = MAX_NUM_REG_BINS_2x2SUBBLOCK - MAX_NUM_GT2_BINS_2x2SUBBLOCK;
+    }
+    else
+    {
+      currState.m_remRegBins  = MAX_NUM_REG_BINS_4x4SUBBLOCK - MAX_NUM_GT2_BINS_4x4SUBBLOCK;
+    }
+#endif
+    currState.m_goRicePar     = 0;
     currState.m_refSbbCtxId   = currState.m_stateId;
     currState.m_sbbFracBits   = m_sbbFlagBits[ sigNSbb ];
 
@@ -1124,7 +1395,11 @@ namespace DQIntern
       if( nbOut->num )
       {
         TCoeff sumAbs = 0, sumAbs1 = 0, sumNum = 0;
+#if JVET_L0274
+#define UPDATE(k) {TCoeff t=absLevels[nbOut->outPos[k]]; sumAbs+=t; sumAbs1+=std::min<TCoeff>(2+(t&1),t); sumNum+=!!t; }
+#else
 #define UPDATE(k) {TCoeff t=absLevels[nbOut->outPos[k]]; sumAbs+=t; sumAbs1+=std::min<TCoeff>(4-(t&1),t); sumNum+=!!t; }
+#endif
         UPDATE(0);
         if( nbOut->num > 1 )
         {
@@ -1171,8 +1446,12 @@ namespace DQIntern
 
   private:
     void    xDecideAndUpdate  ( const TCoeff absCoeff, const ScanInfo& scanInfo );
+#if JVET_L0274
+    void    xDecide           ( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions );
+#else
     template<ScanPosType spt>
     void    xDecide           ( const TCoeff absCoeff, int32_t lastOffset, Decision* decisions );
+#endif
 
   private:
     CommonCtx   m_commonCtx;
@@ -1210,13 +1489,23 @@ namespace DQIntern
 #undef  DINIT
 
 
+#if JVET_L0274
+  void DepQuant::xDecide( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions)
+#else
   template<ScanPosType spt>
   void DepQuant::xDecide( const TCoeff absCoeff, int32_t lastOffset, Decision* decisions )
+#endif
   {
     ::memcpy( decisions, startDec, 8*sizeof(Decision) );
 
     PQData  pqData[4];
     m_quant.preQuantCoeff( absCoeff, pqData );
+#if JVET_L0274
+    m_prevStates[0].checkRdCosts( spt, pqData[0], pqData[2], decisions[0], decisions[2]);
+    m_prevStates[1].checkRdCosts( spt, pqData[0], pqData[2], decisions[2], decisions[0]);
+    m_prevStates[2].checkRdCosts( spt, pqData[3], pqData[1], decisions[1], decisions[3]);
+    m_prevStates[3].checkRdCosts( spt, pqData[3], pqData[1], decisions[3], decisions[1]);
+#else
     m_prevStates[0].checkRdCostNonZero<spt> ( pqData[0],  decisions[0] );
     m_prevStates[0].checkRdCostNonZero<spt> ( pqData[2],  decisions[2] );
     m_prevStates[0].checkRdCostZero<spt>                ( decisions[0] );
@@ -1229,6 +1518,7 @@ namespace DQIntern
     m_prevStates[3].checkRdCostNonZero<spt> ( pqData[1],  decisions[1] );
     m_prevStates[3].checkRdCostNonZero<spt> ( pqData[3],  decisions[3] );
     m_prevStates[3].checkRdCostZero<spt>                ( decisions[3] );
+#endif
     if( spt==SCAN_EOCSBB )
     {
       m_skipStates[0].checkRdCostSkipSbb( decisions[0] );
@@ -1246,9 +1536,13 @@ namespace DQIntern
 
     std::swap( m_prevStates, m_currStates );
 
+#if JVET_L0274
+    xDecide( scanInfo.spt, absCoeff, lastOffset(scanInfo.scanIdx), decisions);
+#else
     if     ( scanInfo.socsbb )  { xDecide<SCAN_SOCSBB>( absCoeff, scanInfo.lastOffset, decisions ); }
     else if( scanInfo.eocsbb )  { xDecide<SCAN_EOCSBB>( absCoeff, scanInfo.lastOffset, decisions ); }
     else                        { xDecide<SCAN_ISCSBB>( absCoeff, scanInfo.lastOffset, decisions ); }
+#endif
 
     if( scanInfo.scanIdx )
     {
@@ -1303,7 +1597,11 @@ namespace DQIntern
         }
       }
 
+#if JVET_L0274
+      if( scanInfo.spt == SCAN_SOCSBB )
+#else
       if( scanInfo.socsbb )
+#endif
       {
         std::swap( m_prevStates, m_skipStates );
       }
@@ -1313,6 +1611,10 @@ namespace DQIntern
 
   void DepQuant::quant( TransformUnit& tu, const CCoeffBuf& srcCoeff, const ComponentID compID, const QpParam& cQP, const double lambda, const Ctx& ctx, TCoeff& absSum )
   {
+#if JVET_L0274
+    CHECKD( tu.cs->sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag(), "ext precision is not supported" );
+#endif
+
     //===== reset / pre-init =====
     RateEstimator::initBlock  ( tu, compID );
     m_quant.initQuantBlock    ( tu, compID, cQP, lambda );

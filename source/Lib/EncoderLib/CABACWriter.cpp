@@ -2057,7 +2057,10 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
   }
 
   uint8_t   ctxOffset[16];
+#if JVET_L0274
+#else
   unsigned  nextPass = 0;
+#endif
 
   //===== encode absolute values =====
   const int inferSigPos   = nextSigPos != cctx.scanPosLast() ? ( cctx.isNotFirst() ? minSubPos : -1 ) : nextSigPos;
@@ -2068,8 +2071,19 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
   int       remAbsLevel   = -1;
   int       numNonZero    =  0;
   unsigned  signPattern   =  0;
+#if JVET_L0274
+  bool      is2x2subblock = ( cctx.log2CGSize() == 2 );
+  int       remGt2Bins    = ( is2x2subblock ? MAX_NUM_GT2_BINS_2x2SUBBLOCK : MAX_NUM_GT2_BINS_4x4SUBBLOCK );
+  int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK ) - remGt2Bins;
+  int       firstPosMode2 = minSubPos - 1;
+  int       firstPosMode1 = minSubPos - 1;
+#endif
 
+#if JVET_L0274
+  for( ; nextSigPos >= minSubPos && remRegBins >= 3; nextSigPos-- )
+#else
   for( ; nextSigPos >= minSubPos; nextSigPos-- )
+#endif
   {
     TCoeff    Coeff      = coeff[ cctx.blockPos( nextSigPos ) ];
     unsigned  sigFlag    = ( Coeff != 0 );
@@ -2078,6 +2092,9 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
       const unsigned sigCtxId = cctx.sigCtxIdAbs( nextSigPos, coeff, state );
       m_BinEncoder.encodeBin( sigFlag, sigCtxId );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "sig_bin() bin=%d ctx=%d\n", sigFlag, sigCtxId );
+#if JVET_L0274
+      remRegBins--;
+#endif
     }
 
     if( sigFlag )
@@ -2094,6 +2111,26 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
       if( nextSigPos != cctx.scanPosLast() ) signPattern <<= 1;
       if( Coeff < 0 )                        signPattern++;
 
+#if JVET_L0274
+      unsigned gt1 = !!remAbsLevel;
+      m_BinEncoder.encodeBin( gt1, cctx.greater1CtxIdAbs(ctxOff) );
+      DTRACE( g_trace_ctx, D_SYNTAX_RESI, "gt1_flag() bin=%d ctx=%d\n", gt1, cctx.greater1CtxIdAbs(ctxOff) );
+      remRegBins--;
+
+      if( gt1 )
+      {
+        remAbsLevel  -= 1;
+        m_BinEncoder.encodeBin( remAbsLevel&1, cctx.parityCtxIdAbs( ctxOff ) );
+        DTRACE( g_trace_ctx, D_SYNTAX_RESI, "par_flag() bin=%d ctx=%d\n", remAbsLevel&1, cctx.parityCtxIdAbs( ctxOff ) );
+        remAbsLevel >>= 1;
+
+        remRegBins--;
+        if( remGt2Bins && !--remGt2Bins )
+        {
+          firstPosMode1 = nextSigPos - 1;
+        }
+      }
+#else
       m_BinEncoder.encodeBin( remAbsLevel&1, cctx.parityCtxIdAbs(ctxOff) );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "par_flag() bin=%d ctx=%d\n", remAbsLevel&1, cctx.parityCtxIdAbs(ctxOff) );
       remAbsLevel >>= 1;
@@ -2102,12 +2139,85 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
       m_BinEncoder.encodeBin( gt1, cctx.greater1CtxIdAbs(ctxOff) );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "gt1_flag() bin=%d ctx=%d\n", gt1, cctx.greater1CtxIdAbs(ctxOff) );
       nextPass |= gt1;
+#endif
     }
 
     state = ( stateTransTable >> ((state<<2)+((Coeff&1)<<1)) ) & 3;
   }
+#if JVET_L0274
+  firstPosMode2 = nextSigPos;
+  firstPosMode1 = ( firstPosMode1 > firstPosMode2 ? firstPosMode1 : firstPosMode2 );
+#endif
 
 
+#if JVET_L0274
+  //===== 2nd PASS: gt2 =====
+  for( int scanPos = firstSigPos; scanPos > firstPosMode1; scanPos-- )
+  {
+    unsigned absLevel = abs( coeff[ cctx.blockPos( scanPos ) ] );
+    if( absLevel >= 2 )
+    {
+      uint8_t& ctxOff = ctxOffset[ scanPos - minSubPos ];
+      unsigned gt2    = ( absLevel >= 4 );
+      m_BinEncoder.encodeBin( gt2, cctx.greater2CtxIdAbs(ctxOff) );
+      DTRACE( g_trace_ctx, D_SYNTAX_RESI, "gt2_flag() bin=%d ctx=%d\n", gt2, cctx.greater2CtxIdAbs(ctxOff) );
+    }
+  }
+
+  //===== 3rd PASS: Go-rice codes =====
+  unsigned ricePar = 0;
+  for( int scanPos = firstSigPos; scanPos > firstPosMode1; scanPos-- )
+  {
+    unsigned absLevel = abs( coeff[ cctx.blockPos( scanPos ) ] );
+    if( absLevel >= 4 )
+    {
+      unsigned rem      = ( absLevel - 4 ) >> 1;
+      m_BinEncoder.encodeRemAbsEP( rem, ricePar, cctx.extPrec(), cctx.maxLog2TrDRange() );
+      DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, ricePar );
+      if( ricePar < 3 && rem > (3<<ricePar)-1 )
+      {
+        ricePar++;
+      }
+    }
+  }
+  for( int scanPos = firstPosMode1; scanPos > firstPosMode2; scanPos-- )
+  {
+    unsigned absLevel = abs( coeff[ cctx.blockPos( scanPos ) ] );
+    if( absLevel >= 2 )
+    {
+      unsigned rem      = ( absLevel - 2 ) >> 1;
+      m_BinEncoder.encodeRemAbsEP( rem, ricePar, cctx.extPrec(), cctx.maxLog2TrDRange() );
+      DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, ricePar );
+      if( ricePar < 3 && rem > (3<<ricePar)-1 )
+      {
+        ricePar++;
+      }
+    }
+  }
+
+  //===== coeff bypass ====
+  for( int scanPos = firstPosMode2; scanPos >= minSubPos; scanPos-- )
+  {
+    TCoeff    Coeff     = coeff[ cctx.blockPos( scanPos ) ];
+    unsigned  absLevel  = abs( Coeff );
+    int       sumAll    = cctx.templateAbsSum(scanPos, coeff);
+    int       rice      = g_auiGoRiceParsCoeff                        [sumAll];
+    int       pos0      = g_auiGoRicePosCoeff0[std::max(0, state - 1)][sumAll];
+    unsigned  rem       = ( absLevel == 0 ? pos0 : absLevel <= pos0 ? absLevel-1 : absLevel );
+    m_BinEncoder.encodeRemAbsEP( rem, rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
+    DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, rice );
+    state = ( stateTransTable >> ((state<<2)+((absLevel&1)<<1)) ) & 3;
+    if( absLevel )
+    {
+      numNonZero++;
+#if HEVC_USE_SIGN_HIDING
+      lastNZPos   = std::max<int>( lastNZPos, scanPos );
+#endif
+      signPattern <<= 1;
+      if( Coeff < 0 ) signPattern++;
+    }
+  }
+#else
   //===== 2nd PASS: gt2 =====
   if( nextPass )
   {
@@ -2141,6 +2251,7 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
       }
     }
   }
+#endif
 
   //===== encode sign's =====
 #if HEVC_USE_SIGN_HIDING

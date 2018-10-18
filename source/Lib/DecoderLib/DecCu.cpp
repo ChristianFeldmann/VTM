@@ -542,15 +542,15 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               pu.mvpNum [eRefList] = amvpInfo.numCand;
               pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx [eRefList]] + pu.mvd[eRefList];
 
+#if REMOVE_MV_ADAPT_PREC
+              pu.mv[eRefList].hor = pu.mv[eRefList].hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+              pu.mv[eRefList].ver = pu.mv[eRefList].ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#else
               if( pu.cs->sps->getSpsNext().getUseAffine() )
               {
-#if REMOVE_MV_ADAPT_PREC
-                pu.mv[eRefList].hor = pu.mv[eRefList].hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-                pu.mv[eRefList].ver = pu.mv[eRefList].ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-#else
                 pu.mv[eRefList].setHighPrec();
-#endif
               }
+#endif
             }
           }
         }

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0194_ONE_CTX_FOR_MRG_IDX                    1 // one context for full-block Merge index
+
 #define REUSE_CU_RESULTS                                  1
 
 #define REMOVE_MV_ADAPT_PREC                              1 // remove the high precision flag in the MV class

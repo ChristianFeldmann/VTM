@@ -1257,7 +1257,139 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     pRecSrc0 += iRecStride2;
   }
 }
+#if JVET_L0191_LM_WO_LMS
+void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const ComponentID compID,
+                                              const CompArea &chromaArea,
+                                              int &a, int &b, int &iShift)
+{
+  CHECK(compID == COMPONENT_Y, "");
 
+  const SizeType cWidth  = chromaArea.width;
+  const SizeType cHeight = chromaArea.height;
+
+  const Position posLT = chromaArea;
+
+  CodingStructure & cs = *(pu.cs);
+  const CodingUnit &cu = *(pu.cu);
+
+  const SPS &        sps           = *cs.sps;
+  const uint32_t     tuWidth     = chromaArea.width;
+  const uint32_t     tuHeight    = chromaArea.height;
+  const ChromaFormat nChromaFormat = sps.getChromaFormatIdc();
+
+  const int baseUnitSize = 1 << MIN_CU_LOG2;
+  const int unitWidth    = baseUnitSize >> getComponentScaleX(chromaArea.compID, nChromaFormat);
+  const int unitHeight   = baseUnitSize >> getComponentScaleX(chromaArea.compID, nChromaFormat);
+
+  const int tuWidthInUnits  = tuWidth / unitWidth;
+  const int tuHeightInUnits = tuHeight / unitHeight;
+  const int aboveUnits      = tuWidthInUnits;
+  const int leftUnits       = tuHeightInUnits;
+
+  bool neighborFlags[4 * MAX_NUM_PART_IDXS_IN_CTU_WIDTH + 1];
+
+  memset(neighborFlags, 0, 1 + leftUnits + aboveUnits);
+
+  bool aboveAvailable, leftAvailable;
+
+  int availableUnit =
+    isAboveAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, aboveUnits, unitWidth, (neighborFlags + leftUnits + 1));
+  aboveAvailable = availableUnit == tuWidthInUnits;
+
+  availableUnit =
+    isLeftAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, leftUnits, unitHeight, (neighborFlags + leftUnits - 1));
+  leftAvailable = availableUnit == tuHeightInUnits;
+
+  Pel *srcColor0, *curChroma0;
+  int  srcStride, curStride;
+
+  PelBuf temp;
+  srcStride = MAX_CU_SIZE + 1;
+  temp        = PelBuf(m_piTemp + srcStride + 1, srcStride, Size(chromaArea));
+  srcColor0 = temp.bufAt(0, 0);
+  curChroma0 = getPredictorPtr(compID);
+
+  curStride = m_topRefLength + 1;
+
+  curChroma0 += curStride + 1;
+
+  unsigned internalBitDepth = sps.getBitDepth(CHANNEL_TYPE_CHROMA);
+
+  int minLuma[2] = { MAX_INT, 0 };
+  int maxLuma[2] = { -MAX_INT, 0 };
+
+  Pel *src = srcColor0 - srcStride;
+  Pel *cur = curChroma0 - curStride;
+
+  int minDim = leftAvailable && aboveAvailable ? 1 << g_aucPrevLog2[std::min(cHeight, cWidth)]
+                                                   : 1 << g_aucPrevLog2[leftAvailable ? cHeight : cWidth];
+  int numSteps = minDim;
+
+  if (aboveAvailable)
+  {
+    for (int j = 0; j < numSteps; j++)
+    {
+      int idx = (j * cWidth) / minDim;
+
+      if (minLuma[0] > src[idx])
+      {
+        minLuma[0] = src[idx];
+        minLuma[1] = cur[idx];
+      }
+      if (maxLuma[0] < src[idx])
+      {
+        maxLuma[0] = src[idx];
+        maxLuma[1] = cur[idx];
+      }
+    }
+  }
+
+  if (leftAvailable)
+  {
+    src = srcColor0 - 1;
+    cur = curChroma0 - 1;
+
+    for (int i = 0; i < numSteps; i++)
+    {
+      int idx = (i * cHeight) / minDim;
+
+      if (minLuma[0] > src[srcStride * idx])
+      {
+        minLuma[0] = src[srcStride * idx];
+        minLuma[1] = cur[curStride * idx];
+      }
+      if (maxLuma[0] < src[srcStride * idx])
+      {
+        maxLuma[0] = src[srcStride * idx];
+        maxLuma[1] = cur[curStride * idx];
+      }
+    }
+  }
+
+  if ((leftAvailable || aboveAvailable))
+  {
+    a         = 0;
+    iShift    = 16;
+    int shift = (internalBitDepth > 8) ? internalBitDepth - 9 : 0;
+    int add   = shift ? 1 << (shift - 1) : 0;
+    int diff  = (maxLuma[0] - minLuma[0] + add) >> shift;
+    if (diff > 0)
+    {
+      int div = ((maxLuma[1] - minLuma[1]) * g_aiLMDivTableLow[diff - 1] + 32768) >> 16;
+      a       = (((maxLuma[1] - minLuma[1]) * g_aiLMDivTableHigh[diff - 1] + div + add) >> shift);
+    }
+    b = minLuma[1] - ((a * minLuma[0]) >> iShift);
+  }
+  else
+  {
+    a = 0;
+
+    b = 1 << (internalBitDepth - 1);
+
+    iShift = 0;
+  }
+}
+#else
 static int GetFloorLog2( unsigned x )
 {
   int bits = -1;
@@ -1466,6 +1598,6 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
     b = avgY - ( ( a * avgX ) >> iShift );
   }
 }
-
+#endif
 
 //! \}

@@ -708,9 +708,56 @@ void CABACWriter::cu_pred_data( const CodingUnit& cu )
 
   imv_mode   ( cu );
 
+#if JVET_L0646_GBI
+  cu_gbi_flag( cu );
+#endif
+
 }
 
+#if JVET_L0646_GBI
+void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
+{
+  if(!CU::isGBiIdxCoded(cu))
+  {
+    return;
+  }
 
+  CHECK(!(GBI_NUM > 1 && (GBI_NUM == 2 || (GBI_NUM & 0x01) == 1)), " !( GBI_NUM > 1 && ( GBI_NUM == 2 || ( GBI_NUM & 0x01 ) == 1 ) ) ");
+  const uint8_t gbiCodingIdx = (uint8_t)g_GbiCodingOrder[CU::getValidGbiIdx(cu)];
+
+  int ctxId = 0;
+
+  int32_t numGBi = (cu.slice->getCheckLDC()) ? 5 : 3;
+
+  m_BinEncoder.encodeBin((gbiCodingIdx == 0 ? 1 : 0), Ctx::GBiIdx(ctxId));
+
+  if(numGBi > 2 && gbiCodingIdx != 0)
+  {
+    uint32_t prefixNumBits = numGBi - 2;
+    uint32_t step = 1;
+    uint8_t prefixSymbol = gbiCodingIdx;
+
+    int ctxIdGBi = 4;
+    uint8_t idx = 1;
+    for(int ui = 0; ui < prefixNumBits; ++ui)
+    {
+      if (prefixSymbol == idx)
+      {
+        m_BinEncoder.encodeBin(1, Ctx::GBiIdx(ctxIdGBi));
+        break;
+      }
+      else
+      {
+        m_BinEncoder.encodeBin(0, Ctx::GBiIdx(ctxIdGBi));
+        ctxIdGBi += step;
+        idx += step;
+      }
+    }
+  }
+
+  DTRACE(g_trace_ctx, D_SYNTAX, "cu_gbi_flag() gbi_idx=%d\n", cu.GBiIdx ? 1 : 0);
+}
+#endif
 
 void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
 {

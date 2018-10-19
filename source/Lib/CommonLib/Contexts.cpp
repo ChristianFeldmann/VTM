@@ -367,6 +367,15 @@ const CtxSet ContextSetCfg::AffineType = ContextSetCfg::addCtxSet
   { CNU, },
 });
 
+#if JVET_L0646_GBI
+const CtxSet ContextSetCfg::GBiIdx = ContextSetCfg::addCtxSet
+({
+  // 4 ctx for 1st bin; 1 ctx for each of rest bins
+  { 95,  79,  63,  31,  31,  31,  31, },
+  { 95,  79,  63,  31,  31,  31,  31, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  });
+#endif
 
 const CtxSet ContextSetCfg::Mvd = ContextSetCfg::addCtxSet
 ({

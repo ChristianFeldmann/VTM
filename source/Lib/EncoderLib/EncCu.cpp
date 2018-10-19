@@ -1641,6 +1641,9 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
   unsigned char interDirNeighbours;
   int           numValidMergeCand;
   bool          hasNoResidual = false;
+#if JVET_L0646_GBI
+  uint8_t       gbiIdx = GBI_DEFAULT;
+#endif
 
 
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
@@ -1664,7 +1667,11 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 
   cu.firstPU->mergeFlag = true;
   cu.firstPU->mergeIdx  = 0;
+#if JVET_L0646_GBI
+  PU::getAffineMergeCand( *cu.firstPU, affineMvField, interDirNeighbours, gbiIdx, numValidMergeCand );
+#else
   PU::getAffineMergeCand( *cu.firstPU, affineMvField, interDirNeighbours, numValidMergeCand );
+#endif
   if( numValidMergeCand == -1 )
   {
     return;
@@ -1673,6 +1680,9 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
   cu.firstPU->interDir = interDirNeighbours;
   PU::setAllAffineMvField( *cu.firstPU, affineMvField[REF_PIC_LIST_0], REF_PIC_LIST_0 );
   PU::setAllAffineMvField( *cu.firstPU, affineMvField[REF_PIC_LIST_1], REF_PIC_LIST_1 );
+#if JVET_L0646_GBI
+  cu.GBiIdx = gbiIdx;
+#endif
 
   PU::spanMotionInfo( *cu.firstPU );
 
@@ -1699,6 +1709,53 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 {
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
 
+#if JVET_L0646_GBI
+  
+  m_pcInterSearch->setAffineModeSelected(false);
+
+  if( tempCS->slice->getCheckLDC() )
+  {
+    m_bestGbiCost[0] = m_bestGbiCost[1] = std::numeric_limits<double>::max();
+    m_bestGbiIdx[0] = m_bestGbiIdx[1] = -1;
+  }
+
+  m_pcInterSearch->resetBufferedUniMotions();
+  int gbiLoopNum = (tempCS->slice->isInterB() ? GBI_NUM : 1);
+  gbiLoopNum = (tempCS->sps->getSpsNext().getUseGBi() ? gbiLoopNum : 1);
+
+  if( tempCS->area.lwidth() * tempCS->area.lheight() < GBI_SIZE_CONSTRAINT )
+  {
+    gbiLoopNum = 1;
+  }
+
+  double curBestCost = bestCS->cost;
+  double equGBiCost = MAX_DOUBLE;
+
+  for( int gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
+  {
+    if( m_pcEncCfg->getUseGBiFast() )
+    {
+      auto blkCache = dynamic_cast< CacheBlkInfoCtrl* >(m_modeCtrl);
+
+      if( blkCache )
+      {
+        bool isBestInter = blkCache->getInter(bestCS->area);
+        uint8_t bestGBiIdx = blkCache->getGbiIdx(bestCS->area);
+
+        if( isBestInter && g_GbiSearchOrder[gbiLoopIdx] != GBI_DEFAULT && g_GbiSearchOrder[gbiLoopIdx] != bestGBiIdx )
+        {
+          continue;
+        }
+      }
+    }
+    if( !tempCS->slice->getCheckLDC() )
+    {
+      if( gbiLoopIdx != 0 && gbiLoopIdx != 3 && gbiLoopIdx != 4 )
+      {
+        continue;
+      }
+    }
+#endif
 
   CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
 
@@ -1716,18 +1773,70 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
   cu.qp               = encTestMode.qp;
   CU::addPUs( cu );
 
+#if JVET_L0646_GBI
+  cu.GBiIdx = g_GbiSearchOrder[gbiLoopIdx];
+  uint8_t gbiIdx = cu.GBiIdx;
+  bool  testGbi = (gbiIdx != GBI_DEFAULT);
+#endif
 
   m_pcInterSearch->predInterSearch( cu, partitioner );
 
   const unsigned wIdx = gp_sizeIdxInfo->idxFrom( tempCS->area.lwidth () );
 
+#if JVET_L0646_GBI
+  gbiIdx = CU::getValidGbiIdx(cu);
+  if( testGbi && gbiIdx == GBI_DEFAULT ) // Enabled GBi but the search results is uni.
+  {
+    tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
+    continue;
+  }
+  CHECK(!(testGbi || (!testGbi && gbiIdx == GBI_DEFAULT)), " !( bTestGbi || (!bTestGbi && gbiIdx == GBI_DEFAULT ) )");
+
+  bool isEqualUni = false;
+  if( m_pcEncCfg->getUseGBiFast() )
+  {
+    if( cu.firstPU->interDir != 3 && testGbi == 0 )
+    {
+      isEqualUni = true;
+    }
+  }
+#endif
 
   xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, 0
     , m_pImvTempCS ? m_pImvTempCS[wIdx][encTestMode.partSize] : NULL
     , 1
     , 0
+#if JVET_L0646_GBI
+    , &equGBiCost
+#endif
   );
 
+#if JVET_L0646_GBI
+  if( g_GbiSearchOrder[gbiLoopIdx] == GBI_DEFAULT )
+    m_pcInterSearch->setAffineModeSelected((bestCS->cus.front()->affine && !(bestCS->cus.front()->firstPU->mergeFlag)));
+
+  tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
+
+  double skipTH = MAX_DOUBLE;
+  skipTH = (m_pcEncCfg->getUseGBiFast() ? 1.05 : MAX_DOUBLE);
+  if( equGBiCost > curBestCost * skipTH )
+  {
+    break;
+  }
+
+  if( m_pcEncCfg->getUseGBiFast() )
+  {
+    if( isEqualUni == true && m_pcEncCfg->getIntraPeriod() == -1 )
+    {
+      break;
+    }
+  }
+  if( g_GbiSearchOrder[gbiLoopIdx] == GBI_DEFAULT && xIsGBiSkip(cu) && m_pcEncCfg->getUseGBiFast() )
+  {
+    break;
+  }
+ }  // for( UChar gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
+#endif
 }
 
 
@@ -1737,6 +1846,9 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
   int iIMV = int( ( encTestMode.opts & ETO_IMV ) >> ETO_IMV_SHIFT );
+#if JVET_L0646_GBI
+  m_pcInterSearch->setAffineModeSelected(false);
+#endif
   // Only int-Pel, 4-Pel and fast 4-Pel allowed
   CHECK( iIMV != 1 && iIMV != 2 && iIMV != 3, "Unsupported IMV Mode" );
   // Fast 4-Pel Mode
@@ -1762,6 +1874,53 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     }
   }
 
+#if JVET_L0646_GBI
+  m_pcInterSearch->resetBufferedUniMotions();
+  int gbiLoopNum = (tempCS->slice->isInterB() ? GBI_NUM : 1);
+  gbiLoopNum = (pcCUInfo2Reuse != NULL ? 1 : gbiLoopNum);
+  gbiLoopNum = (tempCS->slice->getSPS()->getSpsNext().getUseGBi() ? gbiLoopNum : 1);
+
+  if( tempCS->area.lwidth() * tempCS->area.lheight() < GBI_SIZE_CONSTRAINT )
+  {
+    gbiLoopNum = 1;
+  }
+
+  double curBestCost = bestCS->cost;
+  double equGBiCost = MAX_DOUBLE;
+
+  for( int gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
+  {
+    if( m_pcEncCfg->getUseGBiFast() )
+    {
+      auto blkCache = dynamic_cast< CacheBlkInfoCtrl* >(m_modeCtrl);
+
+      if( blkCache )
+      {
+        bool isBestInter = blkCache->getInter(bestCS->area);
+        uint8_t bestGBiIdx = blkCache->getGbiIdx(bestCS->area);
+
+        if( isBestInter && g_GbiSearchOrder[gbiLoopIdx] != GBI_DEFAULT && g_GbiSearchOrder[gbiLoopIdx] != bestGBiIdx )
+        {
+          continue;
+        }
+      }
+    }
+
+    if( !tempCS->slice->getCheckLDC() )
+    {
+      if( gbiLoopIdx != 0 && gbiLoopIdx != 3 && gbiLoopIdx != 4 )
+      {
+        continue;
+      }
+    }
+
+    if( m_pcEncCfg->getUseGBiFast() && tempCS->slice->getCheckLDC() && g_GbiSearchOrder[gbiLoopIdx] != GBI_DEFAULT
+      && (m_bestGbiIdx[0] >= 0 && g_GbiSearchOrder[gbiLoopIdx] != m_bestGbiIdx[0])
+      && (m_bestGbiIdx[1] >= 0 && g_GbiSearchOrder[gbiLoopIdx] != m_bestGbiIdx[1]))
+    {
+      continue;
+    }
+#endif
 
   CodingUnit &cu = ( pcCUInfo2Reuse != nullptr ) ? *tempCS->getCU( partitioner.chType ) : tempCS->addCU( tempCS->area, partitioner.chType );
 
@@ -1795,12 +1954,21 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   cu.imv      = iIMV > 1 ? 2 : 1;
   cu.emtFlag  = false;
 
+#if JVET_L0646_GBI
+  bool testGbi;
+  uint8_t gbiIdx;
+#endif
   
   if( pcCUInfo2Reuse != nullptr )
   {
     // reuse the motion info from pcCUInfo2Reuse
     CU::resetMVDandMV2Int( cu, m_pcInterSearch );
 
+#if JVET_L0646_GBI
+    CHECK(cu.GBiIdx < 0 || cu.GBiIdx >= GBI_NUM, "cu.GBiIdx < 0 || cu.GBiIdx >= GBI_NUM");
+    gbiIdx = CU::getValidGbiIdx(cu);
+    testGbi = (gbiIdx != GBI_DEFAULT);
+#endif
 
     if( !CU::hasSubCUNonZeroMVd( cu ) )
     {
@@ -1814,11 +1982,36 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   }
   else
   {
+#if JVET_L0646_GBI 
+    cu.GBiIdx = g_GbiSearchOrder[gbiLoopIdx];
+    gbiIdx = cu.GBiIdx;
+    testGbi = (gbiIdx != GBI_DEFAULT);
+#endif
 
     m_pcInterSearch->predInterSearch( cu, partitioner );
 
+#if JVET_L0646_GBI
+    gbiIdx = CU::getValidGbiIdx(cu);
+#endif
   }
 
+#if JVET_L0646_GBI
+  if( testGbi && gbiIdx == GBI_DEFAULT ) // Enabled GBi but the search results is uni.
+  {
+    tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
+    continue;
+  }
+  CHECK(!(testGbi || (!testGbi && gbiIdx == GBI_DEFAULT)), " !( bTestGbi || (!bTestGbi && gbiIdx == GBI_DEFAULT ) )");
+
+  bool isEqualUni = false;
+  if( m_pcEncCfg->getUseGBiFast() )
+  {
+    if( cu.firstPU->interDir != 3 && testGbi == 0 )
+    {
+      isEqualUni = true;
+    }
+  }
+#endif
 
   if( !CU::hasSubCUNonZeroMVd( cu ) )
   {
@@ -1830,7 +2023,34 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     , NULL
     , true
     , 0
+#if JVET_L0646_GBI
+    , &equGBiCost
+#endif
   );
+
+#if JVET_L0646_GBI
+  tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
+
+  double skipTH = MAX_DOUBLE;
+  skipTH = (m_pcEncCfg->getUseGBiFast() ? 1.05 : MAX_DOUBLE);
+  if( equGBiCost > curBestCost * skipTH )
+  {
+    break;
+  }
+
+  if( m_pcEncCfg->getUseGBiFast() )
+  {
+    if( isEqualUni == true && m_pcEncCfg->getIntraPeriod() == -1 )
+    {
+      break;
+    }
+  }
+  if( g_GbiSearchOrder[gbiLoopIdx] == GBI_DEFAULT && xIsGBiSkip(cu) && m_pcEncCfg->getUseGBiFast() )
+  {
+    break;
+  }
+ } // for( UChar gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
+#endif
 
   return true;
 }
@@ -1839,6 +2059,9 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
   , CodingStructure* imvCS
   , int emtMode
   , bool* bestHasNonResi
+#if JVET_L0646_GBI
+  , double* equGBiCost
+#endif
   )
 {
   if( residualPass == 1 && encTestMode.lossless )
@@ -1904,6 +2127,37 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
 
     xCheckDQP( *tempCS, partitioner );
 
+#if JVET_L0646_GBI
+    if( ETM_INTER_ME == encTestMode.type )
+    {
+      if( equGBiCost != NULL )
+      {
+        if( tempCS->cost < (*equGBiCost) && cu->GBiIdx == GBI_DEFAULT )
+        {
+          (*equGBiCost) = tempCS->cost;
+        }
+      }
+      else
+      {
+        CHECK(equGBiCost == NULL, "equGBiCost == NULL");
+      }
+      if( tempCS->slice->getCheckLDC() && !cu->imv && cu->GBiIdx != GBI_DEFAULT && tempCS->cost < m_bestGbiCost[1] )
+      {
+        if( tempCS->cost < m_bestGbiCost[0] )
+        {
+          m_bestGbiCost[1] = m_bestGbiCost[0];
+          m_bestGbiCost[0] = tempCS->cost;
+          m_bestGbiIdx[1] = m_bestGbiIdx[0];
+          m_bestGbiIdx[0] = cu->GBiIdx;
+        }
+        else
+        {
+          m_bestGbiCost[1] = tempCS->cost;
+          m_bestGbiIdx[1] = cu->GBiIdx;
+        }
+      }
+    }
+#endif
 
     double emtFirstPassCost = tempCS->cost;
     if( imvCS && (tempCS->cost < imvCS->cost) )
@@ -2037,5 +2291,6 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
 }
 
 #endif
+
 
 //! \}

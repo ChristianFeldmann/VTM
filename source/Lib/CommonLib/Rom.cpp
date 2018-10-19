@@ -183,7 +183,71 @@ public:
 
 const int g_aiNonLMPosThrs[] = {  3,  1,  0 };
 
+#if JVET_L0646_GBI
+const int8_t g_GbiLog2WeightBase = 3;
+const int8_t g_GbiWeightBase = (1 << g_GbiLog2WeightBase);
+const int8_t g_GbiWeights[GBI_NUM] = { -2, 3, 4, 5, 10 };
+const int8_t g_GbiSearchOrder[GBI_NUM] = { GBI_DEFAULT, GBI_DEFAULT - 2, GBI_DEFAULT + 2, GBI_DEFAULT - 1, GBI_DEFAULT + 1 };
+int8_t g_GbiCodingOrder[GBI_NUM];
+int8_t g_GbiParsingOrder[GBI_NUM];
 
+int8_t getGbiWeight(uint8_t gbiIdx, uint8_t uhRefFrmList)
+{
+  // Weghts for the model: P0 + w * (P1 - P0) = (1-w) * P0 + w * P1
+  // Retuning  1-w for P0 or w for P1
+  return (uhRefFrmList == REF_PIC_LIST_0 ? g_GbiWeightBase - g_GbiWeights[gbiIdx] : g_GbiWeights[gbiIdx]);
+}
+
+void resetGbiCodingOrder(bool bRunDecoding, const CodingStructure &cs)
+{
+  // Form parsing order: { GBI_DEFAULT, GBI_DEFAULT+1, GBI_DEFAULT-1, GBI_DEFAULT+2, GBI_DEFAULT-2, ... }
+  g_GbiParsingOrder[0] = GBI_DEFAULT;
+  for (int i = 1; i <= (GBI_NUM >> 1); ++i)
+  {
+    g_GbiParsingOrder[2 * i - 1] = GBI_DEFAULT + (int8_t)i;
+    g_GbiParsingOrder[2 * i] = GBI_DEFAULT - (int8_t)i;
+  }
+
+  // Form encoding order
+  if (!bRunDecoding)
+  {
+    for (int i = 0; i < GBI_NUM; ++i)
+    {
+      g_GbiCodingOrder[(uint32_t)g_GbiParsingOrder[i]] = i;
+    }
+  }
+}
+
+uint32_t deriveWeightIdxBits(uint8_t gbiIdx) // Note: align this with TEncSbac::codeGbiIdx and TDecSbac::parseGbiIdx
+{
+  uint32_t numBits = 1;
+  uint8_t  gbiCodingIdx = (uint8_t)g_GbiCodingOrder[gbiIdx];
+
+  if (GBI_NUM > 2 && gbiCodingIdx != 0)
+  {
+    uint32_t prefixNumBits = GBI_NUM - 2;
+    uint32_t step = 1;
+    uint8_t  prefixSymbol = gbiCodingIdx;
+
+    // Truncated unary code
+    uint8_t idx = 1;
+    for (int ui = 0; ui < prefixNumBits; ++ui)
+    {
+      if (prefixSymbol == idx)
+      {
+        ++numBits;
+        break;
+      }
+      else
+      {
+        ++numBits;
+        idx += step;
+      }
+    }
+  }
+  return numBits;
+}
+#endif
 
 // initialize ROM variables
 void initROM()

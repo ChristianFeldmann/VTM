@@ -211,6 +211,171 @@ void reco_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int src
   }
 }
 
+#if ENABLE_SIMD_OPT_GBI
+template< X86_VEXT vext, int W >
+void removeWeightHighFreq_SSE(int16_t* src0, int src0Stride, const int16_t* src1, int src1Stride, int width, int height, int shift, int gbiWeight)
+{
+  int normalizer = ((1 << 16) + (gbiWeight>0 ? (gbiWeight >> 1) : -(gbiWeight >> 1))) / gbiWeight;
+  int weight0 = normalizer << g_GbiLog2WeightBase;
+  int weight1 = (g_GbiWeightBase - gbiWeight)*normalizer;
+  int offset = 1 << (shift - 1);
+  if (W == 8)
+  {
+#if 0//USE_AVX2
+    if (vext >= AVX2)
+    {
+      __m256i vzero = _mm256_setzero_si256();
+      __m256i voffset = _mm256_set1_epi32(offset);
+      __m256i vw0 = _mm256_set1_epi32(weight0);
+      __m256i vw1 = _mm256_set1_epi32(weight1);
+
+      for (int row = 0; row < height; row++)
+      {
+        for (int col = 0; col < width; col += 8)
+        {
+          __m256i vsrc0, vsrc1;
+          __m128i a = _mm_load_si128((const __m128i *)&src0[col]);
+          __m128i b = _mm_load_si128((const __m128i *)&src1[col]);
+
+          vsrc0 = _mm256_cvtepi16_epi32(a);
+          vsrc1 = _mm256_cvtepi16_epi32(b);
+          vsrc0 = _mm256_mullo_epi32(vsrc0, vw0);
+          vsrc1 = _mm256_mullo_epi32(vsrc1, vw1);
+          vsrc0 = _mm256_add_epi32(_mm256_sub_epi32(vsrc0, vsrc1), voffset);
+          vsrc0 = _mm256_srai_epi32(vsrc0, shift);
+
+          vsrc0 = _mm256_packs_epi32(vsrc0, vzero);
+
+          _mm_store_si128((__m128i *)&src0[col], _mm256_castsi256_si128(vsrc0));
+        }
+
+        src0 += src0Stride;
+        src1 += src1Stride;
+      }
+    }
+    else
+#endif
+    {
+      __m128i vzero = _mm_setzero_si128();
+      __m128i voffset = _mm_set1_epi32(offset);
+      __m128i vw0 = _mm_set1_epi32(weight0);
+      __m128i vw1 = _mm_set1_epi32(weight1);
+
+      for (int row = 0; row < height; row++)
+      {
+        for (int col = 0; col < width; col += 8)
+        {
+          __m128i vsrc0 = _mm_load_si128((const __m128i *)&src0[col]);
+          __m128i vsrc1 = _mm_load_si128((const __m128i *)&src1[col]);
+
+          __m128i vtmp, vdst, vsrc;
+          vdst = _mm_cvtepi16_epi32(vsrc0);
+          vsrc = _mm_cvtepi16_epi32(vsrc1);
+          vdst = _mm_mullo_epi32(vdst, vw0);
+          vsrc = _mm_mullo_epi32(vsrc, vw1);
+          vtmp = _mm_add_epi32(_mm_sub_epi32(vdst, vsrc), voffset);
+          vtmp = _mm_srai_epi32(vtmp, shift);
+
+          vsrc0 = _mm_unpackhi_epi64(vsrc0, vzero);
+          vsrc1 = _mm_unpackhi_epi64(vsrc1, vzero);
+          vdst = _mm_cvtepi16_epi32(vsrc0);
+          vsrc = _mm_cvtepi16_epi32(vsrc1);
+          vdst = _mm_mullo_epi32(vdst, vw0);
+          vsrc = _mm_mullo_epi32(vsrc, vw1);
+          vdst = _mm_add_epi32(_mm_sub_epi32(vdst, vsrc), voffset);
+          vdst = _mm_srai_epi32(vdst, shift);
+          vdst = _mm_packs_epi32(vtmp, vdst);
+
+          _mm_store_si128((__m128i *)&src0[col], vdst);
+        }
+
+        src0 += src0Stride;
+        src1 += src1Stride;
+      }
+    }
+  }
+  else if (W == 4)
+  {
+    __m128i vzero = _mm_setzero_si128();
+    __m128i voffset = _mm_set1_epi32(offset);
+    __m128i vw0 = _mm_set1_epi32(weight0);
+    __m128i vw1 = _mm_set1_epi32(weight1);
+
+    for (int row = 0; row < height; row++)
+    {
+      __m128i vsum = _mm_loadl_epi64((const __m128i *)src0);
+      __m128i vdst = _mm_loadl_epi64((const __m128i *)src1);
+
+      vsum = _mm_cvtepi16_epi32(vsum);
+      vdst = _mm_cvtepi16_epi32(vdst);
+      vsum = _mm_mullo_epi32(vsum, vw0);
+      vdst = _mm_mullo_epi32(vdst, vw1);
+      vsum = _mm_add_epi32(_mm_sub_epi32(vsum, vdst), voffset);
+      vsum = _mm_srai_epi32(vsum, shift);
+      vsum = _mm_packs_epi32(vsum, vzero);
+
+      _mm_storel_epi64((__m128i *)src0, vsum);
+
+      src0 += src0Stride;
+      src1 += src1Stride;
+    }
+  }
+  else
+  {
+    THROW("Unsupported size");
+  }
+}
+
+template< X86_VEXT vext, int W >
+void removeHighFreq_SSE(int16_t* src0, int src0Stride, const int16_t* src1, int src1Stride, int width, int height)
+{
+  if (W == 8)
+  {
+    // TODO: AVX2 impl
+    {
+      for (int row = 0; row < height; row++)
+      {
+        for (int col = 0; col < width; col += 8)
+        {
+          __m128i vsrc0 = _mm_load_si128((const __m128i *)&src0[col]);
+          __m128i vsrc1 = _mm_load_si128((const __m128i *)&src1[col]);
+
+          vsrc0 = _mm_sub_epi16(_mm_slli_epi16(vsrc0, 1), vsrc1);
+          _mm_store_si128((__m128i *)&src0[col], vsrc0);
+        }
+
+        src0 += src0Stride;
+        src1 += src1Stride;
+      }
+    }
+  }
+  else if (W == 4)
+  {
+    for (int row = 0; row < height; row += 2)
+    {
+      __m128i vsrc0 = _mm_loadl_epi64((const __m128i *)src0);
+      __m128i vsrc1 = _mm_loadl_epi64((const __m128i *)src1);
+      __m128i vsrc0_2 = _mm_loadl_epi64((const __m128i *)(src0 + src0Stride));
+      __m128i vsrc1_2 = _mm_loadl_epi64((const __m128i *)(src1 + src1Stride));
+
+      vsrc0 = _mm_unpacklo_epi64(vsrc0, vsrc0_2);
+      vsrc1 = _mm_unpacklo_epi64(vsrc1, vsrc1_2);
+
+      vsrc0 = _mm_sub_epi16(_mm_slli_epi16(vsrc0, 1), vsrc1);
+      _mm_storel_epi64((__m128i *)src0, vsrc0);
+      _mm_storel_epi64((__m128i *)(src0 + src0Stride), _mm_unpackhi_epi64(vsrc0, vsrc0));
+
+      src0 += (src0Stride << 1);
+      src1 += (src1Stride << 1);
+    }
+  }
+  else
+  {
+    THROW("Unsupported size");
+  }
+}
+#endif
+
 template<bool doShift, bool shiftR, typename T> static inline void do_shift( T &vreg, int num );
 #if USE_AVX2
 template<> inline void do_shift<true,  true , __m256i>( __m256i &vreg, int num ) { vreg = _mm256_srai_epi32( vreg, num ); }
@@ -373,6 +538,12 @@ void PelBufferOps::_initPelBufOpsX86()
 
   linTf8 = linTf_SSE_entry<vext, 8>;
   linTf4 = linTf_SSE_entry<vext, 4>;
+#if ENABLE_SIMD_OPT_GBI
+  removeWeightHighFreq8 = removeWeightHighFreq_SSE<vext, 8>;
+  removeWeightHighFreq4 = removeWeightHighFreq_SSE<vext, 4>;
+  removeHighFreq8 = removeHighFreq_SSE<vext, 8>;
+  removeHighFreq4 = removeHighFreq_SSE<vext, 4>;
+#endif
 }
 
 template void PelBufferOps::_initPelBufOpsX86<SIMDX86>();

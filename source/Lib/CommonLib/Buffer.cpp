@@ -62,6 +62,40 @@ void addAvgCore( const T* src1, int src1Stride, const T* src2, int src2Stride, T
 #undef ADD_AVG_CORE_INC
 }
 
+#if ENABLE_SIMD_OPT_GBI && JVET_L0646_GBI
+void removeWeightHighFreq(int16_t* dst, int dstStride, const int16_t* src, int srcStride, int width, int height, int shift, int gbiWeight)
+{
+  int normalizer = ((1 << 16) + (gbiWeight > 0 ? (gbiWeight >> 1) : -(gbiWeight >> 1))) / gbiWeight;
+  int weight0 = normalizer << g_GbiLog2WeightBase;
+  int weight1 = (g_GbiWeightBase - gbiWeight)*normalizer;
+#define REM_HF_INC  \
+  src += srcStride; \
+  dst += dstStride; \
+
+#define REM_HF_OP( ADDR )      dst[ADDR] =             (dst[ADDR]*weight0 - src[ADDR]*weight1 + (1<<15))>>16
+
+  SIZE_AWARE_PER_EL_OP(REM_HF_OP, REM_HF_INC);
+
+#undef REM_HF_INC
+#undef REM_HF_OP
+#undef REM_HF_OP_CLIP
+}
+
+void removeHighFreq(int16_t* dst, int dstStride, const int16_t* src, int srcStride, int width, int height)
+{
+#define REM_HF_INC  \
+  src += srcStride; \
+  dst += dstStride; \
+
+#define REM_HF_OP( ADDR )      dst[ADDR] =             2 * dst[ADDR] - src[ADDR]
+
+  SIZE_AWARE_PER_EL_OP(REM_HF_OP, REM_HF_INC);
+
+#undef REM_HF_INC
+#undef REM_HF_OP
+#undef REM_HF_OP_CLIP
+}
+#endif
 
 template<typename T>
 void reconstructCore( const T* src1, int src1Stride, const T* src2, int src2Stride, T* dest, int dstStride, int width, int height, const ClpRng& clpRng )
@@ -103,6 +137,14 @@ PelBufferOps::PelBufferOps()
 
   linTf4 = linTfCore<Pel>;
   linTf8 = linTfCore<Pel>;
+
+#if ENABLE_SIMD_OPT_GBI
+  removeWeightHighFreq8 = removeWeightHighFreq;
+  removeWeightHighFreq4 = removeWeightHighFreq;
+  removeHighFreq8 = removeHighFreq;
+  removeHighFreq4 = removeHighFreq;
+#endif
+
 }
 
 PelBufferOps g_pelBufOP = PelBufferOps();
@@ -110,6 +152,37 @@ PelBufferOps g_pelBufOP = PelBufferOps();
 #endif
 #endif
 
+#if JVET_L0646_GBI
+template<>
+void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng, const int8_t gbiIdx)
+{
+  const int8_t w0 = getGbiWeight(gbiIdx, REF_PIC_LIST_0);
+  const int8_t w1 = getGbiWeight(gbiIdx, REF_PIC_LIST_1);
+  const int8_t log2WeightBase = g_GbiLog2WeightBase;
+
+  const Pel* src0 = other1.buf;
+  const Pel* src2 = other2.buf;
+  Pel* dest = buf;
+
+  const unsigned src1Stride = other1.stride;
+  const unsigned src2Stride = other2.stride;
+  const unsigned destStride = stride;
+  const int clipbd = clpRng.bd;
+  const int shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + log2WeightBase;
+  const int offset = (1 << (shiftNum - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
+
+#define ADD_AVG_OP( ADDR ) dest[ADDR] = ClipPel( rightShift( ( src0[ADDR]*w0 + src2[ADDR]*w1 + offset ), shiftNum ), clpRng )
+#define ADD_AVG_INC     \
+    src0 += src1Stride; \
+    src2 += src2Stride; \
+    dest += destStride; \
+
+  SIZE_AWARE_PER_EL_OP(ADD_AVG_OP, ADD_AVG_INC);
+
+#undef ADD_AVG_OP
+#undef ADD_AVG_INC
+}
+#endif
 
 template<>
 void AreaBuf<Pel>::addAvg( const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng)

@@ -844,6 +844,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     "\t2:  Enable fast methods only for Inter EMT\n"
     "\t3:  Enable fast methods for both Intra & Inter EMT\n")
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
+#if JVET_L0646_GBI
+  ("GBi",                                             m_GBi,                                            false, "Enable Generalized Bi-prediction(GBi)")
+  ("GBiFast",                                         m_GBiFast,                                        false, "Fast methods for Generalized Bi-prediction(GBi)\n")
+#endif
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
 
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
@@ -1916,7 +1920,11 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
     xConfirmPara( m_EMT, "EMT only allowed with NEXT profile" );
     xConfirmPara( m_FastEMT, "EMT only allowed with NEXT profile" );
-    xConfirmPara(m_compositeRefEnabled, "Composite Reference Frame is only allowed with NEXT profile");
+    xConfirmPara( m_compositeRefEnabled, "Composite Reference Frame is only allowed with NEXT profile" );
+#if JVET_L0646_GBI
+    xConfirmPara( m_GBi, "GBi is only allowed with NEXT profile" );
+    xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
+#endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
   else
@@ -3111,6 +3119,10 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "LMChroma:%d ", m_LMChroma );
     msg( VERBOSE, "EMT: %1d(intra) %1d(inter) ", m_EMT & 1, ( m_EMT >> 1 ) & 1 );
     msg(VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
+#if JVET_L0646_GBI
+    msg( VERBOSE, "GBi:%d ", m_GBi );
+    msg( VERBOSE, "GBiFast:%d ", m_GBiFast );
+#endif
   }
   // ADD_NEW_TOOL (add some output indicating the usage of tools)
 

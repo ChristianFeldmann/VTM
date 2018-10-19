@@ -503,6 +503,29 @@ bool CacheBlkInfoCtrl::getMv( const UnitArea& area, const RefPicList refPicList,
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->validMv[refPicList][iRefIdx];
 }
 
+#if JVET_L0646_GBI 
+bool CacheBlkInfoCtrl::getInter(const UnitArea& area)
+{
+  unsigned idx1, idx2, idx3, idx4;
+  getAreaIdx(area.Y(), *m_slice_chblk->getPPS()->pcv, idx1, idx2, idx3, idx4);
+
+  return m_codedCUInfo[idx1][idx2][idx3][idx4]->isInter;
+}
+void CacheBlkInfoCtrl::setGbiIdx(const UnitArea& area, uint8_t gBiIdx)
+{
+  unsigned idx1, idx2, idx3, idx4;
+  getAreaIdx(area.Y(), *m_slice_chblk->getPPS()->pcv, idx1, idx2, idx3, idx4);
+
+  m_codedCUInfo[idx1][idx2][idx3][idx4]->GBiIdx = gBiIdx;
+}
+uint8_t CacheBlkInfoCtrl::getGbiIdx(const UnitArea& area)
+{
+  unsigned idx1, idx2, idx3, idx4;
+  getAreaIdx(area.Y(), *m_slice_chblk->getPPS()->pcv, idx1, idx2, idx3, idx4);
+
+  return m_codedCUInfo[idx1][idx2][idx3][idx4]->GBiIdx;
+}
+#endif
 
 #if REUSE_CU_RESULTS
 static bool isTheSameNbHood( const CodingUnit &cu, const Partitioner &partitioner )
@@ -1482,6 +1505,9 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           relatedCU.isSkip   |= bestCU->skip;
 #else
           relatedCU.isSkip    = bestCU->skip;
+#endif
+#if JVET_L0646_GBI
+          relatedCU.GBiIdx    = bestCU->GBiIdx;
 #endif
         }
         else if( CU::isIntra( *bestCU ) )

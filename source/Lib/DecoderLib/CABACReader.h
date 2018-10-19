@@ -80,6 +80,9 @@ public:
   void        pred_mode                 ( CodingUnit&                   cu );
   void        pcm_flag                  ( CodingUnit&                   cu );
   void        cu_pred_data              ( CodingUnit&                   cu );
+#if JVET_L0646_GBI
+  void        cu_gbi_flag               ( CodingUnit&                   cu );
+#endif
   void        intra_luma_pred_modes     ( CodingUnit&                   cu );
   void        intra_chroma_pred_modes   ( CodingUnit&                   cu );
   bool        intra_chroma_lmc_mode     ( PredictionUnit&               pu );

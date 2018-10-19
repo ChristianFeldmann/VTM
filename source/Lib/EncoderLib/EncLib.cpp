@@ -852,7 +852,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
   sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
-
+#if JVET_L0646_GBI
+  sps.getSpsNext().setUseGBi                ( m_GBi );
+#endif
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 
   int minCUSize = ( /*sps.getSpsNext().getUseQTBT() ? 1 << MIN_CU_LOG2 :*/ sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize() );

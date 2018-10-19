@@ -333,7 +333,11 @@ void IntraPrediction::predIntraChromaLM(const ComponentID compID, PelBuf &piPred
   iLumaStride = MAX_CU_SIZE + 1;
   Temp = PelBuf(m_piTemp + iLumaStride + 1, iLumaStride, Size(chromaArea));
   int a, b, iShift;
+#if JVET_L0191_LM_WO_LMS
   xGetLMParameters(pu, compID, chromaArea, a, b, iShift);
+#else
+  xGetLMParameters(pu, compID, chromaArea, a, b, iShift);
+#endif
 
   ////// final prediction
   piPred.copyFrom(Temp);
@@ -1257,7 +1261,139 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     pRecSrc0 += iRecStride2;
   }
 }
+#if JVET_L0191_LM_WO_LMS
+void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const ComponentID compID,
+                                              const CompArea &chromaArea,
+                                              int &a, int &b, int &iShift)
+{
+  CHECK(compID == COMPONENT_Y, "");
 
+  const SizeType uiCWidth  = chromaArea.width;
+  const SizeType uiCHeight = chromaArea.height;
+
+  const Position posLT = chromaArea;
+
+  CodingStructure & cs = *(pu.cs);
+  const CodingUnit &cu = *(pu.cu);
+
+  const SPS &        sps           = *cs.sps;
+  const uint32_t     uiTuWidth     = chromaArea.width;
+  const uint32_t     uiTuHeight    = chromaArea.height;
+  const ChromaFormat nChromaFormat = sps.getChromaFormatIdc();
+
+  const int iBaseUnitSize = 1 << MIN_CU_LOG2;
+  const int iUnitWidth    = iBaseUnitSize >> getComponentScaleX(chromaArea.compID, nChromaFormat);
+  const int iUnitHeight   = iBaseUnitSize >> getComponentScaleX(chromaArea.compID, nChromaFormat);
+
+  const int iTUWidthInUnits  = uiTuWidth / iUnitWidth;
+  const int iTUHeightInUnits = uiTuHeight / iUnitHeight;
+  const int iAboveUnits      = iTUWidthInUnits;
+  const int iLeftUnits       = iTUHeightInUnits;
+
+  bool bNeighborFlags[4 * MAX_NUM_PART_IDXS_IN_CTU_WIDTH + 1];
+
+  memset(bNeighborFlags, 0, 1 + iLeftUnits + iAboveUnits);
+
+  bool bAboveAvaillable, bLeftAvaillable;
+
+  int availlableUnit =
+    isAboveAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, iAboveUnits, iUnitWidth, (bNeighborFlags + iLeftUnits + 1));
+  bAboveAvaillable = availlableUnit == iTUWidthInUnits;
+
+  availlableUnit =
+    isLeftAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, iLeftUnits, iUnitHeight, (bNeighborFlags + iLeftUnits - 1));
+  bLeftAvaillable = availlableUnit == iTUHeightInUnits;
+
+  Pel *pSrcColor0, *pCurChroma0;
+  int  iSrcStride, iCurStride;
+
+  PelBuf Temp;
+  iSrcStride  = MAX_CU_SIZE + 1;
+  Temp        = PelBuf(m_piTemp + iSrcStride + 1, iSrcStride, Size(chromaArea));
+  pSrcColor0  = Temp.bufAt(0, 0);
+  pCurChroma0 = getPredictorPtr(compID);
+
+  iCurStride = m_topRefLength + 1;
+
+  pCurChroma0 += iCurStride + 1;
+
+  unsigned uiInternalBitDepth = sps.getBitDepth(CHANNEL_TYPE_CHROMA);
+
+  int MinLuma[2] = { MAX_INT, 0 };
+  int MaxLuma[2] = { -MAX_INT, 0 };
+
+  Pel *pSrc = pSrcColor0 - iSrcStride;
+  Pel *pCur = pCurChroma0 - iCurStride;
+
+  int minDim = bLeftAvaillable && bAboveAvaillable ? 1 << g_aucPrevLog2[std::min(uiCHeight, uiCWidth)]
+                                                   : 1 << g_aucPrevLog2[bLeftAvaillable ? uiCHeight : uiCWidth];
+  int numSteps = minDim;
+
+  if (bAboveAvaillable)
+  {
+    for (int j = 0; j < numSteps; j++)
+    {
+      int idx = (j * uiCWidth) / minDim;
+
+      if (MinLuma[0] > pSrc[idx])
+      {
+        MinLuma[0] = pSrc[idx];
+        MinLuma[1] = pCur[idx];
+      }
+      if (MaxLuma[0] < pSrc[idx])
+      {
+        MaxLuma[0] = pSrc[idx];
+        MaxLuma[1] = pCur[idx];
+      }
+    }
+  }
+
+  if (bLeftAvaillable)
+  {
+    pSrc = pSrcColor0 - 1;
+    pCur = pCurChroma0 - 1;
+
+    for (int i = 0; i < numSteps; i++)
+    {
+      int idx = (i * uiCHeight) / minDim;
+
+      if (MinLuma[0] > pSrc[iSrcStride * idx])
+      {
+        MinLuma[0] = pSrc[iSrcStride * idx];
+        MinLuma[1] = pCur[iCurStride * idx];
+      }
+      if (MaxLuma[0] < pSrc[iSrcStride * idx])
+      {
+        MaxLuma[0] = pSrc[iSrcStride * idx];
+        MaxLuma[1] = pCur[iCurStride * idx];
+      }
+    }
+  }
+
+  if ((bLeftAvaillable || bAboveAvaillable))
+  {
+    a         = 0;
+    iShift    = 16;
+    int shift = (uiInternalBitDepth > 8) ? uiInternalBitDepth - 9 : 0;
+    int add   = shift ? 1 << (shift - 1) : 0;
+    int diff  = (MaxLuma[0] - MinLuma[0] + add) >> shift;
+    if (diff > 0)
+    {
+      int div = ((MaxLuma[1] - MinLuma[1]) * g_aiLMDivTableLow[diff - 1] + 32768) >> 16;
+      a       = (((MaxLuma[1] - MinLuma[1]) * g_aiLMDivTableHigh[diff - 1] + div + add) >> shift);
+    }
+    b = MinLuma[1] - ((a * MinLuma[0]) >> iShift);
+  }
+  else
+  {
+    a = 0;
+
+    b = 1 << (uiInternalBitDepth - 1);
+
+    iShift = 0;
+  }
+}
+#else
 static int GetFloorLog2( unsigned x )
 {
   int bits = -1;
@@ -1466,6 +1602,6 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
     b = avgY - ( ( a * avgX ) >> iShift );
   }
 }
-
+#endif
 
 //! \}

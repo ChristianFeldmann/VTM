@@ -52,7 +52,7 @@
 
 #define JVET_L0083_ALF_FRAC_BIT                           1 // Reduce number of ALF fractional bit to 7   
 
-#define JVET_L0082_ALF_COEF_BITS                          1 // ALF filter coefficient bitwidth constraints: 10-bit
+#define JVET_L0082_ALF_COEF_BITS                          1 // ALF filter coefficient bitwidth constraints
 
 #define REUSE_CU_RESULTS                                  1
 

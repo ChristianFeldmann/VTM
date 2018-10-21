@@ -50,7 +50,6 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_L0392_ALF_INIT_STATE                         1
 #define JVET_L0664_ALF_REMOVE_LUMA_5x5                    1
 
 #define REUSE_CU_RESULTS                                  1

@@ -104,7 +104,9 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
       {
         Area blk( xPos, yPos, width, height );
         deriveClassification( m_classifier, tmpYuv.get( COMPONENT_Y ), blk );
-
+#if JVET_L0664_ALF_REMOVE_LUMA_5x5
+        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y]);
+#else
         if( alfSliceParam.lumaFilterType == ALF_FILTER_5 )
         {
           m_filter5x5Blk( m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y] );
@@ -117,6 +119,7 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
         {
           CHECK( 0, "Wrong ALF filter type" );
         }
+#endif
       }
 
       for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
@@ -140,8 +143,11 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
 void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, const bool bRedo )
 {
   int factor = ( 1 << ( m_NUM_BITS - 1 ) );
-
+#if JVET_L0664_ALF_REMOVE_LUMA_5x5
+  AlfFilterType filterType = isLuma( channel ) ? ALF_FILTER_7 : ALF_FILTER_5;
+#else
   AlfFilterType filterType = isLuma( channel ) ? alfSliceParam.lumaFilterType : ALF_FILTER_5;
+#endif
   int numClasses = isLuma( channel ) ? MAX_NUM_ALF_CLASSES : 1;
   int numCoeff = filterType == ALF_FILTER_5 ? 7 : 13;
   int numCoeffMinus1 = numCoeff - 1;
@@ -205,8 +211,9 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
   m_numCTUsInWidth = ( m_picWidth / m_maxCUWidth ) + ( ( m_picWidth % m_maxCUWidth ) ? 1 : 0 );
   m_numCTUsInHeight = ( m_picHeight / m_maxCUHeight ) + ( ( m_picHeight % m_maxCUHeight ) ? 1 : 0 );
   m_numCTUsInPic = m_numCTUsInHeight * m_numCTUsInWidth;
-
+#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
   m_filterShapes[CHANNEL_TYPE_LUMA].push_back( AlfFilterShape( 5 ) );
+#endif
   m_filterShapes[CHANNEL_TYPE_LUMA].push_back( AlfFilterShape( 7 ) );
   m_filterShapes[CHANNEL_TYPE_CHROMA].push_back( AlfFilterShape( 5 ) );
 

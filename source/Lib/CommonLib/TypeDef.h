@@ -64,6 +64,8 @@
 
 #define REMOVE_MV_ADAPT_PREC                              1 // remove the high precision flag in the MV class
 
+#define JVET_L0093_SIMP_PRUNE                             1
+
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )
 #endif
@@ -159,7 +161,11 @@
 #define HM_EMT_NSST_AS_IN_JEM                             1   //
 #define HM_MDIS_AS_IN_JEM                                 1   // *** - PM: not filtering ref. samples for 64xn case and using Planar MDIS condition at encoder
 #define HM_JEM_CLIP_PEL                                   1   // ***
+#if JVET_L0093_SIMP_PRUNE
+#define HM_JEM_MERGE_CANDS                                0   // ***
+#else
 #define HM_JEM_MERGE_CANDS                                1   // ***
+#endif
 
 #endif//JEM_COMP
 

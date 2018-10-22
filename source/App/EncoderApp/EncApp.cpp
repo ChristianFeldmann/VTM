@@ -213,6 +213,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setRDpenalty                                         ( m_rdPenalty );
   m_cEncLib.setQTBT                                              ( m_QTBT );
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
+#endif
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxBTDepth                                        ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   m_cEncLib.setDualITree                                         ( m_dualTree );

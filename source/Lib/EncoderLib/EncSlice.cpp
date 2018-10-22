@@ -672,7 +672,22 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setSliceSegmentArgument ( m_pcCfg->getSliceSegmentArgument() );
 #endif
   rpcSlice->setMaxNumMergeCand      ( m_pcCfg->getMaxNumMergeCand()      );
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  rpcSlice->setSplitConsOverrideFlag(false);
+  rpcSlice->setMinQTSize( rpcSlice->getSPS()->getSpsNext().getMinQTSize(eSliceType));
+  rpcSlice->setMaxBTDepth( rpcSlice->isIntra() ? rpcSlice->getSPS()->getSpsNext().getMaxBTDepthI() : rpcSlice->getSPS()->getSpsNext().getMaxBTDepth() );
+  rpcSlice->setMaxBTSize( rpcSlice->isIntra() ? rpcSlice->getSPS()->getSpsNext().getMaxBTSizeI() : rpcSlice->getSPS()->getSpsNext().getMaxBTSize() );
+  rpcSlice->setMaxTTSize( rpcSlice->isIntra() ? rpcSlice->getSPS()->getSpsNext().getMaxTTSizeI() : rpcSlice->getSPS()->getSpsNext().getMaxTTSize() );
+  if ( eSliceType == I_SLICE && rpcSlice->getSPS()->getSpsNext().getUseDualITree() )
+  {
+    rpcSlice->setMinQTSizeIChroma( rpcSlice->getSPS()->getSpsNext().getMinQTSize(eSliceType, CHANNEL_TYPE_CHROMA) );
+    rpcSlice->setMaxBTDepthIChroma( rpcSlice->getSPS()->getSpsNext().getMaxBTDepthIChroma() );
+    rpcSlice->setMaxBTSizeIChroma( rpcSlice->getSPS()->getSpsNext().getMaxBTSizeIChroma() );
+    rpcSlice->setMaxTTSizeIChroma( rpcSlice->getSPS()->getSpsNext().getMaxTTSizeIChroma() );
+  }
+#else
   rpcSlice->setMaxBTSize            ( rpcSlice->isIntra() ? MAX_BT_SIZE : MAX_BT_SIZE_INTER );
+#endif
 }
 
 

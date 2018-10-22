@@ -830,6 +830,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setNextToolsEnabled      ( m_profile == Profile::NEXT );
   sps.getSpsNext().setUseQTBT               ( m_QTBT );
   sps.getSpsNext().setCTUSize               ( m_CTUSize );
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  sps.getSpsNext().setSplitConsOverrideEnabledFlag( m_useSplitConsOverride );
+#endif
   sps.getSpsNext().setMinQTSizes            ( m_uiMinQT );
   sps.getSpsNext().setUseLargeCTU           ( m_LargeCTU );
   sps.getSpsNext().setMaxBTDepth            ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );

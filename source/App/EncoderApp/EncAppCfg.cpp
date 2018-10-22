@@ -796,6 +796,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("QTBT",                                            m_QTBT,                                           false, "Enable QTBT (0:off, 1:on)  [default: off]")
   ("MTT",                                             m_MTT,                                               0u, "Multi type tree type (0: off, 1:QTBT + triple split) [default: 0]")
   ("CTUSize",                                         m_uiCTUSize,                                       128u, "CTUSize (specifies the CTU size if QTBT is on) [default: 128]")
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  ("EnablePartitionConstraintsOverride",              m_SplitConsOverrideEnabledFlag,                    true, "Enable partition constraints override")
+#endif
   ("MinQTISlice",                                     m_uiMinQT[0],                                        8u, "MinQTISlice")
   ("MinQTLumaISlice",                                 m_uiMinQT[0],                                        8u, "MinQTLumaISlice")
   ("MinQTChromaISlice",                               m_uiMinQT[2],                                        4u, "MinQTChromaISlice")
@@ -1828,7 +1831,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCodingDepth;
     m_uiMaxCUWidth = m_uiMaxCUHeight = m_uiCTUSize;
     m_uiMaxCUDepth = m_uiMaxCodingDepth;
+#if !JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
     m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCUDepth - 1;
+#endif
   }
 
   // check validity of input parameters
@@ -1979,6 +1984,9 @@ bool EncAppCfg::xCheckParameter()
 #endif
 
 
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  xConfirmPara( m_useAMaxBT && !m_SplitConsOverrideEnabledFlag, "AMaxBt can only be used with PartitionConstriantsOverride enabled" );
+#endif
   xConfirmPara( m_useAMaxBT && !m_QTBT, "AMaxBT can only be used with QTBT!" );
 
 

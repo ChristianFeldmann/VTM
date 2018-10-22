@@ -50,11 +50,20 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0392_ALF_INIT_STATE                         1
+
 #define JVET_L0664_ALF_REMOVE_LUMA_5x5                    1
 
 #define JVET_L0083_ALF_FRAC_BIT                           1 // Reduce number of ALF fractional bit to 7   
 
 #define JVET_L0082_ALF_COEF_BITS                          1 // ALF filter coefficient bitwidth constraints
+
+#define JVET_L0194_ONE_CTX_FOR_MRG_IDX                    1 // one context for full-block Merge index
+
+
+
+
+
 
 #define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)
 

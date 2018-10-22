@@ -1243,18 +1243,24 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
     }
     else
     {
+#if !JVET_L0194_ONE_CTX_FOR_MRG_IDX
       bool useExtCtx = pu.cs->sps->getSpsNext().getUseSubPuMvp();
+#endif
       m_BinEncoder.encodeBin( 1, Ctx::MergeIdx() );
       for( unsigned idx = 1; idx < numCandminus1; idx++ )
       {
+#if !JVET_L0194_ONE_CTX_FOR_MRG_IDX
         if( useExtCtx )
         {
           m_BinEncoder.encodeBin( pu.mergeIdx == idx ? 0 : 1, Ctx::MergeIdx( std::min<int>( idx, NUM_MERGE_IDX_EXT_CTX - 1 ) ) );
         }
         else
         {
+#endif
           m_BinEncoder.encodeBinEP( pu.mergeIdx == idx ? 0 : 1 );
+#if !JVET_L0194_ONE_CTX_FOR_MRG_IDX
         }
+#endif
         if( pu.mergeIdx == idx )
         {
           break;

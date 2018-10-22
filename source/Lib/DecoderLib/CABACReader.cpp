@@ -1282,10 +1282,13 @@ void CABACReader::merge_idx( PredictionUnit& pu )
   {
     if( m_BinDecoder.decodeBin( Ctx::MergeIdx() ) )
     {
+#if !JVET_L0194_ONE_CTX_FOR_MRG_IDX
       bool useExtCtx = pu.cs->sps->getSpsNext().getUseSubPuMvp();
+#endif
       pu.mergeIdx++;
       for( ; pu.mergeIdx < numCandminus1; pu.mergeIdx++ )
       {
+#if !JVET_L0194_ONE_CTX_FOR_MRG_IDX
         if( useExtCtx )
         {
           if( !m_BinDecoder.decodeBin( Ctx::MergeIdx( std::min<int>( pu.mergeIdx, NUM_MERGE_IDX_EXT_CTX - 1 ) ) ) )
@@ -1295,11 +1298,14 @@ void CABACReader::merge_idx( PredictionUnit& pu )
         }
         else
         {
+#endif
           if( !m_BinDecoder.decodeBinEP() )
           {
             break;
           }
+#if !JVET_L0194_ONE_CTX_FOR_MRG_IDX
         }
+#endif
       }
     }
   }

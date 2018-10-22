@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0392_ALF_INIT_STATE                         1
+
 #define JVET_L0664_ALF_REMOVE_LUMA_5x5                    1
 
 #define JVET_L0083_ALF_FRAC_BIT                           1 // Reduce number of ALF fractional bit to 7   

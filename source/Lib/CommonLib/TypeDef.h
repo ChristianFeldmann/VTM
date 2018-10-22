@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN               1 // Subsampled Laplacian calculation
+
 #define JVET_L0392_ALF_INIT_STATE                         1
 
 #define JVET_L0664_ALF_REMOVE_LUMA_5x5                    1

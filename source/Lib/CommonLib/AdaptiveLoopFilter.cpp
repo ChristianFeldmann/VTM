@@ -337,14 +337,23 @@ void AdaptiveLoopFilter::deriveClassificationBlk( AlfClassifier** classifier, in
       const Pel* pYup2 = src3 + pixY;
 
       const Pel y0 = pY[0] << 1;
+#if !JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN
       const Pel y1 = pY[1] << 1;
       const Pel yup0 = pYup[0] << 1;
+#endif
       const Pel yup1 = pYup[1] << 1;
 
+#if JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN
+      pYver[j] = abs( y0 - pYdown[0] - pYup[0] ) + abs( yup1 - pY[1] - pYup2[1] );
+      pYhor[j] = abs( y0 - pY[1] - pY[-1] ) + abs( yup1 - pYup[2] - pYup[0] );
+      pYdig0[j] = abs( y0 - pYdown[-1] - pYup[1] ) + abs( yup1 - pY[0] - pYup2[2] );
+      pYdig1[j] = abs( y0 - pYup[-1] - pYdown[1] ) + abs( yup1 - pYup2[0] - pY[2] );
+#else
       pYver[j] = abs( y0 - pYdown[0] - pYup[0] ) + abs( y1 - pYdown[1] - pYup[1] ) + abs( yup0 - pY[0] - pYup2[0] ) + abs( yup1 - pY[1] - pYup2[1] );
       pYhor[j] = abs( y0 - pY[1] - pY[-1] ) + abs( y1 - pY[2] - pY[0] ) + abs( yup0 - pYup[1] - pYup[-1] ) + abs( yup1 - pYup[2] - pYup[0] );
       pYdig0[j] = abs( y0 - pYdown[-1] - pYup[1] ) + abs( y1 - pYdown[0] - pYup[2] ) + abs( yup0 - pY[-1] - pYup2[1] ) + abs( yup1 - pY[0] - pYup2[2] );
       pYdig1[j] = abs( y0 - pYup[-1] - pYdown[1] ) + abs( y1 - pYup[0] - pYdown[2] ) + abs( yup0 - pYup2[-1] - pY[1] ) + abs( yup1 - pYup2[0] - pY[2] );
+#endif
 
       if( j > 4 && ( j - 6 ) % 4 == 0 )
       {
@@ -394,7 +403,11 @@ void AdaptiveLoopFilter::deriveClassificationBlk( AlfClassifier** classifier, in
       int sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j] + pYdig16[j];
 
       int tempAct = sumV + sumH;
+#if JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN
+      int activity = (Pel)Clip3<int>( 0, maxActivity, ( tempAct * 64 ) >> shift );
+#else
       int activity = (Pel)Clip3<int>( 0, maxActivity, ( tempAct * 32 ) >> shift );
+#endif
       int classIdx = th[activity];
 
       int hv1, hv0, d1, d0, hvd1, hvd0;

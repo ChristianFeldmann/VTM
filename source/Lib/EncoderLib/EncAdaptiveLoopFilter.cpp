@@ -340,11 +340,12 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
   for( int iShapeIdx = 0; iShapeIdx < alfFilterShape.size(); iShapeIdx++ )
   {
     m_alfSliceParamTemp = alfSliceParam;
+#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
     if( isLuma( channel ) )
     {
       m_alfSliceParamTemp.lumaFilterType = alfFilterShape[iShapeIdx].filterType;
     }
-
+#endif
     //1. get unfiltered distortion
     double cost = getUnfilteredDistortion( m_alfCovarianceFrame[channel][iShapeIdx], channel );
     cost /= 1.001; // slight preference for unfiltered choice
@@ -382,7 +383,11 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
 
     //3. CTU decision
     double distUnfilter = 0;
+#if JVET_L0664_ALF_REMOVE_LUMA_5x5
+    const int iterNum = isLuma(channel) ? (2 * 4 + 1) : (2 * 2 + 1);
+#else
     const int iterNum = 2 * 2 + 1;
+#endif
 
     for( int iter = 0; iter < iterNum; iter++ )
     {
@@ -421,7 +426,11 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
       int ctuIdx = 0;
       const int chromaScaleX = getComponentScaleX( compID, recBuf.chromaFormat );
       const int chromaScaleY = getComponentScaleY( compID, recBuf.chromaFormat );
+#if JVET_L0664_ALF_REMOVE_LUMA_5x5
+      AlfFilterType filterType = isLuma( compID ) ? ALF_FILTER_7 : ALF_FILTER_5;
+#else
       AlfFilterType filterType = isLuma( compID ) ? alfSliceParam.lumaFilterType : ALF_FILTER_5;
+#endif
       short* coeff = isLuma( compID ) ? m_coeffFinal : alfSliceParam.chromaCoeff;
 
       for( int yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight )
@@ -535,7 +544,11 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
   }
 
   memset( m_bitsCoeffScan, 0, sizeof( m_bitsCoeffScan ) );
+#if JVET_L0664_ALF_REMOVE_LUMA_5x5
+  AlfFilterShape alfShape( isChroma ? 5 : 7 );
+#else
   AlfFilterShape alfShape( isChroma ? 5 : ( alfSliceParam.lumaFilterType == ALF_FILTER_5 ? 5 : 7 ) );
+#endif
   const int maxGolombIdx = AdaptiveLoopFilter::getMaxGolombIdx( alfShape.filterType );
   const short* coeff = isChroma ? alfSliceParam.chromaCoeff : alfSliceParam.lumaCoeff;
   const int numFilters = isChroma ? 1 : alfSliceParam.numLumaFilters;
@@ -1126,9 +1139,15 @@ double EncAdaptiveLoopFilter::deriveCoeffQuant( int *filterCoeffQuant, double **
     memset( filterCoeffQuant, 0, sizeof( int ) * numCoeff );
   }
 
+#if JVET_L0082_ALF_COEF_BITS
+  int max_value = factor - 1;
+  int min_value = -factor;
+#else
   //512 -> 1, (64+32+4+2)->0.199
   int max_value = 512 + 64 + 32 + 4 + 2;  
   int min_value = -max_value;             
+#endif 
+
   for ( int i = 0; i < numCoeff - 1; i++ )
   {
     filterCoeffQuant[i] = std::min( max_value, std::max( min_value, filterCoeffQuant[i] ) );
@@ -1143,6 +1162,74 @@ double EncAdaptiveLoopFilter::deriveCoeffQuant( int *filterCoeffQuant, double **
   }
   filterCoeffQuant[numCoeff - 1] = -quantCoeffSum;
   filterCoeff[numCoeff - 1] = filterCoeffQuant[numCoeff - 1] / double(factor);
+
+#if JVET_L0082_ALF_COEF_BITS
+  
+  //Restrict the range of the center coefficient
+  int max_value_center = (2 * factor - 1) - factor;
+  int min_value_center = 0 - factor;
+
+  filterCoeffQuant[numCoeff - 1] = std::min(max_value_center, std::max(min_value_center, filterCoeffQuant[numCoeff - 1]));
+  filterCoeff[numCoeff - 1] = filterCoeffQuant[numCoeff - 1] / double(factor);
+
+  int coeffQuantAdjust[MAX_NUM_ALF_LUMA_COEFF];
+  int adjustedTotalCoeff = (numCoeff - 1) << 1;
+
+  count = 0;
+  quantCoeffSum += filterCoeffQuant[numCoeff - 1];
+  while (quantCoeffSum != targetCoeffSumInt && count < 15)
+  {
+    int sign = quantCoeffSum > targetCoeffSumInt ? 1 : -1;
+    int diff = (quantCoeffSum - targetCoeffSumInt) * sign;
+
+    if (diff > 4 * adjustedTotalCoeff)     sign = sign * 8;
+    else if (diff > 2 * adjustedTotalCoeff)     sign = sign * 4;
+    else if (diff >     adjustedTotalCoeff)     sign = sign * 2;
+
+    double errMin = MAX_DOUBLE;
+    int    minInd = -1;
+
+    for (int k = 0; k < numCoeff - 1; k++)
+    {
+      memcpy(coeffQuantAdjust, filterCoeffQuant, sizeof(int) * numCoeff);
+
+      coeffQuantAdjust[k] -= sign;
+
+      if (coeffQuantAdjust[k] <= max_value && coeffQuantAdjust[k] >= min_value)
+      {
+        double error = calcErrorForCoeffs(E, y, coeffQuantAdjust, numCoeff, bitDepth);
+
+        if (error < errMin)
+        {
+          errMin = error;
+          minInd = k;
+        }
+      }
+    }
+
+    if (minInd != -1)
+    {
+      filterCoeffQuant[minInd] -= sign;
+      quantCoeffSum -= (weights[minInd] * sign);
+    }
+
+    ++count;
+  }
+
+  if (quantCoeffSum != targetCoeffSumInt)
+  {
+    memset(filterCoeffQuant, 0, sizeof(int) * numCoeff);
+  }
+
+  for (int i = 0; i < numCoeff - 1; i++)
+  {
+    CHECK(filterCoeffQuant[i] > max_value || filterCoeffQuant[i] < min_value, "filterCoeffQuant[i]>max_value || filterCoeffQuant[i]<min_value");
+    filterCoeff[i] = filterCoeffQuant[i] / double(factor);
+  }
+  CHECK(filterCoeffQuant[numCoeff - 1] > max_value_center || filterCoeffQuant[numCoeff - 1] < min_value_center, "filterCoeffQuant[numCoeff-1]>max_value_center || filterCoeffQuant[numCoeff-1]<min_value_center");
+  filterCoeff[numCoeff - 1] = filterCoeffQuant[numCoeff - 1] / double(factor);
+
+#endif
 
   double error = calcErrorForCoeffs( E, y, filterCoeffQuant, numCoeff, bitDepth );
   return error;

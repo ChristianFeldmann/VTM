@@ -50,6 +50,12 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0664_ALF_REMOVE_LUMA_5x5                    1
+
+#define JVET_L0083_ALF_FRAC_BIT                           1 // Reduce number of ALF fractional bit to 7   
+
+#define JVET_L0082_ALF_COEF_BITS                          1 // ALF filter coefficient bitwidth constraints
+
 #define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)
 
 #define REUSE_CU_RESULTS                                  1
@@ -1411,7 +1417,9 @@ struct AlfFilterShape
 struct AlfSliceParam
 {
   bool                         enabledFlag[MAX_NUM_COMPONENT];                          // alf_slice_enable_flag, alf_chroma_idc
+#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
   AlfFilterType                lumaFilterType;                                          // filter_type_flag
+#endif
   bool                         chromaCtbPresentFlag;                                    // alf_chroma_ctb_present_flag
   short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
   short                        chromaCoeff[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_coeff_chroma[i]
@@ -1425,7 +1433,9 @@ struct AlfSliceParam
   void reset()
   {
     std::memset( enabledFlag, false, sizeof( enabledFlag ) );
+#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
     lumaFilterType = ALF_FILTER_5;
+#endif
     std::memset( lumaCoeff, 0, sizeof( lumaCoeff ) );
     std::memset( chromaCoeff, 0, sizeof( chromaCoeff ) );
     std::memset( filterCoeffDeltaIdx, 0, sizeof( filterCoeffDeltaIdx ) );
@@ -1439,7 +1449,9 @@ struct AlfSliceParam
   const AlfSliceParam& operator = ( const AlfSliceParam& src )
   {
     std::memcpy( enabledFlag, src.enabledFlag, sizeof( enabledFlag ) );
+#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
     lumaFilterType = src.lumaFilterType;
+#endif
     std::memcpy( lumaCoeff, src.lumaCoeff, sizeof( lumaCoeff ) );
     std::memcpy( chromaCoeff, src.chromaCoeff, sizeof( chromaCoeff ) );
     std::memcpy( filterCoeffDeltaIdx, src.filterCoeffDeltaIdx, sizeof( filterCoeffDeltaIdx ) );

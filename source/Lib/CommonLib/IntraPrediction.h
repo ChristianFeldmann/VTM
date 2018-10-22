@@ -104,7 +104,12 @@ protected:
   void destroy                    ();
 
   void xFilterGroup               ( Pel* pMulDst[], int i, Pel const* const piSrc, int iRecStride, bool bAboveAvaillable, bool bLeftAvaillable);
+#if JVET_L0191_LM_WO_LMS
+  void xGetLMParameters           (const PredictionUnit &pu, const ComponentID compID, const CompArea &chromaArea, int &a,
+                                   int &b, int &iShift);
+#else
   void xGetLMParameters(const PredictionUnit &pu, const ComponentID compID, const CompArea& chromaArea, int& a, int& b, int& iShift);
+#endif
 public:
   IntraPrediction();
   virtual ~IntraPrediction();

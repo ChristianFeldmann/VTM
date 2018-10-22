@@ -82,8 +82,8 @@ private:
 
   ClpRng          m_lumaClpRng;
 #if JVET_L0646_GBI 
-  uint32_t        m_auiEstWeightIdxBits[GBI_NUM];
-  GBiMotionParam  m_cUniMotions;
+  uint32_t        m_estWeightIdxBits[GBI_NUM];
+  GBiMotionParam  m_uniMotions;
   bool            m_affineModeSelected;
 #endif
 
@@ -360,8 +360,8 @@ protected:
   double xGetMEDistortionWeight   ( uint8_t gbiIdx, RefPicList eRefPicList);
   bool xReadBufferedUniMv         ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost);
 public:
-  void resetBufferedUniMotions    () { m_cUniMotions.reset(); }
-  uint32_t getWeightIdxBits       ( uint8_t gbiIdx ) { return m_auiEstWeightIdxBits[gbiIdx]; }
+  void resetBufferedUniMotions    () { m_uniMotions.reset(); }
+  uint32_t getWeightIdxBits       ( uint8_t gbiIdx ) { return m_estWeightIdxBits[gbiIdx]; }
   void initWeightIdxBits          ();
 protected:
 #endif

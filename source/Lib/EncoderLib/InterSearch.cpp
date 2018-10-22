@@ -888,8 +888,8 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           if( cu.cs->sps->getSpsNext().getUseGBi() && cu.GBiIdx == GBI_DEFAULT && cu.cs->slice->isInterB() )
           {
             const bool checkIdentical = true;
-            m_cUniMotions.setReadMode(checkIdentical, (uint32_t)iRefList, (uint32_t)iRefIdxTemp);
-            m_cUniMotions.copyFrom(cMvTemp[iRefList][iRefIdxTemp], uiCostTemp - m_pcRdCost->getCost(uiBitsTemp), (uint32_t)iRefList, (uint32_t)iRefIdxTemp);
+            m_uniMotions.setReadMode(checkIdentical, (uint32_t)iRefList, (uint32_t)iRefIdxTemp);
+            m_uniMotions.copyFrom(cMvTemp[iRefList][iRefIdxTemp], uiCostTemp - m_pcRdCost->getCost(uiBitsTemp), (uint32_t)iRefList, (uint32_t)iRefIdxTemp);
           }
 #endif
           xCopyAMVPInfo( &amvp[eRefPicList], &aacAMVPInfo[iRefList][iRefIdxTemp]); // must always be done ( also when AMVP_MODE = AM_NONE )
@@ -2778,8 +2778,8 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 #if JVET_L0646_GBI
       if(pu.cu->cs->sps->getSpsNext().getUseGBi() && pu.cu->GBiIdx == GBI_DEFAULT && pu.cu->slice->isInterB())
       {
-        m_cUniMotions.setReadModeAffine(true, (uint8_t)iRefList, (uint8_t)iRefIdxTemp, pu.cu->affineType);
-        m_cUniMotions.copyAffineMvFrom(cMvTemp[iRefList][iRefIdxTemp], uiCostTemp - m_pcRdCost->getCost(uiBitsTemp), (uint8_t)iRefList, (uint8_t)iRefIdxTemp, pu.cu->affineType
+        m_uniMotions.setReadModeAffine(true, (uint8_t)iRefList, (uint8_t)iRefIdxTemp, pu.cu->affineType);
+        m_uniMotions.copyAffineMvFrom(cMvTemp[iRefList][iRefIdxTemp], uiCostTemp - m_pcRdCost->getCost(uiBitsTemp), (uint8_t)iRefList, (uint8_t)iRefIdxTemp, pu.cu->affineType
         );
       }
 #endif
@@ -4727,9 +4727,9 @@ double InterSearch::xGetMEDistortionWeight(uint8_t gbiIdx, RefPicList eRefPicLis
 }
 bool InterSearch::xReadBufferedUniMv(PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost)
 {
-  if (m_cUniMotions.isReadMode((uint32_t)eRefPicList, (uint32_t)iRefIdx))
+  if (m_uniMotions.isReadMode((uint32_t)eRefPicList, (uint32_t)iRefIdx))
   {
-    m_cUniMotions.copyTo(rcMv, ruiCost, (uint32_t)eRefPicList, (uint32_t)iRefIdx);
+    m_uniMotions.copyTo(rcMv, ruiCost, (uint32_t)eRefPicList, (uint32_t)iRefIdx);
 
     m_pcRdCost->setPredictor(pcMvPred);
     m_pcRdCost->setCostScale(0);
@@ -4745,9 +4745,9 @@ bool InterSearch::xReadBufferedUniMv(PredictionUnit& pu, RefPicList eRefPicList,
 }
 bool InterSearch::xReadBufferedAffineUniMv(PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv acMvPred[3], Mv acMv[3], uint32_t& ruiBits, Distortion& ruiCost)
 {
-  if (m_cUniMotions.isReadModeAffine((uint32_t)eRefPicList, (uint32_t)iRefIdx, pu.cu->affineType))
+  if (m_uniMotions.isReadModeAffine((uint32_t)eRefPicList, (uint32_t)iRefIdx, pu.cu->affineType))
   {
-    m_cUniMotions.copyAffineMvTo(acMv, ruiCost, (uint32_t)eRefPicList, (uint32_t)iRefIdx, pu.cu->affineType);
+    m_uniMotions.copyAffineMvTo(acMv, ruiCost, (uint32_t)eRefPicList, (uint32_t)iRefIdx, pu.cu->affineType);
     m_pcRdCost->setCostScale(0);
 
     uint32_t uiMvBits = 0;
@@ -4774,7 +4774,7 @@ void InterSearch::initWeightIdxBits()
 {
   for (int n = 0; n < GBI_NUM; ++n)
   {
-    m_auiEstWeightIdxBits[n] = deriveWeightIdxBits(n);
+    m_estWeightIdxBits[n] = deriveWeightIdxBits(n);
   }
 }
 #endif

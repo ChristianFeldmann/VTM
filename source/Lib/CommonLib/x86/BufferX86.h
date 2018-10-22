@@ -221,77 +221,40 @@ void removeWeightHighFreq_SSE(int16_t* src0, int src0Stride, const int16_t* src1
   int offset = 1 << (shift - 1);
   if (W == 8)
   {
-#if 0//USE_AVX2
-    if (vext >= AVX2)
+    __m128i vzero = _mm_setzero_si128();
+    __m128i voffset = _mm_set1_epi32(offset);
+    __m128i vw0 = _mm_set1_epi32(weight0);
+    __m128i vw1 = _mm_set1_epi32(weight1);
+
+    for (int row = 0; row < height; row++)
     {
-      __m256i vzero = _mm256_setzero_si256();
-      __m256i voffset = _mm256_set1_epi32(offset);
-      __m256i vw0 = _mm256_set1_epi32(weight0);
-      __m256i vw1 = _mm256_set1_epi32(weight1);
-
-      for (int row = 0; row < height; row++)
+      for (int col = 0; col < width; col += 8)
       {
-        for (int col = 0; col < width; col += 8)
-        {
-          __m256i vsrc0, vsrc1;
-          __m128i a = _mm_load_si128((const __m128i *)&src0[col]);
-          __m128i b = _mm_load_si128((const __m128i *)&src1[col]);
+        __m128i vsrc0 = _mm_load_si128((const __m128i *)&src0[col]);
+        __m128i vsrc1 = _mm_load_si128((const __m128i *)&src1[col]);
 
-          vsrc0 = _mm256_cvtepi16_epi32(a);
-          vsrc1 = _mm256_cvtepi16_epi32(b);
-          vsrc0 = _mm256_mullo_epi32(vsrc0, vw0);
-          vsrc1 = _mm256_mullo_epi32(vsrc1, vw1);
-          vsrc0 = _mm256_add_epi32(_mm256_sub_epi32(vsrc0, vsrc1), voffset);
-          vsrc0 = _mm256_srai_epi32(vsrc0, shift);
+        __m128i vtmp, vdst, vsrc;
+        vdst = _mm_cvtepi16_epi32(vsrc0);
+        vsrc = _mm_cvtepi16_epi32(vsrc1);
+        vdst = _mm_mullo_epi32(vdst, vw0);
+        vsrc = _mm_mullo_epi32(vsrc, vw1);
+        vtmp = _mm_add_epi32(_mm_sub_epi32(vdst, vsrc), voffset);
+        vtmp = _mm_srai_epi32(vtmp, shift);
 
-          vsrc0 = _mm256_packs_epi32(vsrc0, vzero);
+        vsrc0 = _mm_unpackhi_epi64(vsrc0, vzero);
+        vsrc1 = _mm_unpackhi_epi64(vsrc1, vzero);
+        vdst = _mm_cvtepi16_epi32(vsrc0);
+        vsrc = _mm_cvtepi16_epi32(vsrc1);
+        vdst = _mm_mullo_epi32(vdst, vw0);
+        vsrc = _mm_mullo_epi32(vsrc, vw1);
+        vdst = _mm_add_epi32(_mm_sub_epi32(vdst, vsrc), voffset);
+        vdst = _mm_srai_epi32(vdst, shift);
+        vdst = _mm_packs_epi32(vtmp, vdst);
 
-          _mm_store_si128((__m128i *)&src0[col], _mm256_castsi256_si128(vsrc0));
-        }
-
-        src0 += src0Stride;
-        src1 += src1Stride;
+        _mm_store_si128((__m128i *)&src0[col], vdst);
       }
-    }
-    else
-#endif
-    {
-      __m128i vzero = _mm_setzero_si128();
-      __m128i voffset = _mm_set1_epi32(offset);
-      __m128i vw0 = _mm_set1_epi32(weight0);
-      __m128i vw1 = _mm_set1_epi32(weight1);
-
-      for (int row = 0; row < height; row++)
-      {
-        for (int col = 0; col < width; col += 8)
-        {
-          __m128i vsrc0 = _mm_load_si128((const __m128i *)&src0[col]);
-          __m128i vsrc1 = _mm_load_si128((const __m128i *)&src1[col]);
-
-          __m128i vtmp, vdst, vsrc;
-          vdst = _mm_cvtepi16_epi32(vsrc0);
-          vsrc = _mm_cvtepi16_epi32(vsrc1);
-          vdst = _mm_mullo_epi32(vdst, vw0);
-          vsrc = _mm_mullo_epi32(vsrc, vw1);
-          vtmp = _mm_add_epi32(_mm_sub_epi32(vdst, vsrc), voffset);
-          vtmp = _mm_srai_epi32(vtmp, shift);
-
-          vsrc0 = _mm_unpackhi_epi64(vsrc0, vzero);
-          vsrc1 = _mm_unpackhi_epi64(vsrc1, vzero);
-          vdst = _mm_cvtepi16_epi32(vsrc0);
-          vsrc = _mm_cvtepi16_epi32(vsrc1);
-          vdst = _mm_mullo_epi32(vdst, vw0);
-          vsrc = _mm_mullo_epi32(vsrc, vw1);
-          vdst = _mm_add_epi32(_mm_sub_epi32(vdst, vsrc), voffset);
-          vdst = _mm_srai_epi32(vdst, shift);
-          vdst = _mm_packs_epi32(vtmp, vdst);
-
-          _mm_store_si128((__m128i *)&src0[col], vdst);
-        }
-
-        src0 += src0Stride;
-        src1 += src1Stride;
-      }
+      src0 += src0Stride;
+      src1 += src1Stride;
     }
   }
   else if (W == 4)

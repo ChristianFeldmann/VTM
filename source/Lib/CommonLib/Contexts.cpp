@@ -290,9 +290,15 @@ const CtxSet ContextSetCfg::MergeFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MergeIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_L0194_ONE_CTX_FOR_MRG_IDX
+  { 137,},
+  { 122,},
+  { CNU,},
+#else
   {  137, CNU, CNU, CNU, CNU,},
   {  122, CNU, CNU, CNU, CNU,},
   {  CNU, CNU, CNU, CNU, CNU,},
+#endif
 });
 
 const CtxSet ContextSetCfg::PartSize = ContextSetCfg::addCtxSet

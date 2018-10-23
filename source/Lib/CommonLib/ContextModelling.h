@@ -107,7 +107,11 @@ public:
     const int     diag      = posX + posY;
     int           numPos    = 0;
     int           sumAbs    = 0;
+#if JVET_L0274
+#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(2+(a&1),a);numPos+=!!a;}
+#else
 #define UPDATE(x) {int a=abs(x);sumAbs+=std::min(4-(a&1),a);numPos+=!!a;}
+#endif
     if( posX < m_width-1 )
     {
       UPDATE( pData[1] );
@@ -154,6 +158,36 @@ public:
   unsigned greater1CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[1]( offset ); }
   unsigned greater2CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[0]( offset ); }
 
+#if JVET_L0274
+  unsigned templateAbsSum( int scanPos, const TCoeff* coeff )
+  {
+    const uint32_t  posY  = m_scanPosY[scanPos];
+    const uint32_t  posX  = m_scanPosX[scanPos];
+    const TCoeff*   pData = coeff + posX + posY * m_width;
+    int             sum   = 0;
+    if (posX < m_width - 1)
+    {
+      sum += abs(pData[1]);
+      if (posX < m_width - 2)
+      {
+        sum += abs(pData[2]);
+      }
+      if (posY < m_height - 1)
+      {
+        sum += abs(pData[m_width + 1]);
+      }
+    }
+    if (posY < m_height - 1)
+    {
+      sum += abs(pData[m_width]);
+      if (posY < m_height - 2)
+      {
+        sum += abs(pData[m_width << 1]);
+      }
+    }
+    return std::min(sum, 31);
+  }
+#else
   unsigned GoRiceParAbs( int scanPos, const TCoeff* coeff ) const
   {
 #define UPDATE(x) sum+=abs(x)-!!x
@@ -185,7 +219,7 @@ public:
     int     r = g_auiGoRicePars[ std::min( sum, 31 ) ];
     return  r;
   }
-
+#endif
 
   unsigned        emtNumSigCoeff()                          const { return m_emtNumSigCoeff; }
   void            setEmtNumSigCoeff( unsigned val )               { m_emtNumSigCoeff = val; }

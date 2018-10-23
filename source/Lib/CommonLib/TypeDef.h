@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
+
 #define JVET_L0392_ALF_INIT_STATE                         1
 
 #define JVET_L0664_ALF_REMOVE_LUMA_5x5                    1
@@ -59,6 +61,15 @@
 #define JVET_L0082_ALF_COEF_BITS                          1 // ALF filter coefficient bitwidth constraints
 
 #define JVET_L0194_ONE_CTX_FOR_MRG_IDX                    1 // one context for full-block Merge index
+
+#define JVET_L0274                                        1
+#define JVET_L0274_ENCODER_SPEED_UP                     ( 1 && JVET_L0274 ) // encoder speed-up by pre-calculating position dependent parameters
+
+
+
+
+
+
 
 
 
@@ -70,6 +81,8 @@
 #define REUSE_CU_RESULTS                                  1
 
 #define REMOVE_MV_ADAPT_PREC                              1 // remove the high precision flag in the MV class
+
+#define JVET_L0093_SIMP_PRUNE                             1
 
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )
@@ -166,7 +179,11 @@
 #define HM_EMT_NSST_AS_IN_JEM                             1   //
 #define HM_MDIS_AS_IN_JEM                                 1   // *** - PM: not filtering ref. samples for 64xn case and using Planar MDIS condition at encoder
 #define HM_JEM_CLIP_PEL                                   1   // ***
+#if JVET_L0093_SIMP_PRUNE
+#define HM_JEM_MERGE_CANDS                                0   // ***
+#else
 #define HM_JEM_MERGE_CANDS                                1   // ***
+#endif
 
 #endif//JEM_COMP
 

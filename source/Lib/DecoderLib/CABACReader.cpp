@@ -2216,7 +2216,10 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
   }
 
   uint8_t   ctxOffset[16];
+#if JVET_L0274
+#else
   unsigned  nextPass = 0;
+#endif
 
   //===== decode absolute values =====
   const int inferSigPos   = nextSigPos != cctx.scanPosLast() ? ( cctx.isNotFirst() ? minSubPos : -1 ) : nextSigPos;
@@ -2225,9 +2228,20 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
   int       lastNZPos     = -1;
 #endif
   int       numNonZero    =  0;
+#if JVET_L0274
+  bool      is2x2subblock = ( cctx.log2CGSize() == 2 );
+  int       remGt2Bins    = ( is2x2subblock ? MAX_NUM_GT2_BINS_2x2SUBBLOCK : MAX_NUM_GT2_BINS_4x4SUBBLOCK );
+  int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK ) - remGt2Bins;
+  int       firstPosMode2 = minSubPos - 1;
+  int       firstPosMode1 = minSubPos - 1;
+#endif
   int       sigBlkPos[ 1 << MLS_CG_SIZE ];
 
+#if JVET_L0274
+  for( ; nextSigPos >= minSubPos && remRegBins >= 3; nextSigPos-- )
+#else
   for( ; nextSigPos >= minSubPos; nextSigPos-- )
+#endif
   {
     int      blkPos     = cctx.blockPos( nextSigPos );
     unsigned sigFlag    = ( !numNonZero && nextSigPos == inferSigPos );
@@ -2237,6 +2251,9 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       const unsigned sigCtxId = cctx.sigCtxIdAbs( nextSigPos, coeff, state );
       sigFlag = m_BinDecoder.decodeBin( sigCtxId );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "sig_bin() bin=%d ctx=%d\n", sigFlag, sigCtxId );
+#if JVET_L0274
+      remRegBins--;
+#endif
     }
 
     if( sigFlag )
@@ -2249,6 +2266,27 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       lastNZPos  = std::max<int>( lastNZPos, nextSigPos );
 #endif
 
+#if JVET_L0274
+      RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_gt1 );
+      unsigned gt1Flag = m_BinDecoder.decodeBin( cctx.greater1CtxIdAbs(ctxOff) );
+      DTRACE( g_trace_ctx, D_SYNTAX_RESI, "gt1_flag() bin=%d ctx=%d\n", gt1Flag, cctx.greater1CtxIdAbs(ctxOff) );
+      remRegBins--;
+
+      unsigned parFlag = 0;
+      if( gt1Flag )
+      {
+        RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_par );
+        parFlag = m_BinDecoder.decodeBin( cctx.parityCtxIdAbs( ctxOff ) );
+        DTRACE( g_trace_ctx, D_SYNTAX_RESI, "par_flag() bin=%d ctx=%d\n", parFlag, cctx.parityCtxIdAbs( ctxOff ) );
+
+        remRegBins--;
+        if( remGt2Bins && !--remGt2Bins )
+        {
+          firstPosMode1 = nextSigPos - 1;
+        }
+      }
+      coeff[ blkPos ] += 1 + parFlag + gt1Flag;
+#else
       RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_par );
       unsigned parFlag = m_BinDecoder.decodeBin( cctx.parityCtxIdAbs(ctxOff) );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "par_flag() bin=%d ctx=%d\n", parFlag, cctx.parityCtxIdAbs(ctxOff) );
@@ -2258,11 +2296,85 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "gt1_flag() bin=%d ctx=%d\n", gt1Flag, cctx.greater1CtxIdAbs(ctxOff) );
       coeff[blkPos] += 1+parFlag+(gt1Flag<<1);
       nextPass      |= gt1Flag;
+#endif
     }
 
     state = ( stateTransTable >> ((state<<2)+((coeff[blkPos]&1)<<1)) ) & 3;
   }
+#if JVET_L0274
+  firstPosMode2 = nextSigPos;
+  firstPosMode1 = ( firstPosMode1 > firstPosMode2 ? firstPosMode1 : firstPosMode2 );
+#endif
 
+#if JVET_L0274
+  //===== 2nd PASS: gt2 =====
+  for( int scanPos = firstSigPos; scanPos > firstPosMode1; scanPos-- )
+  {
+    TCoeff& tcoeff = coeff[ cctx.blockPos( scanPos ) ];
+    if( tcoeff >= 2 )
+    {
+      RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_gt2 );
+      uint8_t& ctxOff  = ctxOffset[ scanPos - minSubPos ];
+      unsigned gt2Flag = m_BinDecoder.decodeBin( cctx.greater2CtxIdAbs(ctxOff) );
+      DTRACE( g_trace_ctx, D_SYNTAX_RESI, "gt2_flag() bin=%d ctx=%d\n", gt2Flag, cctx.greater2CtxIdAbs(ctxOff) );
+      tcoeff    += (gt2Flag<<1);
+    }
+  }
+
+  //===== 3rd PASS: Go-rice codes =====
+  unsigned ricePar = 0;
+  for( int scanPos = firstSigPos; scanPos > firstPosMode1; scanPos-- )
+  {
+    TCoeff& tcoeff = coeff[ cctx.blockPos( scanPos ) ];
+    if( tcoeff >= 4 )
+    {
+      RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_escs );
+      int       rem     = m_BinDecoder.decodeRemAbsEP( ricePar, cctx.extPrec(), cctx.maxLog2TrDRange() );
+      DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, ricePar );
+      tcoeff += (rem<<1);
+      if( ricePar < 3 && rem > (3<<ricePar)-1 )
+      {
+        ricePar++;
+      }
+    }
+  }
+  for( int scanPos = firstPosMode1; scanPos > firstPosMode2; scanPos-- )
+  {
+    TCoeff& tcoeff = coeff[ cctx.blockPos( scanPos ) ];
+    if( tcoeff >= 2 )
+    {
+      RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_escs );
+      int       rem     = m_BinDecoder.decodeRemAbsEP( ricePar, cctx.extPrec(), cctx.maxLog2TrDRange() );
+      DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, ricePar );
+      tcoeff += (rem<<1);
+      if( ricePar < 3 && rem > (3<<ricePar)-1 )
+      {
+        ricePar++;
+      }
+    }
+  }
+
+  //===== coeff bypass ====
+  for( int scanPos = firstPosMode2; scanPos >= minSubPos; scanPos-- )
+  {
+    int       sumAll    = cctx.templateAbsSum(scanPos, coeff);
+    int       rice      = g_auiGoRiceParsCoeff                        [sumAll];
+    int       pos0      = g_auiGoRicePosCoeff0[std::max(0, state - 1)][sumAll];
+    int       rem       = m_BinDecoder.decodeRemAbsEP( rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
+    DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, rice );
+    TCoeff    tcoeff  = ( rem == pos0 ? 0 : rem < pos0 ? rem+1 : rem );
+    state = ( stateTransTable >> ((state<<2)+((tcoeff&1)<<1)) ) & 3;
+    if( tcoeff )
+    {
+      int        blkPos         = cctx.blockPos( scanPos );
+      sigBlkPos[ numNonZero++ ] = blkPos;
+#if HEVC_USE_SIGN_HIDING
+      lastNZPos  = std::max<int>( lastNZPos, scanPos );
+#endif
+      coeff[blkPos] = tcoeff;
+    }
+  }
+#else
   //===== 2nd PASS: gt2 =====
   if( nextPass )
   {
@@ -2298,6 +2410,7 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       }
     }
   }
+#endif
 
   //===== decode sign's =====
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__SIGN_BIT, Size( cctx.width(), cctx.height() ), cctx.compID() );

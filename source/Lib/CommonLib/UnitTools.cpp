@@ -502,11 +502,16 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
   const uint32_t maxNumMergeCand = slice.getMaxNumMergeCand();
   const bool canFastExit     = pu.cs->pps->getLog2ParallelMergeLevelMinus2() == 0;
 
+#if !JVET_L0090_PAIR_AVG
+  // this variable is unused if remove HEVC combined candidates
   bool isCandInter[MRG_MAX_NUM_CANDS];
+#endif
 
   for (uint32_t ui = 0; ui < maxNumMergeCand; ++ui)
   {
+#if !JVET_L0090_PAIR_AVG
     isCandInter[ui] = false;
+#endif
 #if JVET_L0646_GBI
     mrgCtx.GBiIdx[ui] = GBI_DEFAULT;
 #endif
@@ -535,7 +540,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
   {
     miLeft = puLeft->getMotionInfo( posLB.offset(-1, 0) );
 
+#if !JVET_L0090_PAIR_AVG
     isCandInter[cnt] = true;
+#endif
 
     // get Inter Dir
     mrgCtx.interDirNeighbours[cnt] = miLeft.interDir;
@@ -576,7 +583,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
 
     if( !isAvailableA1 || ( miAbove != miLeft ) )
     {
+#if !JVET_L0090_PAIR_AVG
       isCandInter[cnt] = true;
+#endif
 
       // get Inter Dir
       mrgCtx.interDirNeighbours[cnt] = miAbove.interDir;
@@ -621,7 +630,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
     if( !isAvailableB1 || ( miAbove != miAboveRight ) )
 #endif
     {
+#if !JVET_L0090_PAIR_AVG
       isCandInter[cnt] = true;
+#endif
 
       // get Inter Dir
       mrgCtx.interDirNeighbours[cnt] = miAboveRight.interDir;
@@ -665,7 +676,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
     if( !isAvailableA1 || ( miBelowLeft != miLeft ) )
 #endif
     {
+#if !JVET_L0090_PAIR_AVG
       isCandInter[cnt] = true;
+#endif
 
       // get Inter Dir
       mrgCtx.interDirNeighbours[cnt] = miBelowLeft.interDir;
@@ -715,7 +728,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
 
     if( isAvailableSubPu )
     {
+#if !JVET_L0090_PAIR_AVG
       isCandInter[cnt] = true;
+#endif
 
       mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_SUBPU_ATMVP;
 
@@ -751,7 +766,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
       if( ( !isAvailableA1 || ( miLeft != miAboveLeft ) ) && ( !isAvailableB1 || ( miAbove != miAboveLeft ) ) )
 #endif
       {
+#if !JVET_L0090_PAIR_AVG
         isCandInter[cnt] = true;
+#endif
 
         // get Inter Dir
         mrgCtx.interDirNeighbours[cnt] = miAboveLeft.interDir;
@@ -885,11 +902,12 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
       if( addTMvp )
       {
         mrgCtx.interDirNeighbours[uiArrayAddr] = dir;
-#if JVET_L0646_GBI
-        mrgCtx.GBiIdx            [uiArrayAddr] = GBI_DEFAULT;
-#endif
+#if !JVET_L0090_PAIR_AVG
         isCandInter              [uiArrayAddr] = true;
-
+#endif
+#if JVET_L0646_GBI
+		mrgCtx.GBiIdx[uiArrayAddr] = GBI_DEFAULT;
+#endif
         if( mrgCandIdx == cnt && canFastExit )
         {
           return;
@@ -906,7 +924,97 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
     return;
   }
 
+#if JVET_L0090_PAIR_AVG
+  // pairwise-average candidates
+  {
+    const int cutoff = std::min( cnt, 4 );
+    const int end = cutoff * (cutoff - 1) / 2;
+    constexpr int PRIORITY_LIST0[] = { 0, 0, 1, 0, 1, 2 };
+    constexpr int PRIORITY_LIST1[] = { 1, 2, 2, 3, 3, 3 };
+
+    for( int idx = 0; idx < end && cnt != maxNumMergeCand; idx++ )
+    {
+      const int i = PRIORITY_LIST0[idx];
+      const int j = PRIORITY_LIST1[idx];
+
+      mrgCtx.mvFieldNeighbours[cnt * 2].setMvField( Mv( 0, 0 ), NOT_VALID );
+      mrgCtx.mvFieldNeighbours[cnt * 2 + 1].setMvField( Mv( 0, 0 ), NOT_VALID );
+      // calculate average MV for L0 and L1 seperately
+      unsigned char interDir = 0;
+      for( int refListId = 0; refListId < (slice.isInterB() ? 2 : 1); refListId++ )
+      {
+        const short refIdxI = mrgCtx.mvFieldNeighbours[i * 2 + refListId].refIdx;
+        const short refIdxJ = mrgCtx.mvFieldNeighbours[j * 2 + refListId].refIdx;
+
+        // both MVs are invalid, skip
+        if( (refIdxI == NOT_VALID) && (refIdxJ == NOT_VALID) )
+        {
+          continue;
+        }
+
+        interDir += 1 << refListId;
+        // both MVs are valid, average these two MVs
+        if( (refIdxI != NOT_VALID) && (refIdxJ != NOT_VALID) )
+        {
+          const Mv& MvI = mrgCtx.mvFieldNeighbours[i * 2 + refListId].mv;
+          const Mv& MvJ = mrgCtx.mvFieldNeighbours[j * 2 + refListId].mv;
+
+          // average two MVs
+          Mv avgMv = MvI;
+#if !REMOVE_MV_ADAPT_PREC
+          if( pu.cs->sps->getSpsNext().getUseHighPrecMv() )
+          {
+            avgMv.setHighPrec();
+          }
+#endif
+          avgMv += MvJ;
+          avgMv.setHor( avgMv.getHor() / 2 );
+          avgMv.setVer( avgMv.getVer() / 2 );
+
+          mrgCtx.mvFieldNeighbours[cnt * 2 + refListId].setMvField( avgMv, refIdxI );
+        }
+        // only one MV is valid, take the only one MV
+        else if( refIdxI != NOT_VALID )
+        {
+          Mv singleMv = mrgCtx.mvFieldNeighbours[i * 2 + refListId].mv;
+#if !REMOVE_MV_ADAPT_PREC
+          if( pu.cs->sps->getSpsNext().getUseHighPrecMv() )
+          {
+            singleMv.setHighPrec();
+          }
+#endif
+          mrgCtx.mvFieldNeighbours[cnt * 2 + refListId].setMvField( singleMv, refIdxI );
+        }
+        else if( refIdxJ != NOT_VALID )
+        {
+          Mv singleMv = mrgCtx.mvFieldNeighbours[j * 2 + refListId].mv;
+#if !REMOVE_MV_ADAPT_PREC
+          if( pu.cs->sps->getSpsNext().getUseHighPrecMv() )
+          {
+            singleMv.setHighPrec();
+          }
+#endif
+          mrgCtx.mvFieldNeighbours[cnt * 2 + refListId].setMvField( singleMv, refIdxJ );
+        }
+      }
+
+      mrgCtx.interDirNeighbours[cnt] = interDir;
+      if( interDir > 0 )
+      {
+        cnt++;
+      }
+    }
+
+    // early termination
+    if( cnt == maxNumMergeCand )
+    {
+      return;
+    }
+  }
+#endif
+
   uint32_t uiArrayAddr = cnt;
+#if !JVET_L0090_PAIR_AVG
   uint32_t uiCutoff    = std::min( uiArrayAddr, 4u );
 
   if (slice.isInterB())
@@ -952,6 +1060,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
   {
     return;
   }
+#endif
 
   int iNumRefIdx = slice.isInterB() ? std::min(slice.getNumRefIdx(REF_PIC_LIST_0), slice.getNumRefIdx(REF_PIC_LIST_1)) : slice.getNumRefIdx(REF_PIC_LIST_0);
 
@@ -959,7 +1068,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
   int refcnt = 0;
   while (uiArrayAddr < maxNumMergeCand)
   {
+#if !JVET_L0090_PAIR_AVG
     isCandInter               [uiArrayAddr     ] = true;
+#endif
     mrgCtx.interDirNeighbours [uiArrayAddr     ] = 1;
 #if JVET_L0646_GBI
     mrgCtx.GBiIdx             [uiArrayAddr     ] = GBI_DEFAULT;

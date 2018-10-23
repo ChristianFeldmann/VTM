@@ -82,6 +82,8 @@
 
 #define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)
 
+#define JVET_L0628_4TAP_INTRA                             1 // 4-tap intra-interpolation filtering with switching between Gaussian and DCT-IF filters for luma component
+
 #define REUSE_CU_RESULTS                                  1
 
 #define REMOVE_MV_ADAPT_PREC                              1 // remove the high precision flag in the MV class

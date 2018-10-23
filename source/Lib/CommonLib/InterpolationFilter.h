@@ -92,6 +92,10 @@ public:
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   void cacheAssign( CacheModel *cache ) { m_cacheModel = cache; }
 #endif
+
+#if JVET_L0628_4TAP_INTRA
+  static TFilterCoeff const * const getChromaFilterTable(const int deltaFract) { return m_chromaFilter[deltaFract]; };
+#endif //JVET_L0628_4TAP_INTRA
 };
 
 //! \}

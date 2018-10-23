@@ -71,6 +71,8 @@
 
 #define JVET_L0093_SIMP_PRUNE                             1
 
+#define JVET_L0257_ATMVP_COLBLK_CLIP                      1
+
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )
 #endif

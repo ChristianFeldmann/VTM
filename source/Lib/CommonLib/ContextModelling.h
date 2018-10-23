@@ -299,6 +299,9 @@ public:
   ~MergeCtx() {}
 public:
   MvField       mvFieldNeighbours [ MRG_MAX_NUM_CANDS << 1 ]; // double length for mv of both lists
+#if JVET_L0646_GBI
+  uint8_t       GBiIdx            [ MRG_MAX_NUM_CANDS      ];
+#endif
   unsigned char interDirNeighbours[ MRG_MAX_NUM_CANDS      ];
   MergeType     mrgTypeNeighbours [ MRG_MAX_NUM_CANDS      ];
   int           numValidMergeCand;

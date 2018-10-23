@@ -217,6 +217,20 @@ extern MsgLevel g_verbosity;
 
 extern const int g_aiNonLMPosThrs[];
 
+#if JVET_L0646_GBI
+extern const int8_t g_GbiLog2WeightBase;
+extern const int8_t g_GbiWeightBase;
+extern const int8_t g_GbiWeights[GBI_NUM];
+extern const int8_t g_GbiSearchOrder[GBI_NUM];
+extern       int8_t g_GbiCodingOrder[GBI_NUM];
+extern       int8_t g_GbiParsingOrder[GBI_NUM];
+
+class CodingStructure;
+int8_t getGbiWeight(uint8_t gbiIdx, uint8_t uhRefFrmList);
+void resetGbiCodingOrder(bool bRunDecoding, const CodingStructure &cs);
+uint32_t deriveWeightIdxBits(uint8_t gbiIdx);
+#endif 
+
 constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,

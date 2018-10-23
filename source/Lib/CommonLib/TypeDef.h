@@ -65,6 +65,19 @@
 #define JVET_L0274                                        1
 #define JVET_L0274_ENCODER_SPEED_UP                     ( 1 && JVET_L0274 ) // encoder speed-up by pre-calculating position dependent parameters
 
+
+
+
+
+
+
+
+
+
+
+
+#define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)
+
 #define REUSE_CU_RESULTS                                  1
 
 #define REMOVE_MV_ADAPT_PREC                              1 // remove the high precision flag in the MV class
@@ -234,6 +247,10 @@
 #define ENABLE_SIMD_OPT_DIST                            ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for the distortion calculations(SAD,SSE,HADAMARD), no impact on RD performance
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
+#if ENABLE_SIMD_OPT_BUFFER
+#define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi   
+#endif
+
 // End of SIMD optimizations
 
 

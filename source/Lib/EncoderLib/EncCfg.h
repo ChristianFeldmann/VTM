@@ -204,6 +204,10 @@ protected:
   bool      m_AltDQPCoding;
 #endif
   bool      m_compositeRefEnabled;        //composite reference
+#if JVET_L0646_GBI
+  bool      m_GBi;
+  bool      m_GBiFast;
+#endif
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
 
   bool      m_useFastLCTU;
@@ -641,7 +645,12 @@ public:
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }
-
+#if JVET_L0646_GBI
+  void      setUseGBi                       ( bool b )       { m_GBi = b; }
+  bool      getUseGBi                       ()         const { return m_GBi; }
+  void      setUseGBiFast                   ( uint32_t b )   { m_GBiFast = b; }
+  bool      getUseGBiFast                   ()         const { return m_GBiFast; }
+#endif
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 
   void      setMaxCUWidth                   ( uint32_t  u )      { m_maxCUWidth  = u; }
@@ -767,7 +776,7 @@ public:
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       getIntraQPOffset                () const    { return  m_intraQPOffset; }
   int       getLambdaFromQPEnable           () const    { return  m_lambdaFromQPEnable; }
-#if ENABLE_QPA
+#if ENABLE_QPA | JVET_L0646_GBI
 public:
 #else
 protected:

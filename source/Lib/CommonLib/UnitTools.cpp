@@ -512,6 +512,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
 #if !JVET_L0090_PAIR_AVG
     isCandInter[ui] = false;
 #endif
+#if JVET_L0646_GBI
+    mrgCtx.GBiIdx[ui] = GBI_DEFAULT;
+#endif
     mrgCtx.interDirNeighbours[ui] = 0;
     mrgCtx.mrgTypeNeighbours [ui] = MRG_TYPE_DEFAULT_N;
     mrgCtx.mvFieldNeighbours[(ui << 1)    ].refIdx = NOT_VALID;
@@ -543,6 +546,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
 
     // get Inter Dir
     mrgCtx.interDirNeighbours[cnt] = miLeft.interDir;
+#if JVET_L0646_GBI
+    mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puLeft->cu->GBiIdx : GBI_DEFAULT;
+#endif
     // get Mv from Left
     mrgCtx.mvFieldNeighbours[cnt << 1].setMvField(miLeft.mv[0], miLeft.refIdx[0]);
 
@@ -584,6 +590,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
       // get Inter Dir
       mrgCtx.interDirNeighbours[cnt] = miAbove.interDir;
       // get Mv from Above
+#if JVET_L0646_GBI
+      mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puAbove->cu->GBiIdx : GBI_DEFAULT;
+#endif
       mrgCtx.mvFieldNeighbours[cnt << 1].setMvField( miAbove.mv[0], miAbove.refIdx[0] );
 
       if( slice.isInterB() )
@@ -628,6 +637,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
       // get Inter Dir
       mrgCtx.interDirNeighbours[cnt] = miAboveRight.interDir;
       // get Mv from Above-right
+#if JVET_L0646_GBI
+      mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puAboveRight->cu->GBiIdx : GBI_DEFAULT;
+#endif
       mrgCtx.mvFieldNeighbours[cnt << 1].setMvField( miAboveRight.mv[0], miAboveRight.refIdx[0] );
 
       if( slice.isInterB() )
@@ -670,6 +682,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
 
       // get Inter Dir
       mrgCtx.interDirNeighbours[cnt] = miBelowLeft.interDir;
+#if JVET_L0646_GBI
+      mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puLeftBottom->cu->GBiIdx : GBI_DEFAULT;
+#endif
       // get Mv from Bottom-Left
       mrgCtx.mvFieldNeighbours[cnt << 1].setMvField( miBelowLeft.mv[0], miBelowLeft.refIdx[0] );
 
@@ -757,6 +772,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
 
         // get Inter Dir
         mrgCtx.interDirNeighbours[cnt] = miAboveLeft.interDir;
+#if JVET_L0646_GBI
+        mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puAboveLeft->cu->GBiIdx : GBI_DEFAULT;
+#endif
         // get Mv from Above-Left
         mrgCtx.mvFieldNeighbours[cnt << 1].setMvField( miAboveLeft.mv[0], miAboveLeft.refIdx[0] );
 
@@ -887,7 +905,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
 #if !JVET_L0090_PAIR_AVG
         isCandInter              [uiArrayAddr] = true;
 #endif
-
+#if JVET_L0646_GBI
+		mrgCtx.GBiIdx[uiArrayAddr] = GBI_DEFAULT;
+#endif
         if( mrgCandIdx == cnt && canFastExit )
         {
           return;
@@ -1012,6 +1032,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
       {
         isCandInter[uiArrayAddr] = true;
         mrgCtx.interDirNeighbours[uiArrayAddr] = 3;
+#if JVET_L0646_GBI
+        mrgCtx.GBiIdx[uiArrayAddr] = ((mrgCtx.interDirNeighbours[uiArrayAddr] == 3)) ? CU::deriveGbiIdx(mrgCtx.GBiIdx[i], mrgCtx.GBiIdx[j]) : GBI_DEFAULT;
+#endif
 
         // get Mv from cand[i] and cand[j]
         mrgCtx.mvFieldNeighbours[ uiArrayAddr << 1     ].setMvField(mrgCtx.mvFieldNeighbours[ i << 1     ].mv, mrgCtx.mvFieldNeighbours[ i << 1     ].refIdx);
@@ -1049,6 +1072,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
     isCandInter               [uiArrayAddr     ] = true;
 #endif
     mrgCtx.interDirNeighbours [uiArrayAddr     ] = 1;
+#if JVET_L0646_GBI
+    mrgCtx.GBiIdx             [uiArrayAddr     ] = GBI_DEFAULT;
+#endif
     mrgCtx.mvFieldNeighbours  [uiArrayAddr << 1].setMvField(Mv(0, 0), r);
 
     if (slice.isInterB())
@@ -1979,7 +2005,11 @@ bool PU::isAffineMrgFlagCoded( const PredictionUnit &pu )
   }
   return getFirstAvailableAffineNeighbour( pu ) != nullptr;
 }
+#if JVET_L0646_GBI
+void PU::getAffineMergeCand( const PredictionUnit &pu, MvField(*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, unsigned char &gbiIdx, int &numValidMergeCand )
+#else
 void PU::getAffineMergeCand( const PredictionUnit &pu, MvField (*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, int &numValidMergeCand )
+#endif
 {
   for ( int mvNum = 0; mvNum < 3; mvNum++ )
   {
@@ -1991,6 +2021,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, MvField (*mvFieldNeighbou
   if( puFirstNeighbour == nullptr )
   {
     numValidMergeCand = -1;
+#if JVET_L0646_GBI
+    gbiIdx = GBI_DEFAULT;
+#endif
     return;
   }
   else
@@ -2025,6 +2058,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, MvField (*mvFieldNeighbou
       }
     }
   }
+#if JVET_L0646_GBI
+  gbiIdx = puFirstNeighbour->cu->GBiIdx;
+#endif
 }
 
 void PU::setAllAffineMvField( PredictionUnit &pu, MvField *mvField, RefPicList eRefList )
@@ -2323,6 +2359,9 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
         mrgCtx.mvFieldNeighbours[(count << 1) + currRefListId].setMvField(cColMv, 0);
         mrgCtx.interDirNeighbours[count] |= (1 << currRefListId);
         LICFlag = tempLICFlag;
+#if JVET_L0646_GBI
+        mrgCtx.GBiIdx[count] = GBI_DEFAULT;
+#endif
         found = true;
       }
       else
@@ -2568,6 +2607,9 @@ void PU::restrictBiPredMergeCands( const PredictionUnit &pu, MergeCtx& mergeCtx 
       {
         mergeCtx.interDirNeighbours[ mergeCand ] = 1;
         mergeCtx.mvFieldNeighbours[( mergeCand << 1 ) + 1].setMvField( Mv( 0, 0 ), -1 );
+#if JVET_L0646_GBI
+        mergeCtx.GBiIdx[mergeCand] = GBI_DEFAULT;
+#endif
       }
     }
   }
@@ -2684,9 +2726,108 @@ int CU::getMaxNeighboriMVCandNum( const CodingStructure& cs, const Position& pos
   return maxImvNumCand;
 }
 
+#if JVET_L0646_GBI
+bool CU::isGBiIdxCoded( const CodingUnit &cu )
+{
+  if( cu.cs->sps->getSpsNext().getUseGBi() == false )
+  {
+    CHECK(cu.GBiIdx != GBI_DEFAULT, "Error: cu.GBiIdx != GBI_DEFAULT");
+    return false;
+  }
 
+  if( cu.predMode == MODE_INTRA || cu.cs->slice->isInterP() )
+  {
+    return false;
+  }
 
+  if( cu.lwidth() * cu.lheight() < GBI_SIZE_CONSTRAINT )
+  {
+    return false;
+  }
 
+  if( cu.firstPU->interDir == 3 && !cu.firstPU->mergeFlag )
+  {
+    return true;
+  }
+
+  return false;
+}
+
+uint8_t CU::getValidGbiIdx( const CodingUnit &cu )
+{
+  if( cu.firstPU->interDir == 3 && !cu.firstPU->mergeFlag )
+  {
+    return cu.GBiIdx;
+  }
+  else if( cu.firstPU->interDir == 3 && cu.firstPU->mergeFlag && cu.firstPU->mergeType == MRG_TYPE_DEFAULT_N )
+  {
+    // This is intended to do nothing here.
+  }
+  else if( cu.firstPU->mergeFlag && cu.firstPU->mergeType == MRG_TYPE_SUBPU_ATMVP )
+  {
+    CHECK(cu.GBiIdx != GBI_DEFAULT, " cu.GBiIdx != GBI_DEFAULT ");
+  }
+  else
+  {
+    CHECK(cu.GBiIdx != GBI_DEFAULT, " cu.GBiIdx != GBI_DEFAULT ");
+  }
+
+  return GBI_DEFAULT;
+}
+
+void CU::setGbiIdx( CodingUnit &cu, uint8_t uh )
+{
+  int8_t uhCnt = 0;
+
+  if( cu.firstPU->interDir == 3 && !cu.firstPU->mergeFlag )
+  {
+    cu.GBiIdx = uh;
+    ++uhCnt;
+  }
+  else if( cu.firstPU->interDir == 3 && cu.firstPU->mergeFlag && cu.firstPU->mergeType == MRG_TYPE_DEFAULT_N )
+  {
+    // This is intended to do nothing here.
+  }
+  else if( cu.firstPU->mergeFlag && cu.firstPU->mergeType == MRG_TYPE_SUBPU_ATMVP )
+  {
+    cu.GBiIdx = GBI_DEFAULT;
+  }
+  else
+  {
+    cu.GBiIdx = GBI_DEFAULT;
+  }
+
+  CHECK(uhCnt <= 0, " uhCnt <= 0 ");
+}
+
+uint8_t CU::deriveGbiIdx( uint8_t gbiLO, uint8_t gbiL1 )
+{
+  if( gbiLO == gbiL1 )
+  {
+    return gbiLO;
+  }
+  const int8_t w0 = getGbiWeight(gbiLO, REF_PIC_LIST_0);
+  const int8_t w1 = getGbiWeight(gbiL1, REF_PIC_LIST_1);
+  const int8_t th = g_GbiWeightBase >> 1;
+  const int8_t off = 1;
+
+  if( w0 == w1 || (w0 < (th - off) && w1 < (th - off)) || (w0 >(th + off) && w1 >(th + off)) )
+  {
+    return GBI_DEFAULT;
+  }
+  else
+  {
+    if( w0 > w1 )
+    {
+      return ( w0 >= th ? gbiLO : gbiL1 );
+    }
+    else
+    {
+      return ( w1 >= th ? gbiL1 : gbiLO );
+    }
+  }
+}
+#endif
 
 // TU tools
 

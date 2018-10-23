@@ -620,6 +620,13 @@ void InterPrediction::xWeightedAverage( const PredictionUnit& pu, const CPelUnit
 
   if( iRefIdx0 >= 0 && iRefIdx1 >= 0 )
   {
+#if JVET_L0646_GBI
+    if( pu.cu->GBiIdx != GBI_DEFAULT )
+    {
+      pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->GBiIdx);
+      return;
+    }
+#endif
     pcYuvDst.addAvg( pcYuvSrc0, pcYuvSrc1, clpRngs );
   }
   else if( iRefIdx0 >= 0 && iRefIdx1 < 0 )

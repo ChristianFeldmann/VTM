@@ -84,6 +84,12 @@ namespace CU
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
   uint32_t getNumNonZeroCoeffNonTs        (const CodingUnit& cu);
 
+#if JVET_L0646_GBI
+  bool  isGBiIdxCoded                 (const CodingUnit& cu);
+  uint8_t getValidGbiIdx              (const CodingUnit& cu);
+  void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);
+  uint8_t deriveGbiIdx                (uint8_t gbiLO, uint8_t gbiL1);
+#endif
 
   PUTraverser traversePUs             (      CodingUnit& cu);
   TUTraverser traverseTUs             (      CodingUnit& cu);
@@ -115,7 +121,11 @@ namespace PU
   bool isBipredRestriction            (const PredictionUnit &pu);
   void spanMotionInfo                 (      PredictionUnit &pu, const MergeCtx &mrgCtx = MergeCtx() );
   void applyImv                       (      PredictionUnit &pu, MergeCtx &mrgCtx, InterPrediction *interPred = NULL );
+#if JVET_L0646_GBI
+  void getAffineMergeCand             (const PredictionUnit &pu, MvField(*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, unsigned char &gbiIdx, int &numValidMergeCand);
+#else
   void getAffineMergeCand             (const PredictionUnit &pu, MvField (*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, int &numValidMergeCand );
+#endif
   bool isAffineMrgFlagCoded           (const PredictionUnit &pu );
   void getAffineMergeCand             (const PredictionUnit &pu, MvField (*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, int &numValidMergeCand );
   void setAllAffineMvField            (      PredictionUnit &pu, MvField *mvField, RefPicList eRefList );

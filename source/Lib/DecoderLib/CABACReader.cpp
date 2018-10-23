@@ -834,10 +834,62 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
 
   imv_mode   ( cu, mrgCtx );
 
+#if JVET_L0646_GBI
+  cu_gbi_flag( cu );
+#endif
+
 }
 
+#if JVET_L0646_GBI
+void CABACReader::cu_gbi_flag(CodingUnit& cu)
+{
+  if(!CU::isGBiIdxCoded(cu))
+  {
+    return;
+  }
 
+  uint8_t gbiIdx = GBI_DEFAULT;
 
+  CHECK(!(GBI_NUM > 1 && (GBI_NUM == 2 || (GBI_NUM & 0x01) == 1)), " !( GBI_NUM > 1 && ( GBI_NUM == 2 || ( GBI_NUM & 0x01 ) == 1 ) ) ");
+
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__GBI_IDX);
+
+  int ctxId = 0;
+
+  uint32_t idx = 0;
+  uint32_t symbol;
+
+  symbol = (m_BinDecoder.decodeBin(Ctx::GBiIdx(ctxId)));
+
+  int32_t numGBi = (cu.slice->getCheckLDC()) ? 5 : 3;
+
+  if(symbol == 0)
+  {
+    uint32_t prefixNumBits = numGBi - 2;
+    uint32_t step = 1;
+
+    unsigned ctxIdGBi = 4;
+    idx = 1;
+
+    for(int ui = 0; ui < prefixNumBits; ++ui)
+    {
+      symbol = (m_BinDecoder.decodeBin(Ctx::GBiIdx(ctxIdGBi)));
+
+      if (symbol == 1)
+      {
+        break;
+      }
+      ctxIdGBi += step;
+      idx += step;
+    }
+  }
+
+  gbiIdx = (uint8_t)g_GbiParsingOrder[idx];
+  CU::setGbiIdx(cu, gbiIdx);
+
+  DTRACE(g_trace_ctx, D_SYNTAX, "cu_gbi_flag() gbi_idx=%d\n", cu.GBiIdx ? 1 : 0);
+}
+#endif
 
 void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
 {
@@ -1153,6 +1205,9 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     pu.mv    [REF_PIC_LIST_1] = Mv(0, 0);
     pu.refIdx[REF_PIC_LIST_1] = -1;
     pu.interDir               =  1;
+#if JVET_L0646_GBI
+    pu.cu->GBiIdx = GBI_DEFAULT;
+#endif
   }
 
   PU::spanMotionInfo( pu, mrgCtx );

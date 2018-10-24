@@ -96,9 +96,9 @@ private:
   CodingStructure    ***m_pTempCS;
   CodingStructure    ***m_pBestCS;
 #if JVET_L0266_HMVP
-  LuTMotionCand      ***m_pTempMotLUTs;
-  LuTMotionCand      ***m_pBestMotLUTs;
-  LuTMotionCand      ***m_pSplitTempMotLUTs;
+  LutMotionCand      ***m_pTempMotLUTs;
+  LutMotionCand      ***m_pBestMotLUTs;
+  LutMotionCand      ***m_pSplitTempMotLUTs;
 #endif
   //  Access channel
   EncCfg*               m_pcEncCfg;
@@ -174,8 +174,8 @@ protected:
 
   void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm
 #if JVET_L0266_HMVP
-    , LuTMotionCand* &tempMotCandLUTs
-    , LuTMotionCand* &bestMotCandLUTs
+    , LutMotionCand* &tempMotCandLUTs
+    , LutMotionCand* &bestMotCandLUTs
 #endif
   );
 #if ENABLE_SPLIT_PARALLELISM
@@ -192,8 +192,8 @@ protected:
 
   void xCheckModeSplit        ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode
 #if JVET_L0266_HMVP
-    , LuTMotionCand* &tempMotCandLUTs
-    , LuTMotionCand* &bestMotCandLUTs
+    , LutMotionCand* &tempMotCandLUTs
+    , LutMotionCand* &bestMotCandLUTs
     , UnitArea  parArea
 #endif
   );

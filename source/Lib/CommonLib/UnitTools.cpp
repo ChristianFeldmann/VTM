@@ -507,8 +507,8 @@ bool PU::xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const 
     {
       if (mergeCandList.interDirNeighbours[ui] == 3)
       {
-        int offset0 = (ui << 1);
-        int offset1 = (mergeCandIndex << 1);
+        int offset0 = (ui * 2);
+        int offset1 = (mergeCandIndex * 2);
         if (mergeCandList.mvFieldNeighbours[offset0].refIdx == mergeCandList.mvFieldNeighbours[offset1].refIdx &&
             mergeCandList.mvFieldNeighbours[offset0 + 1].refIdx == mergeCandList.mvFieldNeighbours[offset1 + 1].refIdx &&
             mergeCandList.mvFieldNeighbours[offset0].mv == mergeCandList.mvFieldNeighbours[offset1].mv &&
@@ -521,8 +521,8 @@ bool PU::xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const 
       }
       else
       {
-        int offset0 = (ui << 1) + mergeCandList.interDirNeighbours[ui] - 1;
-        int offset1 = (mergeCandIndex << 1) + mergeCandList.interDirNeighbours[ui] - 1;
+        int offset0 = (ui * 2) + mergeCandList.interDirNeighbours[ui] - 1;
+        int offset1 = (mergeCandIndex * 2) + mergeCandList.interDirNeighbours[ui] - 1;
         if (mergeCandList.mvFieldNeighbours[offset0].refIdx == mergeCandList.mvFieldNeighbours[offset1].refIdx &&
           mergeCandList.mvFieldNeighbours[offset0].mv == mergeCandList.mvFieldNeighbours[offset1].mv
           )
@@ -544,7 +544,7 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
 {
   MotionInfo miNeighbor;
   bool hasPruned[MRG_MAX_NUM_CANDS];
-  memset(hasPruned, false, MRG_MAX_NUM_CANDS * sizeof(bool));
+  memset(hasPruned, 0, MRG_MAX_NUM_CANDS * sizeof(bool));
   if (isAvailableSubPu)
   {
     hasPruned[subPuMvpPos] = true;
@@ -989,7 +989,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
         isCandInter              [uiArrayAddr] = true;
 #endif
 #if JVET_L0646_GBI
-		mrgCtx.GBiIdx[uiArrayAddr] = GBI_DEFAULT;
+        mrgCtx.GBiIdx[uiArrayAddr] = GBI_DEFAULT;
 #endif
         if( mrgCandIdx == cnt && canFastExit )
         {
@@ -2100,7 +2100,7 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
     }
     neibMi = slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx);
 
-    for (int predictorSource = 0; predictorSource < 2; predictorSource++) // examine the indicated reference picture list, then if not available, examine the other list.
+    for (int predictorSource = 0; predictorSource < 2; predictorSource++) 
     {
       const RefPicList eRefPicListIndex = (predictorSource == 0) ? eRefPicList : eRefPicList2nd;
       const int        neibRefIdx = neibMi.refIdx[eRefPicListIndex];

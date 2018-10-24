@@ -1557,7 +1557,7 @@ private:
 
   AlfSliceParam              m_alfSliceParam;
 #if  JVET_L0266_HMVP
-  LuTMotionCand*             m_MotionCandLuTs;
+  LutMotionCand*             m_MotionCandLut;
 #endif
 
 public:
@@ -1820,15 +1820,15 @@ public:
   void                        initMotionLUTs       ();
   void                        destroyMotionLUTs    ();
   void                        resetMotionLUTs();
-  int                         getAvailableLUTMrgNum() const  { return m_MotionCandLuTs->currCnt; }
+  int                         getAvailableLUTMrgNum() const  { return m_MotionCandLut->currCnt; }
   MotionInfo                  getMotionInfoFromLUTs(int MotCandIdx) const;
-  LuTMotionCand*              getMotionLUTs() { return m_MotionCandLuTs; }
+  LutMotionCand*              getMotionLUTs() { return m_MotionCandLut; }
 
 
-  void                        addMotionInfoToLUTs(LuTMotionCand* lutMC, MotionInfo newMi);
+  void                        addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi);
 
-  void                        updateMotionLUTs(LuTMotionCand* lutMC, CodingUnit & cu);
-  void                        copyMotionLUTs(LuTMotionCand* Src, LuTMotionCand* Dst);
+  void                        updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu);
+  void                        copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst);
 #endif
 
 protected:

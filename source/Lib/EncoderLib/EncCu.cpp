@@ -79,9 +79,9 @@ void EncCu::create( EncCfg* encCfg )
   m_pBestCS = new CodingStructure**  [numWidths];
 
 #if JVET_L0266_HMVP
-  m_pTempMotLUTs = new LuTMotionCand**[numWidths];
-  m_pBestMotLUTs = new LuTMotionCand**[numWidths];
-  m_pSplitTempMotLUTs = new LuTMotionCand**[numWidths];
+  m_pTempMotLUTs = new LutMotionCand**[numWidths];
+  m_pBestMotLUTs = new LutMotionCand**[numWidths];
+  m_pSplitTempMotLUTs = new LutMotionCand**[numWidths];
 #endif
 
   for( unsigned w = 0; w < numWidths; w++ )
@@ -89,9 +89,9 @@ void EncCu::create( EncCfg* encCfg )
     m_pTempCS[w] = new CodingStructure*  [numHeights];
     m_pBestCS[w] = new CodingStructure*  [numHeights];
 #if JVET_L0266_HMVP
-    m_pTempMotLUTs[w] = new LuTMotionCand*[numHeights];
-    m_pBestMotLUTs[w] = new LuTMotionCand*[numHeights];
-    m_pSplitTempMotLUTs[w] = new LuTMotionCand*[numHeights];
+    m_pTempMotLUTs[w] = new LutMotionCand*[numHeights];
+    m_pBestMotLUTs[w] = new LutMotionCand*[numHeights];
+    m_pSplitTempMotLUTs[w] = new LutMotionCand*[numHeights];
 #endif
 
     for( unsigned h = 0; h < numHeights; h++ )
@@ -107,20 +107,20 @@ void EncCu::create( EncCfg* encCfg )
         m_pTempCS[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
         m_pBestCS[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
 #if JVET_L0266_HMVP
-        m_pTempMotLUTs[w][h] = new LuTMotionCand ;
-        m_pBestMotLUTs[w][h] = new LuTMotionCand ;
-        m_pSplitTempMotLUTs[w][h] = new LuTMotionCand;
+        m_pTempMotLUTs[w][h] = new LutMotionCand ;
+        m_pBestMotLUTs[w][h] = new LutMotionCand ;
+        m_pSplitTempMotLUTs[w][h] = new LutMotionCand;
           m_pSplitTempMotLUTs[w][h]->currCnt = 0;
-          m_pSplitTempMotLUTs[w][h]->m_MotionCand = nullptr;
-          m_pSplitTempMotLUTs[w][h]->m_MotionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+          m_pSplitTempMotLUTs[w][h]->motionCand = nullptr;
+          m_pSplitTempMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
 
          m_pTempMotLUTs[w][h]->currCnt = 0;
-          m_pTempMotLUTs[w][h]->m_MotionCand = nullptr;
-          m_pTempMotLUTs[w][h]->m_MotionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+          m_pTempMotLUTs[w][h]->motionCand = nullptr;
+          m_pTempMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
 
           m_pBestMotLUTs[w][h]->currCnt = 0;
-          m_pBestMotLUTs[w][h]->m_MotionCand = nullptr;
-          m_pBestMotLUTs[w][h]->m_MotionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+          m_pBestMotLUTs[w][h]->motionCand = nullptr;
+          m_pBestMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
 #endif
       }
       else
@@ -215,21 +215,21 @@ void EncCu::destroy()
 #if JVET_L0266_HMVP
         if (m_pTempMotLUTs[w][h])
         {
-          delete[] m_pTempMotLUTs[w][h]->m_MotionCand;
-          m_pTempMotLUTs[w][h]->m_MotionCand = nullptr;
+          delete[] m_pTempMotLUTs[w][h]->motionCand;
+          m_pTempMotLUTs[w][h]->motionCand = nullptr;
           delete[] m_pTempMotLUTs[w][h];
         }
         if (m_pBestMotLUTs[w][h])
         {
-          delete[] m_pBestMotLUTs[w][h]->m_MotionCand;
-          m_pBestMotLUTs[w][h]->m_MotionCand = nullptr;
+          delete[] m_pBestMotLUTs[w][h]->motionCand;
+          m_pBestMotLUTs[w][h]->motionCand = nullptr;
           delete[] m_pBestMotLUTs[w][h];
         }
 
         if (m_pSplitTempMotLUTs[w][h])
         {
-          delete[] m_pSplitTempMotLUTs[w][h]->m_MotionCand;
-          m_pSplitTempMotLUTs[w][h]->m_MotionCand = nullptr;
+          delete[] m_pSplitTempMotLUTs[w][h]->motionCand;
+          m_pSplitTempMotLUTs[w][h]->motionCand = nullptr;
           delete[] m_pSplitTempMotLUTs[w][h];
         }
 #endif
@@ -356,8 +356,8 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   CodingStructure *tempCS = m_pTempCS[gp_sizeIdxInfo->idxFrom( area.lumaSize().width )][gp_sizeIdxInfo->idxFrom( area.lumaSize().height )];
   CodingStructure *bestCS = m_pBestCS[gp_sizeIdxInfo->idxFrom( area.lumaSize().width )][gp_sizeIdxInfo->idxFrom( area.lumaSize().height )];
 #if JVET_L0266_HMVP
-  LuTMotionCand *tempMotCandLUTs = m_pTempMotLUTs[gp_sizeIdxInfo->idxFrom(area.lumaSize().width)][gp_sizeIdxInfo->idxFrom(area.lumaSize().height)];
-  LuTMotionCand *bestMotCandLUTs = m_pBestMotLUTs[gp_sizeIdxInfo->idxFrom(area.lumaSize().width)][gp_sizeIdxInfo->idxFrom(area.lumaSize().height)];
+  LutMotionCand *tempMotCandLUTs = m_pTempMotLUTs[gp_sizeIdxInfo->idxFrom(area.lumaSize().width)][gp_sizeIdxInfo->idxFrom(area.lumaSize().height)];
+  LutMotionCand *bestMotCandLUTs = m_pBestMotLUTs[gp_sizeIdxInfo->idxFrom(area.lumaSize().width)][gp_sizeIdxInfo->idxFrom(area.lumaSize().height)];
   cs.slice->copyMotionLUTs(cs.slice->getMotionLUTs(), tempMotCandLUTs);
   cs.slice->copyMotionLUTs(cs.slice->getMotionLUTs(), bestMotCandLUTs);
 #endif
@@ -554,7 +554,7 @@ void EncCu::xCheckBestMode( CodingStructure *&tempCS, CodingStructure *&bestCS, 
 #endif
 {
 #if JVET_L0266_HMVP
-  bool bSwitch = false;
+  bool CSUpdated = false;
 #endif
 
   if( !tempCS->cus.empty() )
@@ -588,7 +588,7 @@ void EncCu::xCheckBestMode( CodingStructure *&tempCS, CodingStructure *&bestCS, 
       // store temp best CI for next CU coding
       m_CurrCtx->best = m_CABACEstimator->getCtx();
 #if JVET_L0266_HMVP
-      bSwitch = true;
+      CSUpdated = true;
 #endif
     }
   }
@@ -596,15 +596,15 @@ void EncCu::xCheckBestMode( CodingStructure *&tempCS, CodingStructure *&bestCS, 
   // reset context states
   m_CABACEstimator->getCtx() = m_CurrCtx->start;
 #if JVET_L0266_HMVP
-  return bSwitch;
+  return CSUpdated;
 #endif
 
 }
 
 void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner
 #if JVET_L0266_HMVP
-  , LuTMotionCand* &tempMotCandLUTs
-  , LuTMotionCand* &bestMotCandLUTs
+  , LutMotionCand* &tempMotCandLUTs
+  , LutMotionCand* &bestMotCandLUTs
 #endif
 )
 {
@@ -660,10 +660,10 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     return;
   }
 #if JVET_L0266_HMVP
-	if (!slice.isIntra())
-	{
-		tempCS->slice->copyMotionLUTs(tempMotCandLUTs, tempCS->slice->getMotionLUTs());
-	}
+  if (!slice.isIntra())
+  {
+    tempCS->slice->copyMotionLUTs(tempMotCandLUTs, tempCS->slice->getMotionLUTs());
+  }
 #endif
 
   DTRACE_UPDATE( g_trace_ctx, std::make_pair( "cux", uiLPelX ) );
@@ -1013,8 +1013,8 @@ void EncCu::copyState( EncCu* other, Partitioner& partitioner, const UnitArea& c
 
 void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode
 #if JVET_L0266_HMVP
-  , LuTMotionCand* &tempMotCandLUTs
-  , LuTMotionCand* &bestMotCandLUTs
+  , LutMotionCand* &tempMotCandLUTs
+  , LutMotionCand* &bestMotCandLUTs
   , UnitArea  parArea
 #endif
 )
@@ -1094,8 +1094,8 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       tempCS->initSubStructure( *tempSubCS, partitioner.chType, subCUArea, false );
       tempCS->initSubStructure( *bestSubCS, partitioner.chType, subCUArea, false );
 #if JVET_L0266_HMVP
-      LuTMotionCand *tempSubMotCandLUTs = m_pTempMotLUTs[wIdx][hIdx];
-      LuTMotionCand *bestSubMotCandLUTs = m_pBestMotLUTs[wIdx][hIdx];
+      LutMotionCand *tempSubMotCandLUTs = m_pTempMotLUTs[wIdx][hIdx];
+      LutMotionCand *bestSubMotCandLUTs = m_pBestMotLUTs[wIdx][hIdx];
       tempCS->slice->copyMotionLUTs(tempMotCandLUTs, tempSubMotCandLUTs);
       tempCS->slice->copyMotionLUTs(tempMotCandLUTs, bestSubMotCandLUTs);
 #endif
@@ -1114,12 +1114,12 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
         m_CurrCtx--;
         partitioner.exitCurrSplit();
 #if JVET_L0266_HMVP
-        bool bUpdate =
+        bool CSUpdated =
 #endif
         xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
 #if JVET_L0266_HMVP
-        if (bUpdate)
+        if (CSUpdated)
         {
           std::swap(tempMotCandLUTs, bestMotCandLUTs);
         }
@@ -1236,19 +1236,19 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
   // RD check for sub partitioned coding structure.
 #if JVET_L0266_HMVP
-  bool bUpdate =
+  bool CSUpdated =
 #endif
   xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
 #if JVET_L0266_HMVP
-	if (!slice.isIntra())
-	{
-		if (bUpdate)
-		{
-			std::swap(tempMotCandLUTs, bestMotCandLUTs);
-		}
-		tempCS->slice->copyMotionLUTs(m_pSplitTempMotLUTs[wParIdx][hParIdx], tempMotCandLUTs);
-	}
+  if (!slice.isIntra())
+  {
+    if (CSUpdated)
+    {
+      std::swap(tempMotCandLUTs, bestMotCandLUTs);
+    }
+    tempCS->slice->copyMotionLUTs(m_pSplitTempMotLUTs[wParIdx][hParIdx], tempMotCandLUTs);
+  }
 #endif
 
   tempCS->releaseIntermediateData();

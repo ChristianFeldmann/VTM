@@ -553,32 +553,30 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     {
 
 #if JVET_L0265_AFF_MINIMUM4X4
-        int iMvScaleTmpHor, iMvScaleTmpVer;
-        if(compID == COMPONENT_Y)
-        {
+       int iMvScaleTmpHor, iMvScaleTmpVer;
+       if(compID == COMPONENT_Y)
+       {
+          iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
+          iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
+          roundAffineMv(iMvScaleTmpHor, iMvScaleTmpVer, shift);
 
-            iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
-            iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
-            roundAffineMv(iMvScaleTmpHor, iMvScaleTmpVer, shift);
+          // clip and scale
+          iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
+          iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
 
-            // clip and scale
-            iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
-            iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
-
-            storedMv[h / AFFINE_MIN_BLOCK_SIZE][w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
-        }
-        else
-        {
-
-            Mv curMv = (storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE] +
-                storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE] +
-                storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1] +
-                storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1] +
-                Mv(2, 2));
-            curMv.set(curMv.getHor() >> 2, curMv.getVer() >> 2);     
-            iMvScaleTmpHor = curMv.hor;
-            iMvScaleTmpVer = curMv.ver;
-        }
+          storedMv[h / AFFINE_MIN_BLOCK_SIZE][w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
+       }
+       else
+       {
+          Mv curMv = (storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE] +
+              storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE] +
+              storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1] +
+              storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1] +
+              Mv(2, 2));
+          curMv.set(curMv.getHor() >> 2, curMv.getVer() >> 2);     
+          iMvScaleTmpHor = curMv.hor;
+          iMvScaleTmpVer = curMv.ver;
+       }
 #else
       int iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
       int iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);

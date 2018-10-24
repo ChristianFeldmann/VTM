@@ -73,16 +73,7 @@
 #define JVET_L0274                                        1
 #define JVET_L0274_ENCODER_SPEED_UP                     ( 1 && JVET_L0274 ) // encoder speed-up by pre-calculating position dependent parameters
 
-
-
-
-
-
-
-
-
-
-
+#define L0074_SUBBLOCK_DEBLOCKING                         1
 
 #define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)
 

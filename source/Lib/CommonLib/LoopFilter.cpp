@@ -250,6 +250,10 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     xSetEdgefilterMultiple( cu, EDGE_HOR, areaTu, m_stLFCUParam.internalEdge );
   }
 
+#if L0074_SUBBLOCK_DEBLOCKING
+  bool mvSubBlocks = false;
+  int subBlockSize = 8;
+#endif
   for( auto &currPU : CU::traversePUs( cu ) )
   {
     const Area& areaPu = cu.Y().valid() ? currPU.block( COMPONENT_Y ) : area;
@@ -259,8 +263,31 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     xSetEdgefilterMultiple( cu, EDGE_VER, areaPu, (xOff ? m_stLFCUParam.internalEdge : m_stLFCUParam.leftEdge), xOff );
     xSetEdgefilterMultiple( cu, EDGE_HOR, areaPu, (yOff ? m_stLFCUParam.internalEdge : m_stLFCUParam.topEdge),  yOff );
 
+#if L0074_SUBBLOCK_DEBLOCKING
+    if ((currPU.mergeFlag && (currPU.mergeType == MRG_TYPE_SUBPU_ATMVP)) || cu.affine)
+    {
+      mvSubBlocks = true;
+      if (edgeDir == EDGE_HOR)
+      {
+        for (uint32_t off = subBlockSize; off < areaPu.height; off += subBlockSize)
+        {
+          const Area mvBlockH(cu.Y().x, cu.Y().y + off, cu.Y().width, pcv.minCUHeight);
+          xSetEdgefilterMultiple(cu, EDGE_HOR, mvBlockH, m_stLFCUParam.internalEdge, 1);
+        }
+      }
+      else
+      {
+        for (uint32_t off = subBlockSize; off < areaPu.width; off += subBlockSize)
+        {
+          const Area mvBlockV(cu.Y().x + off, cu.Y().y, pcv.minCUWidth, cu.Y().height);
+          xSetEdgefilterMultiple(cu, EDGE_VER, mvBlockV, m_stLFCUParam.internalEdge, 1);
+        }
+      }
+    }
+#endif
   }
 
+#if !L0074_SUBBLOCK_DEBLOCKING
   if ( cu.affine )
   {
     const int widthInBaseUnits = cu.Y().width >> pcv.minCUWidthLog2;
@@ -276,6 +303,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       xSetEdgefilterMultiple( cu, EDGE_HOR, affiBlockH, m_stLFCUParam.internalEdge, 1 );
     }
   }
+#endif
   const unsigned uiPelsInPart = pcv.minCUWidth;
 
   for( int y = 0; y < area.height; y += uiPelsInPart )
@@ -316,12 +344,27 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 
   if (cu.blocks[COMPONENT_Y].valid())
   {
+#if L0074_SUBBLOCK_DEBLOCKING
+    if (mvSubBlocks)
+    {
+      orthogonalIncrement = subBlockSize / 4;
+      orthogonalLength = (edgeDir == EDGE_HOR) ? cu.blocks[COMPONENT_Y].height / 4 : cu.blocks[COMPONENT_Y].width / 4;
+    }
+#endif
+#if L0074_SUBBLOCK_DEBLOCKING
+    if ((cu.blocks[COMPONENT_Y].height > 64) && (edgeDir == EDGE_HOR) && !mvSubBlocks)
+#else
     if ((cu.blocks[COMPONENT_Y].height > 64) && (edgeDir == EDGE_HOR))
+#endif
     {
       orthogonalIncrement = 64 / 4;
       orthogonalLength = cu.blocks[COMPONENT_Y].height / 4;
     }
+#if L0074_SUBBLOCK_DEBLOCKING
+    if ((cu.blocks[COMPONENT_Y].width > 64) && (edgeDir == EDGE_VER) && !mvSubBlocks)
+#else
     if ((cu.blocks[COMPONENT_Y].width > 64) && (edgeDir == EDGE_VER))
+#endif
     {
       orthogonalIncrement = 64 / 4;
       orthogonalLength = cu.blocks[COMPONENT_Y].width / 4;

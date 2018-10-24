@@ -41,6 +41,9 @@
 #include "Picture.h"
 #include "dtrace_next.h"
 
+#if  JVET_L0266_HMVP
+#include "UnitTools.h"
+#endif
 
 //! \ingroup CommonLib
 //! \{
@@ -125,6 +128,9 @@ Slice::Slice()
 , m_iProcessingStartTime          ( 0 )
 , m_dProcessingTime               ( 0 )
 , m_uiMaxBTSize                   ( 0 )
+#if  JVET_L0266_HMVP
+, m_MotionCandLuTs                (NULL)
+#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -161,11 +167,16 @@ Slice::Slice()
     m_saoEnabledFlag[ch] = false;
   }
 
+#if  JVET_L0266_HMVP
+  initMotionLUTs();
+#endif
 }
 
 Slice::~Slice()
 {
-
+#if  JVET_L0266_HMVP
+  destroyMotionLUTs();
+#endif
 }
 
 
@@ -197,6 +208,9 @@ void Slice::initSlice()
   m_enableTMVPFlag       = true;
   m_subPuMvpSubBlkSizeSliceEnable = false;
   m_subPuMvpSubBlkLog2Size        = 2;
+#if  JVET_L0266_HMVP
+  resetMotionLUTs();
+#endif
 }
 
 void Slice::setDefaultClpRng( const SPS& sps )
@@ -1550,7 +1564,75 @@ void Slice::stopProcessingTimer()
   m_dProcessingTime += (double)(clock()-m_iProcessingStartTime) / CLOCKS_PER_SEC;
   m_iProcessingStartTime = 0;
 }
+#if  JVET_L0266_HMVP
+void Slice::initMotionLUTs()
+{
+  m_MotionCandLuTs = new LuTMotionCand;
+  m_MotionCandLuTs->currCnt = 0;
+  m_MotionCandLuTs->m_MotionCand = nullptr;
+  m_MotionCandLuTs->m_MotionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+}
+void Slice::destroyMotionLUTs()
+{
+  delete[] m_MotionCandLuTs->m_MotionCand;
+  m_MotionCandLuTs->m_MotionCand = nullptr;
+  delete[] m_MotionCandLuTs;
+  m_MotionCandLuTs = NULL;
+}
+void Slice::resetMotionLUTs()
+{
+   m_MotionCandLuTs->currCnt = 0;
+}
 
+MotionInfo Slice::getMotionInfoFromLUTs(int MotCandIdx) const
+{
+  return m_MotionCandLuTs->m_MotionCand[MotCandIdx];
+}
+
+
+
+void Slice::addMotionInfoToLUTs(LuTMotionCand* lutMC, MotionInfo newMi)
+{
+  int currCnt = lutMC->currCnt ;
+
+  bool bPruned = false;
+  int  sameCandIdx = -1;
+  for (int idx = 0; idx < currCnt; idx++)
+  {
+    if (lutMC->m_MotionCand[idx] == newMi)
+    {
+      sameCandIdx = idx;
+      bPruned = true;
+      break;
+    }
+  }
+  if (bPruned || lutMC->currCnt == MAX_NUM_HMVP_CANDS)
+  {
+    int startIdx = bPruned ? sameCandIdx : 0;
+    memmove(&lutMC->m_MotionCand[startIdx], &lutMC->m_MotionCand[startIdx+1], sizeof(MotionInfo)*(currCnt - sameCandIdx - 1));
+    memcpy(&lutMC->m_MotionCand[lutMC->currCnt-1], &newMi, sizeof(MotionInfo));
+  }
+  else
+  {
+    memcpy(&lutMC->m_MotionCand[lutMC->currCnt++], &newMi, sizeof(MotionInfo));
+  }
+}
+
+void Slice::updateMotionLUTs(LuTMotionCand* lutMC, CodingUnit & cu)
+{
+  PredictionUnit *selectedPU = cu.firstPU;
+  if (cu.affine) { return; }
+
+  MotionInfo newMi = selectedPU->getMotionInfo(); 
+  addMotionInfoToLUTs(lutMC, newMi);
+}
+
+void Slice::copyMotionLUTs(LuTMotionCand* Src, LuTMotionCand* Dst)
+{
+   memcpy(Dst->m_MotionCand, Src->m_MotionCand, sizeof(MotionInfo)*(std::min(Src->currCnt, MAX_NUM_HMVP_CANDS)));
+   Dst->currCnt = Src->currCnt;
+}
+#endif
 
 unsigned Slice::getMinPictureDistance() const
 {

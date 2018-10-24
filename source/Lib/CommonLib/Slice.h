@@ -49,7 +49,10 @@
 
 //! \ingroup CommonLib
 //! \{
-
+#if JVET_L0266_HMVP
+#include "CommonLib/MotionInfo.h"
+struct MotionInfo;
+#endif
 
 
 struct Picture;
@@ -1553,6 +1556,9 @@ private:
   uint32_t                       m_uiMaxBTSize;
 
   AlfSliceParam              m_alfSliceParam;
+#if  JVET_L0266_HMVP
+  LuTMotionCand*             m_MotionCandLuTs;
+#endif
 
 public:
                               Slice();
@@ -1810,6 +1816,20 @@ public:
 
   void                        setAlfSliceParam( AlfSliceParam& alfSliceParam ) { m_alfSliceParam = alfSliceParam; }
   AlfSliceParam&              getAlfSliceParam() { return m_alfSliceParam; }
+#if  JVET_L0266_HMVP
+  void                        initMotionLUTs       ();
+  void                        destroyMotionLUTs    ();
+  void                        resetMotionLUTs();
+  int                         getAvailableLUTMrgNum() const  { return m_MotionCandLuTs->currCnt; }
+  MotionInfo                  getMotionInfoFromLUTs(int MotCandIdx) const;
+  LuTMotionCand*              getMotionLUTs() { return m_MotionCandLuTs; }
+
+
+  void                        addMotionInfoToLUTs(LuTMotionCand* lutMC, MotionInfo newMi);
+
+  void                        updateMotionLUTs(LuTMotionCand* lutMC, CodingUnit & cu);
+  void                        copyMotionLUTs(LuTMotionCand* Src, LuTMotionCand* Dst);
+#endif
 
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);

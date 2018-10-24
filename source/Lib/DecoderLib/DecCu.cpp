@@ -316,6 +316,9 @@ void DecCu::xReconInter(CodingUnit &cu)
 {
   // inter prediction
   m_pcInterPred->motionCompensation( cu );
+#if JVET_L0266_HMVP
+  cu.slice->updateMotionLUTs(cu.slice->getMotionLUTs(), cu);
+#endif
 
   DTRACE    ( g_trace_ctx, D_TMP, "pred " );
   DTRACE_CRC( g_trace_ctx, D_TMP, *cu.cs, cu.cs->getPredBuf( cu ), &cu.Y() );

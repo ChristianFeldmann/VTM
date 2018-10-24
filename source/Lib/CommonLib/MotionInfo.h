@@ -208,5 +208,11 @@ public:
   }
 };
 #endif
-
+#if  JVET_L0266_HMVP
+struct LuTMotionCand
+{
+  MotionInfo*   m_MotionCand;
+  int  currCnt;
+};
+#endif
 #endif // __MOTIONINFO__

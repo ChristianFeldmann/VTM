@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0266_HMVP                                   1 //History-based MVP
+
 #define JVET_L0553_FIX_INITQP                             1
 
 #define JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN               1 // Subsampled Laplacian calculation
@@ -306,6 +308,10 @@
 #else
 #define DISTORTION_ESTIMATION_BITS                        8
 #define DISTORTION_PRECISION_ADJUSTMENT(x)                ((x>DISTORTION_ESTIMATION_BITS)? ((x)-DISTORTION_ESTIMATION_BITS) : 0)
+#endif
+#if JVET_L0266_HMVP
+#define MAX_NUM_HMVP_CANDS                                6
+#define MAX_NUM_HMVP_AVMPCANDS                            4  //should NOT be larger than MAX_NUM_HMVP_CANDS
 #endif
 
 // ====================================================================================================================

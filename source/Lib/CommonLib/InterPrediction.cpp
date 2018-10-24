@@ -501,6 +501,16 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
 
   blockWidth  >>= iScaleX;
   blockHeight >>= iScaleY;
+
+ #if JVET_L0265_AFF_MINIMUM4X4
+  blockWidth =  std::max(blockWidth, AFFINE_MIN_BLOCK_SIZE);
+  blockHeight = std::max(blockHeight, AFFINE_MIN_BLOCK_SIZE);
+
+  CHECK(blockWidth  > (width >> iScaleX ), "Sub Block width  > Block width");
+  CHECK(blockHeight > (height >> iScaleX), "Sub Block height > Block height");
+  static Mv storedMv[32][32];//128/4
+#endif
+
   const int cxWidth  = width  >> iScaleX;
   const int cxHeight = height >> iScaleY;
   const int iHalfBW  = blockWidth  >> 1;
@@ -541,6 +551,35 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   {
     for ( int w = 0; w < cxWidth; w += blockWidth )
     {
+
+#if JVET_L0265_AFF_MINIMUM4X4
+        int iMvScaleTmpHor, iMvScaleTmpVer;
+        if(compID == COMPONENT_Y)
+        {
+
+            iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
+            iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
+            roundAffineMv(iMvScaleTmpHor, iMvScaleTmpVer, shift);
+
+            // clip and scale
+            iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
+            iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
+
+            storedMv[h / AFFINE_MIN_BLOCK_SIZE][w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
+        }
+        else
+        {
+
+            Mv curMv = (storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE] +
+                storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE] +
+                storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1] +
+                storedMv[(h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1][(w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1] +
+                Mv(2, 2));
+            curMv.set(curMv.getHor() >> 2, curMv.getVer() >> 2);     
+            iMvScaleTmpHor = curMv.hor;
+            iMvScaleTmpVer = curMv.ver;
+        }
+#else
       int iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
       int iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
       roundAffineMv( iMvScaleTmpHor, iMvScaleTmpVer, shift );
@@ -548,7 +587,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
       // clip and scale
       iMvScaleTmpHor = std::min<int>( iHorMax, std::max<int>( iHorMin, iMvScaleTmpHor ) );
       iMvScaleTmpVer = std::min<int>( iVerMax, std::max<int>( iVerMin, iMvScaleTmpVer ) );
-
+#endif
       // get the MV in high precision
       int xFrac, yFrac, xInt, yInt;
 

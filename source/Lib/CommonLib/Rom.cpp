@@ -246,7 +246,12 @@ int g_aiLMDivTableHigh[] = {
   129,   129,   129,   129,   128,   128,   128,  128,
 };
 #endif
-const int g_aiNonLMPosThrs[] = {  3,  1,  0 };
+const int g_aiNonLMPosThrs[] = 
+#if JVET_L0338_MDLM
+{ 0,  0,  0 }; // not use the useless threshold values.actually, these threshold values should be cleaned up
+#else
+{  3,  1,  0 };
+#endif
 
 #if JVET_L0646_GBI
 const int8_t g_GbiLog2WeightBase = 3;

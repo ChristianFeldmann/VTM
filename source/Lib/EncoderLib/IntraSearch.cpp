@@ -714,7 +714,108 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
           orgTUs.push_back( ptu );
         }
       }
+#if JVET_L0338_MDLM
+      // SATD pre-selecting.
+      int satdModeList[NUM_CHROMA_MODE];
+      int64_t satdSortedCost[NUM_CHROMA_MODE];
+      for (int i = 0; i < NUM_CHROMA_MODE; i++)
+      {
+        satdSortedCost[i] = 0; // for the mode not pre-select by SATD, do RDO by default, so set the initial value 0.
+        satdModeList[i] = 0;
+      }
+      bool modeIsEnable[NUM_INTRA_MODE + 1]; // use intra mode idx to check whether enable
+      for (int i = 0; i < NUM_INTRA_MODE + 1; i++)
+      {
+        modeIsEnable[i] = 1;
+      }
 
+      DistParam distParam;
+      const bool useHadamard = true;
+      pu.intraDir[1] = MDLM_L_IDX; // temporary assigned, just to indicate this is a MDLM mode. for luma down-sampling operation.
+
+      initIntraPatternChType(cu, pu.Cb());
+      initIntraPatternChType(cu, pu.Cr());
+      xGetLumaRecPixels(pu, pu.Cb());
+
+      for (int idx = uiMinMode; idx <= uiMaxMode - 1; idx++)
+      {
+        int mode = chromaCandModes[idx];
+        satdModeList[idx] = mode;
+        if (PU::isLMCMode(mode) && !PU::isLMCModeEnabled(pu, mode))
+        {
+          continue;
+        }
+        if (PU::isLMCMode(mode) || (mode == PLANAR_IDX) || (mode == DM_CHROMA_IDX)) // only pre-check regular mode, not including DM and Planar, and LM modes
+        {
+          continue;
+        }
+        pu.intraDir[1] = mode; // temporary assigned, for SATD checking.
+
+        int64_t sad = 0;
+        CodingStructure& cs = *(pu.cs);
+
+        CompArea areaCb = pu.Cb();
+        PelBuf orgCb = cs.getOrgBuf(areaCb);
+        PelBuf predCb = cs.getPredBuf(areaCb);
+
+        m_pcRdCost->setDistParam(distParam, orgCb, predCb, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cb, useHadamard);
+        distParam.applyWeight = false;
+
+        if (PU::isLMCMode(mode))
+        {
+          predIntraChromaLM(COMPONENT_Cb, predCb, pu, areaCb, mode);
+        }
+        else
+        {
+          predIntraAng(COMPONENT_Cb, predCb, pu, false);
+        }
+
+        sad += distParam.distFunc(distParam);
+
+        CompArea areaCr = pu.Cr();
+        PelBuf orgCr = cs.getOrgBuf(areaCr);
+        PelBuf predCr = cs.getPredBuf(areaCr);
+
+        m_pcRdCost->setDistParam(distParam, orgCr, predCr, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cr, useHadamard);
+        distParam.applyWeight = false;
+
+        if (PU::isLMCMode(mode))
+        {
+          predIntraChromaLM(COMPONENT_Cr, predCr, pu, areaCr, mode);
+        }
+        else
+        {
+          predIntraAng(COMPONENT_Cr, predCr, pu, false);
+        }
+        sad += distParam.distFunc(distParam);
+        satdSortedCost[idx] = sad;
+      }
+      // sort the mode based on the cost from small to large.
+      int tempIdx = 0;
+      int64_t tempCost = 0;
+      for (int i = uiMinMode; i <= uiMaxMode - 1; i++)
+      {
+        for (int j = i + 1; j <= uiMaxMode - 1; j++)
+        {
+          if (satdSortedCost[j] < satdSortedCost[i])
+          {
+            tempIdx = satdModeList[i];
+            satdModeList[i] = satdModeList[j];
+            satdModeList[j] = tempIdx;
+
+            tempCost = satdSortedCost[i];
+            satdSortedCost[i] = satdSortedCost[j];
+            satdSortedCost[j] = tempCost;
+
+          }
+        }
+      }
+      int reducedModeNumber = 2; // reduce the number of chroma modes
+      for (int i = 0; i < reducedModeNumber; i++)
+      {
+        modeIsEnable[satdModeList[uiMaxMode - 1 - i]] = 0; // disable the last reducedModeNumber modes
+      }
+#endif
 
       // save the dist
       Distortion baseDist = cs.dist;
@@ -726,7 +827,12 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
         {
           continue;
         }
-
+#if JVET_L0338_MDLM
+        if (!modeIsEnable[chromaIntraMode] && PU::isLMCModeEnabled(pu, chromaIntraMode)) // when CCLM is disable, then MDLM is disable. not use satd checking
+        {
+          continue;
+        }
+#endif
         cs.setDecomp( pu.Cb(), false );
         cs.dist = baseDist;
         //----- restore context models -----

@@ -388,7 +388,13 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
     modeList[  2 ] = HOR_IDX;
     modeList[  3 ] = DC_IDX;
     modeList[4] = LM_CHROMA_IDX;
+#if JVET_L0338_MDLM
+    modeList[5] = MDLM_L_IDX;
+    modeList[6] = MDLM_T_IDX;
+    modeList[7] = DM_CHROMA_IDX;
+#else
     modeList[5] = DM_CHROMA_IDX;
+#endif
 
     const PredictionUnit *lumaPU = CS::isDualITree( *pu.cs ) ? pu.cs->picture->cs->getPU( pu.blocks[pu.chType].lumaPos(), CHANNEL_TYPE_LUMA ) : &pu;
     const uint32_t lumaMode = lumaPU->intraDir[CHANNEL_TYPE_LUMA];
@@ -406,7 +412,11 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
 
 bool PU::isLMCMode(unsigned mode)
 {
+#if JVET_L0338_MDLM
+  return (mode >= LM_CHROMA_IDX && mode <= MDLM_T_IDX);
+#else
   return (mode == LM_CHROMA_IDX);
+#endif
 }
 bool PU::isLMCModeEnabled(const PredictionUnit &pu, unsigned mode)
 {
@@ -456,7 +466,10 @@ int PU::getLMSymbolList(const PredictionUnit &pu, int *pModeList)
     pModeList[ iIdx++ ] = -1;
     bNonLMInsert = true;
   }
-
+#if JVET_L0338_MDLM
+  pModeList[iIdx++] = MDLM_L_IDX;
+  pModeList[iIdx++] = MDLM_T_IDX;
+#endif
   if ( iCount >= g_aiNonLMPosThrs[1] && ! bNonLMInsert )
   {
     pModeList[ iIdx++ ] = -1;

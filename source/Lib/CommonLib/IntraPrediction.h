@@ -75,6 +75,9 @@ private:
   unsigned m_auShiftLM[32]; // Table for substituting division operation by multiplication
 
   Pel* m_piTemp;
+#if JVET_L0338_MDLM
+  Pel* m_pMdlmTemp; // for MDLM mode
+#endif
 protected:
 
   ChromaFormat  m_currChromaFormat;
@@ -109,6 +112,9 @@ protected:
 
   void xFilterGroup               ( Pel* pMulDst[], int i, Pel const* const piSrc, int iRecStride, bool bAboveAvaillable, bool bLeftAvaillable);
   void xGetLMParameters(const PredictionUnit &pu, const ComponentID compID, const CompArea& chromaArea, int& a, int& b, int& iShift);
+#if JVET_L0338_MDLM && !JVET_L0191_LM_WO_LMS
+  void xPadMdlmTemplateSample    (Pel*pSrc, Pel*pCur, int cWidth, int cHeight, int existSampNum, int targetSampNum);
+#endif
 public:
   IntraPrediction();
   virtual ~IntraPrediction();

@@ -1284,7 +1284,11 @@ void CABACWriter::inter_pred_idc( const PredictionUnit& pu )
   {
     return;
   }
+#if JVET_L0104_NO_4x4BI_INTER_CU
+  if( !(PU::isBipredRestriction(pu)) && ( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 ) )
+#else
   if( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 )
+#endif
   {
     unsigned ctxId = DeriveCtx::CtxInterDir(pu);
     if( pu.interDir == 3 )

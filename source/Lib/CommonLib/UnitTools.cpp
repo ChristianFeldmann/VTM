@@ -1955,6 +1955,12 @@ bool PU::addMVPCandWithScaling( const PredictionUnit &pu, const RefPicList &eRef
 bool PU::isBipredRestriction(const PredictionUnit &pu)
 {
   const SPSNext &spsNext = pu.cs->sps->getSpsNext();
+#if JVET_L0104_NO_4x4BI_INTER_CU
+  if(pu.cu->lumaSize().width == 4 && pu.cu->lumaSize().height ==4 )
+  {
+    return true;
+  }
+#endif
   if( !pu.cs->pcv->only2Nx2N && !spsNext.getUseSubPuMvp() && pu.cu->lumaSize().width == 8 && ( pu.lumaSize().width < 8 || pu.lumaSize().height < 8 ) )
   {
     return true;

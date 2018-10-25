@@ -54,11 +54,7 @@ void fastForwardDCT2_B2(const TCoeff *src, TCoeff *dst, int shift, int line, int
   int E, O;
   TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P2[TRANSFORM_FORWARD][0];
-#else
   const TMatrixCoeff *iT = g_aiTr2[DCT2][0];
-#endif
 
   TCoeff *pCoef = dst;
   const int  reducedLine = line - iSkipLine;
@@ -92,11 +88,7 @@ void fastInverseDCT2_B2(const TCoeff *src, TCoeff *dst, int shift, int line, int
   int E, O;
   int add = 1 << (shift - 1);
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P2[TRANSFORM_INVERSE][0];
-#else
   const TMatrixCoeff *iT = g_aiTr2[DCT2][0];
-#endif
 
   const int  reducedLine = line - iSkipLine;
   for (j = 0; j<reducedLine; j++)
@@ -142,11 +134,7 @@ void fastForwardDCT2_B4(const TCoeff *src, TCoeff *dst, int shift, int line, int
   TCoeff E[2], O[2];
   TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P4[TRANSFORM_FORWARD][0];
-#else
   const TMatrixCoeff *iT = g_aiTr4[DCT2][0];
-#endif
 
   TCoeff *pCoef = dst;
   const int  reducedLine = line - iSkipLine;
@@ -191,11 +179,7 @@ void fastInverseDCT2_B4( const TCoeff *src, TCoeff *dst, int shift, int line, in
   int E[2], O[2];
   int add = 1 << ( shift - 1 );
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P4[TRANSFORM_INVERSE][0];
-#else
   const TMatrixCoeff *iT = g_aiTr4[DCT2][0];
-#endif
 
   const int  reducedLine = line - iSkipLine;
   for( j = 0; j < reducedLine; j++ )
@@ -307,11 +291,7 @@ void fastForwardDCT2_B8( const TCoeff *src, TCoeff *dst, int shift, int line, in
   TCoeff EE[2], EO[2];
   TCoeff add = ( shift > 0 ) ? ( 1 << ( shift - 1 ) ) : 0;
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P8[TRANSFORM_FORWARD][0];
-#else
   const TMatrixCoeff *iT = g_aiTr8[DCT2][0];
-#endif
 
   TCoeff *pCoef = dst;
   const int  reducedLine = line - iSkipLine;
@@ -368,11 +348,7 @@ void fastInverseDCT2_B8(const TCoeff *src, TCoeff *dst, int shift, int line, int
   int EE[2], EO[2];
   int add = 1 << (shift - 1);
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P8[TRANSFORM_INVERSE][0];
-#else
   const TMatrixCoeff *iT = g_aiTr8[DCT2][0];
-#endif
 
   const int  reducedLine = line - iSkipLine;
   for( j = 0; j < reducedLine; j++ )
@@ -423,11 +399,7 @@ void fastForwardDCT2_B16(const TCoeff *src, TCoeff *dst, int shift, int line, in
   TCoeff EEE[2], EEO[2];
   TCoeff add = ( shift > 0 ) ? ( 1 << ( shift - 1 ) ) : 0;
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P16[TRANSFORM_FORWARD][0];
-#else
   const TMatrixCoeff *iT = g_aiTr16[DCT2][0];
-#endif
 
   TCoeff *pCoef = dst;
   const int  reducedLine = line - iSkipLine;
@@ -498,11 +470,7 @@ void fastInverseDCT2_B16( const TCoeff *src, TCoeff *dst, int shift, int line, i
   int EEE[2], EEO[2];
   int add = 1 << ( shift - 1 );
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P16[TRANSFORM_INVERSE][0];
-#else
   const TMatrixCoeff *iT = g_aiTr16[DCT2][0];
-#endif
 
   const int  reducedLine = line - iSkipLine;
 
@@ -565,11 +533,7 @@ void fastForwardDCT2_B32( const TCoeff *src, TCoeff *dst, int shift, int line, i
   TCoeff EEEE[ 2], EEEO[ 2];
   TCoeff add = ( shift > 0 ) ? ( 1 << ( shift - 1 ) ) : 0;
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P32[TRANSFORM_FORWARD][0];
-#else
   const TMatrixCoeff *iT = g_aiTr32[DCT2][0];
-#endif
 
   TCoeff *pCoef = dst;
   const int  reducedLine = line - iSkipLine;
@@ -651,11 +615,7 @@ void fastInverseDCT2_B32(const TCoeff *src, TCoeff *dst, int shift, int line, in
   int EEEE[2], EEEO[2];
   int add = 1 << (shift - 1);
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P32[TRANSFORM_INVERSE][0];
-#else
   const TMatrixCoeff *iT = g_aiTr32[DCT2][0];
-#endif
 
   const int  reducedLine = line - iSkipLine;
   for (j = 0; j<reducedLine; j++)
@@ -716,11 +676,7 @@ void fastForwardDCT2_B64(const TCoeff *src, TCoeff *dst, int shift, int line, in
   int rnd_factor = 1 << (shift - 1);
 
   const int uiTrSize = 64;
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P64[TRANSFORM_FORWARD][0];
-#else
   const TMatrixCoeff *iT = g_aiTr64[DCT2][0];
-#endif
 
   int   j, k;
   TCoeff E[32], O[32];
@@ -825,11 +781,7 @@ void fastInverseDCT2_B64(const TCoeff *src, TCoeff *dst, int shift, int line, in
 {
   int rnd_factor = 1 << (shift - 1);
   const int uiTrSize = 64;
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT2P64[TRANSFORM_INVERSE][0];
-#else
   const TMatrixCoeff *iT = g_aiTr64[DCT2][0];
-#endif
 
   int    j, k;
   TCoeff E[32], O[32];
@@ -917,9 +869,7 @@ void fastForwardDST7_B4(const TCoeff *src, TCoeff *dst, int shift, int line, int
   int i;
   TCoeff rnd_factor = (shift > 0) ? (1 << (shift - 1)) : 0;
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDST7P4[TRANSFORM_FORWARD][0];
-#elif HEVC_USE_4x4_DSTVII
+#if HEVC_USE_4x4_DSTVII
   const TMatrixCoeff *iT = use ? g_aiTr4[DST7][0] : g_as_DST_MAT_4[TRANSFORM_FORWARD][0];
 #else
   const TMatrixCoeff *iT = g_aiTr4[DST7][0];
@@ -961,9 +911,7 @@ void fastInverseDST7_B4(const TCoeff *src, TCoeff *dst, int shift, int line, int
   TCoeff c[4];
   TCoeff rnd_factor = (shift > 0) ? (1 << (shift - 1)) : 0;
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDST7P4[TRANSFORM_INVERSE][0];
-#elif HEVC_USE_4x4_DSTVII
+#if HEVC_USE_4x4_DSTVII
   const TMatrixCoeff *iT = use ? g_aiTr4[DST7][0] : g_as_DST_MAT_4[TRANSFORM_INVERSE][0];
 #else
   const TMatrixCoeff *iT = g_aiTr4[DST7][0];
@@ -996,58 +944,34 @@ void fastInverseDST7_B4(const TCoeff *src, TCoeff *dst, int shift, int line, int
 
 void fastForwardDST7_B8(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastForwardMM< 8 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiDST7P8[TRANSFORM_FORWARD][0] );
-#else
   _fastForwardMM< 8 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiTr8[DST7][0] );
-#endif
 }
 
 void fastInverseDST7_B8(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastInverseMM< 8 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiDST7P8[TRANSFORM_INVERSE][0]);
-#else
   _fastInverseMM< 8 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiTr8[DST7][0] );
-#endif
 }
 
 
 void fastForwardDST7_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastForwardMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiDST7P16[TRANSFORM_FORWARD][0] );
-#else
   _fastForwardMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiTr16[DST7][0] );
-#endif
 }
 
 void fastInverseDST7_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastInverseMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiDST7P16[TRANSFORM_INVERSE][0]);
-#else
   _fastInverseMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiTr16[DST7][0] );
-#endif
 }
 
 
 void fastForwardDST7_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastForwardMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiDST7P32[TRANSFORM_FORWARD][0] );
-#else
   _fastForwardMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiTr32[DST7][0] );
-#endif
 }
 
 void fastInverseDST7_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastInverseMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiDST7P32[TRANSFORM_INVERSE][0] );
-#else
   _fastInverseMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiTr32[DST7][0] );
-#endif
 }
 
 
@@ -1056,11 +980,7 @@ void fastForwardDCT8_B4(const TCoeff *src, TCoeff *dst, int shift, int line, int
 {
   int i;
   int rnd_factor = 1 << (shift - 1);
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT8P4[TRANSFORM_FORWARD][0];
-#else
   const TMatrixCoeff *iT = g_aiTr4[DCT8][0];
-#endif
 
   int c[4];
   TCoeff *pCoeff = dst;
@@ -1097,11 +1017,7 @@ void fastInverseDCT8_B4(const TCoeff *src, TCoeff *dst, int shift, int line, int
   int i;
   int rnd_factor = 1 << (shift - 1);
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  const TMatrixCoeff *iT = g_aiDCT8P4[TRANSFORM_INVERSE][0];
-#else
   const TMatrixCoeff *iT = g_aiTr4[DCT8][0];
-#endif
 
   int c[4];
   const int  reducedLine = line - iSkipLine;
@@ -1130,57 +1046,33 @@ void fastInverseDCT8_B4(const TCoeff *src, TCoeff *dst, int shift, int line, int
 
 void fastForwardDCT8_B8(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastForwardMM< 8 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiDCT8P8[TRANSFORM_FORWARD][0] );
-#else
   _fastForwardMM< 8 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiTr8[DCT8][0] );
-#endif
 }
 
 void fastInverseDCT8_B8(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastInverseMM< 8 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiDCT8P8[TRANSFORM_INVERSE][0] );
-#else
   _fastInverseMM< 8 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiTr8[DCT8][0] );
-#endif
 }
 
 
 void fastForwardDCT8_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastForwardMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiDCT8P16[TRANSFORM_FORWARD][0] );
-#else
   _fastForwardMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiTr16[DCT8][0] );
-#endif
 }
 
 void fastInverseDCT8_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastInverseMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiDCT8P16[TRANSFORM_INVERSE][0] );
-#else
   _fastInverseMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiTr16[DCT8][0] );
-#endif
 }
 
 
 void fastForwardDCT8_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastForwardMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiDCT8P32[TRANSFORM_FORWARD][0] );
-#else
   _fastForwardMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_aiTr32[DCT8][0] );
-#endif
 }
 
 void fastInverseDCT8_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  _fastInverseMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiDCT8P32[TRANSFORM_INVERSE][0] );
-#else
   _fastInverseMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_aiTr32[DCT8][0] );
-#endif
 }
 

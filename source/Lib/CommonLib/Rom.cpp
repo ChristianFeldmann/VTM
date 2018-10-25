@@ -188,11 +188,7 @@ const int g_aiNonLMPosThrs[] = {  3,  1,  0 };
 // initialize ROM variables
 void initROM()
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
-  int c;
-#else
   int i, c;
-#endif
 
 #if RExt__HIGH_BIT_DEPTH_SUPPORT
   {
@@ -242,7 +238,6 @@ void initROM()
     g_aucLog2    [i] = c;
   }
 
-#if !JVET_L0285_8BIT_TRANSFORM_CORE
   c = 2; //for the 2x2 transforms if QTBT is on
 
   const double PI = 3.14159265358979323846;
@@ -286,8 +281,6 @@ void initROM()
     }
     c <<= 1;
   }
-#endif
-
   gp_sizeIdxInfo = new SizeIndexInfoLog2();
   gp_sizeIdxInfo->init(MAX_CU_SIZE);
 
@@ -489,7 +482,7 @@ const uint8_t g_aucTrSetHorz35[35] =
 //EMT threshold
 const uint32_t g_EmtSigNumThr = 2;
 
-#if !JVET_L0285_8BIT_TRANSFORM_CORE
+
 //EMT transform coeficient variable
 TMatrixCoeff g_aiTr2  [NUM_TRANS_TYPE][  2][  2];
 TMatrixCoeff g_aiTr4  [NUM_TRANS_TYPE][  4][  4];
@@ -497,7 +490,6 @@ TMatrixCoeff g_aiTr8  [NUM_TRANS_TYPE][  8][  8];
 TMatrixCoeff g_aiTr16 [NUM_TRANS_TYPE][ 16][ 16];
 TMatrixCoeff g_aiTr32 [NUM_TRANS_TYPE][ 32][ 32];
 TMatrixCoeff g_aiTr64 [NUM_TRANS_TYPE][ 64][ 64];
-#endif
 
 //--------------------------------------------------------------------------------------------------
 //coefficients

@@ -606,8 +606,6 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   if( spsNext.getUseSubPuMvp() )
   {
     WRITE_CODE( spsNext.getSubPuMvpLog2Size() - MIN_CU_LOG2, 3,                                 "log2_sub_pu_tmvp_size_minus2" );
-#if ENABLE_BMS
-#endif
   }
 
   if( spsNext.getUseIMV() )

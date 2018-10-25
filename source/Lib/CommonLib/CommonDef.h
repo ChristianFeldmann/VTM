@@ -364,6 +364,10 @@ static const unsigned C806_ALF_TEMPPRED_NUM =                      6;
 
 static const int NTAPS_LUMA               =                         8; ///< Number of taps for luma
 static const int NTAPS_CHROMA             =                         4; ///< Number of taps for chroma
+#if JVET_L0256_BIO
+static const int NTAPS_BILINEAR           =                         2; ///< Number of taps for bilinear filter
+#endif
+
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================

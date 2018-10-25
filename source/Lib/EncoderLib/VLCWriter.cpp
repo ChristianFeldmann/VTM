@@ -535,6 +535,9 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
 #if !REMOVE_MV_ADAPT_PREC
   WRITE_FLAG( spsNext.getUseHighPrecMv() ? 1 : 0,                                               "high_precision_motion_vectors");
 #endif
+#if JVET_L0256_BIO
+  WRITE_FLAG( spsNext.getUseBIO() ? 1 : 0,                                                      "bio_enable_flag" );
+#endif
   WRITE_FLAG( spsNext.getDisableMotCompress() ? 1 : 0,                                          "disable_motion_compression_flag" );
   WRITE_FLAG( spsNext.getUseLMChroma() ? 1 : 0,                                                 "lm_chroma_enabled_flag" );
   WRITE_FLAG( spsNext.getUseIntraEMT() ? 1 : 0,                                                 "emt_intra_enabled_flag" );

@@ -804,6 +804,9 @@ private:
 #if !REMOVE_MV_ADAPT_PREC
   bool              m_highPrecMv;
 #endif
+#if JVET_L0256_BIO
+  bool              m_BIO;
+#endif
   bool              m_DisableMotionCompression;   // 13
   bool              m_LMChroma;                   // 17
   bool              m_IntraEMT;                   // 18
@@ -865,6 +868,10 @@ public:
 #if !REMOVE_MV_ADAPT_PREC
   void      setUseHighPrecMv(bool b) { m_highPrecMv = b; }
   bool      getUseHighPrecMv()                                      const { return m_highPrecMv; }
+#endif
+#if JVET_L0256_BIO
+  void      setUseBIO(bool b)                                                       { m_BIO = b; }
+  bool      getUseBIO()                                                   const     { return m_BIO; }
 #endif
   void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
   bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }

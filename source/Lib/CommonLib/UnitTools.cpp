@@ -989,7 +989,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
         isCandInter              [uiArrayAddr] = true;
 #endif
 #if JVET_L0646_GBI
-        mrgCtx.GBiIdx[uiArrayAddr] = GBI_DEFAULT;
+		mrgCtx.GBiIdx[uiArrayAddr] = GBI_DEFAULT;
 #endif
         if( mrgCandIdx == cnt && canFastExit )
         {

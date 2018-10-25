@@ -309,10 +309,6 @@
 #define DISTORTION_ESTIMATION_BITS                        8
 #define DISTORTION_PRECISION_ADJUSTMENT(x)                ((x>DISTORTION_ESTIMATION_BITS)? ((x)-DISTORTION_ESTIMATION_BITS) : 0)
 #endif
-#if JVET_L0266_HMVP
-#define MAX_NUM_HMVP_CANDS                                6
-#define MAX_NUM_HMVP_AVMPCANDS                            4  //should NOT be larger than MAX_NUM_HMVP_CANDS
-#endif
 
 // ====================================================================================================================
 // Error checks

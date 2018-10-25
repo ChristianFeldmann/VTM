@@ -744,8 +744,8 @@ int EncAdaptiveLoopFilter::getNonFilterCoeffRate( AlfSliceParam& alfSliceParam )
   int len = 1   // filter_type
             + 1   // alf_coefficients_delta_flag
 #endif
-         + lengthTruncatedUnary( 0, 3 )    // chroma_idc = 0, it is signalled when ALF is enabled for luma
-         + getTBlength( alfSliceParam.numLumaFilters - 1, MAX_NUM_ALF_CLASSES );   //numLumaFilters
+    	    + lengthTruncatedUnary( 0, 3 )    // chroma_idc = 0, it is signalled when ALF is enabled for luma
+    	    + getTBlength( alfSliceParam.numLumaFilters - 1, MAX_NUM_ALF_CLASSES );   //numLumaFilters
 
   if( alfSliceParam.numLumaFilters > 1 )
   {
@@ -842,8 +842,8 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
 
   // Coding parameters
   int len = kMin           //min_golomb_order
-          + maxGolombIdx   //golomb_order_increase_flag
-          + numFilters;    //filter_coefficient_flag[i]
+    	    + maxGolombIdx   //golomb_order_increase_flag
+    	    + numFilters;    //filter_coefficient_flag[i]
 
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )

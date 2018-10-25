@@ -428,6 +428,9 @@ protected:
 
   uint32_t      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
+#if JVET_L0632_AFFINE_MERGE
+  uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
+#endif
 
   int       m_TMVPModeId;
   bool      m_depQuantEnabledFlag;

@@ -431,6 +431,9 @@ protected:
   WeightedPredictionMethod m_weightedPredictionMethod;
   uint32_t      m_log2ParallelMergeLevelMinus2;       ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                    ///< Maximum number of merge candidates
+#if JVET_L0632_AFFINE_MERGE
+  uint32_t      m_maxNumAffineMergeCand;              ///< Maximum number of affine merge candidates
+#endif
 #if HEVC_USE_SCALING_LISTS
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
@@ -1136,6 +1139,10 @@ public:
   uint32_t         getLog2ParallelMergeLevelMinus2   ()                  { return m_log2ParallelMergeLevelMinus2;       }
   void         setMaxNumMergeCand                ( uint32_t u )          { m_maxNumMergeCand = u;      }
   uint32_t         getMaxNumMergeCand                ()                  { return m_maxNumMergeCand;   }
+#if JVET_L0632_AFFINE_MERGE
+  void         setMaxNumAffineMergeCand          ( uint32_t u )      { m_maxNumAffineMergeCand = u;    }
+  uint32_t     getMaxNumAffineMergeCand          ()                  { return m_maxNumAffineMergeCand; }
+#endif
 #if HEVC_USE_SCALING_LISTS
   void         setUseScalingListId    ( ScalingListMode u )          { m_useScalingListId       = u;   }
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }

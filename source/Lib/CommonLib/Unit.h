@@ -364,6 +364,9 @@ struct InterPredictionData
   int16_t     refIdx  [NUM_REF_PIC_LIST_01];
   MergeType mergeType;
   Mv        mvdAffi [NUM_REF_PIC_LIST_01][3];
+#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
+  Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
+#endif
 };
 
 struct PredictionUnit : public UnitArea, public IntraPredictionData, public InterPredictionData

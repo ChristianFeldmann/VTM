@@ -316,6 +316,29 @@ public:
   void setMergeInfo( PredictionUnit& pu, int candIdx );
 };
 
+#if JVET_L0632_AFFINE_MERGE
+class AffineMergeCtx
+{
+public:
+  AffineMergeCtx() : numValidMergeCand( 0 ) { for ( unsigned i = 0; i < AFFINE_MRG_MAX_NUM_CANDS; i++ ) affineType[i] = AFFINEMODEL_4PARAM; }
+  ~AffineMergeCtx() {}
+public:
+  MvField       mvFieldNeighbours[AFFINE_MRG_MAX_NUM_CANDS << 1][3]; // double length for mv of both lists
+  unsigned char interDirNeighbours[AFFINE_MRG_MAX_NUM_CANDS];
+  EAffineModel  affineType[AFFINE_MRG_MAX_NUM_CANDS];
+#if JVET_L0646_GBI
+  uint8_t       GBiIdx[AFFINE_MRG_MAX_NUM_CANDS];
+#endif
+  int           numValidMergeCand;
+  int           maxNumMergeCand;
+
+#if JVET_L0369_SUBBLOCK_MERGE
+  MergeCtx     *mrgCtx;
+  MergeType     mergeType[AFFINE_MRG_MAX_NUM_CANDS];
+#endif
+};
+#endif
+
 
 namespace DeriveCtx
 {

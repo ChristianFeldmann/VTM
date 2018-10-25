@@ -141,6 +141,9 @@ static const int AMVP_MAX_NUM_CANDS =                               2; ///< AMVP
 static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP: advanced motion vector prediction - max number of candidates
 static const int AMVP_DECIMATION_FACTOR =                           2;
 static const int MRG_MAX_NUM_CANDS =                                7; ///< MERGE
+#if JVET_L0632_AFFINE_MERGE
+static const int AFFINE_MRG_MAX_NUM_CANDS =                         5; ///< AFFINE MERGE
+#endif
 
 static const int MAX_TLAYER =                                       7; ///< Explicit temporal layer QP offset - max number of temporal layer
 
@@ -372,6 +375,9 @@ static const int    FAST_SKIP_DEPTH =                               2;
 static const double PBINTRA_RATIO     =                             1.1;
 static const int    NUM_MRG_SATD_CAND =                             4;
 static const double MRG_FAST_RATIO    =                             1.25;
+#if JVET_L0632_AFFINE_MERGE
+static const int    NUM_AFF_MRG_SATD_CAND =                         1;
+#endif
 
 static const double AMAXBT_TH32 =                                  15.0;
 static const double AMAXBT_TH64 =                                  30.0;

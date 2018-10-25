@@ -2025,6 +2025,285 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     return;
   }
 
+#if JVET_L0632_AFFINE_MERGE
+  const Slice &slice = *tempCS->slice;
+
+  CHECK( slice.getSliceType() == I_SLICE, "Affine Merge modes not available for I-slices" );
+
+  tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+
+  AffineMergeCtx affineMergeCtx;
+  const SPS &sps = *tempCS->sps;
+
+#if JVET_L0369_SUBBLOCK_MERGE
+  MergeCtx mrgCtx;
+  if ( sps.getSpsNext().getUseSubPuMvp() )
+  {
+    Size bufSize = g_miScaling.scale( tempCS->area.lumaSize() );
+    mrgCtx.subPuMvpMiBuf = MotionBuf( m_SubPuMiBuf, bufSize );
+    affineMergeCtx.mrgCtx = &mrgCtx;
+  }
+#endif
+
+  {
+    // first get merge candidates
+    CodingUnit cu( tempCS->area );
+    cu.cs = tempCS;
+    cu.partSize = SIZE_2Nx2N;
+    cu.predMode = MODE_INTER;
+    cu.slice = tempCS->slice;
+#if HEVC_TILES_WPP
+    cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
+#endif
+
+    PredictionUnit pu( tempCS->area );
+    pu.cu = &cu;
+    pu.cs = tempCS;
+
+    PU::getAffineMergeCand( pu, affineMergeCtx );
+
+    if ( affineMergeCtx.numValidMergeCand <= 0 )
+    {
+      return;
+    }
+  }
+
+  bool candHasNoResidual[AFFINE_MRG_MAX_NUM_CANDS];
+  for ( uint32_t ui = 0; ui < affineMergeCtx.numValidMergeCand; ui++ )
+  {
+    candHasNoResidual[ui] = false;
+  }
+
+  bool                                        bestIsSkip = false;
+  uint32_t                                    uiNumMrgSATDCand = affineMergeCtx.numValidMergeCand;
+  PelUnitBuf                                  acMergeBuffer[AFFINE_MRG_MAX_NUM_CANDS];
+  static_vector<uint32_t, AFFINE_MRG_MAX_NUM_CANDS>  RdModeList;
+  bool                                        mrgTempBufSet = false;
+
+  for ( uint32_t i = 0; i < AFFINE_MRG_MAX_NUM_CANDS; i++ )
+  {
+    RdModeList.push_back( i );
+  }
+
+  if ( m_pcEncCfg->getUseFastMerge() )
+  {
+    uiNumMrgSATDCand = std::min( NUM_AFF_MRG_SATD_CAND, affineMergeCtx.numValidMergeCand );
+    bestIsSkip = false;
+
+    if ( auto blkCache = dynamic_cast<CacheBlkInfoCtrl*>(m_modeCtrl) )
+    {
+      bestIsSkip = blkCache->isSkip( tempCS->area );
+    }
+
+    static_vector<double, AFFINE_MRG_MAX_NUM_CANDS> candCostList;
+
+    // 1. Pass: get SATD-cost for selected candidates and reduce their count
+    if ( !bestIsSkip )
+    {
+      RdModeList.clear();
+      mrgTempBufSet = true;
+      const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda( encTestMode.lossless );
+
+      CodingUnit &cu = tempCS->addCU( tempCS->area, partitioner.chType );
+
+      partitioner.setCUData( cu );
+      cu.slice = tempCS->slice;
+#if HEVC_TILES_WPP
+      cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
+#endif
+      cu.skip = false;
+      cu.partSize = SIZE_2Nx2N;
+      cu.affine = true;
+      cu.predMode = MODE_INTER;
+      cu.transQuantBypass = encTestMode.lossless;
+      cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
+      cu.qp = encTestMode.qp;
+
+      PredictionUnit &pu = tempCS->addPU( cu, partitioner.chType );
+
+      DistParam distParam;
+      const bool bUseHadamard = !encTestMode.lossless;
+      m_pcRdCost->setDistParam( distParam, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y(), sps.getBitDepth( CHANNEL_TYPE_LUMA ), COMPONENT_Y, bUseHadamard );
+
+      const UnitArea localUnitArea( tempCS->area.chromaFormat, Area( 0, 0, tempCS->area.Y().width, tempCS->area.Y().height ) );
+
+      for ( uint32_t uiMergeCand = 0; uiMergeCand < affineMergeCtx.numValidMergeCand; uiMergeCand++ )
+      {
+        acMergeBuffer[uiMergeCand] = m_acMergeBuffer[uiMergeCand].getBuf( localUnitArea );
+
+        // set merge information
+        pu.interDir = affineMergeCtx.interDirNeighbours[uiMergeCand];
+        pu.mergeFlag = true;
+        pu.mergeIdx = uiMergeCand;
+        cu.affineType = affineMergeCtx.affineType[uiMergeCand];
+#if JVET_L0646_GBI
+        cu.GBiIdx = affineMergeCtx.GBiIdx[uiMergeCand];
+#endif
+
+#if JVET_L0369_SUBBLOCK_MERGE
+        pu.mergeType = affineMergeCtx.mergeType[uiMergeCand];
+        if ( pu.mergeType == MRG_TYPE_SUBPU_ATMVP )
+        {
+          pu.refIdx[0] = affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 0][0].refIdx;
+          pu.refIdx[1] = affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 1][0].refIdx;
+          PU::spanMotionInfo( pu, mrgCtx );
+        }
+        else
+        {
+#endif
+          PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 0], REF_PIC_LIST_0 );
+          PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 1], REF_PIC_LIST_1 );
+
+          PU::spanMotionInfo( pu );
+#if JVET_L0369_SUBBLOCK_MERGE
+        }
+#endif
+
+        distParam.cur = acMergeBuffer[uiMergeCand].Y();
+
+        m_pcInterSearch->motionCompensation( pu, acMergeBuffer[uiMergeCand] );
+
+        Distortion uiSad = distParam.distFunc( distParam );
+        uint32_t   uiBitsCand = uiMergeCand + 1;
+        if ( uiMergeCand == tempCS->slice->getMaxNumAffineMergeCand() - 1 )
+        {
+          uiBitsCand--;
+        }
+        double cost = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
+
+        updateCandList( uiMergeCand, cost, RdModeList, candCostList, uiNumMrgSATDCand );
+
+        CHECK( std::min( uiMergeCand + 1, uiNumMrgSATDCand ) != RdModeList.size(), "" );
+      }
+
+      // Try to limit number of candidates using SATD-costs
+      for ( uint32_t i = 1; i < uiNumMrgSATDCand; i++ )
+      {
+        if ( candCostList[i] > MRG_FAST_RATIO * candCostList[0] )
+        {
+          uiNumMrgSATDCand = i;
+          break;
+        }
+      }
+
+      tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+    }
+    else
+    {
+      uiNumMrgSATDCand = affineMergeCtx.numValidMergeCand;
+    }
+  }
+
+  const uint32_t iteration = encTestMode.lossless ? 1 : 2;
+
+  // 2. Pass: check candidates using full RD test
+  for ( uint32_t uiNoResidualPass = 0; uiNoResidualPass < iteration; uiNoResidualPass++ )
+  {
+    for ( uint32_t uiMrgHADIdx = 0; uiMrgHADIdx < uiNumMrgSATDCand; uiMrgHADIdx++ )
+    {
+      uint32_t uiMergeCand = RdModeList[uiMrgHADIdx];
+
+      if ( ((uiNoResidualPass != 0) && candHasNoResidual[uiMergeCand])
+        || ((uiNoResidualPass == 0) && bestIsSkip) )
+      {
+        continue;
+      }
+
+      // first get merge candidates
+      CodingUnit &cu = tempCS->addCU( tempCS->area, partitioner.chType );
+
+      partitioner.setCUData( cu );
+      cu.slice = tempCS->slice;
+#if HEVC_TILES_WPP
+      cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
+#endif
+      cu.skip = false;
+      cu.partSize = SIZE_2Nx2N;
+      cu.affine = true;
+      cu.predMode = MODE_INTER;
+      cu.transQuantBypass = encTestMode.lossless;
+      cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
+      cu.qp = encTestMode.qp;
+      PredictionUnit &pu = tempCS->addPU( cu, partitioner.chType );
+
+      // set merge information
+      pu.mergeFlag = true;
+      pu.mergeIdx = uiMergeCand;
+      pu.interDir = affineMergeCtx.interDirNeighbours[uiMergeCand];
+      cu.affineType = affineMergeCtx.affineType[uiMergeCand];
+#if JVET_L0646_GBI
+      cu.GBiIdx = affineMergeCtx.GBiIdx[uiMergeCand];
+#endif
+
+#if JVET_L0369_SUBBLOCK_MERGE
+      pu.mergeType = affineMergeCtx.mergeType[uiMergeCand];
+      if ( pu.mergeType == MRG_TYPE_SUBPU_ATMVP )
+      {
+        pu.refIdx[0] = affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 0][0].refIdx;
+        pu.refIdx[1] = affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 1][0].refIdx;
+        PU::spanMotionInfo( pu, mrgCtx );
+      }
+      else
+      {
+#endif
+        PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 0], REF_PIC_LIST_0 );
+        PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 1], REF_PIC_LIST_1 );
+
+        PU::spanMotionInfo( pu );
+#if JVET_L0369_SUBBLOCK_MERGE
+      }
+#endif
+
+      if ( mrgTempBufSet )
+      {
+        tempCS->getPredBuf().copyFrom( acMergeBuffer[uiMergeCand] );
+      }
+      else
+      {
+        m_pcInterSearch->motionCompensation( pu );
+      }
+
+      xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, uiNoResidualPass, NULL, true, ((uiNoResidualPass == 0) ? &candHasNoResidual[uiMergeCand] : NULL) );
+
+      if ( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip )
+      {
+        bestIsSkip = bestCS->getCU( partitioner.chType )->rootCbf == 0;
+      }
+      tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+    }// end loop uiMrgHADIdx
+
+    if ( uiNoResidualPass == 0 && m_pcEncCfg->getUseEarlySkipDetection() )
+    {
+      const CodingUnit     &bestCU = *bestCS->getCU( partitioner.chType );
+      const PredictionUnit &bestPU = *bestCS->getPU( partitioner.chType );
+
+      if ( bestCU.rootCbf == 0 )
+      {
+        if ( bestPU.mergeFlag )
+        {
+          m_modeCtrl->setEarlySkipDetected();
+        }
+        else if ( m_pcEncCfg->getMotionEstimationSearchMethod() != MESEARCH_SELECTIVE )
+        {
+          int absolute_MV = 0;
+
+          for ( uint32_t uiRefListIdx = 0; uiRefListIdx < 2; uiRefListIdx++ )
+          {
+            if ( slice.getNumRefIdx( RefPicList( uiRefListIdx ) ) > 0 )
+            {
+              absolute_MV += bestPU.mvd[uiRefListIdx].getAbsHor() + bestPU.mvd[uiRefListIdx].getAbsVer();
+            }
+          }
+
+          if ( absolute_MV == 0 )
+          {
+            m_modeCtrl->setEarlySkipDetected();
+          }
+        }
+      }
+    }
+  }
+#else
   MvField       affineMvField[2][3];
   unsigned char interDirNeighbours;
   int           numValidMergeCand;
@@ -2095,6 +2374,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       , 1
       , &hasNoResidual);
   }
+#endif
 }
 void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {

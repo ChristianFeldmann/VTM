@@ -255,6 +255,11 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   subPu.cu        = pu.cu;
   subPu.mergeType = MRG_TYPE_DEFAULT_N;
 
+#if JVET_L0369_SUBBLOCK_MERGE
+  bool bAffine = pu.cu->affine;
+  subPu.cu->affine = false;
+#endif
+
   // join sub-pus containing the same motion
   bool verMC = puSize.height > puSize.width;
   int  fstStart = (!verMC ? puPos.y : puPos.x);
@@ -299,6 +304,10 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
       secDim = later - secStep;
     }
   }
+
+#if JVET_L0369_SUBBLOCK_MERGE
+  pu.cu->affine = bAffine;
+#endif
 }
 
 
@@ -314,10 +323,16 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   {
     CHECK( iRefIdx < 0, "iRefIdx incorrect." );
 
+#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
+    mv[0] = pu.mvAffi[eRefPicList][0];
+    mv[1] = pu.mvAffi[eRefPicList][1];
+    mv[2] = pu.mvAffi[eRefPicList][2];
+#else
     const CMotionBuf &mb = pu.getMotionBuf();
     mv[0] = mb.at( 0,            0             ).mv[eRefPicList];
     mv[1] = mb.at( mb.width - 1, 0             ).mv[eRefPicList];
     mv[2] = mb.at( 0,            mb.height - 1 ).mv[eRefPicList];
+#endif
   }
   else
   {

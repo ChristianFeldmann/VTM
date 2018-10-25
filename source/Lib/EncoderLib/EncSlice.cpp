@@ -672,6 +672,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setSliceSegmentArgument ( m_pcCfg->getSliceSegmentArgument() );
 #endif
   rpcSlice->setMaxNumMergeCand      ( m_pcCfg->getMaxNumMergeCand()      );
+#if JVET_L0632_AFFINE_MERGE
+  rpcSlice->setMaxNumAffineMergeCand( m_pcCfg->getMaxNumAffineMergeCand() );
+#endif
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   rpcSlice->setSplitConsOverrideFlag(false);
   rpcSlice->setMinQTSize( rpcSlice->getSPS()->getSpsNext().getMinQTSize(eSliceType));

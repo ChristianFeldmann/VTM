@@ -1355,13 +1355,20 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           bestMvpNum[0] = pu.mvpNum[0];
           bestMvpNum[1] = pu.mvpNum[1];
 
+#if !JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
           const CMotionBuf &mb = pu.getMotionBuf();
+#endif
           for ( int refList = 0; refList < 2; refList++ )
           {
+#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
+            bestMv[refList][0] = pu.mvAffi[refList][0];
+            bestMv[refList][1] = pu.mvAffi[refList][1];
+            bestMv[refList][2] = pu.mvAffi[refList][2];
+#else
             bestMv[refList][0] = mb.at( 0, 0 ).mv[refList];
             bestMv[refList][1] = mb.at( mb.width - 1, 0 ).mv[refList];
             bestMv[refList][2] = mb.at( 0, mb.height - 1 ).mv[refList];
-
+#endif
             bestMvd[refList][0] = pu.mvdAffi[refList][0];
             bestMvd[refList][1] = pu.mvdAffi[refList][1];
             bestMvd[refList][2] = pu.mvdAffi[refList][2];
@@ -4602,7 +4609,11 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     PredictionUnit &pu = *cs.getPU( partitioner.chType );
 
     m_CABACEstimator->cu_skip_flag  ( cu );
+#if JVET_L0369_SUBBLOCK_MERGE
+    m_CABACEstimator->subblock_merge_flag( cu );
+#else
     m_CABACEstimator->affine_flag( cu );
+#endif
 #if JVET_L0054_MMVD
     if (cu.mmvdSkip)
     {
@@ -4733,7 +4744,11 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
     }
 
     m_CABACEstimator->cu_skip_flag  ( cu );
+#if JVET_L0369_SUBBLOCK_MERGE
+    m_CABACEstimator->subblock_merge_flag( cu );
+#else
     m_CABACEstimator->affine_flag   ( cu );
+#endif
 #if JVET_L0054_MMVD
     if (cu.mmvdSkip)
     {

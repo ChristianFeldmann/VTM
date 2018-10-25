@@ -910,6 +910,21 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   }
 
 
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  READ_FLAG( symbol, "sps_ladf_enabled_flag" );                     spsNext.setLadfEnabled( symbol != 0 );
+  if ( spsNext.getLadfEnabled() )
+  {
+    int signedSymbol = 0;
+    READ_CODE( 2, symbol, "sps_num_ladf_intervals_minus2");         spsNext.setLadfNumIntervals( symbol + 2 );
+    READ_SVLC(signedSymbol, "sps_ladf_lowest_interval_qp_offset" );      spsNext.setLadfQpOffset( signedSymbol, 0 );
+    for ( int k = 1; k < spsNext.getLadfNumIntervals(); k++ )
+    {
+      READ_SVLC(signedSymbol, "sps_ladf_qp_offset" );                    spsNext.setLadfQpOffset( signedSymbol, k );
+      READ_UVLC( symbol, "sps_ladf_delta_threshold_minus1");
+      spsNext.setLadfIntervalLowerBound(symbol + spsNext.getLadfIntervalLowerBound(k - 1) + 1, k);
+    }
+  }
+#endif
   // ADD_NEW_TOOL : (sps extension parser) read tool enabling flags and associated parameters here
 }
 

@@ -246,6 +246,18 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
 #endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  m_cEncLib.setUseLadf                                           ( m_LadfEnabed );
+  if ( m_LadfEnabed )
+  {
+    m_cEncLib.setLadfNumIntervals                                ( m_LadfNumIntervals);
+    for ( int k = 0; k < m_LadfNumIntervals; k++ )
+    {
+      m_cEncLib.setLadfQpOffset( m_LadfQpOffset[k], k );
+      m_cEncLib.setLadfIntervalLowerBound(m_LadfIntervalLowerBound[k], k);
+    }
+  }
+#endif  
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
 
   m_cEncLib.setMaxCUWidth                                        ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );

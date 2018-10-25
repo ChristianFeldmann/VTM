@@ -364,6 +364,10 @@ static const unsigned C806_ALF_TEMPPRED_NUM =                      6;
 
 static const int NTAPS_LUMA               =                         8; ///< Number of taps for luma
 static const int NTAPS_CHROMA             =                         4; ///< Number of taps for chroma
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+static const int MAX_LADF_INTERVALS       =                         5; /// max number of luma adaptive deblocking filter qp offset intervals
+#endif
+
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================

@@ -1663,6 +1663,12 @@ SPSNext::SPSNext( SPS& sps )
 #if ENABLE_WPP_PARALLELISM
   , m_NextDQP                   ( false )
 #endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  , m_LadfEnabled               ( false )
+  , m_LadfNumIntervals          ( 0 )
+  , m_LadfQpOffset              { 0 }
+  , m_LadfIntervalLowerBound    { 0 }
+#endif
 
   // default values for additional parameters
   , m_CTUSize                   ( 0 )

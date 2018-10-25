@@ -211,6 +211,12 @@ protected:
   bool      m_GBi;
   bool      m_GBiFast;
 #endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  bool      m_LadfEnabled;
+  int       m_LadfNumIntervals;
+  int       m_LadfQpOffset[MAX_LADF_INTERVALS];
+  int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
+#endif
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
 
   bool      m_useFastLCTU;
@@ -657,6 +663,18 @@ public:
   bool      getUseGBi                       ()         const { return m_GBi; }
   void      setUseGBiFast                   ( uint32_t b )   { m_GBiFast = b; }
   bool      getUseGBiFast                   ()         const { return m_GBiFast; }
+#endif
+
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  void      setUseLadf                      ( bool b )       { m_LadfEnabled = b; }
+  bool      getUseLadf                      ()         const { return m_LadfEnabled; }
+  void      setLadfNumIntervals             ( int i )        { m_LadfNumIntervals = i; }
+  int       getLadfNumIntervals             ()         const { return m_LadfNumIntervals; }
+  void      setLadfQpOffset                 ( int value, int idx ){ m_LadfQpOffset[ idx ] = value; }
+  int       getLadfQpOffset                 ( int idx ) const { return m_LadfQpOffset[ idx ]; }
+  void      setLadfIntervalLowerBound       ( int value, int idx ){ m_LadfIntervalLowerBound[ idx ] = value; }
+  int       getLadfIntervalLowerBound       ( int idx ) const { return m_LadfIntervalLowerBound[ idx ]; }
+
 #endif
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 

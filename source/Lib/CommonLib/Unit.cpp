@@ -266,6 +266,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
 #endif
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
+#if JVET_L0646_GBI
+  GBiIdx            = other.GBiIdx;
+#endif
   return *this;
 }
 
@@ -292,6 +295,9 @@ void CodingUnit::initData()
 #endif
   imv               = 0;
   imvNumCand        = 0;
+#if JVET_L0646_GBI
+  GBiIdx            = GBI_DEFAULT;
+#endif
 }
 
 

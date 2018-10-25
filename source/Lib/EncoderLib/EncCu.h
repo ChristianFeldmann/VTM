@@ -118,7 +118,10 @@ private:
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   EncLib*               m_pcEncLib;
 #endif
-
+#if JVET_L0646_GBI
+  int                   m_bestGbiIdx[2];
+  double                m_bestGbiCost[2];
+#endif
 #if SHARP_LUMA_DELTA_QP
   void    updateLambda      ( Slice* slice, double dQP );
 #endif
@@ -192,9 +195,22 @@ protected:
     , CodingStructure* imvCS = NULL
     , int emtMode = 1
     , bool* bestHasNonResi = NULL
+#if JVET_L0646_GBI
+    , double* equGBiCost = NULL
+#endif
   );
 #if REUSE_CU_RESULTS
   void xReuseCachedResult     ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &Partitioner );
+#endif
+
+#if JVET_L0646_GBI
+  bool xIsGBiSkip(const CodingUnit& cu)
+  {
+    return((m_pcEncCfg->getBaseQP() > 32) && ((cu.slice->getTLayer() >= 4)
+       || ((cu.refIdxBi[0] >= 0 && cu.refIdxBi[1] >= 0)
+       && (abs(cu.slice->getPOC() - cu.slice->getRefPOC(REF_PIC_LIST_0, cu.refIdxBi[0])) == 1
+       ||  abs(cu.slice->getPOC() - cu.slice->getRefPOC(REF_PIC_LIST_1, cu.refIdxBi[1])) == 1))));
+  }
 #endif
 };
 

@@ -291,6 +291,17 @@ static const int AFFINE_MAX_NUM_V2 =                                2; ///< max 
 static const int AFFINE_MAX_NUM_COMB =                             12; ///< max number of combined motion candidates
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
 
+#if JVET_L0274
+static const int MAX_NUM_REG_BINS_4x4SUBBLOCK =                    32; ///< max number of context-coded bins (incl. gt2 bins) per 4x4 subblock
+static const int MAX_NUM_GT2_BINS_4x4SUBBLOCK =                     4; ///< max number of gt2 bins per 4x4 subblock
+static const int MAX_NUM_REG_BINS_2x2SUBBLOCK =                     8; ///< max number of context-coded bins (incl. gt2 bins) per 2x2 subblock (chroma)
+static const int MAX_NUM_GT2_BINS_2x2SUBBLOCK =                     2; ///< max number of gt2 bins per 2x2 subblock (chroma)
+#endif
+#if JVET_L0646_GBI
+static const int GBI_NUM =                                          5; ///< the number of weight options
+static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
+static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
+#endif
 
 #if W0038_DB_OPT
 static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;

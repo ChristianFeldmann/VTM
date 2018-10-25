@@ -87,7 +87,11 @@ protected:
 #if HEVC_USE_HOR_VER_PREDFILTERING
   void xPredIntraAng              ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const bool bEnableEdgeFilters, const SPS& sps, const bool enableBoundaryFilter = true );
 #else
+#if JVET_L0628_4TAP_INTRA
+  void xPredIntraAng              ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps, const bool useFilteredPredSamples );
+#else
   void xPredIntraAng              ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps, const bool enableBoundaryFilter = true );
+#endif //JVET_L0628_4TAP_INTRA
 #endif
   Pel  xGetPredValDc              ( const CPelBuf &pSrc, const Size &dstSize );
 

@@ -198,7 +198,9 @@ unsigned DeriveCtx::CtxCUsplit( const CodingStructure& cs, Partitioner& partitio
 #endif
 
   ctxId += ( cuAbove && cuAbove->qtDepth > partitioner.currQtDepth ) ? 1 : 0;
-
+#if JVET_L0361_SPLIT_CTX
+  ctxId += partitioner.currQtDepth < 2 ? 0 : 3;
+#else
   if( cs.sps->getSpsNext().getUseLargeCTU() )
   {
     unsigned minDepth = 0;
@@ -213,6 +215,7 @@ unsigned DeriveCtx::CtxCUsplit( const CodingStructure& cs, Partitioner& partitio
       ctxId = 4;
     }
   }
+#endif
 
   return ctxId;
 }
@@ -319,10 +322,39 @@ unsigned DeriveCtx::CtxBTsplit(const CodingStructure& cs, Partitioner& partition
 #endif
 
   {
+#if JVET_L0361_SPLIT_CTX
+    unsigned widthCurr = partitioner.currArea().lwidth();
+    unsigned heightCurr = partitioner.currArea().lheight();
+
+    if( cuLeft )
+    {
+      unsigned heightLeft = cuLeft->Y().height;
+      ctx += ( heightLeft < heightCurr ? 1 : 0 );
+    }
+    if( cuAbove )
+    {
+      unsigned widthAbove = cuAbove->Y().width;
+      ctx += ( widthAbove < widthCurr ? 1 : 0 );
+    }
+
+    if( partitioner.chType == CHANNEL_TYPE_CHROMA )
+    {
+      ctx += 9;
+    }
+    else
+    {
+      int maxBTSize = cs.pcv->getMaxBtSize( *cs.slice, partitioner.chType );
+      int th1 = ( maxBTSize == 128 ) ? 128  : ( ( maxBTSize == 64 ) ? 64  : 64  );
+      int th2 = ( maxBTSize == 128 ) ? 1024 : ( ( maxBTSize == 64 ) ? 512 : 256 );
+      unsigned int sizeCurr = widthCurr * heightCurr;
+      ctx += sizeCurr > th2 ? 0 : ( sizeCurr > th1 ? 3 : 6 );
+    }
+#else
     const unsigned currDepth = partitioner.currQtDepth * 2 + partitioner.currBtDepth;
 
     if( cuLeft )  ctx += ( ( 2 * cuLeft->qtDepth  + cuLeft->btDepth  ) > currDepth ? 1 : 0 );
     if( cuAbove ) ctx += ( ( 2 * cuAbove->qtDepth + cuAbove->btDepth ) > currDepth ? 1 : 0 );
+#endif
   }
   return ctx;
 }
@@ -347,5 +379,8 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   pu.mvpNum [REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum [REF_PIC_LIST_1] = NOT_VALID;
 
-  
+#if JVET_L0646_GBI 
+  pu.cu->GBiIdx = ( interDirNeighbours[candIdx] == 3 ) ? GBiIdx[candIdx] : GBI_DEFAULT;
+#endif
+
 }

@@ -810,6 +810,9 @@ private:
   bool              m_InterEMT;                   // 19
   bool              m_Affine;
   bool              m_AffineType;
+#if JVET_L0646_GBI
+  bool              m_GBi;                        //
+#endif
   bool              m_MTTEnabled;                 //
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
@@ -876,6 +879,10 @@ public:
   bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
   void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
   bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
+#if JVET_L0646_GBI
+  void      setUseGBi             ( bool b )                                        { m_GBi = b; }
+  bool      getUseGBi             ()                                      const     { return m_GBi; }
+#endif
   //=====  additional parameters  =====
   // qtbt
   void      setCTUSize            ( unsigned    ctuSize )                           { m_CTUSize = ctuSize; }

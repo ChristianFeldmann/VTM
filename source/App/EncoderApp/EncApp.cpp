@@ -239,6 +239,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
+#if JVET_L0646_GBI
+  m_cEncLib.setUseGBi                                            ( m_GBi );
+  m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
+#endif
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
 
   m_cEncLib.setMaxCUWidth                                        ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );

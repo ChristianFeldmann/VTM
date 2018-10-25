@@ -90,7 +90,12 @@ extern const uint32_t   ctxIndMap4x4[4*4];
 
 extern const uint32_t   g_uiGroupIdx[ MAX_TU_SIZE ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
+#if JVET_L0274
+extern const uint32_t   g_auiGoRiceParsCoeff     [ 32 ];
+extern const uint32_t   g_auiGoRicePosCoeff0[ 3 ][ 32 ];
+#else
 extern const uint32_t   g_auiGoRicePars [ 32 ];
+#endif
 extern const uint32_t   g_auiGoRiceRange[ MAX_GR_ORDER_RESIDUAL ];                  //!< maximum value coded with Rice codes
 
 // ====================================================================================================================
@@ -209,8 +214,26 @@ extern const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
 
 extern MsgLevel g_verbosity;
 
+#if JVET_L0191_LM_WO_LMS
+extern int g_aiLMDivTableLow[];
+extern int g_aiLMDivTableHigh[];
+#endif
 
 extern const int g_aiNonLMPosThrs[];
+
+#if JVET_L0646_GBI
+extern const int8_t g_GbiLog2WeightBase;
+extern const int8_t g_GbiWeightBase;
+extern const int8_t g_GbiWeights[GBI_NUM];
+extern const int8_t g_GbiSearchOrder[GBI_NUM];
+extern       int8_t g_GbiCodingOrder[GBI_NUM];
+extern       int8_t g_GbiParsingOrder[GBI_NUM];
+
+class CodingStructure;
+int8_t getGbiWeight(uint8_t gbiIdx, uint8_t uhRefFrmList);
+void resetGbiCodingOrder(bool bRunDecoding, const CodingStructure &cs);
+uint32_t deriveWeightIdxBits(uint8_t gbiIdx);
+#endif 
 
 constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,

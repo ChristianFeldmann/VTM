@@ -407,6 +407,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       CodingStatistics::IncrementStatisticTool( CodingStatisticsClassType{ STATS__TOOL_AFF, pu.Y().width, pu.Y().height } );
     }
 #endif
+
+#if JVET_L0646_GBI
+    uint8_t gbiIdx = GBI_DEFAULT;
+#endif
+
     if( pu.mergeFlag )
     {
       {
@@ -416,7 +421,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           MvField       affineMvField[2][3];
           unsigned char interDirNeighbours;
           int           numValidMergeCand;
+#if JVET_L0646_GBI
+          PU::getAffineMergeCand( pu, affineMvField, interDirNeighbours, gbiIdx, numValidMergeCand);
+#else
           PU::getAffineMergeCand( pu, affineMvField, interDirNeighbours, numValidMergeCand );
+#endif
           pu.interDir = interDirNeighbours;
           for( int i = 0; i < 2; ++i )
           {
@@ -428,6 +437,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               pu.mvpNum[i] = 0;
               pu.mvd[i]    = Mv();
               PU::setAllAffineMvField( pu, mvField, RefPicList( i ) );
+#if JVET_L0646_GBI
+              pu.cu->GBiIdx = gbiIdx;
+#endif
             }
           }
           PU::spanMotionInfo( pu, mrgCtx );
@@ -466,6 +478,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
             pu.mv    [REF_PIC_LIST_1] = Mv(0, 0);
             pu.refIdx[REF_PIC_LIST_1] = -1;
             pu.interDir               =  1;
+#if JVET_L0646_GBI
+            pu.cu->GBiIdx = GBI_DEFAULT;
+#endif
           }
 
           PU::spanMotionInfo( pu, mrgCtx );

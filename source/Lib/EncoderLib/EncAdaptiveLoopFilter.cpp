@@ -738,8 +738,12 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
 
 int EncAdaptiveLoopFilter::getNonFilterCoeffRate( AlfSliceParam& alfSliceParam )
 {
+#if   JVET_L0664_ALF_REMOVE_LUMA_5x5
+  int len = 1   // alf_coefficients_delta_flag
+#else
   int len = 1   // filter_type
-    	    + 1   // alf_coefficients_delta_flag
+            + 1   // alf_coefficients_delta_flag
+#endif
     	    + lengthTruncatedUnary( 0, 3 )    // chroma_idc = 0, it is signalled when ALF is enabled for luma
     	    + getTBlength( alfSliceParam.numLumaFilters - 1, MAX_NUM_ALF_CLASSES );   //numLumaFilters
 

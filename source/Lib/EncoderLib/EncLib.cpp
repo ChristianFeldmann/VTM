@@ -852,7 +852,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
   sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
-
+#if JVET_L0646_GBI
+  sps.getSpsNext().setUseGBi                ( m_GBi );
+#endif
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 
   int minCUSize = ( /*sps.getSpsNext().getUseQTBT() ? 1 << MIN_CU_LOG2 :*/ sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize() );
@@ -1232,7 +1234,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     {
       baseQp = getBaseQP()-26;
     }
+#if JVET_L0553_FIX_INITQP
+    const int maxDQP = 37;
+#else
     const int maxDQP = 25;
+#endif
     const int minDQP = -26 + sps.getQpBDOffset(CHANNEL_TYPE_LUMA);
 
     pps.setPicInitQPMinus26( std::min( maxDQP, std::max( minDQP, baseQp ) ));

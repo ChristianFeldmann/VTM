@@ -715,7 +715,11 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   // pcm samples
   if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
   {
+#if JVET_L0553_PCM
+    pcm_flag( cu, partitioner );
+#else
     pcm_flag( cu );
+#endif
     if( cu.ipcm )
     {
       TransformUnit& tu = cs.addTU( cu, partitioner.chType );
@@ -818,11 +822,19 @@ void CABACReader::pred_mode( CodingUnit& cu )
   }
 }
 
-
+#if JVET_L0553_PCM
+void CABACReader::pcm_flag( CodingUnit& cu, Partitioner &partitioner )
+#else
 void CABACReader::pcm_flag( CodingUnit& cu )
+#endif
 {
   const SPS& sps = *cu.cs->sps;
+#if JVET_L0553_PCM
+  if( !sps.getUsePCM() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
+      || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
+#else
   if( !sps.getUsePCM() || cu.lumaSize().width > (1 << sps.getPCMLog2MaxSize()) || cu.lumaSize().width < (1 << sps.getPCMLog2MinSize()) )
+#endif
   {
     cu.ipcm = false;
     return;
@@ -1888,10 +1900,24 @@ void CABACReader::pcm_samples( TransformUnit& tu )
 {
   CHECK( !tu.cu->ipcm, "pcm mode expected" );
 
+#if JVET_L0553_PCM
+  const CodingStructure *cs = tu.cs;
+  const ChannelType chType = tu.chType;
+#endif
+
   const SPS&        sps       = *tu.cu->cs->sps;
+#if !JVET_L0553_PCM
   const ComponentID maxCompId = ( tu.chromaFormat == CHROMA_400 ? COMPONENT_Y : COMPONENT_Cr );
+#endif
   tu.depth                    = 0;
+
+#if JVET_L0553_PCM
+  ComponentID compStr = (CS::isDualITree(*cs) && !isLuma(chType)) ? COMPONENT_Cb: COMPONENT_Y;
+  ComponentID compEnd = (CS::isDualITree(*cs) && isLuma(chType)) ? COMPONENT_Y : COMPONENT_Cr;
+  for( ComponentID compID = compStr; compID <= compEnd; compID = ComponentID(compID+1) )
+#else
   for( ComponentID compID = COMPONENT_Y; compID <= maxCompId; compID = ComponentID(compID+1) )
+#endif
   {
     PelBuf          samples     = tu.getPcmbuf( compID );
     const unsigned  sampleBits  = sps.getPCMBitDepth( toChannelType(compID) );

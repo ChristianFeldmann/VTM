@@ -125,6 +125,7 @@
 #define NUM_SPLIT_THREADS_IF_MSVC                         4
 
 #endif
+#define JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT   1
 
 
 // ====================================================================================================================

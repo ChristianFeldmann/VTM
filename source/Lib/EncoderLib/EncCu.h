@@ -206,6 +206,10 @@ protected:
 #if JVET_L0646_GBI
   bool xIsGBiSkip(const CodingUnit& cu)
   {
+    if (cu.slice->getSliceType() != B_SLICE)
+    {
+      return true;
+    }
     return((m_pcEncCfg->getBaseQP() > 32) && ((cu.slice->getTLayer() >= 4)
        || ((cu.refIdxBi[0] >= 0 && cu.refIdxBi[1] >= 0)
        && (abs(cu.slice->getPOC() - cu.slice->getRefPOC(REF_PIC_LIST_0, cu.refIdxBi[0])) == 1

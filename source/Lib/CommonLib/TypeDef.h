@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0553_FIX_INITQP                             1
+
 #define JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN               1 // Subsampled Laplacian calculation
 
 #define JVET_L0191_LM_WO_LMS                              1 // NO LMS regression. min/max are used instead
@@ -66,8 +68,12 @@
 
 #define JVET_L0194_ONE_CTX_FOR_MRG_IDX                    1 // one context for full-block Merge index
 
+#define JVET_L0361_SPLIT_CTX                              1 // context for cu-split-related flags
+
 #define JVET_L0274                                        1
 #define JVET_L0274_ENCODER_SPEED_UP                     ( 1 && JVET_L0274 ) // encoder speed-up by pre-calculating position dependent parameters
+
+#define L0074_SUBBLOCK_DEBLOCKING                         1
 
 #define JVET_L0256_BIO                                    1
 #if JVET_L0256_BIO
@@ -83,6 +89,8 @@
 #define REMOVE_MV_ADAPT_PREC                              1 // remove the high precision flag in the MV class
 
 #define JVET_L0093_SIMP_PRUNE                             1
+
+#define JVET_L0257_ATMVP_COLBLK_CLIP                      1
 
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )

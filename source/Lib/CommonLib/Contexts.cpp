@@ -262,16 +262,29 @@ std::vector<std::vector<uint8_t>> ContextSetCfg::sm_InitTables( NUMBER_OF_SLICE_
 
 const CtxSet ContextSetCfg::SplitFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_L0361_SPLIT_CTX
+  {  107, 139, 126, 107, 139, 126, },
+  {  107, 139, 126, 107, 139, 126, },
+  {  139, 141, 157, 139, 141, 157, },
+#else
   {  107, 139, 126, 255,   0,},
   {  107, 139, 126, 255,   0,},
   {  139, 141, 157, 255,   0,},
+#endif
 });
 
 const CtxSet ContextSetCfg::BTSplitFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_L0361_SPLIT_CTX
+  // |-------- 1st bin, 9 ctx for luma + 3 ctx for chroma------| |--2nd bin--| |3rd bin|
+  {  107, 139, 126, 107, 139, 126, 107, 139, 126, 107, 139, 126, 154, 154, 154, 154,},
+  {  107, 139, 126, 107, 139, 126, 107, 139, 126, 107, 139, 126, 154, 154, 154, 154,},
+  {  139, 141, 157, 139, 141, 157, 139, 141, 157, 139, 141, 157, 154, 154, 154, 154,},
+#else
   {  107, 139, 126, 154, 154, 154, 154, 154, 154, 154, 154, 154,},
   {  107, 139, 126, 154, 154, 154, 154, 154, 154, 154, 154, 154,},
   {  139, 141, 157, 154, 154, 154, 154, 154, 154, 154, 154, 154,},
+#endif
 });
 
 const CtxSet ContextSetCfg::SkipFlag = ContextSetCfg::addCtxSet

@@ -268,6 +268,8 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   imvNumCand        = other.imvNumCand;
 #if JVET_L0646_GBI
   GBiIdx            = other.GBiIdx;
+  for (int i = 0; i<2; i++)
+    refIdxBi[i] = other.refIdxBi[i];
 #endif
   return *this;
 }
@@ -297,6 +299,8 @@ void CodingUnit::initData()
   imvNumCand        = 0;
 #if JVET_L0646_GBI
   GBiIdx            = GBI_DEFAULT;
+  for (int i = 0; i < 2; i++)
+    refIdxBi[i] = -1;
 #endif
 }
 

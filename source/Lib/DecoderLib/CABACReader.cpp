@@ -757,6 +757,11 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
 
   if( skip )
   {
+#if JVET_L0054_MMVD
+    unsigned mmvdSkip = m_BinDecoder.decodeBin(Ctx::MmvdFlag(0));
+    cu.mmvdSkip = mmvdSkip;
+    DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, mmvdSkip ? 1 : 0);
+#endif
     cu.skip     = true;
     cu.rootCbf  = false;
     cu.predMode = MODE_INTER;
@@ -1155,6 +1160,13 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
   if( pu.mergeFlag )
   {
     affine_flag  ( *pu.cu );
+#if JVET_L0054_MMVD
+    if (pu.mmvdMergeFlag)
+    {
+      mmvd_merge_idx(pu);
+    }
+    else
+#endif
     merge_data   ( pu );
   }
   else
@@ -1236,6 +1248,12 @@ void CABACReader::affine_flag( CodingUnit& cu )
   {
     return;
   }
+#if JVET_L0054_MMVD
+  if (cu.firstPU->mergeFlag && (cu.firstPU->mmvdMergeFlag || cu.mmvdSkip))
+  {
+    return;
+  }
+#endif
 
   CHECK( !cu.cs->pcv->rectCUs && cu.lumaSize().width != cu.lumaSize().height, "CU width and height are not equal for QTBT off." );
 
@@ -1265,6 +1283,13 @@ void CABACReader::merge_flag( PredictionUnit& pu )
   pu.mergeFlag = ( m_BinDecoder.decodeBin( Ctx::MergeFlag() ) );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_flag() merge=%d pos=(%d,%d) size=%dx%d\n", pu.mergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
+#if JVET_L0054_MMVD
+  if (pu.mergeFlag)
+  {
+    pu.mmvdMergeFlag = (m_BinDecoder.decodeBin(Ctx::MmvdFlag(0)));
+    DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+  }
+#endif
 }
 
 
@@ -1274,7 +1299,13 @@ void CABACReader::merge_data( PredictionUnit& pu )
   {
     return;
   }
-
+#if JVET_L0054_MMVD
+  if (pu.cu->mmvdSkip)
+  {
+    mmvd_merge_idx(pu);
+  }
+  else
+#endif
   merge_idx( pu );
 }
 
@@ -1319,6 +1350,76 @@ void CABACReader::merge_idx( PredictionUnit& pu )
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() merge_idx=%d\n", pu.mergeIdx );
 }
 
+#if JVET_L0054_MMVD
+void CABACReader::mmvd_merge_idx(PredictionUnit& pu)
+{
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__MERGE_INDEX);
+  int var0, var1, var2;
+  int dir0 = 0;
+  int var = 0;
+  int mvpIdx = 0;
+
+  pu.mmvdMergeIdx = 0;
+
+  mvpIdx = (var + dir0)*(MMVD_MAX_REFINE_NUM*MMVD_BASE_MV_NUM);
+
+  int numCandminus1_base = MMVD_BASE_MV_NUM - 1;
+  var0 = 0;
+  if (numCandminus1_base > 0)
+  {
+    if (m_BinDecoder.decodeBin(Ctx::MmvdMergeIdx()))
+    {
+      var0++;
+      for (; var0 < numCandminus1_base; var0++)
+      {
+        if (!m_BinDecoder.decodeBinEP())
+        {
+          break;
+        }
+      }
+    }
+  }
+  DTRACE(g_trace_ctx, D_SYNTAX, "base_mvp_idx() base_mvp_idx=%d\n", var0);
+  int numCandminus1_step = MMVD_REFINE_STEP - 1;
+  var1 = 0;
+  if (numCandminus1_step > 0)
+  {
+    if (m_BinDecoder.decodeBin(Ctx::MmvdStepMvpIdx()))
+    {
+      var1++;
+      for (; var1 < numCandminus1_step; var1++)
+      {
+        if (!m_BinDecoder.decodeBinEP())
+        {
+          break;
+        }
+      }
+    }
+  }
+  DTRACE(g_trace_ctx, D_SYNTAX, "MmvdStepMvpIdx() MmvdStepMvpIdx=%d\n", var1);
+  var2 = 0;
+  if (m_BinDecoder.decodeBinEP())
+  {
+    var2 += 2;
+    if (m_BinDecoder.decodeBinEP())
+    {
+      var2 += 1;
+    }
+  }
+  else
+  {
+    var2 += 0;
+    if (m_BinDecoder.decodeBinEP())
+    {
+      var2 += 1;
+    }
+  }
+  DTRACE(g_trace_ctx, D_SYNTAX, "pos() pos=%d\n", var2);
+  mvpIdx += (var0 * MMVD_MAX_REFINE_NUM + var1 * 4 + var2);
+  pu.mmvdMergeIdx = mvpIdx;
+  DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_idx() mmvd_merge_idx=%d\n", pu.mmvdMergeIdx);
+}
+#endif
 
 void CABACReader::inter_pred_idc( PredictionUnit& pu )
 {
@@ -1329,7 +1430,11 @@ void CABACReader::inter_pred_idc( PredictionUnit& pu )
     pu.interDir = 1;
     return;
   }
+#if JVET_L0104_NO_4x4BI_INTER_CU
+  if( !(PU::isBipredRestriction(pu)) && ( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 ) )
+#else
   if( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 )
+#endif
   {
     unsigned ctxId = DeriveCtx::CtxInterDir(pu);
     if( m_BinDecoder.decodeBin( Ctx::InterDir(ctxId) ) )

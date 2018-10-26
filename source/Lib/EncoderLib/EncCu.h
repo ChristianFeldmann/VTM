@@ -95,6 +95,11 @@ private:
 
   CodingStructure    ***m_pTempCS;
   CodingStructure    ***m_pBestCS;
+#if JVET_L0266_HMVP
+  LutMotionCand      ***m_pTempMotLUTs;
+  LutMotionCand      ***m_pBestMotLUTs;
+  LutMotionCand      ***m_pSplitTempMotLUTs;
+#endif
   //  Access channel
   EncCfg*               m_pcEncCfg;
   IntraSearch*          m_pcIntraSearch;
@@ -107,9 +112,11 @@ private:
   RateCtrl*             m_pcRateCtrl;
   CodingStructure    ***m_pImvTempCS;
   EncModeCtrl          *m_modeCtrl;
-
+#if JVET_L0054_MMVD
+  PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
+#else
   PelStorage            m_acMergeBuffer[MRG_MAX_NUM_CANDS];
-
+#endif
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];
   unsigned int          m_subMergeBlkSize[10];
   unsigned int          m_subMergeBlkNum[10];
@@ -167,15 +174,31 @@ public:
 
 protected:
 
-  void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm );
+  void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm
+#if JVET_L0266_HMVP
+    , LutMotionCand *&tempMotCandLUTs
+    , LutMotionCand *&bestMotCandLUTs
+#endif
+  );
 #if ENABLE_SPLIT_PARALLELISM
   void xCompressCUParallel    ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm );
   void copyState              ( EncCu* other, Partitioner& pm, const UnitArea& currArea, const bool isDist );
 #endif
 
-  void xCheckBestMode         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestmode );
+#if JVET_L0266_HMVP
+  bool
+#else
+  void
+#endif
+    xCheckBestMode         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestmode );
 
-  void xCheckModeSplit        ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+  void xCheckModeSplit        ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode
+#if JVET_L0266_HMVP
+    , LutMotionCand* &tempMotCandLUTs
+    , LutMotionCand* &bestMotCandLUTs
+    , UnitArea  parArea
+#endif
+  );
 
   void xCheckRDCostIntra      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
   void xCheckIntraPCM         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
@@ -206,6 +229,10 @@ protected:
 #if JVET_L0646_GBI
   bool xIsGBiSkip(const CodingUnit& cu)
   {
+    if (cu.slice->getSliceType() != B_SLICE)
+    {
+      return true;
+    }
     return((m_pcEncCfg->getBaseQP() > 32) && ((cu.slice->getTLayer() >= 4)
        || ((cu.refIdxBi[0] >= 0 && cu.refIdxBi[1] >= 0)
        && (abs(cu.slice->getPOC() - cu.slice->getRefPOC(REF_PIC_LIST_0, cu.refIdxBi[0])) == 1

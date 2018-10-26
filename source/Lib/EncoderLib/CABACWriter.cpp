@@ -666,6 +666,13 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
   m_BinEncoder.encodeBin( ( cu.skip ), Ctx::SkipFlag( ctxId ) );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0 );
+#if JVET_L0054_MMVD
+  if (cu.skip)
+  {
+    m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
+    DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
+  }
+#endif
 }
 
 
@@ -1114,6 +1121,13 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   if( pu.mergeFlag )
   {
     affine_flag  ( *pu.cu );
+#if JVET_L0054_MMVD
+    if (pu.mmvdMergeFlag)
+    {
+      mmvd_merge_idx(pu);
+    }
+    else
+#endif
     merge_idx    ( pu );
   }
   else
@@ -1180,7 +1194,12 @@ void CABACWriter::affine_flag( const CodingUnit& cu )
   }
 
   CHECK( !cu.cs->pcv->rectCUs && cu.lumaSize().width != cu.lumaSize().height, "CU width and height are not equal for QTBT off." );
-
+#if JVET_L0054_MMVD
+  if (cu.firstPU->mergeFlag && (cu.firstPU->mmvdMergeFlag || cu.mmvdSkip))
+  {
+    return;
+  }
+#endif
   unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
   m_BinEncoder.encodeBin( cu.affine, Ctx::AffineFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_COMMON, " (%d) affine_flag() affine=%d\n", DTRACE_GET_COUNTER(g_trace_ctx, D_COMMON), cu.affine ? 1 : 0 );
@@ -1202,6 +1221,13 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
   m_BinEncoder.encodeBin( pu.mergeFlag, Ctx::MergeFlag() );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_flag() merge=%d pos=(%d,%d) size=%dx%d\n", pu.mergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
+#if JVET_L0054_MMVD
+  if (pu.mergeFlag)
+  {
+    m_BinEncoder.encodeBin(pu.mmvdMergeFlag, Ctx::MmvdFlag(0));
+    DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+  }
+#endif
 }
 
 void CABACWriter::imv_mode( const CodingUnit& cu )
@@ -1277,14 +1303,76 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
   }
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() merge_idx=%d\n", pu.mergeIdx );
 }
+#if JVET_L0054_MMVD
+void CABACWriter::mmvd_merge_idx(const PredictionUnit& pu)
+{
+  int var0, var1, var2;
+  int mvpIdx = pu.mmvdMergeIdx;
+  var0 = mvpIdx / MMVD_MAX_REFINE_NUM;
+  var1 = (mvpIdx - (var0 * MMVD_MAX_REFINE_NUM)) / 4;
+  var2 = mvpIdx - (var0 * MMVD_MAX_REFINE_NUM) - var1 * 4;
 
+  int numCandminus1_base = MMVD_BASE_MV_NUM - 1;
+  if (numCandminus1_base > 0)
+  {
+    if (var0 == 0)
+    {
+      m_BinEncoder.encodeBin(0, Ctx::MmvdMergeIdx());
+    }
+    else
+    {
+      m_BinEncoder.encodeBin(1, Ctx::MmvdMergeIdx());
+      for (unsigned idx = 1; idx < numCandminus1_base; idx++)
+      {
+        m_BinEncoder.encodeBinEP(var0 == idx ? 0 : 1);
+        if (var0 == idx)
+        {
+          break;
+        }
+      }
+    }
+  }
+  DTRACE(g_trace_ctx, D_SYNTAX, "base_mvp_idx() base_mvp_idx=%d\n", var0);
+
+  int numCandminus1_step = MMVD_REFINE_STEP - 1;
+  if (numCandminus1_step > 0)
+  {
+    if (var1 == 0)
+    {
+      m_BinEncoder.encodeBin(0, Ctx::MmvdStepMvpIdx());
+    }
+    else
+    {
+      m_BinEncoder.encodeBin(1, Ctx::MmvdStepMvpIdx());
+      for (unsigned idx = 1; idx < numCandminus1_step; idx++)
+      {
+        m_BinEncoder.encodeBinEP(var1 == idx ? 0 : 1);
+        if (var1 == idx)
+        {
+          break;
+        }
+      }
+    }
+  }
+  DTRACE(g_trace_ctx, D_SYNTAX, "MmvdStepMvpIdx() MmvdStepMvpIdx=%d\n", var1);
+
+  m_BinEncoder.encodeBinsEP(var2, 2);
+
+  DTRACE(g_trace_ctx, D_SYNTAX, "pos() pos=%d\n", var2);
+  DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_idx() mmvd_merge_idx=%d\n", pu.mmvdMergeIdx);
+}
+#endif
 void CABACWriter::inter_pred_idc( const PredictionUnit& pu )
 {
   if( !pu.cs->slice->isInterB() )
   {
     return;
   }
+#if JVET_L0104_NO_4x4BI_INTER_CU
+  if( !(PU::isBipredRestriction(pu)) && ( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 ) )
+#else
   if( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 )
+#endif
   {
     unsigned ctxId = DeriveCtx::CtxInterDir(pu);
     if( pu.interDir == 3 )

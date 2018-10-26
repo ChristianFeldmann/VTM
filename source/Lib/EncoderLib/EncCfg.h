@@ -174,6 +174,9 @@ protected:
   bool      m_useAMP;
   bool      m_QTBT;
   unsigned  m_CTUSize;
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  bool      m_useSplitConsOverride;
+#endif
   unsigned  m_uiMinQT[3]; //0: I slice; 1: P/B slice, 2: I slice chroma
   unsigned  m_uiMaxBTDepth;
   unsigned  m_uiMaxBTDepthI;
@@ -210,6 +213,12 @@ protected:
 #if JVET_L0646_GBI
   bool      m_GBi;
   bool      m_GBiFast;
+#endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  bool      m_LadfEnabled;
+  int       m_LadfNumIntervals;
+  int       m_LadfQpOffset[MAX_LADF_INTERVALS];
+  int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
 
@@ -601,6 +610,10 @@ public:
   unsigned  getMaxBTDepthIChroma            ()         const { return m_uiMaxBTDepthIChroma; }
   bool      getQTBT                         ()         const { return m_QTBT; }
   int       getCTUSize                      ()         const { return m_CTUSize; }
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  void      setUseSplitConsOverride         (bool  n)        { m_useSplitConsOverride = n; }
+  bool      getUseSplitConsOverride         ()         const { return m_useSplitConsOverride; }
+#endif
   void      setDualITree                    ( bool b )       { m_dualITree = b; }
   bool      getDualITree                    ()         const { return m_dualITree; }
 
@@ -657,6 +670,18 @@ public:
   bool      getUseGBi                       ()         const { return m_GBi; }
   void      setUseGBiFast                   ( uint32_t b )   { m_GBiFast = b; }
   bool      getUseGBiFast                   ()         const { return m_GBiFast; }
+#endif
+
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  void      setUseLadf                      ( bool b )       { m_LadfEnabled = b; }
+  bool      getUseLadf                      ()         const { return m_LadfEnabled; }
+  void      setLadfNumIntervals             ( int i )        { m_LadfNumIntervals = i; }
+  int       getLadfNumIntervals             ()         const { return m_LadfNumIntervals; }
+  void      setLadfQpOffset                 ( int value, int idx ){ m_LadfQpOffset[ idx ] = value; }
+  int       getLadfQpOffset                 ( int idx ) const { return m_LadfQpOffset[ idx ]; }
+  void      setLadfIntervalLowerBound       ( int value, int idx ){ m_LadfIntervalLowerBound[ idx ] = value; }
+  int       getLadfIntervalLowerBound       ( int idx ) const { return m_LadfIntervalLowerBound[ idx ]; }
+
 #endif
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 

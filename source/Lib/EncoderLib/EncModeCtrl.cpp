@@ -473,6 +473,16 @@ bool CacheBlkInfoCtrl::isSkip( const UnitArea& area )
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->isSkip;
 }
 
+#if JVET_L0054_MMVD
+bool CacheBlkInfoCtrl::isMMVDSkip(const UnitArea& area)
+{
+  unsigned idx1, idx2, idx3, idx4;
+  getAreaIdx(area.Y(), *m_slice_chblk->getPPS()->pcv, idx1, idx2, idx3, idx4);
+
+  return m_codedCUInfo[idx1][idx2][idx3][idx4]->isMMVDSkip;
+}
+#endif
+
 void CacheBlkInfoCtrl::setMv( const UnitArea& area, const RefPicList refPicList, const int iRefIdx, const Mv& rMv )
 {
   if( iRefIdx >= MAX_STORED_CU_INFO_REFS ) return;
@@ -1398,9 +1408,15 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           {
             unsigned maxBTD        = cs.pcv->getMaxBtDepth( slice, partitioner.chType );
             const CodingUnit *cuBR = bestCS->cus.back();
+#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
+            unsigned height        = partitioner.currArea().lumaSize().height;
+#endif
 
             if( bestCU && ( ( bestCU->btDepth == 0 &&                               maxBTD >= ( slice.isIntra() ? 3 : 2 ) )
                          || ( bestCU->btDepth == 1 && cuBR && cuBR->btDepth == 1 && maxBTD >= ( slice.isIntra() ? 4 : 3 ) ) )
+#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
+                       && ( width <= MAX_TU_SIZE_FOR_PROFILE && height <= MAX_TU_SIZE_FOR_PROFILE )
+#endif
                        && cuECtx.get<bool>( DID_HORZ_SPLIT ) && cuECtx.get<bool>( DID_VERT_SPLIT ) )
             {
               return false;
@@ -1503,6 +1519,9 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           relatedCU.isInter   = true;
 #if HM_CODED_CU_INFO
           relatedCU.isSkip   |= bestCU->skip;
+#if JVET_L0054_MMVD
+          relatedCU.isMMVDSkip |= bestCU->mmvdSkip;
+#endif
 #else
           relatedCU.isSkip    = bestCU->skip;
 #endif

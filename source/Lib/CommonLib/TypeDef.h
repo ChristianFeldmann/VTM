@@ -50,6 +50,13 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0285_8BIT_TRANSFORM_CORE                    1 // Primary transform using 8-bit cores
+
+#define JVET_L0081_VPDU_SPLIT_CONSTRAINTS                 1 // VPDU constraints for binary and ternary partitions
+
+#define JVET_L0104_NO_4x4BI_INTER_CU                      1 // Prohibit 4x4 bi-prediction for inter CU
+#define JVET_L0266_HMVP                                   1 //History-based MVP
+
 #define JVET_L0553_FIX_INITQP                             1
 
 #define JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN               1 // Subsampled Laplacian calculation
@@ -57,6 +64,7 @@
 #define JVET_L0191_LM_WO_LMS                              1 // NO LMS regression. min/max are used instead
 
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
+#define JVET_L0054_MMVD                                   1
 
 #define JVET_L0392_ALF_INIT_STATE                         1
 
@@ -127,6 +135,7 @@
 #define NUM_SPLIT_THREADS_IF_MSVC                         4
 
 #endif
+#define JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT   1
 
 
 // ====================================================================================================================
@@ -287,6 +296,7 @@
 
 #define QP_SWITCHING_FOR_PARALLEL                         1 ///< Replace floating point QP with a source-file frame number. After switching POC, increase base QP instead of frame level QP.
 
+#define LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET         1 /// JVET-L0414 (CE11.2.2) with explicit signalling of num interval, threshold and qpOffset
 // ====================================================================================================================
 // Derived macros
 // ====================================================================================================================

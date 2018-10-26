@@ -313,7 +313,28 @@ const CtxSet ContextSetCfg::MergeIdx = ContextSetCfg::addCtxSet
   {  CNU, CNU, CNU, CNU, CNU,},
 #endif
 });
+#if JVET_L0054_MMVD
+const CtxSet ContextSetCfg::MmvdFlag = ContextSetCfg::addCtxSet
+({
+  { 151, },
+  { CNU, },
+  { CNU, },
+  });
 
+const CtxSet ContextSetCfg::MmvdMergeIdx = ContextSetCfg::addCtxSet
+({
+  { CNU, },
+  { CNU, },
+  { CNU, },
+  });
+
+const CtxSet ContextSetCfg::MmvdStepMvpIdx = ContextSetCfg::addCtxSet
+({
+  { 184, },
+  { CNU, },
+  { CNU, },
+  });
+#endif
 const CtxSet ContextSetCfg::PartSize = ContextSetCfg::addCtxSet
 ({
   {  154, 139, 154, 154,},

@@ -699,6 +699,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<bool> cfg_timeCodeSeiHoursFlag            (0,  1, 0, MAX_TIMECODE_SEI_SETS);
   SMultiValueInput<int>  cfg_timeCodeSeiTimeOffsetLength     (0, 31, 0, MAX_TIMECODE_SEI_SETS);
   SMultiValueInput<int>  cfg_timeCodeSeiTimeOffsetValue      (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, MAX_TIMECODE_SEI_SETS);
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  const int defaultLadfQpOffset[3] = { 1, 0, 1 };
+  const int defaultLadfIntervalLowerBound[2] = { 350, 833 };
+  SMultiValueInput<int>  cfg_LadfQpOffset                    ( -MAX_QP, MAX_QP, 2, MAX_LADF_INTERVALS, defaultLadfQpOffset, 3 );
+  SMultiValueInput<int>  cfg_LadfIntervalLowerBound          ( 0, std::numeric_limits<int>::max(), 1, MAX_LADF_INTERVALS - 1, defaultLadfIntervalLowerBound, 2 );
+#endif
   int warnUnknowParameter = 0;
 
 #if ENABLE_TRACING
@@ -796,6 +802,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("QTBT",                                            m_QTBT,                                           false, "Enable QTBT (0:off, 1:on)  [default: off]")
   ("MTT",                                             m_MTT,                                               0u, "Multi type tree type (0: off, 1:QTBT + triple split) [default: 0]")
   ("CTUSize",                                         m_uiCTUSize,                                       128u, "CTUSize (specifies the CTU size if QTBT is on) [default: 128]")
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  ("EnablePartitionConstraintsOverride",              m_SplitConsOverrideEnabledFlag,                    true, "Enable partition constraints override")
+#endif
   ("MinQTISlice",                                     m_uiMinQT[0],                                        8u, "MinQTISlice")
   ("MinQTLumaISlice",                                 m_uiMinQT[0],                                        8u, "MinQTLumaISlice")
   ("MinQTChromaISlice",                               m_uiMinQT[2],                                        4u, "MinQTChromaISlice")
@@ -850,6 +859,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if JVET_L0646_GBI
   ("GBi",                                             m_GBi,                                            false, "Enable Generalized Bi-prediction(GBi)")
   ("GBiFast",                                         m_GBiFast,                                        false, "Fast methods for Generalized Bi-prediction(GBi)\n")
+#endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  ("LADF",                                            m_LadfEnabed,                                     false, "Luma adaptive deblocking filter QP Offset(L0414)")
+  ("LadfNumIntervals",                                m_LadfNumIntervals,                                   3, "LADF number of intervals (2-5, inclusive)")
+  ("LadfQpOffset",                                    cfg_LadfQpOffset,                      cfg_LadfQpOffset, "LADF QP offset")
+  ("LadfIntervalLowerBound",                          cfg_LadfIntervalLowerBound,  cfg_LadfIntervalLowerBound, "LADF lower bound for 2nd lowest interval")
 #endif
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
 
@@ -1686,6 +1701,19 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
 #endif
 
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  if ( m_LadfEnabed )
+  {
+    CHECK( m_LadfNumIntervals != cfg_LadfQpOffset.values.size(), "size of LadfQpOffset must be equal to LadfNumIntervals");
+    CHECK( m_LadfNumIntervals - 1 != cfg_LadfIntervalLowerBound.values.size(), "size of LadfIntervalLowerBound must be equal to LadfNumIntervals - 1");
+    m_LadfQpOffset = cfg_LadfQpOffset.values;
+    for (int k = 1; k < m_LadfNumIntervals; k++)
+    {
+      m_LadfIntervalLowerBound[k] = cfg_LadfIntervalLowerBound.values[k - 1];
+    }
+  }
+#endif
+
   // reading external dQP description from file
   if ( !m_dQPFileName.empty() )
   {
@@ -1835,7 +1863,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCodingDepth;
     m_uiMaxCUWidth = m_uiMaxCUHeight = m_uiCTUSize;
     m_uiMaxCUDepth = m_uiMaxCodingDepth;
+#if !JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
     m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCUDepth - 1;
+#endif
   }
 
   // check validity of input parameters
@@ -1993,6 +2023,9 @@ bool EncAppCfg::xCheckParameter()
 #endif
 
 
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  xConfirmPara( m_useAMaxBT && !m_SplitConsOverrideEnabledFlag, "AMaxBt can only be used with PartitionConstriantsOverride enabled" );
+#endif
   xConfirmPara( m_useAMaxBT && !m_QTBT, "AMaxBT can only be used with QTBT!" );
 
 
@@ -3131,6 +3164,9 @@ void EncAppCfg::xPrintParameter()
 #if JVET_L0646_GBI
     msg( VERBOSE, "GBi:%d ", m_GBi );
     msg( VERBOSE, "GBiFast:%d ", m_GBiFast );
+#endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+    msg( VERBOSE, "LADF:%d ", m_LadfEnabed );
 #endif
   }
   // ADD_NEW_TOOL (add some output indicating the usage of tools)

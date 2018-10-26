@@ -213,6 +213,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setRDpenalty                                         ( m_rdPenalty );
   m_cEncLib.setQTBT                                              ( m_QTBT );
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
+#endif
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxBTDepth                                        ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   m_cEncLib.setDualITree                                         ( m_dualTree );
@@ -246,6 +249,18 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
 #endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  m_cEncLib.setUseLadf                                           ( m_LadfEnabed );
+  if ( m_LadfEnabed )
+  {
+    m_cEncLib.setLadfNumIntervals                                ( m_LadfNumIntervals);
+    for ( int k = 0; k < m_LadfNumIntervals; k++ )
+    {
+      m_cEncLib.setLadfQpOffset( m_LadfQpOffset[k], k );
+      m_cEncLib.setLadfIntervalLowerBound(m_LadfIntervalLowerBound[k], k);
+    }
+  }
+#endif  
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
 
   m_cEncLib.setMaxCUWidth                                        ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );

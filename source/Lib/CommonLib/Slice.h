@@ -49,7 +49,10 @@
 
 //! \ingroup CommonLib
 //! \{
-
+#if JVET_L0266_HMVP
+#include "CommonLib/MotionInfo.h"
+struct MotionInfo;
+#endif
 
 
 struct Picture;
@@ -820,6 +823,12 @@ private:
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
 #endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  bool              m_LadfEnabled;
+  int               m_LadfNumIntervals;
+  int               m_LadfQpOffset[MAX_LADF_INTERVALS];
+  int               m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
+#endif
 
 public:
   const static int  NumReservedFlags = 32 - 27; /* current number of tool enabling flags */
@@ -828,9 +837,15 @@ private:
   //=====  additional parameters  =====
   // qtbt
   unsigned    m_CTUSize;
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  unsigned    m_partitionOverrideEnalbed;       // enable partition constraints override function
+#endif
   unsigned    m_minQT[3];   // 0: I slice luma; 1: P/B slice; 2: I slice chroma
   unsigned    m_maxBTDepth[3];
   unsigned    m_maxBTSize[3];
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  unsigned    m_maxTTSize[3];
+#endif
   unsigned    m_dualITree;
   // sub-pu merging
   unsigned    m_subPuLog2Size;
@@ -890,10 +905,24 @@ public:
   void      setUseGBi             ( bool b )                                        { m_GBi = b; }
   bool      getUseGBi             ()                                      const     { return m_GBi; }
 #endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  void      setLadfEnabled        ( bool b )                                        { m_LadfEnabled = b; }
+  bool      getLadfEnabled        ()                                      const     { return m_LadfEnabled; }
+  void      setLadfNumIntervals   ( int i )                                         { m_LadfNumIntervals = i; }
+  int       getLadfNumIntervals   ()                                      const     { return m_LadfNumIntervals; }
+  void      setLadfQpOffset       ( int value, int idx )                            { m_LadfQpOffset[ idx ] = value; }
+  int       getLadfQpOffset       ( int idx )                             const     { return m_LadfQpOffset[ idx ]; }
+  void      setLadfIntervalLowerBound( int value, int idx )                         { m_LadfIntervalLowerBound[ idx ] = value; }
+  int       getLadfIntervalLowerBound( int idx )                          const     { return m_LadfIntervalLowerBound[ idx ]; }
+#endif
   //=====  additional parameters  =====
   // qtbt
   void      setCTUSize            ( unsigned    ctuSize )                           { m_CTUSize = ctuSize; }
   unsigned  getCTUSize            ()                                      const     { return  m_CTUSize;   }
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  void      setSplitConsOverrideEnabledFlag(bool b)                                         { m_partitionOverrideEnalbed = b; }
+  bool      getSplitConsOverrideEnabledFlag()                                     const     { return m_partitionOverrideEnalbed; }
+#endif
   void      setMinQTSizes         ( unsigned*   minQT )                             { m_minQT[0] = minQT[0]; m_minQT[1] = minQT[1]; m_minQT[2] = minQT[2]; }
   unsigned  getMinQTSize          ( SliceType   slicetype,
                                     ChannelType chType = CHANNEL_TYPE_LUMA )
@@ -910,6 +939,14 @@ public:
   unsigned  getMaxBTSize          ()                                      const     { return m_maxBTSize[1]; }
   unsigned  getMaxBTSizeI         ()                                      const     { return m_maxBTSize[0]; }
   unsigned  getMaxBTSizeIChroma   ()                                      const     { return m_maxBTSize[2]; }
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  void      setMaxTTSize          (unsigned    maxTTSize,
+                                   unsigned    maxTTSizeI,
+                                   unsigned    maxTTSizeC)                          { m_maxTTSize[1] = maxTTSize; m_maxTTSize[0] = maxTTSizeI; m_maxTTSize[2] = maxTTSizeC;  }
+  unsigned  getMaxTTSize()                                                const     { return m_maxTTSize[1]; }
+  unsigned  getMaxTTSizeI()                                               const     { return m_maxTTSize[0]; }
+  unsigned  getMaxTTSizeIChroma()                                         const     { return m_maxTTSize[2]; }
+#endif
 
   void      setUseDualITree       ( bool b )                                        { m_dualITree = b; }
   bool      getUseDualITree       ()                                      const     { return m_dualITree; }
@@ -1557,9 +1594,23 @@ private:
 
   clock_t                    m_iProcessingStartTime;
   double                     m_dProcessingTime;
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  bool                       m_splitConsOverrideFlag;
+  uint32_t                   m_uiMinQTSize;
+  uint32_t                   m_uiMaxBTDepth;
+  uint32_t                   m_uiMaxTTSize;
+
+  uint32_t                   m_uiMinQTSizeIChroma;
+  uint32_t                   m_uiMaxBTDepthIChroma;
+  uint32_t                   m_uiMaxBTSizeIChroma;
+  uint32_t                   m_uiMaxTTSizeIChroma;
+#endif
   uint32_t                       m_uiMaxBTSize;
 
   AlfSliceParam              m_alfSliceParam;
+#if  JVET_L0266_HMVP
+  LutMotionCand*             m_MotionCandLut;
+#endif
 
 public:
                               Slice();
@@ -1667,6 +1718,25 @@ public:
   void                        setLambdas( const double lambdas[MAX_NUM_COMPONENT] )  { for (int component = 0; component < MAX_NUM_COMPONENT; component++) m_lambdas[component] = lambdas[component]; }
   const double*               getLambdas() const                                     { return m_lambdas;                                             }
 
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  void                        setSplitConsOverrideFlag(bool b)                       { m_splitConsOverrideFlag = b; }
+  bool                        getSplitConsOverrideFlag() const                       { return m_splitConsOverrideFlag; }
+  void                        setMinQTSize(int i)                                    { m_uiMinQTSize = i; }
+  uint32_t                    getMinQTSize() const                                   { return m_uiMinQTSize; }
+  void                        setMaxBTDepth(int i)                                   { m_uiMaxBTDepth = i; }
+  uint32_t                    getMaxBTDepth() const                                  { return m_uiMaxBTDepth; }
+  void                        setMaxTTSize(int i)                                    { m_uiMaxTTSize = i; }
+  uint32_t                    getMaxTTSize() const                                   { return m_uiMaxTTSize; }
+
+  void                        setMinQTSizeIChroma(int i)                             { m_uiMinQTSizeIChroma = i; }
+  uint32_t                    getMinQTSizeIChroma() const                            { return m_uiMinQTSizeIChroma; }
+  void                        setMaxBTDepthIChroma(int i)                            { m_uiMaxBTDepthIChroma = i; }
+  uint32_t                    getMaxBTDepthIChroma() const                           { return m_uiMaxBTDepthIChroma; }
+  void                        setMaxBTSizeIChroma(int i)                             { m_uiMaxBTSizeIChroma = i; }
+  uint32_t                    getMaxBTSizeIChroma() const                            { return m_uiMaxBTSizeIChroma; }
+  void                        setMaxTTSizeIChroma(int i)                             { m_uiMaxTTSizeIChroma = i; }
+  uint32_t                    getMaxTTSizeIChroma() const                            { return m_uiMaxTTSizeIChroma; }
+#endif
   void                        setMaxBTSize(int i)                                    { m_uiMaxBTSize = i; }
   uint32_t                        getMaxBTSize() const                                   { return m_uiMaxBTSize; }
 
@@ -1817,6 +1887,20 @@ public:
 
   void                        setAlfSliceParam( AlfSliceParam& alfSliceParam ) { m_alfSliceParam = alfSliceParam; }
   AlfSliceParam&              getAlfSliceParam() { return m_alfSliceParam; }
+#if  JVET_L0266_HMVP
+  void                        initMotionLUTs       ();
+  void                        destroyMotionLUTs    ();
+  void                        resetMotionLUTs();
+  int                         getAvailableLUTMrgNum() const  { return m_MotionCandLut->currCnt; }
+  MotionInfo                  getMotionInfoFromLUTs(int MotCandIdx) const;
+  LutMotionCand*              getMotionLUTs() { return m_MotionCandLut; }
+
+
+  void                        addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi);
+
+  void                        updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu);
+  void                        copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst);
+#endif
 
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
@@ -2064,7 +2148,11 @@ public:
     , minBtSize           { MIN_BT_SIZE, MIN_BT_SIZE_INTER, MIN_BT_SIZE_C }
     , maxBtSize           { sps.getSpsNext().getMaxBTSizeI(), sps.getSpsNext().getMaxBTSize(), sps.getSpsNext().getMaxBTSizeIChroma() }
     , minTtSize           { MIN_TT_SIZE, MIN_TT_SIZE_INTER, MIN_TT_SIZE_C }
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+	  , maxTtSize           { sps.getSpsNext().getMaxTTSizeI(), sps.getSpsNext().getMaxTTSize(), sps.getSpsNext().getMaxTTSizeIChroma() }
+#else
     , maxTtSize           { MAX_TT_SIZE, MAX_TT_SIZE_INTER, MAX_TT_SIZE_C }
+#endif
     , minQtSize           { sps.getSpsNext().getMinQTSize( I_SLICE, CHANNEL_TYPE_LUMA ), sps.getSpsNext().getMinQTSize( B_SLICE, CHANNEL_TYPE_LUMA ), sps.getSpsNext().getMinQTSize( I_SLICE, CHANNEL_TYPE_CHROMA ) }
   {}
 

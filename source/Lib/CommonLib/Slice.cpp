@@ -41,6 +41,9 @@
 #include "Picture.h"
 #include "dtrace_next.h"
 
+#if  JVET_L0266_HMVP
+#include "UnitTools.h"
+#endif
 
 //! \ingroup CommonLib
 //! \{
@@ -124,7 +127,20 @@ Slice::Slice()
 , m_encCABACTableIdx              (I_SLICE)
 , m_iProcessingStartTime          ( 0 )
 , m_dProcessingTime               ( 0 )
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+, m_splitConsOverrideFlag         ( false )
+, m_uiMinQTSize                   ( 0 )
+, m_uiMaxBTDepth                  ( 0 )
+, m_uiMaxTTSize                   ( 0 )
+, m_uiMinQTSizeIChroma            ( 0 )
+, m_uiMaxBTDepthIChroma           ( 0 )
+, m_uiMaxBTSizeIChroma            ( 0 )
+, m_uiMaxTTSizeIChroma            ( 0 )
+#endif
 , m_uiMaxBTSize                   ( 0 )
+#if  JVET_L0266_HMVP
+, m_MotionCandLut                (NULL)
+#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -161,11 +177,16 @@ Slice::Slice()
     m_saoEnabledFlag[ch] = false;
   }
 
+#if  JVET_L0266_HMVP
+  initMotionLUTs();
+#endif
 }
 
 Slice::~Slice()
 {
-
+#if  JVET_L0266_HMVP
+  destroyMotionLUTs();
+#endif
 }
 
 
@@ -197,6 +218,9 @@ void Slice::initSlice()
   m_enableTMVPFlag       = true;
   m_subPuMvpSubBlkSizeSliceEnable = false;
   m_subPuMvpSubBlkLog2Size        = 2;
+#if  JVET_L0266_HMVP
+  resetMotionLUTs();
+#endif
 }
 
 void Slice::setDefaultClpRng( const SPS& sps )
@@ -815,6 +839,16 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_subPuMvpSubBlkLog2Size        = pSrc->m_subPuMvpSubBlkLog2Size;
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  m_splitConsOverrideFlag         = pSrc->m_splitConsOverrideFlag;
+  m_uiMinQTSize                   = pSrc->m_uiMinQTSize;
+  m_uiMaxBTDepth                  = pSrc->m_uiMaxBTDepth;
+  m_uiMaxTTSize                   = pSrc->m_uiMaxTTSize;
+  m_uiMinQTSizeIChroma            = pSrc->m_uiMinQTSizeIChroma;
+  m_uiMaxBTDepthIChroma           = pSrc->m_uiMaxBTDepthIChroma;
+  m_uiMaxBTSizeIChroma            = pSrc->m_uiMaxBTSizeIChroma;
+  m_uiMaxTTSizeIChroma            = pSrc->m_uiMaxTTSizeIChroma;
+#endif
   m_uiMaxBTSize                   = pSrc->m_uiMaxBTSize;
 }
 
@@ -1550,7 +1584,75 @@ void Slice::stopProcessingTimer()
   m_dProcessingTime += (double)(clock()-m_iProcessingStartTime) / CLOCKS_PER_SEC;
   m_iProcessingStartTime = 0;
 }
+#if  JVET_L0266_HMVP
+void Slice::initMotionLUTs()
+{
+  m_MotionCandLut = new LutMotionCand;
+  m_MotionCandLut->currCnt = 0;
+  m_MotionCandLut->motionCand = nullptr;
+  m_MotionCandLut->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+}
+void Slice::destroyMotionLUTs()
+{
+  delete[] m_MotionCandLut->motionCand;
+  m_MotionCandLut->motionCand = nullptr;
+  delete[] m_MotionCandLut;
+  m_MotionCandLut = NULL;
+}
+void Slice::resetMotionLUTs()
+{
+  m_MotionCandLut->currCnt = 0;
+}
 
+MotionInfo Slice::getMotionInfoFromLUTs(int MotCandIdx) const
+{
+  return m_MotionCandLut->motionCand[MotCandIdx];
+}
+
+
+
+void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi)
+{
+  int currCnt = lutMC->currCnt ;
+
+  bool pruned = false;
+  int  sameCandIdx = -1;
+  for (int idx = 0; idx < currCnt; idx++)
+  {
+    if (lutMC->motionCand[idx] == newMi)
+    {
+      sameCandIdx = idx;
+      pruned = true;
+      break;
+    }
+  }
+  if (pruned || lutMC->currCnt == MAX_NUM_HMVP_CANDS)
+  {
+    int startIdx = pruned ? sameCandIdx : 0;
+    memmove(&lutMC->motionCand[startIdx], &lutMC->motionCand[startIdx+1], sizeof(MotionInfo)*(currCnt - sameCandIdx - 1));
+    memcpy(&lutMC->motionCand[lutMC->currCnt-1], &newMi, sizeof(MotionInfo));
+  }
+  else
+  {
+    memcpy(&lutMC->motionCand[lutMC->currCnt++], &newMi, sizeof(MotionInfo));
+  }
+}
+
+void Slice::updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu)
+{
+  PredictionUnit *selectedPU = cu.firstPU;
+  if (cu.affine) { return; }
+
+  MotionInfo newMi = selectedPU->getMotionInfo(); 
+  addMotionInfoToLUTs(lutMC, newMi);
+}
+
+void Slice::copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst)
+{
+   memcpy(Dst->motionCand, Src->motionCand, sizeof(MotionInfo)*(std::min(Src->currCnt, MAX_NUM_HMVP_CANDS)));
+   Dst->currCnt = Src->currCnt;
+}
+#endif
 
 unsigned Slice::getMinPictureDistance() const
 {
@@ -1646,12 +1748,25 @@ SPSNext::SPSNext( SPS& sps )
 #if ENABLE_WPP_PARALLELISM
   , m_NextDQP                   ( false )
 #endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  , m_LadfEnabled               ( false )
+  , m_LadfNumIntervals          ( 0 )
+  , m_LadfQpOffset              { 0 }
+  , m_LadfIntervalLowerBound    { 0 }
+#endif
 
   // default values for additional parameters
   , m_CTUSize                   ( 0 )
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  , m_minQT                     { 0, 0, 0 }
+#else
   , m_minQT                     { 0, 0 }
+#endif
   , m_maxBTDepth                { MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
   , m_maxBTSize                 { MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  , m_maxTTSize                 { MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
+#endif
   , m_subPuLog2Size             ( 0 )
   , m_subPuMrgMode              ( 0 )
   , m_ImvMode                   ( IMV_OFF )
@@ -2448,6 +2563,11 @@ uint32_t PreCalcValues::getValIdx( const Slice &slice, const ChannelType chType 
 
 uint32_t PreCalcValues::getMaxBtDepth( const Slice &slice, const ChannelType chType ) const
 {
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  if ( slice.getSplitConsOverrideFlag() )
+    return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMaxBTDepth() : slice.getMaxBTDepthIChroma();
+  else
+#endif
   return maxBtDepth[getValIdx( slice, chType )];
 }
 
@@ -2458,7 +2578,14 @@ uint32_t PreCalcValues::getMinBtSize( const Slice &slice, const ChannelType chTy
 
 uint32_t PreCalcValues::getMaxBtSize( const Slice &slice, const ChannelType chType ) const
 {
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  if (slice.getSplitConsOverrideFlag())
+    return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMaxBTSize() : slice.getMaxBTSizeIChroma();
+  else
+    return maxBtSize[getValIdx(slice, chType)];
+#else
   return ( !slice.isIRAP() || isLuma( chType ) || ISingleTree ) ? slice.getMaxBTSize() : MAX_BT_SIZE_C;
+#endif
 }
 
 uint32_t PreCalcValues::getMinTtSize( const Slice &slice, const ChannelType chType ) const
@@ -2468,10 +2595,20 @@ uint32_t PreCalcValues::getMinTtSize( const Slice &slice, const ChannelType chTy
 
 uint32_t PreCalcValues::getMaxTtSize( const Slice &slice, const ChannelType chType ) const
 {
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  if ( slice.getSplitConsOverrideFlag() )
+    return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMaxTTSize() : slice.getMaxTTSizeIChroma();
+  else
+#endif
   return maxTtSize[getValIdx( slice, chType )];
 }
 uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chType ) const
 {
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  if ( slice.getSplitConsOverrideFlag() )
+    return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMinQTSize() : slice.getMinQTSizeIChroma();
+  else
+#endif
   return minQtSize[getValIdx( slice, chType )];
 }
 

@@ -365,6 +365,9 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   CHECK( candIdx >= numValidMergeCand, "Merge candidate does not exist" );
 
   pu.mergeFlag               = true;
+#if JVET_L0054_MMVD
+  pu.mmvdMergeFlag = false;
+#endif
   pu.interDir                = interDirNeighbours[candIdx];
   pu.mergeIdx                = candIdx;
   pu.mergeType               = mrgTypeNeighbours[candIdx];
@@ -384,3 +387,209 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 #endif
 
 }
+#if JVET_L0054_MMVD
+void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
+{
+  const Slice &slice = *pu.cs->slice;
+  const int mvShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  const int refMvdCands[8] = { 1 << mvShift , 2 << mvShift , 4 << mvShift , 8 << mvShift , 16 << mvShift , 32 << mvShift,  64 << mvShift , 128 << mvShift };
+  int fPosGroup = 0;
+  int fPosBaseIdx = 0;
+  int fPosStep = 0;
+  int tempIdx = 0;
+  int fPosPosition = 0;
+  Mv tempMv[2];
+
+  tempIdx = candIdx;
+  fPosGroup = tempIdx / (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
+  tempIdx = tempIdx - fPosGroup * (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
+  fPosBaseIdx = tempIdx / MMVD_MAX_REFINE_NUM;
+  tempIdx = tempIdx - fPosBaseIdx * (MMVD_MAX_REFINE_NUM);
+  fPosStep = tempIdx / 4;
+  fPosPosition = tempIdx - fPosStep * (4);
+
+  const int offset = refMvdCands[fPosStep];
+#if !REMOVE_MV_ADAPT_PREC
+  const int highPrecList0 = mmvdBaseMv[fPosBaseIdx][0].mv.highPrec;
+  const int highPrecList1 = mmvdBaseMv[fPosBaseIdx][1].mv.highPrec;
+#endif
+  const int refList0 = mmvdBaseMv[fPosBaseIdx][0].refIdx;
+  const int refList1 = mmvdBaseMv[fPosBaseIdx][1].refIdx;
+
+  if ((refList0 != -1) && (refList1 != -1))
+  {
+    const int poc0 = slice.getRefPOC(REF_PIC_LIST_0, refList0);
+    const int poc1 = slice.getRefPOC(REF_PIC_LIST_1, refList1);
+    const int currPoc = slice.getPOC();
+    int refSign = 1;
+
+    if ((poc0 - currPoc) * (currPoc - poc1) > 0)
+    {
+      refSign = -1;
+    }
+#if REMOVE_MV_ADAPT_PREC
+    if (fPosPosition == 0)
+    {
+      tempMv[0] = Mv(offset, 0);
+      tempMv[1] = Mv(offset * refSign, 0);
+    }
+    else if (fPosPosition == 1)
+    {
+      tempMv[0] = Mv(-offset, 0);
+      tempMv[1] = Mv(-offset * refSign, 0);
+    }
+    else if (fPosPosition == 2)
+    {
+      tempMv[0] = Mv(0, offset);
+      tempMv[1] = Mv(0, offset * refSign);
+    }
+    else
+    {
+      tempMv[0] = Mv(0, -offset);
+      tempMv[1] = Mv(0, -offset * refSign);
+    }
+#else
+    if (fPosPosition == 0)
+    {
+      tempMv[0] = Mv(offset, 0, highPrecList0);
+      tempMv[1] = Mv(offset * refSign, 0, highPrecList1);
+    }
+    else if (fPosPosition == 1)
+    {
+      tempMv[0] = Mv(-offset, 0, highPrecList0);
+      tempMv[1] = Mv(-offset * refSign, 0, highPrecList1);
+    }
+    else if (fPosPosition == 2)
+    {
+      tempMv[0] = Mv(0, offset, highPrecList0);
+      tempMv[1] = Mv(0, offset * refSign, highPrecList1);
+    }
+    else
+    {
+      tempMv[0] = Mv(0, -offset, highPrecList0);
+      tempMv[1] = Mv(0, -offset * refSign, highPrecList1);
+    }
+#endif
+    if (abs(poc1 - currPoc) > abs(poc0 - currPoc))
+    {
+      const int scale = PU::getDistScaleFactor(currPoc, poc0, currPoc, poc1);
+      if (scale != 4096)
+      {
+        tempMv[0] = tempMv[0].scaleMv(scale);
+      }
+    }
+    else if (abs(poc1 - currPoc) < abs(poc0 - currPoc))
+    {
+      const int scale = PU::getDistScaleFactor(currPoc, poc1, currPoc, poc0);
+      if (scale != 4096)
+      {
+        tempMv[1] = tempMv[1].scaleMv(scale);
+      }
+    }
+
+    pu.interDir = 3;
+    pu.mv[REF_PIC_LIST_0] = mmvdBaseMv[fPosBaseIdx][0].mv + tempMv[0];
+    pu.refIdx[REF_PIC_LIST_0] = refList0;
+    pu.mv[REF_PIC_LIST_1] = mmvdBaseMv[fPosBaseIdx][1].mv + tempMv[1];
+    pu.refIdx[REF_PIC_LIST_1] = refList1;
+  }
+  else if (refList0 != -1)
+  {
+#if REMOVE_MV_ADAPT_PREC
+    if (fPosPosition == 0)
+    {
+      tempMv[0] = Mv(offset, 0);
+    }
+    else if (fPosPosition == 1)
+    {
+      tempMv[0] = Mv(-offset, 0);
+    }
+    else if (fPosPosition == 2)
+    {
+      tempMv[0] = Mv(0, offset);
+    }
+    else
+    {
+      tempMv[0] = Mv(0, -offset);
+    }
+#else
+    if (fPosPosition == 0)
+    {
+      tempMv[0] = Mv(offset, 0, highPrecList0);
+    }
+    else if (fPosPosition == 1)
+    {
+      tempMv[0] = Mv(-offset, 0, highPrecList0);
+    }
+    else if (fPosPosition == 2)
+    {
+      tempMv[0] = Mv(0, offset, highPrecList0);
+    }
+    else
+    {
+      tempMv[0] = Mv(0, -offset, highPrecList0);
+    }
+#endif
+    pu.interDir = 1;
+    pu.mv[REF_PIC_LIST_0] = mmvdBaseMv[fPosBaseIdx][0].mv + tempMv[0];
+    pu.refIdx[REF_PIC_LIST_0] = refList0;
+    pu.mv[REF_PIC_LIST_1] = Mv(0, 0);
+    pu.refIdx[REF_PIC_LIST_1] = -1;
+  }
+  else if (refList1 != -1)
+  {
+#if REMOVE_MV_ADAPT_PREC
+    if (fPosPosition == 0)
+    {
+      tempMv[1] = Mv(offset, 0);
+    }
+    else if (fPosPosition == 1)
+    {
+      tempMv[1] = Mv(-offset, 0);
+    }
+    else if (fPosPosition == 2)
+    {
+      tempMv[1] = Mv(0, offset);
+    }
+    else
+    {
+      tempMv[1] = Mv(0, -offset);
+    }
+#else
+    if (fPosPosition == 0)
+    {
+      tempMv[1] = Mv(offset, 0, highPrecList1);
+    }
+    else if (fPosPosition == 1)
+    {
+      tempMv[1] = Mv(-offset, 0, highPrecList1);
+    }
+    else if (fPosPosition == 2)
+    {
+      tempMv[1] = Mv(0, offset, highPrecList1);
+    }
+    else
+    {
+      tempMv[1] = Mv(0, -offset, highPrecList1);
+    }
+#endif
+    pu.interDir = 2;
+    pu.mv[REF_PIC_LIST_0] = Mv(0, 0);
+    pu.refIdx[REF_PIC_LIST_0] = -1;
+    pu.mv[REF_PIC_LIST_1] = mmvdBaseMv[fPosBaseIdx][1].mv + tempMv[1];
+    pu.refIdx[REF_PIC_LIST_1] = refList1;
+  }
+
+  pu.mmvdMergeFlag = true;
+  pu.mmvdMergeIdx = candIdx;
+  pu.mergeFlag = true;
+  pu.mergeIdx = candIdx;
+  pu.mergeType = MRG_TYPE_DEFAULT_N;
+  pu.mvd[REF_PIC_LIST_0] = Mv();
+  pu.mvd[REF_PIC_LIST_1] = Mv();
+  pu.mvpIdx[REF_PIC_LIST_0] = NOT_VALID;
+  pu.mvpIdx[REF_PIC_LIST_1] = NOT_VALID;
+  pu.mvpNum[REF_PIC_LIST_0] = NOT_VALID;
+  pu.mvpNum[REF_PIC_LIST_1] = NOT_VALID;
+}
+#endif

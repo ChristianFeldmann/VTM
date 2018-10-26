@@ -830,6 +830,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setNextToolsEnabled      ( m_profile == Profile::NEXT );
   sps.getSpsNext().setUseQTBT               ( m_QTBT );
   sps.getSpsNext().setCTUSize               ( m_CTUSize );
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  sps.getSpsNext().setSplitConsOverrideEnabledFlag( m_useSplitConsOverride );
+#endif
   sps.getSpsNext().setMinQTSizes            ( m_uiMinQT );
   sps.getSpsNext().setUseLargeCTU           ( m_LargeCTU );
   sps.getSpsNext().setMaxBTDepth            ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
@@ -858,6 +861,20 @@ void EncLib::xInitSPS(SPS &sps)
 #if JVET_L0646_GBI
   sps.getSpsNext().setUseGBi                ( m_GBi );
 #endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  sps.getSpsNext().setLadfEnabled           ( m_LadfEnabled );
+  if ( m_LadfEnabled )
+  {
+    sps.getSpsNext().setLadfNumIntervals    ( m_LadfNumIntervals );
+    for ( int k = 0; k < m_LadfNumIntervals; k++ )
+    {
+      sps.getSpsNext().setLadfQpOffset( m_LadfQpOffset[k], k );
+      sps.getSpsNext().setLadfIntervalLowerBound( m_LadfIntervalLowerBound[k], k );
+    }
+    CHECK( m_LadfIntervalLowerBound[0] != 0, "abnormal value set to LadfIntervalLowerBound[0]" );
+  }
+#endif
+
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 
   int minCUSize = ( /*sps.getSpsNext().getUseQTBT() ? 1 << MIN_CU_LOG2 :*/ sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize() );

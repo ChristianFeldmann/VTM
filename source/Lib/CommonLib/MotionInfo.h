@@ -162,7 +162,7 @@ public:
     }
 
     Mv* pAffineMv = &(m_mvAffine[0][0][0][0]);
-    for (int ui = 0; ui < 2 * 2 * 33 * 3; ++ui, ++pMv)
+    for (int ui = 0; ui < 2 * 2 * 33 * 3; ++ui, ++pAffineMv)
     {
       pAffineMv->set(0, 0);
     }
@@ -208,5 +208,11 @@ public:
   }
 };
 #endif
-
+#if  JVET_L0266_HMVP
+struct LutMotionCand
+{
+  MotionInfo*   motionCand;
+  int  currCnt;
+};
+#endif
 #endif // __MOTIONINFO__

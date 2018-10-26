@@ -258,6 +258,9 @@ static const int MAX_TU_SIZE =                                    128;
 static const int MAX_LOG2_TU_SIZE_PLUS_ONE =                        8; ///< log2(MAX_TU_SIZE) + 1
 static const int MAX_NUM_PARTS_IN_CTU =                         ( ( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 ) );
 static const int MAX_TR_SIZE =                            MAX_CU_SIZE;
+#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
+static const int MAX_TU_SIZE_FOR_PROFILE =                         64;
+#endif
 #if ENABLE_BMS
 static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         2;
 static const int MAX_CU_TILING_PARTITIONS = 1 << ( MAX_LOG2_DIFF_CU_TR_SIZE << 1 );
@@ -291,6 +294,16 @@ static const int AFFINE_MAX_NUM_V2 =                                2; ///< max 
 static const int AFFINE_MAX_NUM_COMB =                             12; ///< max number of combined motion candidates
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
 
+
+#if JVET_L0054_MMVD
+static const int MMVD_REFINE_STEP =                                 8; ///< max number of distance step
+static const int MMVD_MAX_REFINE_NUM =                              (MMVD_REFINE_STEP * 4); ///< max number of candidate from a base candidate
+static const int MMVD_BASE_MV_NUM =                                 2; ///< max number of base candidate
+static const int MMVD_ADD_NUM =                                     (MMVD_MAX_REFINE_NUM * MMVD_BASE_MV_NUM);///< total number of mmvd candidate
+static const int MMVD_MRG_MAX_RD_NUM =                              MRG_MAX_NUM_CANDS;
+static const int MMVD_MRG_MAX_RD_BUF_NUM =                          (MMVD_MRG_MAX_RD_NUM + 1);///< increase buffer size by 1
+#endif
+
 #if JVET_L0274
 static const int MAX_NUM_REG_BINS_4x4SUBBLOCK =                    32; ///< max number of context-coded bins (incl. gt2 bins) per 4x4 subblock
 static const int MAX_NUM_GT2_BINS_4x4SUBBLOCK =                     4; ///< max number of gt2 bins per 4x4 subblock
@@ -307,6 +320,10 @@ static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE
 static const int GBI_NUM =                                          5; ///< the number of weight options
 static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
+#endif
+#if JVET_L0266_HMVP
+static const int MAX_NUM_HMVP_CANDS =                              6; ///< maximum number of HMVP candidates to be stored and used in merge list
+static const int MAX_NUM_HMVP_AVMPCANDS =                          4; ///< maximum number of HMVP candidates to be used in AMVP list
 #endif
 
 #if W0038_DB_OPT
@@ -361,7 +378,11 @@ static const double AMAXBT_TH64 =                                  30.0;
 static const int MAX_DELTA_QP   =                                   7;      ///< maximum supported delta QP value
 static const int MAX_TESTED_QPs =   ( 1 + 1 + ( MAX_DELTA_QP << 1 ) );      ///< dqp=0 +- max_delta_qp + lossless mode
 
+#if JVET_L0285_8BIT_TRANSFORM_CORE
+static const int COM16_C806_TRANS_PREC =                            0;
+#else
 static const int COM16_C806_TRANS_PREC =                            2;
+#endif
 
 static const int NUM_MERGE_IDX_EXT_CTX =                            5;
 static const unsigned E0104_ALF_MAX_TEMPLAYERID =                  5;       // define to zero to switch of  code
@@ -370,6 +391,10 @@ static const unsigned C806_ALF_TEMPPRED_NUM =                      6;
 
 static const int NTAPS_LUMA               =                         8; ///< Number of taps for luma
 static const int NTAPS_CHROMA             =                         4; ///< Number of taps for chroma
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+static const int MAX_LADF_INTERVALS       =                         5; /// max number of luma adaptive deblocking filter qp offset intervals
+#endif
+
 #if JVET_L0256_BIO
 static const int NTAPS_BILINEAR           =                         2; ///< Number of taps for bilinear filter
 #endif

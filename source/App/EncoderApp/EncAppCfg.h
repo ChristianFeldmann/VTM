@@ -198,6 +198,9 @@ protected:
   // coding unit (CU) definition
   bool      m_QTBT;
   unsigned  m_uiCTUSize;
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  bool      m_SplitConsOverrideEnabledFlag;
+#endif
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
   unsigned  m_uiMaxBTDepth;
   unsigned  m_uiMaxBTDepthI;
@@ -227,6 +230,12 @@ protected:
 #if JVET_L0646_GBI
   bool      m_GBi;
   bool      m_GBiFast;
+#endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  bool      m_LadfEnabed;
+  int       m_LadfNumIntervals;
+  std::vector<int> m_LadfQpOffset;
+  int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
 

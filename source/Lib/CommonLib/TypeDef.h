@@ -76,9 +76,6 @@
 #define L0074_SUBBLOCK_DEBLOCKING                         1
 
 #define JVET_L0256_BIO                                    1
-#if JVET_L0256_BIO
-#define JVET_L0256_BIO_EXTEND_SIZE                        1
-#endif
 
 #define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)
 
@@ -258,6 +255,7 @@
 #if ENABLE_SIMD_OPT_BUFFER
 #define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi   
 #endif
+#define ENABLE_SIMD_OPT_BIO                             ( JVET_L0256_BIO && ENABLE_SIMD_OPT )               ///< SIMD optimization for BIO
 
 // End of SIMD optimizations
 

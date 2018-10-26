@@ -297,7 +297,7 @@ Distortion RdCost::xGetSAD_SIMD( const DistParam &rcDtParam )
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
 }
 
-#if JVET_L0256_BIO
+#if ENABLE_SIMD_OPT_BIO
 template< X86_VEXT vext >
 Distortion RdCost::xGetSAD_IBD_SIMD(const DistParam &rcDtParam)
 {
@@ -308,14 +308,14 @@ Distortion RdCost::xGetSAD_IBD_SIMD(const DistParam &rcDtParam)
   const short* src1 = (const short*)rcDtParam.cur.buf;
   int  width = rcDtParam.org.height;
   int  height = rcDtParam.org.width;
-  int  iSubShift = rcDtParam.subShift;
-  int  iSubStep = (1 << iSubShift);
-  const int src0Stride = rcDtParam.org.stride * iSubStep;
-  const int src1Stride = rcDtParam.cur.stride * iSubStep;
+  int  subShift = rcDtParam.subShift;
+  int  subStep = (1 << subShift);
+  const int src0Stride = rcDtParam.org.stride * subStep;
+  const int src1Stride = rcDtParam.cur.stride * subStep;
 
   __m128i vtotalsum32 = _mm_setzero_si128();
   __m128i vzero = _mm_setzero_si128();
-  for (int y = 0; y < height; y += iSubStep)
+  for (int y = 0; y < height; y += subStep)
   {
     for (int x = 0; x < width; x += 4)
     {
@@ -332,7 +332,7 @@ Distortion RdCost::xGetSAD_IBD_SIMD(const DistParam &rcDtParam)
   vtotalsum32 = _mm_hadd_epi32(vtotalsum32, vzero);
   Distortion uiSum = _mm_cvtsi128_si32(vtotalsum32);
 
-  uiSum <<= iSubShift;
+  uiSum <<= subShift;
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
 }
 #endif
@@ -2462,7 +2462,7 @@ void RdCost::_initRdCostX86()
   m_afpDistortFunc[DF_HAD64]   = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
   m_afpDistortFunc[DF_HAD16N]  = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
 
-#if JVET_L0256_BIO
+#if ENABLE_SIMD_OPT_BIO
   m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD_IBD_SIMD<vext>;
 #endif
 }

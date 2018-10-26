@@ -63,7 +63,7 @@ void addAvgCore( const T* src1, int src1Stride, const T* src2, int src2Stride, T
 }
 
 #if JVET_L0256_BIO
-void addBIOAvgCore(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *pGradX0, const Pel *pGradX1, const Pel *pGradY0, const Pel*pGradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
+void addBIOAvgCore(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
 {
   int b = 0;
 
@@ -71,125 +71,125 @@ void addBIOAvgCore(const Pel* src0, int src0Stride, const Pel* src1, int src1Str
   {
     for (int x = 0; x < width; x += 4)
     {
-      b = tmpx * (pGradX0[x] - pGradX1[x]) + tmpy * (pGradY0[x] - pGradY1[x]);
+      b = tmpx * (gradX0[x] - gradX1[x]) + tmpy * (gradY0[x] - gradY1[x]);
       b = ((b + 1) >> 1);
       dst[x] = ClipPel((int16_t)rightShift((src0[x] + src1[x] + b + offset), shift), clpRng);
 
-      b = tmpx * (pGradX0[x + 1] - pGradX1[x + 1]) + tmpy * (pGradY0[x + 1] - pGradY1[x + 1]);
+      b = tmpx * (gradX0[x + 1] - gradX1[x + 1]) + tmpy * (gradY0[x + 1] - gradY1[x + 1]);
       b = ((b + 1) >> 1);
       dst[x + 1] = ClipPel((int16_t)rightShift((src0[x + 1] + src1[x + 1] + b + offset), shift), clpRng);
 
-      b = tmpx * (pGradX0[x + 2] - pGradX1[x + 2]) + tmpy * (pGradY0[x + 2] - pGradY1[x + 2]);
+      b = tmpx * (gradX0[x + 2] - gradX1[x + 2]) + tmpy * (gradY0[x + 2] - gradY1[x + 2]);
       b = ((b + 1) >> 1);
       dst[x + 2] = ClipPel((int16_t)rightShift((src0[x + 2] + src1[x + 2] + b + offset), shift), clpRng);
 
-      b = tmpx * (pGradX0[x + 3] - pGradX1[x + 3]) + tmpy * (pGradY0[x + 3] - pGradY1[x + 3]);
+      b = tmpx * (gradX0[x + 3] - gradX1[x + 3]) + tmpy * (gradY0[x + 3] - gradY1[x + 3]);
       b = ((b + 1) >> 1);
       dst[x + 3] = ClipPel((int16_t)rightShift((src0[x + 3] + src1[x + 3] + b + offset), shift), clpRng);
     }
     dst += dstStride;       src0 += src0Stride;     src1 += src1Stride;
-    pGradX0 += gradStride; pGradX1 += gradStride; pGradY0 += gradStride; pGradY1 += gradStride;
+    gradX0 += gradStride; gradX1 += gradStride; gradY0 += gradStride; gradY1 += gradStride;
   }
 }
 
-void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* pGradX, Pel* pGradY)
+void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY)
 {
-  Pel* piSrcTmp = pSrc + srcStride + 1;
-  Pel* piGradXTmp = pGradX + gradStride + 1;
-  Pel* piGradYTmp = pGradY + gradStride + 1;
+  Pel* srcTmp = pSrc + srcStride + 1;
+  Pel* gradXTmp = gradX + gradStride + 1;
+  Pel* gradYTmp = gradY + gradStride + 1;
 
-  for (int y = 0; y < (height - 2 * JVET_L0256_BIO_EXTEND_SIZE); y++)
+  for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
   {
-    for (int x = 0; x < (width - 2 * JVET_L0256_BIO_EXTEND_SIZE); x++)
+    for (int x = 0; x < (width - 2 * BIO_EXTEND_SIZE); x++)
     {
-      piGradYTmp[x] = (piSrcTmp[x + srcStride] - piSrcTmp[x - srcStride]) >> 4;
-      piGradXTmp[x] = (piSrcTmp[x + 1] - piSrcTmp[x - 1]) >> 4;
+      gradYTmp[x] = (srcTmp[x + srcStride] - srcTmp[x - srcStride]) >> 4;
+      gradXTmp[x] = (srcTmp[x + 1] - srcTmp[x - 1]) >> 4;
     }
-    piGradXTmp += gradStride;
-    piGradYTmp += gradStride;
-    piSrcTmp += srcStride;
+    gradXTmp += gradStride;
+    gradYTmp += gradStride;
+    srcTmp += srcStride;
   }
 
-  piGradXTmp = pGradX + gradStride + 1;
-  piGradYTmp = pGradY + gradStride + 1;
-  for (int y = 0; y < (height - 2 * JVET_L0256_BIO_EXTEND_SIZE); y++)
+  gradXTmp = gradX + gradStride + 1;
+  gradYTmp = gradY + gradStride + 1;
+  for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
   {
-    piGradXTmp[-1] = piGradXTmp[0];
-    piGradXTmp[width - 2 * JVET_L0256_BIO_EXTEND_SIZE] = piGradXTmp[width - 2 * JVET_L0256_BIO_EXTEND_SIZE - 1];
-    piGradXTmp += gradStride;
+    gradXTmp[-1] = gradXTmp[0];
+    gradXTmp[width - 2 * BIO_EXTEND_SIZE] = gradXTmp[width - 2 * BIO_EXTEND_SIZE - 1];
+    gradXTmp += gradStride;
 
-    piGradYTmp[-1] = piGradYTmp[0];
-    piGradYTmp[width - 2 * JVET_L0256_BIO_EXTEND_SIZE] = piGradYTmp[width - 2 * JVET_L0256_BIO_EXTEND_SIZE - 1];
-    piGradYTmp += gradStride;
+    gradYTmp[-1] = gradYTmp[0];
+    gradYTmp[width - 2 * BIO_EXTEND_SIZE] = gradYTmp[width - 2 * BIO_EXTEND_SIZE - 1];
+    gradYTmp += gradStride;
   }
 
-  piGradXTmp = pGradX + gradStride;
-  piGradYTmp = pGradY + gradStride;
-  ::memcpy(piGradXTmp - gradStride, piGradXTmp, sizeof(Pel)*(width));
-  ::memcpy(piGradXTmp + (height - 2 * JVET_L0256_BIO_EXTEND_SIZE)*gradStride, piGradXTmp + (height - 2 * JVET_L0256_BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
-  ::memcpy(piGradYTmp - gradStride, piGradYTmp, sizeof(Pel)*(width));
-  ::memcpy(piGradYTmp + (height - 2 * JVET_L0256_BIO_EXTEND_SIZE)*gradStride, piGradYTmp + (height - 2 * JVET_L0256_BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
+  gradXTmp = gradX + gradStride;
+  gradYTmp = gradY + gradStride;
+  ::memcpy(gradXTmp - gradStride, gradXTmp, sizeof(Pel)*(width));
+  ::memcpy(gradXTmp + (height - 2 * BIO_EXTEND_SIZE)*gradStride, gradXTmp + (height - 2 * BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
+  ::memcpy(gradYTmp - gradStride, gradYTmp, sizeof(Pel)*(width));
+  ::memcpy(gradYTmp + (height - 2 * BIO_EXTEND_SIZE)*gradStride, gradYTmp + (height - 2 * BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
 }
 
-void calcBIOParCore(const Pel* pSrcY0Temp, const Pel* pSrcY1Temp, const Pel* pGradX0, const Pel* pGradX1, const Pel* pGradY0, const Pel* pGradY1, int* m_piDotProductTemp1, int* m_piDotProductTemp2, int* m_piDotProductTemp3, int* m_piDotProductTemp5, int* m_piDotProductTemp6, const int iSrc0Stride, const int iSrc1Stride, const int iGradStride, const int iWidthG, const int iHeightG)
+void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG)
 {
-  for (int y = 0; y < iHeightG; y++)
+  for (int y = 0; y < heightG; y++)
   {
-    for (int x = 0; x < iWidthG; x++)
+    for (int x = 0; x < widthG; x++)
     {
-      int temp = (pSrcY0Temp[x] >> 6) - (pSrcY1Temp[x] >> 6);
-      int tempX = (pGradX0[x] + pGradX1[x]) >> 3;
-      int tempY = (pGradY0[x] + pGradY1[x]) >> 3;
-      m_piDotProductTemp1[x] = tempX * tempX;
-      m_piDotProductTemp2[x] = tempX * tempY;
-      m_piDotProductTemp3[x] = -tempX * temp;
-      m_piDotProductTemp5[x] = tempY * tempY;
-      m_piDotProductTemp6[x] = -tempY * temp;
+      int temp = (srcY0Temp[x] >> 6) - (srcY1Temp[x] >> 6);
+      int tempX = (gradX0[x] + gradX1[x]) >> 3;
+      int tempY = (gradY0[x] + gradY1[x]) >> 3;
+      dotProductTemp1[x] = tempX * tempX;
+      dotProductTemp2[x] = tempX * tempY;
+      dotProductTemp3[x] = -tempX * temp;
+      dotProductTemp5[x] = tempY * tempY;
+      dotProductTemp6[x] = -tempY * temp;
     }
-    pSrcY0Temp += iSrc0Stride;
-    pSrcY1Temp += iSrc1Stride;
-    pGradX0 += iGradStride;
-    pGradX1 += iGradStride;
-    pGradY0 += iGradStride;
-    pGradY1 += iGradStride;
-    m_piDotProductTemp1 += iWidthG;
-    m_piDotProductTemp2 += iWidthG;
-    m_piDotProductTemp3 += iWidthG;
-    m_piDotProductTemp5 += iWidthG;
-    m_piDotProductTemp6 += iWidthG;
+    srcY0Temp += src0Stride;
+    srcY1Temp += src1Stride;
+    gradX0 += gradStride;
+    gradX1 += gradStride;
+    gradY0 += gradStride;
+    gradY1 += gradStride;
+    dotProductTemp1 += widthG;
+    dotProductTemp2 += widthG;
+    dotProductTemp3 += widthG;
+    dotProductTemp5 += widthG;
+    dotProductTemp6 += widthG;
   }
 }
 
 void calcBlkGradientCore(int sx, int sy, int     *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize)
 {
-  int     *pGx2 = arraysGx2;
-  int     *pGy2 = arraysGy2;
-  int     *pGxGy = arraysGxGy;
-  int     *pGxdI = arraysGxdI;
-  int     *pGydI = arraysGydI;
+  int     *Gx2 = arraysGx2;
+  int     *Gy2 = arraysGy2;
+  int     *GxGy = arraysGxGy;
+  int     *GxdI = arraysGxdI;
+  int     *GydI = arraysGydI;
 
   // set to the above row due to JVET_K0485_BIO_EXTEND_SIZE
-  pGx2 -= (JVET_L0256_BIO_EXTEND_SIZE*width);
-  pGy2 -= (JVET_L0256_BIO_EXTEND_SIZE*width);
-  pGxGy -= (JVET_L0256_BIO_EXTEND_SIZE*width);
-  pGxdI -= (JVET_L0256_BIO_EXTEND_SIZE*width);
-  pGydI -= (JVET_L0256_BIO_EXTEND_SIZE*width);
+  Gx2 -= (BIO_EXTEND_SIZE*width);
+  Gy2 -= (BIO_EXTEND_SIZE*width);
+  GxGy -= (BIO_EXTEND_SIZE*width);
+  GxdI -= (BIO_EXTEND_SIZE*width);
+  GydI -= (BIO_EXTEND_SIZE*width);
 
-  for (int y = -JVET_L0256_BIO_EXTEND_SIZE; y < unitSize + JVET_L0256_BIO_EXTEND_SIZE; y++)
+  for (int y = -BIO_EXTEND_SIZE; y < unitSize + BIO_EXTEND_SIZE; y++)
   {
-    for (int x = -JVET_L0256_BIO_EXTEND_SIZE; x < unitSize + JVET_L0256_BIO_EXTEND_SIZE; x++)
+    for (int x = -BIO_EXTEND_SIZE; x < unitSize + BIO_EXTEND_SIZE; x++)
     {
-      sGx2 += pGx2[x];
-      sGy2 += pGy2[x];
-      sGxGy += pGxGy[x];
-      sGxdI += pGxdI[x];
-      sGydI += pGydI[x];
+      sGx2 += Gx2[x];
+      sGy2 += Gy2[x];
+      sGxGy += GxGy[x];
+      sGxdI += GxdI[x];
+      sGydI += GydI[x];
     }
-    pGx2 += width;
-    pGy2 += width;
-    pGxGy += width;
-    pGxdI += width;
-    pGydI += width;
+    Gx2 += width;
+    Gy2 += width;
+    GxGy += width;
+    GxdI += width;
+    GydI += width;
   }
 }
 #endif

@@ -56,10 +56,10 @@ InterPrediction::InterPrediction()
 , m_maxCompIDToPred ( MAX_NUM_COMPONENT )
 , m_pcRdCost        ( nullptr )
 #if JVET_L0256_BIO
-, m_pGradX0(nullptr)
-, m_pGradY0(nullptr)
-, m_pGradX1(nullptr)
-, m_pGradY1(nullptr)
+, m_gradX0(nullptr)
+, m_gradY0(nullptr)
+, m_gradX1(nullptr)
+, m_gradY1(nullptr)
 , m_subPuMC(false)
 #endif
 {
@@ -118,10 +118,10 @@ void InterPrediction::destroy()
   }
 
 #if JVET_L0256_BIO
-  xFree(m_pGradX0);   m_pGradX0 = nullptr;
-  xFree(m_pGradY0);   m_pGradY0 = nullptr;
-  xFree(m_pGradX1);   m_pGradX1 = nullptr;
-  xFree(m_pGradY1);   m_pGradY1 = nullptr;
+  xFree(m_gradX0);   m_gradX0 = nullptr;
+  xFree(m_gradY0);   m_gradY0 = nullptr;
+  xFree(m_gradX1);   m_gradX1 = nullptr;
+  xFree(m_gradY1);   m_gradY1 = nullptr;
 #endif
 }
 
@@ -142,8 +142,8 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
     for( uint32_t c = 0; c < MAX_NUM_COMPONENT; c++ )
     {
 #if JVET_L0256_BIO
-      int extWidth = MAX_CU_SIZE + (2 * JVET_L0256_BIO_EXTEND_SIZE + 2) + 16;
-      int extHeight = MAX_CU_SIZE + (2 * JVET_L0256_BIO_EXTEND_SIZE + 2) + 1;
+      int extWidth = MAX_CU_SIZE + (2 * BIO_EXTEND_SIZE + 2) + 16;
+      int extHeight = MAX_CU_SIZE + (2 * BIO_EXTEND_SIZE + 2) + 1;
 #else
       int extWidth  = MAX_CU_SIZE + 16;
       int extHeight = MAX_CU_SIZE + 1;
@@ -169,10 +169,10 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
     m_iRefListIdx = -1;
   
 #if JVET_L0256_BIO
-    m_pGradX0 = (Pel*)xMalloc(Pel, BIO_TEMP_BUFFER_SIZE);
-    m_pGradY0 = (Pel*)xMalloc(Pel, BIO_TEMP_BUFFER_SIZE);
-    m_pGradX1 = (Pel*)xMalloc(Pel, BIO_TEMP_BUFFER_SIZE);
-    m_pGradY1 = (Pel*)xMalloc(Pel, BIO_TEMP_BUFFER_SIZE);
+    m_gradX0 = (Pel*)xMalloc(Pel, BIO_TEMP_BUFFER_SIZE);
+    m_gradY0 = (Pel*)xMalloc(Pel, BIO_TEMP_BUFFER_SIZE);
+    m_gradX1 = (Pel*)xMalloc(Pel, BIO_TEMP_BUFFER_SIZE);
+    m_gradY1 = (Pel*)xMalloc(Pel, BIO_TEMP_BUFFER_SIZE);
 #endif
   }
 
@@ -336,7 +336,7 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
 
 void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
 #if JVET_L0256_BIO
-                                   ,const bool& bBIOApplied /*=false*/
+                                   ,const bool& bioApplied /*=false*/
 #endif
 )
 {
@@ -368,7 +368,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
     if ( pu.cu->affine )
     {
 #if JVET_L0256_BIO
-      CHECK( bBIOApplied, "BIO is not allowed with affine" );
+      CHECK( bioApplied, "BIO is not allowed with affine" );
 #endif
       xPredAffineBlk( compID, pu, pu.cu->slice->getRefPic( eRefPicList, iRefIdx ), mv, pcYuvPred, bi, pu.cu->slice->clpRng( compID ) );
     }
@@ -376,7 +376,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
     {
       xPredInterBlk( compID, pu, pu.cu->slice->getRefPic( eRefPicList, iRefIdx ), mv[0], pcYuvPred, bi, pu.cu->slice->clpRng( compID )
 #if JVET_L0256_BIO
-                    ,bBIOApplied
+                    ,bioApplied
 #endif
       );
     }
@@ -389,31 +389,31 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
   const Slice &slice = *pu.cs->slice;
 
 #if JVET_L0256_BIO
-  bool bBIOApplied = false;
+  bool bioApplied = false;
   if (pu.cs->sps->getSpsNext().getUseBIO())
   {
     if (pu.cu->affine || m_subPuMC)
     {
-      bBIOApplied = false;
+      bioApplied = false;
     }
     else
     {
-      const bool bBIOcheck0 = !(pps.getWPBiPred() && slice.getSliceType() == B_SLICE);
-      const bool bBIOcheck1 = !(pps.getUseWP() && slice.getSliceType() == P_SLICE);
-      if (bBIOcheck0
-        && bBIOcheck1
+      const bool biocheck0 = !(pps.getWPBiPred() && slice.getSliceType() == B_SLICE);
+      const bool biocheck1 = !(pps.getUseWP() && slice.getSliceType() == P_SLICE);
+      if (biocheck0
+        && biocheck1
         && PU::isBiPredFromDifferentDir(pu)
         && !(pu.Y().height == 4 || (pu.Y().width == 4 && pu.Y().height == 8))
        )
       {
-        bBIOApplied = true;
+        bioApplied = true;
       }
     }
 
 #if JVET_L0646_GBI
-    if (pu.cu->cs->sps->getSpsNext().getUseGBi() && bBIOApplied && pu.cu->GBiIdx != GBI_DEFAULT)
+    if (pu.cu->cs->sps->getSpsNext().getUseGBi() && bioApplied && pu.cu->GBiIdx != GBI_DEFAULT)
     {
-      bBIOApplied = false;
+      bioApplied = false;
     }
 #endif
   }
@@ -439,7 +439,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
     {
       xPredInterUni ( pu, eRefPicList, pcMbBuf, true
 #if JVET_L0256_BIO
-                     ,bBIOApplied 
+                     ,bioApplied 
 #endif
                      );
     }
@@ -474,7 +474,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
   else
   {
 #if JVET_L0256_BIO
-    xWeightedAverage( pu, srcPred0, srcPred1, pcYuvPred, slice.getSPS()->getBitDepths(), slice.clpRngs(), bBIOApplied );
+    xWeightedAverage( pu, srcPred0, srcPred1, pcYuvPred, slice.getSPS()->getBitDepths(), slice.clpRngs(), bioApplied );
 #else
     xWeightedAverage( pu, srcPred0, srcPred1, pcYuvPred, slice.getSPS()->getBitDepths(), slice.clpRngs() );
 #endif
@@ -483,7 +483,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
 
 void InterPrediction::xPredInterBlk ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
 #if JVET_L0256_BIO
-                                     ,const bool& bBIOApplied /*=false*/
+                                     ,const bool& bioApplied /*=false*/
 #endif
 )
 {
@@ -533,10 +533,10 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   Pel *backupDstBufPtr = dstBuf.buf;
   int backupDstBufStride = dstBuf.stride;
 
-  if (bBIOApplied && compID == COMPONENT_Y)
+  if (bioApplied && compID == COMPONENT_Y)
   {
-    width = width + 2 * JVET_L0256_BIO_EXTEND_SIZE + 2;
-    height = height + 2 * JVET_L0256_BIO_EXTEND_SIZE + 2;
+    width = width + 2 * BIO_EXTEND_SIZE + 2;
+    height = height + 2 * BIO_EXTEND_SIZE + 2;
 
     // change MC output
     dstBuf.stride = width;
@@ -582,7 +582,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
     JVET_J0090_SET_CACHE_ENABLE( true );
   }
 #if JVET_L0256_BIO
-  if (bBIOApplied && compID == COMPONENT_Y)
+  if (bioApplied && compID == COMPONENT_Y)
   {
     refBuf.buf = refBuf.buf - refBuf.stride - 1;
     dstBuf.buf = m_filteredBlockTmp[2 + m_iRefListIdx][compID] + dstBuf.stride + 1;
@@ -744,48 +744,48 @@ int getMSB( unsigned x )
 }
 
 #if JVET_L0256_BIO
-void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &pcYuvSrc0, const CPelUnitBuf &pcYuvSrc1, const int &iRefIdx0, const int &iRefIdx1, PelUnitBuf &pcYuvDst, const BitDepths &clipBitDepths)
+void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &yuvSrc0, const CPelUnitBuf &yuvSrc1, const int &refIdx0, const int &refIdx1, PelUnitBuf &yuvDst, const BitDepths &clipBitDepths)
 {
-  const int     iHeight = pcYuvDst.Y().height;
-  const int     iWidth = pcYuvDst.Y().width;
-  int           iHeightG = iHeight + 2 * JVET_L0256_BIO_EXTEND_SIZE;
-  int           iWidthG = iWidth + 2 * JVET_L0256_BIO_EXTEND_SIZE;
-  int           offsetPos = iWidthG*JVET_L0256_BIO_EXTEND_SIZE + JVET_L0256_BIO_EXTEND_SIZE;
+  const int     height = yuvDst.Y().height;
+  const int     width = yuvDst.Y().width;
+  int           heightG = height + 2 * BIO_EXTEND_SIZE;
+  int           widthG = width + 2 * BIO_EXTEND_SIZE;
+  int           offsetPos = widthG*BIO_EXTEND_SIZE + BIO_EXTEND_SIZE;
 
-  Pel*          pGradX0 = m_pGradX0;
-  Pel*          pGradX1 = m_pGradX1;
-  Pel*          pGradY0 = m_pGradY0;
-  Pel*          pGradY1 = m_pGradY1;
+  Pel*          gradX0 = m_gradX0;
+  Pel*          gradX1 = m_gradX1;
+  Pel*          gradY0 = m_gradY0;
+  Pel*          gradY1 = m_gradY1;
 
-  int           stridePredMC = iWidthG + 2;
-  const Pel*    pSrcY0 = m_filteredBlockTmp[2][COMPONENT_Y] + stridePredMC + 1;
-  const Pel*    pSrcY1 = m_filteredBlockTmp[3][COMPONENT_Y] + stridePredMC + 1;
-  const int     iSrc0Stride = stridePredMC;
-  const int     iSrc1Stride = stridePredMC;
+  int           stridePredMC = widthG + 2;
+  const Pel*    srcY0 = m_filteredBlockTmp[2][COMPONENT_Y] + stridePredMC + 1;
+  const Pel*    srcY1 = m_filteredBlockTmp[3][COMPONENT_Y] + stridePredMC + 1;
+  const int     src0Stride = stridePredMC;
+  const int     src1Stride = stridePredMC;
 
-  Pel*          pDstY = pcYuvDst.Y().buf;
-  const int     iDstStride = pcYuvDst.Y().stride;
-  const Pel*    pSrcY0Temp = pSrcY0;
-  const Pel*    pSrcY1Temp = pSrcY1;
+  Pel*          dstY = yuvDst.Y().buf;
+  const int     dstStride = yuvDst.Y().stride;
+  const Pel*    srcY0Temp = srcY0;
+  const Pel*    srcY1Temp = srcY1;
 
   for (int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++)
   {
     Pel* dstTempPtr = m_filteredBlockTmp[2 + refList][COMPONENT_Y] + stridePredMC + 1;
-    Pel* pGradY = (refList == 0) ? m_pGradY0 : m_pGradY1;
-    Pel* pGradX = (refList == 0) ? m_pGradX0 : m_pGradX1;
+    Pel* gradY = (refList == 0) ? m_gradY0 : m_gradY1;
+    Pel* gradX = (refList == 0) ? m_gradX0 : m_gradX1;
 
-    g_pelBufOP.bioGradFilter(dstTempPtr, stridePredMC, iWidthG, iHeightG, iWidthG, pGradX, pGradY);
-    Pel* pcPadStr = m_filteredBlockTmp[2 + refList][COMPONENT_Y] + 2 * stridePredMC + 2;
-    for (int y = 0; y< iHeight; y++)
+    g_pelBufOP.bioGradFilter(dstTempPtr, stridePredMC, widthG, heightG, widthG, gradX, gradY);
+    Pel* padStr = m_filteredBlockTmp[2 + refList][COMPONENT_Y] + 2 * stridePredMC + 2;
+    for (int y = 0; y< height; y++)
     {
-      pcPadStr[-1] = pcPadStr[0];
-      pcPadStr[iWidth] = pcPadStr[iWidth - 1];
-      pcPadStr += stridePredMC;
+      padStr[-1] = padStr[0];
+      padStr[width] = padStr[width - 1];
+      padStr += stridePredMC;
     }
 
-    pcPadStr = m_filteredBlockTmp[2 + refList][COMPONENT_Y] + 2 * stridePredMC + 1;
-    ::memcpy(pcPadStr - stridePredMC, pcPadStr, sizeof(Pel)*(iWidthG));
-    ::memcpy(pcPadStr + iHeight*stridePredMC, pcPadStr + (iHeight - 1)*stridePredMC, sizeof(Pel)*(iWidthG));
+    padStr = m_filteredBlockTmp[2 + refList][COMPONENT_Y] + 2 * stridePredMC + 1;
+    ::memcpy(padStr - stridePredMC, padStr, sizeof(Pel)*(widthG));
+    ::memcpy(padStr + height*stridePredMC, padStr + (height - 1)*stridePredMC, sizeof(Pel)*(widthG));
   }
 
   const ClpRng& clpRng = pu.cu->cs->slice->clpRng(COMPONENT_Y);
@@ -794,20 +794,20 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   const int   offset = (1 << (shiftNum - 1)) + 2 * IF_INTERNAL_OFFS;
   const int   limit = ((int)1 << (4 + IF_INTERNAL_PREC - bitDepth - 5));
 
-  int*     m_piDotProductTemp1 = m_piDotProduct1;
-  int*     m_piDotProductTemp2 = m_piDotProduct2;
-  int*     m_piDotProductTemp3 = m_piDotProduct3;
-  int*     m_piDotProductTemp5 = m_piDotProduct5;
-  int*     m_piDotProductTemp6 = m_piDotProduct6;
+  int*     dotProductTemp1 = m_dotProduct1;
+  int*     dotProductTemp2 = m_dotProduct2;
+  int*     dotProductTemp3 = m_dotProduct3;
+  int*     dotProductTemp5 = m_dotProduct5;
+  int*     dotProductTemp6 = m_dotProduct6;
 
-  g_pelBufOP.calcBIOPar(pSrcY0Temp, pSrcY1Temp, pGradX0, pGradX1, pGradY0, pGradY1, m_piDotProductTemp1, m_piDotProductTemp2, m_piDotProductTemp3, m_piDotProductTemp5, m_piDotProductTemp6, iSrc0Stride, iSrc1Stride, iWidthG, iWidthG, iHeightG);
+  g_pelBufOP.calcBIOPar(srcY0Temp, srcY1Temp, gradX0, gradX1, gradY0, gradY1, dotProductTemp1, dotProductTemp2, dotProductTemp3, dotProductTemp5, dotProductTemp6, src0Stride, src1Stride, widthG, widthG, heightG);
 
-  int xUnit = (iWidth >> 2);
-  int yUnit = (iHeight >> 2);
+  int xUnit = (width >> 2);
+  int yUnit = (height >> 2);
 
-  Pel *pDstY0 = pDstY;
-  pGradX0 = m_pGradX0; pGradX1 = m_pGradX1;
-  pGradY0 = m_pGradY0; pGradY1 = m_pGradY1;
+  Pel *dstY0 = dstY;
+  gradX0 = m_gradX0; gradX1 = m_gradX1;
+  gradY0 = m_gradY0; gradY1 = m_gradY1;
 
   for (int yu = 0; yu < yUnit; yu++)
   {
@@ -815,23 +815,23 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
     {
       if (m_bioPredSubBlkDist[yu*xUnit + xu] < m_bioSubBlkDistThres)
       {
-        pSrcY0Temp = pSrcY0 + (stridePredMC + 1) + ((yu*iSrc0Stride + xu) << 2);
-        pSrcY1Temp = pSrcY1 + (stridePredMC + 1) + ((yu*iSrc1Stride + xu) << 2);
-        pDstY0 = pDstY + ((yu*iDstStride + xu) << 2);
-        g_pelBufOP.addAvg4(pSrcY0Temp, iSrc0Stride, pSrcY1Temp, iSrc1Stride, pDstY0, iDstStride, (1 << 2), (1 << 2), shiftNum, offset, clpRng);
+        srcY0Temp = srcY0 + (stridePredMC + 1) + ((yu*src0Stride + xu) << 2);
+        srcY1Temp = srcY1 + (stridePredMC + 1) + ((yu*src1Stride + xu) << 2);
+        dstY0 = dstY + ((yu*dstStride + xu) << 2);
+        g_pelBufOP.addAvg4(srcY0Temp, src0Stride, srcY1Temp, src1Stride, dstY0, dstStride, (1 << 2), (1 << 2), shiftNum, offset, clpRng);
         continue;
       }
 
       int     sGxdI = 0, sGydI = 0, sGxGy = 0, sGx2 = 0, sGy2 = 0;
       int     tmpx = 0, tmpy = 0;
 
-      m_piDotProductTemp1 = m_piDotProduct1 + offsetPos + ((yu*iWidthG + xu) << 2);
-      m_piDotProductTemp2 = m_piDotProduct2 + offsetPos + ((yu*iWidthG + xu) << 2);
-      m_piDotProductTemp3 = m_piDotProduct3 + offsetPos + ((yu*iWidthG + xu) << 2);
-      m_piDotProductTemp5 = m_piDotProduct5 + offsetPos + ((yu*iWidthG + xu) << 2);
-      m_piDotProductTemp6 = m_piDotProduct6 + offsetPos + ((yu*iWidthG + xu) << 2);
+      dotProductTemp1 = m_dotProduct1 + offsetPos + ((yu*widthG + xu) << 2);
+      dotProductTemp2 = m_dotProduct2 + offsetPos + ((yu*widthG + xu) << 2);
+      dotProductTemp3 = m_dotProduct3 + offsetPos + ((yu*widthG + xu) << 2);
+      dotProductTemp5 = m_dotProduct5 + offsetPos + ((yu*widthG + xu) << 2);
+      dotProductTemp6 = m_dotProduct6 + offsetPos + ((yu*widthG + xu) << 2);
 
-      g_pelBufOP.calcBlkGradient(xu << 2, yu << 2, m_piDotProductTemp1, m_piDotProductTemp2, m_piDotProductTemp3, m_piDotProductTemp5, m_piDotProductTemp6, sGx2, sGy2, sGxGy, sGxdI, sGydI, iWidthG, iHeightG, (1 << 2));
+      g_pelBufOP.calcBlkGradient(xu << 2, yu << 2, dotProductTemp1, dotProductTemp2, dotProductTemp3, dotProductTemp5, dotProductTemp6, sGx2, sGy2, sGxGy, sGxdI, sGydI, widthG, heightG, (1 << 2));
 
       if (sGx2 > 0)
       {
@@ -848,15 +848,15 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
         tmpy = Clip3(-limit, limit, tmpy);
       }
 
-      pSrcY0Temp = pSrcY0 + (stridePredMC + 1) + ((yu*iSrc0Stride + xu) << 2);
-      pSrcY1Temp = pSrcY1 + (stridePredMC + 1) + ((yu*iSrc0Stride + xu) << 2);
-      pGradX0 = m_pGradX0 + offsetPos + ((yu*iWidthG + xu) << 2);
-      pGradX1 = m_pGradX1 + offsetPos + ((yu*iWidthG + xu) << 2);
-      pGradY0 = m_pGradY0 + offsetPos + ((yu*iWidthG + xu) << 2);
-      pGradY1 = m_pGradY1 + offsetPos + ((yu*iWidthG + xu) << 2);
+      srcY0Temp = srcY0 + (stridePredMC + 1) + ((yu*src0Stride + xu) << 2);
+      srcY1Temp = srcY1 + (stridePredMC + 1) + ((yu*src0Stride + xu) << 2);
+      gradX0 = m_gradX0 + offsetPos + ((yu*widthG + xu) << 2);
+      gradX1 = m_gradX1 + offsetPos + ((yu*widthG + xu) << 2);
+      gradY0 = m_gradY0 + offsetPos + ((yu*widthG + xu) << 2);
+      gradY1 = m_gradY1 + offsetPos + ((yu*widthG + xu) << 2);
 
-      pDstY0 = pDstY + ((yu*iDstStride + xu) << 2);
-      g_pelBufOP.addBIOAvg4(pSrcY0Temp, iSrc0Stride, pSrcY1Temp, iSrc1Stride, pDstY0, iDstStride, pGradX0, pGradX1, pGradY0, pGradY1, iWidthG, (1 << 2), (1 << 2), (int)tmpx, (int)tmpy, shiftNum, offset, clpRng);
+      dstY0 = dstY + ((yu*dstStride + xu) << 2);
+      g_pelBufOP.addBIOAvg4(srcY0Temp, src0Stride, srcY1Temp, src1Stride, dstY0, dstStride, gradX0, gradX1, gradY0, gradY1, widthG, (1 << 2), (1 << 2), (int)tmpx, (int)tmpy, shiftNum, offset, clpRng);
     }  // xu
   }  // yu
 }
@@ -957,7 +957,7 @@ bool InterPrediction::xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel*
 #endif
 
 #if JVET_L0256_BIO
-void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bBIOApplied )
+void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied )
 #else
 void InterPrediction::xWeightedAverage( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs )
 #endif
@@ -971,17 +971,17 @@ void InterPrediction::xWeightedAverage( const PredictionUnit& pu, const CPelUnit
     if( pu.cu->GBiIdx != GBI_DEFAULT )
     {
 #if JVET_L0256_BIO
-      CHECK(bBIOApplied, "GBi is disallowed with BIO");
+      CHECK(bioApplied, "GBi is disallowed with BIO");
 #endif
       pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->GBiIdx);
       return;
     }
 #endif
 #if JVET_L0256_BIO
-    if (bBIOApplied)
+    if (bioApplied)
     {
-      const int  src0Stride = pu.lwidth() + 2 * JVET_L0256_BIO_EXTEND_SIZE + 2;
-      const int  src1Stride = pu.lwidth() + 2 * JVET_L0256_BIO_EXTEND_SIZE + 2;
+      const int  src0Stride = pu.lwidth() + 2 * BIO_EXTEND_SIZE + 2;
+      const int  src1Stride = pu.lwidth() + 2 * BIO_EXTEND_SIZE + 2;
       const Pel* pSrcY0 = m_filteredBlockTmp[2][COMPONENT_Y] + 2 * src0Stride + 2;
       const Pel* pSrcY1 = m_filteredBlockTmp[3][COMPONENT_Y] + 2 * src1Stride + 2;
 
@@ -995,7 +995,7 @@ void InterPrediction::xWeightedAverage( const PredictionUnit& pu, const CPelUnit
         pcYuvDst.bufs[0].addAvg(CPelBuf(pSrcY0, src0Stride, pu.lumaSize()), CPelBuf(pSrcY1, src1Stride, pu.lumaSize()), clpRngs.comp[0]);
       }
     }
-    pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, bBIOApplied);
+    pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, bioApplied);
 #else
     pcYuvDst.addAvg( pcYuvSrc0, pcYuvSrc1, clpRngs );
 #endif

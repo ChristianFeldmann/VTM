@@ -128,9 +128,9 @@ void addAvg_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int s
   }
 }
 
-#if JVET_L0256_BIO
+#if ENABLE_SIMD_OPT_BIO
 template< X86_VEXT vext >
-void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *pGradX0, const Pel *pGradX1, const Pel *pGradY0, const Pel*pGradY1, int iGradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
+void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
 {
   __m128i mm_tmpx = _mm_unpacklo_epi64(_mm_set1_epi16(tmpx), _mm_set1_epi16(tmpy));
   __m128i mm_boffset = _mm_set1_epi32(1);
@@ -142,8 +142,8 @@ void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1St
   {
     for (int x = 0; x < width; x += 4)
     {
-      __m128i mm_a = _mm_unpacklo_epi64(_mm_loadl_epi64((const __m128i *)(pGradX0 + x)), _mm_loadl_epi64((const __m128i *)(pGradY0 + x)));
-      __m128i mm_b = _mm_unpacklo_epi64(_mm_loadl_epi64((const __m128i *)(pGradX1 + x)), _mm_loadl_epi64((const __m128i *)(pGradY1 + x)));
+      __m128i mm_a = _mm_unpacklo_epi64(_mm_loadl_epi64((const __m128i *)(gradX0 + x)), _mm_loadl_epi64((const __m128i *)(gradY0 + x)));
+      __m128i mm_b = _mm_unpacklo_epi64(_mm_loadl_epi64((const __m128i *)(gradX1 + x)), _mm_loadl_epi64((const __m128i *)(gradY1 + x)));
       mm_a = _mm_sub_epi16(mm_a, mm_b);
       mm_b = _mm_mulhi_epi16(mm_a, mm_tmpx);
       mm_a = _mm_mullo_epi16(mm_a, mm_tmpx);
@@ -158,82 +158,82 @@ void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1St
       _mm_storel_epi64((__m128i *)(dst + x), mm_sum);
     }
     dst += dstStride;       src0 += src0Stride;     src1 += src1Stride;
-    pGradX0 += iGradStride; pGradX1 += iGradStride; pGradY0 += iGradStride; pGradY1 += iGradStride;
+    gradX0 += gradStride; gradX1 += gradStride; gradY0 += gradStride; gradY1 += gradStride;
   }
 }
 
 template< X86_VEXT vext >
-void gradFilter_SSE(Pel* piSrc, int iSrcStride, int iWidth, int iHeight, int iGradStride, Pel* piGradX, Pel* piGradY)
+void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY)
 {
   __m128i vzero = _mm_setzero_si128();
-  Pel* piSrcTmp = piSrc + iSrcStride + 1;
-  Pel* piGradXTmp = piGradX + iGradStride + 1;
-  Pel* piGradYTmp = piGradY + iGradStride + 1;
+  Pel* srcTmp = src + srcStride + 1;
+  Pel* gradXTmp = gradX + gradStride + 1;
+  Pel* gradYTmp = gradY + gradStride + 1;
 
-  int iWidthInside = iWidth - 2 * JVET_L0256_BIO_EXTEND_SIZE;
-  int iHeightInside = iHeight - 2 * JVET_L0256_BIO_EXTEND_SIZE;
+  int widthInside = width - 2 * BIO_EXTEND_SIZE;
+  int heightInside = height - 2 * BIO_EXTEND_SIZE;
 
-  assert((iWidthInside & 3) == 0);
+  assert((widthInside & 3) == 0);
 
-  for (int y = 0; y < iHeightInside; y++)
+  for (int y = 0; y < heightInside; y++)
   {
     int x = 0;
-    for (; x < iWidthInside; x += 4)
+    for (; x < widthInside; x += 4)
     {
-      __m128i mmPixTop = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(piSrcTmp + x - iSrcStride)));
-      __m128i mmPixBottom = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(piSrcTmp + x + iSrcStride)));
-      __m128i mmPixLeft = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(piSrcTmp + x - 1)));
-      __m128i mmPixRight = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(piSrcTmp + x + 1)));
+      __m128i mmPixTop = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - srcStride)));
+      __m128i mmPixBottom = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + srcStride)));
+      __m128i mmPixLeft = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - 1)));
+      __m128i mmPixRight = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + 1)));
 
       __m128i mmGradVer = _mm_srai_epi32(_mm_sub_epi32(mmPixBottom, mmPixTop), 4);
       __m128i mmGradHor = _mm_srai_epi32(_mm_sub_epi32(mmPixRight, mmPixLeft), 4);
       mmGradVer = _mm_packs_epi32(mmGradVer, vzero);
       mmGradHor = _mm_packs_epi32(mmGradHor, vzero);
 
-      _mm_storel_epi64((__m128i *)(piGradYTmp + x), mmGradVer);
-      _mm_storel_epi64((__m128i *)(piGradXTmp + x), mmGradHor);
+      _mm_storel_epi64((__m128i *)(gradYTmp + x), mmGradVer);
+      _mm_storel_epi64((__m128i *)(gradXTmp + x), mmGradHor);
     }
 
-    piGradXTmp += iGradStride;
-    piGradYTmp += iGradStride;
-    piSrcTmp += iSrcStride;
+    gradXTmp += gradStride;
+    gradYTmp += gradStride;
+    srcTmp += srcStride;
   }
 
-  piGradXTmp = piGradX + iGradStride + 1;
-  piGradYTmp = piGradY + iGradStride + 1;
-  for (int y = 0; y < iHeightInside; y++)
+  gradXTmp = gradX + gradStride + 1;
+  gradYTmp = gradY + gradStride + 1;
+  for (int y = 0; y < heightInside; y++)
   {
-    piGradXTmp[-1] = piGradXTmp[0];
-    piGradXTmp[iWidthInside] = piGradXTmp[iWidthInside - 1];
-    piGradXTmp += iGradStride;
+    gradXTmp[-1] = gradXTmp[0];
+    gradXTmp[widthInside] = gradXTmp[widthInside - 1];
+    gradXTmp += gradStride;
 
-    piGradYTmp[-1] = piGradYTmp[0];
-    piGradYTmp[iWidthInside] = piGradYTmp[iWidthInside - 1];
-    piGradYTmp += iGradStride;
+    gradYTmp[-1] = gradYTmp[0];
+    gradYTmp[widthInside] = gradYTmp[widthInside - 1];
+    gradYTmp += gradStride;
   }
 
-  piGradXTmp = piGradX + iGradStride;
-  piGradYTmp = piGradY + iGradStride;
-  ::memcpy(piGradXTmp - iGradStride, piGradXTmp, sizeof(Pel)*(iWidth));
-  ::memcpy(piGradXTmp + iHeightInside*iGradStride, piGradXTmp + (iHeightInside - 1)*iGradStride, sizeof(Pel)*(iWidth));
-  ::memcpy(piGradYTmp - iGradStride, piGradYTmp, sizeof(Pel)*(iWidth));
-  ::memcpy(piGradYTmp + iHeightInside*iGradStride, piGradYTmp + (iHeightInside - 1)*iGradStride, sizeof(Pel)*(iWidth));
+  gradXTmp = gradX + gradStride;
+  gradYTmp = gradY + gradStride;
+  ::memcpy(gradXTmp - gradStride, gradXTmp, sizeof(Pel)*(width));
+  ::memcpy(gradXTmp + heightInside*gradStride, gradXTmp + (heightInside - 1)*gradStride, sizeof(Pel)*(width));
+  ::memcpy(gradYTmp - gradStride, gradYTmp, sizeof(Pel)*(width));
+  ::memcpy(gradYTmp + heightInside*gradStride, gradYTmp + (heightInside - 1)*gradStride, sizeof(Pel)*(width));
 }
 
 template< X86_VEXT vext >
-void calcBIOPar_SSE(const Pel* pSrcY0Temp, const Pel* pSrcY1Temp, const Pel* pGradX0, const Pel* pGradX1, const Pel* pGradY0, const Pel* pGradY1, int* m_piDotProductTemp1, int* m_piDotProductTemp2, int* m_piDotProductTemp3, int* m_piDotProductTemp5, int* m_piDotProductTemp6, const int iSrc0Stride, const int iSrc1Stride, const int iGradStride, const int iWidthG, const int iHeightG)
+void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG)
 {
-  for (int y = 0; y < iHeightG; y++)
+  for (int y = 0; y < heightG; y++)
   {
     int x = 0;
-    for (; x < ((iWidthG >> 3) << 3); x += 8)
+    for (; x < ((widthG >> 3) << 3); x += 8)
     {
-      __m128i mmSrcY0Temp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(pSrcY0Temp + x)), 6);
-      __m128i mmSrcY1Temp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(pSrcY1Temp + x)), 6);
-      __m128i mmGradX0 = _mm_loadu_si128((__m128i*)(pGradX0 + x));
-      __m128i mmGradX1 = _mm_loadu_si128((__m128i*)(pGradX1 + x));
-      __m128i mmGradY0 = _mm_loadu_si128((__m128i*)(pGradY0 + x));
-      __m128i mmGradY1 = _mm_loadu_si128((__m128i*)(pGradY1 + x));
+      __m128i mmSrcY0Temp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY0Temp + x)), 6);
+      __m128i mmSrcY1Temp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY1Temp + x)), 6);
+      __m128i mmGradX0 = _mm_loadu_si128((__m128i*)(gradX0 + x));
+      __m128i mmGradX1 = _mm_loadu_si128((__m128i*)(gradX1 + x));
+      __m128i mmGradY0 = _mm_loadu_si128((__m128i*)(gradY0 + x));
+      __m128i mmGradY1 = _mm_loadu_si128((__m128i*)(gradY1 + x));
 
       __m128i mmTemp1 = _mm_sub_epi16(mmSrcY1Temp, mmSrcY0Temp);
       __m128i mmTempX = _mm_srai_epi16(_mm_add_epi16(mmGradX0, mmGradX1), 3);
@@ -246,8 +246,8 @@ void calcBIOPar_SSE(const Pel* pSrcY0Temp, const Pel* pSrcY1Temp, const Pel* pGr
       __m128i mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
       __m128i mm_h = _mm_unpackhi_epi16(mm_a, mm_b);
 
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp1 + x), mm_l);
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp1 + x + 4), mm_h);
+      _mm_storeu_si128((__m128i *)(dotProductTemp1 + x), mm_l);
+      _mm_storeu_si128((__m128i *)(dotProductTemp1 + x + 4), mm_h);
 
       // m_piDotProductTemp2
       mm_b = _mm_mulhi_epi16(mmTempX, mmTempY);
@@ -256,8 +256,8 @@ void calcBIOPar_SSE(const Pel* pSrcY0Temp, const Pel* pSrcY1Temp, const Pel* pGr
       mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
       mm_h = _mm_unpackhi_epi16(mm_a, mm_b);
 
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp2 + x), mm_l);
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp2 + x + 4), mm_h);
+      _mm_storeu_si128((__m128i *)(dotProductTemp2 + x), mm_l);
+      _mm_storeu_si128((__m128i *)(dotProductTemp2 + x + 4), mm_h);
 
       // m_piDotProductTemp3
       mm_b = _mm_mulhi_epi16(mmTempX, mmTemp1);
@@ -266,8 +266,8 @@ void calcBIOPar_SSE(const Pel* pSrcY0Temp, const Pel* pSrcY1Temp, const Pel* pGr
       mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
       mm_h = _mm_unpackhi_epi16(mm_a, mm_b);
 
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp3 + x), mm_l);
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp3 + x + 4), mm_h);
+      _mm_storeu_si128((__m128i *)(dotProductTemp3 + x), mm_l);
+      _mm_storeu_si128((__m128i *)(dotProductTemp3 + x + 4), mm_h);
 
       // m_piDotProductTemp5
       mm_b = _mm_mulhi_epi16(mmTempY, mmTempY);
@@ -276,8 +276,8 @@ void calcBIOPar_SSE(const Pel* pSrcY0Temp, const Pel* pSrcY1Temp, const Pel* pGr
       mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
       mm_h = _mm_unpackhi_epi16(mm_a, mm_b);
 
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp5 + x), mm_l);
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp5 + x + 4), mm_h);
+      _mm_storeu_si128((__m128i *)(dotProductTemp5 + x), mm_l);
+      _mm_storeu_si128((__m128i *)(dotProductTemp5 + x + 4), mm_h);
 
       // m_piDotProductTemp6
       mm_b = _mm_mulhi_epi16(mmTempY, mmTemp1);
@@ -286,18 +286,18 @@ void calcBIOPar_SSE(const Pel* pSrcY0Temp, const Pel* pSrcY1Temp, const Pel* pGr
       mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
       mm_h = _mm_unpackhi_epi16(mm_a, mm_b);
 
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp6 + x), mm_l);
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp6 + x + 4), mm_h);
+      _mm_storeu_si128((__m128i *)(dotProductTemp6 + x), mm_l);
+      _mm_storeu_si128((__m128i *)(dotProductTemp6 + x + 4), mm_h);
     }
 
-    for (; x < ((iWidthG >> 2) << 2); x += 4)
+    for (; x < ((widthG >> 2) << 2); x += 4)
     {
-      __m128i mmSrcY0Temp = _mm_srai_epi16(_mm_loadl_epi64((__m128i*)(pSrcY0Temp + x)), 6);
-      __m128i mmSrcY1Temp = _mm_srai_epi16(_mm_loadl_epi64((__m128i*)(pSrcY1Temp + x)), 6);
-      __m128i mmGradX0 = _mm_loadl_epi64((__m128i*)(pGradX0 + x));
-      __m128i mmGradX1 = _mm_loadl_epi64((__m128i*)(pGradX1 + x));
-      __m128i mmGradY0 = _mm_loadl_epi64((__m128i*)(pGradY0 + x));
-      __m128i mmGradY1 = _mm_loadl_epi64((__m128i*)(pGradY1 + x));
+      __m128i mmSrcY0Temp = _mm_srai_epi16(_mm_loadl_epi64((__m128i*)(srcY0Temp + x)), 6);
+      __m128i mmSrcY1Temp = _mm_srai_epi16(_mm_loadl_epi64((__m128i*)(srcY1Temp + x)), 6);
+      __m128i mmGradX0 = _mm_loadl_epi64((__m128i*)(gradX0 + x));
+      __m128i mmGradX1 = _mm_loadl_epi64((__m128i*)(gradX1 + x));
+      __m128i mmGradY0 = _mm_loadl_epi64((__m128i*)(gradY0 + x));
+      __m128i mmGradY1 = _mm_loadl_epi64((__m128i*)(gradY1 + x));
 
       __m128i mmTemp1 = _mm_sub_epi16(mmSrcY1Temp, mmSrcY0Temp);
       __m128i mmTempX = _mm_srai_epi16(_mm_add_epi16(mmGradX0, mmGradX1), 3);
@@ -308,78 +308,78 @@ void calcBIOPar_SSE(const Pel* pSrcY0Temp, const Pel* pSrcY1Temp, const Pel* pGr
       __m128i mm_a = _mm_mullo_epi16(mmTempX, mmTempX);
       __m128i mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
 
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp1 + x), mm_l);
+      _mm_storeu_si128((__m128i *)(dotProductTemp1 + x), mm_l);
 
       // m_piDotProductTemp2
       mm_b = _mm_mulhi_epi16(mmTempX, mmTempY);
       mm_a = _mm_mullo_epi16(mmTempX, mmTempY);
       mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
 
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp2 + x), mm_l);
+      _mm_storeu_si128((__m128i *)(dotProductTemp2 + x), mm_l);
 
       // m_piDotProductTemp3
       mm_b = _mm_mulhi_epi16(mmTempX, mmTemp1);
       mm_a = _mm_mullo_epi16(mmTempX, mmTemp1);
       mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
 
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp3 + x), mm_l);
+      _mm_storeu_si128((__m128i *)(dotProductTemp3 + x), mm_l);
 
       // m_piDotProductTemp5
       mm_b = _mm_mulhi_epi16(mmTempY, mmTempY);
       mm_a = _mm_mullo_epi16(mmTempY, mmTempY);
       mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
 
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp5 + x), mm_l);
+      _mm_storeu_si128((__m128i *)(dotProductTemp5 + x), mm_l);
 
       // m_piDotProductTemp6
       mm_b = _mm_mulhi_epi16(mmTempY, mmTemp1);
       mm_a = _mm_mullo_epi16(mmTempY, mmTemp1);
       mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
 
-      _mm_storeu_si128((__m128i *)(m_piDotProductTemp6 + x), mm_l);
+      _mm_storeu_si128((__m128i *)(dotProductTemp6 + x), mm_l);
     }
 
-    for (; x < iWidthG; x++)
+    for (; x < widthG; x++)
     {
-      int temp = (pSrcY0Temp[x] >> 6) - (pSrcY1Temp[x] >> 6);
-      int tempX = (pGradX0[x] + pGradX1[x]) >> 3;
-      int tempY = (pGradY0[x] + pGradY1[x]) >> 3;
-      m_piDotProductTemp1[x] = tempX * tempX;
-      m_piDotProductTemp2[x] = tempX * tempY;
-      m_piDotProductTemp3[x] = -tempX * temp;
-      m_piDotProductTemp5[x] = tempY * tempY;
-      m_piDotProductTemp6[x] = -tempY * temp;
+      int temp = (srcY0Temp[x] >> 6) - (srcY1Temp[x] >> 6);
+      int tempX = (gradX0[x] + gradX1[x]) >> 3;
+      int tempY = (gradY0[x] + gradY1[x]) >> 3;
+      dotProductTemp1[x] = tempX * tempX;
+      dotProductTemp2[x] = tempX * tempY;
+      dotProductTemp3[x] = -tempX * temp;
+      dotProductTemp5[x] = tempY * tempY;
+      dotProductTemp6[x] = -tempY * temp;
     }
 
-    pSrcY0Temp += iSrc0Stride;
-    pSrcY1Temp += iSrc1Stride;
-    pGradX0 += iGradStride;
-    pGradX1 += iGradStride;
-    pGradY0 += iGradStride;
-    pGradY1 += iGradStride;
-    m_piDotProductTemp1 += iWidthG;
-    m_piDotProductTemp2 += iWidthG;
-    m_piDotProductTemp3 += iWidthG;
-    m_piDotProductTemp5 += iWidthG;
-    m_piDotProductTemp6 += iWidthG;
+    srcY0Temp += src0Stride;
+    srcY1Temp += src1Stride;
+    gradX0 += gradStride;
+    gradX1 += gradStride;
+    gradY0 += gradStride;
+    gradY1 += gradStride;
+    dotProductTemp1 += widthG;
+    dotProductTemp2 += widthG;
+    dotProductTemp3 += widthG;
+    dotProductTemp5 += widthG;
+    dotProductTemp6 += widthG;
   }
 }
 
 template< X86_VEXT vext >
 void calcBlkGradient_SSE(int sx, int sy, int     *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize)
 {
-  int     *pGx2 = arraysGx2;
-  int     *pGy2 = arraysGy2;
-  int     *pGxGy = arraysGxGy;
-  int     *pGxdI = arraysGxdI;
-  int     *pGydI = arraysGydI;
+  int     *Gx2 = arraysGx2;
+  int     *Gy2 = arraysGy2;
+  int     *GxGy = arraysGxGy;
+  int     *GxdI = arraysGxdI;
+  int     *GydI = arraysGydI;
 
   // set to the above row due to JVET_K0485_BIO_EXTEND_SIZE
-  pGx2 -= (JVET_L0256_BIO_EXTEND_SIZE*width);
-  pGy2 -= (JVET_L0256_BIO_EXTEND_SIZE*width);
-  pGxGy -= (JVET_L0256_BIO_EXTEND_SIZE*width);
-  pGxdI -= (JVET_L0256_BIO_EXTEND_SIZE*width);
-  pGydI -= (JVET_L0256_BIO_EXTEND_SIZE*width);
+  Gx2 -= (BIO_EXTEND_SIZE*width);
+  Gy2 -= (BIO_EXTEND_SIZE*width);
+  GxGy -= (BIO_EXTEND_SIZE*width);
+  GxdI -= (BIO_EXTEND_SIZE*width);
+  GydI -= (BIO_EXTEND_SIZE*width);
 
   __m128i vzero = _mm_setzero_si128();
   __m128i mmGx2Total = _mm_setzero_si128();
@@ -388,13 +388,13 @@ void calcBlkGradient_SSE(int sx, int sy, int     *arraysGx2, int     *arraysGxGy
   __m128i mmGxdITotal = _mm_setzero_si128();
   __m128i mmGydITotal = _mm_setzero_si128();
 
-  for (int y = -JVET_L0256_BIO_EXTEND_SIZE; y < unitSize + JVET_L0256_BIO_EXTEND_SIZE; y++)
+  for (int y = -BIO_EXTEND_SIZE; y < unitSize + BIO_EXTEND_SIZE; y++)
   {
-    __m128i mmsGx2 = _mm_loadu_si128((__m128i*)(pGx2 - 1));   __m128i mmsGx2Sec = _mm_loadl_epi64((__m128i*)(pGx2 + 3));
-    __m128i mmsGy2 = _mm_loadu_si128((__m128i*)(pGy2 - 1));   __m128i mmsGy2Sec = _mm_loadl_epi64((__m128i*)(pGy2 + 3));
-    __m128i mmsGxGy = _mm_loadu_si128((__m128i*)(pGxGy - 1));  __m128i mmsGxGySec = _mm_loadl_epi64((__m128i*)(pGxGy + 3));
-    __m128i mmsGxdI = _mm_loadu_si128((__m128i*)(pGxdI - 1));  __m128i mmsGxdISec = _mm_loadl_epi64((__m128i*)(pGxdI + 3));
-    __m128i mmsGydI = _mm_loadu_si128((__m128i*)(pGydI - 1));  __m128i mmsGydISec = _mm_loadl_epi64((__m128i*)(pGydI + 3));
+    __m128i mmsGx2 = _mm_loadu_si128((__m128i*)(Gx2 - 1));   __m128i mmsGx2Sec = _mm_loadl_epi64((__m128i*)(Gx2 + 3));
+    __m128i mmsGy2 = _mm_loadu_si128((__m128i*)(Gy2 - 1));   __m128i mmsGy2Sec = _mm_loadl_epi64((__m128i*)(Gy2 + 3));
+    __m128i mmsGxGy = _mm_loadu_si128((__m128i*)(GxGy - 1));  __m128i mmsGxGySec = _mm_loadl_epi64((__m128i*)(GxGy + 3));
+    __m128i mmsGxdI = _mm_loadu_si128((__m128i*)(GxdI - 1));  __m128i mmsGxdISec = _mm_loadl_epi64((__m128i*)(GxdI + 3));
+    __m128i mmsGydI = _mm_loadu_si128((__m128i*)(GydI - 1));  __m128i mmsGydISec = _mm_loadl_epi64((__m128i*)(GydI + 3));
 
     mmsGx2 = _mm_add_epi32(mmsGx2, mmsGx2Sec);
     mmsGy2 = _mm_add_epi32(mmsGy2, mmsGy2Sec);
@@ -409,11 +409,11 @@ void calcBlkGradient_SSE(int sx, int sy, int     *arraysGx2, int     *arraysGxGy
     mmGxdITotal = _mm_add_epi32(mmGxdITotal, mmsGxdI);
     mmGydITotal = _mm_add_epi32(mmGydITotal, mmsGydI);
 
-    pGx2 += width;
-    pGy2 += width;
-    pGxGy += width;
-    pGxdI += width;
-    pGydI += width;
+    Gx2 += width;
+    Gy2 += width;
+    GxGy += width;
+    GxdI += width;
+    GydI += width;
   }
 
   mmGx2Total = _mm_hadd_epi32(_mm_hadd_epi32(mmGx2Total, vzero), vzero);
@@ -798,7 +798,7 @@ void PelBufferOps::_initPelBufOpsX86()
   addAvg8 = addAvg_SSE<vext, 8>;
   addAvg4 = addAvg_SSE<vext, 4>;
 
-#if JVET_L0256_BIO
+#if ENABLE_SIMD_OPT_BIO
   addBIOAvg4      = addBIOAvg4_SSE<vext>;
   bioGradFilter   = gradFilter_SSE<vext>;
   calcBIOPar      = calcBIOPar_SSE<vext>;

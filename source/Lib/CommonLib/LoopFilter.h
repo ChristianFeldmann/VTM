@@ -80,7 +80,7 @@ private:
   void xEdgeFilterChroma          ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge );
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
-  void deriveLADFShift( const Pel* piSrc, const int iStride, int& iShift, const DeblockEdgeDir edgeDir, const SPS sps );
+  void deriveLADFShift( const Pel* src, const int stride, int& shift, const DeblockEdgeDir edgeDir, const SPS sps );
 #endif
   inline void xPelFilterLuma      ( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const int iThrCut, const bool bFilterSecondP, const bool bFilterSecondQ, const ClpRng& clpRng ) const;
   inline void xPelFilterChroma    ( Pel* piSrc, const int iOffset, const int tc,                const bool bPartPNoFilter, const bool bPartQNoFilter,                                                                          const ClpRng& clpRng ) const;

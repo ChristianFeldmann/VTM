@@ -561,26 +561,26 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
 }
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
-void LoopFilter::deriveLADFShift( const Pel* piSrc, const int iStride, int& iShift, const DeblockEdgeDir edgeDir, const SPS sps )
+void LoopFilter::deriveLADFShift( const Pel* src, const int stride, int& shift, const DeblockEdgeDir edgeDir, const SPS sps )
 {
-  uint32_t uiLevel = 0;
-  iShift = sps.getSpsNext().getLadfQpOffset(0);
+  uint32_t lumaLevel = 0;
+  shift = sps.getSpsNext().getLadfQpOffset(0);
 
   if (edgeDir == EDGE_VER)
   {
-    uiLevel = (piSrc[0] + piSrc[3*iStride] + piSrc[-1] + piSrc[3*iStride - 1]) >> 2;
+    lumaLevel = (src[0] + src[3*stride] + src[-1] + src[3*stride - 1]) >> 2;
   }
   else // (edgeDir == EDGE_HOR)
   {
-    uiLevel = (piSrc[0] + piSrc[3] + piSrc[-iStride] + piSrc[-iStride + 3]) >> 2;
+    lumaLevel = (src[0] + src[3] + src[-stride] + src[-stride + 3]) >> 2;
   }
 
   for ( int k = 1; k < sps.getSpsNext().getLadfNumIntervals(); k++ )
   {
     const int th = sps.getSpsNext().getLadfIntervalLowerBound( k );
-    if ( uiLevel > th )
+    if ( lumaLevel > th )
     {
-      iShift = sps.getSpsNext().getLadfQpOffset( k );
+      shift = sps.getSpsNext().getLadfQpOffset( k );
     }
     else
     {

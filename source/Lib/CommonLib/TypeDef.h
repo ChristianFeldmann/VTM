@@ -63,6 +63,8 @@
 
 #define JVET_L0191_LM_WO_LMS                              1 // NO LMS regression. min/max are used instead
 
+#define JVET_L0338_MDLM                                   1 // multi-directional LM. L0338 test5.4.1,L0340 test5.6.1
+
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define JVET_L0054_MMVD                                   1
 

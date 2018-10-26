@@ -143,6 +143,9 @@ IntraPrediction::IntraPrediction()
   }
 
   m_piTemp = nullptr;
+#if JVET_L0338_MDLM
+  m_pMdlmTemp = nullptr;
+#endif
 }
 
 IntraPrediction::~IntraPrediction()
@@ -163,6 +166,10 @@ void IntraPrediction::destroy()
 
   delete[] m_piTemp;
   m_piTemp = nullptr;
+#if JVET_L0338_MDLM
+  delete[] m_pMdlmTemp;
+  m_pMdlmTemp = nullptr;
+#endif
 }
 
 void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepthY)
@@ -197,6 +204,12 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
   {
     m_piTemp = new Pel[(MAX_CU_SIZE + 1) * (MAX_CU_SIZE + 1)];
   }
+#if JVET_L0338_MDLM
+  if (m_pMdlmTemp == nullptr)
+  {
+    m_pMdlmTemp = new Pel[(2 * MAX_CU_SIZE + 1)*(2 * MAX_CU_SIZE + 1)];//MDLM will use top-above and left-below samples.
+  }
+#endif
 }
 
 // ====================================================================================================================
@@ -383,8 +396,20 @@ void IntraPrediction::predIntraChromaLM(const ComponentID compID, PelBuf &piPred
 {
   int  iLumaStride = 0;
   PelBuf Temp;
+#if JVET_L0338_MDLM
+  if ((intraDir == MDLM_L_IDX) || (intraDir == MDLM_T_IDX))
+  {
+    iLumaStride = 2 * MAX_CU_SIZE + 1;
+    Temp = PelBuf(m_pMdlmTemp + iLumaStride + 1, iLumaStride, Size(chromaArea));
+  }
+  else
+  {
+#endif
   iLumaStride = MAX_CU_SIZE + 1;
   Temp = PelBuf(m_piTemp + iLumaStride + 1, iLumaStride, Size(chromaArea));
+#if JVET_L0338_MDLM
+  }
+#endif
   int a, b, iShift;
   xGetLMParameters(pu, compID, chromaArea, a, b, iShift);
 
@@ -1239,8 +1264,21 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
 {
   int iDstStride = 0;
   Pel* pDst0 = 0;
+#if JVET_L0338_MDLM
+  int curChromaMode = pu.intraDir[1];
+  if ((curChromaMode == MDLM_L_IDX) || (curChromaMode == MDLM_T_IDX))
+  {
+    iDstStride = 2 * MAX_CU_SIZE + 1;
+    pDst0 = m_pMdlmTemp + iDstStride + 1;
+  }
+  else
+  {
+#endif
   iDstStride = MAX_CU_SIZE + 1;
   pDst0 = m_piTemp + iDstStride + 1; //MMLM_SAMPLE_NEIGHBOR_LINES;
+#if JVET_L0338_MDLM
+  }
+#endif
   //assert 420 chroma subsampling
   CompArea lumaArea = CompArea( COMPONENT_Y, pu.chromaFormat, chromaArea.lumaPos(), recalcSize( pu.chromaFormat, CHANNEL_TYPE_CHROMA, CHANNEL_TYPE_LUMA, chromaArea.size() ) );//needed for correct pos/size (4x4 Tus)
 
@@ -1280,13 +1318,36 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   const int  iTUHeightInUnits = uiTuHeight / iUnitHeight;
   const int  iAboveUnits      = iTUWidthInUnits;
   const int  iLeftUnits       = iTUHeightInUnits;
+#if JVET_L0338_MDLM
+  const int  chromaUnitWidth = iBaseUnitSize >> getComponentScaleX(COMPONENT_Cb, area.chromaFormat);
+  const int  chromaUnitHeight = iBaseUnitSize >> getComponentScaleX(COMPONENT_Cb, area.chromaFormat);
+  const int  topTemplateSampNum = 2 * uiCWidth; // for MDLM, the number of template samples is 2W or 2H.
+  const int  leftTemplateSampNum = 2 * uiCHeight;
+  assert(m_topRefLength >= topTemplateSampNum);
+  assert(m_leftRefLength >= leftTemplateSampNum);
+  const int  totalAboveUnits = (topTemplateSampNum + (chromaUnitWidth - 1)) / chromaUnitWidth;
+  const int  totalLeftUnits = (leftTemplateSampNum + (chromaUnitHeight - 1)) / chromaUnitHeight;
+  const int  totalUnits = totalLeftUnits + totalAboveUnits + 1;
+  const int  aboveRightUnits = totalAboveUnits - iAboveUnits;
+  const int  leftBelowUnits = totalLeftUnits - iLeftUnits;
 
+  int avaiAboveRightUnits = 0;
+  int avaiLeftBelowUnits = 0;
+#endif
   bool  bNeighborFlags[4 * MAX_NUM_PART_IDXS_IN_CTU_WIDTH + 1];
-
+#if JVET_L0338_MDLM
+  memset(bNeighborFlags, 0, totalUnits);
+#else
   memset( bNeighborFlags, 0, 1 + iLeftUnits + iAboveUnits );
+#endif
   bool bAboveAvaillable, bLeftAvaillable;
 
-  int availlableUnit = isLeftAvailable( isChroma( pu.chType ) ? cu : lumaCU, toChannelType( area.compID ), area.pos(), iLeftUnits, iUnitHeight, ( bNeighborFlags + iLeftUnits - 1 ) );
+  int availlableUnit = isLeftAvailable( isChroma( pu.chType ) ? cu : lumaCU, toChannelType( area.compID ), area.pos(), iLeftUnits, iUnitHeight,
+#if JVET_L0338_MDLM
+  ( bNeighborFlags + iLeftUnits + leftBelowUnits - 1 ) );
+#else
+  ( bNeighborFlags + iLeftUnits - 1 ) );
+#endif
 
   if( lumaCU.cs->pcv->rectCUs )
   {
@@ -1297,7 +1358,12 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     bLeftAvaillable = availlableUnit == iTUWidthInUnits;
   }
 
-  availlableUnit = isAboveAvailable( isChroma( pu.chType ) ? cu : lumaCU, toChannelType( area.compID ), area.pos(), iAboveUnits, iUnitWidth, ( bNeighborFlags + iLeftUnits + 1 ) );
+  availlableUnit = isAboveAvailable( isChroma( pu.chType ) ? cu : lumaCU, toChannelType( area.compID ), area.pos(), iAboveUnits, iUnitWidth,
+#if JVET_L0338_MDLM
+  ( bNeighborFlags + iLeftUnits + leftBelowUnits + 1 ) );
+#else
+  ( bNeighborFlags + iLeftUnits + 1 ) );
+#endif
 
   if( lumaCU.cs->pcv->rectCUs )
   {
@@ -1307,7 +1373,17 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   {
     bAboveAvaillable = availlableUnit == iTUHeightInUnits;
   }
+#if JVET_L0338_MDLM
+  if (bLeftAvaillable) // if left is not available, then the below left is not available
+  {
+    avaiLeftBelowUnits = isBelowLeftAvailable(isChroma(pu.chType) ? cu : lumaCU, toChannelType(area.compID), area.bottomLeftComp(area.compID), leftBelowUnits, iUnitHeight, (bNeighborFlags + leftBelowUnits - 1));
+  }
 
+  if (bAboveAvaillable) // if above is not available, then  the above right is not available.
+  {
+    avaiAboveRightUnits = isAboveRightAvailable(isChroma(pu.chType) ? cu : lumaCU, toChannelType(area.compID), area.topRightComp(area.compID), aboveRightUnits, iUnitWidth, (bNeighborFlags + iLeftUnits + leftBelowUnits + iAboveUnits + 1));
+  }
+#endif
 
   Pel*       pDst  = nullptr;
   Pel const* piSrc = nullptr;
@@ -1316,8 +1392,16 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   {
     pDst  = pDst0    - iDstStride;
     piSrc = pRecSrc0 - iRecStride2;
-
+#if JVET_L0338_MDLM
+    int addedAboveRight = 0;
+    if ((curChromaMode == MDLM_L_IDX) || (curChromaMode == MDLM_T_IDX))
+    {
+      addedAboveRight = avaiAboveRightUnits*chromaUnitWidth;
+    }
+    for (int i = 0; i < uiCWidth + addedAboveRight; i++)
+#else
     for( int i = 0; i < uiCWidth; i++ )
+#endif
     {
       if( i == 0 && !bLeftAvaillable )
       {
@@ -1336,8 +1420,16 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   {
     pDst  = pDst0    - 1;
     piSrc = pRecSrc0 - 3;
-
+#if JVET_L0338_MDLM
+    int addedLeftBelow = 0;
+    if ((curChromaMode == MDLM_L_IDX) || (curChromaMode == MDLM_T_IDX))
+    {
+      addedLeftBelow = avaiLeftBelowUnits*chromaUnitHeight;
+    }
+    for (int j = 0; j < uiCHeight + addedLeftBelow; j++)
+#else
     for( int j = 0; j < uiCHeight; j++ )
+#endif
     {
       pDst[0] = ( ( piSrc[1             ] * 2 + piSrc[0         ] + piSrc[2             ] )
                 + ( piSrc[1 + iRecStride] * 2 + piSrc[iRecStride] + piSrc[2 + iRecStride] )
@@ -1370,6 +1462,19 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     pRecSrc0 += iRecStride2;
   }
 }
+#if JVET_L0338_MDLM && !JVET_L0191_LM_WO_LMS
+void IntraPrediction::xPadMdlmTemplateSample(Pel*pSrc, Pel*pCur, int cWidth, int cHeight, int existSampNum, int targetSampNum)
+{
+  int sampNumToBeAdd = targetSampNum - existSampNum;
+  Pel*pTempSrc = pSrc + existSampNum;
+  Pel*pTempCur = pCur + existSampNum;
+  for (int i = 0; i < sampNumToBeAdd; i++)
+  {
+    pTempSrc[i] = pSrc[existSampNum - 1];
+    pTempCur[i] = pCur[existSampNum - 1];
+  }
+}
+#endif
 #if JVET_L0191_LM_WO_LMS
 void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const ComponentID compID,
                                               const CompArea &chromaArea,
@@ -1398,27 +1503,79 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   const int tuHeightInUnits = tuHeight / unitHeight;
   const int aboveUnits      = tuWidthInUnits;
   const int leftUnits       = tuHeightInUnits;
+#if JVET_L0338_MDLM
+  int topTemplateSampNum = 2 * cWidth; // for MDLM, the template sample number is 2W or 2H;
+  int leftTemplateSampNum = 2 * cHeight;
+  assert(m_topRefLength >= topTemplateSampNum);
+  assert(m_leftRefLength >= leftTemplateSampNum);
+  int totalAboveUnits = (topTemplateSampNum + (unitWidth - 1)) / unitWidth;
+  int totalLeftUnits = (leftTemplateSampNum + (unitHeight - 1)) / unitHeight;
+  int totalUnits = totalLeftUnits + totalAboveUnits + 1;
+  int aboveRightUnits = totalAboveUnits - aboveUnits;
+  int leftBelowUnits = totalLeftUnits - leftUnits;
+  int avaiAboveRightUnits = 0;
+  int avaiLeftBelowUnits = 0;
+  int avaiAboveUnits = 0;
+  int avaiLeftUnits = 0;
 
+  int curChromaMode = pu.intraDir[1];
+#endif
   bool neighborFlags[4 * MAX_NUM_PART_IDXS_IN_CTU_WIDTH + 1];
-
+#if JVET_L0338_MDLM
+  memset(neighborFlags, 0, totalUnits);
+#else
   memset(neighborFlags, 0, 1 + leftUnits + aboveUnits);
+#endif
 
   bool aboveAvailable, leftAvailable;
 
   int availableUnit =
-    isAboveAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, aboveUnits, unitWidth, (neighborFlags + leftUnits + 1));
+    isAboveAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, aboveUnits, unitWidth, 
+#if JVET_L0338_MDLM
+    (neighborFlags + leftUnits + leftBelowUnits + 1));
+#else
+    (neighborFlags + leftUnits + 1));
+#endif
   aboveAvailable = availableUnit == tuWidthInUnits;
 
   availableUnit =
-    isLeftAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, leftUnits, unitHeight, (neighborFlags + leftUnits - 1));
+    isLeftAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, leftUnits, unitHeight, 
+#if JVET_L0338_MDLM
+    (neighborFlags + leftUnits + leftBelowUnits - 1));
+#else
+    (neighborFlags + leftUnits - 1));
+#endif
   leftAvailable = availableUnit == tuHeightInUnits;
-
+#if JVET_L0338_MDLM
+  if (leftAvailable) // if left is not available, then the below left is not available
+  {
+    avaiLeftUnits = tuHeightInUnits;
+    avaiLeftBelowUnits = isBelowLeftAvailable(cu, CHANNEL_TYPE_CHROMA, chromaArea.bottomLeftComp(chromaArea.compID), leftBelowUnits, unitHeight, (neighborFlags + leftBelowUnits - 1));
+  }
+  if (aboveAvailable) // if above is not available, then  the above right is not available.
+  {
+    avaiAboveUnits = tuWidthInUnits;
+    avaiAboveRightUnits = isAboveRightAvailable(cu, CHANNEL_TYPE_CHROMA, chromaArea.topRightComp(chromaArea.compID), aboveRightUnits, unitWidth, (neighborFlags + leftUnits + leftBelowUnits + aboveUnits + 1));
+  }
+#endif
   Pel *srcColor0, *curChroma0;
   int  srcStride, curStride;
 
   PelBuf temp;
+#if JVET_L0338_MDLM
+  if ((curChromaMode == MDLM_L_IDX) || (curChromaMode == MDLM_T_IDX))
+  {
+    srcStride = 2 * MAX_CU_SIZE + 1;
+    temp = PelBuf(m_pMdlmTemp + srcStride + 1, srcStride, Size(chromaArea));
+  }
+  else
+  {
+#endif
   srcStride = MAX_CU_SIZE + 1;
   temp        = PelBuf(m_piTemp + srcStride + 1, srcStride, Size(chromaArea));
+#if JVET_L0338_MDLM
+  }
+#endif
   srcColor0 = temp.bufAt(0, 0);
   curChroma0 = getPredictorPtr(compID);
 
@@ -1433,16 +1590,45 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
   Pel *src = srcColor0 - srcStride;
   Pel *cur = curChroma0 - curStride;
-
+#if JVET_L0338_MDLM
+  int minDim = 1;
+  int actualTopTemplateSampNum = 0;
+  int actualLeftTemplateSampNum = 0;
+  if (curChromaMode == MDLM_T_IDX)
+  {
+    leftAvailable = 0;
+    actualTopTemplateSampNum = unitWidth*(avaiAboveUnits + avaiAboveRightUnits);
+    minDim = actualTopTemplateSampNum;
+  }
+  else if (curChromaMode == MDLM_L_IDX)
+  {
+    aboveAvailable = 0;
+    actualLeftTemplateSampNum = unitHeight*(avaiLeftUnits + avaiLeftBelowUnits);
+    minDim = actualLeftTemplateSampNum;
+  }
+  else if (curChromaMode == LM_CHROMA_IDX)
+  {
+    actualTopTemplateSampNum = cWidth;
+    actualLeftTemplateSampNum = cHeight;
+    minDim = leftAvailable && aboveAvailable ? 1 << g_aucPrevLog2[std::min(actualLeftTemplateSampNum, actualTopTemplateSampNum)]
+      : 1 << g_aucPrevLog2[leftAvailable ? actualLeftTemplateSampNum : actualTopTemplateSampNum];
+  }
+#endif
+#if !JVET_L0338_MDLM
   int minDim = leftAvailable && aboveAvailable ? 1 << g_aucPrevLog2[std::min(cHeight, cWidth)]
                                                    : 1 << g_aucPrevLog2[leftAvailable ? cHeight : cWidth];
+#endif
   int numSteps = minDim;
 
   if (aboveAvailable)
   {
     for (int j = 0; j < numSteps; j++)
     {
+#if JVET_L0338_MDLM
+      int idx = (j * actualTopTemplateSampNum) / minDim;
+#else
       int idx = (j * cWidth) / minDim;
+#endif
 
       if (minLuma[0] > src[idx])
       {
@@ -1464,7 +1650,11 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
     for (int i = 0; i < numSteps; i++)
     {
+#if JVET_L0338_MDLM
+      int idx = (i * actualLeftTemplateSampNum) / minDim;
+#else
       int idx = (i * cHeight) / minDim;
+#endif
 
       if (minLuma[0] > src[srcStride * idx])
       {
@@ -1542,25 +1732,77 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   const int  iTUHeightInUnits = uiTuHeight / iUnitHeight;
   const int  iAboveUnits      = iTUWidthInUnits;
   const int  iLeftUnits       = iTUHeightInUnits;
+#if JVET_L0338_MDLM
+  int topTemplateSampNum = 2 * uiCWidth; // for MDLM, the template sample number is 2W or 2H;
+  int leftTemplateSampNum = 2 * uiCHeight;
+  assert(m_topRefLength >= topTemplateSampNum);
+  assert(m_leftRefLength >= leftTemplateSampNum);
+  int totalAboveUnits = (topTemplateSampNum + (iUnitWidth - 1)) / iUnitWidth;
+  int totalLeftUnits = (leftTemplateSampNum + (iUnitHeight - 1)) / iUnitHeight;
+  int totalUnits = totalLeftUnits + totalAboveUnits + 1;
+  int aboveRightUnits = totalAboveUnits - iAboveUnits;
+  int leftBelowUnits = totalLeftUnits - iLeftUnits;
+  int avaiAboveRightUnits = 0;
+  int avaiLeftBelowUnits = 0;
+  int avaiAboveUnits = 0;
+  int avaiLeftUnits = 0;
 
+  int curChromaMode = pu.intraDir[1];
+#endif
   bool  bNeighborFlags[4 * MAX_NUM_PART_IDXS_IN_CTU_WIDTH + 1];
-
+#if JVET_L0338_MDLM
+  memset(bNeighborFlags, 0, totalUnits);
+#else
   memset( bNeighborFlags, 0, 1 + iLeftUnits + iAboveUnits );
+#endif
 
   bool bAboveAvaillable, bLeftAvaillable;
 
-  int availlableUnit = isAboveAvailable( cu, CHANNEL_TYPE_CHROMA, posLT, iAboveUnits, iUnitWidth, ( bNeighborFlags + iLeftUnits + 1 ) );
+  int availlableUnit = isAboveAvailable( cu, CHANNEL_TYPE_CHROMA, posLT, iAboveUnits, iUnitWidth, 
+#if JVET_L0338_MDLM
+    (bNeighborFlags + iLeftUnits + leftBelowUnits + 1 ) );
+#else
+    ( bNeighborFlags + iLeftUnits + 1 ) );
+#endif
   bAboveAvaillable = availlableUnit == iTUWidthInUnits;
 
-  availlableUnit = isLeftAvailable( cu, CHANNEL_TYPE_CHROMA, posLT, iLeftUnits, iUnitHeight, ( bNeighborFlags + iLeftUnits - 1 ) );
+  availlableUnit = isLeftAvailable( cu, CHANNEL_TYPE_CHROMA, posLT, iLeftUnits, iUnitHeight, 
+#if JVET_L0338_MDLM
+    (bNeighborFlags + iLeftUnits + leftBelowUnits - 1 ) );
+#else
+    ( bNeighborFlags + iLeftUnits - 1 ) );
+#endif
   bLeftAvaillable = availlableUnit == iTUHeightInUnits;
-
+#if JVET_L0338_MDLM
+  if (bLeftAvaillable) // if left is not available, then the below left is not available
+  {
+    avaiLeftUnits = iTUHeightInUnits;
+    avaiLeftBelowUnits = isBelowLeftAvailable(cu, CHANNEL_TYPE_CHROMA, chromaArea.bottomLeftComp(chromaArea.compID), leftBelowUnits, iUnitHeight, (bNeighborFlags + leftBelowUnits - 1));
+  }
+  if (bAboveAvaillable) // if above is not available, then  the above right is not available.
+  {
+    avaiAboveUnits = iTUWidthInUnits;
+    avaiAboveRightUnits = isAboveRightAvailable(cu, CHANNEL_TYPE_CHROMA, chromaArea.topRightComp(chromaArea.compID), aboveRightUnits, iUnitWidth, (bNeighborFlags + iLeftUnits + leftBelowUnits + iAboveUnits + 1));
+  }
+#endif
   Pel *pSrcColor0, *pCurChroma0;
   int  iSrcStride,  iCurStride;
 
   PelBuf Temp;  
+#if JVET_L0338_MDLM
+  if ((curChromaMode == MDLM_L_IDX) || (curChromaMode == MDLM_T_IDX))
+  {
+    iSrcStride = 2 * MAX_CU_SIZE + 1;
+    Temp = PelBuf(m_pMdlmTemp + iSrcStride + 1, iSrcStride, Size(chromaArea));
+  }
+  else
+  {
+#endif
   iSrcStride = MAX_CU_SIZE + 1;
   Temp = PelBuf(m_piTemp + iSrcStride + 1, iSrcStride, Size(chromaArea));
+#if JVET_L0338_MDLM
+  }
+#endif
   pSrcColor0 = Temp.bufAt(0, 0);
   pCurChroma0 = getPredictorPtr(compID);
   iCurStride = m_topRefLength + 1;
@@ -1571,7 +1813,73 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
   Pel *pSrc = pSrcColor0  - iSrcStride;
   Pel *pCur = pCurChroma0 - iCurStride;
+#if JVET_L0338_MDLM
+  //get the temp buffer to store the downsampled luma and chroma
+  Pel* pTempBufferSrc = new Pel[2 * MAX_CU_SIZE]; // for MDLM, use tempalte size 2W or 2H,
+  Pel* pTempBufferCur = new Pel[2 * MAX_CU_SIZE];
 
+  int actualTopTemplateSampNum = iUnitWidth*(avaiAboveUnits + avaiAboveRightUnits);
+  int actualLeftTemplateSampNum = iUnitHeight*(avaiLeftUnits + avaiLeftBelowUnits);
+
+  if ((curChromaMode == MDLM_L_IDX) || (curChromaMode == MDLM_T_IDX))
+  {
+    if (curChromaMode == MDLM_T_IDX)
+    {
+      if (bAboveAvaillable)
+      {
+        for (int j = 0; j < actualTopTemplateSampNum; j++)
+        {
+          pTempBufferSrc[j] = pSrc[j];
+          pTempBufferCur[j] = pCur[j];
+        }
+      }
+    }
+    else
+    {
+      if (bLeftAvaillable)
+      {
+        pSrc = pSrcColor0 - 1;
+        pCur = pCurChroma0 - 1;
+        for (int i = 0; i < actualLeftTemplateSampNum; i++)
+        {
+          pTempBufferSrc[i] = pSrc[iSrcStride *i];
+          pTempBufferCur[i] = pCur[iCurStride *i];
+        }
+      }
+    }
+    //pad the temple sample to targetSampNum.
+    int orgNumSample = (curChromaMode == MDLM_T_IDX) ? (avaiAboveUnits*iUnitWidth) : (avaiLeftUnits*iUnitHeight);
+    int existSampNum = (curChromaMode == MDLM_T_IDX) ? actualTopTemplateSampNum : actualLeftTemplateSampNum;
+    int targetSampNum = 1 << (g_aucLog2[existSampNum - 1] + 1);
+
+    if (orgNumSample == 0)
+    {
+      delete[] pTempBufferSrc;
+      delete[] pTempBufferCur;
+      pTempBufferSrc = nullptr;
+      pTempBufferCur = nullptr;
+
+      a = 0;
+      b = 1 << (uiInternalBitDepth - 1);
+      iShift = 0;
+      return;
+    }
+    if (targetSampNum != existSampNum)//if existSampNum not a value of power of 2
+    {
+      xPadMdlmTemplateSample(pTempBufferSrc, pTempBufferCur, uiCWidth, uiCHeight, existSampNum, targetSampNum);
+    }
+    for (int j = 0; j < targetSampNum; j++)
+    {
+      x += pTempBufferSrc[j];
+      y += pTempBufferCur[j];
+      xx += pTempBufferSrc[j] * pTempBufferSrc[j];
+      xy += pTempBufferSrc[j] * pTempBufferCur[j];
+    }
+    iCountShift = g_aucLog2[targetSampNum];
+  }
+  else
+  {
+#endif
   int       minDim        = bLeftAvaillable && bAboveAvaillable ? 1 << g_aucPrevLog2[std::min( uiCHeight, uiCWidth )] : 1 << g_aucPrevLog2[bLeftAvaillable ? uiCHeight : uiCWidth];
   int       minStep       = 1;
   int       numSteps      = cs.pcv->rectCUs ? minDim / minStep : minDim;
@@ -1607,7 +1915,28 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
     iCountShift += bAboveAvaillable ? 1 : g_aucLog2[minDim / minStep];
   }
+#if JVET_L0338_MDLM
+  }
 
+  delete[] pTempBufferSrc;
+  delete[] pTempBufferCur;
+  pTempBufferSrc = nullptr;
+  pTempBufferCur = nullptr;
+#endif
+#if JVET_L0338_MDLM
+  if ((curChromaMode == MDLM_L_IDX) || (curChromaMode == MDLM_T_IDX))
+  {
+    if ((curChromaMode == MDLM_L_IDX) ? (!bLeftAvaillable) : (!bAboveAvaillable))
+    {
+      a = 0;
+      b = 1 << (uiInternalBitDepth - 1);
+      iShift = 0;
+      return;
+    }
+  }
+  else
+  {
+#endif
   if( !bLeftAvaillable && !bAboveAvaillable )
   {
     a = 0;
@@ -1615,7 +1944,9 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
     iShift = 0;
     return;
   }
-
+#if JVET_L0338_MDLM
+  }
+#endif
   int iTempShift = uiInternalBitDepth + iCountShift - 15;
 
   if( iTempShift > 0 )

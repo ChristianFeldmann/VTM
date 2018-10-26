@@ -246,8 +246,9 @@ int g_aiLMDivTableHigh[] = {
   129,   129,   129,   129,   128,   128,   128,  128,
 };
 #endif
+#if !JVET_L0338_MDLM
 const int g_aiNonLMPosThrs[] = {  3,  1,  0 };
-
+#endif
 #if JVET_L0646_GBI
 const int8_t g_GbiLog2WeightBase = 3;
 const int8_t g_GbiWeightBase = (1 << g_GbiLog2WeightBase);

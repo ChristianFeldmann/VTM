@@ -95,6 +95,11 @@ private:
 
   CodingStructure    ***m_pTempCS;
   CodingStructure    ***m_pBestCS;
+#if JVET_L0266_HMVP
+  LutMotionCand      ***m_pTempMotLUTs;
+  LutMotionCand      ***m_pBestMotLUTs;
+  LutMotionCand      ***m_pSplitTempMotLUTs;
+#endif
   //  Access channel
   EncCfg*               m_pcEncCfg;
   IntraSearch*          m_pcIntraSearch;
@@ -169,15 +174,31 @@ public:
 
 protected:
 
-  void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm );
+  void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm
+#if JVET_L0266_HMVP
+    , LutMotionCand *&tempMotCandLUTs
+    , LutMotionCand *&bestMotCandLUTs
+#endif
+  );
 #if ENABLE_SPLIT_PARALLELISM
   void xCompressCUParallel    ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm );
   void copyState              ( EncCu* other, Partitioner& pm, const UnitArea& currArea, const bool isDist );
 #endif
 
-  void xCheckBestMode         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestmode );
+#if JVET_L0266_HMVP
+  bool
+#else
+  void
+#endif
+    xCheckBestMode         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestmode );
 
-  void xCheckModeSplit        ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+  void xCheckModeSplit        ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode
+#if JVET_L0266_HMVP
+    , LutMotionCand* &tempMotCandLUTs
+    , LutMotionCand* &bestMotCandLUTs
+    , UnitArea  parArea
+#endif
+  );
 
   void xCheckRDCostIntra      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
   void xCheckIntraPCM         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );

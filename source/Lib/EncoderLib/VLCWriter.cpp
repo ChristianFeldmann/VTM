@@ -617,6 +617,19 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   {
     WRITE_UVLC( spsNext.getMTTMode() - 1,                                                       "mtt_mode_minus1" );
   }
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  WRITE_FLAG( spsNext.getLadfEnabled() ? 1 : 0,                                                 "sps_ladf_enabled_flag" );
+  if ( spsNext.getLadfEnabled() )
+  {
+    WRITE_CODE( spsNext.getLadfNumIntervals() - 2, 2,                                           "sps_num_ladf_intervals_minus2" );
+    WRITE_SVLC( spsNext.getLadfQpOffset( 0 ),                                                   "sps_ladf_lowest_interval_qp_offset");
+    for ( int k = 1; k< spsNext.getLadfNumIntervals(); k++ )
+    {
+      WRITE_SVLC( spsNext.getLadfQpOffset( k ),                                                 "sps_ladf_qp_offset" );
+      WRITE_UVLC( spsNext.getLadfIntervalLowerBound( k ) - spsNext.getLadfIntervalLowerBound( k - 1 ) - 1, "sps_ladf_delta_threshold_minus1" );
+    }
+  }
+#endif
   // ADD_NEW_TOOL : (sps extension writer) write tool enabling flags and associated parameters here
 }
 

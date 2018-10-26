@@ -228,6 +228,12 @@ protected:
   bool      m_GBi;
   bool      m_GBiFast;
 #endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  bool      m_LadfEnabed;
+  int       m_LadfNumIntervals;
+  std::vector<int> m_LadfQpOffset;
+  int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
+#endif
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
 
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel

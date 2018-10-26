@@ -745,7 +745,7 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
         {
           continue;
         }
-        if (PU::isLMCMode(mode) || (mode == PLANAR_IDX) || (mode == DM_CHROMA_IDX)) // only pre-check regular mode, not including DM and Planar, and LM modes
+        if ((mode == LM_CHROMA_IDX) || (mode == PLANAR_IDX) || (mode == DM_CHROMA_IDX)) // only pre-check regular modes and MDLM modes, not including DM ,Planar, and LM
         {
           continue;
         }

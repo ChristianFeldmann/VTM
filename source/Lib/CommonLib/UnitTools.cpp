@@ -429,6 +429,7 @@ bool PU::isLMCModeEnabled(const PredictionUnit &pu, unsigned mode)
 
 int PU::getLMSymbolList(const PredictionUnit &pu, int *pModeList)
 {
+#if !JVET_L0338_MDLM
   const int iNeighbors = 5;
   const PredictionUnit* neighboringPUs[ iNeighbors ];
 
@@ -457,19 +458,24 @@ int PU::getLMSymbolList(const PredictionUnit &pu, int *pModeList)
   }
 
   bool bNonLMInsert = false;
+#endif
   int iIdx = 0;
 
   pModeList[ iIdx++ ] = LM_CHROMA_IDX;
-
+#if !JVET_L0338_MDLM
   if ( iCount >= g_aiNonLMPosThrs[0] && ! bNonLMInsert )
   {
+#endif
     pModeList[ iIdx++ ] = -1;
+#if !JVET_L0338_MDLM
     bNonLMInsert = true;
   }
+#endif
 #if JVET_L0338_MDLM
   pModeList[iIdx++] = MDLM_L_IDX;
   pModeList[iIdx++] = MDLM_T_IDX;
 #endif
+#if !JVET_L0338_MDLM
   if ( iCount >= g_aiNonLMPosThrs[1] && ! bNonLMInsert )
   {
     pModeList[ iIdx++ ] = -1;
@@ -480,7 +486,7 @@ int PU::getLMSymbolList(const PredictionUnit &pu, int *pModeList)
     pModeList[ iIdx++ ] = -1;
     bNonLMInsert = true;
   }
-
+#endif
   return iIdx;
 }
 

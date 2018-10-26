@@ -220,17 +220,12 @@ unsigned DeriveCtx::CtxCUsplit( const CodingStructure& cs, Partitioner& partitio
   return ctxId;
 }
 
-#if ENABLE_BMS
 unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf )
-#else
-unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const bool prevCbCbf )
-#endif
 {
   if( compID == COMPONENT_Cr )
   {
     return ( prevCbCbf ? 1 : 0 );
   }
-#if ENABLE_BMS
   if( isChroma( compID ) )
   {
     return trDepth;
@@ -239,9 +234,6 @@ unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const bool prevCbCbf )
   {
     return ( trDepth == 0 ? 1 : 0 );
   }
-#else
-  return isChroma( compID ) ? 0 : 1;
-#endif
 }
 
 unsigned DeriveCtx::CtxInterDir( const PredictionUnit& pu )

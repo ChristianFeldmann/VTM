@@ -123,20 +123,13 @@ public:
 
   // transform tree (clause 7.3.8.8)
   void        transform_tree            ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx,  ChromaCbfs& chromaCbfs );
-#if ENABLE_BMS
   bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     unsigned depth, const bool prevCbCbf = false );
-#else
-  bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     const bool prevCbCbf = false );
-#endif
 
   // mvd coding (clause 7.3.8.9)
   void        mvd_coding                ( Mv &rMvd );
 
   // transform unit (clause 7.3.8.10)
   void        transform_unit            ( TransformUnit&                tu,     CUCtx&          cuCtx,  ChromaCbfs& chromaCbfs );
-#if HM_QTBT_AS_IN_JEM_SYNTAX
-  void        transform_unit_qtbt       ( TransformUnit&                tu,     CUCtx&          cuCtx,  ChromaCbfs& chromaCbfs );
-#endif
   void        cu_qp_delta               ( CodingUnit&                   cu,     int             predQP, int8_t& qp );
   void        cu_chroma_qp_offset       ( CodingUnit&                   cu );
 #if !HM_EMT_NSST_AS_IN_JEM

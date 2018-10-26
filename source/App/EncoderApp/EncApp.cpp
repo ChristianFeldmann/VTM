@@ -220,11 +220,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMaxBTDepth                                        ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   m_cEncLib.setDualITree                                         ( m_dualTree );
   m_cEncLib.setLargeCTU                                          ( m_LargeCTU );
-#if ENABLE_BMS
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode );
-#else
-  m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode > 0 ? 3 : 0 );
-#endif
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   m_cEncLib.setSubPuMvpLog2Size                                  ( m_SubPuMvpLog2Size );
 #endif 

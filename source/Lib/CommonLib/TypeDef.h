@@ -214,17 +214,12 @@
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
 
-#define ENABLE_BMS                                        1
 
 #if QTBT_AS_IN_JEM // macros which will cause changes in the decoder behavior ara marked with *** - keep them on to retain compatibility with JEM-toolcheck
-#define HM_NO_ADDITIONAL_SPEEDUPS                         0
 #define HM_QTBT_AS_IN_JEM                                 1   // ***
 #if     HM_QTBT_AS_IN_JEM
-#define HM_QTBT_AS_IN_JEM_CONTEXT                         1   // ***
-#define HM_QTBT_AS_IN_JEM_SYNTAX                        ( 1 && !( ENABLE_BMS ) ) // *** -- cannot be enabled if ENABLE_BMS is on
 #define HM_QTBT_AS_IN_JEM_QUANT                           1   // ***
 #define HM_QTBT_REPRODUCE_FAST_LCTU_BUG                   1
-#define HM_QTBT_ONLY_QT_IMPLICIT                          0   // ***
 #endif
 #define HM_CODED_CU_INFO                                  1   // like in JEM, when related CU is skipped, it stays like this even if a non skip mode wins...
 #define HM_4TAPIF_AS_IN_JEM                               1   // *** - PM: condition not well suited for 4-tap interpolation filters
@@ -238,13 +233,6 @@
 #endif
 
 #endif//JEM_COMP
-
-#if ENABLE_BMS
-#if HM_QTBT_AS_IN_JEM_SYNTAX
-#error HM_QTBT_AS_IN_JEM_SYNTAX cannot be enabled if ENABLE_BMS is enabled
-#endif
-#endif
-
 
 // ====================================================================================================================
 // Debugging
@@ -306,12 +294,6 @@
 
 // End of SIMD optimizations
 
-
-#define ENABLE_RQT_INTRA_SPEEDUP_MOD                      0 ///< tests two best modes with full rqt
-
-#if ENABLE_RQT_INTRA_SPEEDUP_MOD
-#error
-#endif
 
 #define ME_ENABLE_ROUNDING_OF_MVS                         1 ///< 0 (default) = disables rounding of motion vectors when right shifted,  1 = enables rounding
 

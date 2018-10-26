@@ -551,15 +551,8 @@ void CABACWriter::split_cu_mode_mt(const PartSplit split, const CodingStructure&
 
   DecisionTree dt( g_mtSplitDTT );
 
-#if HM_QTBT_AS_IN_JEM_SYNTAX
-  unsigned minBTSize = cs.slice->isIntra() ? ( partitioner.chType == 0 ? MIN_BT_SIZE : MIN_BT_SIZE_C ) : MIN_BT_SIZE_INTER;
-
-  dt.setAvail( DTT_SPLIT_BT_HORZ,  height > minBTSize && ( partitioner.canSplit( CU_HORZ_SPLIT, cs ) || width  == minBTSize ) );
-  dt.setAvail( DTT_SPLIT_BT_VERT,  width  > minBTSize && ( partitioner.canSplit( CU_VERT_SPLIT, cs ) || height == minBTSize ) );
-#else                              
   dt.setAvail( DTT_SPLIT_BT_HORZ,  partitioner.canSplit( CU_HORZ_SPLIT, cs ) );
   dt.setAvail( DTT_SPLIT_BT_VERT,  partitioner.canSplit( CU_VERT_SPLIT, cs ) );
-#endif
 
   dt.setAvail( DTT_SPLIT_TT_HORZ,  partitioner.canSplit( CU_TRIH_SPLIT, cs ) );
   dt.setAvail( DTT_SPLIT_TT_VERT,  partitioner.canSplit( CU_TRIV_SPLIT, cs ) );
@@ -1874,77 +1867,45 @@ void CABACWriter::pcm_samples( const TransformUnit& tu )
 void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partitioner, CUCtx& cuCtx, ChromaCbfs& chromaCbfs )
 {
   const UnitArea&       area          = partitioner.currArea();
-
-#if HM_QTBT_AS_IN_JEM_SYNTAX
-  if( cs.pcv->noRQT )
-  {
-    const TransformUnit &tu = *cs.getTU( area.blocks[partitioner.chType].pos(), partitioner.chType );
-
-    transform_unit_qtbt( tu, cuCtx, chromaCbfs );
-
-    return;
-  }
-#endif
-
   const TransformUnit&  tu            = *cs.getTU( area.blocks[partitioner.chType].pos(), partitioner.chType );
   const CodingUnit&     cu            = *tu.cu;
-#if ENABLE_BMS
   const unsigned        trDepth       = partitioner.currTrDepth;
   const bool            split         = ( tu.depth > trDepth );
 
   // split_transform_flag
   if( cs.pcv->noRQT )
   {
-#if ENABLE_BMS
     if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
       CHECK( !split, "transform split implied" );
     }
     else
-#endif
     CHECK( split, "transform split not allowed with QTBT" );
   }
-#endif
 
   // cbf_cb & cbf_cr
   if( area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && ( !CS::isDualITree( cs ) || partitioner.chType == CHANNEL_TYPE_CHROMA ) )
   {
     {
-#if ENABLE_BMS
       if( trDepth == 0 || chromaCbfs.Cb )
-#endif
       {
-#if ENABLE_BMS
         chromaCbfs.Cb = TU::getCbfAtDepth( tu, COMPONENT_Cb, trDepth );
         cbf_comp( cs, chromaCbfs.Cb, area.blocks[COMPONENT_Cb], trDepth );
-#else
-        chromaCbfs.Cb = TU::getCbf( tu, COMPONENT_Cb );
-        cbf_comp( cs, chromaCbfs.Cb, area.blocks[COMPONENT_Cb] );
-#endif
       }
-#if ENABLE_BMS
       else
       {
         CHECK( TU::getCbfAtDepth( tu, COMPONENT_Cb, trDepth ) != chromaCbfs.Cb, "incorrect Cb cbf" );
       }
 
       if( trDepth == 0 || chromaCbfs.Cr )
-#endif
       {
-#if ENABLE_BMS
         chromaCbfs.Cr = TU::getCbfAtDepth( tu, COMPONENT_Cr,   trDepth );
         cbf_comp( cs, chromaCbfs.Cr, area.blocks[COMPONENT_Cr], trDepth, chromaCbfs.Cb );
-#else
-        chromaCbfs.Cr = TU::getCbf( tu, COMPONENT_Cr );
-        cbf_comp( cs, chromaCbfs.Cr, area.blocks[COMPONENT_Cr], chromaCbfs.Cb );
-#endif
       }
-#if ENABLE_BMS
       else
       {
         CHECK( TU::getCbfAtDepth( tu, COMPONENT_Cr, trDepth ) != chromaCbfs.Cr, "incorrect Cr cbf" );
       }
-#endif
     }
   }
   else if( CS::isDualITree( cs ) )
@@ -1952,7 +1913,6 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
     chromaCbfs = ChromaCbfs( false );
   }
 
-#if ENABLE_BMS
   if( split )
   {
     if( area.chromaFormat != CHROMA_400 )
@@ -1964,7 +1924,6 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
     if( trDepth == 0 ) emt_cu_flag( cu );
 #endif
 
-#if ENABLE_BMS
     if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
 #if ENABLE_TRACING
@@ -1975,7 +1934,6 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
       partitioner.splitCurrArea( TU_MAX_TR_SPLIT, cs );
     }
     else
-#endif
       THROW( "Implicit TU split not available" );
 
     do
@@ -1987,60 +1945,32 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
     partitioner.exitCurrSplit();
   }
   else
-#endif
   {
-#if ENABLE_BMS
     DTRACE( g_trace_ctx, D_SYNTAX, "transform_unit() pos=(%d,%d) size=%dx%d depth=%d trDepth=%d\n", tu.blocks[tu.chType].x, tu.blocks[tu.chType].y, tu.blocks[tu.chType].width, tu.blocks[tu.chType].height, cu.depth, partitioner.currTrDepth );
-#else
-    DTRACE( g_trace_ctx, D_SYNTAX, "transform_unit() pos=(%d,%d) size=%dx%d depth=%d\n", tu.blocks[tu.chType].x, tu.blocks[tu.chType].y, tu.blocks[tu.chType].width, tu.blocks[tu.chType].height, cu.depth );
-#endif
 
     if( !isChroma( partitioner.chType ) )
     {
-#if ENABLE_BMS
       if( !CU::isIntra( cu ) && trDepth == 0 && !chromaCbfs.sigChroma( area.chromaFormat ) )
       {
         CHECK( !TU::getCbfAtDepth( tu, COMPONENT_Y, trDepth ), "Luma cbf must be true for inter units with no chroma coeffs" );
       }
-#else
-      if( !CU::isIntra( cu ) && !chromaCbfs.sigChroma( area.chromaFormat ) )
-      {
-        CHECK( !TU::getCbf( tu, COMPONENT_Y ), "Luma cbf must be true for inter units with no chroma coeffs" );
-      }
-#endif
       else
       {
-#if ENABLE_BMS
         cbf_comp( cs, TU::getCbfAtDepth( tu, COMPONENT_Y, trDepth ), tu.Y(), trDepth );
-#else
-        cbf_comp( cs, TU::getCbf( tu, COMPONENT_Y ), tu.Y() );
-#endif
       }
     }
 
 #if HM_EMT_NSST_AS_IN_JEM
-#if ENABLE_BMS
     if( trDepth == 0 && TU::getCbfAtDepth( tu, COMPONENT_Y, 0 ) ) emt_cu_flag( cu );
-#else
-    if( TU::getCbf( tu, COMPONENT_Y ) ) emt_cu_flag( cu );
-#endif
 #endif
 
     transform_unit( tu, cuCtx, chromaCbfs );
   }
 }
 
-#if ENABLE_BMS
 void CABACWriter::cbf_comp( const CodingStructure& cs, bool cbf, const CompArea& area, unsigned depth, const bool prevCbCbf )
-#else
-void CABACWriter::cbf_comp( const CodingStructure& cs, bool cbf, const CompArea& area, const bool prevCbCbf )
-#endif
 {
-#if ENABLE_BMS
   const unsigned  ctxId   = DeriveCtx::CtxQtCbf( area.compID, depth, prevCbCbf );
-#else
-  const unsigned  ctxId   = DeriveCtx::CtxQtCbf( area.compID, prevCbCbf );
-#endif
   const CtxSet&   ctxSet  = Ctx::QtCbf[ area.compID ];
 
   m_BinEncoder.encodeBin( cbf, ctxSet( ctxId ) );
@@ -2181,88 +2111,6 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
     }
   }
 }
-
-#if HM_QTBT_AS_IN_JEM_SYNTAX
-void CABACWriter::transform_unit_qtbt( const TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& chromaCbfs )
-{
-  CodingUnit& cu  = *tu.cu;
-  bool cbfLuma    = false;
-  bool cbfChroma  = false;
-
-  bool lumaOnly   = ( cu.chromaFormat == CHROMA_400 || !tu.blocks[COMPONENT_Cb].valid() );
-  bool chromaOnly =                                    !tu.blocks[COMPONENT_Y ].valid();
-
-  if( !lumaOnly )
-  {
-    bool prevCbf = false;
-    for( ComponentID compID = COMPONENT_Cb; compID <= COMPONENT_Cr; compID = ComponentID( compID + 1 ) )
-    {
-#if ENABLE_BMS
-      cbf_comp( *tu.cs, tu.cbf[compID] != 0, tu.blocks[compID], tu.depth, prevCbf );
-      prevCbf = (tu.cbf[compID] != 0);
-#else
-      cbf_comp( *tu.cs, tu.cbf[compID] != 0, tu.blocks[compID], prevCbf );
-      prevCbf = (tu.cbf[compID] != 0);
-#endif
-      chromaCbfs.cbf( compID ) = tu.cbf[compID] != 0;
-
-      if( TU::hasCrossCompPredInfo( tu, compID ) )
-      {
-        cross_comp_pred( tu, compID );
-      }
-      if( tu.cbf[compID] )
-      {
-        residual_coding( tu, compID );
-        cbfChroma = true;
-      }
-    }
-  }
-
-  if( !chromaOnly )
-  {
-    if( !CU::isIntra( cu ) && !chromaCbfs.sigChroma( tu.chromaFormat ) )
-    {
-#if ENABLE_BMS
-      CHECK( !TU::getCbfAtDepth( tu, COMPONENT_Y, 0 ), "The luma CBF is implicitely '1', but '0' found" );
-#else
-      CHECK( !TU::getCbf( tu, COMPONENT_Y ), "The luma CBF is implicitely '1', but '0' found" );
-#endif
-    }
-    else
-    {
-#if ENABLE_BMS
-      cbf_comp( *tu.cs, TU::getCbf( tu, COMPONENT_Y ), tu.Y(), tu.depth );
-#else
-      cbf_comp( *tu.cs, TU::getCbf( tu, COMPONENT_Y ), tu.Y() );
-#endif
-    }
-
-    if( tu.cbf[0] )
-    {
-#if HM_EMT_NSST_AS_IN_JEM
-      emt_cu_flag( cu );
-#endif
-      residual_coding( tu, COMPONENT_Y );
-      cbfLuma = true;
-    }
-  }
-
-  if( cbfLuma || cbfChroma )
-  {
-    if( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded )
-    {
-      cu_qp_delta( cu, cuCtx.qp, cu.qp );
-      cuCtx.qp         = cu.qp;
-      cuCtx.isDQPCoded = true;
-    }
-    if( cu.cs->slice->getUseChromaQpAdj() && cbfChroma && !cu.transQuantBypass && !cuCtx.isChromaQpAdjCoded )
-    {
-      cu_chroma_qp_offset( cu );
-      cuCtx.isChromaQpAdjCoded = true;
-    }
-  }
-}
-#endif
 
 void CABACWriter::cu_qp_delta( const CodingUnit& cu, int predQP, const int8_t qp )
 {

@@ -473,11 +473,7 @@ namespace DQIntern
     }
     else
     {
-#if ENABLE_BMS
       BinFracBits bits = fracBitsAccess.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( compID, tu.depth, tu.cbf[COMPONENT_Cb] ) ) );
-#else
-      BinFracBits bits = fracBitsAccess.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( compID, tu.cbf[COMPONENT_Cb] ) ) );
-#endif
       cbfDeltaBits = int32_t( bits.intBits[1] ) - int32_t( bits.intBits[0] );
     }
 
@@ -878,11 +874,7 @@ namespace DQIntern
     }
     else
     {
-#if ENABLE_BMS
       BinFracBits bits = fracBitsAccess.getFracBitsArray( Ctx::QtCbf[m_compID]( DeriveCtx::CtxQtCbf( m_compID, tu.depth, tu.cbf[COMPONENT_Cb] ) ) );
-#else
-      BinFracBits bits = fracBitsAccess.getFracBitsArray( Ctx::QtCbf[m_compID]( DeriveCtx::CtxQtCbf( m_compID, tu.cbf[COMPONENT_Cb] ) ) );
-#endif
       cbfDeltaBits = int32_t( bits.intBits[1] ) - int32_t( bits.intBits[0] );
     }
 

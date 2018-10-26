@@ -544,9 +544,7 @@ void TransformUnit::initData()
     transformSkip[i] = false;
     compAlpha[i]     = 0;
   }
-#if ENABLE_BMS
   depth              = 0;
-#endif
   emtIdx             = 0;
 
 }
@@ -581,9 +579,7 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
     transformSkip[i] = other.transformSkip[i];
     compAlpha[i]     = other.compAlpha[i];
   }
-#if ENABLE_BMS
   depth              = other.depth;
-#endif
   emtIdx             = other.emtIdx;
   return *this;
 }
@@ -604,10 +600,8 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
   transformSkip[i] = other.transformSkip[i];
   compAlpha[i]     = other.compAlpha[i];
 
-#if ENABLE_BMS
   depth            = other.depth;
 
-#endif
   if( isLuma( i ) )
   {
     emtIdx         = other.emtIdx;

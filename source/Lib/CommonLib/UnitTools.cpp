@@ -5403,14 +5403,9 @@ bool TU::isNonTransformedResidualRotated(const TransformUnit &tu, const Componen
 
 bool TU::getCbf( const TransformUnit &tu, const ComponentID &compID )
 {
-#if ENABLE_BMS
   return getCbfAtDepth( tu, compID, tu.depth );
-#else
-  return tu.cbf[compID];
-#endif
 }
 
-#if ENABLE_BMS
 bool TU::getCbfAtDepth(const TransformUnit &tu, const ComponentID &compID, const unsigned &depth)
 {
   return ((tu.cbf[compID] >> depth) & 1) == 1;
@@ -5423,12 +5418,6 @@ void TU::setCbfAtDepth(TransformUnit &tu, const ComponentID &compID, const unsig
   // then set the CBF
   tu.cbf[compID] |= ((cbf ? 1 : 0) << depth);
 }
-#else
-void TU::setCbf( TransformUnit &tu, const ComponentID &compID, const bool &cbf )
-{
-  tu.cbf[compID] = cbf;
-}
-#endif
 
 bool TU::hasTransformSkipFlag(const CodingStructure& cs, const CompArea& area)
 {

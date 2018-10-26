@@ -303,10 +303,8 @@ void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, Pel
   const uint32_t uiWidth      = area.width;
   const uint32_t uiHeight     = area.height;
 
-#if ENABLE_BMS
   CHECK( uiWidth > tu.cs->sps->getMaxTrSize() || uiHeight > tu.cs->sps->getMaxTrSize(), "Maximal allowed transformation size exceeded!" );
 
-#endif
   if (tu.cu->transQuantBypass)
   {
     // where should this logic go?
@@ -647,12 +645,8 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
     }
   }
 
-#if ENABLE_BMS
   // set coded block flag (CBF)
   TU::setCbfAtDepth (tu, compID, tu.depth, uiAbsSum > 0);
-#else
-  TU::setCbf( tu, compID, uiAbsSum > 0 );
-#endif
 }
 
 void TrQuant::applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const RDPCMMode &mode)

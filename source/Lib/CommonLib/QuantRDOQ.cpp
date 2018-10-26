@@ -1018,11 +1018,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   int     iBestLastIdxP1      = 0;
 
 
-#if ENABLE_BMS
   if( !CU::isIntra( *tu.cu ) && isLuma( compID ) && tu.depth == 0 )
-#else
-  if( !CU::isIntra( *tu.cu ) && isLuma( compID ) )
-#endif
   {
     const BinFracBits fracBitsQtRootCbf = fracBits.getFracBitsArray( Ctx::QtRootCbf() );
     d64BestCost  = d64BlockUncodedCost + xGetICost( fracBitsQtRootCbf.intBits[ 0 ] );
@@ -1030,11 +1026,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   }
   else
   {
-#if ENABLE_BMS
     BinFracBits fracBitsQtCbf = fracBits.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( rect.compID, tu.depth, tu.cbf[COMPONENT_Cb] ) ) );
-#else
-    BinFracBits fracBitsQtCbf = fracBits.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( rect.compID, tu.cbf[COMPONENT_Cb] ) ) );
-#endif
 
     d64BestCost  = d64BlockUncodedCost + xGetICost( fracBitsQtCbf.intBits[0] );
     d64BaseCost += xGetICost( fracBitsQtCbf.intBits[1] );

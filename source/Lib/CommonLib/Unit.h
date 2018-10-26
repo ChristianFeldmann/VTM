@@ -428,9 +428,7 @@ struct TransformUnit : public UnitArea
   CodingStructure *cs;
   ChannelType      chType;
 
-#if ENABLE_BMS
   uint8_t        depth;
-#endif
   uint8_t        emtIdx;
   uint8_t        cbf          [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];

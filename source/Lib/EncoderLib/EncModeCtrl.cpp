@@ -1194,13 +1194,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     return partitioner.canSplit( CU_QUAD_SPLIT, cs );
   }
 
-#if !ENABLE_BMS
-  if( partitioner.currArea().lwidth() > m_slice->getSPS()->getMaxTrSize() && encTestmode.type != ETM_SPLIT_QT )
-  {
-    return false;
-  }
-
-#endif
 #if REUSE_CU_RESULTS
   if( cuECtx.get<bool>( IS_REUSING_CU ) )
   {

@@ -815,11 +815,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxBTDepthISliceC",                               m_uiMaxBTDepthIChroma,                               3u, "MaxBTDepthISliceC")
   ("DualITree",                                       m_dualTree,                                       false, "Use separate QTBT trees for intra slice luma and chroma channel types")
   ("LargeCTU",                                        m_LargeCTU,                                       false, "Enable large CTU (0:off, 1:on)  [default: off]")
-#if ENABLE_BMS
   ("SubPuMvp",                                       m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:ATMVP, 2:STMVP, 3:ATMVP+STMVP)  [default: off]")
-#else
-  ("SubPuMvp",                                       m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:on)  [default: off]")
-#endif
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   ("SubPuMvpLog2Size",                               m_SubPuMvpLog2Size,                                   2u, "Sub-PU TMVP size index: 2^n")
 #endif
@@ -1912,9 +1908,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_uiCTUSize = m_uiMaxCUWidth;
   }
 
-#if !ENABLE_BMS
-  m_SubPuMvpMode = m_SubPuMvpMode > 0 ? 3 : 0;
-#endif
 
   // print-out parameters
   xPrintParameter();
@@ -2226,17 +2219,6 @@ bool EncAppCfg::xCheckParameter()
 
   xConfirmPara( m_quadtreeTULog2MaxSize < 0, "Maximal TU size is invalid" );
 
-#if !ENABLE_BMS
-  if( m_profile == Profile::NEXT && m_quadtreeTULog2MaxSize < 6 )
-  {
-    msg( WARNING, "****************************************************************************\n" );
-    msg( WARNING, "** WARNING: Using NEXT-Profile but not enabling large transformation      **\n" );
-    msg( WARNING, "**          sizes. Use --TULog2MaxSize to set maximum transformation      **\n" );
-    msg( WARNING, "**          size to 128 (=7) or 64 (=6)                                   **\n" );
-    msg( WARNING, "****************************************************************************\n" );
-  }
-
-#endif
   if( m_SubPuMvpMode == 3 && m_maxNumMergeCand < 7 )
   {
     msg( WARNING, "****************************************************************************\n" );

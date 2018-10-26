@@ -116,9 +116,7 @@ void Partitioner::copyState( const Partitioner& other )
   currQtDepth = other.currQtDepth;
   currDepth   = other.currDepth;
   currMtDepth = other.currMtDepth;
-#if ENABLE_BMS
   currTrDepth = other.currTrDepth;
-#endif
   currImplicitBtDepth
               = other.currImplicitBtDepth;
   chType      = other.chType;
@@ -224,9 +222,7 @@ void QTBTPartitioner::initCtu( const UnitArea& ctuArea, const ChannelType _chTyp
   m_currArea = ctuArea;
 #endif
   currDepth   = 0;
-#if ENABLE_BMS
   currTrDepth = 0;
-#endif
   currBtDepth = 0;
   currMtDepth = 0;
   currQtDepth = 0;
@@ -259,11 +255,9 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
     CHECK( ( cs.sps->getSpsNext().getMTTMode() & 1 ) != 1, "Triple splits are not allowed" );
     m_partStack.push_back( PartLevel( split, PartitionerImpl::getCUSubPartitions( currArea(), cs, split ) ) );
     break;
-#if ENABLE_BMS
   case TU_MAX_TR_SPLIT:
     m_partStack.push_back( PartLevel( split, PartitionerImpl::getMaxTuTiling( currArea(), cs ) ) );
     break;
-#endif
   default:
     THROW( "Unknown split mode" );
     break;
@@ -274,18 +268,14 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
   m_currArea = m_partStack.back().parts.front();
 #endif
 
-#if ENABLE_BMS
   if( split == TU_MAX_TR_SPLIT )
   {
     currTrDepth++;
   }
-#endif
-#if ENABLE_BMS
   else
   {
     currTrDepth = 0;
   }
-#endif
 
   if( split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT || split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT )
   {
@@ -322,9 +312,7 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   const unsigned minBtSize      = cs.pcv->getMinBtSize( *cs.slice, chType );
   const unsigned maxTtSize      = cs.pcv->getMaxTtSize( *cs.slice, chType );
   const unsigned minTtSize      = cs.pcv->getMinTtSize( *cs.slice, chType );
-#if ENABLE_BMS
   const unsigned maxTrSize      = cs.sps->getMaxTrSize();
-#endif
 
   const PartSplit lastSplit = m_partStack.back().split;
   const PartSplit parlSplit = lastSplit == CU_TRIH_SPLIT ? CU_HORZ_SPLIT : CU_VERT_SPLIT;
@@ -340,11 +328,9 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
     THROW( "Checking if top level split is possible" );
     return true;
     break;
-#if ENABLE_BMS
   case TU_MAX_TR_SPLIT:
     return area.width > maxTrSize || area.height > maxTrSize;
     break;
-#endif
   case CU_QUAD_SPLIT:
   {
     // don't allow QT-splitting below a BT split
@@ -457,13 +443,6 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
 
   PartSplit split = CU_DONT_SPLIT;
 
-#if !ENABLE_BMS
-  if( currArea().lwidth() > cs.sps->getMaxTrSize() || currArea().lheight() > cs.sps->getMaxTrSize() )
-  {
-    split = CU_QUAD_SPLIT;
-  }
-
-#endif
   if( split == CU_DONT_SPLIT )
   {
     const bool isBlInPic = cs.picture->Y().contains( currArea().Y().bottomLeft() );
@@ -531,19 +510,15 @@ void QTBTPartitioner::exitCurrSplit()
       currBtDepth--;
     }
   }
-#if ENABLE_BMS
   else if( currSplit == TU_MAX_TR_SPLIT )
   {
     CHECK( currTrDepth == 0, "TR depth is '0', although a TU split was performed" );
     currTrDepth--;
   }
-#endif
   else
   {
-#if ENABLE_BMS
     CHECK( currTrDepth > 0, "RQT found with QTBT partitioner" );
 
-#endif
     CHECK( currQtDepth == 0, "QT depth is '0', although a QT split was performed" );
     currQtDepth--;
   }
@@ -804,7 +779,6 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
   }
 }
 
-#if ENABLE_BMS
 static const int g_maxRtGridSize = 3;
 
 static const int g_zScanToX[1 << ( g_maxRtGridSize << 1 )] =
@@ -880,4 +854,3 @@ Partitioning PartitionerImpl::getMaxTuTiling( const UnitArea &cuArea, const Codi
 
   return ret;
 }
-#endif

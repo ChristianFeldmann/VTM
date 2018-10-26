@@ -207,12 +207,8 @@ namespace TU
 #endif
   bool isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID);
   bool getCbf                         (const TransformUnit &tu, const ComponentID &compID);
-#if ENABLE_BMS
   bool getCbfAtDepth                  (const TransformUnit &tu, const ComponentID &compID, const unsigned &depth);
   void setCbfAtDepth                  (      TransformUnit &tu, const ComponentID &compID, const unsigned &depth, const bool &cbf);
-#else
-  void setCbf                         (      TransformUnit &tu, const ComponentID &compID, const bool &cbf);
-#endif
   bool hasTransformSkipFlag           (const CodingStructure& cs, const CompArea& area);
   uint32_t getGolombRiceStatisticsIndex   (const TransformUnit &tu, const ComponentID &compID);
 #if HEVC_USE_MDCS

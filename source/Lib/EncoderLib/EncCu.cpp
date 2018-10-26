@@ -1602,9 +1602,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       , 0
 #endif
     );
-#if JVET_L0054_MMVD
-    PU::getInterMMVDMergeCandidates(pu, mergeCtx);
-#endif
 #if JVET_L0104_NO_4x4BI_INTER_CU
     if (PU::isBipredRestriction(pu))
     {
@@ -1620,6 +1617,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
       }
     }
+#endif
+#if JVET_L0054_MMVD
+    PU::getInterMMVDMergeCandidates(pu, mergeCtx);
 #endif
   }
 #if JVET_L0054_MMVD

@@ -110,17 +110,17 @@ void EncCu::create( EncCfg* encCfg )
         m_pTempMotLUTs[w][h] = new LutMotionCand ;
         m_pBestMotLUTs[w][h] = new LutMotionCand ;
         m_pSplitTempMotLUTs[w][h] = new LutMotionCand;
-          m_pSplitTempMotLUTs[w][h]->currCnt = 0;
-          m_pSplitTempMotLUTs[w][h]->motionCand = nullptr;
-          m_pSplitTempMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+        m_pSplitTempMotLUTs[w][h]->currCnt = 0;
+        m_pSplitTempMotLUTs[w][h]->motionCand = nullptr;
+        m_pSplitTempMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
 
-         m_pTempMotLUTs[w][h]->currCnt = 0;
-          m_pTempMotLUTs[w][h]->motionCand = nullptr;
-          m_pTempMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+        m_pTempMotLUTs[w][h]->currCnt = 0;
+        m_pTempMotLUTs[w][h]->motionCand = nullptr;
+        m_pTempMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
 
-          m_pBestMotLUTs[w][h]->currCnt = 0;
-          m_pBestMotLUTs[w][h]->motionCand = nullptr;
-          m_pBestMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+        m_pBestMotLUTs[w][h]->currCnt = 0;
+        m_pBestMotLUTs[w][h]->motionCand = nullptr;
+        m_pBestMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
 #endif
       }
       else
@@ -554,7 +554,7 @@ void EncCu::xCheckBestMode( CodingStructure *&tempCS, CodingStructure *&bestCS, 
 #endif
 {
 #if JVET_L0266_HMVP
-  bool CSUpdated = false;
+  bool bestCSUpdated = false;
 #endif
 
   if( !tempCS->cus.empty() )
@@ -588,7 +588,7 @@ void EncCu::xCheckBestMode( CodingStructure *&tempCS, CodingStructure *&bestCS, 
       // store temp best CI for next CU coding
       m_CurrCtx->best = m_CABACEstimator->getCtx();
 #if JVET_L0266_HMVP
-      CSUpdated = true;
+      bestCSUpdated = true;
 #endif
     }
   }
@@ -596,15 +596,15 @@ void EncCu::xCheckBestMode( CodingStructure *&tempCS, CodingStructure *&bestCS, 
   // reset context states
   m_CABACEstimator->getCtx() = m_CurrCtx->start;
 #if JVET_L0266_HMVP
-  return CSUpdated;
+  return bestCSUpdated;
 #endif
 
 }
 
 void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner
 #if JVET_L0266_HMVP
-  , LutMotionCand* &tempMotCandLUTs
-  , LutMotionCand* &bestMotCandLUTs
+  , LutMotionCand *&tempMotCandLUTs
+  , LutMotionCand *&bestMotCandLUTs
 #endif
 )
 {
@@ -1114,12 +1114,12 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
         m_CurrCtx--;
         partitioner.exitCurrSplit();
 #if JVET_L0266_HMVP
-        bool CSUpdated =
+        bool bestCSUpdated =
 #endif
         xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
 #if JVET_L0266_HMVP
-        if (CSUpdated)
+        if (bestCSUpdated)
         {
           std::swap(tempMotCandLUTs, bestMotCandLUTs);
         }
@@ -1236,14 +1236,14 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
   // RD check for sub partitioned coding structure.
 #if JVET_L0266_HMVP
-  bool CSUpdated =
+  bool bestCSUpdated =
 #endif
   xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
 #if JVET_L0266_HMVP
   if (!slice.isIntra())
   {
-    if (CSUpdated)
+    if (bestCSUpdated)
     {
       std::swap(tempMotCandLUTs, bestMotCandLUTs);
     }

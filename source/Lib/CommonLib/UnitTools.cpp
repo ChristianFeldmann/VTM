@@ -503,7 +503,7 @@ bool PU::xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const 
     {
       continue;
     }
-    if ( (mergeCandList.interDirNeighbours[ui] == mergeCandList.interDirNeighbours[mergeCandIndex]))
+    if (mergeCandList.interDirNeighbours[ui] == mergeCandList.interDirNeighbours[mergeCandIndex])
     {
       if (mergeCandList.interDirNeighbours[ui] == 3)
       {
@@ -524,7 +524,7 @@ bool PU::xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const 
         int offset0 = (ui * 2) + mergeCandList.interDirNeighbours[ui] - 1;
         int offset1 = (mergeCandIndex * 2) + mergeCandList.interDirNeighbours[ui] - 1;
         if (mergeCandList.mvFieldNeighbours[offset0].refIdx == mergeCandList.mvFieldNeighbours[offset1].refIdx &&
-          mergeCandList.mvFieldNeighbours[offset0].mv == mergeCandList.mvFieldNeighbours[offset1].mv
+            mergeCandList.mvFieldNeighbours[offset0].mv == mergeCandList.mvFieldNeighbours[offset1].mv
           )
         {
           hasPruned[ui] = true;

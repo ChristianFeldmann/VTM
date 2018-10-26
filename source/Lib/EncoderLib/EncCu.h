@@ -174,8 +174,8 @@ protected:
 
   void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm
 #if JVET_L0266_HMVP
-    , LutMotionCand* &tempMotCandLUTs
-    , LutMotionCand* &bestMotCandLUTs
+    , LutMotionCand *&tempMotCandLUTs
+    , LutMotionCand *&bestMotCandLUTs
 #endif
   );
 #if ENABLE_SPLIT_PARALLELISM

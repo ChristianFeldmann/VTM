@@ -1581,7 +1581,7 @@ void Slice::destroyMotionLUTs()
 }
 void Slice::resetMotionLUTs()
 {
-   m_MotionCandLut->currCnt = 0;
+  m_MotionCandLut->currCnt = 0;
 }
 
 MotionInfo Slice::getMotionInfoFromLUTs(int MotCandIdx) const

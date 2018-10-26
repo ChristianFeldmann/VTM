@@ -295,6 +295,9 @@ struct CodingUnit : public UnitArea
   int8_t          qp;
   SplitSeries    splitSeries;
   bool           skip;
+#if JVET_L0054_MMVD
+  bool           mmvdSkip;
+#endif
   bool           affine;
   int            affineType;
   bool           transQuantBypass;
@@ -349,6 +352,10 @@ struct InterPredictionData
 {
   bool      mergeFlag;
   uint8_t     mergeIdx;
+#if JVET_L0054_MMVD
+  bool           mmvdMergeFlag;
+  uint32_t       mmvdMergeIdx;
+#endif
   uint8_t     interDir;
   uint8_t     mvpIdx  [NUM_REF_PIC_LIST_01];
   uint8_t     mvpNum  [NUM_REF_PIC_LIST_01];

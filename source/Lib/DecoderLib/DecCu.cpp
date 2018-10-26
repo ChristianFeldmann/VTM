@@ -414,6 +414,63 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 
     if( pu.mergeFlag )
     {
+#if JVET_L0054_MMVD
+      if (pu.mmvdMergeFlag || pu.cu->mmvdSkip)
+      {
+        if (pu.cs->sps->getSpsNext().getUseSubPuMvp())
+        {
+          Size bufSize = g_miScaling.scale(pu.lumaSize());
+          mrgCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);
+        }
+
+        if (cu.cs->pps->getLog2ParallelMergeLevelMinus2() && cu.partSize != SIZE_2Nx2N && cu.lumaSize().width <= 8)
+        {
+          if (!mrgCtx.hasMergedCandList)
+          {
+            // temporarily set size to 2Nx2N
+            PartSize                 tmpPS = SIZE_2Nx2N;
+            PredictionUnit           tmpPU = pu;
+            static_cast<UnitArea&> (tmpPU) = cu;
+            std::swap(tmpPS, cu.partSize);
+#if JVET_L0054_MMVD
+            int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
+            PU::getInterMergeCandidates(tmpPU, mrgCtx, 1, fPosBaseIdx + 1);
+#else
+            PU::getInterMergeCandidates(tmpPU, mrgCtx, 255);
+#endif
+            PU::getInterMMVDMergeCandidates(tmpPU, mrgCtx,
+              pu.mmvdMergeIdx
+            );
+            std::swap(tmpPS, cu.partSize);
+            mrgCtx.hasMergedCandList = true;
+          }
+        }
+        else
+        {
+#if JVET_L0054_MMVD
+          int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
+          PU::getInterMergeCandidates(pu, mrgCtx, 1, fPosBaseIdx + 1);
+#else
+          PU::getInterMergeCandidates(pu, mrgCtx, 255);
+#endif
+          PU::getInterMMVDMergeCandidates(pu, mrgCtx,
+            pu.mmvdMergeIdx
+          );
+        }
+        mrgCtx.setMmvdMergeCandiInfo(pu, pu.mmvdMergeIdx);
+
+        if (pu.interDir == 3 /* PRED_BI */ && PU::isBipredRestriction(pu))
+        {
+          pu.mv[REF_PIC_LIST_1] = Mv(0, 0);
+          pu.refIdx[REF_PIC_LIST_1] = -1;
+          pu.interDir = 1;
+        }
+
+        PU::spanMotionInfo(pu, mrgCtx);
+      }
+      else
+      {
+#endif
       {
         if( pu.cu->affine )
         {
@@ -461,14 +518,22 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               PredictionUnit           tmpPU    = pu;
               static_cast<UnitArea&> ( tmpPU )  = cu;
               std::swap( tmpPS, cu.partSize );
+#if JVET_L0054_MMVD
+              PU::getInterMergeCandidates(tmpPU, mrgCtx, 0, pu.mergeIdx);
+#else
               PU::getInterMergeCandidates( tmpPU, mrgCtx, pu.mergeIdx );
+#endif
               std::swap( tmpPS, cu.partSize );
               mrgCtx.hasMergedCandList          = true;
             }
           }
           else
           {
+#if JVET_L0054_MMVD
+            PU::getInterMergeCandidates(pu, mrgCtx, 0, pu.mergeIdx);
+#else
             PU::getInterMergeCandidates( pu, mrgCtx, pu.mergeIdx );
+#endif
           }
 
           mrgCtx.setMergeInfo( pu, pu.mergeIdx );
@@ -486,6 +551,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           PU::spanMotionInfo( pu, mrgCtx );
         }
       }
+#if JVET_L0054_MMVD
+      }
+#endif
     }
     else
     {

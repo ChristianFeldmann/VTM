@@ -692,16 +692,54 @@ void InterSearch::xMergeEstimation( PredictionUnit& pu, PelUnitBuf& origBuf, int
 
       pu.UnitArea::operator=( *pu.cu );
       pu.cu->partSize = SIZE_2Nx2N;
-
+#if JVET_L0054_MMVD
+      if(pu.mmvdMergeFlag)
+      {
+      PU::getInterMergeCandidates( pu, mergeCtx 
+#if JVET_L0054_MMVD
+        , 0
+#endif
+      );
+        PU::getInterMMVDMergeCandidates(pu, mergeCtx);
+      }
+      else
+      {
+        PU::getInterMergeCandidates(pu, mergeCtx
+#if JVET_L0054_MMVD
+          , 0
+#endif
+        );
+      }
+#else
       PU::getInterMergeCandidates( pu, mergeCtx );
-
+#endif
       pu.UnitArea::operator=( unitArea );
       pu.cu->partSize = partSize;
     }
   }
   else
   {
+#if JVET_L0054_MMVD
+    if(pu.mmvdMergeFlag)
+    {
+    PU::getInterMergeCandidates( pu, mergeCtx 
+#if JVET_L0054_MMVD
+      , 0
+#endif
+    );
+      PU::getInterMMVDMergeCandidates(pu, mergeCtx);
+    }
+    else
+    {
+      PU::getInterMergeCandidates(pu, mergeCtx
+#if JVET_L0054_MMVD
+        , 0
+#endif
+      );
+    }
+#else
     PU::getInterMergeCandidates( pu, mergeCtx );
+#endif
   }
 
   PU::restrictBiPredMergeCands( pu, mergeCtx );
@@ -4565,6 +4603,13 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
     m_CABACEstimator->cu_skip_flag  ( cu );
     m_CABACEstimator->affine_flag( cu );
+#if JVET_L0054_MMVD
+    if (cu.mmvdSkip)
+    {
+      m_CABACEstimator->mmvd_merge_idx(pu);
+    }
+    else
+#endif
     m_CABACEstimator->merge_idx     ( pu );
 
 
@@ -4689,6 +4734,13 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
 
     m_CABACEstimator->cu_skip_flag  ( cu );
     m_CABACEstimator->affine_flag   ( cu );
+#if JVET_L0054_MMVD
+    if (cu.mmvdSkip)
+    {
+      m_CABACEstimator->mmvd_merge_idx(*cu.firstPU);
+    }
+    else
+#endif
     m_CABACEstimator->merge_idx     ( *cu.firstPU );
     fracBits   += m_CABACEstimator->getEstFracBits();
   }

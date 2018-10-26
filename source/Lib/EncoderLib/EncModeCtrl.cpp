@@ -473,6 +473,16 @@ bool CacheBlkInfoCtrl::isSkip( const UnitArea& area )
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->isSkip;
 }
 
+#if JVET_L0054_MMVD
+bool CacheBlkInfoCtrl::isMMVDSkip(const UnitArea& area)
+{
+  unsigned idx1, idx2, idx3, idx4;
+  getAreaIdx(area.Y(), *m_slice_chblk->getPPS()->pcv, idx1, idx2, idx3, idx4);
+
+  return m_codedCUInfo[idx1][idx2][idx3][idx4]->isMMVDSkip;
+}
+#endif
+
 void CacheBlkInfoCtrl::setMv( const UnitArea& area, const RefPicList refPicList, const int iRefIdx, const Mv& rMv )
 {
   if( iRefIdx >= MAX_STORED_CU_INFO_REFS ) return;
@@ -1509,6 +1519,9 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           relatedCU.isInter   = true;
 #if HM_CODED_CU_INFO
           relatedCU.isSkip   |= bestCU->skip;
+#if JVET_L0054_MMVD
+          relatedCU.isMMVDSkip |= bestCU->mmvdSkip;
+#endif
 #else
           relatedCU.isSkip    = bestCU->skip;
 #endif

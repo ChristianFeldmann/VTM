@@ -107,9 +107,11 @@ private:
   RateCtrl*             m_pcRateCtrl;
   CodingStructure    ***m_pImvTempCS;
   EncModeCtrl          *m_modeCtrl;
-
+#if JVET_L0054_MMVD
+  PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
+#else
   PelStorage            m_acMergeBuffer[MRG_MAX_NUM_CANDS];
-
+#endif
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];
   unsigned int          m_subMergeBlkSize[10];
   unsigned int          m_subMergeBlkNum[10];

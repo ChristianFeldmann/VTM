@@ -253,6 +253,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   mtDepth           = other.mtDepth;
   splitSeries       = other.splitSeries;
   skip              = other.skip;
+#if JVET_L0054_MMVD
+  mmvdSkip = other.mmvdSkip;
+#endif
   affine            = other.affine;
   affineType        = other.affineType;
   transQuantBypass  = other.transQuantBypass;
@@ -284,6 +287,9 @@ void CodingUnit::initData()
   mtDepth           = 0;
   splitSeries       = 0;
   skip              = false;
+#if JVET_L0054_MMVD
+  mmvdSkip = false;
+#endif
   affine            = false;
   affineType        = 0;
   transQuantBypass  = false;
@@ -321,6 +327,10 @@ void PredictionUnit::initData()
   // inter data
   mergeFlag   = false;
   mergeIdx    = MAX_UCHAR;
+#if JVET_L0054_MMVD
+  mmvdMergeFlag = false;
+  mmvdMergeIdx = MAX_UINT;
+#endif
   interDir    = MAX_UCHAR;
   mergeType   = MRG_TYPE_DEFAULT_N;
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
@@ -351,6 +361,10 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
 {
   mergeFlag   = predData.mergeFlag;
   mergeIdx    = predData.mergeIdx;
+#if JVET_L0054_MMVD
+  mmvdMergeFlag = predData.mmvdMergeFlag;
+  mmvdMergeIdx = predData.mmvdMergeIdx;
+#endif
   interDir    = predData.interDir;
   mergeType   = predData.mergeType;
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
@@ -378,6 +392,10 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
 
   mergeFlag   = other.mergeFlag;
   mergeIdx    = other.mergeIdx;
+#if JVET_L0054_MMVD
+  mmvdMergeFlag = other.mmvdMergeFlag;
+  mmvdMergeIdx = other.mmvdMergeIdx;
+#endif
   interDir    = other.interDir;
   mergeType   = other.mergeType;
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)

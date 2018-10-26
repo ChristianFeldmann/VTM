@@ -317,7 +317,9 @@ struct CodedCUInfo
   bool isInter;
   bool isIntra;
   bool isSkip;
-
+#if JVET_L0054_MMVD
+  bool isMMVDSkip;
+#endif
   bool validMv[NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
@@ -368,7 +370,9 @@ public:
   virtual ~CacheBlkInfoCtrl() {}
 
   bool isSkip ( const UnitArea& area );
-
+#if JVET_L0054_MMVD
+  bool isMMVDSkip(const UnitArea& area);
+#endif
   bool getMv  ( const UnitArea& area, const RefPicList refPicList, const int iRefIdx,       Mv& rMv ) const;
   void setMv  ( const UnitArea& area, const RefPicList refPicList, const int iRefIdx, const Mv& rMv );
 

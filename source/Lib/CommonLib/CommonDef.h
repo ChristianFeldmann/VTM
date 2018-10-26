@@ -294,6 +294,16 @@ static const int AFFINE_MAX_NUM_V2 =                                2; ///< max 
 static const int AFFINE_MAX_NUM_COMB =                             12; ///< max number of combined motion candidates
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
 
+
+#if JVET_L0054_MMVD
+static const int MMVD_REFINE_STEP =                                 8; ///< max number of distance step
+static const int MMVD_MAX_REFINE_NUM =                              (MMVD_REFINE_STEP * 4); ///< max number of candidate from a base candidate
+static const int MMVD_BASE_MV_NUM =                                 2; ///< max number of base candidate
+static const int MMVD_ADD_NUM =                                     (MMVD_MAX_REFINE_NUM * MMVD_BASE_MV_NUM);///< total number of mmvd candidate
+static const int MMVD_MRG_MAX_RD_NUM =                              MRG_MAX_NUM_CANDS;
+static const int MMVD_MRG_MAX_RD_BUF_NUM =                          (MMVD_MRG_MAX_RD_NUM + 1);///< increase buffer size by 1
+#endif
+
 #if JVET_L0274
 static const int MAX_NUM_REG_BINS_4x4SUBBLOCK =                    32; ///< max number of context-coded bins (incl. gt2 bins) per 4x4 subblock
 static const int MAX_NUM_GT2_BINS_4x4SUBBLOCK =                     4; ///< max number of gt2 bins per 4x4 subblock

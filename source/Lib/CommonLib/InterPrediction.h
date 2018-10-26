@@ -81,6 +81,9 @@ protected:
 
   int                  m_iRefListIdx;
   
+#if JVET_L0265_AFF_MINIMUM4X4
+  Mv*                  m_storedMv;
+#endif
 
   void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
   );
@@ -89,11 +92,7 @@ protected:
                                  );
   
   void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs );
-  void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng 
-#if JVET_L0265_AFF_MINIMUM4X4
-    , Mv* storedMv = nullptr
-#endif
-  );
+  void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng );
 
   static bool xCheckIdenticalMotion( const PredictionUnit& pu );
 

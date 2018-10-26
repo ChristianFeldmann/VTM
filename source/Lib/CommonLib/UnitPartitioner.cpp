@@ -322,7 +322,7 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   const unsigned minBtSize      = cs.pcv->getMinBtSize( *cs.slice, chType );
   const unsigned maxTtSize      = cs.pcv->getMaxTtSize( *cs.slice, chType );
   const unsigned minTtSize      = cs.pcv->getMinTtSize( *cs.slice, chType );
-#if ENABLE_BMS || JVET_L0081_VPDU_SPLIT_CONSTRAINTS
+#if ENABLE_BMS
   const unsigned maxTrSize      = cs.sps->getMaxTrSize();
 #endif
 
@@ -413,27 +413,27 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   case CU_HORZ_SPLIT:
     if( area.height <= minBtSize || area.height > maxBtSize )     return false;
 #if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
-    if( area.width > maxTrSize && area.height <= maxTrSize )      return false;
+    if( area.width > MAX_TU_SIZE_FOR_PROFILE && area.height <= MAX_TU_SIZE_FOR_PROFILE ) return false;
 #endif
     break;
   case CU_VERT_SPLIT:
     if( area.width <= minBtSize || area.width > maxBtSize )       return false;
 #if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
-    if( area.width <= maxTrSize && area.height > maxTrSize )      return false;
+    if( area.width <= MAX_TU_SIZE_FOR_PROFILE && area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
 #endif
     break;
   case CU_TRIH_SPLIT:
     if( ( cs.sps->getSpsNext().getMTTMode() & 1 ) != 1 )          return false;
     if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize) return false;
 #if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
-    if( area.width > maxTrSize || area.height > maxTrSize )       return false;
+    if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
 #endif
     break;
   case CU_TRIV_SPLIT:
     if( ( cs.sps->getSpsNext().getMTTMode() & 1 ) != 1 )          return false;
     if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize)  return false;
 #if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
-    if( area.width > maxTrSize || area.height > maxTrSize )       return false;
+    if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
 #endif
     break;
   default:

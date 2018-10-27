@@ -1602,22 +1602,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       , 0
 #endif
     );
-#if JVET_L0104_NO_4x4BI_INTER_CU
-    if (PU::isBipredRestriction(pu))
-    {
-      for( uint32_t mergeCand = 0; mergeCand < mergeCtx.numValidMergeCand; ++mergeCand )
-      {
-        if( mergeCtx.interDirNeighbours[ mergeCand ] == 3 )
-        {
-          mergeCtx.interDirNeighbours[ mergeCand ] = 1;
-          mergeCtx.mvFieldNeighbours[( mergeCand << 1 ) + 1].setMvField( Mv( 0, 0 ), -1 );
-#if JVET_L0646_GBI
-          mergeCtx.GBiIdx[mergeCand] = GBI_DEFAULT;
-#endif
-        }
-      }
-    }
-#endif
+    PU::restrictBiPredMergeCands(pu, mergeCtx);
 #if JVET_L0054_MMVD
     PU::getInterMMVDMergeCandidates(pu, mergeCtx);
 #endif

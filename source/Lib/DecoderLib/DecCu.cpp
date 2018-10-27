@@ -441,6 +441,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #else
             PU::getInterMergeCandidates(tmpPU, mrgCtx, 255);
 #endif
+            PU::restrictBiPredMergeCands(pu, mrgCtx);
             PU::getInterMMVDMergeCandidates(tmpPU, mrgCtx,
               pu.mmvdMergeIdx
             );
@@ -456,18 +457,12 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #else
           PU::getInterMergeCandidates(pu, mrgCtx, 255);
 #endif
+          PU::restrictBiPredMergeCands(pu, mrgCtx);
           PU::getInterMMVDMergeCandidates(pu, mrgCtx,
             pu.mmvdMergeIdx
           );
         }
         mrgCtx.setMmvdMergeCandiInfo(pu, pu.mmvdMergeIdx);
-
-        if (pu.interDir == 3 /* PRED_BI */ && PU::isBipredRestriction(pu))
-        {
-          pu.mv[REF_PIC_LIST_1] = Mv(0, 0);
-          pu.refIdx[REF_PIC_LIST_1] = -1;
-          pu.interDir = 1;
-        }
 
         PU::spanMotionInfo(pu, mrgCtx);
       }
@@ -526,6 +521,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #else
               PU::getInterMergeCandidates( tmpPU, mrgCtx, pu.mergeIdx );
 #endif
+              PU::restrictBiPredMergeCands(pu, mrgCtx);
               std::swap( tmpPS, cu.partSize );
               mrgCtx.hasMergedCandList          = true;
             }
@@ -537,19 +533,10 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #else
             PU::getInterMergeCandidates( pu, mrgCtx, pu.mergeIdx );
 #endif
+            PU::restrictBiPredMergeCands(pu, mrgCtx);
           }
 
           mrgCtx.setMergeInfo( pu, pu.mergeIdx );
-
-          if( pu.interDir == 3 /* PRED_BI */ && PU::isBipredRestriction(pu) )
-          {
-            pu.mv    [REF_PIC_LIST_1] = Mv(0, 0);
-            pu.refIdx[REF_PIC_LIST_1] = -1;
-            pu.interDir               =  1;
-#if JVET_L0646_GBI
-            pu.cu->GBiIdx = GBI_DEFAULT;
-#endif
-          }
 
           PU::spanMotionInfo( pu, mrgCtx );
         }

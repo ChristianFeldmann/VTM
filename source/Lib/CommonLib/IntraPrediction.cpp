@@ -585,8 +585,8 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   Pel* refMain;
   Pel* refSide;
 
-  Pel  refAbove[2 * MAX_CU_SIZE + 1];
-  Pel  refLeft [2 * MAX_CU_SIZE + 1];
+  Pel  refAbove[2 * MAX_CU_SIZE + 3];
+  Pel  refLeft [2 * MAX_CU_SIZE + 3];
 
 
   // Initialize the Main and Left reference array.

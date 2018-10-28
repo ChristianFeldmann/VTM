@@ -827,8 +827,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if !REMOVE_MV_ADAPT_PREC 
   ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
 #endif
-  ("Affine",                                          m_Affine,                                        false, "Enable affine prediction (0:off, 1:on)  [default: off]")
-  ( "AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
+  ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
+  ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
+#if JVET_L0256_BIO
+  ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
+#endif    
   ("DisableMotCompression",                           m_DisableMotionCompression,                       false, "Disable motion data compression for all modes")
   ("IMV",                                             m_ImvMode,                                            2, "Adaptive MV precision Mode (IMV)\n"
                                                                                                                "\t0: disabled IMV\n"
@@ -1943,6 +1946,9 @@ bool EncAppCfg::xCheckParameter()
 #if !REMOVE_MV_ADAPT_PREC
     xConfirmPara( m_highPrecisionMv, "High precision MV for temporal merging can only be used with NEXT profile" );
     xConfirmPara( m_Affine, "Affine is only allowed with NEXT profile" );
+#endif
+#if JVET_L0256_BIO
+    xConfirmPara( m_BIO, "BIO only allowed with NEXT profile" );
 #endif
     xConfirmPara( m_DisableMotionCompression, "Disable motion data compression only allowed with NEXT profile" );
     xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
@@ -3143,6 +3149,9 @@ void EncAppCfg::xPrintParameter()
     if( !m_QTBT ) msg( VERBOSE, "IMVMaxCand:%d ", m_ImvMaxCand );
 #if !REMOVE_MV_ADAPT_PREC 
     msg(VERBOSE, "HighPrecMv:%d ", m_highPrecisionMv);
+#endif
+#if JVET_L0256_BIO
+    msg( VERBOSE, "BIO:%d ", m_BIO );
 #endif
     msg( VERBOSE, "DisMDC:%d ", m_DisableMotionCompression );
     msg( VERBOSE, "MTT:%d ", m_MTT );

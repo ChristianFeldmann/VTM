@@ -85,6 +85,8 @@
 
 #define L0074_SUBBLOCK_DEBLOCKING                         1
 
+#define JVET_L0256_BIO                                    1
+
 #define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)
 
 #define JVET_L0628_4TAP_INTRA                             1 // 4-tap intra-interpolation filtering with switching between Gaussian and DCT-IF filters for luma component
@@ -264,6 +266,7 @@
 #if ENABLE_SIMD_OPT_BUFFER && JVET_L0646_GBI
 #define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi   
 #endif
+#define ENABLE_SIMD_OPT_BIO                             ( JVET_L0256_BIO && ENABLE_SIMD_OPT )               ///< SIMD optimization for BIO
 
 // End of SIMD optimizations
 
@@ -558,7 +561,13 @@ enum DFunc
   DF_DEFAULT_ORI      = DF_SSE_WTD+8,
 #endif
 
+#if JVET_L0256_BIO
+  DF_SAD_INTERMEDIATE_BITDEPTH = 63,
+
+  DF_TOTAL_FUNCTIONS = 64
+#else
   DF_TOTAL_FUNCTIONS = 63
+#endif
 };
 
 /// motion vector predictor direction used in AMVP

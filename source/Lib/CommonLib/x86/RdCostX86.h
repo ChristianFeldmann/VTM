@@ -297,6 +297,45 @@ Distortion RdCost::xGetSAD_SIMD( const DistParam &rcDtParam )
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
 }
 
+#if ENABLE_SIMD_OPT_BIO
+template< X86_VEXT vext >
+Distortion RdCost::xGetSAD_IBD_SIMD(const DistParam &rcDtParam)
+{
+  if (rcDtParam.org.width < 4 || rcDtParam.bitDepth > 10 || rcDtParam.applyWeight)
+    return RdCost::xGetSAD(rcDtParam);
+
+  const short* src0 = (const short*)rcDtParam.org.buf;
+  const short* src1 = (const short*)rcDtParam.cur.buf;
+  int  width = rcDtParam.org.height;
+  int  height = rcDtParam.org.width;
+  int  subShift = rcDtParam.subShift;
+  int  subStep = (1 << subShift);
+  const int src0Stride = rcDtParam.org.stride * subStep;
+  const int src1Stride = rcDtParam.cur.stride * subStep;
+
+  __m128i vtotalsum32 = _mm_setzero_si128();
+  __m128i vzero = _mm_setzero_si128();
+  for (int y = 0; y < height; y += subStep)
+  {
+    for (int x = 0; x < width; x += 4)
+    {
+      __m128i vsrc1 = _mm_loadl_epi64((const __m128i*)(src0 + x));
+      __m128i vsrc2 = _mm_loadl_epi64((const __m128i*)(src1 + x));
+      vsrc1 = _mm_cvtepi16_epi32(vsrc1);
+      vsrc2 = _mm_cvtepi16_epi32(vsrc2);
+      vtotalsum32 = _mm_add_epi32(vtotalsum32, _mm_abs_epi32(_mm_sub_epi32(vsrc1, vsrc2)));
+    }
+    src0 += src0Stride;
+    src1 += src1Stride;
+  }
+  vtotalsum32 = _mm_hadd_epi32(vtotalsum32, vzero);
+  vtotalsum32 = _mm_hadd_epi32(vtotalsum32, vzero);
+  Distortion uiSum = _mm_cvtsi128_si32(vtotalsum32);
+
+  uiSum <<= subShift;
+  return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
+}
+#endif
 
 template< int iWidth, X86_VEXT vext >
 Distortion RdCost::xGetSAD_NxN_SIMD( const DistParam &rcDtParam )
@@ -2422,6 +2461,10 @@ void RdCost::_initRdCostX86()
   m_afpDistortFunc[DF_HAD32]   = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
   m_afpDistortFunc[DF_HAD64]   = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
   m_afpDistortFunc[DF_HAD16N]  = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
+
+#if ENABLE_SIMD_OPT_BIO
+  m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD_IBD_SIMD<vext>;
+#endif
 }
 
 template void RdCost::_initRdCostX86<SIMDX86>();

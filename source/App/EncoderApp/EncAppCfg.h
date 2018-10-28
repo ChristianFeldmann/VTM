@@ -214,6 +214,9 @@ protected:
 #if !REMOVE_MV_ADAPT_PREC
   bool      m_highPrecisionMv;
 #endif
+#if JVET_L0256_BIO
+  bool      m_BIO;
+#endif
   bool      m_DisableMotionCompression;
   unsigned  m_MTT;
 #if ENABLE_WPP_PARALLELISM

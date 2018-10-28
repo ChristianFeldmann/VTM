@@ -1735,6 +1735,9 @@ SPSNext::SPSNext( SPS& sps )
 #if !REMOVE_MV_ADAPT_PREC
   , m_highPrecMv                ( false )
 #endif
+#if JVET_L0256_BIO
+  , m_BIO                       ( false )
+#endif
   , m_DisableMotionCompression  ( false )
   , m_LMChroma                  ( false )
   , m_IntraEMT                  ( false )

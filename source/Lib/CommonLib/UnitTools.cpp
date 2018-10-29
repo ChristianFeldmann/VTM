@@ -392,7 +392,7 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
 
 #if JVET_L0053_L0272_DM
     Position topLeftPos = pu.blocks[pu.chType].lumaPos();
-    Position refPos = topLeftPos.offset( pu.blocks[pu.chType].width, pu.blocks[pu.chType].height );
+    Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
     const PredictionUnit *lumaPU = CS::isDualITree( *pu.cs ) ? pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : &pu;
 #else
     const PredictionUnit *lumaPU = CS::isDualITree( *pu.cs ) ? pu.cs->picture->cs->getPU( pu.blocks[pu.chType].lumaPos(), CHANNEL_TYPE_LUMA ) : &pu;
@@ -492,7 +492,7 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
   {
 #if JVET_L0053_L0272_DM
     Position topLeftPos = pu.blocks[pu.chType].lumaPos();
-    Position refPos = topLeftPos.offset( pu.blocks[pu.chType].width, pu.blocks[pu.chType].height );
+    Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
     const PredictionUnit &lumaPU = CS::isDualITree( *pu.cs ) ? *pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : *pu.cs->getPU( topLeftPos, CHANNEL_TYPE_LUMA );
 #else
     const PredictionUnit &lumaPU = CS::isDualITree( *pu.cs ) ? *pu.cs->picture->cs->getPU( pu.blocks[chType].lumaPos(), CHANNEL_TYPE_LUMA ) : *pu.cs->getPU( pu.blocks[chType].lumaPos(), CHANNEL_TYPE_LUMA );

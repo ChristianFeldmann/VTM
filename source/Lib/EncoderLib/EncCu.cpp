@@ -281,7 +281,11 @@ void EncCu::destroy()
     m_pImvTempCS = nullptr;
   }
 
+#if JVET_L0054_MMVD
+  for (unsigned ui = 0; ui < MMVD_MRG_MAX_RD_BUF_NUM; ui++)
+#else
   for( unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++ )
+#endif
   {
     m_acMergeBuffer[ui].destroy();
   }

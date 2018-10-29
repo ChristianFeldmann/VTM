@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0377_AMVR_ROUNDING_ALIGN                    1 // Align AMVR rounding for AMVP candidate
+
 #define JVET_L0285_8BIT_TRANSFORM_CORE                    1 // Primary transform using 8-bit cores
 
 #define JVET_L0081_VPDU_SPLIT_CONSTRAINTS                 1 // VPDU constraints for binary and ternary partitions

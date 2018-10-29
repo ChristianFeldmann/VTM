@@ -2055,6 +2055,9 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 #if HEVC_TILES_WPP
     cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
+#if JVET_L0054_MMVD
+    cu.mmvdSkip = false;
+#endif
 
     PredictionUnit pu( tempCS->area );
     pu.cu = &cu;

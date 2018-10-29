@@ -1183,6 +1183,13 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
 #if JVET_L0369_SUBBLOCK_MERGE
 void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
 {
+#if JVET_L0054_MMVD
+  if ( cu.firstPU->mergeFlag && (cu.firstPU->mmvdMergeFlag || cu.mmvdSkip) )
+  {
+    return;
+  }
+#endif
+
   if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSpsNext().getUseATMVP()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
   {
     unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );

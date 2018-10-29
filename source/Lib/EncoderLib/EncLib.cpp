@@ -844,6 +844,9 @@ void EncLib::xInitSPS(SPS &sps)
 #if !REMOVE_MV_ADAPT_PREC
   sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
 #endif
+#if JVET_L0256_BIO
+  sps.getSpsNext().setUseBIO                ( m_BIO );
+#endif
   sps.getSpsNext().setUseAffine             ( m_Affine );
   sps.getSpsNext().setUseAffineType         ( m_AffineType );
   sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );

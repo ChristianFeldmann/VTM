@@ -64,6 +64,17 @@ class InterPrediction : public WeightPrediction
 {
 private:
 
+#if JVET_L0256_BIO
+  Distortion  m_bioDistThres;
+  Distortion  m_bioSubBlkDistThres;
+  Distortion  m_bioPredSubBlkDist[MAX_NUM_PARTS_IN_CTU];
+
+  int m_dotProduct1[BIO_TEMP_BUFFER_SIZE];
+  int m_dotProduct2[BIO_TEMP_BUFFER_SIZE];
+  int m_dotProduct3[BIO_TEMP_BUFFER_SIZE];
+  int m_dotProduct5[BIO_TEMP_BUFFER_SIZE];
+  int m_dotProduct6[BIO_TEMP_BUFFER_SIZE];
+#endif
 
 protected:
   InterpolationFilter  m_if;
@@ -80,15 +91,37 @@ protected:
   RdCost*              m_pcRdCost;
 
   int                  m_iRefListIdx;
-  
+ 
+#if JVET_L0256_BIO
+  Pel*                 m_gradX0;
+  Pel*                 m_gradY0;
+  Pel*                 m_gradX1;
+  Pel*                 m_gradY1;
+  bool                 m_subPuMC;
+
+  int             rightShiftMSB(int numer, int    denom);
+  void            applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &yuvSrc0, const CPelUnitBuf &yuvSrc1, const int &refIdx0, const int &refIdx1, PelUnitBuf &yuvDst, const BitDepths &clipBitDepths);
+  bool            xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel* yuvSrc0, const int src0Stride, const Pel* yuvSrc1, const int src1Stride, const BitDepths &clipBitDepths);
+  void            bioSampleExtendBilinearFilter(Pel const* src, int srcStride, Pel *dst, int dstStride, int width, int height, int dim, int fracX, int fracY, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng);
+#endif
 
   void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
+#if JVET_L0256_BIO
+                                  ,const bool& bioApplied = false
+#endif
   );
   void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred );
   void xPredInterBlk            ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
+#if JVET_L0256_BIO
+                                  ,const bool& bioApplied = false
+#endif
                                  );
-  
+
+#if JVET_L0256_BIO
+  void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied );
+#else
   void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs );
+#endif
   void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng );
 
   static bool xCheckIdenticalMotion( const PredictionUnit& pu );

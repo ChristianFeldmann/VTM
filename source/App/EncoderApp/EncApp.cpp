@@ -231,6 +231,9 @@ void EncApp::xInitLibCfg()
 #if !REMOVE_MV_ADAPT_PREC
   m_cEncLib.setHighPrecisionMv                                   (m_highPrecisionMv);
 #endif
+#if JVET_L0256_BIO
+  m_cEncLib.setBIO                                               (m_BIO);
+#endif
   m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );
   m_cEncLib.setMTTMode                                           ( m_MTT );
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );

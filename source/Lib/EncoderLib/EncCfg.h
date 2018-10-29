@@ -200,6 +200,9 @@ protected:
 #if !REMOVE_MV_ADAPT_PREC
   bool      m_highPrecMv;
 #endif
+#if JVET_L0256_BIO
+  bool      m_BIO;
+#endif
   bool      m_DisableMotionCompression;
   unsigned  m_MTTMode;
 
@@ -635,6 +638,10 @@ public:
 #if !REMOVE_MV_ADAPT_PREC
   void      setHighPrecisionMv              ( bool b )       { m_highPrecMv = b; }
   bool      getHighPrecisionMv              ()               { return m_highPrecMv; }
+#endif
+#if JVET_L0256_BIO
+  void      setBIO(bool b)                                   { m_BIO = b; }
+  bool      getBIO()                                   const { return m_BIO; }
 #endif
   void      setDisableMotionCompression     ( bool b )       { m_DisableMotionCompression = b; }
   bool      getDisableMotionCompression     ()         const { return m_DisableMotionCompression; }

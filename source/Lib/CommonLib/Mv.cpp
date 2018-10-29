@@ -47,9 +47,13 @@ void roundMV( Mv & rMV, unsigned imvShift )
   if (rMV.highPrec) imvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
 #endif
   int offset = 1 << ( imvShift - 1 );
-
+#if JVET_L0377_AMVR_ROUNDING_ALIGN
+  rMV.setHor(rMV.getHor() >= 0 ? ((rMV.getHor() + offset) >> imvShift) << imvShift : -(((-rMV.getHor() + offset) >> imvShift)) << imvShift);
+  rMV.setVer(rMV.getVer() >= 0 ? ((rMV.getVer() + offset) >> imvShift) << imvShift : -(((-rMV.getVer() + offset) >> imvShift)) << imvShift);
+#else
   rMV.setHor( ( ( rMV.getHor() + offset ) >> imvShift ) << imvShift );
   rMV.setVer( ( ( rMV.getVer() + offset ) >> imvShift ) << imvShift );
+#endif
 }
 
 void roundAffineMv( int& mvx, int& mvy, int nShift )

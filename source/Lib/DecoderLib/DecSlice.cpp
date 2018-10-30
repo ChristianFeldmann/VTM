@@ -230,6 +230,13 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
     }
 #endif
 
+#if JVET_L0158_L0106_RESET_BUFFER
+    if (cs.slice->getSliceType() != I_SLICE && ctuXPosInCtus == 0)
+    {
+      cs.slice->resetMotionLUTs();
+    }
+#endif
+
     isLastCtuOfSliceSegment = cabacReader.coding_tree_unit( cs, ctuArea, pic->m_prevQP, ctuRsAddr );
 
     m_pcCuDecoder->decompressCtu( cs, ctuArea );

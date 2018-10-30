@@ -1538,6 +1538,13 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     const UnitArea ctuArea( cs.area.chromaFormat, Area( pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight ) );
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
+#if JVET_L0158_L0106_RESET_BUFFER
+    if ( pcSlice->getSliceType() != I_SLICE && ctuXPosInCtus == 0)
+    {
+      pcSlice->resetMotionLUTs();
+    }
+#endif
+
 #if ENABLE_WPP_PARALLELISM
     pcPic->scheduler.wait( ctuXPosInCtus, ctuYPosInCtus );
 #endif

@@ -58,6 +58,9 @@
 
 #define JVET_L0104_NO_4x4BI_INTER_CU                      1 // Prohibit 4x4 bi-prediction for inter CU
 #define JVET_L0266_HMVP                                   1 //History-based MVP
+#if JVET_L0266_HMVP
+#define JVET_L0158_L0106_RESET_BUFFER                     1 //reset the history buffer on HMVP
+#endif
 
 #define JVET_L0553_FIX_INITQP                             1
 #define JVET_L0053_L0272_DM                               1 // use center position of luma block to derive DM

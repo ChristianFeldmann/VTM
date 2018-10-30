@@ -173,6 +173,9 @@ public:
 #endif
   static const CtxSet   AffineFlag;
   static const CtxSet   AffineType;
+#if JVET_L0632_AFFINE_MERGE
+  static const CtxSet   AffMergeIdx;
+#endif
   static const CtxSet   Mvd;
   static const CtxSet   TransSubdivFlag;
   static const CtxSet   QtRootCbf;

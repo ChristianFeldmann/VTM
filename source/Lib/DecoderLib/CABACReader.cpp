@@ -1159,7 +1159,11 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
   }
   if( pu.mergeFlag )
   {
+#if JVET_L0369_SUBBLOCK_MERGE
+    subblock_merge_flag( *pu.cu );
+#else
     affine_flag  ( *pu.cu );
+#endif
 #if JVET_L0054_MMVD
     if (pu.mmvdMergeFlag)
     {
@@ -1232,8 +1236,50 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
   PU::spanMotionInfo( pu, mrgCtx );
 }
 
+#if JVET_L0369_SUBBLOCK_MERGE
+void CABACReader::subblock_merge_flag( CodingUnit& cu )
+{
+#if JVET_L0054_MMVD
+  if ( cu.firstPU->mergeFlag && (cu.firstPU->mmvdMergeFlag || cu.mmvdSkip) )
+  {
+    return;
+  }
+#endif
+
+  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSpsNext().getUseSubPuMvp()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+  {
+    RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__AFFINE_FLAG );
+
+    unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
+    cu.affine = m_BinDecoder.decodeBin( Ctx::AffineFlag( ctxId ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "subblock_merge_flag() subblock_merge_flag=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
+  }
+}
+#endif
+
 void CABACReader::affine_flag( CodingUnit& cu )
 {
+#if JVET_L0369_SUBBLOCK_MERGE
+  if ( !cu.cs->slice->isIntra() && cu.cs->sps->getSpsNext().getUseAffine() && cu.lumaSize().width > 8 && cu.lumaSize().height > 8 )
+  {
+    RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__AFFINE_FLAG );
+
+    unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
+    cu.affine = m_BinDecoder.decodeBin( Ctx::AffineFlag( ctxId ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "affine_flag() affine=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
+
+    if ( cu.affine && cu.cs->sps->getSpsNext().getUseAffineType() )
+    {
+      ctxId = 0;
+      cu.affineType = m_BinDecoder.decodeBin( Ctx::AffineType( ctxId ) );
+      DTRACE( g_trace_ctx, D_SYNTAX, "affine_type() affine_type=%d ctx=%d pos=(%d,%d)\n", cu.affineType ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
+    }
+    else
+    {
+      cu.affineType = AFFINEMODEL_4PARAM;
+    }
+  }
+#else
   if( cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() || cu.partSize != SIZE_2Nx2N )
   {
     return;
@@ -1244,7 +1290,11 @@ void CABACReader::affine_flag( CodingUnit& cu )
     return;
   }
 
+#if JVET_L0632_AFFINE_MERGE
+  if ( cu.firstPU->mergeFlag && !(cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8) )
+#else
   if( cu.firstPU->mergeFlag && !PU::isAffineMrgFlagCoded( *cu.firstPU ) )
+#endif
   {
     return;
   }
@@ -1274,6 +1324,7 @@ void CABACReader::affine_flag( CodingUnit& cu )
   {
     cu.affineType = AFFINEMODEL_4PARAM;
   }
+#endif
 }
 
 void CABACReader::merge_flag( PredictionUnit& pu )
@@ -1295,10 +1346,13 @@ void CABACReader::merge_flag( PredictionUnit& pu )
 
 void CABACReader::merge_data( PredictionUnit& pu )
 {
+#if !JVET_L0632_AFFINE_MERGE
   if ( pu.cu->affine )
   {
     return;
   }
+#endif
+
 #if JVET_L0054_MMVD
   if (pu.cu->mmvdSkip)
   {
@@ -1314,6 +1368,41 @@ void CABACReader::merge_idx( PredictionUnit& pu )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__MERGE_INDEX );
 
+#if JVET_L0632_AFFINE_MERGE
+  if ( pu.cu->affine )
+  {
+    int numCandminus1 = int( pu.cs->slice->getMaxNumAffineMergeCand() ) - 1;
+    pu.mergeIdx = 0;
+    if ( numCandminus1 > 0 )
+    {
+      if ( m_BinDecoder.decodeBin( Ctx::AffMergeIdx() ) )
+      {
+        bool useExtCtx = pu.cs->sps->getSpsNext().getUseSubPuMvp();
+        pu.mergeIdx++;
+        for ( ; pu.mergeIdx < numCandminus1; pu.mergeIdx++ )
+        {
+          if ( useExtCtx )
+          {
+            if ( !m_BinDecoder.decodeBin( Ctx::AffMergeIdx( std::min<int>( pu.mergeIdx, NUM_MERGE_IDX_EXT_CTX - 1 ) ) ) )
+            {
+              break;
+            }
+          }
+          else
+          {
+            if ( !m_BinDecoder.decodeBinEP() )
+            {
+              break;
+            }
+          }
+        }
+      }
+    }
+    DTRACE( g_trace_ctx, D_SYNTAX, "aff_merge_idx() aff_merge_idx=%d\n", pu.mergeIdx );
+  }
+  else
+  {
+#endif
   int numCandminus1 = int( pu.cs->slice->getMaxNumMergeCand() ) - 1;
   pu.mergeIdx       = 0;
   if( numCandminus1 > 0 )
@@ -1348,6 +1437,9 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     }
   }
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() merge_idx=%d\n", pu.mergeIdx );
+#if JVET_L0632_AFFINE_MERGE
+  }
+#endif
 }
 
 #if JVET_L0054_MMVD

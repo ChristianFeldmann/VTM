@@ -411,7 +411,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     }
 #endif
 
-#if JVET_L0646_GBI
+#if JVET_L0646_GBI && !JVET_L0632_AFFINE_MERGE
     uint8_t gbiIdx = GBI_DEFAULT;
 #endif
 
@@ -472,6 +472,26 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       {
         if( pu.cu->affine )
         {
+#if JVET_L0632_AFFINE_MERGE
+          AffineMergeCtx affineMergeCtx;
+#if JVET_L0369_SUBBLOCK_MERGE
+          if ( pu.cs->sps->getSpsNext().getUseSubPuMvp() )
+          {
+            Size bufSize = g_miScaling.scale( pu.lumaSize() );
+            mrgCtx.subPuMvpMiBuf = MotionBuf( m_SubPuMiBuf, bufSize );
+            affineMergeCtx.mrgCtx = &mrgCtx;
+          }
+#endif
+          PU::getAffineMergeCand( pu, affineMergeCtx, pu.mergeIdx );
+          pu.interDir = affineMergeCtx.interDirNeighbours[pu.mergeIdx];
+          pu.cu->affineType = affineMergeCtx.affineType[pu.mergeIdx];
+#if JVET_L0646_GBI
+          pu.cu->GBiIdx = affineMergeCtx.GBiIdx[pu.mergeIdx];
+#endif
+#if JVET_L0369_SUBBLOCK_MERGE
+          pu.mergeType = affineMergeCtx.mergeType[pu.mergeIdx];
+#endif
+#else
           pu.mergeIdx = 0;
           MvField       affineMvField[2][3];
           unsigned char interDirNeighbours;
@@ -482,31 +502,48 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           PU::getAffineMergeCand( pu, affineMvField, interDirNeighbours, numValidMergeCand );
 #endif
           pu.interDir = interDirNeighbours;
+#endif
+#if JVET_L0369_SUBBLOCK_MERGE
+          if ( pu.mergeType == MRG_TYPE_SUBPU_ATMVP )
+          {
+            pu.refIdx[0] = affineMergeCtx.mvFieldNeighbours[(pu.mergeIdx << 1) + 0][0].refIdx;
+            pu.refIdx[1] = affineMergeCtx.mvFieldNeighbours[(pu.mergeIdx << 1) + 1][0].refIdx;
+          }
+          else
+          {
+#endif
           for( int i = 0; i < 2; ++i )
           {
             if( pu.cs->slice->getNumRefIdx( RefPicList( i ) ) > 0 )
             {
+#if JVET_L0632_AFFINE_MERGE
+              MvField* mvField = affineMergeCtx.mvFieldNeighbours[(pu.mergeIdx << 1) + i];
+#else
               MvField* mvField = affineMvField[i];
-
+#endif
               pu.mvpIdx[i] = 0;
               pu.mvpNum[i] = 0;
               pu.mvd[i]    = Mv();
               PU::setAllAffineMvField( pu, mvField, RefPicList( i ) );
-#if JVET_L0646_GBI
+#if JVET_L0646_GBI && !JVET_L0632_AFFINE_MERGE
               pu.cu->GBiIdx = gbiIdx;
 #endif
             }
           }
+#if JVET_L0369_SUBBLOCK_MERGE
+        }
+#endif
           PU::spanMotionInfo( pu, mrgCtx );
         }
         else
         {
+#if !JVET_L0369_SUBBLOCK_MERGE
           if( pu.cs->sps->getSpsNext().getUseSubPuMvp() )
           {
             Size bufSize = g_miScaling.scale( pu.lumaSize() );
             mrgCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
           }
-
+#endif
           if( cu.cs->pps->getLog2ParallelMergeLevelMinus2() && cu.partSize != SIZE_2Nx2N && cu.lumaSize().width <= 8 )
           {
             if( !mrgCtx.hasMergedCandList )

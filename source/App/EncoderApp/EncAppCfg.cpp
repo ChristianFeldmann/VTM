@@ -1070,6 +1070,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    false )
 #endif
   ("MaxNumMergeCand",                                 m_maxNumMergeCand,                                   5u, "Maximum number of merge candidates")
+#if JVET_L0632_AFFINE_MERGE
+  ("MaxNumAffineMergeCand",                           m_maxNumAffineMergeCand,                             5u, "Maximum number of affine merge candidates")
+#endif
   /* Misc. */
   ("SEIDecodedPictureHash,-dph",                      tmpDecodedPictureHashSEIMappedType,                   0, "Control generation of decode picture hash SEI messages\n"
                                                                                                                "\t3: checksum\n"
@@ -2315,6 +2318,18 @@ bool EncAppCfg::xCheckParameter()
   {
     xConfirmPara( m_maxNumMergeCand > 5, "MaxNumMergeCand must be 5 or smaller." );
   }
+
+#if JVET_L0632_AFFINE_MERGE
+  xConfirmPara( m_maxNumAffineMergeCand < 1, "MaxNumAffineMergeCand must be 1 or greater." );
+  xConfirmPara( m_maxNumAffineMergeCand > 5, "MaxNumAffineMergeCand must be 5 or smaller." );
+#if JVET_L0369_SUBBLOCK_MERGE
+  if ( m_Affine == 0 )
+  {
+    m_maxNumAffineMergeCand = m_SubPuMvpMode;
+  }
+#endif
+#endif
+
   xConfirmPara( m_EMT < 0 || m_EMT >3, "EMT must be 0, 1, 2 or 3" );
   xConfirmPara( m_FastEMT < 0 || m_FastEMT >3, "FEMT must be 0, 1, 2 or 3" );
   if( m_usePCM)
@@ -3061,6 +3076,9 @@ void EncAppCfg::xPrintParameter()
   }
 
   msg( DETAILS, "Max Num Merge Candidates               : %d\n", m_maxNumMergeCand );
+#if JVET_L0632_AFFINE_MERGE
+  msg( DETAILS, "Max Num Affine Merge Candidates        : %d\n", m_maxNumAffineMergeCand );
+#endif
   msg( DETAILS, "\n");
 
   msg( VERBOSE, "TOOL CFG: ");

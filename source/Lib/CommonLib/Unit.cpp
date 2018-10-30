@@ -344,6 +344,12 @@ void PredictionUnit::initData()
     {
       mvdAffi[i][j].setZero();
     }
+#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
+    for ( uint32_t j = 0; j < 3; j++ )
+    {
+      mvAffi[i][j].setZero();
+    }
+#endif
   }
 }
 
@@ -378,6 +384,12 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
     {
       mvdAffi[i][j] = predData.mvdAffi[i][j];
     }
+#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
+    for ( uint32_t j = 0; j < 3; j++ )
+    {
+      mvAffi[i][j] = predData.mvAffi[i][j];
+    }
+#endif
   }
 
   return *this;
@@ -409,6 +421,12 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
     {
       mvdAffi[i][j] = other.mvdAffi[i][j];
     }
+#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
+    for ( uint32_t j = 0; j < 3; j++ )
+    {
+      mvAffi[i][j] = other.mvAffi[i][j];
+    }
+#endif
   }
 
   return *this;

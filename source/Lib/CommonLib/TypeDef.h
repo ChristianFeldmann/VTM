@@ -60,6 +60,9 @@
 
 #define JVET_L0104_NO_4x4BI_INTER_CU                      1 // Prohibit 4x4 bi-prediction for inter CU
 #define JVET_L0266_HMVP                                   1 //History-based MVP
+#if JVET_L0266_HMVP
+#define JVET_L0158_L0106_RESET_BUFFER                     1 //reset the history buffer on HMVP
+#endif
 
 #define JVET_L0265_AFF_MINIMUM4X4                         1 //Affine 4x4 chroma subblock 
 

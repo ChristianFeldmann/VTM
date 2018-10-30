@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0118_ALIGN_MTS_INDEX                        1 // Align mts_index on intra and inter
+
 #define JVET_L0377_AMVR_ROUNDING_ALIGN                    1 // Align AMVR rounding for AMVP candidate
 
 #define JVET_L0285_8BIT_TRANSFORM_CORE                    1 // Primary transform using 8-bit cores

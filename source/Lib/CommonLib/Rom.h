@@ -118,7 +118,11 @@ extern const TMatrixCoeff g_as_DST_MAT_4 [TRANSFORM_NUMBER_OF_DIRECTIONS][4][4];
 #endif
 
 extern const int g_aiTrSubsetIntra[3][2];
+#if JVET_L0118_ALIGN_MTS_INDEX
+extern const int g_aiTrSubsetInter[2];
+#else
 extern const int g_aiTrSubsetInter[4];
+#endif
 
 extern const uint8_t g_aucTrSetVert[NUM_INTRA_MODE - 1];
 extern const uint8_t g_aucTrSetHorz[NUM_INTRA_MODE - 1];

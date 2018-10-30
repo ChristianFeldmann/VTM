@@ -598,7 +598,7 @@ const int g_invQuantScales[SCALING_LIST_REM_NUM] =
 //EMT transform sets
 const int g_aiTrSubsetIntra[3][2] = { { DST7, DCT8 }, { DST7, DCT8 }, { DST7, DCT8 } };
 #if JVET_L0118_ALIGN_MTS_INDEX
-const int g_aiTrSubsetInter[4] = { DST7, DCT8 };
+const int g_aiTrSubsetInter[2] = { DST7, DCT8 };
 #else
 const int g_aiTrSubsetInter[4] = { DCT8, DST7 };
 #endif

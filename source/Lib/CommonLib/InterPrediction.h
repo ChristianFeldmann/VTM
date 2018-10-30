@@ -91,6 +91,9 @@ protected:
   RdCost*              m_pcRdCost;
 
   int                  m_iRefListIdx;
+#if JVET_L0265_AFF_MINIMUM4X4
+  Mv*                  m_storedMv;
+#endif
  
 #if JVET_L0256_BIO
   Pel*                 m_gradX0;

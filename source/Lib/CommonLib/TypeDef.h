@@ -61,6 +61,8 @@
 #define JVET_L0104_NO_4x4BI_INTER_CU                      1 // Prohibit 4x4 bi-prediction for inter CU
 #define JVET_L0266_HMVP                                   1 //History-based MVP
 
+#define JVET_L0265_AFF_MINIMUM4X4                         1 //Affine 4x4 chroma subblock 
+
 #define JVET_L0553_FIX_INITQP                             1
 #define JVET_L0053_L0272_DM                               1 // use center position of luma block to derive DM
 

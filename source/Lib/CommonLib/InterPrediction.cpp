@@ -281,7 +281,7 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   subPu.mergeType = MRG_TYPE_DEFAULT_N;
 
 #if JVET_L0369_SUBBLOCK_MERGE
-  bool bAffine = pu.cu->affine;
+  bool isAffine = pu.cu->affine;
   subPu.cu->affine = false;
 #endif
 
@@ -338,7 +338,7 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
 #endif
 
 #if JVET_L0369_SUBBLOCK_MERGE
-  pu.cu->affine = bAffine;
+  pu.cu->affine = isAffine;
 #endif
 }
 

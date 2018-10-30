@@ -1695,13 +1695,13 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 }
 
 #if JVET_L0271_AFFINE_AMVP_SIMPLIFY
-bool PU::addAffineMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AffineAMVPInfo &affiAMVPInfo )
+bool PU::addAffineMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &refPicList, const int &refIdx, const Position &pos, const MvpDir &dir, AffineAMVPInfo &affiAMVPInfo )
 {
   CodingStructure &cs = *pu.cs;
   const PredictionUnit *neibPU = NULL;
   Position neibPos;
 
-  switch ( eDir )
+  switch ( dir )
   {
   case MD_LEFT:
     neibPos = pos.offset( -1, 0 );
@@ -1736,12 +1736,12 @@ bool PU::addAffineMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &e
   Mv outputAffineMv[3];
   const MotionInfo& neibMi = neibPU->getMotionInfo( neibPos );
 
-  const int        currRefPOC = cs.slice->getRefPic( eRefPicList, iRefIdx )->getPOC();
-  const RefPicList eRefPicList2nd = (eRefPicList == REF_PIC_LIST_0) ? REF_PIC_LIST_1 : REF_PIC_LIST_0;
+  const int        currRefPOC = cs.slice->getRefPic( refPicList, refIdx )->getPOC();
+  const RefPicList refPicList2nd = (refPicList == REF_PIC_LIST_0) ? REF_PIC_LIST_1 : REF_PIC_LIST_0;
 
   for ( int predictorSource = 0; predictorSource < 2; predictorSource++ ) // examine the indicated reference picture list, then if not available, examine the other list.
   {
-    const RefPicList eRefPicListIndex = (predictorSource == 0) ? eRefPicList : eRefPicList2nd;
+    const RefPicList eRefPicListIndex = (predictorSource == 0) ? refPicList : refPicList2nd;
     const int        neibRefIdx = neibMi.refIdx[eRefPicListIndex];
 
     if ( ((neibPU->interDir & (eRefPicListIndex + 1)) == 0) || pu.cu->slice->getRefPOC( eRefPicListIndex, neibRefIdx ) != currRefPOC )
@@ -1855,7 +1855,7 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
 #endif
 
 #if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
-  bool bTopCtuBoundary = false;
+  bool isTopCtuBoundary = false;
   if ( (posNeiY + neiH) % pu.cs->sps->getSpsNext().getCTUSize() == 0 && (posNeiY + neiH) == posCurY )
   {
     // use bottom-left and bottom-right sub-block MVs for inheritance
@@ -1864,7 +1864,7 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
     mvLT = puNeighbour->getMotionInfo( posLB ).mv[eRefPicList];
     mvRT = puNeighbour->getMotionInfo( posRB ).mv[eRefPicList];
     posNeiY += neiH;
-    bTopCtuBoundary = true;
+    isTopCtuBoundary = true;
   }
 #endif
 
@@ -1874,7 +1874,7 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
   iDMvHorX = (mvRT - mvLT).getHor() << (shift - g_aucLog2[neiW]);
   iDMvHorY = (mvRT - mvLT).getVer() << (shift - g_aucLog2[neiW]);
 #if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP // degrade to 4-parameter model
-  if ( puNeighbour->cu->affineType == AFFINEMODEL_6PARAM && !bTopCtuBoundary )
+  if ( puNeighbour->cu->affineType == AFFINEMODEL_6PARAM && !isTopCtuBoundary )
 #else
   if ( puNeighbour->cu->affineType == AFFINEMODEL_6PARAM )
 #endif
@@ -2152,7 +2152,7 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
     // Get Temporal Motion Predictor
     if ( affiAMVPInfo.numCand < 2 && pu.cs->slice->getEnableTMVPFlag() )
     {
-      const int refIdx_Col = refIdx;
+      const int refIdxCol = refIdx;
 
       Position posRB = pu.Y().bottomRight().offset( -3, -3 );
 
@@ -2190,7 +2190,7 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
         }
       }
 
-      if ( (C0Avail && getColocatedMVP( pu, eRefPicList, posC0, cColMv, refIdx_Col )) || getColocatedMVP( pu, eRefPicList, posC1, cColMv, refIdx_Col ) )
+      if ( (C0Avail && getColocatedMVP( pu, eRefPicList, posC0, cColMv, refIdxCol )) || getColocatedMVP( pu, eRefPicList, posC1, cColMv, refIdxCol ) )
       {
 #if !REMOVE_MV_ADAPT_PREC
         cColMv.setHighPrec();
@@ -2515,7 +2515,7 @@ bool PU::isBipredRestriction(const PredictionUnit &pu)
 }
 
 #if JVET_L0632_AFFINE_MERGE
-void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool bAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgType )
+void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgType )
 {
   int cuW = pu.Y().width;
   int cuH = pu.Y().height;
@@ -2532,7 +2532,7 @@ void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], 
   if ( verNum == 2 )
   {
     int idx0 = verIdx[0], idx1 = verIdx[1];
-    if ( !bAvailable[idx0] || !bAvailable[idx1] )
+    if ( !isAvailable[idx0] || !isAvailable[idx1] )
     {
       return;
     }
@@ -2553,7 +2553,7 @@ void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], 
   else if ( verNum == 3 )
   {
     int idx0 = verIdx[0], idx1 = verIdx[1], idx2 = verIdx[2];
-    if ( !bAvailable[idx0] || !bAvailable[idx1] || !bAvailable[idx2] )
+    if ( !isAvailable[idx0] || !isAvailable[idx1] || !isAvailable[idx2] )
     {
       return;
     }
@@ -2955,7 +2955,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
     ///> Start: Constructed affine candidates
     {
       MotionInfo mi[4];
-      bool bAvailable[4] = { false };
+      bool isAvailable[4] = { false };
 
       // control point: LT B2->B3->A2
       const Position posLT[3] = { pu.Y().topLeft().offset( -1, -1 ), pu.Y().topLeft().offset( 0, -1 ), pu.Y().topLeft().offset( -1, 0 ) };
@@ -2965,7 +2965,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         const PredictionUnit* puNeigh = cs.getPURestricted( pos, pu, pu.chType );
         if ( puNeigh && CU::isInter( *puNeigh->cu ) )
         {
-          bAvailable[0] = true;
+          isAvailable[0] = true;
           mi[0] = puNeigh->getMotionInfo( pos );
 #if !REMOVE_MV_ADAPT_PREC
           mi[0].mv[0].setHighPrec();
@@ -2983,7 +2983,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         const PredictionUnit* puNeigh = cs.getPURestricted( pos, pu, pu.chType );
         if ( puNeigh && CU::isInter( *puNeigh->cu ) )
         {
-          bAvailable[1] = true;
+          isAvailable[1] = true;
           mi[1] = puNeigh->getMotionInfo( pos );
 #if !REMOVE_MV_ADAPT_PREC
           mi[1].mv[0].setHighPrec();
@@ -3001,7 +3001,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         const PredictionUnit* puNeigh = cs.getPURestricted( pos, pu, pu.chType );
         if ( puNeigh && CU::isInter( *puNeigh->cu ) )
         {
-          bAvailable[2] = true;
+          isAvailable[2] = true;
           mi[2] = puNeigh->getMotionInfo( pos );
 #if !REMOVE_MV_ADAPT_PREC
           mi[2].mv[0].setHighPrec();
@@ -3060,7 +3060,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 #endif
           mi[3].refIdx[0] = refIdx;
           mi[3].interDir = 1;
-          bAvailable[3] = true;
+          isAvailable[3] = true;
         }
 
         if ( slice.isInterB() )
@@ -3074,7 +3074,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 #endif
             mi[3].refIdx[1] = refIdx;
             mi[3].interDir |= 2;
-            bAvailable[3] = true;
+            isAvailable[3] = true;
           }
         }
       }
@@ -3096,7 +3096,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       for ( int idx = startIdx; idx < modelNum; idx++ )
       {
         int modelIdx = order[idx];
-        getAffineControlPointCand( pu, mi, bAvailable, model[modelIdx], modelIdx, verNum[modelIdx], affMrgCtx );
+        getAffineControlPointCand( pu, mi, isAvailable, model[modelIdx], modelIdx, verNum[modelIdx], affMrgCtx );
         if ( affMrgCtx.numValidMergeCand != 0 && affMrgCtx.numValidMergeCand - 1 == mrgCandIdx )
         {
           return;

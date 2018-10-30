@@ -1454,6 +1454,9 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   CHECK(sps == 0, "No SPS present");
   writeBlockStatisticsHeader(sps);
 #endif
+#if JVET_L0260_AFFINE_ME
+  m_pcInterSearch->resetAffineMVList();
+#endif
   encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
 
 #if HEVC_DEPENDENT_SLICES

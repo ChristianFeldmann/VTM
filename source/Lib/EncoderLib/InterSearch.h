@@ -63,6 +63,14 @@ static const uint32_t MAX_IDX_ADAPT_SR          = 33;
 static const uint32_t NUM_MV_PREDICTORS         = 3;
 class EncModeCtrl;
 
+#if JVET_L0260_AFFINE_ME
+struct AffineMVInfo
+{
+  Mv  affMVs[2][33][3];
+  int x, y, w, h;
+};
+#endif
+
 /// encoder search class
 class InterSearch : public InterPrediction, CrossComponentPrediction, AffineGradientSearch
 {
@@ -85,6 +93,14 @@ private:
   uint32_t        m_estWeightIdxBits[GBI_NUM];
   GBiMotionParam  m_uniMotions;
   bool            m_affineModeSelected;
+#endif
+
+#if JVET_L0260_AFFINE_ME
+  AffineMVInfo       *m_affMVList;
+  int             m_affMVListIdx;
+  int             m_affMVListSize;
+  int             m_affMVListMaxSize;
+  Distortion      m_hevcCost;
 #endif
 
 protected:
@@ -140,6 +156,40 @@ public:
 #endif
 #if JVET_L0646_GBI
   void setAffineModeSelected        ( bool flag) { m_affineModeSelected = flag; }
+#endif
+#if JVET_L0260_AFFINE_ME
+  void resetAffineMVList() { m_affMVListIdx = 0; m_affMVListSize = 0; }
+  void savePrevAffMVInfo(int idx, AffineMVInfo &tmpMVInfo, bool& isSaved)
+  {
+    if (m_affMVListSize > idx)
+    {
+      tmpMVInfo = m_affMVList[(m_affMVListIdx - 1 - idx + m_affMVListMaxSize) % m_affMVListMaxSize];
+      isSaved = true;
+    }
+    else
+      isSaved = false;
+  }
+  void addAffMVInfo(AffineMVInfo &tmpMVInfo)
+  {
+    int j = 0;
+    AffineMVInfo *prevInfo = nullptr;
+    for (; j < m_affMVListSize; j++)
+    {
+      prevInfo = m_affMVList + ((m_affMVListIdx - j - 1 + m_affMVListMaxSize) % (m_affMVListMaxSize));
+      if ((tmpMVInfo.x == prevInfo->x) && (tmpMVInfo.y == prevInfo->y) && (tmpMVInfo.w == prevInfo->w) && (tmpMVInfo.h == prevInfo->h))
+      {
+        break;
+      }
+    }
+    if (j < m_affMVListSize)
+      *prevInfo = tmpMVInfo;
+    else
+    {
+      m_affMVList[m_affMVListIdx] = tmpMVInfo;
+      m_affMVListIdx = (m_affMVListIdx + 1) % m_affMVListMaxSize;
+      m_affMVListSize = std::min(m_affMVListSize + 1, m_affMVListMaxSize);
+    }
+  }
 #endif
 protected:
 

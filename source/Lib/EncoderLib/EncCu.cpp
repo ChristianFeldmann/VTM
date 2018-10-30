@@ -1090,6 +1090,11 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   m_CurrCtx++;
 
   tempCS->getRecoBuf().fill( 0 );
+#if JVET_L0260_AFFINE_ME
+  AffineMVInfo tmpMVInfo;
+  bool isAffMVInfoSaved;
+  m_pcInterSearch->savePrevAffMVInfo(0, tmpMVInfo, isAffMVInfoSaved);
+#endif
 
   do
   {
@@ -1251,6 +1256,11 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   bool bestCSUpdated =
 #endif
   xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
+
+#if JVET_L0260_AFFINE_ME
+  if (isAffMVInfoSaved)
+    m_pcInterSearch->addAffMVInfo(tmpMVInfo);
+#endif
 
 #if JVET_L0266_HMVP
   if (!slice.isIntra())

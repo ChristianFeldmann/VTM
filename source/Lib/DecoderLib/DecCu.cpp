@@ -485,7 +485,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           PU::getAffineMergeCand( pu, affineMergeCtx, pu.mergeIdx );
           pu.interDir = affineMergeCtx.interDirNeighbours[pu.mergeIdx];
           pu.cu->affineType = affineMergeCtx.affineType[pu.mergeIdx];
-#if JVET_L0632_AFFINE_MERGE
+#if JVET_L0646_GBI
           pu.cu->GBiIdx = affineMergeCtx.GBiIdx[pu.mergeIdx];
 #endif
 #if JVET_L0369_SUBBLOCK_MERGE

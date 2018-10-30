@@ -621,7 +621,9 @@ const uint8_t g_aucTrSetHorz35[35] =
 };
 
 //EMT threshold
+#if !JVET_L0059_MTS_SIMP
 const uint32_t g_EmtSigNumThr = 2;
+#endif
 
 #if !JVET_L0285_8BIT_TRANSFORM_CORE
 //EMT transform coeficient variable

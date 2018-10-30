@@ -2081,14 +2081,18 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
   {
     if( CU::isIntra( *tu.cu ) )
     {
-      if( numSig > g_EmtSigNumThr )
+#if JVET_L0059_MTS_SIMP
+      emt_tu_index(tu);
+#else 
+      if (numSig > g_EmtSigNumThr)
       {
-        emt_tu_index( tu );
+        emt_tu_index(tu);
       }
       else
       {
         tu.emtIdx = 0; //default transform
       }
+#endif
     }
     else
     {

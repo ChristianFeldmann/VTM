@@ -1997,6 +1997,9 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
   {
     if( CU::isIntra( *tu.cu ) )
     {
+#if JVET_L0059_MTS_SIMP
+      emt_tu_index(tu);
+#else 
       if( numSig > g_EmtSigNumThr )
       {
         emt_tu_index( tu );
@@ -2005,6 +2008,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
       {
         CHECK( tu.emtIdx != 0, "If the number of significant coefficients is <= g_EmtSigNumThr, then the tu index must be 0" );
       }
+#endif
     }
     else
     {

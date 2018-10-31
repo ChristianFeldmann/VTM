@@ -2207,14 +2207,14 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   amvpInfo0.numCand = 0;
 
   // A->C: Above Left, Above, Left
-  addMVPCandUnscaled( pu, eRefPicList, refIdx, posLT, MD_ABOVE_LEFT, amvpInfo0, true );
+  addMVPCandUnscaled( pu, eRefPicList, refIdx, posLT, MD_ABOVE_LEFT, amvpInfo0 );
   if ( amvpInfo0.numCand < 1 )
   {
-    addMVPCandUnscaled( pu, eRefPicList, refIdx, posLT, MD_ABOVE, amvpInfo0, true );
+    addMVPCandUnscaled( pu, eRefPicList, refIdx, posLT, MD_ABOVE, amvpInfo0 );
   }
   if ( amvpInfo0.numCand < 1 )
   {
-    addMVPCandUnscaled( pu, eRefPicList, refIdx, posLT, MD_LEFT, amvpInfo0, true );
+    addMVPCandUnscaled( pu, eRefPicList, refIdx, posLT, MD_LEFT, amvpInfo0 );
   }
   cornerMVPattern = cornerMVPattern | amvpInfo0.numCand;
 
@@ -2223,10 +2223,10 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   amvpInfo1.numCand = 0;
 
   // D->E: Above, Above Right
-  addMVPCandUnscaled( pu, eRefPicList, refIdx, posRT, MD_ABOVE, amvpInfo1, true );
+  addMVPCandUnscaled( pu, eRefPicList, refIdx, posRT, MD_ABOVE, amvpInfo1 );
   if ( amvpInfo1.numCand < 1 )
   {
-    addMVPCandUnscaled( pu, eRefPicList, refIdx, posRT, MD_ABOVE_RIGHT, amvpInfo1, true );
+    addMVPCandUnscaled( pu, eRefPicList, refIdx, posRT, MD_ABOVE_RIGHT, amvpInfo1 );
   }
   cornerMVPattern = cornerMVPattern | (amvpInfo1.numCand << 1);
 
@@ -2235,10 +2235,10 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   amvpInfo2.numCand = 0;
 
   // F->G: Left, Below Left
-  addMVPCandUnscaled( pu, eRefPicList, refIdx, posLB, MD_LEFT, amvpInfo2, true );
+  addMVPCandUnscaled( pu, eRefPicList, refIdx, posLB, MD_LEFT, amvpInfo2 );
   if ( amvpInfo2.numCand < 1 )
   {
-    addMVPCandUnscaled( pu, eRefPicList, refIdx, posLB, MD_BELOW_LEFT, amvpInfo2, true );
+    addMVPCandUnscaled( pu, eRefPicList, refIdx, posLB, MD_BELOW_LEFT, amvpInfo2 );
   }
   cornerMVPattern = cornerMVPattern | (amvpInfo2.numCand << 2);
 
@@ -2423,7 +2423,7 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 #endif
 }
 
-bool PU::addMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &info, bool affine )
+bool PU::addMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &info )
 {
         CodingStructure &cs    = *pu.cs;
   const PredictionUnit *neibPU = NULL;
@@ -2469,35 +2469,10 @@ bool PU::addMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &eRefPic
 
     if( neibRefIdx >= 0 && currRefPOC == cs.slice->getRefPOC( eRefPicListIndex, neibRefIdx ) )
     {
-      if( affine )
-      {
-        int i = 0;
-        for( i = 0; i < info.numCand; i++ )
-        {
-          if( info.mvCand[i] == neibMi.mv[eRefPicListIndex] )
-          {
-            break;
-          }
-        }
-        if( i == info.numCand )
-        {
-          info.mvCand[info.numCand++] = neibMi.mv[eRefPicListIndex];
-#if !REMOVE_MV_ADAPT_PREC
-          Mv cMvHigh = neibMi.mv[eRefPicListIndex];
-          cMvHigh.setHighPrec();
-#endif
-//          CHECK( !neibMi.mv[eRefPicListIndex].highPrec, "Unexpected low precision mv.");
-          return true;
-        }
-      }
-      else
-      {
-        info.mvCand[info.numCand++] = neibMi.mv[eRefPicListIndex];
-        return true;
-      }
+      info.mvCand[info.numCand++] = neibMi.mv[eRefPicListIndex];
+      return true;
     }
   }
-
 
   return false;
 }
@@ -2510,7 +2485,7 @@ bool PU::addMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &eRefPic
 * \param eDir
 * \returns bool
 */
-bool PU::addMVPCandWithScaling( const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &info, bool affine )
+bool PU::addMVPCandWithScaling( const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &info )
 {
         CodingStructure &cs    = *pu.cs;
   const Slice &slice           = *cs.slice;
@@ -2583,32 +2558,11 @@ bool PU::addMVPCandWithScaling( const PredictionUnit &pu, const RefPicList &eRef
           }
         }
 
-        if( affine )
-        {
-          int i;
-          for( i = 0; i < info.numCand; i++ )
-          {
-            if( info.mvCand[i] == cMv )
-            {
-              break;
-            }
-          }
-          if( i == info.numCand )
-          {
-            info.mvCand[info.numCand++] = cMv;
-//            CHECK( !cMv.highPrec, "Unexpected low precision mv.");
-            return true;
-          }
-        }
-        else
-        {
-          info.mvCand[info.numCand++] = cMv;
-          return true;
-        }
+        info.mvCand[info.numCand++] = cMv;
+        return true;
       }
     }
   }
-
 
   return false;
 }
@@ -3483,7 +3437,7 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
 
       for ( int y = (h >> MIN_CU_LOG2); y < ((h + blockHeight) >> MIN_CU_LOG2); y++ )
       {
-        for ( int x = (w >> MIN_CU_LOG2); x < ((w + blockHeight) >> MIN_CU_LOG2); x++ )
+        for ( int x = (w >> MIN_CU_LOG2); x < ((w + blockWidth) >> MIN_CU_LOG2); x++ )
         {
 #if REMOVE_MV_ADAPT_PREC
           mb.at(x, y).mv[eRefList].hor = mvScaleTmpHor;

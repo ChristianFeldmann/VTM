@@ -325,7 +325,7 @@ void DecCu::xReconInter(CodingUnit &cu)
 #endif
 
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-  if (cu.firstPU->MHIntraFlag)
+  if (cu.firstPU->mhIntraFlag)
   {
     m_pcIntraPred->geneWeightedPred(COMPONENT_Y, cu.cs->getPredBuf(*cu.firstPU).Y(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Y, 0));
     m_pcIntraPred->geneWeightedPred(COMPONENT_Cb, cu.cs->getPredBuf(*cu.firstPU).Cb(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cb, 0));
@@ -434,7 +434,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       if (pu.mmvdMergeFlag || pu.cu->mmvdSkip)
       {
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-        CHECK(pu.MHIntraFlag == true, "invalid MHIntra");
+        CHECK(pu.mhIntraFlag == true, "invalid MHIntra");
 #endif
         if (pu.cs->sps->getSpsNext().getUseSubPuMvp())
         {

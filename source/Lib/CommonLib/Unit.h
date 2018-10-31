@@ -368,7 +368,7 @@ struct InterPredictionData
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
 #endif
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-  bool      MHIntraFlag;
+  bool      mhIntraFlag;
 #endif
 };
 

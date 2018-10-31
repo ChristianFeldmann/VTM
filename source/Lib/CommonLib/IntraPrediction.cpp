@@ -952,10 +952,7 @@ void IntraPrediction::switchBuffer(const PredictionUnit &pu, ComponentID compID,
   int compHeight = compID == COMPONENT_Y ? pu.Y().height : pu.Cb().height;
   for (int i = 0; i < compHeight; i++)
   {
-    for (int j = 0; j < compWidth; j++)
-    {
-      memcpy(dst, src, compWidth * sizeof(Pel));
-    }
+    memcpy(dst, src, compWidth * sizeof(Pel));
     src += srcBuff.stride;
     dst += compWidth;
   }
@@ -963,7 +960,7 @@ void IntraPrediction::switchBuffer(const PredictionUnit &pu, ComponentID compID,
 
 void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
 {
-  if (!cu.firstPU->MHIntraFlag)
+  if (!cu.firstPU->mhIntraFlag)
   {
     return;
   }

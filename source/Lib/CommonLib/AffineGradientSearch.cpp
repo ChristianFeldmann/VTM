@@ -135,26 +135,50 @@ void AffineGradientSearch::xEqualCoeffComputer( Pel *pResidue, int residueStride
 
   for ( int j = 0; j != height; j++ )
   {
+#if JVET_L0260_AFFINE_ME
+    int cy = ((j >> 2) << 2) + 2;
+#endif
     for ( int k = 0; k != width; k++ )
     {
       int iC[6];
 
       int idx = j * derivateBufStride + k;
+#if JVET_L0260_AFFINE_ME
+      int cx = ((k >> 2) << 2) + 2;
+#endif
       if ( !b6Param )
       {
         iC[0] = ppDerivate[0][idx];
+#if JVET_L0260_AFFINE_ME
+        iC[1] = cx * ppDerivate[0][idx] + cy * ppDerivate[1][idx];
+#else
         iC[1] = k * ppDerivate[0][idx] + j * ppDerivate[1][idx];
+#endif 
         iC[2] = ppDerivate[1][idx];
+#if JVET_L0260_AFFINE_ME
+        iC[3] = cy * ppDerivate[0][idx] - cx * ppDerivate[1][idx];
+#else
         iC[3] = j * ppDerivate[0][idx] - k * ppDerivate[1][idx];
+#endif
       }
       else
       {
         iC[0] = ppDerivate[0][idx];
+#if JVET_L0260_AFFINE_ME
+        iC[1] = cx * ppDerivate[0][idx];
+#else
         iC[1] = k * ppDerivate[0][idx];
+#endif
         iC[2] = ppDerivate[1][idx];
+#if JVET_L0260_AFFINE_ME
+        iC[3] = cx * ppDerivate[1][idx];
+        iC[4] = cy * ppDerivate[0][idx];
+        iC[5] = cy * ppDerivate[1][idx];
+#else
         iC[3] = k * ppDerivate[1][idx];
         iC[4] = j * ppDerivate[0][idx];
         iC[5] = j * ppDerivate[1][idx];
+#endif
       }
       for ( int col = 0; col < affineParamNum; col++ )
       {

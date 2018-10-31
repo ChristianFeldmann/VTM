@@ -55,6 +55,9 @@ InterPrediction::InterPrediction()
   m_currChromaFormat( NUM_CHROMA_FORMAT )
 , m_maxCompIDToPred ( MAX_NUM_COMPONENT )
 , m_pcRdCost        ( nullptr )
+#if JVET_L0265_AFF_MINIMUM4X4
+, m_storedMv        ( nullptr )
+#endif
 #if JVET_L0256_BIO
 , m_gradX0(nullptr)
 , m_gradY0(nullptr)
@@ -117,6 +120,13 @@ void InterPrediction::destroy()
     }
   }
 
+#if JVET_L0265_AFF_MINIMUM4X4
+  if (m_storedMv != nullptr)
+  {
+    delete[]m_storedMv;
+  }
+#endif
+
 #if JVET_L0256_BIO
   xFree(m_gradX0);   m_gradX0 = nullptr;
   xFree(m_gradY0);   m_gradY0 = nullptr;
@@ -178,6 +188,11 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
 
 #if !JVET_J0090_MEMORY_BANDWITH_MEASURE
   m_if.initInterpolationFilter( true );
+#endif
+
+#if JVET_L0265_AFF_MINIMUM4X4
+  const int MVBUFFER_SIZE = MAX_CU_SIZE / MIN_PU_SIZE;
+  m_storedMv = new Mv [MVBUFFER_SIZE*MVBUFFER_SIZE];
 #endif
 }
 
@@ -280,6 +295,11 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   subPu.cu        = pu.cu;
   subPu.mergeType = MRG_TYPE_DEFAULT_N;
 
+#if JVET_L0369_SUBBLOCK_MERGE
+  bool isAffine = pu.cu->affine;
+  subPu.cu->affine = false;
+#endif
+
   // join sub-pus containing the same motion
   bool verMC = puSize.height > puSize.width;
   int  fstStart = (!verMC ? puPos.y : puPos.x);
@@ -331,6 +351,10 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
 #if JVET_L0256_BIO
   m_subPuMC = false;
 #endif
+
+#if JVET_L0369_SUBBLOCK_MERGE
+  pu.cu->affine = isAffine;
+#endif
 }
 
 
@@ -349,10 +373,16 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   {
     CHECK( iRefIdx < 0, "iRefIdx incorrect." );
 
+#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
+    mv[0] = pu.mvAffi[eRefPicList][0];
+    mv[1] = pu.mvAffi[eRefPicList][1];
+    mv[2] = pu.mvAffi[eRefPicList][2];
+#else
     const CMotionBuf &mb = pu.getMotionBuf();
     mv[0] = mb.at( 0,            0             ).mv[eRefPicList];
     mv[1] = mb.at( mb.width - 1, 0             ).mv[eRefPicList];
     mv[2] = mb.at( 0,            mb.height - 1 ).mv[eRefPicList];
+#endif
   }
   else
   {
@@ -632,6 +662,16 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
 
   blockWidth  >>= iScaleX;
   blockHeight >>= iScaleY;
+
+ #if JVET_L0265_AFF_MINIMUM4X4
+  blockWidth =  std::max(blockWidth, AFFINE_MIN_BLOCK_SIZE);
+  blockHeight = std::max(blockHeight, AFFINE_MIN_BLOCK_SIZE);
+
+  CHECK(blockWidth  > (width >> iScaleX ), "Sub Block width  > Block width");
+  CHECK(blockHeight > (height >> iScaleX), "Sub Block height > Block height");
+  const int MVBUFFER_SIZE = MAX_CU_SIZE / MIN_PU_SIZE;
+#endif
+
   const int cxWidth  = width  >> iScaleX;
   const int cxHeight = height >> iScaleY;
   const int iHalfBW  = blockWidth  >> 1;
@@ -672,6 +712,33 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   {
     for ( int w = 0; w < cxWidth; w += blockWidth )
     {
+
+#if JVET_L0265_AFF_MINIMUM4X4
+      int iMvScaleTmpHor, iMvScaleTmpVer;
+      if(compID == COMPONENT_Y)
+      {
+        iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
+        iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
+        roundAffineMv(iMvScaleTmpHor, iMvScaleTmpVer, shift);
+
+        // clip and scale
+        iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
+        iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
+
+        m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
+      }
+      else
+      {
+        Mv curMv = (m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE) * MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE)] +
+          m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1)* MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE)] +
+          m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE)* MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1)] +
+          m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1)* MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1)] +
+          Mv(2, 2));
+        curMv.set(curMv.getHor() >> 2, curMv.getVer() >> 2);     
+        iMvScaleTmpHor = curMv.hor;
+        iMvScaleTmpVer = curMv.ver;
+      }
+#else
       int iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
       int iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
       roundAffineMv( iMvScaleTmpHor, iMvScaleTmpVer, shift );
@@ -679,7 +746,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
       // clip and scale
       iMvScaleTmpHor = std::min<int>( iHorMax, std::max<int>( iHorMin, iMvScaleTmpHor ) );
       iMvScaleTmpVer = std::min<int>( iVerMax, std::max<int>( iVerMin, iMvScaleTmpVer ) );
-
+#endif
       // get the MV in high precision
       int xFrac, yFrac, xInt, yInt;
 

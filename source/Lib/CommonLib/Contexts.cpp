@@ -407,6 +407,15 @@ const CtxSet ContextSetCfg::AffineType = ContextSetCfg::addCtxSet
   { CNU, },
 });
 
+#if JVET_L0632_AFFINE_MERGE
+const CtxSet ContextSetCfg::AffMergeIdx = ContextSetCfg::addCtxSet
+( {
+  { 137, CNU, CNU, CNU, CNU, },
+  { 122, CNU, CNU, CNU, CNU, },
+  { CNU, CNU, CNU, CNU, CNU, },
+} );
+#endif
+
 #if JVET_L0646_GBI
 const CtxSet ContextSetCfg::GBiIdx = ContextSetCfg::addCtxSet
 ({

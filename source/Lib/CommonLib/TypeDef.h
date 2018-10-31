@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0059_MTS_SIMP                               1 // Simpification on MTS signaling
+
 #define JVET_L0118_ALIGN_MTS_INDEX                        1 // Align mts_index on intra and inter
 
 #define JVET_L0377_AMVR_ROUNDING_ALIGN                    1 // Align AMVR rounding for AMVP candidate
@@ -60,6 +62,11 @@
 
 #define JVET_L0104_NO_4x4BI_INTER_CU                      1 // Prohibit 4x4 bi-prediction for inter CU
 #define JVET_L0266_HMVP                                   1 //History-based MVP
+#if JVET_L0266_HMVP
+#define JVET_L0158_L0106_RESET_BUFFER                     1 //reset the history buffer on HMVP
+#endif
+
+#define JVET_L0265_AFF_MINIMUM4X4                         1 //Affine 4x4 chroma subblock 
 
 #define JVET_L0553_FIX_INITQP                             1
 #define JVET_L0053_L0272_DM                               1 // use center position of luma block to derive DM
@@ -90,11 +97,20 @@
 
 #define L0074_SUBBLOCK_DEBLOCKING                         1
 
+#define JVET_L0260_AFFINE_ME                              1
+
 #define JVET_L0256_BIO                                    1
 
 #define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)
 
 #define JVET_L0628_4TAP_INTRA                             1 // 4-tap intra-interpolation filtering with switching between Gaussian and DCT-IF filters for luma component
+
+#define JVET_L0271_AFFINE_AMVP_SIMPLIFY                   1 // Simplification of affine AMVP list construction
+#define JVET_L0694_AFFINE_LINEBUFFER_CLEANUP              1 // Combination of affine mode clean up and line buffer reduction
+#define JVET_L0632_AFFINE_MERGE                           1 // Affine merge list construction
+#if JVET_L0632_AFFINE_MERGE
+#define JVET_L0369_SUBBLOCK_MERGE                         1 // Moving ATMVP into the sub-block merge list
+#endif
 
 #define REUSE_CU_RESULTS                                  1
 

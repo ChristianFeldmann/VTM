@@ -1120,7 +1120,11 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   }
   if( pu.mergeFlag )
   {
+#if JVET_L0369_SUBBLOCK_MERGE
+    subblock_merge_flag( *pu.cu );
+#else
     affine_flag  ( *pu.cu );
+#endif
 #if JVET_L0054_MMVD
     if (pu.mmvdMergeFlag)
     {
@@ -1176,8 +1180,42 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   }
 }
 
+#if JVET_L0369_SUBBLOCK_MERGE
+void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
+{
+#if JVET_L0054_MMVD
+  if ( cu.firstPU->mergeFlag && (cu.firstPU->mmvdMergeFlag || cu.mmvdSkip) )
+  {
+    return;
+  }
+#endif
+
+  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSpsNext().getUseATMVP()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+  {
+    unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
+    m_BinEncoder.encodeBin( cu.affine, Ctx::AffineFlag( ctxId ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "subblock_merge_flag() subblock_merge_flag=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
+  }
+}
+#endif
+
 void CABACWriter::affine_flag( const CodingUnit& cu )
 {
+#if JVET_L0369_SUBBLOCK_MERGE
+  if ( !cu.cs->slice->isIntra() && cu.cs->sps->getSpsNext().getUseAffine() && cu.lumaSize().width > 8 && cu.lumaSize().height > 8 )
+  {
+    unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
+    m_BinEncoder.encodeBin( cu.affine, Ctx::AffineFlag( ctxId ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "affine_flag() affine=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
+
+    if ( cu.affine && cu.cs->sps->getSpsNext().getUseAffineType() )
+    {
+      unsigned ctxId = 0;
+      m_BinEncoder.encodeBin( cu.affineType, Ctx::AffineType( ctxId ) );
+      DTRACE( g_trace_ctx, D_SYNTAX, "affine_type() affine_type=%d ctx=%d pos=(%d,%d)\n", cu.affineType ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
+    }
+  }
+#else
   if( cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() || cu.partSize != SIZE_2Nx2N )
   {
     return;
@@ -1188,7 +1226,11 @@ void CABACWriter::affine_flag( const CodingUnit& cu )
     return;
   }
 
+#if JVET_L0632_AFFINE_MERGE
+  if ( cu.firstPU->mergeFlag && !(cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8) )
+#else
   if( cu.firstPU->mergeFlag && !PU::isAffineMrgFlagCoded( *cu.firstPU ) )
+#endif
   {
     return;
   }
@@ -1214,6 +1256,7 @@ void CABACWriter::affine_flag( const CodingUnit& cu )
     DTRACE( g_trace_ctx, D_COMMON, " (%d) affine_type() affine_type=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_COMMON ), cu.affineType ? 1 : 0 );
     DTRACE( g_trace_ctx, D_SYNTAX, "affine_type() affine_type=%d ctx=%d pos=(%d,%d)\n", cu.affineType ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
   }
+#endif
 }
 
 void CABACWriter::merge_flag( const PredictionUnit& pu )
@@ -1260,11 +1303,51 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
 
 void CABACWriter::merge_idx( const PredictionUnit& pu )
 {
+#if !JVET_L0632_AFFINE_MERGE
   if ( pu.cu->affine )
   {
     return;
   }
+#endif
 
+#if JVET_L0632_AFFINE_MERGE
+  if ( pu.cu->affine )
+  {
+    int numCandminus1 = int( pu.cs->slice->getMaxNumAffineMergeCand() ) - 1;
+    if ( numCandminus1 > 0 )
+    {
+      if ( pu.mergeIdx == 0 )
+      {
+        m_BinEncoder.encodeBin( 0, Ctx::AffMergeIdx() );
+        DTRACE( g_trace_ctx, D_SYNTAX, "aff_merge_idx() aff_merge_idx=%d\n", pu.mergeIdx );
+        return;
+      }
+      else
+      {
+        bool useExtCtx = pu.cs->sps->getSpsNext().getUseSubPuMvp();
+        m_BinEncoder.encodeBin( 1, Ctx::AffMergeIdx() );
+        for ( unsigned idx = 1; idx < numCandminus1; idx++ )
+        {
+          if ( useExtCtx )
+          {
+            m_BinEncoder.encodeBin( pu.mergeIdx == idx ? 0 : 1, Ctx::AffMergeIdx( std::min<int>( idx, NUM_MERGE_IDX_EXT_CTX - 1 ) ) );
+          }
+          else
+          {
+            m_BinEncoder.encodeBinEP( pu.mergeIdx == idx ? 0 : 1 );
+          }
+          if ( pu.mergeIdx == idx )
+          {
+            break;
+          }
+        }
+      }
+    }
+    DTRACE( g_trace_ctx, D_SYNTAX, "aff_merge_idx() aff_merge_idx=%d\n", pu.mergeIdx );
+  }
+  else
+  {
+#endif
   int numCandminus1 = int( pu.cs->slice->getMaxNumMergeCand() ) - 1;
   if( numCandminus1 > 0 )
   {
@@ -1302,6 +1385,9 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
     }
   }
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() merge_idx=%d\n", pu.mergeIdx );
+#if JVET_L0632_AFFINE_MERGE
+  }
+#endif
 }
 #if JVET_L0054_MMVD
 void CABACWriter::mmvd_merge_idx(const PredictionUnit& pu)
@@ -1997,6 +2083,9 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
   {
     if( CU::isIntra( *tu.cu ) )
     {
+#if JVET_L0059_MTS_SIMP
+      emt_tu_index(tu);
+#else 
       if( numSig > g_EmtSigNumThr )
       {
         emt_tu_index( tu );
@@ -2005,6 +2094,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
       {
         CHECK( tu.emtIdx != 0, "If the number of significant coefficients is <= g_EmtSigNumThr, then the tu index must be 0" );
       }
+#endif
     }
     else
     {

@@ -773,6 +773,46 @@ void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
 }
 #endif
 
+#if JVET_L0165_6MPM
+void CABACWriter::xWriteTruncBinCode(uint32_t uiSymbol, uint32_t uiMaxSymbol)
+{
+  int uiThresh;
+  if (uiMaxSymbol > 256)
+  {
+    int uiThreshVal = 1 << 8;
+    uiThresh = 8;
+    while (uiThreshVal <= uiMaxSymbol)
+    {
+      uiThresh++;
+      uiThreshVal <<= 1;
+    }
+    uiThresh--;
+  }
+  else
+  {
+    uiThresh = g_tbMax[uiMaxSymbol];
+  }
+
+  int uiVal = 1 << uiThresh;
+  assert(uiVal <= uiMaxSymbol);
+  assert((uiVal << 1) > uiMaxSymbol);
+  assert(uiSymbol < uiMaxSymbol);
+  int b = uiMaxSymbol - uiVal;
+  assert(b < uiVal);
+  if (uiSymbol < uiVal - b)
+  {
+    m_BinEncoder.encodeBinsEP(uiSymbol, uiThresh);
+  }
+  else
+  {
+    uiSymbol += uiVal - b;
+    assert(uiSymbol < (uiVal << 1));
+    assert((uiSymbol >> 1) >= uiVal - b);
+    m_BinEncoder.encodeBinsEP(uiSymbol, uiThresh + 1);
+  }
+}
+#endif
+
 void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
 {
   if( !cu.Y().valid() )
@@ -827,6 +867,20 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
         {
           m_BinEncoder.encodeBinEP( mpm_idx > 1 );
         }
+#if JVET_L0165_6MPM
+        if (mpm_idx > 1)
+        {
+          m_BinEncoder.encodeBinEP(mpm_idx > 2);
+        }
+        if (mpm_idx > 2)
+        {
+          m_BinEncoder.encodeBinEP(mpm_idx > 3);
+        }
+        if (mpm_idx > 3)
+        {
+          m_BinEncoder.encodeBinEP(mpm_idx > 4);
+        }
+#endif
       }
     }
     else
@@ -846,8 +900,11 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
           }
         }
         CHECK(ipred_mode >= 64, "Incorrect mode");
-
+#if JVET_L0165_6MPM
+        xWriteTruncBinCode(ipred_mode, NUM_LUMA_MODE - NUM_MOST_PROBABLE_MODES);  // Remaining mode is truncated binary coded
+#else
         m_BinEncoder.encodeBinsEP(ipred_mode, 6);
+#endif
       }
     }
 
@@ -888,6 +945,20 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
       {
         m_BinEncoder.encodeBinEP( mpm_idx > 1 );
       }
+#if JVET_L0165_6MPM
+      if (mpm_idx > 1)
+      {
+        m_BinEncoder.encodeBinEP(mpm_idx > 2);
+      }
+      if (mpm_idx > 2)
+      {
+        m_BinEncoder.encodeBinEP(mpm_idx > 3);
+      }
+      if (mpm_idx > 3)
+      {
+        m_BinEncoder.encodeBinEP(mpm_idx > 4);
+      }
+#endif
     }
   }
   else
@@ -901,7 +972,11 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
           ipred_mode--;
         }
       }
+#if JVET_L0165_6MPM
+      xWriteTruncBinCode(ipred_mode, NUM_LUMA_MODE - NUM_MOST_PROBABLE_MODES);  // Remaining mode is truncated binary coded
+#else
       m_BinEncoder.encodeBinsEP(ipred_mode, 6);
+#endif
     }
   }
 }

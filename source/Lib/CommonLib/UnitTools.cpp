@@ -301,6 +301,83 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
   const unsigned numMPMs = pu.cs->pcv->numMPMs;
   {
     int numCand      = -1;
+#if JVET_L0165_6MPM
+    int leftIntraDir = PLANAR_IDX, aboveIntraDir = PLANAR_IDX;
+
+    const CompArea &area = pu.block(getFirstComponentOfChannel(channelType));
+    const Position posRT = area.topRight();
+    const Position posLB = area.bottomLeft();
+
+    // Get intra direction of left PU
+    const PredictionUnit *puLeft = pu.cs->getPURestricted(posLB.offset(-1, 0), pu, channelType);
+    if (puLeft && CU::isIntra(*puLeft->cu))
+    {
+      leftIntraDir = puLeft->intraDir[channelType];
+    }
+
+    // Get intra direction of above PU
+    const PredictionUnit *puAbove = pu.cs->getPURestricted(posRT.offset(0, -1), pu, channelType);
+    if (puAbove && CU::isIntra(*puAbove->cu) && CU::isSameCtu(*pu.cu, *puAbove->cu))
+    {
+      aboveIntraDir = puAbove->intraDir[channelType];
+    }
+
+    CHECK(2 >= numMPMs, "Invalid number of most probable modes");
+
+    const int offset = (int)NUM_LUMA_MODE - 5;
+    const int mod = offset + 3;
+
+    mpm[0] = leftIntraDir;
+    mpm[1] = !leftIntraDir;
+    mpm[2] = VER_IDX;
+    mpm[3] = HOR_IDX;
+    mpm[4] = VER_IDX - 4;
+    mpm[5] = VER_IDX + 4;
+
+    if (leftIntraDir == aboveIntraDir)
+    {
+      numCand = 1;
+      if (leftIntraDir > DC_IDX)
+      {
+        mpm[0] = leftIntraDir;
+        mpm[1] = PLANAR_IDX;
+        mpm[2] = DC_IDX;
+        mpm[3] = ((leftIntraDir + offset) % mod) + 2;
+        mpm[4] = ((leftIntraDir - 1) % mod) + 2;
+        mpm[5] = ((leftIntraDir + 61) % mod) + 2;
+      }
+    }
+    else //L!=A
+    {
+      numCand = 2;
+      mpm[0] = leftIntraDir;
+      mpm[1] = aboveIntraDir;
+      bool biggerIdx = mpm[0] > mpm[1] ? 0 : 1;
+
+      if ((leftIntraDir > DC_IDX) && (aboveIntraDir > DC_IDX))
+      {
+        mpm[2] = PLANAR_IDX;
+        mpm[3] = DC_IDX;
+        if ((mpm[biggerIdx] - mpm[!biggerIdx] != 64) && (mpm[biggerIdx] - mpm[!biggerIdx] != 1))
+        {
+          mpm[4] = ((mpm[biggerIdx] + 62) % mod) + 2;
+          mpm[5] = ((mpm[biggerIdx] - 1) % mod) + 2;
+        }
+        else
+        {
+          mpm[4] = ((mpm[biggerIdx] + 61) % mod) + 2;
+          mpm[5] = ((mpm[biggerIdx] - 0) % mod) + 2;
+        }
+      }
+      else if (leftIntraDir + aboveIntraDir >= 2)
+      {
+        mpm[2] = (!mpm[!biggerIdx]);
+        mpm[3] = ((mpm[biggerIdx] + 62) % mod) + 2;
+        mpm[4] = ((mpm[biggerIdx] - 1) % mod) + 2;
+        mpm[5] = ((mpm[biggerIdx] + 61) % mod) + 2;
+      }
+    }
+#else
     int leftIntraDir = DC_IDX, aboveIntraDir = DC_IDX;
 
     const CompArea &area = pu.block(getFirstComponentOfChannel(channelType));
@@ -370,6 +447,7 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
         mpm[2] = (leftIntraDir + aboveIntraDir) < 2 ? VER_IDX : DC_IDX;
       }
     }
+#endif
     for (int i = 0; i < numMPMs; i++)
     {
       CHECK(mpm[i] >= NUM_LUMA_MODE, "Invalid MPM");

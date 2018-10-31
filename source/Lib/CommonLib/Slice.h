@@ -820,6 +820,9 @@ private:
   bool              m_GBi;                        //
 #endif
   bool              m_MTTEnabled;                 //
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  bool              m_MHIntra;
+#endif
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
 #endif
@@ -965,6 +968,11 @@ public:
 
   void      setUseCompositeRef(bool b) { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef()                                      const { return m_compositeRefEnabled; }
+
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  void      setUseMHIntra         ( bool b )                                        { m_MHIntra = b; }
+  bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
+#endif
   // ADD_NEW_TOOL : (sps extension) add access functions for tool enabling flags and associated parameters here
 
 };

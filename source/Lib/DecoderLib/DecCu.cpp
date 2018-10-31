@@ -314,10 +314,23 @@ void DecCu::xFillPCMBuffer(CodingUnit &cu)
 
 void DecCu::xReconInter(CodingUnit &cu)
 {
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  m_pcIntraPred->geneIntrainterPred(cu);
+#endif
+
   // inter prediction
   m_pcInterPred->motionCompensation( cu );
 #if JVET_L0266_HMVP
   cu.slice->updateMotionLUTs(cu.slice->getMotionLUTs(), cu);
+#endif
+
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  if (cu.firstPU->MHIntraFlag)
+  {
+    m_pcIntraPred->geneWeightedPred(COMPONENT_Y, cu.cs->getPredBuf(*cu.firstPU).Y(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Y, 0));
+    m_pcIntraPred->geneWeightedPred(COMPONENT_Cb, cu.cs->getPredBuf(*cu.firstPU).Cb(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cb, 0));
+    m_pcIntraPred->geneWeightedPred(COMPONENT_Cr, cu.cs->getPredBuf(*cu.firstPU).Cr(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cr, 0));
+  }
 #endif
 
   DTRACE    ( g_trace_ctx, D_TMP, "pred " );
@@ -420,6 +433,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #if JVET_L0054_MMVD
       if (pu.mmvdMergeFlag || pu.cu->mmvdSkip)
       {
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+        CHECK(pu.MHIntraFlag == true, "invalid MHIntra");
+#endif
         if (pu.cs->sps->getSpsNext().getUseSubPuMvp())
         {
           Size bufSize = g_miScaling.scale(pu.lumaSize());

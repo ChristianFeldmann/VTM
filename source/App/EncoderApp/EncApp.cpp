@@ -261,6 +261,9 @@ void EncApp::xInitLibCfg()
     }
   }
 #endif  
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
+#endif
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
 
   m_cEncLib.setMaxCUWidth                                        ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );

@@ -220,6 +220,10 @@ protected:
   int       m_LadfQpOffset[MAX_LADF_INTERVALS];
   int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
+
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  bool      m_MHIntra;
+#endif
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
 
   bool      m_useFastLCTU;
@@ -686,6 +690,12 @@ public:
   int       getLadfIntervalLowerBound       ( int idx ) const { return m_LadfIntervalLowerBound[ idx ]; }
 
 #endif
+
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  void      setUseMHIntra                   ( bool b )       { m_MHIntra = b; }
+  bool      getUseMHIntra                   ()         const { return m_MHIntra; }
+#endif
+
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 
   void      setMaxCUWidth                   ( uint32_t  u )      { m_maxCUWidth  = u; }

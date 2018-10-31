@@ -51,6 +51,7 @@
 #include <cassert>
 
 #define JVET_L0059_MTS_SIMP                               1 // Simpification on MTS signaling
+#define JVET_L0100_MULTI_HYPOTHESIS_INTRA                 1 // Combine intra mode with an extra merge indexed prediction
 
 #define JVET_L0118_ALIGN_MTS_INDEX                        1 // Align mts_index on intra and inter
 

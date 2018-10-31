@@ -556,6 +556,9 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   }
 
   WRITE_FLAG( spsNext.getMTTEnabled() ? 1 : 0,                                                  "mtt_enabled_flag" );
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  WRITE_FLAG( spsNext.getUseMHIntra() ? 1 : 0,                                                  "mhintra_flag" );
+#endif
 #if ENABLE_WPP_PARALLELISM
   WRITE_FLAG( spsNext.getUseNextDQP(),                                                          "next_dqp_enabled_flag" );
 #else

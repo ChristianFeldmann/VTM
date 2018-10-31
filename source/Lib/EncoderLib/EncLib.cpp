@@ -875,6 +875,10 @@ void EncLib::xInitSPS(SPS &sps)
   }
 #endif
 
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  sps.getSpsNext().setUseMHIntra            ( m_MHIntra );
+#endif
+
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 
   int minCUSize = ( /*sps.getSpsNext().getUseQTBT() ? 1 << MIN_CU_LOG2 :*/ sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize() );

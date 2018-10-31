@@ -367,6 +367,9 @@ struct InterPredictionData
 #if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
 #endif
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  bool      MHIntraFlag;
+#endif
 };
 
 struct PredictionUnit : public UnitArea, public IntraPredictionData, public InterPredictionData

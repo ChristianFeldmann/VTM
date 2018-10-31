@@ -237,6 +237,10 @@ protected:
   std::vector<int> m_LadfQpOffset;
   int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
+
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  bool      m_MHIntra;
+#endif
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
 
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel

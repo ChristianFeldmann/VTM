@@ -121,6 +121,10 @@ public:
   void        ref_idx                   ( const PredictionUnit&         pu,       RefPicList        eRefList );
   void        mvp_flag                  ( const PredictionUnit&         pu,       RefPicList        eRefList );
 
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  void        MHIntra_flag              ( const PredictionUnit&         pu );
+  void        MHIntra_luma_pred_modes   ( const CodingUnit&             cu );
+#endif
 
   // pcm samples (clause 7.3.8.7)
   void        pcm_samples               ( const TransformUnit&          tu );

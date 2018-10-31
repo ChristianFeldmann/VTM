@@ -807,6 +807,21 @@ const CtxSet ContextSetCfg::ctbAlfFlag =
     } )
 };
 
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
+({
+  { 154, },
+  { 110, },
+  { CNU, },
+});
+
+const CtxSet ContextSetCfg::MHIntraPredMode = ContextSetCfg::addCtxSet
+({
+  { 183, CNU, CNU, CNU, },
+  { 154, CNU, CNU, CNU, },
+  { 184, CNU, CNU, CNU, },
+});
+#endif
 
 const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_InitTables[0].size();
 

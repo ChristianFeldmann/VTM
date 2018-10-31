@@ -1164,6 +1164,14 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
 #else
     affine_flag  ( *pu.cu );
 #endif
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+    MHIntra_flag(pu);
+    if (pu.MHIntraFlag)
+    {
+      MHIntra_luma_pred_modes(*pu.cu);
+      pu.intraDir[1] = DM_CHROMA_IDX;
+    }
+#endif
 #if JVET_L0054_MMVD
     if (pu.mmvdMergeFlag)
     {
@@ -1590,6 +1598,135 @@ void CABACReader::mvp_flag( PredictionUnit& pu, RefPicList eRefList )
   pu.mvpIdx [eRefList] = mvp_idx;
   DTRACE( g_trace_ctx, D_SYNTAX, "mvpIdx(refList:%d)=%d\n", eRefList, mvp_idx );
 }
+
+
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+void CABACReader::MHIntra_flag(PredictionUnit& pu)
+{
+  if (!pu.cs->sps->getSpsNext().getUseMHIntra())
+  {
+    pu.MHIntraFlag = false;
+    return;
+  }
+  if (pu.cu->skip)
+  {
+    pu.MHIntraFlag = false;
+    return;
+  }
+
+#if JVET_L0054_MMVD
+  if (pu.mmvdMergeFlag)
+  {
+    pu.MHIntraFlag = false;
+    return;
+  }
+#endif
+  if (pu.cu->lwidth() * pu.cu->lheight() < 64 || pu.cu->lwidth() >= MAX_CU_SIZE || pu.cu->lheight() >= MAX_CU_SIZE)
+  {
+    pu.MHIntraFlag = false;
+    return;
+  }
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__MH_INTRA_FLAG);
+
+  pu.MHIntraFlag = (m_BinDecoder.decodeBin(Ctx::MHIntraFlag()));
+  DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() MHIntra=%d pos=(%d,%d) size=%dx%d\n", pu.MHIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+}
+
+void CABACReader::MHIntra_luma_pred_modes(CodingUnit &cu)
+{
+  if (!cu.Y().valid())
+  {
+    return;
+  }
+
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__INTRA_DIR_ANG, cu.lumaSize(), CHANNEL_TYPE_LUMA);
+
+  const uint32_t numMPMs = 3;
+
+  // prev_intra_luma_pred_flag
+  int numBlocks = CU::getNumPUs(cu);
+  int mpmFlag[4];
+  PredictionUnit *pu = cu.firstPU;
+  for (int k = 0; k < numBlocks; k++)
+  {
+    if (PU::getNarrowShape(pu->lwidth(), pu->lheight()) == 0)
+    {
+      mpmFlag[k] = m_BinDecoder.decodeBin(Ctx::MHIntraPredMode());
+    }
+    else
+    {
+      mpmFlag[k] = 1;
+    }
+  }
+
+  unsigned mpm_pred[numMPMs];
+  // mpm_idx / rem_intra_luma_pred_mode
+  for (int k = 0; k < numBlocks; k++)
+  {
+    PU::getMHIntraMPMs(*pu, mpm_pred);
+
+    if (mpmFlag[k])
+    {
+      unsigned pred_idx = 0;
+
+      pred_idx = m_BinDecoder.decodeBinEP();
+      if (pred_idx)
+      {
+        pred_idx += m_BinDecoder.decodeBinEP();
+      }
+      pu->intraDir[0] = mpm_pred[pred_idx];
+    }
+    else
+    {
+      unsigned pred_mode = 0;
+
+      bool isMPMCand[4];
+      for (unsigned i = 0; i < 4; i++)
+      {
+        isMPMCand[i] = false;
+      }
+      for (unsigned i = 0; i < 3; i++)
+      {
+        if (mpm_pred[i] == PLANAR_IDX)
+        {
+          isMPMCand[0] = true;
+        }
+        else if (mpm_pred[i] == DC_IDX)
+        {
+          isMPMCand[1] = true;
+        }
+        else if (mpm_pred[i] == HOR_IDX)
+        {
+          isMPMCand[2] = true;
+        }
+        else if (mpm_pred[i] == VER_IDX)
+        {
+          isMPMCand[3] = true;
+        }
+      }
+      if (!isMPMCand[0])
+      {
+        pred_mode = PLANAR_IDX;
+      }
+      if (!isMPMCand[1])
+      {
+        pred_mode = DC_IDX;
+      }
+      if (!isMPMCand[2])
+      {
+        pred_mode = HOR_IDX;
+      }
+      if (!isMPMCand[3])
+      {
+        pred_mode = VER_IDX;
+      }
+      pu->intraDir[0] = pred_mode;
+    }
+    DTRACE(g_trace_ctx, D_SYNTAX, "intra_luma_pred_modes() idx=%d pos=(%d,%d) mode=%d\n", k, pu->lumaPos().x, pu->lumaPos().y, pu->intraDir2[0]);
+    pu = pu->next;
+  }
+}
+#endif
 
 
 //================================================================================

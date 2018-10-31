@@ -309,7 +309,11 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     // Get intra direction of left PU
     const PredictionUnit *puLeft = pu.cs->getPURestricted(pos.offset(-1, 0), pu, channelType);
 
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+    if (puLeft && (CU::isIntra(*puLeft->cu) || (channelType == CHANNEL_TYPE_LUMA && puLeft->MHIntraFlag)))
+#else
     if (puLeft && CU::isIntra(*puLeft->cu))
+#endif
     {
       leftIntraDir = puLeft->intraDir[channelType];
 
@@ -322,7 +326,11 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     // Get intra direction of above PU
     const PredictionUnit *puAbove = pu.cs->getPURestricted(pos.offset(0, -1), pu, channelType);
 
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+    if (puAbove && (CU::isIntra(*puAbove->cu) || (channelType == CHANNEL_TYPE_LUMA && puAbove->MHIntraFlag)) && CU::isSameCtu(*pu.cu, *puAbove->cu))
+#else
     if (puAbove && CU::isIntra(*puAbove->cu) && CU::isSameCtu(*pu.cu, *puAbove->cu))
+#endif
     {
       aboveIntraDir = puAbove->intraDir[channelType];
 
@@ -503,6 +511,152 @@ bool PU::isChromaIntraModeCrossCheckMode( const PredictionUnit &pu )
   return pu.intraDir[CHANNEL_TYPE_CHROMA] == DM_CHROMA_IDX;
 }
 
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+int PU::getMHIntraMPMs(const PredictionUnit &pu, unsigned* mpm, const ChannelType &channelType /*= CHANNEL_TYPE_LUMA*/, const bool isChromaMDMS /*= false*/, const unsigned startIdx /*= 0*/)
+{
+  const unsigned numMPMs = 3;
+  {
+    int numCand = -1;
+    uint32_t leftIntraDir = DC_IDX, aboveIntraDir = DC_IDX;
+
+    const CompArea& area = pu.block(getFirstComponentOfChannel(channelType));
+    const Position& pos = area.pos();
+
+    // Get intra direction of left PU
+    const PredictionUnit *puLeft = pu.cs->getPURestricted(pos.offset(-1, 0), pu, channelType);
+
+    if (puLeft && (CU::isIntra(*puLeft->cu) || puLeft->MHIntraFlag))
+    {
+      leftIntraDir = puLeft->intraDir[channelType];
+
+      if (isChroma(channelType) && leftIntraDir == DM_CHROMA_IDX)
+      {
+        leftIntraDir = puLeft->intraDir[0];
+      }
+    }
+
+    // Get intra direction of above PU
+    const PredictionUnit* puAbove = pu.cs->getPURestricted(pos.offset(0, -1), pu, channelType);
+
+    if (puAbove && (CU::isIntra(*puAbove->cu) || puAbove->MHIntraFlag) && CU::isSameCtu(*pu.cu, *puAbove->cu))
+    {
+      aboveIntraDir = puAbove->intraDir[channelType];
+
+      if (isChroma(channelType) && aboveIntraDir == DM_CHROMA_IDX)
+      {
+        aboveIntraDir = puAbove->intraDir[0];
+      }
+    }
+
+    CHECK(2 >= numMPMs, "Invalid number of most probable modes");
+
+    uint32_t leftIntraDir2 = leftIntraDir;
+    uint32_t aboveIntraDir2 = aboveIntraDir;
+
+    leftIntraDir2 = (leftIntraDir2 > DC_IDX) ? ((leftIntraDir2 <= DIA_IDX) ? HOR_IDX : VER_IDX) : leftIntraDir2;
+    aboveIntraDir2 = (aboveIntraDir2 > DC_IDX) ? ((aboveIntraDir2 <= DIA_IDX) ? HOR_IDX : VER_IDX) : aboveIntraDir2;
+
+    if (leftIntraDir2 == aboveIntraDir2)
+    {
+      numCand = 1;
+
+      if (leftIntraDir2 > DC_IDX) // angular modes
+      {
+        mpm[0] = leftIntraDir2;
+        mpm[1] = PLANAR_IDX;
+        mpm[2] = DC_IDX;
+      }
+      else //non-angular
+      {
+        mpm[0] = PLANAR_IDX;
+        mpm[1] = DC_IDX;
+        mpm[2] = VER_IDX;
+      }
+    }
+    else
+    {
+      numCand = 2;
+
+      mpm[0] = leftIntraDir2;
+      mpm[1] = aboveIntraDir2;
+
+      if (leftIntraDir2 && aboveIntraDir2) //both modes are non-planar
+      {
+        mpm[2] = PLANAR_IDX;
+      }
+      else
+      {
+        mpm[2] = (leftIntraDir2 + aboveIntraDir2) < 2 ? VER_IDX : DC_IDX;
+      }
+    }
+    int narrowCase = getNarrowShape(pu.lwidth(), pu.lheight());
+    if (narrowCase > 0)
+    {
+      bool isMPM[NUM_LUMA_MODE];
+      for (int idx = 0; idx < NUM_LUMA_MODE; idx++)
+      {
+        isMPM[idx] = false;
+      }
+      for (int idx = 0; idx < numMPMs; idx++)
+      {
+        isMPM[mpm[idx]] = true;
+      }
+      if (narrowCase == 1 && isMPM[HOR_IDX])
+      {
+        for (int idx = 0; idx < numMPMs; idx++)
+        {
+          if (mpm[idx] == HOR_IDX)
+          {
+            if (!isMPM[PLANAR_IDX])
+              mpm[idx] = PLANAR_IDX;
+            else if (!isMPM[DC_IDX])
+              mpm[idx] = DC_IDX;
+            else if (!isMPM[VER_IDX])
+              mpm[idx] = VER_IDX;
+            break;
+          }
+        }
+      }
+      if (narrowCase == 2 && isMPM[VER_IDX])
+      {
+        for (int idx = 0; idx < numMPMs; idx++)
+        {
+          if (mpm[idx] == VER_IDX)
+          {
+            if (!isMPM[PLANAR_IDX])
+              mpm[idx] = PLANAR_IDX;
+            else if (!isMPM[DC_IDX])
+              mpm[idx] = DC_IDX;
+            else if (!isMPM[HOR_IDX])
+              mpm[idx] = HOR_IDX;
+            break;
+          }
+        }
+      }
+    }
+    CHECK(numCand == 0, "No candidates found");
+    CHECK(mpm[0] == mpm[1] || mpm[0] == mpm[2] || mpm[2] == mpm[1], "redundant MPM");
+    return numCand;
+  }
+}
+int PU::getNarrowShape(const int width, const int height)
+{
+  int longSide = (width > height) ? width : height;
+  int shortSide = (width > height) ? height : width;
+  if (longSide > (2 * shortSide))
+  {
+    if (longSide == width)
+      return 1;
+    else
+      return 2;
+  }
+  else
+  {
+    return 0;
+  }
+}
+#endif
+
 uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chType )
 {
   uint32_t uiIntraMode = pu.intraDir[chType];
@@ -516,6 +670,7 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
 #else
     const PredictionUnit &lumaPU = CS::isDualITree( *pu.cs ) ? *pu.cs->picture->cs->getPU( pu.blocks[chType].lumaPos(), CHANNEL_TYPE_LUMA ) : *pu.cs->getPU( pu.blocks[chType].lumaPos(), CHANNEL_TYPE_LUMA );
 #endif
+
     uiIntraMode = lumaPU.intraDir[0];
   }
   if( pu.chromaFormat == CHROMA_422 && !isLuma( chType ) )

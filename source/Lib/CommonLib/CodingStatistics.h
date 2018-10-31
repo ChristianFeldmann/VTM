@@ -106,6 +106,9 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__EMT_CU_FLAG,
   STATS__CABAC_BITS__EMT_TU_INDEX,
   STATS__TOOL_EMT,
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  STATS__CABAC_BITS__MH_INTRA_FLAG,
+#endif
   STATS__TOOL_TOTAL,
   STATS__NUM_STATS
 };
@@ -178,6 +181,9 @@ static inline const char* getName(CodingStatisticsType name)
 #endif
     "CABAC_BITS__EMT_CU_FLAG",
     "CABAC_BITS__EMT_TU_INDX",
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+    "CABAC_BITS__MH_INTRA_FLAG",
+#endif
     "CABAC_BITS__OTHER",
     "CABAC_BITS__INVALID",
     "TOOL_FRAME",

@@ -169,6 +169,10 @@ namespace PU
   bool isLMCMode                      (                          unsigned mode);
   bool isLMCModeEnabled               (const PredictionUnit &pu, unsigned mode);
   bool isChromaIntraModeCrossCheckMode(const PredictionUnit &pu);
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  int  getMHIntraMPMs                 (const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA, const bool isChromaMDMS = false, const unsigned startIdx = 0);
+  int  getNarrowShape                 (const int width, const int height);
+#endif
 }
 
 // TU tools
@@ -259,6 +263,69 @@ uint32_t updateCandList( T uiMode, double uiCost, static_vector<T, N>& candModeL
 #endif
   return 0;
 }
+
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+template<typename T, size_t N>
+#if JVET_L0054_MMVD
+uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, static_vector<T, N>& candModeList2, T mode2, size_t fastCandNum = N, int* iserttPos = nullptr)
+#else
+uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, static_vector<T, N>& candModeList2, T mode2, size_t fastCandNum = N)
+#endif
+{
+  CHECK(std::min(fastCandNum, candModeList.size()) != std::min(fastCandNum, candCostList.size()), "Sizes do not match!");
+  CHECK(fastCandNum > candModeList.capacity(), "The vector is to small to hold all the candidates!");
+
+  size_t i;
+  size_t shift = 0;
+  size_t currSize = std::min(fastCandNum, candCostList.size());
+
+  while (shift < fastCandNum && shift < currSize && cost < candCostList[currSize - 1 - shift])
+  {
+    shift++;
+  }
+
+  if (candModeList.size() >= fastCandNum && shift != 0)
+  {
+    for (i = 1; i < shift; i++)
+    {
+      candModeList[currSize - i] = candModeList[currSize - 1 - i];
+      candModeList2[currSize - i] = candModeList2[currSize - 1 - i];
+      candCostList[currSize - i] = candCostList[currSize - 1 - i];
+    }
+    candModeList[currSize - shift] = mode;
+    candModeList2[currSize - shift] = mode2;
+    candCostList[currSize - shift] = cost;
+#if JVET_L0054_MMVD
+    if (iserttPos != nullptr)
+    {
+      *iserttPos = int(currSize - shift);
+    }
+#endif
+    return 1;
+  }
+  else if (currSize < fastCandNum)
+  {
+    candModeList.insert(candModeList.end() - shift, mode);
+    candModeList2.insert(candModeList2.end() - shift, mode2);
+    candCostList.insert(candCostList.end() - shift, cost);
+#if JVET_L0054_MMVD
+    if (iserttPos != nullptr)
+    {
+      *iserttPos = int(candModeList.size() - shift - 1);
+    }
+#endif
+    return 1;
+  }
+
+#if JVET_L0054_MMVD
+  if (iserttPos != nullptr)
+  {
+    *iserttPos = -1;
+  }
+#endif
+  return 0;
+}
+#endif
 
 
 #endif

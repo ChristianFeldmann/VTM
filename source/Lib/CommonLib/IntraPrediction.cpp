@@ -141,6 +141,15 @@ IntraPrediction::IntraPrediction()
       m_piYuvExt[ch][buf] = nullptr;
     }
   }
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  for (uint32_t ch = 0; ch < MAX_NUM_COMPONENT; ch++)
+  {
+    for (uint32_t buf = 0; buf < 4; buf++)
+    {
+      m_yuvExt2[ch][buf] = nullptr;
+    }
+  }
+#endif
 
   m_piTemp = nullptr;
 #if JVET_L0338_MDLM
@@ -163,6 +172,16 @@ void IntraPrediction::destroy()
       m_piYuvExt[ch][buf] = nullptr;
     }
   }
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  for (uint32_t ch = 0; ch < MAX_NUM_COMPONENT; ch++)
+  {
+    for (uint32_t buf = 0; buf < 4; buf++)
+    {
+      delete[] m_yuvExt2[ch][buf];
+      m_yuvExt2[ch][buf] = nullptr;
+    }
+  }
+#endif
 
   delete[] m_piTemp;
   m_piTemp = nullptr;
@@ -180,6 +199,13 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
     destroy();
   }
 
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  if (m_yuvExt2[COMPONENT_Y][0] != nullptr && m_currChromaFormat != chromaFormatIDC)
+  {
+    destroy();
+  }
+#endif
+
   m_currChromaFormat = chromaFormatIDC;
 
   if (m_piYuvExt[COMPONENT_Y][PRED_BUF_UNFILTERED] == nullptr) // check if first is null (in which case, nothing initialised yet)
@@ -194,6 +220,21 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
       }
     }
   }
+
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  if (m_yuvExt2[COMPONENT_Y][0] == nullptr) // check if first is null (in which case, nothing initialised yet)
+  {
+    m_yuvExtSize2 = (MAX_CU_SIZE) * (MAX_CU_SIZE);
+
+    for (uint32_t ch = 0; ch < MAX_NUM_COMPONENT; ch++)
+    {
+      for (uint32_t buf = 0; buf < 4; buf++)
+      {
+        m_yuvExt2[ch][buf] = new Pel[m_yuvExtSize2];
+      }
+    }
+  }
+#endif
 
   int shift = bitDepthY + 4;
   for (int i = 32; i < 64; i++)
@@ -820,6 +861,133 @@ bool IntraPrediction::useDPCMForFirstPassIntraEstimation(const PredictionUnit &p
 {
   return CU::isRDPCMEnabled(*pu.cu) && pu.cu->transQuantBypass && (uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
 }
+
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+void IntraPrediction::geneWeightedPred(const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf)
+{
+  const int            width = pred.width;
+  const int            height = pred.height;
+  const int            srcStride = width;
+  const int            dstStride = pred.stride;
+
+  const uint32_t       dirMode = PU::getFinalIntraMode(pu, toChannelType(compId));
+  const ClpRng&        clpRng(pu.cu->cs->slice->clpRng(compId));
+  Pel*                 dstBuf = pred.buf;
+  int                  k, l;
+
+  bool                 modeDC = (dirMode <= DC_IDX);
+  Pel                  wIntra1 = 6, wInter1 = 2, wIntra2 = 5, wInter2 = 3, wIntra3 = 3, wInter3 = 5, wIntra4 = 2, wInter4 = 6;
+
+  if (modeDC || width < 4 || height < 4)
+  {
+    for (k = 0; k<height; k++)
+    {
+      for (l = 0; l<width; l++)
+      {
+        dstBuf[k*dstStride + l] = ClipPel((((dstBuf[k*dstStride + l] * 4) + (srcBuf[k*srcStride + l] * 4)) >> 3), clpRng);
+      }
+    }
+  }
+  else
+  {
+    if (dirMode <= DIA_IDX)
+    {
+      int interval = (width >> 2);
+
+      for (k = 0; k<height; k++)
+      {
+        for (l = 0; l<width; l++)
+        {
+          if (l<interval)
+          {
+            dstBuf[k*dstStride + l] = ClipPel((((dstBuf[k*dstStride + l] * wInter1) + (srcBuf[k*srcStride + l] * wIntra1)) >> 3), clpRng);
+          }
+          else if (l >= interval && l < (2 * interval))
+          {
+            dstBuf[k*dstStride + l] = ClipPel((((dstBuf[k*dstStride + l] * wInter2) + (srcBuf[k*srcStride + l] * wIntra2)) >> 3), clpRng);
+          }
+          else if (l >= (interval * 2) && l < (3 * interval))
+          {
+            dstBuf[k*dstStride + l] = ClipPel((((dstBuf[k*dstStride + l] * wInter3) + (srcBuf[k*srcStride + l] * wIntra3)) >> 3), clpRng);
+          }
+          else
+          {
+            dstBuf[k*dstStride + l] = ClipPel((((dstBuf[k*dstStride + l] * wInter4) + (srcBuf[k*srcStride + l] * wIntra4)) >> 3), clpRng);
+          }
+        }
+      }
+    }
+    else
+    {
+      int interval = (height >> 2);
+      for (k = 0; k<height; k++)
+      {
+        for (l = 0; l<width; l++)
+        {
+          if (k<interval)
+          {
+            dstBuf[k*dstStride + l] = ClipPel((((dstBuf[k*dstStride + l] * wInter1) + (srcBuf[k*srcStride + l] * wIntra1)) >> 3), clpRng);
+          }
+          else if (k >= interval && k < (2 * interval))
+          {
+            dstBuf[k*dstStride + l] = ClipPel((((dstBuf[k*dstStride + l] * wInter2) + (srcBuf[k*srcStride + l] * wIntra2)) >> 3), clpRng);
+          }
+          else if (k >= (interval * 2) && k < (3 * interval))
+          {
+            dstBuf[k*dstStride + l] = ClipPel((((dstBuf[k*dstStride + l] * wInter3) + (srcBuf[k*srcStride + l] * wIntra3)) >> 3), clpRng);
+          }
+          else
+          {
+            dstBuf[k*dstStride + l] = ClipPel((((dstBuf[k*dstStride + l] * wInter4) + (srcBuf[k*srcStride + l] * wIntra4)) >> 3), clpRng);
+          }
+        }
+      }
+    }
+  }
+}
+void IntraPrediction::switchBuffer(const PredictionUnit &pu, ComponentID compID, PelBuf srcBuff, Pel *dst)
+{
+  Pel  *src = srcBuff.bufAt(0, 0);
+  int compWidth = compID == COMPONENT_Y ? pu.Y().width : pu.Cb().width;
+  int compHeight = compID == COMPONENT_Y ? pu.Y().height : pu.Cb().height;
+  for (int i = 0; i < compHeight; i++)
+  {
+    for (int j = 0; j < compWidth; j++)
+    {
+      memcpy(dst, src, compWidth * sizeof(Pel));
+    }
+    src += srcBuff.stride;
+    dst += compWidth;
+  }
+}
+
+void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
+{
+  if (!cu.firstPU->MHIntraFlag)
+  {
+    return;
+  }
+
+  const PredictionUnit* pu = cu.firstPU;
+
+  bool isUseFilter = IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Y, *pu, true, *pu);
+  initIntraPatternChType(cu, pu->Y(), isUseFilter);
+  predIntraAng(COMPONENT_Y, cu.cs->getPredBuf(*pu).Y(), *pu, isUseFilter);
+  isUseFilter = IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Cb, *pu, true, *pu);
+  initIntraPatternChType(cu, pu->Cb(), isUseFilter);
+  predIntraAng(COMPONENT_Cb, cu.cs->getPredBuf(*pu).Cb(), *pu, isUseFilter);
+  isUseFilter = IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Cr, *pu, true, *pu);
+  initIntraPatternChType(cu, pu->Cr(), isUseFilter);
+  predIntraAng(COMPONENT_Cr, cu.cs->getPredBuf(*pu).Cr(), *pu, isUseFilter);
+
+  for (int currCompID = 0; currCompID < 3; currCompID++)
+  {
+    ComponentID currCompID2 = (ComponentID)currCompID;
+    PelBuf tmpBuf = currCompID == 0 ? cu.cs->getPredBuf(*pu).Y() : (currCompID == 1 ? cu.cs->getPredBuf(*pu).Cb() : cu.cs->getPredBuf(*pu).Cr());
+    switchBuffer(*pu, currCompID2, tmpBuf, getPredictorPtr2(currCompID2, 0));
+  }
+}
+#endif
 
 inline bool isAboveLeftAvailable  ( const CodingUnit &cu, const ChannelType &chType, const Position &posLT );
 inline int  isAboveAvailable      ( const CodingUnit &cu, const ChannelType &chType, const Position &posLT, const uint32_t uiNumUnitsInPU, const uint32_t unitWidth, bool *validFlags );

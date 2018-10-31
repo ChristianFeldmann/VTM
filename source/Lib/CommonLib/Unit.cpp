@@ -351,6 +351,9 @@ void PredictionUnit::initData()
     }
 #endif
   }
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  MHIntraFlag = false;
+#endif
 }
 
 PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
@@ -391,6 +394,9 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
     }
 #endif
   }
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  MHIntraFlag = predData.MHIntraFlag;
+#endif
 
   return *this;
 }
@@ -428,6 +434,9 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
     }
 #endif
   }
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  MHIntraFlag = other.MHIntraFlag;
+#endif
 
   return *this;
 }

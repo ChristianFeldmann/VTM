@@ -1904,19 +1904,34 @@ uint64_t IntraSearch::xFracModeBitsIntra(PredictionUnit &pu, const uint32_t &uiM
 {
   uint32_t orgMode = uiMode;
 
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  if (!pu.MHIntraFlag)
+#endif
   std::swap(orgMode, pu.intraDir[chType]);
 
   m_CABACEstimator->resetBits();
 
   if( isLuma( chType ) )
   {
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+    if ( pu.MHIntraFlag )
+      m_CABACEstimator->MHIntra_luma_pred_modes(*pu.cu);
+    else
+    {
+      m_CABACEstimator->intra_luma_pred_mode(pu);
+    }
+#else
     m_CABACEstimator->intra_luma_pred_mode( pu );
+#endif
   }
   else
   {
     m_CABACEstimator->intra_chroma_pred_mode( pu );
   }
 
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  if ( !pu.MHIntraFlag )
+#endif
   std::swap(orgMode, pu.intraDir[chType]);
 
   return m_CABACEstimator->getEstFracBits();

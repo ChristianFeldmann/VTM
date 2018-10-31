@@ -866,6 +866,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LadfQpOffset",                                    cfg_LadfQpOffset,                      cfg_LadfQpOffset, "LADF QP offset")
   ("LadfIntervalLowerBound",                          cfg_LadfIntervalLowerBound,  cfg_LadfIntervalLowerBound, "LADF lower bound for 2nd lowest interval")
 #endif
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
+#endif
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
 
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
@@ -3185,6 +3188,9 @@ void EncAppCfg::xPrintParameter()
 #endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
     msg( VERBOSE, "LADF:%d ", m_LadfEnabed );
+#endif
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+    msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
 #endif
   }
   // ADD_NEW_TOOL (add some output indicating the usage of tools)

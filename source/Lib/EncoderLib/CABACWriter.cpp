@@ -1125,6 +1125,13 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
 #else
     affine_flag  ( *pu.cu );
 #endif
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+    MHIntra_flag( pu );
+    if ( pu.MHIntraFlag )
+    {
+      MHIntra_luma_pred_modes( *pu.cu );
+    }
+#endif
 #if JVET_L0054_MMVD
     if (pu.mmvdMergeFlag)
     {
@@ -1521,7 +1528,95 @@ void CABACWriter::mvp_flag( const PredictionUnit& pu, RefPicList eRefList )
   DTRACE( g_trace_ctx, D_SYNTAX, "mvpIdx(refList:%d)=%d\n", eRefList, pu.mvpIdx[eRefList] );
 }
 
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
+{
+  if (!pu.cs->sps->getSpsNext().getUseMHIntra())
+  {
+    CHECK(pu.MHIntraFlag == true, "invalid MHIntra SPS");
+    return;
+  }
+  if (pu.cu->skip)
+  {
+    CHECK(pu.MHIntraFlag == true, "invalid MHIntra and skip");
+    return;
+  }
+#if JVET_L0054_MMVD
+  if (pu.mmvdMergeFlag)
+  {
+    CHECK(pu.MHIntraFlag == true, "invalid MHIntra and mmvd");
+    return;
+  }
+#endif
+  if (pu.cu->lwidth() * pu.cu->lheight() < 64 || pu.cu->lwidth() >= MAX_CU_SIZE || pu.cu->lheight() >= MAX_CU_SIZE)
+  {
+    CHECK(pu.MHIntraFlag == true, "invalid MHIntra and blk");
+    return;
+  }
+  m_BinEncoder.encodeBin(pu.MHIntraFlag, Ctx::MHIntraFlag());
+  DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() intrainter=%d pos=(%d,%d) size=%dx%d\n", pu.MHIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+}
 
+void CABACWriter::MHIntra_luma_pred_modes(const CodingUnit& cu)
+{
+  if (!cu.Y().valid())
+  {
+    return;
+  }
+
+  const unsigned numMPMs = 3;
+  int      numBlocks = CU::getNumPUs(cu);
+  unsigned mpm_idxs[4];
+  unsigned pred_modes[4];
+
+  const PredictionUnit* pu = cu.firstPU;
+
+  unsigned mpm_pred[numMPMs];
+  for (int k = 0; k < numBlocks; k++)
+  {
+    unsigned&  mpm_idx = mpm_idxs[k];
+    unsigned&  pred_mode = pred_modes[k];
+
+    PU::getMHIntraMPMs(*pu, mpm_pred);
+
+    pred_mode = pu->intraDir[0];
+
+    mpm_idx = numMPMs;
+
+    for (unsigned idx = 0; idx < numMPMs; idx++)
+    {
+      if (pred_mode == mpm_pred[idx])
+      {
+        mpm_idx = idx;
+        break;
+      }
+    }
+    if (PU::getNarrowShape(pu->lwidth(), pu->lheight()) == 0)
+    {
+      m_BinEncoder.encodeBin(mpm_idx < numMPMs, Ctx::MHIntraPredMode());
+    }
+    pu = pu->next;
+  }
+
+  pu = cu.firstPU;
+
+  // mpm_idx / rem_intra_luma_pred_mode
+  for (int k = 0; k < numBlocks; k++)
+  {
+    const unsigned& mpm_idx = mpm_idxs[k];
+    if (mpm_idx < numMPMs)
+    {
+      m_BinEncoder.encodeBinEP(mpm_idx > 0);
+      if (mpm_idx)
+      {
+        m_BinEncoder.encodeBinEP(mpm_idx > 1);
+      }
+    }
+    DTRACE(g_trace_ctx, D_SYNTAX, "intra_luma_pred_modes() idx=%d pos=(%d,%d) mode=%d\n", k, pu->lumaPos().x, pu->lumaPos().y, pu->intraDir[0]);
+    pu = pu->next;
+  }
+}
+#endif
 
 //================================================================================
 //  clause 7.3.8.7

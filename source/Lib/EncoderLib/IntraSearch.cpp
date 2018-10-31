@@ -1905,7 +1905,7 @@ uint64_t IntraSearch::xFracModeBitsIntra(PredictionUnit &pu, const uint32_t &uiM
   uint32_t orgMode = uiMode;
 
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-  if (!pu.MHIntraFlag)
+  if (!pu.mhIntraFlag)
 #endif
   std::swap(orgMode, pu.intraDir[chType]);
 
@@ -1914,7 +1914,7 @@ uint64_t IntraSearch::xFracModeBitsIntra(PredictionUnit &pu, const uint32_t &uiM
   if( isLuma( chType ) )
   {
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-    if ( pu.MHIntraFlag )
+    if ( pu.mhIntraFlag )
       m_CABACEstimator->MHIntra_luma_pred_modes(*pu.cu);
     else
     {
@@ -1930,7 +1930,7 @@ uint64_t IntraSearch::xFracModeBitsIntra(PredictionUnit &pu, const uint32_t &uiM
   }
 
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-  if ( !pu.MHIntraFlag )
+  if ( !pu.mhIntraFlag )
 #endif
   std::swap(orgMode, pu.intraDir[chType]);
 

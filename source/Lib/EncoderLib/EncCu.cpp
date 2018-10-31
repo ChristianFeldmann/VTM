@@ -1880,7 +1880,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         int bestMHIntraMode = -1;
         double bestMHIntraCost = MAX_DOUBLE;
 
-        pu.MHIntraFlag = true;
+        pu.mhIntraFlag = true;
 
         // save the to-be-tested merge candidates
         uint32_t MHIntraMergeCand[NUM_MRG_SATD_CAND];
@@ -1965,7 +1965,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             }
           }
         }
-        pu.MHIntraFlag = false;
+        pu.mhIntraFlag = false;
         m_CABACEstimator->getCtx() = ctxStart;
       }
 #endif
@@ -2076,7 +2076,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       if (isIntrainterEnabled)
       {
-        pu.MHIntraFlag = true;
+        pu.mhIntraFlag = true;
         for (uint32_t mergeCnt = 0; mergeCnt < uiNumMrgSATDCand; mergeCnt++)
         {
 #if JVET_L0054_MMVD
@@ -2098,7 +2098,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             m_pcIntraSearch->switchBuffer(pu, COMPONENT_Cr, pu.cs->getPredBuf(pu).Cr(), m_pcIntraSearch->getPredictorPtr2(COMPONENT_Cr, bufIdx));
           }
         }
-        pu.MHIntraFlag = false;
+        pu.mhIntraFlag = false;
       }
 #endif
 
@@ -2194,7 +2194,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #else
         uiMergeCand -= (MRG_MAX_NUM_CANDS + MRG_MAX_NUM_CANDS);
 #endif
-        pu.MHIntraFlag = true;
+        pu.mhIntraFlag = true;
         pu.intraDir[0] = RdModeList2[uiMrgHADIdx];
         CHECK(pu.intraDir[0]<0 || pu.intraDir[0]>(NUM_LUMA_MODE - 1), "out of intra mode");
         pu.intraDir[1] = DM_CHROMA_IDX;
@@ -2227,7 +2227,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         pu.mvd[0] = refinedMvdL0[uiMergeCand];
 #endif
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-        if (pu.MHIntraFlag)
+        if (pu.mhIntraFlag)
         {
           uint32_t bufIdx = (pu.intraDir[0] > 1) ? (pu.intraDir[0] == HOR_IDX ? 2 : 3) : pu.intraDir[0];
           PelBuf tmpBuf = tempCS->getPredBuf(pu).Y();
@@ -2270,7 +2270,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       }
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 #if JVET_L0054_MMVD
-      if (!cu.mmvdSkip && !pu.MHIntraFlag && uiNoResidualPass != 0)
+      if (!cu.mmvdSkip && !pu.mhIntraFlag && uiNoResidualPass != 0)
 #else
       if (!pu.MHIntraFlag && uiNoResidualPass != 0)
 #endif
@@ -2293,7 +2293,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #endif
 
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-      if( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip && !pu.MHIntraFlag)
+      if( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip && !pu.mhIntraFlag)
 #else
       if( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip )
 #endif
@@ -3175,7 +3175,7 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
     {
       bestCostInternal = tempCS->cost;
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-      if (!(tempCS->getPU(partitioner.chType)->MHIntraFlag))
+      if (!(tempCS->getPU(partitioner.chType)->mhIntraFlag))
 #endif
       *bestHasNonResi  = !cu->rootCbf;
     }
@@ -3183,7 +3183,7 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     if (cu->rootCbf == false)
     {
-      if (tempCS->getPU(partitioner.chType)->MHIntraFlag)
+      if (tempCS->getPU(partitioner.chType)->mhIntraFlag)
       {
         tempCS->cost = MAX_DOUBLE;
         return;

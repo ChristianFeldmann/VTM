@@ -1127,7 +1127,7 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
 #endif
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     MHIntra_flag( pu );
-    if ( pu.MHIntraFlag )
+    if ( pu.mhIntraFlag )
     {
       MHIntra_luma_pred_modes( *pu.cu );
     }
@@ -1533,28 +1533,28 @@ void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
 {
   if (!pu.cs->sps->getSpsNext().getUseMHIntra())
   {
-    CHECK(pu.MHIntraFlag == true, "invalid MHIntra SPS");
+    CHECK(pu.mhIntraFlag == true, "invalid MHIntra SPS");
     return;
   }
   if (pu.cu->skip)
   {
-    CHECK(pu.MHIntraFlag == true, "invalid MHIntra and skip");
+    CHECK(pu.mhIntraFlag == true, "invalid MHIntra and skip");
     return;
   }
 #if JVET_L0054_MMVD
   if (pu.mmvdMergeFlag)
   {
-    CHECK(pu.MHIntraFlag == true, "invalid MHIntra and mmvd");
+    CHECK(pu.mhIntraFlag == true, "invalid MHIntra and mmvd");
     return;
   }
 #endif
   if (pu.cu->lwidth() * pu.cu->lheight() < 64 || pu.cu->lwidth() >= MAX_CU_SIZE || pu.cu->lheight() >= MAX_CU_SIZE)
   {
-    CHECK(pu.MHIntraFlag == true, "invalid MHIntra and blk");
+    CHECK(pu.mhIntraFlag == true, "invalid MHIntra and blk");
     return;
   }
-  m_BinEncoder.encodeBin(pu.MHIntraFlag, Ctx::MHIntraFlag());
-  DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() intrainter=%d pos=(%d,%d) size=%dx%d\n", pu.MHIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+  m_BinEncoder.encodeBin(pu.mhIntraFlag, Ctx::MHIntraFlag());
+  DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() intrainter=%d pos=(%d,%d) size=%dx%d\n", pu.mhIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
 }
 
 void CABACWriter::MHIntra_luma_pred_modes(const CodingUnit& cu)

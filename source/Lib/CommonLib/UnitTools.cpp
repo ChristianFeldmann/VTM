@@ -310,7 +310,7 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     const PredictionUnit *puLeft = pu.cs->getPURestricted(pos.offset(-1, 0), pu, channelType);
 
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-    if (puLeft && (CU::isIntra(*puLeft->cu) || (channelType == CHANNEL_TYPE_LUMA && puLeft->MHIntraFlag)))
+    if (puLeft && (CU::isIntra(*puLeft->cu) || (channelType == CHANNEL_TYPE_LUMA && puLeft->mhIntraFlag)))
 #else
     if (puLeft && CU::isIntra(*puLeft->cu))
 #endif
@@ -327,7 +327,7 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     const PredictionUnit *puAbove = pu.cs->getPURestricted(pos.offset(0, -1), pu, channelType);
 
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-    if (puAbove && (CU::isIntra(*puAbove->cu) || (channelType == CHANNEL_TYPE_LUMA && puAbove->MHIntraFlag)) && CU::isSameCtu(*pu.cu, *puAbove->cu))
+    if (puAbove && (CU::isIntra(*puAbove->cu) || (channelType == CHANNEL_TYPE_LUMA && puAbove->mhIntraFlag)) && CU::isSameCtu(*pu.cu, *puAbove->cu))
 #else
     if (puAbove && CU::isIntra(*puAbove->cu) && CU::isSameCtu(*pu.cu, *puAbove->cu))
 #endif
@@ -525,7 +525,7 @@ int PU::getMHIntraMPMs(const PredictionUnit &pu, unsigned* mpm, const ChannelTyp
     // Get intra direction of left PU
     const PredictionUnit *puLeft = pu.cs->getPURestricted(pos.offset(-1, 0), pu, channelType);
 
-    if (puLeft && (CU::isIntra(*puLeft->cu) || puLeft->MHIntraFlag))
+    if (puLeft && (CU::isIntra(*puLeft->cu) || puLeft->mhIntraFlag))
     {
       leftIntraDir = puLeft->intraDir[channelType];
 
@@ -538,7 +538,7 @@ int PU::getMHIntraMPMs(const PredictionUnit &pu, unsigned* mpm, const ChannelTyp
     // Get intra direction of above PU
     const PredictionUnit* puAbove = pu.cs->getPURestricted(pos.offset(0, -1), pu, channelType);
 
-    if (puAbove && (CU::isIntra(*puAbove->cu) || puAbove->MHIntraFlag) && CU::isSameCtu(*pu.cu, *puAbove->cu))
+    if (puAbove && (CU::isIntra(*puAbove->cu) || puAbove->mhIntraFlag) && CU::isSameCtu(*pu.cu, *puAbove->cu))
     {
       aboveIntraDir = puAbove->intraDir[channelType];
 

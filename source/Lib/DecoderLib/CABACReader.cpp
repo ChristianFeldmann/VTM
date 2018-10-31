@@ -1166,7 +1166,7 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
 #endif
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     MHIntra_flag(pu);
-    if (pu.MHIntraFlag)
+    if (pu.mhIntraFlag)
     {
       MHIntra_luma_pred_modes(*pu.cu);
       pu.intraDir[1] = DM_CHROMA_IDX;
@@ -1605,31 +1605,31 @@ void CABACReader::MHIntra_flag(PredictionUnit& pu)
 {
   if (!pu.cs->sps->getSpsNext().getUseMHIntra())
   {
-    pu.MHIntraFlag = false;
+    pu.mhIntraFlag = false;
     return;
   }
   if (pu.cu->skip)
   {
-    pu.MHIntraFlag = false;
+    pu.mhIntraFlag = false;
     return;
   }
 
 #if JVET_L0054_MMVD
   if (pu.mmvdMergeFlag)
   {
-    pu.MHIntraFlag = false;
+    pu.mhIntraFlag = false;
     return;
   }
 #endif
   if (pu.cu->lwidth() * pu.cu->lheight() < 64 || pu.cu->lwidth() >= MAX_CU_SIZE || pu.cu->lheight() >= MAX_CU_SIZE)
   {
-    pu.MHIntraFlag = false;
+    pu.mhIntraFlag = false;
     return;
   }
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__MH_INTRA_FLAG);
 
-  pu.MHIntraFlag = (m_BinDecoder.decodeBin(Ctx::MHIntraFlag()));
-  DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() MHIntra=%d pos=(%d,%d) size=%dx%d\n", pu.MHIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+  pu.mhIntraFlag = (m_BinDecoder.decodeBin(Ctx::MHIntraFlag()));
+  DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() MHIntra=%d pos=(%d,%d) size=%dx%d\n", pu.mhIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
 }
 
 void CABACReader::MHIntra_luma_pred_modes(CodingUnit &cu)

@@ -3282,7 +3282,7 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
 
       for ( int y = (h >> MIN_CU_LOG2); y < ((h + blockHeight) >> MIN_CU_LOG2); y++ )
       {
-        for ( int x = (w >> MIN_CU_LOG2); x < ((w + blockHeight) >> MIN_CU_LOG2); x++ )
+        for ( int x = (w >> MIN_CU_LOG2); x < ((w + blockWidth) >> MIN_CU_LOG2); x++ )
         {
 #if REMOVE_MV_ADAPT_PREC
           mb.at(x, y).mv[eRefList].hor = mvScaleTmpHor;

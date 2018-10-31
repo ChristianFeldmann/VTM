@@ -1389,7 +1389,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   Pel const* piSrc = nullptr;
 
 #if JVET_L0136_L0085_LM_RESTRICTED_LINEBUFFER
-  bool bIsFirstRowOfCtu = ((pu.block(COMPONENT_Cb).y)&(((pu.cs->sps)->getMaxCUWidth() >> 1) - 1)) == 0;
+  bool IsFirstRowOfCtu = ((pu.block(COMPONENT_Cb).y)&(((pu.cs->sps)->getMaxCUWidth() >> 1) - 1)) == 0;
 #endif
 
   if( bAboveAvaillable )
@@ -1410,7 +1410,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
 #endif
     {
 #if JVET_L0136_L0085_LM_RESTRICTED_LINEBUFFER
-      if (bIsFirstRowOfCtu)
+      if (IsFirstRowOfCtu)
       {
         piSrc = pRecSrc0 - iRecStride;
 

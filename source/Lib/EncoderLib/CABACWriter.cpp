@@ -774,41 +774,41 @@ void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
 #endif
 
 #if JVET_L0165_6MPM
-void CABACWriter::xWriteTruncBinCode(unsigned uiSymbol, int uiMaxSymbol)
+void CABACWriter::xWriteTruncBinCode(uint32_t symbol, uint32_t maxSymbol)
 {
-  int uiThresh;
-  if (uiMaxSymbol > 256)
+  int thresh;
+  if (maxSymbol > 256)
   {
-    int uiThreshVal = 1 << 8;
-    uiThresh = 8;
-    while (uiThreshVal <= uiMaxSymbol)
+    int threshVal = 1 << 8;
+    thresh = 8;
+    while (threshVal <= maxSymbol)
     {
-      uiThresh++;
-      uiThreshVal <<= 1;
+      thresh++;
+      threshVal <<= 1;
     }
-    uiThresh--;
+    thresh--;
   }
   else
   {
-    uiThresh = g_tbMax[uiMaxSymbol];
+    thresh = g_tbMax[maxSymbol];
   }
 
-  int uiVal = 1 << uiThresh;
-  assert(uiVal <= uiMaxSymbol);
-  assert((uiVal << 1) > uiMaxSymbol);
-  assert(uiSymbol < uiMaxSymbol);
-  int b = uiMaxSymbol - uiVal;
-  assert(b < uiVal);
-  if (uiSymbol < uiVal - b)
+  int val = 1 << thresh;
+  assert(val <= maxSymbol);
+  assert((val << 1) > maxSymbol);
+  assert(symbol < maxSymbol);
+  int b = maxSymbol - val;
+  assert(b < val);
+  if (symbol < val - b)
   {
-    m_BinEncoder.encodeBinsEP(uiSymbol, uiThresh);
+    m_BinEncoder.encodeBinsEP(symbol, thresh);
   }
   else
   {
-    uiSymbol += uiVal - b;
-    assert(uiSymbol < (uiVal << 1));
-    assert((uiSymbol >> 1) >= uiVal - b);
-    m_BinEncoder.encodeBinsEP(uiSymbol, uiThresh + 1);
+    symbol += val - b;
+    assert(symbol < (val << 1));
+    assert((symbol >> 1) >= val - b);
+    m_BinEncoder.encodeBinsEP(symbol, thresh + 1);
   }
 }
 #endif

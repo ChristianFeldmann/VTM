@@ -150,7 +150,7 @@ private:
   unsigned    get_num_bits_read         () { return m_BinDecoder.getNumBitsRead(); }
 
 #if JVET_L0165_6MPM
-  void        xReadTruncBinCode(unsigned& ruiSymbol, int uiMaxSymbol);
+  void        xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol);
 #endif
 
 private:

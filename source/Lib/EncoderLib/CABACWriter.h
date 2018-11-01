@@ -170,7 +170,7 @@ private:
   unsigned    get_num_written_bits()    { return m_BinEncoder.getNumWrittenBits(); }
 
 #if JVET_L0165_6MPM
-  void  xWriteTruncBinCode(unsigned uiSymbol, int uiMaxSymbol);
+  void  xWriteTruncBinCode(uint32_t uiSymbol, uint32_t uiMaxSymbol);
 #endif
 
 private:

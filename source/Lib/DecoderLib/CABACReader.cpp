@@ -904,35 +904,35 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
 #endif
 
 #if JVET_L0165_6MPM
-void CABACReader::xReadTruncBinCode(unsigned& ruiSymbol, int uiMaxSymbol)
+void CABACReader::xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol)
 {
-  int uiThresh;
-  if (uiMaxSymbol > 256)
+  int thresh;
+  if (maxSymbol > 256)
   {
-    int uiThreshVal = 1 << 8;
-    uiThresh = 8;
-    while (uiThreshVal <= uiMaxSymbol)
+    int threshVal = 1 << 8;
+    thresh = 8;
+    while (threshVal <= maxSymbol)
     {
-      uiThresh++;
-      uiThreshVal <<= 1;
+      thresh++;
+      threshVal <<= 1;
     }
-    uiThresh--;
+    thresh--;
   }
   else
   {
-    uiThresh = g_tbMax[uiMaxSymbol];
+    thresh = g_tbMax[maxSymbol];
   }
 
-  int uiVal = 1 << uiThresh;
-  int b = uiMaxSymbol - uiVal;
-  ruiSymbol = m_BinDecoder.decodeBinsEP(uiThresh);
-  if (ruiSymbol >= uiVal - b)
+  int val = 1 << thresh;
+  int b = maxSymbol - val;
+  symbol = m_BinDecoder.decodeBinsEP(thresh);
+  if (symbol >= val - b)
   {
-    uint32_t uiSymbol;
-    uiSymbol = m_BinDecoder.decodeBinEP();
-    ruiSymbol <<= 1;
-    ruiSymbol += uiSymbol;
-    ruiSymbol -= (uiVal - b);
+    uint32_t altSymbol;
+    altSymbol = m_BinDecoder.decodeBinEP();
+    symbol <<= 1;
+    symbol += altSymbol;
+    symbol -= (val - b);
   }
 }
 #endif

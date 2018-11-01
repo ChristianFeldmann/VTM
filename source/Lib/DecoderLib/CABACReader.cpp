@@ -904,7 +904,7 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
 #endif
 
 #if JVET_L0165_6MPM
-void CABACReader::xReadTruncBinCode(uint32_t& ruiSymbol, uint32_t uiMaxSymbol)
+void CABACReader::xReadTruncBinCode(unsigned& ruiSymbol, int uiMaxSymbol)
 {
   int uiThresh;
   if (uiMaxSymbol > 256)

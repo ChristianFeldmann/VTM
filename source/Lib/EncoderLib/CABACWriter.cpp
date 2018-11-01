@@ -774,7 +774,7 @@ void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
 #endif
 
 #if JVET_L0165_6MPM
-void CABACWriter::xWriteTruncBinCode(uint32_t uiSymbol, uint32_t uiMaxSymbol)
+void CABACWriter::xWriteTruncBinCode(unsigned uiSymbol, int uiMaxSymbol)
 {
   int uiThresh;
   if (uiMaxSymbol > 256)

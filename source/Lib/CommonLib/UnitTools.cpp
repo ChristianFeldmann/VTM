@@ -324,11 +324,11 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
 
     CHECK(2 >= numMPMs, "Invalid number of most probable modes");
 
-    const int offset = (int)NUM_LUMA_MODE - 5;
+    const int offset = (int)NUM_LUMA_MODE - 6;
     const int mod = offset + 3;
 
     mpm[0] = leftIntraDir;
-    mpm[1] = !leftIntraDir;
+    mpm[1] = (mpm[0] == PLANAR_IDX) ? DC_IDX : PLANAR_IDX;
     mpm[2] = VER_IDX;
     mpm[3] = HOR_IDX;
     mpm[4] = VER_IDX - 4;
@@ -344,7 +344,7 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
         mpm[2] = DC_IDX;
         mpm[3] = ((leftIntraDir + offset) % mod) + 2;
         mpm[4] = ((leftIntraDir - 1) % mod) + 2;
-        mpm[5] = ((leftIntraDir + 61) % mod) + 2;
+        mpm[5] = ((leftIntraDir + offset - 1) % mod) + 2;
       }
     }
     else //L!=A
@@ -352,29 +352,29 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
       numCand = 2;
       mpm[0] = leftIntraDir;
       mpm[1] = aboveIntraDir;
-      bool biggerIdx = mpm[0] > mpm[1] ? 0 : 1;
+      bool maxCandModeIdx = mpm[0] > mpm[1] ? 0 : 1;
 
       if ((leftIntraDir > DC_IDX) && (aboveIntraDir > DC_IDX))
       {
         mpm[2] = PLANAR_IDX;
         mpm[3] = DC_IDX;
-        if ((mpm[biggerIdx] - mpm[!biggerIdx] != 64) && (mpm[biggerIdx] - mpm[!biggerIdx] != 1))
+        if ((mpm[maxCandModeIdx] - mpm[!maxCandModeIdx] < 63) && (mpm[maxCandModeIdx] - mpm[!maxCandModeIdx] > 1))
         {
-          mpm[4] = ((mpm[biggerIdx] + 62) % mod) + 2;
-          mpm[5] = ((mpm[biggerIdx] - 1) % mod) + 2;
+          mpm[4] = ((mpm[maxCandModeIdx] + offset) % mod) + 2;
+          mpm[5] = ((mpm[maxCandModeIdx] - 1) % mod) + 2;
         }
         else
         {
-          mpm[4] = ((mpm[biggerIdx] + 61) % mod) + 2;
-          mpm[5] = ((mpm[biggerIdx] - 0) % mod) + 2;
+          mpm[4] = ((mpm[maxCandModeIdx] + offset - 1) % mod) + 2;
+          mpm[5] = ((mpm[maxCandModeIdx] ) % mod) + 2;
         }
       }
       else if (leftIntraDir + aboveIntraDir >= 2)
       {
-        mpm[2] = (!mpm[!biggerIdx]);
-        mpm[3] = ((mpm[biggerIdx] + 62) % mod) + 2;
-        mpm[4] = ((mpm[biggerIdx] - 1) % mod) + 2;
-        mpm[5] = ((mpm[biggerIdx] + 61) % mod) + 2;
+        mpm[2] = (mpm[!maxCandModeIdx] == PLANAR_IDX) ? DC_IDX : PLANAR_IDX;
+        mpm[3] = ((mpm[maxCandModeIdx] + offset) % mod) + 2;
+        mpm[4] = ((mpm[maxCandModeIdx] - 1) % mod) + 2;
+        mpm[5] = ((mpm[maxCandModeIdx] + offset - 1) % mod) + 2;
       }
     }
 #else

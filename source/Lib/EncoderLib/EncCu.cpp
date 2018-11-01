@@ -191,7 +191,7 @@ void EncCu::create( EncCfg* encCfg )
   {
     m_acMergeBuffer[ui].create( chromaFormat, Area( 0, 0, uiMaxWidth, uiMaxHeight ) );
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA && JVET_L0054_MMVD
   for (unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++)
   {
     m_acRealMergeBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
@@ -295,7 +295,7 @@ void EncCu::destroy()
   {
     m_acMergeBuffer[ui].destroy();
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA && JVET_L0054_MMVD
   for (unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++)
   {
     m_acRealMergeBuffer[ui].destroy();
@@ -2272,7 +2272,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if JVET_L0054_MMVD
       if (!cu.mmvdSkip && !pu.mhIntraFlag && uiNoResidualPass != 0)
 #else
-      if (!pu.MHIntraFlag && uiNoResidualPass != 0)
+      if (!pu.mhIntraFlag && uiNoResidualPass != 0)
 #endif
       {
         CHECK(uiMergeCand >= mergeCtx.numValidMergeCand, "out of normal merge");

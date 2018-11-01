@@ -1621,6 +1621,11 @@ void CABACReader::MHIntra_flag(PredictionUnit& pu)
     return;
   }
 #endif
+  if (pu.cu->affine)
+  {
+    pu.mhIntraFlag = false;
+    return;
+  }
   if (pu.cu->lwidth() * pu.cu->lheight() < 64 || pu.cu->lwidth() >= MAX_CU_SIZE || pu.cu->lheight() >= MAX_CU_SIZE)
   {
     pu.mhIntraFlag = false;

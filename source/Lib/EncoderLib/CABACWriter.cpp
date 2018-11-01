@@ -1548,6 +1548,11 @@ void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
     return;
   }
 #endif
+  if (pu.cu->affine)
+  {
+    CHECK(pu.mhIntraFlag == true, "invalid MHIntra and affine");
+    return;
+  }
   if (pu.cu->lwidth() * pu.cu->lheight() < 64 || pu.cu->lwidth() >= MAX_CU_SIZE || pu.cu->lheight() >= MAX_CU_SIZE)
   {
     CHECK(pu.mhIntraFlag == true, "invalid MHIntra and blk");

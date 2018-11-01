@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0136_L0085_LM_RESTRICTED_LINEBUFFER         1 // line buffer restriction in LM prediction
+
 #define JVET_L0059_MTS_SIMP                               1 // Simpification on MTS signaling
 #define JVET_L0100_MULTI_HYPOTHESIS_INTRA                 1 // Combine intra mode with an extra merge indexed prediction
 

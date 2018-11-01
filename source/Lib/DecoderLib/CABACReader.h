@@ -111,6 +111,9 @@ public:
   void        MHIntra_flag              ( PredictionUnit&               pu );
   void        MHIntra_luma_pred_modes   ( CodingUnit&                   cu );
 #endif
+#if JVET_L0124_L0208_TRIANGLE
+  void        triangle_mode             ( CodingUnit&                   cu );
+#endif
 
   // pcm samples (clause 7.3.8.7)
   void        pcm_samples               ( TransformUnit&                tu );

@@ -869,6 +869,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
 #endif
+#if JVET_L0124_L0208_TRIANGLE
+  ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)  [default: on]")
+#endif
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
 
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
@@ -1966,6 +1969,9 @@ bool EncAppCfg::xCheckParameter()
 #if JVET_L0646_GBI
     xConfirmPara( m_GBi, "GBi is only allowed with NEXT profile" );
     xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
+#endif
+#if JVET_L0124_L0208_TRIANGLE
+    xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
 #endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
@@ -3191,6 +3197,9 @@ void EncAppCfg::xPrintParameter()
 #endif
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
+#endif
+#if JVET_L0124_L0208_TRIANGLE
+    msg( VERBOSE, "Triangle:%d ", m_Triangle );
 #endif
   }
   // ADD_NEW_TOOL (add some output indicating the usage of tools)

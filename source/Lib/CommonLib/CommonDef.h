@@ -415,6 +415,14 @@ static const int MAX_LADF_INTERVALS       =                         5; /// max n
 static const int NTAPS_BILINEAR           =                         2; ///< Number of taps for bilinear filter
 #endif
 
+#if JVET_L0124_L0208_TRIANGLE
+static const int TRIANGLE_MAX_NUM_UNI_CANDS =                       5;
+static const int TRIANGLE_MAX_NUM_CANDS_MEM =                       7;
+static const int TRIANGLE_MAX_NUM_CANDS =                          40;
+static const int TRIANGLE_MAX_NUM_SATD_CANDS =                      3;
+static const int TRIANGLE_MIN_SIZE =                            8 * 8;
+#endif
+
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================

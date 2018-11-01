@@ -91,6 +91,9 @@ protected:
   RdCost*              m_pcRdCost;
 
   int                  m_iRefListIdx;
+#if JVET_L0124_L0208_TRIANGLE
+  PelStorage           m_tmpTriangleBuf;
+#endif
 #if JVET_L0265_AFF_MINIMUM4X4
   Mv*                  m_storedMv;
 #endif
@@ -148,6 +151,11 @@ public:
   );
   void    motionCompensation  (CodingUnit &cu,     const RefPicList &eRefPicList = REF_PIC_LIST_X
   );
+
+#if JVET_L0124_L0208_TRIANGLE
+  void    motionCompensation4Triangle( CodingUnit &cu, MergeCtx &TriangleMrgCtx, const bool SplitDir, const uint8_t CandIdx0, const uint8_t CandIdx1 );
+  void    TriangleWeighting          ( PredictionUnit &pu, bool ehanced, const bool SplitDir, int32_t channel, PelUnitBuf& PredDst, PelUnitBuf& PredSrc0, PelUnitBuf& PredSrc1 );
+#endif
 
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   void    cacheAssign( CacheModel *cache );

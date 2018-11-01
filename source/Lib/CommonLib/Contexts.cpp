@@ -823,6 +823,22 @@ const CtxSet ContextSetCfg::MHIntraPredMode = ContextSetCfg::addCtxSet
 });
 #endif
 
+#if JVET_L0124_L0208_TRIANGLE
+const CtxSet ContextSetCfg::TriangleFlag = ContextSetCfg::addCtxSet
+({
+  { 151, 137, 154, },
+  { 151, 137, 154, },
+  { CNU, CNU, CNU, },
+});
+
+const CtxSet ContextSetCfg::TriangleIdx = ContextSetCfg::addCtxSet
+({
+  { 140, },
+  { 140, },
+  { CNU, },
+});
+#endif
+
 const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_InitTables[0].size();
 
 

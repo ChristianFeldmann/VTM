@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0124_L0208_TRIANGLE                         1 // triangular shape prediction unit
+
 #define JVET_L0059_MTS_SIMP                               1 // Simpification on MTS signaling
 #define JVET_L0100_MULTI_HYPOTHESIS_INTRA                 1 // Combine intra mode with an extra merge indexed prediction
 
@@ -942,6 +944,14 @@ enum MergeType
   NUM_MRG_TYPE                   // 5
 };
 
+#if JVET_L0124_L0208_TRIANGLE
+enum TriangleSplit
+{
+  TRIANGLE_DIR_135 = 0,
+  TRIANGLE_DIR_45,
+  TRIANGLE_DIR_NUM
+};
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out

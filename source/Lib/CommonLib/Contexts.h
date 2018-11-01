@@ -207,6 +207,10 @@ public:
   static const CtxSet   MHIntraFlag;
   static const CtxSet   MHIntraPredMode;
 #endif
+#if JVET_L0124_L0208_TRIANGLE
+  static const CtxSet   TriangleFlag;
+  static const CtxSet   TriangleIdx;
+#endif
   static const unsigned NumberOfContexts;
 
   // combined sets for less complex copying

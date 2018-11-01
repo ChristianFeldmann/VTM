@@ -120,6 +120,10 @@ void InterPrediction::destroy()
     }
   }
 
+#if JVET_L0124_L0208_TRIANGLE
+  m_tmpTriangleBuf.destroy();
+#endif
+
 #if JVET_L0265_AFF_MINIMUM4X4
   if (m_storedMv != nullptr)
   {
@@ -175,6 +179,9 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
       }
     }
 
+#if JVET_L0124_L0208_TRIANGLE
+    m_tmpTriangleBuf.create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
+#endif
 
     m_iRefListIdx = -1;
   
@@ -481,7 +488,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
       }
       else
       {
+#if JVET_L0124_L0208_TRIANGLE
+        xPredInterUni ( pu, eRefPicList, pcMbBuf, pu.cu->triangle, false );
+#else
         xPredInterUni ( pu, eRefPicList, pcMbBuf, false );
+#endif
       }
     }
   }
@@ -1069,10 +1080,24 @@ void InterPrediction::xWeightedAverage( const PredictionUnit& pu, const CPelUnit
   }
   else if( iRefIdx0 >= 0 && iRefIdx1 < 0 )
   {
+#if JVET_L0124_L0208_TRIANGLE
+    if( pu.cu->triangle )
+    {
+      pcYuvDst.copyFrom( pcYuvSrc0 );
+    }
+    else
+#endif 
     pcYuvDst.copyClip( pcYuvSrc0, clpRngs );
   }
   else if( iRefIdx0 < 0 && iRefIdx1 >= 0 )
   {
+#if JVET_L0124_L0208_TRIANGLE
+    if( pu.cu->triangle )
+    {
+      pcYuvDst.copyFrom( pcYuvSrc1 );
+    }
+    else
+#endif
     pcYuvDst.copyClip( pcYuvSrc1, clpRngs );
   }
 }
@@ -1149,6 +1174,665 @@ int InterPrediction::rightShiftMSB(int numer, int denom)
   d = (numer >> shiftIdx);
 
   return d;
+}
+#endif
+
+#if JVET_L0124_L0208_TRIANGLE
+void InterPrediction::motionCompensation4Triangle( CodingUnit &cu, MergeCtx &TriangleMrgCtx, const bool SplitDir, const uint8_t CandIdx0, const uint8_t CandIdx1 )
+{
+  for( auto &pu : CU::traversePUs( cu ) )
+  {
+    const UnitArea localUnitArea( cu.cs->area.chromaFormat, Area( 0, 0, pu.lwidth(), pu.lheight() ) );
+    PelUnitBuf tmpTriangleBuf = m_tmpTriangleBuf.getBuf( localUnitArea );
+    PelUnitBuf predBuf        = cu.cs->getPredBuf( pu );
+     
+    TriangleMrgCtx.setMergeInfo( pu, CandIdx0 );
+    PU::spanMotionInfo( pu );
+    motionCompensation( pu, tmpTriangleBuf );
+   
+    TriangleMrgCtx.setMergeInfo( pu, CandIdx1 );
+    PU::spanMotionInfo( pu );
+    motionCompensation( pu, predBuf );
+
+    TriangleWeighting( pu, PU::isTriangleEhancedWeight(pu, TriangleMrgCtx, CandIdx0, CandIdx1), SplitDir, MAX_NUM_CHANNEL_TYPE, predBuf, tmpTriangleBuf, predBuf );
+  }
+}
+
+void InterPrediction::TriangleWeighting( PredictionUnit &pu, bool ehanced, const bool SplitDir, int32_t channel, PelUnitBuf& PredDst, PelUnitBuf& PredSrc0, PelUnitBuf& PredSrc1 )
+{
+  const uint32_t WidthY    = pu.lumaSize()  .width;
+  const uint32_t HeightY   = pu.lumaSize()  .height;
+  const uint32_t WidthUV   = pu.chromaSize().width;
+  const uint32_t HeightUV  = pu.chromaSize().height;
+
+        Pel*     DstY      = PredDst .get(COMPONENT_Y).buf;
+        Pel*     Src0Y     = PredSrc0.get(COMPONENT_Y).buf;
+        Pel*     Src1Y     = PredSrc1.get(COMPONENT_Y).buf;
+        Pel*     DstU      = PredDst .get(COMPONENT_Cb).buf;
+        Pel*     Src0U     = PredSrc0.get(COMPONENT_Cb).buf;
+        Pel*     Src1U     = PredSrc1.get(COMPONENT_Cb).buf;
+        Pel*     DstV      = PredDst .get(COMPONENT_Cr).buf;
+        Pel*     Src0V     = PredSrc0.get(COMPONENT_Cr).buf;
+        Pel*     Src1V     = PredSrc1.get(COMPONENT_Cr).buf;
+                           
+        int      strideY   = PredDst .get(COMPONENT_Y).stride  - WidthY;
+        int      stride0Y  = PredSrc0.get(COMPONENT_Y).stride  - WidthY;
+        int      stride1Y  = PredSrc1.get(COMPONENT_Y).stride  - WidthY;
+        int      strideU   = PredDst .get(COMPONENT_Cb).stride - WidthUV;
+        int      stride0U  = PredSrc0.get(COMPONENT_Cb).stride - WidthUV;
+        int      stride1U  = PredSrc1.get(COMPONENT_Cb).stride - WidthUV;
+                           
+  const bool     format    = PredDst.chromaFormat == CHROMA_444 ? 0 : 1;
+
+  const int32_t BlendLengthY  = g_TriangleWeightLengthLuma[ehanced];
+  const int32_t BlendLengthUV = g_TriangleWeightLengthChroma[format][ehanced];
+
+  const char log2WeightBase = 3;
+  const ClpRng clipRngY     = pu.cu->slice->clpRngs().comp[0];
+  const ClpRng clipRngU     = pu.cu->slice->clpRngs().comp[1];
+  const ClpRng clipRngV     = pu.cu->slice->clpRngs().comp[2];
+  const int clipbdY         = clipRngY.bd;
+  const int clipbdU         = clipRngU.bd;
+  const int clipbdV         = clipRngV.bd;
+  const int shiftNumY       = std::max<int>(2, (IF_INTERNAL_PREC - clipbdY)) + log2WeightBase;
+  const int offsetY         = (1 << (shiftNumY - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
+  const int shiftNumU       = std::max<int>(2, (IF_INTERNAL_PREC - clipbdU)) + log2WeightBase;
+  const int offsetU         = (1 << (shiftNumU - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
+  const int shiftNumV       = std::max<int>(2, (IF_INTERNAL_PREC - clipbdV)) + log2WeightBase;
+  const int offsetV         = (1 << (shiftNumV - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
+
+  const int shiftDefault    = std::max<int>(2, (IF_INTERNAL_PREC - clipbdY));
+  const int offsetDefault   = (1<<(shiftDefault-1)) + IF_INTERNAL_OFFS;
+
+  const Pel*   TmpPelWeighted;
+
+  if( channel == CHANNEL_TYPE_LUMA || channel == MAX_NUM_CHANNEL_TYPE )
+  {
+    if( SplitDir == TRIANGLE_DIR_135 && WidthY == HeightY )
+    {
+      int32_t BlendStart = 0 - (BlendLengthY >> 1);
+      int32_t BlendEnd   = 0 + (BlendLengthY >> 1);
+      for( int32_t y = 0; y < HeightY; y++ )
+      {
+        int32_t x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src1Y++ + offsetDefault, shiftDefault ), clipRngY );
+        }
+        Src0Y += x;
+
+        int32_t TmpBlendStart = std::max( (int32_t)0, BlendStart );
+        int32_t TmpBlendEnd   = std::min( BlendEnd, (int32_t)(WidthY - 1) );
+        TmpPelWeighted        = g_TrianglePelWeightedLuma[SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs( BlendStart );
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0Y++) + ((8 - (*TmpPelWeighted)) * (*Src1Y++)) + offsetY), shiftNumY ), clipRngY );
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthY; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src0Y++ + offsetDefault, shiftDefault ), clipRngY );
+          Src1Y++;
+        }
+
+        BlendStart++;
+        BlendEnd++;
+
+        DstY  += strideY;
+        Src0Y += stride0Y;
+        Src1Y += stride1Y;
+      }
+    }
+    else if( SplitDir == TRIANGLE_DIR_135 && WidthY > HeightY )
+    {
+      int32_t RatioWH     = WidthY / HeightY;
+      int32_t BlendStart = 0 - (BlendLengthY >> 1) * RatioWH;
+      int32_t BlendEnd   = BlendStart + BlendLengthY * RatioWH - 1;
+      for( int32_t y = 0; y < HeightY; y++ )
+      {
+        int32_t x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src1Y++ + offsetDefault, shiftDefault ), clipRngY );
+        }
+        Src0Y += x;
+
+        int32_t TmpBlendStart = std::max((int32_t)0, BlendStart);
+        int32_t TmpBlendEnd   = std::min(BlendEnd, (int32_t)(WidthY - 1) );
+        TmpPelWeighted    = g_TrianglePelWeightedLuma[SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs(BlendStart) / RatioWH;
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x += RatioWH )
+        {
+          for( int32_t Cnt = 0; Cnt < RatioWH; Cnt++ )
+          {
+            *DstY++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0Y++) + ((8 - (*TmpPelWeighted)) * (*Src1Y++)) + offsetY), shiftNumY ), clipRngY );
+          }
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthY; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src0Y++ + offsetDefault, shiftDefault ), clipRngY );
+          Src1Y++;
+        }
+        
+        BlendStart += RatioWH;
+        BlendEnd   += RatioWH;
+
+        DstY  += strideY;
+        Src0Y += stride0Y;
+        Src1Y += stride1Y;
+      }
+    }
+    else if( SplitDir == TRIANGLE_DIR_135 && WidthY < HeightY )
+    {
+      int32_t RatioHW     = HeightY / WidthY;
+      int32_t BlendStart = 0 - (BlendLengthY >> 1);
+      int32_t BlendEnd   = BlendStart + BlendLengthY - 1;
+      int32_t Cnt        = RatioHW;
+      for( int32_t y = 0; y < HeightY; y++ )
+      {
+        int32_t x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src1Y++ + offsetDefault, shiftDefault ), clipRngY );
+        }
+        Src0Y += x;
+
+        int32_t TmpBlendStart = std::max((int32_t)0, BlendStart);
+        int32_t TmpBlendEnd   = std::min(BlendEnd, (int32_t)(WidthY - 1));
+        TmpPelWeighted    = g_TrianglePelWeightedLuma[SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs(BlendStart);
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0Y++) + ((8 - (*TmpPelWeighted)) * (*Src1Y++)) + offsetY), shiftNumY ), clipRngY );
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthY; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src0Y++ + offsetDefault, shiftDefault ), clipRngY );
+          Src1Y++;
+        }
+        
+        Cnt--;
+        if( Cnt <= 0 )
+        {
+          BlendStart++;
+          BlendEnd++;
+          Cnt = RatioHW;
+        }
+
+        DstY  += strideY;
+        Src0Y += stride0Y;
+        Src1Y += stride1Y;
+      }
+    }
+    else if( SplitDir == TRIANGLE_DIR_45 && WidthY == HeightY )
+    {
+      int32_t BlendStart = (WidthY - 1) - (BlendLengthY >> 1);
+      int32_t BlendEnd   = (WidthY - 1) + (BlendLengthY >> 1);
+      for( int32_t y = 0; y < HeightY; y++ )
+      {
+        int32_t x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src0Y++ + offsetDefault, shiftDefault ), clipRngY );
+        }
+        Src1Y += x;
+
+        int32_t TmpBlendStart = std::max((int32_t)0, BlendStart);
+        int32_t TmpBlendEnd   = std::min(BlendEnd, (int32_t)(WidthY - 1));
+        TmpPelWeighted    = g_TrianglePelWeightedLuma[SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs(BlendStart);
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0Y++) + ((8 - (*TmpPelWeighted)) * (*Src1Y++)) + offsetY), shiftNumY ), clipRngY );
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthY; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src1Y++ + offsetDefault, shiftDefault ), clipRngY );
+          Src0Y++;
+        }
+        
+        BlendStart--;
+        BlendEnd--;
+
+        DstY  += strideY;
+        Src0Y += stride0Y;
+        Src1Y += stride1Y;
+      }
+    }
+    else if( SplitDir == TRIANGLE_DIR_45 && WidthY > HeightY )
+    {
+      int32_t RatioWH     = WidthY / HeightY;
+      int32_t BlendStart = WidthY - ((BlendLengthY + 1) >> 1) * RatioWH;
+      int32_t BlendEnd   = BlendStart + BlendLengthY * RatioWH - 1;
+      for( int32_t y = 0; y < HeightY; y++ )
+      {
+        int32_t x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src0Y++ + offsetDefault, shiftDefault ), clipRngY );
+        }
+        Src1Y += x;
+
+        int32_t TmpBlendStart = std::max((int32_t)0, BlendStart);
+        int32_t TmpBlendEnd   = std::min(BlendEnd, (int32_t)(WidthY - 1));
+        TmpPelWeighted        = g_TrianglePelWeightedLuma[SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs(BlendStart) / RatioWH;
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x += RatioWH )
+        {
+          for( int32_t Cnt = 0; Cnt < RatioWH; Cnt++ )
+          {
+            *DstY++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0Y++) + ((8 - (*TmpPelWeighted)) * (*Src1Y++)) + offsetY), shiftNumY ), clipRngY );
+          }
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthY; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src1Y++ + offsetDefault, shiftDefault ), clipRngY );
+          Src0Y++;
+        }
+        
+        BlendStart -= RatioWH;
+        BlendEnd   -= RatioWH;
+
+        DstY  += strideY;
+        Src0Y += stride0Y;
+        Src1Y += stride1Y;
+      }
+    }
+    else if( SplitDir == TRIANGLE_DIR_45 && WidthY < HeightY )
+    {
+      int32_t RatioHW     = HeightY / WidthY;
+      int32_t BlendStart = WidthY - ((BlendLengthY + 1) >> 1);
+      int32_t BlendEnd   = BlendStart + BlendLengthY - 1;
+      int32_t Cnt        = RatioHW;
+      for( int32_t y = 0; y < HeightY; y++ )
+      {
+        int32_t x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src0Y++ + offsetDefault, shiftDefault ), clipRngY );
+        }
+        Src1Y += x;
+
+        int32_t TmpBlendStart = std::max((int32_t)0, BlendStart);
+        int32_t TmpBlendEnd   = std::min(BlendEnd, (int32_t)(WidthY - 1));
+        TmpPelWeighted    = g_TrianglePelWeightedLuma[SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs(BlendStart);
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0Y++) + ((8 - (*TmpPelWeighted)) * (*Src1Y++)) + offsetY), shiftNumY ), clipRngY );
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthY; x++ )
+        {
+          *DstY++ = ClipPel( rightShift( *Src1Y++ + offsetDefault, shiftDefault ), clipRngY );
+          Src0Y++;
+        }
+        
+        Cnt--;
+        if( Cnt <= 0 )
+        {
+          BlendStart--;
+          BlendEnd--;
+          Cnt = RatioHW;
+        }
+
+        DstY  += strideY;
+        Src0Y += stride0Y;
+        Src1Y += stride1Y;
+      }
+    }
+    else
+    {
+      assert(0);
+    }
+  }
+
+  if( channel == CHANNEL_TYPE_CHROMA || channel == MAX_NUM_CHANNEL_TYPE )
+  {
+    if( SplitDir == TRIANGLE_DIR_135 && WidthY == HeightY )
+    {
+      int32_t BlendStart = 0 - (BlendLengthUV >> 1);
+      int32_t BlendEnd   = 0 + (BlendLengthUV >> 1);
+      for( int32_t y = 0; y < HeightUV; y++ )
+      {
+        int x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src1U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src1V++ + offsetDefault, shiftDefault ), clipRngV );
+        }
+        Src0U += x;
+        Src0V += x;
+
+        int32_t TmpBlendStart = std::max((int32_t)0, BlendStart);
+        int32_t TmpBlendEnd   = std::min(BlendEnd, (int32_t)(WidthUV - 1));
+        TmpPelWeighted    = g_TrianglePelWeightedChroma[format][SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs(BlendStart);
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0U++) + ((8 - (*TmpPelWeighted)) * (*Src1U++)) + offsetU), shiftNumU ), clipRngU );
+          *DstV++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0V++) + ((8 - (*TmpPelWeighted)) * (*Src1V++)) + offsetV), shiftNumV ), clipRngV );
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthUV; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src0U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src0V++ + offsetDefault, shiftDefault ), clipRngV );
+          Src1U++;
+          Src1V++;
+        }
+
+        BlendStart++;
+        BlendEnd++;
+
+        DstU  += strideU;
+        Src0U += stride0U;
+        Src1U += stride1U;
+        DstV  += strideU;
+        Src0V += stride0U;
+        Src1V += stride1U;
+      }
+    }
+    else if( SplitDir == TRIANGLE_DIR_135 && WidthY > HeightY )
+    {
+      int32_t RatioWH     = WidthY / HeightY;
+      int32_t BlendStart = 0 - (BlendLengthUV >> 1) * RatioWH;
+      int32_t BlendEnd   = BlendStart + BlendLengthUV * RatioWH - 1;
+      for( int32_t y = 0; y < HeightUV; y++ )
+      {
+        int32_t x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src1U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src1V++ + offsetDefault, shiftDefault ), clipRngV );
+        }
+        Src0U += x;
+        Src0V += x;
+
+        int32_t TmpBlendStart = std::max((int32_t)0, BlendStart);
+        int32_t TmpBlendEnd   = std::min(BlendEnd, (int32_t)(WidthUV - 1));
+        TmpPelWeighted    = g_TrianglePelWeightedChroma[format][SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs(BlendStart) / RatioWH;
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x += RatioWH )
+        {
+          for( int32_t Cnt = 0; Cnt < RatioWH; Cnt++ )
+          {
+            *DstU++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0U++) + ((8 - (*TmpPelWeighted)) * (*Src1U++)) + offsetU), shiftNumU ), clipRngU );
+            *DstV++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0V++) + ((8 - (*TmpPelWeighted)) * (*Src1V++)) + offsetV), shiftNumV ), clipRngV );
+          }
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthUV; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src0U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src0V++ + offsetDefault, shiftDefault ), clipRngV );
+          Src1U++;
+          Src1V++;
+        }
+
+        BlendStart += RatioWH;
+        BlendEnd   += RatioWH;
+
+        DstU  += strideU;
+        Src0U += stride0U;
+        Src1U += stride1U;
+        DstV  += strideU;
+        Src0V += stride0U;
+        Src1V += stride1U;
+      }
+    }
+    else if( SplitDir == TRIANGLE_DIR_135 && WidthY < HeightY )
+    {
+      int32_t RatioHW     = HeightY / WidthY;
+      int32_t Cnt        = RatioHW;
+      int32_t BlendStart = 0 - (BlendLengthUV >> 1);
+      int32_t BlendEnd   = BlendStart + BlendLengthUV - 1;
+      for( int32_t y = 0; y < HeightUV; y++ )
+      {
+        int32_t x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src1U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src1V++ + offsetDefault, shiftDefault ), clipRngV );
+        }
+        Src0U += x;
+        Src0V += x;
+
+        int32_t TmpBlendStart = std::max((int32_t)0, BlendStart);
+        int32_t TmpBlendEnd   = std::min(BlendEnd, (int32_t)(WidthUV - 1));
+        TmpPelWeighted    = g_TrianglePelWeightedChroma[format][SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs(BlendStart);
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0U++) + ((8 - (*TmpPelWeighted)) * (*Src1U++)) + offsetU), shiftNumU ), clipRngU );
+          *DstV++ = ClipPel( rightShift( ((*TmpPelWeighted)*(*Src0V++) + ((8 - (*TmpPelWeighted)) * (*Src1V++)) + offsetV), shiftNumV ), clipRngV );
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthUV; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src0U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src0V++ + offsetDefault, shiftDefault ), clipRngV );
+          Src1U++;
+          Src1V++;
+        }
+
+        Cnt--;
+        if( Cnt <= 0 )
+        {
+          BlendStart++;
+          BlendEnd++;
+          Cnt = RatioHW;
+        }
+
+        DstU  += strideU;
+        Src0U += stride0U;
+        Src1U += stride1U;
+        DstV  += strideU;
+        Src0V += stride0U;
+        Src1V += stride1U;
+      }
+    }
+    else if( SplitDir == TRIANGLE_DIR_45 && WidthY == HeightY )
+    {
+      int32_t BlendStart = (WidthUV - 1) - (BlendLengthUV >> 1);
+      int32_t BlendEnd   = (WidthUV - 1) + (BlendLengthUV >> 1);
+      for( int32_t y = 0; y < HeightUV; y++ )
+      {
+        int32_t x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src0U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src0V++ + offsetDefault, shiftDefault ), clipRngV );
+        }
+        Src1U += x;
+        Src1V += x;
+
+        int32_t TmpBlendStart = std::max((int32_t)0, BlendStart);
+        int32_t TmpBlendEnd   = std::min(BlendEnd, (int32_t)(WidthUV - 1));
+        TmpPelWeighted    = g_TrianglePelWeightedChroma[format][SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs(BlendStart);
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x++ )
+        {
+          *DstU++ = ClipPel( rightShift(((*TmpPelWeighted)*(*Src0U++) + ((8 - (*TmpPelWeighted)) * (*Src1U++)) + offsetU), shiftNumU ), clipRngU );
+          *DstV++ = ClipPel( rightShift(((*TmpPelWeighted)*(*Src0V++) + ((8 - (*TmpPelWeighted)) * (*Src1V++)) + offsetV), shiftNumV ), clipRngV );
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthUV; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src1U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src1V++ + offsetDefault, shiftDefault ), clipRngV );
+          Src0U++;
+          Src0V++;
+        }
+        
+        BlendStart--;
+        BlendEnd--;
+
+        DstU  += strideU;
+        Src0U += stride0U;
+        Src1U += stride1U;
+        DstV  += strideU;
+        Src0V += stride0U;
+        Src1V += stride1U;
+      }
+    }
+    else if( SplitDir == TRIANGLE_DIR_45 && WidthY > HeightY )
+    {
+      int32_t RatioWH     = WidthY / HeightY;
+      int32_t BlendStart = WidthUV - ((BlendLengthUV + 1) >> 1) * RatioWH;
+      int32_t BlendEnd   = BlendStart + BlendLengthUV * RatioWH - 1;
+      for( int32_t y = 0; y < HeightUV; y++ )
+      {
+        int32_t x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src0U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src0V++ + offsetDefault, shiftDefault ), clipRngV );
+        }
+        Src1U += x;
+        Src1V += x;
+
+        int32_t TmpBlendStart = std::max((int32_t)0, BlendStart);
+        int32_t TmpBlendEnd   = std::min(BlendEnd, (int32_t)(WidthUV - 1));
+        TmpPelWeighted    = g_TrianglePelWeightedChroma[format][SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs(BlendStart) / RatioWH;
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x += RatioWH )
+        {
+          for( int32_t Cnt = 0; Cnt < RatioWH; Cnt++ )
+          {
+            *DstU++ = ClipPel( rightShift(((*TmpPelWeighted)*(*Src0U++) + ((8 - (*TmpPelWeighted)) * (*Src1U++)) + offsetU), shiftNumU ), clipRngU );
+            *DstV++ = ClipPel( rightShift(((*TmpPelWeighted)*(*Src0V++) + ((8 - (*TmpPelWeighted)) * (*Src1V++)) + offsetV), shiftNumV ), clipRngV );
+          }
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthUV; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src1U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src1V++ + offsetDefault, shiftDefault ), clipRngV );
+          Src0U++;
+          Src0V++;
+        }
+
+        BlendStart -= RatioWH;
+        BlendEnd   -= RatioWH;
+
+        DstU  += strideU;
+        Src0U += stride0U;
+        Src1U += stride1U;
+        DstV  += strideU;
+        Src0V += stride0U;
+        Src1V += stride1U;
+      }
+    }
+    else if( SplitDir == TRIANGLE_DIR_45 && WidthY < HeightY )
+    {
+      int32_t RatioHW     = HeightY / WidthY;
+      int32_t BlendStart = WidthUV - ((BlendLengthUV + 1) >> 1);
+      int32_t BlendEnd   = BlendStart + BlendLengthUV - 1;
+      int32_t Cnt        = RatioHW;
+      for( int32_t y = 0; y < HeightUV; y++ )
+      {
+        int32_t x = 0;
+        for( x = 0; x < BlendStart; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src0U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src0V++ + offsetDefault, shiftDefault ), clipRngV );
+        }
+        Src1U += x;
+        Src1V += x;
+
+        int32_t TmpBlendStart = std::max((int32_t)0, BlendStart);
+        int32_t TmpBlendEnd   = std::min(BlendEnd, (int32_t)(WidthUV - 1));
+        TmpPelWeighted    = g_TrianglePelWeightedChroma[format][SplitDir][ehanced];
+        if( BlendStart < 0 )
+        {
+          TmpPelWeighted += abs(BlendStart);
+        }
+        for( x = TmpBlendStart; x <= TmpBlendEnd; x++ )
+        {
+          *DstU++ = ClipPel( rightShift(((*TmpPelWeighted)*(*Src0U++) + ((8 - (*TmpPelWeighted)) * (*Src1U++)) + offsetU), shiftNumU ), clipRngU );
+          *DstV++ = ClipPel( rightShift(((*TmpPelWeighted)*(*Src0V++) + ((8 - (*TmpPelWeighted)) * (*Src1V++)) + offsetV), shiftNumV ), clipRngV );
+          TmpPelWeighted++;
+        }
+
+        for( x = BlendEnd + 1; x < WidthUV; x++ )
+        {
+          *DstU++ = ClipPel( rightShift( *Src1U++ + offsetDefault, shiftDefault ), clipRngU );
+          *DstV++ = ClipPel( rightShift( *Src1V++ + offsetDefault, shiftDefault ), clipRngV );
+          Src0U++;
+          Src0V++;
+        }
+
+        Cnt--;
+        if( Cnt <= 0 )
+        {
+          BlendStart--;
+          BlendEnd--;
+          Cnt = RatioHW;
+        }
+
+        DstU  += strideU;
+        Src0U += stride0U;
+        Src1U += stride1U;
+        DstV  += strideU;
+        Src0V += stride0U;
+        Src1V += stride1U;
+      }
+    }
+    else
+    {
+      assert(0);
+    }
+  }
 }
 #endif
 

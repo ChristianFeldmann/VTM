@@ -1132,6 +1132,9 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       MHIntra_luma_pred_modes( *pu.cu );
     }
 #endif
+#if JVET_L0124_L0208_TRIANGLE
+    triangle_mode( *pu.cu );
+#endif
 #if JVET_L0054_MMVD
     if (pu.mmvdMergeFlag)
     {
@@ -1354,6 +1357,24 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
   }
   else
   {
+#endif
+#if JVET_L0124_L0208_TRIANGLE
+    if( pu.cu->triangle )
+    {
+      if( pu.mergeIdx < 2 )
+      {
+        m_BinEncoder.encodeBin( 0, Ctx::TriangleIdx() );
+        m_BinEncoder.encodeBinEP( pu.mergeIdx );
+      }
+      else
+      {
+        m_BinEncoder.encodeBin( 1, Ctx::TriangleIdx() );
+        exp_golomb_eqprob( pu.mergeIdx - 2, 2 );
+      }
+
+      DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx=%d\n", pu.mergeIdx );
+      return;
+    }
 #endif
   int numCandminus1 = int( pu.cs->slice->getMaxNumMergeCand() ) - 1;
   if( numCandminus1 > 0 )
@@ -1615,6 +1636,22 @@ void CABACWriter::MHIntra_luma_pred_modes(const CodingUnit& cu)
     DTRACE(g_trace_ctx, D_SYNTAX, "intra_luma_pred_modes() idx=%d pos=(%d,%d) mode=%d\n", k, pu->lumaPos().x, pu->lumaPos().y, pu->intraDir[0]);
     pu = pu->next;
   }
+}
+#endif
+
+#if JVET_L0124_L0208_TRIANGLE
+void CABACWriter::triangle_mode( const CodingUnit& cu )
+{
+  if( !cu.cs->slice->getSPS()->getSpsNext().getUseTriangle() || !cu.cs->slice->isInterB() || cu.lwidth() * cu.lheight() < TRIANGLE_MIN_SIZE || cu.affine )
+  {
+    return;
+  }
+
+  unsigned flag_idx     = DeriveCtx::CtxTriangleFlag( cu );
+
+  m_BinEncoder.encodeBin( cu.triangle, Ctx::TriangleFlag(flag_idx) );
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "triangle_mode() triangle_mode=%d pos=(%d,%d) size: %dx%d\n", cu.triangle, cu.Y().x, cu.Y().y, cu.lumaSize().width, cu.lumaSize().height );
 }
 #endif
 

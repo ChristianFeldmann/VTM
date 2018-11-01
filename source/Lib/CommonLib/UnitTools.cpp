@@ -3973,6 +3973,495 @@ void PU::restrictBiPredMergeCands( const PredictionUnit &pu, MergeCtx& mergeCtx 
   }
 }
 
+#if JVET_L0124_L0208_TRIANGLE
+void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& TriangleMrgCtx )
+{
+  const CodingStructure &cs  = *pu.cs;
+  const Slice &slice         = *pu.cs->slice;
+  const int32_t maxNumMergeCand = TRIANGLE_MAX_NUM_UNI_CANDS;
+  TriangleMrgCtx.numValidMergeCand = 0;
+
+  for( int32_t i = 0; i < maxNumMergeCand; i++ )
+  {
+    TriangleMrgCtx.interDirNeighbours[i] = 0;
+    TriangleMrgCtx.mrgTypeNeighbours [i] = MRG_TYPE_DEFAULT_N;
+    TriangleMrgCtx.mvFieldNeighbours[(i << 1)    ].refIdx = NOT_VALID;
+    TriangleMrgCtx.mvFieldNeighbours[(i << 1) + 1].refIdx = NOT_VALID;
+    TriangleMrgCtx.mvFieldNeighbours[(i << 1)    ].mv = Mv();
+    TriangleMrgCtx.mvFieldNeighbours[(i << 1) + 1].mv = Mv();
+  }
+
+  MotionInfo Candidate[TRIANGLE_MAX_NUM_CANDS_MEM];
+  int32_t CandCount = 0;
+
+  const Position posLT = pu.Y().topLeft();
+  const Position posRT = pu.Y().topRight();
+  const Position posLB = pu.Y().bottomLeft();
+
+  MotionInfo miAbove, miLeft, miAboveLeft, miAboveRight, miBelowLeft;
+
+  //left
+  const PredictionUnit* puLeft = cs.getPURestricted( posLB.offset( -1, 0 ), pu, pu.chType );
+  const bool isAvailableA1 = puLeft && isDiffMER( pu, *puLeft ) && pu.cu != puLeft->cu && CU::isInter( *puLeft->cu );
+  if( isAvailableA1 )
+  {
+    miLeft = puLeft->getMotionInfo( posLB.offset(-1, 0) );
+    Candidate[CandCount].isInter   = true;
+    Candidate[CandCount].interDir  = miLeft.interDir;
+    Candidate[CandCount].mv[0]     = miLeft.mv[0];
+    Candidate[CandCount].mv[1]     = miLeft.mv[1];
+    Candidate[CandCount].refIdx[0] = miLeft.refIdx[0];
+    Candidate[CandCount].refIdx[1] = miLeft.refIdx[1];
+    CandCount++;
+  }
+
+  // above
+  const PredictionUnit *puAbove = cs.getPURestricted( posRT.offset( 0, -1 ), pu, pu.chType );
+  bool isAvailableB1 = puAbove && isDiffMER( pu, *puAbove ) && pu.cu != puAbove->cu && CU::isInter( *puAbove->cu );
+  if( isAvailableB1 )
+  {
+    miAbove = puAbove->getMotionInfo( posRT.offset( 0, -1 ) );
+    
+    if( !isAvailableA1 || ( miAbove != miLeft ) )
+    {
+      Candidate[CandCount].isInter   = true;
+      Candidate[CandCount].interDir  = miAbove.interDir;
+      Candidate[CandCount].mv[0]     = miAbove.mv[0];
+      Candidate[CandCount].mv[1]     = miAbove.mv[1];
+      Candidate[CandCount].refIdx[0] = miAbove.refIdx[0];
+      Candidate[CandCount].refIdx[1] = miAbove.refIdx[1];
+      CandCount++;
+    }
+  }
+  
+  // above right
+  const PredictionUnit *puAboveRight = cs.getPURestricted( posRT.offset( 1, -1 ), pu, pu.chType );
+  bool isAvailableB0 = puAboveRight && isDiffMER( pu, *puAboveRight ) && CU::isInter( *puAboveRight->cu );
+
+  if( isAvailableB0 )
+  {
+    miAboveRight = puAboveRight->getMotionInfo( posRT.offset( 1, -1 ) );
+
+    if( ( !isAvailableB1 || ( miAbove != miAboveRight ) ) && ( !isAvailableA1 || ( miLeft != miAboveRight ) ) )
+    {
+      Candidate[CandCount].isInter   = true;
+      Candidate[CandCount].interDir  = miAboveRight.interDir;
+      Candidate[CandCount].mv[0]     = miAboveRight.mv[0];
+      Candidate[CandCount].mv[1]     = miAboveRight.mv[1];
+      Candidate[CandCount].refIdx[0] = miAboveRight.refIdx[0];
+      Candidate[CandCount].refIdx[1] = miAboveRight.refIdx[1];
+      CandCount++;
+    }
+  }  
+
+  //left bottom
+  const PredictionUnit *puLeftBottom = cs.getPURestricted( posLB.offset( -1, 1 ), pu, pu.chType );
+  bool isAvailableA0 = puLeftBottom && isDiffMER( pu, *puLeftBottom ) && CU::isInter( *puLeftBottom->cu );
+  if( isAvailableA0 )
+  {
+    miBelowLeft = puLeftBottom->getMotionInfo( posLB.offset( -1, 1 ) );
+    
+    if( ( !isAvailableA1 || ( miBelowLeft != miLeft ) ) && ( !isAvailableB1 || ( miBelowLeft != miAbove ) ) && ( !isAvailableB0 || ( miBelowLeft != miAboveRight ) ) )
+    {
+      Candidate[CandCount].isInter   = true;
+      Candidate[CandCount].interDir  = miBelowLeft.interDir;
+      Candidate[CandCount].mv[0]     = miBelowLeft.mv[0];
+      Candidate[CandCount].mv[1]     = miBelowLeft.mv[1];
+      Candidate[CandCount].refIdx[0] = miBelowLeft.refIdx[0];
+      Candidate[CandCount].refIdx[1] = miBelowLeft.refIdx[1];
+      CandCount++;
+    }
+  }
+
+  // above left
+  const PredictionUnit *puAboveLeft = cs.getPURestricted( posLT.offset( -1, -1 ), pu, pu.chType );
+  bool isAvailableB2 = puAboveLeft && isDiffMER( pu, *puAboveLeft ) && CU::isInter( *puAboveLeft->cu );
+
+  if( isAvailableB2 )
+  {
+    miAboveLeft = puAboveLeft->getMotionInfo( posLT.offset( -1, -1 ) );
+
+    if( ( !isAvailableA1 || ( miLeft != miAboveLeft ) ) && ( !isAvailableB1 || ( miAbove != miAboveLeft ) ) && ( !isAvailableA0 || ( miBelowLeft != miAboveLeft ) ) && ( !isAvailableB0 || ( miAboveRight != miAboveLeft ) ) )
+    {
+      Candidate[CandCount].isInter   = true;
+      Candidate[CandCount].interDir  = miAboveLeft.interDir;
+      Candidate[CandCount].mv[0]     = miAboveLeft.mv[0];
+      Candidate[CandCount].mv[1]     = miAboveLeft.mv[1];
+      Candidate[CandCount].refIdx[0] = miAboveLeft.refIdx[0];
+      Candidate[CandCount].refIdx[1] = miAboveLeft.refIdx[1];
+      CandCount++;
+    }
+  }
+  
+  if( slice.getEnableTMVPFlag() )
+  {
+    Position posRB = pu.Y().bottomRight().offset(-3, -3);
+
+    const PreCalcValues& pcv = *cs.pcv;
+
+    Position posC0;
+    Position posC1 = pu.Y().center();
+    bool C0Avail = false;
+
+    if (((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight))
+    {
+      Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
+
+      if( ( posInCtu.x + 4 < pcv.maxCUWidth ) &&           // is not at the last column of CTU
+          ( posInCtu.y + 4 < pcv.maxCUHeight ) )           // is not at the last row    of CTU
+      {
+        posC0 = posRB.offset( 4, 4 );
+        C0Avail = true;
+      }
+      else if( posInCtu.x + 4 < pcv.maxCUWidth )           // is not at the last column of CTU But is last row of CTU
+      {
+        posC0 = posRB.offset( 4, 4 );
+        // in the reference the CTU address is not set - thus probably resulting in no using this C0 possibility
+      }
+      else if( posInCtu.y + 4 < pcv.maxCUHeight )          // is not at the last row of CTU But is last column of CTU
+      {
+        posC0 = posRB.offset( 4, 4 );
+        C0Avail = true;
+      }
+      else //is the right bottom corner of CTU
+      {
+        posC0 = posRB.offset( 4, 4 );
+        // same as for last column but not last row
+      }
+    }
+
+    // C0
+    Mv        cColMv;
+    int32_t   RefIdx     = 0;
+    bool      ExistMV    = ( C0Avail && getColocatedMVP( pu, REF_PIC_LIST_0, posC0, cColMv, RefIdx ) );
+    MotionInfo MvTemporal;
+    MvTemporal.interDir  = 0;
+    if( ExistMV )
+    {
+      MvTemporal.isInter   = true;
+      MvTemporal.interDir |= 1;
+      MvTemporal.mv[0]     = cColMv;
+      MvTemporal.refIdx[0] = RefIdx;
+    }
+    ExistMV = ( C0Avail && getColocatedMVP( pu, REF_PIC_LIST_1, posC0, cColMv, RefIdx ) );
+    if( ExistMV )
+    {
+      MvTemporal.interDir |= 2;
+      MvTemporal.mv[1]     = cColMv;
+      MvTemporal.refIdx[1] = RefIdx;
+    }
+
+    if( MvTemporal.interDir != 0 )
+    {
+      Candidate[CandCount].isInter   = true;
+      Candidate[CandCount].interDir  = MvTemporal.interDir;
+      Candidate[CandCount].mv[0]     = MvTemporal.mv[0];
+      Candidate[CandCount].mv[1]     = MvTemporal.mv[1];
+      Candidate[CandCount].refIdx[0] = MvTemporal.refIdx[0];
+      Candidate[CandCount].refIdx[1] = MvTemporal.refIdx[1];
+      CandCount++;
+    }
+   
+    // C1
+    MvTemporal.interDir = 0;
+    ExistMV    = getColocatedMVP(pu, REF_PIC_LIST_0, posC1, cColMv, RefIdx );
+    if( ExistMV )
+    {
+      MvTemporal.isInter   = true;
+      MvTemporal.interDir |= 1;
+      MvTemporal.mv[0]     = cColMv;
+      MvTemporal.refIdx[0] = RefIdx;
+    }
+    ExistMV    = getColocatedMVP(pu, REF_PIC_LIST_1, posC1, cColMv, RefIdx );
+    if( ExistMV )
+    {
+      MvTemporal.interDir |= 2;
+      MvTemporal.mv[1]     = cColMv;
+      MvTemporal.refIdx[1] = RefIdx;
+    }
+
+    if( MvTemporal.interDir != 0 )
+    {
+      Candidate[CandCount].isInter   = true;
+      Candidate[CandCount].interDir  = MvTemporal.interDir;
+      Candidate[CandCount].mv[0]     = MvTemporal.mv[0];
+      Candidate[CandCount].mv[1]     = MvTemporal.mv[1];
+      Candidate[CandCount].refIdx[0] = MvTemporal.refIdx[0];
+      Candidate[CandCount].refIdx[1] = MvTemporal.refIdx[1];
+      CandCount++;
+    }
+  } // if( slice.getEnableTMVPFlag() )
+  
+  // uni-pred
+  for( int32_t i = 0; i < CandCount; i++ )
+  { 
+    if( Candidate[i].interDir != 3 )
+    {
+      TriangleMrgCtx.interDirNeighbours[TriangleMrgCtx.numValidMergeCand] = Candidate[i].interDir;
+      TriangleMrgCtx.mrgTypeNeighbours [TriangleMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1)    ].mv = Candidate[i].mv[0];
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1) + 1].mv = Candidate[i].mv[1];
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1)    ].refIdx = Candidate[i].refIdx[0];
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1) + 1].refIdx = Candidate[i].refIdx[1];
+      TriangleMrgCtx.numValidMergeCand += isUniqueTriangleCandidates(pu, TriangleMrgCtx);
+      if( TriangleMrgCtx.numValidMergeCand == TRIANGLE_MAX_NUM_UNI_CANDS )
+      {
+        return;
+      }
+    }
+  }
+
+  // L0 of bi-pred
+  for( int32_t i = 0; i < CandCount; i++ )
+  {
+    if( Candidate[i].interDir == 3 )
+    {
+      TriangleMrgCtx.interDirNeighbours[TriangleMrgCtx.numValidMergeCand] = 1;
+      TriangleMrgCtx.mrgTypeNeighbours [TriangleMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1)    ].mv = Candidate[i].mv[0];
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1) + 1].mv = Mv(0, 0);
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1)    ].refIdx = Candidate[i].refIdx[0];
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1) + 1].refIdx = -1;
+      TriangleMrgCtx.numValidMergeCand += isUniqueTriangleCandidates(pu, TriangleMrgCtx);
+      if( TriangleMrgCtx.numValidMergeCand == TRIANGLE_MAX_NUM_UNI_CANDS )
+      {
+        return;
+      }
+    }
+  }
+
+  // L1 of bi-pred
+  for( int32_t i = 0; i < CandCount; i++ )
+  {
+    if( Candidate[i].interDir == 3 )
+    {
+      TriangleMrgCtx.interDirNeighbours[TriangleMrgCtx.numValidMergeCand] = 2;
+      TriangleMrgCtx.mrgTypeNeighbours [TriangleMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1)    ].mv = Mv(0, 0);
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1) + 1].mv = Candidate[i].mv[1];
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1)    ].refIdx = -1;
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1) + 1].refIdx = Candidate[i].refIdx[1];
+      TriangleMrgCtx.numValidMergeCand += isUniqueTriangleCandidates(pu, TriangleMrgCtx);
+      if( TriangleMrgCtx.numValidMergeCand == TRIANGLE_MAX_NUM_UNI_CANDS )
+      {
+        return;
+      }
+    }
+  }
+
+  // averaging two uni-pred of bi-pred
+  for( int32_t i = 0; i < CandCount; i++ )
+  {
+    if( Candidate[i].interDir == 3 )
+    {
+      int32_t currPOC  = slice.getPOC();
+      int32_t L0RefPOC = slice.getRefPOC(REF_PIC_LIST_0, Candidate[i].refIdx[0]);
+      int32_t L1RefPOC = slice.getRefPOC(REF_PIC_LIST_1, Candidate[i].refIdx[1]);
+      Mv aveMv = Candidate[i].mv[1];
+      aveMv = aveMv.scaleMv( xGetDistScaleFactor( currPOC, L0RefPOC, currPOC, L1RefPOC ) ); // scaling to L0
+      aveMv.setHor( ( aveMv.getHor() + Candidate[i].mv[0].getHor() + 1 ) >> 1 );
+      aveMv.setVer( ( aveMv.getVer() + Candidate[i].mv[0].getVer() + 1 ) >> 1 );
+          
+      TriangleMrgCtx.interDirNeighbours[TriangleMrgCtx.numValidMergeCand] = 1;
+      TriangleMrgCtx.mrgTypeNeighbours [TriangleMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1)    ].mv = aveMv;
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1) + 1].mv = Mv(0, 0);
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1)    ].refIdx = Candidate[i].refIdx[0];
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1) + 1].refIdx = -1;
+      TriangleMrgCtx.numValidMergeCand += isUniqueTriangleCandidates(pu, TriangleMrgCtx);
+      if( TriangleMrgCtx.numValidMergeCand == TRIANGLE_MAX_NUM_UNI_CANDS )
+      {
+        return;
+      }
+    }
+  } 
+    
+  // fill with Mv(0, 0)
+  int32_t NumRefIdx = std::min( slice.getNumRefIdx(REF_PIC_LIST_0), slice.getNumRefIdx(REF_PIC_LIST_1) );
+  int32_t Cnt = 0;
+  while( TriangleMrgCtx.numValidMergeCand < TRIANGLE_MAX_NUM_UNI_CANDS )
+  {
+    if( Cnt < NumRefIdx )
+    {
+      TriangleMrgCtx.interDirNeighbours[TriangleMrgCtx.numValidMergeCand] = 1;
+      TriangleMrgCtx.mvFieldNeighbours[TriangleMrgCtx.numValidMergeCand << 1].setMvField(Mv(0, 0), Cnt);
+      TriangleMrgCtx.numValidMergeCand++;
+      
+      if( TriangleMrgCtx.numValidMergeCand == TRIANGLE_MAX_NUM_UNI_CANDS )
+      {
+        return;
+      }
+      
+      TriangleMrgCtx.interDirNeighbours[TriangleMrgCtx.numValidMergeCand] = 2;
+      TriangleMrgCtx.mvFieldNeighbours [(TriangleMrgCtx.numValidMergeCand << 1) + 1 ].setMvField(Mv(0, 0), Cnt);
+      TriangleMrgCtx.numValidMergeCand++;
+      
+      Cnt = (Cnt + 1) % NumRefIdx;
+    }
+  }  
+}
+
+bool PU::isUniqueTriangleCandidates( const PredictionUnit &pu, MergeCtx& TriangleMrgCtx )
+{
+  int newCand = TriangleMrgCtx.numValidMergeCand;
+  for( int32_t i = 0; i < newCand; i++ )
+  {
+    int32_t predFlagCur  = TriangleMrgCtx.interDirNeighbours[i] == 1 ? 0 : 1;
+    int32_t predFlagNew  = TriangleMrgCtx.interDirNeighbours[newCand] == 1 ? 0 : 1;
+    int32_t refPicPocCur = pu.cs->slice->getRefPOC( (RefPicList)predFlagCur, TriangleMrgCtx.mvFieldNeighbours[(i << 1) + predFlagCur].refIdx );
+    int32_t refPicPocNew = pu.cs->slice->getRefPOC( (RefPicList)predFlagNew, TriangleMrgCtx.mvFieldNeighbours[(newCand << 1) + predFlagNew].refIdx);
+    if( refPicPocCur == refPicPocNew && TriangleMrgCtx.mvFieldNeighbours[(i << 1) + predFlagCur].mv == TriangleMrgCtx.mvFieldNeighbours[(newCand << 1) + predFlagNew].mv )
+    {
+      return false;
+    }
+  }
+  return true;  
+}
+
+bool PU::isTriangleEhancedWeight( const PredictionUnit& pu, MergeCtx &TriangleMrgCtx, const uint8_t CandIdx0, const uint8_t CandIdx1 )
+{
+  RefPicList RefPicListCand0 = TriangleMrgCtx.interDirNeighbours[CandIdx0] == 1 ? REF_PIC_LIST_0 : REF_PIC_LIST_1;
+  RefPicList RefPicListCand1 = TriangleMrgCtx.interDirNeighbours[CandIdx1] == 1 ? REF_PIC_LIST_0 : REF_PIC_LIST_1;
+  int32_t RefPicPoc0 = pu.cs->slice->getRefPOC( RefPicListCand0, TriangleMrgCtx.mvFieldNeighbours[ (CandIdx0 << 1) + RefPicListCand0 ].refIdx );
+  int32_t RefPicPoc1 = pu.cs->slice->getRefPOC( RefPicListCand1, TriangleMrgCtx.mvFieldNeighbours[ (CandIdx1 << 1) + RefPicListCand1 ].refIdx );
+  
+  if( RefPicPoc0 != RefPicPoc1 )
+  {
+    // different reference picture
+    return true;
+  }
+  
+  // same reference picture, but mv difference is larger than 16 pel
+  int32_t threshold = 16 << 4;
+  Mv DiffMv = TriangleMrgCtx.mvFieldNeighbours[(CandIdx0 << 1) + RefPicListCand0].mv - TriangleMrgCtx.mvFieldNeighbours[(CandIdx1 << 1) + RefPicListCand1].mv;
+  
+  if( DiffMv.getAbsHor() > threshold || DiffMv.getAbsVer() > threshold  )
+  {
+    return true;
+  }
+
+  return false;
+}
+
+void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &TriangleMrgCtx, const uint8_t MergeIdx, const bool SplitDir, const uint8_t CandIdx0, const uint8_t CandIdx1 )
+{
+  pu.mergeIdx  = MergeIdx;
+  MotionBuf mb = pu.getMotionBuf();
+
+  MotionInfo BiMv;
+  BiMv.isInter  = true;
+  
+  if( TriangleMrgCtx.interDirNeighbours[CandIdx0] == 1 && TriangleMrgCtx.interDirNeighbours[CandIdx1] == 2 )
+  {
+    BiMv.interDir  = 3;
+    BiMv.mv[0]     = TriangleMrgCtx.mvFieldNeighbours[ CandIdx0 << 1     ].mv;
+    BiMv.mv[1]     = TriangleMrgCtx.mvFieldNeighbours[(CandIdx1 << 1) + 1].mv;
+    BiMv.refIdx[0] = TriangleMrgCtx.mvFieldNeighbours[ CandIdx0 << 1     ].refIdx;
+    BiMv.refIdx[1] = TriangleMrgCtx.mvFieldNeighbours[(CandIdx1 << 1) + 1].refIdx;
+  }
+  else if( TriangleMrgCtx.interDirNeighbours[CandIdx0] == 2 && TriangleMrgCtx.interDirNeighbours[CandIdx1] == 1 )
+  {
+    BiMv.interDir  = 3;
+    BiMv.mv[0]     = TriangleMrgCtx.mvFieldNeighbours[ CandIdx1 << 1     ].mv;
+    BiMv.mv[1]     = TriangleMrgCtx.mvFieldNeighbours[(CandIdx0 << 1) + 1].mv;
+    BiMv.refIdx[0] = TriangleMrgCtx.mvFieldNeighbours[ CandIdx1 << 1     ].refIdx;
+    BiMv.refIdx[1] = TriangleMrgCtx.mvFieldNeighbours[(CandIdx0 << 1) + 1].refIdx;
+  }
+  else if( TriangleMrgCtx.interDirNeighbours[CandIdx0] == 1 && TriangleMrgCtx.interDirNeighbours[CandIdx1] == 1 )
+  {
+    int32_t refIdx = mappingRefPic( pu, pu.cs->slice->getRefPOC( REF_PIC_LIST_0, TriangleMrgCtx.mvFieldNeighbours[CandIdx1 << 1].refIdx ), REF_PIC_LIST_1 );
+    if( refIdx != -1 )
+    {
+      BiMv.interDir  = 3;
+      BiMv.mv[0]     = TriangleMrgCtx.mvFieldNeighbours[CandIdx0 << 1].mv;
+      BiMv.mv[1]     = TriangleMrgCtx.mvFieldNeighbours[CandIdx1 << 1].mv;
+      BiMv.refIdx[0] = TriangleMrgCtx.mvFieldNeighbours[CandIdx0 << 1].refIdx;
+      BiMv.refIdx[1] = refIdx;
+    }
+    else
+    {
+      refIdx = mappingRefPic( pu, pu.cs->slice->getRefPOC( REF_PIC_LIST_0, TriangleMrgCtx.mvFieldNeighbours[CandIdx0 << 1].refIdx), REF_PIC_LIST_1 );
+      BiMv.interDir  = ( refIdx != -1 ) ? 3 : 1;
+      BiMv.mv[0]     = ( refIdx != -1 ) ? TriangleMrgCtx.mvFieldNeighbours[CandIdx1 << 1].mv : TriangleMrgCtx.mvFieldNeighbours[CandIdx0 << 1].mv;
+      BiMv.mv[1]     = ( refIdx != -1 ) ? TriangleMrgCtx.mvFieldNeighbours[CandIdx0 << 1].mv : Mv(0, 0);
+      BiMv.refIdx[0] = ( refIdx != -1 ) ? TriangleMrgCtx.mvFieldNeighbours[CandIdx1 << 1].refIdx : TriangleMrgCtx.mvFieldNeighbours[CandIdx0 << 1].refIdx;
+      BiMv.refIdx[1] = ( refIdx != -1 ) ? refIdx : -1;
+    }
+  }
+  else if( TriangleMrgCtx.interDirNeighbours[CandIdx0] == 2 && TriangleMrgCtx.interDirNeighbours[CandIdx1] == 2 )
+  {
+    int32_t refIdx = mappingRefPic( pu, pu.cs->slice->getRefPOC( REF_PIC_LIST_1, TriangleMrgCtx.mvFieldNeighbours[(CandIdx1 << 1) + 1].refIdx ), REF_PIC_LIST_0 );
+    if( refIdx != -1 )
+    {
+      BiMv.interDir  = 3;
+      BiMv.mv[0]     = TriangleMrgCtx.mvFieldNeighbours[(CandIdx1 << 1) + 1].mv;
+      BiMv.mv[1]     = TriangleMrgCtx.mvFieldNeighbours[(CandIdx0 << 1) + 1].mv;
+      BiMv.refIdx[0] = refIdx;
+      BiMv.refIdx[1] = TriangleMrgCtx.mvFieldNeighbours[(CandIdx0 << 1) + 1].refIdx;
+    }
+    else
+    {
+      refIdx = mappingRefPic( pu, pu.cs->slice->getRefPOC( REF_PIC_LIST_1, TriangleMrgCtx.mvFieldNeighbours[(CandIdx0 << 1) + 1].refIdx ), REF_PIC_LIST_0 );
+      BiMv.interDir  = ( refIdx != -1 ) ? 3 : 2;
+      BiMv.mv[0]     = ( refIdx != -1 ) ? TriangleMrgCtx.mvFieldNeighbours[(CandIdx0 << 1) + 1].mv : Mv(0, 0);
+      BiMv.mv[1]     = ( refIdx != -1 ) ? TriangleMrgCtx.mvFieldNeighbours[(CandIdx1 << 1) + 1].mv : TriangleMrgCtx.mvFieldNeighbours[(CandIdx0 << 1) + 1].mv;
+      BiMv.refIdx[0] = ( refIdx != -1 ) ? refIdx : -1; 
+      BiMv.refIdx[1] = ( refIdx != -1 ) ? TriangleMrgCtx.mvFieldNeighbours[(CandIdx1 << 1) + 1].refIdx : TriangleMrgCtx.mvFieldNeighbours[(CandIdx0 << 1) + 1].refIdx;
+    }
+  }
+
+  int32_t IdxW  = (int32_t)g_aucLog2[pu.lwidth() ] - MIN_CU_LOG2;
+  int32_t IdxH  = (int32_t)g_aucLog2[pu.lheight()] - MIN_CU_LOG2;
+  for( int32_t y = 0; y < mb.height; y++ )
+  {
+    for( int32_t x = 0; x < mb.width; x++ )
+    {
+      if( g_TriangleMvStorage[SplitDir][IdxH][IdxW][y][x] == 2 )
+      {
+        mb.at( x, y ).isInter   = true;
+        mb.at( x, y ).interDir  = BiMv.interDir;
+        mb.at( x, y ).refIdx[0] = BiMv.refIdx[0];
+        mb.at( x, y ).refIdx[1] = BiMv.refIdx[1];
+        mb.at( x, y ).mv    [0] = BiMv.mv    [0];
+        mb.at( x, y ).mv    [1] = BiMv.mv    [1];
+      }
+      else if( g_TriangleMvStorage[SplitDir][IdxH][IdxW][y][x] == 0 )
+      {
+        mb.at( x, y ).isInter   = true;
+        mb.at( x, y ).interDir  = TriangleMrgCtx.interDirNeighbours[CandIdx0];
+        mb.at( x, y ).refIdx[0] = TriangleMrgCtx.mvFieldNeighbours[ CandIdx0 << 1     ].refIdx;
+        mb.at( x, y ).refIdx[1] = TriangleMrgCtx.mvFieldNeighbours[(CandIdx0 << 1) + 1].refIdx;
+        mb.at( x, y ).mv    [0] = TriangleMrgCtx.mvFieldNeighbours[ CandIdx0 << 1     ].mv;
+        mb.at( x, y ).mv    [1] = TriangleMrgCtx.mvFieldNeighbours[(CandIdx0 << 1) + 1].mv;
+      }
+      else
+      {
+        mb.at( x, y ).isInter   = true;
+        mb.at( x, y ).interDir  = TriangleMrgCtx.interDirNeighbours[CandIdx1];
+        mb.at( x, y ).refIdx[0] = TriangleMrgCtx.mvFieldNeighbours[ CandIdx1 << 1     ].refIdx;
+        mb.at( x, y ).refIdx[1] = TriangleMrgCtx.mvFieldNeighbours[(CandIdx1 << 1) + 1].refIdx;
+        mb.at( x, y ).mv    [0] = TriangleMrgCtx.mvFieldNeighbours[ CandIdx1 << 1     ].mv;
+        mb.at( x, y ).mv    [1] = TriangleMrgCtx.mvFieldNeighbours[(CandIdx1 << 1) + 1].mv;
+      }
+    }
+  }
+}
+
+int32_t PU::mappingRefPic( const PredictionUnit &pu, int32_t refPicPoc, bool targetRefPicList )
+{
+  int32_t numRefIdx = pu.cs->slice->getNumRefIdx( (RefPicList)targetRefPicList );
+
+  for( int32_t i = 0; i < numRefIdx; i++ )
+  {
+    if( pu.cs->slice->getRefPOC( (RefPicList)targetRefPicList, i ) == refPicPoc )
+    {
+      return i;
+    }
+  }
+  return -1;
+}
+#endif
+
 void CU::resetMVDandMV2Int( CodingUnit& cu, InterPrediction *interPred )
 {
   for( auto &pu : CU::traversePUs( cu ) )

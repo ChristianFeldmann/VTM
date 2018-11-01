@@ -173,6 +173,13 @@ namespace PU
   int  getMHIntraMPMs                 (const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA, const bool isChromaMDMS = false, const unsigned startIdx = 0);
   int  getNarrowShape                 (const int width, const int height);
 #endif
+#if JVET_L0124_L0208_TRIANGLE
+  void getTriangleMergeCandidates     (const PredictionUnit &pu, MergeCtx& TriangleMrgCtx);
+  bool isUniqueTriangleCandidates     (const PredictionUnit &pu, MergeCtx& TriangleMrgCtx);
+  bool isTriangleEhancedWeight        (const PredictionUnit &pu, MergeCtx &TriangleMrgCtx, const uint8_t CandIdx0, const uint8_t CandIdx1);
+  void spanTriangleMotionInfo         (      PredictionUnit &pu, MergeCtx &TriangleMrgCtx, const uint8_t MergeIdx, const bool SplitDir, const uint8_t CandIdx0, const uint8_t CandIdx1);
+  int32_t mappingRefPic               (const PredictionUnit &pu, int32_t refPicPoc, bool targetRefPicList);
+#endif
 }
 
 // TU tools

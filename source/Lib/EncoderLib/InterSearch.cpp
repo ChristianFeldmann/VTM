@@ -4860,6 +4860,9 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 #else
     m_CABACEstimator->affine_flag( cu );
 #endif
+#if JVET_L0124_L0208_TRIANGLE
+    m_CABACEstimator->triangle_mode ( cu );
+#endif
 #if JVET_L0054_MMVD
     if (cu.mmvdSkip)
     {
@@ -4994,6 +4997,9 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
     m_CABACEstimator->subblock_merge_flag( cu );
 #else
     m_CABACEstimator->affine_flag   ( cu );
+#endif
+#if JVET_L0124_L0208_TRIANGLE
+    m_CABACEstimator->triangle_mode ( cu );
 #endif
 #if JVET_L0054_MMVD
     if (cu.mmvdSkip)

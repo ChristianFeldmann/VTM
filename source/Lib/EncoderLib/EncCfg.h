@@ -194,7 +194,9 @@ protected:
   int       m_FastInterEMT;
   bool      m_LargeCTU;
   int       m_SubPuMvpMode;
+#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   unsigned  m_SubPuMvpLog2Size;
+#endif 
   bool      m_Affine;
   bool      m_AffineType;
 #if !REMOVE_MV_ADAPT_PREC
@@ -632,8 +634,10 @@ public:
 
   void      setSubPuMvpMode(int n)          { m_SubPuMvpMode = n; }
   bool      getSubPuMvpMode()         const { return m_SubPuMvpMode; }
+#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   void      setSubPuMvpLog2Size(unsigned n) { m_SubPuMvpLog2Size = n; }
   unsigned  getSubPuMvpLog2Size()      const { return m_SubPuMvpLog2Size; }
+#endif 
 
   void      setAffine                       ( bool b )       { m_Affine = b; }
   bool      getAffine                       ()         const { return m_Affine; }

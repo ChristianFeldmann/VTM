@@ -3682,6 +3682,20 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   bool terminate = false;
   for (unsigned currRefListId = 0; currRefListId < (slice.getSliceType() == B_SLICE ? 2 : 1) && !terminate; currRefListId++)
   {
+#if JVET_L0198_ATMVP_SCAN_SIMP
+    if ( count )
+    {
+      RefPicList currRefPicList = RefPicList(slice.getCheckLDC() ? (slice.getColFromL0Flag() ? currRefListId : 1 - currRefListId) : currRefListId);
+        
+      if ((mrgCtx.interDirNeighbours[0] & (1 << currRefPicList)) && slice.getRefPic(currRefPicList, mrgCtx.mvFieldNeighbours[0 * 2 + currRefPicList].refIdx) == pColPic)
+      {
+        cTMv = mrgCtx.mvFieldNeighbours[0 * 2 + currRefPicList].mv;
+        terminate = true;
+        fetchRefPicList = currRefPicList;
+        break;
+      }
+    }
+#else
     for (int uiN = 0; uiN < count && !terminate; uiN++)
     {
       RefPicList currRefPicList = RefPicList(slice.getCheckLDC() ? (slice.getColFromL0Flag() ? currRefListId : 1 - currRefListId) : currRefListId);
@@ -3694,6 +3708,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
         break;
       }
     }
+#endif
   }
 
   ///////////////////////////////////////////////////////////////////////
@@ -3719,10 +3734,17 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   // compute the location of the current PU
   Position puPos = pu.lumaPos();
   Size puSize = pu.lumaSize();
+#if JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
+  int numPartLine = std::max(puSize.width >> ATMVP_SUB_BLOCK_SIZE, 1u);
+  int numPartCol = std::max(puSize.height >> ATMVP_SUB_BLOCK_SIZE, 1u);
+  int puHeight = numPartCol == 1 ? puSize.height : 1 << ATMVP_SUB_BLOCK_SIZE;
+  int puWidth = numPartLine == 1 ? puSize.width : 1 << ATMVP_SUB_BLOCK_SIZE;
+#else 
   int numPartLine = std::max(puSize.width >> slice.getSubPuMvpSubblkLog2Size(), 1u);
   int numPartCol = std::max(puSize.height >> slice.getSubPuMvpSubblkLog2Size(), 1u);
   int puHeight = numPartCol == 1 ? puSize.height : 1 << slice.getSubPuMvpSubblkLog2Size();
   int puWidth = numPartLine == 1 ? puSize.width : 1 << slice.getSubPuMvpSubblkLog2Size();
+#endif 
 
   Mv cColMv;
   // use coldir.

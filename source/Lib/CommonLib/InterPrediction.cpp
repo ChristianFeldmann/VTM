@@ -282,11 +282,18 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
 
   int numPartLine, numPartCol, puHeight, puWidth;
   {
+#if JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
+    numPartLine = std::max(puSize.width >> ATMVP_SUB_BLOCK_SIZE, 1u);
+    numPartCol = std::max(puSize.height >> ATMVP_SUB_BLOCK_SIZE, 1u);
+    puHeight = numPartCol == 1 ? puSize.height : 1 << ATMVP_SUB_BLOCK_SIZE;
+    puWidth = numPartLine == 1 ? puSize.width : 1 << ATMVP_SUB_BLOCK_SIZE;
+#else 
     const Slice& slice = *pu.cs->slice;
     numPartLine = std::max(puSize.width >> slice.getSubPuMvpSubblkLog2Size(), 1u);
     numPartCol  = std::max(puSize.height >> slice.getSubPuMvpSubblkLog2Size(), 1u);
     puHeight    = numPartCol == 1 ? puSize.height : 1 << slice.getSubPuMvpSubblkLog2Size();
     puWidth     = numPartLine == 1 ? puSize.width : 1 << slice.getSubPuMvpSubblkLog2Size();
+#endif 
   }
 
   PredictionUnit subPu;

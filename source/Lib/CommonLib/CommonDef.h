@@ -227,8 +227,11 @@ static const uint32_t  EMT_INTRA_MAX_CU =                              32; ///< 
 static const uint32_t  EMT_INTER_MAX_CU =                              32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  EMT_INTRA_MAX_CU_WITH_QTBT =                    32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  EMT_INTER_MAX_CU_WITH_QTBT =                    32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
-
+#if JVET_L0165_6MPM
+static const int NUM_MOST_PROBABLE_MODES = 6;
+#else
 static const int NUM_MOST_PROBABLE_MODES = 3;
+#endif
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
 static const int FAST_UDI_MAX_RDMODE_NUM =              NUM_LUMA_MODE; ///< maximum number of RD comparison in fast-UDI estimation loop

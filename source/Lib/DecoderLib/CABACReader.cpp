@@ -903,6 +903,40 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
 }
 #endif
 
+#if JVET_L0165_6MPM
+void CABACReader::xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol)
+{
+  int thresh;
+  if (maxSymbol > 256)
+  {
+    int threshVal = 1 << 8;
+    thresh = 8;
+    while (threshVal <= maxSymbol)
+    {
+      thresh++;
+      threshVal <<= 1;
+    }
+    thresh--;
+  }
+  else
+  {
+    thresh = g_tbMax[maxSymbol];
+  }
+
+  int val = 1 << thresh;
+  int b = maxSymbol - val;
+  symbol = m_BinDecoder.decodeBinsEP(thresh);
+  if (symbol >= val - b)
+  {
+    uint32_t altSymbol;
+    altSymbol = m_BinDecoder.decodeBinEP();
+    symbol <<= 1;
+    symbol += altSymbol;
+    symbol -= (val - b);
+  }
+}
+#endif
+
 void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
 {
   if( !cu.Y().valid() )
@@ -939,6 +973,20 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
         {
           ipred_idx += m_BinDecoder.decodeBinEP();
         }
+#if JVET_L0165_6MPM
+        if (ipred_idx > 1)
+        {
+          ipred_idx += m_BinDecoder.decodeBinEP();
+        }
+        if (ipred_idx > 2)
+        {
+          ipred_idx += m_BinDecoder.decodeBinEP();
+        }
+        if (ipred_idx > 3)
+        {
+          ipred_idx += m_BinDecoder.decodeBinEP();
+        }
+#endif
       }
       pu->intraDir[0] = mpm_pred[ipred_idx];
     }
@@ -947,7 +995,11 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
       unsigned ipred_mode = 0;
 
       {
+#if JVET_L0165_6MPM
+        xReadTruncBinCode(ipred_mode, NUM_LUMA_MODE - NUM_MOST_PROBABLE_MODES);
+#else
         ipred_mode = m_BinDecoder.decodeBinsEP(6);
+#endif
       }
       //postponed sorting of MPMs (only in remaining branch)
       std::sort( mpm_pred, mpm_pred + cu.cs->pcv->numMPMs );

@@ -2897,17 +2897,10 @@ void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr,
     if( alfSliceParam.enabledFlag[compIdx] )
     {
       uint8_t* ctbAlfFlag = cs.slice->getPic()->getAlfCtuEnableFlag( compIdx );
-      if( alfSliceParam.chromaCtbPresentFlag && compIdx )
-      {
-        CHECK( !ctbAlfFlag[ctuRsAddr], "ALF chroma CTB enable flag must be 1 with chromaCtbPresentFlag = 1" );
-      }
-      else
-      {
-        int ctx = 0;
-        ctx += leftCTUAddr > -1 ? ( ctbAlfFlag[leftCTUAddr] ? 1 : 0 ) : 0;
-        ctx += aboveCTUAddr > -1 ? ( ctbAlfFlag[aboveCTUAddr] ? 1 : 0 ) : 0;
-        m_BinEncoder.encodeBin( ctbAlfFlag[ctuRsAddr], Ctx::ctbAlfFlag( compIdx * 3 + ctx ) );
-      }
+      int ctx = 0;
+      ctx += leftCTUAddr > -1 ? ( ctbAlfFlag[leftCTUAddr] ? 1 : 0 ) : 0;
+      ctx += aboveCTUAddr > -1 ? ( ctbAlfFlag[aboveCTUAddr] ? 1 : 0 ) : 0;
+      m_BinEncoder.encodeBin( ctbAlfFlag[ctuRsAddr], Ctx::ctbAlfFlag( compIdx * 3 + ctx ) );
     }
   }
 }

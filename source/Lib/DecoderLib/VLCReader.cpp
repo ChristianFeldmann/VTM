@@ -2423,8 +2423,6 @@ void HLSyntaxReader::alf( AlfSliceParam& alfSliceParam )
 
   if( alfChromaIdc )
   {
-    READ_FLAG( code, "alf_chroma_ctb_present_flag" );
-    alfSliceParam.chromaCtbPresentFlag = code ? true : false;
     alfFilter( alfSliceParam, true );
   }
 }

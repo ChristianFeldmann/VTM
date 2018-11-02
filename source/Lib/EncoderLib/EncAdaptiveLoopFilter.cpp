@@ -274,10 +274,6 @@ double EncAdaptiveLoopFilter::deriveCtbAlfEnableFlags( CodingStructure& cs, cons
   distUnfilter = 0;
 
   setEnableFlag(m_alfSliceParamTemp, channel, true);
-  if( isChroma( channel ) )
-  {
-    m_alfSliceParamTemp.chromaCtbPresentFlag = false;
-  }
 
   for( int ctuIdx = 0; ctuIdx < m_numCTUsInPic; ctuIdx++ )
   {
@@ -357,17 +353,9 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
       // no CABAC signalling
       ctxBest = AlfCtx( ctxStart );
       setCtuEnableFlag( m_ctuEnableFlagTmp, channel, 0 );
-      if( isChroma( channel ) )
-      {
-        alfSliceParam.chromaCtbPresentFlag = false;
-      }
     }
 
     //2. all CTUs are on
-    if( isChroma( channel ) )
-    {
-      m_alfSliceParamTemp.chromaCtbPresentFlag = true;
-    }
     setEnableFlag( m_alfSliceParamTemp, channel, true );
     m_CABACEstimator->getCtx() = AlfCtx( ctxStart );
     setCtuEnableFlag( m_ctuEnableFlag, channel, 1 );
@@ -473,7 +461,6 @@ void EncAdaptiveLoopFilter::copyAlfSliceParam( AlfSliceParam& alfSliceParamDst, 
   {
     alfSliceParamDst.enabledFlag[COMPONENT_Cb] = alfSliceParamSrc.enabledFlag[COMPONENT_Cb];
     alfSliceParamDst.enabledFlag[COMPONENT_Cr] = alfSliceParamSrc.enabledFlag[COMPONENT_Cr];
-    alfSliceParamDst.chromaCtbPresentFlag      = alfSliceParamSrc.chromaCtbPresentFlag;
     memcpy( alfSliceParamDst.chromaCoeff, alfSliceParamSrc.chromaCoeff, sizeof( alfSliceParamDst.chromaCoeff ) );
   }
 }
@@ -510,21 +497,10 @@ double EncAdaptiveLoopFilter::getFilterCoeffAndCost( CodingStructure& cs, double
     uiSliceFlag = lengthTruncatedUnary(alfChromaIdc, 3);
   }
 
-  double rate = uiCoeffBits + uiSliceFlag;
-  if (isLuma(channel) || (!m_alfSliceParamTemp.chromaCtbPresentFlag))
-  {
-    if (isChroma(channel))
-    {
-      CHECK(m_alfSliceParamTemp.chromaCtbPresentFlag, "chromaCTB is on");
-    }
-    else
-    {
-      CHECK(!m_alfSliceParamTemp.enabledFlag[COMPONENT_Y], "Slice Y is off");
-    }
-    m_CABACEstimator->resetBits();
-    m_CABACEstimator->codeAlfCtuEnableFlags( cs, channel, &m_alfSliceParamTemp);
-    rate += FracBitsScale * (double)m_CABACEstimator->getEstFracBits();
-  }
+  double rate = uiCoeffBits + uiSliceFlag;  
+  m_CABACEstimator->resetBits();
+  m_CABACEstimator->codeAlfCtuEnableFlags( cs, channel, &m_alfSliceParamTemp);
+  rate += FracBitsScale * (double)m_CABACEstimator->getEstFracBits();
   return dist + m_lambda[channel] * rate;
 }
 

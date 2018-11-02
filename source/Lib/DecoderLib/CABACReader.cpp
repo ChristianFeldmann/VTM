@@ -179,15 +179,8 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
         ctx += leftCTUAddr > -1 ? ( ctbAlfFlag[leftCTUAddr] ? 1 : 0 ) : 0;
         ctx += aboveCTUAddr > -1 ? ( ctbAlfFlag[aboveCTUAddr] ? 1 : 0 ) : 0;
 
-        if( compIdx && alfSliceParam.chromaCtbPresentFlag )
-        {
-          ctbAlfFlag[ctuRsAddr] = 1;
-        }
-        else
-        {
-          RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__ALF);
-          ctbAlfFlag[ctuRsAddr] = m_BinDecoder.decodeBin( Ctx::ctbAlfFlag( compIdx * 3 + ctx ) );
-        }
+        RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__ALF);
+        ctbAlfFlag[ctuRsAddr] = m_BinDecoder.decodeBin( Ctx::ctbAlfFlag( compIdx * 3 + ctx ) );
       }
     }
   }

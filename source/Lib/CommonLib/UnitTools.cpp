@@ -4341,7 +4341,12 @@ bool TU::hasTransformSkipFlag(const CodingStructure& cs, const CompArea& area)
 
   if( cs.pcv->rectCUs )
   {
+#if JVET_L0111
+    SizeType transformSkipMaxSize = 1 << transformSkipLog2MaxSize;
+    return area.width <= transformSkipMaxSize && area.height <= transformSkipMaxSize;
+#else
     return ( area.width * area.height <= (1 << ( transformSkipLog2MaxSize << 1 )) );
+#endif
   }
   return ( area.width <= (1 << transformSkipLog2MaxSize) );
 }

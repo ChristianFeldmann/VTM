@@ -225,7 +225,9 @@ void EncApp::xInitLibCfg()
 #else
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode > 0 ? 3 : 0 );
 #endif
+#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   m_cEncLib.setSubPuMvpLog2Size                                  ( m_SubPuMvpLog2Size );
+#endif 
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );
 #if !REMOVE_MV_ADAPT_PREC

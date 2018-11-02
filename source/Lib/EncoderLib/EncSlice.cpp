@@ -1191,6 +1191,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #endif
   m_pcCuEncoder->getModeCtrl()->setFastDeltaQp(bFastDeltaQP);
 
+#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   if (pcSlice->getSPS()->getSpsNext().getUseSubPuMvp())
   {
     if (!pcSlice->isIRAP() )
@@ -1201,6 +1202,9 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
         m_pcCuEncoder->setClearSubMergeStatic(false);
       }
 
+#if JVET_L0198_ATMVP_8x8SUB_BLOCK
+      pcSlice->setSubPuMvpSubblkLog2Size(ATMVP_SUB_BLOCK_SIZE);
+#else
       unsigned int layer = pcSlice->getDepth();
       unsigned int subMergeBlkSize = m_pcCuEncoder->getSubMergeBlkSize(layer);
       unsigned int subMergeBlkNum = m_pcCuEncoder->getSubMergeBlkNum(layer);
@@ -1233,6 +1237,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
       {
         pcSlice->setSubPuMvpSliceSubblkSizeEnable(true);
       }
+#endif
     }
     else
     {
@@ -1248,6 +1253,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
       }
     }
   }
+#endif 
 
   //------------------------------------------------------------------------------
   //  Weighted Prediction parameters estimation.

@@ -124,7 +124,9 @@ private:
   unsigned int          m_subMergeBlkSize[10];
   unsigned int          m_subMergeBlkNum[10];
   unsigned int          m_prevPOC;
+#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   bool                  m_clearSubMergeStatic;
+#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   EncLib*               m_pcEncLib;
 #endif
@@ -153,6 +155,7 @@ public:
 
   EncModeCtrl* getModeCtrl  () { return m_modeCtrl; }
 
+#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   void clearSubMergeStatics()
   {
     ::memset(m_subMergeBlkSize, 0, sizeof(m_subMergeBlkSize));
@@ -172,6 +175,7 @@ public:
   unsigned int getPrevPOC() { return m_prevPOC; }
   void setClearSubMergeStatic(bool b) { m_clearSubMergeStatic = b; }
   bool getClearSubMergeStatic() { return m_clearSubMergeStatic; }
+#endif 
 
   ~EncCu();
 

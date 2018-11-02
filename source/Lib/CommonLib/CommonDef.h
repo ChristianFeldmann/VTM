@@ -418,6 +418,9 @@ static const int MAX_LADF_INTERVALS       =                         5; /// max n
 static const int NTAPS_BILINEAR           =                         2; ///< Number of taps for bilinear filter
 #endif
 
+#if JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
+static const int ATMVP_SUB_BLOCK_SIZE =                             3; ///< sub-block size for ATMVP
+#endif
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================

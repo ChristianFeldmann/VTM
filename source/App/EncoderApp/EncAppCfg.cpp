@@ -870,7 +870,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
 #endif
 #if JVET_L0124_L0208_TRIANGLE
-  ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)  [default: on]")
+  ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
 #endif
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
 

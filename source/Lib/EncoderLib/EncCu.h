@@ -121,7 +121,7 @@ private:
   PelStorage            m_acMergeBuffer[MRG_MAX_NUM_CANDS];
 #endif
 #if JVET_L0124_L0208_TRIANGLE
-  PelStorage            m_acTriangleWeightBuffer[TRIANGLE_MAX_NUM_CANDS]; // to store weighted prediction pixles
+  PelStorage            m_acTriangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS]; // to store weighted prediction pixles
   double                m_mergeBestSATDCost;
 #endif
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];

@@ -92,7 +92,7 @@ protected:
 
   int                  m_iRefListIdx;
 #if JVET_L0124_L0208_TRIANGLE
-  PelStorage           m_tmpTriangleBuf;
+  PelStorage           m_triangleBuf;
 #endif
 #if JVET_L0265_AFF_MINIMUM4X4
   Mv*                  m_storedMv;
@@ -130,6 +130,10 @@ protected:
 #endif
   void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng );
 
+#if JVET_L0124_L0208_TRIANGLE
+  void xWeightedTriangleBlk     ( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, const bool weights, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
+#endif
+
   static bool xCheckIdenticalMotion( const PredictionUnit& pu );
 
   void xSubPuMC(PredictionUnit& pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X);
@@ -153,8 +157,8 @@ public:
   );
 
 #if JVET_L0124_L0208_TRIANGLE
-  void    motionCompensation4Triangle( CodingUnit &cu, MergeCtx &TriangleMrgCtx, const bool SplitDir, const uint8_t CandIdx0, const uint8_t CandIdx1 );
-  void    TriangleWeighting          ( PredictionUnit &pu, bool ehanced, const bool SplitDir, int32_t channel, PelUnitBuf& PredDst, PelUnitBuf& PredSrc0, PelUnitBuf& PredSrc1 );
+  void    motionCompensation4Triangle( CodingUnit &cu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 );
+  void    weightedTriangleBlk        ( PredictionUnit &pu, bool weights, const bool splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
 #endif
 
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE

@@ -200,7 +200,7 @@ void EncCu::create( EncCfg* encCfg )
 #if JVET_L0124_L0208_TRIANGLE
   for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
   {
-    m_acTriangleWeightBuffer[ui].create( chromaFormat, Area( 0, 0, uiMaxWidth, uiMaxHeight ) );
+    m_acTriangleWeightedBuffer[ui].create( chromaFormat, Area( 0, 0, uiMaxWidth, uiMaxHeight ) );
   }
 #endif
 
@@ -310,7 +310,7 @@ void EncCu::destroy()
 #if JVET_L0124_L0208_TRIANGLE
   for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
   {
-    m_acTriangleWeightBuffer[ui].destroy();
+    m_acTriangleWeightedBuffer[ui].destroy();
   }
 #endif
 }
@@ -2378,19 +2378,19 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
   
-  bool TrianglecandHasNoResidual[TRIANGLE_MAX_NUM_CANDS];
-  for( int MergeCand = 0; MergeCand < TRIANGLE_MAX_NUM_CANDS; MergeCand++ )
+  bool trianglecandHasNoResidual[TRIANGLE_MAX_NUM_CANDS];
+  for( int mergeCand = 0; mergeCand < TRIANGLE_MAX_NUM_CANDS; mergeCand++ )
   {
-    TrianglecandHasNoResidual[MergeCand] = false;
+    trianglecandHasNoResidual[mergeCand] = false;
   }
 
   bool                                            bestIsSkip             = m_pcEncCfg->getUseFastDecisionForMerge() ? bestCS->getCU( partitioner.chType )->rootCbf == 0 : false;
-  uint8_t                                         NumTriangleCandidate   = TRIANGLE_MAX_NUM_CANDS;
-  uint8_t                                         TriangleNumMrgSATDCand = TRIANGLE_MAX_NUM_SATD_CANDS;
-  PelUnitBuf                                      acTriangleBuffer[TRIANGLE_MAX_NUM_UNI_CANDS];
-  PelUnitBuf                                      acTriangleWeightBuffer[TRIANGLE_MAX_NUM_CANDS];
-  static_vector<uint8_t, TRIANGLE_MAX_NUM_CANDS> TriangleRdModeList;
-  static_vector<double,  TRIANGLE_MAX_NUM_CANDS> TrianglecandCostList;
+  uint8_t                                         numTriangleCandidate   = TRIANGLE_MAX_NUM_CANDS;
+  uint8_t                                         triangleNumMrgSATDCand = TRIANGLE_MAX_NUM_SATD_CANDS;
+  PelUnitBuf                                      triangleBuffer[TRIANGLE_MAX_NUM_UNI_CANDS];
+  PelUnitBuf                                      triangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS];
+  static_vector<uint8_t, TRIANGLE_MAX_NUM_CANDS> triangleRdModeList;
+  static_vector<double,  TRIANGLE_MAX_NUM_CANDS> tianglecandCostList;
 
   if( auto blkCache = dynamic_cast< CacheBlkInfoCtrl* >( m_modeCtrl ) )
   {
@@ -2398,14 +2398,14 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   }
 
   DistParam distParam;
-  const bool UseHadamard = !encTestMode.lossless;
-  m_pcRdCost->setDistParam( distParam, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y(), sps.getBitDepth( CHANNEL_TYPE_LUMA ), COMPONENT_Y, UseHadamard );
+  const bool useHadamard = !encTestMode.lossless;
+  m_pcRdCost->setDistParam( distParam, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y(), sps.getBitDepth( CHANNEL_TYPE_LUMA ), COMPONENT_Y, useHadamard );
 
   const UnitArea localUnitArea( tempCS->area.chromaFormat, Area( 0, 0, tempCS->area.Y().width, tempCS->area.Y().height) );
 
   const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda(encTestMode.lossless);
 
-  MergeCtx TriangleMrgCtx;
+  MergeCtx triangleMrgCtx;
   {
     CodingUnit cu( tempCS->area );
     cu.cs       = tempCS;
@@ -2425,24 +2425,24 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     pu.cs = tempCS;
 
 
-    PU::getTriangleMergeCandidates( pu, TriangleMrgCtx );
-    for( uint8_t MergeCand = 0; MergeCand < TRIANGLE_MAX_NUM_UNI_CANDS; MergeCand++ )
+    PU::getTriangleMergeCandidates( pu, triangleMrgCtx );
+    for( uint8_t mergeCand = 0; mergeCand < TRIANGLE_MAX_NUM_UNI_CANDS; mergeCand++ )
     {
-      acTriangleBuffer[MergeCand] = m_acMergeBuffer[MergeCand].getBuf(localUnitArea);
-      TriangleMrgCtx.setMergeInfo( pu, MergeCand );
-      PU::spanMotionInfo( pu, TriangleMrgCtx );
+      triangleBuffer[mergeCand] = m_acMergeBuffer[mergeCand].getBuf(localUnitArea);
+      triangleMrgCtx.setMergeInfo( pu, mergeCand );
+      PU::spanMotionInfo( pu, triangleMrgCtx );
       
-      m_pcInterSearch->motionCompensation( pu, acTriangleBuffer[MergeCand] );
+      m_pcInterSearch->motionCompensation( pu, triangleBuffer[mergeCand] );
     }
   }
 
-  bool TempBufSet = bestIsSkip ? false : true;
-  TriangleNumMrgSATDCand = bestIsSkip ? TRIANGLE_MAX_NUM_CANDS : TRIANGLE_MAX_NUM_SATD_CANDS;
+  bool tempBufSet = bestIsSkip ? false : true;
+  triangleNumMrgSATDCand = bestIsSkip ? TRIANGLE_MAX_NUM_CANDS : TRIANGLE_MAX_NUM_SATD_CANDS;
   if( bestIsSkip )
   {
     for( uint8_t i = 0; i < TRIANGLE_MAX_NUM_CANDS; i++ )
     {
-      TriangleRdModeList.push_back(i);
+      triangleRdModeList.push_back(i);
     }
   }
   else
@@ -2467,63 +2467,62 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
     PredictionUnit &pu  = tempCS->addPU( cu, partitioner.chType );
       
-    int32_t Ratio = abs(g_aucLog2[cu.lwidth()] - g_aucLog2[cu.lheight()]);
-    if( Ratio >= 2 )
+    if( abs(g_aucLog2[cu.lwidth()] - g_aucLog2[cu.lheight()]) >= 2 )
     {
-      NumTriangleCandidate = 30;
+      numTriangleCandidate = 30;
     }
     else
     {
-      NumTriangleCandidate = TRIANGLE_MAX_NUM_CANDS;
+      numTriangleCandidate = TRIANGLE_MAX_NUM_CANDS;
     }
 
-    for( uint8_t MergeCand = 0; MergeCand < NumTriangleCandidate; MergeCand++ )
+    for( uint8_t mergeCand = 0; mergeCand < numTriangleCandidate; mergeCand++ )
     {
-      bool    SplitDir = g_TriangleCombination[MergeCand][0];
-      uint8_t CandIdx0 = g_TriangleCombination[MergeCand][1];
-      uint8_t CandIdx1 = g_TriangleCombination[MergeCand][2];
+      bool    splitDir = g_triangleCombination[mergeCand][0];
+      uint8_t candIdx0 = g_triangleCombination[mergeCand][1];
+      uint8_t candIdx1 = g_triangleCombination[mergeCand][2];
 
-      pu.mergeIdx  = MergeCand;
+      pu.mergeIdx  = mergeCand;
       pu.mergeFlag = true;
-      acTriangleWeightBuffer[MergeCand] = m_acTriangleWeightBuffer[MergeCand].getBuf( localUnitArea );
-      acTriangleBuffer[CandIdx0] = m_acMergeBuffer[CandIdx0].getBuf( localUnitArea );
-      acTriangleBuffer[CandIdx1] = m_acMergeBuffer[CandIdx1].getBuf( localUnitArea );
+      triangleWeightedBuffer[mergeCand] = m_acTriangleWeightedBuffer[mergeCand].getBuf( localUnitArea );
+      triangleBuffer[candIdx0] = m_acMergeBuffer[candIdx0].getBuf( localUnitArea );
+      triangleBuffer[candIdx1] = m_acMergeBuffer[candIdx1].getBuf( localUnitArea );
 
-      m_pcInterSearch->TriangleWeighting( pu, PU::isTriangleEhancedWeight(pu, TriangleMrgCtx, CandIdx0, CandIdx1), SplitDir, CHANNEL_TYPE_LUMA, acTriangleWeightBuffer[MergeCand], acTriangleBuffer[CandIdx0], acTriangleBuffer[CandIdx1] );
+      m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, CHANNEL_TYPE_LUMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
       
-      distParam.cur = acTriangleWeightBuffer[MergeCand].Y();
+      distParam.cur = triangleWeightedBuffer[mergeCand].Y();
 
       Distortion uiSad = distParam.distFunc( distParam );
 
-      uint32_t uiBitsCand = g_TriangleIdxBins[MergeCand];
+      uint32_t uiBitsCand = g_triangleIdxBins[mergeCand];
 
       double cost = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
 
-      updateCandList( MergeCand, cost, TriangleRdModeList, TrianglecandCostList, TriangleNumMrgSATDCand );
+      updateCandList( mergeCand, cost, triangleRdModeList, tianglecandCostList, triangleNumMrgSATDCand );
     }
         
     // limit number of candidates using SATD-costs
-    for( uint8_t i = 0; i < TriangleNumMrgSATDCand; i++ )
+    for( uint8_t i = 0; i < triangleNumMrgSATDCand; i++ )
     {
-      if( TrianglecandCostList[i] > MRG_FAST_RATIO * TrianglecandCostList[0] || TrianglecandCostList[i] > getMergeBestSATDCost() )
+      if( tianglecandCostList[i] > MRG_FAST_RATIO * tianglecandCostList[0] || tianglecandCostList[i] > getMergeBestSATDCost() )
       {
-        TriangleNumMrgSATDCand = i;
+        triangleNumMrgSATDCand = i;
         break;
       }
     }
 
     // perform chroma weighting process
-    for( uint8_t i = 0; i < TriangleNumMrgSATDCand; i++ )
+    for( uint8_t i = 0; i < triangleNumMrgSATDCand; i++ )
     {
-      uint8_t  MergeCand = TriangleRdModeList[i];
-      bool     SplitDir  = g_TriangleCombination[MergeCand][0];
-      uint8_t  CandIdx0  = g_TriangleCombination[MergeCand][1];
-      uint8_t  CandIdx1  = g_TriangleCombination[MergeCand][2];
+      uint8_t  mergeCand = triangleRdModeList[i];
+      bool     splitDir  = g_triangleCombination[mergeCand][0];
+      uint8_t  candIdx0  = g_triangleCombination[mergeCand][1];
+      uint8_t  candIdx1  = g_triangleCombination[mergeCand][2];
         
-      pu.mergeIdx  = MergeCand;
+      pu.mergeIdx  = mergeCand;
       pu.mergeFlag = true;
                 
-      m_pcInterSearch->TriangleWeighting( pu, PU::isTriangleEhancedWeight(pu, TriangleMrgCtx, CandIdx0, CandIdx1), SplitDir, CHANNEL_TYPE_CHROMA, acTriangleWeightBuffer[MergeCand], acTriangleBuffer[CandIdx0], acTriangleBuffer[CandIdx1] );
+      m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, CHANNEL_TYPE_CHROMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
     }
 
     tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
@@ -2531,21 +2530,21 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
   {
     const uint8_t iteration = encTestMode.lossless ? 1 : 2;
-    for( uint8_t NoResidualPass = 0; NoResidualPass < iteration; NoResidualPass++ )
+    for( uint8_t noResidualPass = 0; noResidualPass < iteration; noResidualPass++ )
     {
-      for( uint8_t MrgHADIdx = 0; MrgHADIdx < TriangleNumMrgSATDCand; MrgHADIdx++ )
+      for( uint8_t mrgHADIdx = 0; mrgHADIdx < triangleNumMrgSATDCand; mrgHADIdx++ )
       {
-        uint8_t MergeCand = TriangleRdModeList[MrgHADIdx];
+        uint8_t mergeCand = triangleRdModeList[mrgHADIdx];
 
-        if ( ( (NoResidualPass != 0) && TrianglecandHasNoResidual[MergeCand] )
-          || ( (NoResidualPass == 0) && bestIsSkip ) )
+        if ( ( (noResidualPass != 0) && trianglecandHasNoResidual[mergeCand] )
+          || ( (noResidualPass == 0) && bestIsSkip ) )
         {
           continue;
         }
 
-        bool    SplitDir = g_TriangleCombination[MergeCand][0];
-        uint8_t CandIdx0 = g_TriangleCombination[MergeCand][1];
-        uint8_t CandIdx1 = g_TriangleCombination[MergeCand][2];
+        bool    splitDir = g_triangleCombination[mergeCand][0];
+        uint8_t candIdx0 = g_triangleCombination[mergeCand][1];
+        uint8_t candIdx1 = g_triangleCombination[mergeCand][2];
 
         CodingUnit &cu = tempCS->addCU(tempCS->area, partitioner.chType);
 
@@ -2566,31 +2565,31 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 #endif
         PredictionUnit &pu = tempCS->addPU(cu, partitioner.chType);
 
-        pu.mergeIdx = MergeCand;
+        pu.mergeIdx = mergeCand;
         pu.mergeFlag = true;
 
-        PU::spanTriangleMotionInfo(pu, TriangleMrgCtx, MergeCand, SplitDir, CandIdx0, CandIdx1 );
+        PU::spanTriangleMotionInfo(pu, triangleMrgCtx, mergeCand, splitDir, candIdx0, candIdx1 );
 
-        if( TempBufSet )
+        if( tempBufSet )
         {
-          tempCS->getPredBuf().copyFrom( acTriangleWeightBuffer[MergeCand] );
+          tempCS->getPredBuf().copyFrom( triangleWeightedBuffer[mergeCand] );
         }
         else
         {
-          acTriangleBuffer[CandIdx0] = m_acMergeBuffer[CandIdx0].getBuf( localUnitArea );
-          acTriangleBuffer[CandIdx1] = m_acMergeBuffer[CandIdx1].getBuf( localUnitArea );
+          triangleBuffer[candIdx0] = m_acMergeBuffer[candIdx0].getBuf( localUnitArea );
+          triangleBuffer[candIdx1] = m_acMergeBuffer[candIdx1].getBuf( localUnitArea );
           PelUnitBuf predBuf         = tempCS->getPredBuf();
-          m_pcInterSearch->TriangleWeighting( pu, PU::isTriangleEhancedWeight(pu, TriangleMrgCtx, CandIdx0, CandIdx1), SplitDir, MAX_NUM_CHANNEL_TYPE, predBuf, acTriangleBuffer[CandIdx0], acTriangleBuffer[CandIdx1] );
+          m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
         }
         
-        xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, NoResidualPass, NULL, true, ( (NoResidualPass == 0 ) ? &TrianglecandHasNoResidual[MergeCand] : NULL ) );
+        xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, noResidualPass, NULL, true, ( (noResidualPass == 0 ) ? &trianglecandHasNoResidual[mergeCand] : NULL ) );
 
         if (m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip)
         {
           bestIsSkip = bestCS->getCU(partitioner.chType)->rootCbf == 0;
         }
         tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
-      }// end loop MrgHADIdx
+      }// end loop mrgHADIdx
     }   
   }
 }

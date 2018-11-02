@@ -318,11 +318,11 @@ void DecCu::xReconInter(CodingUnit &cu)
   if( cu.triangle )
   {
     const uint8_t mergeIdx = cu.firstPU->mergeIdx;
-    const bool    SplitDir = g_TriangleCombination[mergeIdx][0];
-    const uint8_t CandIdx0 = g_TriangleCombination[mergeIdx][1];
-    const uint8_t CandIdx1 = g_TriangleCombination[mergeIdx][2];
-    m_pcInterPred->motionCompensation4Triangle( cu, m_TriangleMrgCtx, SplitDir, CandIdx0, CandIdx1 );
-    PU::spanTriangleMotionInfo( *cu.firstPU, m_TriangleMrgCtx, mergeIdx, SplitDir, CandIdx0, CandIdx1 );
+    const bool    splitDir = g_triangleCombination[mergeIdx][0];
+    const uint8_t candIdx0 = g_triangleCombination[mergeIdx][1];
+    const uint8_t candIdx1 = g_triangleCombination[mergeIdx][2];
+    m_pcInterPred->motionCompensation4Triangle( cu, m_triangleMrgCtx, splitDir, candIdx0, candIdx1 );
+    PU::spanTriangleMotionInfo( *cu.firstPU, m_triangleMrgCtx, mergeIdx, splitDir, candIdx0, candIdx1 );
   }
   else
   {
@@ -505,7 +505,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #if JVET_L0124_L0208_TRIANGLE
         if( pu.cu->triangle )
         {
-          PU::getTriangleMergeCandidates( pu, m_TriangleMrgCtx );
+          PU::getTriangleMergeCandidates( pu, m_triangleMrgCtx );
         }
         else
         {

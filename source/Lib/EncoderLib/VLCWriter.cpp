@@ -1691,7 +1691,6 @@ void HLSWriter::alf( const AlfSliceParam& alfSliceParam )
 
   if( alfChromaIdc )
   {
-    WRITE_FLAG( alfSliceParam.chromaCtbPresentFlag, "alf_chroma_ctb_present_flag" );
     alfFilter( alfSliceParam, true );
   }
 }

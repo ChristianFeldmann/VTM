@@ -1494,7 +1494,6 @@ struct AlfSliceParam
 #if !JVET_L0664_ALF_REMOVE_LUMA_5x5
   AlfFilterType                lumaFilterType;                                          // filter_type_flag
 #endif
-  bool                         chromaCtbPresentFlag;                                    // alf_chroma_ctb_present_flag
   short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
   short                        chromaCoeff[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_coeff_chroma[i]
   short                        filterCoeffDeltaIdx[MAX_NUM_ALF_CLASSES];                // filter_coeff_delta[i]
@@ -1517,7 +1516,6 @@ struct AlfSliceParam
     numLumaFilters = 1;
     coeffDeltaFlag = false;
     coeffDeltaPredModeFlag = false;
-    chromaCtbPresentFlag = false;
   }
 
   const AlfSliceParam& operator = ( const AlfSliceParam& src )
@@ -1534,7 +1532,6 @@ struct AlfSliceParam
     coeffDeltaFlag = src.coeffDeltaFlag;
     coeffDeltaPredModeFlag = src.coeffDeltaPredModeFlag;
     filterShapes = src.filterShapes;
-    chromaCtbPresentFlag = src.chromaCtbPresentFlag;
     return *this;
   }
 };

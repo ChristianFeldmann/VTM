@@ -300,6 +300,9 @@ struct CodingUnit : public UnitArea
 #endif
   bool           affine;
   int            affineType;
+#if JVET_L0124_L0208_TRIANGLE
+  bool           triangle;
+#endif
   bool           transQuantBypass;
   bool           ipcm;
   uint8_t          imv;

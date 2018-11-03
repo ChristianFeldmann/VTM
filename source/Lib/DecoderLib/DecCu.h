@@ -92,6 +92,10 @@ private:
 
 
   MotionInfo        m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
+
+#if JVET_L0124_L0208_TRIANGLE
+  MergeCtx          m_triangleMrgCtx;
+#endif
 };
 
 //! \}

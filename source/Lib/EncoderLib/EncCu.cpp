@@ -197,6 +197,12 @@ void EncCu::create( EncCfg* encCfg )
     m_acRealMergeBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
   }
 #endif
+#if JVET_L0124_L0208_TRIANGLE
+  for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
+  {
+    m_acTriangleWeightedBuffer[ui].create( chromaFormat, Area( 0, 0, uiMaxWidth, uiMaxHeight ) );
+  }
+#endif
 
   m_CtxBuffer.resize( maxDepth );
   m_CurrCtx = 0;
@@ -299,6 +305,12 @@ void EncCu::destroy()
   for (unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++)
   {
     m_acRealMergeBuffer[ui].destroy();
+  }
+#endif
+#if JVET_L0124_L0208_TRIANGLE
+  for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
+  {
+    m_acTriangleWeightedBuffer[ui].destroy();
   }
 #endif
 }
@@ -741,6 +753,12 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
       cu->mmvdSkip = cu->skip == false ? false : cu->mmvdSkip;
 #endif
     }
+#if JVET_L0124_L0208_TRIANGLE
+    else if( currTestMode.type == ETM_MERGE_TRIANGLE )
+    {
+      xCheckRDCostMergeTriangle2Nx2N( tempCS, bestCS, partitioner, currTestMode );
+    }
+#endif
     else if( currTestMode.type == ETM_INTRA )
     {
       xCheckRDCostIntra( tempCS, bestCS, partitioner, currTestMode );
@@ -1611,6 +1629,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     mergeCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
   }
 
+#if JVET_L0124_L0208_TRIANGLE
+  setMergeBestSATDCost( MAX_DOUBLE );
+#endif
+
   {
     // first get merge candidates
     CodingUnit cu( tempCS->area );
@@ -1781,6 +1803,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       cu.skip             = false;
 #if JVET_L0054_MMVD
       cu.mmvdSkip = false;
+#endif
+#if JVET_L0124_L0208_TRIANGLE
+      cu.triangle         = false;
 #endif
       cu.partSize         = SIZE_2Nx2N;
     //cu.affine
@@ -2075,6 +2100,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
       }
 
+#if JVET_L0124_L0208_TRIANGLE
+      setMergeBestSATDCost( candCostList[0] );
+#endif
+
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       if (isIntrainterEnabled)
       {
@@ -2172,6 +2201,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       cu.skip             = false;
 #if JVET_L0054_MMVD
       cu.mmvdSkip = false;
+#endif
+#if JVET_L0124_L0208_TRIANGLE
+      cu.triangle         = false;
 #endif
       cu.partSize         = SIZE_2Nx2N;
     //cu.affine
@@ -2337,6 +2369,233 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     }
   }
 }
+
+#if JVET_L0124_L0208_TRIANGLE
+void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
+{
+  const Slice &slice = *tempCS->slice;
+  const SPS &sps = *tempCS->sps;
+
+  CHECK( slice.getSliceType() != B_SLICE, "Triangle mode is only applied to B-slices" );
+  
+  tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+  
+  bool trianglecandHasNoResidual[TRIANGLE_MAX_NUM_CANDS];
+  for( int mergeCand = 0; mergeCand < TRIANGLE_MAX_NUM_CANDS; mergeCand++ )
+  {
+    trianglecandHasNoResidual[mergeCand] = false;
+  }
+
+  bool                                            bestIsSkip             = m_pcEncCfg->getUseFastDecisionForMerge() ? bestCS->getCU( partitioner.chType )->rootCbf == 0 : false;
+  uint8_t                                         numTriangleCandidate   = TRIANGLE_MAX_NUM_CANDS;
+  uint8_t                                         triangleNumMrgSATDCand = TRIANGLE_MAX_NUM_SATD_CANDS;
+  PelUnitBuf                                      triangleBuffer[TRIANGLE_MAX_NUM_UNI_CANDS];
+  PelUnitBuf                                      triangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS];
+  static_vector<uint8_t, TRIANGLE_MAX_NUM_CANDS> triangleRdModeList;
+  static_vector<double,  TRIANGLE_MAX_NUM_CANDS> tianglecandCostList;
+
+  if( auto blkCache = dynamic_cast< CacheBlkInfoCtrl* >( m_modeCtrl ) )
+  {
+    bestIsSkip |= blkCache->isSkip( tempCS->area );
+  }
+
+  DistParam distParam;
+  const bool useHadamard = !encTestMode.lossless;
+  m_pcRdCost->setDistParam( distParam, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y(), sps.getBitDepth( CHANNEL_TYPE_LUMA ), COMPONENT_Y, useHadamard );
+
+  const UnitArea localUnitArea( tempCS->area.chromaFormat, Area( 0, 0, tempCS->area.Y().width, tempCS->area.Y().height) );
+
+  const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda(encTestMode.lossless);
+
+  MergeCtx triangleMrgCtx;
+  {
+    CodingUnit cu( tempCS->area );
+    cu.cs       = tempCS;
+    cu.partSize = SIZE_2Nx2N;
+    cu.predMode = MODE_INTER;
+    cu.slice    = tempCS->slice;
+    cu.triangle = true;
+#if JVET_L0054_MMVD
+    cu.mmvdSkip = false;
+#endif    
+#if JVET_L0646_GBI
+    cu.GBiIdx   = GBI_DEFAULT;
+#endif
+
+    PredictionUnit pu( tempCS->area );
+    pu.cu = &cu;
+    pu.cs = tempCS;
+
+
+    PU::getTriangleMergeCandidates( pu, triangleMrgCtx );
+    for( uint8_t mergeCand = 0; mergeCand < TRIANGLE_MAX_NUM_UNI_CANDS; mergeCand++ )
+    {
+      triangleBuffer[mergeCand] = m_acMergeBuffer[mergeCand].getBuf(localUnitArea);
+      triangleMrgCtx.setMergeInfo( pu, mergeCand );
+      PU::spanMotionInfo( pu, triangleMrgCtx );
+      
+      m_pcInterSearch->motionCompensation( pu, triangleBuffer[mergeCand] );
+    }
+  }
+
+  bool tempBufSet = bestIsSkip ? false : true;
+  triangleNumMrgSATDCand = bestIsSkip ? TRIANGLE_MAX_NUM_CANDS : TRIANGLE_MAX_NUM_SATD_CANDS;
+  if( bestIsSkip )
+  {
+    for( uint8_t i = 0; i < TRIANGLE_MAX_NUM_CANDS; i++ )
+    {
+      triangleRdModeList.push_back(i);
+    }
+  }
+  else
+  {
+    CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
+      
+    partitioner.setCUData( cu );
+    cu.slice            = tempCS->slice;
+    cu.skip             = false;
+    cu.partSize         = SIZE_2Nx2N;
+    cu.predMode         = MODE_INTER;
+    cu.transQuantBypass = encTestMode.lossless;
+    cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
+    cu.qp               = encTestMode.qp;
+    cu.triangle         = true;
+#if JVET_L0054_MMVD
+    cu.mmvdSkip         = false;
+#endif
+#if JVET_L0646_GBI
+    cu.GBiIdx           = GBI_DEFAULT;
+#endif
+
+    PredictionUnit &pu  = tempCS->addPU( cu, partitioner.chType );
+      
+    if( abs(g_aucLog2[cu.lwidth()] - g_aucLog2[cu.lheight()]) >= 2 )
+    {
+      numTriangleCandidate = 30;
+    }
+    else
+    {
+      numTriangleCandidate = TRIANGLE_MAX_NUM_CANDS;
+    }
+
+    for( uint8_t mergeCand = 0; mergeCand < numTriangleCandidate; mergeCand++ )
+    {
+      bool    splitDir = g_triangleCombination[mergeCand][0];
+      uint8_t candIdx0 = g_triangleCombination[mergeCand][1];
+      uint8_t candIdx1 = g_triangleCombination[mergeCand][2];
+
+      pu.mergeIdx  = mergeCand;
+      pu.mergeFlag = true;
+      triangleWeightedBuffer[mergeCand] = m_acTriangleWeightedBuffer[mergeCand].getBuf( localUnitArea );
+      triangleBuffer[candIdx0] = m_acMergeBuffer[candIdx0].getBuf( localUnitArea );
+      triangleBuffer[candIdx1] = m_acMergeBuffer[candIdx1].getBuf( localUnitArea );
+
+      m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, CHANNEL_TYPE_LUMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+      
+      distParam.cur = triangleWeightedBuffer[mergeCand].Y();
+
+      Distortion uiSad = distParam.distFunc( distParam );
+
+      uint32_t uiBitsCand = g_triangleIdxBins[mergeCand];
+
+      double cost = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
+
+      updateCandList( mergeCand, cost, triangleRdModeList, tianglecandCostList, triangleNumMrgSATDCand );
+    }
+        
+    // limit number of candidates using SATD-costs
+    for( uint8_t i = 0; i < triangleNumMrgSATDCand; i++ )
+    {
+      if( tianglecandCostList[i] > MRG_FAST_RATIO * tianglecandCostList[0] || tianglecandCostList[i] > getMergeBestSATDCost() )
+      {
+        triangleNumMrgSATDCand = i;
+        break;
+      }
+    }
+
+    // perform chroma weighting process
+    for( uint8_t i = 0; i < triangleNumMrgSATDCand; i++ )
+    {
+      uint8_t  mergeCand = triangleRdModeList[i];
+      bool     splitDir  = g_triangleCombination[mergeCand][0];
+      uint8_t  candIdx0  = g_triangleCombination[mergeCand][1];
+      uint8_t  candIdx1  = g_triangleCombination[mergeCand][2];
+        
+      pu.mergeIdx  = mergeCand;
+      pu.mergeFlag = true;
+                
+      m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, CHANNEL_TYPE_CHROMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+    }
+
+    tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+  }
+
+  {
+    const uint8_t iteration = encTestMode.lossless ? 1 : 2;
+    for( uint8_t noResidualPass = 0; noResidualPass < iteration; noResidualPass++ )
+    {
+      for( uint8_t mrgHADIdx = 0; mrgHADIdx < triangleNumMrgSATDCand; mrgHADIdx++ )
+      {
+        uint8_t mergeCand = triangleRdModeList[mrgHADIdx];
+
+        if ( ( (noResidualPass != 0) && trianglecandHasNoResidual[mergeCand] )
+          || ( (noResidualPass == 0) && bestIsSkip ) )
+        {
+          continue;
+        }
+
+        bool    splitDir = g_triangleCombination[mergeCand][0];
+        uint8_t candIdx0 = g_triangleCombination[mergeCand][1];
+        uint8_t candIdx1 = g_triangleCombination[mergeCand][2];
+
+        CodingUnit &cu = tempCS->addCU(tempCS->area, partitioner.chType);
+
+        partitioner.setCUData(cu);
+        cu.slice = tempCS->slice;
+        cu.skip = false;
+        cu.partSize = SIZE_2Nx2N;
+        cu.predMode = MODE_INTER;
+        cu.transQuantBypass = encTestMode.lossless;
+        cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
+        cu.qp = encTestMode.qp;
+        cu.triangle = true;
+#if JVET_L0054_MMVD
+        cu.mmvdSkip = false;
+#endif
+#if JVET_L0646_GBI
+        cu.GBiIdx   = GBI_DEFAULT;
+#endif
+        PredictionUnit &pu = tempCS->addPU(cu, partitioner.chType);
+
+        pu.mergeIdx = mergeCand;
+        pu.mergeFlag = true;
+
+        PU::spanTriangleMotionInfo(pu, triangleMrgCtx, mergeCand, splitDir, candIdx0, candIdx1 );
+
+        if( tempBufSet )
+        {
+          tempCS->getPredBuf().copyFrom( triangleWeightedBuffer[mergeCand] );
+        }
+        else
+        {
+          triangleBuffer[candIdx0] = m_acMergeBuffer[candIdx0].getBuf( localUnitArea );
+          triangleBuffer[candIdx1] = m_acMergeBuffer[candIdx1].getBuf( localUnitArea );
+          PelUnitBuf predBuf         = tempCS->getPredBuf();
+          m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+        }
+        
+        xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, noResidualPass, NULL, true, ( (noResidualPass == 0 ) ? &trianglecandHasNoResidual[mergeCand] : NULL ) );
+
+        if (m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip)
+        {
+          bestIsSkip = bestCS->getCU(partitioner.chType)->rootCbf == 0;
+        }
+        tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
+      }// end loop mrgHADIdx
+    }   
+  }
+}
+#endif
 
 void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {

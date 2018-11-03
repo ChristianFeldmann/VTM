@@ -1657,6 +1657,9 @@ void Slice::updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu)
 {
   PredictionUnit *selectedPU = cu.firstPU;
   if (cu.affine) { return; }
+#if JVET_L0124_L0208_TRIANGLE
+  if (cu.triangle) { return; }
+#endif
 
   MotionInfo newMi = selectedPU->getMotionInfo(); 
   addMotionInfoToLUTs(lutMC, newMi);
@@ -1762,6 +1765,9 @@ SPSNext::SPSNext( SPS& sps )
   , m_MTTEnabled                ( false )
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   , m_MHIntra                   ( false )
+#endif
+#if JVET_L0124_L0208_TRIANGLE
+  , m_Triangle                  ( false )
 #endif
 #if ENABLE_WPP_PARALLELISM
   , m_NextDQP                   ( false )

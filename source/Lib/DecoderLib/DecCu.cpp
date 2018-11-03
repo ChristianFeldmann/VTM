@@ -314,12 +314,28 @@ void DecCu::xFillPCMBuffer(CodingUnit &cu)
 
 void DecCu::xReconInter(CodingUnit &cu)
 {
+#if JVET_L0124_L0208_TRIANGLE
+  if( cu.triangle )
+  {
+    const uint8_t mergeIdx = cu.firstPU->mergeIdx;
+    const bool    splitDir = g_triangleCombination[mergeIdx][0];
+    const uint8_t candIdx0 = g_triangleCombination[mergeIdx][1];
+    const uint8_t candIdx1 = g_triangleCombination[mergeIdx][2];
+    m_pcInterPred->motionCompensation4Triangle( cu, m_triangleMrgCtx, splitDir, candIdx0, candIdx1 );
+    PU::spanTriangleMotionInfo( *cu.firstPU, m_triangleMrgCtx, mergeIdx, splitDir, candIdx0, candIdx1 );
+  }
+  else
+  {
+#endif
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   m_pcIntraPred->geneIntrainterPred(cu);
 #endif
 
   // inter prediction
   m_pcInterPred->motionCompensation( cu );
+#if JVET_L0124_L0208_TRIANGLE
+  }
+#endif
 #if JVET_L0266_HMVP
   cu.slice->updateMotionLUTs(cu.slice->getMotionLUTs(), cu);
 #endif
@@ -486,6 +502,14 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       {
 #endif
       {
+#if JVET_L0124_L0208_TRIANGLE
+        if( pu.cu->triangle )
+        {
+          PU::getTriangleMergeCandidates( pu, m_triangleMrgCtx );
+        }
+        else
+        {
+#endif
         if( pu.cu->affine )
         {
 #if JVET_L0632_AFFINE_MERGE
@@ -593,6 +617,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 
           PU::spanMotionInfo( pu, mrgCtx );
         }
+#if JVET_L0124_L0208_TRIANGLE
+        }
+#endif
       }
 #if JVET_L0054_MMVD
       }

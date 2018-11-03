@@ -53,6 +53,7 @@
 #define JVET_L0410_TC_TAB                                 1 // Change TC table for QP 51-63
 
 #define JVET_L0136_L0085_LM_RESTRICTED_LINEBUFFER         1 // line buffer restriction in LM prediction
+#define JVET_L0124_L0208_TRIANGLE                         1 // triangular shape prediction unit
 
 #define JVET_L0059_MTS_SIMP                               1 // Simpification on MTS signaling
 #define JVET_L0100_MULTI_HYPOTHESIS_INTRA                 1 // Combine intra mode with an extra merge indexed prediction
@@ -950,6 +951,14 @@ enum MergeType
   NUM_MRG_TYPE                   // 5
 };
 
+#if JVET_L0124_L0208_TRIANGLE
+enum TriangleSplit
+{
+  TRIANGLE_DIR_135 = 0,
+  TRIANGLE_DIR_45,
+  TRIANGLE_DIR_NUM
+};
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out

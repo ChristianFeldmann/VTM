@@ -528,6 +528,30 @@ void initROM()
       //--------------------------------------------------------------------------------------------------
     }
   }
+
+#if JVET_L0124_L0208_TRIANGLE
+  for( int idxH = MAX_CU_DEPTH - MIN_CU_LOG2; idxH >= 0; --idxH )
+  {
+    for( int idxW = MAX_CU_DEPTH - MIN_CU_LOG2; idxW >= 0; --idxW )
+    {
+      int numW   = 1 << idxW;
+      int numH   = 1 << idxH;
+      int ratioW = std::max( 0, idxW - idxH );
+      int ratioH = std::max( 0, idxH - idxW );
+      int sum    = std::max( (numW >> ratioW), (numH >> ratioH) ) - 1;
+      for( int y = 0; y < numH; y++ )
+      {
+        int idxY = y >> ratioH;
+        for( int x = 0; x < numW; x++ )
+        {
+          int idxX = x >> ratioW;
+          g_triangleMvStorage[TRIANGLE_DIR_135][idxH][idxW][y][x] = (idxX == idxY) ? 2 : (idxX > idxY ? 0 : 1);
+          g_triangleMvStorage[TRIANGLE_DIR_45][idxH][idxW][y][x] = (idxX + idxY == sum) ? 2 : (idxX + idxY > sum ? 1 : 0);
+        }
+      }
+    }
+  }
+#endif
 }
 
 void destroyROM()
@@ -883,5 +907,65 @@ const uint8_t g_NonMPM[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
 
+#if JVET_L0124_L0208_TRIANGLE
+const Pel g_trianglePelWeightedLuma[TRIANGLE_DIR_NUM][2][7] =
+{ 
+  { // TRIANGLE_DIR_135
+    { 1, 2, 4, 6, 7, 0, 0 },
+    { 1, 2, 3, 4, 5, 6, 7 }
+  },
+  { // TRIANGLE_DIR_45
+    { 7, 6, 4, 2, 1, 0, 0 },
+    { 7, 6, 5, 4, 3, 2, 1 }
+  }
+};
+const Pel g_trianglePelWeightedChroma[2][TRIANGLE_DIR_NUM][2][7] =
+{
+  { // 444 format
+    { // TRIANGLE_DIR_135
+      { 1, 2, 4, 6, 7, 0, 0 },
+      { 1, 2, 3, 4, 5, 6, 7 }
+    },
+    { // TRIANGLE_DIR_45
+      { 7, 6, 4, 2, 1, 0, 0 },
+      { 7, 6, 5, 4, 3, 2, 1 }
+    }
+  },
+  { // 420 format
+    { // TRIANGLE_DIR_135
+      { 1, 4, 7, 0, 0, 0, 0 },
+      { 2, 4, 6, 0, 0, 0, 0 }
+    },
+    { // TRIANGLE_DIR_45
+      { 7, 4, 1, 0, 0, 0, 0 },
+      { 6, 4, 2, 0, 0, 0, 0 }
+    }
+  }
+};
 
+const uint8_t g_triangleWeightLengthLuma[2] = { 5, 7 };
+const uint8_t g_triangleWeightLengthChroma[2][2] = { { 5, 7 }, { 3, 3 } };
+
+      uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
+
+const uint8_t g_triangleCombination[TRIANGLE_MAX_NUM_CANDS][3] =
+{
+  { 0, 1, 0 }, { 1, 0, 1 }, { 1, 0, 2 }, { 0, 0, 1 }, { 0, 2, 0 }, 
+  { 1, 0, 3 }, { 1, 0, 4 }, { 1, 1, 0 }, { 0, 3, 0 }, { 0, 4, 0 }, 
+  { 0, 0, 2 }, { 0, 1, 2 }, { 1, 1, 2 }, { 0, 0, 4 }, { 0, 0, 3 }, 
+  { 0, 1, 3 }, { 0, 1, 4 }, { 1, 1, 4 }, { 1, 1, 3 }, { 1, 2, 1 }, 
+  { 1, 2, 0 }, { 0, 2, 1 }, { 0, 4, 3 }, { 1, 3, 0 }, { 1, 3, 2 }, 
+  { 1, 3, 4 }, { 1, 4, 0 }, { 1, 3, 1 }, { 1, 2, 3 }, { 1, 4, 1 }, 
+  { 0, 4, 1 }, { 0, 2, 3 }, { 1, 4, 2 }, { 0, 3, 2 }, { 1, 4, 3 }, 
+  { 0, 3, 1 }, { 0, 2, 4 }, { 1, 2, 4 }, { 0, 4, 2 }, { 0, 3, 4 }, 
+};
+
+const uint8_t g_triangleIdxBins[TRIANGLE_MAX_NUM_CANDS] =
+{
+   2,  2,  4,  4,  4,  4,  6,  6,  6,  6,
+   6,  6,  6,  6,  8,  8,  8,  8,  8,  8,
+   8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
+  10, 10, 10, 10, 10, 10, 10, 10, 10, 10
+};
+#endif
 //! \}

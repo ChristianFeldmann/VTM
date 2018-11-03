@@ -270,5 +270,15 @@ constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 
 
 //! \}
 
+#if JVET_L0124_L0208_TRIANGLE
+extern const Pel     g_trianglePelWeightedLuma[TRIANGLE_DIR_NUM][2][7];
+extern const Pel     g_trianglePelWeightedChroma[2][TRIANGLE_DIR_NUM][2][7];
+extern const uint8_t g_triangleWeightLengthLuma[2];
+extern const uint8_t g_triangleWeightLengthChroma[2][2];
+extern       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
+extern const uint8_t g_triangleCombination[TRIANGLE_MAX_NUM_CANDS][3];
+extern const uint8_t g_triangleIdxBins[TRIANGLE_MAX_NUM_CANDS];
+#endif
+
 #endif  //__TCOMROM__
 

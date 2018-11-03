@@ -243,6 +243,9 @@ protected:
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool      m_MHIntra;
 #endif
+#if JVET_L0124_L0208_TRIANGLE
+  bool      m_Triangle;
+#endif
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
 
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel

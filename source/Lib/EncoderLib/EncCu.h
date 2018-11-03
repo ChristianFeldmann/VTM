@@ -120,6 +120,10 @@ private:
 #else
   PelStorage            m_acMergeBuffer[MRG_MAX_NUM_CANDS];
 #endif
+#if JVET_L0124_L0208_TRIANGLE
+  PelStorage            m_acTriangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS]; // to store weighted prediction pixles
+  double                m_mergeBestSATDCost;
+#endif
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];
   unsigned int          m_subMergeBlkSize[10];
   unsigned int          m_subMergeBlkNum[10];
@@ -177,6 +181,11 @@ public:
   bool getClearSubMergeStatic() { return m_clearSubMergeStatic; }
 #endif 
 
+#if JVET_L0124_L0208_TRIANGLE
+  void   setMergeBestSATDCost(double cost) { m_mergeBestSATDCost = cost; }
+  double getMergeBestSATDCost()            { return m_mergeBestSATDCost; }
+#endif
+
   ~EncCu();
 
 protected:
@@ -220,6 +229,10 @@ protected:
   void xEncodeDontSplit       ( CodingStructure &cs, Partitioner &partitioner);
 
   void xCheckRDCostMerge2Nx2N ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+
+#if JVET_L0124_L0208_TRIANGLE
+  void xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+#endif
 
   void xEncodeInterResidual   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, int residualPass = 0
     , CodingStructure* imvCS = NULL

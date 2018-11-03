@@ -258,6 +258,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
 #endif
   affine            = other.affine;
   affineType        = other.affineType;
+#if JVET_L0124_L0208_TRIANGLE
+  triangle          = other.triangle;
+#endif
   transQuantBypass  = other.transQuantBypass;
   ipcm              = other.ipcm;
   qp                = other.qp;
@@ -292,6 +295,9 @@ void CodingUnit::initData()
 #endif
   affine            = false;
   affineType        = 0;
+#if JVET_L0124_L0208_TRIANGLE
+  triangle          = false;
+#endif
   transQuantBypass  = false;
   ipcm              = false;
   qp                = 0;

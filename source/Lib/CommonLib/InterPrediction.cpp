@@ -120,6 +120,10 @@ void InterPrediction::destroy()
     }
   }
 
+#if JVET_L0124_L0208_TRIANGLE
+  m_triangleBuf.destroy();
+#endif
+
 #if JVET_L0265_AFF_MINIMUM4X4
   if (m_storedMv != nullptr)
   {
@@ -175,6 +179,9 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
       }
     }
 
+#if JVET_L0124_L0208_TRIANGLE
+    m_triangleBuf.create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
+#endif
 
     m_iRefListIdx = -1;
   
@@ -488,7 +495,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
       }
       else
       {
+#if JVET_L0124_L0208_TRIANGLE
+        xPredInterUni ( pu, eRefPicList, pcMbBuf, pu.cu->triangle, false );
+#else
         xPredInterUni ( pu, eRefPicList, pcMbBuf, false );
+#endif
       }
     }
   }
@@ -1076,10 +1087,24 @@ void InterPrediction::xWeightedAverage( const PredictionUnit& pu, const CPelUnit
   }
   else if( iRefIdx0 >= 0 && iRefIdx1 < 0 )
   {
+#if JVET_L0124_L0208_TRIANGLE
+    if( pu.cu->triangle )
+    {
+      pcYuvDst.copyFrom( pcYuvSrc0 );
+    }
+    else
+#endif 
     pcYuvDst.copyClip( pcYuvSrc0, clpRngs );
   }
   else if( iRefIdx0 < 0 && iRefIdx1 >= 0 )
   {
+#if JVET_L0124_L0208_TRIANGLE
+    if( pu.cu->triangle )
+    {
+      pcYuvDst.copyFrom( pcYuvSrc1 );
+    }
+    else
+#endif
     pcYuvDst.copyClip( pcYuvSrc1, clpRngs );
   }
 }
@@ -1156,6 +1181,118 @@ int InterPrediction::rightShiftMSB(int numer, int denom)
   d = (numer >> shiftIdx);
 
   return d;
+}
+#endif
+
+#if JVET_L0124_L0208_TRIANGLE
+void InterPrediction::motionCompensation4Triangle( CodingUnit &cu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 )
+{
+  for( auto &pu : CU::traversePUs( cu ) )
+  {
+    const UnitArea localUnitArea( cu.cs->area.chromaFormat, Area( 0, 0, pu.lwidth(), pu.lheight() ) );
+    PelUnitBuf tmpTriangleBuf = m_triangleBuf.getBuf( localUnitArea );
+    PelUnitBuf predBuf        = cu.cs->getPredBuf( pu );
+     
+    triangleMrgCtx.setMergeInfo( pu, candIdx0 );
+    PU::spanMotionInfo( pu );
+    motionCompensation( pu, tmpTriangleBuf );
+   
+    triangleMrgCtx.setMergeInfo( pu, candIdx1 );
+    PU::spanMotionInfo( pu );
+    motionCompensation( pu, predBuf );
+
+    weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, tmpTriangleBuf, predBuf );
+  }
+}
+
+void InterPrediction::weightedTriangleBlk( PredictionUnit &pu, bool weights, const bool splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
+{
+  if( channel == CHANNEL_TYPE_LUMA )
+  {
+    xWeightedTriangleBlk( pu, pu.lumaSize().width, pu.lumaSize().height, COMPONENT_Y, splitDir, weights, predDst, predSrc0, predSrc1 );
+  }
+  else if( channel == CHANNEL_TYPE_CHROMA )
+  {
+    xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, weights, predDst, predSrc0, predSrc1 );
+    xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, weights, predDst, predSrc0, predSrc1 );
+  }
+  else
+  {
+    xWeightedTriangleBlk( pu, pu.lumaSize().width,   pu.lumaSize().height,   COMPONENT_Y,  splitDir, weights, predDst, predSrc0, predSrc1 );
+    xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, weights, predDst, predSrc0, predSrc1 );
+    xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, weights, predDst, predSrc0, predSrc1 );
+  }
+}
+
+void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, const bool weights, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
+{
+  Pel*    dst        = predDst .get(compIdx).buf;
+  Pel*    src0       = predSrc0.get(compIdx).buf;
+  Pel*    src1       = predSrc1.get(compIdx).buf;
+  int32_t strideDst  = predDst .get(compIdx).stride  - width;
+  int32_t strideSrc0 = predSrc0.get(compIdx).stride  - width;
+  int32_t strideSrc1 = predSrc1.get(compIdx).stride  - width;
+
+  const char    log2WeightBase    = 3;
+  const ClpRng  clipRng           = pu.cu->slice->clpRngs().comp[compIdx];
+  const int32_t clipbd            = clipRng.bd;
+  const int32_t shiftDefault      = std::max<int>(2, (IF_INTERNAL_PREC - clipbd));
+  const int32_t offsetDefault     = (1<<(shiftDefault-1)) + IF_INTERNAL_OFFS;
+  const int32_t shiftWeighted     = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + log2WeightBase;
+  const int32_t offsetWeighted    = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
+                                  
+  const int32_t ratioWH           = (width > height) ? (width / height) : 1;
+  const int32_t ratioHW           = (width > height) ? 1 : (height / width);
+  const Pel*    pelWeighted       = (compIdx == COMPONENT_Y) ? g_trianglePelWeightedLuma[splitDir][weights] : g_trianglePelWeightedChroma[predDst.chromaFormat == CHROMA_444 ? 0 : 1][splitDir][weights];
+  const int32_t weightedLength    = (compIdx == COMPONENT_Y) ? g_triangleWeightLengthLuma[weights] : g_triangleWeightLengthChroma[predDst.chromaFormat == CHROMA_444 ? 0 : 1][weights];
+        int32_t weightedStartPos  = ( splitDir == 0 ) ? ( 0 - (weightedLength >> 1) * ratioWH ) : ( width - ((weightedLength + 1) >> 1) * ratioWH );
+        int32_t weightedEndPos    = weightedStartPos + weightedLength * ratioWH - 1;
+        int32_t weightedPosoffset =( splitDir == 0 ) ? ratioWH : -ratioWH;
+  
+  const Pel*    tmpPelWeighted;
+        int32_t x, y, tmpX, tmpY, tmpWeightedStart, tmpWeightedEnd;
+  
+  for( y = 0; y < height; y+= ratioHW )
+  {
+    for( tmpY = ratioHW; tmpY > 0; tmpY-- )
+    {
+      for( x = 0; x < weightedStartPos; x++ )
+      {
+        *dst++ = ClipPel( rightShift( (splitDir == 0 ? *src1 : *src0) + offsetDefault, shiftDefault), clipRng );
+        src0++;
+        src1++;
+      }
+
+      tmpWeightedStart = std::max((int32_t)0, weightedStartPos);
+      tmpWeightedEnd   = std::min(weightedEndPos, (int32_t)(width - 1));
+      tmpPelWeighted   = pelWeighted;
+      if( weightedStartPos < 0 )
+      {
+        tmpPelWeighted += abs(weightedStartPos) / ratioWH;
+      }
+      for( x = tmpWeightedStart; x <= tmpWeightedEnd; x+= ratioWH )
+      {
+        for( tmpX = ratioWH; tmpX > 0; tmpX-- )
+        {
+          *dst++ = ClipPel( rightShift( ((*tmpPelWeighted)*(*src0++) + ((8 - (*tmpPelWeighted)) * (*src1++)) + offsetWeighted), shiftWeighted ), clipRng );
+        }
+        tmpPelWeighted++;
+      }
+
+      for( x = weightedEndPos + 1; x < width; x++ )
+      {
+        *dst++ = ClipPel( rightShift( (splitDir == 0 ? *src0 : *src1) + offsetDefault, shiftDefault ), clipRng );
+        src0++;
+        src1++;
+      }
+
+      dst  += strideDst;
+      src0 += strideSrc0;
+      src1 += strideSrc1;
+    }
+    weightedStartPos += weightedPosoffset;
+    weightedEndPos   += weightedPosoffset;
+  }
 }
 #endif
 

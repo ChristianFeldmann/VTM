@@ -359,6 +359,22 @@ unsigned DeriveCtx::CtxBTsplit(const CodingStructure& cs, Partitioner& partition
   return ctx;
 }
 
+#if JVET_L0124_L0208_TRIANGLE
+unsigned DeriveCtx::CtxTriangleFlag( const CodingUnit& cu )
+{
+  const CodingStructure *cs = cu.cs;
+  unsigned ctxId = 0;
+
+  const CodingUnit *cuLeft = cs->getCURestricted( cu.lumaPos().offset( -1, 0 ), cu, CH_L );
+  ctxId = ( cuLeft && cuLeft->triangle ) ? 1 : 0;
+
+  const CodingUnit *cuAbove = cs->getCURestricted( cu.lumaPos().offset( 0, -1 ), cu, CH_L );
+  ctxId += ( cuAbove && cuAbove->triangle ) ? 1 : 0;
+
+  return ctxId;
+}
+#endif
+
 
 void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 {

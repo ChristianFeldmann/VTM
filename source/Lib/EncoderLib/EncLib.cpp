@@ -880,6 +880,9 @@ void EncLib::xInitSPS(SPS &sps)
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   sps.getSpsNext().setUseMHIntra            ( m_MHIntra );
 #endif
+#if JVET_L0124_L0208_TRIANGLE
+  sps.getSpsNext().setUseTriangle           ( m_Triangle );
+#endif
 
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 

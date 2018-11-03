@@ -823,6 +823,9 @@ private:
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool              m_MHIntra;
 #endif
+#if JVET_L0124_L0208_TRIANGLE
+  bool              m_Triangle;
+#endif
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
 #endif
@@ -976,6 +979,10 @@ public:
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   void      setUseMHIntra         ( bool b )                                        { m_MHIntra = b; }
   bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
+#endif
+#if JVET_L0124_L0208_TRIANGLE
+  void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
+  bool      getUseTriangle        ()                                      const     { return m_Triangle; }
 #endif
   // ADD_NEW_TOOL : (sps extension) add access functions for tool enabling flags and associated parameters here
 

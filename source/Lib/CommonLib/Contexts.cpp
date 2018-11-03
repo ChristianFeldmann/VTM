@@ -349,6 +349,15 @@ const CtxSet ContextSetCfg::PredMode = ContextSetCfg::addCtxSet
   {  CNU,},
 });
 
+#if JVET_L0283_MULTI_REF_LINE
+const CtxSet ContextSetCfg::MultiRefLineIdx = ContextSetCfg::addCtxSet
+({
+  { 154, 154, 154 },
+  { 154, 154, 154 },
+  { CNU, CNU, CNU },
+  });
+#endif
+
 const CtxSet ContextSetCfg::IPredMode[] =
 {
   ContextSetCfg::addCtxSet

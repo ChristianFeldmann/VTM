@@ -107,6 +107,8 @@
 
 #define JVET_L0260_AFFINE_ME                              1
 
+#define JVET_L0283_MULTI_REF_LINE                         1
+
 #define JVET_L0256_BIO                                    1
 
 #define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)

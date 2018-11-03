@@ -210,7 +210,11 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
 
   if (m_piYuvExt[COMPONENT_Y][PRED_BUF_UNFILTERED] == nullptr) // check if first is null (in which case, nothing initialised yet)
   {
+#if JVET_L0283_MULTI_REF_LINE
+    m_iYuvExtSize = (MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX * 5) * (MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX * 5);
+#else
     m_iYuvExtSize = (MAX_CU_SIZE * 2 + 1) * (MAX_CU_SIZE * 2 + 1);
+#endif
 
     for (uint32_t ch = 0; ch < MAX_NUM_COMPONENT; ch++)
     {
@@ -339,9 +343,14 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   CHECK( g_aucLog2[iWidth] < 2 && pu.cs->pcv->noChroma2x2, "Size not allowed" );
   CHECK( g_aucLog2[iWidth] > 7, "Size not allowed" );
   CHECK( iWidth != iHeight && !pu.cs->pcv->rectCUs, "Rectangular block are only allowed with QTBT" );
-
+#if JVET_L0283_MULTI_REF_LINE
+  const int  multiRefIdx = (compID == COMPONENT_Y) ? pu.multiRefIdx : 0;
+  const int  srcStride   = m_topRefLength  + 1 + 5 * multiRefIdx;
+  const int  srcHStride  = m_leftRefLength + 1 + 5 * multiRefIdx;
+#else
   const int  srcStride  = m_topRefLength  + 1;
   const int  srcHStride = m_leftRefLength + 1;
+#endif
 
   Pel *ptrSrc = getPredictorPtr(compID, useFilteredPredSamples);
   const ClpRng& clpRng(pu.cu->cs->slice->clpRng(compID));
@@ -356,17 +365,33 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
     case(VDIA_IDX):
       if (getWideAngle(iWidth, iHeight, uiDirMode) == static_cast<int>(uiDirMode)) // check if uiDirMode is not wide-angle
       {
-        xPredIntraAng(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps, useFilteredPredSamples); 
+        xPredIntraAng(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps
+#if JVET_L0283_MULTI_REF_LINE
+          , multiRefIdx
+#endif
+          , useFilteredPredSamples); 
         break;
       }
-    default:          xPredIntraAng(CPelBuf(getPredictorPtr(compID, false), srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps, useFilteredPredSamples); break;
+    default:          xPredIntraAng(CPelBuf(getPredictorPtr(compID, false), srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps
+#if JVET_L0283_MULTI_REF_LINE
+      , multiRefIdx
+#endif
+      , useFilteredPredSamples); break;
 #else //JVET_L0628_4TAP_INTRA
-    default:          xPredIntraAng(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps, false); break;
+    default:          xPredIntraAng(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps
+#if JVET_L0283_MULTI_REF_LINE
+      , multiRefIdx
+#endif
+      , false); break;
 #endif //JVET_L0628_4TAP_INTRA
   }
 
   bool pdpcCondition = (uiDirMode == PLANAR_IDX || uiDirMode == DC_IDX || uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
+#if JVET_L0283_MULTI_REF_LINE
+  if (pdpcCondition && multiRefIdx == 0)
+#else
   if (pdpcCondition)
+#endif
   {
     const CPelBuf srcBuf = CPelBuf(ptrSrc, srcStride, srcStride);
     PelBuf dstBuf = piPred;
@@ -593,11 +618,23 @@ void IntraPrediction::xDCPredFiltering(const CPelBuf &pSrc, PelBuf &pDst, const 
 */
 //NOTE: Bit-Limit - 25-bit source
 #if HEVC_USE_HOR_VER_PREDFILTERING
-void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const bool bEnableEdgeFilters, const SPS& sps, const bool enableBoundaryFilter )
+void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const bool bEnableEdgeFilters, const SPS& sps
+#if JVET_L0283_MULTI_REF_LINE
+  , int multiRefIdx
+#endif
+  , const bool enableBoundaryFilter )
 #elif JVET_L0628_4TAP_INTRA
-void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps, const bool useFilteredPredSamples )
+void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps
+#if JVET_L0283_MULTI_REF_LINE
+  , int multiRefIdx
+#endif
+  , const bool useFilteredPredSamples )
 #else
-void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps, const bool enableBoundaryFilter )
+void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps
+#if JVET_L0283_MULTI_REF_LINE
+  , int multiRefIdx
+#endif
+  , const bool enableBoundaryFilter )
 #endif
 {
   int width =int(pDst.width);
@@ -626,9 +663,13 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   Pel* refMain;
   Pel* refSide;
 
+#if JVET_L0283_MULTI_REF_LINE
+  Pel  refAbove[2 * MAX_CU_SIZE + 3 + 5 * MAX_REF_LINE_IDX];
+  Pel  refLeft [2 * MAX_CU_SIZE + 3 + 5 * MAX_REF_LINE_IDX];
+#else
   Pel  refAbove[2 * MAX_CU_SIZE + 3];
   Pel  refLeft [2 * MAX_CU_SIZE + 3];
-
+#endif
 
   // Initialize the Main and Left reference array.
   if (intraPredAngle < 0)
@@ -636,14 +677,26 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
 #if JVET_L0628_4TAP_INTRA
     auto width    = int(pDst.width) +1;
     auto height   = int(pDst.height)+1;  
+#if JVET_L0283_MULTI_REF_LINE
+    auto lastIdx  = (bIsModeVer ? width : height) + multiRefIdx;
+#else
     auto lastIdx  = bIsModeVer ? width : height;
+#endif
     auto firstIdx = ( ((bIsModeVer ? height : width) -1) * intraPredAngle ) >> 5;
 #endif //JVET_L0628_4TAP_INTRA
+#if JVET_L0283_MULTI_REF_LINE
+    for (int x = 0; x < width + 1 + multiRefIdx; x++)
+#else
     for( int x = 0; x < width + 1; x++ )
+#endif
     {
       refAbove[x + height - 1] = pSrc.at( x, 0 );
     }
+#if JVET_L0283_MULTI_REF_LINE
+    for (int y = 0; y < height + 1 + multiRefIdx; y++)
+#else
     for( int y = 0; y < height + 1; y++ )
+#endif
     {
       refLeft[y + width - 1] = pSrc.at( 0, y );
     }
@@ -669,7 +722,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   }
   else
   {
+#if JVET_L0283_MULTI_REF_LINE
+    for (int x = 0; x < m_topRefLength + 1 + 5 * multiRefIdx; x++)
+#else
     for( int x = 0; x < m_topRefLength + 1; x++ )
+#endif
     {
 #if JVET_L0628_4TAP_INTRA
       refAbove[x+1] = pSrc.at(x, 0);
@@ -677,7 +734,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
       refAbove[x] = pSrc.at(x, 0);
 #endif //JVET_L0628_4TAP_INTRA
     }
+#if JVET_L0283_MULTI_REF_LINE
+    for (int y = 0; y < m_leftRefLength + 1 + 5 * multiRefIdx; y++)
+#else
     for( int y = 0; y < m_leftRefLength + 1; y++ )
+#endif
     {
 #if JVET_L0628_4TAP_INTRA
       refLeft[y+1]  = pSrc.at(0, y);
@@ -692,7 +753,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     refMain++;
     refSide++;
     refMain[-1] = refMain[0];
+#if JVET_L0283_MULTI_REF_LINE
+    auto lastIdx = 1 + ((bIsModeVer) ? m_topRefLength : m_leftRefLength) + 5 * multiRefIdx;
+#else
     auto lastIdx = 1 + ((bIsModeVer) ? m_topRefLength : m_leftRefLength);
+#endif
     refMain[lastIdx] = refMain[lastIdx-1];
 #endif //JVET_L0628_4TAP_INTRA
   }
@@ -706,6 +771,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     std::swap(width, height);
   }
 
+#if JVET_L0283_MULTI_REF_LINE
+  // compensate for line offset in reference line buffers
+  refMain += multiRefIdx;
+  refSide += multiRefIdx;
+#endif
 
   if( intraPredAngle == 0 )  // pure vertical or pure horizontal
   {
@@ -717,7 +787,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
       }
     }
 #if HEVC_USE_HOR_VER_PREDFILTERING
+#if JVET_L0283_MULTI_REF_LINE
+    if (edgeFilter && multiRefIdx == 0)
+#else
     if (edgeFilter)
+#endif
     {
       for( int y = 0; y < height; y++ )
       {
@@ -729,8 +803,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   else
   {
     Pel *pDsty=pDstBuf;
-
+#if JVET_L0283_MULTI_REF_LINE
+    for (int y = 0, deltaPos = intraPredAngle * (1 + multiRefIdx); y<height; y++, deltaPos += intraPredAngle, pDsty += dstStride)
+#else
     for (int y=0, deltaPos=intraPredAngle; y<height; y++, deltaPos+=intraPredAngle, pDsty+=dstStride)
+#endif
     {
       const int deltaInt   = deltaPos >> 5;
       const int deltaFract = deltaPos & (32 - 1);
@@ -747,7 +824,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
         if( isLuma(channelType) )
         {
           Pel                        p[4];
+#if JVET_L0283_MULTI_REF_LINE
+          const bool                 useCubicFilter = !useFilteredPredSamples || multiRefIdx > 0;
+#else
           const bool                 useCubicFilter = !useFilteredPredSamples;
+#endif
           TFilterCoeff const * const f              = (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : g_intraGaussFilter[deltaFract];
 
           int         refMainIndex   = deltaInt + 1;
@@ -792,8 +873,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
       const int numModes = 8;
       const int scale = ((g_aucLog2[width] - 2 + g_aucLog2[height] - 2 + 2) >> 2);
       CHECK(scale < 0 || scale > 31, "PDPC: scale < 0 || scale > 31");
-
+#if JVET_L0283_MULTI_REF_LINE
+      if ((predMode == 2 || predMode == VDIA_IDX) && multiRefIdx == 0)
+#else
       if (predMode == 2 || predMode == VDIA_IDX)
+#endif
       {
         int wT = 16 >> std::min(31, ((y << 1) >> scale));
 
@@ -809,7 +893,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
           pDsty[x] = ClipPel((wL * left + wT * top + (64 - wL - wT) * pDsty[x] + 32) >> 6, clpRng);
         }
       }
+#if JVET_L0283_MULTI_REF_LINE
+      else if (((predMode >= VDIA_IDX - numModes && predMode != VDIA_IDX) || (predMode != 2 && predMode <= (2 + numModes))) && multiRefIdx == 0)
+#else
       else if ((predMode >= VDIA_IDX - numModes && predMode != VDIA_IDX) || (predMode != 2 && predMode <= (2 + numModes)))
+#endif
       {
         int invAngleSum0 = 2;
         for (int x = 0; x < width; x++)
@@ -1006,7 +1094,11 @@ void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompAre
   // ----- Step 2: filtered reference samples -----
   if( bFilterRefSamples )
   {
-    xFilterReferenceSamples( refBufUnfiltered, refBufFiltered, area, *cs.sps );
+    xFilterReferenceSamples( refBufUnfiltered, refBufFiltered, area, *cs.sps 
+#if JVET_L0283_MULTI_REF_LINE
+      , cu.firstPU->multiRefIdx
+#endif
+    );
   }
 }
 
@@ -1017,11 +1109,19 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
   const SPS             &sps    = *cs.sps;
   const PreCalcValues   &pcv    = *cs.pcv;
 
+#if JVET_L0283_MULTI_REF_LINE
+  const int multiRefIdx         = (area.compID == COMPONENT_Y) ? cu.firstPU->multiRefIdx : 0;
+#endif
+
   const int  tuWidth            = area.width;
   const int  tuHeight           = area.height;
   const int  predSize           = m_topRefLength;
   const int  predHSize          = m_leftRefLength;
+#if JVET_L0283_MULTI_REF_LINE
+  const int  predStride         = predSize + 1 + 5 * multiRefIdx;
+#else
   const int  predStride         = predSize + 1;
+#endif
 
   const bool noShift            = pcv.noChroma2x2 && area.width == 4; // don't shift on the lowest level (chroma not-split)
   const int  unitWidth          = pcv.minCUWidth  >> (noShift ? 0 : getComponentScaleX( area.compID, sps.getChromaFormatIdc() ));
@@ -1067,20 +1167,198 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
   if( numIntraNeighbor == 0 )
   {
     // Fill border with DC value
+#if JVET_L0283_MULTI_REF_LINE
+    for (int j = 0; j <= predSize + multiRefIdx; j++) { ptrDst[j] = valueDC; }
+    for (int i = 1; i <= predHSize + multiRefIdx; i++) { ptrDst[i*predStride] = valueDC; }
+#else
     for( int j = 0; j <= predSize; j++ ) { ptrDst[j]            = valueDC; }
     for( int i = 1; i <= predHSize; i++ ) { ptrDst[i*predStride] = valueDC; }
+#endif
   }
   else if( numIntraNeighbor == totalUnits )
   {
     // Fill top-left border and top and top right with rec. samples
+#if JVET_L0283_MULTI_REF_LINE
+    ptrSrc = srcBuf - (1 + multiRefIdx) * srcStride - (1 + multiRefIdx);
+    for (int j = 0; j <= predSize + multiRefIdx; j++) { ptrDst[j] = ptrSrc[j]; }
+    ptrSrc = srcBuf - multiRefIdx * srcStride - (1 + multiRefIdx);
+    for (int i = 1; i <= predHSize + multiRefIdx; i++) { ptrDst[i*predStride] = *(ptrSrc); ptrSrc += srcStride; }
+#else
     ptrSrc = srcBuf - srcStride - 1;
     for( int j = 0; j <= predSize; j++ ) { ptrDst[j] = ptrSrc[j]; }
     // Fill left and below left border with rec. samples
     ptrSrc = srcBuf - 1;
     for( int i = 1; i <= predHSize; i++ ) { ptrDst[i*predStride] = *(ptrSrc); ptrSrc += srcStride; }
+#endif
   }
   else // reference samples are partially available
   {
+#if JVET_L0283_MULTI_REF_LINE
+    // Fill top-left sample(s) if available
+    ptrSrc = srcBuf - (1 + multiRefIdx) * srcStride - (1 + multiRefIdx);
+    ptrDst = refBufUnfiltered;
+    if (neighborFlags[totalLeftUnits])
+    {
+      ptrDst[0] = ptrSrc[0];
+      for (int i = 1; i <= multiRefIdx; i++)
+      {
+        ptrDst[i] = ptrSrc[i];
+        ptrDst[i*predStride] = ptrSrc[i*srcStride];
+      }
+    }
+
+    // Fill left & below-left samples if available (downwards)
+    ptrSrc += (1 + multiRefIdx) * srcStride;
+    ptrDst += (1 + multiRefIdx) * predStride;
+    for (int unitIdx = totalLeftUnits - 1; unitIdx > 0; unitIdx--)
+    {
+      if (neighborFlags[unitIdx])
+      {
+        for (int i = 0; i < unitHeight; i++)
+        {
+          ptrDst[i*predStride] = ptrSrc[i*srcStride];
+        }
+      }
+      ptrSrc += unitHeight * srcStride;
+      ptrDst += unitHeight * predStride;
+    }
+    // Fill last below-left sample(s)
+    if (neighborFlags[0])
+    {
+      int lastSample = (predHSize % unitHeight == 0) ? unitHeight : predHSize % unitHeight;
+      for (int i = 0; i < lastSample; i++)
+      {
+        ptrDst[i*predStride] = ptrSrc[i*srcStride];
+      }
+    }
+
+    // Fill above & above-right samples if available (left-to-right)
+    ptrSrc = srcBuf - srcStride * (1 + multiRefIdx);
+    ptrDst = refBufUnfiltered + 1 + multiRefIdx;
+    for (int unitIdx = totalLeftUnits + 1; unitIdx < totalUnits - 1; unitIdx++)
+    {
+      if (neighborFlags[unitIdx])
+      {
+        for (int j = 0; j < unitWidth; j++)
+        {
+          ptrDst[j] = ptrSrc[j];
+        }
+      }
+      ptrSrc += unitWidth;
+      ptrDst += unitWidth;
+    }
+    // Fill last above-right sample(s)
+    if (neighborFlags[totalUnits - 1])
+    {
+      int lastSample = (predSize % unitWidth == 0) ? unitWidth : predSize % unitWidth;
+      for (int j = 0; j < lastSample; j++)
+      {
+        ptrDst[j] = ptrSrc[j];
+      }
+    }
+
+    // pad from first available down to the last below-left
+    ptrDst = refBufUnfiltered;
+    int lastAvailUnit = 0;
+    if (!neighborFlags[0])
+    {
+      int firstAvailUnit = 1;
+      while (firstAvailUnit < totalUnits && !neighborFlags[firstAvailUnit])
+      {
+        firstAvailUnit++;
+      }
+
+      // first available sample
+      int firstAvailRow = 0;
+      int firstAvailCol = 0;
+      if (firstAvailUnit < totalLeftUnits)
+      {
+        firstAvailRow = (totalLeftUnits - firstAvailUnit) * unitHeight + multiRefIdx;
+      }
+      else if (firstAvailUnit == totalLeftUnits)
+      {
+        firstAvailRow = multiRefIdx;
+      }
+      else
+      {
+        firstAvailCol = (firstAvailUnit - totalLeftUnits - 1) * unitWidth + 1 + multiRefIdx;
+      }
+      const Pel firstAvailSample = ptrDst[firstAvailCol + firstAvailRow * predStride];
+
+      // last sample below-left (n.a.)
+      int lastRow = predHSize + multiRefIdx;
+
+      // fill left column
+      for (int i = lastRow; i > firstAvailRow; i--)
+      {
+        ptrDst[i*predStride] = firstAvailSample;
+      }
+      // fill top row
+      if (firstAvailCol > 0)
+      {
+        for (int j = 0; j < firstAvailCol; j++)
+        {
+          ptrDst[j] = firstAvailSample;
+        }
+      }
+      lastAvailUnit = firstAvailUnit;
+    }
+
+    // pad all other reference samples.
+    int currUnit = lastAvailUnit + 1;
+    while (currUnit < totalUnits)
+    {
+      if (!neighborFlags[currUnit]) // samples not available
+      {
+        // last available sample
+        int lastAvailRow = 0;
+        int lastAvailCol = 0;
+        if (lastAvailUnit < totalLeftUnits)
+        {
+          lastAvailRow = (totalLeftUnits - lastAvailUnit - 1) * unitHeight + multiRefIdx + 1;
+        }
+        else if (lastAvailUnit == totalLeftUnits)
+        {
+          lastAvailCol = multiRefIdx;
+        }
+        else
+        {
+          lastAvailCol = (lastAvailUnit - totalLeftUnits) * unitWidth + multiRefIdx;
+        }
+        const Pel lastAvailSample = ptrDst[lastAvailCol + lastAvailRow * predStride];
+
+        // fill current unit with last available sample
+        if (currUnit < totalLeftUnits)
+        {
+          for (int i = lastAvailRow - 1; i <= lastAvailRow + unitHeight; i++)
+          {
+            ptrDst[i*predStride] = lastAvailSample;
+          }
+        }
+        else if (currUnit == totalLeftUnits)
+        {
+          for (int i = 1; i < multiRefIdx + 1; i++)
+          {
+            ptrDst[i*predStride] = lastAvailSample;
+          }
+          for (int j = 0; j < multiRefIdx + 1; j++)
+          {
+            ptrDst[j] = lastAvailSample;
+          }
+        }
+        else
+        {
+          int numSamplesInUnit = (currUnit == totalUnits - 1) ? ((predSize % unitWidth == 0) ? unitWidth : predSize % unitWidth) : unitWidth;
+          for (int j = lastAvailCol + 1; j <= lastAvailCol + numSamplesInUnit; j++)
+          {
+            ptrDst[j] = lastAvailSample;
+          }
+        }
+      }
+      lastAvailUnit = currUnit;
+      currUnit++;
+    }
+#else
     // BB: old implementation using tmpLineBuf
     // ---------------------------------------
     Pel  tmpLineBuf[5 * MAX_CU_SIZE];
@@ -1182,13 +1460,35 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
 
     ptrTmp = tmpLineBuf + (totalLeftUnits * unitHeight);
     for( int i = 1; i <= predHSize; i++ ) { ptrDst[i*predStride] = ptrTmp[-i]; }
-  }
+#endif  
+}
+#if JVET_L0283_MULTI_REF_LINE
+  // padding of extended samples above right with the last sample
+  int lastSample = multiRefIdx + predSize;
+  for (int j = 1; j <= 4 * multiRefIdx; j++) { ptrDst[lastSample + j] = ptrDst[lastSample]; }
+  // padding of extended samples below left with the last sample
+  lastSample = multiRefIdx + predHSize;
+  for (int i = 1; i <= 4 * multiRefIdx; i++) { ptrDst[(lastSample + i)*predStride] = ptrDst[lastSample*predStride]; }
+#endif
 }
 
-void IntraPrediction::xFilterReferenceSamples( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps )
+void IntraPrediction::xFilterReferenceSamples( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps 
+#if JVET_L0283_MULTI_REF_LINE
+  , int multiRefIdx
+#endif
+)
 {
+#if JVET_L0283_MULTI_REF_LINE
+  if (area.compID != COMPONENT_Y)
+  {
+    multiRefIdx = 0;
+  }
+  const int  predSize  = m_topRefLength  + 5 * multiRefIdx;
+  const int  predHSize = m_leftRefLength + 5 * multiRefIdx;
+#else
   const int  predSize   = m_topRefLength;
   const int  predHSize  = m_leftRefLength;
+#endif
   const int  predStride = predSize + 1;
 
 
@@ -1267,6 +1567,10 @@ bool IntraPrediction::useFilteredIntraRefSamples( const ComponentID &compID, con
 
 
   if( !modeSpecific )                                                                                    { return true; }
+
+#if JVET_L0283_MULTI_REF_LINE
+  if (pu.multiRefIdx)                                                                                    { return false; }
+#endif
 
   // pred. mode related conditions
   const int dirMode = PU::getFinalIntraMode( pu, chType );

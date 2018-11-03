@@ -317,12 +317,20 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandCostList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandHadList;
 
+#if JVET_L0283_MULTI_REF_LINE
+  static_vector<int, FAST_UDI_MAX_RDMODE_NUM> extendRefList;
+  static_vector<int, FAST_UDI_MAX_RDMODE_NUM>* nullList = NULL;
+#endif
+
   auto &pu = *cu.firstPU;
   int puIndex = 0;
   {
     CandHadList.clear();
     CandCostList.clear();
     uiHadModeList.clear();
+#if JVET_L0283_MULTI_REF_LINE
+    extendRefList.clear();
+#endif
 
     CHECK(pu.cu != &cu, "PU is not contained in the CU");
 
@@ -350,6 +358,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     {
       // this should always be true
       CHECK( !pu.Y().valid(), "PU is not valid" );
+#if JVET_L0283_MULTI_REF_LINE
+      bool isFirstLineOfCtu = (((pu.block(COMPONENT_Y).y)&((pu.cs->sps)->getMaxCUWidth() - 1)) == 0);
+      int numOfPassesExtendRef = (isFirstLineOfCtu ? 1 : MRL_NUM_REF_LINES);
+      pu.multiRefIdx = 0;
+#endif
 
       //===== init pattern for luma prediction =====
       initIntraPatternChType( cu, pu.Y(), IntraPrediction::useFilteredIntraRefSamples( COMPONENT_Y, pu, false, pu ) );
@@ -409,13 +422,25 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
             DTRACE( g_trace_ctx, D_INTRA_COST, "IntraHAD: %u, %llu, %f (%d)\n", uiSad, fracModeBits, cost, uiMode );
 
-            updateCandList( uiMode, cost,  uiRdModeList, CandCostList, numModesForFullRD + extraModes );
-            updateCandList(uiMode, (double) uiSad, uiHadModeList, CandHadList, 3 + extraModes);
+            updateCandList( uiMode, cost,  uiRdModeList, CandCostList
+#if JVET_L0283_MULTI_REF_LINE
+              , extendRefList, 0
+#endif              
+              , numModesForFullRD + extraModes );
+            updateCandList(uiMode, (double) uiSad, uiHadModeList, CandHadList
+#if JVET_L0283_MULTI_REF_LINE
+              , *nullList, -1
+#endif              
+              , 3 + extraModes);
           }
         } // NSSTFlag
 
         // forget the extra modes
         uiRdModeList.resize( numModesForFullRD );
+#if JVET_L0283_MULTI_REF_LINE
+        CandCostList.resize(numModesForFullRD);
+        extendRefList.resize(numModesForFullRD);
+#endif
         static_vector<unsigned, FAST_UDI_MAX_RDMODE_NUM> parentCandList(FAST_UDI_MAX_RDMODE_NUM);
         std::copy_n(uiRdModeList.begin(), numModesForFullRD, parentCandList.begin());
 
@@ -453,18 +478,74 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
                 double cost = (double) sad + (double) fracModeBits * sqrtLambdaForFirstPass;
 
-                updateCandList(mode, cost, uiRdModeList, CandCostList, numModesForFullRD);
-                updateCandList(mode, (double)sad, uiHadModeList, CandHadList, 3);
+                updateCandList(mode, cost, uiRdModeList, CandCostList
+#if JVET_L0283_MULTI_REF_LINE
+                  , extendRefList, 0
+#endif
+                  , numModesForFullRD);
+                updateCandList(mode, (double)sad, uiHadModeList, CandHadList
+#if JVET_L0283_MULTI_REF_LINE
+                  , *nullList, -1
+#endif                 
+                  , 3);
 
                 bSatdChecked[mode] = true;
               }
             }
           }
         }
+#if JVET_L0283_MULTI_REF_LINE
+        pu.multiRefIdx = 1;
+        unsigned  numMPMs = pu.cs->pcv->numMPMs;
+        unsigned *multiRefMPM = (unsigned*)alloca(pu.cs->pcv->numMPMs * sizeof(unsigned));
+        PU::getIntraMPMs(pu, multiRefMPM);
+        for (int mRefNum = 1; mRefNum < numOfPassesExtendRef; mRefNum++)
+        {
+          int multiRefIdx = MULTI_REF_LINE_IDX[mRefNum];
+
+          pu.multiRefIdx = multiRefIdx;
+          {
+            initIntraPatternChType(cu, pu.Y(), IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Y, pu, false, pu));
+          }
+          for (int x = 0; x < numMPMs; x++)
+          {
+            uint32_t mode = multiRefMPM[x];
+            {
+              pu.intraDir[0] = mode;
+
+              if (useDPCMForFirstPassIntraEstimation(pu, mode))
+              {
+                encPredIntraDPCM(COMPONENT_Y, piOrg, piPred, mode);
+              }
+              else
+              {
+                predIntraAng(COMPONENT_Y, piPred, pu, IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Y, pu, true, pu));
+              }
+
+              // use Hadamard transform here
+              Distortion sad = distParam.distFunc(distParam);
+
+              // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been pre-estimated.
+              m_CABACEstimator->getCtx() = SubCtx(Ctx::IPredMode[CHANNEL_TYPE_LUMA], ctxStartIntraMode);
+
+              uint64_t fracModeBits = xFracModeBitsIntra(pu, mode, CHANNEL_TYPE_LUMA);
+
+              double cost = (double)sad + (double)fracModeBits * sqrtLambdaForFirstPass;
+              updateCandList(mode, cost, uiRdModeList, CandCostList, extendRefList, multiRefIdx, numModesForFullRD);
+            }
+          }
+        }
+        CandCostList.resize(numModesForFullRD);
+        extendRefList.resize(numModesForFullRD);
+#endif
         if( m_pcEncCfg->getFastUDIUseMPMEnabled() )
         {
           unsigned  numMPMs = pu.cs->pcv->numMPMs;
           unsigned *uiPreds = ( unsigned* ) alloca( numMPMs * sizeof( unsigned ) );
+
+#if JVET_L0283_MULTI_REF_LINE
+          pu.multiRefIdx = 0;
+#endif
 
           const int numCand = PU::getIntraMPMs( pu, uiPreds );
 
@@ -476,10 +557,17 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
             for( int i = 0; i < numModesForFullRD; i++ )
             {
+#if JVET_L0283_MULTI_REF_LINE
+              mostProbableModeIncluded |= (mostProbableMode == uiRdModeList[i] && extendRefList[i] == 0);
+#else
               mostProbableModeIncluded |= ( mostProbableMode == uiRdModeList[i] );
+#endif
             }
             if( !mostProbableModeIncluded )
             {
+#if JVET_L0283_MULTI_REF_LINE
+              extendRefList.push_back(0);
+#endif
               numModesForFullRD++;
               uiRdModeList.push_back( mostProbableMode );
             }
@@ -498,6 +586,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
         // Store the modes to be checked with RD
         m_savedNumRdModes[puIndex] = numModesForFullRD;
         std::copy_n( uiRdModeList.begin(), numModesForFullRD, m_savedRdModeList[puIndex] );
+#if JVET_L0283_MULTI_REF_LINE
+        std::copy_n(extendRefList.begin(), numModesForFullRD, m_savedExtendRefList[puIndex]);
+#endif
       }
     }
     else //emtUsage = 2 (here we potentially reduce the number of modes that will be full-RD checked)
@@ -529,6 +620,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
           if( m_modeCostStore[puIndex][i] <= thresholdSkipMode * m_bestModeCostStore[puIndex] )
           {
             uiRdModeList.push_back( m_savedRdModeList[puIndex][i] );
+#if JVET_L0283_MULTI_REF_LINE
+            extendRefList.push_back(m_savedExtendRefList[puIndex][i]);
+#endif
             numModesForFullRD++;
           }
         }
@@ -539,6 +633,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
         numModesForFullRD = m_savedNumRdModes[puIndex];
         uiRdModeList.resize( numModesForFullRD );
         std::copy_n( m_savedRdModeList[puIndex], m_savedNumRdModes[puIndex], uiRdModeList.begin() );
+#if JVET_L0283_MULTI_REF_LINE
+        CandCostList.resize(numModesForFullRD);
+        extendRefList.resize(numModesForFullRD);
+        std::copy_n(m_savedExtendRefList[puIndex], m_savedNumRdModes[puIndex], extendRefList.begin());
+#endif
       }
     }
 
@@ -576,6 +675,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     double dSecondBestPUCost = MAX_DOUBLE;
 #endif
     uint32_t       uiBestPUMode  = 0;
+#if JVET_L0283_MULTI_REF_LINE
+    int            bestExtendRef = 0;
+#endif
 
     CodingStructure *csTemp = m_pTempCS[gp_sizeIdxInfo->idxFrom( cu.lwidth() )][gp_sizeIdxInfo->idxFrom( cu.lheight() )];
     CodingStructure *csBest = m_pBestCS[gp_sizeIdxInfo->idxFrom( cu.lwidth() )][gp_sizeIdxInfo->idxFrom( cu.lheight() )];
@@ -593,6 +695,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
       uint32_t uiOrgMode = uiRdModeList[uiMode];
 
       pu.intraDir[0] = uiOrgMode;
+#if JVET_L0283_MULTI_REF_LINE
+      int multiRefIdx = extendRefList[uiMode];
+      pu.multiRefIdx  = multiRefIdx;
+      CHECK(pu.multiRefIdx && (pu.intraDir[0] == DC_IDX || pu.intraDir[0] == PLANAR_IDX), "ERL");
+#endif
 
 
       // set context models
@@ -622,6 +729,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
         dSecondBestPUCost = csTemp->cost;
 #endif
         uiBestPUMode  = uiOrgMode;
+#if JVET_L0283_MULTI_REF_LINE
+        bestExtendRef = multiRefIdx;
+#endif
 
         if( ( emtUsageFlag == 1 ) && m_pcEncCfg->getFastIntraEMT() )
         {
@@ -644,6 +754,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     csBest->releaseIntermediateData();
     //=== update PU data ====
     pu.intraDir[0] = uiBestPUMode;
+#if JVET_L0283_MULTI_REF_LINE
+    pu.multiRefIdx = bestExtendRef;
+#endif
   }
 
   //===== reset context models =====
@@ -978,6 +1091,9 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
         m_CABACEstimator->cu_skip_flag( cu );
         m_CABACEstimator->pred_mode   ( cu );
       }
+#if JVET_L0283_MULTI_REF_LINE
+      m_CABACEstimator->extend_ref_line(cu);
+#endif
       if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
       {
         m_CABACEstimator->pcm_data( cu );
@@ -1918,9 +2034,15 @@ uint64_t IntraSearch::xFracModeBitsIntra(PredictionUnit &pu, const uint32_t &uiM
       m_CABACEstimator->MHIntra_luma_pred_modes(*pu.cu);
     else
     {
+#if JVET_L0283_MULTI_REF_LINE
+      m_CABACEstimator->extend_ref_line(pu);
+#endif
       m_CABACEstimator->intra_luma_pred_mode(pu);
     }
 #else
+#if JVET_L0283_MULTI_REF_LINE
+    m_CABACEstimator->extend_ref_line(pu);
+#endif
     m_CABACEstimator->intra_luma_pred_mode( pu );
 #endif
   }

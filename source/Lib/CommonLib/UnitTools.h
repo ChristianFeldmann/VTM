@@ -216,9 +216,17 @@ uint32_t getCtuAddr        (const Position& pos, const PreCalcValues &pcv);
 
 template<typename T, size_t N>
 #if JVET_L0054_MMVD
-uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, size_t uiFastCandNum = N, int* iserttPos = nullptr)
+uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList
+#if JVET_L0283_MULTI_REF_LINE
+  , static_vector<int, N>& extendRefList, int extendRef
+#endif  
+  , size_t uiFastCandNum = N, int* iserttPos = nullptr)
 #else
-uint32_t updateCandList( T uiMode, double uiCost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, size_t uiFastCandNum = N )
+uint32_t updateCandList( T uiMode, double uiCost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList
+#if JVET_L0283_MULTI_REF_LINE
+  , static_vector<int, N>& extendRefList, int extendRef
+#endif  
+  , size_t uiFastCandNum = N )
 #endif
 {
   CHECK( std::min( uiFastCandNum, candModeList.size() ) != std::min( uiFastCandNum, candCostList.size() ), "Sizes do not match!" );
@@ -239,9 +247,21 @@ uint32_t updateCandList( T uiMode, double uiCost, static_vector<T, N>& candModeL
     {
       candModeList[currSize - i] = candModeList[currSize - 1 - i];
       candCostList[currSize - i] = candCostList[currSize - 1 - i];
+#if JVET_L0283_MULTI_REF_LINE
+      if (extendRef != -1)
+      {
+        extendRefList[currSize - i] = extendRefList[currSize - 1 - i];
+      }  
+#endif
     }
     candModeList[currSize - shift] = uiMode;
     candCostList[currSize - shift] = uiCost;
+#if JVET_L0283_MULTI_REF_LINE
+    if (extendRef != -1)
+    {
+      extendRefList[currSize - shift] = extendRef;
+    }
+#endif
 #if JVET_L0054_MMVD
     if (iserttPos != nullptr)
     {
@@ -254,6 +274,12 @@ uint32_t updateCandList( T uiMode, double uiCost, static_vector<T, N>& candModeL
   {
     candModeList.insert( candModeList.end() - shift, uiMode );
     candCostList.insert( candCostList.end() - shift, uiCost );
+#if JVET_L0283_MULTI_REF_LINE
+    if (extendRef != -1)
+    {
+      extendRefList.insert(extendRefList.end() - shift, extendRef);
+    }
+#endif
 #if JVET_L0054_MMVD
     if (iserttPos != nullptr)
     {
@@ -318,7 +344,7 @@ uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candMode
 #if JVET_L0054_MMVD
     if (iserttPos != nullptr)
     {
-      *iserttPos = int(candModeList.size() - shift - 1);
+      *iserttPos = int(candModeList.size() - shift - 1);  
     }
 #endif
     return 1;
@@ -336,4 +362,3 @@ uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candMode
 
 
 #endif
-

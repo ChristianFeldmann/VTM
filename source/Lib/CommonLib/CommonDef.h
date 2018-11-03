@@ -196,6 +196,12 @@ static const int ADJ_DEQUANT_SHIFT =            ( ADJ_QUANT_SHIFT + 1 );
 
 static const int RVM_VCEGAM10_M =                                   4;
 
+#if JVET_L0283_MULTI_REF_LINE
+static const int MAX_REF_LINE_IDX =                                 3; //highest refLine offset in the list
+static const int MRL_NUM_REF_LINES =                                3; //number of candidates in the array
+static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 3, 0 };
+#endif
+
 static const int NUM_LUMA_MODE =                                   67; ///< Planar + DC + 65 directional mode (4*16 + 1)
 #if JVET_L0338_MDLM
 static const int NUM_LMC_MODE =                                    1 + 2; ///< LMC + MDLM_T + MDLM_L

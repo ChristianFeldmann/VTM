@@ -708,6 +708,10 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   // --> create PUs
   CU::addPUs( cu );
 
+#if JVET_L0283_MULTI_REF_LINE
+  extend_ref_line( cu );
+#endif
+
   // pcm samples
   if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
   {
@@ -929,6 +933,46 @@ void CABACReader::xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol)
   }
 }
 #endif
+#if JVET_L0283_MULTI_REF_LINE
+void CABACReader::extend_ref_line(CodingUnit& cu)
+{
+  if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType))
+  {
+    cu.firstPU->multiRefIdx = 0;
+    return;
+  }
+
+  const int numBlocks = CU::getNumPUs(cu);
+  PredictionUnit* pu = cu.firstPU;
+
+  for (int k = 0; k < numBlocks; k++)
+  {
+    bool isFirstLineOfCtu = (((cu.block(COMPONENT_Y).y)&((cu.cs->sps)->getMaxCUWidth() - 1)) == 0);
+    if (isFirstLineOfCtu)
+    {
+      pu->multiRefIdx = 0;
+      continue;
+    }
+    int multiRefIdx = 0;
+
+    if (MRL_NUM_REF_LINES > 1)
+    {
+      multiRefIdx = m_BinDecoder.decodeBin(Ctx::MultiRefLineIdx(0)) == 1 ? MULTI_REF_LINE_IDX[1] : MULTI_REF_LINE_IDX[0];
+      if (MRL_NUM_REF_LINES > 2 && multiRefIdx != MULTI_REF_LINE_IDX[0])
+      {
+        multiRefIdx = m_BinDecoder.decodeBin(Ctx::MultiRefLineIdx(1)) == 1 ? MULTI_REF_LINE_IDX[2] : MULTI_REF_LINE_IDX[1];
+        if (MRL_NUM_REF_LINES > 3 && multiRefIdx != MULTI_REF_LINE_IDX[1])
+        {
+          multiRefIdx = m_BinDecoder.decodeBin(Ctx::MultiRefLineIdx(2)) == 1 ? MULTI_REF_LINE_IDX[3] : MULTI_REF_LINE_IDX[2];
+        }
+      }
+
+    }
+    pu->multiRefIdx = multiRefIdx;
+    pu = pu->next;
+  }
+}
+#endif
 
 void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
 {
@@ -946,6 +990,14 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
   int mpmFlag[4];
   for( int k = 0; k < numBlocks; k++ )
   {
+#if JVET_L0283_MULTI_REF_LINE
+    CHECK(numBlocks != 1, "not supported yet");
+    if (cu.firstPU->multiRefIdx)
+    {
+      mpmFlag[0] = true;
+    }
+    else
+#endif
     mpmFlag[k] = m_BinDecoder.decodeBin( Ctx::IPredMode[0]() );
   }
 

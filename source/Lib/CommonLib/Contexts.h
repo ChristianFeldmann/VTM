@@ -161,6 +161,9 @@ public:
   static const CtxSet   MergeIdx;
   static const CtxSet   PartSize;
   static const CtxSet   PredMode;
+#if JVET_L0283_MULTI_REF_LINE
+  static const CtxSet   MultiRefLineIdx;
+#endif
   static const CtxSet   IPredMode       [2];    // [ ChannelType ]
   static const CtxSet   PdpcFlag;
   static const CtxSet   DeltaQP;

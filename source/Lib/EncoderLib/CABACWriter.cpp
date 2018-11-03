@@ -634,6 +634,10 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
   // prediction mode and partitioning data
   pred_mode ( cu );
 
+#if JVET_L0283_MULTI_REF_LINE
+  extend_ref_line(cu);
+#endif
+
   // pcm samples
   if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
   {
@@ -815,6 +819,70 @@ void CABACWriter::xWriteTruncBinCode(uint32_t symbol, uint32_t maxSymbol)
 }
 #endif
 
+#if JVET_L0283_MULTI_REF_LINE
+void CABACWriter::extend_ref_line(const PredictionUnit& pu)
+{
+  const CodingUnit& cu = *pu.cu;
+  if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType))
+  {
+    return;
+  }
+  bool isFirstLineOfCtu = (((cu.block(COMPONENT_Y).y)&((cu.cs->sps)->getMaxCUWidth() - 1)) == 0);
+  if (isFirstLineOfCtu)
+  {
+    return;
+  }
+  int multiRefIdx = pu.multiRefIdx;
+  if (MRL_NUM_REF_LINES > 1)
+  {
+    m_BinEncoder.encodeBin(multiRefIdx != MULTI_REF_LINE_IDX[0], Ctx::MultiRefLineIdx(0));
+    if (MRL_NUM_REF_LINES > 2 && multiRefIdx != MULTI_REF_LINE_IDX[0])
+    {
+      m_BinEncoder.encodeBin(multiRefIdx != MULTI_REF_LINE_IDX[1], Ctx::MultiRefLineIdx(1));
+      if (MRL_NUM_REF_LINES > 3 && multiRefIdx != MULTI_REF_LINE_IDX[1])
+      {
+        m_BinEncoder.encodeBin(multiRefIdx != MULTI_REF_LINE_IDX[2], Ctx::MultiRefLineIdx(2));
+      }
+    }
+  }
+}
+
+void CABACWriter::extend_ref_line(const CodingUnit& cu)
+{
+  if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType))
+  {
+    return;
+  }
+
+  const int numBlocks = CU::getNumPUs(cu);
+  const PredictionUnit* pu = cu.firstPU;
+
+  for (int k = 0; k < numBlocks; k++)
+  {
+    bool isFirstLineOfCtu = (((cu.block(COMPONENT_Y).y)&((cu.cs->sps)->getMaxCUWidth() - 1)) == 0);
+    if (isFirstLineOfCtu)
+    {
+      return;
+    }
+    int multiRefIdx = pu->multiRefIdx;
+    if (MRL_NUM_REF_LINES > 1)
+    {
+      m_BinEncoder.encodeBin(multiRefIdx != MULTI_REF_LINE_IDX[0], Ctx::MultiRefLineIdx(0));
+      if (MRL_NUM_REF_LINES > 2 && multiRefIdx != MULTI_REF_LINE_IDX[0])
+      {
+        m_BinEncoder.encodeBin(multiRefIdx != MULTI_REF_LINE_IDX[1], Ctx::MultiRefLineIdx(1));
+        if (MRL_NUM_REF_LINES > 3 && multiRefIdx != MULTI_REF_LINE_IDX[1])
+        {
+          m_BinEncoder.encodeBin(multiRefIdx != MULTI_REF_LINE_IDX[2], Ctx::MultiRefLineIdx(2));
+        }
+      }
+
+    }
+    pu = pu->next;
+  }
+}
+#endif
+
 void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
 {
   if( !cu.Y().valid() )
@@ -850,6 +918,13 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
         break;
       }
     }
+#if JVET_L0283_MULTI_REF_LINE
+    if (pu->multiRefIdx)
+    {
+      CHECK(mpm_idx >= numMPMs, "use of non-MPM");
+    }
+    else
+#endif
     m_BinEncoder.encodeBin( mpm_idx < numMPMs, Ctx::IPredMode[0]() );
 
     pu = pu->next;
@@ -936,6 +1011,13 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
       break;
     }
   }
+#if JVET_L0283_MULTI_REF_LINE
+  if (pu.multiRefIdx)
+  {
+    CHECK(mpm_idx >= numMPMs, "use of non-MPM");
+  }
+  else
+#endif
   m_BinEncoder.encodeBin( mpm_idx < numMPMs, Ctx::IPredMode[0]() );
 
   // mpm_idx / rem_intra_luma_pred_mode

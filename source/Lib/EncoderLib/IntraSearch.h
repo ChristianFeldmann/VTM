@@ -78,6 +78,9 @@ private:
   double m_bestModeCostStore[4];                                    // RD cost of the best mode for each PU using DCT2
   double m_modeCostStore    [4][NUM_LUMA_MODE];                         // RD cost of each mode for each PU using DCT2
   uint32_t   m_savedRdModeList  [4][NUM_LUMA_MODE], m_savedNumRdModes[4];
+#if JVET_L0283_MULTI_REF_LINE
+  int        m_savedExtendRefList[4][NUM_LUMA_MODE];
+#endif
 
 protected:
   // interface to option

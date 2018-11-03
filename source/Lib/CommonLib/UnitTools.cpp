@@ -299,6 +299,9 @@ cTUTraverser CU::traverseTUs( const CodingUnit& cu )
 int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType &channelType /*= CHANNEL_TYPE_LUMA*/ )
 {
   const unsigned numMPMs = pu.cs->pcv->numMPMs;
+#if JVET_L0283_MULTI_REF_LINE
+  const int extendRefLine = (channelType == CHANNEL_TYPE_LUMA) ? pu.multiRefIdx : 0;
+#endif
   {
     int numCand      = -1;
 #if JVET_L0165_6MPM
@@ -327,56 +330,130 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     const int offset = (int)NUM_LUMA_MODE - 6;
     const int mod = offset + 3;
 
-    mpm[0] = leftIntraDir;
-    mpm[1] = (mpm[0] == PLANAR_IDX) ? DC_IDX : PLANAR_IDX;
-    mpm[2] = VER_IDX;
-    mpm[3] = HOR_IDX;
-    mpm[4] = VER_IDX - 4;
-    mpm[5] = VER_IDX + 4;
-
-    if (leftIntraDir == aboveIntraDir)
+#if JVET_L0283_MULTI_REF_LINE
+    if (extendRefLine)
     {
-      numCand = 1;
+      int modeIdx = 0;
+      int angularMode[2] = { 0, 0 };
+
       if (leftIntraDir > DC_IDX)
       {
-        mpm[0] = leftIntraDir;
-        mpm[1] = PLANAR_IDX;
-        mpm[2] = DC_IDX;
-        mpm[3] = ((leftIntraDir + offset) % mod) + 2;
-        mpm[4] = ((leftIntraDir - 1) % mod) + 2;
-        mpm[5] = ((leftIntraDir + offset - 1) % mod) + 2;
+        angularMode[modeIdx++] = leftIntraDir;
       }
-    }
-    else //L!=A
-    {
-      numCand = 2;
-      mpm[0] = leftIntraDir;
-      mpm[1] = aboveIntraDir;
-      bool maxCandModeIdx = mpm[0] > mpm[1] ? 0 : 1;
-
-      if ((leftIntraDir > DC_IDX) && (aboveIntraDir > DC_IDX))
+      if (aboveIntraDir > DC_IDX)
       {
-        mpm[2] = PLANAR_IDX;
-        mpm[3] = DC_IDX;
-        if ((mpm[maxCandModeIdx] - mpm[!maxCandModeIdx] < 63) && (mpm[maxCandModeIdx] - mpm[!maxCandModeIdx] > 1))
+        angularMode[modeIdx++] = aboveIntraDir;
+      }
+      if (modeIdx == 0)
+      {
+        mpm[0] = VER_IDX;
+        mpm[1] = HOR_IDX;
+        mpm[2] = 2;
+        mpm[3] = DIA_IDX;
+        mpm[4] = VDIA_IDX;
+        mpm[5] = 26;
+      }
+      else if (modeIdx == 1)
+      {
+        mpm[0] = angularMode[0];
+        mpm[1] = ((angularMode[0] + offset) % mod) + 2;
+        mpm[2] = ((angularMode[0] - 1) % mod) + 2;
+        mpm[3] = ((angularMode[0] + offset - 1) % mod) + 2;
+        mpm[4] = (angularMode[0] % mod) + 2;
+        mpm[5] = ((angularMode[0] + offset - 2) % mod) + 2;
+      }
+      else
+      {
+        mpm[0] = angularMode[0];
+        mpm[1] = angularMode[1];
+        int maxCandModeIdx = mpm[0] > mpm[1] ? 0 : 1;
+        int minCandModeIdx = 1 - maxCandModeIdx;
+        if (mpm[maxCandModeIdx] - mpm[minCandModeIdx] == 1)
         {
-          mpm[4] = ((mpm[maxCandModeIdx] + offset) % mod) + 2;
-          mpm[5] = ((mpm[maxCandModeIdx] - 1) % mod) + 2;
+          mpm[2] = ((angularMode[minCandModeIdx] + offset) % mod) + 2;
+          mpm[3] = ((angularMode[maxCandModeIdx] - 1) % mod) + 2;
+          mpm[4] = ((angularMode[minCandModeIdx] + offset - 1) % mod) + 2;
+          mpm[5] = ( angularMode[maxCandModeIdx] % mod) + 2;
+        }
+        else if (mpm[maxCandModeIdx] - mpm[minCandModeIdx] >= 62)
+        {
+          mpm[2] = ((angularMode[minCandModeIdx] - 1) % mod) + 2;
+          mpm[3] = ((angularMode[maxCandModeIdx] + offset) % mod) + 2;
+          mpm[4] = ((angularMode[minCandModeIdx]) % mod) + 2;
+          mpm[5] = ((angularMode[maxCandModeIdx] + offset - 1) % mod) + 2;
+        }
+        else if (mpm[maxCandModeIdx] - mpm[minCandModeIdx] == 2)
+        {
+          mpm[2] = ((angularMode[minCandModeIdx] - 1) % mod) + 2;
+          mpm[3] = ((angularMode[minCandModeIdx] + offset) % mod) + 2;
+          mpm[4] = ((angularMode[maxCandModeIdx] - 1) % mod) + 2;
+          mpm[5] = ((angularMode[minCandModeIdx] + offset - 1) % mod) + 2;
         }
         else
         {
-          mpm[4] = ((mpm[maxCandModeIdx] + offset - 1) % mod) + 2;
-          mpm[5] = ((mpm[maxCandModeIdx] ) % mod) + 2;
+          mpm[2] = ((angularMode[minCandModeIdx] + offset) % mod) + 2;
+          mpm[3] = ((angularMode[minCandModeIdx] - 1) % mod) + 2;
+          mpm[4] = ((angularMode[maxCandModeIdx] + offset) % mod) + 2;
+          mpm[5] = ((angularMode[maxCandModeIdx] - 1) % mod) + 2;
         }
       }
-      else if (leftIntraDir + aboveIntraDir >= 2)
-      {
-        mpm[2] = (mpm[!maxCandModeIdx] == PLANAR_IDX) ? DC_IDX : PLANAR_IDX;
-        mpm[3] = ((mpm[maxCandModeIdx] + offset) % mod) + 2;
-        mpm[4] = ((mpm[maxCandModeIdx] - 1) % mod) + 2;
-        mpm[5] = ((mpm[maxCandModeIdx] + offset - 1) % mod) + 2;
-      }
     }
+    else
+    {
+#endif
+      mpm[0] = leftIntraDir;
+      mpm[1] = (mpm[0] == PLANAR_IDX) ? DC_IDX : PLANAR_IDX;
+      mpm[2] = VER_IDX;
+      mpm[3] = HOR_IDX;
+      mpm[4] = VER_IDX - 4;
+      mpm[5] = VER_IDX + 4;
+
+      if (leftIntraDir == aboveIntraDir)
+      {
+        numCand = 1;
+        if (leftIntraDir > DC_IDX)
+        {
+          mpm[0] = leftIntraDir;
+          mpm[1] = PLANAR_IDX;
+          mpm[2] = DC_IDX;
+          mpm[3] = ((leftIntraDir + offset) % mod) + 2;
+          mpm[4] = ((leftIntraDir - 1) % mod) + 2;
+          mpm[5] = ((leftIntraDir + offset - 1) % mod) + 2;
+        }
+      }
+      else //L!=A
+      {
+        numCand = 2;
+        mpm[0] = leftIntraDir;
+        mpm[1] = aboveIntraDir;
+        bool maxCandModeIdx = mpm[0] > mpm[1] ? 0 : 1;
+
+        if ((leftIntraDir > DC_IDX) && (aboveIntraDir > DC_IDX))
+        {
+          mpm[2] = PLANAR_IDX;
+          mpm[3] = DC_IDX;
+          if ((mpm[maxCandModeIdx] - mpm[!maxCandModeIdx] < 63) && (mpm[maxCandModeIdx] - mpm[!maxCandModeIdx] > 1))
+          {
+            mpm[4] = ((mpm[maxCandModeIdx] + offset) % mod) + 2;
+            mpm[5] = ((mpm[maxCandModeIdx] - 1) % mod) + 2;
+          }
+          else
+          {
+            mpm[4] = ((mpm[maxCandModeIdx] + offset - 1) % mod) + 2;
+            mpm[5] = ((mpm[maxCandModeIdx]) % mod) + 2;
+          }
+        }
+        else if (leftIntraDir + aboveIntraDir >= 2)
+        {
+          mpm[2] = (mpm[!maxCandModeIdx] == PLANAR_IDX) ? DC_IDX : PLANAR_IDX;
+          mpm[3] = ((mpm[maxCandModeIdx] + offset) % mod) + 2;
+          mpm[4] = ((mpm[maxCandModeIdx] - 1) % mod) + 2;
+          mpm[5] = ((mpm[maxCandModeIdx] + offset - 1) % mod) + 2;
+        }
+      }
+#if JVET_L0283_MULTI_REF_LINE
+    }
+#endif
 #else
     int leftIntraDir = DC_IDX, aboveIntraDir = DC_IDX;
 
@@ -422,6 +499,71 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     const int offset = 61;
     const int mod    = 64;
 
+#if JVET_L0283_MULTI_REF_LINE
+    if (extendRefLine)
+    {
+      if (leftIntraDir == aboveIntraDir)
+      {
+        numCand = 1;
+
+        if (leftIntraDir > DC_IDX)   // angular modes
+        {
+          mpm[0] = leftIntraDir;
+          mpm[1] = ((leftIntraDir + offset) % mod) + 2;
+          mpm[2] = ((leftIntraDir - 1) % mod) + 2;
+        }
+        else   // non-angular
+        {
+          mpm[0] = 2;
+          mpm[1] = HOR_IDX;
+          mpm[2] = VER_IDX;
+        }
+      }
+      else
+      {
+        numCand = 2;
+
+        if (leftIntraDir <= DC_IDX && aboveIntraDir <= DC_IDX) // both non-angular
+        {
+          mpm[0] = 2;
+          mpm[1] = HOR_IDX;
+          mpm[2] = VER_IDX;
+        }
+        else if (leftIntraDir <= DC_IDX) // left non-angular
+        {
+          mpm[0] = aboveIntraDir;
+          mpm[1] = ((aboveIntraDir + offset) % mod) + 2;
+          mpm[2] = ((aboveIntraDir - 1) % mod) + 2;
+        }
+        else if (aboveIntraDir <= DC_IDX) // above non-angular
+        {
+          mpm[0] = leftIntraDir;
+          mpm[1] = ((leftIntraDir + offset) % mod) + 2;
+          mpm[2] = ((leftIntraDir - 1) % mod) + 2;
+        }
+        else // both angular
+        {
+          mpm[0] = leftIntraDir;
+          mpm[1] = aboveIntraDir;
+          if (leftIntraDir == VER_IDX)
+          {
+            mpm[2] = aboveIntraDir == HOR_IDX ? 2 : HOR_IDX;
+          }
+          else if (leftIntraDir == HOR_IDX)
+          {
+            mpm[2] = aboveIntraDir == VER_IDX ? 2 : VER_IDX;
+          }
+          else
+          {
+            mpm[2] = aboveIntraDir == VER_IDX ? HOR_IDX : VER_IDX;
+          }
+        }
+      }
+    }
+    else
+    {
+#endif
+
     if (leftIntraDir == aboveIntraDir)
     {
       numCand = 1;
@@ -455,6 +597,9 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
         mpm[2] = (leftIntraDir + aboveIntraDir) < 2 ? VER_IDX : DC_IDX;
       }
     }
+#if JVET_L0283_MULTI_REF_LINE
+    }
+#endif
 #endif
     for (int i = 0; i < numMPMs; i++)
     {

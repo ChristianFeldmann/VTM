@@ -1415,6 +1415,9 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
       m_CABACEstimator->cu_skip_flag ( cu );
     }
     m_CABACEstimator->pred_mode      ( cu );
+#if JVET_L0283_MULTI_REF_LINE
+    m_CABACEstimator->extend_ref_line( cu );
+#endif
     m_CABACEstimator->cu_pred_data   ( cu );
     m_CABACEstimator->pcm_data       ( cu );
 
@@ -1867,7 +1870,14 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         updateDoubleCandList(uiMergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
 #else
-        updateCandList(uiMergeCand, cost, RdModeList, candCostList, uiNumMrgSATDCand, &insertPos);
+#if JVET_L0283_MULTI_REF_LINE
+        static_vector<int, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM> * nullList = nullptr;
+#endif
+        updateCandList(uiMergeCand, cost, RdModeList, candCostList
+#if JVET_L0283_MULTI_REF_LINE
+          , *nullList, -1
+#endif          
+          , uiNumMrgSATDCand, &insertPos);
 #endif
         if (insertPos != -1)
         {
@@ -1889,7 +1899,14 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         updateDoubleCandList(uiMergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand);
 #else
-        updateCandList( uiMergeCand, cost, RdModeList, candCostList, uiNumMrgSATDCand );
+#if JVET_L0283_MULTI_REF_LINE
+        static_vector<int, MRG_MAX_NUM_CANDS> * nullList = nullptr;
+#endif
+        updateCandList( uiMergeCand, cost, RdModeList, candCostList
+#if JVET_L0283_MULTI_REF_LINE
+          , *nullList, -1
+#endif
+          , uiNumMrgSATDCand );
 #endif
 #endif
         CHECK( std::min( uiMergeCand + 1, uiNumMrgSATDCand ) != RdModeList.size(), "" );
@@ -2071,7 +2088,14 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         updateDoubleCandList(mergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
 #else
-        updateCandList(mergeCand, cost, RdModeList, candCostList, uiNumMrgSATDCand, &insertPos);
+#if JVET_L0283_MULTI_REF_LINE
+        static_vector<int, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM> * nullList = nullptr;
+#endif
+        updateCandList(mergeCand, cost, RdModeList, candCostList
+#if JVET_L0283_MULTI_REF_LINE
+          , *nullList, -1
+#endif
+          , uiNumMrgSATDCand, &insertPos);
 #endif
         if (insertPos != -1)
         {
@@ -2500,7 +2524,14 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
       double cost = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
 
-      updateCandList( mergeCand, cost, triangleRdModeList, tianglecandCostList, triangleNumMrgSATDCand );
+#if JVET_L0283_MULTI_REF_LINE
+      static_vector<int, TRIANGLE_MAX_NUM_CANDS> * nullList = nullptr;
+#endif
+      updateCandList( mergeCand, cost, triangleRdModeList, tianglecandCostList
+#if JVET_L0283_MULTI_REF_LINE
+        , *nullList, -1
+#endif
+        , triangleNumMrgSATDCand );
     }
         
     // limit number of candidates using SATD-costs
@@ -2757,8 +2788,14 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
           uiBitsCand--;
         }
         double cost = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
-
-        updateCandList( uiMergeCand, cost, RdModeList, candCostList, uiNumMrgSATDCand );
+#if JVET_L0283_MULTI_REF_LINE
+        static_vector<int, AFFINE_MRG_MAX_NUM_CANDS> * nullList = nullptr;
+#endif
+        updateCandList( uiMergeCand, cost, RdModeList, candCostList
+#if JVET_L0283_MULTI_REF_LINE
+          , *nullList, -1
+#endif
+          , uiNumMrgSATDCand );
 
         CHECK( std::min( uiMergeCand + 1, uiNumMrgSATDCand ) != RdModeList.size(), "" );
       }

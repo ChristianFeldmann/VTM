@@ -983,8 +983,6 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__INTRA_DIR_ANG, cu.lumaSize(), CHANNEL_TYPE_LUMA );
 
-  const uint32_t numMPMs = cu.cs->pcv->numMPMs;
-
   // prev_intra_luma_pred_flag
   int numBlocks = CU::getNumPUs( cu );
   int mpmFlag[4];
@@ -1003,15 +1001,14 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
 
   PredictionUnit *pu = cu.firstPU;
 
-  // mpm_idx / rem_intra_luma_pred_mode
+  unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];  // mpm_idx / rem_intra_luma_pred_mode
   for( int k = 0; k < numBlocks; k++ )
   {
-    unsigned *mpm_pred = ( unsigned* ) alloca( numMPMs * sizeof( unsigned ) );
     PU::getIntraMPMs( *pu, mpm_pred );
 
     if( mpmFlag[k] )
     {
-      unsigned ipred_idx = 0;
+      uint32_t ipred_idx = 0;
       {
         ipred_idx = m_BinDecoder.decodeBinEP();
         if( ipred_idx )
@@ -1047,9 +1044,9 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
 #endif
       }
       //postponed sorting of MPMs (only in remaining branch)
-      std::sort( mpm_pred, mpm_pred + cu.cs->pcv->numMPMs );
+      std::sort( mpm_pred, mpm_pred + NUM_MOST_PROBABLE_MODES );
 
-      for( unsigned i = 0; i < cu.cs->pcv->numMPMs; i++ )
+      for( uint32_t i = 0; i < NUM_MOST_PROBABLE_MODES; i++ )
       {
         ipred_mode += (ipred_mode >= mpm_pred[i]);
       }
@@ -1765,7 +1762,7 @@ void CABACReader::MHIntra_luma_pred_modes(CodingUnit &cu)
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__INTRA_DIR_ANG, cu.lumaSize(), CHANNEL_TYPE_LUMA);
 
-  const uint32_t numMPMs = 3;
+  const int numMPMs = 3;  // Multi-hypothesis intra uses only 3 MPM
 
   // prev_intra_luma_pred_flag
   int numBlocks = CU::getNumPUs(cu);
@@ -1784,7 +1781,6 @@ void CABACReader::MHIntra_luma_pred_modes(CodingUnit &cu)
   }
 
   unsigned mpm_pred[numMPMs];
-  // mpm_idx / rem_intra_luma_pred_mode
   for (int k = 0; k < numBlocks; k++)
   {
     PU::getMHIntraMPMs(*pu, mpm_pred);

@@ -496,8 +496,8 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
         }
 #if JVET_L0283_MULTI_REF_LINE
         pu.multiRefIdx = 1;
-        unsigned  numMPMs = pu.cs->pcv->numMPMs;
-        unsigned *multiRefMPM = (unsigned*)alloca(pu.cs->pcv->numMPMs * sizeof(unsigned));
+        const int  numMPMs = NUM_MOST_PROBABLE_MODES;
+        unsigned  multiRefMPM [numMPMs];
         PU::getIntraMPMs(pu, multiRefMPM);
         for (int mRefNum = 1; mRefNum < numOfPassesExtendRef; mRefNum++)
         {
@@ -540,8 +540,8 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 #endif
         if( m_pcEncCfg->getFastUDIUseMPMEnabled() )
         {
-          unsigned  numMPMs = pu.cs->pcv->numMPMs;
-          unsigned *uiPreds = ( unsigned* ) alloca( numMPMs * sizeof( unsigned ) );
+          const int numMPMs = NUM_MOST_PROBABLE_MODES;
+          unsigned  uiPreds[numMPMs];
 
 #if JVET_L0283_MULTI_REF_LINE
           pu.multiRefIdx = 0;

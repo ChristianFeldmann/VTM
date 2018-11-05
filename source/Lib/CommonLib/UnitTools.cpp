@@ -298,7 +298,7 @@ cTUTraverser CU::traverseTUs( const CodingUnit& cu )
 
 int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType &channelType /*= CHANNEL_TYPE_LUMA*/ )
 {
-  const unsigned numMPMs = pu.cs->pcv->numMPMs;
+  const int numMPMs = NUM_MOST_PROBABLE_MODES;
 #if JVET_L0283_MULTI_REF_LINE
   const int extendRefLine = (channelType == CHANNEL_TYPE_LUMA) ? pu.multiRefIdx : 0;
 #endif
@@ -737,7 +737,7 @@ bool PU::isChromaIntraModeCrossCheckMode( const PredictionUnit &pu )
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 int PU::getMHIntraMPMs(const PredictionUnit &pu, unsigned* mpm, const ChannelType &channelType /*= CHANNEL_TYPE_LUMA*/, const bool isChromaMDMS /*= false*/, const unsigned startIdx /*= 0*/)
 {
-  const unsigned numMPMs = 3;
+  const int numMPMs = 3; // Multi-hypothesis intra uses only 3 MPM
   {
     int numCand = -1;
     uint32_t leftIntraDir = DC_IDX, aboveIntraDir = DC_IDX;

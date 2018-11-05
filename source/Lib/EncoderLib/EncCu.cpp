@@ -3382,6 +3382,18 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
   int minEMTMode = 0;
   int maxEMTMode = (considerEmtSecondPass?1:0);
 
+  // Not allow very big |MVd| to avoid CABAC crash caused by too large MVd. Normally no impact on coding performance.
+  const int maxMvd = 1 << 15;
+  const PredictionUnit& pu = *cu->firstPU;
+  if (!cu->affine)
+  {
+    if ((pu.refIdx[0] >= 0 && (pu.mvd[0].getAbsHor() >= maxMvd || pu.mvd[0].getAbsVer() >= maxMvd))
+      || (pu.refIdx[1] >= 0 && (pu.mvd[1].getAbsHor() >= maxMvd || pu.mvd[1].getAbsVer() >= maxMvd)))
+    {
+      return;
+    }
+  }
+
   if( emtMode == 2 )
   {
     minEMTMode = maxEMTMode = (cu->emtFlag?1:0);

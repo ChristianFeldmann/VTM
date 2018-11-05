@@ -2167,7 +2167,6 @@ public:
     , lumaWidth           ( sps.getPicWidthInLumaSamples() )
     , lumaHeight          ( sps.getPicHeightInLumaSamples() )
     , fastDeltaQPCuMaxSize( Clip3(sps.getMaxCUHeight() >> (sps.getLog2DiffMaxMinCodingBlockSize()), sps.getMaxCUHeight(), 32u) )
-    , numMPMs             (NUM_MOST_PROBABLE_MODES)
     , noRQT               (  sps.getSpsNext().getUseQTBT() )
     , rectCUs             (  sps.getSpsNext().getUseQTBT() )
     , only2Nx2N           (  sps.getSpsNext().getUseQTBT() )
@@ -2209,7 +2208,6 @@ public:
   const unsigned     lumaWidth;
   const unsigned     lumaHeight;
   const unsigned     fastDeltaQPCuMaxSize;
-  const unsigned     numMPMs;
   const bool         noRQT;
   const bool         rectCUs;
   const bool         only2Nx2N;

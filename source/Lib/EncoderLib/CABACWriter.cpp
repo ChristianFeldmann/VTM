@@ -890,22 +890,21 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
     return;
   }
 
-  unsigned numMPMs   = cu.cs->pcv->numMPMs;
-  int      numBlocks = CU::getNumPUs( cu );
-  unsigned *mpm_preds  [4];
-  unsigned mpm_idxs    [4];
-  unsigned ipred_modes [4];
+  const int numMPMs   = NUM_MOST_PROBABLE_MODES;
+  const int numBlocks = CU::getNumPUs( cu );
+  unsigned  mpm_preds   [4][numMPMs];
+  unsigned  mpm_idxs    [4];
+  unsigned  ipred_modes [4];
 
   const PredictionUnit* pu = cu.firstPU;
 
   // prev_intra_luma_pred_flag
   for( int k = 0; k < numBlocks; k++ )
   {
-    unsigned*& mpm_pred   = mpm_preds[k];
+    unsigned*  mpm_pred   = mpm_preds[k];
     unsigned&  mpm_idx    = mpm_idxs[k];
     unsigned&  ipred_mode = ipred_modes[k];
 
-    mpm_pred = ( unsigned* ) alloca( numMPMs * sizeof( unsigned ) );
     PU::getIntraMPMs( *pu, mpm_pred );
 
     ipred_mode = pu->intraDir[0];
@@ -969,7 +968,7 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
       std::sort( mpm_pred, mpm_pred + numMPMs );
 
       {
-        for (int idx = int(numMPMs) - 1; idx >= 0; idx--)
+        for (int idx = numMPMs - 1; idx >= 0; idx--)
         {
           if (ipred_mode > mpm_pred[idx])
           {
@@ -995,15 +994,15 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
 {
 
   // prev_intra_luma_pred_flag
-  unsigned  numMPMs  = pu.cs->pcv->numMPMs;
-  unsigned *mpm_pred = ( unsigned* ) alloca( numMPMs * sizeof( unsigned ) );
-
+  const int numMPMs  = NUM_MOST_PROBABLE_MODES;
+  unsigned  mpm_pred[numMPMs];
+  
   PU::getIntraMPMs( pu, mpm_pred );
 
   unsigned ipred_mode = pu.intraDir[0];
   unsigned mpm_idx = numMPMs;
 
-  for( unsigned idx = 0; idx < numMPMs; idx++ )
+  for( int idx = 0; idx < numMPMs; idx++ )
   {
     if( ipred_mode == mpm_pred[idx] )
     {
@@ -1049,7 +1048,7 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
   {
     std::sort( mpm_pred, mpm_pred + numMPMs );
     {
-      for (int idx = int(numMPMs) - 1; idx >= 0; idx--)
+      for (int idx = numMPMs - 1; idx >= 0; idx--)
       {
         if (ipred_mode > mpm_pred[idx])
         {
@@ -1749,7 +1748,7 @@ void CABACWriter::MHIntra_luma_pred_modes(const CodingUnit& cu)
     return;
   }
 
-  const unsigned numMPMs = 3;
+  const int numMPMs = 3;
   int      numBlocks = CU::getNumPUs(cu);
   unsigned mpm_idxs[4];
   unsigned pred_modes[4];
@@ -1768,7 +1767,7 @@ void CABACWriter::MHIntra_luma_pred_modes(const CodingUnit& cu)
 
     mpm_idx = numMPMs;
 
-    for (unsigned idx = 0; idx < numMPMs; idx++)
+    for (int idx = 0; idx < numMPMs; idx++)
     {
       if (pred_mode == mpm_pred[idx])
       {

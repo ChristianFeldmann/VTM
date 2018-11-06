@@ -115,11 +115,19 @@ protected:
 #if JVET_L0256_BIO
                                   ,const bool& bioApplied = false
 #endif
+
+#if JVET_L0293_CPR
+    , const bool luma = true, const bool chroma = true
+#endif
   );
   void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred );
   void xPredInterBlk            ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
 #if JVET_L0256_BIO
                                   ,const bool& bioApplied = false
+#endif
+
+#if JVET_L0293_CPR
+    , bool isCPR = false
 #endif
                                  );
 
@@ -141,7 +149,9 @@ protected:
 
 
   MotionInfo      m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
-
+#if JVET_L0293_CPR
+  void xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred);
+#endif
 public:
   InterPrediction();
   virtual ~InterPrediction();
@@ -150,10 +160,19 @@ public:
 
   // inter
   void    motionCompensation  (PredictionUnit &pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X
+#if JVET_L0293_CPR
+    , const bool luma = true, const bool chroma = true
+#endif
   );
   void    motionCompensation  (PredictionUnit &pu, const RefPicList &eRefPicList = REF_PIC_LIST_X
+#if JVET_L0293_CPR
+    , const bool luma = true, const bool chroma = true
+#endif
   );
   void    motionCompensation  (CodingUnit &cu,     const RefPicList &eRefPicList = REF_PIC_LIST_X
+#if JVET_L0293_CPR
+    , const bool luma = true, const bool chroma = true
+#endif
   );
 
 #if JVET_L0124_L0208_TRIANGLE

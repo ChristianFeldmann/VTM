@@ -447,6 +447,15 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       pcRefPic = xGetLongTermRefPic(rcListPic, m_pRPS->getPOC(i), m_pRPS->getCheckLTMSBPresent(i));
     }
   }
+#if JVET_L0293_CPR
+  if (getSPS()->getSpsNext().getCPRMode())
+  {
+    RefPicSetLtCurr[NumPicLtCurr] = getPic();
+    //getPic()->setIsLongTerm(true);
+    getPic()->longTerm = true;
+    NumPicLtCurr++;
+  }
+#endif
   // ref_pic_list_init
   Picture*  rpsCurrList0[MAX_NUM_REF+1];
   Picture*  rpsCurrList1[MAX_NUM_REF+1];
@@ -459,6 +468,13 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
     // - Otherwise, when the current picture contains a P or B slice, the value of NumPocTotalCurr shall not be equal to 0.
     if (getRapPicFlag())
     {
+#if JVET_L0293_CPR
+      if (getSPS()->getSpsNext().getCPRMode())
+      {
+        CHECK(numPicTotalCurr != 1, "Invalid state");
+      }
+      else
+#endif
         CHECK(numPicTotalCurr != 0, "Invalid state");
     }
 
@@ -529,6 +545,13 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       m_bIsUsedAsLongTerm[REF_PIC_LIST_1][rIdx] = ( cIdx >= NumPicStCurr0 + NumPicStCurr1 );
     }
   }
+#if JVET_L0293_CPR
+  if (getSPS()->getSpsNext().getCPRMode())
+  {
+    m_apcRefPicList[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = getPic();
+    m_bIsUsedAsLongTerm[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = true;
+  }
+#endif
     // For generalized B
   // note: maybe not existed case (always L0 is copied to L1 if L1 is empty)
   if( bCopyL0toL1ErrorCase && isInterB() && getNumRefIdx(REF_PIC_LIST_1) == 0)
@@ -559,6 +582,13 @@ int Slice::getNumRpsCurrTempList() const
       numRpsCurrTempList++;
     }
   }
+#if JVET_L0293_CPR
+  if (getSPS()->getSpsNext().getCPRMode())
+  {
+    return numRpsCurrTempList + 1;
+  }
+  else
+#endif
     return numRpsCurrTempList;
 }
 
@@ -1798,6 +1828,9 @@ SPSNext::SPSNext( SPS& sps )
   , m_ImvMode                   ( IMV_OFF )
   , m_MTTMode                   ( 0 )
     , m_compositeRefEnabled     ( false )
+#if JVET_L0293_CPR
+  , m_CPRMode                   ( 0 )
+#endif
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags here (with "false" as default values)
 {
 }

@@ -58,6 +58,15 @@ enum PictureType
   PIC_ORG_RESI,
   NUM_PIC_TYPES
 };
+#if JVET_L0293_CPR
+enum CprLumaCoverage
+{
+  CPR_LUMA_COVERAGE_FULL = 0,
+  CPR_LUMA_COVERAGE_PARTIAL,
+  CPR_LUMA_COVERAGE_NONE,
+  NUM_CPR_LUMA_COVERAGE,
+};
+#endif
 extern XUCache g_globalUnitCache;
 
 // ---------------------------------------------------------------------------
@@ -76,6 +85,9 @@ public:
   Slice           *slice;
 
   UnitScale        unitScale[MAX_NUM_COMPONENT];
+#if JVET_L0293_CPR
+  ChannelType chType;
+#endif
 
   int         baseQP;
   int         prevQP[MAX_NUM_CHANNEL_TYPE];
@@ -146,6 +158,9 @@ public:
   cCUTraverser    traverseCUs(const UnitArea& _unit, const ChannelType _chType) const;
   cPUTraverser    traversePUs(const UnitArea& _unit, const ChannelType _chType) const;
   cTUTraverser    traverseTUs(const UnitArea& _unit, const ChannelType _chType) const;
+#if JVET_L0293_CPR
+  CprLumaCoverage getCprLumaCoverage(const CompArea& chromaArea) const;
+#endif
   // ---------------------------------------------------------------------------
   // encoding search utilities
   // ---------------------------------------------------------------------------

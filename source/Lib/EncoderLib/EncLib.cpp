@@ -884,6 +884,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseTriangle           ( m_Triangle );
 #endif
 
+#if JVET_L0293_CPR
+  sps.getSpsNext().setCPRMode               ( m_CPRMode );
+#endif 
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 
   int minCUSize = ( /*sps.getSpsNext().getUseQTBT() ? 1 << MIN_CU_LOG2 :*/ sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize() );
@@ -1387,6 +1390,13 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     }
   }
   CHECK(!(bestPos <= 15), "Unspecified error");
+#if JVET_L0293_CPR
+  if (sps.getSpsNext().getCPRMode())
+  {
+    pps.setNumRefIdxL0DefaultActive(bestPos + 1);
+  }
+  else
+#endif
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());

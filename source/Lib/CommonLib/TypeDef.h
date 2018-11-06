@@ -131,6 +131,8 @@
 
 #define JVET_L0257_ATMVP_COLBLK_CLIP                      1
 
+#define JVET_L0293_CPR                                    1 // current picture referencing or intra block copy mode
+
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )
 #endif
@@ -951,6 +953,9 @@ enum MergeType
 {
   MRG_TYPE_DEFAULT_N        = 0, // 0
   MRG_TYPE_SUBPU_ATMVP,
+#if JVET_L0293_CPR
+  MRG_TYPE_CPR,                  
+#endif
   NUM_MRG_TYPE                   // 5
 };
 

@@ -246,6 +246,18 @@ protected:
 #if JVET_L0124_L0208_TRIANGLE
   bool      m_Triangle;
 #endif
+
+
+#if JVET_L0293_CPR
+  unsigned  m_CPRMode;
+  unsigned  m_CPRLocalSearchRangeX;
+  unsigned  m_CPRLocalSearchRangeY;
+  unsigned  m_CPRHashSearch;
+  unsigned  m_CPRHashSearchMaxCand;
+  unsigned  m_CPRHashSearchRange4SmallBlk;
+  unsigned  m_CPRFastMethod;
+#endif    
+  
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
 
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel

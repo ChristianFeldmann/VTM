@@ -114,6 +114,28 @@ struct UnitScale
   Size     scale( const Size     &size ) const { return { size.width >> posx, size.height >> posy }; }
   Area     scale( const Area    &_area ) const { return Area( scale( _area.pos() ), scale( _area.size() ) ); }
 };
+#if JVET_L0293_CPR
+namespace std
+{
+  template <>
+  struct hash<Position> : public unary_function<Position, uint64_t>
+  {
+    uint64_t operator()(const Position& value) const
+    {
+      return (((uint64_t)value.x << 32) + value.y);
+    }
+  };
+
+  template <>
+  struct hash<Size> : public unary_function<Size, uint64_t>
+  {
+    uint64_t operator()(const Size& value) const
+    {
+      return (((uint64_t)value.width << 32) + value.height);
+    }
+  };
+}
+#endif
 inline size_t rsAddr(const Position &pos, const uint32_t stride, const UnitScale &unitScale )
 {
   return (size_t)(stride >> unitScale.posx) * (size_t)(pos.y >> unitScale.posy) + (size_t)(pos.x >> unitScale.posx);

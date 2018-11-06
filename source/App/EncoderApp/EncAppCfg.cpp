@@ -874,6 +874,17 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if JVET_L0124_L0208_TRIANGLE
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
 #endif
+
+#if JVET_L0293_CPR
+  ( "CPR",                                            m_CPRMode,                                           0u, "CPRMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
+  ( "CPRLocalSearchRangeX",                           m_CPRLocalSearchRangeX,                            128u, "Search range of CPR local search in x direction")
+  ( "CPRLocalSearchRangeY",                           m_CPRLocalSearchRangeY,                            128u, "Search range of CPR local search in y direction")
+  ( "CPRHashSearch",                                  m_CPRHashSearch,                                     1u, "Hash based CPR search")
+  ( "CPRHashSearchMaxCand",                           m_CPRHashSearchMaxCand,                            256u, "Max candidates for hash based CPR search")
+  ( "CPRHashSearchRange4SmallBlk",                    m_CPRHashSearchRange4SmallBlk,                     256u, "Small block search range in based CPR search")
+  ( "CPRFastMethod",                                  m_CPRFastMethod,                                     6u, "Fast methods for CPR")
+#endif
+
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
 
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
@@ -1964,6 +1975,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_DisableMotionCompression, "Disable motion data compression only allowed with NEXT profile" );
     xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
+#if JVET_L0293_CPR
+    xConfirmPara(m_CPRMode, "CPR Mode only allowed with NEXT profile");
+#endif
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
     xConfirmPara( m_EMT, "EMT only allowed with NEXT profile" );
     xConfirmPara( m_FastEMT, "EMT only allowed with NEXT profile" );
@@ -3208,6 +3222,9 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
 #endif
   }
+#if JVET_L0293_CPR
+    msg(VERBOSE, "CPR:%d ", m_CPRMode);
+#endif
   // ADD_NEW_TOOL (add some output indicating the usage of tools)
 
   msg( VERBOSE, "\nFAST TOOL CFG: " );

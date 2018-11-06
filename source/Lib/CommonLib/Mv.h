@@ -273,6 +273,19 @@ public:
   }
 #endif
 };// END CLASS DEFINITION MV
+#if JVET_L0293_CPR
+namespace std
+{
+  template <>
+  struct hash<Mv> : public unary_function<Mv, uint64_t>
+  {
+    uint64_t operator()(const Mv& value) const
+    {
+      return (((uint64_t)value.hor << 32) + value.ver);
+    }
+  };
+};
+#endif
 void roundMV( Mv& rcMv, unsigned imvShift );
 void clipMv ( Mv& rcMv, const struct Position& pos, const class SPS& sps );
 

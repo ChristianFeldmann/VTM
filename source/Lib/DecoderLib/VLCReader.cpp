@@ -904,12 +904,8 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
     READ_CODE( 3, symbol, "log2_sub_pu_tmvp_size_minus2" );         spsNext.setSubPuMvpLog2Size( symbol + MIN_CU_LOG2 );
 #endif 
-#if ENABLE_BMS
     int subPuMode = 1;
     spsNext.setSubPuMvpMode( subPuMode );
-#else
-    spsNext.setSubPuMvpMode( 3 );
-#endif
   }
 
 

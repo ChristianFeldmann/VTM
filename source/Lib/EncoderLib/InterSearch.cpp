@@ -5080,32 +5080,25 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
   const UnitArea& currArea    = partitioner.currArea();
   const TransformUnit &currTU = *cs.getTU(currArea.lumaPos(), partitioner.chType);
   const CodingUnit &cu        = *currTU.cu;
-#if ENABLE_BMS
   const unsigned currDepth    = partitioner.currTrDepth;
 
   const bool bSubdiv          = currDepth != currTU.depth;
-#endif
 
   if (compID == MAX_NUM_TBLOCKS)  // we are not processing a channel, instead we always recurse and code the CBFs
   {
-#if ENABLE_BMS
     if( cs.pcv->noRQT )
     {
-#if ENABLE_BMS
       if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
       {
         CHECK( !bSubdiv, "Not performing the implicit TU split" );
       }
       else
-#endif
       CHECK( bSubdiv, "transformsplit not supported" );
     }
-#endif
     CHECK(CU::isIntra(cu), "Inter search provided with intra CU");
 
     if( cu.chromaFormat != CHROMA_400 )
     {
-#if ENABLE_BMS
       const bool firstCbfOfCU = ( currDepth == 0 );
       {
         if( firstCbfOfCU || TU::getCbfAtDepth( currTU, COMPONENT_Cb, currDepth - 1 ) )
@@ -5125,18 +5118,9 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
     {
       m_CABACEstimator->cbf_comp( cs, TU::getCbfAtDepth( currTU, COMPONENT_Y, currDepth ), currArea.Y(), currDepth );
     }
-#else
-      m_CABACEstimator->cbf_comp( cs, TU::getCbf( currTU, COMPONENT_Cb ), currArea.blocks[COMPONENT_Cb] );
-      m_CABACEstimator->cbf_comp( cs, TU::getCbf( currTU, COMPONENT_Cr ), currArea.blocks[COMPONENT_Cr], TU::getCbf( currTU, COMPONENT_Cb ) );
-    }
-
-    m_CABACEstimator->cbf_comp( cs, TU::getCbf( currTU, COMPONENT_Y ), currArea.Y() );
-#endif
   }
 
-#if ENABLE_BMS
   if (!bSubdiv)
-#endif
   {
     if (compID != MAX_NUM_TBLOCKS) // we have already coded the CBFs, so now we code coefficients
     {
@@ -5153,18 +5137,15 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
       }
     }
   }
-#if ENABLE_BMS
   else
   {
     if( compID == MAX_NUM_TBLOCKS || TU::getCbfAtDepth( currTU, compID, currDepth ) )
     {
-#if ENABLE_BMS
       if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
       {
         partitioner.splitCurrArea( TU_MAX_TR_SPLIT, cs );
       }
       else
-#endif
         THROW( "Implicit TU split not available!" );
 
       do
@@ -5175,7 +5156,6 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
       partitioner.exitCurrSplit();
     }
   }
-#endif
 }
 
 void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &partitioner, Distortion *puiZeroDist /*= NULL*/
@@ -5192,17 +5172,14 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #if JVET_L0293_CPR
   const CodingUnit &cu = *cs.getCU(partitioner.chType);
 #endif
-#if ENABLE_BMS
   const unsigned currDepth = partitioner.currTrDepth;
 
   bool bCheckSplit = false, bCheckFull = false;
-#if ENABLE_BMS
   if( cs.pcv->noRQT )
   {
     bCheckFull  = !partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
     bCheckSplit = !bCheckFull;
   }
-#endif
 
   // get temporary data
   CodingStructure *csSplit = nullptr;
@@ -5215,10 +5192,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
   {
     csFull = &cs;
   }
-#else
-  bool bCheckFull = true;
-  CodingStructure *csFull = &cs;
-#endif
 
   Distortion uiSingleDist         = 0;
   Distortion uiSingleDistComp [3] = { 0, 0, 0 };
@@ -5234,9 +5207,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #else
     TransformUnit &tu = csFull->addTU(currArea, partitioner.chType);
 #endif
-#if ENABLE_BMS
     tu.depth          = currDepth;
-#endif
     tu.emtIdx         = 0;
 
     double minCost            [MAX_NUM_TBLOCKS];
@@ -5362,11 +5333,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             }
 
             const bool prevCbf = ( compID == COMPONENT_Cr ? tu.cbf[COMPONENT_Cb] : false );
-#if ENABLE_BMS
             m_CABACEstimator->cbf_comp( *csFull, false, compArea, currDepth, prevCbf );
-#else
-            m_CABACEstimator->cbf_comp( *csFull, false, compArea, prevCbf );
-#endif
 
             if( isCrossCPredictionAvailable )
             {
@@ -5398,11 +5365,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             }
 
             const bool prevCbf = ( compID == COMPONENT_Cr ? tu.cbf[COMPONENT_Cb] : false );
-#if ENABLE_BMS
             m_CABACEstimator->cbf_comp( *csFull, true, compArea, currDepth, prevCbf );
-#else
-            m_CABACEstimator->cbf_comp( *csFull, true, compArea, prevCbf );
-#endif
 
             if( isCrossCPredictionAvailable )
             {
@@ -5513,13 +5476,8 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #endif
       if( tu.blocks[compID].valid() )
       {
-#if ENABLE_BMS
         const bool prevCbf = ( compID == COMPONENT_Cr ? TU::getCbfAtDepth( tu, COMPONENT_Cb, currDepth ) : false );
         m_CABACEstimator->cbf_comp( *csFull, TU::getCbfAtDepth( tu, compID, currDepth ), tu.blocks[compID], currDepth, prevCbf );
-#else
-        const bool prevCbf = ( compID == COMPONENT_Cr ? TU::getCbf( tu, COMPONENT_Cb ) : false );
-        m_CABACEstimator->cbf_comp( *csFull, TU::getCbf( tu, compID ), tu.blocks[compID], prevCbf );
-#endif
       }
     }
 
@@ -5557,7 +5515,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #endif
     csFull->cost      = m_pcRdCost->calcRdCost(csFull->fracBits, csFull->dist);
   } // check full
-#if ENABLE_BMS
 
   // code sub-blocks
   if( bCheckSplit )
@@ -5567,13 +5524,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       m_CABACEstimator->getCtx() = ctxStart;
     }
 
-#if ENABLE_BMS
     if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
       partitioner.splitCurrArea( TU_MAX_TR_SPLIT, cs );
     }
     else
-#endif
       THROW( "Implicit TU split not available!" );
 
     do
@@ -5669,7 +5624,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       csFull ->releaseIntermediateData();
     }
   }
-#endif
 }
 
 void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &partitioner, const bool &skipResidual

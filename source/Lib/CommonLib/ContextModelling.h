@@ -344,11 +344,7 @@ namespace DeriveCtx
 {
 unsigned CtxCUsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 unsigned CtxBTsplit   ( const CodingStructure& cs, Partitioner& partitioner );
-#if ENABLE_BMS
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf );
-#else
-unsigned CtxQtCbf     ( const ComponentID compID, const bool prevCbCbf );
-#endif
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );

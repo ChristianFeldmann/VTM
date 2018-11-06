@@ -138,20 +138,13 @@ public:
 
   // transform tree (clause 7.3.8.8)
   void        transform_tree            ( const CodingStructure&        cs,       Partitioner&      pm,     CUCtx& cuCtx,   ChromaCbfs& chromaCbfs );
-#if ENABLE_BMS
   void        cbf_comp                  ( const CodingStructure&        cs,       bool              cbf,    const CompArea& area, unsigned depth, const bool prevCbCbf = false );
-#else
-  void        cbf_comp                  ( const CodingStructure&        cs,       bool              cbf,    const CompArea& area, const bool prevCbCbf = false );
-#endif
 
   // mvd coding (clause 7.3.8.9)
   void        mvd_coding                ( const Mv &rMvd, uint8_t imv );
 
   // transform unit (clause 7.3.8.10)
   void        transform_unit            ( const TransformUnit&          tu,       CUCtx&            cuCtx,  ChromaCbfs& chromaCbfs );
-#if HM_QTBT_AS_IN_JEM_SYNTAX
-  void        transform_unit_qtbt       ( const TransformUnit&          tu,       CUCtx&            cuCtx,  ChromaCbfs& chromaCbfs );
-#endif
   void        cu_qp_delta               ( const CodingUnit&             cu,       int               predQP, const int8_t qp );
   void        cu_chroma_qp_offset       ( const CodingUnit&             cu );
 #if !HM_EMT_NSST_AS_IN_JEM

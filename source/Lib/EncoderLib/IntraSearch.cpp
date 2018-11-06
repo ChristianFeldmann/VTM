@@ -670,10 +670,6 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     }
 
     //===== check modes (using r-d costs) =====
-#if ENABLE_RQT_INTRA_SPEEDUP_MOD
-    uint32_t   uiSecondBestMode  = MAX_UINT;
-    double dSecondBestPUCost = MAX_DOUBLE;
-#endif
     uint32_t       uiBestPUMode  = 0;
 #if JVET_L0283_MULTI_REF_LINE
     int            bestExtendRef = 0;
@@ -723,11 +719,6 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
       {
         std::swap( csTemp, csBest );
 
-
-#if ENABLE_RQT_INTRA_SPEEDUP_MOD
-        uiSecondBestMode  = uiBestPUMode;
-        dSecondBestPUCost = csTemp->cost;
-#endif
         uiBestPUMode  = uiOrgMode;
 #if JVET_L0283_MULTI_REF_LINE
         bestExtendRef = multiRefIdx;
@@ -738,13 +729,6 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
           m_bestModeCostStore[puIndex] = csBest->cost; //cs.cost;
         }
       }
-#if ENABLE_RQT_INTRA_SPEEDUP_MOD
-      else if( csTemp->cost < dSecondBestPUCost )
-      {
-        uiSecondBestMode  = uiOrgMode;
-        dSecondBestPUCost = csTemp->cost;
-      }
-#endif
 
       csTemp->releaseIntermediateData();
     } // Mode loop
@@ -797,7 +781,6 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
 
       if( CS::isDualITree( cs ) )
       {
-#if ENABLE_BMS
         if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
         {
           partitioner.splitCurrArea( TU_MAX_TR_SPLIT, cs );
@@ -810,7 +793,6 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
           partitioner.exitCurrSplit();
         }
         else
-#endif
         cs.addTU( CS::getArea( cs, partitioner.currArea(), partitioner.chType ), partitioner.chType );
       }
 
@@ -1146,23 +1128,19 @@ void IntraSearch::xEncSubdivCbfQT(CodingStructure &cs, Partitioner &partitioner,
 #if HM_EMT_NSST_AS_IN_JEM
   CodingUnit &currCU       = *currTU.cu;
 #endif
-#if ENABLE_BMS
   uint32_t currDepth           = partitioner.currTrDepth;
 
   const bool subdiv        = currTU.depth > currDepth;
 
   if( cs.pcv->noRQT )
   {
-#if ENABLE_BMS
     if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
       CHECK( !subdiv, "TU split implied" );
     }
     else
-#endif
       CHECK( subdiv, "No TU subdivision is allowed with QTBT" );
   }
-#endif
 
   if (bChroma)
   {
@@ -1172,34 +1150,26 @@ void IntraSearch::xEncSubdivCbfQT(CodingStructure &cs, Partitioner &partitioner,
     {
       const ComponentID compID = ComponentID(ch);
 
-#if ENABLE_BMS
       if( currDepth == 0 || TU::getCbfAtDepth( currTU, compID, currDepth - 1 ) )
       {
         const bool prevCbf = ( compID == COMPONENT_Cr ? TU::getCbfAtDepth( currTU, COMPONENT_Cb, currDepth ) : false );
         m_CABACEstimator->cbf_comp( cs, TU::getCbfAtDepth( currTU, compID, currDepth ), currArea.blocks[compID], currDepth, prevCbf );
 
       }
-#else
-      const bool prevCbf = ( compID == COMPONENT_Cr ? TU::getCbf( currTU, COMPONENT_Cb ) : false );
-      m_CABACEstimator->cbf_comp( cs, TU::getCbf( currTU, compID ), currArea.blocks[compID], prevCbf );
-#endif
     }
   }
 
-#if ENABLE_BMS
   if (subdiv)
   {
 #if HM_EMT_NSST_AS_IN_JEM
     if( currDepth == 0 && bLuma ) m_CABACEstimator->emt_cu_flag( currCU );
 #endif
 
-#if ENABLE_BMS
     if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
       partitioner.splitCurrArea( TU_MAX_TR_SPLIT, cs );
     }
     else
-#endif
     THROW( "Cannot perform an implicit split!" );
 
     do
@@ -1210,24 +1180,15 @@ void IntraSearch::xEncSubdivCbfQT(CodingStructure &cs, Partitioner &partitioner,
     partitioner.exitCurrSplit();
   }
   else
-#endif
   {
 #if HM_EMT_NSST_AS_IN_JEM
-#if ENABLE_BMS
     if( currDepth == 0 && bLuma && TU::getCbfAtDepth( currTU, COMPONENT_Y, 0 ) ) m_CABACEstimator->emt_cu_flag( currCU );
-#else
-    if( bLuma && TU::getCbf( currTU, COMPONENT_Y ) ) m_CABACEstimator->emt_cu_flag( *currTU.cu );
-#endif
 
 #endif
     //===== Cbfs =====
     if (bLuma)
     {
-#if ENABLE_BMS
       m_CABACEstimator->cbf_comp( cs, TU::getCbfAtDepth( currTU, COMPONENT_Y, currDepth ), currTU.Y(), currTU.depth );
-#else
-      m_CABACEstimator->cbf_comp( cs, TU::getCbf( currTU, COMPONENT_Y), currTU.Y() );
-#endif
     }
   }
 }
@@ -1236,19 +1197,16 @@ void IntraSearch::xEncCoeffQT(CodingStructure &cs, Partitioner &partitioner, con
 {
   const UnitArea &currArea  = partitioner.currArea();
   TransformUnit &currTU     = *cs.getTU( currArea.blocks[partitioner.chType], partitioner.chType );
-#if ENABLE_BMS
   uint32_t      currDepth       = partitioner.currTrDepth;
   const bool subdiv         = currTU.depth > currDepth;
 
   if (subdiv)
   {
-#if ENABLE_BMS
     if (partitioner.canSplit(TU_MAX_TR_SPLIT, cs))
     {
       partitioner.splitCurrArea(TU_MAX_TR_SPLIT, cs);
     }
     else
-#endif
       THROW("Implicit TU split not available!");
 
     do
@@ -1259,7 +1217,6 @@ void IntraSearch::xEncCoeffQT(CodingStructure &cs, Partitioner &partitioner, con
     partitioner.exitCurrSplit();
   }
   else
-#endif
 
   if( currArea.blocks[compID].valid() )
   {
@@ -1354,9 +1311,6 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     //===== get prediction signal =====
     if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
     {
-#if !ENABLE_BMS
-      if( !PU::isMFLMEnabled(pu) || !pu.cs->pcv->noRQT)
-#endif
       {
         xGetLumaRecPixels( pu, area );
       }
@@ -1479,17 +1433,13 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 {
   const UnitArea &currArea = partitioner.currArea();
   const CodingUnit &cu     = *cs.getCU(currArea.lumaPos(), partitioner.chType);
-#if ENABLE_BMS
   uint32_t     currDepth       = partitioner.currTrDepth;
-#endif
   const PPS &pps           = *cs.pps;
   const bool keepResi      = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() || KEEP_PRED_AND_RESI_SIGNALS;
   bool bCheckFull          = true;
   bool bCheckSplit         = false;
-#if ENABLE_BMS
   bCheckFull               = cs.pcv->noRQT && !partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
   bCheckSplit              = cs.pcv->noRQT &&  partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
-#endif
 
   uint32_t    numSig           = 0;
 
@@ -1512,18 +1462,14 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
   const TempCtx ctxStart  ( m_CtxCache, m_CABACEstimator->getCtx() );
   TempCtx       ctxBest   ( m_CtxCache );
 
-#if ENABLE_BMS
   CodingStructure *csSplit = nullptr;
-#endif
   CodingStructure *csFull  = nullptr;
 
-#if ENABLE_BMS
   if( bCheckSplit )
   {
     csSplit = &cs;
   }
   else if( bCheckFull )
-#endif
   {
     csFull = &cs;
   }
@@ -1533,9 +1479,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
     csFull->cost = 0.0;
 
     TransformUnit &tu = csFull->addTU( CS::getArea( *csFull, currArea, partitioner.chType ), partitioner.chType );
-#if ENABLE_BMS
     tu.depth = currDepth;
-#endif
 
     checkTransformSkip &= TU::hasTransformSkipFlag( *tu.cs, tu.Y() );
     checkTransformSkip &= !cu.transQuantBypass;
@@ -1632,19 +1576,10 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       //----- determine rate and r-d cost -----
       //the condition (transformIndex != DCT2_EMT) seems to be irrelevant, since DCT2_EMT=7 and the highest value of transformIndex is 4
 #if JVET_L0059_MTS_SIMP
-#if ENABLE_BMS
       if( ( modeId == lastCheckId && checkTransformSkip && !TU::getCbfAtDepth( tu, COMPONENT_Y, currDepth ) ) )
 #else
-      if( ( modeId == lastCheckId && checkTransformSkip && !TU::getCbf( tu, COMPONENT_Y ) ) )
-#endif
-#else
-#if ENABLE_BMS
       if( ( modeId == lastCheckId && checkTransformSkip && !TU::getCbfAtDepth( tu, COMPONENT_Y, currDepth ) )
         || ( tu.emtIdx > 0 && ( checkTransformSkip ? transformIndex != lastCheckId : true ) && tu.emtIdx != DCT2_EMT && numSig <= g_EmtSigNumThr ) )
-#else
-      if( ( modeId == lastCheckId && checkTransformSkip && !TU::getCbf( tu, COMPONENT_Y ) )
-        || ( tu.emtIdx > 0 && ( checkTransformSkip ? transformIndex != lastCheckId : true ) && tu.emtIdx != DCT2_EMT && numSig <= g_EmtSigNumThr ) )
-#endif
 #endif
       {
         //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
@@ -1663,11 +1598,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         singleFracBits    = singleTmpFracBits;
 
         bestModeId[COMPONENT_Y] = modeId;
-#if ENABLE_BMS
         cbfBestMode       = TU::getCbfAtDepth( tu, COMPONENT_Y, currDepth );
-#else
-        cbfBestMode       = TU::getCbf( tu, COMPONENT_Y );
-#endif
 
 
         if( bestModeId[COMPONENT_Y] != lastCheckId )
@@ -1720,7 +1651,6 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
     csFull->fracBits += singleFracBits;
   }
 
-#if ENABLE_BMS
   if( bCheckSplit )
   {
     //----- store full entropy coding status, load original entropy coding status -----
@@ -1733,12 +1663,10 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 
     bool uiSplitCbfLuma  = false;
     bool splitIsSelected = true;
-#if ENABLE_BMS
     if( cs.pcv->noRQT && partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
       partitioner.splitCurrArea( TU_MAX_TR_SPLIT, cs );
     }
-#endif
 
     do
     {
@@ -1776,7 +1704,6 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
   }
 
   if( csFull || csSplit )
-#endif
   {
     {
       // otherwise this would've happened in useSubStructure
@@ -1798,15 +1725,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
   const PredictionUnit &pu            = *cs.getPU( currArea.chromaPos(), CHANNEL_TYPE_CHROMA );
   const TransformUnit &currTULuma     = CS::isDualITree( cs ) ? *cs.picture->cs->getTU( currArea.lumaPos(), CHANNEL_TYPE_LUMA ) : currTU;
 
-#if ENABLE_BMS
   uint32_t     currDepth                  = partitioner.currTrDepth;
-#endif
   const PPS &pps                      = *cs.pps;
   ChromaCbfs cbfs                     ( false );
 
-#if ENABLE_BMS
   if (currDepth == currTU.depth)
-#endif
   {
     if (!currArea.Cb().valid() || !currArea.Cr().valid())
     {
@@ -1971,20 +1894,16 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
       cs.dist += singleDistC;
     }
   }
-#if ENABLE_BMS
   else
   {
-#if ENABLE_BMS
     unsigned    numValidTBlocks   = ::getNumberValidTBlocks( *cs.pcv );
     ChromaCbfs  SplitCbfs         ( false );
 
-#if ENABLE_BMS
     if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
       partitioner.splitCurrArea( TU_MAX_TR_SPLIT, cs );
     }
     else
-#endif
       THROW( "Implicit TU split not available" );
 
     do
@@ -2014,11 +1933,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
         }
       }
     }
-#else
-    THROW( "TU split is only allowed in HEVC mode or with Mode1D partitions" );
-#endif
   }
-#endif
 
   return cbfs;
 }

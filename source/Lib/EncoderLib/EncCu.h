@@ -45,6 +45,9 @@
 #include "CommonLib/TrQuant.h"
 #include "CommonLib/Unit.h"
 #include "CommonLib/UnitPartitioner.h"
+#if JVET_L0293_CPR
+#include "CommonLib/CprHashMap.h"
+#endif
 
 #if REUSE_CU_RESULTS
 #include "DecoderLib/DecCu.h"
@@ -110,6 +113,9 @@ private:
 
   CABACWriter*          m_CABACEstimator;
   RateCtrl*             m_pcRateCtrl;
+#if JVET_L0293_CPR
+  CprHashMap            m_cprHashMap;
+#endif
   CodingStructure    ***m_pImvTempCS;
   EncModeCtrl          *m_modeCtrl;
 #if JVET_L0054_MMVD
@@ -130,6 +136,10 @@ private:
   unsigned int          m_prevPOC;
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   bool                  m_clearSubMergeStatic;
+#endif
+#if JVET_L0293_CPR
+  int                   m_ctuCprSearchRangeX;
+  int                   m_ctuCprSearchRangeY;
 #endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   EncLib*               m_pcEncLib;
@@ -245,7 +255,6 @@ protected:
 #if REUSE_CU_RESULTS
   void xReuseCachedResult     ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &Partitioner );
 #endif
-
 #if JVET_L0646_GBI
   bool xIsGBiSkip(const CodingUnit& cu)
   {
@@ -259,8 +268,10 @@ protected:
        ||  abs(cu.slice->getPOC() - cu.slice->getRefPOC(REF_PIC_LIST_1, cu.refIdxBi[1])) == 1))));
   }
 #endif
-
-
+#if JVET_L0293_CPR
+  void xCheckRDCostCPRMode    ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+  void xCheckRDCostCPRModeMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
+#endif
 };
 
 //! \}

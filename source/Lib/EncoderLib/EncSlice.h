@@ -157,6 +157,9 @@ public:
   void    setSliceSegmentIdx  (uint32_t i)              { m_uiSliceSegmentIdx = i;          }
 
   SliceType getEncCABACTableIdx() const             { return m_encCABACTableIdx;        }
+ #if JVET_L0293_CPR
+  void    setEncCABACTableIdx (SliceType b)         { m_encCABACTableIdx = b; }
+#endif
 private:
   double  xGetQPValueAccordingToLambda ( double lambda );
 };

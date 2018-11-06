@@ -1082,6 +1082,9 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
     if( isFirst )
     {
       if( !cs.slice->isIntra() 
+#if JVET_L0293_CPR
+        && cu.Y().valid()
+#endif
         )
       {
         if( cs.pps->getTransquantBypassEnabledFlag() )
@@ -1111,6 +1114,10 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
     {
       if (isFirst)
       {
+#if JVET_L0293_CPR
+        if ( !cu.Y().valid())
+          m_CABACEstimator->pred_mode( cu );
+#endif
         m_CABACEstimator->intra_luma_pred_mode( pu );
       }
     }

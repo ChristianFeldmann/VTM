@@ -269,6 +269,17 @@ void EncApp::xInitLibCfg()
 #if JVET_L0124_L0208_TRIANGLE
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
 #endif
+
+#if JVET_L0293_CPR
+  m_cEncLib.setCPRMode                                           ( m_CPRMode );
+  m_cEncLib.setCPRLocalSearchRangeX                              ( m_CPRLocalSearchRangeX );
+  m_cEncLib.setCPRLocalSearchRangeY                              ( m_CPRLocalSearchRangeY );
+  m_cEncLib.setCPRHashSearch                                     ( m_CPRHashSearch );
+  m_cEncLib.setCPRHashSearchMaxCand                              ( m_CPRHashSearchMaxCand );
+  m_cEncLib.setCPRHashSearchRange4SmallBlk                       ( m_CPRHashSearchRange4SmallBlk );
+  m_cEncLib.setCPRFastMethod                                     ( m_CPRFastMethod );
+#endif    
+
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
 
   m_cEncLib.setMaxCUWidth                                        ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );

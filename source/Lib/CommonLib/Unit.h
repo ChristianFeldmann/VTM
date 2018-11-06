@@ -317,7 +317,9 @@ struct CodingUnit : public UnitArea
 #endif
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
-
+#if JVET_L0293_CPR
+  bool           cpr;
+#endif
 
   CodingUnit() : chType( CH_L ) { }
   CodingUnit(const UnitArea &unit);
@@ -375,6 +377,10 @@ struct InterPredictionData
 #endif
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool      mhIntraFlag;
+#endif
+#if JVET_L0293_CPR
+  Mv        bv;                             // block vector for CPR
+  Mv        bvd;                            // block vector difference for CPR
 #endif
 };
 

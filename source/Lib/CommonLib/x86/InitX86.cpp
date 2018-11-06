@@ -48,6 +48,10 @@
 
 #include "CommonLib/AdaptiveLoopFilter.h"
 
+#if JVET_L0293_CPR
+#include "CommonLib/CprHashMap.h"
+#endif
+
 #ifdef TARGET_SIMD_X86
 
 
@@ -166,7 +170,7 @@ void AdaptiveLoopFilter::initAdaptiveLoopFilterX86()
 #endif
 
 #if ENABLE_SIMD_OPT_CPR
-void IbcHashMap::initIbcHashMapX86()
+void CprHashMap::initCprHashMapX86()
 {
   auto vext = read_x86_extension_flags();
   switch (vext) 
@@ -175,7 +179,7 @@ void IbcHashMap::initIbcHashMapX86()
   case AVX2:
   case AVX:
   case SSE42:
-    _initIbcHashMapX86<SSE42>();
+    _initCprHashMapX86<SSE42>();
     break;
   case SSE41:
   default:

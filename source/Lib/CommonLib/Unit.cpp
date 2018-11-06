@@ -277,6 +277,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
 #endif
+#if JVET_L0293_CPR
+  cpr               = other.cpr;
+#endif
   return *this;
 }
 
@@ -314,6 +317,9 @@ void CodingUnit::initData()
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
 #endif
+#if JVET_L0293_CPR
+  cpr               = false;
+#endif
 }
 
 
@@ -342,6 +348,10 @@ void PredictionUnit::initData()
 #endif
   interDir    = MAX_UCHAR;
   mergeType   = MRG_TYPE_DEFAULT_N;
+#if JVET_L0293_CPR
+  bv.setZero();
+  bvd.setZero();
+#endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i] = MAX_UCHAR;
@@ -388,6 +398,10 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
 #endif
   interDir    = predData.interDir;
   mergeType   = predData.mergeType;
+#if JVET_L0293_CPR
+  bv          = predData.bv;
+  bvd         = predData.bvd;
+#endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i]   = predData.mvpIdx[i];
@@ -431,6 +445,10 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
 #endif
   interDir    = other.interDir;
   mergeType   = other.mergeType;
+#if JVET_L0293_CPR
+  bv          = other.bv;
+  bvd         = other.bvd;
+#endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i]   = other.mvpIdx[i];

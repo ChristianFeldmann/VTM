@@ -200,6 +200,10 @@ void InterSearch::init( EncCfg*        pcEncCfg,
 )
 {
   CHECK(m_isInitialized, "Already initialized");
+#if JVET_L0293_CPR
+  m_numBVs = 0;
+  m_numBV16s = 0;
+#endif
   m_pcEncCfg                     = pcEncCfg;
   m_pcTrQuant                    = pcTrQuant;
   m_iSearchRange                 = iSearchRange;
@@ -767,6 +771,12 @@ void InterSearch::xMergeEstimation( PredictionUnit& pu, PelUnitBuf& origBuf, int
   ruiCost = std::numeric_limits<Distortion>::max();
   for( uint32_t uiMergeCand = 0; uiMergeCand < mergeCtx.numValidMergeCand; ++uiMergeCand )
   {
+#if JVET_L0293_CPR
+    if (pu.cs->slice->getRefPic(REF_PIC_LIST_0, mergeCtx.mvFieldNeighbours[uiMergeCand << 1].refIdx)->getPOC() == pu.cs->slice->getPOC())
+    {
+      continue;
+    }
+#endif
     mergeCtx.setMergeInfo( pu, uiMergeCand );
 
     PU::spanMotionInfo( pu, mergeCtx );
@@ -793,6 +803,788 @@ void InterSearch::xMergeEstimation( PredictionUnit& pu, PelUnitBuf& origBuf, int
 #endif
 
 }
+#if JVET_L0293_CPR
+/// add cpr search functions here
+
+void InterSearch::xCPRSearchMVCandUpdate(Distortion  sad, int x, int y, Distortion* sadBestCand, Mv* cMVCand)
+{
+  int j = CHROMA_REFINEMENT_CANDIDATES - 1;
+
+  if (sad < sadBestCand[CHROMA_REFINEMENT_CANDIDATES - 1])
+  {
+    for (int t = CHROMA_REFINEMENT_CANDIDATES - 1; t >= 0; t--)
+    {
+      if (sad < sadBestCand[t])
+        j = t;
+    }
+
+    for (int k = CHROMA_REFINEMENT_CANDIDATES - 1; k > j; k--)
+    {
+      sadBestCand[k] = sadBestCand[k - 1];
+
+      cMVCand[k].set(cMVCand[k - 1].getHor(), cMVCand[k - 1].getVer());
+    }
+    sadBestCand[j] = sad;
+    cMVCand[j].set(x, y);
+  }
+}
+
+int InterSearch::xCPRSearchMVChromaRefine(PredictionUnit& pu,
+  int         roiWidth,
+  int         roiHeight,
+  int         cuPelX,
+  int         cuPelY,
+  Distortion* sadBestCand,
+  Mv*     cMVCand
+
+)
+{
+  if (!pu.Cb().valid())
+    return 0;
+
+  int bestCandIdx = 0;
+  Distortion  sadBest = std::numeric_limits<Distortion>::max();
+  Distortion  tempSad;
+
+  Pel* pRef;
+  Pel* pOrg;
+  int refStride, orgStride;
+  int width, height;
+
+  int picWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
+  int picHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
+
+  UnitArea allCompBlocks(pu.chromaFormat, (Area)pu.block(COMPONENT_Y));
+  for (int cand = 0; cand < CHROMA_REFINEMENT_CANDIDATES; cand++)
+  {
+    if ((!cMVCand[cand].getHor()) && (!cMVCand[cand].getVer()))
+      continue;
+
+    if (((int)(cuPelY + cMVCand[cand].getVer() + roiHeight) >= picHeight) || ((cuPelY + cMVCand[cand].getVer()) < 0))
+      continue;
+
+    if (((int)(cuPelX + cMVCand[cand].getHor() + roiWidth) >= picWidth) || ((cuPelX + cMVCand[cand].getHor()) < 0))
+      continue;
+
+    tempSad = sadBestCand[cand];
+
+    Mv cMvQuaterPixl = cMVCand[cand];
+    cMvQuaterPixl <<= 2;
+    pu.mv[0] = cMvQuaterPixl;
+    pu.interDir = 1;
+    pu.refIdx[0] = pu.cs->slice->getNumRefIdx(REF_PIC_LIST_0) - 1; // last idx in the list
+
+    PelUnitBuf predBufTmp = m_tmpPredStorage[REF_PIC_LIST_0].getBuf(UnitAreaRelative(*pu.cu, pu));
+    motionCompensation(pu, predBufTmp, REF_PIC_LIST_0);
+
+    for (unsigned int ch = COMPONENT_Cb; ch < ::getNumberValidComponents(pu.chromaFormat); ch++)
+    {
+      width = roiWidth >> ::getComponentScaleX(ComponentID(ch), pu.chromaFormat);
+      height = roiHeight >> ::getComponentScaleY(ComponentID(ch), pu.chromaFormat);
+
+      PelUnitBuf origBuf = pu.cs->getOrgBuf(allCompBlocks);
+      PelUnitBuf* pBuf = &origBuf;
+      CPelBuf  tmpPattern = pBuf->get(ComponentID(ch));
+      pOrg = (Pel*)tmpPattern.buf;
+
+      Picture* refPic = pu.cu->slice->getPic();
+      const CPelBuf refBuf = refPic->getRecoBuf(allCompBlocks.blocks[ComponentID(ch)]);
+      pRef = (Pel*)refBuf.buf;
+
+      refStride = refBuf.stride;
+      orgStride = tmpPattern.stride;
+
+      //ComponentID compID = (ComponentID)ch;
+      PelUnitBuf* pBufRef = &predBufTmp;
+      CPelBuf  tmpPatternRef = pBufRef->get(ComponentID(ch));
+      pRef = (Pel*)tmpPatternRef.buf;
+      refStride = tmpPatternRef.stride;
+
+
+      for (int row = 0; row < height; row++)
+      {
+        for (int col = 0; col < width; col++)
+        {
+          tempSad += ((abs(pRef[col] - pOrg[col])) >> (pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA) - 8));
+        }
+        pRef += refStride;
+        pOrg += orgStride;
+      }
+    }
+
+    if (tempSad < sadBest)
+    {
+      sadBest = tempSad;
+      bestCandIdx = cand;
+    }
+  }
+
+  return bestCandIdx;
+}
+
+static unsigned int xMergeCandLists(Mv *dst, unsigned int dn, Mv *src, unsigned int sn)
+{
+  for (unsigned int cand = 0; cand < sn && dn<CPR_NUM_CANDIDATES; cand++)
+  {
+    bool found = false;
+    for (int j = 0; j<dn; j++)
+    {
+      if (src[cand] == dst[j])
+      {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found)
+    {
+      dst[dn] = src[cand];
+      dn++;
+    }
+  }
+
+  return dn;
+}
+
+void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cStruct, Mv& rcMv, Distortion&  ruiCost, Mv*  pcMvSrchRngLT, Mv*  pcMvSrchRngRB, Mv* pcMvPred)
+{
+  const int   srchRngHorLeft = pcMvSrchRngLT->getHor();
+  const int   srchRngHorRight = pcMvSrchRngRB->getHor();
+  const int   srchRngVerTop = pcMvSrchRngLT->getVer();
+  const int   srchRngVerBottom = pcMvSrchRngRB->getVer();
+
+  const unsigned int  lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
+  const int   puPelOffsetX = 0;
+  const int   puPelOffsetY = 0;
+  const int   cuPelX = pu.Y().x;
+  const int   cuPelY = pu.Y().y;
+
+  int          roiWidth = pu.lwidth();
+  int          roiHeight = pu.lheight();
+
+  Distortion  sad;
+  Distortion  sadBest = std::numeric_limits<Distortion>::max();
+  int         bestX = 0;
+  int         bestY = 0;
+
+  const Pel*        piRefSrch = cStruct.piRefY;
+
+  int         bestCandIdx = 0;
+
+  Distortion  sadBestCand[CHROMA_REFINEMENT_CANDIDATES];
+  Mv      cMVCand[CHROMA_REFINEMENT_CANDIDATES];
+
+
+  for (int cand = 0; cand < CHROMA_REFINEMENT_CANDIDATES; cand++)
+  {
+    sadBestCand[cand] = std::numeric_limits<Distortion>::max();
+    cMVCand[cand].set(0, 0);
+  }
+
+  m_cDistParam.useMR = false;
+  m_pcRdCost->setDistParam(m_cDistParam, *cStruct.pcPatternKey, cStruct.piRefY, cStruct.iRefStride, m_lumaClpRng.bd, COMPONENT_Y, cStruct.subShiftMode);
+
+
+  const int picWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
+  const int picHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
+
+
+  {
+    m_cDistParam.subShift = 0;
+
+    Distortion tempSadBest = 0;
+
+    int srLeft = srchRngHorLeft, srRight = srchRngHorRight, srTop = srchRngVerTop, srBottom = srchRngVerBottom;
+
+    if (roiWidth>8 || roiHeight>8)
+    {
+      m_numBVs = 0;
+    }
+    else if (roiWidth + roiHeight == 16)
+    {
+      m_numBVs = m_numBV16s;
+    }
+
+    Mv cMvPredEncOnly[16];
+    int nbPreds = 0;
+    PU::getCprMVPsEncOnly(pu, cMvPredEncOnly, nbPreds);
+    m_numBVs = xMergeCandLists(m_acBVs, m_numBVs, cMvPredEncOnly, nbPreds);
+
+    for (unsigned int cand = 0; cand < m_numBVs; cand++)
+    {
+      int xPred = m_acBVs[cand].getHor();
+      int yPred = m_acBVs[cand].getVer();
+
+      if (!(xPred == 0 && yPred == 0)
+        && !((yPred < srTop) || (yPred > srBottom))
+        && !((xPred < srLeft) || (xPred > srRight)))
+      {
+        bool validCand = PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, xPred, yPred, lcuWidth);
+
+        if (validCand)
+        {
+          sad = m_pcRdCost->getBvCostMultiplePreds(xPred, yPred, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+          m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * yPred + xPred;
+          sad += m_cDistParam.distFunc(m_cDistParam);
+
+          xCPRSearchMVCandUpdate(sad, xPred, yPred, sadBestCand, cMVCand);
+        }
+      }
+    }
+
+    bestX = cMVCand[0].getHor();
+    bestY = cMVCand[0].getVer();
+    rcMv.set(bestX, bestY);
+    sadBest = sadBestCand[0];
+
+    const int boundY = (0 - roiHeight - puPelOffsetY);
+    for (int y = std::max(srchRngVerTop, 0 - cuPelY); y <= boundY; ++y)
+    {
+      if (!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, 0, y, lcuWidth))
+      {
+        continue;
+      }
+
+      sad = m_pcRdCost->getBvCostMultiplePreds(0, y, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+      m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y;
+      sad += m_cDistParam.distFunc(m_cDistParam);
+
+      xCPRSearchMVCandUpdate(sad, 0, y, sadBestCand, cMVCand);
+      tempSadBest = sadBestCand[0];
+      if (sadBestCand[0] <= 3)
+      {
+        bestX = cMVCand[0].getHor();
+        bestY = cMVCand[0].getVer();
+        sadBest = sadBestCand[0];
+        rcMv.set(bestX, bestY);
+        ruiCost = sadBest;
+        goto end;
+      }
+    }
+
+    const int boundX = std::max(srchRngHorLeft, -cuPelX);
+    for (int x = 0 - roiWidth - puPelOffsetX; x >= boundX; --x)
+    {
+      if (!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, x, 0, lcuWidth))
+      {
+        continue;
+      }
+
+      sad = m_pcRdCost->getBvCostMultiplePreds(x, 0, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+      m_cDistParam.cur.buf = piRefSrch + x;
+      sad += m_cDistParam.distFunc(m_cDistParam);
+
+
+      xCPRSearchMVCandUpdate(sad, x, 0, sadBestCand, cMVCand);
+      tempSadBest = sadBestCand[0];
+      if (sadBestCand[0] <= 3)
+      {
+        bestX = cMVCand[0].getHor();
+        bestY = cMVCand[0].getVer();
+        sadBest = sadBestCand[0];
+        rcMv.set(bestX, bestY);
+        ruiCost = sadBest;
+        goto end;
+      }
+    }
+
+    bestX = cMVCand[0].getHor();
+    bestY = cMVCand[0].getVer();
+    sadBest = sadBestCand[0];
+    if ((!bestX && !bestY) || (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL) <= 32))
+    {
+      //chroma refine
+      bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+      bestX = cMVCand[bestCandIdx].getHor();
+      bestY = cMVCand[bestCandIdx].getVer();
+      sadBest = sadBestCand[bestCandIdx];
+      rcMv.set(bestX, bestY);
+      ruiCost = sadBest;
+      goto end;
+    }
+
+
+    if (pu.lwidth() < 16 && pu.lheight() < 16)
+    {
+      for (int y = std::max(srchRngVerTop, -cuPelY); y <= srchRngVerBottom; y += 2)
+      {
+        if ((y == 0) || ((int)(cuPelY + y + roiHeight) >= picHeight))
+          continue;
+
+        for (int x = std::max(srchRngHorLeft, -cuPelX); x <= srchRngHorRight; x++)
+        {
+          if ((x == 0) || ((int)(cuPelX + x + roiWidth) >= picWidth))
+            continue;
+
+          if (!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, x, y, lcuWidth))
+          {
+            continue;
+          }
+
+          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+          m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y + x;
+          sad += m_cDistParam.distFunc(m_cDistParam);
+
+          xCPRSearchMVCandUpdate(sad, x, y, sadBestCand, cMVCand);
+        }
+      }
+
+      bestX = cMVCand[0].getHor();
+      bestY = cMVCand[0].getVer();
+      sadBest = sadBestCand[0];
+      if (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL) <= 16)
+      {
+        //chroma refine
+        bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+
+        bestX = cMVCand[bestCandIdx].getHor();
+        bestY = cMVCand[bestCandIdx].getVer();
+        sadBest = sadBestCand[bestCandIdx];
+        rcMv.set(bestX, bestY);
+        ruiCost = sadBest;
+        goto end;
+      }
+
+
+      for (int y = (std::max(srchRngVerTop, -cuPelY) + 1); y <= srchRngVerBottom; y += 2)
+      {
+        if ((y == 0) || ((int)(cuPelY + y + roiHeight) >= picHeight))
+          continue;
+
+        for (int x = std::max(srchRngHorLeft, -cuPelX); x <= srchRngHorRight; x += 2)
+        {
+          if ((x == 0) || ((int)(cuPelX + x + roiWidth) >= picWidth))
+            continue;
+
+          if (!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, x, y, lcuWidth))
+          {
+            continue;
+          }
+
+          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+          m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y + x;
+          sad += m_cDistParam.distFunc(m_cDistParam);
+
+
+          xCPRSearchMVCandUpdate(sad, x, y, sadBestCand, cMVCand);
+          if (sadBestCand[0] <= 5)
+          {
+            //chroma refine & return
+            bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+            bestX = cMVCand[bestCandIdx].getHor();
+            bestY = cMVCand[bestCandIdx].getVer();
+            sadBest = sadBestCand[bestCandIdx];
+            rcMv.set(bestX, bestY);
+            ruiCost = sadBest;
+            goto end;
+          }
+        }
+      }
+
+      bestX = cMVCand[0].getHor();
+      bestY = cMVCand[0].getVer();
+      sadBest = sadBestCand[0];
+
+      if ((sadBest >= tempSadBest) || ((sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL)) <= 32))
+      {
+        //chroma refine
+        bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+        bestX = cMVCand[bestCandIdx].getHor();
+        bestY = cMVCand[bestCandIdx].getVer();
+        sadBest = sadBestCand[bestCandIdx];
+        rcMv.set(bestX, bestY);
+        ruiCost = sadBest;
+        goto end;
+      }
+
+      tempSadBest = sadBestCand[0];
+
+
+      for (int y = (std::max(srchRngVerTop, -cuPelY) + 1); y <= srchRngVerBottom; y += 2)
+      {
+        if ((y == 0) || ((int)(cuPelY + y + roiHeight) >= picHeight))
+          continue;
+
+
+
+        for (int x = (std::max(srchRngHorLeft, -cuPelX) + 1); x <= srchRngHorRight; x += 2)
+        {
+
+          if ((x == 0) || ((int)(cuPelX + x + roiWidth) >= picWidth))
+            continue;
+
+          if (!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, x, y, lcuWidth))
+          {
+            continue;
+          }
+
+          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+          m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y + x;
+          sad += m_cDistParam.distFunc(m_cDistParam);
+
+
+          xCPRSearchMVCandUpdate(sad, x, y, sadBestCand, cMVCand);
+          if (sadBestCand[0] <= 5)
+          {
+            //chroma refine & return
+            bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+            bestX = cMVCand[bestCandIdx].getHor();
+            bestY = cMVCand[bestCandIdx].getVer();
+            sadBest = sadBestCand[bestCandIdx];
+            rcMv.set(bestX, bestY);
+            ruiCost = sadBest;
+            goto end;
+          }
+        }
+      }
+    }
+  }
+
+  bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+
+  bestX = cMVCand[bestCandIdx].getHor();
+  bestY = cMVCand[bestCandIdx].getVer();
+  sadBest = sadBestCand[bestCandIdx];
+  rcMv.set(bestX, bestY);
+  ruiCost = sadBest;
+
+end:
+  if (roiWidth + roiHeight > 8)
+  {
+    m_numBVs = xMergeCandLists(m_acBVs, m_numBVs, cMVCand, CHROMA_REFINEMENT_CANDIDATES);
+
+    if (roiWidth + roiHeight == 32)
+    {
+      m_numBV16s = m_numBVs;
+    }
+  }
+
+  return;
+}
+
+
+
+// based on xMotionEstimation
+void InterSearch::xCPREstimation(PredictionUnit& pu, PelUnitBuf& origBuf,
+  Mv     *pcMvPred,
+  Mv     &rcMv,
+  Distortion &ruiCost, const int localSearchRangeX, const int localSearchRangeY
+)
+{
+  bool buffered = false;
+  if (m_pcEncCfg->getCPRFastMethod() & CPR_FAST_METHOD_BUFFERBV)
+  {
+    ruiCost = MAX_UINT;
+    const int iPicWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
+    const int iPicHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
+    const int   cuPelX = pu.Y().x;
+    const int   cuPelY = pu.Y().y;
+
+    int          iRoiWidth = pu.lwidth();
+    int          iRoiHeight = pu.lheight();
+    std::unordered_map<Mv, Distortion>& history = m_ctuRecord[pu.lumaPos()][pu.lumaSize()].bvRecord;
+    const unsigned int  lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
+    for (std::unordered_map<Mv, Distortion>::iterator p = history.begin(); p != history.end(); p++)
+    {
+      const Mv& bv = p->first;
+
+      int xBv = bv.hor;
+      int yBv = bv.ver;
+      if (PU::isBlockVectorValid(pu, cuPelX, cuPelY, iRoiWidth, iRoiHeight, iPicWidth, iPicHeight, 0, 0, xBv, yBv, lcuWidth))
+       {
+        if (p->second < ruiCost)
+        {
+          rcMv = bv;
+          ruiCost = p->second;
+          buffered = true;
+        }
+      }
+    }
+  }
+
+  if (!buffered)
+  {
+    Mv        cMvSrchRngLT;
+    Mv        cMvSrchRngRB;
+
+    //cMvSrchRngLT.highPrec = false;
+    //cMvSrchRngRB.highPrec = false;
+
+    PelUnitBuf* pBuf = &origBuf;
+
+    //  Search key pattern initialization
+    CPelBuf  tmpPattern = pBuf->Y();
+    CPelBuf* pcPatternKey = &tmpPattern;
+
+    m_lumaClpRng = pu.cs->slice->clpRng(COMPONENT_Y);
+    Picture* refPic = pu.cu->slice->getPic();
+
+    const CPelBuf refBuf = refPic->getRecoBuf(pu.blocks[COMPONENT_Y]);
+
+    IntTZSearchStruct cStruct;
+    cStruct.pcPatternKey = pcPatternKey;
+    cStruct.iRefStride = refBuf.stride;
+    cStruct.piRefY = refBuf.buf;
+    cStruct.imvShift = pu.cu->imv << 1;
+    cStruct.subShiftMode = 0; // used by intra pattern search function
+
+                              // assume that intra BV is integer-pel precision
+    xSetIntraSearchRange(pu, pu.lwidth(), pu.lheight(), localSearchRangeX, localSearchRangeY, cMvSrchRngLT, cMvSrchRngRB);
+
+    // disable weighted prediction
+    setWpScalingDistParam(-1, REF_PIC_LIST_X, pu.cs->slice);
+
+    m_pcRdCost->getMotionCost(0, pu.cu->transQuantBypass);
+    m_pcRdCost->setPredictors(pcMvPred);
+    m_pcRdCost->setCostScale(0);
+
+    //  Do integer search
+
+    xIntraPatternSearch(pu, cStruct, rcMv, ruiCost, &cMvSrchRngLT, &cMvSrchRngRB, pcMvPred);
+  }
+}
+
+// based on xSetSearchRange
+void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iRoiHeight, const int localSearchRangeX, const int localSearchRangeY, Mv& rcMvSrchRngLT, Mv& rcMvSrchRngRB)
+{
+  const SPS &sps = *pu.cs->sps;
+
+  int srLeft, srRight, srTop, srBottom;
+
+  const int cuPelX = pu.Y().x;
+  const int cuPelY = pu.Y().y;
+
+  const int iPicWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
+  const int iPicHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
+
+  srLeft = -std::min(cuPelX, localSearchRangeX);
+  srTop = -std::min(cuPelY, localSearchRangeY);
+
+  srRight = std::min(iPicWidth - cuPelX - iRoiWidth, localSearchRangeX);
+  srBottom = std::min(iPicHeight - cuPelY - iRoiHeight, localSearchRangeY);
+
+  rcMvSrchRngLT.setHor(srLeft);
+  rcMvSrchRngLT.setVer(srTop);
+  rcMvSrchRngRB.setHor(srRight);
+  rcMvSrchRngRB.setVer(srBottom);
+
+  rcMvSrchRngLT <<= 2;
+  rcMvSrchRngRB <<= 2;
+  clipMv(rcMvSrchRngLT, pu.cu->lumaPos(), sps);
+  clipMv(rcMvSrchRngRB, pu.cu->lumaPos(), sps);
+  rcMvSrchRngLT >>= 2;
+  rcMvSrchRngRB >>= 2;
+}
+
+bool InterSearch::predCPRSearch(CodingUnit& cu, Partitioner& partitioner, const int localSearchRangeX, const int localSearchRangeY, CprHashMap& cprHashMap)
+{
+  // check only no greater than CPR_MAX_CAND_SIZE
+  if (cu.Y().width > CPR_MAX_CAND_SIZE || cu.Y().height > CPR_MAX_CAND_SIZE)
+    return false;
+  Mv           cMvSrchRngLT;
+  Mv           cMvSrchRngRB;
+
+  Mv           cMv;
+  Mv           cMvPred;
+
+  for (auto &pu : CU::traversePUs(cu))
+  {
+    m_maxCompIDToPred = MAX_NUM_COMPONENT;
+
+    CHECK(pu.cu != &cu, "PU is contained in another CU");
+    //////////////////////////////////////////////////////////
+    /// cpr search
+    pu.cu->imv = 2;
+    AMVPInfo amvpInfo4Pel;
+    PU::fillMvpCand(pu, REF_PIC_LIST_0, pu.refIdx[REF_PIC_LIST_0], amvpInfo4Pel);
+
+
+    pu.cu->imv = 0;// (Int)cu.cs->sps->getSpsNext().getUseIMV(); // set as IMV=0 initially
+    Mv    cMv, cMvPred[2];
+    AMVPInfo amvpInfo;
+    PU::fillMvpCand(pu, REF_PIC_LIST_0, pu.refIdx[REF_PIC_LIST_0], amvpInfo);
+    cMvPred[0].set(amvpInfo.mvCand[0].getHor() >> (2), amvpInfo.mvCand[0].getVer() >> (2)); // store in full pel accuracy, shift before use in search
+    cMvPred[1].set(amvpInfo.mvCand[1].getHor() >> (2), amvpInfo.mvCand[1].getVer() >> (2));
+
+    int iBvpNum = 2;
+    int bvpIdxBest = 0;
+    cMv.setZero();
+    Distortion cost = 0;
+
+    if (m_pcEncCfg->getCPRHashSearch())
+    {
+      xxCPRHashSearch(pu, cMvPred, iBvpNum, cMv, bvpIdxBest, cprHashMap);
+    }
+
+    if (cMv.getHor() == 0 && cMv.getVer() == 0)
+    {
+      // if hash search does not work or is not enabled
+      PelUnitBuf origBuf = pu.cs->getOrgBuf(pu);
+      xCPREstimation(pu, origBuf, cMvPred, cMv, cost, localSearchRangeX, localSearchRangeY);
+    }
+
+    if (cMv.getHor() == 0 && cMv.getVer() == 0)
+    {
+      return false;
+    }
+    /// cpr search
+    /////////////////////////////////////////////////////////
+    unsigned int bitsBVPBest, bitsBVPTemp;
+    bitsBVPBest = MAX_INT;
+    m_pcRdCost->setCostScale(0);
+
+    for (int bvpIdxTemp = 0; bvpIdxTemp<iBvpNum; bvpIdxTemp++)
+    {
+      m_pcRdCost->setPredictor(cMvPred[bvpIdxTemp]);
+
+      bitsBVPTemp = m_pcRdCost->getBitsOfVectorWithPredictor(cMv.getHor(), cMv.getVer(), 0);
+
+      if (bitsBVPTemp < bitsBVPBest)
+      {
+        bitsBVPBest = bitsBVPTemp;
+        bvpIdxBest = bvpIdxTemp;
+
+        if (cu.cs->sps->getSpsNext().getImvMode() && cMv != cMvPred[bvpIdxTemp])
+          pu.cu->imv = 1; // set as full-pel
+        else
+          pu.cu->imv = 0; // set as fractional-pel
+
+      }
+
+      unsigned int bitsBVPQP = MAX_UINT;
+
+
+      Mv mvPredQuadPel;
+      if ((cMv.getHor() % 4 == 0) && (cMv.getVer() % 4 == 0) && (pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL))
+      {
+        mvPredQuadPel = amvpInfo4Pel.mvCand[bvpIdxTemp];// cMvPred[bvpIdxTemp];
+
+        mvPredQuadPel >>= (4);
+
+        m_pcRdCost->setPredictor(mvPredQuadPel);
+
+        bitsBVPQP = m_pcRdCost->getBitsOfVectorWithPredictor(cMv.getHor() >> 2, cMv.getVer() >> 2, 0);
+
+      }
+      mvPredQuadPel <<= (2);
+      if (bitsBVPQP < bitsBVPBest && cMv != mvPredQuadPel)
+      {
+        bitsBVPBest = bitsBVPQP;
+        bvpIdxBest = bvpIdxTemp;
+
+        if (cu.cs->sps->getSpsNext().getImvMode())
+          pu.cu->imv = 2; // set as quad-pel
+      }
+
+    }
+
+    pu.bv = cMv;
+    cMv <<= (2);
+    pu.mv[REF_PIC_LIST_0] = cMv; // store in fractional pel accuracy
+
+    pu.mvpIdx[REF_PIC_LIST_0] = bvpIdxBest;
+
+    if(pu.cu->imv == 2 && cMv != amvpInfo4Pel.mvCand[bvpIdxBest])
+      pu.mvd[REF_PIC_LIST_0] = cMv - amvpInfo4Pel.mvCand[bvpIdxBest];
+    else
+      pu.mvd[REF_PIC_LIST_0] = cMv - amvpInfo.mvCand[bvpIdxBest];
+
+    if (pu.mvd[REF_PIC_LIST_0] == Mv(0, 0))
+      pu.cu->imv = 0;
+    if (pu.cu->imv == 2)
+      assert((cMv.getHor() % 16 == 0) && (cMv.getVer() % 16 == 0));
+    if (cu.cs->sps->getSpsNext().getUseIMV())
+      assert(pu.cu->imv>0 || pu.mvd[REF_PIC_LIST_0] == Mv());
+
+    if (!cu.cs->sps->getSpsNext().getUseIMV())
+      pu.mvd[REF_PIC_LIST_0] >>= (2);
+
+    pu.refIdx[REF_PIC_LIST_0] = pu.cs->slice->getNumRefIdx(REF_PIC_LIST_0) - 1;
+
+#if REMOVE_MV_ADAPT_PREC
+	pu.mv[REF_PIC_LIST_0].hor = pu.mv[REF_PIC_LIST_0].hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+	pu.mv[REF_PIC_LIST_0].ver = pu.mv[REF_PIC_LIST_0].ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#endif
+
+    m_ctuRecord[cu.lumaPos()][cu.lumaSize()].bvRecord[pu.bv] = cost;
+  }
+
+  return true;
+}
+
+void InterSearch::xxCPRHashSearch(PredictionUnit& pu, Mv* mvPred, int numMvPred, Mv &mv, int& idxMvPred, CprHashMap& cprHashMap)
+{
+  mv.setZero();
+  m_pcRdCost->setCostScale(0);
+
+  std::vector<Position> candPos;
+  if (cprHashMap.cprHashMatch(pu.Y(), candPos, *pu.cs, m_pcEncCfg->getCPRHashSearchMaxCand(), m_pcEncCfg->getCPRHashSearchRange4SmallBlk()))
+  {
+    unsigned int minCost = MAX_UINT;
+
+    const unsigned int  lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
+    const int   cuPelX = pu.Y().x;
+    const int   cuPelY = pu.Y().y;
+    const int   picWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
+    const int   picHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
+    int         roiWidth = pu.lwidth();
+    int         roiHeight = pu.lheight();
+
+    for (std::vector<Position>::iterator pos = candPos.begin(); pos != candPos.end(); pos++)
+    {
+      Position bottomRight = pos->offset(pu.Y().width - 1, pu.Y().height - 1);
+      if (pu.cs->isDecomp(*pos, pu.cs->chType) && pu.cs->isDecomp(bottomRight, pu.cs->chType))
+      {
+        Position tmp = *pos - pu.Y().pos();
+        Mv candMv;
+        candMv.set(tmp.x, tmp.y);
+
+        if (!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, candMv.getHor(), candMv.getVer(), lcuWidth))
+        {
+          continue;
+        }
+
+        for (int n = 0; n < numMvPred; n++)
+        {
+          m_pcRdCost->setPredictor(mvPred[n]);
+
+          unsigned int cost = m_pcRdCost->getBitsOfVectorWithPredictor(candMv.getHor(), candMv.getVer(), 0);
+
+          if (cost < minCost)
+          {
+            mv = candMv;
+            idxMvPred = n;
+            minCost = cost;
+          }
+
+          int costQuadPel = MAX_UINT;
+          if ((candMv.getHor() % 4 == 0) && (candMv.getVer() % 4 == 0) && (pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL))
+          {
+            Mv mvPredQuadPel;
+            int imvShift = 2;
+            int offset = 1 << (imvShift - 1);
+
+            mvPredQuadPel.set(((mvPred[n].hor + offset) >> 2), ((mvPred[n].ver + offset) >> 2));
+
+            m_pcRdCost->setPredictor(mvPredQuadPel);
+
+            costQuadPel = m_pcRdCost->getBitsOfVectorWithPredictor(candMv.getHor() >> 2, candMv.getVer() >> 2, 0);
+
+          }
+          if (costQuadPel < minCost)
+          {
+            mv = candMv;
+            idxMvPred = n;
+            minCost = costQuadPel;
+          }
+
+        }
+      }
+    }
+  }
+
+}
+#endif // CPR
 
 
 
@@ -894,7 +1686,16 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       for ( int iRefList = 0; iRefList < iNumPredDir; iRefList++ )
       {
         RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
+#if JVET_L0293_CPR
+        int refPicNumber = cs.slice->getNumRefIdx(eRefPicList);
+        if (cs.slice->getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
+        {
+          refPicNumber--;
+        }
+        for (int iRefIdxTemp = 0; iRefIdxTemp < refPicNumber; iRefIdxTemp++)
+#else
         for ( int iRefIdxTemp = 0; iRefIdxTemp < cs.slice->getNumRefIdx(eRefPicList); iRefIdxTemp++ )
+#endif
         {
           uiBitsTemp = uiMbBits[iRefList];
           if ( cs.slice->getNumRefIdx(eRefPicList) > 1 )
@@ -1113,7 +1914,13 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
           iRefStart = 0;
           iRefEnd   = cs.slice->getNumRefIdx(eRefPicList)-1;
-          for( int iRefIdxTemp = iRefStart; iRefIdxTemp <= iRefEnd; iRefIdxTemp++ )
+#if JVET_L0293_CPR
+          if (cs.slice->getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
+          {
+            iRefEnd--;
+          }
+#endif
+		      for (int iRefIdxTemp = iRefStart; iRefIdxTemp <= iRefEnd; iRefIdxTemp++)
           {
 #if JVET_L0646_GBI
             if( m_pcEncCfg->getUseGBiFast() && (gbiIdx != GBI_DEFAULT)
@@ -1676,6 +2483,9 @@ Distortion InterSearch::xGetTemplateCost( const PredictionUnit& pu,
 
 
   xPredInterBlk( COMPONENT_Y, pu, picRef, cMvCand, predBuf, bi, pu.cu->slice->clpRng( COMPONENT_Y )
+#if JVET_L0293_CPR
+    , false
+#endif
                 );
 
 
@@ -2711,7 +3521,16 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   for ( int iRefList = 0; iRefList < iNumPredDir; iRefList++ )
   {
     RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
+#if JVET_L0293_CPR
+    int refPicNumber = slice.getNumRefIdx(eRefPicList);
+    if (slice.getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
+    {
+      refPicNumber--;
+    }
+    for (int iRefIdxTemp = 0; iRefIdxTemp < refPicNumber; iRefIdxTemp++)
+#else
     for ( int iRefIdxTemp = 0; iRefIdxTemp < slice.getNumRefIdx(eRefPicList); iRefIdxTemp++ )
+#endif
     {
       // Get RefIdx bits
       uiBitsTemp = uiMbBits[iRefList];
@@ -3119,6 +3938,12 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 
       iRefStart = 0;
       iRefEnd   = slice.getNumRefIdx(eRefPicList) - 1;
+#if JVET_L0293_CPR
+      if (slice.getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
+      {
+        iRefEnd--;
+      }
+#endif
       for ( int iRefIdxTemp = iRefStart; iRefIdxTemp <= iRefEnd; iRefIdxTemp++ )
       {
         if ( pu.cu->affineType == AFFINEMODEL_6PARAM && refIdx4Para[iRefList] != iRefIdxTemp )
@@ -4354,6 +5179,9 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
 }
 
 void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &partitioner, Distortion *puiZeroDist /*= NULL*/
+#if JVET_L0293_CPR 
+  , const bool luma, const bool chroma
+#endif
 )
 {
   const UnitArea& currArea = partitioner.currArea();
@@ -4361,6 +5189,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
   const PPS &pps           = *cs.pps;
   const uint32_t numValidComp  = getNumberValidComponents( sps.getChromaFormatIdc() );
   const uint32_t numTBlocks    = getNumberValidTBlocks   ( *cs.pcv );
+#if JVET_L0293_CPR
+  const CodingUnit &cu = *cs.getCU(partitioner.chType);
+#endif
 #if ENABLE_BMS
   const unsigned currDepth = partitioner.currTrDepth;
 
@@ -4398,7 +5229,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
   if (bCheckFull)
   {
+#if JVET_L0293_CPR
+    TransformUnit &tu = csFull->addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
+#else
     TransformUnit &tu = csFull->addTU(currArea, partitioner.chType);
+#endif
 #if ENABLE_BMS
     tu.depth          = currDepth;
 #endif
@@ -4421,11 +5256,21 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     saveCS.picture = cs.picture;
     saveCS.area.repositionTo(currArea);
     saveCS.clearTUs();
+#if JVET_L0293_CPR 
+    TransformUnit & bestTU = saveCS.addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
+#else
     TransformUnit &bestTU = saveCS.addTU( currArea, partitioner.chType );
+#endif
 
     for( uint32_t c = 0; c < numTBlocks; c++ )
     {
       const ComponentID compID    = ComponentID(c);
+#if JVET_L0293_CPR
+      if (compID == COMPONENT_Y && !luma)
+        continue;
+      if (compID != COMPONENT_Y && !chroma)
+        continue;
+#endif
       const CompArea&   compArea  = tu.blocks[compID];
       const int channelBitDepth   = sps.getBitDepth(toChannelType(compID));
 
@@ -4660,6 +5505,12 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     for( unsigned c = 0; c < numTBlocks; c++)
     {
       const ComponentID compID = cbf_getComp[c];
+#if JVET_L0293_CPR
+      if (compID == COMPONENT_Y && !luma)
+        continue;
+      if (compID != COMPONENT_Y && !chroma)
+        continue;
+#endif
       if( tu.blocks[compID].valid() )
       {
 #if ENABLE_BMS
@@ -4675,6 +5526,12 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     for (uint32_t ch = 0; ch < numValidComp; ch++)
     {
       const ComponentID compID = ComponentID(ch);
+#if JVET_L0293_CPR 
+      if (compID == COMPONENT_Y && !luma)
+        continue;
+      if (compID != COMPONENT_Y && !chroma)
+        continue;
+#endif
       if (tu.blocks[compID].valid())
       {
         if( cs.pps->getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isChroma(compID) && uiAbsSum[COMPONENT_Y] )
@@ -4722,6 +5579,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     do
     {
       xEstimateInterResidualQT(*csSplit, partitioner, bCheckFull ? nullptr : puiZeroDist
+#if JVET_L0293_CPR
+        , luma, chroma
+#endif
       );
 
       csSplit->cost = m_pcRdCost->calcRdCost( csSplit->fracBits, csSplit->dist );
@@ -4774,6 +5634,13 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       xEncodeInterResidualQT( *csSplit, partitioner, MAX_NUM_TBLOCKS );
       for (uint32_t ch = 0; ch < numValidComp; ch++)
       {
+#if JVET_L0293_CPR
+        const ComponentID compID = ComponentID(ch);
+        if (compID == COMPONENT_Y && !luma)
+          continue;
+        if (compID != COMPONENT_Y && !chroma)
+          continue;
+#endif
         xEncodeInterResidualQT( *csSplit, partitioner, ComponentID( ch ) );
       }
 
@@ -4806,6 +5673,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 }
 
 void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &partitioner, const bool &skipResidual
+#if JVET_L0293_CPR 
+  , const bool luma, const bool chroma
+#endif
 )
 {
   CodingUnit &cu = *cs.getCU( partitioner.chType );
@@ -4826,12 +5696,22 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
 
     // add an empty TU
+#if JVET_L0293_CPR
+    cs.addTU(CS::isDualITree(cs) ? cu : cs.area, partitioner.chType);
+#else
     cs.addTU(cs.area, partitioner.chType);
+#endif
     Distortion distortion = 0;
 
     for (int comp = 0; comp < numValidComponents; comp++)
     {
       const ComponentID compID = ComponentID(comp);
+#if JVET_L0293_CPR 
+      if (compID == COMPONENT_Y && !luma)
+        continue;
+      if (compID != COMPONENT_Y && !chroma)
+        continue;
+#endif
       CPelBuf reco = cs.getRecoBuf (compID);
       CPelBuf org  = cs.getOrgBuf  (compID);
 #if WCG_EXT
@@ -4881,15 +5761,43 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   }
 
   //  Residual coding.
+#if JVET_L0293_CPR
+  if (luma)
+  {
+    cs.getResiBuf().bufs[0].copyFrom(cs.getOrgBuf().bufs[0]);
+    cs.getResiBuf().bufs[0].subtract(cs.getPredBuf().bufs[0]);
+  }
+  if (chroma)
+  {
+    cs.getResiBuf().bufs[1].copyFrom(cs.getOrgBuf().bufs[1]);
+    cs.getResiBuf().bufs[2].copyFrom(cs.getOrgBuf().bufs[2]);
+    cs.getResiBuf().bufs[1].subtract(cs.getPredBuf().bufs[1]);
+    cs.getResiBuf().bufs[2].subtract(cs.getPredBuf().bufs[2]);
+  }
+#else
   cs.getResiBuf().copyFrom (cs.getOrgBuf());
   cs.getResiBuf().subtract (cs.getPredBuf());
+#endif
   Distortion zeroDistortion = 0;
 
   const TempCtx ctxStart( m_CtxCache, m_CABACEstimator->getCtx() );
 
+#if JVET_L0293_CPR 
+  if (luma)
+  {
+    cs.getOrgResiBuf().bufs[0].copyFrom(cs.getResiBuf().bufs[0]);
+  }
+  if (chroma)
+  {
+    cs.getOrgResiBuf().bufs[1].copyFrom(cs.getResiBuf().bufs[1]);
+    cs.getOrgResiBuf().bufs[2].copyFrom(cs.getResiBuf().bufs[2]);
+  }
+  xEstimateInterResidualQT(cs, partitioner, &zeroDistortion, luma, chroma);
+#else
   cs.getOrgResiBuf().copyFrom(cs.getResiBuf());
 
   xEstimateInterResidualQT(cs, partitioner, &zeroDistortion);
+#endif
   TransformUnit &firstTU = *cs.getTU( partitioner.chType );
 
   cu.rootCbf = false;
@@ -4940,12 +5848,37 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
   uint64_t finalFracBits = xGetSymbolFracBitsInter( cs, partitioner );
   // we've now encoded the CU, and so have a valid bit cost
+#if JVET_L0293_CPR 
+  if (!cu.rootCbf)
+  {
+    if (luma)
+    {
+      cs.getResiBuf().bufs[0].fill(0); // Clear the residual image, if we didn't code it.
+    }
+    if (chroma)
+    {
+      cs.getResiBuf().bufs[1].fill(0); // Clear the residual image, if we didn't code it.
+      cs.getResiBuf().bufs[2].fill(0); // Clear the residual image, if we didn't code it.
+    }
+  }
+
+  if (luma)
+  {
+    cs.getRecoBuf().bufs[0].reconstruct(cs.getPredBuf().bufs[0], cs.getResiBuf().bufs[0], cs.slice->clpRngs().comp[0]);
+  }
+  if (chroma)
+  {
+    cs.getRecoBuf().bufs[1].reconstruct(cs.getPredBuf().bufs[1], cs.getResiBuf().bufs[1], cs.slice->clpRngs().comp[1]);
+    cs.getRecoBuf().bufs[2].reconstruct(cs.getPredBuf().bufs[2], cs.getResiBuf().bufs[2], cs.slice->clpRngs().comp[2]);
+  }
+#else
   if (!cu.rootCbf)
   {
     cs.getResiBuf().fill(0); // Clear the residual image, if we didn't code it.
   }
 
   cs.getRecoBuf().reconstruct(cs.getPredBuf(), cs.getResiBuf(), cs.slice->clpRngs());
+#endif
 
   // update with clipped distortion and cost (previously unclipped reconstruction values were used)
   Distortion finalDistortion = 0;
@@ -4953,6 +5886,12 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   for (int comp = 0; comp < numValidComponents; comp++)
   {
     const ComponentID compID = ComponentID(comp);
+#if JVET_L0293_CPR
+    if (compID == COMPONENT_Y && !luma)
+      continue;
+    if (compID != COMPONENT_Y && !chroma)
+      continue;
+#endif
     CPelBuf reco = cs.getRecoBuf (compID);
     CPelBuf org  = cs.getOrgBuf  (compID);
 
@@ -5019,6 +5958,9 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
     {
       m_CABACEstimator->cu_transquant_bypass_flag( cu );
     }
+#if JVET_L0293_CPR
+    if (cu.Y().valid())
+#endif
     m_CABACEstimator->cu_skip_flag( cu );
     m_CABACEstimator->pred_mode   ( cu );
     m_CABACEstimator->cu_pred_data( cu );

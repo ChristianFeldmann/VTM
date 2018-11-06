@@ -229,6 +229,17 @@ protected:
 #if JVET_L0124_L0208_TRIANGLE
   bool      m_Triangle;
 #endif
+
+#if JVET_L0293_CPR
+  unsigned  m_CPRMode;
+  unsigned  m_CPRLocalSearchRangeX;
+  unsigned  m_CPRLocalSearchRangeY;
+  unsigned  m_CPRHashSearch;
+  unsigned  m_CPRHashSearchMaxCand;
+  unsigned  m_CPRHashSearchRange4SmallBlk;
+  unsigned  m_CPRFastMethod;
+#endif    
+  
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
 
   bool      m_useFastLCTU;
@@ -707,7 +718,26 @@ public:
   bool      getUseTriangle                  ()         const { return m_Triangle; }
 #endif
 
+
+#if JVET_L0293_CPR
+  void      setCPRMode                      (unsigned n)     { m_CPRMode = n; }
+  unsigned  getCPRMode                      ()         const { return m_CPRMode; }
+  void      setCPRLocalSearchRangeX         (unsigned n)     { m_CPRLocalSearchRangeX = n; }
+  unsigned  getCPRLocalSearchRangeX         ()         const { return m_CPRLocalSearchRangeX; }
+  void      setCPRLocalSearchRangeY         (unsigned n)     { m_CPRLocalSearchRangeY = n; }
+  unsigned  getCPRLocalSearchRangeY         ()         const { return m_CPRLocalSearchRangeY; }
+  void      setCPRHashSearch                (unsigned n)     { m_CPRHashSearch = n; }
+  unsigned  getCPRHashSearch                ()         const { return m_CPRHashSearch; }
+  void      setCPRHashSearchMaxCand         (unsigned n)     { m_CPRHashSearchMaxCand = n; }
+  unsigned  getCPRHashSearchMaxCand         ()         const { return m_CPRHashSearchMaxCand; }
+  void      setCPRHashSearchRange4SmallBlk  (unsigned n)     { m_CPRHashSearchRange4SmallBlk = n; }
+  unsigned  getCPRHashSearchRange4SmallBlk  ()         const { return m_CPRHashSearchRange4SmallBlk; }
+  void      setCPRFastMethod                (unsigned n)     { m_CPRFastMethod = n; }
+  unsigned  getCPRFastMethod                ()         const { return m_CPRFastMethod; }
+#endif  
+
   // ADD_NEW_TOOL : (encoder lib) add access functions here
+
 
   void      setMaxCUWidth                   ( uint32_t  u )      { m_maxCUWidth  = u; }
   uint32_t      getMaxCUWidth                   () const         { return m_maxCUWidth; }

@@ -679,6 +679,9 @@ bool CABACReader::split_cu_flag( CodingStructure& cs, Partitioner &partitioner )
 bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& cuCtx )
 {
   CodingStructure& cs = *cu.cs;
+#if JVET_L0293_CPR
+  cs.chType = partitioner.chType;
+#endif
   // transquant bypass flag
   if( cs.pps->getTransquantBypassEnabledFlag() )
   {
@@ -686,7 +689,11 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   }
 
   // skip flag
+#if JVET_L0293_CPR
+  if (!cs.slice->isIntra() && cu.Y().valid())
+#else
   if( !cs.slice->isIntra() )
+#endif
   {
     cu_skip_flag( cu );
   }
@@ -785,6 +792,11 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
 
   unsigned value = 0;
   unsigned ctxId = DeriveCtx::CtxIMVFlag( cu );
+#if JVET_L0293_CPR
+  if (cu.firstPU->interDir == 1 && cu.cs->slice->getRefPic(REF_PIC_LIST_0, cu.firstPU->refIdx[REF_PIC_LIST_0])->getPOC() == cu.cs->slice->getPOC()) // the first bin of IMV flag does need to be signaled in CPR block
+    value = 1;
+  else
+#endif
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, ctxId );
 
@@ -834,6 +846,14 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
     intra_chroma_pred_modes( cu );
     return;
   }
+#if JVET_L0293_CPR 
+  if (!cu.Y().valid()) // dual tree chroma CU
+  {
+    cu.predMode = MODE_INTER;
+    cu.cpr = true;
+    return;
+  }
+#endif 
   MergeCtx mrgCtx;
 
   for( auto &pu : CU::traversePUs( cu ) )

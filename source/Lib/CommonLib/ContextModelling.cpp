@@ -315,17 +315,16 @@ unsigned DeriveCtx::CtxBTsplit(const CodingStructure& cs, Partitioner& partition
 
   {
 #if JVET_L0361_SPLIT_CTX
-    unsigned widthCurr = partitioner.currArea().lwidth();
-    unsigned heightCurr = partitioner.currArea().lheight();
-
+    unsigned widthCurr  = partitioner.currArea().blocks[partitioner.chType].width;
+    unsigned heightCurr = partitioner.currArea().blocks[partitioner.chType].height;
     if( cuLeft )
     {
-      unsigned heightLeft = cuLeft->Y().height;
+      unsigned heightLeft = cuLeft->blocks[partitioner.chType].height;
       ctx += ( heightLeft < heightCurr ? 1 : 0 );
     }
     if( cuAbove )
     {
-      unsigned widthAbove = cuAbove->Y().width;
+      unsigned widthAbove = cuAbove->blocks[partitioner.chType].width;
       ctx += ( widthAbove < widthCurr ? 1 : 0 );
     }
 
@@ -338,7 +337,7 @@ unsigned DeriveCtx::CtxBTsplit(const CodingStructure& cs, Partitioner& partition
       int maxBTSize = cs.pcv->getMaxBtSize( *cs.slice, partitioner.chType );
       int th1 = ( maxBTSize == 128 ) ? 128  : ( ( maxBTSize == 64 ) ? 64  : 64  );
       int th2 = ( maxBTSize == 128 ) ? 1024 : ( ( maxBTSize == 64 ) ? 512 : 256 );
-      unsigned int sizeCurr = widthCurr * heightCurr;
+      unsigned int sizeCurr = partitioner.currArea().lumaSize().area();
       ctx += sizeCurr > th2 ? 0 : ( sizeCurr > th1 ? 3 : 6 );
     }
 #else

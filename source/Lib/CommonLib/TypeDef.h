@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define TRAINED_CABAC_INIT_TABLES                         1 // Trained values for VTM3
 #define JVET_L0410_TC_TAB                                 1 // Change TC table for QP 51-63
 
 #define JVET_L0136_L0085_LM_RESTRICTED_LINEBUFFER         1 // line buffer restriction in LM prediction

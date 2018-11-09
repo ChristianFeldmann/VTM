@@ -340,7 +340,7 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
       {
         angularMode[modeIdx++] = leftIntraDir;
       }
-      if (aboveIntraDir > DC_IDX)
+      if (aboveIntraDir > DC_IDX && aboveIntraDir != leftIntraDir)
       {
         angularMode[modeIdx++] = aboveIntraDir;
       }

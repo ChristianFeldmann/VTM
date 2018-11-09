@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
 {
   // print information
   fprintf( stdout, "\n" );
-  fprintf( stdout, "VVCSoftware: VTM Encoder Version %s ", NEXT_SOFTWARE_VERSION );
+  fprintf( stdout, "VVCSoftware: VTM Encoder Version %s ", VTM_VERSION );
   fprintf( stdout, NVM_ONOS );
   fprintf( stdout, NVM_COMPILEDBY );
   fprintf( stdout, NVM_BITS );

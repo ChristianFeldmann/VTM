@@ -1853,7 +1853,7 @@ void CABACReader::MHIntra_luma_pred_modes(CodingUnit &cu)
       }
       pu->intraDir[0] = pred_mode;
     }
-    DTRACE(g_trace_ctx, D_SYNTAX, "intra_luma_pred_modes() idx=%d pos=(%d,%d) mode=%d\n", k, pu->lumaPos().x, pu->lumaPos().y, pu->intraDir2[0]);
+    DTRACE(g_trace_ctx, D_SYNTAX, "intra_luma_pred_modes() idx=%d pos=(%d,%d) mode=%d\n", k, pu->lumaPos().x, pu->lumaPos().y, pu->intraDir[0]);
     pu = pu->next;
   }
 }

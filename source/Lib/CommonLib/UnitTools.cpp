@@ -2365,6 +2365,9 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
       if (pu.cu->imv != 0)
       {
         unsigned imvShift = pu.cu->imv << 1;
+#if REMOVE_MV_ADAPT_PREC
+        imvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#endif
         roundMV(cColMv, imvShift);
       }
       int i = 0;
@@ -3158,6 +3161,9 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
   MotionInfo neibMi;
   int i = 0;
   unsigned imvShift = imv << 1;
+#if REMOVE_MV_ADAPT_PREC
+  imvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#endif
 
   int num_avai_candInLUT = slice.getAvailableLUTMrgNum();
   int num_allowedCand = std::min(MAX_NUM_HMVP_AVMPCANDS, num_avai_candInLUT);

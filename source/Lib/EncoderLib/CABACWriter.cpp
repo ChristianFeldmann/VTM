@@ -1697,12 +1697,10 @@ void CABACWriter::ref_idx( const PredictionUnit& pu, RefPicList eRefList )
     if( refIdx > idx - 1 )
     {
       m_BinEncoder.encodeBinEP( 1 );
-      DTRACE( g_trace_ctx, D_SYNTAX, "ref_idx() value=%d ctxId=%d pos=(%d,%d)\n", 1, 0, pu.lumaPos().x, pu.lumaPos().y );
     }
     else
     {
       m_BinEncoder.encodeBinEP( 0 );
-      DTRACE( g_trace_ctx, D_SYNTAX, "ref_idx() value=%d ctxId=%d pos=(%d,%d)\n", 0, 0, pu.lumaPos().x, pu.lumaPos().y );
       break;
     }
   }
@@ -1747,7 +1745,7 @@ void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
     return;
   }
   m_BinEncoder.encodeBin(pu.mhIntraFlag, Ctx::MHIntraFlag());
-  DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() intrainter=%d pos=(%d,%d) size=%dx%d\n", pu.mhIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+  DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() MHIntra=%d pos=(%d,%d) size=%dx%d\n", pu.mhIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
 }
 
 void CABACWriter::MHIntra_luma_pred_modes(const CodingUnit& cu)

@@ -342,11 +342,16 @@ void DecCu::xReconInter(CodingUnit &cu)
 
   // inter prediction
 #if JVET_L0293_CPR
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   CHECK(cu.cpr && cu.firstPU->mhIntraFlag, "CPR and MHIntra cannot be used together");
+#endif
   CHECK(cu.cpr && cu.affine, "CPR and Affine cannot be used together");
+#if JVET_L0124_L0208_TRIANGLE
   CHECK(cu.cpr && cu.triangle, "CPR and triangle cannot be used together");
+#endif
+#if JVET_L0054_MMVD
   CHECK(cu.cpr && cu.firstPU->mmvdMergeFlag, "CPR and MMVD cannot be used together");
-
+#endif
   const bool luma = cu.Y().valid();
   const bool chroma = cu.Cb().valid();
   if (luma && chroma)

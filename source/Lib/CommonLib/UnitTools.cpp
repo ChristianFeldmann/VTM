@@ -991,10 +991,16 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
       if (miNeighbor.interDir == 1 && slice.getRefPic(REF_PIC_LIST_0, miNeighbor.refIdx[0])->getPOC() == slice.getPOC())
       {
         mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
+#if JVET_L0054_MMVD
         if(mmvdList != 0 && mrgCandIdx != -1)
           mrgCandIdxCPR++;
+#endif
       }
+#if JVET_L0054_MMVD
       if (mrgCandIdxCPR == cnt && canFastExit)
+#else
+      if (mrgCandIdx == cnt && canFastExit)
+#endif
 #else
       if (mrgCandIdx == cnt && canFastExit)
 #endif

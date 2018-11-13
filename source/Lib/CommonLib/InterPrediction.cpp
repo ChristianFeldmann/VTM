@@ -730,7 +730,10 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   {
     Mv mvTemp = _mv[0];
     clipMv( mvTemp, pu.cu->lumaPos(), *pu.cs->sps );
-    xPredInterBlk( compID, pu, refPic, mvTemp, dstPic, bi, clpRng 
+    xPredInterBlk( compID, pu, refPic, mvTemp, dstPic, bi, clpRng
+#if JVET_L0256_BIO
+      , false
+#endif
 #if JVET_L0293_CPR
       , false
 #endif

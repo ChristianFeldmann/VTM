@@ -123,11 +123,10 @@ protected:
   void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred );
   void xPredInterBlk            ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
 #if JVET_L0256_BIO
-                                  ,const bool& bioApplied = false
+                                 , const bool& bioApplied
 #endif
-
 #if JVET_L0293_CPR
-    , bool isCPR = false
+                                 , bool isCPR
 #endif
                                  );
 

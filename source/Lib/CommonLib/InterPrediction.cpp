@@ -402,16 +402,14 @@ void InterPrediction::xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred)
 
       xPredInterBlk(COMPONENT_Cb, subPu, refPic, curMi.mv[0], subPredBuf, false, pu.cu->slice->clpRng(COMPONENT_Cb)
 #if JVET_L0256_BIO
-        , false
+                    , false
 #endif
-        , true
-      );
+                    , true);
       xPredInterBlk(COMPONENT_Cr, subPu, refPic, curMi.mv[0], subPredBuf, false, pu.cu->slice->clpRng(COMPONENT_Cr)
 #if JVET_L0256_BIO
-        , false
+                    , false
 #endif
-        , true
-      );
+                    , true);
     }
   }
 }
@@ -480,13 +478,11 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
     else
     {
       xPredInterBlk( compID, pu, pu.cu->slice->getRefPic( eRefPicList, iRefIdx ), mv[0], pcYuvPred, bi, pu.cu->slice->clpRng( compID )
-
 #if JVET_L0256_BIO
-                    ,bioApplied
+                    , bioApplied
 #endif
-
-#if JVET_L0293_CPR 
-        , isCPR
+#if JVET_L0293_CPR
+                    , isCPR
 #endif
                     );
 
@@ -597,13 +593,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
 }
 
 void InterPrediction::xPredInterBlk ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
-
 #if JVET_L0256_BIO
-                                     ,const bool& bioApplied /*=false*/
+                                     , const bool& bioApplied
 #endif
-
-#if JVET_L0293_CPR 
-  , bool isCPR /*=false*/
+#if JVET_L0293_CPR
+                                     , bool isCPR
 #endif
                                     )
 {
@@ -732,12 +726,12 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     clipMv( mvTemp, pu.cu->lumaPos(), *pu.cs->sps );
     xPredInterBlk( compID, pu, refPic, mvTemp, dstPic, bi, clpRng
 #if JVET_L0256_BIO
-      , false
+                  , false
 #endif
 #if JVET_L0293_CPR
-      , false
+                  , false
 #endif
-    );
+                  );
     return;
   }
 

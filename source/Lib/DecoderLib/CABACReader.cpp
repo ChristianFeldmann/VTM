@@ -954,6 +954,7 @@ void CABACReader::extend_ref_line(CodingUnit& cu)
     cu.firstPU->multiRefIdx = 0;
     return;
   }
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__MULTI_REF_LINE);
 
   const int numBlocks = CU::getNumPUs(cu);
   PredictionUnit* pu = cu.firstPU;

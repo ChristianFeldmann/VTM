@@ -1641,7 +1641,7 @@ void Slice::destroyMotionLUTs()
 {
   delete[] m_MotionCandLut->motionCand;
   m_MotionCandLut->motionCand = nullptr;
-  delete[] m_MotionCandLut;
+  delete m_MotionCandLut;
   m_MotionCandLut = NULL;
 }
 void Slice::resetMotionLUTs()

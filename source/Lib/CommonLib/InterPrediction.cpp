@@ -128,6 +128,7 @@ void InterPrediction::destroy()
   if (m_storedMv != nullptr)
   {
     delete[]m_storedMv;
+    m_storedMv = nullptr;
   }
 #endif
 

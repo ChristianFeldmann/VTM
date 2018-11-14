@@ -128,6 +128,7 @@ void InterPrediction::destroy()
   if (m_storedMv != nullptr)
   {
     delete[]m_storedMv;
+    m_storedMv = nullptr;
   }
 #endif
 
@@ -198,8 +199,11 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
 #endif
 
 #if JVET_L0265_AFF_MINIMUM4X4
-  const int MVBUFFER_SIZE = MAX_CU_SIZE / MIN_PU_SIZE;
-  m_storedMv = new Mv [MVBUFFER_SIZE*MVBUFFER_SIZE];
+  if (m_storedMv == nullptr)
+  {
+    const int MVBUFFER_SIZE = MAX_CU_SIZE / MIN_PU_SIZE;
+    m_storedMv = new Mv[MVBUFFER_SIZE*MVBUFFER_SIZE];
+  }
 #endif
 }
 

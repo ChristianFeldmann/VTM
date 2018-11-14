@@ -465,6 +465,10 @@ public:
                    getPsnr(COMPONENT_Cr) / (double)getNumPic(),
                    PSNRyuv );
 
+#if EXTENSION_360_VIDEO
+            m_ext360.printPSNRs(getNumPic(), e_msg_level);
+#endif
+
             if (printHexPsnr)
             {
               double dPsnr[MAX_NUM_COMPONENT];
@@ -479,10 +483,6 @@ public:
               }
               msg(e_msg_level, "   %16" PRIx64 "  %16" PRIx64 "  %16" PRIx64 , xPsnr[COMPONENT_Y], xPsnr[COMPONENT_Cb], xPsnr[COMPONENT_Cr]);
             }
-
-#if EXTENSION_360_VIDEO
-            m_ext360.printPSNRs(getNumPic(), e_msg_level);
-#endif
 
             if (printSequenceMSE)
             {

@@ -5979,8 +5979,7 @@ bool InterSearch::xReadBufferedAffineUniMv(PredictionUnit& pu, RefPicList eRefPi
       {
         m_pcRdCost->setPredictor(acMvPred[iVerIdx]);
       }
-      const int shift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-      uiMvBits += m_pcRdCost->getBitsOfVectorWithPredictor(acMv[iVerIdx].getHor() >> shift, acMv[iVerIdx].getVer() >> shift, 0);
+      uiMvBits += m_pcRdCost->getBitsOfVectorWithPredictor(acMv[iVerIdx].getHor(), acMv[iVerIdx].getVer(), 0);
     }
     ruiBits += uiMvBits;
     ruiCost += m_pcRdCost->getCost(ruiBits);

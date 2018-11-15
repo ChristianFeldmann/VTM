@@ -1661,7 +1661,7 @@ void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi)
   int currCnt = lutMC->currCnt ;
 
   bool pruned = false;
-  int  sameCandIdx = -1;
+  int  sameCandIdx = 0;
   for (int idx = 0; idx < currCnt; idx++)
   {
     if (lutMC->motionCand[idx] == newMi)
@@ -1673,8 +1673,8 @@ void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi)
   }
   if (pruned || lutMC->currCnt == MAX_NUM_HMVP_CANDS)
   {
-    int startIdx = pruned ? sameCandIdx : 0;
-    memmove(&lutMC->motionCand[startIdx], &lutMC->motionCand[startIdx+1], sizeof(MotionInfo)*(currCnt - sameCandIdx - 1));
+    memmove(&lutMC->motionCand[sameCandIdx], &lutMC->motionCand[sameCandIdx + 1],
+            sizeof(MotionInfo) * (currCnt - sameCandIdx - 1));
     memcpy(&lutMC->motionCand[lutMC->currCnt-1], &newMi, sizeof(MotionInfo));
   }
   else

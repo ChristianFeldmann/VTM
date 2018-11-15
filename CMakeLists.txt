@@ -104,7 +104,6 @@ endif()
 if( MSVC )
   add_compile_options( "/MP" )
   add_compile_options( "/EHsc" )
-  add_compile_options( "/MT" )
 endif()
 
 # set address sanitizer compiler arguments

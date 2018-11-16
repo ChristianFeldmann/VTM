@@ -1784,8 +1784,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
     if (!pcSlice->isIntra())
     {
+#if JVET_L0369_SUBBLOCK_MERGE
+      READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
+      pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
+#else
       READ_UVLC( uiCode, sps->getSpsNext().getUseSubPuMvp() ? "seven_minus_max_num_merge_cand" : "five_minus_max_num_merge_cand");
       pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode - ( sps->getSpsNext().getUseSubPuMvp() ? 0 : 2 ) );
+#endif
 
 #if JVET_L0632_AFFINE_MERGE
 #if JVET_L0369_SUBBLOCK_MERGE

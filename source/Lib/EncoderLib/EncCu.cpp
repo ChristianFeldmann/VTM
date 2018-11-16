@@ -1875,16 +1875,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     static_vector<double, MRG_MAX_NUM_CANDS> candCostList;
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-#if JVET_L0054_MMVD
-    for (uint32_t idx = 0; idx < MRG_MAX_NUM_CANDS + MMVD_ADD_NUM; idx++)
-#else
-    for (uint32_t idx = 0; idx < MRG_MAX_NUM_CANDS; idx++)
-#endif
-    {
-      candCostList[idx] = MAX_DOUBLE;
-    }
-#endif
     // 1. Pass: get SATD-cost for selected candidates and reduce their count
     if( !bestIsSkip )
     {

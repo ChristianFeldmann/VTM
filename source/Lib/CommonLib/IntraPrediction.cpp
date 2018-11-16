@@ -898,7 +898,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
             p[0] = refMain[refMainIndex - 1];
             p[1] = refMain[refMainIndex];
             p[2] = refMain[refMainIndex + 1];
-            p[3] = refMain[refMainIndex + 2];
+            p[3] = f[3] != 0 ? refMain[refMainIndex + 2] : 0;
 
             pDstBuf[y*dstStride + x] = static_cast<Pel>((static_cast<int>(f[0] * p[0]) + static_cast<int>(f[1] * p[1]) + static_cast<int>(f[2] * p[2]) + static_cast<int>(f[3] * p[3]) + 32) >> 6);
 

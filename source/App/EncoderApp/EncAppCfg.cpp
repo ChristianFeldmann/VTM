@@ -2320,19 +2320,12 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_uiQuadtreeTUMaxDepthIntra < 1,                                                       "QuadtreeTUMaxDepthIntra must be greater than or equal to 1" );
   xConfirmPara( m_uiMaxCUWidth < ( 1 << (m_quadtreeTULog2MinSize + m_uiQuadtreeTUMaxDepthIntra - 1) ), "QuadtreeTUMaxDepthInter must be less than or equal to the difference between log2(maxCUSize) and QuadtreeTULog2MinSize plus 1" );
 
-  xConfirmPara(  m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
-  if( m_SubPuMvpMode != 0 )
-  {
-    xConfirmPara( m_maxNumMergeCand > 7, "MaxNumMergeCand must be 7 or smaller." );
-  }
-  else
-  {
-    xConfirmPara( m_maxNumMergeCand > 5, "MaxNumMergeCand must be 5 or smaller." );
-  }
+  xConfirmPara( m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
+  xConfirmPara( m_maxNumMergeCand > MRG_MAX_NUM_CANDS, "MaxNumMergeCand must be no more than MRG_MAX_NUM_CANDS." );
 
 #if JVET_L0632_AFFINE_MERGE
   xConfirmPara( m_maxNumAffineMergeCand < 1, "MaxNumAffineMergeCand must be 1 or greater." );
-  xConfirmPara( m_maxNumAffineMergeCand > 5, "MaxNumAffineMergeCand must be 5 or smaller." );
+  xConfirmPara( m_maxNumAffineMergeCand > AFFINE_MRG_MAX_NUM_CANDS, "MaxNumAffineMergeCand must be no more than AFFINE_MRG_MAX_NUM_CANDS." );
 #if JVET_L0369_SUBBLOCK_MERGE
   if ( m_Affine == 0 )
   {

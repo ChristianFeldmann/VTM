@@ -2219,7 +2219,6 @@ bool EncAppCfg::xCheckParameter()
 
   xConfirmPara( m_quadtreeTULog2MaxSize < 0, "Maximal TU size is invalid" );
 
-#if !JVET_L0369_SUBBLOCK_MERGE
   if( m_SubPuMvpMode == 3 && m_maxNumMergeCand < 7 )
   {
     msg( WARNING, "****************************************************************************\n" );
@@ -2234,7 +2233,6 @@ bool EncAppCfg::xCheckParameter()
     msg( WARNING, "**          an advanced sup-pu temporal merging mode is enabled.          **\n" );
     msg( WARNING, "****************************************************************************\n" );
   }
-#endif
   xConfirmPara( m_iQP < -6 * (m_internalBitDepth[CHANNEL_TYPE_LUMA] - 8) || m_iQP > MAX_QP, "QP exceeds supported range (-QpBDOffsety to 63)" );
 #if W0038_DB_OPT
   xConfirmPara( m_deblockingFilterMetric!=0 && (m_bLoopFilterDisable || m_loopFilterOffsetInPPS), "If DeblockingFilterMetric is non-zero then both LoopFilterDisable and LoopFilterOffsetInPPS must be 0");

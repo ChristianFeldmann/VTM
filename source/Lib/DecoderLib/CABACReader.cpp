@@ -1342,6 +1342,9 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
   {
     inter_pred_idc( pu );
     affine_flag   ( *pu.cu );
+#if JVET_M0444_SMVD
+    smvd_mode( pu );
+#endif
 
     if( pu.interDir != 2 /* PRED_L1 */ )
     {
@@ -1364,6 +1367,10 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
 
     if( pu.interDir != 1 /* PRED_L0 */ )
     {
+#if JVET_M0444_SMVD
+      if ( pu.cu->smvdMode != 1 )
+      {
+#endif
       ref_idx     ( pu, REF_PIC_LIST_1 );
       if( pu.cu->cs->slice->getMvdL1ZeroFlag() && pu.interDir == 3 /* PRED_BI */ )
       {
@@ -1385,6 +1392,9 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
       {
         mvd_coding( pu.mvd[REF_PIC_LIST_1] );
       }
+#if JVET_M0444_SMVD
+      }
+#endif
       mvp_flag    ( pu, REF_PIC_LIST_1 );
     }
   }
@@ -1396,8 +1406,39 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     pu.cu->GBiIdx = GBI_DEFAULT;
   }
 
+#if JVET_M0444_SMVD
+  if ( pu.cu->smvdMode )
+  {
+    RefPicList eCurRefList = (RefPicList)(pu.cu->smvdMode - 1);
+    pu.mvd[1 - eCurRefList].set( -pu.mvd[eCurRefList].hor, -pu.mvd[eCurRefList].ver );
+    pu.refIdx[1 - eCurRefList] = pu.cs->slice->getSymRefIdx( 1 - eCurRefList );
+  }
+#endif
+
   PU::spanMotionInfo( pu, mrgCtx );
 }
+
+#if JVET_M0444_SMVD
+void CABACReader::smvd_mode( PredictionUnit& pu )
+{
+  pu.cu->smvdMode = 0;
+  if ( pu.interDir != 3 || pu.cu->affine )
+  {
+    return;
+  }
+
+  if ( pu.cs->slice->getBiDirPred() == false )
+  {
+    return;
+  }
+
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__SYMMVD_FLAG );
+
+  pu.cu->smvdMode = m_BinDecoder.decodeBin( Ctx::SmvdFlag() ) ? 1 : 0;
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "symmvd_flag() symmvd=%d pos=(%d,%d) size=%dx%d\n", pu.cu->smvdMode ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
+}
+#endif
 
 void CABACReader::subblock_merge_flag( CodingUnit& cu )
 {
@@ -1643,6 +1684,14 @@ void CABACReader::inter_pred_idc( PredictionUnit& pu )
 void CABACReader::ref_idx( PredictionUnit &pu, RefPicList eRefList )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__REF_FRM_IDX );
+
+#if JVET_M0444_SMVD
+  if ( pu.cu->smvdMode )
+  {
+    pu.refIdx[eRefList] = pu.cs->slice->getSymRefIdx( eRefList );
+    return;
+  }
+#endif
 
   int numRef  = pu.cs->slice->getNumRefIdx(eRefList);
   if( numRef <= 1 || !m_BinDecoder.decodeBin( Ctx::RefPic() ) )

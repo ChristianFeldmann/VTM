@@ -313,6 +313,9 @@ struct CodingUnit : public UnitArea
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
   bool           cpr;
+#if JVET_M0444_SMVD
+  uint8_t          smvdMode;
+#endif
 
   CodingUnit() : chType( CH_L ) { }
   CodingUnit(const UnitArea &unit);

@@ -108,6 +108,9 @@ enum CodingStatisticsType
   STATS__TOOL_TOTAL_FRAME,// This is a special case and is not included in the report.
   STATS__TOOL_AFF,
   STATS__TOOL_EMT,
+#if JVET_M0444_SMVD
+  STATS__CABAC_BITS__SYMMVD_FLAG,
+#endif
   STATS__TOOL_TOTAL,
   STATS__NUM_STATS
 };
@@ -184,6 +187,9 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__TRIANGLE_FLAG",
     "CABAC_BITS__TRIANGLE_INDEX",
     "CABAC_BITS__MULTI_REF_LINE",
+#if JVET_M0444_SMVD
+    "CABAC_BITS__SYMMVD_FLAG",
+#endif
     "TOOL_FRAME",
     "TOOL_AFFINE",
     "TOOL_EMT",

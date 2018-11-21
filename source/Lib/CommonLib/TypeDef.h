@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0444_SMVD                                   1 // SMVD mode
+
 #define JVET_M0142_CCLM_COLLOCATED_CHROMA                 1 // Adding support for chroma sample location type 2 in CCLM
 
 #define JVET_M0479_18BITS_MV_CLIP                         1

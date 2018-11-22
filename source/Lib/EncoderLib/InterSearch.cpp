@@ -1783,11 +1783,10 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
       if (cu.Y().width > 8 && cu.Y().height > 8 && cu.partSize == SIZE_2Nx2N && cu.slice->getSPS()->getSpsNext().getUseAffine() 
         && cu.imv == 0
+#if JVET_L0646_GBI
+        && (gbiIdx == GBI_DEFAULT || m_affineModeSelected || !m_pcEncCfg->getUseGBiFast())
+#endif
         )
-      {
-        ::memcpy( cMvHevcTemp, cMvTemp, sizeof( cMvTemp ) );
-      }
-      if ( cu.Y().width > 8 && cu.Y().height > 8 && cu.partSize == SIZE_2Nx2N && cu.slice->getSPS()->getSpsNext().getUseAffine() )
       {
         ::memcpy( cMvHevcTemp, cMvTemp, sizeof( cMvTemp ) );
       }

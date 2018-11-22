@@ -708,18 +708,11 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   // --> create PUs
   CU::addPUs( cu );
 
-#if JVET_L0283_MULTI_REF_LINE
-  extend_ref_line( cu );
-#endif
-
+#if JVET_L0553_PCM
   // pcm samples
   if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
   {
-#if JVET_L0553_PCM
     pcm_flag( cu, partitioner );
-#else
-    pcm_flag( cu );
-#endif
     if( cu.ipcm )
     {
       TransformUnit& tu = cs.addTU( cu, partitioner.chType );
@@ -727,6 +720,25 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
       return end_of_ctu( cu, cuCtx );
     }
   }
+#endif
+
+#if JVET_L0283_MULTI_REF_LINE
+  extend_ref_line( cu );
+#endif
+
+#if !JVET_L0553_PCM
+  // pcm samples
+  if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
+  {
+    pcm_flag( cu );
+    if( cu.ipcm )
+    {
+      TransformUnit& tu = cs.addTU( cu, partitioner.chType );
+      pcm_samples( tu );
+      return end_of_ctu( cu, cuCtx );
+    }
+  }
+#endif
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
   cu_pred_data( cu );

@@ -631,6 +631,19 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
     return;
   }
 
+#if JVET_L0553_PCM
+  // pcm samples
+  if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
+  {
+    pcm_data( cu, partitioner );
+    if( cu.ipcm )
+    {
+      end_of_ctu( cu, cuCtx );
+      return;
+    }
+  }
+#endif
+
   // prediction mode and partitioning data
   pred_mode ( cu );
 
@@ -638,20 +651,18 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
   extend_ref_line(cu);
 #endif
 
+#if !JVET_L0553_PCM
   // pcm samples
   if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
   {
-#if JVET_L0553_PCM
-    pcm_data( cu, partitioner );
-#else
     pcm_data( cu );
-#endif
     if( cu.ipcm )
     {
       end_of_ctu( cu, cuCtx );
       return;
     }
   }
+#endif
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
   cu_pred_data( cu );

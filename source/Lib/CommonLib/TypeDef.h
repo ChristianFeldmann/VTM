@@ -134,6 +134,9 @@
 
 #define JVET_L0293_CPR                                    1 // current picture referencing or intra block copy mode
 
+#define JVET_L0362_QG_FIX                                 1 // QG is the node of qtDepth + mttDepth <= maxDqpDepth
+#define JVET_L0362_QG_FIX_CU_REUSE                        1 // fix bug on encoder cu coding info reusing fast algorithm (i.e., reuse cu info when having the same neighbor and the same qp)
+
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )
 #endif

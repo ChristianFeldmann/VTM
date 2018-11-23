@@ -754,13 +754,21 @@ bool BestEncInfoCache::setFromCs( const CodingStructure& cs, const Partitioner& 
   return true;
 }
 
+#if JVET_L0362_QG_FIX_CU_REUSE
+bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& partitioner, int qp )
+#else
 bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& partitioner )
+#endif
 {
   unsigned idx1, idx2, idx3, idx4;
   getAreaIdx( cs.area.Y(), *m_slice_bencinf->getPPS()->pcv, idx1, idx2, idx3, idx4 );
 
   BestEncodingInfo& encInfo = *m_bestEncInfo[idx1][idx2][idx3][idx4];
 
+#if JVET_L0362_QG_FIX_CU_REUSE
+  if( encInfo.cu.qp != qp )
+    return false;
+#endif
   if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != encInfo.cu || !isTheSameNbHood( encInfo.cu, partitioner ) 
 #if JVET_L0293_CPR
     || encInfo.cu.cpr
@@ -928,7 +936,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   cuECtx.set( DID_QUAD_SPLIT,       false );
   cuECtx.set( IS_BEST_NOSPLIT_SKIP, false );
   cuECtx.set( MAX_QT_SUB_DEPTH,     0 );
-#if REUSE_CU_RESULTS
+#if REUSE_CU_RESULTS && !JVET_L0362_QG_FIX_CU_REUSE
   const bool isReusingCu = isValid( cs, partitioner );
   cuECtx.set( IS_REUSING_CU,        isReusingCu );
 #endif
@@ -1049,7 +1057,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 
   m_ComprCUCtxList.back().testModes.push_back( { ETM_POST_DONT_SPLIT } );
 
-#if REUSE_CU_RESULTS
+#if REUSE_CU_RESULTS && !JVET_L0362_QG_FIX_CU_REUSE
   if( isReusingCu )
   {
     m_ComprCUCtxList.back().testModes.push_back( { ETM_RECO_CACHED } );
@@ -1078,6 +1086,14 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   {
     const int  qp       = std::max( qpLoop, lowestQP );
     const bool lossless = useLossless && qpLoop == minQP;
+#if REUSE_CU_RESULTS && JVET_L0362_QG_FIX_CU_REUSE
+    const bool isReusingCu = isValid( cs, partitioner, qp );
+    cuECtx.set( IS_REUSING_CU, isReusingCu );
+    if( isReusingCu )
+    {
+      m_ComprCUCtxList.back().testModes.push_back( {ETM_RECO_CACHED, SIZE_2Nx2N, ETO_STANDARD, qp, lossless} );
+    }
+#endif
     // add intra modes
     m_ComprCUCtxList.back().testModes.push_back( { ETM_IPCM,  SIZE_2Nx2N, ETO_STANDARD, qp, lossless } );
     m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, SIZE_2Nx2N, ETO_STANDARD, qp, lossless } );

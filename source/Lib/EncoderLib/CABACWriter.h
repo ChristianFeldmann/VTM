@@ -90,7 +90,7 @@ public:
   void        cu_transquant_bypass_flag ( const CodingUnit&             cu );
   void        cu_skip_flag              ( const CodingUnit&             cu );
   void        pred_mode                 ( const CodingUnit&             cu );
-#if JVET_L0553_PCM
+#if JVET_L0209_PCM
   void        pcm_data                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        pcm_flag                  ( const CodingUnit&             cu,       Partitioner&      pm );
 #else

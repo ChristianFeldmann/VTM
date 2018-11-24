@@ -631,7 +631,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
     return;
   }
 
-#if JVET_L0553_PCM
+#if JVET_L0209_PCM
   // pcm samples
   if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
   {
@@ -651,7 +651,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
   extend_ref_line(cu);
 #endif
 
-#if !JVET_L0553_PCM
+#if !JVET_L0209_PCM
   // pcm samples
   if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
   {
@@ -706,13 +706,13 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
   m_BinEncoder.encodeBin( ( CU::isIntra( cu ) ), Ctx::PredMode() );
 }
 
-#if JVET_L0553_PCM
+#if JVET_L0209_PCM
 void CABACWriter::pcm_data( const CodingUnit& cu, Partitioner& partitioner  )
 #else
 void CABACWriter::pcm_data( const CodingUnit& cu )
 #endif
 {
-#if JVET_L0553_PCM
+#if JVET_L0209_PCM
   pcm_flag( cu, partitioner );
 #else
   pcm_flag( cu );
@@ -724,14 +724,14 @@ void CABACWriter::pcm_data( const CodingUnit& cu )
   }
 }
 
-#if JVET_L0553_PCM
+#if JVET_L0209_PCM
 void CABACWriter::pcm_flag( const CodingUnit& cu, Partitioner& partitioner )
 #else
 void CABACWriter::pcm_flag( const CodingUnit& cu )
 #endif
 {
   const SPS& sps = *cu.cs->sps;
- #if JVET_L0553_PCM
+ #if JVET_L0209_PCM
   if( !sps.getUsePCM() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
       || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
 #else
@@ -1868,7 +1868,7 @@ void CABACWriter::pcm_samples( const TransformUnit& tu )
 
   const SPS&        sps       = *tu.cu->cs->sps;
 
-#if JVET_L0553_PCM
+#if JVET_L0209_PCM
   const CodingStructure *cs = tu.cs;
   const ChannelType chType = tu.chType;
 

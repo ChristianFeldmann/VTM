@@ -260,7 +260,7 @@ void DecCu::xDecodePCMTexture(TransformUnit &tu, const ComponentID compID)
 */
 void DecCu::xReconPCM(TransformUnit &tu)
 {
-#if JVET_L0553_PCM
+#if JVET_L0209_PCM
   const CodingStructure *cs = tu.cs;
   const ChannelType chType = tu.chType;
 
@@ -271,7 +271,7 @@ void DecCu::xReconPCM(TransformUnit &tu)
   for (uint32_t ch = 0; ch < tu.blocks.size(); ch++)
 #endif
   {
-#if !JVET_L0553_PCM
+#if !JVET_L0209_PCM
     ComponentID compID = ComponentID(ch);
 #endif
 

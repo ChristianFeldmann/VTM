@@ -217,7 +217,11 @@ void EncAdaptiveLoopFilter::initCABACEstimator( CABACEncoder* cabacEncoder, CtxC
   m_CABACEstimator->resetBits();
 }
 
-void EncAdaptiveLoopFilter::ALFProcess( CodingStructure& cs, const double *lambdas, AlfSliceParam& alfSliceParam )
+void EncAdaptiveLoopFilter::ALFProcess( CodingStructure& cs, const double *lambdas,
+#if ENABLE_QPA
+                                        const double lambdaChromaWeight,
+#endif
+                                        AlfSliceParam& alfSliceParam )
 {
   // set available filter shapes
   alfSliceParam.filterShapes = m_filterShapes;
@@ -254,16 +258,28 @@ void EncAdaptiveLoopFilter::ALFProcess( CodingStructure& cs, const double *lambd
   deriveStatsForFiltering( orgYuv, recYuv );
 
   // derive filter (luma)
-  alfEncoder( cs, alfSliceParam, orgYuv, recYuv, cs.getRecoBuf(), CHANNEL_TYPE_LUMA );
+  alfEncoder( cs, alfSliceParam, orgYuv, recYuv, cs.getRecoBuf(), CHANNEL_TYPE_LUMA
+#if ENABLE_QPA
+            , lambdaChromaWeight
+#endif
+            );
 
   // derive filter (chroma)
   if( alfSliceParam.enabledFlag[COMPONENT_Y] )
   {
-    alfEncoder( cs, alfSliceParam, orgYuv, recYuv, cs.getRecoBuf(), CHANNEL_TYPE_CHROMA );
+    alfEncoder( cs, alfSliceParam, orgYuv, recYuv, cs.getRecoBuf(), CHANNEL_TYPE_CHROMA
+#if ENABLE_QPA
+              , lambdaChromaWeight
+#endif
+              );
   }
 }
 
-double EncAdaptiveLoopFilter::deriveCtbAlfEnableFlags( CodingStructure& cs, const int iShapeIdx, ChannelType channel, const int numClasses, const int numCoeff, double& distUnfilter )
+double EncAdaptiveLoopFilter::deriveCtbAlfEnableFlags( CodingStructure& cs, const int iShapeIdx, ChannelType channel,
+#if ENABLE_QPA
+                                                       const double chromaWeight,
+#endif
+                                                       const int numClasses, const int numCoeff, double& distUnfilter )
 {
   TempCtx        ctxTempStart( m_CtxCache );
   TempCtx        ctxTempBest( m_CtxCache );
@@ -274,6 +290,9 @@ double EncAdaptiveLoopFilter::deriveCtbAlfEnableFlags( CodingStructure& cs, cons
   distUnfilter = 0;
 
   setEnableFlag(m_alfSliceParamTemp, channel, true);
+#if ENABLE_QPA
+  CHECK ((chromaWeight > 0.0) && (cs.slice->getSliceCurStartCtuTsAddr() != 0), "incompatible start CTU address, must be 0");
+#endif
 
   for( int ctuIdx = 0; ctuIdx < m_numCTUsInPic; ctuIdx++ )
   {
@@ -286,14 +305,19 @@ double EncAdaptiveLoopFilter::deriveCtbAlfEnableFlags( CodingStructure& cs, cons
       m_ctuEnableFlag[compID][ctuIdx] = 1;
       m_CABACEstimator->codeAlfCtuEnableFlag( cs, ctuIdx, compID, &m_alfSliceParamTemp );
       double costOn = distUnfilterCtu + getFilteredDistortion( m_alfCovariance[compID][iShapeIdx][ctuIdx], numClasses, m_alfSliceParamTemp.numLumaFilters - 1, numCoeff );
-      costOn += m_lambda[compID] * FracBitsScale*(double)m_CABACEstimator->getEstFracBits();
+#if ENABLE_QPA
+      const double ctuLambda = chromaWeight > 0.0 ? (isLuma (channel) ? cs.picture->m_uEnerHpCtu[ctuIdx] : cs.picture->m_uEnerHpCtu[ctuIdx] / chromaWeight) : m_lambda[compID];
+#else
+      const double ctuLambda = m_lambda[compID];
+#endif
+      costOn += ctuLambda * FracBitsScale*(double)m_CABACEstimator->getEstFracBits();
       ctxTempBest = AlfCtx( m_CABACEstimator->getCtx() );
 
       m_CABACEstimator->getCtx() = AlfCtx( ctxTempStart );
       m_CABACEstimator->resetBits();
       m_ctuEnableFlag[compID][ctuIdx] = 0;
       m_CABACEstimator->codeAlfCtuEnableFlag( cs, ctuIdx, compID, &m_alfSliceParamTemp);
-      double costOff = distUnfilterCtu + m_lambda[compID] * FracBitsScale*(double)m_CABACEstimator->getEstFracBits();
+      double costOff = distUnfilterCtu + ctuLambda * FracBitsScale*(double)m_CABACEstimator->getEstFracBits();
 
       if( costOn < costOff )
       {
@@ -320,7 +344,11 @@ double EncAdaptiveLoopFilter::deriveCtbAlfEnableFlags( CodingStructure& cs, cons
   return cost;
 }
 
-void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfSliceParam, const PelUnitBuf& orgUnitBuf, const PelUnitBuf& recExtBuf, const PelUnitBuf& recBuf, const ChannelType channel )
+void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfSliceParam, const PelUnitBuf& orgUnitBuf, const PelUnitBuf& recExtBuf, const PelUnitBuf& recBuf, const ChannelType channel
+#if ENABLE_QPA
+                                      , const double lambdaChromaWeight // = 0.0
+#endif
+                                      )
 {
   const TempCtx  ctxStart( m_CtxCache, AlfCtx( m_CABACEstimator->getCtx() ) );
   TempCtx        ctxBest( m_CtxCache );
@@ -383,7 +411,11 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
       {
         m_CABACEstimator->getCtx() = AlfCtx(ctxStart);
         cost = m_lambda[channel] * uiCoeffBits;
-        cost += deriveCtbAlfEnableFlags(cs, iShapeIdx, channel, numClasses, alfFilterShape[iShapeIdx].numCoeff, distUnfilter);
+        cost += deriveCtbAlfEnableFlags(cs, iShapeIdx, channel,
+#if ENABLE_QPA
+                                        lambdaChromaWeight,
+#endif
+                                        numClasses, alfFilterShape[iShapeIdx].numCoeff, distUnfilter);
         if (cost < costMin)
         {
           costMin = cost;
@@ -718,10 +750,10 @@ int EncAdaptiveLoopFilter::getNonFilterCoeffRate( AlfSliceParam& alfSliceParam )
   int len = 1   // alf_coefficients_delta_flag
 #else
   int len = 1   // filter_type
-            + 1   // alf_coefficients_delta_flag
+          + 1   // alf_coefficients_delta_flag
 #endif
-    	    + lengthTruncatedUnary( 0, 3 )    // chroma_idc = 0, it is signalled when ALF is enabled for luma
-    	    + getTBlength( alfSliceParam.numLumaFilters - 1, MAX_NUM_ALF_CLASSES );   //numLumaFilters
+          + lengthTruncatedUnary( 0, 3 )    // chroma_idc = 0, it is signalled when ALF is enabled for luma
+          + getTBlength( alfSliceParam.numLumaFilters - 1, MAX_NUM_ALF_CLASSES );   //numLumaFilters
 
   if( alfSliceParam.numLumaFilters > 1 )
   {
@@ -818,8 +850,8 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
 
   // Coding parameters
   int len = kMin           //min_golomb_order
-    	    + maxGolombIdx   //golomb_order_increase_flag
-    	    + numFilters;    //filter_coefficient_flag[i]
+          + maxGolombIdx   //golomb_order_increase_flag
+          + numFilters;    //filter_coefficient_flag[i]
 
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )

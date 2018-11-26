@@ -705,10 +705,25 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   // --> create PUs
   CU::addPUs( cu );
 
+#if JVET_L0209_PCM
+  // pcm samples
+  if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
+  {
+    pcm_flag( cu, partitioner );
+    if( cu.ipcm )
+    {
+      TransformUnit& tu = cs.addTU( cu, partitioner.chType );
+      pcm_samples( tu );
+      return end_of_ctu( cu, cuCtx );
+    }
+  }
+#endif
+
 #if JVET_L0283_MULTI_REF_LINE
   extend_ref_line( cu );
 #endif
 
+#if !JVET_L0209_PCM
   // pcm samples
   if( CU::isIntra(cu) )
   {
@@ -720,6 +735,7 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
       return end_of_ctu( cu, cuCtx );
     }
   }
+#endif
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
   cu_pred_data( cu );
@@ -814,11 +830,19 @@ void CABACReader::pred_mode( CodingUnit& cu )
   }
 }
 
-
+#if JVET_L0209_PCM
+void CABACReader::pcm_flag( CodingUnit& cu, Partitioner &partitioner )
+#else
 void CABACReader::pcm_flag( CodingUnit& cu )
+#endif
 {
   const SPS& sps = *cu.cs->sps;
+#if JVET_L0209_PCM
+  if( !sps.getUsePCM() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
+      || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
+#else
   if( !sps.getUsePCM() || cu.lumaSize().width > (1 << sps.getPCMLog2MaxSize()) || cu.lumaSize().width < (1 << sps.getPCMLog2MinSize()) )
+#endif
   {
     cu.ipcm = false;
     return;
@@ -1882,10 +1906,24 @@ void CABACReader::pcm_samples( TransformUnit& tu )
 {
   CHECK( !tu.cu->ipcm, "pcm mode expected" );
 
+#if JVET_L0209_PCM
+  const CodingStructure *cs = tu.cs;
+  const ChannelType chType = tu.chType;
+#endif
+
   const SPS&        sps       = *tu.cu->cs->sps;
+#if !JVET_L0209_PCM
   const ComponentID maxCompId = ( tu.chromaFormat == CHROMA_400 ? COMPONENT_Y : COMPONENT_Cr );
+#endif
   tu.depth                    = 0;
+
+#if JVET_L0209_PCM
+  ComponentID compStr = (CS::isDualITree(*cs) && !isLuma(chType)) ? COMPONENT_Cb: COMPONENT_Y;
+  ComponentID compEnd = (CS::isDualITree(*cs) && isLuma(chType)) ? COMPONENT_Y : COMPONENT_Cr;
+  for( ComponentID compID = compStr; compID <= compEnd; compID = ComponentID(compID+1) )
+#else
   for( ComponentID compID = COMPONENT_Y; compID <= maxCompId; compID = ComponentID(compID+1) )
+#endif
   {
     PelBuf          samples     = tu.getPcmbuf( compID );
     const unsigned  sampleBits  = sps.getPCMBitDepth( toChannelType(compID) );

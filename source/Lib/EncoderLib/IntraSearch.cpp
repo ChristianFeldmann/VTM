@@ -1000,9 +1000,17 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
 
 void IntraSearch::IPCMSearch(CodingStructure &cs, Partitioner& partitioner)
 {
+#if JVET_L0209_PCM
+  ComponentID compStr = (CS::isDualITree(cs) && !isLuma(partitioner.chType)) ? COMPONENT_Cb: COMPONENT_Y;
+  ComponentID compEnd = (CS::isDualITree(cs) && isLuma(partitioner.chType)) ? COMPONENT_Y : COMPONENT_Cr;
+  for( ComponentID compID = compStr; compID <= compEnd; compID = ComponentID(compID+1) )
+#else
   for (uint32_t ch = 0; ch < getNumberValidTBlocks( *cs.pcv ); ch++)
+#endif
   {
+#if !JVET_L0209_PCM
     const ComponentID compID = ComponentID(ch);
+#endif
 
     xEncPCM(cs, partitioner, compID);
   }
@@ -1016,7 +1024,9 @@ void IntraSearch::IPCMSearch(CodingStructure &cs, Partitioner& partitioner)
   cs.cost     = 0;
 
   cs.setDecomp(cs.area);
+#if !JVET_L0209_PCM
   cs.picture->getRecoBuf(cs.area).copyFrom(cs.getRecoBuf());
+#endif
 }
 
 void IntraSearch::xEncPCM(CodingStructure &cs, Partitioner& partitioner, const ComponentID &compID)
@@ -1080,7 +1090,11 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
 #endif
       if( CU::isIntra(cu) )
       {
+#if JVET_L0209_PCM
+        m_CABACEstimator->pcm_data( cu, partitioner );
+#else
         m_CABACEstimator->pcm_data( cu );
+#endif
         if( cu.ipcm )
         {
           return;

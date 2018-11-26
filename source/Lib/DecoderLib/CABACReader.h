@@ -78,7 +78,11 @@ public:
   void        cu_transquant_bypass_flag ( CodingUnit&                   cu );
   void        cu_skip_flag              ( CodingUnit&                   cu );
   void        pred_mode                 ( CodingUnit&                   cu );
+#if JVET_L0209_PCM
+  void        pcm_flag                  ( CodingUnit&                   cu,     Partitioner&    pm );
+#else
   void        pcm_flag                  ( CodingUnit&                   cu );
+#endif
   void        cu_pred_data              ( CodingUnit&                   cu );
 #if JVET_L0646_GBI
   void        cu_gbi_flag               ( CodingUnit&                   cu );

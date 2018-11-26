@@ -1636,6 +1636,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     {
       iSrcOffset = pcPic->m_iOffsetCtu[ctuRsAddr];
       const double newLambda = oldLambda * pow (2.0, double(iSrcOffset - iQPIndex) / 3.0);
+      pcPic->m_uEnerHpCtu[ctuRsAddr] = newLambda;
 #if RDOQ_CHROMA_LAMBDA
       pTrQuant->getLambdas (oldLambdaArray); // save the old lambdas
       const double chromaLambda = newLambda / pRdCost->getChromaWeight();

@@ -561,7 +561,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
         // prediction mode and partitioning data
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::PredMode), cu.predMode);
 
-        if (CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N)
+        if (CU::isIntra(cu))
         {
           if (!(!sps.getUsePCM() || cu.lumaSize().width > (1 << sps.getPCMLog2MaxSize()) || cu.lumaSize().width < (1 << sps.getPCMLog2MinSize())))
           {
@@ -585,7 +585,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::TransQuantBypassFlag_Chroma), cu.transQuantBypass);
         }
 
-        if (CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N)
+        if (CU::isIntra(cu))
         {
           if (!(!sps.getUsePCM() || cu.lumaSize().width > (1 << sps.getPCMLog2MaxSize()) || cu.lumaSize().width < (1 << sps.getPCMLog2MinSize())))
           {
@@ -651,7 +651,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
 #if JVET_L0632_AFFINE_MERGE
               if (!cu.cs->slice->isIntra() && cu.cs->sps->getSpsNext().getUseAffine() && cu.lumaSize().width > 8 && cu.lumaSize().height > 8)
 #else
-              if (!(cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() || cu.partSize != SIZE_2Nx2N)
+              if (!(cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine())
                 && !(!cu.firstPU->mergeFlag && !(cu.lumaSize().width > 8 && cu.lumaSize().height > 8))
                 && !(cu.firstPU->mergeFlag && !PU::isAffineMrgFlagCoded(*cu.firstPU)))
 #endif

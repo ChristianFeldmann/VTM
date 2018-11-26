@@ -631,7 +631,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 
 #if JVET_L0209_PCM
   // pcm samples
-  if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
+  if( CU::isIntra(cu) )
   {
     pcm_data( cu, partitioner );
     if( cu.ipcm )
@@ -1419,7 +1419,7 @@ void CABACWriter::affine_flag( const CodingUnit& cu )
     }
   }
 #else
-  if( cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() || cu.partSize != SIZE_2Nx2N )
+  if( cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() )
   {
     return;
   }

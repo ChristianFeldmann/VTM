@@ -361,10 +361,7 @@ PredictionUnit& CodingStructure::addPU( const UnitArea &unit, const ChannelType 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
 
   CHECK( pu->cacheId != pu->cu->cacheId, "Inconsintent cacheId between the PU and assigned CU" );
-  if( pcv->noRQT )
-  {
-    CHECK( pu->cu->firstPU != nullptr, "Without an RQT the firstPU should be null" );
-  }
+  CHECK( pu->cu->firstPU != nullptr, "Without an RQT the firstPU should be null" );
 #endif
 
   PredictionUnit *prevPU = m_numPUs > 0 ? pus.back() : nullptr;

@@ -491,8 +491,8 @@ namespace DQIntern
       const bool          useYCtx     = ( xy != 0 );
 #endif
       const CtxSet&       ctxSetLast  = ( useYCtx ? Ctx::LastY : Ctx::LastX )[ chType ];
-      const unsigned      lastShift   = ( compID == COMPONENT_Y ? (log2Size+1)>>2 : ( tu.cs->pcv->rectCUs ? Clip3<unsigned>(0,2,size>>3) : log2Size-2 ) );
-      const unsigned      lastOffset  = ( compID == COMPONENT_Y ? ( tu.cs->pcv->rectCUs ? prefixCtx[log2Size] : 3*(log2Size-2)+((log2Size-1)>>2) ) : 0 );
+      const unsigned      lastShift   = ( compID == COMPONENT_Y ? (log2Size+1)>>2 : Clip3<unsigned>(0,2,size>>3) );
+      const unsigned      lastOffset  = ( compID == COMPONENT_Y ? ( prefixCtx[log2Size] ) : 0 );
       uint32_t            sumFBits    = 0;
       unsigned            maxCtxId    = g_uiGroupIdx[ size - 1 ];
       for( unsigned ctxId = 0; ctxId < maxCtxId; ctxId++ )
@@ -892,8 +892,8 @@ namespace DQIntern
       const bool          useYCtx     = ( xy != 0 );
 #endif
       const CtxSet&       ctxSetLast  = ( useYCtx ? Ctx::LastY : Ctx::LastX )[ m_chType ];
-      const unsigned      lastShift   = ( m_compID == COMPONENT_Y ? (log2Size+1)>>2 : ( tu.cs->pcv->rectCUs ? Clip3<unsigned>(0,2,size>>3) : log2Size-2 ) );
-      const unsigned      lastOffset  = ( m_compID == COMPONENT_Y ? ( tu.cs->pcv->rectCUs ? prefixCtx[log2Size] : 3*(log2Size-2)+((log2Size-1)>>2) ) : 0 );
+      const unsigned      lastShift   = ( m_compID == COMPONENT_Y ? (log2Size+1)>>2 : Clip3<unsigned>(0,2,size>>3) );
+      const unsigned      lastOffset  = ( m_compID == COMPONENT_Y ? prefixCtx[log2Size] : 0 );
       uint32_t            sumFBits    = 0;
       unsigned            maxCtxId    = g_uiGroupIdx[ size - 1 ];
       for( unsigned ctxId = 0; ctxId < maxCtxId; ctxId++ )

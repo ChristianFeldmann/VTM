@@ -363,7 +363,6 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
 
   CHECK( g_aucLog2[iWidth] < 2 && pu.cs->pcv->noChroma2x2, "Size not allowed" );
   CHECK( g_aucLog2[iWidth] > 7, "Size not allowed" );
-  CHECK( iWidth != iHeight && !pu.cs->pcv->rectCUs, "Rectangular block are only allowed with QTBT" );
 
 #if JVET_L0283_MULTI_REF_LINE
   const int  multiRefIdx = (compID == COMPONENT_Y) ? pu.multiRefIdx : 0;
@@ -1852,23 +1851,15 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   int iRecStride        = Src.stride;
   int iRecStride2       = iRecStride << 1;
 
-  CodingStructure&      cs = *pu.cs;
   const CodingUnit& lumaCU = isChroma( pu.chType ) ? *pu.cs->picture->cs->getCU( lumaArea.pos(), CH_L ) : *pu.cu;
   const CodingUnit&     cu = *pu.cu;
 
   const CompArea& area = isChroma( pu.chType ) ? chromaArea : lumaArea;
 
-  const SPS &sps = *cs.sps;
-
   const uint32_t uiTuWidth  = area.width;
   const uint32_t uiTuHeight = area.height;
 
   int iBaseUnitSize = ( 1 << MIN_CU_LOG2 );
-
-  if( !cs.pcv->rectCUs )
-  {
-    iBaseUnitSize = sps.getMaxCUWidth() >> sps.getMaxCodingDepth();
-  }
 
   const int  iUnitWidth       = iBaseUnitSize >> getComponentScaleX( area.compID, area.chromaFormat );
   const int  iUnitHeight      = iBaseUnitSize >> getComponentScaleX( area.compID, area.chromaFormat );
@@ -1907,15 +1898,8 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   ( bNeighborFlags + iLeftUnits - 1 ) );
 #endif
 
-  if( lumaCU.cs->pcv->rectCUs )
-  {
-    bLeftAvaillable = availlableUnit == iTUHeightInUnits;
-  }
-  else
-  {
-    bLeftAvaillable = availlableUnit == iTUWidthInUnits;
-  }
-
+  bLeftAvaillable = availlableUnit == iTUHeightInUnits;
+ 
   availlableUnit = isAboveAvailable( isChroma( pu.chType ) ? cu : lumaCU, toChannelType( area.compID ), area.pos(), iAboveUnits, iUnitWidth,
 #if JVET_L0338_MDLM
   ( bNeighborFlags + iLeftUnits + leftBelowUnits + 1 ) );
@@ -1923,14 +1907,8 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   ( bNeighborFlags + iLeftUnits + 1 ) );
 #endif
 
-  if( lumaCU.cs->pcv->rectCUs )
-  {
-    bAboveAvaillable = availlableUnit == iTUWidthInUnits;
-  }
-  else
-  {
-    bAboveAvaillable = availlableUnit == iTUHeightInUnits;
-  }
+  bAboveAvaillable = availlableUnit == iTUWidthInUnits;
+
 #if JVET_L0338_MDLM
   if (bLeftAvaillable) // if left is not available, then the below left is not available
   {
@@ -2477,7 +2455,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 #endif
   int       minDim        = bLeftAvaillable && bAboveAvaillable ? 1 << g_aucPrevLog2[std::min( uiCHeight, uiCWidth )] : 1 << g_aucPrevLog2[bLeftAvaillable ? uiCHeight : uiCWidth];
   int       minStep       = 1;
-  int       numSteps      = cs.pcv->rectCUs ? minDim / minStep : minDim;
+  int       numSteps      = minDim / minStep;
 
   if( bAboveAvaillable )
   {

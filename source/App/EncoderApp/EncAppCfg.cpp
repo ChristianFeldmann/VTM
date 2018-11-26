@@ -799,7 +799,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("InterlacedSource",                                m_interlacedSourceFlag,                           false, "Indicate that source is interlaced")
   ("NonPackedSource",                                 m_nonPackedConstraintFlag,                        false, "Indicate that source does not contain frame packing")
   ("FrameOnly",                                       m_frameOnlyConstraintFlag,                        false, "Indicate that the bitstream contains only frames")
-  ("QTBT",                                            m_QTBT,                                           false, "Enable QTBT (0:off, 1:on)  [default: off]")
   ("MTT",                                             m_MTT,                                               0u, "Multi type tree type (0: off, 1:QTBT + triple split) [default: 0]")
   ("CTUSize",                                         m_uiCTUSize,                                       128u, "CTUSize (specifies the CTU size if QTBT is on) [default: 128]")
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
@@ -836,7 +835,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t1: IMV default (Full-Pel)\n"
                                                                                                                "\t2: IMV Full-Pel and 4-PEL\n")
   ("IMV4PelFast",                                     m_Imv4PelFast,                                        1, "Fast 4-Pel Adaptive MV precision Mode 0:disabled, 1:enabled)  [default: 1]")
-  ("IMVMaxCand",                                      m_ImvMaxCand,                                         4, "max IMV cand (QTBF off only)")
 #if ENABLE_WPP_PARALLELISM
   ("AltDQPCoding",                                    m_AltDQPCoding,                                   false, "Improved predictive delta-QP coding (0:off, 1:on)  [default: off]")
 #endif
@@ -1870,21 +1868,18 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     if( ( 1u << m_tuLog2MaxSize         ) > m_uiCTUSize ) m_tuLog2MaxSize--;
   }
 
-  if( m_QTBT )
+  const int minCuSize = 1 << MIN_CU_LOG2;
+  m_uiMaxCodingDepth = 0;
+  while( ( m_uiCTUSize >> m_uiMaxCodingDepth ) > minCuSize )
   {
-    int minCuSize = 1 << MIN_CU_LOG2;
-    m_uiMaxCodingDepth = 0;
-    while( ( m_uiCTUSize >> m_uiMaxCodingDepth ) > minCuSize )
-    {
-      m_uiMaxCodingDepth++;
-    }
-    m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCodingDepth;
-    m_uiMaxCUWidth = m_uiMaxCUHeight = m_uiCTUSize;
-    m_uiMaxCUDepth = m_uiMaxCodingDepth;
-#if !JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-    m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCUDepth - 1;
-#endif
+    m_uiMaxCodingDepth++;
   }
+  m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCodingDepth;
+  m_uiMaxCUWidth = m_uiMaxCUHeight = m_uiCTUSize;
+  m_uiMaxCUDepth = m_uiMaxCodingDepth;
+#if !JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCUDepth - 1;
+#endif
 
   // check validity of input parameters
   if( xCheckParameter() )
@@ -1892,22 +1887,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     // return check failed
     return false;
   }
-
-  if( !m_QTBT )
-  {
-    // compute actual CU depth with respect to config depth and max transform size
-    uint32_t uiAddCUDepth = 0;
-    while( ( m_uiMaxCUWidth >> m_uiMaxCUDepth ) > ( 1 << ( m_quadtreeTULog2MinSize + uiAddCUDepth ) ) )
-    {
-      uiAddCUDepth++;
-    }
-
-    m_uiMaxCodingDepth = m_uiMaxCUDepth + uiAddCUDepth; // if minimum TU larger than 4x4, allow for additional part indices for 4:2:2 SubTUs.
-    m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCUDepth - 1;
-
-    m_uiCTUSize = m_uiMaxCUWidth;
-  }
-
 
   // print-out parameters
   xPrintParameter();
@@ -1954,7 +1933,6 @@ bool EncAppCfg::xCheckParameter()
 #if ENABLE_WPP_PARALLELISM
     xConfirmPara( m_numWppThreads > 1, "WPP-style parallelization only supported with NEXT profile" );
 #endif
-    xConfirmPara( m_QTBT, "QTBT only allowed with NEXT profile" );
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_LargeCTU, "Large CTU is only allowed with NEXT profile" );
     xConfirmPara( m_SubPuMvpMode != 0, "Sub-PU motion vector prediction is only allowed with NEXT profile" );
@@ -2000,7 +1978,6 @@ bool EncAppCfg::xCheckParameter()
       xConfirmPara( m_signDataHidingEnabledFlag, "SignHideFlag must be equal to 0 if dependent quantization is enabled" );
 #endif
     }
-    xConfirmPara( !m_QTBT && m_MTT,                      "Multi type tree is an extension of QTBT, thus QTBT has to be enabled for MTT" );
 
 #if !REMOVE_MV_ADAPT_PREC 
     xConfirmPara(m_Affine && !m_highPrecisionMv, "Affine is not yet implemented for HighPrecMv off.");
@@ -2049,13 +2026,8 @@ bool EncAppCfg::xCheckParameter()
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   xConfirmPara( m_useAMaxBT && !m_SplitConsOverrideEnabledFlag, "AMaxBt can only be used with PartitionConstriantsOverride enabled" );
 #endif
-  xConfirmPara( m_useAMaxBT && !m_QTBT, "AMaxBT can only be used with QTBT!" );
-
-
-
-
-
-
+ 
+  
   xConfirmPara(m_bitstreamFileName.empty(), "A bitstream file name must be specified (BitstreamFile)");
   const uint32_t maxBitDepth=(m_chromaFormatIDC==CHROMA_400) ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]);
   xConfirmPara(m_bitDepthConstraint<maxBitDepth, "The internalBitDepth must not be greater than the bitDepthConstraint value");
@@ -2251,10 +2223,6 @@ bool EncAppCfg::xCheckParameter()
 #if SHARP_LUMA_DELTA_QP
   xConfirmPara( m_lumaLevelToDeltaQPMapping.mode && m_uiDeltaQpRD > 0,                      "Luma-level-based Delta QP cannot be used together with slice level multiple-QP optimization\n" );
 #endif
-  if( !m_QTBT )
-  {
-    xConfirmPara( m_iMaxCuDQPDepth > m_uiMaxCUDepth - 1, "Absolute depth for a minimum CuDQP exceeds maximum coding unit depth" );
-  }
 
   xConfirmPara( m_cbQpOffset < -12,   "Min. Chroma Cb QP Offset is -12" );
   xConfirmPara( m_cbQpOffset >  12,   "Max. Chroma Cb QP Offset is  12" );
@@ -2297,7 +2265,7 @@ bool EncAppCfg::xCheckParameter()
   {
     xConfirmPara( m_uiMaxCUHeight > 64, "CTU bigger than 64 only allowed with large CTU." );
     xConfirmPara( m_uiMaxCUWidth  > 64, "CTU bigger than 64 only allowed with large CTU." );
-    if( m_QTBT ) xConfirmPara( m_uiCTUSize > 64, "CTU bigger than 64 only allowed with large CTU." );
+    xConfirmPara( m_uiCTUSize > 64, "CTU bigger than 64 only allowed with large CTU." );
   }
 
   if( m_profile == Profile::NEXT )
@@ -3101,7 +3069,6 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "FDM:%d ", m_useFastDecisionForMerge            );
   msg( VERBOSE, "CFM:%d ", m_bUseCbfFastMode                    );
   msg( VERBOSE, "ESD:%d ", m_useEarlySkipDetection              );
-  msg( VERBOSE, "RQT:%d ", !m_QTBT                              );
   msg( VERBOSE, "TransformSkip:%d ",     m_useTransformSkip     );
   msg( VERBOSE, "TransformSkipFast:%d ", m_useTransformSkipFast );
   msg( VERBOSE, "TransformSkipLog2MaxSize:%d ", m_log2MaxTransformSkipBlockSize);
@@ -3164,12 +3131,10 @@ void EncAppCfg::xPrintParameter()
       msg(VERBOSE, "SubPuMvpLog2Size:%d ", m_SubPuMvpLog2Size);
   }
 #endif 
-    msg( VERBOSE, "QTBT:%d ", m_QTBT );
-    if( m_QTBT ) msg( VERBOSE, "DualITree:%d ", m_dualTree );
+    msg( VERBOSE, "DualITree:%d ", m_dualTree );
     msg( VERBOSE, "LargeCTU:%d ", m_LargeCTU );
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
-    if( !m_QTBT ) msg( VERBOSE, "IMVMaxCand:%d ", m_ImvMaxCand );
-#if !REMOVE_MV_ADAPT_PREC 
+#if !REMOVE_MV_ADAPT_PREC
     msg(VERBOSE, "HighPrecMv:%d ", m_highPrecisionMv);
 #endif
 #if JVET_L0256_BIO
@@ -3211,9 +3176,9 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "PBIntraFast:%d ", m_usePbIntraFast );
   if( m_ImvMode == 2 ) msg( VERBOSE, "IMV4PelFast:%d ", m_Imv4PelFast );
   if( m_EMT ) msg( VERBOSE, "EMTFast: %1d(intra) %1d(inter) ", ( m_FastEMT & m_EMT & 1 ), ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
-  if( m_QTBT ) msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
-  if( m_QTBT ) msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
-  if( m_QTBT ) msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );
+  msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
+  msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
+  msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );
 
   msg( VERBOSE, "NumSplitThreads:%d ", m_numSplitThreads );
   if( m_numSplitThreads > 1 )

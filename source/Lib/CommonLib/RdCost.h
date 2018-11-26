@@ -79,7 +79,6 @@ public:
   bool                  useMR;
   bool                  applyWeight;     // whether weighted prediction is used or not
   bool                  isBiPred;
-  bool                  isQtbt;
 
   const WPScalingParam *wpCur;           // weighted prediction scaling parameters for current ref
   ComponentID           compID;
@@ -121,7 +120,6 @@ private:
   double                  m_motionLambda;
   int                     m_iCostScale;
 
-  bool                    m_useQtbt;
 #if JVET_L0293_CPR
   double                  m_dCost; // for cpr
 #endif
@@ -147,8 +145,6 @@ public:
   double        getChromaWeight()     { return ((m_distortionWeight[COMPONENT_Cb] + m_distortionWeight[COMPONENT_Cr]) / 2.0); }
 
   void          setCostMode(CostMode m) { m_costMode = m; }
-
-  void          setUseQtbt(bool b)    { m_useQtbt = b; }
 
   // Distortion Functions
   void          init();

@@ -154,7 +154,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   //===== get prediction signal =====
   if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
   {
-    const PredictionUnit& pu = cs.pcv->noRQT && cs.pcv->only2Nx2N ? *tu.cu->firstPU : *tu.cs->getPU( tu.block( compID ), CHANNEL_TYPE_CHROMA );
+    const PredictionUnit& pu = *tu.cu->firstPU;
     m_pcIntraPred->xGetLumaRecPixels( pu, area );
     m_pcIntraPred->predIntraChromaLM( compID, piPred, pu, area, uiChFinalMode );
   }
@@ -493,42 +493,16 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           mrgCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);
         }
 
-        if (cu.cs->pps->getLog2ParallelMergeLevelMinus2() && cu.partSize != SIZE_2Nx2N && cu.lumaSize().width <= 8)
-        {
-          if (!mrgCtx.hasMergedCandList)
-          {
-            // temporarily set size to 2Nx2N
-            PartSize                 tmpPS = SIZE_2Nx2N;
-            PredictionUnit           tmpPU = pu;
-            static_cast<UnitArea&> (tmpPU) = cu;
-            std::swap(tmpPS, cu.partSize);
 #if JVET_L0054_MMVD
-            int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
-            PU::getInterMergeCandidates(tmpPU, mrgCtx, 1, fPosBaseIdx + 1);
+        int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
+        PU::getInterMergeCandidates(pu, mrgCtx, 1, fPosBaseIdx + 1);
 #else
-            PU::getInterMergeCandidates(tmpPU, mrgCtx, 255);
+        PU::getInterMergeCandidates(pu, mrgCtx, 255);
 #endif
-            PU::restrictBiPredMergeCands(pu, mrgCtx);
-            PU::getInterMMVDMergeCandidates(tmpPU, mrgCtx,
-              pu.mmvdMergeIdx
-            );
-            std::swap(tmpPS, cu.partSize);
-            mrgCtx.hasMergedCandList = true;
-          }
-        }
-        else
-        {
-#if JVET_L0054_MMVD
-          int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
-          PU::getInterMergeCandidates(pu, mrgCtx, 1, fPosBaseIdx + 1);
-#else
-          PU::getInterMergeCandidates(pu, mrgCtx, 255);
-#endif
-          PU::restrictBiPredMergeCands(pu, mrgCtx);
-          PU::getInterMMVDMergeCandidates(pu, mrgCtx,
-            pu.mmvdMergeIdx
-          );
-        }
+        PU::restrictBiPredMergeCands(pu, mrgCtx);
+        PU::getInterMMVDMergeCandidates(pu, mrgCtx,
+          pu.mmvdMergeIdx
+        );
         mrgCtx.setMmvdMergeCandiInfo(pu, pu.mmvdMergeIdx);
 
         PU::spanMotionInfo(pu, mrgCtx);
@@ -619,34 +593,13 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
             mrgCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
           }
 #endif
-          if( cu.cs->pps->getLog2ParallelMergeLevelMinus2() && cu.partSize != SIZE_2Nx2N && cu.lumaSize().width <= 8 )
-          {
-            if( !mrgCtx.hasMergedCandList )
-            {
-              // temporarily set size to 2Nx2N
-              PartSize                 tmpPS    = SIZE_2Nx2N;
-              PredictionUnit           tmpPU    = pu;
-              static_cast<UnitArea&> ( tmpPU )  = cu;
-              std::swap( tmpPS, cu.partSize );
-#if JVET_L0054_MMVD
-              PU::getInterMergeCandidates(tmpPU, mrgCtx, 0, pu.mergeIdx);
-#else
-              PU::getInterMergeCandidates( tmpPU, mrgCtx, pu.mergeIdx );
-#endif
-              PU::restrictBiPredMergeCands(pu, mrgCtx);
-              std::swap( tmpPS, cu.partSize );
-              mrgCtx.hasMergedCandList          = true;
-            }
-          }
-          else
-          {
+
 #if JVET_L0054_MMVD
             PU::getInterMergeCandidates(pu, mrgCtx, 0, pu.mergeIdx);
 #else
             PU::getInterMergeCandidates( pu, mrgCtx, pu.mergeIdx );
 #endif
             PU::restrictBiPredMergeCands(pu, mrgCtx);
-          }
 
           mrgCtx.setMergeInfo( pu, pu.mergeIdx );
 

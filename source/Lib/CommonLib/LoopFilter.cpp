@@ -316,10 +316,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     for( int x = 0; x < area.width; x += uiPelsInPart )
     {
       unsigned uiBSCheck = 1;
-      if( !cu.cs->pcv->noRQT && uiPelsInPart == 4 )
-      {
-        uiBSCheck = ( ( edgeDir == EDGE_VER ) && ( x % 8 == 0 ) ) || ( ( edgeDir == EDGE_HOR ) && ( y % 8 == 0 ) );
-      }
       const Position localPos  { area.x + x, area.y + y };
       const unsigned rasterIdx = getRasterIdx( localPos, pcv );
 
@@ -329,9 +325,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       }
     }
   }
-
-  const unsigned shiftFactor  = edgeDir == EDGE_VER ? ::getComponentScaleX( COMPONENT_Cb, pcv.chrFormat ) : ::getComponentScaleY( COMPONENT_Cb, pcv.chrFormat );
-  const bool bAlwaysDoChroma  = pcv.chrFormat == CHROMA_444 || pcv.noRQT;
 
   if (edgeDir == EDGE_HOR)
   {
@@ -382,7 +375,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     {
       xEdgeFilterLuma(cu, edgeDir, edge);
     }
-    if (cu.blocks[COMPONENT_Cb].valid() && pcv.chrFormat != CHROMA_400 && (bAlwaysDoChroma || (uiPelsInPart > DEBLOCK_SMALLEST_BLOCK) || (edge % ((DEBLOCK_SMALLEST_BLOCK << shiftFactor) / uiPelsInPart)) == 0))
+    if (cu.blocks[COMPONENT_Cb].valid() && pcv.chrFormat != CHROMA_400)
     {
       xEdgeFilterChroma(cu, edgeDir, edge);
     }
@@ -618,7 +611,7 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
   const ClpRng& clpRng( cu.cs->slice->clpRng(COMPONENT_Y) );
 
   int          iQP          = 0;
-  unsigned     uiNumParts   = ( pcv.rectCUs ? ( ( edgeDir == EDGE_VER ) ? lumaArea.height / pcv.minCUHeight : lumaArea.width / pcv.minCUWidth ) : pcv.partsInCtuWidth >> cu.qtDepth );
+  unsigned     uiNumParts   = ( ( ( edgeDir == EDGE_VER ) ? lumaArea.height / pcv.minCUHeight : lumaArea.width / pcv.minCUWidth ) );
   int          pelsInPart   = pcv.minCUWidth;
   unsigned     uiBsAbsIdx   = 0, uiBs = 0;
   int          iOffset, iSrcStep;
@@ -792,7 +785,7 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
     return;
   }
 
-  unsigned uiNumParts = ( pcv.rectCUs ? ( ( edgeDir == EDGE_VER ) ? lumaSize.height / pcv.minCUHeight : lumaSize.width / pcv.minCUWidth ) : pcv.partsInCtuWidth >> cu.qtDepth );
+  unsigned uiNumParts =  ( edgeDir == EDGE_VER ) ? lumaSize.height / pcv.minCUHeight : lumaSize.width / pcv.minCUWidth ;
   int   uiNumPelsLuma = pcv.minCUWidth;
   unsigned uiBsAbsIdx;
   unsigned ucBs;

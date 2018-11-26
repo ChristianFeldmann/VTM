@@ -3210,17 +3210,12 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
 #endif
 bool PU::isBipredRestriction(const PredictionUnit &pu)
 {
-  const SPSNext &spsNext = pu.cs->sps->getSpsNext();
 #if JVET_L0104_NO_4x4BI_INTER_CU
   if(pu.cu->lumaSize().width == 4 && pu.cu->lumaSize().height ==4 )
   {
     return true;
   }
 #endif
-  if( !pu.cs->pcv->only2Nx2N && !spsNext.getUseSubPuMvp() && pu.cu->lumaSize().width == 8 && ( pu.lumaSize().width < 8 || pu.lumaSize().height < 8 ) )
-  {
-    return true;
-  }
   return false;
 }
 
@@ -5435,16 +5430,12 @@ bool TU::hasTransformSkipFlag(const CodingStructure& cs, const CompArea& area)
 {
   uint32_t transformSkipLog2MaxSize = cs.pps->getPpsRangeExtension().getLog2MaxTransformSkipBlockSize();
 
-  if( cs.pcv->rectCUs )
-  {
 #if JVET_L0111
-    SizeType transformSkipMaxSize = 1 << transformSkipLog2MaxSize;
-    return area.width <= transformSkipMaxSize && area.height <= transformSkipMaxSize;
+  SizeType transformSkipMaxSize = 1 << transformSkipLog2MaxSize;
+  return area.width <= transformSkipMaxSize && area.height <= transformSkipMaxSize;
 #else
-    return ( area.width * area.height <= (1 << ( transformSkipLog2MaxSize << 1 )) );
+  return ( area.width * area.height <= (1 << ( transformSkipLog2MaxSize << 1 )) );
 #endif
-  }
-  return ( area.width <= (1 << transformSkipLog2MaxSize) );
 }
 
 uint32_t TU::getGolombRiceStatisticsIndex(const TransformUnit &tu, const ComponentID &compID)
@@ -5561,7 +5552,7 @@ bool TU::needsBlockSizeTrafoScale( const Size& size )
 #else
 bool TU::needsQP3Offset(const TransformUnit &tu, const ComponentID &compID)
 {
-  if( tu.cs->pcv->rectCUs && !tu.transformSkip[compID] )
+  if( !tu.transformSkip[compID] )
   {
     return ( ( ( g_aucLog2[tu.blocks[compID].width] + g_aucLog2[tu.blocks[compID].height] ) & 1 ) == 1 );
   }

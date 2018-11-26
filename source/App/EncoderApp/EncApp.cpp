@@ -211,7 +211,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseSelectiveRDOQ                                  ( m_useSelectiveRDOQ );
 #endif
   m_cEncLib.setRDpenalty                                         ( m_rdPenalty );
-  m_cEncLib.setQTBT                                              ( m_QTBT );
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
@@ -278,8 +277,8 @@ void EncApp::xInitLibCfg()
 
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
 
-  m_cEncLib.setMaxCUWidth                                        ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );
-  m_cEncLib.setMaxCUHeight                                       ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );
+  m_cEncLib.setMaxCUWidth                                        ( m_uiCTUSize );
+  m_cEncLib.setMaxCUHeight                                       ( m_uiCTUSize );
   m_cEncLib.setMaxCodingDepth                                    ( m_uiMaxCodingDepth );
   m_cEncLib.setLog2DiffMaxMinCodingBlockSize                     ( m_uiLog2DiffMaxMinCodingBlockSize );
   m_cEncLib.setQuadtreeTULog2MaxSize                             ( m_quadtreeTULog2MaxSize );
@@ -535,7 +534,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSummaryVerboseness                                ( m_summaryVerboseness );
   m_cEncLib.setIMV                                               ( m_ImvMode );
   m_cEncLib.setIMV4PelFast                                       ( m_Imv4PelFast );
-  m_cEncLib.setIMVMaxCand                                        ( m_ImvMaxCand );
   m_cEncLib.setDecodeBitstream                                   ( 0, m_decodeBitstreams[0] );
   m_cEncLib.setDecodeBitstream                                   ( 1, m_decodeBitstreams[1] );
   m_cEncLib.setSwitchPOC                                         ( m_switchPOC );

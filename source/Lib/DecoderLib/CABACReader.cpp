@@ -633,9 +633,7 @@ PartSplit CABACReader::split_cu_mode_mt( CodingStructure& cs, Partitioner &parti
 bool CABACReader::split_cu_flag( CodingStructure& cs, Partitioner &partitioner )
 {
   // TODO: make maxQTDepth a slice parameter
-  unsigned maxQTDepth = ( cs.sps->getSpsNext().getUseQTBT()
-    ? g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize( cs.slice->getSliceType(), partitioner.chType )]
-    : cs.sps->getLog2DiffMaxMinCodingBlockSize() );
+  unsigned maxQTDepth = ( g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize( cs.slice->getSliceType(), partitioner.chType )] );
   if( partitioner.currDepth == maxQTDepth )
   {
     return false;
@@ -703,7 +701,6 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
 
   // prediction mode and partitioning data
   pred_mode ( cu );
-  cu.partSize = SIZE_2Nx2N;
 
   // --> create PUs
   CU::addPUs( cu );
@@ -713,7 +710,7 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
 #endif
 
   // pcm samples
-  if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
+  if( CU::isIntra(cu) )
   {
     pcm_flag( cu );
     if( cu.ipcm )
@@ -762,7 +759,6 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
     cu.skip     = true;
     cu.rootCbf  = false;
     cu.predMode = MODE_INTER;
-    cu.partSize = SIZE_2Nx2N;
   }
 }
 
@@ -1137,7 +1133,7 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
   if( CU::isInter( cu ) )
   {
     PredictionUnit& pu = *cu.firstPU;
-    if( !( ( cu.cs->pcv->noRQT || cu.partSize == SIZE_2Nx2N ) && pu.mergeFlag ) )
+    if( !pu.mergeFlag )
     {
       rqt_root_cbf( cu );
     }
@@ -1422,8 +1418,6 @@ void CABACReader::affine_flag( CodingUnit& cu )
   }
 #endif
 
-  CHECK( !cu.cs->pcv->rectCUs && cu.lumaSize().width != cu.lumaSize().height, "CU width and height are not equal for QTBT off." );
-
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__AFFINE_FLAG );
 
   unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
@@ -1659,9 +1653,9 @@ void CABACReader::inter_pred_idc( PredictionUnit& pu )
     return;
   }
 #if JVET_L0104_NO_4x4BI_INTER_CU
-  if( !(PU::isBipredRestriction(pu)) && ( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 ) )
+  if( !(PU::isBipredRestriction(pu)) )
 #else
-  if( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 )
+  if( true )
 #endif
   {
     unsigned ctxId = DeriveCtx::CtxInterDir(pu);
@@ -1927,10 +1921,8 @@ void CABACReader::transform_tree( CodingStructure &cs, Partitioner &partitioner,
 
   // split_transform_flag
   bool split = false;
-  if( cu.cs->pcv->noRQT )
-  {
-    split = partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
-  }
+
+  split = partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
 
   // cbf_cb & cbf_cr
   if( area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && ( !CS::isDualITree( cs ) || partitioner.chType == CHANNEL_TYPE_CHROMA ) )
@@ -2338,17 +2330,8 @@ void CABACReader::transform_skip_flag( TransformUnit& tu, ComponentID compID )
 
 void CABACReader::emt_tu_index( TransformUnit& tu )
 {
-  int maxSizeEmtIntra, maxSizeEmtInter;
-  if( tu.cs->pcv->noRQT )
-  {
-    maxSizeEmtIntra = EMT_INTRA_MAX_CU_WITH_QTBT;
-    maxSizeEmtInter = EMT_INTER_MAX_CU_WITH_QTBT;
-  }
-  else
-  {
-    maxSizeEmtIntra = EMT_INTRA_MAX_CU;
-    maxSizeEmtInter = EMT_INTER_MAX_CU;
-  }
+  int maxSizeEmtIntra = EMT_INTRA_MAX_CU_WITH_QTBT;
+  int maxSizeEmtInter = EMT_INTER_MAX_CU_WITH_QTBT;
 
   uint8_t trIdx = 0;
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__EMT_TU_INDEX );
@@ -2389,21 +2372,12 @@ void CABACReader::emt_cu_flag( CodingUnit& cu )
   const unsigned cuHeight   = cu.lheight();
 
   int maxSizeEmtIntra, maxSizeEmtInter;
-  if( cu.cs->pcv->noRQT )
+  if( depth >= NUM_EMT_CU_FLAG_CTX )
   {
-    if( depth >= NUM_EMT_CU_FLAG_CTX )
-    {
-      depth = NUM_EMT_CU_FLAG_CTX - 1;
-    }
-    maxSizeEmtIntra = EMT_INTRA_MAX_CU_WITH_QTBT;
-    maxSizeEmtInter = EMT_INTER_MAX_CU_WITH_QTBT;
+    depth = NUM_EMT_CU_FLAG_CTX - 1;
   }
-  else
-  {
-    maxSizeEmtIntra = EMT_INTRA_MAX_CU;
-    maxSizeEmtInter = EMT_INTER_MAX_CU;
-    CHECK( depth >= NUM_EMT_CU_FLAG_CTX, "Depth exceeds limit." );
-  }
+  maxSizeEmtIntra = EMT_INTRA_MAX_CU_WITH_QTBT;
+  maxSizeEmtInter = EMT_INTER_MAX_CU_WITH_QTBT;
 
   cu.emtFlag = 0;
 

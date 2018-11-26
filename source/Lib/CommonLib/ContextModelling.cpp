@@ -110,35 +110,19 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
 #endif
   if (m_chType == CHANNEL_TYPE_CHROMA)
   {
-    if( tu.cs->pcv->rectCUs )
-    {
 #if HEVC_USE_MDCS
-      const_cast<int&>(m_lastShiftX) = Clip3( 0, 2, int( ( m_scanType == SCAN_VER ? m_height : m_width  ) >> 3) );
-      const_cast<int&>(m_lastShiftY) = Clip3( 0, 2, int( ( m_scanType == SCAN_VER ? m_width  : m_height ) >> 3) );
+    const_cast<int&>(m_lastShiftX) = Clip3( 0, 2, int( ( m_scanType == SCAN_VER ? m_height : m_width  ) >> 3) );
+    const_cast<int&>(m_lastShiftY) = Clip3( 0, 2, int( ( m_scanType == SCAN_VER ? m_width  : m_height ) >> 3) );
 #else
-      const_cast<int&>(m_lastShiftX) = Clip3( 0, 2, int( m_width  >> 3) );
-      const_cast<int&>(m_lastShiftY) = Clip3( 0, 2, int( m_height >> 3) );
+    const_cast<int&>(m_lastShiftX) = Clip3( 0, 2, int( m_width  >> 3) );
+    const_cast<int&>(m_lastShiftY) = Clip3( 0, 2, int( m_height >> 3) );
 #endif
-    }
-    else
-    {
-      const_cast<int&>(m_lastShiftX) = log2sizeX - 2;
-      const_cast<int&>(m_lastShiftY) = log2sizeY - 2;
-    }
   }
   else
   {
-    if( tu.cs->pcv->rectCUs )
-    {
-      static const int prefix_ctx[8]  = { 0, 0, 0, 3, 6, 10, 15, 21 };
-      const_cast<int&>(m_lastOffsetX) = prefix_ctx[ log2sizeX ];
-      const_cast<int&>(m_lastOffsetY) = prefix_ctx[ log2sizeY ];;
-    }
-    else
-    {
-      const_cast<int&>(m_lastOffsetX) = 3 * (log2sizeX - 2) + ((log2sizeX - 1) >> 2);
-      const_cast<int&>(m_lastOffsetY) = 3 * (log2sizeY - 2) + ((log2sizeY - 1) >> 2);
-    }
+    static const int prefix_ctx[8]  = { 0, 0, 0, 3, 6, 10, 15, 21 };
+    const_cast<int&>(m_lastOffsetX) = prefix_ctx[ log2sizeX ];
+    const_cast<int&>(m_lastOffsetY) = prefix_ctx[ log2sizeY ];;
     const_cast<int&>(m_lastShiftX)  = (log2sizeX + 1) >> 2;
     const_cast<int&>(m_lastShiftY)  = (log2sizeY + 1) >> 2;
   }
@@ -240,11 +224,7 @@ unsigned DeriveCtx::CtxInterDir( const PredictionUnit& pu )
 {
   if( pu.cs->sps->getSpsNext().getUseLargeCTU() )
   {
-    if( pu.cs->pcv->rectCUs )
-    {
-      return Clip3( 0, 3, 7 - ( ( g_aucLog2[pu.lumaSize().width] + g_aucLog2[pu.lumaSize().height] + 1 ) >> 1 ) );    // VG-ASYMM DONE
-    }
-    return Clip3( 0, 3, 6 - g_aucLog2[pu.cu->lumaSize().width] );
+    return Clip3( 0, 3, 7 - ( ( g_aucLog2[pu.lumaSize().width] + g_aucLog2[pu.lumaSize().height] + 1 ) >> 1 ) );    // VG-ASYMM DONE
   }
   return pu.cu->qtDepth;
 }

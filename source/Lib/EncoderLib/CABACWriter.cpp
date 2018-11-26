@@ -529,9 +529,7 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
 
 void CABACWriter::split_cu_flag( bool split, const CodingStructure& cs, Partitioner& partitioner )
 {
-  unsigned maxQTDepth = ( cs.sps->getSpsNext().getUseQTBT()
-    ? g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize( cs.slice->getSliceType(), partitioner.chType )]
-    : cs.sps->getLog2DiffMaxMinCodingBlockSize() );
+  unsigned maxQTDepth = ( g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize( cs.slice->getSliceType(), partitioner.chType )] );
   if( partitioner.currDepth == maxQTDepth )
   {
     return;
@@ -639,7 +637,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 #endif
 
   // pcm samples
-  if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
+  if( CU::isIntra(cu) )
   {
     pcm_data( cu );
     if( cu.ipcm )
@@ -1151,7 +1149,7 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
   if( CU::isInter( cu ) )
   {
     PredictionUnit& pu = *cu.firstPU;
-    if( !( ( cu.cs->pcv->noRQT || cu.partSize == SIZE_2Nx2N ) && pu.mergeFlag ) )
+    if( !pu.mergeFlag )
     {
       rqt_root_cbf( cu );
     }
@@ -1182,7 +1180,7 @@ void CABACWriter::cu_emt_pertu_idx( const CodingUnit& cu )
     anyNonTs |= !tu.transformSkip[0];
   }
 
-  if( !cu.cs->pcv->noRQT || !isLuma( cu.chType ) || cu.nsstIdx != 0 ||
+  if( !isLuma( cu.chType ) || cu.nsstIdx != 0 ||
       !( cu.cs->sps->getSpsNext().getUseIntraEMT() || cu.cs->sps->getSpsNext().getUseInterEMT() ) || !anyCbf || !anyNonTs )
   {
     return;
@@ -1409,7 +1407,6 @@ void CABACWriter::affine_flag( const CodingUnit& cu )
     return;
   }
 
-  CHECK( !cu.cs->pcv->rectCUs && cu.lumaSize().width != cu.lumaSize().height, "CU width and height are not equal for QTBT off." );
 #if JVET_L0054_MMVD
   if (cu.firstPU->mergeFlag && (cu.firstPU->mmvdMergeFlag || cu.mmvdSkip))
   {
@@ -1650,9 +1647,9 @@ void CABACWriter::inter_pred_idc( const PredictionUnit& pu )
     return;
   }
 #if JVET_L0104_NO_4x4BI_INTER_CU
-  if( !(PU::isBipredRestriction(pu)) && ( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 ) )
+  if( !(PU::isBipredRestriction(pu)) )
 #else
-  if( pu.cu->partSize == SIZE_2Nx2N || pu.cs->sps->getSpsNext().getUseSubPuMvp() || pu.cu->lumaSize().width != 8 )
+  if( true )
 #endif
   {
     unsigned ctxId = DeriveCtx::CtxInterDir(pu);
@@ -1871,15 +1868,12 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
   const bool            split         = ( tu.depth > trDepth );
 
   // split_transform_flag
-  if( cs.pcv->noRQT )
+  if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
   {
-    if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
-    {
-      CHECK( !split, "transform split implied" );
-    }
-    else
-    CHECK( split, "transform split not allowed with QTBT" );
+    CHECK( !split, "transform split implied" );
   }
+  else
+  CHECK( split, "transform split not allowed with QTBT" );
 
   // cbf_cb & cbf_cr
   if( area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && ( !CS::isDualITree( cs ) || partitioner.chType == CHANNEL_TYPE_CHROMA ) )
@@ -2279,17 +2273,9 @@ void CABACWriter::transform_skip_flag( const TransformUnit& tu, ComponentID comp
 
 void CABACWriter::emt_tu_index( const TransformUnit& tu )
 {
-  int maxSizeEmtIntra, maxSizeEmtInter;
-  if( tu.cs->pcv->noRQT )
-  {
-    maxSizeEmtIntra = EMT_INTRA_MAX_CU_WITH_QTBT;
-    maxSizeEmtInter = EMT_INTER_MAX_CU_WITH_QTBT;
-  }
-  else
-  {
-    maxSizeEmtIntra = EMT_INTRA_MAX_CU;
-    maxSizeEmtInter = EMT_INTER_MAX_CU;
-  }
+  int maxSizeEmtIntra = EMT_INTRA_MAX_CU_WITH_QTBT;
+  int maxSizeEmtInter = EMT_INTER_MAX_CU_WITH_QTBT;
+
   if( CU::isIntra( *tu.cu ) && ( tu.cu->Y().width <= maxSizeEmtIntra ) && ( tu.cu->Y().height <= maxSizeEmtIntra ) )
   {
     uint8_t trIdx = tu.emtIdx;
@@ -2320,23 +2306,12 @@ void CABACWriter::emt_cu_flag( const CodingUnit& cu )
   const unsigned cuWidth  = cu.lwidth();
   const unsigned cuHeight = cu.lheight();
 
-  int maxSizeEmtIntra, maxSizeEmtInter;
-
-  if( cu.cs->pcv->noRQT )
+  if( depth >= NUM_EMT_CU_FLAG_CTX )
   {
-    if( depth >= NUM_EMT_CU_FLAG_CTX )
-    {
-      depth = NUM_EMT_CU_FLAG_CTX - 1;
-    }
-    maxSizeEmtIntra = EMT_INTRA_MAX_CU_WITH_QTBT;
-    maxSizeEmtInter = EMT_INTER_MAX_CU_WITH_QTBT;
+    depth = NUM_EMT_CU_FLAG_CTX - 1;
   }
-  else
-  {
-    maxSizeEmtIntra = EMT_INTRA_MAX_CU;
-    maxSizeEmtInter = EMT_INTER_MAX_CU;
-    CHECK( depth >= NUM_EMT_CU_FLAG_CTX, "Depth exceeds limit." );
-  }
+  int maxSizeEmtIntra = EMT_INTRA_MAX_CU_WITH_QTBT;
+  int maxSizeEmtInter = EMT_INTER_MAX_CU_WITH_QTBT;
 
   const unsigned maxSizeEmt = CU::isIntra( cu ) ? maxSizeEmtIntra : maxSizeEmtInter;
 

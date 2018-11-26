@@ -284,7 +284,6 @@ struct CodingUnit : public UnitArea
   ChannelType    chType;
 
   PredMode       predMode;
-  PartSize       partSize;
 
   uint8_t          depth;   // number of all splits, applied with generalized splits
   uint8_t          qtDepth; // number of applied quad-splits, before switching to the multi-type-tree (mtt)

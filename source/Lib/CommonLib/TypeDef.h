@@ -476,13 +476,6 @@ enum DeblockEdgeDir
   NUM_EDGE_DIR = 2
 };
 
-/// supported partition shape
-enum PartSize
-{
-  SIZE_2Nx2N           = 0,           ///< symmetric motion partition,  2Nx2N
-  NUMBER_OF_PART_SIZES
-};
-
 /// supported prediction type
 enum PredMode
 {

@@ -75,8 +75,7 @@ public:
                     const bool useSelectiveRDOQ     = false,
 #endif
                     const bool bEnc                 = false,
-                    const bool useTransformSkipFast = false,
-                    const bool rectTUs              = false
+                    const bool useTransformSkipFast = false
   );
 
   uint8_t getEmtTrIdx( TransformUnit tu, const ComponentID compID );

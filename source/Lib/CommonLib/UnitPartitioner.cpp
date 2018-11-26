@@ -132,9 +132,7 @@ void Partitioner::copyState( const Partitioner& other )
 void AdaptiveDepthPartitioner::setMaxMinDepth( unsigned& minDepth, unsigned& maxDepth, const CodingStructure& cs ) const
 {
   unsigned          stdMinDepth = 0;
-  unsigned          stdMaxDepth = ( ( cs.sps->getSpsNext().getUseQTBT() )
-                                        ? g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize( cs.slice->getSliceType(), chType )]
-                                        : cs.sps->getLog2DiffMaxMinCodingBlockSize() );
+  unsigned          stdMaxDepth = ( g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize( cs.slice->getSliceType(), chType )]);
   const Position    pos         = currArea().blocks[chType].pos();
   const unsigned    curSliceIdx = cs.slice->getIndependentSliceIdx();
 #if HEVC_TILES_WPP
@@ -247,7 +245,6 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
     break;
   case CU_HORZ_SPLIT:
   case CU_VERT_SPLIT:
-    CHECK( !cs.sps->getSpsNext().getUseQTBT(), "QTBT disabled" );
     m_partStack.push_back( PartLevel( split, PartitionerImpl::getCUSubPartitions( currArea(), cs, split ) ) );
     break;
   case CU_TRIH_SPLIT:
@@ -375,7 +372,6 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   case CU_MT_SPLIT:
   case CU_BT_SPLIT:
   {
-    if( !cs.sps->getSpsNext().getUseQTBT() )                  return false;
     if( currMtDepth >= maxBTD )                               return false;
     if(      ( area.width <= minBtSize && area.height <= minBtSize )
         && ( ( area.width <= minTtSize && area.height <= minTtSize ) || cs.sps->getSpsNext().getMTTMode() == 0 ) ) return false;
@@ -572,14 +568,7 @@ bool QTBTPartitioner::hasNextPart()
 
 Partitioner* PartitionerFactory::get( const Slice& slice )
 {
-  if( slice.getSPS()->getSpsNext().getUseQTBT() )
-  {
-    return new QTBTPartitioner;
-  }
-  else
-  {
-    THROW( "Unknown partitioner!" );
-  }
+  return new QTBTPartitioner;
 }
 
 //////////////////////////////////////////////////////////////////////////

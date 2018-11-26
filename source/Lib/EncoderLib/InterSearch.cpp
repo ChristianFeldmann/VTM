@@ -703,106 +703,6 @@ Distortion InterSearch::xGetInterPredictionError( PredictionUnit& pu, PelUnitBuf
   return (Distortion)cDistParam.distFunc( cDistParam );
 }
 
-//! estimation of best merge coding
-void InterSearch::xMergeEstimation( PredictionUnit& pu, PelUnitBuf& origBuf, int iPUIdx, uint32_t& uiMergeIdx, Distortion& ruiCost, MergeCtx &mergeCtx )
-{
-  PartSize partSize = pu.cu->partSize;
-
-  if ( pu.cs->pps->getLog2ParallelMergeLevelMinus2() && partSize != SIZE_2Nx2N && pu.cu->lumaSize().width <= 8 )
-  {
-    if ( iPUIdx == 0 )
-    {
-      UnitArea unitArea = pu;
-
-      pu.UnitArea::operator=( *pu.cu );
-      pu.cu->partSize = SIZE_2Nx2N;
-#if JVET_L0054_MMVD
-      if(pu.mmvdMergeFlag)
-      {
-      PU::getInterMergeCandidates( pu, mergeCtx 
-#if JVET_L0054_MMVD
-        , 0
-#endif
-      );
-        PU::getInterMMVDMergeCandidates(pu, mergeCtx);
-      }
-      else
-      {
-        PU::getInterMergeCandidates(pu, mergeCtx
-#if JVET_L0054_MMVD
-          , 0
-#endif
-        );
-      }
-#else
-      PU::getInterMergeCandidates( pu, mergeCtx );
-#endif
-      pu.UnitArea::operator=( unitArea );
-      pu.cu->partSize = partSize;
-    }
-  }
-  else
-  {
-#if JVET_L0054_MMVD
-    if(pu.mmvdMergeFlag)
-    {
-    PU::getInterMergeCandidates( pu, mergeCtx 
-#if JVET_L0054_MMVD
-      , 0
-#endif
-    );
-      PU::getInterMMVDMergeCandidates(pu, mergeCtx);
-    }
-    else
-    {
-      PU::getInterMergeCandidates(pu, mergeCtx
-#if JVET_L0054_MMVD
-        , 0
-#endif
-      );
-    }
-#else
-    PU::getInterMergeCandidates( pu, mergeCtx );
-#endif
-  }
-
-  PU::restrictBiPredMergeCands( pu, mergeCtx );
-
-  ruiCost = std::numeric_limits<Distortion>::max();
-  for( uint32_t uiMergeCand = 0; uiMergeCand < mergeCtx.numValidMergeCand; ++uiMergeCand )
-  {
-#if JVET_L0293_CPR
-    if (pu.cs->slice->getRefPic(REF_PIC_LIST_0, mergeCtx.mvFieldNeighbours[uiMergeCand << 1].refIdx)->getPOC() == pu.cs->slice->getPOC())
-    {
-      continue;
-    }
-#endif
-    mergeCtx.setMergeInfo( pu, uiMergeCand );
-
-    PU::spanMotionInfo( pu, mergeCtx );
-
-    Distortion uiCostCand = xGetInterPredictionError( pu, origBuf );
-    uint32_t       uiBitsCand = uiMergeCand + 1;
-
-    if( uiMergeCand == m_pcEncCfg->getMaxNumMergeCand() - 1 )
-    {
-      uiBitsCand--;
-    }
-    uiCostCand = uiCostCand + m_pcRdCost->getCost( uiBitsCand );
-    if ( uiCostCand < ruiCost )
-    {
-      ruiCost    = uiCostCand;
-      uiMergeIdx = uiMergeCand;
-    }
-  }
-#if JVET_L0646_GBI
-  if( pu.cu->GBiIdx != GBI_DEFAULT )
-  {
-    pu.cu->GBiIdx = GBI_DEFAULT; // Reset to default for the rest modes.
-  }
-#endif
-
-}
 #if JVET_L0293_CPR
 /// add cpr search functions here
 
@@ -1677,7 +1577,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
     PelUnitBuf origBuf = pu.cs->getOrgBuf( pu );
 
-    xGetBlkBits( cu.partSize, cs.slice->isInterP(), puIdx, uiLastMode, uiMbBits );
+    xGetBlkBits( cs.slice->isInterP(), puIdx, uiLastMode, uiMbBits );
 
     m_pcRdCost->selectMotionLambda( cu.transQuantBypass );
 
@@ -1781,7 +1681,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         }
       }
 
-      if (cu.Y().width > 8 && cu.Y().height > 8 && cu.partSize == SIZE_2Nx2N && cu.slice->getSPS()->getSpsNext().getUseAffine() 
+      if (cu.Y().width > 8 && cu.Y().height > 8 && cu.slice->getSPS()->getSpsNext().getUseAffine()
         && cu.imv == 0
 #if JVET_L0646_GBI
         && (gbiIdx == GBI_DEFAULT || m_affineModeSelected || !m_pcEncCfg->getUseGBiFast())
@@ -2017,8 +1917,6 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
     pu.mvpNum[REF_PIC_LIST_1] = NOT_VALID;
 
 
-    uint32_t uiMEBits = 0;
-
     // Set Motion Field
 
     cMv    [1] = mvValidList1;
@@ -2054,8 +1952,6 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         pu.mvpNum[REF_PIC_LIST_0] = aaiMvpNum[0][iRefIdxBi[0]];
         pu.mvpNum[REF_PIC_LIST_1] = aaiMvpNum[1][iRefIdxBi[1]];
         pu.interDir = 3;
-
-        uiMEBits = uiBits[2];
       }
       else if ( uiCost[0] <= uiCost[1] )
       {
@@ -2070,8 +1966,6 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         pu.mvpIdx[REF_PIC_LIST_0] = aaiMvpIdx[0][iRefIdx[0]];
         pu.mvpNum[REF_PIC_LIST_0] = aaiMvpNum[0][iRefIdx[0]];
         pu.interDir = 1;
-
-        uiMEBits = uiBits[0];
       }
       else
       {
@@ -2086,8 +1980,6 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         pu.mvpIdx[REF_PIC_LIST_1] = aaiMvpIdx[1][iRefIdx[1]];
         pu.mvpNum[REF_PIC_LIST_1] = aaiMvpNum[1][iRefIdx[1]];
         pu.interDir = 2;
-
-        uiMEBits = uiBits[1];
       }
 
 #if JVET_L0646_GBI 
@@ -2097,39 +1989,8 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       }
 #endif
 
-    if ( cu.partSize != SIZE_2Nx2N )
-    {
-      uint32_t uiMRGIndex    = 0;
-
-      // calculate ME cost
-      Distortion uiMEError = xGetInterPredictionError( pu, origBuf );
-      Distortion uiMECost = uiMEError + m_pcRdCost->getCost( uiMEBits );
-      // save ME result.
-      InterPredictionData savedPU = pu;
-
-      // find Merge result
-      Distortion uiMRGCost = std::numeric_limits<Distortion>::max();
-
-      pu.initData();
-      xMergeEstimation( pu, origBuf, puIdx, uiMRGIndex, uiMRGCost, mergeCtx );
-
-      if( uiMRGCost < uiMECost )
-      {
-        // set Merge result
-        mergeCtx.setMergeInfo( pu, uiMRGIndex );
-      }
-      else
-      {
-        pu = savedPU;
-      }
-      uiHevcCost = ( uiMRGCost < uiMECost ) ? uiMRGCost : uiMECost;
-    }
-    if( cu.cs->pcv->only2Nx2N || cu.partSize == SIZE_2Nx2N )
-    {
-      uiHevcCost = ( uiCostBi <= uiCost[0] && uiCostBi <= uiCost[1] ) ? uiCostBi : ( ( uiCost[0] <= uiCost[1] ) ? uiCost[0] : uiCost[1] );
-    }
-    CHECK( !( !cu.cs->pcv->only2Nx2N || cu.partSize == SIZE_2Nx2N ), "Unexpected part size for QTBT." );
-    if (cu.Y().width > 8 && cu.Y().height > 8 && cu.partSize == SIZE_2Nx2N && cu.slice->getSPS()->getSpsNext().getUseAffine() && cu.imv == 0
+    uiHevcCost = ( uiCostBi <= uiCost[0] && uiCostBi <= uiCost[1] ) ? uiCostBi : ( ( uiCost[0] <= uiCost[1] ) ? uiCost[0] : uiCost[1] );
+    if (cu.Y().width > 8 && cu.Y().height > 8 && cu.slice->getSPS()->getSpsNext().getUseAffine() && cu.imv == 0
 #if JVET_L0646_GBI
       && (gbiIdx == GBI_DEFAULT || m_affineModeSelected || !m_pcEncCfg->getUseGBiFast())
 #endif      
@@ -2378,18 +2239,11 @@ uint32_t InterSearch::xGetMvpIdxBits(int iIdx, int iNum)
   return uiLength;
 }
 
-void InterSearch::xGetBlkBits( PartSize eCUMode, bool bPSlice, int iPartIdx, uint32_t uiLastMode, uint32_t uiBlkBit[3])
+void InterSearch::xGetBlkBits( bool bPSlice, int iPartIdx, uint32_t uiLastMode, uint32_t uiBlkBit[3])
 {
-  if ( eCUMode == SIZE_2Nx2N )
-  {
-    uiBlkBit[0] = (! bPSlice) ? 3 : 1;
-    uiBlkBit[1] = 3;
-    uiBlkBit[2] = 5;
-  }
-  else
-  {
-    THROW("Wrong part size!");
-  }
+  uiBlkBit[0] = (! bPSlice) ? 3 : 1;
+  uiBlkBit[1] = 3;
+  uiBlkBit[2] = 5;
 }
 
 void InterSearch::xCopyAMVPInfo (AMVPInfo* pSrc, AMVPInfo* pDst)
@@ -2654,16 +2508,12 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
                             ( m_pcEncCfg->getFastInterSearchMode() == FASTINTERSEARCH_MODE1 || m_pcEncCfg->getFastInterSearchMode() == FASTINTERSEARCH_MODE3 ) ? 2 : 0;
     rcMv = rcMvPred;
     const Mv *pIntegerMv2Nx2NPred = 0;
-    if( !pu.cs->pcv->only2Nx2N && ( pu.cu->partSize != SIZE_2Nx2N || pu.cu->qtDepth != 0 ) )
-    {
-      pIntegerMv2Nx2NPred = &( m_integerMv2Nx2N[eRefPicList][iRefIdxPred] );
-    }
     xPatternSearchFast( pu, cStruct, rcMv, ruiCost, pIntegerMv2Nx2NPred );
     if( blkCache )
     {
       blkCache->setMv( pu.cs->area, eRefPicList, iRefIdxPred, rcMv );
     }
-    else if( pu.cu->partSize == SIZE_2Nx2N )
+    else
     {
       m_integerMv2Nx2N[eRefPicList][iRefIdxPred] = rcMv;
     }
@@ -3479,8 +3329,6 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 
   int           iRefStart, iRefEnd;
 
-  PartSize      ePartSize = pu.cu->partSize;
-
   int           bestBiPRefIdxL1 = 0;
   int           bestBiPMvpL1 = 0;
   Distortion biPDistTemp = std::numeric_limits<Distortion>::max();
@@ -3506,7 +3354,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   Distortion costValidList1 = std::numeric_limits<Distortion>::max();
   Mv            mvHevc[3];
 
-  xGetBlkBits( ePartSize, slice.isInterP(), puIdx, lastMode, uiMbBits);
+  xGetBlkBits( slice.isInterP(), puIdx, lastMode, uiMbBits);
 
   pu.cu->affine = true;
   pu.mergeFlag = false;
@@ -5087,15 +4935,15 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
 
   if (compID == MAX_NUM_TBLOCKS)  // we are not processing a channel, instead we always recurse and code the CBFs
   {
-    if( cs.pcv->noRQT )
+    if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
-      if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
-      {
-        CHECK( !bSubdiv, "Not performing the implicit TU split" );
-      }
-      else
+      CHECK( !bSubdiv, "Not performing the implicit TU split" );
+    }
+    else
+    {
       CHECK( bSubdiv, "transformsplit not supported" );
     }
+
     CHECK(CU::isIntra(cu), "Inter search provided with intra CU");
 
     if( cu.chromaFormat != CHROMA_400 )
@@ -5175,12 +5023,8 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #endif
   const unsigned currDepth = partitioner.currTrDepth;
 
-  bool bCheckSplit = false, bCheckFull = false;
-  if( cs.pcv->noRQT )
-  {
-    bCheckFull  = !partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
-    bCheckSplit = !bCheckFull;
-  }
+  bool bCheckFull  = !partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
+  bool bCheckSplit = !bCheckFull;
 
   // get temporary data
   CodingStructure *csSplit = nullptr;
@@ -5877,7 +5721,7 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
 
   m_CABACEstimator->resetBits();
 
-  if( cu.partSize == SIZE_2Nx2N && cu.firstPU->mergeFlag && !cu.rootCbf )
+  if( cu.firstPU->mergeFlag && !cu.rootCbf )
   {
     cu.skip = true;
 

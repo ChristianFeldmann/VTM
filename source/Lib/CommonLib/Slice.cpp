@@ -1776,7 +1776,6 @@ SPSNext::SPSNext( SPS& sps )
   : m_SPS                       ( sps )
   , m_NextEnabled               ( false )
   // disable all tool enabling flags by default
-  , m_QTBT                      ( false )
   , m_LargeCTU                  ( false )
   , m_SubPuMvp                  ( false )
   , m_IMV                       ( false )

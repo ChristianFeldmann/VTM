@@ -196,7 +196,6 @@ protected:
   int       m_maxTempLayer;                                   ///< Max temporal layer
 
   // coding unit (CU) definition
-  bool      m_QTBT;
   unsigned  m_uiCTUSize;
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   bool      m_SplitConsOverrideEnabledFlag;
@@ -525,7 +524,6 @@ protected:
   int       m_log2MaxMvLengthVertical;                        ///< Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
-  int       m_ImvMaxCand;                                     ///< imv max num cand for test (QTBT off only)
   std::string m_colourRemapSEIFileRoot;
 
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.

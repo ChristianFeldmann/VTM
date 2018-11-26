@@ -116,7 +116,7 @@ private:
 #if JVET_L0293_CPR
   CprHashMap            m_cprHashMap;
 #endif
-  CodingStructure    ***m_pImvTempCS;
+  CodingStructure     **m_pImvTempCS;
   EncModeCtrl          *m_modeCtrl;
 #if JVET_L0054_MMVD
   PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];

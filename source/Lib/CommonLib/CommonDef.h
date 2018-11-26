@@ -223,8 +223,6 @@ static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chro
 
 static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes
 
-static const uint32_t  EMT_INTRA_MAX_CU =                              32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
-static const uint32_t  EMT_INTER_MAX_CU =                              32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  EMT_INTRA_MAX_CU_WITH_QTBT =                    32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  EMT_INTER_MAX_CU_WITH_QTBT =                    32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
 #if JVET_L0165_6MPM

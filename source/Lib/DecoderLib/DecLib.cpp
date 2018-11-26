@@ -769,11 +769,10 @@ void DecLib::xActivateParameterSets()
 
     // Recursive structure
     m_cCuDecoder.init( &m_cTrQuant, &m_cIntraPred, &m_cInterPred );
-    m_cTrQuant.init( nullptr, sps->getMaxTrSize(), false, false, false, false, false, pps->pcv->rectCUs );
+    m_cTrQuant.init( nullptr, sps->getMaxTrSize(), false, false, false, false, false );
 
     // RdCost
     m_cRdCost.setCostMode ( COST_STANDARD_LOSSY ); // not used in decoder side RdCost stuff -> set to default
-    m_cRdCost.setUseQtbt  ( sps->getSpsNext().getUseQTBT() );
 
     m_cSliceDecoder.create();
 

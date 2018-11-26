@@ -100,17 +100,16 @@ static void getAreaIdx(const Area& area, const PreCalcValues &pcv, unsigned &idx
 struct EncTestMode
 {
   EncTestMode()
-    : type( ETM_INVALID ), opts( ETO_INVALID  ), partSize( NUMBER_OF_PART_SIZES ), qp( -1  ), lossless( false ) {}
+    : type( ETM_INVALID ), opts( ETO_INVALID  ), qp( -1  ), lossless( false ) {}
   EncTestMode( EncTestModeType _type )
-    : type( _type       ), opts( ETO_STANDARD ), partSize( SIZE_2Nx2N           ), qp( -1  ), lossless( false ) {}
+    : type( _type       ), opts( ETO_STANDARD ), qp( -1  ), lossless( false ) {}
   EncTestMode( EncTestModeType _type, int _qp, bool _lossless )
-    : type( _type       ), opts( ETO_STANDARD ), partSize( SIZE_2Nx2N           ), qp( _qp ), lossless( _lossless ) {}
-  EncTestMode( EncTestModeType _type, PartSize _partSize, EncTestModeOpts _opts, int _qp, bool _lossless )
-    : type( _type       ), opts( _opts        ), partSize( _partSize            ), qp( _qp ), lossless( _lossless ) {}
+    : type( _type       ), opts( ETO_STANDARD ), qp( _qp ), lossless( _lossless ) {}
+  EncTestMode( EncTestModeType _type, EncTestModeOpts _opts, int _qp, bool _lossless )
+    : type( _type       ), opts( _opts        ), qp( _qp ), lossless( _lossless ) {}
 
   EncTestModeType type;
   EncTestModeOpts opts;
-  PartSize        partSize;
   int             qp;
   bool            lossless;
 };
@@ -163,8 +162,8 @@ inline PartSplit getPartSplit( const EncTestMode& encTestmode )
 inline EncTestMode getCSEncMode( const CodingStructure& cs )
 {
   return EncTestMode( EncTestModeType( (unsigned)cs.features[ENC_FT_ENC_MODE_TYPE] ),
-                      PartSize       ( (unsigned)cs.features[ENC_FT_ENC_MODE_PART] ),
-                      EncTestModeOpts( (unsigned)cs.features[ENC_FT_ENC_MODE_OPTS] ) );
+                      EncTestModeOpts( (unsigned)cs.features[ENC_FT_ENC_MODE_OPTS] ),
+                      false);
 }
 
 

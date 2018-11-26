@@ -230,11 +230,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
     m_cRdCost[jId].setCostMode ( m_costMode );
-    m_cRdCost[jId].setUseQtbt  ( m_QTBT );
   }
 #else
   m_cRdCost.setCostMode ( m_costMode );
-  m_cRdCost.setUseQtbt  ( m_QTBT );
 #endif
 
   // initialize PPS
@@ -280,7 +278,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
                           true,
                           m_useTransformSkipFast
-                          , m_QTBT
     );
 
     // initialize encoder search class
@@ -313,7 +310,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
                    true,
                    m_useTransformSkipFast
-                   , m_QTBT
   );
 
   // initialize encoder search class
@@ -828,7 +824,6 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setLog2DiffMaxMinCodingBlockSize(m_log2DiffMaxMinCodingBlockSize);
 
   sps.getSpsNext().setNextToolsEnabled      ( m_profile == Profile::NEXT );
-  sps.getSpsNext().setUseQTBT               ( m_QTBT );
   sps.getSpsNext().setCTUSize               ( m_CTUSize );
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   sps.getSpsNext().setSplitConsOverrideEnabledFlag( m_useSplitConsOverride );
@@ -889,7 +884,7 @@ void EncLib::xInitSPS(SPS &sps)
 #endif 
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 
-  int minCUSize = ( /*sps.getSpsNext().getUseQTBT() ? 1 << MIN_CU_LOG2 :*/ sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize() );
+  int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;
   while(minCUSize > 1)
   {

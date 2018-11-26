@@ -77,11 +77,8 @@ void IntraSearch::destroy()
 
   if( m_pcEncCfg )
   {
-    bool BTnoRQT = m_pcEncCfg->getQTBT();
-
-
-    const uint32_t uiNumLayersToAllocateSplit = BTnoRQT ? 1 : m_pcEncCfg->getQuadtreeTULog2MaxSize() - m_pcEncCfg->getQuadtreeTULog2MinSize() + 1;
-    const uint32_t uiNumLayersToAllocateFull  = BTnoRQT ? 1 : m_pcEncCfg->getQuadtreeTULog2MaxSize() - m_pcEncCfg->getQuadtreeTULog2MinSize() + 1;
+    const uint32_t uiNumLayersToAllocateSplit = 1;
+    const uint32_t uiNumLayersToAllocateFull  = 1;
     const int uiNumSaveLayersToAllocate = 2;
 
     for( uint32_t layer = 0; layer < uiNumSaveLayersToAllocate; layer++ )
@@ -97,7 +94,7 @@ void IntraSearch::destroy()
     {
       for( uint32_t height = 0; height < numHeights; height++ )
       {
-        if( ( BTnoRQT || width == height ) && gp_sizeIdxInfo->isCuSize( gp_sizeIdxInfo->sizeFrom( width ) ) && gp_sizeIdxInfo->isCuSize( gp_sizeIdxInfo->sizeFrom( height ) ) )
+        if( gp_sizeIdxInfo->isCuSize( gp_sizeIdxInfo->sizeFrom( width ) ) && gp_sizeIdxInfo->isCuSize( gp_sizeIdxInfo->sizeFrom( height ) ) )
         {
           for( uint32_t layer = 0; layer < uiNumLayersToAllocateSplit; layer++ )
           {
@@ -192,10 +189,8 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
   uint32_t numWidths  = gp_sizeIdxInfo->numWidths();
   uint32_t numHeights = gp_sizeIdxInfo->numHeights();
 
-  bool BTnoRQT = m_pcEncCfg->getQTBT();
-
-  const uint32_t uiNumLayersToAllocateSplit = BTnoRQT ? 1 : pcEncCfg->getQuadtreeTULog2MaxSize() - pcEncCfg->getQuadtreeTULog2MinSize() + 1;
-  const uint32_t uiNumLayersToAllocateFull  = BTnoRQT ? 1 : pcEncCfg->getQuadtreeTULog2MaxSize() - pcEncCfg->getQuadtreeTULog2MinSize() + 1;
+  const uint32_t uiNumLayersToAllocateSplit = 1;
+  const uint32_t uiNumLayersToAllocateFull  = 1;
 
   m_pBestCS = new CodingStructure**[numWidths];
   m_pTempCS = new CodingStructure**[numWidths];
@@ -213,7 +208,7 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
 
     for( uint32_t height = 0; height < numHeights; height++ )
     {
-      if( ( BTnoRQT || width == height ) && gp_sizeIdxInfo->isCuSize( gp_sizeIdxInfo->sizeFrom( width ) ) && gp_sizeIdxInfo->isCuSize( gp_sizeIdxInfo->sizeFrom( height ) ) )
+      if(  gp_sizeIdxInfo->isCuSize( gp_sizeIdxInfo->sizeFrom( width ) ) && gp_sizeIdxInfo->isCuSize( gp_sizeIdxInfo->sizeFrom( height ) ) )
       {
         m_pBestCS[width][height] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
         m_pTempCS[width][height] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
@@ -270,7 +265,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 {
   CodingStructure       &cs            = *cu.cs;
   const SPS             &sps           = *cs.sps;
-  const uint32_t             uiWidthBit    = cs.pcv->rectCUs ? g_aucLog2[partitioner.currArea().lwidth() ] : CU::getIntraSizeIdx(cu);
+  const uint32_t             uiWidthBit    = g_aucLog2[partitioner.currArea().lwidth() ];
   const uint32_t             uiHeightBit   =                   g_aucLog2[partitioner.currArea().lheight()];
 
   // Lambda calculation at equivalent Qp of 4 is recommended because at that Qp, the quantization divisor is 1.
@@ -303,7 +298,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
   // 1: EMT fast algorithm can be applied for the current CU, and the DCT2 is being checked
   // 2: EMT is being checked for current CU. Stored results of DCT2 can be utilized for speedup
   uint8_t emtUsageFlag = 0;
-  const int maxSizeEMT = cs.pcv->noRQT ? EMT_INTRA_MAX_CU_WITH_QTBT : EMT_INTRA_MAX_CU;
+  const int maxSizeEMT = EMT_INTRA_MAX_CU_WITH_QTBT;
   if( width <= maxSizeEMT && height <= maxSizeEMT && sps.getSpsNext().getUseIntraEMT() )
   {
     emtUsageFlag = cu.emtFlag == 1 ? 2 : 1;
@@ -311,12 +306,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
   bool isAllIntra = m_pcEncCfg->getIntraPeriod() == 1;
 
-  if( cs.pcv->rectCUs )
+  if( width * height < 64 && !isAllIntra )
   {
-    if( width * height < 64 && !isAllIntra )
-    {
-      emtUsageFlag = 0; //this forces the recalculation of the candidates list. Why is this necessary? (to be checked)
-    }
+    emtUsageFlag = 0; //this forces the recalculation of the candidates list. Why is this necessary? (to be checked)
   }
 
   static_vector<uint32_t,   FAST_UDI_MAX_RDMODE_NUM> uiHadModeList;
@@ -345,15 +337,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     static_vector< uint32_t, FAST_UDI_MAX_RDMODE_NUM > uiRdModeList;
 
     int numModesForFullRD = 3;
-    if( cs.pcv->rectCUs )
-    {
-      numModesForFullRD = g_aucIntraModeNumFast_UseMPM_2D[uiWidthBit - MIN_CU_LOG2][uiHeightBit - MIN_CU_LOG2];
-    }
-    else
-    {
-      numModesForFullRD = m_pcEncCfg->getFastUDIUseMPMEnabled() ? g_aucIntraModeNumFast_UseMPM[uiWidthBit] : g_aucIntraModeNumFast_NotUseMPM[uiWidthBit];
-      numModesForFullRD -= 1;
-    }
+    numModesForFullRD = g_aucIntraModeNumFast_UseMPM_2D[uiWidthBit - MIN_CU_LOG2][uiHeightBit - MIN_CU_LOG2];
 
 #if INTRA_FULL_SEARCH
     numModesForFullRD = numModesAvailable;
@@ -619,22 +603,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     {
       if( isAllIntra && m_pcEncCfg->getFastIntraEMT() )
       {
-        double thresholdSkipMode;
-        if( cs.pcv->noRQT )
-        {
-          thresholdSkipMode = 1.0 + 1.4 / sqrt( ( double ) ( width*height ) );
-        }
-        else
-        {
-          switch( width )
-          {
-          case  4: thresholdSkipMode = 1.47; break; // Skip checking   4x4 Intra modes using the R-D cost in the DCT2-pass
-          case  8: thresholdSkipMode = 1.28; break; // Skip checking   8x8 Intra modes using the R-D cost in the DCT2-pass
-          case 16: thresholdSkipMode = 1.12; break; // Skip checking 16x16 Intra modes using the R-D cost in the DCT2-pass
-          case 32: thresholdSkipMode = 1.06; break; // Skip checking 32x32 Intra modes using the R-D cost in the DCT2-pass
-          default: thresholdSkipMode = 1.06; break; // Skip checking 32x32 Intra modes using the R-D cost in the DCT2-pass
-          }
-        }
+        double thresholdSkipMode = 1.0 + 1.4 / sqrt( ( double ) ( width*height ) );
 
         numModesForFullRD = 0;
 
@@ -671,7 +640,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     // after this point, don't use numModesForFullRD
 
     // PBINTRA fast
-    if( m_pcEncCfg->getUsePbIntraFast() && !cs.slice->isIntra() && cu.partSize == SIZE_2Nx2N && uiRdModeList.size() < numModesAvailable && emtUsageFlag != 2 )
+    if( m_pcEncCfg->getUsePbIntraFast() && !cs.slice->isIntra() && uiRdModeList.size() < numModesAvailable && emtUsageFlag != 2 )
     {
       if( CandHadList.size() < 3 || CandHadList[2] > cs.interHad * PBINTRA_RATIO )
       {
@@ -833,7 +802,7 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
       for( const auto &ptu : cs.tus )
       {
         // for split TUs in HEVC, add the TUs without Chroma parts for correct setting of Cbfs
-        if( pu.contains( *ptu, CHANNEL_TYPE_CHROMA ) || ( !cs.pcv->noRQT && !ptu->Cb().valid() && !ptu->Cr().valid() ) )
+        if( pu.contains( *ptu, CHANNEL_TYPE_CHROMA ) )
         {
           saveCS.addTU( *ptu, partitioner.chType );
           orgTUs.push_back( ptu );
@@ -1109,7 +1078,7 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
 #if JVET_L0283_MULTI_REF_LINE
       m_CABACEstimator->extend_ref_line(cu);
 #endif
-      if( CU::isIntra(cu) && cu.partSize == SIZE_2Nx2N )
+      if( CU::isIntra(cu) )
       {
         m_CABACEstimator->pcm_data( cu );
         if( cu.ipcm )
@@ -1122,16 +1091,13 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
     PredictionUnit &pu = *cs.getPU(partitioner.currArea().lumaPos(), partitioner.chType);
 
     // luma prediction mode
-    if (cu.partSize == SIZE_2Nx2N)
+    if (isFirst)
     {
-      if (isFirst)
-      {
 #if JVET_L0293_CPR
-        if ( !cu.Y().valid())
-          m_CABACEstimator->pred_mode( cu );
+      if ( !cu.Y().valid())
+        m_CABACEstimator->pred_mode( cu );
 #endif
-        m_CABACEstimator->intra_luma_pred_mode( pu );
-      }
+      m_CABACEstimator->intra_luma_pred_mode( pu );
     }
   }
 
@@ -1141,12 +1107,9 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
 
     PredictionUnit &pu = *cs.getPU( partitioner.currArea().chromaPos(), CHANNEL_TYPE_CHROMA );
 
-    if( cu.partSize == SIZE_2Nx2N )
+    if( isFirst )
     {
-      if( isFirst )
-      {
-        m_CABACEstimator->intra_chroma_pred_mode( pu );
-      }
+      m_CABACEstimator->intra_chroma_pred_mode( pu );
     }
   }
 }
@@ -1162,14 +1125,13 @@ void IntraSearch::xEncSubdivCbfQT(CodingStructure &cs, Partitioner &partitioner,
 
   const bool subdiv        = currTU.depth > currDepth;
 
-  if( cs.pcv->noRQT )
+  if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
   {
-    if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
-    {
-      CHECK( !subdiv, "TU split implied" );
-    }
-    else
-      CHECK( subdiv, "No TU subdivision is allowed with QTBT" );
+    CHECK( !subdiv, "TU split implied" );
+  }
+  else
+  {
+    CHECK( subdiv, "No TU subdivision is allowed with QTBT" );
   }
 
   if (bChroma)
@@ -1468,14 +1430,10 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
   const bool keepResi      = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() || KEEP_PRED_AND_RESI_SIGNALS;
   bool bCheckFull          = true;
   bool bCheckSplit         = false;
-  bCheckFull               = cs.pcv->noRQT && !partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
-  bCheckSplit              = cs.pcv->noRQT &&  partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
+  bCheckFull               = !partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
+  bCheckSplit              = partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
 
   uint32_t    numSig           = 0;
-
-  if( !cs.pcv->noRQT )
-  {
-  }
 
   bool    checkInitTrDepth = false, checkInitTrDepthTransformSkipWinner = false;
 
@@ -1693,7 +1651,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 
     bool uiSplitCbfLuma  = false;
     bool splitIsSelected = true;
-    if( cs.pcv->noRQT && partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
+    if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
       partitioner.splitCurrArea( TU_MAX_TR_SPLIT, cs );
     }

@@ -800,7 +800,6 @@ private:
 
   bool              m_NextEnabled;
   //=====  tool enabling flags (4 bytes - NOTE: last flag must be used for new extensions) =====
-  bool              m_QTBT;                       // 1
   bool              m_LargeCTU;                   // 5
   bool              m_SubPuMvp;
   bool              m_IMV;                        // 9
@@ -880,8 +879,6 @@ public:
   void        setNextToolsEnabled ( bool next )                                     { m_NextEnabled = next; }
 
   //=====  tool enabling flags and extension bit  =====
-  void      setUseQTBT            ( bool QTBT )                                     { m_QTBT = QTBT; }
-  bool      getUseQTBT            ()                                      const     { return m_QTBT; }
   void      setUseLargeCTU        ( bool b )                                        { m_LargeCTU = b; }
   bool      getUseLargeCTU        ()                                      const     { return m_LargeCTU; }
   bool      getUseSubPuMvp()                                   const { return m_SubPuMvp; }
@@ -2155,7 +2152,7 @@ class PreCalcValues
 public:
   PreCalcValues( const SPS& sps, const PPS& pps, bool _isEncoder )
     : chrFormat           ( sps.getChromaFormatIdc() )
-    , multiBlock422       ( chrFormat == CHROMA_422 && !sps.getSpsNext().getUseQTBT() )
+    , multiBlock422       ( false )
     , noMotComp           ( sps.getSpsNext().getDisableMotCompress() )
     , maxCUWidth          ( sps.getMaxCUWidth() )
     , maxCUHeight         ( sps.getMaxCUHeight() )
@@ -2176,12 +2173,9 @@ public:
     , lumaWidth           ( sps.getPicWidthInLumaSamples() )
     , lumaHeight          ( sps.getPicHeightInLumaSamples() )
     , fastDeltaQPCuMaxSize( Clip3(sps.getMaxCUHeight() >> (sps.getLog2DiffMaxMinCodingBlockSize()), sps.getMaxCUHeight(), 32u) )
-    , noRQT               (  sps.getSpsNext().getUseQTBT() )
-    , rectCUs             (  sps.getSpsNext().getUseQTBT() )
-    , only2Nx2N           (  sps.getSpsNext().getUseQTBT() )
-    , noChroma2x2         ( !sps.getSpsNext().getUseQTBT() )
+    , noChroma2x2         (  false )
     , isEncoder           ( _isEncoder )
-    , ISingleTree         ( !sps.getSpsNext().getUseQTBT() || !sps.getSpsNext().getUseDualITree() )
+    , ISingleTree         ( !sps.getSpsNext().getUseDualITree() )
     , maxBtDepth          { sps.getSpsNext().getMaxBTDepthI(), sps.getSpsNext().getMaxBTDepth(), sps.getSpsNext().getMaxBTDepthIChroma() }
     , minBtSize           { MIN_BT_SIZE, MIN_BT_SIZE_INTER, MIN_BT_SIZE_C }
     , maxBtSize           { sps.getSpsNext().getMaxBTSizeI(), sps.getSpsNext().getMaxBTSize(), sps.getSpsNext().getMaxBTSizeIChroma() }
@@ -2217,9 +2211,6 @@ public:
   const unsigned     lumaWidth;
   const unsigned     lumaHeight;
   const unsigned     fastDeltaQPCuMaxSize;
-  const bool         noRQT;
-  const bool         rectCUs;
-  const bool         only2Nx2N;
   const bool         noChroma2x2;
   const bool         isEncoder;
   const bool         ISingleTree;

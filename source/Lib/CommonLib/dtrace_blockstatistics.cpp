@@ -773,7 +773,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
       if (CU::isInter(cu))
       {
         const PredictionUnit &pu = *cu.firstPU;
-        if (!((cu.cs->pcv->noRQT || cu.partSize == SIZE_2Nx2N) && pu.mergeFlag))
+        if ( !pu.mergeFlag )
         {
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::RootCbf), cu.rootCbf);
         }

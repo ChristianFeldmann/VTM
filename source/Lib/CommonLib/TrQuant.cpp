@@ -132,8 +132,7 @@ void xTrMxN_EMT( const int bitDepth, const Pel *residual, size_t stride, TCoeff 
 #else
 void xTrMxN_EMT( const int bitDepth, const Pel *residual, size_t stride, TCoeff *coeff, int iWidth, int iHeight, const int maxLog2TrDynamicRange,
 #endif
-  const uint8_t ucMode, const uint8_t ucTrIdx
-  , const bool useQTBT )
+  const uint8_t ucMode, const uint8_t ucTrIdx)
 {
   const int TRANSFORM_MATRIX_SHIFT = g_transformMatrixShift[TRANSFORM_FORWARD];
   const int shift_1st = ((g_aucLog2[iWidth ]) + bitDepth + TRANSFORM_MATRIX_SHIFT) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
@@ -143,17 +142,8 @@ void xTrMxN_EMT( const int bitDepth, const Pel *residual, size_t stride, TCoeff 
   const int iZeroOutThresh = JVET_C0024_ZERO_OUT_TH;
 
   int iSkipWidth = 0, iSkipHeight = 0;
-  if( useQTBT )
-  {
-    iSkipWidth  = (iWidth  > iZeroOutThresh ? iWidth  - iZeroOutThresh : 0);
-    iSkipHeight = (iHeight > iZeroOutThresh ? iHeight - iZeroOutThresh : 0);
-  }
-  else
-  if( ( ( ucMode == INTER_MODE_IDX || iWidth > iZeroOutThresh ) && ucTrIdx != DCT2_EMT && iWidth >= iZeroOutThresh ) || ( ucTrIdx == DCT2_EMT && iWidth > iZeroOutThresh ) )
-  {
-    iSkipWidth  = iWidth  >> 1;
-    iSkipHeight = iHeight >> 1;
-  }
+  iSkipWidth  = (iWidth  > iZeroOutThresh ? iWidth  - iZeroOutThresh : 0);
+  iSkipHeight = (iHeight > iZeroOutThresh ? iHeight - iZeroOutThresh : 0);
 
   CHECK( shift_1st < 0, "Negative shift" );
   CHECK( shift_2nd < 0, "Negative shift" );
@@ -270,14 +260,12 @@ void TrQuant::init( const Quant* otherQuant,
                     const bool useSelectiveRDOQ,
 #endif
                     const bool bEnc,
-                    const bool useTransformSkipFast,
-                    const bool rectTUs
+                    const bool useTransformSkipFast
 )
 {
   m_uiMaxTrSize          = uiMaxTrSize;
   m_bEnc                 = bEnc;
   m_useTransformSkipFast = useTransformSkipFast;
-  m_rectTUs              = rectTUs;
 
   delete m_quant;
   m_quant = nullptr;
@@ -427,7 +415,6 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
 #else
   xTrMxN_EMT(channelBitDepth, resi.buf, resi.stride, dstCoeff.buf, iWidth, iHeight, maxLog2TrDynamicRange, ucMode, ucTrIdx
 #endif
-    , m_rectTUs
     );
 
 }

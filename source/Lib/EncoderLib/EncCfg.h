@@ -172,7 +172,6 @@ protected:
 
   int       m_maxTempLayer;                      ///< Max temporal layer
   bool      m_useAMP;
-  bool      m_QTBT;
   unsigned  m_CTUSize;
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   bool      m_useSplitConsOverride;
@@ -533,7 +532,6 @@ protected:
   uint32_t        m_summaryVerboseness;                           ///< Specifies the level of the verboseness of the text output.
   int       m_ImvMode;
   int       m_Imv4PelFast;
-  int       m_ImvMaxCand;
   std::string m_decodeBitstreams[2];                          ///< filename for decode bitstreams.
   bool        m_forceDecodeBitstream1;                        ///< guess what it means
   int         m_switchPOC;                                    ///< dbg poc.
@@ -623,7 +621,6 @@ public:
   int       getMaxTempLayer                 ()                              { return m_maxTempLayer;              }
   void      setMaxTempLayer                 ( int maxTempLayer )            { m_maxTempLayer = maxTempLayer;      }
 
-  void      setQTBT                         ( bool b )           { m_QTBT = b; }
   void      setCTUSize                      ( unsigned  u )      { m_CTUSize  = u; }
   void      setMinQTSizes                   ( unsigned* minQT)   { m_uiMinQT[0] = minQT[0]; m_uiMinQT[1] = minQT[1]; m_uiMinQT[2] = minQT[2]; }
   void      setMaxBTDepth                   ( unsigned uiMaxBTDepth, unsigned uiMaxBTDepthI, unsigned uiMaxBTDepthIChroma )
@@ -631,7 +628,6 @@ public:
   unsigned  getMaxBTDepth                   ()         const { return m_uiMaxBTDepth; }
   unsigned  getMaxBTDepthI                  ()         const { return m_uiMaxBTDepthI; }
   unsigned  getMaxBTDepthIChroma            ()         const { return m_uiMaxBTDepthIChroma; }
-  bool      getQTBT                         ()         const { return m_QTBT; }
   int       getCTUSize                      ()         const { return m_CTUSize; }
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   void      setUseSplitConsOverride         (bool  n)        { m_useSplitConsOverride = n; }
@@ -1374,8 +1370,6 @@ public:
   int          getIMV() const                                        { return m_ImvMode; }
   void         setIMV4PelFast(int n)                                 { m_Imv4PelFast = n; }
   int          getIMV4PelFast() const                                { return m_Imv4PelFast; }
-  void         setIMVMaxCand(int n)                                  { m_ImvMaxCand = n; }
-  int          getIMVMaxCand() const                                 { return m_ImvMaxCand; }
   void         setDecodeBitstream( int i, const std::string& s )     { m_decodeBitstreams[i] = s; }
   const std::string& getDecodeBitstream( int i )               const { return m_decodeBitstreams[i]; }
   bool         getForceDecodeBitstream1()                      const { return m_forceDecodeBitstream1; }

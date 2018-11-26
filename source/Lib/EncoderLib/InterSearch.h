@@ -306,15 +306,7 @@ protected:
 
   void xCopyAMVPInfo              ( AMVPInfo*   pSrc, AMVPInfo* pDst );
   uint32_t xGetMvpIdxBits             ( int iIdx, int iNum );
-  void xGetBlkBits                ( PartSize  eCUMode, bool bPSlice, int iPartIdx,  uint32_t uiLastMode, uint32_t uiBlkBit[3]);
-
-  void xMergeEstimation           ( PredictionUnit&       pu,
-                                    PelUnitBuf&           origBuf,
-                                    int                   iPartIdx,
-                                    uint32_t&                 uiMergeIndex,
-                                    Distortion&           ruiCost,
-                                    MergeCtx &            mergeCtx
-                                  );
+  void xGetBlkBits                ( bool bPSlice, int iPartIdx,  uint32_t uiLastMode, uint32_t uiBlkBit[3]);
 
 
 

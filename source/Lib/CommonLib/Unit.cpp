@@ -246,7 +246,6 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
 {
   slice             = other.slice;
   predMode          = other.predMode;
-  partSize          = other.partSize;
   qtDepth           = other.qtDepth;
   depth             = other.depth;
   btDepth           = other.btDepth;
@@ -286,7 +285,6 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
 void CodingUnit::initData()
 {
   predMode          = NUMBER_OF_PREDICTION_MODES;
-  partSize          = NUMBER_OF_PART_SIZES;
   qtDepth           = 0;
   depth             = 0;
   btDepth           = 0;

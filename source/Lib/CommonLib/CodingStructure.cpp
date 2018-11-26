@@ -979,7 +979,7 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
   clearTUs();
   clearCUs();
 
-  if( QP >= 0 )
+  if( QP < MAX_INT )
   {
     currQP[0] = currQP[1] = QP;
     isLossless            = _isLosses;

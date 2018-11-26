@@ -172,7 +172,7 @@ public:
   Distortion  dist;
   Distortion  interHad;
 
-  void initStructData  (const int &QP = -1, const bool &_isLosses = false, const bool &skipMotBuf = false);
+  void initStructData  (const int &QP = MAX_INT, const bool &_isLosses = false, const bool &skipMotBuf = false);
   void initSubStructure(      CodingStructure& cs, const ChannelType chType, const UnitArea &subArea, const bool &isTuEnc);
 
   void copyStructure   (const CodingStructure& cs, const ChannelType chType, const bool copyTUs = false, const bool copyRecoBuffer = false);

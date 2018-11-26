@@ -1764,7 +1764,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
     saveCS.pcv      = cs.pcv;
     saveCS.picture  = cs.picture;
     saveCS.area.repositionTo( cs.area );
-    saveCS.initStructData( -1, false, true );
+    saveCS.initStructData( MAX_INT, false, true );
 
     TransformUnit &tmpTU = saveCS.addTU(currArea, partitioner.chType);
 

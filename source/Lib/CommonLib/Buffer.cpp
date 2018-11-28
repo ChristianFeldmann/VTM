@@ -270,7 +270,7 @@ PelBufferOps::PelBufferOps()
   linTf4 = linTfCore<Pel>;
   linTf8 = linTfCore<Pel>;
 
-#if JVET_L0256_BIO
+#if ENABLE_SIMD_OPT_BIO
   addBIOAvg4      = addBIOAvgCore;
   bioGradFilter   = gradFilterCore;
   calcBIOPar      = calcBIOParCore;

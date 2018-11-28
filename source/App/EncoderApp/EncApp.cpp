@@ -276,8 +276,8 @@ void EncApp::xInitLibCfg()
 #endif    
 
 #if JVET_L0231_WRAPAROUND
-  m_cEncLib.setUseWraparound                                     ( m_Wraparound );
-  m_cEncLib.setWraparoundOffset                                  ( m_WraparoundOffset );
+  m_cEncLib.setUseWrapAround                                     ( m_wrapAround );
+  m_cEncLib.setWrapAroundOffset                                  ( m_wrapAroundOffset );
 #endif
 
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here

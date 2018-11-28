@@ -1831,8 +1831,8 @@ SPSNext::SPSNext( SPS& sps )
   , m_CPRMode                   ( 0 )
 #endif
 #if JVET_L0231_WRAPAROUND
-  , m_Wraparound                ( false )
-  , m_WraparoundOffset          ( 0 )
+  , m_wrapAround                ( false )
+  , m_wrapAroundOffset          ( 0 )
 #endif
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags here (with "false" as default values)
 {

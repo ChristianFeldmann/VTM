@@ -258,8 +258,8 @@ protected:
 #endif    
   
 #if JVET_L0231_WRAPAROUND
-  bool      m_Wraparound;
-  unsigned  m_WraparoundOffset;
+  bool      m_wrapAround;
+  unsigned  m_wrapAroundOffset;
 #endif
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here

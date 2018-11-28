@@ -240,8 +240,8 @@ protected:
 #endif    
   
 #if JVET_L0231_WRAPAROUND
-  bool      m_Wraparound;
-  unsigned  m_WraparoundOffset;
+  bool      m_wrapAround;
+  unsigned  m_wrapAroundOffset;
 #endif
 
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
@@ -738,10 +738,10 @@ public:
 #endif  
 
 #if JVET_L0231_WRAPAROUND
-  void      setUseWraparound                ( bool b )       { m_Wraparound = b; }
-  bool      getUseWraparound                ()         const { return m_Wraparound; }
-  void      setWraparoundOffset             ( unsigned u )   { m_WraparoundOffset = u; }
-  unsigned  getWraparoundOffset             ()         const { return m_WraparoundOffset; }
+  void      setUseWrapAround                ( bool b )       { m_wrapAround = b; }
+  bool      getUseWrapAround                ()         const { return m_wrapAround; }
+  void      setWrapAroundOffset             ( unsigned u )   { m_wrapAroundOffset = u; }
+  unsigned  getWrapAroundOffset             ()         const { return m_wrapAroundOffset; }
 #endif
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here

@@ -880,8 +880,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
 
 #if JVET_L0231_WRAPAROUND
-  ("Wraparound",                                      m_Wraparound,                                     false, "Enable horizontal wrap-around motion compensation for inter prediction (0:off, 1:on)  [default: off]")
-  ("WraparoundOffset",                                m_WraparoundOffset,                                  0u, "Offset in luma samples used for computing the horizontal wrap-around position")
+  ("WrapAround",                                      m_wrapAround,                                     false, "Enable horizontal wrap-around motion compensation for inter prediction (0:off, 1:on)  [default: off]")
+  ("WrapAroundOffset",                                m_wrapAroundOffset,                                  0u, "Offset in luma samples used for computing the horizontal wrap-around position")
 #endif
 
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
@@ -1966,7 +1966,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
 #endif
 #if JVET_L0231_WRAPAROUND
-    xConfirmPara( m_Wraparound, "Horizontal wrap-around motion compensation for inter prediction is only allowed with NEXT profile" );
+    xConfirmPara( m_wrapAround, "Horizontal wrap-around motion compensation for inter prediction is only allowed with NEXT profile" );
 #endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
@@ -1992,11 +1992,11 @@ bool EncAppCfg::xCheckParameter()
 #endif
 
 #if JVET_L0231_WRAPAROUND
-    if( m_Wraparound )
+    if( m_wrapAround )
     {
-      xConfirmPara(m_WraparoundOffset == 0, "Wrap-around offset must be greater than 0");
-      xConfirmPara(m_WraparoundOffset > m_iSourceWidth, "Wrap-around offset must not be greater than the source picture width");
-      xConfirmPara(m_WraparoundOffset % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Wrap-around offset must be an integer multiple of the specified chroma subsampling");
+      xConfirmPara(m_wrapAroundOffset == 0, "Wrap-around offset must be greater than 0");
+      xConfirmPara(m_wrapAroundOffset > m_iSourceWidth, "Wrap-around offset must not be greater than the source picture width");
+      xConfirmPara(m_wrapAroundOffset % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Wrap-around offset must be an integer multiple of the specified chroma subsampling");
     }
 #endif
   }
@@ -3182,10 +3182,10 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "CPR:%d ", m_CPRMode);
 #endif
 #if JVET_L0231_WRAPAROUND
-  msg( VERBOSE, "Wraparound:%d ", m_Wraparound);
-  if( m_Wraparound )
+  msg( VERBOSE, "WrapAround:%d ", m_wrapAround);
+  if( m_wrapAround )
   {
-    msg( VERBOSE, "WraparoundOffset:%d ", m_WraparoundOffset );
+    msg( VERBOSE, "WrapAroundOffset:%d ", m_wrapAroundOffset );
   }
 #endif
   // ADD_NEW_TOOL (add some output indicating the usage of tools)

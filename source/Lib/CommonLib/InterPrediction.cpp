@@ -831,7 +831,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
 
         // clip and scale
 #if JVET_L0231_WRAPAROUND
-        if (sps.getSpsNext().getUseWraparound())
+        if (sps.getSpsNext().getUseWrapAround())
         {
           m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
           Mv tmpMv(iMvScaleTmpHor, iMvScaleTmpVer);
@@ -859,7 +859,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
           Mv(2, 2));
         curMv.set(curMv.getHor() >> 2, curMv.getVer() >> 2);     
 #if JVET_L0231_WRAPAROUND
-        if (sps.getSpsNext().getUseWraparound())
+        if (sps.getSpsNext().getUseWrapAround())
         {
           clipMv(curMv, Position(pu.Y().x + (w << iScaleX), pu.Y().y + (h << iScaleY)), Size(blockWidth << iScaleX, blockHeight << iScaleY), sps);
         }
@@ -874,7 +874,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
 
       // clip and scale
 #if JVET_L0231_WRAPAROUND
-      if (sps.getSpsNext().getUseWraparound())
+      if (sps.getSpsNext().getUseWrapAround())
       {
         Mv tmpMv(iMvScaleTmpHor, iMvScaleTmpVer);
         clipMv(tmpMv, Position(pu.Y().x + (w << iScaleX), pu.Y().y + (h << iScaleY)), Size(blockWidth << iScaleX, blockHeight << iScaleY), sps);

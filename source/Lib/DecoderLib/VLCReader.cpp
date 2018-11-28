@@ -932,10 +932,10 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
 #endif
 
 #if JVET_L0231_WRAPAROUND
-  READ_FLAG( symbol, "ref_wraparound_enabled_flag" );               spsNext.setUseWraparound( symbol != 0 );
-  if( spsNext.getUseWraparound() )
+  READ_FLAG( symbol, "ref_wraparound_enabled_flag" );               spsNext.setUseWrapAround( symbol != 0 );
+  if( spsNext.getUseWrapAround() )
   {
-    READ_UVLC( symbol, "ref_wraparound_offset" );                   spsNext.setWraparoundOffset( symbol );
+    READ_UVLC( symbol, "ref_wraparound_offset" );                   spsNext.setWrapAroundOffset( symbol );
   }
 #endif
   // ADD_NEW_TOOL : (sps extension parser) read tool enabling flags and associated parameters here

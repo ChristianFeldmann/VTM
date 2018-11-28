@@ -869,8 +869,8 @@ private:
 #endif
 
 #if JVET_L0231_WRAPAROUND
-  bool        m_Wraparound;
-  unsigned    m_WraparoundOffset;
+  bool        m_wrapAround;
+  unsigned    m_wrapAroundOffset;
 #endif
 
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags and associated parameters here
@@ -996,10 +996,10 @@ public:
   unsigned  getCPRMode            ()                                      const     { return m_CPRMode; }
 #endif
 #if JVET_L0231_WRAPAROUND
-  void      setUseWraparound      ( bool b )                                        { m_Wraparound = b; }
-  bool      getUseWraparound      ()                                      const     { return m_Wraparound; }
-  void      setWraparoundOffset   ( unsigned offset )                               { m_WraparoundOffset = offset; }
-  unsigned  getWraparoundOffset   ()                                      const     { return m_WraparoundOffset; }
+  void      setUseWrapAround      ( bool b )                                        { m_wrapAround = b; }
+  bool      getUseWrapAround      ()                                      const     { return m_wrapAround; }
+  void      setWrapAroundOffset   ( unsigned offset )                               { m_wrapAroundOffset = offset; }
+  unsigned  getWrapAroundOffset   ()                                      const     { return m_wrapAroundOffset; }
 #endif
   // ADD_NEW_TOOL : (sps extension) add access functions for tool enabling flags and associated parameters here
 

@@ -884,8 +884,8 @@ void EncLib::xInitSPS(SPS &sps)
 #endif 
 
 #if JVET_L0231_WRAPAROUND
-  sps.getSpsNext().setUseWraparound         ( m_Wraparound );
-  sps.getSpsNext().setWraparoundOffset      ( m_WraparoundOffset );
+  sps.getSpsNext().setUseWrapAround         ( m_wrapAround );
+  sps.getSpsNext().setWrapAroundOffset      ( m_wrapAroundOffset );
 #endif
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 

@@ -311,12 +311,10 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::SkipFlag), cu.skip);
         }
 
-#if HM_EMT_NSST_AS_IN_JEM
         if (!(!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && CU::isInter(cu))) || isChroma(cu.chType)))
         {
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::EMTFlag), cu.emtFlag);
         }
-#endif
       }
       else if( chType == CHANNEL_TYPE_CHROMA )
       {
@@ -334,12 +332,10 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::TransQuantBypassFlag_Chroma), cu.transQuantBypass);
         }
 
-#if HM_EMT_NSST_AS_IN_JEM
         if (!(!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && CU::isInter(cu))) || isChroma(cu.chType)))
         {
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::EMTFlag_Chroma), cu.emtFlag);
         }
-#endif
       }
 
 
@@ -785,11 +781,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
           if (tu.Y().valid())
           {
             DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, tu, GetBlockStatisticName(BlockStatistic::Cbf_Y), tu.cbf[COMPONENT_Y]);
-#if HM_EMT_NSST_AS_IN_JEM
             if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Y]) || (isLuma(COMPONENT_Y) && tu.cu->emtFlag)))
-#else
-            if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Y])))
-#endif
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, tu, GetBlockStatisticName(BlockStatistic::TransformSkipFlag_Y), tu.transformSkip[COMPONENT_Y]);
             }
@@ -798,26 +790,17 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
           {
             DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, tu, GetBlockStatisticName(BlockStatistic::Cbf_Cb), tu.cbf[COMPONENT_Cb]);
             DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, tu, GetBlockStatisticName(BlockStatistic::Cbf_Cr), tu.cbf[COMPONENT_Cr]);
-#if HM_EMT_NSST_AS_IN_JEM
             if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Cb]) || (isLuma(COMPONENT_Cb) && tu.cu->emtFlag)))
-#else
-            if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Cb])))
-#endif
             {
               DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, tu, GetBlockStatisticName(BlockStatistic::TransformSkipFlag_Cb), tu.transformSkip[COMPONENT_Cb]);
             }
-#if HM_EMT_NSST_AS_IN_JEM
             if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Cr]) || (isLuma(COMPONENT_Cr) && tu.cu->emtFlag)))
-#else
-            if (!(!tu.cu->cs->pps->getUseTransformSkip() || tu.cu->transQuantBypass || !TU::hasTransformSkipFlag(*tu.cs, tu.blocks[COMPONENT_Cr])))
-#endif
             {
               DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, tu, GetBlockStatisticName(BlockStatistic::TransformSkipFlag_Cr), tu.transformSkip[COMPONENT_Cr]);
             }
           }
         }
       }
-#if HM_EMT_NSST_AS_IN_JEM
       if (!(!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && CU::isInter(cu))) || isChroma(cu.chType)))
       {
         if( isLuma( ChannelType( chType ) ) )
@@ -829,7 +812,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::EMTFlag_Chroma), cu.emtFlag);
         }
       }
-#endif
     }
   }
 }

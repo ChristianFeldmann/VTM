@@ -1132,9 +1132,7 @@ void IntraSearch::xEncSubdivCbfQT(CodingStructure &cs, Partitioner &partitioner,
 {
   const UnitArea &currArea = partitioner.currArea();
   TransformUnit &currTU    = *cs.getTU( currArea.blocks[partitioner.chType], partitioner.chType );
-#if HM_EMT_NSST_AS_IN_JEM
   CodingUnit &currCU       = *currTU.cu;
-#endif
   uint32_t currDepth           = partitioner.currTrDepth;
 
   const bool subdiv        = currTU.depth > currDepth;
@@ -1167,9 +1165,7 @@ void IntraSearch::xEncSubdivCbfQT(CodingStructure &cs, Partitioner &partitioner,
 
   if (subdiv)
   {
-#if HM_EMT_NSST_AS_IN_JEM
     if( currDepth == 0 && bLuma ) m_CABACEstimator->emt_cu_flag( currCU );
-#endif
 
     if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
@@ -1187,10 +1183,8 @@ void IntraSearch::xEncSubdivCbfQT(CodingStructure &cs, Partitioner &partitioner,
   }
   else
   {
-#if HM_EMT_NSST_AS_IN_JEM
     if( currDepth == 0 && bLuma && TU::getCbfAtDepth( currTU, COMPONENT_Y, 0 ) ) m_CABACEstimator->emt_cu_flag( currCU );
 
-#endif
     //===== Cbfs =====
     if (bLuma)
     {

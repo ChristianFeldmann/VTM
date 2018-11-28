@@ -511,10 +511,6 @@ void DecLib::executeLoopFilters()
   // deblocking filter
   m_cLoopFilter.loopFilterPic( cs );
 
-#if DMVR_JVET_LOW_LATENCY_K0217
-  CS::setRefinedMotionField(cs);
-#endif
-
   if( cs.sps->getUseSAO() )
   {
     m_cSAO.SAOProcess( cs, cs.picture->getSAO() );

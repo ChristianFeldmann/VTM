@@ -66,30 +66,6 @@ UnitArea CS::getArea( const CodingStructure &cs, const UnitArea &area, const Cha
   return isDualITree( cs ) ? area.singleChan( chType ) : area;
 }
 
-#if DMVR_JVET_LOW_LATENCY_K0217
-void CS::setRefinedMotionField(CodingStructure &cs)
-{
-  for (CodingUnit *cu : cs.cus)
-  {
-    for (auto &pu : CU::traversePUs(*cu))
-    {
-      if (pu.cs->sps->getSpsNext().getUseDMVR()
-        && pu.mergeFlag
-        && pu.mergeType == MRG_TYPE_DEFAULT_N
-        && !pu.frucMrgMode
-        && !pu.cu->LICFlag
-        && !pu.cu->affine
-        && PU::isBiPredFromDifferentDir(pu))
-      {
-        pu.mv[REF_PIC_LIST_0] += pu.mvd[REF_PIC_LIST_0];
-        pu.mv[REF_PIC_LIST_1] -= pu.mvd[REF_PIC_LIST_0];
-        pu.mvd[REF_PIC_LIST_0].setZero();
-        PU::spanMotionInfo(pu);
-      }
-    }
-  }
-}
-#endif
 // CU tools
 
 bool CU::isIntra(const CodingUnit &cu)

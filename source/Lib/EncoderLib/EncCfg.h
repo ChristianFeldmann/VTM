@@ -239,6 +239,11 @@ protected:
   unsigned  m_CPRFastMethod;
 #endif    
   
+#if JVET_L0231_WRAPAROUND
+  bool      m_Wraparound;
+  unsigned  m_WraparoundOffset;
+#endif
+
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
 
   bool      m_useFastLCTU;
@@ -731,6 +736,13 @@ public:
   void      setCPRFastMethod                (unsigned n)     { m_CPRFastMethod = n; }
   unsigned  getCPRFastMethod                ()         const { return m_CPRFastMethod; }
 #endif  
+
+#if JVET_L0231_WRAPAROUND
+  void      setUseWraparound                ( bool b )       { m_Wraparound = b; }
+  bool      getUseWraparound                ()         const { return m_Wraparound; }
+  void      setWraparoundOffset             ( unsigned u )   { m_WraparoundOffset = u; }
+  unsigned  getWraparoundOffset             ()         const { return m_WraparoundOffset; }
+#endif
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 

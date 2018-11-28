@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_L0231_WRAPAROUND                             1 // Wrap-around MC
+
 #define TRAINED_CABAC_INIT_TABLES                         1 // Trained values for VTM3
 #define JVET_L0410_TC_TAB                                 1 // Change TC table for QP 51-63
 

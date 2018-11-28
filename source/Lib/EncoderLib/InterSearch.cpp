@@ -1270,8 +1270,16 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
 
   rcMvSrchRngLT <<= 2;
   rcMvSrchRngRB <<= 2;
-  clipMv(rcMvSrchRngLT, pu.cu->lumaPos(), sps);
-  clipMv(rcMvSrchRngRB, pu.cu->lumaPos(), sps);
+  clipMv(rcMvSrchRngLT, pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+         pu.cu->lumaSize(),
+#endif
+         sps);
+  clipMv(rcMvSrchRngRB, pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+         pu.cu->lumaSize(),
+#endif
+         sps);
   rcMvSrchRngLT >>= 2;
   rcMvSrchRngRB >>= 2;
 }
@@ -2328,7 +2336,11 @@ Distortion InterSearch::xGetTemplateCost( const PredictionUnit& pu,
   cMvCand.hor = cMvCand.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
   cMvCand.ver = cMvCand.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
 #endif
-  clipMv( cMvCand, pu.cu->lumaPos(), *pu.cs->sps );
+  clipMv( cMvCand, pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+          pu.cu->lumaSize(),
+#endif
+          *pu.cs->sps );
 
 
   // prediction pattern
@@ -2566,7 +2578,11 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
   cFPMvPred.hor = cFPMvPred.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
   cFPMvPred.ver = cFPMvPred.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
 #endif
-  clipMv( cFPMvPred, pu.cu->lumaPos(), *pu.cs->sps );
+  clipMv( cFPMvPred, pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+          pu.cu->lumaSize(),
+#endif
+          *pu.cs->sps );
 
 #if !REMOVE_MV_ADAPT_PREC
   Mv mvTL(cFPMvPred.getHor() - (iSrchRng << iMvShift), cFPMvPred.getVer() - (iSrchRng << iMvShift), cFPMvPred.highPrec);
@@ -2576,8 +2592,16 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
   Mv mvBR(cFPMvPred.getHor() + (iSrchRng << iMvShift), cFPMvPred.getVer() + (iSrchRng << iMvShift));
 #endif
 
-  clipMv( mvTL, pu.cu->lumaPos(), *pu.cs->sps );
-  clipMv( mvBR, pu.cu->lumaPos(), *pu.cs->sps );
+  clipMv( mvTL, pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+          pu.cu->lumaSize(),
+#endif
+          *pu.cs->sps );
+  clipMv( mvBR, pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+          pu.cu->lumaSize(),
+#endif
+          *pu.cs->sps );
 
   mvTL.divideByPowerOf2( iMvShift );
   mvBR.divideByPowerOf2( iMvShift );
@@ -2727,7 +2751,11 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
   rcMv.hor = rcMv.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
   rcMv.ver = rcMv.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
 #endif
-  clipMv( rcMv, pu.cu->lumaPos(), *pu.cs->sps );
+  clipMv( rcMv, pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+          pu.cu->lumaSize(),
+#endif
+          *pu.cs->sps );
 #if REMOVE_MV_ADAPT_PREC
   rcMv.hor = rcMv.hor >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
   rcMv.ver = rcMv.ver >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
@@ -2768,7 +2796,11 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
     integerMv2Nx2NPred.hor = integerMv2Nx2NPred.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
     integerMv2Nx2NPred.ver = integerMv2Nx2NPred.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
 #endif
-    clipMv( integerMv2Nx2NPred, pu.cu->lumaPos(), *pu.cs->sps );
+    clipMv( integerMv2Nx2NPred, pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+            pu.cu->lumaSize(),
+#endif
+            *pu.cs->sps );
 #if REMOVE_MV_ADAPT_PREC
     integerMv2Nx2NPred.hor = integerMv2Nx2NPred.hor >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
     integerMv2Nx2NPred.ver = integerMv2Nx2NPred.ver >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
@@ -3005,7 +3037,11 @@ void InterSearch::xTZSearchSelective( const PredictionUnit& pu,
   rcMv.hor = rcMv.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
   rcMv.ver = rcMv.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
 #endif
-  clipMv( rcMv, pu.cu->lumaPos(), *pu.cs->sps );
+  clipMv( rcMv, pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+          pu.cu->lumaSize(),
+#endif
+          *pu.cs->sps );
 #if REMOVE_MV_ADAPT_PREC
   rcMv.hor = rcMv.hor >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
   rcMv.ver = rcMv.ver >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
@@ -3040,7 +3076,11 @@ void InterSearch::xTZSearchSelective( const PredictionUnit& pu,
     integerMv2Nx2NPred.hor = integerMv2Nx2NPred.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
     integerMv2Nx2NPred.ver = integerMv2Nx2NPred.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
 #endif
-    clipMv( integerMv2Nx2NPred, pu.cu->lumaPos(), *pu.cs->sps );
+    clipMv( integerMv2Nx2NPred, pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+            pu.cu->lumaSize(),
+#endif
+            *pu.cs->sps );
 #if REMOVE_MV_ADAPT_PREC
     integerMv2Nx2NPred.hor = integerMv2Nx2NPred.hor >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
     integerMv2Nx2NPred.ver = integerMv2Nx2NPred.ver >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
@@ -3191,7 +3231,11 @@ void InterSearch::xPatternSearchIntRefine(PredictionUnit& pu, IntTZSearchStruct&
         cTempMV.hor = cTempMV.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
         cTempMV.ver = cTempMV.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
 #endif
-        clipMv(cTempMV, pu.cu->lumaPos(), sps);
+        clipMv(cTempMV, pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+               pu.cu->lumaSize(),
+#endif
+               sps);
 #if REMOVE_MV_ADAPT_PREC
         cTempMV.hor = cTempMV.hor >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
         cTempMV.ver = cTempMV.ver >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
@@ -3458,13 +3502,21 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
           vy = mvScaleVer + dMvHorY * (pu.Y().x - mvInfo->x) + dMvVerY * (pu.Y().y - mvInfo->y);
           roundAffineMv(vx, vy, shift);
           mvTmp[0] = Mv(vx, vy);
-          clipMv(mvTmp[0], pu.cu->lumaPos(), *pu.cs->sps);
+          clipMv(mvTmp[0], pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+                 pu.cu->lumaSize(),
+#endif
+                 *pu.cs->sps);
           mvTmp[0].roundMV2SignalPrecision();
           vx = mvScaleHor + dMvHorX * (pu.Y().x + pu.Y().width - mvInfo->x) + dMvVerX * (pu.Y().y - mvInfo->y);
           vy = mvScaleVer + dMvHorY * (pu.Y().x + pu.Y().width - mvInfo->x) + dMvVerY * (pu.Y().y - mvInfo->y);
           roundAffineMv(vx, vy, shift);
           mvTmp[1] = Mv(vx, vy);
-          clipMv(mvTmp[1], pu.cu->lumaPos(), *pu.cs->sps);
+          clipMv(mvTmp[1], pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+                 pu.cu->lumaSize(),
+#endif
+                 *pu.cs->sps);
           mvTmp[1].roundMV2SignalPrecision();
 #if REMOVE_MV_ADAPT_PREC
           mvTmp[0].hor = mvTmp[0].hor >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
@@ -4245,11 +4297,23 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
   uint32_t uiBitsBest = 0;
 
   // do motion compensation with origin mv
-  clipMv( acMvTemp[0], pu.cu->lumaPos(), *pu.cs->sps );
-  clipMv( acMvTemp[1], pu.cu->lumaPos(), *pu.cs->sps );
+  clipMv( acMvTemp[0], pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+          pu.cu->lumaSize(),
+#endif
+          *pu.cs->sps );
+  clipMv( acMvTemp[1], pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+          pu.cu->lumaSize(),
+#endif
+          *pu.cs->sps );
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
-    clipMv( acMvTemp[2], pu.cu->lumaPos(), *pu.cs->sps );
+    clipMv( acMvTemp[2], pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+            pu.cu->lumaSize(),
+#endif
+            *pu.cs->sps );
   }
   xPredAffineBlk( COMPONENT_Y, pu, refPic, acMvTemp, predBuf, false, pu.cs->slice->clpRng( COMPONENT_Y ) );
 
@@ -4422,7 +4486,11 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
       acMvTemp[i].hor = Clip3( -32768, 32767, acMvTemp[i].hor );
       acMvTemp[i].ver = Clip3( -32768, 32767, acMvTemp[i].ver );
       acMvTemp[i].roundMV2SignalPrecision();
-      clipMv(acMvTemp[i], pu.cu->lumaPos(), *pu.cs->sps);
+      clipMv(acMvTemp[i], pu.cu->lumaPos(),
+#if JVET_L0231_WRAPAROUND
+             pu.cu->lumaSize(),
+#endif
+             *pu.cs->sps);
     }
     xPredAffineBlk( COMPONENT_Y, pu, refPic, acMvTemp, predBuf, false, pu.cu->slice->clpRng( COMPONENT_Y ) );
 

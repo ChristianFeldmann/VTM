@@ -882,6 +882,11 @@ void EncLib::xInitSPS(SPS &sps)
 #if JVET_L0293_CPR
   sps.getSpsNext().setCPRMode               ( m_CPRMode );
 #endif 
+
+#if JVET_L0231_WRAPAROUND
+  sps.getSpsNext().setUseWraparound         ( m_Wraparound );
+  sps.getSpsNext().setWraparoundOffset      ( m_WraparoundOffset );
+#endif
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();

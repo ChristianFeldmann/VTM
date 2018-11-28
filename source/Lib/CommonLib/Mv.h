@@ -287,7 +287,11 @@ namespace std
 };
 #endif
 void roundMV( Mv& rcMv, unsigned imvShift );
-void clipMv ( Mv& rcMv, const struct Position& pos, const class SPS& sps );
+void clipMv ( Mv& rcMv, const struct Position& pos, 
+#if JVET_L0231_WRAPAROUND
+              const struct Size& size,
+#endif
+              const class SPS& sps );
 
 void roundAffineMv( int& mvx, int& mvy, int nShift );
 

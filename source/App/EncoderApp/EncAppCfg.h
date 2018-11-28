@@ -257,6 +257,11 @@ protected:
   unsigned  m_CPRFastMethod;
 #endif    
   
+#if JVET_L0231_WRAPAROUND
+  bool      m_Wraparound;
+  unsigned  m_WraparoundOffset;
+#endif
+
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
 
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel

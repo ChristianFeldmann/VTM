@@ -640,6 +640,14 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
     }
   }
 #endif
+
+#if JVET_L0231_WRAPAROUND
+  WRITE_FLAG( spsNext.getUseWraparound() ? 1 : 0,                                               "ref_wraparound_enabled_flag" );
+  if( spsNext.getUseWraparound() )
+  {
+    WRITE_UVLC( spsNext.getWraparoundOffset(),                                                  "ref_wraparound_offset" );
+  }
+#endif
   // ADD_NEW_TOOL : (sps extension writer) write tool enabling flags and associated parameters here
 }
 

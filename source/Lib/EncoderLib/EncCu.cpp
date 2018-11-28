@@ -3952,6 +3952,22 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
       return;
     }
   }
+  else
+  {
+    for (int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++)
+    {
+      if (pu.refIdx[refList] >= 0)
+      {
+        for (int ctrlP = 1 + (cu->affineType == AFFINEMODEL_6PARAM); ctrlP >= 0; ctrlP--)
+        {
+          if (pu.mvdAffi[refList][ctrlP].getAbsHor() >= maxMvd || pu.mvdAffi[refList][ctrlP].getAbsVer() >= maxMvd)
+          {
+            return;
+          }
+        }
+      }
+    }
+  }
 
   if( emtMode == 2 )
   {

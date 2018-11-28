@@ -1903,6 +1903,12 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       }
     }
 #endif
+    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
+    if( updateGbiCodingOrder )
+    {
+      resetGbiCodingOrder(false, cs);
+    }
+
     m_CABACWriter->coding_tree_unit( cs, ctuArea, pcPic->m_prevQP, ctuRsAddr );
 
 #if HEVC_TILES_WPP

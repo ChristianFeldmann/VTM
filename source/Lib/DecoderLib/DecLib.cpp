@@ -172,13 +172,6 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                 {
                   pcEncPic->copySAO( *pic, 0 );
                 }
-
-                pcDecLib->executeLoopFilters();
-                if ( pic->cs->sps->getUseSAO() )
-                {
-                  pcEncPic->copySAO( *pic, 1 );
-                }
-
                 if( pic->cs->sps->getUseALF() )
                 {
                   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
@@ -192,6 +185,25 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   }
                 }
 
+                pcDecLib->executeLoopFilters();
+                if ( pic->cs->sps->getUseSAO() )
+                {
+                  pcEncPic->copySAO( *pic, 1 );
+                }
+/*
+                if( pic->cs->sps->getUseALF() )
+                {
+                  for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
+                  {
+                    std::copy( pic->getAlfCtuEnableFlag()[compIdx].begin(), pic->getAlfCtuEnableFlag()[compIdx].end(), pcEncPic->getAlfCtuEnableFlag()[compIdx].begin() );
+                  }
+
+                  for( int i = 0; i < pic->slices.size(); i++ )
+                  {
+                    pcEncPic->slices[i]->getAlfSliceParam() = pic->slices[i]->getAlfSliceParam();
+                  }
+                }
+*/
                 pcEncPic->cs->copyStructure( *pic->cs, CH_L, true, true );
 
                 if( CS::isDualITree( *pcEncPic->cs ) )

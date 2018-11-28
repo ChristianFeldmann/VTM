@@ -563,7 +563,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
       else
       {
 #if JVET_L0124_L0208_TRIANGLE
-        xPredInterUni ( pu, eRefPicList, pcMbBuf, pu.cu->triangle, false );
+        xPredInterUni( pu, eRefPicList, pcMbBuf, pu.cu->triangle );
 #else
         xPredInterUni ( pu, eRefPicList, pcMbBuf, false );
 #endif
@@ -941,7 +941,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
     Pel* gradY = (refList == 0) ? m_gradY0 : m_gradY1;
     Pel* gradX = (refList == 0) ? m_gradX0 : m_gradX1;
 
-    g_pelBufOP.bioGradFilter(dstTempPtr, stridePredMC, widthG, heightG, widthG, gradX, gradY);
+    xBioGradFilter(dstTempPtr, stridePredMC, widthG, heightG, widthG, gradX, gradY);
     Pel* padStr = m_filteredBlockTmp[2 + refList][COMPONENT_Y] + 2 * stridePredMC + 2;
     for (int y = 0; y< height; y++)
     {
@@ -967,7 +967,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   int*     dotProductTemp5 = m_dotProduct5;
   int*     dotProductTemp6 = m_dotProduct6;
 
-  g_pelBufOP.calcBIOPar(srcY0Temp, srcY1Temp, gradX0, gradX1, gradY0, gradY1, dotProductTemp1, dotProductTemp2, dotProductTemp3, dotProductTemp5, dotProductTemp6, src0Stride, src1Stride, widthG, widthG, heightG);
+  xCalcBIOPar(srcY0Temp, srcY1Temp, gradX0, gradX1, gradY0, gradY1, dotProductTemp1, dotProductTemp2, dotProductTemp3, dotProductTemp5, dotProductTemp6, src0Stride, src1Stride, widthG, widthG, heightG);
 
   int xUnit = (width >> 2);
   int yUnit = (height >> 2);
@@ -985,7 +985,8 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
         srcY0Temp = srcY0 + (stridePredMC + 1) + ((yu*src0Stride + xu) << 2);
         srcY1Temp = srcY1 + (stridePredMC + 1) + ((yu*src1Stride + xu) << 2);
         dstY0 = dstY + ((yu*dstStride + xu) << 2);
-        g_pelBufOP.addAvg4(srcY0Temp, src0Stride, srcY1Temp, src1Stride, dstY0, dstStride, (1 << 2), (1 << 2), shiftNum, offset, clpRng);
+        PelBuf dstPelBuf(dstY0, dstStride, Size(4, 4));
+        dstPelBuf.addAvg(CPelBuf(srcY0Temp, src0Stride, Size(4, 4)), CPelBuf(srcY1Temp, src1Stride, Size(4, 4)), clpRng);
         continue;
       }
 
@@ -998,7 +999,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
       dotProductTemp5 = m_dotProduct5 + offsetPos + ((yu*widthG + xu) << 2);
       dotProductTemp6 = m_dotProduct6 + offsetPos + ((yu*widthG + xu) << 2);
 
-      g_pelBufOP.calcBlkGradient(xu << 2, yu << 2, dotProductTemp1, dotProductTemp2, dotProductTemp3, dotProductTemp5, dotProductTemp6, sGx2, sGy2, sGxGy, sGxdI, sGydI, widthG, heightG, (1 << 2));
+      xCalcBlkGradient(xu << 2, yu << 2, dotProductTemp1, dotProductTemp2, dotProductTemp3, dotProductTemp5, dotProductTemp6, sGx2, sGy2, sGxGy, sGxdI, sGydI, widthG, heightG, (1 << 2));
 
       if (sGx2 > 0)
       {
@@ -1023,7 +1024,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
       gradY1 = m_gradY1 + offsetPos + ((yu*widthG + xu) << 2);
 
       dstY0 = dstY + ((yu*dstStride + xu) << 2);
-      g_pelBufOP.addBIOAvg4(srcY0Temp, src0Stride, srcY1Temp, src1Stride, dstY0, dstStride, gradX0, gradX1, gradY0, gradY1, widthG, (1 << 2), (1 << 2), (int)tmpx, (int)tmpy, shiftNum, offset, clpRng);
+      xAddBIOAvg4(srcY0Temp, src0Stride, srcY1Temp, src1Stride, dstY0, dstStride, gradX0, gradX1, gradY0, gradY1, widthG, (1 << 2), (1 << 2), (int)tmpx, (int)tmpy, shiftNum, offset, clpRng);
     }  // xu
   }  // yu
 }
@@ -1120,6 +1121,152 @@ bool InterPrediction::xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel*
   }
 
   return (dist >= m_bioDistThres);
+}
+
+void InterPrediction::xAddBIOAvg4(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
+{
+#if ENABLE_SIMD_OPT_BIO
+  g_pelBufOP.addBIOAvg4(src0, src0Stride, src1, src1Stride, dst, dstStride, gradX0, gradX1, gradY0, gradY1, gradStride, width, height, tmpx, tmpy, shift, offset, clpRng);
+#else
+  int b = 0;
+
+  for (int y = 0; y < height; y++)
+  {
+    for (int x = 0; x < width; x += 4)
+    {
+      b = tmpx * (gradX0[x] - gradX1[x]) + tmpy * (gradY0[x] - gradY1[x]);
+      b = ((b + 1) >> 1);
+      dst[x] = ClipPel((int16_t)rightShift((src0[x] + src1[x] + b + offset), shift), clpRng);
+
+      b = tmpx * (gradX0[x + 1] - gradX1[x + 1]) + tmpy * (gradY0[x + 1] - gradY1[x + 1]);
+      b = ((b + 1) >> 1);
+      dst[x + 1] = ClipPel((int16_t)rightShift((src0[x + 1] + src1[x + 1] + b + offset), shift), clpRng);
+
+      b = tmpx * (gradX0[x + 2] - gradX1[x + 2]) + tmpy * (gradY0[x + 2] - gradY1[x + 2]);
+      b = ((b + 1) >> 1);
+      dst[x + 2] = ClipPel((int16_t)rightShift((src0[x + 2] + src1[x + 2] + b + offset), shift), clpRng);
+
+      b = tmpx * (gradX0[x + 3] - gradX1[x + 3]) + tmpy * (gradY0[x + 3] - gradY1[x + 3]);
+      b = ((b + 1) >> 1);
+      dst[x + 3] = ClipPel((int16_t)rightShift((src0[x + 3] + src1[x + 3] + b + offset), shift), clpRng);
+    }
+    dst += dstStride;       src0 += src0Stride;     src1 += src1Stride;
+    gradX0 += gradStride; gradX1 += gradStride; gradY0 += gradStride; gradY1 += gradStride;
+  }
+#endif
+}
+
+void InterPrediction::xBioGradFilter(Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY)
+{
+#if ENABLE_SIMD_OPT_BIO
+  g_pelBufOP.bioGradFilter(pSrc, srcStride, width, height, gradStride, gradX, gradY);
+#else
+  Pel* srcTmp = pSrc + srcStride + 1;
+  Pel* gradXTmp = gradX + gradStride + 1;
+  Pel* gradYTmp = gradY + gradStride + 1;
+
+  for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
+  {
+    for (int x = 0; x < (width - 2 * BIO_EXTEND_SIZE); x++)
+    {
+      gradYTmp[x] = (srcTmp[x + srcStride] - srcTmp[x - srcStride]) >> 4;
+      gradXTmp[x] = (srcTmp[x + 1] - srcTmp[x - 1]) >> 4;
+    }
+    gradXTmp += gradStride;
+    gradYTmp += gradStride;
+    srcTmp += srcStride;
+  }
+
+  gradXTmp = gradX + gradStride + 1;
+  gradYTmp = gradY + gradStride + 1;
+  for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
+  {
+    gradXTmp[-1] = gradXTmp[0];
+    gradXTmp[width - 2 * BIO_EXTEND_SIZE] = gradXTmp[width - 2 * BIO_EXTEND_SIZE - 1];
+    gradXTmp += gradStride;
+
+    gradYTmp[-1] = gradYTmp[0];
+    gradYTmp[width - 2 * BIO_EXTEND_SIZE] = gradYTmp[width - 2 * BIO_EXTEND_SIZE - 1];
+    gradYTmp += gradStride;
+  }
+
+  gradXTmp = gradX + gradStride;
+  gradYTmp = gradY + gradStride;
+  ::memcpy(gradXTmp - gradStride, gradXTmp, sizeof(Pel)*(width));
+  ::memcpy(gradXTmp + (height - 2 * BIO_EXTEND_SIZE)*gradStride, gradXTmp + (height - 2 * BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
+  ::memcpy(gradYTmp - gradStride, gradYTmp, sizeof(Pel)*(width));
+  ::memcpy(gradYTmp + (height - 2 * BIO_EXTEND_SIZE)*gradStride, gradYTmp + (height - 2 * BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
+#endif
+}
+
+void InterPrediction::xCalcBIOPar(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG)
+{
+#if ENABLE_SIMD_OPT_BIO 
+  g_pelBufOP.calcBIOPar(srcY0Temp, srcY1Temp, gradX0, gradX1, gradY0, gradY1, dotProductTemp1, dotProductTemp2, dotProductTemp3, dotProductTemp5, dotProductTemp6, src0Stride, src1Stride, gradStride, widthG, heightG);
+#else
+  for (int y = 0; y < heightG; y++)
+  {
+    for (int x = 0; x < widthG; x++)
+    {
+      int temp = (srcY0Temp[x] >> 6) - (srcY1Temp[x] >> 6);
+      int tempX = (gradX0[x] + gradX1[x]) >> 3;
+      int tempY = (gradY0[x] + gradY1[x]) >> 3;
+      dotProductTemp1[x] = tempX * tempX;
+      dotProductTemp2[x] = tempX * tempY;
+      dotProductTemp3[x] = -tempX * temp;
+      dotProductTemp5[x] = tempY * tempY;
+      dotProductTemp6[x] = -tempY * temp;
+    }
+    srcY0Temp += src0Stride;
+    srcY1Temp += src1Stride;
+    gradX0 += gradStride;
+    gradX1 += gradStride;
+    gradY0 += gradStride;
+    gradY1 += gradStride;
+    dotProductTemp1 += widthG;
+    dotProductTemp2 += widthG;
+    dotProductTemp3 += widthG;
+    dotProductTemp5 += widthG;
+    dotProductTemp6 += widthG;
+  }
+#endif
+}
+
+void InterPrediction::xCalcBlkGradient(int sx, int sy, int    *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize)
+{
+#if ENABLE_SIMD_OPT_BIO
+  g_pelBufOP.calcBlkGradient(sx, sy, arraysGx2, arraysGxGy, arraysGxdI, arraysGy2, arraysGydI, sGx2, sGy2, sGxGy, sGxdI, sGydI, width, height, unitSize);
+#else
+  int     *Gx2 = arraysGx2;
+  int     *Gy2 = arraysGy2;
+  int     *GxGy = arraysGxGy;
+  int     *GxdI = arraysGxdI;
+  int     *GydI = arraysGydI;
+
+  // set to the above row due to JVET_K0485_BIO_EXTEND_SIZE
+  Gx2 -= (BIO_EXTEND_SIZE*width);
+  Gy2 -= (BIO_EXTEND_SIZE*width);
+  GxGy -= (BIO_EXTEND_SIZE*width);
+  GxdI -= (BIO_EXTEND_SIZE*width);
+  GydI -= (BIO_EXTEND_SIZE*width);
+
+  for (int y = -BIO_EXTEND_SIZE; y < unitSize + BIO_EXTEND_SIZE; y++)
+  {
+    for (int x = -BIO_EXTEND_SIZE; x < unitSize + BIO_EXTEND_SIZE; x++)
+    {
+      sGx2 += Gx2[x];
+      sGy2 += Gy2[x];
+      sGxGy += GxGy[x];
+      sGxdI += GxdI[x];
+      sGydI += GydI[x];
+    }
+    Gx2 += width;
+    Gy2 += width;
+    GxGy += width;
+    GxdI += width;
+    GydI += width;
+  }
+#endif
 }
 #endif
 

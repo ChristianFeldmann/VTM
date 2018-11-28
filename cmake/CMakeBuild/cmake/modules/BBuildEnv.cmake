@@ -1,56 +1,289 @@
-#[[.rst:
+#[===[.rst:
 BBuildEnv
 ---------
 
-The module BBuildEnv provides a CMake build environment similar to Boost.Build with functions and macros 
-to access other external SDKs including AdobeSDK, CodeMeter, CUDASamples, Intel Performance Libraries, OfxSDK, and VLC 
+The module BBuildEnv provides a CMake build environment with functions and macros 
+to access other external SDKs including CodeMeter, CUDASamples, Intel Performance Libraries
 not yet supported by CMake natively. 
+
+Other macros ensure consistent build settings for multithreading and provide 
+an abstract CMake generator independent way to configure compiler warnings 
+depending on compiler family and version. 
 
 This module also provides some system information not yet available by CMake.  
 
-How to Use
-^^^^^^^^^^
+Unless explicitly disabled by configuration option ``BBuildEnv_EXCLUDE_MODULES`` 
+module ``BBuildEnv`` loads the following submodules to provide additional support 
+for Boost, Qt5, OpenCV, file downloads, MinGW and CPack:
 
-Include the following statement(s) in your top-level CMakeLists.txt to load this module 
-and its submodules.  The modification of CMAKE_MODULE_PATH makes a set of new or patched Find module available 
-as well and is therefore the recommended way to include BBuildEnv::
-
-  set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeBuild/cmake/modules" )
-  # ... some other CMake statements ...
-  include( BBuildEnv )
-
-Projects without the need to modify their CMAKE_MODULE_PATH to get access to the supplemental/patched Find modules 
-may prefer the following include statement::
-
-  include( "${CMAKE_SOURCE_DIR}/CMakeBuild/cmake/modules/BBuildEnv.cmake" )
+- :module:`BBuildEnvAddProject` provides macros and functions to add standard
+  subproject like console applications, libraries, samples, UTF tests and Qt
+  applications to a standard workspace. 
+- :module:`BBuildEnvBoost` adds a few utility functions and macros helping to 
+  use locally built Boost libraries. 
+- :module:`BBuildEnvOpenCV`
+- :module:`BBuildEnvQt5`
+- :module:`BBuildEnvDownload`
+- :module:`BBuildEnvVersionUtil`
+- :module:`BBuildEnvCPack` adds a few utility functions helping to create binary
+  distribution packages.   
+- :module:`BBuildEnvMingw` adds helper functions to copy MinGW runtime DLLs.
 
 
 Reserved Identifiers
 ^^^^^^^^^^^^^^^^^^^^
 
-Avoiding name clashes in CMakeLists.txt or project specific cmake files all projects including BBuildEnv.cmake 
-are advised not to use CMake variables, functions or macros starting with::
+Avoiding name clashes in CMakeLists.txt or project specific CMake files all 
+projects including module ``BBuildEnv``, or any of its submodules, are advised 
+not to use CMake variables, functions or macros starting with::
 
-  _bb_, bb_, BB_, _BB_, BBuildEnv, _BBuildEnv
+  BBuildEnv, _BBuildEnv, _bb_, bb_, BB_, _BB_
+
+Users may use variables starting with ``BBuildEnv_<var>`` only to configure the 
+behavior of ``BuildEnv`` modules or submodules or evaluate properties of loaded 
+``BuildEnv`` modules or submodules exposed through documented variables 
+``BBuildEnv_<var>``. 
 
 
-#]]
+Configuration Options
+^^^^^^^^^^^^^^^^^^^^^
 
-#BBuildEnv_DISABLE_PYTHON_DETECTION
+This module evaluates the following variables at load time allowing users to 
+customize its behavior:
+
+``BBuildEnv_DEBUG``
+  Enable debugging messages.
+``BBuildEnv_EXCLUDE_MODULES``
+  List of submodules to be excluded from loading.  Use ``ALL`` to disable
+  loading any submodule.
+
+
+How to Use
+^^^^^^^^^^
+
+Include the following statement(s) in your top-level CMakeLists.txt to load this module 
+and its submodules.  The modification of :variable:`CMAKE_MODULE_PATH` makes a set of new 
+or patched find modules available as well and is therefore the recommended way 
+to include ``BBuildEnv``.  The logic below assumes assumes CMakeBuild is included
+as an svn:external or as a versioned Git subtree:
+
+.. code-block:: cmake
+
+  # Set module path to subversion or git layout based on the existence of 
+  # ${CMAKE_SOURCE_DIR}/CMakeBuild/CMakeBuild/cmake/modules.
+  if( EXISTS "${CMAKE_SOURCE_DIR}/CMakeBuild/CMakeBuild/cmake/modules" )
+    set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeBuild/CMakeBuild/cmake/modules" )
+    set( USE_GIT_SUBPROJECTS OFF )
+  else()
+    file( GLOB CMAKEBUILD_TAGS RELATIVE ${CMAKE_SOURCE_DIR}/CMakeBuild ${CMAKE_SOURCE_DIR}/CMakeBuild/*/CMakeBuild/cmake/modules/BBuildEnv.cmake )
+    list( LENGTH CMAKEBUILD_TAGS NUM_OF_TAGS )
+    if( ${NUM_OF_TAGS} EQUAL 1 )
+      if( CMAKEBUILD_TAGS MATCHES "^([^/]+)/" )
+        set( CMAKEBUILD_TAG ${CMAKE_MATCH_1} )
+      endif()
+      if( EXISTS "${CMAKE_SOURCE_DIR}/CMakeBuild/${CMAKEBUILD_TAG}/CMakeBuild/cmake/modules" )
+        set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeBuild/${CMAKEBUILD_TAG}/CMakeBuild/cmake/modules" )
+        set( USE_GIT_SUBPROJECTS ON )
+      else()
+        message( FATAL_ERROR "ERROR: CMakeBuild directory not found: ${CMAKE_SOURCE_DIR}/CMakeBuild/${CMAKEBUILD_TAG}/CMakeBuild/cmake/modules" )
+      endif()
+    else()
+      message( FATAL_ERROR "ERROR: ${NUM_OF_TAGS} CMakeBuild directories found, exactly one is expected. Directories found: ${CMAKEBUILD_TAGS}" )
+    endif()
+  endif()
+  
+  # Include a utility module providing functions, macros, and settings to customize the build environment.
+  include( BBuildEnv )
+
+
+Provided Variables
+^^^^^^^^^^^^^^^^^^
+
+``BBuildEnv_VERSION``
+  Module's version in decimal dotted format with a maximum of four components.
+
+``BBuildEnv_MSYS``
+  Set to true when using MSYS.
+
+``BBuildEnv_ROOT_DIR``
+  Optional root directory of CMakeBuild customization files. 
+
+``BBuildEnv_SCRIPT_DIR``
+  Optional path to non-cmake scripts. 
+
+
+Provided Functions and Macros
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. command:: bb_multithreading
+
+  The ``bb_multithreading()`` macro adds an imported target ``Threads::Threads`` 
+  to enable multithreaded code generation.  All multithreaded targets 
+  shall have an explicit or implicit dependency on ``Threads::Threads``::
+  
+    bb_multithreading()
+  
+
+.. command:: bb_enable_warnings
+
+  The ``bb_enable_warnings()`` macro enables CXX compiler warnings in case the 
+  selected CMake generator does not by default 
+  and accepts parameters to configure warnings as errors and disable warnings given a 
+  specific compiler version or compiler family::
+
+    bb_enable_warnings([<compiler>[-<compiler_version>]] [warnings-as-errors] [<warning_flag>...])
+
+  **Parameters:**
+
+    ``compiler``
+      The macro supports the following compiler families 
+      ``gcc``, ``clang``, ``msvc`` and ``intel``.
+  
+    ``compiler_version``
+      Compiler version specified as ``major_version`` or 
+      ``major_version.minor_version`` to indicate which compiler version
+      the macro should configure. 
+      
+    ``warnings-as-errors``
+      Treat warnings as errors.
+      
+    ``warning_flag``
+      Compiler specific flag to enable or disable a warning.
+
+
+.. command:: bb_set_external_dir
+
+  The ``bb_set_external_dir()`` function searches for a directory given a 
+  relative path using a fixed set of root paths.  It's intended use is to find 
+  a shared folder holding an external project
+  without searching any system paths or cross compiler specific paths::
+  
+    bb_set_external_dir(<abs_path> <relative_path> [<OPTIONAL>])
+
+  **Parameters:**
+
+    ``abs_path``
+      Absolute path to ``relative_path`` found in one of the default locations.
+
+    ``relative_path``
+      Path to search for in one of the default locations.  An absolute path 
+      will be returned as-is.
+          
+    ``OPTIONAL``
+      Search failure is not treated as an fatal error. 
+
+  **Search Path:**
+
+  Search path in decreasing order of preference.  All paths consisting of 
+  undefined environment variables are silently ignored.
+
+    ``$ENV{PROJ_HOME}``
+
+    ``${CMAKE_SOURCE_DIR}/..``
+     
+    ``${CMAKE_SOURCE_DIR}/../..``
+     
+    ``$ENV{HOME}/projects``
+      Ignored on windows host systems.
+     
+    ``$ENV{USERPROFILE}/projects``
+      Ignored on non-windows host systems.
+
+
+.. command:: bb_add_subdirectory
+
+  The ``bb_add_subdirectory()`` macro adds an external in-tree Git subproject. 
+  The macro silently assumes the subproject is checked out to
+  ``${CMAKE_SOURCE_DIR}/ext/<subproject>``::
+  
+    bb_add_subdirectory(<subproject>)
+    
+  **Parameters:**
+  
+    ``subproject``
+      A relative path to an in-tree subproject; e.g. ``BoostAddon/src/lib/LoggerLib``
+
+
+#]===]
+
 
 if( NOT CMAKE_VERSION VERSION_LESS 3.10 )
   include_guard( GLOBAL )
 endif()
 
-macro( _bb_set_bbuildenv_version version_ )
-  if( DEFINED BBuildEnv_VERSION )
-    if( NOT BBuildEnv_VERSION VERSION_EQUAL ${version_} )
-      message( STATUS "Updating BBuildEnv ${BBuildEnv_VERSION} to ${version_}" )
-      set( BBuildEnv_VERSION ${version_} CACHE INTERNAL "BBuildEnv version" )
-    endif() 
+include( "${CMAKE_CURRENT_LIST_DIR}/BBuildEnvVersion.cmake" )
+
+# List of submodules to load by default.
+set( _BBuildEnvSubmoduleList
+     BBuildEnvAddProject
+     # BBuildEnvDebug
+     BBuildEnvDownload
+     BBuildEnvMingw
+     BBuildEnvVersionUtil
+     BBuildEnvCPack
+     BBuildEnvBoost 
+     BBuildEnvQt5
+     BBuildEnvOpenCV 
+   )
+
+foreach( _cmod IN LISTS _BBuildEnvSubmoduleList )
+  if( DEFINED BBuildEnv_EXCLUDE_MODULES )
+    if( "${BBuildEnv_EXCLUDE_MODULES}" STREQUAL "ALL" )
+      break()
+    endif()
+    if( NOT _cmod IN_LIST BBuildEnv_EXCLUDE_MODULES )
+      include( "${CMAKE_CURRENT_LIST_DIR}/${_cmod}.cmake" OPTIONAL )
+    endif()
+  else()
+    include( "${CMAKE_CURRENT_LIST_DIR}/${_cmod}.cmake" OPTIONAL )
   endif()
-  set( BBuildEnv_VERSION ${version_} CACHE INTERNAL "BBuildEnv version" ) 
+endforeach()     
+
+
+# this macro switches between subversion externals and git dependencies
+macro( bb_add_subdirectory subdirectory_ )
+  if( USE_GIT_SUBPROJECTS )
+    string( REGEX REPLACE "([^/]+).*" "\\1" BASE_DIRECTORY ${subdirectory_} )
+    add_subdirectory( ${CMAKE_SOURCE_DIR}/ext/${BASE_DIRECTORY}/${subdirectory_} ${CMAKE_BINARY_DIR}/${subdirectory_} )
+  else()
+    add_subdirectory( ${subdirectory_} )  
+  endif()
 endmacro()
+
+
+macro( bb_save_find_context fnd_ctx )
+  if( CMAKE_CROSSCOMPILING )
+    # find_package must be told not to expect the BOOST libraries inside "CMAKE_FIND_ROOT_PATH".
+    foreach( _v  INCLUDE LIBRARY PACKAGE )
+      if( DEFINED CMAKE_FIND_ROOT_PATH_MODE_${_v} )
+        # message( STATUS "bb_save_find_context(): CMAKE_FIND_ROOT_PATH_MODE_${_v}=${CMAKE_FIND_ROOT_PATH_MODE_${_v}}" )
+        
+        set( ${fnd_ctx}_CMAKE_FIND_ROOT_PATH_MODE_${_v} ${CMAKE_FIND_ROOT_PATH_MODE_${_v}} )
+        set( CMAKE_FIND_ROOT_PATH_MODE_${_v} NEVER )
+      else()
+        unset( ${fnd_ctx}_CMAKE_FIND_ROOT_PATH_MODE_${_v} )
+      endif()
+    endforeach()
+  endif()
+endmacro()
+
+
+macro( bb_restore_find_context fnd_ctx )
+  if( CMAKE_CROSSCOMPILING )
+    # Restore CMAKE_FIND_ROOT_PATH settings    
+    foreach( _v  INCLUDE LIBRARY PACKAGE )
+      if( DEFINED ${fnd_ctx}_CMAKE_FIND_ROOT_PATH_MODE_${_v} )
+        set( CMAKE_FIND_ROOT_PATH_MODE_${_v} ${${fnd_ctx}_CMAKE_FIND_ROOT_PATH_MODE_${_v}} )
+        unset( ${fnd_ctx}_CMAKE_FIND_ROOT_PATH_MODE_${_v} )
+        
+        # message( STATUS "bb_restore_find_context(): CMAKE_FIND_ROOT_PATH_MODE_${_v}=${CMAKE_FIND_ROOT_PATH_MODE_${_v}}" )
+      endif()
+    endforeach()
+  endif()
+endmacro()
+
+
+
 #
 # Internal macro to extract the CXX compiler's <major>.<minor> version.
 #
@@ -121,6 +354,7 @@ macro( bb_multithreading )
   if( TARGET Threads::Threads )
     message( FATAL_ERROR "bb_multithreading(): target Threads::Threads already exists. Please contact technical support." )
   endif()
+  unset( _bb_mt_prop_value )
   if( MINGW )
     # MinGW may be a native compiler or a cross compiler.
     find_package( Threads REQUIRED )
@@ -134,7 +368,6 @@ macro( bb_multithreading )
     else()
       set_target_properties( Threads::Threads PROPERTIES INTERFACE_COMPILE_OPTIONS "-mthreads" )
     endif()
-    unset( _bb_mt_prop_value )
   elseif( CMAKE_CROSSCOMPILING )
     find_package( Threads REQUIRED )
   elseif( CMAKE_CXX_COMPILER_ID STREQUAL "Cray" )
@@ -154,7 +387,6 @@ macro( bb_multithreading )
           set_target_properties( Threads::Threads PROPERTIES INTERFACE_COMPILE_OPTIONS $<$<OR:$<COMPILE_LANGUAGE:CXX>,$<COMPILE_LANGUAGE:C>>:-pthread> )
         endif()
       endif()
-      unset( _bb_mt_prop_value )
     endif()
   endif()
 endmacro( bb_multithreading )
@@ -169,6 +401,7 @@ macro( bb_enable_warnings )
     message( STATUS "bb_enable_warnings: ${toolset} -> updating warnings flags: ${_bb_warning_options}" )
     foreach( _bb_warning_opt IN LISTS _bb_warning_options )
       if( MSVC )
+        # CMake 3.11.0 introduces support for generator expression COMPILE_LANGUAGE.
         # MSVC generator does not support the generator expression COMPILE_LANGUAGE yet.
         string( APPEND CMAKE_CXX_FLAGS " ${_bb_warning_opt}" )
         string( APPEND CMAKE_C_FLAGS " ${_bb_warning_opt}" )
@@ -187,7 +420,13 @@ function( _bb_enable_warnings_helper warning_options_ )
   if( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
     set( _bb_warning_compiler_id "gcc" )
   elseif( CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang)$" )
-    set( _bb_warning_compiler_id "clang" )
+    if( MSVC )
+      # No support for clang as MSVC toolset.
+      # message( STATUS "_bb_enable_warnings_helper(): no support for MSVC/clang toolsets yet." )
+      return()
+    else()
+      set( _bb_warning_compiler_id "clang" )
+    endif()
   elseif( CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" )
     set( _bb_warning_compiler_id "msvc" )
   elseif( CMAKE_CXX_COMPILER_ID STREQUAL "Intel" )
@@ -215,8 +454,17 @@ function( _bb_enable_warnings_helper warning_options_ )
     
     if( "${_arg1}" MATCHES "^(gcc|clang|msvc|intel)" )
       #message( STATUS "bb_enable_warnings(): found toolset argument ${ARGV0}" )
-      if( "${_arg1}" MATCHES "^([a-z]+)-([0-9.]+)" )
-        # strip version suffix; e.g. gcc-4.8 -> gcc
+      if( "${_arg1}" MATCHES "^([a-z]+)-([0-9]+)$" )
+        # Strip version suffix; e.g. gcc-8 -> gcc
+        set( _bb_warning_toolset         "${CMAKE_MATCH_1}" )
+        # Save major version
+        set( _bb_warning_toolset_version "${CMAKE_MATCH_2}" )
+        # Get compiler's minor version
+        if( CMAKE_CXX_COMPILER_VERSION MATCHES "^[0-9]+\\.([0-9]+)" )
+          string( APPEND _bb_warning_toolset_version ".${CMAKE_MATCH_1}" )
+        endif()
+      elseif( "${_arg1}" MATCHES "^([a-z]+)-([0-9]+\\.[0-9]+)" )
+        # Strip version suffix; e.g. gcc-4.8 -> gcc
         set( _bb_warning_toolset         "${CMAKE_MATCH_1}" )
         set( _bb_warning_toolset_version "${CMAKE_MATCH_2}" )
       else()
@@ -282,9 +530,6 @@ function( _bb_enable_warnings_helper warning_options_ )
       if( CMAKE_CXX_COMPILER_ID STREQUAL "Intel" )
         # Replace -XXX with /XXX avoiding the mix of both option specifications. 
         string( REPLACE "-Q" "/Q" _bb_warning_options "${_bb_warning_options}" )
-      else()
-        # Replace -XXX with /XXX avoiding the mix of both option specifications. 
-        string( REPLACE "-" "/" _bb_warning_options "${_bb_warning_options}" )
       endif()
     endif()
     set( ${warning_options_} ${_bb_warning_options} PARENT_SCOPE )
@@ -367,7 +612,7 @@ function( _bb_find_proj_home proj_home_ home_dir_ )
 endfunction()
 
 #
-# search path: $ENV{PROJ_HOME} ${CMAKE_SOURCE_DIR}/.. ${bb_home_dir}/projects
+# search path: $ENV{PROJ_HOME} ${CMAKE_SOURCE_DIR}/.. ${CMAKE_SOURCE_DIR}/../.. ${bb_home_dir}/projects
 #
 function( bb_set_external_dir dir_var_ dir_ )
   unset( _dir )
@@ -396,9 +641,12 @@ function( bb_set_external_dir dir_var_ dir_ )
       file( TO_CMAKE_PATH "$ENV{PROJ_HOME}" _proj_home )
       list( APPEND _search_path "${_proj_home}" )
     endif()
-    #list( APPEND _search_path "${CMAKE_CURRENT_SOURCE_DIR}/.." )
-    get_filename_component( _dir_norm "${CMAKE_SOURCE_DIR}/.." REALPATH )
-    list( APPEND _search_path "${_dir_norm}" )
+    foreach( _dir_tmp "${CMAKE_CURRENT_SOURCE_DIR}/.." "${CMAKE_CURRENT_SOURCE_DIR}/../.." )
+      if( EXISTS "${_dir_tmp}" )
+        get_filename_component( _dir_norm "${_dir_tmp}" REALPATH )
+        list( APPEND _search_path "${_dir_norm}" )
+      endif()
+    endforeach()
     if( EXISTS "${bb_home_dir}/projects" )
       list( APPEND _search_path "${bb_home_dir}/projects" )
     endif()
@@ -422,10 +670,6 @@ function( bb_set_external_dir dir_var_ dir_ )
   endif()
 endfunction()
 
-# 
-# Mingw utilities
-# 
-include( ${CMAKE_CURRENT_LIST_DIR}/BBuildEnvMingw.cmake )
 
 # 
 # Additional system information
@@ -442,91 +686,6 @@ macro( bb_get_python_script_path script_path_ script_dir_ script_name_ )
   endif()
 endmacro()
  
-macro( bb_dump_cmake_system_info )
-  message( STATUS "bb_dump_cmake_system_info() entering" )
-  message( STATUS "CMAKE_COMMAND:               ${CMAKE_COMMAND}" )
-  message( STATUS "CMAKE_VERSION:               ${CMAKE_VERSION}" )
-  message( STATUS "CMAKE_ROOT:                  ${CMAKE_ROOT}" )
-  message( STATUS "CMAKE_SOURCE_DIR:            ${CMAKE_SOURCE_DIR}" )
-  message( STATUS "CMAKE_SIZEOF_VOID_P:         ${CMAKE_SIZEOF_VOID_P}" )
-  
-  if( MINGW )
-    message( STATUS "MINGW:                     on" )
-  endif()
-
-  if( CMAKE_CROSSCOMPILING )
-    message( STATUS "CMAKE_CROSSCOMPILING:      on" )
-  endif()
-  
-  # target operating system: Linux, Windows, Darwin, Android
-  message( STATUS "CMAKE_SYSTEM_NAME:           ${CMAKE_SYSTEM_NAME}" )
-  message( STATUS "CMAKE_HOST_SYSTEM:           ${CMAKE_HOST_SYSTEM}" )
-  message( STATUS "CMAKE_SYSTEM_VERSION:        ${CMAKE_SYSTEM_VERSION}" )
-  
-  # examples: x86_64 (ubuntu 16.04, macosx 10.12)
-  #           AMD64 (windows 7 64-bit, -A x64, -A Win32)
-  message( STATUS "CMAKE_SYSTEM_PROCESSOR:      ${CMAKE_SYSTEM_PROCESSOR}" )
-  message( STATUS "CMAKE_HOST_SYSTEM_PROCESSOR: ${CMAKE_HOST_SYSTEM_PROCESSOR}" )
- 
-  if( CMAKE_HOST_APPLE )
-    message( STATUS "CMAKE_HOST_APPLE:            on" )
-  endif()
-  if( CMAKE_HOST_UNIX )
-    message( STATUS "CMAKE_HOST_UNIX:             on" )
-  endif()
-  if( CMAKE_HOST_WIN32 )
-    message( STATUS "CMAKE_HOST_WIN32:            on" )
-  endif()
-  if( CMAKE_VERSION VERSION_GREATER_EQUAL 3.10.0 )
-    cmake_host_system_information( RESULT os_name QUERY OS_NAME )
-    cmake_host_system_information( RESULT os_release QUERY OS_RELEASE )
-    cmake_host_system_information( RESULT os_version QUERY OS_VERSION )
-    cmake_host_system_information( RESULT os_platform QUERY OS_PLATFORM )
-    message( STATUS "OS_NAME:                     ${os_name}" )
-    message( STATUS "OS_RELEASE:                  ${os_release}" )
-    message( STATUS "OS_VERSION:                  ${os_version}" )
-    message( STATUS "OS_PLATFORM:                 ${os_platform}" )
-  endif()
-  message( STATUS "CMAKE_PROGRAM_PATH:          ${CMAKE_PROGRAM_PATH}" )  
-  message( STATUS "CMAKE_SYSTEM_PROGRAM_PATH:   ${CMAKE_SYSTEM_PROGRAM_PATH}" )
-  message( STATUS "CMAKE_GENERATOR:             ${CMAKE_GENERATOR}" )
-  if( CMAKE_CXX_COMPILER_LOADED )
-    message( STATUS "CMAKE_CXX_COMPILER_LOADED:   on" )
-  endif()
-  # expected: GNU, Clang, AppleClang, MSVC,
-  message( STATUS "CMAKE_CXX_COMPILER_ID:       ${CMAKE_CXX_COMPILER_ID}" )
-  message( STATUS "CMAKE_CXX_COMPILER:          ${CMAKE_CXX_COMPILER}" )
-  message( STATUS "CMAKE_CXX_COMPILER_VERSION:  ${CMAKE_CXX_COMPILER_VERSION}" )
-  #message( STATUS "cxx compile features:        ${CMAKE_CXX_COMPILE_FEATURES}" )
-  
-  if( MSVC )
-    message( STATUS "CMAKE_VS_PLATFORM_NAME:      ${CMAKE_VS_PLATFORM_NAME}" )
-    message( STATUS "CMAKE_VS_PLATFORM_TOOLSET:   ${CMAKE_VS_PLATFORM_TOOLSET}" )
-    message( STATUS "MSVC_VERSION:                ${MSVC_VERSION}" )
-    if( CMAKE_CSharp_COMPILER_WORKS )
-      message( STATUS "CMAKE_CSharp_COMPILER_ID:      ${CMAKE_CSharp_COMPILER_ID}" )
-      message( STATUS "CMAKE_CSharp_COMPILER:         ${CMAKE_CSharp_COMPILER}" )
-      message( STATUS "CMAKE_CSharp_COMPILER_VERSION: ${CMAKE_CSharp_COMPILER_VERSION}" )
-    endif()
-  endif()
-  if( XCODE )
-    if( CMAKE_Swift_COMPILER_ID )
-      message( STATUS "CMAKE_Swift_COMPILER_ID:      ${CMAKE_Swift_COMPILER_ID}" )
-      message( STATUS "CMAKE_Swift_COMPILER:         ${CMAKE_Swift_COMPILER}" )
-      message( STATUS "CMAKE_Swift_COMPILER_VERSION: ${CMAKE_Swift_COMPILER_VERSION}" )
-    endif()  
-  endif()
-  get_property( _bb_generator_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG )
-  if( _bb_generator_is_multi_config )
-    message( STATUS "CMAKE_CONFIGURATION_TYPES:   ${CMAKE_CONFIGURATION_TYPES}" )
-  else()
-    message( STATUS "CMAKE_BUILD_TYPE:            ${CMAKE_BUILD_TYPE}" )
-  endif()
-  unset( _bb_generator_is_multi_config ) 
-  #message( STATUS "bb_system_info:              ${bb_system_info}" )
-  message( STATUS "bb_dump_cmake_system_info() leaving" )
-endmacro( bb_dump_cmake_system_info )
-
 
 function( _bb_query_linux_pkg_arch pkg_arch_ )
   if( bb_dpkg_cmd )
@@ -589,7 +748,7 @@ function( _bb_query_system_info system_info_ )
     endif()
   elseif( CMAKE_HOST_APPLE )
     set( _system_info "macosx" )
-    if( CMAKE_VERSION VERSION_GREATER_EQUAL 3.10.0 )
+    if( NOT CMAKE_VERSION VERSION_LESS 3.10.0 )
       # sw_vers -productVersion
       cmake_host_system_information( RESULT _lsb_distro_version QUERY OS_RELEASE )
       # sw_vers -buildVersion
@@ -725,7 +884,11 @@ function( _bb_get_toolset_subdir toolset_subdir_ compiler_version_ )
     # MinGW is either a cross compiler or a native compiler.
     set( _toolset_subdir "gcc-mingw-${compiler_version_}" )
   elseif( CMAKE_CROSSCOMPILING )
-    message( FATAL_ERROR "no support for this type of cross compiler, please contact technical support." )
+    if( BBuildEnv_DEBUG )
+      message( STATUS "[ ${CMAKE_CURRENT_LIST_FILE}:${CMAKE_CURRENT_LIST_LINE} ] "
+                      "cross compiling for ${CMAKE_SYSTEM_PROCESSOR} CMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID} cxx_version=${compiler_version_}" )
+    endif()
+    # message( FATAL_ERROR "no support for this type of cross compiler, please contact technical support." )
   endif()
   if( DEFINED _toolset_subdir )
     set( ${toolset_subdir_} "${_toolset_subdir}" PARENT_SCOPE )
@@ -740,9 +903,7 @@ endfunction()
 function( bb_get_target_arch target_arch_ )
   list( GET bb_system_info 1 _target_arch )
   if( MSVC )
-    if( CMAKE_VS_PLATFORM_NAME STREQUAL "x64" )
-      set( _target_arch "x86_64" )
-    elseif( CMAKE_VS_PLATFORM_NAME STREQUAL "Win32" )
+    if( CMAKE_SIZEOF_VOID_P EQUAL 4 )
       set( _target_arch "x86" )
     endif()
   elseif( MINGW )
@@ -788,19 +949,7 @@ function( bb_get_isysroot isysroot_ )
   set( ${isysroot_} "${_isysroot}" PARENT_SCOPE )
 endfunction()
 
-function( bb_dump_target_properties target_ prop1_ )
-  set( _prop_list ${prop1_} )
-  list( APPEND _prop_list ${ARGN} )
-  list( LENGTH _prop_list _prop_list_len )
-  message( STATUS "bb_dump_target_properties: len=${_prop_list_len} ${_prop_list}" )
-  foreach( _prop ${_prop_list} )
-    get_target_property( _prop_value ${target_} ${_prop} )
-    if( _prop_value )
-      message( STATUS "bb_dump_target_properties: ${target_}: ${_prop}=${_prop_value}" )
-    endif()  
-  endforeach()
-  message( STATUS "bb_dump_target_properties: leaving" )
-endfunction()
+
 
 function( bb_get_imp_targets_from_components target_list_ target_prefix_ config_ comp1_ )
   set( _comp_list ${comp1_} ${ARGN} )
@@ -848,7 +997,7 @@ function( bb_get_dsos_from_imp_targets dso_list_ config_ target1_ )
     # "IMPORTED_LOCATION" "IMPORTED_LOCATION_RELEASE" "IMPORTED_LOCATION_DEBUG"
     get_target_property( _prop_value ${_target} IMPORTED_LOCATION_${_config_uc} )
     if( NOT _prop_value )
-      message( WARNING "_bb_get_qt5_dlls(): no IMPORTED_LOCATION_${_configuration} for target ${_qt5_target}" )
+      message( WARNING "bb_get_dsos_from_imp_targets(): no IMPORTED_LOCATION_${_config_uc} for target ${_target}" )
       get_target_property( _prop_value ${_target} IMPORTED_LOCATION )
     endif()
     if( _prop_value )
@@ -946,60 +1095,34 @@ function( bb_file action_ input_path_ output_path_ )
 endfunction()
 
 
-# 
-# Version file parsing utilities
-#
-include( ${CMAKE_CURRENT_LIST_DIR}/BBuildEnvVersionUtil.cmake )
-
-#
-# CPACK support
-# 
-include( ${CMAKE_CURRENT_LIST_DIR}/BBuildEnvCPack.cmake )
-
-#
-# BOOST SDK utilities
-#
-include( ${CMAKE_CURRENT_LIST_DIR}/BBuildEnvBoost.cmake )
-
-#
-# Qt5 utilities
-#
-include( ${CMAKE_CURRENT_LIST_DIR}/BBuildEnvQt5.cmake )
-
-#
-# OpenCV utilities
-#
-include( ${CMAKE_CURRENT_LIST_DIR}/BBuildEnvOpenCV.cmake )
-
 
 #
 # Internal macro to setup the build environment. 
 #
 macro( bb_build_env_setup )
 
-  _bb_set_bbuildenv_version( 3.10.2.4 )
   message( STATUS "Setting up BBuildEnv ${BBuildEnv_VERSION}" )
 
-  if( NOT DEFINED BBuildEnv_DISABLE_PYTHON_DETECTION )
-    set( BBuildEnv_DISABLE_PYTHON_DETECTION OFF )
-  endif()
-
-  bb_check_build_type()
-
-  if( EXISTS "${CMAKE_SOURCE_DIR}/CMakeBuild/bin" )
-    # Helps migration as some detection code may still require Boost.Build python scripts.
-    set( bb_script_dir "${CMAKE_SOURCE_DIR}/CMakeBuild/bin" )
+  unset( BBuildEnv_ROOT_DIR )
+  unset( BBuildEnv_SCRIPT_DIR )
+  set( BBuildEnv_MSYS FALSE )
+  
+  if( CMAKE_HOST_WIN32 )
+    if( DEFINED ENV{MSYSTEM} )
+      message( STATUS "BBuildEnv: MSYS[2] platform detected." )
+      set( BBuildEnv_MSYS TRUE )
+    endif()
   endif()
   
-  if( ( NOT BBuildEnv_DISABLE_PYTHON_DETECTION ) AND ( NOT PYTHONINTERP_FOUND ) )
-    find_package( PythonInterp 3 QUIET MODULE )
-    if( NOT PYTHONINTERP_FOUND )
-      find_package( PythonInterp MODULE )
-    endif()
-    if( PYTHONINTERP_FOUND )
-      # message( STATUS "BBuildEnv: python interpreter found: ${PYTHON_EXECUTABLE} version ${PYTHON_VERSION_STRING}" )
+  bb_check_build_type()
+
+  if( EXISTS "${CMAKE_CURRENT_LIST_DIR}/../.." )
+    get_filename_component( BBuildEnv_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../.." REALPATH )
+    if( EXISTS "${BBuildEnv_ROOT_DIR}/bin" )
+      set( BBuildEnv_SCRIPT_DIR "${BBuildEnv_ROOT_DIR}/bin" )
     endif()
   endif()
+
   
   _bb_query_system_info( bb_system_info )
   # message( STATUS "bb_system_info: ${bb_system_info}" )
@@ -1007,8 +1130,7 @@ macro( bb_build_env_setup )
   bb_get_home_dir( bb_home_dir )
   
   _bb_find_proj_home( bb_proj_home "${bb_home_dir}" )
-  
-      
+
   # Add a cmake generator alias
   # --
   # Visual Studio 15 2017

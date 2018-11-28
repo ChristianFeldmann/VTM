@@ -1,11 +1,11 @@
 #!/usr/bin/python
 #
-# cmake.py
+# cmakebuild_update.py
 #
 
+import pyhhi.build.app.cmbldup
 import pyhhi.build.common.util
-import pyhhi.build.app.cmk
 
 
-app = pyhhi.build.app.cmk.CMakeLauncherApp()
+app = pyhhi.build.app.cmbldup.CMakeBuildUpdateApp()
 pyhhi.build.common.util.exec_main_default_try(app)

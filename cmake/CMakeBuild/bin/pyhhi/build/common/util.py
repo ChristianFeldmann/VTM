@@ -1,19 +1,38 @@
 from __future__ import print_function
 
+import inspect
 import logging
 import os
-import sys
-import re
 import platform
+import re
+import shutil
+import stat
+import subprocess
+import sys
 import traceback
-import inspect
+
+
+# imports a base exception with an attribute to enable or disable traceback information.
+from pyhhi.build.common.error import BaseError
 
 
 def exec_main_default_try(main_fnc, sys_exit_err=1, finally_action=None):
     """Execute main_fnc inside a try block and dump the callstack in case of exceptions."""
     exit_error = False
+    prog_name = os.path.basename(sys.argv[0])
     try:
         main_fnc()
+    # except (InvalidInputParameterError, InvalidCommandLineArgumentError) BaseError as e:
+    except BaseError as e:
+        exit_error = True
+        if e.list_traceback:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+            for line in lines[:-1]:
+                print(line.rstrip())
+            print('-----')
+        print("{0}: error: {1}".format(prog_name, e.msg))
+
     except KeyboardInterrupt:
         exit_error = True
         #print("Keyboard interrupt signaled")
@@ -35,8 +54,8 @@ def exec_main_default_try(main_fnc, sys_exit_err=1, finally_action=None):
 
 
 def app_args_add_log_level(parser):
-    parser.add_argument("--log-level", action="store", dest="log_level", choices=['warning', 'debug'], default="warning",
-                        help="configure the log level [default: warning]")
+    parser.add_argument("--log-level", action="store", dest="log_level", choices=['warning', 'info', 'debug'], default="warning",
+                        help="configure the log level [default: %(default)s]")
 
 
 def app_configure_logging(log_level):
@@ -62,6 +81,13 @@ def normalize_path(fpath):
         if re_match:
             fpath = re_match.group(1).upper() + fpath[1:]
     return os.path.normpath(fpath)
+
+
+def to_posix_path(fpath):
+    fpath = normalize_path(fpath)
+    if platform.system().lower() == 'windows':
+        fpath = fpath.replace('\\', '/')
+    return fpath
 
 
 def find_tool_on_path(tool, must_succeed=False, search_path=None):
@@ -132,18 +158,26 @@ def get_top_dir():
 
 
 def is_top_dir(top_dir):
-    if os.path.exists(os.path.join(top_dir, 'CMakeBuild', 'bin', 'cmake.py')):
+    if not os.path.exists(top_dir):
+        return False
+    # Path check returns true if CMakeBuild is a top-level SVN external or Git submodule.
+    if not os.path.exists(os.path.join(top_dir, 'CMakeBuild')):
+        return False
+    if os.path.exists(os.path.join(top_dir, 'CMakeBuild', 'bin', 'cmake.py')) or os.path.exists(os.path.join(top_dir, 'CMakeBuild', 'CMakeBuild', 'bin', 'cmake.py')):
         return True
-    if os.path.exists(os.path.join(top_dir, 'BoostBuild', 'bin', 'bjam.py')) or os.path.exists(os.path.join(top_dir, 'BoostBuild', 'bin', 'bjam3.py')):
-        return True
+
+    # Check for CMakeBuild versioned subtree
+    cmakebuild_dir = os.path.join(top_dir, 'CMakeBuild')
+    for fname in os.listdir(cmakebuild_dir):
+        if os.path.isdir(os.path.join(cmakebuild_dir, fname)):
+            if os.path.exists(os.path.join(cmakebuild_dir, fname, 'CMakeBuild', 'bin', 'cmake.py')):
+                return True
     return False
 
 
 def get_script_dir():
     py_util_fname = inspect.getfile(get_script_dir)
     # <top>/CMakeBuild/bin/pyhhi/build/common/util.py
-    # or
-    # <top>/BoostBuild/bin/pyhhi/build/common/util.py
     script_dir = os.path.normpath(os.path.join(os.path.dirname(py_util_fname), '..', '..', '..'))
     return script_dir
 
@@ -193,3 +227,50 @@ def find_repo_name_from_src_path(src_path):
         repo_path = drive_path_comps[1]
     return repo_path.lstrip(os.path.sep).split(os.path.sep)[-1]
 
+
+def subproc_call_flushed(*popenargs, **kwargs):
+    """Run command with arguments.  Wait for command to complete or
+    timeout, then return the returncode attribute.
+
+    The arguments are the same as for the Popen constructor.  Example:
+
+    retcode = call(["ls", "-l"])
+    """
+    sys.stdout.flush()
+    return subprocess.call(*popenargs, **kwargs)
+
+
+def subproc_check_call_flushed(*popenargs, **kwargs):
+    """Run command with arguments.  Wait for command to complete.  If
+    the exit code was zero then return, otherwise raise
+    CalledProcessError.  The CalledProcessError object will have the
+    return code in the returncode attribute.
+
+    The arguments are the same as for the call function.  Example:
+
+    check_call(["ls", "-l"])
+    """
+    sys.stdout.flush()
+    return subprocess.check_call(*popenargs, **kwargs)
+
+
+def rmtree(directory):
+    """On Windows invokes rmtree_readonly() and on other platforms shutil.rmtree().
+    This convenience function may be used as an replacement of shutil.rmtree(directory)
+    to be able to remove directory trees on Windows containing some readonly files.
+    """
+    if sys.platform.startswith('win'):
+        rmtree_readonly(directory)
+    else:
+        shutil.rmtree(directory)
+
+
+def rmtree_readonly(directory):
+    """Remove a directory tree on Windows where some files are readonly."""
+
+    def remove_readonly(func, path, _excinfo):
+        "Clear the readonly bit and reattempt the removal"
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+
+    shutil.rmtree(directory, onerror=remove_readonly)

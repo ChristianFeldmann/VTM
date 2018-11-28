@@ -17,6 +17,10 @@
 # Remove the section labeled with ``marker`` from file ``lldbinit_file``.
 #
 
+if( NOT CMAKE_VERSION VERSION_LESS 3.10 )
+  include_guard( GLOBAL )
+endif()
+
 function( bb_lldbinit_update action_ lldbinit_file_ marker_ )
   set( _fnc_name "bb_lldbinit_update" )
   #message( STATUS "${_fnc_name}: entering" )

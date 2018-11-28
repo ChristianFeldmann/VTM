@@ -49,9 +49,6 @@ namespace CS
   uint64_t getEstBits                   ( const CodingStructure &cs );
   UnitArea getArea                    ( const CodingStructure &cs, const UnitArea &area, const ChannelType chType );
   bool   isDualITree                  ( const CodingStructure &cs );
-#if DMVR_JVET_LOW_LATENCY_K0217
-  void   setRefinedMotionField        ( CodingStructure &cs );
-#endif
 }
 
 

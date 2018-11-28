@@ -1353,11 +1353,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
   const PPS &pps              = *tempCS->pps;
   const CodingUnit *bestCU    = bestCS->getCU( partitioner.chType );
   const int maxSizeEMT        = EMT_INTRA_MAX_CU_WITH_QTBT;
-#if HM_EMT_NSST_AS_IN_JEM
   uint8_t considerEmtSecondPass = ( sps.getSpsNext().getUseIntraEMT() && isLuma( partitioner.chType ) && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT ) ? 1 : 0;
-#else
-  uint8_t considerEmtSecondPass = ( sps.getSpsNext().getUseIntraEMT() && isLuma( partitioner.chType ) && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT && nsstIdx == 0 ) ? 1 : 0;
-#endif
 
   Distortion interHad = m_modeCtrl->getInterHad();
 
@@ -1764,10 +1760,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   static_vector<unsigned, MRG_MAX_NUM_CANDS>  RdModeList;
   bool                                        mrgTempBufSet    = false;
 
-#if DMVR_JVET_LOW_LATENCY_K0217
-  Mv                                          refinedMvdL0[MRG_MAX_NUM_CANDS];
-#endif
-
   for( unsigned i = 0; i < MRG_MAX_NUM_CANDS; i++ )
   {
     RdModeList.push_back( i );
@@ -1911,9 +1903,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         {
           mergeCtx.mvFieldNeighbours[2*uiMergeCand].mv   = pu.mv[0];
           mergeCtx.mvFieldNeighbours[2*uiMergeCand+1].mv = pu.mv[1];
-#if DMVR_JVET_LOW_LATENCY_K0217
-          refinedMvdL0[uiMergeCand] = pu.mvd[0];
-#endif
         }
 
         Distortion uiSad = distParam.distFunc(distParam);
@@ -2370,9 +2359,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
       if( mrgTempBufSet )
       {
-#if DMVR_JVET_LOW_LATENCY_K0217
-        pu.mvd[0] = refinedMvdL0[uiMergeCand];
-#endif
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         if (pu.mhIntraFlag)
         {

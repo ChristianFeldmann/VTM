@@ -136,9 +136,6 @@ public:
   void        transform_unit            ( TransformUnit&                tu,     CUCtx&          cuCtx,  ChromaCbfs& chromaCbfs );
   void        cu_qp_delta               ( CodingUnit&                   cu,     int             predQP, int8_t& qp );
   void        cu_chroma_qp_offset       ( CodingUnit&                   cu );
-#if !HM_EMT_NSST_AS_IN_JEM
-  void        cu_emt_pertu_idx          ( CodingUnit&                   cu );
-#endif
 
   // residual coding (clause 7.3.8.11)
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID );

@@ -78,8 +78,7 @@ public:
                     const bool useTransformSkipFast = false
   );
 
-  uint8_t getEmtTrIdx( TransformUnit tu, const ComponentID compID );
-  uint8_t getEmtMode ( TransformUnit tu, const ComponentID compID );
+  void getTrTypes( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer );
 
 
 protected:

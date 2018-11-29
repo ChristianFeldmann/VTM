@@ -113,11 +113,10 @@ protected:
 
   void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
 #if JVET_L0256_BIO
-                                  ,const bool& bioApplied = false
+                                  , const bool& bioApplied 
 #endif
-
 #if JVET_L0293_CPR
-    , const bool luma = true, const bool chroma = true
+                                  , const bool luma, const bool chroma
 #endif
   );
   void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred );

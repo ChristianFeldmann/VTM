@@ -422,10 +422,10 @@ void InterPrediction::xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred)
 
 void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
 #if JVET_L0256_BIO
-                                   ,const bool& bioApplied /*=false*/
+                                   , const bool& bioApplied 
 #endif
 #if JVET_L0293_CPR
-  , const bool luma, const bool chroma
+                                   , const bool luma, const bool chroma
 #endif
 )
 {
@@ -550,22 +550,46 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
     {
       xPredInterUni ( pu, eRefPicList, pcMbBuf, true
 #if JVET_L0256_BIO
-                     ,bioApplied 
+        , bioApplied
 #endif
-                     );
+#if JVET_L0293_CPR     
+        , true, true
+#endif
+      );
     }
     else
     {
       if( ( (pps.getUseWP() && slice.getSliceType() == P_SLICE) || (pps.getWPBiPred() && slice.getSliceType() == B_SLICE) ) )
       {
-        xPredInterUni ( pu, eRefPicList, pcMbBuf, true );
+        xPredInterUni ( pu, eRefPicList, pcMbBuf, true 
+#if JVET_L0256_BIO
+          , bioApplied
+#endif
+#if JVET_L0293_CPR     
+          , true, true
+#endif
+        );
       }
       else
       {
 #if JVET_L0124_L0208_TRIANGLE
-        xPredInterUni( pu, eRefPicList, pcMbBuf, pu.cu->triangle );
+        xPredInterUni( pu, eRefPicList, pcMbBuf, pu.cu->triangle 
+#if JVET_L0256_BIO
+          , bioApplied
+#endif
+#if JVET_L0293_CPR     
+          , true, true
+#endif
+        );
 #else
-        xPredInterUni ( pu, eRefPicList, pcMbBuf, false );
+        xPredInterUni ( pu, eRefPicList, pcMbBuf, false 
+#if JVET_L0256_BIO
+          , bioApplied
+#endif
+#if JVET_L0293_CPR     
+          , true, true
+#endif
+        );
 #endif
       }
     }
@@ -1373,12 +1397,26 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   {
     if( ( ( sliceType == P_SLICE && pps.getUseWP() ) || ( sliceType == B_SLICE && pps.getWPBiPred() ) ) )
     {
-      xPredInterUni         ( pu,          eRefPicList, predBuf, true );
+      xPredInterUni         ( pu,          eRefPicList, predBuf, true 
+#if JVET_L0256_BIO
+        , false
+#endif
+#if JVET_L0293_CPR     
+        , true, true
+#endif
+      );
       xWeightedPredictionUni( pu, predBuf, eRefPicList, predBuf, -1, m_maxCompIDToPred );
     }
     else
     {
-      xPredInterUni( pu, eRefPicList, predBuf, false );
+      xPredInterUni( pu, eRefPicList, predBuf, false 
+#if JVET_L0256_BIO
+        , false
+#endif
+#if JVET_L0293_CPR     
+        , true, true
+#endif
+      );
     }
   }
   else
@@ -1393,7 +1431,14 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     }
     else if( xCheckIdenticalMotion( pu ) )
     {
-      xPredInterUni( pu, REF_PIC_LIST_0, predBuf, false );
+      xPredInterUni( pu, REF_PIC_LIST_0, predBuf, false 
+#if JVET_L0256_BIO
+        , false
+#endif
+#if JVET_L0293_CPR     
+        , true, true
+#endif
+      );
     }
     else
     {

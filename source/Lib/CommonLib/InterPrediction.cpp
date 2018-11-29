@@ -630,6 +630,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   if (isCPR)
   {
     xFrac = yFrac = 0;
+    JVET_J0090_SET_CACHE_ENABLE( false );
   }
 #endif
   xFrac <<= VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE - iAddPrecShift;
@@ -702,8 +703,8 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 #else
     m_if.filterVer(compID, (Pel*) tmpBuf.buf + ((vFilterSize >> 1) - 1) * tmpBuf.stride, tmpBuf.stride, dstBuf.buf, dstBuf.stride, width, height,                   yFrac, false, rndRes, chFmt, clpRng);
 #endif
-    JVET_J0090_SET_CACHE_ENABLE( true );
   }
+  JVET_J0090_SET_CACHE_ENABLE( true );
 #if JVET_L0256_BIO
   if (bioApplied && compID == COMPONENT_Y)
   {
@@ -1084,7 +1085,9 @@ void InterPrediction::bioSampleExtendBilinearFilter(Pel const* src, int srcStrid
       tmpBuf.stride = width;
 
       m_if.filterHor(COMPONENT_Y, pSrc - ((vFilterSize >> 1) - 1) * srcStride, srcStride, tmpBuf.buf, tmpBuf.stride, widthTmp, heightTmp + vFilterSize - 1, fracX, false, fmt, clpRng, 1);
+      JVET_J0090_SET_CACHE_ENABLE( false );
       m_if.filterVer(COMPONENT_Y, tmpBuf.buf + ((vFilterSize >> 1) - 1) * tmpBuf.stride, tmpBuf.stride, pDst, dstStride, widthTmp, heightTmp, fracY, false, isLast, fmt, clpRng, 1);
+      JVET_J0090_SET_CACHE_ENABLE( true );
     }
   }
 }

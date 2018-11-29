@@ -155,6 +155,9 @@ protected:
 #if JVET_L0293_CPR
   void xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred);
 #endif
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+  CacheModel      *m_cacheModel;
+#endif
 public:
   InterPrediction();
   virtual ~InterPrediction();

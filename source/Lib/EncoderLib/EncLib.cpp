@@ -824,15 +824,26 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setLog2DiffMaxMinCodingBlockSize(m_log2DiffMaxMinCodingBlockSize);
 
   sps.getSpsNext().setNextToolsEnabled      ( m_profile == Profile::NEXT );
-  sps.getSpsNext().setCTUSize               ( m_CTUSize );
+#if JVET_L0217_L0678_SPS_CLEANUP
+  sps.setCTUSize                             ( m_CTUSize );
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-  sps.getSpsNext().setSplitConsOverrideEnabledFlag( m_useSplitConsOverride );
+  sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
+#endif
+  sps.setMinQTSizes                          ( m_uiMinQT );
+  sps.getSpsNext().setUseLargeCTU            ( m_LargeCTU );
+  sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
+  sps.setUseDualITree                        ( m_dualITree );
+#else
+  sps.getSpsNext().setCTUSize                (m_CTUSize);
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  sps.getSpsNext().setSplitConsOverrideEnabledFlag(m_useSplitConsOverride);
 #endif
   sps.getSpsNext().setMinQTSizes            ( m_uiMinQT );
   sps.getSpsNext().setUseLargeCTU           ( m_LargeCTU );
   sps.getSpsNext().setMaxBTDepth            ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   sps.getSpsNext().setUseDualITree          ( m_dualITree );
-  sps.getSpsNext().setSubPuMvpMode(m_SubPuMvpMode);
+#endif
+  sps.getSpsNext().setSubPuMvpMode          ( m_SubPuMvpMode );
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   sps.getSpsNext().setSubPuMvpLog2Size(m_SubPuMvpLog2Size);
 #endif 
@@ -1315,7 +1326,13 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
  #endif
   pps.setSliceChromaQpFlag(bChromaDeltaQPEnabled);
 #endif
-  if (!pps.getSliceChromaQpFlag() && sps.getSpsNext().getUseDualITree() && (getChromaFormatIdc() != CHROMA_400))
+  if (
+#if JVET_L0217_L0678_SPS_CLEANUP
+    !pps.getSliceChromaQpFlag() && sps.getUseDualITree() 
+#else
+    !pps.getSliceChromaQpFlag() && sps.getSpsNext().getUseDualITree()
+#endif
+    && (getChromaFormatIdc() != CHROMA_400))
   {
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0);
   }

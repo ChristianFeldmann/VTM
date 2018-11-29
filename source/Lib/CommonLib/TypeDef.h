@@ -175,6 +175,8 @@
 
 #endif
 #define JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT   1
+#define JVET_L0217_L0678_SPS_CLEANUP                      1 // move the QT/BT/TT related high level syntax element from SPSNext to SPS, delete HEVC RQT in SPS
+
 
 #define JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK         1  // Fix sub-block size to 8x8 in ATMVP as proposed in L0198, L0468 and L0104
 #define JVET_L0198_ATMVP_SCAN_SIMP                        1  // Simplification for scan process in ATMVP cTMv derivation

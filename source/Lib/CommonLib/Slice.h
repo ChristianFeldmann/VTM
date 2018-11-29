@@ -841,6 +841,7 @@ public:
 private:
   //=====  additional parameters  =====
   // qtbt
+#if !JVET_L0217_L0678_SPS_CLEANUP
   unsigned    m_CTUSize;
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   unsigned    m_partitionOverrideEnalbed;       // enable partition constraints override function
@@ -852,6 +853,7 @@ private:
   unsigned    m_maxTTSize[3];
 #endif
   unsigned    m_dualITree;
+#endif
   // sub-pu merging
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   unsigned    m_subPuLog2Size;
@@ -927,6 +929,7 @@ public:
 #endif
   //=====  additional parameters  =====
   // qtbt
+#if !JVET_L0217_L0678_SPS_CLEANUP
   void      setCTUSize            ( unsigned    ctuSize )                           { m_CTUSize = ctuSize; }
   unsigned  getCTUSize            ()                                      const     { return  m_CTUSize;   }
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
@@ -960,7 +963,7 @@ public:
 
   void      setUseDualITree       ( bool b )                                        { m_dualITree = b; }
   bool      getUseDualITree       ()                                      const     { return m_dualITree; }
-
+#endif
   // sub pu tmvp
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   void      setSubPuMvpLog2Size   ( unsigned    log2Size )                          { m_subPuLog2Size = log2Size; }
@@ -1013,6 +1016,19 @@ private:
 
   int               m_log2MinCodingBlockSize;
   int               m_log2DiffMaxMinCodingBlockSize;
+#if JVET_L0217_L0678_SPS_CLEANUP
+  unsigned    m_CTUSize;
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  unsigned    m_partitionOverrideEnalbed;       // enable partition constraints override function
+#endif
+  unsigned    m_minQT[3];   // 0: I slice luma; 1: P/B slice; 2: I slice chroma
+  unsigned    m_maxBTDepth[3];
+  unsigned    m_maxBTSize[3];
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  unsigned    m_maxTTSize[3];
+#endif
+  unsigned    m_dualITree;
+#endif
   uint32_t              m_uiMaxCUWidth;
   uint32_t              m_uiMaxCUHeight;
   uint32_t              m_uiMaxCodingDepth; ///< Total CU depth, relative to the smallest possible transform block size.
@@ -1115,6 +1131,44 @@ public:
   void                    setLog2MinCodingBlockSize(int val)                                              { m_log2MinCodingBlockSize = val;                                      }
   int                     getLog2DiffMaxMinCodingBlockSize() const                                        { return m_log2DiffMaxMinCodingBlockSize;                              }
   void                    setLog2DiffMaxMinCodingBlockSize(int val)                                       { m_log2DiffMaxMinCodingBlockSize = val;                               }
+#if JVET_L0217_L0678_SPS_CLEANUP
+  void                    setCTUSize(unsigned    ctuSize)                                                 { m_CTUSize = ctuSize; }
+  unsigned                getCTUSize()                                                              const { return  m_CTUSize; }
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  void                    setSplitConsOverrideEnabledFlag(bool b)                                         { m_partitionOverrideEnalbed = b; }
+  bool                    getSplitConsOverrideEnabledFlag()                                         const { return m_partitionOverrideEnalbed; }
+#endif
+  void                    setMinQTSizes(unsigned*   minQT)                                                { m_minQT[0] = minQT[0]; m_minQT[1] = minQT[1]; m_minQT[2] = minQT[2]; }
+  unsigned                getMinQTSize(SliceType   slicetype,
+                                       ChannelType chType = CHANNEL_TYPE_LUMA)
+                                                                                                    const { return slicetype == I_SLICE ? (chType == CHANNEL_TYPE_LUMA ? m_minQT[0] : m_minQT[2]) : m_minQT[1]; }
+  void                    setMaxBTDepth(unsigned    maxBTDepth,
+                                        unsigned    maxBTDepthI,
+                                        unsigned    maxBTDepthIChroma)
+                                                                                                          { m_maxBTDepth[1] = maxBTDepth; m_maxBTDepth[0] = maxBTDepthI; m_maxBTDepth[2] = maxBTDepthIChroma; }
+  unsigned                getMaxBTDepth()                                                           const { return m_maxBTDepth[1]; }
+  unsigned                getMaxBTDepthI()                                                          const { return m_maxBTDepth[0]; }
+  unsigned                getMaxBTDepthIChroma()                                                    const { return m_maxBTDepth[2]; }
+  void                    setMaxBTSize(unsigned    maxBTSize,
+                                       unsigned    maxBTSizeI,
+                                       unsigned    maxBTSizeC) 
+                                                                                                          { m_maxBTSize[1] = maxBTSize; m_maxBTSize[0] = maxBTSizeI; m_maxBTSize[2] = maxBTSizeC; }
+  unsigned                getMaxBTSize()                                                            const { return m_maxBTSize[1]; }
+  unsigned                getMaxBTSizeI()                                                           const { return m_maxBTSize[0]; }
+  unsigned                getMaxBTSizeIChroma()                                                     const { return m_maxBTSize[2]; }
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+  void                    setMaxTTSize(unsigned    maxTTSize,
+                                       unsigned    maxTTSizeI,
+                                       unsigned    maxTTSizeC)
+                                                                                                          { m_maxTTSize[1] = maxTTSize; m_maxTTSize[0] = maxTTSizeI; m_maxTTSize[2] = maxTTSizeC; }
+  unsigned                getMaxTTSize()                                                            const { return m_maxTTSize[1]; }
+  unsigned                getMaxTTSizeI()                                                           const { return m_maxTTSize[0]; }
+  unsigned                getMaxTTSizeIChroma()                                                     const { return m_maxTTSize[2]; }
+#endif 
+
+  void                    setUseDualITree(bool b) { m_dualITree = b; }
+  bool                    getUseDualITree()                                      const { return m_dualITree; }
+#endif
 
   void                    setMaxCUWidth( uint32_t u )                                                         { m_uiMaxCUWidth = u;                                                  }
   uint32_t                    getMaxCUWidth() const                                                           { return  m_uiMaxCUWidth;                                              }
@@ -2175,6 +2229,19 @@ public:
     , fastDeltaQPCuMaxSize( Clip3(sps.getMaxCUHeight() >> (sps.getLog2DiffMaxMinCodingBlockSize()), sps.getMaxCUHeight(), 32u) )
     , noChroma2x2         (  false )
     , isEncoder           ( _isEncoder )
+#if JVET_L0217_L0678_SPS_CLEANUP
+    , ISingleTree         ( !sps.getUseDualITree() )
+    , maxBtDepth          { sps.getMaxBTDepthI(), sps.getMaxBTDepth(), sps.getMaxBTDepthIChroma() }
+    , minBtSize           { MIN_BT_SIZE, MIN_BT_SIZE_INTER, MIN_BT_SIZE_C }
+    , maxBtSize           { sps.getMaxBTSizeI(), sps.getMaxBTSize(), sps.getMaxBTSizeIChroma() }
+    , minTtSize           { MIN_TT_SIZE, MIN_TT_SIZE_INTER, MIN_TT_SIZE_C }
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+    , maxTtSize           { sps.getMaxTTSizeI(), sps.getMaxTTSize(), sps.getMaxTTSizeIChroma() }
+#else
+    , maxTtSize           { MAX_TT_SIZE, MAX_TT_SIZE_INTER, MAX_TT_SIZE_C }
+#endif
+    , minQtSize           { sps.getMinQTSize(I_SLICE, CHANNEL_TYPE_LUMA), sps.getMinQTSize(B_SLICE, CHANNEL_TYPE_LUMA), sps.getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA) }
+#else
     , ISingleTree         ( !sps.getSpsNext().getUseDualITree() )
     , maxBtDepth          { sps.getSpsNext().getMaxBTDepthI(), sps.getSpsNext().getMaxBTDepth(), sps.getSpsNext().getMaxBTDepthIChroma() }
     , minBtSize           { MIN_BT_SIZE, MIN_BT_SIZE_INTER, MIN_BT_SIZE_C }
@@ -2186,6 +2253,7 @@ public:
     , maxTtSize           { MAX_TT_SIZE, MAX_TT_SIZE_INTER, MAX_TT_SIZE_C }
 #endif
     , minQtSize           { sps.getSpsNext().getMinQTSize( I_SLICE, CHANNEL_TYPE_LUMA ), sps.getSpsNext().getMinQTSize( B_SLICE, CHANNEL_TYPE_LUMA ), sps.getSpsNext().getMinQTSize( I_SLICE, CHANNEL_TYPE_CHROMA ) }
+#endif
   {}
 
   const ChromaFormat chrFormat;

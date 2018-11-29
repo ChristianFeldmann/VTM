@@ -1809,6 +1809,7 @@ SPSNext::SPSNext( SPS& sps )
 #endif
 
   // default values for additional parameters
+#if !JVET_L0217_L0678_SPS_CLEANUP
   , m_CTUSize                   ( 0 )
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   , m_minQT                     { 0, 0, 0 }
@@ -1819,6 +1820,7 @@ SPSNext::SPSNext( SPS& sps )
   , m_maxBTSize                 { MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   , m_maxTTSize                 { MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
+#endif
 #endif
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   , m_subPuLog2Size             ( 0 )
@@ -1847,6 +1849,19 @@ SPS::SPS()
 , m_picHeightInLumaSamples    (288)
 , m_log2MinCodingBlockSize    (  0)
 , m_log2DiffMaxMinCodingBlockSize(0)
+#if JVET_L0217_L0678_SPS_CLEANUP
+, m_CTUSize(0)
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+, m_minQT{ 0, 0, 0 }
+#else
+, m_minQT{ 0, 0 }
+#endif
+, m_maxBTDepth{ MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
+, m_maxBTSize{ MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
+#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
+, m_maxTTSize{ MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
+#endif
+#endif
 , m_uiMaxCUWidth              ( 32)
 , m_uiMaxCUHeight             ( 32)
 , m_uiMaxCodingDepth          (  3)

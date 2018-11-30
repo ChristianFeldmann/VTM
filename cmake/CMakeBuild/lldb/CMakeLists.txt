@@ -1,4 +1,4 @@
-# CMakeBuild/lldb/CMakeLists.txt
+# CMakeBuild/CMakeBuild/lldb/CMakeLists.txt
 
 if( NOT DEFINED LLDB_INSTALL_ROOT )
   set( LLDB_INSTALL_ROOT "$ENV{HOME}/.lldb.d" ) 
@@ -15,11 +15,6 @@ if( NOT DEFINED ENABLE_LLDBINIT_UPDATE )
   message( STATUS "${CMAKE_CURRENT_LIST_FILE}: ENABLE_LLDBINIT_UPDATE not set, using default ${ENABLE_LLDBINIT_UPDATE}." )
 endif()
 
-#foreach( _vars_required LLDB_INSTALL_ROOT LLDBINIT_FILE ENABLE_LLDBINIT_UPDATE )
-#  if( NOT DEFINED ${_vars_required} )
-#    message( FATAL_ERROR "Required variable ${_vars_required} is not defined, please check your top-level CMakeLists.txt." )
-#  endif()
-#endforeach()
 
 set( LLDB_INSTALL_DIR ${LLDB_INSTALL_ROOT}/${PROJECT_NAME} )
 

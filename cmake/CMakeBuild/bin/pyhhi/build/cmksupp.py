@@ -1,112 +1,16 @@
+
 from __future__ import print_function
 
 import logging
 import os
 import re
-import subprocess
 import sys
 
 import pyhhi.build.common.bldtools as bldtools
 import pyhhi.build.common.util as util
 import pyhhi.build.common.ver as ver
 from pyhhi.build.common.system import SystemInfo
-
-
-class CMakeFinder(object):
-
-    def __init__(self, sys_info=None):
-        self._logger = logging.getLogger(__name__)
-        if sys_info is None:
-            self._sys_info = SystemInfo()
-        else:
-            self._sys_info = sys_info
-        self._cmake_prog = None
-        self._cmake_version = None
-        self._cmake_search_path = self._sys_info.get_path()
-        if self._sys_info.is_windows():
-            cmake_dir_list = []
-            cmake_inst_dir = self._query_winreg_cmake_inst_dir()
-            if cmake_inst_dir is None:
-                # cmake 3.6.1 is 64 bit but earlier cmake versions are 32 bit only.
-                if self._sys_info.get_os_arch() == 'x86_64':
-                    cmake_dir_list.append(os.path.join(self._sys_info.get_program_dir('x86_64'), 'CMake', 'bin'))
-                cmake_dir_list.append(os.path.join(self._sys_info.get_program_dir('x86'), 'CMake', 'bin'))
-                for cmake_dir in cmake_dir_list:
-                    if os.path.exists(cmake_dir):
-                        if cmake_dir not in self._cmake_search_path:
-                            self._cmake_search_path.append(cmake_dir)
-            else:
-                # Append cmake install directory picked up from the registry (3.8.0 or higher).
-                self._cmake_search_path.append(cmake_inst_dir)
-        elif self._sys_info.is_macosx():
-            # The default installation path is /Applications/CMake.app/Contents/bin on MacOSX.
-            cmake_dir = os.path.join('/Applications', 'CMake.app', 'Contents', 'bin')
-            if os.path.exists(cmake_dir):
-                if cmake_dir not in self._cmake_search_path:
-                    self._cmake_search_path.append(cmake_dir)
-        elif self._sys_info.is_linux():
-            pass
-        else:
-            assert False
-
-    def find_cmake(self):
-        """Returns the absolute path of a cmake executable."""
-        if self._cmake_prog is None:
-            self._logger.debug("cmake search path: %s", ';'.join(self._cmake_search_path))
-            self._cmake_prog = util.find_tool_on_path('cmake', must_succeed=True, search_path=self._cmake_search_path)
-            self._cmake_version = self._query_cmake_version(self._cmake_prog)
-        return self._cmake_prog
-
-    def is_cmake_installed(self):
-        return self.find_cmake() is not None
-
-    def get_cmake_version(self):
-        assert self._cmake_version is not None
-        return self._cmake_version
-
-    def _query_cmake_version(self, cmake_cmd):
-        retv = subprocess.check_output([cmake_cmd, '--version'], universal_newlines=True)
-        return self._parse_cmake_version_retv(retv)
-
-    def _parse_cmake_version_retv(self, retv):
-        version_response = retv.rstrip()
-        lines = version_response.splitlines()
-        # Possible version information:
-        #   cmake version 3.7.2
-        #   cmake version 3.8.0-rc2
-        #   cmake3 version 3.6.3           # redhat 7.x cmake3
-        re_version_match = re.match(r'cmake\d*\s+version\s+([0-9]+\.[0-9]+\.[0-9]+)', lines[0], re.IGNORECASE)
-        if not re_version_match:
-            raise Exception("cmake has returned an unsupported version string. Please contact technical support.")
-        self._logger.debug("cmake version: %s", re_version_match.group(1))
-        return ver.version_tuple_from_str(re_version_match.group(1))
-
-    def _query_winreg_cmake_inst_dir(self):
-        cmake_install_dir = None
-        if self._sys_info.is_python3():
-            import winreg
-            win_registry = winreg
-        else:
-            import _winreg
-            win_registry = _winreg
-
-        reg_section = "SOFTWARE\\Kitware\\CMake"
-
-        try:
-            # rkey must be initialized in case OpenKey() does not return but raises an exception.
-            rkey = None
-            rkey = win_registry.OpenKey(win_registry.HKEY_LOCAL_MACHINE, reg_section)
-            install_dir = win_registry.QueryValueEx(rkey, 'InstallDir')[0]
-            if os.path.exists(os.path.join(install_dir, 'bin', 'cmake.exe')):
-                cmake_install_dir = os.path.join(install_dir, 'bin')
-        except WindowsError:
-            if rkey is not None:
-                win_registry.CloseKey(rkey)
-        if cmake_install_dir:
-            self._logger.debug("cmake install dir (winreg): %s", cmake_install_dir)
-        else:
-            self._logger.debug("cmake install dir (winreg): %s", "not found")
-        return cmake_install_dir
+from pyhhi.build.cmkfnd import CMakeFinder
 
 
 class CMakeLauncherParams(object):
@@ -115,6 +19,8 @@ class CMakeLauncherParams(object):
         self.dry_run = False
         self.cmk_build = False
         self.clean_first = False
+        # cmk_bin_dir override the default CMake search path.
+        self.cmk_bin_dir = None
         self.cmk_build_jobs = 1
         self.cmk_build_target = None
         #msbuild: verbosity levels: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]
@@ -130,6 +36,8 @@ class CMakeLauncherParams(object):
         self.link_variants = tuple(['static'])
         # Assigned if the script and its modules are to be installed.
         self.install_dir = None
+        # Python directories to search for cache files/directories.
+        self.py_cache_dirs = []
 
 
 class CMakeCompilerInfo(object):
@@ -144,6 +52,7 @@ class CMakeCompilerInfo(object):
         self.target_arch = None
         self.cmake_cxx_compiler = None
         self.cmake_c_compiler = None
+        self.mingw = False
 
     def is_cross_compiler(self):
         return self.cmake_toolchain_file is not None
@@ -159,8 +68,6 @@ class CMakeCompilerInfo(object):
             if self.cmake_cxx_compiler:
                 s += "cmake cxx compiler: %s\n" % self.cmake_cxx_compiler
                 s += "cmake c compiler:   %s\n" % self.cmake_c_compiler
-        # if self.build_dirs:
-        #    s += "build dir: %s\n" % self.build_dirs
         return s
 
 
@@ -193,7 +100,10 @@ class CMakeBuildTreeInfo(object):
                     build_dir_dict[cfg + '.' + 'shared'] = os.path.join(build_root, cfg + '-shared')
         else:
             target_arch = compiler_info.target_arch
-            toolset_dir = compiler_info.compiler_family + '-' + ver.version_tuple_to_str(compiler_info.version_major_minor)
+            if compiler_info.mingw:
+                toolset_dir = "{}-mingw-{}".format(compiler_info.compiler_family, ver.version_tuple_to_str(compiler_info.version_major_minor))
+            else:
+                toolset_dir = "{}-{}".format(compiler_info.compiler_family, ver.version_tuple_to_str(compiler_info.version_major_minor))
             if self.is_multi_configuration_generator():
                 for cfg in build_configs:
                     build_dir_dict[cfg + '.' + 'static'] = os.path.join(self._build_root, generator_alias, toolset_dir, target_arch)
@@ -279,6 +189,9 @@ class CMakeLauncher(object):
                     assert False
 
     def launch(self, params, cmake_argv):
+
+        if params.cmk_bin_dir:
+            self._cmake_finder.set_cmake_search_path([params.cmk_bin_dir])
         # Is cmake installed?
         if not self._cmake_finder.is_cmake_installed():
             return
@@ -376,10 +289,15 @@ class CMakeLauncher(object):
             # print("launch_config(): cmake_args", cmake_argv)
             # print("build dir:", b_dir)
             # print("top dir:", self._top_dir)
-            os.chdir(b_dir)
-            cmake_argv.append(os.path.relpath(self._top_dir))
-            retv = self.launch_cmake(cmake_argv)
-            os.chdir(cur_dir)
+            if (not self._sys_info.is_windows()) and (ver.version_compare(self._cmake_finder.get_cmake_version(), (3, 13, 0)) >= 0):
+                # Not done for windows yet avoiding potential issues with command line length limits.
+                cmake_argv.extend(['-S', self._top_dir, '-B', b_dir])
+                retv = self.launch_cmake(cmake_argv)
+            else:
+                os.chdir(b_dir)
+                cmake_argv.append(os.path.relpath(self._top_dir))
+                retv = self.launch_cmake(cmake_argv)
+                os.chdir(cur_dir)
             if retv != 0:
                 sys.exit(1)
 
@@ -424,7 +342,7 @@ class CMakeLauncher(object):
             joiner = ' '
             cmd_line = joiner.join(argv)
             print("Launching: " + cmd_line)
-        retv = subprocess.call(argv)
+        retv = util.subproc_call_flushed(argv)
         if retv < 0:
             self._logger.debug("child was terminated by signal: %d", -retv)
         else:
@@ -436,14 +354,17 @@ class CMakeLauncher(object):
 
     def _check_cmake_params(self, params):
         if params.cmk_generator_alias is None:
-            params.cmk_generator_alias = self._get_default_cmake_generator()
+            if self._sys_info.is_windows_msys() and (params.toolset_str is not None) and (params.toolset_str == 'gcc'):
+                params.cmk_generator_alias = 'umake'
+            else:
+                params.cmk_generator_alias = self._get_default_cmake_generator()
         if params.toolset_str is None:
             if self._sys_info.get_platform() == 'linux':
                 params.toolset_str = 'gcc'
             elif self._sys_info.get_platform() == 'macosx':
                 params.toolset_str = 'clang'
             elif self._sys_info.get_platform() == 'windows':
-                if params.cmk_generator_alias == 'mgwmake':
+                if params.cmk_generator_alias in ['mgwmake', 'umake']:
                     params.toolset_str = 'gcc'
                 else:
                     params.toolset_str = self._dict_generator_alias_to_msvc_toolsets[params.cmk_generator_alias][0]
@@ -476,6 +397,11 @@ class CMakeLauncher(object):
                 raise Exception("CMake cache entry expression " + cache_opt + " is unsupported, please contact technical support." )
 
     def _get_default_cmake_generator(self):
+        if 'DEFAULT_CMAKE_GENERATOR' in os.environ:
+            generator_alias = os.environ['DEFAULT_CMAKE_GENERATOR']
+            if generator_alias not in self._dict_to_cmake_generator:
+                raise Exception("CMake generator " + generator_alias + " defined by environment variable DEFAULT_CMAKE_GENERATOR is unsupported.")
+            return generator_alias
         if self._sys_info.get_platform() == 'linux':
             generator_alias = 'umake'
         elif self._sys_info.get_platform() == 'macosx':
@@ -562,6 +488,7 @@ class CMakeLauncher(object):
                 pass
             elif compiler_info.compiler_family == 'gcc':
                 # MinGW as native compiler: 64 bit and 32 bit default targets are possible.
+                compiler_info.mingw = bb_toolset_info.is_mingw()
                 compiler_info.target_arch = bb_toolset_info.get_platform_info(0).get_target_arch(0)
             elif compiler_info.compiler_family == 'intel':
                 compiler_info.target_arch = bb_toolset_info.get_platform_info(0).get_target_arch(0)
@@ -614,14 +541,25 @@ class CMakeLauncher(object):
             cmake_argv.append('--clean-first')
 
     def _add_cmake_build_jobs_option(self, cmake_argv, generator_alias, build_jobs):
-        if build_jobs < 2:
-            return
-        if generator_alias in ['umake', 'ninja']:
-            self._add_cmake_build_tool_options(cmake_argv, ['-j' + str(build_jobs)])
-        elif generator_alias.startswith('vs'):
-            self._add_cmake_build_tool_options(cmake_argv, ['/maxcpucount:' + str(build_jobs)])
-        elif generator_alias == 'xcode':
-            self._add_cmake_build_tool_options(cmake_argv, ['-parallelizeTargets', '-jobs', str(build_jobs)])
+        cmake_version = self._cmake_finder.get_cmake_version()
+        if ver.version_compare(cmake_version, (3, 12)) >= 0:
+            assert len(cmake_argv) >= 2
+            if build_jobs >= 2:
+                if generator_alias.startswith('vs'):
+                    self._add_cmake_build_tool_options(cmake_argv, ['/maxcpucount:' + str(build_jobs)])
+                else:
+                    cmake_argv.insert(2, str(build_jobs))
+                    cmake_argv.insert(2, '--parallel')
+            elif build_jobs == 0:
+                # Use the build engine's native number of jobs.
+                cmake_argv.insert(2, '--parallel')
+        elif build_jobs >= 2:
+            if generator_alias in ['umake', 'ninja']:
+                self._add_cmake_build_tool_options(cmake_argv, ['-j' + str(build_jobs)])
+            elif generator_alias.startswith('vs'):
+                self._add_cmake_build_tool_options(cmake_argv, ['/maxcpucount:' + str(build_jobs)])
+            elif generator_alias == 'xcode':
+                self._add_cmake_build_tool_options(cmake_argv, ['-parallelizeTargets', '-jobs', str(build_jobs)])
 
     def _add_cmake_build_verbosity_option(self, cmake_argv, generator_alias, verbosity_level):
         if generator_alias.startswith('vs'):

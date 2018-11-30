@@ -7,42 +7,13 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import textwrap
 
 import pyhhi.build.common.system as system
 import pyhhi.build.common.util as util
 import pyhhi.build.common.ver as ver
-
-
-class MsvcToolsetSpecDict(object):
-
-    def __init__(self):
-        # Mapping between CMake VC toolsets and Boost.Build VC toolsets if unique.
-        # VS 2017 updates cl to 19.11.x whereas Boost.Build detects 19.10.x and 19.11.x as msvc-14.1, hence
-        # no mapping anymore.
-        self._dict_cmake_msvc_bbuild_msvc = {'msvc-19.0': 'msvc-14.0',
-                                             'msvc-18.0': 'msvc-12.0',
-                                             'msvc-17.0': 'msvc-11.0',
-                                             'msvc-16.0': 'msvc-10.0'}
-
-        # Mapping between Boost.Build VC toolsets and CMake VC toolsets.
-        self._dict_bbuild_msvc_cmake_msvc = {'msvc-14.0': 'msvc-19.0',
-                                             'msvc-12.0': 'msvc-18.0',
-                                             'msvc-11.0': 'msvc-17.0',
-                                             'msvc-10.0': 'msvc-16.0'}
-
-    def transform_bbuild_to_cmake(self, toolset):
-        if toolset in self._dict_bbuild_msvc_cmake_msvc:
-            return self._dict_bbuild_msvc_cmake_msvc[toolset]
-        else:
-            return toolset
-
-    def transform_cmake_to_bbuild(self, toolset):
-        if toolset in self._dict_cmake_msvc_bbuild_msvc:
-            return self._dict_cmake_msvc_bbuild_msvc[toolset]
-        else:
-            return toolset
 
 
 class MsvcRegistry(object):
@@ -79,11 +50,6 @@ class MsvcRegistry(object):
             # Update VS2017 installation paths via vswhere.exe
             self._do_inventory_vc141()
             self._do_inventory()
-
-        def _get_devnull(self):
-            if not hasattr(self, '_devnull'):
-                self._devnull = os.open(os.devnull, os.O_RDWR)
-            return self._devnull
 
         def get_compiler_command(self, version=None):
             if version is None:
@@ -196,14 +162,7 @@ class MsvcRegistry(object):
                 versionf.write(textwrap.dedent("""\
                     #pragma message(_MSC_FULL_VER _MSC_BUILD)
                     """.format()))            
-            python_version = ver.get_python_version()
-            if ver.version_compare(python_version, (3,3)) >= 0:
-                # subprocess.DEVNULL since python 3.3
-                retv = subprocess.check_output([cl_cmd, '/EP', version_file], stderr=subprocess.DEVNULL, universal_newlines=True).lstrip()
-            else:
-                self._logger.debug("attribute subprocess.DEVNULL not available (python < 3.3), using os.devnull instead")
-                devnull = self._get_devnull()
-                retv = subprocess.check_output([cl_cmd, '/EP', version_file], stderr=devnull, universal_newlines=True).lstrip()
+            retv = subprocess.check_output([cl_cmd, '/EP', version_file], stderr=self._sys_info.get_subprocess_devnull(), universal_newlines=True).lstrip()
             # print("_query_msvc_compiler_versionf(): retv=" + retv)
             re_match = re.match(r'#pragma\s+message\(([0-9][0-9])([0-9][0-9])([0-9]+)\s+([0-9]+)\)', retv)
             if re_match:
@@ -1283,7 +1242,7 @@ class FatBinaryTool(object):
                     # and launch lipo to create the universal binary file.
                     cmd_line = ' '.join(lipo_argv)
                     print("Launching: " + cmd_line)
-                    retv = subprocess.call(lipo_argv)
+                    retv = util.subproc_call_flushed(lipo_argv)
                     if retv != 0:
                         raise Exception("Creating a universal file failed -> " + cmd_line)
             else:
@@ -1386,7 +1345,7 @@ class DyLibInstallNameInfoInspector(object):
             argv.append(depends_dict[key])
         argv.append(dylib)
         #print("modify_depends(): ", argv)
-        subprocess.check_call(argv)
+        util.subproc_check_call_flushed(argv)
     
     def change_rpaths(self, dylib, rpaths_dict):
         argv = ['install_name_tool']
@@ -1396,7 +1355,7 @@ class DyLibInstallNameInfoInspector(object):
             argv.append(rpaths_dict[key])
         argv.append(dylib)
         #print("change_rpaths(): ", argv)
-        subprocess.check_call(argv)
+        util.subproc_check_call_flushed(argv)
 
     def delete_rpaths(self, dylib, rpath_list):
         argv = ['install_name_tool']
@@ -1405,36 +1364,26 @@ class DyLibInstallNameInfoInspector(object):
             argv.append(rpath)
         argv.append(dylib)
         #print("change_rpaths(): ", argv)
-        subprocess.check_call(argv)
+        util.subproc_check_call_flushed(argv)
 
     def modify_install_name(self, dylib, install_name):
         argv = ['install_name_tool', '-id', install_name, dylib]
-        subprocess.check_call(argv)
+        util.subproc_check_call_flushed(argv)
 
 
 class BuildScriptInstaller(object):
 
-    def __init__(self, top_dir=None, verbose=False):
+    def __init__(self, verbose=False):
         self._logger = logging.getLogger(__name__)
         # print("BuildScriptInstaller.__init__(): __name__=" + __name__)
         self._verbose = verbose
-        self._sys_info = system.SystemInfo()
-        if top_dir is None:
-            top_dir = os.getcwd()
-        else:
-            assert os.path.exists(top_dir)
-        self._top_dir = top_dir
 
     def set_verbose(self, verbose):
         self._verbose = verbose
 
-    def get_top_dir(self):
-        return self._top_dir
-
-    def install_script(self, inst_dir, script, modules, rename=None):
+    def install_script(self, inst_dir, script, modules):
         assert inst_dir is not None
         script = os.path.abspath(script)
-        src_dir = os.path.dirname(script)
         module_flist = []
         package_dir_set = set()
         # python modules are specified in import syntax like "<package>.<name>".
@@ -1460,16 +1409,27 @@ class BuildScriptInstaller(object):
         # make sure all files exist before trying to copy anything.
         if not os.path.exists(script):
             raise Exception("file " + script + " does not exist.")
+        # key = module_file_path, value = file system path
+        # e.g. pyhhi/build/common/ver.py must be mapped to a directory listed by sys.path.
+        module_flist_src_dict = {}
         for f in module_flist:
-            fpath = os.path.join(src_dir, f)
-            if not os.path.exists(fpath):
-                raise Exception("file " + fpath + " does not exist.")
+            for pth in sys.path:
+                fpath = os.path.join(pth, f)
+                if os.path.exists(fpath):
+                    module_flist_src_dict[f] = fpath
+                    break
+                else:
+                    fpath = None
+            if fpath is None:
+                raise Exception("module file {0} not found.".format(fpath))
+
         # create destination directory
         if not os.path.exists(inst_dir):
             os.makedirs(inst_dir)
 
         for f in module_flist:
-            fpath_src = os.path.join(src_dir, f)
+            assert f in module_flist_src_dict
+            fpath_src = module_flist_src_dict[f]
             dname = os.path.dirname(f)
             dst_dir = os.path.join(inst_dir, dname)
             #print("cp " + fpath_src + " -> " + os.path.join(dst_dir, dname))
@@ -1481,12 +1441,7 @@ class BuildScriptInstaller(object):
             shutil.copy(fpath_src, dst_dir)
 
         # copy the script to <inst_dir>
-        if rename is None:
-            if self._verbose:
-                print("copying %-15s %s" % (os.path.basename(script), inst_dir))
-            shutil.copy(script, inst_dir)
-        else:
-            if self._verbose:
-                print("copying %-15s %s" % (os.path.basename(script), os.path.join(inst_dir, rename)))
-            shutil.copy2(script, os.path.join(inst_dir, rename))
+        if self._verbose:
+            print("copying %-15s %s" % (os.path.basename(script), inst_dir))
+        shutil.copy(script, inst_dir)
 

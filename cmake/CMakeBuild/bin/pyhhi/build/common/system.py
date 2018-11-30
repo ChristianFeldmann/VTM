@@ -1,15 +1,7 @@
-#
-# Copyright:
-# 2016 Fraunhofer Institute for Telecommunications, Heinrich-Hertz-Institut (HHI)
-# The copyright of this software source code is the property of HHI.
-# This software may be used and/or copied only with the written permission
-# of HHI and in accordance with the terms and conditions stipulated
-# in the agreement/contract under which the software has been supplied.
-# The software distributed under this license is distributed on an "AS IS" basis,
-# WITHOUT WARRANTY OF ANY KIND, either expressed or implied.
-#
+
 from __future__ import print_function
 
+import multiprocessing
 import logging
 import platform
 import os
@@ -41,6 +33,7 @@ class SystemInfo(object):
             self._os_distro = platform.platform()
             # self._os_distro_short = platform.platform()
             self._win32api_installed = False
+            self._windows_msys = False
             self._redhat_system = False
             self._debian_system = False
             self._suse_system = False
@@ -50,7 +43,7 @@ class SystemInfo(object):
             self._os_codename = 'unknown'
             self._os_arch = 'x86_64'
             self._os_version = (0, 0, 0)
-            self._num_processors = 1
+            self._num_processors = multiprocessing.cpu_count()
 
             platform_system = platform.system().lower()
             self._platform_system = platform_system
@@ -71,13 +64,10 @@ class SystemInfo(object):
                 # there's no portable way in python to obtain the linux version.
                 self._query_linux_distro_info()
 
-                # there's no portable way in python to obtain the number of installed processors.
-                self._query_linux_num_cpus()
-
                 if self.is_debian():
                     self._pkg_fmt = 'deb'
                     self._pkg_arch = subprocess.check_output(['dpkg', '--print-architecture'], universal_newlines=True).rstrip()
-                elif (self.is_redhat() or self.is_suse()):
+                elif self.is_redhat() or self.is_suse():
                     self._pkg_fmt = 'rpm'
                     self._pkg_arch = subprocess.check_output(['rpm', '--eval', '%_arch'], universal_newlines=True).rstrip()
                 else:
@@ -91,20 +81,13 @@ class SystemInfo(object):
                 self._program_dir = None
                 self._program_data_dir = None
 
+                if 'MSYSTEM' in os.environ:
+                    self._windows_msys = True
+
                 # obtain additional version information
                 # windows 7: ('7', '6.1.7601', 'SP1', 'Multiprocessor Free')
                 self._os_version = ver.version_tuple_from_str(platform.win32_ver()[1])
 
-                try:
-                    import win32api
-
-                    # great, win32api module is installed.
-                    self._win32api_installed = True
-                except ImportError:
-                    # we don't have any dependencies on the win32 extensions anymore but some scripts might have and can 
-                    # figure out whether the extensions are available or not.
-                    pass
-                
                 # Hm, win32api not installed/available -> system detection may not by accurate and includes some guessing.
                 if platform.architecture()[0] != '64bit':
                     self._python_arch = 'x86'
@@ -113,9 +96,6 @@ class SystemInfo(object):
                         # 32 bit python interpreter and 64 bit windows
                         self._os_arch = 'x86_64'
                     
-                if 'NUMBER_OF_PROCESSORS' in os.environ:
-                    self._num_processors = int(os.getenv('NUMBER_OF_PROCESSORS'))
-                
                 if self._os_arch == 'x86_64':
                     if self._python_arch == 'x86':
                         self._program_dir = os.getenv('PROGRAMW6432')
@@ -130,8 +110,12 @@ class SystemInfo(object):
                     assert False
                 assert self._program_dir is not None
                 self._program_data_dir = os.getenv('PROGRAMDATA')
-                if os.path.exists(os.path.join(r'C:\Windows', 'py.exe')):
+
+                if self._windows_msys:
+                    pass
+                elif os.path.exists(os.path.join(r'C:\Windows', 'py.exe')):
                     self._python_launcher = os.path.join(r'C:\Windows', 'py.exe')
+
                 # probe the registry to ensure the shell will pass additional arguments to the
                 # registered python interpreter.
                 # if pywin_check:
@@ -147,7 +131,8 @@ class SystemInfo(object):
                                  '10.10': 'yosemite',
                                  '10.11': 'el capitan',
                                  '10.12': 'sierra',
-                                 '10.13': 'high sierra'}
+                                 '10.13': 'high sierra',
+                                 '10.14': 'mojave'}
                 # replace darwin by macosx
                 self._platform_system = 'macosx'
                 # e.g. ('10.7.4', ('', '', ''), 'x86_64')
@@ -162,9 +147,6 @@ class SystemInfo(object):
                 self._os_arch = mac_ver[2]
                 # python architecture is the same as the macosx architecture
                 self._python_arch = self._os_arch
-                # obtain the number of processors
-                retv = subprocess.check_output(["/usr/sbin/sysctl", "hw.ncpu"], universal_newlines=True)
-                self._num_processors = int(retv.rstrip().split()[1], 10)
             else:
                 raise Exception('unsupported platform detected: ' + platform_system)
             self._query_home_dir()
@@ -234,6 +216,9 @@ class SystemInfo(object):
         def is_windows8(self):
             return self.is_windows() and (self._os_version[0] == 6) and (self._os_version[1] == 2)
 
+        def is_windows_msys(self):
+            return self._windows_msys
+
         def check_pywin_registry(self):
             assert self.is_windows()
             # Create a temporary script and invoke it to see whether argument passing works or not.
@@ -264,9 +249,6 @@ class SystemInfo(object):
                 msg += " - Download the latest 64 bit version of python from www.python.org and install it, the build system will work with python 2.7.x or python 3.x.\n"
                 raise Exception(msg)
             return True
-
-        def is_win32api_installed(self):
-            return self._win32api_installed
 
         def check_os_detection(self, todo_list):
             if (self._os_version[0] == 0) and self.is_linux():
@@ -380,6 +362,19 @@ class SystemInfo(object):
             if (comspec is None) or (not os.path.exists(comspec)):
                 raise Exception("The environment variable COMSPEC must be fixed, please contact technical support.")
 
+        def get_subprocess_devnull(self):
+            if ver.version_compare(self._python_version, (3,3)) >= 0:
+                devnull =  subprocess.DEVNULL
+            else:
+                self._logger.debug("attribute subprocess.DEVNULL not available (python < 3.3), using os.devnull instead")
+                devnull = self._get_devnull()
+            return devnull
+
+        def _get_devnull(self):
+            if not hasattr(self, '_devnull'):
+                self._devnull = os.open(os.devnull, os.O_RDWR)
+            return self._devnull
+
         def _query_linux_distro_info(self):
             if 'CRAYOS_VERSION' in os.environ:
                 self._os_distro = 'cray'
@@ -439,22 +434,6 @@ class SystemInfo(object):
                 # not sure how to do this for suse, revert back to regex
                 if re.match(r'(suse)|(opensuse)', self._os_distro):
                     self._suse_system = True
-
-        def _query_linux_num_cpus(self):
-            """Query the system for the number of enabled processor cores."""
-            re_processor = re.compile(r'^processor\s*:\s*\d+\s*', re.IGNORECASE)
-            num_procs = 0
-
-            with open("/proc/cpuinfo") as f:
-                for line in f:
-                    if re_processor.match(line):
-                        num_procs = num_procs + 1
-
-            if num_procs > 0:
-                self._num_processors = num_procs
-            else:
-                # last resort, something seems to be broken in the loop above.
-                self._num_processors = 1
 
         def _query_home_dir(self):
             home_dir = os.path.expanduser('~')

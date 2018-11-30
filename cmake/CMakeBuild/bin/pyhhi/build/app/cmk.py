@@ -1,16 +1,19 @@
+
 from __future__ import print_function
 
 import argparse
 import logging
 import os
 import re
+import shutil
 import sys
 
 import pyhhi.build.common.system as system
 import pyhhi.build.common.util as util
 import pyhhi.build.common.ver as ver
-import pyhhi.cmbuild.cmksupp as cmksupp
-from pyhhi.build.common.bldtools import MsvcToolsetSpecDict, BuildScriptInstaller
+import pyhhi.build.cmksupp as cmksupp
+from pyhhi.build.common.bldtools import BuildScriptInstaller
+from pyhhi.build.common.error import InvalidCommandLineArgumentError
 
 
 class CMakeLauncherApp(object):
@@ -21,12 +24,14 @@ class CMakeLauncherApp(object):
         self._cmake_launcher = None
         self._dict_generator_choice = {'linux': ['umake', 'ninja'],
                                        'macosx': ['xcode', 'umake', 'ninja'],
-                                       'windows': ['vs15', 'vs14', 'vs12', 'vs11', 'vs10', 'mgwmake', 'ninja']}
-        self._msvc_dict = MsvcToolsetSpecDict()
+                                       'windows': ['vs15', 'vs14', 'vs12', 'vs11', 'vs10', 'umake', 'mgwmake', 'ninja']}
         self._top_dir = None
-        self._cmake_mod_list = ['pyhhi.cmbuild.app.cmk',
+        self._cmake_mod_list = ['pyhhi.build.app.cmk',
+                                'pyhhi.build.cmkfnd',
+                                'pyhhi.build.cmksupp',
                                 'pyhhi.build.common.bldtools',
-                                'pyhhi.cmbuild.cmksupp',
+                                'pyhhi.build.common.cmbldver',
+                                'pyhhi.build.common.error',
                                 'pyhhi.build.common.system',
                                 'pyhhi.build.common.util',
                                 'pyhhi.build.common.ver']
@@ -41,12 +46,16 @@ class CMakeLauncherApp(object):
             top_dir = util.get_top_dir()
             os.chdir(top_dir)
             script_dir = util.get_script_dir()
-            script_installer = BuildScriptInstaller(top_dir, verbose=True)
-            #if ver.version_compare(self._sys_info.get_python_version(), (3, 0)) >= 0:
-            #    script_installer.install_script(params.install_dir, os.path.join(script_dir, 'cmake3.py'), self._cmake_mod_list, rename='cmake.py')
-            #else:
-            #    script_installer.install_script(params.install_dir, os.path.join(script_dir, 'cmake.py'), self._cmake_mod_list)
+            # print("sys.path: ", sys.path)
+            script_installer = BuildScriptInstaller(verbose=True)
             script_installer.install_script(params.install_dir, os.path.join(script_dir, 'cmake.py'), self._cmake_mod_list)
+        elif params.py_cache_dirs:
+            for dname in params.py_cache_dirs:
+                if not os.path.exists(dname):
+                    continue
+                if not os.path.isdir(dname):
+                    continue
+                self._remove_pycache(dname)
         else:
             # Apply additional checks on params.
             self._check_params(params)
@@ -57,10 +66,7 @@ class CMakeLauncherApp(object):
             self._cmake_launcher.launch(params, cmake_argv)
 
     def _check_params(self, params):
-        if params.toolset_str and params.toolset_str.startswith('msvc-'):
-            # Let's check an msvc-x.y toolset specification in case the user is not aware of the difference
-            # between Boost.Build and cmake.py.
-            params.toolset_str = self._msvc_dict.transform_bbuild_to_cmake(params.toolset_str)
+        pass
 
     def _print_env(self):
         env_var_list = list(os.environ.keys())
@@ -94,7 +100,7 @@ arguments:
   variant:          debug if not specified
   link:             static if not specified
   toolset:          default c++ compiler if not specified
-                    examples/windows: msvc-19.12, msvc-19.0, msvc-18.0, msvc-17.0, msvc-16.0, intel
+                    examples/windows: msvc-19.13, msvc-19.0, msvc-18.0, msvc-17.0, msvc-16.0, intel, gcc
                     examples/linux:   gcc-4.9, gcc-5, gcc-6, clang, intel
   address-model=32: windows: builds 32 bit binaries instead of 64 bit binaries
 
@@ -120,10 +126,14 @@ usage examples:
 """
         parser = argparse.ArgumentParser(usage=_usage, epilog=_epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
 
-        parser.add_argument("-g","-G", action="store", dest="generator", choices=self._dict_generator_choice[self._sys_info.get_platform()],
+        parser.add_argument("--cmake-bin-dir", action="store", dest="cmk_bin_dir",
+                            help="specify a directory to search for CMake overriding the default CMake search path.")
+
+        parser.add_argument("-g", "-G", action="store", dest="generator", choices=self._dict_generator_choice[self._sys_info.get_platform()],
                             help="""specify a cmake generator the script has special support for.
                                     Supported generators: ninja, umake, mgwmake, vs15, vs14, vs12, vs11, vs10, xcode.
-                                    The choices accepted are platform and installation dependent.""")
+                                    The choices accepted are platform and installation dependent. The environment variable
+                                    DEFAULT_CMAKE_GENERATOR may be used to override the default value.""")
 
         parser.add_argument("-D", action="append", dest="cache_entries",
                             help="specify a cmake cache entry. The option will be ignored if a build tree already exists.")
@@ -137,7 +147,7 @@ usage examples:
         parser.add_argument("-j", action="store", dest="build_jobs", type=int, nargs='?', default=1,
                             const=str(self._get_optimal_number_cmake_jobs()),
                             help="""specify the number of parallel build jobs. If you omit the numeric argument,
-                                    cmake --build ... will be invoked with -j<number_of_processors>.""")
+                                    cmake --build ... will be invoked with -j%(const)s.""")
 
         parser.add_argument("--target", action="store", dest="build_target",
                             help="specify a build target overriding the default target.")
@@ -146,12 +156,18 @@ usage examples:
                             help="build target clean first, then build the active target.")
 
         parser.add_argument("--verbosity", action="store", dest="build_verbosity", choices=['quiet', 'minimal', 'normal', 'detailed', 'diagnostic'], default='minimal',
-                            help="specify msbuild verbosity level [default: minimal].")
-
-        parser.add_argument("-i", action="store", dest="install_dir", nargs='?', const=os.path.join(self._sys_info.get_home_dir(), 'bin'),
-                            help="install this script and exit. The default destination directory is $HOME/bin.")
+                            help="specify msbuild verbosity level [default: %(default)s].")
 
         util.app_args_add_log_level(parser)
+
+        g = parser.add_argument_group("advanced options")
+        g.add_argument("-i", action="store", dest="install_dir", nargs='?', const=os.path.join(self._sys_info.get_home_dir(), 'bin'),
+                       help="install this script and exit. The default destination directory is %(const)s.")
+
+        g.add_argument("--py-cache-clean", action="store", dest="py_cache_dirs", nargs='+',
+                       help="search for Python cache files in one or more directory trees, remove them and exit. This special option is intended "
+                            "for cross-platform Makefiles to clean up the source tree as python cache files are stored next to the source and "
+                            "not in the build tree.")
 
         # -j may be followed by a non-numeric argument which the parser is not able to handle.
         if '-j' in argv:
@@ -184,15 +200,20 @@ usage examples:
                 launcher_params.install_dir = cmake_py_options.install_dir
             else:
                 launcher_params.install_dir = os.path.abspath(cmake_py_options.install_dir)
+        elif cmake_py_options.py_cache_dirs:
+            launcher_params.py_cache_dirs = []
+            for dname in cmake_py_options.py_cache_dirs:
+                launcher_params.py_cache_dirs.append(os.path.normpath(os.path.abspath(dname)))
 
         self._top_dir = os.getcwd()
-        if cmake_py_options.install_dir:
+        if cmake_py_options.install_dir or launcher_params.py_cache_dirs:
             return launcher_params, cmake_args
 
         # if args_left:
         #    print("cmake args", args_left)
 
         # Assign cmake.py options to attributes of CMakeLauncherParams.
+        launcher_params.cmk_bin_dir = cmake_py_options.cmk_bin_dir
         launcher_params.cmk_build = cmake_py_options.build
         launcher_params.cmk_build_jobs = cmake_py_options.build_jobs
         launcher_params.clean_first = cmake_py_options.clean_first
@@ -216,8 +237,7 @@ usage examples:
                         # A toolset=<something>.cmake expression is supposed to be a toolchain file to enable
                         # some kind of cross compilation.
                         if not os.path.exists(arg_value):
-                            print("cmake.py: error: toolchain file=" + arg_value + " does not exist.")
-                            sys.exit(1)
+                            raise InvalidCommandLineArgumentError("toolchain file={} does not exist.".format(arg_value))
                         launcher_params.toolset_str = os.path.abspath(arg_value)
                     else:
                         launcher_params.toolset_str = self._normalize_toolset_spec(arg_value)
@@ -225,15 +245,13 @@ usage examples:
                     build_configs = arg_value.split(',')
                     for cfg in build_configs:
                         if cfg not in ['release', 'debug', 'relwithdebinfo', 'minsizerel']:
-                            print("cmake.py: error: " + arg + " is not understood.")
-                            sys.exit(1)
+                            raise InvalidCommandLineArgumentError("argument {} is not understood.".format(arg))
                     launcher_params.build_configs = build_configs
                 elif arg_key == 'link':
                     link_variants = arg_value.split(',')
                     for lnk in link_variants:
                         if lnk not in ['static', 'shared']:
-                            print("cmake.py: error: " + arg + " is not understood.")
-                            sys.exit(1)
+                            raise InvalidCommandLineArgumentError("argument {} is not understood.".format(arg))
                     launcher_params.link_variants = link_variants
                 elif arg_key == 'address-model':
                     if arg_value == '32':
@@ -241,18 +259,15 @@ usage examples:
                     elif arg_value == '64':
                         launcher_params.target_arch = 'x86_64'
                     else:
-                        print("cmake.py: error: " + arg + " is not understood.")
-                        sys.exit(1)
+                        raise InvalidCommandLineArgumentError("argument {} is not understood.".format(arg))
                 else:
-                    print("cmake.py: error: " + arg + " is not understood.")
-                    sys.exit(1)
+                    raise Exception("argument {} is not understood.".format(arg))
                 continue
             if arg == '--':
                 # Semantics seems to be tricky and I haven't seen a convincing use case yet.
                 # In configuration mode all unknown arguments are passed verbatim to cmake and in build mode
                 # all unknown arguments are really build tool arguments and are passed verbatim to the build tool.
-                print("cmake.py: error: argument '--' encountered, this is not yet supported, please contact the maintainer.")
-                sys.exit(1)
+                raise InvalidCommandLineArgumentError("argument '--' encountered, this is not yet supported, please contact the maintainer.")
             # all other arguments are passed on to cmake verbatim.
             cmake_args.append(arg)
         return launcher_params, cmake_args
@@ -267,7 +282,11 @@ usage examples:
                 # looks like a cross compiler specification which requires a toolchain file matching the toolset spec and the linux system.
                 toolset_spec_norm = self._find_toolchain_file(toolset_spec_norm)
         elif self._sys_info.is_windows():
-            pass
+            # msvc-19.00 -> normalized to 19.0
+            re_match = re.match(r'msvc-(\d+)\.(\d+)', toolset_spec)
+            if re_match:
+                minor_version = int(re_match.group(2))
+                toolset_spec_norm = "msvc-{0}.{1:d}".format(re_match.group(1), minor_version)
         elif self._sys_info.is_macosx():
             pass
         else:
@@ -277,21 +296,30 @@ usage examples:
 
     def _find_toolchain_file(self, toolset_spec):
         toolchain_file = None
-        toolchains_dir = os.path.join(self._get_workspace_folder(), 'CMakeBuild', 'cmake', 'toolchains')
-        if self._sys_info.is_linux():
-            toolchain_file_suffix = '-' + self._sys_info.get_os_distro_short()
-            if self._sys_info.get_os_distro_short() == 'ubuntu':
-                os_version_str = ver.ubuntu_version_tuple_to_str(self._sys_info.get_os_version())
-            else:
-                os_version_str = self._sys_info.get_os_version()
-            toolchain_file_suffix += os_version_str.replace('.', '') + '.cmake'
-            if os.path.exists(os.path.join(toolchains_dir, toolset_spec + toolchain_file_suffix)):
-                toolchain_file = os.path.join(toolchains_dir, toolset_spec + toolchain_file_suffix)
+        toolchains_dir = self._find_toolchains_dir()
+        if toolchains_dir is not None:
+            if self._sys_info.is_linux():
+                toolchain_file_suffix = '-' + self._sys_info.get_os_distro_short()
+                if self._sys_info.get_os_distro_short() == 'ubuntu':
+                    os_version_str = ver.ubuntu_version_tuple_to_str(self._sys_info.get_os_version())
+                else:
+                    os_version_str = self._sys_info.get_os_version()
+                toolchain_file_suffix += os_version_str.replace('.', '') + '.cmake'
+                if os.path.exists(os.path.join(toolchains_dir, toolset_spec + toolchain_file_suffix)):
+                    toolchain_file = os.path.join(toolchains_dir, toolset_spec + toolchain_file_suffix)
         if toolchain_file is None:
             msg = "toolset=" + toolset_spec + " cannot be mapped to a default toolchain file automatically. Please use a toolchain file or "
             msg += "contact technical support."
             raise Exception(msg)
         return toolchain_file
+
+    def _find_toolchains_dir(self):
+        toolchains_dir = os.path.join(util.get_script_dir(), '..', 'cmake', 'toolchains')
+        if not os.path.exists(toolchains_dir):
+            self._logger.warning("toolchains dir {} does not exist.".format(toolchains_dir))
+            return None
+        toolchains_dir = os.path.normpath(toolchains_dir)
+        return toolchains_dir
 
     def _get_workspace_folder(self):
         assert self._top_dir is not None
@@ -306,3 +334,16 @@ usage examples:
                 cmake_jobs = cmake_max_jobs
         assert cmake_jobs >= 1
         return cmake_jobs
+
+    def _remove_pycache(self, py_dir_root):
+        os.chdir(py_dir_root)
+        re_pyc_file = re.compile(r'.+\.pyc$', re.IGNORECASE)
+        for root, dirs, files in os.walk(py_dir_root):
+            if '__pycache__' in dirs:
+                self._logger.info("rm -rf {0}".format(os.path.join(root,'__pycache__')))
+                shutil.rmtree(os.path.join(root, '__pycache__'))
+                dirs.remove('__pycache__')
+            for fname in files:
+                if re_pyc_file.match(fname):
+                    self._logger.info("rm {0}".format(os.path.join(root, fname)))
+                    os.remove(os.path.join(root, fname))

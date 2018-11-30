@@ -301,17 +301,17 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
   }
 }
 
-void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, CoeffBuf &dstCoeff, const int iWidth, const int iHeight )
+void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, CoeffBuf &dstCoeff, const int width, const int height )
 {
   const unsigned maxLog2TrDynamicRange  = tu.cs->sps->getMaxLog2TrDynamicRange( toChannelType( compID ) );
   const unsigned bitDepth               = tu.cs->sps->getBitDepth(              toChannelType( compID ) );
   const int      TRANSFORM_MATRIX_SHIFT = g_transformMatrixShift[TRANSFORM_FORWARD];
-  const int      shift_1st              = ((g_aucLog2[iWidth ]) + bitDepth + TRANSFORM_MATRIX_SHIFT) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
-  const int      shift_2nd              =  (g_aucLog2[iHeight])            + TRANSFORM_MATRIX_SHIFT                          + COM16_C806_TRANS_PREC;
-  const uint32_t transformWidthIndex    = g_aucLog2[iWidth ] - 1;  // nLog2WidthMinus1, since transform start from 2-point
-  const uint32_t transformHeightIndex   = g_aucLog2[iHeight] - 1;  // nLog2HeightMinus1, since transform start from 2-point
-  const int      iSkipWidth             = iWidth  > JVET_C0024_ZERO_OUT_TH ? iWidth  - JVET_C0024_ZERO_OUT_TH : 0;
-  const int      iSkipHeight            = iHeight > JVET_C0024_ZERO_OUT_TH ? iHeight - JVET_C0024_ZERO_OUT_TH : 0;
+  const int      shift_1st              = ((g_aucLog2[width ]) + bitDepth + TRANSFORM_MATRIX_SHIFT) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
+  const int      shift_2nd              =  (g_aucLog2[height])            + TRANSFORM_MATRIX_SHIFT                          + COM16_C806_TRANS_PREC;
+  const uint32_t transformWidthIndex    = g_aucLog2[width ] - 1;  // nLog2WidthMinus1, since transform start from 2-point
+  const uint32_t transformHeightIndex   = g_aucLog2[height] - 1;  // nLog2HeightMinus1, since transform start from 2-point
+  const int      skipWidth              = width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
+  const int      skipHeight             = height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
   
   CHECK( shift_1st < 0, "Negative shift" );
   CHECK( shift_2nd < 0, "Negative shift" );
@@ -324,7 +324,7 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
 #if RExt__DECODER_DEBUG_TOOL_STATISTICS
   if ( trTypeHor != DCT2 )
   {
-    CodingStatistics::IncrementStatisticTool( CodingStatisticsClassType{ STATS__TOOL_EMT, uint32_t( iWidth ), uint32_t( iHeight ), compID } );
+    CodingStatistics::IncrementStatisticTool( CodingStatisticsClassType{ STATS__TOOL_EMT, uint32_t( width ), uint32_t( height ), compID } );
   }
 #endif
   
@@ -333,24 +333,24 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
   const Pel *resiBuf    = resi.buf;
   const int  resiStride = resi.stride;
   
-  for( int y = 0; y < iHeight; y++ )
+  for( int y = 0; y < height; y++ )
   {
-    for( int x = 0; x < iWidth; x++ )
+    for( int x = 0; x < width; x++ )
     {
-      block[( y * iWidth ) + x] = resiBuf[( y * resiStride ) + x];
+      block[( y * width ) + x] = resiBuf[( y * resiStride ) + x];
     }
   }
   
-  TCoeff *tmp = ( TCoeff * ) alloca( iWidth * iHeight * sizeof( TCoeff ) );
+  TCoeff *tmp = ( TCoeff * ) alloca( width * height * sizeof( TCoeff ) );
   
-  fastFwdTrans[trTypeHor][transformWidthIndex ](block,        tmp, shift_1st, iHeight,         0, iSkipWidth);
-  fastFwdTrans[trTypeVer][transformHeightIndex](tmp, dstCoeff.buf, shift_2nd, iWidth, iSkipWidth, iSkipHeight);
+  fastFwdTrans[trTypeHor][transformWidthIndex ](block,        tmp, shift_1st, height,        0, skipWidth);
+  fastFwdTrans[trTypeVer][transformHeightIndex](tmp, dstCoeff.buf, shift_2nd, width, skipWidth, skipHeight);
 }
 
 void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pCoeff, PelBuf &pResidual )
 {
-  const int      iWidth                 = pCoeff.width;
-  const int      iHeight                = pCoeff.height;
+  const int      width                  = pCoeff.width;
+  const int      height                 = pCoeff.height;
   const unsigned maxLog2TrDynamicRange  = tu.cs->sps->getMaxLog2TrDynamicRange( toChannelType( compID ) );
   const unsigned bitDepth               = tu.cs->sps->getBitDepth(              toChannelType( compID ) );
   const int      TRANSFORM_MATRIX_SHIFT = g_transformMatrixShift[TRANSFORM_INVERSE];
@@ -358,10 +358,10 @@ void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCo
   const TCoeff   clipMaximum            =  ( 1 << maxLog2TrDynamicRange ) - 1;
   const int      shift_1st              =   TRANSFORM_MATRIX_SHIFT + 1 + COM16_C806_TRANS_PREC; // 1 has been added to shift_1st at the expense of shift_2nd
   const int      shift_2nd              = ( TRANSFORM_MATRIX_SHIFT + maxLog2TrDynamicRange - 1 ) - bitDepth + COM16_C806_TRANS_PREC;
-  const uint32_t transformWidthIndex    = g_aucLog2[iWidth ] - 1;                               // nLog2WidthMinus1, since transform start from 2-point
-  const uint32_t transformHeightIndex   = g_aucLog2[iHeight] - 1;                               // nLog2HeightMinus1, since transform start from 2-point
-  const int      iSkipWidth             = iWidth  > JVET_C0024_ZERO_OUT_TH ? iWidth  - JVET_C0024_ZERO_OUT_TH : 0;
-  const int      iSkipHeight            = iHeight > JVET_C0024_ZERO_OUT_TH ? iHeight - JVET_C0024_ZERO_OUT_TH : 0;
+  const uint32_t transformWidthIndex    = g_aucLog2[width ] - 1;                                // nLog2WidthMinus1, since transform start from 2-point
+  const uint32_t transformHeightIndex   = g_aucLog2[height] - 1;                                // nLog2HeightMinus1, since transform start from 2-point
+  const int      skipWidth              = width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
+  const int      skipHeight             = height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
   
   CHECK( shift_1st < 0, "Negative shift" );
   CHECK( shift_2nd < 0, "Negative shift" );
@@ -371,20 +371,20 @@ void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCo
   
   getTrTypes ( tu, compID, trTypeHor, trTypeVer );
   
-  TCoeff *tmp   = ( TCoeff * ) alloca( iWidth * iHeight * sizeof( TCoeff ) );
-  TCoeff *block = ( TCoeff * ) alloca( iWidth * iHeight * sizeof( TCoeff ) );
+  TCoeff *tmp   = ( TCoeff * ) alloca( width * height * sizeof( TCoeff ) );
+  TCoeff *block = ( TCoeff * ) alloca( width * height * sizeof( TCoeff ) );
   
-  fastInvTrans[trTypeVer][transformHeightIndex](pCoeff.buf, tmp, shift_1st, iWidth, iSkipWidth, iSkipHeight, clipMinimum, clipMaximum);
-  fastInvTrans[trTypeHor][transformWidthIndex] (tmp,      block, shift_2nd, iHeight,         0,  iSkipWidth, clipMinimum, clipMaximum);
+  fastInvTrans[trTypeVer][transformHeightIndex](pCoeff.buf, tmp, shift_1st, width, skipWidth, skipHeight, clipMinimum, clipMaximum);
+  fastInvTrans[trTypeHor][transformWidthIndex] (tmp,      block, shift_2nd, height,         0, skipWidth, clipMinimum, clipMaximum);
   
   Pel *resiBuf    = pResidual.buf;
   int  resiStride = pResidual.stride;
   
-  for( int y = 0; y < iHeight; y++ )
+  for( int y = 0; y < height; y++ )
   {
-    for( int x = 0; x < iWidth; x++ )
+    for( int x = 0; x < width; x++ )
     {
-      resiBuf[( y * resiStride ) + x] = Pel( block[( y * iWidth ) + x] );
+      resiBuf[( y * resiStride ) + x] = Pel( block[( y * width ) + x] );
     }
   }
 }

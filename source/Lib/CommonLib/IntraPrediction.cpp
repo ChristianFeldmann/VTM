@@ -1399,7 +1399,7 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
         // fill current unit with last available sample
         if (currUnit < totalLeftUnits)
         {
-          for (int i = lastAvailRow - 1; i <= lastAvailRow + unitHeight; i++)
+          for (int i = lastAvailRow - 1; i >= lastAvailRow - unitHeight; i--)
           {
             ptrDst[i*predStride] = lastAvailSample;
           }

@@ -78,8 +78,7 @@ public:
                     const bool useTransformSkipFast = false
   );
 
-  uint8_t getEmtTrIdx( TransformUnit tu, const ComponentID compID );
-  uint8_t getEmtMode ( TransformUnit tu, const ComponentID compID );
+  void getTrTypes( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer );
 
 
 protected:
@@ -126,8 +125,7 @@ private:
 
 
   // forward Transform
-  void xT        ( const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, CoeffBuf &dstCoeff, const int iWidth, const int iHeight );
-
+  void xT               (const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, CoeffBuf &dstCoeff, const int width, const int height);
 
   // skipping Transform
   void xTransformSkip   (const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, TCoeff* psCoeff);

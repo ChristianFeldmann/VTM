@@ -44,16 +44,18 @@
 
 #if K0149_BLOCK_STATISTICS
 #define DTRACE_HEADER(ctx,...) ctx->dtrace_header( __VA_ARGS__ )
-#define DTRACE_BLOCK_SCALAR(ctx,channel,cs_cu_pu,stat_type,val)      ctx->dtrace_block_scalar( channel, cs_cu_pu, stat_type, val )
-#define DTRACE_BLOCK_SCALAR_CHROMA(ctx,channel,cs_cu_pu,stat_type,val)      ctx->dtrace_block_scalar( channel, cs_cu_pu, stat_type, val, true)
-#define DTRACE_BLOCK_VECTOR(ctx,channel,cu_pu,stat_type,v_x,v_y)     ctx->dtrace_block_vector( channel, cu_pu, stat_type, v_x, v_y )
-#define DTRACE_BLOCK_VECTOR_CHROMA(ctx,channel,pu,stat_type,v_x,v_y)     ctx->dtrace_block_vector( channel, pu, stat_type, v_x, v_y, true )
-#define DTRACE_BLOCK_AFFINETF(ctx,channel,pu,stat_type,v_x0,v_y0,v_x1,v_y1,v_x2,v_y2)  ctx->dtrace_block_affinetf( channel, pu, stat_type, v_x0, v_y0, v_x1, v_y1, v_x2, v_y2 )
+#define DTRACE_BLOCK_SCALAR(ctx,channel,cs_cu_pu,stat_type,val)                         ctx->dtrace_block_scalar( channel, cs_cu_pu, stat_type, val )
+#define DTRACE_BLOCK_SCALAR_CHROMA(ctx,channel,cs_cu_pu,stat_type,val)                  ctx->dtrace_block_scalar( channel, cs_cu_pu, stat_type, val, true)
+#define DTRACE_BLOCK_VECTOR(ctx,channel,cu_pu,stat_type,v_x,v_y)                        ctx->dtrace_block_vector( channel, cu_pu, stat_type, v_x, v_y )
+#define DTRACE_BLOCK_VECTOR_CHROMA(ctx,channel,pu,stat_type,v_x,v_y)                    ctx->dtrace_block_vector( channel, pu, stat_type, v_x, v_y, true )
+#define DTRACE_BLOCK_AFFINETF(ctx,channel,pu,stat_type,v_x0,v_y0,v_x1,v_y1,v_x2,v_y2)   ctx->dtrace_block_affinetf( channel, pu, stat_type, v_x0, v_y0, v_x1, v_y1, v_x2, v_y2 )
+#define DTRACE_LINE(ctx,channel,cs_cu_pu,stat_type, x0, y0, x1, y1)                     ctx->dtrace_block_line( channel, cs_cu_pu, stat_type, x0, y0, x1, y1)
+#define DTRACE_POLYGON_SCALAR(ctx,channel, poc, polygon,stat_type,val)                  ctx->dtrace_polygon_scalar( channel, poc, polygon, stat_type, val )
+#define DTRACE_POLYGON_VECTOR(ctx,channel, poc, polygon,stat_type,v_x,v_y)              ctx->dtrace_polygon_vector( channel, poc, polygon, stat_type, v_x, v_y )
 
 enum class BlockStatistic {
   // general
   PredMode,
-  PartSize,
   Depth,
   QT_Depth,
   BT_Depth,
@@ -71,7 +73,9 @@ enum class BlockStatistic {
   IPCM,
   Luma_IntraMode,
   Chroma_IntraMode,
-
+#if JVET_L0283_MULTI_REF_LINE
+  MultiRefIdx,
+#endif
   // inter
   SkipFlag,
   RootCbf,
@@ -95,10 +99,28 @@ enum class BlockStatistic {
   AffineMVL0,
   AffineMVL1,
   AffineType,
-
+#if JVET_L0054_MMVD
+  MMVDSkipFlag,
+  MMVDMergeFlag,
+  MMVDMergeIdx,
+#endif
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  MHIntraFlag,
+#endif
+#if JVET_L0124_L0208_TRIANGLE
+  TriangleFlag,
+  TrianglePartitioning,
+  TriangleMVL0, //<< currently only uni-prediction enabled
+  TriangleMVL1, //<< currently only uni-prediction enabled
+#endif
+#if JVET_L0646_GBI
+  GBIIndex,
+#endif
+#if JVET_L0293_CPR
+  CPRFlag,
+#endif
 // for dual tree
   // general
-  PartSize_Chroma,
   Depth_Chroma,
   QT_Depth_Chroma,
   BT_Depth_Chroma,
@@ -120,6 +142,10 @@ enum class BlockStatisticType {
   Vector,
   Integer,
   AffineTFVectors,
+  Line,
+  FlagPolygon,
+  VectorPolygon,
+  IntegerPolygon,
 };
 
 static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType, std::string>> blockstatistic2description =
@@ -137,7 +163,6 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::TransformSkipFlag_Y,    std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Y",         BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::TransformSkipFlag_Cb,   std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Cb",        BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::TransformSkipFlag_Cr,   std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Cr",        BlockStatisticType::Flag,                   ""}},
-  { BlockStatistic::PartSize,               std::tuple<std::string, BlockStatisticType, std::string>{"PartSize",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_PART_SIZES) + "]"}},
   { BlockStatistic::Depth,                  std::tuple<std::string, BlockStatisticType, std::string>{"Depth",                       BlockStatisticType::Integer,                "[0, 7]"}}, 
   { BlockStatistic::QT_Depth,               std::tuple<std::string, BlockStatisticType, std::string>{"QT_Depth",                    BlockStatisticType::Integer,                "[0, 7]"}}, 
   { BlockStatistic::BT_Depth,               std::tuple<std::string, BlockStatisticType, std::string>{"BT_Depth",                    BlockStatisticType::Integer,                "[0, 7]"}}, 
@@ -165,9 +190,30 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::AffineMVL1,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineMVL1",                  BlockStatisticType::AffineTFVectors,        "Scale: 4"}},
   { BlockStatistic::AffineType,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineType",                  BlockStatisticType::Flag,                   ""} },
   { BlockStatistic::EMTFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"EMTFlag",                     BlockStatisticType::Flag,                   ""}},
-
+#if JVET_L0283_MULTI_REF_LINE
+  { BlockStatistic::MultiRefIdx,            std::tuple<std::string, BlockStatisticType, std::string>{"MultiRefIdx",                 BlockStatisticType::Integer,                "[0, 1]"}}, 
+#endif
+#if JVET_L0054_MMVD
+  { BlockStatistic::MMVDSkipFlag,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDSkipFlag",                BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::MMVDMergeFlag,          std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeFlag",               BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::MMVDMergeIdx,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeIdx",                BlockStatisticType::Integer,                "[0, 1]"}}, 
+#endif
+#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
+  { BlockStatistic::MHIntraFlag,            std::tuple<std::string, BlockStatisticType, std::string>{"MHIntraFlag",                 BlockStatisticType::Flag,                   ""}},
+#endif
+#if JVET_L0124_L0208_TRIANGLE
+  { BlockStatistic::TriangleFlag,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleFlag",                BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::TrianglePartitioning,   std::tuple<std::string, BlockStatisticType, std::string>{"TrianglePartitioning",        BlockStatisticType::Line,                   ""}},
+  { BlockStatistic::TriangleMVL0,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL0",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
+  { BlockStatistic::TriangleMVL1,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL1",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
+#endif
+#if JVET_L0646_GBI
+  { BlockStatistic::GBIIndex,               std::tuple<std::string, BlockStatisticType, std::string>{"GBIIndex",                    BlockStatisticType::Integer,                "[0, 4]"}}, 
+#endif
+#if JVET_L0293_CPR
+  { BlockStatistic::CPRFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"CPRFlag",                     BlockStatisticType::Flag,                   ""}},
+#endif
   // for dual tree
-  { BlockStatistic::PartSize_Chroma,               std::tuple<std::string, BlockStatisticType, std::string>{"PartSize_Chroma",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_PART_SIZES) + "]"}},
   { BlockStatistic::Depth_Chroma,                  std::tuple<std::string, BlockStatisticType, std::string>{"Depth_Chroma",                       BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
   { BlockStatistic::QT_Depth_Chroma,               std::tuple<std::string, BlockStatisticType, std::string>{"QT_Depth_Chroma",                    BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
   { BlockStatistic::BT_Depth_Chroma,               std::tuple<std::string, BlockStatisticType, std::string>{"BT_Depth_Chroma",                    BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?

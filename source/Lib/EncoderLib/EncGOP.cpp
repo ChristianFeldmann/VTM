@@ -1791,6 +1791,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setEnableTMVPFlag(0);
     }
 
+#if JVET_L0293_CPR
+    // disable TMVP when current picture is the only ref picture
+    if (pcSlice->isIRAP() && pcSlice->getSPS()->getSpsNext().getCPRMode())
+    {
+      pcSlice->setEnableTMVPFlag(0);
+    }
+#endif
+
     // set adaptive search range for non-intra-slices
     if (m_pcCfg->getUseASR() && !pcSlice->isIRAP())
     {

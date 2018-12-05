@@ -1094,7 +1094,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     cuECtx.set( IS_REUSING_CU, isReusingCu );
     if( isReusingCu )
     {
-      m_ComprCUCtxList.back().testModes.push_back( {ETM_RECO_CACHED, SIZE_2Nx2N, ETO_STANDARD, qp, lossless} );
+      m_ComprCUCtxList.back().testModes.push_back( {ETM_RECO_CACHED, ETO_STANDARD, qp, lossless} );
     }
 #endif
     // add intra modes

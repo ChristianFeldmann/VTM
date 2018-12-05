@@ -176,13 +176,32 @@ int CU::predictQP( const CodingUnit& cu, const int prevQP )
   return ( a + b + 1 ) >> 1;
 }
 
+#if JVET_L0362_QG_FIX
+bool CU::isQGStart( const CodingUnit& cu, Partitioner& partitioner )
+#else
 bool CU::isQGStart( const CodingUnit& cu )
+#endif
 {
+#if JVET_L0362_QG_FIX
+  int maxDqpDepth = cu.slice->getPPS()->getMaxCuDQPDepth();
+  if( partitioner.currDepth >= maxDqpDepth )
+  {
+    PartLevel splitAtMaxDepth = partitioner.getPartStack().at( maxDqpDepth ); 
+    // the parent node of qtDepth + mttDepth == maxDqpDepth
+    if( splitAtMaxDepth.parts[splitAtMaxDepth.idx].blocks[partitioner.chType].pos() == cu.blocks[partitioner.chType].pos() )
+      return true;
+    else
+      return false;
+  }
+  else
+    return true;
+#else
   const SPS &sps = *cu.cs->sps;
   const PPS &pps = *cu.cs->pps;
 
   return ( cu.blocks[cu.chType].x % ( ( 1 << ( g_aucLog2[sps.getMaxCUWidth()]  - pps.getMaxCuDQPDepth() ) ) >> getChannelTypeScaleX( cu.chType, cu.chromaFormat ) ) ) == 0 &&
          ( cu.blocks[cu.chType].y % ( ( 1 << ( g_aucLog2[sps.getMaxCUHeight()] - pps.getMaxCuDQPDepth() ) ) >> getChannelTypeScaleY( cu.chType, cu.chromaFormat ) ) ) == 0;
+#endif
 }
 
 uint32_t CU::getNumPUs( const CodingUnit& cu )

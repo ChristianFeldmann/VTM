@@ -422,7 +422,11 @@ protected:
   void init     ( const Slice &slice );
 
   bool setFromCs( const CodingStructure& cs, const Partitioner& partitioner );
+#if JVET_L0362_QG_FIX
+  bool isValid  ( const CodingStructure& cs, const Partitioner& partitioner, int qp );
+#else
   bool isValid  ( const CodingStructure& cs, const Partitioner& partitioner );
+#endif
 
   // TODO: implement copyState
 

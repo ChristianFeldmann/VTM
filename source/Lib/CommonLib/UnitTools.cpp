@@ -4980,7 +4980,11 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
       int32_t refPicPocL0 = slice.getRefPOC(REF_PIC_LIST_0, candidate[i].refIdx[0]);
       int32_t refPicPocL1 = slice.getRefPOC(REF_PIC_LIST_1, candidate[i].refIdx[1]);
       Mv aveMv = candidate[i].mv[1];
-      aveMv = aveMv.scaleMv( xGetDistScaleFactor( curPicPoc, refPicPocL0, curPicPoc, refPicPocL1 ) ); // scaling to L0
+      int32_t distscale = xGetDistScaleFactor( curPicPoc, refPicPocL0, curPicPoc, refPicPocL1 );
+      if( distscale != 4096 )
+      {
+        aveMv = aveMv.scaleMv( distscale ); // scaling to L0
+      }
       aveMv.setHor( ( aveMv.getHor() + candidate[i].mv[0].getHor() + 1 ) >> 1 );
       aveMv.setVer( ( aveMv.getVer() + candidate[i].mv[0].getVer() + 1 ) >> 1 );
           

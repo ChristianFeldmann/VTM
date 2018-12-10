@@ -1198,6 +1198,16 @@ void InterSearch::xCPREstimation(PredictionUnit& pu, PelUnitBuf& origBuf,
           ruiCost = p->second;
           buffered = true;
         }
+        else if (p->second == ruiCost)
+        {
+          // stabilise the search through the unordered list
+          if (bv.hor < rcMv.getHor()
+              || (bv.hor == rcMv.getHor() && bv.ver < rcMv.getVer()))
+          {
+            // update the vector.
+            rcMv = bv;
+          }
+        }
       }
     }
   }

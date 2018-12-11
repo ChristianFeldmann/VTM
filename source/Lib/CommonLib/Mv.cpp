@@ -85,7 +85,7 @@ void clipMv( Mv& rcMv, const Position& pos,
   int iVerMin = ( -( int ) sps.getMaxCUHeight()   - iOffset - ( int ) pos.y + 1 ) << iMvShift;
 
 #if JVET_L0231_WRAPAROUND
-  if( sps.getSpsNext().getUseWrapAround() )
+  if( sps.getUseWrapAround() )
   {
     int iHorMax = ( sps.getPicWidthInLumaSamples() + sps.getMaxCUWidth() - size.width + iOffset - ( int ) pos.x - 1 ) << iMvShift;
     int iHorMin = ( -( int ) sps.getMaxCUWidth()                                      - iOffset - ( int ) pos.x + 1 ) << iMvShift;

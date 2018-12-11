@@ -1965,9 +1965,6 @@ bool EncAppCfg::xCheckParameter()
 #if JVET_L0124_L0208_TRIANGLE
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
 #endif
-#if JVET_L0231_WRAPAROUND
-    xConfirmPara( m_wrapAround, "Horizontal wrap-around motion compensation for inter prediction is only allowed with NEXT profile" );
-#endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
   else
@@ -1990,16 +1987,16 @@ bool EncAppCfg::xCheckParameter()
 #if !REMOVE_MV_ADAPT_PREC 
     xConfirmPara(m_Affine && !m_highPrecisionMv, "Affine is not yet implemented for HighPrecMv off.");
 #endif
+  }
 
 #if JVET_L0231_WRAPAROUND
-    if( m_wrapAround )
-    {
-      xConfirmPara(m_wrapAroundOffset == 0, "Wrap-around offset must be greater than 0");
-      xConfirmPara(m_wrapAroundOffset > m_iSourceWidth, "Wrap-around offset must not be greater than the source picture width");
-      xConfirmPara(m_wrapAroundOffset % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Wrap-around offset must be an integer multiple of the specified chroma subsampling");
-    }
-#endif
+  if( m_wrapAround )
+  {
+    xConfirmPara( m_wrapAroundOffset == 0, "Wrap-around offset must be greater than 0" );
+    xConfirmPara( m_wrapAroundOffset > m_iSourceWidth, "Wrap-around offset must not be greater than the source picture width" );
+    xConfirmPara( m_wrapAroundOffset % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Wrap-around offset must be an integer multiple of the specified chroma subsampling" );
   }
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   xConfirmPara( m_numSplitThreads < 1, "Number of used threads cannot be smaller than 1" );

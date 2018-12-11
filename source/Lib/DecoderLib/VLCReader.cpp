@@ -930,14 +930,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
     }
   }
 #endif
-
-#if JVET_L0231_WRAPAROUND
-  READ_FLAG( symbol, "ref_wraparound_enabled_flag" );               spsNext.setUseWrapAround( symbol != 0 );
-  if( spsNext.getUseWrapAround() )
-  {
-    READ_UVLC( symbol, "ref_wraparound_offset" );                   spsNext.setWrapAroundOffset( symbol );
-  }
-#endif
   // ADD_NEW_TOOL : (sps extension parser) read tool enabling flags and associated parameters here
 }
 
@@ -1084,6 +1076,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_UVLC( uiCode, "log2_diff_max_min_pcm_luma_coding_block_size" ); pcSPS->setPCMLog2MaxSize ( uiCode+pcSPS->getPCMLog2MinSize() );
     READ_FLAG( uiCode, "pcm_loop_filter_disable_flag" );                 pcSPS->setPCMFilterDisableFlag ( uiCode ? true : false );
   }
+
+#if JVET_L0231_WRAPAROUND
+  READ_FLAG(uiCode, "ref_wraparound_enabled_flag");                 pcSPS->setUseWrapAround( uiCode ? true : false );
+  if (pcSPS->getUseWrapAround())
+  {
+    READ_UVLC(uiCode, "ref_wraparound_offset");                     pcSPS->setWrapAroundOffset( uiCode );
+  }
+#endif
 
   READ_UVLC( uiCode, "num_short_term_ref_pic_sets" );
   CHECK(uiCode > 64, "Invalid code");

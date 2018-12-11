@@ -868,11 +868,6 @@ private:
   unsigned    m_CPRMode;
 #endif
 
-#if JVET_L0231_WRAPAROUND
-  bool        m_wrapAround;
-  unsigned    m_wrapAroundOffset;
-#endif
-
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags and associated parameters here
 
 public:
@@ -995,12 +990,6 @@ public:
   void      setCPRMode            (unsigned CPRMode)                                { m_CPRMode = CPRMode; }
   unsigned  getCPRMode            ()                                      const     { return m_CPRMode; }
 #endif
-#if JVET_L0231_WRAPAROUND
-  void      setUseWrapAround      ( bool b )                                        { m_wrapAround = b; }
-  bool      getUseWrapAround      ()                                      const     { return m_wrapAround; }
-  void      setWrapAroundOffset   ( unsigned offset )                               { m_wrapAroundOffset = offset; }
-  unsigned  getWrapAroundOffset   ()                                      const     { return m_wrapAroundOffset; }
-#endif
   // ADD_NEW_TOOL : (sps extension) add access functions for tool enabling flags and associated parameters here
 
 };
@@ -1085,6 +1074,11 @@ private:
   PTL               m_pcPTL;
 
   bool              m_useALF;
+
+#if JVET_L0231_WRAPAROUND
+  bool              m_useWrapAround;
+  unsigned          m_wrapAroundOffset;
+#endif
 
 public:
 
@@ -1220,6 +1214,13 @@ public:
 
   bool                    getUseALF() const { return m_useALF; }
   void                    setUseALF( bool b ) { m_useALF = b; }
+
+#if JVET_L0231_WRAPAROUND
+  void                    setUseWrapAround(bool b)                                                        { m_useWrapAround = b;                                                 }
+  bool                    getUseWrapAround() const                                                        { return m_useWrapAround;                                              }
+  void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
+  unsigned                getWrapAroundOffset() const                                                     { return m_wrapAroundOffset;                                           }
+#endif
 };
 
 

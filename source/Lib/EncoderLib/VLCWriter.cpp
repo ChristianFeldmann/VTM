@@ -640,14 +640,6 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
     }
   }
 #endif
-
-#if JVET_L0231_WRAPAROUND
-  WRITE_FLAG( spsNext.getUseWrapAround() ? 1 : 0,                                               "ref_wraparound_enabled_flag" );
-  if( spsNext.getUseWrapAround() )
-  {
-    WRITE_UVLC( spsNext.getWrapAroundOffset(),                                                  "ref_wraparound_offset" );
-  }
-#endif
   // ADD_NEW_TOOL : (sps extension writer) write tool enabling flags and associated parameters here
 }
 
@@ -739,6 +731,14 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_UVLC( pcSPS->getPCMLog2MaxSize() - pcSPS->getPCMLog2MinSize(),             "log2_diff_max_min_pcm_luma_coding_block_size" );
     WRITE_FLAG( pcSPS->getPCMFilterDisableFlag()?1 : 0,                              "pcm_loop_filter_disable_flag");
   }
+
+#if JVET_L0231_WRAPAROUND
+  WRITE_FLAG( pcSPS->getUseWrapAround() ? 1 : 0,                                     "ref_wraparound_enabled_flag" );
+  if( pcSPS->getUseWrapAround() )
+  {
+    WRITE_UVLC( pcSPS->getWrapAroundOffset(),                                        "ref_wraparound_offset" );
+  }
+#endif
 
   CHECK( pcSPS->getMaxTLayers() == 0, "Maximum number of T-layers is '0'" );
 

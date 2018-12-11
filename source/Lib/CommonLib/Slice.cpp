@@ -1830,10 +1830,6 @@ SPSNext::SPSNext( SPS& sps )
 #if JVET_L0293_CPR
   , m_CPRMode                   ( 0 )
 #endif
-#if JVET_L0231_WRAPAROUND
-  , m_wrapAround                ( false )
-  , m_wrapAroundOffset          ( 0 )
-#endif
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags here (with "false" as default values)
 {
 }
@@ -1878,6 +1874,10 @@ SPS::SPS()
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_spsNextExtension          (*this)
+#if JVET_L0231_WRAPAROUND
+, m_useWrapAround             (false)
+, m_wrapAroundOffset          (  0)
+#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {

@@ -1059,7 +1059,7 @@ void InterPrediction::bioSampleExtendBilinearFilter(Pel const* src, int srcStrid
   Pel const* pSrc = NULL;
   Pel*       pDst = NULL;
 
-  int vFilterSize = NTAPS_LUMA;
+  int vFilterSize = NTAPS_BILINEAR;
   int widthTmp = 0;
   int heightTmp = 0;
 

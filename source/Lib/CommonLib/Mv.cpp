@@ -63,7 +63,11 @@ void roundAffineMv( int& mvx, int& mvy, int nShift )
   mvy = mvy >= 0 ? (mvy + nOffset) >> nShift : -((-mvy + nOffset) >> nShift);
 }
 
-void clipMv( Mv& rcMv, const Position& pos, const SPS& sps )
+void clipMv( Mv& rcMv, const Position& pos,
+#if JVET_L0231_WRAPAROUND
+             const struct Size& size,
+#endif
+             const SPS& sps )
 {
 #if !REMOVE_MV_ADAPT_PREC
   int iMvShift = 2 + (rcMv.highPrec ? VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : 0);
@@ -79,6 +83,17 @@ void clipMv( Mv& rcMv, const Position& pos, const SPS& sps )
 
   int iVerMax = ( sps.getPicHeightInLumaSamples() + iOffset - ( int ) pos.y - 1 ) << iMvShift;
   int iVerMin = ( -( int ) sps.getMaxCUHeight()   - iOffset - ( int ) pos.y + 1 ) << iMvShift;
+
+#if JVET_L0231_WRAPAROUND
+  if( sps.getUseWrapAround() )
+  {
+    int iHorMax = ( sps.getPicWidthInLumaSamples() + sps.getMaxCUWidth() - size.width + iOffset - ( int ) pos.x - 1 ) << iMvShift;
+    int iHorMin = ( -( int ) sps.getMaxCUWidth()                                      - iOffset - ( int ) pos.x + 1 ) << iMvShift;
+    rcMv.setHor( std::min( iHorMax, std::max( iHorMin, rcMv.getHor() ) ) );
+    rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );
+    return;
+  }
+#endif
 
   rcMv.setHor( std::min( iHorMax, std::max( iHorMin, rcMv.getHor() ) ) );
   rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );

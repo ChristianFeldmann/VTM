@@ -1091,6 +1091,11 @@ private:
 
   bool              m_useALF;
 
+#if JVET_L0231_WRAPAROUND
+  bool              m_useWrapAround;
+  unsigned          m_wrapAroundOffset;
+#endif
+
 public:
 
   SPS();
@@ -1263,6 +1268,13 @@ public:
 
   bool                    getUseALF() const { return m_useALF; }
   void                    setUseALF( bool b ) { m_useALF = b; }
+
+#if JVET_L0231_WRAPAROUND
+  void                    setUseWrapAround(bool b)                                                        { m_useWrapAround = b;                                                 }
+  bool                    getUseWrapAround() const                                                        { return m_useWrapAround;                                              }
+  void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
+  unsigned                getWrapAroundOffset() const                                                     { return m_wrapAroundOffset;                                           }
+#endif
 };
 
 

@@ -1004,15 +1004,35 @@ void Picture::extendPicBorder()
 
     Pel*  pi = piTxt;
     // do left and right margins
-    for (int y = 0; y < p.height; y++)
+#if JVET_L0231_WRAPAROUND
+    if (cs->sps->getUseWrapAround())
     {
-      for (int x = 0; x < xmargin; x++ )
+      int xoffset = cs->sps->getWrapAroundOffset() >> getComponentScaleX( compID, cs->area.chromaFormat );
+      for (int y = 0; y < p.height; y++)
       {
-        pi[ -xmargin + x ] = pi[0];
-        pi[  p.width + x ] = pi[p.width-1];
+        for (int x = 0; x < xmargin; x++ )
+        {
+          pi[ -xmargin + x ] = pi[ -xmargin + x + xoffset ];
+          pi[  p.width + x ] = pi[  p.width + x - xoffset ];
+        }
+        pi += p.stride;
       }
-      pi += p.stride;
     }
+    else
+    {
+#endif
+      for (int y = 0; y < p.height; y++)
+      {
+        for (int x = 0; x < xmargin; x++ )
+        {
+          pi[ -xmargin + x ] = pi[0];
+          pi[  p.width + x ] = pi[p.width-1];
+        }
+        pi += p.stride;
+      }
+#if JVET_L0231_WRAPAROUND
+    }
+#endif
 
     // pi is now the (0,height) (bottom left of image within bigger picture
     pi -= (p.stride + xmargin);

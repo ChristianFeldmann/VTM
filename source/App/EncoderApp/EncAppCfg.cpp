@@ -879,6 +879,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "CPRFastMethod",                                  m_CPRFastMethod,                                     6u, "Fast methods for CPR")
 #endif
 
+#if JVET_L0231_WRAPAROUND
+  ("WrapAround",                                      m_wrapAround,                                     false, "Enable horizontal wrap-around motion compensation for inter prediction (0:off, 1:on)  [default: off]")
+  ("WrapAroundOffset",                                m_wrapAroundOffset,                                  0u, "Offset in luma samples used for computing the horizontal wrap-around position")
+#endif
+
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
 
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
@@ -1982,8 +1987,16 @@ bool EncAppCfg::xCheckParameter()
 #if !REMOVE_MV_ADAPT_PREC 
     xConfirmPara(m_Affine && !m_highPrecisionMv, "Affine is not yet implemented for HighPrecMv off.");
 #endif
-
   }
+
+#if JVET_L0231_WRAPAROUND
+  if( m_wrapAround )
+  {
+    xConfirmPara( m_wrapAroundOffset == 0, "Wrap-around offset must be greater than 0" );
+    xConfirmPara( m_wrapAroundOffset > m_iSourceWidth, "Wrap-around offset must not be greater than the source picture width" );
+    xConfirmPara( m_wrapAroundOffset % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Wrap-around offset must be an integer multiple of the specified chroma subsampling" );
+  }
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   xConfirmPara( m_numSplitThreads < 1, "Number of used threads cannot be smaller than 1" );
@@ -3164,6 +3177,13 @@ void EncAppCfg::xPrintParameter()
   }
 #if JVET_L0293_CPR
     msg(VERBOSE, "CPR:%d ", m_CPRMode);
+#endif
+#if JVET_L0231_WRAPAROUND
+  msg( VERBOSE, "WrapAround:%d ", m_wrapAround);
+  if( m_wrapAround )
+  {
+    msg( VERBOSE, "WrapAroundOffset:%d ", m_wrapAroundOffset );
+  }
 #endif
   // ADD_NEW_TOOL (add some output indicating the usage of tools)
 

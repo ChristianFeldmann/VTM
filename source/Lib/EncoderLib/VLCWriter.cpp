@@ -1033,10 +1033,17 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       WRITE_FLAG( pcSlice->getPicOutputFlag() ? 1 : 0, "pic_output_flag" );
     }
 
+#if JVET_L0449
+    int pocBits = pcSlice->getSPS()->getBitsForPOC();
+    int pocMask = (1 << pocBits) - 1;
+    WRITE_CODE(pcSlice->getPOC() & pocMask, pocBits, "slice_pic_order_cnt_lsb");
+#endif
     if( !pcSlice->getIdrPicFlag() )
     {
+#if !JVET_L0449
       int picOrderCntLSB = ( pcSlice->getPOC() - pcSlice->getLastIDR() + ( 1 << pcSlice->getSPS()->getBitsForPOC() ) ) & ( ( 1 << pcSlice->getSPS()->getBitsForPOC() ) - 1 );
       WRITE_CODE( picOrderCntLSB, pcSlice->getSPS()->getBitsForPOC(), "slice_pic_order_cnt_lsb" );
+#endif
       const ReferencePictureSet* rps = pcSlice->getRPS();
 
       // check for bitstream restriction stating that:

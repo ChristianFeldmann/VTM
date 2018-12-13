@@ -141,6 +141,8 @@
 #define JVET_L0362_QG_FIX                                 1 // QG is the node of qtDepth + mttDepth <= maxDqpDepth
 #define JVET_L0362_QG_FIX_CU_REUSE                        1 // fix bug on encoder cu coding info reusing fast algorithm (i.e., reuse cu info when having the same neighbor and the same qp)
 
+#define JVET_L0449                                        1 // code POC value for IDRs
+
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )
 #endif

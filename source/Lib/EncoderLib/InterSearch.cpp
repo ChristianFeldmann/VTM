@@ -3391,7 +3391,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   Distortion    uiCostBi  = std::numeric_limits<Distortion>::max();
   Distortion    uiCostTemp;
 
-  uint32_t          uiBits[3];
+  uint32_t          uiBits[3] = { 0 };
   uint32_t          uiBitsTemp;
   Distortion    bestBiPDist = std::numeric_limits<Distortion>::max();
 

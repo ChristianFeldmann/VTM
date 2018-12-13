@@ -1438,7 +1438,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->fieldPic = isField;
 #endif
 
+#if JVET_L0449
+    int pocBits = pcSlice->getSPS()->getBitsForPOC();
+    int pocMask = (1 << pocBits) - 1;
+    pcSlice->setLastIDR(m_iLastIDR & ~pocMask);
+#else
     pcSlice->setLastIDR(m_iLastIDR);
+#endif
 #if HEVC_DEPENDENT_SLICES
     pcSlice->setSliceSegmentIdx(0);
 #endif

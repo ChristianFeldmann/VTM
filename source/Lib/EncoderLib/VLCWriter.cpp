@@ -649,7 +649,25 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   const ChromaFormat format                = pcSPS->getChromaFormatIdc();
   const bool         chromaEnabled         = isChromaEnabled(format);
-
+#if JVET_L0696_CONSTRAINT_SYNTAX
+  WRITE_FLAG(pcSPS->getIntraOnlyConstraintFlag() ? 1 : 0, "intra_only_constraint_flag");
+  WRITE_CODE(pcSPS->getMaxBitDepthConstraintIdc(), 4, "max_bitdepth_constraint_idc");
+  WRITE_CODE(pcSPS->getMaxChromaFormatConstraintIdc(), 2, "max_chroma_format_constraint_idc");
+  WRITE_FLAG(pcSPS->getFrameConstraintFlag() ? 1 : 0, "frame_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoQtbttDualTreeIntraConstraintFlag() ? 1 : 0, "no_qtbtt_dual_tree_intra constraint_flag");
+  WRITE_FLAG(pcSPS->getNoCclmConstraintFlag() ? 1 : 0, "no_cclm_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoSaoConstraintFlag() ? 1 : 0, "no_sao_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoAlfConstraintFlag() ? 1 : 0, "no_alf_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoPcmConstraintFlag() ? 1 : 0, "no_pcm_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoTemporalMvpConstraintFlag() ? 1 : 0, "no_temporal_mvp_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoSbtmvpConstraintFlag() ? 1 : 0, "no_sbtmvp_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoAmvrConstraintFlag() ? 1 : 0, "no_amvr_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoAffineMotionConstraintFlag() ? 1 : 0, "no_affine_motion_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoMtsConstraintFlag() ? 1 : 0, "no_mts_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoLadfConstraintFlag() ? 1 : 0, "no_ladf_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoDepQuantConstraintFlag() ? 1 : 0, "no_dep_quant_constraint_flag");
+  WRITE_FLAG(pcSPS->getNoSignDataHidingConstraintFlag() ? 1 : 0, "no_sign_data_hiding_constraint_flag");
+#endif
 #if ENABLE_TRACING
   xTraceSPSHeader ();
 #endif

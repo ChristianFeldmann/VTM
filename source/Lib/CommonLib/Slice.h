@@ -1003,6 +1003,26 @@ class SPS
 {
 private:
   int               m_SPSId;
+#if JVET_L0696_CONSTRAINT_SYNTAX
+  bool              m_bIntraOnlyConstraintFlag;
+  uint32_t          m_maxBitDepthConstraintIdc;
+  uint32_t          m_maxChromaFormatConstraintIdc;
+  bool              m_bFrameConstraintFlag;
+  bool              m_bNoQtbttDualTreeIntraConstraintFlag;
+  bool              m_bNoCclmConstraintFlag;
+  bool              m_bNoSaoConstraintFlag;
+  bool              m_bNoAlfConstraintFlag;
+  bool              m_bNoPcmConstraintFlag;
+  bool              m_bNoTemporalMvpConstraintFlag;
+  bool              m_bNoSbtmvpConstraintFlag;
+  bool              m_bNoAmvrConstraintFlag;
+  bool              m_bNoAffineMotionConstraintFlag;
+  bool              m_bNoMtsConstraintFlag;
+  bool              m_bNoLadfConstraintFlag;
+  bool              m_bNoDepQuantConstraintFlag;
+  bool              m_bNoSignDataHidingConstraintFlag;
+#endif
+
 #if HEVC_VPS
   int               m_VPSId;
 #endif
@@ -1104,6 +1124,42 @@ public:
 #if HEVC_VPS
   int                     getVPSId() const                                                                { return m_VPSId;                                                      }
   void                    setVPSId(int i)                                                                 { m_VPSId = i;                                                         }
+#endif
+#if JVET_L0696_CONSTRAINT_SYNTAX
+  bool                    getIntraOnlyConstraintFlag() const                                              { return m_bIntraOnlyConstraintFlag;                                   }
+  void                    setIntraOnlyConstraintFlag(bool bVal)                                           { m_bIntraOnlyConstraintFlag = bVal;                                   }
+  uint32_t                getMaxBitDepthConstraintIdc() const                                             { return m_maxBitDepthConstraintIdc;                                   }
+  void                    setMaxBitDepthConstraintIdc(uint32_t u)                                         { m_maxBitDepthConstraintIdc = u;                                      }
+  uint32_t                getMaxChromaFormatConstraintIdc() const                                         { return m_maxChromaFormatConstraintIdc;                               }
+  void                    setMaxChromaFormatConstraintIdc(uint32_t u)                                     { m_maxChromaFormatConstraintIdc = u;                                  }
+  bool                    getFrameConstraintFlag() const                                                  { return m_bFrameConstraintFlag;                                   }
+  void                    setFrameConstraintFlag(bool bVal)                                               { m_bFrameConstraintFlag = bVal;                                   }
+  bool                    getNoQtbttDualTreeIntraConstraintFlag() const                                   { return m_bNoQtbttDualTreeIntraConstraintFlag;                        }
+  void                    setNoQtbttDualTreeIntraConstraintFlag(bool bVal)                                { m_bNoQtbttDualTreeIntraConstraintFlag = bVal;                        }
+  bool                    getNoCclmConstraintFlag() const                                                 { return m_bNoCclmConstraintFlag;                                      }
+  void                    setNoCclmConstraintFlag(bool bVal)                                              { m_bNoCclmConstraintFlag = bVal;                                      }
+  bool                    getNoSaoConstraintFlag() const                                                  { return m_bNoSaoConstraintFlag;                                       }
+  void                    setNoSaoConstraintFlag(bool bVal)                                               { m_bNoSaoConstraintFlag = bVal;                                       }
+  bool                    getNoAlfConstraintFlag() const                                                  { return m_bNoAlfConstraintFlag;                                       }
+  void                    setNoAlfConstraintFlag(bool bVal)                                               { m_bNoAlfConstraintFlag = bVal;                                       }
+  bool                    getNoPcmConstraintFlag() const                                                  { return m_bNoPcmConstraintFlag;                                       }
+  void                    setNoPcmConstraintFlag(bool bVal)                                               { m_bNoPcmConstraintFlag = bVal;                                       }
+  bool                    getNoTemporalMvpConstraintFlag() const                                          { return m_bNoTemporalMvpConstraintFlag;                               }
+  void                    setNoTemporalMvpConstraintFlag(bool bVal)                                       { m_bNoTemporalMvpConstraintFlag = bVal;                               }
+  bool                    getNoSbtmvpConstraintFlag() const                                               { return m_bNoSbtmvpConstraintFlag;                                    }
+  void                    setNoSbtmvpConstraintFlag(bool bVal)                                            { m_bNoSbtmvpConstraintFlag = bVal;                                    }
+  bool                    getNoAmvrConstraintFlag() const                                                 { return m_bNoAmvrConstraintFlag;                                      }
+  void                    setNoAmvrConstraintFlag(bool bVal)                                              { m_bNoAmvrConstraintFlag = bVal;                                      }
+  bool                    getNoAffineMotionConstraintFlag() const                                         { return m_bNoAffineMotionConstraintFlag;                              }
+  void                    setNoAffineMotionConstraintFlag(bool bVal)                                      { m_bNoAffineMotionConstraintFlag = bVal;                              }
+  bool                    getNoMtsConstraintFlag() const                                                  { return m_bNoMtsConstraintFlag;                                       }
+  void                    setNoMtsConstraintFlag(bool bVal)                                               { m_bNoMtsConstraintFlag = bVal;                                       }
+  bool                    getNoLadfConstraintFlag() const                                                 { return m_bNoLadfConstraintFlag;                                      }
+  void                    setNoLadfConstraintFlag(bool bVal)                                              { m_bNoLadfConstraintFlag = bVal;                                      }
+  bool                    getNoDepQuantConstraintFlag() const                                             { return m_bNoDepQuantConstraintFlag;                                  }
+  void                    setNoDepQuantConstraintFlag(bool bVal)                                          { m_bNoDepQuantConstraintFlag = bVal;                                  }
+  bool                    getNoSignDataHidingConstraintFlag() const                                       { return m_bNoSignDataHidingConstraintFlag;                            }
+  void                    setNoSignDataHidingConstraintFlag(bool bVal)                                    { m_bNoSignDataHidingConstraintFlag = bVal;                            }
 #endif
   int                     getSPSId() const                                                                { return m_SPSId;                                                      }
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }

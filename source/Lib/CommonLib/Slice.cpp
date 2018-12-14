@@ -1839,6 +1839,25 @@ SPSNext::SPSNext( SPS& sps )
 
 SPS::SPS()
 : m_SPSId                     (  0)
+#if JVET_L0696_CONSTRAINT_SYNTAX
+, m_bIntraOnlyConstraintFlag  (false)
+, m_maxBitDepthConstraintIdc  (  0)
+, m_maxChromaFormatConstraintIdc(CHROMA_420)
+, m_bFrameConstraintFlag  (false)
+, m_bNoQtbttDualTreeIntraConstraintFlag(false)
+, m_bNoCclmConstraintFlag     (false)
+, m_bNoSaoConstraintFlag      (false)
+, m_bNoAlfConstraintFlag      (false)
+, m_bNoPcmConstraintFlag      (false)
+, m_bNoTemporalMvpConstraintFlag(false)
+, m_bNoSbtmvpConstraintFlag   (false)
+, m_bNoAmvrConstraintFlag     (false)
+, m_bNoAffineMotionConstraintFlag(false)
+, m_bNoMtsConstraintFlag      (false)
+, m_bNoLadfConstraintFlag     (false)
+, m_bNoDepQuantConstraintFlag (false)
+, m_bNoSignDataHidingConstraintFlag(false)
+#endif
 #if HEVC_VPS
 , m_VPSId                     (  0)
 #endif

@@ -1002,6 +1002,7 @@ public:
 class SPS
 {
 private:
+  int               m_SPSId;
 #if JVET_L0696_CONSTRAINT_SYNTAX
   bool              m_bIntraOnlyConstraintFlag;
   uint32_t          m_maxBitDepthConstraintIdc;
@@ -1022,7 +1023,6 @@ private:
   bool              m_bNoSignDataHidingConstraintFlag;
 #endif
 
-  int               m_SPSId;
 #if HEVC_VPS
   int               m_VPSId;
 #endif

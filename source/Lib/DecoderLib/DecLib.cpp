@@ -173,12 +173,6 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   pcEncPic->copySAO( *pic, 0 );
                 }
 
-                pcDecLib->executeLoopFilters();
-                if ( pic->cs->sps->getUseSAO() )
-                {
-                  pcEncPic->copySAO( *pic, 1 );
-                }
-
                 if( pic->cs->sps->getUseALF() )
                 {
                   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
@@ -190,6 +184,12 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   {
                     pcEncPic->slices[i]->getAlfSliceParam() = pic->slices[i]->getAlfSliceParam();
                   }
+                }
+
+                pcDecLib->executeLoopFilters();
+                if ( pic->cs->sps->getUseSAO() )
+                {
+                  pcEncPic->copySAO( *pic, 1 );
                 }
 
                 pcEncPic->cs->copyStructure( *pic->cs, CH_L, true, true );
@@ -1088,7 +1088,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     pcSlice->checkCRA(pcSlice->getRPS(), m_pocCRA, m_associatedIRAPType, m_cListPic );
     // Set reference list
     pcSlice->setRefPicList( m_cListPic, true, true );
-	
+
     if (!pcSlice->isIntra())
     {
       bool bLowDelay = true;

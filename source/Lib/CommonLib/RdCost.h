@@ -167,12 +167,6 @@ public:
   void           setPredictor             ( const Mv& rcMv )
   {
     m_mvPredictor = rcMv;
-#if !REMOVE_MV_ADAPT_PREC
-    if( m_mvPredictor.highPrec )
-    {
-      m_mvPredictor = Mv( m_mvPredictor.hor >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE, m_mvPredictor.ver >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE, false );
-    }
-#endif
   }
   void           setCostScale             ( int iCostScale )           { m_iCostScale = iCostScale; }
   Distortion     getCost                  ( uint32_t b )                   { return Distortion( m_motionLambda * b ); }

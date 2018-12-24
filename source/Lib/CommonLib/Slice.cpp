@@ -1779,9 +1779,6 @@ SPSNext::SPSNext( SPS& sps )
   , m_LargeCTU                  ( false )
   , m_SubPuMvp                  ( false )
   , m_IMV                       ( false )
-#if !REMOVE_MV_ADAPT_PREC
-  , m_highPrecMv                ( false )
-#endif
 #if JVET_L0256_BIO
   , m_BIO                       ( false )
 #endif

@@ -43,9 +43,6 @@
 void roundMV( Mv & rMV, unsigned imvShift )
 {
   CHECK( imvShift == 0, "roundMV called for imvShift=0" );
-#if !REMOVE_MV_ADAPT_PREC
-  if (rMV.highPrec) imvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-#endif
   int offset = 1 << ( imvShift - 1 );
 #if JVET_L0377_AMVR_ROUNDING_ALIGN
   rMV.setHor(rMV.getHor() >= 0 ? ((rMV.getHor() + offset) >> imvShift) << imvShift : -(((-rMV.getHor() + offset) >> imvShift)) << imvShift);
@@ -69,14 +66,8 @@ void clipMv( Mv& rcMv, const Position& pos,
 #endif
              const SPS& sps )
 {
-#if !REMOVE_MV_ADAPT_PREC
-  int iMvShift = 2 + (rcMv.highPrec ? VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : 0);
-#else
   int iMvShift = 2;
-#endif
-#if REMOVE_MV_ADAPT_PREC
   iMvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-#endif
   int iOffset = 8;
   int iHorMax = ( sps.getPicWidthInLumaSamples() + iOffset - ( int ) pos.x - 1 ) << iMvShift;
   int iHorMin = ( -( int ) sps.getMaxCUWidth()   - iOffset - ( int ) pos.x + 1 ) << iMvShift;

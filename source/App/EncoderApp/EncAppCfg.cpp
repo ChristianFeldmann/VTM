@@ -818,12 +818,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   ("SubPuMvpLog2Size",                               m_SubPuMvpLog2Size,                                   2u, "Sub-PU TMVP size index: 2^n")
 #endif
-#if !REMOVE_MV_ADAPT_PREC 
-  ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
-#endif
-#if !REMOVE_MV_ADAPT_PREC 
-  ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
-#endif
   ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
   ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
 #if JVET_L0256_BIO
@@ -1941,10 +1935,6 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_LargeCTU, "Large CTU is only allowed with NEXT profile" );
     xConfirmPara( m_SubPuMvpMode != 0, "Sub-PU motion vector prediction is only allowed with NEXT profile" );
-#if !REMOVE_MV_ADAPT_PREC
-    xConfirmPara( m_highPrecisionMv, "High precision MV for temporal merging can only be used with NEXT profile" );
-    xConfirmPara( m_Affine, "Affine is only allowed with NEXT profile" );
-#endif
 #if JVET_L0256_BIO
     xConfirmPara( m_BIO, "BIO only allowed with NEXT profile" );
 #endif
@@ -1984,9 +1974,6 @@ bool EncAppCfg::xCheckParameter()
 #endif
     }
 
-#if !REMOVE_MV_ADAPT_PREC 
-    xConfirmPara(m_Affine && !m_highPrecisionMv, "Affine is not yet implemented for HighPrecMv off.");
-#endif
   }
 
 #if JVET_L0231_WRAPAROUND
@@ -3147,9 +3134,6 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "DualITree:%d ", m_dualTree );
     msg( VERBOSE, "LargeCTU:%d ", m_LargeCTU );
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
-#if !REMOVE_MV_ADAPT_PREC
-    msg(VERBOSE, "HighPrecMv:%d ", m_highPrecisionMv);
-#endif
 #if JVET_L0256_BIO
     msg( VERBOSE, "BIO:%d ", m_BIO );
 #endif

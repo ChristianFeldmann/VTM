@@ -486,18 +486,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     if( 0 <= miQ.refIdx[1] ) { mvQ1 = miQ.mv[1]; }
 
     int nThreshold = 4;
-#if !REMOVE_MV_ADAPT_PREC
-    if (cu.cs->sps->getSpsNext().getUseHighPrecMv())
-    {
-      mvP0.setHighPrec();
-      mvP1.setHighPrec();
-      mvQ0.setHighPrec();
-      mvQ1.setHighPrec();
-#endif
       nThreshold = 4 << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-#if !REMOVE_MV_ADAPT_PREC
-  }
-#endif
     unsigned uiBs = 0;
 
     //th can be optimized
@@ -551,16 +540,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   Mv mvQ0 = miQ.mv[0];
 
   int nThreshold = 4;
-#if !REMOVE_MV_ADAPT_PREC
-  if (cu.cs->sps->getSpsNext().getUseHighPrecMv())
-  {
-    mvP0.setHighPrec();
-    mvQ0.setHighPrec();
-#endif
     nThreshold = 4 << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-#if !REMOVE_MV_ADAPT_PREC
-  }
-#endif
   return ( ( abs( mvQ0.getHor() - mvP0.getHor() ) >= nThreshold ) || ( abs( mvQ0.getVer() - mvP0.getVer() ) >= nThreshold ) ) ? 1 : 0;
 }
 

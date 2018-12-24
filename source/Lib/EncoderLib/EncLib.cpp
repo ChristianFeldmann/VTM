@@ -868,9 +868,6 @@ void EncLib::xInitSPS(SPS &sps)
 #endif 
   sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
   sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
-#if !REMOVE_MV_ADAPT_PREC
-  sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
-#endif
 #if JVET_L0256_BIO
   sps.getSpsNext().setUseBIO                ( m_BIO );
 #endif

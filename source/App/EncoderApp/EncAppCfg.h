@@ -212,9 +212,6 @@ protected:
 #endif 
   bool      m_Affine;
   bool      m_AffineType;
-#if !REMOVE_MV_ADAPT_PREC
-  bool      m_highPrecisionMv;
-#endif
 #if JVET_L0256_BIO
   bool      m_BIO;
 #endif

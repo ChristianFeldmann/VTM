@@ -531,9 +531,6 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   WRITE_FLAG( spsNext.getUseLargeCTU() ? 1 : 0,                                                 "large_ctu_flag" );
   WRITE_FLAG(spsNext.getUseSubPuMvp() ? 1 : 0,                                                  "subpu_tmvp_flag");
   WRITE_FLAG( spsNext.getUseIMV() ? 1 : 0,                                                      "imv_enable_flag" );
-#if !REMOVE_MV_ADAPT_PREC
-  WRITE_FLAG( spsNext.getUseHighPrecMv() ? 1 : 0,                                               "high_precision_motion_vectors");
-#endif
 #if JVET_L0256_BIO
   WRITE_FLAG( spsNext.getUseBIO() ? 1 : 0,                                                      "bio_enable_flag" );
 #endif

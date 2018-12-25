@@ -803,9 +803,6 @@ private:
   bool              m_LargeCTU;                   // 5
   bool              m_SubPuMvp;
   bool              m_IMV;                        // 9
-#if !REMOVE_MV_ADAPT_PREC
-  bool              m_highPrecMv;
-#endif
 #if JVET_L0256_BIO
   bool              m_BIO;
 #endif
@@ -892,10 +889,6 @@ public:
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
-#if !REMOVE_MV_ADAPT_PREC
-  void      setUseHighPrecMv(bool b) { m_highPrecMv = b; }
-  bool      getUseHighPrecMv()                                      const { return m_highPrecMv; }
-#endif
 #if JVET_L0256_BIO
   void      setUseBIO(bool b)                                                       { m_BIO = b; }
   bool      getUseBIO()                                                   const     { return m_BIO; }

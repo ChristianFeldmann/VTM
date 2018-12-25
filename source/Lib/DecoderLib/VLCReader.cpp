@@ -791,9 +791,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   READ_FLAG( symbol,    "large_ctu_flag" );                         spsNext.setUseLargeCTU            ( symbol != 0 );
   READ_FLAG( symbol,    "subpu_tmvp_flag" );                        spsNext.setSubPuMvpMode           (symbol);
   READ_FLAG( symbol,    "imv_enable_flag" );                        spsNext.setUseIMV                 ( symbol != 0 );
-#if !REMOVE_MV_ADAPT_PREC
-  READ_FLAG( symbol, "high_precision_motion_vectors" );             spsNext.setUseHighPrecMv(symbol != 0);
-#endif
 #if JVET_L0256_BIO
   READ_FLAG( symbol, "bio_enable_flag" );                           spsNext.setUseBIO                 ( symbol != 0 );
 #endif

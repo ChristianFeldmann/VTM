@@ -217,9 +217,6 @@ protected:
 #endif 
   bool      m_Affine;
   bool      m_AffineType;
-#if !REMOVE_MV_ADAPT_PREC
-  bool      m_highPrecMv;
-#endif
 #if JVET_L0256_BIO
   bool      m_BIO;
 #endif
@@ -714,10 +711,6 @@ public:
   bool      getAffine                       ()         const { return m_Affine; }
   void      setAffineType( bool b )                          { m_AffineType = b; }
   bool      getAffineType()                            const { return m_AffineType; }
-#if !REMOVE_MV_ADAPT_PREC
-  void      setHighPrecisionMv              ( bool b )       { m_highPrecMv = b; }
-  bool      getHighPrecisionMv              ()               { return m_highPrecMv; }
-#endif
 #if JVET_L0256_BIO
   void      setBIO(bool b)                                   { m_BIO = b; }
   bool      getBIO()                                   const { return m_BIO; }

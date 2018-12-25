@@ -225,9 +225,6 @@ void EncApp::xInitLibCfg()
 #endif 
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );
-#if !REMOVE_MV_ADAPT_PREC
-  m_cEncLib.setHighPrecisionMv                                   (m_highPrecisionMv);
-#endif
 #if JVET_L0256_BIO
   m_cEncLib.setBIO                                               (m_BIO);
 #endif

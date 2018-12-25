@@ -403,10 +403,6 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   fPosPosition = tempIdx - fPosStep * (4);
 
   const int offset = refMvdCands[fPosStep];
-#if !REMOVE_MV_ADAPT_PREC
-  const int highPrecList0 = mmvdBaseMv[fPosBaseIdx][0].mv.highPrec;
-  const int highPrecList1 = mmvdBaseMv[fPosBaseIdx][1].mv.highPrec;
-#endif
   const int refList0 = mmvdBaseMv[fPosBaseIdx][0].refIdx;
   const int refList1 = mmvdBaseMv[fPosBaseIdx][1].refIdx;
 
@@ -421,7 +417,6 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
     {
       refSign = -1;
     }
-#if REMOVE_MV_ADAPT_PREC
     if (fPosPosition == 0)
     {
       tempMv[0] = Mv(offset, 0);
@@ -442,28 +437,6 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
       tempMv[0] = Mv(0, -offset);
       tempMv[1] = Mv(0, -offset * refSign);
     }
-#else
-    if (fPosPosition == 0)
-    {
-      tempMv[0] = Mv(offset, 0, highPrecList0);
-      tempMv[1] = Mv(offset * refSign, 0, highPrecList1);
-    }
-    else if (fPosPosition == 1)
-    {
-      tempMv[0] = Mv(-offset, 0, highPrecList0);
-      tempMv[1] = Mv(-offset * refSign, 0, highPrecList1);
-    }
-    else if (fPosPosition == 2)
-    {
-      tempMv[0] = Mv(0, offset, highPrecList0);
-      tempMv[1] = Mv(0, offset * refSign, highPrecList1);
-    }
-    else
-    {
-      tempMv[0] = Mv(0, -offset, highPrecList0);
-      tempMv[1] = Mv(0, -offset * refSign, highPrecList1);
-    }
-#endif
     if (abs(poc1 - currPoc) > abs(poc0 - currPoc))
     {
       const int scale = PU::getDistScaleFactor(currPoc, poc0, currPoc, poc1);
@@ -489,7 +462,6 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   }
   else if (refList0 != -1)
   {
-#if REMOVE_MV_ADAPT_PREC
     if (fPosPosition == 0)
     {
       tempMv[0] = Mv(offset, 0);
@@ -506,24 +478,6 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
     {
       tempMv[0] = Mv(0, -offset);
     }
-#else
-    if (fPosPosition == 0)
-    {
-      tempMv[0] = Mv(offset, 0, highPrecList0);
-    }
-    else if (fPosPosition == 1)
-    {
-      tempMv[0] = Mv(-offset, 0, highPrecList0);
-    }
-    else if (fPosPosition == 2)
-    {
-      tempMv[0] = Mv(0, offset, highPrecList0);
-    }
-    else
-    {
-      tempMv[0] = Mv(0, -offset, highPrecList0);
-    }
-#endif
     pu.interDir = 1;
     pu.mv[REF_PIC_LIST_0] = mmvdBaseMv[fPosBaseIdx][0].mv + tempMv[0];
     pu.refIdx[REF_PIC_LIST_0] = refList0;
@@ -532,7 +486,6 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   }
   else if (refList1 != -1)
   {
-#if REMOVE_MV_ADAPT_PREC
     if (fPosPosition == 0)
     {
       tempMv[1] = Mv(offset, 0);
@@ -549,24 +502,6 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
     {
       tempMv[1] = Mv(0, -offset);
     }
-#else
-    if (fPosPosition == 0)
-    {
-      tempMv[1] = Mv(offset, 0, highPrecList1);
-    }
-    else if (fPosPosition == 1)
-    {
-      tempMv[1] = Mv(-offset, 0, highPrecList1);
-    }
-    else if (fPosPosition == 2)
-    {
-      tempMv[1] = Mv(0, offset, highPrecList1);
-    }
-    else
-    {
-      tempMv[1] = Mv(0, -offset, highPrecList1);
-    }
-#endif
     pu.interDir = 2;
     pu.mv[REF_PIC_LIST_0] = Mv(0, 0);
     pu.refIdx[REF_PIC_LIST_0] = -1;

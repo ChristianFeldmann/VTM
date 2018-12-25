@@ -162,9 +162,7 @@ namespace PU
 #endif
   void setAllAffineMvField            (      PredictionUnit &pu, MvField *mvField, RefPicList eRefList );
   void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList 
-#if REMOVE_MV_ADAPT_PREC
     , bool setHighPrec = false
-#endif 
   );
   bool getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx &mrgCtx, bool& LICFlag, const int count
 #if JVET_L0054_MMVD

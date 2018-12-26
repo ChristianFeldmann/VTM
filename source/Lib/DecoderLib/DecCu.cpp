@@ -656,18 +656,15 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               Mv mvLT = affineAMVPInfo.mvCandLT[mvp_idx] + pu.mvdAffi[eRefList][0];
               Mv mvRT = affineAMVPInfo.mvCandRT[mvp_idx] + pu.mvdAffi[eRefList][1];
               mvRT += pu.mvdAffi[eRefList][0];
-              mvLT.hor = mvLT.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-              mvLT.ver = mvLT.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-              mvRT.hor = mvRT.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-              mvRT.ver = mvRT.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+              mvLT.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
+              mvRT.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
 
               Mv mvLB;
               if ( cu.affineType == AFFINEMODEL_6PARAM )
               {
                 mvLB = affineAMVPInfo.mvCandLB[mvp_idx] + pu.mvdAffi[eRefList][2];
                 mvLB += pu.mvdAffi[eRefList][0];
-                mvLB.hor = mvLB.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-                mvLB.ver = mvLB.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+                mvLB.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
               }
               PU::setAllAffineMv( pu, mvLT, mvRT, mvLB, eRefList );
             }
@@ -691,15 +688,13 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #if REUSE_CU_RESULTS
                 if (!cu.cs->pcv->isEncoder)
 #endif
-                  mvd <<= 2;
+                  mvd.changePrecision(MV_PRECISION_INT, MV_PRECISION_QUARTER);
               }
               pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx[eRefList]] + mvd;
 #else
               pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx [eRefList]] + pu.mvd[eRefList];
 #endif
-
-              pu.mv[eRefList].hor = pu.mv[eRefList].hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-              pu.mv[eRefList].ver = pu.mv[eRefList].ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+              pu.mv[eRefList].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
             }
           }
         }

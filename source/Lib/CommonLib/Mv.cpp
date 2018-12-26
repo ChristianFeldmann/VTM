@@ -40,18 +40,7 @@
 #include "Common.h"
 #include "Slice.h"
 
-void roundMV( Mv & rMV, unsigned imvShift )
-{
-  CHECK( imvShift == 0, "roundMV called for imvShift=0" );
-  int offset = 1 << ( imvShift - 1 );
-#if JVET_L0377_AMVR_ROUNDING_ALIGN
-  rMV.setHor(rMV.getHor() >= 0 ? ((rMV.getHor() + offset) >> imvShift) << imvShift : -(((-rMV.getHor() + offset) >> imvShift)) << imvShift);
-  rMV.setVer(rMV.getVer() >= 0 ? ((rMV.getVer() + offset) >> imvShift) << imvShift : -(((-rMV.getVer() + offset) >> imvShift)) << imvShift);
-#else
-  rMV.setHor( ( ( rMV.getHor() + offset ) >> imvShift ) << imvShift );
-  rMV.setVer( ( ( rMV.getVer() + offset ) >> imvShift ) << imvShift );
-#endif
-}
+const MvPrecision Mv::m_dstMvPrecision[3] = { MV_PRECISION_QUARTER, MV_PRECISION_INT, MV_PRECISION_4PEL };
 
 void roundAffineMv( int& mvx, int& mvy, int nShift )
 {
@@ -66,8 +55,7 @@ void clipMv( Mv& rcMv, const Position& pos,
 #endif
              const SPS& sps )
 {
-  int iMvShift = 2;
-  iMvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  int iMvShift = 2 + VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
   int iOffset = 8;
   int iHorMax = ( sps.getPicWidthInLumaSamples() + iOffset - ( int ) pos.x - 1 ) << iMvShift;
   int iHorMin = ( -( int ) sps.getMaxCUWidth()   - iOffset - ( int ) pos.x + 1 ) << iMvShift;

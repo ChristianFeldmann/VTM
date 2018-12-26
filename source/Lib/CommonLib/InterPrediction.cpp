@@ -637,9 +637,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   const ChromaFormat  chFmt = pu.chromaFormat;
   const bool          rndRes = !bi;
 
-  int iAddPrecShift = 0;
-
-    iAddPrecShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  int iAddPrecShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
 
   int shiftHor = 2 + iAddPrecShift + ::getComponentScaleX(compID, chFmt);
   int shiftVer = 2 + iAddPrecShift + ::getComponentScaleY(compID, chFmt);

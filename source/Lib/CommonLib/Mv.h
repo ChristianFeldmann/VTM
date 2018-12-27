@@ -59,7 +59,7 @@ enum MvPrecision
 class Mv
 {
 private:
-  static const MvPrecision m_dstMvPrecision[3];
+  static const MvPrecision m_amvrPrecision[3];
 
 public:
   int   hor;     ///< horizontal component of motion vector
@@ -188,7 +188,7 @@ public:
 
   void changePrecisionAmvr(const int amvr, const MvPrecision& dst)
   {
-    changePrecision(m_dstMvPrecision[amvr], dst);
+    changePrecision(m_amvrPrecision[amvr], dst);
   }
 
   void roundToPrecision(const MvPrecision& src, const MvPrecision& dst)
@@ -199,8 +199,7 @@ public:
 
   void roundToAmvrSignalPrecision(const MvPrecision& src, const int amvr)
   {
-    static const MvPrecision dstMvPrecision[3] = { MV_PRECISION_QUARTER, MV_PRECISION_INT, MV_PRECISION_4PEL };
-    roundToPrecision(src, dstMvPrecision[amvr]);
+    roundToPrecision(src, m_amvrPrecision[amvr]);
   }
 };// END CLASS DEFINITION MV
 

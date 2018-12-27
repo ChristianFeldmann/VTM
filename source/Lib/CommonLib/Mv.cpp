@@ -40,7 +40,7 @@
 #include "Common.h"
 #include "Slice.h"
 
-const MvPrecision Mv::m_dstMvPrecision[3] = { MV_PRECISION_QUARTER, MV_PRECISION_INT, MV_PRECISION_4PEL };
+const MvPrecision Mv::m_amvrPrecision[3] = { MV_PRECISION_QUARTER, MV_PRECISION_INT, MV_PRECISION_4PEL }; // for cu.imv=0, 1 and 2
 
 void roundAffineMv( int& mvx, int& mvy, int nShift )
 {

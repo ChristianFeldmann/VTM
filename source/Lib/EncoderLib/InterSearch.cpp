@@ -768,9 +768,9 @@ int InterSearch::xCPRSearchMVChromaRefine(PredictionUnit& pu,
 
     tempSad = sadBestCand[cand];
 
-    Mv cMvQuaterPixl = cMVCand[cand];
-    cMvQuaterPixl <<= 2;
-    pu.mv[0] = cMvQuaterPixl;
+    Mv mvFullPrecision = cMVCand[cand];
+    mvFullPrecision <<= ( 2 + VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE);
+    pu.mv[0] = mvFullPrecision;
     pu.interDir = 1;
     pu.refIdx[0] = pu.cs->slice->getNumRefIdx(REF_PIC_LIST_0) - 1; // last idx in the list
 

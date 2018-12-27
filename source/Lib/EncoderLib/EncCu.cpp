@@ -192,20 +192,20 @@ void EncCu::destroy()
       {
         delete[] m_pTempMotLUTs[w][h]->motionCand;
         m_pTempMotLUTs[w][h]->motionCand = nullptr;
-        delete[] m_pTempMotLUTs[w][h];
+        delete m_pTempMotLUTs[w][h];
       }
       if (m_pBestMotLUTs[w][h])
       {
         delete[] m_pBestMotLUTs[w][h]->motionCand;
         m_pBestMotLUTs[w][h]->motionCand = nullptr;
-        delete[] m_pBestMotLUTs[w][h];
+        delete m_pBestMotLUTs[w][h];
       }
 
       if (m_pSplitTempMotLUTs[w][h])
       {
         delete[] m_pSplitTempMotLUTs[w][h]->motionCand;
         m_pSplitTempMotLUTs[w][h]->motionCand = nullptr;
-        delete[] m_pSplitTempMotLUTs[w][h];
+        delete m_pSplitTempMotLUTs[w][h];
       }
 #endif
     }

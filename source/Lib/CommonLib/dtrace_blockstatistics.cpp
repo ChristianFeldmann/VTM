@@ -409,7 +409,7 @@ void getAndStoreBlockStatistics(const CodingStructure& cs, const UnitArea& ctuAr
 void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
 {
   const int maxNumChannelType = cs.pcv->chrFormat != CHROMA_400 && CS::isDualITree( cs ) ? 2 : 1;
-  const int nShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  const int nShift = MV_FRACTIONAL_BITS_DIFF;
   const int nOffset = 1 << (nShift - 1);
   for( int ch = 0; ch < maxNumChannelType; ch++ )
   {
@@ -682,7 +682,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
 
 void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
 {
-  const int nShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  const int nShift = MV_FRACTIONAL_BITS_DIFF;
   const int nOffset = 1 << (nShift - 1);
   const int maxNumChannelType = cs.pcv->chrFormat != CHROMA_400 && CS::isDualITree(cs) ? 2 : 1;
 

@@ -4107,7 +4107,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   ///////////////////////////////////////////////////////////////////////
   ////////          GET Initial Temporal Vector                  ////////
   ///////////////////////////////////////////////////////////////////////
-  int mvPrec = 2 + VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  int mvPrec = MV_FRACTIONAL_BITS_INTERNAL;
 #if !JVET_L0257_ATMVP_COLBLK_CLIP
   int mvRndOffs = (1 << mvPrec) >> 1;
 #endif

@@ -373,7 +373,7 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   {
     pu.cu->cpr = true;
     pu.bv = pu.mv[REF_PIC_LIST_0];
-    pu.bv >>= (2 + VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE); // used for only integer resolution
+    pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
   }
 #endif
 #if JVET_L0646_GBI 
@@ -385,7 +385,7 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
 {
   const Slice &slice = *pu.cs->slice;
-  const int mvShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  const int mvShift = MV_FRACTIONAL_BITS_DIFF;
   const int refMvdCands[8] = { 1 << mvShift , 2 << mvShift , 4 << mvShift , 8 << mvShift , 16 << mvShift , 32 << mvShift,  64 << mvShift , 128 << mvShift };
   int fPosGroup = 0;
   int fPosBaseIdx = 0;

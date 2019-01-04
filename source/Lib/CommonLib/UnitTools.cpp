@@ -2250,11 +2250,9 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 
   if( pu.cu->imv != 0)
   {
-    unsigned imvShift = pu.cu->imv << 1;
-    imvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
     for( int i = 0; i < pInfo->numCand; i++ )
     {
-      roundMV( pInfo->mvCand[i], imvShift );
+      pInfo->mvCand[i].roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
     }
   }
 
@@ -2313,9 +2311,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 #if JVET_L0266_HMVP
       if (pu.cu->imv != 0)
       {
-        unsigned imvShift = pu.cu->imv << 1;
-        imvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-        roundMV(cColMv, imvShift);
+        cColMv.roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv); 
       }
       int i = 0;
       for (i = 0; i < pInfo->numCand; i++)
@@ -2352,20 +2348,10 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     pInfo->mvCand[pInfo->numCand] = Mv( 0, 0 );
     pInfo->numCand++;
   }
-    for (Mv &mv : pInfo->mvCand)
-    {
-      const int nShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-      const int nOffset = 1 << (nShift - 1);
-      mv.hor = mv.hor >= 0 ? (mv.hor + nOffset) >> nShift : -((-mv.hor + nOffset) >> nShift);
-      mv.ver = mv.ver >= 0 ? (mv.ver + nOffset) >> nShift : -((-mv.ver + nOffset) >> nShift);
-    }
-  if (pu.cu->imv != 0)
+  for (Mv &mv : pInfo->mvCand)
   {
-    unsigned imvShift = pu.cu->imv << 1;
-    for (int i = 0; i < pInfo->numCand; i++)
-    {
-      roundMV(pInfo->mvCand[i], imvShift);
-    }
+    mv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+    mv.roundToAmvrSignalPrecision(MV_PRECISION_QUARTER, pu.cu->imv);
   }
 }
 
@@ -2426,13 +2412,13 @@ bool PU::addAffineMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &r
 
     xInheritedAffineMv( pu, neibPU, eRefPicListIndex, outputAffineMv );
 
-    outputAffineMv[0].roundMV2SignalPrecision();
-    outputAffineMv[1].roundMV2SignalPrecision();
+    outputAffineMv[0].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+    outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
     affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = outputAffineMv[0];
     affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = outputAffineMv[1];
     if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
     {
-      outputAffineMv[2].roundMV2SignalPrecision();
+      outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
       affiAMVPInfo.mvCandLB[affiAMVPInfo.numCand] = outputAffineMv[2];
     }
     affiAMVPInfo.numCand++;
@@ -2599,8 +2585,6 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
 
 void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AffineAMVPInfo &affiAMVPInfo)
 {
-  const int nShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-  const int nOffset = 1 << (nShift - 1);
   affiAMVPInfo.numCand = 0;
 
   if (refIdx < 0)
@@ -2655,11 +2639,11 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 
       xInheritedAffineMv( pu, puNeighbour, eTestRefPicList, outputAffineMv );
 
-      outputAffineMv[0].roundMV2SignalPrecision();
-      outputAffineMv[1].roundMV2SignalPrecision();
+      outputAffineMv[0].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+      outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
       if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
       {
-        outputAffineMv[2].roundMV2SignalPrecision();
+        outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
       }
 
       if ( affiAMVPInfo.numCand == 0
@@ -2680,12 +2664,9 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   {
     for (int i = 0; i < affiAMVPInfo.numCand; i++)
     {
-      affiAMVPInfo.mvCandLT[i].hor = affiAMVPInfo.mvCandLT[i].hor >= 0 ? (affiAMVPInfo.mvCandLT[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLT[i].hor + nOffset) >> nShift);
-      affiAMVPInfo.mvCandLT[i].ver = affiAMVPInfo.mvCandLT[i].ver >= 0 ? (affiAMVPInfo.mvCandLT[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLT[i].ver + nOffset) >> nShift);
-      affiAMVPInfo.mvCandRT[i].hor = affiAMVPInfo.mvCandRT[i].hor >= 0 ? (affiAMVPInfo.mvCandRT[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandRT[i].hor + nOffset) >> nShift);
-      affiAMVPInfo.mvCandRT[i].ver = affiAMVPInfo.mvCandRT[i].ver >= 0 ? (affiAMVPInfo.mvCandRT[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandRT[i].ver + nOffset) >> nShift);
-      affiAMVPInfo.mvCandLB[i].hor = affiAMVPInfo.mvCandLB[i].hor >= 0 ? (affiAMVPInfo.mvCandLB[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLB[i].hor + nOffset) >> nShift);
-      affiAMVPInfo.mvCandLB[i].ver = affiAMVPInfo.mvCandLB[i].ver >= 0 ? (affiAMVPInfo.mvCandLB[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLB[i].ver + nOffset) >> nShift);
+      affiAMVPInfo.mvCandLT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+      affiAMVPInfo.mvCandRT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+      affiAMVPInfo.mvCandLB[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
     }
     return;
   }
@@ -2743,9 +2724,9 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   outputAffineMv[2] = amvpInfo2.mvCand[0];
 
 
-  outputAffineMv[0].roundMV2SignalPrecision();
-  outputAffineMv[1].roundMV2SignalPrecision();
-  outputAffineMv[2].roundMV2SignalPrecision();
+  outputAffineMv[0].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+  outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+  outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
 
 #if JVET_L0271_AFFINE_AMVP_SIMPLIFY
   if ( cornerMVPattern == 7 || (cornerMVPattern == 3 && pu.cu->affineType == AFFINEMODEL_4PARAM) )
@@ -2765,7 +2746,7 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       int vy2 = (outputAffineMv[0].getVer() << shift) + ((outputAffineMv[1].getHor() - outputAffineMv[0].getHor()) << (shift + g_aucLog2[curHeight] - g_aucLog2[curWidth]));
       roundAffineMv( vx2, vy2, shift );
       outputAffineMv[2].set( vx2, vy2 );
-      outputAffineMv[2].roundMV2SignalPrecision();
+      outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
     }
 
     if ( cornerMVPattern == 5 ) // V0 V2 are available, derived V1
@@ -2775,7 +2756,7 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       int vy1 = (outputAffineMv[0].getVer() << shift) - ((outputAffineMv[2].getHor() - outputAffineMv[0].getHor()) << (shift + g_aucLog2[curWidth] - g_aucLog2[curHeight]));
       roundAffineMv( vx1, vy1, shift );
       outputAffineMv[1].set( vx1, vy1 );
-      outputAffineMv[1].roundMV2SignalPrecision();
+      outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
     }
 
     if ( affiAMVPInfo.numCand == 0
@@ -2850,7 +2831,7 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 
       if ( (C0Avail && getColocatedMVP( pu, eRefPicList, posC0, cColMv, refIdxCol )) || getColocatedMVP( pu, eRefPicList, posC1, cColMv, refIdxCol ) )
       {
-        cColMv.roundMV2SignalPrecision();
+        cColMv.roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
         affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = cColMv;
         affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = cColMv;
         affiAMVPInfo.mvCandLB[affiAMVPInfo.numCand] = cColMv;
@@ -2874,12 +2855,9 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 
   for (int i = 0; i < affiAMVPInfo.numCand; i++)
   {
-    affiAMVPInfo.mvCandLT[i].hor = affiAMVPInfo.mvCandLT[i].hor >= 0 ? (affiAMVPInfo.mvCandLT[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLT[i].hor + nOffset) >> nShift);
-    affiAMVPInfo.mvCandLT[i].ver = affiAMVPInfo.mvCandLT[i].ver >= 0 ? (affiAMVPInfo.mvCandLT[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLT[i].ver + nOffset) >> nShift);
-    affiAMVPInfo.mvCandRT[i].hor = affiAMVPInfo.mvCandRT[i].hor >= 0 ? (affiAMVPInfo.mvCandRT[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandRT[i].hor + nOffset) >> nShift);
-    affiAMVPInfo.mvCandRT[i].ver = affiAMVPInfo.mvCandRT[i].ver >= 0 ? (affiAMVPInfo.mvCandRT[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandRT[i].ver + nOffset) >> nShift);
-    affiAMVPInfo.mvCandLB[i].hor = affiAMVPInfo.mvCandLB[i].hor >= 0 ? (affiAMVPInfo.mvCandLB[i].hor + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLB[i].hor + nOffset) >> nShift);
-    affiAMVPInfo.mvCandLB[i].ver = affiAMVPInfo.mvCandLB[i].ver >= 0 ? (affiAMVPInfo.mvCandLB[i].ver + nOffset) >> nShift : -((-affiAMVPInfo.mvCandLB[i].ver + nOffset) >> nShift);
+    affiAMVPInfo.mvCandLT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER); 
+    affiAMVPInfo.mvCandRT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER); 
+    affiAMVPInfo.mvCandLB[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
   }
 
 
@@ -3046,9 +3024,6 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
 
   MotionInfo neibMi;
   int i = 0;
-  unsigned imvShift = imv << 1;
-  imvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-
   int num_avai_candInLUT = slice.getAvailableLUTMrgNum();
   int num_allowedCand = std::min(MAX_NUM_HMVP_AVMPCANDS, num_avai_candInLUT);
 
@@ -3070,7 +3045,7 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
         Mv pmv = neibMi.mv[eRefPicListIndex];
         if (imv != 0)
         {
-          roundMV(pmv, imvShift);
+          pmv.roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, imv);
         }
         for (i = 0; i < info.numCand; i++)
         {
@@ -3871,20 +3846,15 @@ void PU::setAllAffineMvField( PredictionUnit &pu, MvField *mvField, RefPicList e
   pu.refIdx[eRefList] = mvField[0].refIdx;
 }
 
-void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList 
-  , bool setHighPrec
-)
+void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList, bool setHighPrec)
 {
   int width  = pu.Y().width;
   int shift = MAX_CU_DEPTH;
   if (setHighPrec)
   {
-    affLT.hor = affLT.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-    affLT.ver = affLT.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-    affRT.hor = affRT.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-    affRT.ver = affRT.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-    affLB.hor = affLB.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-    affLB.ver = affLB.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+    affLT.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
+    affRT.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
+    affLB.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
   }
   int deltaMvHorX, deltaMvHorY, deltaMvVerX, deltaMvVerY;
   deltaMvHorX = (affRT - affLT).getHor() << (shift - g_aucLog2[width]);
@@ -4137,8 +4107,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   ///////////////////////////////////////////////////////////////////////
   ////////          GET Initial Temporal Vector                  ////////
   ///////////////////////////////////////////////////////////////////////
-  int mvPrec = 2;
-    mvPrec += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  int mvPrec = MV_FRACTIONAL_BITS_INTERNAL;
 #if !JVET_L0257_ATMVP_COLBLK_CLIP
   int mvRndOffs = (1 << mvPrec) >> 1;
 #endif
@@ -4407,21 +4376,16 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
 {
   if( !pu.mergeFlag )
   {
-    unsigned imvShift = pu.cu->imv << 1;
     if( pu.interDir != 2 /* PRED_L1 */ )
     {
-      if (pu.cu->imv)
-      {
-        pu.mvd[0] = Mv( pu.mvd[0].hor << imvShift, pu.mvd[0].ver << imvShift );
-      }
+      pu.mvd[0].changePrecisionAmvr( pu.cu->imv, MV_PRECISION_QUARTER);
       unsigned mvp_idx = pu.mvpIdx[0];
       AMVPInfo amvpInfo;
       PU::fillMvpCand(pu, REF_PIC_LIST_0, pu.refIdx[0], amvpInfo);
       pu.mvpNum[0] = amvpInfo.numCand;
       pu.mvpIdx[0] = mvp_idx;
       pu.mv    [0] = amvpInfo.mvCand[mvp_idx] + pu.mvd[0];
-      pu.mv[0].hor = pu.mv[0].hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-      pu.mv[0].ver = pu.mv[0].ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+      pu.mv[0].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
 #if JVET_L0293_CPR
       if (pu.interDir == 1 && pu.cs->slice->getRefPic(REF_PIC_LIST_0, pu.refIdx[REF_PIC_LIST_0])->getPOC() == pu.cs->slice->getPOC())
       {
@@ -4434,7 +4398,7 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
     {
       if( !( pu.cu->cs->slice->getMvdL1ZeroFlag() && pu.interDir == 3 ) && pu.cu->imv )/* PRED_BI */
       {
-        pu.mvd[1] = Mv( pu.mvd[1].hor << imvShift, pu.mvd[1].ver << imvShift );
+        pu.mvd[1].changePrecisionAmvr(pu.cu->imv, MV_PRECISION_QUARTER);
       }
       unsigned mvp_idx = pu.mvpIdx[1];
       AMVPInfo amvpInfo;
@@ -4442,8 +4406,7 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
       pu.mvpNum[1] = amvpInfo.numCand;
       pu.mvpIdx[1] = mvp_idx;
       pu.mv    [1] = amvpInfo.mvCand[mvp_idx] + pu.mvd[1];
-      pu.mv[1].hor = pu.mv[1].hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-      pu.mv[1].ver = pu.mv[1].ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+      pu.mv[1].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
     }
   }
   else
@@ -5018,7 +4981,6 @@ void CU::resetMVDandMV2Int( CodingUnit& cu, InterPrediction *interPred )
 
     if( !pu.mergeFlag )
     {
-      unsigned imvShift = cu.imv << 1;
       if( pu.interDir != 2 /* PRED_L1 */ )
       {
         Mv mv        = pu.mv[0];
@@ -5028,7 +4990,7 @@ void CU::resetMVDandMV2Int( CodingUnit& cu, InterPrediction *interPred )
         pu.mvpNum[0] = amvpInfo.numCand;
 
         mvPred       = amvpInfo.mvCand[pu.mvpIdx[0]];
-        roundMV      ( mv, imvShift );
+        mv.roundToAmvrSignalPrecision(MV_PRECISION_QUARTER, cu.imv);
         pu.mv[0]     = mv;
         Mv mvDiff    = mv - mvPred;
         pu.mvd[0]    = mvDiff;
@@ -5042,7 +5004,7 @@ void CU::resetMVDandMV2Int( CodingUnit& cu, InterPrediction *interPred )
         pu.mvpNum[1] = amvpInfo.numCand;
 
         mvPred       = amvpInfo.mvCand[pu.mvpIdx[1]];
-        roundMV      ( mv, imvShift );
+        mv.roundToAmvrSignalPrecision(MV_PRECISION_QUARTER, cu.imv);
         Mv mvDiff    = mv - mvPred;
 
         if( pu.cu->cs->slice->getMvdL1ZeroFlag() && pu.interDir == 3 /* PRED_BI */ )

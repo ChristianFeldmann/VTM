@@ -47,9 +47,20 @@
 // Class definition
 // ====================================================================================================================
 
+enum MvPrecision
+{
+  MV_PRECISION_4PEL     = 0,      // 4-pel
+  MV_PRECISION_INT      = 2,      // 1-pel, shift 2 bits from 4-pel
+  MV_PRECISION_QUARTER  = 4,      // 1/4-pel (the precision of regular MV difference signaling), shift 4 bits from 4-pel
+  MV_PRECISION_INTERNAL = 6,      // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
+};
+
 /// basic motion vector class
 class Mv
 {
+private:
+  static const MvPrecision m_amvrPrecision[3];
+
 public:
   int   hor;     ///< horizontal component of motion vector
   int   ver;     ///< vertical component of motion vector
@@ -159,16 +170,39 @@ public:
     return Mv( mvx, mvy );
   }
 
-  void roundMV2SignalPrecision()
+  void changePrecision(const MvPrecision& src, const MvPrecision& dst)
   {
-    const int nShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-    const int nOffset = 1 << (nShift - 1);
-    hor = hor >= 0 ? (hor + nOffset) >> nShift : -((-hor + nOffset) >> nShift);
-    ver = ver >= 0 ? (ver + nOffset) >> nShift : -((-ver + nOffset) >> nShift);
-    hor = hor >= 0 ? (hor) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : -((-hor) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE);
-    ver = ver >= 0 ? (ver) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : -((-ver) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE);
+    const int shift = (int)dst - (int)src;
+    if (shift >= 0)
+    {
+      *this <<= shift;
+    }
+    else
+    {
+      const int rightShift = -shift;
+      const int nOffset = 1 << (rightShift - 1);
+      hor = hor >= 0 ? (hor + nOffset) >> rightShift : -((-hor + nOffset) >> rightShift);
+      ver = ver >= 0 ? (ver + nOffset) >> rightShift : -((-ver + nOffset) >> rightShift);
+    }
+  }
+
+  void changePrecisionAmvr(const int amvr, const MvPrecision& dst)
+  {
+    changePrecision(m_amvrPrecision[amvr], dst);
+  }
+
+  void roundToPrecision(const MvPrecision& src, const MvPrecision& dst)
+  {
+    changePrecision(src, dst);
+    changePrecision(dst, src);
+  }
+
+  void roundToAmvrSignalPrecision(const MvPrecision& src, const int amvr)
+  {
+    roundToPrecision(src, m_amvrPrecision[amvr]);
   }
 };// END CLASS DEFINITION MV
+
 #if JVET_L0293_CPR
 namespace std
 {
@@ -182,7 +216,6 @@ namespace std
   };
 };
 #endif
-void roundMV( Mv& rcMv, unsigned imvShift );
 void clipMv ( Mv& rcMv, const struct Position& pos, 
 #if JVET_L0231_WRAPAROUND
               const struct Size& size,

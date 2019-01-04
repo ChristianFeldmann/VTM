@@ -76,9 +76,9 @@ InterPrediction::InterPrediction()
 
   for( uint32_t c = 0; c < MAX_NUM_COMPONENT; c++ )
   {
-    for( uint32_t i = 0; i < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS; i++ )
+    for( uint32_t i = 0; i < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS_SIGNAL; i++ )
     {
-      for( uint32_t j = 0; j < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS; j++ )
+      for( uint32_t j = 0; j < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS_SIGNAL; j++ )
       {
         m_filteredBlock[i][j][c] = nullptr;
       }
@@ -107,9 +107,9 @@ void InterPrediction::destroy()
 
   for( uint32_t c = 0; c < MAX_NUM_COMPONENT; c++ )
   {
-    for( uint32_t i = 0; i < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS; i++ )
+    for( uint32_t i = 0; i < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS_SIGNAL; i++ )
     {
-      for( uint32_t j = 0; j < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS; j++ )
+      for( uint32_t j = 0; j < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS_SIGNAL; j++ )
       {
         xFree( m_filteredBlock[i][j][c] );
         m_filteredBlock[i][j][c] = nullptr;
@@ -163,11 +163,11 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
       int extWidth  = MAX_CU_SIZE + 16;
       int extHeight = MAX_CU_SIZE + 1;
 #endif
-      for( uint32_t i = 0; i < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS; i++ )
+      for( uint32_t i = 0; i < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS_SIGNAL; i++ )
       {
         m_filteredBlockTmp[i][c] = ( Pel* ) xMalloc( Pel, ( extWidth + 4 ) * ( extHeight + 7 + 4 ) );
 
-        for( uint32_t j = 0; j < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS; j++ )
+        for( uint32_t j = 0; j < LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS_SIGNAL; j++ )
         {
           m_filteredBlock[i][j][c] = ( Pel* ) xMalloc( Pel, extWidth * extHeight );
         }
@@ -637,12 +637,8 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   const ChromaFormat  chFmt = pu.chromaFormat;
   const bool          rndRes = !bi;
 
-  int iAddPrecShift = 0;
-
-    iAddPrecShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-
-  int shiftHor = 2 + iAddPrecShift + ::getComponentScaleX(compID, chFmt);
-  int shiftVer = 2 + iAddPrecShift + ::getComponentScaleY(compID, chFmt);
+  int shiftHor = MV_FRACTIONAL_BITS_INTERNAL + ::getComponentScaleX(compID, chFmt);
+  int shiftVer = MV_FRACTIONAL_BITS_INTERNAL + ::getComponentScaleY(compID, chFmt);
 
   int xFrac = _mv.hor & ((1 << shiftHor) - 1);
   int yFrac = _mv.ver & ((1 << shiftVer) - 1);
@@ -653,8 +649,6 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
     JVET_J0090_SET_CACHE_ENABLE( false );
   }
 #endif
-  xFrac <<= VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE - iAddPrecShift;
-  yFrac <<= VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE - iAddPrecShift;
 
   PelBuf &dstBuf  = dstPic.bufs[compID];
   unsigned width  = dstBuf.width;
@@ -821,7 +815,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   PelBuf tmpBuf = PelBuf(m_filteredBlockTmp[0][compID], pu.blocks[compID]);
   const int vFilterSize = isLuma(compID) ? NTAPS_LUMA : NTAPS_CHROMA;
 
-  const int shift = iBit - 4 + VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE + 2;
+  const int shift = iBit - 4 + MV_FRACTIONAL_BITS_INTERNAL;
 
   // get prediction block by block
   for ( int h = 0; h < cxHeight; h += blockHeight )

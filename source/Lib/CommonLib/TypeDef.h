@@ -220,8 +220,8 @@
 #define HEVC_TILES_WPP                                    1
 #else
 #define HEVC_USE_SIGN_HIDING                              1
+#define HEVC_TILES_WPP                                    1
 #endif
-
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
 

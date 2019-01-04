@@ -2525,6 +2525,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     cu.cs       = tempCS;
     cu.predMode = MODE_INTER;
     cu.slice    = tempCS->slice;
+#if HEVC_TILES_WPP
+    cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
+#endif
     cu.triangle = true;
 #if JVET_L0054_MMVD
     cu.mmvdSkip = false;
@@ -2564,6 +2567,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
       
     partitioner.setCUData( cu );
     cu.slice            = tempCS->slice;
+#if HEVC_TILES_WPP
+    cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
+#endif
     cu.skip             = false;
     cu.predMode         = MODE_INTER;
     cu.transQuantBypass = encTestMode.lossless;
@@ -2669,6 +2675,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
         partitioner.setCUData(cu);
         cu.slice = tempCS->slice;
+#if HEVC_TILES_WPP
+        cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
+#endif
         cu.skip = false;
         cu.predMode = MODE_INTER;
         cu.transQuantBypass = encTestMode.lossless;

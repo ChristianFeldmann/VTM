@@ -187,6 +187,7 @@
 #define JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK         1  // Fix sub-block size to 8x8 in ATMVP as proposed in L0198, L0468 and L0104
 #define JVET_L0198_ATMVP_SCAN_SIMP                        1  // Simplification for scan process in ATMVP cTMv derivation
 #define JVET_L0696_CONSTRAINT_SYNTAX                      1 // Starting point for interoperability point syntax
+#define JVET_L0428_DQP_SEP_TREE                           1  // Delta QP for Separate Tree
 // ====================================================================================================================
 // NEXT software switches
 // ====================================================================================================================

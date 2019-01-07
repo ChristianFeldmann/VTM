@@ -401,7 +401,6 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
 #endif
   );
 
-
   // all signals were already copied during compression if the CTU was split - at this point only the structures are copied to the top level CS
   const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1 && KEEP_PRED_AND_RESI_SIGNALS;
   cs.useSubStructure( *bestCS, partitioner->chType, CS::getArea( *bestCS, area, partitioner->chType ), copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals );
@@ -703,7 +702,24 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 
   do
   {
-    const EncTestMode currTestMode = m_modeCtrl->currTestMode();
+    EncTestMode currTestMode = m_modeCtrl->currTestMode();
+
+#if JVET_L0428_DQP_SEP_TREE
+    if (tempCS->pps->getUseDQP() && partitioner.chType == CHANNEL_TYPE_CHROMA)
+    {
+      const Position chromaCentral(tempCS->area.Cb().chromaPos().offset(tempCS->area.Cb().chromaSize().width >> 1, tempCS->area.Cb().chromaSize().height >> 1));
+      const Position lumaRefPos(chromaCentral.x << getComponentScaleX(COMPONENT_Cb, tempCS->area.chromaFormat), chromaCentral.y << getComponentScaleY(COMPONENT_Cb, tempCS->area.chromaFormat));
+      const CodingStructure* baseCS = bestCS->picture->cs;
+      const CodingUnit* colLumaCu = baseCS->getCU(lumaRefPos, CHANNEL_TYPE_LUMA);
+      const TransformUnit*  tu = baseCS->getTU(lumaRefPos, CHANNEL_TYPE_LUMA);
+
+      if (tu)
+      {
+        currTestMode.qp = colLumaCu->qp;
+      }
+
+    }
+#endif
 
 #if SHARP_LUMA_DELTA_QP
     if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && partitioner.currDepth <= pps.getMaxCuDQPDepth() )
@@ -1585,6 +1601,13 @@ void EncCu::xCheckDQP( CodingStructure& cs, Partitioner& partitioner, bool bKeep
   {
     return;
   }
+
+#if JVET_L0428_DQP_SEP_TREE
+  if (partitioner.chType == CHANNEL_TYPE_CHROMA)
+  {
+    return;
+  }
+#endif
 
   if( bKeepCtx && partitioner.currDepth != cs.pps->getMaxCuDQPDepth() )
   {

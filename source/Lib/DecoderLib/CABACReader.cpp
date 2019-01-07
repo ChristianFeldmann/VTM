@@ -579,7 +579,18 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     cuCtx.qp = CU::predictQP( cu, cuCtx.qp );
   }
 
-  cu.qp          = cuCtx.qp;        //NOTE: CU QP can be changed by deltaQP signaling at TU level
+#if JVET_L0428_DQP_SEP_TREE
+  const Position chromaCentral(cu.chromaPos().offset(cu.chromaSize().width >> 1, cu.chromaSize().height >> 1));
+  const Position lumaRefPos(chromaCentral.x << getComponentScaleX(COMPONENT_Cb, cu.chromaFormat), chromaCentral.y << getComponentScaleY(COMPONENT_Cb, cu.chromaFormat));
+  const CodingUnit* colLumaCu = cs.getCU(lumaRefPos, CHANNEL_TYPE_LUMA);
+
+  if (cu.cs->pps->getUseDQP() && CS::isDualITree(cs) && isChroma(cu.chType))
+  {
+    cuCtx.qp = colLumaCu->qp;
+  }
+#endif
+
+  cu.qp = cuCtx.qp;                 //NOTE: CU QP can be changed by deltaQP signaling at TU level
   cu.chromaQpAdj = cs.chromaQpAdj;  //NOTE: CU chroma QP adjustment can be changed by adjustment signaling at TU level
 
   // coding unit
@@ -2127,15 +2138,18 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
   bool        cbfLuma    = ( tu.cbf[ COMPONENT_Y ] != 0 );
   bool        cbfChroma  = ( cu.chromaFormat == CHROMA_400 ? false : ( chromaCbfs.Cb || chromaCbfs.Cr ) );
 
-
-
   if( cbfLuma || cbfChroma )
   {
     if( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded )
     {
-      cu_qp_delta( cu, cuCtx.qp, cu.qp );
-      cuCtx.qp         = cu.qp;
-      cuCtx.isDQPCoded = true;
+#if JVET_L0428_DQP_SEP_TREE
+      if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
+#endif
+      {
+        cu_qp_delta(cu, cuCtx.qp, cu.qp);
+        cuCtx.qp = cu.qp;
+        cuCtx.isDQPCoded = true;
+      }
     }
     if( cu.cs->slice->getUseChromaQpAdj() && cbfChroma && !cu.transQuantBypass && !cuCtx.isChromaQpAdjCoded )
     {

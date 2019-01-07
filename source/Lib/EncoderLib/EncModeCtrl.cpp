@@ -948,8 +948,14 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   int baseQP = cs.baseQP;
   if( m_pcEncCfg->getUseAdaptiveQP() )
   {
-    baseQP = Clip3( -cs.sps->getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP + xComputeDQP( cs, partitioner ) );
+#if JVET_L0428_DQP_SEP_TREE
+    if (partitioner.chType == CHANNEL_TYPE_LUMA || !cs.slice->isIRAP())
+    {
+      baseQP = Clip3(-cs.sps->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, baseQP + xComputeDQP(cs, partitioner));
+    }
+#endif
   }
+  
   int minQP = baseQP;
   int maxQP = baseQP;
 

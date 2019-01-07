@@ -2309,7 +2309,7 @@ public:
     , maxBtSize           { sps.getSpsNext().getMaxBTSizeI(), sps.getSpsNext().getMaxBTSize(), sps.getSpsNext().getMaxBTSizeIChroma() }
     , minTtSize           { MIN_TT_SIZE, MIN_TT_SIZE_INTER, MIN_TT_SIZE_C }
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-	  , maxTtSize           { sps.getSpsNext().getMaxTTSizeI(), sps.getSpsNext().getMaxTTSize(), sps.getSpsNext().getMaxTTSizeIChroma() }
+    , maxTtSize           { sps.getSpsNext().getMaxTTSizeI(), sps.getSpsNext().getMaxTTSize(), sps.getSpsNext().getMaxTTSizeIChroma() }
 #else
     , maxTtSize           { MAX_TT_SIZE, MAX_TT_SIZE_INTER, MAX_TT_SIZE_C }
 #endif

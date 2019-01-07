@@ -186,15 +186,15 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
   }
   else
   {
-  coding_tree( cs, *partitioner, cuCtx );
-  qps[CH_L] = cuCtx.qp;
-  if( CS::isDualITree( cs ) && cs.pcv->chrFormat != CHROMA_400 )
-  {
-    CUCtx cuCtxChroma( qps[CH_C] );
-    partitioner->initCtu( area, CH_C, *cs.slice );
-    coding_tree( cs, *partitioner, cuCtxChroma );
-    qps[CH_C] = cuCtxChroma.qp;
-  }
+    coding_tree( cs, *partitioner, cuCtx );
+    qps[CH_L] = cuCtx.qp;
+    if( CS::isDualITree( cs ) && cs.pcv->chrFormat != CHROMA_400 )
+    {
+      CUCtx cuCtxChroma( qps[CH_C] );
+      partitioner->initCtu( area, CH_C, *cs.slice );
+      coding_tree( cs, *partitioner, cuCtxChroma );
+      qps[CH_C] = cuCtxChroma.qp;
+    }
   }
 
   delete partitioner;
@@ -2063,7 +2063,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
     if( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded )
     {
 #if JVET_L0428_DQP_SEP_TREE
-      if ((!CS::isDualITree(*tu.cs) || isLuma(tu.chType)))
+      if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
 #endif
       {
         cu_qp_delta(cu, cuCtx.qp, cu.qp);

@@ -112,12 +112,8 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 #else
   const int       startCtuTsAddr          = slice->getSliceCurStartCtuTsAddr();
 #endif
-#if HEVC_TILES_WPP
-  const int       startCtuRsAddr          = tileMap.getCtuTsToRsAddrMap(startCtuTsAddr);
-#else
 #if HEVC_DEPENDENT_SLICES
   const int       startCtuRsAddr          = startCtuTsAddr;
-#endif
 #endif
   const unsigned  numCtusInFrame          = cs.pcv->sizeInCtus;
   const unsigned  widthInCtus             = cs.pcv->widthInCtus;

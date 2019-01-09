@@ -122,7 +122,7 @@ const TFilterCoeff g_intraGaussFilter[32][4] = {
   { 4, 18, 29, 13 },
   { 3, 18, 29, 14 },
   { 3, 17, 29, 15 },
-  { 3, 17, 29, 15 } 
+  { 3, 17, 29, 15 }
 };
 #endif
 
@@ -281,17 +281,17 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
 
   if ( width >= height )
   {
-  for( idx = 0; idx < width; idx++ )
-  {
-    sum += pSrc.at( 1 + idx, 0 );
-  }
+    for( idx = 0; idx < width; idx++ )
+    {
+      sum += pSrc.at( 1 + idx, 0 );
+    }
   }
   if ( width <= height )
-  {   
-  for( idx = 0; idx < height; idx++ )
   {
-    sum += pSrc.at( 0, 1 + idx );
-  }  
+    for( idx = 0; idx < height; idx++ )
+    {
+      sum += pSrc.at( 0, 1 + idx );
+    }
   }
 
   dcVal = (sum + divOffset) >> divShift;
@@ -388,7 +388,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
     case(PLANAR_IDX): xPredIntraPlanar(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, *pu.cs->sps); break;
     case(DC_IDX):     xPredIntraDc(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, false); break;
 #if JVET_L0628_4TAP_INTRA
-    case(2): 
+    case(2):
     case(DIA_IDX):
     case(VDIA_IDX):
       if (getWideAngle(iWidth, iHeight, uiDirMode) == static_cast<int>(uiDirMode)) // check if uiDirMode is not wide-angle
@@ -397,7 +397,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
 #if JVET_L0283_MULTI_REF_LINE
           , multiRefIdx
 #endif
-          , useFilteredPredSamples); 
+          , useFilteredPredSamples);
         break;
       }
     default:          xPredIntraAng(CPelBuf(getPredictorPtr(compID, false), srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps
@@ -719,7 +719,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   {
 #if JVET_L0628_4TAP_INTRA
     auto width    = int(pDst.width) +1;
-    auto height   = int(pDst.height)+1;  
+    auto height   = int(pDst.height)+1;
 #if JVET_L0283_MULTI_REF_LINE
     auto lastIdx  = (bIsModeVer ? width : height) + multiRefIdx;
 #else
@@ -1157,7 +1157,7 @@ void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompAre
   // ----- Step 2: filtered reference samples -----
   if( bFilterRefSamples )
   {
-    xFilterReferenceSamples( refBufUnfiltered, refBufFiltered, area, *cs.sps 
+    xFilterReferenceSamples( refBufUnfiltered, refBufFiltered, area, *cs.sps
 #if JVET_L0283_MULTI_REF_LINE
       , cu.firstPU->multiRefIdx
 #endif
@@ -1529,7 +1529,7 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
 
     ptrTmp = tmpLineBuf + (totalLeftUnits * unitHeight);
     for( int i = 1; i <= predHSize; i++ ) { ptrDst[i*predStride] = ptrTmp[-i]; }
-#endif  
+#endif
 }
 #if JVET_L0283_MULTI_REF_LINE
   // padding of extended samples above right with the last sample
@@ -1549,7 +1549,7 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
 #endif
 }
 
-void IntraPrediction::xFilterReferenceSamples( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps 
+void IntraPrediction::xFilterReferenceSamples( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps
 #if JVET_L0283_MULTI_REF_LINE
   , int multiRefIdx
 #endif
@@ -1899,7 +1899,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
 #endif
 
   bLeftAvaillable = availlableUnit == iTUHeightInUnits;
- 
+
   availlableUnit = isAboveAvailable( isChroma( pu.chType ) ? cu : lumaCU, toChannelType( area.compID ), area.pos(), iAboveUnits, iUnitWidth,
 #if JVET_L0338_MDLM
   ( bNeighborFlags + iLeftUnits + leftBelowUnits + 1 ) );
@@ -1958,7 +1958,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
         {
           pDst[i] = ( piSrc[2 * i] * 2 + piSrc[2 * i - 1] + piSrc[2 * i + 1] + 2 ) >> 2;
         }
-      }        
+      }
       else
       {
         piSrc = pRecSrc0 - iRecStride2;
@@ -2103,7 +2103,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   bool aboveAvailable, leftAvailable;
 
   int availableUnit =
-    isAboveAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, aboveUnits, unitWidth, 
+    isAboveAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, aboveUnits, unitWidth,
 #if JVET_L0338_MDLM
     (neighborFlags + leftUnits + leftBelowUnits + 1));
 #else
@@ -2112,7 +2112,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   aboveAvailable = availableUnit == tuWidthInUnits;
 
   availableUnit =
-    isLeftAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, leftUnits, unitHeight, 
+    isLeftAvailable(cu, CHANNEL_TYPE_CHROMA, posLT, leftUnits, unitHeight,
 #if JVET_L0338_MDLM
     (neighborFlags + leftUnits + leftBelowUnits - 1));
 #else
@@ -2158,7 +2158,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
   unsigned internalBitDepth = sps.getBitDepth(CHANNEL_TYPE_CHROMA);
 
-  int minLuma[2] = { MAX_INT, 0 };
+  int minLuma[2] = {  MAX_INT, 0 };
   int maxLuma[2] = { -MAX_INT, 0 };
 
   Pel *src = srcColor0 - srcStride;
@@ -2242,7 +2242,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
     }
   }
 
-  if ((leftAvailable || aboveAvailable))
+  if (leftAvailable || aboveAvailable)
   {
     a         = 0;
     iShift    = 16;
@@ -2331,7 +2331,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
   bool bAboveAvaillable, bLeftAvaillable;
 
-  int availlableUnit = isAboveAvailable( cu, CHANNEL_TYPE_CHROMA, posLT, iAboveUnits, iUnitWidth, 
+  int availlableUnit = isAboveAvailable( cu, CHANNEL_TYPE_CHROMA, posLT, iAboveUnits, iUnitWidth,
 #if JVET_L0338_MDLM
     (bNeighborFlags + iLeftUnits + leftBelowUnits + 1 ) );
 #else
@@ -2339,7 +2339,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 #endif
   bAboveAvaillable = availlableUnit == iTUWidthInUnits;
 
-  availlableUnit = isLeftAvailable( cu, CHANNEL_TYPE_CHROMA, posLT, iLeftUnits, iUnitHeight, 
+  availlableUnit = isLeftAvailable( cu, CHANNEL_TYPE_CHROMA, posLT, iLeftUnits, iUnitHeight,
 #if JVET_L0338_MDLM
     (bNeighborFlags + iLeftUnits + leftBelowUnits - 1 ) );
 #else
@@ -2361,7 +2361,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   Pel *pSrcColor0, *pCurChroma0;
   int  iSrcStride,  iCurStride;
 
-  PelBuf Temp;  
+  PelBuf Temp;
 #if JVET_L0338_MDLM
   if ((curChromaMode == MDLM_L_IDX) || (curChromaMode == MDLM_T_IDX))
   {

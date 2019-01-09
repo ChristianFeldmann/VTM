@@ -1826,7 +1826,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
             iRefEnd--;
           }
 #endif
-		      for (int iRefIdxTemp = iRefStart; iRefIdxTemp <= iRefEnd; iRefIdxTemp++)
+          for (int iRefIdxTemp = iRefStart; iRefIdxTemp <= iRefEnd; iRefIdxTemp++)
           {
 #if JVET_L0646_GBI
             if( m_pcEncCfg->getUseGBiFast() && (gbiIdx != GBI_DEFAULT)

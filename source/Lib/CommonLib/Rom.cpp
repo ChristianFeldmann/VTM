@@ -619,9 +619,6 @@ const int g_invQuantScales[SCALING_LIST_REM_NUM] =
 //structures
 
 //EMT threshold
-#if !JVET_L0059_MTS_SIMP
-const uint32_t g_EmtSigNumThr = 2;
-#endif
 
 #if !JVET_L0285_8BIT_TRANSFORM_CORE
 //EMT transform coeficient variable

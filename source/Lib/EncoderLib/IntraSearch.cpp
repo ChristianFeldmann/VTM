@@ -1297,9 +1297,6 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   const bool           bUseCrossCPrediction = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isChroma( compID ) && PU::isChromaIntraModeCrossCheckMode( pu ) && checkCrossCPrediction;
   const bool           ccUseRecoResi        = m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate();
 
-#if !JVET_L0059_MTS_SIMP
-  const uint8_t          transformIndex       = tu.cu->emtFlag && compID == COMPONENT_Y ? tu.emtIdx : DCT2_EMT ;
-#endif
 
   //===== init availability pattern =====
   PelBuf sharedPredTS( m_pSharedPredTransformSkip[compID], area );
@@ -1370,29 +1367,6 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
   m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx());
 
-#if !JVET_L0059_MTS_SIMP
-  if( transformIndex != DCT2_EMT && ( !tu.transformSkip[COMPONENT_Y] ) ) //this can only be true if compID is luma
-  {
-    *numSig = 0;
-    TCoeff* coeffBuffer = tu.getCoeffs(compID).buf;
-    for( uint32_t uiX = 0; uiX < tu.Y().area(); uiX++ )
-    {
-      if( coeffBuffer[uiX] )
-      {
-        ( *numSig )++;
-        if( *numSig > g_EmtSigNumThr )
-        {
-          break;
-        }
-      }
-    }
-    //if the number of significant coeffs is less than the threshold, then only the default transform (which has a 0 index, but it is the DST7) is allowed
-    if( transformIndex != 0 && *numSig <= g_EmtSigNumThr && !tu.transformSkip[compID] )
-    {
-      return;
-    }
-  }
-#endif
 
   DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), compID, uiAbsSum );
 
@@ -1571,12 +1545,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 
       //----- determine rate and r-d cost -----
       //the condition (transformIndex != DCT2_EMT) seems to be irrelevant, since DCT2_EMT=7 and the highest value of transformIndex is 4
-#if JVET_L0059_MTS_SIMP
       if( ( modeId == lastCheckId && checkTransformSkip && !TU::getCbfAtDepth( tu, COMPONENT_Y, currDepth ) ) )
-#else
-      if( ( modeId == lastCheckId && checkTransformSkip && !TU::getCbfAtDepth( tu, COMPONENT_Y, currDepth ) )
-        || ( tu.emtIdx > 0 && ( checkTransformSkip ? transformIndex != lastCheckId : true ) && tu.emtIdx != DCT2_EMT && numSig <= g_EmtSigNumThr ) )
-#endif
       {
         //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
         singleCostTmp = MAX_DOUBLE;

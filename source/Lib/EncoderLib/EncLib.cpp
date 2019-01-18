@@ -784,7 +784,6 @@ void EncLib::xInitVPS(VPS &vps, const SPS &sps)
 
 void EncLib::xInitSPS(SPS &sps)
 {
-#if JVET_L0696_CONSTRAINT_SYNTAX
   sps.setIntraOnlyConstraintFlag(m_intraConstraintFlag);
   sps.setMaxBitDepthConstraintIdc(m_bitDepthConstraintValue - 8);
   sps.setMaxChromaFormatConstraintIdc(m_chromaFormatConstraintValue);
@@ -802,7 +801,6 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setNoLadfConstraintFlag(!m_LadfEnabled);
   sps.setNoDepQuantConstraintFlag(!m_DepQuantEnabledFlag);
   sps.setNoSignDataHidingConstraintFlag(!m_SignDataHidingEnabledFlag);
-#endif
   ProfileTierLevel& profileTierLevel = *sps.getPTL()->getGeneralPTL();
   profileTierLevel.setLevelIdc                    (m_level);
   profileTierLevel.setTierFlag                    (m_levelTier);

@@ -131,7 +131,6 @@
 #endif
 
 
-#define JVET_L0696_CONSTRAINT_SYNTAX                      1 // Starting point for interoperability point syntax
 #define JVET_L0428_DQP_SEP_TREE                           1  // Delta QP for Separate Tree
 // ====================================================================================================================
 // NEXT software switches

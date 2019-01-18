@@ -1768,7 +1768,6 @@ SPSNext::SPSNext( SPS& sps )
 
 SPS::SPS()
 : m_SPSId                     (  0)
-#if JVET_L0696_CONSTRAINT_SYNTAX
 , m_bIntraOnlyConstraintFlag  (false)
 , m_maxBitDepthConstraintIdc  (  0)
 , m_maxChromaFormatConstraintIdc(CHROMA_420)
@@ -1786,7 +1785,6 @@ SPS::SPS()
 , m_bNoLadfConstraintFlag     (false)
 , m_bNoDepQuantConstraintFlag (false)
 , m_bNoSignDataHidingConstraintFlag(false)
-#endif
 #if HEVC_VPS
 , m_VPSId                     (  0)
 #endif

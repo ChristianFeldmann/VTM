@@ -589,7 +589,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   const ChromaFormat format                = pcSPS->getChromaFormatIdc();
   const bool         chromaEnabled         = isChromaEnabled(format);
-#if JVET_L0696_CONSTRAINT_SYNTAX
   WRITE_FLAG(pcSPS->getIntraOnlyConstraintFlag() ? 1 : 0, "intra_only_constraint_flag");
   WRITE_CODE(pcSPS->getMaxBitDepthConstraintIdc(), 4, "max_bitdepth_constraint_idc");
   WRITE_CODE(pcSPS->getMaxChromaFormatConstraintIdc(), 2, "max_chroma_format_constraint_idc");
@@ -607,7 +606,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG(pcSPS->getNoLadfConstraintFlag() ? 1 : 0, "no_ladf_constraint_flag");
   WRITE_FLAG(pcSPS->getNoDepQuantConstraintFlag() ? 1 : 0, "no_dep_quant_constraint_flag");
   WRITE_FLAG(pcSPS->getNoSignDataHidingConstraintFlag() ? 1 : 0, "no_sign_data_hiding_constraint_flag");
-#endif
 #if ENABLE_TRACING
   xTraceSPSHeader ();
 #endif

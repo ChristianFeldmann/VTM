@@ -1358,15 +1358,9 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
     if( !pcSlice->isIntra() )
     {
-#if JVET_L0369_SUBBLOCK_MERGE
       CHECK( pcSlice->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported" );
       WRITE_UVLC( MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand" );
-#else
-      CHECK( pcSlice->getMaxNumMergeCand() > ( MRG_MAX_NUM_CANDS - ( pcSlice->getSPS()->getSpsNext().getUseSubPuMvp() ? 0 : 2 ) ), "More merge candidates signalled than supported" );
-      WRITE_UVLC( MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand() - ( pcSlice->getSPS()->getSpsNext().getUseSubPuMvp() ? 0 : 2 ), pcSlice->getSPS()->getSpsNext().getUseSubPuMvp() ? "seven_minus_max_num_merge_cand" : "five_minus_max_num_merge_cand" );
-#endif
 
-#if JVET_L0369_SUBBLOCK_MERGE
       if ( pcSlice->getSPS()->getSpsNext().getUseSubPuMvp() && !pcSlice->getSPS()->getSpsNext().getUseAffine() ) // ATMVP only
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() != 1, "Sub-block merge can number should be 1" );
@@ -1377,7 +1371,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         CHECK( pcSlice->getMaxNumAffineMergeCand() != 0, "Sub-block merge can number should be 0" );
       }
       else
-#endif
       if ( pcSlice->getSPS()->getSpsNext().getUseAffine() )
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() > AFFINE_MRG_MAX_NUM_CANDS, "More affine merge candidates signalled than supported" );

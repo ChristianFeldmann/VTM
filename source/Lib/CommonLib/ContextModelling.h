@@ -287,10 +287,8 @@ public:
   int           numValidMergeCand;
   int           maxNumMergeCand;
 
-#if JVET_L0369_SUBBLOCK_MERGE
   MergeCtx     *mrgCtx;
   MergeType     mergeType[AFFINE_MRG_MAX_NUM_CANDS];
-#endif
 };
 
 

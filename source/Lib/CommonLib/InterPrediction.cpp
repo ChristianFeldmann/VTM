@@ -290,10 +290,8 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   subPu.cu        = pu.cu;
   subPu.mergeType = MRG_TYPE_DEFAULT_N;
 
-#if JVET_L0369_SUBBLOCK_MERGE
   bool isAffine = pu.cu->affine;
   subPu.cu->affine = false;
-#endif
 
   // join sub-pus containing the same motion
   bool verMC = puSize.height > puSize.width;
@@ -343,9 +341,7 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   }
   m_subPuMC = false;
 
-#if JVET_L0369_SUBBLOCK_MERGE
   pu.cu->affine = isAffine;
-#endif
 }
 
 #if JVET_L0293_CPR

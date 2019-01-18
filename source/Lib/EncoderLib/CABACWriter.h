@@ -109,9 +109,7 @@ public:
   void        prediction_unit           ( const PredictionUnit&         pu );
   void        merge_flag                ( const PredictionUnit&         pu );
   void        affine_flag               ( const CodingUnit&             cu );
-#if JVET_L0369_SUBBLOCK_MERGE
   void        subblock_merge_flag       ( const CodingUnit&             cu );
-#endif
   void        merge_idx                 ( const PredictionUnit&         pu );
   void        mmvd_merge_idx(const PredictionUnit&         pu);
   void        imv_mode                  ( const CodingUnit&             cu );

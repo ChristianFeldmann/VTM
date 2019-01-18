@@ -95,9 +95,7 @@ public:
   void        merge_flag                ( PredictionUnit&               pu );
   void        merge_data                ( PredictionUnit&               pu );
   void        affine_flag               ( CodingUnit&                   cu );
-#if JVET_L0369_SUBBLOCK_MERGE
   void        subblock_merge_flag       ( CodingUnit&                   cu );
-#endif
   void        merge_idx                 ( PredictionUnit&               pu );
   void        mmvd_merge_idx(PredictionUnit&               pu);
   void        imv_mode                  ( CodingUnit&                   cu,     MergeCtx&       mrgCtx );

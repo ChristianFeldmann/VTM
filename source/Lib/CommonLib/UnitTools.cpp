@@ -816,9 +816,6 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #if JVET_L0293_CPR
   int mrgCandIdxCPR = mrgCandIdx;
 #endif
-#if JVET_L0293_CPR && !JVET_L0369_SUBBLOCK_MERGE
-  int cntCPR = 0;
-#endif
 
   const Position posLT = pu.Y().topLeft();
   const Position posRT = pu.Y().topRight();
@@ -847,10 +844,6 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     if (puLeft->cu->cpr)
     {
       mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
-#if !JVET_L0369_SUBBLOCK_MERGE
-      cntCPR++;
-
-#endif
 #if JVET_L0293_CPR
       if (mmvdList != 0 && mrgCandIdx != -1)
         mrgCandIdxCPR++;
@@ -905,10 +898,6 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       if (puAbove->cu->cpr)
       {
         mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
-#if !JVET_L0369_SUBBLOCK_MERGE
-        cntCPR++;
-
-#endif
 #if JVET_L0293_CPR
         if (mmvdList != 0 && mrgCandIdx != -1)
           mrgCandIdxCPR++;
@@ -967,10 +956,6 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       if (puAboveRight->cu->cpr)
       {
         mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
-#if !JVET_L0369_SUBBLOCK_MERGE
-        cntCPR++;
-
-#endif
 #if JVET_L0293_CPR
         if (mmvdList != 0 && mrgCandIdx != -1)
           mrgCandIdxCPR++;
@@ -1029,10 +1014,6 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       if (puLeftBottom->cu->cpr)
       {
         mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
-#if !JVET_L0369_SUBBLOCK_MERGE
-        cntCPR++;
-
-#endif
 #if JVET_L0293_CPR
         if (mmvdList != 0 && mrgCandIdx != -1)
           mrgCandIdxCPR++;
@@ -1064,71 +1045,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     return;
   }
 
-#if !JVET_L0369_SUBBLOCK_MERGE
-
-#if JVET_L0293_CPR
-  bool enableSubPuMvp = slice.getSPS()->getSpsNext().getUseSubPuMvp() && !(slice.getPOC() == slice.getRefPic(REF_PIC_LIST_0, 0)->getPOC() && slice.isIRAP());
-#else
-  bool enableSubPuMvp = slice.getSPS()->getSpsNext().getUseSubPuMvp();
-#endif
-
-  bool isAvailableSubPu = false;
-  unsigned subPuMvpPos = 0;
-
-  if( enableSubPuMvp )
-  {
-    CHECK( mrgCtx.subPuMvpMiBuf   .area() == 0 || !mrgCtx.subPuMvpMiBuf   .buf, "Buffer not initialized" );
-
-    mrgCtx.subPuMvpMiBuf   .fill( MotionInfo() );
-  }
-
-  if( enableSubPuMvp && slice.getEnableTMVPFlag() )
-  {
-#if JVET_L0293_CPR
-    bool bMrgIdxMatchATMVPCan = (mrgCandIdxCPR == cnt);
-#else
-    bool bMrgIdxMatchATMVPCan = ( mrgCandIdx == cnt );
-#endif
-    bool tmpLICFlag           = false;
-
-    isAvailableSubPu = cs.sps->getSpsNext().getUseATMVP() &&     
-      getInterMergeSubPuMvpCand( pu, mrgCtx, tmpLICFlag, cnt 
-        , mmvdList
-#if JVET_L0293_CPR
-      , cntCPR
-#endif
-    );
-
-    if( isAvailableSubPu )
-    {
-#if !JVET_L0090_PAIR_AVG
-      isCandInter[cnt] = true;
-#endif
-
-      mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_SUBPU_ATMVP;
-
-      if( bMrgIdxMatchATMVPCan )
-      {
-        return;
-      }
-      subPuMvpPos = cnt;
-      cnt++;
-
-      if( cnt == maxNumMergeCand )
-      {
-        return;
-      }
-    }
-
-  }
-#endif
 
   // above left
-#if JVET_L0369_SUBBLOCK_MERGE
   if ( cnt < 4 )
-#else
-  if( cnt < ( enableSubPuMvp ? 6 : 4 ) )
-#endif
   {
     const PredictionUnit *puAboveLeft = cs.getPURestricted( posLT.offset( -1, -1 ), pu, pu.chType );
 
@@ -1156,10 +1075,6 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
         if (puAboveLeft->cu->cpr)
         {
           mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
-#if !JVET_L0369_SUBBLOCK_MERGE
-          cntCPR++;
-
-#endif
 #if JVET_L0293_CPR
           if (mmvdList != 0 && mrgCandIdx != -1)
             mrgCandIdxCPR++;
@@ -1259,38 +1174,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 
     if( dir != 0 )
     {
-#if JVET_L0369_SUBBLOCK_MERGE
       bool addTMvp = true;
-#else
-      bool addTMvp = !( cs.sps->getSpsNext().getUseSubPuMvp() && isAvailableSubPu );
-      if( !addTMvp )
-      {
-        if ( dir != mrgCtx.interDirNeighbours[subPuMvpPos] )
-        {
-          addTMvp = true;
-        }
-        else
-        {
-          for( unsigned refList = 0; refList < NUM_REF_PIC_LIST_01; refList++ )
-          {
-            if( dir & ( 1 << refList ) )
-            {
-              if( mrgCtx.mvFieldNeighbours[( cnt << 1 ) + refList] != mrgCtx.mvFieldNeighbours[(subPuMvpPos << 1) + refList] )
-              {
-                addTMvp = true;
-                break;
-              }
-            }
-          }
-        }
-      }
-#endif
 #if HM_JEM_MERGE_CANDS
-#if JVET_L0369_SUBBLOCK_MERGE
       int iSpanCand = cnt;
-#else
-      int iSpanCand = isAvailableSubPu ? cnt - 1 : cnt;
-#endif
       for( int i = 0; i < iSpanCand; i++ )
       {
         if( mrgCtx.interDirNeighbours[  i           ] == dir &&
@@ -1331,10 +1217,8 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   int maxNumMergeCandMin1 = maxNumMergeCand - 1;
   if (cnt != maxNumMergeCandMin1)
   {
-#if JVET_L0369_SUBBLOCK_MERGE
     bool isAvailableSubPu = false;
     unsigned subPuMvpPos = 0;
-#endif
 #if JVET_L0090_PAIR_AVG
     bool bFound = addMergeHMVPCand(slice, mrgCtx, canFastExit
 #if JVET_L0293_CPR
@@ -2117,9 +2001,7 @@ bool PU::addAffineMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &r
   neibPU = cs.getPURestricted( neibPos, pu, pu.chType );
 
   if ( neibPU == NULL || !CU::isInter( *neibPU->cu ) || !neibPU->cu->affine
-#if JVET_L0369_SUBBLOCK_MERGE
     || neibPU->mergeType != MRG_TYPE_DEFAULT_N
-#endif
     )
   {
     return false;
@@ -2765,9 +2647,7 @@ const int getAvailableAffineNeighboursForLeftPredictor( const PredictionUnit &pu
 
   const PredictionUnit *puLeftBottom = pu.cs->getPURestricted( posLB.offset( -1, 1 ), pu, pu.chType );
   if ( puLeftBottom && puLeftBottom->cu->affine
-#if JVET_L0369_SUBBLOCK_MERGE
     && puLeftBottom->mergeType == MRG_TYPE_DEFAULT_N
-#endif
     )
   {
     npu[num++] = puLeftBottom;
@@ -2776,9 +2656,7 @@ const int getAvailableAffineNeighboursForLeftPredictor( const PredictionUnit &pu
 
   const PredictionUnit* puLeft = pu.cs->getPURestricted( posLB.offset( -1, 0 ), pu, pu.chType );
   if ( puLeft && puLeft->cu->affine
-#if JVET_L0369_SUBBLOCK_MERGE
     && puLeft->mergeType == MRG_TYPE_DEFAULT_N
-#endif
     )
   {
     npu[num++] = puLeft;
@@ -2796,9 +2674,7 @@ const int getAvailableAffineNeighboursForAbovePredictor( const PredictionUnit &p
 
   const PredictionUnit* puAboveRight = pu.cs->getPURestricted( posRT.offset( 1, -1 ), pu, pu.chType );
   if ( puAboveRight && puAboveRight->cu->affine
-#if JVET_L0369_SUBBLOCK_MERGE
     && puAboveRight->mergeType == MRG_TYPE_DEFAULT_N
-#endif
     )
   {
     npu[num++] = puAboveRight;
@@ -2807,9 +2683,7 @@ const int getAvailableAffineNeighboursForAbovePredictor( const PredictionUnit &p
 
   const PredictionUnit* puAbove = pu.cs->getPURestricted( posRT.offset( 0, -1 ), pu, pu.chType );
   if ( puAbove && puAbove->cu->affine
-#if JVET_L0369_SUBBLOCK_MERGE
     && puAbove->mergeType == MRG_TYPE_DEFAULT_N
-#endif
     )
   {
     npu[num++] = puAbove;
@@ -2818,9 +2692,7 @@ const int getAvailableAffineNeighboursForAbovePredictor( const PredictionUnit &p
 
   const PredictionUnit *puAboveLeft = pu.cs->getPURestricted( posLT.offset( -1, -1 ), pu, pu.chType );
   if ( puAboveLeft && puAboveLeft->cu->affine
-#if JVET_L0369_SUBBLOCK_MERGE
     && puAboveLeft->mergeType == MRG_TYPE_DEFAULT_N
-#endif
     )
   {
     npu[num++] = puAboveLeft;
@@ -2845,16 +2717,13 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
     }
     affMrgCtx.interDirNeighbours[i] = 0;
     affMrgCtx.affineType[i] = AFFINEMODEL_4PARAM;
-#if JVET_L0369_SUBBLOCK_MERGE
     affMrgCtx.mergeType[i] = MRG_TYPE_DEFAULT_N;
-#endif
     affMrgCtx.GBiIdx[i] = GBI_DEFAULT;
   }
 
   affMrgCtx.numValidMergeCand = 0;
   affMrgCtx.maxNumMergeCand = maxNumAffineMergeCand;
 
-#if JVET_L0369_SUBBLOCK_MERGE ///> insert ATMVP candidate
 #if JVET_L0293_CPR
   bool enableSubPuMvp = slice.getSPS()->getSpsNext().getUseSubPuMvp() && !(slice.getPOC() == slice.getRefPic(REF_PIC_LIST_0, 0)->getPOC() && slice.isIRAP());
 #else
@@ -3029,12 +2898,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       }
     }
   }
-#endif
 
-#if JVET_L0369_SUBBLOCK_MERGE
   if ( slice.getSPS()->getSpsNext().getUseAffine() )
   {
-#endif
     ///> Start: inherited affine candidates
     const PredictionUnit* npu[5];
     int numAffNeighLeft = getAvailableAffineNeighboursForLeftPredictor( pu, npu );
@@ -3237,9 +3103,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       }
     }
     ///> End: Constructed affine candidates
-#if JVET_L0369_SUBBLOCK_MERGE
   }
-#endif
 
   ///> zero padding
   int cnt = affMrgCtx.numValidMergeCand;

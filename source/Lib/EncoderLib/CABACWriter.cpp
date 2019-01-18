@@ -1209,11 +1209,7 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   }
   if( pu.mergeFlag )
   {
-#if JVET_L0369_SUBBLOCK_MERGE
     subblock_merge_flag( *pu.cu );
-#else
-    affine_flag  ( *pu.cu );
-#endif
     MHIntra_flag( pu );
     if ( pu.mhIntraFlag )
     {
@@ -1273,7 +1269,6 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   }
 }
 
-#if JVET_L0369_SUBBLOCK_MERGE
 void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
 {
   if ( cu.firstPU->mergeFlag && (cu.firstPU->mmvdMergeFlag || cu.mmvdSkip) )
@@ -1288,11 +1283,9 @@ void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
     DTRACE( g_trace_ctx, D_SYNTAX, "subblock_merge_flag() subblock_merge_flag=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
   }
 }
-#endif
 
 void CABACWriter::affine_flag( const CodingUnit& cu )
 {
-#if JVET_L0369_SUBBLOCK_MERGE
   if ( !cu.cs->slice->isIntra() && cu.cs->sps->getSpsNext().getUseAffine() && cu.lumaSize().width > 8 && cu.lumaSize().height > 8 )
   {
     unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
@@ -1306,41 +1299,6 @@ void CABACWriter::affine_flag( const CodingUnit& cu )
       DTRACE( g_trace_ctx, D_SYNTAX, "affine_type() affine_type=%d ctx=%d pos=(%d,%d)\n", cu.affineType ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
     }
   }
-#else
-  if( cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine() )
-  {
-    return;
-  }
-
-  if( !cu.firstPU->mergeFlag && !( cu.lumaSize().width > 8 && cu.lumaSize().height > 8 ) )
-  {
-    return;
-  }
-
-  if ( cu.firstPU->mergeFlag && !(cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8) )
-  {
-    return;
-  }
-
-  if (cu.firstPU->mergeFlag && (cu.firstPU->mmvdMergeFlag || cu.mmvdSkip))
-  {
-    return;
-  }
-  unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
-  m_BinEncoder.encodeBin( cu.affine, Ctx::AffineFlag( ctxId ) );
-  DTRACE( g_trace_ctx, D_COMMON, " (%d) affine_flag() affine=%d\n", DTRACE_GET_COUNTER(g_trace_ctx, D_COMMON), cu.affine ? 1 : 0 );
-
-  DTRACE( g_trace_ctx, D_SYNTAX, "affine_flag() affine=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
-
-  if ( cu.affine && !cu.firstPU->mergeFlag && cu.cs->sps->getSpsNext().getUseAffineType() )
-  {
-    unsigned ctxId = 0;
-    m_BinEncoder.encodeBin( cu.affineType, Ctx::AffineType( ctxId ) );
-
-    DTRACE( g_trace_ctx, D_COMMON, " (%d) affine_type() affine_type=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_COMMON ), cu.affineType ? 1 : 0 );
-    DTRACE( g_trace_ctx, D_SYNTAX, "affine_type() affine_type=%d ctx=%d pos=(%d,%d)\n", cu.affineType ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
-  }
-#endif
 }
 
 void CABACWriter::merge_flag( const PredictionUnit& pu )

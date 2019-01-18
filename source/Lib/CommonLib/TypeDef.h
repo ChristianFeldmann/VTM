@@ -82,7 +82,6 @@
 
 
 
-#define JVET_L0369_SUBBLOCK_MERGE                         1 // Moving ATMVP into the sub-block merge list
 
 #define REUSE_CU_RESULTS                                  1
 

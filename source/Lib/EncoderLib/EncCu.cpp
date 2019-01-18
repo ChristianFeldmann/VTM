@@ -2420,7 +2420,6 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
   AffineMergeCtx affineMergeCtx;
   const SPS &sps = *tempCS->sps;
 
-#if JVET_L0369_SUBBLOCK_MERGE
   MergeCtx mrgCtx;
   if ( sps.getSpsNext().getUseSubPuMvp() )
   {
@@ -2428,7 +2427,6 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     mrgCtx.subPuMvpMiBuf = MotionBuf( m_SubPuMiBuf, bufSize );
     affineMergeCtx.mrgCtx = &mrgCtx;
   }
-#endif
 
   {
     // first get merge candidates
@@ -2522,7 +2520,6 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
         cu.affineType = affineMergeCtx.affineType[uiMergeCand];
         cu.GBiIdx = affineMergeCtx.GBiIdx[uiMergeCand];
 
-#if JVET_L0369_SUBBLOCK_MERGE
         pu.mergeType = affineMergeCtx.mergeType[uiMergeCand];
         if ( pu.mergeType == MRG_TYPE_SUBPU_ATMVP )
         {
@@ -2532,14 +2529,11 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
         }
         else
         {
-#endif
           PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 0], REF_PIC_LIST_0 );
           PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 1], REF_PIC_LIST_1 );
 
           PU::spanMotionInfo( pu );
-#if JVET_L0369_SUBBLOCK_MERGE
         }
-#endif
 
         distParam.cur = acMergeBuffer[uiMergeCand].Y();
 
@@ -2616,7 +2610,6 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       cu.affineType = affineMergeCtx.affineType[uiMergeCand];
       cu.GBiIdx = affineMergeCtx.GBiIdx[uiMergeCand];
 
-#if JVET_L0369_SUBBLOCK_MERGE
       pu.mergeType = affineMergeCtx.mergeType[uiMergeCand];
       if ( pu.mergeType == MRG_TYPE_SUBPU_ATMVP )
       {
@@ -2626,14 +2619,11 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       }
       else
       {
-#endif
         PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 0], REF_PIC_LIST_0 );
         PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 1], REF_PIC_LIST_1 );
 
         PU::spanMotionInfo( pu );
-#if JVET_L0369_SUBBLOCK_MERGE
       }
-#endif
 
       if ( mrgTempBufSet )
       {

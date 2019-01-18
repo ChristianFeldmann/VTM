@@ -497,22 +497,17 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         if( pu.cu->affine )
         {
           AffineMergeCtx affineMergeCtx;
-#if JVET_L0369_SUBBLOCK_MERGE
           if ( pu.cs->sps->getSpsNext().getUseSubPuMvp() )
           {
             Size bufSize = g_miScaling.scale( pu.lumaSize() );
             mrgCtx.subPuMvpMiBuf = MotionBuf( m_SubPuMiBuf, bufSize );
             affineMergeCtx.mrgCtx = &mrgCtx;
           }
-#endif
           PU::getAffineMergeCand( pu, affineMergeCtx, pu.mergeIdx );
           pu.interDir = affineMergeCtx.interDirNeighbours[pu.mergeIdx];
           pu.cu->affineType = affineMergeCtx.affineType[pu.mergeIdx];
           pu.cu->GBiIdx = affineMergeCtx.GBiIdx[pu.mergeIdx];
-#if JVET_L0369_SUBBLOCK_MERGE
           pu.mergeType = affineMergeCtx.mergeType[pu.mergeIdx];
-#endif
-#if JVET_L0369_SUBBLOCK_MERGE
           if ( pu.mergeType == MRG_TYPE_SUBPU_ATMVP )
           {
             pu.refIdx[0] = affineMergeCtx.mvFieldNeighbours[(pu.mergeIdx << 1) + 0][0].refIdx;
@@ -520,7 +515,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           }
           else
           {
-#endif
           for( int i = 0; i < 2; ++i )
           {
             if( pu.cs->slice->getNumRefIdx( RefPicList( i ) ) > 0 )
@@ -532,20 +526,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               PU::setAllAffineMvField( pu, mvField, RefPicList( i ) );
             }
           }
-#if JVET_L0369_SUBBLOCK_MERGE
         }
-#endif
           PU::spanMotionInfo( pu, mrgCtx );
         }
         else
         {
-#if !JVET_L0369_SUBBLOCK_MERGE
-          if( pu.cs->sps->getSpsNext().getUseSubPuMvp() )
-          {
-            Size bufSize = g_miScaling.scale( pu.lumaSize() );
-            mrgCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
-          }
-#endif
 
             PU::getInterMergeCandidates(pu, mrgCtx, 0, pu.mergeIdx);
             PU::restrictBiPredMergeCands(pu, mrgCtx);

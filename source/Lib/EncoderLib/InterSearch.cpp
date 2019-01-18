@@ -5260,11 +5260,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     PredictionUnit &pu = *cs.getPU( partitioner.chType );
 
     m_CABACEstimator->cu_skip_flag  ( cu );
-#if JVET_L0369_SUBBLOCK_MERGE
     m_CABACEstimator->subblock_merge_flag( cu );
-#else
-    m_CABACEstimator->affine_flag( cu );
-#endif
     m_CABACEstimator->triangle_mode ( cu );
     if (cu.mmvdSkip)
     {
@@ -5453,11 +5449,7 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
     }
 
     m_CABACEstimator->cu_skip_flag  ( cu );
-#if JVET_L0369_SUBBLOCK_MERGE
     m_CABACEstimator->subblock_merge_flag( cu );
-#else
-    m_CABACEstimator->affine_flag   ( cu );
-#endif
     m_CABACEstimator->triangle_mode ( cu );
     if (cu.mmvdSkip)
     {

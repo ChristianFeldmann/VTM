@@ -86,7 +86,6 @@
 #define REUSE_CU_RESULTS                                  1
 
 
-#define JVET_L0093_SIMP_PRUNE                             1
 
 #define JVET_L0257_ATMVP_COLBLK_CLIP                      1
 
@@ -192,11 +191,7 @@
 #define HM_4TAPIF_AS_IN_JEM                               1   // *** - PM: condition not well suited for 4-tap interpolation filters
 #define HM_MDIS_AS_IN_JEM                                 1   // *** - PM: not filtering ref. samples for 64xn case and using Planar MDIS condition at encoder
 #define HM_JEM_CLIP_PEL                                   1   // ***
-#if JVET_L0093_SIMP_PRUNE
 #define HM_JEM_MERGE_CANDS                                0   // ***
-#else
-#define HM_JEM_MERGE_CANDS                                1   // ***
-#endif
 
 #endif//JEM_COMP
 

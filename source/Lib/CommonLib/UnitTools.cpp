@@ -3285,7 +3285,6 @@ static bool deriveScaledMotionTemporal( const Slice&      slice,
   return false;
 }
 
-#if JVET_L0257_ATMVP_COLBLK_CLIP
 void clipColPos(int& posX, int& posY, const PredictionUnit& pu)
 {
   Position puPos = pu.lumaPos();
@@ -3311,30 +3310,6 @@ void clipColPos(int& posX, int& posY, const PredictionUnit& pu)
   posX = std::min(horMax, std::max(horMin, posX));
   posY = std::min(verMax, std::max(verMin, posY));
 }
-#else
-void clipColBlkMv(int& mvX, int& mvY, const PredictionUnit& pu)
-{
-  Position puPos = pu.lumaPos();
-  Size     puSize = pu.lumaSize();
-
-  int ctuSize = pu.cs->sps->getSpsNext().getCTUSize();
-  int ctuX = puPos.x / ctuSize*ctuSize;
-  int ctuY = puPos.y / ctuSize*ctuSize;
-
-  int horMax = std::min((int)pu.cs->sps->getPicWidthInLumaSamples(), ctuX + ctuSize + 4) - puSize.width;
-  int horMin = std::max((int)0, ctuX);
-  int verMax = std::min((int)pu.cs->sps->getPicHeightInLumaSamples(), ctuY + ctuSize) - puSize.height;
-  int verMin = std::min((int)0, ctuY);
-
-  horMax = horMax - puPos.x;
-  horMin = horMin - puPos.x;
-  verMax = verMax - puPos.y;
-  verMin = verMin - puPos.y;
-
-  mvX = std::min(horMax, std::max(horMin, mvX));
-  mvY = std::min(verMax, std::max(verMin, mvY));
-}
-#endif
 
 bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, bool& LICFlag, const int count
   , int mmvdList
@@ -3397,9 +3372,6 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   ////////          GET Initial Temporal Vector                  ////////
   ///////////////////////////////////////////////////////////////////////
   int mvPrec = MV_FRACTIONAL_BITS_INTERNAL;
-#if !JVET_L0257_ATMVP_COLBLK_CLIP
-  int mvRndOffs = (1 << mvPrec) >> 1;
-#endif
 
   Mv cTempVector = cTMv;
   bool  tempLICFlag = false;
@@ -3427,7 +3399,6 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
 
   bool found = false;
   cTempVector = cTMv;
-#if JVET_L0257_ATMVP_COLBLK_CLIP
   int tempX = cTempVector.getHor() >> mvPrec;
   int tempY = cTempVector.getVer() >> mvPrec;
 
@@ -3435,25 +3406,6 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   centerPos.y = puPos.y + (puSize.height >> 1) + tempY;
 
   clipColPos(centerPos.x, centerPos.y, pu);
-#else
-  int tempX = ((cTempVector.getHor() + mvRndOffs) >> mvPrec);
-  int tempY = ((cTempVector.getVer() + mvRndOffs) >> mvPrec);
-  clipColBlkMv(tempX, tempY, pu);
-
-  if (puSize.width == puWidth && puSize.height == puHeight)
-  {
-    centerPos.x = puPos.x + (puSize.width >> 1) + tempX;
-    centerPos.y = puPos.y + (puSize.height >> 1) + tempY;
-  }
-  else
-  {
-    centerPos.x = puPos.x + ((puSize.width / puWidth) >> 1)   * puWidth + (puWidth >> 1) + tempX;
-    centerPos.y = puPos.y + ((puSize.height / puHeight) >> 1) * puHeight + (puHeight >> 1) + tempY;
-  }
-
-  centerPos.x = Clip3(0, (int)pColPic->lwidth() - 1, centerPos.x);
-  centerPos.y = Clip3(0, (int)pColPic->lheight() - 1, centerPos.y);
-#endif
 
   centerPos = Position{ PosType(centerPos.x & mask), PosType(centerPos.y & mask) };
 
@@ -3489,20 +3441,8 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   }
   if (mmvdList != 1)
   {
-#if JVET_L0257_ATMVP_COLBLK_CLIP
   int xOff = (puWidth >> 1) + tempX;
   int yOff = (puHeight >> 1) + tempY;
-#else
-  int xOff = puWidth / 2;
-  int yOff = puHeight / 2;
-
-  // compute the location of the current PU
-  xOff += tempX;
-  yOff += tempY;
-
-  int iPicWidth = pColPic->lwidth() - 1;
-  int iPicHeight = pColPic->lheight() - 1;
-#endif
 
   MotionBuf& mb = mrgCtx.subPuMvpMiBuf;
 
@@ -3514,12 +3454,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
     {
       Position colPos{ x + xOff, y + yOff };
 
-#if JVET_L0257_ATMVP_COLBLK_CLIP
       clipColPos(colPos.x, colPos.y, pu);
-#else
-      colPos.x = Clip3(0, iPicWidth, colPos.x);
-      colPos.y = Clip3(0, iPicHeight, colPos.y);
-#endif
 
       colPos = Position{ PosType(colPos.x & mask), PosType(colPos.y & mask) };
 

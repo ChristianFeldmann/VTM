@@ -87,7 +87,6 @@
 
 
 
-#define JVET_L0257_ATMVP_COLBLK_CLIP                      1
 
 #define JVET_L0293_CPR                                    1 // current picture referencing or intra block copy mode
 

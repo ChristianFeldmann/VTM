@@ -1466,12 +1466,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
     if( pcSlice->getIdrPicFlag() )
     {
-#if JVET_L0449
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
       pcSlice->setPOC(uiCode);
-#else
-      pcSlice->setPOC(0);
-#endif
       ReferencePictureSet* rps = pcSlice->getLocalRPS();
       (*rps)=ReferencePictureSet();
       pcSlice->setRPS(rps);

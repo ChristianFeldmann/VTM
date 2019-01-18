@@ -90,7 +90,6 @@
 
 
 
-#define JVET_L0449                                        1 // code POC value for IDRs
 
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )

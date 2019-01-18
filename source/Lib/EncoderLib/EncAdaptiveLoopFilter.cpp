@@ -364,12 +364,6 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
   for( int iShapeIdx = 0; iShapeIdx < alfFilterShape.size(); iShapeIdx++ )
   {
     m_alfSliceParamTemp = alfSliceParam;
-#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
-    if( isLuma( channel ) )
-    {
-      m_alfSliceParamTemp.lumaFilterType = alfFilterShape[iShapeIdx].filterType;
-    }
-#endif
     //1. get unfiltered distortion
     double cost = getUnfilteredDistortion( m_alfCovarianceFrame[channel][iShapeIdx], channel );
     cost /= 1.001; // slight preference for unfiltered choice
@@ -399,11 +393,7 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
 
     //3. CTU decision
     double distUnfilter = 0;
-#if JVET_L0664_ALF_REMOVE_LUMA_5x5
     const int iterNum = isLuma(channel) ? (2 * 4 + 1) : (2 * 2 + 1);
-#else
-    const int iterNum = 2 * 2 + 1;
-#endif
 
     for( int iter = 0; iter < iterNum; iter++ )
     {
@@ -446,11 +436,7 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
       int ctuIdx = 0;
       const int chromaScaleX = getComponentScaleX( compID, recBuf.chromaFormat );
       const int chromaScaleY = getComponentScaleY( compID, recBuf.chromaFormat );
-#if JVET_L0664_ALF_REMOVE_LUMA_5x5
       AlfFilterType filterType = isLuma( compID ) ? ALF_FILTER_7 : ALF_FILTER_5;
-#else
-      AlfFilterType filterType = isLuma( compID ) ? alfSliceParam.lumaFilterType : ALF_FILTER_5;
-#endif
       short* coeff = isLuma( compID ) ? m_coeffFinal : alfSliceParam.chromaCoeff;
 
       for( int yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight )
@@ -552,11 +538,7 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
   }
 
   memset( m_bitsCoeffScan, 0, sizeof( m_bitsCoeffScan ) );
-#if JVET_L0664_ALF_REMOVE_LUMA_5x5
   AlfFilterShape alfShape( isChroma ? 5 : 7 );
-#else
-  AlfFilterShape alfShape( isChroma ? 5 : ( alfSliceParam.lumaFilterType == ALF_FILTER_5 ? 5 : 7 ) );
-#endif
   const int maxGolombIdx = AdaptiveLoopFilter::getMaxGolombIdx( alfShape.filterType );
   const short* coeff = isChroma ? alfSliceParam.chromaCoeff : alfSliceParam.lumaCoeff;
   const int numFilters = isChroma ? 1 : alfSliceParam.numLumaFilters;
@@ -746,12 +728,7 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
 
 int EncAdaptiveLoopFilter::getNonFilterCoeffRate( AlfSliceParam& alfSliceParam )
 {
-#if   JVET_L0664_ALF_REMOVE_LUMA_5x5
   int len = 1   // alf_coefficients_delta_flag
-#else
-  int len = 1   // filter_type
-          + 1   // alf_coefficients_delta_flag
-#endif
           + lengthTruncatedUnary( 0, 3 )    // chroma_idc = 0, it is signalled when ALF is enabled for luma
           + getTBlength( alfSliceParam.numLumaFilters - 1, MAX_NUM_ALF_CLASSES );   //numLumaFilters
 

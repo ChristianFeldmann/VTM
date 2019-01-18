@@ -2516,10 +2516,6 @@ void HLSyntaxReader::alf( AlfSliceParam& alfSliceParam )
 
   xReadTruncBinCode( code, MAX_NUM_ALF_CLASSES );  //number_of_filters_minus1
   alfSliceParam.numLumaFilters = code + 1;
-#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
-  READ_FLAG( code, "filter_type_flag" );
-  alfSliceParam.lumaFilterType = code ? ALF_FILTER_5 : ALF_FILTER_7;
-#endif
   if( alfSliceParam.numLumaFilters > 1 )
   {
     for( int i = 0; i < MAX_NUM_ALF_CLASSES; i++ )
@@ -2614,11 +2610,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
   }
 
   // derive maxGolombIdx
-#if JVET_L0664_ALF_REMOVE_LUMA_5x5
   AlfFilterShape alfShape( isChroma ? 5 : 7 );
-#else
-  AlfFilterShape alfShape( isChroma ? 5 : ( alfSliceParam.lumaFilterType == ALF_FILTER_5 ? 5 : 7 ) );
-#endif
   const int maxGolombIdx = AdaptiveLoopFilter::getMaxGolombIdx( alfShape.filterType );
   READ_UVLC( code, "min_golomb_order" );
 

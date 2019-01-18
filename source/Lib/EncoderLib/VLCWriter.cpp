@@ -1766,9 +1766,6 @@ void HLSWriter::alf( const AlfSliceParam& alfSliceParam )
   truncatedUnaryEqProb( alfChromaIdc, 3 );   // alf_chroma_idc
 
   xWriteTruncBinCode( alfSliceParam.numLumaFilters - 1, MAX_NUM_ALF_CLASSES );  //number_of_filters_minus1
-#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
-  WRITE_FLAG( alfSliceParam.lumaFilterType == ALF_FILTER_5 ? 1 : 0, "filter_type_flag" );
-#endif
   if( alfSliceParam.numLumaFilters > 1 )
   {
     for( int i = 0; i < MAX_NUM_ALF_CLASSES; i++ )
@@ -1828,11 +1825,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
 
   static int bitsCoeffScan[EncAdaptiveLoopFilter::m_MAX_SCAN_VAL][EncAdaptiveLoopFilter::m_MAX_EXP_GOLOMB];
   memset( bitsCoeffScan, 0, sizeof( bitsCoeffScan ) );
-#if JVET_L0664_ALF_REMOVE_LUMA_5x5
   AlfFilterShape alfShape( isChroma ? 5 : 7 );
-#else
-  AlfFilterShape alfShape( isChroma ? 5 : ( alfSliceParam.lumaFilterType == ALF_FILTER_5 ? 5 : 7 ) );
-#endif
   const int maxGolombIdx = AdaptiveLoopFilter::getMaxGolombIdx( alfShape.filterType );
   const short* coeff = isChroma ? alfSliceParam.chromaCoeff : alfSliceParam.lumaCoeff;
   const int numFilters = isChroma ? 1 : alfSliceParam.numLumaFilters;

@@ -60,7 +60,6 @@
 #define JVET_L0285_8BIT_TRANSFORM_CORE                    1 // Primary transform using 8-bit cores
 
 
-#define JVET_L0158_L0106_RESET_BUFFER                     1 //reset the history buffer on HMVP
 
 #define JVET_L0265_AFF_MINIMUM4X4                         1 //Affine 4x4 chroma subblock 
 

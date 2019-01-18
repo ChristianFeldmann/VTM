@@ -1404,11 +1404,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     m_CABACEstimator->extend_ref_line( cu );
 #endif
     m_CABACEstimator->cu_pred_data   ( cu );
-#if JVET_L0209_PCM
     m_CABACEstimator->pcm_data       ( cu, partitioner );
-#else
-    m_CABACEstimator->pcm_data       ( cu );
-#endif
 
     // Encode Coefficients
     CUCtx cuCtx;
@@ -1454,11 +1450,7 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
 {
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
 
-#if JVET_L0209_PCM
   CodingUnit &cu      = tempCS->addCU( CS::getArea( *tempCS, tempCS->area, partitioner.chType ), partitioner.chType );
-#else
-  CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
-#endif
 
   partitioner.setCUData( cu );
   cu.slice            = tempCS->slice;
@@ -1475,15 +1467,9 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
   cu.qp               = encTestMode.qp;
   cu.ipcm             = true;
 
-#if JVET_L0209_PCM
   tempCS->addPU( CS::getArea( *tempCS, tempCS->area, partitioner.chType ), partitioner.chType );
 
   tempCS->addTU( CS::getArea( *tempCS, tempCS->area, partitioner.chType ), partitioner.chType );
-#else
-  tempCS->addPU(tempCS->area, partitioner.chType);
-
-  tempCS->addTU( tempCS->area, partitioner.chType );
-#endif
 
   m_pcIntraSearch->IPCMSearch(*tempCS, partitioner);
 
@@ -1505,11 +1491,7 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
     m_CABACEstimator->cu_skip_flag ( cu );
   }
   m_CABACEstimator->pred_mode      ( cu );
-#if JVET_L0209_PCM
   m_CABACEstimator->pcm_data       ( cu, partitioner );
-#else
-  m_CABACEstimator->pcm_data       ( cu );
-#endif
 
 
   tempCS->fracBits = m_CABACEstimator->getEstFracBits();

@@ -61,7 +61,6 @@
 
 
 
-#define JVET_L0209_PCM                                    1 // PCM mode
 
 #define JVET_L0553_FIX_INITQP                             1
 #define JVET_L0053_L0272_DM                               1 // use center position of luma block to derive DM

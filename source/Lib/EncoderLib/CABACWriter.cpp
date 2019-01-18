@@ -637,7 +637,6 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
     return;
   }
 
-#if JVET_L0209_PCM
   // pcm samples
   if( CU::isIntra(cu) )
   {
@@ -648,7 +647,6 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
       return;
     }
   }
-#endif
 
   // prediction mode and partitioning data
   pred_mode ( cu );
@@ -657,18 +655,6 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
   extend_ref_line(cu);
 #endif
 
-#if !JVET_L0209_PCM
-  // pcm samples
-  if( CU::isIntra(cu) )
-  {
-    pcm_data( cu );
-    if( cu.ipcm )
-    {
-      end_of_ctu( cu, cuCtx );
-      return;
-    }
-  }
-#endif
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
   cu_pred_data( cu );
@@ -712,17 +698,9 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
   m_BinEncoder.encodeBin( ( CU::isIntra( cu ) ), Ctx::PredMode() );
 }
 
-#if JVET_L0209_PCM
 void CABACWriter::pcm_data( const CodingUnit& cu, Partitioner& partitioner  )
-#else
-void CABACWriter::pcm_data( const CodingUnit& cu )
-#endif
 {
-#if JVET_L0209_PCM
   pcm_flag( cu, partitioner );
-#else
-  pcm_flag( cu );
-#endif
   if( cu.ipcm )
   {
     m_BinEncoder.pcmAlignBits();
@@ -730,19 +708,11 @@ void CABACWriter::pcm_data( const CodingUnit& cu )
   }
 }
 
-#if JVET_L0209_PCM
 void CABACWriter::pcm_flag( const CodingUnit& cu, Partitioner& partitioner )
-#else
-void CABACWriter::pcm_flag( const CodingUnit& cu )
-#endif
 {
   const SPS& sps = *cu.cs->sps;
- #if JVET_L0209_PCM
   if( !sps.getUsePCM() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
       || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
-#else
-  if( !sps.getUsePCM() || cu.lumaSize().width > (1 << sps.getPCMLog2MaxSize()) || cu.lumaSize().width < (1 << sps.getPCMLog2MinSize()) )
-#endif
   {
     return;
   }
@@ -1798,17 +1768,12 @@ void CABACWriter::pcm_samples( const TransformUnit& tu )
 
   const SPS&        sps       = *tu.cu->cs->sps;
 
-#if JVET_L0209_PCM
   const CodingStructure *cs = tu.cs;
   const ChannelType chType = tu.chType;
 
   ComponentID compStr = (CS::isDualITree(*cs) && !isLuma(chType)) ? COMPONENT_Cb: COMPONENT_Y;
   ComponentID compEnd = (CS::isDualITree(*cs) && isLuma(chType)) ? COMPONENT_Y : COMPONENT_Cr;
   for( ComponentID compID = compStr; compID <= compEnd; compID = ComponentID(compID+1) )
-#else
-  const ComponentID maxCompId = ( tu.chromaFormat == CHROMA_400 ? COMPONENT_Y : COMPONENT_Cr );
-  for( ComponentID compID = COMPONENT_Y; compID <= maxCompId; compID = ComponentID(compID+1) )
-#endif
   {
     const CPelBuf   samples     = tu.getPcmbuf( compID );
     const unsigned  sampleBits  = sps.getPCMBitDepth( toChannelType(compID) );

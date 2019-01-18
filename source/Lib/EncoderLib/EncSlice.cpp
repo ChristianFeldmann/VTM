@@ -672,11 +672,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setSliceSegmentArgument ( m_pcCfg->getSliceSegmentArgument() );
 #endif
   rpcSlice->setMaxNumMergeCand      ( m_pcCfg->getMaxNumMergeCand()      );
-#if JVET_L0632_AFFINE_MERGE
   rpcSlice->setMaxNumAffineMergeCand( m_pcCfg->getMaxNumAffineMergeCand() );
-#endif
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-#if JVET_L0217_L0678_SPS_CLEANUP
   rpcSlice->setSplitConsOverrideFlag(false);
   rpcSlice->setMinQTSize( rpcSlice->getSPS()->getMinQTSize(eSliceType));
   rpcSlice->setMaxBTDepth( rpcSlice->isIntra() ? rpcSlice->getSPS()->getMaxBTDepthI() : rpcSlice->getSPS()->getMaxBTDepth() );
@@ -689,23 +685,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setMaxBTSizeIChroma( rpcSlice->getSPS()->getMaxBTSizeIChroma() );
     rpcSlice->setMaxTTSizeIChroma( rpcSlice->getSPS()->getMaxTTSizeIChroma() );
   }
-#else
-  rpcSlice->setSplitConsOverrideFlag(false);
-  rpcSlice->setMinQTSize(rpcSlice->getSPS()->getSpsNext().getMinQTSize(eSliceType));
-  rpcSlice->setMaxBTDepth(rpcSlice->isIntra() ? rpcSlice->getSPS()->getSpsNext().getMaxBTDepthI() : rpcSlice->getSPS()->getSpsNext().getMaxBTDepth());
-  rpcSlice->setMaxBTSize(rpcSlice->isIntra() ? rpcSlice->getSPS()->getSpsNext().getMaxBTSizeI() : rpcSlice->getSPS()->getSpsNext().getMaxBTSize());
-  rpcSlice->setMaxTTSize(rpcSlice->isIntra() ? rpcSlice->getSPS()->getSpsNext().getMaxTTSizeI() : rpcSlice->getSPS()->getSpsNext().getMaxTTSize());
-  if (eSliceType == I_SLICE && rpcSlice->getSPS()->getSpsNext().getUseDualITree())
-  {
-    rpcSlice->setMinQTSizeIChroma(rpcSlice->getSPS()->getSpsNext().getMinQTSize(eSliceType, CHANNEL_TYPE_CHROMA));
-    rpcSlice->setMaxBTDepthIChroma(rpcSlice->getSPS()->getSpsNext().getMaxBTDepthIChroma());
-    rpcSlice->setMaxBTSizeIChroma(rpcSlice->getSPS()->getSpsNext().getMaxBTSizeIChroma());
-    rpcSlice->setMaxTTSizeIChroma(rpcSlice->getSPS()->getSpsNext().getMaxTTSizeIChroma());
-  }
-#endif
-#else
-  rpcSlice->setMaxBTSize            ( rpcSlice->isIntra() ? MAX_BT_SIZE : MAX_BT_SIZE_INTER );
-#endif
 }
 
 
@@ -1206,69 +1185,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #endif
   m_pcCuEncoder->getModeCtrl()->setFastDeltaQp(bFastDeltaQP);
 
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  if (pcSlice->getSPS()->getSpsNext().getUseSubPuMvp())
-  {
-    if (!pcSlice->isIRAP() )
-    {
-      if (pcSlice->getPOC() > m_pcCuEncoder->getPrevPOC() && m_pcCuEncoder->getClearSubMergeStatic())
-      {
-        m_pcCuEncoder->clearSubMergeStatics();
-        m_pcCuEncoder->setClearSubMergeStatic(false);
-      }
-
-#if JVET_L0198_ATMVP_8x8SUB_BLOCK
-      pcSlice->setSubPuMvpSubblkLog2Size(ATMVP_SUB_BLOCK_SIZE);
-#else
-      unsigned int layer = pcSlice->getDepth();
-      unsigned int subMergeBlkSize = m_pcCuEncoder->getSubMergeBlkSize(layer);
-      unsigned int subMergeBlkNum = m_pcCuEncoder->getSubMergeBlkNum(layer);
-
-      if (subMergeBlkNum > 0)
-      {
-        unsigned int subMergeBlkSizeTh = pcSlice->getCheckLDC() ? 75 : 27;
-        unsigned int aveBlkSize = subMergeBlkSize / subMergeBlkNum;
-        if (aveBlkSize < (subMergeBlkSizeTh*subMergeBlkSizeTh))
-        {
-          pcSlice->setSubPuMvpSubblkLog2Size(2);
-        }
-        else
-        {
-          pcSlice->setSubPuMvpSubblkLog2Size(3);
-        }
-        m_pcCuEncoder->clearOneTLayerSubMergeStatics(layer);
-      }
-      else
-      {
-        pcSlice->setSubPuMvpSubblkLog2Size(pcSlice->getSPS()->getSpsNext().getSubPuMvpLog2Size());
-        CHECK(subMergeBlkSize != 0, "subMerge blksize should be 0");
-      }
-
-      if (pcSlice->getSubPuMvpSubblkLog2Size() == pcSlice->getSPS()->getSpsNext().getSubPuMvpLog2Size())
-      {
-        pcSlice->setSubPuMvpSliceSubblkSizeEnable(false);
-      }
-      else
-      {
-        pcSlice->setSubPuMvpSliceSubblkSizeEnable(true);
-      }
-#endif
-    }
-    else
-    {
-      m_pcCuEncoder->setPrevPOC(pcSlice->getPOC());
-      if (m_pcCfg->getGOPSize() != m_pcCfg->getIntraPeriod())
-      {
-        m_pcCuEncoder->setClearSubMergeStatic(true);
-      }
-      else
-      {
-        m_pcCuEncoder->clearSubMergeStatics();
-        m_pcCuEncoder->setClearSubMergeStatic(false);
-      }
-    }
-  }
-#endif 
 
   //------------------------------------------------------------------------------
   //  Weighted Prediction parameters estimation.
@@ -1475,9 +1391,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   CHECK(sps == 0, "No SPS present");
   writeBlockStatisticsHeader(sps);
 #endif
-#if JVET_L0260_AFFINE_ME
   m_pcInterSearch->resetAffineMVList();
-#endif
   encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
 
 #if HEVC_DEPENDENT_SLICES
@@ -1565,12 +1479,10 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     const UnitArea ctuArea( cs.area.chromaFormat, Area( pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight ) );
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
-#if JVET_L0158_L0106_RESET_BUFFER
     if ( pcSlice->getSliceType() != I_SLICE && ctuXPosInCtus == 0)
     {
       pcSlice->resetMotionLUTs();
     }
-#endif
 
 #if ENABLE_WPP_PARALLELISM
     pcPic->scheduler.wait( ctuXPosInCtus, ctuYPosInCtus );
@@ -1665,14 +1577,12 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     }
 #endif
 
-#if JVET_L0646_GBI
     bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
     if( updateGbiCodingOrder )
     {
       resetGbiCodingOrder(false, cs);
       m_pcInterSearch->initWeightIdxBits();
     }
-#endif
 
 #if ENABLE_WPP_PARALLELISM
     pEncLib->getCuEncoder( dataId )->compressCtu( cs, ctuArea, ctuRsAddr, prevQP, currQP );
@@ -1920,13 +1830,11 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
     }
 #endif
 
-#if JVET_L0646_GBI
     bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
     if( updateGbiCodingOrder )
     {
       resetGbiCodingOrder(false, cs);
     }
-#endif
 
     m_CABACWriter->coding_tree_unit( cs, ctuArea, pcPic->m_prevQP, ctuRsAddr );
 

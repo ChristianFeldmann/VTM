@@ -62,7 +62,6 @@ void addAvgCore( const T* src1, int src1Stride, const T* src2, int src2Stride, T
 #undef ADD_AVG_CORE_INC
 }
 
-#if JVET_L0256_BIO
 void addBIOAvgCore(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
 {
   int b = 0;
@@ -192,9 +191,8 @@ void calcBlkGradientCore(int sx, int sy, int     *arraysGx2, int     *arraysGxGy
     GydI += width;
   }
 }
-#endif
 
-#if ENABLE_SIMD_OPT_GBI && JVET_L0646_GBI
+#if ENABLE_SIMD_OPT_GBI
 void removeWeightHighFreq(int16_t* dst, int dstStride, const int16_t* src, int srcStride, int width, int height, int shift, int gbiWeight)
 {
   int normalizer = ((1 << 16) + (gbiWeight > 0 ? (gbiWeight >> 1) : -(gbiWeight >> 1))) / gbiWeight;
@@ -270,12 +268,10 @@ PelBufferOps::PelBufferOps()
   linTf4 = linTfCore<Pel>;
   linTf8 = linTfCore<Pel>;
 
-#if ENABLE_SIMD_OPT_BIO
   addBIOAvg4      = addBIOAvgCore;
   bioGradFilter   = gradFilterCore;
   calcBIOPar      = calcBIOParCore;
   calcBlkGradient = calcBlkGradientCore;
-#endif
 
 #if ENABLE_SIMD_OPT_GBI
   removeWeightHighFreq8 = removeWeightHighFreq;
@@ -291,7 +287,6 @@ PelBufferOps g_pelBufOP = PelBufferOps();
 #endif
 #endif
 
-#if JVET_L0646_GBI
 template<>
 void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng, const int8_t gbiIdx)
 {
@@ -321,7 +316,6 @@ void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBu
 #undef ADD_AVG_OP
 #undef ADD_AVG_INC
 }
-#endif
 
 template<>
 void AreaBuf<Pel>::addAvg( const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng)

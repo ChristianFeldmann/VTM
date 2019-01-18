@@ -212,22 +212,15 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setRDpenalty                                         ( m_rdPenalty );
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
-#endif
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxBTDepth                                        ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   m_cEncLib.setDualITree                                         ( m_dualTree );
   m_cEncLib.setLargeCTU                                          ( m_LargeCTU );
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode );
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  m_cEncLib.setSubPuMvpLog2Size                                  ( m_SubPuMvpLog2Size );
-#endif 
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );
-#if JVET_L0256_BIO
   m_cEncLib.setBIO                                               (m_BIO);
-#endif
   m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );
   m_cEncLib.setMTTMode                                           ( m_MTT );
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
@@ -239,10 +232,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
-#if JVET_L0646_GBI
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   m_cEncLib.setUseLadf                                           ( m_LadfEnabed );
   if ( m_LadfEnabed )
@@ -255,14 +246,9 @@ void EncApp::xInitLibCfg()
     }
   }
 #endif  
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
-#endif
 
-#if JVET_L0293_CPR
   m_cEncLib.setCPRMode                                           ( m_CPRMode );
   m_cEncLib.setCPRLocalSearchRangeX                              ( m_CPRLocalSearchRangeX );
   m_cEncLib.setCPRLocalSearchRangeY                              ( m_CPRLocalSearchRangeY );
@@ -270,12 +256,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCPRHashSearchMaxCand                              ( m_CPRHashSearchMaxCand );
   m_cEncLib.setCPRHashSearchRange4SmallBlk                       ( m_CPRHashSearchRange4SmallBlk );
   m_cEncLib.setCPRFastMethod                                     ( m_CPRFastMethod );
-#endif    
 
-#if JVET_L0231_WRAPAROUND
   m_cEncLib.setUseWrapAround                                     ( m_wrapAround );
   m_cEncLib.setWrapAroundOffset                                  ( m_wrapAroundOffset );
-#endif
 
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
 
@@ -330,9 +313,7 @@ void EncApp::xInitLibCfg()
 
   m_cEncLib.setPCMLog2MaxSize                                    ( m_pcmLog2MaxSize);
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
-#if JVET_L0632_AFFINE_MERGE
   m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
-#endif
 
   //====== Weighted Prediction ========
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );

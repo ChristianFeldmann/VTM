@@ -161,24 +161,18 @@ public:
   static const CtxSet   MergeIdx;
   static const CtxSet   PartSize;
   static const CtxSet   PredMode;
-#if JVET_L0283_MULTI_REF_LINE
   static const CtxSet   MultiRefLineIdx;
-#endif
   static const CtxSet   IPredMode       [2];    // [ ChannelType ]
   static const CtxSet   PdpcFlag;
   static const CtxSet   DeltaQP;
   static const CtxSet   InterDir;
   static const CtxSet   RefPic;
-#if JVET_L0054_MMVD
   static const CtxSet   MmvdFlag;
   static const CtxSet   MmvdMergeIdx;
   static const CtxSet   MmvdStepMvpIdx;
-#endif
   static const CtxSet   AffineFlag;
   static const CtxSet   AffineType;
-#if JVET_L0632_AFFINE_MERGE
   static const CtxSet   AffMergeIdx;
-#endif
   static const CtxSet   Mvd;
   static const CtxSet   TransSubdivFlag;
   static const CtxSet   QtRootCbf;
@@ -202,18 +196,12 @@ public:
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;
   static const CtxSet   ImvFlag;
-#if JVET_L0646_GBI
   static const CtxSet   GBiIdx;
-#endif
   static const CtxSet   ctbAlfFlag;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   static const CtxSet   MHIntraFlag;
   static const CtxSet   MHIntraPredMode;
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   static const CtxSet   TriangleFlag;
   static const CtxSet   TriangleIdx;
-#endif
   static const unsigned NumberOfContexts;
 
   // combined sets for less complex copying

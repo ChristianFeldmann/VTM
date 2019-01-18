@@ -252,14 +252,10 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   mtDepth           = other.mtDepth;
   splitSeries       = other.splitSeries;
   skip              = other.skip;
-#if JVET_L0054_MMVD
   mmvdSkip = other.mmvdSkip;
-#endif
   affine            = other.affine;
   affineType        = other.affineType;
-#if JVET_L0124_L0208_TRIANGLE
   triangle          = other.triangle;
-#endif
   transQuantBypass  = other.transQuantBypass;
   ipcm              = other.ipcm;
   qp                = other.qp;
@@ -271,14 +267,10 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
 #endif
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
-#if JVET_L0646_GBI
   GBiIdx            = other.GBiIdx;
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
-#endif
-#if JVET_L0293_CPR
   cpr               = other.cpr;
-#endif
   return *this;
 }
 
@@ -291,14 +283,10 @@ void CodingUnit::initData()
   mtDepth           = 0;
   splitSeries       = 0;
   skip              = false;
-#if JVET_L0054_MMVD
   mmvdSkip = false;
-#endif
   affine            = false;
   affineType        = 0;
-#if JVET_L0124_L0208_TRIANGLE
   triangle          = false;
-#endif
   transQuantBypass  = false;
   ipcm              = false;
   qp                = 0;
@@ -310,14 +298,10 @@ void CodingUnit::initData()
 #endif
   imv               = 0;
   imvNumCand        = 0;
-#if JVET_L0646_GBI
   GBiIdx            = GBI_DEFAULT;
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
-#endif
-#if JVET_L0293_CPR
   cpr               = false;
-#endif
 }
 
 
@@ -333,23 +317,17 @@ void PredictionUnit::initData()
   // intra data - need this default initialization for PCM
   intraDir[0] = DC_IDX;
   intraDir[1] = PLANAR_IDX;
-#if JVET_L0283_MULTI_REF_LINE
   multiRefIdx = 0;
-#endif
 
   // inter data
   mergeFlag   = false;
   mergeIdx    = MAX_UCHAR;
-#if JVET_L0054_MMVD
   mmvdMergeFlag = false;
   mmvdMergeIdx = MAX_UINT;
-#endif
   interDir    = MAX_UCHAR;
   mergeType   = MRG_TYPE_DEFAULT_N;
-#if JVET_L0293_CPR
   bv.setZero();
   bvd.setZero();
-#endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i] = MAX_UCHAR;
@@ -361,16 +339,12 @@ void PredictionUnit::initData()
     {
       mvdAffi[i][j].setZero();
     }
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
     for ( uint32_t j = 0; j < 3; j++ )
     {
       mvAffi[i][j].setZero();
     }
-#endif
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   mhIntraFlag = false;
-#endif
 }
 
 PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
@@ -379,9 +353,7 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
   {
     intraDir[i] = predData.intraDir[i];
   }
-#if JVET_L0283_MULTI_REF_LINE
   multiRefIdx = predData.multiRefIdx;
-#endif
 
   return *this;
 }
@@ -390,16 +362,12 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
 {
   mergeFlag   = predData.mergeFlag;
   mergeIdx    = predData.mergeIdx;
-#if JVET_L0054_MMVD
   mmvdMergeFlag = predData.mmvdMergeFlag;
   mmvdMergeIdx = predData.mmvdMergeIdx;
-#endif
   interDir    = predData.interDir;
   mergeType   = predData.mergeType;
-#if JVET_L0293_CPR
   bv          = predData.bv;
   bvd         = predData.bvd;
-#endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i]   = predData.mvpIdx[i];
@@ -411,16 +379,12 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
     {
       mvdAffi[i][j] = predData.mvdAffi[i][j];
     }
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
     for ( uint32_t j = 0; j < 3; j++ )
     {
       mvAffi[i][j] = predData.mvAffi[i][j];
     }
-#endif
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   mhIntraFlag = predData.mhIntraFlag;
-#endif
 
   return *this;
 }
@@ -431,22 +395,16 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   {
     intraDir[ i ] = other.intraDir[ i ];
   }
-#if JVET_L0283_MULTI_REF_LINE
   multiRefIdx = other.multiRefIdx;
-#endif
 
   mergeFlag   = other.mergeFlag;
   mergeIdx    = other.mergeIdx;
-#if JVET_L0054_MMVD
   mmvdMergeFlag = other.mmvdMergeFlag;
   mmvdMergeIdx = other.mmvdMergeIdx;
-#endif
   interDir    = other.interDir;
   mergeType   = other.mergeType;
-#if JVET_L0293_CPR
   bv          = other.bv;
   bvd         = other.bvd;
-#endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i]   = other.mvpIdx[i];
@@ -458,16 +416,12 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
     {
       mvdAffi[i][j] = other.mvdAffi[i][j];
     }
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
     for ( uint32_t j = 0; j < 3; j++ )
     {
       mvAffi[i][j] = other.mvAffi[i][j];
     }
-#endif
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   mhIntraFlag = other.mhIntraFlag;
-#endif
 
   return *this;
 }

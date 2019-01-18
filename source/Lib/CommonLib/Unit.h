@@ -294,14 +294,10 @@ struct CodingUnit : public UnitArea
   int8_t          qp;
   SplitSeries    splitSeries;
   bool           skip;
-#if JVET_L0054_MMVD
   bool           mmvdSkip;
-#endif
   bool           affine;
   int            affineType;
-#if JVET_L0124_L0208_TRIANGLE
   bool           triangle;
-#endif
   bool           transQuantBypass;
   bool           ipcm;
   uint8_t          imv;
@@ -310,15 +306,11 @@ struct CodingUnit : public UnitArea
   uint32_t           tileIdx;
 #endif
   uint8_t          emtFlag;
-#if JVET_L0646_GBI
   uint8_t         GBiIdx;
   int             refIdxBi[2];
-#endif
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
-#if JVET_L0293_CPR
   bool           cpr;
-#endif
 
   CodingUnit() : chType( CH_L ) { }
   CodingUnit(const UnitArea &unit);
@@ -350,19 +342,15 @@ struct CodingUnit : public UnitArea
 struct IntraPredictionData
 {
   uint32_t  intraDir[MAX_NUM_CHANNEL_TYPE];
-#if JVET_L0283_MULTI_REF_LINE
   int       multiRefIdx;
-#endif
 };
 
 struct InterPredictionData
 {
   bool      mergeFlag;
   uint8_t     mergeIdx;
-#if JVET_L0054_MMVD
   bool           mmvdMergeFlag;
   uint32_t       mmvdMergeIdx;
-#endif
   uint8_t     interDir;
   uint8_t     mvpIdx  [NUM_REF_PIC_LIST_01];
   uint8_t     mvpNum  [NUM_REF_PIC_LIST_01];
@@ -371,16 +359,10 @@ struct InterPredictionData
   int16_t     refIdx  [NUM_REF_PIC_LIST_01];
   MergeType mergeType;
   Mv        mvdAffi [NUM_REF_PIC_LIST_01][3];
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
-#endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool      mhIntraFlag;
-#endif
-#if JVET_L0293_CPR
   Mv        bv;                             // block vector for CPR
   Mv        bvd;                            // block vector difference for CPR
-#endif
 };
 
 struct PredictionUnit : public UnitArea, public IntraPredictionData, public InterPredictionData

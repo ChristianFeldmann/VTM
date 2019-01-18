@@ -69,19 +69,15 @@ private:
   Pel* m_piYuvExt[MAX_NUM_COMPONENT][NUM_PRED_BUF];
   int  m_iYuvExtSize;
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   Pel* m_yuvExt2[MAX_NUM_COMPONENT][4];
   int  m_yuvExtSize2;
-#endif
 
   static const uint8_t m_aucIntraFilter[MAX_NUM_CHANNEL_TYPE][MAX_INTRA_FILTER_DEPTHS];
 
   unsigned m_auShiftLM[32]; // Table for substituting division operation by multiplication
 
   Pel* m_piTemp;
-#if JVET_L0338_MDLM
   Pel* m_pMdlmTemp; // for MDLM mode
-#endif
 protected:
 
   ChromaFormat  m_currChromaFormat;
@@ -93,32 +89,18 @@ protected:
   void xPredIntraDc               ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType,                                                                                          const bool enableBoundaryFilter = true );
 #if HEVC_USE_HOR_VER_PREDFILTERING
   void xPredIntraAng              ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const bool bEnableEdgeFilters, const SPS& sps
-#if JVET_L0283_MULTI_REF_LINE
     , int multiRefIdx
-#endif
     , const bool enableBoundaryFilter = true );
 #else
-#if JVET_L0628_4TAP_INTRA
   void xPredIntraAng              ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps
-#if JVET_L0283_MULTI_REF_LINE
     , int multiRefIdx
-#endif    
     , const bool useFilteredPredSamples );
-#else
-  void xPredIntraAng              ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps
-#if JVET_L0283_MULTI_REF_LINE
-    , int multiRefIdx
-#endif    
-    , const bool enableBoundaryFilter = true );
-#endif //JVET_L0628_4TAP_INTRA
 #endif
   Pel  xGetPredValDc              ( const CPelBuf &pSrc, const Size &dstSize );
 
   void xFillReferenceSamples      ( const CPelBuf &recoBuf,      Pel* refBufUnfiltered, const CompArea &area, const CodingUnit &cu );
   void xFilterReferenceSamples    ( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps 
-#if JVET_L0283_MULTI_REF_LINE
     , int multiRefIdx
-#endif
   );
 
 #if HEVC_USE_DC_PREDFILTERING
@@ -132,9 +114,6 @@ protected:
 
   void xFilterGroup               ( Pel* pMulDst[], int i, Pel const* const piSrc, int iRecStride, bool bAboveAvaillable, bool bLeftAvaillable);
   void xGetLMParameters(const PredictionUnit &pu, const ComponentID compID, const CompArea& chromaArea, int& a, int& b, int& iShift);
-#if JVET_L0338_MDLM && !JVET_L0191_LM_WO_LMS
-  void xPadMdlmTemplateSample    (Pel*pSrc, Pel*pCur, int cWidth, int cHeight, int existSampNum, int targetSampNum);
-#endif
 public:
   IntraPrediction();
   virtual ~IntraPrediction();
@@ -153,12 +132,10 @@ public:
 static bool useFilteredIntraRefSamples( const ComponentID &compID, const PredictionUnit &pu, bool modeSpecific, const UnitArea &tuArea );
   static bool useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode);
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   void geneWeightedPred           (const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf);
   Pel* getPredictorPtr2           (const ComponentID compID, uint32_t idx) { return m_yuvExt2[compID][idx]; }
   void switchBuffer               (const PredictionUnit &pu, ComponentID compID, PelBuf srcBuff, Pel *dst);
   void geneIntrainterPred         (const CodingUnit &cu);
-#endif
 };
 
 //! \}

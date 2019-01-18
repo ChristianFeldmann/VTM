@@ -182,24 +182,7 @@ unsigned DeriveCtx::CtxCUsplit( const CodingStructure& cs, Partitioner& partitio
 #endif
 
   ctxId += ( cuAbove && cuAbove->qtDepth > partitioner.currQtDepth ) ? 1 : 0;
-#if JVET_L0361_SPLIT_CTX
   ctxId += partitioner.currQtDepth < 2 ? 0 : 3;
-#else
-  if( cs.sps->getSpsNext().getUseLargeCTU() )
-  {
-    unsigned minDepth = 0;
-    unsigned maxDepth = 0;
-    adPartitioner->setMaxMinDepth( minDepth, maxDepth, cs );
-    if( partitioner.currDepth < minDepth )
-    {
-      ctxId = 3;
-    }
-    else if( partitioner.currDepth >= maxDepth + 1 )
-    {
-      ctxId = 4;
-    }
-  }
-#endif
 
   return ctxId;
 }
@@ -294,7 +277,6 @@ unsigned DeriveCtx::CtxBTsplit(const CodingStructure& cs, Partitioner& partition
 #endif
 
   {
-#if JVET_L0361_SPLIT_CTX
     unsigned widthCurr  = partitioner.currArea().blocks[partitioner.chType].width;
     unsigned heightCurr = partitioner.currArea().blocks[partitioner.chType].height;
     if( cuLeft )
@@ -320,17 +302,10 @@ unsigned DeriveCtx::CtxBTsplit(const CodingStructure& cs, Partitioner& partition
       unsigned int sizeCurr = partitioner.currArea().lumaSize().area();
       ctx += sizeCurr > th2 ? 0 : ( sizeCurr > th1 ? 3 : 6 );
     }
-#else
-    const unsigned currDepth = partitioner.currQtDepth * 2 + partitioner.currBtDepth;
-
-    if( cuLeft )  ctx += ( ( 2 * cuLeft->qtDepth  + cuLeft->btDepth  ) > currDepth ? 1 : 0 );
-    if( cuAbove ) ctx += ( ( 2 * cuAbove->qtDepth + cuAbove->btDepth ) > currDepth ? 1 : 0 );
-#endif
   }
   return ctx;
 }
 
-#if JVET_L0124_L0208_TRIANGLE
 unsigned DeriveCtx::CtxTriangleFlag( const CodingUnit& cu )
 {
   const CodingStructure *cs = cu.cs;
@@ -344,7 +319,6 @@ unsigned DeriveCtx::CtxTriangleFlag( const CodingUnit& cu )
 
   return ctxId;
 }
-#endif
 
 
 void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
@@ -352,9 +326,7 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   CHECK( candIdx >= numValidMergeCand, "Merge candidate does not exist" );
 
   pu.mergeFlag               = true;
-#if JVET_L0054_MMVD
   pu.mmvdMergeFlag = false;
-#endif
   pu.interDir                = interDirNeighbours[candIdx];
   pu.mergeIdx                = candIdx;
   pu.mergeType               = mrgTypeNeighbours[candIdx];
@@ -368,20 +340,15 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   pu.mvpIdx [REF_PIC_LIST_1] = NOT_VALID;
   pu.mvpNum [REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum [REF_PIC_LIST_1] = NOT_VALID;
-#if JVET_L0293_CPR
   if (interDirNeighbours[candIdx] == 1 && pu.cs->slice->getRefPic(REF_PIC_LIST_0, mvFieldNeighbours[candIdx << 1].refIdx)->getPOC() == pu.cs->slice->getPOC())
   {
     pu.cu->cpr = true;
     pu.bv = pu.mv[REF_PIC_LIST_0];
     pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
   }
-#endif
-#if JVET_L0646_GBI 
   pu.cu->GBiIdx = ( interDirNeighbours[candIdx] == 3 ) ? GBiIdx[candIdx] : GBI_DEFAULT;
-#endif
 
 }
-#if JVET_L0054_MMVD
 void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
 {
   const Slice &slice = *pu.cs->slice;
@@ -521,8 +488,5 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mvpNum[REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum[REF_PIC_LIST_1] = NOT_VALID;
 
-#if JVET_L0646_GBI 
   pu.cu->GBiIdx = (interDirNeighbours[fPosBaseIdx] == 3) ? GBiIdx[fPosBaseIdx] : GBI_DEFAULT;
-#endif
 }
-#endif

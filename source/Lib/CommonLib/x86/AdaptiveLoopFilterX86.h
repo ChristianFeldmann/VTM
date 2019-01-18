@@ -105,7 +105,6 @@ static void simdDeriveClassificationBlk( AlfClassifier** classifier, int** lapla
       __m128i xmm4 = _mm_slli_epi16( _mm_alignr_epi8( xmm1_next, xmm1, 2 ), 1 );
       __m128i xmm5 = _mm_slli_epi16( _mm_alignr_epi8( xmm2_next, xmm2, 2 ), 1 );
 
-#if JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN
       __m128i xmm15 = _mm_setzero_si128();
 
       //dig0
@@ -131,31 +130,6 @@ static void simdDeriveClassificationBlk( AlfClassifier** classifier, int** lapla
       xmm11 = _mm_sub_epi16( _mm_blend_epi16 ( xmm4, xmm15, 0xAA ), _mm_blend_epi16 ( xmm11, xmm15, 0xAA ) );
       __m128i xmm12 = _mm_add_epi16( _mm_alignr_epi8( xmm1_next, xmm1, 2 ), _mm_alignr_epi8( xmm3_next, xmm3, 2 ) );
       xmm12 = _mm_sub_epi16( _mm_blend_epi16 ( xmm5, xmm15, 0x55 ), _mm_blend_epi16 ( xmm12, xmm15, 0x55 ) );
-#else
-      //dig0
-      __m128i xmm6 = _mm_add_epi16( _mm_alignr_epi8( xmm2_next, xmm2, 4 ), xmm0 );
-      xmm6 = _mm_sub_epi16( xmm4, xmm6 );
-      __m128i xmm8 = _mm_add_epi16( _mm_alignr_epi8( xmm3_next, xmm3, 4 ), xmm1 );
-      xmm8 = _mm_sub_epi16( xmm5, xmm8 );
-
-      //dig1
-      __m128i xmm9 = _mm_add_epi16( _mm_alignr_epi8( xmm0_next, xmm0, 4 ), xmm2 );
-      xmm9 = _mm_sub_epi16( xmm4, xmm9 );
-      __m128i xmm10 = _mm_add_epi16( _mm_alignr_epi8( xmm1_next, xmm1, 4 ), xmm3 );
-      xmm10 = _mm_sub_epi16( xmm5, xmm10 );
-
-      //hor
-      __m128i xmm13 = _mm_add_epi16( _mm_alignr_epi8( xmm1_next, xmm1, 4 ), xmm1 );
-      xmm13 = _mm_sub_epi16( xmm4, xmm13 );
-      __m128i xmm14 = _mm_add_epi16( _mm_alignr_epi8( xmm2_next, xmm2, 4 ), xmm2 );
-      xmm14 = _mm_sub_epi16( xmm5, xmm14 );
-
-      //ver
-      __m128i xmm11 = _mm_add_epi16( _mm_alignr_epi8( xmm0_next, xmm0, 2 ), _mm_alignr_epi8( xmm2_next, xmm2, 2 ) );
-      xmm11 = _mm_sub_epi16( xmm4, xmm11 );
-      __m128i xmm12 = _mm_add_epi16( _mm_alignr_epi8( xmm1_next, xmm1, 2 ), _mm_alignr_epi8( xmm3_next, xmm3, 2 ) );
-      xmm12 = _mm_sub_epi16( xmm5, xmm12 );
-#endif
 
       xmm6 = _mm_abs_epi16( xmm6 );
       xmm8 = _mm_abs_epi16( xmm8 );
@@ -230,11 +204,7 @@ static void simdDeriveClassificationBlk( AlfClassifier** classifier, int** lapla
       __m128i xmm12 = _mm_blend_epi16( xmm4, _mm_shuffle_epi32( xmm0, 0x40 ), 0xF0 );
       __m128i xmm10 = _mm_shuffle_epi32( xmm12, 0xB1 );
       xmm12 = _mm_add_epi32( xmm10, xmm12 );
-#if JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN
       xmm12 = _mm_srai_epi32( xmm12, shift - 6 );
-#else
-      xmm12 = _mm_srai_epi32( xmm12, shift - 5 );
-#endif
       xmm12 = _mm_min_epi32( xmm12, xmm13 );
 
       xmm12 = _mm_and_si128( xmm12, mm_15 );

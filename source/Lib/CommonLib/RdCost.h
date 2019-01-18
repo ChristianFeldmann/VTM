@@ -114,15 +114,11 @@ private:
 
   // for motion cost
   Mv                      m_mvPredictor;
-#if JVET_L0293_CPR
   Mv                      m_bvPredictors[2];
-#endif
   double                  m_motionLambda;
   int                     m_iCostScale;
 
-#if JVET_L0293_CPR
   double                  m_dCost; // for cpr
-#endif
 public:
   RdCost();
   virtual ~RdCost();
@@ -156,11 +152,7 @@ public:
 
   void           setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRefY , int iRefStride, int bitDepth, ComponentID compID, int subShiftMode = 0, int step = 1, bool useHadamard = false );
   void           setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &cur, int bitDepth, ComponentID compID, bool useHadamard = false );
-#if JVET_L0256_BIO
   void           setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, int iOrgStride, int iRefStride, int bitDepth, ComponentID compID, int width, int height, int subShiftMode = 0, int step = 1, bool useHadamard = false, bool bioApplied = false );
-#else
-  void           setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, int iOrgStride, int iRefStride, int bitDepth, ComponentID compID, int width, int height, int subShiftMode = 0, int step = 1, bool useHadamard = false );
-#endif
 
   double         getMotionLambda          ( bool bIsTransquantBypass ) { return m_dLambdaMotionSAD[(bIsTransquantBypass && m_costMode==COST_MIXED_LOSSLESS_LOSSY_CODING)?1:0]; }
   void           selectMotionLambda       ( bool bIsTransquantBypass ) { m_motionLambda = getMotionLambda( bIsTransquantBypass ); }
@@ -170,7 +162,6 @@ public:
   }
   void           setCostScale             ( int iCostScale )           { m_iCostScale = iCostScale; }
   Distortion     getCost                  ( uint32_t b )                   { return Distortion( m_motionLambda * b ); }
-#if JVET_L0293_CPR
   // for cpr
   void           getMotionCost(int add, bool isTransquantBypass) { m_dCost = m_dLambdaMotionSAD[(isTransquantBypass && m_costMode == COST_MIXED_LOSSLESS_LOSSY_CODING) ? 1 : 0] + add; }
 
@@ -274,7 +265,6 @@ public:
 
     return length;
   }
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   void copyState( const RdCost& other );
@@ -370,10 +360,8 @@ private:
   static Distortion xGetSAD_SIMD    ( const DistParam& pcDtParam );
   template< int iWidth, X86_VEXT vext >
   static Distortion xGetSAD_NxN_SIMD( const DistParam& pcDtParam );
-#if ENABLE_SIMD_OPT_BIO
   template< X86_VEXT vext >
   static Distortion xGetSAD_IBD_SIMD(const DistParam& pcDtParam);
-#endif
 
   template< typename Torg, typename Tcur, X86_VEXT vext >
   static Distortion xGetHADs_SIMD   ( const DistParam& pcDtParam );

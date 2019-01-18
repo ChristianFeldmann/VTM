@@ -89,19 +89,14 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
 
     for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, chType ), chType ) )
     {
-#if JVET_L0293_CPR 
       cs.chType = chType;
       if (currCU.predMode != MODE_INTRA && currCU.Y().valid())
       {
         xDeriveCUMV(currCU);
       }
-#endif
       switch( currCU.predMode )
       {
       case MODE_INTER:
-#if !JVET_L0293_CPR 
-        xDeriveCUMV( currCU );
-#endif
         xReconInter( currCU );
         break;
       case MODE_INTRA:
@@ -260,20 +255,13 @@ void DecCu::xDecodePCMTexture(TransformUnit &tu, const ComponentID compID)
 */
 void DecCu::xReconPCM(TransformUnit &tu)
 {
-#if JVET_L0209_PCM
   const CodingStructure *cs = tu.cs;
   const ChannelType chType = tu.chType;
 
   ComponentID compStr = (CS::isDualITree(*cs) && !isLuma(chType)) ? COMPONENT_Cb: COMPONENT_Y;
   ComponentID compEnd = (CS::isDualITree(*cs) && isLuma(chType)) ? COMPONENT_Y : COMPONENT_Cr;
   for( ComponentID compID = compStr; compID <= compEnd; compID = ComponentID(compID+1) )
-#else
-  for (uint32_t ch = 0; ch < tu.blocks.size(); ch++)
-#endif
   {
-#if !JVET_L0209_PCM
-    ComponentID compID = ComponentID(ch);
-#endif
 
     xDecodePCMTexture(tu, compID);
   }
@@ -334,7 +322,6 @@ void DecCu::xFillPCMBuffer(CodingUnit &cu)
 
 void DecCu::xReconInter(CodingUnit &cu)
 {
-#if JVET_L0124_L0208_TRIANGLE
   if( cu.triangle )
   {
     const uint8_t mergeIdx = cu.firstPU->mergeIdx;
@@ -346,23 +333,13 @@ void DecCu::xReconInter(CodingUnit &cu)
   }
   else
   {
-#endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   m_pcIntraPred->geneIntrainterPred(cu);
-#endif
 
   // inter prediction
-#if JVET_L0293_CPR
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   CHECK(cu.cpr && cu.firstPU->mhIntraFlag, "CPR and MHIntra cannot be used together");
-#endif
   CHECK(cu.cpr && cu.affine, "CPR and Affine cannot be used together");
-#if JVET_L0124_L0208_TRIANGLE
   CHECK(cu.cpr && cu.triangle, "CPR and triangle cannot be used together");
-#endif
-#if JVET_L0054_MMVD
   CHECK(cu.cpr && cu.firstPU->mmvdMergeFlag, "CPR and MMVD cannot be used together");
-#endif
   const bool luma = cu.Y().valid();
   const bool chroma = cu.Cb().valid();
   if (luma && chroma)
@@ -373,27 +350,16 @@ void DecCu::xReconInter(CodingUnit &cu)
   {
     m_pcInterPred->motionCompensation(cu, REF_PIC_LIST_0, luma, chroma);
   }
-#else
-  m_pcInterPred->motionCompensation( cu );
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   }
-#endif
-#if JVET_L0266_HMVP
-#if JVET_L0293_CPR
   if (cu.Y().valid())
-#endif
   cu.slice->updateMotionLUTs(cu.slice->getMotionLUTs(), cu);
-#endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   if (cu.firstPU->mhIntraFlag)
   {
     m_pcIntraPred->geneWeightedPred(COMPONENT_Y, cu.cs->getPredBuf(*cu.firstPU).Y(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Y, 0));
     m_pcIntraPred->geneWeightedPred(COMPONENT_Cb, cu.cs->getPredBuf(*cu.firstPU).Cb(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cb, 0));
     m_pcIntraPred->geneWeightedPred(COMPONENT_Cr, cu.cs->getPredBuf(*cu.firstPU).Cr(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cr, 0));
   }
-#endif
 
   DTRACE    ( g_trace_ctx, D_TMP, "pred " );
   DTRACE_CRC( g_trace_ctx, D_TMP, *cu.cs, cu.cs->getPredBuf( cu ), &cu.Y() );
@@ -486,30 +452,20 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     }
 #endif
 
-#if JVET_L0646_GBI && !JVET_L0632_AFFINE_MERGE
-    uint8_t gbiIdx = GBI_DEFAULT;
-#endif
 
     if( pu.mergeFlag )
     {
-#if JVET_L0054_MMVD
       if (pu.mmvdMergeFlag || pu.cu->mmvdSkip)
       {
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         CHECK(pu.mhIntraFlag == true, "invalid MHIntra");
-#endif
         if (pu.cs->sps->getSpsNext().getUseSubPuMvp())
         {
           Size bufSize = g_miScaling.scale(pu.lumaSize());
           mrgCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);
         }
 
-#if JVET_L0054_MMVD
         int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
         PU::getInterMergeCandidates(pu, mrgCtx, 1, fPosBaseIdx + 1);
-#else
-        PU::getInterMergeCandidates(pu, mrgCtx, 255);
-#endif
         PU::restrictBiPredMergeCands(pu, mrgCtx);
         PU::getInterMMVDMergeCandidates(pu, mrgCtx,
           pu.mmvdMergeIdx
@@ -520,50 +476,27 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       }
       else
       {
-#endif
       {
-#if JVET_L0124_L0208_TRIANGLE
         if( pu.cu->triangle )
         {
           PU::getTriangleMergeCandidates( pu, m_triangleMrgCtx );
         }
         else
         {
-#endif
         if( pu.cu->affine )
         {
-#if JVET_L0632_AFFINE_MERGE
           AffineMergeCtx affineMergeCtx;
-#if JVET_L0369_SUBBLOCK_MERGE
           if ( pu.cs->sps->getSpsNext().getUseSubPuMvp() )
           {
             Size bufSize = g_miScaling.scale( pu.lumaSize() );
             mrgCtx.subPuMvpMiBuf = MotionBuf( m_SubPuMiBuf, bufSize );
             affineMergeCtx.mrgCtx = &mrgCtx;
           }
-#endif
           PU::getAffineMergeCand( pu, affineMergeCtx, pu.mergeIdx );
           pu.interDir = affineMergeCtx.interDirNeighbours[pu.mergeIdx];
           pu.cu->affineType = affineMergeCtx.affineType[pu.mergeIdx];
-#if JVET_L0646_GBI
           pu.cu->GBiIdx = affineMergeCtx.GBiIdx[pu.mergeIdx];
-#endif
-#if JVET_L0369_SUBBLOCK_MERGE
           pu.mergeType = affineMergeCtx.mergeType[pu.mergeIdx];
-#endif
-#else
-          pu.mergeIdx = 0;
-          MvField       affineMvField[2][3];
-          unsigned char interDirNeighbours;
-          int           numValidMergeCand;
-#if JVET_L0646_GBI
-          PU::getAffineMergeCand( pu, affineMvField, interDirNeighbours, gbiIdx, numValidMergeCand);
-#else
-          PU::getAffineMergeCand( pu, affineMvField, interDirNeighbours, numValidMergeCand );
-#endif
-          pu.interDir = interDirNeighbours;
-#endif
-#if JVET_L0369_SUBBLOCK_MERGE
           if ( pu.mergeType == MRG_TYPE_SUBPU_ATMVP )
           {
             pu.refIdx[0] = affineMergeCtx.mvFieldNeighbours[(pu.mergeIdx << 1) + 0][0].refIdx;
@@ -571,58 +504,33 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           }
           else
           {
-#endif
           for( int i = 0; i < 2; ++i )
           {
             if( pu.cs->slice->getNumRefIdx( RefPicList( i ) ) > 0 )
             {
-#if JVET_L0632_AFFINE_MERGE
               MvField* mvField = affineMergeCtx.mvFieldNeighbours[(pu.mergeIdx << 1) + i];
-#else
-              MvField* mvField = affineMvField[i];
-#endif
               pu.mvpIdx[i] = 0;
               pu.mvpNum[i] = 0;
               pu.mvd[i]    = Mv();
               PU::setAllAffineMvField( pu, mvField, RefPicList( i ) );
-#if JVET_L0646_GBI && !JVET_L0632_AFFINE_MERGE
-              pu.cu->GBiIdx = gbiIdx;
-#endif
             }
           }
-#if JVET_L0369_SUBBLOCK_MERGE
         }
-#endif
           PU::spanMotionInfo( pu, mrgCtx );
         }
         else
         {
-#if !JVET_L0369_SUBBLOCK_MERGE
-          if( pu.cs->sps->getSpsNext().getUseSubPuMvp() )
-          {
-            Size bufSize = g_miScaling.scale( pu.lumaSize() );
-            mrgCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
-          }
-#endif
 
-#if JVET_L0054_MMVD
             PU::getInterMergeCandidates(pu, mrgCtx, 0, pu.mergeIdx);
-#else
-            PU::getInterMergeCandidates( pu, mrgCtx, pu.mergeIdx );
-#endif
             PU::restrictBiPredMergeCands(pu, mrgCtx);
 
           mrgCtx.setMergeInfo( pu, pu.mergeIdx );
 
           PU::spanMotionInfo( pu, mrgCtx );
         }
-#if JVET_L0124_L0208_TRIANGLE
         }
-#endif
       }
-#if JVET_L0054_MMVD
       }
-#endif
     }
     else
     {
@@ -680,7 +588,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               AMVPInfo amvpInfo;
               PU::fillMvpCand(pu, eRefList, pu.refIdx[eRefList], amvpInfo);
               pu.mvpNum [eRefList] = amvpInfo.numCand;
-#if JVET_L0293_CPR
               Mv mvd = pu.mvd[eRefList];
               if (eRefList == REF_PIC_LIST_0 && pu.cs->slice->getRefPic(eRefList, pu.refIdx[eRefList])->getPOC() == pu.cs->slice->getPOC())
               {
@@ -691,9 +598,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
                   mvd.changePrecision(MV_PRECISION_INT, MV_PRECISION_QUARTER);
               }
               pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx[eRefList]] + mvd;
-#else
-              pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx [eRefList]] + pu.mvd[eRefList];
-#endif
               pu.mv[eRefList].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
             }
           }

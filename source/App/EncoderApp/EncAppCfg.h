@@ -197,9 +197,7 @@ protected:
 
   // coding unit (CU) definition
   unsigned  m_uiCTUSize;
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   bool      m_SplitConsOverrideEnabledFlag;
-#endif
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
   unsigned  m_uiMaxBTDepth;
   unsigned  m_uiMaxBTDepthI;
@@ -207,14 +205,9 @@ protected:
   bool      m_dualTree;
   bool      m_LargeCTU;
   int       m_SubPuMvpMode;
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  unsigned  m_SubPuMvpLog2Size;
-#endif 
   bool      m_Affine;
   bool      m_AffineType;
-#if JVET_L0256_BIO
   bool      m_BIO;
-#endif
   bool      m_DisableMotionCompression;
   unsigned  m_MTT;
 #if ENABLE_WPP_PARALLELISM
@@ -225,10 +218,8 @@ protected:
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
 
   bool      m_compositeRefEnabled;
-#if JVET_L0646_GBI
   bool      m_GBi;
   bool      m_GBiFast;
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool      m_LadfEnabed;
   int       m_LadfNumIntervals;
@@ -236,15 +227,10 @@ protected:
   int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool      m_MHIntra;
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   bool      m_Triangle;
-#endif
 
 
-#if JVET_L0293_CPR
   unsigned  m_CPRMode;
   unsigned  m_CPRLocalSearchRangeX;
   unsigned  m_CPRLocalSearchRangeY;
@@ -252,12 +238,9 @@ protected:
   unsigned  m_CPRHashSearchMaxCand;
   unsigned  m_CPRHashSearchRange4SmallBlk;
   unsigned  m_CPRFastMethod;
-#endif    
   
-#if JVET_L0231_WRAPAROUND
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
-#endif
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
 
@@ -453,9 +436,7 @@ protected:
 
   uint32_t      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
-#if JVET_L0632_AFFINE_MERGE
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
-#endif
 
   int       m_TMVPModeId;
   bool      m_depQuantEnabledFlag;

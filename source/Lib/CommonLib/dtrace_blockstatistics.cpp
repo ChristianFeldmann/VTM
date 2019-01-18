@@ -271,7 +271,6 @@ void CDTrace::dtrace_polygon_vector(int k, int poc, const std::vector<Position> 
   dtrace<false>(k, "BlockStat: POC %d @[%s] %s={%4d,%4d}\n", poc, polygonDescription.c_str(), stat_type.c_str(), val_x, val_y);
 }
 
-#if JVET_L0124_L0208_TRIANGLE
 void retrieveTriangularMvInfo(const PredictionUnit& pu, MotionInfo& mi0, MotionInfo& mi1)
 {
   int triangleDir = g_triangleCombination[pu.mergeIdx][0];
@@ -359,7 +358,6 @@ void retrieveTrianglePolygon(const PredictionUnit& pu, std::vector<Position>& tr
     CHECK(triangleDir != TRIANGLE_DIR_45 && triangleDir != TRIANGLE_DIR_135, "Unknown triangle type");
   }
 }
-#endif
 
 void writeBlockStatisticsHeader(const SPS *sps)
 {
@@ -443,9 +441,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
         {
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::EMTFlag), cu.emtFlag);
         }
-#if JVET_L0054_MMVD
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::MMVDSkipFlag), cu.mmvdSkip);
-#endif
       }
       else if( chType == CHANNEL_TYPE_CHROMA )
       {
@@ -483,23 +479,17 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MergeIdx),  pu.mergeIdx);
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MergeType), pu.mergeType);
-#if JVET_L0054_MMVD
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MMVDMergeFlag),  pu.mmvdMergeFlag);
               if (cu.mmvdSkip || pu.mmvdMergeFlag)
               {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MMVDMergeIdx),  pu.mmvdMergeIdx);
               }
-#endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MHIntraFlag),  pu.mhIntraFlag);
               if (pu.mhIntraFlag)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::Luma_IntraMode),  pu.intraDir[COMPONENT_Y]);
               }
-#endif
-#if JVET_L0124_L0208_TRIANGLE
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::TriangleFlag), pu.cu->triangle);
-#endif
             }
             DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineFlag), pu.cu->affine);
             DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineType), pu.cu->affineType);
@@ -515,11 +505,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVPIdxL1), pu.mvpIdx[REF_PIC_LIST_1]);
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::RefIdxL1), pu.refIdx[REF_PIC_LIST_1]);
             }
-#if JVET_L0124_L0208_TRIANGLE
             if (!pu.cu->affine && !pu.cu->triangle)
-#else
-            if (!pu.cu->affine)
-#endif
             {
               if (pu.interDir != 2 /* PRED_L1 */)
               {
@@ -544,7 +530,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVL1), mv.hor, mv.ver);
               }
             }
-#if JVET_L0124_L0208_TRIANGLE
             else if (pu.cu->triangle)
             {
               MotionInfo mi[2];
@@ -566,7 +551,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 }
               }
             }
-#endif
             else
             {
               if (pu.interDir != 2 /* PRED_L1 */)
@@ -683,12 +667,8 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
           }
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::RootCbf), cu.rootCbf);
-#if JVET_L0646_GBI
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::GBIIndex), cu.GBiIdx);
-#endif
-#if JVET_L0293_CPR
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::CPRFlag), cu.cpr);
-#endif
 
         }
         break;
@@ -716,9 +696,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 {
                   const uint32_t uiChFinalMode  = PU::getFinalIntraMode( pu, ChannelType( chType ) );
                   DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::Luma_IntraMode), uiChFinalMode);
-#if JVET_L0283_MULTI_REF_LINE
                   DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MultiRefIdx), pu.multiRefIdx);
-#endif
                 }
                 else
                 {
@@ -785,21 +763,13 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::TransQuantBypassFlag), cu.transQuantBypass);
         }
         // skip flag
-#if JVET_L0293_CPR
         if (!cs.slice->isIntra() && cu.Y().valid())
-#else
-        if( !cs.slice->isIntra() )
-#endif
         {
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::SkipFlag), cu.skip);
-#if JVET_L0054_MMVD
           if (cu.skip)
           {
-#if JVET_L0054_MMVD
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::MMVDSkipFlag), cu.mmvdSkip);
-#endif
           }
-#endif
         }
 
         // prediction mode and partitioning data
@@ -851,12 +821,10 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
             {
               DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::Chroma_IntraMode), PU::getFinalIntraMode(pu, CHANNEL_TYPE_CHROMA));
             }
-#if JVET_L0283_MULTI_REF_LINE
             if (cu.Y().valid() && isLuma(cu.chType))
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MultiRefIdx), pu.multiRefIdx);
             }
-#endif
             break;
           }
           case MODE_INTER:
@@ -869,28 +837,19 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MergeIdx),  pu.mergeIdx);
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MergeType), pu.mergeType);
-#if JVET_L0054_MMVD
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MMVDMergeFlag), pu.mmvdMergeFlag);
               if (pu.mmvdMergeFlag)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MMVDMergeIdx), pu.mmvdMergeIdx);
               }
-#endif
-#if JVET_L0369_SUBBLOCK_MERGE
               if (!cu.cs->slice->isIntra() && cu.cs->sps->getSpsNext().getUseAffine() && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8
-#if JVET_L0054_MMVD
                 && !pu.mmvdMergeFlag && !cu.mmvdSkip
-#endif
                 )
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineFlag), pu.cu->affine);
               }
-#endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
               if (pu.cs->sps->getSpsNext().getUseMHIntra() && !pu.cu->skip && !pu.cu->affine && !(pu.cu->lwidth() * pu.cu->lheight() < 64 || pu.cu->lwidth() >= MAX_CU_SIZE || pu.cu->lheight() >= MAX_CU_SIZE)
-#if JVET_L0054_MMVD
                 && !pu.mmvdMergeFlag
-#endif
                 )
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MHIntraFlag), pu.mhIntraFlag);
@@ -903,14 +862,11 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                   }
                 }
               }
-#endif
-#if JVET_L0124_L0208_TRIANGLE
               if (cu.cs->slice->getSPS()->getSpsNext().getUseTriangle() && cu.cs->slice->isInterB() && cu.lwidth() * cu.lheight() >= TRIANGLE_MIN_SIZE && !cu.affine)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::TriangleFlag), cu.triangle);
 
               }
-#endif
             }
             else
             {
@@ -918,13 +874,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::InterDir), pu.interDir);
               }
-#if JVET_L0632_AFFINE_MERGE
               if (!cu.cs->slice->isIntra() && cu.cs->sps->getSpsNext().getUseAffine() && cu.lumaSize().width > 8 && cu.lumaSize().height > 8)
-#else
-              if (!(cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine())
-                && !(!cu.firstPU->mergeFlag && !(cu.lumaSize().width > 8 && cu.lumaSize().height > 8))
-                && !(cu.firstPU->mergeFlag && !PU::isAffineMrgFlagCoded(*cu.firstPU)))
-#endif
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineFlag), pu.cu->affine);
                 if (cu.affine && !cu.firstPU->mergeFlag && cu.cs->sps->getSpsNext().getUseAffineType())
@@ -943,11 +893,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVPIdxL1), pu.mvpIdx[REF_PIC_LIST_1]);
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::RefIdxL1), pu.refIdx[REF_PIC_LIST_1]);
             }
-#if JVET_L0124_L0208_TRIANGLE
             if (!pu.cu->affine && !pu.cu->triangle)
-#else
-            if (!pu.cu->affine)
-#endif
             {
               if (pu.interDir != 2 /* PRED_L1 */)
               {
@@ -972,7 +918,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVL1), mv.hor, mv.ver);
               }
             }
-#if JVET_L0124_L0208_TRIANGLE
             else if (pu.cu->triangle)
             {
               MotionInfo mi[2];
@@ -994,7 +939,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 }
               }
             }
-#endif
             else
             {
               if (pu.interDir != 2 /* PRED_L1 */)
@@ -1034,12 +978,10 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
             }
-#if JVET_L0646_GBI
             if (CU::isGBiIdxCoded(cu))
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::GBIIndex), cu.GBiIdx);           
             }
-#endif
             break;
           }
           default:

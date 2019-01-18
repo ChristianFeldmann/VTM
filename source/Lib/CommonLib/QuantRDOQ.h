@@ -91,11 +91,9 @@ private:
                               const BinFracBits& fracBitsPar,
                               const BinFracBits& fracBitsGt1,
                               const BinFracBits& fracBitsGt2,
-#if JVET_L0274
                               const int          remGt2Bins,
                               const int          remRegBins,
                               unsigned           goRiceZero,
-#endif
                               uint16_t             ui16AbsGoRice,
                               int                iQBits,
                               double             errorScale,
@@ -106,11 +104,9 @@ private:
                               const BinFracBits& fracBitsPar,
                               const BinFracBits& fracBitsGt1,
                               const BinFracBits& fracBitsGt2,
-#if JVET_L0274
                               const int          remGt2Bins,
                               const int          remRegBins,
                               unsigned           goRiceZero,
-#endif
                               const uint16_t       ui16AbsGoRice,
                               const bool         useLimitedPrefixLength,
                               const int          maxLog2TrDynamicRange  ) const;

@@ -472,7 +472,6 @@ bool CacheBlkInfoCtrl::isSkip( const UnitArea& area )
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->isSkip;
 }
 
-#if JVET_L0054_MMVD
 bool CacheBlkInfoCtrl::isMMVDSkip(const UnitArea& area)
 {
   unsigned idx1, idx2, idx3, idx4;
@@ -480,7 +479,6 @@ bool CacheBlkInfoCtrl::isMMVDSkip(const UnitArea& area)
 
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->isMMVDSkip;
 }
-#endif
 
 void CacheBlkInfoCtrl::setMv( const UnitArea& area, const RefPicList refPicList, const int iRefIdx, const Mv& rMv )
 {
@@ -512,7 +510,6 @@ bool CacheBlkInfoCtrl::getMv( const UnitArea& area, const RefPicList refPicList,
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->validMv[refPicList][iRefIdx];
 }
 
-#if JVET_L0646_GBI 
 bool CacheBlkInfoCtrl::getInter(const UnitArea& area)
 {
   unsigned idx1, idx2, idx3, idx4;
@@ -534,7 +531,6 @@ uint8_t CacheBlkInfoCtrl::getGbiIdx(const UnitArea& area)
 
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->GBiIdx;
 }
-#endif
 
 #if REUSE_CU_RESULTS
 static bool isTheSameNbHood( const CodingUnit &cu, const CodingStructure& cs, const Partitioner &partitioner )
@@ -754,25 +750,17 @@ bool BestEncInfoCache::setFromCs( const CodingStructure& cs, const Partitioner& 
   return true;
 }
 
-#if JVET_L0362_QG_FIX_CU_REUSE
 bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& partitioner, int qp )
-#else
-bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& partitioner )
-#endif
 {
   unsigned idx1, idx2, idx3, idx4;
   getAreaIdx( cs.area.Y(), *m_slice_bencinf->getPPS()->pcv, idx1, idx2, idx3, idx4 );
 
   BestEncodingInfo& encInfo = *m_bestEncInfo[idx1][idx2][idx3][idx4];
 
-#if JVET_L0362_QG_FIX_CU_REUSE
   if( encInfo.cu.qp != qp )
     return false;
-#endif
   if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner )
-#if JVET_L0293_CPR
     || encInfo.cu.cpr
-#endif
     )
   {
     return false;
@@ -887,11 +875,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 {
   // Min/max depth
   unsigned minDepth = 0;
-#if JVET_L0217_L0678_SPS_CLEANUP
   unsigned maxDepth = g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize( m_slice->getSliceType(), partitioner.chType )];
-#else
-  unsigned maxDepth = g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize(m_slice->getSliceType(), partitioner.chType)];
-#endif
   if( m_pcEncCfg->getUseFastLCTU() )
   {
     if( auto adPartitioner = dynamic_cast<AdaptiveDepthPartitioner*>( &partitioner ) )
@@ -940,18 +924,12 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   cuECtx.set( DID_QUAD_SPLIT,       false );
   cuECtx.set( IS_BEST_NOSPLIT_SKIP, false );
   cuECtx.set( MAX_QT_SUB_DEPTH,     0 );
-#if REUSE_CU_RESULTS && !JVET_L0362_QG_FIX_CU_REUSE
-  const bool isReusingCu = isValid( cs, partitioner );
-  cuECtx.set( IS_REUSING_CU,        isReusingCu );
-#endif
 
   // QP
   int baseQP = cs.baseQP;
   if( m_pcEncCfg->getUseAdaptiveQP() )
   {
-#if JVET_L0428_DQP_SEP_TREE
     if (!CS::isDualITree(cs) || isLuma(partitioner.chType))
-#endif
     {
       baseQP = Clip3(-cs.sps->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, baseQP + xComputeDQP(cs, partitioner));
     }
@@ -973,7 +951,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 #endif
 
   xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, true );
-#if JVET_L0293_CPR 
   bool checkCpr = true;
   if (cs.chType == CHANNEL_TYPE_CHROMA)
   {
@@ -995,7 +972,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       THROW("Unknown CPR luma coverage type");
     }
   }
-#endif
   // Add coding modes here
   // NOTE: Working back to front, as a stack, which is more efficient with the container
   // NOTE: First added modes will be processed at the end.
@@ -1067,13 +1043,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 
   m_ComprCUCtxList.back().testModes.push_back( { ETM_POST_DONT_SPLIT } );
 
-#if REUSE_CU_RESULTS && !JVET_L0362_QG_FIX_CU_REUSE
-  if( isReusingCu )
-  {
-    m_ComprCUCtxList.back().testModes.push_back( { ETM_RECO_CACHED } );
-  }
-
-#endif
   xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, false );
 
   bool useLossless = false;
@@ -1096,7 +1065,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   {
     const int  qp       = std::max( qpLoop, lowestQP );
     const bool lossless = useLossless && qpLoop == minQP;
-#if REUSE_CU_RESULTS && JVET_L0362_QG_FIX_CU_REUSE
+#if REUSE_CU_RESULTS
     const bool isReusingCu = isValid( cs, partitioner, qp );
     cuECtx.set( IS_REUSING_CU, isReusingCu );
     if( isReusingCu )
@@ -1107,7 +1076,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     // add intra modes
     m_ComprCUCtxList.back().testModes.push_back( { ETM_IPCM,  ETO_STANDARD, qp, lossless } );
     m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp, lossless } );
-#if JVET_L0293_CPR
     // add cpr mode to intra path
     if (cs.sps->getSpsNext().getCPRMode() && checkCpr )
     {
@@ -1117,7 +1085,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
         m_ComprCUCtxList.back().testModes.push_back({ ETM_CPR_MERGE,   ETO_STANDARD,  qp, lossless });
       }
     }
-#endif
   }
 
   // add first pass modes
@@ -1140,18 +1107,12 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       // add inter modes
       if( m_pcEncCfg->getUseEarlySkipDetection() )
       {
-#if JVET_L0124_L0208_TRIANGLE
         if( cs.sps->getSpsNext().getUseTriangle() && cs.slice->isInterB() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
         }
-#endif
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
-#if JVET_L0369_SUBBLOCK_MERGE
         if ( cs.sps->getSpsNext().getUseAffine() || cs.sps->getSpsNext().getUseSubPuMvp() )
-#else
-        if( cs.sps->getSpsNext().getUseAffine() )
-#endif
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp, lossless } );
         }
@@ -1160,18 +1121,12 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       else
       {
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME,    ETO_STANDARD, qp, lossless } );
-#if JVET_L0124_L0208_TRIANGLE
         if( cs.sps->getSpsNext().getUseTriangle() && cs.slice->isInterB() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
         }
-#endif
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
-#if JVET_L0369_SUBBLOCK_MERGE
         if ( cs.sps->getSpsNext().getUseAffine() || cs.sps->getSpsNext().getUseSubPuMvp() )
-#else
-        if( cs.sps->getSpsNext().getUseAffine() )
-#endif
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp, lossless } );
         }
@@ -1286,10 +1241,8 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     }
 
     // INTRA MODES
-#if JVET_L0293_CPR
     if (cs.sps->getSpsNext().getCPRMode() && !cuECtx.bestTU)
       return true;
-#endif
     CHECK( !slice.isIntra() && !cuECtx.bestTU, "No possible non-intra encoding for a P- or B-slice found" );
 
     if( !( slice.isIRAP() || bestMode.type == ETM_INTRA || 
@@ -1301,7 +1254,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
-#if JVET_L0293_CPR
     if ((m_pcEncCfg->getCPRFastMethod() & CPR_FAST_METHOD_NOINTRA_CPRCBF0)
       && (bestMode.type == ETM_CPR || bestMode.type == ETM_CPR_MERGE)
       && (!cuECtx.bestCU->Y().valid() || cuECtx.bestTU->cbf[0] == 0)
@@ -1310,7 +1262,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
-#endif
     if( lastTestMode().type != ETM_INTRA && cuECtx.bestCS && cuECtx.bestCU && interHadActive( cuECtx ) )
     {
       // Get SATD threshold from best Inter-CU
@@ -1345,13 +1296,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     // PCM MODES
     return sps.getUsePCM() && width <= ( 1 << sps.getPCMLog2MaxSize() ) && width >= ( 1 << sps.getPCMLog2MinSize() );
   }
-#if JVET_L0293_CPR
   else if (encTestmode.type == ETM_CPR || encTestmode.type == ETM_CPR_MERGE)
   {
     // CPR MODES
     return sps.getSpsNext().getCPRMode() && width <= CPR_MAX_CAND_SIZE && partitioner.currArea().lumaSize().height <= CPR_MAX_CAND_SIZE;
   }
-#endif
   else if( isModeInter( encTestmode ) )
   {
     // INTER MODES (ME + MERGE/SKIP)
@@ -1399,12 +1348,10 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
-#if JVET_L0124_L0208_TRIANGLE
     if( encTestmode.type == ETM_MERGE_TRIANGLE && ( partitioner.currArea().lumaSize().area() < TRIANGLE_MIN_SIZE || relatedCU.isIntra ) )
     { 
       return false;
     }
-#endif
     return true;
   }
   else if( isModeSplit( encTestmode ) )
@@ -1508,15 +1455,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           {
             unsigned maxBTD        = cs.pcv->getMaxBtDepth( slice, partitioner.chType );
             const CodingUnit *cuBR = bestCS->cus.back();
-#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
             unsigned height        = partitioner.currArea().lumaSize().height;
-#endif
 
             if( bestCU && ( ( bestCU->btDepth == 0 &&                               maxBTD >= ( slice.isIntra() ? 3 : 2 ) )
                          || ( bestCU->btDepth == 1 && cuBR && cuBR->btDepth == 1 && maxBTD >= ( slice.isIntra() ? 4 : 3 ) ) )
-#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
                        && ( width <= MAX_TU_SIZE_FOR_PROFILE && height <= MAX_TU_SIZE_FOR_PROFILE )
-#endif
                        && cuECtx.get<bool>( DID_HORZ_SPLIT ) && cuECtx.get<bool>( DID_VERT_SPLIT ) )
             {
               return false;
@@ -1619,15 +1562,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           relatedCU.isInter   = true;
 #if HM_CODED_CU_INFO
           relatedCU.isSkip   |= bestCU->skip;
-#if JVET_L0054_MMVD
           relatedCU.isMMVDSkip |= bestCU->mmvdSkip;
-#endif
 #else
           relatedCU.isSkip    = bestCU->skip;
 #endif
-#if JVET_L0646_GBI
           relatedCU.GBiIdx    = bestCU->GBiIdx;
-#endif
         }
         else if( CU::isIntra( *bestCU ) )
         {

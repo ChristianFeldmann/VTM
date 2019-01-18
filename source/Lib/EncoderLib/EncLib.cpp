@@ -784,7 +784,6 @@ void EncLib::xInitVPS(VPS &vps, const SPS &sps)
 
 void EncLib::xInitSPS(SPS &sps)
 {
-#if JVET_L0696_CONSTRAINT_SYNTAX
   sps.setIntraOnlyConstraintFlag(m_intraConstraintFlag);
   sps.setMaxBitDepthConstraintIdc(m_bitDepthConstraintValue - 8);
   sps.setMaxChromaFormatConstraintIdc(m_chromaFormatConstraintValue);
@@ -802,7 +801,6 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setNoLadfConstraintFlag(!m_LadfEnabled);
   sps.setNoDepQuantConstraintFlag(!m_DepQuantEnabledFlag);
   sps.setNoSignDataHidingConstraintFlag(!m_SignDataHidingEnabledFlag);
-#endif
   ProfileTierLevel& profileTierLevel = *sps.getPTL()->getGeneralPTL();
   profileTierLevel.setLevelIdc                    (m_level);
   profileTierLevel.setTierFlag                    (m_levelTier);
@@ -843,34 +841,16 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setLog2DiffMaxMinCodingBlockSize(m_log2DiffMaxMinCodingBlockSize);
 
   sps.getSpsNext().setNextToolsEnabled      ( m_profile == Profile::NEXT );
-#if JVET_L0217_L0678_SPS_CLEANUP
   sps.setCTUSize                             ( m_CTUSize );
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
-#endif
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.getSpsNext().setUseLargeCTU            ( m_LargeCTU );
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   sps.setUseDualITree                        ( m_dualITree );
-#else
-  sps.getSpsNext().setCTUSize                (m_CTUSize);
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-  sps.getSpsNext().setSplitConsOverrideEnabledFlag(m_useSplitConsOverride);
-#endif
-  sps.getSpsNext().setMinQTSizes            ( m_uiMinQT );
-  sps.getSpsNext().setUseLargeCTU           ( m_LargeCTU );
-  sps.getSpsNext().setMaxBTDepth            ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
-  sps.getSpsNext().setUseDualITree          ( m_dualITree );
-#endif
   sps.getSpsNext().setSubPuMvpMode          ( m_SubPuMvpMode );
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  sps.getSpsNext().setSubPuMvpLog2Size(m_SubPuMvpLog2Size);
-#endif 
   sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
   sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
-#if JVET_L0256_BIO
   sps.getSpsNext().setUseBIO                ( m_BIO );
-#endif
   sps.getSpsNext().setUseAffine             ( m_Affine );
   sps.getSpsNext().setUseAffineType         ( m_AffineType );
   sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );
@@ -882,9 +862,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
   sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
-#if JVET_L0646_GBI
   sps.getSpsNext().setUseGBi                ( m_GBi );
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   sps.getSpsNext().setLadfEnabled           ( m_LadfEnabled );
   if ( m_LadfEnabled )
@@ -899,21 +877,13 @@ void EncLib::xInitSPS(SPS &sps)
   }
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   sps.getSpsNext().setUseMHIntra            ( m_MHIntra );
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   sps.getSpsNext().setUseTriangle           ( m_Triangle );
-#endif
 
-#if JVET_L0293_CPR
   sps.getSpsNext().setCPRMode               ( m_CPRMode );
-#endif 
 
-#if JVET_L0231_WRAPAROUND
   sps.setUseWrapAround                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
-#endif
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
@@ -1293,11 +1263,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     {
       baseQp = getBaseQP()-26;
     }
-#if JVET_L0553_FIX_INITQP
     const int maxDQP = 37;
-#else
-    const int maxDQP = 25;
-#endif
     const int minDQP = -26 + sps.getQpBDOffset(CHANNEL_TYPE_LUMA);
 
     pps.setPicInitQPMinus26( std::min( maxDQP, std::max( minDQP, baseQp ) ));
@@ -1348,11 +1314,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setSliceChromaQpFlag(bChromaDeltaQPEnabled);
 #endif
   if (
-#if JVET_L0217_L0678_SPS_CLEANUP
     !pps.getSliceChromaQpFlag() && sps.getUseDualITree() 
-#else
-    !pps.getSliceChromaQpFlag() && sps.getSpsNext().getUseDualITree()
-#endif
     && (getChromaFormatIdc() != CHROMA_400))
   {
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0);
@@ -1423,13 +1385,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     }
   }
   CHECK(!(bestPos <= 15), "Unspecified error");
-#if JVET_L0293_CPR
   if (sps.getSpsNext().getCPRMode())
   {
     pps.setNumRefIdxL0DefaultActive(bestPos + 1);
   }
   else
-#endif
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());

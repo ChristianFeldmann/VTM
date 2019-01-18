@@ -218,20 +218,16 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
     }
 #endif
 
-#if JVET_L0646_GBI
     bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
     if(updateGbiCodingOrder)
     {
       resetGbiCodingOrder(true, cs);
     }
-#endif
 
-#if JVET_L0158_L0106_RESET_BUFFER
     if (cs.slice->getSliceType() != I_SLICE && ctuXPosInCtus == 0)
     {
       cs.slice->resetMotionLUTs();
     }
-#endif
 
     isLastCtuOfSliceSegment = cabacReader.coding_tree_unit( cs, ctuArea, pic->m_prevQP, ctuRsAddr );
 

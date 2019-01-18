@@ -51,11 +51,9 @@
 #include "CommonLib/RdCost.h"
 
 #include "CommonLib/AffineGradientSearch.h"
-#if JVET_L0293_CPR
 #include "CommonLib/CprHashMap.h"
 #include <unordered_map>
 #include <vector>
-#endif
 //! \ingroup EncoderLib
 //! \{
 
@@ -66,21 +64,17 @@
 static const uint32_t MAX_NUM_REF_LIST_ADAPT_SR = 2;
 static const uint32_t MAX_IDX_ADAPT_SR          = 33;
 static const uint32_t NUM_MV_PREDICTORS         = 3;
-#if JVET_L0293_CPR
 struct BlkRecord
 {
   std::unordered_map<Mv, Distortion> bvRecord;
 };
-#endif
 class EncModeCtrl;
 
-#if JVET_L0260_AFFINE_ME
 struct AffineMVInfo
 {
   Mv  affMVs[2][33][3];
   int x, y, w, h;
 };
-#endif
 
 /// encoder search class
 class InterSearch : public InterPrediction, CrossComponentPrediction, AffineGradientSearch
@@ -100,21 +94,15 @@ private:
   CodingStructure **m_pSaveCS;
 
   ClpRng          m_lumaClpRng;
-#if JVET_L0646_GBI 
   uint32_t        m_estWeightIdxBits[GBI_NUM];
   GBiMotionParam  m_uniMotions;
   bool            m_affineModeSelected;
-#endif
-#if JVET_L0293_CPR
   std::unordered_map< Position, std::unordered_map< Size, BlkRecord> > m_ctuRecord;
-#endif
-#if JVET_L0260_AFFINE_ME
   AffineMVInfo       *m_affMVList;
   int             m_affMVListIdx;
   int             m_affMVListSize;
   int             m_affMVListMaxSize;
   Distortion      m_hevcCost;
-#endif
 
 protected:
   // interface to option
@@ -143,10 +131,8 @@ protected:
   Mv              m_integerMv2Nx2N              [NUM_REF_PIC_LIST_01][MAX_NUM_REF];
 
   bool            m_isInitialized;
-#if JVET_L0293_CPR
   unsigned int    m_numBVs, m_numBV16s;
   Mv              m_acBVs[CPR_NUM_CANDIDATES];
-#endif
 public:
   InterSearch();
   virtual ~InterSearch();
@@ -167,16 +153,11 @@ public:
   void destroy                      ();
 
   void setTempBuffers               (CodingStructure ****pSlitCS, CodingStructure ****pFullCS, CodingStructure **pSaveCS );
-#if JVET_L0293_CPR
   void resetCtuRecord               ()             { m_ctuRecord.clear(); }
-#endif
 #if ENABLE_SPLIT_PARALLELISM
   void copyState                    ( const InterSearch& other );
 #endif
-#if JVET_L0646_GBI
   void setAffineModeSelected        ( bool flag) { m_affineModeSelected = flag; }
-#endif
-#if JVET_L0260_AFFINE_ME
   void resetAffineMVList() { m_affMVListIdx = 0; m_affMVListSize = 0; }
   void savePrevAffMVInfo(int idx, AffineMVInfo &tmpMVInfo, bool& isSaved)
   {
@@ -209,7 +190,6 @@ public:
       m_affMVListSize = std::min(m_affMVListSize + 1, m_affMVListMaxSize);
     }
   }
-#endif
 protected:
 
   /// sub-function for motion vector refinement used in fractional-pel accuracy
@@ -258,14 +238,12 @@ public:
 
   /// set ME search range
   void setAdaptiveSearchRange       ( int iDir, int iRefIdx, int iSearchRange) { CHECK(iDir >= MAX_NUM_REF_LIST_ADAPT_SR || iRefIdx>=int(MAX_IDX_ADAPT_SR), "Invalid index"); m_aaiAdaptSR[iDir][iRefIdx] = iSearchRange; }
-#if JVET_L0293_CPR
   bool  predCPRSearch           ( CodingUnit& cu, Partitioner& partitioner, const int localSearchRangeX, const int localSearchRangeY, CprHashMap& cprHashMap);
   void  xIntraPatternSearch         ( PredictionUnit& pu, IntTZSearchStruct&  cStruct, Mv& rcMv, Distortion&  ruiCost, Mv* cMvSrchRngLT, Mv* cMvSrchRngRB, Mv* pcMvPred);
   void  xSetIntraSearchRange        ( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, const int localSearchRangeX, const int localSearchRangeY, Mv& rcMvSrchRngLT, Mv& rcMvSrchRngRB);
   void  xCPREstimation   ( PredictionUnit& pu, PelUnitBuf& origBuf, Mv     *pcMvPred, Mv     &rcMv, Distortion &ruiCost, const int localSearchRangeX, const int localSearchRangeY);
   void  xCPRSearchMVCandUpdate  ( Distortion  uiSad, int x, int y, Distortion* uiSadBestCand, Mv* cMVCand);
   int   xCPRSearchMVChromaRefine( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, int cuPelX, int cuPelY, Distortion* uiSadBestCand, Mv*     cMVCand);
-#endif
 protected:
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -391,11 +369,9 @@ protected:
                                     Mv                    hevcMv[2][33]
                                   , Mv                    mvAffine4Para[2][33][3]
                                   , int                   refIdx4Para[2]
-#if JVET_L0646_GBI 
                                   , uint8_t               gbiIdx = GBI_DEFAULT
                                   , bool                  enforceGBiPred = false
                                   , uint32_t              gbiIdxBits = 0
-#endif
                                   );
 
   void xAffineMotionEstimation    ( PredictionUnit& pu,
@@ -423,7 +399,6 @@ protected:
   void xCopyAffineAMVPInfo        ( AffineAMVPInfo& src, AffineAMVPInfo& dst );
   void xCheckBestAffineMVP        ( PredictionUnit &pu, AffineAMVPInfo &affineAMVPInfo, RefPicList eRefPicList, Mv acMv[3], Mv acMvPred[3], int& riMVPIdx, uint32_t& ruiBits, Distortion& ruiCost );
 
-#if JVET_L0646_GBI 
   bool xReadBufferedAffineUniMv   ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv acMvPred[3], Mv acMv[3], uint32_t& ruiBits, Distortion& ruiCost);
   double xGetMEDistortionWeight   ( uint8_t gbiIdx, RefPicList eRefPicList);
   bool xReadBufferedUniMv         ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost);
@@ -432,7 +407,6 @@ public:
   uint32_t getWeightIdxBits       ( uint8_t gbiIdx ) { return m_estWeightIdxBits[gbiIdx]; }
   void initWeightIdxBits          ();
 protected:
-#endif
 
   void xExtDIFUpSamplingH         ( CPelBuf* pcPattern );
   void xExtDIFUpSamplingQ         ( CPelBuf* pcPatternKey, Mv halfPelRef );
@@ -442,22 +416,16 @@ protected:
   // -------------------------------------------------------------------------------------------------------------------
 
   void  setWpScalingDistParam     ( int iRefIdx, RefPicList eRefPicListCur, Slice *slice );
-#if JVET_L0293_CPR
 private:
   void  xxCPRHashSearch(PredictionUnit& pu, Mv* mvPred, int numMvPred, Mv &mv, int& idxMvPred, CprHashMap& cprHashMap);
-#endif
 public:
 
   void encodeResAndCalcRdInterCU  (CodingStructure &cs, Partitioner &partitioner, const bool &skipResidual
-#if JVET_L0293_CPR 
     , const bool luma = true, const bool chroma = true
-#endif
   );
   void xEncodeInterResidualQT     (CodingStructure &cs, Partitioner &partitioner, const ComponentID &compID);
   void xEstimateInterResidualQT   (CodingStructure &cs, Partitioner &partitioner, Distortion *puiZeroDist = NULL
-#if JVET_L0293_CPR
     , const bool luma = true, const bool chroma = true
-#endif
   );
   uint64_t xGetSymbolFracBitsInter  (CodingStructure &cs, Partitioner &partitioner);
 

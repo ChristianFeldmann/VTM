@@ -57,9 +57,7 @@ enum EncTestModeType
   ETM_MERGE_SKIP,
   ETM_INTER_ME,
   ETM_AFFINE,
-#if JVET_L0124_L0208_TRIANGLE
   ETM_MERGE_TRIANGLE,
-#endif
   ETM_INTRA,
   ETM_IPCM,
   ETM_SPLIT_QT,
@@ -72,10 +70,8 @@ enum EncTestModeType
   ETM_RECO_CACHED,
 #endif
   ETM_TRIGGER_IMV_LIST,
-#if JVET_L0293_CPR
   ETM_CPR,    // cpr mode
   ETM_CPR_MERGE, // cpr merge mode
-#endif
   ETM_INVALID
 };
 
@@ -140,9 +136,7 @@ inline bool isModeInter( const EncTestMode& encTestmode ) // perhaps remove
   return (   encTestmode.type == ETM_INTER_ME
           || encTestmode.type == ETM_MERGE_SKIP
           || encTestmode.type == ETM_AFFINE
-#if JVET_L0124_L0208_TRIANGLE
           || encTestmode.type == ETM_MERGE_TRIANGLE
-#endif
          );
 }
 
@@ -326,15 +320,11 @@ struct CodedCUInfo
   bool isInter;
   bool isIntra;
   bool isSkip;
-#if JVET_L0054_MMVD
   bool isMMVDSkip;
-#endif
   bool validMv[NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
-#if JVET_L0646_GBI   
   uint8_t GBiIdx;
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 
@@ -379,17 +369,13 @@ public:
   virtual ~CacheBlkInfoCtrl() {}
 
   bool isSkip ( const UnitArea& area );
-#if JVET_L0054_MMVD
   bool isMMVDSkip(const UnitArea& area);
-#endif
   bool getMv  ( const UnitArea& area, const RefPicList refPicList, const int iRefIdx,       Mv& rMv ) const;
   void setMv  ( const UnitArea& area, const RefPicList refPicList, const int iRefIdx, const Mv& rMv );
 
-#if JVET_L0646_GBI 
   bool  getInter( const UnitArea& area );
   void  setGbiIdx( const UnitArea& area, uint8_t gBiIdx );
   uint8_t getGbiIdx( const UnitArea& area );
-#endif
 };
 
 #if REUSE_CU_RESULTS
@@ -422,11 +408,7 @@ protected:
   void init     ( const Slice &slice );
 
   bool setFromCs( const CodingStructure& cs, const Partitioner& partitioner );
-#if JVET_L0362_QG_FIX
   bool isValid  ( const CodingStructure& cs, const Partitioner& partitioner, int qp );
-#else
-  bool isValid  ( const CodingStructure& cs, const Partitioner& partitioner );
-#endif
 
   // TODO: implement copyState
 

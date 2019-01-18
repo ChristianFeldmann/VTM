@@ -90,21 +90,12 @@ public:
   void        cu_transquant_bypass_flag ( const CodingUnit&             cu );
   void        cu_skip_flag              ( const CodingUnit&             cu );
   void        pred_mode                 ( const CodingUnit&             cu );
-#if JVET_L0209_PCM
   void        pcm_data                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        pcm_flag                  ( const CodingUnit&             cu,       Partitioner&      pm );
-#else
-  void        pcm_data                  ( const CodingUnit&             cu );
-  void        pcm_flag                  ( const CodingUnit&             cu );
-#endif
   void        cu_pred_data              ( const CodingUnit&             cu );
-#if JVET_L0646_GBI
   void        cu_gbi_flag               ( const CodingUnit&             cu );
-#endif
-#if JVET_L0283_MULTI_REF_LINE
   void        extend_ref_line           (const PredictionUnit&          pu );
   void        extend_ref_line           (const CodingUnit&              cu );
-#endif
   void        intra_luma_pred_modes     ( const CodingUnit&             cu );
   void        intra_luma_pred_mode      ( const PredictionUnit&         pu );
   void        intra_chroma_pred_modes   ( const CodingUnit&             cu );
@@ -118,25 +109,17 @@ public:
   void        prediction_unit           ( const PredictionUnit&         pu );
   void        merge_flag                ( const PredictionUnit&         pu );
   void        affine_flag               ( const CodingUnit&             cu );
-#if JVET_L0369_SUBBLOCK_MERGE
   void        subblock_merge_flag       ( const CodingUnit&             cu );
-#endif
   void        merge_idx                 ( const PredictionUnit&         pu );
-#if JVET_L0054_MMVD
   void        mmvd_merge_idx(const PredictionUnit&         pu);
-#endif
   void        imv_mode                  ( const CodingUnit&             cu );
   void        inter_pred_idc            ( const PredictionUnit&         pu );
   void        ref_idx                   ( const PredictionUnit&         pu,       RefPicList        eRefList );
   void        mvp_flag                  ( const PredictionUnit&         pu,       RefPicList        eRefList );
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   void        MHIntra_flag              ( const PredictionUnit&         pu );
   void        MHIntra_luma_pred_modes   ( const CodingUnit&             cu );
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   void        triangle_mode             ( const CodingUnit&             cu );
-#endif
 
   // pcm samples (clause 7.3.8.7)
   void        pcm_samples               ( const TransformUnit&          tu );
@@ -178,9 +161,7 @@ private:
   // statistic
   unsigned    get_num_written_bits()    { return m_BinEncoder.getNumWrittenBits(); }
 
-#if JVET_L0165_6MPM
   void  xWriteTruncBinCode(uint32_t uiSymbol, uint32_t uiMaxSymbol);
-#endif
 
 private:
   BinEncIf&         m_BinEncoder;

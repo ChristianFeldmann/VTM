@@ -78,18 +78,10 @@ public:
   void        cu_transquant_bypass_flag ( CodingUnit&                   cu );
   void        cu_skip_flag              ( CodingUnit&                   cu );
   void        pred_mode                 ( CodingUnit&                   cu );
-#if JVET_L0209_PCM
   void        pcm_flag                  ( CodingUnit&                   cu,     Partitioner&    pm );
-#else
-  void        pcm_flag                  ( CodingUnit&                   cu );
-#endif
   void        cu_pred_data              ( CodingUnit&                   cu );
-#if JVET_L0646_GBI
   void        cu_gbi_flag               ( CodingUnit&                   cu );
-#endif
-#if JVET_L0283_MULTI_REF_LINE
   void        extend_ref_line           (CodingUnit&                     cu);
-#endif
   void        intra_luma_pred_modes     ( CodingUnit&                   cu );
   void        intra_chroma_pred_modes   ( CodingUnit&                   cu );
   bool        intra_chroma_lmc_mode     ( PredictionUnit&               pu );
@@ -103,24 +95,16 @@ public:
   void        merge_flag                ( PredictionUnit&               pu );
   void        merge_data                ( PredictionUnit&               pu );
   void        affine_flag               ( CodingUnit&                   cu );
-#if JVET_L0369_SUBBLOCK_MERGE
   void        subblock_merge_flag       ( CodingUnit&                   cu );
-#endif
   void        merge_idx                 ( PredictionUnit&               pu );
-#if JVET_L0054_MMVD
   void        mmvd_merge_idx(PredictionUnit&               pu);
-#endif
   void        imv_mode                  ( CodingUnit&                   cu,     MergeCtx&       mrgCtx );
   void        inter_pred_idc            ( PredictionUnit&               pu );
   void        ref_idx                   ( PredictionUnit&               pu,     RefPicList      eRefList );
   void        mvp_flag                  ( PredictionUnit&               pu,     RefPicList      eRefList );
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   void        MHIntra_flag              ( PredictionUnit&               pu );
   void        MHIntra_luma_pred_modes   ( CodingUnit&                   cu );
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   void        triangle_mode             ( CodingUnit&                   cu );
-#endif
 
   // pcm samples (clause 7.3.8.7)
   void        pcm_samples               ( TransformUnit&                tu );
@@ -156,9 +140,7 @@ private:
   unsigned    decode_sparse_dt          ( DecisionTree& dt );
   unsigned    get_num_bits_read         () { return m_BinDecoder.getNumBitsRead(); }
 
-#if JVET_L0165_6MPM
   void        xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol);
-#endif
 
 private:
   BinDecoderBase& m_BinDecoder;

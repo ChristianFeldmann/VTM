@@ -73,9 +73,7 @@ enum class BlockStatistic {
   IPCM,
   Luma_IntraMode,
   Chroma_IntraMode,
-#if JVET_L0283_MULTI_REF_LINE
   MultiRefIdx,
-#endif
   // inter
   SkipFlag,
   RootCbf,
@@ -101,26 +99,16 @@ enum class BlockStatistic {
   AffineMVL0,
   AffineMVL1,
   AffineType,
-#if JVET_L0054_MMVD
   MMVDSkipFlag,
   MMVDMergeFlag,
   MMVDMergeIdx,
-#endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   MHIntraFlag,
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   TriangleFlag,
   TrianglePartitioning,
   TriangleMVL0, //<< currently only uni-prediction enabled
   TriangleMVL1, //<< currently only uni-prediction enabled
-#endif
-#if JVET_L0646_GBI
   GBIIndex,
-#endif
-#if JVET_L0293_CPR
   CPRFlag,
-#endif
 // for dual tree
   // general
   Depth_Chroma,
@@ -194,29 +182,17 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::EMTFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"EMTFlag",                     BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::MotionBufL0,            std::tuple<std::string, BlockStatisticType, std::string>{"MotionBufL0",                 BlockStatisticType::Vector,                 "Scale: 16"}},
   { BlockStatistic::MotionBufL1,            std::tuple<std::string, BlockStatisticType, std::string>{"MotionBufL1",                 BlockStatisticType::Vector,                 "Scale: 16"}},
-#if JVET_L0283_MULTI_REF_LINE
   { BlockStatistic::MultiRefIdx,            std::tuple<std::string, BlockStatisticType, std::string>{"MultiRefIdx",                 BlockStatisticType::Integer,                "[0, 1]"}}, 
-#endif
-#if JVET_L0054_MMVD
   { BlockStatistic::MMVDSkipFlag,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDSkipFlag",                BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::MMVDMergeFlag,          std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeFlag",               BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::MMVDMergeIdx,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeIdx",                BlockStatisticType::Integer,                "[0, 1]"}}, 
-#endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   { BlockStatistic::MHIntraFlag,            std::tuple<std::string, BlockStatisticType, std::string>{"MHIntraFlag",                 BlockStatisticType::Flag,                   ""}},
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   { BlockStatistic::TriangleFlag,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleFlag",                BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::TrianglePartitioning,   std::tuple<std::string, BlockStatisticType, std::string>{"TrianglePartitioning",        BlockStatisticType::Line,                   ""}},
   { BlockStatistic::TriangleMVL0,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL0",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
   { BlockStatistic::TriangleMVL1,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL1",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
-#endif
-#if JVET_L0646_GBI
   { BlockStatistic::GBIIndex,               std::tuple<std::string, BlockStatisticType, std::string>{"GBIIndex",                    BlockStatisticType::Integer,                "[0, 4]"}}, 
-#endif
-#if JVET_L0293_CPR
   { BlockStatistic::CPRFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"CPRFlag",                     BlockStatisticType::Flag,                   ""}},
-#endif
   // for dual tree
   { BlockStatistic::Depth_Chroma,                  std::tuple<std::string, BlockStatisticType, std::string>{"Depth_Chroma",                       BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
   { BlockStatistic::QT_Depth_Chroma,               std::tuple<std::string, BlockStatisticType, std::string>{"QT_Depth_Chroma",                    BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?

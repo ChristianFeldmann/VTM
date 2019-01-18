@@ -203,7 +203,6 @@ public:
   }
 };// END CLASS DEFINITION MV
 
-#if JVET_L0293_CPR
 namespace std
 {
   template <>
@@ -215,11 +214,8 @@ namespace std
     }
   };
 };
-#endif
 void clipMv ( Mv& rcMv, const struct Position& pos, 
-#if JVET_L0231_WRAPAROUND
               const struct Size& size,
-#endif
               const class SPS& sps );
 
 void roundAffineMv( int& mvx, int& mvy, int nShift );

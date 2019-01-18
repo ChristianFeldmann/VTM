@@ -107,11 +107,7 @@ public:
     const int     diag      = posX + posY;
     int           numPos    = 0;
     int           sumAbs    = 0;
-#if JVET_L0274
 #define UPDATE(x) {int a=abs(x);sumAbs+=std::min(2+(a&1),a);numPos+=!!a;}
-#else
-#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(4-(a&1),a);numPos+=!!a;}
-#endif
     if( posX < m_width-1 )
     {
       UPDATE( pData[1] );
@@ -158,7 +154,6 @@ public:
   unsigned greater1CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[1]( offset ); }
   unsigned greater2CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[0]( offset ); }
 
-#if JVET_L0274
   unsigned templateAbsSum( int scanPos, const TCoeff* coeff )
   {
     const uint32_t  posY  = m_scanPosY[scanPos];
@@ -187,39 +182,6 @@ public:
     }
     return std::min(sum, 31);
   }
-#else
-  unsigned GoRiceParAbs( int scanPos, const TCoeff* coeff ) const
-  {
-#define UPDATE(x) sum+=abs(x)-!!x
-    const uint32_t    posY      = m_scanPosY[ scanPos ];
-    const uint32_t    posX      = m_scanPosX[ scanPos ];
-    const TCoeff* pData     = coeff + posX + posY * m_width;
-    int           sum       = 0;
-    if( posX < m_width-1 )
-    {
-      UPDATE( pData[1] );
-      if( posX < m_width-2 )
-      {
-        UPDATE( pData[2] );
-      }
-      if( posY < m_height-1 )
-      {
-        UPDATE( pData[m_width+1] );
-      }
-    }
-    if( posY < m_height-1 )
-    {
-      UPDATE( pData[m_width] );
-      if( posY < m_height-2 )
-      {
-        UPDATE( pData[m_width<<1] );
-      }
-    }
-#undef UPDATE
-    int     r = g_auiGoRicePars[ std::min( sum, 31 ) ];
-    return  r;
-  }
-#endif
 
   unsigned        emtNumSigCoeff()                          const { return m_emtNumSigCoeff; }
   void            setEmtNumSigCoeff( unsigned val )               { m_emtNumSigCoeff = val; }
@@ -299,9 +261,7 @@ public:
   ~MergeCtx() {}
 public:
   MvField       mvFieldNeighbours [ MRG_MAX_NUM_CANDS << 1 ]; // double length for mv of both lists
-#if JVET_L0646_GBI
   uint8_t       GBiIdx            [ MRG_MAX_NUM_CANDS      ];
-#endif
   unsigned char interDirNeighbours[ MRG_MAX_NUM_CANDS      ];
   MergeType     mrgTypeNeighbours [ MRG_MAX_NUM_CANDS      ];
   int           numValidMergeCand;
@@ -309,14 +269,11 @@ public:
 
   MotionBuf     subPuMvpMiBuf;
   MotionBuf     subPuMvpExtMiBuf;
-#if JVET_L0054_MMVD
   MvField mmvdBaseMv[MMVD_BASE_MV_NUM][2];
   void setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx);
-#endif
   void setMergeInfo( PredictionUnit& pu, int candIdx );
 };
 
-#if JVET_L0632_AFFINE_MERGE
 class AffineMergeCtx
 {
 public:
@@ -326,18 +283,13 @@ public:
   MvField       mvFieldNeighbours[AFFINE_MRG_MAX_NUM_CANDS << 1][3]; // double length for mv of both lists
   unsigned char interDirNeighbours[AFFINE_MRG_MAX_NUM_CANDS];
   EAffineModel  affineType[AFFINE_MRG_MAX_NUM_CANDS];
-#if JVET_L0646_GBI
   uint8_t       GBiIdx[AFFINE_MRG_MAX_NUM_CANDS];
-#endif
   int           numValidMergeCand;
   int           maxNumMergeCand;
 
-#if JVET_L0369_SUBBLOCK_MERGE
   MergeCtx     *mrgCtx;
   MergeType     mergeType[AFFINE_MRG_MAX_NUM_CANDS];
-#endif
 };
-#endif
 
 
 namespace DeriveCtx
@@ -349,9 +301,7 @@ unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
 unsigned CtxAffineFlag( const CodingUnit& cu );
-#if JVET_L0124_L0208_TRIANGLE
 unsigned CtxTriangleFlag( const CodingUnit& cu );
-#endif
 }
 
 #endif // __CONTEXTMODELLING__

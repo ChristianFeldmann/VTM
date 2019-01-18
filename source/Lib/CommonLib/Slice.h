@@ -49,10 +49,8 @@
 
 //! \ingroup CommonLib
 //! \{
-#if JVET_L0266_HMVP
 #include "CommonLib/MotionInfo.h"
 struct MotionInfo;
-#endif
 
 
 struct Picture;
@@ -803,25 +801,17 @@ private:
   bool              m_LargeCTU;                   // 5
   bool              m_SubPuMvp;
   bool              m_IMV;                        // 9
-#if JVET_L0256_BIO
   bool              m_BIO;
-#endif
   bool              m_DisableMotionCompression;   // 13
   bool              m_LMChroma;                   // 17
   bool              m_IntraEMT;                   // 18
   bool              m_InterEMT;                   // 19
   bool              m_Affine;
   bool              m_AffineType;
-#if JVET_L0646_GBI
   bool              m_GBi;                        //
-#endif
   bool              m_MTTEnabled;                 //
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool              m_MHIntra;
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   bool              m_Triangle;
-#endif
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
 #endif
@@ -838,23 +828,7 @@ public:
 private:
   //=====  additional parameters  =====
   // qtbt
-#if !JVET_L0217_L0678_SPS_CLEANUP
-  unsigned    m_CTUSize;
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-  unsigned    m_partitionOverrideEnalbed;       // enable partition constraints override function
-#endif
-  unsigned    m_minQT[3];   // 0: I slice luma; 1: P/B slice; 2: I slice chroma
-  unsigned    m_maxBTDepth[3];
-  unsigned    m_maxBTSize[3];
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-  unsigned    m_maxTTSize[3];
-#endif
-  unsigned    m_dualITree;
-#endif
   // sub-pu merging
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  unsigned    m_subPuLog2Size;
-#endif
   int         m_subPuMrgMode;
   //imv
   ImvMode     m_ImvMode;
@@ -863,9 +837,7 @@ private:
 
   bool              m_compositeRefEnabled;        //composite longterm reference
 
-#if JVET_L0293_CPR
   unsigned    m_CPRMode;
-#endif
 
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags and associated parameters here
 
@@ -889,10 +861,8 @@ public:
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
-#if JVET_L0256_BIO
   void      setUseBIO(bool b)                                                       { m_BIO = b; }
   bool      getUseBIO()                                                   const     { return m_BIO; }
-#endif
   void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
   bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }
   bool      getMTTEnabled         ()                                      const     { return m_MTTEnabled; }
@@ -906,10 +876,8 @@ public:
   bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
   void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
   bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
-#if JVET_L0646_GBI
   void      setUseGBi             ( bool b )                                        { m_GBi = b; }
   bool      getUseGBi             ()                                      const     { return m_GBi; }
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   void      setLadfEnabled        ( bool b )                                        { m_LadfEnabled = b; }
   bool      getLadfEnabled        ()                                      const     { return m_LadfEnabled; }
@@ -922,46 +890,7 @@ public:
 #endif
   //=====  additional parameters  =====
   // qtbt
-#if !JVET_L0217_L0678_SPS_CLEANUP
-  void      setCTUSize            ( unsigned    ctuSize )                           { m_CTUSize = ctuSize; }
-  unsigned  getCTUSize            ()                                      const     { return  m_CTUSize;   }
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-  void      setSplitConsOverrideEnabledFlag(bool b)                                         { m_partitionOverrideEnalbed = b; }
-  bool      getSplitConsOverrideEnabledFlag()                                     const     { return m_partitionOverrideEnalbed; }
-#endif
-  void      setMinQTSizes         ( unsigned*   minQT )                             { m_minQT[0] = minQT[0]; m_minQT[1] = minQT[1]; m_minQT[2] = minQT[2]; }
-  unsigned  getMinQTSize          ( SliceType   slicetype,
-                                    ChannelType chType = CHANNEL_TYPE_LUMA )
-                                                                          const     { return slicetype == I_SLICE ? ( chType == CHANNEL_TYPE_LUMA ? m_minQT[0] : m_minQT[2] ) : m_minQT[1]; }
-  void      setMaxBTDepth         ( unsigned    maxBTDepth,
-                                    unsigned    maxBTDepthI,
-                                    unsigned    maxBTDepthIChroma )                 { m_maxBTDepth[1] = maxBTDepth; m_maxBTDepth[0] = maxBTDepthI; m_maxBTDepth[2] = maxBTDepthIChroma; }
-  unsigned  getMaxBTDepth         ()                                      const     { return m_maxBTDepth[1]; }
-  unsigned  getMaxBTDepthI        ()                                      const     { return m_maxBTDepth[0]; }
-  unsigned  getMaxBTDepthIChroma  ()                                      const     { return m_maxBTDepth[2]; }
-  void      setMaxBTSize          ( unsigned    maxBTSize,
-                                    unsigned    maxBTSizeI,
-                                    unsigned    maxBTSizeC )                        { m_maxBTSize[1] = maxBTSize; m_maxBTSize[0] = maxBTSizeI; m_maxBTSize[2] = maxBTSizeC; }
-  unsigned  getMaxBTSize          ()                                      const     { return m_maxBTSize[1]; }
-  unsigned  getMaxBTSizeI         ()                                      const     { return m_maxBTSize[0]; }
-  unsigned  getMaxBTSizeIChroma   ()                                      const     { return m_maxBTSize[2]; }
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-  void      setMaxTTSize          (unsigned    maxTTSize,
-                                   unsigned    maxTTSizeI,
-                                   unsigned    maxTTSizeC)                          { m_maxTTSize[1] = maxTTSize; m_maxTTSize[0] = maxTTSizeI; m_maxTTSize[2] = maxTTSizeC;  }
-  unsigned  getMaxTTSize()                                                const     { return m_maxTTSize[1]; }
-  unsigned  getMaxTTSizeI()                                               const     { return m_maxTTSize[0]; }
-  unsigned  getMaxTTSizeIChroma()                                         const     { return m_maxTTSize[2]; }
-#endif
-
-  void      setUseDualITree       ( bool b )                                        { m_dualITree = b; }
-  bool      getUseDualITree       ()                                      const     { return m_dualITree; }
-#endif
   // sub pu tmvp
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  void      setSubPuMvpLog2Size   ( unsigned    log2Size )                          { m_subPuLog2Size = log2Size; }
-  unsigned  getSubPuMvpLog2Size   ()                                      const     { return m_subPuLog2Size; }
-#endif 
   void      setImvMode(ImvMode m) { m_ImvMode = m; m_IMV = m != 0;  }
   ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
 
@@ -974,18 +903,12 @@ public:
   void      setUseCompositeRef(bool b) { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef()                                      const { return m_compositeRefEnabled; }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   void      setUseMHIntra         ( bool b )                                        { m_MHIntra = b; }
   bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
-#endif
-#if JVET_L0293_CPR
   void      setCPRMode            (unsigned CPRMode)                                { m_CPRMode = CPRMode; }
   unsigned  getCPRMode            ()                                      const     { return m_CPRMode; }
-#endif
   // ADD_NEW_TOOL : (sps extension) add access functions for tool enabling flags and associated parameters here
 
 };
@@ -996,7 +919,6 @@ class SPS
 {
 private:
   int               m_SPSId;
-#if JVET_L0696_CONSTRAINT_SYNTAX
   bool              m_bIntraOnlyConstraintFlag;
   uint32_t          m_maxBitDepthConstraintIdc;
   uint32_t          m_maxChromaFormatConstraintIdc;
@@ -1014,7 +936,6 @@ private:
   bool              m_bNoLadfConstraintFlag;
   bool              m_bNoDepQuantConstraintFlag;
   bool              m_bNoSignDataHidingConstraintFlag;
-#endif
 
 #if HEVC_VPS
   int               m_VPSId;
@@ -1029,19 +950,13 @@ private:
 
   int               m_log2MinCodingBlockSize;
   int               m_log2DiffMaxMinCodingBlockSize;
-#if JVET_L0217_L0678_SPS_CLEANUP
   unsigned    m_CTUSize;
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   unsigned    m_partitionOverrideEnalbed;       // enable partition constraints override function
-#endif
   unsigned    m_minQT[3];   // 0: I slice luma; 1: P/B slice; 2: I slice chroma
   unsigned    m_maxBTDepth[3];
   unsigned    m_maxBTSize[3];
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   unsigned    m_maxTTSize[3];
-#endif
   unsigned    m_dualITree;
-#endif
   uint32_t              m_uiMaxCUWidth;
   uint32_t              m_uiMaxCUHeight;
   uint32_t              m_uiMaxCodingDepth; ///< Total CU depth, relative to the smallest possible transform block size.
@@ -1104,10 +1019,8 @@ private:
 
   bool              m_useALF;
 
-#if JVET_L0231_WRAPAROUND
   bool              m_useWrapAround;
   unsigned          m_wrapAroundOffset;
-#endif
 
 public:
 
@@ -1118,7 +1031,6 @@ public:
   int                     getVPSId() const                                                                { return m_VPSId;                                                      }
   void                    setVPSId(int i)                                                                 { m_VPSId = i;                                                         }
 #endif
-#if JVET_L0696_CONSTRAINT_SYNTAX
   bool                    getIntraOnlyConstraintFlag() const                                              { return m_bIntraOnlyConstraintFlag;                                   }
   void                    setIntraOnlyConstraintFlag(bool bVal)                                           { m_bIntraOnlyConstraintFlag = bVal;                                   }
   uint32_t                getMaxBitDepthConstraintIdc() const                                             { return m_maxBitDepthConstraintIdc;                                   }
@@ -1153,7 +1065,6 @@ public:
   void                    setNoDepQuantConstraintFlag(bool bVal)                                          { m_bNoDepQuantConstraintFlag = bVal;                                  }
   bool                    getNoSignDataHidingConstraintFlag() const                                       { return m_bNoSignDataHidingConstraintFlag;                            }
   void                    setNoSignDataHidingConstraintFlag(bool bVal)                                    { m_bNoSignDataHidingConstraintFlag = bVal;                            }
-#endif
   int                     getSPSId() const                                                                { return m_SPSId;                                                      }
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
   ChromaFormat            getChromaFormatIdc () const                                                     { return m_chromaFormatIdc;                                            }
@@ -1185,13 +1096,10 @@ public:
   void                    setLog2MinCodingBlockSize(int val)                                              { m_log2MinCodingBlockSize = val;                                      }
   int                     getLog2DiffMaxMinCodingBlockSize() const                                        { return m_log2DiffMaxMinCodingBlockSize;                              }
   void                    setLog2DiffMaxMinCodingBlockSize(int val)                                       { m_log2DiffMaxMinCodingBlockSize = val;                               }
-#if JVET_L0217_L0678_SPS_CLEANUP
   void                    setCTUSize(unsigned    ctuSize)                                                 { m_CTUSize = ctuSize; }
   unsigned                getCTUSize()                                                              const { return  m_CTUSize; }
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   void                    setSplitConsOverrideEnabledFlag(bool b)                                         { m_partitionOverrideEnalbed = b; }
   bool                    getSplitConsOverrideEnabledFlag()                                         const { return m_partitionOverrideEnalbed; }
-#endif
   void                    setMinQTSizes(unsigned*   minQT)                                                { m_minQT[0] = minQT[0]; m_minQT[1] = minQT[1]; m_minQT[2] = minQT[2]; }
   unsigned                getMinQTSize(SliceType   slicetype,
                                        ChannelType chType = CHANNEL_TYPE_LUMA)
@@ -1210,7 +1118,6 @@ public:
   unsigned                getMaxBTSize()                                                            const { return m_maxBTSize[1]; }
   unsigned                getMaxBTSizeI()                                                           const { return m_maxBTSize[0]; }
   unsigned                getMaxBTSizeIChroma()                                                     const { return m_maxBTSize[2]; }
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   void                    setMaxTTSize(unsigned    maxTTSize,
                                        unsigned    maxTTSizeI,
                                        unsigned    maxTTSizeC)
@@ -1218,11 +1125,9 @@ public:
   unsigned                getMaxTTSize()                                                            const { return m_maxTTSize[1]; }
   unsigned                getMaxTTSizeI()                                                           const { return m_maxTTSize[0]; }
   unsigned                getMaxTTSizeIChroma()                                                     const { return m_maxTTSize[2]; }
-#endif 
 
   void                    setUseDualITree(bool b) { m_dualITree = b; }
   bool                    getUseDualITree()                                      const { return m_dualITree; }
-#endif
 
   void                    setMaxCUWidth( uint32_t u )                                                         { m_uiMaxCUWidth = u;                                                  }
   uint32_t                    getMaxCUWidth() const                                                           { return  m_uiMaxCUWidth;                                              }
@@ -1318,12 +1223,10 @@ public:
   bool                    getUseALF() const { return m_useALF; }
   void                    setUseALF( bool b ) { m_useALF = b; }
 
-#if JVET_L0231_WRAPAROUND
   void                    setUseWrapAround(bool b)                                                        { m_useWrapAround = b;                                                 }
   bool                    getUseWrapAround() const                                                        { return m_useWrapAround;                                              }
   void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
   unsigned                getWrapAroundOffset() const                                                     { return m_wrapAroundOffset;                                           }
-#endif
 };
 
 
@@ -1682,9 +1585,7 @@ private:
 
   uint32_t                       m_colRefIdx;
   uint32_t                       m_maxNumMergeCand;
-#if JVET_L0632_AFFINE_MERGE
   uint32_t                   m_maxNumAffineMergeCand;
-#endif
 
   double                     m_lambdas[MAX_NUM_COMPONENT];
 
@@ -1730,16 +1631,11 @@ private:
 
   bool                       m_enableTMVPFlag;
 
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  bool                       m_subPuMvpSubBlkSizeSliceEnable;
-  int                        m_subPuMvpSubBlkLog2Size;
-#endif 
 
   SliceType                  m_encCABACTableIdx;           // Used to transmit table selection across slices.
 
   clock_t                    m_iProcessingStartTime;
   double                     m_dProcessingTime;
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   bool                       m_splitConsOverrideFlag;
   uint32_t                   m_uiMinQTSize;
   uint32_t                   m_uiMaxBTDepth;
@@ -1749,13 +1645,10 @@ private:
   uint32_t                   m_uiMaxBTDepthIChroma;
   uint32_t                   m_uiMaxBTSizeIChroma;
   uint32_t                   m_uiMaxTTSizeIChroma;
-#endif
   uint32_t                       m_uiMaxBTSize;
 
   AlfSliceParam              m_alfSliceParam;
-#if  JVET_L0266_HMVP
   LutMotionCand*             m_MotionCandLut;
-#endif
 
 public:
                               Slice();
@@ -1863,7 +1756,6 @@ public:
   void                        setLambdas( const double lambdas[MAX_NUM_COMPONENT] )  { for (int component = 0; component < MAX_NUM_COMPONENT; component++) m_lambdas[component] = lambdas[component]; }
   const double*               getLambdas() const                                     { return m_lambdas;                                             }
 
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   void                        setSplitConsOverrideFlag(bool b)                       { m_splitConsOverrideFlag = b; }
   bool                        getSplitConsOverrideFlag() const                       { return m_splitConsOverrideFlag; }
   void                        setMinQTSize(int i)                                    { m_uiMinQTSize = i; }
@@ -1881,7 +1773,6 @@ public:
   uint32_t                    getMaxBTSizeIChroma() const                            { return m_uiMaxBTSizeIChroma; }
   void                        setMaxTTSizeIChroma(int i)                             { m_uiMaxTTSizeIChroma = i; }
   uint32_t                    getMaxTTSizeIChroma() const                            { return m_uiMaxTTSizeIChroma; }
-#endif
   void                        setMaxBTSize(int i)                                    { m_uiMaxBTSize = i; }
   uint32_t                        getMaxBTSize() const                                   { return m_uiMaxBTSize; }
 
@@ -1928,10 +1819,8 @@ public:
   );
   void                        setMaxNumMergeCand(uint32_t val )                          { m_maxNumMergeCand = val;                                      }
   uint32_t                    getMaxNumMergeCand() const                             { return m_maxNumMergeCand;                                     }
-#if JVET_L0632_AFFINE_MERGE
   void                        setMaxNumAffineMergeCand( uint32_t val )               { m_maxNumAffineMergeCand = val;  }
   uint32_t                    getMaxNumAffineMergeCand() const                       { return m_maxNumAffineMergeCand; }
-#endif
 
   void                        setNoOutputPriorPicsFlag( bool val )                   { m_noOutputPriorPicsFlag = val;                                }
   bool                        getNoOutputPriorPicsFlag() const                       { return m_noOutputPriorPicsFlag;                               }
@@ -2016,12 +1905,6 @@ public:
   void                        setEncCABACTableIdx( SliceType idx )                   { m_encCABACTableIdx = idx;                                     }
   SliceType                   getEncCABACTableIdx() const                            { return m_encCABACTableIdx;                                    }
 
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  void                        setSubPuMvpSliceSubblkSizeEnable(bool b) { m_subPuMvpSubBlkSizeSliceEnable = b; }
-  bool                        getSubPuMvpSliceSubblkSizeEnable()                  const { return m_subPuMvpSubBlkSizeSliceEnable; }
-  void                        setSubPuMvpSubblkLog2Size(int n) { m_subPuMvpSubBlkLog2Size = n; }
-  int                         getSubPuMvpSubblkLog2Size()                         const { return m_subPuMvpSubBlkLog2Size; }
-#endif 
 
   void                        setSliceQpBase( int i )                                { m_iSliceQpBase = i;                                           }
   int                         getSliceQpBase()                                 const { return m_iSliceQpBase;                                        }
@@ -2038,7 +1921,6 @@ public:
 
   void                        setAlfSliceParam( AlfSliceParam& alfSliceParam ) { m_alfSliceParam = alfSliceParam; }
   AlfSliceParam&              getAlfSliceParam() { return m_alfSliceParam; }
-#if  JVET_L0266_HMVP
   void                        initMotionLUTs       ();
   void                        destroyMotionLUTs    ();
   void                        resetMotionLUTs();
@@ -2051,7 +1933,6 @@ public:
 
   void                        updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu);
   void                        copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst);
-#endif
 
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
@@ -2290,31 +2171,13 @@ public:
     , fastDeltaQPCuMaxSize( Clip3(sps.getMaxCUHeight() >> (sps.getLog2DiffMaxMinCodingBlockSize()), sps.getMaxCUHeight(), 32u) )
     , noChroma2x2         (  false )
     , isEncoder           ( _isEncoder )
-#if JVET_L0217_L0678_SPS_CLEANUP
     , ISingleTree         ( !sps.getUseDualITree() )
     , maxBtDepth          { sps.getMaxBTDepthI(), sps.getMaxBTDepth(), sps.getMaxBTDepthIChroma() }
     , minBtSize           { MIN_BT_SIZE, MIN_BT_SIZE_INTER, MIN_BT_SIZE_C }
     , maxBtSize           { sps.getMaxBTSizeI(), sps.getMaxBTSize(), sps.getMaxBTSizeIChroma() }
     , minTtSize           { MIN_TT_SIZE, MIN_TT_SIZE_INTER, MIN_TT_SIZE_C }
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
     , maxTtSize           { sps.getMaxTTSizeI(), sps.getMaxTTSize(), sps.getMaxTTSizeIChroma() }
-#else
-    , maxTtSize           { MAX_TT_SIZE, MAX_TT_SIZE_INTER, MAX_TT_SIZE_C }
-#endif
     , minQtSize           { sps.getMinQTSize(I_SLICE, CHANNEL_TYPE_LUMA), sps.getMinQTSize(B_SLICE, CHANNEL_TYPE_LUMA), sps.getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA) }
-#else
-    , ISingleTree         ( !sps.getSpsNext().getUseDualITree() )
-    , maxBtDepth          { sps.getSpsNext().getMaxBTDepthI(), sps.getSpsNext().getMaxBTDepth(), sps.getSpsNext().getMaxBTDepthIChroma() }
-    , minBtSize           { MIN_BT_SIZE, MIN_BT_SIZE_INTER, MIN_BT_SIZE_C }
-    , maxBtSize           { sps.getSpsNext().getMaxBTSizeI(), sps.getSpsNext().getMaxBTSize(), sps.getSpsNext().getMaxBTSizeIChroma() }
-    , minTtSize           { MIN_TT_SIZE, MIN_TT_SIZE_INTER, MIN_TT_SIZE_C }
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-    , maxTtSize           { sps.getSpsNext().getMaxTTSizeI(), sps.getSpsNext().getMaxTTSize(), sps.getSpsNext().getMaxTTSizeIChroma() }
-#else
-    , maxTtSize           { MAX_TT_SIZE, MAX_TT_SIZE_INTER, MAX_TT_SIZE_C }
-#endif
-    , minQtSize           { sps.getSpsNext().getMinQTSize( I_SLICE, CHANNEL_TYPE_LUMA ), sps.getSpsNext().getMinQTSize( B_SLICE, CHANNEL_TYPE_LUMA ), sps.getSpsNext().getMinQTSize( I_SLICE, CHANNEL_TYPE_CHROMA ) }
-#endif
   {}
 
   const ChromaFormat chrFormat;

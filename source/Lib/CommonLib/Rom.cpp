@@ -180,7 +180,6 @@ public:
     return rtn;
   }
 };
-#if JVET_L0191_LM_WO_LMS
 int g_aiLMDivTableLow[] = {
   0,     0,     21845, 0,     13107, 43690, 18724, 0,     50972, 39321, 53620, 21845, 15123, 9362,  4369,  0,     3855,
   58254, 17246, 52428, 49932, 59578, 25644, 43690, 28835, 40329, 16990, 37449, 56496, 34952, 4228,  0,     61564, 34695,
@@ -245,11 +244,6 @@ int g_aiLMDivTableHigh[] = {
   134,   134,   134,   133,   133,   133,   132,  132,  132,  132,  131,  131,  131,  131,  130,  130,  130,  130,
   129,   129,   129,   129,   128,   128,   128,  128,
 };
-#endif
-#if !JVET_L0338_MDLM
-const int g_aiNonLMPosThrs[] = {  3,  1,  0 };
-#endif
-#if JVET_L0646_GBI
 const int8_t g_GbiLog2WeightBase = 3;
 const int8_t g_GbiWeightBase = (1 << g_GbiLog2WeightBase);
 const int8_t g_GbiWeights[GBI_NUM] = { -2, 3, 4, 5, 10 };
@@ -313,16 +307,11 @@ uint32_t deriveWeightIdxBits(uint8_t gbiIdx) // Note: align this with TEncSbac::
   }
   return numBits;
 }
-#endif
 
 // initialize ROM variables
 void initROM()
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
   int c;
-#else
-  int i, c;
-#endif
 
 #if RExt__HIGH_BIT_DEPTH_SUPPORT
   {
@@ -372,51 +361,6 @@ void initROM()
     g_aucLog2    [i] = c;
   }
 
-#if !JVET_L0285_8BIT_TRANSFORM_CORE
-  c = 2; //for the 2x2 transforms if QTBT is on
-
-  const double PI = 3.14159265358979323846;
-
-  for (i = 0; i < g_numTransformMatrixSizes; i++)
-  {
-    TMatrixCoeff *iT = NULL;
-    const double s = sqrt((double)c) * (64 << COM16_C806_TRANS_PREC);
-
-    switch (i)
-    {
-      case 0: iT = g_aiTr2[0][0]; break;
-      case 1: iT = g_aiTr4[0][0]; break;
-      case 2: iT = g_aiTr8[0][0]; break;
-      case 3: iT = g_aiTr16[0][0]; break;
-      case 4: iT = g_aiTr32[0][0]; break;
-      case 5: iT = g_aiTr64[0][0]; break;
-      default: exit(0); break;
-    }
-
-    for (int k = 0; k < c; k++)
-    {
-      for (int n = 0; n < c; n++)
-      {
-        double w0, v;
-
-        // DCT-II
-        w0 = k == 0 ? sqrt(0.5) : 1;
-        v = cos(PI*(n + 0.5)*k / c) * w0 * sqrt(2.0 / c);
-        iT[DCT2*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-        // DCT-VIII
-        v = cos(PI*(k + 0.5)*(n + 0.5) / (c + 0.5)) * sqrt(2.0 / (c + 0.5));
-        iT[DCT8*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-        // DST-VII
-        v = sin(PI*(k + 0.5)*(n + 1) / (c + 0.5)) * sqrt(2.0 / (c + 0.5));
-        iT[DST7*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-      }
-    }
-    c <<= 1;
-  }
-#endif
 
   gp_sizeIdxInfo = new SizeIndexInfoLog2();
   gp_sizeIdxInfo->init(MAX_CU_SIZE);
@@ -529,7 +473,6 @@ void initROM()
     }
   }
 
-#if JVET_L0124_L0208_TRIANGLE
   for( int idxH = MAX_CU_DEPTH - MIN_CU_LOG2; idxH >= 0; --idxH )
   {
     for( int idxW = MAX_CU_DEPTH - MIN_CU_LOG2; idxW >= 0; --idxW )
@@ -551,7 +494,6 @@ void initROM()
       }
     }
   }
-#endif
 }
 
 void destroyROM()
@@ -621,19 +563,7 @@ const int g_invQuantScales[SCALING_LIST_REM_NUM] =
 //structures
 
 //EMT threshold
-#if !JVET_L0059_MTS_SIMP
-const uint32_t g_EmtSigNumThr = 2;
-#endif
 
-#if !JVET_L0285_8BIT_TRANSFORM_CORE
-//EMT transform coeficient variable
-TMatrixCoeff g_aiTr2  [NUM_TRANS_TYPE][  2][  2];
-TMatrixCoeff g_aiTr4  [NUM_TRANS_TYPE][  4][  4];
-TMatrixCoeff g_aiTr8  [NUM_TRANS_TYPE][  8][  8];
-TMatrixCoeff g_aiTr16 [NUM_TRANS_TYPE][ 16][ 16];
-TMatrixCoeff g_aiTr32 [NUM_TRANS_TYPE][ 32][ 32];
-TMatrixCoeff g_aiTr64 [NUM_TRANS_TYPE][ 64][ 64];
-#endif
 
 //--------------------------------------------------------------------------------------------------
 //coefficients
@@ -740,7 +670,6 @@ const uint32_t g_uiMinInGroup[LAST_SIGNIFICANT_GROUPS] = { 0,1,2,3,4,6,8,12,16,2
 const uint32_t g_uiGroupIdx[MAX_TU_SIZE] = { 0,1,2,3,4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9, 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
 ,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12
 ,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13 };
-#if JVET_L0274
 const uint32_t g_auiGoRiceParsCoeff[32] =
 {
   0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3
@@ -751,15 +680,6 @@ const uint32_t g_auiGoRicePosCoeff0[3][32] =
   {1, 1, 1, 1, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16,    16, 16, 16, 16},
   {1, 1, 2, 2, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 16, 16, 16,    16, 16, 16, 16}
 };
-#else
-const uint32_t g_auiGoRicePars[ 32 ] =
-{
-  0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0,
-  0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 2, 2, 2, 2, 2, 2, 2
-};
-#endif
 const uint32_t g_auiGoRiceRange[MAX_GR_ORDER_RESIDUAL] =
 {
   6, 5, 6, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION
@@ -883,7 +803,6 @@ const uint8_t g_NonMPM[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
 
-#if JVET_L0124_L0208_TRIANGLE
 const Pel g_trianglePelWeightedLuma[TRIANGLE_DIR_NUM][2][7] =
 { 
   { // TRIANGLE_DIR_135
@@ -943,5 +862,4 @@ const uint8_t g_triangleIdxBins[TRIANGLE_MAX_NUM_CANDS] =
    8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
   10, 10, 10, 10, 10, 10, 10, 10, 10, 10
 };
-#endif
 //! \}

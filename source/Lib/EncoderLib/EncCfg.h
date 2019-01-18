@@ -134,7 +134,6 @@ protected:
   bool      m_printSequenceMSE;
   bool      m_cabacZeroWordPaddingEnabled;
 
-#if JVET_L0696_CONSTRAINT_SYNTAX
   bool      m_bIntraOnlyConstraintFlag;
   uint32_t  m_maxBitDepthConstraintIdc;
   uint32_t  m_maxChromaFormatConstraintIdc;
@@ -152,7 +151,6 @@ protected:
   bool      m_bNoLadfConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
-#endif
 
   /* profile & level */
   Profile::Name m_profile;
@@ -192,9 +190,7 @@ protected:
   int       m_maxTempLayer;                      ///< Max temporal layer
   bool      m_useAMP;
   unsigned  m_CTUSize;
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   bool      m_useSplitConsOverride;
-#endif
   unsigned  m_uiMinQT[3]; //0: I slice; 1: P/B slice, 2: I slice chroma
   unsigned  m_uiMaxBTDepth;
   unsigned  m_uiMaxBTDepthI;
@@ -212,14 +208,9 @@ protected:
   int       m_FastInterEMT;
   bool      m_LargeCTU;
   int       m_SubPuMvpMode;
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  unsigned  m_SubPuMvpLog2Size;
-#endif 
   bool      m_Affine;
   bool      m_AffineType;
-#if JVET_L0256_BIO
   bool      m_BIO;
-#endif
   bool      m_DisableMotionCompression;
   unsigned  m_MTTMode;
 
@@ -227,10 +218,8 @@ protected:
   bool      m_AltDQPCoding;
 #endif
   bool      m_compositeRefEnabled;        //composite reference
-#if JVET_L0646_GBI
   bool      m_GBi;
   bool      m_GBiFast;
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool      m_LadfEnabled;
   int       m_LadfNumIntervals;
@@ -238,14 +227,9 @@ protected:
   int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool      m_MHIntra;
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   bool      m_Triangle;
-#endif
 
-#if JVET_L0293_CPR
   unsigned  m_CPRMode;
   unsigned  m_CPRLocalSearchRangeX;
   unsigned  m_CPRLocalSearchRangeY;
@@ -253,12 +237,9 @@ protected:
   unsigned  m_CPRHashSearchMaxCand;
   unsigned  m_CPRHashSearchRange4SmallBlk;
   unsigned  m_CPRFastMethod;
-#endif    
   
-#if JVET_L0231_WRAPAROUND
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
-#endif
 
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
 
@@ -474,9 +455,7 @@ protected:
   WeightedPredictionMethod m_weightedPredictionMethod;
   uint32_t      m_log2ParallelMergeLevelMinus2;       ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                    ///< Maximum number of merge candidates
-#if JVET_L0632_AFFINE_MERGE
   uint32_t      m_maxNumAffineMergeCand;              ///< Maximum number of affine merge candidates
-#endif
 #if HEVC_USE_SCALING_LISTS
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
@@ -592,7 +571,6 @@ public:
   void setProfile(Profile::Name profile) { m_profile = profile; }
   void setLevel(Level::Tier tier, Level::Name level) { m_levelTier = tier; m_level = level; }
 
-#if JVET_L0696_CONSTRAINT_SYNTAX
   bool      getIntraOnlyConstraintFlag() const { return m_bIntraOnlyConstraintFlag; }
   void      setIntraOnlyConstraintFlag(bool bVal) { m_bIntraOnlyConstraintFlag = bVal; }
   uint32_t  getMaxBitDepthConstraintIdc() const { return m_maxBitDepthConstraintIdc; }
@@ -627,7 +605,6 @@ public:
   void      setNoDepQuantConstraintFlag(bool bVal) { m_bNoDepQuantConstraintFlag = bVal; }
   bool      getNoSignDataHidingConstraintFlag() const { return m_bNoSignDataHidingConstraintFlag; }
   void      setNoSignDataHidingConstraintFlag(bool bVal) { m_bNoSignDataHidingConstraintFlag = bVal; }
-#endif
 
   void      setFrameRate                    ( int   i )      { m_iFrameRate = i; }
   void      setFrameSkip                    ( uint32_t  i )      { m_FrameSkip = i; }
@@ -687,10 +664,8 @@ public:
   unsigned  getMaxBTDepthI                  ()         const { return m_uiMaxBTDepthI; }
   unsigned  getMaxBTDepthIChroma            ()         const { return m_uiMaxBTDepthIChroma; }
   int       getCTUSize                      ()         const { return m_CTUSize; }
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   void      setUseSplitConsOverride         (bool  n)        { m_useSplitConsOverride = n; }
   bool      getUseSplitConsOverride         ()         const { return m_useSplitConsOverride; }
-#endif
   void      setDualITree                    ( bool b )       { m_dualITree = b; }
   bool      getDualITree                    ()         const { return m_dualITree; }
 
@@ -702,19 +677,13 @@ public:
 
   void      setSubPuMvpMode(int n)          { m_SubPuMvpMode = n; }
   bool      getSubPuMvpMode()         const { return m_SubPuMvpMode; }
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  void      setSubPuMvpLog2Size(unsigned n) { m_SubPuMvpLog2Size = n; }
-  unsigned  getSubPuMvpLog2Size()      const { return m_SubPuMvpLog2Size; }
-#endif 
 
   void      setAffine                       ( bool b )       { m_Affine = b; }
   bool      getAffine                       ()         const { return m_Affine; }
   void      setAffineType( bool b )                          { m_AffineType = b; }
   bool      getAffineType()                            const { return m_AffineType; }
-#if JVET_L0256_BIO
   void      setBIO(bool b)                                   { m_BIO = b; }
   bool      getBIO()                                   const { return m_BIO; }
-#endif
   void      setDisableMotionCompression     ( bool b )       { m_DisableMotionCompression = b; }
   bool      getDisableMotionCompression     ()         const { return m_DisableMotionCompression; }
 
@@ -740,12 +709,10 @@ public:
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }
-#if JVET_L0646_GBI
   void      setUseGBi                       ( bool b )       { m_GBi = b; }
   bool      getUseGBi                       ()         const { return m_GBi; }
   void      setUseGBiFast                   ( uint32_t b )   { m_GBiFast = b; }
   bool      getUseGBiFast                   ()         const { return m_GBiFast; }
-#endif
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   void      setUseLadf                      ( bool b )       { m_LadfEnabled = b; }
@@ -759,17 +726,12 @@ public:
 
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   void      setUseMHIntra                   ( bool b )       { m_MHIntra = b; }
   bool      getUseMHIntra                   ()         const { return m_MHIntra; }
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   void      setUseTriangle                  ( bool b )       { m_Triangle = b; }
   bool      getUseTriangle                  ()         const { return m_Triangle; }
-#endif
 
 
-#if JVET_L0293_CPR
   void      setCPRMode                      (unsigned n)     { m_CPRMode = n; }
   unsigned  getCPRMode                      ()         const { return m_CPRMode; }
   void      setCPRLocalSearchRangeX         (unsigned n)     { m_CPRLocalSearchRangeX = n; }
@@ -784,14 +746,11 @@ public:
   unsigned  getCPRHashSearchRange4SmallBlk  ()         const { return m_CPRHashSearchRange4SmallBlk; }
   void      setCPRFastMethod                (unsigned n)     { m_CPRFastMethod = n; }
   unsigned  getCPRFastMethod                ()         const { return m_CPRFastMethod; }
-#endif  
 
-#if JVET_L0231_WRAPAROUND
   void      setUseWrapAround                ( bool b )       { m_wrapAround = b; }
   bool      getUseWrapAround                ()         const { return m_wrapAround; }
   void      setWrapAroundOffset             ( unsigned u )   { m_wrapAroundOffset = u; }
   unsigned  getWrapAroundOffset             ()         const { return m_wrapAroundOffset; }
-#endif
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 
@@ -1254,10 +1213,8 @@ public:
   uint32_t         getLog2ParallelMergeLevelMinus2   ()                  { return m_log2ParallelMergeLevelMinus2;       }
   void         setMaxNumMergeCand                ( uint32_t u )          { m_maxNumMergeCand = u;      }
   uint32_t         getMaxNumMergeCand                ()                  { return m_maxNumMergeCand;   }
-#if JVET_L0632_AFFINE_MERGE
   void         setMaxNumAffineMergeCand          ( uint32_t u )      { m_maxNumAffineMergeCand = u;    }
   uint32_t     getMaxNumAffineMergeCand          ()                  { return m_maxNumAffineMergeCand; }
-#endif
 #if HEVC_USE_SCALING_LISTS
   void         setUseScalingListId    ( ScalingListMode u )          { m_useScalingListId       = u;   }
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }

@@ -603,6 +603,83 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               }
             }
 
+            // tracing Motion buffers
+            CMotionBuf mb = pu.getMotionBuf();
+            // todo: assuming granulatiry == 4. can it be derived?
+            for( int y = 0; y < mb.height; y++ )
+            {
+              for( int x = 0; x < mb.width; x++ )
+              {
+                const MotionInfo &pixMi = mb.at( x, y );
+
+                if( pixMi.interDir == 1)
+                {
+                  const Mv mv = pixMi.mv[REF_PIC_LIST_0];
+                  g_trace_ctx->dtrace<false>(
+                    D_BLOCK_STATISTICS_ALL,
+                    "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
+                     cs.picture->poc,
+                     pu.lx() + 4*x,
+                     pu.ly() + 4*y,
+                     4,
+                     4,
+                     GetBlockStatisticName(BlockStatistic::MotionBufL0).c_str(),
+                     mv.hor,
+                     mv.ver);
+                }
+                else if( pixMi.interDir == 2)
+                {
+                  const Mv mv = pixMi.mv[REF_PIC_LIST_1];
+                  g_trace_ctx->dtrace<false>(
+                    D_BLOCK_STATISTICS_ALL,
+                    "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
+                     cs.picture->poc,
+                     pu.lx() + 4*x,
+                     pu.ly() + 4*y,
+                     4,
+                     4,
+                     GetBlockStatisticName(BlockStatistic::MotionBufL1).c_str(),
+                     mv.hor,
+                     mv.ver);
+                }
+                else if( pixMi.interDir == 3)
+                {
+                  {
+                    const Mv mv = pixMi.mv[REF_PIC_LIST_0];
+                    g_trace_ctx->dtrace<false>(
+                      D_BLOCK_STATISTICS_ALL,
+                      "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
+                      cs.picture->poc,
+                      pu.lx() + 4*x,
+                      pu.ly() + 4*y,
+                      4,
+                      4,
+                      GetBlockStatisticName(BlockStatistic::MotionBufL0).c_str(),
+                      mv.hor,
+                      mv.ver);
+                  }
+                  {
+                    const Mv mv = pixMi.mv[REF_PIC_LIST_1];
+                    g_trace_ctx->dtrace<false>(
+                      D_BLOCK_STATISTICS_ALL,
+                      "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
+                      cs.picture->poc,
+                      pu.lx() + 4*x,
+                      pu.ly() + 4*y,
+                      4,
+                      4,
+                      GetBlockStatisticName(BlockStatistic::MotionBufL1).c_str(),
+                      mv.hor,
+                      mv.ver);
+                  }
+                }
+
+              }
+            }
+
+
+
+
           }
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::RootCbf), cu.rootCbf);

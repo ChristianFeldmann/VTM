@@ -130,9 +130,6 @@ protected:
 
   void xFilterGroup               ( Pel* pMulDst[], int i, Pel const* const piSrc, int iRecStride, bool bAboveAvaillable, bool bLeftAvaillable);
   void xGetLMParameters(const PredictionUnit &pu, const ComponentID compID, const CompArea& chromaArea, int& a, int& b, int& iShift);
-#if JVET_L0338_MDLM && !JVET_L0191_LM_WO_LMS
-  void xPadMdlmTemplateSample    (Pel*pSrc, Pel*pCur, int cWidth, int cHeight, int existSampNum, int targetSampNum);
-#endif
 public:
   IntraPrediction();
   virtual ~IntraPrediction();

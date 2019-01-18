@@ -131,7 +131,6 @@
 #endif
 
 
-#define JVET_L0198_ATMVP_SCAN_SIMP                        1  // Simplification for scan process in ATMVP cTMv derivation
 #define JVET_L0696_CONSTRAINT_SYNTAX                      1 // Starting point for interoperability point syntax
 #define JVET_L0428_DQP_SEP_TREE                           1  // Delta QP for Separate Tree
 // ====================================================================================================================

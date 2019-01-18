@@ -3198,7 +3198,6 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   bool terminate = false;
   for (unsigned currRefListId = 0; currRefListId < (slice.getSliceType() == B_SLICE ? 2 : 1) && !terminate; currRefListId++)
   {
-#if JVET_L0198_ATMVP_SCAN_SIMP
     if ( count )
     {
       RefPicList currRefPicList = RefPicList(slice.getCheckLDC() ? (slice.getColFromL0Flag() ? currRefListId : 1 - currRefListId) : currRefListId);
@@ -3211,24 +3210,6 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
         break;
       }
     }
-#else
-    for (int uiN = 0; uiN < count && !terminate; uiN++)
-    {
-      RefPicList currRefPicList = RefPicList(slice.getCheckLDC() ? (slice.getColFromL0Flag() ? currRefListId : 1 - currRefListId) : currRefListId);
-      //if (mrgCtx.mrgTypeNeighbours[uiN] == MRG_TYPE_CPR)
-      if (((mrgCtx.interDirNeighbours[uiN] == 1) || (mrgCtx.interDirNeighbours[uiN] == 3)) && slice.getRefPic(REF_PIC_LIST_0, mrgCtx.mvFieldNeighbours[uiN << 1].refIdx)->getPOC() == slice.getPOC())
-      {
-        continue;
-      }
-      if ((mrgCtx.interDirNeighbours[uiN] & (1 << currRefPicList)) && slice.getRefPic(currRefPicList, mrgCtx.mvFieldNeighbours[uiN * 2 + currRefPicList].refIdx) == pColPic)
-      {
-        cTMv = mrgCtx.mvFieldNeighbours[uiN * 2 + currRefPicList].mv;
-        terminate = true;
-        fetchRefPicList = currRefPicList;
-        break;
-      }
-    }
-#endif
   }
 
   ///////////////////////////////////////////////////////////////////////

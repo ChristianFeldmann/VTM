@@ -54,7 +54,6 @@
 #define TRAINED_CABAC_INIT_TABLES                         1 // Trained values for VTM3
 
 
-#define JVET_L0165_6MPM                                   1 // Use 6 MPM for 67 intra prediction modes
 #define JVET_L0279_WAIP_CLEANUP                           1 // WAIP cleanup
 
 #define JVET_L0118_ALIGN_MTS_INDEX                        1 // Align mts_index on intra and inter

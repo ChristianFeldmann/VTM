@@ -1905,10 +1905,8 @@ SPS::SPS()
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_spsNextExtension          (*this)
-#if JVET_L0231_WRAPAROUND
 , m_useWrapAround             (false)
 , m_wrapAroundOffset          (  0)
-#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {

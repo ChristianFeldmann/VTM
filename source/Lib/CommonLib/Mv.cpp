@@ -50,9 +50,7 @@ void roundAffineMv( int& mvx, int& mvy, int nShift )
 }
 
 void clipMv( Mv& rcMv, const Position& pos,
-#if JVET_L0231_WRAPAROUND
              const struct Size& size,
-#endif
              const SPS& sps )
 {
   int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
@@ -63,7 +61,6 @@ void clipMv( Mv& rcMv, const Position& pos,
   int iVerMax = ( sps.getPicHeightInLumaSamples() + iOffset - ( int ) pos.y - 1 ) << iMvShift;
   int iVerMin = ( -( int ) sps.getMaxCUHeight()   - iOffset - ( int ) pos.y + 1 ) << iMvShift;
 
-#if JVET_L0231_WRAPAROUND
   if( sps.getUseWrapAround() )
   {
     int iHorMax = ( sps.getPicWidthInLumaSamples() + sps.getMaxCUWidth() - size.width + iOffset - ( int ) pos.x - 1 ) << iMvShift;
@@ -72,7 +69,6 @@ void clipMv( Mv& rcMv, const Position& pos,
     rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );
     return;
   }
-#endif
 
   rcMv.setHor( std::min( iHorMax, std::max( iHorMin, rcMv.getHor() ) ) );
   rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );

@@ -1280,14 +1280,10 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
   rcMvSrchRngLT <<= 2;
   rcMvSrchRngRB <<= 2;
   clipMv(rcMvSrchRngLT, pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
          pu.cu->lumaSize(),
-#endif
          sps);
   clipMv(rcMvSrchRngRB, pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
          pu.cu->lumaSize(),
-#endif
          sps);
   rcMvSrchRngLT >>= 2;
   rcMvSrchRngRB >>= 2;
@@ -2316,9 +2312,7 @@ Distortion InterSearch::xGetTemplateCost( const PredictionUnit& pu,
   const Picture* picRef = pu.cu->slice->getRefPic( eRefPicList, iRefIdx );
   cMvCand.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL); 
   clipMv( cMvCand, pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
           pu.cu->lumaSize(),
-#endif
           *pu.cs->sps );
 
 
@@ -2537,23 +2531,17 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
   Mv cFPMvPred = cMvPred;
   cFPMvPred.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL); 
   clipMv( cFPMvPred, pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
           pu.cu->lumaSize(),
-#endif
           *pu.cs->sps );
 
   Mv mvTL(cFPMvPred.getHor() - (iSrchRng << iMvShift), cFPMvPred.getVer() - (iSrchRng << iMvShift));
   Mv mvBR(cFPMvPred.getHor() + (iSrchRng << iMvShift), cFPMvPred.getVer() + (iSrchRng << iMvShift));
 
   clipMv( mvTL, pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
           pu.cu->lumaSize(),
-#endif
           *pu.cs->sps );
   clipMv( mvBR, pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
           pu.cu->lumaSize(),
-#endif
           *pu.cs->sps );
 
   mvTL.divideByPowerOf2( iMvShift );
@@ -2699,9 +2687,7 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
   int iSearchRange = m_iSearchRange;
   rcMv.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL); 
   clipMv( rcMv, pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
           pu.cu->lumaSize(),
-#endif
           *pu.cs->sps );
   rcMv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER); 
   rcMv.divideByPowerOf2(2);
@@ -2737,9 +2723,7 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
     Mv integerMv2Nx2NPred = *pIntegerMv2Nx2NPred;
     integerMv2Nx2NPred.changePrecision(MV_PRECISION_INT, MV_PRECISION_INTERNAL);
     clipMv( integerMv2Nx2NPred, pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
             pu.cu->lumaSize(),
-#endif
             *pu.cs->sps );
     integerMv2Nx2NPred.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
     integerMv2Nx2NPred.divideByPowerOf2(2);
@@ -2969,9 +2953,7 @@ void InterSearch::xTZSearchSelective( const PredictionUnit& pu,
   int   iDist                   = 0;
   rcMv.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
   clipMv( rcMv, pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
           pu.cu->lumaSize(),
-#endif
           *pu.cs->sps );
   rcMv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
   rcMv.divideByPowerOf2(2);
@@ -3001,9 +2983,7 @@ void InterSearch::xTZSearchSelective( const PredictionUnit& pu,
     Mv integerMv2Nx2NPred = *pIntegerMv2Nx2NPred;
     integerMv2Nx2NPred.changePrecision(MV_PRECISION_INT, MV_PRECISION_INTERNAL);
     clipMv( integerMv2Nx2NPred, pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
             pu.cu->lumaSize(),
-#endif
             *pu.cs->sps );
     integerMv2Nx2NPred.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
     integerMv2Nx2NPred.divideByPowerOf2(2);
@@ -3147,9 +3127,7 @@ void InterSearch::xPatternSearchIntRefine(PredictionUnit& pu, IntTZSearchStruct&
         Mv cTempMV = cTestMv[iMVPIdx];
         cTempMV.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
         clipMv(cTempMV, pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
                pu.cu->lumaSize(),
-#endif
                sps);
         cTempMV.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
         m_cDistParam.cur.buf = cStruct.piRefY  + cStruct.iRefStride * (cTempMV.getVer() >>  2) + (cTempMV.getHor() >> 2);
@@ -3413,9 +3391,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
           roundAffineMv(vx, vy, shift);
           mvTmp[0] = Mv(vx, vy);
           clipMv(mvTmp[0], pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
                  pu.cu->lumaSize(),
-#endif
                  *pu.cs->sps);
           mvTmp[0].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
           vx = mvScaleHor + dMvHorX * (pu.Y().x + pu.Y().width - mvInfo->x) + dMvVerX * (pu.Y().y - mvInfo->y);
@@ -3423,9 +3399,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
           roundAffineMv(vx, vy, shift);
           mvTmp[1] = Mv(vx, vy);
           clipMv(mvTmp[1], pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
                  pu.cu->lumaSize(),
-#endif
                  *pu.cs->sps);
           mvTmp[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
           mvTmp[0].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
@@ -4154,21 +4128,15 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
 
   // do motion compensation with origin mv
   clipMv( acMvTemp[0], pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
           pu.cu->lumaSize(),
-#endif
           *pu.cs->sps );
   clipMv( acMvTemp[1], pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
           pu.cu->lumaSize(),
-#endif
           *pu.cs->sps );
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
     clipMv( acMvTemp[2], pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
             pu.cu->lumaSize(),
-#endif
             *pu.cs->sps );
   }
   xPredAffineBlk( COMPONENT_Y, pu, refPic, acMvTemp, predBuf, false, pu.cs->slice->clpRng( COMPONENT_Y ) );
@@ -4325,9 +4293,7 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
       acMvTemp[i].ver = Clip3( -32768, 32767, acMvTemp[i].ver );
       acMvTemp[i].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
       clipMv(acMvTemp[i], pu.cu->lumaPos(),
-#if JVET_L0231_WRAPAROUND
              pu.cu->lumaSize(),
-#endif
              *pu.cs->sps);
     }
     xPredAffineBlk( COMPONENT_Y, pu, refPic, acMvTemp, predBuf, false, pu.cu->slice->clpRng( COMPONENT_Y ) );

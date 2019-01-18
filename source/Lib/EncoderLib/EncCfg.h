@@ -255,10 +255,8 @@ protected:
   unsigned  m_CPRFastMethod;
 #endif    
   
-#if JVET_L0231_WRAPAROUND
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
-#endif
 
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
 
@@ -786,12 +784,10 @@ public:
   unsigned  getCPRFastMethod                ()         const { return m_CPRFastMethod; }
 #endif  
 
-#if JVET_L0231_WRAPAROUND
   void      setUseWrapAround                ( bool b )       { m_wrapAround = b; }
   bool      getUseWrapAround                ()         const { return m_wrapAround; }
   void      setWrapAroundOffset             ( unsigned u )   { m_wrapAroundOffset = u; }
   unsigned  getWrapAroundOffset             ()         const { return m_wrapAroundOffset; }
-#endif
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 

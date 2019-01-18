@@ -1172,13 +1172,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode, "pcm_loop_filter_disable_flag" );                 pcSPS->setPCMFilterDisableFlag ( uiCode ? true : false );
   }
 
-#if JVET_L0231_WRAPAROUND
   READ_FLAG(uiCode, "ref_wraparound_enabled_flag");                 pcSPS->setUseWrapAround( uiCode ? true : false );
   if (pcSPS->getUseWrapAround())
   {
     READ_UVLC(uiCode, "ref_wraparound_offset");                     pcSPS->setWrapAroundOffset( uiCode );
   }
-#endif
 
   READ_UVLC( uiCode, "num_short_term_ref_pic_sets" );
   CHECK(uiCode > 64, "Invalid code");

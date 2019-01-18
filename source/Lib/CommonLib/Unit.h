@@ -346,9 +346,7 @@ struct CodingUnit : public UnitArea
 struct IntraPredictionData
 {
   uint32_t  intraDir[MAX_NUM_CHANNEL_TYPE];
-#if JVET_L0283_MULTI_REF_LINE
   int       multiRefIdx;
-#endif
 };
 
 struct InterPredictionData

@@ -383,7 +383,6 @@ const CtxSet ContextSetCfg::PredMode = ContextSetCfg::addCtxSet
 #endif
 });
 
-#if JVET_L0283_MULTI_REF_LINE
 const CtxSet ContextSetCfg::MultiRefLineIdx = ContextSetCfg::addCtxSet
 ({
 #if TRAINED_CABAC_INIT_TABLES
@@ -396,7 +395,6 @@ const CtxSet ContextSetCfg::MultiRefLineIdx = ContextSetCfg::addCtxSet
   { CNU, CNU, CNU },
 #endif
   });
-#endif
 
 const CtxSet ContextSetCfg::IPredMode[] =
 {

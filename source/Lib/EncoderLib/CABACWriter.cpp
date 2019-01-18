@@ -644,9 +644,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
   // prediction mode and partitioning data
   pred_mode ( cu );
 
-#if JVET_L0283_MULTI_REF_LINE
   extend_ref_line(cu);
-#endif
 
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
@@ -821,7 +819,6 @@ void CABACWriter::xWriteTruncBinCode(uint32_t symbol, uint32_t maxSymbol)
   }
 }
 
-#if JVET_L0283_MULTI_REF_LINE
 void CABACWriter::extend_ref_line(const PredictionUnit& pu)
 {
   const CodingUnit& cu = *pu.cu;
@@ -883,7 +880,6 @@ void CABACWriter::extend_ref_line(const CodingUnit& cu)
     pu = pu->next;
   }
 }
-#endif
 
 void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
 {
@@ -919,13 +915,11 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
         break;
       }
     }
-#if JVET_L0283_MULTI_REF_LINE
     if (pu->multiRefIdx)
     {
       CHECK(mpm_idx >= numMPMs, "use of non-MPM");
     }
     else
-#endif
     m_BinEncoder.encodeBin( mpm_idx < numMPMs, Ctx::IPredMode[0]() );
 
     pu = pu->next;
@@ -1006,13 +1000,11 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
       break;
     }
   }
-#if JVET_L0283_MULTI_REF_LINE
   if (pu.multiRefIdx)
   {
     CHECK(mpm_idx >= numMPMs, "use of non-MPM");
   }
   else
-#endif
   m_BinEncoder.encodeBin( mpm_idx < numMPMs, Ctx::IPredMode[0]() );
 
   // mpm_idx / rem_intra_luma_pred_mode

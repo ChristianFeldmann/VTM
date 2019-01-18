@@ -73,9 +73,7 @@ enum class BlockStatistic {
   IPCM,
   Luma_IntraMode,
   Chroma_IntraMode,
-#if JVET_L0283_MULTI_REF_LINE
   MultiRefIdx,
-#endif
   // inter
   SkipFlag,
   RootCbf,
@@ -188,9 +186,7 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::EMTFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"EMTFlag",                     BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::MotionBufL0,            std::tuple<std::string, BlockStatisticType, std::string>{"MotionBufL0",                 BlockStatisticType::Vector,                 "Scale: 16"}},
   { BlockStatistic::MotionBufL1,            std::tuple<std::string, BlockStatisticType, std::string>{"MotionBufL1",                 BlockStatisticType::Vector,                 "Scale: 16"}},
-#if JVET_L0283_MULTI_REF_LINE
   { BlockStatistic::MultiRefIdx,            std::tuple<std::string, BlockStatisticType, std::string>{"MultiRefIdx",                 BlockStatisticType::Integer,                "[0, 1]"}}, 
-#endif
   { BlockStatistic::MMVDSkipFlag,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDSkipFlag",                BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::MMVDMergeFlag,          std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeFlag",               BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::MMVDMergeIdx,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeIdx",                BlockStatisticType::Integer,                "[0, 1]"}}, 

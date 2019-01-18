@@ -83,9 +83,7 @@ public:
 #if JVET_L0646_GBI
   void        cu_gbi_flag               ( CodingUnit&                   cu );
 #endif
-#if JVET_L0283_MULTI_REF_LINE
   void        extend_ref_line           (CodingUnit&                     cu);
-#endif
   void        intra_luma_pred_modes     ( CodingUnit&                   cu );
   void        intra_chroma_pred_modes   ( CodingUnit&                   cu );
   bool        intra_chroma_lmc_mode     ( PredictionUnit&               pu );

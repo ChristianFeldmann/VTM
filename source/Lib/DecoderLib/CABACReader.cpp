@@ -729,9 +729,7 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
     }
   }
 
-#if JVET_L0283_MULTI_REF_LINE
   extend_ref_line( cu );
-#endif
 
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
@@ -951,7 +949,6 @@ void CABACReader::xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol)
     symbol -= (val - b);
   }
 }
-#if JVET_L0283_MULTI_REF_LINE
 void CABACReader::extend_ref_line(CodingUnit& cu)
 {
   if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType))
@@ -991,7 +988,6 @@ void CABACReader::extend_ref_line(CodingUnit& cu)
     pu = pu->next;
   }
 }
-#endif
 
 void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
 {
@@ -1007,14 +1003,12 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
   int mpmFlag[4];
   for( int k = 0; k < numBlocks; k++ )
   {
-#if JVET_L0283_MULTI_REF_LINE
     CHECK(numBlocks != 1, "not supported yet");
     if (cu.firstPU->multiRefIdx)
     {
       mpmFlag[0] = true;
     }
     else
-#endif
     mpmFlag[k] = m_BinDecoder.decodeBin( Ctx::IPredMode[0]() );
   }
 

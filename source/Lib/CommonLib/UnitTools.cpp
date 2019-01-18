@@ -294,9 +294,7 @@ cTUTraverser CU::traverseTUs( const CodingUnit& cu )
 int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType &channelType /*= CHANNEL_TYPE_LUMA*/ )
 {
   const int numMPMs = NUM_MOST_PROBABLE_MODES;
-#if JVET_L0283_MULTI_REF_LINE
   const int extendRefLine = (channelType == CHANNEL_TYPE_LUMA) ? pu.multiRefIdx : 0;
-#endif
   {
     int numCand      = -1;
     int leftIntraDir = PLANAR_IDX, aboveIntraDir = PLANAR_IDX;
@@ -324,7 +322,6 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     const int offset = (int)NUM_LUMA_MODE - 6;
     const int mod = offset + 3;
 
-#if JVET_L0283_MULTI_REF_LINE
     if (extendRefLine)
     {
       int modeIdx = 0;
@@ -394,7 +391,6 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     }
     else
     {
-#endif
       mpm[0] = leftIntraDir;
       mpm[1] = (mpm[0] == PLANAR_IDX) ? DC_IDX : PLANAR_IDX;
       mpm[2] = VER_IDX;
@@ -445,9 +441,7 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
           mpm[5] = ((mpm[maxCandModeIdx] + offset - 1) % mod) + 2;
         }
       }
-#if JVET_L0283_MULTI_REF_LINE
     }
-#endif
     for (int i = 0; i < numMPMs; i++)
     {
       CHECK(mpm[i] >= NUM_LUMA_MODE, "Invalid MPM");

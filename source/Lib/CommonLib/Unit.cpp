@@ -325,9 +325,7 @@ void PredictionUnit::initData()
   // intra data - need this default initialization for PCM
   intraDir[0] = DC_IDX;
   intraDir[1] = PLANAR_IDX;
-#if JVET_L0283_MULTI_REF_LINE
   multiRefIdx = 0;
-#endif
 
   // inter data
   mergeFlag   = false;
@@ -367,9 +365,7 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
   {
     intraDir[i] = predData.intraDir[i];
   }
-#if JVET_L0283_MULTI_REF_LINE
   multiRefIdx = predData.multiRefIdx;
-#endif
 
   return *this;
 }
@@ -415,9 +411,7 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   {
     intraDir[ i ] = other.intraDir[ i ];
   }
-#if JVET_L0283_MULTI_REF_LINE
   multiRefIdx = other.multiRefIdx;
-#endif
 
   mergeFlag   = other.mergeFlag;
   mergeIdx    = other.mergeIdx;

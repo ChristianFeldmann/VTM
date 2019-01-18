@@ -238,9 +238,7 @@ protected:
   int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool      m_MHIntra;
-#endif
   bool      m_Triangle;
 
 #if JVET_L0293_CPR
@@ -755,10 +753,8 @@ public:
 
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   void      setUseMHIntra                   ( bool b )       { m_MHIntra = b; }
   bool      getUseMHIntra                   ()         const { return m_MHIntra; }
-#endif
   void      setUseTriangle                  ( bool b )       { m_Triangle = b; }
   bool      getUseTriangle                  ()         const { return m_Triangle; }
 

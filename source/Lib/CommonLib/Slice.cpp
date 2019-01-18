@@ -1787,9 +1787,7 @@ SPSNext::SPSNext( SPS& sps )
   , m_Affine                    ( false )
   , m_AffineType                ( false )
   , m_MTTEnabled                ( false )
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   , m_MHIntra                   ( false )
-#endif
   , m_Triangle                  ( false )
 #if ENABLE_WPP_PARALLELISM
   , m_NextDQP                   ( false )

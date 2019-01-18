@@ -255,9 +255,7 @@ void EncApp::xInitLibCfg()
     }
   }
 #endif  
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
-#endif
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
 
 #if JVET_L0293_CPR

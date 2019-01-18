@@ -114,10 +114,8 @@ public:
   void        inter_pred_idc            ( PredictionUnit&               pu );
   void        ref_idx                   ( PredictionUnit&               pu,     RefPicList      eRefList );
   void        mvp_flag                  ( PredictionUnit&               pu,     RefPicList      eRefList );
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   void        MHIntra_flag              ( PredictionUnit&               pu );
   void        MHIntra_luma_pred_modes   ( CodingUnit&                   cu );
-#endif
   void        triangle_mode             ( CodingUnit&                   cu );
 
   // pcm samples (clause 7.3.8.7)

@@ -899,9 +899,7 @@ void EncLib::xInitSPS(SPS &sps)
   }
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   sps.getSpsNext().setUseMHIntra            ( m_MHIntra );
-#endif
   sps.getSpsNext().setUseTriangle           ( m_Triangle );
 
 #if JVET_L0293_CPR

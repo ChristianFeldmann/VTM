@@ -856,9 +856,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LadfQpOffset",                                    cfg_LadfQpOffset,                      cfg_LadfQpOffset, "LADF QP offset")
   ("LadfIntervalLowerBound",                          cfg_LadfIntervalLowerBound,  cfg_LadfIntervalLowerBound, "LADF lower bound for 2nd lowest interval")
 #endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
-#endif
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
 
 #if JVET_L0293_CPR
@@ -3144,9 +3142,7 @@ void EncAppCfg::xPrintParameter()
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
     msg( VERBOSE, "LADF:%d ", m_LadfEnabed );
 #endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
-#endif
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
   }
 #if JVET_L0293_CPR

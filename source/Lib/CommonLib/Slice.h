@@ -816,9 +816,7 @@ private:
   bool              m_GBi;                        //
 #endif
   bool              m_MTTEnabled;                 //
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool              m_MHIntra;
-#endif
   bool              m_Triangle;
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
@@ -972,10 +970,8 @@ public:
   void      setUseCompositeRef(bool b) { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef()                                      const { return m_compositeRefEnabled; }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   void      setUseMHIntra         ( bool b )                                        { m_MHIntra = b; }
   bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
-#endif
   void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
 #if JVET_L0293_CPR

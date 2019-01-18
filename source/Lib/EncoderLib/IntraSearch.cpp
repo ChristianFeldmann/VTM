@@ -276,9 +276,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
   const TempCtx ctxStart          ( m_CtxCache, m_CABACEstimator->getCtx() );
   const TempCtx ctxStartIntraMode ( m_CtxCache, SubCtx( Ctx::IPredMode[CHANNEL_TYPE_LUMA],        m_CABACEstimator->getCtx() ) );
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   const TempCtx ctxStartMHIntraMode ( m_CtxCache, SubCtx( Ctx::MHIntraPredMode,        m_CABACEstimator->getCtx() ) );
-#endif
 #if JVET_L0283_MULTI_REF_LINE
   const TempCtx ctxStartMrlIdx      ( m_CtxCache, SubCtx( Ctx::MultiRefLineIdx,        m_CABACEstimator->getCtx() ) );
 #endif
@@ -405,9 +403,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
             // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been pre-estimated.
             m_CABACEstimator->getCtx() = SubCtx( Ctx::IPredMode[CHANNEL_TYPE_LUMA], ctxStartIntraMode );
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
             m_CABACEstimator->getCtx() = SubCtx( Ctx::MHIntraPredMode, ctxStartMHIntraMode );
-#endif
 #if JVET_L0283_MULTI_REF_LINE
             m_CABACEstimator->getCtx() = SubCtx( Ctx::MultiRefLineIdx, ctxStartMrlIdx );
 #endif
@@ -469,9 +465,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
                 // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been pre-estimated.
                 m_CABACEstimator->getCtx() = SubCtx( Ctx::IPredMode[CHANNEL_TYPE_LUMA], ctxStartIntraMode );
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
                 m_CABACEstimator->getCtx() = SubCtx( Ctx::MHIntraPredMode, ctxStartMHIntraMode );
-#endif
 #if JVET_L0283_MULTI_REF_LINE
                 m_CABACEstimator->getCtx() = SubCtx( Ctx::MultiRefLineIdx, ctxStartMrlIdx );
 #endif
@@ -529,9 +523,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
               // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been pre-estimated.
               m_CABACEstimator->getCtx() = SubCtx( Ctx::IPredMode[CHANNEL_TYPE_LUMA], ctxStartIntraMode );
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
               m_CABACEstimator->getCtx() = SubCtx( Ctx::MHIntraPredMode, ctxStartMHIntraMode );
-#endif
 #if JVET_L0283_MULTI_REF_LINE
               m_CABACEstimator->getCtx() = SubCtx( Ctx::MultiRefLineIdx, ctxStartMrlIdx );
 #endif
@@ -657,9 +649,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
         //===== reset context models =====
         m_CABACEstimator->getCtx() = SubCtx( Ctx::IPredMode[CHANNEL_TYPE_LUMA], ctxStartIntraMode );
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         m_CABACEstimator->getCtx() = SubCtx( Ctx::MHIntraPredMode, ctxStartMHIntraMode );
-#endif
 #if JVET_L0283_MULTI_REF_LINE
         m_CABACEstimator->getCtx() = SubCtx( Ctx::MultiRefLineIdx, ctxStartMrlIdx );
 #endif
@@ -1907,16 +1897,13 @@ uint64_t IntraSearch::xFracModeBitsIntra(PredictionUnit &pu, const uint32_t &uiM
 {
   uint32_t orgMode = uiMode;
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   if (!pu.mhIntraFlag)
-#endif
   std::swap(orgMode, pu.intraDir[chType]);
 
   m_CABACEstimator->resetBits();
 
   if( isLuma( chType ) )
   {
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     if ( pu.mhIntraFlag )
       m_CABACEstimator->MHIntra_luma_pred_modes(*pu.cu);
     else
@@ -1926,21 +1913,13 @@ uint64_t IntraSearch::xFracModeBitsIntra(PredictionUnit &pu, const uint32_t &uiM
 #endif
       m_CABACEstimator->intra_luma_pred_mode(pu);
     }
-#else
-#if JVET_L0283_MULTI_REF_LINE
-    m_CABACEstimator->extend_ref_line(pu);
-#endif
-    m_CABACEstimator->intra_luma_pred_mode( pu );
-#endif
   }
   else
   {
     m_CABACEstimator->intra_chroma_pred_mode( pu );
   }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   if ( !pu.mhIntraFlag )
-#endif
   std::swap(orgMode, pu.intraDir[chType]);
 
   return m_CABACEstimator->getEstFracBits();

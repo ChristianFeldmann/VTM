@@ -206,10 +206,8 @@ public:
   static const CtxSet   GBiIdx;
 #endif
   static const CtxSet   ctbAlfFlag;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   static const CtxSet   MHIntraFlag;
   static const CtxSet   MHIntraPredMode;
-#endif
   static const CtxSet   TriangleFlag;
   static const CtxSet   TriangleIdx;
   static const unsigned NumberOfContexts;

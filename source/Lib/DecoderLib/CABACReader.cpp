@@ -1262,14 +1262,12 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
 #else
     affine_flag  ( *pu.cu );
 #endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     MHIntra_flag(pu);
     if (pu.mhIntraFlag)
     {
       MHIntra_luma_pred_modes(*pu.cu);
       pu.intraDir[1] = DM_CHROMA_IDX;
     }
-#endif
     triangle_mode( *pu.cu );
 #if JVET_L0054_MMVD
     if (pu.mmvdMergeFlag)
@@ -1714,7 +1712,6 @@ void CABACReader::mvp_flag( PredictionUnit& pu, RefPicList eRefList )
 }
 
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 void CABACReader::MHIntra_flag(PredictionUnit& pu)
 {
   if (!pu.cs->sps->getSpsNext().getUseMHIntra())
@@ -1844,7 +1841,6 @@ void CABACReader::MHIntra_luma_pred_modes(CodingUnit &cu)
     pu = pu->next;
   }
 }
-#endif
 
 void CABACReader::triangle_mode( CodingUnit& cu )
 {

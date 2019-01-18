@@ -155,7 +155,7 @@ void EncCu::create( EncCfg* encCfg )
   {
     m_acMergeBuffer[ui].create( chromaFormat, Area( 0, 0, uiMaxWidth, uiMaxHeight ) );
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA && JVET_L0054_MMVD
+#if JVET_L0054_MMVD
   for (unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++)
   {
     m_acRealMergeBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
@@ -256,7 +256,7 @@ void EncCu::destroy()
   {
     m_acMergeBuffer[ui].destroy();
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA && JVET_L0054_MMVD
+#if JVET_L0054_MMVD
   for (unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++)
   {
     m_acRealMergeBuffer[ui].destroy();
@@ -1735,9 +1735,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
   bool                                        bestIsSkip = false;
   bool                                        bestIsMMVDSkip = true;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   PelUnitBuf                                  acMergeBuffer[MRG_MAX_NUM_CANDS];
-#endif
   PelUnitBuf                                  acMergeRealBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
   PelUnitBuf *                                acMergeTempBuffer[MMVD_MRG_MAX_RD_NUM];
   PelUnitBuf *                                singleMergeTempBuffer;
@@ -1784,7 +1782,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   }
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 #if JVET_L0054_MMVD
   static_vector<unsigned, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM>  RdModeList2; // store the Intra mode for Intrainter
 #else
@@ -1801,20 +1798,13 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   {
     isTestSkipMerge[idx] = false;
   }
-#endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   if( m_pcEncCfg->getUseFastMerge() || isIntrainterEnabled)
-#else
-  if( m_pcEncCfg->getUseFastMerge() )
-#endif
   {
     uiNumMrgSATDCand = NUM_MRG_SATD_CAND;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     if (isIntrainterEnabled)
     {
       uiNumMrgSATDCand += 1;
     }
-#endif
     bestIsSkip       = false;
 
     if( auto blkCache = dynamic_cast< CacheBlkInfoCtrl* >( m_modeCtrl ) )
@@ -1833,12 +1823,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #endif
     }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     if (isIntrainterEnabled) // always perform low complexity check
     {
       bestIsSkip = false;
     }
-#endif
 
 #if JVET_L0054_MMVD
     static_vector<double, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM> candCostList;
@@ -1854,9 +1842,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda( encTestMode.lossless );
 
       CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       const double sqrtLambdaForFirstPassIntra = m_pcRdCost->getMotionLambda(cu.transQuantBypass) / double(1 << SCALE_BITS);
-#endif
 
       partitioner.setCUData( cu );
       cu.slice            = tempCS->slice;
@@ -1906,10 +1892,8 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if JVET_L0054_MMVD
         distParam.cur = singleMergeTempBuffer->Y();
         m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer);
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         acMergeBuffer[uiMergeCand] = m_acRealMergeBuffer[uiMergeCand].getBuf(localUnitArea);
         acMergeBuffer[uiMergeCand].copyFrom(*singleMergeTempBuffer);
-#endif
 #else
         distParam.cur = acMergeBuffer[uiMergeCand].Y();
 
@@ -1933,18 +1917,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         double cost     = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
 #if JVET_L0054_MMVD
         insertPos = -1;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         updateDoubleCandList(uiMergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
-#else
-#if JVET_L0283_MULTI_REF_LINE
-        static_vector<int, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM> * nullList = nullptr;
-#endif
-        updateCandList(uiMergeCand, cost, RdModeList, candCostList
-#if JVET_L0283_MULTI_REF_LINE
-          , *nullList, -1
-#endif          
-          , uiNumMrgSATDCand, &insertPos);
-#endif
         if (insertPos != -1)
         {
           if (insertPos == RdModeList.size() - 1)
@@ -1962,18 +1935,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
 #else
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         updateDoubleCandList(uiMergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand);
-#else
-#if JVET_L0283_MULTI_REF_LINE
-        static_vector<int, MRG_MAX_NUM_CANDS> * nullList = nullptr;
-#endif
-        updateCandList( uiMergeCand, cost, RdModeList, candCostList
-#if JVET_L0283_MULTI_REF_LINE
-          , *nullList, -1
-#endif
-          , uiNumMrgSATDCand );
-#endif
 #endif
 #if JVET_L0293_CPR
         CHECK(std::min(uiMergeCand + 1 - cprCand, uiNumMrgSATDCand) != RdModeList.size(), "");
@@ -1989,7 +1951,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #endif
 
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       if (isIntrainterEnabled)
       {
         int numTestIntraMode = 4;
@@ -2096,7 +2057,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         pu.mhIntraFlag = false;
         m_CABACEstimator->getCtx() = ctxStart;
       }
-#endif
 
 #if JVET_L0054_MMVD
       cu.mmvdSkip = true;
@@ -2169,18 +2129,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #endif
 #if JVET_L0054_MMVD
         insertPos = -1;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         updateDoubleCandList(mergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
-#else
-#if JVET_L0283_MULTI_REF_LINE
-        static_vector<int, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM> * nullList = nullptr;
-#endif
-        updateCandList(mergeCand, cost, RdModeList, candCostList
-#if JVET_L0283_MULTI_REF_LINE
-          , *nullList, -1
-#endif
-          , uiNumMrgSATDCand, &insertPos);
-#endif
         if (insertPos != -1)
         {
           for (int i = int(RdModeList.size()) - 1; i > insertPos; i--)
@@ -2210,7 +2159,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
       setMergeBestSATDCost( candCostList[0] );
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       if (isIntrainterEnabled)
       {
         pu.mhIntraFlag = true;
@@ -2237,7 +2185,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
         pu.mhIntraFlag = false;
       }
-#endif
 
       tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
     }
@@ -2278,7 +2225,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 #if JVET_L0054_MMVD
       if (uiNoResidualPass != 0 && uiMergeCand >= (MRG_MAX_NUM_CANDS + MMVD_ADD_NUM)) // intrainter does not support skip mode
 #else
@@ -2295,7 +2241,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           continue;
         }
       }
-#endif
 
 #if JVET_L0054_MMVD
       if (((uiNoResidualPass != 0) && candHasNoResidual[uiMrgHADIdx])
@@ -2328,7 +2273,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       cu.qp               = encTestMode.qp;
       PredictionUnit &pu  = tempCS->addPU( cu, partitioner.chType );
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 #if JVET_L0054_MMVD
       if (uiNoResidualPass == 0 && uiMergeCand >= (MRG_MAX_NUM_CANDS + MMVD_ADD_NUM))
 #else
@@ -2347,14 +2291,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         CHECK(pu.intraDir[0]<0 || pu.intraDir[0]>(NUM_LUMA_MODE - 1), "out of intra mode");
         pu.intraDir[1] = DM_CHROMA_IDX;
       }
-#endif
 
 #if JVET_L0054_MMVD
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       else if (uiMergeCand >= mergeCtx.numValidMergeCand && uiMergeCand < MRG_MAX_NUM_CANDS + MMVD_ADD_NUM)
-#else
-      if (uiMergeCand >= mergeCtx.numValidMergeCand)
-#endif
       {
         cu.mmvdSkip = true;
         mergeCtx.setMmvdMergeCandiInfo(pu, uiMergeCand - mergeCtx.numValidMergeCand);
@@ -2371,7 +2310,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
       if( mrgTempBufSet )
       {
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         if (pu.mhIntraFlag)
         {
           uint32_t bufIdx = (pu.intraDir[0] > 1) ? (pu.intraDir[0] == HOR_IDX ? 2 : 3) : pu.intraDir[0];
@@ -2400,20 +2338,12 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           tempCS->getPredBuf().copyFrom(acMergeBuffer[uiMergeCand]);
 #endif
         }
-#else
-#if JVET_L0054_MMVD
-        tempCS->getPredBuf().copyFrom(*acMergeTempBuffer[uiMrgHADIdx]);
-#else
-        tempCS->getPredBuf().copyFrom( acMergeBuffer[ uiMergeCand ]);
-#endif
-#endif
       }
       else
       {
         m_pcInterSearch->motionCompensation( pu );
         
       }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 #if JVET_L0054_MMVD
       if (!cu.mmvdSkip && !pu.mhIntraFlag && uiNoResidualPass != 0)
 #else
@@ -2423,7 +2353,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         CHECK(uiMergeCand >= mergeCtx.numValidMergeCand, "out of normal merge");
         isTestSkipMerge[uiMergeCand] = true;
       }
-#endif
 
 #if JVET_L0054_MMVD
       xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, uiNoResidualPass
@@ -2437,11 +2366,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         , uiNoResidualPass == 0 ? &candHasNoResidual[uiMergeCand] : NULL );
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       if( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip && !pu.mhIntraFlag)
-#else
-      if( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip )
-#endif
       {
         bestIsSkip = bestCS->getCU( partitioner.chType )->rootCbf == 0;
       }
@@ -4058,13 +3983,10 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
     if( NULL != bestHasNonResi && (bestCostInternal > tempCS->cost) )
     {
       bestCostInternal = tempCS->cost;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       if (!(tempCS->getPU(partitioner.chType)->mhIntraFlag))
-#endif
       *bestHasNonResi  = !cu->rootCbf;
     }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     if (cu->rootCbf == false)
     {
       if (tempCS->getPU(partitioner.chType)->mhIntraFlag)
@@ -4073,7 +3995,6 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
         return;
       }
     }
-#endif
 
 #if WCG_EXT
     DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda( true ) );

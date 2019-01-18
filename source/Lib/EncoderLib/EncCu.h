@@ -120,9 +120,7 @@ private:
   EncModeCtrl          *m_modeCtrl;
 #if JVET_L0054_MMVD
   PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   PelStorage            m_acRealMergeBuffer[MRG_MAX_NUM_CANDS];
-#endif
 #else
   PelStorage            m_acMergeBuffer[MRG_MAX_NUM_CANDS];
 #endif

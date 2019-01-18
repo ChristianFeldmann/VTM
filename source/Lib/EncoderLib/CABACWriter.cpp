@@ -1279,13 +1279,11 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
 #else
     affine_flag  ( *pu.cu );
 #endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     MHIntra_flag( pu );
     if ( pu.mhIntraFlag )
     {
       MHIntra_luma_pred_modes( *pu.cu );
     }
-#endif
     triangle_mode( *pu.cu );
 #if JVET_L0054_MMVD
     if (pu.mmvdMergeFlag)
@@ -1699,7 +1697,6 @@ void CABACWriter::mvp_flag( const PredictionUnit& pu, RefPicList eRefList )
   DTRACE( g_trace_ctx, D_SYNTAX, "mvpIdx(refList:%d)=%d\n", eRefList, pu.mvpIdx[eRefList] );
 }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
 {
   if (!pu.cs->sps->getSpsNext().getUseMHIntra())
@@ -1792,7 +1789,6 @@ void CABACWriter::MHIntra_luma_pred_modes(const CodingUnit& cu)
     pu = pu->next;
   }
 }
-#endif
 
 void CABACWriter::triangle_mode( const CodingUnit& cu )
 {

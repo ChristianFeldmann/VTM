@@ -69,10 +69,8 @@ private:
   Pel* m_piYuvExt[MAX_NUM_COMPONENT][NUM_PRED_BUF];
   int  m_iYuvExtSize;
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   Pel* m_yuvExt2[MAX_NUM_COMPONENT][4];
   int  m_yuvExtSize2;
-#endif
 
   static const uint8_t m_aucIntraFilter[MAX_NUM_CHANNEL_TYPE][MAX_INTRA_FILTER_DEPTHS];
 
@@ -153,12 +151,10 @@ public:
 static bool useFilteredIntraRefSamples( const ComponentID &compID, const PredictionUnit &pu, bool modeSpecific, const UnitArea &tuArea );
   static bool useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode);
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   void geneWeightedPred           (const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf);
   Pel* getPredictorPtr2           (const ComponentID compID, uint32_t idx) { return m_yuvExt2[compID][idx]; }
   void switchBuffer               (const PredictionUnit &pu, ComponentID compID, PelBuf srcBuff, Pel *dst);
   void geneIntrainterPred         (const CodingUnit &cu);
-#endif
 };
 
 //! \}

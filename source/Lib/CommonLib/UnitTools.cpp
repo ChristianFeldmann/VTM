@@ -458,11 +458,7 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     // Get intra direction of left PU
     const PredictionUnit *puLeft = pu.cs->getPURestricted(pos.offset(-1, 0), pu, channelType);
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     if (puLeft && (CU::isIntra(*puLeft->cu) || (channelType == CHANNEL_TYPE_LUMA && puLeft->mhIntraFlag)))
-#else
-    if (puLeft && CU::isIntra(*puLeft->cu))
-#endif
     {
       leftIntraDir = puLeft->intraDir[channelType];
 
@@ -475,11 +471,7 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     // Get intra direction of above PU
     const PredictionUnit *puAbove = pu.cs->getPURestricted(pos.offset(0, -1), pu, channelType);
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     if (puAbove && (CU::isIntra(*puAbove->cu) || (channelType == CHANNEL_TYPE_LUMA && puAbove->mhIntraFlag)) && CU::isSameCtu(*pu.cu, *puAbove->cu))
-#else
-    if (puAbove && CU::isIntra(*puAbove->cu) && CU::isSameCtu(*pu.cu, *puAbove->cu))
-#endif
     {
       aboveIntraDir = puAbove->intraDir[channelType];
 
@@ -729,7 +721,6 @@ bool PU::isChromaIntraModeCrossCheckMode( const PredictionUnit &pu )
   return pu.intraDir[CHANNEL_TYPE_CHROMA] == DM_CHROMA_IDX;
 }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 int PU::getMHIntraMPMs(const PredictionUnit &pu, unsigned* mpm, const ChannelType &channelType /*= CHANNEL_TYPE_LUMA*/, const bool isChromaMDMS /*= false*/, const unsigned startIdx /*= 0*/)
 {
   const int numMPMs = 3; // Multi-hypothesis intra uses only 3 MPM
@@ -873,7 +864,6 @@ int PU::getNarrowShape(const int width, const int height)
     return 0;
   }
 }
-#endif
 
 uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chType )
 {

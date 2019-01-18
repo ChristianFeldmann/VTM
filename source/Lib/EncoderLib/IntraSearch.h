@@ -122,9 +122,7 @@ public:
   void estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm );
   void estIntraPredChromaQT       (CodingUnit &cu, Partitioner& pm);
   void IPCMSearch                 (CodingStructure &cs, Partitioner& partitioner);
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   uint64_t xFracModeBitsIntra     (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
-#endif
 
 protected:
 
@@ -145,9 +143,6 @@ protected:
   uint64_t xGetIntraFracBitsQTChroma(TransformUnit& tu, const ComponentID &compID);
   void xEncCoeffQT                (CodingStructure &cs, Partitioner& pm, const ComponentID &compID);
 
-#if !JVET_L0100_MULTI_HYPOTHESIS_INTRA
-  uint64_t xFracModeBitsIntra       (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
-#endif
 
   void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr );
 

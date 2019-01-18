@@ -179,10 +179,8 @@ namespace PU
   bool isLMCMode                      (                          unsigned mode);
   bool isLMCModeEnabled               (const PredictionUnit &pu, unsigned mode);
   bool isChromaIntraModeCrossCheckMode(const PredictionUnit &pu);
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   int  getMHIntraMPMs                 (const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA, const bool isChromaMDMS = false, const unsigned startIdx = 0);
   int  getNarrowShape                 (const int width, const int height);
-#endif
   void getTriangleMergeCandidates     (const PredictionUnit &pu, MergeCtx &triangleMrgCtx);
   bool isUniqueTriangleCandidates     (const PredictionUnit &pu, MergeCtx &triangleMrgCtx);
   bool getTriangleWeights             (const PredictionUnit &pu, MergeCtx &triangleMrgCtx, const uint8_t candIdx0, const uint8_t candIdx1);
@@ -306,7 +304,6 @@ uint32_t updateCandList( T uiMode, double uiCost, static_vector<T, N>& candModeL
   return 0;
 }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 template<typename T, size_t N>
 #if JVET_L0054_MMVD
 uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, static_vector<T, N>& candModeList2, T mode2, size_t fastCandNum = N, int* iserttPos = nullptr)
@@ -367,7 +364,6 @@ uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candMode
 #endif
   return 0;
 }
-#endif
 
 
 #endif

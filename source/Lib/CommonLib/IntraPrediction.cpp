@@ -141,7 +141,6 @@ IntraPrediction::IntraPrediction()
       m_piYuvExt[ch][buf] = nullptr;
     }
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   for (uint32_t ch = 0; ch < MAX_NUM_COMPONENT; ch++)
   {
     for (uint32_t buf = 0; buf < 4; buf++)
@@ -149,7 +148,6 @@ IntraPrediction::IntraPrediction()
       m_yuvExt2[ch][buf] = nullptr;
     }
   }
-#endif
 
   m_piTemp = nullptr;
 #if JVET_L0338_MDLM
@@ -172,7 +170,6 @@ void IntraPrediction::destroy()
       m_piYuvExt[ch][buf] = nullptr;
     }
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   for (uint32_t ch = 0; ch < MAX_NUM_COMPONENT; ch++)
   {
     for (uint32_t buf = 0; buf < 4; buf++)
@@ -181,7 +178,6 @@ void IntraPrediction::destroy()
       m_yuvExt2[ch][buf] = nullptr;
     }
   }
-#endif
 
   delete[] m_piTemp;
   m_piTemp = nullptr;
@@ -199,12 +195,10 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
     destroy();
   }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   if (m_yuvExt2[COMPONENT_Y][0] != nullptr && m_currChromaFormat != chromaFormatIDC)
   {
     destroy();
   }
-#endif
 
   m_currChromaFormat = chromaFormatIDC;
 
@@ -229,7 +223,6 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
     }
   }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   if (m_yuvExt2[COMPONENT_Y][0] == nullptr) // check if first is null (in which case, nothing initialised yet)
   {
     m_yuvExtSize2 = (MAX_CU_SIZE) * (MAX_CU_SIZE);
@@ -242,7 +235,6 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
       }
     }
   }
-#endif
 
   int shift = bitDepthY + 4;
   for (int i = 32; i < 64; i++)
@@ -1013,7 +1005,6 @@ bool IntraPrediction::useDPCMForFirstPassIntraEstimation(const PredictionUnit &p
   return CU::isRDPCMEnabled(*pu.cu) && pu.cu->transQuantBypass && (uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
 }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 void IntraPrediction::geneWeightedPred(const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf)
 {
   const int            width = pred.width;
@@ -1135,7 +1126,6 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
     switchBuffer(*pu, currCompID2, tmpBuf, getPredictorPtr2(currCompID2, 0));
   }
 }
-#endif
 
 inline bool isAboveLeftAvailable  ( const CodingUnit &cu, const ChannelType &chType, const Position &posLT );
 inline int  isAboveAvailable      ( const CodingUnit &cu, const ChannelType &chType, const Position &posLT, const uint32_t uiNumUnitsInPU, const uint32_t unitWidth, bool *validFlags );

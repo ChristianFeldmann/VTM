@@ -54,7 +54,6 @@
 #define TRAINED_CABAC_INIT_TABLES                         1 // Trained values for VTM3
 
 
-#define JVET_L0100_MULTI_HYPOTHESIS_INTRA                 1 // Combine intra mode with an extra merge indexed prediction
 #define JVET_L0165_6MPM                                   1 // Use 6 MPM for 67 intra prediction modes
 #define JVET_L0279_WAIP_CLEANUP                           1 // WAIP cleanup
 

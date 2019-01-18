@@ -372,9 +372,7 @@ struct InterPredictionData
 #if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
 #endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool      mhIntraFlag;
-#endif
 #if JVET_L0293_CPR
   Mv        bv;                             // block vector for CPR
   Mv        bvd;                            // block vector difference for CPR

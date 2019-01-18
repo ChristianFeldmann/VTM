@@ -814,9 +814,7 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
     READ_FLAG( symbol,  "reserved_flag" );                          if( symbol != 0 ) EXIT("Incompatible version: SPSNext reserved flag not equal to zero (bitstream was probably created with newer software version)" );
   }
   READ_FLAG( symbol,  "mtt_enabled_flag" );                       spsNext.setMTTMode                ( symbol );
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   READ_FLAG( symbol,  "mhintra_flag" );                           spsNext.setUseMHIntra             ( symbol != 0 );
-#endif
   READ_FLAG( symbol,    "triangle_flag" );                          spsNext.setUseTriangle            ( symbol != 0 );
 #if ENABLE_WPP_PARALLELISM
   READ_FLAG( symbol,  "next_dqp_enabled_flag" );                  spsNext.setUseNextDQP             ( symbol != 0 );

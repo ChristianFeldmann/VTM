@@ -1110,7 +1110,6 @@ const CtxSet ContextSetCfg::ctbAlfFlag =
     } )
 };
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
 const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
 ({
 #if TRAINED_CABAC_INIT_TABLES
@@ -1136,7 +1135,6 @@ const CtxSet ContextSetCfg::MHIntraPredMode = ContextSetCfg::addCtxSet
   { 184, CNU, CNU, CNU, },
 #endif
 });
-#endif
 
 const CtxSet ContextSetCfg::TriangleFlag = ContextSetCfg::addCtxSet
 ({

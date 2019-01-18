@@ -61,7 +61,6 @@
 
 
 
-#define JVET_L0265_AFF_MINIMUM4X4                         1 //Affine 4x4 chroma subblock 
 
 #define JVET_L0111                                        1 // Max Tx size for skip
 #define JVET_L0209_PCM                                    1 // PCM mode

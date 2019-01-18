@@ -55,9 +55,7 @@ InterPrediction::InterPrediction()
   m_currChromaFormat( NUM_CHROMA_FORMAT )
 , m_maxCompIDToPred ( MAX_NUM_COMPONENT )
 , m_pcRdCost        ( nullptr )
-#if JVET_L0265_AFF_MINIMUM4X4
 , m_storedMv        ( nullptr )
-#endif
 #if JVET_L0256_BIO
 , m_gradX0(nullptr)
 , m_gradY0(nullptr)
@@ -122,13 +120,11 @@ void InterPrediction::destroy()
 
   m_triangleBuf.destroy();
 
-#if JVET_L0265_AFF_MINIMUM4X4
   if (m_storedMv != nullptr)
   {
     delete[]m_storedMv;
     m_storedMv = nullptr;
   }
-#endif
 
 #if JVET_L0256_BIO
   xFree(m_gradX0);   m_gradX0 = nullptr;
@@ -194,13 +190,11 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
   m_if.initInterpolationFilter( true );
 #endif
 
-#if JVET_L0265_AFF_MINIMUM4X4
   if (m_storedMv == nullptr)
   {
     const int MVBUFFER_SIZE = MAX_CU_SIZE / MIN_PU_SIZE;
     m_storedMv = new Mv[MVBUFFER_SIZE*MVBUFFER_SIZE];
   }
-#endif
 }
 
 bool checkIdenticalMotion( const PredictionUnit &pu, bool checkAffine )
@@ -754,14 +748,12 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   blockWidth  >>= iScaleX;
   blockHeight >>= iScaleY;
 
- #if JVET_L0265_AFF_MINIMUM4X4
   blockWidth =  std::max(blockWidth, AFFINE_MIN_BLOCK_SIZE);
   blockHeight = std::max(blockHeight, AFFINE_MIN_BLOCK_SIZE);
 
   CHECK(blockWidth  > (width >> iScaleX ), "Sub Block width  > Block width");
   CHECK(blockHeight > (height >> iScaleX), "Sub Block height > Block height");
   const int MVBUFFER_SIZE = MAX_CU_SIZE / MIN_PU_SIZE;
-#endif
 
   const int cxWidth  = width  >> iScaleX;
   const int cxHeight = height >> iScaleY;
@@ -804,7 +796,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     for ( int w = 0; w < cxWidth; w += blockWidth )
     {
 
-#if JVET_L0265_AFF_MINIMUM4X4
       int iMvScaleTmpHor, iMvScaleTmpVer;
       if(compID == COMPONENT_Y)
       {
@@ -844,25 +835,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         iMvScaleTmpHor = curMv.hor;
         iMvScaleTmpVer = curMv.ver;
       }
-#else
-      int iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
-      int iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
-      roundAffineMv( iMvScaleTmpHor, iMvScaleTmpVer, shift );
-
-      // clip and scale
-      if (sps.getUseWrapAround())
-      {
-        Mv tmpMv(iMvScaleTmpHor, iMvScaleTmpVer);
-        clipMv(tmpMv, Position(pu.Y().x + (w << iScaleX), pu.Y().y + (h << iScaleY)), Size(blockWidth << iScaleX, blockHeight << iScaleY), sps);
-        iMvScaleTmpHor = tmpMv.getHor();
-        iMvScaleTmpVer = tmpMv.getVer();
-      }
-      else
-      {
-        iMvScaleTmpHor = std::min<int>( iHorMax, std::max<int>( iHorMin, iMvScaleTmpHor ) );
-        iMvScaleTmpVer = std::min<int>( iVerMax, std::max<int>( iVerMin, iMvScaleTmpVer ) );
-      }
-#endif
       // get the MV in high precision
       int xFrac, yFrac, xInt, yInt;
 

@@ -92,9 +92,7 @@ protected:
 
   int                  m_iRefListIdx;
   PelStorage           m_triangleBuf;
-#if JVET_L0265_AFF_MINIMUM4X4
   Mv*                  m_storedMv;
-#endif
  
 #if JVET_L0256_BIO
   Pel*                 m_gradX0;

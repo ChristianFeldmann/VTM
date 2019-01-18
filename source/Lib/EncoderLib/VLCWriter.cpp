@@ -561,7 +561,6 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
 #if !JVET_L0217_L0678_SPS_CLEANUP
   WRITE_FLAG( spsNext.getUseDualITree(),                                                      "qtbt_dual_intra_tree" );
   WRITE_UVLC( g_aucLog2[spsNext.getCTUSize()]                                 - MIN_CU_LOG2,  "log2_CTU_size_minus2" );
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   WRITE_FLAG (spsNext.getSplitConsOverrideEnabledFlag(),                                      "sps_override_partition_constraints_enable_flag");
   WRITE_UVLC( g_aucLog2[spsNext.getMinQTSize(I_SLICE)] - spsNext.getSPS().getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_slice");
   WRITE_UVLC( g_aucLog2[spsNext.getMinQTSize(B_SLICE)] - spsNext.getSPS().getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_inter_slice");
@@ -577,15 +576,8 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
     WRITE_UVLC(g_aucLog2[spsNext.getMaxBTSize()] - g_aucLog2[spsNext.getMinQTSize(B_SLICE)], "sps_log2_diff_max_bt_min_qt_inter_slice");
     WRITE_UVLC(g_aucLog2[spsNext.getMaxTTSize()] - g_aucLog2[spsNext.getMinQTSize(B_SLICE)], "sps_log2_diff_max_tt_min_qt_inter_slice");
   }
-#else
-  WRITE_UVLC( g_aucLog2[spsNext.getMinQTSize( I_SLICE ) ]                     - MIN_CU_LOG2,  "log2_minQT_ISlice_minus2" );
-  WRITE_UVLC( g_aucLog2[spsNext.getMinQTSize( B_SLICE ) ]                     - MIN_CU_LOG2,  "log2_minQT_PBSlice_minus2" );
-  WRITE_UVLC( spsNext.getMaxBTDepth(),                                                        "max_bt_depth" );
-  WRITE_UVLC( spsNext.getMaxBTDepthI(),                                                       "max_bt_depth_i_slice" );
-#endif
   if( spsNext.getUseDualITree() )
   {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
     WRITE_UVLC( g_aucLog2[spsNext.getMinQTSize( I_SLICE, CHANNEL_TYPE_CHROMA )] - spsNext.getSPS().getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_slice_chroma");
     WRITE_UVLC( spsNext.getMaxBTDepthIChroma(),                                                "sps_max_mtt_hierarchy_depth_intra_slices_chroma");
     if (spsNext.getMaxBTDepthIChroma() != 0)
@@ -593,10 +585,6 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
       WRITE_UVLC(g_aucLog2[spsNext.getMaxBTSizeIChroma()] - g_aucLog2[spsNext.getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)], "sps_log2_diff_max_bt_min_qt_intra_slice_chroma");
       WRITE_UVLC(g_aucLog2[spsNext.getMaxTTSizeIChroma()] - g_aucLog2[spsNext.getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)], "sps_log2_diff_max_tt_min_qt_intra_slice_chroma");
     }
-#else
-    WRITE_UVLC( g_aucLog2[spsNext.getMinQTSize( I_SLICE, CHANNEL_TYPE_CHROMA )] - MIN_CU_LOG2, "log2_minQT_ISliceChroma_minus2" );
-    WRITE_UVLC( spsNext.getMaxBTDepthIChroma(),                                                "max_bt_depth_i_slice_chroma" );
-#endif
   }
 #endif
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
@@ -704,22 +692,13 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   CHECK( pcSPS->getMaxCUWidth() != pcSPS->getMaxCUHeight(),                          "Rectangular CTUs not supported" );
 #if !JVET_L0217_L0678_SPS_CLEANUP
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   WRITE_UVLC( pcSPS->getLog2MinCodingBlockSize() - 2,                                "log2_min_luma_coding_block_size_minus2");
-#else
-  WRITE_UVLC( pcSPS->getLog2MinCodingBlockSize() - 3,                                "log2_min_luma_coding_block_size_minus3" );
-#endif
   WRITE_UVLC( pcSPS->getLog2DiffMaxMinCodingBlockSize(),                             "log2_diff_max_min_luma_coding_block_size" );
 #endif
 #if JVET_L0217_L0678_SPS_CLEANUP
   WRITE_FLAG(pcSPS->getUseDualITree(), "qtbt_dual_intra_tree");
   WRITE_UVLC(g_aucLog2[pcSPS->getCTUSize()] - MIN_CU_LOG2, "log2_CTU_size_minus2");
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   WRITE_UVLC(pcSPS->getLog2MinCodingBlockSize() - 2, "log2_min_luma_coding_block_size_minus2");
-#else
-  WRITE_UVLC(pcSPS->getLog2MinCodingBlockSize() - 3, "log2_min_luma_coding_block_size_minus3");
-#endif
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   WRITE_FLAG(pcSPS->getSplitConsOverrideEnabledFlag(), "sps_override_partition_constraints_enable_flag");
   WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(I_SLICE)] - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_slice");
   WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(B_SLICE)] - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_inter_slice");
@@ -735,15 +714,8 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_UVLC(g_aucLog2[pcSPS->getMaxBTSize()] - g_aucLog2[pcSPS->getMinQTSize(B_SLICE)], "sps_log2_diff_max_bt_min_qt_inter_slice");
     WRITE_UVLC(g_aucLog2[pcSPS->getMaxTTSize()] - g_aucLog2[pcSPS->getMinQTSize(B_SLICE)], "sps_log2_diff_max_tt_min_qt_inter_slice");
   }
-#else
-  WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(I_SLICE)] - MIN_CU_LOG2, "log2_minQT_ISlice_minus2");
-  WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(B_SLICE)] - MIN_CU_LOG2, "log2_minQT_PBSlice_minus2");
-  WRITE_UVLC(pcSPS->getMaxBTDepth(), "max_bt_depth");
-  WRITE_UVLC(pcSPS->getMaxBTDepthI(), "max_bt_depth_i_slice");
-#endif
   if (pcSPS->getUseDualITree())
   {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
     WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)] - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_slice_chroma");
     WRITE_UVLC(pcSPS->getMaxBTDepthIChroma(), "sps_max_mtt_hierarchy_depth_intra_slices_chroma");
     if (pcSPS->getMaxBTDepthIChroma() != 0)
@@ -751,10 +723,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_UVLC(g_aucLog2[pcSPS->getMaxBTSizeIChroma()] - g_aucLog2[pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)], "sps_log2_diff_max_bt_min_qt_intra_slice_chroma");
       WRITE_UVLC(g_aucLog2[pcSPS->getMaxTTSizeIChroma()] - g_aucLog2[pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)], "sps_log2_diff_max_tt_min_qt_intra_slice_chroma");
     }
-#else
-    WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)] - MIN_CU_LOG2, "log2_minQT_ISliceChroma_minus2");
-    WRITE_UVLC(pcSPS->getMaxBTDepthIChroma(), "max_bt_depth_i_slice_chroma");
-#endif
   }
 #endif
   WRITE_UVLC( pcSPS->getQuadtreeTULog2MinSize() - 2,                                 "log2_min_luma_transform_block_size_minus2" );
@@ -1294,7 +1262,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       CHECK( pcSlice->getSignDataHidingEnabledFlag(), "sign data hiding not supported when dependent quantization is enabled" );
     }
 #endif
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
     if (
 #if JVET_L0217_L0678_SPS_CLEANUP
       pcSlice->getSPS()->getSplitConsOverrideEnabledFlag()
@@ -1335,19 +1302,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
       }
     }
-#else
-    if( !pcSlice->isIntra() )
-    {
-      if( pcSlice->getSPS()->getSpsNext().getCTUSize() > pcSlice->getMaxBTSize() )
-      {
-        WRITE_UVLC( g_aucLog2[pcSlice->getSPS()->getSpsNext().getCTUSize()] - g_aucLog2[pcSlice->getMaxBTSize()], "max_binary_tree_unit_size" );
-      }
-      else
-      {
-        WRITE_UVLC( 0, "max_binary_tree_unit_size" );
-      }
-    }
-#endif
     if( !pcSlice->isIntra() )
     {
       CHECK( pcSlice->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported" );

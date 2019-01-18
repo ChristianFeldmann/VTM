@@ -197,9 +197,7 @@ protected:
 
   // coding unit (CU) definition
   unsigned  m_uiCTUSize;
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   bool      m_SplitConsOverrideEnabledFlag;
-#endif
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
   unsigned  m_uiMaxBTDepth;
   unsigned  m_uiMaxBTDepthI;

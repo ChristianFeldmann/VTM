@@ -128,7 +128,6 @@ Slice::Slice()
 , m_encCABACTableIdx              (I_SLICE)
 , m_iProcessingStartTime          ( 0 )
 , m_dProcessingTime               ( 0 )
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
 , m_splitConsOverrideFlag         ( false )
 , m_uiMinQTSize                   ( 0 )
 , m_uiMaxBTDepth                  ( 0 )
@@ -137,7 +136,6 @@ Slice::Slice()
 , m_uiMaxBTDepthIChroma           ( 0 )
 , m_uiMaxBTSizeIChroma            ( 0 )
 , m_uiMaxTTSizeIChroma            ( 0 )
-#endif
 , m_uiMaxBTSize                   ( 0 )
 , m_MotionCandLut                (NULL)
 {
@@ -860,7 +858,6 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
   m_maxNumAffineMergeCand         = pSrc->m_maxNumAffineMergeCand;
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   m_splitConsOverrideFlag         = pSrc->m_splitConsOverrideFlag;
   m_uiMinQTSize                   = pSrc->m_uiMinQTSize;
   m_uiMaxBTDepth                  = pSrc->m_uiMaxBTDepth;
@@ -869,7 +866,6 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_uiMaxBTDepthIChroma           = pSrc->m_uiMaxBTDepthIChroma;
   m_uiMaxBTSizeIChroma            = pSrc->m_uiMaxBTSizeIChroma;
   m_uiMaxTTSizeIChroma            = pSrc->m_uiMaxTTSizeIChroma;
-#endif
   m_uiMaxBTSize                   = pSrc->m_uiMaxBTSize;
 }
 
@@ -1774,16 +1770,10 @@ SPSNext::SPSNext( SPS& sps )
   // default values for additional parameters
 #if !JVET_L0217_L0678_SPS_CLEANUP
   , m_CTUSize                   ( 0 )
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   , m_minQT                     { 0, 0, 0 }
-#else
-  , m_minQT                     { 0, 0 }
-#endif
   , m_maxBTDepth                { MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
   , m_maxBTSize                 { MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   , m_maxTTSize                 { MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
-#endif
 #endif
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   , m_subPuLog2Size             ( 0 )
@@ -1831,16 +1821,10 @@ SPS::SPS()
 , m_log2DiffMaxMinCodingBlockSize(0)
 #if JVET_L0217_L0678_SPS_CLEANUP
 , m_CTUSize(0)
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
 , m_minQT{ 0, 0, 0 }
-#else
-, m_minQT{ 0, 0 }
-#endif
 , m_maxBTDepth{ MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
 , m_maxBTSize{ MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
 , m_maxTTSize{ MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
-#endif
 #endif
 , m_uiMaxCUWidth              ( 32)
 , m_uiMaxCUHeight             ( 32)
@@ -2618,11 +2602,9 @@ uint32_t PreCalcValues::getValIdx( const Slice &slice, const ChannelType chType 
 
 uint32_t PreCalcValues::getMaxBtDepth( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   if ( slice.getSplitConsOverrideFlag() )
     return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMaxBTDepth() : slice.getMaxBTDepthIChroma();
   else
-#endif
   return maxBtDepth[getValIdx( slice, chType )];
 }
 
@@ -2633,14 +2615,10 @@ uint32_t PreCalcValues::getMinBtSize( const Slice &slice, const ChannelType chTy
 
 uint32_t PreCalcValues::getMaxBtSize( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   if (slice.getSplitConsOverrideFlag())
     return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMaxBTSize() : slice.getMaxBTSizeIChroma();
   else
     return maxBtSize[getValIdx(slice, chType)];
-#else
-  return ( !slice.isIRAP() || isLuma( chType ) || ISingleTree ) ? slice.getMaxBTSize() : MAX_BT_SIZE_C;
-#endif
 }
 
 uint32_t PreCalcValues::getMinTtSize( const Slice &slice, const ChannelType chType ) const
@@ -2650,20 +2628,16 @@ uint32_t PreCalcValues::getMinTtSize( const Slice &slice, const ChannelType chTy
 
 uint32_t PreCalcValues::getMaxTtSize( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   if ( slice.getSplitConsOverrideFlag() )
     return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMaxTTSize() : slice.getMaxTTSizeIChroma();
   else
-#endif
   return maxTtSize[getValIdx( slice, chType )];
 }
 uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   if ( slice.getSplitConsOverrideFlag() )
     return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMinQTSize() : slice.getMinQTSizeIChroma();
   else
-#endif
   return minQtSize[getValIdx( slice, chType )];
 }
 

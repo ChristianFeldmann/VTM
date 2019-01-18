@@ -1659,9 +1659,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         if( refLayer >= 0 && m_uiNumBlk[refLayer] != 0 )
         {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
           pcSlice->setSplitConsOverrideFlag(true);
-#endif
           double dBlkSize = sqrt( ( double ) m_uiBlkSize[refLayer] / m_uiNumBlk[refLayer] );
           if( dBlkSize < AMAXBT_TH32 )
           {

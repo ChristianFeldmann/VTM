@@ -129,7 +129,6 @@
 #define NUM_SPLIT_THREADS_IF_MSVC                         4
 
 #endif
-#define JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT   1
 #define JVET_L0217_L0678_SPS_CLEANUP                      1 // move the QT/BT/TT related high level syntax element from SPSNext to SPS, delete HEVC RQT in SPS
 
 

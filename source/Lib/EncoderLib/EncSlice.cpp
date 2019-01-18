@@ -673,7 +673,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 #endif
   rpcSlice->setMaxNumMergeCand      ( m_pcCfg->getMaxNumMergeCand()      );
   rpcSlice->setMaxNumAffineMergeCand( m_pcCfg->getMaxNumAffineMergeCand() );
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
 #if JVET_L0217_L0678_SPS_CLEANUP
   rpcSlice->setSplitConsOverrideFlag(false);
   rpcSlice->setMinQTSize( rpcSlice->getSPS()->getMinQTSize(eSliceType));
@@ -700,9 +699,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setMaxBTSizeIChroma(rpcSlice->getSPS()->getSpsNext().getMaxBTSizeIChroma());
     rpcSlice->setMaxTTSizeIChroma(rpcSlice->getSPS()->getSpsNext().getMaxTTSizeIChroma());
   }
-#endif
-#else
-  rpcSlice->setMaxBTSize            ( rpcSlice->isIntra() ? MAX_BT_SIZE : MAX_BT_SIZE_INTER );
 #endif
 }
 

@@ -192,9 +192,7 @@ protected:
   int       m_maxTempLayer;                      ///< Max temporal layer
   bool      m_useAMP;
   unsigned  m_CTUSize;
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   bool      m_useSplitConsOverride;
-#endif
   unsigned  m_uiMinQT[3]; //0: I slice; 1: P/B slice, 2: I slice chroma
   unsigned  m_uiMaxBTDepth;
   unsigned  m_uiMaxBTDepthI;
@@ -673,10 +671,8 @@ public:
   unsigned  getMaxBTDepthI                  ()         const { return m_uiMaxBTDepthI; }
   unsigned  getMaxBTDepthIChroma            ()         const { return m_uiMaxBTDepthIChroma; }
   int       getCTUSize                      ()         const { return m_CTUSize; }
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   void      setUseSplitConsOverride         (bool  n)        { m_useSplitConsOverride = n; }
   bool      getUseSplitConsOverride         ()         const { return m_useSplitConsOverride; }
-#endif
   void      setDualITree                    ( bool b )       { m_dualITree = b; }
   bool      getDualITree                    ()         const { return m_dualITree; }
 

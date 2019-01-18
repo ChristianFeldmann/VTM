@@ -845,18 +845,14 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setNextToolsEnabled      ( m_profile == Profile::NEXT );
 #if JVET_L0217_L0678_SPS_CLEANUP
   sps.setCTUSize                             ( m_CTUSize );
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
-#endif
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.getSpsNext().setUseLargeCTU            ( m_LargeCTU );
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   sps.setUseDualITree                        ( m_dualITree );
 #else
   sps.getSpsNext().setCTUSize                (m_CTUSize);
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   sps.getSpsNext().setSplitConsOverrideEnabledFlag(m_useSplitConsOverride);
-#endif
   sps.getSpsNext().setMinQTSizes            ( m_uiMinQT );
   sps.getSpsNext().setUseLargeCTU           ( m_LargeCTU );
   sps.getSpsNext().setMaxBTDepth            ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );

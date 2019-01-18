@@ -1287,11 +1287,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     {
       baseQp = getBaseQP()-26;
     }
-#if JVET_L0553_FIX_INITQP
     const int maxDQP = 37;
-#else
-    const int maxDQP = 25;
-#endif
     const int minDQP = -26 + sps.getQpBDOffset(CHANNEL_TYPE_LUMA);
 
     pps.setPicInitQPMinus26( std::min( maxDQP, std::max( minDQP, baseQp ) ));

@@ -1128,14 +1128,8 @@ double EncAdaptiveLoopFilter::deriveCoeffQuant( int *filterCoeffQuant, double **
     memset( filterCoeffQuant, 0, sizeof( int ) * numCoeff );
   }
 
-#if JVET_L0082_ALF_COEF_BITS
   int max_value = factor - 1;
   int min_value = -factor;
-#else
-  //512 -> 1, (64+32+4+2)->0.199
-  int max_value = 512 + 64 + 32 + 4 + 2;  
-  int min_value = -max_value;             
-#endif 
 
   for ( int i = 0; i < numCoeff - 1; i++ )
   {
@@ -1152,7 +1146,6 @@ double EncAdaptiveLoopFilter::deriveCoeffQuant( int *filterCoeffQuant, double **
   filterCoeffQuant[numCoeff - 1] = -quantCoeffSum;
   filterCoeff[numCoeff - 1] = filterCoeffQuant[numCoeff - 1] / double(factor);
 
-#if JVET_L0082_ALF_COEF_BITS
   
   //Restrict the range of the center coefficient
   int max_value_center = (2 * factor - 1) - factor;
@@ -1218,7 +1211,6 @@ double EncAdaptiveLoopFilter::deriveCoeffQuant( int *filterCoeffQuant, double **
   CHECK(filterCoeffQuant[numCoeff - 1] > max_value_center || filterCoeffQuant[numCoeff - 1] < min_value_center, "filterCoeffQuant[numCoeff-1]>max_value_center || filterCoeffQuant[numCoeff-1]<min_value_center");
   filterCoeff[numCoeff - 1] = filterCoeffQuant[numCoeff - 1] / double(factor);
 
-#endif
 
   double error = calcErrorForCoeffs( E, y, filterCoeffQuant, numCoeff, bitDepth );
   return error;

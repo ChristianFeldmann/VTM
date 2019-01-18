@@ -71,7 +71,6 @@
 
 
 
-#define JVET_L0082_ALF_COEF_BITS                          1 // ALF filter coefficient bitwidth constraints
 
 #define JVET_L0194_ONE_CTX_FOR_MRG_IDX                    1 // one context for full-block Merge index
 

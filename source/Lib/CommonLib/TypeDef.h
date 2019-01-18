@@ -72,7 +72,6 @@
 
 
 
-#define JVET_L0194_ONE_CTX_FOR_MRG_IDX                    1 // one context for full-block Merge index
 
 #define JVET_L0361_SPLIT_CTX                              1 // context for cu-split-related flags
 

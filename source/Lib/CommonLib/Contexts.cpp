@@ -327,7 +327,6 @@ const CtxSet ContextSetCfg::MergeFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MergeIdx = ContextSetCfg::addCtxSet
 ({
-#if JVET_L0194_ONE_CTX_FOR_MRG_IDX
 #if TRAINED_CABAC_INIT_TABLES
   { 167, },
   { 138, },
@@ -336,11 +335,6 @@ const CtxSet ContextSetCfg::MergeIdx = ContextSetCfg::addCtxSet
   { 137,},
   { 122,},
   { CNU,},
-#endif
-#else
-  {  137, CNU, CNU, CNU, CNU,},
-  {  122, CNU, CNU, CNU, CNU,},
-  {  CNU, CNU, CNU, CNU, CNU,},
 #endif
 });
 const CtxSet ContextSetCfg::MmvdFlag = ContextSetCfg::addCtxSet

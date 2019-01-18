@@ -813,9 +813,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("DualITree",                                       m_dualTree,                                       false, "Use separate QTBT trees for intra slice luma and chroma channel types")
   ("LargeCTU",                                        m_LargeCTU,                                       false, "Enable large CTU (0:off, 1:on)  [default: off]")
   ("SubPuMvp",                                       m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:ATMVP, 2:STMVP, 3:ATMVP+STMVP)  [default: off]")
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  ("SubPuMvpLog2Size",                               m_SubPuMvpLog2Size,                                   2u, "Sub-PU TMVP size index: 2^n")
-#endif
   ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
   ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
   ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
@@ -1935,10 +1932,6 @@ bool EncAppCfg::xCheckParameter()
 #if ENABLE_WPP_PARALLELISM
     xConfirmPara( !m_AltDQPCoding && ( m_numWppThreads + m_numWppExtraLines ) > 1, "Wavefront parallel encoding only supported with AltDQPCoding" );
 #endif
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-    xConfirmPara( m_SubPuMvpLog2Size < MIN_CU_LOG2,      "SubPuMvpLog2Size must be 2 or greater." );
-    xConfirmPara( m_SubPuMvpLog2Size > 6,                "SubPuMvpLog2Size must be 6 or smaller." );
-#endif 
     if( m_depQuantEnabledFlag )
     {
       xConfirmPara( !m_useRDOQ || !m_useRDOQTS, "RDOQ and RDOQTS must be equal to 1 if dependent quantization is enabled" );
@@ -3088,12 +3081,6 @@ void EncAppCfg::xPrintParameter()
       msg( VERBOSE, "AffineType:%d ", m_AffineType );
     }
     msg(VERBOSE, "SubPuMvp:%d+%d ", m_SubPuMvpMode & 1, (m_SubPuMvpMode & 2) == 2);
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-    if (m_SubPuMvpMode != 0)
-    {
-      msg(VERBOSE, "SubPuMvpLog2Size:%d ", m_SubPuMvpLog2Size);
-  }
-#endif 
     msg( VERBOSE, "DualITree:%d ", m_dualTree );
     msg( VERBOSE, "LargeCTU:%d ", m_LargeCTU );
     msg( VERBOSE, "IMV:%d ", m_ImvMode );

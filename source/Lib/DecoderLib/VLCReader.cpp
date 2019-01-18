@@ -819,9 +819,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   // additional parameters
   if( spsNext.getUseSubPuMvp() )
   {
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-    READ_CODE( 3, symbol, "log2_sub_pu_tmvp_size_minus2" );         spsNext.setSubPuMvpLog2Size( symbol + MIN_CU_LOG2 );
-#endif 
     int subPuMode = 1;
     spsNext.setSubPuMvpMode( subPuMode );
   }
@@ -1858,22 +1855,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   {
     pcSlice->setDefaultClpRng( *sps );
 
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-    if (sps->getSpsNext().getUseSubPuMvp() && !pcSlice->isIntra())
-    {
-      READ_FLAG(uiCode, "slice_atmvp_subblk_size_enable_flag");
-      pcSlice->setSubPuMvpSliceSubblkSizeEnable(uiCode);
-      if (pcSlice->getSubPuMvpSliceSubblkSizeEnable())
-      {
-        READ_CODE(3, uiCode, "log2_slice_sub_pu_tmvp_size_minus2");
-        pcSlice->setSubPuMvpSubblkLog2Size(uiCode + MIN_CU_LOG2);
-      }
-      else
-      {
-        pcSlice->setSubPuMvpSubblkLog2Size(sps->getSpsNext().getSubPuMvpLog2Size());
-      }
-    }
-#endif
   }
 
   if(pps->getSliceHeaderExtensionPresentFlag())

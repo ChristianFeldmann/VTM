@@ -3242,17 +3242,10 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   // compute the location of the current PU
   Position puPos = pu.lumaPos();
   Size puSize = pu.lumaSize();
-#if JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
   int numPartLine = std::max(puSize.width >> ATMVP_SUB_BLOCK_SIZE, 1u);
   int numPartCol = std::max(puSize.height >> ATMVP_SUB_BLOCK_SIZE, 1u);
   int puHeight = numPartCol == 1 ? puSize.height : 1 << ATMVP_SUB_BLOCK_SIZE;
   int puWidth = numPartLine == 1 ? puSize.width : 1 << ATMVP_SUB_BLOCK_SIZE;
-#else 
-  int numPartLine = std::max(puSize.width >> slice.getSubPuMvpSubblkLog2Size(), 1u);
-  int numPartCol = std::max(puSize.height >> slice.getSubPuMvpSubblkLog2Size(), 1u);
-  int puHeight = numPartCol == 1 ? puSize.height : 1 << slice.getSubPuMvpSubblkLog2Size();
-  int puWidth = numPartLine == 1 ? puSize.width : 1 << slice.getSubPuMvpSubblkLog2Size();
-#endif 
 
   Mv cColMv;
   // use coldir.

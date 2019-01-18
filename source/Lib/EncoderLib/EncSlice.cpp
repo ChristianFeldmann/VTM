@@ -1185,69 +1185,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #endif
   m_pcCuEncoder->getModeCtrl()->setFastDeltaQp(bFastDeltaQP);
 
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  if (pcSlice->getSPS()->getSpsNext().getUseSubPuMvp())
-  {
-    if (!pcSlice->isIRAP() )
-    {
-      if (pcSlice->getPOC() > m_pcCuEncoder->getPrevPOC() && m_pcCuEncoder->getClearSubMergeStatic())
-      {
-        m_pcCuEncoder->clearSubMergeStatics();
-        m_pcCuEncoder->setClearSubMergeStatic(false);
-      }
-
-#if JVET_L0198_ATMVP_8x8SUB_BLOCK
-      pcSlice->setSubPuMvpSubblkLog2Size(ATMVP_SUB_BLOCK_SIZE);
-#else
-      unsigned int layer = pcSlice->getDepth();
-      unsigned int subMergeBlkSize = m_pcCuEncoder->getSubMergeBlkSize(layer);
-      unsigned int subMergeBlkNum = m_pcCuEncoder->getSubMergeBlkNum(layer);
-
-      if (subMergeBlkNum > 0)
-      {
-        unsigned int subMergeBlkSizeTh = pcSlice->getCheckLDC() ? 75 : 27;
-        unsigned int aveBlkSize = subMergeBlkSize / subMergeBlkNum;
-        if (aveBlkSize < (subMergeBlkSizeTh*subMergeBlkSizeTh))
-        {
-          pcSlice->setSubPuMvpSubblkLog2Size(2);
-        }
-        else
-        {
-          pcSlice->setSubPuMvpSubblkLog2Size(3);
-        }
-        m_pcCuEncoder->clearOneTLayerSubMergeStatics(layer);
-      }
-      else
-      {
-        pcSlice->setSubPuMvpSubblkLog2Size(pcSlice->getSPS()->getSpsNext().getSubPuMvpLog2Size());
-        CHECK(subMergeBlkSize != 0, "subMerge blksize should be 0");
-      }
-
-      if (pcSlice->getSubPuMvpSubblkLog2Size() == pcSlice->getSPS()->getSpsNext().getSubPuMvpLog2Size())
-      {
-        pcSlice->setSubPuMvpSliceSubblkSizeEnable(false);
-      }
-      else
-      {
-        pcSlice->setSubPuMvpSliceSubblkSizeEnable(true);
-      }
-#endif
-    }
-    else
-    {
-      m_pcCuEncoder->setPrevPOC(pcSlice->getPOC());
-      if (m_pcCfg->getGOPSize() != m_pcCfg->getIntraPeriod())
-      {
-        m_pcCuEncoder->setClearSubMergeStatic(true);
-      }
-      else
-      {
-        m_pcCuEncoder->clearSubMergeStatics();
-        m_pcCuEncoder->setClearSubMergeStatic(false);
-      }
-    }
-  }
-#endif 
 
   //------------------------------------------------------------------------------
   //  Weighted Prediction parameters estimation.

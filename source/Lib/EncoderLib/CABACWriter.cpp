@@ -507,18 +507,6 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
     cuCtx.qp = CU::predictQP( cu, cuCtx.qp );
   }
 
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  if (!cs.slice->isIntra() && m_EncCu)
-  {
-    PredictionUnit& pu = *cu.firstPU;
-    if (pu.mergeFlag && (pu.mergeType == MRG_TYPE_SUBPU_ATMVP))
-    {
-      unsigned int layerId = cs.slice->getDepth();
-      m_EncCu->incrementSubMergeBlkSize(layerId, cu.Y().width*cu.Y().height);
-      m_EncCu->incrementSubMergeBlkNum(layerId, 1);
-    }
-  }
-#endif 
 
   // coding unit
   coding_unit( cu, partitioner, cuCtx );

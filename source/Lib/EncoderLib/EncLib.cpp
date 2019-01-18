@@ -850,9 +850,6 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   sps.setUseDualITree                        ( m_dualITree );
   sps.getSpsNext().setSubPuMvpMode          ( m_SubPuMvpMode );
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  sps.getSpsNext().setSubPuMvpLog2Size(m_SubPuMvpLog2Size);
-#endif 
   sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
   sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
   sps.getSpsNext().setUseBIO                ( m_BIO );

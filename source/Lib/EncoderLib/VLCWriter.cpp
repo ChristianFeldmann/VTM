@@ -558,12 +558,6 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
 #endif
 
   // additional parameters
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  if( spsNext.getUseSubPuMvp() )
-  {
-    WRITE_CODE( spsNext.getSubPuMvpLog2Size() - MIN_CU_LOG2, 3,                                 "log2_sub_pu_tmvp_size_minus2" );
-  }
-#endif 
 
   if( spsNext.getUseIMV() )
   {
@@ -1324,16 +1318,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   }
 #endif
 
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  if (pcSlice->getSPS()->getSpsNext().getUseSubPuMvp() && !pcSlice->isIntra())
-  {
-    WRITE_FLAG(pcSlice->getSubPuMvpSliceSubblkSizeEnable(), "slice_atmvp_subblk_size_enable_flag");
-    if (pcSlice->getSubPuMvpSliceSubblkSizeEnable())
-    {
-      WRITE_CODE(pcSlice->getSubPuMvpSubblkLog2Size() - MIN_CU_LOG2, 3, "log2_slice_sub_pu_tmvp_size_minus2");
-    }
-  }
-#endif
   if(pcSlice->getPPS()->getSliceHeaderExtensionPresentFlag())
   {
     WRITE_UVLC(0,"slice_segment_header_extension_length");

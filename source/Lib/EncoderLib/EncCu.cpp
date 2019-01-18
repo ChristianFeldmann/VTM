@@ -279,9 +279,6 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   ::memset(m_subMergeBlkSize, 0, sizeof(m_subMergeBlkSize));
   ::memset(m_subMergeBlkNum, 0, sizeof(m_subMergeBlkNum));
   m_prevPOC = MAX_UINT;
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  m_clearSubMergeStatic = false;
-#endif
 
   if (m_pcEncCfg->getCPRHashSearch() && m_pcEncCfg->getCPRMode())
   {

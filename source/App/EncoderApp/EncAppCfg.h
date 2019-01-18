@@ -205,9 +205,6 @@ protected:
   bool      m_dualTree;
   bool      m_LargeCTU;
   int       m_SubPuMvpMode;
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  unsigned  m_SubPuMvpLog2Size;
-#endif 
   bool      m_Affine;
   bool      m_AffineType;
   bool      m_BIO;

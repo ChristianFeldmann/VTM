@@ -829,9 +829,6 @@ private:
   //=====  additional parameters  =====
   // qtbt
   // sub-pu merging
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  unsigned    m_subPuLog2Size;
-#endif
   int         m_subPuMrgMode;
   //imv
   ImvMode     m_ImvMode;
@@ -894,10 +891,6 @@ public:
   //=====  additional parameters  =====
   // qtbt
   // sub pu tmvp
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  void      setSubPuMvpLog2Size   ( unsigned    log2Size )                          { m_subPuLog2Size = log2Size; }
-  unsigned  getSubPuMvpLog2Size   ()                                      const     { return m_subPuLog2Size; }
-#endif 
   void      setImvMode(ImvMode m) { m_ImvMode = m; m_IMV = m != 0;  }
   ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
 
@@ -1642,10 +1635,6 @@ private:
 
   bool                       m_enableTMVPFlag;
 
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  bool                       m_subPuMvpSubBlkSizeSliceEnable;
-  int                        m_subPuMvpSubBlkLog2Size;
-#endif 
 
   SliceType                  m_encCABACTableIdx;           // Used to transmit table selection across slices.
 
@@ -1920,12 +1909,6 @@ public:
   void                        setEncCABACTableIdx( SliceType idx )                   { m_encCABACTableIdx = idx;                                     }
   SliceType                   getEncCABACTableIdx() const                            { return m_encCABACTableIdx;                                    }
 
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  void                        setSubPuMvpSliceSubblkSizeEnable(bool b) { m_subPuMvpSubBlkSizeSliceEnable = b; }
-  bool                        getSubPuMvpSliceSubblkSizeEnable()                  const { return m_subPuMvpSubBlkSizeSliceEnable; }
-  void                        setSubPuMvpSubblkLog2Size(int n) { m_subPuMvpSubBlkLog2Size = n; }
-  int                         getSubPuMvpSubblkLog2Size()                         const { return m_subPuMvpSubBlkLog2Size; }
-#endif 
 
   void                        setSliceQpBase( int i )                                { m_iSliceQpBase = i;                                           }
   int                         getSliceQpBase()                                 const { return m_iSliceQpBase;                                        }

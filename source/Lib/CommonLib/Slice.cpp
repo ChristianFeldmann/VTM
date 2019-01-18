@@ -121,10 +121,6 @@ Slice::Slice()
 , m_temporalLayerNonReferenceFlag ( false )
 , m_LFCrossSliceBoundaryFlag      ( false )
 , m_enableTMVPFlag                ( true )
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-, m_subPuMvpSubBlkSizeSliceEnable(false)
-, m_subPuMvpSubBlkLog2Size       (2)
-#endif 
 , m_encCABACTableIdx              (I_SLICE)
 , m_iProcessingStartTime          ( 0 )
 , m_dProcessingTime               ( 0 )
@@ -210,10 +206,6 @@ void Slice::initSlice()
   m_cabacInitFlag        = false;
   m_cabacWinUpdateMode   = 0;
   m_enableTMVPFlag       = true;
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  m_subPuMvpSubBlkSizeSliceEnable = false;
-  m_subPuMvpSubBlkLog2Size        = 2;
-#endif 
   resetMotionLUTs();
 }
 
@@ -851,10 +843,6 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_bLMvdL1Zero                   = pSrc->m_bLMvdL1Zero;
   m_LFCrossSliceBoundaryFlag      = pSrc->m_LFCrossSliceBoundaryFlag;
   m_enableTMVPFlag                = pSrc->m_enableTMVPFlag;
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  m_subPuMvpSubBlkSizeSliceEnable = pSrc->m_subPuMvpSubBlkSizeSliceEnable;
-  m_subPuMvpSubBlkLog2Size        = pSrc->m_subPuMvpSubBlkLog2Size;
-#endif 
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
   m_maxNumAffineMergeCand         = pSrc->m_maxNumAffineMergeCand;
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
@@ -1768,9 +1756,6 @@ SPSNext::SPSNext( SPS& sps )
 #endif
 
   // default values for additional parameters
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  , m_subPuLog2Size             ( 0 )
-#endif
   , m_subPuMrgMode              ( 0 )
   , m_ImvMode                   ( IMV_OFF )
   , m_MTTMode                   ( 0 )

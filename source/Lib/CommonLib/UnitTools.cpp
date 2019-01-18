@@ -748,7 +748,6 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
   return uiIntraMode;
 }
 
-#if JVET_L0266_HMVP
 bool PU::xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const MergeCtx mergeCandList, bool hasPruned[MRG_MAX_NUM_CANDS])
 {
   for (uint32_t ui = 0; ui < prevCnt; ui++)
@@ -861,7 +860,6 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
   }
   return false;
 }
-#endif
 
 void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #if JVET_L0054_MMVD
@@ -1428,7 +1426,6 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     return;
   }
 
-#if JVET_L0266_HMVP
   int maxNumMergeCandMin1 = maxNumMergeCand - 1;
   if (cnt != maxNumMergeCandMin1)
   {
@@ -1466,7 +1463,6 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       return;
     }
   }
-#endif
 
 #if JVET_L0090_PAIR_AVG
   // pairwise-average candidates
@@ -1561,11 +1557,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 
   uint32_t uiArrayAddr = cnt;
 #if !JVET_L0090_PAIR_AVG
-#if JVET_L0266_HMVP
   uint32_t uiCutoff    = std::min( uiArrayAddr, 3u );
-#else
-  uint32_t uiCutoff    = std::min( uiArrayAddr, 4u );
-#endif
   if (slice.isInterB())
   {
     static const uint32_t NUM_PRIORITY_LIST = 12;
@@ -2158,7 +2150,6 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 
     if ((C0Avail && getColocatedMVP(pu, eRefPicList, posC0, cColMv, refIdx_Col)) || getColocatedMVP(pu, eRefPicList, posC1, cColMv, refIdx_Col))
     {
-#if JVET_L0266_HMVP
       if (pu.cu->imv != 0)
       {
         cColMv.roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv); 
@@ -2175,19 +2166,14 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
       {
         pInfo->mvCand[pInfo->numCand++] = cColMv;
       }
-#else
-      pInfo->mvCand[pInfo->numCand++] = cColMv;
-#endif
     }
   }
-#if JVET_L0266_HMVP
   if (pInfo->numCand < AMVP_MAX_NUM_CANDS)
   {
     const int        currRefPOC = cs.slice->getRefPic(eRefPicList, refIdx)->getPOC();
     const RefPicList eRefPicList2nd = (eRefPicList == REF_PIC_LIST_0) ? REF_PIC_LIST_1 : REF_PIC_LIST_0;
     addAMVPHMVPCand(pu, eRefPicList, eRefPicList2nd, currRefPOC, *pInfo, pu.cu->imv);
   }
-#endif
   if (pInfo->numCand > AMVP_MAX_NUM_CANDS)
   {
     pInfo->numCand = AMVP_MAX_NUM_CANDS;
@@ -2867,7 +2853,6 @@ bool PU::addMVPCandWithScaling( const PredictionUnit &pu, const RefPicList &eRef
   return false;
 }
 
-#if JVET_L0266_HMVP
 void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList, const RefPicList eRefPicList2nd, const int currRefPOC, AMVPInfo &info, uint8_t imv)
 {
   const Slice &slice = *(*pu.cs).slice;
@@ -2916,7 +2901,6 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
     }
   }
 }
-#endif
 bool PU::isBipredRestriction(const PredictionUnit &pu)
 {
   if(pu.cu->lumaSize().width == 4 && pu.cu->lumaSize().height ==4 )

@@ -41,9 +41,7 @@
 #include "Picture.h"
 #include "dtrace_next.h"
 
-#if  JVET_L0266_HMVP
 #include "UnitTools.h"
-#endif
 
 //! \ingroup CommonLib
 //! \{
@@ -143,9 +141,7 @@ Slice::Slice()
 , m_uiMaxTTSizeIChroma            ( 0 )
 #endif
 , m_uiMaxBTSize                   ( 0 )
-#if  JVET_L0266_HMVP
 , m_MotionCandLut                (NULL)
-#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -182,16 +178,12 @@ Slice::Slice()
     m_saoEnabledFlag[ch] = false;
   }
 
-#if  JVET_L0266_HMVP
   initMotionLUTs();
-#endif
 }
 
 Slice::~Slice()
 {
-#if  JVET_L0266_HMVP
   destroyMotionLUTs();
-#endif
 }
 
 
@@ -228,9 +220,7 @@ void Slice::initSlice()
   m_subPuMvpSubBlkSizeSliceEnable = false;
   m_subPuMvpSubBlkLog2Size        = 2;
 #endif 
-#if  JVET_L0266_HMVP
   resetMotionLUTs();
-#endif
 }
 
 void Slice::setDefaultClpRng( const SPS& sps )
@@ -1629,7 +1619,6 @@ void Slice::stopProcessingTimer()
   m_dProcessingTime += (double)(clock()-m_iProcessingStartTime) / CLOCKS_PER_SEC;
   m_iProcessingStartTime = 0;
 }
-#if  JVET_L0266_HMVP
 void Slice::initMotionLUTs()
 {
   m_MotionCandLut = new LutMotionCand;
@@ -1698,7 +1687,6 @@ void Slice::copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst)
    memcpy(Dst->motionCand, Src->motionCand, sizeof(MotionInfo)*(std::min(Src->currCnt, MAX_NUM_HMVP_CANDS)));
    Dst->currCnt = Src->currCnt;
 }
-#endif
 
 unsigned Slice::getMinPictureDistance() const
 {

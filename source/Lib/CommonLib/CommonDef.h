@@ -330,10 +330,8 @@ static const int GBI_NUM =                                          5; ///< the 
 static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
 #endif
-#if JVET_L0266_HMVP
 static const int MAX_NUM_HMVP_CANDS =                              6; ///< maximum number of HMVP candidates to be stored and used in merge list
 static const int MAX_NUM_HMVP_AVMPCANDS =                          4; ///< maximum number of HMVP candidates to be used in AMVP list
-#endif
 
 #if W0038_DB_OPT
 static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;

@@ -211,11 +211,9 @@ public:
   }
 };
 #endif
-#if  JVET_L0266_HMVP
 struct LutMotionCand
 {
   MotionInfo*   motionCand;
   int  currCnt;
 };
-#endif
 #endif // __MOTIONINFO__

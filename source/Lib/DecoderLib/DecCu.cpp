@@ -369,12 +369,10 @@ void DecCu::xReconInter(CodingUnit &cu)
   m_pcInterPred->motionCompensation( cu );
 #endif
   }
-#if JVET_L0266_HMVP
 #if JVET_L0293_CPR
   if (cu.Y().valid())
 #endif
   cu.slice->updateMotionLUTs(cu.slice->getMotionLUTs(), cu);
-#endif
 
   if (cu.firstPU->mhIntraFlag)
   {

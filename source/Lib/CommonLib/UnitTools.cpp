@@ -2919,12 +2919,10 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
 #endif
 bool PU::isBipredRestriction(const PredictionUnit &pu)
 {
-#if JVET_L0104_NO_4x4BI_INTER_CU
   if(pu.cu->lumaSize().width == 4 && pu.cu->lumaSize().height ==4 )
   {
     return true;
   }
-#endif
   return false;
 }
 

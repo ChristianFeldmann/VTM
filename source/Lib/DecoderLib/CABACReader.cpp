@@ -1634,11 +1634,7 @@ void CABACReader::inter_pred_idc( PredictionUnit& pu )
     pu.interDir = 1;
     return;
   }
-#if JVET_L0104_NO_4x4BI_INTER_CU
   if( !(PU::isBipredRestriction(pu)) )
-#else
-  if( true )
-#endif
   {
     unsigned ctxId = DeriveCtx::CtxInterDir(pu);
     if( m_BinDecoder.decodeBin( Ctx::InterDir(ctxId) ) )

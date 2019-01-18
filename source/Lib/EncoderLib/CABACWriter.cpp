@@ -1618,11 +1618,7 @@ void CABACWriter::inter_pred_idc( const PredictionUnit& pu )
   {
     return;
   }
-#if JVET_L0104_NO_4x4BI_INTER_CU
   if( !(PU::isBipredRestriction(pu)) )
-#else
-  if( true )
-#endif
   {
     unsigned ctxId = DeriveCtx::CtxInterDir(pu);
     if( pu.interDir == 3 )

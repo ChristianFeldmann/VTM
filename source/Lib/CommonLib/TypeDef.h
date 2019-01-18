@@ -56,7 +56,6 @@
 
 
 
-#define JVET_L0377_AMVR_ROUNDING_ALIGN                    1 // Align AMVR rounding for AMVP candidate
 
 #define JVET_L0285_8BIT_TRANSFORM_CORE                    1 // Primary transform using 8-bit cores
 

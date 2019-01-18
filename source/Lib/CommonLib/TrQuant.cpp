@@ -281,21 +281,8 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
         int indHor = tu.emtIdx &  1;
         int indVer = tu.emtIdx >> 1;
         
-#if JVET_L0118_ALIGN_MTS_INDEX
         trTypeHor = indHor ? DCT8 : DST7;
         trTypeVer = indVer ? DCT8 : DST7;
-#else
-        if ( CU::isIntra( *tu.cu ) )
-        {
-          trTypeHor = indHor ? DCT8 : DST7;
-          trTypeVer = indVer ? DCT8 : DST7;
-        }
-        else
-        {
-          trTypeHor = indHor ? DST7 : DCT8;
-          trTypeVer = indVer ? DST7 : DCT8;
-        }
-#endif
       }
     }
   }

@@ -120,9 +120,7 @@ void InterPrediction::destroy()
     }
   }
 
-#if JVET_L0124_L0208_TRIANGLE
   m_triangleBuf.destroy();
-#endif
 
 #if JVET_L0265_AFF_MINIMUM4X4
   if (m_storedMv != nullptr)
@@ -180,9 +178,7 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
       }
     }
 
-#if JVET_L0124_L0208_TRIANGLE
     m_triangleBuf.create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
-#endif
 
     m_iRefListIdx = -1;
   
@@ -574,7 +570,6 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
       }
       else
       {
-#if JVET_L0124_L0208_TRIANGLE
         xPredInterUni( pu, eRefPicList, pcMbBuf, pu.cu->triangle 
 #if JVET_L0256_BIO
           , bioApplied
@@ -583,16 +578,6 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
           , true, true
 #endif
         );
-#else
-        xPredInterUni ( pu, eRefPicList, pcMbBuf, false 
-#if JVET_L0256_BIO
-          , bioApplied
-#endif
-#if JVET_L0293_CPR     
-          , true, true
-#endif
-        );
-#endif
       }
     }
   }
@@ -1349,24 +1334,20 @@ void InterPrediction::xWeightedAverage( const PredictionUnit& pu, const CPelUnit
   }
   else if( iRefIdx0 >= 0 && iRefIdx1 < 0 )
   {
-#if JVET_L0124_L0208_TRIANGLE
     if( pu.cu->triangle )
     {
       pcYuvDst.copyFrom( pcYuvSrc0 );
     }
     else
-#endif 
     pcYuvDst.copyClip( pcYuvSrc0, clpRngs );
   }
   else if( iRefIdx0 < 0 && iRefIdx1 >= 0 )
   {
-#if JVET_L0124_L0208_TRIANGLE
     if( pu.cu->triangle )
     {
       pcYuvDst.copyFrom( pcYuvSrc1 );
     }
     else
-#endif
     pcYuvDst.copyClip( pcYuvSrc1, clpRngs );
   }
 }
@@ -1508,7 +1489,6 @@ int InterPrediction::rightShiftMSB(int numer, int denom)
 }
 #endif
 
-#if JVET_L0124_L0208_TRIANGLE
 void InterPrediction::motionCompensation4Triangle( CodingUnit &cu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 )
 {
   for( auto &pu : CU::traversePUs( cu ) )
@@ -1618,7 +1598,6 @@ void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint
     weightedEndPos   += weightedPosoffset;
   }
 }
-#endif
 
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
 void InterPrediction::cacheAssign( CacheModel *cache )

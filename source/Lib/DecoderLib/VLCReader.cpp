@@ -817,9 +817,7 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   READ_FLAG( symbol,  "mhintra_flag" );                           spsNext.setUseMHIntra             ( symbol != 0 );
 #endif
-#if JVET_L0124_L0208_TRIANGLE
   READ_FLAG( symbol,    "triangle_flag" );                          spsNext.setUseTriangle            ( symbol != 0 );
-#endif
 #if ENABLE_WPP_PARALLELISM
   READ_FLAG( symbol,  "next_dqp_enabled_flag" );                  spsNext.setUseNextDQP             ( symbol != 0 );
 #else

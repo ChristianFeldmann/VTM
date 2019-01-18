@@ -1270,9 +1270,7 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
       pu.intraDir[1] = DM_CHROMA_IDX;
     }
 #endif
-#if JVET_L0124_L0208_TRIANGLE
     triangle_mode( *pu.cu );
-#endif
 #if JVET_L0054_MMVD
     if (pu.mmvdMergeFlag)
     {
@@ -1513,7 +1511,6 @@ void CABACReader::merge_idx( PredictionUnit& pu )
   int numCandminus1 = int( pu.cs->slice->getMaxNumMergeCand() ) - 1;
   pu.mergeIdx       = 0;
 
-#if JVET_L0124_L0208_TRIANGLE
   if( pu.cu->triangle )
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__TRIANGLE_INDEX );
@@ -1529,7 +1526,6 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx=%d\n", pu.mergeIdx );
     return;
   }
-#endif
 
   if( numCandminus1 > 0 )
   {
@@ -1850,7 +1846,6 @@ void CABACReader::MHIntra_luma_pred_modes(CodingUnit &cu)
 }
 #endif
 
-#if JVET_L0124_L0208_TRIANGLE
 void CABACReader::triangle_mode( CodingUnit& cu )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__TRIANGLE_FLAG );
@@ -1866,7 +1861,6 @@ void CABACReader::triangle_mode( CodingUnit& cu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "triangle_mode() triangle_mode=%d pos=(%d,%d) size: %dx%d\n", cu.triangle, cu.Y().x, cu.Y().y, cu.lumaSize().width, cu.lumaSize().height );
 }
-#endif
 
 //================================================================================
 //  clause 7.3.8.7

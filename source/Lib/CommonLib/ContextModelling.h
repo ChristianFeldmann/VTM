@@ -349,9 +349,7 @@ unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
 unsigned CtxAffineFlag( const CodingUnit& cu );
-#if JVET_L0124_L0208_TRIANGLE
 unsigned CtxTriangleFlag( const CodingUnit& cu );
-#endif
 }
 
 #endif // __CONTEXTMODELLING__

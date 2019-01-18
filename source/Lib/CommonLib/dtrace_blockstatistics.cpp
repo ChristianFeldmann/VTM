@@ -271,7 +271,6 @@ void CDTrace::dtrace_polygon_vector(int k, int poc, const std::vector<Position> 
   dtrace<false>(k, "BlockStat: POC %d @[%s] %s={%4d,%4d}\n", poc, polygonDescription.c_str(), stat_type.c_str(), val_x, val_y);
 }
 
-#if JVET_L0124_L0208_TRIANGLE
 void retrieveTriangularMvInfo(const PredictionUnit& pu, MotionInfo& mi0, MotionInfo& mi1)
 {
   int triangleDir = g_triangleCombination[pu.mergeIdx][0];
@@ -359,7 +358,6 @@ void retrieveTrianglePolygon(const PredictionUnit& pu, std::vector<Position>& tr
     CHECK(triangleDir != TRIANGLE_DIR_45 && triangleDir != TRIANGLE_DIR_135, "Unknown triangle type");
   }
 }
-#endif
 
 void writeBlockStatisticsHeader(const SPS *sps)
 {
@@ -497,9 +495,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::Luma_IntraMode),  pu.intraDir[COMPONENT_Y]);
               }
 #endif
-#if JVET_L0124_L0208_TRIANGLE
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::TriangleFlag), pu.cu->triangle);
-#endif
             }
             DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineFlag), pu.cu->affine);
             DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineType), pu.cu->affineType);
@@ -515,11 +511,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVPIdxL1), pu.mvpIdx[REF_PIC_LIST_1]);
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::RefIdxL1), pu.refIdx[REF_PIC_LIST_1]);
             }
-#if JVET_L0124_L0208_TRIANGLE
             if (!pu.cu->affine && !pu.cu->triangle)
-#else
-            if (!pu.cu->affine)
-#endif
             {
               if (pu.interDir != 2 /* PRED_L1 */)
               {
@@ -544,7 +536,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVL1), mv.hor, mv.ver);
               }
             }
-#if JVET_L0124_L0208_TRIANGLE
             else if (pu.cu->triangle)
             {
               MotionInfo mi[2];
@@ -566,7 +557,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 }
               }
             }
-#endif
             else
             {
               if (pu.interDir != 2 /* PRED_L1 */)
@@ -904,13 +894,11 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 }
               }
 #endif
-#if JVET_L0124_L0208_TRIANGLE
               if (cu.cs->slice->getSPS()->getSpsNext().getUseTriangle() && cu.cs->slice->isInterB() && cu.lwidth() * cu.lheight() >= TRIANGLE_MIN_SIZE && !cu.affine)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::TriangleFlag), cu.triangle);
 
               }
-#endif
             }
             else
             {
@@ -943,11 +931,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVPIdxL1), pu.mvpIdx[REF_PIC_LIST_1]);
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::RefIdxL1), pu.refIdx[REF_PIC_LIST_1]);
             }
-#if JVET_L0124_L0208_TRIANGLE
             if (!pu.cu->affine && !pu.cu->triangle)
-#else
-            if (!pu.cu->affine)
-#endif
             {
               if (pu.interDir != 2 /* PRED_L1 */)
               {
@@ -972,7 +956,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVL1), mv.hor, mv.ver);
               }
             }
-#if JVET_L0124_L0208_TRIANGLE
             else if (pu.cu->triangle)
             {
               MotionInfo mi[2];
@@ -994,7 +977,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 }
               }
             }
-#endif
             else
             {
               if (pu.interDir != 2 /* PRED_L1 */)

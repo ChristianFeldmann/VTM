@@ -239,9 +239,7 @@ protected:
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool      m_MHIntra;
 #endif
-#if JVET_L0124_L0208_TRIANGLE
   bool      m_Triangle;
-#endif
 
 
 #if JVET_L0293_CPR

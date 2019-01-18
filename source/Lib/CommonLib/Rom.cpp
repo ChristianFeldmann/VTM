@@ -529,7 +529,6 @@ void initROM()
     }
   }
 
-#if JVET_L0124_L0208_TRIANGLE
   for( int idxH = MAX_CU_DEPTH - MIN_CU_LOG2; idxH >= 0; --idxH )
   {
     for( int idxW = MAX_CU_DEPTH - MIN_CU_LOG2; idxW >= 0; --idxW )
@@ -551,7 +550,6 @@ void initROM()
       }
     }
   }
-#endif
 }
 
 void destroyROM()
@@ -883,7 +881,6 @@ const uint8_t g_NonMPM[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
 
-#if JVET_L0124_L0208_TRIANGLE
 const Pel g_trianglePelWeightedLuma[TRIANGLE_DIR_NUM][2][7] =
 { 
   { // TRIANGLE_DIR_135
@@ -943,5 +940,4 @@ const uint8_t g_triangleIdxBins[TRIANGLE_MAX_NUM_CANDS] =
    8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
   10, 10, 10, 10, 10, 10, 10, 10, 10, 10
 };
-#endif
 //! \}

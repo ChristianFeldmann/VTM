@@ -1140,12 +1140,10 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       // add inter modes
       if( m_pcEncCfg->getUseEarlySkipDetection() )
       {
-#if JVET_L0124_L0208_TRIANGLE
         if( cs.sps->getSpsNext().getUseTriangle() && cs.slice->isInterB() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
         }
-#endif
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
 #if JVET_L0369_SUBBLOCK_MERGE
         if ( cs.sps->getSpsNext().getUseAffine() || cs.sps->getSpsNext().getUseSubPuMvp() )
@@ -1160,12 +1158,10 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       else
       {
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME,    ETO_STANDARD, qp, lossless } );
-#if JVET_L0124_L0208_TRIANGLE
         if( cs.sps->getSpsNext().getUseTriangle() && cs.slice->isInterB() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
         }
-#endif
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
 #if JVET_L0369_SUBBLOCK_MERGE
         if ( cs.sps->getSpsNext().getUseAffine() || cs.sps->getSpsNext().getUseSubPuMvp() )
@@ -1399,12 +1395,10 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
-#if JVET_L0124_L0208_TRIANGLE
     if( encTestmode.type == ETM_MERGE_TRIANGLE && ( partitioner.currArea().lumaSize().area() < TRIANGLE_MIN_SIZE || relatedCU.isIntra ) )
     { 
       return false;
     }
-#endif
     return true;
   }
   else if( isModeSplit( encTestmode ) )

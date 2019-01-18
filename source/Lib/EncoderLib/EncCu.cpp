@@ -161,12 +161,10 @@ void EncCu::create( EncCfg* encCfg )
     m_acRealMergeBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
   }
 #endif
-#if JVET_L0124_L0208_TRIANGLE
   for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
   {
     m_acTriangleWeightedBuffer[ui].create( chromaFormat, Area( 0, 0, uiMaxWidth, uiMaxHeight ) );
   }
-#endif
 
   m_CtxBuffer.resize( maxDepth );
   m_CurrCtx = 0;
@@ -264,12 +262,10 @@ void EncCu::destroy()
     m_acRealMergeBuffer[ui].destroy();
   }
 #endif
-#if JVET_L0124_L0208_TRIANGLE
   for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
   {
     m_acTriangleWeightedBuffer[ui].destroy();
   }
-#endif
 }
 
 
@@ -766,12 +762,10 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
       cu->mmvdSkip = cu->skip == false ? false : cu->mmvdSkip;
 #endif
     }
-#if JVET_L0124_L0208_TRIANGLE
     else if( currTestMode.type == ETM_MERGE_TRIANGLE )
     {
       xCheckRDCostMergeTriangle2Nx2N( tempCS, bestCS, partitioner, currTestMode );
     }
-#endif
     else if( currTestMode.type == ETM_INTRA )
     {
       xCheckRDCostIntra( tempCS, bestCS, partitioner, currTestMode );
@@ -1707,9 +1701,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     mergeCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
   }
 
-#if JVET_L0124_L0208_TRIANGLE
   setMergeBestSATDCost( MAX_DOUBLE );
-#endif
 
   {
     // first get merge candidates
@@ -1875,9 +1867,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if JVET_L0054_MMVD
       cu.mmvdSkip = false;
 #endif
-#if JVET_L0124_L0208_TRIANGLE
       cu.triangle         = false;
-#endif
     //cu.affine
       cu.predMode         = MODE_INTER;
     //cu.LICFlag
@@ -2218,9 +2208,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
       }
 
-#if JVET_L0124_L0208_TRIANGLE
       setMergeBestSATDCost( candCostList[0] );
-#endif
 
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       if (isIntrainterEnabled)
@@ -2331,9 +2319,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if JVET_L0054_MMVD
       cu.mmvdSkip = false;
 #endif
-#if JVET_L0124_L0208_TRIANGLE
       cu.triangle         = false;
-#endif
     //cu.affine
       cu.predMode         = MODE_INTER;
     //cu.LICFlag
@@ -2495,7 +2481,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   }
 }
 
-#if JVET_L0124_L0208_TRIANGLE
 void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
   const Slice &slice = *tempCS->slice;
@@ -2742,7 +2727,6 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     }   
   }
 }
-#endif
 
 void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
@@ -3153,9 +3137,7 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
     cu.mmvdSkip = false;
     pu.mmvdMergeFlag = false;
 #endif
-#if JVET_L0124_L0208_TRIANGLE
     cu.triangle = false;
-#endif
     PU::getInterMergeCandidates(pu, mergeCtx
 #if JVET_L0054_MMVD
       , 0
@@ -3199,9 +3181,7 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 #if JVET_L0054_MMVD
       cu.mmvdSkip = false;
 #endif
-#if JVET_L0124_L0208_TRIANGLE
       cu.triangle = false;
-#endif
       DistParam distParam;
       const bool bUseHadamard = !encTestMode.lossless;
       PredictionUnit &pu = tempCS->addPU(cu, partitioner.chType); //tempCS->addPU(cu);
@@ -3349,9 +3329,7 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
             cu.mmvdSkip = false;
             pu.mmvdMergeFlag = false;
 #endif
-#if JVET_L0124_L0208_TRIANGLE
             cu.triangle = false;
-#endif
             mergeCtx.setMergeInfo(pu, mergeCand);
             PU::spanMotionInfo(pu, mergeCtx);
 

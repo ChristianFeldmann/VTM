@@ -330,7 +330,6 @@ unsigned DeriveCtx::CtxBTsplit(const CodingStructure& cs, Partitioner& partition
   return ctx;
 }
 
-#if JVET_L0124_L0208_TRIANGLE
 unsigned DeriveCtx::CtxTriangleFlag( const CodingUnit& cu )
 {
   const CodingStructure *cs = cu.cs;
@@ -344,7 +343,6 @@ unsigned DeriveCtx::CtxTriangleFlag( const CodingUnit& cu )
 
   return ctxId;
 }
-#endif
 
 
 void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )

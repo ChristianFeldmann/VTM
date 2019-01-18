@@ -859,9 +859,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
 #endif
-#if JVET_L0124_L0208_TRIANGLE
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
-#endif
 
 #if JVET_L0293_CPR
   ( "CPR",                                            m_CPRMode,                                           0u, "CPRMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
@@ -1950,9 +1948,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_GBi, "GBi is only allowed with NEXT profile" );
     xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
 #endif
-#if JVET_L0124_L0208_TRIANGLE
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
-#endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
   else
@@ -3151,9 +3147,7 @@ void EncAppCfg::xPrintParameter()
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
 #endif
-#if JVET_L0124_L0208_TRIANGLE
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
-#endif
   }
 #if JVET_L0293_CPR
     msg(VERBOSE, "CPR:%d ", m_CPRMode);

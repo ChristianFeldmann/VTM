@@ -109,12 +109,10 @@ enum class BlockStatistic {
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   MHIntraFlag,
 #endif
-#if JVET_L0124_L0208_TRIANGLE
   TriangleFlag,
   TrianglePartitioning,
   TriangleMVL0, //<< currently only uni-prediction enabled
   TriangleMVL1, //<< currently only uni-prediction enabled
-#endif
 #if JVET_L0646_GBI
   GBIIndex,
 #endif
@@ -205,12 +203,10 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   { BlockStatistic::MHIntraFlag,            std::tuple<std::string, BlockStatisticType, std::string>{"MHIntraFlag",                 BlockStatisticType::Flag,                   ""}},
 #endif
-#if JVET_L0124_L0208_TRIANGLE
   { BlockStatistic::TriangleFlag,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleFlag",                BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::TrianglePartitioning,   std::tuple<std::string, BlockStatisticType, std::string>{"TrianglePartitioning",        BlockStatisticType::Line,                   ""}},
   { BlockStatistic::TriangleMVL0,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL0",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
   { BlockStatistic::TriangleMVL1,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL1",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
-#endif
 #if JVET_L0646_GBI
   { BlockStatistic::GBIIndex,               std::tuple<std::string, BlockStatisticType, std::string>{"GBIIndex",                    BlockStatisticType::Integer,                "[0, 4]"}}, 
 #endif

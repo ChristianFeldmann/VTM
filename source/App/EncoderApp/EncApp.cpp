@@ -258,9 +258,7 @@ void EncApp::xInitLibCfg()
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
 #endif
-#if JVET_L0124_L0208_TRIANGLE
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
-#endif
 
 #if JVET_L0293_CPR
   m_cEncLib.setCPRMode                                           ( m_CPRMode );

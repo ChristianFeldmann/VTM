@@ -334,7 +334,6 @@ void DecCu::xFillPCMBuffer(CodingUnit &cu)
 
 void DecCu::xReconInter(CodingUnit &cu)
 {
-#if JVET_L0124_L0208_TRIANGLE
   if( cu.triangle )
   {
     const uint8_t mergeIdx = cu.firstPU->mergeIdx;
@@ -346,7 +345,6 @@ void DecCu::xReconInter(CodingUnit &cu)
   }
   else
   {
-#endif
 #if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   m_pcIntraPred->geneIntrainterPred(cu);
 #endif
@@ -357,9 +355,7 @@ void DecCu::xReconInter(CodingUnit &cu)
   CHECK(cu.cpr && cu.firstPU->mhIntraFlag, "CPR and MHIntra cannot be used together");
 #endif
   CHECK(cu.cpr && cu.affine, "CPR and Affine cannot be used together");
-#if JVET_L0124_L0208_TRIANGLE
   CHECK(cu.cpr && cu.triangle, "CPR and triangle cannot be used together");
-#endif
 #if JVET_L0054_MMVD
   CHECK(cu.cpr && cu.firstPU->mmvdMergeFlag, "CPR and MMVD cannot be used together");
 #endif
@@ -376,9 +372,7 @@ void DecCu::xReconInter(CodingUnit &cu)
 #else
   m_pcInterPred->motionCompensation( cu );
 #endif
-#if JVET_L0124_L0208_TRIANGLE
   }
-#endif
 #if JVET_L0266_HMVP
 #if JVET_L0293_CPR
   if (cu.Y().valid())
@@ -522,14 +516,12 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       {
 #endif
       {
-#if JVET_L0124_L0208_TRIANGLE
         if( pu.cu->triangle )
         {
           PU::getTriangleMergeCandidates( pu, m_triangleMrgCtx );
         }
         else
         {
-#endif
         if( pu.cu->affine )
         {
 #if JVET_L0632_AFFINE_MERGE
@@ -616,9 +608,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 
           PU::spanMotionInfo( pu, mrgCtx );
         }
-#if JVET_L0124_L0208_TRIANGLE
         }
-#endif
       }
 #if JVET_L0054_MMVD
       }

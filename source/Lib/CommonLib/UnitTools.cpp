@@ -4460,7 +4460,6 @@ void PU::restrictBiPredMergeCands( const PredictionUnit &pu, MergeCtx& mergeCtx 
   }
 }
 
-#if JVET_L0124_L0208_TRIANGLE
 void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangleMrgCtx )
 {
   const CodingStructure &cs  = *pu.cs;
@@ -4971,7 +4970,6 @@ int32_t PU::mappingRefPic( const PredictionUnit &pu, int32_t refPicPoc, bool tar
   }
   return -1;
 }
-#endif
 
 void CU::resetMVDandMV2Int( CodingUnit& cu, InterPrediction *interPred )
 {

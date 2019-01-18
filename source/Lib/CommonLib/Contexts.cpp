@@ -1138,7 +1138,6 @@ const CtxSet ContextSetCfg::MHIntraPredMode = ContextSetCfg::addCtxSet
 });
 #endif
 
-#if JVET_L0124_L0208_TRIANGLE
 const CtxSet ContextSetCfg::TriangleFlag = ContextSetCfg::addCtxSet
 ({
 #if TRAINED_CABAC_INIT_TABLES
@@ -1164,7 +1163,6 @@ const CtxSet ContextSetCfg::TriangleIdx = ContextSetCfg::addCtxSet
   { CNU, },
 #endif
 });
-#endif
 
 const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_InitTables[0].size();
 

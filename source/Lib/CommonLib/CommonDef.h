@@ -420,13 +420,11 @@ static const int NTAPS_BILINEAR           =                         2; ///< Numb
 #if JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
 static const int ATMVP_SUB_BLOCK_SIZE =                             3; ///< sub-block size for ATMVP
 #endif
-#if JVET_L0124_L0208_TRIANGLE
 static const int TRIANGLE_MAX_NUM_UNI_CANDS =                       5;
 static const int TRIANGLE_MAX_NUM_CANDS_MEM =                       7;
 static const int TRIANGLE_MAX_NUM_CANDS =                          40;
 static const int TRIANGLE_MAX_NUM_SATD_CANDS =                      3;
 static const int TRIANGLE_MIN_SIZE =                            8 * 8;
-#endif
 
 #if JVET_L0293_CPR
 static const int CPR_MAX_CAND_SIZE = 16; // max block size for cpr search

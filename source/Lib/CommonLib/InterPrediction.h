@@ -91,9 +91,7 @@ protected:
   RdCost*              m_pcRdCost;
 
   int                  m_iRefListIdx;
-#if JVET_L0124_L0208_TRIANGLE
   PelStorage           m_triangleBuf;
-#endif
 #if JVET_L0265_AFF_MINIMUM4X4
   Mv*                  m_storedMv;
 #endif
@@ -140,9 +138,7 @@ protected:
 #endif
   void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng );
 
-#if JVET_L0124_L0208_TRIANGLE
   void xWeightedTriangleBlk     ( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, const bool weights, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
-#endif
 
   static bool xCheckIdenticalMotion( const PredictionUnit& pu );
 
@@ -180,10 +176,8 @@ public:
 #endif
   );
 
-#if JVET_L0124_L0208_TRIANGLE
   void    motionCompensation4Triangle( CodingUnit &cu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 );
   void    weightedTriangleBlk        ( PredictionUnit &pu, bool weights, const bool splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
-#endif
 
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   void    cacheAssign( CacheModel *cache );

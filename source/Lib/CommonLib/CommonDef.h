@@ -388,11 +388,7 @@ static const double AMAXBT_TH64 =                                  30.0;
 static const int MAX_DELTA_QP   =                                   7;      ///< maximum supported delta QP value
 static const int MAX_TESTED_QPs =   ( 1 + 1 + ( MAX_DELTA_QP << 1 ) );      ///< dqp=0 +- max_delta_qp + lossless mode
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
 static const int COM16_C806_TRANS_PREC =                            0;
-#else
-static const int COM16_C806_TRANS_PREC =                            2;
-#endif
 
 static const int NUM_MERGE_IDX_EXT_CTX =                            5;
 static const unsigned E0104_ALF_MAX_TEMPLAYERID =                  5;       // define to zero to switch of  code

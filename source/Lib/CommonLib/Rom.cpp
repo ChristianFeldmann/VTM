@@ -318,11 +318,7 @@ uint32_t deriveWeightIdxBits(uint8_t gbiIdx) // Note: align this with TEncSbac::
 // initialize ROM variables
 void initROM()
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
   int c;
-#else
-  int i, c;
-#endif
 
 #if RExt__HIGH_BIT_DEPTH_SUPPORT
   {
@@ -372,51 +368,6 @@ void initROM()
     g_aucLog2    [i] = c;
   }
 
-#if !JVET_L0285_8BIT_TRANSFORM_CORE
-  c = 2; //for the 2x2 transforms if QTBT is on
-
-  const double PI = 3.14159265358979323846;
-
-  for (i = 0; i < g_numTransformMatrixSizes; i++)
-  {
-    TMatrixCoeff *iT = NULL;
-    const double s = sqrt((double)c) * (64 << COM16_C806_TRANS_PREC);
-
-    switch (i)
-    {
-      case 0: iT = g_aiTr2[0][0]; break;
-      case 1: iT = g_aiTr4[0][0]; break;
-      case 2: iT = g_aiTr8[0][0]; break;
-      case 3: iT = g_aiTr16[0][0]; break;
-      case 4: iT = g_aiTr32[0][0]; break;
-      case 5: iT = g_aiTr64[0][0]; break;
-      default: exit(0); break;
-    }
-
-    for (int k = 0; k < c; k++)
-    {
-      for (int n = 0; n < c; n++)
-      {
-        double w0, v;
-
-        // DCT-II
-        w0 = k == 0 ? sqrt(0.5) : 1;
-        v = cos(PI*(n + 0.5)*k / c) * w0 * sqrt(2.0 / c);
-        iT[DCT2*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-        // DCT-VIII
-        v = cos(PI*(k + 0.5)*(n + 0.5) / (c + 0.5)) * sqrt(2.0 / (c + 0.5));
-        iT[DCT8*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-        // DST-VII
-        v = sin(PI*(k + 0.5)*(n + 1) / (c + 0.5)) * sqrt(2.0 / (c + 0.5));
-        iT[DST7*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-      }
-    }
-    c <<= 1;
-  }
-#endif
 
   gp_sizeIdxInfo = new SizeIndexInfoLog2();
   gp_sizeIdxInfo->init(MAX_CU_SIZE);
@@ -620,15 +571,6 @@ const int g_invQuantScales[SCALING_LIST_REM_NUM] =
 
 //EMT threshold
 
-#if !JVET_L0285_8BIT_TRANSFORM_CORE
-//EMT transform coeficient variable
-TMatrixCoeff g_aiTr2  [NUM_TRANS_TYPE][  2][  2];
-TMatrixCoeff g_aiTr4  [NUM_TRANS_TYPE][  4][  4];
-TMatrixCoeff g_aiTr8  [NUM_TRANS_TYPE][  8][  8];
-TMatrixCoeff g_aiTr16 [NUM_TRANS_TYPE][ 16][ 16];
-TMatrixCoeff g_aiTr32 [NUM_TRANS_TYPE][ 32][ 32];
-TMatrixCoeff g_aiTr64 [NUM_TRANS_TYPE][ 64][ 64];
-#endif
 
 //--------------------------------------------------------------------------------------------------
 //coefficients

@@ -57,7 +57,6 @@
 
 
 
-#define JVET_L0285_8BIT_TRANSFORM_CORE                    1 // Primary transform using 8-bit cores
 
 
 

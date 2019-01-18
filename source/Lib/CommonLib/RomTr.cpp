@@ -37,7 +37,6 @@
 
 #include "Rom.h"
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
 
 // DCT-2
 #define DEFINE_DCT2_P2_MATRIX(a) \
@@ -427,6 +426,5 @@ const TMatrixCoeff g_trCoreDST7P32[TRANSFORM_NUMBER_OF_DIRECTIONS][32][32] =
   DEFINE_DST7_P32_MATRIX(4,     9,    13,    17,    21,    26,    30,    34,    38,    42,    45,    50,    53,    56,    60,    63,    66,    68,    72,    74,    77,    78,    80,    82,    84,    85,    86,    88,    88,    89,    90,    90),
   DEFINE_DST7_P32_MATRIX(4,     9,    13,    17,    21,    26,    30,    34,    38,    42,    45,    50,    53,    56,    60,    63,    66,    68,    72,    74,    77,    78,    80,    82,    84,    85,    86,    88,    88,    89,    90,    90)
 };
-#endif // JVET_L0285_8BIT_TRANSFORM_CORE
 
 //--------------------------------------------------------------------------------------------------

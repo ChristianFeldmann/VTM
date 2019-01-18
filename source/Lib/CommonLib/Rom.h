@@ -119,7 +119,6 @@ extern const TMatrixCoeff g_as_DST_MAT_4 [TRANSFORM_NUMBER_OF_DIRECTIONS][4][4];
 
 extern const uint32_t g_EmtSigNumThr;
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
 extern const TMatrixCoeff g_trCoreDCT2P2  [TRANSFORM_NUMBER_OF_DIRECTIONS][  2][  2];
 extern const TMatrixCoeff g_trCoreDCT2P4  [TRANSFORM_NUMBER_OF_DIRECTIONS][  4][  4];
 extern const TMatrixCoeff g_trCoreDCT2P8  [TRANSFORM_NUMBER_OF_DIRECTIONS][  8][  8];
@@ -136,14 +135,6 @@ extern const TMatrixCoeff g_trCoreDST7P4  [TRANSFORM_NUMBER_OF_DIRECTIONS][  4][
 extern const TMatrixCoeff g_trCoreDST7P8  [TRANSFORM_NUMBER_OF_DIRECTIONS][  8][  8];
 extern const TMatrixCoeff g_trCoreDST7P16 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 16][ 16];
 extern const TMatrixCoeff g_trCoreDST7P32 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 32][ 32];
-#else
-extern TMatrixCoeff g_aiTr2   [NUM_TRANS_TYPE][  2][  2];
-extern TMatrixCoeff g_aiTr4   [NUM_TRANS_TYPE][  4][  4];
-extern TMatrixCoeff g_aiTr8   [NUM_TRANS_TYPE][  8][  8];
-extern TMatrixCoeff g_aiTr16  [NUM_TRANS_TYPE][ 16][ 16];
-extern TMatrixCoeff g_aiTr32  [NUM_TRANS_TYPE][ 32][ 32];
-extern TMatrixCoeff g_aiTr64  [NUM_TRANS_TYPE][ 64][ 64];
-#endif
 
 // ====================================================================================================================
 // Decision tree templates

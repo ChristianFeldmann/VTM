@@ -750,21 +750,15 @@ bool BestEncInfoCache::setFromCs( const CodingStructure& cs, const Partitioner& 
   return true;
 }
 
-#if JVET_L0362_QG_FIX_CU_REUSE
 bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& partitioner, int qp )
-#else
-bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& partitioner )
-#endif
 {
   unsigned idx1, idx2, idx3, idx4;
   getAreaIdx( cs.area.Y(), *m_slice_bencinf->getPPS()->pcv, idx1, idx2, idx3, idx4 );
 
   BestEncodingInfo& encInfo = *m_bestEncInfo[idx1][idx2][idx3][idx4];
 
-#if JVET_L0362_QG_FIX_CU_REUSE
   if( encInfo.cu.qp != qp )
     return false;
-#endif
   if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner )
     || encInfo.cu.cpr
     )
@@ -934,10 +928,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   cuECtx.set( DID_QUAD_SPLIT,       false );
   cuECtx.set( IS_BEST_NOSPLIT_SKIP, false );
   cuECtx.set( MAX_QT_SUB_DEPTH,     0 );
-#if REUSE_CU_RESULTS && !JVET_L0362_QG_FIX_CU_REUSE
-  const bool isReusingCu = isValid( cs, partitioner );
-  cuECtx.set( IS_REUSING_CU,        isReusingCu );
-#endif
 
   // QP
   int baseQP = cs.baseQP;
@@ -1059,13 +1049,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 
   m_ComprCUCtxList.back().testModes.push_back( { ETM_POST_DONT_SPLIT } );
 
-#if REUSE_CU_RESULTS && !JVET_L0362_QG_FIX_CU_REUSE
-  if( isReusingCu )
-  {
-    m_ComprCUCtxList.back().testModes.push_back( { ETM_RECO_CACHED } );
-  }
-
-#endif
   xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, false );
 
   bool useLossless = false;
@@ -1088,7 +1071,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   {
     const int  qp       = std::max( qpLoop, lowestQP );
     const bool lossless = useLossless && qpLoop == minQP;
-#if REUSE_CU_RESULTS && JVET_L0362_QG_FIX_CU_REUSE
+#if REUSE_CU_RESULTS
     const bool isReusingCu = isValid( cs, partitioner, qp );
     cuECtx.set( IS_REUSING_CU, isReusingCu );
     if( isReusingCu )

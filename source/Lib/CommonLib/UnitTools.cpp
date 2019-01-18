@@ -2087,7 +2087,6 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
   }
 }
 
-#if JVET_L0271_AFFINE_AMVP_SIMPLIFY
 bool PU::addAffineMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &refPicList, const int &refIdx, const Position &pos, const MvpDir &dir, AffineAMVPInfo &affiAMVPInfo )
 {
   CodingStructure &cs = *pu.cs;
@@ -2159,67 +2158,6 @@ bool PU::addAffineMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &r
 
   return false;
 }
-#else
-const int getAvailableAffineNeighbours( const PredictionUnit &pu, const PredictionUnit* npu[] )
-{
-  const Position posLT = pu.Y().topLeft();
-  const Position posRT = pu.Y().topRight();
-  const Position posLB = pu.Y().bottomLeft();
-
-  int num = 0;
-  const PredictionUnit* puLeft = pu.cs->getPURestricted( posLB.offset( -1, 0 ), pu, pu.chType );
-  if ( puLeft && puLeft->cu->affine
-#if JVET_L0369_SUBBLOCK_MERGE
-    && puLeft->mergeType == MRG_TYPE_DEFAULT_N
-#endif
-    )
-  {
-    npu[num++] = puLeft;
-  }
-
-  const PredictionUnit* puAbove = pu.cs->getPURestricted( posRT.offset( 0, -1 ), pu, pu.chType );
-  if ( puAbove && puAbove->cu->affine
-#if JVET_L0369_SUBBLOCK_MERGE
-    && puAbove->mergeType == MRG_TYPE_DEFAULT_N
-#endif
-    )
-  {
-    npu[num++] = puAbove;
-  }
-
-  const PredictionUnit* puAboveRight = pu.cs->getPURestricted( posRT.offset( 1, -1 ), pu, pu.chType );
-  if ( puAboveRight && puAboveRight->cu->affine
-#if JVET_L0369_SUBBLOCK_MERGE
-    && puAboveRight->mergeType == MRG_TYPE_DEFAULT_N
-#endif
-    )
-  {
-    npu[num++] = puAboveRight;
-  }
-
-  const PredictionUnit *puLeftBottom = pu.cs->getPURestricted( posLB.offset( -1, 1 ), pu, pu.chType );
-  if ( puLeftBottom && puLeftBottom->cu->affine
-#if JVET_L0369_SUBBLOCK_MERGE
-    && puLeftBottom->mergeType == MRG_TYPE_DEFAULT_N
-#endif
-    )
-  {
-    npu[num++] = puLeftBottom;
-  }
-
-  const PredictionUnit *puAboveLeft = pu.cs->getPURestricted( posLT.offset( -1, -1 ), pu, pu.chType );
-  if ( puAboveLeft && puAboveLeft->cu->affine
-#if JVET_L0369_SUBBLOCK_MERGE
-    && puAboveLeft->mergeType == MRG_TYPE_DEFAULT_N
-#endif
-    )
-  {
-    npu[num++] = puAboveLeft;
-  }
-
-  return num;
-}
-#endif
 
 void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puNeighbour, RefPicList eRefPicList, Mv rcMv[3] )
 {
@@ -2324,14 +2262,9 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
     return;
   }
 
-#if !JVET_L0271_AFFINE_AMVP_SIMPLIFY
-  const int curWidth = pu.Y().width;
-  const int curHeight = pu.Y().height;
-#endif
 
   // insert inherited affine candidates
   Mv outputAffineMv[3];
-#if JVET_L0271_AFFINE_AMVP_SIMPLIFY
   Position posLT = pu.Y().topLeft();
   Position posRT = pu.Y().topRight();
   Position posLB = pu.Y().bottomLeft();
@@ -2350,47 +2283,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       addAffineMVPCandUnscaled( pu, eRefPicList, refIdx, posLT, MD_ABOVE_LEFT, affiAMVPInfo );
     }
   }
-#else
-  const int maxNei = 5;
-  const PredictionUnit* npu[maxNei];
-  int numAffNeigh = getAvailableAffineNeighbours( pu, npu );
-  int targetRefPOC = pu.cu->slice->getRefPOC( eRefPicList, refIdx );
-
-  for ( int refPicList = 0; refPicList < 2 && affiAMVPInfo.numCand < AMVP_MAX_NUM_CANDS; refPicList++ )
-  {
-    RefPicList eTestRefPicList = (refPicList == 0) ? eRefPicList : RefPicList( 1 - eRefPicList );
-
-    for ( int neighIdx = 0; neighIdx < numAffNeigh && affiAMVPInfo.numCand < AMVP_MAX_NUM_CANDS; neighIdx++ )
-    {
-      const PredictionUnit* puNeighbour = npu[neighIdx];
-
-      if ( ((puNeighbour->interDir & (eTestRefPicList + 1)) == 0) || pu.cu->slice->getRefPOC( eTestRefPicList, puNeighbour->refIdx[eTestRefPicList] ) != targetRefPOC )
-      {
-        continue;
-      }
-
-      xInheritedAffineMv( pu, puNeighbour, eTestRefPicList, outputAffineMv );
-
-      outputAffineMv[0].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-      outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-      if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
-      {
-        outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-      }
-
-      if ( affiAMVPInfo.numCand == 0
-        || (pu.cu->affineType == AFFINEMODEL_4PARAM && (outputAffineMv[0] != affiAMVPInfo.mvCandLT[0] || outputAffineMv[1] != affiAMVPInfo.mvCandRT[0]))
-        || (pu.cu->affineType == AFFINEMODEL_6PARAM && (outputAffineMv[0] != affiAMVPInfo.mvCandLT[0] || outputAffineMv[1] != affiAMVPInfo.mvCandRT[0] || outputAffineMv[2] != affiAMVPInfo.mvCandLB[0]))
-        )
-      {
-        affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = outputAffineMv[0];
-        affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = outputAffineMv[1];
-        affiAMVPInfo.mvCandLB[affiAMVPInfo.numCand] = outputAffineMv[2];
-        affiAMVPInfo.numCand++;
-      }
-    }
-  }
-#endif
 
   if ( affiAMVPInfo.numCand >= AMVP_MAX_NUM_CANDS )
   {
@@ -2405,11 +2297,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 
   // insert constructed affine candidates
   int cornerMVPattern = 0;
-#if !JVET_L0271_AFFINE_AMVP_SIMPLIFY
-  Position posLT = pu.Y().topLeft();
-  Position posRT = pu.Y().topRight();
-  Position posLB = pu.Y().bottomLeft();
-#endif
 
   //-------------------  V0 (START) -------------------//
   AMVPInfo amvpInfo0;
@@ -2460,7 +2347,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
   outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
 
-#if JVET_L0271_AFFINE_AMVP_SIMPLIFY
   if ( cornerMVPattern == 7 || (cornerMVPattern == 3 && pu.cu->affineType == AFFINEMODEL_4PARAM) )
   {
     affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = outputAffineMv[0];
@@ -2468,44 +2354,8 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
     affiAMVPInfo.mvCandLB[affiAMVPInfo.numCand] = outputAffineMv[2];
     affiAMVPInfo.numCand++;
   }
-#else
-  if ( cornerMVPattern == 7 || cornerMVPattern == 3 || cornerMVPattern == 5 )
-  {
-    if ( cornerMVPattern == 3 && pu.cu->affineType == AFFINEMODEL_6PARAM ) // V0 V1 are available, derived V2 for 6-para
-    {
-      int shift = MAX_CU_DEPTH;
-      int vx2 = (outputAffineMv[0].getHor() << shift) - ((outputAffineMv[1].getVer() - outputAffineMv[0].getVer()) << (shift + g_aucLog2[curHeight] - g_aucLog2[curWidth]));
-      int vy2 = (outputAffineMv[0].getVer() << shift) + ((outputAffineMv[1].getHor() - outputAffineMv[0].getHor()) << (shift + g_aucLog2[curHeight] - g_aucLog2[curWidth]));
-      roundAffineMv( vx2, vy2, shift );
-      outputAffineMv[2].set( vx2, vy2 );
-      outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-    }
-
-    if ( cornerMVPattern == 5 ) // V0 V2 are available, derived V1
-    {
-      int shift = MAX_CU_DEPTH;
-      int vx1 = (outputAffineMv[0].getHor() << shift) + ((outputAffineMv[2].getVer() - outputAffineMv[0].getVer()) << (shift + g_aucLog2[curWidth] - g_aucLog2[curHeight]));
-      int vy1 = (outputAffineMv[0].getVer() << shift) - ((outputAffineMv[2].getHor() - outputAffineMv[0].getHor()) << (shift + g_aucLog2[curWidth] - g_aucLog2[curHeight]));
-      roundAffineMv( vx1, vy1, shift );
-      outputAffineMv[1].set( vx1, vy1 );
-      outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-    }
-
-    if ( affiAMVPInfo.numCand == 0
-      || (pu.cu->affineType == AFFINEMODEL_4PARAM && (outputAffineMv[0] != affiAMVPInfo.mvCandLT[0] || outputAffineMv[1] != affiAMVPInfo.mvCandRT[0]))
-      || (pu.cu->affineType == AFFINEMODEL_6PARAM && (outputAffineMv[0] != affiAMVPInfo.mvCandLT[0] || outputAffineMv[1] != affiAMVPInfo.mvCandRT[0] || outputAffineMv[2] != affiAMVPInfo.mvCandLB[0]))
-      )
-    {
-      affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = outputAffineMv[0];
-      affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = outputAffineMv[1];
-      affiAMVPInfo.mvCandLB[affiAMVPInfo.numCand] = outputAffineMv[2];
-      affiAMVPInfo.numCand++;
-    }
-  }
-#endif
 
 
-#if JVET_L0271_AFFINE_AMVP_SIMPLIFY
   if ( affiAMVPInfo.numCand < 2 )
   {
     // check corner MVs
@@ -2583,7 +2433,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       }
     }
   }
-#endif
 
   for (int i = 0; i < affiAMVPInfo.numCand; i++)
   {
@@ -2593,22 +2442,6 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   }
 
 
-#if !JVET_L0271_AFFINE_AMVP_SIMPLIFY
-  if ( affiAMVPInfo.numCand < 2 )
-  {
-    AMVPInfo amvpInfo;
-    PU::fillMvpCand( pu, eRefPicList, refIdx, amvpInfo );
-
-    int iAdd = amvpInfo.numCand - affiAMVPInfo.numCand;
-    for ( int i = 0; i < iAdd; i++ )
-    {
-      affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = amvpInfo.mvCand[i];
-      affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = amvpInfo.mvCand[i];
-      affiAMVPInfo.mvCandLB[affiAMVPInfo.numCand] = amvpInfo.mvCand[i];
-      affiAMVPInfo.numCand++;
-    }
-  }
-#endif
 }
 
 bool PU::addMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &info )

@@ -169,11 +169,9 @@ public:
   static const CtxSet   DeltaQP;
   static const CtxSet   InterDir;
   static const CtxSet   RefPic;
-#if JVET_L0054_MMVD
   static const CtxSet   MmvdFlag;
   static const CtxSet   MmvdMergeIdx;
   static const CtxSet   MmvdStepMvpIdx;
-#endif
   static const CtxSet   AffineFlag;
   static const CtxSet   AffineType;
 #if JVET_L0632_AFFINE_MERGE

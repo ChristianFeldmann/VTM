@@ -345,9 +345,7 @@ void DecCu::xReconInter(CodingUnit &cu)
   CHECK(cu.cpr && cu.firstPU->mhIntraFlag, "CPR and MHIntra cannot be used together");
   CHECK(cu.cpr && cu.affine, "CPR and Affine cannot be used together");
   CHECK(cu.cpr && cu.triangle, "CPR and triangle cannot be used together");
-#if JVET_L0054_MMVD
   CHECK(cu.cpr && cu.firstPU->mmvdMergeFlag, "CPR and MMVD cannot be used together");
-#endif
   const bool luma = cu.Y().valid();
   const bool chroma = cu.Cb().valid();
   if (luma && chroma)
@@ -471,7 +469,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 
     if( pu.mergeFlag )
     {
-#if JVET_L0054_MMVD
       if (pu.mmvdMergeFlag || pu.cu->mmvdSkip)
       {
         CHECK(pu.mhIntraFlag == true, "invalid MHIntra");
@@ -481,12 +478,8 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           mrgCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);
         }
 
-#if JVET_L0054_MMVD
         int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
         PU::getInterMergeCandidates(pu, mrgCtx, 1, fPosBaseIdx + 1);
-#else
-        PU::getInterMergeCandidates(pu, mrgCtx, 255);
-#endif
         PU::restrictBiPredMergeCands(pu, mrgCtx);
         PU::getInterMMVDMergeCandidates(pu, mrgCtx,
           pu.mmvdMergeIdx
@@ -497,7 +490,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       }
       else
       {
-#endif
       {
         if( pu.cu->triangle )
         {
@@ -580,11 +572,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           }
 #endif
 
-#if JVET_L0054_MMVD
             PU::getInterMergeCandidates(pu, mrgCtx, 0, pu.mergeIdx);
-#else
-            PU::getInterMergeCandidates( pu, mrgCtx, pu.mergeIdx );
-#endif
             PU::restrictBiPredMergeCands(pu, mrgCtx);
 
           mrgCtx.setMergeInfo( pu, pu.mergeIdx );
@@ -593,9 +581,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         }
         }
       }
-#if JVET_L0054_MMVD
       }
-#endif
     }
     else
     {

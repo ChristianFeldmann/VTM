@@ -5379,13 +5379,11 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     m_CABACEstimator->affine_flag( cu );
 #endif
     m_CABACEstimator->triangle_mode ( cu );
-#if JVET_L0054_MMVD
     if (cu.mmvdSkip)
     {
       m_CABACEstimator->mmvd_merge_idx(pu);
     }
     else
-#endif
     m_CABACEstimator->merge_idx     ( pu );
 
 
@@ -5574,13 +5572,11 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
     m_CABACEstimator->affine_flag   ( cu );
 #endif
     m_CABACEstimator->triangle_mode ( cu );
-#if JVET_L0054_MMVD
     if (cu.mmvdSkip)
     {
       m_CABACEstimator->mmvd_merge_idx(*cu.firstPU);
     }
     else
-#endif
     m_CABACEstimator->merge_idx     ( *cu.firstPU );
     fracBits   += m_CABACEstimator->getEstFracBits();
   }

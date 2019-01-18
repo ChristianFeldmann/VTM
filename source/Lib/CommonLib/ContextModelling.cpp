@@ -350,9 +350,7 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   CHECK( candIdx >= numValidMergeCand, "Merge candidate does not exist" );
 
   pu.mergeFlag               = true;
-#if JVET_L0054_MMVD
   pu.mmvdMergeFlag = false;
-#endif
   pu.interDir                = interDirNeighbours[candIdx];
   pu.mergeIdx                = candIdx;
   pu.mergeType               = mrgTypeNeighbours[candIdx];
@@ -379,7 +377,6 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 #endif
 
 }
-#if JVET_L0054_MMVD
 void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
 {
   const Slice &slice = *pu.cs->slice;
@@ -523,4 +520,3 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.cu->GBiIdx = (interDirNeighbours[fPosBaseIdx] == 3) ? GBiIdx[fPosBaseIdx] : GBI_DEFAULT;
 #endif
 }
-#endif

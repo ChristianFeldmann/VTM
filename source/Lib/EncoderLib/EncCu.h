@@ -116,12 +116,8 @@ private:
 #endif
   CodingStructure     **m_pImvTempCS;
   EncModeCtrl          *m_modeCtrl;
-#if JVET_L0054_MMVD
   PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
   PelStorage            m_acRealMergeBuffer[MRG_MAX_NUM_CANDS];
-#else
-  PelStorage            m_acMergeBuffer[MRG_MAX_NUM_CANDS];
-#endif
   PelStorage            m_acTriangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS]; // to store weighted prediction pixles
   double                m_mergeBestSATDCost;
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];

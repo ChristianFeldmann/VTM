@@ -103,9 +103,7 @@ public:
   void        subblock_merge_flag       ( CodingUnit&                   cu );
 #endif
   void        merge_idx                 ( PredictionUnit&               pu );
-#if JVET_L0054_MMVD
   void        mmvd_merge_idx(PredictionUnit&               pu);
-#endif
   void        imv_mode                  ( CodingUnit&                   cu,     MergeCtx&       mrgCtx );
   void        inter_pred_idc            ( PredictionUnit&               pu );
   void        ref_idx                   ( PredictionUnit&               pu,     RefPicList      eRefList );

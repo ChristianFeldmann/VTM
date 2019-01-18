@@ -343,7 +343,6 @@ const CtxSet ContextSetCfg::MergeIdx = ContextSetCfg::addCtxSet
   {  CNU, CNU, CNU, CNU, CNU,},
 #endif
 });
-#if JVET_L0054_MMVD
 const CtxSet ContextSetCfg::MmvdFlag = ContextSetCfg::addCtxSet
 ({
 #if TRAINED_CABAC_INIT_TABLES
@@ -382,7 +381,6 @@ const CtxSet ContextSetCfg::MmvdStepMvpIdx = ContextSetCfg::addCtxSet
   { CNU, },
 #endif
   });
-#endif
 const CtxSet ContextSetCfg::PartSize = ContextSetCfg::addCtxSet
 ({
   {  154, 139, 154, 154,},

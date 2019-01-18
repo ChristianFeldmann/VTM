@@ -111,14 +111,10 @@ namespace PU
   void getIntraChromaCandModes        (const PredictionUnit &pu, unsigned modeList[NUM_CHROMA_MODE]);
   uint32_t getFinalIntraMode              (const PredictionUnit &pu, const ChannelType &chType);
   void getInterMergeCandidates        (const PredictionUnit &pu, MergeCtx& mrgCtx,
-#if JVET_L0054_MMVD
     int mmvdList,
-#endif
     const int& mrgCandIdx = -1 );
-#if JVET_L0054_MMVD
   void getInterMMVDMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const int& mrgCandIdx = -1);
   int getDistScaleFactor(const int &currPOC, const int &currRefPOC, const int &colPOC, const int &colRefPOC);
-#endif 
   bool isDiffMER                      (const PredictionUnit &pu, const PredictionUnit &pu2);
   bool getColocatedMVP                (const PredictionUnit &pu, const RefPicList &eRefPicList, const Position &pos, Mv& rcMv, const int &refIdx);
   void fillMvpCand                    (      PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AMVPInfo &amvpInfo );
@@ -129,13 +125,13 @@ namespace PU
   bool xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const MergeCtx mergeCandList, bool hasPruned[MRG_MAX_NUM_CANDS]);
 #if JVET_L0090_PAIR_AVG
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
-#if JVET_L0293_CPR && JVET_L0054_MMVD
+#if JVET_L0293_CPR
     , int mmvdList
 #endif
   );
 #else
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter[MRG_MAX_NUM_CANDS], bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
-#if JVET_L0293_CPR && JVET_L0054_MMVD
+#if JVET_L0293_CPR
     , int mmvdList
 #endif
   );
@@ -163,9 +159,7 @@ namespace PU
     , bool setHighPrec = false
   );
   bool getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx &mrgCtx, bool& LICFlag, const int count
-#if JVET_L0054_MMVD
     , int mmvdList
-#endif
 #if JVET_L0293_CPR
     , const int countCPR
 #endif  
@@ -220,19 +214,11 @@ namespace TU
 uint32_t getCtuAddr        (const Position& pos, const PreCalcValues &pcv);
 
 template<typename T, size_t N>
-#if JVET_L0054_MMVD
 uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList
 #if JVET_L0283_MULTI_REF_LINE
   , static_vector<int, N>& extendRefList, int extendRef
 #endif  
   , size_t uiFastCandNum = N, int* iserttPos = nullptr)
-#else
-uint32_t updateCandList( T uiMode, double uiCost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList
-#if JVET_L0283_MULTI_REF_LINE
-  , static_vector<int, N>& extendRefList, int extendRef
-#endif  
-  , size_t uiFastCandNum = N )
-#endif
 {
   CHECK( std::min( uiFastCandNum, candModeList.size() ) != std::min( uiFastCandNum, candCostList.size() ), "Sizes do not match!" );
   CHECK( uiFastCandNum > candModeList.capacity(), "The vector is to small to hold all the candidates!" );
@@ -267,12 +253,10 @@ uint32_t updateCandList( T uiMode, double uiCost, static_vector<T, N>& candModeL
       extendRefList[currSize - shift] = extendRef;
     }
 #endif
-#if JVET_L0054_MMVD
     if (iserttPos != nullptr)
     {
       *iserttPos = int(currSize - shift);
     }
-#endif
     return 1;
   }
   else if( currSize < uiFastCandNum )
@@ -285,29 +269,21 @@ uint32_t updateCandList( T uiMode, double uiCost, static_vector<T, N>& candModeL
       extendRefList.insert(extendRefList.end() - shift, extendRef);
     }
 #endif
-#if JVET_L0054_MMVD
     if (iserttPos != nullptr)
     {
       *iserttPos = int(candModeList.size() - shift - 1);
     }
-#endif
     return 1;
   }
-#if JVET_L0054_MMVD
   if (iserttPos != nullptr)
   {
     *iserttPos = -1;
   }
-#endif
   return 0;
 }
 
 template<typename T, size_t N>
-#if JVET_L0054_MMVD
 uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, static_vector<T, N>& candModeList2, T mode2, size_t fastCandNum = N, int* iserttPos = nullptr)
-#else
-uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, static_vector<T, N>& candModeList2, T mode2, size_t fastCandNum = N)
-#endif
 {
   CHECK(std::min(fastCandNum, candModeList.size()) != std::min(fastCandNum, candCostList.size()), "Sizes do not match!");
   CHECK(fastCandNum > candModeList.capacity(), "The vector is to small to hold all the candidates!");
@@ -332,12 +308,10 @@ uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candMode
     candModeList[currSize - shift] = mode;
     candModeList2[currSize - shift] = mode2;
     candCostList[currSize - shift] = cost;
-#if JVET_L0054_MMVD
     if (iserttPos != nullptr)
     {
       *iserttPos = int(currSize - shift);
     }
-#endif
     return 1;
   }
   else if (currSize < fastCandNum)
@@ -345,21 +319,17 @@ uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candMode
     candModeList.insert(candModeList.end() - shift, mode);
     candModeList2.insert(candModeList2.end() - shift, mode2);
     candCostList.insert(candCostList.end() - shift, cost);
-#if JVET_L0054_MMVD
     if (iserttPos != nullptr)
     {
       *iserttPos = int(candModeList.size() - shift - 1);  
     }
-#endif
     return 1;
   }
 
-#if JVET_L0054_MMVD
   if (iserttPos != nullptr)
   {
     *iserttPos = -1;
   }
-#endif
   return 0;
 }
 

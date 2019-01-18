@@ -309,10 +309,8 @@ public:
 
   MotionBuf     subPuMvpMiBuf;
   MotionBuf     subPuMvpExtMiBuf;
-#if JVET_L0054_MMVD
   MvField mmvdBaseMv[MMVD_BASE_MV_NUM][2];
   void setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx);
-#endif
   void setMergeInfo( PredictionUnit& pu, int candIdx );
 };
 

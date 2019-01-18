@@ -679,13 +679,11 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
   m_BinEncoder.encodeBin( ( cu.skip ), Ctx::SkipFlag( ctxId ) );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0 );
-#if JVET_L0054_MMVD
   if (cu.skip)
   {
     m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
     DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
   }
-#endif
 }
 
 
@@ -1241,13 +1239,11 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       MHIntra_luma_pred_modes( *pu.cu );
     }
     triangle_mode( *pu.cu );
-#if JVET_L0054_MMVD
     if (pu.mmvdMergeFlag)
     {
       mmvd_merge_idx(pu);
     }
     else
-#endif
     merge_idx    ( pu );
   }
   else
@@ -1299,12 +1295,10 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
 #if JVET_L0369_SUBBLOCK_MERGE
 void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
 {
-#if JVET_L0054_MMVD
   if ( cu.firstPU->mergeFlag && (cu.firstPU->mmvdMergeFlag || cu.mmvdSkip) )
   {
     return;
   }
-#endif
 
   if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSpsNext().getUseATMVP()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
   {
@@ -1351,12 +1345,10 @@ void CABACWriter::affine_flag( const CodingUnit& cu )
     return;
   }
 
-#if JVET_L0054_MMVD
   if (cu.firstPU->mergeFlag && (cu.firstPU->mmvdMergeFlag || cu.mmvdSkip))
   {
     return;
   }
-#endif
   unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
   m_BinEncoder.encodeBin( cu.affine, Ctx::AffineFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_COMMON, " (%d) affine_flag() affine=%d\n", DTRACE_GET_COUNTER(g_trace_ctx, D_COMMON), cu.affine ? 1 : 0 );
@@ -1379,13 +1371,11 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
   m_BinEncoder.encodeBin( pu.mergeFlag, Ctx::MergeFlag() );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_flag() merge=%d pos=(%d,%d) size=%dx%d\n", pu.mergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
-#if JVET_L0054_MMVD
   if (pu.mergeFlag)
   {
     m_BinEncoder.encodeBin(pu.mmvdMergeFlag, Ctx::MmvdFlag(0));
     DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
   }
-#endif
 }
 
 void CABACWriter::imv_mode( const CodingUnit& cu )
@@ -1523,7 +1513,6 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
   }
 #endif
 }
-#if JVET_L0054_MMVD
 void CABACWriter::mmvd_merge_idx(const PredictionUnit& pu)
 {
   int var0, var1, var2;
@@ -1581,7 +1570,6 @@ void CABACWriter::mmvd_merge_idx(const PredictionUnit& pu)
   DTRACE(g_trace_ctx, D_SYNTAX, "pos() pos=%d\n", var2);
   DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_idx() mmvd_merge_idx=%d\n", pu.mmvdMergeIdx);
 }
-#endif
 void CABACWriter::inter_pred_idc( const PredictionUnit& pu )
 {
   if( !pu.cs->slice->isInterB() )
@@ -1661,13 +1649,11 @@ void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
     CHECK(pu.mhIntraFlag == true, "invalid MHIntra and skip");
     return;
   }
-#if JVET_L0054_MMVD
   if (pu.mmvdMergeFlag)
   {
     CHECK(pu.mhIntraFlag == true, "invalid MHIntra and mmvd");
     return;
   }
-#endif
   if (pu.cu->affine)
   {
     CHECK(pu.mhIntraFlag == true, "invalid MHIntra and affine");

@@ -101,11 +101,9 @@ enum class BlockStatistic {
   AffineMVL0,
   AffineMVL1,
   AffineType,
-#if JVET_L0054_MMVD
   MMVDSkipFlag,
   MMVDMergeFlag,
   MMVDMergeIdx,
-#endif
   MHIntraFlag,
   TriangleFlag,
   TrianglePartitioning,
@@ -193,11 +191,9 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
 #if JVET_L0283_MULTI_REF_LINE
   { BlockStatistic::MultiRefIdx,            std::tuple<std::string, BlockStatisticType, std::string>{"MultiRefIdx",                 BlockStatisticType::Integer,                "[0, 1]"}}, 
 #endif
-#if JVET_L0054_MMVD
   { BlockStatistic::MMVDSkipFlag,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDSkipFlag",                BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::MMVDMergeFlag,          std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeFlag",               BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::MMVDMergeIdx,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeIdx",                BlockStatisticType::Integer,                "[0, 1]"}}, 
-#endif
   { BlockStatistic::MHIntraFlag,            std::tuple<std::string, BlockStatisticType, std::string>{"MHIntraFlag",                 BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::TriangleFlag,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleFlag",                BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::TrianglePartitioning,   std::tuple<std::string, BlockStatisticType, std::string>{"TrianglePartitioning",        BlockStatisticType::Line,                   ""}},

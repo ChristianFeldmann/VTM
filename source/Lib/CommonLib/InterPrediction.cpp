@@ -209,14 +209,8 @@ bool checkIdenticalMotion( const PredictionUnit &pu, bool checkAffine )
         else
         {
           CHECK( !checkAffine, "In this case, checkAffine should be on." );
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
           if ( (pu.cu->affineType == AFFINEMODEL_4PARAM && (pu.mvAffi[0][0] == pu.mvAffi[1][0]) && (pu.mvAffi[0][1] == pu.mvAffi[1][1]))
             || (pu.cu->affineType == AFFINEMODEL_6PARAM && (pu.mvAffi[0][0] == pu.mvAffi[1][0]) && (pu.mvAffi[0][1] == pu.mvAffi[1][1]) && (pu.mvAffi[0][2] == pu.mvAffi[1][2])) )
-#else
-          const CMotionBuf &mb = pu.getMotionBuf();
-          if ( (pu.cu->affineType == AFFINEMODEL_4PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]))
-            || (pu.cu->affineType == AFFINEMODEL_6PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) && (mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1])) )
-#endif
           {
             return true;
           }
@@ -254,14 +248,8 @@ bool InterPrediction::xCheckIdenticalMotion( const PredictionUnit &pu )
         }
         else
         {
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
           if ( (pu.cu->affineType == AFFINEMODEL_4PARAM && (pu.mvAffi[0][0] == pu.mvAffi[1][0]) && (pu.mvAffi[0][1] == pu.mvAffi[1][1]))
             || (pu.cu->affineType == AFFINEMODEL_6PARAM && (pu.mvAffi[0][0] == pu.mvAffi[1][0]) && (pu.mvAffi[0][1] == pu.mvAffi[1][1]) && (pu.mvAffi[0][2] == pu.mvAffi[1][2])) )
-#else
-          const CMotionBuf &mb = pu.getMotionBuf();
-          if ( (pu.cu->affineType == AFFINEMODEL_4PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]))
-            || (pu.cu->affineType == AFFINEMODEL_6PARAM && (mb.at( 0, 0 ).mv[0] == mb.at( 0, 0 ).mv[1]) && (mb.at( mb.width - 1, 0 ).mv[0] == mb.at( mb.width - 1, 0 ).mv[1]) && (mb.at( 0, mb.height - 1 ).mv[0] == mb.at( 0, mb.height - 1 ).mv[1])) )
-#endif
           {
             return true;
           }
@@ -413,16 +401,9 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   {
     CHECK( iRefIdx < 0, "iRefIdx incorrect." );
 
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
     mv[0] = pu.mvAffi[eRefPicList][0];
     mv[1] = pu.mvAffi[eRefPicList][1];
     mv[2] = pu.mvAffi[eRefPicList][2];
-#else
-    const CMotionBuf &mb = pu.getMotionBuf();
-    mv[0] = mb.at( 0,            0             ).mv[eRefPicList];
-    mv[1] = mb.at( mb.width - 1, 0             ).mv[eRefPicList];
-    mv[2] = mb.at( 0,            mb.height - 1 ).mv[eRefPicList];
-#endif
   }
   else
   {

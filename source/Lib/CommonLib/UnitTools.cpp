@@ -2172,20 +2172,10 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
   int curH = pu.Y().height;
   
   Mv mvLT, mvRT, mvLB;
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
   mvLT = puNeighbour->mvAffi[eRefPicList][0];
   mvRT = puNeighbour->mvAffi[eRefPicList][1];
   mvLB = puNeighbour->mvAffi[eRefPicList][2];
-#else
-  const Position posLT = puNeighbour->Y().topLeft();
-  const Position posRT = puNeighbour->Y().topRight();
-  const Position posLB = puNeighbour->Y().bottomLeft();
-  mvLT = puNeighbour->getMotionInfo( posLT ).mv[eRefPicList];
-  mvRT = puNeighbour->getMotionInfo( posRT ).mv[eRefPicList];
-  mvLB = puNeighbour->getMotionInfo( posLB ).mv[eRefPicList];
-#endif
 
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
   bool isTopCtuBoundary = false;
 #if JVET_L0217_L0678_SPS_CLEANUP
   if ( (posNeiY + neiH) % pu.cs->sps->getCTUSize() == 0 && (posNeiY + neiH) == posCurY )
@@ -2201,18 +2191,13 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
     posNeiY += neiH;
     isTopCtuBoundary = true;
   }
-#endif
 
   int shift = MAX_CU_DEPTH;
   int iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY;
 
   iDMvHorX = (mvRT - mvLT).getHor() << (shift - g_aucLog2[neiW]);
   iDMvHorY = (mvRT - mvLT).getVer() << (shift - g_aucLog2[neiW]);
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP // degrade to 4-parameter model
   if ( puNeighbour->cu->affineType == AFFINEMODEL_6PARAM && !isTopCtuBoundary )
-#else
-  if ( puNeighbour->cu->affineType == AFFINEMODEL_6PARAM )
-#endif
   {
     iDMvVerX = (mvLB - mvLT).getHor() << (shift - g_aucLog2[neiH]);
     iDMvVerY = (mvLB - mvLT).getVer() << (shift - g_aucLog2[neiH]);
@@ -3447,20 +3432,9 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
     }
   }
 
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
   pu.mvAffi[eRefList][0] = affLT;
   pu.mvAffi[eRefList][1] = affRT;
   pu.mvAffi[eRefList][2] = affLB;
-#else
-  // Set AffineMvField for affine motion compensation LT, RT, LB and RB
-  mb.at(            0,             0 ).mv[eRefList] = affLT;
-  mb.at( mb.width - 1,             0 ).mv[eRefList] = affRT;
-
-  if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
-  {
-    mb.at( 0, mb.height - 1 ).mv[eRefList] = affLB;
-  }
-#endif
 }
 
 static bool deriveScaledMotionTemporal( const Slice&      slice,

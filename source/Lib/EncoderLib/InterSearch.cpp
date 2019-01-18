@@ -1993,20 +1993,11 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           bestMvpNum[0] = pu.mvpNum[0];
           bestMvpNum[1] = pu.mvpNum[1];
 
-#if !JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
-          const CMotionBuf &mb = pu.getMotionBuf();
-#endif
           for ( int refList = 0; refList < 2; refList++ )
           {
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
             bestMv[refList][0] = pu.mvAffi[refList][0];
             bestMv[refList][1] = pu.mvAffi[refList][1];
             bestMv[refList][2] = pu.mvAffi[refList][2];
-#else
-            bestMv[refList][0] = mb.at( 0, 0 ).mv[refList];
-            bestMv[refList][1] = mb.at( mb.width - 1, 0 ).mv[refList];
-            bestMv[refList][2] = mb.at( 0, mb.height - 1 ).mv[refList];
-#endif
             bestMvd[refList][0] = pu.mvdAffi[refList][0];
             bestMvd[refList][1] = pu.mvdAffi[refList][1];
             bestMvd[refList][2] = pu.mvdAffi[refList][2];

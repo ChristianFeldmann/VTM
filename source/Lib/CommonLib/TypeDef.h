@@ -82,7 +82,6 @@
 
 
 
-#define JVET_L0694_AFFINE_LINEBUFFER_CLEANUP              1 // L0045/L0047/L0694: Combination of affine mode clean up and line buffer reduction
 #define JVET_L0632_AFFINE_MERGE                           1 // L0142/L0632: Affine merge list construction
 #if JVET_L0632_AFFINE_MERGE
 #define JVET_L0369_SUBBLOCK_MERGE                         1 // Moving ATMVP into the sub-block merge list

@@ -114,6 +114,8 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 #endif
 #if HEVC_DEPENDENT_SLICES
   const int       startCtuRsAddr          = startCtuTsAddr;
+#elif HEVC_TILES_WPP
+  const int       startCtuRsAddr          = tileMap.getCtuTsToRsAddrMap(startCtuTsAddr);
 #endif
   const unsigned  numCtusInFrame          = cs.pcv->sizeInCtus;
   const unsigned  widthInCtus             = cs.pcv->widthInCtus;
@@ -145,7 +147,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 #if HEVC_DEPENDENT_SLICES
   const unsigned subStreamOffset = tileMap.getSubstreamForCtuAddr( startCtuRsAddr, true, slice );
 #elif HEVC_TILES_WPP
-  const unsigned subStreamOffset = 0;
+  const unsigned  subStreamOffset         = tileMap.getSubstreamForCtuAddr(startCtuRsAddr, true, slice);
 #endif
 
 #if HEVC_DEPENDENT_SLICES

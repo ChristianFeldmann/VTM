@@ -77,9 +77,7 @@ private:
   unsigned m_auShiftLM[32]; // Table for substituting division operation by multiplication
 
   Pel* m_piTemp;
-#if JVET_L0338_MDLM
   Pel* m_pMdlmTemp; // for MDLM mode
-#endif
 protected:
 
   ChromaFormat  m_currChromaFormat;

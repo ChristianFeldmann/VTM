@@ -197,11 +197,7 @@ static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 3, 0 };
 #endif
 
 static const int NUM_LUMA_MODE =                                   67; ///< Planar + DC + 65 directional mode (4*16 + 1)
-#if JVET_L0338_MDLM
 static const int NUM_LMC_MODE =                                    1 + 2; ///< LMC + MDLM_T + MDLM_L
-#else
-static const int NUM_LMC_MODE = 1; ///< LMC
-#endif
 static const int NUM_INTRA_MODE = (NUM_LUMA_MODE + NUM_LMC_MODE);
 
 static const int NUM_DIR =           (((NUM_LUMA_MODE - 3) >> 2) + 1);
@@ -215,10 +211,8 @@ static const int NOMODE_IDX =                               MAX_UCHAR; ///< indi
 
 static const int NUM_CHROMA_MODE = (5 + NUM_LMC_MODE); ///< total number of chroma modes
 static const int LM_CHROMA_IDX = NUM_LUMA_MODE; ///< chroma mode index for derived from LM mode
-#if JVET_L0338_MDLM
 static const int MDLM_L_IDX =                          LM_CHROMA_IDX + 1; ///< MDLM_L
 static const int MDLM_T_IDX =                          LM_CHROMA_IDX + 2; ///< MDLM_T
-#endif
 static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chroma mode index for derived from luma intra mode
 
 static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes

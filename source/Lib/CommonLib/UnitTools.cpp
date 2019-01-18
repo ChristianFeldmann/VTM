@@ -466,13 +466,9 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
     modeList[  2 ] = HOR_IDX;
     modeList[  3 ] = DC_IDX;
     modeList[4] = LM_CHROMA_IDX;
-#if JVET_L0338_MDLM
     modeList[5] = MDLM_L_IDX;
     modeList[6] = MDLM_T_IDX;
     modeList[7] = DM_CHROMA_IDX;
-#else
-    modeList[5] = DM_CHROMA_IDX;
-#endif
 
     Position topLeftPos = pu.blocks[pu.chType].lumaPos();
     Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
@@ -492,11 +488,7 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
 
 bool PU::isLMCMode(unsigned mode)
 {
-#if JVET_L0338_MDLM
   return (mode >= LM_CHROMA_IDX && mode <= MDLM_T_IDX);
-#else
-  return (mode == LM_CHROMA_IDX);
-#endif
 }
 bool PU::isLMCModeEnabled(const PredictionUnit &pu, unsigned mode)
 {
@@ -509,64 +501,12 @@ bool PU::isLMCModeEnabled(const PredictionUnit &pu, unsigned mode)
 
 int PU::getLMSymbolList(const PredictionUnit &pu, int *pModeList)
 {
-#if !JVET_L0338_MDLM
-  const int iNeighbors = 5;
-  const PredictionUnit* neighboringPUs[ iNeighbors ];
-
-  const CompArea& area = pu.Cb();
-  const Position posLT = area.topLeft();
-  const Position posRT = area.topRight();
-  const Position posLB = area.bottomLeft();
-
-  neighboringPUs[ 0 ] = pu.cs->getPURestricted( posLB.offset(-1,  0), pu, CHANNEL_TYPE_CHROMA ); //left
-  neighboringPUs[ 1 ] = pu.cs->getPURestricted( posRT.offset( 0, -1), pu, CHANNEL_TYPE_CHROMA ); //above
-  neighboringPUs[ 2 ] = pu.cs->getPURestricted( posRT.offset( 1, -1), pu, CHANNEL_TYPE_CHROMA ); //aboveRight
-  neighboringPUs[ 3 ] = pu.cs->getPURestricted( posLB.offset(-1,  1), pu, CHANNEL_TYPE_CHROMA ); //BelowLeft
-  neighboringPUs[ 4 ] = pu.cs->getPURestricted( posLT.offset(-1, -1), pu, CHANNEL_TYPE_CHROMA ); //AboveLeft
-
-  int iCount = 0;
-  for ( int i = 0; i < iNeighbors; i++ )
-  {
-    if ( neighboringPUs[i] && CU::isIntra( *(neighboringPUs[i]->cu) ) )
-    {
-      int iMode = neighboringPUs[i]->intraDir[CHANNEL_TYPE_CHROMA];
-      if ( ! PU::isLMCMode( iMode ) )
-      {
-        iCount++;
-      }
-    }
-  }
-
-  bool bNonLMInsert = false;
-#endif
   int iIdx = 0;
 
   pModeList[ iIdx++ ] = LM_CHROMA_IDX;
-#if !JVET_L0338_MDLM
-  if ( iCount >= g_aiNonLMPosThrs[0] && ! bNonLMInsert )
-  {
-#endif
     pModeList[ iIdx++ ] = -1;
-#if !JVET_L0338_MDLM
-    bNonLMInsert = true;
-  }
-#endif
-#if JVET_L0338_MDLM
   pModeList[iIdx++] = MDLM_L_IDX;
   pModeList[iIdx++] = MDLM_T_IDX;
-#endif
-#if !JVET_L0338_MDLM
-  if ( iCount >= g_aiNonLMPosThrs[1] && ! bNonLMInsert )
-  {
-    pModeList[ iIdx++ ] = -1;
-    bNonLMInsert = true;
-  }
-  if ( ! bNonLMInsert )
-  {
-    pModeList[ iIdx++ ] = -1;
-    bNonLMInsert = true;
-  }
-#endif
   return iIdx;
 }
 

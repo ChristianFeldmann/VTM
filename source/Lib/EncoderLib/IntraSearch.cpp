@@ -798,7 +798,6 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
           orgTUs.push_back( ptu );
         }
       }
-#if JVET_L0338_MDLM
       // SATD pre-selecting.
       int satdModeList[NUM_CHROMA_MODE];
       int64_t satdSortedCost[NUM_CHROMA_MODE];
@@ -899,7 +898,6 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
       {
         modeIsEnable[satdModeList[uiMaxMode - 1 - i]] = 0; // disable the last reducedModeNumber modes
       }
-#endif
 
       // save the dist
       Distortion baseDist = cs.dist;
@@ -911,12 +909,10 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
         {
           continue;
         }
-#if JVET_L0338_MDLM
         if (!modeIsEnable[chromaIntraMode] && PU::isLMCModeEnabled(pu, chromaIntraMode)) // when CCLM is disable, then MDLM is disable. not use satd checking
         {
           continue;
         }
-#endif
         cs.setDecomp( pu.Cb(), false );
         cs.dist = baseDist;
         //----- restore context models -----

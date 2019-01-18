@@ -487,12 +487,10 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
       }
     }
 
-#if JVET_L0646_GBI
     if (pu.cu->cs->sps->getSpsNext().getUseGBi() && bioApplied && pu.cu->GBiIdx != GBI_DEFAULT)
     {
       bioApplied = false;
     }
-#endif
   }
 
   for (uint32_t refList = 0; refList < NUM_REF_PIC_LIST_01; refList++)
@@ -1202,14 +1200,12 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
 
   if( iRefIdx0 >= 0 && iRefIdx1 >= 0 )
   {
-#if JVET_L0646_GBI
     if( pu.cu->GBiIdx != GBI_DEFAULT )
     {
       CHECK(bioApplied, "GBi is disallowed with BIO");
       pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->GBiIdx);
       return;
     }
-#endif
     if (bioApplied)
     {
       const int  src0Stride = pu.lwidth() + 2 * BIO_EXTEND_SIZE + 2;

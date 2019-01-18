@@ -861,13 +861,10 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
 
   imv_mode   ( cu, mrgCtx );
 
-#if JVET_L0646_GBI
   cu_gbi_flag( cu );
-#endif
 
 }
 
-#if JVET_L0646_GBI
 void CABACReader::cu_gbi_flag(CodingUnit& cu)
 {
   if(!CU::isGBiIdxCoded(cu))
@@ -916,7 +913,6 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
 
   DTRACE(g_trace_ctx, D_SYNTAX, "cu_gbi_flag() gbi_idx=%d\n", cu.GBiIdx ? 1 : 0);
 }
-#endif
 
 void CABACReader::xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol)
 {
@@ -1285,9 +1281,7 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     pu.mv    [REF_PIC_LIST_1] = Mv(0, 0);
     pu.refIdx[REF_PIC_LIST_1] = -1;
     pu.interDir               =  1;
-#if JVET_L0646_GBI
     pu.cu->GBiIdx = GBI_DEFAULT;
-#endif
   }
 
   PU::spanMotionInfo( pu, mrgCtx );

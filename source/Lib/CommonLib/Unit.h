@@ -306,10 +306,8 @@ struct CodingUnit : public UnitArea
   uint32_t           tileIdx;
 #endif
   uint8_t          emtFlag;
-#if JVET_L0646_GBI
   uint8_t         GBiIdx;
   int             refIdxBi[2];
-#endif
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
 #if JVET_L0293_CPR

@@ -463,7 +463,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     }
 #endif
 
-#if JVET_L0646_GBI && !JVET_L0632_AFFINE_MERGE
+#if !JVET_L0632_AFFINE_MERGE
     uint8_t gbiIdx = GBI_DEFAULT;
 #endif
 
@@ -512,9 +512,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           PU::getAffineMergeCand( pu, affineMergeCtx, pu.mergeIdx );
           pu.interDir = affineMergeCtx.interDirNeighbours[pu.mergeIdx];
           pu.cu->affineType = affineMergeCtx.affineType[pu.mergeIdx];
-#if JVET_L0646_GBI
           pu.cu->GBiIdx = affineMergeCtx.GBiIdx[pu.mergeIdx];
-#endif
 #if JVET_L0369_SUBBLOCK_MERGE
           pu.mergeType = affineMergeCtx.mergeType[pu.mergeIdx];
 #endif
@@ -523,11 +521,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           MvField       affineMvField[2][3];
           unsigned char interDirNeighbours;
           int           numValidMergeCand;
-#if JVET_L0646_GBI
           PU::getAffineMergeCand( pu, affineMvField, interDirNeighbours, gbiIdx, numValidMergeCand);
-#else
-          PU::getAffineMergeCand( pu, affineMvField, interDirNeighbours, numValidMergeCand );
-#endif
           pu.interDir = interDirNeighbours;
 #endif
 #if JVET_L0369_SUBBLOCK_MERGE
@@ -552,7 +546,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               pu.mvpNum[i] = 0;
               pu.mvd[i]    = Mv();
               PU::setAllAffineMvField( pu, mvField, RefPicList( i ) );
-#if JVET_L0646_GBI && !JVET_L0632_AFFINE_MERGE
+#if !JVET_L0632_AFFINE_MERGE
               pu.cu->GBiIdx = gbiIdx;
 #endif
             }

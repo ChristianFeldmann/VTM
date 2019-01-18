@@ -348,9 +348,7 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
     pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
   }
 #endif
-#if JVET_L0646_GBI 
   pu.cu->GBiIdx = ( interDirNeighbours[candIdx] == 3 ) ? GBiIdx[candIdx] : GBI_DEFAULT;
-#endif
 
 }
 void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
@@ -492,7 +490,5 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mvpNum[REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum[REF_PIC_LIST_1] = NOT_VALID;
 
-#if JVET_L0646_GBI 
   pu.cu->GBiIdx = (interDirNeighbours[fPosBaseIdx] == 3) ? GBiIdx[fPosBaseIdx] : GBI_DEFAULT;
-#endif
 }

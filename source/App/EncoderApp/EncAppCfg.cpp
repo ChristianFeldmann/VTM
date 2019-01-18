@@ -844,10 +844,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     "\t2:  Enable fast methods only for Inter EMT\n"
     "\t3:  Enable fast methods for both Intra & Inter EMT\n")
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
-#if JVET_L0646_GBI
   ("GBi",                                             m_GBi,                                            false, "Enable Generalized Bi-prediction(GBi)")
   ("GBiFast",                                         m_GBiFast,                                        false, "Fast methods for Generalized Bi-prediction(GBi)\n")
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   ("LADF",                                            m_LadfEnabed,                                     false, "Luma adaptive deblocking filter QP Offset(L0414)")
   ("LadfNumIntervals",                                m_LadfNumIntervals,                                   3, "LADF number of intervals (2-5, inclusive)")
@@ -1938,10 +1936,8 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_EMT, "EMT only allowed with NEXT profile" );
     xConfirmPara( m_FastEMT, "EMT only allowed with NEXT profile" );
     xConfirmPara( m_compositeRefEnabled, "Composite Reference Frame is only allowed with NEXT profile" );
-#if JVET_L0646_GBI
     xConfirmPara( m_GBi, "GBi is only allowed with NEXT profile" );
     xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
-#endif
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
@@ -3129,10 +3125,8 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "LMChroma:%d ", m_LMChroma );
     msg( VERBOSE, "EMT: %1d(intra) %1d(inter) ", m_EMT & 1, ( m_EMT >> 1 ) & 1 );
     msg(VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
-#if JVET_L0646_GBI
     msg( VERBOSE, "GBi:%d ", m_GBi );
     msg( VERBOSE, "GBiFast:%d ", m_GBiFast );
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
     msg( VERBOSE, "LADF:%d ", m_LadfEnabed );
 #endif

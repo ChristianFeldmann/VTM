@@ -218,13 +218,11 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
     }
 #endif
 
-#if JVET_L0646_GBI
     bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
     if(updateGbiCodingOrder)
     {
       resetGbiCodingOrder(true, cs);
     }
-#endif
 
     if (cs.slice->getSliceType() != I_SLICE && ctuXPosInCtus == 0)
     {

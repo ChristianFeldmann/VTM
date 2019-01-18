@@ -85,12 +85,10 @@ namespace CU
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
   uint32_t getNumNonZeroCoeffNonTs        (const CodingUnit& cu);
 
-#if JVET_L0646_GBI
   bool  isGBiIdxCoded                 (const CodingUnit& cu);
   uint8_t getValidGbiIdx              (const CodingUnit& cu);
   void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);
   uint8_t deriveGbiIdx                (uint8_t gbiLO, uint8_t gbiL1);
-#endif
 
   PUTraverser traversePUs             (      CodingUnit& cu);
   TUTraverser traverseTUs             (      CodingUnit& cu);
@@ -147,11 +145,7 @@ namespace PU
   void getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgCtx );
   void getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx, const int mrgCandIdx = -1 );
 #else
-#if JVET_L0646_GBI
   void getAffineMergeCand             (const PredictionUnit &pu, MvField(*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, unsigned char &gbiIdx, int &numValidMergeCand);
-#else
-  void getAffineMergeCand             (const PredictionUnit &pu, MvField (*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, int &numValidMergeCand );
-#endif
   bool isAffineMrgFlagCoded           (const PredictionUnit &pu );
 #endif
   void setAllAffineMvField            (      PredictionUnit &pu, MvField *mvField, RefPicList eRefList );

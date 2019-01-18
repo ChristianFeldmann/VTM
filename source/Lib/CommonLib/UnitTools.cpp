@@ -800,9 +800,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #if !JVET_L0090_PAIR_AVG
     isCandInter[ui] = false;
 #endif
-#if JVET_L0646_GBI
     mrgCtx.GBiIdx[ui] = GBI_DEFAULT;
-#endif
     mrgCtx.interDirNeighbours[ui] = 0;
     mrgCtx.mrgTypeNeighbours [ui] = MRG_TYPE_DEFAULT_N;
     mrgCtx.mvFieldNeighbours[(ui << 1)    ].refIdx = NOT_VALID;
@@ -843,9 +841,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 
     // get Inter Dir
     mrgCtx.interDirNeighbours[cnt] = miLeft.interDir;
-#if JVET_L0646_GBI
     mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puLeft->cu->GBiIdx : GBI_DEFAULT;
-#endif
     // get Mv from Left
 #if JVET_L0293_CPR
     if (puLeft->cu->cpr)
@@ -904,9 +900,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       // get Inter Dir
       mrgCtx.interDirNeighbours[cnt] = miAbove.interDir;
       // get Mv from Above
-#if JVET_L0646_GBI
       mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puAbove->cu->GBiIdx : GBI_DEFAULT;
-#endif
 #if JVET_L0293_CPR
       if (puAbove->cu->cpr)
       {
@@ -968,9 +962,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       // get Inter Dir
       mrgCtx.interDirNeighbours[cnt] = miAboveRight.interDir;
       // get Mv from Above-right
-#if JVET_L0646_GBI
       mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puAboveRight->cu->GBiIdx : GBI_DEFAULT;
-#endif
 #if JVET_L0293_CPR
       if (puAboveRight->cu->cpr)
       {
@@ -1031,9 +1023,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 
       // get Inter Dir
       mrgCtx.interDirNeighbours[cnt] = miBelowLeft.interDir;
-#if JVET_L0646_GBI
       mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puLeftBottom->cu->GBiIdx : GBI_DEFAULT;
-#endif
       // get Mv from Bottom-Left
 #if JVET_L0293_CPR
       if (puLeftBottom->cu->cpr)
@@ -1160,9 +1150,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 
         // get Inter Dir
         mrgCtx.interDirNeighbours[cnt] = miAboveLeft.interDir;
-#if JVET_L0646_GBI
         mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puAboveLeft->cu->GBiIdx : GBI_DEFAULT;
-#endif
         // get Mv from Above-Left
 #if JVET_L0293_CPR
         if (puAboveLeft->cu->cpr)
@@ -1319,9 +1307,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #if !JVET_L0090_PAIR_AVG
         isCandInter              [uiArrayAddr] = true;
 #endif
-#if JVET_L0646_GBI
         mrgCtx.GBiIdx[uiArrayAddr] = GBI_DEFAULT;
-#endif
 #if JVET_L0293_CPR
         if (mrgCandIdxCPR == cnt && canFastExit)
 #else
@@ -1489,9 +1475,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       {
         isCandInter[uiArrayAddr] = true;
         mrgCtx.interDirNeighbours[uiArrayAddr] = 3;
-#if JVET_L0646_GBI
         mrgCtx.GBiIdx[uiArrayAddr] = ((mrgCtx.interDirNeighbours[uiArrayAddr] == 3)) ? CU::deriveGbiIdx(mrgCtx.GBiIdx[i], mrgCtx.GBiIdx[j]) : GBI_DEFAULT;
-#endif
 
         // get Mv from cand[i] and cand[j]
         mrgCtx.mvFieldNeighbours[ uiArrayAddr << 1     ].setMvField(mrgCtx.mvFieldNeighbours[ i << 1     ].mv, mrgCtx.mvFieldNeighbours[ i << 1     ].refIdx);
@@ -1529,9 +1513,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     isCandInter               [uiArrayAddr     ] = true;
 #endif
     mrgCtx.interDirNeighbours [uiArrayAddr     ] = 1;
-#if JVET_L0646_GBI
     mrgCtx.GBiIdx             [uiArrayAddr     ] = GBI_DEFAULT;
-#endif
     mrgCtx.mvFieldNeighbours  [uiArrayAddr << 1].setMvField(Mv(0, 0), r);
 
     if (slice.isInterB())
@@ -3049,9 +3031,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 #if JVET_L0369_SUBBLOCK_MERGE
     affMrgCtx.mergeType[i] = MRG_TYPE_DEFAULT_N;
 #endif
-#if JVET_L0646_GBI
     affMrgCtx.GBiIdx[i] = GBI_DEFAULT;
-#endif
   }
 
   affMrgCtx.numValidMergeCand = 0;
@@ -3267,9 +3247,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       }
       affMrgCtx.interDirNeighbours[affMrgCtx.numValidMergeCand] = puNeigh->interDir;
       affMrgCtx.affineType[affMrgCtx.numValidMergeCand] = (EAffineModel)(puNeigh->cu->affineType);
-#if JVET_L0646_GBI
       affMrgCtx.GBiIdx[affMrgCtx.numValidMergeCand] = puNeigh->cu->GBiIdx;
-#endif
 
       if ( affMrgCtx.numValidMergeCand == mrgCandIdx )
       {
@@ -3516,11 +3494,7 @@ bool PU::isAffineMrgFlagCoded( const PredictionUnit &pu )
   }
   return getFirstAvailableAffineNeighbour( pu ) != nullptr;
 }
-#if JVET_L0646_GBI
 void PU::getAffineMergeCand( const PredictionUnit &pu, MvField(*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, unsigned char &gbiIdx, int &numValidMergeCand )
-#else
-void PU::getAffineMergeCand( const PredictionUnit &pu, MvField (*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, int &numValidMergeCand )
-#endif
 {
   for ( int mvNum = 0; mvNum < 3; mvNum++ )
   {
@@ -3532,9 +3506,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, MvField (*mvFieldNeighbou
   if( puFirstNeighbour == nullptr )
   {
     numValidMergeCand = -1;
-#if JVET_L0646_GBI
     gbiIdx = GBI_DEFAULT;
-#endif
     return;
   }
   else
@@ -3569,9 +3541,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, MvField (*mvFieldNeighbou
       }
     }
   }
-#if JVET_L0646_GBI
   gbiIdx = puFirstNeighbour->cu->GBiIdx;
-#endif
 }
 #endif
 
@@ -3925,9 +3895,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
         mrgCtx.mvFieldNeighbours[(count << 1) + currRefListId].setMvField(cColMv, 0);
         mrgCtx.interDirNeighbours[count] |= (1 << currRefListId);
         LICFlag = tempLICFlag;
-#if JVET_L0646_GBI
         mrgCtx.GBiIdx[count] = GBI_DEFAULT;
-#endif
         found = true;
       }
       else
@@ -4188,9 +4156,7 @@ void PU::restrictBiPredMergeCands( const PredictionUnit &pu, MergeCtx& mergeCtx 
       {
         mergeCtx.interDirNeighbours[ mergeCand ] = 1;
         mergeCtx.mvFieldNeighbours[( mergeCand << 1 ) + 1].setMvField( Mv( 0, 0 ), -1 );
-#if JVET_L0646_GBI
         mergeCtx.GBiIdx[mergeCand] = GBI_DEFAULT;
-#endif
       }
     }
   }
@@ -4819,7 +4785,6 @@ int CU::getMaxNeighboriMVCandNum( const CodingStructure& cs, const Position& pos
   return maxImvNumCand;
 }
 
-#if JVET_L0646_GBI
 bool CU::isGBiIdxCoded( const CodingUnit &cu )
 {
   if( cu.cs->sps->getSpsNext().getUseGBi() == false )
@@ -4920,7 +4885,6 @@ uint8_t CU::deriveGbiIdx( uint8_t gbiLO, uint8_t gbiL1 )
     }
   }
 }
-#endif
 
 // TU tools
 

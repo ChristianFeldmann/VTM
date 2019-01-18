@@ -808,9 +808,7 @@ private:
   bool              m_InterEMT;                   // 19
   bool              m_Affine;
   bool              m_AffineType;
-#if JVET_L0646_GBI
   bool              m_GBi;                        //
-#endif
   bool              m_MTTEnabled;                 //
   bool              m_MHIntra;
   bool              m_Triangle;
@@ -896,10 +894,8 @@ public:
   bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
   void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
   bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
-#if JVET_L0646_GBI
   void      setUseGBi             ( bool b )                                        { m_GBi = b; }
   bool      getUseGBi             ()                                      const     { return m_GBi; }
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   void      setLadfEnabled        ( bool b )                                        { m_LadfEnabled = b; }
   bool      getLadfEnabled        ()                                      const     { return m_LadfEnabled; }

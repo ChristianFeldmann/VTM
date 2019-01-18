@@ -237,10 +237,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
-#if JVET_L0646_GBI
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   m_cEncLib.setUseLadf                                           ( m_LadfEnabed );
   if ( m_LadfEnabed )

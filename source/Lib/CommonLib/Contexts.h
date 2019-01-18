@@ -198,9 +198,7 @@ public:
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;
   static const CtxSet   ImvFlag;
-#if JVET_L0646_GBI
   static const CtxSet   GBiIdx;
-#endif
   static const CtxSet   ctbAlfFlag;
   static const CtxSet   MHIntraFlag;
   static const CtxSet   MHIntraPredMode;

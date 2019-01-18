@@ -93,9 +93,7 @@ public:
   void        pcm_data                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        pcm_flag                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        cu_pred_data              ( const CodingUnit&             cu );
-#if JVET_L0646_GBI
   void        cu_gbi_flag               ( const CodingUnit&             cu );
-#endif
   void        extend_ref_line           (const PredictionUnit&          pu );
   void        extend_ref_line           (const CodingUnit&              cu );
   void        intra_luma_pred_modes     ( const CodingUnit&             cu );

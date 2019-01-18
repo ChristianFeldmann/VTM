@@ -730,13 +730,10 @@ void CABACWriter::cu_pred_data( const CodingUnit& cu )
 
   imv_mode   ( cu );
 
-#if JVET_L0646_GBI
   cu_gbi_flag( cu );
-#endif
 
 }
 
-#if JVET_L0646_GBI
 void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
 {
   if(!CU::isGBiIdxCoded(cu))
@@ -779,7 +776,6 @@ void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
 
   DTRACE(g_trace_ctx, D_SYNTAX, "cu_gbi_flag() gbi_idx=%d\n", cu.GBiIdx ? 1 : 0);
 }
-#endif
 
 void CABACWriter::xWriteTruncBinCode(uint32_t symbol, uint32_t maxSymbol)
 {

@@ -143,7 +143,6 @@ struct MotionInfo
   }
 };
 
-#if JVET_L0646_GBI
 class GBiMotionParam
 {
   bool       m_readOnly[2][33];       // 2 RefLists, 33 RefFrams
@@ -210,7 +209,6 @@ public:
     ruiDist = m_distAffine[bP4][uiRefList][uiRefIdx];
   }
 };
-#endif
 struct LutMotionCand
 {
   MotionInfo*   motionCand;

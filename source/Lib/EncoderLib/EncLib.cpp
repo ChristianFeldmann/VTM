@@ -880,9 +880,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
   sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
-#if JVET_L0646_GBI
   sps.getSpsNext().setUseGBi                ( m_GBi );
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   sps.getSpsNext().setLadfEnabled           ( m_LadfEnabled );
   if ( m_LadfEnabled )

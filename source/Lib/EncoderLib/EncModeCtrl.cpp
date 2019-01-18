@@ -510,7 +510,6 @@ bool CacheBlkInfoCtrl::getMv( const UnitArea& area, const RefPicList refPicList,
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->validMv[refPicList][iRefIdx];
 }
 
-#if JVET_L0646_GBI 
 bool CacheBlkInfoCtrl::getInter(const UnitArea& area)
 {
   unsigned idx1, idx2, idx3, idx4;
@@ -532,7 +531,6 @@ uint8_t CacheBlkInfoCtrl::getGbiIdx(const UnitArea& area)
 
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->GBiIdx;
 }
-#endif
 
 #if REUSE_CU_RESULTS
 static bool isTheSameNbHood( const CodingUnit &cu, const CodingStructure& cs, const Partitioner &partitioner )
@@ -1611,9 +1609,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
 #else
           relatedCU.isSkip    = bestCU->skip;
 #endif
-#if JVET_L0646_GBI
           relatedCU.GBiIdx    = bestCU->GBiIdx;
-#endif
         }
         else if( CU::isIntra( *bestCU ) )
         {

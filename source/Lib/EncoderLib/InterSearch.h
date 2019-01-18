@@ -98,11 +98,9 @@ private:
   CodingStructure **m_pSaveCS;
 
   ClpRng          m_lumaClpRng;
-#if JVET_L0646_GBI 
   uint32_t        m_estWeightIdxBits[GBI_NUM];
   GBiMotionParam  m_uniMotions;
   bool            m_affineModeSelected;
-#endif
 #if JVET_L0293_CPR
   std::unordered_map< Position, std::unordered_map< Size, BlkRecord> > m_ctuRecord;
 #endif
@@ -169,9 +167,7 @@ public:
 #if ENABLE_SPLIT_PARALLELISM
   void copyState                    ( const InterSearch& other );
 #endif
-#if JVET_L0646_GBI
   void setAffineModeSelected        ( bool flag) { m_affineModeSelected = flag; }
-#endif
   void resetAffineMVList() { m_affMVListIdx = 0; m_affMVListSize = 0; }
   void savePrevAffMVInfo(int idx, AffineMVInfo &tmpMVInfo, bool& isSaved)
   {
@@ -385,11 +381,9 @@ protected:
                                     Mv                    hevcMv[2][33]
                                   , Mv                    mvAffine4Para[2][33][3]
                                   , int                   refIdx4Para[2]
-#if JVET_L0646_GBI 
                                   , uint8_t               gbiIdx = GBI_DEFAULT
                                   , bool                  enforceGBiPred = false
                                   , uint32_t              gbiIdxBits = 0
-#endif
                                   );
 
   void xAffineMotionEstimation    ( PredictionUnit& pu,
@@ -417,7 +411,6 @@ protected:
   void xCopyAffineAMVPInfo        ( AffineAMVPInfo& src, AffineAMVPInfo& dst );
   void xCheckBestAffineMVP        ( PredictionUnit &pu, AffineAMVPInfo &affineAMVPInfo, RefPicList eRefPicList, Mv acMv[3], Mv acMvPred[3], int& riMVPIdx, uint32_t& ruiBits, Distortion& ruiCost );
 
-#if JVET_L0646_GBI 
   bool xReadBufferedAffineUniMv   ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv acMvPred[3], Mv acMv[3], uint32_t& ruiBits, Distortion& ruiCost);
   double xGetMEDistortionWeight   ( uint8_t gbiIdx, RefPicList eRefPicList);
   bool xReadBufferedUniMv         ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost);
@@ -426,7 +419,6 @@ public:
   uint32_t getWeightIdxBits       ( uint8_t gbiIdx ) { return m_estWeightIdxBits[gbiIdx]; }
   void initWeightIdxBits          ();
 protected:
-#endif
 
   void xExtDIFUpSamplingH         ( CPelBuf* pcPattern );
   void xExtDIFUpSamplingQ         ( CPelBuf* pcPatternKey, Mv halfPelRef );

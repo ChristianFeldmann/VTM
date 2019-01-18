@@ -225,10 +225,8 @@ protected:
   bool      m_AltDQPCoding;
 #endif
   bool      m_compositeRefEnabled;        //composite reference
-#if JVET_L0646_GBI
   bool      m_GBi;
   bool      m_GBiFast;
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool      m_LadfEnabled;
   int       m_LadfNumIntervals;
@@ -730,12 +728,10 @@ public:
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }
-#if JVET_L0646_GBI
   void      setUseGBi                       ( bool b )       { m_GBi = b; }
   bool      getUseGBi                       ()         const { return m_GBi; }
   void      setUseGBiFast                   ( uint32_t b )   { m_GBiFast = b; }
   bool      getUseGBiFast                   ()         const { return m_GBiFast; }
-#endif
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   void      setUseLadf                      ( bool b )       { m_LadfEnabled = b; }

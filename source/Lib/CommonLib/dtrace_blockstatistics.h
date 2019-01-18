@@ -107,9 +107,7 @@ enum class BlockStatistic {
   TrianglePartitioning,
   TriangleMVL0, //<< currently only uni-prediction enabled
   TriangleMVL1, //<< currently only uni-prediction enabled
-#if JVET_L0646_GBI
   GBIIndex,
-#endif
 #if JVET_L0293_CPR
   CPRFlag,
 #endif
@@ -195,9 +193,7 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::TrianglePartitioning,   std::tuple<std::string, BlockStatisticType, std::string>{"TrianglePartitioning",        BlockStatisticType::Line,                   ""}},
   { BlockStatistic::TriangleMVL0,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL0",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
   { BlockStatistic::TriangleMVL1,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL1",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
-#if JVET_L0646_GBI
   { BlockStatistic::GBIIndex,               std::tuple<std::string, BlockStatisticType, std::string>{"GBIIndex",                    BlockStatisticType::Integer,                "[0, 4]"}}, 
-#endif
 #if JVET_L0293_CPR
   { BlockStatistic::CPRFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"CPRFlag",                     BlockStatisticType::Flag,                   ""}},
 #endif

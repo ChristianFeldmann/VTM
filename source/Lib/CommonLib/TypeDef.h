@@ -80,7 +80,6 @@
 
 
 
-#define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)
 
 #define JVET_L0628_4TAP_INTRA                             1 // 4-tap intra-interpolation filtering with switching between Gaussian and DCT-IF filters for luma component
 
@@ -261,7 +260,7 @@
 #define ENABLE_SIMD_OPT_DIST                            ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for the distortion calculations(SAD,SSE,HADAMARD), no impact on RD performance
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
-#if ENABLE_SIMD_OPT_BUFFER && JVET_L0646_GBI
+#if ENABLE_SIMD_OPT_BUFFER
 #define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi   
 #endif
 #define ENABLE_SIMD_OPT_BIO                             ( JVET_L0256_BIO && ENABLE_SIMD_OPT )               ///< SIMD optimization for BIO

@@ -223,10 +223,8 @@ protected:
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
 
   bool      m_compositeRefEnabled;
-#if JVET_L0646_GBI
   bool      m_GBi;
   bool      m_GBiFast;
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool      m_LadfEnabed;
   int       m_LadfNumIntervals;

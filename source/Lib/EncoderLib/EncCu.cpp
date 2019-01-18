@@ -2224,9 +2224,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 #endif
     cu.triangle = true;
     cu.mmvdSkip = false;
-#if JVET_L0646_GBI
     cu.GBiIdx   = GBI_DEFAULT;
-#endif
 
     PredictionUnit pu( tempCS->area );
     pu.cu = &cu;
@@ -2269,9 +2267,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     cu.qp               = encTestMode.qp;
     cu.triangle         = true;
     cu.mmvdSkip         = false;
-#if JVET_L0646_GBI
     cu.GBiIdx           = GBI_DEFAULT;
-#endif
 
     PredictionUnit &pu  = tempCS->addPU( cu, partitioner.chType );
       
@@ -2371,9 +2367,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
         cu.qp = encTestMode.qp;
         cu.triangle = true;
         cu.mmvdSkip = false;
-#if JVET_L0646_GBI
         cu.GBiIdx   = GBI_DEFAULT;
-#endif
         PredictionUnit &pu = tempCS->addPU(cu, partitioner.chType);
 
         pu.mergeIdx = mergeCand;
@@ -2527,9 +2521,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
         pu.mergeFlag = true;
         pu.mergeIdx = uiMergeCand;
         cu.affineType = affineMergeCtx.affineType[uiMergeCand];
-#if JVET_L0646_GBI
         cu.GBiIdx = affineMergeCtx.GBiIdx[uiMergeCand];
-#endif
 
 #if JVET_L0369_SUBBLOCK_MERGE
         pu.mergeType = affineMergeCtx.mergeType[uiMergeCand];
@@ -2623,9 +2615,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       pu.mergeIdx = uiMergeCand;
       pu.interDir = affineMergeCtx.interDirNeighbours[uiMergeCand];
       cu.affineType = affineMergeCtx.affineType[uiMergeCand];
-#if JVET_L0646_GBI
       cu.GBiIdx = affineMergeCtx.GBiIdx[uiMergeCand];
-#endif
 
 #if JVET_L0369_SUBBLOCK_MERGE
       pu.mergeType = affineMergeCtx.mergeType[uiMergeCand];
@@ -2700,9 +2690,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
   unsigned char interDirNeighbours;
   int           numValidMergeCand;
   bool          hasNoResidual = false;
-#if JVET_L0646_GBI
   uint8_t       gbiIdx = GBI_DEFAULT;
-#endif
 
 
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
@@ -2727,11 +2715,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 
   cu.firstPU->mergeFlag = true;
   cu.firstPU->mergeIdx  = 0;
-#if JVET_L0646_GBI
   PU::getAffineMergeCand( *cu.firstPU, affineMvField, interDirNeighbours, gbiIdx, numValidMergeCand );
-#else
-  PU::getAffineMergeCand( *cu.firstPU, affineMvField, interDirNeighbours, numValidMergeCand );
-#endif
   if( numValidMergeCand == -1 )
   {
     return;
@@ -2740,9 +2724,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
   cu.firstPU->interDir = interDirNeighbours;
   PU::setAllAffineMvField( *cu.firstPU, affineMvField[REF_PIC_LIST_0], REF_PIC_LIST_0 );
   PU::setAllAffineMvField( *cu.firstPU, affineMvField[REF_PIC_LIST_1], REF_PIC_LIST_1 );
-#if JVET_L0646_GBI
   cu.GBiIdx = gbiIdx;
-#endif
 
   PU::spanMotionInfo( *cu.firstPU );
 
@@ -3214,7 +3196,6 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 {
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
 
-#if JVET_L0646_GBI
   
   m_pcInterSearch->setAffineModeSelected(false);
 
@@ -3260,7 +3241,6 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
         continue;
       }
     }
-#endif
 
   CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
 
@@ -3278,17 +3258,14 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
   cu.qp               = encTestMode.qp;
   CU::addPUs( cu );
 
-#if JVET_L0646_GBI
   cu.GBiIdx = g_GbiSearchOrder[gbiLoopIdx];
   uint8_t gbiIdx = cu.GBiIdx;
   bool  testGbi = (gbiIdx != GBI_DEFAULT);
-#endif
 
   m_pcInterSearch->predInterSearch( cu, partitioner );
 
   const unsigned wIdx = gp_sizeIdxInfo->idxFrom( tempCS->area.lwidth () );
 
-#if JVET_L0646_GBI
   gbiIdx = CU::getValidGbiIdx(cu);
   if( testGbi && gbiIdx == GBI_DEFAULT ) // Enabled GBi but the search results is uni.
   {
@@ -3305,18 +3282,14 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
       isEqualUni = true;
     }
   }
-#endif
 
   xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, 0
     , m_pImvTempCS ? m_pImvTempCS[wIdx] : NULL
     , 1
     , 0
-#if JVET_L0646_GBI
     , &equGBiCost
-#endif
   );
 
-#if JVET_L0646_GBI
   if( g_GbiSearchOrder[gbiLoopIdx] == GBI_DEFAULT )
     m_pcInterSearch->setAffineModeSelected((bestCS->cus.front()->affine && !(bestCS->cus.front()->firstPU->mergeFlag)));
 
@@ -3341,7 +3314,6 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
     break;
   }
  }  // for( UChar gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
-#endif
 }
 
 
@@ -3351,9 +3323,7 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
   int iIMV = int( ( encTestMode.opts & ETO_IMV ) >> ETO_IMV_SHIFT );
-#if JVET_L0646_GBI
   m_pcInterSearch->setAffineModeSelected(false);
-#endif
   // Only int-Pel, 4-Pel and fast 4-Pel allowed
   CHECK( iIMV != 1 && iIMV != 2 && iIMV != 3, "Unsupported IMV Mode" );
   // Fast 4-Pel Mode
@@ -3365,7 +3335,6 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
 
   CodingStructure* pcCUInfo2Reuse = nullptr;
 
-#if JVET_L0646_GBI
   m_pcInterSearch->resetBufferedUniMotions();
   int gbiLoopNum = (tempCS->slice->isInterB() ? GBI_NUM : 1);
   gbiLoopNum = (pcCUInfo2Reuse != NULL ? 1 : gbiLoopNum);
@@ -3411,7 +3380,6 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     {
       continue;
     }
-#endif
 
   CodingUnit &cu = ( pcCUInfo2Reuse != nullptr ) ? *tempCS->getCU( partitioner.chType ) : tempCS->addCU( tempCS->area, partitioner.chType );
 
@@ -3444,21 +3412,17 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   cu.imv      = iIMV > 1 ? 2 : 1;
   cu.emtFlag  = false;
 
-#if JVET_L0646_GBI
   bool testGbi;
   uint8_t gbiIdx;
-#endif
   
   if( pcCUInfo2Reuse != nullptr )
   {
     // reuse the motion info from pcCUInfo2Reuse
     CU::resetMVDandMV2Int( cu, m_pcInterSearch );
 
-#if JVET_L0646_GBI
     CHECK(cu.GBiIdx < 0 || cu.GBiIdx >= GBI_NUM, "cu.GBiIdx < 0 || cu.GBiIdx >= GBI_NUM");
     gbiIdx = CU::getValidGbiIdx(cu);
     testGbi = (gbiIdx != GBI_DEFAULT);
-#endif
 
     if( !CU::hasSubCUNonZeroMVd( cu ) )
     {
@@ -3481,20 +3445,15 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   }
   else
   {
-#if JVET_L0646_GBI 
     cu.GBiIdx = g_GbiSearchOrder[gbiLoopIdx];
     gbiIdx = cu.GBiIdx;
     testGbi = (gbiIdx != GBI_DEFAULT);
-#endif
 
     m_pcInterSearch->predInterSearch( cu, partitioner );
 
-#if JVET_L0646_GBI
     gbiIdx = CU::getValidGbiIdx(cu);
-#endif
   }
 
-#if JVET_L0646_GBI
   if( testGbi && gbiIdx == GBI_DEFAULT ) // Enabled GBi but the search results is uni.
   {
     tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
@@ -3510,7 +3469,6 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
       isEqualUni = true;
     }
   }
-#endif
 
   if( !CU::hasSubCUNonZeroMVd( cu ) )
   {
@@ -3531,12 +3489,9 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     , NULL
     , true
     , 0
-#if JVET_L0646_GBI
     , &equGBiCost
-#endif
   );
 
-#if JVET_L0646_GBI
   tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
 
   double skipTH = MAX_DOUBLE;
@@ -3558,7 +3513,6 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     break;
   }
  } // for( UChar gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
-#endif
 
   return true;
 }
@@ -3567,9 +3521,7 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
   , CodingStructure* imvCS
   , int emtMode
   , bool* bestHasNonResi
-#if JVET_L0646_GBI
   , double* equGBiCost
-#endif
   )
 {
   if( residualPass == 1 && encTestMode.lossless )
@@ -3663,7 +3615,6 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
 
     xCheckDQP( *tempCS, partitioner );
 
-#if JVET_L0646_GBI
     if( ETM_INTER_ME == encTestMode.type )
     {
       if( equGBiCost != NULL )
@@ -3693,7 +3644,6 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
         }
       }
     }
-#endif
 
     double emtFirstPassCost = tempCS->cost;
     if( imvCS && (tempCS->cost < imvCS->cost) )

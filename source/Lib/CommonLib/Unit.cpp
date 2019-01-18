@@ -267,11 +267,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
 #endif
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
-#if JVET_L0646_GBI
   GBiIdx            = other.GBiIdx;
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
-#endif
 #if JVET_L0293_CPR
   cpr               = other.cpr;
 #endif
@@ -302,11 +300,9 @@ void CodingUnit::initData()
 #endif
   imv               = 0;
   imvNumCand        = 0;
-#if JVET_L0646_GBI
   GBiIdx            = GBI_DEFAULT;
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
-#endif
 #if JVET_L0293_CPR
   cpr               = false;
 #endif

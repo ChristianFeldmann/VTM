@@ -80,9 +80,7 @@ public:
   void        pred_mode                 ( CodingUnit&                   cu );
   void        pcm_flag                  ( CodingUnit&                   cu,     Partitioner&    pm );
   void        cu_pred_data              ( CodingUnit&                   cu );
-#if JVET_L0646_GBI
   void        cu_gbi_flag               ( CodingUnit&                   cu );
-#endif
   void        extend_ref_line           (CodingUnit&                     cu);
   void        intra_luma_pred_modes     ( CodingUnit&                   cu );
   void        intra_chroma_pred_modes   ( CodingUnit&                   cu );

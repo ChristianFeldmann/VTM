@@ -505,7 +505,6 @@ const CtxSet ContextSetCfg::AffMergeIdx = ContextSetCfg::addCtxSet
 } );
 #endif
 
-#if JVET_L0646_GBI
 const CtxSet ContextSetCfg::GBiIdx = ContextSetCfg::addCtxSet
 ({
   // 4 ctx for 1st bin; 1 ctx for each of rest bins
@@ -519,7 +518,6 @@ const CtxSet ContextSetCfg::GBiIdx = ContextSetCfg::addCtxSet
   { CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
 #endif
   });
-#endif
 
 const CtxSet ContextSetCfg::Mvd = ContextSetCfg::addCtxSet
 ({

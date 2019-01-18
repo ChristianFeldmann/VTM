@@ -111,7 +111,6 @@ const TFilterCoeff InterpolationFilter::m_chromaFilter[CHROMA_INTERPOLATION_FILT
   {  0,  2, 63, -1 },
 };
 
-#if JVET_L0256_BIO
 const TFilterCoeff InterpolationFilter::m_bilinearFilter[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_BILINEAR] =
 {
   { 64,  0, },
@@ -131,7 +130,6 @@ const TFilterCoeff InterpolationFilter::m_bilinearFilter[LUMA_INTERPOLATION_FILT
   { 8, 56, },
   { 4, 60, },
 };
-#endif
 
 // ====================================================================================================================
 // Private member functions
@@ -465,11 +463,7 @@ void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int sr
  * \param  fmt        Chroma format
  * \param  bitDepth   Bit depth
  */
-#if JVET_L0256_BIO
 void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx )
-#else
-void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng )
-#endif
 {
   if( frac == 0 )
   {
@@ -478,13 +472,11 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
   else if( isLuma( compID ) )
   {
     CHECK( frac < 0 || frac >= LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
-#if JVET_L0256_BIO
     if( nFilterIdx == 1 )
     {
       filterHor<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_bilinearFilter[frac]);
     }
     else
-#endif
     {
       filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter[frac] );
     }
@@ -514,11 +506,7 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
  * \param  fmt        Chroma format
  * \param  bitDepth   Bit depth
  */
-#if JVET_L0256_BIO
 void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx)
-#else
-void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng )
-#endif
 {
   if( frac == 0 )
   {
@@ -527,13 +515,11 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
   else if( isLuma( compID ) )
   {
     CHECK( frac < 0 || frac >= LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
-#if JVET_L0256_BIO
     if (nFilterIdx == 1)
     {
       filterVer<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilter[frac]);
     }
     else
-#endif
     {
       filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter[frac] );
     }

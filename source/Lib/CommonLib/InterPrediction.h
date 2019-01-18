@@ -64,7 +64,6 @@ class InterPrediction : public WeightPrediction
 {
 private:
 
-#if JVET_L0256_BIO
   Distortion  m_bioDistThres;
   Distortion  m_bioSubBlkDistThres;
   Distortion  m_bioPredSubBlkDist[MAX_NUM_PARTS_IN_CTU];
@@ -74,7 +73,6 @@ private:
   int m_dotProduct3[BIO_TEMP_BUFFER_SIZE];
   int m_dotProduct5[BIO_TEMP_BUFFER_SIZE];
   int m_dotProduct6[BIO_TEMP_BUFFER_SIZE];
-#endif
 
 protected:
   InterpolationFilter  m_if;
@@ -94,7 +92,6 @@ protected:
   PelStorage           m_triangleBuf;
   Mv*                  m_storedMv;
  
-#if JVET_L0256_BIO
   Pel*                 m_gradX0;
   Pel*                 m_gradY0;
   Pel*                 m_gradX1;
@@ -105,35 +102,26 @@ protected:
   void            applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &yuvSrc0, const CPelUnitBuf &yuvSrc1, const int &refIdx0, const int &refIdx1, PelUnitBuf &yuvDst, const BitDepths &clipBitDepths);
   bool            xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel* yuvSrc0, const int src0Stride, const Pel* yuvSrc1, const int src1Stride, const BitDepths &clipBitDepths);
   void            bioSampleExtendBilinearFilter(Pel const* src, int srcStride, Pel *dst, int dstStride, int width, int height, int dim, int fracX, int fracY, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng);
-#endif
 
   void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
-#if JVET_L0256_BIO
                                   , const bool& bioApplied 
-#endif
 #if JVET_L0293_CPR
                                   , const bool luma, const bool chroma
 #endif
   );
   void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred );
   void xPredInterBlk            ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
-#if JVET_L0256_BIO
                                  , const bool& bioApplied
-#endif
 #if JVET_L0293_CPR
                                  , bool isCPR
 #endif
                                  );
 
-#if JVET_L0256_BIO
   void xAddBIOAvg4              (const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng);
   void xBioGradFilter           (Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY);
   void xCalcBIOPar              (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG);
   void xCalcBlkGradient         (int sx, int sy, int    *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize);
   void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied );
-#else
-  void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs );
-#endif
   void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng );
 
   void xWeightedTriangleBlk     ( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, const bool weights, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );

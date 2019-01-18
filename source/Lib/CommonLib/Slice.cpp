@@ -1765,9 +1765,7 @@ SPSNext::SPSNext( SPS& sps )
   , m_LargeCTU                  ( false )
   , m_SubPuMvp                  ( false )
   , m_IMV                       ( false )
-#if JVET_L0256_BIO
   , m_BIO                       ( false )
-#endif
   , m_DisableMotionCompression  ( false )
   , m_LMChroma                  ( false )
   , m_IntraEMT                  ( false )

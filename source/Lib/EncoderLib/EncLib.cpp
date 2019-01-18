@@ -868,9 +868,7 @@ void EncLib::xInitSPS(SPS &sps)
 #endif 
   sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
   sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
-#if JVET_L0256_BIO
   sps.getSpsNext().setUseBIO                ( m_BIO );
-#endif
   sps.getSpsNext().setUseAffine             ( m_Affine );
   sps.getSpsNext().setUseAffineType         ( m_AffineType );
   sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );

@@ -225,9 +225,7 @@ void EncApp::xInitLibCfg()
 #endif 
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );
-#if JVET_L0256_BIO
   m_cEncLib.setBIO                                               (m_BIO);
-#endif
   m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );
   m_cEncLib.setMTTMode                                           ( m_MTT );
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );

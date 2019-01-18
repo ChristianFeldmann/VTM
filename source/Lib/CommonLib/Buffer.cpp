@@ -62,7 +62,6 @@ void addAvgCore( const T* src1, int src1Stride, const T* src2, int src2Stride, T
 #undef ADD_AVG_CORE_INC
 }
 
-#if JVET_L0256_BIO
 void addBIOAvgCore(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
 {
   int b = 0;
@@ -192,7 +191,6 @@ void calcBlkGradientCore(int sx, int sy, int     *arraysGx2, int     *arraysGxGy
     GydI += width;
   }
 }
-#endif
 
 #if ENABLE_SIMD_OPT_GBI && JVET_L0646_GBI
 void removeWeightHighFreq(int16_t* dst, int dstStride, const int16_t* src, int srcStride, int width, int height, int shift, int gbiWeight)

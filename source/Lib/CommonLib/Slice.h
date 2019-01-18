@@ -801,9 +801,7 @@ private:
   bool              m_LargeCTU;                   // 5
   bool              m_SubPuMvp;
   bool              m_IMV;                        // 9
-#if JVET_L0256_BIO
   bool              m_BIO;
-#endif
   bool              m_DisableMotionCompression;   // 13
   bool              m_LMChroma;                   // 17
   bool              m_IntraEMT;                   // 18
@@ -883,10 +881,8 @@ public:
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
-#if JVET_L0256_BIO
   void      setUseBIO(bool b)                                                       { m_BIO = b; }
   bool      getUseBIO()                                                   const     { return m_BIO; }
-#endif
   void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
   bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }
   bool      getMTTEnabled         ()                                      const     { return m_MTTEnabled; }

@@ -79,7 +79,6 @@
 
 
 
-#define JVET_L0256_BIO                                    1
 
 #define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)
 
@@ -547,13 +546,9 @@ enum DFunc
   DF_DEFAULT_ORI      = DF_SSE_WTD+8,
 #endif
 
-#if JVET_L0256_BIO
   DF_SAD_INTERMEDIATE_BITDEPTH = 63,
 
   DF_TOTAL_FUNCTIONS = 64
-#else
-  DF_TOTAL_FUNCTIONS = 63
-#endif
 };
 
 /// motion vector predictor direction used in AMVP

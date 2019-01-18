@@ -217,9 +217,7 @@ protected:
 #endif 
   bool      m_Affine;
   bool      m_AffineType;
-#if JVET_L0256_BIO
   bool      m_BIO;
-#endif
   bool      m_DisableMotionCompression;
   unsigned  m_MTTMode;
 
@@ -705,10 +703,8 @@ public:
   bool      getAffine                       ()         const { return m_Affine; }
   void      setAffineType( bool b )                          { m_AffineType = b; }
   bool      getAffineType()                            const { return m_AffineType; }
-#if JVET_L0256_BIO
   void      setBIO(bool b)                                   { m_BIO = b; }
   bool      getBIO()                                   const { return m_BIO; }
-#endif
   void      setDisableMotionCompression     ( bool b )       { m_DisableMotionCompression = b; }
   bool      getDisableMotionCompression     ()         const { return m_DisableMotionCompression; }
 

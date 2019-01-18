@@ -2313,9 +2313,7 @@ Distortion InterSearch::xGetTemplateCost( const PredictionUnit& pu,
 
 
   xPredInterBlk( COMPONENT_Y, pu, picRef, cMvCand, predBuf, bi, pu.cu->slice->clpRng( COMPONENT_Y )
-#if JVET_L0256_BIO
                 , false
-#endif
 #if JVET_L0293_CPR
                 , false
 #endif

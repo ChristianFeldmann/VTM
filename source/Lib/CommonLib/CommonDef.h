@@ -306,10 +306,8 @@ static const int MAX_NUM_GT2_BINS_4x4SUBBLOCK =                     4; ///< max 
 static const int MAX_NUM_REG_BINS_2x2SUBBLOCK =                     8; ///< max number of context-coded bins (incl. gt2 bins) per 2x2 subblock (chroma)
 static const int MAX_NUM_GT2_BINS_2x2SUBBLOCK =                     2; ///< max number of gt2 bins per 2x2 subblock (chroma)
 
-#if JVET_L0256_BIO
 static const int BIO_EXTEND_SIZE              =                     1;
 static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE) * (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE);
-#endif
 
 #if JVET_L0646_GBI
 static const int GBI_NUM =                                          5; ///< the number of weight options
@@ -387,9 +385,7 @@ static const int NTAPS_CHROMA             =                         4; ///< Numb
 static const int MAX_LADF_INTERVALS       =                         5; /// max number of luma adaptive deblocking filter qp offset intervals
 #endif
 
-#if JVET_L0256_BIO
 static const int NTAPS_BILINEAR           =                         2; ///< Number of taps for bilinear filter
-#endif
 
 #if JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
 static const int ATMVP_SUB_BLOCK_SIZE =                             3; ///< sub-block size for ATMVP

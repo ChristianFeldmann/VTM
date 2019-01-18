@@ -164,9 +164,7 @@ void RdCost::init()
   m_afpDistortFunc[DF_SSE16N_WTD] = RdCost::xGetSSE16N_WTD;
 #endif
 
-#if JVET_L0256_BIO
   m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD;
-#endif
 
 #if ENABLE_SIMD_OPT_DIST
 #ifdef TARGET_SIMD_X86
@@ -319,11 +317,7 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &c
   rcDP.maximumDistortionForEarlyExit = std::numeric_limits<Distortion>::max();
 }
 
-#if JVET_L0256_BIO
 void RdCost::setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, int iOrgStride, int iRefStride, int bitDepth, ComponentID compID, int width, int height, int subShiftMode, int step, bool useHadamard, bool bioApplied )
-#else
-void RdCost::setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, int iOrgStride, int iRefStride, int bitDepth, ComponentID compID, int width, int height, int subShiftMode, int step, bool useHadamard )
-#endif
 {
   rcDP.bitDepth   = bitDepth;
   rcDP.compID     = compID;
@@ -343,13 +337,11 @@ void RdCost::setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, 
 
   CHECK( useHadamard || rcDP.useMR || subShiftMode > 0, "only used in xDirectMCCost with these default parameters (so far...)" );
 
-#if JVET_L0256_BIO
   if ( bioApplied )
   {
     rcDP.distFunc = m_afpDistortFunc[ DF_SAD_INTERMEDIATE_BITDEPTH ];
     return;
   }
-#endif
 
   if( width == 12 )
   {

@@ -212,9 +212,7 @@ protected:
 #endif 
   bool      m_Affine;
   bool      m_AffineType;
-#if JVET_L0256_BIO
   bool      m_BIO;
-#endif
   bool      m_DisableMotionCompression;
   unsigned  m_MTT;
 #if ENABLE_WPP_PARALLELISM

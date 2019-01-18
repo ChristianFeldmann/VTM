@@ -531,9 +531,7 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   WRITE_FLAG( spsNext.getUseLargeCTU() ? 1 : 0,                                                 "large_ctu_flag" );
   WRITE_FLAG(spsNext.getUseSubPuMvp() ? 1 : 0,                                                  "subpu_tmvp_flag");
   WRITE_FLAG( spsNext.getUseIMV() ? 1 : 0,                                                      "imv_enable_flag" );
-#if JVET_L0256_BIO
   WRITE_FLAG( spsNext.getUseBIO() ? 1 : 0,                                                      "bio_enable_flag" );
-#endif
   WRITE_FLAG( spsNext.getDisableMotCompress() ? 1 : 0,                                          "disable_motion_compression_flag" );
   WRITE_FLAG( spsNext.getUseLMChroma() ? 1 : 0,                                                 "lm_chroma_enabled_flag" );
   WRITE_FLAG( spsNext.getUseIntraEMT() ? 1 : 0,                                                 "emt_intra_enabled_flag" );

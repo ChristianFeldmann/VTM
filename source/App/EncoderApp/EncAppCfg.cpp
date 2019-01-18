@@ -820,9 +820,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
   ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
-#if JVET_L0256_BIO
   ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
-#endif    
   ("DisableMotCompression",                           m_DisableMotionCompression,                       false, "Disable motion data compression for all modes")
   ("IMV",                                             m_ImvMode,                                            2, "Adaptive MV precision Mode (IMV)\n"
                                                                                                                "\t0: disabled IMV\n"
@@ -1929,9 +1927,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_LargeCTU, "Large CTU is only allowed with NEXT profile" );
     xConfirmPara( m_SubPuMvpMode != 0, "Sub-PU motion vector prediction is only allowed with NEXT profile" );
-#if JVET_L0256_BIO
     xConfirmPara( m_BIO, "BIO only allowed with NEXT profile" );
-#endif
     xConfirmPara( m_DisableMotionCompression, "Disable motion data compression only allowed with NEXT profile" );
     xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
@@ -3124,9 +3120,7 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "DualITree:%d ", m_dualTree );
     msg( VERBOSE, "LargeCTU:%d ", m_LargeCTU );
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
-#if JVET_L0256_BIO
     msg( VERBOSE, "BIO:%d ", m_BIO );
-#endif
     msg( VERBOSE, "DisMDC:%d ", m_DisableMotionCompression );
     msg( VERBOSE, "MTT:%d ", m_MTT );
 #if ENABLE_WPP_PARALLELISM

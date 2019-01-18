@@ -875,11 +875,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 {
   // Min/max depth
   unsigned minDepth = 0;
-#if JVET_L0217_L0678_SPS_CLEANUP
   unsigned maxDepth = g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize( m_slice->getSliceType(), partitioner.chType )];
-#else
-  unsigned maxDepth = g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize(m_slice->getSliceType(), partitioner.chType)];
-#endif
   if( m_pcEncCfg->getUseFastLCTU() )
   {
     if( auto adPartitioner = dynamic_cast<AdaptiveDepthPartitioner*>( &partitioner ) )

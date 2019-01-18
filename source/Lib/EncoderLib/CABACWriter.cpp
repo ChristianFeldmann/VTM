@@ -529,11 +529,7 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
 
 void CABACWriter::split_cu_flag( bool split, const CodingStructure& cs, Partitioner& partitioner )
 {
-#if JVET_L0217_L0678_SPS_CLEANUP
   unsigned maxQTDepth = ( g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize(cs.slice->getSliceType(), partitioner.chType)] );
-#else
-  unsigned maxQTDepth = ( g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize( cs.slice->getSliceType(), partitioner.chType )] );
-#endif
   if( partitioner.currDepth == maxQTDepth )
   {
     return;

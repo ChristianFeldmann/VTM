@@ -637,11 +637,7 @@ PartSplit CABACReader::split_cu_mode_mt( CodingStructure& cs, Partitioner &parti
 bool CABACReader::split_cu_flag( CodingStructure& cs, Partitioner &partitioner )
 {
   // TODO: make maxQTDepth a slice parameter
-#if JVET_L0217_L0678_SPS_CLEANUP
   unsigned maxQTDepth = (g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize(cs.slice->getSliceType(), partitioner.chType)]);
-#else
-  unsigned maxQTDepth = ( g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize( cs.slice->getSliceType(), partitioner.chType )] );
-#endif
   if( partitioner.currDepth == maxQTDepth )
   {
     return false;

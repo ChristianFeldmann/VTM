@@ -673,7 +673,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 #endif
   rpcSlice->setMaxNumMergeCand      ( m_pcCfg->getMaxNumMergeCand()      );
   rpcSlice->setMaxNumAffineMergeCand( m_pcCfg->getMaxNumAffineMergeCand() );
-#if JVET_L0217_L0678_SPS_CLEANUP
   rpcSlice->setSplitConsOverrideFlag(false);
   rpcSlice->setMinQTSize( rpcSlice->getSPS()->getMinQTSize(eSliceType));
   rpcSlice->setMaxBTDepth( rpcSlice->isIntra() ? rpcSlice->getSPS()->getMaxBTDepthI() : rpcSlice->getSPS()->getMaxBTDepth() );
@@ -686,20 +685,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setMaxBTSizeIChroma( rpcSlice->getSPS()->getMaxBTSizeIChroma() );
     rpcSlice->setMaxTTSizeIChroma( rpcSlice->getSPS()->getMaxTTSizeIChroma() );
   }
-#else
-  rpcSlice->setSplitConsOverrideFlag(false);
-  rpcSlice->setMinQTSize(rpcSlice->getSPS()->getSpsNext().getMinQTSize(eSliceType));
-  rpcSlice->setMaxBTDepth(rpcSlice->isIntra() ? rpcSlice->getSPS()->getSpsNext().getMaxBTDepthI() : rpcSlice->getSPS()->getSpsNext().getMaxBTDepth());
-  rpcSlice->setMaxBTSize(rpcSlice->isIntra() ? rpcSlice->getSPS()->getSpsNext().getMaxBTSizeI() : rpcSlice->getSPS()->getSpsNext().getMaxBTSize());
-  rpcSlice->setMaxTTSize(rpcSlice->isIntra() ? rpcSlice->getSPS()->getSpsNext().getMaxTTSizeI() : rpcSlice->getSPS()->getSpsNext().getMaxTTSize());
-  if (eSliceType == I_SLICE && rpcSlice->getSPS()->getSpsNext().getUseDualITree())
-  {
-    rpcSlice->setMinQTSizeIChroma(rpcSlice->getSPS()->getSpsNext().getMinQTSize(eSliceType, CHANNEL_TYPE_CHROMA));
-    rpcSlice->setMaxBTDepthIChroma(rpcSlice->getSPS()->getSpsNext().getMaxBTDepthIChroma());
-    rpcSlice->setMaxBTSizeIChroma(rpcSlice->getSPS()->getSpsNext().getMaxBTSizeIChroma());
-    rpcSlice->setMaxTTSizeIChroma(rpcSlice->getSPS()->getSpsNext().getMaxTTSizeIChroma());
-  }
-#endif
 }
 
 

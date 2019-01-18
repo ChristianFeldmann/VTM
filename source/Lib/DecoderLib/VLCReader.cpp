@@ -817,52 +817,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
 #endif
 
   // additional parameters
-#if !JVET_L0217_L0678_SPS_CLEANUP
-  unsigned  minQT [3] = { 0, 0, 0 };
-  unsigned  maxBTD[3] = { 0, 0, 0 };
-
-  unsigned  maxBTSize[3] = { 0, 0, 0 };
-  unsigned  maxTTSize[3] = { 0, 0, 0 };
-  READ_FLAG( symbol,  "qtbt_dual_intra_tree" );                   spsNext.setUseDualITree( symbol );
-  READ_UVLC( symbol,  "log2_CTU_size_minus2" );                   spsNext.setCTUSize( 1 << ( symbol + MIN_CU_LOG2 ) );
-                                                                  spsNext.getSPS().setMaxCodingDepth( symbol );               // overwrite original value
-                                                                  spsNext.getSPS().setMaxCUWidth    ( spsNext.getCTUSize() ); // overwrite original value
-                                                                  spsNext.getSPS().setMaxCUHeight   ( spsNext.getCTUSize() ); // overwrite original value
-  READ_FLAG( symbol, "sps_override_partition_constraints_enable_flag"); spsNext.setSplitConsOverrideEnabledFlag( symbol );
-  READ_UVLC( symbol, "sps_log2_diff_min_qt_min_cb_intra_slice");      minQT[0] = 1 << (symbol + spsNext.getSPS().getLog2MinCodingBlockSize());
-  READ_UVLC( symbol, "sps_log2_diff_min_qt_min_cb_inter_slice");      minQT[1] = 1 << (symbol + spsNext.getSPS().getLog2MinCodingBlockSize());
-  READ_UVLC( symbol, "sps_max_mtt_hierarchy_depth_inter_slices");     maxBTD[1] = symbol;
-  READ_UVLC( symbol, "sps_max_mtt_hierarchy_depth_intra_slices");     maxBTD[0] = symbol;
-  
-  maxTTSize[0] = maxBTSize[0] = minQT[0];
-  if (maxBTD[0] != 0)
-  {
-    READ_UVLC(symbol, "sps_log2_diff_max_bt_min_qt_intra_slice");     maxBTSize[0] <<= symbol;
-    READ_UVLC(symbol, "sps_log2_diff_max_tt_min_qt_intra_slice");     maxTTSize[0] <<= symbol;
-  }
-  maxTTSize[1] = maxBTSize[1] = minQT[1];
-  if (maxBTD[1] != 0)
-  {
-    READ_UVLC(symbol, "sps_log2_diff_max_bt_min_qt_inter_slice");     maxBTSize[1] <<= symbol;
-    READ_UVLC(symbol, "sps_log2_diff_max_tt_min_qt_inter_slice");     maxTTSize[1] <<= symbol;
-  }
-  if( spsNext.getUseDualITree() )
-  {
-    READ_UVLC( symbol, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma" ); minQT [2] = 1 << ( symbol + spsNext.getSPS().getLog2MinCodingBlockSize());
-    READ_UVLC( symbol, "sps_max_mtt_hierarchy_depth_intra_slices_chroma"); maxBTD[2] = symbol;
-    maxTTSize[2] = maxBTSize[2] = minQT[2];
-    if (maxBTD[2] != 0)
-    {
-      READ_UVLC(symbol, "sps_log2_diff_max_bt_min_qt_intra_slice_chroma");       maxBTSize[2] <<= symbol;
-      READ_UVLC(symbol, "sps_log2_diff_max_tt_min_qt_intra_slice_chroma");       maxTTSize[2] <<= symbol;
-    }
-  }
-
-  spsNext.setMinQTSizes( minQT );
-  spsNext.setMaxBTDepth( maxBTD[1], maxBTD[0], maxBTD[2] );
-  spsNext.setMaxBTSize( maxBTSize[1], maxBTSize[0], maxBTSize[2] );
-  spsNext.setMaxTTSize( maxTTSize[1], maxTTSize[0], maxTTSize[2] );
-#endif
   if( spsNext.getUseSubPuMvp() )
   {
 #if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
@@ -1007,14 +961,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     }
   }
 
-#if !JVET_L0217_L0678_SPS_CLEANUP
-  READ_UVLC( uiCode, "log2_min_luma_coding_block_size_minus2");
-  int log2MinCUSize = uiCode + 2;
-  pcSPS->setLog2MinCodingBlockSize(log2MinCUSize);
-  READ_UVLC( uiCode, "log2_diff_max_min_luma_coding_block_size" );
-  pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode);
-#endif
-#if JVET_L0217_L0678_SPS_CLEANUP
   unsigned  minQT[3] = { 0, 0, 0 };
   unsigned  maxBTD[3] = { 0, 0, 0 };
 
@@ -1064,28 +1010,15 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setMaxBTDepth(maxBTD[1], maxBTD[0], maxBTD[2]);
   pcSPS->setMaxBTSize(maxBTSize[1], maxBTSize[0], maxBTSize[2]);
   pcSPS->setMaxTTSize(maxTTSize[1], maxTTSize[0], maxTTSize[2]);
-#endif
 
   if (pcSPS->getPTL()->getGeneralPTL()->getLevelIdc() >= Level::LEVEL5)
   {
     CHECK(log2MinCUSize + pcSPS->getLog2DiffMaxMinCodingBlockSize() < 5, "Invalid code");
   }
-#if !JVET_L0217_L0678_SPS_CLEANUP
-  int maxCUDepthDelta = uiCode;
-  pcSPS->setMaxCUWidth  ( 1<<(log2MinCUSize + maxCUDepthDelta) );
-  pcSPS->setMaxCUHeight ( 1<<(log2MinCUSize + maxCUDepthDelta) );
-#endif
   READ_UVLC( uiCode, "log2_min_luma_transform_block_size_minus2" );   pcSPS->setQuadtreeTULog2MinSize( uiCode + 2 );
 
   READ_UVLC( uiCode, "log2_diff_max_min_luma_transform_block_size" ); pcSPS->setQuadtreeTULog2MaxSize( uiCode + pcSPS->getQuadtreeTULog2MinSize() );
   pcSPS->setMaxTrSize( 1<<(uiCode + pcSPS->getQuadtreeTULog2MinSize()) );
-#if !JVET_L0217_L0678_SPS_CLEANUP
-    READ_UVLC( uiCode, "max_transform_hierarchy_depth_inter" );    pcSPS->setQuadtreeTUMaxDepthInter( uiCode + 1 );
-    READ_UVLC( uiCode, "max_transform_hierarchy_depth_intra" );    pcSPS->setQuadtreeTUMaxDepthIntra( uiCode + 1 );
-
-  int addCuDepth = std::max (0, log2MinCUSize - (int)pcSPS->getQuadtreeTULog2MinSize() );
-  pcSPS->setMaxCodingDepth( maxCUDepthDelta + addCuDepth );
-#endif
   READ_FLAG( uiCode, "sps_alf_enable_flag" ); pcSPS->setUseALF( uiCode );
 
 #if HEVC_USE_SCALING_LISTS
@@ -1771,11 +1704,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
 #endif
     if (
-#if JVET_L0217_L0678_SPS_CLEANUP
       sps->getSplitConsOverrideEnabledFlag()
-#else
-      sps->getSpsNext().getSplitConsOverrideEnabledFlag()
-#endif
       )
     {
       READ_FLAG(uiCode, "partition_constrainst_override_flag");        pcSlice->setSplitConsOverrideFlag(uiCode ? true : false);
@@ -1794,11 +1723,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
           pcSlice->setMaxTTSize(pcSlice->getMinQTSize());
         }
         if (
-#if JVET_L0217_L0678_SPS_CLEANUP
           pcSlice->isIntra() && sps->getUseDualITree()
-#else
-          pcSlice->isIntra() && sps->getSpsNext().getUseDualITree()
-#endif
           )
         {
           READ_UVLC(uiCode, "log2_diff_min_qt_min_cb_chroma");                 pcSlice->setMinQTSizeIChroma(1 << (uiCode + sps->getLog2MinCodingBlockSize()));

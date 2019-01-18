@@ -1967,11 +1967,7 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
   mvLB = puNeighbour->mvAffi[eRefPicList][2];
 
   bool isTopCtuBoundary = false;
-#if JVET_L0217_L0678_SPS_CLEANUP
   if ( (posNeiY + neiH) % pu.cs->sps->getCTUSize() == 0 && (posNeiY + neiH) == posCurY )
-#else
-  if ((posNeiY + neiH) % pu.cs->sps->getSpsNext().getCTUSize() == 0 && (posNeiY + neiH) == posCurY)
-#endif
   {
     // use bottom-left and bottom-right sub-block MVs for inheritance
     const Position posRB = puNeighbour->Y().bottomRight();
@@ -3172,24 +3168,13 @@ static bool deriveScaledMotionTemporal( const Slice&      slice,
 void clipColPos(int& posX, int& posY, const PredictionUnit& pu)
 {
   Position puPos = pu.lumaPos();
-#if JVET_L0217_L0678_SPS_CLEANUP
   int log2CtuSize = g_aucLog2[pu.cs->sps->getCTUSize()];
-#else
-  int log2CtuSize = g_aucLog2[pu.cs->sps->getSpsNext().getCTUSize()];
-#endif
   int ctuX = ((puPos.x >> log2CtuSize) << log2CtuSize);
   int ctuY = ((puPos.y >> log2CtuSize) << log2CtuSize);
-#if JVET_L0217_L0678_SPS_CLEANUP
   int horMax = std::min((int)pu.cs->sps->getPicWidthInLumaSamples() - 1, ctuX + (int)pu.cs->sps->getCTUSize() + 3);
   int horMin = std::max((int)0, ctuX);
   int verMax = std::min((int)pu.cs->sps->getPicHeightInLumaSamples() - 1, ctuY + (int)pu.cs->sps->getCTUSize() - 1);
   int verMin = std::max((int)0, ctuY);
-#else
-  int horMax = std::min((int)pu.cs->sps->getPicWidthInLumaSamples() - 1, ctuX + (int)pu.cs->sps->getSpsNext().getCTUSize() + 3);
-  int horMin = std::max((int)0, ctuX);
-  int verMax = std::min((int)pu.cs->sps->getPicHeightInLumaSamples() - 1, ctuY + (int)pu.cs->sps->getSpsNext().getCTUSize() - 1);
-  int verMin = std::max((int)0, ctuY);
-#endif
 
   posX = std::min(horMax, std::max(horMin, posX));
   posY = std::min(verMax, std::max(verMin, posY));

@@ -132,11 +132,7 @@ void Partitioner::copyState( const Partitioner& other )
 void AdaptiveDepthPartitioner::setMaxMinDepth( unsigned& minDepth, unsigned& maxDepth, const CodingStructure& cs ) const
 {
   unsigned          stdMinDepth = 0;
-#if JVET_L0217_L0678_SPS_CLEANUP
   unsigned          stdMaxDepth = ( g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize( cs.slice->getSliceType(), chType )]);
-#else
-  unsigned          stdMaxDepth = (g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize(cs.slice->getSliceType(), chType)]);
-#endif
   const Position    pos         = currArea().blocks[chType].pos();
   const unsigned    curSliceIdx = cs.slice->getIndependentSliceIdx();
 #if HEVC_TILES_WPP

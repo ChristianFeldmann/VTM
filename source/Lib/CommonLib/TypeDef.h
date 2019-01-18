@@ -77,7 +77,6 @@
 
 #define L0074_SUBBLOCK_DEBLOCKING                         1
 
-#define JVET_L0260_AFFINE_ME                              1
 
 #define JVET_L0283_MULTI_REF_LINE                         1
 

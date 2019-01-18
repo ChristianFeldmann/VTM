@@ -74,13 +74,11 @@ struct BlkRecord
 #endif
 class EncModeCtrl;
 
-#if JVET_L0260_AFFINE_ME
 struct AffineMVInfo
 {
   Mv  affMVs[2][33][3];
   int x, y, w, h;
 };
-#endif
 
 /// encoder search class
 class InterSearch : public InterPrediction, CrossComponentPrediction, AffineGradientSearch
@@ -108,13 +106,11 @@ private:
 #if JVET_L0293_CPR
   std::unordered_map< Position, std::unordered_map< Size, BlkRecord> > m_ctuRecord;
 #endif
-#if JVET_L0260_AFFINE_ME
   AffineMVInfo       *m_affMVList;
   int             m_affMVListIdx;
   int             m_affMVListSize;
   int             m_affMVListMaxSize;
   Distortion      m_hevcCost;
-#endif
 
 protected:
   // interface to option
@@ -176,7 +172,6 @@ public:
 #if JVET_L0646_GBI
   void setAffineModeSelected        ( bool flag) { m_affineModeSelected = flag; }
 #endif
-#if JVET_L0260_AFFINE_ME
   void resetAffineMVList() { m_affMVListIdx = 0; m_affMVListSize = 0; }
   void savePrevAffMVInfo(int idx, AffineMVInfo &tmpMVInfo, bool& isSaved)
   {
@@ -209,7 +204,6 @@ public:
       m_affMVListSize = std::min(m_affMVListSize + 1, m_affMVListMaxSize);
     }
   }
-#endif
 protected:
 
   /// sub-function for motion vector refinement used in fractional-pel accuracy

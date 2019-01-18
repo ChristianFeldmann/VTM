@@ -107,11 +107,9 @@ InterSearch::InterSearch()
   }
 
   setWpScalingDistParam( -1, REF_PIC_LIST_X, nullptr );
-#if JVET_L0260_AFFINE_ME
   m_affMVList = nullptr;
   m_affMVListSize = 0;
   m_affMVListIdx = 0;
-#endif
 }
 
 
@@ -147,7 +145,6 @@ void InterSearch::destroy()
   {
     delete[] m_tmpAffiDeri[1];
   }
-#if JVET_L0260_AFFINE_ME
   if (m_affMVList)
   {
     delete[] m_affMVList;
@@ -155,7 +152,6 @@ void InterSearch::destroy()
   }
   m_affMVListIdx = 0;
   m_affMVListSize = 0;
-#endif
   m_isInitialized = false;
 }
 
@@ -249,13 +245,11 @@ void InterSearch::init( EncCfg*        pcEncCfg,
   m_tmpAffiDeri[0] = new int[MAX_CU_SIZE * MAX_CU_SIZE];
   m_tmpAffiDeri[1] = new int[MAX_CU_SIZE * MAX_CU_SIZE];
   m_pTempPel = new Pel[maxCUWidth*maxCUHeight];
-#if JVET_L0260_AFFINE_ME
   m_affMVListMaxSize = (pcEncCfg->getIntraPeriod() == (uint32_t)-1) ? AFFINE_ME_LIST_SIZE_LD : AFFINE_ME_LIST_SIZE;
   if (!m_affMVList)
     m_affMVList = new AffineMVInfo[m_affMVListMaxSize];
   m_affMVListIdx = 0;
   m_affMVListSize = 0;
-#endif
   m_isInitialized = true;
 }
 
@@ -1986,9 +1980,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 #endif      
       )
     {
-#if JVET_L0260_AFFINE_ME
       m_hevcCost = uiHevcCost;
-#endif
       // save normal hevc result
       uint32_t uiMRGIndex = pu.mergeIdx;
       bool bMergeFlag = pu.mergeFlag;
@@ -2364,11 +2356,7 @@ Distortion InterSearch::xGetAffineTemplateCost( PredictionUnit& pu, PelUnitBuf& 
   // calc distortion
 
   uiCost  = m_pcRdCost->getDistPart( origBuf.Y(), predBuf.Y(), pu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y
-#if JVET_L0260_AFFINE_ME
     , DF_HAD 
-#else
-    , DF_SAD
-#endif
   );
   uiCost += m_pcRdCost->getCost( m_auiMVPIdxCost[iMVPIdx][iMVPNum] );
   DTRACE( g_trace_ctx, D_COMMON, " (%d) affineTemplateCost=%d\n", DTRACE_GET_COUNTER(g_trace_ctx,D_COMMON), uiCost );
@@ -3345,7 +3333,6 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 
       Distortion uiCandCost = xGetAffineTemplateCost(pu, origBuf, predBuf, mvHevc, aaiMvpIdx[iRefList][iRefIdxTemp],
                                                      AMVP_MAX_NUM_CANDS, eRefPicList, iRefIdxTemp);
-#if JVET_L0260_AFFINE_ME
       if (pu.cu->affineType == AFFINEMODEL_4PARAM && m_affMVListSize
 #if JVET_L0646_GBI
         && (!pu.cu->cs->sps->getSpsNext().getUseGBi() || gbiIdx == GBI_DEFAULT)
@@ -3412,7 +3399,6 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
           }
         }
       }
-#endif
       if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
       {
         Mv mvFour[3];
@@ -3542,7 +3528,6 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   if ( pu.cu->affineType == AFFINEMODEL_4PARAM )
   {
     ::memcpy( mvAffine4Para, cMvTemp, sizeof( cMvTemp ) );
-#if JVET_L0260_AFFINE_ME
 #if JVET_L0646_GBI
     if (!pu.cu->cs->sps->getSpsNext().getUseGBi() || gbiIdx == GBI_DEFAULT)
     {
@@ -3575,7 +3560,6 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
       }
 #if JVET_L0646_GBI
     }
-#endif
 #endif
   }
 
@@ -4332,7 +4316,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
     }
   }
 
-#if JVET_L0260_AFFINE_ME
   auto checkCPMVRdCost = [&](Mv ctrlPtMv[3]) 
   {
     xPredAffineBlk(COMPONENT_Y, pu, refPic, ctrlPtMv, predBuf, false, pu.cu->slice->clpRng(COMPONENT_Y));
@@ -4430,7 +4413,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
       }
     }
   }
-#endif
 
   acMv[0].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
   acMv[1].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);

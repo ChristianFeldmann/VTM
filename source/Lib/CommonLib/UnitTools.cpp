@@ -2624,7 +2624,6 @@ bool PU::isBipredRestriction(const PredictionUnit &pu)
   return false;
 }
 
-#if JVET_L0632_AFFINE_MERGE
 void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgType )
 {
   int cuW = pu.Y().width;
@@ -3269,99 +3268,6 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
     }
   }
 }
-#else
-const PredictionUnit* getFirstAvailableAffineNeighbour( const PredictionUnit &pu )
-{
-  const Position posLT = pu.Y().topLeft();
-  const Position posRT = pu.Y().topRight();
-  const Position posLB = pu.Y().bottomLeft();
-
-  const PredictionUnit* puLeft = pu.cs->getPURestricted( posLB.offset( -1, 0 ), pu, pu.chType );
-  if( puLeft && puLeft->cu->affine )
-  {
-    return puLeft;
-  }
-  const PredictionUnit* puAbove = pu.cs->getPURestricted( posRT.offset( 0, -1 ), pu, pu.chType );
-  if( puAbove && puAbove->cu->affine )
-  {
-    return puAbove;
-  }
-  const PredictionUnit* puAboveRight = pu.cs->getPURestricted( posRT.offset( 1, -1 ), pu, pu.chType );
-  if( puAboveRight && puAboveRight->cu->affine )
-  {
-    return puAboveRight;
-  }
-  const PredictionUnit *puLeftBottom = pu.cs->getPURestricted( posLB.offset( -1, 1 ), pu, pu.chType );
-  if( puLeftBottom && puLeftBottom->cu->affine )
-  {
-    return puLeftBottom;
-  }
-  const PredictionUnit *puAboveLeft = pu.cs->getPURestricted( posLT.offset( -1, -1 ), pu, pu.chType );
-  if( puAboveLeft && puAboveLeft->cu->affine )
-  {
-    return puAboveLeft;
-  }
-  return nullptr;
-}
-
-bool PU::isAffineMrgFlagCoded( const PredictionUnit &pu )
-{
-  if ( pu.cu->lumaSize().width < 8 || pu.cu->lumaSize().height < 8 )
-  {
-    return false;
-  }
-  return getFirstAvailableAffineNeighbour( pu ) != nullptr;
-}
-void PU::getAffineMergeCand( const PredictionUnit &pu, MvField(*mvFieldNeighbours)[3], unsigned char &interDirNeighbours, unsigned char &gbiIdx, int &numValidMergeCand )
-{
-  for ( int mvNum = 0; mvNum < 3; mvNum++ )
-  {
-    mvFieldNeighbours[0][mvNum].setMvField( Mv(), -1 );
-    mvFieldNeighbours[1][mvNum].setMvField( Mv(), -1 );
-  }
-
-  const PredictionUnit* puFirstNeighbour = getFirstAvailableAffineNeighbour( pu );
-  if( puFirstNeighbour == nullptr )
-  {
-    numValidMergeCand = -1;
-    gbiIdx = GBI_DEFAULT;
-    return;
-  }
-  else
-  {
-    numValidMergeCand = 1;
-  }
-
-  // get Inter Dir
-  interDirNeighbours = puFirstNeighbour->getMotionInfo().interDir;
-
-  pu.cu->affineType = puFirstNeighbour->cu->affineType;
-
-  // derive Mv from neighbor affine block
-  Mv cMv[3];
-  if ( interDirNeighbours != 2 )
-  {
-    xInheritedAffineMv( pu, puFirstNeighbour, REF_PIC_LIST_0, cMv );
-    for ( int mvNum = 0; mvNum < 3; mvNum++ )
-    {
-      mvFieldNeighbours[0][mvNum].setMvField( cMv[mvNum], puFirstNeighbour->refIdx[0] );
-    }
-  }
-
-  if ( pu.cs->slice->isInterB() )
-  {
-    if ( interDirNeighbours != 1 )
-    {
-      xInheritedAffineMv( pu, puFirstNeighbour, REF_PIC_LIST_1, cMv );
-      for ( int mvNum = 0; mvNum < 3; mvNum++ )
-      {
-        mvFieldNeighbours[1][mvNum].setMvField( cMv[mvNum], puFirstNeighbour->refIdx[1] );
-      }
-    }
-  }
-  gbiIdx = puFirstNeighbour->cu->GBiIdx;
-}
-#endif
 
 void PU::setAllAffineMvField( PredictionUnit &pu, MvField *mvField, RefPicList eRefList )
 {

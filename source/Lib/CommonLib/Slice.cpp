@@ -88,9 +88,7 @@ Slice::Slice()
 , m_handleCraAsBlaFlag            ( false )
 , m_colRefIdx                     ( 0 )
 , m_maxNumMergeCand               ( 0 )
-#if JVET_L0632_AFFINE_MERGE
 , m_maxNumAffineMergeCand         ( 0 )
-#endif
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
 , m_sliceMode                     ( NO_SLICES )
@@ -206,9 +204,7 @@ void Slice::initSlice()
   }
 
   m_maxNumMergeCand = MRG_MAX_NUM_CANDS;
-#if JVET_L0632_AFFINE_MERGE
   m_maxNumAffineMergeCand = AFFINE_MRG_MAX_NUM_CANDS;
-#endif
 
   m_bFinalized=false;
 
@@ -870,9 +866,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_subPuMvpSubBlkLog2Size        = pSrc->m_subPuMvpSubBlkLog2Size;
 #endif 
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
-#if JVET_L0632_AFFINE_MERGE
   m_maxNumAffineMergeCand         = pSrc->m_maxNumAffineMergeCand;
-#endif
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
 #if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   m_splitConsOverrideFlag         = pSrc->m_splitConsOverrideFlag;

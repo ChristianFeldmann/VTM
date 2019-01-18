@@ -882,13 +882,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::InterDir), pu.interDir);
               }
-#if JVET_L0632_AFFINE_MERGE
               if (!cu.cs->slice->isIntra() && cu.cs->sps->getSpsNext().getUseAffine() && cu.lumaSize().width > 8 && cu.lumaSize().height > 8)
-#else
-              if (!(cu.cs->slice->isIntra() || !cu.cs->sps->getSpsNext().getUseAffine())
-                && !(!cu.firstPU->mergeFlag && !(cu.lumaSize().width > 8 && cu.lumaSize().height > 8))
-                && !(cu.firstPU->mergeFlag && !PU::isAffineMrgFlagCoded(*cu.firstPU)))
-#endif
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineFlag), pu.cu->affine);
                 if (cu.affine && !cu.firstPU->mergeFlag && cu.cs->sps->getSpsNext().getUseAffineType())

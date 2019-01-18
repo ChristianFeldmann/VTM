@@ -1317,11 +1317,7 @@ void CABACWriter::affine_flag( const CodingUnit& cu )
     return;
   }
 
-#if JVET_L0632_AFFINE_MERGE
   if ( cu.firstPU->mergeFlag && !(cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8) )
-#else
-  if( cu.firstPU->mergeFlag && !PU::isAffineMrgFlagCoded( *cu.firstPU ) )
-#endif
   {
     return;
   }
@@ -1392,14 +1388,7 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
 
 void CABACWriter::merge_idx( const PredictionUnit& pu )
 {
-#if !JVET_L0632_AFFINE_MERGE
-  if ( pu.cu->affine )
-  {
-    return;
-  }
-#endif
 
-#if JVET_L0632_AFFINE_MERGE
   if ( pu.cu->affine )
   {
     int numCandminus1 = int( pu.cs->slice->getMaxNumAffineMergeCand() ) - 1;
@@ -1436,7 +1425,6 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
   }
   else
   {
-#endif
     if( pu.cu->triangle )
     {
       if( pu.mergeIdx < 2 )
@@ -1476,9 +1464,7 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
     }
   }
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() merge_idx=%d\n", pu.mergeIdx );
-#if JVET_L0632_AFFINE_MERGE
   }
-#endif
 }
 void CABACWriter::mmvd_merge_idx(const PredictionUnit& pu)
 {

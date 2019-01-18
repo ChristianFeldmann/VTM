@@ -2411,7 +2411,6 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     return;
   }
 
-#if JVET_L0632_AFFINE_MERGE
   const Slice &slice = *tempCS->slice;
 
   CHECK( slice.getSliceType() == I_SLICE, "Affine Merge modes not available for I-slices" );
@@ -2685,68 +2684,6 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       }
     }
   }
-#else
-  MvField       affineMvField[2][3];
-  unsigned char interDirNeighbours;
-  int           numValidMergeCand;
-  bool          hasNoResidual = false;
-  uint8_t       gbiIdx = GBI_DEFAULT;
-
-
-  tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
-
-  CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
-
-  partitioner.setCUData( cu );
-  cu.slice            = tempCS->slice;
-#if HEVC_TILES_WPP
-  cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
-  cu.skip             = false;
-  cu.mmvdSkip = false;
-  cu.partSize         = encTestMode.partSize;
-  cu.affine           = true;
-  cu.predMode         = MODE_INTER;
-  cu.transQuantBypass = encTestMode.lossless;
-  cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
-  cu.qp               = encTestMode.qp;
-
-  CU::addPUs( cu );
-
-  cu.firstPU->mergeFlag = true;
-  cu.firstPU->mergeIdx  = 0;
-  PU::getAffineMergeCand( *cu.firstPU, affineMvField, interDirNeighbours, gbiIdx, numValidMergeCand );
-  if( numValidMergeCand == -1 )
-  {
-    return;
-  }
-
-  cu.firstPU->interDir = interDirNeighbours;
-  PU::setAllAffineMvField( *cu.firstPU, affineMvField[REF_PIC_LIST_0], REF_PIC_LIST_0 );
-  PU::setAllAffineMvField( *cu.firstPU, affineMvField[REF_PIC_LIST_1], REF_PIC_LIST_1 );
-  cu.GBiIdx = gbiIdx;
-
-  PU::spanMotionInfo( *cu.firstPU );
-
-  m_pcInterSearch->motionCompensation( cu );
-
-  xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, 0
-    , NULL
-    , 1
-    , &hasNoResidual);
-
-  if( ! (encTestMode.lossless || hasNoResidual) )
-  {
-    tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
-    tempCS->copyStructure( *bestCS, partitioner.chType );
-    tempCS->getPredBuf().copyFrom( bestCS->getPredBuf() );
-
-    xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, 1
-      , NULL
-      , 1
-      , &hasNoResidual);
-  }
-#endif
 }
 #if JVET_L0293_CPR
 //////////////////////////////////////////////////////////////////////////////////////////////

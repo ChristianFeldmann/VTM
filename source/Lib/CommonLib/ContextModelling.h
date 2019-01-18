@@ -274,7 +274,6 @@ public:
   void setMergeInfo( PredictionUnit& pu, int candIdx );
 };
 
-#if JVET_L0632_AFFINE_MERGE
 class AffineMergeCtx
 {
 public:
@@ -293,7 +292,6 @@ public:
   MergeType     mergeType[AFFINE_MRG_MAX_NUM_CANDS];
 #endif
 };
-#endif
 
 
 namespace DeriveCtx

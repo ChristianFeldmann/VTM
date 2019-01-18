@@ -1660,9 +1660,7 @@ private:
 
   uint32_t                       m_colRefIdx;
   uint32_t                       m_maxNumMergeCand;
-#if JVET_L0632_AFFINE_MERGE
   uint32_t                   m_maxNumAffineMergeCand;
-#endif
 
   double                     m_lambdas[MAX_NUM_COMPONENT];
 
@@ -1904,10 +1902,8 @@ public:
   );
   void                        setMaxNumMergeCand(uint32_t val )                          { m_maxNumMergeCand = val;                                      }
   uint32_t                    getMaxNumMergeCand() const                             { return m_maxNumMergeCand;                                     }
-#if JVET_L0632_AFFINE_MERGE
   void                        setMaxNumAffineMergeCand( uint32_t val )               { m_maxNumAffineMergeCand = val;  }
   uint32_t                    getMaxNumAffineMergeCand() const                       { return m_maxNumAffineMergeCand; }
-#endif
 
   void                        setNoOutputPriorPicsFlag( bool val )                   { m_noOutputPriorPicsFlag = val;                                }
   bool                        getNoOutputPriorPicsFlag() const                       { return m_noOutputPriorPicsFlag;                               }

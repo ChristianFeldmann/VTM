@@ -320,9 +320,7 @@ void EncApp::xInitLibCfg()
 
   m_cEncLib.setPCMLog2MaxSize                                    ( m_pcmLog2MaxSize);
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
-#if JVET_L0632_AFFINE_MERGE
   m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
-#endif
 
   //====== Weighted Prediction ========
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );

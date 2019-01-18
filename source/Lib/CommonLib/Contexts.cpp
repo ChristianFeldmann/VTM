@@ -490,7 +490,6 @@ const CtxSet ContextSetCfg::AffineType = ContextSetCfg::addCtxSet
 #endif
 });
 
-#if JVET_L0632_AFFINE_MERGE
 const CtxSet ContextSetCfg::AffMergeIdx = ContextSetCfg::addCtxSet
 ( {
 #if TRAINED_CABAC_INIT_TABLES
@@ -503,7 +502,6 @@ const CtxSet ContextSetCfg::AffMergeIdx = ContextSetCfg::addCtxSet
   { CNU, CNU, CNU, CNU, CNU, },
 #endif
 } );
-#endif
 
 const CtxSet ContextSetCfg::GBiIdx = ContextSetCfg::addCtxSet
 ({

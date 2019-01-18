@@ -1366,7 +1366,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       WRITE_UVLC( MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand() - ( pcSlice->getSPS()->getSpsNext().getUseSubPuMvp() ? 0 : 2 ), pcSlice->getSPS()->getSpsNext().getUseSubPuMvp() ? "seven_minus_max_num_merge_cand" : "five_minus_max_num_merge_cand" );
 #endif
 
-#if JVET_L0632_AFFINE_MERGE
 #if JVET_L0369_SUBBLOCK_MERGE
       if ( pcSlice->getSPS()->getSpsNext().getUseSubPuMvp() && !pcSlice->getSPS()->getSpsNext().getUseAffine() ) // ATMVP only
       {
@@ -1384,7 +1383,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         CHECK( pcSlice->getMaxNumAffineMergeCand() > AFFINE_MRG_MAX_NUM_CANDS, "More affine merge candidates signalled than supported" );
         WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_affine_merge_cand" );
       }
-#endif
     }
     int iCode = pcSlice->getSliceQp() - ( pcSlice->getPPS()->getPicInitQPMinus26() + 26 );
     WRITE_SVLC( iCode, "slice_qp_delta" );

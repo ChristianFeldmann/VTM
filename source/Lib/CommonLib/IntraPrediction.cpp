@@ -1924,16 +1924,11 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   Pel*       pDst  = nullptr;
   Pel const* piSrc = nullptr;
 
-#if JVET_L0136_L0085_LM_RESTRICTED_LINEBUFFER
   bool isFirstRowOfCtu = ((pu.block(COMPONENT_Cb).y)&(((pu.cs->sps)->getMaxCUWidth() >> 1) - 1)) == 0;
-#endif
 
   if( bAboveAvaillable )
   {
     pDst  = pDst0    - iDstStride;
-#if !JVET_L0136_L0085_LM_RESTRICTED_LINEBUFFER
-    piSrc = pRecSrc0 - iRecStride2;
-#endif
 #if JVET_L0338_MDLM
     int addedAboveRight = 0;
     if ((curChromaMode == MDLM_L_IDX) || (curChromaMode == MDLM_T_IDX))
@@ -1945,7 +1940,6 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     for( int i = 0; i < uiCWidth; i++ )
 #endif
     {
-#if JVET_L0136_L0085_LM_RESTRICTED_LINEBUFFER
       if (isFirstRowOfCtu)
       {
         piSrc = pRecSrc0 - iRecStride;
@@ -1974,18 +1968,6 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
                     + 4 ) >> 3;
         }
       }
-#else
-      if( i == 0 && !bLeftAvaillable )
-      {
-        pDst[i] = ( piSrc[2 * i] + piSrc[2 * i + iRecStride] + 1 ) >> 1;
-      }
-      else
-      {
-        pDst[i] = ( ( ( piSrc[2 * i             ] * 2 ) + piSrc[2 * i - 1             ] + piSrc[2 * i + 1             ] )
-                  + ( ( piSrc[2 * i + iRecStride] * 2 ) + piSrc[2 * i - 1 + iRecStride] + piSrc[2 * i + 1 + iRecStride] )
-                  + 4 ) >> 3;
-      }
-#endif
     }
   }
 

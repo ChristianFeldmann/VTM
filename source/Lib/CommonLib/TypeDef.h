@@ -53,7 +53,6 @@
 
 #define TRAINED_CABAC_INIT_TABLES                         1 // Trained values for VTM3
 
-#define JVET_L0136_L0085_LM_RESTRICTED_LINEBUFFER         1 // line buffer restriction in LM prediction
 #define JVET_L0124_L0208_TRIANGLE                         1 // triangular shape prediction unit
 
 #define JVET_L0059_MTS_SIMP                               1 // Simpification on MTS signaling

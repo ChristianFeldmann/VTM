@@ -51,7 +51,6 @@
 #include <cassert>
 
 
-#define TRAINED_CABAC_INIT_TABLES                         1 // Trained values for VTM3
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
 

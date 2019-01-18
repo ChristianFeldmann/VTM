@@ -205,11 +205,7 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
   if (m_piYuvExt[COMPONENT_Y][PRED_BUF_UNFILTERED] == nullptr) // check if first is null (in which case, nothing initialised yet)
   {
 #if JVET_L0283_MULTI_REF_LINE
-#if JVET_L0279_WAIP_CLEANUP
     m_iYuvExtSize = (MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX * 33) * (MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX * 33);
-#else
-    m_iYuvExtSize = (MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX * 5) * (MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX * 5);
-#endif
 #else
     m_iYuvExtSize = (MAX_CU_SIZE * 2 + 1) * (MAX_CU_SIZE * 2 + 1);
 #endif
@@ -294,7 +290,6 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
   {
     if ( predMode > DC_IDX && predMode <= VDIA_IDX )
     {
-#if JVET_L0279_WAIP_CLEANUP
       int modeShift[] = { 0, 6, 10, 12, 14, 15 };
       int deltaSize = abs(g_aucLog2[width] - g_aucLog2[height]);
       if (width > height && predMode < 2 + modeShift[deltaSize])
@@ -305,17 +300,6 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
       {
         predMode -= (VDIA_IDX - 1);
       }
-#else
-      int modeShift = (std::min(2, abs(g_aucLog2[width] - g_aucLog2[height])) << 2) + 2;
-      if ( width > height && predMode < 2 + modeShift )
-      {
-        predMode += (VDIA_IDX - 1);
-      }
-      else if ( height > width && predMode > VDIA_IDX - modeShift )
-      {
-        predMode -= (VDIA_IDX - 1);
-      }
-#endif
     }
     return predMode;
   }
@@ -325,22 +309,9 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
     // set Top and Left reference samples length
     const int  width    = area.width;
     const int  height   = area.height;
-#if !JVET_L0279_WAIP_CLEANUP
-    int blockShapeRatio = std::min(2, abs(g_aucLog2[width] - g_aucLog2[height]));
-#endif
 
     m_leftRefLength     = (height << 1);
     m_topRefLength      = (width << 1);
-#if !JVET_L0279_WAIP_CLEANUP
-    if( width > height )
-    {
-      m_leftRefLength  += (width >> blockShapeRatio) - height + ((width + 31) >> 5);
-    }
-    else if( height > width )
-    {
-      m_topRefLength   += (height >> blockShapeRatio) - width + ((height + 31) >> 5);
-    }
-#endif
 
   }
 
@@ -358,15 +329,10 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
 
 #if JVET_L0283_MULTI_REF_LINE
   const int  multiRefIdx = (compID == COMPONENT_Y) ? pu.multiRefIdx : 0;
-#if JVET_L0279_WAIP_CLEANUP
   int whRatio           = std::max(1, iWidth / iHeight);
   int hwRatio           = std::max(1, iHeight / iWidth);
   const int  srcStride  = m_topRefLength  + 1 + (whRatio + 1) * multiRefIdx;
   const int  srcHStride = m_leftRefLength + 1 + (hwRatio + 1) * multiRefIdx;
-#else
-  const int  srcStride   = m_topRefLength  + 1 + 5 * multiRefIdx;
-  const int  srcHStride  = m_leftRefLength + 1 + 5 * multiRefIdx;
-#endif
 #else
   const int  srcStride  = m_topRefLength  + 1;
   const int  srcHStride = m_leftRefLength + 1;
@@ -673,13 +639,8 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
 
   // Set bitshifts and scale the angle parameter to block size
 
-#if JVET_L0279_WAIP_CLEANUP
   static const int angTable[32]    = { 0,    1,    2,    3,    4,    6,     8,   10,   12,   14,   16,   18,   20,   23,   26,   29,   32,   35,   39,  45,  51,  57,  64,  73,  85, 102, 128, 171, 256, 341, 512, 1024 };
   static const int invAngTable[32] = { 0, 8192, 4096, 2731, 2048, 1365,  1024,  819,  683,  585,  512,  455,  410,  356,  315,  282,  256,  234,  210, 182, 160, 144, 128, 112,  96,  80,  64,  48,  32,  24,  16,    8 }; // (256 * 32) / Angle
-#else
-  static const int angTable[27]    = { 0,    1,    2,    3,    5,    7,    9,   11,   13,   15,   17,   19,   21,   23,   26,   29,   32,   35,  39,  45,  49,  54,  60,  68,  79,  93, 114 };
-  static const int invAngTable[27] = { 0, 8192, 4096, 2731, 1638, 1170,  910,  745,  630,  546,  482,  431,  390,  356,  315,  282,  256,  234, 210, 182, 167, 152, 137, 120, 104,  88,  72 }; // (256 * 32) / Angle
-#endif
 
   int invAngle                    = invAngTable[absAngMode];
   int absAng                      = angTable   [absAngMode];
@@ -689,19 +650,14 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   Pel* refSide;
 
 #if JVET_L0283_MULTI_REF_LINE
-#if JVET_L0279_WAIP_CLEANUP
   Pel  refAbove[2 * MAX_CU_SIZE + 3 + 33 * MAX_REF_LINE_IDX];
   Pel  refLeft [2 * MAX_CU_SIZE + 3 + 33 * MAX_REF_LINE_IDX];
-#else
-  Pel  refAbove[2 * MAX_CU_SIZE + 3 + 5 * MAX_REF_LINE_IDX];
-  Pel  refLeft [2 * MAX_CU_SIZE + 3 + 5 * MAX_REF_LINE_IDX];
-#endif
 #else
   Pel  refAbove[2 * MAX_CU_SIZE + 3];
   Pel  refLeft [2 * MAX_CU_SIZE + 3];
 #endif
 
-#if JVET_L0279_WAIP_CLEANUP && JVET_L0283_MULTI_REF_LINE
+#if JVET_L0283_MULTI_REF_LINE
   int whRatio = std::max(1, width / height);
   int hwRatio = std::max(1, height / width);
 #endif
@@ -758,11 +714,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   else
   {
 #if JVET_L0283_MULTI_REF_LINE
-#if JVET_L0279_WAIP_CLEANUP
     for (int x = 0; x < m_topRefLength + 1 + (whRatio + 1) * multiRefIdx; x++)
-#else
-    for (int x = 0; x < m_topRefLength + 1 + 5 * multiRefIdx; x++)
-#endif
 #else
     for( int x = 0; x < m_topRefLength + 1; x++ )
 #endif
@@ -774,11 +726,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
 #endif //JVET_L0628_4TAP_INTRA
     }
 #if JVET_L0283_MULTI_REF_LINE
-#if JVET_L0279_WAIP_CLEANUP
     for (int y = 0; y < m_leftRefLength + 1 + (hwRatio + 1) * multiRefIdx; y++)
-#else
-    for (int y = 0; y < m_leftRefLength + 1 + 5 * multiRefIdx; y++)
-#endif
 #else
     for( int y = 0; y < m_leftRefLength + 1; y++ )
 #endif
@@ -797,11 +745,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     refSide++;
     refMain[-1] = refMain[0];
 #if JVET_L0283_MULTI_REF_LINE
-#if JVET_L0279_WAIP_CLEANUP
     auto lastIdx = 1 + ((bIsModeVer) ? m_topRefLength + (whRatio + 1) * multiRefIdx : m_leftRefLength +  (hwRatio + 1) * multiRefIdx);
-#else
-    auto lastIdx = 1 + ((bIsModeVer) ? m_topRefLength : m_leftRefLength) + 5 * multiRefIdx;
-#endif
 #else
     auto lastIdx = 1 + ((bIsModeVer) ? m_topRefLength : m_leftRefLength);
 #endif
@@ -860,11 +804,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
       const int deltaFract = deltaPos & (32 - 1);
 
 #if JVET_L0628_4TAP_INTRA
-#if JVET_L0279_WAIP_CLEANUP
       if (absAng != 0 && absAng != 32)
-#else
-      if( (absAng & (32 - 1)) != 0 ) // use 4-tap interpolation only for intra prediction modes with fractional displacements
-#endif
 #elif HM_4TAPIF_AS_IN_JEM
       if( deltaFract )
 #else //JVET_L0628_4TAP_INTRA
@@ -938,10 +878,8 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
           if (wT + wL == 0) break;
 
           int c = x + y + 1;
-#if JVET_L0279_WAIP_CLEANUP
           if (c >= 2 * height) { wL = 0; }
           if (c >= 2 * width)  { wT = 0; }
-#endif
           const Pel left = (wL != 0) ? refSide[c + 1] : 0;
           const Pel top  = (wT != 0) ? refMain[c + 1] : 0;
 
@@ -1171,13 +1109,9 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
   const int  predSize           = m_topRefLength;
   const int  predHSize          = m_leftRefLength;
 #if JVET_L0283_MULTI_REF_LINE
-#if JVET_L0279_WAIP_CLEANUP
   int whRatio                   = std::max(1, tuWidth / tuHeight);
   int hwRatio                   = std::max(1, tuHeight / tuWidth);
   const int  predStride         = predSize + 1 + (whRatio + 1) * multiRefIdx;
-#else
-  const int  predStride         = predSize + 1 + 5 * multiRefIdx;
-#endif
 #else
   const int  predStride         = predSize + 1;
 #endif
@@ -1524,18 +1458,10 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
 #if JVET_L0283_MULTI_REF_LINE
   // padding of extended samples above right with the last sample
   int lastSample = multiRefIdx + predSize;
-#if JVET_L0279_WAIP_CLEANUP
   for (int j = 1; j <= whRatio * multiRefIdx; j++) { ptrDst[lastSample + j] = ptrDst[lastSample]; }
-#else
-  for (int j = 1; j <= 4 * multiRefIdx; j++) { ptrDst[lastSample + j] = ptrDst[lastSample]; }
-#endif
   // padding of extended samples below left with the last sample
   lastSample = multiRefIdx + predHSize;
-#if JVET_L0279_WAIP_CLEANUP
   for (int i = 1; i <= hwRatio * multiRefIdx; i++) { ptrDst[(lastSample + i)*predStride] = ptrDst[lastSample*predStride]; }
-#else
-  for (int i = 1; i <= 4 * multiRefIdx; i++) { ptrDst[(lastSample + i)*predStride] = ptrDst[lastSample*predStride]; }
-#endif
 #endif
 }
 
@@ -1550,15 +1476,10 @@ void IntraPrediction::xFilterReferenceSamples( const Pel* refBufUnfiltered, Pel*
   {
     multiRefIdx = 0;
   }
-#if JVET_L0279_WAIP_CLEANUP
   int whRatio          = std::max(1, int(area.width  / area.height));
   int hwRatio          = std::max(1, int(area.height / area.width));
   const int  predSize  = m_topRefLength  + (whRatio + 1) * multiRefIdx;
   const int  predHSize = m_leftRefLength + (hwRatio + 1) * multiRefIdx;
-#else
-  const int  predSize  = m_topRefLength  + 5 * multiRefIdx;
-  const int  predHSize = m_leftRefLength + 5 * multiRefIdx;
-#endif
 #else
   const int  predSize   = m_topRefLength;
   const int  predHSize  = m_leftRefLength;
@@ -1649,11 +1570,7 @@ bool IntraPrediction::useFilteredIntraRefSamples( const ComponentID &compID, con
   // pred. mode related conditions
   const int dirMode = PU::getFinalIntraMode( pu, chType );
   int predMode = getWideAngle(tuArea.blocks[compID].width, tuArea.blocks[compID].height, dirMode);
-#if JVET_L0279_WAIP_CLEANUP
   if (predMode != dirMode )                                                                              { return true; }
-#else
-  if (predMode != dirMode && (predMode < 2 || predMode > VDIA_IDX))                                      { return true; }
-#endif
   if (dirMode == DC_IDX)                                                                                 { return false; }
   if (dirMode == PLANAR_IDX)
   {

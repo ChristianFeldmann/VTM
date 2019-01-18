@@ -52,44 +52,8 @@
 
 
 #define TRAINED_CABAC_INIT_TABLES                         1 // Trained values for VTM3
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
-
-
-
-
-
-
-
-
-#define L0074_SUBBLOCK_DEBLOCKING                         1
-
-
-
-
-
-
-
 #define REUSE_CU_RESULTS                                  1
-
-
-
-
-
-
 
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )

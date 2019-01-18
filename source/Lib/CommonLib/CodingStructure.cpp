@@ -746,11 +746,7 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   if( cpyResi ) picture->getResiBuf( clippedArea ).copyFrom( subResiBuf );
   if( cpyReco ) picture->getRecoBuf( clippedArea ).copyFrom( subRecoBuf );
 
-#if JVET_L0293_CPR
   if (!subStruct.m_isTuEnc && (!slice->isIntra() && subStruct.chType != CHANNEL_TYPE_CHROMA))
-#else
-  if( !subStruct.m_isTuEnc && !slice->isIntra() )
-#endif
   {
     // copy motion buffer
     MotionBuf ownMB  = getMotionBuf          ( clippedArea );
@@ -1303,7 +1299,6 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   }
 }
 
-#if JVET_L0293_CPR 
 CprLumaCoverage CodingStructure::getCprLumaCoverage(const CompArea& chromaArea) const
 {
   CHECK(chType != CHANNEL_TYPE_CHROMA, "Error");
@@ -1337,4 +1332,3 @@ CprLumaCoverage CodingStructure::getCprLumaCoverage(const CompArea& chromaArea) 
 
   return coverage;
 }
-#endif

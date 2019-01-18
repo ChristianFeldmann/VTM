@@ -430,13 +430,9 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const Slice& sliceQ = *cu.slice;
 
   const Position& cuPosLuma = cu.lumaPos();
-#if JVET_L0293_CPR
   int shiftHor = cu.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cu.firstPU->chromaFormat);
   int shiftVer = cu.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cu.firstPU->chromaFormat);
   const Position& posQ = Position{ localPos.x >> shiftHor,  localPos.y >> shiftVer };
-#else
-  const Position& posQ  = localPos;
-#endif
   const Position  posP  = ( edgeDir == EDGE_VER ) ? posQ.offset( -1, 0 ) : posQ.offset( 0, -1 );
 
   const bool sameCU     = posP.x >= cuPosLuma.x && posP.y >= cuPosLuma.y;

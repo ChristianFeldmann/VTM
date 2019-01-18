@@ -254,7 +254,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
 
-#if JVET_L0293_CPR
   m_cEncLib.setCPRMode                                           ( m_CPRMode );
   m_cEncLib.setCPRLocalSearchRangeX                              ( m_CPRLocalSearchRangeX );
   m_cEncLib.setCPRLocalSearchRangeY                              ( m_CPRLocalSearchRangeY );
@@ -262,7 +261,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCPRHashSearchMaxCand                              ( m_CPRHashSearchMaxCand );
   m_cEncLib.setCPRHashSearchRange4SmallBlk                       ( m_CPRHashSearchRange4SmallBlk );
   m_cEncLib.setCPRFastMethod                                     ( m_CPRFastMethod );
-#endif    
 
   m_cEncLib.setUseWrapAround                                     ( m_wrapAround );
   m_cEncLib.setWrapAroundOffset                                  ( m_wrapAroundOffset );

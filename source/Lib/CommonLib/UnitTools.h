@@ -123,15 +123,11 @@ namespace PU
   bool xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const MergeCtx mergeCandList, bool hasPruned[MRG_MAX_NUM_CANDS]);
 #if JVET_L0090_PAIR_AVG
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
-#if JVET_L0293_CPR
     , int mmvdList
-#endif
   );
 #else
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter[MRG_MAX_NUM_CANDS], bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
-#if JVET_L0293_CPR
     , int mmvdList
-#endif
   );
 #endif
   void addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList, const RefPicList eRefPicList2nd, const int currRefPOC, AMVPInfo &info, uint8_t imv);
@@ -147,9 +143,7 @@ namespace PU
   );
   bool getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx &mrgCtx, bool& LICFlag, const int count
     , int mmvdList
-#if JVET_L0293_CPR
     , const int countCPR
-#endif  
   );
   bool getInterMergeSubPuRecurCand(const PredictionUnit &pu, MergeCtx &mrgCtx, const int count);
   bool isBiPredFromDifferentDir       (const PredictionUnit &pu);
@@ -165,11 +159,9 @@ namespace PU
   bool getTriangleWeights             (const PredictionUnit &pu, MergeCtx &triangleMrgCtx, const uint8_t candIdx0, const uint8_t candIdx1);
   void spanTriangleMotionInfo         (      PredictionUnit &pu, MergeCtx &triangleMrgCtx, const uint8_t mergeIdx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1);
   int32_t mappingRefPic               (const PredictionUnit &pu, int32_t refPicPoc, bool targetRefPicList);
-#if JVET_L0293_CPR
   void getCprMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred);
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
-#endif
 }
 
 // TU tools

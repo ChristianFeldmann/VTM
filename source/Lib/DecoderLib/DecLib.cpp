@@ -1150,24 +1150,20 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 #endif
 
-#if JVET_L0293_CPR
   if (pcSlice->getSPS()->getSpsNext().getCPRMode() && pcSlice->getEnableTMVPFlag())
   {
     CHECK(pcSlice->getRefPic(RefPicList(pcSlice->isInterB() ? 1 - pcSlice->getColFromL0Flag() : 0), pcSlice->getColRefIdx())->getPOC() == pcSlice->getPOC(), "curr ref picture cannot be collocated picture");
   }
-#endif
 
 
   //  Decode a picture
   m_cSliceDecoder.decompressSlice( pcSlice, &(nalu.getBitstream()) );
 
   m_bFirstSliceInPicture = false;
-#if JVET_L0293_CPR
   if (pcSlice->getSPS()->getSpsNext().getCPRMode())
   {
     pcSlice->getPic()->longTerm = false;
   }
-#endif
   m_uiSliceSegmentIdx++;
 
   return false;

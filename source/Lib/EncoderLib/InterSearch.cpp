@@ -196,10 +196,8 @@ void InterSearch::init( EncCfg*        pcEncCfg,
 )
 {
   CHECK(m_isInitialized, "Already initialized");
-#if JVET_L0293_CPR
   m_numBVs = 0;
   m_numBV16s = 0;
-#endif
   m_pcEncCfg                     = pcEncCfg;
   m_pcTrQuant                    = pcTrQuant;
   m_iSearchRange                 = iSearchRange;
@@ -697,7 +695,6 @@ Distortion InterSearch::xGetInterPredictionError( PredictionUnit& pu, PelUnitBuf
   return (Distortion)cDistParam.distFunc( cDistParam );
 }
 
-#if JVET_L0293_CPR
 /// add cpr search functions here
 
 void InterSearch::xCPRSearchMVCandUpdate(Distortion  sad, int x, int y, Distortion* sadBestCand, Mv* cMVCand)
@@ -1487,7 +1484,6 @@ void InterSearch::xxCPRHashSearch(PredictionUnit& pu, Mv* mvPred, int numMvPred,
   }
 
 }
-#endif // CPR
 
 
 
@@ -1587,16 +1583,12 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       for ( int iRefList = 0; iRefList < iNumPredDir; iRefList++ )
       {
         RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
-#if JVET_L0293_CPR
         int refPicNumber = cs.slice->getNumRefIdx(eRefPicList);
         if (cs.slice->getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
         {
           refPicNumber--;
         }
         for (int iRefIdxTemp = 0; iRefIdxTemp < refPicNumber; iRefIdxTemp++)
-#else
-        for ( int iRefIdxTemp = 0; iRefIdxTemp < cs.slice->getNumRefIdx(eRefPicList); iRefIdxTemp++ )
-#endif
         {
           uiBitsTemp = uiMbBits[iRefList];
           if ( cs.slice->getNumRefIdx(eRefPicList) > 1 )
@@ -1798,12 +1790,10 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
           iRefStart = 0;
           iRefEnd   = cs.slice->getNumRefIdx(eRefPicList)-1;
-#if JVET_L0293_CPR
           if (cs.slice->getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
           {
             iRefEnd--;
           }
-#endif
           for (int iRefIdxTemp = iRefStart; iRefIdxTemp <= iRefEnd; iRefIdxTemp++)
           {
             if( m_pcEncCfg->getUseGBiFast() && (gbiIdx != GBI_DEFAULT)
@@ -2265,9 +2255,7 @@ Distortion InterSearch::xGetTemplateCost( const PredictionUnit& pu,
 
   xPredInterBlk( COMPONENT_Y, pu, picRef, cMvCand, predBuf, bi, pu.cu->slice->clpRng( COMPONENT_Y )
                 , false
-#if JVET_L0293_CPR
                 , false
-#endif
                 );
 
   if ( bi )
@@ -3229,16 +3217,12 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   for ( int iRefList = 0; iRefList < iNumPredDir; iRefList++ )
   {
     RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
-#if JVET_L0293_CPR
     int refPicNumber = slice.getNumRefIdx(eRefPicList);
     if (slice.getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
     {
       refPicNumber--;
     }
     for (int iRefIdxTemp = 0; iRefIdxTemp < refPicNumber; iRefIdxTemp++)
-#else
-    for ( int iRefIdxTemp = 0; iRefIdxTemp < slice.getNumRefIdx(eRefPicList); iRefIdxTemp++ )
-#endif
     {
       // Get RefIdx bits
       uiBitsTemp = uiMbBits[iRefList];
@@ -3607,12 +3591,10 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 
       iRefStart = 0;
       iRefEnd   = slice.getNumRefIdx(eRefPicList) - 1;
-#if JVET_L0293_CPR
       if (slice.getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
       {
         iRefEnd--;
       }
-#endif
       for ( int iRefIdxTemp = iRefStart; iRefIdxTemp <= iRefEnd; iRefIdxTemp++ )
       {
         if ( pu.cu->affineType == AFFINEMODEL_6PARAM && refIdx4Para[iRefList] != iRefIdxTemp )
@@ -4734,9 +4716,7 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
 }
 
 void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &partitioner, Distortion *puiZeroDist /*= NULL*/
-#if JVET_L0293_CPR 
   , const bool luma, const bool chroma
-#endif
 )
 {
   const UnitArea& currArea = partitioner.currArea();
@@ -4744,9 +4724,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
   const PPS &pps           = *cs.pps;
   const uint32_t numValidComp  = getNumberValidComponents( sps.getChromaFormatIdc() );
   const uint32_t numTBlocks    = getNumberValidTBlocks   ( *cs.pcv );
-#if JVET_L0293_CPR
   const CodingUnit &cu = *cs.getCU(partitioner.chType);
-#endif
   const unsigned currDepth = partitioner.currTrDepth;
 
   bool bCheckFull  = !partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
@@ -4773,11 +4751,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
   if (bCheckFull)
   {
-#if JVET_L0293_CPR
     TransformUnit &tu = csFull->addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
-#else
-    TransformUnit &tu = csFull->addTU(currArea, partitioner.chType);
-#endif
     tu.depth          = currDepth;
     tu.emtIdx         = 0;
 
@@ -4798,21 +4772,15 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     saveCS.picture = cs.picture;
     saveCS.area.repositionTo(currArea);
     saveCS.clearTUs();
-#if JVET_L0293_CPR 
     TransformUnit & bestTU = saveCS.addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
-#else
-    TransformUnit &bestTU = saveCS.addTU( currArea, partitioner.chType );
-#endif
 
     for( uint32_t c = 0; c < numTBlocks; c++ )
     {
       const ComponentID compID    = ComponentID(c);
-#if JVET_L0293_CPR
       if (compID == COMPONENT_Y && !luma)
         continue;
       if (compID != COMPONENT_Y && !chroma)
         continue;
-#endif
       const CompArea&   compArea  = tu.blocks[compID];
       const int channelBitDepth   = sps.getBitDepth(toChannelType(compID));
 
@@ -5039,12 +5007,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     for( unsigned c = 0; c < numTBlocks; c++)
     {
       const ComponentID compID = cbf_getComp[c];
-#if JVET_L0293_CPR
       if (compID == COMPONENT_Y && !luma)
         continue;
       if (compID != COMPONENT_Y && !chroma)
         continue;
-#endif
       if( tu.blocks[compID].valid() )
       {
         const bool prevCbf = ( compID == COMPONENT_Cr ? TU::getCbfAtDepth( tu, COMPONENT_Cb, currDepth ) : false );
@@ -5055,12 +5021,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     for (uint32_t ch = 0; ch < numValidComp; ch++)
     {
       const ComponentID compID = ComponentID(ch);
-#if JVET_L0293_CPR 
       if (compID == COMPONENT_Y && !luma)
         continue;
       if (compID != COMPONENT_Y && !chroma)
         continue;
-#endif
       if (tu.blocks[compID].valid())
       {
         if( cs.pps->getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isChroma(compID) && uiAbsSum[COMPONENT_Y] )
@@ -5105,9 +5069,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     do
     {
       xEstimateInterResidualQT(*csSplit, partitioner, bCheckFull ? nullptr : puiZeroDist
-#if JVET_L0293_CPR
         , luma, chroma
-#endif
       );
 
       csSplit->cost = m_pcRdCost->calcRdCost( csSplit->fracBits, csSplit->dist );
@@ -5160,13 +5122,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       xEncodeInterResidualQT( *csSplit, partitioner, MAX_NUM_TBLOCKS );
       for (uint32_t ch = 0; ch < numValidComp; ch++)
       {
-#if JVET_L0293_CPR
         const ComponentID compID = ComponentID(ch);
         if (compID == COMPONENT_Y && !luma)
           continue;
         if (compID != COMPONENT_Y && !chroma)
           continue;
-#endif
         xEncodeInterResidualQT( *csSplit, partitioner, ComponentID( ch ) );
       }
 
@@ -5198,9 +5158,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 }
 
 void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &partitioner, const bool &skipResidual
-#if JVET_L0293_CPR 
   , const bool luma, const bool chroma
-#endif
 )
 {
   CodingUnit &cu = *cs.getCU( partitioner.chType );
@@ -5221,22 +5179,16 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
 
     // add an empty TU
-#if JVET_L0293_CPR
     cs.addTU(CS::isDualITree(cs) ? cu : cs.area, partitioner.chType);
-#else
-    cs.addTU(cs.area, partitioner.chType);
-#endif
     Distortion distortion = 0;
 
     for (int comp = 0; comp < numValidComponents; comp++)
     {
       const ComponentID compID = ComponentID(comp);
-#if JVET_L0293_CPR 
       if (compID == COMPONENT_Y && !luma)
         continue;
       if (compID != COMPONENT_Y && !chroma)
         continue;
-#endif
       CPelBuf reco = cs.getRecoBuf (compID);
       CPelBuf org  = cs.getOrgBuf  (compID);
 #if WCG_EXT
@@ -5278,7 +5230,6 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   }
 
   //  Residual coding.
-#if JVET_L0293_CPR
   if (luma)
   {
     cs.getResiBuf().bufs[0].copyFrom(cs.getOrgBuf().bufs[0]);
@@ -5291,15 +5242,10 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     cs.getResiBuf().bufs[1].subtract(cs.getPredBuf().bufs[1]);
     cs.getResiBuf().bufs[2].subtract(cs.getPredBuf().bufs[2]);
   }
-#else
-  cs.getResiBuf().copyFrom (cs.getOrgBuf());
-  cs.getResiBuf().subtract (cs.getPredBuf());
-#endif
   Distortion zeroDistortion = 0;
 
   const TempCtx ctxStart( m_CtxCache, m_CABACEstimator->getCtx() );
 
-#if JVET_L0293_CPR 
   if (luma)
   {
     cs.getOrgResiBuf().bufs[0].copyFrom(cs.getResiBuf().bufs[0]);
@@ -5310,11 +5256,6 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     cs.getOrgResiBuf().bufs[2].copyFrom(cs.getResiBuf().bufs[2]);
   }
   xEstimateInterResidualQT(cs, partitioner, &zeroDistortion, luma, chroma);
-#else
-  cs.getOrgResiBuf().copyFrom(cs.getResiBuf());
-
-  xEstimateInterResidualQT(cs, partitioner, &zeroDistortion);
-#endif
   TransformUnit &firstTU = *cs.getTU( partitioner.chType );
 
   cu.rootCbf = false;
@@ -5365,7 +5306,6 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
   uint64_t finalFracBits = xGetSymbolFracBitsInter( cs, partitioner );
   // we've now encoded the CU, and so have a valid bit cost
-#if JVET_L0293_CPR 
   if (!cu.rootCbf)
   {
     if (luma)
@@ -5388,14 +5328,6 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     cs.getRecoBuf().bufs[1].reconstruct(cs.getPredBuf().bufs[1], cs.getResiBuf().bufs[1], cs.slice->clpRngs().comp[1]);
     cs.getRecoBuf().bufs[2].reconstruct(cs.getPredBuf().bufs[2], cs.getResiBuf().bufs[2], cs.slice->clpRngs().comp[2]);
   }
-#else
-  if (!cu.rootCbf)
-  {
-    cs.getResiBuf().fill(0); // Clear the residual image, if we didn't code it.
-  }
-
-  cs.getRecoBuf().reconstruct(cs.getPredBuf(), cs.getResiBuf(), cs.slice->clpRngs());
-#endif
 
   // update with clipped distortion and cost (previously unclipped reconstruction values were used)
   Distortion finalDistortion = 0;
@@ -5403,12 +5335,10 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   for (int comp = 0; comp < numValidComponents; comp++)
   {
     const ComponentID compID = ComponentID(comp);
-#if JVET_L0293_CPR
     if (compID == COMPONENT_Y && !luma)
       continue;
     if (compID != COMPONENT_Y && !chroma)
       continue;
-#endif
     CPelBuf reco = cs.getRecoBuf (compID);
     CPelBuf org  = cs.getOrgBuf  (compID);
 
@@ -5467,9 +5397,7 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
     {
       m_CABACEstimator->cu_transquant_bypass_flag( cu );
     }
-#if JVET_L0293_CPR
     if (cu.Y().valid())
-#endif
     m_CABACEstimator->cu_skip_flag( cu );
     m_CABACEstimator->pred_mode   ( cu );
     m_CABACEstimator->cu_pred_data( cu );

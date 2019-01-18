@@ -298,11 +298,7 @@ bool CprHashMap::cprHashMatch(const Area& lumaArea, std::vector<Position>& cand,
       bool wholeBlockMatch = true;
       if (lumaArea.width > MIN_PU_SIZE || lumaArea.height > MIN_PU_SIZE)
       {
-#if JVET_L0293_CPR
         if (!cs.isDecomp(bottomRight, cs.chType) || bottomRight.x >= m_picWidth || bottomRight.y >= m_picHeight)
-#else
-        if (!cs.isDecomp(bottomRight, CHANNEL_TYPE_LUMA) || bottomRight.x >= m_picWidth || bottomRight.y >= m_picHeight)
-#endif
         {
           continue;
         }
@@ -317,11 +313,7 @@ bool CprHashMap::cprHashMatch(const Area& lumaArea, std::vector<Position>& cand,
       }
       else
       {
-#if JVET_L0293_CPR
         if (abs(refBlockPos->x - lumaArea.x) > searchRange4SmallBlk || abs(refBlockPos->y - lumaArea.y) > searchRange4SmallBlk || !cs.isDecomp(bottomRight, cs.chType))
-#else
-        if (abs(refBlockPos->x - lumaArea.x) > searchRange4SmallBlk || abs(refBlockPos->y - lumaArea.y) > searchRange4SmallBlk || !cs.isDecomp(bottomRight, CHANNEL_TYPE_LUMA))
-#endif
         {
           continue;
         }

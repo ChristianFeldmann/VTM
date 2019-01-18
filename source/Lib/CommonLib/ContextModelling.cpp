@@ -340,14 +340,12 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   pu.mvpIdx [REF_PIC_LIST_1] = NOT_VALID;
   pu.mvpNum [REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum [REF_PIC_LIST_1] = NOT_VALID;
-#if JVET_L0293_CPR
   if (interDirNeighbours[candIdx] == 1 && pu.cs->slice->getRefPic(REF_PIC_LIST_0, mvFieldNeighbours[candIdx << 1].refIdx)->getPOC() == pu.cs->slice->getPOC())
   {
     pu.cu->cpr = true;
     pu.bv = pu.mv[REF_PIC_LIST_0];
     pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
   }
-#endif
   pu.cu->GBiIdx = ( interDirNeighbours[candIdx] == 3 ) ? GBiIdx[candIdx] : GBI_DEFAULT;
 
 }

@@ -802,9 +802,7 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
     READ_FLAG( symbol,  "affine_type_flag" );                       spsNext.setUseAffineType          ( symbol != 0 );
   }
   READ_FLAG( symbol,    "gbi_flag" );                               spsNext.setUseGBi                 ( symbol != 0 );
-#if JVET_L0293_CPR
   READ_FLAG( symbol, "cpr_flag");                                   spsNext.setCPRMode                ( symbol != 0 );
-#endif  
   for( int k = 0; k < SPSNext::NumReservedFlags; k++ )
   {
     READ_FLAG( symbol,  "reserved_flag" );                          if( symbol != 0 ) EXIT("Incompatible version: SPSNext reserved flag not equal to zero (bitstream was probably created with newer software version)" );

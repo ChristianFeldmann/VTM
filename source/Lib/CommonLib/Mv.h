@@ -203,7 +203,6 @@ public:
   }
 };// END CLASS DEFINITION MV
 
-#if JVET_L0293_CPR
 namespace std
 {
   template <>
@@ -215,7 +214,6 @@ namespace std
     }
   };
 };
-#endif
 void clipMv ( Mv& rcMv, const struct Position& pos, 
               const struct Size& size,
               const class SPS& sps );

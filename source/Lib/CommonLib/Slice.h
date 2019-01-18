@@ -853,9 +853,7 @@ private:
 
   bool              m_compositeRefEnabled;        //composite longterm reference
 
-#if JVET_L0293_CPR
   unsigned    m_CPRMode;
-#endif
 
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags and associated parameters here
 
@@ -964,10 +962,8 @@ public:
   bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
   void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
-#if JVET_L0293_CPR
   void      setCPRMode            (unsigned CPRMode)                                { m_CPRMode = CPRMode; }
   unsigned  getCPRMode            ()                                      const     { return m_CPRMode; }
-#endif
   // ADD_NEW_TOOL : (sps extension) add access functions for tool enabling flags and associated parameters here
 
 };

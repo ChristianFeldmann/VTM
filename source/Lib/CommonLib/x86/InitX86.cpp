@@ -48,9 +48,7 @@
 
 #include "CommonLib/AdaptiveLoopFilter.h"
 
-#if JVET_L0293_CPR
 #include "CommonLib/CprHashMap.h"
-#endif
 
 #ifdef TARGET_SIMD_X86
 

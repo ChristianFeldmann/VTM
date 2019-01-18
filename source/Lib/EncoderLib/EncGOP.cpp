@@ -1460,12 +1460,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType(I_SLICE);
     }
-#if JVET_L0293_CPR
     if (pcSlice->getSliceType() == I_SLICE && pcSlice->getSPS()->getSpsNext().getCPRMode())
     {
       pcSlice->setSliceType(P_SLICE);
     }
-#endif
     // Set the nal unit type
     pcSlice->setNalUnitType(getNalUnitType(pocCurr, m_iLastIDR, isField));
     if(pcSlice->getTemporalLayerNonReferenceFlag())
@@ -1636,7 +1634,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && getPrepareLTRef()) {
       arrangeCompositeReference(pcSlice, rcListPic, pocCurr);
     }
-#if JVET_L0293_CPR
     if (pcSlice->getSPS()->getSpsNext().getCPRMode())
     {
       if (m_pcCfg->getIntraPeriod() > 0 && pcSlice->getPOC() % m_pcCfg->getIntraPeriod() == 0)
@@ -1647,7 +1644,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       pcSlice->setNumRefIdx(REF_PIC_LIST_0, pcSlice->getNumRefIdx(REF_PIC_LIST_0) + 1);
     }
-#endif
     //  Set reference list
     pcSlice->setRefPicList ( rcListPic );
 
@@ -1706,12 +1702,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType ( P_SLICE );
     }
-#if JVET_L0293_CPR
     if (pcSlice->getSPS()->getSpsNext().getCPRMode() && pcSlice->getNumRefIdx(REF_PIC_LIST_0) == 1)
     {
       m_pcSliceEncoder->setEncCABACTableIdx(P_SLICE);
     }
-#endif
     xUpdateRasInit( pcSlice );
 
     // Do decoding refresh marking if any
@@ -1797,13 +1791,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setEnableTMVPFlag(0);
     }
 
-#if JVET_L0293_CPR
     // disable TMVP when current picture is the only ref picture
     if (pcSlice->isIRAP() && pcSlice->getSPS()->getSpsNext().getCPRMode())
     {
       pcSlice->setEnableTMVPFlag(0);
     }
-#endif
 
     // set adaptive search range for non-intra-slices
     if (m_pcCfg->getUseASR() && !pcSlice->isIRAP())
@@ -1814,7 +1806,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     bool bGPBcheck=false;
     if ( pcSlice->getSliceType() == B_SLICE)
     {
-#if JVET_L0293_CPR
       if (pcSlice->getSPS()->getSpsNext().getCPRMode())
       {
         if (pcSlice->getNumRefIdx(RefPicList(0)) - 1 == pcSlice->getNumRefIdx(RefPicList(1)))
@@ -1831,7 +1822,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
       else
-#endif
       if ( pcSlice->getNumRefIdx(RefPicList( 0 ) ) == pcSlice->getNumRefIdx(RefPicList( 1 ) ) )
       {
         bGPBcheck=true;
@@ -2439,9 +2429,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 0 ) ) );
 
     pcPic->reconstructed = true;
-#if JVET_L0293_CPR
     pcPic->longTerm = false;
-#endif
     m_bFirst = false;
     m_iNumPicCoded++;
     if (!(pcPic->cs->sps->getSpsNext().getUseCompositeRef() && isEncodeLtRef))

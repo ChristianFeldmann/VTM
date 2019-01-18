@@ -114,15 +114,11 @@ private:
 
   // for motion cost
   Mv                      m_mvPredictor;
-#if JVET_L0293_CPR
   Mv                      m_bvPredictors[2];
-#endif
   double                  m_motionLambda;
   int                     m_iCostScale;
 
-#if JVET_L0293_CPR
   double                  m_dCost; // for cpr
-#endif
 public:
   RdCost();
   virtual ~RdCost();
@@ -166,7 +162,6 @@ public:
   }
   void           setCostScale             ( int iCostScale )           { m_iCostScale = iCostScale; }
   Distortion     getCost                  ( uint32_t b )                   { return Distortion( m_motionLambda * b ); }
-#if JVET_L0293_CPR
   // for cpr
   void           getMotionCost(int add, bool isTransquantBypass) { m_dCost = m_dLambdaMotionSAD[(isTransquantBypass && m_costMode == COST_MIXED_LOSSLESS_LOSSY_CODING) ? 1 : 0] + add; }
 
@@ -270,7 +265,6 @@ public:
 
     return length;
   }
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   void copyState( const RdCost& other );

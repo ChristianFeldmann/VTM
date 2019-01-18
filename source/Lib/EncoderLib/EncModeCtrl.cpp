@@ -766,9 +766,7 @@ bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& pa
     return false;
 #endif
   if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner )
-#if JVET_L0293_CPR
     || encInfo.cu.cpr
-#endif
     )
   {
     return false;
@@ -969,7 +967,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 #endif
 
   xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, true );
-#if JVET_L0293_CPR 
   bool checkCpr = true;
   if (cs.chType == CHANNEL_TYPE_CHROMA)
   {
@@ -991,7 +988,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       THROW("Unknown CPR luma coverage type");
     }
   }
-#endif
   // Add coding modes here
   // NOTE: Working back to front, as a stack, which is more efficient with the container
   // NOTE: First added modes will be processed at the end.
@@ -1103,7 +1099,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     // add intra modes
     m_ComprCUCtxList.back().testModes.push_back( { ETM_IPCM,  ETO_STANDARD, qp, lossless } );
     m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp, lossless } );
-#if JVET_L0293_CPR
     // add cpr mode to intra path
     if (cs.sps->getSpsNext().getCPRMode() && checkCpr )
     {
@@ -1113,7 +1108,6 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
         m_ComprCUCtxList.back().testModes.push_back({ ETM_CPR_MERGE,   ETO_STANDARD,  qp, lossless });
       }
     }
-#endif
   }
 
   // add first pass modes
@@ -1270,10 +1264,8 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     }
 
     // INTRA MODES
-#if JVET_L0293_CPR
     if (cs.sps->getSpsNext().getCPRMode() && !cuECtx.bestTU)
       return true;
-#endif
     CHECK( !slice.isIntra() && !cuECtx.bestTU, "No possible non-intra encoding for a P- or B-slice found" );
 
     if( !( slice.isIRAP() || bestMode.type == ETM_INTRA || 
@@ -1285,7 +1277,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
-#if JVET_L0293_CPR
     if ((m_pcEncCfg->getCPRFastMethod() & CPR_FAST_METHOD_NOINTRA_CPRCBF0)
       && (bestMode.type == ETM_CPR || bestMode.type == ETM_CPR_MERGE)
       && (!cuECtx.bestCU->Y().valid() || cuECtx.bestTU->cbf[0] == 0)
@@ -1294,7 +1285,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
-#endif
     if( lastTestMode().type != ETM_INTRA && cuECtx.bestCS && cuECtx.bestCU && interHadActive( cuECtx ) )
     {
       // Get SATD threshold from best Inter-CU
@@ -1329,13 +1319,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     // PCM MODES
     return sps.getUsePCM() && width <= ( 1 << sps.getPCMLog2MaxSize() ) && width >= ( 1 << sps.getPCMLog2MinSize() );
   }
-#if JVET_L0293_CPR
   else if (encTestmode.type == ETM_CPR || encTestmode.type == ETM_CPR_MERGE)
   {
     // CPR MODES
     return sps.getSpsNext().getCPRMode() && width <= CPR_MAX_CAND_SIZE && partitioner.currArea().lumaSize().height <= CPR_MAX_CAND_SIZE;
   }
-#endif
   else if( isModeInter( encTestmode ) )
   {
     // INTER MODES (ME + MERGE/SKIP)

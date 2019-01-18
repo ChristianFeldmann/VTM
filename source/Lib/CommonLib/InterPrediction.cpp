@@ -344,7 +344,6 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   pu.cu->affine = isAffine;
 }
 
-#if JVET_L0293_CPR
 void InterPrediction::xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred)
 {
   // separated tree, chroma
@@ -372,27 +371,22 @@ void InterPrediction::xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred)
     }
   }
 }
-#endif
 
 
 void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
                                    , const bool& bioApplied 
-#if JVET_L0293_CPR
                                    , const bool luma, const bool chroma
-#endif
 )
 {
   const SPS &sps = *pu.cs->sps;
 
   int iRefIdx = pu.refIdx[eRefPicList];
   Mv mv[3];
-#if JVET_L0293_CPR 
   bool isCPR = false;
   if (pu.cs->slice->getRefPic(eRefPicList, iRefIdx)->getPOC() == pu.cs->slice->getPOC())
   {
     isCPR = true;
   }
-#endif
   if( pu.cu->affine )
   {
     CHECK( iRefIdx < 0, "iRefIdx incorrect." );
@@ -414,12 +408,10 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   for( uint32_t comp = COMPONENT_Y; comp < pcYuvPred.bufs.size() && comp <= m_maxCompIDToPred; comp++ )
   {
     const ComponentID compID = ComponentID( comp );
-#if JVET_L0293_CPR
     if (compID == COMPONENT_Y && !luma)
       continue;
     if (compID != COMPONENT_Y && !chroma)
       continue;
-#endif
     if ( pu.cu->affine )
     {
       CHECK( bioApplied, "BIO is not allowed with affine" );
@@ -429,9 +421,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
     {
       xPredInterBlk( compID, pu, pu.cu->slice->getRefPic( eRefPicList, iRefIdx ), mv[0], pcYuvPred, bi, pu.cu->slice->clpRng( compID )
                     , bioApplied
-#if JVET_L0293_CPR
                     , isCPR
-#endif
                     );
 
     }
@@ -490,9 +480,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
     {
       xPredInterUni ( pu, eRefPicList, pcMbBuf, true
         , bioApplied
-#if JVET_L0293_CPR     
         , true, true
-#endif
       );
     }
     else
@@ -501,18 +489,14 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
       {
         xPredInterUni ( pu, eRefPicList, pcMbBuf, true 
           , bioApplied
-#if JVET_L0293_CPR     
           , true, true
-#endif
         );
       }
       else
       {
         xPredInterUni( pu, eRefPicList, pcMbBuf, pu.cu->triangle 
           , bioApplied
-#if JVET_L0293_CPR     
           , true, true
-#endif
         );
       }
     }
@@ -541,9 +525,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
 
 void InterPrediction::xPredInterBlk ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
                                      , const bool& bioApplied
-#if JVET_L0293_CPR
                                      , bool isCPR
-#endif
                                     )
 {
   JVET_J0090_SET_REF_PICTURE( refPic, compID );
@@ -555,13 +537,11 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 
   int xFrac = _mv.hor & ((1 << shiftHor) - 1);
   int yFrac = _mv.ver & ((1 << shiftVer) - 1);
-#if JVET_L0293_CPR 
   if (isCPR)
   {
     xFrac = yFrac = 0;
     JVET_J0090_SET_CACHE_ENABLE( false );
   }
-#endif
 
   PelBuf &dstBuf  = dstPic.bufs[compID];
   unsigned width  = dstBuf.width;
@@ -634,9 +614,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
             *pu.cs->sps );
     xPredInterBlk( compID, pu, refPic, mvTemp, dstPic, bi, clpRng
                   , false
-#if JVET_L0293_CPR
                   , false
-#endif
                   );
     return;
   }
@@ -1223,12 +1201,9 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
 }
 
 void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBuf, const RefPicList &eRefPicList 
-#if JVET_L0293_CPR
   , const bool luma, const bool chroma
-#endif
 )
 {
-#if JVET_L0293_CPR
   // dual tree handling for CPR as the only ref
   if (!luma || !chroma)
   {
@@ -1246,7 +1221,6 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     }
   }
   // else, go with regular MC below
-#endif
         CodingStructure &cs = *pu.cs;
   const PPS &pps            = *cs.pps;
   const SliceType sliceType =  cs.slice->getSliceType();
@@ -1257,9 +1231,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     {
       xPredInterUni         ( pu,          eRefPicList, predBuf, true 
         , false
-#if JVET_L0293_CPR     
         , true, true
-#endif
       );
       xWeightedPredictionUni( pu, predBuf, eRefPicList, predBuf, -1, m_maxCompIDToPred );
     }
@@ -1267,19 +1239,13 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     {
       xPredInterUni( pu, eRefPicList, predBuf, false 
         , false
-#if JVET_L0293_CPR     
         , true, true
-#endif
       );
     }
   }
   else
   {
-#if JVET_L0293_CPR
     if (pu.mergeType != MRG_TYPE_DEFAULT_N && pu.mergeType != MRG_TYPE_CPR)
-#else
-    if( pu.mergeType != MRG_TYPE_DEFAULT_N )
-#endif
     {
       xSubPuMC( pu, predBuf, eRefPicList );
     }
@@ -1287,9 +1253,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     {
       xPredInterUni( pu, REF_PIC_LIST_0, predBuf, false 
         , false
-#if JVET_L0293_CPR     
         , true, true
-#endif
       );
     }
     else
@@ -1301,33 +1265,25 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
 }
 
 void InterPrediction::motionCompensation( CodingUnit &cu, const RefPicList &eRefPicList 
-#if JVET_L0293_CPR
   , const bool luma, const bool chroma
-#endif
 )
 {
   for( auto &pu : CU::traversePUs( cu ) )
   {
     PelUnitBuf predBuf = cu.cs->getPredBuf( pu );
     motionCompensation( pu, predBuf, eRefPicList 
-#if JVET_L0293_CPR
       , luma, chroma
-#endif
     );
   }
 }
 
 void InterPrediction::motionCompensation( PredictionUnit &pu, const RefPicList &eRefPicList /*= REF_PIC_LIST_X*/ 
-#if JVET_L0293_CPR
   , const bool luma, const bool chroma
-#endif
 )
 {
   PelUnitBuf predBuf = pu.cs->getPredBuf( pu );
   motionCompensation( pu, predBuf, eRefPicList 
-#if JVET_L0293_CPR
     , luma, chroma
-#endif
   );
 }
 

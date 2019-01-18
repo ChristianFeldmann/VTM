@@ -237,7 +237,6 @@ protected:
   bool      m_MHIntra;
   bool      m_Triangle;
 
-#if JVET_L0293_CPR
   unsigned  m_CPRMode;
   unsigned  m_CPRLocalSearchRangeX;
   unsigned  m_CPRLocalSearchRangeY;
@@ -245,7 +244,6 @@ protected:
   unsigned  m_CPRHashSearchMaxCand;
   unsigned  m_CPRHashSearchRange4SmallBlk;
   unsigned  m_CPRFastMethod;
-#endif    
   
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
@@ -749,7 +747,6 @@ public:
   bool      getUseTriangle                  ()         const { return m_Triangle; }
 
 
-#if JVET_L0293_CPR
   void      setCPRMode                      (unsigned n)     { m_CPRMode = n; }
   unsigned  getCPRMode                      ()         const { return m_CPRMode; }
   void      setCPRLocalSearchRangeX         (unsigned n)     { m_CPRLocalSearchRangeX = n; }
@@ -764,7 +761,6 @@ public:
   unsigned  getCPRHashSearchRange4SmallBlk  ()         const { return m_CPRHashSearchRange4SmallBlk; }
   void      setCPRFastMethod                (unsigned n)     { m_CPRFastMethod = n; }
   unsigned  getCPRFastMethod                ()         const { return m_CPRFastMethod; }
-#endif  
 
   void      setUseWrapAround                ( bool b )       { m_wrapAround = b; }
   bool      getUseWrapAround                ()         const { return m_wrapAround; }

@@ -898,9 +898,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseMHIntra            ( m_MHIntra );
   sps.getSpsNext().setUseTriangle           ( m_Triangle );
 
-#if JVET_L0293_CPR
   sps.getSpsNext().setCPRMode               ( m_CPRMode );
-#endif 
 
   sps.setUseWrapAround                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
@@ -1409,13 +1407,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     }
   }
   CHECK(!(bestPos <= 15), "Unspecified error");
-#if JVET_L0293_CPR
   if (sps.getSpsNext().getCPRMode())
   {
     pps.setNumRefIdxL0DefaultActive(bestPos + 1);
   }
   else
-#endif
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());

@@ -855,7 +855,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
 
-#if JVET_L0293_CPR
   ( "CPR",                                            m_CPRMode,                                           0u, "CPRMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "CPRLocalSearchRangeX",                           m_CPRLocalSearchRangeX,                            128u, "Search range of CPR local search in x direction")
   ( "CPRLocalSearchRangeY",                           m_CPRLocalSearchRangeY,                            128u, "Search range of CPR local search in y direction")
@@ -863,7 +862,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "CPRHashSearchMaxCand",                           m_CPRHashSearchMaxCand,                            256u, "Max candidates for hash based CPR search")
   ( "CPRHashSearchRange4SmallBlk",                    m_CPRHashSearchRange4SmallBlk,                     256u, "Small block search range in based CPR search")
   ( "CPRFastMethod",                                  m_CPRFastMethod,                                     6u, "Fast methods for CPR")
-#endif
 
   ("WrapAround",                                      m_wrapAround,                                     false, "Enable horizontal wrap-around motion compensation for inter prediction (0:off, 1:on)  [default: off]")
   ("WrapAroundOffset",                                m_wrapAroundOffset,                                  0u, "Offset in luma samples used for computing the horizontal wrap-around position")
@@ -1927,9 +1925,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_DisableMotionCompression, "Disable motion data compression only allowed with NEXT profile" );
     xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
-#if JVET_L0293_CPR
     xConfirmPara(m_CPRMode, "CPR Mode only allowed with NEXT profile");
-#endif
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
     xConfirmPara( m_EMT, "EMT only allowed with NEXT profile" );
     xConfirmPara( m_FastEMT, "EMT only allowed with NEXT profile" );
@@ -3125,9 +3121,7 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
   }
-#if JVET_L0293_CPR
     msg(VERBOSE, "CPR:%d ", m_CPRMode);
-#endif
   msg( VERBOSE, "WrapAround:%d ", m_wrapAround);
   if( m_wrapAround )
   {

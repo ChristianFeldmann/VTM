@@ -542,9 +542,7 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
     WRITE_FLAG( spsNext.getUseAffineType() ? 1 : 0,                                             "affine_type_flag" );
   }
   WRITE_FLAG( spsNext.getUseGBi() ? 1 : 0,                                                      "gbi_flag" );
-#if JVET_L0293_CPR
   WRITE_FLAG(spsNext.getCPRMode() ? 1 : 0,                                                      "cpr_flag" );
-#endif  
   for( int k = 0; k < SPSNext::NumReservedFlags; k++ )
   {
     WRITE_FLAG( 0,                                                                              "reserved_flag" );

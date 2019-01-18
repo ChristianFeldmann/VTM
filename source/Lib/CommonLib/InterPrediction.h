@@ -105,16 +105,12 @@ protected:
 
   void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
                                   , const bool& bioApplied 
-#if JVET_L0293_CPR
                                   , const bool luma, const bool chroma
-#endif
   );
   void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred );
   void xPredInterBlk            ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
                                  , const bool& bioApplied
-#if JVET_L0293_CPR
                                  , bool isCPR
-#endif
                                  );
 
   void xAddBIOAvg4              (const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng);
@@ -133,9 +129,7 @@ protected:
 
 
   MotionInfo      m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
-#if JVET_L0293_CPR
   void xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred);
-#endif
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   CacheModel      *m_cacheModel;
 #endif
@@ -147,19 +141,13 @@ public:
 
   // inter
   void    motionCompensation  (PredictionUnit &pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X
-#if JVET_L0293_CPR
     , const bool luma = true, const bool chroma = true
-#endif
   );
   void    motionCompensation  (PredictionUnit &pu, const RefPicList &eRefPicList = REF_PIC_LIST_X
-#if JVET_L0293_CPR
     , const bool luma = true, const bool chroma = true
-#endif
   );
   void    motionCompensation  (CodingUnit &cu,     const RefPicList &eRefPicList = REF_PIC_LIST_X
-#if JVET_L0293_CPR
     , const bool luma = true, const bool chroma = true
-#endif
   );
 
   void    motionCompensation4Triangle( CodingUnit &cu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 );

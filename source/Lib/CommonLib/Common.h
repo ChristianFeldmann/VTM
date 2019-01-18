@@ -114,7 +114,6 @@ struct UnitScale
   Size     scale( const Size     &size ) const { return { size.width >> posx, size.height >> posy }; }
   Area     scale( const Area    &_area ) const { return Area( scale( _area.pos() ), scale( _area.size() ) ); }
 };
-#if JVET_L0293_CPR
 namespace std
 {
   template <>
@@ -135,7 +134,6 @@ namespace std
     }
   };
 }
-#endif
 inline size_t rsAddr(const Position &pos, const uint32_t stride, const UnitScale &unitScale )
 {
   return (size_t)(stride >> unitScale.posx) * (size_t)(pos.y >> unitScale.posy) + (size_t)(pos.x >> unitScale.posx);

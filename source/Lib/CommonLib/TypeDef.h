@@ -88,7 +88,6 @@
 
 
 
-#define JVET_L0293_CPR                                    1 // current picture referencing or intra block copy mode
 
 #define JVET_L0362_QG_FIX                                 1 // QG is the node of qtDepth + mttDepth <= maxDqpDepth
 #define JVET_L0362_QG_FIX_CU_REUSE                        1 // fix bug on encoder cu coding info reusing fast algorithm (i.e., reuse cu info when having the same neighbor and the same qp)
@@ -884,9 +883,7 @@ enum MergeType
 {
   MRG_TYPE_DEFAULT_N        = 0, // 0
   MRG_TYPE_SUBPU_ATMVP,
-#if JVET_L0293_CPR
   MRG_TYPE_CPR,                  
-#endif
   NUM_MRG_TYPE                   // 5
 };
 

@@ -89,19 +89,14 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
 
     for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, chType ), chType ) )
     {
-#if JVET_L0293_CPR 
       cs.chType = chType;
       if (currCU.predMode != MODE_INTRA && currCU.Y().valid())
       {
         xDeriveCUMV(currCU);
       }
-#endif
       switch( currCU.predMode )
       {
       case MODE_INTER:
-#if !JVET_L0293_CPR 
-        xDeriveCUMV( currCU );
-#endif
         xReconInter( currCU );
         break;
       case MODE_INTRA:
@@ -341,7 +336,6 @@ void DecCu::xReconInter(CodingUnit &cu)
   m_pcIntraPred->geneIntrainterPred(cu);
 
   // inter prediction
-#if JVET_L0293_CPR
   CHECK(cu.cpr && cu.firstPU->mhIntraFlag, "CPR and MHIntra cannot be used together");
   CHECK(cu.cpr && cu.affine, "CPR and Affine cannot be used together");
   CHECK(cu.cpr && cu.triangle, "CPR and triangle cannot be used together");
@@ -356,13 +350,8 @@ void DecCu::xReconInter(CodingUnit &cu)
   {
     m_pcInterPred->motionCompensation(cu, REF_PIC_LIST_0, luma, chroma);
   }
-#else
-  m_pcInterPred->motionCompensation( cu );
-#endif
   }
-#if JVET_L0293_CPR
   if (cu.Y().valid())
-#endif
   cu.slice->updateMotionLUTs(cu.slice->getMotionLUTs(), cu);
 
   if (cu.firstPU->mhIntraFlag)
@@ -599,7 +588,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               AMVPInfo amvpInfo;
               PU::fillMvpCand(pu, eRefList, pu.refIdx[eRefList], amvpInfo);
               pu.mvpNum [eRefList] = amvpInfo.numCand;
-#if JVET_L0293_CPR
               Mv mvd = pu.mvd[eRefList];
               if (eRefList == REF_PIC_LIST_0 && pu.cs->slice->getRefPic(eRefList, pu.refIdx[eRefList])->getPOC() == pu.cs->slice->getPOC())
               {
@@ -610,9 +598,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
                   mvd.changePrecision(MV_PRECISION_INT, MV_PRECISION_QUARTER);
               }
               pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx[eRefList]] + mvd;
-#else
-              pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx [eRefList]] + pu.mvd[eRefList];
-#endif
               pu.mv[eRefList].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
             }
           }

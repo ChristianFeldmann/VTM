@@ -236,7 +236,6 @@ protected:
   bool      m_Triangle;
 
 
-#if JVET_L0293_CPR
   unsigned  m_CPRMode;
   unsigned  m_CPRLocalSearchRangeX;
   unsigned  m_CPRLocalSearchRangeY;
@@ -244,7 +243,6 @@ protected:
   unsigned  m_CPRHashSearchMaxCand;
   unsigned  m_CPRHashSearchRange4SmallBlk;
   unsigned  m_CPRFastMethod;
-#endif    
   
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;

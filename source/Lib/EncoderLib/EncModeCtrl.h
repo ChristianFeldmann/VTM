@@ -70,10 +70,8 @@ enum EncTestModeType
   ETM_RECO_CACHED,
 #endif
   ETM_TRIGGER_IMV_LIST,
-#if JVET_L0293_CPR
   ETM_CPR,    // cpr mode
   ETM_CPR_MERGE, // cpr merge mode
-#endif
   ETM_INVALID
 };
 

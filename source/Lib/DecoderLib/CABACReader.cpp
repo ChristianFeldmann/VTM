@@ -570,11 +570,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
 #endif
 
   // Predict QP on start of quantization group
-#if JVET_L0362_QG_FIX
   if( pps.getUseDQP() && !cuCtx.isDQPCoded && CU::isQGStart( cu, partitioner ) )
-#else
-  if( pps.getUseDQP() && !cuCtx.isDQPCoded && CU::isQGStart( cu ) )
-#endif
   {
     cuCtx.qp = CU::predictQP( cu, cuCtx.qp );
   }

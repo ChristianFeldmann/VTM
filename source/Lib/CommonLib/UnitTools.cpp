@@ -5057,12 +5057,8 @@ bool TU::hasTransformSkipFlag(const CodingStructure& cs, const CompArea& area)
 {
   uint32_t transformSkipLog2MaxSize = cs.pps->getPpsRangeExtension().getLog2MaxTransformSkipBlockSize();
 
-#if JVET_L0111
   SizeType transformSkipMaxSize = 1 << transformSkipLog2MaxSize;
   return area.width <= transformSkipMaxSize && area.height <= transformSkipMaxSize;
-#else
-  return ( area.width * area.height <= (1 << ( transformSkipLog2MaxSize << 1 )) );
-#endif
 }
 
 uint32_t TU::getGolombRiceStatisticsIndex(const TransformUnit &tu, const ComponentID &compID)

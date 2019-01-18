@@ -61,7 +61,6 @@
 
 
 
-#define JVET_L0111                                        1 // Max Tx size for skip
 #define JVET_L0209_PCM                                    1 // PCM mode
 
 #define JVET_L0553_FIX_INITQP                             1

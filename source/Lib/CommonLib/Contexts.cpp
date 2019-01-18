@@ -262,7 +262,6 @@ std::vector<std::vector<uint8_t>> ContextSetCfg::sm_InitTables( NUMBER_OF_SLICE_
 
 const CtxSet ContextSetCfg::SplitFlag = ContextSetCfg::addCtxSet
 ({
-#if JVET_L0361_SPLIT_CTX
 #if TRAINED_CABAC_INIT_TABLES
   { 137, 125, 127, 107, 138, 140, },
   { 138, 111, 143, 107, 138, 140, },
@@ -272,16 +271,10 @@ const CtxSet ContextSetCfg::SplitFlag = ContextSetCfg::addCtxSet
   {  107, 139, 126, 107, 139, 126, },
   {  139, 141, 157, 139, 141, 157, },
 #endif
-#else
-  {  107, 139, 126, 255,   0,},
-  {  107, 139, 126, 255,   0,},
-  {  139, 141, 157, 255,   0,},
-#endif
 });
 
 const CtxSet ContextSetCfg::BTSplitFlag = ContextSetCfg::addCtxSet
 ({
-#if JVET_L0361_SPLIT_CTX
   // |-------- 1st bin, 9 ctx for luma + 3 ctx for chroma------| |--2nd bin--| |3rd bin|
 #if TRAINED_CABAC_INIT_TABLES
   { 137, 125, 141, 123, 125, 141, 78, 124, 140, CNU, CNU, CNU, 169, 155, 154, 154, },
@@ -291,11 +284,6 @@ const CtxSet ContextSetCfg::BTSplitFlag = ContextSetCfg::addCtxSet
   {  107, 139, 126, 107, 139, 126, 107, 139, 126, 107, 139, 126, 154, 154, 154, 154,},
   {  107, 139, 126, 107, 139, 126, 107, 139, 126, 107, 139, 126, 154, 154, 154, 154,},
   {  139, 141, 157, 139, 141, 157, 139, 141, 157, 139, 141, 157, 154, 154, 154, 154,},
-#endif
-#else
-  {  107, 139, 126, 154, 154, 154, 154, 154, 154, 154, 154, 154,},
-  {  107, 139, 126, 154, 154, 154, 154, 154, 154, 154, 154, 154,},
-  {  139, 141, 157, 154, 154, 154, 154, 154, 154, 154, 154, 154,},
 #endif
 });
 

@@ -73,7 +73,6 @@
 
 
 
-#define JVET_L0361_SPLIT_CTX                              1 // context for cu-split-related flags
 
 #define JVET_L0274                                        1
 #define JVET_L0274_ENCODER_SPEED_UP                     ( 1 && JVET_L0274 ) // encoder speed-up by pre-calculating position dependent parameters

@@ -182,24 +182,7 @@ unsigned DeriveCtx::CtxCUsplit( const CodingStructure& cs, Partitioner& partitio
 #endif
 
   ctxId += ( cuAbove && cuAbove->qtDepth > partitioner.currQtDepth ) ? 1 : 0;
-#if JVET_L0361_SPLIT_CTX
   ctxId += partitioner.currQtDepth < 2 ? 0 : 3;
-#else
-  if( cs.sps->getSpsNext().getUseLargeCTU() )
-  {
-    unsigned minDepth = 0;
-    unsigned maxDepth = 0;
-    adPartitioner->setMaxMinDepth( minDepth, maxDepth, cs );
-    if( partitioner.currDepth < minDepth )
-    {
-      ctxId = 3;
-    }
-    else if( partitioner.currDepth >= maxDepth + 1 )
-    {
-      ctxId = 4;
-    }
-  }
-#endif
 
   return ctxId;
 }
@@ -294,7 +277,6 @@ unsigned DeriveCtx::CtxBTsplit(const CodingStructure& cs, Partitioner& partition
 #endif
 
   {
-#if JVET_L0361_SPLIT_CTX
     unsigned widthCurr  = partitioner.currArea().blocks[partitioner.chType].width;
     unsigned heightCurr = partitioner.currArea().blocks[partitioner.chType].height;
     if( cuLeft )
@@ -320,12 +302,6 @@ unsigned DeriveCtx::CtxBTsplit(const CodingStructure& cs, Partitioner& partition
       unsigned int sizeCurr = partitioner.currArea().lumaSize().area();
       ctx += sizeCurr > th2 ? 0 : ( sizeCurr > th1 ? 3 : 6 );
     }
-#else
-    const unsigned currDepth = partitioner.currQtDepth * 2 + partitioner.currBtDepth;
-
-    if( cuLeft )  ctx += ( ( 2 * cuLeft->qtDepth  + cuLeft->btDepth  ) > currDepth ? 1 : 0 );
-    if( cuAbove ) ctx += ( ( 2 * cuAbove->qtDepth + cuAbove->btDepth ) > currDepth ? 1 : 0 );
-#endif
   }
   return ctx;
 }

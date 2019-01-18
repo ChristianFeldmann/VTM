@@ -1502,15 +1502,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           {
             unsigned maxBTD        = cs.pcv->getMaxBtDepth( slice, partitioner.chType );
             const CodingUnit *cuBR = bestCS->cus.back();
-#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
             unsigned height        = partitioner.currArea().lumaSize().height;
-#endif
 
             if( bestCU && ( ( bestCU->btDepth == 0 &&                               maxBTD >= ( slice.isIntra() ? 3 : 2 ) )
                          || ( bestCU->btDepth == 1 && cuBR && cuBR->btDepth == 1 && maxBTD >= ( slice.isIntra() ? 4 : 3 ) ) )
-#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
                        && ( width <= MAX_TU_SIZE_FOR_PROFILE && height <= MAX_TU_SIZE_FOR_PROFILE )
-#endif
                        && cuECtx.get<bool>( DID_HORZ_SPLIT ) && cuECtx.get<bool>( DID_VERT_SPLIT ) )
             {
               return false;

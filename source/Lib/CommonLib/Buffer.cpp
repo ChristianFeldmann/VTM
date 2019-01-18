@@ -268,12 +268,10 @@ PelBufferOps::PelBufferOps()
   linTf4 = linTfCore<Pel>;
   linTf8 = linTfCore<Pel>;
 
-#if ENABLE_SIMD_OPT_BIO
   addBIOAvg4      = addBIOAvgCore;
   bioGradFilter   = gradFilterCore;
   calcBIOPar      = calcBIOParCore;
   calcBlkGradient = calcBlkGradientCore;
-#endif
 
 #if ENABLE_SIMD_OPT_GBI
   removeWeightHighFreq8 = removeWeightHighFreq;

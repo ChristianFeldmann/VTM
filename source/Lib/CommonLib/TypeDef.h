@@ -240,7 +240,6 @@
 #if ENABLE_SIMD_OPT_BUFFER
 #define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi   
 #endif
-#define ENABLE_SIMD_OPT_BIO                             ( JVET_L0256_BIO && ENABLE_SIMD_OPT )               ///< SIMD optimization for BIO
 
 // End of SIMD optimizations
 

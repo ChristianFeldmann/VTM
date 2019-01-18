@@ -128,7 +128,6 @@ void addAvg_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int s
   }
 }
 
-#if ENABLE_SIMD_OPT_BIO
 template< X86_VEXT vext >
 void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
 {
@@ -428,7 +427,6 @@ void calcBlkGradient_SSE(int sx, int sy, int     *arraysGx2, int     *arraysGxGy
   sGxdI = _mm_cvtsi128_si32(mmGxdITotal);
   sGydI = _mm_cvtsi128_si32(mmGydITotal);
 }
-#endif
 
 template< X86_VEXT vext, int W >
 void reco_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int src1Stride, int16_t *dst, int dstStride, int width, int height, const ClpRng& clpRng )
@@ -798,12 +796,10 @@ void PelBufferOps::_initPelBufOpsX86()
   addAvg8 = addAvg_SSE<vext, 8>;
   addAvg4 = addAvg_SSE<vext, 4>;
 
-#if ENABLE_SIMD_OPT_BIO
   addBIOAvg4      = addBIOAvg4_SSE<vext>;
   bioGradFilter   = gradFilter_SSE<vext>;
   calcBIOPar      = calcBIOPar_SSE<vext>;
   calcBlkGradient = calcBlkGradient_SSE<vext>;
-#endif
 
   reco8 = reco_SSE<vext, 8>;
   reco4 = reco_SSE<vext, 4>;

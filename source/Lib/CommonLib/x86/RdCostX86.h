@@ -297,7 +297,6 @@ Distortion RdCost::xGetSAD_SIMD( const DistParam &rcDtParam )
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
 }
 
-#if ENABLE_SIMD_OPT_BIO
 template< X86_VEXT vext >
 Distortion RdCost::xGetSAD_IBD_SIMD(const DistParam &rcDtParam)
 {
@@ -335,7 +334,6 @@ Distortion RdCost::xGetSAD_IBD_SIMD(const DistParam &rcDtParam)
   uiSum <<= subShift;
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
 }
-#endif
 
 template< int iWidth, X86_VEXT vext >
 Distortion RdCost::xGetSAD_NxN_SIMD( const DistParam &rcDtParam )
@@ -2462,9 +2460,7 @@ void RdCost::_initRdCostX86()
   m_afpDistortFunc[DF_HAD64]   = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
   m_afpDistortFunc[DF_HAD16N]  = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
 
-#if ENABLE_SIMD_OPT_BIO
   m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD_IBD_SIMD<vext>;
-#endif
 }
 
 template void RdCost::_initRdCostX86<SIMDX86>();

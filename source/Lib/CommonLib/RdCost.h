@@ -360,10 +360,8 @@ private:
   static Distortion xGetSAD_SIMD    ( const DistParam& pcDtParam );
   template< int iWidth, X86_VEXT vext >
   static Distortion xGetSAD_NxN_SIMD( const DistParam& pcDtParam );
-#if ENABLE_SIMD_OPT_BIO
   template< X86_VEXT vext >
   static Distortion xGetSAD_IBD_SIMD(const DistParam& pcDtParam);
-#endif
 
   template< typename Torg, typename Tcur, X86_VEXT vext >
   static Distortion xGetHADs_SIMD   ( const DistParam& pcDtParam );

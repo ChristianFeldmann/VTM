@@ -575,7 +575,6 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     cuCtx.qp = CU::predictQP( cu, cuCtx.qp );
   }
 
-#if JVET_L0428_DQP_SEP_TREE
   if (pps.getUseDQP() && CS::isDualITree(cs) && isChroma(cu.chType))
   {
     const Position chromaCentral(cu.chromaPos().offset(cu.chromaSize().width >> 1, cu.chromaSize().height >> 1));
@@ -584,7 +583,6 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
 
     if (colLumaCu) cuCtx.qp = colLumaCu->qp;
   }
-#endif
 
   cu.qp = cuCtx.qp;                 //NOTE: CU QP can be changed by deltaQP signaling at TU level
   cu.chromaQpAdj = cs.chromaQpAdj;  //NOTE: CU chroma QP adjustment can be changed by adjustment signaling at TU level
@@ -1959,9 +1957,7 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
   {
     if( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded )
     {
-#if JVET_L0428_DQP_SEP_TREE
       if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
-#endif
       {
         cu_qp_delta(cu, cuCtx.qp, cu.qp);
         cuCtx.qp = cu.qp;

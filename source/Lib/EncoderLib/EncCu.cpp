@@ -639,7 +639,6 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   {
     EncTestMode currTestMode = m_modeCtrl->currTestMode();
 
-#if JVET_L0428_DQP_SEP_TREE
     if (tempCS->pps->getUseDQP() && CS::isDualITree(*tempCS) && isChroma(partitioner.chType))
     {
       const Position chromaCentral(tempCS->area.Cb().chromaPos().offset(tempCS->area.Cb().chromaSize().width >> 1, tempCS->area.Cb().chromaSize().height >> 1));
@@ -653,7 +652,6 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
         currTestMode.qp = colLumaCu->qp;
       }
     }
-#endif
 
 #if SHARP_LUMA_DELTA_QP
     if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && partitioner.currDepth <= pps.getMaxCuDQPDepth() )
@@ -1452,12 +1450,10 @@ void EncCu::xCheckDQP( CodingStructure& cs, Partitioner& partitioner, bool bKeep
     return;
   }
 
-#if JVET_L0428_DQP_SEP_TREE
   if (CS::isDualITree(cs) && isChroma(partitioner.chType))
   {
     return;
   }
-#endif
 
   if( bKeepCtx && partitioner.currDepth != cs.pps->getMaxCuDQPDepth() )
   {

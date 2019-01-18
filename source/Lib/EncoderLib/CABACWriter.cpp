@@ -1866,9 +1866,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
   {
     if( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded )
     {
-#if JVET_L0428_DQP_SEP_TREE
       if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
-#endif
       {
         cu_qp_delta(cu, cuCtx.qp, cu.qp);
         cuCtx.qp = cu.qp;

@@ -46,9 +46,7 @@
 
 #include <memory.h>
 
-#if JVET_L0628_4TAP_INTRA
 #include "CommonLib/InterpolationFilter.h"
-#endif //JVET_L0628_4TAP_INTRA
 
 //! \ingroup CommonLib
 //! \{
@@ -66,11 +64,7 @@ const uint8_t IntraPrediction::m_aucIntraFilter[MAX_NUM_CHANNEL_TYPE][MAX_INTRA_
     14, //   8xn
     2,  //  16xn
     0,  //  32xn
-#if HM_MDIS_AS_IN_JEM && !JVET_L0628_4TAP_INTRA
-    20, //  64xn
-#else
     0,  //  64xn
-#endif
     0,  // 128xn
   },
   { // Chroma
@@ -80,16 +74,11 @@ const uint8_t IntraPrediction::m_aucIntraFilter[MAX_NUM_CHANNEL_TYPE][MAX_INTRA_
     28, //   8xn
     4,  //  16xn
     0,  //  32xn
-#if HM_MDIS_AS_IN_JEM && !JVET_L0628_4TAP_INTRA
-    40, //  64xn
-#else
     0,  //  64xn
-#endif
     0,  // 128xn
   }
 };
 
-#if JVET_L0628_4TAP_INTRA
 const TFilterCoeff g_intraGaussFilter[32][4] = {
   { 16, 32, 16, 0 },
   { 15, 29, 17, 3 },
@@ -124,7 +113,6 @@ const TFilterCoeff g_intraGaussFilter[32][4] = {
   { 3, 17, 29, 15 },
   { 3, 17, 29, 15 }
 };
-#endif
 
 // ====================================================================================================================
 // Constructor / destructor / initialize
@@ -330,7 +318,6 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   {
     case(PLANAR_IDX): xPredIntraPlanar(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, *pu.cs->sps); break;
     case(DC_IDX):     xPredIntraDc(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, false); break;
-#if JVET_L0628_4TAP_INTRA
     case(2):
     case(DIA_IDX):
     case(VDIA_IDX):
@@ -344,11 +331,6 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
     default:          xPredIntraAng(CPelBuf(getPredictorPtr(compID, false), srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps
       , multiRefIdx
       , useFilteredPredSamples); break;
-#else //JVET_L0628_4TAP_INTRA
-    default:          xPredIntraAng(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps
-      , multiRefIdx
-      , false); break;
-#endif //JVET_L0628_4TAP_INTRA
   }
 
   bool pdpcCondition = (uiDirMode == PLANAR_IDX || uiDirMode == DC_IDX || uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
@@ -578,14 +560,10 @@ void IntraPrediction::xDCPredFiltering(const CPelBuf &pSrc, PelBuf &pDst, const 
 void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const bool bEnableEdgeFilters, const SPS& sps
   , int multiRefIdx
   , const bool enableBoundaryFilter )
-#elif JVET_L0628_4TAP_INTRA
-void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps
-  , int multiRefIdx
-  , const bool useFilteredPredSamples )
 #else
 void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps
   , int multiRefIdx
-  , const bool enableBoundaryFilter )
+  , const bool useFilteredPredSamples )
 #endif
 {
   int width =int(pDst.width);
@@ -623,12 +601,10 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   // Initialize the Main and Left reference array.
   if (intraPredAngle < 0)
   {
-#if JVET_L0628_4TAP_INTRA
     auto width    = int(pDst.width) +1;
     auto height   = int(pDst.height)+1;
     auto lastIdx  = (bIsModeVer ? width : height) + multiRefIdx;
     auto firstIdx = ( ((bIsModeVer ? height : width) -1) * intraPredAngle ) >> 5;
-#endif //JVET_L0628_4TAP_INTRA
     for (int x = 0; x < width + 1 + multiRefIdx; x++)
     {
       refAbove[x + height - 1] = pSrc.at( x, 0 );
@@ -642,49 +618,32 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
 
     // Extend the Main reference to the left.
     int invAngleSum    = 128;       // rounding for (shift by 8)
-#if JVET_L0628_4TAP_INTRA
     for( int k = -1; k > firstIdx; k-- )
-#else //JVET_L0628_4TAP_INTRA
-    const int refMainOffsetPreScale = bIsModeVer ? height : width;
-    for( int k = -1; k > (refMainOffsetPreScale * intraPredAngle) >> 5; k-- )
-#endif //JVET_L0628_4TAP_INTRA
     {
       invAngleSum += invAngle;
       refMain[k] = refSide[invAngleSum>>8];
     }
-#if JVET_L0628_4TAP_INTRA
     refMain[lastIdx] = refMain[lastIdx-1];
     refMain[firstIdx] = refMain[firstIdx+1];
-#endif //JVET_L0628_4TAP_INTRA
   }
   else
   {
     for (int x = 0; x < m_topRefLength + 1 + (whRatio + 1) * multiRefIdx; x++)
     {
-#if JVET_L0628_4TAP_INTRA
       refAbove[x+1] = pSrc.at(x, 0);
-#else //JVET_L0628_4TAP_INTRA
-      refAbove[x] = pSrc.at(x, 0);
-#endif //JVET_L0628_4TAP_INTRA
     }
     for (int y = 0; y < m_leftRefLength + 1 + (hwRatio + 1) * multiRefIdx; y++)
     {
-#if JVET_L0628_4TAP_INTRA
       refLeft[y+1]  = pSrc.at(0, y);
-#else //JVET_L0628_4TAP_INTRA
-      refLeft[y]  = pSrc.at(0, y);
-#endif //JVET_L0628_4TAP_INTRA
     }
     refMain = bIsModeVer ? refAbove : refLeft ;
     refSide = bIsModeVer ? refLeft  : refAbove;
 
-#if JVET_L0628_4TAP_INTRA
     refMain++;
     refSide++;
     refMain[-1] = refMain[0];
     auto lastIdx = 1 + ((bIsModeVer) ? m_topRefLength + (whRatio + 1) * multiRefIdx : m_leftRefLength +  (hwRatio + 1) * multiRefIdx);
     refMain[lastIdx] = refMain[lastIdx-1];
-#endif //JVET_L0628_4TAP_INTRA
   }
 
   // swap width/height if we are doing a horizontal mode:
@@ -727,15 +686,8 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
       const int deltaInt   = deltaPos >> 5;
       const int deltaFract = deltaPos & (32 - 1);
 
-#if JVET_L0628_4TAP_INTRA
       if (absAng != 0 && absAng != 32)
-#elif HM_4TAPIF_AS_IN_JEM
-      if( deltaFract )
-#else //JVET_L0628_4TAP_INTRA
-      if( absAng < 32 )
-#endif
       {
-#if JVET_L0628_4TAP_INTRA
         if( isLuma(channelType) )
         {
           Pel                        p[4];
@@ -760,7 +712,6 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
           }
         }
         else
-#endif //JVET_L0628_4TAP_INTRA
         {
           // Do linear filtering
           const Pel *pRM = refMain + deltaInt + 1;

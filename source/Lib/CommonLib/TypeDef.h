@@ -81,7 +81,6 @@
 
 
 
-#define JVET_L0628_4TAP_INTRA                             1 // 4-tap intra-interpolation filtering with switching between Gaussian and DCT-IF filters for luma component
 
 #define JVET_L0271_AFFINE_AMVP_SIMPLIFY                   1 // Simplification of affine AMVP list construction
 #define JVET_L0694_AFFINE_LINEBUFFER_CLEANUP              1 // L0045/L0047/L0694: Combination of affine mode clean up and line buffer reduction

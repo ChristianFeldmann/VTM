@@ -537,7 +537,7 @@ uint8_t CacheBlkInfoCtrl::getGbiIdx(const UnitArea& area)
 #endif
 
 #if REUSE_CU_RESULTS
-static bool isTheSameNbHood( const CodingUnit &cu, const Partitioner &partitioner )
+static bool isTheSameNbHood( const CodingUnit &cu, const CodingStructure& cs, const Partitioner &partitioner )
 {
   if( cu.chType != partitioner.chType )
   {
@@ -557,10 +557,11 @@ static bool isTheSameNbHood( const CodingUnit &cu, const Partitioner &partitione
   }
 
   const UnitArea &cmnAnc = ps[i - 1].parts[ps[i - 1].idx];
+  const UnitArea cuArea  = CS::getArea( cs, cu, partitioner.chType );
 
   for( int i = 0; i < cmnAnc.blocks.size(); i++ )
   {
-    if( i < cu.blocks.size() && cu.blocks[i].valid() && cu.blocks[i].pos() != cmnAnc.blocks[i].pos() )
+    if( i < cuArea.blocks.size() && cuArea.blocks[i].valid() && cuArea.blocks[i].pos() != cmnAnc.blocks[i].pos() )
     {
       return false;
     }
@@ -768,7 +769,7 @@ bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& pa
   if( encInfo.cu.qp != qp )
     return false;
 #endif
-  if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != encInfo.cu || !isTheSameNbHood( encInfo.cu, partitioner ) 
+  if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner )
 #if JVET_L0293_CPR
     || encInfo.cu.cpr
 #endif
@@ -789,7 +790,7 @@ bool BestEncInfoCache::setCsFrom( CodingStructure& cs, EncTestMode& testMode, co
 
   BestEncodingInfo& encInfo = *m_bestEncInfo[idx1][idx2][idx3][idx4];
 
-  if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != encInfo.cu || !isTheSameNbHood( encInfo.cu, partitioner ) )
+  if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner ) )
   {
     return false;
   }

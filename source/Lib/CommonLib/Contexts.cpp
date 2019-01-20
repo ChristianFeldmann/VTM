@@ -41,8 +41,7 @@
 #include <cstring>
 #include <limits>
 
-
-
+#if !JVET_M0453_CABAC_ENGINE
 const uint8_t ProbModelTables::m_NextState[128][2] =
 {
   {   2,  1 },{   0,  3 },{   4,  0 },{   1,  5 },{   6,  2 },{   3,  7 },{   8,  4 },{   5,  9 },
@@ -174,6 +173,7 @@ const uint8_t ProbModelTables::m_LPSTable_64_4[64][4] =
   {   6,   7,   8,   9 },
   {   2,   2,   2,   2 }
 };
+#endif
 
 const uint8_t ProbModelTables::m_RenormTable_32[32] =
 {
@@ -187,15 +187,96 @@ const uint8_t ProbModelTables::m_RenormTable_32[32] =
   1,  1,  1,  1
 };
 
+#if JVET_M0453_CABAC_ENGINE
+const BinFracBits ProbModelTables::m_binFracBits[256] = {
+  { { 0x0005c, 0x48000 } }, { { 0x00116, 0x3b520 } }, { { 0x001d0, 0x356cb } }, { { 0x0028b, 0x318a9 } },
+  { { 0x00346, 0x2ea40 } }, { { 0x00403, 0x2c531 } }, { { 0x004c0, 0x2a658 } }, { { 0x0057e, 0x28beb } },
+  { { 0x0063c, 0x274ce } }, { { 0x006fc, 0x26044 } }, { { 0x007bc, 0x24dc9 } }, { { 0x0087d, 0x23cfc } },
+  { { 0x0093f, 0x22d96 } }, { { 0x00a01, 0x21f60 } }, { { 0x00ac4, 0x2122e } }, { { 0x00b89, 0x205dd } },
+  { { 0x00c4e, 0x1fa51 } }, { { 0x00d13, 0x1ef74 } }, { { 0x00dda, 0x1e531 } }, { { 0x00ea2, 0x1db78 } },
+  { { 0x00f6a, 0x1d23c } }, { { 0x01033, 0x1c970 } }, { { 0x010fd, 0x1c10b } }, { { 0x011c8, 0x1b903 } },
+  { { 0x01294, 0x1b151 } }, { { 0x01360, 0x1a9ee } }, { { 0x0142e, 0x1a2d4 } }, { { 0x014fc, 0x19bfc } },
+  { { 0x015cc, 0x19564 } }, { { 0x0169c, 0x18f06 } }, { { 0x0176d, 0x188de } }, { { 0x0183f, 0x182e8 } },
+  { { 0x01912, 0x17d23 } }, { { 0x019e6, 0x1778a } }, { { 0x01abb, 0x1721c } }, { { 0x01b91, 0x16cd5 } },
+  { { 0x01c68, 0x167b4 } }, { { 0x01d40, 0x162b6 } }, { { 0x01e19, 0x15dda } }, { { 0x01ef3, 0x1591e } },
+  { { 0x01fcd, 0x15480 } }, { { 0x020a9, 0x14fff } }, { { 0x02186, 0x14b99 } }, { { 0x02264, 0x1474e } },
+  { { 0x02343, 0x1431b } }, { { 0x02423, 0x13f01 } }, { { 0x02504, 0x13afd } }, { { 0x025e6, 0x1370f } },
+  { { 0x026ca, 0x13336 } }, { { 0x027ae, 0x12f71 } }, { { 0x02894, 0x12bc0 } }, { { 0x0297a, 0x12821 } },
+  { { 0x02a62, 0x12494 } }, { { 0x02b4b, 0x12118 } }, { { 0x02c35, 0x11dac } }, { { 0x02d20, 0x11a51 } },
+  { { 0x02e0c, 0x11704 } }, { { 0x02efa, 0x113c7 } }, { { 0x02fe9, 0x11098 } }, { { 0x030d9, 0x10d77 } },
+  { { 0x031ca, 0x10a63 } }, { { 0x032bc, 0x1075c } }, { { 0x033b0, 0x10461 } }, { { 0x034a5, 0x10173 } },
+  { { 0x0359b, 0x0fe90 } }, { { 0x03693, 0x0fbb9 } }, { { 0x0378c, 0x0f8ed } }, { { 0x03886, 0x0f62b } },
+  { { 0x03981, 0x0f374 } }, { { 0x03a7e, 0x0f0c7 } }, { { 0x03b7c, 0x0ee23 } }, { { 0x03c7c, 0x0eb89 } },
+  { { 0x03d7d, 0x0e8f9 } }, { { 0x03e7f, 0x0e671 } }, { { 0x03f83, 0x0e3f2 } }, { { 0x04088, 0x0e17c } },
+  { { 0x0418e, 0x0df0e } }, { { 0x04297, 0x0dca8 } }, { { 0x043a0, 0x0da4a } }, { { 0x044ab, 0x0d7f3 } },
+  { { 0x045b8, 0x0d5a5 } }, { { 0x046c6, 0x0d35d } }, { { 0x047d6, 0x0d11c } }, { { 0x048e7, 0x0cee3 } },
+  { { 0x049fa, 0x0ccb0 } }, { { 0x04b0e, 0x0ca84 } }, { { 0x04c24, 0x0c85e } }, { { 0x04d3c, 0x0c63f } },
+  { { 0x04e55, 0x0c426 } }, { { 0x04f71, 0x0c212 } }, { { 0x0508d, 0x0c005 } }, { { 0x051ac, 0x0bdfe } },
+  { { 0x052cc, 0x0bbfc } }, { { 0x053ee, 0x0b9ff } }, { { 0x05512, 0x0b808 } }, { { 0x05638, 0x0b617 } },
+  { { 0x0575f, 0x0b42a } }, { { 0x05888, 0x0b243 } }, { { 0x059b4, 0x0b061 } }, { { 0x05ae1, 0x0ae83 } },
+  { { 0x05c10, 0x0acaa } }, { { 0x05d41, 0x0aad6 } }, { { 0x05e74, 0x0a907 } }, { { 0x05fa9, 0x0a73c } },
+  { { 0x060e0, 0x0a575 } }, { { 0x06219, 0x0a3b3 } }, { { 0x06354, 0x0a1f5 } }, { { 0x06491, 0x0a03b } },
+  { { 0x065d1, 0x09e85 } }, { { 0x06712, 0x09cd4 } }, { { 0x06856, 0x09b26 } }, { { 0x0699c, 0x0997c } },
+  { { 0x06ae4, 0x097d6 } }, { { 0x06c2f, 0x09634 } }, { { 0x06d7c, 0x09495 } }, { { 0x06ecb, 0x092fa } },
+  { { 0x0701d, 0x09162 } }, { { 0x07171, 0x08fce } }, { { 0x072c7, 0x08e3e } }, { { 0x07421, 0x08cb0 } },
+  { { 0x0757c, 0x08b26 } }, { { 0x076da, 0x089a0 } }, { { 0x0783b, 0x0881c } }, { { 0x0799f, 0x0869c } },
+  { { 0x07b05, 0x0851f } }, { { 0x07c6e, 0x083a4 } }, { { 0x07dd9, 0x0822d } }, { { 0x07f48, 0x080b9 } },
+  { { 0x080b9, 0x07f48 } }, { { 0x0822d, 0x07dd9 } }, { { 0x083a4, 0x07c6e } }, { { 0x0851f, 0x07b05 } },
+  { { 0x0869c, 0x0799f } }, { { 0x0881c, 0x0783b } }, { { 0x089a0, 0x076da } }, { { 0x08b26, 0x0757c } },
+  { { 0x08cb0, 0x07421 } }, { { 0x08e3e, 0x072c7 } }, { { 0x08fce, 0x07171 } }, { { 0x09162, 0x0701d } },
+  { { 0x092fa, 0x06ecb } }, { { 0x09495, 0x06d7c } }, { { 0x09634, 0x06c2f } }, { { 0x097d6, 0x06ae4 } },
+  { { 0x0997c, 0x0699c } }, { { 0x09b26, 0x06856 } }, { { 0x09cd4, 0x06712 } }, { { 0x09e85, 0x065d1 } },
+  { { 0x0a03b, 0x06491 } }, { { 0x0a1f5, 0x06354 } }, { { 0x0a3b3, 0x06219 } }, { { 0x0a575, 0x060e0 } },
+  { { 0x0a73c, 0x05fa9 } }, { { 0x0a907, 0x05e74 } }, { { 0x0aad6, 0x05d41 } }, { { 0x0acaa, 0x05c10 } },
+  { { 0x0ae83, 0x05ae1 } }, { { 0x0b061, 0x059b4 } }, { { 0x0b243, 0x05888 } }, { { 0x0b42a, 0x0575f } },
+  { { 0x0b617, 0x05638 } }, { { 0x0b808, 0x05512 } }, { { 0x0b9ff, 0x053ee } }, { { 0x0bbfc, 0x052cc } },
+  { { 0x0bdfe, 0x051ac } }, { { 0x0c005, 0x0508d } }, { { 0x0c212, 0x04f71 } }, { { 0x0c426, 0x04e55 } },
+  { { 0x0c63f, 0x04d3c } }, { { 0x0c85e, 0x04c24 } }, { { 0x0ca84, 0x04b0e } }, { { 0x0ccb0, 0x049fa } },
+  { { 0x0cee3, 0x048e7 } }, { { 0x0d11c, 0x047d6 } }, { { 0x0d35d, 0x046c6 } }, { { 0x0d5a5, 0x045b8 } },
+  { { 0x0d7f3, 0x044ab } }, { { 0x0da4a, 0x043a0 } }, { { 0x0dca8, 0x04297 } }, { { 0x0df0e, 0x0418e } },
+  { { 0x0e17c, 0x04088 } }, { { 0x0e3f2, 0x03f83 } }, { { 0x0e671, 0x03e7f } }, { { 0x0e8f9, 0x03d7d } },
+  { { 0x0eb89, 0x03c7c } }, { { 0x0ee23, 0x03b7c } }, { { 0x0f0c7, 0x03a7e } }, { { 0x0f374, 0x03981 } },
+  { { 0x0f62b, 0x03886 } }, { { 0x0f8ed, 0x0378c } }, { { 0x0fbb9, 0x03693 } }, { { 0x0fe90, 0x0359b } },
+  { { 0x10173, 0x034a5 } }, { { 0x10461, 0x033b0 } }, { { 0x1075c, 0x032bc } }, { { 0x10a63, 0x031ca } },
+  { { 0x10d77, 0x030d9 } }, { { 0x11098, 0x02fe9 } }, { { 0x113c7, 0x02efa } }, { { 0x11704, 0x02e0c } },
+  { { 0x11a51, 0x02d20 } }, { { 0x11dac, 0x02c35 } }, { { 0x12118, 0x02b4b } }, { { 0x12494, 0x02a62 } },
+  { { 0x12821, 0x0297a } }, { { 0x12bc0, 0x02894 } }, { { 0x12f71, 0x027ae } }, { { 0x13336, 0x026ca } },
+  { { 0x1370f, 0x025e6 } }, { { 0x13afd, 0x02504 } }, { { 0x13f01, 0x02423 } }, { { 0x1431b, 0x02343 } },
+  { { 0x1474e, 0x02264 } }, { { 0x14b99, 0x02186 } }, { { 0x14fff, 0x020a9 } }, { { 0x15480, 0x01fcd } },
+  { { 0x1591e, 0x01ef3 } }, { { 0x15dda, 0x01e19 } }, { { 0x162b6, 0x01d40 } }, { { 0x167b4, 0x01c68 } },
+  { { 0x16cd5, 0x01b91 } }, { { 0x1721c, 0x01abb } }, { { 0x1778a, 0x019e6 } }, { { 0x17d23, 0x01912 } },
+  { { 0x182e8, 0x0183f } }, { { 0x188de, 0x0176d } }, { { 0x18f06, 0x0169c } }, { { 0x19564, 0x015cc } },
+  { { 0x19bfc, 0x014fc } }, { { 0x1a2d4, 0x0142e } }, { { 0x1a9ee, 0x01360 } }, { { 0x1b151, 0x01294 } },
+  { { 0x1b903, 0x011c8 } }, { { 0x1c10b, 0x010fd } }, { { 0x1c970, 0x01033 } }, { { 0x1d23c, 0x00f6a } },
+  { { 0x1db78, 0x00ea2 } }, { { 0x1e531, 0x00dda } }, { { 0x1ef74, 0x00d13 } }, { { 0x1fa51, 0x00c4e } },
+  { { 0x205dd, 0x00b89 } }, { { 0x2122e, 0x00ac4 } }, { { 0x21f60, 0x00a01 } }, { { 0x22d96, 0x0093f } },
+  { { 0x23cfc, 0x0087d } }, { { 0x24dc9, 0x007bc } }, { { 0x26044, 0x006fc } }, { { 0x274ce, 0x0063c } },
+  { { 0x28beb, 0x0057e } }, { { 0x2a658, 0x004c0 } }, { { 0x2c531, 0x00403 } }, { { 0x2ea40, 0x00346 } },
+  { { 0x318a9, 0x0028b } }, { { 0x356cb, 0x001d0 } }, { { 0x3b520, 0x00116 } }, { { 0x48000, 0x0005c } },
+};
 
-
-
+const uint16_t ProbModelTables::m_inistateToCount[128] = {
+  614,   647,   681,   718,   756,   797,   839,   884,   932,   982,   1034,  1089,  1148,  1209,  1274,  1342,
+  1414,  1490,  1569,  1653,  1742,  1835,  1933,  2037,  2146,  2261,  2382,  2509,  2643,  2785,  2934,  3091,
+  3256,  3430,  3614,  3807,  4011,  4225,  4452,  4690,  4941,  5205,  5483,  5777,  6086,  6412,  6755,  7116,
+  7497,  7898,  8320,  8766,  9235,  9729,  10249, 10798, 11375, 11984, 12625, 13300, 14012, 14762, 15551, 16384,
+  16384, 17216, 18005, 18755, 19467, 20142, 20783, 21392, 21969, 22518, 23038, 23532, 24001, 24447, 24869, 25270,
+  25651, 26012, 26355, 26681, 26990, 27284, 27562, 27826, 28077, 28315, 28542, 28756, 28960, 29153, 29337, 29511,
+  29676, 29833, 29982, 30124, 30258, 30385, 30506, 30621, 30730, 30834, 30932, 31025, 31114, 31198, 31277, 31353,
+  31425, 31493, 31558, 31619, 31678, 31733, 31785, 31835, 31883, 31928, 31970, 32011, 32049, 32086, 32120, 32153
+};
+#endif
 
 void BinProbModel_Std::init( int qp, int initId )
 {
   int slope     = ( ( initId >>  4 )  * 5 ) - 45;
   int offset    = ( ( initId  & 15 ) << 3 ) - 16;
   int inistate  = ( ( slope   * qp ) >> 4 ) + offset;
+#if JVET_M0453_CABAC_ENGINE
+  const int p1 = m_inistateToCount[inistate < 0 ? 0 : inistate > 127 ? 127 : inistate];
+  m_state[0]   = p1 & MASK_0;
+  m_state[1]   = p1 & MASK_1;
+#else
   if( inistate >= 64 )
   {
     m_State     = ( std::min( 62, inistate - 64 ) << 1 ) + 1;
@@ -204,6 +285,7 @@ void BinProbModel_Std::init( int qp, int initId )
   {
     m_State     = ( std::min( 62, 63 - inistate ) << 1 );
   }
+#endif
 }
 
 
@@ -258,97 +340,195 @@ CtxSet ContextSetCfg::addCtxSet( std::initializer_list<std::initializer_list<uin
 
 
 #define CNU 154 // dummy initialization value for unused context models 'Context model Not Used'
+#if JVET_M0453_CABAC_ENGINE
+std::vector<std::vector<uint8_t>> ContextSetCfg::sm_InitTables(NUMBER_OF_SLICE_TYPES + 1);
+#else
 std::vector<std::vector<uint8_t>> ContextSetCfg::sm_InitTables( NUMBER_OF_SLICE_TYPES );
+#endif
 
+// clang-format off
 const CtxSet ContextSetCfg::SplitFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  107, 110, 127, 106, 123, 140,},
+  {  138, 140, 142, 106, 123, 125,},
+  {  152, 126, 159, 150, 138, 126,},
+  {    8,   8,  12,  12,  12,   9,},
+#else
   { 137, 125, 127, 107, 138, 140, },
   { 138, 111, 143, 107, 138, 140, },
   { 138, 141, 158, 151, 124, 126, },
+#endif
 });
 
 const CtxSet ContextSetCfg::BTSplitFlag = ContextSetCfg::addCtxSet
 ({
   // |-------- 1st bin, 9 ctx for luma + 3 ctx for chroma------| |--2nd bin--| |3rd bin|
+#if JVET_M0453_CABAC_ENGINE
+  {  137, 125, 141, 123, 125, 141,  78, 124, 140, CNU, CNU, CNU, 169, 155, 154, 140,},
+  {  138, 140, 142, 138, 125, 141, 107, 124, 140, CNU, CNU, CNU, 169, 170, 139, 155,},
+  {  139, 141, 157, 124, 111, 142, 138, 139, 141, 153, 140, 156, 154, 169, 139, 155,},
+  {    4,   9,   9,   9,   9,   9,   8,  12,   8,   9,  13,  13,   5,   8,   8,  13,},
+#else
   { 137, 125, 141, 123, 125, 141, 78, 124, 140, CNU, CNU, CNU, 169, 155, 154, 154, },
   { 123, 140, 156, 138, 125, 141, 122, 124, 140, CNU, CNU, CNU, 169, 155, 139, 169, },
   { 139, 141, 157, 139, 155, 142, 153, 125, 141, 154, 154, 154, 154, 154, 154, 140, },
+#endif
 });
 
 const CtxSet ContextSetCfg::SkipFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  197, 214, 230,},
+  {  197, 184, 200,},
+  {  CNU, CNU, CNU,},
+  {    5,   8,   8,},
+#else
   { 183, 185, 186, },
   { 168, 199, 200, },
   { CNU, CNU, CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::MergeFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  125,},
+  {  110,},
+  {  CNU,},
+  {    5,},
+#else
   { 125, },
   { 110, },
   { CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::MergeIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  { 153, },
+  {  154,},
+  { CNU, },
+  {    8,},
+#else
   { 167, },
   { 138, },
   { CNU, },
+#endif
 });
+
 const CtxSet ContextSetCfg::MmvdFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  135,},
+  {  122,},
+  {  CNU,},
+  {    9,},
+#else
   { 136, },
   { 167, },
   { CNU, },
-  });
+#endif
+});
 
 const CtxSet ContextSetCfg::MmvdMergeIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
   { 154, },
   { 154, },
   { CNU, },
-  });
+  {   10,},
+#else
+  { 154, },
+  { 154, },
+  { CNU, },
+#endif
+});
 
 const CtxSet ContextSetCfg::MmvdStepMvpIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  { 228, },
+  {  245,},
+  { CNU, },
+  {    1,},
+#else
   { 213, },
   { 169, },
   { CNU, },
-  });
+#endif
+});
+
 const CtxSet ContextSetCfg::PartSize = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  CNU, CNU, CNU, CNU,},
+  {  CNU, CNU, CNU, CNU,},
+  {  CNU, CNU, CNU, CNU,},
+  { DWS, DWS, DWS, DWS, }
+#else
   {  154, 139, 154, 154,},
   {  154, 139, 154, 154,},
   {  184, CNU, CNU, CNU,},
+#endif
 });
 
 const CtxSet ContextSetCfg::PredMode = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  193,},
+  {  151,},
+  {  CNU,},
+  {    1,},
+#else
   { 178, },
   { 194, },
   { CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::MultiRefLineIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {   90, 212, CNU,},
+  {  118, 212, CNU,},
+  {  134, 184, CNU,},
+  {    8,   8, DWS,},
+#else
   { 151, 183, CNU, },
   { 165, 183, CNU, },
   { 122, 184, CNU, },
-  });
+#endif
+});
 
 const CtxSet ContextSetCfg::IPredMode[] =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  169,},
+    {  169,},
+    {  156,},
+    {    1,},
+#else
     { 183, },
     { 154, },
     { 156, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  CNU, 137, 139, 140, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU,},
+    {  CNU, 138, 139, 169, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU,},
+    {  CNU, 154, 139, 154, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU,},
+    {  DWS,   5,   8,   9, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS,  },
+#else
     { CNU, 152, 139, 154, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
     { CNU, 138, 139, 169, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
     { CNU, 109, 139, 154, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+#endif
   }),
 };
 
@@ -357,6 +537,9 @@ const CtxSet ContextSetCfg::PdpcFlag = ContextSetCfg::addCtxSet
   {  107,},
   {  107,},
   {  139,},
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, }
+#endif
 });
 
 const CtxSet ContextSetCfg::DeltaQP = ContextSetCfg::addCtxSet
@@ -364,56 +547,108 @@ const CtxSet ContextSetCfg::DeltaQP = ContextSetCfg::addCtxSet
   {  154, 154, 154,},
   {  154, 154, 154,},
   {  154, 154, 154,},
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, DWS, DWS, }
+#endif
 });
 
 const CtxSet ContextSetCfg::InterDir = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  126, 125, 110,  79, 208,},
+  {  126, 111, 110,  79, 224,},
+  {  CNU, CNU, CNU, CNU, CNU,},
+  {    0,   1,   4,   5,   0,},
+#else
   { 111, 110, 95, 78, 193, },
   { 126, 111, 95, 93, 194, },
   { CNU, CNU, CNU, CNU, CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::RefPic = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  110, 139,},
+  {  108, 168,},
+  {  CNU, CNU,},
+  {    4,   5,},
+#else
   { 139, 139, },
   { 138, 168, },
   { CNU, CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::AffineFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  194, 169, 156,},
+  {  180, 182, 155,},
+  {  CNU, CNU, CNU,},
+  {    8,   5,   4,},
+#else
   { 196, 184, 171, },
   { 181, 169, 185, },
   { CNU, CNU, CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::AffineType = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  { 138, },
+  { 138, },
+  { CNU, },
+  {    4,},
+#else
   { 123, },
   { 138, },
   { CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::AffMergeIdx = ContextSetCfg::addCtxSet
 ( {
+#if JVET_M0453_CABAC_ENGINE
+  {  109, 168, 168, 153, CNU,},
+  {   95, 154, 139, 153, CNU,},
+  {  CNU, CNU, CNU, CNU, CNU,},
+  {    0,   5,   9,   8, DWS,},
+#else
   { 123, 154, 154, 168, CNU, },
   { 109, 154, 139, 168, CNU, },
   { CNU, CNU, CNU, CNU, CNU, },
+#endif
 } );
 
 const CtxSet ContextSetCfg::GBiIdx = ContextSetCfg::addCtxSet
 ({
   // 4 ctx for 1st bin; 1 ctx for each of rest bins
+#if JVET_M0453_CABAC_ENGINE
+  {  228, CNU, CNU, CNU, 154, 170, 143,},
+  {  242, CNU, CNU, CNU, 154, 185, 175,},
+  {  CNU, CNU, CNU, CNU, CNU, CNU, CNU,},
+  {    4, DWS, DWS, DWS,   4,   0,   0,},
+#else
   { 199, CNU, CNU, CNU, 124, 169, 127, },
   { 154, CNU, CNU, CNU, 124, 185, 143, },
   { CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
-  });
+#endif
+});
 
 const CtxSet ContextSetCfg::Mvd = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  { 169, 183, },
+  {  155, 154,},
+  { CNU, CNU, },
+  {    9,   5,},
+#else
   { 169, 183, },
   { 155, 198, },
   { CNU, CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::TransSubdivFlag = ContextSetCfg::addCtxSet
@@ -421,34 +656,65 @@ const CtxSet ContextSetCfg::TransSubdivFlag = ContextSetCfg::addCtxSet
   {  224, 167, 122, 122, 122},
   {  124, 138,  94,  94,  94},
   {  153, 138, 138, 138, 138},
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, DWS, DWS, DWS, DWS, }
+#endif
 });
 
 const CtxSet ContextSetCfg::QtRootCbf = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {   94,},
+  {   94,},
+  {  CNU,},
+  {    4,},
+#else
   { 94, },
   { 95, },
   { CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::QtCbf[] =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  155, 127,},
+    {  141, 127,},
+    {  CNU, 126,},
+    {    4,   5,  },
+#else
     { 140, 141, },
     { 155, 127, },
     { CNU, 126, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  178, 154, CNU, CNU, CNU,},
+    {  164, 154, CNU, CNU, CNU,},
+    {  109, CNU, CNU, CNU, CNU,},
+    {    5,   4, DWS, DWS, DWS,  },
+#else
     { 149, 168, CNU, CNU, CNU, },
     { 164, 154, CNU, CNU, CNU, },
     { 109, CNU, CNU, CNU, CNU, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  162, 154,},
+    {  192, 154,},
+    {  151, 155,},
+    {    5,   4,  },
+#else
     { 192, 153, },
     { 178, 139, },
     { 122, 140, },
+#endif
   }),
 };
 
@@ -456,27 +722,47 @@ const CtxSet ContextSetCfg::SigCoeffGroup[] =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  120, 185,},
+    {  106, 171,},
+    {  107, 159,},
+    {    8,   5,  },
+#else
     { 106, 170, },
     { 121, 141, },
     { 107, 158, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {   91, 141,},
+    {   90, 156,},
+    {   76, 127,},
+    {    8,   8,  },
+#else
     { 91, 140, },
     { 105, 155, },
     { 105, 126, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
     {  122, 143,  },
     {   78, 111,  },
     {  135, 155,  },
+#if JVET_M0453_CABAC_ENGINE
+    { DWS, DWS, }
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
     {   91, 141,  },
     {   60, 140,  },
     {  104, 139,  },
+#if JVET_M0453_CABAC_ENGINE
+    { DWS, DWS, }
+#endif
   }),
 };
 
@@ -484,39 +770,81 @@ const CtxSet ContextSetCfg::SigFlag[] =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  104, 137, 152, 182, 168, 169, 161, 167, 182, 168, 183, 170, 208, 213, 183, 183, 169, 185,},
+    {  133, 152, 167, 168, 183, 140, 163, 182, 168, 183, 169, 170, 166, 213, 183, 169, 184, 156,},
+    {  104, 138, 153, 139, 125, 111, 134, 139, 139, 140, 155, 127, 137, 185, 169, 185, 156, 143,},
+    {   12,   9,   9,   9,   9,  10,   9,   9,   9,   9,   9,   9,   8,   8,   8,   8,   8,   9,  },
+#else
     { 105, 152, 167, 153, 168, 169, 104, 167, 182, 183, 183, 170, 209, 213, 183, 183, 169, 185, },
     { 119, 152, 167, 168, 183, 140, 134, 182, 168, 183, 169, 185, 166, 228, 183, 198, 184, 156, },
     { 105, 138, 153, 154, 125, 111, 105, 139, 154, 155, 155, 127, 137, 185, 169, 185, 171, 159, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  133, 167, 153, 168, 154, 155, 151, 199, 183, 199, 199, 157,},
+    {  104, 138, 153, 139, 154, 155, 181, 229, 169, 229, 170, 157,},
+    {   74, 153, 168, 169, 140, 141, 152, 215, 155, 172, 171, 143,},
+    {    9,   9,  12,   9,   9,  13,   8,   5,   8,   8,   8,   9,  },
+#else
     { 148, 167, 153, 168, 154, 140, 166, 199, 183, 199, 199, 172, },
     { 134, 168, 168, 169, 169, 170, 196, 244, 184, 244, 200, 172, },
     { 104, 168, 168, 169, 140, 141, 167, 215, 155, 172, 171, 158, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  152, 127, 187, 201, 172, 173, 197, 248, 188, 232, 188, 205, 182, 223, 223, 223, 223, 223,},
+    {  123, 142, 172, 172, 172, 218, 138, 248, 248, 248, 248, 223, 139, 223, 223, 223, 223, 223,},
+    {   93, 157, 143, 158, 203, 190, 123, 223, 175, 253, 253, 223, 124, 223, 223, 223, 223, 223,},
+    {    9,  12,   8,   8,   8,   8,   8,   8,   8,   8,   8,   8,   8,   0,   0,   0,   0,   0,  },
+#else
     { 152, 127, 173, 201, 187, 173, 197, 203, 188, 217, 188, 189, 182, 223, 223, 223, 223, 223, },
     { 123, 142, 202, 172, 172, 203, 138, 188, 233, 203, 203, 191, 139, 223, 223, 223, 223, 223, },
     { 108, 157, 158, 158, 218, 189, 123, 191, 159, 190, 205, 236, 79, 223, 253, 223, 223, 253, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  182, 171, 143, 158, 172, 189, 183, 223, 223, 223, 223, 223,},
+    {  168, 156, 173, 201, 172, 204, 169, 223, 223, 223, 223, 223,},
+    {  152, 173, 157, 187, 189, 252, 170, 223, 223, 223, 223, 223,},
+    {    8,   9,  12,   8,   8,   8,   4,   0,   0,   0,   0,   0,  },
+#else
     { 182, 171, 143, 158, 172, 202, 168, 223, 223, 223, 223, 223, },
     { 168, 156, 173, 201, 157, 203, 198, 223, 223, 223, 223, 223, },
     { 152, 173, 157, 187, 189, 251, 170, 223, 223, 253, 223, 223, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  123, 158, 223, 175, 217, 205, 212, 223, 223, 220, 205, 223, 208, 223, 223, 223, 223, 223,},
+    {  123, 174, 223, 189, 203, 221, 138, 223, 223, 223, 190, 223, 196, 223, 223, 223, 223, 223,},
+    {  107, 159, 223, 191, 205, 253,  63, 223, 223, 223, 223, 223,  14, 223, 223, 223, 223, 223,},
+    {    8,   8,   4,   8,   8,   8,   8,   0,   0,   4,   8,   8,   4,   0,   0,   0,   0,   0,  },
+#else
     { 137, 142, 190, 188, 202, 189, 241, 191, 191, 189, 189, 190, 195, 223, 223, 223, 223, 223, },
     { 123, 187, 191, 173, 173, 248, 138, 191, 191, 191, 203, 191, 196, 223, 223, 223, 223, 223, },
     { 107, 143, 205, 188, 233, 205, 63, 251, 191, 253, 206, 252, 62, 223, 223, 223, 223, 223, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  167, 201, 223, 233, 189, 223, 181, 223, 223, 223, 223, 223,},
+    {  167, 171, 223, 174, 233, 223, 152, 223, 223, 223, 223, 223,},
+    {  166, 219, 223, 235, 233, 252, 123, 223, 223, 223, 223, 223,},
+    {    8,   8,   8,   8,   8,   8,   8,   0,   0,   0,   0,   0,  },
+#else
     { 167, 200, 175, 188, 174, 175, 196, 223, 223, 223, 223, 223, },
     { 167, 156, 237, 158, 188, 205, 182, 223, 223, 223, 223, 223, },
     { 166, 174, 159, 247, 188, 189, 168, 223, 223, 223, 238, 223, },
+#endif
   }),
 };
 
@@ -525,15 +853,29 @@ const CtxSet ContextSetCfg::ParFlag[] =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  121, 119, 121, 137, 138, 153,  90, 122, 167, 153, 168, 121, 152, 153, 168, 139, 151, 153, 139, 168, 154,},
+    {  121, 119, 136, 152, 138, 153, 119, 122, 138, 153, 139, 121, 138, 153, 168, 139, 137, 153, 168, 139, 139,},
+    {  121, 135, 137, 152, 138, 153,  91, 137, 138, 153, 139, 151, 138, 153, 139, 139, 138, 168, 139, 154, 139,},
+    {    8,   9,  12,  13,  13,  13,  10,  13,  13,  13,  13,  10,  13,  13,  13,  13,  10,  10,  13,  13,  13,  },
+#else
     { 91, 104, 136, 152, 153, 153, 105, 137, 167, 153, 168, 121, 167, 153, 168, 139, 151, 153, 139, 168, 154, },
     { 106, 134, 151, 152, 138, 168, 120, 137, 138, 153, 139, 136, 138, 153, 168, 139, 137, 153, 168, 139, 139, },
     { 121, 135, 137, 138, 153, 153, 136, 123, 138, 153, 139, 152, 153, 153, 139, 139, 138, 168, 139, 154, 139, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  136, 120, 152, 138, 138, 153, 136, 168, 154, 168, 139,},
+    {  135, 120, 137, 138, 138, 153, 136, 153, 168, 139, 154,},
+    {  136, 135, 152, 153, 138, 153, 136, 168, 154, 139, 154,},
+    {    8,  10,  12,  12,  13,  13,  10,  10,  10,  12,  13,  },
+#else
     { 135, 135, 152, 138, 153, 124, 151, 168, 169, 153, 139, },
     { 120, 150, 152, 153, 153, 153, 166, 168, 168, 139, 154, },
     { 136, 121, 167, 168, 138, 153, 137, 139, 154, 139, 154, },
+#endif
   }),
 };
 
@@ -541,27 +883,55 @@ const CtxSet ContextSetCfg::GtxFlag[] =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {   60,   0, 102, 119, 150, 137,  42,  44, 120, 136, 123,  86, 119, 151, 152, 153, 104, 136, 138, 153, 125,},
+    {   44,   0,  41, 119, 135, 137,   0,  88, 135, 151, 138, 116, 105, 122, 167, 153, 119, 107, 123, 153, 154,},
+    {   75,  86, 148, 150, 151, 138,  43,  75,  77, 137, 109,  58, 106, 108, 109, 124, 121, 138, 139, 154, 140,},
+    {    4,   5,   9,   9,   9,   6,   5,   9,   8,   9,   9,   9,   9,   8,   8,   8,   9,   8,   8,   8,   8,  },
+#else
     { 30, 0, 102, 104, 106, 152, 57, 44, 120, 136, 123, 87, 134, 151, 152, 153, 89, 121, 152, 153, 125, },
     { 88, 0, 102, 149, 150, 152, 101, 103, 150, 151, 138, 102, 105, 122, 167, 153, 90, 107, 123, 153, 154, },
     { 90, 41, 149, 121, 122, 123, 58, 105, 92, 108, 109, 104, 92, 123, 109, 124, 151, 138, 139, 154, 140, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  119,  11, 105, 107, 107, 108, 104, 122, 124, 140, 140,},
+    {  117, 101,  90, 106,  92,  78,  88, 136, 138, 154, 125,},
+    {  194,  56, 105, 122, 122, 123, 118, 106, 153, 154, 140,},
+    {    2,   5,   8,   8,   8,   8,   6,   9,   8,   8,   9,  },
+#else
     { 102, 101, 90, 107, 122, 93, 118, 121, 153, 125, 140, },
     { 0, 0, 105, 151, 107, 93, 103, 136, 138, 154, 125, },
     { 165, 11, 120, 122, 137, 138, 75, 106, 138, 154, 155, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {   88, 147, 151, 138, 139, 140, 133, 167, 124, 154, 155, 164, 153, 154, 169, 155, 166, 183, 169, 185, 186,},
+    {  101, 133, 137, 153, 139, 140, 134, 138, 139, 169, 155, 121, 153, 154, 140, 170, 152, 154, 155, 170, 186,},
+    {  119, 120, 123, 153, 139, 140, 121, 153, 139, 125, 126, 152, 154, 140, 155, 141, 139, 140, 185, 171, 157,},
+    {    8,   5,  10,  12,  13,  10,   9,   9,  10,  12,  10,   9,   9,   9,   9,   9,   8,   8,   8,   8,   9,  },
+#else
     { 89, 132, 151, 138, 124, 125, 119, 152, 153, 154, 140, 135, 153, 139, 169, 155, 151, 168, 169, 170, 171, },
     { 118, 101, 137, 138, 139, 140, 149, 138, 139, 154, 155, 136, 153, 154, 140, 170, 152, 139, 140, 155, 186, },
     { 135, 120, 108, 153, 139, 140, 151, 153, 139, 125, 140, 123, 154, 140, 155, 126, 139, 140, 170, 156, 142, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  116, 164, 153, 154, 140, 140, 196, 170, 171, 157, 158,},
+    {  117, 150, 153, 139, 125, 140, 167, 155, 156, 142, 173,},
+    {  134, 136, 153, 154, 125, 111, 168, 170, 201, 172, 173,},
+    {    6,   9,  10,  12,  12,   9,   8,   9,   8,   8,   9,  },
+#else
     { 102, 164, 138, 139, 154, 140, 181, 155, 171, 157, 143, },
     { 132, 136, 153, 154, 140, 155, 167, 155, 156, 142, 173, },
     { 165, 151, 153, 154, 125, 126, 168, 155, 186, 172, 143, },
+#endif
   }),
 };
 
@@ -569,15 +939,29 @@ const CtxSet ContextSetCfg::LastX[] =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  111, 111, 110, 111, 111, 124, 111, 111, 111,  95, 126, 126, 111, 111, 169, 154, 111, 110, 110, 123, CNU, CNU, CNU, CNU, CNU,},
+    {  125, 110, 109, 111, 125, 123, 111, 111,  95, 108, 126, 126, 110,  95, 183, 154, 140, 110, 124, 137, CNU, CNU, CNU, CNU, CNU,},
+    {  140, 140, 124, 111, 126, 109, 111, 126, 125, 123, 126, 127, 111, 110,  93, 141, 157, 126, 125, 182, CNU, CNU, CNU, CNU, CNU,},
+    {    8,   8,   5,   5,   4,   4,   5,   4,   4,   0,   5,   4,   0,   0,   0,   1,   1,   1,   0,   8, DWS, DWS, DWS, DWS, DWS,  },
+#else
     { 111, 125, 124, 111, 111, 109, 111, 111, 125, 109, 140, 126, 111, 111, 139, 140, 111, 125, 95, 138, CNU, CNU, CNU, CNU, CNU, },
     { 125, 110, 109, 111, 125, 123, 111, 111, 95, 123, 140, 126, 125, 95, 169, 125, 140, 110, 124, 152, CNU, CNU, CNU, CNU, CNU, },
     { 140, 140, 124, 140, 126, 109, 140, 141, 125, 94, 111, 127, 111, 140, 93, 141, 186, 141, 125, 197, CNU, CNU, CNU, CNU, CNU, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  137, 109,  62, CNU,},
+    {  138, 123,  92, CNU,},
+    {  138, 108,  61, CNU,},
+    {    2,   4,   4, DWS,  },
+#else
     { 123, 109, 63, CNU, },
     { 138, 123, 92, CNU, },
     { 123, 108, 62, CNU, },
+#endif
   }),
 };
 
@@ -585,45 +969,87 @@ const CtxSet ContextSetCfg::LastY[] =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  125, 125, 139, 111, 111, 124, 111, 111, 110, 110, 140, 126, 110,  95, 155, 154, 111, 110, 124, 180, CNU, CNU, CNU, CNU, CNU,},
+    {  110,  95, 109, 125, 110,  93, 125, 111, 124, 108, 140, 111,  95, 109, 153, 125, 126, 110, 109, 181, CNU, CNU, CNU, CNU, CNU,},
+    {  110, 110, 109, 125, 111, 108, 111, 126,  95,  93, 111, 127, 111,  95,  47, 155, 158, 156, 140, 137, CNU, CNU, CNU, CNU, CNU,},
+    {    8,   5,   8,   5,   5,   4,   5,   5,   4,   0,   5,   5,   1,   0,   0,   1,   4,   1,   0,   8, DWS, DWS, DWS, DWS, DWS,  },
+#else
     { 125, 110, 139, 125, 125, 109, 111, 111, 110, 109, 140, 126, 110, 110, 154, 140, 111, 125, 109, 181, CNU, CNU, CNU, CNU, CNU, },
     { 110, 95, 94, 125, 110, 123, 140, 111, 95, 123, 125, 111, 110, 95, 154, 125, 111, 95, 94, 137, CNU, CNU, CNU, CNU, CNU, },
     { 110, 110, 109, 125, 111, 123, 111, 141, 95, 108, 111, 142, 111, 95, 63, 140, 157, 141, 110, 152, CNU, CNU, CNU, CNU, CNU, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_M0453_CABAC_ENGINE
+    {  137, 109, 122, CNU,},
+    {  108, 108, 136, CNU,},
+    {  123, 123,  91, CNU,},
+    {    2,   5,   5, DWS,  },
+#else
     { 108, 94, 122, CNU, },
     { 108, 93, 92, CNU, },
     { 108, 123, 77, CNU, },
+#endif
   }),
 };
 
 
 const CtxSet ContextSetCfg::MVPIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  153,},
+  { 168, },
+  { CNU, },
+  {   10,},
+#else
   { 168, },
   { 168, },
   { CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::SaoMergeFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {   63,},
+  {  244,},
+  {  199,},
+  {    0,},
+#else
   { 92, },
   { 214, },
   { 184, },
+#endif
 });
 
 const CtxSet ContextSetCfg::SaoTypeIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {   63,},
+  {   95,},
+  {  110,},
+  {    0,},
+#else
   { 77, },
   { 111, },
   { 110, },
+#endif
 });
 
 const CtxSet ContextSetCfg::TransformSkipFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  154,  13,},
+  {  152,  57,},
+  {  139,   0,},
+  {    4,   1,},
+#else
   { 124, 61, },
   { 138, 46, },
   { 109, 42, },
+#endif
 });
 
 const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
@@ -631,6 +1057,9 @@ const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
   {  154,},
   {  154,},
   {  154,},
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, }
+#endif
 });
 
 const CtxSet ContextSetCfg::RdpcmFlag = ContextSetCfg::addCtxSet
@@ -638,6 +1067,9 @@ const CtxSet ContextSetCfg::RdpcmFlag = ContextSetCfg::addCtxSet
   {  139, 139,},
   {  139, 139,},
   {  CNU, CNU,},
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, DWS, }
+#endif
 });
 
 const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
@@ -645,20 +1077,37 @@ const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
   {  139, 139,},
   {  139, 139,},
   {  CNU, CNU,},
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, DWS, }
+#endif
 });
 
 const CtxSet ContextSetCfg::EMTTuIndex = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  122, 136, CNU, CNU,},
+  {  151, 150, CNU, CNU,},
+  {  121, 136, CNU, CNU,},
+  {    9,   9, DWS, DWS,},
+#else
   { 153, 138, CNU, CNU, },
   { 138, 167, CNU, CNU, },
   { 167, 123, CNU, CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::EMTCuFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  216, 158, 172, 201, 200, CNU,},
+  {  202, 158, 158, 158, 187, CNU,},
+  {  CNU, CNU, 141, 171, 171, CNU,},
+  {    9,   8,   9,   8,   8, DWS,},
+#else
   { 155, 141, 155, 155, 140, CNU, },
   { 141, 141, 141, 126, 155, CNU, },
   { CNU, CNU, 140, 155, 155, CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::CrossCompPred = ContextSetCfg::addCtxSet
@@ -666,6 +1115,9 @@ const CtxSet ContextSetCfg::CrossCompPred = ContextSetCfg::addCtxSet
   {  154, 154, 154, 154, 154, 154, 154, 154, 154, 154,},
   {  154, 154, 154, 154, 154, 154, 154, 154, 154, 154,},
   {  154, 154, 154, 154, 154, 154, 154, 154, 154, 154,},
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, }
+#endif
 });
 
 const CtxSet ContextSetCfg::ChromaQpAdjFlag = ContextSetCfg::addCtxSet
@@ -673,6 +1125,9 @@ const CtxSet ContextSetCfg::ChromaQpAdjFlag = ContextSetCfg::addCtxSet
   {  154,},
   {  154,},
   {  154,},
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, }
+#endif
 });
 
 const CtxSet ContextSetCfg::ChromaQpAdjIdc = ContextSetCfg::addCtxSet
@@ -680,52 +1135,98 @@ const CtxSet ContextSetCfg::ChromaQpAdjIdc = ContextSetCfg::addCtxSet
   {  154,},
   {  154,},
   {  154,},
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, }
+#endif
 });
 
 const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  227, 214, 230, 195,},
+  {  213, 229, 230, 166,},
+  {  CNU, CNU, CNU, CNU,},
+  {    1,   4,   4,   5,},
+#else
   { 212, 214, 230, 182, },
   { 212, 214, 230, 182, },
   { CNU, CNU, CNU, CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::ctbAlfFlag =
 {
   ContextSetCfg::addCtxSet
   ( {
+#if JVET_M0453_CABAC_ENGINE
+    {  154, 201, 203, 168, 247, 249, 168, 248, 235,},
+    {  139, 186, 203, 168, 247, 249, 168, 247, 234,},
+    {  219, 237, 253, 187, 234, 235, 216, 219, 250,},
+    {    0,   0,   4,   0,   0,   0,   0,   0,   0,  },
+#else
     { 138, 141, 173, 122, 170, 203, 151, 170, 203, },
     { 153, 156, 188, 137, 185, 218, 152, 185, 218, },
     { 155, 205, 253, 168, 187, 234, 168, 187, 220, },
-    } )
+#endif
+  } )
 };
 
 const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  240,},
+  {  197,},
+  {  CNU,},
+  {    1,},
+#else
   { 226, },
   { 227, },
   { CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::MHIntraPredMode = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  156, CNU, CNU, CNU,},
+  {  156, CNU, CNU, CNU,},
+  {  CNU, CNU, CNU, CNU,},
+  {    9, DWS, DWS, DWS,},
+#else
   { 155, CNU, CNU, CNU, },
   { 141, CNU, CNU, CNU, },
   { CNU, CNU, CNU, CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::TriangleFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  149, 137, 137,},
+  {  165, 151, 137,},
+  {  CNU, CNU, CNU,},
+  {    9,  13,  10,},
+#else
   { 165, 137, 153, },
   { 106, 122, 138, },
   { CNU, CNU, CNU, },
+#endif
 });
 
 const CtxSet ContextSetCfg::TriangleIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0453_CABAC_ENGINE
+  {  141,},
+  {  141,},
+  {  CNU,},
+  {    8,},
+#else
   { 155, },
   { 126, },
   { CNU, },
+#endif
 });
+// clang-format on
 
 const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_InitTables[0].size();
 
@@ -759,10 +1260,19 @@ void CtxStore<BinProbModel>::init( int qp, int initId )
   const std::vector<uint8_t>& initTable = ContextSetCfg::getInitTable( initId );
   CHECK( m_CtxBuffer.size() != initTable.size(),
         "Size of init table (" << initTable.size() << ") does not match size of context buffer (" << m_CtxBuffer.size() << ")." );
+#if JVET_M0453_CABAC_ENGINE
+  const std::vector<uint8_t> &rateInitTable = ContextSetCfg::getInitTable(NUMBER_OF_SLICE_TYPES);
+  CHECK(m_CtxBuffer.size() != rateInitTable.size(),
+        "Size of rate init table (" << rateInitTable.size() << ") does not match size of context buffer ("
+                                    << m_CtxBuffer.size() << ").");
+#endif
   int clippedQP = Clip3( 0, MAX_QP, qp );
   for( std::size_t k = 0; k < m_CtxBuffer.size(); k++ )
   {
     m_CtxBuffer[k].init( clippedQP, initTable[k] );
+#if JVET_M0453_CABAC_ENGINE
+    m_CtxBuffer[k].setLog2WindowSize(rateInitTable[k]);
+#endif
   }
 }
 

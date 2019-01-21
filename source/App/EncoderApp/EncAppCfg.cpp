@@ -943,8 +943,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
   ("CbQpOffset,-cbqpofs",                             m_cbQpOffset,                                         0, "Chroma Cb QP Offset")
   ("CrQpOffset,-crqpofs",                             m_crQpOffset,                                         0, "Chroma Cr QP Offset")
-  ("CbQpOffsetDualTree",                              m_cbQpOffsetDualTree,                                 1, "Chroma Cb QP Offset for dual tree")
-  ("CrQpOffsetDualTree",                              m_crQpOffsetDualTree,                                 1, "Chroma Cr QP Offset for dual tree")
+  ("CbQpOffsetDualTree",                              m_cbQpOffsetDualTree,                                 0, "Chroma Cb QP Offset for dual tree")
+  ("CrQpOffsetDualTree",                              m_crQpOffsetDualTree,                                 0, "Chroma Cr QP Offset for dual tree")
 #if ER_CHROMA_QP_WCG_PPS
   ("WCGPPSEnable",                                    m_wcgChromaQpControl.enabled,                     false, "1: Enable the WCG PPS chroma modulation scheme. 0 (default) disabled")
   ("WCGPPSCbQpScale",                                 m_wcgChromaQpControl.chromaCbQpScale,               1.0, "WCG PPS Chroma Cb QP Scale")

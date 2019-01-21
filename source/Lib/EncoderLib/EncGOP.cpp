@@ -2638,10 +2638,6 @@ void EncGOP::xGetBuffer( PicList&                  rcListPic,
 #ifndef BETA
   #define BETA 0.5 // value between 0.0 and 1; use 0.0 to obtain traditional PSNR
 #endif
-#define GLOBAL_AVERAGING 1 // "global" averaging of a_k across a set instead of one picture
-#if FRAME_WEIGHTING
-static const uint32_t DQP[16] = { 4, 12, 11, 12,  9, 12, 11, 12,  6, 12, 11, 12,  9, 12, 11, 12 };
-#endif
 
 static inline double calcWeightedSquaredError(const CPelBuf& org,        const CPelBuf& rec,
                                               double &sumAct,            const uint32_t bitDepth,
@@ -2745,9 +2741,7 @@ uint64_t EncGOP::xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, 
       }
 
       double wmse = 0.0, sumAct = 0.0; // compute activity normalized SNR value
-#if !GLOBAL_AVERAGING
-      double numAct = 0.0;
-#endif
+
       for (y = 0; y < H; y += B)
       {
         for (x = 0; x < W; x += B)
@@ -2757,29 +2751,13 @@ uint64_t EncGOP::xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, 
                                            W,      H,
                                            x,      y,
                                            B,      B);
-#if !GLOBAL_AVERAGING
-          numAct += 1.0;
-#endif
         }
       }
 
       // integer weighted distortion
-#if GLOBAL_AVERAGING
-      sumAct = 32.0 * double(1 << BD);
-
-      if ((W << chromaShift) > 2048 && (H << chromaShift) > 1280) // for UHD/4K
-      {
-        sumAct *= 0.5;
-      }
-      else if ((W << chromaShift) <= 1024 || (H << chromaShift) <= 640) // 480p
-      {
-        sumAct *= 2.0;
-      }
+      sumAct = 16.0 * sqrt ((3840.0 * 2160.0) / double((W << chromaShift) * (H << chromaShift))) * double(1 << BD);
 
       return (wmse <= 0.0) ? 0 : uint64_t(wmse * pow(sumAct, BETA) + 0.5);
-#else
-      return (wmse <= 0.0 || numAct <= 0.0) ? 0 : uint64_t(wmse * pow(sumAct / numAct, BETA) + 0.5);
-#endif
     }
 #endif // ENABLE_QPA
     uiTotalDiff = 0;
@@ -2984,12 +2962,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   const bool bPicIsField     = pcPic->fieldPic;
   const Slice*  pcSlice      = pcPic->slices[0];
-#if ENABLE_QPA && FRAME_WEIGHTING
-  const uint32_t    currDQP      = (pcSlice->getPOC() % m_pcEncLib->getIntraPeriod()) == 0 ? 0 : DQP[pcSlice->getPOC() % m_pcEncLib->getGOPSize()];
-  const double  frameWeight  = pow(2.0, (double)currDQP / -3.0);
 
-  if (useWPSNR) m_gcAnalyzeAll.addWeight(frameWeight);
-#endif
   for (int comp = 0; comp < ::getNumberValidComponents(formatD); comp++)
   {
     const ComponentID compID = ComponentID(comp);
@@ -3008,11 +2981,10 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     const uint32_t    bitDepth = sps.getBitDepth(toChannelType(compID));
 #if ENABLE_QPA
     const uint64_t uiSSDtemp = xFindDistortionPlane(recPB, orgPB, useWPSNR ? bitDepth : 0, ::getComponentScaleX(compID, format));
-    const uint32_t maxval = /*useWPSNR ? (1 << bitDepth) - 1 :*/ 255 << (bitDepth - 8); // fix with WPSNR: 1023 (4095) instead of 1020 (4080) for bit-depth 10 (12)
 #else
     const uint64_t uiSSDtemp = xFindDistortionPlane(recPB, orgPB, 0);
-    const uint32_t maxval = 255 << (bitDepth - 8);
 #endif
+    const uint32_t maxval = 255 << (bitDepth - 8);
     const uint32_t size   = width * height;
     const double fRefValue = (double)maxval * maxval * size;
     dPSNR[comp]       = uiSSDtemp ? 10.0 * log10(fRefValue / (double)uiSSDtemp) : 999.99;
@@ -3024,10 +2996,6 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       dPSNRWeighted[comp] = uiSSDtempWeighted ? 10.0 * log10(fRefValue / (double)uiSSDtempWeighted) : 999.99;
       MSEyuvframeWeighted[comp] = (double)uiSSDtempWeighted / size;
     }
-#endif
-
-#if ENABLE_QPA && FRAME_WEIGHTING
-    if (useWPSNR) m_gcAnalyzeAll.addWeightedSSD(frameWeight * (double)uiSSDtemp / fRefValue, compID);
 #endif
   }
 
@@ -3216,13 +3184,7 @@ void EncGOP::xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* 
 
   CHECK(!(acPicRecFields[0].chromaFormat==acPicRecFields[1].chromaFormat), "Unspecified error");
   const uint32_t numValidComponents = ::getNumberValidComponents( acPicRecFields[0].chromaFormat );
-#if ENABLE_QPA && FRAME_WEIGHTING
-  const Slice*  pcSlice      = pcPicOrgFirstField->slices[0];
-  const uint32_t    currDQP      = (pcSlice->getPOC() % m_pcEncLib->getIntraPeriod()) == 0 ? 0 : DQP[pcSlice->getPOC() % m_pcEncLib->getGOPSize()];
-  const double  frameWeight  = pow(2.0, (double)currDQP / -3.0);
 
-  if (useWPSNR) m_gcAnalyzeAll_in.addWeight(frameWeight);
-#endif
   for (int chan = 0; chan < numValidComponents; chan++)
   {
     const ComponentID ch=ComponentID(chan);
@@ -3243,18 +3205,11 @@ void EncGOP::xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* 
       uiSSDtemp += xFindDistortionPlane( acPicRecFields[fieldNum].get(ch), apcPicOrgFields[fieldNum]->getOrigBuf().get(ch), 0 );
 #endif
     }
-#if ENABLE_QPA
-    const uint32_t maxval = /*useWPSNR ? (1 << bitDepth) - 1 :*/ 255 << (bitDepth - 8); // fix with WPSNR: 1023 (4095) instead of 1020 (4080) for bit-depth 10 (12)
-#else
     const uint32_t maxval = 255 << (bitDepth - 8);
-#endif
     const uint32_t size   = width * height * 2;
     const double fRefValue = (double)maxval * maxval * size;
     dPSNR[ch]         = uiSSDtemp ? 10.0 * log10(fRefValue / (double)uiSSDtemp) : 999.99;
     MSEyuvframe[ch]   = (double)uiSSDtemp / size;
-#if ENABLE_QPA && FRAME_WEIGHTING
-    if (useWPSNR) m_gcAnalyzeAll_in.addWeightedSSD(frameWeight * (double)uiSSDtemp / fRefValue, ch);
-#endif
   }
 
   uint32_t uibits = 0; // the number of bits for the pair is not calculated here - instead the overall total is used elsewhere.

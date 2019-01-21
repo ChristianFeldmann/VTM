@@ -60,10 +60,6 @@
 // Class definition
 // ====================================================================================================================
 
-#if ENABLE_QPA
- #define FRAME_WEIGHTING 0 // WPSNR temporal weighting according to hierarchical coding structure; only for GOP size 16
-#endif
-
 /// encoder analyzer class
 class Analyze
 {
@@ -73,10 +69,6 @@ private:
   uint32_t      m_uiNumPic;
   double    m_dFrmRate; //--CFG_KDY
   double    m_MSEyuvframe[MAX_NUM_COMPONENT]; // sum of MSEs
-#if ENABLE_QPA && FRAME_WEIGHTING
-  double    m_sumWSSD[MAX_NUM_COMPONENT];   // weighted SSDs
-  double    m_sumW;
-#endif
 #if EXTENSION_360_VIDEO
   TExt360EncAnalyze m_ext360;
 #endif
@@ -101,13 +93,7 @@ public:
     m_uiNumPic++;
   }
 #if ENABLE_QPA
- #if FRAME_WEIGHTING
-  void    addWeightedSSD(const double dWeightedSSD, const ComponentID compID) { m_sumWSSD[compID] += dWeightedSSD; }
-  void    addWeight     (const double dWeight) { m_sumW += dWeight; }
-  double  getWPSNR      (const ComponentID compID) const { return (m_sumWSSD[compID] > 0.0 ? 10.0 * log10(m_sumW / m_sumWSSD[compID]) : 999.99); }
- #else
   double  getWPSNR      (const ComponentID compID) const { return m_dPSNRSum[compID] / (double)m_uiNumPic; }
- #endif
 #endif
   double  getPsnr(ComponentID compID) const { return  m_dPSNRSum[compID];  }
   double  getBits()                   const { return  m_dAddBits;   }
@@ -125,13 +111,7 @@ public:
     {
       m_dPSNRSum[i] = 0;
       m_MSEyuvframe[i] = 0;
-#if ENABLE_QPA && FRAME_WEIGHTING
-      m_sumWSSD[i] = 0;
-#endif
     }
-#if ENABLE_QPA && FRAME_WEIGHTING
-    m_sumW = 0;
-#endif
     m_uiNumPic = 0;
 #if EXTENSION_360_VIDEO
     m_ext360.clear();

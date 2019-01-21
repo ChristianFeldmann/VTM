@@ -188,18 +188,9 @@ static void filterAndCalculateAverageEnergies (const Pel* pSrc, const int  iSrcS
 #if GLOBAL_AVERAGING
 static double getAveragePictureEnergy (const CPelBuf picOrig, const uint32_t uBitDepth)
 {
-  double hpEnerPic = 5.65625 * double(1 << (uBitDepth >> 1));   // square-root of a_pic value
+  const double hpEnerPic = 16.0 * sqrt ((3840.0 * 2160.0) / double(picOrig.width * picOrig.height)) * double(1 << uBitDepth);
 
-  if (picOrig.width > 2048 && picOrig.height > 1280) // for UHD/4K
-  {
-    hpEnerPic *= (4.0 / 5.65625);
-  }
-  else if (picOrig.width <= 1024 || picOrig.height <= 640) // 480p
-  {
-    hpEnerPic *= (8.0 / 5.65625);
-  }
-
-  return hpEnerPic;
+  return sqrt (hpEnerPic); // square-root of a_pic value
 }
 #endif
 
@@ -884,11 +875,7 @@ static bool applyQPAdaptation (Picture* const pcPic,     Slice* const pcSlice,  
 
       int iQPAdapt = Clip3 (0, MAX_QP, iQPIndex + apprI3Log2 (pcPic->m_uEnerHpCtu[ctuRsAddr] * hpEnerPic));
 
-#if SHARP_LUMA_DELTA_QP
       if (pcv.widthInCtus > 1) // try to enforce CTU SNR greater than zero dB
-#else
-      if (!pcSlice->isIntra()) // try to enforce CTU SNR greater than zero dB
-#endif
       {
         const Pel      dcOffset   = pcPic->m_iOffsetCtu[ctuRsAddr];
 #if SHARP_LUMA_DELTA_QP
@@ -1263,7 +1250,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   CodingStructure&  cs          = *pcPic->cs;
 #if ENABLE_QPA || ENABLE_WPP_PARALLELISM
   const PreCalcValues& pcv      = *cs.pcv;
-  const uint32_t        widthInCtus = pcv.widthInCtus;
+  const uint32_t    widthInCtus = pcv.widthInCtus;
 #endif
 
   cs.slice = pcSlice;
@@ -1278,7 +1265,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   double hpEnerPic     = 0.0;
   int    iSrcOffset;
 
-  if (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl())
+  if (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && (boundingCtuTsAddr > startCtuTsAddr))
   {
     for (uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++)
     {
@@ -1325,10 +1312,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
       pcPic->m_iOffsetCtu[ctuRsAddr] = (Pel)iSrcOffset;
     } // end iteration over all CTUs in current slice
 
-  }
-
-  if (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && (boundingCtuTsAddr > startCtuTsAddr))
-  {
     const double hpEnerAvg = hpEnerPic / double(boundingCtuTsAddr - startCtuTsAddr);
 
     if (applyQPAdaptation (pcPic, pcSlice, pcv, startCtuTsAddr, boundingCtuTsAddr, m_pcCfg->getLumaLevelToDeltaQPMapping().mode == LUMALVL_TO_DQP_NUM_MODES,
@@ -1420,7 +1403,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #endif
 #if ENABLE_QPA
   const int iQPIndex              = pcSlice->getSliceQpBase();
-  int iSrcOffset                  = 0;
 #endif
 
 #if ENABLE_WPP_PARALLELISM
@@ -1561,8 +1543,8 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if ENABLE_QPA
     else if (pCfg->getUsePerceptQPA() && pcSlice->getPPS()->getUseDQP())
     {
-      iSrcOffset = pcPic->m_iOffsetCtu[ctuRsAddr];
-      const double newLambda = oldLambda * pow (2.0, double(iSrcOffset - iQPIndex) / 3.0);
+      const int adaptedQP    = pcPic->m_iOffsetCtu[ctuRsAddr];
+      const double newLambda = oldLambda * pow (2.0, double (adaptedQP - iQPIndex) / 3.0);
       pcPic->m_uEnerHpCtu[ctuRsAddr] = newLambda;
 #if RDOQ_CHROMA_LAMBDA
       pTrQuant->getLambdas (oldLambdaArray); // save the old lambdas
@@ -1573,7 +1555,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       pTrQuant->setLambda (newLambda);
 #endif
       pRdCost->setLambda (newLambda, pcSlice->getSPS()->getBitDepths());
-      currQP[0] = currQP[1] = iSrcOffset;
+      currQP[0] = currQP[1] = adaptedQP;
     }
 #endif
 

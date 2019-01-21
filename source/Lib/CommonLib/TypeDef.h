@@ -50,8 +50,12 @@
 #include <assert.h>
 #include <cassert>
 
+// clang-format off
+#define JVET_M0453_CABAC_ENGINE                           1
+
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
+// clang-format on
 
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )

@@ -339,10 +339,18 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
     canBv = parlSplit != CU_VERT_SPLIT;
   }
 
-  if( canBtt ) if( ( area.width <= minBtSize && area.height <= minBtSize )
-              && ( ( area.width <= minTtSize && area.height <= minTtSize ) || cs.sps->getSpsNext().getMTTMode() == 0 ) ) canBtt = false;
-  if( canBtt ) if( ( area.width > maxBtSize || area.height > maxBtSize )
-              && ( ( area.width > maxTtSize || area.height > maxTtSize ) || cs.sps->getSpsNext().getMTTMode() == 0 ) ) canBtt = false;
+  if( canBtt && ( area.width <= minBtSize && area.height <= minBtSize )
+      && ( ( area.width <= minTtSize && area.height <= minTtSize )
+           || cs.sps->getSpsNext().getMTTMode() == 0 ) )
+  {
+    canBtt = false;
+  }
+  if( canBtt && ( area.width > maxBtSize || area.height > maxBtSize )
+      && ( ( area.width > maxTtSize || area.height > maxTtSize )
+           || cs.sps->getSpsNext().getMTTMode() == 0 ) )
+  {
+    canBtt = false;
+  }
 
   if( !canBtt )
   {

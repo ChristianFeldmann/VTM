@@ -606,6 +606,50 @@ PartSplit CABACReader::split_cu_mode_mt( CodingStructure& cs, Partitioner &parti
   unsigned width      = partitioner.currArea().lumaSize().width;
   unsigned height     = partitioner.currArea().lumaSize().height;
 
+#if REMOVE_BIN_DECISION_TREE
+  unsigned btSCtxId = width == height ? 0 : ( width > height ? 1 : 2 );
+
+  const bool canNo  = partitioner.canSplit( CU_DONT_SPLIT, cs );
+  const bool canBh  = partitioner.canSplit( CU_HORZ_SPLIT, cs );
+  const bool canBv  = partitioner.canSplit( CU_VERT_SPLIT, cs );
+  const bool canTh  = partitioner.canSplit( CU_TRIH_SPLIT, cs );
+  const bool canTv  = partitioner.canSplit( CU_TRIV_SPLIT, cs );
+
+  bool isSplit = canBh || canBv || canTh || canTv;
+
+  if( canNo && isSplit )
+  {
+    isSplit = m_BinDecoder.decodeBin( Ctx::BTSplitFlag( ctxIdBT ) );
+  }
+
+  if( !isSplit )
+  {
+    DTRACE( g_trace_ctx, D_SYNTAX, "split_cu_mode_mt() ctx=%d split=%d\n", ctxIdBT, mode );
+
+    return mode;
+  }
+
+  const bool canHor = canBh || canTh;
+  bool        isVer = canBv || canTv;
+
+  if( isVer && canHor )
+  {
+    isVer = m_BinDecoder.decodeBin( Ctx::BTSplitFlag( 12 + btSCtxId ) );
+  }
+
+  const bool can14 = isVer ? canTv : canTh;
+  bool        is12 = isVer ? canBv : canBh;
+
+  if( is12 && can14 )
+  {
+    is12 = m_BinDecoder.decodeBin( Ctx::BTSplitFlag( 15 ) );
+  }
+
+  if     ( isVer && is12 )  mode = CU_VERT_SPLIT;
+  else if( isVer && !is12 ) mode = CU_TRIV_SPLIT;
+  else if( !isVer && is12 ) mode = CU_HORZ_SPLIT;
+  else                      mode = CU_TRIH_SPLIT;
+#else
   DecisionTree dt( g_mtSplitDTT );
 
   dt.setAvail( DTT_SPLIT_BT_HORZ,  partitioner.canSplit( CU_HORZ_SPLIT, cs ) );
@@ -626,6 +670,7 @@ PartSplit CABACReader::split_cu_mode_mt( CodingStructure& cs, Partitioner &parti
 
   mode = id == DTT_SPLIT_NO_SPLIT ? CU_DONT_SPLIT : PartSplit( id );
 
+#endif
   DTRACE( g_trace_ctx, D_SYNTAX, "split_cu_mode_mt() ctx=%d split=%d\n", ctxIdBT, mode );
 
   return mode;
@@ -2577,7 +2622,7 @@ unsigned CABACReader::exp_golomb_eqprob( unsigned count )
   return symbol;
 }
 
-
+#if !REMOVE_BIN_DECISION_TREE
 unsigned CABACReader::decode_sparse_dt( DecisionTree& dt )
 {
   dt.reduce();
@@ -2626,3 +2671,4 @@ unsigned CABACReader::decode_sparse_dt( DecisionTree& dt )
   return dt.dtt.ids[offset];
 }
 
+#endif

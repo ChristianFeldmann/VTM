@@ -38,6 +38,8 @@
 #include "BinaryDecisionTree.h"
 #include "CommonDef.h"
 
+#if !REMOVE_BIN_DECISION_TREE
+
 #include <algorithm>
 
 struct DecisionTreeBuilder
@@ -183,3 +185,5 @@ void DecisionTree::reduce( unsigned offset /*= 0*/, int depth /*= -1 */ )
 
   isAvail[offset] = avail;
 }
+
+#endif

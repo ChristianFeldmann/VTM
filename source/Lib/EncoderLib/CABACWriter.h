@@ -156,7 +156,9 @@ private:
   void        unary_max_symbol          ( unsigned symbol, unsigned ctxId0, unsigned ctxIdN, unsigned maxSymbol );
   void        unary_max_eqprob          ( unsigned symbol,                                   unsigned maxSymbol );
   void        exp_golomb_eqprob         ( unsigned symbol, unsigned count );
+#if !REMOVE_BIN_DECISION_TREE
   void        encode_sparse_dt          ( DecisionTree& dt, unsigned toCodeId );
+#endif
 
   // statistic
   unsigned    get_num_written_bits()    { return m_BinEncoder.getNumWrittenBits(); }

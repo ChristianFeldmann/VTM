@@ -535,6 +535,49 @@ void CABACWriter::split_cu_mode_mt(const PartSplit split, const CodingStructure&
   unsigned width   = partitioner.currArea().lumaSize().width;
   unsigned height  = partitioner.currArea().lumaSize().height;
 
+#if REMOVE_BIN_DECISION_TREE
+  unsigned btSCtxId = width == height ? 0 : ( width > height ? 1 : 2 );
+
+  const bool canNo  = partitioner.canSplit( CU_DONT_SPLIT, cs );
+  const bool canBh  = partitioner.canSplit( CU_HORZ_SPLIT, cs );
+  const bool canBv  = partitioner.canSplit( CU_VERT_SPLIT, cs );
+  const bool canTh  = partitioner.canSplit( CU_TRIH_SPLIT, cs );
+  const bool canTv  = partitioner.canSplit( CU_TRIV_SPLIT, cs );
+
+  const bool canSplit = canBh || canBv || canTh || canTv;
+  const bool isNo     = split == CU_DONT_SPLIT;
+
+  if( canNo && canSplit )
+  {
+    m_BinEncoder.encodeBin( !isNo, Ctx::BTSplitFlag( ctxIdBT ) );
+  }
+
+  if( isNo )
+  {
+    DTRACE( g_trace_ctx, D_SYNTAX, "split_cu_mode_mt() ctx=%d split=%d\n", ctxIdBT, split );
+
+    return;
+  }
+
+  const bool canHor = canBh || canTh;
+  const bool canVer = canBv || canTv;
+  const bool  isVer = split == CU_VERT_SPLIT || split == CU_TRIV_SPLIT;
+
+  if( canVer && canHor )
+  {
+    m_BinEncoder.encodeBin( isVer, Ctx::BTSplitFlag( 12 + btSCtxId ) );
+  }
+
+  const bool can14 = isVer ? canTv : canTh;
+  const bool can12 = isVer ? canBv : canBh;
+  const bool  is12 = isVer ? ( split == CU_VERT_SPLIT ) : ( split == CU_HORZ_SPLIT );
+
+
+  if( can12 && can14 )
+  {
+    m_BinEncoder.encodeBin( is12, Ctx::BTSplitFlag( 15 ) );
+  }
+#else
   DecisionTree dt( g_mtSplitDTT );
 
   dt.setAvail( DTT_SPLIT_BT_HORZ,  partitioner.canSplit( CU_HORZ_SPLIT, cs ) );
@@ -553,6 +596,7 @@ void CABACWriter::split_cu_mode_mt(const PartSplit split, const CodingStructure&
 
 
   encode_sparse_dt( dt, split == CU_DONT_SPLIT ? ( unsigned ) DTT_SPLIT_NO_SPLIT : ( unsigned ) split );
+#endif
 
   DTRACE(g_trace_ctx, D_SYNTAX, "split_cu_mode_mt() ctx=%d split=%d\n", ctxIdBT, split);
 }
@@ -2468,6 +2512,7 @@ void CABACWriter::exp_golomb_eqprob( unsigned symbol, unsigned count )
   m_BinEncoder.encodeBinsEP( bins, numBins );
 }
 
+#if !REMOVE_BIN_DECISION_TREE
 void CABACWriter::encode_sparse_dt( DecisionTree& dt, unsigned toCodeId )
 {
   // propagate the sparsity information from end-nodes to intermediate nodes
@@ -2517,6 +2562,7 @@ void CABACWriter::encode_sparse_dt( DecisionTree& dt, unsigned toCodeId )
   return;
 }
 
+#endif
 void CABACWriter::codeAlfCtuEnableFlags( CodingStructure& cs, ChannelType channel, AlfSliceParam* alfParam)
 {
   if( isLuma( channel ) )

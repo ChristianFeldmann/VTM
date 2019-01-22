@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define REMOVE_BIN_DECISION_TREE                          1
+
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
 

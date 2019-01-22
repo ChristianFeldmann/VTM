@@ -878,13 +878,9 @@ public:
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       getIntraQPOffset                () const    { return  m_intraQPOffset; }
   int       getLambdaFromQPEnable           () const    { return  m_lambdaFromQPEnable; }
-#if ENABLE_QPA | JVET_L0646_GBI
+
 public:
-#else
-protected:
-#endif
   int       getBaseQP                       () const { return  m_iQP; } // public should use getQPForPicture.
-public:
   int       getQPForPicture                 (const uint32_t gopIndex, const Slice *pSlice) const; // Function actually defined in EncLib.cpp
 #else
   int       getBaseQP                       ()       { return  m_iQP; }

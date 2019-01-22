@@ -132,6 +132,7 @@ extern const TMatrixCoeff g_trCoreDST7P8  [TRANSFORM_NUMBER_OF_DIRECTIONS][  8][
 extern const TMatrixCoeff g_trCoreDST7P16 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 16][ 16];
 extern const TMatrixCoeff g_trCoreDST7P32 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 32][ 32];
 
+#if !REMOVE_BIN_DECISION_TREE
 // ====================================================================================================================
 // Decision tree templates
 // ====================================================================================================================
@@ -155,6 +156,7 @@ extern const DecisionTreeTemplate g_mtSplitDTT;
 // decision tree for QTBT split
 extern const DecisionTreeTemplate g_qtbtSplitDTT;
 
+#endif
 
 // ====================================================================================================================
 // Misc.

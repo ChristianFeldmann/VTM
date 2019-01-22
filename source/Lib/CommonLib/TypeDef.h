@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define REMOVE_BIN_DECISION_TREE                          1
+
 // clang-format off
 #define JVET_M0453_CABAC_ENGINE                           1
 

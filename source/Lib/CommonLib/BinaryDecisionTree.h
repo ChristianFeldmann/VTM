@@ -40,6 +40,8 @@
 
 #include "CommonDef.h"
 
+#if !REMOVE_BIN_DECISION_TREE
+
 #define MAX_DEPTH_DECISION_TREE   5
 #define MAX_NODES_DECISION_TREE ( 2 * ( 1 << MAX_DEPTH_DECISION_TREE ) )
 
@@ -90,5 +92,7 @@ DecisionTreeBuilder* decision( unsigned id, DecisionTreeBuilder* sub0, unsigned 
 DecisionTreeBuilder* decision( unsigned id, DecisionTreeBuilder* sub0, DecisionTreeBuilder* sub1 );
 // a decision with two decision sub-trees
 DecisionTreeBuilder* decision( unsigned id, unsigned id0, DecisionTreeBuilder* sub1 );
+
+#endif
 
 #endif

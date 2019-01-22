@@ -294,8 +294,12 @@ public:
 
 namespace DeriveCtx
 {
+#if JVET_M0421_SPLIT_SIG
+void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* canSplit = nullptr );
+#else
 unsigned CtxCUsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 unsigned CtxBTsplit   ( const CodingStructure& cs, Partitioner& partitioner );
+#endif
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf );
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );

@@ -1029,10 +1029,19 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   m_CABACEstimator->getCtx() = m_CurrCtx->start;
 
   const TempCtx ctxStartSP( m_CtxCache, SubCtx( Ctx::SplitFlag,   m_CABACEstimator->getCtx() ) );
+#if JVET_M0421_SPLIT_SIG
+  const TempCtx ctxStartQt( m_CtxCache, SubCtx( Ctx::SplitQtFlag, m_CABACEstimator->getCtx() ) );
+  const TempCtx ctxStartHv( m_CtxCache, SubCtx( Ctx::SplitHvFlag, m_CABACEstimator->getCtx() ) );
+  const TempCtx ctxStart12( m_CtxCache, SubCtx( Ctx::Split12Flag, m_CABACEstimator->getCtx() ) );
+#else
   const TempCtx ctxStartBT( m_CtxCache, SubCtx( Ctx::BTSplitFlag, m_CABACEstimator->getCtx() ) );
+#endif
 
   m_CABACEstimator->resetBits();
 
+#if JVET_M0421_SPLIT_SIG
+  m_CABACEstimator->split_cu_mode( split, *tempCS, partitioner );
+#else
   if( partitioner.getImplicitSplit( *tempCS ) != CU_QUAD_SPLIT )
   {
     if( partitioner.canSplit( CU_QUAD_SPLIT, *tempCS ) )
@@ -1044,12 +1053,19 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       m_CABACEstimator->split_cu_mode_mt( split, *tempCS, partitioner );
     }
   }
+#endif
 
   const double factor = ( tempCS->currQP[partitioner.chType] > 30 ? 1.1 : 1.075 );
   const double cost   = m_pcRdCost->calcRdCost( uint64_t( m_CABACEstimator->getEstFracBits() + ( ( bestCS->fracBits ) / factor ) ), Distortion( bestCS->dist / factor ) );
 
   m_CABACEstimator->getCtx() = SubCtx( Ctx::SplitFlag,   ctxStartSP );
+#if JVET_M0421_SPLIT_SIG
+  m_CABACEstimator->getCtx() = SubCtx( Ctx::SplitQtFlag, ctxStartQt );
+  m_CABACEstimator->getCtx() = SubCtx( Ctx::SplitHvFlag, ctxStartHv );
+  m_CABACEstimator->getCtx() = SubCtx( Ctx::Split12Flag, ctxStart12 );
+#else
   m_CABACEstimator->getCtx() = SubCtx( Ctx::BTSplitFlag, ctxStartBT );
+#endif
 
   if( cost > bestCS->cost )
   {
@@ -1159,6 +1175,9 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     {
       m_CABACEstimator->resetBits();
 
+#if JVET_M0421_SPLIT_SIG
+      m_CABACEstimator->split_cu_mode( split, *tempCS, partitioner );
+#else
       if( partitioner.canSplit( CU_QUAD_SPLIT, *tempCS ) )
       {
         m_CABACEstimator->split_cu_flag( split == CU_QUAD_SPLIT, *tempCS, partitioner );
@@ -1167,6 +1186,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       {
         m_CABACEstimator->split_cu_mode_mt( split, *tempCS, partitioner );
       }
+#endif
 
       tempCS->fracBits += m_CABACEstimator->getEstFracBits(); // split bits
     }
@@ -3542,6 +3562,9 @@ void EncCu::xEncodeDontSplit( CodingStructure &cs, Partitioner &partitioner )
 {
   m_CABACEstimator->resetBits();
 
+#if JVET_M0421_SPLIT_SIG
+  m_CABACEstimator->split_cu_mode( CU_DONT_SPLIT, cs, partitioner );
+#else
   {
     if( partitioner.canSplit( CU_QUAD_SPLIT, cs ) )
     {
@@ -3552,6 +3575,7 @@ void EncCu::xEncodeDontSplit( CodingStructure &cs, Partitioner &partitioner )
       m_CABACEstimator->split_cu_mode_mt( CU_DONT_SPLIT, cs, partitioner );
     }
   }
+#endif
 
   cs.fracBits += m_CABACEstimator->getEstFracBits(); // split bits
   cs.cost      = m_pcRdCost->calcRdCost( cs.fracBits, cs.dist );

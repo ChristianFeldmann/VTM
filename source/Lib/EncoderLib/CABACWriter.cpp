@@ -396,6 +396,16 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
     }
   }
 
+#if JVET_M0421_SPLIT_SIG
+  const PartSplit splitMode = CU::getSplitAtDepth( cu, partitioner.currDepth );
+
+  split_cu_mode( splitMode, cs, partitioner );
+
+  CHECK( !partitioner.canSplit( splitMode, cs ), "The chosen split mode is invalid!" );
+
+  if( splitMode != CU_DONT_SPLIT )
+  {
+#else
   const PartSplit implicitSplit = partitioner.getImplicitSplit( cs );
 
   // QT
@@ -415,6 +425,7 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
     // quad-tree split
     if( qtSplit )
     {
+#endif
       if (CS::isDualITree(cs) && pPartitionerChroma != nullptr && (partitioner.currArea().lwidth() >= 64 || partitioner.currArea().lheight() >= 64))
       {
         partitioner.splitCurrArea(CU_QUAD_SPLIT, cs);
@@ -459,7 +470,11 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
       }
       else
       {
+#if JVET_M0421_SPLIT_SIG
+      partitioner.splitCurrArea( splitMode, cs );
+#else
       partitioner.splitCurrArea( CU_QUAD_SPLIT, cs );
+#endif
 
       do
       {
@@ -472,9 +487,12 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
       partitioner.exitCurrSplit();
       }
       return;
+#if !JVET_M0421_SPLIT_SIG
     }
+#endif
   }
 
+#if !JVET_M0421_SPLIT_SIG
   {
     bool mtSplit = partitioner.canSplit( CU_MT_SPLIT, cs );
 
@@ -501,6 +519,7 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
     }
   }
 
+#endif
   // Predict QP on start of quantization group
   if( pps.getUseDQP() && !cuCtx.isDQPCoded && CU::isQGStart( cu, partitioner ) )
   {
@@ -515,6 +534,68 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
   DTRACE_BLOCK_REC_COND( ( !isEncoding() ), cs.picture->getRecoBuf( cu ), cu, cu.predMode );
 }
 
+#if JVET_M0421_SPLIT_SIG
+void CABACWriter::split_cu_mode( const PartSplit split, const CodingStructure& cs, Partitioner& partitioner )
+{
+  bool canNo, canQt, canBh, canBv, canTh, canTv;
+  partitioner.canSplit( cs, canNo, canQt, canBh, canBv, canTh, canTv );
+
+  bool canSpl[6] = { canNo, canQt, canBh, canBv, canTh, canTv };
+
+  unsigned ctxSplit = 0, ctxQtSplit = 0, ctxBttHV = 0, ctxBttH12 = 0, ctxBttV12;
+  DeriveCtx::CtxSplit( cs, partitioner, ctxSplit, ctxQtSplit, ctxBttHV, ctxBttH12, ctxBttV12, canSpl );
+  
+  const bool canSplit = canBh || canBv || canTh || canTv || canQt;
+  const bool isNo     = split == CU_DONT_SPLIT;
+
+  if( canNo && canSplit )
+  {
+    m_BinEncoder.encodeBin( !isNo, Ctx::SplitFlag( ctxSplit ) );
+  }
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "split_cu_mode() ctx=%d split=%d\n", ctxSplit, !isNo );
+
+  if( isNo )
+  {
+    return;
+  }
+
+  const bool canBtt = canBh || canBv || canTh || canTv;
+  const bool isQt   = split == CU_QUAD_SPLIT;
+
+  if( canQt && canBtt )
+  {
+    m_BinEncoder.encodeBin( isQt, Ctx::SplitQtFlag( ctxQtSplit ) );
+  }
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "split_cu_mode() ctx=%d qt=%d\n", ctxQtSplit, isQt );
+
+  if( isQt )
+  {
+    return;
+  }
+
+  const bool canHor = canBh || canTh;
+  const bool canVer = canBv || canTv;
+  const bool  isVer = split == CU_VERT_SPLIT || split == CU_TRIV_SPLIT;
+
+  if( canVer && canHor )
+  {
+    m_BinEncoder.encodeBin( isVer, Ctx::SplitHvFlag( ctxBttHV ) );
+  }
+
+  const bool can14 = isVer ? canTv : canTh;
+  const bool can12 = isVer ? canBv : canBh;
+  const bool  is12 = isVer ? ( split == CU_VERT_SPLIT ) : ( split == CU_HORZ_SPLIT );
+
+  if( can12 && can14 )
+  {
+    m_BinEncoder.encodeBin( is12, Ctx::Split12Flag( isVer ? ctxBttV12 : ctxBttH12 ) );
+  }
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "split_cu_mode() ctxHv=%d ctx12=%d mode=%d\n", ctxBttHV, isVer ? ctxBttV12 : ctxBttH12, split );
+}
+#else
 void CABACWriter::split_cu_flag( bool split, const CodingStructure& cs, Partitioner& partitioner )
 {
   unsigned maxQTDepth = ( g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize(cs.slice->getSliceType(), partitioner.chType)] );
@@ -600,7 +681,7 @@ void CABACWriter::split_cu_mode_mt(const PartSplit split, const CodingStructure&
 
   DTRACE(g_trace_ctx, D_SYNTAX, "split_cu_mode_mt() ctx=%d split=%d\n", ctxIdBT, split);
 }
-
+#endif
 
 //================================================================================
 //  clause 7.3.8.5

@@ -297,8 +297,89 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
   }
 }
 
+#if JVET_M0421_SPLIT_SIG
+void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& canQt, bool& canBh, bool& canBv, bool& canTh, bool& canTv )
+{
+  const PartSplit implicitSplit = m_partStack.back().checkdIfImplicit ? m_partStack.back().implicitSplit : getImplicitSplit( cs );
+  
+  const unsigned maxBTD         = cs.pcv->getMaxBtDepth( *cs.slice, chType ) + currImplicitBtDepth;
+  const unsigned maxBtSize      = cs.pcv->getMaxBtSize ( *cs.slice, chType );
+  const unsigned minBtSize      = cs.pcv->getMinBtSize ( *cs.slice, chType );
+  const unsigned maxTtSize      = cs.pcv->getMaxTtSize ( *cs.slice, chType );
+  const unsigned minTtSize      = cs.pcv->getMinTtSize ( *cs.slice, chType );
+  const unsigned minQtSize      = cs.pcv->getMinQtSize ( *cs.slice, chType );
+
+  canNo = canQt = canBh = canTh = canBv = canTv = true;
+  bool canBtt = currMtDepth < maxBTD;
+
+  // the minimal and maximal sizes are given in luma samples
+  const CompArea&  area  = currArea().Y();
+        PartLevel& level = m_partStack.back();
+
+  const PartSplit lastSplit = level.split;
+  const PartSplit parlSplit = lastSplit == CU_TRIH_SPLIT ? CU_HORZ_SPLIT : CU_VERT_SPLIT;
+
+  // don't allow QT-splitting below a BT split
+  if( lastSplit != CTU_LEVEL && lastSplit != CU_QUAD_SPLIT ) canQt = false;
+  if( area.width <= minQtSize )                              canQt = false;
+
+  if( implicitSplit != CU_DONT_SPLIT )
+  {
+    canNo = canTh = canTv = false;
+
+    canBh = implicitSplit == CU_HORZ_SPLIT;
+    canBv = implicitSplit == CU_VERT_SPLIT;
+
+    return;
+  }
+
+  if( ( lastSplit == CU_TRIH_SPLIT || lastSplit == CU_TRIV_SPLIT ) && currPartIdx() == 1 )
+  {
+    canBh = parlSplit != CU_HORZ_SPLIT;
+    canBv = parlSplit != CU_VERT_SPLIT;
+  }
+
+  if( canBtt ) if( ( area.width <= minBtSize && area.height <= minBtSize )
+              && ( ( area.width <= minTtSize && area.height <= minTtSize ) || cs.sps->getSpsNext().getMTTMode() == 0 ) ) canBtt = false;
+  if( canBtt ) if( ( area.width > maxBtSize || area.height > maxBtSize )
+              && ( ( area.width > maxTtSize || area.height > maxTtSize ) || cs.sps->getSpsNext().getMTTMode() == 0 ) ) canBtt = false;
+
+  if( !canBtt )
+  {
+    canBh = canTh = canBv = canTv = false;
+
+    return;
+  }
+
+  // specific check for BT splits
+  if( area.height <= minBtSize || area.height > maxBtSize )                            canBh = false;
+  if( area.width > MAX_TU_SIZE_FOR_PROFILE && area.height <= MAX_TU_SIZE_FOR_PROFILE ) canBh = false;
+
+  if( area.width <= minBtSize || area.width > maxBtSize )                              canBv = false;
+  if( area.width <= MAX_TU_SIZE_FOR_PROFILE && area.height > MAX_TU_SIZE_FOR_PROFILE ) canBv = false;
+
+  if( ( cs.sps->getSpsNext().getMTTMode() & 1 ) != 1 )                                 canTh = false;
+  if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize ) 
+                                                                                       canTh = false;
+  if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE )  canTh = false;
+
+  if( ( cs.sps->getSpsNext().getMTTMode() & 1 ) != 1 )                                 canTv = false;
+  if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize )
+                                                                                       canTv = false;
+  if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE )  canTv = false;
+}
+
+#endif
 bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs )
 {
+#if JVET_M0421_SPLIT_SIG
+  const CompArea area       = currArea().Y();
+  const unsigned maxTrSize  = cs.sps->getMaxTrSize();
+
+  bool canNo, canQt, canBh, canTh, canBv, canTv;
+
+  canSplit( cs, canNo, canQt, canBh, canBv, canTh, canTv );
+#else
   const PartSplit implicitSplit = getImplicitSplit( cs );
 
   // the minimal and maximal sizes are given in luma samples
@@ -319,6 +400,7 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
     return false;
   }
 
+#endif
   switch( split )
   {
   case CTU_LEVEL:
@@ -328,6 +410,20 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   case TU_MAX_TR_SPLIT:
     return area.width > maxTrSize || area.height > maxTrSize;
     break;
+#if JVET_M0421_SPLIT_SIG
+  case CU_QUAD_SPLIT:
+    return canQt;
+  case CU_DONT_SPLIT:
+    return canNo;
+  case CU_HORZ_SPLIT:
+    return canBh;
+  case CU_VERT_SPLIT:
+    return canBv;
+  case CU_TRIH_SPLIT:
+    return canTh;
+  case CU_TRIV_SPLIT:
+    return canTv;
+#else
   case CU_QUAD_SPLIT:
   {
     // don't allow QT-splitting below a BT split
@@ -369,8 +465,15 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   }
     if( implicitSplit == split )                                   return true;
     if( implicitSplit != CU_DONT_SPLIT && implicitSplit != split ) return false;
+#endif
   case CU_MT_SPLIT:
+#if JVET_M0421_SPLIT_SIG
+    return ( canBh || canTh || canBv || canTv );
+#endif
   case CU_BT_SPLIT:
+#if JVET_M0421_SPLIT_SIG
+    return ( canBh || canBv );
+#else
   {
     if( currMtDepth >= maxBTD )                               return false;
     if(      ( area.width <= minBtSize && area.height <= minBtSize )
@@ -382,13 +485,14 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
       return false;
     }
   }
+#endif
   break;
   default:
     THROW( "Unknown split mode" );
     return false;
     break;
   }
-
+#if !JVET_M0421_SPLIT_SIG
   // specific check for BT splits
   switch( split )
   {
@@ -413,6 +517,7 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   default:
     break;
   }
+#endif
 
   return true;
 }

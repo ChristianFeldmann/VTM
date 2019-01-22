@@ -82,8 +82,12 @@ public:
   void        sao_offset_pars           ( const SAOOffset&              ctbPars,  ComponentID       compID,     bool sliceEnabled,  int bitDepth );
   // coding (quad)tree (clause 7.3.8.4)
   void        coding_tree               ( const CodingStructure&        cs,       Partitioner&      pm,         CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
+#if JVET_M0421_SPLIT_SIG
+  void        split_cu_mode             ( const PartSplit               split,    const CodingStructure& cs,    Partitioner& pm );
+#else
   void        split_cu_flag             ( bool                          split,    const CodingStructure& cs,    Partitioner& pm );
   void        split_cu_mode_mt          ( const PartSplit               split,    const CodingStructure& cs,    Partitioner& pm );
+#endif
 
   // coding unit (clause 7.3.8.5)
   void        coding_unit               ( const CodingUnit&             cu,       Partitioner&      pm,         CUCtx& cuCtx );

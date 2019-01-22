@@ -70,8 +70,12 @@ public:
 
   // coding (quad)tree (clause 7.3.8.4)
   bool        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
+#if JVET_M0421_SPLIT_SIG
+  PartSplit   split_cu_mode             ( CodingStructure&              cs,     Partitioner&    pm );
+#else
   bool        split_cu_flag             ( CodingStructure&              cs,     Partitioner&    pm );
   PartSplit   split_cu_mode_mt          ( CodingStructure&              cs,     Partitioner&    pm );
+#endif
 
   // coding unit (clause 7.3.8.5)
   bool        coding_unit               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0421_SPLIT_SIG                              1
+
 #define REMOVE_BIN_DECISION_TREE                          1
 
 // clang-format off

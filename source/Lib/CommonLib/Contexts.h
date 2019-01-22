@@ -245,7 +245,13 @@ class ContextSetCfg
 public:
   // context sets: specify offset and size
   static const CtxSet   SplitFlag;
+#if JVET_M0421_SPLIT_SIG
+  static const CtxSet   SplitQtFlag;
+  static const CtxSet   SplitHvFlag;
+  static const CtxSet   Split12Flag;
+#else
   static const CtxSet   BTSplitFlag;
+#endif
   static const CtxSet   SkipFlag;
   static const CtxSet   MergeFlag;
   static const CtxSet   MergeIdx;

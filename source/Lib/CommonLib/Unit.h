@@ -305,7 +305,9 @@ struct CodingUnit : public UnitArea
 #if HEVC_TILES_WPP
   uint32_t           tileIdx;
 #endif
+#if !JVET_M0464_UNI_MTS
   uint8_t          emtFlag;
+#endif
   uint8_t         GBiIdx;
   int             refIdxBi[2];
   // needed for fast imv mode decisions
@@ -410,11 +412,17 @@ struct TransformUnit : public UnitArea
   ChannelType      chType;
 
   uint8_t        depth;
+#if JVET_M0464_UNI_MTS
+  uint8_t        mtsIdx;
+#else
   uint8_t        emtIdx;
-  uint8_t        cbf          [ MAX_NUM_TBLOCKS ];
+#endif
+  uint8_t        cbf        [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];
+#if !JVET_M0464_UNI_MTS
   bool         transformSkip[ MAX_NUM_TBLOCKS ];
-  int8_t        compAlpha    [ MAX_NUM_TBLOCKS ];
+#endif
+  int8_t        compAlpha   [ MAX_NUM_TBLOCKS ];
 
   TransformUnit() : chType( CH_L ) { }
   TransformUnit(const UnitArea& unit);

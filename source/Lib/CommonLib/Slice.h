@@ -804,8 +804,13 @@ private:
   bool              m_BIO;
   bool              m_DisableMotionCompression;   // 13
   bool              m_LMChroma;                   // 17
+#if JVET_M0464_UNI_MTS
+  bool              m_IntraMTS;                   // 18
+  bool              m_InterMTS;                   // 19
+#else
   bool              m_IntraEMT;                   // 18
   bool              m_InterEMT;                   // 19
+#endif
   bool              m_Affine;
   bool              m_AffineType;
   bool              m_GBi;                        //
@@ -872,10 +877,17 @@ public:
 #endif
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
+#if JVET_M0464_UNI_MTS
+  void      setUseIntraMTS        ( bool b )                                        { m_IntraMTS = b; }
+  bool      getUseIntraMTS        ()                                      const     { return m_IntraMTS; }
+  void      setUseInterMTS        ( bool b )                                        { m_InterMTS = b; }
+  bool      getUseInterMTS        ()                                      const     { return m_InterMTS; }
+#else
   void      setUseIntraEMT        ( bool b )                                        { m_IntraEMT = b; }
   bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
   void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
   bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
+#endif
   void      setUseGBi             ( bool b )                                        { m_GBi = b; }
   bool      getUseGBi             ()                                      const     { return m_GBi; }
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET

@@ -282,12 +282,18 @@ public:
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;
   static const CtxSet   SaoTypeIdx;
+#if JVET_M0464_UNI_MTS
+  static const CtxSet   MTSIndex;
+#else
   static const CtxSet   TransformSkipFlag;
+#endif
   static const CtxSet   TransquantBypassFlag;
   static const CtxSet   RdpcmFlag;
   static const CtxSet   RdpcmDir;
+#if !JVET_M0464_UNI_MTS
   static const CtxSet   EMTTuIndex;
   static const CtxSet   EMTCuFlag;
+#endif
   static const CtxSet   CrossCompPred;
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;

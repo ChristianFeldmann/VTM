@@ -797,7 +797,11 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setNoSbtmvpConstraintFlag(m_SubPuMvpMode ? false : true);
   sps.setNoAmvrConstraintFlag(!m_bNoAmvrConstraintFlag);
   sps.setNoAffineMotionConstraintFlag(!m_Affine);
+#if JVET_M0464_UNI_MTS
+  sps.setNoMtsConstraintFlag((m_IntraMTS || m_InterMTS) ? false : true);
+#else
   sps.setNoMtsConstraintFlag((m_IntraEMT || m_InterEMT) ? false : true);
+#endif
   sps.setNoLadfConstraintFlag(!m_LadfEnabled);
   sps.setNoDepQuantConstraintFlag(!m_DepQuantEnabledFlag);
   sps.setNoSignDataHidingConstraintFlag(!m_SignDataHidingEnabledFlag);
@@ -859,8 +863,13 @@ void EncLib::xInitSPS(SPS &sps)
 #if ENABLE_WPP_PARALLELISM
   sps.getSpsNext().setUseNextDQP            ( m_AltDQPCoding );
 #endif
+#if JVET_M0464_UNI_MTS
+  sps.getSpsNext().setUseIntraMTS           ( m_IntraMTS );
+  sps.getSpsNext().setUseInterMTS           ( m_InterMTS );
+#else
   sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
+#endif
   sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
   sps.getSpsNext().setUseGBi                ( m_GBi );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET

@@ -1080,6 +1080,7 @@ const CtxSet ContextSetCfg::SaoTypeIdx = ContextSetCfg::addCtxSet
 #endif
 });
 
+#if !JVET_M0464_UNI_MTS
 const CtxSet ContextSetCfg::TransformSkipFlag = ContextSetCfg::addCtxSet
 ({
 #if JVET_M0453_CABAC_ENGINE
@@ -1093,6 +1094,7 @@ const CtxSet ContextSetCfg::TransformSkipFlag = ContextSetCfg::addCtxSet
   { 109, 42, },
 #endif
 });
+#endif
 
 const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
 ({
@@ -1124,6 +1126,21 @@ const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
 #endif
 });
 
+#if JVET_M0464_UNI_MTS
+const CtxSet ContextSetCfg::MTSIndex = ContextSetCfg::addCtxSet
+({
+#if JVET_M0453_CABAC_ENGINE
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, },
+#else
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+#endif
+});
+#else
 const CtxSet ContextSetCfg::EMTTuIndex = ContextSetCfg::addCtxSet
 ({
 #if JVET_M0453_CABAC_ENGINE
@@ -1151,6 +1168,7 @@ const CtxSet ContextSetCfg::EMTCuFlag = ContextSetCfg::addCtxSet
   { CNU, CNU, 140, 155, 155, CNU, },
 #endif
 });
+#endif
 
 const CtxSet ContextSetCfg::CrossCompPred = ContextSetCfg::addCtxSet
 ({

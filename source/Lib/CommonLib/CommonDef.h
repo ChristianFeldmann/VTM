@@ -211,8 +211,14 @@ static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chro
 
 static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes
 
+#if JVET_M0464_UNI_MTS
+static const uint32_t  NUM_TRAFO_MODES_MTS =                            6; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
+static const uint32_t  MTS_INTRA_MAX_CU_SIZE =                         32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
+static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
+#else
 static const uint32_t  EMT_INTRA_MAX_CU_WITH_QTBT =                    32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  EMT_INTER_MAX_CU_WITH_QTBT =                    32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
+#endif
 static const int NUM_MOST_PROBABLE_MODES = 6;
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
@@ -321,7 +327,9 @@ static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;
 static const uint32_t LUMA_LEVEL_TO_DQP_LUT_MAXSIZE =                1024; ///< max LUT size for QP offset based on luma
 
 #endif
+#if !JVET_M0464_UNI_MTS
 static const int NUM_EMT_CU_FLAG_CTX =                              6;      ///< number of context models for EMT CU-level flag
+#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.

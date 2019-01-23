@@ -534,8 +534,13 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   WRITE_FLAG( spsNext.getUseBIO() ? 1 : 0,                                                      "bio_enable_flag" );
   WRITE_FLAG( spsNext.getDisableMotCompress() ? 1 : 0,                                          "disable_motion_compression_flag" );
   WRITE_FLAG( spsNext.getUseLMChroma() ? 1 : 0,                                                 "lm_chroma_enabled_flag" );
+#if JVET_M0464_UNI_MTS
+  WRITE_FLAG( spsNext.getUseIntraMTS() ? 1 : 0,                                                 "mts_intra_enabled_flag" );
+  WRITE_FLAG( spsNext.getUseInterMTS() ? 1 : 0,                                                 "mts_inter_enabled_flag" );
+#else
   WRITE_FLAG( spsNext.getUseIntraEMT() ? 1 : 0,                                                 "emt_intra_enabled_flag" );
   WRITE_FLAG( spsNext.getUseInterEMT() ? 1 : 0,                                                 "emt_inter_enabled_flag" );
+#endif
   WRITE_FLAG( spsNext.getUseAffine() ? 1 : 0,                                                   "affine_flag" );
   if ( spsNext.getUseAffine() )
   {

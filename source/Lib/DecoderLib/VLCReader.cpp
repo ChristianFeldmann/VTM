@@ -794,8 +794,13 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   READ_FLAG( symbol, "bio_enable_flag" );                           spsNext.setUseBIO                 ( symbol != 0 );
   READ_FLAG( symbol,    "disable_motion_compression_flag" );        spsNext.setDisableMotCompress     ( symbol != 0 );
   READ_FLAG( symbol,    "lm_chroma_enabled_flag" );                 spsNext.setUseLMChroma            ( symbol != 0 );
+#if JVET_M0464_UNI_MTS
+  READ_FLAG( symbol,    "mts_intra_enabled_flag" );                 spsNext.setUseIntraMTS            ( symbol != 0 );
+  READ_FLAG( symbol,    "mts_inter_enabled_flag" );                 spsNext.setUseInterMTS            ( symbol != 0 );
+#else
   READ_FLAG( symbol,    "emt_intra_enabled_flag" );                 spsNext.setUseIntraEMT            ( symbol != 0 );
   READ_FLAG( symbol,    "emt_inter_enabled_flag" );                 spsNext.setUseInterEMT            ( symbol != 0 );
+#endif
   READ_FLAG( symbol,    "affine_flag" );                            spsNext.setUseAffine              ( symbol != 0 );
   if ( spsNext.getUseAffine() )
   {

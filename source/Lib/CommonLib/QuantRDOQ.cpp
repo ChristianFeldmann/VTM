@@ -542,7 +542,11 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
   const CCoeffBuf &piCoef   = pSrc;
         CoeffBuf   piQCoef  = tu.getCoeffs(compID);
 
+#if JVET_M0464_UNI_MTS
+  const bool useTransformSkip      = tu.mtsIdx==1;
+#else
   const bool useTransformSkip      = tu.transformSkip[compID];
+#endif
 
   bool useRDOQ = useTransformSkip ? m_useRDOQTS : m_useRDOQ;
 
@@ -598,7 +602,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   // Represents scaling through forward transform
   int iTransformShift = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
 
+#if JVET_M0464_UNI_MTS
+  if (tu.mtsIdx==1 && extendedPrecision)
+#else
   if (tu.transformSkip[compID] && extendedPrecision)
+#endif
   {
     iTransformShift = std::max<int>(0, iTransformShift);
   }

@@ -1905,7 +1905,9 @@ void CABACReader::transform_tree( CodingStructure &cs, Partitioner &partitioner,
   if( split )
   {
     {
+#if !JVET_M0464_UNI_MTS
       if( trDepth == 0 ) emt_cu_flag( cu );
+#endif
 
       if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
       {
@@ -1989,7 +1991,9 @@ void CABACReader::transform_tree( CodingStructure &cs, Partitioner &partitioner,
       TU::setCbfAtDepth( tu, COMPONENT_Cr, trDepth, ( chromaCbfs.Cr ? 1 : 0 ) );
     }
 
+#if !JVET_M0464_UNI_MTS
     if( trDepth == 0 && TU::getCbfAtDepth( tu, COMPONENT_Y, 0 ) ) emt_cu_flag( cu );
+#endif
 
     transform_unit( tu, cuCtx, chromaCbfs );
   }
@@ -2186,14 +2190,22 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_coding() etype=%d pos=(%d,%d) size=%dx%d predMode=%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height, cu.predMode );
 
   // parse transform skip and explicit rdpcm mode
+#if JVET_M0464_UNI_MTS
+  mts_coding         ( tu, compID );
+#else
   transform_skip_flag( tu, compID );
+#endif
   explicit_rdpcm_mode( tu, compID );
 
 
 #if HEVC_USE_SIGN_HIDING
   // determine sign hiding
   bool signHiding  = ( cu.cs->slice->getSignDataHidingEnabledFlag() && !cu.transQuantBypass && tu.rdpcm[compID] == RDPCM_OFF );
+#if JVET_M0464_UNI_MTS
+  if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx==1 )
+#else
   if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.transformSkip[compID] )
+#endif
   {
     const ChannelType chType    = toChannelType( compID );
     const unsigned    intraMode = PU::getFinalIntraMode( *cu.cs->getPU( tu.blocks[compID].pos(), chType ), chType );
@@ -2211,7 +2223,9 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
   CoeffCodingContext  cctx    ( tu, compID );
 #endif
   TCoeff*             coeff   = tu.getCoeffs( compID ).buf;
+#if !JVET_M0464_UNI_MTS
   unsigned            numSig  = 0;
+#endif
 
   // parse last coeff position
   cctx.setScanPosLast( last_sig_coeff( cctx ) );
@@ -2220,21 +2234,25 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
   const int stateTransTab = ( tu.cs->slice->getDepQuantEnabledFlag() ? 32040 : 0 );
   int       state         = 0;
 
+#if !JVET_M0464_UNI_MTS
   bool useEmt = ( cu.cs->sps->getSpsNext().getUseIntraEMT() && cu.predMode == MODE_INTRA ) || ( cu.cs->sps->getSpsNext().getUseInterEMT() && cu.predMode != MODE_INTRA );
   useEmt = useEmt && isLuma(compID);
+#endif
 
     for( int subSetId = ( cctx.scanPosLast() >> cctx.log2CGSize() ); subSetId >= 0; subSetId--)
     {
       cctx.initSubblock       ( subSetId );
       residual_coding_subblock( cctx, coeff, stateTransTab, state );
+#if !JVET_M0464_UNI_MTS
       if (useEmt)
       {
         numSig += cctx.emtNumSigCoeff();
         cctx.setEmtNumSigCoeff( 0 );
       }
+#endif
     }
 
-
+#if !JVET_M0464_UNI_MTS
   if( useEmt && !tu.transformSkip[compID] && compID == COMPONENT_Y && tu.cu->emtFlag )
   {
     if( CU::isIntra( *tu.cu ) )
@@ -2246,9 +2264,55 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
       emt_tu_index( tu );
     }
   }
+#endif
 }
 
+#if JVET_M0464_UNI_MTS
+void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
+{
+  const CodingUnit  &cu = *tu.cu;
+  const bool  tsAllowed = TU::isTSAllowed ( tu, compID );
+  const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
 
+  if( !mtsAllowed && !tsAllowed ) return;
+
+  int symbol = 0;
+  int ctxIdx = 0;
+
+  if( tsAllowed )
+  {
+    ctxIdx = 6;
+    symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+    tu.mtsIdx = 1-symbol; // 1 = TS
+  }
+
+  if( tu.mtsIdx != 1 )
+  {
+    if( mtsAllowed )
+    {
+      ctxIdx = std::min( (int)cu.qtDepth, 5 );
+      symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+
+      if( symbol )
+      {
+        ctxIdx    = 7;
+        tu.mtsIdx = 2; // mtsIdx = 2 -- 4
+        for( int i = 0; i < 3; i++, ctxIdx++ )
+        {
+          symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+          tu.mtsIdx += symbol;
+
+          if( !symbol )
+          {
+            break;
+          }
+        }
+      }
+    }
+  }
+  DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), tu.mtsIdx );
+}
+#else
 void CABACReader::transform_skip_flag( TransformUnit& tu, ComponentID compID )
 {
 
@@ -2327,7 +2391,7 @@ void CABACReader::emt_cu_flag( CodingUnit& cu )
     DTRACE( g_trace_ctx, D_SYNTAX, "emt_cu_flag() etype=%d pos=(%d,%d) emtCuFlag=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), ( int ) cu.emtFlag );
   }
 }
-
+#endif
 
 void CABACReader::explicit_rdpcm_mode( TransformUnit& tu, ComponentID compID )
 {
@@ -2335,7 +2399,11 @@ void CABACReader::explicit_rdpcm_mode( TransformUnit& tu, ComponentID compID )
 
   tu.rdpcm[compID] = RDPCM_OFF;
 
+#if JVET_M0464_UNI_MTS
+  if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx==1 || cu.transQuantBypass ) )
+#else
   if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.transformSkip[compID] || cu.transQuantBypass ) )
+#endif
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE( STATS__EXPLICIT_RDPCM_BITS, tu.blocks[tu.chType].lumaSize() );
 
@@ -2618,7 +2686,9 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     coeff[ sigBlkPos[k] ] = ( sumAbs & 1 ? -AbsCoeff : AbsCoeff );
   }
 #endif
+#if !JVET_M0464_UNI_MTS
   cctx.setEmtNumSigCoeff( numNonZero );
+#endif
 }
 
 

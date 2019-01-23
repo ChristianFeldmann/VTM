@@ -91,7 +91,13 @@ TrQuant::TrQuant() : m_quant( nullptr )
 {
   // allocate temporary buffers
   m_plTempCoeff   = (TCoeff*) xMalloc( TCoeff, MAX_CU_SIZE * MAX_CU_SIZE );
-
+#if JVET_M0464_UNI_MTS
+  m_mtsCoeffs = new TCoeff*[ NUM_TRAFO_MODES_MTS ];
+  for( int i = 0; i < NUM_TRAFO_MODES_MTS; i++ )
+  {
+    m_mtsCoeffs[i] = (TCoeff*) xMalloc( TCoeff, MAX_CU_SIZE * MAX_CU_SIZE );
+  }
+#endif
 }
 
 TrQuant::~TrQuant()
@@ -108,6 +114,17 @@ TrQuant::~TrQuant()
     xFree( m_plTempCoeff );
     m_plTempCoeff = nullptr;
   }
+#if JVET_M0464_UNI_MTS
+  if( m_mtsCoeffs )
+  {
+    for( int i = 0; i < NUM_TRAFO_MODES_MTS; i++ )
+    {
+      xFree( m_mtsCoeffs[i] );
+      m_mtsCoeffs[i] = nullptr;
+    }
+    m_mtsCoeffs = nullptr;
+  }
+#endif
 }
 
 #if ENABLE_SPLIT_PARALLELISM
@@ -187,8 +204,11 @@ void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, Pel
 
     DTRACE_COEFF_BUF( D_TCOEFF, tempCoeff, tu, tu.cu->predMode, compID );
 
-
+#if JVET_M0464_UNI_MTS
+    if( tu.mtsIdx == 1 )
+#else
     if( tu.transformSkip[compID] )
+#endif
     {
       xITransformSkip( tempCoeff, pResi, tu, compID );
     }
@@ -207,7 +227,11 @@ void TrQuant::invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &
 {
   const CompArea &area    = tu.blocks[compID];
 
+#if JVET_M0464_UNI_MTS
+  if (CU::isRDPCMEnabled(*tu.cu) && (tu.mtsIdx==1 || tu.cu->transQuantBypass))
+#else
   if (CU::isRDPCMEnabled(*tu.cu) && ((tu.transformSkip[compID] != 0) || tu.cu->transQuantBypass))
+#endif
   {
     const uint32_t uiWidth  = area.width;
     const uint32_t uiHeight = area.height;
@@ -267,19 +291,34 @@ void TrQuant::invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &
 
 void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer )
 {
+#if JVET_M0464_UNI_MTS
+  bool mtsActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getSpsNext().getUseIntraMTS() : tu.cs->sps->getSpsNext().getUseInterMTS();
+#else
   bool emtActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getSpsNext().getUseIntraEMT() : tu.cs->sps->getSpsNext().getUseInterEMT();
+#endif
   
   trTypeHor = DCT2;
   trTypeVer = DCT2;
   
+#if JVET_M0464_UNI_MTS
+  if ( mtsActivated )
+#else
   if ( emtActivated )
+#endif
   {
     if( compID == COMPONENT_Y )
     {
+#if JVET_M0464_UNI_MTS
+      if ( tu.mtsIdx > 1 )
+      {
+        int indHor = ( tu.mtsIdx - 2 ) &  1;
+        int indVer = ( tu.mtsIdx - 2 ) >> 1;
+#else
       if ( tu.cu->emtFlag )
       {
         int indHor = tu.emtIdx &  1;
         int indVer = tu.emtIdx >> 1;
+#endif
         
         trTypeHor = indHor ? DCT8 : DST7;
         trTypeVer = indVer ? DCT8 : DST7;
@@ -437,7 +476,67 @@ void TrQuant::xQuant(TransformUnit &tu, const ComponentID &compID, const CCoeffB
   m_quant->quant( tu, compID, pSrc, uiAbsSum, cQP, ctx );
 }
 
+#if JVET_M0464_UNI_MTS
+void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, std::vector<TrMode>* trModes, const int maxCand)
+{
+        CodingStructure &cs = *tu.cs;
+  const SPS &sps            = *cs.sps;
+  const CompArea &rect      = tu.blocks[compID];
+  const uint32_t width      = rect.width;
+  const uint32_t height     = rect.height;
+
+  const CPelBuf  resiBuf    = cs.getResiBuf(rect);
+
+  CHECK( sps.getMaxTrSize() < width, "Unsupported transformation size" );
+
+  int pos = 0;
+  std::vector<TrCost> trCosts;
+  std::vector<TrMode>::iterator it = trModes->begin();
+  const double facBB[] = { 1.2, 1.3, 1.3, 1.4, 1.5 };
+  while( it != trModes->end() )
+  {
+    tu.mtsIdx = it->first;
+    CoeffBuf tempCoeff( m_mtsCoeffs[tu.mtsIdx], rect );
+
+    if( tu.mtsIdx == 1 )
+    {
+      xTransformSkip( tu, compID, resiBuf, tempCoeff.buf );
+    }
+    else
+    {
+      xT( tu, compID, resiBuf, tempCoeff, width, height );
+    }
+
+    int sumAbs = 0;
+    for( int pos = 0; pos < width*height; pos++ )
+    {
+      sumAbs += abs( tempCoeff.buf[pos] );
+    }
+
+    trCosts.push_back( TrCost( sumAbs, pos++ ) );
+    it++;
+  }
+
+  int numTests = 0;
+  std::vector<TrCost>::iterator itC = trCosts.begin();
+  const double fac   = facBB[g_aucLog2[std::max(width, height)]-2];
+  const double thr   = fac * trCosts.begin()->first;
+  const double thrTS = trCosts.begin()->first;
+  while( itC != trCosts.end() )
+  {
+    const bool testTr = itC->first <= ( itC->second == 1 ? thrTS : thr ) && numTests <= maxCand;
+    trModes->at( itC->second ).second = testTr;
+    numTests += testTr;
+    itC++;
+  }
+}
+#endif
+
+#if JVET_M0464_UNI_MTS
+void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, const bool loadTr)
+#else
 void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx)
+#endif
 {
         CodingStructure &cs = *tu.cs;
   const SPS &sps            = *cs.sps;
@@ -483,11 +582,21 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
     {
       CHECK( sps.getMaxTrSize() < uiWidth, "Unsupported transformation size" );
 
+#if JVET_M0464_UNI_MTS
+      CoeffBuf tempCoeff( loadTr ? m_mtsCoeffs[tu.mtsIdx] : m_plTempCoeff, rect );
+#else
       CoeffBuf tempCoeff( m_plTempCoeff, rect );
+#endif
 
       DTRACE_PEL_BUF( D_RESIDUALS, resiBuf, tu, tu.cu->predMode, compID );
 
+#if JVET_M0464_UNI_MTS
+      if( !loadTr )
+      {
+        if( tu.mtsIdx == 1 )
+#else
       if( tu.transformSkip[compID] )
+#endif
       {
         xTransformSkip( tu, compID, resiBuf, tempCoeff.buf );
       }
@@ -495,6 +604,9 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
       {
         xT( tu, compID, resiBuf, tempCoeff, uiWidth, uiHeight );
       }
+#if JVET_M0464_UNI_MTS
+      }
+#endif
 
       DTRACE_COEFF_BUF( D_TCOEFF, tempCoeff, tu, tu.cu->predMode, compID );
 
@@ -567,7 +679,11 @@ void TrQuant::applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, co
 
 void TrQuant::rdpcmNxN(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, RDPCMMode &rdpcmMode)
 {
+#if JVET_M0464_UNI_MTS
+  if (!CU::isRDPCMEnabled(*tu.cu) || (tu.mtsIdx!=1 && !tu.cu->transQuantBypass))
+#else
   if (!CU::isRDPCMEnabled(*tu.cu) || (!tu.transformSkip[compID] && !tu.cu->transQuantBypass))
+#endif
   {
     rdpcmMode = RDPCM_OFF;
   }

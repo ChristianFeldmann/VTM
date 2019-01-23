@@ -828,6 +828,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LMChroma",                                        m_LMChroma,                                           1, " LMChroma prediction "
                                                                                                                "\t0:  Disable LMChroma\n"
                                                                                                                "\t1:  Enable LMChroma\n")
+#if JVET_M0464_UNI_MTS
+  ("MTS",                                             m_MTS,                                                0, "Multiple Transform Set (MTS)\n"
+    "\t0:  Disable MTS\n"
+    "\t1:  Enable only Intra MTS\n"
+    "\t2:  Enable only Inter MTS\n"
+    "\t3:  Enable both Intra & Inter MTS\n")
+  ("MTSIntraMaxCand",                                 m_MTSIntraMaxCand,                                    3, "Number of additional candidates to test in encoder search for MTS in intra slices\n")
+  ("MTSInterMaxCand",                                 m_MTSInterMaxCand,                                    4, "Number of additional candidates to test in encoder search for MTS in inter slices\n")
+#else
   ("EMT,-emt",                                        m_EMT,                                                0, "Enhanced Multiple Transform (EMT)\n"
     "\t0:  Disable EMT\n"
     "\t1:  Enable only Intra EMT\n"
@@ -838,6 +847,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     "\t1:  Enable fast methods only for Intra EMT\n"
     "\t2:  Enable fast methods only for Inter EMT\n"
     "\t3:  Enable fast methods for both Intra & Inter EMT\n")
+#endif
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
   ("GBi",                                             m_GBi,                                            false, "Enable Generalized Bi-prediction(GBi)")
   ("GBiFast",                                         m_GBiFast,                                        false, "Fast methods for Generalized Bi-prediction(GBi)\n")
@@ -989,8 +999,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SaoLumaOffsetBitShift",                           saoOffsetBitShift[CHANNEL_TYPE_LUMA],                 0, "Specify the luma SAO bit-shift. If negative, automatically calculate a suitable value based upon bit depth and initial QP")
   ("SaoChromaOffsetBitShift",                         saoOffsetBitShift[CHANNEL_TYPE_CHROMA],               0, "Specify the chroma SAO bit-shift. If negative, automatically calculate a suitable value based upon bit depth and initial QP")
   ("TransformSkip",                                   m_useTransformSkip,                               false, "Intra transform skipping")
+#if JVET_M0464_UNI_MTS
+  ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast encoder search for transform skipping, winner takes it all mode.")
+  ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     5U, "Specify transform-skip maximum size. Minimum 2, Maximum 5. (not valid in V1 profiles)")
+#else
   ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast intra transform skipping")
   ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     2U, "Specify transform-skip maximum size. Minimum 2. (not valid in V1 profiles)")
+#endif
   ("ImplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT],        false, "Enable implicitly signalled residual DPCM for intra (also known as sample-adaptive intra predict) (not valid in V1 profiles)")
   ("ExplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT],        false, "Enable explicitly signalled residual DPCM for inter (not valid in V1 profiles)")
   ("ResidualRotation",                                m_transformSkipRotationEnabledFlag,               false, "Enable rotation of transform-skipped and transquant-bypassed TUs through 180 degrees prior to entropy coding (not valid in V1 profiles)")
@@ -1919,8 +1934,14 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
     xConfirmPara(m_CPRMode, "CPR Mode only allowed with NEXT profile");
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
+#if JVET_M0464_UNI_MTS
+    xConfirmPara( m_MTS, "MTS only allowed with NEXT profile" );
+    xConfirmPara( m_MTSIntraMaxCand, "MTS only allowed with NEXT profile" );
+    xConfirmPara( m_MTSInterMaxCand, "MTS only allowed with NEXT profile" );
+#else
     xConfirmPara( m_EMT, "EMT only allowed with NEXT profile" );
     xConfirmPara( m_FastEMT, "EMT only allowed with NEXT profile" );
+#endif
     xConfirmPara( m_compositeRefEnabled, "Composite Reference Frame is only allowed with NEXT profile" );
     xConfirmPara( m_GBi, "GBi is only allowed with NEXT profile" );
     xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
@@ -2049,7 +2070,11 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_profile == Profile::MAINSTILLPICTURE && m_framesToBeEncoded > 1, "Number of frames to be encoded must be 1 when main still picture profile is used.");
 
     xConfirmPara(m_crossComponentPredictionEnabledFlag==true, "CrossComponentPrediction must not be used for non main-RExt profiles.");
+#if JVET_M0464_UNI_MTS
+    xConfirmPara(m_log2MaxTransformSkipBlockSize>=6, "Transform Skip Log2 Max Size must be less or equal to 5.");
+#else
     xConfirmPara(m_log2MaxTransformSkipBlockSize!=2, "Transform Skip Log2 Max Size must be 2 for V1 profiles.");
+#endif
     xConfirmPara(m_transformSkipRotationEnabledFlag==true, "UseResidualRotation must not be enabled for non main-RExt profiles.");
     xConfirmPara(m_transformSkipContextEnabledFlag==true, "UseSingleSignificanceMapContext must not be enabled for non main-RExt profiles.");
     xConfirmPara(m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT]==true, "ImplicitResidualDPCM must not be enabled for non main-RExt profiles.");
@@ -2138,6 +2163,7 @@ bool EncAppCfg::xCheckParameter()
 
   xConfirmPara (m_log2MaxTransformSkipBlockSize < 2, "Transform Skip Log2 Max Size must be at least 2 (4x4)");
 
+#if !JVET_M0464_UNI_MTS
   if (m_log2MaxTransformSkipBlockSize!=2 && m_useTransformSkipFast)
   {
     msg( WARNING, "***************************************************************************\n");
@@ -2146,6 +2172,7 @@ bool EncAppCfg::xCheckParameter()
     msg( WARNING, "**          It may be better to disable transform skip fast mode         **\n");
     msg( WARNING, "***************************************************************************\n");
   }
+#endif
 
   xConfirmPara( m_quadtreeTULog2MaxSize * m_tuLog2MaxSize >= 0, "Setting of TULog2MaxSize and QuadtreeTULog2MaxSize is mutually exclusive - use only one of the parameters" );
 
@@ -2258,8 +2285,14 @@ bool EncAppCfg::xCheckParameter()
     m_maxNumAffineMergeCand = m_SubPuMvpMode;
   }
 
+#if JVET_M0464_UNI_MTS
+  xConfirmPara( m_MTS < 0 || m_MTS > 3, "MTS must be greater than 0 smaller than 4" );
+  xConfirmPara( m_MTSIntraMaxCand < 0 || m_MTSIntraMaxCand > 5, "m_MTSIntraMaxCand must be greater than 0 and smaller than 6" );
+  xConfirmPara( m_MTSInterMaxCand < 0 || m_MTSInterMaxCand > 5, "m_MTSInterMaxCand must be greater than 0 and smaller than 6" );
+#else
   xConfirmPara( m_EMT < 0 || m_EMT >3, "EMT must be 0, 1, 2 or 3" );
   xConfirmPara( m_FastEMT < 0 || m_FastEMT >3, "FEMT must be 0, 1, 2 or 3" );
+#endif
   if( m_usePCM)
   {
     for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
@@ -3091,8 +3124,12 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "AltDQPCoding:%d ", m_AltDQPCoding );
 #endif
     msg( VERBOSE, "LMChroma:%d ", m_LMChroma );
+#if JVET_M0464_UNI_MTS
+    msg( VERBOSE, "MTS: %1d(intra) %1d(inter) ", m_MTS & 1, ( m_MTS >> 1 ) & 1 );
+#else
     msg( VERBOSE, "EMT: %1d(intra) %1d(inter) ", m_EMT & 1, ( m_EMT >> 1 ) & 1 );
-    msg(VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
+#endif
+    msg( VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
     msg( VERBOSE, "GBi:%d ", m_GBi );
     msg( VERBOSE, "GBiFast:%d ", m_GBiFast );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
@@ -3117,7 +3154,11 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "FastMrg:%d ", m_useFastMrg );
   msg( VERBOSE, "PBIntraFast:%d ", m_usePbIntraFast );
   if( m_ImvMode == 2 ) msg( VERBOSE, "IMV4PelFast:%d ", m_Imv4PelFast );
+#if JVET_M0464_UNI_MTS
+  if( m_MTS ) msg( VERBOSE, "MTSMaxCand: %1d(intra) %1d(inter) ", m_MTSIntraMaxCand, m_MTSInterMaxCand );
+#else
   if( m_EMT ) msg( VERBOSE, "EMTFast: %1d(intra) %1d(inter) ", ( m_FastEMT & m_EMT & 1 ), ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
+#endif
   msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
   msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
   msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );

@@ -183,8 +183,10 @@ public:
     return std::min(sum, 31);
   }
 
+#if !JVET_M0464_UNI_MTS
   unsigned        emtNumSigCoeff()                          const { return m_emtNumSigCoeff; }
   void            setEmtNumSigCoeff( unsigned val )               { m_emtNumSigCoeff = val; }
+#endif
 
 private:
   // constant
@@ -235,7 +237,9 @@ private:
   CtxSet                    m_parFlagCtxSet;
   CtxSet                    m_gtxFlagCtxSet[2];
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
+#if !JVET_M0464_UNI_MTS
   unsigned                  m_emtNumSigCoeff;
+#endif
 };
 
 

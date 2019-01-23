@@ -214,8 +214,14 @@ protected:
   bool      m_AltDQPCoding;
 #endif
   int       m_LMChroma;
+#if JVET_M0464_UNI_MTS
+  int       m_MTS;                                            ///< XZ: Multiple Transform Set
+  int       m_MTSIntraMaxCand;                                ///< XZ: Number of additional candidates to test
+  int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test
+#else
   int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
+#endif
 
   bool      m_compositeRefEnabled;
   bool      m_GBi;

@@ -190,12 +190,24 @@ protected:
 
   void xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
 
+#if JVET_M0464_UNI_MTS
+  void xEncodeInterResidual(   CodingStructure *&tempCS
+                             , CodingStructure *&bestCS
+                             , Partitioner &partitioner
+                             , const EncTestMode& encTestMode
+                             , int residualPass       = 0
+                             , CodingStructure* imvCS = NULL
+                             , bool* bestHasNonResi   = NULL
+                             , double* equGBiCost     = NULL
+                           );
+#else
   void xEncodeInterResidual   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, int residualPass = 0
     , CodingStructure* imvCS = NULL
     , int emtMode = 1
     , bool* bestHasNonResi = NULL
     , double* equGBiCost = NULL
   );
+#endif
 #if REUSE_CU_RESULTS
   void xReuseCachedResult     ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &Partitioner );
 #endif

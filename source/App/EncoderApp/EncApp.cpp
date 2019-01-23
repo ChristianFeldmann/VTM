@@ -227,10 +227,17 @@ void EncApp::xInitLibCfg()
 #if ENABLE_WPP_PARALLELISM
   m_cEncLib.setUseAltDQPCoding                                   ( m_AltDQPCoding );
 #endif
+#if JVET_M0464_UNI_MTS
+  m_cEncLib.setIntraMTS                                          ( m_MTS & 1 );
+  m_cEncLib.setIntraMTSMaxCand                                   ( m_MTSIntraMaxCand );
+  m_cEncLib.setInterMTS                                          ( ( m_MTS >> 1 ) & 1 );
+  m_cEncLib.setInterMTSMaxCand                                   ( m_MTSInterMaxCand );
+#else
   m_cEncLib.setIntraEMT                                          ( m_EMT & 1 );
   m_cEncLib.setFastIntraEMT                                      ( m_FastEMT & m_EMT & 1 );
   m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
+#endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );

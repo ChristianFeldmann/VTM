@@ -261,7 +261,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
+#if !JVET_M0464_UNI_MTS
   emtFlag           = other.emtFlag;
+#endif
 #if HEVC_TILES_WPP
   tileIdx           = other.tileIdx;
 #endif
@@ -292,7 +294,9 @@ void CodingUnit::initData()
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
+#if !JVET_M0464_UNI_MTS
   emtFlag           = 0;
+#endif
 #if HEVC_TILES_WPP
   tileIdx           = 0;
 #endif
@@ -493,12 +497,17 @@ void TransformUnit::initData()
   {
     cbf[i]           = 0;
     rdpcm[i]         = NUMBER_OF_RDPCM_MODES;
+#if !JVET_M0464_UNI_MTS
     transformSkip[i] = false;
+#endif
     compAlpha[i]     = 0;
   }
   depth              = 0;
+#if JVET_M0464_UNI_MTS
+  mtsIdx             = 0;
+#else
   emtIdx             = 0;
-
+#endif
 }
 
 void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf)
@@ -528,11 +537,17 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
 
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
+#if !JVET_M0464_UNI_MTS
     transformSkip[i] = other.transformSkip[i];
+#endif
     compAlpha[i]     = other.compAlpha[i];
   }
   depth              = other.depth;
+#if JVET_M0464_UNI_MTS
+  mtsIdx             = other.mtsIdx;
+#else
   emtIdx             = other.emtIdx;
+#endif
   return *this;
 }
 
@@ -549,15 +564,20 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 
   cbf[i]           = other.cbf[i];
   rdpcm[i]         = other.rdpcm[i];
+#if !JVET_M0464_UNI_MTS
   transformSkip[i] = other.transformSkip[i];
+#endif
   compAlpha[i]     = other.compAlpha[i];
 
   depth            = other.depth;
-
+#if JVET_M0464_UNI_MTS
+  mtsIdx           = isLuma( i ) ? other.mtsIdx : mtsIdx;
+#else
   if( isLuma( i ) )
   {
     emtIdx         = other.emtIdx;
   }
+#endif
 }
 
        CoeffBuf TransformUnit::getCoeffs(const ComponentID id)       { return  CoeffBuf(m_coeffs[id], blocks[id]); }

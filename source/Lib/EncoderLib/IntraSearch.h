@@ -75,10 +75,12 @@ private:
   CodingStructure **m_pSaveCS;
 
   //cost variables for the EMT algorithm and new modes list
+#if !JVET_M0464_UNI_MTS
   double m_bestModeCostStore[4];                                    // RD cost of the best mode for each PU using DCT2
   double m_modeCostStore    [4][NUM_LUMA_MODE];                         // RD cost of each mode for each PU using DCT2
   uint32_t   m_savedRdModeList  [4][NUM_LUMA_MODE], m_savedNumRdModes[4];
   int        m_savedExtendRefList[4][NUM_LUMA_MODE];
+#endif
 
 protected:
   // interface to option
@@ -142,7 +144,11 @@ protected:
   void xEncCoeffQT                (CodingStructure &cs, Partitioner& pm, const ComponentID &compID);
 
 
+#if JVET_M0464_UNI_MTS
+  void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr, std::vector<TrMode>* trModes=nullptr, const bool loadTr=false );
+#else
   void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr );
+#endif
 
   ChromaCbfs xRecurIntraChromaCodingQT  (CodingStructure &cs, Partitioner& pm);
 

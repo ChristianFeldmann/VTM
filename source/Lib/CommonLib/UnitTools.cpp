@@ -236,7 +236,11 @@ bool CU::hasNonTsCodedBlock( const CodingUnit& cu )
   {
     for( uint32_t i = 0; i < ::getNumberValidTBlocks( *cu.cs->pcv ); i++ )
     {
+#if JVET_M0464_UNI_MTS
+      hasAnyNonTSCoded |= ( currTU.blocks[i].valid() && ( isLuma(ComponentID(i)) ? currTU.mtsIdx != 1 : true ) && TU::getCbf( currTU, ComponentID( i ) ) );
+#else
       hasAnyNonTSCoded |= ( currTU.blocks[i].valid() && !currTU.transformSkip[i] && TU::getCbf( currTU, ComponentID( i ) ) );
+#endif
     }
   }
 
@@ -4280,6 +4284,31 @@ void TU::setCbfAtDepth(TransformUnit &tu, const ComponentID &compID, const unsig
   tu.cbf[compID] |= ((cbf ? 1 : 0) << depth);
 }
 
+#if JVET_M0464_UNI_MTS
+bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
+{
+  bool    tsAllowed = compID == COMPONENT_Y;
+  const int maxSize = tu.cs->pps->getPpsRangeExtension().getLog2MaxTransformSkipBlockSize();
+
+  tsAllowed &= tu.cs->pps->getUseTransformSkip();
+  tsAllowed &= !tu.cu->transQuantBypass;
+
+  SizeType transformSkipMaxSize = 1 << maxSize;
+  tsAllowed &= tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize;
+
+  return tsAllowed;
+}
+
+bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
+{
+  bool   mtsAllowed = compID == COMPONENT_Y;
+  const int maxSize = CU::isIntra( *tu.cu ) ? MTS_INTRA_MAX_CU_SIZE : MTS_INTER_MAX_CU_SIZE;
+
+  mtsAllowed &= CU::isIntra( *tu.cu ) ? tu.cs->sps->getSpsNext().getUseIntraMTS() : tu.cs->sps->getSpsNext().getUseInterMTS();
+  mtsAllowed &= ( tu.lwidth() <= maxSize && tu.lheight() <= maxSize );
+  return mtsAllowed;
+}
+#else
 bool TU::hasTransformSkipFlag(const CodingStructure& cs, const CompArea& area)
 {
   uint32_t transformSkipLog2MaxSize = cs.pps->getPpsRangeExtension().getLog2MaxTransformSkipBlockSize();
@@ -4287,10 +4316,15 @@ bool TU::hasTransformSkipFlag(const CodingStructure& cs, const CompArea& area)
   SizeType transformSkipMaxSize = 1 << transformSkipLog2MaxSize;
   return area.width <= transformSkipMaxSize && area.height <= transformSkipMaxSize;
 }
+#endif
 
 uint32_t TU::getGolombRiceStatisticsIndex(const TransformUnit &tu, const ComponentID &compID)
 {
+#if JVET_M0464_UNI_MTS
+  const bool transformSkip    = tu.mtsIdx==1;
+#else
   const bool transformSkip    = tu.transformSkip[compID];
+#endif
   const bool transquantBypass = tu.cu->transQuantBypass;
 
   //--------
@@ -4372,7 +4406,11 @@ uint32_t TU::getNumNonZeroCoeffsNonTS( const TransformUnit& tu, const bool bLuma
   uint32_t count = 0;
   for( uint32_t i = 0; i < ::getNumberValidTBlocks( *tu.cs->pcv ); i++ )
   {
+#if JVET_M0464_UNI_MTS
+    if( tu.blocks[i].valid() && ( isLuma(ComponentID(i)) ? tu.mtsIdx !=1 : true ) && TU::getCbf( tu, ComponentID( i ) ) )
+#else
     if( tu.blocks[i].valid() && !tu.transformSkip[i] && TU::getCbf( tu, ComponentID( i ) ) )
+#endif
     {
       if( isLuma  ( tu.blocks[i].compID ) && !bLuma   ) continue;
       if( isChroma( tu.blocks[i].compID ) && !bChroma ) continue;

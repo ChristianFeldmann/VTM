@@ -4721,7 +4721,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 {
   const UnitArea& currArea = partitioner.currArea();
   const SPS &sps           = *cs.sps;
+#if !JVET_M0464_UNI_MTS
   const PPS &pps           = *cs.pps;
+#endif
   const uint32_t numValidComp  = getNumberValidComponents( sps.getChromaFormatIdc() );
   const uint32_t numTBlocks    = getNumberValidTBlocks   ( *cs.pcv );
   const CodingUnit &cu = *cs.getCU(partitioner.chType);
@@ -4753,10 +4755,16 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
   {
     TransformUnit &tu = csFull->addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
     tu.depth          = currDepth;
+#if JVET_M0464_UNI_MTS
+    tu.mtsIdx         = 0;
+#else
     tu.emtIdx         = 0;
+#endif
 
     double minCost            [MAX_NUM_TBLOCKS];
+#if !JVET_M0464_UNI_MTS
     bool   checkTransformSkip [MAX_NUM_TBLOCKS];
+#endif
 
     m_CABACEstimator->resetBits();
 
@@ -4783,19 +4791,22 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         continue;
       const CompArea&   compArea  = tu.blocks[compID];
       const int channelBitDepth   = sps.getBitDepth(toChannelType(compID));
-
+#if !JVET_M0464_UNI_MTS
       checkTransformSkip[compID]  = false;
+#endif
 
       if( !tu.blocks[compID].valid() )
       {
         continue;
       }
 
+#if !JVET_M0464_UNI_MTS
       checkTransformSkip[compID] = pps.getUseTransformSkip() && TU::hasTransformSkipFlag( *tu.cs, tu.blocks[compID] ) && !cs.isLossless;
       if( isLuma(compID) )
       {
         checkTransformSkip[compID]  &= !tu.cu->emtFlag;
       }
+#endif
 
       const bool isCrossCPredictionAvailable = TU::hasCrossCompPredInfo( tu, compID );
 
@@ -4808,10 +4819,32 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         preCalcAlpha = xCalcCrossComponentPredictionAlpha( tu, compID, m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate() );
       }
 
+#if JVET_M0464_UNI_MTS
+      const bool tsAllowed  = TU::isTSAllowed ( tu, compID );
+      const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
+      uint8_t nNumTransformCands = 1 + ( tsAllowed ? 1 : 0 ) + ( mtsAllowed ? 4 : 0 ); // DCT + TS + 4 MTS = 6 tests
+      std::vector<TrMode> trModes;
+      trModes.push_back( TrMode( 0, true ) ); //DCT2
+      if( tsAllowed )
+      {
+        trModes.push_back( TrMode( 1, true ) );
+      }
+      if( mtsAllowed )
+      {
+        for( int i = 2; i < 6; i++ )
+        {
+          trModes.push_back( TrMode( i, true ) );
+        }
+      }
+#endif
       const int crossCPredictionModesToTest = preCalcAlpha != 0 ? 2 : 1;
+#if JVET_M0464_UNI_MTS
+      const int numTransformCandidates = nNumTransformCands;
+#else
       const int numEmtTransformCandidates   = isLuma(compID) && tu.cu->emtFlag && sps.getSpsNext().getUseInterEMT() ? 4 : 1;
       const int numTransformCandidates      = checkTransformSkip[compID] ? ( numEmtTransformCandidates + 1 ) : numEmtTransformCandidates;
       int lastTransformModeIndex            = numTransformCandidates - 1; //lastTransformModeIndex is the mode for transformSkip (if transformSkip is active)
+#endif
       const bool isOneMode                  = crossCPredictionModesToTest == 1 && numTransformCandidates == 1;
 
       bool isLastBest = isOneMode;
@@ -4829,8 +4862,23 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           m_CABACEstimator->getCtx() = ctxStart;
           m_CABACEstimator->resetBits();
 
+#if JVET_M0464_UNI_MTS
+          if( isLuma( compID ) )
+          {
+            if( bestTU.mtsIdx == 1 && m_pcEncCfg->getUseTransformSkipFast() )
+            {
+              continue;
+            }
+            if( !trModes[transformMode].second )
+            {
+              continue;
+            }
+            tu.mtsIdx = trModes[transformMode].first;
+          }
+#else
           if( isLuma( compID ) ) tu.emtIdx = transformMode;
           tu.transformSkip[compID]  = checkTransformSkip[compID] && transformMode == lastTransformModeIndex;
+#endif
           tu.compAlpha[compID]      = bUseCrossCPrediction ? preCalcAlpha : 0;
 
           const QpParam cQP(tu, compID);  // note: uses tu.transformSkip[compID]
@@ -4853,7 +4901,23 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             crossComponentPrediction( tu, compID, lumaResi, resiBuf, resiBuf, false );
           }
 
+#if JVET_M0464_UNI_MTS
+          if( nNumTransformCands > 1 )
+          {
+            if( transformMode == 0 )
+            {
+              m_pcTrQuant->transformNxN( tu, compID, cQP, &trModes, CU::isIntra( *tu.cu ) ? m_pcEncCfg->getIntraMTSMaxCand() : m_pcEncCfg->getInterMTSMaxCand() );
+              tu.mtsIdx = trModes[0].first;
+            }
+            m_pcTrQuant->transformNxN( tu, compID, cQP, currAbsSum, m_CABACEstimator->getCtx(), true );
+          }
+          else
+          {
+            m_pcTrQuant->transformNxN( tu, compID, cQP, currAbsSum, m_CABACEstimator->getCtx() );
+          }
+#else
           m_pcTrQuant->transformNxN(tu, compID, cQP, currAbsSum, m_CABACEstimator->getCtx());
+#endif
 
           if (isFirstMode || (currAbsSum == 0))
           {
@@ -4937,7 +5001,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
               nonCoeffCost = MAX_DOUBLE;
             }
           }
+#if JVET_M0464_UNI_MTS
+          else if( transformMode > 0 && !bUseCrossCPrediction )
+#else
           else if( ( transformMode == lastTransformModeIndex ) && checkTransformSkip[compID] && !bUseCrossCPrediction )
+#endif
           {
             currCompCost = MAX_DOUBLE;
           }
@@ -4951,7 +5019,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           }
 
           // evaluate
+#if JVET_M0464_UNI_MTS
+          if( ( currCompCost < minCost[compID] ) || ( transformMode == 1 && currCompCost == minCost[compID] ) )
+#else
           if( ( currCompCost < minCost[compID] ) || ( transformMode == lastTransformModeIndex && checkTransformSkip[compID] && currCompCost == minCost[compID] ) )
+#endif
           {
             // copy component
             if (isFirstMode && ((nonCoeffCost < currCompCost) || (currAbsSum == 0))) // check for forced null
@@ -5073,10 +5145,12 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       );
 
       csSplit->cost = m_pcRdCost->calcRdCost( csSplit->fracBits, csSplit->dist );
+#if !JVET_M0464_UNI_MTS
       if( csFull && csSplit->cost >= csFull->cost && m_pcEncCfg->getFastInterEMT() )
       {
         break;
       }
+#endif
     } while( partitioner.nextPart( *csSplit ) );
 
     partitioner.exitCurrSplit();
@@ -5084,8 +5158,12 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     unsigned        anyCbfSet   =   0;
     unsigned        compCbf[3]  = { 0, 0, 0 };
 
+#if JVET_M0464_UNI_MTS
+    if( !bCheckFull )
+#else
     bool isSplit = bCheckFull ? false : true;
     if( !bCheckFull || ( csSplit->cost < csFull->cost && m_pcEncCfg->getFastInterEMT() ) || !m_pcEncCfg->getFastInterEMT() )
+#endif
     {
       for( auto &currTU : csSplit->traverseTUs( currArea, partitioner.chType ) )
       {
@@ -5137,10 +5215,13 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       {
         cs.useSubStructure( *csSplit, partitioner.chType, currArea, false, false, false, true );
         cs.cost = csSplit->cost;
+#if !JVET_M0464_UNI_MTS
         isSplit = true;
+#endif
       }
     }
 
+#if !JVET_M0464_UNI_MTS
     if( ( !isSplit && m_pcEncCfg->getFastInterEMT() ) || ( !m_pcEncCfg->getFastInterEMT() && !( !bCheckFull || ( anyCbfSet && csSplit->cost < csFull->cost ) ) ) )
     {
       CHECK( !bCheckFull, "Error!" );
@@ -5148,6 +5229,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       cs.cost = csFull->cost;
       m_CABACEstimator->getCtx() = ctxBest;
     }
+#endif
 
     if( csSplit && csFull )
     {

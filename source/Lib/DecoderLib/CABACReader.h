@@ -127,9 +127,13 @@ public:
 
   // residual coding (clause 7.3.8.11)
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID );
+#if JVET_M0464_UNI_MTS
+  void        mts_coding                ( TransformUnit&                tu,     ComponentID     compID );
+#else
   void        transform_skip_flag       ( TransformUnit&                tu,     ComponentID     compID );
   void        emt_tu_index              ( TransformUnit&                tu );
   void        emt_cu_flag               ( CodingUnit&                   cu );
+#endif
   void        explicit_rdpcm_mode       ( TransformUnit&                tu,     ComponentID     compID );
   int         last_sig_coeff            ( CoeffCodingContext&           cctx );
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff, const int stateTransTable, int& state );

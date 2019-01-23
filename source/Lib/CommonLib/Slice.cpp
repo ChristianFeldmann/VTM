@@ -1738,8 +1738,13 @@ SPSNext::SPSNext( SPS& sps )
   , m_BIO                       ( false )
   , m_DisableMotionCompression  ( false )
   , m_LMChroma                  ( false )
+#if JVET_M0464_UNI_MTS
+  , m_IntraMTS                  ( false )
+  , m_InterMTS                  ( false )
+#else
   , m_IntraEMT                  ( false )
   , m_InterEMT                  ( false )
+#endif
   , m_Affine                    ( false )
   , m_AffineType                ( false )
   , m_MTTEnabled                ( false )

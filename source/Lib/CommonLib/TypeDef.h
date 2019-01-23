@@ -52,6 +52,13 @@
 
 #define JVET_M0407_CPR_RANGE                              1 // extend CPR search range to some part of left CTU
 
+#define JVET_M0464_UNI_MTS                                1
+
+#if JVET_M0464_UNI_MTS
+typedef std::pair<int, bool> TrMode;
+typedef std::pair<int, int>  TrCost;
+#endif
+
 #define JVET_M0421_SPLIT_SIG                              1
 
 #define REMOVE_BIN_DECISION_TREE                          1

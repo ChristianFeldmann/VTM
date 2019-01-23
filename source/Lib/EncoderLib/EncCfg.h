@@ -202,10 +202,17 @@ protected:
   unsigned  m_log2DiffMaxMinCodingBlockSize;
 
   int       m_LMChroma;
+#if JVET_M0464_UNI_MTS
+  int       m_IntraMTS;
+  int       m_InterMTS;
+  int       m_IntraMTSMaxCand;
+  int       m_InterMTSMaxCand;
+#else
   int       m_IntraEMT;
   int       m_InterEMT;
   int       m_FastIntraEMT;
   int       m_FastInterEMT;
+#endif
   bool      m_LargeCTU;
   int       m_SubPuMvpMode;
   bool      m_Affine;
@@ -695,6 +702,16 @@ public:
   bool      getUseAltDQPCoding              ()         const { return m_AltDQPCoding; }
 #endif
 
+#if JVET_M0464_UNI_MTS
+  void      setIntraMTSMaxCand              ( unsigned u )   { m_IntraMTSMaxCand = u; }
+  unsigned  getIntraMTSMaxCand              ()         const { return m_IntraMTSMaxCand; }
+  void      setInterMTSMaxCand              ( unsigned u )   { m_InterMTSMaxCand = u; }
+  unsigned  getInterMTSMaxCand              ()         const { return m_InterMTSMaxCand; }
+  void      setIntraMTS                     ( bool b )       { m_IntraMTS = b; }
+  bool      getIntraMTS                     ()         const { return m_IntraMTS; }
+  void      setInterMTS                     ( bool b )       { m_InterMTS = b; }
+  bool      getInterMTS                     ()         const { return m_InterMTS; }
+#else
   void      setFastIntraEMT                 ( bool b )       { m_FastIntraEMT = b; }
   bool      getFastIntraEMT                 ()         const { return m_FastIntraEMT; }
   void      setFastInterEMT                 ( bool b )       { m_FastInterEMT = b; }
@@ -703,6 +720,7 @@ public:
   bool      getIntraEMT                     ()         const { return m_IntraEMT; }
   void      setInterEMT                     ( bool b )       { m_InterEMT = b; }
   bool      getInterEMT                     ()         const { return m_InterEMT; }
+#endif
 
 
 
@@ -878,7 +896,6 @@ public:
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       getIntraQPOffset                () const    { return  m_intraQPOffset; }
   int       getLambdaFromQPEnable           () const    { return  m_lambdaFromQPEnable; }
-
 public:
   int       getBaseQP                       () const { return  m_iQP; } // public should use getQPForPicture.
   int       getQPForPicture                 (const uint32_t gopIndex, const Slice *pSlice) const; // Function actually defined in EncLib.cpp

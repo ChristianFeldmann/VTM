@@ -285,7 +285,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
   uint32_t extraModes = 0; // add two extra modes, which would be used after uiMode <= DC_IDX is removed for cu.nsstIdx == 3
 
-
+#if !JVET_M0464_UNI_MTS
   const int width   = partitioner.currArea().lwidth();
   const int height  = partitioner.currArea().lheight();
 
@@ -306,6 +306,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
   {
     emtUsageFlag = 0; //this forces the recalculation of the candidates list. Why is this necessary? (to be checked)
   }
+#endif
 
   static_vector<uint32_t,   FAST_UDI_MAX_RDMODE_NUM> uiHadModeList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandCostList;
@@ -315,7 +316,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
   static_vector<int, FAST_UDI_MAX_RDMODE_NUM>* nullList = NULL;
 
   auto &pu = *cu.firstPU;
+#if !JVET_M0464_UNI_MTS
   int puIndex = 0;
+#endif
   {
     CandHadList.clear();
     CandCostList.clear();
@@ -335,8 +338,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     numModesForFullRD = numModesAvailable;
 #endif
 
-
+#if !JVET_M0464_UNI_MTS
     if( emtUsageFlag != 2 )
+#endif
     {
       // this should always be true
       CHECK( !pu.Y().valid(), "PU is not valid" );
@@ -547,6 +551,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
           uiRdModeList.push_back( i );
         }
       }
+#if !JVET_M0464_UNI_MTS
       if( emtUsageFlag == 1 )
       {
         // Store the modes to be checked with RD
@@ -554,7 +559,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
         std::copy_n( uiRdModeList.begin(), numModesForFullRD, m_savedRdModeList[puIndex] );
         std::copy_n(extendRefList.begin(), numModesForFullRD, m_savedExtendRefList[puIndex]);
       }
+#endif
     }
+#if !JVET_M0464_UNI_MTS
     else //emtUsage = 2 (here we potentially reduce the number of modes that will be full-RD checked)
     {
       if( isAllIntra && m_pcEncCfg->getFastIntraEMT() )
@@ -585,6 +592,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
         std::copy_n(m_savedExtendRefList[puIndex], m_savedNumRdModes[puIndex], extendRefList.begin());
       }
     }
+#endif
 
 
     CHECK( numModesForFullRD != uiRdModeList.size(), "Inconsistent state!" );
@@ -592,7 +600,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     // after this point, don't use numModesForFullRD
 
     // PBINTRA fast
+#if JVET_M0464_UNI_MTS
+    if( m_pcEncCfg->getUsePbIntraFast() && !cs.slice->isIntra() && uiRdModeList.size() < numModesAvailable )
+#else
     if( m_pcEncCfg->getUsePbIntraFast() && !cs.slice->isIntra() && uiRdModeList.size() < numModesAvailable && emtUsageFlag != 2 )
+#endif
     {
       if( CandHadList.size() < 3 || CandHadList[2] > cs.interHad * PBINTRA_RATIO )
       {
@@ -649,11 +661,12 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
       xRecurIntraCodingLumaQT( *csTemp, partitioner );
 
+#if !JVET_M0464_UNI_MTS
       if( emtUsageFlag == 1 && m_pcEncCfg->getFastIntraEMT() )
       {
         m_modeCostStore[puIndex][uiMode] = csTemp->cost; //cs.cost;
       }
-
+#endif
 
       DTRACE( g_trace_ctx, D_INTRA_COST, "IntraCost T %f (%d) \n", csTemp->cost, uiOrgMode );
 
@@ -664,11 +677,12 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
         uiBestPUMode  = uiOrgMode;
         bestExtendRef = multiRefIdx;
-
+#if !JVET_M0464_UNI_MTS
         if( ( emtUsageFlag == 1 ) && m_pcEncCfg->getFastIntraEMT() )
         {
           m_bestModeCostStore[puIndex] = csBest->cost; //cs.cost;
         }
+#endif
       }
 
       csTemp->releaseIntermediateData();
@@ -1048,7 +1062,9 @@ void IntraSearch::xEncSubdivCbfQT(CodingStructure &cs, Partitioner &partitioner,
 {
   const UnitArea &currArea = partitioner.currArea();
   TransformUnit &currTU    = *cs.getTU( currArea.blocks[partitioner.chType], partitioner.chType );
+#if !JVET_M0464_UNI_MTS
   CodingUnit &currCU       = *currTU.cu;
+#endif
   uint32_t currDepth           = partitioner.currTrDepth;
 
   const bool subdiv        = currTU.depth > currDepth;
@@ -1081,7 +1097,9 @@ void IntraSearch::xEncSubdivCbfQT(CodingStructure &cs, Partitioner &partitioner,
 
   if (subdiv)
   {
+#if !JVET_M0464_UNI_MTS
     if( currDepth == 0 && bLuma ) m_CABACEstimator->emt_cu_flag( currCU );
+#endif
 
     if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
@@ -1099,8 +1117,9 @@ void IntraSearch::xEncSubdivCbfQT(CodingStructure &cs, Partitioner &partitioner,
   }
   else
   {
+#if !JVET_M0464_UNI_MTS
     if( currDepth == 0 && bLuma && TU::getCbfAtDepth( currTU, COMPONENT_Y, 0 ) ) m_CABACEstimator->emt_cu_flag( currCU );
-
+#endif
     //===== Cbfs =====
     if (bLuma)
     {
@@ -1185,7 +1204,11 @@ uint64_t IntraSearch::xGetIntraFracBitsQTChroma(TransformUnit& currTU, const Com
   return fracBits;
 }
 
+#if JVET_M0464_UNI_MTS
+void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2, uint32_t* numSig, std::vector<TrMode>* trModes, const bool loadTr)
+#else
 void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2, uint32_t* numSig )
+#endif
 {
   if (!tu.blocks[compID].valid())
   {
@@ -1280,8 +1303,16 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   m_pcTrQuant->selectLambda(compID);
 #endif
 
-
+#if JVET_M0464_UNI_MTS
+  if( trModes )
+  {
+    m_pcTrQuant->transformNxN( tu, compID, cQP, trModes, CU::isIntra( *tu.cu ) ? m_pcEncCfg->getIntraMTSMaxCand() : m_pcEncCfg->getInterMTSMaxCand() );
+    tu.mtsIdx = trModes->at(0).first;
+  }
+  m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
+#else
   m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx());
+#endif
 
 
   DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), compID, uiAbsSum );
@@ -1322,8 +1353,10 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &partitioner )
 {
   const UnitArea &currArea = partitioner.currArea();
+#if !JVET_M0464_UNI_MTS
   const CodingUnit &cu     = *cs.getCU(currArea.lumaPos(), partitioner.chType);
-  uint32_t     currDepth       = partitioner.currTrDepth;
+#endif
+  uint32_t currDepth       = partitioner.currTrDepth;
   const PPS &pps           = *cs.pps;
   const bool keepResi      = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() || KEEP_PRED_AND_RESI_SIGNALS;
   bool bCheckFull          = true;
@@ -1333,6 +1366,12 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 
   uint32_t    numSig           = 0;
 
+#if JVET_M0464_UNI_MTS
+  double     dSingleCost                        = MAX_DOUBLE;
+  Distortion uiSingleDistLuma                   = 0;
+  uint64_t   singleFracBits                     = 0;
+  int        bestModeId[MAX_NUM_COMPONENT]      = { 0, 0, 0 };
+#else
   bool    checkInitTrDepth = false, checkInitTrDepthTransformSkipWinner = false;
 
   double     dSingleCost                        = MAX_DOUBLE;
@@ -1344,6 +1383,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
   bool       isAllIntra                         = m_pcEncCfg->getIntraPeriod() == 1;
 
   uint8_t numTransformIndexCands                  = nNumTransformCands;
+#endif
 
   const TempCtx ctxStart  ( m_CtxCache, m_CABACEstimator->getCtx() );
   TempCtx       ctxBest   ( m_CtxCache );
@@ -1367,6 +1407,26 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
     TransformUnit &tu = csFull->addTU( CS::getArea( *csFull, currArea, partitioner.chType ), partitioner.chType );
     tu.depth = currDepth;
 
+#if JVET_M0464_UNI_MTS
+    const bool tsAllowed  = TU::isTSAllowed ( tu, COMPONENT_Y );
+    const bool mtsAllowed = TU::isMTSAllowed( tu, COMPONENT_Y );
+    uint8_t nNumTransformCands = 1 + ( tsAllowed ? 1 : 0 ) + ( mtsAllowed ? 4 : 0 ); // DCT + TS + 4 MTS = 6 tests
+    std::vector<TrMode> trModes;
+    trModes.push_back( TrMode( 0, true ) ); //DCT2
+    if( tsAllowed )
+    {
+      trModes.push_back( TrMode( 1, true ) );
+    }
+    if( mtsAllowed )
+    {
+      for( int i = 2; i < 6; i++ )
+      {
+        trModes.push_back( TrMode( i, true) );
+      }
+    }
+
+    CHECK( !tu.Y().valid(), "Invalid TU" );
+#else
     checkTransformSkip &= TU::hasTransformSkipFlag( *tu.cs, tu.Y() );
     checkTransformSkip &= !cu.transQuantBypass;
     checkTransformSkip &= !cu.emtFlag;
@@ -1378,6 +1438,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 
 
     CHECK( checkInitTrDepthTransformSkipWinner && !checkTransformSkip, "Transform Skip must be enabled if it was the winner in the previous call of xRecurIntraCodingLumaQT!" );
+#endif
 
     CodingStructure &saveCS = *m_pSaveCS[0];
 
@@ -1388,9 +1449,14 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
     double     singleCostTmp     = 0;
     int        firstCheckId      = 0;
 
+#if JVET_M0464_UNI_MTS
+    int       lastCheckId        = trModes[nNumTransformCands-1].first;
+    bool isNotOnlyOneMode        = nNumTransformCands != 1;
+#else
     //we add the EMT candidates to the loop. TransformSkip will still be the last one to be checked (when modeId == lastCheckId) as long as checkTransformSkip is true
     int        lastCheckId       = numTransformIndexCands - ( firstCheckId + 1 ) + ( int ) checkTransformSkip;
     bool isNotOnlyOneMode        = lastCheckId != firstCheckId && !checkInitTrDepthTransformSkipWinner;
+#endif
 
     if( isNotOnlyOneMode )
     {
@@ -1401,9 +1467,25 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       tmpTU = &saveCS.addTU(currArea, partitioner.chType);
     }
 
+#if JVET_M0464_UNI_MTS
+    bool    cbfDCT2  = true;
+#else
     bool cbfBestMode = false;
+#endif
 
-
+#if JVET_M0464_UNI_MTS
+    for( int modeId = firstCheckId; modeId < nNumTransformCands; modeId++ )
+    {
+      if( !cbfDCT2 || ( m_pcEncCfg->getUseTransformSkipFast() && bestModeId[COMPONENT_Y] == 1 ) )
+      {
+        break;
+      }
+      if( !trModes[modeId].second )
+      {
+        continue;
+      }
+      tu.mtsIdx = trModes[modeId].first;
+#else
     for( int modeId = firstCheckId; modeId <= lastCheckId; modeId++ )
     {
       if( checkInitTrDepthTransformSkipWinner )
@@ -1426,6 +1508,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
           continue;
         }
       }
+#endif
 
       if ((modeId != firstCheckId) && isNotOnlyOneMode)
       {
@@ -1435,7 +1518,11 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       int default0Save1Load2 = 0;
       singleDistTmpLuma = 0;
 
+#if JVET_M0464_UNI_MTS
+      if( modeId == firstCheckId && nNumTransformCands > 1 )
+#else
       if (modeId == firstCheckId && modeId != lastCheckId && !checkInitTrDepthTransformSkipWinner )
+#endif
       {
         default0Save1Load2 = 1;
       }
@@ -1443,7 +1530,26 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       {
         default0Save1Load2 = 2;
       }
-
+#if JVET_M0464_UNI_MTS
+      if( nNumTransformCands > 1 )
+      {
+        xIntraCodingTUBlock( tu, COMPONENT_Y, false, singleDistTmpLuma, default0Save1Load2, &numSig, modeId == 0 ? &trModes : nullptr, true );
+        if( modeId == 0 )
+        {
+          for( int i = 0; i < nNumTransformCands; i++ )
+          {
+            if( trModes[i].second )
+            {
+              lastCheckId = trModes[i].first;
+            }
+          }
+        }
+      }
+      else
+      {
+        xIntraCodingTUBlock( tu, COMPONENT_Y, false, singleDistTmpLuma, default0Save1Load2, &numSig );
+      }
+#else
       if (cu.emtFlag)
       {
         tu.emtIdx = transformIndex;
@@ -1458,10 +1564,15 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       }
 
       xIntraCodingTUBlock( tu, COMPONENT_Y, false, singleDistTmpLuma, default0Save1Load2, &numSig );
+#endif
 
       //----- determine rate and r-d cost -----
+#if JVET_M0464_UNI_MTS
+      if( ( trModes[modeId].first != 0 && !TU::getCbfAtDepth( tu, COMPONENT_Y, currDepth ) ) )
+#else
       //the condition (transformIndex != DCT2_EMT) seems to be irrelevant, since DCT2_EMT=7 and the highest value of transformIndex is 4
       if( ( modeId == lastCheckId && checkTransformSkip && !TU::getCbfAtDepth( tu, COMPONENT_Y, currDepth ) ) )
+#endif
       {
         //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
         singleCostTmp = MAX_DOUBLE;
@@ -1478,9 +1589,16 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         uiSingleDistLuma  = singleDistTmpLuma;
         singleFracBits    = singleTmpFracBits;
 
+#if JVET_M0464_UNI_MTS
+        bestModeId[COMPONENT_Y] = trModes[modeId].first;
+        if( trModes[modeId].first == 0 )
+        {
+          cbfDCT2  = TU::getCbfAtDepth( tu, COMPONENT_Y, currDepth );
+        }
+#else
         bestModeId[COMPONENT_Y] = modeId;
         cbfBestMode       = TU::getCbfAtDepth( tu, COMPONENT_Y, currDepth );
-
+#endif
 
         if( bestModeId[COMPONENT_Y] != lastCheckId )
         {
@@ -1604,7 +1722,9 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
 
   TransformUnit &currTU               = *cs.getTU( currArea.chromaPos(), CHANNEL_TYPE_CHROMA );
   const PredictionUnit &pu            = *cs.getPU( currArea.chromaPos(), CHANNEL_TYPE_CHROMA );
+#if !JVET_M0464_UNI_MTS
   const TransformUnit &currTULuma     = CS::isDualITree( cs ) ? *cs.picture->cs->getTU( currArea.lumaPos(), CHANNEL_TYPE_LUMA ) : currTU;
+#endif
 
   uint32_t     currDepth                  = partitioner.currTrDepth;
   const PPS &pps                      = *cs.pps;
@@ -1617,6 +1737,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
       return cbfs;
     }
 
+#if !JVET_M0464_UNI_MTS
     bool checkTransformSkip = pps.getUseTransformSkip();
     checkTransformSkip &= TU::hasTransformSkipFlag( *currTU.cs, partitioner.currArea().Cb() );
 
@@ -1638,6 +1759,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
         checkTransformSkip &= ( nbLumaSkip > 0 );
       }
     }
+#endif
 
     CodingStructure &saveCS = *m_pSaveCS[1];
     saveCS.pcv      = cs.pcv;
@@ -1666,8 +1788,12 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
       const bool checkCrossComponentPrediction = PU::isChromaIntraModeCrossCheckMode( pu ) && pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && TU::getCbf( currTU, COMPONENT_Y );
 
       const int  crossCPredictionModesToTest = checkCrossComponentPrediction ? 2 : 1;
+#if JVET_M0464_UNI_MTS
+      const int  totalModesToTest            = crossCPredictionModesToTest;
+#else
       const int  transformSkipModesToTest    = checkTransformSkip ? 2 : 1;
       const int  totalModesToTest            = crossCPredictionModesToTest * transformSkipModesToTest;
+#endif
       const bool isOneMode                   = (totalModesToTest == 1);
 
       int currModeId = 0;
@@ -1681,12 +1807,16 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
         ctxStart = m_CABACEstimator->getCtx();
       }
 
+#if !JVET_M0464_UNI_MTS
       for (int transformSkipModeId = 0; transformSkipModeId < transformSkipModesToTest; transformSkipModeId++)
+#endif
       {
         for (int crossCPredictionModeId = 0; crossCPredictionModeId < crossCPredictionModesToTest; crossCPredictionModeId++)
         {
           currTU.compAlpha    [compID] = 0;
+#if !JVET_M0464_UNI_MTS
           currTU.transformSkip[compID] = transformSkipModeId;
+#endif
 
           currModeId++;
 
@@ -1697,7 +1827,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
           {
             default0Save1Load2 = 0;
           }
+#if JVET_M0464_UNI_MTS
+          else if (!isOneMode && (crossCPredictionModeId == 0))
+#else
           else if (!isOneMode && (transformSkipModeId == 0) && (crossCPredictionModeId == 0))
+#endif
           {
             default0Save1Load2 = 1; //save prediction on first mode
           }
@@ -1715,7 +1849,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
 
           xIntraCodingTUBlock( currTU, compID, crossCPredictionModeId != 0, singleDistCTmp, default0Save1Load2 );
 
+#if JVET_M0464_UNI_MTS
+          if( ( ( crossCPredictionModeId == 1 ) && ( currTU.compAlpha[compID] == 0 ) ) ) //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
+#else
           if( ( ( crossCPredictionModeId == 1 ) && ( currTU.compAlpha[compID] == 0 ) ) || ( ( transformSkipModeId == 1 ) && !TU::getCbf( currTU, compID ) ) ) //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
+#endif
           {
             singleCostTmp = MAX_DOUBLE;
           }

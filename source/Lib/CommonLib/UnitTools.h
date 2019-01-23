@@ -171,7 +171,12 @@ namespace TU
   bool getCbf                         (const TransformUnit &tu, const ComponentID &compID);
   bool getCbfAtDepth                  (const TransformUnit &tu, const ComponentID &compID, const unsigned &depth);
   void setCbfAtDepth                  (      TransformUnit &tu, const ComponentID &compID, const unsigned &depth, const bool &cbf);
+#if JVET_M0464_UNI_MTS
+  bool isTSAllowed                    (const TransformUnit &tu, const ComponentID  compID);
+  bool isMTSAllowed                   (const TransformUnit &tu, const ComponentID  compID);
+#else
   bool hasTransformSkipFlag           (const CodingStructure& cs, const CompArea& area);
+#endif
   uint32_t getGolombRiceStatisticsIndex   (const TransformUnit &tu, const ComponentID &compID);
 #if HEVC_USE_MDCS
   uint32_t getCoefScanIdx                 (const TransformUnit &tu, const ComponentID &compID);

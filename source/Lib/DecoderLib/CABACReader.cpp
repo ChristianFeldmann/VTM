@@ -421,6 +421,14 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     }
   }
 
+#if JVET_M0421_SPLIT_SIG
+  const PartSplit splitMode = split_cu_mode( cs, partitioner );
+
+  CHECK( !partitioner.canSplit( splitMode, cs ), "Got an invalid split!" );
+
+  if( splitMode != CU_DONT_SPLIT )
+  {
+#else
   const PartSplit implicitSplit = partitioner.getImplicitSplit( cs );
 
   // QT
@@ -440,6 +448,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     // quad-tree split
     if( qtSplit )
     {
+#endif
       if (CS::isDualITree(cs) && pPartitionerChroma != nullptr && (partitioner.currArea().lwidth() >= 64 || partitioner.currArea().lheight() >= 64))
       {
         partitioner.splitCurrArea(CU_QUAD_SPLIT, cs);
@@ -519,7 +528,11 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       }
       else
       {
+#if JVET_M0421_SPLIT_SIG
+      partitioner.splitCurrArea( splitMode, cs );
+#else
       partitioner.splitCurrArea( CU_QUAD_SPLIT, cs );
+#endif
       do
       {
         if( !lastSegment && cs.area.blocks[partitioner.chType].contains( partitioner.currArea().blocks[partitioner.chType].pos() ) )
@@ -531,9 +544,12 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       partitioner.exitCurrSplit();
       }
       return lastSegment;
+#if !JVET_M0421_SPLIT_SIG
     }
+#endif
   }
 
+#if !JVET_M0421_SPLIT_SIG
   {
     // MT
     bool mtSplit = partitioner.canSplit( CU_MT_SPLIT, cs );
@@ -560,7 +576,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     }
   }
 
-
+#endif
   CodingUnit& cu = cs.addCU( CS::getArea( cs, currArea, partitioner.chType ), partitioner.chType );
 
   partitioner.setCUData( cu );
@@ -595,6 +611,76 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   return isLastCtu;
 }
 
+#if JVET_M0421_SPLIT_SIG
+PartSplit CABACReader::split_cu_mode( CodingStructure& cs, Partitioner &partitioner )
+{
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__SPLIT_FLAG, partitioner.currArea().blocks[partitioner.chType].size(), partitioner.chType );
+
+  PartSplit mode = CU_DONT_SPLIT;
+  
+  bool canNo, canQt, canBh, canBv, canTh, canTv;
+  partitioner.canSplit( cs, canNo, canQt, canBh, canBv, canTh, canTv );
+
+  bool canSpl[6] = { canNo, canQt, canBh, canBv, canTh, canTv };
+
+  unsigned ctxSplit = 0, ctxQtSplit = 0, ctxBttHV = 0, ctxBttH12 = 0, ctxBttV12;
+  DeriveCtx::CtxSplit( cs, partitioner, ctxSplit, ctxQtSplit, ctxBttHV, ctxBttH12, ctxBttV12, canSpl );
+
+  bool isSplit = canBh || canBv || canTh || canTv || canQt;
+
+  if( canNo && isSplit )
+  {
+    isSplit = m_BinDecoder.decodeBin( Ctx::SplitFlag( ctxSplit ) );
+  }
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "split_cu_mode() ctx=%d split=%d\n", ctxSplit, isSplit );
+
+  if( !isSplit )
+  {
+    return CU_DONT_SPLIT;
+  }
+
+  const bool canBtt = canBh || canBv || canTh || canTv;
+  bool       isQt   = canQt;
+
+  if( isQt && canBtt )
+  {
+    isQt = m_BinDecoder.decodeBin( Ctx::SplitQtFlag( ctxQtSplit ) );
+  }
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "split_cu_mode() ctx=%d qt=%d\n", ctxQtSplit, isQt );
+
+  if( isQt )
+  {
+    return CU_QUAD_SPLIT;
+  }
+
+  const bool canHor = canBh || canTh;
+  bool        isVer = canBv || canTv;
+
+  if( isVer && canHor )
+  {
+    isVer = m_BinDecoder.decodeBin( Ctx::SplitHvFlag( ctxBttHV ) );
+  }
+
+  const bool can14 = isVer ? canTv : canTh;
+  bool        is12 = isVer ? canBv : canBh;
+
+  if( is12 && can14 )
+  {
+    is12 = m_BinDecoder.decodeBin( Ctx::Split12Flag( isVer ? ctxBttV12 : ctxBttH12 ) );
+  }
+
+  if     ( isVer && is12 )  mode = CU_VERT_SPLIT;
+  else if( isVer && !is12 ) mode = CU_TRIV_SPLIT;
+  else if( !isVer && is12 ) mode = CU_HORZ_SPLIT;
+  else                      mode = CU_TRIH_SPLIT;
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "split_cu_mode() ctxHv=%d ctx12=%d mode=%d\n", ctxBttHV, isVer ? ctxBttV12 : ctxBttH12, mode );
+
+  return mode;
+}
+#else
 PartSplit CABACReader::split_cu_mode_mt( CodingStructure& cs, Partitioner &partitioner )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__SPLIT_FLAG );
@@ -694,6 +780,7 @@ bool CABACReader::split_cu_flag( CodingStructure& cs, Partitioner &partitioner )
   return split;
 }
 
+#endif
 
 //================================================================================
 //  clause 7.3.8.5

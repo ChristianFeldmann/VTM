@@ -1071,6 +1071,9 @@ const CtxSet ContextSetCfg::SmvdFlag = ContextSetCfg::addCtxSet
   { 154, },
   { 110, },
   { CNU, },
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, }
+#endif
 } );
 #endif
 

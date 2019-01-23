@@ -75,7 +75,7 @@ Slice::Slice()
 #endif
 , m_bCheckLDC                     ( false )
 #if JVET_M0444_SMVD
-, m_bBiDirPred                    ( false )
+, m_biDirPred                    ( false )
 #endif
 , m_iSliceQpDelta                 ( 0 )
 , m_iDepth                        ( 0 )
@@ -196,7 +196,7 @@ void Slice::initSlice()
   m_bCheckLDC = false;
 
 #if JVET_M0444_SMVD
-  m_bBiDirPred = false;
+  m_biDirPred = false;
   m_symRefIdx[0] = -1;
   m_symRefIdx[1] = -1;
 #endif
@@ -775,7 +775,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_iSliceQpDelta        = pSrc->m_iSliceQpDelta;
 
 #if JVET_M0444_SMVD
-  m_bBiDirPred = pSrc->m_bBiDirPred;
+  m_biDirPred = pSrc->m_biDirPred;
   m_symRefIdx[0] = pSrc->m_symRefIdx[0];
   m_symRefIdx[1] = pSrc->m_symRefIdx[1];
 #endif

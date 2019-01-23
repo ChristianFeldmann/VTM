@@ -1573,7 +1573,7 @@ private:
   bool                       m_bCheckLDC;
 
 #if JVET_M0444_SMVD
-  bool                       m_bBiDirPred;
+  bool                       m_biDirPred;
   int                        m_symRefIdx[2];
 #endif
 
@@ -1766,8 +1766,8 @@ public:
   void                        setMvdL1ZeroFlag( bool b)                              { m_bLMvdL1Zero = b;                                            }
 
 #if JVET_M0444_SMVD
-  void                        setBiDirPred( bool b, int refIdx0, int refIdx1 ) { m_bBiDirPred = b; m_symRefIdx[0] = refIdx0; m_symRefIdx[1] = refIdx1; }
-  bool                        getBiDirPred() const { return m_bBiDirPred; }
+  void                        setBiDirPred( bool b, int refIdx0, int refIdx1 ) { m_biDirPred = b; m_symRefIdx[0] = refIdx0; m_symRefIdx[1] = refIdx1; }
+  bool                        getBiDirPred() const { return m_biDirPred; }
   int                         getSymRefIdx( int refList ) const { return m_symRefIdx[refList]; }
 #endif
 

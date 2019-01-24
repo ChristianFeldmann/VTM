@@ -519,14 +519,27 @@ const CtxSet ContextSetCfg::PartSize = ContextSetCfg::addCtxSet
 const CtxSet ContextSetCfg::PredMode = ContextSetCfg::addCtxSet
 ({
 #if JVET_M0453_CABAC_ENGINE
+#if JVET_M0502_PRED_MODE_CTX
+  { 193, 193, },
+  { 151, 151, },
+  { CNU, CNU, },
+  {   1,   1, },
+#else
   {  193,},
   {  151,},
   {  CNU,},
   {    1,},
+#endif
+#else
+#if JVET_M0502_PRED_MODE_CTX
+  { 178, 178, },
+  { 194, 194, },
+  { CNU, CNU, },
 #else
   { 178, },
   { 194, },
   { CNU, },
+#endif
 #endif
 });
 

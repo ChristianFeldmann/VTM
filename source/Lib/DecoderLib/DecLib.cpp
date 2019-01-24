@@ -1122,7 +1122,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       int currPOC = pcSlice->getPOC();
 
       int forwardPOC = currPOC;
-      int bacwardPOC = currPOC;
+      int backwardPOC = currPOC;
       int ref = 0;
       int refIdx0 = -1;
       int refIdx1 = -1;
@@ -1142,17 +1142,17 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); ref++ )
       {
         int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
-        if ( poc > currPOC && (poc < bacwardPOC || refIdx1 == -1) )
+        if ( poc > currPOC && (poc < backwardPOC || refIdx1 == -1) )
         {
-          bacwardPOC = poc;
+          backwardPOC = poc;
           refIdx1 = ref;
         }
       }
 
-      if ( !(forwardPOC < currPOC && bacwardPOC > currPOC) )
+      if ( !(forwardPOC < currPOC && backwardPOC > currPOC) )
       {
         forwardPOC = currPOC;
-        bacwardPOC = currPOC;
+        backwardPOC = currPOC;
         refIdx0 = -1;
         refIdx1 = -1;
 
@@ -1160,9 +1160,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); ref++ )
         {
           int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
-          if ( poc > currPOC && (poc < bacwardPOC || refIdx0 == -1) )
+          if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) )
           {
-            bacwardPOC = poc;
+            backwardPOC = poc;
             refIdx0 = ref;
           }
         }
@@ -1179,7 +1179,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         }
       }
 
-      if ( forwardPOC < currPOC && bacwardPOC > currPOC )
+      if ( forwardPOC < currPOC && backwardPOC > currPOC )
       {
         pcSlice->setBiDirPred( true, refIdx0, refIdx1 );
       }

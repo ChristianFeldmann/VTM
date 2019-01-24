@@ -214,6 +214,9 @@ protected:
   bool      m_AltDQPCoding;
 #endif
   int       m_LMChroma;
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  bool      m_cclmCollocatedChromaFlag;
+#endif
 #if JVET_M0464_UNI_MTS
   int       m_MTS;                                            ///< XZ: Multiple Transform Set
   int       m_MTSIntraMaxCand;                                ///< XZ: Number of additional candidates to test

@@ -794,6 +794,12 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   READ_FLAG( symbol, "bio_enable_flag" );                           spsNext.setUseBIO                 ( symbol != 0 );
   READ_FLAG( symbol,    "disable_motion_compression_flag" );        spsNext.setDisableMotCompress     ( symbol != 0 );
   READ_FLAG( symbol,    "lm_chroma_enabled_flag" );                 spsNext.setUseLMChroma            ( symbol != 0 );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  if ( spsNext.getUseLMChroma() && spsNext.getSPS().getChromaFormatIdc() == CHROMA_420 )
+  {
+    READ_FLAG( symbol,  "sps_cclm_collocated_chroma_flag" );        spsNext.setCclmCollocatedChromaFlag( symbol != 0 );
+  }
+#endif
 #if JVET_M0464_UNI_MTS
   READ_FLAG( symbol,    "mts_intra_enabled_flag" );                 spsNext.setUseIntraMTS            ( symbol != 0 );
   READ_FLAG( symbol,    "mts_inter_enabled_flag" );                 spsNext.setUseInterMTS            ( symbol != 0 );

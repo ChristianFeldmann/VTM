@@ -1738,6 +1738,9 @@ SPSNext::SPSNext( SPS& sps )
   , m_BIO                       ( false )
   , m_DisableMotionCompression  ( false )
   , m_LMChroma                  ( false )
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  , m_cclmCollocatedChromaFlag  ( false )
+#endif
 #if JVET_M0464_UNI_MTS
   , m_IntraMTS                  ( false )
   , m_InterMTS                  ( false )

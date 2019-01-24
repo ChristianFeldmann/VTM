@@ -1389,9 +1389,28 @@ bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, i
   }
 
   // in the same CTU line
-
+#if JVET_M0407_CPR_RANGE
+  if ((refRightX >> ctuSizeLog2 <= xPos >> ctuSizeLog2) && (refLeftX >> ctuSizeLog2 >= (xPos >> ctuSizeLog2) - 1))
+#else
   if ((refRightX >> ctuSizeLog2 <= xPos >> ctuSizeLog2) && (refLeftX >> ctuSizeLog2 >= (xPos >> ctuSizeLog2)))
+#endif
   {
+
+#if JVET_M0407_CPR_RANGE
+    // in the same CTU, or left CTU
+    // if part of ref block is in the left CTU, some area can be referred from the not-yet updated local CTU buffer
+    if ((refLeftX >> ctuSizeLog2) == ((xPos >> ctuSizeLog2) - 1))
+    {
+      // ref block's collocated block in current CTU
+      const Position refPosCol = pu.Y().topLeft().offset(xBv + ctuSize, yBv);
+      int offset64x = (refPosCol.x >> (ctuSizeLog2 - 1)) << (ctuSizeLog2 - 1);
+      int offset64y = (refPosCol.y >> (ctuSizeLog2 - 1)) << (ctuSizeLog2 - 1);
+      const Position refPosCol64x64 = {offset64x, offset64y};
+      if (pu.cs->isDecomp(refPosCol64x64, toChannelType(COMPONENT_Y)))
+        return false;
+    }
+#endif
+#if !JVET_M0407_CPR_RANGE
     // in the same CTU, check if the reference block is already coded
     const Position refPosLT = pu.Y().topLeft().offset(xBv, yBv);
     const Position refPosBR = pu.Y().bottomRight().offset(xBv, yBv);
@@ -1403,9 +1422,22 @@ bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, i
         return false;
     }
     return true;
+#endif
   }
   else
     return false;
+
+#if JVET_M0407_CPR_RANGE
+  // in the same CTU, or valid area from left CTU. Check if the reference block is already coded
+  const Position refPosLT = pu.Y().topLeft().offset(xBv, yBv);
+  const Position refPosBR = pu.Y().bottomRight().offset(xBv, yBv);
+  const ChannelType      chType = toChannelType(COMPONENT_Y);
+  if (!pu.cs->isDecomp(refPosBR, chType))
+    return false;
+  if (!pu.cs->isDecomp(refPosLT, chType))
+    return false;
+  return true;
+#endif
 
 }// for cpr pu validation
 

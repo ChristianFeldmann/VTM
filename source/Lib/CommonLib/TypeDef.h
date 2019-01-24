@@ -54,6 +54,8 @@
 
 #define JVET_M0502_PRED_MODE_CTX                          1
 
+#define JVET_M0407_CPR_RANGE                              1 // extend CPR search range to some part of left CTU
+
 #define JVET_M0464_UNI_MTS                                1
 
 #if JVET_M0464_UNI_MTS

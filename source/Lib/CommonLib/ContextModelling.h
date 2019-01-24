@@ -310,6 +310,9 @@ unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
 unsigned CtxAffineFlag( const CodingUnit& cu );
 unsigned CtxTriangleFlag( const CodingUnit& cu );
+#if JVET_M0502_PRED_MODE_CTX
+unsigned CtxPredModeFlag( const CodingUnit& cu );
+#endif
 }
 
 #endif // __CONTEXTMODELLING__

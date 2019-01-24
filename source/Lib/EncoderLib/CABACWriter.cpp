@@ -783,7 +783,11 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
   {
     return;
   }
+#if JVET_M0502_PRED_MODE_CTX
+  m_BinEncoder.encodeBin( ( CU::isIntra( cu ) ), Ctx::PredMode( DeriveCtx::CtxPredModeFlag( cu ) ) );
+#else
   m_BinEncoder.encodeBin( ( CU::isIntra( cu ) ), Ctx::PredMode() );
+#endif
 }
 
 void CABACWriter::pcm_data( const CodingUnit& cu, Partitioner& partitioner  )

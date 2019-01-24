@@ -52,6 +52,8 @@
 
 #define JVET_M0479_18BITS_MV_CLIP                         1
 
+#define JVET_M0502_PRED_MODE_CTX                          1
+
 #define JVET_M0464_UNI_MTS                                1
 
 #if JVET_M0464_UNI_MTS

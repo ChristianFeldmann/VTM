@@ -927,7 +927,11 @@ void CABACReader::pred_mode( CodingUnit& cu )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__PRED_MODE );
 
+#if JVET_M0502_PRED_MODE_CTX
+  if( cu.cs->slice->isIntra() || m_BinDecoder.decodeBin( Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)) ) )
+#else
   if( cu.cs->slice->isIntra() || m_BinDecoder.decodeBin( Ctx::PredMode() ) )
+#endif
   {
     cu.predMode = MODE_INTRA;
   }

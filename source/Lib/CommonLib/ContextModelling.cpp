@@ -439,6 +439,17 @@ unsigned DeriveCtx::CtxTriangleFlag( const CodingUnit& cu )
   return ctxId;
 }
 
+#if JVET_M0502_PRED_MODE_CTX
+unsigned DeriveCtx::CtxPredModeFlag( const CodingUnit& cu )
+{
+  const CodingUnit *cuLeft  = cu.cs->getCURestricted(cu.lumaPos().offset(-1, 0), cu, CH_L);
+  const CodingUnit *cuAbove = cu.cs->getCURestricted(cu.lumaPos().offset(0, -1), cu, CH_L);
+
+  unsigned ctxId = ((cuAbove && cuAbove->predMode == MODE_INTRA) || (cuLeft && cuLeft->predMode == MODE_INTRA)) ? 1 : 0;
+
+  return ctxId;
+}
+#endif
 
 void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 {

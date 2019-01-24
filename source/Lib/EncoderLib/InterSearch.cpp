@@ -4160,8 +4160,13 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
     for ( int i = 0; i < mvNum; i++ )
     {
       acMvTemp[i] += acDeltaMv[i];
+#if JVET_M0479_18BITS_MV_CLIP
+      acMvTemp[i].hor = Clip3( -131072, 131071, acMvTemp[i].hor );
+      acMvTemp[i].ver = Clip3( -131072, 131071, acMvTemp[i].ver );
+#else
       acMvTemp[i].hor = Clip3( -32768, 32767, acMvTemp[i].hor );
       acMvTemp[i].ver = Clip3( -32768, 32767, acMvTemp[i].ver );
+#endif
       acMvTemp[i].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
       clipMv(acMvTemp[i], pu.cu->lumaPos(),
              pu.cu->lumaSize(),

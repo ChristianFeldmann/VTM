@@ -544,6 +544,45 @@ template <typename ValueType> inline ValueType rightShift      (const ValueType 
 template <typename ValueType> inline ValueType leftShift_round (const ValueType value, const int shift) { return (shift >= 0) ? ( value                                  << shift) : ((value + (ValueType(1) << (-shift - 1))) >> -shift); }
 template <typename ValueType> inline ValueType rightShift_round(const ValueType value, const int shift) { return (shift >= 0) ? ((value + (ValueType(1) << (shift - 1))) >> shift) : ( value                                   << -shift); }
 
+static inline int floorLog2(uint32_t x)
+{
+  if (x == 0)
+  {
+    return -1;
+  }
+#ifdef __GNUC__
+  return 31 - __builtin_clz(x);
+#else
+  int result = 0;
+  if (x & 0xffff0000)
+  {
+    x >>= 16;
+    result += 16;
+  }
+  if (x & 0xff00)
+  {
+    x >>= 8;
+    result += 8;
+  }
+  if (x & 0xf0)
+  {
+    x >>= 4;
+    result += 4;
+  }
+  if (x & 0xc)
+  {
+    x >>= 2;
+    result += 2;
+  }
+  if (x & 0x2)
+  {
+    x >>= 1;
+    result += 1;
+  }
+  return result;
+#endif
+}
+
 //CASE-BREAK for breakpoints
 #if defined ( _MSC_VER ) && defined ( _DEBUG )
 #define _CASE(_x) if(_x)

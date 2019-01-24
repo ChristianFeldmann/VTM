@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -134,6 +134,23 @@ protected:
   bool      m_printSequenceMSE;
   bool      m_cabacZeroWordPaddingEnabled;
 
+  bool      m_bIntraOnlyConstraintFlag;
+  uint32_t  m_maxBitDepthConstraintIdc;
+  uint32_t  m_maxChromaFormatConstraintIdc;
+  bool      m_bFrameConstraintFlag;
+  bool      m_bNoQtbttDualTreeIntraConstraintFlag;
+  bool      m_bNoCclmConstraintFlag;
+  bool      m_bNoSaoConstraintFlag;
+  bool      m_bNoAlfConstraintFlag;
+  bool      m_bNoPcmConstraintFlag;
+  bool      m_bNoTemporalMvpConstraintFlag;
+  bool      m_bNoSbtmvpConstraintFlag;
+  bool      m_bNoAmvrConstraintFlag;
+  bool      m_bNoAffineMotionConstraintFlag;
+  bool      m_bNoMtsConstraintFlag;
+  bool      m_bNoLadfConstraintFlag;
+  bool      m_bNoDepQuantConstraintFlag;
+  bool      m_bNoSignDataHidingConstraintFlag;
 
   /* profile & level */
   Profile::Name m_profile;
@@ -172,8 +189,8 @@ protected:
 
   int       m_maxTempLayer;                      ///< Max temporal layer
   bool      m_useAMP;
-  bool      m_QTBT;
   unsigned  m_CTUSize;
+  bool      m_useSplitConsOverride;
   unsigned  m_uiMinQT[3]; //0: I slice; 1: P/B slice, 2: I slice chroma
   unsigned  m_uiMaxBTDepth;
   unsigned  m_uiMaxBTDepthI;
@@ -185,18 +202,22 @@ protected:
   unsigned  m_log2DiffMaxMinCodingBlockSize;
 
   int       m_LMChroma;
+#if JVET_M0464_UNI_MTS
+  int       m_IntraMTS;
+  int       m_InterMTS;
+  int       m_IntraMTSMaxCand;
+  int       m_InterMTSMaxCand;
+#else
   int       m_IntraEMT;
   int       m_InterEMT;
   int       m_FastIntraEMT;
   int       m_FastInterEMT;
+#endif
   bool      m_LargeCTU;
   int       m_SubPuMvpMode;
-  unsigned  m_SubPuMvpLog2Size;
   bool      m_Affine;
   bool      m_AffineType;
-#if !REMOVE_MV_ADAPT_PREC
-  bool      m_highPrecMv;
-#endif
+  bool      m_BIO;
   bool      m_DisableMotionCompression;
   unsigned  m_MTTMode;
 
@@ -204,10 +225,29 @@ protected:
   bool      m_AltDQPCoding;
 #endif
   bool      m_compositeRefEnabled;        //composite reference
-#if JVET_L0646_GBI
   bool      m_GBi;
   bool      m_GBiFast;
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  bool      m_LadfEnabled;
+  int       m_LadfNumIntervals;
+  int       m_LadfQpOffset[MAX_LADF_INTERVALS];
+  int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
+
+  bool      m_MHIntra;
+  bool      m_Triangle;
+
+  unsigned  m_CPRMode;
+  unsigned  m_CPRLocalSearchRangeX;
+  unsigned  m_CPRLocalSearchRangeY;
+  unsigned  m_CPRHashSearch;
+  unsigned  m_CPRHashSearchMaxCand;
+  unsigned  m_CPRHashSearchRange4SmallBlk;
+  unsigned  m_CPRFastMethod;
+  
+  bool      m_wrapAround;
+  unsigned  m_wrapAroundOffset;
+
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
 
   bool      m_useFastLCTU;
@@ -422,6 +462,7 @@ protected:
   WeightedPredictionMethod m_weightedPredictionMethod;
   uint32_t      m_log2ParallelMergeLevelMinus2;       ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                    ///< Maximum number of merge candidates
+  uint32_t      m_maxNumAffineMergeCand;              ///< Maximum number of affine merge candidates
 #if HEVC_USE_SCALING_LISTS
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
@@ -498,7 +539,6 @@ protected:
   uint32_t        m_summaryVerboseness;                           ///< Specifies the level of the verboseness of the text output.
   int       m_ImvMode;
   int       m_Imv4PelFast;
-  int       m_ImvMaxCand;
   std::string m_decodeBitstreams[2];                          ///< filename for decode bitstreams.
   bool        m_forceDecodeBitstream1;                        ///< guess what it means
   int         m_switchPOC;                                    ///< dbg poc.
@@ -537,6 +577,41 @@ public:
 
   void setProfile(Profile::Name profile) { m_profile = profile; }
   void setLevel(Level::Tier tier, Level::Name level) { m_levelTier = tier; m_level = level; }
+
+  bool      getIntraOnlyConstraintFlag() const { return m_bIntraOnlyConstraintFlag; }
+  void      setIntraOnlyConstraintFlag(bool bVal) { m_bIntraOnlyConstraintFlag = bVal; }
+  uint32_t  getMaxBitDepthConstraintIdc() const { return m_maxBitDepthConstraintIdc; }
+  void      setMaxBitDepthConstraintIdc(uint32_t u) { m_maxBitDepthConstraintIdc = u; }
+  uint32_t  getMaxChromaFormatConstraintIdc() const { return m_maxChromaFormatConstraintIdc; }
+  void      setMaxChromaFormatConstraintIdc(uint32_t u) { m_maxChromaFormatConstraintIdc = u; }
+  bool      getFrameConstraintFlag() const { return m_bFrameConstraintFlag; }
+  void      setFrameConstraintFlag(bool bVal) { m_bFrameConstraintFlag = bVal; }
+  bool      getNoQtbttDualTreeIntraConstraintFlag() const { return m_bNoQtbttDualTreeIntraConstraintFlag; }
+  void      setNoQtbttDualTreeIntraConstraintFlag(bool bVal) { m_bNoQtbttDualTreeIntraConstraintFlag = bVal; }
+  bool      getNoCclmConstraintFlag() const { return m_bNoCclmConstraintFlag; }
+  void      setNoCclmConstraintFlag(bool bVal) { m_bNoCclmConstraintFlag = bVal; }
+  bool      getNoSaoConstraintFlag() const { return m_bNoSaoConstraintFlag; }
+  void      setNoSaoConstraintFlag(bool bVal) { m_bNoSaoConstraintFlag = bVal; }
+  bool      getNoAlfConstraintFlag() const { return m_bNoAlfConstraintFlag; }
+  void      setNoAlfConstraintFlag(bool bVal) { m_bNoAlfConstraintFlag = bVal; }
+  bool      getNoPcmConstraintFlag() const { return m_bNoPcmConstraintFlag; }
+  void      setNoPcmConstraintFlag(bool bVal) { m_bNoPcmConstraintFlag = bVal; }
+  bool      getNoTemporalMvpConstraintFlag() const { return m_bNoTemporalMvpConstraintFlag; }
+  void      setNoTemporalMvpConstraintFlag(bool bVal) { m_bNoTemporalMvpConstraintFlag = bVal; }
+  bool      getNoSbtmvpConstraintFlag() const { return m_bNoSbtmvpConstraintFlag; }
+  void      setNoSbtmvpConstraintFlag(bool bVal) { m_bNoSbtmvpConstraintFlag = bVal; }
+  bool      getNoAmvrConstraintFlag() const { return m_bNoAmvrConstraintFlag; }
+  void      setNoAmvrConstraintFlag(bool bVal) { m_bNoAmvrConstraintFlag = bVal; }
+  bool      getNoAffineMotionConstraintFlag() const { return m_bNoAffineMotionConstraintFlag; }
+  void      setNoAffineMotionConstraintFlag(bool bVal) { m_bNoAffineMotionConstraintFlag = bVal; }
+  bool      getNoMtsConstraintFlag() const { return m_bNoMtsConstraintFlag; }
+  void      setNoMtsConstraintFlag(bool bVal) { m_bNoMtsConstraintFlag = bVal; }
+  bool      getNoLadfConstraintFlag() const { return m_bNoLadfConstraintFlag; }
+  void      setNoLadfConstraintFlag(bool bVal) { m_bNoLadfConstraintFlag = bVal; }
+  bool      getNoDepQuantConstraintFlag() const { return m_bNoDepQuantConstraintFlag; }
+  void      setNoDepQuantConstraintFlag(bool bVal) { m_bNoDepQuantConstraintFlag = bVal; }
+  bool      getNoSignDataHidingConstraintFlag() const { return m_bNoSignDataHidingConstraintFlag; }
+  void      setNoSignDataHidingConstraintFlag(bool bVal) { m_bNoSignDataHidingConstraintFlag = bVal; }
 
   void      setFrameRate                    ( int   i )      { m_iFrameRate = i; }
   void      setFrameSkip                    ( uint32_t  i )      { m_FrameSkip = i; }
@@ -588,7 +663,6 @@ public:
   int       getMaxTempLayer                 ()                              { return m_maxTempLayer;              }
   void      setMaxTempLayer                 ( int maxTempLayer )            { m_maxTempLayer = maxTempLayer;      }
 
-  void      setQTBT                         ( bool b )           { m_QTBT = b; }
   void      setCTUSize                      ( unsigned  u )      { m_CTUSize  = u; }
   void      setMinQTSizes                   ( unsigned* minQT)   { m_uiMinQT[0] = minQT[0]; m_uiMinQT[1] = minQT[1]; m_uiMinQT[2] = minQT[2]; }
   void      setMaxBTDepth                   ( unsigned uiMaxBTDepth, unsigned uiMaxBTDepthI, unsigned uiMaxBTDepthIChroma )
@@ -596,8 +670,9 @@ public:
   unsigned  getMaxBTDepth                   ()         const { return m_uiMaxBTDepth; }
   unsigned  getMaxBTDepthI                  ()         const { return m_uiMaxBTDepthI; }
   unsigned  getMaxBTDepthIChroma            ()         const { return m_uiMaxBTDepthIChroma; }
-  bool      getQTBT                         ()         const { return m_QTBT; }
   int       getCTUSize                      ()         const { return m_CTUSize; }
+  void      setUseSplitConsOverride         (bool  n)        { m_useSplitConsOverride = n; }
+  bool      getUseSplitConsOverride         ()         const { return m_useSplitConsOverride; }
   void      setDualITree                    ( bool b )       { m_dualITree = b; }
   bool      getDualITree                    ()         const { return m_dualITree; }
 
@@ -609,17 +684,13 @@ public:
 
   void      setSubPuMvpMode(int n)          { m_SubPuMvpMode = n; }
   bool      getSubPuMvpMode()         const { return m_SubPuMvpMode; }
-  void      setSubPuMvpLog2Size(unsigned n) { m_SubPuMvpLog2Size = n; }
-  unsigned  getSubPuMvpLog2Size()      const { return m_SubPuMvpLog2Size; }
 
   void      setAffine                       ( bool b )       { m_Affine = b; }
   bool      getAffine                       ()         const { return m_Affine; }
   void      setAffineType( bool b )                          { m_AffineType = b; }
   bool      getAffineType()                            const { return m_AffineType; }
-#if !REMOVE_MV_ADAPT_PREC
-  void      setHighPrecisionMv              ( bool b )       { m_highPrecMv = b; }
-  bool      getHighPrecisionMv              ()               { return m_highPrecMv; }
-#endif
+  void      setBIO(bool b)                                   { m_BIO = b; }
+  bool      getBIO()                                   const { return m_BIO; }
   void      setDisableMotionCompression     ( bool b )       { m_DisableMotionCompression = b; }
   bool      getDisableMotionCompression     ()         const { return m_DisableMotionCompression; }
 
@@ -631,6 +702,16 @@ public:
   bool      getUseAltDQPCoding              ()         const { return m_AltDQPCoding; }
 #endif
 
+#if JVET_M0464_UNI_MTS
+  void      setIntraMTSMaxCand              ( unsigned u )   { m_IntraMTSMaxCand = u; }
+  unsigned  getIntraMTSMaxCand              ()         const { return m_IntraMTSMaxCand; }
+  void      setInterMTSMaxCand              ( unsigned u )   { m_InterMTSMaxCand = u; }
+  unsigned  getInterMTSMaxCand              ()         const { return m_InterMTSMaxCand; }
+  void      setIntraMTS                     ( bool b )       { m_IntraMTS = b; }
+  bool      getIntraMTS                     ()         const { return m_IntraMTS; }
+  void      setInterMTS                     ( bool b )       { m_InterMTS = b; }
+  bool      getInterMTS                     ()         const { return m_InterMTS; }
+#else
   void      setFastIntraEMT                 ( bool b )       { m_FastIntraEMT = b; }
   bool      getFastIntraEMT                 ()         const { return m_FastIntraEMT; }
   void      setFastInterEMT                 ( bool b )       { m_FastInterEMT = b; }
@@ -639,19 +720,58 @@ public:
   bool      getIntraEMT                     ()         const { return m_IntraEMT; }
   void      setInterEMT                     ( bool b )       { m_InterEMT = b; }
   bool      getInterEMT                     ()         const { return m_InterEMT; }
+#endif
 
 
 
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }
-#if JVET_L0646_GBI
   void      setUseGBi                       ( bool b )       { m_GBi = b; }
   bool      getUseGBi                       ()         const { return m_GBi; }
   void      setUseGBiFast                   ( uint32_t b )   { m_GBiFast = b; }
   bool      getUseGBiFast                   ()         const { return m_GBiFast; }
+
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  void      setUseLadf                      ( bool b )       { m_LadfEnabled = b; }
+  bool      getUseLadf                      ()         const { return m_LadfEnabled; }
+  void      setLadfNumIntervals             ( int i )        { m_LadfNumIntervals = i; }
+  int       getLadfNumIntervals             ()         const { return m_LadfNumIntervals; }
+  void      setLadfQpOffset                 ( int value, int idx ){ m_LadfQpOffset[ idx ] = value; }
+  int       getLadfQpOffset                 ( int idx ) const { return m_LadfQpOffset[ idx ]; }
+  void      setLadfIntervalLowerBound       ( int value, int idx ){ m_LadfIntervalLowerBound[ idx ] = value; }
+  int       getLadfIntervalLowerBound       ( int idx ) const { return m_LadfIntervalLowerBound[ idx ]; }
+
 #endif
+
+  void      setUseMHIntra                   ( bool b )       { m_MHIntra = b; }
+  bool      getUseMHIntra                   ()         const { return m_MHIntra; }
+  void      setUseTriangle                  ( bool b )       { m_Triangle = b; }
+  bool      getUseTriangle                  ()         const { return m_Triangle; }
+
+
+  void      setCPRMode                      (unsigned n)     { m_CPRMode = n; }
+  unsigned  getCPRMode                      ()         const { return m_CPRMode; }
+  void      setCPRLocalSearchRangeX         (unsigned n)     { m_CPRLocalSearchRangeX = n; }
+  unsigned  getCPRLocalSearchRangeX         ()         const { return m_CPRLocalSearchRangeX; }
+  void      setCPRLocalSearchRangeY         (unsigned n)     { m_CPRLocalSearchRangeY = n; }
+  unsigned  getCPRLocalSearchRangeY         ()         const { return m_CPRLocalSearchRangeY; }
+  void      setCPRHashSearch                (unsigned n)     { m_CPRHashSearch = n; }
+  unsigned  getCPRHashSearch                ()         const { return m_CPRHashSearch; }
+  void      setCPRHashSearchMaxCand         (unsigned n)     { m_CPRHashSearchMaxCand = n; }
+  unsigned  getCPRHashSearchMaxCand         ()         const { return m_CPRHashSearchMaxCand; }
+  void      setCPRHashSearchRange4SmallBlk  (unsigned n)     { m_CPRHashSearchRange4SmallBlk = n; }
+  unsigned  getCPRHashSearchRange4SmallBlk  ()         const { return m_CPRHashSearchRange4SmallBlk; }
+  void      setCPRFastMethod                (unsigned n)     { m_CPRFastMethod = n; }
+  unsigned  getCPRFastMethod                ()         const { return m_CPRFastMethod; }
+
+  void      setUseWrapAround                ( bool b )       { m_wrapAround = b; }
+  bool      getUseWrapAround                ()         const { return m_wrapAround; }
+  void      setWrapAroundOffset             ( unsigned u )   { m_wrapAroundOffset = u; }
+  unsigned  getWrapAroundOffset             ()         const { return m_wrapAroundOffset; }
+
   // ADD_NEW_TOOL : (encoder lib) add access functions here
+
 
   void      setMaxCUWidth                   ( uint32_t  u )      { m_maxCUWidth  = u; }
   uint32_t      getMaxCUWidth                   () const         { return m_maxCUWidth; }
@@ -776,13 +896,8 @@ public:
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       getIntraQPOffset                () const    { return  m_intraQPOffset; }
   int       getLambdaFromQPEnable           () const    { return  m_lambdaFromQPEnable; }
-#if ENABLE_QPA | JVET_L0646_GBI
 public:
-#else
-protected:
-#endif
   int       getBaseQP                       () const { return  m_iQP; } // public should use getQPForPicture.
-public:
   int       getQPForPicture                 (const uint32_t gopIndex, const Slice *pSlice) const; // Function actually defined in EncLib.cpp
 #else
   int       getBaseQP                       ()       { return  m_iQP; }
@@ -1111,6 +1226,8 @@ public:
   uint32_t         getLog2ParallelMergeLevelMinus2   ()                  { return m_log2ParallelMergeLevelMinus2;       }
   void         setMaxNumMergeCand                ( uint32_t u )          { m_maxNumMergeCand = u;      }
   uint32_t         getMaxNumMergeCand                ()                  { return m_maxNumMergeCand;   }
+  void         setMaxNumAffineMergeCand          ( uint32_t u )      { m_maxNumAffineMergeCand = u;    }
+  uint32_t     getMaxNumAffineMergeCand          ()                  { return m_maxNumAffineMergeCand; }
 #if HEVC_USE_SCALING_LISTS
   void         setUseScalingListId    ( ScalingListMode u )          { m_useScalingListId       = u;   }
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }
@@ -1284,8 +1401,6 @@ public:
   int          getIMV() const                                        { return m_ImvMode; }
   void         setIMV4PelFast(int n)                                 { m_Imv4PelFast = n; }
   int          getIMV4PelFast() const                                { return m_Imv4PelFast; }
-  void         setIMVMaxCand(int n)                                  { m_ImvMaxCand = n; }
-  int          getIMVMaxCand() const                                 { return m_ImvMaxCand; }
   void         setDecodeBitstream( int i, const std::string& s )     { m_decodeBitstreams[i] = s; }
   const std::string& getDecodeBitstream( int i )               const { return m_decodeBitstreams[i]; }
   bool         getForceDecodeBitstream1()                      const { return m_forceDecodeBitstream1; }

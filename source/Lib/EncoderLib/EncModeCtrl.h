@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,7 @@ enum EncTestModeType
   ETM_MERGE_SKIP,
   ETM_INTER_ME,
   ETM_AFFINE,
+  ETM_MERGE_TRIANGLE,
   ETM_INTRA,
   ETM_IPCM,
   ETM_SPLIT_QT,
@@ -69,6 +70,8 @@ enum EncTestModeType
   ETM_RECO_CACHED,
 #endif
   ETM_TRIGGER_IMV_LIST,
+  ETM_CPR,    // cpr mode
+  ETM_CPR_MERGE, // cpr merge mode
   ETM_INVALID
 };
 
@@ -93,17 +96,16 @@ static void getAreaIdx(const Area& area, const PreCalcValues &pcv, unsigned &idx
 struct EncTestMode
 {
   EncTestMode()
-    : type( ETM_INVALID ), opts( ETO_INVALID  ), partSize( NUMBER_OF_PART_SIZES ), qp( -1  ), lossless( false ) {}
+    : type( ETM_INVALID ), opts( ETO_INVALID  ), qp( -1  ), lossless( false ) {}
   EncTestMode( EncTestModeType _type )
-    : type( _type       ), opts( ETO_STANDARD ), partSize( SIZE_2Nx2N           ), qp( -1  ), lossless( false ) {}
+    : type( _type       ), opts( ETO_STANDARD ), qp( -1  ), lossless( false ) {}
   EncTestMode( EncTestModeType _type, int _qp, bool _lossless )
-    : type( _type       ), opts( ETO_STANDARD ), partSize( SIZE_2Nx2N           ), qp( _qp ), lossless( _lossless ) {}
-  EncTestMode( EncTestModeType _type, PartSize _partSize, EncTestModeOpts _opts, int _qp, bool _lossless )
-    : type( _type       ), opts( _opts        ), partSize( _partSize            ), qp( _qp ), lossless( _lossless ) {}
+    : type( _type       ), opts( ETO_STANDARD ), qp( _qp ), lossless( _lossless ) {}
+  EncTestMode( EncTestModeType _type, EncTestModeOpts _opts, int _qp, bool _lossless )
+    : type( _type       ), opts( _opts        ), qp( _qp ), lossless( _lossless ) {}
 
   EncTestModeType type;
   EncTestModeOpts opts;
-  PartSize        partSize;
   int             qp;
   bool            lossless;
 };
@@ -134,6 +136,7 @@ inline bool isModeInter( const EncTestMode& encTestmode ) // perhaps remove
   return (   encTestmode.type == ETM_INTER_ME
           || encTestmode.type == ETM_MERGE_SKIP
           || encTestmode.type == ETM_AFFINE
+          || encTestmode.type == ETM_MERGE_TRIANGLE
          );
 }
 
@@ -153,8 +156,8 @@ inline PartSplit getPartSplit( const EncTestMode& encTestmode )
 inline EncTestMode getCSEncMode( const CodingStructure& cs )
 {
   return EncTestMode( EncTestModeType( (unsigned)cs.features[ENC_FT_ENC_MODE_TYPE] ),
-                      PartSize       ( (unsigned)cs.features[ENC_FT_ENC_MODE_PART] ),
-                      EncTestModeOpts( (unsigned)cs.features[ENC_FT_ENC_MODE_OPTS] ) );
+                      EncTestModeOpts( (unsigned)cs.features[ENC_FT_ENC_MODE_OPTS] ),
+                      false);
 }
 
 
@@ -181,10 +184,12 @@ struct ComprCUCtx
     , extraFeatures (            )
     , extraFeaturesd(            )
     , bestInterCost ( MAX_DOUBLE )
+#if !JVET_M0464_UNI_MTS
     , bestEmtSize2Nx2N1stPass
                     ( MAX_DOUBLE )
     , skipSecondEMTPass
                     ( false   )
+#endif
     , interHad      (std::numeric_limits<Distortion>::max())
 #if ENABLE_SPLIT_PARALLELISM
     , isLevelSplitParallel
@@ -213,8 +218,10 @@ struct ComprCUCtx
   static_vector<int64_t,  30>         extraFeatures;
   static_vector<double, 30>         extraFeaturesd;
   double                            bestInterCost;
+#if !JVET_M0464_UNI_MTS
   double                            bestEmtSize2Nx2N1stPass;
   bool                              skipSecondEMTPass;
+#endif
   Distortion                        interHad;
 #if ENABLE_SPLIT_PARALLELISM
   bool                              isLevelSplitParallel;
@@ -295,9 +302,11 @@ public:
   double getBestInterCost             ()                  const { return m_ComprCUCtxList.back().bestInterCost;           }
   Distortion getInterHad              ()                  const { return m_ComprCUCtxList.back().interHad;                }
   void enforceInterHad                ( Distortion had )        {        m_ComprCUCtxList.back().interHad = had;          }
+#if !JVET_M0464_UNI_MTS
   double getEmtSize2Nx2NFirstPassCost ()                  const { return m_ComprCUCtxList.back().bestEmtSize2Nx2N1stPass; }
   bool getSkipSecondEMTPass           ()                  const { return m_ComprCUCtxList.back().skipSecondEMTPass;       }
   void setSkipSecondEMTPass           ( bool b )                {        m_ComprCUCtxList.back().skipSecondEMTPass = b;   }
+#endif
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );
@@ -317,13 +326,11 @@ struct CodedCUInfo
   bool isInter;
   bool isIntra;
   bool isSkip;
-
+  bool isMMVDSkip;
   bool validMv[NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
-#if JVET_L0646_GBI   
   uint8_t GBiIdx;
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 
@@ -368,15 +375,13 @@ public:
   virtual ~CacheBlkInfoCtrl() {}
 
   bool isSkip ( const UnitArea& area );
-
+  bool isMMVDSkip(const UnitArea& area);
   bool getMv  ( const UnitArea& area, const RefPicList refPicList, const int iRefIdx,       Mv& rMv ) const;
   void setMv  ( const UnitArea& area, const RefPicList refPicList, const int iRefIdx, const Mv& rMv );
 
-#if JVET_L0646_GBI 
   bool  getInter( const UnitArea& area );
   void  setGbiIdx( const UnitArea& area, uint8_t gBiIdx );
   uint8_t getGbiIdx( const UnitArea& area );
-#endif
 };
 
 #if REUSE_CU_RESULTS
@@ -409,7 +414,7 @@ protected:
   void init     ( const Slice &slice );
 
   bool setFromCs( const CodingStructure& cs, const Partitioner& partitioner );
-  bool isValid  ( const CodingStructure& cs, const Partitioner& partitioner );
+  bool isValid  ( const CodingStructure& cs, const Partitioner& partitioner, int qp );
 
   // TODO: implement copyState
 

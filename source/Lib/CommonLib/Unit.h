@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -284,7 +284,6 @@ struct CodingUnit : public UnitArea
   ChannelType    chType;
 
   PredMode       predMode;
-  PartSize       partSize;
 
   uint8_t          depth;   // number of all splits, applied with generalized splits
   uint8_t          qtDepth; // number of applied quad-splits, before switching to the multi-type-tree (mtt)
@@ -295,8 +294,10 @@ struct CodingUnit : public UnitArea
   int8_t          qp;
   SplitSeries    splitSeries;
   bool           skip;
+  bool           mmvdSkip;
   bool           affine;
   int            affineType;
+  bool           triangle;
   bool           transQuantBypass;
   bool           ipcm;
   uint8_t          imv;
@@ -304,14 +305,14 @@ struct CodingUnit : public UnitArea
 #if HEVC_TILES_WPP
   uint32_t           tileIdx;
 #endif
+#if !JVET_M0464_UNI_MTS
   uint8_t          emtFlag;
-#if JVET_L0646_GBI
+#endif
   uint8_t         GBiIdx;
   int             refIdxBi[2];
-#endif
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
-
+  bool           cpr;
 
   CodingUnit() : chType( CH_L ) { }
   CodingUnit(const UnitArea &unit);
@@ -343,12 +344,15 @@ struct CodingUnit : public UnitArea
 struct IntraPredictionData
 {
   uint32_t  intraDir[MAX_NUM_CHANNEL_TYPE];
+  int       multiRefIdx;
 };
 
 struct InterPredictionData
 {
   bool      mergeFlag;
   uint8_t     mergeIdx;
+  bool           mmvdMergeFlag;
+  uint32_t       mmvdMergeIdx;
   uint8_t     interDir;
   uint8_t     mvpIdx  [NUM_REF_PIC_LIST_01];
   uint8_t     mvpNum  [NUM_REF_PIC_LIST_01];
@@ -357,6 +361,10 @@ struct InterPredictionData
   int16_t     refIdx  [NUM_REF_PIC_LIST_01];
   MergeType mergeType;
   Mv        mvdAffi [NUM_REF_PIC_LIST_01][3];
+  Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
+  bool      mhIntraFlag;
+  Mv        bv;                             // block vector for CPR
+  Mv        bvd;                            // block vector difference for CPR
 };
 
 struct PredictionUnit : public UnitArea, public IntraPredictionData, public InterPredictionData
@@ -403,14 +411,18 @@ struct TransformUnit : public UnitArea
   CodingStructure *cs;
   ChannelType      chType;
 
-#if ENABLE_BMS
   uint8_t        depth;
-#endif
+#if JVET_M0464_UNI_MTS
+  uint8_t        mtsIdx;
+#else
   uint8_t        emtIdx;
-  uint8_t        cbf          [ MAX_NUM_TBLOCKS ];
+#endif
+  uint8_t        cbf        [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];
+#if !JVET_M0464_UNI_MTS
   bool         transformSkip[ MAX_NUM_TBLOCKS ];
-  int8_t        compAlpha    [ MAX_NUM_TBLOCKS ];
+#endif
+  int8_t        compAlpha   [ MAX_NUM_TBLOCKS ];
 
   TransformUnit() : chType( CH_L ) { }
   TransformUnit(const UnitArea& unit);

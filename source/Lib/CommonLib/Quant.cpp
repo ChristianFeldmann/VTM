@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -301,7 +301,11 @@ void Quant::dequant(const TransformUnit &tu,
   CHECK(uiWidth > m_uiMaxTrSize, "Unsupported transformation size");
 
   // Represents scaling through forward transform
+#if JVET_M0464_UNI_MTS
+  const bool bClipTransformShiftTo0 = tu.mtsIdx!=1 && sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
+#else
   const bool bClipTransformShiftTo0 = (tu.transformSkip[compID] != 0) && sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
+#endif
   const int  originalTransformShift = getTransformShift(channelBitDepth, area.size(), maxLog2TrDynamicRange);
   const int  iTransformShift        = bClipTransformShiftTo0 ? std::max<int>(0, originalTransformShift) : originalTransformShift;
 
@@ -717,7 +721,11 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
   const CCoeffBuf &piCoef   = pSrc;
         CoeffBuf   piQCoef  = tu.getCoeffs(compID);
 
+#if JVET_M0464_UNI_MTS
+  const bool useTransformSkip      = tu.mtsIdx==1;
+#else
   const bool useTransformSkip      = tu.transformSkip[compID];
+#endif
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
   {
@@ -820,7 +828,11 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   const CCoeffBuf piCoef    = pSrc;
 
+#if JVET_M0464_UNI_MTS
+  const bool useTransformSkip      = tu.mtsIdx==1;
+#else
   const bool useTransformSkip      = tu.transformSkip[compID];
+#endif
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
 #if HEVC_USE_SCALING_LISTS
@@ -916,9 +928,7 @@ void Quant::transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &co
 
   const int iQBits = QUANT_SHIFT + cQP.per + iTransformShift;
   // QBits will be OK for any internal bit depth as the reduction in transform shift is balanced by an increase in Qp_per due to QpBDOffset
-
-  const int iAdd = int64_t(bUseHalfRoundingPoint ? 256 : (tu.cs->slice->getSliceType() == I_SLICE ? 171 : 85)) << int64_t(iQBits - 9);
-
+  const int iAdd = int64_t(bUseHalfRoundingPoint ? 256 : (tu.cs->slice->isIRAP() ? 171 : 85)) << int64_t(iQBits - 9);
   TCoeff transformedCoefficient;
 
   // transform-skip

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -196,8 +196,8 @@ protected:
   int       m_maxTempLayer;                                   ///< Max temporal layer
 
   // coding unit (CU) definition
-  bool      m_QTBT;
   unsigned  m_uiCTUSize;
+  bool      m_SplitConsOverrideEnabledFlag;
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
   unsigned  m_uiMaxBTDepth;
   unsigned  m_uiMaxBTDepthI;
@@ -205,26 +205,49 @@ protected:
   bool      m_dualTree;
   bool      m_LargeCTU;
   int       m_SubPuMvpMode;
-  unsigned  m_SubPuMvpLog2Size;
   bool      m_Affine;
   bool      m_AffineType;
-#if !REMOVE_MV_ADAPT_PREC
-  bool      m_highPrecisionMv;
-#endif
+  bool      m_BIO;
   bool      m_DisableMotionCompression;
   unsigned  m_MTT;
 #if ENABLE_WPP_PARALLELISM
   bool      m_AltDQPCoding;
 #endif
   int       m_LMChroma;
+#if JVET_M0464_UNI_MTS
+  int       m_MTS;                                            ///< XZ: Multiple Transform Set
+  int       m_MTSIntraMaxCand;                                ///< XZ: Number of additional candidates to test
+  int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test
+#else
   int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
+#endif
 
   bool      m_compositeRefEnabled;
-#if JVET_L0646_GBI
   bool      m_GBi;
   bool      m_GBiFast;
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  bool      m_LadfEnabed;
+  int       m_LadfNumIntervals;
+  std::vector<int> m_LadfQpOffset;
+  int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
+
+  bool      m_MHIntra;
+  bool      m_Triangle;
+
+
+  unsigned  m_CPRMode;
+  unsigned  m_CPRLocalSearchRangeX;
+  unsigned  m_CPRLocalSearchRangeY;
+  unsigned  m_CPRHashSearch;
+  unsigned  m_CPRHashSearchMaxCand;
+  unsigned  m_CPRHashSearchRange4SmallBlk;
+  unsigned  m_CPRFastMethod;
+  
+  bool      m_wrapAround;
+  unsigned  m_wrapAroundOffset;
+
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
 
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
@@ -419,6 +442,7 @@ protected:
 
   uint32_t      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
+  uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
 
   int       m_TMVPModeId;
   bool      m_depQuantEnabledFlag;
@@ -489,7 +513,6 @@ protected:
   int       m_log2MaxMvLengthVertical;                        ///< Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
-  int       m_ImvMaxCand;                                     ///< imv max num cand for test (QTBT off only)
   std::string m_colourRemapSEIFileRoot;
 
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.

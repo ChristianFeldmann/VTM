@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,17 +40,7 @@
 #include "Common.h"
 #include "Slice.h"
 
-void roundMV( Mv & rMV, unsigned imvShift )
-{
-  CHECK( imvShift == 0, "roundMV called for imvShift=0" );
-#if !REMOVE_MV_ADAPT_PREC
-  if (rMV.highPrec) imvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-#endif
-  int offset = 1 << ( imvShift - 1 );
-
-  rMV.setHor( ( ( rMV.getHor() + offset ) >> imvShift ) << imvShift );
-  rMV.setVer( ( ( rMV.getVer() + offset ) >> imvShift ) << imvShift );
-}
+const MvPrecision Mv::m_amvrPrecision[3] = { MV_PRECISION_QUARTER, MV_PRECISION_INT, MV_PRECISION_4PEL }; // for cu.imv=0, 1 and 2
 
 void roundAffineMv( int& mvx, int& mvy, int nShift )
 {
@@ -59,22 +49,26 @@ void roundAffineMv( int& mvx, int& mvy, int nShift )
   mvy = mvy >= 0 ? (mvy + nOffset) >> nShift : -((-mvy + nOffset) >> nShift);
 }
 
-void clipMv( Mv& rcMv, const Position& pos, const SPS& sps )
+void clipMv( Mv& rcMv, const Position& pos,
+             const struct Size& size,
+             const SPS& sps )
 {
-#if !REMOVE_MV_ADAPT_PREC
-  int iMvShift = 2 + (rcMv.highPrec ? VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : 0);
-#else
-  int iMvShift = 2;
-#endif
-#if REMOVE_MV_ADAPT_PREC
-  iMvShift += VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-#endif
+  int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
   int iOffset = 8;
   int iHorMax = ( sps.getPicWidthInLumaSamples() + iOffset - ( int ) pos.x - 1 ) << iMvShift;
   int iHorMin = ( -( int ) sps.getMaxCUWidth()   - iOffset - ( int ) pos.x + 1 ) << iMvShift;
 
   int iVerMax = ( sps.getPicHeightInLumaSamples() + iOffset - ( int ) pos.y - 1 ) << iMvShift;
   int iVerMin = ( -( int ) sps.getMaxCUHeight()   - iOffset - ( int ) pos.y + 1 ) << iMvShift;
+
+  if( sps.getUseWrapAround() )
+  {
+    int iHorMax = ( sps.getPicWidthInLumaSamples() + sps.getMaxCUWidth() - size.width + iOffset - ( int ) pos.x - 1 ) << iMvShift;
+    int iHorMin = ( -( int ) sps.getMaxCUWidth()                                      - iOffset - ( int ) pos.x + 1 ) << iMvShift;
+    rcMv.setHor( std::min( iHorMax, std::max( iHorMin, rcMv.getHor() ) ) );
+    rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );
+    return;
+  }
 
   rcMv.setHor( std::min( iHorMax, std::max( iHorMin, rcMv.getHor() ) ) );
   rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );

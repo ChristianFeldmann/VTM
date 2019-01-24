@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -211,42 +211,66 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseSelectiveRDOQ                                  ( m_useSelectiveRDOQ );
 #endif
   m_cEncLib.setRDpenalty                                         ( m_rdPenalty );
-  m_cEncLib.setQTBT                                              ( m_QTBT );
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
+  m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxBTDepth                                        ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   m_cEncLib.setDualITree                                         ( m_dualTree );
   m_cEncLib.setLargeCTU                                          ( m_LargeCTU );
-#if ENABLE_BMS
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode );
-#else
-  m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode > 0 ? 3 : 0 );
-#endif
-  m_cEncLib.setSubPuMvpLog2Size                                  ( m_SubPuMvpLog2Size );
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );
-#if !REMOVE_MV_ADAPT_PREC
-  m_cEncLib.setHighPrecisionMv                                   (m_highPrecisionMv);
-#endif
+  m_cEncLib.setBIO                                               (m_BIO);
   m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );
   m_cEncLib.setMTTMode                                           ( m_MTT );
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
 #if ENABLE_WPP_PARALLELISM
   m_cEncLib.setUseAltDQPCoding                                   ( m_AltDQPCoding );
 #endif
+#if JVET_M0464_UNI_MTS
+  m_cEncLib.setIntraMTS                                          ( m_MTS & 1 );
+  m_cEncLib.setIntraMTSMaxCand                                   ( m_MTSIntraMaxCand );
+  m_cEncLib.setInterMTS                                          ( ( m_MTS >> 1 ) & 1 );
+  m_cEncLib.setInterMTSMaxCand                                   ( m_MTSInterMaxCand );
+#else
   m_cEncLib.setIntraEMT                                          ( m_EMT & 1 );
   m_cEncLib.setFastIntraEMT                                      ( m_FastEMT & m_EMT & 1 );
   m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
+#endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
-#if JVET_L0646_GBI
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
-#endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  m_cEncLib.setUseLadf                                           ( m_LadfEnabed );
+  if ( m_LadfEnabed )
+  {
+    m_cEncLib.setLadfNumIntervals                                ( m_LadfNumIntervals);
+    for ( int k = 0; k < m_LadfNumIntervals; k++ )
+    {
+      m_cEncLib.setLadfQpOffset( m_LadfQpOffset[k], k );
+      m_cEncLib.setLadfIntervalLowerBound(m_LadfIntervalLowerBound[k], k);
+    }
+  }
+#endif  
+  m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
+  m_cEncLib.setUseTriangle                                       ( m_Triangle );
+
+  m_cEncLib.setCPRMode                                           ( m_CPRMode );
+  m_cEncLib.setCPRLocalSearchRangeX                              ( m_CPRLocalSearchRangeX );
+  m_cEncLib.setCPRLocalSearchRangeY                              ( m_CPRLocalSearchRangeY );
+  m_cEncLib.setCPRHashSearch                                     ( m_CPRHashSearch );
+  m_cEncLib.setCPRHashSearchMaxCand                              ( m_CPRHashSearchMaxCand );
+  m_cEncLib.setCPRHashSearchRange4SmallBlk                       ( m_CPRHashSearchRange4SmallBlk );
+  m_cEncLib.setCPRFastMethod                                     ( m_CPRFastMethod );
+
+  m_cEncLib.setUseWrapAround                                     ( m_wrapAround );
+  m_cEncLib.setWrapAroundOffset                                  ( m_wrapAroundOffset );
+
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
 
-  m_cEncLib.setMaxCUWidth                                        ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );
-  m_cEncLib.setMaxCUHeight                                       ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );
+  m_cEncLib.setMaxCUWidth                                        ( m_uiCTUSize );
+  m_cEncLib.setMaxCUHeight                                       ( m_uiCTUSize );
   m_cEncLib.setMaxCodingDepth                                    ( m_uiMaxCodingDepth );
   m_cEncLib.setLog2DiffMaxMinCodingBlockSize                     ( m_uiLog2DiffMaxMinCodingBlockSize );
   m_cEncLib.setQuadtreeTULog2MaxSize                             ( m_quadtreeTULog2MaxSize );
@@ -296,7 +320,7 @@ void EncApp::xInitLibCfg()
 
   m_cEncLib.setPCMLog2MaxSize                                    ( m_pcmLog2MaxSize);
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
-
+  m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
 
   //====== Weighted Prediction ========
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );
@@ -500,7 +524,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSummaryVerboseness                                ( m_summaryVerboseness );
   m_cEncLib.setIMV                                               ( m_ImvMode );
   m_cEncLib.setIMV4PelFast                                       ( m_Imv4PelFast );
-  m_cEncLib.setIMVMaxCand                                        ( m_ImvMaxCand );
   m_cEncLib.setDecodeBitstream                                   ( 0, m_decodeBitstreams[0] );
   m_cEncLib.setDecodeBitstream                                   ( 1, m_decodeBitstreams[1] );
   m_cEncLib.setSwitchPOC                                         ( m_switchPOC );

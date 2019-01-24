@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,6 +68,10 @@ struct PelBufferOps
   void ( *reco8 )         ( const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, int width, int height,                                   const ClpRng& clpRng );
   void ( *linTf4 )        ( const Pel* src0, int src0Stride,                                  Pel *dst, int dstStride, int width, int height, int scale, int shift, int offset, const ClpRng& clpRng, bool bClip );
   void ( *linTf8 )        ( const Pel* src0, int src0Stride,                                  Pel *dst, int dstStride, int width, int height, int scale, int shift, int offset, const ClpRng& clpRng, bool bClip );
+  void(*addBIOAvg4)    (const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng);
+  void(*bioGradFilter) (Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY);
+  void(*calcBIOPar)    (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG);
+  void(*calcBlkGradient)(int sx, int sy, int    *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize);
 #if ENABLE_SIMD_OPT_GBI
   void ( *removeWeightHighFreq8)  ( Pel* src0, int src0Stride, const Pel* src1, int src1Stride, int width, int height, int shift, int gbiWeight);
   void ( *removeWeightHighFreq4)  ( Pel* src0, int src0Stride, const Pel* src1, int src1Stride, int width, int height, int shift, int gbiWeight);
@@ -108,10 +112,8 @@ struct AreaBuf : public Size
   void subtract             ( const AreaBuf<const T> &other );
   void extendSingleBorderPel();
   void extendBorderPel      (  unsigned margin );
-#if JVET_L0646_GBI
   void addWeightedAvg       ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng, const int8_t gbiIdx);
   void removeWeightHighFreq ( const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng, const int8_t iGbiWeight);
-#endif
   void addAvg               ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng );
   void removeHighFreq       ( const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng);
   void updateHistogram      ( std::vector<int32_t>& hist ) const;
@@ -394,7 +396,6 @@ void AreaBuf<T>::toLast( const ClpRng& clpRng )
 template<>
 void AreaBuf<Pel>::toLast( const ClpRng& clpRng );
 
-#if JVET_L0646_GBI
 template<typename T>
 void AreaBuf<T>::removeWeightHighFreq(const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng, const int8_t gbiWeight)
 {
@@ -446,7 +447,6 @@ void AreaBuf<T>::removeWeightHighFreq(const AreaBuf<T>& other, const bool bClip,
   }
 #endif
 }
-#endif
 
 template<typename T>
 void AreaBuf<T>::removeHighFreq( const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng )
@@ -457,7 +457,7 @@ void AreaBuf<T>::removeHighFreq( const AreaBuf<T>& other, const bool bClip, cons
         T*  dst       = buf;
   const int dstStride = stride;
 
-#if ENABLE_SIMD_OPT_GBI && JVET_L0646_GBI
+#if ENABLE_SIMD_OPT_GBI
   if (!bClip)
   {
     if(!(width & 7))
@@ -491,7 +491,7 @@ void AreaBuf<T>::removeHighFreq( const AreaBuf<T>& other, const bool bClip, cons
 #undef REM_HF_OP
 #undef REM_HF_OP_CLIP
 
-#if ENABLE_SIMD_OPT_GBI && JVET_L0646_GBI
+#if ENABLE_SIMD_OPT_GBI
   }
 #endif
 }
@@ -657,16 +657,12 @@ struct UnitBuf
   void reconstruct          ( const UnitBuf<const T> &pred, const UnitBuf<const T> &resi, const ClpRngs& clpRngs );
   void copyClip             ( const UnitBuf<const T> &src, const ClpRngs& clpRngs );
   void subtract             ( const UnitBuf<const T> &other );
-#if JVET_L0646_GBI
   void addWeightedAvg       ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const uint8_t gbiIdx = GBI_DEFAULT, const bool chromaOnly = false, const bool lumaOnly = false);
-#endif
   void addAvg               ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const bool chromaOnly = false, const bool lumaOnly = false);
   void extendSingleBorderPel();
   void extendBorderPel      ( unsigned margin );
   void removeHighFreq       ( const UnitBuf<T>& other, const bool bClip, const ClpRngs& clpRngs
-#if JVET_L0646_GBI
                             , const int8_t gbiWeight = g_GbiWeights[GBI_DEFAULT]
-#endif
                             );
 
         UnitBuf<      T> subBuf (const UnitArea& subArea);
@@ -736,7 +732,6 @@ void UnitBuf<T>::reconstruct(const UnitBuf<const T> &pred, const UnitBuf<const T
   }
 }
 
-#if JVET_L0646_GBI
 template<typename T>
 void UnitBuf<T>::addWeightedAvg(const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const uint8_t gbiIdx /* = GBI_DEFAULT */, const bool chromaOnly /* = false */, const bool lumaOnly /* = false */)
 {
@@ -750,7 +745,6 @@ void UnitBuf<T>::addWeightedAvg(const UnitBuf<const T> &other1, const UnitBuf<co
     bufs[i].addWeightedAvg(other1.bufs[i], other2.bufs[i], clpRngs.comp[i], gbiIdx);
   }
 }
-#endif
 
 template<typename T>
 void UnitBuf<T>::addAvg(const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const bool chromaOnly /* = false */, const bool lumaOnly /* = false */)
@@ -786,24 +780,15 @@ void UnitBuf<T>::extendBorderPel( unsigned margin )
 
 template<typename T>
 void UnitBuf<T>::removeHighFreq( const UnitBuf<T>& other, const bool bClip, const ClpRngs& clpRngs
-#if JVET_L0646_GBI
                                , const int8_t gbiWeight
-#endif
                                )
 {
-#if JVET_L0646_GBI 
   if(gbiWeight != g_GbiWeights[GBI_DEFAULT])
   {
     bufs[0].removeWeightHighFreq(other.bufs[0], bClip, clpRngs.comp[0], gbiWeight);
     return;
   }
   bufs[0].removeHighFreq(other.bufs[0], bClip, clpRngs.comp[0]);
-#else
-  for (unsigned i = 0; i <bufs.size(); i++)
-  {
-    bufs[i].removeHighFreq(other.bufs[i], bClip, clpRngs.comp[i]);
-  }
-#endif
 
 }
 

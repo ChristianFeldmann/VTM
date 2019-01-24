@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -297,6 +297,43 @@ Distortion RdCost::xGetSAD_SIMD( const DistParam &rcDtParam )
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
 }
 
+template< X86_VEXT vext >
+Distortion RdCost::xGetSAD_IBD_SIMD(const DistParam &rcDtParam)
+{
+  if (rcDtParam.org.width < 4 || rcDtParam.bitDepth > 10 || rcDtParam.applyWeight)
+    return RdCost::xGetSAD(rcDtParam);
+
+  const short* src0 = (const short*)rcDtParam.org.buf;
+  const short* src1 = (const short*)rcDtParam.cur.buf;
+  int  width = rcDtParam.org.height;
+  int  height = rcDtParam.org.width;
+  int  subShift = rcDtParam.subShift;
+  int  subStep = (1 << subShift);
+  const int src0Stride = rcDtParam.org.stride * subStep;
+  const int src1Stride = rcDtParam.cur.stride * subStep;
+
+  __m128i vtotalsum32 = _mm_setzero_si128();
+  __m128i vzero = _mm_setzero_si128();
+  for (int y = 0; y < height; y += subStep)
+  {
+    for (int x = 0; x < width; x += 4)
+    {
+      __m128i vsrc1 = _mm_loadl_epi64((const __m128i*)(src0 + x));
+      __m128i vsrc2 = _mm_loadl_epi64((const __m128i*)(src1 + x));
+      vsrc1 = _mm_cvtepi16_epi32(vsrc1);
+      vsrc2 = _mm_cvtepi16_epi32(vsrc2);
+      vtotalsum32 = _mm_add_epi32(vtotalsum32, _mm_abs_epi32(_mm_sub_epi32(vsrc1, vsrc2)));
+    }
+    src0 += src0Stride;
+    src1 += src1Stride;
+  }
+  vtotalsum32 = _mm_hadd_epi32(vtotalsum32, vzero);
+  vtotalsum32 = _mm_hadd_epi32(vtotalsum32, vzero);
+  Distortion uiSum = _mm_cvtsi128_si32(vtotalsum32);
+
+  uiSum <<= subShift;
+  return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
+}
 
 template< int iWidth, X86_VEXT vext >
 Distortion RdCost::xGetSAD_NxN_SIMD( const DistParam &rcDtParam )
@@ -2268,7 +2305,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
   int  x, y;
   Distortion uiSum = 0;
 
-  if( rcDtParam.isQtbt && iCols > iRows && ( iCols & 15 ) == 0 && ( iRows & 7 ) == 0 )
+  if( iCols > iRows && ( iCols & 15 ) == 0 && ( iRows & 7 ) == 0 )
   {
     for( y = 0; y < iRows; y += 8 )
     {
@@ -2283,7 +2320,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
       piCur += iStrideCur * 8;
     }
   }
-  else if( rcDtParam.isQtbt && iCols < iRows && ( iRows & 15 ) == 0 && ( iCols & 7 ) == 0 )
+  else if( iCols < iRows && ( iRows & 15 ) == 0 && ( iCols & 7 ) == 0 )
   {
     for( y = 0; y < iRows; y += 16 )
     {
@@ -2298,7 +2335,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
       piCur += iStrideCur * 16;
     }
   }
-  else if( rcDtParam.isQtbt && iCols > iRows && ( iCols & 7 ) == 0 && ( iRows & 3 ) == 0 )
+  else if( iCols > iRows && ( iCols & 7 ) == 0 && ( iRows & 3 ) == 0 )
   {
     for( y = 0; y < iRows; y += 4 )
     {
@@ -2310,7 +2347,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
       piCur += iStrideCur * 4;
     }
   }
-  else if( rcDtParam.isQtbt && iCols < iRows && ( iRows & 7 ) == 0 && ( iCols & 3 ) == 0 )
+  else if( iCols < iRows && ( iRows & 7 ) == 0 && ( iCols & 3 ) == 0 )
   {
     for( y = 0; y < iRows; y += 8 )
     {
@@ -2322,7 +2359,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
       piCur += iStrideCur * 8;
     }
   }
-  else if( vext >= AVX2 && ( ( ( iRows | iCols ) & 15 ) == 0 ) && ( iRows == iCols || !rcDtParam.isQtbt ) )
+  else if( vext >= AVX2 && ( ( ( iRows | iCols ) & 15 ) == 0 ) && ( iRows == iCols ) )
   {
     int  iOffsetOrg = iStrideOrg << 4;
     int  iOffsetCur = iStrideCur << 4;
@@ -2336,7 +2373,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
       piCur += iOffsetCur;
     }
   }
-  else if( ( ( ( iRows | iCols ) & 7 ) == 0 ) && ( iRows == iCols || !rcDtParam.isQtbt ) )
+  else if( ( ( ( iRows | iCols ) & 7 ) == 0 ) && ( iRows == iCols ) )
   {
     int  iOffsetOrg = iStrideOrg << 3;
     int  iOffsetCur = iStrideCur << 3;
@@ -2422,6 +2459,8 @@ void RdCost::_initRdCostX86()
   m_afpDistortFunc[DF_HAD32]   = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
   m_afpDistortFunc[DF_HAD64]   = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
   m_afpDistortFunc[DF_HAD16N]  = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
+
+  m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD_IBD_SIMD<vext>;
 }
 
 template void RdCost::_initRdCostX86<SIMDX86>();

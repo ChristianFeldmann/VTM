@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -361,10 +361,7 @@ PredictionUnit& CodingStructure::addPU( const UnitArea &unit, const ChannelType 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
 
   CHECK( pu->cacheId != pu->cu->cacheId, "Inconsintent cacheId between the PU and assigned CU" );
-  if( pcv->noRQT )
-  {
-    CHECK( pu->cu->firstPU != nullptr, "Without an RQT the firstPU should be null" );
-  }
+  CHECK( pu->cu->firstPU != nullptr, "Without an RQT the firstPU should be null" );
 #endif
 
   PredictionUnit *prevPU = m_numPUs > 0 ? pus.back() : nullptr;
@@ -749,7 +746,7 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   if( cpyResi ) picture->getResiBuf( clippedArea ).copyFrom( subResiBuf );
   if( cpyReco ) picture->getRecoBuf( clippedArea ).copyFrom( subRecoBuf );
 
-  if( !subStruct.m_isTuEnc && !slice->isIntra() )
+  if (!subStruct.m_isTuEnc && (!slice->isIntra() && subStruct.chType != CHANNEL_TYPE_CHROMA))
   {
     // copy motion buffer
     MotionBuf ownMB  = getMotionBuf          ( clippedArea );
@@ -978,7 +975,7 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
   clearTUs();
   clearCUs();
 
-  if( QP >= 0 )
+  if( QP < MAX_INT )
   {
     currQP[0] = currQP[1] = QP;
     isLossless            = _isLosses;
@@ -1302,3 +1299,36 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   }
 }
 
+CprLumaCoverage CodingStructure::getCprLumaCoverage(const CompArea& chromaArea) const
+{
+  CHECK(chType != CHANNEL_TYPE_CHROMA, "Error");
+
+  const unsigned int unitAreaSubBlock = MIN_PU_SIZE * MIN_PU_SIZE;
+  CompArea lumaArea = CompArea(COMPONENT_Y, chromaArea.chromaFormat, chromaArea.lumaPos(), recalcSize(chromaArea.chromaFormat, CHANNEL_TYPE_CHROMA, CHANNEL_TYPE_LUMA, chromaArea.size()));
+  lumaArea = clipArea(lumaArea, picture->block(COMPONENT_Y));
+  const unsigned int fullArea = lumaArea.area();
+  unsigned int cprArea = 0;
+  for (SizeType y = 0; y < lumaArea.height; y += MIN_PU_SIZE)
+  {
+    for (SizeType x = 0; x < lumaArea.width; x += MIN_PU_SIZE)
+    {
+      Position pos = lumaArea.offset(x, y);
+      if (picture->cs->getMotionInfo(pos).isInter) // need to change if inter slice allows dualtree
+      {
+        cprArea += unitAreaSubBlock;
+      }
+    }
+  }
+
+  CprLumaCoverage coverage = CPR_LUMA_COVERAGE_FULL;
+  if (cprArea == 0)
+  {
+    coverage = CPR_LUMA_COVERAGE_NONE;
+  }
+  else if (cprArea < fullArea)
+  {
+    coverage = CPR_LUMA_COVERAGE_PARTIAL;
+  }
+
+  return coverage;
+}

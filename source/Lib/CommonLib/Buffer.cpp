@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -62,7 +62,137 @@ void addAvgCore( const T* src1, int src1Stride, const T* src2, int src2Stride, T
 #undef ADD_AVG_CORE_INC
 }
 
-#if ENABLE_SIMD_OPT_GBI && JVET_L0646_GBI
+void addBIOAvgCore(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
+{
+  int b = 0;
+
+  for (int y = 0; y < height; y++)
+  {
+    for (int x = 0; x < width; x += 4)
+    {
+      b = tmpx * (gradX0[x] - gradX1[x]) + tmpy * (gradY0[x] - gradY1[x]);
+      b = ((b + 1) >> 1);
+      dst[x] = ClipPel((int16_t)rightShift((src0[x] + src1[x] + b + offset), shift), clpRng);
+
+      b = tmpx * (gradX0[x + 1] - gradX1[x + 1]) + tmpy * (gradY0[x + 1] - gradY1[x + 1]);
+      b = ((b + 1) >> 1);
+      dst[x + 1] = ClipPel((int16_t)rightShift((src0[x + 1] + src1[x + 1] + b + offset), shift), clpRng);
+
+      b = tmpx * (gradX0[x + 2] - gradX1[x + 2]) + tmpy * (gradY0[x + 2] - gradY1[x + 2]);
+      b = ((b + 1) >> 1);
+      dst[x + 2] = ClipPel((int16_t)rightShift((src0[x + 2] + src1[x + 2] + b + offset), shift), clpRng);
+
+      b = tmpx * (gradX0[x + 3] - gradX1[x + 3]) + tmpy * (gradY0[x + 3] - gradY1[x + 3]);
+      b = ((b + 1) >> 1);
+      dst[x + 3] = ClipPel((int16_t)rightShift((src0[x + 3] + src1[x + 3] + b + offset), shift), clpRng);
+    }
+    dst += dstStride;       src0 += src0Stride;     src1 += src1Stride;
+    gradX0 += gradStride; gradX1 += gradStride; gradY0 += gradStride; gradY1 += gradStride;
+  }
+}
+
+void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY)
+{
+  Pel* srcTmp = pSrc + srcStride + 1;
+  Pel* gradXTmp = gradX + gradStride + 1;
+  Pel* gradYTmp = gradY + gradStride + 1;
+
+  for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
+  {
+    for (int x = 0; x < (width - 2 * BIO_EXTEND_SIZE); x++)
+    {
+      gradYTmp[x] = (srcTmp[x + srcStride] - srcTmp[x - srcStride]) >> 4;
+      gradXTmp[x] = (srcTmp[x + 1] - srcTmp[x - 1]) >> 4;
+    }
+    gradXTmp += gradStride;
+    gradYTmp += gradStride;
+    srcTmp += srcStride;
+  }
+
+  gradXTmp = gradX + gradStride + 1;
+  gradYTmp = gradY + gradStride + 1;
+  for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
+  {
+    gradXTmp[-1] = gradXTmp[0];
+    gradXTmp[width - 2 * BIO_EXTEND_SIZE] = gradXTmp[width - 2 * BIO_EXTEND_SIZE - 1];
+    gradXTmp += gradStride;
+
+    gradYTmp[-1] = gradYTmp[0];
+    gradYTmp[width - 2 * BIO_EXTEND_SIZE] = gradYTmp[width - 2 * BIO_EXTEND_SIZE - 1];
+    gradYTmp += gradStride;
+  }
+
+  gradXTmp = gradX + gradStride;
+  gradYTmp = gradY + gradStride;
+  ::memcpy(gradXTmp - gradStride, gradXTmp, sizeof(Pel)*(width));
+  ::memcpy(gradXTmp + (height - 2 * BIO_EXTEND_SIZE)*gradStride, gradXTmp + (height - 2 * BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
+  ::memcpy(gradYTmp - gradStride, gradYTmp, sizeof(Pel)*(width));
+  ::memcpy(gradYTmp + (height - 2 * BIO_EXTEND_SIZE)*gradStride, gradYTmp + (height - 2 * BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
+}
+
+void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG)
+{
+  for (int y = 0; y < heightG; y++)
+  {
+    for (int x = 0; x < widthG; x++)
+    {
+      int temp = (srcY0Temp[x] >> 6) - (srcY1Temp[x] >> 6);
+      int tempX = (gradX0[x] + gradX1[x]) >> 3;
+      int tempY = (gradY0[x] + gradY1[x]) >> 3;
+      dotProductTemp1[x] = tempX * tempX;
+      dotProductTemp2[x] = tempX * tempY;
+      dotProductTemp3[x] = -tempX * temp;
+      dotProductTemp5[x] = tempY * tempY;
+      dotProductTemp6[x] = -tempY * temp;
+    }
+    srcY0Temp += src0Stride;
+    srcY1Temp += src1Stride;
+    gradX0 += gradStride;
+    gradX1 += gradStride;
+    gradY0 += gradStride;
+    gradY1 += gradStride;
+    dotProductTemp1 += widthG;
+    dotProductTemp2 += widthG;
+    dotProductTemp3 += widthG;
+    dotProductTemp5 += widthG;
+    dotProductTemp6 += widthG;
+  }
+}
+
+void calcBlkGradientCore(int sx, int sy, int     *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize)
+{
+  int     *Gx2 = arraysGx2;
+  int     *Gy2 = arraysGy2;
+  int     *GxGy = arraysGxGy;
+  int     *GxdI = arraysGxdI;
+  int     *GydI = arraysGydI;
+
+  // set to the above row due to JVET_K0485_BIO_EXTEND_SIZE
+  Gx2 -= (BIO_EXTEND_SIZE*width);
+  Gy2 -= (BIO_EXTEND_SIZE*width);
+  GxGy -= (BIO_EXTEND_SIZE*width);
+  GxdI -= (BIO_EXTEND_SIZE*width);
+  GydI -= (BIO_EXTEND_SIZE*width);
+
+  for (int y = -BIO_EXTEND_SIZE; y < unitSize + BIO_EXTEND_SIZE; y++)
+  {
+    for (int x = -BIO_EXTEND_SIZE; x < unitSize + BIO_EXTEND_SIZE; x++)
+    {
+      sGx2 += Gx2[x];
+      sGy2 += Gy2[x];
+      sGxGy += GxGy[x];
+      sGxdI += GxdI[x];
+      sGydI += GydI[x];
+    }
+    Gx2 += width;
+    Gy2 += width;
+    GxGy += width;
+    GxdI += width;
+    GydI += width;
+  }
+}
+
+#if ENABLE_SIMD_OPT_GBI
 void removeWeightHighFreq(int16_t* dst, int dstStride, const int16_t* src, int srcStride, int width, int height, int shift, int gbiWeight)
 {
   int normalizer = ((1 << 16) + (gbiWeight > 0 ? (gbiWeight >> 1) : -(gbiWeight >> 1))) / gbiWeight;
@@ -138,6 +268,11 @@ PelBufferOps::PelBufferOps()
   linTf4 = linTfCore<Pel>;
   linTf8 = linTfCore<Pel>;
 
+  addBIOAvg4      = addBIOAvgCore;
+  bioGradFilter   = gradFilterCore;
+  calcBIOPar      = calcBIOParCore;
+  calcBlkGradient = calcBlkGradientCore;
+
 #if ENABLE_SIMD_OPT_GBI
   removeWeightHighFreq8 = removeWeightHighFreq;
   removeWeightHighFreq4 = removeWeightHighFreq;
@@ -152,7 +287,6 @@ PelBufferOps g_pelBufOP = PelBufferOps();
 #endif
 #endif
 
-#if JVET_L0646_GBI
 template<>
 void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng, const int8_t gbiIdx)
 {
@@ -182,7 +316,6 @@ void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBu
 #undef ADD_AVG_OP
 #undef ADD_AVG_INC
 }
-#endif
 
 template<>
 void AreaBuf<Pel>::addAvg( const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng)

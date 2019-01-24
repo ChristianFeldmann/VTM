@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -112,12 +112,10 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 #else
   const int       startCtuTsAddr          = slice->getSliceCurStartCtuTsAddr();
 #endif
-#if HEVC_TILES_WPP
-  const int       startCtuRsAddr          = tileMap.getCtuTsToRsAddrMap(startCtuTsAddr);
-#else
 #if HEVC_DEPENDENT_SLICES
   const int       startCtuRsAddr          = startCtuTsAddr;
-#endif
+#elif HEVC_TILES_WPP
+  const int       startCtuRsAddr          = tileMap.getCtuTsToRsAddrMap(startCtuTsAddr);
 #endif
   const unsigned  numCtusInFrame          = cs.pcv->sizeInCtus;
   const unsigned  widthInCtus             = cs.pcv->widthInCtus;
@@ -149,7 +147,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 #if HEVC_DEPENDENT_SLICES
   const unsigned subStreamOffset = tileMap.getSubstreamForCtuAddr( startCtuRsAddr, true, slice );
 #elif HEVC_TILES_WPP
-  const unsigned subStreamOffset = 0;
+  const unsigned  subStreamOffset         = tileMap.getSubstreamForCtuAddr(startCtuRsAddr, true, slice);
 #endif
 
 #if HEVC_DEPENDENT_SLICES
@@ -222,13 +220,16 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
     }
 #endif
 
-#if JVET_L0646_GBI
     bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
     if(updateGbiCodingOrder)
     {
       resetGbiCodingOrder(true, cs);
     }
-#endif
+
+    if (cs.slice->getSliceType() != I_SLICE && ctuXPosInCtus == 0)
+    {
+      cs.slice->resetMotionLUTs();
+    }
 
     isLastCtuOfSliceSegment = cabacReader.coding_tree_unit( cs, ctuArea, pic->m_prevQP, ctuRsAddr );
 

@@ -47,10 +47,6 @@ set( INC_FILES ${BASE_INC_FILES} ${X86_INC_FILES} ${MD5_INC_FILES} )
 # library
 add_library( ${LIB_NAME} STATIC ${SRC_FILES} ${INC_FILES} ${NATVIS_FILES} )
 
-if( ENABLE_VTM )
-  target_compile_definitions( ${LIB_NAME} PUBLIC BMS_TOOLS=0 )
-endif()
-
 if( EXTENSION_360_VIDEO )
   target_compile_definitions( ${LIB_NAME} PUBLIC EXTENSION_360_VIDEO=1 )
 endif()
@@ -95,7 +91,7 @@ set_property( SOURCE ${AVX2_SRC_FILES}  APPEND PROPERTY COMPILE_DEFINITIONS USE_
 if( MSVC )
   set_property( SOURCE ${AVX_SRC_FILES}   APPEND PROPERTY COMPILE_FLAGS "/arch:AVX" )
   set_property( SOURCE ${AVX2_SRC_FILES}  APPEND PROPERTY COMPILE_FLAGS "/arch:AVX2" )
-elseif( UNIX )
+elseif( UNIX OR MINGW )
   set_property( SOURCE ${SSE41_SRC_FILES} APPEND PROPERTY COMPILE_FLAGS "-msse4.1" )
   set_property( SOURCE ${SSE42_SRC_FILES} APPEND PROPERTY COMPILE_FLAGS "-msse4.2" )
   set_property( SOURCE ${AVX_SRC_FILES}   APPEND PROPERTY COMPILE_FLAGS "-mavx" )

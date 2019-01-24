@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,8 @@
 
 //! \ingroup CommonLib
 //! \{
-
+#include "CommonLib/MotionInfo.h"
+struct MotionInfo;
 
 
 struct Picture;
@@ -797,25 +798,33 @@ private:
 
   bool              m_NextEnabled;
   //=====  tool enabling flags (4 bytes - NOTE: last flag must be used for new extensions) =====
-  bool              m_QTBT;                       // 1
   bool              m_LargeCTU;                   // 5
   bool              m_SubPuMvp;
   bool              m_IMV;                        // 9
-#if !REMOVE_MV_ADAPT_PREC
-  bool              m_highPrecMv;
-#endif
+  bool              m_BIO;
   bool              m_DisableMotionCompression;   // 13
   bool              m_LMChroma;                   // 17
+#if JVET_M0464_UNI_MTS
+  bool              m_IntraMTS;                   // 18
+  bool              m_InterMTS;                   // 19
+#else
   bool              m_IntraEMT;                   // 18
   bool              m_InterEMT;                   // 19
+#endif
   bool              m_Affine;
   bool              m_AffineType;
-#if JVET_L0646_GBI
   bool              m_GBi;                        //
-#endif
   bool              m_MTTEnabled;                 //
+  bool              m_MHIntra;
+  bool              m_Triangle;
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
+#endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  bool              m_LadfEnabled;
+  int               m_LadfNumIntervals;
+  int               m_LadfQpOffset[MAX_LADF_INTERVALS];
+  int               m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
 
 public:
@@ -824,13 +833,7 @@ public:
 private:
   //=====  additional parameters  =====
   // qtbt
-  unsigned    m_CTUSize;
-  unsigned    m_minQT[3];   // 0: I slice luma; 1: P/B slice; 2: I slice chroma
-  unsigned    m_maxBTDepth[3];
-  unsigned    m_maxBTSize[3];
-  unsigned    m_dualITree;
   // sub-pu merging
-  unsigned    m_subPuLog2Size;
   int         m_subPuMrgMode;
   //imv
   ImvMode     m_ImvMode;
@@ -838,6 +841,9 @@ private:
   unsigned    m_MTTMode;
 
   bool              m_compositeRefEnabled;        //composite longterm reference
+
+  unsigned    m_CPRMode;
+
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags and associated parameters here
 
 public:
@@ -849,8 +855,6 @@ public:
   void        setNextToolsEnabled ( bool next )                                     { m_NextEnabled = next; }
 
   //=====  tool enabling flags and extension bit  =====
-  void      setUseQTBT            ( bool QTBT )                                     { m_QTBT = QTBT; }
-  bool      getUseQTBT            ()                                      const     { return m_QTBT; }
   void      setUseLargeCTU        ( bool b )                                        { m_LargeCTU = b; }
   bool      getUseLargeCTU        ()                                      const     { return m_LargeCTU; }
   bool      getUseSubPuMvp()                                   const { return m_SubPuMvp; }
@@ -862,10 +866,8 @@ public:
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
-#if !REMOVE_MV_ADAPT_PREC
-  void      setUseHighPrecMv(bool b) { m_highPrecMv = b; }
-  bool      getUseHighPrecMv()                                      const { return m_highPrecMv; }
-#endif
+  void      setUseBIO(bool b)                                                       { m_BIO = b; }
+  bool      getUseBIO()                                                   const     { return m_BIO; }
   void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
   bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }
   bool      getMTTEnabled         ()                                      const     { return m_MTTEnabled; }
@@ -875,41 +877,32 @@ public:
 #endif
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
+#if JVET_M0464_UNI_MTS
+  void      setUseIntraMTS        ( bool b )                                        { m_IntraMTS = b; }
+  bool      getUseIntraMTS        ()                                      const     { return m_IntraMTS; }
+  void      setUseInterMTS        ( bool b )                                        { m_InterMTS = b; }
+  bool      getUseInterMTS        ()                                      const     { return m_InterMTS; }
+#else
   void      setUseIntraEMT        ( bool b )                                        { m_IntraEMT = b; }
   bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
   void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
   bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
-#if JVET_L0646_GBI
+#endif
   void      setUseGBi             ( bool b )                                        { m_GBi = b; }
   bool      getUseGBi             ()                                      const     { return m_GBi; }
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  void      setLadfEnabled        ( bool b )                                        { m_LadfEnabled = b; }
+  bool      getLadfEnabled        ()                                      const     { return m_LadfEnabled; }
+  void      setLadfNumIntervals   ( int i )                                         { m_LadfNumIntervals = i; }
+  int       getLadfNumIntervals   ()                                      const     { return m_LadfNumIntervals; }
+  void      setLadfQpOffset       ( int value, int idx )                            { m_LadfQpOffset[ idx ] = value; }
+  int       getLadfQpOffset       ( int idx )                             const     { return m_LadfQpOffset[ idx ]; }
+  void      setLadfIntervalLowerBound( int value, int idx )                         { m_LadfIntervalLowerBound[ idx ] = value; }
+  int       getLadfIntervalLowerBound( int idx )                          const     { return m_LadfIntervalLowerBound[ idx ]; }
 #endif
   //=====  additional parameters  =====
   // qtbt
-  void      setCTUSize            ( unsigned    ctuSize )                           { m_CTUSize = ctuSize; }
-  unsigned  getCTUSize            ()                                      const     { return  m_CTUSize;   }
-  void      setMinQTSizes         ( unsigned*   minQT )                             { m_minQT[0] = minQT[0]; m_minQT[1] = minQT[1]; m_minQT[2] = minQT[2]; }
-  unsigned  getMinQTSize          ( SliceType   slicetype,
-                                    ChannelType chType = CHANNEL_TYPE_LUMA )
-                                                                          const     { return slicetype == I_SLICE ? ( chType == CHANNEL_TYPE_LUMA ? m_minQT[0] : m_minQT[2] ) : m_minQT[1]; }
-  void      setMaxBTDepth         ( unsigned    maxBTDepth,
-                                    unsigned    maxBTDepthI,
-                                    unsigned    maxBTDepthIChroma )                 { m_maxBTDepth[1] = maxBTDepth; m_maxBTDepth[0] = maxBTDepthI; m_maxBTDepth[2] = maxBTDepthIChroma; }
-  unsigned  getMaxBTDepth         ()                                      const     { return m_maxBTDepth[1]; }
-  unsigned  getMaxBTDepthI        ()                                      const     { return m_maxBTDepth[0]; }
-  unsigned  getMaxBTDepthIChroma  ()                                      const     { return m_maxBTDepth[2]; }
-  void      setMaxBTSize          ( unsigned    maxBTSize,
-                                    unsigned    maxBTSizeI,
-                                    unsigned    maxBTSizeC )                        { m_maxBTSize[1] = maxBTSize; m_maxBTSize[0] = maxBTSizeI; m_maxBTSize[2] = maxBTSizeC; }
-  unsigned  getMaxBTSize          ()                                      const     { return m_maxBTSize[1]; }
-  unsigned  getMaxBTSizeI         ()                                      const     { return m_maxBTSize[0]; }
-  unsigned  getMaxBTSizeIChroma   ()                                      const     { return m_maxBTSize[2]; }
-
-  void      setUseDualITree       ( bool b )                                        { m_dualITree = b; }
-  bool      getUseDualITree       ()                                      const     { return m_dualITree; }
-
   // sub pu tmvp
-  void      setSubPuMvpLog2Size   ( unsigned    log2Size )                          { m_subPuLog2Size = log2Size; }
-  unsigned  getSubPuMvpLog2Size   ()                                      const     { return m_subPuLog2Size; }
   void      setImvMode(ImvMode m) { m_ImvMode = m; m_IMV = m != 0;  }
   ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
 
@@ -921,6 +914,13 @@ public:
 
   void      setUseCompositeRef(bool b) { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef()                                      const { return m_compositeRefEnabled; }
+
+  void      setUseMHIntra         ( bool b )                                        { m_MHIntra = b; }
+  bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
+  void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
+  bool      getUseTriangle        ()                                      const     { return m_Triangle; }
+  void      setCPRMode            (unsigned CPRMode)                                { m_CPRMode = CPRMode; }
+  unsigned  getCPRMode            ()                                      const     { return m_CPRMode; }
   // ADD_NEW_TOOL : (sps extension) add access functions for tool enabling flags and associated parameters here
 
 };
@@ -931,6 +931,24 @@ class SPS
 {
 private:
   int               m_SPSId;
+  bool              m_bIntraOnlyConstraintFlag;
+  uint32_t          m_maxBitDepthConstraintIdc;
+  uint32_t          m_maxChromaFormatConstraintIdc;
+  bool              m_bFrameConstraintFlag;
+  bool              m_bNoQtbttDualTreeIntraConstraintFlag;
+  bool              m_bNoCclmConstraintFlag;
+  bool              m_bNoSaoConstraintFlag;
+  bool              m_bNoAlfConstraintFlag;
+  bool              m_bNoPcmConstraintFlag;
+  bool              m_bNoTemporalMvpConstraintFlag;
+  bool              m_bNoSbtmvpConstraintFlag;
+  bool              m_bNoAmvrConstraintFlag;
+  bool              m_bNoAffineMotionConstraintFlag;
+  bool              m_bNoMtsConstraintFlag;
+  bool              m_bNoLadfConstraintFlag;
+  bool              m_bNoDepQuantConstraintFlag;
+  bool              m_bNoSignDataHidingConstraintFlag;
+
 #if HEVC_VPS
   int               m_VPSId;
 #endif
@@ -944,6 +962,13 @@ private:
 
   int               m_log2MinCodingBlockSize;
   int               m_log2DiffMaxMinCodingBlockSize;
+  unsigned    m_CTUSize;
+  unsigned    m_partitionOverrideEnalbed;       // enable partition constraints override function
+  unsigned    m_minQT[3];   // 0: I slice luma; 1: P/B slice; 2: I slice chroma
+  unsigned    m_maxBTDepth[3];
+  unsigned    m_maxBTSize[3];
+  unsigned    m_maxTTSize[3];
+  unsigned    m_dualITree;
   uint32_t              m_uiMaxCUWidth;
   uint32_t              m_uiMaxCUHeight;
   uint32_t              m_uiMaxCodingDepth; ///< Total CU depth, relative to the smallest possible transform block size.
@@ -1006,6 +1031,9 @@ private:
 
   bool              m_useALF;
 
+  bool              m_useWrapAround;
+  unsigned          m_wrapAroundOffset;
+
 public:
 
   SPS();
@@ -1015,6 +1043,40 @@ public:
   int                     getVPSId() const                                                                { return m_VPSId;                                                      }
   void                    setVPSId(int i)                                                                 { m_VPSId = i;                                                         }
 #endif
+  bool                    getIntraOnlyConstraintFlag() const                                              { return m_bIntraOnlyConstraintFlag;                                   }
+  void                    setIntraOnlyConstraintFlag(bool bVal)                                           { m_bIntraOnlyConstraintFlag = bVal;                                   }
+  uint32_t                getMaxBitDepthConstraintIdc() const                                             { return m_maxBitDepthConstraintIdc;                                   }
+  void                    setMaxBitDepthConstraintIdc(uint32_t u)                                         { m_maxBitDepthConstraintIdc = u;                                      }
+  uint32_t                getMaxChromaFormatConstraintIdc() const                                         { return m_maxChromaFormatConstraintIdc;                               }
+  void                    setMaxChromaFormatConstraintIdc(uint32_t u)                                     { m_maxChromaFormatConstraintIdc = u;                                  }
+  bool                    getFrameConstraintFlag() const                                                  { return m_bFrameConstraintFlag;                                   }
+  void                    setFrameConstraintFlag(bool bVal)                                               { m_bFrameConstraintFlag = bVal;                                   }
+  bool                    getNoQtbttDualTreeIntraConstraintFlag() const                                   { return m_bNoQtbttDualTreeIntraConstraintFlag;                        }
+  void                    setNoQtbttDualTreeIntraConstraintFlag(bool bVal)                                { m_bNoQtbttDualTreeIntraConstraintFlag = bVal;                        }
+  bool                    getNoCclmConstraintFlag() const                                                 { return m_bNoCclmConstraintFlag;                                      }
+  void                    setNoCclmConstraintFlag(bool bVal)                                              { m_bNoCclmConstraintFlag = bVal;                                      }
+  bool                    getNoSaoConstraintFlag() const                                                  { return m_bNoSaoConstraintFlag;                                       }
+  void                    setNoSaoConstraintFlag(bool bVal)                                               { m_bNoSaoConstraintFlag = bVal;                                       }
+  bool                    getNoAlfConstraintFlag() const                                                  { return m_bNoAlfConstraintFlag;                                       }
+  void                    setNoAlfConstraintFlag(bool bVal)                                               { m_bNoAlfConstraintFlag = bVal;                                       }
+  bool                    getNoPcmConstraintFlag() const                                                  { return m_bNoPcmConstraintFlag;                                       }
+  void                    setNoPcmConstraintFlag(bool bVal)                                               { m_bNoPcmConstraintFlag = bVal;                                       }
+  bool                    getNoTemporalMvpConstraintFlag() const                                          { return m_bNoTemporalMvpConstraintFlag;                               }
+  void                    setNoTemporalMvpConstraintFlag(bool bVal)                                       { m_bNoTemporalMvpConstraintFlag = bVal;                               }
+  bool                    getNoSbtmvpConstraintFlag() const                                               { return m_bNoSbtmvpConstraintFlag;                                    }
+  void                    setNoSbtmvpConstraintFlag(bool bVal)                                            { m_bNoSbtmvpConstraintFlag = bVal;                                    }
+  bool                    getNoAmvrConstraintFlag() const                                                 { return m_bNoAmvrConstraintFlag;                                      }
+  void                    setNoAmvrConstraintFlag(bool bVal)                                              { m_bNoAmvrConstraintFlag = bVal;                                      }
+  bool                    getNoAffineMotionConstraintFlag() const                                         { return m_bNoAffineMotionConstraintFlag;                              }
+  void                    setNoAffineMotionConstraintFlag(bool bVal)                                      { m_bNoAffineMotionConstraintFlag = bVal;                              }
+  bool                    getNoMtsConstraintFlag() const                                                  { return m_bNoMtsConstraintFlag;                                       }
+  void                    setNoMtsConstraintFlag(bool bVal)                                               { m_bNoMtsConstraintFlag = bVal;                                       }
+  bool                    getNoLadfConstraintFlag() const                                                 { return m_bNoLadfConstraintFlag;                                      }
+  void                    setNoLadfConstraintFlag(bool bVal)                                              { m_bNoLadfConstraintFlag = bVal;                                      }
+  bool                    getNoDepQuantConstraintFlag() const                                             { return m_bNoDepQuantConstraintFlag;                                  }
+  void                    setNoDepQuantConstraintFlag(bool bVal)                                          { m_bNoDepQuantConstraintFlag = bVal;                                  }
+  bool                    getNoSignDataHidingConstraintFlag() const                                       { return m_bNoSignDataHidingConstraintFlag;                            }
+  void                    setNoSignDataHidingConstraintFlag(bool bVal)                                    { m_bNoSignDataHidingConstraintFlag = bVal;                            }
   int                     getSPSId() const                                                                { return m_SPSId;                                                      }
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
   ChromaFormat            getChromaFormatIdc () const                                                     { return m_chromaFormatIdc;                                            }
@@ -1046,6 +1108,38 @@ public:
   void                    setLog2MinCodingBlockSize(int val)                                              { m_log2MinCodingBlockSize = val;                                      }
   int                     getLog2DiffMaxMinCodingBlockSize() const                                        { return m_log2DiffMaxMinCodingBlockSize;                              }
   void                    setLog2DiffMaxMinCodingBlockSize(int val)                                       { m_log2DiffMaxMinCodingBlockSize = val;                               }
+  void                    setCTUSize(unsigned    ctuSize)                                                 { m_CTUSize = ctuSize; }
+  unsigned                getCTUSize()                                                              const { return  m_CTUSize; }
+  void                    setSplitConsOverrideEnabledFlag(bool b)                                         { m_partitionOverrideEnalbed = b; }
+  bool                    getSplitConsOverrideEnabledFlag()                                         const { return m_partitionOverrideEnalbed; }
+  void                    setMinQTSizes(unsigned*   minQT)                                                { m_minQT[0] = minQT[0]; m_minQT[1] = minQT[1]; m_minQT[2] = minQT[2]; }
+  unsigned                getMinQTSize(SliceType   slicetype,
+                                       ChannelType chType = CHANNEL_TYPE_LUMA)
+                                                                                                    const { return slicetype == I_SLICE ? (chType == CHANNEL_TYPE_LUMA ? m_minQT[0] : m_minQT[2]) : m_minQT[1]; }
+  void                    setMaxBTDepth(unsigned    maxBTDepth,
+                                        unsigned    maxBTDepthI,
+                                        unsigned    maxBTDepthIChroma)
+                                                                                                          { m_maxBTDepth[1] = maxBTDepth; m_maxBTDepth[0] = maxBTDepthI; m_maxBTDepth[2] = maxBTDepthIChroma; }
+  unsigned                getMaxBTDepth()                                                           const { return m_maxBTDepth[1]; }
+  unsigned                getMaxBTDepthI()                                                          const { return m_maxBTDepth[0]; }
+  unsigned                getMaxBTDepthIChroma()                                                    const { return m_maxBTDepth[2]; }
+  void                    setMaxBTSize(unsigned    maxBTSize,
+                                       unsigned    maxBTSizeI,
+                                       unsigned    maxBTSizeC) 
+                                                                                                          { m_maxBTSize[1] = maxBTSize; m_maxBTSize[0] = maxBTSizeI; m_maxBTSize[2] = maxBTSizeC; }
+  unsigned                getMaxBTSize()                                                            const { return m_maxBTSize[1]; }
+  unsigned                getMaxBTSizeI()                                                           const { return m_maxBTSize[0]; }
+  unsigned                getMaxBTSizeIChroma()                                                     const { return m_maxBTSize[2]; }
+  void                    setMaxTTSize(unsigned    maxTTSize,
+                                       unsigned    maxTTSizeI,
+                                       unsigned    maxTTSizeC)
+                                                                                                          { m_maxTTSize[1] = maxTTSize; m_maxTTSize[0] = maxTTSizeI; m_maxTTSize[2] = maxTTSizeC; }
+  unsigned                getMaxTTSize()                                                            const { return m_maxTTSize[1]; }
+  unsigned                getMaxTTSizeI()                                                           const { return m_maxTTSize[0]; }
+  unsigned                getMaxTTSizeIChroma()                                                     const { return m_maxTTSize[2]; }
+
+  void                    setUseDualITree(bool b) { m_dualITree = b; }
+  bool                    getUseDualITree()                                      const { return m_dualITree; }
 
   void                    setMaxCUWidth( uint32_t u )                                                         { m_uiMaxCUWidth = u;                                                  }
   uint32_t                    getMaxCUWidth() const                                                           { return  m_uiMaxCUWidth;                                              }
@@ -1140,6 +1234,11 @@ public:
 
   bool                    getUseALF() const { return m_useALF; }
   void                    setUseALF( bool b ) { m_useALF = b; }
+
+  void                    setUseWrapAround(bool b)                                                        { m_useWrapAround = b;                                                 }
+  bool                    getUseWrapAround() const                                                        { return m_useWrapAround;                                              }
+  void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
+  unsigned                getWrapAroundOffset() const                                                     { return m_wrapAroundOffset;                                           }
 };
 
 
@@ -1498,6 +1597,7 @@ private:
 
   uint32_t                       m_colRefIdx;
   uint32_t                       m_maxNumMergeCand;
+  uint32_t                   m_maxNumAffineMergeCand;
 
   double                     m_lambdas[MAX_NUM_COMPONENT];
 
@@ -1543,16 +1643,24 @@ private:
 
   bool                       m_enableTMVPFlag;
 
-  bool                       m_subPuMvpSubBlkSizeSliceEnable;
-  int                        m_subPuMvpSubBlkLog2Size;
 
   SliceType                  m_encCABACTableIdx;           // Used to transmit table selection across slices.
 
   clock_t                    m_iProcessingStartTime;
   double                     m_dProcessingTime;
+  bool                       m_splitConsOverrideFlag;
+  uint32_t                   m_uiMinQTSize;
+  uint32_t                   m_uiMaxBTDepth;
+  uint32_t                   m_uiMaxTTSize;
+
+  uint32_t                   m_uiMinQTSizeIChroma;
+  uint32_t                   m_uiMaxBTDepthIChroma;
+  uint32_t                   m_uiMaxBTSizeIChroma;
+  uint32_t                   m_uiMaxTTSizeIChroma;
   uint32_t                       m_uiMaxBTSize;
 
   AlfSliceParam              m_alfSliceParam;
+  LutMotionCand*             m_MotionCandLut;
 
 public:
                               Slice();
@@ -1660,6 +1768,23 @@ public:
   void                        setLambdas( const double lambdas[MAX_NUM_COMPONENT] )  { for (int component = 0; component < MAX_NUM_COMPONENT; component++) m_lambdas[component] = lambdas[component]; }
   const double*               getLambdas() const                                     { return m_lambdas;                                             }
 
+  void                        setSplitConsOverrideFlag(bool b)                       { m_splitConsOverrideFlag = b; }
+  bool                        getSplitConsOverrideFlag() const                       { return m_splitConsOverrideFlag; }
+  void                        setMinQTSize(int i)                                    { m_uiMinQTSize = i; }
+  uint32_t                    getMinQTSize() const                                   { return m_uiMinQTSize; }
+  void                        setMaxBTDepth(int i)                                   { m_uiMaxBTDepth = i; }
+  uint32_t                    getMaxBTDepth() const                                  { return m_uiMaxBTDepth; }
+  void                        setMaxTTSize(int i)                                    { m_uiMaxTTSize = i; }
+  uint32_t                    getMaxTTSize() const                                   { return m_uiMaxTTSize; }
+
+  void                        setMinQTSizeIChroma(int i)                             { m_uiMinQTSizeIChroma = i; }
+  uint32_t                    getMinQTSizeIChroma() const                            { return m_uiMinQTSizeIChroma; }
+  void                        setMaxBTDepthIChroma(int i)                            { m_uiMaxBTDepthIChroma = i; }
+  uint32_t                    getMaxBTDepthIChroma() const                           { return m_uiMaxBTDepthIChroma; }
+  void                        setMaxBTSizeIChroma(int i)                             { m_uiMaxBTSizeIChroma = i; }
+  uint32_t                    getMaxBTSizeIChroma() const                            { return m_uiMaxBTSizeIChroma; }
+  void                        setMaxTTSizeIChroma(int i)                             { m_uiMaxTTSizeIChroma = i; }
+  uint32_t                    getMaxTTSizeIChroma() const                            { return m_uiMaxTTSizeIChroma; }
   void                        setMaxBTSize(int i)                                    { m_uiMaxBTSize = i; }
   uint32_t                        getMaxBTSize() const                                   { return m_uiMaxBTSize; }
 
@@ -1706,6 +1831,8 @@ public:
   );
   void                        setMaxNumMergeCand(uint32_t val )                          { m_maxNumMergeCand = val;                                      }
   uint32_t                    getMaxNumMergeCand() const                             { return m_maxNumMergeCand;                                     }
+  void                        setMaxNumAffineMergeCand( uint32_t val )               { m_maxNumAffineMergeCand = val;  }
+  uint32_t                    getMaxNumAffineMergeCand() const                       { return m_maxNumAffineMergeCand; }
 
   void                        setNoOutputPriorPicsFlag( bool val )                   { m_noOutputPriorPicsFlag = val;                                }
   bool                        getNoOutputPriorPicsFlag() const                       { return m_noOutputPriorPicsFlag;                               }
@@ -1790,10 +1917,6 @@ public:
   void                        setEncCABACTableIdx( SliceType idx )                   { m_encCABACTableIdx = idx;                                     }
   SliceType                   getEncCABACTableIdx() const                            { return m_encCABACTableIdx;                                    }
 
-  void                        setSubPuMvpSliceSubblkSizeEnable(bool b) { m_subPuMvpSubBlkSizeSliceEnable = b; }
-  bool                        getSubPuMvpSliceSubblkSizeEnable()                  const { return m_subPuMvpSubBlkSizeSliceEnable; }
-  void                        setSubPuMvpSubblkLog2Size(int n) { m_subPuMvpSubBlkLog2Size = n; }
-  int                         getSubPuMvpSubblkLog2Size()                         const { return m_subPuMvpSubBlkLog2Size; }
 
   void                        setSliceQpBase( int i )                                { m_iSliceQpBase = i;                                           }
   int                         getSliceQpBase()                                 const { return m_iSliceQpBase;                                        }
@@ -1810,6 +1933,18 @@ public:
 
   void                        setAlfSliceParam( AlfSliceParam& alfSliceParam ) { m_alfSliceParam = alfSliceParam; }
   AlfSliceParam&              getAlfSliceParam() { return m_alfSliceParam; }
+  void                        initMotionLUTs       ();
+  void                        destroyMotionLUTs    ();
+  void                        resetMotionLUTs();
+  int                         getAvailableLUTMrgNum() const  { return m_MotionCandLut->currCnt; }
+  MotionInfo                  getMotionInfoFromLUTs(int MotCandIdx) const;
+  LutMotionCand*              getMotionLUTs() { return m_MotionCandLut; }
+
+
+  void                        addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi);
+
+  void                        updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu);
+  void                        copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst);
 
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
@@ -2025,7 +2160,7 @@ class PreCalcValues
 public:
   PreCalcValues( const SPS& sps, const PPS& pps, bool _isEncoder )
     : chrFormat           ( sps.getChromaFormatIdc() )
-    , multiBlock422       ( chrFormat == CHROMA_422 && !sps.getSpsNext().getUseQTBT() )
+    , multiBlock422       ( false )
     , noMotComp           ( sps.getSpsNext().getDisableMotCompress() )
     , maxCUWidth          ( sps.getMaxCUWidth() )
     , maxCUHeight         ( sps.getMaxCUHeight() )
@@ -2046,19 +2181,15 @@ public:
     , lumaWidth           ( sps.getPicWidthInLumaSamples() )
     , lumaHeight          ( sps.getPicHeightInLumaSamples() )
     , fastDeltaQPCuMaxSize( Clip3(sps.getMaxCUHeight() >> (sps.getLog2DiffMaxMinCodingBlockSize()), sps.getMaxCUHeight(), 32u) )
-    , numMPMs             (NUM_MOST_PROBABLE_MODES)
-    , noRQT               (  sps.getSpsNext().getUseQTBT() )
-    , rectCUs             (  sps.getSpsNext().getUseQTBT() )
-    , only2Nx2N           (  sps.getSpsNext().getUseQTBT() )
-    , noChroma2x2         ( !sps.getSpsNext().getUseQTBT() )
+    , noChroma2x2         (  false )
     , isEncoder           ( _isEncoder )
-    , ISingleTree         ( !sps.getSpsNext().getUseQTBT() || !sps.getSpsNext().getUseDualITree() )
-    , maxBtDepth          { sps.getSpsNext().getMaxBTDepthI(), sps.getSpsNext().getMaxBTDepth(), sps.getSpsNext().getMaxBTDepthIChroma() }
+    , ISingleTree         ( !sps.getUseDualITree() )
+    , maxBtDepth          { sps.getMaxBTDepthI(), sps.getMaxBTDepth(), sps.getMaxBTDepthIChroma() }
     , minBtSize           { MIN_BT_SIZE, MIN_BT_SIZE_INTER, MIN_BT_SIZE_C }
-    , maxBtSize           { sps.getSpsNext().getMaxBTSizeI(), sps.getSpsNext().getMaxBTSize(), sps.getSpsNext().getMaxBTSizeIChroma() }
+    , maxBtSize           { sps.getMaxBTSizeI(), sps.getMaxBTSize(), sps.getMaxBTSizeIChroma() }
     , minTtSize           { MIN_TT_SIZE, MIN_TT_SIZE_INTER, MIN_TT_SIZE_C }
-    , maxTtSize           { MAX_TT_SIZE, MAX_TT_SIZE_INTER, MAX_TT_SIZE_C }
-    , minQtSize           { sps.getSpsNext().getMinQTSize( I_SLICE, CHANNEL_TYPE_LUMA ), sps.getSpsNext().getMinQTSize( B_SLICE, CHANNEL_TYPE_LUMA ), sps.getSpsNext().getMinQTSize( I_SLICE, CHANNEL_TYPE_CHROMA ) }
+    , maxTtSize           { sps.getMaxTTSizeI(), sps.getMaxTTSize(), sps.getMaxTTSizeIChroma() }
+    , minQtSize           { sps.getMinQTSize(I_SLICE, CHANNEL_TYPE_LUMA), sps.getMinQTSize(B_SLICE, CHANNEL_TYPE_LUMA), sps.getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA) }
   {}
 
   const ChromaFormat chrFormat;
@@ -2084,10 +2215,6 @@ public:
   const unsigned     lumaWidth;
   const unsigned     lumaHeight;
   const unsigned     fastDeltaQPCuMaxSize;
-  const unsigned     numMPMs;
-  const bool         noRQT;
-  const bool         rectCUs;
-  const bool         only2Nx2N;
   const bool         noChroma2x2;
   const bool         isEncoder;
   const bool         ISingleTree;

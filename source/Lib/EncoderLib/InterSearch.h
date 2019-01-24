@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,6 +51,9 @@
 #include "CommonLib/RdCost.h"
 
 #include "CommonLib/AffineGradientSearch.h"
+#include "CommonLib/CprHashMap.h"
+#include <unordered_map>
+#include <vector>
 //! \ingroup EncoderLib
 //! \{
 
@@ -61,7 +64,17 @@
 static const uint32_t MAX_NUM_REF_LIST_ADAPT_SR = 2;
 static const uint32_t MAX_IDX_ADAPT_SR          = 33;
 static const uint32_t NUM_MV_PREDICTORS         = 3;
+struct BlkRecord
+{
+  std::unordered_map<Mv, Distortion> bvRecord;
+};
 class EncModeCtrl;
+
+struct AffineMVInfo
+{
+  Mv  affMVs[2][33][3];
+  int x, y, w, h;
+};
 
 /// encoder search class
 class InterSearch : public InterPrediction, CrossComponentPrediction, AffineGradientSearch
@@ -81,11 +94,15 @@ private:
   CodingStructure **m_pSaveCS;
 
   ClpRng          m_lumaClpRng;
-#if JVET_L0646_GBI 
   uint32_t        m_estWeightIdxBits[GBI_NUM];
   GBiMotionParam  m_uniMotions;
   bool            m_affineModeSelected;
-#endif
+  std::unordered_map< Position, std::unordered_map< Size, BlkRecord> > m_ctuRecord;
+  AffineMVInfo       *m_affMVList;
+  int             m_affMVListIdx;
+  int             m_affMVListSize;
+  int             m_affMVListMaxSize;
+  Distortion      m_hevcCost;
 
 protected:
   // interface to option
@@ -114,7 +131,8 @@ protected:
   Mv              m_integerMv2Nx2N              [NUM_REF_PIC_LIST_01][MAX_NUM_REF];
 
   bool            m_isInitialized;
-
+  unsigned int    m_numBVs, m_numBV16s;
+  Mv              m_acBVs[CPR_NUM_CANDIDATES];
 public:
   InterSearch();
   virtual ~InterSearch();
@@ -135,12 +153,43 @@ public:
   void destroy                      ();
 
   void setTempBuffers               (CodingStructure ****pSlitCS, CodingStructure ****pFullCS, CodingStructure **pSaveCS );
+  void resetCtuRecord               ()             { m_ctuRecord.clear(); }
 #if ENABLE_SPLIT_PARALLELISM
   void copyState                    ( const InterSearch& other );
 #endif
-#if JVET_L0646_GBI
   void setAffineModeSelected        ( bool flag) { m_affineModeSelected = flag; }
-#endif
+  void resetAffineMVList() { m_affMVListIdx = 0; m_affMVListSize = 0; }
+  void savePrevAffMVInfo(int idx, AffineMVInfo &tmpMVInfo, bool& isSaved)
+  {
+    if (m_affMVListSize > idx)
+    {
+      tmpMVInfo = m_affMVList[(m_affMVListIdx - 1 - idx + m_affMVListMaxSize) % m_affMVListMaxSize];
+      isSaved = true;
+    }
+    else
+      isSaved = false;
+  }
+  void addAffMVInfo(AffineMVInfo &tmpMVInfo)
+  {
+    int j = 0;
+    AffineMVInfo *prevInfo = nullptr;
+    for (; j < m_affMVListSize; j++)
+    {
+      prevInfo = m_affMVList + ((m_affMVListIdx - j - 1 + m_affMVListMaxSize) % (m_affMVListMaxSize));
+      if ((tmpMVInfo.x == prevInfo->x) && (tmpMVInfo.y == prevInfo->y) && (tmpMVInfo.w == prevInfo->w) && (tmpMVInfo.h == prevInfo->h))
+      {
+        break;
+      }
+    }
+    if (j < m_affMVListSize)
+      *prevInfo = tmpMVInfo;
+    else
+    {
+      m_affMVList[m_affMVListIdx] = tmpMVInfo;
+      m_affMVListIdx = (m_affMVListIdx + 1) % m_affMVListMaxSize;
+      m_affMVListSize = std::min(m_affMVListSize + 1, m_affMVListMaxSize);
+    }
+  }
 protected:
 
   /// sub-function for motion vector refinement used in fractional-pel accuracy
@@ -189,7 +238,12 @@ public:
 
   /// set ME search range
   void setAdaptiveSearchRange       ( int iDir, int iRefIdx, int iSearchRange) { CHECK(iDir >= MAX_NUM_REF_LIST_ADAPT_SR || iRefIdx>=int(MAX_IDX_ADAPT_SR), "Invalid index"); m_aaiAdaptSR[iDir][iRefIdx] = iSearchRange; }
-
+  bool  predCPRSearch           ( CodingUnit& cu, Partitioner& partitioner, const int localSearchRangeX, const int localSearchRangeY, CprHashMap& cprHashMap);
+  void  xIntraPatternSearch         ( PredictionUnit& pu, IntTZSearchStruct&  cStruct, Mv& rcMv, Distortion&  ruiCost, Mv* cMvSrchRngLT, Mv* cMvSrchRngRB, Mv* pcMvPred);
+  void  xSetIntraSearchRange        ( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, const int localSearchRangeX, const int localSearchRangeY, Mv& rcMvSrchRngLT, Mv& rcMvSrchRngRB);
+  void  xCPREstimation   ( PredictionUnit& pu, PelUnitBuf& origBuf, Mv     *pcMvPred, Mv     &rcMv, Distortion &ruiCost, const int localSearchRangeX, const int localSearchRangeY);
+  void  xCPRSearchMVCandUpdate  ( Distortion  uiSad, int x, int y, Distortion* uiSadBestCand, Mv* cMVCand);
+  int   xCPRSearchMVChromaRefine( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, int cuPelX, int cuPelY, Distortion* uiSadBestCand, Mv*     cMVCand);
 protected:
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -230,15 +284,7 @@ protected:
 
   void xCopyAMVPInfo              ( AMVPInfo*   pSrc, AMVPInfo* pDst );
   uint32_t xGetMvpIdxBits             ( int iIdx, int iNum );
-  void xGetBlkBits                ( PartSize  eCUMode, bool bPSlice, int iPartIdx,  uint32_t uiLastMode, uint32_t uiBlkBit[3]);
-
-  void xMergeEstimation           ( PredictionUnit&       pu,
-                                    PelUnitBuf&           origBuf,
-                                    int                   iPartIdx,
-                                    uint32_t&                 uiMergeIndex,
-                                    Distortion&           ruiCost,
-                                    MergeCtx &            mergeCtx
-                                  );
+  void xGetBlkBits                ( bool bPSlice, int iPartIdx,  uint32_t uiLastMode, uint32_t uiBlkBit[3]);
 
 
 
@@ -323,11 +369,9 @@ protected:
                                     Mv                    hevcMv[2][33]
                                   , Mv                    mvAffine4Para[2][33][3]
                                   , int                   refIdx4Para[2]
-#if JVET_L0646_GBI 
                                   , uint8_t               gbiIdx = GBI_DEFAULT
                                   , bool                  enforceGBiPred = false
                                   , uint32_t              gbiIdxBits = 0
-#endif
                                   );
 
   void xAffineMotionEstimation    ( PredictionUnit& pu,
@@ -355,7 +399,6 @@ protected:
   void xCopyAffineAMVPInfo        ( AffineAMVPInfo& src, AffineAMVPInfo& dst );
   void xCheckBestAffineMVP        ( PredictionUnit &pu, AffineAMVPInfo &affineAMVPInfo, RefPicList eRefPicList, Mv acMv[3], Mv acMvPred[3], int& riMVPIdx, uint32_t& ruiBits, Distortion& ruiCost );
 
-#if JVET_L0646_GBI 
   bool xReadBufferedAffineUniMv   ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv acMvPred[3], Mv acMv[3], uint32_t& ruiBits, Distortion& ruiCost);
   double xGetMEDistortionWeight   ( uint8_t gbiIdx, RefPicList eRefPicList);
   bool xReadBufferedUniMv         ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost);
@@ -364,7 +407,6 @@ public:
   uint32_t getWeightIdxBits       ( uint8_t gbiIdx ) { return m_estWeightIdxBits[gbiIdx]; }
   void initWeightIdxBits          ();
 protected:
-#endif
 
   void xExtDIFUpSamplingH         ( CPelBuf* pcPattern );
   void xExtDIFUpSamplingQ         ( CPelBuf* pcPatternKey, Mv halfPelRef );
@@ -374,13 +416,16 @@ protected:
   // -------------------------------------------------------------------------------------------------------------------
 
   void  setWpScalingDistParam     ( int iRefIdx, RefPicList eRefPicListCur, Slice *slice );
-
+private:
+  void  xxCPRHashSearch(PredictionUnit& pu, Mv* mvPred, int numMvPred, Mv &mv, int& idxMvPred, CprHashMap& cprHashMap);
 public:
 
   void encodeResAndCalcRdInterCU  (CodingStructure &cs, Partitioner &partitioner, const bool &skipResidual
+    , const bool luma = true, const bool chroma = true
   );
   void xEncodeInterResidualQT     (CodingStructure &cs, Partitioner &partitioner, const ComponentID &compID);
   void xEstimateInterResidualQT   (CodingStructure &cs, Partitioner &partitioner, Distortion *puiZeroDist = NULL
+    , const bool luma = true, const bool chroma = true
   );
   uint64_t xGetSymbolFracBitsInter  (CodingStructure &cs, Partitioner &partitioner);
 

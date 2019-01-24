@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -42,12 +42,8 @@
 
 #include "CommonDef.h"
 
-#if ENABLE_BMS
 static_assert( MAX_CU_TILING_PARTITIONS >= 4, "Minimum required number of partitions for the Partitioning type is 4!" );
 typedef static_vector<UnitArea, MAX_CU_TILING_PARTITIONS> Partitioning;
-#else
-typedef static_vector<UnitArea, 4> Partitioning;
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 // PartManager class - manages the partitioning tree
@@ -66,9 +62,7 @@ enum PartSplit
   CU_VERT_SPLIT,
   CU_TRIH_SPLIT,
   CU_TRIV_SPLIT,
-#if ENABLE_BMS
   TU_MAX_TR_SPLIT,
-#endif
   NUM_PART_SPLIT,
   CU_MT_SPLIT             = 1000, ///< dummy element to indicate the MT (multi-type-tree) split
   CU_BT_SPLIT             = 1001, ///< dummy element to indicate the BT split
@@ -107,9 +101,7 @@ protected:
 public:
   unsigned currDepth;
   unsigned currQtDepth;
-#if ENABLE_BMS
   unsigned currTrDepth;
-#endif
   unsigned currBtDepth;
   unsigned currMtDepth;
 
@@ -136,6 +128,9 @@ public:
   virtual void copyState                  ( const Partitioner& other );
 
 public:
+#if JVET_M0421_SPLIT_SIG
+  virtual void canSplit                   ( const CodingStructure &cs, bool& canNo, bool& canQt, bool& canBh, bool& canBv, bool& canTh, bool& canTv ) = 0;
+#endif
   virtual bool canSplit                   ( const PartSplit split,                          const CodingStructure &cs ) = 0;
   virtual bool isSplitImplicit            ( const PartSplit split,                          const CodingStructure &cs ) = 0;
   virtual PartSplit getImplicitSplit      (                                                 const CodingStructure &cs ) = 0;
@@ -155,7 +150,10 @@ public:
   void exitCurrSplit              ();
   bool nextPart                   ( const CodingStructure &cs, bool autoPop = false );
   bool hasNextPart                ();
-
+  
+#if JVET_M0421_SPLIT_SIG
+  void canSplit                   ( const CodingStructure &cs, bool& canNo, bool& canQt, bool& canBh, bool& canBv, bool& canTh, bool& canTv );
+#endif
   bool canSplit                   ( const PartSplit split,                          const CodingStructure &cs );
   bool isSplitImplicit            ( const PartSplit split,                          const CodingStructure &cs );
   PartSplit getImplicitSplit      (                                                 const CodingStructure &cs );
@@ -177,9 +175,7 @@ namespace PartitionerFactory
 namespace PartitionerImpl
 {
   Partitioning getCUSubPartitions( const UnitArea   &cuArea, const CodingStructure &cs, const PartSplit splitType = CU_QUAD_SPLIT );
-#if ENABLE_BMS
   Partitioning getMaxTuTiling    ( const UnitArea& curArea, const CodingStructure &cs );
-#endif
 };
 
 #endif

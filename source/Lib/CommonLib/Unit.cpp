@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -246,58 +246,66 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
 {
   slice             = other.slice;
   predMode          = other.predMode;
-  partSize          = other.partSize;
   qtDepth           = other.qtDepth;
   depth             = other.depth;
   btDepth           = other.btDepth;
   mtDepth           = other.mtDepth;
   splitSeries       = other.splitSeries;
   skip              = other.skip;
+  mmvdSkip = other.mmvdSkip;
   affine            = other.affine;
   affineType        = other.affineType;
+  triangle          = other.triangle;
   transQuantBypass  = other.transQuantBypass;
   ipcm              = other.ipcm;
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
+#if !JVET_M0464_UNI_MTS
   emtFlag           = other.emtFlag;
+#endif
 #if HEVC_TILES_WPP
   tileIdx           = other.tileIdx;
 #endif
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
-#if JVET_L0646_GBI
   GBiIdx            = other.GBiIdx;
-#endif
+  for (int i = 0; i<2; i++)
+    refIdxBi[i] = other.refIdxBi[i];
+  cpr               = other.cpr;
   return *this;
 }
 
 void CodingUnit::initData()
 {
   predMode          = NUMBER_OF_PREDICTION_MODES;
-  partSize          = NUMBER_OF_PART_SIZES;
   qtDepth           = 0;
   depth             = 0;
   btDepth           = 0;
   mtDepth           = 0;
   splitSeries       = 0;
   skip              = false;
+  mmvdSkip = false;
   affine            = false;
   affineType        = 0;
+  triangle          = false;
   transQuantBypass  = false;
   ipcm              = false;
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
+#if !JVET_M0464_UNI_MTS
   emtFlag           = 0;
+#endif
 #if HEVC_TILES_WPP
   tileIdx           = 0;
 #endif
   imv               = 0;
   imvNumCand        = 0;
-#if JVET_L0646_GBI
   GBiIdx            = GBI_DEFAULT;
-#endif
+  for (int i = 0; i < 2; i++)
+    refIdxBi[i] = -1;
+  cpr               = false;
 }
 
 
@@ -313,12 +321,17 @@ void PredictionUnit::initData()
   // intra data - need this default initialization for PCM
   intraDir[0] = DC_IDX;
   intraDir[1] = PLANAR_IDX;
+  multiRefIdx = 0;
 
   // inter data
   mergeFlag   = false;
   mergeIdx    = MAX_UCHAR;
+  mmvdMergeFlag = false;
+  mmvdMergeIdx = MAX_UINT;
   interDir    = MAX_UCHAR;
   mergeType   = MRG_TYPE_DEFAULT_N;
+  bv.setZero();
+  bvd.setZero();
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i] = MAX_UCHAR;
@@ -330,7 +343,12 @@ void PredictionUnit::initData()
     {
       mvdAffi[i][j].setZero();
     }
+    for ( uint32_t j = 0; j < 3; j++ )
+    {
+      mvAffi[i][j].setZero();
+    }
   }
+  mhIntraFlag = false;
 }
 
 PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
@@ -339,6 +357,7 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
   {
     intraDir[i] = predData.intraDir[i];
   }
+  multiRefIdx = predData.multiRefIdx;
 
   return *this;
 }
@@ -347,8 +366,12 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
 {
   mergeFlag   = predData.mergeFlag;
   mergeIdx    = predData.mergeIdx;
+  mmvdMergeFlag = predData.mmvdMergeFlag;
+  mmvdMergeIdx = predData.mmvdMergeIdx;
   interDir    = predData.interDir;
   mergeType   = predData.mergeType;
+  bv          = predData.bv;
+  bvd         = predData.bvd;
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i]   = predData.mvpIdx[i];
@@ -360,7 +383,12 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
     {
       mvdAffi[i][j] = predData.mvdAffi[i][j];
     }
+    for ( uint32_t j = 0; j < 3; j++ )
+    {
+      mvAffi[i][j] = predData.mvAffi[i][j];
+    }
   }
+  mhIntraFlag = predData.mhIntraFlag;
 
   return *this;
 }
@@ -371,11 +399,16 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   {
     intraDir[ i ] = other.intraDir[ i ];
   }
+  multiRefIdx = other.multiRefIdx;
 
   mergeFlag   = other.mergeFlag;
   mergeIdx    = other.mergeIdx;
+  mmvdMergeFlag = other.mmvdMergeFlag;
+  mmvdMergeIdx = other.mmvdMergeIdx;
   interDir    = other.interDir;
   mergeType   = other.mergeType;
+  bv          = other.bv;
+  bvd         = other.bvd;
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i]   = other.mvpIdx[i];
@@ -387,7 +420,12 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
     {
       mvdAffi[i][j] = other.mvdAffi[i][j];
     }
+    for ( uint32_t j = 0; j < 3; j++ )
+    {
+      mvAffi[i][j] = other.mvAffi[i][j];
+    }
   }
+  mhIntraFlag = other.mhIntraFlag;
 
   return *this;
 }
@@ -459,14 +497,17 @@ void TransformUnit::initData()
   {
     cbf[i]           = 0;
     rdpcm[i]         = NUMBER_OF_RDPCM_MODES;
+#if !JVET_M0464_UNI_MTS
     transformSkip[i] = false;
+#endif
     compAlpha[i]     = 0;
   }
-#if ENABLE_BMS
   depth              = 0;
-#endif
+#if JVET_M0464_UNI_MTS
+  mtsIdx             = 0;
+#else
   emtIdx             = 0;
-
+#endif
 }
 
 void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf)
@@ -496,13 +537,17 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
 
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
+#if !JVET_M0464_UNI_MTS
     transformSkip[i] = other.transformSkip[i];
+#endif
     compAlpha[i]     = other.compAlpha[i];
   }
-#if ENABLE_BMS
   depth              = other.depth;
-#endif
+#if JVET_M0464_UNI_MTS
+  mtsIdx             = other.mtsIdx;
+#else
   emtIdx             = other.emtIdx;
+#endif
   return *this;
 }
 
@@ -519,17 +564,20 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 
   cbf[i]           = other.cbf[i];
   rdpcm[i]         = other.rdpcm[i];
+#if !JVET_M0464_UNI_MTS
   transformSkip[i] = other.transformSkip[i];
+#endif
   compAlpha[i]     = other.compAlpha[i];
 
-#if ENABLE_BMS
   depth            = other.depth;
-
-#endif
+#if JVET_M0464_UNI_MTS
+  mtsIdx           = isLuma( i ) ? other.mtsIdx : mtsIdx;
+#else
   if( isLuma( i ) )
   {
     emtIdx         = other.emtIdx;
   }
+#endif
 }
 
        CoeffBuf TransformUnit::getCoeffs(const ComponentID id)       { return  CoeffBuf(m_coeffs[id], blocks[id]); }

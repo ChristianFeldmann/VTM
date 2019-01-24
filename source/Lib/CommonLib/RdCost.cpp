@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -164,6 +164,8 @@ void RdCost::init()
   m_afpDistortFunc[DF_SSE16N_WTD] = RdCost::xGetSSE16N_WTD;
 #endif
 
+  m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD;
+
 #if ENABLE_SIMD_OPT_DIST
 #ifdef TARGET_SIMD_X86
   initRdCostX86();
@@ -188,7 +190,6 @@ void RdCost::copyState( const RdCost& other )
   m_mvPredictor   = other.m_mvPredictor;
   m_motionLambda  = other.m_motionLambda;
   m_iCostScale    = other.m_iCostScale;
-  m_useQtbt       = other.m_useQtbt;
   memcpy( m_dLambdaMotionSAD, other.m_dLambdaMotionSAD, sizeof( m_dLambdaMotionSAD ) );
 }
 #endif
@@ -197,7 +198,6 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRef
 {
   rcDP.bitDepth   = bitDepth;
   rcDP.compID     = compID;
-  rcDP.isQtbt     = m_useQtbt;
 
   // set Original & Curr Pointer / Stride
   rcDP.org        = org;
@@ -277,7 +277,6 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRef
 
 void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &cur, int bitDepth, ComponentID compID, bool useHadamard )
 {
-  rcDP.isQtbt       = m_useQtbt;
   rcDP.org          = org;
   rcDP.cur          = cur;
   rcDP.step         = 1;
@@ -318,11 +317,10 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &c
   rcDP.maximumDistortionForEarlyExit = std::numeric_limits<Distortion>::max();
 }
 
-void RdCost::setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, int iOrgStride, int iRefStride, int bitDepth, ComponentID compID, int width, int height, int subShiftMode, int step, bool useHadamard )
+void RdCost::setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, int iOrgStride, int iRefStride, int bitDepth, ComponentID compID, int width, int height, int subShiftMode, int step, bool useHadamard, bool bioApplied )
 {
   rcDP.bitDepth   = bitDepth;
   rcDP.compID     = compID;
-  rcDP.isQtbt     = m_useQtbt;
 
   rcDP.org.buf    = pOrg;
   rcDP.org.stride = iOrgStride;
@@ -338,6 +336,12 @@ void RdCost::setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, 
   rcDP.maximumDistortionForEarlyExit = std::numeric_limits<Distortion>::max();
 
   CHECK( useHadamard || rcDP.useMR || subShiftMode > 0, "only used in xDirectMCCost with these default parameters (so far...)" );
+
+  if ( bioApplied )
+  {
+    rcDP.distFunc = m_afpDistortFunc[ DF_SAD_INTERMEDIATE_BITDEPTH ];
+    return;
+  }
 
   if( width == 12 )
   {
@@ -365,7 +369,6 @@ Distortion RdCost::getDistPart( const CPelBuf &org, const CPelBuf &cur, int bitD
 {
   DistParam cDtParam;
 
-  cDtParam.isQtbt     = m_useQtbt;
   cDtParam.org        = org;
   cDtParam.cur        = cur;
   cDtParam.step       = 1;
@@ -2754,7 +2757,7 @@ Distortion RdCost::xGetHADs( const DistParam &rcDtParam )
 
   Distortion uiSum = 0;
 
-  if( rcDtParam.isQtbt && iCols > iRows && ( iRows & 7 ) == 0 && ( iCols & 15 ) == 0 )
+  if( iCols > iRows && ( iRows & 7 ) == 0 && ( iCols & 15 ) == 0 )
   {
     for( y = 0; y < iRows; y += 8 )
     {
@@ -2766,7 +2769,7 @@ Distortion RdCost::xGetHADs( const DistParam &rcDtParam )
       piCur += iStrideCur * 8;
     }
   }
-  else if( rcDtParam.isQtbt && iCols < iRows && ( iCols & 7 ) == 0 && ( iRows & 15 ) == 0 )
+  else if( iCols < iRows && ( iCols & 7 ) == 0 && ( iRows & 15 ) == 0 )
   {
     for( y = 0; y < iRows; y += 16 )
     {
@@ -2778,7 +2781,7 @@ Distortion RdCost::xGetHADs( const DistParam &rcDtParam )
       piCur += iStrideCur * 16;
     }
   }
-  else if( rcDtParam.isQtbt && iCols > iRows && ( iRows & 3 ) == 0 && ( iCols & 7 ) == 0 )
+  else if( iCols > iRows && ( iRows & 3 ) == 0 && ( iCols & 7 ) == 0 )
   {
     for( y = 0; y < iRows; y += 4 )
     {
@@ -2790,7 +2793,7 @@ Distortion RdCost::xGetHADs( const DistParam &rcDtParam )
       piCur += iStrideCur * 4;
     }
   }
-  else if( rcDtParam.isQtbt && iCols < iRows && ( iCols & 3 ) == 0 && ( iRows & 7 ) == 0 )
+  else if( iCols < iRows && ( iCols & 3 ) == 0 && ( iRows & 7 ) == 0 )
   {
     for( y = 0; y < iRows; y += 8 )
     {

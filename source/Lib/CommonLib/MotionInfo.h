@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -106,6 +106,7 @@ struct MotionInfo
 
   Mv      mv     [ NUM_REF_PIC_LIST_01 ];
   int16_t   refIdx [ NUM_REF_PIC_LIST_01 ];
+  Mv      bv;
   MotionInfo()        : isInter(  false ), interDir( 0 ), sliceIdx( 0 ), refIdx{ NOT_VALID, NOT_VALID } { }
   // ensure that MotionInfo(0) produces '\x000....' bit pattern - needed to work with AreaBuf - don't use this constructor for anything else
   MotionInfo( int i ) : isInter( i != 0 ), interDir( 0 ), sliceIdx( 0 ), refIdx{         0,         0 } { CHECKD( i != 0, "The argument for this constructor has to be '0'" ); }
@@ -140,7 +141,6 @@ struct MotionInfo
   }
 };
 
-#if JVET_L0646_GBI
 class GBiMotionParam
 {
   bool       m_readOnly[2][33];       // 2 RefLists, 33 RefFrams
@@ -162,7 +162,7 @@ public:
     }
 
     Mv* pAffineMv = &(m_mvAffine[0][0][0][0]);
-    for (int ui = 0; ui < 2 * 2 * 33 * 3; ++ui, ++pMv)
+    for (int ui = 0; ui < 2 * 2 * 33 * 3; ++ui, ++pAffineMv)
     {
       pAffineMv->set(0, 0);
     }
@@ -207,6 +207,9 @@ public:
     ruiDist = m_distAffine[bP4][uiRefList][uiRefIdx];
   }
 };
-#endif
-
+struct LutMotionCand
+{
+  MotionInfo*   motionCand;
+  int  currCnt;
+};
 #endif // __MOTIONINFO__

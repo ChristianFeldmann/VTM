@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1438,7 +1438,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->fieldPic = isField;
 #endif
 
-    pcSlice->setLastIDR(m_iLastIDR);
+    int pocBits = pcSlice->getSPS()->getBitsForPOC();
+    int pocMask = (1 << pocBits) - 1;
+    pcSlice->setLastIDR(m_iLastIDR & ~pocMask);
 #if HEVC_DEPENDENT_SLICES
     pcSlice->setSliceSegmentIdx(0);
 #endif
@@ -1453,6 +1455,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if(pcSlice->getSliceType()==B_SLICE&&m_pcCfg->getGOPEntry(iGOPid).m_sliceType=='I')
     {
       pcSlice->setSliceType(I_SLICE);
+    }
+    if (pcSlice->getSliceType() == I_SLICE && pcSlice->getSPS()->getSpsNext().getCPRMode())
+    {
+      pcSlice->setSliceType(P_SLICE);
     }
     // Set the nal unit type
     pcSlice->setNalUnitType(getNalUnitType(pocCurr, m_iLastIDR, isField));
@@ -1624,7 +1630,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && getPrepareLTRef()) {
       arrangeCompositeReference(pcSlice, rcListPic, pocCurr);
     }
+    if (pcSlice->getSPS()->getSpsNext().getCPRMode())
+    {
+      if (m_pcCfg->getIntraPeriod() > 0 && pcSlice->getPOC() % m_pcCfg->getIntraPeriod() == 0)
+      {
+        pcSlice->setNumRefIdx(REF_PIC_LIST_0, 0);
+        pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
+      }
 
+      pcSlice->setNumRefIdx(REF_PIC_LIST_0, pcSlice->getNumRefIdx(REF_PIC_LIST_0) + 1);
+    }
     //  Set reference list
     pcSlice->setRefPicList ( rcListPic );
 
@@ -1644,6 +1659,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         if( refLayer >= 0 && m_uiNumBlk[refLayer] != 0 )
         {
+          pcSlice->setSplitConsOverrideFlag(true);
           double dBlkSize = sqrt( ( double ) m_uiBlkSize[refLayer] / m_uiNumBlk[refLayer] );
           if( dBlkSize < AMAXBT_TH32 )
           {
@@ -1679,6 +1695,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if ( (pcSlice->getSliceType() == B_SLICE) && (pcSlice->getNumRefIdx(REF_PIC_LIST_1) == 0) )
     {
       pcSlice->setSliceType ( P_SLICE );
+    }
+    if (pcSlice->getSPS()->getSpsNext().getCPRMode() && pcSlice->getNumRefIdx(REF_PIC_LIST_0) == 1)
+    {
+      m_pcSliceEncoder->setEncCABACTableIdx(P_SLICE);
     }
     xUpdateRasInit( pcSlice );
 
@@ -1765,6 +1785,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setEnableTMVPFlag(0);
     }
 
+    // disable TMVP when current picture is the only ref picture
+    if (pcSlice->isIRAP() && pcSlice->getSPS()->getSpsNext().getCPRMode())
+    {
+      pcSlice->setEnableTMVPFlag(0);
+    }
+
     // set adaptive search range for non-intra-slices
     if (m_pcCfg->getUseASR() && !pcSlice->isIRAP())
     {
@@ -1774,6 +1800,22 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     bool bGPBcheck=false;
     if ( pcSlice->getSliceType() == B_SLICE)
     {
+      if (pcSlice->getSPS()->getSpsNext().getCPRMode())
+      {
+        if (pcSlice->getNumRefIdx(RefPicList(0)) - 1 == pcSlice->getNumRefIdx(RefPicList(1)))
+        {
+          bGPBcheck = true;
+          for (int i = 0; i < pcSlice->getNumRefIdx(RefPicList(1)); i++)
+          {
+            if (pcSlice->getRefPOC(RefPicList(1), i) != pcSlice->getRefPOC(RefPicList(0), i))
+            {
+              bGPBcheck = false;
+              break;
+            }
+          }
+        }
+      }
+      else
       if ( pcSlice->getNumRefIdx(RefPicList( 0 ) ) == pcSlice->getNumRefIdx(RefPicList( 1 ) ) )
       {
         bGPBcheck=true;
@@ -2069,20 +2111,21 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       m_pcLoopFilter->loopFilterPic( cs );
 
-#if DMVR_JVET_LOW_LATENCY_K0217 
-      CS::setRefinedMotionField(cs);
-#endif
-
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 1 ) ) );
 
       if( pcSlice->getSPS()->getUseSAO() )
       {
         bool sliceEnabled[MAX_NUM_COMPONENT];
         m_pcSAO->initCABACEstimator( m_pcEncLib->getCABACEncoder(), m_pcEncLib->getCtxCache(), pcSlice );
+
+        m_pcSAO->SAOProcess( cs, sliceEnabled, pcSlice->getLambdas(),
+#if ENABLE_QPA
+                             (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP() ? m_pcEncLib->getRdCost (PARL_PARAM0 (0))->getChromaWeight() : 0.0),
+#endif
 #if K0238_SAO_GREEDY_MERGE_ENCODING
-        m_pcSAO->SAOProcess(cs, sliceEnabled, pcSlice->getLambdas(), m_pcCfg->getTestSAODisableAtPictureLevel(), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma(), m_pcCfg->getSaoCtuBoundary(), m_pcCfg->getSaoGreedyMergeEnc());
+                             m_pcCfg->getTestSAODisableAtPictureLevel(), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma(), m_pcCfg->getSaoCtuBoundary(), m_pcCfg->getSaoGreedyMergeEnc() );
 #else
-        m_pcSAO->SAOProcess(cs, sliceEnabled, pcSlice->getLambdas(), m_pcCfg->getTestSAODisableAtPictureLevel(), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma(), m_pcCfg->getSaoCtuBoundary());
+                             m_pcCfg->getTestSAODisableAtPictureLevel(), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma(), m_pcCfg->getSaoCtuBoundary() );
 #endif
         //assign SAO slice header
         for(int s=0; s< uiNumSliceSegments; s++)
@@ -2097,7 +2140,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         AlfSliceParam alfSliceParam;
         m_pcALF->initCABACEstimator( m_pcEncLib->getCABACEncoder(), m_pcEncLib->getCtxCache(), pcSlice );
-        m_pcALF->ALFProcess( cs, pcSlice->getLambdas(), alfSliceParam );
+
+        m_pcALF->ALFProcess( cs, pcSlice->getLambdas(),
+#if ENABLE_QPA
+                             (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP() ? m_pcEncLib->getRdCost (PARL_PARAM0 (0))->getChromaWeight() : 0.0),
+#endif
+                             alfSliceParam );
         //assign ALF slice header
         for( int s = 0; s< uiNumSliceSegments; s++ )
         {
@@ -2113,6 +2161,17 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceQpBase( pcSlice->getSliceQp() );
 
+#if ENABLE_QPA
+      if (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP())
+      {
+        const double picLambda = pcSlice->getLambdas()[0];
+
+        for (uint32_t ctuRsAddr = 0; ctuRsAddr < numberOfCtusInFrame; ctuRsAddr++)
+        {
+          pcPic->m_uEnerHpCtu[ctuRsAddr] = picLambda;  // initialize to slice lambda (just for safety)
+        }
+      }
+#endif
       if( pcSlice->getSPS()->getUseSAO() )
       {
         m_pcSAO->disabledRate( *pcPic->cs, pcPic->getSAO(1), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma());
@@ -2364,6 +2423,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 0 ) ) );
 
     pcPic->reconstructed = true;
+    pcPic->longTerm = false;
     m_bFirst = false;
     m_iNumPicCoded++;
     if (!(pcPic->cs->sps->getSpsNext().getUseCompositeRef() && isEncodeLtRef))
@@ -2436,7 +2496,7 @@ void EncGOP::printOutSummary(uint32_t uiNumAllPicCoded, bool isField, const bool
   if (useLumaWPSNR)
   {
     msg(DETAILS, "\nWPSNR SUMMARY --------------------------------------------------------\n");
-    m_gcAnalyzeWPSNR.printOut('w', chFmt, printMSEBasedSNR, printSequenceMSE, bitDepths, useLumaWPSNR);
+    m_gcAnalyzeWPSNR.printOut('w', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths, useLumaWPSNR);
   }
 #endif
   if (!m_pcCfg->getSummaryOutFilename().empty())
@@ -2454,7 +2514,7 @@ void EncGOP::printOutSummary(uint32_t uiNumAllPicCoded, bool isField, const bool
 #if WCG_WPSNR
   if (!m_pcCfg->getSummaryOutFilename().empty() && useLumaWPSNR)
   {
-    m_gcAnalyzeWPSNR.printSummary(chFmt, printSequenceMSE, bitDepths, m_pcCfg->getSummaryOutFilename());
+    m_gcAnalyzeWPSNR.printSummary(chFmt, printSequenceMSE, printHexPsnr, bitDepths, m_pcCfg->getSummaryOutFilename());
   }
 #endif
   if(isField)
@@ -2476,7 +2536,7 @@ void EncGOP::printOutSummary(uint32_t uiNumAllPicCoded, bool isField, const bool
 #if WCG_WPSNR
       if (useLumaWPSNR)
       {
-        m_gcAnalyzeWPSNR.printSummary(chFmt, printSequenceMSE, bitDepths, m_pcCfg->getSummaryOutFilename());
+        m_gcAnalyzeWPSNR.printSummary(chFmt, printSequenceMSE, printHexPsnr, bitDepths, m_pcCfg->getSummaryOutFilename());
       }
 #endif
     }
@@ -2577,10 +2637,6 @@ void EncGOP::xGetBuffer( PicList&                  rcListPic,
 
 #ifndef BETA
   #define BETA 0.5 // value between 0.0 and 1; use 0.0 to obtain traditional PSNR
-#endif
-#define GLOBAL_AVERAGING 1 // "global" averaging of a_k across a set instead of one picture
-#if FRAME_WEIGHTING
-static const uint32_t DQP[16] = { 4, 12, 11, 12,  9, 12, 11, 12,  6, 12, 11, 12,  9, 12, 11, 12 };
 #endif
 
 static inline double calcWeightedSquaredError(const CPelBuf& org,        const CPelBuf& rec,
@@ -2685,9 +2741,7 @@ uint64_t EncGOP::xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, 
       }
 
       double wmse = 0.0, sumAct = 0.0; // compute activity normalized SNR value
-#if !GLOBAL_AVERAGING
-      double numAct = 0.0;
-#endif
+
       for (y = 0; y < H; y += B)
       {
         for (x = 0; x < W; x += B)
@@ -2697,29 +2751,13 @@ uint64_t EncGOP::xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, 
                                            W,      H,
                                            x,      y,
                                            B,      B);
-#if !GLOBAL_AVERAGING
-          numAct += 1.0;
-#endif
         }
       }
 
       // integer weighted distortion
-#if GLOBAL_AVERAGING
-      sumAct = 32.0 * double(1 << BD);
-
-      if ((W << chromaShift) > 2048 && (H << chromaShift) > 1280) // for UHD/4K
-      {
-        sumAct *= 0.5;
-      }
-      else if ((W << chromaShift) <= 1024 || (H << chromaShift) <= 640) // 480p
-      {
-        sumAct *= 2.0;
-      }
+      sumAct = 16.0 * sqrt ((3840.0 * 2160.0) / double((W << chromaShift) * (H << chromaShift))) * double(1 << BD);
 
       return (wmse <= 0.0) ? 0 : uint64_t(wmse * pow(sumAct, BETA) + 0.5);
-#else
-      return (wmse <= 0.0 || numAct <= 0.0) ? 0 : uint64_t(wmse * pow(sumAct / numAct, BETA) + 0.5);
-#endif
     }
 #endif // ENABLE_QPA
     uiTotalDiff = 0;
@@ -2924,12 +2962,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   const bool bPicIsField     = pcPic->fieldPic;
   const Slice*  pcSlice      = pcPic->slices[0];
-#if ENABLE_QPA && FRAME_WEIGHTING
-  const uint32_t    currDQP      = (pcSlice->getPOC() % m_pcEncLib->getIntraPeriod()) == 0 ? 0 : DQP[pcSlice->getPOC() % m_pcEncLib->getGOPSize()];
-  const double  frameWeight  = pow(2.0, (double)currDQP / -3.0);
 
-  if (useWPSNR) m_gcAnalyzeAll.addWeight(frameWeight);
-#endif
   for (int comp = 0; comp < ::getNumberValidComponents(formatD); comp++)
   {
     const ComponentID compID = ComponentID(comp);
@@ -2948,28 +2981,21 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     const uint32_t    bitDepth = sps.getBitDepth(toChannelType(compID));
 #if ENABLE_QPA
     const uint64_t uiSSDtemp = xFindDistortionPlane(recPB, orgPB, useWPSNR ? bitDepth : 0, ::getComponentScaleX(compID, format));
-    const uint32_t maxval = /*useWPSNR ? (1 << bitDepth) - 1 :*/ 255 << (bitDepth - 8); // fix with WPSNR: 1023 (4095) instead of 1020 (4080) for bit-depth 10 (12)
 #else
     const uint64_t uiSSDtemp = xFindDistortionPlane(recPB, orgPB, 0);
-#if WCG_WPSNR
-    const double uiSSDtempWeighted = xFindDistortionPlaneWPSNR(recPB, orgPB, 0, org.get(COMPONENT_Y), compID, format);
 #endif
     const uint32_t maxval = 255 << (bitDepth - 8);
-#endif
     const uint32_t size   = width * height;
     const double fRefValue = (double)maxval * maxval * size;
     dPSNR[comp]       = uiSSDtemp ? 10.0 * log10(fRefValue / (double)uiSSDtemp) : 999.99;
     MSEyuvframe[comp] = (double)uiSSDtemp / size;
 #if WCG_WPSNR
+    const double uiSSDtempWeighted = xFindDistortionPlaneWPSNR(recPB, orgPB, 0, org.get(COMPONENT_Y), compID, format);
     if (useLumaWPSNR)
     {
       dPSNRWeighted[comp] = uiSSDtempWeighted ? 10.0 * log10(fRefValue / (double)uiSSDtempWeighted) : 999.99;
       MSEyuvframeWeighted[comp] = (double)uiSSDtempWeighted / size;
     }
-#endif
-
-#if ENABLE_QPA && FRAME_WEIGHTING
-    if (useWPSNR) m_gcAnalyzeAll.addWeightedSSD(frameWeight * (double)uiSSDtemp / fRefValue, compID);
 #endif
   }
 
@@ -3050,7 +3076,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 #if WCG_WPSNR
   if (useLumaWPSNR)
   {
-    m_gcAnalyzeWPSNR.addResult(dPSNRWeighted, (double)uibits, MSEyuvframeWeighted);
+    m_gcAnalyzeWPSNR.addResult(dPSNRWeighted, (double)uibits, MSEyuvframeWeighted, isEncodeLtRef);
   }
 #endif
 
@@ -3158,13 +3184,7 @@ void EncGOP::xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* 
 
   CHECK(!(acPicRecFields[0].chromaFormat==acPicRecFields[1].chromaFormat), "Unspecified error");
   const uint32_t numValidComponents = ::getNumberValidComponents( acPicRecFields[0].chromaFormat );
-#if ENABLE_QPA && FRAME_WEIGHTING
-  const Slice*  pcSlice      = pcPicOrgFirstField->slices[0];
-  const uint32_t    currDQP      = (pcSlice->getPOC() % m_pcEncLib->getIntraPeriod()) == 0 ? 0 : DQP[pcSlice->getPOC() % m_pcEncLib->getGOPSize()];
-  const double  frameWeight  = pow(2.0, (double)currDQP / -3.0);
 
-  if (useWPSNR) m_gcAnalyzeAll_in.addWeight(frameWeight);
-#endif
   for (int chan = 0; chan < numValidComponents; chan++)
   {
     const ComponentID ch=ComponentID(chan);
@@ -3185,18 +3205,11 @@ void EncGOP::xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* 
       uiSSDtemp += xFindDistortionPlane( acPicRecFields[fieldNum].get(ch), apcPicOrgFields[fieldNum]->getOrigBuf().get(ch), 0 );
 #endif
     }
-#if ENABLE_QPA
-    const uint32_t maxval = /*useWPSNR ? (1 << bitDepth) - 1 :*/ 255 << (bitDepth - 8); // fix with WPSNR: 1023 (4095) instead of 1020 (4080) for bit-depth 10 (12)
-#else
     const uint32_t maxval = 255 << (bitDepth - 8);
-#endif
     const uint32_t size   = width * height * 2;
     const double fRefValue = (double)maxval * maxval * size;
     dPSNR[ch]         = uiSSDtemp ? 10.0 * log10(fRefValue / (double)uiSSDtemp) : 999.99;
     MSEyuvframe[ch]   = (double)uiSSDtemp / size;
-#if ENABLE_QPA && FRAME_WEIGHTING
-    if (useWPSNR) m_gcAnalyzeAll_in.addWeightedSSD(frameWeight * (double)uiSSDtemp / fRefValue, ch);
-#endif
   }
 
   uint32_t uibits = 0; // the number of bits for the pair is not calculated here - instead the overall total is used elsewhere.

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,8 @@
 #include "CommonLib/AffineGradientSearch.h"
 
 #include "CommonLib/AdaptiveLoopFilter.h"
+
+#include "CommonLib/CprHashMap.h"
 
 #ifdef TARGET_SIMD_X86
 
@@ -166,7 +168,7 @@ void AdaptiveLoopFilter::initAdaptiveLoopFilterX86()
 #endif
 
 #if ENABLE_SIMD_OPT_CPR
-void IbcHashMap::initIbcHashMapX86()
+void CprHashMap::initCprHashMapX86()
 {
   auto vext = read_x86_extension_flags();
   switch (vext) 
@@ -175,7 +177,7 @@ void IbcHashMap::initIbcHashMapX86()
   case AVX2:
   case AVX:
   case SSE42:
-    _initIbcHashMapX86<SSE42>();
+    _initCprHashMapX86<SSE42>();
     break;
   case SSE41:
   default:

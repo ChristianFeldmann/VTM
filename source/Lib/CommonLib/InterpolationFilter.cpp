@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,7 @@ CacheModel* InterpolationFilter::m_cacheModel;
 // Tables
 // ====================================================================================================================
 
-const TFilterCoeff InterpolationFilter::m_lumaFilter[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE][NTAPS_LUMA] =
+const TFilterCoeff InterpolationFilter::m_lumaFilter[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA] =
 {
   {  0, 0,   0, 64,  0,   0,  0,  0 },
   {  0, 1,  -3, 63,  4,  -2,  1,  0 },
@@ -75,7 +75,7 @@ const TFilterCoeff InterpolationFilter::m_lumaFilter[LUMA_INTERPOLATION_FILTER_S
   {  0, 1,  -2,  4, 63,  -3,  1,  0 }
 };
 
-const TFilterCoeff InterpolationFilter::m_chromaFilter[CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE][NTAPS_CHROMA] =
+const TFilterCoeff InterpolationFilter::m_chromaFilter[CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_CHROMA] =
 {
   {  0, 64,  0,  0 },
   { -1, 63,  2,  0 },
@@ -109,6 +109,26 @@ const TFilterCoeff InterpolationFilter::m_chromaFilter[CHROMA_INTERPOLATION_FILT
   { -1,  7, 60, -2 },
   {  0,  4, 62, -2 },
   {  0,  2, 63, -1 },
+};
+
+const TFilterCoeff InterpolationFilter::m_bilinearFilter[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_BILINEAR] =
+{
+  { 64,  0, },
+  { 60,  4, },
+  { 56,  8, },
+  { 52, 12, },
+  { 48, 16, },
+  { 44, 20, },
+  { 40, 24, },
+  { 36, 28, },
+  { 32, 32, },
+  { 28, 36, },
+  { 24, 40, },
+  { 20, 44, },
+  { 16, 48, },
+  { 12, 52, },
+  { 8, 56, },
+  { 4, 60, },
 };
 
 // ====================================================================================================================
@@ -443,7 +463,7 @@ void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int sr
  * \param  fmt        Chroma format
  * \param  bitDepth   Bit depth
  */
-void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng )
+void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx )
 {
   if( frac == 0 )
   {
@@ -451,7 +471,12 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
   }
   else if( isLuma( compID ) )
   {
-    CHECK( frac < 0 || frac >= ( LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE ), "Invalid fraction" );
+    CHECK( frac < 0 || frac >= LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
+    if( nFilterIdx == 1 )
+    {
+      filterHor<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_bilinearFilter[frac]);
+    }
+    else
     {
       filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter[frac] );
     }
@@ -459,7 +484,7 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
   else
   {
     const uint32_t csx = getComponentScaleX( compID, fmt );
-    CHECK( frac < 0 || csx >= 2 || ( frac << ( 1 - csx ) ) >= ( CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE ), "Invalid fraction" );
+    CHECK( frac < 0 || csx >= 2 || ( frac << ( 1 - csx ) ) >= CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
     filterHor<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_chromaFilter[frac << ( 1 - csx )] );
   }
 }
@@ -481,7 +506,7 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
  * \param  fmt        Chroma format
  * \param  bitDepth   Bit depth
  */
-void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng )
+void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx)
 {
   if( frac == 0 )
   {
@@ -489,7 +514,12 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
   }
   else if( isLuma( compID ) )
   {
-    CHECK( frac < 0 || frac >= ( LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE ), "Invalid fraction" );
+    CHECK( frac < 0 || frac >= LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
+    if (nFilterIdx == 1)
+    {
+      filterVer<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilter[frac]);
+    }
+    else
     {
       filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter[frac] );
     }
@@ -497,7 +527,7 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
   else
   {
     const uint32_t csy = getComponentScaleY( compID, fmt );
-    CHECK( frac < 0 || csy >= 2 || ( frac << ( 1 - csy ) ) >= ( CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE ), "Invalid fraction" );
+    CHECK( frac < 0 || csy >= 2 || ( frac << ( 1 - csy ) ) >= CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
     filterVer<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilter[frac << ( 1 - csy )] );
   }
 }

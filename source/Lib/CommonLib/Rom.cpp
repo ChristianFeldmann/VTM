@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -180,7 +180,6 @@ public:
     return rtn;
   }
 };
-#if JVET_L0191_LM_WO_LMS
 int g_aiLMDivTableLow[] = {
   0,     0,     21845, 0,     13107, 43690, 18724, 0,     50972, 39321, 53620, 21845, 15123, 9362,  4369,  0,     3855,
   58254, 17246, 52428, 49932, 59578, 25644, 43690, 28835, 40329, 16990, 37449, 56496, 34952, 4228,  0,     61564, 34695,
@@ -245,10 +244,6 @@ int g_aiLMDivTableHigh[] = {
   134,   134,   134,   133,   133,   133,   132,  132,  132,  132,  131,  131,  131,  131,  130,  130,  130,  130,
   129,   129,   129,   129,   128,   128,   128,  128,
 };
-#endif
-const int g_aiNonLMPosThrs[] = {  3,  1,  0 };
-
-#if JVET_L0646_GBI
 const int8_t g_GbiLog2WeightBase = 3;
 const int8_t g_GbiWeightBase = (1 << g_GbiLog2WeightBase);
 const int8_t g_GbiWeights[GBI_NUM] = { -2, 3, 4, 5, 10 };
@@ -312,12 +307,11 @@ uint32_t deriveWeightIdxBits(uint8_t gbiIdx) // Note: align this with TEncSbac::
   }
   return numBits;
 }
-#endif
 
 // initialize ROM variables
 void initROM()
 {
-  int i, c;
+  int c;
 
 #if RExt__HIGH_BIT_DEPTH_SUPPORT
   {
@@ -367,49 +361,7 @@ void initROM()
     g_aucLog2    [i] = c;
   }
 
-  c = 2; //for the 2x2 transforms if QTBT is on
 
-  const double PI = 3.14159265358979323846;
-
-  for (i = 0; i < g_numTransformMatrixSizes; i++)
-  {
-    TMatrixCoeff *iT = NULL;
-    const double s = sqrt((double)c) * (64 << COM16_C806_TRANS_PREC);
-
-    switch (i)
-    {
-      case 0: iT = g_aiTr2[0][0]; break;
-      case 1: iT = g_aiTr4[0][0]; break;
-      case 2: iT = g_aiTr8[0][0]; break;
-      case 3: iT = g_aiTr16[0][0]; break;
-      case 4: iT = g_aiTr32[0][0]; break;
-      case 5: iT = g_aiTr64[0][0]; break;
-      default: exit(0); break;
-    }
-
-    for (int k = 0; k < c; k++)
-    {
-      for (int n = 0; n < c; n++)
-      {
-        double w0, v;
-
-        // DCT-II
-        w0 = k == 0 ? sqrt(0.5) : 1;
-        v = cos(PI*(n + 0.5)*k / c) * w0 * sqrt(2.0 / c);
-        iT[DCT2*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-        // DCT-VIII
-        v = cos(PI*(k + 0.5)*(n + 0.5) / (c + 0.5)) * sqrt(2.0 / (c + 0.5));
-        iT[DCT8*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-        // DST-VII
-        v = sin(PI*(k + 0.5)*(n + 1) / (c + 0.5)) * sqrt(2.0 / (c + 0.5));
-        iT[DST7*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-      }
-    }
-    c <<= 1;
-  }
   gp_sizeIdxInfo = new SizeIndexInfoLog2();
   gp_sizeIdxInfo->init(MAX_CU_SIZE);
 
@@ -520,6 +472,28 @@ void initROM()
       //--------------------------------------------------------------------------------------------------
     }
   }
+
+  for( int idxH = MAX_CU_DEPTH - MIN_CU_LOG2; idxH >= 0; --idxH )
+  {
+    for( int idxW = MAX_CU_DEPTH - MIN_CU_LOG2; idxW >= 0; --idxW )
+    {
+      int numW   = 1 << idxW;
+      int numH   = 1 << idxH;
+      int ratioW = std::max( 0, idxW - idxH );
+      int ratioH = std::max( 0, idxH - idxW );
+      int sum    = std::max( (numW >> ratioW), (numH >> ratioH) ) - 1;
+      for( int y = 0; y < numH; y++ )
+      {
+        int idxY = y >> ratioH;
+        for( int x = 0; x < numW; x++ )
+        {
+          int idxX = x >> ratioW;
+          g_triangleMvStorage[TRIANGLE_DIR_135][idxH][idxW][y][x] = (idxX == idxY) ? 2 : (idxX > idxY ? 0 : 1);
+          g_triangleMvStorage[TRIANGLE_DIR_45][idxH][idxW][y][x] = (idxX + idxY == sum) ? 2 : (idxX + idxY > sum ? 1 : 0);
+        }
+      }
+    }
+  }
 }
 
 void destroyROM()
@@ -587,38 +561,9 @@ const int g_invQuantScales[SCALING_LIST_REM_NUM] =
 
 //--------------------------------------------------------------------------------------------------
 //structures
-//EMT transform sets
-const int g_aiTrSubsetIntra[3][2] = { { DST7, DCT8 }, { DST7, DCT8 }, { DST7, DCT8 } };
-const int g_aiTrSubsetInter[4] = { DCT8, DST7 };
-
-const uint8_t g_aucTrSetVert[NUM_INTRA_MODE - 1] =
-{//0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66
-   2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0
-};
-const uint8_t g_aucTrSetVert35[35] =
-{//0  1  2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26    27    28    29    30    31    32    33    34
-   2, 1, 0,    1,    0,    1,    0,    1,    0,    0,    0,    0,    0,    1,    0,    1,    0,    1,    0,    1,    0,    1,    0,    1,    2,    2,    2,    2,    2,    1,    0,    1,    0,    1,    0
-};
-const uint8_t g_aucTrSetHorz[NUM_INTRA_MODE - 1] =
-{//0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66
-   2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0
-};
-const uint8_t g_aucTrSetHorz35[35] =
-{//0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
-   2, 1, 0, 1, 0, 1, 0, 1, 2, 2, 2, 2, 2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0
-};
 
 //EMT threshold
-const uint32_t g_EmtSigNumThr = 2;
 
-
-//EMT transform coeficient variable
-TMatrixCoeff g_aiTr2  [NUM_TRANS_TYPE][  2][  2];
-TMatrixCoeff g_aiTr4  [NUM_TRANS_TYPE][  4][  4];
-TMatrixCoeff g_aiTr8  [NUM_TRANS_TYPE][  8][  8];
-TMatrixCoeff g_aiTr16 [NUM_TRANS_TYPE][ 16][ 16];
-TMatrixCoeff g_aiTr32 [NUM_TRANS_TYPE][ 32][ 32];
-TMatrixCoeff g_aiTr64 [NUM_TRANS_TYPE][ 64][ 64];
 
 //--------------------------------------------------------------------------------------------------
 //coefficients
@@ -674,7 +619,7 @@ const uint8_t g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE] =
 { 0, 1, 2, 2, 2, 2, 2, 2, 2, 3,  4,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 44, 44, 45, 46, 46, 46, 47, 48, 48, 48, 49, 50, 51, 52, 52, 52, 53, 54, 54, 54, 55, 56, 56, 56, 57, 58, 59, 60, DM_CHROMA_IDX };
 
 
-
+#if !REMOVE_BIN_DECISION_TREE
 // ====================================================================================================================
 // Decision tree templates
 // ====================================================================================================================
@@ -690,6 +635,7 @@ const DecisionTreeTemplate g_mtSplitDTT = compile(
               /*0*/ DTT_SPLIT_TT_VERT,
               /*1*/ DTT_SPLIT_BT_VERT ) ) ) );
 
+#endif
 
 
 // ====================================================================================================================
@@ -725,7 +671,6 @@ const uint32_t g_uiMinInGroup[LAST_SIGNIFICANT_GROUPS] = { 0,1,2,3,4,6,8,12,16,2
 const uint32_t g_uiGroupIdx[MAX_TU_SIZE] = { 0,1,2,3,4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9, 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
 ,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12
 ,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13 };
-#if JVET_L0274
 const uint32_t g_auiGoRiceParsCoeff[32] =
 {
   0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3
@@ -736,15 +681,6 @@ const uint32_t g_auiGoRicePosCoeff0[3][32] =
   {1, 1, 1, 1, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16,    16, 16, 16, 16},
   {1, 1, 2, 2, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 16, 16, 16,    16, 16, 16, 16}
 };
-#else
-const uint32_t g_auiGoRicePars[ 32 ] =
-{
-  0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0,
-  0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 2, 2, 2, 2, 2, 2, 2
-};
-#endif
 const uint32_t g_auiGoRiceRange[MAX_GR_ORDER_RESIDUAL] =
 {
   6, 5, 6, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION
@@ -868,5 +804,63 @@ const uint8_t g_NonMPM[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
 
+const Pel g_trianglePelWeightedLuma[TRIANGLE_DIR_NUM][2][7] =
+{ 
+  { // TRIANGLE_DIR_135
+    { 1, 2, 4, 6, 7, 0, 0 },
+    { 1, 2, 3, 4, 5, 6, 7 }
+  },
+  { // TRIANGLE_DIR_45
+    { 7, 6, 4, 2, 1, 0, 0 },
+    { 7, 6, 5, 4, 3, 2, 1 }
+  }
+};
+const Pel g_trianglePelWeightedChroma[2][TRIANGLE_DIR_NUM][2][7] =
+{
+  { // 444 format
+    { // TRIANGLE_DIR_135
+      { 1, 2, 4, 6, 7, 0, 0 },
+      { 1, 2, 3, 4, 5, 6, 7 }
+    },
+    { // TRIANGLE_DIR_45
+      { 7, 6, 4, 2, 1, 0, 0 },
+      { 7, 6, 5, 4, 3, 2, 1 }
+    }
+  },
+  { // 420 format
+    { // TRIANGLE_DIR_135
+      { 1, 4, 7, 0, 0, 0, 0 },
+      { 2, 4, 6, 0, 0, 0, 0 }
+    },
+    { // TRIANGLE_DIR_45
+      { 7, 4, 1, 0, 0, 0, 0 },
+      { 6, 4, 2, 0, 0, 0, 0 }
+    }
+  }
+};
 
+const uint8_t g_triangleWeightLengthLuma[2] = { 5, 7 };
+const uint8_t g_triangleWeightLengthChroma[2][2] = { { 5, 7 }, { 3, 3 } };
+
+      uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
+
+const uint8_t g_triangleCombination[TRIANGLE_MAX_NUM_CANDS][3] =
+{
+  { 0, 1, 0 }, { 1, 0, 1 }, { 1, 0, 2 }, { 0, 0, 1 }, { 0, 2, 0 }, 
+  { 1, 0, 3 }, { 1, 0, 4 }, { 1, 1, 0 }, { 0, 3, 0 }, { 0, 4, 0 }, 
+  { 0, 0, 2 }, { 0, 1, 2 }, { 1, 1, 2 }, { 0, 0, 4 }, { 0, 0, 3 }, 
+  { 0, 1, 3 }, { 0, 1, 4 }, { 1, 1, 4 }, { 1, 1, 3 }, { 1, 2, 1 }, 
+  { 1, 2, 0 }, { 0, 2, 1 }, { 0, 4, 3 }, { 1, 3, 0 }, { 1, 3, 2 }, 
+  { 1, 3, 4 }, { 1, 4, 0 }, { 1, 3, 1 }, { 1, 2, 3 }, { 1, 4, 1 }, 
+  { 0, 4, 1 }, { 0, 2, 3 }, { 1, 4, 2 }, { 0, 3, 2 }, { 1, 4, 3 }, 
+  { 0, 3, 1 }, { 0, 2, 4 }, { 1, 2, 4 }, { 0, 4, 2 }, { 0, 3, 4 }, 
+};
+
+const uint8_t g_triangleIdxBins[TRIANGLE_MAX_NUM_CANDS] =
+{
+   2,  2,  4,  4,  4,  4,  6,  6,  6,  6,
+   6,  6,  6,  6,  8,  8,  8,  8,  8,  8,
+   8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
+  10, 10, 10, 10, 10, 10, 10, 10, 10, 10
+};
 //! \}

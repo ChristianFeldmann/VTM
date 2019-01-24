@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -75,12 +75,10 @@ public:
                     const bool useSelectiveRDOQ     = false,
 #endif
                     const bool bEnc                 = false,
-                    const bool useTransformSkipFast = false,
-                    const bool rectTUs              = false
+                    const bool useTransformSkipFast = false
   );
 
-  uint8_t getEmtTrIdx( TransformUnit tu, const ComponentID compID );
-  uint8_t getEmtMode ( TransformUnit tu, const ComponentID compID );
+  void getTrTypes( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer );
 
 
 protected:
@@ -89,7 +87,12 @@ public:
 
   void invTransformNxN  (TransformUnit &tu, const ComponentID &compID, PelBuf &pResi, const QpParam &cQPs);
 
+#if JVET_M0464_UNI_MTS
+  void transformNxN     (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, std::vector<TrMode>* trModes, const int maxCand);
+  void transformNxN     (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, const bool loadTr=false);
+#else
   void transformNxN     (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx);
+#endif
   void rdpcmNxN         (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum,       RDPCMMode &rdpcmMode);
   void applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const RDPCMMode &rdpcmMode);
 
@@ -124,11 +127,13 @@ protected:
 
 private:
   Quant    *m_quant;          //!< Quantizer
+#if JVET_M0464_UNI_MTS
+  TCoeff** m_mtsCoeffs;
+#endif
 
 
   // forward Transform
-  void xT        ( const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, CoeffBuf &dstCoeff, const int iWidth, const int iHeight );
-
+  void xT               (const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, CoeffBuf &dstCoeff, const int width, const int height);
 
   // skipping Transform
   void xTransformSkip   (const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, TCoeff* psCoeff);

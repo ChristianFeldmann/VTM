@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -173,12 +173,6 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   pcEncPic->copySAO( *pic, 0 );
                 }
 
-                pcDecLib->executeLoopFilters();
-                if ( pic->cs->sps->getUseSAO() )
-                {
-                  pcEncPic->copySAO( *pic, 1 );
-                }
-
                 if( pic->cs->sps->getUseALF() )
                 {
                   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
@@ -190,6 +184,12 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   {
                     pcEncPic->slices[i]->getAlfSliceParam() = pic->slices[i]->getAlfSliceParam();
                   }
+                }
+
+                pcDecLib->executeLoopFilters();
+                if ( pic->cs->sps->getUseSAO() )
+                {
+                  pcEncPic->copySAO( *pic, 1 );
                 }
 
                 pcEncPic->cs->copyStructure( *pic->cs, CH_L, true, true );
@@ -511,10 +511,6 @@ void DecLib::executeLoopFilters()
   // deblocking filter
   m_cLoopFilter.loopFilterPic( cs );
 
-#if DMVR_JVET_LOW_LATENCY_K0217
-  CS::setRefinedMotionField(cs);
-#endif
-
   if( cs.sps->getUseSAO() )
   {
     m_cSAO.SAOProcess( cs, cs.picture->getSAO() );
@@ -769,11 +765,10 @@ void DecLib::xActivateParameterSets()
 
     // Recursive structure
     m_cCuDecoder.init( &m_cTrQuant, &m_cIntraPred, &m_cInterPred );
-    m_cTrQuant.init( nullptr, sps->getMaxTrSize(), false, false, false, false, false, pps->pcv->rectCUs );
+    m_cTrQuant.init( nullptr, sps->getMaxTrSize(), false, false, false, false, false );
 
     // RdCost
     m_cRdCost.setCostMode ( COST_STANDARD_LOSSY ); // not used in decoder side RdCost stuff -> set to default
-    m_cRdCost.setUseQtbt  ( sps->getSpsNext().getUseQTBT() );
 
     m_cSliceDecoder.create();
 
@@ -1093,7 +1088,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     pcSlice->checkCRA(pcSlice->getRPS(), m_pocCRA, m_associatedIRAPType, m_cListPic );
     // Set reference list
     pcSlice->setRefPicList( m_cListPic, true, true );
-	
+
     if (!pcSlice->isIntra())
     {
       bool bLowDelay = true;
@@ -1155,11 +1150,20 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 #endif
 
+  if (pcSlice->getSPS()->getSpsNext().getCPRMode() && pcSlice->getEnableTMVPFlag())
+  {
+    CHECK(pcSlice->getRefPic(RefPicList(pcSlice->isInterB() ? 1 - pcSlice->getColFromL0Flag() : 0), pcSlice->getColRefIdx())->getPOC() == pcSlice->getPOC(), "curr ref picture cannot be collocated picture");
+  }
+
 
   //  Decode a picture
   m_cSliceDecoder.decompressSlice( pcSlice, &(nalu.getBitstream()) );
 
   m_bFirstSliceInPicture = false;
+  if (pcSlice->getSPS()->getSpsNext().getCPRMode())
+  {
+    pcSlice->getPic()->longTerm = false;
+  }
   m_uiSliceSegmentIdx++;
 
   return false;

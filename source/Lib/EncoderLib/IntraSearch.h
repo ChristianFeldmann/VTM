@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -75,9 +75,12 @@ private:
   CodingStructure **m_pSaveCS;
 
   //cost variables for the EMT algorithm and new modes list
+#if !JVET_M0464_UNI_MTS
   double m_bestModeCostStore[4];                                    // RD cost of the best mode for each PU using DCT2
   double m_modeCostStore    [4][NUM_LUMA_MODE];                         // RD cost of each mode for each PU using DCT2
   uint32_t   m_savedRdModeList  [4][NUM_LUMA_MODE], m_savedNumRdModes[4];
+  int        m_savedExtendRefList[4][NUM_LUMA_MODE];
+#endif
 
 protected:
   // interface to option
@@ -119,6 +122,7 @@ public:
   void estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm );
   void estIntraPredChromaQT       (CodingUnit &cu, Partitioner& pm);
   void IPCMSearch                 (CodingStructure &cs, Partitioner& partitioner);
+  uint64_t xFracModeBitsIntra     (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
 
 protected:
 
@@ -139,9 +143,12 @@ protected:
   uint64_t xGetIntraFracBitsQTChroma(TransformUnit& tu, const ComponentID &compID);
   void xEncCoeffQT                (CodingStructure &cs, Partitioner& pm, const ComponentID &compID);
 
-  uint64_t xFracModeBitsIntra       (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
 
+#if JVET_M0464_UNI_MTS
+  void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr, std::vector<TrMode>* trModes=nullptr, const bool loadTr=false );
+#else
   void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr );
+#endif
 
   ChromaCbfs xRecurIntraChromaCodingQT  (CodingStructure &cs, Partitioner& pm);
 

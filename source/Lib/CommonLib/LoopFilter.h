@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,7 +62,7 @@ private:
 private:
   /// CU-level deblocking function
   void xDeblockCU                 (       CodingUnit& cu, const DeblockEdgeDir edgeDir );
-
+  
   // set / get functions
   void xSetLoopfilterParam        ( const CodingUnit& cu );
 
@@ -79,6 +79,9 @@ private:
   void xEdgeFilterLuma            ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge );
   void xEdgeFilterChroma          ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge );
 
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  void deriveLADFShift( const Pel* src, const int stride, int& shift, const DeblockEdgeDir edgeDir, const SPS sps );
+#endif
   inline void xPelFilterLuma      ( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const int iThrCut, const bool bFilterSecondP, const bool bFilterSecondQ, const ClpRng& clpRng ) const;
   inline void xPelFilterChroma    ( Pel* piSrc, const int iOffset, const int tc,                const bool bPartPNoFilter, const bool bPartQNoFilter,                                                                          const ClpRng& clpRng ) const;
 

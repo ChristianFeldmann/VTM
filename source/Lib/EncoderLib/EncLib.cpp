@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -230,11 +230,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
     m_cRdCost[jId].setCostMode ( m_costMode );
-    m_cRdCost[jId].setUseQtbt  ( m_QTBT );
   }
 #else
   m_cRdCost.setCostMode ( m_costMode );
-  m_cRdCost.setUseQtbt  ( m_QTBT );
 #endif
 
   // initialize PPS
@@ -280,7 +278,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
                           true,
                           m_useTransformSkipFast
-                          , m_QTBT
     );
 
     // initialize encoder search class
@@ -313,7 +310,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
                    true,
                    m_useTransformSkipFast
-                   , m_QTBT
   );
 
   // initialize encoder search class
@@ -788,6 +784,27 @@ void EncLib::xInitVPS(VPS &vps, const SPS &sps)
 
 void EncLib::xInitSPS(SPS &sps)
 {
+  sps.setIntraOnlyConstraintFlag(m_intraConstraintFlag);
+  sps.setMaxBitDepthConstraintIdc(m_bitDepthConstraintValue - 8);
+  sps.setMaxChromaFormatConstraintIdc(m_chromaFormatConstraintValue);
+  sps.setFrameConstraintFlag(m_frameOnlyConstraintFlag);
+  sps.setNoQtbttDualTreeIntraConstraintFlag(!m_dualITree);
+  sps.setNoCclmConstraintFlag(m_LMChroma ? false : true);
+  sps.setNoSaoConstraintFlag(!m_bUseSAO);
+  sps.setNoAlfConstraintFlag(!m_alf);
+  sps.setNoPcmConstraintFlag(!m_usePCM);
+  sps.setNoTemporalMvpConstraintFlag(m_TMVPModeId ? false : true);
+  sps.setNoSbtmvpConstraintFlag(m_SubPuMvpMode ? false : true);
+  sps.setNoAmvrConstraintFlag(!m_bNoAmvrConstraintFlag);
+  sps.setNoAffineMotionConstraintFlag(!m_Affine);
+#if JVET_M0464_UNI_MTS
+  sps.setNoMtsConstraintFlag((m_IntraMTS || m_InterMTS) ? false : true);
+#else
+  sps.setNoMtsConstraintFlag((m_IntraEMT || m_InterEMT) ? false : true);
+#endif
+  sps.setNoLadfConstraintFlag(!m_LadfEnabled);
+  sps.setNoDepQuantConstraintFlag(!m_DepQuantEnabledFlag);
+  sps.setNoSignDataHidingConstraintFlag(!m_SignDataHidingEnabledFlag);
   ProfileTierLevel& profileTierLevel = *sps.getPTL()->getGeneralPTL();
   profileTierLevel.setLevelIdc                    (m_level);
   profileTierLevel.setTierFlag                    (m_levelTier);
@@ -828,19 +845,16 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setLog2DiffMaxMinCodingBlockSize(m_log2DiffMaxMinCodingBlockSize);
 
   sps.getSpsNext().setNextToolsEnabled      ( m_profile == Profile::NEXT );
-  sps.getSpsNext().setUseQTBT               ( m_QTBT );
-  sps.getSpsNext().setCTUSize               ( m_CTUSize );
-  sps.getSpsNext().setMinQTSizes            ( m_uiMinQT );
-  sps.getSpsNext().setUseLargeCTU           ( m_LargeCTU );
-  sps.getSpsNext().setMaxBTDepth            ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
-  sps.getSpsNext().setUseDualITree          ( m_dualITree );
-  sps.getSpsNext().setSubPuMvpMode(m_SubPuMvpMode);
-  sps.getSpsNext().setSubPuMvpLog2Size(m_SubPuMvpLog2Size);
+  sps.setCTUSize                             ( m_CTUSize );
+  sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
+  sps.setMinQTSizes                          ( m_uiMinQT );
+  sps.getSpsNext().setUseLargeCTU            ( m_LargeCTU );
+  sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
+  sps.setUseDualITree                        ( m_dualITree );
+  sps.getSpsNext().setSubPuMvpMode          ( m_SubPuMvpMode );
   sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
   sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
-#if !REMOVE_MV_ADAPT_PREC
-  sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
-#endif
+  sps.getSpsNext().setUseBIO                ( m_BIO );
   sps.getSpsNext().setUseAffine             ( m_Affine );
   sps.getSpsNext().setUseAffineType         ( m_AffineType );
   sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );
@@ -849,15 +863,39 @@ void EncLib::xInitSPS(SPS &sps)
 #if ENABLE_WPP_PARALLELISM
   sps.getSpsNext().setUseNextDQP            ( m_AltDQPCoding );
 #endif
+#if JVET_M0464_UNI_MTS
+  sps.getSpsNext().setUseIntraMTS           ( m_IntraMTS );
+  sps.getSpsNext().setUseInterMTS           ( m_InterMTS );
+#else
   sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
-  sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
-#if JVET_L0646_GBI
-  sps.getSpsNext().setUseGBi                ( m_GBi );
 #endif
+  sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
+  sps.getSpsNext().setUseGBi                ( m_GBi );
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  sps.getSpsNext().setLadfEnabled           ( m_LadfEnabled );
+  if ( m_LadfEnabled )
+  {
+    sps.getSpsNext().setLadfNumIntervals    ( m_LadfNumIntervals );
+    for ( int k = 0; k < m_LadfNumIntervals; k++ )
+    {
+      sps.getSpsNext().setLadfQpOffset( m_LadfQpOffset[k], k );
+      sps.getSpsNext().setLadfIntervalLowerBound( m_LadfIntervalLowerBound[k], k );
+    }
+    CHECK( m_LadfIntervalLowerBound[0] != 0, "abnormal value set to LadfIntervalLowerBound[0]" );
+  }
+#endif
+
+  sps.getSpsNext().setUseMHIntra            ( m_MHIntra );
+  sps.getSpsNext().setUseTriangle           ( m_Triangle );
+
+  sps.getSpsNext().setCPRMode               ( m_CPRMode );
+
+  sps.setUseWrapAround                      ( m_wrapAround );
+  sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 
-  int minCUSize = ( /*sps.getSpsNext().getUseQTBT() ? 1 << MIN_CU_LOG2 :*/ sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize() );
+  int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;
   while(minCUSize > 1)
   {
@@ -1234,11 +1272,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     {
       baseQp = getBaseQP()-26;
     }
-#if JVET_L0553_FIX_INITQP
     const int maxDQP = 37;
-#else
-    const int maxDQP = 25;
-#endif
     const int minDQP = -26 + sps.getQpBDOffset(CHANNEL_TYPE_LUMA);
 
     pps.setPicInitQPMinus26( std::min( maxDQP, std::max( minDQP, baseQp ) ));
@@ -1288,7 +1322,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
  #endif
   pps.setSliceChromaQpFlag(bChromaDeltaQPEnabled);
 #endif
-  if (!pps.getSliceChromaQpFlag() && sps.getSpsNext().getUseDualITree() && (getChromaFormatIdc() != CHROMA_400))
+  if (
+    !pps.getSliceChromaQpFlag() && sps.getUseDualITree() 
+    && (getChromaFormatIdc() != CHROMA_400))
   {
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0);
   }
@@ -1358,6 +1394,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     }
   }
   CHECK(!(bestPos <= 15), "Unspecified error");
+  if (sps.getSpsNext().getCPRMode())
+  {
+    pps.setNumRefIdxL0DefaultActive(bestPos + 1);
+  }
+  else
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());

@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -1004,14 +1004,30 @@ void Picture::extendPicBorder()
 
     Pel*  pi = piTxt;
     // do left and right margins
-    for (int y = 0; y < p.height; y++)
+    if (cs->sps->getUseWrapAround())
     {
-      for (int x = 0; x < xmargin; x++ )
+      int xoffset = cs->sps->getWrapAroundOffset() >> getComponentScaleX( compID, cs->area.chromaFormat );
+      for (int y = 0; y < p.height; y++)
       {
-        pi[ -xmargin + x ] = pi[0];
-        pi[  p.width + x ] = pi[p.width-1];
+        for (int x = 0; x < xmargin; x++ )
+        {
+          pi[ -xmargin + x ] = pi[ -xmargin + x + xoffset ];
+          pi[  p.width + x ] = pi[  p.width + x - xoffset ];
+        }
+        pi += p.stride;
       }
-      pi += p.stride;
+    }
+    else
+    {
+      for (int y = 0; y < p.height; y++)
+      {
+        for (int x = 0; x < xmargin; x++ )
+        {
+          pi[ -xmargin + x ] = pi[0];
+          pi[  p.width + x ] = pi[p.width-1];
+        }
+        pi += p.stride;
+      }
     }
 
     // pi is now the (0,height) (bottom left of image within bigger picture

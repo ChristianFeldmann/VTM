@@ -30,7 +30,6 @@ endif()
 set( EXTENSION_360_VIDEO OFF CACHE BOOL "If EXTENSION_360_VIDEO is on, 360Lib will be added" )
 set( SET_ENABLE_TRACING OFF CACHE BOOL "Set ENABLE_TRACING as a compiler flag" )
 set( ENABLE_TRACING OFF CACHE BOOL "If SET_ENABLE_TRACING is on, it will be set to this value" )
-set( ENABLE_VTM OFF CACHE BOOL "If ENABLE_VTM is on, the software will be compiled as VTM" )
 
 if( CMAKE_COMPILER_IS_GNUCC )
   set( BUILD_STATIC OFF CACHE BOOL "Build static executables" )
@@ -97,7 +96,7 @@ endif()
 bb_enable_warnings( msvc warnings-as-errors "/wd4996" )
 
 # enable sse4.1 build for all source files for gcc and clang
-if( UNIX )
+if( UNIX OR MINGW )
   add_compile_options( "-msse4.1" )
 endif()
 
@@ -105,7 +104,6 @@ endif()
 if( MSVC )
   add_compile_options( "/MP" )
   add_compile_options( "/EHsc" )
-  add_compile_options( "/MT" )
 endif()
 
 # set address sanitizer compiler arguments

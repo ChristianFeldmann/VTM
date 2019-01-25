@@ -2536,13 +2536,23 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
 #endif
   int       numNonZero    =  0;
   bool      is2x2subblock = ( cctx.log2CGSize() == 2 );
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK );
+#else
   int       remGt2Bins    = ( is2x2subblock ? MAX_NUM_GT2_BINS_2x2SUBBLOCK : MAX_NUM_GT2_BINS_4x4SUBBLOCK );
   int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK ) - remGt2Bins;
+#endif
   int       firstPosMode2 = minSubPos - 1;
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   int       firstPosMode1 = minSubPos - 1;
+#endif
   int       sigBlkPos[ 1 << MLS_CG_SIZE ];
 
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  for( ; nextSigPos >= minSubPos && remRegBins >= 4; nextSigPos-- )
+#else
   for( ; nextSigPos >= minSubPos && remRegBins >= 3; nextSigPos-- )
+#endif
   {
     int      blkPos     = cctx.blockPos( nextSigPos );
     unsigned sigFlag    = ( !numNonZero && nextSigPos == inferSigPos );
@@ -2571,6 +2581,9 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       remRegBins--;
 
       unsigned parFlag = 0;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+      unsigned gt2Flag = 0;
+#endif
       if( gt1Flag )
       {
         RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_par );
@@ -2578,19 +2591,33 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "par_flag() bin=%d ctx=%d\n", parFlag, cctx.parityCtxIdAbs( ctxOff ) );
 
         remRegBins--;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+        RExt__DECODER_DEBUG_BIT_STATISTICS_SET(ctype_gt2);
+        gt2Flag = m_BinDecoder.decodeBin( cctx.greater2CtxIdAbs( ctxOff ) );
+        DTRACE( g_trace_ctx, D_SYNTAX_RESI, "gt2_flag() bin=%d ctx=%d\n", gt2Flag, cctx.greater2CtxIdAbs( ctxOff ) );
+        remRegBins--;
+#else
         if( remGt2Bins && !--remGt2Bins )
         {
           firstPosMode1 = nextSigPos - 1;
         }
+#endif
       }
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+      coeff[ blkPos ] += 1 + parFlag + gt1Flag + (gt2Flag << 1);
+#else
       coeff[ blkPos ] += 1 + parFlag + gt1Flag;
+#endif
     }
 
     state = ( stateTransTable >> ((state<<2)+((coeff[blkPos]&1)<<1)) ) & 3;
   }
   firstPosMode2 = nextSigPos;
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   firstPosMode1 = ( firstPosMode1 > firstPosMode2 ? firstPosMode1 : firstPosMode2 );
+#endif
 
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   //===== 2nd PASS: gt2 =====
   for( int scanPos = firstSigPos; scanPos > firstPosMode1; scanPos-- )
   {
@@ -2604,10 +2631,17 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       tcoeff    += (gt2Flag<<1);
     }
   }
+#endif
 
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  //===== 2nd PASS: Go-rice codes =====
+  unsigned ricePar = 0;
+  for( int scanPos = firstSigPos; scanPos > firstPosMode2; scanPos-- )
+#else
   //===== 3rd PASS: Go-rice codes =====
   unsigned ricePar = 0;
   for( int scanPos = firstSigPos; scanPos > firstPosMode1; scanPos-- )
+#endif
   {
     TCoeff& tcoeff = coeff[ cctx.blockPos( scanPos ) ];
     if( tcoeff >= 4 )
@@ -2622,6 +2656,7 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       }
     }
   }
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   for( int scanPos = firstPosMode1; scanPos > firstPosMode2; scanPos-- )
   {
     TCoeff& tcoeff = coeff[ cctx.blockPos( scanPos ) ];
@@ -2637,6 +2672,7 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       }
     }
   }
+#endif
 
   //===== coeff bypass ====
   for( int scanPos = firstPosMode2; scanPos >= minSubPos; scanPos-- )

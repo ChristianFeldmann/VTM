@@ -185,7 +185,11 @@ inline int QuantRDOQ::xGetICRate( const uint32_t         uiAbsLevel,
                                   const bool         useLimitedPrefixLength,
                                   const int          maxLog2TrDynamicRange  ) const
 {
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  if( remRegBins < 4 )
+#else
   if( remRegBins < 3 )
+#endif
   {
     int       iRate   = int( xGetIEPRate() ); // cost of sign bit
     uint32_t  symbol  = ( uiAbsLevel == 0 ? goRiceZero : uiAbsLevel <= goRiceZero ? uiAbsLevel-1 : uiAbsLevel );
@@ -226,7 +230,11 @@ inline int QuantRDOQ::xGetICRate( const uint32_t         uiAbsLevel,
   }
 
   int iRate = int( xGetIEPRate() ); // cost of sign bit
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  const uint32_t cthres = 4;
+#else
   const uint32_t cthres = ( remGt2Bins ? 4 : 2 );
+#endif
   if( uiAbsLevel >= cthres )
   {
     uint32_t symbol = ( uiAbsLevel - cthres ) >> 1;
@@ -266,7 +274,11 @@ inline int QuantRDOQ::xGetICRate( const uint32_t         uiAbsLevel,
 
     iRate += fracBitsGt1.intBits[1];
     iRate += fracBitsPar.intBits[( uiAbsLevel - 2 ) & 1];
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+    if( remRegBins )
+#else
     if( remGt2Bins )
+#endif
     {
       iRate += fracBitsGt2.intBits[1];
     }
@@ -694,7 +706,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
   bool      is2x2subblock = ( iCGSizeM1 == 3 );
   int       remGt2Bins    = ( is2x2subblock ? MAX_NUM_GT2_BINS_2x2SUBBLOCK : MAX_NUM_GT2_BINS_4x4SUBBLOCK );
-  int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK ) - remGt2Bins;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK );
+#else
+  int       remRegBins = (is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK) - remGt2Bins;
+#endif
   uint32_t  goRiceParam   = 0;
 
   double *pdCostCoeffGroupSig = m_pdCostCoeffGroupSig;
@@ -770,7 +786,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
         uint32_t    uiGt1Ctx      = cctx.greater1CtxIdAbs ( ctxOffset );
         uint32_t    uiGt2Ctx      = cctx.greater2CtxIdAbs ( ctxOffset );
         uint32_t    goRiceZero    = 0;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+        if( remRegBins < 4 )
+#else
         if( remRegBins < 3 )
+#endif
         {
           unsigned  sumAbs        = cctx.templateAbsSum( iScanPos, piDstCoeff );
           goRiceParam             = g_auiGoRiceParsCoeff   [ sumAbs ];
@@ -794,7 +814,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
           uiLevel = xGetCodedLevel( pdCostCoeff[ iScanPos ], pdCostCoeff0[ iScanPos ], pdCostSig[ iScanPos ],
                                     lLevelDouble, uiMaxAbsLevel, &fracBitsSig, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, goRiceParam, iQBits, errorScale, 0, extendedPrecision, maxLog2TrDynamicRange );
 #if HEVC_USE_SIGN_HIDING
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+          sigRateDelta[ uiBlkPos ] = ( remRegBins < 4 ? 0 : fracBitsSig.intBits[1] - fracBitsSig.intBits[0] );
+#else
           sigRateDelta[ uiBlkPos ] = ( remRegBins < 3 ? 0 : fracBitsSig.intBits[1] - fracBitsSig.intBits[0] );
+#endif
 #endif
         }
 
@@ -813,7 +837,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
         }
         else // uiLevel == 0
         {
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+          if( remRegBins < 4 )
+#else
           if( remRegBins < 3 )
+#endif
           {
             int rateNow            = xGetICRate( uiLevel,   fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, goRiceParam, extendedPrecision, maxLog2TrDynamicRange );
             rateIncUp [ uiBlkPos ] = xGetICRate( uiLevel+1, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, goRiceParam, extendedPrecision, maxLog2TrDynamicRange ) - rateNow;
@@ -833,18 +861,32 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
           remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK ) - remGt2Bins;
           goRiceParam   = 0;
         }
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+        else if( remRegBins >= 4 )
+#else
         else if( remRegBins >= 3 )
+#endif
         {
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+          const uint32_t baseLevel = 4;
+#else
           const uint32_t baseLevel = ( remGt2Bins ? 4 : 2 );
+#endif
           if( goRiceParam < 3 && ((uiLevel-baseLevel)>>1) > (3<<goRiceParam)-1 )
           {
             goRiceParam++;
           }
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
           if( uiLevel >= 2 && remGt2Bins )
           {
             remGt2Bins--;
           }
+#endif
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+          remRegBins -= (uiLevel < 2 ? uiLevel : 3) + (iScanPos != iLastScanPos);
+#else
           remRegBins -= std::min<int>( uiLevel, 2 ) + (iScanPos != iLastScanPos);
+#endif
         }
       }
       else

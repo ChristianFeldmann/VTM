@@ -1065,6 +1065,18 @@ const CtxSet ContextSetCfg::MVPIdx = ContextSetCfg::addCtxSet
 #endif
 });
 
+#if JVET_M0444_SMVD
+const CtxSet ContextSetCfg::SmvdFlag = ContextSetCfg::addCtxSet
+( {
+  { 154, },
+  { 110, },
+  { CNU, },
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, }
+#endif
+} );
+#endif
+
 const CtxSet ContextSetCfg::SaoMergeFlag = ContextSetCfg::addCtxSet
 ({
 #if JVET_M0453_CABAC_ENGINE

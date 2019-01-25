@@ -1572,6 +1572,11 @@ private:
 #endif
   bool                       m_bCheckLDC;
 
+#if JVET_M0444_SMVD
+  bool                       m_biDirPred;
+  int                        m_symRefIdx[2];
+#endif
+
   //  Data
   int                        m_iSliceQpDelta;
   int                        m_iSliceChromaQpDelta[MAX_NUM_COMPONENT];
@@ -1759,6 +1764,12 @@ public:
   void                        setColRefIdx( uint32_t refIdx)                             { m_colRefIdx = refIdx;                                         }
   void                        setCheckLDC( bool b )                                  { m_bCheckLDC = b;                                              }
   void                        setMvdL1ZeroFlag( bool b)                              { m_bLMvdL1Zero = b;                                            }
+
+#if JVET_M0444_SMVD
+  void                        setBiDirPred( bool b, int refIdx0, int refIdx1 ) { m_biDirPred = b; m_symRefIdx[0] = refIdx0; m_symRefIdx[1] = refIdx1; }
+  bool                        getBiDirPred() const { return m_biDirPred; }
+  int                         getSymRefIdx( int refList ) const { return m_symRefIdx[refList]; }
+#endif
 
   bool                        isIntra() const                                        { return m_eSliceType == I_SLICE;                               }
   bool                        isInterB() const                                       { return m_eSliceType == B_SLICE;                               }

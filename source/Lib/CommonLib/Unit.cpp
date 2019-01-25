@@ -273,6 +273,10 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
   cpr               = other.cpr;
+#if JVET_M0444_SMVD
+  smvdMode        = other.smvdMode;
+#endif
+
   return *this;
 }
 
@@ -306,6 +310,9 @@ void CodingUnit::initData()
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
   cpr               = false;
+#if JVET_M0444_SMVD
+  smvdMode        = 0;
+#endif
 }
 
 

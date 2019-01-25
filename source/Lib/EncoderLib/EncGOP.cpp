@@ -1842,6 +1842,81 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->slices[pcSlice->getSliceSegmentIdx()]->setMvdL1ZeroFlag(pcSlice->getMvdL1ZeroFlag());
 #endif
 
+#if JVET_M0444_SMVD
+    if ( pcSlice->getCheckLDC() == false && pcSlice->getMvdL1ZeroFlag() == false )
+    {
+      int currPOC = pcSlice->getPOC();
+
+      int forwardPOC = currPOC;
+      int backwardPOC = currPOC;
+      int ref = 0, refIdx0 = -1, refIdx1 = -1;
+
+      // search nearest forward POC in List 0
+      for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); ref++ )
+      {
+        int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
+        if ( poc < currPOC && (poc > forwardPOC || refIdx0 == -1) )
+        {
+          forwardPOC = poc;
+          refIdx0 = ref;
+        }
+      }
+
+      // search nearest backward POC in List 1
+      for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); ref++ )
+      {
+        int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
+        if ( poc > currPOC && (poc < backwardPOC || refIdx1 == -1) )
+        {
+          backwardPOC = poc;
+          refIdx1 = ref;
+        }
+      }
+
+      if ( !(forwardPOC < currPOC && backwardPOC > currPOC) )
+      {
+        forwardPOC = currPOC;
+        backwardPOC = currPOC;
+        refIdx0 = -1;
+        refIdx1 = -1;
+
+        // search nearest backward POC in List 0
+        for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); ref++ )
+        {
+          int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
+          if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) )
+          {
+            backwardPOC = poc;
+            refIdx0 = ref;
+          }
+        }
+
+        // search nearest forward POC in List 1
+        for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); ref++ )
+        {
+          int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
+          if ( poc < currPOC && (poc > forwardPOC || refIdx1 == -1) )
+          {
+            forwardPOC = poc;
+            refIdx1 = ref;
+          }
+        }
+      }
+
+      if ( forwardPOC < currPOC && backwardPOC > currPOC )
+      {
+        pcSlice->setBiDirPred( true, refIdx0, refIdx1 );
+      }
+      else
+      {
+        pcSlice->setBiDirPred( false, -1, -1 );
+      }
+    }
+    else
+    {
+      pcSlice->setBiDirPred( false, -1, -1 );
+    }
+#endif
 
     double lambda            = 0.0;
     int actualHeadBits       = 0;

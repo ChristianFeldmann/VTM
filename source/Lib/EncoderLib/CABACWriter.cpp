@@ -1328,6 +1328,9 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   {
     inter_pred_idc( pu );
     affine_flag   ( *pu.cu );
+#if JVET_M0444_SMVD
+    smvd_mode( pu );
+#endif
     if( pu.interDir != 2 /* PRED_L1 */ )
     {
       ref_idx     ( pu, REF_PIC_LIST_0 );
@@ -1348,6 +1351,10 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
     }
     if( pu.interDir != 1 /* PRED_L0 */ )
     {
+#if JVET_M0444_SMVD
+      if ( pu.cu->smvdMode != 1 )
+      {
+#endif
       ref_idx     ( pu, REF_PIC_LIST_1 );
       if( !pu.cs->slice->getMvdL1ZeroFlag() || pu.interDir != 3 /* PRED_BI */ )
       {
@@ -1365,10 +1372,32 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
           mvd_coding( pu.mvd[REF_PIC_LIST_1], pu.cu->imv );
         }
       }
+#if JVET_M0444_SMVD
+      }
+#endif
       mvp_flag    ( pu, REF_PIC_LIST_1 );
     }
   }
 }
+
+#if JVET_M0444_SMVD
+void CABACWriter::smvd_mode( const PredictionUnit& pu )
+{
+  if ( pu.interDir != 3 || pu.cu->affine )
+  {
+    return;
+  }
+
+  if ( pu.cs->slice->getBiDirPred() == false )
+  {
+    return;
+  }
+
+  m_BinEncoder.encodeBin( pu.cu->smvdMode ? 1 : 0, Ctx::SmvdFlag() );
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "symmvd_flag() symmvd=%d pos=(%d,%d) size=%dx%d\n", pu.cu->smvdMode ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
+}
+#endif
 
 void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
 {
@@ -1607,6 +1636,14 @@ void CABACWriter::inter_pred_idc( const PredictionUnit& pu )
 
 void CABACWriter::ref_idx( const PredictionUnit& pu, RefPicList eRefList )
 {
+#if JVET_M0444_SMVD
+  if ( pu.cu->smvdMode )
+  {
+    CHECK( pu.refIdx[eRefList] != pu.cs->slice->getSymRefIdx( eRefList ), "Invalid reference index!\n" );
+    return;
+  }
+#endif
+
   int numRef  = pu.cs->slice->getNumRefIdx(eRefList);
   if( numRef <= 1 )
   {

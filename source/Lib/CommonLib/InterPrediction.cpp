@@ -446,6 +446,13 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
       }
     }
 
+#if JVET_M0444_SMVD
+    if (bioApplied && pu.cu->smvdMode)
+    {
+      bioApplied = false;
+    }
+#endif
+
     if (pu.cu->cs->sps->getSpsNext().getUseGBi() && bioApplied && pu.cu->GBiIdx != GBI_DEFAULT)
     {
       bioApplied = false;

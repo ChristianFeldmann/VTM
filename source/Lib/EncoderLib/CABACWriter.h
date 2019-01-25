@@ -124,6 +124,9 @@ public:
   void        MHIntra_flag              ( const PredictionUnit&         pu );
   void        MHIntra_luma_pred_modes   ( const CodingUnit&             cu );
   void        triangle_mode             ( const CodingUnit&             cu );
+#if JVET_M0444_SMVD
+  void        smvd_mode              ( const PredictionUnit&         pu );
+#endif
 
   // pcm samples (clause 7.3.8.7)
   void        pcm_samples               ( const TransformUnit&          tu );

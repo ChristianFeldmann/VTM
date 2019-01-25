@@ -804,6 +804,9 @@ private:
   bool              m_IMV;                        // 9
   bool              m_DisableMotionCompression;   // 13
   bool              m_LMChroma;                   // 17
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  bool              m_cclmCollocatedChromaFlag;
+#endif
 #if JVET_M0464_UNI_MTS
   bool              m_IntraMTS;                   // 18
   bool              m_InterMTS;                   // 19
@@ -867,6 +870,10 @@ public:
 #endif
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  void      setCclmCollocatedChromaFlag( bool b )                                   { m_cclmCollocatedChromaFlag = b; }
+  bool      getCclmCollocatedChromaFlag()                                 const     { return m_cclmCollocatedChromaFlag; }
+#endif
 #if JVET_M0464_UNI_MTS
   void      setUseIntraMTS        ( bool b )                                        { m_IntraMTS = b; }
   bool      getUseIntraMTS        ()                                      const     { return m_IntraMTS; }

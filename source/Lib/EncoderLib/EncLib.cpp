@@ -860,6 +860,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );
   sps.getSpsNext().setMTTMode               ( m_MTTMode );
   sps.getSpsNext().setUseLMChroma           ( m_LMChroma ? true : false );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  sps.getSpsNext().setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
+#endif
 #if ENABLE_WPP_PARALLELISM
   sps.getSpsNext().setUseNextDQP            ( m_AltDQPCoding );
 #endif

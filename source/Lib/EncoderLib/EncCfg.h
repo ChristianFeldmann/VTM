@@ -201,6 +201,9 @@ protected:
   unsigned  m_log2DiffMaxMinCodingBlockSize;
 
   int       m_LMChroma;
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  bool      m_cclmCollocatedChromaFlag;
+#endif
 #if JVET_M0464_UNI_MTS
   int       m_IntraMTS;
   int       m_InterMTS;
@@ -680,6 +683,10 @@ public:
 
   void      setUseLMChroma                  ( int n )        { m_LMChroma = n; }
   int       getUseLMChroma()                           const { return m_LMChroma; }
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  void      setCclmCollocatedChromaFlag     ( bool b )       { m_cclmCollocatedChromaFlag = b; }
+  bool      getCclmCollocatedChromaFlag     ()         const { return m_cclmCollocatedChromaFlag; }
+#endif
 
   void      setSubPuMvpMode(int n)          { m_SubPuMvpMode = n; }
   bool      getSubPuMvpMode()         const { return m_SubPuMvpMode; }

@@ -1563,6 +1563,24 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
           pDst[i] = ( piSrc[2 * i] * 2 + piSrc[2 * i - 1] + piSrc[2 * i + 1] + 2 ) >> 2;
         }
       }
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+      else if( pu.cs->sps->getSpsNext().getCclmCollocatedChromaFlag() )
+      {
+        piSrc = pRecSrc0 - iRecStride2;
+
+        if( i == 0 && !bLeftAvaillable )
+        {
+          pDst[i] = ( piSrc[2 * i] * 2 + piSrc[2 * i - iRecStride] + piSrc[2 * i + iRecStride] + 2 ) >> 2;
+        }
+        else
+        {
+          pDst[i] = ( piSrc[2 * i - iRecStride]
+                    + piSrc[2 * i             ] * 4 + piSrc[2 * i - 1] + piSrc[2 * i + 1]
+                    + piSrc[2 * i + iRecStride]
+                    + 4 ) >> 3;
+        }
+      }
+#endif
       else
       {
         piSrc = pRecSrc0 - iRecStride2;
@@ -1592,9 +1610,30 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     }
     for (int j = 0; j < uiCHeight + addedLeftBelow; j++)
     {
-      pDst[0] = ( ( piSrc[1             ] * 2 + piSrc[0         ] + piSrc[2             ] )
-                + ( piSrc[1 + iRecStride] * 2 + piSrc[iRecStride] + piSrc[2 + iRecStride] )
-                + 4 ) >> 3;
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+      if( pu.cs->sps->getSpsNext().getCclmCollocatedChromaFlag() )
+      {
+        if( j == 0 && !bAboveAvaillable )
+        {
+          pDst[0] = ( piSrc[1] * 2 + piSrc[0] + piSrc[2] + 2 ) >> 2;
+        }
+        else
+        {
+          pDst[0] = ( piSrc[1 - iRecStride]
+                    + piSrc[1             ] * 4 + piSrc[0] + piSrc[2]
+                    + piSrc[1 + iRecStride]
+                    + 4 ) >> 3;
+        }
+      }
+      else
+      {
+#endif
+        pDst[0] = ( ( piSrc[1             ] * 2 + piSrc[0         ] + piSrc[2             ] )
+                  + ( piSrc[1 + iRecStride] * 2 + piSrc[iRecStride] + piSrc[2 + iRecStride] )
+                  + 4 ) >> 3;
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+      }
+#endif
 
       piSrc += iRecStride2;
       pDst  += iDstStride;
@@ -1607,16 +1646,48 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   {
     for( int i = 0; i < uiCWidth; i++ )
     {
-      if( i == 0 && !bLeftAvaillable )
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+      if( pu.cs->sps->getSpsNext().getCclmCollocatedChromaFlag() )
       {
-        pDst0[i] = ( pRecSrc0[2 * i] + pRecSrc0[2 * i + iRecStride] + 1 ) >> 1;
+        if( i == 0 && !bLeftAvaillable )
+        {
+          if( j == 0 && !bAboveAvaillable )
+          {
+            pDst0[i] = pRecSrc0[2 * i];
+          }
+          else
+          {
+            pDst0[i] = ( pRecSrc0[2 * i] * 2 + pRecSrc0[2 * i - iRecStride] + pRecSrc0[2 * i + iRecStride] + 2 ) >> 2;
+          }
+        }
+        else if( j == 0 && !bAboveAvaillable )
+        {
+          pDst0[i] = ( pRecSrc0[2 * i] * 2 + pRecSrc0[2 * i - 1] + pRecSrc0[2 * i + 1] + 2 ) >> 2;
+        }
+        else
+        {
+          pDst0[i] = ( pRecSrc0[2 * i - iRecStride]
+                     + pRecSrc0[2 * i             ] * 4 + pRecSrc0[2 * i - 1] + pRecSrc0[2 * i + 1]
+                     + pRecSrc0[2 * i + iRecStride]
+                     + 4 ) >> 3;
+        }
       }
       else
       {
-        pDst0[i] = ( pRecSrc0[2 * i             ] * 2 + pRecSrc0[2 * i + 1             ] + pRecSrc0[2 * i - 1             ]
-                   + pRecSrc0[2 * i + iRecStride] * 2 + pRecSrc0[2 * i + 1 + iRecStride] + pRecSrc0[2 * i - 1 + iRecStride]
-                   + 4 ) >> 3;
+#endif
+        if( i == 0 && !bLeftAvaillable )
+        {
+          pDst0[i] = ( pRecSrc0[2 * i] + pRecSrc0[2 * i + iRecStride] + 1 ) >> 1;
+        }
+        else
+        {
+          pDst0[i] = ( pRecSrc0[2 * i             ] * 2 + pRecSrc0[2 * i + 1             ] + pRecSrc0[2 * i - 1             ]
+                     + pRecSrc0[2 * i + iRecStride] * 2 + pRecSrc0[2 * i + 1 + iRecStride] + pRecSrc0[2 * i - 1 + iRecStride]
+                     + 4 ) >> 3;
+        }
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
       }
+#endif
     }
 
     pDst0    += iDstStride;

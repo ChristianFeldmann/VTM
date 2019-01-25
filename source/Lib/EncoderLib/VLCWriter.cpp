@@ -532,6 +532,12 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   WRITE_FLAG( spsNext.getUseIMV() ? 1 : 0,                                                      "imv_enable_flag" );
   WRITE_FLAG( spsNext.getDisableMotCompress() ? 1 : 0,                                          "disable_motion_compression_flag" );
   WRITE_FLAG( spsNext.getUseLMChroma() ? 1 : 0,                                                 "lm_chroma_enabled_flag" );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  if ( spsNext.getUseLMChroma() && spsNext.getSPS().getChromaFormatIdc() == CHROMA_420 )
+  {
+    WRITE_FLAG( spsNext.getCclmCollocatedChromaFlag() ? 1 : 0,                                  "sps_cclm_collocated_chroma_flag" );
+  }
+#endif
 #if JVET_M0464_UNI_MTS
   WRITE_FLAG( spsNext.getUseIntraMTS() ? 1 : 0,                                                 "mts_intra_enabled_flag" );
   WRITE_FLAG( spsNext.getUseInterMTS() ? 1 : 0,                                                 "mts_inter_enabled_flag" );

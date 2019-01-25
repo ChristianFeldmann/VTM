@@ -275,13 +275,13 @@ inline int QuantRDOQ::xGetICRate( const uint32_t         uiAbsLevel,
     iRate += fracBitsGt1.intBits[1];
     iRate += fracBitsPar.intBits[( uiAbsLevel - 2 ) & 1];
 #if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
-    if( remRegBins )
+    iRate += fracBitsGt2.intBits[1];
 #else
     if( remGt2Bins )
-#endif
     {
       iRate += fracBitsGt2.intBits[1];
     }
+#endif
   }
   else if( uiAbsLevel == 1 )
   {

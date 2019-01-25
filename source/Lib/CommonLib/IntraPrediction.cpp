@@ -1784,6 +1784,37 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
   if (leftAvailable || aboveAvailable)
   {
+#if JVET_M0064_CCLM_SIMPLIFICATION
+    int diff = maxLuma[0] - minLuma[0];
+    if (diff > 0)
+    {
+      int diffC = maxLuma[1] - minLuma[1];
+      int x = floorLog2( diff );
+      static const uint8_t DivSigTable[1 << 4] = {
+        // 4bit significands - 8 ( MSB is omitted )
+        0,  7,  6,  5,  5,  4,  4,  3,  3,  2,  2,  1,  1,  1,  1,  0
+      };
+      int normDiff = (diff << 4 >> x) & 15;
+      int v = DivSigTable[normDiff] | 8;
+      x += normDiff != 0;
+
+      int y = floorLog2( abs( diffC ) ) + 1;
+      int add = 1 << y >> 1;
+      a = (diffC * v + add) >> y;
+      iShift = 3 + x - y;
+      if ( iShift < 1 ) {
+        iShift = 1;
+        a = ( (a == 0)? 0: (a < 0)? -15 : 15 );   // a=Sign(a)*15
+      }
+      b = minLuma[1] - ((a * minLuma[0]) >> iShift);
+    }
+    else
+    {
+      a = 0;
+      b = minLuma[1];
+      iShift = 0;
+    }
+#else // original
     a         = 0;
     iShift    = 16;
     int shift = (internalBitDepth > 8) ? internalBitDepth - 9 : 0;
@@ -1795,6 +1826,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
       a       = (((maxLuma[1] - minLuma[1]) * g_aiLMDivTableHigh[diff - 1] + div + add) >> shift);
     }
     b = minLuma[1] - ((a * minLuma[0]) >> iShift);
+#endif
   }
   else
   {

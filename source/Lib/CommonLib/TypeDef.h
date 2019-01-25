@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0064_CCLM_SIMPLIFICATION                    1
+
 #define JVET_M0479_18BITS_MV_CLIP                         1
 
 #define JVET_M0502_PRED_MODE_CTX                          1

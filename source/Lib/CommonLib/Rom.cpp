@@ -180,6 +180,7 @@ public:
     return rtn;
   }
 };
+#if !JVET_M0064_CCLM_SIMPLIFICATION
 int g_aiLMDivTableLow[] = {
   0,     0,     21845, 0,     13107, 43690, 18724, 0,     50972, 39321, 53620, 21845, 15123, 9362,  4369,  0,     3855,
   58254, 17246, 52428, 49932, 59578, 25644, 43690, 28835, 40329, 16990, 37449, 56496, 34952, 4228,  0,     61564, 34695,
@@ -244,6 +245,7 @@ int g_aiLMDivTableHigh[] = {
   134,   134,   134,   133,   133,   133,   132,  132,  132,  132,  131,  131,  131,  131,  130,  130,  130,  130,
   129,   129,   129,   129,   128,   128,   128,  128,
 };
+#endif
 const int8_t g_GbiLog2WeightBase = 3;
 const int8_t g_GbiWeightBase = (1 << g_GbiLog2WeightBase);
 const int8_t g_GbiWeights[GBI_NUM] = { -2, 3, 4, 5, 10 };

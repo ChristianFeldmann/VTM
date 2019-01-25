@@ -530,9 +530,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 
           mrgCtx.setMergeInfo( pu, pu.mergeIdx );
 
-#if JVET_M0068_M0171_MMVD_CLEANUP
-          PU::restrictBiPredMergeCandsOne(pu);
-#endif
           PU::spanMotionInfo( pu, mrgCtx );
         }
         }

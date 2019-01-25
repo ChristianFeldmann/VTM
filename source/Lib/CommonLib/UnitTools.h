@@ -144,6 +144,9 @@ namespace PU
   bool getInterMergeSubPuRecurCand(const PredictionUnit &pu, MergeCtx &mrgCtx, const int count);
   bool isBiPredFromDifferentDir       (const PredictionUnit &pu);
   void restrictBiPredMergeCands       (const PredictionUnit &pu, MergeCtx& mrgCtx);
+#if JVET_M0068_M0171_MMVD_CLEANUP
+  void restrictBiPredMergeCandsOne    (PredictionUnit &pu);
+#endif
 
   bool isLMCMode                      (                          unsigned mode);
   bool isLMCModeEnabled               (const PredictionUnit &pu, unsigned mode);

@@ -1505,8 +1505,14 @@ void PU::getInterMMVDMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx,
   {
     for (k = currBaseNum; k < MMVD_BASE_MV_NUM; k++)
     {
+#if JVET_M0068_M0171_MMVD_CLEANUP
+      mrgCtx.mmvdBaseMv[k][0] = MvField(Mv(0, 0), 0);
+      const Slice &slice = *pu.cs->slice;
+      mrgCtx.mmvdBaseMv[k][1] = MvField(Mv(0, 0), (slice.isInterB() ? 0 : -1));
+#else
       mrgCtx.mmvdBaseMv[k][0] = MvField(Mv(0, 0), 0);
       mrgCtx.mmvdBaseMv[k][0] = MvField(Mv(0, 0), 0);
+#endif
     }
   }
 }
@@ -3497,7 +3503,9 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
     PU::getInterMergeCandidates ( pu, mrgCtx 
       , 0
     );
+#if !JVET_M0068_M0171_MMVD_CLEANUP
     PU::restrictBiPredMergeCands( pu, mrgCtx );
+#endif
 
     mrgCtx.setMergeInfo( pu, pu.mergeIdx );
   }
@@ -3536,6 +3544,22 @@ void PU::restrictBiPredMergeCands( const PredictionUnit &pu, MergeCtx& mergeCtx 
     }
   }
 }
+
+#if JVET_M0068_M0171_MMVD_CLEANUP
+void PU::restrictBiPredMergeCandsOne(PredictionUnit &pu)
+{
+  if (PU::isBipredRestriction(pu))
+  {
+    if (pu.interDir == 3)
+    {
+      pu.interDir = 1;
+      pu.refIdx[1] = -1;
+      pu.mv[1] = Mv(0, 0);
+      pu.cu->GBiIdx = GBI_DEFAULT;
+    }
+  }
+}
+#endif
 
 void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangleMrgCtx )
 {
@@ -4090,7 +4114,9 @@ void CU::resetMVDandMV2Int( CodingUnit& cu, InterPrediction *interPred )
         PU::getInterMergeCandidates ( pu, mrgCtx 
           , 0
         );
+#if !JVET_M0068_M0171_MMVD_CLEANUP
         PU::restrictBiPredMergeCands( pu, mrgCtx );
+#endif
 
         mrgCtx.setMergeInfo( pu, pu.mergeIdx );
     }

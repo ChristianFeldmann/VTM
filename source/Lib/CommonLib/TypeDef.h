@@ -57,6 +57,7 @@
 #define JVET_M0407_CPR_RANGE                              1 // extend CPR search range to some part of left CTU
 
 #define JVET_M0464_UNI_MTS                                1
+#define JVET_M0068_M0171_MMVD_CLEANUP                     1 // MMVD cleanup with 1) flip removal, 2) L1 zero vector fix, 3) bi-pred restriction after merge/MMVD
 
 #if JVET_M0464_UNI_MTS
 typedef std::pair<int, bool> TrMode;

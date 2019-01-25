@@ -478,6 +478,9 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   }
   pu.cu->GBiIdx = ( interDirNeighbours[candIdx] == 3 ) ? GBiIdx[candIdx] : GBI_DEFAULT;
 
+#if JVET_M0068_M0171_MMVD_CLEANUP
+  PU::restrictBiPredMergeCandsOne(pu);
+#endif
 }
 void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
 {
@@ -508,47 +511,78 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
     const int poc0 = slice.getRefPOC(REF_PIC_LIST_0, refList0);
     const int poc1 = slice.getRefPOC(REF_PIC_LIST_1, refList1);
     const int currPoc = slice.getPOC();
+#if !JVET_M0068_M0171_MMVD_CLEANUP
     int refSign = 1;
 
     if ((poc0 - currPoc) * (currPoc - poc1) > 0)
     {
       refSign = -1;
     }
+#endif
     if (fPosPosition == 0)
     {
       tempMv[0] = Mv(offset, 0);
+#if !JVET_M0068_M0171_MMVD_CLEANUP
       tempMv[1] = Mv(offset * refSign, 0);
+#endif
     }
     else if (fPosPosition == 1)
     {
       tempMv[0] = Mv(-offset, 0);
+#if !JVET_M0068_M0171_MMVD_CLEANUP
       tempMv[1] = Mv(-offset * refSign, 0);
+#endif
     }
     else if (fPosPosition == 2)
     {
       tempMv[0] = Mv(0, offset);
+#if !JVET_M0068_M0171_MMVD_CLEANUP
       tempMv[1] = Mv(0, offset * refSign);
+#endif
     }
     else
     {
       tempMv[0] = Mv(0, -offset);
+#if !JVET_M0068_M0171_MMVD_CLEANUP
       tempMv[1] = Mv(0, -offset * refSign);
+#endif
     }
+#if JVET_M0068_M0171_MMVD_CLEANUP
+    if ((poc0 - currPoc) == (poc1 - currPoc))
+    {
+      tempMv[1] = tempMv[0];
+    }
+    else if (abs(poc1 - currPoc) > abs(poc0 - currPoc))
+#else
     if (abs(poc1 - currPoc) > abs(poc0 - currPoc))
+#endif
     {
       const int scale = PU::getDistScaleFactor(currPoc, poc0, currPoc, poc1);
+#if JVET_M0068_M0171_MMVD_CLEANUP
+      tempMv[1] = tempMv[0];
+      tempMv[0] = tempMv[1].scaleMv(scale);
+#else
       if (scale != 4096)
       {
         tempMv[0] = tempMv[0].scaleMv(scale);
       }
+#endif
     }
+#if JVET_M0068_M0171_MMVD_CLEANUP
+    else
+#else
     else if (abs(poc1 - currPoc) < abs(poc0 - currPoc))
+#endif
     {
       const int scale = PU::getDistScaleFactor(currPoc, poc1, currPoc, poc0);
+#if JVET_M0068_M0171_MMVD_CLEANUP
+      tempMv[1] = tempMv[0].scaleMv(scale);
+#else
       if (scale != 4096)
       {
         tempMv[1] = tempMv[1].scaleMv(scale);
       }
+#endif
     }
 
     pu.interDir = 3;
@@ -619,4 +653,8 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mvpNum[REF_PIC_LIST_1] = NOT_VALID;
 
   pu.cu->GBiIdx = (interDirNeighbours[fPosBaseIdx] == 3) ? GBiIdx[fPosBaseIdx] : GBI_DEFAULT;
+
+#if JVET_M0068_M0171_MMVD_CLEANUP
+  PU::restrictBiPredMergeCandsOne(pu);
+#endif
 }

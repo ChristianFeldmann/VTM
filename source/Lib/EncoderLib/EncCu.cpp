@@ -1606,7 +1606,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     PU::getInterMergeCandidates(pu, mergeCtx
       , 0
     );
+#if !JVET_M0068_M0171_MMVD_CLEANUP
     PU::restrictBiPredMergeCands(pu, mergeCtx);
+#endif
     PU::getInterMMVDMergeCandidates(pu, mergeCtx);
   }
   bool candHasNoResidual[MRG_MAX_NUM_CANDS + MMVD_ADD_NUM];

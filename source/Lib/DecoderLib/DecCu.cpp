@@ -466,7 +466,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 
         int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
         PU::getInterMergeCandidates(pu, mrgCtx, 1, fPosBaseIdx + 1);
+#if !JVET_M0068_M0171_MMVD_CLEANUP
         PU::restrictBiPredMergeCands(pu, mrgCtx);
+#endif
         PU::getInterMMVDMergeCandidates(pu, mrgCtx,
           pu.mmvdMergeIdx
         );
@@ -522,7 +524,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         {
 
             PU::getInterMergeCandidates(pu, mrgCtx, 0, pu.mergeIdx);
+#if !JVET_M0068_M0171_MMVD_CLEANUP
             PU::restrictBiPredMergeCands(pu, mrgCtx);
+#endif
 
           mrgCtx.setMergeInfo( pu, pu.mergeIdx );
 

@@ -115,6 +115,10 @@ private:
   static int              m_lumaBD;
 #else
   static double           m_lumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
+#if JVET_M0427_INLOOP_RESHAPER
+  static double           m_reshapeLumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
+  static uint32_t         m_iSignalType;
+  static double           m_chroma_weight;
 #endif
 #endif
   double                  m_DistScale;

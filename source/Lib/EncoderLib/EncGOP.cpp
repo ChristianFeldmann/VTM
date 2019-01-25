@@ -186,6 +186,16 @@ void EncGOP::init ( EncLib* pcEncLib )
   }
   else if (m_pcCfg->getLumaLevelToDeltaQPMapping().mode)
   {
+#if JVET_M0427_INLOOP_RESHAPER
+  memcpy(pcEncLib->getALF()->getLumaLevelWeightTable(), pcEncLib->getRdCost()->getLumaLevelWeightTable(), LUMA_LEVEL_TO_DQP_LUT_MAXSIZE * sizeof(double));
+  int alfWSSD = 0;
+
+  if (m_pcCfg->getReshaper() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ )
+  {
+    alfWSSD = 1;
+  }
+
+  pcEncLib->getALF()->setAlfWSSD(alfWSSD);
 #endif
     pcEncLib->getRdCost()->initLumaLevelToWeightTable();
 #if JVET_M0427_INLOOP_RESHAPER

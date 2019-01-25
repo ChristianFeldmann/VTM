@@ -1723,6 +1723,9 @@ private:
 #if JVET_M0427_INLOOP_RESHAPER
   sliceReshapeInfo           m_sliceReshapeInfo;
 #endif
+#if JVET_M0427_INLOOP_RESHAPER
+  sliceReshapeInfo           m_sliceReshapeInfo;
+#endif
 public:
   LutMotionCand*             m_MotionCandLuTsBkup;
 #endif

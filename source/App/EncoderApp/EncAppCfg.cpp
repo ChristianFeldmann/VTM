@@ -707,13 +707,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   int warnUnknowParameter = 0;
 
-#if JVET_M0427_INLOOP_RESHAPER
-  const int CW_NUMS = 3;
-  const uint32_t defaultBinCW[CW_NUMS - 1]  = { 38, 28 };
-  const uint32_t defaultBinThr[CW_NUMS - 1] = { 2500, 4000 };
-  SMultiValueInput<uint32_t> cfg_BinCW          (0, 64, CW_NUMS - 1, CW_NUMS - 1, defaultBinCW, sizeof(defaultBinCW) / sizeof(uint32_t));
-  SMultiValueInput<uint32_t> cfg_BinThr         (0, std::numeric_limits<uint32_t>::max(), CW_NUMS - 1, CW_NUMS - 1, defaultBinThr, sizeof(defaultBinThr) / sizeof(uint32_t));
-#endif
 
 #if ENABLE_TRACING
   string sTracingRule;

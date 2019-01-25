@@ -417,7 +417,19 @@ static constexpr int MV_MANTISSA_UPPER_LIMIT = ((1 << (MV_MANTISSA_BITCOUNT - 1)
 static constexpr int MV_MANTISSA_LIMIT       = (1 << (MV_MANTISSA_BITCOUNT - 1));
 static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1);
 #endif
-
+#if JVET_M0427_INLOOP_RESHAPER
+static const int MAX_LUMA_RESHAPING_LUT_SIZE =                 1024;
+static const int CSCALE_FP_PREC =                                11;
+static const int PIC_ANALYZE_CW_BINS =                           32;
+static const int FP_PREC =                                       14;
+static const int log2_MAX_LUMA_RESHAPING_LUT_SIZE =              10;
+static const int log2_PIC_ANALYZE_CW_BINS =                       5;
+static const int PIC_ANALYZE_WIN_SIZE =                           5;
+static const int CW_NUMS =                                        3;
+static const int MAX_FRAME_RATE =                               128;
+static const int PIC_CODE_CW_BINS =                              16;
+static const int log2_PIC_CODE_CW_BINS =                          4;
+#endif
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================

@@ -863,7 +863,11 @@ namespace DQIntern
     {
       m_rdCost        = std::numeric_limits<int64_t>::max()>>1;
       m_numSigSbb     = 0;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+      m_remRegBins    = 4;  // just large enough for last scan pos
+#else
       m_remRegBins    = 3;  // just large enough for last scan pos
+#endif
       m_refSbbCtxId   = -1;
       m_sigFracBits   = m_sigFracBitsArray[ 0 ];
       m_coeffFracBits = m_gtxFracBitsArray[ 0 ];
@@ -877,7 +881,11 @@ namespace DQIntern
       int64_t         rdCostA   = m_rdCost + pqDataA.deltaDist;
       int64_t         rdCostB   = m_rdCost + pqDataB.deltaDist;
       int64_t         rdCostZ   = m_rdCost;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+      if( m_remRegBins >= 4 )
+#else
       if( m_remRegBins >= 3 )
+#endif
       {
         if( pqDataA.absLevel < 4 )
           rdCostA += m_coeffFracBits.bits[pqDataA.absLevel];
@@ -1016,14 +1024,22 @@ namespace DQIntern
         m_sbbFracBits           = prvState->m_sbbFracBits;
         m_remRegBins            = prvState->m_remRegBins - 1;
         m_goRicePar             = prvState->m_goRicePar;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+        if( m_remRegBins >= 4 )
+#else
         if( m_remRegBins >= 3 )
+#endif
         {
           TCoeff rem = (decision.absLevel - 4) >> 1;
           if( m_goRicePar < 3 && rem > (3<<m_goRicePar)-1 )
           {
             m_goRicePar++;
           }
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+          m_remRegBins -= (decision.absLevel < 2 ? decision.absLevel : 3);
+#else
           m_remRegBins -= std::min<TCoeff>( decision.absLevel, 2 );
+#endif
         }
         ::memcpy( m_absLevelsAndCtxInit, prvState->m_absLevelsAndCtxInit, 48*sizeof(uint8_t) );
       }
@@ -1033,11 +1049,19 @@ namespace DQIntern
         m_refSbbCtxId   = -1;
         if ( scanInfo.sbbSize == 4 )
         {
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+          m_remRegBins = MAX_NUM_REG_BINS_2x2SUBBLOCK - (decision.absLevel < 2 ? decision.absLevel : 3);
+#else
           m_remRegBins  = MAX_NUM_REG_BINS_2x2SUBBLOCK - MAX_NUM_GT2_BINS_2x2SUBBLOCK - std::min<TCoeff>( decision.absLevel, 2 );
+#endif
         }
         else
         {
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+          m_remRegBins = MAX_NUM_REG_BINS_4x4SUBBLOCK - (decision.absLevel < 2 ? decision.absLevel : 3);
+#else
           m_remRegBins  = MAX_NUM_REG_BINS_4x4SUBBLOCK - MAX_NUM_GT2_BINS_4x4SUBBLOCK - std::min<TCoeff>( decision.absLevel, 2 );
+#endif
         }
         m_goRicePar     = ( ((decision.absLevel - 4) >> 1) > (3<<0)-1 ? 1 : 0 );
         ::memset( m_absLevelsAndCtxInit, 0, 48*sizeof(uint8_t) );
@@ -1046,12 +1070,20 @@ namespace DQIntern
       uint8_t* levels               = reinterpret_cast<uint8_t*>(m_absLevelsAndCtxInit);
       levels[ scanInfo.insidePos ]  = (uint8_t)std::min<TCoeff>( 255, decision.absLevel );
 
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+      if (m_remRegBins >= 4)
+#else
       if (m_remRegBins >= 3)
+#endif
       {
         TCoeff  tinit = m_absLevelsAndCtxInit[8 + scanInfo.nextInsidePos];
         TCoeff  sumAbs1 = (tinit >> 3) & 31;
         TCoeff  sumNum = tinit & 7;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+#define UPDATE(k) {TCoeff t=levels[scanInfo.nextNbInfoSbb.inPos[k]]; sumAbs1+=std::min<TCoeff>(4+(t&1),t); sumNum+=!!t; }
+#else
 #define UPDATE(k) {TCoeff t=levels[scanInfo.nextNbInfoSbb.inPos[k]]; sumAbs1+=std::min<TCoeff>(2+(t&1),t); sumNum+=!!t; }
+#endif
         if (numIPos == 1)
         {
           UPDATE(0);
@@ -1182,11 +1214,19 @@ namespace DQIntern
     currState.m_numSigSbb     = 0;
     if (scanInfo.sbbSize == 4)
     {
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+      currState.m_remRegBins  = MAX_NUM_REG_BINS_2x2SUBBLOCK;
+#else
       currState.m_remRegBins  = MAX_NUM_REG_BINS_2x2SUBBLOCK - MAX_NUM_GT2_BINS_2x2SUBBLOCK;
+#endif
     }
     else
     {
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+      currState.m_remRegBins  = MAX_NUM_REG_BINS_4x4SUBBLOCK;
+#else
       currState.m_remRegBins  = MAX_NUM_REG_BINS_4x4SUBBLOCK - MAX_NUM_GT2_BINS_4x4SUBBLOCK;
+#endif
     }
     currState.m_goRicePar     = 0;
     currState.m_refSbbCtxId   = currState.m_stateId;
@@ -1201,7 +1241,11 @@ namespace DQIntern
       if( nbOut->num )
       {
         TCoeff sumAbs = 0, sumAbs1 = 0, sumNum = 0;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+#define UPDATE(k) {TCoeff t=absLevels[nbOut->outPos[k]]; sumAbs+=t; sumAbs1+=std::min<TCoeff>(4+(t&1),t); sumNum+=!!t; }
+#else
 #define UPDATE(k) {TCoeff t=absLevels[nbOut->outPos[k]]; sumAbs+=t; sumAbs1+=std::min<TCoeff>(2+(t&1),t); sumNum+=!!t; }
+#endif
         UPDATE(0);
         if( nbOut->num > 1 )
         {

@@ -2415,12 +2415,22 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
   int       numNonZero    =  0;
   unsigned  signPattern   =  0;
   bool      is2x2subblock = ( cctx.log2CGSize() == 2 );
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK );
+#else
   int       remGt2Bins    = ( is2x2subblock ? MAX_NUM_GT2_BINS_2x2SUBBLOCK : MAX_NUM_GT2_BINS_4x4SUBBLOCK );
   int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK ) - remGt2Bins;
+#endif
   int       firstPosMode2 = minSubPos - 1;
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   int       firstPosMode1 = minSubPos - 1;
+#endif
 
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  for( ; nextSigPos >= minSubPos && remRegBins >= 4; nextSigPos-- )
+#else
   for( ; nextSigPos >= minSubPos && remRegBins >= 3; nextSigPos-- )
+#endif
   {
     TCoeff    Coeff      = coeff[ cctx.blockPos( nextSigPos ) ];
     unsigned  sigFlag    = ( Coeff != 0 );
@@ -2459,19 +2469,29 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
         remAbsLevel >>= 1;
 
         remRegBins--;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+        unsigned gt2 = !!remAbsLevel;
+        m_BinEncoder.encodeBin(gt2, cctx.greater2CtxIdAbs(ctxOff));
+        DTRACE(g_trace_ctx, D_SYNTAX_RESI, "gt2_flag() bin=%d ctx=%d\n", gt2, cctx.greater2CtxIdAbs(ctxOff));
+        remRegBins--;
+#else
         if( remGt2Bins && !--remGt2Bins )
         {
           firstPosMode1 = nextSigPos - 1;
         }
+#endif
       }
     }
 
     state = ( stateTransTable >> ((state<<2)+((Coeff&1)<<1)) ) & 3;
   }
   firstPosMode2 = nextSigPos;
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   firstPosMode1 = ( firstPosMode1 > firstPosMode2 ? firstPosMode1 : firstPosMode2 );
+#endif
 
 
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   //===== 2nd PASS: gt2 =====
   for( int scanPos = firstSigPos; scanPos > firstPosMode1; scanPos-- )
   {
@@ -2484,10 +2504,17 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "gt2_flag() bin=%d ctx=%d\n", gt2, cctx.greater2CtxIdAbs(ctxOff) );
     }
   }
+#endif
 
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  //===== 2nd PASS: Go-rice codes =====
+  unsigned ricePar = 0;
+  for( int scanPos = firstSigPos; scanPos > firstPosMode2; scanPos-- )
+#else
   //===== 3rd PASS: Go-rice codes =====
   unsigned ricePar = 0;
   for( int scanPos = firstSigPos; scanPos > firstPosMode1; scanPos-- )
+#endif
   {
     unsigned absLevel = abs( coeff[ cctx.blockPos( scanPos ) ] );
     if( absLevel >= 4 )
@@ -2501,6 +2528,7 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
       }
     }
   }
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   for( int scanPos = firstPosMode1; scanPos > firstPosMode2; scanPos-- )
   {
     unsigned absLevel = abs( coeff[ cctx.blockPos( scanPos ) ] );
@@ -2515,6 +2543,7 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
       }
     }
   }
+#endif
 
   //===== coeff bypass ====
   for( int scanPos = firstPosMode2; scanPos >= minSubPos; scanPos-- )

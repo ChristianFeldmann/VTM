@@ -791,6 +791,8 @@ public:
 
 
 class SPS;
+
+// Deprecated: SPSNext is going to be removed! Do not add any parameters to SPSNext
 class SPSNext
 {
 private:
@@ -799,9 +801,7 @@ private:
   bool              m_NextEnabled;
   //=====  tool enabling flags (4 bytes - NOTE: last flag must be used for new extensions) =====
   bool              m_LargeCTU;                   // 5
-  bool              m_SubPuMvp;
   bool              m_IMV;                        // 9
-  bool              m_BIO;
   bool              m_DisableMotionCompression;   // 13
   bool              m_LMChroma;                   // 17
 #if JVET_M0464_UNI_MTS
@@ -833,18 +833,13 @@ public:
 private:
   //=====  additional parameters  =====
   // qtbt
-  // sub-pu merging
-  int         m_subPuMrgMode;
   //imv
   ImvMode     m_ImvMode;
   // multi type tree (QTBT + triple split)
   unsigned    m_MTTMode;
 
-  bool              m_compositeRefEnabled;        //composite longterm reference
-
+  bool        m_compositeRefEnabled;        //composite longterm reference
   unsigned    m_CPRMode;
-
-  // ADD_NEW_TOOL : (sps extension) add tool enabling flags and associated parameters here
 
 public:
   SPSNext( SPS& sps );
@@ -857,17 +852,12 @@ public:
   //=====  tool enabling flags and extension bit  =====
   void      setUseLargeCTU        ( bool b )                                        { m_LargeCTU = b; }
   bool      getUseLargeCTU        ()                                      const     { return m_LargeCTU; }
-  bool      getUseSubPuMvp()                                   const { return m_SubPuMvp; }
-  void      setSubPuMvpMode(int n)                             { m_subPuMrgMode = n; m_SubPuMvp = n != 0; }
-  bool      getUseATMVP()                                      const { return (m_subPuMrgMode & 1) == 1; }
   void      setUseIMV             ( bool b )                                        { m_IMV = b; }
   bool      getUseIMV             ()                                      const     { return m_IMV; }
   void      setUseAffine          ( bool b )                                        { m_Affine = b; }
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
-  void      setUseBIO(bool b)                                                       { m_BIO = b; }
-  bool      getUseBIO()                                                   const     { return m_BIO; }
   void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
   bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }
   bool      getMTTEnabled         ()                                      const     { return m_MTTEnabled; }
@@ -906,8 +896,6 @@ public:
   void      setImvMode(ImvMode m) { m_ImvMode = m; m_IMV = m != 0;  }
   ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
 
-
-
   // multi type tree
   unsigned  getMTTMode            ()                                      const     { return m_MTTMode; }
   void      setMTTMode            ( unsigned    mode )                              { m_MTTMode = mode; m_MTTEnabled = ( m_MTTMode != 0 ); }
@@ -921,8 +909,6 @@ public:
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
   void      setCPRMode            (unsigned CPRMode)                                { m_CPRMode = CPRMode; }
   unsigned  getCPRMode            ()                                      const     { return m_CPRMode; }
-  // ADD_NEW_TOOL : (sps extension) add access functions for tool enabling flags and associated parameters here
-
 };
 
 
@@ -985,16 +971,18 @@ private:
   uint32_t              m_uiQuadtreeTULog2MinSize;
   uint32_t              m_uiQuadtreeTUMaxDepthInter;
   uint32_t              m_uiQuadtreeTUMaxDepthIntra;
-  bool              m_usePCM;
+  bool                  m_pcmEnabledFlag;
   uint32_t              m_pcmLog2MaxSize;
   uint32_t              m_uiPCMLog2MinSize;
-  bool              m_useAMP;
 
   // Parameter
   BitDepths         m_bitDepths;
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
   int               m_pcmBitDepths[MAX_NUM_CHANNEL_TYPE];
   bool              m_bPCMFilterDisableFlag;
+
+  bool              m_sbtmvpEnabledFlag;
+  bool              m_bdofEnabledFlag;
 
   uint32_t              m_uiBitsForPOC;
   uint32_t              m_numLongTermRefPicSPS;
@@ -1003,7 +991,7 @@ private:
   // Max physical transform size
   uint32_t              m_uiMaxTrSize;
 
-  bool              m_bUseSAO;
+  bool              m_saoEnabledFlag;
 
   bool              m_bTemporalIdNestingFlag; // temporal_id_nesting_flag
 
@@ -1029,9 +1017,9 @@ private:
   static const int  m_winUnitY[NUM_CHROMA_FORMAT];
   PTL               m_pcPTL;
 
-  bool              m_useALF;
+  bool              m_alfEnabledFlag;
 
-  bool              m_useWrapAround;
+  bool              m_wrapAroundEnabledFlag;
   unsigned          m_wrapAroundOffset;
 
 public:
@@ -1147,16 +1135,14 @@ public:
   uint32_t                    getMaxCUHeight() const                                                          { return  m_uiMaxCUHeight;                                             }
   void                    setMaxCodingDepth( uint32_t u )                                                     { m_uiMaxCodingDepth = u;                                              }
   uint32_t                    getMaxCodingDepth() const                                                       { return  m_uiMaxCodingDepth;                                          }
-  void                    setUsePCM( bool b )                                                             { m_usePCM = b;                                                        }
-  bool                    getUsePCM() const                                                               { return m_usePCM;                                                     }
+  void                    setPCMEnabledFlag( bool b )                                                         { m_pcmEnabledFlag = b;                                                }
+  bool                    getPCMEnabledFlag() const                                                           { return m_pcmEnabledFlag;                                             }
   void                    setPCMLog2MaxSize( uint32_t u )                                                     { m_pcmLog2MaxSize = u;                                                }
   uint32_t                    getPCMLog2MaxSize() const                                                       { return  m_pcmLog2MaxSize;                                            }
   void                    setPCMLog2MinSize( uint32_t u )                                                     { m_uiPCMLog2MinSize = u;                                              }
   uint32_t                    getPCMLog2MinSize() const                                                       { return  m_uiPCMLog2MinSize;                                          }
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
-  bool                    getUseAMP() const                                                               { return m_useAMP;                                                     }
-  void                    setUseAMP( bool b )                                                             { m_useAMP = b;                                                        }
   void                    setQuadtreeTULog2MaxSize( uint32_t u )                                              { m_uiQuadtreeTULog2MaxSize = u;                                       }
   uint32_t                    getQuadtreeTULog2MaxSize() const                                                { return m_uiQuadtreeTULog2MaxSize;                                    }
   void                    setQuadtreeTULog2MinSize( uint32_t u )                                              { m_uiQuadtreeTULog2MinSize = u;                                       }
@@ -1188,11 +1174,20 @@ public:
   int                     getQpBDOffset(ChannelType type) const                                           { return m_qpBDOffset[type];                                           }
   void                    setQpBDOffset(ChannelType type, int i)                                          { m_qpBDOffset[type] = i;                                              }
 
-  void                    setUseSAO(bool bVal)                                                            { m_bUseSAO = bVal;                                                    }
-  bool                    getUseSAO() const                                                               { return m_bUseSAO;                                                    }
+  void                    setSAOEnabledFlag(bool bVal)                                                    { m_saoEnabledFlag = bVal;                                                    }
+  bool                    getSAOEnabledFlag() const                                                       { return m_saoEnabledFlag;                                                    }
 
-  uint32_t                    getMaxTLayers() const                                                           { return m_uiMaxTLayers; }
-  void                    setMaxTLayers( uint32_t uiMaxTLayers )                                              { CHECK( uiMaxTLayers > MAX_TLAYER, "Invalid number T-layers" ); m_uiMaxTLayers = uiMaxTLayers; }
+  bool                    getALFEnabledFlag() const                                                       { return m_alfEnabledFlag; }
+  void                    setALFEnabledFlag( bool b )                                                     { m_alfEnabledFlag = b; }
+
+  bool                    getSBTMVPEnabledFlag() const                                                    { return m_sbtmvpEnabledFlag; }
+  void                    setSBTMVPEnabledFlag(bool b)                                                    { m_sbtmvpEnabledFlag = b; }
+  
+  void                    setBDOFEnabledFlag(bool b)                                                      { m_bdofEnabledFlag = b; }
+  bool                    getBDOFEnabledFlag() const                                                      { return m_bdofEnabledFlag; }
+
+  uint32_t                getMaxTLayers() const                                                           { return m_uiMaxTLayers; }
+  void                    setMaxTLayers( uint32_t uiMaxTLayers )                                          { CHECK( uiMaxTLayers > MAX_TLAYER, "Invalid number T-layers" ); m_uiMaxTLayers = uiMaxTLayers; }
 
   bool                    getTemporalIdNestingFlag() const                                                { return m_bTemporalIdNestingFlag;                                     }
   void                    setTemporalIdNestingFlag( bool bValue )                                         { m_bTemporalIdNestingFlag = bValue;                                   }
@@ -1232,11 +1227,8 @@ public:
   const SPSNext&          getSpsNext() const                                                              { return m_spsNextExtension;                                           }
   SPSNext&                getSpsNext()                                                                    { return m_spsNextExtension;                                           }
 
-  bool                    getUseALF() const { return m_useALF; }
-  void                    setUseALF( bool b ) { m_useALF = b; }
-
-  void                    setUseWrapAround(bool b)                                                        { m_useWrapAround = b;                                                 }
-  bool                    getUseWrapAround() const                                                        { return m_useWrapAround;                                              }
+  void                    setWrapAroundEnabledFlag(bool b)                                                { m_wrapAroundEnabledFlag = b;                                         }
+  bool                    getWrapAroundEnabledFlag() const                                                { return m_wrapAroundEnabledFlag;                                      }
   void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
   unsigned                getWrapAroundOffset() const                                                     { return m_wrapAroundOffset;                                           }
 };

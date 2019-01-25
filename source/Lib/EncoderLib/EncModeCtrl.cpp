@@ -1112,7 +1112,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
         }
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
-        if ( cs.sps->getSpsNext().getUseAffine() || cs.sps->getSpsNext().getUseSubPuMvp() )
+        if ( cs.sps->getSpsNext().getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp, lossless } );
         }
@@ -1126,7 +1126,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
         }
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
-        if ( cs.sps->getSpsNext().getUseAffine() || cs.sps->getSpsNext().getUseSubPuMvp() )
+        if ( cs.sps->getSpsNext().getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp, lossless } );
         }
@@ -1294,7 +1294,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     }
 
     // PCM MODES
-    return sps.getUsePCM() && width <= ( 1 << sps.getPCMLog2MaxSize() ) && width >= ( 1 << sps.getPCMLog2MinSize() );
+    return sps.getPCMEnabledFlag() && width <= ( 1 << sps.getPCMLog2MaxSize() ) && width >= ( 1 << sps.getPCMLog2MinSize() );
   }
   else if (encTestmode.type == ETM_CPR || encTestmode.type == ETM_CPR_MERGE)
   {

@@ -188,7 +188,6 @@ protected:
                                                  // TODO: We need to have a common sliding mechanism used by both the encoder and decoder
 
   int       m_maxTempLayer;                      ///< Max temporal layer
-  bool      m_useAMP;
   unsigned  m_CTUSize;
   bool      m_useSplitConsOverride;
   unsigned  m_uiMinQT[3]; //0: I slice; 1: P/B slice, 2: I slice chroma
@@ -800,8 +799,6 @@ public:
   void      setQuadtreeTULog2MinSize        ( uint32_t  u )      { m_uiQuadtreeTULog2MinSize = u; }
   void      setQuadtreeTUMaxDepthInter      ( uint32_t  u )      { m_uiQuadtreeTUMaxDepthInter = u; }
   void      setQuadtreeTUMaxDepthIntra      ( uint32_t  u )      { m_uiQuadtreeTUMaxDepthIntra = u; }
-
-  void setUseAMP( bool b ) { m_useAMP = b; }
 
   //====== Loop/Deblock Filter ========
   void      setLoopFilterDisable            ( bool  b )      { m_bLoopFilterDisable       = b; }

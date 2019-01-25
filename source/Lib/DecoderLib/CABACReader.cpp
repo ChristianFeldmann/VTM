@@ -149,7 +149,7 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 
   AlfSliceParam& alfSliceParam = cs.slice->getAlfSliceParam();
 
-  if( cs.sps->getUseALF() && ( alfSliceParam.enabledFlag[COMPONENT_Y] || alfSliceParam.enabledFlag[COMPONENT_Cb] || alfSliceParam.enabledFlag[COMPONENT_Cr] ) )
+  if( cs.sps->getALFEnabledFlag() && ( alfSliceParam.enabledFlag[COMPONENT_Y] || alfSliceParam.enabledFlag[COMPONENT_Cb] || alfSliceParam.enabledFlag[COMPONENT_Cr] ) )
   {
 
     const PreCalcValues& pcv = *cs.pcv;
@@ -231,7 +231,7 @@ void CABACReader::sao( CodingStructure& cs, unsigned ctuRsAddr )
 {
   const SPS&   sps   = *cs.sps;
 
-  if( !sps.getUseSAO() )
+  if( !sps.getSAOEnabledFlag() )
   {
     return;
   }
@@ -944,7 +944,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
 void CABACReader::pcm_flag( CodingUnit& cu, Partitioner &partitioner )
 {
   const SPS& sps = *cu.cs->sps;
-  if( !sps.getUsePCM() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
+  if( !sps.getPCMEnabledFlag() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
       || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
   {
     cu.ipcm = false;
@@ -1406,7 +1406,7 @@ void CABACReader::subblock_merge_flag( CodingUnit& cu )
     return;
   }
 
-  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSpsNext().getUseSubPuMvp()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__AFFINE_FLAG );
 
@@ -1478,7 +1478,7 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     {
       if ( m_BinDecoder.decodeBin( Ctx::AffMergeIdx() ) )
       {
-        bool useExtCtx = pu.cs->sps->getSpsNext().getUseSubPuMvp();
+        bool useExtCtx = pu.cs->sps->getSBTMVPEnabledFlag();
         pu.mergeIdx++;
         for ( ; pu.mergeIdx < numCandminus1; pu.mergeIdx++ )
         {

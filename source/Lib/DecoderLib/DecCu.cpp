@@ -458,7 +458,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       if (pu.mmvdMergeFlag || pu.cu->mmvdSkip)
       {
         CHECK(pu.mhIntraFlag == true, "invalid MHIntra");
-        if (pu.cs->sps->getSpsNext().getUseSubPuMvp())
+        if (pu.cs->sps->getSBTMVPEnabledFlag())
         {
           Size bufSize = g_miScaling.scale(pu.lumaSize());
           mrgCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);
@@ -486,7 +486,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         if( pu.cu->affine )
         {
           AffineMergeCtx affineMergeCtx;
-          if ( pu.cs->sps->getSpsNext().getUseSubPuMvp() )
+          if ( pu.cs->sps->getSBTMVPEnabledFlag() )
           {
             Size bufSize = g_miScaling.scale( pu.lumaSize() );
             mrgCtx.subPuMvpMiBuf = MotionBuf( m_SubPuMiBuf, bufSize );

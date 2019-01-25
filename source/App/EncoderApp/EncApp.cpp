@@ -141,7 +141,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setAccessUnitDelimiter                               ( m_AccessUnitDelimiter );
 
   m_cEncLib.setMaxTempLayer                                      ( m_maxTempLayer );
-  m_cEncLib.setUseAMP( m_enableAMP );
 
   //===== Slice ========
 

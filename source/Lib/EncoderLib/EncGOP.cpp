@@ -1983,14 +1983,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->m_uEnerHpCtu.resize( numberOfCtusInFrame );
     pcPic->m_iOffsetCtu.resize( numberOfCtusInFrame );
 #endif
-    if (pcSlice->getSPS()->getUseSAO())
+    if (pcSlice->getSPS()->getSAOEnabledFlag())
     {
       pcPic->resizeSAO( numberOfCtusInFrame, 0 );
       pcPic->resizeSAO( numberOfCtusInFrame, 1 );
     }
 
     // it is used for signalling during CTU mode decision, i.e. before ALF processing
-    if( pcSlice->getSPS()->getUseALF() )
+    if( pcSlice->getSPS()->getALFEnabledFlag() )
     {
       pcPic->resizeAlfCtuEnableFlag( numberOfCtusInFrame );
       std::memset( pcSlice->getAlfSliceParam().enabledFlag, false, sizeof( pcSlice->getAlfSliceParam().enabledFlag ) );
@@ -2087,7 +2087,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice = pcPic->slices[0];
 
       // SAO parameter estimation using non-deblocked pixels for CTU bottom and right boundary areas
-      if( pcSlice->getSPS()->getUseSAO() && m_pcCfg->getSaoCtuBoundary() )
+      if( pcSlice->getSPS()->getSAOEnabledFlag() && m_pcCfg->getSaoCtuBoundary() )
       {
         m_pcSAO->getPreDBFStatistics( cs );
       }
@@ -2113,7 +2113,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 1 ) ) );
 
-      if( pcSlice->getSPS()->getUseSAO() )
+      if( pcSlice->getSPS()->getSAOEnabledFlag() )
       {
         bool sliceEnabled[MAX_NUM_COMPONENT];
         m_pcSAO->initCABACEstimator( m_pcEncLib->getCABACEncoder(), m_pcEncLib->getCtxCache(), pcSlice );
@@ -2136,7 +2136,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
 
-      if( pcSlice->getSPS()->getUseALF() )
+      if( pcSlice->getSPS()->getALFEnabledFlag() )
       {
         AlfSliceParam alfSliceParam;
         m_pcALF->initCABACEstimator( m_pcEncLib->getCABACEncoder(), m_pcEncLib->getCtxCache(), pcSlice );
@@ -2172,7 +2172,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
 #endif
-      if( pcSlice->getSPS()->getUseSAO() )
+      if( pcSlice->getSPS()->getSAOEnabledFlag() )
       {
         m_pcSAO->disabledRate( *pcPic->cs, pcPic->getSAO(1), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma());
       }

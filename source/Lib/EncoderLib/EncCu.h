@@ -156,7 +156,9 @@ private:
 public:
   /// copy parameters from encoder class
   void  init                ( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int jId = 0 ) );
-
+#if JVET_M0427_INLOOP_RESHAPER && REUSE_CU_RESULTS
+  void setDecCuReshaperInEncCU(EncReshape* pcReshape, ChromaFormat chromaFormatIDC) { initDecCuReshaper((Reshape*) pcReshape, chromaFormatIDC); }
+#endif
   /// create internal buffers
   void  create              ( EncCfg* encCfg );
 

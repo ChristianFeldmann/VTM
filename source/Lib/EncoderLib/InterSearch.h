@@ -54,6 +54,9 @@
 #include "CommonLib/IbcHashMap.h"
 #include <unordered_map>
 #include <vector>
+#if JVET_M0427_INLOOP_RESHAPER
+#include "EncReshape.h"
+#endif
 //! \ingroup EncoderLib
 //! \{
 
@@ -126,6 +129,9 @@ protected:
 
   // interface to classes
   TrQuant*        m_pcTrQuant;
+#if JVET_M0427_INLOOP_RESHAPER
+  EncReshape*     m_pcReshape;
+#endif
 
   // ME parameters
   int             m_iSearchRange;
@@ -164,6 +170,9 @@ public:
                                       RdCost*        pcRdCost,
                                       CABACWriter*   CABACEstimator,
                                       CtxCache*      ctxCache
+#if JVET_M0427_INLOOP_RESHAPER
+                                     , EncReshape*   m_pcReshape
+#endif
                                     );
 
   void destroy                      ();

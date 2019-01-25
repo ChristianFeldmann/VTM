@@ -550,6 +550,12 @@ void EncApp::xInitLibCfg()
 
 #endif
   m_cEncLib.setUseALF                                            ( m_alf );
+#if JVET_M0427_INLOOP_RESHAPER
+  m_cEncLib.setReshaper                                          ( m_bLumaReshapeEnable );
+  m_cEncLib.setReshapeSignalType                                 ( m_uiSignalType );
+  m_cEncLib.setReshapeIntraCMD                                   ( m_uiIntraCMD );
+  m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
+#endif  
 }
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList

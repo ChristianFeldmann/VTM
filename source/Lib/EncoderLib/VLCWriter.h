@@ -145,6 +145,9 @@ private:
   void alfGolombEncode( const int coeff, const int k );
   void truncatedUnaryEqProb( int symbol, int maxSymbol );
 
+#if JVET_M0427_INLOOP_RESHAPER
+  void  codeReshaper            ( const sliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra);
+#endif
 };
 
 //! \}

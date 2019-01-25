@@ -136,6 +136,12 @@ void EncLib::create ()
     m_cEncALF.create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );
   }
 
+#if JVET_M0427_INLOOP_RESHAPER
+  if (m_bUseReshape)
+  {
+    m_cReshaper.create_enc( getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight );
+  }
+#endif
   if ( m_RCEnableRateControl )
   {
     m_cRateCtrl.init(m_framesToBeEncoded, m_RCTargetBitrate, (int)((double)m_iFrameRate / m_temporalSubsampleRatio + 0.5), m_iGOPSize, m_iSourceWidth, m_iSourceHeight,
@@ -165,6 +171,9 @@ void EncLib::destroy ()
   m_cEncSAO.            destroy();
   m_cLoopFilter.        destroy();
   m_cRateCtrl.          destroy();
+#if JVET_M0427_INLOOP_RESHAPER
+  m_cReshaper.          destroy();
+#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
@@ -318,13 +327,21 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        &m_cTrQuant,
                        &m_cRdCost,
                        cabacEstimator,
-                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth );
+                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth 
+#if JVET_M0427_INLOOP_RESHAPER
+                     , &m_cReshaper
+#endif
+  );
   m_cInterSearch.init( this,
                        &m_cTrQuant,
                        m_iSearchRange,
                        m_bipredSearchRange,
                        m_motionEstimationSearchMethod,
-                       m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache() );
+    m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache()
+#if JVET_M0427_INLOOP_RESHAPER
+                     , &m_cReshaper
+#endif
+  );
 
   // link temporary buffets from intra search with inter search to avoid unneccessary memory overhead
   m_cInterSearch.setTempBuffers( m_cIntraSearch.getSplitCSBuf(), m_cIntraSearch.getFullCSBuf(), m_cIntraSearch.getSaveCSBuf() );
@@ -551,6 +568,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
+#if JVET_M0427_INLOOP_RESHAPER
+      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL).swap(*cPicYuvTrueOrg);
+#endif
 
       pcPicCurr->finalInit( *pSPS, *pPPS );
     }
@@ -902,7 +922,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
-
+#if JVET_M0427_INLOOP_RESHAPER
+  sps.setUseReshaper(m_bUseReshape);
+#endif
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;
   while(minCUSize > 1)

@@ -291,6 +291,38 @@ struct HrdSubLayerInfo
   uint32_t duBitRateValue    [MAX_CPB_CNT][2];
 };
 
+#if JVET_M0427_INLOOP_RESHAPER
+class sliceReshapeInfo
+{
+public:
+  bool      slice_reshaper_enable_flag;
+  bool      slice_reshaper_model_present_flag;
+  unsigned  uiReshapeChromaAdj;
+  uint32_t  reshape_model_min_bin_idx;
+  uint32_t  reshape_model_max_bin_idx;
+  int       reshape_model_bin_CW_delta[PIC_CODE_CW_BINS];
+  int       maxNbitsNeededDeltaCW;
+  void      setUseSliceReshaper(bool b_useSliceReshaper)                   { slice_reshaper_enable_flag = b_useSliceReshaper;          }
+  bool      getUseSliceReshaper() const                                    { return slice_reshaper_enable_flag;                        }
+  void      setSliceReshapeModelPresentFlag(bool bflag)                    { slice_reshaper_model_present_flag = bflag;                }
+  bool      getSliceReshapeModelPresentFlag() const                        { return   slice_reshaper_model_present_flag;               }
+  void      setSliceReshapeChromaAdj(unsigned uiChromaAdj)                 { uiReshapeChromaAdj = uiChromaAdj;                         }
+  unsigned  getSliceReshapeChromaAdj() const                               { return uiReshapeChromaAdj;                                }
+};
+
+struct ReshapeCW
+{
+  std::vector<uint32_t> BinCW;
+  int RspPicSize;
+  int RspIntraPeriod;
+  int RspFps;
+  int RspBaseQP;
+  int Tid;
+  int SliceQP;
+  int RspFpsToIp;
+};
+#endif
+
 class HRD
 {
 private:
@@ -1033,7 +1065,9 @@ private:
 
   bool              m_wrapAroundEnabledFlag;
   unsigned          m_wrapAroundOffset;
-
+#if JVET_M0427_INLOOP_RESHAPER
+  bool              m_bUseReshape;
+#endif
 public:
 
   SPS();
@@ -1252,6 +1286,10 @@ public:
   bool                    getWrapAroundEnabledFlag() const                                                { return m_wrapAroundEnabledFlag;                                      }
   void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
   unsigned                getWrapAroundOffset() const                                                     { return m_wrapAroundOffset;                                           }
+#if JVET_M0427_INLOOP_RESHAPER
+  void                    setUseReshaper(bool b)                                                          { m_bUseReshape = b;                                                   }
+  bool                    getUseReshaper() const                                                          { return m_bUseReshape;                                                }
+#endif
 };
 
 
@@ -1682,6 +1720,9 @@ private:
   AlfSliceParam              m_alfSliceParam;
   LutMotionCand*             m_MotionCandLut;
 #if JVET_M0170_MRG_SHARELIST
+#if JVET_M0427_INLOOP_RESHAPER
+  sliceReshapeInfo           m_sliceReshapeInfo;
+#endif
 public:
   LutMotionCand*             m_MotionCandLuTsBkup;
 #endif
@@ -1981,7 +2022,10 @@ public:
 
   void                        updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu);
   void                        copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst);
-
+#if JVET_M0427_INLOOP_RESHAPER
+  const sliceReshapeInfo&     getReshapeInfo() const { return m_sliceReshapeInfo; }
+        sliceReshapeInfo&     getReshapeInfo()       { return m_sliceReshapeInfo; }
+#endif
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
   Picture*              xGetLongTermRefPic(PicList& rcListPic, int poc, bool pocHasMsb);

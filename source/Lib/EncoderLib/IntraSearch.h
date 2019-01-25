@@ -48,6 +48,9 @@
 #include "CommonLib/TrQuant.h"
 #include "CommonLib/Unit.h"
 #include "CommonLib/RdCost.h"
+#if JVET_M0427_INLOOP_RESHAPER
+#include "EncReshape.h"
+#endif
 
 //! \ingroup EncoderLib
 //! \{
@@ -81,7 +84,9 @@ private:
   uint32_t   m_savedRdModeList  [4][NUM_LUMA_MODE], m_savedNumRdModes[4];
   int        m_savedExtendRefList[4][NUM_LUMA_MODE];
 #endif
-
+#if JVET_M0427_INLOOP_RESHAPER
+  PelStorage      m_tmpStorageLCU;
+#endif
 protected:
   // interface to option
   EncCfg*         m_pcEncCfg;
@@ -89,6 +94,9 @@ protected:
   // interface to classes
   TrQuant*        m_pcTrQuant;
   RdCost*         m_pcRdCost;
+#if JVET_M0427_INLOOP_RESHAPER
+  EncReshape*     m_pcReshape;
+#endif
 
   // RD computation
   CABACWriter*    m_CABACEstimator;
@@ -109,6 +117,9 @@ public:
                                     const uint32_t     maxCUWidth,
                                     const uint32_t     maxCUHeight,
                                     const uint32_t     maxTotalCUDepth
+#if JVET_M0427_INLOOP_RESHAPER
+                                  , EncReshape*   m_pcReshape
+#endif
                                   );
 
   void destroy                    ();

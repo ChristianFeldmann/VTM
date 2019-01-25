@@ -343,6 +343,99 @@ void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBu
 #undef ADD_AVG_INC
 }
 
+#if JVET_M0427_INLOOP_RESHAPER
+template<>
+void AreaBuf<Pel>::rspSignal(std::vector<Pel>& pLUT)
+{
+  Pel* dst = buf;
+  Pel* src = buf;
+  if (width == 1)
+  {
+    THROW("Blocks of width = 1 not supported");
+  }  
+  else
+  {
+    for (unsigned y = 0; y < height; y++)
+    {
+      for (unsigned x = 0; x < width; x++)
+      {
+        dst[x] = pLUT[src[x]];
+      }
+      dst += stride;
+      src += stride;
+    }
+  }
+}
+
+template<>
+void AreaBuf<Pel>::scaleSignal(const int scale, const bool dir)
+{
+  Pel* dst = buf;
+  Pel* src = buf;
+  int sign, absval;
+
+  if (dir) // forward
+  {
+    if (width == 1)
+    {
+      THROW("Blocks of width = 1 not supported");
+    }
+    else
+    {
+      for (unsigned y = 0; y < height; y++)
+      {
+        for (unsigned x = 0; x < width; x++)
+        {
+          sign = src[x] >= 0 ? 1 : -1;
+          absval = sign * src[x];
+          dst[x] = sign * (((absval << CSCALE_FP_PREC) + (scale >> 1)) / scale);
+          dst[x] = dst[x] > 1023 ? 1023 : dst[x] < -1023 ? -1023 : dst[x];
+        }
+        dst += stride;
+        src += stride;
+      }
+    }
+  }
+  else // inverse
+  {
+    for (unsigned y = 0; y < height; y++)
+    {
+      for (unsigned x = 0; x < width; x++)
+      {
+        sign = src[x] >= 0 ? 1 : -1;
+        absval = sign * src[x];
+        dst[x] = sign * ((absval * scale + (1 << (CSCALE_FP_PREC - 1))) >> CSCALE_FP_PREC);
+      }
+      dst += stride;
+      src += stride;
+    }
+  }
+}
+
+template<>
+Pel AreaBuf <Pel> ::computeAvg() const
+{
+  const Pel* src = buf;
+
+  if (width == 1)
+  {
+    THROW("Blocks of width = 1 not supported");
+  }
+  else
+  {
+    int32_t acc = 0;
+#define AVG_INC   \
+    src +=       stride; 
+#define AVG_OP(ADDR) acc += src[ADDR]
+    SIZE_AWARE_PER_EL_OP(AVG_OP, AVG_INC);
+#undef AVG_INC
+#undef AVG_OP
+    return Pel((acc + (area() >> 1)) / area());
+  }
+}
+
+#endif
+
 template<>
 void AreaBuf<Pel>::addAvg( const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng)
 {

@@ -176,6 +176,10 @@ void RdCost::init()
 
   m_motionLambda               = 0;
   m_iCostScale                 = 0;
+#if JVET_M0427_INLOOP_RESHAPER
+  m_iSignalType                = RESHAPE_SIGNAL_NULL;
+  m_chroma_weight              = 1.0;
+#endif
 }
 
 
@@ -2859,6 +2863,11 @@ Distortion RdCost::xGetHADs( const DistParam &rcDtParam )
 
 #if WCG_EXT
 double RdCost::m_lumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
+#if JVET_M0427_INLOOP_RESHAPER
+double     RdCost::m_reshapeLumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
+uint32_t   RdCost::m_iSignalType;
+double     RdCost::m_chroma_weight;
+#endif
 
 void RdCost::saveUnadjustedLambda()
 {
@@ -2868,6 +2877,18 @@ void RdCost::saveUnadjustedLambda()
 
 void RdCost::initLumaLevelToWeightTable()
 {
+#if JVET_M0427_INLOOP_RESHAPER
+  if (m_iSignalType == RESHAPE_SIGNAL_SDR)
+  {
+    double weight = 1.0;
+    for (int i = 0; i < LUMA_LEVEL_TO_DQP_LUT_MAXSIZE; i++)
+    {
+      m_lumaLevelToWeightPLUT[i] = weight;
+    }
+    return;
+  }
+#endif
+
   for (int i = 0; i < LUMA_LEVEL_TO_DQP_LUT_MAXSIZE; i++) {
     double x = i;
     double y;
@@ -2889,7 +2910,69 @@ void RdCost::initLumaLevelToWeightTable()
     
     m_lumaLevelToWeightPLUT[i] = pow(2.0, y / 3.0);      // or power(10, dQp/10)      they are almost equal       
   }
+#if JVET_M0427_INLOOP_RESHAPER
+  memcpy(m_reshapeLumaLevelToWeightPLUT, m_lumaLevelToWeightPLUT, LUMA_LEVEL_TO_DQP_LUT_MAXSIZE * sizeof(double));
+#endif
 }
+
+#if JVET_M0427_INLOOP_RESHAPER
+void RdCost::updateReshapeLumaLevelToWeightTableChromaMD(std::vector<Pel>& ILUT)
+{
+  for (int i = 0; i < LUMA_LEVEL_TO_DQP_LUT_MAXSIZE; i++) // idx in reshaped domain;
+  {
+    m_reshapeLumaLevelToWeightPLUT[i] = m_lumaLevelToWeightPLUT[ILUT[i]];
+  }
+}
+
+void RdCost::restoreReshapeLumaLevelToWeightTable()
+{
+  memcpy(m_reshapeLumaLevelToWeightPLUT, m_lumaLevelToWeightPLUT, LUMA_LEVEL_TO_DQP_LUT_MAXSIZE * sizeof(double));
+}
+
+
+void RdCost::updateReshapeLumaLevelToWeightTable(sliceReshapeInfo &sliceReshape, Pel *wt_table, double cwt)
+{
+  if (m_iSignalType == RESHAPE_SIGNAL_SDR)
+  {
+    if (sliceReshape.getSliceReshapeModelPresentFlag())
+    {
+      double w_bin = 1.0;
+      double weight = 1.0;
+      int hist_lens = MAX_LUMA_RESHAPING_LUT_SIZE / PIC_CODE_CW_BINS;
+
+      for (int i = 0; i < PIC_CODE_CW_BINS; i++)
+      {
+        if ((i < sliceReshape.reshape_model_min_bin_idx) || (i > sliceReshape.reshape_model_max_bin_idx))
+          weight = 1.0;
+        else
+        {
+          if (sliceReshape.reshape_model_bin_CW_delta[i] == 1 || sliceReshape.reshape_model_bin_CW_delta[i] == -1 * MAX_LUMA_RESHAPING_LUT_SIZE / PIC_CODE_CW_BINS)
+            weight = w_bin;
+          else 
+          {
+            weight = (double)wt_table[i] / (double)hist_lens;
+            weight = weight*weight;
+          }
+        }
+        for (int j = 0; j < hist_lens; j++)
+        {
+          int ii = i*hist_lens + j;
+          m_reshapeLumaLevelToWeightPLUT[ii] = weight;
+        }
+      }
+      m_chroma_weight = cwt;
+    }
+    else
+    {
+      THROW("updateReshapeLumaLevelToWeightTable ERROR!!");
+    }
+  }
+  else
+  {
+    THROW("updateReshapeLumaLevelToWeightTable not support other signal types!!");
+  }
+}
+#endif
 
 Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, const uint32_t uiShift, const Pel orgLuma) 
 {
@@ -2902,8 +2985,28 @@ Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, con
      CHECK(org!=orgLuma, "");
   }
   // use luma to get weight
+#if JVET_M0427_INLOOP_RESHAPER
+  double weight = 1.0;
+  if (m_iSignalType == RESHAPE_SIGNAL_SDR) 
+  {
+    if (compIdx == COMPONENT_Y)
+      weight = m_reshapeLumaLevelToWeightPLUT[orgLuma];
+    else
+    {
+      weight = m_chroma_weight; 
+    }
+  }
+  else
+      weight = m_reshapeLumaLevelToWeightPLUT[orgLuma];
+#else
   double weight = m_lumaLevelToWeightPLUT[orgLuma];
+#endif
+#if JVET_M0427_INLOOP_RESHAPER // FIXED_PT_WD_CALCULATION
+  int64_t fixedPTweight = (int64_t)(weight * (double)(1 << 16));
+  Intermediate_Int mse = Intermediate_Int((fixedPTweight*(iTemp*iTemp) + (1 << 15)) >> 16);
+#else
   Intermediate_Int mse = Intermediate_Int(weight*(double)iTemp*(double)iTemp+0.5);
+#endif
   distortionVal = Distortion( mse >> uiShift);
   return distortionVal;
 }

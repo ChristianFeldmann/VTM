@@ -151,6 +151,12 @@ class EncAdaptiveLoopFilter : public AdaptiveLoopFilter
 public:
   static constexpr int   m_MAX_SCAN_VAL = 11;
   static constexpr int   m_MAX_EXP_GOLOMB = 16;
+#if JVET_M0427_INLOOP_RESHAPER
+  int m_alfWSSD;
+  inline void           setAlfWSSD(int alfWSSD) { m_alfWSSD = alfWSSD; }
+  static double         m_lumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
+  inline  double*       getLumaLevelWeightTable() { return m_lumaLevelToWeightPLUT; }
+#endif
 
 private:
   AlfCovariance***       m_alfCovariance[MAX_NUM_COMPONENT];          // [compIdx][shapeIdx][ctbAddr][classIdx]

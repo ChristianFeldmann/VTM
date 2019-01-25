@@ -53,6 +53,9 @@
 #include "CommonLib/AdaptiveLoopFilter.h"
 #include "CommonLib/SEI.h"
 #include "CommonLib/Unit.h"
+#if JVET_M0427_INLOOP_RESHAPER
+#include "CommonLib/Reshape.h"
+#endif
 
 class InputNALUnit;
 
@@ -94,6 +97,9 @@ private:
   LoopFilter              m_cLoopFilter;
   SampleAdaptiveOffset    m_cSAO;
   AdaptiveLoopFilter      m_cALF;
+#if JVET_M0427_INLOOP_RESHAPER
+  Reshape                 m_cReshaper;                        ///< reshaper class
+#endif
   // decoder side RD cost computation
   RdCost                  m_cRdCost;                      ///< RD cost computation class
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE

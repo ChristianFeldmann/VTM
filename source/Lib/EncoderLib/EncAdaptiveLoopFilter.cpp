@@ -40,6 +40,9 @@
 #include "CommonLib/CodingStructure.h"
 
 #define AlfCtx(c) SubCtx( Ctx::ctbAlfFlag, c )
+#if JVET_M0427_INLOOP_RESHAPER
+double EncAdaptiveLoopFilter::m_lumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
+#endif
 
 EncAdaptiveLoopFilter::EncAdaptiveLoopFilter()
   : m_CABACEstimator( nullptr )
@@ -55,6 +58,10 @@ EncAdaptiveLoopFilter::EncAdaptiveLoopFilter()
   m_filterCoeffQuant = nullptr;
   m_filterCoeffSet = nullptr;
   m_diffFilterCoeff = nullptr;
+
+#if JVET_M0427_INLOOP_RESHAPER
+  m_alfWSSD = 0;
+#endif
 }
 
 void EncAdaptiveLoopFilter::create( const int picWidth, const int picHeight, const ChromaFormat chromaFormatIDC, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE], const int internalBitDepth[MAX_NUM_CHANNEL_TYPE] )
@@ -1472,16 +1479,40 @@ void EncAdaptiveLoopFilter::getBlkStats( AlfCovariance* alfCovariace, const AlfF
         classIdx = cl.classIdx;
       }
 
+#if JVET_M0427_INLOOP_RESHAPER
+      double weight = m_lumaLevelToWeightPLUT[org[j]];
+#endif
       int yLocal = org[j] - rec[j];
       calcCovariance( ELocal, rec + j, recStride, shape.pattern.data(), shape.filterLength >> 1, transposeIdx );
       for( int k = 0; k < shape.numCoeff; k++ )
       {
         for( int l = k; l < shape.numCoeff; l++ )
         {
+#if JVET_M0427_INLOOP_RESHAPER
+          if (m_alfWSSD)
+          {
+            alfCovariace[classIdx].E[k][l] += weight * (double)(ELocal[k] * ELocal[l]);
+          }
+          else
+#endif
           alfCovariace[classIdx].E[k][l] += ELocal[k] * ELocal[l];
         }
+#if JVET_M0427_INLOOP_RESHAPER
+        if (m_alfWSSD)
+        {
+          alfCovariace[classIdx].y[k] += weight * (double)(ELocal[k] * yLocal);
+        }
+        else
+#endif
         alfCovariace[classIdx].y[k] += ELocal[k] * yLocal;
       }
+#if JVET_M0427_INLOOP_RESHAPER
+      if (m_alfWSSD)
+      {
+        alfCovariace[classIdx].pixAcc += weight * (double)(yLocal * yLocal);
+      }
+      else
+#endif
       alfCovariace[classIdx].pixAcc += yLocal * yLocal;
     }
     org += orgStride;

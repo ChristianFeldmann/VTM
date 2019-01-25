@@ -853,6 +853,40 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   // ADD_NEW_TOOL : (sps extension parser) read tool enabling flags and associated parameters here
 }
 
+#if JVET_M0427_INLOOP_RESHAPER
+void HLSyntaxReader::parseReshaper        (sliceReshapeInfo& info, const SPS* pcSPS, const bool isIntra)
+{
+  unsigned  symbol = 0;
+  READ_FLAG(symbol, "slice_reshape_model_present_flag");                           info.setSliceReshapeModelPresentFlag(symbol == 1);
+  if (info.getSliceReshapeModelPresentFlag())
+  {
+    // parse slice reshaper model
+    memset(info.reshape_model_bin_CW_delta, 0, PIC_CODE_CW_BINS * sizeof(int));
+      READ_UVLC(symbol, "reshaper_model_min_bin_idx");                             info.reshape_model_min_bin_idx = symbol;
+      READ_UVLC(symbol, "max_bin_minus_reshape_model_max_bin_idx");                info.reshape_model_max_bin_idx = PIC_CODE_CW_BINS - 1 - symbol;
+      READ_UVLC(symbol, "reshaper_model_bin_delta_abs_cw_prec_minus1");            info.maxNbitsNeededDeltaCW = symbol+1;
+      assert(info.maxNbitsNeededDeltaCW > 0);
+      for (uint32_t i = info.reshape_model_min_bin_idx; i <= info.reshape_model_max_bin_idx; i++)
+      {
+        READ_CODE(info.maxNbitsNeededDeltaCW, symbol, "reshape_model_abs_CW");                  int absCW = symbol;
+        if (absCW > 0)
+          READ_CODE(1, symbol, "reshape_model_sign_CW");                  int signCW = symbol;
+        info.reshape_model_bin_CW_delta[i] = (1 - 2 * signCW) * absCW;
+      }
+  }
+  READ_FLAG(symbol, "slice_reshaper_enable_flag");                           info.setUseSliceReshaper(symbol == 1);
+
+  if (info.getUseSliceReshaper())
+  {
+    if (!(pcSPS->getUseDualITree() && isIntra))
+    {
+      READ_FLAG(symbol, "slice_reshaper_ChromaAdj");                info.setSliceReshapeChromaAdj(symbol);
+    }
+    else
+      info.setSliceReshapeChromaAdj(0);
+  }
+}
+#endif
 void HLSyntaxReader::parseSPS(SPS* pcSPS)
 {
 #if ENABLE_TRACING
@@ -1171,7 +1205,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       }
     }
   }
-
+#if JVET_M0427_INLOOP_RESHAPER
+  READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);
+#endif
   xReadRbspTrailingBits();
 }
 
@@ -1869,6 +1905,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       uiCode = pps->getLoopFilterAcrossSlicesEnabledFlag()?1:0;
     }
     pcSlice->setLFCrossSliceBoundaryFlag( (uiCode==1)?true:false);
+
+#if JVET_M0427_INLOOP_RESHAPER
+    if (sps->getUseReshaper())
+    {
+      parseReshaper(pcSlice->getReshapeInfo(), sps, pcSlice->isIntra());
+    }
+#endif
 #if HEVC_DEPENDENT_SLICES
   }
 #endif

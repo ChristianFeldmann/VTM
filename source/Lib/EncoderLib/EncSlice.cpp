@@ -1612,7 +1612,12 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       resetGbiCodingOrder(false, cs);
       m_pcInterSearch->initWeightIdxBits();
     }
-
+#if JVET_M0427_INLOOP_RESHAPER && REUSE_CU_RESULTS
+    if (pcSlice->getSPS()->getUseReshaper())
+    {
+      m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());
+    }
+#endif
 #if ENABLE_WPP_PARALLELISM
     pEncLib->getCuEncoder( dataId )->compressCtu( cs, ctuArea, ctuRsAddr, prevQP, currQP );
 #else

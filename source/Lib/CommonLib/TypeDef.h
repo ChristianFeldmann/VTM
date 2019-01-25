@@ -186,7 +186,11 @@ typedef std::pair<int, int>  TrCost;
 #endif
 #endif // ! ENABLE_TRACING
 
+#if JVET_M0427_INLOOP_RESHAPER
+#define WCG_EXT                                           1
+#else
 #define WCG_EXT                                           0 // part of JEM sharp Luma qp
+#endif
 #define WCG_WPSNR                                         WCG_EXT
 
 #if HEVC_TOOLS
@@ -1146,6 +1150,15 @@ enum MsgLevel
   VERBOSE = 5,
   DETAILS = 6
 };
+#if JVET_M0427_INLOOP_RESHAPER
+enum RESHAPE_SIGNAL_TYPE
+{
+  RESHAPE_SIGNAL_SDR = 0,
+  RESHAPE_SIGNAL_PQ  = 1,
+  RESHAPE_SIGNAL_HLG = 2,
+  RESHAPE_SIGNAL_NULL = 100,
+};
+#endif
 
 
 // ---------------------------------------------------------------------------

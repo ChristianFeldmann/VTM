@@ -256,7 +256,12 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
-
+#if JVET_M0427_INLOOP_RESHAPER
+  bool      m_bUseReshape;
+  unsigned  m_uiSignalType;
+  unsigned  m_uiIntraCMD;
+  ReshapeCW m_reshapeCW;
+#endif
   bool      m_useFastLCTU;
   bool      m_useFastMrg;
   bool      m_usePbIntraFast;
@@ -790,7 +795,16 @@ public:
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 
-
+#if JVET_M0427_INLOOP_RESHAPER
+  void      setReshaper                     ( bool b )                   { m_bUseReshape = b; }
+  bool      getReshaper                     () const                     { return m_bUseReshape; }
+  void      setReshapeSignalType            ( uint32_t uiSignalType )    { m_uiSignalType = uiSignalType; }
+  uint32_t  getReshapeSignalType            () const                     { return m_uiSignalType; }
+  void      setReshapeIntraCMD              (uint32_t uiIntraCMD)        { m_uiIntraCMD = uiIntraCMD; }
+  uint32_t  getReshapeIntraCMD              ()                           { return m_uiIntraCMD; }
+  void      setReshapeCW                    (const ReshapeCW &reshapeCW) { m_reshapeCW = reshapeCW; }
+  const ReshapeCW& getReshapeCW             ()                           { return m_reshapeCW; }
+#endif
   void      setMaxCUWidth                   ( uint32_t  u )      { m_maxCUWidth  = u; }
   uint32_t      getMaxCUWidth                   () const         { return m_maxCUWidth; }
   void      setMaxCUHeight                  ( uint32_t  u )      { m_maxCUHeight = u; }

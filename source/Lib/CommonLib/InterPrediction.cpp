@@ -426,7 +426,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
   const Slice &slice = *pu.cs->slice;
 
   bool bioApplied = false;
-  if (pu.cs->sps->getSpsNext().getUseBIO())
+  if (pu.cs->sps->getBDOFEnabledFlag())
   {
     if (pu.cu->affine || m_subPuMC)
     {
@@ -686,7 +686,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         roundAffineMv(iMvScaleTmpHor, iMvScaleTmpVer, shift);
 
         // clip and scale
-        if (sps.getUseWrapAround())
+        if (sps.getWrapAroundEnabledFlag())
         {
           m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
           Mv tmpMv(iMvScaleTmpHor, iMvScaleTmpVer);
@@ -710,7 +710,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
           m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1)* MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1)] +
           Mv(2, 2));
         curMv.set(curMv.getHor() >> 2, curMv.getVer() >> 2);     
-        if (sps.getUseWrapAround())
+        if (sps.getWrapAroundEnabledFlag())
         {
           clipMv(curMv, Position(pu.Y().x + (w << iScaleX), pu.Y().y + (h << iScaleY)), Size(blockWidth << iScaleX, blockHeight << iScaleY), sps);
         }

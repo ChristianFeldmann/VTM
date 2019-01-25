@@ -215,7 +215,7 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 void CABACWriter::sao( const Slice& slice, unsigned ctuRsAddr )
 {
   const SPS& sps = *slice.getSPS();
-  if( !sps.getUseSAO() )
+  if( !sps.getSAOEnabledFlag() )
   {
     return;
   }
@@ -803,7 +803,7 @@ void CABACWriter::pcm_data( const CodingUnit& cu, Partitioner& partitioner  )
 void CABACWriter::pcm_flag( const CodingUnit& cu, Partitioner& partitioner )
 {
   const SPS& sps = *cu.cs->sps;
-  if( !sps.getUsePCM() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
+  if( !sps.getPCMEnabledFlag() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
       || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
   {
     return;
@@ -1377,7 +1377,7 @@ void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
     return;
   }
 
-  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSpsNext().getUseATMVP()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
   {
     unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
     m_BinEncoder.encodeBin( cu.affine, Ctx::AffineFlag( ctxId ) );
@@ -1459,7 +1459,7 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
       }
       else
       {
-        bool useExtCtx = pu.cs->sps->getSpsNext().getUseSubPuMvp();
+        bool useExtCtx = pu.cs->sps->getSBTMVPEnabledFlag();
         m_BinEncoder.encodeBin( 1, Ctx::AffMergeIdx() );
         for ( unsigned idx = 1; idx < numCandminus1; idx++ )
         {
@@ -2749,7 +2749,7 @@ void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr,
 {
   AlfSliceParam& alfSliceParam = alfParam ? (*alfParam) : cs.slice->getAlfSliceParam();
 
-  if( cs.sps->getUseALF() && alfSliceParam.enabledFlag[compIdx] )
+  if( cs.sps->getALFEnabledFlag() && alfSliceParam.enabledFlag[compIdx] )
   {
     const PreCalcValues& pcv = *cs.pcv;
     int                 frame_width_in_ctus = pcv.widthInCtus;

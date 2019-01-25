@@ -168,12 +168,12 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
                 pcEncPic->cs->slice = pcEncPic->slices.back();
 
-                if ( pic->cs->sps->getUseSAO() )
+                if ( pic->cs->sps->getSAOEnabledFlag() )
                 {
                   pcEncPic->copySAO( *pic, 0 );
                 }
 
-                if( pic->cs->sps->getUseALF() )
+                if( pic->cs->sps->getALFEnabledFlag() )
                 {
                   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
                   {
@@ -187,7 +187,7 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                 }
 
                 pcDecLib->executeLoopFilters();
-                if ( pic->cs->sps->getUseSAO() )
+                if ( pic->cs->sps->getSAOEnabledFlag() )
                 {
                   pcEncPic->copySAO( *pic, 1 );
                 }
@@ -511,12 +511,12 @@ void DecLib::executeLoopFilters()
   // deblocking filter
   m_cLoopFilter.loopFilterPic( cs );
 
-  if( cs.sps->getUseSAO() )
+  if( cs.sps->getSAOEnabledFlag() )
   {
     m_cSAO.SAOProcess( cs, cs.picture->getSAO() );
   }
 
-  if( cs.sps->getUseALF() )
+  if( cs.sps->getALFEnabledFlag() )
   {
     m_cALF.ALFProcess( cs, cs.slice->getAlfSliceParam() );
   }
@@ -772,7 +772,7 @@ void DecLib::xActivateParameterSets()
 
     m_cSliceDecoder.create();
 
-    if( sps->getUseALF() )
+    if( sps->getALFEnabledFlag() )
     {
       m_cALF.create( sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), sps->getBitDepths().recon );
     }

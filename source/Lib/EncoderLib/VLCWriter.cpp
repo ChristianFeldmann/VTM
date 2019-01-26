@@ -603,17 +603,17 @@ void HLSWriter::codeReshaper(const sliceReshapeInfo& pSliceReshaperInfo, const S
     WRITE_UVLC(pSliceReshaperInfo.reshape_model_min_bin_idx, "reshaper_model_min_bin_idx");
     WRITE_UVLC(PIC_CODE_CW_BINS - 1 - pSliceReshaperInfo.reshape_model_max_bin_idx, "reshaper_model_max_bin_idx");
     assert(pSliceReshaperInfo.maxNbitsNeededDeltaCW > 0);
-    WRITE_UVLC(pSliceReshaperInfo.maxNbitsNeededDeltaCW-1, "reshaper_model_bin_delta_abs_cw_prec_minus1");
+    WRITE_UVLC(pSliceReshaperInfo.maxNbitsNeededDeltaCW - 1, "reshaper_model_bin_delta_abs_cw_prec_minus1");
 
-     for (int i = pSliceReshaperInfo.reshape_model_min_bin_idx; i <= pSliceReshaperInfo.reshape_model_max_bin_idx; i++)
-     {
-       int CW_delta = pSliceReshaperInfo.reshape_model_bin_CW_delta[i];
-       int signCW = (CW_delta < 0) ? 1 : 0;
-       int absCW = (CW_delta < 0) ? (-CW_delta) : CW_delta;
-       WRITE_CODE(absCW, pSliceReshaperInfo.maxNbitsNeededDeltaCW, "reshape_model_abs_CW");
-       if (absCW > 0)
-         WRITE_FLAG(signCW, "reshape_model_sign_CW");
-     }
+    for (int i = pSliceReshaperInfo.reshape_model_min_bin_idx; i <= pSliceReshaperInfo.reshape_model_max_bin_idx; i++)
+    {
+      int deltaCW = pSliceReshaperInfo.reshape_model_bin_CW_delta[i];
+      int signCW = (deltaCW < 0) ? 1 : 0;
+      int absCW = (deltaCW < 0) ? (-deltaCW) : deltaCW;
+      WRITE_CODE(absCW, pSliceReshaperInfo.maxNbitsNeededDeltaCW, "reshape_model_abs_CW");
+      if (absCW > 0)
+        WRITE_FLAG(signCW, "reshape_model_sign_CW");
+    }
   }
 
   WRITE_FLAG(pSliceReshaperInfo.getUseSliceReshaper() ? 1 : 0, "slice_reshaper_enable_flag");

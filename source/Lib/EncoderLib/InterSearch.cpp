@@ -5635,7 +5635,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           {
             PelBuf resiBuf = csFull->getResiBuf(compArea);
             int cScale = tu.getChromaAdj();
-            resiBuf.scaleSignal(cScale, 1);
+            resiBuf.scaleSignal(cScale, 1, tu.cu->cs->slice->clpRng(compID));
           }
 #endif
 #if JVET_M0464_UNI_MTS
@@ -5723,7 +5723,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             if (slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() && tu.blocks[compID].width*tu.blocks[compID].height > 4 )
             {
               int cScale = tu.getChromaAdj();
-              resiBuf.scaleSignal(cScale, 0);
+              resiBuf.scaleSignal(cScale, 0, tu.cu->cs->slice->clpRng(compID));
             }
 #endif
 

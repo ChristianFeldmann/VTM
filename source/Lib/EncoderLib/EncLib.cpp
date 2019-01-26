@@ -139,7 +139,7 @@ void EncLib::create ()
 #if JVET_M0427_INLOOP_RESHAPER
   if (m_bUseReshape)
   {
-    m_cReshaper.create_enc( getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight );
+    m_cReshaper.createEnc( getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_bitDepth[COMPONENT_Y]);
   }
 #endif
   if ( m_RCEnableRateControl )

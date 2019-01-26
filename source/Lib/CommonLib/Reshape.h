@@ -60,22 +60,24 @@ protected:
   bool                    m_bRecReshaped;
   std::vector<Pel>        inverseReshapingLUT;
   std::vector<Pel>        forwardReshapingLUT;
-  std::vector<int>        ChromaAdjHelpLUT;
-  std::vector<uint16_t>   m_uiBinCWAll;
-  uint16_t                m_uiCWOrg;
+  std::vector<int>        m_chromaAdjHelpLUT;
+  std::vector<uint16_t>   m_binCW;
+  uint16_t                m_initCW;
   bool                    m_bReshape;
-  std::vector<Pel>        m_ReshapePivot;
+  std::vector<Pel>        m_reshapePivot;
+  int                     m_lumaBD;
+  int                     m_reshapeLUTSize;
 public:
   Reshape();
   ~Reshape();
 
-  void create_dec();
+  void createDec(int bitDepth);
   void destroy();
 
-  void ReverseLUT(std::vector<Pel>& InputLUT, std::vector<Pel>& OutputLUT, uint16_t lut_size);
+  void reverseLUT(std::vector<Pel>& inputLUT, std::vector<Pel>& outputLUT, uint16_t lutSize);
   std::vector<Pel>&  getFwdLUT() { return forwardReshapingLUT; }
   std::vector<Pel>&  getInvLUT() { return inverseReshapingLUT; }
-  std::vector<int>&  getChromaAdjHelpLUT() { return ChromaAdjHelpLUT; }
+  std::vector<int>&  getChromaAdjHelpLUT() { return m_chromaAdjHelpLUT; }
 
   bool getCTUFlag()              { return m_bCTUFlag; }
   void setCTUFlag(bool bCTUFlag) { m_bCTUFlag = bCTUFlag; }

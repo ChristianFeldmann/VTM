@@ -41,7 +41,7 @@
 
 #define AlfCtx(c) SubCtx( Ctx::ctbAlfFlag, c )
 #if JVET_M0427_INLOOP_RESHAPER
-double EncAdaptiveLoopFilter::m_lumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
+std::vector<double> EncAdaptiveLoopFilter::m_lumaLevelToWeightPLUT;
 #endif
 
 EncAdaptiveLoopFilter::EncAdaptiveLoopFilter()
@@ -1480,7 +1480,11 @@ void EncAdaptiveLoopFilter::getBlkStats( AlfCovariance* alfCovariace, const AlfF
       }
 
 #if JVET_M0427_INLOOP_RESHAPER
-      double weight = m_lumaLevelToWeightPLUT[org[j]];
+      double weight = 1.0;
+      if (m_alfWSSD)
+      {
+        weight = m_lumaLevelToWeightPLUT[org[j]];
+      }
 #endif
       int yLocal = org[j] - rec[j];
       calcCovariance( ELocal, rec + j, recStride, shape.pattern.data(), shape.filterLength >> 1, transposeIdx );

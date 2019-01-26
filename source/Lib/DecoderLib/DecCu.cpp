@@ -243,7 +243,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   bFlag = bFlag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
   if (bFlag && TU::getCbf(tu, compID) && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj())
   {  
-    piResi.scaleSignal(tu.getChromaAdj(), 0);
+    piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
   }
 #endif
   if( isChroma(compID) && tu.compAlpha[compID] != 0 )
@@ -570,7 +570,7 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
   const Slice           &slice = *cs.slice;
   if ( slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && isChroma(compID) && TU::getCbf(currTU, compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() && currTU.blocks[compID].width*currTU.blocks[compID].height > 4 )
   {
-    resiBuf.scaleSignal(currTU.getChromaAdj(), 0);
+    resiBuf.scaleSignal(currTU.getChromaAdj(), 0, currTU.cu->cs->slice->clpRng(compID));
   }
 #endif
   if( isChroma( compID ) && currTU.compAlpha[compID] != 0 )

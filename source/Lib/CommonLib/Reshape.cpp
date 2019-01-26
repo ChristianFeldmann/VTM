@@ -51,25 +51,27 @@ Reshape::Reshape()
   m_bCTUFlag = false;
   m_bRecReshaped = false;
   m_bReshape = true;
-  m_uiCWOrg = MAX_LUMA_RESHAPING_LUT_SIZE / PIC_CODE_CW_BINS;
 }
 
 Reshape::~Reshape()
 {
 }
 
-void  Reshape::create_dec()
+void  Reshape::createDec(int bitDepth)
 {
+  m_lumaBD = bitDepth;
+  m_reshapeLUTSize = 1 << m_lumaBD;
+  m_initCW = m_reshapeLUTSize / PIC_CODE_CW_BINS;
   if (forwardReshapingLUT.empty())
-    forwardReshapingLUT.resize(MAX_LUMA_RESHAPING_LUT_SIZE, 0);
+    forwardReshapingLUT.resize(m_reshapeLUTSize, 0);
   if (inverseReshapingLUT.empty())
-    inverseReshapingLUT.resize(MAX_LUMA_RESHAPING_LUT_SIZE, 0);
-  if (m_uiBinCWAll.empty())
-    m_uiBinCWAll.resize(PIC_CODE_CW_BINS, 0);
-  if (m_ReshapePivot.empty())
-    m_ReshapePivot.resize(PIC_CODE_CW_BINS + 1, 0);
-  if (ChromaAdjHelpLUT.empty())
-    ChromaAdjHelpLUT.resize(PIC_CODE_CW_BINS, 2048);
+    inverseReshapingLUT.resize(m_reshapeLUTSize, 0);
+  if (m_binCW.empty())
+    m_binCW.resize(PIC_CODE_CW_BINS, 0);
+  if (m_reshapePivot.empty())
+    m_reshapePivot.resize(PIC_CODE_CW_BINS + 1, 0);
+  if (m_chromaAdjHelpLUT.empty())
+    m_chromaAdjHelpLUT.resize(PIC_CODE_CW_BINS, 1<<CSCALE_FP_PREC);
 }
 
 void  Reshape::destroy()
@@ -82,38 +84,38 @@ void  Reshape::destroy()
 \retval  OutputLUT describing the inversed LUT of InputLUT
 \param   lut_size  size of LUT in number of samples
 */
-void Reshape::ReverseLUT(std::vector<Pel>& InputLUT, std::vector<Pel>& OutputLUT, uint16_t lut_size)
+void Reshape::reverseLUT(std::vector<Pel>& inputLUT, std::vector<Pel>& outputLUT, uint16_t lutSize)
 {
   int i, j;
-  OutputLUT[m_ReshapePivot[m_sliceReshapeInfo.reshape_model_min_bin_idx]] = m_sliceReshapeInfo.reshape_model_min_bin_idx*m_uiCWOrg;
+  outputLUT[m_reshapePivot[m_sliceReshapeInfo.reshape_model_min_bin_idx]] = m_sliceReshapeInfo.reshape_model_min_bin_idx*m_initCW;
   for (i = m_sliceReshapeInfo.reshape_model_min_bin_idx; i <= m_sliceReshapeInfo.reshape_model_max_bin_idx; i++)
   {
-    int16_t X1 = m_ReshapePivot[i];
-    int16_t X2 = m_ReshapePivot[i + 1];
-    OutputLUT[X2] = (i + 1)*m_uiCWOrg;
-    int16_t Y1 = OutputLUT[X1];
-    int16_t Y2 = OutputLUT[X2];
+    int16_t X1 = m_reshapePivot[i];
+    int16_t X2 = m_reshapePivot[i + 1];
+    outputLUT[X2] = (i + 1)*m_initCW;
+    int16_t Y1 = outputLUT[X1];
+    int16_t Y2 = outputLUT[X2];
 
     if (X2 !=X1)
     {
       int32_t scale = (int32_t)(Y2 - Y1) * (1 << FP_PREC) / (int32_t)(X2 - X1);
       for (j = X1 + 1; j < X2; j++)
       {
-        OutputLUT[j] = (Pel)((scale*(int32_t)(j - X1) + (1 << (FP_PREC - 1))) >> FP_PREC) + Y1;
+        outputLUT[j] = (Pel)((scale*(int32_t)(j - X1) + (1 << (FP_PREC - 1))) >> FP_PREC) + Y1;
       }
     }
   }
 
-  for (i = 0; i < m_ReshapePivot[m_sliceReshapeInfo.reshape_model_min_bin_idx]; i++)
-    OutputLUT[i] = OutputLUT[m_ReshapePivot[m_sliceReshapeInfo.reshape_model_min_bin_idx]];
-  for (i = m_ReshapePivot[m_sliceReshapeInfo.reshape_model_max_bin_idx + 1]; i < MAX_LUMA_RESHAPING_LUT_SIZE; i++)
-    OutputLUT[i] = OutputLUT[m_ReshapePivot[m_sliceReshapeInfo.reshape_model_max_bin_idx + 1]];
+  for (i = 0; i < m_reshapePivot[m_sliceReshapeInfo.reshape_model_min_bin_idx]; i++)
+    outputLUT[i] = outputLUT[m_reshapePivot[m_sliceReshapeInfo.reshape_model_min_bin_idx]];
+  for (i = m_reshapePivot[m_sliceReshapeInfo.reshape_model_max_bin_idx + 1]; i < m_reshapeLUTSize; i++)
+    outputLUT[i] = outputLUT[m_reshapePivot[m_sliceReshapeInfo.reshape_model_max_bin_idx + 1]];
 
   bool clipRange = ((m_sliceReshapeInfo.reshape_model_min_bin_idx > 0) && (m_sliceReshapeInfo.reshape_model_max_bin_idx < (PIC_CODE_CW_BINS - 1)));
-  for (i = 0; i < lut_size; i++)
+  for (i = 0; i < lutSize; i++)
   {
-    if (clipRange) OutputLUT[i] = Clip3((Pel)64, (Pel)940, OutputLUT[i]);
-    else           OutputLUT[i] = Clip3((Pel)0, (Pel)1023, OutputLUT[i]);
+    if (clipRange) outputLUT[i] = Clip3((Pel)(16<<(m_lumaBD-8)), (Pel)(235<<(m_lumaBD-8)), outputLUT[i]);
+    else           outputLUT[i] = Clip3((Pel)0, (Pel)((1<<m_lumaBD)-1), outputLUT[i]);
   }
 }
 
@@ -124,8 +126,8 @@ void Reshape::ReverseLUT(std::vector<Pel>& InputLUT, std::vector<Pel>& OutputLUT
 */
 int  Reshape::calculateChromaAdj(Pel avgLuma)
 {
-  int lumaIdx = Clip3<int>(0, int(LUMA_LEVEL_TO_DQP_LUT_MAXSIZE) - 1, avgLuma);
-  int iAdj = ChromaAdjHelpLUT[getPWLIdxInv(lumaIdx)];
+  int lumaIdx = Clip3<int>(0, (1<<m_lumaBD) - 1, avgLuma);
+  int iAdj = m_chromaAdjHelpLUT[getPWLIdxInv(lumaIdx)];
   return(iAdj);
 }
 
@@ -137,15 +139,15 @@ int  Reshape::calculateChromaAdj(Pel avgLuma)
 int Reshape::getPWLIdxInv(int lumaVal)
 {
   int idxS = 0;
-  if (lumaVal < m_ReshapePivot[m_sliceReshapeInfo.reshape_model_min_bin_idx + 1])
+  if (lumaVal < m_reshapePivot[m_sliceReshapeInfo.reshape_model_min_bin_idx + 1])
     return m_sliceReshapeInfo.reshape_model_min_bin_idx;
-  else if (lumaVal >= m_ReshapePivot[m_sliceReshapeInfo.reshape_model_max_bin_idx])
+  else if (lumaVal >= m_reshapePivot[m_sliceReshapeInfo.reshape_model_max_bin_idx])
     return m_sliceReshapeInfo.reshape_model_max_bin_idx;
   else
   {
     for (idxS = m_sliceReshapeInfo.reshape_model_min_bin_idx; (idxS < m_sliceReshapeInfo.reshape_model_max_bin_idx); idxS++)
     {
-      if (lumaVal < m_ReshapePivot[idxS + 1])     break;
+      if (lumaVal < m_reshapePivot[idxS + 1])     break;
     }
     return idxS;
   }
@@ -180,33 +182,33 @@ void Reshape::copySliceReshaperInfo(sliceReshapeInfo& tInfo, sliceReshapeInfo& s
 void Reshape::constructReshaper()
 {
   int pwlFwdLUTsize = PIC_CODE_CW_BINS;
-  int pwlFwdBinLen = MAX_LUMA_RESHAPING_LUT_SIZE / PIC_CODE_CW_BINS;
+  int pwlFwdBinLen = m_reshapeLUTSize / PIC_CODE_CW_BINS;
 
   for (int i = 0; i < m_sliceReshapeInfo.reshape_model_min_bin_idx; i++)
-    m_uiBinCWAll[i] = 0;
+    m_binCW[i] = 0;
   for (int i = m_sliceReshapeInfo.reshape_model_max_bin_idx + 1; i < PIC_CODE_CW_BINS; i++)
-    m_uiBinCWAll[i] = 0;
+    m_binCW[i] = 0;
   for (int i = m_sliceReshapeInfo.reshape_model_min_bin_idx; i <= m_sliceReshapeInfo.reshape_model_max_bin_idx; i++)
-    m_uiBinCWAll[i] = (uint16_t)(m_sliceReshapeInfo.reshape_model_bin_CW_delta[i] + (int)m_uiCWOrg);
+    m_binCW[i] = (uint16_t)(m_sliceReshapeInfo.reshape_model_bin_CW_delta[i] + (int)m_initCW);
 
   for (int i = 0; i < pwlFwdLUTsize; i++)
   {
-    m_ReshapePivot[i + 1] = m_ReshapePivot[i] + m_uiBinCWAll[i];
-    int16_t Y1 = m_ReshapePivot[i];
-    int16_t Y2 = m_ReshapePivot[i + 1];
+    m_reshapePivot[i + 1] = m_reshapePivot[i] + m_binCW[i];
+    int16_t Y1 = m_reshapePivot[i];
+    int16_t Y2 = m_reshapePivot[i + 1];
 
-    forwardReshapingLUT[i*pwlFwdBinLen] = Clip3((Pel)0, (Pel)1023, (Pel)Y1);
+    forwardReshapingLUT[i*pwlFwdBinLen] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)Y1);
 
-    int log2_pwlFwdBinLen = log2_MAX_LUMA_RESHAPING_LUT_SIZE - log2_PIC_CODE_CW_BINS;
+    int log2_pwlFwdBinLen = g_aucLog2[pwlFwdBinLen];
 
     int32_t scale = ((int32_t)(Y2 - Y1) * (1 << FP_PREC) + (1 << (log2_pwlFwdBinLen - 1))) >> (log2_pwlFwdBinLen);
     for (int j = 1; j < pwlFwdBinLen; j++)
     {
       int tempVal = Y1 + (((int32_t)scale * (int32_t)j + (1 << (FP_PREC - 1))) >> FP_PREC);
-      forwardReshapingLUT[i*pwlFwdBinLen + j] = Clip3((Pel)0, (Pel)1023, (Pel)tempVal);
+      forwardReshapingLUT[i*pwlFwdBinLen + j] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)tempVal);
     }
   }
-  ReverseLUT(forwardReshapingLUT, inverseReshapingLUT, MAX_LUMA_RESHAPING_LUT_SIZE);
+  reverseLUT(forwardReshapingLUT, inverseReshapingLUT, m_reshapeLUTSize);
   updateChromaDQPLUT();
 }
 
@@ -219,10 +221,11 @@ void Reshape::updateChromaDQPLUT()
   const int16_t  CW_bin_SC_LUT[2 * PIC_ANALYZE_CW_BINS] = { 16384, 16384, 16384, 16384, 16384, 16384, 16384, 8192, 8192, 8192, 8192, 5461, 5461, 5461, 5461, 4096, 4096, 4096, 4096, 3277, 3277, 3277, 3277, 2731, 2731, 2731, 2731, 2341, 2341, 2341, 2048, 2048, 2048, 1820, 1820, 1820, 1638, 1638, 1638, 1638, 1489, 1489, 1489, 1489, 1365, 1365, 1365, 1365, 1260, 1260, 1260, 1260, 1170, 1170, 1170, 1170, 1092, 1092, 1092, 1092, 1024, 1024, 1024, 1024 }; //p=11
   for (int i = 0; i < PIC_CODE_CW_BINS; i++)
   {
+    uint16_t binCW = m_lumaBD > 10 ? (m_binCW[i] >> (m_lumaBD - 10)) : m_lumaBD < 10 ? (m_binCW[i] << (10 -m_lumaBD)): m_binCW[i];
     if ((i < m_sliceReshapeInfo.reshape_model_min_bin_idx) || (i > m_sliceReshapeInfo.reshape_model_max_bin_idx))
-      ChromaAdjHelpLUT[i] = 1 << CSCALE_FP_PREC;
+      m_chromaAdjHelpLUT[i] = 1 << CSCALE_FP_PREC;
     else
-      ChromaAdjHelpLUT[i] = CW_bin_SC_LUT[Clip3((uint16_t)1, (uint16_t)64, (uint16_t)(m_uiBinCWAll[i] >> 1)) - 1];
+      m_chromaAdjHelpLUT[i] = CW_bin_SC_LUT[Clip3((uint16_t)1, (uint16_t)64, (uint16_t)(binCW >> 1)) - 1];
   }
 }
 #endif

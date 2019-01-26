@@ -1378,7 +1378,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     double tmpWeight = dCScale*dCScale;
     m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / tmpWeight);
 
-    piResi.scaleSignal(tu.getChromaAdj(), 1);
+    piResi.scaleSignal(tu.getChromaAdj(), 1, tu.cu->cs->slice->clpRng(compID));
   }
 #endif 
 
@@ -1411,7 +1411,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #if JVET_M0427_INLOOP_RESHAPER
   if (bFlag && uiAbsSum > 0 && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() )
   {
-    piResi.scaleSignal(tu.getChromaAdj(), 0);
+    piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
   }
 #endif
   if (bUseCrossCPrediction)

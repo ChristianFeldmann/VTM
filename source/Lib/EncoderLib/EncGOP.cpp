@@ -180,18 +180,22 @@ void EncGOP::init ( EncLib* pcEncLib )
 #if WCG_EXT
 #if JVET_M0427_INLOOP_RESHAPER
   if (m_pcCfg->getReshaper())
-    pcEncLib->getRdCost()->setReshapeSignalType(m_pcCfg->getReshapeSignalType());
+  {
+    pcEncLib->getRdCost()->setReshapeInfo(m_pcCfg->getReshapeSignalType(), m_pcCfg->getBitDepth(CHANNEL_TYPE_LUMA));
+    pcEncLib->getRdCost()->initLumaLevelToWeightTableReshape();
+  }
+  else if (m_pcCfg->getLumaLevelToDeltaQPMapping().mode)
+  {
 #endif
-  pcEncLib->getRdCost()->initLumaLevelToWeightTable();
+    pcEncLib->getRdCost()->initLumaLevelToWeightTable();
 #if JVET_M0427_INLOOP_RESHAPER
-  memcpy(pcEncLib->getALF()->getLumaLevelWeightTable(), pcEncLib->getRdCost()->getLumaLevelWeightTable(), LUMA_LEVEL_TO_DQP_LUT_MAXSIZE * sizeof(double));
+  }
+  pcEncLib->getALF()->getLumaLevelWeightTable() = pcEncLib->getRdCost()->getLumaLevelWeightTable();
   int alfWSSD = 0;
-
   if (m_pcCfg->getReshaper() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ )
   {
     alfWSSD = 1;
   }
-
   pcEncLib->getALF()->setAlfWSSD(alfWSSD);
 #endif
 #endif

@@ -756,7 +756,7 @@ void DecLib::xActivateParameterSets()
 #if JVET_M0427_INLOOP_RESHAPER
     if (sps->getUseReshaper())
     {
-      m_cReshaper.create_dec();
+      m_cReshaper.createDec(sps->getBitDepth(CHANNEL_TYPE_LUMA));
     }
 #endif
 

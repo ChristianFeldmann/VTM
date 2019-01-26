@@ -368,11 +368,12 @@ void AreaBuf<Pel>::rspSignal(std::vector<Pel>& pLUT)
 }
 
 template<>
-void AreaBuf<Pel>::scaleSignal(const int scale, const bool dir)
+void AreaBuf<Pel>::scaleSignal(const int scale, const bool dir, const ClpRng& clpRng)
 {
   Pel* dst = buf;
   Pel* src = buf;
   int sign, absval;
+  int maxAbsclipBD = (1<<clpRng.bd) - 1;
 
   if (dir) // forward
   {
@@ -388,8 +389,7 @@ void AreaBuf<Pel>::scaleSignal(const int scale, const bool dir)
         {
           sign = src[x] >= 0 ? 1 : -1;
           absval = sign * src[x];
-          dst[x] = sign * (((absval << CSCALE_FP_PREC) + (scale >> 1)) / scale);
-          dst[x] = dst[x] > 1023 ? 1023 : dst[x] < -1023 ? -1023 : dst[x];
+          dst[x] = (Pel)Clip3(-maxAbsclipBD, maxAbsclipBD, sign * (((absval << CSCALE_FP_PREC) + (scale >> 1)) / scale));
         }
         dst += stride;
         src += stride;

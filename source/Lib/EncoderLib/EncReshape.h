@@ -89,18 +89,18 @@ private:
   int                     m_tcase;
   int                     m_rateAdpMode;
   bool                    m_bUseAdpCW;
-  uint16_t                m_uiCWOrgAnalyze;
-  ModelInfo               m_DftModel;
+  uint16_t                m_initCWAnalyze;
+  ModelInfo               m_dQPModel;
   ReshapeCW               m_reshapeCW;
   Pel                     m_cwLumaWeight[PIC_CODE_CW_BINS];
-  double                  m_chromaWeight;  
+  double                  m_chromaWeight;
   int                     m_chromaAdj;
 public:
 
   EncReshape();
   ~EncReshape();
 
-  void create_enc( int picWidth, int picHeight, uint32_t maxCUWidth, uint32_t maxCUHeight);
+  void createEnc( int picWidth, int picHeight, uint32_t maxCUWidth, uint32_t maxCUHeight, int bitDepth);
   void destroy();
 
   bool getSrcReshaped() { return m_bSrcReshaped; }
@@ -123,24 +123,24 @@ public:
   void initModelParam(double dScale = 0.015, double dOffset = -7.5, int QPMax = 6, int QPMin = -3)
   {
     /// dQP model:  dQP = clip3(QPMin, QPMax, dScale*Y+dOffset);
-    m_DftModel.FullRangeInputFlag = 0; 
-    m_DftModel.ScaleIntPrec = 0;
-    m_DftModel.ScaleFracPrec = 16;
-    m_DftModel.OffsetIntPrec = 3;
-    m_DftModel.OffsetFracPrec = 1;
-    m_DftModel.MinMaxQPAbsPrec = 3;
-    m_DftModel.ScaleSign = dScale < 0 ? 1 : 0;
-    m_DftModel.ScaleAbs = unsigned((dScale < 0 ? -dScale : dScale) * (1 << m_DftModel.ScaleFracPrec));
-    m_DftModel.ScaleInt = m_DftModel.ScaleAbs >> m_DftModel.ScaleFracPrec;
-    m_DftModel.ScaleFrac = m_DftModel.ScaleAbs - (m_DftModel.ScaleInt << m_DftModel.ScaleFracPrec);
-    m_DftModel.OffsetSign = dOffset < 0 ? 1 : 0;
-    m_DftModel.OffsetAbs = unsigned((dOffset < 0 ? -dOffset : dOffset) * (1 << m_DftModel.OffsetFracPrec));
-    m_DftModel.OffsetInt = m_DftModel.OffsetAbs >> m_DftModel.OffsetFracPrec;
-    m_DftModel.OffsetFrac = m_DftModel.OffsetAbs - (m_DftModel.OffsetInt << m_DftModel.OffsetFracPrec);
-    m_DftModel.MaxQPSign = QPMax < 0 ? 1 : 0;
-    m_DftModel.MaxQPAbs = m_DftModel.MaxQPSign ? -QPMax : QPMax;
-    m_DftModel.MinQPSign = QPMin < 0 ? 1 : 0;
-    m_DftModel.MinQPAbs = m_DftModel.MinQPSign ? -QPMin : QPMin;
+    m_dQPModel.FullRangeInputFlag = 0;
+    m_dQPModel.ScaleIntPrec = 0;
+    m_dQPModel.ScaleFracPrec = 16;
+    m_dQPModel.OffsetIntPrec = 3;
+    m_dQPModel.OffsetFracPrec = 1;
+    m_dQPModel.MinMaxQPAbsPrec = 3;
+    m_dQPModel.ScaleSign = dScale < 0 ? 1 : 0;
+    m_dQPModel.ScaleAbs = unsigned((dScale < 0 ? -dScale : dScale) * (1 << m_dQPModel.ScaleFracPrec));
+    m_dQPModel.ScaleInt = m_dQPModel.ScaleAbs >> m_dQPModel.ScaleFracPrec;
+    m_dQPModel.ScaleFrac = m_dQPModel.ScaleAbs - (m_dQPModel.ScaleInt << m_dQPModel.ScaleFracPrec);
+    m_dQPModel.OffsetSign = dOffset < 0 ? 1 : 0;
+    m_dQPModel.OffsetAbs = unsigned((dOffset < 0 ? -dOffset : dOffset) * (1 << m_dQPModel.OffsetFracPrec));
+    m_dQPModel.OffsetInt = m_dQPModel.OffsetAbs >> m_dQPModel.OffsetFracPrec;
+    m_dQPModel.OffsetFrac = m_dQPModel.OffsetAbs - (m_dQPModel.OffsetInt << m_dQPModel.OffsetFracPrec);
+    m_dQPModel.MaxQPSign = QPMax < 0 ? 1 : 0;
+    m_dQPModel.MaxQPAbs = m_dQPModel.MaxQPSign ? -QPMax : QPMax;
+    m_dQPModel.MinQPSign = QPMin < 0 ? 1 : 0;
+    m_dQPModel.MinQPAbs = m_dQPModel.MinQPSign ? -QPMin : QPMin;
   }
 };// END CLASS DEFINITION EncReshape
 

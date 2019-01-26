@@ -405,17 +405,10 @@ static const int IBC_FAST_METHOD_NOINTRA_IBCCBF0 = 0x01;
 static const int IBC_FAST_METHOD_BUFFERBV = 0X02;
 static const int IBC_FAST_METHOD_ADAPTIVE_SEARCHRANGE = 0X04;
 #if JVET_M0427_INLOOP_RESHAPER
-static const int MAX_LUMA_RESHAPING_LUT_SIZE =                 1024;
-static const int CSCALE_FP_PREC =                                11;
 static const int PIC_ANALYZE_CW_BINS =                           32;
-static const int FP_PREC =                                       14;
-static const int log2_MAX_LUMA_RESHAPING_LUT_SIZE =              10;
-static const int log2_PIC_ANALYZE_CW_BINS =                       5;
-static const int PIC_ANALYZE_WIN_SIZE =                           5;
-static const int CW_NUMS =                                        3;
-static const int MAX_FRAME_RATE =                               128;
 static const int PIC_CODE_CW_BINS =                              16;
-static const int log2_PIC_CODE_CW_BINS =                          4;
+static const int FP_PREC =                                       14;
+static const int CSCALE_FP_PREC =                                11;
 #endif
 #if JVET_M0512_MOTION_BUFFER_COMPRESSION
 static constexpr int MV_EXPONENT_BITCOUNT    = 4;

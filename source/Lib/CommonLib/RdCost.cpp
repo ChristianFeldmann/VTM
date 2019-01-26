@@ -177,8 +177,9 @@ void RdCost::init()
   m_motionLambda               = 0;
   m_iCostScale                 = 0;
 #if JVET_M0427_INLOOP_RESHAPER
-  m_iSignalType                = RESHAPE_SIGNAL_NULL;
-  m_chroma_weight              = 1.0;
+  m_signalType                 = RESHAPE_SIGNAL_NULL;
+  m_chromaWeight               = 1.0;
+  m_lumaBD                     = 10;
 #endif
 }
 
@@ -2862,11 +2863,14 @@ Distortion RdCost::xGetHADs( const DistParam &rcDtParam )
 
 
 #if WCG_EXT
-double RdCost::m_lumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
 #if JVET_M0427_INLOOP_RESHAPER
-double     RdCost::m_reshapeLumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
-uint32_t   RdCost::m_iSignalType;
-double     RdCost::m_chroma_weight;
+uint32_t   RdCost::m_signalType;
+double     RdCost::m_chromaWeight;
+int        RdCost::m_lumaBD;
+std::vector<double> RdCost::m_reshapeLumaLevelToWeightPLUT;
+std::vector<double> RdCost::m_lumaLevelToWeightPLUT;
+#else
+double RdCost::m_lumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
 #endif
 
 void RdCost::saveUnadjustedLambda()
@@ -2877,18 +2881,6 @@ void RdCost::saveUnadjustedLambda()
 
 void RdCost::initLumaLevelToWeightTable()
 {
-#if JVET_M0427_INLOOP_RESHAPER
-  if (m_iSignalType == RESHAPE_SIGNAL_SDR)
-  {
-    double weight = 1.0;
-    for (int i = 0; i < LUMA_LEVEL_TO_DQP_LUT_MAXSIZE; i++)
-    {
-      m_lumaLevelToWeightPLUT[i] = weight;
-    }
-    return;
-  }
-#endif
-
   for (int i = 0; i < LUMA_LEVEL_TO_DQP_LUT_MAXSIZE; i++) {
     double x = i;
     double y;
@@ -2910,15 +2902,33 @@ void RdCost::initLumaLevelToWeightTable()
     
     m_lumaLevelToWeightPLUT[i] = pow(2.0, y / 3.0);      // or power(10, dQp/10)      they are almost equal       
   }
-#if JVET_M0427_INLOOP_RESHAPER
-  memcpy(m_reshapeLumaLevelToWeightPLUT, m_lumaLevelToWeightPLUT, LUMA_LEVEL_TO_DQP_LUT_MAXSIZE * sizeof(double));
-#endif
 }
 
 #if JVET_M0427_INLOOP_RESHAPER
+void RdCost::initLumaLevelToWeightTableReshape()
+{
+  int lutSize = 1 << m_lumaBD;
+  if (m_reshapeLumaLevelToWeightPLUT.empty())
+    m_reshapeLumaLevelToWeightPLUT.resize(lutSize, 1.0);
+  if (m_lumaLevelToWeightPLUT.empty())
+    m_lumaLevelToWeightPLUT.resize(lutSize, 1.0);
+  if (m_signalType == RESHAPE_SIGNAL_PQ)
+  {
+    for (int i = 0; i < (1 << m_lumaBD); i++) 
+    {
+      double x = m_lumaBD < 10 ? i << (10 - m_lumaBD) : m_lumaBD > 10 ? i >> (m_lumaBD - 10) : i;
+      double y;
+      y = 0.015*x - 1.5 - 6;
+      y = y < -3 ? -3 : (y > 6 ? 6 : y);
+      m_reshapeLumaLevelToWeightPLUT[i] = pow(2.0, y / 3.0);
+      m_lumaLevelToWeightPLUT[i] = m_reshapeLumaLevelToWeightPLUT[i];
+    }
+  }
+}
+
 void RdCost::updateReshapeLumaLevelToWeightTableChromaMD(std::vector<Pel>& ILUT)
 {
-  for (int i = 0; i < LUMA_LEVEL_TO_DQP_LUT_MAXSIZE; i++) // idx in reshaped domain;
+  for (int i = 0; i < (1 << m_lumaBD); i++)
   {
     m_reshapeLumaLevelToWeightPLUT[i] = m_lumaLevelToWeightPLUT[ILUT[i]];
   }
@@ -2926,19 +2936,21 @@ void RdCost::updateReshapeLumaLevelToWeightTableChromaMD(std::vector<Pel>& ILUT)
 
 void RdCost::restoreReshapeLumaLevelToWeightTable()
 {
-  memcpy(m_reshapeLumaLevelToWeightPLUT, m_lumaLevelToWeightPLUT, LUMA_LEVEL_TO_DQP_LUT_MAXSIZE * sizeof(double));
+  for (int i = 0; i < (1 << m_lumaBD); i++) 
+  {
+    m_reshapeLumaLevelToWeightPLUT.at(i) = m_lumaLevelToWeightPLUT.at(i);
+  }
 }
 
-
-void RdCost::updateReshapeLumaLevelToWeightTable(sliceReshapeInfo &sliceReshape, Pel *wt_table, double cwt)
+void RdCost::updateReshapeLumaLevelToWeightTable(sliceReshapeInfo &sliceReshape, Pel *wtTable, double cwt)
 {
-  if (m_iSignalType == RESHAPE_SIGNAL_SDR)
+  if (m_signalType == RESHAPE_SIGNAL_SDR)
   {
     if (sliceReshape.getSliceReshapeModelPresentFlag())
     {
-      double w_bin = 1.0;
+      double wBin = 1.0;
       double weight = 1.0;
-      int hist_lens = MAX_LUMA_RESHAPING_LUT_SIZE / PIC_CODE_CW_BINS;
+      int histLens = (1 << m_lumaBD) / PIC_CODE_CW_BINS;
 
       for (int i = 0; i < PIC_CODE_CW_BINS; i++)
       {
@@ -2946,21 +2958,21 @@ void RdCost::updateReshapeLumaLevelToWeightTable(sliceReshapeInfo &sliceReshape,
           weight = 1.0;
         else
         {
-          if (sliceReshape.reshape_model_bin_CW_delta[i] == 1 || sliceReshape.reshape_model_bin_CW_delta[i] == -1 * MAX_LUMA_RESHAPING_LUT_SIZE / PIC_CODE_CW_BINS)
-            weight = w_bin;
+          if (sliceReshape.reshape_model_bin_CW_delta[i] == 1 || (sliceReshape.reshape_model_bin_CW_delta[i] == -1 * histLens))
+            weight = wBin;
           else 
           {
-            weight = (double)wt_table[i] / (double)hist_lens;
+            weight = (double)wtTable[i] / (double)histLens;
             weight = weight*weight;
           }
         }
-        for (int j = 0; j < hist_lens; j++)
+        for (int j = 0; j < histLens; j++)
         {
-          int ii = i*hist_lens + j;
+          int ii = i*histLens + j;
           m_reshapeLumaLevelToWeightPLUT[ii] = weight;
         }
       }
-      m_chroma_weight = cwt;
+      m_chromaWeight = cwt;
     }
     else
     {
@@ -2987,13 +2999,13 @@ Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, con
   // use luma to get weight
 #if JVET_M0427_INLOOP_RESHAPER
   double weight = 1.0;
-  if (m_iSignalType == RESHAPE_SIGNAL_SDR) 
+  if (m_signalType == RESHAPE_SIGNAL_SDR) 
   {
     if (compIdx == COMPONENT_Y)
       weight = m_reshapeLumaLevelToWeightPLUT[orgLuma];
     else
     {
-      weight = m_chroma_weight; 
+      weight = m_chromaWeight; 
     }
   }
   else

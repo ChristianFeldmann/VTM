@@ -154,8 +154,8 @@ public:
 #if JVET_M0427_INLOOP_RESHAPER
   int m_alfWSSD;
   inline void           setAlfWSSD(int alfWSSD) { m_alfWSSD = alfWSSD; }
-  static double         m_lumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
-  inline  double*       getLumaLevelWeightTable() { return m_lumaLevelToWeightPLUT; }
+  static std::vector<double>  m_lumaLevelToWeightPLUT;
+  inline std::vector<double>& getLumaLevelWeightTable() { return m_lumaLevelToWeightPLUT; }
 #endif
 
 private:

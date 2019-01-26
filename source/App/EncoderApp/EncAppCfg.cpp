@@ -708,6 +708,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   int warnUnknowParameter = 0;
 
 #if JVET_M0427_INLOOP_RESHAPER
+  const int CW_NUMS = 3;
   const uint32_t defaultBinCW[CW_NUMS - 1]  = { 38, 28 };
   const uint32_t defaultBinThr[CW_NUMS - 1] = { 2500, 4000 };
   SMultiValueInput<uint32_t> cfg_BinCW          (0, 64, CW_NUMS - 1, CW_NUMS - 1, defaultBinCW, sizeof(defaultBinCW) / sizeof(uint32_t));
@@ -1852,7 +1853,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   m_reshapeCW.RspFps = m_iFrameRate;
   m_reshapeCW.RspIntraPeriod = m_iIntraPeriod;
   m_reshapeCW.RspPicSize = m_iSourceWidth*m_iSourceHeight;
-  const int FpsToIpTable[MAX_FRAME_RATE + 1] = { 0, 0, 0, 0, 0, 0, 0, 0, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 128, 128, 128, 128, 128, 128, 128, 128, 128 };
+  const int FpsToIpTable[129] = { 0, 0, 0, 0, 0, 0, 0, 0, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 128, 128, 128, 128, 128, 128, 128, 128, 128 };
   m_reshapeCW.RspFpsToIp = FpsToIpTable[m_iFrameRate];
   m_reshapeCW.RspBaseQP = m_iQP;
 #endif
@@ -2243,7 +2244,7 @@ bool EncAppCfg::xCheckParameter()
   if (m_bLumaReshapeEnable && (m_internalBitDepth[CHANNEL_TYPE_LUMA] != 10))
   {
     m_bLumaReshapeEnable = false;
-    msg(WARNING, "Reshaping is implemented for 10bit luma internal bitdepth.\n");
+    msg(WARNING, "Reshaping is turned off for luma internal bitdepth not equal to 10.\n");
   }
   if (!m_bLumaReshapeEnable)
   {

@@ -3002,14 +3002,18 @@ Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, con
   if (m_signalType == RESHAPE_SIGNAL_SDR) 
   {
     if (compIdx == COMPONENT_Y)
+    {
       weight = m_reshapeLumaLevelToWeightPLUT[orgLuma];
+    }
     else
     {
       weight = m_chromaWeight; 
     }
   }
   else
-      weight = m_reshapeLumaLevelToWeightPLUT[orgLuma];
+  {
+    weight = m_reshapeLumaLevelToWeightPLUT[orgLuma];
+  }
 #else
   double weight = m_lumaLevelToWeightPLUT[orgLuma];
 #endif

@@ -2881,18 +2881,6 @@ void RdCost::saveUnadjustedLambda()
 
 void RdCost::initLumaLevelToWeightTable()
 {
-#if JVET_M0427_INLOOP_RESHAPER
-  if (m_iSignalType == RESHAPE_SIGNAL_SDR)
-  {
-    double weight = 1.0;
-    for (int i = 0; i < LUMA_LEVEL_TO_DQP_LUT_MAXSIZE; i++)
-    {
-      m_lumaLevelToWeightPLUT[i] = weight;
-    }
-    return;
-  }
-#endif
-
   for (int i = 0; i < LUMA_LEVEL_TO_DQP_LUT_MAXSIZE; i++) {
     double x = i;
     double y;
@@ -2914,9 +2902,6 @@ void RdCost::initLumaLevelToWeightTable()
     
     m_lumaLevelToWeightPLUT[i] = pow(2.0, y / 3.0);      // or power(10, dQp/10)      they are almost equal       
   }
-#if JVET_M0427_INLOOP_RESHAPER
-  memcpy(m_reshapeLumaLevelToWeightPLUT, m_lumaLevelToWeightPLUT, LUMA_LEVEL_TO_DQP_LUT_MAXSIZE * sizeof(double));
-#endif
 }
 
 #if JVET_M0427_INLOOP_RESHAPER

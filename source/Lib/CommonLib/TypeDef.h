@@ -76,6 +76,8 @@ typedef std::pair<int, int>  TrCost;
 
 #define REMOVE_BIN_DECISION_TREE                          1
 
+#define JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY       1 
+
 // clang-format off
 #define JVET_M0453_CABAC_ENGINE                           1
 

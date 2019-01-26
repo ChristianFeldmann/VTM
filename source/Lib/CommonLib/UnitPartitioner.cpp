@@ -575,6 +575,12 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
     {
       split = CU_QUAD_SPLIT;
     }
+#if JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY
+    if ((!isBlInPic || !isTrInPic) && (currArea().Y().width > MAX_TU_SIZE_FOR_PROFILE || currArea().Y().height > MAX_TU_SIZE_FOR_PROFILE))
+    {
+      split = CU_QUAD_SPLIT;
+    }
+#endif
   }
 
   m_partStack.back().checkdIfImplicit = true;

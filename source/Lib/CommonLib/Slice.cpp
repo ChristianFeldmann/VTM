@@ -74,6 +74,9 @@ Slice::Slice()
 , m_signDataHidingEnabledFlag     ( false )
 #endif
 , m_bCheckLDC                     ( false )
+#if JVET_M0444_SMVD
+, m_biDirPred                    ( false )
+#endif
 , m_iSliceQpDelta                 ( 0 )
 , m_iDepth                        ( 0 )
 #if HEVC_VPS
@@ -191,6 +194,12 @@ void Slice::initSlice()
   initEqualRef();
 
   m_bCheckLDC = false;
+
+#if JVET_M0444_SMVD
+  m_biDirPred = false;
+  m_symRefIdx[0] = -1;
+  m_symRefIdx[1] = -1;
+#endif
 
   for (uint32_t component = 0; component < MAX_NUM_COMPONENT; component++)
   {
@@ -423,7 +432,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       pcRefPic = xGetLongTermRefPic(rcListPic, m_pRPS->getPOC(i), m_pRPS->getCheckLTMSBPresent(i));
     }
   }
-  if (getSPS()->getSpsNext().getCPRMode())
+  if (getSPS()->getSpsNext().getIBCMode())
   {
     RefPicSetLtCurr[NumPicLtCurr] = getPic();
     //getPic()->setIsLongTerm(true);
@@ -442,7 +451,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
     // - Otherwise, when the current picture contains a P or B slice, the value of NumPocTotalCurr shall not be equal to 0.
     if (getRapPicFlag())
     {
-      if (getSPS()->getSpsNext().getCPRMode())
+      if (getSPS()->getSpsNext().getIBCMode())
       {
         CHECK(numPicTotalCurr != 1, "Invalid state");
       }
@@ -517,7 +526,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       m_bIsUsedAsLongTerm[REF_PIC_LIST_1][rIdx] = ( cIdx >= NumPicStCurr0 + NumPicStCurr1 );
     }
   }
-  if (getSPS()->getSpsNext().getCPRMode())
+  if (getSPS()->getSpsNext().getIBCMode())
   {
     m_apcRefPicList[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = getPic();
     m_bIsUsedAsLongTerm[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = true;
@@ -552,7 +561,7 @@ int Slice::getNumRpsCurrTempList() const
       numRpsCurrTempList++;
     }
   }
-  if (getSPS()->getSpsNext().getCPRMode())
+  if (getSPS()->getSpsNext().getIBCMode())
   {
     return numRpsCurrTempList + 1;
   }
@@ -764,6 +773,13 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
 
   m_bCheckLDC             = pSrc->m_bCheckLDC;
   m_iSliceQpDelta        = pSrc->m_iSliceQpDelta;
+
+#if JVET_M0444_SMVD
+  m_biDirPred = pSrc->m_biDirPred;
+  m_symRefIdx[0] = pSrc->m_symRefIdx[0];
+  m_symRefIdx[1] = pSrc->m_symRefIdx[1];
+#endif
+
   for (uint32_t component = 0; component < MAX_NUM_COMPONENT; component++)
   {
     m_iSliceChromaQpDelta[component] = pSrc->m_iSliceChromaQpDelta[component];
@@ -1733,11 +1749,12 @@ SPSNext::SPSNext( SPS& sps )
   , m_NextEnabled               ( false )
   // disable all tool enabling flags by default
   , m_LargeCTU                  ( false )
-  , m_SubPuMvp                  ( false )
   , m_IMV                       ( false )
-  , m_BIO                       ( false )
   , m_DisableMotionCompression  ( false )
   , m_LMChroma                  ( false )
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  , m_cclmCollocatedChromaFlag  ( false )
+#endif
 #if JVET_M0464_UNI_MTS
   , m_IntraMTS                  ( false )
   , m_InterMTS                  ( false )
@@ -1761,11 +1778,10 @@ SPSNext::SPSNext( SPS& sps )
 #endif
 
   // default values for additional parameters
-  , m_subPuMrgMode              ( 0 )
   , m_ImvMode                   ( IMV_OFF )
   , m_MTTMode                   ( 0 )
     , m_compositeRefEnabled     ( false )
-  , m_CPRMode                   ( 0 )
+  , m_IBCMode                   ( 0 )
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags here (with "false" as default values)
 {
 }
@@ -1814,14 +1830,16 @@ SPS::SPS()
 , m_uiQuadtreeTUMaxDepthInter (  0)
 , m_uiQuadtreeTUMaxDepthIntra (  0)
 // Tool list
-, m_usePCM                    (false)
+, m_pcmEnabledFlag            (false)
 , m_pcmLog2MaxSize            (  5)
 , m_uiPCMLog2MinSize          (  7)
 , m_bPCMFilterDisableFlag     (false)
+, m_sbtmvpEnabledFlag         (false)
+, m_bdofEnabledFlag           (false)
 , m_uiBitsForPOC              (  8)
 , m_numLongTermRefPicSPS      (  0)
 , m_uiMaxTrSize               ( 32)
-, m_bUseSAO                   (false)
+, m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
 #if HEVC_USE_SCALING_LISTS
 , m_scalingListEnabledFlag    (false)
@@ -1832,7 +1850,7 @@ SPS::SPS()
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_spsNextExtension          (*this)
-, m_useWrapAround             (false)
+, m_wrapAroundEnabledFlag     (false)
 , m_wrapAroundOffset          (  0)
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)

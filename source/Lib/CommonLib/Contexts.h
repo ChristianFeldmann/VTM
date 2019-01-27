@@ -304,6 +304,9 @@ public:
   static const CtxSet   MHIntraPredMode;
   static const CtxSet   TriangleFlag;
   static const CtxSet   TriangleIdx;
+#if JVET_M0444_SMVD
+  static const CtxSet   SmvdFlag;
+#endif
   static const unsigned NumberOfContexts;
 
   // combined sets for less complex copying

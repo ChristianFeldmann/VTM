@@ -1299,7 +1299,7 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   }
 }
 
-CprLumaCoverage CodingStructure::getCprLumaCoverage(const CompArea& chromaArea) const
+IbcLumaCoverage CodingStructure::getIbcLumaCoverage(const CompArea& chromaArea) const
 {
   CHECK(chType != CHANNEL_TYPE_CHROMA, "Error");
 
@@ -1307,7 +1307,7 @@ CprLumaCoverage CodingStructure::getCprLumaCoverage(const CompArea& chromaArea) 
   CompArea lumaArea = CompArea(COMPONENT_Y, chromaArea.chromaFormat, chromaArea.lumaPos(), recalcSize(chromaArea.chromaFormat, CHANNEL_TYPE_CHROMA, CHANNEL_TYPE_LUMA, chromaArea.size()));
   lumaArea = clipArea(lumaArea, picture->block(COMPONENT_Y));
   const unsigned int fullArea = lumaArea.area();
-  unsigned int cprArea = 0;
+  unsigned int ibcArea = 0;
   for (SizeType y = 0; y < lumaArea.height; y += MIN_PU_SIZE)
   {
     for (SizeType x = 0; x < lumaArea.width; x += MIN_PU_SIZE)
@@ -1315,19 +1315,19 @@ CprLumaCoverage CodingStructure::getCprLumaCoverage(const CompArea& chromaArea) 
       Position pos = lumaArea.offset(x, y);
       if (picture->cs->getMotionInfo(pos).isInter) // need to change if inter slice allows dualtree
       {
-        cprArea += unitAreaSubBlock;
+        ibcArea += unitAreaSubBlock;
       }
     }
   }
 
-  CprLumaCoverage coverage = CPR_LUMA_COVERAGE_FULL;
-  if (cprArea == 0)
+  IbcLumaCoverage coverage = IBC_LUMA_COVERAGE_FULL;
+  if (ibcArea == 0)
   {
-    coverage = CPR_LUMA_COVERAGE_NONE;
+    coverage = IBC_LUMA_COVERAGE_NONE;
   }
-  else if (cprArea < fullArea)
+  else if (ibcArea < fullArea)
   {
-    coverage = CPR_LUMA_COVERAGE_PARTIAL;
+    coverage = IBC_LUMA_COVERAGE_PARTIAL;
   }
 
   return coverage;

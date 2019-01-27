@@ -107,7 +107,11 @@ public:
     const int     diag      = posX + posY;
     int           numPos    = 0;
     int           sumAbs    = 0;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(4+(a&1),a);numPos+=!!a;}
+#else
 #define UPDATE(x) {int a=abs(x);sumAbs+=std::min(2+(a&1),a);numPos+=!!a;}
+#endif
     if( posX < m_width-1 )
     {
       UPDATE( pData[1] );
@@ -310,6 +314,9 @@ unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
 unsigned CtxAffineFlag( const CodingUnit& cu );
 unsigned CtxTriangleFlag( const CodingUnit& cu );
+#if JVET_M0502_PRED_MODE_CTX
+unsigned CtxPredModeFlag( const CodingUnit& cu );
+#endif
 }
 
 #endif // __CONTEXTMODELLING__

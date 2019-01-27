@@ -214,8 +214,10 @@ extern const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
 
 extern MsgLevel g_verbosity;
 
+#if !JVET_M0064_CCLM_SIMPLIFICATION
 extern int g_aiLMDivTableLow[];
 extern int g_aiLMDivTableHigh[];
+#endif
 
 extern const int g_aiNonLMPosThrs[];
 

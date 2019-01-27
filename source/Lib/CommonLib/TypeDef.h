@@ -50,9 +50,20 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0444_SMVD                                   1 // SMVD mode
+
+#define JVET_M0064_CCLM_SIMPLIFICATION                    1
+
+#define JVET_M0142_CCLM_COLLOCATED_CHROMA                 1 // Adding support for chroma sample location type 2 in CCLM
+
 #define JVET_M0479_18BITS_MV_CLIP                         1
 
+#define JVET_M0502_PRED_MODE_CTX                          1
+
+#define JVET_M0407_IBC_RANGE                              1 // extend IBC search range to some part of left CTU
+
 #define JVET_M0464_UNI_MTS                                1
+#define JVET_M0068_M0171_MMVD_CLEANUP                     1 // MMVD cleanup with 1) flip removal, 2) L1 zero vector fix, 3) bi-pred restriction after merge/MMVD
 
 #if JVET_M0464_UNI_MTS
 typedef std::pair<int, bool> TrMode;
@@ -61,7 +72,11 @@ typedef std::pair<int, int>  TrCost;
 
 #define JVET_M0421_SPLIT_SIG                              1
 
+#define JVET_M0173_MOVE_GT2_TO_FIRST_PASS                 1 // Moving the gtr2 flag to the first coding pass
+
 #define REMOVE_BIN_DECISION_TREE                          1
+
+#define JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY       1 
 
 // clang-format off
 #define JVET_M0453_CABAC_ENGINE                           1
@@ -852,7 +867,7 @@ enum MergeType
 {
   MRG_TYPE_DEFAULT_N        = 0, // 0
   MRG_TYPE_SUBPU_ATMVP,
-  MRG_TYPE_CPR,                  
+  MRG_TYPE_IBC,                  
   NUM_MRG_TYPE                   // 5
 };
 

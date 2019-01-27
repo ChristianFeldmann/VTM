@@ -336,10 +336,10 @@ void DecCu::xReconInter(CodingUnit &cu)
   m_pcIntraPred->geneIntrainterPred(cu);
 
   // inter prediction
-  CHECK(cu.cpr && cu.firstPU->mhIntraFlag, "CPR and MHIntra cannot be used together");
-  CHECK(cu.cpr && cu.affine, "CPR and Affine cannot be used together");
-  CHECK(cu.cpr && cu.triangle, "CPR and triangle cannot be used together");
-  CHECK(cu.cpr && cu.firstPU->mmvdMergeFlag, "CPR and MMVD cannot be used together");
+  CHECK(cu.ibc && cu.firstPU->mhIntraFlag, "IBC and MHIntra cannot be used together");
+  CHECK(cu.ibc && cu.affine, "IBC and Affine cannot be used together");
+  CHECK(cu.ibc && cu.triangle, "IBC and triangle cannot be used together");
+  CHECK(cu.ibc && cu.firstPU->mmvdMergeFlag, "IBC and MMVD cannot be used together");
   const bool luma = cu.Y().valid();
   const bool chroma = cu.Cb().valid();
   if (luma && chroma)
@@ -458,7 +458,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       if (pu.mmvdMergeFlag || pu.cu->mmvdSkip)
       {
         CHECK(pu.mhIntraFlag == true, "invalid MHIntra");
-        if (pu.cs->sps->getSpsNext().getUseSubPuMvp())
+        if (pu.cs->sps->getSBTMVPEnabledFlag())
         {
           Size bufSize = g_miScaling.scale(pu.lumaSize());
           mrgCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);
@@ -466,7 +466,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 
         int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
         PU::getInterMergeCandidates(pu, mrgCtx, 1, fPosBaseIdx + 1);
+#if !JVET_M0068_M0171_MMVD_CLEANUP
         PU::restrictBiPredMergeCands(pu, mrgCtx);
+#endif
         PU::getInterMMVDMergeCandidates(pu, mrgCtx,
           pu.mmvdMergeIdx
         );
@@ -486,7 +488,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         if( pu.cu->affine )
         {
           AffineMergeCtx affineMergeCtx;
-          if ( pu.cs->sps->getSpsNext().getUseSubPuMvp() )
+          if ( pu.cs->sps->getSBTMVPEnabledFlag() )
           {
             Size bufSize = g_miScaling.scale( pu.lumaSize() );
             mrgCtx.subPuMvpMiBuf = MotionBuf( m_SubPuMiBuf, bufSize );
@@ -522,7 +524,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         {
 
             PU::getInterMergeCandidates(pu, mrgCtx, 0, pu.mergeIdx);
+#if !JVET_M0068_M0171_MMVD_CLEANUP
             PU::restrictBiPredMergeCands(pu, mrgCtx);
+#endif
 
           mrgCtx.setMergeInfo( pu, pu.mergeIdx );
 
@@ -591,7 +595,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               Mv mvd = pu.mvd[eRefList];
               if (eRefList == REF_PIC_LIST_0 && pu.cs->slice->getRefPic(eRefList, pu.refIdx[eRefList])->getPOC() == pu.cs->slice->getPOC())
               {
-                pu.cu->cpr = true;
+                pu.cu->ibc = true;
 #if REUSE_CU_RESULTS
                 if (!cu.cs->pcv->isEncoder)
 #endif

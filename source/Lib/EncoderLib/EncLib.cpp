@@ -851,15 +851,18 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseLargeCTU            ( m_LargeCTU );
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   sps.setUseDualITree                        ( m_dualITree );
-  sps.getSpsNext().setSubPuMvpMode          ( m_SubPuMvpMode );
+  sps.setSBTMVPEnabledFlag                  ( m_SubPuMvpMode );
   sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
   sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
-  sps.getSpsNext().setUseBIO                ( m_BIO );
+  sps.setBDOFEnabledFlag                    ( m_BIO );
   sps.getSpsNext().setUseAffine             ( m_Affine );
   sps.getSpsNext().setUseAffineType         ( m_AffineType );
   sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );
   sps.getSpsNext().setMTTMode               ( m_MTTMode );
   sps.getSpsNext().setUseLMChroma           ( m_LMChroma ? true : false );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  sps.getSpsNext().setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
+#endif
 #if ENABLE_WPP_PARALLELISM
   sps.getSpsNext().setUseNextDQP            ( m_AltDQPCoding );
 #endif
@@ -889,9 +892,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseMHIntra            ( m_MHIntra );
   sps.getSpsNext().setUseTriangle           ( m_Triangle );
 
-  sps.getSpsNext().setCPRMode               ( m_CPRMode );
+  sps.getSpsNext().setIBCMode               ( m_IBCMode );
 
-  sps.setUseWrapAround                      ( m_wrapAround );
+  sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 
@@ -906,7 +909,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setLog2MinCodingBlockSize(log2MinCUSize);
 
   sps.setPCMLog2MinSize (m_uiPCMLog2MinSize);
-  sps.setUsePCM        ( m_usePCM           );
+  sps.setPCMEnabledFlag        ( m_usePCM           );
   sps.setPCMLog2MaxSize( m_pcmLog2MaxSize  );
 
   sps.setQuadtreeTULog2MaxSize( m_uiQuadtreeTULog2MaxSize );
@@ -918,8 +921,6 @@ void EncLib::xInitSPS(SPS &sps)
 
   sps.setMaxTrSize   ( 1 << m_uiQuadtreeTULog2MaxSize );
 
-  sps.setUseAMP ( m_useAMP );
-
   for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
   {
     sps.setBitDepth      (ChannelType(channelType), m_bitDepth[channelType] );
@@ -927,7 +928,7 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setPCMBitDepth (ChannelType(channelType), m_PCMBitDepth[channelType]         );
   }
 
-  sps.setUseSAO( m_bUseSAO );
+  sps.setSAOEnabledFlag( m_bUseSAO );
 
   sps.setMaxTLayers( m_maxTempLayer );
   sps.setTemporalIdNestingFlag( ( m_maxTempLayer == 1 ) ? true : false );
@@ -945,7 +946,7 @@ void EncLib::xInitSPS(SPS &sps)
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
   sps.setUseStrongIntraSmoothing( m_useStrongIntraSmoothing );
 #endif
-  sps.setUseALF( m_alf );
+  sps.setALFEnabledFlag( m_alf );
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
   if (sps.getVuiParametersPresentFlag())
@@ -1394,7 +1395,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     }
   }
   CHECK(!(bestPos <= 15), "Unspecified error");
-  if (sps.getSpsNext().getCPRMode())
+  if (sps.getSpsNext().getIBCMode())
   {
     pps.setNumRefIdxL0DefaultActive(bestPos + 1);
   }

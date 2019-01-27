@@ -149,7 +149,7 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 
   AlfSliceParam& alfSliceParam = cs.slice->getAlfSliceParam();
 
-  if( cs.sps->getUseALF() && ( alfSliceParam.enabledFlag[COMPONENT_Y] || alfSliceParam.enabledFlag[COMPONENT_Cb] || alfSliceParam.enabledFlag[COMPONENT_Cr] ) )
+  if( cs.sps->getALFEnabledFlag() && ( alfSliceParam.enabledFlag[COMPONENT_Y] || alfSliceParam.enabledFlag[COMPONENT_Cb] || alfSliceParam.enabledFlag[COMPONENT_Cr] ) )
   {
 
     const PreCalcValues& pcv = *cs.pcv;
@@ -231,7 +231,7 @@ void CABACReader::sao( CodingStructure& cs, unsigned ctuRsAddr )
 {
   const SPS&   sps   = *cs.sps;
 
-  if( !sps.getUseSAO() )
+  if( !sps.getSAOEnabledFlag() )
   {
     return;
   }
@@ -906,7 +906,7 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
 
   unsigned value = 0;
   unsigned ctxId = DeriveCtx::CtxIMVFlag( cu );
-  if (cu.firstPU->interDir == 1 && cu.cs->slice->getRefPic(REF_PIC_LIST_0, cu.firstPU->refIdx[REF_PIC_LIST_0])->getPOC() == cu.cs->slice->getPOC()) // the first bin of IMV flag does need to be signaled in CPR block
+  if (cu.firstPU->interDir == 1 && cu.cs->slice->getRefPic(REF_PIC_LIST_0, cu.firstPU->refIdx[REF_PIC_LIST_0])->getPOC() == cu.cs->slice->getPOC()) // the first bin of IMV flag does need to be signaled in IBC block
     value = 1;
   else
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( ctxId ) );
@@ -927,7 +927,11 @@ void CABACReader::pred_mode( CodingUnit& cu )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__PRED_MODE );
 
+#if JVET_M0502_PRED_MODE_CTX
+  if( cu.cs->slice->isIntra() || m_BinDecoder.decodeBin( Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)) ) )
+#else
   if( cu.cs->slice->isIntra() || m_BinDecoder.decodeBin( Ctx::PredMode() ) )
+#endif
   {
     cu.predMode = MODE_INTRA;
   }
@@ -940,7 +944,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
 void CABACReader::pcm_flag( CodingUnit& cu, Partitioner &partitioner )
 {
   const SPS& sps = *cu.cs->sps;
-  if( !sps.getUsePCM() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
+  if( !sps.getPCMEnabledFlag() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
       || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
   {
     cu.ipcm = false;
@@ -961,7 +965,7 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
   if (!cu.Y().valid()) // dual tree chroma CU
   {
     cu.predMode = MODE_INTER;
-    cu.cpr = true;
+    cu.ibc = true;
     return;
   }
   MergeCtx mrgCtx;
@@ -1338,6 +1342,9 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
   {
     inter_pred_idc( pu );
     affine_flag   ( *pu.cu );
+#if JVET_M0444_SMVD
+    smvd_mode( pu );
+#endif
 
     if( pu.interDir != 2 /* PRED_L1 */ )
     {
@@ -1360,6 +1367,10 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
 
     if( pu.interDir != 1 /* PRED_L0 */ )
     {
+#if JVET_M0444_SMVD
+      if ( pu.cu->smvdMode != 1 )
+      {
+#endif
       ref_idx     ( pu, REF_PIC_LIST_1 );
       if( pu.cu->cs->slice->getMvdL1ZeroFlag() && pu.interDir == 3 /* PRED_BI */ )
       {
@@ -1381,6 +1392,9 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
       {
         mvd_coding( pu.mvd[REF_PIC_LIST_1] );
       }
+#if JVET_M0444_SMVD
+      }
+#endif
       mvp_flag    ( pu, REF_PIC_LIST_1 );
     }
   }
@@ -1392,8 +1406,39 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     pu.cu->GBiIdx = GBI_DEFAULT;
   }
 
+#if JVET_M0444_SMVD
+  if ( pu.cu->smvdMode )
+  {
+    RefPicList eCurRefList = (RefPicList)(pu.cu->smvdMode - 1);
+    pu.mvd[1 - eCurRefList].set( -pu.mvd[eCurRefList].hor, -pu.mvd[eCurRefList].ver );
+    pu.refIdx[1 - eCurRefList] = pu.cs->slice->getSymRefIdx( 1 - eCurRefList );
+  }
+#endif
+
   PU::spanMotionInfo( pu, mrgCtx );
 }
+
+#if JVET_M0444_SMVD
+void CABACReader::smvd_mode( PredictionUnit& pu )
+{
+  pu.cu->smvdMode = 0;
+  if ( pu.interDir != 3 || pu.cu->affine )
+  {
+    return;
+  }
+
+  if ( pu.cs->slice->getBiDirPred() == false )
+  {
+    return;
+  }
+
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__SYMMVD_FLAG );
+
+  pu.cu->smvdMode = m_BinDecoder.decodeBin( Ctx::SmvdFlag() ) ? 1 : 0;
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "symmvd_flag() symmvd=%d pos=(%d,%d) size=%dx%d\n", pu.cu->smvdMode ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
+}
+#endif
 
 void CABACReader::subblock_merge_flag( CodingUnit& cu )
 {
@@ -1402,7 +1447,7 @@ void CABACReader::subblock_merge_flag( CodingUnit& cu )
     return;
   }
 
-  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSpsNext().getUseSubPuMvp()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__AFFINE_FLAG );
 
@@ -1474,7 +1519,7 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     {
       if ( m_BinDecoder.decodeBin( Ctx::AffMergeIdx() ) )
       {
-        bool useExtCtx = pu.cs->sps->getSpsNext().getUseSubPuMvp();
+        bool useExtCtx = pu.cs->sps->getSBTMVPEnabledFlag();
         pu.mergeIdx++;
         for ( ; pu.mergeIdx < numCandminus1; pu.mergeIdx++ )
         {
@@ -1639,6 +1684,14 @@ void CABACReader::inter_pred_idc( PredictionUnit& pu )
 void CABACReader::ref_idx( PredictionUnit &pu, RefPicList eRefList )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__REF_FRM_IDX );
+
+#if JVET_M0444_SMVD
+  if ( pu.cu->smvdMode )
+  {
+    pu.refIdx[eRefList] = pu.cs->slice->getSymRefIdx( eRefList );
+    return;
+  }
+#endif
 
   int numRef  = pu.cs->slice->getNumRefIdx(eRefList);
   if( numRef <= 1 || !m_BinDecoder.decodeBin( Ctx::RefPic() ) )
@@ -2532,13 +2585,23 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
 #endif
   int       numNonZero    =  0;
   bool      is2x2subblock = ( cctx.log2CGSize() == 2 );
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK );
+#else
   int       remGt2Bins    = ( is2x2subblock ? MAX_NUM_GT2_BINS_2x2SUBBLOCK : MAX_NUM_GT2_BINS_4x4SUBBLOCK );
   int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK ) - remGt2Bins;
+#endif
   int       firstPosMode2 = minSubPos - 1;
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   int       firstPosMode1 = minSubPos - 1;
+#endif
   int       sigBlkPos[ 1 << MLS_CG_SIZE ];
 
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  for( ; nextSigPos >= minSubPos && remRegBins >= 4; nextSigPos-- )
+#else
   for( ; nextSigPos >= minSubPos && remRegBins >= 3; nextSigPos-- )
+#endif
   {
     int      blkPos     = cctx.blockPos( nextSigPos );
     unsigned sigFlag    = ( !numNonZero && nextSigPos == inferSigPos );
@@ -2567,6 +2630,9 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       remRegBins--;
 
       unsigned parFlag = 0;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+      unsigned gt2Flag = 0;
+#endif
       if( gt1Flag )
       {
         RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_par );
@@ -2574,19 +2640,33 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "par_flag() bin=%d ctx=%d\n", parFlag, cctx.parityCtxIdAbs( ctxOff ) );
 
         remRegBins--;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+        RExt__DECODER_DEBUG_BIT_STATISTICS_SET(ctype_gt2);
+        gt2Flag = m_BinDecoder.decodeBin( cctx.greater2CtxIdAbs( ctxOff ) );
+        DTRACE( g_trace_ctx, D_SYNTAX_RESI, "gt2_flag() bin=%d ctx=%d\n", gt2Flag, cctx.greater2CtxIdAbs( ctxOff ) );
+        remRegBins--;
+#else
         if( remGt2Bins && !--remGt2Bins )
         {
           firstPosMode1 = nextSigPos - 1;
         }
+#endif
       }
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+      coeff[ blkPos ] += 1 + parFlag + gt1Flag + (gt2Flag << 1);
+#else
       coeff[ blkPos ] += 1 + parFlag + gt1Flag;
+#endif
     }
 
     state = ( stateTransTable >> ((state<<2)+((coeff[blkPos]&1)<<1)) ) & 3;
   }
   firstPosMode2 = nextSigPos;
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   firstPosMode1 = ( firstPosMode1 > firstPosMode2 ? firstPosMode1 : firstPosMode2 );
+#endif
 
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   //===== 2nd PASS: gt2 =====
   for( int scanPos = firstSigPos; scanPos > firstPosMode1; scanPos-- )
   {
@@ -2600,10 +2680,17 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       tcoeff    += (gt2Flag<<1);
     }
   }
+#endif
 
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+  //===== 2nd PASS: Go-rice codes =====
+  unsigned ricePar = 0;
+  for( int scanPos = firstSigPos; scanPos > firstPosMode2; scanPos-- )
+#else
   //===== 3rd PASS: Go-rice codes =====
   unsigned ricePar = 0;
   for( int scanPos = firstSigPos; scanPos > firstPosMode1; scanPos-- )
+#endif
   {
     TCoeff& tcoeff = coeff[ cctx.blockPos( scanPos ) ];
     if( tcoeff >= 4 )
@@ -2618,6 +2705,7 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       }
     }
   }
+#if !JVET_M0173_MOVE_GT2_TO_FIRST_PASS
   for( int scanPos = firstPosMode1; scanPos > firstPosMode2; scanPos-- )
   {
     TCoeff& tcoeff = coeff[ cctx.blockPos( scanPos ) ];
@@ -2633,6 +2721,7 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       }
     }
   }
+#endif
 
   //===== coeff bypass ====
   for( int scanPos = firstPosMode2; scanPos >= minSubPos; scanPos-- )

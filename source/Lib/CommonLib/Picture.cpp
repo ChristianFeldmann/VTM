@@ -1004,7 +1004,7 @@ void Picture::extendPicBorder()
 
     Pel*  pi = piTxt;
     // do left and right margins
-    if (cs->sps->getUseWrapAround())
+    if (cs->sps->getWrapAroundEnabledFlag())
     {
       int xoffset = cs->sps->getWrapAroundOffset() >> getComponentScaleX( compID, cs->area.chromaFormat );
       for (int y = 0; y < p.height; y++)

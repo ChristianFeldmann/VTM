@@ -312,7 +312,10 @@ struct CodingUnit : public UnitArea
   int             refIdxBi[2];
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
-  bool           cpr;
+  bool           ibc;
+#if JVET_M0444_SMVD
+  uint8_t          smvdMode;
+#endif
 
   CodingUnit() : chType( CH_L ) { }
   CodingUnit(const UnitArea &unit);
@@ -363,8 +366,8 @@ struct InterPredictionData
   Mv        mvdAffi [NUM_REF_PIC_LIST_01][3];
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
   bool      mhIntraFlag;
-  Mv        bv;                             // block vector for CPR
-  Mv        bvd;                            // block vector difference for CPR
+  Mv        bv;                             // block vector for IBC
+  Mv        bvd;                            // block vector difference for IBC
 };
 
 struct PredictionUnit : public UnitArea, public IntraPredictionData, public InterPredictionData

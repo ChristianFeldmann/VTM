@@ -272,7 +272,11 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   GBiIdx            = other.GBiIdx;
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
-  cpr               = other.cpr;
+  ibc               = other.ibc;
+#if JVET_M0444_SMVD
+  smvdMode        = other.smvdMode;
+#endif
+
   return *this;
 }
 
@@ -305,7 +309,10 @@ void CodingUnit::initData()
   GBiIdx            = GBI_DEFAULT;
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
-  cpr               = false;
+  ibc               = false;
+#if JVET_M0444_SMVD
+  smvdMode        = 0;
+#endif
 }
 
 

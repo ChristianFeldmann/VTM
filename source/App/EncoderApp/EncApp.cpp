@@ -141,7 +141,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setAccessUnitDelimiter                               ( m_AccessUnitDelimiter );
 
   m_cEncLib.setMaxTempLayer                                      ( m_maxTempLayer );
-  m_cEncLib.setUseAMP( m_enableAMP );
 
   //===== Slice ========
 
@@ -224,6 +223,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );
   m_cEncLib.setMTTMode                                           ( m_MTT );
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
+#endif
 #if ENABLE_WPP_PARALLELISM
   m_cEncLib.setUseAltDQPCoding                                   ( m_AltDQPCoding );
 #endif
@@ -256,13 +258,13 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
 
-  m_cEncLib.setCPRMode                                           ( m_CPRMode );
-  m_cEncLib.setCPRLocalSearchRangeX                              ( m_CPRLocalSearchRangeX );
-  m_cEncLib.setCPRLocalSearchRangeY                              ( m_CPRLocalSearchRangeY );
-  m_cEncLib.setCPRHashSearch                                     ( m_CPRHashSearch );
-  m_cEncLib.setCPRHashSearchMaxCand                              ( m_CPRHashSearchMaxCand );
-  m_cEncLib.setCPRHashSearchRange4SmallBlk                       ( m_CPRHashSearchRange4SmallBlk );
-  m_cEncLib.setCPRFastMethod                                     ( m_CPRFastMethod );
+  m_cEncLib.setIBCMode                                           ( m_IBCMode );
+  m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
+  m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );
+  m_cEncLib.setIBCHashSearch                                     ( m_IBCHashSearch );
+  m_cEncLib.setIBCHashSearchMaxCand                              ( m_IBCHashSearchMaxCand );
+  m_cEncLib.setIBCHashSearchRange4SmallBlk                       ( m_IBCHashSearchRange4SmallBlk );
+  m_cEncLib.setIBCFastMethod                                     ( m_IBCFastMethod );
 
   m_cEncLib.setUseWrapAround                                     ( m_wrapAround );
   m_cEncLib.setWrapAroundOffset                                  ( m_wrapAroundOffset );

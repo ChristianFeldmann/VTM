@@ -206,6 +206,13 @@ public:
   {
     roundToPrecision(src, m_amvrPrecision[amvr]);
   }
+
+#if JVET_M0444_SMVD
+  Mv getSymmvdMv(const Mv& curMvPred, const Mv& tarMvPred)
+  {
+    return Mv(tarMvPred.hor - hor + curMvPred.hor, tarMvPred.ver - ver + curMvPred.ver);
+  }
+#endif
 };// END CLASS DEFINITION MV
 
 namespace std

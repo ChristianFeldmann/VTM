@@ -1456,7 +1456,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType(I_SLICE);
     }
-    if (pcSlice->getSliceType() == I_SLICE && pcSlice->getSPS()->getSpsNext().getCPRMode())
+    if (pcSlice->getSliceType() == I_SLICE && pcSlice->getSPS()->getSpsNext().getIBCMode())
     {
       pcSlice->setSliceType(P_SLICE);
     }
@@ -1630,7 +1630,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && getPrepareLTRef()) {
       arrangeCompositeReference(pcSlice, rcListPic, pocCurr);
     }
-    if (pcSlice->getSPS()->getSpsNext().getCPRMode())
+    if (pcSlice->getSPS()->getSpsNext().getIBCMode())
     {
       if (m_pcCfg->getIntraPeriod() > 0 && pcSlice->getPOC() % m_pcCfg->getIntraPeriod() == 0)
       {
@@ -1696,7 +1696,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType ( P_SLICE );
     }
-    if (pcSlice->getSPS()->getSpsNext().getCPRMode() && pcSlice->getNumRefIdx(REF_PIC_LIST_0) == 1)
+    if (pcSlice->getSPS()->getSpsNext().getIBCMode() && pcSlice->getNumRefIdx(REF_PIC_LIST_0) == 1)
     {
       m_pcSliceEncoder->setEncCABACTableIdx(P_SLICE);
     }
@@ -1786,7 +1786,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
 
     // disable TMVP when current picture is the only ref picture
-    if (pcSlice->isIRAP() && pcSlice->getSPS()->getSpsNext().getCPRMode())
+    if (pcSlice->isIRAP() && pcSlice->getSPS()->getSpsNext().getIBCMode())
     {
       pcSlice->setEnableTMVPFlag(0);
     }
@@ -1800,7 +1800,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     bool bGPBcheck=false;
     if ( pcSlice->getSliceType() == B_SLICE)
     {
-      if (pcSlice->getSPS()->getSpsNext().getCPRMode())
+      if (pcSlice->getSPS()->getSpsNext().getIBCMode())
       {
         if (pcSlice->getNumRefIdx(RefPicList(0)) - 1 == pcSlice->getNumRefIdx(RefPicList(1)))
         {
@@ -1842,6 +1842,81 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->slices[pcSlice->getSliceSegmentIdx()]->setMvdL1ZeroFlag(pcSlice->getMvdL1ZeroFlag());
 #endif
 
+#if JVET_M0444_SMVD
+    if ( pcSlice->getCheckLDC() == false && pcSlice->getMvdL1ZeroFlag() == false )
+    {
+      int currPOC = pcSlice->getPOC();
+
+      int forwardPOC = currPOC;
+      int backwardPOC = currPOC;
+      int ref = 0, refIdx0 = -1, refIdx1 = -1;
+
+      // search nearest forward POC in List 0
+      for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); ref++ )
+      {
+        int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
+        if ( poc < currPOC && (poc > forwardPOC || refIdx0 == -1) )
+        {
+          forwardPOC = poc;
+          refIdx0 = ref;
+        }
+      }
+
+      // search nearest backward POC in List 1
+      for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); ref++ )
+      {
+        int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
+        if ( poc > currPOC && (poc < backwardPOC || refIdx1 == -1) )
+        {
+          backwardPOC = poc;
+          refIdx1 = ref;
+        }
+      }
+
+      if ( !(forwardPOC < currPOC && backwardPOC > currPOC) )
+      {
+        forwardPOC = currPOC;
+        backwardPOC = currPOC;
+        refIdx0 = -1;
+        refIdx1 = -1;
+
+        // search nearest backward POC in List 0
+        for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); ref++ )
+        {
+          int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
+          if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) )
+          {
+            backwardPOC = poc;
+            refIdx0 = ref;
+          }
+        }
+
+        // search nearest forward POC in List 1
+        for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); ref++ )
+        {
+          int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
+          if ( poc < currPOC && (poc > forwardPOC || refIdx1 == -1) )
+          {
+            forwardPOC = poc;
+            refIdx1 = ref;
+          }
+        }
+      }
+
+      if ( forwardPOC < currPOC && backwardPOC > currPOC )
+      {
+        pcSlice->setBiDirPred( true, refIdx0, refIdx1 );
+      }
+      else
+      {
+        pcSlice->setBiDirPred( false, -1, -1 );
+      }
+    }
+    else
+    {
+      pcSlice->setBiDirPred( false, -1, -1 );
+    }
+#endif
 
     double lambda            = 0.0;
     int actualHeadBits       = 0;
@@ -1983,14 +2058,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->m_uEnerHpCtu.resize( numberOfCtusInFrame );
     pcPic->m_iOffsetCtu.resize( numberOfCtusInFrame );
 #endif
-    if (pcSlice->getSPS()->getUseSAO())
+    if (pcSlice->getSPS()->getSAOEnabledFlag())
     {
       pcPic->resizeSAO( numberOfCtusInFrame, 0 );
       pcPic->resizeSAO( numberOfCtusInFrame, 1 );
     }
 
     // it is used for signalling during CTU mode decision, i.e. before ALF processing
-    if( pcSlice->getSPS()->getUseALF() )
+    if( pcSlice->getSPS()->getALFEnabledFlag() )
     {
       pcPic->resizeAlfCtuEnableFlag( numberOfCtusInFrame );
       std::memset( pcSlice->getAlfSliceParam().enabledFlag, false, sizeof( pcSlice->getAlfSliceParam().enabledFlag ) );
@@ -2087,7 +2162,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice = pcPic->slices[0];
 
       // SAO parameter estimation using non-deblocked pixels for CTU bottom and right boundary areas
-      if( pcSlice->getSPS()->getUseSAO() && m_pcCfg->getSaoCtuBoundary() )
+      if( pcSlice->getSPS()->getSAOEnabledFlag() && m_pcCfg->getSaoCtuBoundary() )
       {
         m_pcSAO->getPreDBFStatistics( cs );
       }
@@ -2113,7 +2188,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 1 ) ) );
 
-      if( pcSlice->getSPS()->getUseSAO() )
+      if( pcSlice->getSPS()->getSAOEnabledFlag() )
       {
         bool sliceEnabled[MAX_NUM_COMPONENT];
         m_pcSAO->initCABACEstimator( m_pcEncLib->getCABACEncoder(), m_pcEncLib->getCtxCache(), pcSlice );
@@ -2136,7 +2211,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
 
-      if( pcSlice->getSPS()->getUseALF() )
+      if( pcSlice->getSPS()->getALFEnabledFlag() )
       {
         AlfSliceParam alfSliceParam;
         m_pcALF->initCABACEstimator( m_pcEncLib->getCABACEncoder(), m_pcEncLib->getCtxCache(), pcSlice );
@@ -2172,7 +2247,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
 #endif
-      if( pcSlice->getSPS()->getUseSAO() )
+      if( pcSlice->getSPS()->getSAOEnabledFlag() )
       {
         m_pcSAO->disabledRate( *pcPic->cs, pcPic->getSAO(1), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma());
       }

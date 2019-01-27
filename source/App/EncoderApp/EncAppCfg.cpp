@@ -828,6 +828,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LMChroma",                                        m_LMChroma,                                           1, " LMChroma prediction "
                                                                                                                "\t0:  Disable LMChroma\n"
                                                                                                                "\t1:  Enable LMChroma\n")
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  ("CclmCollocatedChroma",                            m_cclmCollocatedChromaFlag,                       false, "Specifies the location of the top-left downsampled luma sample in cross-component linear model intra prediction relative to the top-left luma sample\n"
+                                                                                                               "\t0:  horizontally co-sited, vertically shifted by 0.5 units of luma samples\n"
+                                                                                                               "\t1:  collocated\n")
+#endif
 #if JVET_M0464_UNI_MTS
   ("MTS",                                             m_MTS,                                                0, "Multiple Transform Set (MTS)\n"
     "\t0:  Disable MTS\n"
@@ -860,13 +865,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
 
-  ( "CPR",                                            m_CPRMode,                                           0u, "CPRMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
-  ( "CPRLocalSearchRangeX",                           m_CPRLocalSearchRangeX,                            128u, "Search range of CPR local search in x direction")
-  ( "CPRLocalSearchRangeY",                           m_CPRLocalSearchRangeY,                            128u, "Search range of CPR local search in y direction")
-  ( "CPRHashSearch",                                  m_CPRHashSearch,                                     1u, "Hash based CPR search")
-  ( "CPRHashSearchMaxCand",                           m_CPRHashSearchMaxCand,                            256u, "Max candidates for hash based CPR search")
-  ( "CPRHashSearchRange4SmallBlk",                    m_CPRHashSearchRange4SmallBlk,                     256u, "Small block search range in based CPR search")
-  ( "CPRFastMethod",                                  m_CPRFastMethod,                                     6u, "Fast methods for CPR")
+  ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
+  ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
+  ( "IBCLocalSearchRangeY",                           m_IBCLocalSearchRangeY,                            128u, "Search range of IBC local search in y direction")
+  ( "IBCHashSearch",                                  m_IBCHashSearch,                                     1u, "Hash based IBC search")
+  ( "IBCHashSearchMaxCand",                           m_IBCHashSearchMaxCand,                            256u, "Max candidates for hash based IBC search")
+  ( "IBCHashSearchRange4SmallBlk",                    m_IBCHashSearchRange4SmallBlk,                     256u, "Small block search range in based IBC search")
+  ( "IBCFastMethod",                                  m_IBCFastMethod,                                     6u, "Fast methods for IBC")
 
   ("WrapAround",                                      m_wrapAround,                                     false, "Enable horizontal wrap-around motion compensation for inter prediction (0:off, 1:on)  [default: off]")
   ("WrapAroundOffset",                                m_wrapAroundOffset,                                  0u, "Offset in luma samples used for computing the horizontal wrap-around position")
@@ -993,7 +998,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("DeblockingFilterMetric",                          m_DeblockingFilterMetric,                         false)
 #endif
   // Coding tools
-  ("AMP",                                             m_enableAMP,                                       true, "Enable asymmetric motion partitions")
   ("CrossComponentPrediction",                        m_crossComponentPredictionEnabledFlag,            false, "Enable the use of cross-component prediction (not valid in V1 profiles)")
   ("ReconBasedCrossCPredictionEstimate",              m_reconBasedCrossCPredictionEstimate,             false, "When determining the alpha value for cross-component prediction, use the decoded residual rather than the pre-transform encoder-side residual")
   ("SaoLumaOffsetBitShift",                           saoOffsetBitShift[CHANNEL_TYPE_LUMA],                 0, "Specify the luma SAO bit-shift. If negative, automatically calculate a suitable value based upon bit depth and initial QP")
@@ -1927,12 +1931,10 @@ bool EncAppCfg::xCheckParameter()
 #endif
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_LargeCTU, "Large CTU is only allowed with NEXT profile" );
-    xConfirmPara( m_SubPuMvpMode != 0, "Sub-PU motion vector prediction is only allowed with NEXT profile" );
-    xConfirmPara( m_BIO, "BIO only allowed with NEXT profile" );
     xConfirmPara( m_DisableMotionCompression, "Disable motion data compression only allowed with NEXT profile" );
     xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
-    xConfirmPara(m_CPRMode, "CPR Mode only allowed with NEXT profile");
+    xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
 #if JVET_M0464_UNI_MTS
     xConfirmPara( m_MTS, "MTS only allowed with NEXT profile" );
@@ -3124,6 +3126,12 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "AltDQPCoding:%d ", m_AltDQPCoding );
 #endif
     msg( VERBOSE, "LMChroma:%d ", m_LMChroma );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+    if( m_LMChroma && m_chromaFormatIDC == CHROMA_420 )
+    {
+      msg( VERBOSE, "CclmCollocatedChroma:%d ", m_cclmCollocatedChromaFlag );
+    }
+#endif
 #if JVET_M0464_UNI_MTS
     msg( VERBOSE, "MTS: %1d(intra) %1d(inter) ", m_MTS & 1, ( m_MTS >> 1 ) & 1 );
 #else
@@ -3138,7 +3146,7 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
   }
-    msg(VERBOSE, "CPR:%d ", m_CPRMode);
+    msg(VERBOSE, "IBC:%d ", m_IBCMode);
   msg( VERBOSE, "WrapAround:%d ", m_wrapAround);
   if( m_wrapAround )
   {

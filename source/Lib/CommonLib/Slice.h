@@ -820,6 +820,9 @@ private:
   bool              m_MTTEnabled;                 //
   bool              m_MHIntra;
   bool              m_Triangle;
+#if JVET_M0255_FRACMMVD_SWITCH
+  bool              allowDisFracMMVD;
+#endif
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
 #endif
@@ -916,6 +919,10 @@ public:
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
   void      setCPRMode            (unsigned CPRMode)                                { m_CPRMode = CPRMode; }
   unsigned  getCPRMode            ()                                      const     { return m_CPRMode; }
+#if JVET_M0255_FRACMMVD_SWITCH
+  void      setAllowDisFracMMVD   ( bool b )                                        { allowDisFracMMVD = b;    }
+  bool      getAllowDisFracMMVD   ()                                      const     { return allowDisFracMMVD; }
+#endif
 };
 
 
@@ -1602,7 +1609,9 @@ private:
   uint32_t                       m_colRefIdx;
   uint32_t                       m_maxNumMergeCand;
   uint32_t                   m_maxNumAffineMergeCand;
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  bool                       m_disFracMMVD;
+#endif
   double                     m_lambdas[MAX_NUM_COMPONENT];
 
   bool                       m_abEqualRef  [NUM_REF_PIC_LIST_01][MAX_NUM_REF][MAX_NUM_REF];
@@ -1843,7 +1852,10 @@ public:
   uint32_t                    getMaxNumMergeCand() const                             { return m_maxNumMergeCand;                                     }
   void                        setMaxNumAffineMergeCand( uint32_t val )               { m_maxNumAffineMergeCand = val;  }
   uint32_t                    getMaxNumAffineMergeCand() const                       { return m_maxNumAffineMergeCand; }
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  void                        setDisFracMMVD( bool val )                             { m_disFracMMVD = val;                                          }
+  bool                        getDisFracMMVD() const                                 { return m_disFracMMVD;                                         }
+#endif
   void                        setNoOutputPriorPicsFlag( bool val )                   { m_noOutputPriorPicsFlag = val;                                }
   bool                        getNoOutputPriorPicsFlag() const                       { return m_noOutputPriorPicsFlag;                               }
 

@@ -501,8 +501,15 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   tempIdx = tempIdx - fPosBaseIdx * (MMVD_MAX_REFINE_NUM);
   fPosStep = tempIdx / 4;
   fPosPosition = tempIdx - fPosStep * (4);
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  int offset = refMvdCands[fPosStep];
+  if ( pu.cu->slice->getDisFracMMVD() )
+  {
+    offset <<= 2;
+  }
+#else
   const int offset = refMvdCands[fPosStep];
+#endif
   const int refList0 = mmvdBaseMv[fPosBaseIdx][0].refIdx;
   const int refList1 = mmvdBaseMv[fPosBaseIdx][1].refIdx;
 

@@ -280,7 +280,11 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   ::memset(m_subMergeBlkNum, 0, sizeof(m_subMergeBlkNum));
   m_prevPOC = MAX_UINT;
 
+#if  JVET_M0255_FRACMMVD_SWITCH
+  if ( ( m_pcEncCfg->getCPRHashSearch() && m_pcEncCfg->getCPRMode() ) || m_pcEncCfg->getAllowDisFracMMVD() )
+#else
   if (m_pcEncCfg->getCPRHashSearch() && m_pcEncCfg->getCPRMode())
+#endif
   {
     m_cprHashMap.init(m_pcEncCfg->getSourceWidth(), m_pcEncCfg->getSourceHeight());
   }
@@ -292,10 +296,12 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
 
 void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsigned ctuRsAddr, const int prevQP[], const int currQP[] )
 {
+#if !JVET_M0255_FRACMMVD_SWITCH
   if (m_pcEncCfg->getCPRHashSearch() && ctuRsAddr == 0 && cs.slice->getSPS()->getSpsNext().getCPRMode())
   {
     m_cprHashMap.rebuildPicHashMap(cs.picture->getOrigBuf());
   }
+#endif
   m_modeCtrl->initCTUEncoding( *cs.slice );
 
 #if ENABLE_SPLIT_PARALLELISM

@@ -864,7 +864,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  ("AllowDisFracMMVD",                                m_allowDisFracMMVD,                               false, "Disable fractional MVD in MMVD mode adaptively")
+#endif
   ( "CPR",                                            m_CPRMode,                                           0u, "CPRMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "CPRLocalSearchRangeX",                           m_CPRLocalSearchRangeX,                            128u, "Search range of CPR local search in x direction")
   ( "CPRLocalSearchRangeY",                           m_CPRLocalSearchRangeY,                            128u, "Search range of CPR local search in y direction")
@@ -3145,6 +3147,9 @@ void EncAppCfg::xPrintParameter()
 #endif
     msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
+#if JVET_M0255_FRACMMVD_SWITCH
+    msg( VERBOSE, "AllowDisFracMMVD:%d ", m_allowDisFracMMVD );
+#endif
   }
     msg(VERBOSE, "CPR:%d ", m_CPRMode);
   msg( VERBOSE, "WrapAround:%d ", m_wrapAround);

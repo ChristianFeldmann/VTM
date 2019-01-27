@@ -258,13 +258,13 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
 
-  m_cEncLib.setCPRMode                                           ( m_CPRMode );
-  m_cEncLib.setCPRLocalSearchRangeX                              ( m_CPRLocalSearchRangeX );
-  m_cEncLib.setCPRLocalSearchRangeY                              ( m_CPRLocalSearchRangeY );
-  m_cEncLib.setCPRHashSearch                                     ( m_CPRHashSearch );
-  m_cEncLib.setCPRHashSearchMaxCand                              ( m_CPRHashSearchMaxCand );
-  m_cEncLib.setCPRHashSearchRange4SmallBlk                       ( m_CPRHashSearchRange4SmallBlk );
-  m_cEncLib.setCPRFastMethod                                     ( m_CPRFastMethod );
+  m_cEncLib.setIBCMode                                           ( m_IBCMode );
+  m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
+  m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );
+  m_cEncLib.setIBCHashSearch                                     ( m_IBCHashSearch );
+  m_cEncLib.setIBCHashSearchMaxCand                              ( m_IBCHashSearchMaxCand );
+  m_cEncLib.setIBCHashSearchRange4SmallBlk                       ( m_IBCHashSearchRange4SmallBlk );
+  m_cEncLib.setIBCFastMethod                                     ( m_IBCFastMethod );
 
   m_cEncLib.setUseWrapAround                                     ( m_wrapAround );
   m_cEncLib.setWrapAroundOffset                                  ( m_wrapAroundOffset );

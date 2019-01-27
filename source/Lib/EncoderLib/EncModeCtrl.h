@@ -70,8 +70,8 @@ enum EncTestModeType
   ETM_RECO_CACHED,
 #endif
   ETM_TRIGGER_IMV_LIST,
-  ETM_CPR,    // cpr mode
-  ETM_CPR_MERGE, // cpr merge mode
+  ETM_IBC,    // ibc mode
+  ETM_IBC_MERGE, // ibc merge mode
   ETM_INVALID
 };
 

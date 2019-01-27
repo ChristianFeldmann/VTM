@@ -33,11 +33,11 @@
 
 /**
  * \file
- * \brief Implementation of CprHashMap class
+ * \brief Implementation of IbcHashMap class
  */
 
 #include "CommonDefX86.h"
-#include "../CprHashMap.h"
+#include "../IbcHashMap.h"
 
 #ifdef TARGET_SIMD_X86
 
@@ -50,12 +50,12 @@ static uint32_t simdComputeCrc32c16bit(uint32_t crc, const Pel pel)
 }
 
 template <X86_VEXT vext>
-void CprHashMap::_initCprHashMapX86()
+void IbcHashMap::_initIbcHashMapX86()
 {
   m_computeCrc32c = simdComputeCrc32c16bit<vext>;
 }
 
-template void CprHashMap::_initCprHashMapX86<SIMDX86>();
+template void IbcHashMap::_initIbcHashMapX86<SIMDX86>();
 
 
 #endif //#ifdef TARGET_SIMD_X86

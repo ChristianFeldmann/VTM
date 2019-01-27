@@ -760,7 +760,7 @@ bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& pa
   if( encInfo.cu.qp != qp )
     return false;
   if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner )
-    || encInfo.cu.cpr
+    || encInfo.cu.ibc
     )
   {
     return false;
@@ -951,25 +951,25 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 #endif
 
   xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, true );
-  bool checkCpr = true;
+  bool checkIbc = true;
   if (cs.chType == CHANNEL_TYPE_CHROMA)
   {
-    CprLumaCoverage cprLumaCoverage = cs.getCprLumaCoverage(cs.area.Cb());
-    switch (cprLumaCoverage)
+    IbcLumaCoverage ibcLumaCoverage = cs.getIbcLumaCoverage(cs.area.Cb());
+    switch (ibcLumaCoverage)
     {
-    case CPR_LUMA_COVERAGE_FULL:
-      // check CPR 
+    case IBC_LUMA_COVERAGE_FULL:
+      // check IBC 
       break;
-    case CPR_LUMA_COVERAGE_PARTIAL:
-      // do not check CPR
-      checkCpr = false;
+    case IBC_LUMA_COVERAGE_PARTIAL:
+      // do not check IBC
+      checkIbc = false;
       break;
-    case CPR_LUMA_COVERAGE_NONE:
-      // do not check CPR
-      checkCpr = false;
+    case IBC_LUMA_COVERAGE_NONE:
+      // do not check IBC
+      checkIbc = false;
       break;
     default:
-      THROW("Unknown CPR luma coverage type");
+      THROW("Unknown IBC luma coverage type");
     }
   }
   // Add coding modes here
@@ -1076,13 +1076,13 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     // add intra modes
     m_ComprCUCtxList.back().testModes.push_back( { ETM_IPCM,  ETO_STANDARD, qp, lossless } );
     m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp, lossless } );
-    // add cpr mode to intra path
-    if (cs.sps->getSpsNext().getCPRMode() && checkCpr )
+    // add ibc mode to intra path
+    if (cs.sps->getSpsNext().getIBCMode() && checkIbc )
     {
-      m_ComprCUCtxList.back().testModes.push_back({ ETM_CPR,         ETO_STANDARD,  qp, lossless });
+      m_ComprCUCtxList.back().testModes.push_back({ ETM_IBC,         ETO_STANDARD,  qp, lossless });
       if (cs.chType == CHANNEL_TYPE_LUMA)
       {
-        m_ComprCUCtxList.back().testModes.push_back({ ETM_CPR_MERGE,   ETO_STANDARD,  qp, lossless });
+        m_ComprCUCtxList.back().testModes.push_back({ ETM_IBC_MERGE,   ETO_STANDARD,  qp, lossless });
       }
     }
   }
@@ -1241,7 +1241,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     }
 
     // INTRA MODES
-    if (cs.sps->getSpsNext().getCPRMode() && !cuECtx.bestTU)
+    if (cs.sps->getSpsNext().getIBCMode() && !cuECtx.bestTU)
       return true;
     CHECK( !slice.isIntra() && !cuECtx.bestTU, "No possible non-intra encoding for a P- or B-slice found" );
 
@@ -1254,8 +1254,8 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
-    if ((m_pcEncCfg->getCPRFastMethod() & CPR_FAST_METHOD_NOINTRA_CPRCBF0)
-      && (bestMode.type == ETM_CPR || bestMode.type == ETM_CPR_MERGE)
+    if ((m_pcEncCfg->getIBCFastMethod() & IBC_FAST_METHOD_NOINTRA_IBCCBF0)
+      && (bestMode.type == ETM_IBC || bestMode.type == ETM_IBC_MERGE)
       && (!cuECtx.bestCU->Y().valid() || cuECtx.bestTU->cbf[0] == 0)
       && (!cuECtx.bestCU->Cb().valid() || cuECtx.bestTU->cbf[1] == 0)
       && (!cuECtx.bestCU->Cr().valid() || cuECtx.bestTU->cbf[2] == 0))
@@ -1296,10 +1296,10 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     // PCM MODES
     return sps.getPCMEnabledFlag() && width <= ( 1 << sps.getPCMLog2MaxSize() ) && width >= ( 1 << sps.getPCMLog2MinSize() );
   }
-  else if (encTestmode.type == ETM_CPR || encTestmode.type == ETM_CPR_MERGE)
+  else if (encTestmode.type == ETM_IBC || encTestmode.type == ETM_IBC_MERGE)
   {
-    // CPR MODES
-    return sps.getSpsNext().getCPRMode() && width <= CPR_MAX_CAND_SIZE && partitioner.currArea().lumaSize().height <= CPR_MAX_CAND_SIZE;
+    // IBC MODES
+    return sps.getSpsNext().getIBCMode() && width <= IBC_MAX_CAND_SIZE && partitioner.currArea().lumaSize().height <= IBC_MAX_CAND_SIZE;
   }
   else if( isModeInter( encTestmode ) )
   {

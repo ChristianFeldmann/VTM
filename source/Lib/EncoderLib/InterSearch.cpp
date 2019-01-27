@@ -695,9 +695,9 @@ Distortion InterSearch::xGetInterPredictionError( PredictionUnit& pu, PelUnitBuf
   return (Distortion)cDistParam.distFunc( cDistParam );
 }
 
-/// add cpr search functions here
+/// add ibc search functions here
 
-void InterSearch::xCPRSearchMVCandUpdate(Distortion  sad, int x, int y, Distortion* sadBestCand, Mv* cMVCand)
+void InterSearch::xIBCSearchMVCandUpdate(Distortion  sad, int x, int y, Distortion* sadBestCand, Mv* cMVCand)
 {
   int j = CHROMA_REFINEMENT_CANDIDATES - 1;
 
@@ -720,7 +720,7 @@ void InterSearch::xCPRSearchMVCandUpdate(Distortion  sad, int x, int y, Distorti
   }
 }
 
-int InterSearch::xCPRSearchMVChromaRefine(PredictionUnit& pu,
+int InterSearch::xIBCSearchMVChromaRefine(PredictionUnit& pu,
   int         roiWidth,
   int         roiHeight,
   int         cuPelX,
@@ -814,7 +814,7 @@ int InterSearch::xCPRSearchMVChromaRefine(PredictionUnit& pu,
 
 static unsigned int xMergeCandLists(Mv *dst, unsigned int dn, Mv *src, unsigned int sn)
 {
-  for (unsigned int cand = 0; cand < sn && dn<CPR_NUM_CANDIDATES; cand++)
+  for (unsigned int cand = 0; cand < sn && dn<IBC_NUM_CANDIDATES; cand++)
   {
     bool found = false;
     for (int j = 0; j<dn; j++)
@@ -897,7 +897,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
 
     Mv cMvPredEncOnly[16];
     int nbPreds = 0;
-    PU::getCprMVPsEncOnly(pu, cMvPredEncOnly, nbPreds);
+    PU::getIbcMVPsEncOnly(pu, cMvPredEncOnly, nbPreds);
     m_numBVs = xMergeCandLists(m_acBVs, m_numBVs, cMvPredEncOnly, nbPreds);
 
     for (unsigned int cand = 0; cand < m_numBVs; cand++)
@@ -917,7 +917,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
           m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * yPred + xPred;
           sad += m_cDistParam.distFunc(m_cDistParam);
 
-          xCPRSearchMVCandUpdate(sad, xPred, yPred, sadBestCand, cMVCand);
+          xIBCSearchMVCandUpdate(sad, xPred, yPred, sadBestCand, cMVCand);
         }
       }
     }
@@ -939,7 +939,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
       m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y;
       sad += m_cDistParam.distFunc(m_cDistParam);
 
-      xCPRSearchMVCandUpdate(sad, 0, y, sadBestCand, cMVCand);
+      xIBCSearchMVCandUpdate(sad, 0, y, sadBestCand, cMVCand);
       tempSadBest = sadBestCand[0];
       if (sadBestCand[0] <= 3)
       {
@@ -965,7 +965,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
       sad += m_cDistParam.distFunc(m_cDistParam);
 
 
-      xCPRSearchMVCandUpdate(sad, x, 0, sadBestCand, cMVCand);
+      xIBCSearchMVCandUpdate(sad, x, 0, sadBestCand, cMVCand);
       tempSadBest = sadBestCand[0];
       if (sadBestCand[0] <= 3)
       {
@@ -984,7 +984,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
     if ((!bestX && !bestY) || (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL) <= 32))
     {
       //chroma refine
-      bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+      bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
       bestX = cMVCand[bestCandIdx].getHor();
       bestY = cMVCand[bestCandIdx].getVer();
       sadBest = sadBestCand[bestCandIdx];
@@ -1015,7 +1015,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
           m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y + x;
           sad += m_cDistParam.distFunc(m_cDistParam);
 
-          xCPRSearchMVCandUpdate(sad, x, y, sadBestCand, cMVCand);
+          xIBCSearchMVCandUpdate(sad, x, y, sadBestCand, cMVCand);
         }
       }
 
@@ -1025,7 +1025,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
       if (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL) <= 16)
       {
         //chroma refine
-        bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+        bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
 
         bestX = cMVCand[bestCandIdx].getHor();
         bestY = cMVCand[bestCandIdx].getVer();
@@ -1056,11 +1056,11 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
           sad += m_cDistParam.distFunc(m_cDistParam);
 
 
-          xCPRSearchMVCandUpdate(sad, x, y, sadBestCand, cMVCand);
+          xIBCSearchMVCandUpdate(sad, x, y, sadBestCand, cMVCand);
           if (sadBestCand[0] <= 5)
           {
             //chroma refine & return
-            bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+            bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
             bestX = cMVCand[bestCandIdx].getHor();
             bestY = cMVCand[bestCandIdx].getVer();
             sadBest = sadBestCand[bestCandIdx];
@@ -1078,7 +1078,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
       if ((sadBest >= tempSadBest) || ((sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL)) <= 32))
       {
         //chroma refine
-        bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+        bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
         bestX = cMVCand[bestCandIdx].getHor();
         bestY = cMVCand[bestCandIdx].getVer();
         sadBest = sadBestCand[bestCandIdx];
@@ -1113,11 +1113,11 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
           sad += m_cDistParam.distFunc(m_cDistParam);
 
 
-          xCPRSearchMVCandUpdate(sad, x, y, sadBestCand, cMVCand);
+          xIBCSearchMVCandUpdate(sad, x, y, sadBestCand, cMVCand);
           if (sadBestCand[0] <= 5)
           {
             //chroma refine & return
-            bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+            bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
             bestX = cMVCand[bestCandIdx].getHor();
             bestY = cMVCand[bestCandIdx].getVer();
             sadBest = sadBestCand[bestCandIdx];
@@ -1130,7 +1130,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
     }
   }
 
-  bestCandIdx = xCPRSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
+  bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
 
   bestX = cMVCand[bestCandIdx].getHor();
   bestY = cMVCand[bestCandIdx].getVer();
@@ -1155,14 +1155,14 @@ end:
 
 
 // based on xMotionEstimation
-void InterSearch::xCPREstimation(PredictionUnit& pu, PelUnitBuf& origBuf,
+void InterSearch::xIBCEstimation(PredictionUnit& pu, PelUnitBuf& origBuf,
   Mv     *pcMvPred,
   Mv     &rcMv,
   Distortion &ruiCost, const int localSearchRangeX, const int localSearchRangeY
 )
 {
   bool buffered = false;
-  if (m_pcEncCfg->getCPRFastMethod() & CPR_FAST_METHOD_BUFFERBV)
+  if (m_pcEncCfg->getIBCFastMethod() & IBC_FAST_METHOD_BUFFERBV)
   {
     ruiCost = MAX_UINT;
     const int iPicWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
@@ -1280,10 +1280,10 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
   rcMvSrchRngRB >>= 2;
 }
 
-bool InterSearch::predCPRSearch(CodingUnit& cu, Partitioner& partitioner, const int localSearchRangeX, const int localSearchRangeY, CprHashMap& cprHashMap)
+bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const int localSearchRangeX, const int localSearchRangeY, IbcHashMap& ibcHashMap)
 {
-  // check only no greater than CPR_MAX_CAND_SIZE
-  if (cu.Y().width > CPR_MAX_CAND_SIZE || cu.Y().height > CPR_MAX_CAND_SIZE)
+  // check only no greater than IBC_MAX_CAND_SIZE
+  if (cu.Y().width > IBC_MAX_CAND_SIZE || cu.Y().height > IBC_MAX_CAND_SIZE)
     return false;
   Mv           cMvSrchRngLT;
   Mv           cMvSrchRngRB;
@@ -1297,7 +1297,7 @@ bool InterSearch::predCPRSearch(CodingUnit& cu, Partitioner& partitioner, const 
 
     CHECK(pu.cu != &cu, "PU is contained in another CU");
     //////////////////////////////////////////////////////////
-    /// cpr search
+    /// ibc search
     pu.cu->imv = 2;
     AMVPInfo amvpInfo4Pel;
     PU::fillMvpCand(pu, REF_PIC_LIST_0, pu.refIdx[REF_PIC_LIST_0], amvpInfo4Pel);
@@ -1315,23 +1315,23 @@ bool InterSearch::predCPRSearch(CodingUnit& cu, Partitioner& partitioner, const 
     cMv.setZero();
     Distortion cost = 0;
 
-    if (m_pcEncCfg->getCPRHashSearch())
+    if (m_pcEncCfg->getIBCHashSearch())
     {
-      xxCPRHashSearch(pu, cMvPred, iBvpNum, cMv, bvpIdxBest, cprHashMap);
+      xxIBCHashSearch(pu, cMvPred, iBvpNum, cMv, bvpIdxBest, ibcHashMap);
     }
 
     if (cMv.getHor() == 0 && cMv.getVer() == 0)
     {
       // if hash search does not work or is not enabled
       PelUnitBuf origBuf = pu.cs->getOrgBuf(pu);
-      xCPREstimation(pu, origBuf, cMvPred, cMv, cost, localSearchRangeX, localSearchRangeY);
+      xIBCEstimation(pu, origBuf, cMvPred, cMv, cost, localSearchRangeX, localSearchRangeY);
     }
 
     if (cMv.getHor() == 0 && cMv.getVer() == 0)
     {
       return false;
     }
-    /// cpr search
+    /// ibc search
     /////////////////////////////////////////////////////////
     unsigned int bitsBVPBest, bitsBVPTemp;
     bitsBVPBest = MAX_INT;
@@ -1412,13 +1412,13 @@ bool InterSearch::predCPRSearch(CodingUnit& cu, Partitioner& partitioner, const 
   return true;
 }
 
-void InterSearch::xxCPRHashSearch(PredictionUnit& pu, Mv* mvPred, int numMvPred, Mv &mv, int& idxMvPred, CprHashMap& cprHashMap)
+void InterSearch::xxIBCHashSearch(PredictionUnit& pu, Mv* mvPred, int numMvPred, Mv &mv, int& idxMvPred, IbcHashMap& ibcHashMap)
 {
   mv.setZero();
   m_pcRdCost->setCostScale(0);
 
   std::vector<Position> candPos;
-  if (cprHashMap.cprHashMatch(pu.Y(), candPos, *pu.cs, m_pcEncCfg->getCPRHashSearchMaxCand(), m_pcEncCfg->getCPRHashSearchRange4SmallBlk()))
+  if (ibcHashMap.ibcHashMatch(pu.Y(), candPos, *pu.cs, m_pcEncCfg->getIBCHashSearchMaxCand(), m_pcEncCfg->getIBCHashSearchRange4SmallBlk()))
   {
     unsigned int minCost = MAX_UINT;
 
@@ -1588,7 +1588,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       {
         RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
         int refPicNumber = cs.slice->getNumRefIdx(eRefPicList);
-        if (cs.slice->getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
+        if (cs.slice->getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
         {
           refPicNumber--;
         }
@@ -1794,7 +1794,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
           iRefStart = 0;
           iRefEnd   = cs.slice->getNumRefIdx(eRefPicList)-1;
-          if (cs.slice->getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
+          if (cs.slice->getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
           {
             iRefEnd--;
           }
@@ -3494,7 +3494,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   {
     RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
     int refPicNumber = slice.getNumRefIdx(eRefPicList);
-    if (slice.getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
+    if (slice.getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
     {
       refPicNumber--;
     }
@@ -3867,7 +3867,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 
       iRefStart = 0;
       iRefEnd   = slice.getNumRefIdx(eRefPicList) - 1;
-      if (slice.getSPS()->getSpsNext().getCPRMode() && eRefPicList == REF_PIC_LIST_0)
+      if (slice.getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
       {
         iRefEnd--;
       }

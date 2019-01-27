@@ -374,10 +374,10 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
 
   int iRefIdx = pu.refIdx[eRefPicList];
   Mv mv[3];
-  bool isCPR = false;
+  bool isIBC = false;
   if (pu.cs->slice->getRefPic(eRefPicList, iRefIdx)->getPOC() == pu.cs->slice->getPOC())
   {
-    isCPR = true;
+    isIBC = true;
   }
   if( pu.cu->affine )
   {
@@ -413,7 +413,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
     {
       xPredInterBlk( compID, pu, pu.cu->slice->getRefPic( eRefPicList, iRefIdx ), mv[0], pcYuvPred, bi, pu.cu->slice->clpRng( compID )
                     , bioApplied
-                    , isCPR
+                    , isIBC
                     );
 
     }
@@ -524,7 +524,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
 
 void InterPrediction::xPredInterBlk ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
                                      , const bool& bioApplied
-                                     , bool isCPR
+                                     , bool isIBC
                                     )
 {
   JVET_J0090_SET_REF_PICTURE( refPic, compID );
@@ -536,7 +536,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 
   int xFrac = _mv.hor & ((1 << shiftHor) - 1);
   int yFrac = _mv.ver & ((1 << shiftVer) - 1);
-  if (isCPR)
+  if (isIBC)
   {
     xFrac = yFrac = 0;
     JVET_J0090_SET_CACHE_ENABLE( false );
@@ -1077,7 +1077,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   , const bool luma, const bool chroma
 )
 {
-  // dual tree handling for CPR as the only ref
+  // dual tree handling for IBC as the only ref
   if (!luma || !chroma)
   {
     if (!luma && chroma)
@@ -1118,7 +1118,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   }
   else
   {
-    if (pu.mergeType != MRG_TYPE_DEFAULT_N && pu.mergeType != MRG_TYPE_CPR)
+    if (pu.mergeType != MRG_TYPE_DEFAULT_N && pu.mergeType != MRG_TYPE_IBC)
     {
       xSubPuMC( pu, predBuf, eRefPicList );
     }

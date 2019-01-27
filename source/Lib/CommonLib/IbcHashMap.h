@@ -31,12 +31,12 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** \file     CprHashMap.h
-    \brief    CPR hash map encoder class (header)
+/** \file     IbcHashMap.h
+    \brief    IBC hash map encoder class (header)
 */
 
-#ifndef __CPRHASHMAP__
-#define __CPRHASHMAP__
+#ifndef __IBCHASHMAP__
+#define __IBCHASHMAP__
 
 // Include files
 #include "CommonLib/CommonDef.h"
@@ -55,7 +55,7 @@
 // Class definition
 // ====================================================================================================================
 
-class CprHashMap
+class IbcHashMap
 {
 private:
   int     m_picWidth;
@@ -73,23 +73,23 @@ private:
 public:
   uint32_t (*m_computeCrc32c) (uint32_t crc, const Pel pel);
 
-  CprHashMap();
-  virtual ~CprHashMap();
+  IbcHashMap();
+  virtual ~IbcHashMap();
 
   void    init(const int picWidth, const int picHeight);
   void    destroy();
   void    rebuildPicHashMap(const PelUnitBuf& pic);
-  bool    cprHashMatch(const Area& lumaArea, std::vector<Position>& cand, const CodingStructure& cs, const int maxCand, const int searchRange4SmallBlk);
+  bool    ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand, const CodingStructure& cs, const int maxCand, const int searchRange4SmallBlk);
   int     getHashHitRatio(const Area& lumaArea);
 
 #ifdef TARGET_SIMD_X86
-  void    initCprHashMapX86();
+  void    initIbcHashMapX86();
   template <X86_VEXT vext>
-  void    _initCprHashMapX86();
+  void    _initIbcHashMapX86();
 #endif
 
 };
 
 //! \}
 
-#endif // __CPRHASHMAP__
+#endif // __IBCHASHMAP__

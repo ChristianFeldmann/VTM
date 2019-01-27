@@ -432,7 +432,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       pcRefPic = xGetLongTermRefPic(rcListPic, m_pRPS->getPOC(i), m_pRPS->getCheckLTMSBPresent(i));
     }
   }
-  if (getSPS()->getSpsNext().getCPRMode())
+  if (getSPS()->getSpsNext().getIBCMode())
   {
     RefPicSetLtCurr[NumPicLtCurr] = getPic();
     //getPic()->setIsLongTerm(true);
@@ -451,7 +451,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
     // - Otherwise, when the current picture contains a P or B slice, the value of NumPocTotalCurr shall not be equal to 0.
     if (getRapPicFlag())
     {
-      if (getSPS()->getSpsNext().getCPRMode())
+      if (getSPS()->getSpsNext().getIBCMode())
       {
         CHECK(numPicTotalCurr != 1, "Invalid state");
       }
@@ -526,7 +526,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       m_bIsUsedAsLongTerm[REF_PIC_LIST_1][rIdx] = ( cIdx >= NumPicStCurr0 + NumPicStCurr1 );
     }
   }
-  if (getSPS()->getSpsNext().getCPRMode())
+  if (getSPS()->getSpsNext().getIBCMode())
   {
     m_apcRefPicList[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = getPic();
     m_bIsUsedAsLongTerm[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = true;
@@ -561,7 +561,7 @@ int Slice::getNumRpsCurrTempList() const
       numRpsCurrTempList++;
     }
   }
-  if (getSPS()->getSpsNext().getCPRMode())
+  if (getSPS()->getSpsNext().getIBCMode())
   {
     return numRpsCurrTempList + 1;
   }
@@ -1781,7 +1781,7 @@ SPSNext::SPSNext( SPS& sps )
   , m_ImvMode                   ( IMV_OFF )
   , m_MTTMode                   ( 0 )
     , m_compositeRefEnabled     ( false )
-  , m_CPRMode                   ( 0 )
+  , m_IBCMode                   ( 0 )
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags here (with "false" as default values)
 {
 }

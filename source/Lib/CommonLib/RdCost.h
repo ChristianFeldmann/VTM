@@ -118,7 +118,7 @@ private:
   double                  m_motionLambda;
   int                     m_iCostScale;
 
-  double                  m_dCost; // for cpr
+  double                  m_dCost; // for ibc
 public:
   RdCost();
   virtual ~RdCost();
@@ -162,7 +162,7 @@ public:
   }
   void           setCostScale             ( int iCostScale )           { m_iCostScale = iCostScale; }
   Distortion     getCost                  ( uint32_t b )                   { return Distortion( m_motionLambda * b ); }
-  // for cpr
+  // for ibc
   void           getMotionCost(int add, bool isTransquantBypass) { m_dCost = m_dLambdaMotionSAD[(isTransquantBypass && m_costMode == COST_MIXED_LOSSLESS_LOSSY_CODING) ? 1 : 0] + add; }
 
   void    setPredictors(Mv* pcMv)

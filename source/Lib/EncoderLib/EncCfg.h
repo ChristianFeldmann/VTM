@@ -239,13 +239,13 @@ protected:
   bool      m_MHIntra;
   bool      m_Triangle;
 
-  unsigned  m_CPRMode;
-  unsigned  m_CPRLocalSearchRangeX;
-  unsigned  m_CPRLocalSearchRangeY;
-  unsigned  m_CPRHashSearch;
-  unsigned  m_CPRHashSearchMaxCand;
-  unsigned  m_CPRHashSearchRange4SmallBlk;
-  unsigned  m_CPRFastMethod;
+  unsigned  m_IBCMode;
+  unsigned  m_IBCLocalSearchRangeX;
+  unsigned  m_IBCLocalSearchRangeY;
+  unsigned  m_IBCHashSearch;
+  unsigned  m_IBCHashSearchMaxCand;
+  unsigned  m_IBCHashSearchRange4SmallBlk;
+  unsigned  m_IBCFastMethod;
   
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
@@ -756,20 +756,20 @@ public:
   bool      getUseTriangle                  ()         const { return m_Triangle; }
 
 
-  void      setCPRMode                      (unsigned n)     { m_CPRMode = n; }
-  unsigned  getCPRMode                      ()         const { return m_CPRMode; }
-  void      setCPRLocalSearchRangeX         (unsigned n)     { m_CPRLocalSearchRangeX = n; }
-  unsigned  getCPRLocalSearchRangeX         ()         const { return m_CPRLocalSearchRangeX; }
-  void      setCPRLocalSearchRangeY         (unsigned n)     { m_CPRLocalSearchRangeY = n; }
-  unsigned  getCPRLocalSearchRangeY         ()         const { return m_CPRLocalSearchRangeY; }
-  void      setCPRHashSearch                (unsigned n)     { m_CPRHashSearch = n; }
-  unsigned  getCPRHashSearch                ()         const { return m_CPRHashSearch; }
-  void      setCPRHashSearchMaxCand         (unsigned n)     { m_CPRHashSearchMaxCand = n; }
-  unsigned  getCPRHashSearchMaxCand         ()         const { return m_CPRHashSearchMaxCand; }
-  void      setCPRHashSearchRange4SmallBlk  (unsigned n)     { m_CPRHashSearchRange4SmallBlk = n; }
-  unsigned  getCPRHashSearchRange4SmallBlk  ()         const { return m_CPRHashSearchRange4SmallBlk; }
-  void      setCPRFastMethod                (unsigned n)     { m_CPRFastMethod = n; }
-  unsigned  getCPRFastMethod                ()         const { return m_CPRFastMethod; }
+  void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
+  unsigned  getIBCMode                      ()         const { return m_IBCMode; }
+  void      setIBCLocalSearchRangeX         (unsigned n)     { m_IBCLocalSearchRangeX = n; }
+  unsigned  getIBCLocalSearchRangeX         ()         const { return m_IBCLocalSearchRangeX; }
+  void      setIBCLocalSearchRangeY         (unsigned n)     { m_IBCLocalSearchRangeY = n; }
+  unsigned  getIBCLocalSearchRangeY         ()         const { return m_IBCLocalSearchRangeY; }
+  void      setIBCHashSearch                (unsigned n)     { m_IBCHashSearch = n; }
+  unsigned  getIBCHashSearch                ()         const { return m_IBCHashSearch; }
+  void      setIBCHashSearchMaxCand         (unsigned n)     { m_IBCHashSearchMaxCand = n; }
+  unsigned  getIBCHashSearchMaxCand         ()         const { return m_IBCHashSearchMaxCand; }
+  void      setIBCHashSearchRange4SmallBlk  (unsigned n)     { m_IBCHashSearchRange4SmallBlk = n; }
+  unsigned  getIBCHashSearchRange4SmallBlk  ()         const { return m_IBCHashSearchRange4SmallBlk; }
+  void      setIBCFastMethod                (unsigned n)     { m_IBCFastMethod = n; }
+  unsigned  getIBCFastMethod                ()         const { return m_IBCFastMethod; }
 
   void      setUseWrapAround                ( bool b )       { m_wrapAround = b; }
   bool      getUseWrapAround                ()         const { return m_wrapAround; }

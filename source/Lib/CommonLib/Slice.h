@@ -842,7 +842,7 @@ private:
   unsigned    m_MTTMode;
 
   bool        m_compositeRefEnabled;        //composite longterm reference
-  unsigned    m_CPRMode;
+  unsigned    m_IBCMode;
 
 public:
   SPSNext( SPS& sps );
@@ -914,8 +914,8 @@ public:
   bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
   void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
-  void      setCPRMode            (unsigned CPRMode)                                { m_CPRMode = CPRMode; }
-  unsigned  getCPRMode            ()                                      const     { return m_CPRMode; }
+  void      setIBCMode            (unsigned IBCMode)                                { m_IBCMode = IBCMode; }
+  unsigned  getIBCMode            ()                                      const     { return m_IBCMode; }
 };
 
 

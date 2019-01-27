@@ -336,10 +336,10 @@ void DecCu::xReconInter(CodingUnit &cu)
   m_pcIntraPred->geneIntrainterPred(cu);
 
   // inter prediction
-  CHECK(cu.cpr && cu.firstPU->mhIntraFlag, "CPR and MHIntra cannot be used together");
-  CHECK(cu.cpr && cu.affine, "CPR and Affine cannot be used together");
-  CHECK(cu.cpr && cu.triangle, "CPR and triangle cannot be used together");
-  CHECK(cu.cpr && cu.firstPU->mmvdMergeFlag, "CPR and MMVD cannot be used together");
+  CHECK(cu.ibc && cu.firstPU->mhIntraFlag, "IBC and MHIntra cannot be used together");
+  CHECK(cu.ibc && cu.affine, "IBC and Affine cannot be used together");
+  CHECK(cu.ibc && cu.triangle, "IBC and triangle cannot be used together");
+  CHECK(cu.ibc && cu.firstPU->mmvdMergeFlag, "IBC and MMVD cannot be used together");
   const bool luma = cu.Y().valid();
   const bool chroma = cu.Cb().valid();
   if (luma && chroma)
@@ -595,7 +595,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               Mv mvd = pu.mvd[eRefList];
               if (eRefList == REF_PIC_LIST_0 && pu.cs->slice->getRefPic(eRefList, pu.refIdx[eRefList])->getPOC() == pu.cs->slice->getPOC())
               {
-                pu.cu->cpr = true;
+                pu.cu->ibc = true;
 #if REUSE_CU_RESULTS
                 if (!cu.cs->pcv->isEncoder)
 #endif

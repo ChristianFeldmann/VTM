@@ -45,7 +45,7 @@
 #include "CommonLib/TrQuant.h"
 #include "CommonLib/Unit.h"
 #include "CommonLib/UnitPartitioner.h"
-#include "CommonLib/CprHashMap.h"
+#include "CommonLib/IbcHashMap.h"
 
 #if REUSE_CU_RESULTS
 #include "DecoderLib/DecCu.h"
@@ -109,7 +109,7 @@ private:
 
   CABACWriter*          m_CABACEstimator;
   RateCtrl*             m_pcRateCtrl;
-  CprHashMap            m_cprHashMap;
+  IbcHashMap            m_ibcHashMap;
   CodingStructure     **m_pImvTempCS;
   EncModeCtrl          *m_modeCtrl;
   PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
@@ -120,8 +120,8 @@ private:
   unsigned int          m_subMergeBlkSize[10];
   unsigned int          m_subMergeBlkNum[10];
   unsigned int          m_prevPOC;
-  int                   m_ctuCprSearchRangeX;
-  int                   m_ctuCprSearchRangeY;
+  int                   m_ctuIbcSearchRangeX;
+  int                   m_ctuIbcSearchRangeY;
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   EncLib*               m_pcEncLib;
 #endif
@@ -222,8 +222,8 @@ protected:
        && (abs(cu.slice->getPOC() - cu.slice->getRefPOC(REF_PIC_LIST_0, cu.refIdxBi[0])) == 1
        ||  abs(cu.slice->getPOC() - cu.slice->getRefPOC(REF_PIC_LIST_1, cu.refIdxBi[1])) == 1))));
   }
-  void xCheckRDCostCPRMode    ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
-  void xCheckRDCostCPRModeMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
+  void xCheckRDCostIBCMode    ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+  void xCheckRDCostIBCModeMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
 };
 
 //! \}

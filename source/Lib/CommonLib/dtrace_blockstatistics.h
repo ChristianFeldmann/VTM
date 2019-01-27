@@ -108,7 +108,7 @@ enum class BlockStatistic {
   TriangleMVL0, //<< currently only uni-prediction enabled
   TriangleMVL1, //<< currently only uni-prediction enabled
   GBIIndex,
-  CPRFlag,
+  IBCFlag,
 // for dual tree
   // general
   Depth_Chroma,
@@ -192,7 +192,7 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::TriangleMVL0,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL0",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
   { BlockStatistic::TriangleMVL1,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL1",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
   { BlockStatistic::GBIIndex,               std::tuple<std::string, BlockStatisticType, std::string>{"GBIIndex",                    BlockStatisticType::Integer,                "[0, 4]"}}, 
-  { BlockStatistic::CPRFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"CPRFlag",                     BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::IBCFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"IBCFlag",                     BlockStatisticType::Flag,                   ""}},
   // for dual tree
   { BlockStatistic::Depth_Chroma,                  std::tuple<std::string, BlockStatisticType, std::string>{"Depth_Chroma",                       BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
   { BlockStatistic::QT_Depth_Chroma,               std::tuple<std::string, BlockStatisticType, std::string>{"QT_Depth_Chroma",                    BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?

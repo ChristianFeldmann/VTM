@@ -1456,7 +1456,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType(I_SLICE);
     }
-    if (pcSlice->getSliceType() == I_SLICE && pcSlice->getSPS()->getSpsNext().getCPRMode())
+    if (pcSlice->getSliceType() == I_SLICE && pcSlice->getSPS()->getSpsNext().getIBCMode())
     {
       pcSlice->setSliceType(P_SLICE);
     }
@@ -1630,7 +1630,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && getPrepareLTRef()) {
       arrangeCompositeReference(pcSlice, rcListPic, pocCurr);
     }
-    if (pcSlice->getSPS()->getSpsNext().getCPRMode())
+    if (pcSlice->getSPS()->getSpsNext().getIBCMode())
     {
       if (m_pcCfg->getIntraPeriod() > 0 && pcSlice->getPOC() % m_pcCfg->getIntraPeriod() == 0)
       {
@@ -1696,7 +1696,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType ( P_SLICE );
     }
-    if (pcSlice->getSPS()->getSpsNext().getCPRMode() && pcSlice->getNumRefIdx(REF_PIC_LIST_0) == 1)
+    if (pcSlice->getSPS()->getSpsNext().getIBCMode() && pcSlice->getNumRefIdx(REF_PIC_LIST_0) == 1)
     {
       m_pcSliceEncoder->setEncCABACTableIdx(P_SLICE);
     }
@@ -1786,7 +1786,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
 
     // disable TMVP when current picture is the only ref picture
-    if (pcSlice->isIRAP() && pcSlice->getSPS()->getSpsNext().getCPRMode())
+    if (pcSlice->isIRAP() && pcSlice->getSPS()->getSpsNext().getIBCMode())
     {
       pcSlice->setEnableTMVPFlag(0);
     }
@@ -1800,7 +1800,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     bool bGPBcheck=false;
     if ( pcSlice->getSliceType() == B_SLICE)
     {
-      if (pcSlice->getSPS()->getSpsNext().getCPRMode())
+      if (pcSlice->getSPS()->getSpsNext().getIBCMode())
       {
         if (pcSlice->getNumRefIdx(RefPicList(0)) - 1 == pcSlice->getNumRefIdx(RefPicList(1)))
         {

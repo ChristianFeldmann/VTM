@@ -1459,7 +1459,7 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
   }
 
   unsigned ctxId = DeriveCtx::CtxIMVFlag( cu );
-  if (!(cu.firstPU->interDir == 1 && cu.cs->slice->getRefPic(REF_PIC_LIST_0, cu.firstPU->refIdx[REF_PIC_LIST_0])->getPOC() == cu.cs->slice->getPOC())) // the first bin of IMV flag does need to be signaled in CPR block
+  if (!(cu.firstPU->interDir == 1 && cu.cs->slice->getRefPic(REF_PIC_LIST_0, cu.firstPU->refIdx[REF_PIC_LIST_0])->getPOC() == cu.cs->slice->getPOC())) // the first bin of IMV flag does need to be signaled in IBC block
     m_BinEncoder.encodeBin( ( cu.imv > 0 ), Ctx::ImvFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", (cu.imv > 0), ctxId );
 

@@ -720,7 +720,7 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
 )
 #endif
 {
-  int mrgCandIdxCPR = mrgCandIdx;
+  int mrgCandIdxIBC = mrgCandIdx;
   MotionInfo miNeighbor;
   bool hasPruned[MRG_MAX_NUM_CANDS];
   memset(hasPruned, 0, MRG_MAX_NUM_CANDS * sizeof(bool));
@@ -745,11 +745,11 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
 #endif
       if (miNeighbor.interDir == 1 && slice.getRefPic(REF_PIC_LIST_0, miNeighbor.refIdx[0])->getPOC() == slice.getPOC())
       {
-        mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
+        mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
         if(mmvdList != 0 && mrgCandIdx != -1)
-          mrgCandIdxCPR++;
+          mrgCandIdxIBC++;
       }
-      if (mrgCandIdxCPR == cnt && canFastExit)
+      if (mrgCandIdxIBC == cnt && canFastExit)
       {
         return true;
       }
@@ -795,7 +795,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   int cnt = 0;
 
 
-  int mrgCandIdxCPR = mrgCandIdx;
+  int mrgCandIdxIBC = mrgCandIdx;
 
   const Position posLT = pu.Y().topLeft();
   const Position posRT = pu.Y().topRight();
@@ -820,11 +820,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     mrgCtx.interDirNeighbours[cnt] = miLeft.interDir;
     mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puLeft->cu->GBiIdx : GBI_DEFAULT;
     // get Mv from Left
-    if (puLeft->cu->cpr)
+    if (puLeft->cu->ibc)
     {
-      mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
+      mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
       if (mmvdList != 0 && mrgCandIdx != -1)
-        mrgCandIdxCPR++;
+        mrgCandIdxIBC++;
     }
     mrgCtx.mvFieldNeighbours[cnt << 1].setMvField(miLeft.mv[0], miLeft.refIdx[0]);
 
@@ -832,7 +832,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     {
       mrgCtx.mvFieldNeighbours[(cnt << 1) + 1].setMvField(miLeft.mv[1], miLeft.refIdx[1]);
     }
-    if (mrgCandIdxCPR == cnt && canFastExit)
+    if (mrgCandIdxIBC == cnt && canFastExit)
     {
       return;
     }
@@ -866,11 +866,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       mrgCtx.interDirNeighbours[cnt] = miAbove.interDir;
       // get Mv from Above
       mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puAbove->cu->GBiIdx : GBI_DEFAULT;
-      if (puAbove->cu->cpr)
+      if (puAbove->cu->ibc)
       {
-        mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
+        mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
         if (mmvdList != 0 && mrgCandIdx != -1)
-          mrgCandIdxCPR++;
+          mrgCandIdxIBC++;
       }
       mrgCtx.mvFieldNeighbours[cnt << 1].setMvField( miAbove.mv[0], miAbove.refIdx[0] );
 
@@ -878,7 +878,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       {
         mrgCtx.mvFieldNeighbours[( cnt << 1 ) + 1].setMvField( miAbove.mv[1], miAbove.refIdx[1] );
       }
-      if (mrgCandIdxCPR == cnt && canFastExit)
+      if (mrgCandIdxIBC == cnt && canFastExit)
       {
         return;
       }
@@ -916,11 +916,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       mrgCtx.interDirNeighbours[cnt] = miAboveRight.interDir;
       // get Mv from Above-right
       mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puAboveRight->cu->GBiIdx : GBI_DEFAULT;
-      if (puAboveRight->cu->cpr)
+      if (puAboveRight->cu->ibc)
       {
-        mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
+        mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
         if (mmvdList != 0 && mrgCandIdx != -1)
-          mrgCandIdxCPR++;
+          mrgCandIdxIBC++;
       }
       mrgCtx.mvFieldNeighbours[cnt << 1].setMvField( miAboveRight.mv[0], miAboveRight.refIdx[0] );
 
@@ -929,7 +929,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
         mrgCtx.mvFieldNeighbours[( cnt << 1 ) + 1].setMvField( miAboveRight.mv[1], miAboveRight.refIdx[1] );
       }
 
-      if (mrgCandIdxCPR == cnt && canFastExit)
+      if (mrgCandIdxIBC == cnt && canFastExit)
       {
         return;
       }
@@ -966,11 +966,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       mrgCtx.interDirNeighbours[cnt] = miBelowLeft.interDir;
       mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puLeftBottom->cu->GBiIdx : GBI_DEFAULT;
       // get Mv from Bottom-Left
-      if (puLeftBottom->cu->cpr)
+      if (puLeftBottom->cu->ibc)
       {
-        mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
+        mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
         if (mmvdList != 0 && mrgCandIdx != -1)
-          mrgCandIdxCPR++;
+          mrgCandIdxIBC++;
       }
       mrgCtx.mvFieldNeighbours[cnt << 1].setMvField( miBelowLeft.mv[0], miBelowLeft.refIdx[0] );
 
@@ -979,7 +979,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
         mrgCtx.mvFieldNeighbours[( cnt << 1 ) + 1].setMvField( miBelowLeft.mv[1], miBelowLeft.refIdx[1] );
       }
 
-      if (mrgCandIdxCPR == cnt && canFastExit)
+      if (mrgCandIdxIBC == cnt && canFastExit)
       {
         return;
       }
@@ -1019,11 +1019,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
         mrgCtx.interDirNeighbours[cnt] = miAboveLeft.interDir;
         mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puAboveLeft->cu->GBiIdx : GBI_DEFAULT;
         // get Mv from Above-Left
-        if (puAboveLeft->cu->cpr)
+        if (puAboveLeft->cu->ibc)
         {
-          mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
+          mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
           if (mmvdList != 0 && mrgCandIdx != -1)
-            mrgCandIdxCPR++;
+            mrgCandIdxIBC++;
         }
         mrgCtx.mvFieldNeighbours[cnt << 1].setMvField( miAboveLeft.mv[0], miAboveLeft.refIdx[0] );
 
@@ -1032,7 +1032,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
           mrgCtx.mvFieldNeighbours[( cnt << 1 ) + 1].setMvField( miAboveLeft.mv[1], miAboveLeft.refIdx[1] );
         }
 
-        if (mrgCandIdxCPR == cnt && canFastExit)
+        if (mrgCandIdxIBC == cnt && canFastExit)
         {
           return;
         }
@@ -1134,7 +1134,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
         isCandInter              [uiArrayAddr] = true;
 #endif
         mrgCtx.GBiIdx[uiArrayAddr] = GBI_DEFAULT;
-        if (mrgCandIdxCPR == cnt && canFastExit)
+        if (mrgCandIdxIBC == cnt && canFastExit)
         {
           return;
         }
@@ -1157,13 +1157,13 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     unsigned subPuMvpPos = 0;
 #if JVET_L0090_PAIR_AVG
     bool bFound = addMergeHMVPCand(slice, mrgCtx, canFastExit
-      , (mmvdList != 0 && mrgCandIdx != -1) ? (const int) mrgCandIdxCPR : mrgCandIdx
+      , (mmvdList != 0 && mrgCandIdx != -1) ? (const int) mrgCandIdxIBC : mrgCandIdx
       , maxNumMergeCandMin1, cnt, cnt, isAvailableSubPu, subPuMvpPos
       , mmvdList
     );
 #else
     bool bFound = addMergeHMVPCand(slice, mrgCtx, isCandInter, canFastExit
-      , (mmvdList != 0 && mrgCandIdx != -1) ? (const int)mrgCandIdxCPR : mrgCandIdx
+      , (mmvdList != 0 && mrgCandIdx != -1) ? (const int)mrgCandIdxIBC : mrgCandIdx
       , maxNumMergeCandMin1, cnt, cnt, isAvailableSubPu, subPuMvpPos
       , mmvdList
     );
@@ -1194,7 +1194,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 
 
       // skip when one is BV and one is MV
-      if (mrgCtx.mrgTypeNeighbours[i] != mrgCtx.mrgTypeNeighbours[j] && pu.cs->sps->getSpsNext().getCPRMode())
+      if (mrgCtx.mrgTypeNeighbours[i] != mrgCtx.mrgTypeNeighbours[j] && pu.cs->sps->getSpsNext().getIBCMode())
       {
         continue;
       }
@@ -1224,9 +1224,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 
 
 
-          if (mrgCtx.mrgTypeNeighbours[i] == MRG_TYPE_CPR && mrgCtx.mrgTypeNeighbours[j] == MRG_TYPE_CPR && pu.cs->sps->getSpsNext().getCPRMode())
+          if (mrgCtx.mrgTypeNeighbours[i] == MRG_TYPE_IBC && mrgCtx.mrgTypeNeighbours[j] == MRG_TYPE_IBC && pu.cs->sps->getSpsNext().getIBCMode())
           {
-             mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_CPR;
+             mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
              avgMv.setHor((avgMv.getHor() / 16) << 4);
              avgMv.setVer((avgMv.getVer() / 16) << 4);
           }
@@ -1328,7 +1328,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 
     if ( mrgCtx.interDirNeighbours[uiArrayAddr] == 1 && pu.cs->slice->getRefPic(REF_PIC_LIST_0, mrgCtx.mvFieldNeighbours[uiArrayAddr << 1].refIdx)->getPOC() == pu.cs->slice->getPOC())
     {
-      mrgCtx.mrgTypeNeighbours[uiArrayAddr] = MRG_TYPE_CPR;
+      mrgCtx.mrgTypeNeighbours[uiArrayAddr] = MRG_TYPE_IBC;
     }
 
     uiArrayAddr++;
@@ -1345,7 +1345,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   }
   mrgCtx.numValidMergeCand = uiArrayAddr;
 }
-// for cpr pu validation
+// for ibc pu validation
 bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize)
 {
   const int ctuSizeLog2 = g_aucLog2[ctuSize];
@@ -1389,14 +1389,14 @@ bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, i
   }
 
   // in the same CTU line
-#if JVET_M0407_CPR_RANGE
+#if JVET_M0407_IBC_RANGE
   if ((refRightX >> ctuSizeLog2 <= xPos >> ctuSizeLog2) && (refLeftX >> ctuSizeLog2 >= (xPos >> ctuSizeLog2) - 1))
 #else
   if ((refRightX >> ctuSizeLog2 <= xPos >> ctuSizeLog2) && (refLeftX >> ctuSizeLog2 >= (xPos >> ctuSizeLog2)))
 #endif
   {
 
-#if JVET_M0407_CPR_RANGE
+#if JVET_M0407_IBC_RANGE
     // in the same CTU, or left CTU
     // if part of ref block is in the left CTU, some area can be referred from the not-yet updated local CTU buffer
     if ((refLeftX >> ctuSizeLog2) == ((xPos >> ctuSizeLog2) - 1))
@@ -1410,7 +1410,7 @@ bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, i
         return false;
     }
 #endif
-#if !JVET_M0407_CPR_RANGE
+#if !JVET_M0407_IBC_RANGE
     // in the same CTU, check if the reference block is already coded
     const Position refPosLT = pu.Y().topLeft().offset(xBv, yBv);
     const Position refPosBR = pu.Y().bottomRight().offset(xBv, yBv);
@@ -1427,7 +1427,7 @@ bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, i
   else
     return false;
 
-#if JVET_M0407_CPR_RANGE
+#if JVET_M0407_IBC_RANGE
   // in the same CTU, or valid area from left CTU. Check if the reference block is already coded
   const Position refPosLT = pu.Y().topLeft().offset(xBv, yBv);
   const Position refPosBR = pu.Y().bottomRight().offset(xBv, yBv);
@@ -1439,7 +1439,7 @@ bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, i
   return true;
 #endif
 
-}// for cpr pu validation
+}// for ibc pu validation
 
 static int xGetDistScaleFactor(const int &iCurrPOC, const int &iCurrRefPOC, const int &iColPOC, const int &iColRefPOC)
 {
@@ -1632,7 +1632,7 @@ bool PU::isDiffMER(const PredictionUnit &pu1, const PredictionUnit &pu2)
 
   return false;
 }
-void PU::getCprMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
+void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
 {
 
   //-- Get Spatial MV
@@ -1645,7 +1645,7 @@ void PU::getCprMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
   //left
   const PredictionUnit *neibLeftPU = NULL;
   neibLeftPU = pu.cs->getPURestricted(posLB.offset(-1, 0), pu, pu.cs->chType);
-  left = (neibLeftPU) ? neibLeftPU->cu->cpr : 0;
+  left = (neibLeftPU) ? neibLeftPU->cu->ibc : 0;
 
   if (left)
   {
@@ -1657,7 +1657,7 @@ void PU::getCprMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
   //above
   const PredictionUnit *neibAbovePU = NULL;
   neibAbovePU = pu.cs->getPURestricted(posRT.offset(0, -1), pu, pu.cs->chType);
-  above = (neibAbovePU) ? neibAbovePU->cu->cpr : 0;
+  above = (neibAbovePU) ? neibAbovePU->cu->ibc : 0;
 
   if (above)
   {
@@ -1669,7 +1669,7 @@ void PU::getCprMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
   // Below Left predictor search
   const PredictionUnit *neibBelowLeftPU = NULL;
   neibBelowLeftPU = pu.cs->getPURestricted(posLB.offset(-1, 1), pu, pu.cs->chType);
-  unsigned int belowLeft = (neibBelowLeftPU) ? neibBelowLeftPU->cu->cpr : 0;
+  unsigned int belowLeft = (neibBelowLeftPU) ? neibBelowLeftPU->cu->ibc : 0;
 
   if (belowLeft)
   {
@@ -1682,7 +1682,7 @@ void PU::getCprMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
   // Above Right predictor search
   const PredictionUnit *neibAboveRightPU = NULL;
   neibAboveRightPU = pu.cs->getPURestricted(posRT.offset(1, -1), pu, pu.cs->chType);
-  unsigned int aboveRight = (neibAboveRightPU) ? neibAboveRightPU->cu->cpr : 0;
+  unsigned int aboveRight = (neibAboveRightPU) ? neibAboveRightPU->cu->ibc : 0;
 
   if (aboveRight)
   {
@@ -1695,7 +1695,7 @@ void PU::getCprMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
   // Above Left predictor search
   const PredictionUnit *neibAboveLeftPU = NULL;
   neibAboveLeftPU = pu.cs->getPURestricted(posLT.offset(-1, -1), pu, pu.cs->chType);
-  unsigned int aboveLeft = (neibAboveLeftPU) ? neibAboveLeftPU->cu->cpr : 0;
+  unsigned int aboveLeft = (neibAboveLeftPU) ? neibAboveLeftPU->cu->ibc : 0;
 
   if (aboveLeft)
   {
@@ -1723,13 +1723,13 @@ bool PU::getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv)
   const PredictionUnit *neibRefPU = NULL;
   neibRefPU = pu.cs->getPURestricted(pu.lumaPos().offset(offsetX, offsetY), pu, pu.cs->chType);
 
-  bool isCPR = (neibRefPU) ? neibRefPU->cu->cpr : 0;
-  if (isCPR)
+  bool isIBC = (neibRefPU) ? neibRefPU->cu->ibc : 0;
+  if (isIBC)
   {
     derivedMv = neibRefPU->bv;
     derivedMv += currentMv;
   }
-  return isCPR;
+  return isIBC;
 }
 /** Constructs a list of candidates for AMVP (See specification, section "Derivation process for motion vector predictor candidates")
 * \param uiPartIdx
@@ -2674,7 +2674,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
   bool isAvailableSubPu = false;
   if ( enableSubPuMvp && slice.getEnableTMVPFlag() )
   {
-    int  cntCPR = 0;
+    int  cntIBC = 0;
     MergeCtx mrgCtx = *affMrgCtx.mrgCtx;
     bool tmpLICFlag = false;
 
@@ -2697,9 +2697,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       mrgCtx.interDirNeighbours[pos] = miLeft.interDir;
 
       // get Mv from Left
-      if (puLeft->cu->cpr)
+      if (puLeft->cu->ibc)
       {
-        cntCPR++;
+        cntIBC++;
       }
       mrgCtx.mvFieldNeighbours[pos << 1].setMvField( miLeft.mv[0], miLeft.refIdx[0] );
 
@@ -2722,9 +2722,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         // get Inter Dir
         mrgCtx.interDirNeighbours[pos] = miAbove.interDir;
         // get Mv from Left
-        if (puAbove->cu->cpr)
+        if (puAbove->cu->ibc)
         {
-          cntCPR++;
+          cntIBC++;
         }
         mrgCtx.mvFieldNeighbours[pos << 1].setMvField( miAbove.mv[0], miAbove.refIdx[0] );
 
@@ -2753,9 +2753,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         // get Inter Dir
         mrgCtx.interDirNeighbours[pos] = miAboveRight.interDir;
         // get Mv from Left
-        if (puAboveRight->cu->cpr)
+        if (puAboveRight->cu->ibc)
         {
-          cntCPR++;
+          cntIBC++;
         }
         mrgCtx.mvFieldNeighbours[pos << 1].setMvField( miAboveRight.mv[0], miAboveRight.refIdx[0] );
 
@@ -2784,9 +2784,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         // get Inter Dir
         mrgCtx.interDirNeighbours[pos] = miBelowLeft.interDir;
         // get Mv from Bottom-Left
-        if (puLeftBottom->cu->cpr)
+        if (puLeftBottom->cu->ibc)
         {
-          cntCPR++;
+          cntIBC++;
         }
         mrgCtx.mvFieldNeighbours[pos << 1].setMvField( miBelowLeft.mv[0], miBelowLeft.refIdx[0] );
 
@@ -2801,7 +2801,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
     isAvailableSubPu = getInterMergeSubPuMvpCand( pu, mrgCtx, tmpLICFlag, pos
       , 0
-      , cntCPR
+      , cntIBC
     );
     if ( isAvailableSubPu )
     {
@@ -2889,7 +2889,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         const PredictionUnit* puNeigh = cs.getPURestricted( pos, pu, pu.chType );
 
         if ( puNeigh && CU::isInter( *puNeigh->cu )
-          && !puNeigh->cu->cpr
+          && !puNeigh->cu->ibc
           )
         {
           isAvailable[0] = true;
@@ -2907,7 +2907,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
 
         if ( puNeigh && CU::isInter( *puNeigh->cu ) 
-          && !puNeigh->cu->cpr
+          && !puNeigh->cu->ibc
           )
         {
           isAvailable[1] = true;
@@ -2925,7 +2925,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
 
         if ( puNeigh && CU::isInter( *puNeigh->cu ) 
-          && !puNeigh->cu->cpr
+          && !puNeigh->cu->ibc
           )
         {
           isAvailable[2] = true;
@@ -3224,10 +3224,10 @@ void clipColPos(int& posX, int& posY, const PredictionUnit& pu)
 
 bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, bool& LICFlag, const int count
   , int mmvdList
-  , const int countCPR
+  , const int countIBC
 )
 {
-  if (count == countCPR && pu.cs->slice->getSPS()->getSpsNext().getCPRMode())
+  if (count == countIBC && pu.cs->slice->getSPS()->getSpsNext().getIBCMode())
     return false;
   const Slice   &slice = *pu.cs->slice;
   const unsigned scale = 4 * std::max<int>(1, 4 * AMVP_DECIMATION_FACTOR / 4);
@@ -3343,7 +3343,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
 
       mi.isInter = true;
       mi.sliceIdx = slice.getIndependentSliceIdx();
-      if (colMi.isInter && !((colMi.interDir == 1 || colMi.interDir == 3) && (pColPic->cs->slice->getRefPOC(REF_PIC_LIST_0, colMi.refIdx[0]) == pColPic->cs->slice->getPOC()) && pu.cs->sps->getSpsNext().getCPRMode()))
+      if (colMi.isInter && !((colMi.interDir == 1 || colMi.interDir == 3) && (pColPic->cs->slice->getRefPOC(REF_PIC_LIST_0, colMi.refIdx[0]) == pColPic->cs->slice->getPOC()) && pu.cs->sps->getSpsNext().getIBCMode()))
       {
         for (unsigned currRefListId = 0; currRefListId < (bBSlice ? 2 : 1); currRefListId++)
         {
@@ -3385,7 +3385,7 @@ void PU::spanMotionInfo( PredictionUnit &pu, const MergeCtx &mrgCtx )
   MotionBuf mb = pu.getMotionBuf();
 
   if( !pu.mergeFlag || pu.mergeType == MRG_TYPE_DEFAULT_N 
-    || pu.mergeType == MRG_TYPE_CPR
+    || pu.mergeType == MRG_TYPE_IBC
     )
   {
     MotionInfo mi;
@@ -3477,7 +3477,7 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
       pu.mv[0].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
       if (pu.interDir == 1 && pu.cs->slice->getRefPic(REF_PIC_LIST_0, pu.refIdx[REF_PIC_LIST_0])->getPOC() == pu.cs->slice->getPOC())
       {
-        pu.cu->cpr = true;
+        pu.cu->ibc = true;
       }
     }
 
@@ -3590,7 +3590,7 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
   //left
   const PredictionUnit* puLeft = cs.getPURestricted( posLB.offset( -1, 0 ), pu, pu.chType );
   const bool isAvailableA1 = puLeft && isDiffMER( pu, *puLeft ) && pu.cu != puLeft->cu && CU::isInter( *puLeft->cu )
-    && !puLeft->cu->cpr
+    && !puLeft->cu->ibc
     ;
   if( isAvailableA1 )
   {
@@ -3607,7 +3607,7 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
   // above
   const PredictionUnit *puAbove = cs.getPURestricted( posRT.offset( 0, -1 ), pu, pu.chType );
   bool isAvailableB1 = puAbove && isDiffMER( pu, *puAbove ) && pu.cu != puAbove->cu && CU::isInter( *puAbove->cu )
-    && !puAbove->cu->cpr
+    && !puAbove->cu->ibc
     ;
   if( isAvailableB1 )
   {
@@ -3628,7 +3628,7 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
   // above right
   const PredictionUnit *puAboveRight = cs.getPURestricted( posRT.offset( 1, -1 ), pu, pu.chType );
   bool isAvailableB0 = puAboveRight && isDiffMER( pu, *puAboveRight ) && CU::isInter( *puAboveRight->cu )
-    && !puAboveRight->cu->cpr
+    && !puAboveRight->cu->ibc
     ;
 
   if( isAvailableB0 )
@@ -3650,7 +3650,7 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
   //left bottom
   const PredictionUnit *puLeftBottom = cs.getPURestricted( posLB.offset( -1, 1 ), pu, pu.chType );
   bool isAvailableA0 = puLeftBottom && isDiffMER( pu, *puLeftBottom ) && CU::isInter( *puLeftBottom->cu )
-    && !puLeftBottom->cu->cpr
+    && !puLeftBottom->cu->ibc
     ;
   if( isAvailableA0 )
   {
@@ -3671,7 +3671,7 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
   // above left
   const PredictionUnit *puAboveLeft = cs.getPURestricted( posLT.offset( -1, -1 ), pu, pu.chType );
   bool isAvailableB2 = puAboveLeft && isDiffMER( pu, *puAboveLeft ) && CU::isInter( *puAboveLeft->cu )
-    && !puAboveLeft->cu->cpr
+    && !puAboveLeft->cu->ibc
     ;
 
   if( isAvailableB2 )

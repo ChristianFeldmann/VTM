@@ -892,7 +892,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseMHIntra            ( m_MHIntra );
   sps.getSpsNext().setUseTriangle           ( m_Triangle );
 
-  sps.getSpsNext().setCPRMode               ( m_CPRMode );
+  sps.getSpsNext().setIBCMode               ( m_IBCMode );
 
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
@@ -1395,7 +1395,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     }
   }
   CHECK(!(bestPos <= 15), "Unspecified error");
-  if (sps.getSpsNext().getCPRMode())
+  if (sps.getSpsNext().getIBCMode())
   {
     pps.setNumRefIdxL0DefaultActive(bestPos + 1);
   }

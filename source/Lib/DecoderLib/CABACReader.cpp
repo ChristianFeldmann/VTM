@@ -906,7 +906,7 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
 
   unsigned value = 0;
   unsigned ctxId = DeriveCtx::CtxIMVFlag( cu );
-  if (cu.firstPU->interDir == 1 && cu.cs->slice->getRefPic(REF_PIC_LIST_0, cu.firstPU->refIdx[REF_PIC_LIST_0])->getPOC() == cu.cs->slice->getPOC()) // the first bin of IMV flag does need to be signaled in CPR block
+  if (cu.firstPU->interDir == 1 && cu.cs->slice->getRefPic(REF_PIC_LIST_0, cu.firstPU->refIdx[REF_PIC_LIST_0])->getPOC() == cu.cs->slice->getPOC()) // the first bin of IMV flag does need to be signaled in IBC block
     value = 1;
   else
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( ctxId ) );
@@ -965,7 +965,7 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
   if (!cu.Y().valid()) // dual tree chroma CU
   {
     cu.predMode = MODE_INTER;
-    cu.cpr = true;
+    cu.ibc = true;
     return;
   }
   MergeCtx mrgCtx;

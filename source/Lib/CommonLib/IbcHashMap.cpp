@@ -31,46 +31,46 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** \file     CprHashMap.cpp
-    \brief    CPR hash map encoder class
+/** \file     IbcHashMap.cpp
+    \brief    IBC hash map encoder class
 */
 
 #include "CommonLib/dtrace_codingstruct.h"
 #include "CommonLib/Picture.h"
 #include "CommonLib/UnitTools.h"
-#include "CprHashMap.h"
+#include "IbcHashMap.h"
 
 
 using namespace std;
 
-//! \ingroup CprHashMap
+//! \ingroup IbcHashMap
 //! \{
 
 // ====================================================================================================================
 // Constructor / destructor / create / destroy
 // ====================================================================================================================
 
-CprHashMap::CprHashMap()
+IbcHashMap::IbcHashMap()
 {
   m_picWidth = 0;
   m_picHeight = 0;
   m_pos2Hash = NULL;
   m_computeCrc32c = xxComputeCrc32c16bit;
 
-#if ENABLE_SIMD_OPT_CPR
+#if ENABLE_SIMD_OPT_IBC
 #ifdef TARGET_SIMD_X86
-  initCprHashMapX86();
+  initIbcHashMapX86();
 #endif
 #endif
 
 }
 
-CprHashMap::~CprHashMap()
+IbcHashMap::~IbcHashMap()
 {
   destroy();
 }
 
-void CprHashMap::init(const int picWidth, const int picHeight)
+void IbcHashMap::init(const int picWidth, const int picHeight)
 {
   if (picWidth != m_picWidth || picHeight != m_picHeight)
   {
@@ -87,7 +87,7 @@ void CprHashMap::init(const int picWidth, const int picHeight)
   }
 }
 
-void CprHashMap::destroy()
+void IbcHashMap::destroy()
 {
   if (m_pos2Hash != NULL)
   {
@@ -168,7 +168,7 @@ static const uint32_t crc32Table[256] = {
   0xBE2DA0A5L, 0x4C4623A6L, 0x5F16D052L, 0xAD7D5351L
 };
 
-uint32_t CprHashMap::xxComputeCrc32c16bit(uint32_t crc, const Pel pel)
+uint32_t IbcHashMap::xxComputeCrc32c16bit(uint32_t crc, const Pel pel)
 {
   const void *buf = &pel;
   const uint8_t *p = (const uint8_t *)buf;
@@ -184,7 +184,7 @@ uint32_t CprHashMap::xxComputeCrc32c16bit(uint32_t crc, const Pel pel)
 // CRC calculation in C code
 ////////////////////////////////////////////////////////
 
-unsigned int CprHashMap::xxCalcBlockHash(const Pel* pel, const int stride, const int width, const int height, unsigned int crc)
+unsigned int IbcHashMap::xxCalcBlockHash(const Pel* pel, const int stride, const int width, const int height, unsigned int crc)
 {
   for (int y = 0; y < height; y++)
   {
@@ -198,7 +198,7 @@ unsigned int CprHashMap::xxCalcBlockHash(const Pel* pel, const int stride, const
 }
 
 template<ChromaFormat chromaFormat>
-void CprHashMap::xxBuildPicHashMap(const PelUnitBuf& pic)
+void IbcHashMap::xxBuildPicHashMap(const PelUnitBuf& pic)
 {
   const int chromaScalingX = getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, chromaFormat);
   const int chromaScalingY = getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, chromaFormat);
@@ -243,7 +243,7 @@ void CprHashMap::xxBuildPicHashMap(const PelUnitBuf& pic)
   }
 }
 
-void CprHashMap::rebuildPicHashMap(const PelUnitBuf& pic)
+void IbcHashMap::rebuildPicHashMap(const PelUnitBuf& pic)
 {
   m_hash2Pos.clear();
 
@@ -267,7 +267,7 @@ void CprHashMap::rebuildPicHashMap(const PelUnitBuf& pic)
   }
 }
 
-bool CprHashMap::cprHashMatch(const Area& lumaArea, std::vector<Position>& cand, const CodingStructure& cs, const int maxCand, const int searchRange4SmallBlk)
+bool IbcHashMap::ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand, const CodingStructure& cs, const int maxCand, const int searchRange4SmallBlk)
 {
   cand.clear();
 
@@ -332,7 +332,7 @@ bool CprHashMap::cprHashMatch(const Area& lumaArea, std::vector<Position>& cand,
   return cand.size() > 0;
 }
 
-int CprHashMap::getHashHitRatio(const Area& lumaArea)
+int IbcHashMap::getHashHitRatio(const Area& lumaArea)
 {
   int maxX = std::min((int)(lumaArea.x + lumaArea.width), m_picWidth);
   int maxY = std::min((int)(lumaArea.y + lumaArea.height), m_picHeight);

@@ -239,13 +239,13 @@ protected:
   bool      m_Triangle;
 
 
-  unsigned  m_CPRMode;
-  unsigned  m_CPRLocalSearchRangeX;
-  unsigned  m_CPRLocalSearchRangeY;
-  unsigned  m_CPRHashSearch;
-  unsigned  m_CPRHashSearchMaxCand;
-  unsigned  m_CPRHashSearchRange4SmallBlk;
-  unsigned  m_CPRFastMethod;
+  unsigned  m_IBCMode;
+  unsigned  m_IBCLocalSearchRangeX;
+  unsigned  m_IBCLocalSearchRangeY;
+  unsigned  m_IBCHashSearch;
+  unsigned  m_IBCHashSearchMaxCand;
+  unsigned  m_IBCHashSearchRange4SmallBlk;
+  unsigned  m_IBCFastMethod;
   
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;

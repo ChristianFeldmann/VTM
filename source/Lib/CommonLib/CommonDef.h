@@ -396,12 +396,12 @@ static const int TRIANGLE_MAX_NUM_CANDS =                          40;
 static const int TRIANGLE_MAX_NUM_SATD_CANDS =                      3;
 static const int TRIANGLE_MIN_SIZE =                            8 * 8;
 
-static const int CPR_MAX_CAND_SIZE = 16; // max block size for cpr search
-static const int CPR_NUM_CANDIDATES = 64; ///< Maximum number of candidates to store/test
+static const int IBC_MAX_CAND_SIZE = 16; // max block size for ibc search
+static const int IBC_NUM_CANDIDATES = 64; ///< Maximum number of candidates to store/test
 static const int CHROMA_REFINEMENT_CANDIDATES = 8; /// 8 candidates BV to choose from
-static const int CPR_FAST_METHOD_NOINTRA_CPRCBF0 = 0x01;
-static const int CPR_FAST_METHOD_BUFFERBV = 0X02;
-static const int CPR_FAST_METHOD_ADAPTIVE_SEARCHRANGE = 0X04;
+static const int IBC_FAST_METHOD_NOINTRA_IBCCBF0 = 0x01;
+static const int IBC_FAST_METHOD_BUFFERBV = 0X02;
+static const int IBC_FAST_METHOD_ADAPTIVE_SEARCHRANGE = 0X04;
 
 // ====================================================================================================================
 // Macro functions

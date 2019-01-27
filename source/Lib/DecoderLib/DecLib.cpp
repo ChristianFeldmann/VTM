@@ -1228,7 +1228,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 #endif
 
-  if (pcSlice->getSPS()->getSpsNext().getCPRMode() && pcSlice->getEnableTMVPFlag())
+  if (pcSlice->getSPS()->getSpsNext().getIBCMode() && pcSlice->getEnableTMVPFlag())
   {
     CHECK(pcSlice->getRefPic(RefPicList(pcSlice->isInterB() ? 1 - pcSlice->getColFromL0Flag() : 0), pcSlice->getColRefIdx())->getPOC() == pcSlice->getPOC(), "curr ref picture cannot be collocated picture");
   }
@@ -1238,7 +1238,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_cSliceDecoder.decompressSlice( pcSlice, &(nalu.getBitstream()) );
 
   m_bFirstSliceInPicture = false;
-  if (pcSlice->getSPS()->getSpsNext().getCPRMode())
+  if (pcSlice->getSPS()->getSpsNext().getIBCMode())
   {
     pcSlice->getPic()->longTerm = false;
   }

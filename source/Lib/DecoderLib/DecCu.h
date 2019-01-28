@@ -69,6 +69,9 @@ public:
   /// destroy internal buffers
   void  decompressCtu     ( CodingStructure& cs, const UnitArea& ctuArea );
 
+#if JVET_M0170_MRG_SHARELIST
+  void setShareStateDec (int shareStateDecIn)  { m_shareStateDec = shareStateDecIn; }
+#endif
   /// reconstruct Ctu information
 protected:
   void xIntraRecQT        ( CodingUnit&      cu, const ChannelType chType );
@@ -90,6 +93,9 @@ private:
   IntraPrediction*  m_pcIntraPred;
   InterPrediction*  m_pcInterPred;
 
+#if JVET_M0170_MRG_SHARELIST
+  int               m_shareStateDec;
+#endif
 
   MotionInfo        m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
 

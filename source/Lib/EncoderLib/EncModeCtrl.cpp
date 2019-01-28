@@ -533,7 +533,11 @@ uint8_t CacheBlkInfoCtrl::getGbiIdx(const UnitArea& area)
 }
 
 #if REUSE_CU_RESULTS
-static bool isTheSameNbHood( const CodingUnit &cu, const CodingStructure& cs, const Partitioner &partitioner )
+static bool isTheSameNbHood( const CodingUnit &cu, const CodingStructure& cs, const Partitioner &partitioner
+#if JVET_M0170_MRG_SHARELIST
+                            , const PredictionUnit &pu, int picW, int picH
+#endif
+                           )
 {
   if( cu.chType != partitioner.chType )
   {
@@ -554,6 +558,32 @@ static bool isTheSameNbHood( const CodingUnit &cu, const CodingStructure& cs, co
 
   const UnitArea &cmnAnc = ps[i - 1].parts[ps[i - 1].idx];
   const UnitArea cuArea  = CS::getArea( cs, cu, partitioner.chType );
+#if JVET_M0170_MRG_SHARELIST
+  bool sharedListReuseMode = true;
+  if(
+      pu.mergeFlag == true &&
+      cu.affine == false &&    
+      cu.predMode == MODE_INTER
+    )
+  {
+    sharedListReuseMode = false;
+
+    if ((cu.lumaSize().width*cu.lumaSize().height) >= MRG_SHARELIST_SHARSIZE)
+    {
+      sharedListReuseMode = true;
+    }
+
+    if (((cmnAnc.lumaSize().width)*(cmnAnc.lumaSize().height) <= MRG_SHARELIST_SHARSIZE))
+    {
+      sharedListReuseMode = true;
+    }
+  }
+  else
+  {
+    sharedListReuseMode = true;
+  }
+//#endif
+#endif
 
   for( int i = 0; i < cmnAnc.blocks.size(); i++ )
   {
@@ -562,6 +592,13 @@ static bool isTheSameNbHood( const CodingUnit &cu, const CodingStructure& cs, co
       return false;
     }
   }
+#if JVET_M0170_MRG_SHARELIST
+  if(!sharedListReuseMode)
+  {
+    return false;
+  }
+#endif
+
 
   return true;
 }
@@ -759,7 +796,11 @@ bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& pa
 
   if( encInfo.cu.qp != qp )
     return false;
-  if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner )
+  if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner
+#if JVET_M0170_MRG_SHARELIST
+    , encInfo.pu, (cs.picture->Y().width), (cs.picture->Y().height)
+#endif
+) 
     || encInfo.cu.ibc
     )
   {
@@ -778,7 +819,11 @@ bool BestEncInfoCache::setCsFrom( CodingStructure& cs, EncTestMode& testMode, co
 
   BestEncodingInfo& encInfo = *m_bestEncInfo[idx1][idx2][idx3][idx4];
 
-  if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner ) )
+  if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner 
+#if JVET_M0170_MRG_SHARELIST
+    , encInfo.pu, (cs.picture->Y().width), (cs.picture->Y().height)
+#endif
+) )
   {
     return false;
   }

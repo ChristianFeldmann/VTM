@@ -137,6 +137,9 @@ Slice::Slice()
 , m_uiMaxTTSizeIChroma            ( 0 )
 , m_uiMaxBTSize                   ( 0 )
 , m_MotionCandLut                (NULL)
+#if  JVET_M0170_MRG_SHARELIST
+, m_MotionCandLuTsBkup           (NULL)
+#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -1611,6 +1614,12 @@ void Slice::initMotionLUTs()
   m_MotionCandLut->currCnt = 0;
   m_MotionCandLut->motionCand = nullptr;
   m_MotionCandLut->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+#if  JVET_M0170_MRG_SHARELIST
+  m_MotionCandLuTsBkup = new LutMotionCand;
+  m_MotionCandLuTsBkup->currCnt = 0;
+  m_MotionCandLuTsBkup->motionCand = nullptr;
+  m_MotionCandLuTsBkup->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+#endif
 }
 void Slice::destroyMotionLUTs()
 {
@@ -1618,18 +1627,31 @@ void Slice::destroyMotionLUTs()
   m_MotionCandLut->motionCand = nullptr;
   delete m_MotionCandLut;
   m_MotionCandLut = NULL;
+#if  JVET_M0170_MRG_SHARELIST
+  delete[] m_MotionCandLuTsBkup->motionCand;
+  m_MotionCandLuTsBkup->motionCand = nullptr;
+  delete m_MotionCandLuTsBkup;
+  m_MotionCandLuTsBkup = NULL;
+#endif
 }
 void Slice::resetMotionLUTs()
 {
   m_MotionCandLut->currCnt = 0;
+#if  JVET_M0170_MRG_SHARELIST
+  m_MotionCandLuTsBkup->currCnt = 0;
+#endif
 }
 
 MotionInfo Slice::getMotionInfoFromLUTs(int MotCandIdx) const
 {
   return m_MotionCandLut->motionCand[MotCandIdx];
 }
-
-
+#if JVET_M0170_MRG_SHARELIST
+MotionInfo Slice::getMotionInfoFromLUTBkup(int MotCandIdx) const
+{
+  return m_MotionCandLuTsBkup->motionCand[MotCandIdx];
+}
+#endif
 
 void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi)
 {

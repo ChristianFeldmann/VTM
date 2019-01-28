@@ -312,6 +312,10 @@ struct CodingUnit : public UnitArea
   int             refIdxBi[2];
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
+#if JVET_M0170_MRG_SHARELIST
+  Position       shareParentPos;
+  Size           shareParentSize;
+#endif
   bool           ibc;
 #if JVET_M0444_SMVD
   uint8_t          smvdMode;
@@ -366,6 +370,11 @@ struct InterPredictionData
   Mv        mvdAffi [NUM_REF_PIC_LIST_01][3];
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
   bool      mhIntraFlag;
+
+#if JVET_M0170_MRG_SHARELIST
+  Position  shareParentPos;
+  Size      shareParentSize;
+#endif
   Mv        bv;                             // block vector for IBC
   Mv        bvd;                            // block vector difference for IBC
 };
@@ -389,6 +398,11 @@ struct PredictionUnit : public UnitArea, public IntraPredictionData, public Inte
   PredictionUnit& operator=(const MotionInfo& mi);
 
   unsigned        idx;
+#if JVET_M0170_MRG_SHARELIST
+  Position shareParentPos;
+  Size     shareParentSize;
+#endif
+
   PredictionUnit *next;
 
   // for accessing motion information, which can have higher resolution than PUs (should always be used, when accessing neighboring motion information)

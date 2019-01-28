@@ -54,9 +54,15 @@
 
 #define JVET_M0444_SMVD                                   1 // SMVD mode
 
+#define JVET_M0170_MRG_SHARELIST                          1
+#if JVET_M0170_MRG_SHARELIST
+#define MRG_SHARELIST_SHARSIZE                            32
+#endif
+
 #define JVET_M0064_CCLM_SIMPLIFICATION                    1
 
 #define JVET_M0142_CCLM_COLLOCATED_CHROMA                 1 // Adding support for chroma sample location type 2 in CCLM
+
 
 #define JVET_M0479_18BITS_MV_CLIP                         1
 
@@ -884,6 +890,14 @@ enum TriangleSplit
   TRIANGLE_DIR_NUM
 };
 
+#if JVET_M0170_MRG_SHARELIST
+enum SharedMrgState
+{
+  NO_SHARE            = 0,
+  GEN_ON_SHARED_BOUND = 1,
+  SHARING             = 2
+};
+#endif
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out
 //////////////////////////////////////////////////////////////////////////

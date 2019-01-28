@@ -48,7 +48,11 @@
 class CABACReader
 {
 public:
+#if JVET_M0170_MRG_SHARELIST
+  CABACReader(BinDecoderBase& binDecoder) : shareStateDec(0), m_BinDecoder(binDecoder), m_Bitstream(0) {}
+#else
   CABACReader( BinDecoderBase& binDecoder ) : m_BinDecoder( binDecoder ), m_Bitstream( 0 ) {}
+#endif
   virtual ~CABACReader() {}
 
 public:
@@ -154,7 +158,12 @@ private:
   unsigned    get_num_bits_read         () { return m_BinDecoder.getNumBitsRead(); }
 
   void        xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol);
-
+#if JVET_M0170_MRG_SHARELIST
+public:
+  int         shareStateDec;
+  Position    shareParentPos;
+  Size        shareParentSize;
+#endif
 private:
   BinDecoderBase& m_BinDecoder;
   InputBitstream* m_Bitstream;

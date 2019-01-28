@@ -2674,7 +2674,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
   bool isAvailableSubPu = false;
   if ( enableSubPuMvp && slice.getEnableTMVPFlag() )
   {
+#if !JVET_M0409_ATMVP_FIX
     int  cntIBC = 0;
+#endif
     MergeCtx mrgCtx = *affMrgCtx.mrgCtx;
     bool tmpLICFlag = false;
 
@@ -2697,10 +2699,12 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       mrgCtx.interDirNeighbours[pos] = miLeft.interDir;
 
       // get Mv from Left
+#if !JVET_M0409_ATMVP_FIX
       if (puLeft->cu->ibc)
       {
         cntIBC++;
       }
+#endif
       mrgCtx.mvFieldNeighbours[pos << 1].setMvField( miLeft.mv[0], miLeft.refIdx[0] );
 
       if ( slice.isInterB() )
@@ -2722,10 +2726,12 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         // get Inter Dir
         mrgCtx.interDirNeighbours[pos] = miAbove.interDir;
         // get Mv from Left
+#if !JVET_M0409_ATMVP_FIX
         if (puAbove->cu->ibc)
         {
           cntIBC++;
         }
+#endif
         mrgCtx.mvFieldNeighbours[pos << 1].setMvField( miAbove.mv[0], miAbove.refIdx[0] );
 
         if ( slice.isInterB() )
@@ -2753,10 +2759,12 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         // get Inter Dir
         mrgCtx.interDirNeighbours[pos] = miAboveRight.interDir;
         // get Mv from Left
+#if !JVET_M0409_ATMVP_FIX
         if (puAboveRight->cu->ibc)
         {
           cntIBC++;
         }
+#endif
         mrgCtx.mvFieldNeighbours[pos << 1].setMvField( miAboveRight.mv[0], miAboveRight.refIdx[0] );
 
         if ( slice.isInterB() )
@@ -2784,10 +2792,12 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         // get Inter Dir
         mrgCtx.interDirNeighbours[pos] = miBelowLeft.interDir;
         // get Mv from Bottom-Left
+#if !JVET_M0409_ATMVP_FIX
         if (puLeftBottom->cu->ibc)
         {
           cntIBC++;
         }
+#endif
         mrgCtx.mvFieldNeighbours[pos << 1].setMvField( miBelowLeft.mv[0], miBelowLeft.refIdx[0] );
 
         if ( slice.isInterB() )
@@ -2801,7 +2811,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
     isAvailableSubPu = getInterMergeSubPuMvpCand( pu, mrgCtx, tmpLICFlag, pos
       , 0
+#if !JVET_M0409_ATMVP_FIX
       , cntIBC
+#endif
     );
     if ( isAvailableSubPu )
     {
@@ -3224,11 +3236,15 @@ void clipColPos(int& posX, int& posY, const PredictionUnit& pu)
 
 bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, bool& LICFlag, const int count
   , int mmvdList
+#if !JVET_M0409_ATMVP_FIX
   , const int countIBC
+#endif
 )
 {
+#if !JVET_M0409_ATMVP_FIX
   if (count == countIBC && pu.cs->slice->getSPS()->getSpsNext().getIBCMode())
     return false;
+#endif
   const Slice   &slice = *pu.cs->slice;
   const unsigned scale = 4 * std::max<int>(1, 4 * AMVP_DECIMATION_FACTOR / 4);
   const unsigned mask = ~(scale - 1);

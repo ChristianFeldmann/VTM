@@ -139,7 +139,9 @@ namespace PU
   );
   bool getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx &mrgCtx, bool& LICFlag, const int count
     , int mmvdList
+#if !JVET_M0409_ATMVP_FIX
     , const int countIBC
+#endif
   );
   bool getInterMergeSubPuRecurCand(const PredictionUnit &pu, MergeCtx &mrgCtx, const int count);
   bool isBiPredFromDifferentDir       (const PredictionUnit &pu);

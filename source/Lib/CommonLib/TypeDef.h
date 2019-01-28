@@ -81,6 +81,8 @@ typedef std::pair<int, int>  TrCost;
 // clang-format off
 #define JVET_M0453_CABAC_ENGINE                           1
 
+#define JVET_M0409_ATMVP_FIX                              1
+
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
 // clang-format on

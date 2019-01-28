@@ -1600,10 +1600,13 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     {
       if ( m_BinDecoder.decodeBin( Ctx::AffMergeIdx() ) )
       {
+#if !JVET_M0381_ONE_CTX_FOR_SUBBLOCK_MRG_IDX
         bool useExtCtx = pu.cs->sps->getSBTMVPEnabledFlag();
+#endif
         pu.mergeIdx++;
         for ( ; pu.mergeIdx < numCandminus1; pu.mergeIdx++ )
         {
+#if !JVET_M0381_ONE_CTX_FOR_SUBBLOCK_MRG_IDX
           if ( useExtCtx )
           {
             if ( !m_BinDecoder.decodeBin( Ctx::AffMergeIdx( std::min<int>( pu.mergeIdx, NUM_MERGE_IDX_EXT_CTX - 1 ) ) ) )
@@ -1613,11 +1616,14 @@ void CABACReader::merge_idx( PredictionUnit& pu )
           }
           else
           {
+#endif
             if ( !m_BinDecoder.decodeBinEP() )
             {
               break;
             }
+#if !JVET_M0381_ONE_CTX_FOR_SUBBLOCK_MRG_IDX
           }
+#endif
         }
       }
     }

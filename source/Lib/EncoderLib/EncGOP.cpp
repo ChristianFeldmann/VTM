@@ -1980,8 +1980,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     std::vector<OutputBitstream> substreamsOut(numSubstreams);
 
 #if ENABLE_QPA
-    pcPic->m_uEnerHpCtu.resize( numberOfCtusInFrame );
-    pcPic->m_iOffsetCtu.resize( numberOfCtusInFrame );
+    pcPic->m_uEnerHpCtu.resize (numberOfCtusInFrame);
+    pcPic->m_iOffsetCtu.resize (numberOfCtusInFrame);
+ #if ENABLE_QPA_SUB_CTU
+    if (pcSlice->getPPS()->getUseDQP() && pcSlice->getPPS()->getMaxCuDQPDepth() > 0)
+    {
+      const PreCalcValues &pcv = *pcPic->cs->pcv;
+      const unsigned   mtsLog2 = (unsigned)g_aucLog2[std::min (pcPic->cs->sps->getMaxTrSize(), pcv.maxCUWidth)];
+      pcPic->m_subCtuQP.resize ((pcv.maxCUWidth >> mtsLog2) * (pcv.maxCUHeight >> mtsLog2));
+    }
+ #endif
 #endif
     if (pcSlice->getSPS()->getUseSAO())
     {

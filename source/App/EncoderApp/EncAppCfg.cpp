@@ -1830,14 +1830,22 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     msg( WARNING, "*************************************************************************\n" );
   }
 
+#if ENABLE_QPA_SUB_CTU
+ #if QP_SWITCHING_FOR_PARALLEL
+  if (m_LargeCTU && (m_iQP < 38) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && (m_iSourceWidth <= 2048) && (m_iSourceHeight <= 1280)
+ #else
+  if (m_LargeCTU && ((int)m_fQP < 38) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && (m_iSourceWidth <= 2048) && (m_iSourceHeight <= 1280)
+ #endif
+      && ((1 << (std::max (m_quadtreeTULog2MaxSize, m_tuLog2MaxSize) + 1)) == m_uiCTUSize) && (m_iSourceWidth > 512 || m_iSourceHeight > 320))
+  {
+    m_iMaxCuDQPDepth = 1;
+  }
+#else
  #if QP_SWITCHING_FOR_PARALLEL
   if( m_LargeCTU && ( m_iQP < 38 ) && ( m_iGOPSize > 4 ) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && ( m_iSourceHeight <= 1280 ) && ( m_iSourceWidth <= 2048 ) )
  #else
   if( m_LargeCTU && ( ( int ) m_fQP < 38 ) && ( m_iGOPSize > 4 ) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && ( m_iSourceHeight <= 1280 ) && ( m_iSourceWidth <= 2048 ) )
  #endif
-#else
-  if( false )
-#endif
   {
     msg( WARNING, "*************************************************************************\n" );
     msg( WARNING, "* WARNING: QPA on with large CTU for <=HD sequences, limiting CTU size! *\n" );
@@ -1847,6 +1855,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     if( ( 1u << m_quadtreeTULog2MaxSize ) > m_uiCTUSize ) m_quadtreeTULog2MaxSize--;
     if( ( 1u << m_tuLog2MaxSize         ) > m_uiCTUSize ) m_tuLog2MaxSize--;
   }
+#endif
+#endif // ENABLE_QPA
 
   const int minCuSize = 1 << MIN_CU_LOG2;
   m_uiMaxCodingDepth = 0;

@@ -151,6 +151,11 @@ static inline int apprI3Log2 (const double d) // rounded 3*log2(d)
   return d < 1.5e-13 ? -128 : int (floor (3.0 * log (d) / log (2.0) + 0.5));
 }
 
+static inline int lumaDQPOffset (const uint32_t avgLumaValue, const int bitDepth)
+{
+  return (1 - int ((3 * uint64_t (avgLumaValue * avgLumaValue)) >> uint64_t (2 * bitDepth - 1)));
+}
+
 static void filterAndCalculateAverageEnergies (const Pel* pSrc, const int  iSrcStride,
                                                double &hpEner,  const int  iHeight,    const int iWidth,
                                                const uint32_t uBitDepth /* luma bit-depth (4-16) */)
@@ -203,52 +208,111 @@ static double getAveragePictureEnergy (const CPelBuf picOrig, const uint32_t uBi
 }
 #endif
 
+static int getGlaringColorQPOffset (Picture* const pcPic, const int ctuAddr, const uint32_t startAddr, const uint32_t boundingAddr,
+                                    const int bitDepth,   uint32_t &avgLumaValue)
+{
+  const PreCalcValues& pcv  = *pcPic->cs->pcv;
+  const ChromaFormat chrFmt = pcPic->chromaFormat;
+  const uint32_t chrWidth   = pcv.maxCUWidth  >> getChannelTypeScaleX (CH_C, chrFmt);
+  const uint32_t chrHeight  = pcv.maxCUHeight >> getChannelTypeScaleY (CH_C, chrFmt);
+  const int      midLevel   = 1 << (bitDepth - 1);
+  int chrValue = MAX_INT;
+  avgLumaValue = (startAddr < boundingAddr) ? 0 : (uint32_t)pcPic->getOrigBuf().Y().mean();
+
+  if (ctuAddr >= 0) // luma
+  {
+    avgLumaValue = (uint32_t)pcPic->m_iOffsetCtu[ctuAddr];
+  }
+  else if (startAddr < boundingAddr)
+  {
+    for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
+    {
+#if HEVC_TILES_WPP
+      const uint32_t ctuRsAddr = pcPic->tileMap->getCtuTsToRsAddrMap (ctuTsAddr);
+#else
+      const uint32_t ctuRsAddr = ctuTsAddr;
+#endif
+
+      avgLumaValue += pcPic->m_iOffsetCtu[ctuRsAddr];
+    }
+    avgLumaValue = (avgLumaValue + ((boundingAddr - startAddr) >> 1)) / (boundingAddr - startAddr);
+  }
+
+  for (uint32_t comp = COMPONENT_Cb; comp < MAX_NUM_COMPONENT; comp++)
+  {
+    const ComponentID compID = (ComponentID)comp;
+    int avgCompValue;
+
+    if (ctuAddr >= 0) // chroma
+    {
+      const CompArea chrArea = clipArea (CompArea (compID, chrFmt, Area ((ctuAddr % pcv.widthInCtus) * chrWidth, (ctuAddr / pcv.widthInCtus) * chrHeight, chrWidth, chrHeight)), pcPic->block (compID));
+
+      avgCompValue = pcPic->getOrigBuf (chrArea).mean();
+    }
+    else avgCompValue = pcPic->getOrigBuf (pcPic->block (compID)).mean();
+
+    if (chrValue > avgCompValue) chrValue = avgCompValue; // minimum of the DC offsets
+  }
+  CHECK (chrValue < 0, "DC offset cannot be negative!");
+
+  chrValue = (int)avgLumaValue - chrValue;
+
+  if (chrValue > midLevel) return apprI3Log2 (double (chrValue * chrValue) / double (midLevel * midLevel));
+
+  return 0;
+}
+
 static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, EncCfg* const pcEncCfg, const int sliceQP)
 {
+  const int iBitDepth              = pcSlice->getSPS()->getBitDepth (CHANNEL_TYPE_LUMA); // overall image bit-depth
   double hpEner[MAX_NUM_COMPONENT] = {0.0, 0.0, 0.0};
   int    optSliceChromaQpOffset[2] = {0, 0};
   int    savedLumaQP               = -1;
+  uint32_t meanLuma                = MAX_UINT;
 
   for (uint32_t comp = 0; comp < getNumberValidComponents (pcPic->chromaFormat); comp++)
   {
     const ComponentID compID = (ComponentID)comp;
     const CPelBuf    picOrig = pcPic->getOrigBuf (pcPic->block (compID));
 
-    filterAndCalculateAverageEnergies (picOrig.buf, picOrig.stride, hpEner[comp], picOrig.height, picOrig.width,
-                                       pcSlice->getSPS()->getBitDepth (toChannelType (compID)) - (isChroma (compID) ? 1 : 0));
+    filterAndCalculateAverageEnergies (picOrig.buf,    picOrig.stride, hpEner[comp],
+                                       picOrig.height, picOrig.width,  iBitDepth - (isChroma (compID) ? 1 : 0));
     if (isChroma (compID))
     {
       const int  adaptChromaQPOffset = 2.0 * hpEner[comp] <= hpEner[0] ? 0 : apprI3Log2 (2.0 * hpEner[comp] / hpEner[0]);
-   #if GLOBAL_AVERAGING
-      int       averageAdaptedLumaQP = Clip3 (0, MAX_QP, sliceQP + apprI3Log2 (hpEner[0] / getAveragePictureEnergy (pcPic->getOrigBuf().Y(), pcSlice->getSPS()->getBitDepth (CH_L))));
-   #else
-      int       averageAdaptedLumaQP = Clip3 (0, MAX_QP, sliceQP); // mean slice QP
-   #endif
-   #if SHARP_LUMA_DELTA_QP
 
-      // change mean picture QP index based on picture's average luma value (Sharp)
-      if (pcEncCfg->getLumaLevelToDeltaQPMapping().mode == LUMALVL_TO_DQP_NUM_MODES)
+      if (savedLumaQP < 0)
       {
-        const CPelBuf picLuma = pcPic->getOrigBuf().Y();
-        uint64_t uAvgLuma = 0;
+#if GLOBAL_AVERAGING
+        int     averageAdaptedLumaQP = Clip3 (0, MAX_QP, sliceQP + apprI3Log2 (hpEner[0] / getAveragePictureEnergy (pcPic->getOrigBuf().Y(), iBitDepth)));
+#else
+        int     averageAdaptedLumaQP = Clip3 (0, MAX_QP, sliceQP); // mean slice QP
+#endif
 
-        for (SizeType y = 0; y < picLuma.height; y++)
+        averageAdaptedLumaQP += getGlaringColorQPOffset (pcPic, -1 /*ctuRsAddr*/, 0 /*startAddr*/, 0 /*boundingAddr*/, iBitDepth, meanLuma);
+
+        if (averageAdaptedLumaQP > MAX_QP
+#if SHARP_LUMA_DELTA_QP
+            && (pcEncCfg->getLumaLevelToDeltaQPMapping().mode != LUMALVL_TO_DQP_NUM_MODES)
+#endif
+            ) averageAdaptedLumaQP = MAX_QP;
+#if SHARP_LUMA_DELTA_QP
+
+        // change mean picture QP index based on picture's average luma value (Sharp)
+        if (pcEncCfg->getLumaLevelToDeltaQPMapping().mode == LUMALVL_TO_DQP_NUM_MODES)
         {
-          for (SizeType x = 0; x < picLuma.width; x++)
-          {
-            uAvgLuma += (uint64_t)picLuma.at (x, y);
-          }
-        }
-        uAvgLuma = (uAvgLuma + (picLuma.area() >> 1)) / picLuma.area();
+          if (meanLuma == MAX_UINT) meanLuma = pcPic->getOrigBuf().Y().mean();
 
-        averageAdaptedLumaQP = Clip3 (0, MAX_QP, averageAdaptedLumaQP + 1 - int((3 * uAvgLuma * uAvgLuma) >> uint64_t (2 * pcSlice->getSPS()->getBitDepth (CH_L) - 1)));
-      }
-   #endif
-      const int lumaChromaMappingDQP = averageAdaptedLumaQP - getScaledChromaQP (averageAdaptedLumaQP, pcEncCfg->getChromaFormatIdc());
+          averageAdaptedLumaQP = Clip3 (0, MAX_QP, averageAdaptedLumaQP + lumaDQPOffset (meanLuma, iBitDepth));
+        }
+#endif
+
+        savedLumaQP = averageAdaptedLumaQP;
+      } // savedLumaQP < 0
+
+      const int lumaChromaMappingDQP = savedLumaQP - getScaledChromaQP (savedLumaQP, pcEncCfg->getChromaFormatIdc());
 
       optSliceChromaQpOffset[comp-1] = std::min (3 + lumaChromaMappingDQP, adaptChromaQPOffset + lumaChromaMappingDQP);
-
-      if (savedLumaQP < 0) savedLumaQP = averageAdaptedLumaQP; // save it for later
     }
   }
 
@@ -794,9 +858,9 @@ void EncSlice::resetQP( Picture* pic, int sliceQP, double lambda )
 }
 
 #if ENABLE_QPA
-static bool applyQPAdaptation (Picture* const pcPic,     Slice* const pcSlice,        const PreCalcValues& pcv,
-                               const uint32_t startAddr, const uint32_t boundingAddr, const bool useSharpLumaDQP,
-                               const double hpEnerAvg,   const double hpEnerMax,      const bool useFrameWiseQPA, const int previouslyAdaptedLumaQP = -1)
+static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,        const PreCalcValues& pcv,
+                               const uint32_t startAddr,   const uint32_t boundingAddr, const bool useSharpLumaDQP,
+                               const bool useFrameWiseQPA, const int previouslyAdaptedLumaQP = -1)
 {
   const int  iBitDepth   = pcSlice->getSPS()->getBitDepth (CHANNEL_TYPE_LUMA);
   const int  iQPIndex    = pcSlice->getSliceQp(); // initial QP index for current slice, used in following loops
@@ -804,6 +868,35 @@ static bool applyQPAdaptation (Picture* const pcPic,     Slice* const pcSlice,  
   const TileMap& tileMap = *pcPic->tileMap;
 #endif
   bool   sliceQPModified = false;
+  uint32_t   meanLuma    = MAX_UINT;
+  double     hpEnerAvg   = 0.0;
+
+#if GLOBAL_AVERAGING
+  if (!useFrameWiseQPA || previouslyAdaptedLumaQP < 0)  // mean visual activity value and luma value in each CTU
+#endif
+  {
+    for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
+    {
+#if HEVC_TILES_WPP
+      const uint32_t ctuRsAddr  = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
+#else
+      const uint32_t ctuRsAddr  = ctuTsAddr;
+#endif
+      const Position pos ((ctuRsAddr % pcv.widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / pcv.widthInCtus) * pcv.maxCUHeight);
+      const CompArea ctuArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight)), pcPic->Y());
+      const CompArea fltArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x > 0 ? pos.x - 1 : 0, pos.y > 0 ? pos.y - 1 : 0, pcv.maxCUWidth + (pos.x > 0 ? 2 : 1), pcv.maxCUHeight + (pos.y > 0 ? 2 : 1))), pcPic->Y());
+      const CPelBuf  picOrig    = pcPic->getOrigBuf (fltArea);
+      double hpEner = 0.0;
+
+      filterAndCalculateAverageEnergies (picOrig.buf,    picOrig.stride, hpEner,
+                                         picOrig.height, picOrig.width,  iBitDepth);
+      hpEnerAvg += hpEner;
+      pcPic->m_uEnerHpCtu[ctuRsAddr] = hpEner;
+      pcPic->m_iOffsetCtu[ctuRsAddr] = pcPic->getOrigBuf (ctuArea).mean();
+    }
+
+    hpEnerAvg /= double (boundingAddr - startAddr);
+  }
 #if GLOBAL_AVERAGING
   const double hpEnerPic = 1.0 / getAveragePictureEnergy (pcPic->getOrigBuf().Y(), iBitDepth); // inverse, speed
 #else
@@ -812,36 +905,40 @@ static bool applyQPAdaptation (Picture* const pcPic,     Slice* const pcSlice,  
 
   if (useFrameWiseQPA || (iQPIndex >= MAX_QP))
   {
-    int iQPFixed;
+    int iQPFixed = (previouslyAdaptedLumaQP < 0) ? Clip3 (0, MAX_QP, iQPIndex + apprI3Log2 (hpEnerAvg * hpEnerPic)) : previouslyAdaptedLumaQP;
 
-    if (useFrameWiseQPA)
+    if (isChromaEnabled (pcPic->chromaFormat) && (iQPIndex < MAX_QP) && (previouslyAdaptedLumaQP < 0))
     {
-      iQPFixed = (previouslyAdaptedLumaQP < 0) ? Clip3 (0, MAX_QP, iQPIndex + apprI3Log2 (hpEnerAvg * hpEnerPic)) : previouslyAdaptedLumaQP; // average-activity slice QP
-    }
-    else
-    {
-      iQPFixed = Clip3 (0, MAX_QP, iQPIndex + ((apprI3Log2 (hpEnerAvg * hpEnerPic) + apprI3Log2 (hpEnerMax * hpEnerPic) + 1) >> 1)); // adapted slice QP = (mean(QP) + max(QP)) / 2
+      iQPFixed += getGlaringColorQPOffset (pcPic, -1 /*ctuRsAddr*/, startAddr, boundingAddr, iBitDepth, meanLuma);
+
+      if (iQPFixed > MAX_QP
+#if SHARP_LUMA_DELTA_QP
+          && !useSharpLumaDQP
+#endif
+          ) iQPFixed = MAX_QP;
     }
 #if SHARP_LUMA_DELTA_QP
 
     // change new fixed QP based on average CTU luma value (Sharp)
     if (useSharpLumaDQP && (iQPIndex < MAX_QP) && (previouslyAdaptedLumaQP < 0))
     {
-      uint64_t uAvgLuma = 0;
-
-      for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
+      if (meanLuma == MAX_UINT) // collect picture mean luma value
       {
-#if HEVC_TILES_WPP
-        const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
-#else
-        const uint32_t ctuRsAddr = ctuTsAddr;
-#endif
+        meanLuma = 0;
 
-        uAvgLuma += (uint64_t)pcPic->m_iOffsetCtu[ctuRsAddr];
+        for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
+        {
+ #if HEVC_TILES_WPP
+          const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
+ #else
+          const uint32_t ctuRsAddr = ctuTsAddr;
+ #endif
+
+          meanLuma += pcPic->m_iOffsetCtu[ctuRsAddr];  // CTU mean
+        }
+        meanLuma = (meanLuma + ((boundingAddr - startAddr) >> 1)) / (boundingAddr - startAddr);
       }
-      uAvgLuma = (uAvgLuma + ((boundingAddr - startAddr) >> 1)) / (boundingAddr - startAddr);
-
-      iQPFixed = Clip3 (0, MAX_QP, iQPFixed + 1 - int((3 * uAvgLuma * uAvgLuma) >> uint64_t(2 * iBitDepth - 1)));
+      iQPFixed = Clip3 (0, MAX_QP, iQPFixed + lumaDQPOffset (meanLuma, iBitDepth));
     }
 #endif
 
@@ -872,7 +969,7 @@ static bool applyQPAdaptation (Picture* const pcPic,     Slice* const pcSlice,  
       pcPic->m_iOffsetCtu[ctuRsAddr] = (Pel)iQPFixed; // fixed QPs
     }
   }
-  else
+  else // CTU-wise QPA
   {
     for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
     {
@@ -884,21 +981,30 @@ static bool applyQPAdaptation (Picture* const pcPic,     Slice* const pcSlice,  
 
       int iQPAdapt = Clip3 (0, MAX_QP, iQPIndex + apprI3Log2 (pcPic->m_uEnerHpCtu[ctuRsAddr] * hpEnerPic));
 
-#if SHARP_LUMA_DELTA_QP
       if (pcv.widthInCtus > 1) // try to enforce CTU SNR greater than zero dB
-#else
-      if (!pcSlice->isIntra()) // try to enforce CTU SNR greater than zero dB
-#endif
       {
-        const Pel      dcOffset   = pcPic->m_iOffsetCtu[ctuRsAddr];
+        meanLuma = (uint32_t)pcPic->m_iOffsetCtu[ctuRsAddr];
+
+        if (isChromaEnabled (pcPic->chromaFormat))
+        {
+          iQPAdapt += getGlaringColorQPOffset (pcPic, (int)ctuRsAddr, startAddr, boundingAddr, iBitDepth, meanLuma);
+
+          if (iQPAdapt > MAX_QP
+#if SHARP_LUMA_DELTA_QP
+              && !useSharpLumaDQP
+#endif
+              ) iQPAdapt = MAX_QP;
+          CHECK (meanLuma != (uint32_t)pcPic->m_iOffsetCtu[ctuRsAddr], "luma DC offsets don't match");
+        }
 #if SHARP_LUMA_DELTA_QP
 
         // change adaptive QP based on mean CTU luma value (Sharp)
         if (useSharpLumaDQP)
         {
-          const uint64_t uAvgLuma   = (uint64_t)dcOffset;
-
-          iQPAdapt = std::max (0, iQPAdapt + 1 - int((3 * uAvgLuma * uAvgLuma) >> uint64_t(2 * iBitDepth - 1)));
+ #if ENABLE_QPA_SUB_CTU
+          pcPic->m_uEnerHpCtu[ctuRsAddr] = (double)meanLuma; // for sub-CTU QPA
+ #endif
+          iQPAdapt = Clip3 (0, MAX_QP, iQPAdapt + lumaDQPOffset (meanLuma, iBitDepth));
         }
 
 #endif
@@ -915,7 +1021,7 @@ static bool applyQPAdaptation (Picture* const pcPic,     Slice* const pcSlice,  
         {
           for (SizeType w = 0; w < iSrcWidth; w++)
           {
-            uAbsDCless += (uint32_t)abs (pSrc[w] - dcOffset);
+            uAbsDCless += (uint32_t)abs (pSrc[w] - (Pel)meanLuma);
           }
           pSrc += iSrcStride;
         }
@@ -937,15 +1043,15 @@ static bool applyQPAdaptation (Picture* const pcPic,     Slice* const pcSlice,  
 
           iQPAdapt = std::max (0, iQPAdapt + redVal);
         }
-#if SHARP_LUMA_DELTA_QP
-
-        if (iQPAdapt > MAX_QP) iQPAdapt = MAX_QP;
-#endif
       }
 
       pcPic->m_iOffsetCtu[ctuRsAddr] = (Pel)iQPAdapt; // adapted QPs
 
+#if ENABLE_QPA_SUB_CTU
+      if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getMaxCuDQPDepth() == 0)  // reduce local DQP rate peaks
+#else
       if (pcv.widthInCtus > 1) // try to reduce local bitrate peaks via minimum smoothing of the adapted QPs
+#endif
       {
         iQPAdapt = ctuRsAddr % pcv.widthInCtus; // horizontal offset
         if (iQPAdapt == 0)
@@ -978,6 +1084,97 @@ static bool applyQPAdaptation (Picture* const pcPic,     Slice* const pcSlice,  
 
   return sliceQPModified;
 }
+
+#if ENABLE_QPA_SUB_CTU
+static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea, const uint32_t ctuAddr, const bool useSharpLumaDQP)
+{
+  const PreCalcValues &pcv = *cs.pcv;
+  const Picture     *pcPic = cs.picture;
+  const int      iBitDepth = cs.slice->getSPS()->getBitDepth (CHANNEL_TYPE_LUMA); // overall image bit-depth
+  const int   adaptedCtuQP = pcPic ? pcPic->m_iOffsetCtu[ctuAddr] : cs.slice->getSliceQpBase();
+
+  if (!pcPic || cs.pps->getMaxCuDQPDepth() == 0) return adaptedCtuQP;
+
+  for (unsigned addr = 0; addr < cs.picture->m_subCtuQP.size(); addr++)
+  {
+    cs.picture->m_subCtuQP[addr] = (int8_t)adaptedCtuQP;
+  }
+  if (cs.slice->getSliceQp() < MAX_QP && pcv.widthInCtus > 1)
+  {
+#if SHARP_LUMA_DELTA_QP
+    const int   lumaCtuDQP = useSharpLumaDQP ? lumaDQPOffset ((uint32_t)pcPic->m_uEnerHpCtu[ctuAddr], iBitDepth) : 0;
+#endif
+    const unsigned     mts = std::min (cs.sps->getMaxTrSize(), pcv.maxCUWidth);
+    const unsigned mtsLog2 = (unsigned)g_aucLog2[mts];
+    const unsigned  stride = pcv.maxCUWidth >> mtsLog2;
+    unsigned numAct = 0;    // number of block activities
+    double   sumAct = 0.0; // sum of all block activities
+    double   subAct[16];   // individual block activities
+#if SHARP_LUMA_DELTA_QP
+    uint32_t subMLV[16];   // individual mean luma values
+#endif
+
+    CHECK (mts * 4 < pcv.maxCUWidth || mts * 4 < pcv.maxCUHeight, "max. transform size is too small for given CTU size");
+
+    for (unsigned h = 0; h < (pcv.maxCUHeight >> mtsLog2); h++)
+    {
+      for (unsigned w = 0; w < stride; w++)
+      {
+        const unsigned addr    = w + h * stride;
+        const PosType  x       = ctuArea.lx() + w * mts;
+        const PosType  y       = ctuArea.ly() + h * mts;
+        const CompArea fltArea = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (x > 0 ? x - 1 : 0, y > 0 ? y - 1 : 0, mts + (x > 0 ? 2 : 1), mts + (y > 0 ? 2 : 1))), pcPic->Y());
+        const CPelBuf  picOrig = pcPic->getOrigBuf (fltArea);
+
+        if (x >= pcPic->lwidth() || y >= pcPic->lheight())
+        {
+          continue;
+        }
+        filterAndCalculateAverageEnergies (picOrig.buf,    picOrig.stride, subAct[addr],
+                                           picOrig.height, picOrig.width,  iBitDepth);
+        numAct++;
+        sumAct += subAct[addr];
+#if SHARP_LUMA_DELTA_QP
+
+        if (useSharpLumaDQP)
+        {
+          const CompArea subArea = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (x, y, mts, mts)), pcPic->Y());
+
+          subMLV[addr] = pcPic->getOrigBuf (subArea).mean();
+        }
+#endif
+      }
+    }
+    if (sumAct <= 0.0) return adaptedCtuQP;
+
+    sumAct = double(numAct) / sumAct; // 1.0 / (average CTU activity)
+
+    for (unsigned h = 0; h < (pcv.maxCUHeight >> mtsLog2); h++)
+    {
+      for (unsigned w = 0; w < stride; w++)
+      {
+        const unsigned addr = w + h * stride;
+
+        if (ctuArea.lx() + w * mts >= pcPic->lwidth() || ctuArea.ly() + h * mts >= pcPic->lheight())
+        {
+          continue;
+        }
+        cs.picture->m_subCtuQP[addr] = (int8_t)Clip3 (0, MAX_QP, adaptedCtuQP + apprI3Log2 (subAct[addr] * sumAct));
+#if SHARP_LUMA_DELTA_QP
+
+        // change adapted QP based on mean sub-CTU luma value (Sharp)
+        if (useSharpLumaDQP)
+        {
+          cs.picture->m_subCtuQP[addr] = (int8_t)Clip3 (0, MAX_QP, (int)cs.picture->m_subCtuQP[addr] - lumaCtuDQP + lumaDQPOffset (subMLV[addr], iBitDepth));
+        }
+#endif
+      }
+    }
+  }
+
+  return adaptedCtuQP;
+}
+#endif // ENABLE_QPA_SUB_CTU
 #endif // ENABLE_QPA
 
 // ====================================================================================================================
@@ -1261,12 +1458,9 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   CHECK( pcPic->m_prevQP[0] == std::numeric_limits<int>::max(), "Invalid previous QP" );
 
   CodingStructure&  cs          = *pcPic->cs;
-#if ENABLE_QPA || ENABLE_WPP_PARALLELISM
-  const PreCalcValues& pcv      = *cs.pcv;
-  const uint32_t        widthInCtus = pcv.widthInCtus;
-#endif
-
-  cs.slice = pcSlice;
+  cs.slice    = pcSlice;
+  cs.pcv      = pcSlice->getPPS()->pcv;
+  cs.fracBits = 0;
 
   if (startCtuTsAddr == 0)
   {
@@ -1274,74 +1468,19 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   }
 
 #if ENABLE_QPA
-  double hpEnerMax     = 1.0;
-  double hpEnerPic     = 0.0;
-  int    iSrcOffset;
-
-  if (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl())
-  {
-    for (uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++)
-    {
- #if HEVC_TILES_WPP
-      const uint32_t ctuRsAddr  = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
- #else
-      const uint32_t ctuRsAddr  = ctuTsAddr;
- #endif
-      const Position pos ((ctuRsAddr % widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / widthInCtus) * pcv.maxCUHeight);
-      const CompArea subArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight)), pcPic->Y());
-      const CompArea fltArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x > 0 ? pos.x - 1 : 0, pos.y > 0 ? pos.y - 1 : 0, pcv.maxCUWidth + (pos.x > 0 ? 2 : 1), pcv.maxCUHeight + (pos.y > 0 ? 2 : 1))), pcPic->Y());
-      const SizeType iSrcStride = pcPic->getOrigBuf (subArea).stride;
-      const Pel*     pSrc       = pcPic->getOrigBuf (subArea).buf;
-      const SizeType iSrcHeight = pcPic->getOrigBuf (subArea).height;
-      const SizeType iSrcWidth  = pcPic->getOrigBuf (subArea).width;
-      const SizeType iFltHeight = pcPic->getOrigBuf (fltArea).height;
-      const SizeType iFltWidth  = pcPic->getOrigBuf (fltArea).width;
-      double hpEner = 0.0;
-
-      DTRACE_UPDATE (g_trace_ctx, std::make_pair ("ctu", ctuRsAddr));
-
-      // compute DC offset to be subtracted from luma values
-      iSrcOffset = 0;
-      for (SizeType h = 0; h < iSrcHeight; h++)
-      {
-        for (SizeType w = 0; w < iSrcWidth; w++)
-        {
-          iSrcOffset += pSrc[w];
-        }
-        pSrc += iSrcStride;
-      }
-      CHECK (iSrcOffset < 0, "DC offset cannot be negative!");
-
-      int x = iSrcHeight * iSrcWidth;
-      iSrcOffset = (iSrcOffset + (x >> 1)) / x; // slow division
-
-      filterAndCalculateAverageEnergies (pcPic->getOrigBuf (fltArea).buf, iSrcStride,
-                                         hpEner, iFltHeight, iFltWidth,
-                                         pcSlice->getSPS()->getBitDepth (CHANNEL_TYPE_LUMA));
-
-      if (hpEner > hpEnerMax) hpEnerMax = hpEner;
-      hpEnerPic += hpEner;
-      pcPic->m_uEnerHpCtu[ctuRsAddr] = hpEner;
-      pcPic->m_iOffsetCtu[ctuRsAddr] = (Pel)iSrcOffset;
-    } // end iteration over all CTUs in current slice
-
-  }
-
   if (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && (boundingCtuTsAddr > startCtuTsAddr))
   {
-    const double hpEnerAvg = hpEnerPic / double(boundingCtuTsAddr - startCtuTsAddr);
-
-    if (applyQPAdaptation (pcPic, pcSlice, pcv, startCtuTsAddr, boundingCtuTsAddr, m_pcCfg->getLumaLevelToDeltaQPMapping().mode == LUMALVL_TO_DQP_NUM_MODES,
-                           hpEnerAvg, hpEnerMax, (m_pcCfg->getBaseQP() >= 38) || (m_pcCfg->getSourceWidth() <= 512 && m_pcCfg->getSourceHeight() <= 320), m_adaptedLumaQP))
+    if (applyQPAdaptation (pcPic, pcSlice, *cs.pcv, startCtuTsAddr, boundingCtuTsAddr, m_pcCfg->getLumaLevelToDeltaQPMapping().mode == LUMALVL_TO_DQP_NUM_MODES,
+                           (m_pcCfg->getBaseQP() >= 38) || (m_pcCfg->getSourceWidth() <= 512 && m_pcCfg->getSourceHeight() <= 320), m_adaptedLumaQP))
     {
       m_CABACEstimator->initCtxModels (*pcSlice);
-  #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
       for (int jId = 1; jId < m_pcLib->getNumCuEncStacks(); jId++)
       {
         CABACWriter* cw = m_pcLib->getCABACEncoder (jId)->getCABACEstimator (pcSlice->getSPS());
         cw->initCtxModels (*pcSlice);
       }
-  #endif
+#endif
 #if HEVC_DEPENDENT_SLICES
       if (!pcSlice->getDependentSliceSegmentFlag())
       {
@@ -1357,10 +1496,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
     }
   }
 #endif // ENABLE_QPA
-
-  cs.pcv      = pcSlice->getPPS()->pcv;
-  cs.fracBits = 0;
-
 
 #if ENABLE_WPP_PARALLELISM
   bool bUseThreads = m_pcCfg->getNumWppThreads() > 1;
@@ -1420,7 +1555,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #endif
 #if ENABLE_QPA
   const int iQPIndex              = pcSlice->getSliceQpBase();
-  int iSrcOffset                  = 0;
 #endif
 
 #if ENABLE_WPP_PARALLELISM
@@ -1515,7 +1649,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #else
 #endif
 
-#if RDOQ_CHROMA_LAMBDA && ENABLE_QPA
+#if RDOQ_CHROMA_LAMBDA && ENABLE_QPA && !ENABLE_QPA_SUB_CTU
     double oldLambdaArray[MAX_NUM_COMPONENT] = {0.0};
 #endif
     const double oldLambda = pRdCost->getLambda();
@@ -1561,9 +1695,14 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if ENABLE_QPA
     else if (pCfg->getUsePerceptQPA() && pcSlice->getPPS()->getUseDQP())
     {
-      iSrcOffset = pcPic->m_iOffsetCtu[ctuRsAddr];
-      const double newLambda = oldLambda * pow (2.0, double(iSrcOffset - iQPIndex) / 3.0);
-      pcPic->m_uEnerHpCtu[ctuRsAddr] = newLambda;
+#if ENABLE_QPA_SUB_CTU
+      const int adaptedQP    = applyQPAdaptationSubCtu (cs, ctuArea, ctuRsAddr, m_pcCfg->getLumaLevelToDeltaQPMapping().mode == LUMALVL_TO_DQP_NUM_MODES);
+#else
+      const int adaptedQP    = pcPic->m_iOffsetCtu[ctuRsAddr];
+#endif
+      const double newLambda = pcSlice->getLambdas()[0] * pow (2.0, double (adaptedQP - iQPIndex) / 3.0);
+      pcPic->m_uEnerHpCtu[ctuRsAddr] = newLambda; // for ALF and SAO
+#if !ENABLE_QPA_SUB_CTU
 #if RDOQ_CHROMA_LAMBDA
       pTrQuant->getLambdas (oldLambdaArray); // save the old lambdas
       const double chromaLambda = newLambda / pRdCost->getChromaWeight();
@@ -1573,7 +1712,8 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       pTrQuant->setLambda (newLambda);
 #endif
       pRdCost->setLambda (newLambda, pcSlice->getSPS()->getBitDepths());
-      currQP[0] = currQP[1] = iSrcOffset;
+#endif
+      currQP[0] = currQP[1] = adaptedQP;
     }
 #endif
 
@@ -1684,7 +1824,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       pRateCtrl->getRCPic()->updateAfterCTU( pRateCtrl->getRCPic()->getLCUCoded(), actualBits, actualQP, actualLambda,
                                              pcSlice->isIRAP() ? 0 : pCfg->getLCULevelRC() );
     }
-#if ENABLE_QPA
+#if ENABLE_QPA && !ENABLE_QPA_SUB_CTU
     else if (pCfg->getUsePerceptQPA() && pcSlice->getPPS()->getUseDQP())
     {
 #if RDOQ_CHROMA_LAMBDA

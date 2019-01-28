@@ -151,19 +151,18 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
       minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - deltaQP );
       maxQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP + deltaQP );
     }
+#if ENABLE_QPA_SUB_CTU
+    else if (pps.getUseDQP() && pps.getMaxCuDQPDepth() > 0 && (!CS::isDualITree (cs) || isLuma (partitioner.chType)))
+    {
+      minQP = baseQP;
+      maxQP = baseQP;
+    }
+#endif
     else
     {
       minQP = cs.currQP[partitioner.chType];
       maxQP = cs.currQP[partitioner.chType];
     }
-
-#if SHARP_LUMA_DELTA_QP
-    if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() )
-    {
-      minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - m_lumaQPOffset );
-      maxQP = minQP; // force encode choose the modified QO
-    }
-#endif
   }
   else
   {
@@ -173,7 +172,11 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
       minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - deltaQP );
       maxQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP + deltaQP );
     }
-    else if( currDepth < pps.getMaxCuDQPDepth() )
+    else if (currDepth < pps.getMaxCuDQPDepth()
+#if ENABLE_QPA_SUB_CTU
+         || (pps.getUseDQP() && pps.getMaxCuDQPDepth() > 0 && (!CS::isDualITree (cs) || isLuma (partitioner.chType)))
+#endif
+            )
     {
       minQP = baseQP;
       maxQP = baseQP;
@@ -183,15 +186,15 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
       minQP = cs.currQP[partitioner.chType];
       maxQP = cs.currQP[partitioner.chType];
     }
-
-#if SHARP_LUMA_DELTA_QP
-    if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() )
-    {
-      minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - m_lumaQPOffset );
-      maxQP = minQP;
-    }
-#endif
   }
+#if SHARP_LUMA_DELTA_QP
+
+  if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && (!CS::isDualITree (cs) || isLuma (partitioner.chType)))
+  {
+    minQP = Clip3 (-sps.getQpBDOffset (CHANNEL_TYPE_LUMA), MAX_QP, baseQP - m_lumaQPOffset);
+    maxQP = minQP;
+  }
+#endif
 }
 
 
@@ -247,16 +250,8 @@ int EncModeCtrl::calculateLumaDQP( const CPelBuf& rcOrg )
   CHECK( m_pcEncCfg->getLumaLevelToDeltaQPMapping().mode != LUMALVL_TO_DQP_AVG_METHOD, "invalid delta qp mode" );
 #endif
   {
-    // Use avg method
-    int sum = 0;
-    for( uint32_t y = 0; y < rcOrg.height; y++ )
-    {
-      for( uint32_t x = 0; x < rcOrg.width; x++ )
-      {
-        sum += rcOrg.at( x, y );
-      }
-    }
-    avg = ( double ) sum / rcOrg.area();
+    // Use average luma value
+    avg = (double) rcOrg.mean();
   }
 #if !WCG_EXT
   else
@@ -870,6 +865,18 @@ void EncModeCtrlMTnoRQT::initCTUEncoding( const Slice &slice )
   }
 }
 
+#if ENABLE_QPA_SUB_CTU
+static Position getMaxLumaDQPDepthPos (const CodingStructure &cs, const Partitioner &partitioner)
+{
+  if (partitioner.currDepth <= cs.pps->getMaxCuDQPDepth())
+  {
+    return partitioner.currArea().lumaPos();
+  }
+  const PartLevel splitAtMaxDepth = partitioner.getPartStack().at (cs.pps->getMaxCuDQPDepth());
+  // the parent node of qtDepth + mttDepth == maxDqpDepth
+  return splitAtMaxDepth.parts[splitAtMaxDepth.idx].lumaPos();
+}
+#endif
 
 void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStructure& cs )
 {
@@ -927,28 +934,38 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 
   // QP
   int baseQP = cs.baseQP;
-  if( m_pcEncCfg->getUseAdaptiveQP() )
+  if (!CS::isDualITree (cs) || isLuma (partitioner.chType))
   {
-    if (!CS::isDualITree(cs) || isLuma(partitioner.chType))
+    if (m_pcEncCfg->getUseAdaptiveQP())
     {
-      baseQP = Clip3(-cs.sps->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, baseQP + xComputeDQP(cs, partitioner));
+      baseQP = Clip3 (-cs.sps->getQpBDOffset (CHANNEL_TYPE_LUMA), MAX_QP, baseQP + xComputeDQP (cs, partitioner));
     }
-  }
+#if ENABLE_QPA_SUB_CTU
+    else if (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && cs.pps->getUseDQP() && cs.pps->getMaxCuDQPDepth() > 0)
+    {
+      const PreCalcValues &pcv = *cs.pcv;
 
-  int minQP = baseQP;
-  int maxQP = baseQP;
+      if ((partitioner.currArea().lwidth() < pcv.maxCUWidth) && (partitioner.currArea().lheight() < pcv.maxCUHeight) && cs.picture)
+      {
+        const Position    &pos = getMaxLumaDQPDepthPos (cs, partitioner);
+        const unsigned mtsLog2 = (unsigned)g_aucLog2[std::min (cs.sps->getMaxTrSize(), pcv.maxCUWidth)];
+        const unsigned  stride = pcv.maxCUWidth >> mtsLog2;
 
+        baseQP = cs.picture->m_subCtuQP[((pos.x & pcv.maxCUWidthMask) >> mtsLog2) + stride * ((pos.y & pcv.maxCUHeightMask) >> mtsLog2)];
+      }
+    }
+#endif
 #if SHARP_LUMA_DELTA_QP
-  if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() )
-  {
-    if( partitioner.currDepth <= cs.pps->getMaxCuDQPDepth() )
+    if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && partitioner.currDepth <= cs.pps->getMaxCuDQPDepth())
     {
       CompArea clipedArea = clipArea( cs.area.Y(), cs.picture->Y() );
       // keep using the same m_QP_LUMA_OFFSET in the same CTU
       m_lumaQPOffset = calculateLumaDQP( cs.getOrgBuf( clipedArea ) );
     }
-  }
 #endif
+  }
+  int minQP = baseQP;
+  int maxQP = baseQP;
 
   xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, true );
   bool checkCpr = true;

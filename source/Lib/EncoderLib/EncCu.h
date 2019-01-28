@@ -127,8 +127,8 @@ private:
 #endif
   int                   m_bestGbiIdx[2];
   double                m_bestGbiCost[2];
-#if SHARP_LUMA_DELTA_QP
-  void    updateLambda      ( Slice* slice, double dQP );
+#if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
+  void    updateLambda      ( Slice* slice, const int dQP, const bool updateRdCostLambda );
 #endif
 
 public:

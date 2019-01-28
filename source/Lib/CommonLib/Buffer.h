@@ -118,6 +118,7 @@ struct AreaBuf : public Size
   void removeHighFreq       ( const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng);
   void updateHistogram      ( std::vector<int32_t>& hist ) const;
 
+  T    mean                 () const;
   T    meanDiff             ( const AreaBuf<const T> &other ) const;
   void subtract             ( const T val );
 
@@ -546,6 +547,27 @@ void AreaBuf<T>::extendBorderPel( unsigned margin )
     ::memcpy( p - ( y + 1 ) * s, p, sizeof( T ) * ( w + ( margin << 1 ) ) );
   }
 }
+
+template<typename T>
+T AreaBuf<T>::mean() const
+{
+  int64_t  sum = 0;
+
+  CHECK (area() == 0, "size of area is zero");
+
+  const T* src = buf;
+
+#define MEAN_INC      src += stride
+#define MEAN_OP(ADDR) sum += src[ADDR]
+
+  SIZE_AWARE_PER_EL_OP(MEAN_OP, MEAN_INC);
+
+#undef MEAN_INC
+#undef MEAN_OP
+
+  return T ((sum + (area() >> 1)) / area());
+}
+
 template<typename T>
 T AreaBuf<T>::meanDiff( const AreaBuf<const T> &other ) const
 {

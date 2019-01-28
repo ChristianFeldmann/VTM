@@ -1951,6 +1951,18 @@ void CABACReader::triangle_mode( CodingUnit& cu )
     return;
   }
   
+#if JVET_M0118_M0185_TRIANGLE_FLAG_FIX
+  if ( cu.firstPU->mmvdMergeFlag || cu.mmvdSkip )
+  {
+    return;
+  }
+
+  if ( cu.firstPU->mhIntraFlag )
+  {
+    return;
+  }
+#endif
+
   unsigned flag_idx = DeriveCtx::CtxTriangleFlag( cu );
   cu.triangle = m_BinDecoder.decodeBin( Ctx::TriangleFlag(flag_idx) );
 

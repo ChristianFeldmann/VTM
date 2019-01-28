@@ -666,14 +666,27 @@ const CtxSet ContextSetCfg::AffineType = ContextSetCfg::addCtxSet
 const CtxSet ContextSetCfg::AffMergeIdx = ContextSetCfg::addCtxSet
 ( {
 #if JVET_M0453_CABAC_ENGINE
+#if JVET_M0381_ONE_CTX_FOR_SUBBLOCK_MRG_IDX
+  { 109,},
+  {  95,},
+  { CNU,},
+  {   0,},
+#else
   {  109, 168, 168, 153, CNU,},
   {   95, 154, 139, 153, CNU,},
   {  CNU, CNU, CNU, CNU, CNU,},
   {    0,   5,   9,   8, DWS,},
+#endif
+#else
+#if JVET_M0381_ONE_CTX_FOR_SUBBLOCK_MRG_IDX
+  { 123, },
+  { 109, },
+  { CNU, },
 #else
   { 123, 154, 154, 168, CNU, },
   { 109, 154, 139, 168, CNU, },
   { CNU, CNU, CNU, CNU, CNU, },
+#endif
 #endif
 } );
 

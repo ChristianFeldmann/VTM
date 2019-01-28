@@ -2586,7 +2586,11 @@ void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], 
       if ( mi[idx0].refIdx[l] >= 0 && mi[idx1].refIdx[l] >= 0 )
       {
         // check same refidx and different mv
+#if JVET_M0228_REMOVE_CPMV_COMPARE
+        if ( mi[idx0].refIdx[l] == mi[idx1].refIdx[l])
+#else
         if ( mi[idx0].refIdx[l] == mi[idx1].refIdx[l] && mi[idx0].mv[l] != mi[idx1].mv[l] )
+#endif
         {
           dir |= (l + 1);
           refIdx[l] = mi[idx0].refIdx[l];
@@ -2607,7 +2611,11 @@ void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], 
       if ( mi[idx0].refIdx[l] >= 0 && mi[idx1].refIdx[l] >= 0 && mi[idx2].refIdx[l] >= 0 )
       {
         // check same refidx and different mv
+#if JVET_M0228_REMOVE_CPMV_COMPARE
+        if ( mi[idx0].refIdx[l] == mi[idx1].refIdx[l] && mi[idx0].refIdx[l] == mi[idx2].refIdx[l])
+#else
         if ( mi[idx0].refIdx[l] == mi[idx1].refIdx[l] && mi[idx0].refIdx[l] == mi[idx2].refIdx[l] && (mi[idx0].mv[l] != mi[idx1].mv[l] || mi[idx0].mv[l] != mi[idx2].mv[l]) )
+#endif
         {
           dir |= (l + 1);
           refIdx[l] = mi[idx0].refIdx[l];

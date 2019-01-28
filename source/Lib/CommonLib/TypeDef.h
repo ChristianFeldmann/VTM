@@ -60,6 +60,10 @@
 
 #define JVET_M0479_18BITS_MV_CLIP                         1
 
+#define JVET_M0497_FAST_DST7                              1
+#if JVET_M0497_FAST_DST7
+#define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
+#endif
 #define JVET_M0502_PRED_MODE_CTX                          1
 
 #define JVET_M0407_IBC_RANGE                              1 // extend IBC search range to some part of left CTU

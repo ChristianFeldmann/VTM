@@ -112,6 +112,14 @@ private:
   IbcHashMap            m_ibcHashMap;
   CodingStructure     **m_pImvTempCS;
   EncModeCtrl          *m_modeCtrl;
+#if JVET_M0170_MRG_SHARELIST
+  int                  m_shareState;
+  uint32_t             m_shareBndPosX;
+  uint32_t             m_shareBndPosY;
+  SizeType             m_shareBndSizeW;
+  SizeType             m_shareBndSizeH;
+#endif
+
   PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
   PelStorage            m_acRealMergeBuffer[MRG_MAX_NUM_CANDS];
   PelStorage            m_acTriangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS]; // to store weighted prediction pixles
@@ -152,6 +160,10 @@ public:
   void   setMergeBestSATDCost(double cost) { m_mergeBestSATDCost = cost; }
   double getMergeBestSATDCost()            { return m_mergeBestSATDCost; }
 
+#if JVET_M0170_MRG_SHARELIST
+  Position shareParentPos;
+  Size     shareParentSize;
+#endif
   ~EncCu();
 
 protected:

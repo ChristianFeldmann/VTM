@@ -268,6 +268,18 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   m_pcEncLib           = pcEncLib;
   m_dataId             = tId;
 #endif
+#if JVET_M0170_MRG_SHARELIST
+  m_shareState = NO_SHARE;
+  m_pcInterSearch->setShareState(0);
+  setShareStateDec(0);
+#endif
+
+#if JVET_M0170_MRG_SHARELIST
+  m_shareBndPosX = -1;
+  m_shareBndPosY = -1;
+  m_shareBndSizeW = 0;
+  m_shareBndSizeH = 0;
+#endif
 
 #if REUSE_CU_RESULTS
   DecCu::init( m_pcTrQuant, m_pcIntraSearch, m_pcInterSearch );
@@ -573,6 +585,17 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   , LutMotionCand *&bestMotCandLUTs
 )
 {
+#if JVET_M0170_MRG_SHARELIST
+  if (m_shareState == NO_SHARE)
+  {
+    tempCS->sharedBndPos = tempCS->area.Y().lumaPos();
+    tempCS->sharedBndSize.width = tempCS->area.lwidth();
+    tempCS->sharedBndSize.height = tempCS->area.lheight();
+    bestCS->sharedBndPos = bestCS->area.Y().lumaPos();
+    bestCS->sharedBndSize.width = bestCS->area.lwidth();
+    bestCS->sharedBndSize.height = bestCS->area.lheight();
+  }
+#endif
 #if ENABLE_SPLIT_PARALLELISM
   CHECK( m_dataId != tempCS->picture->scheduler.getDataId(), "Working in the wrong dataId!" );
 
@@ -634,6 +657,11 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   DTRACE_UPDATE( g_trace_ctx, std::make_pair( "cuw", tempCS->area.lwidth() ) );
   DTRACE_UPDATE( g_trace_ctx, std::make_pair( "cuh", tempCS->area.lheight() ) );
   DTRACE( g_trace_ctx, D_COMMON, "@(%4d,%4d) [%2dx%2d]\n", tempCS->area.lx(), tempCS->area.ly(), tempCS->area.lwidth(), tempCS->area.lheight() );
+
+
+#if JVET_M0170_MRG_SHARELIST
+  int startShareThisLevel = 0;
+#endif
 
   do
   {
@@ -729,6 +757,15 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
       THROW( "Don't know how to handle mode: type = " << currTestMode.type << ", options = " << currTestMode.opts );
     }
   } while( m_modeCtrl->nextMode( *tempCS, partitioner ) );
+
+#if JVET_M0170_MRG_SHARELIST
+  if(startShareThisLevel == 1)
+  {
+    m_shareState = NO_SHARE;
+    m_pcInterSearch->setShareState(m_shareState);
+    setShareStateDec(m_shareState);
+  }
+#endif
 
   //////////////////////////////////////////////////////////////////////////
   // Finishing CU
@@ -1073,6 +1110,55 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     return;
   }
 
+#if JVET_M0170_MRG_SHARELIST
+  if (!slice.isIntra()
+    && tempCS->chType == CHANNEL_TYPE_LUMA
+    )
+  {
+    tempCS->slice->copyMotionLUTs(tempMotCandLUTs, tempCS->slice->getMotionLUTs());
+  }
+
+  int startShareThisLevel = 0;
+  const uint32_t uiLPelX = tempCS->area.Y().lumaPos().x;
+  const uint32_t uiTPelY = tempCS->area.Y().lumaPos().y;
+
+  int splitRatio = 1;
+  CHECK(!(split == CU_QUAD_SPLIT || split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT
+    || split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT), "invalid split type");
+  splitRatio = (split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT) ? 1 : 2;
+
+  bool isOneChildSmall = ((tempCS->area.lwidth())*(tempCS->area.lheight()) >> splitRatio) < MRG_SHARELIST_SHARSIZE;
+
+  if ((((tempCS->area.lwidth())*(tempCS->area.lheight())) > (MRG_SHARELIST_SHARSIZE * 1)))
+  {
+    m_shareState = NO_SHARE;
+  }
+
+  if (m_shareState == NO_SHARE)//init state
+  {
+    if (isOneChildSmall)
+    {
+      m_shareState = GEN_ON_SHARED_BOUND;//share start state
+      startShareThisLevel = 1;
+    }
+  }
+  if ((m_shareState == GEN_ON_SHARED_BOUND) && (!slice.isIntra()))
+  {
+#if JVET_M0170_MRG_SHARELIST
+    tempCS->slice->copyMotionLUTs(tempCS->slice->getMotionLUTs(), tempCS->slice->m_MotionCandLuTsBkup);
+    m_shareBndPosX = uiLPelX;
+    m_shareBndPosY = uiTPelY;
+    m_shareBndSizeW = tempCS->area.lwidth();
+    m_shareBndSizeH = tempCS->area.lheight();
+    m_shareState = SHARING;
+#endif
+  }
+
+
+  m_pcInterSearch->setShareState(m_shareState);
+  setShareStateDec(m_shareState);
+#endif
+
   partitioner.splitCurrArea( split, *tempCS );
 
   m_CurrCtx++;
@@ -1103,7 +1189,16 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
         tempCS->slice->copyMotionLUTs(tempMotCandLUTs, tempSubMotCandLUTs);
         tempCS->slice->copyMotionLUTs(tempMotCandLUTs, bestSubMotCandLUTs);
       }
-
+#if JVET_M0170_MRG_SHARELIST
+      tempSubCS->sharedBndPos.x = (m_shareState == SHARING) ? m_shareBndPosX : tempSubCS->area.Y().lumaPos().x;
+      tempSubCS->sharedBndPos.y = (m_shareState == SHARING) ? m_shareBndPosY : tempSubCS->area.Y().lumaPos().y;
+      tempSubCS->sharedBndSize.width = (m_shareState == SHARING) ? m_shareBndSizeW : tempSubCS->area.lwidth();
+      tempSubCS->sharedBndSize.height = (m_shareState == SHARING) ? m_shareBndSizeH : tempSubCS->area.lheight();
+      bestSubCS->sharedBndPos.x = (m_shareState == SHARING) ? m_shareBndPosX : tempSubCS->area.Y().lumaPos().x;
+      bestSubCS->sharedBndPos.y = (m_shareState == SHARING) ? m_shareBndPosY : tempSubCS->area.Y().lumaPos().y;
+      bestSubCS->sharedBndSize.width = (m_shareState == SHARING) ? m_shareBndSizeW : tempSubCS->area.lwidth();
+      bestSubCS->sharedBndSize.height = (m_shareState == SHARING) ? m_shareBndSizeH : tempSubCS->area.lheight();
+#endif
       xCompressCU( tempSubCS, bestSubCS, partitioner
         , tempSubMotCandLUTs
         , bestSubMotCandLUTs
@@ -1142,6 +1237,15 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   } while( partitioner.nextPart( *tempCS ) );
 
   partitioner.exitCurrSplit();
+
+#if JVET_M0170_MRG_SHARELIST 
+  if (startShareThisLevel == 1)
+  {
+    m_shareState = NO_SHARE;
+    m_pcInterSearch->setShareState(m_shareState);
+    setShareStateDec(m_shareState);
+  }
+#endif
 
   m_CurrCtx--;
 
@@ -1603,6 +1707,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     PredictionUnit pu( tempCS->area );
     pu.cu = &cu;
     pu.cs = tempCS;
+#if JVET_M0170_MRG_SHARELIST
+    pu.shareParentPos = tempCS->sharedBndPos;
+    pu.shareParentSize = tempCS->sharedBndSize;
+#endif
     PU::getInterMergeCandidates(pu, mergeCtx
       , 0
     );
@@ -2688,6 +2796,10 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
     cu.mmvdSkip = false;
     pu.mmvdMergeFlag = false;
     cu.triangle = false;
+#if JVET_M0170_MRG_SHARELIST
+    pu.shareParentPos = tempCS->sharedBndPos;
+    pu.shareParentSize = tempCS->sharedBndSize;
+#endif
     PU::getInterMergeCandidates(pu, mergeCtx
       , 0
     );
@@ -3678,6 +3790,10 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
   if( bestEncCache->setCsFrom( *tempCS, cachedMode, partitioner ) )
   {
     CodingUnit& cu = *tempCS->cus.front();
+#if JVET_M0170_MRG_SHARELIST
+    cu.shareParentPos = tempCS->sharedBndPos;
+    cu.shareParentSize = tempCS->sharedBndSize;
+#endif
     partitioner.setCUData( cu );
 
     if( CU::isIntra( cu ) )

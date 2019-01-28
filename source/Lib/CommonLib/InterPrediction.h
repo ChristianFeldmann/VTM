@@ -63,6 +63,9 @@ class Mv;
 class InterPrediction : public WeightPrediction
 {
 private:
+#if JVET_M0170_MRG_SHARELIST
+  int m_shareState;
+#endif
 
   Distortion  m_bioDistThres;
   Distortion  m_bioSubBlkDistThres;
@@ -157,7 +160,9 @@ public:
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   void    cacheAssign( CacheModel *cache );
 #endif
-
+#if JVET_M0170_MRG_SHARELIST
+  void    setShareState(int shareStateIn) {m_shareState = shareStateIn;}
+#endif
 };
 
 //! \}

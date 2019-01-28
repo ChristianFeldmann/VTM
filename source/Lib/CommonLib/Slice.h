@@ -1665,7 +1665,10 @@ private:
 
   AlfSliceParam              m_alfSliceParam;
   LutMotionCand*             m_MotionCandLut;
-
+#if JVET_M0170_MRG_SHARELIST
+public:
+  LutMotionCand*             m_MotionCandLuTsBkup;
+#endif
 public:
                               Slice();
   virtual                     ~Slice();
@@ -1947,6 +1950,10 @@ public:
   void                        destroyMotionLUTs    ();
   void                        resetMotionLUTs();
   int                         getAvailableLUTMrgNum() const  { return m_MotionCandLut->currCnt; }
+#if JVET_M0170_MRG_SHARELIST
+  int                         getAvailableLUTBkupMrgNum() const  { return m_MotionCandLuTsBkup->currCnt; }
+  MotionInfo                  getMotionInfoFromLUTBkup(int MotCandIdx) const;
+#endif
   MotionInfo                  getMotionInfoFromLUTs(int MotCandIdx) const;
   LutMotionCand*              getMotionLUTs() { return m_MotionCandLut; }
 

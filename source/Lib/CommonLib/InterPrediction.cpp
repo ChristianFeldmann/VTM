@@ -589,9 +589,42 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   JVET_J0090_SET_CACHE_ENABLE( true );
   if (bioApplied && compID == COMPONENT_Y)
   {
+#if JVET_M0487_INT_EXTEND
+    const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
+    const Pel* refPel = refBuf.buf - refBuf.stride - 1;
+    Pel* dstPel = m_filteredBlockTmp[2 + m_iRefListIdx][compID] + dstBuf.stride + 1;
+    for (int w = 0; w < (width - 2 * BIO_EXTEND_SIZE); w++)
+    {
+      Pel val = leftShift_round(refPel[w], shift);
+      dstPel[w] = val - (Pel)IF_INTERNAL_OFFS;
+    }
+
+    refPel = refBuf.buf - 1;
+    dstPel = m_filteredBlockTmp[2 + m_iRefListIdx][compID] + 2 * dstBuf.stride + 1;
+    for (int h = 0; h < (height - 2 * BIO_EXTEND_SIZE - 2); h++)
+    {
+      Pel val = leftShift_round(refPel[0], shift);
+      dstPel[0] = val - (Pel)IF_INTERNAL_OFFS;
+
+      val = leftShift_round(refPel[width - 3], shift);
+      dstPel[width - 3] = val - (Pel)IF_INTERNAL_OFFS;
+
+      refPel += refBuf.stride;
+      dstPel += dstBuf.stride;
+    }
+
+    refPel = refBuf.buf + (height - 2 * BIO_EXTEND_SIZE - 2)*refBuf.stride - 1;
+    dstPel = m_filteredBlockTmp[2 + m_iRefListIdx][compID] + (height - 2 * BIO_EXTEND_SIZE)*dstBuf.stride + 1;
+    for (int w = 0; w < (width - 2 * BIO_EXTEND_SIZE); w++)
+    {
+      Pel val = leftShift_round(refPel[w], shift);
+      dstPel[w] = val - (Pel)IF_INTERNAL_OFFS;
+    }
+#else
     refBuf.buf = refBuf.buf - refBuf.stride - 1;
     dstBuf.buf = m_filteredBlockTmp[2 + m_iRefListIdx][compID] + dstBuf.stride + 1;
     bioSampleExtendBilinearFilter(refBuf.buf, refBuf.stride, dstBuf.buf, dstBuf.stride, width - 2, height - 2, 1, xFrac, yFrac, rndRes, chFmt, clpRng);
+#endif
 
     // restore data 
     width = backupWidth;
@@ -905,6 +938,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   }  // yu
 }
 
+#if !JVET_M0487_INT_EXTEND
 void InterPrediction::bioSampleExtendBilinearFilter(Pel const* src, int srcStride, Pel *dst, int dstStride, int width, int height, int dim, int fracX, int fracY, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng)
 {
   Pel const* pSrc = NULL;
@@ -966,6 +1000,7 @@ void InterPrediction::bioSampleExtendBilinearFilter(Pel const* src, int srcStrid
     }
   }
 }
+#endif
 
 bool InterPrediction::xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel* pYuvSrc0, const int src0Stride, const Pel* pYuvSrc1, const int src1Stride, const BitDepths &clipBitDepths)
 {

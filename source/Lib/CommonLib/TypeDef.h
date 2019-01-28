@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0487_INT_EXTEND                             1  // CE9.1.1 b: integer reference samples as 1 extended samples
+
 #define JVET_M0444_SMVD                                   1 // SMVD mode
 
 #define JVET_M0064_CCLM_SIMPLIFICATION                    1

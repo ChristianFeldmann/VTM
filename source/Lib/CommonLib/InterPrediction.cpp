@@ -724,6 +724,12 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
         iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
         roundAffineMv(iMvScaleTmpHor, iMvScaleTmpVer, shift);
+#if JVET_M0145_AFFINE_MV_CLIP
+        Mv tmpMv(iMvScaleTmpHor, iMvScaleTmpVer);
+        tmpMv.clipToStorageBitDepth();
+        iMvScaleTmpHor = tmpMv.getHor();
+        iMvScaleTmpVer = tmpMv.getVer();
+#endif
 
         // clip and scale
         if (sps.getWrapAroundEnabledFlag())

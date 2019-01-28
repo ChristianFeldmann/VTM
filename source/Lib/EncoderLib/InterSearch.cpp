@@ -3572,6 +3572,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
           vy = mvScaleVer + dMvHorY * (pu.Y().x - mvInfo->x) + dMvVerY * (pu.Y().y - mvInfo->y);
           roundAffineMv(vx, vy, shift);
           mvTmp[0] = Mv(vx, vy);
+#if JVET_M0145_AFFINE_MV_CLIP
+          mvTmp[0].clipToStorageBitDepth();
+#endif
           clipMv(mvTmp[0], pu.cu->lumaPos(),
                  pu.cu->lumaSize(),
                  *pu.cs->sps);
@@ -3580,6 +3583,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
           vy = mvScaleVer + dMvHorY * (pu.Y().x + pu.Y().width - mvInfo->x) + dMvVerY * (pu.Y().y - mvInfo->y);
           roundAffineMv(vx, vy, shift);
           mvTmp[1] = Mv(vx, vy);
+#if JVET_M0145_AFFINE_MV_CLIP
+          mvTmp[1].clipToStorageBitDepth();
+#endif
           clipMv(mvTmp[1], pu.cu->lumaPos(),
                  pu.cu->lumaSize(),
                  *pu.cs->sps);
@@ -3611,6 +3617,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
         vy2 >>= shift;
         mvFour[2].hor = vx2;
         mvFour[2].ver = vy2;
+#if JVET_M0145_AFFINE_MV_CLIP
+        mvFour[2].clipToStorageBitDepth();
+#endif
         mvFour[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
         for (int i = 0; i < 3; i++)
         {

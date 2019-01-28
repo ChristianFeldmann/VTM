@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0118_M0185_TRIANGLE_FLAG_FIX                1 // Avoid signaling triangle flag if a CU uses MMVD or CIIP
+
 #define JVET_M0487_INT_EXTEND                             1  // CE9.1.1 b: integer reference samples as 1 extended samples
 
 #define JVET_M0444_SMVD                                   1 // SMVD mode

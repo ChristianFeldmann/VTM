@@ -128,6 +128,9 @@ public:
   virtual void copyState                  ( const Partitioner& other );
 
 public:
+#if JVET_M0421_SPLIT_SIG
+  virtual void canSplit                   ( const CodingStructure &cs, bool& canNo, bool& canQt, bool& canBh, bool& canBv, bool& canTh, bool& canTv ) = 0;
+#endif
   virtual bool canSplit                   ( const PartSplit split,                          const CodingStructure &cs ) = 0;
   virtual bool isSplitImplicit            ( const PartSplit split,                          const CodingStructure &cs ) = 0;
   virtual PartSplit getImplicitSplit      (                                                 const CodingStructure &cs ) = 0;
@@ -147,7 +150,10 @@ public:
   void exitCurrSplit              ();
   bool nextPart                   ( const CodingStructure &cs, bool autoPop = false );
   bool hasNextPart                ();
-
+  
+#if JVET_M0421_SPLIT_SIG
+  void canSplit                   ( const CodingStructure &cs, bool& canNo, bool& canQt, bool& canBh, bool& canBv, bool& canTh, bool& canTv );
+#endif
   bool canSplit                   ( const PartSplit split,                          const CodingStructure &cs );
   bool isSplitImplicit            ( const PartSplit split,                          const CodingStructure &cs );
   PartSplit getImplicitSplit      (                                                 const CodingStructure &cs );

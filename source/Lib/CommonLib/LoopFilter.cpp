@@ -554,7 +554,7 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
   unsigned     uiBsAbsIdx   = 0, uiBs = 0;
   int          iOffset, iSrcStep;
 
-  bool  bPCMFilter      = (sps.getUsePCM() && sps.getPCMFilterDisableFlag()) ? true : false;
+  bool  bPCMFilter      = (sps.getPCMEnabledFlag() && sps.getPCMFilterDisableFlag()) ? true : false;
   bool  bPartPNoFilter  = false;
   bool  bPartQNoFilter  = false;
   int   betaOffsetDiv2  = slice.getDeblockingFilterBetaOffsetDiv2();
@@ -704,7 +704,7 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
   int       iOffset, iSrcStep;
   unsigned  uiLoopLength;
 
-  bool      bPCMFilter      = (sps.getUsePCM() && sps.getPCMFilterDisableFlag()) ? true : false;
+  bool      bPCMFilter      = (sps.getPCMEnabledFlag() && sps.getPCMFilterDisableFlag()) ? true : false;
   bool      bPartPNoFilter  = false;
   bool      bPartQNoFilter  = false;
   const int tcOffsetDiv2    = slice.getDeblockingFilterTcOffsetDiv2();

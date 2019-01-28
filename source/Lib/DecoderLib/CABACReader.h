@@ -48,7 +48,11 @@
 class CABACReader
 {
 public:
+#if JVET_M0170_MRG_SHARELIST
+  CABACReader(BinDecoderBase& binDecoder) : shareStateDec(0), m_BinDecoder(binDecoder), m_Bitstream(0) {}
+#else
   CABACReader( BinDecoderBase& binDecoder ) : m_BinDecoder( binDecoder ), m_Bitstream( 0 ) {}
+#endif
   virtual ~CABACReader() {}
 
 public:
@@ -70,8 +74,12 @@ public:
 
   // coding (quad)tree (clause 7.3.8.4)
   bool        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
+#if JVET_M0421_SPLIT_SIG
+  PartSplit   split_cu_mode             ( CodingStructure&              cs,     Partitioner&    pm );
+#else
   bool        split_cu_flag             ( CodingStructure&              cs,     Partitioner&    pm );
   PartSplit   split_cu_mode_mt          ( CodingStructure&              cs,     Partitioner&    pm );
+#endif
 
   // coding unit (clause 7.3.8.5)
   bool        coding_unit               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );
@@ -105,6 +113,9 @@ public:
   void        MHIntra_flag              ( PredictionUnit&               pu );
   void        MHIntra_luma_pred_modes   ( CodingUnit&                   cu );
   void        triangle_mode             ( CodingUnit&                   cu );
+ #if JVET_M0444_SMVD
+  void        smvd_mode              ( PredictionUnit&               pu );
+#endif
 
   // pcm samples (clause 7.3.8.7)
   void        pcm_samples               ( TransformUnit&                tu );
@@ -123,9 +134,13 @@ public:
 
   // residual coding (clause 7.3.8.11)
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID );
+#if JVET_M0464_UNI_MTS
+  void        mts_coding                ( TransformUnit&                tu,     ComponentID     compID );
+#else
   void        transform_skip_flag       ( TransformUnit&                tu,     ComponentID     compID );
   void        emt_tu_index              ( TransformUnit&                tu );
   void        emt_cu_flag               ( CodingUnit&                   cu );
+#endif
   void        explicit_rdpcm_mode       ( TransformUnit&                tu,     ComponentID     compID );
   int         last_sig_coeff            ( CoeffCodingContext&           cctx );
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff, const int stateTransTable, int& state );
@@ -137,11 +152,18 @@ private:
   unsigned    unary_max_symbol          ( unsigned ctxId0, unsigned ctxIdN, unsigned maxSymbol );
   unsigned    unary_max_eqprob          (                                   unsigned maxSymbol );
   unsigned    exp_golomb_eqprob         ( unsigned count );
+#if !REMOVE_BIN_DECISION_TREE
   unsigned    decode_sparse_dt          ( DecisionTree& dt );
+#endif
   unsigned    get_num_bits_read         () { return m_BinDecoder.getNumBitsRead(); }
 
   void        xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol);
-
+#if JVET_M0170_MRG_SHARELIST
+public:
+  int         shareStateDec;
+  Position    shareParentPos;
+  Size        shareParentSize;
+#endif
 private:
   BinDecoderBase& m_BinDecoder;
   InputBitstream* m_Bitstream;

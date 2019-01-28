@@ -193,18 +193,9 @@ static void filterAndCalculateAverageEnergies (const Pel* pSrc, const int  iSrcS
 #if GLOBAL_AVERAGING
 static double getAveragePictureEnergy (const CPelBuf picOrig, const uint32_t uBitDepth)
 {
-  double hpEnerPic = 5.65625 * double(1 << (uBitDepth >> 1));   // square-root of a_pic value
+  const double hpEnerPic = 16.0 * sqrt ((3840.0 * 2160.0) / double(picOrig.width * picOrig.height)) * double(1 << uBitDepth);
 
-  if (picOrig.width > 2048 && picOrig.height > 1280) // for UHD/4K
-  {
-    hpEnerPic *= (4.0 / 5.65625);
-  }
-  else if (picOrig.width <= 1024 || picOrig.height <= 640) // 480p
-  {
-    hpEnerPic *= (8.0 / 5.65625);
-  }
-
-  return hpEnerPic;
+  return sqrt (hpEnerPic); // square-root of a_pic value
 }
 #endif
 

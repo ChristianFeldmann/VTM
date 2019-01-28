@@ -50,8 +50,52 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0118_M0185_TRIANGLE_FLAG_FIX                1 // Avoid signaling triangle flag if a CU uses MMVD or CIIP
+
+#define JVET_M0487_INT_EXTEND                             1  // CE9.1.1 b: integer reference samples as 1 extended samples
+
+#define JVET_M0444_SMVD                                   1 // SMVD mode
+
+#define JVET_M0170_MRG_SHARELIST                          1
+#if JVET_M0170_MRG_SHARELIST
+#define MRG_SHARELIST_SHARSIZE                            32
+#endif
+
+#define JVET_M0064_CCLM_SIMPLIFICATION                    1
+
+#define JVET_M0142_CCLM_COLLOCATED_CHROMA                 1 // Adding support for chroma sample location type 2 in CCLM
+
+
+#define JVET_M0479_18BITS_MV_CLIP                         1
+
+#define JVET_M0497_FAST_DST7                              1
+#if JVET_M0497_FAST_DST7
+#define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
+#endif
+#define JVET_M0502_PRED_MODE_CTX                          1
+
+#define JVET_M0407_IBC_RANGE                              1 // extend IBC search range to some part of left CTU
+
+#define JVET_M0464_UNI_MTS                                1
+#define JVET_M0068_M0171_MMVD_CLEANUP                     1 // MMVD cleanup with 1) flip removal, 2) L1 zero vector fix, 3) bi-pred restriction after merge/MMVD
+
+#if JVET_M0464_UNI_MTS
+typedef std::pair<int, bool> TrMode;
+typedef std::pair<int, int>  TrCost;
+#endif
+
+#define JVET_M0421_SPLIT_SIG                              1
+
+#define JVET_M0173_MOVE_GT2_TO_FIRST_PASS                 1 // Moving the gtr2 flag to the first coding pass
+
+#define REMOVE_BIN_DECISION_TREE                          1
+
+#define JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY       1 
+
 // clang-format off
 #define JVET_M0453_CABAC_ENGINE                           1
+
+#define JVET_M0409_ATMVP_FIX                              1
 
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
@@ -839,7 +883,7 @@ enum MergeType
 {
   MRG_TYPE_DEFAULT_N        = 0, // 0
   MRG_TYPE_SUBPU_ATMVP,
-  MRG_TYPE_CPR,                  
+  MRG_TYPE_IBC,                  
   NUM_MRG_TYPE                   // 5
 };
 
@@ -850,6 +894,14 @@ enum TriangleSplit
   TRIANGLE_DIR_NUM
 };
 
+#if JVET_M0170_MRG_SHARELIST
+enum SharedMrgState
+{
+  NO_SHARE            = 0,
+  GEN_ON_SHARED_BOUND = 1,
+  SHARING             = 2
+};
+#endif
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out
 //////////////////////////////////////////////////////////////////////////

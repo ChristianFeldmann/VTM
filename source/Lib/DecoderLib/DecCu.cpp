@@ -81,14 +81,42 @@ void DecCu::init( TrQuant* pcTrQuant, IntraPrediction* pcIntra, InterPrediction*
 
 void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
 {
+
   const int maxNumChannelType = cs.pcv->chrFormat != CHROMA_400 && CS::isDualITree( cs ) ? 2 : 1;
+#if JVET_M0170_MRG_SHARELIST
+  if (!cs.pcv->isEncoder)
+  {
+    m_shareStateDec = NO_SHARE;
+  }
+  bool sharePrepareCondition = ((!cs.pcv->isEncoder) && (!(cs.slice->isIntra())));
+#endif
 
   for( int ch = 0; ch < maxNumChannelType; ch++ )
   {
     const ChannelType chType = ChannelType( ch );
+#if JVET_M0170_MRG_SHARELIST
+    Position prevTmpPos;
+    prevTmpPos.x = -1; prevTmpPos.y = -1; 
+#endif
 
     for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, chType ), chType ) )
     {
+#if JVET_M0170_MRG_SHARELIST
+      if(sharePrepareCondition)
+      {
+        if ((currCU.shareParentPos.x >= 0) && (!(currCU.shareParentPos.x == prevTmpPos.x && currCU.shareParentPos.y == prevTmpPos.y)))
+        {
+          m_shareStateDec = GEN_ON_SHARED_BOUND;
+          cs.slice->copyMotionLUTs(cs.slice->getMotionLUTs(), cs.slice->m_MotionCandLuTsBkup);
+        }
+        
+        if (currCU.shareParentPos.x < 0)
+        {
+          m_shareStateDec = 0;
+        }
+        prevTmpPos = currCU.shareParentPos;
+      }
+#endif
       cs.chType = chType;
       if (currCU.predMode != MODE_INTRA && currCU.Y().valid())
       {
@@ -336,10 +364,10 @@ void DecCu::xReconInter(CodingUnit &cu)
   m_pcIntraPred->geneIntrainterPred(cu);
 
   // inter prediction
-  CHECK(cu.cpr && cu.firstPU->mhIntraFlag, "CPR and MHIntra cannot be used together");
-  CHECK(cu.cpr && cu.affine, "CPR and Affine cannot be used together");
-  CHECK(cu.cpr && cu.triangle, "CPR and triangle cannot be used together");
-  CHECK(cu.cpr && cu.firstPU->mmvdMergeFlag, "CPR and MMVD cannot be used together");
+  CHECK(cu.ibc && cu.firstPU->mhIntraFlag, "IBC and MHIntra cannot be used together");
+  CHECK(cu.ibc && cu.affine, "IBC and Affine cannot be used together");
+  CHECK(cu.ibc && cu.triangle, "IBC and triangle cannot be used together");
+  CHECK(cu.ibc && cu.firstPU->mmvdMergeFlag, "IBC and MMVD cannot be used together");
   const bool luma = cu.Y().valid();
   const bool chroma = cu.Cb().valid();
   if (luma && chroma)
@@ -458,15 +486,21 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       if (pu.mmvdMergeFlag || pu.cu->mmvdSkip)
       {
         CHECK(pu.mhIntraFlag == true, "invalid MHIntra");
-        if (pu.cs->sps->getSpsNext().getUseSubPuMvp())
+        if (pu.cs->sps->getSBTMVPEnabledFlag())
         {
           Size bufSize = g_miScaling.scale(pu.lumaSize());
           mrgCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);
         }
 
         int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
+#if JVET_M0170_MRG_SHARELIST
+          pu.shareParentPos = cu.shareParentPos;
+          pu.shareParentSize = cu.shareParentSize;
+#endif
         PU::getInterMergeCandidates(pu, mrgCtx, 1, fPosBaseIdx + 1);
+#if !JVET_M0068_M0171_MMVD_CLEANUP
         PU::restrictBiPredMergeCands(pu, mrgCtx);
+#endif
         PU::getInterMMVDMergeCandidates(pu, mrgCtx,
           pu.mmvdMergeIdx
         );
@@ -486,7 +520,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         if( pu.cu->affine )
         {
           AffineMergeCtx affineMergeCtx;
-          if ( pu.cs->sps->getSpsNext().getUseSubPuMvp() )
+          if ( pu.cs->sps->getSBTMVPEnabledFlag() )
           {
             Size bufSize = g_miScaling.scale( pu.lumaSize() );
             mrgCtx.subPuMvpMiBuf = MotionBuf( m_SubPuMiBuf, bufSize );
@@ -520,10 +554,14 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         }
         else
         {
-
+#if JVET_M0170_MRG_SHARELIST
+          pu.shareParentPos = cu.shareParentPos;
+          pu.shareParentSize = cu.shareParentSize;
+#endif
             PU::getInterMergeCandidates(pu, mrgCtx, 0, pu.mergeIdx);
+#if !JVET_M0068_M0171_MMVD_CLEANUP
             PU::restrictBiPredMergeCands(pu, mrgCtx);
-
+#endif
           mrgCtx.setMergeInfo( pu, pu.mergeIdx );
 
           PU::spanMotionInfo( pu, mrgCtx );
@@ -591,7 +629,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               Mv mvd = pu.mvd[eRefList];
               if (eRefList == REF_PIC_LIST_0 && pu.cs->slice->getRefPic(eRefList, pu.refIdx[eRefList])->getPOC() == pu.cs->slice->getPOC())
               {
-                pu.cu->cpr = true;
+                pu.cu->ibc = true;
 #if REUSE_CU_RESULTS
                 if (!cu.cs->pcv->isEncoder)
 #endif

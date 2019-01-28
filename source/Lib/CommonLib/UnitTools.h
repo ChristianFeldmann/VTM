@@ -120,6 +120,9 @@ namespace PU
 #if JVET_L0090_PAIR_AVG
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
     , int mmvdList
+#if JVET_M0170_MRG_SHARELIST
+    , bool isShared
+#endif
   );
 #else
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter[MRG_MAX_NUM_CANDS], bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
@@ -139,11 +142,16 @@ namespace PU
   );
   bool getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx &mrgCtx, bool& LICFlag, const int count
     , int mmvdList
-    , const int countCPR
+#if !JVET_M0409_ATMVP_FIX
+    , const int countIBC
+#endif
   );
   bool getInterMergeSubPuRecurCand(const PredictionUnit &pu, MergeCtx &mrgCtx, const int count);
   bool isBiPredFromDifferentDir       (const PredictionUnit &pu);
   void restrictBiPredMergeCands       (const PredictionUnit &pu, MergeCtx& mrgCtx);
+#if JVET_M0068_M0171_MMVD_CLEANUP
+  void restrictBiPredMergeCandsOne    (PredictionUnit &pu);
+#endif
 
   bool isLMCMode                      (                          unsigned mode);
   bool isLMCModeEnabled               (const PredictionUnit &pu, unsigned mode);
@@ -155,7 +163,7 @@ namespace PU
   bool getTriangleWeights             (const PredictionUnit &pu, MergeCtx &triangleMrgCtx, const uint8_t candIdx0, const uint8_t candIdx1);
   void spanTriangleMotionInfo         (      PredictionUnit &pu, MergeCtx &triangleMrgCtx, const uint8_t mergeIdx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1);
   int32_t mappingRefPic               (const PredictionUnit &pu, int32_t refPicPoc, bool targetRefPicList);
-  void getCprMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred);
+  void getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred);
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
 }
@@ -171,7 +179,12 @@ namespace TU
   bool getCbf                         (const TransformUnit &tu, const ComponentID &compID);
   bool getCbfAtDepth                  (const TransformUnit &tu, const ComponentID &compID, const unsigned &depth);
   void setCbfAtDepth                  (      TransformUnit &tu, const ComponentID &compID, const unsigned &depth, const bool &cbf);
+#if JVET_M0464_UNI_MTS
+  bool isTSAllowed                    (const TransformUnit &tu, const ComponentID  compID);
+  bool isMTSAllowed                   (const TransformUnit &tu, const ComponentID  compID);
+#else
   bool hasTransformSkipFlag           (const CodingStructure& cs, const CompArea& area);
+#endif
   uint32_t getGolombRiceStatisticsIndex   (const TransformUnit &tu, const ComponentID &compID);
 #if HEVC_USE_MDCS
   uint32_t getCoefScanIdx                 (const TransformUnit &tu, const ComponentID &compID);

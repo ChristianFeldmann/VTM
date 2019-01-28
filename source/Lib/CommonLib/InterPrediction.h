@@ -63,6 +63,9 @@ class Mv;
 class InterPrediction : public WeightPrediction
 {
 private:
+#if JVET_M0170_MRG_SHARELIST
+  int m_shareState;
+#endif
 
   Distortion  m_bioDistThres;
   Distortion  m_bioSubBlkDistThres;
@@ -101,8 +104,9 @@ protected:
   int             rightShiftMSB(int numer, int    denom);
   void            applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &yuvSrc0, const CPelUnitBuf &yuvSrc1, const int &refIdx0, const int &refIdx1, PelUnitBuf &yuvDst, const BitDepths &clipBitDepths);
   bool            xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel* yuvSrc0, const int src0Stride, const Pel* yuvSrc1, const int src1Stride, const BitDepths &clipBitDepths);
+#if !JVET_M0487_INT_EXTEND
   void            bioSampleExtendBilinearFilter(Pel const* src, int srcStride, Pel *dst, int dstStride, int width, int height, int dim, int fracX, int fracY, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng);
-
+#endif
   void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
                                   , const bool& bioApplied 
                                   , const bool luma, const bool chroma
@@ -110,7 +114,7 @@ protected:
   void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred );
   void xPredInterBlk            ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
                                  , const bool& bioApplied
-                                 , bool isCPR
+                                 , bool isIBC
                                  );
 
   void xAddBIOAvg4              (const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng);
@@ -156,7 +160,9 @@ public:
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   void    cacheAssign( CacheModel *cache );
 #endif
-
+#if JVET_M0170_MRG_SHARELIST
+  void    setShareState(int shareStateIn) {m_shareState = shareStateIn;}
+#endif
 };
 
 //! \}

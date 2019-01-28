@@ -211,8 +211,14 @@ static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chro
 
 static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes
 
+#if JVET_M0464_UNI_MTS
+static const uint32_t  NUM_TRAFO_MODES_MTS =                            6; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
+static const uint32_t  MTS_INTRA_MAX_CU_SIZE =                         32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
+static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
+#else
 static const uint32_t  EMT_INTRA_MAX_CU_WITH_QTBT =                    32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  EMT_INTER_MAX_CU_WITH_QTBT =                    32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
+#endif
 static const int NUM_MOST_PROBABLE_MODES = 6;
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
@@ -321,7 +327,9 @@ static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;
 static const uint32_t LUMA_LEVEL_TO_DQP_LUT_MAXSIZE =                1024; ///< max LUT size for QP offset based on luma
 
 #endif
+#if !JVET_M0464_UNI_MTS
 static const int NUM_EMT_CU_FLAG_CTX =                              6;      ///< number of context models for EMT CU-level flag
+#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.
@@ -388,12 +396,12 @@ static const int TRIANGLE_MAX_NUM_CANDS =                          40;
 static const int TRIANGLE_MAX_NUM_SATD_CANDS =                      3;
 static const int TRIANGLE_MIN_SIZE =                            8 * 8;
 
-static const int CPR_MAX_CAND_SIZE = 16; // max block size for cpr search
-static const int CPR_NUM_CANDIDATES = 64; ///< Maximum number of candidates to store/test
+static const int IBC_MAX_CAND_SIZE = 16; // max block size for ibc search
+static const int IBC_NUM_CANDIDATES = 64; ///< Maximum number of candidates to store/test
 static const int CHROMA_REFINEMENT_CANDIDATES = 8; /// 8 candidates BV to choose from
-static const int CPR_FAST_METHOD_NOINTRA_CPRCBF0 = 0x01;
-static const int CPR_FAST_METHOD_BUFFERBV = 0X02;
-static const int CPR_FAST_METHOD_ADAPTIVE_SEARCHRANGE = 0X04;
+static const int IBC_FAST_METHOD_NOINTRA_IBCCBF0 = 0x01;
+static const int IBC_FAST_METHOD_BUFFERBV = 0X02;
+static const int IBC_FAST_METHOD_ADAPTIVE_SEARCHRANGE = 0X04;
 
 // ====================================================================================================================
 // Macro functions
@@ -535,6 +543,45 @@ template <typename ValueType> inline ValueType leftShift       (const ValueType 
 template <typename ValueType> inline ValueType rightShift      (const ValueType value, const int shift) { return (shift >= 0) ? ( value                                  >> shift) : ( value                                   << -shift); }
 template <typename ValueType> inline ValueType leftShift_round (const ValueType value, const int shift) { return (shift >= 0) ? ( value                                  << shift) : ((value + (ValueType(1) << (-shift - 1))) >> -shift); }
 template <typename ValueType> inline ValueType rightShift_round(const ValueType value, const int shift) { return (shift >= 0) ? ((value + (ValueType(1) << (shift - 1))) >> shift) : ( value                                   << -shift); }
+
+static inline int floorLog2(uint32_t x)
+{
+  if (x == 0)
+  {
+    return -1;
+  }
+#ifdef __GNUC__
+  return 31 - __builtin_clz(x);
+#else
+  int result = 0;
+  if (x & 0xffff0000)
+  {
+    x >>= 16;
+    result += 16;
+  }
+  if (x & 0xff00)
+  {
+    x >>= 8;
+    result += 8;
+  }
+  if (x & 0xf0)
+  {
+    x >>= 4;
+    result += 4;
+  }
+  if (x & 0xc)
+  {
+    x >>= 2;
+    result += 2;
+  }
+  if (x & 0x2)
+  {
+    x >>= 1;
+    result += 1;
+  }
+  return result;
+#endif
+}
 
 //CASE-BREAK for breakpoints
 #if defined ( _MSC_VER ) && defined ( _DEBUG )

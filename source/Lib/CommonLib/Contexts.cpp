@@ -349,6 +349,15 @@ std::vector<std::vector<uint8_t>> ContextSetCfg::sm_InitTables( NUMBER_OF_SLICE_
 // clang-format off
 const CtxSet ContextSetCfg::SplitFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_M0421_SPLIT_SIG
+  // |-------- do split ctx -------------------| 
+  {  93, 124, 141, 123, 125, 141, 139, 126, 157, },
+  { 108, 139, 156, 138, 140, 141, 139, 141, 143, },
+  { 153, 154, 172, 153, 140, 156, 154, 127, 159, },
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, },
+#endif
+#else
 #if JVET_M0453_CABAC_ENGINE
   {  107, 110, 127, 106, 123, 140,},
   {  138, 140, 142, 106, 123, 125,},
@@ -359,8 +368,40 @@ const CtxSet ContextSetCfg::SplitFlag = ContextSetCfg::addCtxSet
   { 138, 111, 143, 107, 138, 140, },
   { 138, 141, 158, 151, 124, 126, },
 #endif
+#endif
 });
 
+#if JVET_M0421_SPLIT_SIG
+const CtxSet ContextSetCfg::SplitQtFlag = ContextSetCfg::addCtxSet
+({
+  { 153, 126, 142, 137, 109, 155, },
+  { 153, 126, 157, 122, 138, 140, },
+  { 153, 125, 127, 137, 153, 155, },
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, DWS, DWS, DWS, DWS, DWS, },
+#endif
+});
+
+const CtxSet ContextSetCfg::SplitHvFlag = ContextSetCfg::addCtxSet
+({
+  { 154, 168, 155, 153, 155, },
+  { 154, 168, 170, 153, 170, },
+  { 154, 153, 140, 153, 154, },
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, DWS, DWS, DWS, DWS, },
+#endif
+});
+
+const CtxSet ContextSetCfg::Split12Flag = ContextSetCfg::addCtxSet
+({
+  { 140, 154, 140, 154, },
+  { 155, 169, 140, 154, },
+  { 155, 154, 155, 154, },
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, DWS, DWS, DWS, },
+#endif
+});
+#else
 const CtxSet ContextSetCfg::BTSplitFlag = ContextSetCfg::addCtxSet
 ({
   // |-------- 1st bin, 9 ctx for luma + 3 ctx for chroma------| |--2nd bin--| |3rd bin|
@@ -375,6 +416,7 @@ const CtxSet ContextSetCfg::BTSplitFlag = ContextSetCfg::addCtxSet
   { 139, 141, 157, 139, 155, 142, 153, 125, 141, 154, 154, 154, 154, 154, 154, 140, },
 #endif
 });
+#endif
 
 const CtxSet ContextSetCfg::SkipFlag = ContextSetCfg::addCtxSet
 ({
@@ -477,14 +519,27 @@ const CtxSet ContextSetCfg::PartSize = ContextSetCfg::addCtxSet
 const CtxSet ContextSetCfg::PredMode = ContextSetCfg::addCtxSet
 ({
 #if JVET_M0453_CABAC_ENGINE
+#if JVET_M0502_PRED_MODE_CTX
+  { 193, 193, },
+  { 151, 151, },
+  { CNU, CNU, },
+  {   1,   1, },
+#else
   {  193,},
   {  151,},
   {  CNU,},
   {    1,},
+#endif
+#else
+#if JVET_M0502_PRED_MODE_CTX
+  { 178, 178, },
+  { 194, 194, },
+  { CNU, CNU, },
 #else
   { 178, },
   { 194, },
   { CNU, },
+#endif
 #endif
 });
 
@@ -1010,6 +1065,18 @@ const CtxSet ContextSetCfg::MVPIdx = ContextSetCfg::addCtxSet
 #endif
 });
 
+#if JVET_M0444_SMVD
+const CtxSet ContextSetCfg::SmvdFlag = ContextSetCfg::addCtxSet
+( {
+  { 154, },
+  { 110, },
+  { CNU, },
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, }
+#endif
+} );
+#endif
+
 const CtxSet ContextSetCfg::SaoMergeFlag = ContextSetCfg::addCtxSet
 ({
 #if JVET_M0453_CABAC_ENGINE
@@ -1038,6 +1105,7 @@ const CtxSet ContextSetCfg::SaoTypeIdx = ContextSetCfg::addCtxSet
 #endif
 });
 
+#if !JVET_M0464_UNI_MTS
 const CtxSet ContextSetCfg::TransformSkipFlag = ContextSetCfg::addCtxSet
 ({
 #if JVET_M0453_CABAC_ENGINE
@@ -1051,6 +1119,7 @@ const CtxSet ContextSetCfg::TransformSkipFlag = ContextSetCfg::addCtxSet
   { 109, 42, },
 #endif
 });
+#endif
 
 const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
 ({
@@ -1082,6 +1151,21 @@ const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
 #endif
 });
 
+#if JVET_M0464_UNI_MTS
+const CtxSet ContextSetCfg::MTSIndex = ContextSetCfg::addCtxSet
+({
+#if JVET_M0453_CABAC_ENGINE
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, },
+#else
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+#endif
+});
+#else
 const CtxSet ContextSetCfg::EMTTuIndex = ContextSetCfg::addCtxSet
 ({
 #if JVET_M0453_CABAC_ENGINE
@@ -1109,6 +1193,7 @@ const CtxSet ContextSetCfg::EMTCuFlag = ContextSetCfg::addCtxSet
   { CNU, CNU, 140, 155, 155, CNU, },
 #endif
 });
+#endif
 
 const CtxSet ContextSetCfg::CrossCompPred = ContextSetCfg::addCtxSet
 ({

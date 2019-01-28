@@ -107,7 +107,11 @@ public:
     const int     diag      = posX + posY;
     int           numPos    = 0;
     int           sumAbs    = 0;
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(4+(a&1),a);numPos+=!!a;}
+#else
 #define UPDATE(x) {int a=abs(x);sumAbs+=std::min(2+(a&1),a);numPos+=!!a;}
+#endif
     if( posX < m_width-1 )
     {
       UPDATE( pData[1] );
@@ -183,8 +187,10 @@ public:
     return std::min(sum, 31);
   }
 
+#if !JVET_M0464_UNI_MTS
   unsigned        emtNumSigCoeff()                          const { return m_emtNumSigCoeff; }
   void            setEmtNumSigCoeff( unsigned val )               { m_emtNumSigCoeff = val; }
+#endif
 
 private:
   // constant
@@ -235,7 +241,9 @@ private:
   CtxSet                    m_parFlagCtxSet;
   CtxSet                    m_gtxFlagCtxSet[2];
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
+#if !JVET_M0464_UNI_MTS
   unsigned                  m_emtNumSigCoeff;
+#endif
 };
 
 
@@ -294,14 +302,21 @@ public:
 
 namespace DeriveCtx
 {
+#if JVET_M0421_SPLIT_SIG
+void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* canSplit = nullptr );
+#else
 unsigned CtxCUsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 unsigned CtxBTsplit   ( const CodingStructure& cs, Partitioner& partitioner );
+#endif
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf );
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
 unsigned CtxAffineFlag( const CodingUnit& cu );
 unsigned CtxTriangleFlag( const CodingUnit& cu );
+#if JVET_M0502_PRED_MODE_CTX
+unsigned CtxPredModeFlag( const CodingUnit& cu );
+#endif
 }
 
 #endif // __CONTEXTMODELLING__

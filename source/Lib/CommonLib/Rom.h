@@ -113,7 +113,9 @@ extern const uint8_t  g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE];
 extern const TMatrixCoeff g_as_DST_MAT_4 [TRANSFORM_NUMBER_OF_DIRECTIONS][4][4];
 #endif
 
+#if !JVET_M0464_UNI_MTS
 extern const uint32_t g_EmtSigNumThr;
+#endif
 
 extern const TMatrixCoeff g_trCoreDCT2P2  [TRANSFORM_NUMBER_OF_DIRECTIONS][  2][  2];
 extern const TMatrixCoeff g_trCoreDCT2P4  [TRANSFORM_NUMBER_OF_DIRECTIONS][  4][  4];
@@ -132,6 +134,7 @@ extern const TMatrixCoeff g_trCoreDST7P8  [TRANSFORM_NUMBER_OF_DIRECTIONS][  8][
 extern const TMatrixCoeff g_trCoreDST7P16 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 16][ 16];
 extern const TMatrixCoeff g_trCoreDST7P32 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 32][ 32];
 
+#if !REMOVE_BIN_DECISION_TREE
 // ====================================================================================================================
 // Decision tree templates
 // ====================================================================================================================
@@ -155,6 +158,7 @@ extern const DecisionTreeTemplate g_mtSplitDTT;
 // decision tree for QTBT split
 extern const DecisionTreeTemplate g_qtbtSplitDTT;
 
+#endif
 
 // ====================================================================================================================
 // Misc.
@@ -210,8 +214,10 @@ extern const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
 
 extern MsgLevel g_verbosity;
 
+#if !JVET_M0064_CCLM_SIMPLIFICATION
 extern int g_aiLMDivTableLow[];
 extern int g_aiLMDivTableHigh[];
+#endif
 
 extern const int g_aiNonLMPosThrs[];
 

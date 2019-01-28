@@ -148,7 +148,6 @@ protected:
   bool      m_transformSkipRotationEnabledFlag;               ///< control flag for transform-skip/transquant-bypass residual rotation
   bool      m_transformSkipContextEnabledFlag;                ///< control flag for transform-skip/transquant-bypass single significance map context
   bool      m_rdpcmEnabledFlag[NUMBER_OF_RDPCM_SIGNALLING_MODES];///< control flags for residual DPCM
-  bool      m_enableAMP;
   bool      m_persistentRiceAdaptationEnabledFlag;            ///< control flag for Golomb-Rice parameter adaptation over each slice
   bool      m_cabacBypassAlignmentEnabledFlag;
 
@@ -214,8 +213,17 @@ protected:
   bool      m_AltDQPCoding;
 #endif
   int       m_LMChroma;
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  bool      m_cclmCollocatedChromaFlag;
+#endif
+#if JVET_M0464_UNI_MTS
+  int       m_MTS;                                            ///< XZ: Multiple Transform Set
+  int       m_MTSIntraMaxCand;                                ///< XZ: Number of additional candidates to test
+  int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test
+#else
   int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
+#endif
 
   bool      m_compositeRefEnabled;
   bool      m_GBi;
@@ -231,13 +239,13 @@ protected:
   bool      m_Triangle;
 
 
-  unsigned  m_CPRMode;
-  unsigned  m_CPRLocalSearchRangeX;
-  unsigned  m_CPRLocalSearchRangeY;
-  unsigned  m_CPRHashSearch;
-  unsigned  m_CPRHashSearchMaxCand;
-  unsigned  m_CPRHashSearchRange4SmallBlk;
-  unsigned  m_CPRFastMethod;
+  unsigned  m_IBCMode;
+  unsigned  m_IBCLocalSearchRangeX;
+  unsigned  m_IBCLocalSearchRangeY;
+  unsigned  m_IBCHashSearch;
+  unsigned  m_IBCHashSearchMaxCand;
+  unsigned  m_IBCHashSearchRange4SmallBlk;
+  unsigned  m_IBCFastMethod;
   
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;

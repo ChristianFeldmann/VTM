@@ -614,7 +614,7 @@ void SampleAdaptiveOffset::SAOProcess( CodingStructure& cs, SAOBlkParam* saoBlkP
 void SampleAdaptiveOffset::xPCMLFDisableProcess(CodingStructure& cs)
 {
   const PreCalcValues& pcv = *cs.pcv;
-  const bool bPCMFilter = (cs.sps->getUsePCM() && cs.sps->getPCMFilterDisableFlag()) ? true : false;
+  const bool bPCMFilter = (cs.sps->getPCMEnabledFlag() && cs.sps->getPCMFilterDisableFlag()) ? true : false;
 
   if( bPCMFilter || cs.pps->getTransquantBypassEnabledFlag() )
   {

@@ -165,8 +165,13 @@ public:
 
   const Mv scaleMv( int iScale ) const
   {
+#if JVET_M0479_18BITS_MV_CLIP
+    const int mvx = Clip3( -131072, 131071, (iScale * getHor() + 127 + (iScale * getHor() < 0)) >> 8 );
+    const int mvy = Clip3( -131072, 131071, (iScale * getVer() + 127 + (iScale * getVer() < 0)) >> 8 );
+#else
     const int mvx = Clip3( -32768, 32767, (iScale * getHor() + 127 + (iScale * getHor() < 0)) >> 8 );
     const int mvy = Clip3( -32768, 32767, (iScale * getVer() + 127 + (iScale * getVer() < 0)) >> 8 );
+#endif
     return Mv( mvx, mvy );
   }
 
@@ -201,6 +206,13 @@ public:
   {
     roundToPrecision(src, m_amvrPrecision[amvr]);
   }
+
+#if JVET_M0444_SMVD
+  Mv getSymmvdMv(const Mv& curMvPred, const Mv& tarMvPred)
+  {
+    return Mv(tarMvPred.hor - hor + curMvPred.hor, tarMvPred.ver - ver + curMvPred.ver);
+  }
+#endif
 };// END CLASS DEFINITION MV
 
 namespace std

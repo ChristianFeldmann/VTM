@@ -789,20 +789,29 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
 
   // tool enabling flags
   READ_FLAG( symbol,    "large_ctu_flag" );                         spsNext.setUseLargeCTU            ( symbol != 0 );
-  READ_FLAG( symbol,    "subpu_tmvp_flag" );                        spsNext.setSubPuMvpMode           (symbol);
   READ_FLAG( symbol,    "imv_enable_flag" );                        spsNext.setUseIMV                 ( symbol != 0 );
-  READ_FLAG( symbol, "bio_enable_flag" );                           spsNext.setUseBIO                 ( symbol != 0 );
   READ_FLAG( symbol,    "disable_motion_compression_flag" );        spsNext.setDisableMotCompress     ( symbol != 0 );
   READ_FLAG( symbol,    "lm_chroma_enabled_flag" );                 spsNext.setUseLMChroma            ( symbol != 0 );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  if ( spsNext.getUseLMChroma() && spsNext.getSPS().getChromaFormatIdc() == CHROMA_420 )
+  {
+    READ_FLAG( symbol,  "sps_cclm_collocated_chroma_flag" );        spsNext.setCclmCollocatedChromaFlag( symbol != 0 );
+  }
+#endif
+#if JVET_M0464_UNI_MTS
+  READ_FLAG( symbol,    "mts_intra_enabled_flag" );                 spsNext.setUseIntraMTS            ( symbol != 0 );
+  READ_FLAG( symbol,    "mts_inter_enabled_flag" );                 spsNext.setUseInterMTS            ( symbol != 0 );
+#else
   READ_FLAG( symbol,    "emt_intra_enabled_flag" );                 spsNext.setUseIntraEMT            ( symbol != 0 );
   READ_FLAG( symbol,    "emt_inter_enabled_flag" );                 spsNext.setUseInterEMT            ( symbol != 0 );
+#endif
   READ_FLAG( symbol,    "affine_flag" );                            spsNext.setUseAffine              ( symbol != 0 );
   if ( spsNext.getUseAffine() )
   {
     READ_FLAG( symbol,  "affine_type_flag" );                       spsNext.setUseAffineType          ( symbol != 0 );
   }
   READ_FLAG( symbol,    "gbi_flag" );                               spsNext.setUseGBi                 ( symbol != 0 );
-  READ_FLAG( symbol, "cpr_flag");                                   spsNext.setCPRMode                ( symbol != 0 );
+  READ_FLAG( symbol, "ibc_flag");                                   spsNext.setIBCMode                ( symbol != 0 );
   for( int k = 0; k < SPSNext::NumReservedFlags; k++ )
   {
     READ_FLAG( symbol,  "reserved_flag" );                          if( symbol != 0 ) EXIT("Incompatible version: SPSNext reserved flag not equal to zero (bitstream was probably created with newer software version)" );
@@ -815,14 +824,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
 #else
   READ_FLAG( symbol,  "reserved_flag" );                          CHECK( symbol, "reserved flag not 0!" );
 #endif
-
-  // additional parameters
-  if( spsNext.getUseSubPuMvp() )
-  {
-    int subPuMode = 1;
-    spsNext.setSubPuMvpMode( subPuMode );
-  }
-
 
   if( spsNext.getUseIMV() )
   {
@@ -1014,8 +1015,39 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_UVLC( uiCode, "log2_diff_max_min_luma_transform_block_size" ); pcSPS->setQuadtreeTULog2MaxSize( uiCode + pcSPS->getQuadtreeTULog2MinSize() );
   pcSPS->setMaxTrSize( 1<<(uiCode + pcSPS->getQuadtreeTULog2MinSize()) );
-  READ_FLAG( uiCode, "sps_alf_enable_flag" ); pcSPS->setUseALF( uiCode );
 
+  READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
+  READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );
+
+  READ_FLAG( uiCode, "pcm_enabled_flag" );                          pcSPS->setPCMEnabledFlag( uiCode ? true : false );
+  if( pcSPS->getPCMEnabledFlag() )
+  {
+    READ_CODE( 4, uiCode, "pcm_sample_bit_depth_luma_minus1" );          pcSPS->setPCMBitDepth    ( CHANNEL_TYPE_LUMA, 1 + uiCode );
+    READ_CODE( 4, uiCode, "pcm_sample_bit_depth_chroma_minus1" );        pcSPS->setPCMBitDepth    ( CHANNEL_TYPE_CHROMA, 1 + uiCode );
+    READ_UVLC( uiCode, "log2_min_pcm_luma_coding_block_size_minus3" );   pcSPS->setPCMLog2MinSize ( uiCode+3 );
+    READ_UVLC( uiCode, "log2_diff_max_min_pcm_luma_coding_block_size" ); pcSPS->setPCMLog2MaxSize ( uiCode+pcSPS->getPCMLog2MinSize() );
+    READ_FLAG( uiCode, "pcm_loop_filter_disable_flag" );                 pcSPS->setPCMFilterDisableFlag ( uiCode ? true : false );
+  }
+
+  READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );
+  if (pcSPS->getWrapAroundEnabledFlag())
+  {
+    READ_UVLC(uiCode, "sps_ref_wraparound_offset");                      pcSPS->setWrapAroundOffset( uiCode );
+  }
+
+  READ_FLAG( uiCode, "sps_temporal_mvp_enabled_flag" );                  pcSPS->setSPSTemporalMVPEnabledFlag(uiCode);
+  
+  if ( pcSPS->getSPSTemporalMVPEnabledFlag() )
+  {
+    READ_FLAG( uiCode,    "sps_sbtmvp_enabled_flag" );                   pcSPS->setSBTMVPEnabledFlag      ( uiCode != 0 );
+  }
+  else
+  {
+    pcSPS->setSBTMVPEnabledFlag(false);
+  }
+
+  READ_FLAG( uiCode, "sps_bdof_enable_flag" );                      pcSPS->setBDOFEnabledFlag ( uiCode != 0 );
+  
 #if HEVC_USE_SCALING_LISTS
   READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
   if(pcSPS->getScalingListFlag())
@@ -1027,24 +1059,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     }
   }
 #endif
-  READ_FLAG( uiCode, "amp_enabled_flag" );                          pcSPS->setUseAMP( uiCode );
-  READ_FLAG( uiCode, "sample_adaptive_offset_enabled_flag" );       pcSPS->setUseSAO ( uiCode ? true : false );
-
-  READ_FLAG( uiCode, "pcm_enabled_flag" ); pcSPS->setUsePCM( uiCode ? true : false );
-  if( pcSPS->getUsePCM() )
-  {
-    READ_CODE( 4, uiCode, "pcm_sample_bit_depth_luma_minus1" );          pcSPS->setPCMBitDepth    ( CHANNEL_TYPE_LUMA, 1 + uiCode );
-    READ_CODE( 4, uiCode, "pcm_sample_bit_depth_chroma_minus1" );        pcSPS->setPCMBitDepth    ( CHANNEL_TYPE_CHROMA, 1 + uiCode );
-    READ_UVLC( uiCode, "log2_min_pcm_luma_coding_block_size_minus3" );   pcSPS->setPCMLog2MinSize (uiCode+3);
-    READ_UVLC( uiCode, "log2_diff_max_min_pcm_luma_coding_block_size" ); pcSPS->setPCMLog2MaxSize ( uiCode+pcSPS->getPCMLog2MinSize() );
-    READ_FLAG( uiCode, "pcm_loop_filter_disable_flag" );                 pcSPS->setPCMFilterDisableFlag ( uiCode ? true : false );
-  }
-
-  READ_FLAG(uiCode, "ref_wraparound_enabled_flag");                 pcSPS->setUseWrapAround( uiCode ? true : false );
-  if (pcSPS->getUseWrapAround())
-  {
-    READ_UVLC(uiCode, "ref_wraparound_offset");                     pcSPS->setWrapAroundOffset( uiCode );
-  }
 
   READ_UVLC( uiCode, "num_short_term_ref_pic_sets" );
   CHECK(uiCode > 64, "Invalid code");
@@ -1071,8 +1085,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setUsedByCurrPicLtSPSFlag(k, uiCode?1:0);
     }
   }
-  READ_FLAG( uiCode, "sps_temporal_mvp_enabled_flag" );           pcSPS->setSPSTemporalMVPEnabledFlag(uiCode);
-
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
   READ_FLAG( uiCode, "strong_intra_smoothing_enable_flag" );      pcSPS->setUseStrongIntraSmoothing(uiCode);
 
@@ -1137,7 +1149,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
         case SPS_EXT__NEXT:
         {
           CHECK( !pcSPS->getSpsNext().nextToolsEnabled(), "Got SPS Next extension in non NEXT profile" );
-          parseSPSNext( pcSPS->getSpsNext(), pcSPS->getUsePCM() );
+          parseSPSNext( pcSPS->getSpsNext(), pcSPS->getPCMEnabledFlag() );
           break;
         }
         default:
@@ -1512,7 +1524,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setEnableTMVPFlag(false);
       }
     }
-    if(sps->getUseSAO())
+    if(sps->getSAOEnabledFlag())
     {
       READ_FLAG(uiCode, "slice_sao_luma_flag");  pcSlice->setSaoEnabledFlag(CHANNEL_TYPE_LUMA, (bool)uiCode);
 
@@ -1522,7 +1534,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
-    if( sps->getUseALF() )
+    if( sps->getALFEnabledFlag() )
     {
       alf( pcSlice->getAlfSliceParam() );
     }
@@ -1741,11 +1753,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
       pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
 
-      if ( sps->getSpsNext().getUseSubPuMvp() && !sps->getSpsNext().getUseAffine() ) // ATMVP only
+      if ( sps->getSBTMVPEnabledFlag() && !sps->getSpsNext().getUseAffine() ) // ATMVP only
       {
         pcSlice->setMaxNumAffineMergeCand( 1 );
       }
-      else if ( !sps->getSpsNext().getUseSubPuMvp() && !sps->getSpsNext().getUseAffine() ) // both off
+      else if ( !sps->getSBTMVPEnabledFlag() && !sps->getSpsNext().getUseAffine() ) // both off
       {
         pcSlice->setMaxNumAffineMergeCand( 0 );
       }
@@ -1833,7 +1845,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       pcSlice->setDeblockingFilterTcOffsetDiv2  ( 0 );
     }
 
-    bool isSAOEnabled = sps->getUseSAO() && (pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_LUMA) || (bChroma && pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_CHROMA)));
+    bool isSAOEnabled = sps->getSAOEnabledFlag() && (pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_LUMA) || (bChroma && pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_CHROMA)));
     bool isDBFEnabled = (!pcSlice->getDeblockingFilterDisable());
 
     if(pps->getLoopFilterAcrossSlicesEnabledFlag() && ( isSAOEnabled || isDBFEnabled ))

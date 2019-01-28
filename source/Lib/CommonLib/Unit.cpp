@@ -261,7 +261,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
+#if !JVET_M0464_UNI_MTS
   emtFlag           = other.emtFlag;
+#endif
 #if HEVC_TILES_WPP
   tileIdx           = other.tileIdx;
 #endif
@@ -270,7 +272,16 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   GBiIdx            = other.GBiIdx;
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
-  cpr               = other.cpr;
+
+#if JVET_M0170_MRG_SHARELIST
+  shareParentPos    = other.shareParentPos;
+  shareParentSize   = other.shareParentSize;
+#endif
+  ibc               = other.ibc;
+#if JVET_M0444_SMVD
+  smvdMode        = other.smvdMode;
+#endif
+
   return *this;
 }
 
@@ -292,7 +303,9 @@ void CodingUnit::initData()
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
+#if !JVET_M0464_UNI_MTS
   emtFlag           = 0;
+#endif
 #if HEVC_TILES_WPP
   tileIdx           = 0;
 #endif
@@ -301,7 +314,15 @@ void CodingUnit::initData()
   GBiIdx            = GBI_DEFAULT;
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
-  cpr               = false;
+#if JVET_M0170_MRG_SHARELIST
+  shareParentPos = Position(-1, -1);
+  shareParentSize.width = -1;
+  shareParentSize.height = -1;
+#endif
+  ibc               = false;
+#if JVET_M0444_SMVD
+  smvdMode        = 0;
+#endif
 }
 
 
@@ -345,6 +366,11 @@ void PredictionUnit::initData()
     }
   }
   mhIntraFlag = false;
+#if JVET_M0170_MRG_SHARELIST
+  shareParentPos = Position(-1, -1);
+  shareParentSize.width = -1;
+  shareParentSize.height = -1;
+#endif
 }
 
 PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
@@ -385,7 +411,10 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
     }
   }
   mhIntraFlag = predData.mhIntraFlag;
-
+#if JVET_M0170_MRG_SHARELIST
+  shareParentPos = predData.shareParentPos;
+  shareParentSize = predData.shareParentSize;
+#endif
   return *this;
 }
 
@@ -422,7 +451,10 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
     }
   }
   mhIntraFlag = other.mhIntraFlag;
-
+#if JVET_M0170_MRG_SHARELIST
+  shareParentPos = other.shareParentPos;
+  shareParentSize = other.shareParentSize;
+#endif
   return *this;
 }
 
@@ -493,12 +525,17 @@ void TransformUnit::initData()
   {
     cbf[i]           = 0;
     rdpcm[i]         = NUMBER_OF_RDPCM_MODES;
+#if !JVET_M0464_UNI_MTS
     transformSkip[i] = false;
+#endif
     compAlpha[i]     = 0;
   }
   depth              = 0;
+#if JVET_M0464_UNI_MTS
+  mtsIdx             = 0;
+#else
   emtIdx             = 0;
-
+#endif
 }
 
 void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf)
@@ -528,11 +565,17 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
 
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
+#if !JVET_M0464_UNI_MTS
     transformSkip[i] = other.transformSkip[i];
+#endif
     compAlpha[i]     = other.compAlpha[i];
   }
   depth              = other.depth;
+#if JVET_M0464_UNI_MTS
+  mtsIdx             = other.mtsIdx;
+#else
   emtIdx             = other.emtIdx;
+#endif
   return *this;
 }
 
@@ -549,15 +592,20 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 
   cbf[i]           = other.cbf[i];
   rdpcm[i]         = other.rdpcm[i];
+#if !JVET_M0464_UNI_MTS
   transformSkip[i] = other.transformSkip[i];
+#endif
   compAlpha[i]     = other.compAlpha[i];
 
   depth            = other.depth;
-
+#if JVET_M0464_UNI_MTS
+  mtsIdx           = isLuma( i ) ? other.mtsIdx : mtsIdx;
+#else
   if( isLuma( i ) )
   {
     emtIdx         = other.emtIdx;
   }
+#endif
 }
 
        CoeffBuf TransformUnit::getCoeffs(const ComponentID id)       { return  CoeffBuf(m_coeffs[id], blocks[id]); }

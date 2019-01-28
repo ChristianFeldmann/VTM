@@ -245,7 +245,13 @@ class ContextSetCfg
 public:
   // context sets: specify offset and size
   static const CtxSet   SplitFlag;
+#if JVET_M0421_SPLIT_SIG
+  static const CtxSet   SplitQtFlag;
+  static const CtxSet   SplitHvFlag;
+  static const CtxSet   Split12Flag;
+#else
   static const CtxSet   BTSplitFlag;
+#endif
   static const CtxSet   SkipFlag;
   static const CtxSet   MergeFlag;
   static const CtxSet   MergeIdx;
@@ -276,12 +282,18 @@ public:
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;
   static const CtxSet   SaoTypeIdx;
+#if JVET_M0464_UNI_MTS
+  static const CtxSet   MTSIndex;
+#else
   static const CtxSet   TransformSkipFlag;
+#endif
   static const CtxSet   TransquantBypassFlag;
   static const CtxSet   RdpcmFlag;
   static const CtxSet   RdpcmDir;
+#if !JVET_M0464_UNI_MTS
   static const CtxSet   EMTTuIndex;
   static const CtxSet   EMTCuFlag;
+#endif
   static const CtxSet   CrossCompPred;
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;
@@ -292,6 +304,9 @@ public:
   static const CtxSet   MHIntraPredMode;
   static const CtxSet   TriangleFlag;
   static const CtxSet   TriangleIdx;
+#if JVET_M0444_SMVD
+  static const CtxSet   SmvdFlag;
+#endif
   static const unsigned NumberOfContexts;
 
   // combined sets for less complex copying

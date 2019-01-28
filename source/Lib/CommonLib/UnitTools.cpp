@@ -2095,6 +2095,9 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
   roundAffineMv( horTmp, verTmp, shift );
   rcMv[0].hor = horTmp;
   rcMv[0].ver = verTmp;
+#if JVET_M0145_AFFINE_MV_CLIP
+  rcMv[0].clipToStorageBitDepth();
+#endif
 
   // v1
   horTmp = iMvScaleHor + iDMvHorX * (posCurX + curW - posNeiX) + iDMvVerX * (posCurY - posNeiY);
@@ -2102,6 +2105,9 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
   roundAffineMv( horTmp, verTmp, shift );
   rcMv[1].hor = horTmp;
   rcMv[1].ver = verTmp;
+#if JVET_M0145_AFFINE_MV_CLIP
+  rcMv[1].clipToStorageBitDepth();
+#endif
 
   // v2
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
@@ -2111,6 +2117,9 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
     roundAffineMv( horTmp, verTmp, shift );
     rcMv[2].hor = horTmp;
     rcMv[2].ver = verTmp;
+#if JVET_M0145_AFFINE_MV_CLIP
+    rcMv[2].clipToStorageBitDepth();
+#endif
   }
 }
 
@@ -3182,13 +3191,21 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
       mvScaleTmpHor = mvScaleHor + deltaMvHorX * (halfBW + w) + deltaMvVerX * (halfBH + h);
       mvScaleTmpVer = mvScaleVer + deltaMvHorY * (halfBW + w) + deltaMvVerY * (halfBH + h);
       roundAffineMv( mvScaleTmpHor, mvScaleTmpVer, shift );
+#if JVET_M0145_AFFINE_MV_CLIP
+      Mv curMv(mvScaleTmpHor, mvScaleTmpVer);
+      curMv.clipToStorageBitDepth();
+#endif
 
       for ( int y = (h >> MIN_CU_LOG2); y < ((h + blockHeight) >> MIN_CU_LOG2); y++ )
       {
         for ( int x = (w >> MIN_CU_LOG2); x < ((w + blockWidth) >> MIN_CU_LOG2); x++ )
         {
+#if JVET_M0145_AFFINE_MV_CLIP
+          mb.at(x, y).mv[eRefList] = curMv;
+#else
           mb.at(x, y).mv[eRefList].hor = mvScaleTmpHor;
           mb.at(x, y).mv[eRefList].ver = mvScaleTmpVer;
+#endif
         }
       }
     }

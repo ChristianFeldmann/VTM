@@ -213,6 +213,14 @@ public:
     return Mv(tarMvPred.hor - hor + curMvPred.hor, tarMvPred.ver - ver + curMvPred.ver);
   }
 #endif
+
+#if JVET_M0145_AFFINE_MV_CLIP
+  void clipToStorageBitDepth()
+  {
+    hor = Clip3( -(1 << 17), (1 << 17) - 1, hor );
+    ver = Clip3( -(1 << 17), (1 << 17) - 1, ver );
+  }
+#endif
 };// END CLASS DEFINITION MV
 
 namespace std

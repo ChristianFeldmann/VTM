@@ -1501,6 +1501,44 @@ static int xGetDistScaleFactor(const int &iCurrPOC, const int &iCurrRefPOC, cons
     return iScale;
   }
 }
+
+#if JVET_M0512_MOTION_BUFFER_COMPRESSION
+int convertMvFixedToFloat(int32_t val)
+{
+  int sign  = val >> 31;
+  int scale = floorLog2((val ^ sign) | MV_MANTISSA_UPPER_LIMIT) - (MV_MANTISSA_BITCOUNT - 1);
+
+  int exponent;
+  int mantissa;
+  if (scale >= 0)
+  {
+    int round = (1 << scale) >> 1;
+    int n     = (val + round) >> scale;
+    exponent  = scale + ((n ^ sign) >> (MV_MANTISSA_BITCOUNT - 1));
+    mantissa  = (n & MV_MANTISSA_UPPER_LIMIT) | (sign << (MV_MANTISSA_BITCOUNT - 1));
+  }
+  else
+  {
+    exponent = 0;
+    mantissa = val;
+  }
+
+  return exponent | (mantissa << MV_EXPONENT_BITCOUNT);
+}
+
+int convertMvFloatToFixed(int val)
+{
+  int exponent = val & MV_EXPONENT_MASK;
+  int mantissa = val >> MV_EXPONENT_BITCOUNT;
+  return exponent == 0 ? mantissa : (mantissa ^ MV_MANTISSA_LIMIT) << (exponent - 1);
+}
+
+int roundMvComp(int x)
+{
+  return convertMvFloatToFixed(convertMvFixedToFloat(x));
+}
+#endif
+
 int PU::getDistScaleFactor(const int &currPOC, const int &currRefPOC, const int &colPOC, const int &colRefPOC)
 {
   return xGetDistScaleFactor(currPOC, currRefPOC, colPOC, colRefPOC);
@@ -1627,6 +1665,10 @@ bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList
 
   // Scale the vector.
   Mv cColMv = mi.mv[eColRefPicList];
+#if JVET_M0512_MOTION_BUFFER_COMPRESSION
+  cColMv.setHor(roundMvComp(cColMv.getHor()));
+  cColMv.setVer(roundMvComp(cColMv.getVer()));
+#endif
 
   if (bIsCurrRefLongTerm /*|| bIsColRefLongTerm*/)
   {
@@ -3277,6 +3319,10 @@ static bool deriveScaledMotionTemporal( const Slice&      slice,
     iCurrRefPOC = slice.getRefPic(eCurrRefPicList, 0)->getPOC();
     // Scale the vector.
     cColMv = mi.mv[eColRefPicList];
+#if JVET_M0512_MOTION_BUFFER_COMPRESSION
+    cColMv.setHor(roundMvComp(cColMv.getHor()));
+    cColMv.setVer(roundMvComp(cColMv.getVer()));
+#endif
     //pcMvFieldSP[2*iPartition + eCurrRefPicList].getMv();
     // Assume always short-term for now
     iScale = xGetDistScaleFactor(iCurrPOC, iCurrRefPOC, iColPOC, iColRefPOC);

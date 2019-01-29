@@ -304,7 +304,7 @@ public:
   void           restoreReshapeLumaLevelToWeightTable        ();
   inline double  getWPSNRReshapeLumaLevelWeight              (int val)                   { return m_reshapeLumaLevelToWeightPLUT[val]; }
   void           setReshapeInfo                              (uint32_t type, int lumaBD) { m_signalType = type; m_lumaBD = lumaBD; }
-  void           updateReshapeLumaLevelToWeightTable         (sliceReshapeInfo &sliceReshape, Pel *wtTable, double cwt);
+  void           updateReshapeLumaLevelToWeightTable         (SliceReshapeInfo &sliceReshape, Pel *wtTable, double cwt);
   inline std::vector<double>& getLumaLevelWeightTable        ()                   { return m_lumaLevelToWeightPLUT; }
 #endif
 #endif

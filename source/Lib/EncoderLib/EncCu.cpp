@@ -355,10 +355,6 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
     if (cs.slice->getSPS()->getUseReshaper() && m_pcReshape->getCTUFlag())
       cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
 #endif
-#if JVET_M0427_INLOOP_RESHAPER
-    if (cs.slice->getSPS()->getUseReshaper() && m_pcReshape->getCTUFlag())
-      cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
-#endif
   }
 #endif
   m_modeCtrl->initCTUEncoding( *cs.slice );

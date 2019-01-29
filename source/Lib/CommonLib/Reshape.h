@@ -55,15 +55,15 @@
 class Reshape
 {
 protected:
-  sliceReshapeInfo        m_sliceReshapeInfo;
-  bool                    m_bCTUFlag;
-  bool                    m_bRecReshaped;
-  std::vector<Pel>        inverseReshapingLUT;
-  std::vector<Pel>        forwardReshapingLUT;
+  SliceReshapeInfo        m_sliceReshapeInfo;
+  bool                    m_CTUFlag;
+  bool                    m_recReshaped;
+  std::vector<Pel>        m_invLUT;
+  std::vector<Pel>        m_fwdLUT;
   std::vector<int>        m_chromaAdjHelpLUT;
   std::vector<uint16_t>   m_binCW;
   uint16_t                m_initCW;
-  bool                    m_bReshape;
+  bool                    m_reshape;
   std::vector<Pel>        m_reshapePivot;
   int                     m_lumaBD;
   int                     m_reshapeLUTSize;
@@ -75,24 +75,24 @@ public:
   void destroy();
 
   void reverseLUT(std::vector<Pel>& inputLUT, std::vector<Pel>& outputLUT, uint16_t lutSize);
-  std::vector<Pel>&  getFwdLUT() { return forwardReshapingLUT; }
-  std::vector<Pel>&  getInvLUT() { return inverseReshapingLUT; }
+  std::vector<Pel>&  getFwdLUT() { return m_fwdLUT; }
+  std::vector<Pel>&  getInvLUT() { return m_invLUT; }
   std::vector<int>&  getChromaAdjHelpLUT() { return m_chromaAdjHelpLUT; }
 
-  bool getCTUFlag()              { return m_bCTUFlag; }
-  void setCTUFlag(bool bCTUFlag) { m_bCTUFlag = bCTUFlag; }
+  bool getCTUFlag()              { return m_CTUFlag; }
+  void setCTUFlag(bool b       ) { m_CTUFlag = b; }
 
-  bool getRecReshaped()          { return m_bRecReshaped; }
-  void setRecReshaped(bool bPicReshaped) { m_bRecReshaped = bPicReshaped; }
+  bool getRecReshaped()          { return m_recReshaped; }
+  void setRecReshaped(bool b)    { m_recReshaped = b; }
   int  calculateChromaAdj(Pel avgLuma);
   int  getPWLIdxInv(int lumaVal);
-  sliceReshapeInfo& getSliceReshaperInfo() { return m_sliceReshapeInfo; }
-  void copySliceReshaperInfo(sliceReshapeInfo& tInfo, sliceReshapeInfo& sInfo);
+  SliceReshapeInfo& getSliceReshaperInfo() { return m_sliceReshapeInfo; }
+  void copySliceReshaperInfo(SliceReshapeInfo& tInfo, SliceReshapeInfo& sInfo);
 
   void constructReshaper();
-  void updateChromaDQPLUT();
-  bool getReshapeFlag() { return m_bReshape; }
-  void setReshapeFlag(bool val) { m_bReshape = val; }
+  void updateChromaScaleLUT();
+  bool getReshapeFlag() { return m_reshape; }
+  void setReshapeFlag(bool b) { m_reshape = b; }
 };// END CLASS DEFINITION Reshape
 
 //! \}

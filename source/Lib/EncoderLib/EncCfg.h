@@ -257,9 +257,9 @@ protected:
 
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
 #if JVET_M0427_INLOOP_RESHAPER
-  bool      m_bUseReshape;
-  unsigned  m_uiSignalType;
-  unsigned  m_uiIntraCMD;
+  bool      m_lumaReshapeEnable;
+  unsigned  m_reshapeSignalType;
+  unsigned  m_intraCMD;
   ReshapeCW m_reshapeCW;
 #endif
   bool      m_useFastLCTU;
@@ -796,12 +796,12 @@ public:
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 
 #if JVET_M0427_INLOOP_RESHAPER
-  void      setReshaper                     ( bool b )                   { m_bUseReshape = b; }
-  bool      getReshaper                     () const                     { return m_bUseReshape; }
-  void      setReshapeSignalType            ( uint32_t uiSignalType )    { m_uiSignalType = uiSignalType; }
-  uint32_t  getReshapeSignalType            () const                     { return m_uiSignalType; }
-  void      setReshapeIntraCMD              (uint32_t uiIntraCMD)        { m_uiIntraCMD = uiIntraCMD; }
-  uint32_t  getReshapeIntraCMD              ()                           { return m_uiIntraCMD; }
+  void      setReshaper                     ( bool b )                   { m_lumaReshapeEnable = b; }
+  bool      getReshaper                     () const                     { return m_lumaReshapeEnable; }
+  void      setReshapeSignalType            ( uint32_t signalType )      { m_reshapeSignalType = signalType; }
+  uint32_t  getReshapeSignalType            () const                     { return m_reshapeSignalType; }
+  void      setReshapeIntraCMD              (uint32_t intraCMD)          { m_intraCMD = intraCMD; }
+  uint32_t  getReshapeIntraCMD              ()                           { return m_intraCMD; }
   void      setReshapeCW                    (const ReshapeCW &reshapeCW) { m_reshapeCW = reshapeCW; }
   const ReshapeCW& getReshapeCW             ()                           { return m_reshapeCW; }
 #endif

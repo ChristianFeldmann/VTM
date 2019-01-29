@@ -137,7 +137,7 @@ void EncLib::create ()
   }
 
 #if JVET_M0427_INLOOP_RESHAPER
-  if (m_bUseReshape)
+  if (m_lumaReshapeEnable)
   {
     m_cReshaper.createEnc( getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_bitDepth[COMPONENT_Y]);
   }
@@ -923,7 +923,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
 #if JVET_M0427_INLOOP_RESHAPER
-  sps.setUseReshaper(m_bUseReshape);
+  sps.setUseReshaper                        ( m_lumaReshapeEnable );
 #endif
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;

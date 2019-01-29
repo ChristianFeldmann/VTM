@@ -198,17 +198,6 @@ void EncGOP::init ( EncLib* pcEncLib )
   }
   pcEncLib->getALF()->setAlfWSSD(alfWSSD);
 #endif
-    pcEncLib->getRdCost()->initLumaLevelToWeightTable();
-#if JVET_M0427_INLOOP_RESHAPER
-  }
-  pcEncLib->getALF()->getLumaLevelWeightTable() = pcEncLib->getRdCost()->getLumaLevelWeightTable();
-  int alfWSSD = 0;
-  if (m_pcCfg->getReshaper() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ )
-  {
-    alfWSSD = 1;
-  }
-  pcEncLib->getALF()->setAlfWSSD(alfWSSD);
-#endif
 #endif
 #if JVET_M0427_INLOOP_RESHAPER
   m_pcReshaper = pcEncLib->getReshaper();
@@ -2128,26 +2117,26 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #if JVET_M0427_INLOOP_RESHAPER
       if (pcSlice->getSPS()->getUseReshaper())
       {
-        m_pcReshaper->getReshapeCW()->Tid = pcSlice->getTLayer()+(pcSlice->isIntra()?0:1);
-        m_pcReshaper->getReshapeCW()->SliceQP = pcSlice->getSliceQp();
+        m_pcReshaper->getReshapeCW()->rspTid = pcSlice->getTLayer()+(pcSlice->isIntra()?0:1);
+        m_pcReshaper->getReshapeCW()->rspSliceQP = pcSlice->getSliceQp();
 
         m_pcReshaper->setSrcReshaped(false);
         m_pcReshaper->setRecReshaped(true);
 
         if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
         {
-          m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getCPRMode());
+          m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
         }
         else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
         {
-          m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getCPRMode());
+          m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
         }
         else
         {
           THROW("Reshaper for signal other than PQ and SDR currently not defined!");
         }
 
-        if (pcSlice->getSliceType() == I_SLICE || (pcSlice->getSliceType()==P_SLICE && m_pcCfg->getCPRMode()))
+        if (pcSlice->getSliceType() == I_SLICE || (pcSlice->getSliceType()==P_SLICE && m_pcCfg->getIBCMode()))
         {
           if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
           {
@@ -2194,8 +2183,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
           else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
           {
-            int modIP = pcPic->getPOC() - pcPic->getPOC() / m_pcCfg->getReshapeCW().RspFpsToIp * m_pcCfg->getReshapeCW().RspFpsToIp;
-            if (m_pcReshaper->getReshapeFlag() && m_pcCfg->getReshapeCW().RspIntraPeriod == -1 && modIP == 0)           // for LDB, update reshaping curve every second
+            int modIP = pcPic->getPOC() - pcPic->getPOC() / m_pcCfg->getReshapeCW().rspFpsToIp * m_pcCfg->getReshapeCW().rspFpsToIp;
+            if (m_pcReshaper->getReshapeFlag() && m_pcCfg->getReshapeCW().rspIntraPeriod == -1 && modIP == 0)           // for LDB, update reshaping curve every second
             {
               m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(true);
               m_pcReshaper->constructReshaperSDR();

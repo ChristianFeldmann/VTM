@@ -2942,7 +2942,7 @@ void RdCost::restoreReshapeLumaLevelToWeightTable()
   }
 }
 
-void RdCost::updateReshapeLumaLevelToWeightTable(sliceReshapeInfo &sliceReshape, Pel *wtTable, double cwt)
+void RdCost::updateReshapeLumaLevelToWeightTable(SliceReshapeInfo &sliceReshape, Pel *wtTable, double cwt)
 {
   if (m_signalType == RESHAPE_SIGNAL_SDR)
   {
@@ -2954,11 +2954,11 @@ void RdCost::updateReshapeLumaLevelToWeightTable(sliceReshapeInfo &sliceReshape,
 
       for (int i = 0; i < PIC_CODE_CW_BINS; i++)
       {
-        if ((i < sliceReshape.reshape_model_min_bin_idx) || (i > sliceReshape.reshape_model_max_bin_idx))
+        if ((i < sliceReshape.reshaperModelMinBinIdx) || (i > sliceReshape.reshaperModelMaxBinIdx))
           weight = 1.0;
         else
         {
-          if (sliceReshape.reshape_model_bin_CW_delta[i] == 1 || (sliceReshape.reshape_model_bin_CW_delta[i] == -1 * histLens))
+          if (sliceReshape.reshaperModelBinCWDelta[i] == 1 || (sliceReshape.reshaperModelBinCWDelta[i] == -1 * histLens))
             weight = wBin;
           else 
           {

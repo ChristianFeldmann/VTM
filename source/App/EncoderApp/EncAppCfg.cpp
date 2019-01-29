@@ -707,7 +707,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   int warnUnknowParameter = 0;
 
-
 #if ENABLE_TRACING
   string sTracingRule;
   string sTracingFile;
@@ -884,9 +883,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
 #if JVET_M0427_INLOOP_RESHAPER
-  ("LumaReshapeEnable",                               m_bLumaReshapeEnable,                             false, "Enable Reshaping for Luma Channel")
-  ("ReshapeSignalType",                               m_uiSignalType,                                      0u, "Input signal type: 0: SDR, 1:PQ, 2:HLG")
-  ("IntraCMD",                                        m_uiIntraCMD,                                        0u, "IntraChroma MD: 0: none, 1:fixed to default wPSNR weight")
+  ("LumaReshapeEnable",                               m_lumaReshapeEnable,                              false, "Enable Reshaping for Luma Channel")
+  ("ReshapeSignalType",                               m_reshapeSignalType,                                 0u, "Input signal type: 0: SDR, 1:PQ, 2:HLG")
+  ("IntraCMD",                                        m_intraCMD,                                          0u, "IntraChroma MD: 0: none, 1:fixed to default wPSNR weight")
 #endif
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
   ("FastMrg",                                         m_useFastMrg,                                     false, "Fast methods for inter merge")
@@ -1842,13 +1841,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
 
 #if JVET_M0427_INLOOP_RESHAPER
-  m_reshapeCW.BinCW.resize(CW_NUMS);
-  m_reshapeCW.RspFps = m_iFrameRate;
-  m_reshapeCW.RspIntraPeriod = m_iIntraPeriod;
-  m_reshapeCW.RspPicSize = m_iSourceWidth*m_iSourceHeight;
+  m_reshapeCW.binCW.resize(3);
+  m_reshapeCW.rspFps = m_iFrameRate;
+  m_reshapeCW.rspIntraPeriod = m_iIntraPeriod;
+  m_reshapeCW.rspPicSize = m_iSourceWidth*m_iSourceHeight;
   const int FpsToIpTable[129] = { 0, 0, 0, 0, 0, 0, 0, 0, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 128, 128, 128, 128, 128, 128, 128, 128, 128 };
-  m_reshapeCW.RspFpsToIp = FpsToIpTable[m_iFrameRate];
-  m_reshapeCW.RspBaseQP = m_iQP;
+  m_reshapeCW.rspFpsToIp = FpsToIpTable[m_iFrameRate];
+  m_reshapeCW.rspBaseQP = m_iQP;
 #endif
 #if ENABLE_TRACING
   g_trace_ctx = tracing_init(sTracingFile, sTracingRule);
@@ -2234,27 +2233,22 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_lumaLevelToDeltaQPMapping.mode && m_uiDeltaQpRD > 0,                      "Luma-level-based Delta QP cannot be used together with slice level multiple-QP optimization\n" );
 #endif
 #if JVET_M0427_INLOOP_RESHAPER
-  if (m_bLumaReshapeEnable && (m_internalBitDepth[CHANNEL_TYPE_LUMA] != 10))
+  if (!m_lumaReshapeEnable)
   {
-    m_bLumaReshapeEnable = false;
-    msg(WARNING, "Reshaping is turned off for luma internal bitdepth not equal to 10.\n");
+    m_reshapeSignalType = RESHAPE_SIGNAL_NULL;
+    m_intraCMD = 0;
   }
-  if (!m_bLumaReshapeEnable)
+  if (m_lumaReshapeEnable && m_reshapeSignalType == RESHAPE_SIGNAL_PQ)
   {
-    m_uiSignalType = RESHAPE_SIGNAL_NULL;
-    m_uiIntraCMD   = 0;
+    m_intraCMD = 1;
   }
-  if (m_bLumaReshapeEnable && m_uiSignalType == RESHAPE_SIGNAL_PQ)
+  else if (m_lumaReshapeEnable && m_reshapeSignalType == RESHAPE_SIGNAL_SDR)
   {
-    m_uiIntraCMD = 1;
-  }
-  else if (m_bLumaReshapeEnable && m_uiSignalType == RESHAPE_SIGNAL_SDR)
-  {
-    m_uiIntraCMD = 0;
+    m_intraCMD = 0;
   }
   else
   {
-    m_bLumaReshapeEnable = false;
+    m_lumaReshapeEnable = false;
   }
 #endif
 
@@ -3203,10 +3197,10 @@ void EncAppCfg::xPrintParameter()
   }
   // ADD_NEW_TOOL (add some output indicating the usage of tools)
 #if JVET_M0427_INLOOP_RESHAPER
-    msg(VERBOSE, "Reshape:%d ", m_bLumaReshapeEnable);
-    if (m_bLumaReshapeEnable)
+    msg(VERBOSE, "Reshape:%d ", m_lumaReshapeEnable);
+    if (m_lumaReshapeEnable)
     {
-      msg(VERBOSE, "(Sigal:%s ", m_uiSignalType==0? "SDR" : "HDR-PQ");
+      msg(VERBOSE, "(Sigal:%s ", m_reshapeSignalType==0? "SDR" : "HDR-PQ");
       msg(VERBOSE, ") ");
     }
 #endif

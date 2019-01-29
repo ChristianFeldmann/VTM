@@ -320,9 +320,6 @@ struct CodingUnit : public UnitArea
 #if JVET_M0444_SMVD
   uint8_t          smvdMode;
 #endif
-#if JVET_M0444_SMVD
-  uint8_t          smvdMode;
-#endif
 
   CodingUnit() : chType( CH_L ) { }
   CodingUnit(const UnitArea &unit);
@@ -439,7 +436,7 @@ struct TransformUnit : public UnitArea
   CodingStructure *cs;
   ChannelType      chType;
  #if JVET_M0427_INLOOP_RESHAPER
-  int              m_iChromaAdj;
+  int              m_chromaResScaleInv;
 #endif 
 
   uint8_t        depth;
@@ -475,7 +472,7 @@ struct TransformUnit : public UnitArea
   const CPelBuf   getPcmbuf(const ComponentID id) const;
 #if JVET_M0427_INLOOP_RESHAPER
         int       getChromaAdj( )                 const;
-        void      setChromaAdj(int iChromaAdj);
+        void      setChromaAdj(int i);
 #endif
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM

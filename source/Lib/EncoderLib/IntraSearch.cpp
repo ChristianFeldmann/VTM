@@ -1317,7 +1317,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
 #if JVET_M0427_INLOOP_RESHAPER
   const Slice           &slice = *cs.slice;
-  bool bFlag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getCPRMode()));
+  bool bFlag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode()));
   if (bFlag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && isChroma(compID))
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
@@ -1370,15 +1370,13 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #endif
 
 #if JVET_M0427_INLOOP_RESHAPER
-  bFlag = bFlag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);  // chroma blk size greater than 2x2
+  bFlag = bFlag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
   if (bFlag && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() )
   {
-    int cScale = tu.getChromaAdj();
-    double dCScale = round((double)(1 << CSCALE_FP_PREC) / (double)cScale);
-    double tmpWeight = dCScale*dCScale;
-    m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / tmpWeight);
-
-    piResi.scaleSignal(tu.getChromaAdj(), 1, tu.cu->cs->slice->clpRng(compID));
+    int cResScaleInv = tu.getChromaAdj();
+    double cResScale = round((double)(1 << CSCALE_FP_PREC) / (double)cResScaleInv);
+    m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cResScale*cResScale));
+    piResi.scaleSignal(cResScaleInv, 1, tu.cu->cs->slice->clpRng(compID));
   }
 #endif 
 

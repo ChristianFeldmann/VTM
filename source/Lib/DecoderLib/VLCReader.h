@@ -164,7 +164,7 @@ public:
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t sizeId, uint32_t listId);
 #endif
 #if JVET_M0427_INLOOP_RESHAPER
-  void parseReshaper        ( sliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
+  void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
 #endif
   void alf( AlfSliceParam& alfSliceParam );
   void alfFilter( AlfSliceParam& alfSliceParam, const bool isChroma );

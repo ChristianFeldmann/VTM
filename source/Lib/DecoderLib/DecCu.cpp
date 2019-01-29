@@ -211,7 +211,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   }
 #if JVET_M0427_INLOOP_RESHAPER
   const Slice           &slice = *cs.slice;
-  bool bFlag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag() ) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getCPRMode()));
+  bool bFlag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag() ) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode()));
 
   if (bFlag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && (compID != COMPONENT_Y))
   {
@@ -260,7 +260,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
   PelBuf tmpPred;
 #endif
-  if (slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || slice.isIntra() || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getCPRMode())) && compID == COMPONENT_Y)
+  if (slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || slice.isIntra() || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode())) && compID == COMPONENT_Y)
   {
 #if REUSE_CU_RESULTS
     {
@@ -279,7 +279,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   pReco.copyFrom( piPred );
 #endif
 #if JVET_M0427_INLOOP_RESHAPER
-  if (slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || slice.isIntra() || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getCPRMode())) && compID == COMPONENT_Y)
+  if (slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || slice.isIntra() || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode())) && compID == COMPONENT_Y)
   {
 #if REUSE_CU_RESULTS
     {
@@ -504,7 +504,7 @@ void DecCu::xReconInter(CodingUnit &cu)
         tmpPred.copyFrom(cs.getPredBuf(cu).get(COMPONENT_Y));
       }
 #endif
-      if (!cu.firstPU->mhIntraFlag && !cu.cpr )
+      if (!cu.firstPU->mhIntraFlag && !cu.ibc )
         cs.getPredBuf(cu).get(COMPONENT_Y).rspSignal(m_pcReshape->getFwdLUT());
     }
 #endif
@@ -530,7 +530,7 @@ void DecCu::xReconInter(CodingUnit &cu)
   {
     cs.getRecoBuf(cu).copyClip(cs.getPredBuf(cu), cs.slice->clpRngs());
 #if JVET_M0427_INLOOP_RESHAPER
-    if (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && !cu.firstPU->mhIntraFlag && !cu.cpr)
+    if (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && !cu.firstPU->mhIntraFlag && !cu.ibc)
     {
       cs.getRecoBuf(cu).get(COMPONENT_Y).rspSignal(m_pcReshape->getFwdLUT());
     }
@@ -604,7 +604,7 @@ void DecCu::xDecodeInterTexture(CodingUnit &cu)
         CompArea tmpArea(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());
         PelBuf tmpPred = m_tmpStorageLCU->getBuf(tmpArea);
         tmpPred.copyFrom(piPredY);
-        if (!cu.firstPU->mhIntraFlag && !cu.cpr)
+        if (!cu.firstPU->mhIntraFlag && !cu.ibc)
           tmpPred.rspSignal(m_pcReshape->getFwdLUT());
         const Pel avgLuma = tmpPred.computeAvg();
         int adj = m_pcReshape->calculateChromaAdj(avgLuma);

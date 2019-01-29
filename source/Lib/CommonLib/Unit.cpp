@@ -562,7 +562,7 @@ void TransformUnit::initData()
   emtIdx             = 0;
 #endif
 #if JVET_M0427_INLOOP_RESHAPER
-  m_iChromaAdj       = 0;
+  m_chromaResScaleInv = 0;
 #endif
 }
 
@@ -642,6 +642,6 @@ const CCoeffBuf TransformUnit::getCoeffs(const ComponentID id) const { return CC
        PelBuf   TransformUnit::getPcmbuf(const ComponentID id)       { return  PelBuf  (m_pcmbuf[id], blocks[id]); }
 const CPelBuf   TransformUnit::getPcmbuf(const ComponentID id) const { return CPelBuf  (m_pcmbuf[id], blocks[id]); }
 #if JVET_M0427_INLOOP_RESHAPER
-int          TransformUnit::getChromaAdj()                     const { return m_iChromaAdj; }
-void         TransformUnit::setChromaAdj(int iChromaAdj)             { m_iChromaAdj = iChromaAdj; }
+int          TransformUnit::getChromaAdj()                     const { return m_chromaResScaleInv; }
+void         TransformUnit::setChromaAdj(int i)                      { m_chromaResScaleInv = i;    }
 #endif

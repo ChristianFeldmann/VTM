@@ -854,32 +854,30 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
 }
 
 #if JVET_M0427_INLOOP_RESHAPER
-void HLSyntaxReader::parseReshaper(sliceReshapeInfo& info, const SPS* pcSPS, const bool isIntra)
+void HLSyntaxReader::parseReshaper(SliceReshapeInfo& info, const SPS* pcSPS, const bool isIntra)
 {
   unsigned  symbol = 0;
-  READ_FLAG(symbol, "slice_reshape_model_present_flag");                         info.setSliceReshapeModelPresentFlag(symbol == 1);
+  READ_FLAG(symbol, "tile_group_reshaper_model_present_flag");                 info.setSliceReshapeModelPresentFlag(symbol == 1);
   if (info.getSliceReshapeModelPresentFlag())
   {
-    // parse slice reshaper model
-    memset(info.reshape_model_bin_CW_delta, 0, PIC_CODE_CW_BINS * sizeof(int));
-    READ_UVLC(symbol, "reshaper_model_min_bin_idx");                             info.reshape_model_min_bin_idx = symbol;
-    READ_UVLC(symbol, "max_bin_minus_reshape_model_max_bin_idx");                info.reshape_model_max_bin_idx = PIC_CODE_CW_BINS - 1 - symbol;
+    memset(info.reshaperModelBinCWDelta, 0, PIC_CODE_CW_BINS * sizeof(int));
+    READ_UVLC(symbol, "reshaper_model_min_bin_idx");                             info.reshaperModelMinBinIdx = symbol;
+    READ_UVLC(symbol, "reshaper_model_delta_max_bin_idx");                       info.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1 - symbol;
     READ_UVLC(symbol, "reshaper_model_bin_delta_abs_cw_prec_minus1");            info.maxNbitsNeededDeltaCW = symbol + 1;
     assert(info.maxNbitsNeededDeltaCW > 0);
-    for (uint32_t i = info.reshape_model_min_bin_idx; i <= info.reshape_model_max_bin_idx; i++)
+    for (uint32_t i = info.reshaperModelMinBinIdx; i <= info.reshaperModelMaxBinIdx; i++)
     {
-      READ_CODE(info.maxNbitsNeededDeltaCW, symbol, "reshape_model_abs_CW");
+      READ_CODE(info.maxNbitsNeededDeltaCW, symbol, "reshaper_model_bin_delta_abs_CW");
       int absCW = symbol;
       if (absCW > 0)
       {
-        READ_CODE(1, symbol, "reshape_model_sign_CW");
+        READ_CODE(1, symbol, "reshaper_model_bin_delta_sign_CW_flag");
       }
       int signCW = symbol;
-      info.reshape_model_bin_CW_delta[i] = (1 - 2 * signCW) * absCW;
+      info.reshaperModelBinCWDelta[i] = (1 - 2 * signCW) * absCW;
     }
   }
-  READ_FLAG(symbol, "slice_reshaper_enable_flag");                           info.setUseSliceReshaper(symbol == 1);
-
+  READ_FLAG(symbol, "tile_group_reshaper_enable_flag");           info.setUseSliceReshaper(symbol == 1);
   if (info.getUseSliceReshaper())
   {
     if (!(pcSPS->getUseDualITree() && isIntra))
@@ -887,7 +885,9 @@ void HLSyntaxReader::parseReshaper(sliceReshapeInfo& info, const SPS* pcSPS, con
       READ_FLAG(symbol, "slice_reshaper_ChromaAdj");                info.setSliceReshapeChromaAdj(symbol);
     }
     else
+    {
       info.setSliceReshapeChromaAdj(0);
+    }
   }
 }
 #endif

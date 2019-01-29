@@ -292,34 +292,34 @@ struct HrdSubLayerInfo
 };
 
 #if JVET_M0427_INLOOP_RESHAPER
-class sliceReshapeInfo
+class SliceReshapeInfo
 {
 public:
-  bool      slice_reshaper_enable_flag;
-  bool      slice_reshaper_model_present_flag;
-  unsigned  uiReshapeChromaAdj;
-  uint32_t  reshape_model_min_bin_idx;
-  uint32_t  reshape_model_max_bin_idx;
-  int       reshape_model_bin_CW_delta[PIC_CODE_CW_BINS];
+  bool      sliceReshaperEnableFlag;
+  bool      sliceReshaperModelPresentFlag;
+  unsigned  enableChromaAdj;
+  uint32_t  reshaperModelMinBinIdx;
+  uint32_t  reshaperModelMaxBinIdx;
+  int       reshaperModelBinCWDelta[PIC_CODE_CW_BINS];
   int       maxNbitsNeededDeltaCW;
-  void      setUseSliceReshaper(bool b_useSliceReshaper)                   { slice_reshaper_enable_flag = b_useSliceReshaper;          }
-  bool      getUseSliceReshaper() const                                    { return slice_reshaper_enable_flag;                        }
-  void      setSliceReshapeModelPresentFlag(bool bflag)                    { slice_reshaper_model_present_flag = bflag;                }
-  bool      getSliceReshapeModelPresentFlag() const                        { return   slice_reshaper_model_present_flag;               }
-  void      setSliceReshapeChromaAdj(unsigned uiChromaAdj)                 { uiReshapeChromaAdj = uiChromaAdj;                         }
-  unsigned  getSliceReshapeChromaAdj() const                               { return uiReshapeChromaAdj;                                }
+  void      setUseSliceReshaper(bool b)                                { sliceReshaperEnableFlag = b;            }
+  bool      getUseSliceReshaper() const                                { return sliceReshaperEnableFlag;         }
+  void      setSliceReshapeModelPresentFlag(bool b)                    { sliceReshaperModelPresentFlag = b;      }
+  bool      getSliceReshapeModelPresentFlag() const                    { return   sliceReshaperModelPresentFlag; }
+  void      setSliceReshapeChromaAdj(unsigned adj)                     { enableChromaAdj = adj;                  }
+  unsigned  getSliceReshapeChromaAdj() const                           { return enableChromaAdj;                 }
 };
 
 struct ReshapeCW
 {
-  std::vector<uint32_t> BinCW;
-  int RspPicSize;
-  int RspIntraPeriod;
-  int RspFps;
-  int RspBaseQP;
-  int Tid;
-  int SliceQP;
-  int RspFpsToIp;
+  std::vector<uint32_t> binCW;
+  int rspPicSize;
+  int rspIntraPeriod;
+  int rspFps;
+  int rspBaseQP;
+  int rspTid;
+  int rspSliceQP;
+  int rspFpsToIp;
 };
 #endif
 
@@ -1066,7 +1066,7 @@ private:
   bool              m_wrapAroundEnabledFlag;
   unsigned          m_wrapAroundOffset;
 #if JVET_M0427_INLOOP_RESHAPER
-  bool              m_bUseReshape;
+  bool              m_lumaReshapeEnable;
 #endif
 public:
 
@@ -1287,8 +1287,8 @@ public:
   void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
   unsigned                getWrapAroundOffset() const                                                     { return m_wrapAroundOffset;                                           }
 #if JVET_M0427_INLOOP_RESHAPER
-  void                    setUseReshaper(bool b)                                                          { m_bUseReshape = b;                                                   }
-  bool                    getUseReshaper() const                                                          { return m_bUseReshape;                                                }
+  void                    setUseReshaper(bool b)                                                          { m_lumaReshapeEnable = b;                                                   }
+  bool                    getUseReshaper() const                                                          { return m_lumaReshapeEnable;                                                }
 #endif
 };
 
@@ -1719,13 +1719,10 @@ private:
 
   AlfSliceParam              m_alfSliceParam;
   LutMotionCand*             m_MotionCandLut;
+#if JVET_M0427_INLOOP_RESHAPER
+  SliceReshapeInfo           m_sliceReshapeInfo;
+#endif
 #if JVET_M0170_MRG_SHARELIST
-#if JVET_M0427_INLOOP_RESHAPER
-  sliceReshapeInfo           m_sliceReshapeInfo;
-#endif
-#if JVET_M0427_INLOOP_RESHAPER
-  sliceReshapeInfo           m_sliceReshapeInfo;
-#endif
 public:
   LutMotionCand*             m_MotionCandLuTsBkup;
 #endif
@@ -2026,8 +2023,8 @@ public:
   void                        updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu);
   void                        copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst);
 #if JVET_M0427_INLOOP_RESHAPER
-  const sliceReshapeInfo&     getReshapeInfo() const { return m_sliceReshapeInfo; }
-        sliceReshapeInfo&     getReshapeInfo()       { return m_sliceReshapeInfo; }
+  const SliceReshapeInfo&     getReshapeInfo() const { return m_sliceReshapeInfo; }
+        SliceReshapeInfo&     getReshapeInfo()       { return m_sliceReshapeInfo; }
 #endif
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);

@@ -5475,7 +5475,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       CompArea      tmpArea(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());
       PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
       tmpPred.copyFrom(piPredY);
-      if (!cu.firstPU->mhIntraFlag && !cu.cpr)
+      if (!cu.firstPU->mhIntraFlag && !cu.ibc)
         tmpPred.rspSignal(m_pcReshape->getFwdLUT());
       const Pel           avgLuma = tmpPred.computeAvg();
       int                    adj  = m_pcReshape->calculateChromaAdj(avgLuma);
@@ -5611,10 +5611,8 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #if JVET_M0427_INLOOP_RESHAPER
           if (slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj())
           {
-            int cScale = tu.getChromaAdj();
-            double dCScale = round((double)(1 << CSCALE_FP_PREC) / (double)cScale);
-            double tmpWeight = dCScale*dCScale;
-            m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / tmpWeight);
+            double cRescale = round((double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj()));
+            m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cRescale*cRescale));
           }
 #endif 
           TCoeff     currAbsSum = 0;
@@ -5634,8 +5632,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           if (slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() && tu.blocks[compID].width*tu.blocks[compID].height > 4 )
           {
             PelBuf resiBuf = csFull->getResiBuf(compArea);
-            int cScale = tu.getChromaAdj();
-            resiBuf.scaleSignal(cScale, 1, tu.cu->cs->slice->clpRng(compID));
+            resiBuf.scaleSignal(tu.getChromaAdj(), 1, tu.cu->cs->slice->clpRng(compID));
           }
 #endif
 #if JVET_M0464_UNI_MTS
@@ -5722,8 +5719,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #if JVET_M0427_INLOOP_RESHAPER
             if (slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() && tu.blocks[compID].width*tu.blocks[compID].height > 4 )
             {
-              int cScale = tu.getChromaAdj();
-              resiBuf.scaleSignal(cScale, 0, tu.cu->cs->slice->clpRng(compID));
+              resiBuf.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
             }
 #endif
 
@@ -6002,7 +5998,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     {
       cs.getRecoBuf().copyFrom(cs.getPredBuf() );
 #if JVET_M0427_INLOOP_RESHAPER
-      if (m_pcEncCfg->getReshaper() && (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag()) && !cu.firstPU->mhIntraFlag && !cu.cpr)
+      if (m_pcEncCfg->getReshaper() && (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag()) && !cu.firstPU->mhIntraFlag && !cu.ibc)
       {
         cs.getRecoBuf().Y().rspSignal(m_pcReshape->getFwdLUT());
       }
@@ -6090,7 +6086,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
       PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
       tmpPred.copyFrom(cs.getPredBuf(COMPONENT_Y));
 
-      if (!cu.firstPU->mhIntraFlag && !cu.cpr)
+      if (!cu.firstPU->mhIntraFlag && !cu.ibc)
         tmpPred.rspSignal(m_pcReshape->getFwdLUT());
       cs.getResiBuf(COMPONENT_Y).rspSignal(m_pcReshape->getFwdLUT());
       cs.getResiBuf(COMPONENT_Y).subtract(tmpPred);
@@ -6193,7 +6189,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
       PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
       tmpPred.copyFrom(cs.getPredBuf(COMPONENT_Y));
 
-      if (!cu.firstPU->mhIntraFlag && !cu.cpr)
+      if (!cu.firstPU->mhIntraFlag && !cu.ibc)
         tmpPred.rspSignal(m_pcReshape->getFwdLUT());
 
       cs.getRecoBuf(COMPONENT_Y).reconstruct(tmpPred, cs.getResiBuf(COMPONENT_Y), cs.slice->clpRng(COMPONENT_Y));
@@ -6203,7 +6199,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 #endif
       cs.getRecoBuf().bufs[0].reconstruct(cs.getPredBuf().bufs[0], cs.getResiBuf().bufs[0], cs.slice->clpRngs().comp[0]);
 #if JVET_M0427_INLOOP_RESHAPER
-      if (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && !cu.firstPU->mhIntraFlag && !cu.cpr)
+      if (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && !cu.firstPU->mhIntraFlag && !cu.ibc)
       {
         cs.getRecoBuf().bufs[0].rspSignal(m_pcReshape->getFwdLUT());
       }

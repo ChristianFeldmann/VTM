@@ -594,35 +594,36 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
 }
 
 #if JVET_M0427_INLOOP_RESHAPER
-void HLSWriter::codeReshaper(const sliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra)
+void HLSWriter::codeReshaper(const SliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra)
 {
-  WRITE_FLAG(pSliceReshaperInfo.getSliceReshapeModelPresentFlag() ? 1 : 0, "slice_reshaper_model_present_flag");
+  WRITE_FLAG(pSliceReshaperInfo.getSliceReshapeModelPresentFlag() ? 1 : 0, "tile_group_reshaper_model_present_flag");
   if (pSliceReshaperInfo.getSliceReshapeModelPresentFlag())
   {
-    // code slice reshaper model
-    WRITE_UVLC(pSliceReshaperInfo.reshape_model_min_bin_idx, "reshaper_model_min_bin_idx");
-    WRITE_UVLC(PIC_CODE_CW_BINS - 1 - pSliceReshaperInfo.reshape_model_max_bin_idx, "reshaper_model_max_bin_idx");
+    WRITE_UVLC(pSliceReshaperInfo.reshaperModelMinBinIdx, "reshaper_model_min_bin_idx");
+    WRITE_UVLC(PIC_CODE_CW_BINS - 1 - pSliceReshaperInfo.reshaperModelMaxBinIdx, "reshaper_model_delta_max_bin_idx");
     assert(pSliceReshaperInfo.maxNbitsNeededDeltaCW > 0);
     WRITE_UVLC(pSliceReshaperInfo.maxNbitsNeededDeltaCW - 1, "reshaper_model_bin_delta_abs_cw_prec_minus1");
 
-    for (int i = pSliceReshaperInfo.reshape_model_min_bin_idx; i <= pSliceReshaperInfo.reshape_model_max_bin_idx; i++)
+    for (int i = pSliceReshaperInfo.reshaperModelMinBinIdx; i <= pSliceReshaperInfo.reshaperModelMaxBinIdx; i++)
     {
-      int deltaCW = pSliceReshaperInfo.reshape_model_bin_CW_delta[i];
+      int deltaCW = pSliceReshaperInfo.reshaperModelBinCWDelta[i];
       int signCW = (deltaCW < 0) ? 1 : 0;
       int absCW = (deltaCW < 0) ? (-deltaCW) : deltaCW;
-      WRITE_CODE(absCW, pSliceReshaperInfo.maxNbitsNeededDeltaCW, "reshape_model_abs_CW");
+      WRITE_CODE(absCW, pSliceReshaperInfo.maxNbitsNeededDeltaCW, "reshaper_model_bin_delta_abs_CW");
       if (absCW > 0)
-        WRITE_FLAG(signCW, "reshape_model_sign_CW");
+      {
+        WRITE_FLAG(signCW, "reshaper_model_bin_delta_sign_CW_flag");
+      }
     }
   }
 
-  WRITE_FLAG(pSliceReshaperInfo.getUseSliceReshaper() ? 1 : 0, "slice_reshaper_enable_flag");
+  WRITE_FLAG(pSliceReshaperInfo.getUseSliceReshaper() ? 1 : 0, "tile_group_reshaper_enable_flag");
 
   if (!pSliceReshaperInfo.getUseSliceReshaper())
     return;
 
   if (!(pcSPS->getUseDualITree() && isIntra))
-    WRITE_FLAG(pSliceReshaperInfo.getSliceReshapeChromaAdj(), "slice_reshaper_chromaAdj");
+    WRITE_FLAG(pSliceReshaperInfo.getSliceReshapeChromaAdj(), "tile_group_reshaper_chroma_residual_scale_flag");
 };
 #endif // #if JVET_M0427_INLOOP_RESHAPER
 

@@ -257,9 +257,9 @@ protected:
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
 #if JVET_M0427_INLOOP_RESHAPER
-  bool      m_bLumaReshapeEnable;
-  uint32_t  m_uiSignalType;
-  uint32_t  m_uiIntraCMD;
+  bool      m_lumaReshapeEnable;
+  uint32_t  m_reshapeSignalType;
+  uint32_t  m_intraCMD;
   ReshapeCW m_reshapeCW;
 #endif
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel

@@ -185,9 +185,9 @@ Slice::Slice()
   m_sliceReshapeInfo.setUseSliceReshaper(false);
   m_sliceReshapeInfo.setSliceReshapeModelPresentFlag(false);
   m_sliceReshapeInfo.setSliceReshapeChromaAdj(0);
-  m_sliceReshapeInfo.reshape_model_min_bin_idx = 0;
-  m_sliceReshapeInfo.reshape_model_max_bin_idx = PIC_CODE_CW_BINS - 1;
-  memset(m_sliceReshapeInfo.reshape_model_bin_CW_delta, 0, PIC_CODE_CW_BINS * sizeof(int));
+  m_sliceReshapeInfo.reshaperModelMinBinIdx = 0;
+  m_sliceReshapeInfo.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1;
+  memset(m_sliceReshapeInfo.reshaperModelBinCWDelta, 0, PIC_CODE_CW_BINS * sizeof(int));
 #endif
 }
 
@@ -1902,7 +1902,7 @@ SPS::SPS()
 , m_wrapAroundEnabledFlag     (false)
 , m_wrapAroundOffset          (  0)
 #if JVET_M0427_INLOOP_RESHAPER
-, m_bUseReshape               (false)
+, m_lumaReshapeEnable         (false)
 #endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)

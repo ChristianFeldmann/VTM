@@ -53,30 +53,30 @@
 
 struct ModelInfo
 {
-  unsigned FullRangeInputFlag;
-  unsigned ScaleIntPrec;
-  unsigned ScaleInt;
-  unsigned ScaleFracPrec;
-  unsigned ScaleFrac;
-  unsigned ScaleSign;
-  unsigned OffsetIntPrec;
-  unsigned OffsetInt;
-  unsigned OffsetFracPrec;
-  unsigned OffsetFrac;
-  unsigned OffsetSign;
-  unsigned MinMaxQPAbsPrec;
-  unsigned MaxQPAbs;
-  unsigned MaxQPSign;
-  unsigned MinQPAbs;
-  unsigned MinQPSign;
-  unsigned ScaleAbs;
-  unsigned OffsetAbs;
+  unsigned fullRangeInputFlag;
+  unsigned scaleIntPrec;
+  unsigned scaleInt;
+  unsigned scaleFracPrec;
+  unsigned scaleFrac;
+  unsigned scaleSign;
+  unsigned offsetIntPrec;
+  unsigned offsetInt;
+  unsigned offsetFracPrec;
+  unsigned offsetFrac;
+  unsigned offsetSign;
+  unsigned minMaxQPAbsPrec;
+  unsigned maxQPAbs;
+  unsigned maxQPSign;
+  unsigned minQPAbs;
+  unsigned minQPSign;
+  unsigned scaleAbs;
+  unsigned offsetAbs;
 };
 
 class EncReshape : public Reshape
 {
 private:
-  bool                    m_bSrcReshaped;
+  bool                    m_srcReshaped;
   int                     m_picWidth;
   int                     m_picHeight;
   uint32_t                m_maxCUWidth;
@@ -84,11 +84,11 @@ private:
   uint32_t                m_widthInCtus;
   uint32_t                m_heightInCtus;
   uint32_t                m_numCtuInFrame;
-  bool                    m_bExceedSTD;
-  std::vector<uint32_t>   m_uiBinImportance;
+  bool                    m_exceedSTD;
+  std::vector<uint32_t>   m_binImportance;
   int                     m_tcase;
   int                     m_rateAdpMode;
-  bool                    m_bUseAdpCW;
+  bool                    m_useAdpCW;
   uint16_t                m_initCWAnalyze;
   ModelInfo               m_dQPModel;
   ReshapeCW               m_reshapeCW;
@@ -103,44 +103,44 @@ public:
   void createEnc( int picWidth, int picHeight, uint32_t maxCUWidth, uint32_t maxCUHeight, int bitDepth);
   void destroy();
 
-  bool getSrcReshaped() { return m_bSrcReshaped; }
-  void setSrcReshaped(bool bPicReshaped) { m_bSrcReshaped = bPicReshaped; }
+  bool getSrcReshaped() { return m_srcReshaped; }
+  void setSrcReshaped(bool b) { m_srcReshaped = b; }
 
   void preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isCPR);
   void preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isCPR);
   void bubbleSortDsd(double *array, int * idx, int n);
   void swap(int *xp, int *yp) { int temp = *xp;  *xp = *yp;  *yp = temp; }
   void swap(double *xp, double *yp) { double temp = *xp;  *xp = *yp;  *yp = temp; }
-  void deriveReshapeParametersSDRfromStats(uint32_t *, double*, double* dReshapeTH1, double* dReshapeTH2, bool *bIntraAdp, bool *bInterAdp);
+  void deriveReshapeParametersSDRfromStats(uint32_t *, double*, double* reshapeTH1, double* reshapeTH2, bool *intraAdp, bool *interAdp);
   void deriveReshapeParameters(double *array, int start, int end, ReshapeCW respCW, double &alpha, double &beta);
   void initLUTfromdQPModel();
   int  calcEXP2(int val);
   void constructReshaperSDR();
-  ReshapeCW *        getReshapeCW() { return &m_reshapeCW; }
+  ReshapeCW * getReshapeCW() { return &m_reshapeCW; }
   Pel * getWeightTable() { return m_cwLumaWeight; }
   double getCWeight() { return m_chromaWeight; }
 
-  void initModelParam(double dScale = 0.015, double dOffset = -7.5, int QPMax = 6, int QPMin = -3)
+  void initModelParam(double scale = 0.015, double offset = -7.5, int QPMax = 6, int QPMin = -3)
   {
     /// dQP model:  dQP = clip3(QPMin, QPMax, dScale*Y+dOffset);
-    m_dQPModel.FullRangeInputFlag = 0;
-    m_dQPModel.ScaleIntPrec = 0;
-    m_dQPModel.ScaleFracPrec = 16;
-    m_dQPModel.OffsetIntPrec = 3;
-    m_dQPModel.OffsetFracPrec = 1;
-    m_dQPModel.MinMaxQPAbsPrec = 3;
-    m_dQPModel.ScaleSign = dScale < 0 ? 1 : 0;
-    m_dQPModel.ScaleAbs = unsigned((dScale < 0 ? -dScale : dScale) * (1 << m_dQPModel.ScaleFracPrec));
-    m_dQPModel.ScaleInt = m_dQPModel.ScaleAbs >> m_dQPModel.ScaleFracPrec;
-    m_dQPModel.ScaleFrac = m_dQPModel.ScaleAbs - (m_dQPModel.ScaleInt << m_dQPModel.ScaleFracPrec);
-    m_dQPModel.OffsetSign = dOffset < 0 ? 1 : 0;
-    m_dQPModel.OffsetAbs = unsigned((dOffset < 0 ? -dOffset : dOffset) * (1 << m_dQPModel.OffsetFracPrec));
-    m_dQPModel.OffsetInt = m_dQPModel.OffsetAbs >> m_dQPModel.OffsetFracPrec;
-    m_dQPModel.OffsetFrac = m_dQPModel.OffsetAbs - (m_dQPModel.OffsetInt << m_dQPModel.OffsetFracPrec);
-    m_dQPModel.MaxQPSign = QPMax < 0 ? 1 : 0;
-    m_dQPModel.MaxQPAbs = m_dQPModel.MaxQPSign ? -QPMax : QPMax;
-    m_dQPModel.MinQPSign = QPMin < 0 ? 1 : 0;
-    m_dQPModel.MinQPAbs = m_dQPModel.MinQPSign ? -QPMin : QPMin;
+    m_dQPModel.fullRangeInputFlag = 0;
+    m_dQPModel.scaleIntPrec = 0;
+    m_dQPModel.scaleFracPrec = 16;
+    m_dQPModel.offsetIntPrec = 3;
+    m_dQPModel.offsetFracPrec = 1;
+    m_dQPModel.minMaxQPAbsPrec = 3;
+    m_dQPModel.scaleSign = scale < 0 ? 1 : 0;
+    m_dQPModel.scaleAbs = unsigned((scale < 0 ? -scale : scale) * (1 << m_dQPModel.scaleFracPrec));
+    m_dQPModel.scaleInt = m_dQPModel.scaleAbs >> m_dQPModel.scaleFracPrec;
+    m_dQPModel.scaleFrac = m_dQPModel.scaleAbs - (m_dQPModel.scaleInt << m_dQPModel.scaleFracPrec);
+    m_dQPModel.offsetSign = offset < 0 ? 1 : 0;
+    m_dQPModel.offsetAbs = unsigned((offset < 0 ? -offset : offset) * (1 << m_dQPModel.offsetFracPrec));
+    m_dQPModel.offsetInt = m_dQPModel.offsetAbs >> m_dQPModel.offsetFracPrec;
+    m_dQPModel.offsetFrac = m_dQPModel.offsetAbs - (m_dQPModel.offsetInt << m_dQPModel.offsetFracPrec);
+    m_dQPModel.maxQPSign = QPMax < 0 ? 1 : 0;
+    m_dQPModel.maxQPAbs = m_dQPModel.maxQPSign ? -QPMax : QPMax;
+    m_dQPModel.minQPSign = QPMin < 0 ? 1 : 0;
+    m_dQPModel.minQPAbs = m_dQPModel.minQPSign ? -QPMin : QPMin;
   }
 };// END CLASS DEFINITION EncReshape
 

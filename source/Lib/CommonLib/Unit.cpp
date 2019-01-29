@@ -282,10 +282,6 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   smvdMode        = other.smvdMode;
 #endif
 
-#if JVET_M0444_SMVD
-  smvdMode        = other.smvdMode;
-#endif
-
   return *this;
 }
 
@@ -324,9 +320,6 @@ void CodingUnit::initData()
   shareParentSize.height = -1;
 #endif
   ibc               = false;
-#if JVET_M0444_SMVD
-  smvdMode        = 0;
-#endif
 #if JVET_M0444_SMVD
   smvdMode        = 0;
 #endif

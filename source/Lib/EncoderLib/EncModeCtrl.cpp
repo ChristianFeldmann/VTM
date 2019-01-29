@@ -1237,6 +1237,9 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
   const SPS&             sps         = *slice.getSPS();
   const uint32_t             numComp     = getNumberValidComponents( slice.getSPS()->getChromaFormatIdc() );
   const uint32_t             width       = partitioner.currArea().lumaSize().width;
+#if FIX_PCM
+  const uint32_t             height       = partitioner.currArea().lumaSize().height;
+#endif
   const CodingStructure *bestCS      = cuECtx.bestCS;
   const CodingUnit      *bestCU      = cuECtx.bestCU;
   const EncTestMode      bestMode    = bestCS ? getCSEncMode( *bestCS ) : EncTestMode();
@@ -1339,7 +1342,12 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     }
 
     // PCM MODES
+#if FIX_PCM
+    return sps.getPCMEnabledFlag() && width <= ( 1 << sps.getPCMLog2MaxSize() ) && width >= ( 1 << sps.getPCMLog2MinSize() )
+            && height <= ( 1 << sps.getPCMLog2MaxSize() ) && height >= ( 1 << sps.getPCMLog2MinSize() );
+#else
     return sps.getPCMEnabledFlag() && width <= ( 1 << sps.getPCMLog2MaxSize() ) && width >= ( 1 << sps.getPCMLog2MinSize() );
+#endif
   }
   else if (encTestmode.type == ETM_IBC || encTestmode.type == ETM_IBC_MERGE)
   {

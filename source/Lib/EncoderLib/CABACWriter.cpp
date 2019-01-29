@@ -729,6 +729,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
     return;
   }
 
+#if !FIX_PCM
   // pcm samples
   if( CU::isIntra(cu) )
   {
@@ -739,10 +740,23 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
       return;
     }
   }
+#endif
 
   // prediction mode and partitioning data
   pred_mode ( cu );
 
+#if FIX_PCM
+  // pcm samples
+  if( CU::isIntra(cu) )
+  {
+    pcm_data( cu, partitioner );
+    if( cu.ipcm )
+    {
+      end_of_ctu( cu, cuCtx );
+      return;
+    }
+  }
+#endif
   extend_ref_line(cu);
 
 

@@ -253,6 +253,10 @@ void EncAdaptiveLoopFilter::ALFProcess( CodingStructure& cs, const double *lambd
   const CPelBuf& recLuma = recYuv.get( COMPONENT_Y );
   Area blk( 0, 0, recLuma.width, recLuma.height );
   deriveClassification( m_classifier, recLuma, blk );
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+  Area blkPCM(0, 0, recLuma.width, recLuma.height);
+  resetPCMBlkClassInfo(cs, m_classifier, recLuma, blkPCM);
+#endif
 
   // get CTB stats for filtering
   deriveStatsForFiltering( orgYuv, recYuv );
@@ -451,11 +455,19 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
           {
             if( filterType == ALF_FILTER_5 )
             {
-              m_filter5x5Blk( m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx] );
+              m_filter5x5Blk( m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx]
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+                , cs
+#endif
+              );
             }
             else if( filterType == ALF_FILTER_7 )
             {
-              m_filter7x7Blk( m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx] );
+              m_filter7x7Blk( m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx]
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+                , cs
+#endif
+              );
             }
             else
             {
@@ -1464,6 +1476,12 @@ void EncAdaptiveLoopFilter::getBlkStats( AlfCovariance* alfCovariace, const AlfF
   {
     for( int j = 0; j < area.width; j++ )
     {
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+      if( classifier && classifier[area.y + i][area.x + j].classIdx == m_ALF_UNUSED_CLASSIDX && classifier[area.y + i][area.x + j].transposeIdx == m_ALF_UNUSED_TRANSPOSIDX )
+      {
+        continue;
+      }
+#endif
       std::memset( ELocal, 0, shape.numCoeff * sizeof( int ) );
       if( classifier )
       {

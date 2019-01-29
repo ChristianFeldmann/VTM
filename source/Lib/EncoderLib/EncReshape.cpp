@@ -1007,13 +1007,13 @@ void EncReshape::initLUTfromdQPModel()
   int pwlFwdBinLen = m_reshapeLUTSize / PIC_CODE_CW_BINS;
   int p1 = m_dQPModel.scaleFracPrec;
   int p2 = m_dQPModel.offsetFracPrec;
-  int total_shift = p1 + p2;
+  int totalShift = p1 + p2;
   int scaleFP = (1 - 2 * m_dQPModel.scaleSign)  * m_dQPModel.scaleAbs;
   int offsetFP = (1 - 2 * m_dQPModel.offsetSign) * m_dQPModel.offsetAbs;
   int maxQP = (1 - 2 * m_dQPModel.maxQPSign)  * m_dQPModel.maxQPAbs;
   int minQP = (1 - 2 * m_dQPModel.minQPSign)  * m_dQPModel.minQPAbs;
-  int maxFP = maxQP * (1 << total_shift);
-  int minFP = minQP * (1 << total_shift);
+  int maxFP = maxQP * (1 << totalShift);
+  int minFP = minQP * (1 << totalShift);
   int temp, signval, absval;
   int dQPDiv6FP;
   int32_t * slopeLUT = new int32_t[m_reshapeLUTSize]();
@@ -1026,7 +1026,7 @@ void EncReshape::initLUTfromdQPModel()
     temp = temp > maxFP ? maxFP : temp < minFP ? minFP : temp;
     signval = temp >= 0 ? 1 : -1;
     absval = signval * temp;
-    dQPDiv6FP = signval * (((absval + 3) / 6 + (1 << (total_shift - 17))) >> (total_shift - 16));
+    dQPDiv6FP = signval * (((absval + 3) / 6 + (1 << (totalShift - 17))) >> (totalShift - 16));
     slopeLUT[i] = calcEXP2(dQPDiv6FP);
   }
 

@@ -211,9 +211,9 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   }
 #if JVET_M0427_INLOOP_RESHAPER
   const Slice           &slice = *cs.slice;
-  bool bFlag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag() ) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode()));
+  bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag() ) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode()));
 
-  if (bFlag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && (compID != COMPONENT_Y))
+  if (flag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && (compID != COMPONENT_Y))
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
     const CompArea &areaY = CompArea(COMPONENT_Y, tu.chromaFormat, area);
@@ -240,8 +240,8 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   //===== reconstruction =====
 #if JVET_M0427_INLOOP_RESHAPER
-  bFlag = bFlag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
-  if (bFlag && TU::getCbf(tu, compID) && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj())
+  flag = flag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
+  if (flag && TU::getCbf(tu, compID) && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj())
   {  
     piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
   }
@@ -600,10 +600,10 @@ void DecCu::xDecodeInterTexture(CodingUnit &cu)
       if (slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && slice.getReshapeInfo().getSliceReshapeChromaAdj() && (compID == COMPONENT_Y))
       {
         const CompArea &areaY = currTU.blocks[COMPONENT_Y];
-        PelBuf piPredY = cs.getPredBuf(areaY);
+        PelBuf predY = cs.getPredBuf(areaY);
         CompArea tmpArea(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());
         PelBuf tmpPred = m_tmpStorageLCU->getBuf(tmpArea);
-        tmpPred.copyFrom(piPredY);
+        tmpPred.copyFrom(predY);
         if (!cu.firstPU->mhIntraFlag && !cu.ibc)
           tmpPred.rspSignal(m_pcReshape->getFwdLUT());
         const Pel avgLuma = tmpPred.computeAvg();

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0427_INLOOP_RESHAPER                        1
+
 #define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
 
 #define JVET_M0257                                        1 // Scan only non zero-out regions of large TUs

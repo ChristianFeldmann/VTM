@@ -1317,8 +1317,8 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
 #if JVET_M0427_INLOOP_RESHAPER
   const Slice           &slice = *cs.slice;
-  bool bFlag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode()));
-  if (bFlag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && isChroma(compID))
+  bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode()));
+  if (flag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && isChroma(compID))
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
     const CompArea &areaY = CompArea(COMPONENT_Y, tu.chromaFormat, area );
@@ -1370,8 +1370,8 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #endif
 
 #if JVET_M0427_INLOOP_RESHAPER
-  bFlag = bFlag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
-  if (bFlag && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() )
+  flag =flag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
+  if (flag && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() )
   {
     int cResScaleInv = tu.getChromaAdj();
     double cResScale = round((double)(1 << CSCALE_FP_PREC) / (double)cResScaleInv);
@@ -1407,7 +1407,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
   //===== reconstruction =====
 #if JVET_M0427_INLOOP_RESHAPER
-  if (bFlag && uiAbsSum > 0 && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() )
+  if (flag && uiAbsSum > 0 && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() )
   {
     piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
   }

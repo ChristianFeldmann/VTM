@@ -1261,9 +1261,12 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
           // average two MVs
           Mv avgMv = MvI;
           avgMv += MvJ;
+#if JVET_M0265_MV_ROUNDING_CLEANUP
+          roundAffineMv(avgMv.hor, avgMv.ver, 1);
+#else
           avgMv.setHor( avgMv.getHor() / 2 );
           avgMv.setVer( avgMv.getVer() / 2 );
-
+#endif
 
 
           if (mrgCtx.mrgTypeNeighbours[i] == MRG_TYPE_IBC && mrgCtx.mrgTypeNeighbours[j] == MRG_TYPE_IBC && pu.cs->sps->getSpsNext().getIBCMode())
@@ -4014,9 +4017,13 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
       {
         aveMv = aveMv.scaleMv( distscale ); // scaling to L0
       }
+#if JVET_M0265_MV_ROUNDING_CLEANUP
+      aveMv = aveMv + candidate[i].mv[0];
+      roundAffineMv(aveMv.hor, aveMv.ver, 1);
+#else
       aveMv.setHor( ( aveMv.getHor() + candidate[i].mv[0].getHor() + 1 ) >> 1 );
       aveMv.setVer( ( aveMv.getVer() + candidate[i].mv[0].getVer() + 1 ) >> 1 );
-          
+#endif    
       triangleMrgCtx.interDirNeighbours[triangleMrgCtx.numValidMergeCand] = 1;
       triangleMrgCtx.mrgTypeNeighbours [triangleMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
       triangleMrgCtx.mvFieldNeighbours [(triangleMrgCtx.numValidMergeCand << 1)    ].mv = aveMv;

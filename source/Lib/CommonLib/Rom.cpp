@@ -806,6 +806,7 @@ const uint8_t g_NonMPM[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
 
+#if !JVET_M0328_KEEP_ONE_WEIGHT_GROUP
 const Pel g_trianglePelWeightedLuma[TRIANGLE_DIR_NUM][2][7] =
 { 
   { // TRIANGLE_DIR_135
@@ -843,6 +844,7 @@ const Pel g_trianglePelWeightedChroma[2][TRIANGLE_DIR_NUM][2][7] =
 
 const uint8_t g_triangleWeightLengthLuma[2] = { 5, 7 };
 const uint8_t g_triangleWeightLengthChroma[2][2] = { { 5, 7 }, { 3, 3 } };
+#endif
 
       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
 

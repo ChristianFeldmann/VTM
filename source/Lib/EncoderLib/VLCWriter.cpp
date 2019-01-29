@@ -1708,7 +1708,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
 {
   if( !isChroma )
   {
-    WRITE_FLAG( alfSliceParam.coeffDeltaFlag, "alf_coefficients_delta_flag" );
+    WRITE_FLAG( alfSliceParam.coeffDeltaFlag, "alf_luma_coeff_delta_flag" );
     if( !alfSliceParam.coeffDeltaFlag )
     {
       if( alfSliceParam.numLumaFilters > 1 )

@@ -2430,7 +2430,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
   uint32_t code;
   if( !isChroma )
   {
-    READ_FLAG( code, "alf_coefficients_delta_flag" );
+    READ_FLAG( code, "alf_luma_coeff_delta_flag" );
     alfSliceParam.coeffDeltaFlag = code;
 
     if( !alfSliceParam.coeffDeltaFlag )

@@ -58,6 +58,8 @@
 
 #define JVET_M0145_AFFINE_MV_CLIP                         1 // Missing clipping for MV storage in affine
 
+#define JVET_M0264_HMVP_WITH_GBIIDX                       1 // Harmonization between HMVP and GBi
+
 #define JVET_M0381_ONE_CTX_FOR_SUBBLOCK_MRG_IDX           1 // CE2.2.2 a: one context for subblock Merge index
 
 #define JVET_M0118_M0185_TRIANGLE_FLAG_FIX                1 // Avoid signaling triangle flag if a CU uses MMVD or CIIP

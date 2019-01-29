@@ -238,7 +238,9 @@ protected:
 
   bool      m_MHIntra;
   bool      m_Triangle;
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  bool      m_allowDisFracMMVD;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -754,7 +756,10 @@ public:
   bool      getUseMHIntra                   ()         const { return m_MHIntra; }
   void      setUseTriangle                  ( bool b )       { m_Triangle = b; }
   bool      getUseTriangle                  ()         const { return m_Triangle; }
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  void      setAllowDisFracMMVD             ( bool b )       { m_allowDisFracMMVD = b;    }
+  bool      getAllowDisFracMMVD             ()         const { return m_allowDisFracMMVD; }
+#endif
 
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }

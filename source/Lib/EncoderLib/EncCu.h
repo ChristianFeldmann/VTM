@@ -159,6 +159,10 @@ public:
 
   void   setMergeBestSATDCost(double cost) { m_mergeBestSATDCost = cost; }
   double getMergeBestSATDCost()            { return m_mergeBestSATDCost; }
+#if JVET_M0255_FRACMMVD_SWITCH
+  IbcHashMap& getCprHashMap()              { return m_ibcHashMap;        }
+  EncCfg*     getEncCfg()            const { return m_pcEncCfg;          }
+#endif
 
 #if JVET_M0170_MRG_SHARELIST
   Position shareParentPos;

@@ -86,6 +86,7 @@
 
 #define JVET_M0464_UNI_MTS                                1
 #define JVET_M0068_M0171_MMVD_CLEANUP                     1 // MMVD cleanup with 1) flip removal, 2) L1 zero vector fix, 3) bi-pred restriction after merge/MMVD
+#define JVET_M0255_FRACMMVD_SWITCH                        1 // disable fractional MVD in MMVD adaptively
 
 #if JVET_M0464_UNI_MTS
 typedef std::pair<int, bool> TrMode;

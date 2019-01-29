@@ -257,7 +257,9 @@ void EncApp::xInitLibCfg()
 #endif  
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  m_cEncLib.setAllowDisFracMMVD                                  ( m_allowDisFracMMVD );
+#endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
   m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );

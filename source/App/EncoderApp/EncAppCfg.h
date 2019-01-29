@@ -237,7 +237,9 @@ protected:
 
   bool      m_MHIntra;
   bool      m_Triangle;
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  bool      m_allowDisFracMMVD;
+#endif
 
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;

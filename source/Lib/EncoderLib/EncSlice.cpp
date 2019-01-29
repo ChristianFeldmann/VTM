@@ -1387,8 +1387,48 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 
 }
 
+#if JVET_M0255_FRACMMVD_SWITCH
+void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr )
+{
+  CodingStructure&  cs            = *pcPic->cs;
+  Slice* pcSlice                  = cs.slice;
+  const PreCalcValues& pcv        = *cs.pcv;
+  const uint32_t    widthInCtus   = pcv.widthInCtus;
+#if HEVC_TILES_WPP
+  const TileMap&  tileMap         = *pcPic->tileMap;
+#endif
+  const uint32_t hashThreshold    = 20;
+  uint32_t totalCtu               = 0;
+  uint32_t hashRatio              = 0;
 
+  if ( !pcSlice->getSPS()->getSpsNext().getAllowDisFracMMVD() )
+  {
+    return;
+  }
 
+  for ( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
+  {
+#if HEVC_TILES_WPP
+    const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap( ctuTsAddr );
+#else
+    const uint32_t ctuRsAddr = ctuTsAddr;
+#endif
+    const uint32_t ctuXPosInCtus        = ctuRsAddr % widthInCtus;
+    const uint32_t ctuYPosInCtus        = ctuRsAddr / widthInCtus;
+
+    const Position pos ( ctuXPosInCtus * pcv.maxCUWidth, ctuYPosInCtus * pcv.maxCUHeight );
+    const UnitArea ctuArea( cs.area.chromaFormat, Area( pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight ) );
+
+    hashRatio += m_pcCuEncoder->getCprHashMap().getHashHitRatio( ctuArea.Y() );
+    totalCtu++;
+  }
+
+  if ( hashRatio > totalCtu * hashThreshold )
+  {
+    pcSlice->setDisFracMMVD( true );
+  }
+}
+#endif
 
 void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pEncLib )
 {
@@ -1439,7 +1479,14 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if HEVC_DEPENDENT_SLICES
   }
 #endif
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  if ( pcSlice->getSPS()->getSpsNext().getAllowDisFracMMVD() || 
+      ( pcSlice->getSPS()->getSpsNext().getIBCMode() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch() ) )
+  {
+    m_pcCuEncoder->getCprHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
+  }
+  checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
+#endif
   // for every CTU in the slice segment (may terminate sooner if there is a byte limit on the slice-segment)
   for( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
   {

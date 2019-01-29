@@ -891,7 +891,9 @@ void EncLib::xInitSPS(SPS &sps)
 
   sps.getSpsNext().setUseMHIntra            ( m_MHIntra );
   sps.getSpsNext().setUseTriangle           ( m_Triangle );
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  sps.getSpsNext().setAllowDisFracMMVD      ( m_allowDisFracMMVD );
+#endif
   sps.getSpsNext().setIBCMode               ( m_IBCMode );
 
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );

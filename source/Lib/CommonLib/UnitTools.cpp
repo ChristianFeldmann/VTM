@@ -2803,9 +2803,14 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
     int pos = 0;
     // Get spatial MV
+#if JVET_M0116_ATMVP_LEFT_NB_FOR_OFFSET
+    const Position posCurLB = pu.Y().bottomLeft();
+    MotionInfo miLeft;
+#else
     const Position posCurRT = pu.Y().topRight();
     const Position posCurLB = pu.Y().bottomLeft();
     MotionInfo miAbove, miLeft, miAboveRight, miBelowLeft;
+#endif
 
     //left
     const PredictionUnit* puLeft = cs.getPURestricted( posCurLB.offset( -1, 0 ), pu, pu.chType );
@@ -2832,6 +2837,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       pos++;
     }
 
+#if !JVET_M0116_ATMVP_LEFT_NB_FOR_OFFSET
     // above
     const PredictionUnit *puAbove = cs.getPURestricted( posCurRT.offset( 0, -1 ), pu, pu.chType );
     bool isAvailableB1 = puAbove && isDiffMER( pu, *puAbove ) && pu.cu != puAbove->cu && CU::isInter( *puAbove->cu );
@@ -2925,6 +2931,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         pos++;
       }
     }
+#endif
     mrgCtx.numValidMergeCand = pos;
 
     isAvailableSubPu = getInterMergeSubPuMvpCand( pu, mrgCtx, tmpLICFlag, pos

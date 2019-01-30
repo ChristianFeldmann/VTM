@@ -358,6 +358,11 @@ struct InterPredictionData
 {
   bool      mergeFlag;
   uint8_t     mergeIdx;
+#if JVET_M0883_TRIANGLE_SIGNALING
+  uint8_t     triangleSplitDir;
+  uint8_t     triangleMergeIdx0;
+  uint8_t     triangleMergeIdx1;
+#endif
   bool           mmvdMergeFlag;
   uint32_t       mmvdMergeIdx;
   uint8_t     interDir;

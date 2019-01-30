@@ -253,8 +253,10 @@ extern const uint8_t g_triangleWeightLengthLuma[2];
 extern const uint8_t g_triangleWeightLengthChroma[2][2];
 #endif
 extern       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
+#if !JVET_M0883_TRIANGLE_SIGNALING
 extern const uint8_t g_triangleCombination[TRIANGLE_MAX_NUM_CANDS][3];
 extern const uint8_t g_triangleIdxBins[TRIANGLE_MAX_NUM_CANDS];
+#endif
 
 #endif  //__TCOMROM__
 

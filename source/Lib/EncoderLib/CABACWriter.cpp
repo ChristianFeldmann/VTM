@@ -1519,6 +1519,38 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
   {
     if( pu.cu->triangle )
     {
+#if JVET_M0883_TRIANGLE_SIGNALING
+      bool    splitDir = pu.triangleSplitDir;
+      uint8_t candIdx0 = pu.triangleMergeIdx0;
+      uint8_t candIdx1 = pu.triangleMergeIdx1;
+      DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_split_dir=%d\n", splitDir );
+      DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx0=%d\n", candIdx0 );
+      DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx1=%d\n", candIdx1 );
+      candIdx1 -= candIdx1 < candIdx0 ? 0 : 1;
+      auto encodeOneIdx = [this](uint8_t mrgIdx, int numCandminus1)
+      {
+        if(mrgIdx == 0)
+        {
+          this->m_BinEncoder.encodeBin( 0, Ctx::MergeIdx() );
+          return;
+        }
+        else
+        {
+          this->m_BinEncoder.encodeBin( 1, Ctx::MergeIdx() );
+          for( unsigned idx = 1; idx < numCandminus1; idx++ )
+          {
+            this->m_BinEncoder.encodeBinEP( mrgIdx == idx ? 0 : 1 );
+            if( mrgIdx == idx )
+            {
+              break;
+            }
+          }
+        }
+      };
+      m_BinEncoder.encodeBinEP(splitDir);
+      encodeOneIdx(candIdx0, TRIANGLE_MAX_NUM_UNI_CANDS - 1);
+      encodeOneIdx(candIdx1, TRIANGLE_MAX_NUM_UNI_CANDS - 2);
+#else
       if( pu.mergeIdx < 2 )
       {
         m_BinEncoder.encodeBin( 0, Ctx::TriangleIdx() );
@@ -1531,6 +1563,7 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
       }
 
       DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx=%d\n", pu.mergeIdx );
+#endif
       return;
     }
   int numCandminus1 = int( pu.cs->slice->getMaxNumMergeCand() ) - 1;

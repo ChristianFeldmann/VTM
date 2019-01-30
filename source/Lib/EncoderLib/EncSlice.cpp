@@ -1427,6 +1427,10 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
   {
     pcSlice->setDisFracMMVD( true );
   }
+#if JVET_M0312_FRACMMVD_SWITCH_FOR_UHD
+  bool useIntegerMVD = (pcPic->lwidth()*pcPic->lheight() > 1920 * 1080);
+  pcSlice->setDisFracMMVD(useIntegerMVD);
+#endif
 }
 #endif
 

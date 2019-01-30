@@ -371,6 +371,9 @@ void PredictionUnit::initData()
   shareParentSize.width = -1;
   shareParentSize.height = -1;
 #endif
+#if JVET_M0823_MMVD_ENCOPT
+  mmvdEncOptMode = 0;
+#endif
 }
 
 PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)

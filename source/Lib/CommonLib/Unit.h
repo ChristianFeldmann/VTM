@@ -377,6 +377,9 @@ struct InterPredictionData
 #endif
   Mv        bv;                             // block vector for IBC
   Mv        bvd;                            // block vector difference for IBC
+#if JVET_M0823_MMVD_ENCOPT
+  uint8_t   mmvdEncOptMode;                  // 0: no action 1: skip chroma MC for MMVD candidate pre-selection 2: skip chroma MC and BIO for MMVD candidate pre-selection
+#endif
 };
 
 struct PredictionUnit : public UnitArea, public IntraPredictionData, public InterPredictionData

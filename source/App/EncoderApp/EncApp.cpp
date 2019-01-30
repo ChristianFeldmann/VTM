@@ -536,6 +536,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setForceDecodeBitstream1                             ( m_forceDecodeBitstream1 );
   m_cEncLib.setStopAfterFFtoPOC                                  ( m_stopAfterFFtoPOC );
   m_cEncLib.setBs2ModPOCAndType                                  ( m_bs2ModPOCAndType );
+#if JVET_M0055_DEBUG_CTU
+  m_cEncLib.setDebugCTU                                          ( m_debugCTU );
+#endif
 #if ENABLE_SPLIT_PARALLELISM
   m_cEncLib.setNumSplitThreads                                   ( m_numSplitThreads );
   m_cEncLib.setForceSingleSplitThread                            ( m_forceSplitSequential );

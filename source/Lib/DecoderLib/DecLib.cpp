@@ -56,7 +56,11 @@
 #include "CommonLib/CodingStatistics.h"
 #endif
 
+#if JVET_M0055_DEBUG_CTU
+bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound /* = false */, int debugCTU /* = -1*/, int debugPOC /* = -1*/ )
+#else
 bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound /* = false */ )
+#endif
 {
   int      poc;
   PicList* pcListPic = NULL;
@@ -91,6 +95,10 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 #endif
       );
 
+#if JVET_M0055_DEBUG_CTU
+      pcDecLib->setDebugCTU( debugCTU );
+      pcDecLib->setDebugPOC( debugPOC );
+#endif
       pcDecLib->setDecodedPictureHashSEIEnabled( true );
 
       bFirstCall = false;
@@ -156,6 +164,9 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
                 CHECK( expectedPoc != poc, "mismatch in POC - check encoder configuration" );
 
+#if JVET_M0055_DEBUG_CTU
+                if( debugCTU < 0 || poc != debugPOC )
+#endif
                 for( int i = 0; i < pic->slices.size(); i++ )
                 {
                   if( pcEncPic->slices.size() <= i )
@@ -168,6 +179,29 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
                 pcEncPic->cs->slice = pcEncPic->slices.back();
 
+#if JVET_M0055_DEBUG_CTU
+                if( debugCTU >= 0 && poc == debugPOC )
+                {
+                  pcEncPic->cs->initStructData();
+
+                  pcEncPic->cs->copyStructure( *pic->cs, CH_L, true, true );
+
+                  if( CS::isDualITree( *pcEncPic->cs ) )
+                  {
+                    pcEncPic->cs->copyStructure( *pic->cs, CH_C, true, true );
+                  }
+
+                  for( auto &cu : pcEncPic->cs->cus )
+                  {
+                    cu->slice = pcEncPic->cs->slice;
+                  }
+#if JVET_L0266_HMVP
+                  pcEncPic->cs->slice->copyMotionLUTs( pic->slices.back()->getMotionLUTs(), pcEncPic->slices.back()->getMotionLUTs());
+#endif
+                }
+                else
+                {
+#endif
                 if ( pic->cs->sps->getSAOEnabledFlag() )
                 {
                   pcEncPic->copySAO( *pic, 0 );
@@ -198,6 +232,9 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                 {
                   pcEncPic->cs->copyStructure( *pic->cs, CH_C, true, true );
                 }
+#if JVET_M0055_DEBUG_CTU
+                }
+#endif
                 goOn = false; // exit the loop return
                 bRet = true;
                 break;
@@ -370,6 +407,10 @@ DecLib::DecLib()
   , m_numberOfChecksumErrorsDetected(0)
   , m_warningMessageSkipPicture(false)
   , m_prefixSEINALUs()
+#if JVET_M0055_DEBUG_CTU
+  , m_debugPOC( -1 )
+  , m_debugCTU( -1 )
+#endif
 {
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
@@ -1235,7 +1276,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
 
   //  Decode a picture
+#if JVET_M0055_DEBUG_CTU
+  m_cSliceDecoder.decompressSlice( pcSlice, &( nalu.getBitstream() ), ( m_pcPic->poc == getDebugPOC() ? getDebugCTU() : -1 ) );
+#else
   m_cSliceDecoder.decompressSlice( pcSlice, &(nalu.getBitstream()) );
+#endif
 
   m_bFirstSliceInPicture = false;
   if (pcSlice->getSPS()->getSpsNext().getIBCMode())

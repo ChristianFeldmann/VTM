@@ -1207,11 +1207,29 @@ void trySkipOrDecodePicture( bool& decPic, bool& encPic, const EncCfg& cfg, Pict
       else
       {
         // update decode decision
+#if JVET_M0055_DEBUG_CTU
+        bool dbgCTU = cfg.getDebugCTU() != -1 && cfg.getSwitchPOC() == pcPic->getPOC();
+
+        if( ( bDecode1stPart = ( cfg.getSwitchPOC() != pcPic->getPOC() ) || dbgCTU ) && ( bDecode1stPart = tryDecodePicture( pcPic, pcPic->getPOC(), cfg.getDecodeBitstream( 0 ), false, cfg.getDebugCTU(), cfg.getSwitchPOC() ) ) )
+        {
+          if( dbgCTU )
+          {
+            encPic = true;
+            decPic = false;
+            bDecode1stPart = false;
+
+            return;
+          }
+          decPic = bDecode1stPart;
+          return;
+        }
+#else
         if( ( bDecode1stPart = ( cfg.getSwitchPOC() != pcPic->getPOC() )) && ( bDecode1stPart = tryDecodePicture( pcPic, pcPic->getPOC(), cfg.getDecodeBitstream( 0 ), false ) ) )
         {
           decPic = bDecode1stPart;
           return;
         }
+#endif
         else if( pcPic->getPOC() )
         {
           // reset decoder if used and not required any further

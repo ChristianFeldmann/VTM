@@ -549,6 +549,9 @@ protected:
   int         m_switchDQP;                                    ///< dqp applied to  switchPOC and subsequent pictures.
   int         m_fastForwardToPOC;                             ///<
   bool        m_stopAfterFFtoPOC;                             ///<
+#if JVET_M0055_DEBUG_CTU
+  int         m_debugCTU;                                     ///< dbg ctu
+#endif
   bool        m_bs2ModPOCAndType;
 
 
@@ -1425,7 +1428,10 @@ public:
   bool         getStopAfterFFtoPOC()                           const { return m_stopAfterFFtoPOC; }
   void         setBs2ModPOCAndType( bool b )                         { m_bs2ModPOCAndType = b; }
   bool         getBs2ModPOCAndType()                           const { return m_bs2ModPOCAndType; }
-
+#if JVET_M0055_DEBUG_CTU
+  void         setDebugCTU( int i )                                  { m_debugCTU = i; }
+  int          getDebugCTU()                                   const { return m_debugCTU; }
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   void         setNumSplitThreads( int n )                           { m_numSplitThreads = n; }

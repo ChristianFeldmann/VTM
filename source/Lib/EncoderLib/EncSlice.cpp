@@ -1255,7 +1255,11 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 
   cs.slice = pcSlice;
 
-  if (startCtuTsAddr == 0)
+#if JVET_M0055_DEBUG_CTU
+  if( startCtuTsAddr == 0 && ( pcSlice->getPOC() != m_pcCfg->getSwitchPOC() || -1 == m_pcCfg->getDebugCTU() ) )
+#else
+  if( startCtuTsAddr == 0 )
+#endif
   {
     cs.initStructData (pcSlice->getSliceQp(), pcSlice->getPPS()->getTransquantBypassEnabledFlag());
   }
@@ -1490,10 +1494,18 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   // for every CTU in the slice segment (may terminate sooner if there is a byte limit on the slice-segment)
   for( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
   {
+#if JVET_M0055_DEBUG_CTU
+ #if HEVC_TILES_WPP
+    const int32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap( ctuTsAddr );
+ #else
+    const int32_t ctuRsAddr = ctuTsAddr;
+#endif
+#else
 #if HEVC_TILES_WPP
     const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap(ctuTsAddr);
 #else
     const uint32_t ctuRsAddr = ctuTsAddr;
+#endif
 #endif
 
 #if HEVC_TILES_WPP
@@ -1508,6 +1520,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     const UnitArea ctuArea( cs.area.chromaFormat, Area( pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight ) );
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
+#if JVET_M0055_DEBUG_CTU
+    if( pCfg->getSwitchPOC() != pcPic->poc || -1 == pCfg->getDebugCTU() )
+#endif
     if ( pcSlice->getSliceType() != I_SLICE && ctuXPosInCtus == 0)
     {
       pcSlice->resetMotionLUTs();
@@ -1613,6 +1628,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       m_pcInterSearch->initWeightIdxBits();
     }
 
+#if JVET_M0055_DEBUG_CTU
+    if( pCfg->getSwitchPOC() != pcPic->poc || ctuRsAddr >= pCfg->getDebugCTU() )
+#endif
 #if ENABLE_WPP_PARALLELISM
     pEncLib->getCuEncoder( dataId )->compressCtu( cs, ctuArea, ctuRsAddr, prevQP, currQP );
 #else

@@ -747,7 +747,7 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
   }
 #if JVET_M0170_MRG_SHARELIST
 #if IBC_SEPERATE_MODE_AND_MER && IBC_SEPERATE_MODE_REDUCTION==0 // Todo: remove
-  int num_avai_candInLUT = (isShared ? slice.getAvailableLUTBkupMrgNum() : slice.getAvailableLUTMrgNum());
+  int num_avai_candInLUT = ibc_flag ? slice.getAvailableLUTIBCMrgNum() : (isShared ? slice.getAvailableLUTBkupMrgNum() : slice.getAvailableLUTMrgNum());
   int offset = ibc_flag ? MAX_NUM_HMVP_CANDS : 0;
 #else
   int num_avai_candInLUT = (isShared ? slice.getAvailableLUTBkupMrgNum() : slice.getAvailableLUTMrgNum());
@@ -765,7 +765,8 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
   {
 #if JVET_M0170_MRG_SHARELIST
 #if IBC_SEPERATE_MODE_AND_MER && IBC_SEPERATE_MODE_REDUCTION==0//Todo: remove
-    miNeighbor = isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx);
+    miNeighbor = ibc_flag ? slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx + offset)
+                          : (isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx));
 #else
     miNeighbor = isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx);
 #endif
@@ -998,7 +999,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
     unsigned subPuMvpPos = 0;
 
 #if JVET_L0090_PAIR_AVG
-#if MODIFY_for_vtm4
+#if IBC_MER_FIX==0
 #if JVET_M0170_MRG_SHARELIST
     bool  isShared = ((pu.Y().lumaSize().width != pu.shareParentSize.width) || (pu.Y().lumaSize().height != pu.shareParentSize.height));
 #endif
@@ -1009,7 +1010,9 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 #if IBC_SEPERATE_MODE && IBC_SEPERATE_MODE_REDUCTION==0
       , true
 #endif
-#if MODIFY_for_vtm4
+#if IBC_MER_FIX
+      , false
+#else
 #if JVET_M0170_MRG_SHARELIST
       , isShared
 #endif

@@ -62,6 +62,7 @@
 #define CLEAN_fillMvpCand                                 1
 #define MODIFY_for_vtm4                      1
 #define IBC_SEPERATE_MODE_AND_MER                         1
+#define IBC_MER_FIX                                       1
 #define DEBUG_M0483                                       1
 #endif
 

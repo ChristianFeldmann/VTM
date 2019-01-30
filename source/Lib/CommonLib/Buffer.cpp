@@ -91,18 +91,30 @@ void addBIOAvgCore(const Pel* src0, int src0Stride, const Pel* src1, int src1Str
   }
 }
 
+#if JVET_M0063_BDOF_FIX
+void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth)
+#else
 void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY)
+#endif
 {
   Pel* srcTmp = pSrc + srcStride + 1;
   Pel* gradXTmp = gradX + gradStride + 1;
   Pel* gradYTmp = gradY + gradStride + 1;
+#if JVET_M0063_BDOF_FIX
+  int  shift1 = std::max<int>(2, (IF_INTERNAL_PREC - bitDepth));
+#endif
 
   for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
   {
     for (int x = 0; x < (width - 2 * BIO_EXTEND_SIZE); x++)
     {
+#if JVET_M0063_BDOF_FIX
+      gradYTmp[x] = (srcTmp[x + srcStride] - srcTmp[x - srcStride]) >> shift1;
+      gradXTmp[x] = (srcTmp[x + 1] - srcTmp[x - 1]) >> shift1;
+#else
       gradYTmp[x] = (srcTmp[x + srcStride] - srcTmp[x - srcStride]) >> 4;
       gradXTmp[x] = (srcTmp[x + 1] - srcTmp[x - 1]) >> 4;
+#endif
     }
     gradXTmp += gradStride;
     gradYTmp += gradStride;
@@ -130,15 +142,29 @@ void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStr
   ::memcpy(gradYTmp + (height - 2 * BIO_EXTEND_SIZE)*gradStride, gradYTmp + (height - 2 * BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
 }
 
+#if JVET_M0063_BDOF_FIX
+void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
+#else
 void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG)
+#endif
 {
+#if JVET_M0063_BDOF_FIX
+  int shift4 = std::min<int>(8, (bitDepth - 4));
+  int shift5 = std::min<int>(5, (bitDepth - 7));
+#endif
   for (int y = 0; y < heightG; y++)
   {
     for (int x = 0; x < widthG; x++)
     {
+#if JVET_M0063_BDOF_FIX
+      int temp = (srcY0Temp[x] >> shift4) - (srcY1Temp[x] >> shift4);
+      int tempX = (gradX0[x] + gradX1[x]) >> shift5;
+      int tempY = (gradY0[x] + gradY1[x]) >> shift5;
+#else
       int temp = (srcY0Temp[x] >> 6) - (srcY1Temp[x] >> 6);
       int tempX = (gradX0[x] + gradX1[x]) >> 3;
       int tempY = (gradY0[x] + gradY1[x]) >> 3;
+#endif
       dotProductTemp1[x] = tempX * tempX;
       dotProductTemp2[x] = tempX * tempY;
       dotProductTemp3[x] = -tempX * temp;

@@ -162,7 +162,11 @@ void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1St
 }
 
 template< X86_VEXT vext >
+#if JVET_M0063_BDOF_FIX
+void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth)
+#else
 void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY)
+#endif
 {
   __m128i vzero = _mm_setzero_si128();
   Pel* srcTmp = src + srcStride + 1;
@@ -171,6 +175,10 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
 
   int widthInside = width - 2 * BIO_EXTEND_SIZE;
   int heightInside = height - 2 * BIO_EXTEND_SIZE;
+#if JVET_M0063_BDOF_FIX
+  int shift1 = std::max<int>(2, (14 - bitDepth));
+#endif
+
 
   assert((widthInside & 3) == 0);
 
@@ -184,8 +192,13 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
       __m128i mmPixLeft = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - 1)));
       __m128i mmPixRight = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + 1)));
 
+#if JVET_M0063_BDOF_FIX
+      __m128i mmGradVer = _mm_sra_epi32(_mm_sub_epi32(mmPixBottom, mmPixTop), _mm_cvtsi32_si128(shift1));
+      __m128i mmGradHor = _mm_sra_epi32(_mm_sub_epi32(mmPixRight, mmPixLeft), _mm_cvtsi32_si128(shift1));
+#else
       __m128i mmGradVer = _mm_srai_epi32(_mm_sub_epi32(mmPixBottom, mmPixTop), 4);
       __m128i mmGradHor = _mm_srai_epi32(_mm_sub_epi32(mmPixRight, mmPixLeft), 4);
+#endif
       mmGradVer = _mm_packs_epi32(mmGradVer, vzero);
       mmGradHor = _mm_packs_epi32(mmGradHor, vzero);
 
@@ -220,23 +233,41 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
 }
 
 template< X86_VEXT vext >
+#if JVET_M0063_BDOF_FIX
+void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
+#else
 void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG)
+#endif
 {
+#if JVET_M0063_BDOF_FIX
+  int shift4 = std::min<int>(8, (bitDepth - 4));
+  int shift5 = std::min<int>(5, (bitDepth - 7));
+#endif
   for (int y = 0; y < heightG; y++)
   {
     int x = 0;
     for (; x < ((widthG >> 3) << 3); x += 8)
     {
+#if JVET_M0063_BDOF_FIX
+      __m128i mmSrcY0Temp = _mm_sra_epi16(_mm_loadu_si128((__m128i*)(srcY0Temp + x)), _mm_cvtsi32_si128(shift4));
+      __m128i mmSrcY1Temp = _mm_sra_epi16(_mm_loadu_si128((__m128i*)(srcY1Temp + x)), _mm_cvtsi32_si128(shift4));
+#else
       __m128i mmSrcY0Temp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY0Temp + x)), 6);
       __m128i mmSrcY1Temp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY1Temp + x)), 6);
+#endif
       __m128i mmGradX0 = _mm_loadu_si128((__m128i*)(gradX0 + x));
       __m128i mmGradX1 = _mm_loadu_si128((__m128i*)(gradX1 + x));
       __m128i mmGradY0 = _mm_loadu_si128((__m128i*)(gradY0 + x));
       __m128i mmGradY1 = _mm_loadu_si128((__m128i*)(gradY1 + x));
 
       __m128i mmTemp1 = _mm_sub_epi16(mmSrcY1Temp, mmSrcY0Temp);
+#if JVET_M0063_BDOF_FIX
+      __m128i mmTempX = _mm_sra_epi16(_mm_add_epi16(mmGradX0, mmGradX1), _mm_cvtsi32_si128(shift5));
+      __m128i mmTempY = _mm_sra_epi16(_mm_add_epi16(mmGradY0, mmGradY1), _mm_cvtsi32_si128(shift5));
+#else
       __m128i mmTempX = _mm_srai_epi16(_mm_add_epi16(mmGradX0, mmGradX1), 3);
       __m128i mmTempY = _mm_srai_epi16(_mm_add_epi16(mmGradY0, mmGradY1), 3);
+#endif
 
       // m_piDotProductTemp1
       __m128i mm_b = _mm_mulhi_epi16(mmTempX, mmTempX);
@@ -291,16 +322,26 @@ void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX
 
     for (; x < ((widthG >> 2) << 2); x += 4)
     {
+#if JVET_M0063_BDOF_FIX
+      __m128i mmSrcY0Temp = _mm_sra_epi16(_mm_loadl_epi64((__m128i*)(srcY0Temp + x)), _mm_cvtsi32_si128(shift4));
+      __m128i mmSrcY1Temp = _mm_sra_epi16(_mm_loadl_epi64((__m128i*)(srcY1Temp + x)), _mm_cvtsi32_si128(shift4));
+#else
       __m128i mmSrcY0Temp = _mm_srai_epi16(_mm_loadl_epi64((__m128i*)(srcY0Temp + x)), 6);
       __m128i mmSrcY1Temp = _mm_srai_epi16(_mm_loadl_epi64((__m128i*)(srcY1Temp + x)), 6);
+#endif
       __m128i mmGradX0 = _mm_loadl_epi64((__m128i*)(gradX0 + x));
       __m128i mmGradX1 = _mm_loadl_epi64((__m128i*)(gradX1 + x));
       __m128i mmGradY0 = _mm_loadl_epi64((__m128i*)(gradY0 + x));
       __m128i mmGradY1 = _mm_loadl_epi64((__m128i*)(gradY1 + x));
 
       __m128i mmTemp1 = _mm_sub_epi16(mmSrcY1Temp, mmSrcY0Temp);
+#if JVET_M0063_BDOF_FIX
+      __m128i mmTempX = _mm_sra_epi16(_mm_add_epi16(mmGradX0, mmGradX1), _mm_cvtsi32_si128(shift5));
+      __m128i mmTempY = _mm_sra_epi16(_mm_add_epi16(mmGradY0, mmGradY1), _mm_cvtsi32_si128(shift5));
+#else
       __m128i mmTempX = _mm_srai_epi16(_mm_add_epi16(mmGradX0, mmGradX1), 3);
       __m128i mmTempY = _mm_srai_epi16(_mm_add_epi16(mmGradY0, mmGradY1), 3);
+#endif
 
       // m_piDotProductTemp1
       __m128i mm_b = _mm_mulhi_epi16(mmTempX, mmTempX);
@@ -340,9 +381,15 @@ void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX
 
     for (; x < widthG; x++)
     {
+#if JVET_M0063_BDOF_FIX
+      int temp = (srcY0Temp[x] >> shift4) - (srcY1Temp[x] >> shift4);
+      int tempX = (gradX0[x] + gradX1[x]) >> shift5;
+      int tempY = (gradY0[x] + gradY1[x]) >> shift5;
+#else
       int temp = (srcY0Temp[x] >> 6) - (srcY1Temp[x] >> 6);
       int tempX = (gradX0[x] + gradX1[x]) >> 3;
       int tempY = (gradY0[x] + gradY1[x]) >> 3;
+#endif
       dotProductTemp1[x] = tempX * tempX;
       dotProductTemp2[x] = tempX * tempY;
       dotProductTemp3[x] = -tempX * temp;

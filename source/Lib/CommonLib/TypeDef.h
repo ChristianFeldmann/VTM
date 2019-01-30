@@ -53,6 +53,8 @@
 #define JVET_M0471_LONG_DEBLOCKING_FILTERS                1 
 #define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
 
+#define JVET_M0253_HASH_ME                                1
+
 #define JVET_M0257                                        1 // Scan only non zero-out regions of large TUs
 #define JVET_M0193_PAIR_AVG_REDUCTION                     1 //Use only one pairwise average candidate
 

@@ -754,6 +754,12 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
       }
 
     }
+#if JVET_M0253_HASH_ME
+    else if (currTestMode.type == ETM_HASH_INTER)
+    {
+      xCheckRDCostHashInter( tempCS, bestCS, partitioner, currTestMode );
+    }
+#endif
     else if( currTestMode.type == ETM_AFFINE )
     {
       xCheckRDCostAffineMerge2Nx2N( tempCS, bestCS, partitioner, currTestMode );
@@ -1721,7 +1727,56 @@ void EncCu::xFillPCMBuffer( CodingUnit &cu )
     }
   }
 }
+#if JVET_M0253_HASH_ME
+void EncCu::xCheckRDCostHashInter( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
+{
+  bool isPerfectMatch = false;
 
+  tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
+  m_pcInterSearch->resetBufferedUniMotions();
+  m_pcInterSearch->setAffineModeSelected(false);
+  CodingUnit &cu = tempCS->addCU(tempCS->area, partitioner.chType);
+
+  partitioner.setCUData(cu);
+  cu.slice = tempCS->slice;
+  cu.skip = false;
+  cu.predMode = MODE_INTER;
+  cu.transQuantBypass = encTestMode.lossless;
+  cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
+  cu.qp = encTestMode.qp;
+  cu.ibc = false;
+  CU::addPUs(cu);
+  cu.mmvdSkip = false;
+  cu.firstPU->mmvdMergeFlag = false;
+
+  if (m_pcInterSearch->predInterHashSearch(cu, partitioner, isPerfectMatch))
+  {
+    const unsigned wIdx = gp_sizeIdxInfo->idxFrom(tempCS->area.lwidth());
+    double equGBiCost = MAX_DOUBLE;
+
+#if JVET_M0464_UNI_MTS
+    xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, 0
+      , m_pImvTempCS ? m_pImvTempCS[wIdx] : NULL
+      , 0
+      , &equGBiCost
+#else
+    xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, 0
+      , m_pImvTempCS ? m_pImvTempCS[wIdx] : NULL
+      , 1
+      , 0
+      , &equGBiCost
+#endif
+    );
+  }
+  tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
+
+  if (cu.lwidth() != 64)
+  {
+    isPerfectMatch = false;
+  }
+  m_modeCtrl->setIsHashPerfectMatch(isPerfectMatch);
+}
+#endif
 
 void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
@@ -2148,10 +2203,25 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     }
   }
 
+#if !JVET_M0253_HASH_ME
   const uint32_t iteration = encTestMode.lossless ? 1 : 2;
 
   // 2. Pass: check candidates using full RD test
   for( uint32_t uiNoResidualPass = 0; uiNoResidualPass < iteration; uiNoResidualPass++ )
+#else
+  uint32_t iteration;
+  uint32_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+  if (encTestMode.lossless)
+  {
+    iteration = 1;
+    iterationBegin = 0;
+  }
+  else
+  {
+    iteration = 2;
+  }
+  for (uint32_t uiNoResidualPass = iterationBegin; uiNoResidualPass < iteration; ++uiNoResidualPass)
+#endif
   {
     for( uint32_t uiMrgHADIdx = 0; uiMrgHADIdx < uiNumMrgSATDCand; uiMrgHADIdx++ )
     {
@@ -2514,8 +2584,23 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   }
 
   {
+#if !JVET_M0253_HASH_ME
     const uint8_t iteration = encTestMode.lossless ? 1 : 2;
     for( uint8_t noResidualPass = 0; noResidualPass < iteration; noResidualPass++ )
+#else
+    uint8_t iteration;
+    uint8_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+    if (encTestMode.lossless)
+    {
+      iteration = 1;
+      iterationBegin = 0;
+    }
+    else
+    {
+      iteration = 2;
+    }
+    for (uint8_t noResidualPass = iterationBegin; noResidualPass < iteration; ++noResidualPass)
+#endif
     {
       for( uint8_t mrgHADIdx = 0; mrgHADIdx < triangleNumMrgSATDCand; mrgHADIdx++ )
       {
@@ -2774,10 +2859,25 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     }
   }
 
+#if !JVET_M0253_HASH_ME
   const uint32_t iteration = encTestMode.lossless ? 1 : 2;
 
   // 2. Pass: check candidates using full RD test
   for ( uint32_t uiNoResidualPass = 0; uiNoResidualPass < iteration; uiNoResidualPass++ )
+#else
+  uint32_t iteration;
+  uint32_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+  if (encTestMode.lossless)
+  {
+    iteration = 1;
+    iterationBegin = 0;
+  }
+  else
+  {
+    iteration = 2;
+  }
+  for (uint32_t uiNoResidualPass = iterationBegin; uiNoResidualPass < iteration; ++uiNoResidualPass)
+#endif
   {
     for ( uint32_t uiMrgHADIdx = 0; uiMrgHADIdx < uiNumMrgSATDCand; uiMrgHADIdx++ )
     {

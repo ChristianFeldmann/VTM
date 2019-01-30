@@ -1643,6 +1643,75 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     //  Set reference list
     pcSlice->setRefPicList ( rcListPic );
 
+#if JVET_M0253_HASH_ME
+    if (m_pcCfg->getUseHashME())
+    {
+      PicList::iterator iterPic = rcListPic.begin();
+      while (iterPic != rcListPic.end())
+      {
+        Picture* refPic = *(iterPic++);
+
+        if (refPic->poc != pcPic->poc && refPic->referenced)
+        {
+          if (!refPic->getHashMap()->isInitial())
+          {
+            if (refPic->getPOC() == 0)
+            {
+              Pel* picSrc = refPic->getOrigBuf().get(COMPONENT_Y).buf;
+              int stridePic = refPic->getOrigBuf().get(COMPONENT_Y).stride;
+              int picWidth = pcSlice->getSPS()->getPicWidthInLumaSamples();
+              int picHeight = pcSlice->getSPS()->getPicHeightInLumaSamples();
+              int blockSize = 4;
+              int allNum = 0;
+              int simpleNum = 0;
+              for (int j = 0; j <= picHeight - blockSize; j += blockSize)
+              {
+                for (int i = 0; i <= picWidth - blockSize; i += blockSize)
+                {
+                  Pel* curBlock = picSrc + j * stridePic + i;
+                  bool isHorSame = true;
+                  for (int m = 0; m < blockSize&&isHorSame; m++)
+                  {
+                    for (int n = 1; n < blockSize&&isHorSame; n++)
+                    {
+                      if (curBlock[m*stridePic] != curBlock[m*stridePic + n])
+                      {
+                        isHorSame = false;
+                      }
+                    }
+                  }
+                  bool isVerSame = true;
+                  for (int m = 1; m < blockSize&&isVerSame; m++)
+                  {
+                    for (int n = 0; n < blockSize&&isVerSame; n++)
+                    {
+                      if (curBlock[n] != curBlock[m*stridePic + n])
+                      {
+                        isVerSame = false;
+                      }
+                    }
+                  }
+                  allNum++;
+                  if (isHorSame || isVerSame)
+                  {
+                    simpleNum++;
+                  }
+                }
+              }
+
+              if (simpleNum < 0.3*allNum)
+              {
+                m_pcCfg->setUseHashME(false);
+                break;
+              }
+            }
+            refPic->addPictureToHashMapForInter();
+          }
+        }
+      }
+
+    }
+#endif
     if( m_pcCfg->getUseAMaxBT() )
     {
       if( !pcSlice->isIRAP() )

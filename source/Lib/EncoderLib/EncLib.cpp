@@ -84,9 +84,9 @@ void EncLib::create ()
 {
   // initialize global variables
   initROM();
-
-
-
+#if JVET_M0253_HASH_ME
+  TComHash::initBlockSizeToIndex();
+#endif
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );
@@ -756,6 +756,9 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   rpcPic->setBorderExtension( false );
   rpcPic->reconstructed = false;
   rpcPic->referenced = true;
+#if JVET_M0253_HASH_ME
+  rpcPic->getHashMap()->clearAll();
+#endif
 
   m_iPOCLast += (m_compositeRefEnabled ? 2 : 1);
   m_iNumPicRcvd++;

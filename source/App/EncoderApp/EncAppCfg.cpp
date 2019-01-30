@@ -864,6 +864,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
+#if JVET_M0253_HASH_ME
+  ("HashME",                                          m_HashME,                                         false, "Enable hash motion estimation (0:off, 1:on)")
+#endif
+
 #if JVET_M0255_FRACMMVD_SWITCH
   ("AllowDisFracMMVD",                                m_allowDisFracMMVD,                               false, "Disable fractional MVD in MMVD mode adaptively")
 #endif
@@ -1943,6 +1947,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
     xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
+#if JVET_M0253_HASH_ME
+    xConfirmPara( m_HashME, "Hash motion estimation only allowed with NEXT profile" );
+#endif   
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
 #if JVET_M0464_UNI_MTS
     xConfirmPara( m_MTS, "MTS only allowed with NEXT profile" );
@@ -3165,6 +3172,9 @@ void EncAppCfg::xPrintParameter()
 #endif
   }
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
+#if JVET_M0253_HASH_ME
+  msg( VERBOSE, "HashME:%d ", m_HashME );
+#endif
   msg( VERBOSE, "WrapAround:%d ", m_wrapAround);
   if( m_wrapAround )
   {

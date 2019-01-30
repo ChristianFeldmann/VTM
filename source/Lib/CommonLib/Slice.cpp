@@ -695,6 +695,9 @@ void Slice::decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& 
       if (rpcPic->getPOC() != pocCurr)
       {
         rpcPic->referenced = false;
+#if JVET_M0253_HASH_ME
+        rpcPic->getHashMap()->clearAll();
+#endif
       }
       iterPic++;
     }
@@ -722,6 +725,9 @@ void Slice::decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& 
           if (rpcPic->getPOC() != pocCurr && rpcPic->getPOC() != m_iLastIDR)
           {
             rpcPic->referenced = false;
+#if JVET_M0253_HASH_ME
+            rpcPic->getHashMap()->clearAll();
+#endif
           }
           iterPic++;
         }
@@ -739,6 +745,9 @@ void Slice::decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& 
           if (rpcPic->getPOC() != pocCurr && rpcPic->getPOC() != pocCRA)
           {
             rpcPic->referenced = false;
+#if JVET_M0253_HASH_ME
+            rpcPic->getHashMap()->clearAll();
+#endif
           }
           iterPic++;
         }
@@ -1150,6 +1159,9 @@ void Slice::applyReferencePictureSet( PicList& rcListPic, const ReferencePicture
       pcPic->referenced = false;
       pcPic->usedByCurr = false;
       pcPic->longTerm   = false;
+#if JVET_M0253_HASH_ME
+      pcPic->getHashMap()->clearAll();
+#endif
     }
 
     // sanity checks

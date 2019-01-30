@@ -237,6 +237,9 @@ protected:
 
   bool      m_MHIntra;
   bool      m_Triangle;
+#if JVET_M0253_HASH_ME
+  bool      m_HashME;
+#endif
 #if JVET_M0255_FRACMMVD_SWITCH
   bool      m_allowDisFracMMVD;
 #endif

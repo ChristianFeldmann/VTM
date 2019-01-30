@@ -1801,9 +1801,6 @@ SPSNext::SPSNext( SPS& sps )
   , m_MTTEnabled                ( false )
   , m_MHIntra                   ( false )
   , m_Triangle                  ( false )
-#if JVET_M0255_FRACMMVD_SWITCH
-  , allowDisFracMMVD            ( false )
-#endif
 #if ENABLE_WPP_PARALLELISM
   , m_NextDQP                   ( false )
 #endif

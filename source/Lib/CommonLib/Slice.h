@@ -820,9 +820,6 @@ private:
   bool              m_MTTEnabled;                 //
   bool              m_MHIntra;
   bool              m_Triangle;
-#if JVET_M0255_FRACMMVD_SWITCH
-  bool              allowDisFracMMVD;
-#endif
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
 #endif

@@ -713,7 +713,11 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
   }
 
   // skip flag
+#if IBC_SEPERATE_MODE
+  if ((!cs.slice->isIntra() || cs.slice->getSPS()->getSpsNext().getIBCMode()) && cu.Y().valid())
+#else
   if (!cs.slice->isIntra() && cu.Y().valid())
+#endif
   {
     cu_skip_flag( cu );
   }
@@ -766,19 +770,123 @@ void CABACWriter::cu_transquant_bypass_flag( const CodingUnit& cu )
 void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 {
   unsigned ctxId = DeriveCtx::CtxSkipFlag( cu );
+
+#if IBC_SEPERATE_MODE
+#if IBC_SEPERATE_MODE_FIX
+  if (cu.slice->isIntra() && cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+#else
+  if (cu.slice->isIntra())
+#endif
+  {
+    if (cu.lwidth() > IBC_MAX_CAND_SIZE || cu.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
+    {
+    }
+    else
+    {
+      m_BinEncoder.encodeBin((cu.skip), Ctx::SkipFlag(ctxId));
+    }
+    DTRACE(g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0);
+    return;
+  }
+#endif
+
   m_BinEncoder.encodeBin( ( cu.skip ), Ctx::SkipFlag( ctxId ) );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0 );
+#if IBC_SEPERATE_MODE
+#if IBC_SEPERATE_MODE_FIX
+  if (cu.skip && cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+#else
+  if (cu.skip)
+#endif
+  {
+    if (cu.lwidth() > IBC_MAX_CAND_SIZE || cu.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
+    {
+
+    }
+    else
+    {
+      unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
+      m_BinEncoder.encodeBin(CU::isIBC(cu) ? 1 : 0, Ctx::IBCFlag(ctxidx));
+      DTRACE(g_trace_ctx, D_SYNTAX, "ibc() ctx=%d cu.predMode=%d\n", ctxidx, cu.predMode);
+    }
+
+    if (CU::isInter(cu))
+    {
+      m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
+      DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
+    }
+  }
+#if IBC_SEPERATE_MODE_FIX
+  if (cu.skip && !cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  {
+    m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
+    DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
+  }
+#endif
+#else
   if (cu.skip)
   {
     m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
     DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
   }
+#endif
 }
 
 
 void CABACWriter::pred_mode( const CodingUnit& cu )
 {
+#if IBC_SEPERATE_MODE_FIX
+  if (cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  {
+#endif
+#if IBC_SEPERATE_MODE//Todo : check ctx
+    if (cu.cs->slice->isIntra())
+    {
+      if (cu.lwidth() > IBC_MAX_CAND_SIZE || cu.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
+      {
+      }
+      else
+      {
+        unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
+        m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
+      }
+    }
+    else
+    {
+#if JVET_M0502_PRED_MODE_CTX
+      m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
+#else
+      m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode());
+#endif
+      if (!CU::isIntra(cu))
+      {
+        if (cu.lwidth() > IBC_MAX_CAND_SIZE || cu.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
+        {
+        }
+        else
+        {
+          unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
+          m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
+        }
+      }
+    }
+#if IBC_SEPERATE_MODE_FIX
+  }
+  else
+  {
+    if (cu.cs->slice->isIntra())
+    {
+      return;
+    }
+#if JVET_M0502_PRED_MODE_CTX
+    m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
+#else
+    m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode());
+#endif
+  }
+#endif
+#else
   if( cu.cs->slice->isIntra() )
   {
     return;
@@ -787,6 +895,7 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
   m_BinEncoder.encodeBin( ( CU::isIntra( cu ) ), Ctx::PredMode( DeriveCtx::CtxPredModeFlag( cu ) ) );
 #else
   m_BinEncoder.encodeBin( ( CU::isIntra( cu ) ), Ctx::PredMode() );
+#endif
 #endif
 }
 
@@ -1221,7 +1330,11 @@ void CABACWriter::intra_chroma_pred_mode( const PredictionUnit& pu )
 
 void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, CUCtx& cuCtx )
 {
+#if IBC_SEPERATE_MODE
+  if (!CU::isIntra(cu))
+#else
   if( CU::isInter( cu ) )
+#endif
   {
     PredictionUnit& pu = *cu.firstPU;
     if( !pu.mergeFlag )
@@ -1310,6 +1423,13 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   }
   if( pu.mergeFlag )
   {
+#if IBC_SEPERATE_MODE
+    if (CU::isIBC(*pu.cu))
+    {
+      merge_idx(pu);
+      return;
+    }
+#endif
     subblock_merge_flag( *pu.cu );
     MHIntra_flag( pu );
     if ( pu.mhIntraFlag )
@@ -1324,6 +1444,14 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
     else
     merge_idx    ( pu );
   }
+#if IBC_SEPERATE_MODE
+  else if (CU::isIBC(*pu.cu))
+  {
+    ref_idx(pu, REF_PIC_LIST_0);
+    mvd_coding(pu.mvd[REF_PIC_LIST_0], pu.cu->imv);
+    mvp_flag(pu, REF_PIC_LIST_0);
+  }
+#endif
   else
   {
     inter_pred_idc( pu );
@@ -1436,6 +1564,14 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
   m_BinEncoder.encodeBin( pu.mergeFlag, Ctx::MergeFlag() );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_flag() merge=%d pos=(%d,%d) size=%dx%d\n", pu.mergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
+  
+#if IBC_SEPERATE_MODE
+  if (pu.mergeFlag && CU::isIBC(*pu.cu))
+  {
+    return;
+  }
+#endif
+
   if (pu.mergeFlag)
   {
     m_BinEncoder.encodeBin(pu.mmvdMergeFlag, Ctx::MmvdFlag(0));
@@ -1459,7 +1595,11 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
   }
 
   unsigned ctxId = DeriveCtx::CtxIMVFlag( cu );
+#if IBC_SEPERATE_MODE
+  if (CU::isIBC(cu) == false)
+#else
   if (!(cu.firstPU->interDir == 1 && cu.cs->slice->getRefPic(REF_PIC_LIST_0, cu.firstPU->refIdx[REF_PIC_LIST_0])->getPOC() == cu.cs->slice->getPOC())) // the first bin of IMV flag does need to be signaled in IBC block
+#endif
     m_BinEncoder.encodeBin( ( cu.imv > 0 ), Ctx::ImvFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", (cu.imv > 0), ctxId );
 
@@ -1651,6 +1791,15 @@ void CABACWriter::ref_idx( const PredictionUnit& pu, RefPicList eRefList )
 #endif
 
   int numRef  = pu.cs->slice->getNumRefIdx(eRefList);
+
+#if IBC_SEPERATE_MODE
+  if (eRefList == REF_PIC_LIST_0 && pu.cs->sps->getSpsNext().getIBCMode())
+  {
+    if (CU::isIBC(*pu.cu))
+      return;
+  }
+#endif
+
   if( numRef <= 1 )
   {
     return;
@@ -2248,6 +2397,9 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
   const bool  tsAllowed = TU::isTSAllowed ( tu, compID );
   const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
 
+#if IBC_SEPERATE_MODE//Todo : check
+#endif
+
   if( !mtsAllowed && !tsAllowed ) return;
 
   int symbol  = 0;
@@ -2325,7 +2477,11 @@ void CABACWriter::emt_cu_flag( const CodingUnit& cu )
 {
   const CodingStructure& cs = *cu.cs;
 
+#if IBC_SEPERATE_MODE
+  if (!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && !CU::isIntra(cu))) || isChroma(cu.chType))
+#else
   if( !( ( cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra( cu ) ) || ( cs.sps->getSpsNext().getUseInterEMT() && CU::isInter( cu ) ) ) || isChroma( cu.chType ) )
+#endif
   {
     return;
   }

@@ -885,7 +885,11 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   }
 
   // skip flag
+#if IBC_SEPERATE_MODE
+  if ((!cs.slice->isIntra() || cs.slice->getSPS()->getSpsNext().getIBCMode()) && cu.Y().valid())
+#else
   if (!cs.slice->isIntra() && cu.Y().valid())
+#endif
   {
     cu_skip_flag( cu );
   }
@@ -948,12 +952,83 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__SKIP_FLAG );
 
+#if IBC_SEPERATE_MODE
+#if IBC_SEPERATE_MODE_FIX
+  if (cu.slice->isIntra() && cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+#else
+  if (cu.slice->isIntra())
+#endif
+  {
+    cu.skip = false;
+    cu.rootCbf = false;
+    cu.predMode = MODE_INTRA;
+    //cu.partSize = SIZE_2Nx2N; //Todo
+    cu.mmvdSkip = false;
+
+    if (cu.lwidth() > IBC_MAX_CAND_SIZE || cu.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
+    {
+
+    }
+    else
+    {
+      unsigned ctxId = DeriveCtx::CtxSkipFlag(cu);
+      unsigned skip = m_BinDecoder.decodeBin(Ctx::SkipFlag(ctxId));
+      if (skip)
+      {
+        cu.skip = true;
+        cu.rootCbf = false;
+        cu.predMode = MODE_IBC;
+        //cu.partSize = SIZE_2Nx2N;//Todo
+        cu.mmvdSkip = false;
+      }
+    }
+    return;
+  }
+#endif
+
   unsigned ctxId  = DeriveCtx::CtxSkipFlag(cu);
   unsigned skip   = m_BinDecoder.decodeBin( Ctx::SkipFlag(ctxId) );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, skip ? 1 : 0 );
 
+#if IBC_SEPERATE_MODE
+#if IBC_SEPERATE_MODE_FIX
+  if (skip && cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+#else
+  if (skip)
+#endif
+  {
+    if (cu.lwidth() > IBC_MAX_CAND_SIZE || cu.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
+    {
+      cu.predMode = MODE_INTER;
+    }
+    else
+    {
+      unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
+      if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
+      {
+        cu.skip = true;
+        cu.rootCbf = false;
+        cu.predMode = MODE_IBC;
+        //cu.partSize = SIZE_2Nx2N;//Todo
+        cu.mmvdSkip = false;
+      }
+      else
+      {
+        cu.predMode = MODE_INTER;
+      }
+      DTRACE(g_trace_ctx, D_SYNTAX, "ibc() ctx=%d cu.predMode=%d\n", ctxidx, cu.predMode);
+    }
+  }
+#if IBC_SEPERATE_MODE_FIX
+  if ((skip && CU::isInter(cu) && cu.cs->slice->getSPS()->getSpsNext().getIBCMode()) ||
+    (skip && !cu.cs->slice->getSPS()->getSpsNext().getIBCMode()))
+#else
+  if (skip && CU::isInter(cu))
+#endif
+#else
   if( skip )
+#endif
   {
     unsigned mmvdSkip = m_BinDecoder.decodeBin(Ctx::MmvdFlag(0));
     cu.mmvdSkip = mmvdSkip;
@@ -983,7 +1058,11 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
 
   unsigned value = 0;
   unsigned ctxId = DeriveCtx::CtxIMVFlag( cu );
+#if IBC_SEPERATE_MODE
+  if (CU::isIBC(cu))
+#else
   if (cu.firstPU->interDir == 1 && cu.cs->slice->getRefPic(REF_PIC_LIST_0, cu.firstPU->refIdx[REF_PIC_LIST_0])->getPOC() == cu.cs->slice->getPOC()) // the first bin of IMV flag does need to be signaled in IBC block
+#endif
     value = 1;
   else
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( ctxId ) );
@@ -1004,6 +1083,72 @@ void CABACReader::pred_mode( CodingUnit& cu )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__PRED_MODE );
 
+#if IBC_SEPERATE_MODE//Todo : predmode ctx
+#if IBC_SEPERATE_MODE_FIX
+  if (cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  {
+#endif
+    if (cu.cs->slice->isIntra())
+    {
+      cu.predMode = MODE_INTRA;
+      if (cu.lwidth() > IBC_MAX_CAND_SIZE || cu.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
+      {
+
+      }
+      else
+      {
+        unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
+        if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
+        {
+          cu.predMode = MODE_IBC;
+        }
+      }
+    }
+    else
+    {
+#if JVET_M0502_PRED_MODE_CTX
+      if (m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))))
+#else
+      if (m_BinDecoder.decodeBin(Ctx::PredMode()))
+#endif
+      {
+        cu.predMode = MODE_INTRA;
+      }
+      else
+      {
+        cu.predMode = MODE_INTER;
+        if (cu.lwidth() > IBC_MAX_CAND_SIZE || cu.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
+        {
+        }
+        else
+        {
+          unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
+          if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
+          {
+            cu.predMode = MODE_IBC;
+          }
+        }
+      }
+    }
+#if IBC_SEPERATE_MODE_FIX
+  }
+  else
+  {
+#if JVET_M0502_PRED_MODE_CTX
+    if (cu.cs->slice->isIntra() || m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))))
+#else
+    if (cu.cs->slice->isIntra() || m_BinDecoder.decodeBin(Ctx::PredMode()))
+#endif
+    {
+      cu.predMode = MODE_INTRA;
+    }
+    else
+    {
+      cu.predMode = MODE_INTER;
+    }
+  }
+#endif
+#else
 #if JVET_M0502_PRED_MODE_CTX
   if( cu.cs->slice->isIntra() || m_BinDecoder.decodeBin( Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)) ) )
 #else
@@ -1016,6 +1161,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
   {
     cu.predMode = MODE_INTER;
   }
+#endif
 }
 
 void CABACReader::pcm_flag( CodingUnit& cu, Partitioner &partitioner )
@@ -1041,8 +1187,12 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
   }
   if (!cu.Y().valid()) // dual tree chroma CU
   {
+#if IBC_SEPERATE_MODE
+    cu.predMode = MODE_IBC;
+#else
     cu.predMode = MODE_INTER;
     cu.ibc = true;
+#endif
     return;
   }
   MergeCtx mrgCtx;
@@ -1320,7 +1470,11 @@ void CABACReader::intra_chroma_pred_mode( PredictionUnit& pu )
 
 void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& cuCtx )
 {
+#if IBC_SEPERATE_MODE
+  if (!CU::isIntra(cu))
+#else
   if( CU::isInter( cu ) )
+#endif
   {
     PredictionUnit& pu = *cu.firstPU;
     if( !pu.mergeFlag )
@@ -1404,6 +1558,14 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
   }
   if( pu.mergeFlag )
   {
+#if IBC_SEPERATE_MODE
+    if (CU::isIBC(*pu.cu))
+    {
+      merge_idx(pu);
+    }
+    else
+    {
+#endif
     subblock_merge_flag( *pu.cu );
     MHIntra_flag(pu);
     if (pu.mhIntraFlag)
@@ -1418,7 +1580,20 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     }
     else
     merge_data   ( pu );
+#if IBC_SEPERATE_MODE
+    }
+#endif
   }
+#if IBC_SEPERATE_MODE
+  else if (CU::isIBC(*pu.cu))
+  {
+    pu.interDir = 1;
+    pu.cu->affine = false;
+    ref_idx(pu, REF_PIC_LIST_0);
+    mvd_coding(pu.mvd[REF_PIC_LIST_0]);
+    mvp_flag(pu, REF_PIC_LIST_0);
+  }
+#endif
   else
   {
     inter_pred_idc( pu );
@@ -1568,6 +1743,15 @@ void CABACReader::merge_flag( PredictionUnit& pu )
   pu.mergeFlag = ( m_BinDecoder.decodeBin( Ctx::MergeFlag() ) );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_flag() merge=%d pos=(%d,%d) size=%dx%d\n", pu.mergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
+  
+#if IBC_SEPERATE_MODE
+  if (pu.mergeFlag && CU::isIBC(*pu.cu))
+  {
+    pu.mmvdMergeFlag = false;
+    return;
+  }
+#endif
+
   if (pu.mergeFlag)
   {
     pu.mmvdMergeFlag = (m_BinDecoder.decodeBin(Ctx::MmvdFlag(0)));
@@ -1781,6 +1965,18 @@ void CABACReader::ref_idx( PredictionUnit &pu, RefPicList eRefList )
 #endif
 
   int numRef  = pu.cs->slice->getNumRefIdx(eRefList);
+
+#if IBC_SEPERATE_MODE //Todo : check
+  if (eRefList == REF_PIC_LIST_0 && pu.cs->sps->getSpsNext().getIBCMode())
+  {
+    if (CU::isIBC(*pu.cu))
+    {
+      pu.refIdx[eRefList] = numRef;
+      return;
+    }
+  }
+#endif
+
   if( numRef <= 1 || !m_BinDecoder.decodeBin( Ctx::RefPic() ) )
   {
     if( numRef > 1 )
@@ -2426,6 +2622,9 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
   const bool  tsAllowed = TU::isTSAllowed ( tu, compID );
   const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
 
+#if IBC_SEPERATE_MODE//Todo
+#endif
+
   if( !mtsAllowed && !tsAllowed ) return;
 
   int symbol = 0;
@@ -2514,7 +2713,11 @@ void CABACReader::emt_cu_flag( CodingUnit& cu )
 {
   const CodingStructure &cs = *cu.cs;
 
+#if IBC_SEPERATE_MODE
+  if (!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && !CU::isIntra(cu))) || isChroma(cu.chType))
+#else
   if( !( ( cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra( cu ) ) || ( cs.sps->getSpsNext().getUseInterEMT() && CU::isInter( cu ) ) ) || isChroma( cu.chType ) )
+#endif
   {
     return;
   }

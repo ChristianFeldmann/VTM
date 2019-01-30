@@ -101,19 +101,31 @@ struct MvField
 struct MotionInfo
 {
   bool     isInter;
+#if IBC_SEPERATE_MODE
+  bool     isIBCmot;
+#endif
   char     interDir;
   uint16_t   sliceIdx;
 
   Mv      mv     [ NUM_REF_PIC_LIST_01 ];
   int16_t   refIdx [ NUM_REF_PIC_LIST_01 ];
   Mv      bv;
+#if IBC_SEPERATE_MODE
+  MotionInfo() : isInter(false), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID } { }
+  // ensure that MotionInfo(0) produces '\x000....' bit pattern - needed to work with AreaBuf - don't use this constructor for anything else
+  MotionInfo(int i) : isInter(i != 0), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ 0,         0 } { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
+#else
   MotionInfo()        : isInter(  false ), interDir( 0 ), sliceIdx( 0 ), refIdx{ NOT_VALID, NOT_VALID } { }
   // ensure that MotionInfo(0) produces '\x000....' bit pattern - needed to work with AreaBuf - don't use this constructor for anything else
   MotionInfo( int i ) : isInter( i != 0 ), interDir( 0 ), sliceIdx( 0 ), refIdx{         0,         0 } { CHECKD( i != 0, "The argument for this constructor has to be '0'" ); }
+#endif
 
   bool operator==( const MotionInfo& mi ) const
   {
     if( isInter != mi.isInter  ) return false;
+#if IBC_SEPERATE_MODE
+    if (isIBCmot != mi.isIBCmot) return false;
+#endif
     if( isInter )
     {
       if( sliceIdx != mi.sliceIdx ) return false;
@@ -211,5 +223,8 @@ struct LutMotionCand
 {
   MotionInfo*   motionCand;
   int  currCnt;
+#if IBC_SEPERATE_MODE && IBC_SEPERATE_MODE_REDUCTION==0
+  int  currCntIBC;
+#endif
 };
 #endif // __MOTIONINFO__

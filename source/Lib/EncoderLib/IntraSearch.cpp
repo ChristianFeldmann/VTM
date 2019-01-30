@@ -1012,7 +1012,11 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
     // CU header
     if( isFirst )
     {
+#if IBC_SEPERATE_MODE 
+      if ((!cs.slice->isIntra() || cs.slice->getSPS()->getSpsNext().getIBCMode())
+#else
       if( !cs.slice->isIntra() 
+#endif
         && cu.Y().valid()
         )
       {

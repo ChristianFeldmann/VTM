@@ -102,6 +102,8 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
     for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, chType ), chType ) )
     {
 #if JVET_M0170_MRG_SHARELIST
+#if IBC_SEPERATE_MODE//Todo : check
+#endif
       if(sharePrepareCondition)
       {
         if ((currCU.shareParentPos.x >= 0) && (!(currCU.shareParentPos.x == prevTmpPos.x && currCU.shareParentPos.y == prevTmpPos.y)))
@@ -125,6 +127,9 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
       switch( currCU.predMode )
       {
       case MODE_INTER:
+#if IBC_SEPERATE_MODE
+      case MODE_IBC:
+#endif
         xReconInter( currCU );
         break;
       case MODE_INTRA:
@@ -364,10 +369,17 @@ void DecCu::xReconInter(CodingUnit &cu)
   m_pcIntraPred->geneIntrainterPred(cu);
 
   // inter prediction
+#if IBC_SEPERATE_MODE
+  CHECK(CU::isIBC(cu) && cu.firstPU->mhIntraFlag, "IBC and MHIntra cannot be used together");
+  CHECK(CU::isIBC(cu) && cu.affine, "IBC and Affine cannot be used together");
+  CHECK(CU::isIBC(cu) && cu.triangle, "IBC and triangle cannot be used together");
+  CHECK(CU::isIBC(cu) && cu.firstPU->mmvdMergeFlag, "IBC and MMVD cannot be used together");
+#else
   CHECK(cu.ibc && cu.firstPU->mhIntraFlag, "IBC and MHIntra cannot be used together");
   CHECK(cu.ibc && cu.affine, "IBC and Affine cannot be used together");
   CHECK(cu.ibc && cu.triangle, "IBC and triangle cannot be used together");
   CHECK(cu.ibc && cu.firstPU->mmvdMergeFlag, "IBC and MMVD cannot be used together");
+#endif
   const bool luma = cu.Y().valid();
   const bool chroma = cu.Cb().valid();
   if (luma && chroma)
@@ -558,6 +570,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           pu.shareParentPos = cu.shareParentPos;
           pu.shareParentSize = cu.shareParentSize;
 #endif
+#if IBC_SEPERATE_FUNCTION//Todo : check
+          if (CU::isIBC(*pu.cu))
+            PU::getIBCMergeCandidates(pu, mrgCtx, pu.mergeIdx);
+          else
+#endif
             PU::getInterMergeCandidates(pu, mrgCtx, 0, pu.mergeIdx);
 #if !JVET_M0068_M0171_MMVD_CLEANUP
             PU::restrictBiPredMergeCands(pu, mrgCtx);
@@ -616,17 +633,60 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
             }
           }
         }
+#if IBC_SEPERATE_FUNCTION//Todo : check mv precision and partsize
+        else if (CU::isIBC(*pu.cu) && pu.interDir == 1)
+        {
+          AMVPInfo amvpInfo;
+          PU::fillIBCMvpCand(pu, REF_PIC_LIST_0, pu.refIdx[REF_PIC_LIST_0], amvpInfo);
+
+          pu.mvpNum[REF_PIC_LIST_0] = amvpInfo.numCand;
+          Mv mvd = pu.mvd[REF_PIC_LIST_0];
+#if REUSE_CU_RESULTS
+          if (!cu.cs->pcv->isEncoder)
+#endif
+            mvd <<= 2;
+          pu.mv[REF_PIC_LIST_0] = amvpInfo.mvCand[pu.mvpIdx[REF_PIC_LIST_0]] + mvd;
+
+#if MODIFY_for_vtm4
+          pu.mv[REF_PIC_LIST_0].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
+#else
+#if REMOVE_MV_ADAPT_PREC
+          pu.mv[REF_PIC_LIST_0].hor = pu.mv[REF_PIC_LIST_0].hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+          pu.mv[REF_PIC_LIST_0].ver = pu.mv[REF_PIC_LIST_0].ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+#else
+          if (pu.cs->sps->getSpsNext().getUseAffine())
+          {
+            pu.mv[REF_PIC_LIST_0].setHighPrec();
+          }
+#endif
+#endif
+        }
+#endif
         else
         {
           for ( uint32_t uiRefListIdx = 0; uiRefListIdx < 2; uiRefListIdx++ )
           {
             RefPicList eRefList = RefPicList( uiRefListIdx );
+#if IBC_SEPERATE_MODE
+            if ((pu.cs->slice->getNumRefIdx(eRefList) > 0 || (eRefList == REF_PIC_LIST_0 && CU::isIBC(*pu.cu))) && (pu.interDir & (1 << uiRefListIdx)))
+#else
             if ( pu.cs->slice->getNumRefIdx( eRefList ) > 0 && ( pu.interDir & ( 1 << uiRefListIdx ) ) )
+#endif
             {
               AMVPInfo amvpInfo;
               PU::fillMvpCand(pu, eRefList, pu.refIdx[eRefList], amvpInfo);
               pu.mvpNum [eRefList] = amvpInfo.numCand;
+#if IBC_SEPERATE_FUNCTION==0//Todo : check
               Mv mvd = pu.mvd[eRefList];
+#if IBC_SEPERATE_MODE 
+              if (CU::isIBC(cu))
+              {
+#if REUSE_CU_RESULTS
+                if (!cu.cs->pcv->isEncoder)
+#endif
+                  mvd <<= 2;
+              }
+#else
               if (eRefList == REF_PIC_LIST_0 && pu.cs->slice->getRefPic(eRefList, pu.refIdx[eRefList])->getPOC() == pu.cs->slice->getPOC())
               {
                 pu.cu->ibc = true;
@@ -635,7 +695,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #endif
                   mvd.changePrecision(MV_PRECISION_INT, MV_PRECISION_QUARTER);
               }
+#endif
               pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx[eRefList]] + mvd;
+#else
+              pu.mv[eRefList] = amvpInfo.mvCand[pu.mvpIdx[eRefList]] + pu.mvd[eRefList];
+#endif
               pu.mv[eRefList].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
             }
           }

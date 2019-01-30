@@ -1326,6 +1326,21 @@ const CtxSet ContextSetCfg::TriangleIdx = ContextSetCfg::addCtxSet
 });
 // clang-format on
 
+#if IBC_SEPERATE_MODE
+const CtxSet ContextSetCfg::IBCFlag = ContextSetCfg::addCtxSet
+({
+#if TRAINED_CABAC_INIT_TABLES
+  { 165, 137, 153, },
+  { 106, 122, 138, },
+  { CNU, CNU, CNU, },
+#else
+  { 151, 137, 154, },
+  { 151, 137, 154, },
+  { CNU, CNU, CNU, },
+#endif
+});
+#endif
+
 const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_InitTables[0].size();
 
 

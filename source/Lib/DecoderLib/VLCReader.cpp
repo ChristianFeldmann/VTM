@@ -1748,10 +1748,21 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         }
       }
     }
-    if (!pcSlice->isIntra())
+
+#if IBC_SEPERATE_MODE 
+    if (!pcSlice->isIntra() || sps->getSpsNext().getIBCMode())
     {
       READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
       pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
+    }
+#endif
+
+    if (!pcSlice->isIntra())
+    {
+#if IBC_SEPERATE_MODE==0
+      READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
+      pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
+#endif
 
       if ( sps->getSBTMVPEnabledFlag() && !sps->getSpsNext().getUseAffine() ) // ATMVP only
       {

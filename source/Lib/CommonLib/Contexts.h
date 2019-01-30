@@ -307,6 +307,9 @@ public:
 #if JVET_M0444_SMVD
   static const CtxSet   SmvdFlag;
 #endif
+#if IBC_SEPERATE_MODE
+  static const CtxSet   IBCFlag;
+#endif
   static const unsigned NumberOfContexts;
 
   // combined sets for less complex copying

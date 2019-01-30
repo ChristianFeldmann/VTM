@@ -107,7 +107,7 @@ void  EncReshape::destroy()
 \param   pcPic describe pointer of current coding picture
 \param   sliceType describe the slice type
 */
-void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isCPR)
+void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isIBC)
 {
   if (m_lumaBD >= 10)
   {
@@ -119,10 +119,10 @@ void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const
     }
     else
     {
-      if (sliceType == I_SLICE || (sliceType==P_SLICE && isCPR) )             { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;  }
+      if (sliceType == I_SLICE || (sliceType==P_SLICE && isIBC) )             { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;  }
       else                                                                    { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = false; }
     }
-    if ((sliceType == I_SLICE || (sliceType == P_SLICE && isCPR)) && isDualT) { m_sliceReshapeInfo.enableChromaAdj = 0;                    }
+    if ((sliceType == I_SLICE || (sliceType == P_SLICE && isIBC)) && isDualT) { m_sliceReshapeInfo.enableChromaAdj = 0;                    }
     else                                                                      { m_sliceReshapeInfo.enableChromaAdj = 1;                    }
   }
   else
@@ -138,14 +138,14 @@ void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const
 \param   sliceType describe the slice type
 \param   reshapeCW describe some input info
 */
-void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isCPR)
+void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isIBC)
 {
   m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;
   m_sliceReshapeInfo.sliceReshaperEnableFlag = true;
 
   int modIP = pcPic->getPOC() - pcPic->getPOC() / reshapeCW.rspFpsToIp * reshapeCW.rspFpsToIp;
 
-  if (sliceType == I_SLICE || (reshapeCW.rspIntraPeriod == -1 && modIP == 0) || (sliceType== P_SLICE && isCPR))
+  if (sliceType == I_SLICE || (reshapeCW.rspIntraPeriod == -1 && modIP == 0) || (sliceType== P_SLICE && isIBC))
   {
     if (m_sliceReshapeInfo.sliceReshaperModelPresentFlag == true)
     {
@@ -175,8 +175,8 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
       uint32_t   bockBinCnt[PIC_ANALYZE_CW_BINS] = { 0 };
       
       const int PIC_ANALYZE_WIN_SIZE = 5;
-      const uint32_t uiWinSize = PIC_ANALYZE_WIN_SIZE;
-      const uint32_t uiWinLens = (uiWinSize - 1) >> 1;
+      const uint32_t winSize = PIC_ANALYZE_WIN_SIZE;
+      const uint32_t winLens = (winSize - 1) >> 1;
 
       int64_t tempSq = 0;
       int64_t leftSum = 0, leftSumSq = 0;
@@ -203,10 +203,10 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
           int64_t sumSq = 0;
           uint32_t numPixInPart = 0;
 
-          uint32_t y1 = std::max((int)(y - uiWinLens), 0);
-          uint32_t y2 = std::min((int)(y + uiWinLens), (height - 1));
-          uint32_t x1 = std::max((int)(x - uiWinLens), 0);
-          uint32_t x2 = std::min((int)(x + uiWinLens), (width - 1));
+          uint32_t y1 = std::max((int)(y - winLens), 0);
+          uint32_t y2 = std::min((int)(y + winLens), (height - 1));
+          uint32_t x1 = std::max((int)(x - winLens), 0);
+          uint32_t x2 = std::min((int)(x + winLens), (width - 1));
 
 
           uint32_t bx = 0, by = 0;
@@ -238,29 +238,29 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
           }
           else if (x == 0 && y > 0)       // for the 1st column, calc the bottom stripe
           {
-            if (y < height - uiWinLens)
+            if (y < height - winLens)
             {
-              pWinY += uiWinLens*stride;
-              topRowSum[y + uiWinLens] = 0;
-              topRowSumSq[y + uiWinLens] = 0;
+              pWinY += winLens*stride;
+              topRowSum[y + winLens] = 0;
+              topRowSumSq[y + winLens] = 0;
               for (bx = x1; bx <= x2; bx++)
               {
-                topRowSum[y + uiWinLens] += pWinY[bx];
-                topRowSumSq[y + uiWinLens] += pWinY[bx] * pWinY[bx];
+                topRowSum[y + winLens] += pWinY[bx];
+                topRowSumSq[y + winLens] += pWinY[bx] * pWinY[bx];
               }
-              topSum += topRowSum[y + uiWinLens];
-              topSumSq += topRowSumSq[y + uiWinLens];
+              topSum += topRowSum[y + winLens];
+              topSumSq += topRowSumSq[y + winLens];
             }
-            if (y > uiWinLens)
+            if (y > winLens)
             {
-              topSum -= topRowSum[y - 1 - uiWinLens];
-              topSumSq -= topRowSumSq[y - 1 - uiWinLens];
+              topSum -= topRowSum[y - 1 - winLens];
+              topSumSq -= topRowSumSq[y - 1 - winLens];
             }
 
             memset(leftColSum, 0, width * sizeof(int64_t));
             memset(leftColSumSq, 0, width * sizeof(int64_t));
             pWinY = &picY.buf[0];
-            pWinY -= (y <= uiWinLens ? y : uiWinLens)*stride;
+            pWinY -= (y <= winLens ? y : winLens)*stride;
             for (by = y1; by <= y2; by++)
             {
               for (bx = x1; bx <= x2; bx++)
@@ -279,48 +279,48 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
 
           else if (x > 0)
           {
-            if (x < width - uiWinLens)
+            if (x < width - winLens)
             {
-              pWinY -= (y <= uiWinLens ? y : uiWinLens)*stride;
+              pWinY -= (y <= winLens ? y : winLens)*stride;
               if (y == 0)                 // for the 1st row, calc the right stripe
               {
-                leftColSum[x + uiWinLens] = 0;
-                leftColSumSq[x + uiWinLens] = 0;
+                leftColSum[x + winLens] = 0;
+                leftColSumSq[x + winLens] = 0;
                 for (by = y1; by <= y2; by++)
                 {
-                  leftColSum[x + uiWinLens] += pWinY[x + uiWinLens];
-                  leftColSumSq[x + uiWinLens] += pWinY[x + uiWinLens] * pWinY[x + uiWinLens];
+                  leftColSum[x + winLens] += pWinY[x + winLens];
+                  leftColSumSq[x + winLens] += pWinY[x + winLens] * pWinY[x + winLens];
                   pWinY += stride;
                 }
               }
               else                        // for the main area, calc the B-R point 
               {
-                leftColSum[x + uiWinLens] = topColSum[x + uiWinLens];
-                leftColSumSq[x + uiWinLens] = topColSumSq[x + uiWinLens];
-                if (y < height - uiWinLens)
+                leftColSum[x + winLens] = topColSum[x + winLens];
+                leftColSumSq[x + winLens] = topColSumSq[x + winLens];
+                if (y < height - winLens)
                 {
                   pWinY = &picY.buf[0];
-                  pWinY += uiWinLens * stride;
-                  leftColSum[x + uiWinLens] += pWinY[x + uiWinLens];
-                  leftColSumSq[x + uiWinLens] += pWinY[x + uiWinLens] * pWinY[x + uiWinLens];
+                  pWinY += winLens * stride;
+                  leftColSum[x + winLens] += pWinY[x + winLens];
+                  leftColSumSq[x + winLens] += pWinY[x + winLens] * pWinY[x + winLens];
                 }
-                if (y > uiWinLens)
+                if (y > winLens)
                 {
                   pWinY = &picY.buf[0];
-                  pWinY -= (uiWinLens + 1) * stride;
-                  leftColSum[x + uiWinLens] -= pWinY[x + uiWinLens];
-                  leftColSumSq[x + uiWinLens] -= pWinY[x + uiWinLens] * pWinY[x + uiWinLens];
+                  pWinY -= (winLens + 1) * stride;
+                  leftColSum[x + winLens] -= pWinY[x + winLens];
+                  leftColSumSq[x + winLens] -= pWinY[x + winLens] * pWinY[x + winLens];
                 }
               }
-              topColSum[x + uiWinLens] = leftColSum[x + uiWinLens];
-              topColSumSq[x + uiWinLens] = leftColSumSq[x + uiWinLens];
-              leftSum += leftColSum[x + uiWinLens];
-              leftSumSq += leftColSumSq[x + uiWinLens];
+              topColSum[x + winLens] = leftColSum[x + winLens];
+              topColSumSq[x + winLens] = leftColSumSq[x + winLens];
+              leftSum += leftColSum[x + winLens];
+              leftSumSq += leftColSumSq[x + winLens];
             }
-            if (x > uiWinLens)
+            if (x > winLens)
             {
-              leftSum -= leftColSum[x - 1 - uiWinLens];
-              leftSumSq -= leftColSumSq[x - 1 - uiWinLens];
+              leftSum -= leftColSum[x - 1 - winLens];
+              leftSumSq -= leftColSumSq[x - 1 - winLens];
             }
             sum = leftSum;
             sumSq = leftSumSq;
@@ -328,22 +328,23 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
 
           double average = double(sum) / numPixInPart;
           double variance = double(sumSq) / numPixInPart - average * average;
+          uint32_t binNum = (uint32_t)(pxlY/PIC_ANALYZE_CW_BINS);
 
           if (m_lumaBD > 10)
           {
             average = average / (double)(1<<(m_lumaBD - 10));
             variance = variance / (double)(1 << (2*m_lumaBD - 20));
+            binNum = (uint32_t)((pxlY>>(m_lumaBD - 10)) / PIC_ANALYZE_CW_BINS);
           }
           else if (m_lumaBD < 10)
           {
             average = average * (double)(1 << (10 - m_lumaBD));
             variance = variance * (double)(1 << (20-2*m_lumaBD));
+            binNum = (uint32_t)((pxlY << (10 - m_lumaBD)) / PIC_ANALYZE_CW_BINS);
           }
           double varLog10 = log10(variance + 1.0);
-
-          uint32_t uiBinNum = (uint32_t)(pxlY/PIC_ANALYZE_CW_BINS);
-          blockBinVarSum[uiBinNum] += varLog10;
-          bockBinCnt[uiBinNum]++;
+          blockBinVarSum[binNum] += varLog10;
+          bockBinCnt[binNum]++;
         }
         picY.buf += stride;
       }
@@ -401,7 +402,7 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
         m_sliceReshapeInfo.reshaperModelMinBinIdx = startBinIdx;
         m_sliceReshapeInfo.reshaperModelMaxBinIdx = endBinIdx;
       }
-
+      m_initCWAnalyze = m_lumaBD > 10 ? (m_initCWAnalyze >> (m_lumaBD - 10)) : m_lumaBD < 10 ? (m_initCWAnalyze << (10 - m_lumaBD)) : m_initCWAnalyze;
       if (reshapeCW.rspBaseQP <= 22 && m_rateAdpMode == 1)
       {
         for (int i = 0; i < PIC_ANALYZE_CW_BINS; i++)
@@ -457,7 +458,7 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
 
     }
     m_chromaAdj = m_sliceReshapeInfo.enableChromaAdj;
-    if ((sliceType == I_SLICE || (sliceType == P_SLICE && isCPR)) && isDualT)
+    if ((sliceType == I_SLICE || (sliceType == P_SLICE && isIBC)) && isDualT)
     {
         m_sliceReshapeInfo.enableChromaAdj = 0;
     }
@@ -1242,14 +1243,14 @@ void EncReshape::constructReshaperSDR()
     absDeltaCW = (deltaCW < 0) ? (-deltaCW) : deltaCW;
     if (absDeltaCW > maxAbsDeltaCW)      {      maxAbsDeltaCW = absDeltaCW;    }
   }
-  m_sliceReshapeInfo.maxNbitsNeededDeltaCW = g_aucLog2[maxAbsDeltaCW << 1];
+  m_sliceReshapeInfo.maxNbitsNeededDeltaCW = std::max(1, (int)g_aucLog2[maxAbsDeltaCW << 1]);
 
   histLenth = m_initCW;
   log2HistLenth = g_aucLog2[histLenth];
 
-  int sum_bins = 0;
-  for (i = 0; i < PIC_CODE_CW_BINS; i++)   {    sum_bins += m_binCW[i];  }
-  CHECK(sum_bins > m_reshapeLUTSize, "SDR CW assignment is wrong!!");
+  int sumBins = 0;
+  for (i = 0; i < PIC_CODE_CW_BINS; i++)   { sumBins += m_binCW[i];  }
+  CHECK(sumBins > m_reshapeLUTSize, "SDR CW assignment is wrong!!");
   memset(tempFwdLUT, 0, (m_reshapeLUTSize + 1) * sizeof(int16_t));
   tempFwdLUT[0] = 0;
 

@@ -770,8 +770,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
 #if JVET_M0192_AFF_CHROMA_SIMPL
         Mv curMv = m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE) * MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE)] +
           m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1)* MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1)];
-        curMv.setHor(curMv.getHor() >= 0 ? ((curMv.getHor() + 1) >> 1) : -((-curMv.getHor() + 1) >> 1));
-        curMv.setVer(curMv.getVer() >= 0 ? ((curMv.getVer() + 1) >> 1) : -((-curMv.getVer() + 1) >> 1));
+        roundAffineMv(curMv.hor, curMv.ver, 1);
 #else
         Mv curMv = (m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE) * MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE)] +
           m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1)* MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE)] +

@@ -4090,6 +4090,7 @@ bool PU::isUniqueTriangleCandidates( const PredictionUnit &pu, MergeCtx& triangl
   return true;  
 }
 
+#if !JVET_M0328_KEEP_ONE_WEIGHT_GROUP
 bool PU::getTriangleWeights( const PredictionUnit& pu, MergeCtx &triangleMrgCtx, const uint8_t candIdx0, const uint8_t candIdx1 )
 {
   RefPicList refPicListCand0 = triangleMrgCtx.interDirNeighbours[candIdx0] == 1 ? REF_PIC_LIST_0 : REF_PIC_LIST_1;
@@ -4114,6 +4115,7 @@ bool PU::getTriangleWeights( const PredictionUnit& pu, MergeCtx &triangleMrgCtx,
 
   return false;
 }
+#endif
 
 void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, const uint8_t mergeIdx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 )
 {

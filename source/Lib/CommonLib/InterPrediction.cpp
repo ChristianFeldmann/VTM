@@ -1278,12 +1278,37 @@ void InterPrediction::motionCompensation4Triangle( CodingUnit &cu, MergeCtx &tri
     PU::spanMotionInfo( pu );
     motionCompensation( pu, predBuf );
 
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+    weightedTriangleBlk( pu, splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, tmpTriangleBuf, predBuf );
+#else
     weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, tmpTriangleBuf, predBuf );
+#endif
   }
 }
 
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+void InterPrediction::weightedTriangleBlk( PredictionUnit &pu, const bool splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
+#else
 void InterPrediction::weightedTriangleBlk( PredictionUnit &pu, bool weights, const bool splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
+#endif
 {
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+  if( channel == CHANNEL_TYPE_LUMA )
+  {
+    xWeightedTriangleBlk( pu, pu.lumaSize().width, pu.lumaSize().height, COMPONENT_Y, splitDir, predDst, predSrc0, predSrc1 );
+  }
+  else if( channel == CHANNEL_TYPE_CHROMA )
+  {
+    xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, predDst, predSrc0, predSrc1 );
+    xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, predDst, predSrc0, predSrc1 );
+  }
+  else
+  {
+    xWeightedTriangleBlk( pu, pu.lumaSize().width,   pu.lumaSize().height,   COMPONENT_Y,  splitDir, predDst, predSrc0, predSrc1 );
+    xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, predDst, predSrc0, predSrc1 );
+    xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, predDst, predSrc0, predSrc1 );
+  }
+#else
   if( channel == CHANNEL_TYPE_LUMA )
   {
     xWeightedTriangleBlk( pu, pu.lumaSize().width, pu.lumaSize().height, COMPONENT_Y, splitDir, weights, predDst, predSrc0, predSrc1 );
@@ -1299,9 +1324,14 @@ void InterPrediction::weightedTriangleBlk( PredictionUnit &pu, bool weights, con
     xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, weights, predDst, predSrc0, predSrc1 );
     xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, weights, predDst, predSrc0, predSrc1 );
   }
+#endif
 }
 
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
+#else
 void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, const bool weights, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
+#endif
 {
   Pel*    dst        = predDst .get(compIdx).buf;
   Pel*    src0       = predSrc0.get(compIdx).buf;
@@ -1320,13 +1350,23 @@ void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint
                                   
   const int32_t ratioWH           = (width > height) ? (width / height) : 1;
   const int32_t ratioHW           = (width > height) ? 1 : (height / width);
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+  const bool    longWeight        = (compIdx == COMPONENT_Y) || ( predDst.chromaFormat == CHROMA_444 );
+  const int32_t weightedLength    = longWeight ? 7 : 3;
+#else
   const Pel*    pelWeighted       = (compIdx == COMPONENT_Y) ? g_trianglePelWeightedLuma[splitDir][weights] : g_trianglePelWeightedChroma[predDst.chromaFormat == CHROMA_444 ? 0 : 1][splitDir][weights];
   const int32_t weightedLength    = (compIdx == COMPONENT_Y) ? g_triangleWeightLengthLuma[weights] : g_triangleWeightLengthChroma[predDst.chromaFormat == CHROMA_444 ? 0 : 1][weights];
+#endif
         int32_t weightedStartPos  = ( splitDir == 0 ) ? ( 0 - (weightedLength >> 1) * ratioWH ) : ( width - ((weightedLength + 1) >> 1) * ratioWH );
         int32_t weightedEndPos    = weightedStartPos + weightedLength * ratioWH - 1;
         int32_t weightedPosoffset =( splitDir == 0 ) ? ratioWH : -ratioWH;
   
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+        Pel     tmpPelWeighted;
+        int32_t weightIdx;
+#else
   const Pel*    tmpPelWeighted;
+#endif
         int32_t x, y, tmpX, tmpY, tmpWeightedStart, tmpWeightedEnd;
   
   for( y = 0; y < height; y+= ratioHW )
@@ -1342,18 +1382,36 @@ void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint
 
       tmpWeightedStart = std::max((int32_t)0, weightedStartPos);
       tmpWeightedEnd   = std::min(weightedEndPos, (int32_t)(width - 1));
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+      weightIdx        = 1;
+#else
       tmpPelWeighted   = pelWeighted;
+#endif
       if( weightedStartPos < 0 )
       {
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+        weightIdx     += abs(weightedStartPos) / ratioWH;
+#else
         tmpPelWeighted += abs(weightedStartPos) / ratioWH;
+#endif
       }
       for( x = tmpWeightedStart; x <= tmpWeightedEnd; x+= ratioWH )
       {
         for( tmpX = ratioWH; tmpX > 0; tmpX-- )
         {
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+          tmpPelWeighted = Clip3( 1, 7, longWeight ? weightIdx : (weightIdx * 2));
+          tmpPelWeighted = splitDir ? ( 8 - tmpPelWeighted ) : tmpPelWeighted;
+          *dst++         = ClipPel( rightShift( (tmpPelWeighted*(*src0++) + ((8 - tmpPelWeighted) * (*src1++)) + offsetWeighted), shiftWeighted ), clipRng );
+#else
           *dst++ = ClipPel( rightShift( ((*tmpPelWeighted)*(*src0++) + ((8 - (*tmpPelWeighted)) * (*src1++)) + offsetWeighted), shiftWeighted ), clipRng );
+#endif
         }
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+        weightIdx ++;
+#else
         tmpPelWeighted++;
+#endif
       }
 
       for( x = weightedEndPos + 1; x < width; x++ )

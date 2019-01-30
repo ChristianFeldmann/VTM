@@ -79,6 +79,7 @@
 
 #define JVET_M0142_CCLM_COLLOCATED_CHROMA                 1 // Adding support for chroma sample location type 2 in CCLM
 
+#define JVET_M0328_KEEP_ONE_WEIGHT_GROUP                  1
 
 #define JVET_M0479_18BITS_MV_CLIP                         1
 

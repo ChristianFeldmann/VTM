@@ -1270,10 +1270,10 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
 
   rcMvSrchRngLT <<= 2;
   rcMvSrchRngRB <<= 2;
-  clipMv(rcMvSrchRngLT, pu.cu->lumaPos(),
+  xClipMv(rcMvSrchRngLT, pu.cu->lumaPos(),
          pu.cu->lumaSize(),
          sps);
-  clipMv(rcMvSrchRngRB, pu.cu->lumaPos(),
+  xClipMv(rcMvSrchRngRB, pu.cu->lumaPos(),
          pu.cu->lumaSize(),
          sps);
   rcMvSrchRngLT >>= 2;
@@ -2583,10 +2583,10 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
   Mv mvTL(cFPMvPred.getHor() - (iSrchRng << iMvShift), cFPMvPred.getVer() - (iSrchRng << iMvShift));
   Mv mvBR(cFPMvPred.getHor() + (iSrchRng << iMvShift), cFPMvPred.getVer() + (iSrchRng << iMvShift));
 
-  clipMv( mvTL, pu.cu->lumaPos(),
+  xClipMv( mvTL, pu.cu->lumaPos(),
           pu.cu->lumaSize(),
           *pu.cs->sps );
-  clipMv( mvBR, pu.cu->lumaPos(),
+  xClipMv( mvBR, pu.cu->lumaPos(),
           pu.cu->lumaSize(),
           *pu.cs->sps );
 
@@ -5845,6 +5845,29 @@ void InterSearch::initWeightIdxBits()
   {
     m_estWeightIdxBits[n] = deriveWeightIdxBits(n);
   }
+}
+
+void InterSearch::xClipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS& sps )
+{
+  int mvShift = MV_FRACTIONAL_BITS_INTERNAL;
+  int offset = 8;
+  int horMax = ( sps.getPicWidthInLumaSamples() + offset - ( int ) pos.x - 1 ) << mvShift;
+  int horMin = ( -( int ) sps.getMaxCUWidth()   - offset - ( int ) pos.x + 1 ) << mvShift;
+
+  int verMax = ( sps.getPicHeightInLumaSamples() + offset - ( int ) pos.y - 1 ) << mvShift;
+  int verMin = ( -( int ) sps.getMaxCUHeight()   - offset - ( int ) pos.y + 1 ) << mvShift;
+
+  if( sps.getWrapAroundEnabledFlag() )
+  {
+    int horMax = ( sps.getPicWidthInLumaSamples() + sps.getMaxCUWidth() - size.width + offset - ( int ) pos.x - 1 ) << mvShift;
+    int horMin = ( -( int ) sps.getMaxCUWidth()                                      - offset - ( int ) pos.x + 1 ) << mvShift;
+    rcMv.setHor( std::min( horMax, std::max( horMin, rcMv.getHor() ) ) );
+    rcMv.setVer( std::min( verMax, std::max( verMin, rcMv.getVer() ) ) );
+    return;
+  }
+
+  rcMv.setHor( std::min( horMax, std::max( horMin, rcMv.getHor() ) ) );
+  rcMv.setVer( std::min( verMax, std::max( verMin, rcMv.getVer() ) ) );
 }
 
 #if JVET_M0444_SMVD

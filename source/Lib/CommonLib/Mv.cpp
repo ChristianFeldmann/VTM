@@ -65,7 +65,14 @@ void clipMv( Mv& rcMv, const Position& pos,
   {
     int iHorMax = ( sps.getPicWidthInLumaSamples() + sps.getMaxCUWidth() - size.width + iOffset - ( int ) pos.x - 1 ) << iMvShift;
     int iHorMin = ( -( int ) sps.getMaxCUWidth()                                      - iOffset - ( int ) pos.x + 1 ) << iMvShift;
-    rcMv.setHor( std::min( iHorMax, std::max( iHorMin, rcMv.getHor() ) ) );
+    int mvX = rcMv.getHor();
+    while( mvX > iHorMax ) {
+      mvX -= ( sps.getWrapAroundOffset() << iMvShift );
+    }
+    while( mvX < iHorMin ) {
+      mvX += ( sps.getWrapAroundOffset() << iMvShift );
+    }
+    rcMv.setHor( mvX );
     rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );
     return;
   }

@@ -1845,8 +1845,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   m_reshapeCW.rspFps = m_iFrameRate;
   m_reshapeCW.rspIntraPeriod = m_iIntraPeriod;
   m_reshapeCW.rspPicSize = m_iSourceWidth*m_iSourceHeight;
-  const int FpsToIpTable[129] = { 0, 0, 0, 0, 0, 0, 0, 0, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 112, 128, 128, 128, 128, 128, 128, 128, 128, 128 };
-  m_reshapeCW.rspFpsToIp = FpsToIpTable[m_iFrameRate];
+  m_reshapeCW.rspFpsToIp = std::max(16, 16 * (int)(round((double)m_iFrameRate /16.0)));
   m_reshapeCW.rspBaseQP = m_iQP;
 #endif
 #if ENABLE_TRACING

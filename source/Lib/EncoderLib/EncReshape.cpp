@@ -149,8 +149,8 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
   {
     if (m_sliceReshapeInfo.sliceReshaperModelPresentFlag == true)
     {
-      uint32_t stdMin = 16 <<(m_lumaBD-8);
-      uint32_t stdMax = 235 << (m_lumaBD - 8);
+      int stdMin = 16 <<(m_lumaBD-8);
+      int stdMax = 235 << (m_lumaBD - 8);
       int  binLen = m_reshapeLUTSize / PIC_ANALYZE_CW_BINS;
 
       m_reshapeCW = reshapeCW;
@@ -161,8 +161,8 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
         m_binCW[b] = binLen;
       }
 
-      int startBinIdx =  int(floor((double(stdMin) / double(binLen))));
-      int endBinIdx = int(floor((double(stdMax) / double(binLen))));
+      int startBinIdx = stdMin / binLen;
+      int endBinIdx = stdMax / binLen;
       m_sliceReshapeInfo.reshaperModelMinBinIdx = startBinIdx;
       m_sliceReshapeInfo.reshaperModelMaxBinIdx = endBinIdx;
 
@@ -341,7 +341,7 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
           }
           double varLog10 = log10(variance + 1.0);
 
-          uint32_t uiBinNum = (uint32_t)floor((double)pxlY / (double)PIC_ANALYZE_CW_BINS);
+          uint32_t uiBinNum = (uint32_t)(pxlY/PIC_ANALYZE_CW_BINS);
           blockBinVarSum[uiBinNum] += varLog10;
           bockBinCnt[uiBinNum]++;
         }
@@ -845,8 +845,6 @@ void EncReshape::deriveReshapeParametersSDRfromStats(uint32_t * blockBinCnt, dou
           *reshapeTH2 = 3.5;
           m_sliceReshapeInfo.enableChromaAdj = 0;
           m_chromaWeight = 0.95;
-          if (m_reshapeCW.rspBaseQP <= 27 && m_reshapeCW.rspBaseQP >=25)
-            m_tcase = 3;
         }
       }
       else

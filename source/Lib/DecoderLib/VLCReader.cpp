@@ -818,9 +818,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   }
   READ_FLAG( symbol,  "mtt_enabled_flag" );                       spsNext.setMTTMode                ( symbol );
   READ_FLAG( symbol,  "mhintra_flag" );                           spsNext.setUseMHIntra             ( symbol != 0 );
-#if JVET_M0255_FRACMMVD_SWITCH
-  READ_FLAG( symbol,  "sps_fracmmvd_disabled_flag" );             spsNext.setAllowDisFracMMVD       ( symbol != 0 );
-#endif
   READ_FLAG( symbol,    "triangle_flag" );                          spsNext.setUseTriangle            ( symbol != 0 );
 #if ENABLE_WPP_PARALLELISM
   READ_FLAG( symbol,  "next_dqp_enabled_flag" );                  spsNext.setUseNextDQP             ( symbol != 0 );
@@ -1050,7 +1047,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 
   READ_FLAG( uiCode, "sps_bdof_enable_flag" );                      pcSPS->setBDOFEnabledFlag ( uiCode != 0 );
-  
+#if JVET_M0255_FRACMMVD_SWITCH
+  READ_FLAG( uiCode,  "sps_fracmmvd_disabled_flag" );               pcSPS->setDisFracMmvdEnabledFlag ( uiCode != 0 );
+#endif
+
 #if HEVC_USE_SCALING_LISTS
   READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
   if(pcSPS->getScalingListFlag())
@@ -1771,7 +1771,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setMaxNumAffineMergeCand( AFFINE_MRG_MAX_NUM_CANDS - uiCode );
       }
 #if JVET_M0255_FRACMMVD_SWITCH
-      if ( sps->getSpsNext().getAllowDisFracMMVD() )
+      if ( sps->getDisFracMmvdEnabledFlag() )
       {
         READ_FLAG( uiCode, "tile_group_fracmmvd_disabled_flag" );
         pcSlice->setDisFracMMVD( uiCode ? true : false );

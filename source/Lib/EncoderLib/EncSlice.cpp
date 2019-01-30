@@ -1401,7 +1401,7 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
   uint32_t totalCtu               = 0;
   uint32_t hashRatio              = 0;
 
-  if ( !pcSlice->getSPS()->getSpsNext().getAllowDisFracMMVD() )
+  if ( !pcSlice->getSPS()->getDisFracMmvdEnabledFlag() )
   {
     return;
   }
@@ -1419,7 +1419,7 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
     const Position pos ( ctuXPosInCtus * pcv.maxCUWidth, ctuYPosInCtus * pcv.maxCUHeight );
     const UnitArea ctuArea( cs.area.chromaFormat, Area( pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight ) );
 
-    hashRatio += m_pcCuEncoder->getCprHashMap().getHashHitRatio( ctuArea.Y() );
+    hashRatio += m_pcCuEncoder->getIbcHashMap().getHashHitRatio( ctuArea.Y() );
     totalCtu++;
   }
 
@@ -1480,10 +1480,10 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   }
 #endif
 #if JVET_M0255_FRACMMVD_SWITCH
-  if ( pcSlice->getSPS()->getSpsNext().getAllowDisFracMMVD() || 
+  if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() || 
       ( pcSlice->getSPS()->getSpsNext().getIBCMode() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch() ) )
   {
-    m_pcCuEncoder->getCprHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
+    m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
   }
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
 #endif

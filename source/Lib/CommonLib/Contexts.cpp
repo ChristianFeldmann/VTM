@@ -1329,13 +1329,14 @@ const CtxSet ContextSetCfg::TriangleIdx = ContextSetCfg::addCtxSet
 #if IBC_SEPERATE_MODE
 const CtxSet ContextSetCfg::IBCFlag = ContextSetCfg::addCtxSet
 ({
-#if TRAINED_CABAC_INIT_TABLES
+#if JVET_M0453_CABAC_ENGINE
+  { 149, 137, 137, },
+  { 165, 151, 137, },
+  { CNU, CNU, CNU, },
+  { 9,  13,  10, },
+#else
   { 165, 137, 153, },
   { 106, 122, 138, },
-  { CNU, CNU, CNU, },
-#else
-  { 151, 137, 154, },
-  { 151, 137, 154, },
   { CNU, CNU, CNU, },
 #endif
 });

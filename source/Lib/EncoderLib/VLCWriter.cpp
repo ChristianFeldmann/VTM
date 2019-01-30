@@ -559,9 +559,6 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
 
   WRITE_FLAG( spsNext.getMTTEnabled() ? 1 : 0,                                                  "mtt_enabled_flag" );
   WRITE_FLAG( spsNext.getUseMHIntra() ? 1 : 0,                                                  "mhintra_flag" );
-#if JVET_M0255_FRACMMVD_SWITCH
-  WRITE_FLAG( spsNext.getAllowDisFracMMVD() ? 1 : 0,                                            "sps_fracmmvd_disabled_flag" );
-#endif
   WRITE_FLAG( spsNext.getUseTriangle() ? 1: 0,                                                  "triangle_flag" );
 #if ENABLE_WPP_PARALLELISM
   WRITE_FLAG( spsNext.getUseNextDQP(),                                                          "next_dqp_enabled_flag" );
@@ -724,6 +721,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 
   WRITE_FLAG( pcSPS->getBDOFEnabledFlag() ? 1 : 0,                                   "sps_bdof_enabled_flag" );
+#if JVET_M0255_FRACMMVD_SWITCH
+  WRITE_FLAG( pcSPS->getDisFracMmvdEnabledFlag() ? 1 : 0,                            "sps_fracmmvd_disabled_flag" );
+#endif
 
 #if HEVC_USE_SCALING_LISTS
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "scaling_list_enabled_flag" );
@@ -1289,7 +1289,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_affine_merge_cand" );
       }
 #if JVET_M0255_FRACMMVD_SWITCH
-      if ( pcSlice->getSPS()->getSpsNext().getAllowDisFracMMVD() )
+      if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() )
       {
         WRITE_FLAG( pcSlice->getDisFracMMVD(), "tile_group_fracmmvd_disabled_flag" );
       }

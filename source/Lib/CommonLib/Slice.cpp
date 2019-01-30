@@ -1873,6 +1873,9 @@ SPS::SPS()
 , m_bPCMFilterDisableFlag     (false)
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
+#if JVET_M0255_FRACMMVD_SWITCH
+, m_disFracMmvdEnabledFlag    ( false )
+#endif
 , m_uiBitsForPOC              (  8)
 , m_numLongTermRefPicSPS      (  0)
 , m_uiMaxTrSize               ( 32)

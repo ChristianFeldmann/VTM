@@ -455,20 +455,20 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
           {
             if( filterType == ALF_FILTER_5 )
             {
-              m_filter5x5Blk( m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx]
 #if JVET_M0277_FIX_PCM_DISABLEFILTER
-                , cs
+              m_filter5x5Blk( m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx], cs );
+#else
+              m_filter5x5Blk( m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx] );
 #endif
-              );
             }
             else if( filterType == ALF_FILTER_7 )
             {
-              m_filter7x7Blk( m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx]
 #if JVET_M0277_FIX_PCM_DISABLEFILTER
-                , cs
+              m_filter7x7Blk( m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx], cs );
+#else
+              m_filter7x7Blk( m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx] );
 #endif
-              );
-            }
+           }
             else
             {
               CHECK( 0, "Wrong ALF filter type" );

@@ -70,7 +70,11 @@ void DecSlice::init( CABACDecoder* cabacDecoder, DecCu* pcCuDecoder )
   m_pcCuDecoder     = pcCuDecoder;
 }
 
+#if JVET_M0055_DEBUG_CTU 
+void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int debugCTU )
+#else
 void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
+#endif
 {
   //-- For time output for each slice
   slice->startProcessingTimer();
@@ -231,6 +235,14 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
       cs.slice->resetMotionLUTs();
     }
 
+#if JVET_M0055_DEBUG_CTU 
+ 
+    if( ctuRsAddr == debugCTU )
+    {
+      isLastCtuOfSliceSegment = true; // get out here
+      break;
+    }
+#endif
     isLastCtuOfSliceSegment = cabacReader.coding_tree_unit( cs, ctuArea, pic->m_prevQP, ctuRsAddr );
 
     m_pcCuDecoder->decompressCtu( cs, ctuArea );

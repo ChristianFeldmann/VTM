@@ -1289,6 +1289,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ForceSingleSplitThread",                          m_forceSplitSequential,                   false, "Force single thread execution even if taking the parallelized path")
   ("NumWppThreads",                                   m_numWppThreads,                              1, "Number of threads used to run WPP-style parallelization")
   ("NumWppExtraLines",                                m_numWppExtraLines,                           0, "Number of additional wpp lines to switch when threads are blocked")
+#if JVET_M0055_DEBUG_CTU
+  ("DebugCTU",                                        m_debugCTU,                                  -1, "If DebugBitstream is present, load frames up to this POC from this bitstream. Starting with DebugPOC-frame at CTUline containin debug CTU.")
+#endif
 #if ENABLE_WPP_PARALLELISM
   ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                       true, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
 #else

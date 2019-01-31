@@ -715,8 +715,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
   double *pdCostCoeffGroupSig = m_pdCostCoeffGroupSig;
   memset( pdCostCoeffGroupSig, 0, ( uiMaxNumCoeff >> cctx.log2CGSize() ) * sizeof( double ) );
-
+#if JVET_M0257
+  const int iCGNum = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiWidth) * std::min<int>(JVET_C0024_ZERO_OUT_TH, uiHeight) >> cctx.log2CGSize();
+#else
   const int iCGNum  = uiWidth * uiHeight >> cctx.log2CGSize();
+#endif
   int iScanPos;
   coeffGroupRDStats rdStats;
 
@@ -1011,8 +1014,13 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
     int dim1  = ( cctx.scanType() == SCAN_VER ? uiHeight : uiWidth  );
     int dim2  = ( cctx.scanType() == SCAN_VER ? uiWidth  : uiHeight );
 #else
+#if JVET_M0257
+    int dim1 = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiWidth);
+    int dim2 = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiHeight);
+#else
     int dim1  = uiWidth;
     int dim2  = uiHeight;
+#endif
 #endif
     int bitsX = 0;
     int bitsY = 0;
@@ -1123,8 +1131,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
     int lastCG = -1;
     int absSum = 0 ;
     int n ;
-
+#if JVET_M0257
+    for (int subSet = iCGNum - 1; subSet >= 0; subSet--)
+#else
     for( int subSet = (uiWidth*uiHeight-1) >> cctx.log2CGSize(); subSet >= 0; subSet-- )
+#endif
     {
       int  subPos         = subSet << cctx.log2CGSize();
       int  firstNZPosInCG = iCGSizeM1 + 1, lastNZPosInCG = -1;

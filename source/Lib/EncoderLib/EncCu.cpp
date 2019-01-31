@@ -64,6 +64,19 @@ extern std::recursive_mutex g_cache_mutex;
 // ====================================================================================================================
 // Constructor / destructor / create / destroy
 // ====================================================================================================================
+#if JVET_M0883_TRIANGLE_SIGNALING
+const TriangleMotionInfo  EncCu::m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS] = 
+{
+  TriangleMotionInfo( 0, 1, 0 ), TriangleMotionInfo( 1, 0, 1 ), TriangleMotionInfo( 1, 0, 2 ), TriangleMotionInfo( 0, 0, 1 ), TriangleMotionInfo( 0, 2, 0 ),
+  TriangleMotionInfo( 1, 0, 3 ), TriangleMotionInfo( 1, 0, 4 ), TriangleMotionInfo( 1, 1, 0 ), TriangleMotionInfo( 0, 3, 0 ), TriangleMotionInfo( 0, 4, 0 ),
+  TriangleMotionInfo( 0, 0, 2 ), TriangleMotionInfo( 0, 1, 2 ), TriangleMotionInfo( 1, 1, 2 ), TriangleMotionInfo( 0, 0, 4 ), TriangleMotionInfo( 0, 0, 3 ),
+  TriangleMotionInfo( 0, 1, 3 ), TriangleMotionInfo( 0, 1, 4 ), TriangleMotionInfo( 1, 1, 4 ), TriangleMotionInfo( 1, 1, 3 ), TriangleMotionInfo( 1, 2, 1 ),
+  TriangleMotionInfo( 1, 2, 0 ), TriangleMotionInfo( 0, 2, 1 ), TriangleMotionInfo( 0, 4, 3 ), TriangleMotionInfo( 1, 3, 0 ), TriangleMotionInfo( 1, 3, 2 ),
+  TriangleMotionInfo( 1, 3, 4 ), TriangleMotionInfo( 1, 4, 0 ), TriangleMotionInfo( 1, 3, 1 ), TriangleMotionInfo( 1, 2, 3 ), TriangleMotionInfo( 1, 4, 1 ),
+  TriangleMotionInfo( 0, 4, 1 ), TriangleMotionInfo( 0, 2, 3 ), TriangleMotionInfo( 1, 4, 2 ), TriangleMotionInfo( 0, 3, 2 ), TriangleMotionInfo( 1, 4, 3 ),
+  TriangleMotionInfo( 0, 3, 1 ), TriangleMotionInfo( 0, 2, 4 ), TriangleMotionInfo( 1, 2, 4 ), TriangleMotionInfo( 0, 4, 2 ), TriangleMotionInfo( 0, 3, 4 ),
+};
+#endif
 
 void EncCu::create( EncCfg* encCfg )
 {
@@ -147,6 +160,20 @@ void EncCu::create( EncCfg* encCfg )
   {
     m_acRealMergeBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
   }
+#if JVET_M0883_TRIANGLE_SIGNALING
+  for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_UNI_CANDS; ui++ )
+  {
+    for( unsigned uj = 0; uj < TRIANGLE_MAX_NUM_UNI_CANDS; uj++ )
+    {
+      if(ui == uj)
+        continue;
+      uint8_t idxBits0 = ui + (ui == TRIANGLE_MAX_NUM_UNI_CANDS - 1 ? 0 : 1);
+      uint8_t candIdx1Enc = uj - (uj > ui ? 1 : 0);
+      uint8_t idxBits1 = candIdx1Enc + (candIdx1Enc == TRIANGLE_MAX_NUM_UNI_CANDS - 2 ? 0 : 1);
+      m_triangleIdxBins[1][ui][uj] = m_triangleIdxBins[0][ui][uj] = 1 + idxBits0 + idxBits1;
+    }
+  }
+#endif
   for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
   {
     m_acTriangleWeightedBuffer[ui].create( chromaFormat, Area( 0, 0, uiMaxWidth, uiMaxHeight ) );
@@ -2363,23 +2390,42 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
     for( uint8_t mergeCand = 0; mergeCand < numTriangleCandidate; mergeCand++ )
     {
+#if JVET_M0883_TRIANGLE_SIGNALING
+      bool    splitDir = m_triangleModeTest[mergeCand].m_splitDir;
+      uint8_t candIdx0 = m_triangleModeTest[mergeCand].m_candIdx0;
+      uint8_t candIdx1 = m_triangleModeTest[mergeCand].m_candIdx1;
+#else
       bool    splitDir = g_triangleCombination[mergeCand][0];
       uint8_t candIdx0 = g_triangleCombination[mergeCand][1];
       uint8_t candIdx1 = g_triangleCombination[mergeCand][2];
+#endif
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+      pu.triangleSplitDir = splitDir;
+      pu.triangleMergeIdx0 = candIdx0;
+      pu.triangleMergeIdx1 = candIdx1;
+#else
       pu.mergeIdx  = mergeCand;
+#endif
       pu.mergeFlag = true;
       triangleWeightedBuffer[mergeCand] = m_acTriangleWeightedBuffer[mergeCand].getBuf( localUnitArea );
       triangleBuffer[candIdx0] = m_acMergeBuffer[candIdx0].getBuf( localUnitArea );
       triangleBuffer[candIdx1] = m_acMergeBuffer[candIdx1].getBuf( localUnitArea );
 
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+      m_pcInterSearch->weightedTriangleBlk( pu, splitDir, CHANNEL_TYPE_LUMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+#else
       m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, CHANNEL_TYPE_LUMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
-      
+#endif
       distParam.cur = triangleWeightedBuffer[mergeCand].Y();
 
       Distortion uiSad = distParam.distFunc( distParam );
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+      uint32_t uiBitsCand = m_triangleIdxBins[splitDir][candIdx0][candIdx1];
+#else
       uint32_t uiBitsCand = g_triangleIdxBins[mergeCand];
+#endif
 
       double cost = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
 
@@ -2403,14 +2449,30 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     for( uint8_t i = 0; i < triangleNumMrgSATDCand; i++ )
     {
       uint8_t  mergeCand = triangleRdModeList[i];
+#if JVET_M0883_TRIANGLE_SIGNALING
+      bool     splitDir  = m_triangleModeTest[mergeCand].m_splitDir;
+      uint8_t  candIdx0  = m_triangleModeTest[mergeCand].m_candIdx0;
+      uint8_t  candIdx1  = m_triangleModeTest[mergeCand].m_candIdx1;
+#else
       bool     splitDir  = g_triangleCombination[mergeCand][0];
       uint8_t  candIdx0  = g_triangleCombination[mergeCand][1];
       uint8_t  candIdx1  = g_triangleCombination[mergeCand][2];
+#endif
         
+#if JVET_M0883_TRIANGLE_SIGNALING
+      pu.triangleSplitDir = splitDir;
+      pu.triangleMergeIdx0 = candIdx0;
+      pu.triangleMergeIdx1 = candIdx1;
+#else
       pu.mergeIdx  = mergeCand;
+#endif
       pu.mergeFlag = true;
                 
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+      m_pcInterSearch->weightedTriangleBlk( pu, splitDir, CHANNEL_TYPE_CHROMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+#else
       m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, CHANNEL_TYPE_CHROMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+#endif
     }
 
     tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
@@ -2430,9 +2492,15 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
           continue;
         }
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+        bool    splitDir = m_triangleModeTest[mergeCand].m_splitDir;
+        uint8_t candIdx0 = m_triangleModeTest[mergeCand].m_candIdx0;
+        uint8_t candIdx1 = m_triangleModeTest[mergeCand].m_candIdx1;
+#else
         bool    splitDir = g_triangleCombination[mergeCand][0];
         uint8_t candIdx0 = g_triangleCombination[mergeCand][1];
         uint8_t candIdx1 = g_triangleCombination[mergeCand][2];
+#endif
 
         CodingUnit &cu = tempCS->addCU(tempCS->area, partitioner.chType);
 
@@ -2451,10 +2519,20 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
         cu.GBiIdx   = GBI_DEFAULT;
         PredictionUnit &pu = tempCS->addPU(cu, partitioner.chType);
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+        pu.triangleSplitDir = splitDir;
+        pu.triangleMergeIdx0 = candIdx0;
+        pu.triangleMergeIdx1 = candIdx1;
+#else
         pu.mergeIdx = mergeCand;
+#endif
         pu.mergeFlag = true;
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+        PU::spanTriangleMotionInfo(pu, triangleMrgCtx, splitDir, candIdx0, candIdx1 );
+#else
         PU::spanTriangleMotionInfo(pu, triangleMrgCtx, mergeCand, splitDir, candIdx0, candIdx1 );
+#endif
 
         if( tempBufSet )
         {
@@ -2465,7 +2543,11 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
           triangleBuffer[candIdx0] = m_acMergeBuffer[candIdx0].getBuf( localUnitArea );
           triangleBuffer[candIdx1] = m_acMergeBuffer[candIdx1].getBuf( localUnitArea );
           PelUnitBuf predBuf         = tempCS->getPredBuf();
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+          m_pcInterSearch->weightedTriangleBlk( pu, splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+#else
           m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+#endif
         }
         
 #if JVET_M0464_UNI_MTS

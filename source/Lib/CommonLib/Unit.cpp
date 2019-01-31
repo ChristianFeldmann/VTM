@@ -343,6 +343,11 @@ void PredictionUnit::initData()
   // inter data
   mergeFlag   = false;
   mergeIdx    = MAX_UCHAR;
+#if JVET_M0883_TRIANGLE_SIGNALING
+  triangleSplitDir  = MAX_UCHAR;
+  triangleMergeIdx0 = MAX_UCHAR;
+  triangleMergeIdx1 = MAX_UCHAR;
+#endif
   mmvdMergeFlag = false;
   mmvdMergeIdx = MAX_UINT;
   interDir    = MAX_UCHAR;
@@ -388,6 +393,11 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
 {
   mergeFlag   = predData.mergeFlag;
   mergeIdx    = predData.mergeIdx;
+#if JVET_M0883_TRIANGLE_SIGNALING
+  triangleSplitDir  = predData.triangleSplitDir  ;
+  triangleMergeIdx0 = predData.triangleMergeIdx0 ;
+  triangleMergeIdx1 = predData.triangleMergeIdx1 ;
+#endif
   mmvdMergeFlag = predData.mmvdMergeFlag;
   mmvdMergeIdx = predData.mmvdMergeIdx;
   interDir    = predData.interDir;
@@ -428,6 +438,11 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
 
   mergeFlag   = other.mergeFlag;
   mergeIdx    = other.mergeIdx;
+#if JVET_M0883_TRIANGLE_SIGNALING
+  triangleSplitDir  = other.triangleSplitDir  ;
+  triangleMergeIdx0 = other.triangleMergeIdx0 ;
+  triangleMergeIdx1 = other.triangleMergeIdx1 ;
+#endif
   mmvdMergeFlag = other.mmvdMergeFlag;
   mmvdMergeIdx = other.mmvdMergeIdx;
   interDir    = other.interDir;

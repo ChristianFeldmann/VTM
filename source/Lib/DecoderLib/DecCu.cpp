@@ -352,12 +352,22 @@ void DecCu::xReconInter(CodingUnit &cu)
 {
   if( cu.triangle )
   {
+#if JVET_M0883_TRIANGLE_SIGNALING
+    const bool    splitDir = cu.firstPU->triangleSplitDir;
+    const uint8_t candIdx0 = cu.firstPU->triangleMergeIdx0;
+    const uint8_t candIdx1 = cu.firstPU->triangleMergeIdx1;
+#else
     const uint8_t mergeIdx = cu.firstPU->mergeIdx;
     const bool    splitDir = g_triangleCombination[mergeIdx][0];
     const uint8_t candIdx0 = g_triangleCombination[mergeIdx][1];
     const uint8_t candIdx1 = g_triangleCombination[mergeIdx][2];
+#endif
     m_pcInterPred->motionCompensation4Triangle( cu, m_triangleMrgCtx, splitDir, candIdx0, candIdx1 );
+#if JVET_M0883_TRIANGLE_SIGNALING
+    PU::spanTriangleMotionInfo( *cu.firstPU, m_triangleMrgCtx, splitDir, candIdx0, candIdx1 );
+#else
     PU::spanTriangleMotionInfo( *cu.firstPU, m_triangleMrgCtx, mergeIdx, splitDir, candIdx0, candIdx1 );
+#endif
   }
   else
   {

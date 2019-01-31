@@ -1709,7 +1709,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
         }
       }
-
     }
 #endif
     if( m_pcCfg->getUseAMaxBT() )

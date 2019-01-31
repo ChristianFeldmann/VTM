@@ -67,12 +67,12 @@ TCRCCalculatorLight::~TCRCCalculatorLight()
 void TCRCCalculatorLight::xInitTable()
 {
   const unsigned int highBit = 1 << (m_bits - 1);
-  const unsigned int ByteHighBit = 1 << (8 - 1);
+  const unsigned int byteHighBit = 1 << (8 - 1);
 
   for (unsigned int value = 0; value < 256; value++)
   {
     unsigned int remainder = 0;
-    for (unsigned char mask = ByteHighBit; mask != 0; mask >>= 1)
+    for (unsigned char mask = byteHighBit; mask != 0; mask >>= 1)
     {
       if (value & mask)
       {

@@ -144,7 +144,7 @@ protected:
 #if JVET_M0253_HASH_ME
   RefPicList      m_currRefPicList;
   int             m_currRefPicIndex;
-  bool            m_bSkipFracME;
+  bool            m_skipFracME;
 #endif
 
   // Misc.
@@ -275,7 +275,6 @@ public:
   int   xIBCSearchMVChromaRefine( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, int cuPelX, int cuPelY, Distortion* uiSadBestCand, Mv*     cMVCand);
 #if JVET_M0253_HASH_ME
   void addToSortList(std::list<BlockHash>& listBlockHash, std::list<int>& listCost, int cost, const BlockHash& blockHash);
-  Distortion getSAD(const Pel* refPel, const int refStride, const Pel* curPel, const int curStride, int width, int height, const BitDepths& bitDepths);
   bool predInterHashSearch(CodingUnit& cu, Partitioner& partitioner, bool& isPerfectMatch);
   bool xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPicList, int& bestRefIndex, Mv& bestMv, Mv& bestMvd, int& bestMVPIndex, bool& isPerfectMatch);
   int  xHashInterPredME(const PredictionUnit& pu, RefPicList currRefPicList, int currRefPicIndex, Mv bestMv[5]);

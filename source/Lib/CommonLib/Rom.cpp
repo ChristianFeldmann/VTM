@@ -429,8 +429,13 @@ void initROM()
 
       const uint32_t  groupWidth     = 1 << log2CGWidth;
       const uint32_t  groupHeight    = 1 << log2CGHeight;
+#if JVET_M0257
+      const uint32_t  widthInGroups = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, blockWidth) >> log2CGWidth;
+      const uint32_t  heightInGroups = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, blockHeight) >> log2CGHeight;
+#else
       const uint32_t  widthInGroups  = blockWidth >> log2CGWidth;
       const uint32_t  heightInGroups = blockHeight >> log2CGHeight;
+#endif
 
       const uint32_t  groupSize      = groupWidth    * groupHeight;
       const uint32_t  totalGroups    = widthInGroups * heightInGroups;
@@ -442,7 +447,17 @@ void initROM()
         g_scanOrder     [SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
         g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
         g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
-
+#if JVET_M0257
+        if ( blockWidth > JVET_C0024_ZERO_OUT_TH || blockHeight > JVET_C0024_ZERO_OUT_TH )
+        {
+          for (uint32_t i = 0; i < totalValues; i++)
+          {
+            g_scanOrder[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][i] = totalValues - 1;
+            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0][i] = blockWidth - 1;
+            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1][i] = blockHeight - 1;
+          }
+        }
+#endif
 
         ScanGenerator fullBlockScan(widthInGroups, heightInGroups, groupWidth, scanType);
 

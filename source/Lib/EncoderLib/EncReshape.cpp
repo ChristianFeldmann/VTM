@@ -154,6 +154,7 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
       int  binLen = m_reshapeLUTSize / PIC_ANALYZE_CW_BINS;
 
       m_reshapeCW = reshapeCW;
+      m_initCWAnalyze = binLen;
 
       for (int b = 0; b < PIC_ANALYZE_CW_BINS; b++)
       {
@@ -402,6 +403,7 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
         m_sliceReshapeInfo.reshaperModelMinBinIdx = startBinIdx;
         m_sliceReshapeInfo.reshaperModelMaxBinIdx = endBinIdx;
       }
+
       m_initCWAnalyze = m_lumaBD > 10 ? (m_initCWAnalyze >> (m_lumaBD - 10)) : m_lumaBD < 10 ? (m_initCWAnalyze << (10 - m_lumaBD)) : m_initCWAnalyze;
       if (reshapeCW.rspBaseQP <= 22 && m_rateAdpMode == 1)
       {

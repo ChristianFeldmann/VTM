@@ -117,6 +117,7 @@ typedef std::pair<int, int>  TrCost;
 // clang-format off
 #define JVET_M0453_CABAC_ENGINE                           1
 #define JVET_M0512_MOTION_BUFFER_COMPRESSION              1
+#define JVET_M0238_PDPC_NO_INTERPOLATION                  1
 
 #define JVET_M0409_ATMVP_FIX                              1
 

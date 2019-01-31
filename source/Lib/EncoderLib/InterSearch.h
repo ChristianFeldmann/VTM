@@ -404,6 +404,10 @@ protected:
                                     Mv              acMv[3],
                                     uint32_t&           ruiBits,
                                     Distortion&     ruiCost,
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+                                    int&            mvpIdx,
+                                    const AffineAMVPInfo& aamvpi,
+#endif
                                     bool            bBi = false
                                   );
 
@@ -430,7 +434,11 @@ protected:
   void xSymmetricMotionEstimation( PredictionUnit& pu, PelUnitBuf& origBuf, Mv& rcMvCurPred, Mv& rcMvTarPred, RefPicList eRefPicList, MvField& rCurMvField, MvField& rTarMvField, Distortion& ruiCost, int gbiIdx );
 #endif
 
-  bool xReadBufferedAffineUniMv   ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv acMvPred[3], Mv acMv[3], uint32_t& ruiBits, Distortion& ruiCost);
+  bool xReadBufferedAffineUniMv   ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv acMvPred[3], Mv acMv[3], uint32_t& ruiBits, Distortion& ruiCost
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+                                    , int& mvpIdx, const AffineAMVPInfo& aamvpi
+#endif
+  );
   double xGetMEDistortionWeight   ( uint8_t gbiIdx, RefPicList eRefPicList);
   bool xReadBufferedUniMv         ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost);
 
@@ -458,7 +466,9 @@ protected:
 
   void xExtDIFUpSamplingH         ( CPelBuf* pcPattern );
   void xExtDIFUpSamplingQ         ( CPelBuf* pcPatternKey, Mv halfPelRef );
-
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  uint32_t xDetermineBestMvp      ( PredictionUnit& pu, Mv acMvTemp[3], int& mvpIdx, const AffineAMVPInfo& aamvpi );
+#endif
   // -------------------------------------------------------------------------------------------------------------------
   // compute symbol bits
   // -------------------------------------------------------------------------------------------------------------------

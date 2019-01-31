@@ -1943,7 +1943,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     }
   }
 
-#if JVET_M0281_AMVP_ROUNDING
+#if JVET_M0281_AMVP_ROUNDING || JVET_M0117_AMVP_LIST_GEN
   for( int i = 0; i < pInfo->numCand; i++ )
   {
     pInfo->mvCand[i].roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
@@ -1966,7 +1966,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     }
   }
 
-#if JVET_M0281_AMVP_ROUNDING
+#if JVET_M0281_AMVP_ROUNDING || JVET_M0117_AMVP_LIST_GEN
   if( cs.slice->getEnableTMVPFlag() && pInfo->numCand < AMVP_MAX_NUM_CANDS )
 #else
   if( cs.slice->getEnableTMVPFlag() )
@@ -2021,7 +2021,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     if ((C0Avail && getColocatedMVP(pu, eRefPicList, posC0, cColMv, refIdx_Col)) || getColocatedMVP(pu, eRefPicList, posC1, cColMv, refIdx_Col))
 #endif
     {
-#if JVET_M0281_AMVP_ROUNDING
+#if JVET_M0281_AMVP_ROUNDING || JVET_M0117_AMVP_LIST_GEN
       cColMv.roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
 #else
       if (pu.cu->imv != 0)
@@ -2029,6 +2029,9 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
         cColMv.roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
       }
 #endif
+#if JVET_M0117_AMVP_LIST_GEN
+      pInfo->mvCand[pInfo->numCand++] = cColMv;
+#else
       int i = 0;
       for (i = 0; i < pInfo->numCand; i++)
       {
@@ -2041,6 +2044,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
       {
         pInfo->mvCand[pInfo->numCand++] = cColMv;
       }
+#endif
     }
   }
 
@@ -2065,7 +2069,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
   for (Mv &mv : pInfo->mvCand)
   {
     mv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-#if !JVET_M0281_AMVP_ROUNDING
+#if !JVET_M0281_AMVP_ROUNDING && !JVET_M0117_AMVP_LIST_GEN
     mv.roundToAmvrSignalPrecision(MV_PRECISION_QUARTER, pu.cu->imv);
 #endif
   }
@@ -2625,7 +2629,9 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
   const Slice &slice = *(*pu.cs).slice;
 
   MotionInfo neibMi;
+#if !JVET_M0117_AMVP_LIST_GEN
   int i = 0;
+#endif
   int num_avai_candInLUT = slice.getAvailableLUTMrgNum();
   int num_allowedCand = std::min(MAX_NUM_HMVP_AVMPCANDS, num_avai_candInLUT);
 
@@ -2635,7 +2641,11 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
     {
       return;
     }
+#if JVET_M0117_AMVP_LIST_GEN
+    neibMi = slice.getMotionInfoFromLUTs(mrgIdx - 1);
+#else
     neibMi = slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx);
+#endif
 
     for (int predictorSource = 0; predictorSource < 2; predictorSource++) 
     {
@@ -2645,7 +2655,7 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
       if (neibRefIdx >= 0 && currRefPOC == slice.getRefPOC(eRefPicListIndex, neibRefIdx))
       {
         Mv pmv = neibMi.mv[eRefPicListIndex];
-#if JVET_M0281_AMVP_ROUNDING
+#if JVET_M0281_AMVP_ROUNDING || JVET_M0117_AMVP_LIST_GEN
         pmv.roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
 #else
         if (imv != 0)
@@ -2654,6 +2664,13 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
         }
 #endif
 
+#if JVET_M0117_AMVP_LIST_GEN
+        info.mvCand[info.numCand++] = pmv;
+        if (info.numCand >= AMVP_MAX_NUM_CANDS)
+        {
+          return;
+        }
+#else
         for (i = 0; i < info.numCand; i++)
         {
           if (pmv == info.mvCand[i])
@@ -2669,6 +2686,7 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
             return;
           }
         }
+#endif
       }
     }
   }

@@ -942,6 +942,9 @@ private:
   bool              m_bNoDepQuantConstraintFlag;
   bool              m_bNoSignDataHidingConstraintFlag;
 
+#if JVET_M0246_AFFINE_AMVR
+  bool              m_affineAmvrEnabledFlag;
+#endif
 #if HEVC_VPS
   int               m_VPSId;
 #endif
@@ -1227,6 +1230,10 @@ public:
   void                    setUseStrongIntraSmoothing(bool bVal)                                           { m_useStrongIntraSmoothing = bVal;                                    }
   bool                    getUseStrongIntraSmoothing() const                                              { return m_useStrongIntraSmoothing;                                    }
 
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  void                    setAffineAmvrEnabledFlag( bool val )                                            { m_affineAmvrEnabledFlag = val;                                       }
+  bool                    getAffineAmvrEnabledFlag() const                                                { return m_affineAmvrEnabledFlag;                                      }
 #endif
   bool                    getVuiParametersPresentFlag() const                                             { return m_vuiParametersPresentFlag;                                   }
   void                    setVuiParametersPresentFlag(bool b)                                             { m_vuiParametersPresentFlag = b;                                      }

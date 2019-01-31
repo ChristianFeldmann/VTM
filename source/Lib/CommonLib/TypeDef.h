@@ -107,6 +107,7 @@ typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 #endif
 
+#define JVET_M0246_AFFINE_AMVR                            1
 #define JVET_M0421_SPLIT_SIG                              1
 
 #define JVET_M0173_MOVE_GT2_TO_FIRST_PASS                 1 // Moving the gtr2 flag to the first coding pass

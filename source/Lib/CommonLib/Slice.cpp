@@ -1840,6 +1840,9 @@ SPS::SPS()
 , m_bNoLadfConstraintFlag     (false)
 , m_bNoDepQuantConstraintFlag (false)
 , m_bNoSignDataHidingConstraintFlag(false)
+#if JVET_M0246_AFFINE_AMVR
+, m_affineAmvrEnabledFlag     ( false )
+#endif
 #if HEVC_VPS
 , m_VPSId                     (  0)
 #endif

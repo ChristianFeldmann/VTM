@@ -979,6 +979,13 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
     return;
   }
 
+#if JVET_M0246_AFFINE_AMVR
+  if ( cu.affine )
+  {
+    return;
+  }
+#endif
+
   const SPSNext& spsNext = cu.cs->sps->getSpsNext();
 
   unsigned value = 0;
@@ -999,6 +1006,39 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
   cu.imv = value;
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() IMVFlag=%d\n", cu.imv );
 }
+
+#if JVET_M0246_AFFINE_AMVR
+void CABACReader::affine_amvr_mode( CodingUnit& cu, MergeCtx& mrgCtx )
+{
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__OTHER );
+
+  const SPS* sps = cu.slice->getSPS();
+
+  if( !sps->getAffineAmvrEnabledFlag() || !cu.affine )
+  {
+    return;
+  }
+
+  if ( !CU::hasSubCUNonZeroAffineMVd( cu ) )
+  {
+    return;
+  }
+
+  unsigned value = 0;
+  value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 4 ) );
+  DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 4 );
+
+  if( value )
+  {
+    value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 5 ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 5 );
+    value++;
+  }
+
+  cu.imv = value;
+  DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() IMVFlag=%d\n", cu.imv );
+}
+#endif
 
 void CABACReader::pred_mode( CodingUnit& cu )
 {
@@ -1057,7 +1097,9 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
   }
 
   imv_mode   ( cu, mrgCtx );
-
+#if JVET_M0246_AFFINE_AMVR
+  affine_amvr_mode( cu, mrgCtx );
+#endif
   cu_gbi_flag( cu );
 
 }

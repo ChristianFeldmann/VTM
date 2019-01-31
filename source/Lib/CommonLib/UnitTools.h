@@ -92,6 +92,9 @@ namespace CU
   cTUTraverser traverseTUs            (const CodingUnit& cu);
 
   bool  hasSubCUNonZeroMVd            (const CodingUnit& cu);
+#if JVET_M0246_AFFINE_AMVR
+  bool  hasSubCUNonZeroAffineMVd      ( const CodingUnit& cu );
+#endif
   int   getMaxNeighboriMVCandNum      (const CodingStructure& cs, const Position& pos);
   void  resetMVDandMV2Int             (      CodingUnit& cu, InterPrediction *interPred );
 

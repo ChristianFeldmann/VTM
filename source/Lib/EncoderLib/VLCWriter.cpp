@@ -724,7 +724,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if JVET_M0255_FRACMMVD_SWITCH
   WRITE_FLAG( pcSPS->getDisFracMmvdEnabledFlag() ? 1 : 0,                            "sps_fracmmvd_disabled_flag" );
 #endif
-
+#if JVET_M0246_AFFINE_AMVR
+  WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                             "sps_affine_amvr_enabled_flag" );
+#endif
 #if HEVC_USE_SCALING_LISTS
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "scaling_list_enabled_flag" );
   if(pcSPS->getScalingListFlag())

@@ -894,6 +894,9 @@ void EncLib::xInitSPS(SPS &sps)
 #if JVET_M0255_FRACMMVD_SWITCH
   sps.setDisFracMmvdEnabledFlag             ( m_allowDisFracMMVD );
 #endif
+#if JVET_M0246_AFFINE_AMVR
+  sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
+#endif
   sps.getSpsNext().setIBCMode               ( m_IBCMode );
 
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );

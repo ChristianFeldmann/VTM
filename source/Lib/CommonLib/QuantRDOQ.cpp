@@ -149,7 +149,12 @@ inline uint32_t QuantRDOQ::xGetCodedLevel( double&            rd64CodedCost,
   for( int uiAbsLevel  = uiMaxAbsLevel; uiAbsLevel >= uiMinAbsLevel ; uiAbsLevel-- )
   {
     double dErr         = double( lLevelDouble  - ( Intermediate_Int(uiAbsLevel) << iQBits ) );
+
+#if JVET_M0470
+    double dCurrCost    = dErr * dErr * errorScale + xGetICost( xGetICRate( uiAbsLevel, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, ui16AbsGoRice, true, maxLog2TrDynamicRange ) );
+#else
     double dCurrCost    = dErr * dErr * errorScale + xGetICost( xGetICRate( uiAbsLevel, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, ui16AbsGoRice, useLimitedPrefixLength, maxLog2TrDynamicRange ) );
+#endif
     dCurrCost          += dCurrCostSig;
 
     if( dCurrCost < rd64CodedCost )
@@ -194,7 +199,11 @@ inline int QuantRDOQ::xGetICRate( const uint32_t         uiAbsLevel,
     int       iRate   = int( xGetIEPRate() ); // cost of sign bit
     uint32_t  symbol  = ( uiAbsLevel == 0 ? goRiceZero : uiAbsLevel <= goRiceZero ? uiAbsLevel-1 : uiAbsLevel );
     uint32_t  length;
+#if JVET_M0470
+    const int threshold = COEF_REMAIN_BIN_REDUCTION;
+#else
     const int threshold = g_auiGoRiceRange[ui16AbsGoRice];
+#endif
     if( symbol < ( threshold << ui16AbsGoRice ) )
     {
       length = symbol >> ui16AbsGoRice;
@@ -239,7 +248,11 @@ inline int QuantRDOQ::xGetICRate( const uint32_t         uiAbsLevel,
   {
     uint32_t symbol = ( uiAbsLevel - cthres ) >> 1;
     uint32_t length;
+#if JVET_M0470
+    const int threshold = COEF_REMAIN_BIN_REDUCTION;
+#else
     const int threshold = g_auiGoRiceRange[ui16AbsGoRice];
+#endif
     if( symbol < ( threshold << ui16AbsGoRice ) )
     {
       length = symbol >> ui16AbsGoRice;

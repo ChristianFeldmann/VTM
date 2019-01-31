@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0257                                        1 // Scan only non zero-out regions of large TUs
 #define JVET_M0193_PAIR_AVG_REDUCTION                     1 //Use only one pairwise average candidate
 
 #define JVET_M0192_AFF_CHROMA_SIMPL                       1 // Affine chroma MV derivation simplification and rounding unification

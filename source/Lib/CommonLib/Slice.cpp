@@ -1801,9 +1801,6 @@ SPSNext::SPSNext( SPS& sps )
   , m_MTTEnabled                ( false )
   , m_MHIntra                   ( false )
   , m_Triangle                  ( false )
-#if JVET_M0255_FRACMMVD_SWITCH
-  , allowDisFracMMVD            ( false )
-#endif
 #if ENABLE_WPP_PARALLELISM
   , m_NextDQP                   ( false )
 #endif
@@ -1873,6 +1870,9 @@ SPS::SPS()
 , m_bPCMFilterDisableFlag     (false)
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
+#if JVET_M0255_FRACMMVD_SWITCH
+, m_disFracMmvdEnabledFlag    ( false )
+#endif
 , m_uiBitsForPOC              (  8)
 , m_numLongTermRefPicSPS      (  0)
 , m_uiMaxTrSize               ( 32)

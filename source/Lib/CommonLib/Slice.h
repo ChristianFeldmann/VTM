@@ -820,9 +820,6 @@ private:
   bool              m_MTTEnabled;                 //
   bool              m_MHIntra;
   bool              m_Triangle;
-#if JVET_M0255_FRACMMVD_SWITCH
-  bool              allowDisFracMMVD;
-#endif
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
 #endif
@@ -919,10 +916,6 @@ public:
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
   void      setIBCMode            (unsigned IBCMode)                                { m_IBCMode = IBCMode; }
   unsigned  getIBCMode            ()                                      const     { return m_IBCMode; }
-#if JVET_M0255_FRACMMVD_SWITCH
-  void      setAllowDisFracMMVD   ( bool b )                                        { allowDisFracMMVD = b;    }
-  bool      getAllowDisFracMMVD   ()                                      const     { return allowDisFracMMVD; }
-#endif
 };
 
 
@@ -997,7 +990,9 @@ private:
 
   bool              m_sbtmvpEnabledFlag;
   bool              m_bdofEnabledFlag;
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  bool              m_disFracMmvdEnabledFlag;
+#endif
   uint32_t              m_uiBitsForPOC;
   uint32_t              m_numLongTermRefPicSPS;
   uint32_t              m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
@@ -1199,6 +1194,11 @@ public:
   
   void                    setBDOFEnabledFlag(bool b)                                                      { m_bdofEnabledFlag = b; }
   bool                    getBDOFEnabledFlag() const                                                      { return m_bdofEnabledFlag; }
+
+#if JVET_M0255_FRACMMVD_SWITCH
+  bool                    getDisFracMmvdEnabledFlag() const                                               { return m_disFracMmvdEnabledFlag; }
+  void                    setDisFracMmvdEnabledFlag( bool b )                                             { m_disFracMmvdEnabledFlag = b;    }
+#endif
 
   uint32_t                getMaxTLayers() const                                                           { return m_uiMaxTLayers; }
   void                    setMaxTLayers( uint32_t uiMaxTLayers )                                          { CHECK( uiMaxTLayers > MAX_TLAYER, "Invalid number T-layers" ); m_uiMaxTLayers = uiMaxTLayers; }

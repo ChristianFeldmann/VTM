@@ -1222,15 +1222,24 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #if JVET_L0090_PAIR_AVG
   // pairwise-average candidates
   {
+#if !JVET_M0193_PAIR_AVG_REDUCTION
     const int cutoff = std::min( cnt, 4 );
     const int end = cutoff * (cutoff - 1) / 2;
     constexpr int PRIORITY_LIST0[] = { 0, 0, 1, 0, 1, 2 };
     constexpr int PRIORITY_LIST1[] = { 1, 2, 2, 3, 3, 3 };
+#endif
 
+#if JVET_M0193_PAIR_AVG_REDUCTION
+    // skip when only 1 candidate is added so far or one is BV and one is MV
+    if( cnt > 1 && cnt < maxNumMergeCand && !(mrgCtx.mrgTypeNeighbours[0] != mrgCtx.mrgTypeNeighbours[1] && pu.cs->sps->getSpsNext().getIBCMode()))
+#else
     for( int idx = 0; idx < end && cnt != maxNumMergeCand; idx++ )
+#endif
     {
+#if !JVET_M0193_PAIR_AVG_REDUCTION
       const int i = PRIORITY_LIST0[idx];
       const int j = PRIORITY_LIST1[idx];
+#endif
 
       mrgCtx.mvFieldNeighbours[cnt * 2].setMvField( Mv( 0, 0 ), NOT_VALID );
       mrgCtx.mvFieldNeighbours[cnt * 2 + 1].setMvField( Mv( 0, 0 ), NOT_VALID );
@@ -1238,15 +1247,22 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       unsigned char interDir = 0;
 
 
+#if !JVET_M0193_PAIR_AVG_REDUCTION
       // skip when one is BV and one is MV
       if (mrgCtx.mrgTypeNeighbours[i] != mrgCtx.mrgTypeNeighbours[j] && pu.cs->sps->getSpsNext().getIBCMode())
       {
         continue;
       }
+#endif
       for( int refListId = 0; refListId < (slice.isInterB() ? 2 : 1); refListId++ )
       {
+#if JVET_M0193_PAIR_AVG_REDUCTION
+        const short refIdxI = mrgCtx.mvFieldNeighbours[0 * 2 + refListId].refIdx;
+        const short refIdxJ = mrgCtx.mvFieldNeighbours[1 * 2 + refListId].refIdx;
+#else
         const short refIdxI = mrgCtx.mvFieldNeighbours[i * 2 + refListId].refIdx;
         const short refIdxJ = mrgCtx.mvFieldNeighbours[j * 2 + refListId].refIdx;
+#endif
 
         // both MVs are invalid, skip
         if( (refIdxI == NOT_VALID) && (refIdxJ == NOT_VALID) )
@@ -1258,8 +1274,13 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
         // both MVs are valid, average these two MVs
         if( (refIdxI != NOT_VALID) && (refIdxJ != NOT_VALID) )
         {
+#if JVET_M0193_PAIR_AVG_REDUCTION
+          const Mv& MvI = mrgCtx.mvFieldNeighbours[0 * 2 + refListId].mv;
+          const Mv& MvJ = mrgCtx.mvFieldNeighbours[1 * 2 + refListId].mv;
+#else
           const Mv& MvI = mrgCtx.mvFieldNeighbours[i * 2 + refListId].mv;
           const Mv& MvJ = mrgCtx.mvFieldNeighbours[j * 2 + refListId].mv;
+#endif
 
           // average two MVs
           Mv avgMv = MvI;
@@ -1272,7 +1293,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #endif
 
 
+#if JVET_M0193_PAIR_AVG_REDUCTION
+          if (mrgCtx.mrgTypeNeighbours[0] == MRG_TYPE_IBC && mrgCtx.mrgTypeNeighbours[1] == MRG_TYPE_IBC && pu.cs->sps->getSpsNext().getIBCMode())
+#else
           if (mrgCtx.mrgTypeNeighbours[i] == MRG_TYPE_IBC && mrgCtx.mrgTypeNeighbours[j] == MRG_TYPE_IBC && pu.cs->sps->getSpsNext().getIBCMode())
+#endif
           {
              mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
              avgMv.setHor((avgMv.getHor() / 16) << 4);
@@ -1284,12 +1309,20 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
         // only one MV is valid, take the only one MV
         else if( refIdxI != NOT_VALID )
         {
+#if JVET_M0193_PAIR_AVG_REDUCTION
+          Mv singleMv = mrgCtx.mvFieldNeighbours[0 * 2 + refListId].mv;
+#else
           Mv singleMv = mrgCtx.mvFieldNeighbours[i * 2 + refListId].mv;
+#endif
           mrgCtx.mvFieldNeighbours[cnt * 2 + refListId].setMvField( singleMv, refIdxI );
         }
         else if( refIdxJ != NOT_VALID )
         {
+#if JVET_M0193_PAIR_AVG_REDUCTION
+          Mv singleMv = mrgCtx.mvFieldNeighbours[1 * 2 + refListId].mv;
+#else
           Mv singleMv = mrgCtx.mvFieldNeighbours[j * 2 + refListId].mv;
+#endif
           mrgCtx.mvFieldNeighbours[cnt * 2 + refListId].setMvField( singleMv, refIdxJ );
         }
       }
@@ -3955,7 +3988,6 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
       candCount++;
     }
   }
-  
   // put uni-prediction candidate to the triangle candidate list
   for( int32_t i = 0; i < candCount; i++ )
   { 
@@ -4090,6 +4122,7 @@ bool PU::isUniqueTriangleCandidates( const PredictionUnit &pu, MergeCtx& triangl
   return true;  
 }
 
+#if !JVET_M0328_KEEP_ONE_WEIGHT_GROUP
 bool PU::getTriangleWeights( const PredictionUnit& pu, MergeCtx &triangleMrgCtx, const uint8_t candIdx0, const uint8_t candIdx1 )
 {
   RefPicList refPicListCand0 = triangleMrgCtx.interDirNeighbours[candIdx0] == 1 ? REF_PIC_LIST_0 : REF_PIC_LIST_1;
@@ -4114,10 +4147,21 @@ bool PU::getTriangleWeights( const PredictionUnit& pu, MergeCtx &triangleMrgCtx,
 
   return false;
 }
+#endif
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 )
+#else
 void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, const uint8_t mergeIdx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 )
+#endif
 {
+#if JVET_M0883_TRIANGLE_SIGNALING
+  pu.triangleSplitDir = splitDir;
+  pu.triangleMergeIdx0 = candIdx0;
+  pu.triangleMergeIdx1 = candIdx1;
+#else
   pu.mergeIdx  = mergeIdx;
+#endif
   MotionBuf mb = pu.getMotionBuf();
 
   MotionInfo biMv;

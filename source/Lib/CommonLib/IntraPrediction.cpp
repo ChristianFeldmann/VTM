@@ -770,7 +770,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
           if (wL == 0) break;
           Pel *p = refSide + deltay;
 
+#if JVET_M0238_PDPC_NO_INTERPOLATION
+          Pel left = p[deltaFrac0 >> 5];
+#else
           Pel left = (((64 - deltaFrac0) * p[0] + deltaFrac0 * p[1] + 32) >> 6);
+#endif
           pDsty[x] = ClipPel((wL * left + (64 - wL) * pDsty[x] + 32) >> 6, clpRng);
         }
       }

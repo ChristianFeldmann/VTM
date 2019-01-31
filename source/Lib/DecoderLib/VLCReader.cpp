@@ -829,6 +829,9 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   READ_FLAG( symbol,  "mtt_enabled_flag" );                       spsNext.setMTTMode                ( symbol );
   READ_FLAG( symbol,  "mhintra_flag" );                           spsNext.setUseMHIntra             ( symbol != 0 );
   READ_FLAG( symbol,    "triangle_flag" );                          spsNext.setUseTriangle            ( symbol != 0 );
+#if JVET_M0147_DMVR
+  READ_FLAG(symbol, "dmvr_enable_flag");                          spsNext.setUseDMVR                  (symbol != 0);
+#endif
 #if ENABLE_WPP_PARALLELISM
   READ_FLAG( symbol,  "next_dqp_enabled_flag" );                  spsNext.setUseNextDQP             ( symbol != 0 );
 #else

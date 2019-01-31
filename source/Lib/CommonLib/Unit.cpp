@@ -354,6 +354,13 @@ void PredictionUnit::initData()
   mergeType   = MRG_TYPE_DEFAULT_N;
   bv.setZero();
   bvd.setZero();
+#if JVET_M0147_DMVR
+  mvRefine = false;
+  for (uint32_t i = 0; i < MAX_NUM_SUBCU_DMVR; i++)
+  {
+    mvdL0SubPu[i].setZero();
+  }
+#endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i] = MAX_UCHAR;
@@ -407,6 +414,13 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
   mergeType   = predData.mergeType;
   bv          = predData.bv;
   bvd         = predData.bvd;
+#if JVET_M0147_DMVR
+  mvRefine = predData.mvRefine;
+  for (uint32_t i = 0; i < MAX_NUM_SUBCU_DMVR; i++)
+  {
+    mvdL0SubPu[i] = predData.mvdL0SubPu[i];
+  }
+#endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i]   = predData.mvpIdx[i];
@@ -452,6 +466,13 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   mergeType   = other.mergeType;
   bv          = other.bv;
   bvd         = other.bvd;
+#if JVET_M0147_DMVR
+  mvRefine = other.mvRefine;
+  for (uint32_t i = 0; i < MAX_NUM_SUBCU_DMVR; i++)
+  {
+    mvdL0SubPu[i] = other.mvdL0SubPu[i];
+  }
+#endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i]   = other.mvpIdx[i];

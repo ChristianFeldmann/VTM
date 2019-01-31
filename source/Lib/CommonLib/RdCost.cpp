@@ -336,12 +336,16 @@ void RdCost::setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, 
   rcDP.cur.stride = iRefStride;
   rcDP.cur.width  = width;
   rcDP.cur.height = height;
-
+#if JVET_M0147_DMVR
+  rcDP.subShift = subShiftMode;
+#endif
   rcDP.step       = step;
   rcDP.maximumDistortionForEarlyExit = std::numeric_limits<Distortion>::max();
-
+#if JVET_M0147_DMVR
+  CHECK( useHadamard || rcDP.useMR, "only used in xDMVRCost with these default parameters (so far...)" );
+#else
   CHECK( useHadamard || rcDP.useMR || subShiftMode > 0, "only used in xDirectMCCost with these default parameters (so far...)" );
-
+#endif
   if ( bioApplied )
   {
     rcDP.distFunc = m_afpDistortFunc[ DF_SAD_INTERMEDIATE_BITDEPTH ];

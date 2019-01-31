@@ -372,6 +372,10 @@ struct InterPredictionData
   Mv        mv      [NUM_REF_PIC_LIST_01];
   int16_t     refIdx  [NUM_REF_PIC_LIST_01];
   MergeType mergeType;
+#if JVET_M0147_DMVR
+  bool      mvRefine;
+  Mv        mvdL0SubPu[MAX_NUM_SUBCU_DMVR];
+#endif
   Mv        mvdAffi [NUM_REF_PIC_LIST_01][3];
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
   bool      mhIntraFlag;

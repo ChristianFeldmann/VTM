@@ -855,6 +855,9 @@ private:
   bool              m_MTTEnabled;                 //
   bool              m_MHIntra;
   bool              m_Triangle;
+#if JVET_M0147_DMVR
+  bool              m_DMVR;
+#endif
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
 #endif
@@ -896,6 +899,10 @@ public:
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
+#if JVET_M0147_DMVR
+  void      setUseDMVR(bool b)                                                      { m_DMVR = b; }
+  bool      getUseDMVR()                                                   const    { return m_DMVR; }
+#endif
   void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
   bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }
   bool      getMTTEnabled         ()                                      const     { return m_MTTEnabled; }

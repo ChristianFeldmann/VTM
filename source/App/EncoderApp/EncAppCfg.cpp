@@ -876,6 +876,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if JVET_M0247_AFFINE_AMVR_ENCOPT
   ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
 #endif
+#if JVET_M0147_DMVR
+  ("DMVR",                                            m_DMVR,        
+#endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
   ( "IBCLocalSearchRangeY",                           m_IBCLocalSearchRangeY,                            128u, "Search range of IBC local search in y direction")
@@ -1971,6 +1974,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_GBi, "GBi is only allowed with NEXT profile" );
     xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
+#if JVET_M0147_DMVR
+    xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
+#endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
   else
@@ -3202,6 +3208,9 @@ void EncAppCfg::xPrintParameter()
 #if JVET_M0247_AFFINE_AMVR_ENCOPT
     m_AffineAmvrEncOpt = m_AffineAmvr ? m_AffineAmvrEncOpt : false;
     msg( VERBOSE, "AffineAmvrEncOpt:%d ", m_AffineAmvrEncOpt );
+#endif
+#if JVET_M0147_DMVR
+    msg(VERBOSE, "DMVR:%d ", m_DMVR);
 #endif
   }
     msg(VERBOSE, "IBC:%d ", m_IBCMode);

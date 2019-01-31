@@ -65,7 +65,39 @@ UnitArea CS::getArea( const CodingStructure &cs, const UnitArea &area, const Cha
 {
   return isDualITree( cs ) ? area.singleChan( chType ) : area;
 }
-
+#if JVET_M0147_DMVR
+void CS::setRefinedMotionField(CodingStructure &cs)
+{
+  for (CodingUnit *cu : cs.cus)
+  {
+    for (auto &pu : CU::traversePUs(*cu))
+    {
+      PredictionUnit subPu = pu;
+      int dx, dy, x, y, num = 0;
+      dy = std::min<int>(pu.lumaSize().height, DMVR_SUBCU_HEIGHT);
+      dx = std::min<int>(pu.lumaSize().width, DMVR_SUBCU_WIDTH);
+      Position puPos = pu.lumaPos();      
+      if (PU::checkDMVRCondition(pu))
+      {
+        for (y = puPos.y; y < (puPos.y + pu.lumaSize().height); y = y + dy)
+        {
+          for (x = puPos.x; x < (puPos.x + pu.lumaSize().width); x = x + dx)
+          {
+            subPu.UnitArea::operator=(UnitArea(pu.chromaFormat, Area(x, y, dx, dy)));
+            subPu.mv[0] = pu.mv[0];
+            subPu.mv[1] = pu.mv[1];
+            subPu.mv[REF_PIC_LIST_0] += pu.mvdL0SubPu[num];
+            subPu.mv[REF_PIC_LIST_1] -= pu.mvdL0SubPu[num];
+            pu.mvdL0SubPu[num].setZero();
+            num++;
+            PU::spanMotionInfo(subPu);
+          }
+        }
+      }
+    }
+  }  
+}
+#endif
 // CU tools
 
 bool CU::isIntra(const CodingUnit &cu)
@@ -1426,6 +1458,27 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   }
   mrgCtx.numValidMergeCand = uiArrayAddr;
 }
+#if JVET_M0147_DMVR
+bool PU::checkDMVRCondition(const PredictionUnit& pu)
+{
+  if (pu.cs->sps->getSpsNext().getUseDMVR())
+  {
+    return pu.mergeFlag
+      && pu.mergeType == MRG_TYPE_DEFAULT_N
+      && !pu.cu->affine
+      && !pu.mmvdMergeFlag
+      && !pu.cu->mmvdSkip
+      && PU::isBiPredFromDifferentDirEqDistPoc(pu)
+      && (pu.lheight() >= 8)
+      && ((pu.lheight() * pu.lwidth()) >= 64)
+      ;
+  }
+  else
+  {
+    return false;
+  }
+}
+#endif
 // for ibc pu validation
 bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize)
 {
@@ -3820,7 +3873,25 @@ bool PU::isBiPredFromDifferentDir( const PredictionUnit& pu )
 
   return false;
 }
-
+#if JVET_M0147_DMVR
+bool PU::isBiPredFromDifferentDirEqDistPoc(const PredictionUnit& pu)
+{
+  if (pu.refIdx[0] >= 0 && pu.refIdx[1] >= 0)
+  {
+    const int iPOC0 = pu.cu->slice->getRefPOC(REF_PIC_LIST_0, pu.refIdx[0]);
+    const int iPOC1 = pu.cu->slice->getRefPOC(REF_PIC_LIST_1, pu.refIdx[1]);
+    const int iPOC = pu.cu->slice->getPOC();
+    if ((iPOC - iPOC0)*(iPOC - iPOC1) < 0)
+    {
+      if (abs(iPOC - iPOC0) == abs(iPOC - iPOC1))
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+#endif
 void PU::restrictBiPredMergeCands( const PredictionUnit &pu, MergeCtx& mergeCtx )
 {
   if( PU::isBipredRestriction( pu ) )

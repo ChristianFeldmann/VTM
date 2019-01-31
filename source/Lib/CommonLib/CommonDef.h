@@ -332,6 +332,14 @@ static const uint32_t LUMA_LEVEL_TO_DQP_LUT_MAXSIZE =                1024; ///< 
 #if !JVET_M0464_UNI_MTS
 static const int NUM_EMT_CU_FLAG_CTX =                              6;      ///< number of context models for EMT CU-level flag
 #endif
+#if JVET_M0147_DMVR
+static const int DMVR_SUBCU_WIDTH = 16;
+static const int DMVR_SUBCU_HEIGHT = 16;
+static const int DMVR_SUBCU_WIDTH_LOG2 = 4;
+static const int DMVR_SUBCU_HEIGHT_LOG2 = 4;
+static const int MAX_NUM_SUBCU_DMVR = ((MAX_CU_SIZE * MAX_CU_SIZE) >> (DMVR_SUBCU_WIDTH_LOG2 + DMVR_SUBCU_HEIGHT_LOG2));
+static const int DMVR_NUM_ITERATION = 2;
+#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.

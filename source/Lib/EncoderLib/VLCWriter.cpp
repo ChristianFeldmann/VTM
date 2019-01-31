@@ -570,6 +570,9 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   WRITE_FLAG( spsNext.getMTTEnabled() ? 1 : 0,                                                  "mtt_enabled_flag" );
   WRITE_FLAG( spsNext.getUseMHIntra() ? 1 : 0,                                                  "mhintra_flag" );
   WRITE_FLAG( spsNext.getUseTriangle() ? 1: 0,                                                  "triangle_flag" );
+#if JVET_M0147_DMVR
+  WRITE_FLAG(spsNext.getUseDMVR() ? 1 : 0,                                                      "dmvr_enable_flag");
+#endif
 #if ENABLE_WPP_PARALLELISM
   WRITE_FLAG( spsNext.getUseNextDQP(),                                                          "next_dqp_enabled_flag" );
 #else

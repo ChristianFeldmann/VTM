@@ -250,6 +250,9 @@ protected:
 #if JVET_M0247_AFFINE_AMVR_ENCOPT
   bool      m_AffineAmvrEncOpt;
 #endif
+#if JVET_M0147_DMVR
+  bool      m_DMVR;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -782,6 +785,10 @@ public:
 #if JVET_M0247_AFFINE_AMVR_ENCOPT
   void      setUseAffineAmvrEncOpt          ( bool b )       { m_AffineAmvrEncOpt = b;    }
   bool      getUseAffineAmvrEncOpt          ()         const { return m_AffineAmvrEncOpt; }
+#endif
+#if JVET_M0147_DMVR
+  void      setDMVR                      ( bool b )       { m_DMVR = b; }
+  bool      getDMVR                      ()         const { return m_DMVR; }
 #endif
 
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }

@@ -525,7 +525,9 @@ void DecLib::executeLoopFilters()
 #endif
   // deblocking filter
   m_cLoopFilter.loopFilterPic( cs );
-
+#if JVET_M0147_DMVR
+  CS::setRefinedMotionField(cs);
+#endif
   if( cs.sps->getSAOEnabledFlag() )
   {
     m_cSAO.SAOProcess( cs, cs.picture->getSAO() );

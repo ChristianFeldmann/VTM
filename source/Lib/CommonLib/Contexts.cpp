@@ -1241,14 +1241,27 @@ const CtxSet ContextSetCfg::ChromaQpAdjIdc = ContextSetCfg::addCtxSet
 const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
 ({
 #if JVET_M0453_CABAC_ENGINE
+#if JVET_M0246_AFFINE_AMVR
+  {  227, 214, 230, 195, 227, 214, },
+  {  213, 229, 230, 166, 213, 229, },
+  {  CNU, CNU, CNU, CNU, CNU, CNU, },
+  {    1,   4,   4,   5,   1,   4, },
+#else
   {  227, 214, 230, 195,},
   {  213, 229, 230, 166,},
   {  CNU, CNU, CNU, CNU,},
   {    1,   4,   4,   5,},
+#endif
+#else
+#if BD_AFFINE_AMVR
+  { 212, 214, 230, 182, 212, 214 },
+  { 212, 214, 230, 182, 212, 214 },
+  { CNU, CNU, CNU, CNU, CNU, CNU },
 #else
   { 212, 214, 230, 182, },
   { 212, 214, 230, 182, },
   { CNU, CNU, CNU, CNU, },
+#endif
 #endif
 });
 

@@ -260,6 +260,9 @@ void EncApp::xInitLibCfg()
 #if JVET_M0255_FRACMMVD_SWITCH
   m_cEncLib.setAllowDisFracMMVD                                  ( m_allowDisFracMMVD );
 #endif
+#if JVET_M0246_AFFINE_AMVR
+  m_cEncLib.setUseAffineAmvr                                     ( m_AffineAmvr );
+#endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
   m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );

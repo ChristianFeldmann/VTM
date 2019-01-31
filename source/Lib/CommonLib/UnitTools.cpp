@@ -2104,14 +2104,36 @@ bool PU::addAffineMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &r
     }
 
     xInheritedAffineMv( pu, neibPU, eRefPicListIndex, outputAffineMv );
-
-    outputAffineMv[0].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-    outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+    if ( pu.cu->imv == 0 )
+    {
+#endif
+      outputAffineMv[0].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+      outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+    }
+    else if ( pu.cu->imv == 2 )
+    {
+      outputAffineMv[0].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
+      outputAffineMv[1].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
+    }
+#endif
     affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = outputAffineMv[0];
     affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = outputAffineMv[1];
     if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
     {
-      outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+      if ( pu.cu->imv == 0 )
+      {
+#endif
+        outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+      }
+      else if ( pu.cu->imv == 2 )
+      {
+        outputAffineMv[2].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
+      }
+#endif
       affiAMVPInfo.mvCandLB[affiAMVPInfo.numCand] = outputAffineMv[2];
     }
     affiAMVPInfo.numCand++;
@@ -2240,9 +2262,16 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   {
     for (int i = 0; i < affiAMVPInfo.numCand; i++)
     {
-      affiAMVPInfo.mvCandLT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-      affiAMVPInfo.mvCandRT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-      affiAMVPInfo.mvCandLB[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+      if ( pu.cu->imv != 1 )
+      {
+#endif
+        affiAMVPInfo.mvCandLT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+        affiAMVPInfo.mvCandRT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+        affiAMVPInfo.mvCandLB[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+      }
+#endif
     }
     return;
   }
@@ -2294,10 +2323,22 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   outputAffineMv[1] = amvpInfo1.mvCand[0];
   outputAffineMv[2] = amvpInfo2.mvCand[0];
 
-
-  outputAffineMv[0].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-  outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-  outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+  if ( pu.cu->imv == 0 )
+  {
+#endif
+    outputAffineMv[0].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+    outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+    outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+  }
+  else if ( pu.cu->imv == 2 )
+  {
+    outputAffineMv[0].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
+    outputAffineMv[1].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
+    outputAffineMv[2].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
+  }
+#endif
 
   if ( cornerMVPattern == 7 || (cornerMVPattern == 3 && pu.cu->affineType == AFFINEMODEL_4PARAM) )
   {
@@ -2372,7 +2413,18 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       if ( (C0Avail && getColocatedMVP( pu, eRefPicList, posC0, cColMv, refIdxCol )) || getColocatedMVP( pu, eRefPicList, posC1, cColMv, refIdxCol ) )
 #endif
       {
-        cColMv.roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+        if ( pu.cu->imv == 0 )
+        {
+#endif
+          cColMv.roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+        }
+        else if ( pu.cu->imv == 2 )
+        {
+          cColMv.roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
+        }
+#endif
         affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = cColMv;
         affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = cColMv;
         affiAMVPInfo.mvCandLB[affiAMVPInfo.numCand] = cColMv;
@@ -2395,9 +2447,16 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 
   for (int i = 0; i < affiAMVPInfo.numCand; i++)
   {
-    affiAMVPInfo.mvCandLT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER); 
-    affiAMVPInfo.mvCandRT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER); 
-    affiAMVPInfo.mvCandLB[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+    if ( pu.cu->imv != 1 )
+    {
+#endif
+      affiAMVPInfo.mvCandLT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER); 
+      affiAMVPInfo.mvCandRT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER); 
+      affiAMVPInfo.mvCandLB[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0246_AFFINE_AMVR
+    }
+#endif
   }
 
 
@@ -4366,6 +4425,47 @@ bool CU::hasSubCUNonZeroMVd( const CodingUnit& cu )
 
   return bNonZeroMvd;
 }
+
+#if JVET_M0246_AFFINE_AMVR
+bool CU::hasSubCUNonZeroAffineMVd( const CodingUnit& cu )
+{
+  bool nonZeroAffineMvd = false;
+
+  if ( !cu.affine || cu.firstPU->mergeFlag )
+  {
+    return false;
+  }
+
+  for ( const auto &pu : CU::traversePUs( cu ) )
+  {
+    if ( ( !pu.mergeFlag ) && ( !cu.skip ) )
+    {
+      if ( pu.interDir != 2 /* PRED_L1 */ )
+      {
+        for ( int i = 0; i < ( cu.affineType == AFFINEMODEL_6PARAM ? 3 : 2 ); i++ )
+        {
+          nonZeroAffineMvd |= pu.mvdAffi[REF_PIC_LIST_0][i].getHor() != 0;
+          nonZeroAffineMvd |= pu.mvdAffi[REF_PIC_LIST_0][i].getVer() != 0;
+        }
+      }
+
+      if ( pu.interDir != 1 /* PRED_L0 */ )
+      {
+        if ( !pu.cu->cs->slice->getMvdL1ZeroFlag() || pu.interDir != 3 /* PRED_BI */ )
+        {
+          for ( int i = 0; i < ( cu.affineType == AFFINEMODEL_6PARAM ? 3 : 2 ); i++ )
+          {
+            nonZeroAffineMvd |= pu.mvdAffi[REF_PIC_LIST_1][i].getHor() != 0;
+            nonZeroAffineMvd |= pu.mvdAffi[REF_PIC_LIST_1][i].getVer() != 0;
+          }
+        }
+      }
+    }
+  }
+
+  return nonZeroAffineMvd;
+}
+#endif
 
 int CU::getMaxNeighboriMVCandNum( const CodingStructure& cs, const Position& pos )
 {

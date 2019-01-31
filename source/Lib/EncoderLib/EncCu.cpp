@@ -695,6 +695,9 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 #if JVET_M0170_MRG_SHARELIST
   int startShareThisLevel = 0;
 #endif
+#if JVET_M0246_AFFINE_AMVR 
+  m_pcInterSearch->resetSavedAffineMotion();
+#endif
 
   do
   {
@@ -731,11 +734,23 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     {
       if( ( currTestMode.opts & ETO_IMV ) != 0 )
       {
+#if JVET_M0246_AFFINE_AMVR
+        tempCS->bestCS = bestCS;
+        xCheckRDCostInterIMV( tempCS, bestCS, partitioner, currTestMode );
+        tempCS->bestCS = nullptr;
+#else
         xCheckRDCostInterIMV(tempCS, bestCS, partitioner, currTestMode);
+#endif
       }
       else
       {
+#if JVET_M0246_AFFINE_AMVR
+        tempCS->bestCS = bestCS;
         xCheckRDCostInter( tempCS, bestCS, partitioner, currTestMode );
+        tempCS->bestCS = nullptr;
+#else
+        xCheckRDCostInter( tempCS, bestCS, partitioner, currTestMode );
+#endif
       }
 
     }
@@ -3489,6 +3504,9 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     gbiLoopNum = 1;
   }
 
+#if JVET_M0246_AFFINE_AMVR
+  bool validMode = false;
+#endif
   double curBestCost = bestCS->cost;
   double equGBiCost = MAX_DOUBLE;
 
@@ -3560,6 +3578,9 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
 
   bool testGbi;
   uint8_t gbiIdx;
+#if JVET_M0246_AFFINE_AMVR
+  bool affineAmvrEanbledFlag = cu.slice->getSPS()->getAffineAmvrEnabledFlag();
+#endif
   
   if( pcCUInfo2Reuse != nullptr )
   {
@@ -3570,7 +3591,11 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     gbiIdx = CU::getValidGbiIdx(cu);
     testGbi = (gbiIdx != GBI_DEFAULT);
 
+#if JVET_M0246_AFFINE_AMVR
+    if ( !CU::hasSubCUNonZeroMVd( cu ) && !CU::hasSubCUNonZeroAffineMVd( cu ) )
+#else
     if( !CU::hasSubCUNonZeroMVd( cu ) )
+#endif
     {
       if (m_modeCtrl->useModeResult(encTestModeBase, tempCS, partitioner))
       {
@@ -3578,7 +3603,19 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
         // store temp best CI for next CU coding
         m_CurrCtx->best = m_CABACEstimator->getCtx();
       }
+#if JVET_M0246_AFFINE_AMVR
+      if ( affineAmvrEanbledFlag )
+      {
+        tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+        continue;
+      }
+      else
+      {
+        return false;
+      }
+#else
       return false;
+#endif
     }
     else
     {
@@ -3591,9 +3628,24 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     gbiIdx = cu.GBiIdx;
     testGbi = (gbiIdx != GBI_DEFAULT);
 
+#if JVET_M0246_AFFINE_AMVR
+    cu.firstPU->interDir = 10;
+#endif
+
     m_pcInterSearch->predInterSearch( cu, partitioner );
 
+#if JVET_M0246_AFFINE_AMVR
+    if ( cu.firstPU->interDir <= 3 )
+    {
+      gbiIdx = CU::getValidGbiIdx(cu);
+    }
+    else
+    {
+      return false;
+    }
+#else
     gbiIdx = CU::getValidGbiIdx(cu);
+#endif
   }
 
   if( testGbi && gbiIdx == GBI_DEFAULT ) // Enabled GBi but the search results is uni.
@@ -3612,7 +3664,11 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     }
   }
 
+#if JVET_M0246_AFFINE_AMVR
+  if ( !CU::hasSubCUNonZeroMVd( cu ) && !CU::hasSubCUNonZeroAffineMVd( cu ) )
+#else
   if( !CU::hasSubCUNonZeroMVd( cu ) )
+#endif
   {
     if (m_modeCtrl->useModeResult(encTestModeBase, tempCS, partitioner))
     {
@@ -3620,7 +3676,19 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
       // store temp best CI for next CU coding
       m_CurrCtx->best = m_CABACEstimator->getCtx();
     }
+#if JVET_M0246_AFFINE_AMVR
+    if ( affineAmvrEanbledFlag )
+    {
+      tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+      continue;
+    }
+    else
+    {
+      return false;
+    }
+#else
     return false;
+#endif
   }
 
 #if JVET_M0464_UNI_MTS
@@ -3657,9 +3725,16 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   {
     break;
   }
+#if JVET_M0246_AFFINE_AMVR
+  validMode = true;
+#endif
  } // for( UChar gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
 
+#if JVET_M0246_AFFINE_AMVR
+  return tempCS->slice->getSPS()->getAffineAmvrEnabledFlag() ? validMode : true;
+#else
   return true;
+#endif
 }
 
 #if JVET_M0464_UNI_MTS

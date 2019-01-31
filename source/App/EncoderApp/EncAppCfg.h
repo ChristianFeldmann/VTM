@@ -240,6 +240,9 @@ protected:
 #if JVET_M0255_FRACMMVD_SWITCH
   bool      m_allowDisFracMMVD;
 #endif
+#if JVET_M0246_AFFINE_AMVR
+  bool      m_AffineAmvr;
+#endif
 
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
@@ -248,7 +251,7 @@ protected:
   unsigned  m_IBCHashSearchMaxCand;
   unsigned  m_IBCHashSearchRange4SmallBlk;
   unsigned  m_IBCFastMethod;
-  
+
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
 

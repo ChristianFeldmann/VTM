@@ -79,7 +79,9 @@ public:
 
   Picture         *picture;
   CodingStructure *parent;
-
+#if JVET_M0246_AFFINE_AMVR
+  CodingStructure *bestCS;
+#endif
   Slice           *slice;
 
   UnitScale        unitScale[MAX_NUM_COMPONENT];

@@ -326,7 +326,9 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
       subPu.UnitArea::operator=(UnitArea(pu.chromaFormat, Area(x, y, dx, dy)));
       subPu = curMi;
       PelUnitBuf subPredBuf = predBuf.subBuf(UnitAreaRelative(pu, subPu));
-
+#if JVET_M0823_MMVD_ENCOPT
+      subPu.mmvdEncOptMode = 0;
+#endif
       motionCompensation(subPu, subPredBuf, eRefPicList);
       secDim = later - secStep;
     }
@@ -396,8 +398,12 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
          pu.cu->lumaSize(),
          sps);
 
-
+#if JVET_M0823_MMVD_ENCOPT
+  int numOfPass = (pu.mmvdMergeFlag && pu.mmvdEncOptMode) ? 1 : (std::min((int)pcYuvPred.bufs.size(), m_maxCompIDToPred + 1));
+  for (uint32_t comp = COMPONENT_Y; comp < numOfPass; comp++)
+#else
   for( uint32_t comp = COMPONENT_Y; comp < pcYuvPred.bufs.size() && comp <= m_maxCompIDToPred; comp++ )
+#endif
   {
     const ComponentID compID = ComponentID( comp );
     if (compID == COMPONENT_Y && !luma)
@@ -458,7 +464,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
       bioApplied = false;
     }
   }
-
+#if JVET_M0823_MMVD_ENCOPT
+  if (pu.mmvdEncOptMode == 2 && pu.mmvdMergeFlag) {
+    bioApplied = false;
+  }
+#endif
   for (uint32_t refList = 0; refList < NUM_REF_PIC_LIST_01; refList++)
   {
     if( pu.refIdx[refList] < 0)

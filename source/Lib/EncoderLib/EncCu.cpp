@@ -2010,7 +2010,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       cu.mmvdSkip = true;
       int tempNum = 0;
       tempNum = MMVD_ADD_NUM;
+#if !JVET_M0823_MMVD_ENCOPT
       bool allowDirection[4] = { true, true, true, true };
+#endif
       for (uint32_t mergeCand = mergeCtx.numValidMergeCand; mergeCand < mergeCtx.numValidMergeCand + tempNum; mergeCand++)
       {
         const int mmvdMergeCand = mergeCand - mergeCtx.numValidMergeCand;
@@ -2020,9 +2022,12 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         int bitsCand = 0;
         int baseIdx;
         int refineStep;
+#if !JVET_M0823_MMVD_ENCOPT
         int direction;
+#endif
         baseIdx = mmvdMergeCand / MMVD_MAX_REFINE_NUM;
         refineStep = (mmvdMergeCand - (baseIdx * MMVD_MAX_REFINE_NUM)) / 4;
+#if !JVET_M0823_MMVD_ENCOPT
         direction = (mmvdMergeCand - baseIdx * MMVD_MAX_REFINE_NUM - refineStep * 4) % 4;
         if (refineStep == 0)
         {
@@ -2032,6 +2037,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         {
           continue;
         }
+#endif
         bitsBaseIdx = baseIdx + 1;
         if (baseIdx == MMVD_BASE_MV_NUM - 1)
         {
@@ -2051,13 +2057,20 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
         PU::spanMotionInfo(pu, mergeCtx);
         distParam.cur = singleMergeTempBuffer->Y();
+#if JVET_M0823_MMVD_ENCOPT
+        pu.mmvdEncOptMode = (refineStep > 2 ? 2 : 1);
+#endif
         m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer);
-
+#if JVET_M0823_MMVD_ENCOPT
+        pu.mmvdEncOptMode = 0;
+#endif
         Distortion uiSad = distParam.distFunc(distParam);
 
 
         double cost = (double)uiSad + (double)bitsCand * sqrtLambdaForFirstPass;
+#if !JVET_M0823_MMVD_ENCOPT
         allowDirection[direction] = cost >  1.3 * candCostList[0] ? 0 : 1;
+#endif
         insertPos = -1;
         updateDoubleCandList(mergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
         if (insertPos != -1)
@@ -2210,6 +2223,13 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
         else
         {
+#if JVET_M0823_MMVD_ENCOPT
+          if (uiMergeCand >= mergeCtx.numValidMergeCand && uiMergeCand < MRG_MAX_NUM_CANDS + MMVD_ADD_NUM) {
+            pu.mmvdEncOptMode = 0;
+            m_pcInterSearch->motionCompensation(pu);
+          }
+          else
+#endif
           if (uiNoResidualPass != 0 && uiMergeCand < mergeCtx.numValidMergeCand && RdModeList[uiMrgHADIdx] >= (MRG_MAX_NUM_CANDS + MMVD_ADD_NUM))
           {
             tempCS->getPredBuf().copyFrom(acMergeBuffer[uiMergeCand]);

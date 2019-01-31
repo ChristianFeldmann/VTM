@@ -491,6 +491,9 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 #if JVET_M0068_M0171_MMVD_CLEANUP
   PU::restrictBiPredMergeCandsOne(pu);
 #endif
+#if JVET_M0823_MMVD_ENCOPT
+  pu.mmvdEncOptMode = 0;
+#endif
 }
 void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
 {

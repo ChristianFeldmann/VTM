@@ -59,6 +59,7 @@
 #define JVET_M0063_BDOF_FIX                               1 // BDOF bitdepth bugfix
 
 #define JVET_M0265_MV_ROUNDING_CLEANUP                    1 // Unify MV roundings and make SW/WD allignment
+#define JVET_M0883_TRIANGLE_SIGNALING                     1 // Using regular merge index signaling for triangle mode
 
 #define JVET_M0228_REMOVE_CPMV_COMPARE                    1 // Remove CPMV comparisons for construnted affine merge candidates from JVET-M0228, M0166, M0477
 

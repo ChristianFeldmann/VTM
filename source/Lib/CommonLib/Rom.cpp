@@ -848,6 +848,7 @@ const uint8_t g_triangleWeightLengthChroma[2][2] = { { 5, 7 }, { 3, 3 } };
 
       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
 
+#if !JVET_M0883_TRIANGLE_SIGNALING
 const uint8_t g_triangleCombination[TRIANGLE_MAX_NUM_CANDS][3] =
 {
   { 0, 1, 0 }, { 1, 0, 1 }, { 1, 0, 2 }, { 0, 0, 1 }, { 0, 2, 0 }, 
@@ -867,4 +868,5 @@ const uint8_t g_triangleIdxBins[TRIANGLE_MAX_NUM_CANDS] =
    8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
   10, 10, 10, 10, 10, 10, 10, 10, 10, 10
 };
+#endif
 //! \}

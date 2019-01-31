@@ -3988,7 +3988,6 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
       candCount++;
     }
   }
-  
   // put uni-prediction candidate to the triangle candidate list
   for( int32_t i = 0; i < candCount; i++ )
   { 
@@ -4150,9 +4149,19 @@ bool PU::getTriangleWeights( const PredictionUnit& pu, MergeCtx &triangleMrgCtx,
 }
 #endif
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 )
+#else
 void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, const uint8_t mergeIdx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 )
+#endif
 {
+#if JVET_M0883_TRIANGLE_SIGNALING
+  pu.triangleSplitDir = splitDir;
+  pu.triangleMergeIdx0 = candIdx0;
+  pu.triangleMergeIdx1 = candIdx1;
+#else
   pu.mergeIdx  = mergeIdx;
+#endif
   MotionBuf mb = pu.getMotionBuf();
 
   MotionInfo biMv;

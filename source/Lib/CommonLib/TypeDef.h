@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0192_AFF_CHROMA_SIMPL                       1 // Affine chroma MV derivation simplification and rounding unification
+
 #define JVET_M0116_ATMVP_LEFT_NB_FOR_OFFSET               1 // Only use left neighbor for ATMVP offset derivation, from M0273, M0240, M0116, M0338, M0204
 
 #define JVET_M0063_BDOF_FIX                               1 // BDOF bitdepth bugfix

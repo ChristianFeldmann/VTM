@@ -353,19 +353,50 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 
   unsigned int orthogonalLength = 1;
   unsigned int orthogonalIncrement = 1;
+#if FIX_DB_MAX_TRANSFORM_SIZE
+  int maxTsize = 64;
+  maxTsize = 1 << cu.slice->getSPS()->getQuadtreeTULog2MaxSize();
+#endif
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
+#if FIX_DB_MAX_TRANSFORM_SIZE
+  int maxFilterLengthQ = 7;
+  int maxFilterLengthP = 7;
+  if (implicitTU && maxTsize < 32)
+  {
+    maxFilterLengthQ = 3;
+    maxFilterLengthP = 3;
+  }
+#else
   int maxFilterLength = 7;
+#endif
 #endif
   if (cu.blocks[COMPONENT_Y].valid())
   {
     if (mvSubBlocks)
     {
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
+#if FIX_DB_MAX_TRANSFORM_SIZE
+      maxFilterLengthQ = std::min(maxFilterLengthQ, 5);
+#else
       maxFilterLength = 5;
+#endif
 #endif
       orthogonalIncrement = subBlockSize / 4;
       orthogonalLength = (edgeDir == EDGE_HOR) ? cu.blocks[COMPONENT_Y].height / 4 : cu.blocks[COMPONENT_Y].width / 4;
     }
+#if FIX_DB_MAX_TRANSFORM_SIZE
+    if ((cu.blocks[COMPONENT_Y].height > maxTsize) && (edgeDir == EDGE_HOR) && !mvSubBlocks)
+    {
+      orthogonalIncrement = maxTsize / 4;
+      orthogonalLength = cu.blocks[COMPONENT_Y].height / 4;
+    }
+    if ((cu.blocks[COMPONENT_Y].width > maxTsize) && (edgeDir == EDGE_VER) && !mvSubBlocks)
+    {
+      orthogonalIncrement = maxTsize / 4;
+      orthogonalLength = cu.blocks[COMPONENT_Y].width / 4;
+
+    }
+#else
     if ((cu.blocks[COMPONENT_Y].height > 64) && (edgeDir == EDGE_HOR) && !mvSubBlocks)
     {
       orthogonalIncrement = 64 / 4;
@@ -377,6 +408,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       orthogonalLength = cu.blocks[COMPONENT_Y].width / 4;
 
     }
+#endif
   }
 
   for (int edge = 0; edge < orthogonalLength; edge += orthogonalIncrement)
@@ -386,15 +418,31 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
       if (edge == 0)
       {
+#if FIX_DB_MAX_TRANSFORM_SIZE 
+        xEdgeFilterLuma(cu, edgeDir, edge, maxFilterLengthP, maxFilterLengthQ);
+#else
         xEdgeFilterLuma(cu, edgeDir, edge, 7, maxFilterLength);
+#endif
       }
       else
       {
+#if FIX_DB_MAX_TRANSFORM_SIZE 
+        if (implicitTU && ((edge % (maxTsize / 4)) == 0))
+#else
         if ( implicitTU && (edge == (64 / 4)) )
+#endif
         {
+#if FIX_DB_MAX_TRANSFORM_SIZE 
+          xEdgeFilterLuma(cu, edgeDir, edge, maxFilterLengthQ, maxFilterLengthQ);
+#else
           xEdgeFilterLuma(cu, edgeDir, edge, maxFilterLength, maxFilterLength);
+#endif
         }
+#if FIX_DB_MAX_TRANSFORM_SIZE 
+        else if ((edge == 2 || edge == (orthogonalLength - 2)) || (implicitTU && (((edge - 2) % ((maxTsize) / 4) == 0) || ((edge + 2) % ((maxTsize) / 4) == 0))))
+#else
         else if ( (edge == 2 || edge == (orthogonalLength - 2)) || (implicitTU && (edge == (56 / 4) || edge == (72 / 4))) )
+#endif
         {
           xEdgeFilterLuma(cu, edgeDir, edge, 2, 2);
         }

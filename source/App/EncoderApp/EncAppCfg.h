@@ -224,6 +224,9 @@ protected:
   int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
 #endif
+#if JVET_M0303_IMPLICIT_MTS
+  int       m_MTSImplicit;
+#endif
 
   bool      m_compositeRefEnabled;
   bool      m_GBi;

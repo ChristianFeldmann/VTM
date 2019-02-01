@@ -215,6 +215,9 @@ protected:
   int       m_FastIntraEMT;
   int       m_FastInterEMT;
 #endif
+#if JVET_M0303_IMPLICIT_MTS
+  int       m_ImplicitMTS;
+#endif
   bool      m_LargeCTU;
   int       m_SubPuMvpMode;
   bool      m_Affine;
@@ -735,9 +738,10 @@ public:
   void      setInterEMT                     ( bool b )       { m_InterEMT = b; }
   bool      getInterEMT                     ()         const { return m_InterEMT; }
 #endif
-
-
-
+#if JVET_M0303_IMPLICIT_MTS
+  void      setImplicitMTS                  ( bool b )       { m_ImplicitMTS = b; }
+  bool      getImplicitMTS                  ()         const { return m_ImplicitMTS; }
+#endif
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }

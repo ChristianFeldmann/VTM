@@ -296,7 +296,10 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
 #else
   bool emtActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getSpsNext().getUseIntraEMT() : tu.cs->sps->getSpsNext().getUseInterEMT();
 #endif
-  
+#if JVET_M0303_IMPLICIT_MTS
+  bool mtsImplicit  = CU::isIntra( *tu.cu ) && tu.cs->sps->getSpsNext().getUseImplicitMTS() && compID == COMPONENT_Y;
+#endif
+
   trTypeHor = DCT2;
   trTypeVer = DCT2;
   
@@ -325,6 +328,22 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
       }
     }
   }
+#if JVET_M0303_IMPLICIT_MTS
+  else if ( mtsImplicit )
+  {
+    int  width       = tu.blocks[compID].width;
+    int  height      = tu.blocks[compID].height;
+    bool widthDstOk  = width  >= 4 && width  <= 16;
+    bool heightDstOk = height >= 4 && height <= 16;
+    
+    if ( width < height && widthDstOk )
+      trTypeHor = DST7;
+    else if ( height < width && heightDstOk )
+      trTypeVer = DST7;
+    else if ( width == height && widthDstOk )
+      trTypeHor = trTypeVer = DST7;
+  }
+#endif
 }
 
 void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, CoeffBuf &dstCoeff, const int width, const int height )

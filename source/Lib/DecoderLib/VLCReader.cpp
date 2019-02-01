@@ -798,13 +798,23 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
     READ_FLAG( symbol,  "sps_cclm_collocated_chroma_flag" );        spsNext.setCclmCollocatedChromaFlag( symbol != 0 );
   }
 #endif
-#if JVET_M0464_UNI_MTS
-  READ_FLAG( symbol,    "mts_intra_enabled_flag" );                 spsNext.setUseIntraMTS            ( symbol != 0 );
-  READ_FLAG( symbol,    "mts_inter_enabled_flag" );                 spsNext.setUseInterMTS            ( symbol != 0 );
-#else
-  READ_FLAG( symbol,    "emt_intra_enabled_flag" );                 spsNext.setUseIntraEMT            ( symbol != 0 );
-  READ_FLAG( symbol,    "emt_inter_enabled_flag" );                 spsNext.setUseInterEMT            ( symbol != 0 );
+
+#if JVET_M0303_IMPLICIT_MTS
+  READ_FLAG( symbol,    "mts_enabled_flag" );                       spsNext.setUseMTS                 ( symbol != 0 );
+  if ( spsNext.getUseMTS() )
+  {
 #endif
+#if JVET_M0464_UNI_MTS
+    READ_FLAG( symbol,    "mts_intra_enabled_flag" );               spsNext.setUseIntraMTS            ( symbol != 0 );
+    READ_FLAG( symbol,    "mts_inter_enabled_flag" );               spsNext.setUseInterMTS            ( symbol != 0 );
+#else
+    READ_FLAG( symbol,    "emt_intra_enabled_flag" );               spsNext.setUseIntraEMT            ( symbol != 0 );
+    READ_FLAG( symbol,    "emt_inter_enabled_flag" );               spsNext.setUseInterEMT            ( symbol != 0 );
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  }
+#endif
+
   READ_FLAG( symbol,    "affine_flag" );                            spsNext.setUseAffine              ( symbol != 0 );
   if ( spsNext.getUseAffine() )
   {

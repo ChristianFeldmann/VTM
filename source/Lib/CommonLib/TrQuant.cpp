@@ -454,7 +454,7 @@ void TrQuant::xITransformSkip(const CCoeffBuf     &pCoeff,
   }
 
   int iWHScale = 1;
-#if HM_QTBT_AS_IN_JEM_QUANT
+#if HM_QTBT_AS_IN_JEM_QUANT && !JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
   if( TU::needsBlockSizeTrafoScale( area ) )
   {
     iTransformShift += ADJ_QUANT_SHIFT;
@@ -532,7 +532,16 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
       sumAbs += abs( tempCoeff.buf[pos] );
     }
 
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+    double scaleSAD=1.0;
+    if (isLuma(compID) && tu.mtsIdx==1 && ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1 )
+    {
+      scaleSAD=1.0/1.414213562; // compensate for not scaling transform skip coefficients by 1/sqrt(2)
+    }
+    trCosts.push_back( TrCost( int(sumAbs*scaleSAD), pos++ ) );
+#else
     trCosts.push_back( TrCost( sumAbs, pos++ ) );
+#endif
     it++;
   }
 
@@ -781,7 +790,7 @@ void TrQuant::xTransformSkip(const TransformUnit &tu, const ComponentID &compID,
   }
 
   int iWHScale = 1;
-#if HM_QTBT_AS_IN_JEM_QUANT
+#if HM_QTBT_AS_IN_JEM_QUANT && !JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
   if( TU::needsBlockSizeTrafoScale( rect ) )
   {
     iTransformShift -= ADJ_DEQUANT_SHIFT;

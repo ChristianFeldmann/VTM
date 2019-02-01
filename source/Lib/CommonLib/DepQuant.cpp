@@ -666,8 +666,13 @@ namespace DQIntern
     m_QShift                    = QUANT_SHIFT  - 1 + qpPer + transformShift;
     m_QAdd                      = -( ( 3 << m_QShift ) >> 1 );
 #if HM_QTBT_AS_IN_JEM_QUANT
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+    Intermediate_Int  invShift  = IQUANT_SHIFT + 1 - qpPer - transformShift + ( TU::needsBlockSizeTrafoScale( tu, compID ) ? ADJ_DEQUANT_SHIFT : 0 );
+    m_QScale                    = ( TU::needsSqrt2Scale( tu, compID ) ? ( g_quantScales[ qpRem ] * 181 ) >> 7 : g_quantScales[ qpRem ] );
+#else
     Intermediate_Int  invShift  = IQUANT_SHIFT + 1 - qpPer - transformShift + ( TU::needsBlockSizeTrafoScale( area ) ? ADJ_DEQUANT_SHIFT : 0 );
     m_QScale                    = ( TU::needsSqrt2Scale( area ) ? ( g_quantScales[ qpRem ] * 181 ) >> 7 : g_quantScales[ qpRem ] );
+#endif
 #else
     Intermediate_Int  invShift  = IQUANT_SHIFT + 1 - qpPer - transformShift;
     m_QScale                    = g_quantScales   [ qpRem ];
@@ -750,8 +755,13 @@ namespace DQIntern
 #endif
     const int         transformShift        = ( clipTransformShift ? std::max<int>( 0, nomTransformShift ) : nomTransformShift );
 #if HM_QTBT_AS_IN_JEM_QUANT
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+    Intermediate_Int  shift                 = IQUANT_SHIFT + 1 - qpPer - transformShift + ( TU::needsBlockSizeTrafoScale( tu, compID ) ? ADJ_DEQUANT_SHIFT : 0 );
+    Intermediate_Int  invQScale             = g_invQuantScales[ qpRem ] * ( TU::needsSqrt2Scale( tu, compID ) ? 181 : 1 );
+#else
     Intermediate_Int  shift                 = IQUANT_SHIFT + 1 - qpPer - transformShift + ( TU::needsBlockSizeTrafoScale( area ) ? ADJ_DEQUANT_SHIFT : 0 );
     Intermediate_Int  invQScale             = g_invQuantScales[ qpRem ] * ( TU::needsSqrt2Scale( area ) ? 181 : 1 );
+#endif
 #else
     Intermediate_Int  shift                 = IQUANT_SHIFT + 1 - qpPer - transformShift;
     Intermediate_Int  invQScale             = g_invQuantScales[ qpRem ];

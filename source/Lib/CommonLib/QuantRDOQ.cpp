@@ -408,15 +408,21 @@ void QuantRDOQ::setScalingList(ScalingList *scalingList, const int maxLog2TrDyna
 #endif
 #else
 
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+double QuantRDOQ::xGetErrScaleCoeff( const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth )
+#else
 double QuantRDOQ::xGetErrScaleCoeff( SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth )
+#endif
 {
   const int iTransformShift = getTransformShift(channelBitDepth, Size(width, height), maxLog2TrDynamicRange);
 #if HM_QTBT_AS_IN_JEM_QUANT
   double    dErrScale       = (double)( 1 << SCALE_BITS );                                // Compensate for scaling of bitcount in Lagrange cost function
-  bool      needsSrqt2      = TU::needsBlockSizeTrafoScale( Size(width, height) );// ( ( (sizeX+sizeY) & 1 ) !=0 );
-  double    dTransShift     = (double)iTransformShift + ( needsSrqt2 ? -0.5 : 0.0 );
+#if !JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+  bool      needsSqrt2      = TU::needsBlockSizeTrafoScale( Size(width, height) );// ( ( (sizeX+sizeY) & 1 ) !=0 );
+#endif
+  double    dTransShift     = (double)iTransformShift + ( needsSqrt2 ? -0.5 : 0.0 );
   dErrScale                 = dErrScale*pow( 2.0, ( -2.0*dTransShift ) );                     // Compensate for scaling through forward transform
-  int       QStep           = ( needsSrqt2 ? ( ( g_quantScales[qp] * 181 ) >> 7 ) : g_quantScales[qp] );
+  int       QStep           = ( needsSqrt2 ? ( ( g_quantScales[qp] * 181 ) >> 7 ) : g_quantScales[qp] );
   double    finalErrScale = dErrScale / QStep / QStep / (1 << (DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth) << 1));
 #else
   int errShift = SCALE_BITS - ((iTransformShift + DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth)) << 1);
@@ -454,8 +460,8 @@ void QuantRDOQ::xSetErrScaleCoeff( uint32_t list, uint32_t sizeX, uint32_t sizeY
 #if HM_QTBT_AS_IN_JEM_QUANT
   double dErrScale = (double)( 1 << SCALE_BITS );                                // Compensate for scaling of bitcount in Lagrange cost function
 
-  bool   needsSrqt2 = TU::needsBlockSizeTrafoScale( Size( g_scalingListSizeX[sizeX], g_scalingListSizeX[sizeY] ) );// ( ( (sizeX+sizeY) & 1 ) !=0 );
-  double dTransShift = (double)iTransformShift + ( needsSrqt2 ? -0.5 : 0.0 );
+  bool   needsSqrt2 = TU::needsBlockSizeTrafoScale( Size( g_scalingListSizeX[sizeX], g_scalingListSizeX[sizeY] ) );// ( ( (sizeX+sizeY) & 1 ) !=0 );
+  double dTransShift = (double)iTransformShift + ( needsSqrt2 ? -0.5 : 0.0 );
   dErrScale = dErrScale*pow( 2.0, ( -2.0*dTransShift ) );                     // Compensate for scaling through forward transform
 
   for( i = 0; i < uiMaxNumCoeff; i++ )
@@ -464,7 +470,7 @@ void QuantRDOQ::xSetErrScaleCoeff( uint32_t list, uint32_t sizeX, uint32_t sizeY
                     / (1 << (DISTORTION_PRECISION_ADJUSTMENT(bitDepths.recon[channelType]) << 1));
   }
 
-  int QStep = ( needsSrqt2 ? ( ( g_quantScales[qp] * 181 ) >> 7 ) : g_quantScales[qp] );
+  int QStep = ( needsSqrt2 ? ( ( g_quantScales[qp] * 181 ) >> 7 ) : g_quantScales[qp] );
 
   xGetErrScaleCoeffNoScalingList(list, sizeX, sizeY, qp) =
     dErrScale / QStep / QStep / (1 << (DISTORTION_PRECISION_ADJUSTMENT(bitDepths.recon[channelType]) << 1));
@@ -682,8 +688,13 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
   const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, tu.transformSkip[compID]);
 #if HM_QTBT_AS_IN_JEM_QUANT
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+  const int    defaultQuantisationCoefficient = ( TU::needsSqrt2Scale( rect, tu.transformSkip[compID] ) ? ( g_quantScales[cQP.rem] * 181 ) >> 7 : g_quantScales[cQP.rem] );
+  const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem);
+#else
   const int    defaultQuantisationCoefficient = ( TU::needsSqrt2Scale( rect ) ? ( g_quantScales[cQP.rem] * 181 ) >> 7 : g_quantScales[cQP.rem] );
   const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem);
+#endif
 #else
   const double blkErrScale                    = ( TU::needsQP3Offset( tu, compID ) ? 2.0 : 1.0 );
   const int    defaultQuantisationCoefficient = g_quantScales[cQP.rem];
@@ -691,8 +702,13 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 #endif
 #else //HEVC_USE_SCALING_LISTS
 #if HM_QTBT_AS_IN_JEM_QUANT
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+  const int    quantisationCoefficient = ( TU::needsSqrt2Scale( tu, compID ) ? ( g_quantScales[cQP.rem] * 181 ) >> 7 : g_quantScales[cQP.rem] );
+  const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), uiWidth, uiHeight, cQP.rem, maxLog2TrDynamicRange, channelBitDepth );
+#else
   const int    quantisationCoefficient = ( TU::needsSqrt2Scale( rect ) ? ( g_quantScales[cQP.rem] * 181 ) >> 7 : g_quantScales[cQP.rem] );
   const double errorScale              = xGetErrScaleCoeff( uiWidth, uiHeight, cQP.rem, maxLog2TrDynamicRange, channelBitDepth );
+#endif
 #else
   const double blkErrScale             = ( TU::needsQP3Offset( tu, compID ) ? 2.0 : 1.0 );
   const int    quantisationCoefficient = g_quantScales[cQP.rem];

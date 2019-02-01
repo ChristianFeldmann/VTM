@@ -4811,17 +4811,37 @@ uint32_t TU::getNumNonZeroCoeffsNonTS( const TransformUnit& tu, const bool bLuma
   return count;
 }
 
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+bool TU::needsSqrt2Scale( const TransformUnit &tu, const ComponentID &compID )
+{
+  const Size &size=tu.blocks[compID];
+#if JVET_M0464_UNI_MTS
+  const bool isTransformSkip = tu.mtsIdx==1 && isLuma(compID);
+#else
+  const bool isTransformSkip = tu.transformSkip[compID];
+#endif
+  return (!isTransformSkip) && (((g_aucLog2[size.width] + g_aucLog2[size.height]) & 1) == 1);
+}
+#else
 bool TU::needsSqrt2Scale( const Size& size )
 {
   return (((g_aucLog2[size.width] + g_aucLog2[size.height]) & 1) == 1);
 }
+#endif
 
 #if HM_QTBT_AS_IN_JEM_QUANT
 
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+bool TU::needsBlockSizeTrafoScale( const TransformUnit &tu, const ComponentID &compID )
+{
+  return needsSqrt2Scale( tu, compID ) || isNonLog2BlockSize( tu.blocks[compID] );
+}
+#else
 bool TU::needsBlockSizeTrafoScale( const Size& size )
 {
   return needsSqrt2Scale( size ) || isNonLog2BlockSize( size );
 }
+#endif
 #else
 bool TU::needsQP3Offset(const TransformUnit &tu, const ComponentID &compID)
 {

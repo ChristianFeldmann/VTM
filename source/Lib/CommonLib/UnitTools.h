@@ -57,7 +57,7 @@ namespace CU
 {
   bool isIntra                        (const CodingUnit &cu);
   bool isInter                        (const CodingUnit &cu);
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
   bool isIBC                          (const CodingUnit &cu);
 #endif
   bool isRDPCMEnabled                 (const CodingUnit &cu);
@@ -110,7 +110,7 @@ namespace PU
   void getInterMergeCandidates        (const PredictionUnit &pu, MergeCtx& mrgCtx,
     int mmvdList,
     const int& mrgCandIdx = -1 );
-#if IBC_SEPERATE_FUNCTION
+#if JVET_M0483_IBC
   void getIBCMergeCandidates          (const PredictionUnit &pu, MergeCtx& mrgCtx, const int& mrgCandIdx = -1);
 #endif
   void getInterMMVDMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const int& mrgCandIdx = -1);
@@ -118,8 +118,9 @@ namespace PU
   bool isDiffMER                      (const PredictionUnit &pu, const PredictionUnit &pu2);
   bool getColocatedMVP                (const PredictionUnit &pu, const RefPicList &eRefPicList, const Position &pos, Mv& rcMv, const int &refIdx);
   void fillMvpCand                    (      PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AMVPInfo &amvpInfo );
-#if IBC_SEPERATE_FUNCTION
-  void fillIBCMvpCand                 (PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AMVPInfo &amvpInfo);
+#if JVET_M0483_IBC
+  void fillIBCMvpCand                 (PredictionUnit &pu, AMVPInfo &amvpInfo);
+  bool addIBCMVPCand                  (const PredictionUnit &pu, const Position &pos, const MvpDir &eDir, AMVPInfo &amvpInfo);
 #endif
   void fillAffineMvpCand              (      PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AffineAMVPInfo &affiAMVPInfo);
   bool addMVPCandUnscaled             (const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &amvpInfo);
@@ -128,10 +129,10 @@ namespace PU
   bool xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const MergeCtx mergeCandList, bool hasPruned[MRG_MAX_NUM_CANDS]);
 #if JVET_L0090_PAIR_AVG
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
-#if IBC_SEPERATE_MODE==0 
+#if JVET_M0483_IBC==0 
     , int mmvdList
 #endif
-#if IBC_SEPERATE_MODE && IBC_SEPERATE_MODE_REDUCTION==0
+#if JVET_M0483_IBC
     , bool ibc_flag
 #endif
 #if JVET_M0170_MRG_SHARELIST
@@ -140,7 +141,7 @@ namespace PU
   );
 #else
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter[MRG_MAX_NUM_CANDS], bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
-#if IBC_SEPERATE_MODE==0 
+#if JVET_M0483_IBC==0 
     , int mmvdList
 #endif
   );
@@ -159,7 +160,7 @@ namespace PU
   bool getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx &mrgCtx, bool& LICFlag, const int count
     , int mmvdList
 #if !JVET_M0409_ATMVP_FIX
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
     , const int countIBC
 #endif
 #endif

@@ -1238,7 +1238,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_cSliceDecoder.decompressSlice( pcSlice, &(nalu.getBitstream()) );
 
   m_bFirstSliceInPicture = false;
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
   if (pcSlice->getSPS()->getSpsNext().getIBCMode())
   {
     pcSlice->getPic()->longTerm = false;

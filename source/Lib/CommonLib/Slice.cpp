@@ -435,7 +435,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       pcRefPic = xGetLongTermRefPic(rcListPic, m_pRPS->getPOC(i), m_pRPS->getCheckLTMSBPresent(i));
     }
   }
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
   if (getSPS()->getSpsNext().getIBCMode())
   {
     RefPicSetLtCurr[NumPicLtCurr] = getPic();
@@ -456,7 +456,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
     // - Otherwise, when the current picture contains a P or B slice, the value of NumPocTotalCurr shall not be equal to 0.
     if (getRapPicFlag())
     {
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
       if (getSPS()->getSpsNext().getIBCMode())
       {
         CHECK(numPicTotalCurr != 1, "Invalid state");
@@ -533,7 +533,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       m_bIsUsedAsLongTerm[REF_PIC_LIST_1][rIdx] = ( cIdx >= NumPicStCurr0 + NumPicStCurr1 );
     }
   }
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
   if (getSPS()->getSpsNext().getIBCMode())
   {
     m_apcRefPicList[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = getPic();
@@ -1618,11 +1618,11 @@ void Slice::initMotionLUTs()
 {
   m_MotionCandLut = new LutMotionCand;
   m_MotionCandLut->currCnt = 0;
-#if IBC_SEPERATE_MODE && IBC_SEPERATE_MODE_REDUCTION==0
+#if JVET_M0483_IBC
   m_MotionCandLut->currCntIBC = 0;
 #endif
   m_MotionCandLut->motionCand = nullptr;
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
   m_MotionCandLut->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS * 2];
 #else
   m_MotionCandLut->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
@@ -1630,11 +1630,11 @@ void Slice::initMotionLUTs()
 #if  JVET_M0170_MRG_SHARELIST
   m_MotionCandLuTsBkup = new LutMotionCand;
   m_MotionCandLuTsBkup->currCnt = 0;
-#if IBC_SEPERATE_MODE_AND_MER && IBC_SEPERATE_MODE_REDUCTION==0
+#if JVET_M0483_IBC
   m_MotionCandLuTsBkup->currCntIBC = 0;
 #endif
   m_MotionCandLuTsBkup->motionCand = nullptr;
-#if IBC_SEPERATE_MODE_AND_MER
+#if JVET_M0483_IBC
   m_MotionCandLuTsBkup->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS * 2];
 #else
   m_MotionCandLuTsBkup->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
@@ -1657,12 +1657,12 @@ void Slice::destroyMotionLUTs()
 void Slice::resetMotionLUTs()
 {
   m_MotionCandLut->currCnt = 0;
-#if IBC_SEPERATE_MODE && IBC_SEPERATE_MODE_REDUCTION==0
+#if JVET_M0483_IBC
   m_MotionCandLut->currCntIBC = 0;
 #endif
 #if  JVET_M0170_MRG_SHARELIST
   m_MotionCandLuTsBkup->currCnt = 0;
-#if IBC_SEPERATE_MODE_AND_MER && IBC_SEPERATE_MODE_REDUCTION==0
+#if JVET_M0483_IBC
   m_MotionCandLuTsBkup->currCntIBC = 0;
 #endif
 #endif
@@ -1679,13 +1679,13 @@ MotionInfo Slice::getMotionInfoFromLUTBkup(int MotCandIdx) const
 }
 #endif
 
-#if IBC_SEPERATE_MODE && IBC_SEPERATE_MODE_REDUCTION==0
+#if JVET_M0483_IBC
 void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi, bool ibcflag)
 #else
 void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi)
 #endif
 {
-#if IBC_SEPERATE_MODE && IBC_SEPERATE_MODE_REDUCTION==0
+#if JVET_M0483_IBC
   int currCntIBC = ibcflag ? lutMC->currCntIBC : lutMC->currCnt;
   int offset = ibcflag ? MAX_NUM_HMVP_CANDS : 0;
   bool pruned = false;
@@ -1752,7 +1752,7 @@ void Slice::updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu)
   if (cu.triangle) { return; }
 
   MotionInfo newMi = selectedPU->getMotionInfo();
-#if IBC_SEPERATE_MODE && IBC_SEPERATE_MODE_REDUCTION==0
+#if JVET_M0483_IBC
   addMotionInfoToLUTs(lutMC, newMi, CU::isIBC(cu));
 #else
   addMotionInfoToLUTs(lutMC, newMi);
@@ -1763,7 +1763,7 @@ void Slice::copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst)
 {
    memcpy(Dst->motionCand, Src->motionCand, sizeof(MotionInfo)*(std::min(Src->currCnt, MAX_NUM_HMVP_CANDS)));
    Dst->currCnt = Src->currCnt;
-#if IBC_SEPERATE_MODE && IBC_SEPERATE_MODE_REDUCTION==0
+#if JVET_M0483_IBC
    memcpy(Dst->motionCand + MAX_NUM_HMVP_CANDS, Src->motionCand + MAX_NUM_HMVP_CANDS, sizeof(MotionInfo)*(std::min(Src->currCntIBC, MAX_NUM_HMVP_CANDS)));
    Dst->currCntIBC = Src->currCntIBC;
 #endif
@@ -1772,7 +1772,7 @@ void Slice::copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst)
 unsigned Slice::getMinPictureDistance() const
 {
   int minPicDist = MAX_INT;
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
   if (getSPS()->getSpsNext().getIBCMode())
   {
     minPicDist = 0;

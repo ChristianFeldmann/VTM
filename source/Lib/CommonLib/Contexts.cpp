@@ -1326,7 +1326,7 @@ const CtxSet ContextSetCfg::TriangleIdx = ContextSetCfg::addCtxSet
 });
 // clang-format on
 
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
 const CtxSet ContextSetCfg::IBCFlag = ContextSetCfg::addCtxSet
 ({
 #if JVET_M0453_CABAC_ENGINE

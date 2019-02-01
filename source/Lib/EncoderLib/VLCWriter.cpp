@@ -1265,7 +1265,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
       }
     }
-#if IBC_SEPERATE_MODE 
+#if JVET_M0483_IBC 
     if (!cs.slice->isIntra() || cs.slice->getSPS()->getSpsNext().getIBCMode())
     {
       CHECK(pcSlice->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
@@ -1274,7 +1274,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
     if( !pcSlice->isIntra() )
     {
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
       CHECK( pcSlice->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported" );
       WRITE_UVLC( MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand" );
 #endif

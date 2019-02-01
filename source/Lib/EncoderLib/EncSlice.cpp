@@ -536,7 +536,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
  #endif
   if(rpcSlice->getPPS()->getSliceChromaQpFlag())
   {
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
     const bool bUseIntraOrPeriodicOffset = (rpcSlice->isIntra() && !rpcSlice->getSPS()->getSpsNext().getIBCMode()) || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);
 #else
     const bool bUseIntraOrPeriodicOffset = rpcSlice->isIntra() || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);

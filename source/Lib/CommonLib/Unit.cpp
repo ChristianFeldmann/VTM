@@ -277,7 +277,7 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   shareParentPos    = other.shareParentPos;
   shareParentSize   = other.shareParentSize;
 #endif
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
   ibc               = other.ibc;
 #endif
 #if JVET_M0444_SMVD
@@ -321,7 +321,7 @@ void CodingUnit::initData()
   shareParentSize.width = -1;
   shareParentSize.height = -1;
 #endif
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
   ibc               = false;
 #endif
 #if JVET_M0444_SMVD

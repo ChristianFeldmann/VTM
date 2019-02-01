@@ -50,21 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_M0483_IBC                                    1 //
-#if JVET_M0483_IBC
-#define IBC_SEPERATE_MODE                                 1   //JVET-M0483_method3
-#define IBC_SEPERATE_MODE_FIX                             1   //JVET-M0483_method3 bug fix ticket 129 and 140
-#define IBC_SEPERATE_MODE_REDUCTION                       0   
-#define IBC_SIZE_CONSTRAINT                               0
-#define IBC_SEPERATE_FUNCTION                             1
-
-#define CLEAN_getInterMergeCandidates                     1
-#define CLEAN_fillMvpCand                                 1
-#define MODIFY_for_vtm4                      1
-#define IBC_SEPERATE_MODE_AND_MER                         1
-#define IBC_MER_FIX                                       1
-#define DEBUG_M0483                                       1
-#endif
+#define JVET_M0483_IBC                                    1 // Block level flag signaling and independent IBC mode
 
 #define JVET_M0145_AFFINE_MV_CLIP                         1 // Missing clipping for MV storage in affine
 
@@ -459,7 +445,7 @@ enum PredMode
 {
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
   MODE_IBC                   = 2,     ///< ibc-prediction mode
   NUMBER_OF_PREDICTION_MODES = 3,
 #else

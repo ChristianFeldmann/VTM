@@ -1749,7 +1749,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
-#if IBC_SEPERATE_MODE 
+#if JVET_M0483_IBC 
     if (!pcSlice->isIntra() || sps->getSpsNext().getIBCMode())
     {
       READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
@@ -1759,7 +1759,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
     if (!pcSlice->isIntra())
     {
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
       READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
       pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
 #endif

@@ -316,7 +316,7 @@ struct CodingUnit : public UnitArea
   Position       shareParentPos;
   Size           shareParentSize;
 #endif
-#if IBC_SEPERATE_MODE ==0
+#if JVET_M0483_IBC ==0
   bool           ibc;
 #endif
 #if JVET_M0444_SMVD

@@ -1949,7 +1949,7 @@ public:
   void                        initMotionLUTs       ();
   void                        destroyMotionLUTs    ();
   void                        resetMotionLUTs();
-#if IBC_SEPERATE_MODE && IBC_SEPERATE_MODE_REDUCTION==0
+#if JVET_M0483_IBC
   int                         getAvailableLUTIBCMrgNum() const { return m_MotionCandLut->currCntIBC; }
 #endif
   int                         getAvailableLUTMrgNum() const  { return m_MotionCandLut->currCnt; }
@@ -1960,7 +1960,7 @@ public:
   MotionInfo                  getMotionInfoFromLUTs(int MotCandIdx) const;
   LutMotionCand*              getMotionLUTs() { return m_MotionCandLut; }
 
-#if IBC_SEPERATE_MODE && IBC_SEPERATE_MODE_REDUCTION==0
+#if JVET_M0483_IBC
   void                        addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi, bool ibcflag);
 #else
   void                        addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi);

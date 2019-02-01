@@ -801,7 +801,7 @@ bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& pa
     , encInfo.pu, (cs.picture->Y().width), (cs.picture->Y().height)
 #endif
 ) 
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
     || CU::isIBC(encInfo.cu)
 #else
     || encInfo.cu.ibc
@@ -1284,7 +1284,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
       return false;
     }
 
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
     if (m_pcEncCfg->getUsePbIntraFast() && (!cs.slice->isIntra() || cs.slice->getSPS()->getSpsNext().getIBCMode()) && !interHadActive(cuECtx) && cuECtx.bestCU && !CU::isIntra(*cuECtx.bestCU))
 #else
     if( m_pcEncCfg->getUsePbIntraFast() && !cs.slice->isIntra() && !interHadActive( cuECtx ) && cuECtx.bestCU && CU::isInter( *cuECtx.bestCU ) )
@@ -1299,7 +1299,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     CHECK( !slice.isIntra() && !cuECtx.bestTU, "No possible non-intra encoding for a P- or B-slice found" );
 
     if( !( slice.isIRAP() || bestMode.type == ETM_INTRA || 
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
       ((!m_pcEncCfg->getDisableIntraPUsInInterSlices()) && (!relatedCU.isInter || !relatedCU.isIBC) && (
 #else    
       ( ( !m_pcEncCfg->getDisableIntraPUsInInterSlices() ) && !relatedCU.isInter && (
@@ -1325,7 +1325,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
       if( !cs.slice->isIRAP() && m_pcEncCfg->getUsePbIntraFast() )
       {
         CodingUnit* bestCU = cuECtx.bestCU;
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
         if (bestCU && !CU::isIntra(*bestCU))
 #else
         if( bestCU && CU::isInter( *bestCU ) )
@@ -1423,7 +1423,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     //////////////////////////////////////////////////////////////////////////
     int skipScore = 0;
 
-#if IBC_SEPERATE_MODE 
+#if JVET_M0483_IBC 
     if ((!slice.isIntra() || slice.getSPS()->getSpsNext().getIBCMode()) && cuECtx.get<bool>(IS_BEST_NOSPLIT_SKIP))
 #else
     if( !slice.isIntra() && cuECtx.get<bool>( IS_BEST_NOSPLIT_SKIP ) )
@@ -1522,7 +1522,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
             const CodingUnit *cuBR = bestCS->cus.back();
             unsigned height        = partitioner.currArea().lumaSize().height;
 
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
             if (bestCU && ((bestCU->btDepth == 0 && maxBTD >= ((slice.isIntra() && !slice.getSPS()->getSpsNext().getIBCMode()) ? 3 : 2))
               || (bestCU->btDepth == 1 && cuBR && cuBR->btDepth == 1 && maxBTD >= ((slice.isIntra() && !slice.getSPS()->getSpsNext().getIBCMode()) ? 4 : 3)))
               && (width <= MAX_TU_SIZE_FOR_PROFILE && height <= MAX_TU_SIZE_FOR_PROFILE)
@@ -1643,7 +1643,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
 #endif
           relatedCU.GBiIdx    = bestCU->GBiIdx;
         }
-#if IBC_SEPERATE_MODE//Todo : macro hm_code_cu_info
+#if JVET_M0483_IBC
         else if (CU::isIBC(*bestCU))
         {
           relatedCU.isIBC = true;

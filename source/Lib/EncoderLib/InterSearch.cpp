@@ -762,7 +762,7 @@ int InterSearch::xIBCSearchMVChromaRefine(PredictionUnit& pu,
     pu.mv[0] = cMVCand[cand];
     pu.mv[0].changePrecision(MV_PRECISION_INT, MV_PRECISION_INTERNAL);
     pu.interDir = 1;
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
     pu.refIdx[0] = pu.cs->slice->getNumRefIdx(REF_PIC_LIST_0); // last idx in the list
 #else
     pu.refIdx[0] = pu.cs->slice->getNumRefIdx(REF_PIC_LIST_0) - 1; // last idx in the list
@@ -1286,9 +1286,6 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
 
 bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const int localSearchRangeX, const int localSearchRangeY, IbcHashMap& ibcHashMap)
 {
-  // check only no greater than IBC_MAX_CAND_SIZE
-  if (cu.Y().width > IBC_MAX_CAND_SIZE || cu.Y().height > IBC_MAX_CAND_SIZE)
-    return false;
   Mv           cMvSrchRngLT;
   Mv           cMvSrchRngRB;
 
@@ -1304,8 +1301,8 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
     /// ibc search
     pu.cu->imv = 2;
     AMVPInfo amvpInfo4Pel;
-#if IBC_SEPERATE_FUNCTION
-    PU::fillIBCMvpCand(pu, REF_PIC_LIST_0, pu.refIdx[REF_PIC_LIST_0], amvpInfo4Pel);
+#if JVET_M0483_IBC
+    PU::fillIBCMvpCand(pu, amvpInfo4Pel);
 #else
     PU::fillMvpCand(pu, REF_PIC_LIST_0, pu.refIdx[REF_PIC_LIST_0], amvpInfo4Pel);
 #endif
@@ -1313,8 +1310,8 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
     pu.cu->imv = 0;// (Int)cu.cs->sps->getSpsNext().getUseIMV(); // set as IMV=0 initially
     Mv    cMv, cMvPred[2];
     AMVPInfo amvpInfo;
-#if IBC_SEPERATE_FUNCTION
-    PU::fillIBCMvpCand(pu, REF_PIC_LIST_0, pu.refIdx[REF_PIC_LIST_0], amvpInfo);
+#if JVET_M0483_IBC
+    PU::fillIBCMvpCand(pu, amvpInfo);
 #else
     PU::fillMvpCand(pu, REF_PIC_LIST_0, pu.refIdx[REF_PIC_LIST_0], amvpInfo);
 #endif
@@ -1414,8 +1411,8 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
     if (!cu.cs->sps->getSpsNext().getUseIMV())
       pu.mvd[REF_PIC_LIST_0] >>= (2);
 
-#if IBC_SEPERATE_MODE
-    pu.refIdx[REF_PIC_LIST_0] = pu.cs->slice->getNumRefIdx(REF_PIC_LIST_0);
+#if JVET_M0483_IBC
+    pu.refIdx[REF_PIC_LIST_0] = MAX_NUM_REF;
 #else
     pu.refIdx[REF_PIC_LIST_0] = pu.cs->slice->getNumRefIdx(REF_PIC_LIST_0) - 1;
 #endif
@@ -1602,7 +1599,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       for ( int iRefList = 0; iRefList < iNumPredDir; iRefList++ )
       {
         RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
         int refPicNumber = cs.slice->getNumRefIdx(eRefPicList);
         if (cs.slice->getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
         {
@@ -1813,7 +1810,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
           iRefStart = 0;
           iRefEnd   = cs.slice->getNumRefIdx(eRefPicList)-1;
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
           if (cs.slice->getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
           {
             iRefEnd--;
@@ -2075,11 +2072,6 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       {
         cu.GBiIdx = GBI_DEFAULT; // Reset to default for the Non-NormalMC modes.
       }
-
-#if IBC_SEPERATE_MODE//Todo : no cu.partsize
-      //no mergeestimation
-      //xMergeEstimation(pu, origBuf, puIdx, uiMRGIndex, uiMRGCost, mergeCtx);
-#endif
 
     uiHevcCost = ( uiCostBi <= uiCost[0] && uiCostBi <= uiCost[1] ) ? uiCostBi : ( ( uiCost[0] <= uiCost[1] ) ? uiCost[0] : uiCost[1] );
     if (cu.Y().width > 8 && cu.Y().height > 8 && cu.slice->getSPS()->getSpsNext().getUseAffine() && cu.imv == 0
@@ -3519,7 +3511,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   for ( int iRefList = 0; iRefList < iNumPredDir; iRefList++ )
   {
     RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
     int refPicNumber = slice.getNumRefIdx(eRefPicList);
     if (slice.getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
     {
@@ -3906,7 +3898,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 
       iRefStart = 0;
       iRefEnd   = slice.getNumRefIdx(eRefPicList) - 1;
-#if IBC_SEPERATE_MODE==0
+#if JVET_M0483_IBC==0
       if (slice.getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
       {
         iRefEnd--;
@@ -5616,7 +5608,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     PredictionUnit &pu = *cs.getPU( partitioner.chType );
 
     m_CABACEstimator->cu_skip_flag  ( cu );
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
     if (CU::isIBC(cu))
     {
       m_CABACEstimator->merge_idx(pu);
@@ -5632,7 +5624,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     }
     else
     m_CABACEstimator->merge_idx     ( pu );
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
     }
 #endif
 

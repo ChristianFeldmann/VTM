@@ -451,7 +451,7 @@ unsigned DeriveCtx::CtxPredModeFlag( const CodingUnit& cu )
 }
 #endif
 
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
 unsigned DeriveCtx::CtxIBCFlag(const CodingUnit& cu)
 {
   const CodingStructure *cs = cu.cs;
@@ -484,7 +484,7 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   pu.mvpIdx [REF_PIC_LIST_1] = NOT_VALID;
   pu.mvpNum [REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum [REF_PIC_LIST_1] = NOT_VALID;
-#if IBC_SEPERATE_MODE // remove macro VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE
+#if JVET_M0483_IBC // remove macro VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE
   if (CU::isIBC(*pu.cu))
   {
     pu.bv = pu.mv[REF_PIC_LIST_0];

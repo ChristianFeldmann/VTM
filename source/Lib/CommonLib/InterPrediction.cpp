@@ -375,7 +375,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   int iRefIdx = pu.refIdx[eRefPicList];
   Mv mv[3];
   bool isIBC = false;
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
   if (CU::isIBC(*pu.cu))
 #else
   if (pu.cs->slice->getRefPic(eRefPicList, iRefIdx)->getPOC() == pu.cs->slice->getPOC())
@@ -415,7 +415,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
     }
     else
     {
-#if IBC_SEPERATE_MODE
+#if JVET_M0483_IBC
       if (isIBC)
       {
         xPredInterBlk(compID, pu, pu.cu->slice->getPic(), mv[0], pcYuvPred, bi, pu.cu->slice->clpRng(compID)
@@ -488,8 +488,9 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
 
     RefPicList eRefPicList = (refList ? REF_PIC_LIST_1 : REF_PIC_LIST_0);
 
-#if IBC_SEPERATE_MODE
-    CHECK(pu.refIdx[refList] > slice.getNumRefIdx(eRefPicList), "Invalid reference index");
+#if JVET_M0483_IBC
+    CHECK(CU::isIBC(*pu.cu) && eRefPicList != REF_PIC_LIST_0, "Invalid interdir for ibc mode");
+    CHECK(CU::isIBC(*pu.cu) && pu.refIdx[refList] != MAX_NUM_REF, "Invalid reference index for ibc mode");
     CHECK((CU::isInter(*pu.cu) && pu.refIdx[refList] >= slice.getNumRefIdx(eRefPicList)), "Invalid reference index");
 #else
     CHECK( pu.refIdx[refList] >= slice.getNumRefIdx( eRefPicList ), "Invalid reference index" );

@@ -273,7 +273,11 @@ void CDTrace::dtrace_polygon_vector(int k, int poc, const std::vector<Position> 
 
 void retrieveTriangularMvInfo(const PredictionUnit& pu, MotionInfo& mi0, MotionInfo& mi1)
 {
+#if JVET_M0883_TRIANGLE_SIGNALING
+  int triangleDir = pu.triangleSplitDir;
+#else
   int triangleDir = g_triangleCombination[pu.mergeIdx][0];
+#endif
   CMotionBuf mb = pu.getMotionBuf();
   bool foundMv[2] = { false, false };
   bool foundBi = false;
@@ -325,7 +329,11 @@ void retrieveTriangularMvInfo(const PredictionUnit& pu, MotionInfo& mi0, MotionI
 }
 void retrieveTrianglePolygon(const PredictionUnit& pu, std::vector<Position>& triangle0, std::vector<Position>& triangle1, Position& S, Position& E)
 {
+#if JVET_M0883_TRIANGLE_SIGNALING
+  TriangleSplit triangleDir = TriangleSplit(pu.triangleSplitDir);
+#else
   TriangleSplit triangleDir = TriangleSplit(g_triangleCombination[pu.mergeIdx][0]);
+#endif
   Position TL = pu.Y().topLeft();  
   Position TR = pu.Y().topRight();    TR = TR.offset(1, 0);
   Position BL = pu.Y().bottomLeft();  BL = BL.offset(0, 1);

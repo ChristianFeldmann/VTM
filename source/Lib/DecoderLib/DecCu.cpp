@@ -355,12 +355,22 @@ void DecCu::xReconInter(CodingUnit &cu)
 {
   if( cu.triangle )
   {
+#if JVET_M0883_TRIANGLE_SIGNALING
+    const bool    splitDir = cu.firstPU->triangleSplitDir;
+    const uint8_t candIdx0 = cu.firstPU->triangleMergeIdx0;
+    const uint8_t candIdx1 = cu.firstPU->triangleMergeIdx1;
+#else
     const uint8_t mergeIdx = cu.firstPU->mergeIdx;
     const bool    splitDir = g_triangleCombination[mergeIdx][0];
     const uint8_t candIdx0 = g_triangleCombination[mergeIdx][1];
     const uint8_t candIdx1 = g_triangleCombination[mergeIdx][2];
+#endif
     m_pcInterPred->motionCompensation4Triangle( cu, m_triangleMrgCtx, splitDir, candIdx0, candIdx1 );
+#if JVET_M0883_TRIANGLE_SIGNALING
+    PU::spanTriangleMotionInfo( *cu.firstPU, m_triangleMrgCtx, splitDir, candIdx0, candIdx1 );
+#else
     PU::spanTriangleMotionInfo( *cu.firstPU, m_triangleMrgCtx, mergeIdx, splitDir, candIdx0, candIdx1 );
+#endif
   }
   else
   {
@@ -588,7 +598,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     else
     {
 #if REUSE_CU_RESULTS
+#if JVET_M0246_AFFINE_AMVR
+      if ( cu.imv && !pu.cu->affine && !cu.cs->pcv->isEncoder )
+#else
         if (cu.imv && !cu.cs->pcv->isEncoder)
+#endif
 #else
         if (cu.imv)
 #endif
@@ -613,7 +627,35 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 
               //    Mv mv[3];
               CHECK( pu.refIdx[eRefList] < 0, "Unexpected negative refIdx." );
+#if JVET_M0246_AFFINE_AMVR
+              Mv tmpMvd[3];
+              memcpy( tmpMvd, pu.mvdAffi[eRefList], 3 * sizeof( Mv ) );
+              const int imvShift = ( !cu.cs->pcv->isEncoder && pu.cu->imv == 2 ) ? MV_FRACTIONAL_BITS_DIFF : 0;
+              pu.mvdAffi[eRefList][0] <<= imvShift;
+              pu.mvdAffi[eRefList][1] <<= imvShift;
 
+              Mv mvLT = affineAMVPInfo.mvCandLT[mvp_idx] + pu.mvdAffi[eRefList][0];
+              Mv mvRT = affineAMVPInfo.mvCandRT[mvp_idx] + pu.mvdAffi[eRefList][1];
+              mvRT += pu.mvdAffi[eRefList][0];
+              if ( pu.cu->imv != 1 )
+              {
+                mvLT.changePrecision( MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL );
+                mvRT.changePrecision( MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL );
+              }
+
+              Mv mvLB;
+              if ( cu.affineType == AFFINEMODEL_6PARAM )
+              {
+                pu.mvdAffi[eRefList][2] <<= imvShift;
+                mvLB = affineAMVPInfo.mvCandLB[mvp_idx] + pu.mvdAffi[eRefList][2];
+                mvLB += pu.mvdAffi[eRefList][0];
+                if ( pu.cu->imv != 1 )
+                {
+                  mvLB.changePrecision( MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL );
+                }
+              }
+              memcpy( pu.mvdAffi[eRefList], tmpMvd, 3 * sizeof( Mv ) );
+#else
               Mv mvLT = affineAMVPInfo.mvCandLT[mvp_idx] + pu.mvdAffi[eRefList][0];
               Mv mvRT = affineAMVPInfo.mvCandRT[mvp_idx] + pu.mvdAffi[eRefList][1];
               mvRT += pu.mvdAffi[eRefList][0];
@@ -627,6 +669,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
                 mvLB += pu.mvdAffi[eRefList][0];
                 mvLB.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
               }
+#endif
               PU::setAllAffineMv( pu, mvLT, mvRT, mvLB, eRefList );
             }
           }

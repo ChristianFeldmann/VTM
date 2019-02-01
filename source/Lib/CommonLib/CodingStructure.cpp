@@ -62,6 +62,9 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
   : area      ()
   , picture   ( nullptr )
   , parent    ( nullptr )
+#if JVET_M0246_AFFINE_AMVR
+  , bestCS    ( nullptr )
+#endif
   , m_isTuEnc ( false )
   , m_cuCache ( cuCache )
   , m_puCache ( puCache )

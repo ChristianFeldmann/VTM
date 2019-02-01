@@ -864,7 +864,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  ("AllowDisFracMMVD",                                m_allowDisFracMMVD,                               false, "Disable fractional MVD in MMVD mode adaptively")
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  ("AffineAmvr",                                      m_AffineAmvr,                                     false, "Eanble AMVR for affine inter mode")
+#endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
   ( "IBCLocalSearchRangeY",                           m_IBCLocalSearchRangeY,                            128u, "Search range of IBC local search in y direction")
@@ -3145,6 +3150,12 @@ void EncAppCfg::xPrintParameter()
 #endif
     msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
+#if JVET_M0255_FRACMMVD_SWITCH
+    msg( VERBOSE, "AllowDisFracMMVD:%d ", m_allowDisFracMMVD );
+#endif
+#if JVET_M0246_AFFINE_AMVR
+    msg( VERBOSE, "AffineAmvr:%d ", m_AffineAmvr );
+#endif
   }
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
   msg( VERBOSE, "WrapAround:%d ", m_wrapAround);

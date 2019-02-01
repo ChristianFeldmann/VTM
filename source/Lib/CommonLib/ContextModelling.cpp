@@ -53,8 +53,13 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
   , m_log2CGWidth               ((m_width & 3) || (m_height & 3) ? 1 : 2)
   , m_log2CGHeight              ((m_width & 3) || (m_height & 3) ? 1 : 2)
   , m_log2CGSize                (m_log2CGWidth + m_log2CGHeight)
-  , m_widthInGroups             (m_width  >> m_log2CGWidth)
-  , m_heightInGroups            (m_height >> m_log2CGHeight)
+#if JVET_M0257
+  , m_widthInGroups(std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_width) >> m_log2CGWidth)
+  , m_heightInGroups(std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_height) >> m_log2CGHeight)
+#else
+  , m_widthInGroups(m_width >> m_log2CGWidth)
+  , m_heightInGroups(m_height >> m_log2CGHeight)
+#endif
   , m_log2BlockWidth            (g_aucLog2[m_width])
   , m_log2BlockHeight           (g_aucLog2[m_height])
   , m_log2BlockSize             ((m_log2BlockWidth + m_log2BlockHeight)>>1)
@@ -75,8 +80,13 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
   , m_scanCG                    (g_scanOrder[SCAN_UNGROUPED  ][m_scanType][gp_sizeIdxInfo->idxFrom(m_widthInGroups)][gp_sizeIdxInfo->idxFrom(m_heightInGroups)])
   , m_CtxSetLastX               (Ctx::LastX[m_chType])
   , m_CtxSetLastY               (Ctx::LastY[m_chType])
-  , m_maxLastPosX               (g_uiGroupIdx[m_width - 1])
-  , m_maxLastPosY               (g_uiGroupIdx[m_height - 1])
+#if JVET_M0257
+  , m_maxLastPosX(g_uiGroupIdx[std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_width) - 1])
+  , m_maxLastPosY(g_uiGroupIdx[std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_height) - 1])
+#else
+  , m_maxLastPosX(g_uiGroupIdx[m_width - 1])
+  , m_maxLastPosY(g_uiGroupIdx[m_height - 1])
+#endif
   , m_lastOffsetX               (0)
   , m_lastOffsetY               (0)
   , m_lastShiftX                (0)
@@ -503,6 +513,9 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 #if JVET_M0068_M0171_MMVD_CLEANUP
   PU::restrictBiPredMergeCandsOne(pu);
 #endif
+#if JVET_M0823_MMVD_ENCOPT
+  pu.mmvdEncOptMode = 0;
+#endif
 }
 void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
 {
@@ -523,8 +536,15 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   tempIdx = tempIdx - fPosBaseIdx * (MMVD_MAX_REFINE_NUM);
   fPosStep = tempIdx / 4;
   fPosPosition = tempIdx - fPosStep * (4);
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  int offset = refMvdCands[fPosStep];
+  if ( pu.cu->slice->getDisFracMMVD() )
+  {
+    offset <<= 2;
+  }
+#else
   const int offset = refMvdCands[fPosStep];
+#endif
   const int refList0 = mmvdBaseMv[fPosBaseIdx][0].refIdx;
   const int refList1 = mmvdBaseMv[fPosBaseIdx][1].refIdx;
 

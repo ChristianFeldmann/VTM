@@ -205,7 +205,7 @@ void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, Pel
     DTRACE_COEFF_BUF( D_TCOEFF, tempCoeff, tu, tu.cu->predMode, compID );
 
 #if JVET_M0464_UNI_MTS
-    if( tu.mtsIdx == 1 )
+    if( isLuma(compID) && tu.mtsIdx == 1 )
 #else
     if( tu.transformSkip[compID] )
 #endif
@@ -498,7 +498,7 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
     tu.mtsIdx = it->first;
     CoeffBuf tempCoeff( m_mtsCoeffs[tu.mtsIdx], rect );
 
-    if( tu.mtsIdx == 1 )
+    if( isLuma(compID) && tu.mtsIdx == 1 )
     {
       xTransformSkip( tu, compID, resiBuf, tempCoeff.buf );
     }
@@ -593,7 +593,7 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
 #if JVET_M0464_UNI_MTS
       if( !loadTr )
       {
-        if( tu.mtsIdx == 1 )
+        if( isLuma(compID) && tu.mtsIdx == 1 )
 #else
       if( tu.transformSkip[compID] )
 #endif

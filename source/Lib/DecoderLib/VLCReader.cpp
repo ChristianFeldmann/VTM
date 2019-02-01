@@ -1047,7 +1047,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 
   READ_FLAG( uiCode, "sps_bdof_enable_flag" );                      pcSPS->setBDOFEnabledFlag ( uiCode != 0 );
-  
+#if JVET_M0255_FRACMMVD_SWITCH
+  READ_FLAG( uiCode,  "sps_fracmmvd_disabled_flag" );               pcSPS->setDisFracMmvdEnabledFlag ( uiCode != 0 );
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );             pcSPS->setAffineAmvrEnabledFlag ( uiCode != 0 );
+#endif
 #if HEVC_USE_SCALING_LISTS
   READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
   if(pcSPS->getScalingListFlag())
@@ -1778,6 +1783,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         READ_UVLC( uiCode, "five_minus_max_num_affine_merge_cand" );
         pcSlice->setMaxNumAffineMergeCand( AFFINE_MRG_MAX_NUM_CANDS - uiCode );
       }
+#if JVET_M0255_FRACMMVD_SWITCH
+      if ( sps->getDisFracMmvdEnabledFlag() )
+      {
+        READ_FLAG( uiCode, "tile_group_fracmmvd_disabled_flag" );
+        pcSlice->setDisFracMMVD( uiCode ? true : false );
+      }
+#endif
     }
 
     READ_SVLC( iCode, "slice_qp_delta" );
@@ -2431,7 +2443,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
   uint32_t code;
   if( !isChroma )
   {
-    READ_FLAG( code, "alf_coefficients_delta_flag" );
+    READ_FLAG( code, "alf_luma_coeff_delta_flag" );
     alfSliceParam.coeffDeltaFlag = code;
 
     if( !alfSliceParam.coeffDeltaFlag )

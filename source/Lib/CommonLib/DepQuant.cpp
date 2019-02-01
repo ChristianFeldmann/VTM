@@ -334,8 +334,13 @@ namespace DQIntern
     m_log2SbbSize         = m_log2SbbWidth + m_log2SbbHeight;
     m_sbbSize             = ( 1 << m_log2SbbSize );
     m_sbbMask             = m_sbbSize - 1;
+#if JVET_M0257
+    m_widthInSbb = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_width) >> m_log2SbbWidth;
+    m_heightInSbb = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_height) >> m_log2SbbHeight;
+#else
     m_widthInSbb          = m_width  >> m_log2SbbWidth;
     m_heightInSbb         = m_height >> m_log2SbbHeight;
+#endif
     m_numSbb              = m_widthInSbb * m_heightInSbb;
 #if HEVC_USE_MDCS
 #error "MDCS is not supported" // use different function...
@@ -489,7 +494,11 @@ namespace DQIntern
       const unsigned      lastShift   = ( compID == COMPONENT_Y ? (log2Size+1)>>2 : Clip3<unsigned>(0,2,size>>3) );
       const unsigned      lastOffset  = ( compID == COMPONENT_Y ? ( prefixCtx[log2Size] ) : 0 );
       uint32_t            sumFBits    = 0;
+#if JVET_M0257
+      unsigned            maxCtxId    = g_uiGroupIdx[std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, size) - 1];
+#else
       unsigned            maxCtxId    = g_uiGroupIdx[ size - 1 ];
+#endif
       for( unsigned ctxId = 0; ctxId < maxCtxId; ctxId++ )
       {
         const BinFracBits bits  = fracBitsAccess.getFracBitsArray( ctxSetLast( lastOffset + ( ctxId >> lastShift ) ) );
@@ -497,7 +506,11 @@ namespace DQIntern
         sumFBits               +=            bits.intBits[1];
       }
       ctxBits  [ maxCtxId ]     = sumFBits + ( maxCtxId>3 ? ((maxCtxId-2)>>1)<<SCALE_BITS : 0 ) + bitOffset;
+#if JVET_M0257
+      for (unsigned pos = 0; pos < std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, size); pos++)
+#else
       for( unsigned pos = 0; pos < size; pos++ )
+#endif
       {
         lastBits[ pos ]         = ctxBits[ g_uiGroupIdx[ pos ] ];
       }
@@ -840,6 +853,15 @@ namespace DQIntern
   };
 
 #define RICEMAX 32
+#if JVET_M0470
+  const int32_t g_goRiceBits[4][RICEMAX] =
+  {
+      { 32768,	65536,	98304,	131072,	163840,	196608,	262144,	262144,	327680,	327680,	327680,	327680,	393216,	393216,	393216,	393216,	393216,	393216,	393216,	393216,	458752,	458752,	458752,	458752,	458752,	458752,	458752,	458752,	458752,	458752,	458752,	458752},
+      { 65536,	65536,	98304,	98304,	131072,	131072,	163840,	163840,	196608,	196608,	229376,	229376,	294912,	294912,	294912,	294912,	360448,	360448,	360448,	360448,	360448,	360448,	360448,	360448,	425984,	425984,	425984,	425984,	425984,	425984,	425984,	425984},
+      { 98304,	98304,	98304,	98304,	131072,	131072,	131072,	131072,	163840,	163840,	163840,	163840,	196608,	196608,	196608,	196608,	229376,	229376,	229376,	229376,	262144,	262144,	262144,	262144,	327680,	327680,	327680,	327680,	327680,	327680,	327680,	327680},
+      { 131072,	131072,	131072,	131072,	131072,	131072,	131072,	131072,	163840,	163840,	163840,	163840,	163840,	163840,	163840,	163840,	196608,	196608,	196608,	196608,	196608,	196608,	196608,	196608,	229376,	229376,	229376,	229376,	229376,	229376,	229376,	229376}
+  };
+#else
   const int32_t g_goRiceBits[4][RICEMAX] =
   {
     {  32768,  65536,  98304, 131072, 163840, 196608, 229376, 294912, 294912, 360448, 360448, 360448, 360448, 425984, 425984, 425984, 425984, 425984, 425984, 425984, 425984, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520 },
@@ -847,6 +869,7 @@ namespace DQIntern
     {  98304,  98304,  98304,  98304, 131072, 131072, 131072, 131072, 163840, 163840, 163840, 163840, 196608, 196608, 196608, 196608, 229376, 229376, 229376, 229376, 262144, 262144, 262144, 262144, 294912, 294912, 294912, 294912, 360448, 360448, 360448, 360448 },
     { 131072, 131072, 131072, 131072, 131072, 131072, 131072, 131072, 163840, 163840, 163840, 163840, 163840, 163840, 163840, 163840, 196608, 196608, 196608, 196608, 196608, 196608, 196608, 196608, 229376, 229376, 229376, 229376, 229376, 229376, 229376, 229376 }
   };
+#endif
 
   class State
   {

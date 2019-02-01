@@ -162,9 +162,11 @@ static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
 static const int MAX_CPB_CNT =                                     32; ///< Upper bound of (cpb_cnt_minus1 + 1)
 static const int MAX_NUM_LAYER_IDS =                               64;
-
+#if JVET_M0470
+static const int COEF_REMAIN_BIN_REDUCTION =                        5; ///< indicates the level at which the VLC transitions from Golomb-Rice to TU+EG(k)
+#else
 static const int COEF_REMAIN_BIN_REDUCTION =                        3; ///< indicates the level at which the VLC transitions from Golomb-Rice to TU+EG(k)
-
+#endif
 static const int CU_DQP_TU_CMAX =                                   5; ///< max number bins for truncated unary
 static const int CU_DQP_EG_k =                                      0; ///< expgolomb order
 
@@ -316,7 +318,7 @@ static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE
 static const int GBI_NUM =                                          5; ///< the number of weight options
 static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
-static const int MAX_NUM_HMVP_CANDS =                              6; ///< maximum number of HMVP candidates to be stored and used in merge list
+static const int MAX_NUM_HMVP_CANDS =                              5; ///< maximum number of HMVP candidates to be stored and used in merge list
 static const int MAX_NUM_HMVP_AVMPCANDS =                          4; ///< maximum number of HMVP candidates to be used in AMVP list
 
 #if W0038_DB_OPT
@@ -365,7 +367,7 @@ static const int    FAST_SKIP_DEPTH =                               2;
 static const double PBINTRA_RATIO     =                             1.1;
 static const int    NUM_MRG_SATD_CAND =                             4;
 static const double MRG_FAST_RATIO    =                             1.25;
-static const int    NUM_AFF_MRG_SATD_CAND =                         1;
+static const int    NUM_AFF_MRG_SATD_CAND =                         2;
 
 static const double AMAXBT_TH32 =                                  15.0;
 static const double AMAXBT_TH64 =                                  30.0;
@@ -402,6 +404,14 @@ static const int CHROMA_REFINEMENT_CANDIDATES = 8; /// 8 candidates BV to choose
 static const int IBC_FAST_METHOD_NOINTRA_IBCCBF0 = 0x01;
 static const int IBC_FAST_METHOD_BUFFERBV = 0X02;
 static const int IBC_FAST_METHOD_ADAPTIVE_SEARCHRANGE = 0X04;
+
+#if JVET_M0512_MOTION_BUFFER_COMPRESSION
+static constexpr int MV_EXPONENT_BITCOUNT    = 4;
+static constexpr int MV_MANTISSA_BITCOUNT    = 6;
+static constexpr int MV_MANTISSA_UPPER_LIMIT = ((1 << (MV_MANTISSA_BITCOUNT - 1)) - 1);
+static constexpr int MV_MANTISSA_LIMIT       = (1 << (MV_MANTISSA_BITCOUNT - 1));
+static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1);
+#endif
 
 // ====================================================================================================================
 // Macro functions

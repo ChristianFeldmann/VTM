@@ -1011,7 +1011,7 @@ void Picture::extendPicBorder()
       {
         for (int x = 0; x < xmargin; x++ )
         {
-          pi[ -xmargin + x ] = pi[ -xmargin + x + xoffset ];
+          pi[ -x - 1       ] = pi[ -x - 1       + xoffset ];
           pi[  p.width + x ] = pi[  p.width + x - xoffset ];
         }
         pi += p.stride;

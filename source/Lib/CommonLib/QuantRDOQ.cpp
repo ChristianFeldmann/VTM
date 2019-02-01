@@ -149,7 +149,12 @@ inline uint32_t QuantRDOQ::xGetCodedLevel( double&            rd64CodedCost,
   for( int uiAbsLevel  = uiMaxAbsLevel; uiAbsLevel >= uiMinAbsLevel ; uiAbsLevel-- )
   {
     double dErr         = double( lLevelDouble  - ( Intermediate_Int(uiAbsLevel) << iQBits ) );
+
+#if JVET_M0470
+    double dCurrCost    = dErr * dErr * errorScale + xGetICost( xGetICRate( uiAbsLevel, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, ui16AbsGoRice, true, maxLog2TrDynamicRange ) );
+#else
     double dCurrCost    = dErr * dErr * errorScale + xGetICost( xGetICRate( uiAbsLevel, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, ui16AbsGoRice, useLimitedPrefixLength, maxLog2TrDynamicRange ) );
+#endif
     dCurrCost          += dCurrCostSig;
 
     if( dCurrCost < rd64CodedCost )
@@ -194,7 +199,11 @@ inline int QuantRDOQ::xGetICRate( const uint32_t         uiAbsLevel,
     int       iRate   = int( xGetIEPRate() ); // cost of sign bit
     uint32_t  symbol  = ( uiAbsLevel == 0 ? goRiceZero : uiAbsLevel <= goRiceZero ? uiAbsLevel-1 : uiAbsLevel );
     uint32_t  length;
+#if JVET_M0470
+    const int threshold = COEF_REMAIN_BIN_REDUCTION;
+#else
     const int threshold = g_auiGoRiceRange[ui16AbsGoRice];
+#endif
     if( symbol < ( threshold << ui16AbsGoRice ) )
     {
       length = symbol >> ui16AbsGoRice;
@@ -239,7 +248,11 @@ inline int QuantRDOQ::xGetICRate( const uint32_t         uiAbsLevel,
   {
     uint32_t symbol = ( uiAbsLevel - cthres ) >> 1;
     uint32_t length;
+#if JVET_M0470
+    const int threshold = COEF_REMAIN_BIN_REDUCTION;
+#else
     const int threshold = g_auiGoRiceRange[ui16AbsGoRice];
+#endif
     if( symbol < ( threshold << ui16AbsGoRice ) )
     {
       length = symbol >> ui16AbsGoRice;
@@ -715,8 +728,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
   double *pdCostCoeffGroupSig = m_pdCostCoeffGroupSig;
   memset( pdCostCoeffGroupSig, 0, ( uiMaxNumCoeff >> cctx.log2CGSize() ) * sizeof( double ) );
-
+#if JVET_M0257
+  const int iCGNum = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiWidth) * std::min<int>(JVET_C0024_ZERO_OUT_TH, uiHeight) >> cctx.log2CGSize();
+#else
   const int iCGNum  = uiWidth * uiHeight >> cctx.log2CGSize();
+#endif
   int iScanPos;
   coeffGroupRDStats rdStats;
 
@@ -1011,8 +1027,13 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
     int dim1  = ( cctx.scanType() == SCAN_VER ? uiHeight : uiWidth  );
     int dim2  = ( cctx.scanType() == SCAN_VER ? uiWidth  : uiHeight );
 #else
+#if JVET_M0257
+    int dim1 = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiWidth);
+    int dim2 = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiHeight);
+#else
     int dim1  = uiWidth;
     int dim2  = uiHeight;
+#endif
 #endif
     int bitsX = 0;
     int bitsY = 0;
@@ -1123,8 +1144,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
     int lastCG = -1;
     int absSum = 0 ;
     int n ;
-
+#if JVET_M0257
+    for (int subSet = iCGNum - 1; subSet >= 0; subSet--)
+#else
     for( int subSet = (uiWidth*uiHeight-1) >> cctx.log2CGSize(); subSet >= 0; subSet-- )
+#endif
     {
       int  subPos         = subSet << cctx.log2CGSize();
       int  firstNZPosInCG = iCGSizeM1 + 1, lastNZPosInCG = -1;

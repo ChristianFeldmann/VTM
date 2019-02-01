@@ -76,6 +76,20 @@ struct AffineMVInfo
   int x, y, w, h;
 };
 
+#if JVET_M0246_AFFINE_AMVR
+typedef struct
+{
+  Mv acMvAffine4Para[2][2];
+  Mv acMvAffine6Para[2][3];
+  int16_t affine4ParaRefIdx[2];
+  int16_t affine6ParaRefIdx[2];
+  Distortion hevcCost[3];
+  Distortion affineCost[3];
+  bool affine4ParaAvail;
+  bool affine6ParaAvail;
+} EncAffineMotion;
+#endif
+
 /// encoder search class
 class InterSearch : public InterPrediction, CrossComponentPrediction, AffineGradientSearch
 {
@@ -103,7 +117,9 @@ private:
   int             m_affMVListSize;
   int             m_affMVListMaxSize;
   Distortion      m_hevcCost;
-
+#if JVET_M0246_AFFINE_AMVR
+  EncAffineMotion m_affineMotion;
+#endif
 protected:
   // interface to option
   EncCfg*         m_pcEncCfg;
@@ -190,6 +206,10 @@ public:
       m_affMVListSize = std::min(m_affMVListSize + 1, m_affMVListMaxSize);
     }
   }
+#if JVET_M0246_AFFINE_AMVR
+  void resetSavedAffineMotion();
+  void storeAffineMotion( Mv acAffineMv[2][3], int16_t affineRefIdx[2], EAffineModel affineType, int gbiIdx );
+#endif
 protected:
 
   /// sub-function for motion vector refinement used in fractional-pel accuracy
@@ -280,7 +300,9 @@ protected:
                                     RefPicList            eRefPicList,
                                     int                   iRefIdx
                                   );
-
+#if JVET_M0246_AFFINE_AMVR
+  uint32_t xCalcAffineMVBits      ( PredictionUnit& pu, Mv mvCand[3], Mv mvPred[3], bool mvHighPrec = false );
+#endif
 
   void xCopyAMVPInfo              ( AMVPInfo*   pSrc, AMVPInfo* pDst );
   uint32_t xGetMvpIdxBits             ( int iIdx, int iNum );
@@ -411,6 +433,9 @@ protected:
   bool xReadBufferedAffineUniMv   ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv acMvPred[3], Mv acMv[3], uint32_t& ruiBits, Distortion& ruiCost);
   double xGetMEDistortionWeight   ( uint8_t gbiIdx, RefPicList eRefPicList);
   bool xReadBufferedUniMv         ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost);
+
+  void xClipMv                    ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps );
+
 public:
   void resetBufferedUniMotions    () { m_uniMotions.reset(); }
   uint32_t getWeightIdxBits       ( uint8_t gbiIdx ) { return m_estWeightIdxBits[gbiIdx]; }

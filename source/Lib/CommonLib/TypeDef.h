@@ -51,6 +51,26 @@
 #include <cassert>
 
 #define JVET_M0483_IBC                                    1 // Block level flag signaling and independent IBC mode
+#define JVET_M0471_LONG_DEBLOCKING_FILTERS                1 
+#define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
+
+#define JVET_M0257                                        1 // Scan only non zero-out regions of large TUs
+#define JVET_M0193_PAIR_AVG_REDUCTION                     1 //Use only one pairwise average candidate
+
+#define JVET_M0281_AMVP_ROUNDING                          1 // Perform all AMVP rounding before pruning even AMVR is off
+
+#define JVET_M0117_AMVP_LIST_GEN                          1 // AMVP candidate list generation simplification
+
+#define JVET_M0192_AFF_CHROMA_SIMPL                       1 // Affine chroma MV derivation simplification and rounding unification
+
+#define JVET_M0116_ATMVP_LEFT_NB_FOR_OFFSET               1 // Only use left neighbor for ATMVP offset derivation, from M0273, M0240, M0116, M0338, M0204
+
+#define JVET_M0063_BDOF_FIX                               1 // BDOF bitdepth bugfix
+
+#define JVET_M0265_MV_ROUNDING_CLEANUP                    1 // Unify MV roundings and make SW/WD allignment
+#define JVET_M0883_TRIANGLE_SIGNALING                     1 // Using regular merge index signaling for triangle mode
+
+#define JVET_M0228_REMOVE_CPMV_COMPARE                    1 // Remove CPMV comparisons for construnted affine merge candidates from JVET-M0228, M0166, M0477
 
 #define JVET_M0145_AFFINE_MV_CLIP                         1 // Missing clipping for MV storage in affine
 
@@ -73,6 +93,7 @@
 
 #define JVET_M0142_CCLM_COLLOCATED_CHROMA                 1 // Adding support for chroma sample location type 2 in CCLM
 
+#define JVET_M0328_KEEP_ONE_WEIGHT_GROUP                  1
 
 #define JVET_M0479_18BITS_MV_CLIP                         1
 
@@ -86,12 +107,15 @@
 
 #define JVET_M0464_UNI_MTS                                1
 #define JVET_M0068_M0171_MMVD_CLEANUP                     1 // MMVD cleanup with 1) flip removal, 2) L1 zero vector fix, 3) bi-pred restriction after merge/MMVD
+#define JVET_M0255_FRACMMVD_SWITCH                        1 // disable fractional MVD in MMVD adaptively
+#define JVET_M0823_MMVD_ENCOPT                            1 // encoder optimization for MMVD
 
 #if JVET_M0464_UNI_MTS
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 #endif
 
+#define JVET_M0246_AFFINE_AMVR                            1
 #define JVET_M0421_SPLIT_SIG                              1
 
 #define JVET_M0173_MOVE_GT2_TO_FIRST_PASS                 1 // Moving the gtr2 flag to the first coding pass
@@ -102,6 +126,8 @@ typedef std::pair<int, int>  TrCost;
 
 // clang-format off
 #define JVET_M0453_CABAC_ENGINE                           1
+#define JVET_M0512_MOTION_BUFFER_COMPRESSION              1
+#define JVET_M0238_PDPC_NO_INTERPOLATION                  1
 
 #define JVET_M0409_ATMVP_FIX                              1
 

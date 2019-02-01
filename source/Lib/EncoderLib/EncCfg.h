@@ -238,7 +238,12 @@ protected:
 
   bool      m_MHIntra;
   bool      m_Triangle;
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  bool      m_allowDisFracMMVD;
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  bool      m_AffineAmvr;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -246,7 +251,7 @@ protected:
   unsigned  m_IBCHashSearchMaxCand;
   unsigned  m_IBCHashSearchRange4SmallBlk;
   unsigned  m_IBCFastMethod;
-  
+
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
 
@@ -754,7 +759,14 @@ public:
   bool      getUseMHIntra                   ()         const { return m_MHIntra; }
   void      setUseTriangle                  ( bool b )       { m_Triangle = b; }
   bool      getUseTriangle                  ()         const { return m_Triangle; }
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  void      setAllowDisFracMMVD             ( bool b )       { m_allowDisFracMMVD = b;    }
+  bool      getAllowDisFracMMVD             ()         const { return m_allowDisFracMMVD; }
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  void      setUseAffineAmvr                ( bool b )       { m_AffineAmvr = b;    }
+  bool      getUseAffineAmvr                ()         const { return m_AffineAmvr; }
+#endif
 
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }

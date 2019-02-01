@@ -242,10 +242,24 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
   const Area area          = cu.Y().valid() ? cu.Y() : Area( recalcPosition( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].pos() ), recalcSize( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].size() ) );
 
   xSetLoopfilterParam( cu );
-
+#if  JVET_M0471_LONG_DEBLOCKING_FILTERS
+  bool implicitTU = false;
+#endif
   for( auto &currTU : CU::traverseTUs( cu ) )
   {
     const Area& areaTu    = cu.Y().valid() ? currTU.block( COMPONENT_Y ) : area;
+#if  JVET_M0471_LONG_DEBLOCKING_FILTERS 
+    const bool xOff = currTU.blocks[cu.chType].x != cu.blocks[cu.chType].x;
+    const bool yOff = currTU.blocks[cu.chType].y != cu.blocks[cu.chType].y;
+    if ((yOff != 0) && (edgeDir == EDGE_HOR))
+    {
+      implicitTU = true;
+    }
+    if ((xOff != 0) && (edgeDir == EDGE_VER))
+    {
+      implicitTU = true;
+    }
+#endif
     xSetEdgefilterMultiple( cu, EDGE_VER, areaTu, m_stLFCUParam.internalEdge );
     xSetEdgefilterMultiple( cu, EDGE_HOR, areaTu, m_stLFCUParam.internalEdge );
   }
@@ -313,11 +327,16 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 
   unsigned int orthogonalLength = 1;
   unsigned int orthogonalIncrement = 1;
-
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+  int maxFilterLength = 7;
+#endif
   if (cu.blocks[COMPONENT_Y].valid())
   {
     if (mvSubBlocks)
     {
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+      maxFilterLength = 5;
+#endif
       orthogonalIncrement = subBlockSize / 4;
       orthogonalLength = (edgeDir == EDGE_HOR) ? cu.blocks[COMPONENT_Y].height / 4 : cu.blocks[COMPONENT_Y].width / 4;
     }
@@ -333,11 +352,34 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 
     }
   }
+
   for (int edge = 0; edge < orthogonalLength; edge += orthogonalIncrement)
   {
     if (cu.blocks[COMPONENT_Y].valid())
     {
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+      if (edge == 0)
+      {
+        xEdgeFilterLuma(cu, edgeDir, edge, 7, maxFilterLength);
+      }
+      else
+      {
+        if ( implicitTU && (edge == (64 / 4)) )
+        {
+          xEdgeFilterLuma(cu, edgeDir, edge, maxFilterLength, maxFilterLength);
+        }
+        else if ( (edge == 2 || edge == (orthogonalLength - 2)) || (implicitTU && (edge == (56 / 4) || edge == (72 / 4))) )
+        {
+          xEdgeFilterLuma(cu, edgeDir, edge, 2, 2);
+        }
+        else
+        {
+          xEdgeFilterLuma(cu, edgeDir, edge, 3, 3);
+        }
+      }
+#else
       xEdgeFilterLuma(cu, edgeDir, edge);
+#endif
     }
     if (cu.blocks[COMPONENT_Cb].valid() && pcv.chrFormat != CHROMA_400)
     {
@@ -412,7 +454,17 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   //-- Set BS for Intra MB : BS = 4 or 3
   if( ( MODE_INTRA == cuP.predMode ) || ( MODE_INTRA == cuQ.predMode ) )
   {
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+    // The boundary strength that is output by the function xGetBoundaryStrengthSingle is a temporary boundary strength that contains both info for luma and chroma, where specific chroma component information related to chroma component cbf also is included.
+    // In addition to filter a chroma component if P or Q is intra, a chroma component can also be filtered if P and Q has non-zero chroma component tu coefficents. 
+    // Both luma and chroma can be filtered with a boundary strength of 2 when the temporary boundary strength is 16 (indicating intra)
+    // Luma can be filtered with a boundary strength of 1 if the temporary boundary strength is 8, 10, 12, 14 (indicating non-zero luma coeffs), or 1, 3, 5 or 7 (indicating motion difference)
+    // Chroma Cb component can be filtered with a boundary strength of 1 if the temporary boundary strength is 4,5,6,7,12 or 14 (indicating non-zero chroma Cb coeffs)
+    // Chroma Cr component can be filtered with a boundary strength of 1 if the temporary boundary strength is 2,3,6,7,10 or 14 (indicating non-zero chroma Cr coeffs)
+    return 16;
+#else
     return 2;
+#endif
   }
 
   const TransformUnit& tuQ = posQ == cuQ.lumaPos() ? *cuQ.firstTU : *cuQ.cs->getTU(posQ, cuQ.chType);
@@ -420,11 +472,35 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const PreCalcValues& pcv = *cu.cs->pcv;
   const unsigned rasterIdx = getRasterIdx( posQ, pcv );
 
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+  unsigned tmpBs = 0;
+  //-- Set BS for not Intra MB : BS = 2 or 1 or 0
+  // Y
+  if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Y) || TU::getCbf(tuP, COMPONENT_Y)))
+  {
+      tmpBs += 8;
+  }
+  // U
+  if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cb) || TU::getCbf(tuP, COMPONENT_Cb)))
+  {
+    tmpBs += 4;
+  }
+  // V
+  if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cr) || TU::getCbf(tuP, COMPONENT_Cr)))
+  {
+    tmpBs += 2;
+  }
+  if ((tmpBs >> 3) & 0x01)
+  {
+    return tmpBs;
+  }
+#else
   //-- Set BS for not Intra MB : BS = 2 or 1 or 0
   if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Y) || TU::getCbf(tuP, COMPONENT_Y)))
   {
     return 1;
   }
+#endif
 
   // and now the pred
   const MotionInfo&     miQ = cuQ.cs->getMotionInfo( posQ );
@@ -486,7 +562,11 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     {
       uiBs = 1;
     }
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+    return uiBs + tmpBs;
+#else
     return uiBs;
+#endif
   }
 
 
@@ -504,14 +584,22 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
 #endif
   if (piRefP0 != piRefQ0)
   {
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+    return tmpBs + 1;
+#else
     return 1;
+#endif
   }
 
   Mv mvP0 = miP.mv[0];
   Mv mvQ0 = miQ.mv[0];
 
   int nThreshold = 1 << MV_FRACTIONAL_BITS_INTERNAL;
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+  return ( ( abs( mvQ0.getHor() - mvP0.getHor() ) >= nThreshold ) || ( abs( mvQ0.getVer() - mvP0.getVer() ) >= nThreshold ) ) ? (tmpBs + 1) : tmpBs;
+#else
   return ( ( abs( mvQ0.getHor() - mvP0.getHor() ) >= nThreshold ) || ( abs( mvQ0.getVer() - mvP0.getVer() ) >= nThreshold ) ) ? 1 : 0;
+#endif
 }
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
@@ -544,7 +632,11 @@ void LoopFilter::deriveLADFShift( const Pel* src, const int stride, int& shift, 
 }
 #endif
 
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge, const int initialMaxFilterLengthP, const int initialMaxFilterLengthQ)
+#else
 void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge)
+#endif
 {
   const CompArea&  lumaArea = cu.block(COMPONENT_Y);
   const PreCalcValues& pcv = *cu.cs->pcv;
@@ -603,7 +695,24 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
     pos.y += yoffset;
 
     uiBsAbsIdx = getRasterIdx( pos, pcv );
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+    unsigned tmpBs = m_aapucBS[edgeDir][uiBsAbsIdx];
+
+    if ((tmpBs >> 4) & 0x01)
+    {
+      uiBs = 2;
+    }
+    else if (((tmpBs >> 3) & 0x01) || (tmpBs & 0x01))
+    {
+      uiBs = 1;
+    }
+    else
+    {
+      uiBs = 0;
+    }
+#else
     uiBs       = m_aapucBS[edgeDir][uiBsAbsIdx];
+#endif
 
     if( uiBs )
     {
@@ -637,6 +746,37 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
         iQP += iShift;
       }
 #endif
+
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+      bool sidePisLarge   = false;
+      bool sideQisLarge   = false;
+      int maxFilterLengthP = initialMaxFilterLengthP;
+      int maxFilterLengthQ = initialMaxFilterLengthQ;
+      if (maxFilterLengthP > 3)
+      {
+        sidePisLarge = (edgeDir == EDGE_VER && cuP.block(COMPONENT_Y).width >= 32)
+          || (edgeDir == EDGE_HOR && cuP.block(COMPONENT_Y).height >= 32);
+
+        if (sidePisLarge && maxFilterLengthP > 5)
+        {
+          // restrict filter length if sub-blocks are used (e.g affine or ATMVP)
+          if (cuP.affine)
+          {
+            maxFilterLengthP = std::min(maxFilterLengthP, 5);
+          }
+        }
+      }
+      if (maxFilterLengthQ > 3)
+      {
+        sideQisLarge = (edgeDir == EDGE_VER && cuQ.block(COMPONENT_Y).width >= 32)
+          || (edgeDir == EDGE_HOR && cuQ.block(COMPONENT_Y).height >= 32);
+      }
+
+      if (edgeDir == EDGE_HOR && pos.y % slice.getSPS()->getCTUSize() == 0)
+      {
+        sidePisLarge = false;
+      }
+#endif
       const int iIndexTC  = Clip3(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, int(iQP + DEFAULT_INTRA_TC_OFFSET*(uiBs - 1) + (tcOffsetDiv2 << 1)));
       const int iIndexB   = Clip3(0, MAX_QP, iQP + (betaOffsetDiv2 << 1));
 
@@ -653,6 +793,72 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
         const int dq0 = xCalcDQ(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 0), iOffset);
         const int dp3 = xCalcDP(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 3), iOffset);
         const int dq3 = xCalcDQ(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 3), iOffset);
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+        int dp0L = dp0;
+        int dq0L = dq0;
+        int dp3L = dp3;
+        int dq3L = dq3;
+
+        if (sidePisLarge)
+        {
+          dp0L = (dp0L + xCalcDP(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 0) - 3 * iOffset, iOffset) + 1) >> 1;
+          dp3L = (dp3L + xCalcDP(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 3) - 3 * iOffset, iOffset) + 1) >> 1;
+        }
+        if (sideQisLarge)
+        {
+          dq0L = (dq0L + xCalcDQ(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 0) + 3 * iOffset, iOffset) + 1) >> 1;
+          dq3L = (dq3L + xCalcDQ(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 3) + 3 * iOffset, iOffset) + 1) >> 1;
+        }
+        bool useLongtapFilter = false;
+        if (sidePisLarge || sideQisLarge)
+        {
+          int d0L = dp0L + dq0L;
+          int d3L = dp3L + dq3L;
+
+          int dpL = dp0L + dp3L;
+          int dqL = dq0L + dq3L;
+
+          int dL = d0L + d3L;
+
+          bPartPNoFilter = bPartQNoFilter = false;
+          if (bPCMFilter)
+          {
+            // Check if each of PUs is I_PCM with LF disabling
+            bPartPNoFilter = cuP.ipcm;
+            bPartQNoFilter = cuQ.ipcm;
+          }
+          if (ppsTransquantBypassEnabledFlag)
+          {
+            // check if each of PUs is lossless coded
+            bPartPNoFilter = bPartPNoFilter || cuP.transQuantBypass;
+            bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
+          }
+
+          if (dL < iBeta)
+          {
+            const bool filterP = (dpL < iSideThreshold);
+            const bool filterQ = (dqL < iSideThreshold);
+
+            Pel* src0 = piTmpSrc + iSrcStep * (iIdx*pelsInPart + iBlkIdx * 4 + 0);
+            Pel* src3 = piTmpSrc + iSrcStep * (iIdx*pelsInPart + iBlkIdx * 4 + 3);
+
+            // adjust decision so that it is not read beyond p5 is maxFilterLengthP is 5 and q5 if maxFilterLengthQ is 5
+            const bool swL = xUseStrongFiltering(src0, iOffset, 2 * d0L, iBeta, iTc, sidePisLarge, sideQisLarge, maxFilterLengthP, maxFilterLengthQ)
+              && xUseStrongFiltering(src3, iOffset, 2 * d3L, iBeta, iTc, sidePisLarge, sideQisLarge, maxFilterLengthP, maxFilterLengthQ);
+            if (swL)
+            {
+              useLongtapFilter = true;
+              for (int i = 0; i < DEBLOCK_SMALLEST_BLOCK / 2; i++)
+              {
+                xPelFilterLuma(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + i), iOffset, iTc, swL, bPartPNoFilter, bPartQNoFilter, iThrCut, filterP, filterQ, clpRng, sidePisLarge, sideQisLarge, maxFilterLengthP, maxFilterLengthQ);
+              }
+            }
+
+          }
+        }
+        if (!useLongtapFilter)
+        {
+#endif
         const int d0 = dp0 + dq0;
         const int d3 = dp3 + dq3;
 
@@ -678,15 +884,25 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
         {
           const bool bFilterP = (dp < iSideThreshold);
           const bool bFilterQ = (dq < iSideThreshold);
-
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+          bool sw = false;
+          if (maxFilterLengthP > 2 && maxFilterLengthQ > 2)
+          {
+            sw = xUseStrongFiltering(piTmpSrc + iSrcStep * (iIdx*pelsInPart + iBlkIdx * 4 + 0), iOffset, 2 * d0, iBeta, iTc)
+              && xUseStrongFiltering(piTmpSrc + iSrcStep * (iIdx*pelsInPart + iBlkIdx * 4 + 3), iOffset, 2 * d3, iBeta, iTc);
+          }
+#else
           const bool sw = xUseStrongFiltering( piTmpSrc + iSrcStep * ( iIdx*pelsInPart + iBlkIdx * 4 + 0 ), iOffset, 2 * d0, iBeta, iTc )
                        && xUseStrongFiltering( piTmpSrc + iSrcStep * ( iIdx*pelsInPart + iBlkIdx * 4 + 3 ), iOffset, 2 * d3, iBeta, iTc );
-
+#endif
           for( int i = 0; i < DEBLOCK_SMALLEST_BLOCK / 2; i++ )
           {
             xPelFilterLuma( piTmpSrc + iSrcStep*( iIdx*pelsInPart + iBlkIdx * 4 + i ), iOffset, iTc, sw, bPartPNoFilter, bPartQNoFilter, iThrCut, bFilterP, bFilterQ, clpRng );
           }
         }
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+        }
+#endif
       }
     }
   }
@@ -720,6 +936,9 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
   bool      bPartPNoFilter  = false;
   bool      bPartQNoFilter  = false;
   const int tcOffsetDiv2    = slice.getDeblockingFilterTcOffsetDiv2();
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+  const int betaOffsetDiv2  = slice.getDeblockingFilterBetaOffsetDiv2();
+#endif
 
   // Vertical Position
   unsigned uiEdgeNumInCtuVert = rasterIdx % pcv.partsInCtuWidth + iEdge;
@@ -739,6 +958,9 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
   int   uiNumPelsLuma = pcv.minCUWidth;
   unsigned uiBsAbsIdx;
   unsigned ucBs;
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+  bool dfChroma[2];
+#endif
 
   Pel* piTmpSrcCb = piSrcCb;
   Pel* piTmpSrcCr = piSrcCr;
@@ -776,9 +998,33 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
     pos.y += yoffset;
 
     uiBsAbsIdx = getRasterIdx( pos, pcv );
-    ucBs       = m_aapucBS[edgeDir][uiBsAbsIdx];
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+    unsigned tmpBs = m_aapucBS[edgeDir][uiBsAbsIdx];
 
+    if ((tmpBs >> 4) & 0x01)
+    {
+        ucBs = 2;
+    }
+    else if (((tmpBs >> 2) & 0x01) || ((tmpBs >> 1) & 0x01)) // cbf_cb or cbf_cr only
+    {
+        ucBs = 1;
+    }
+    else
+    {
+        ucBs = 0;
+    }
+
+    dfChroma[0] = ((((tmpBs >> 4) & 0x01) == 1) || (((tmpBs >> 2) & 0x01) == 1)); // cb
+    dfChroma[1] = ((((tmpBs >> 4) & 0x01) == 1) || (((tmpBs >> 1) & 0x01) == 1)); // cr
+#else
+    ucBs       = m_aapucBS[edgeDir][uiBsAbsIdx];
+#endif
+
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+    if (ucBs > 0)
+#else
     if (ucBs > 1)
+#endif
     {
       const CodingUnit& cuQ =  cu;
       const CodingUnit& cuP = *cu.cs->getCU( recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, cu.chType, pos.offset( xoffset - uiNumPelsLuma, yoffset - uiNumPelsLuma ) ), cu.chType );
@@ -814,8 +1060,28 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
       }
 
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+      const unsigned cuPWidth  = cuP.block(COMPONENT_Cb).width;
+      const unsigned cuPHeight = cuP.block(COMPONENT_Cb).height;
+      const unsigned cuQWidth  = cuQ.block(COMPONENT_Cb).width;
+      const unsigned cuQHeight = cuQ.block(COMPONENT_Cb).height;
+
+      bool largeBoundary = ((edgeDir == EDGE_VER && cuPWidth >= 8 && cuQWidth >= 8) || (edgeDir == EDGE_HOR && cuPHeight >= 8 && cuQHeight >= 8));      
+
+      if (edgeDir == EDGE_HOR && pos.y % cuP.slice->getSPS()->getCTUSize() == 0)
+      {
+        largeBoundary = false;
+      }
+
+      if ((ucBs == 2) || (largeBoundary && (ucBs == 1)))
+      {
+#endif
       for( int chromaIdx = 0; chromaIdx < 2; chromaIdx++ )
       {
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+        if (dfChroma[chromaIdx])
+        {
+#endif
         const ClpRng& clpRng( cu.cs->slice->clpRng( ComponentID( chromaIdx + 1 )) );
         const int chromaQPOffset = pps.getQpOffset( ComponentID( chromaIdx + 1 ) );
         Pel* piTmpSrcChroma = (chromaIdx == 0) ? piTmpSrcCb : piTmpSrcCr;
@@ -840,11 +1106,54 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         const int iIndexTC = Clip3<int>( 0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET*( ucBs - 1 ) + ( tcOffsetDiv2 << 1 ) );
         const int iTc      = sm_tcTable[iIndexTC] * iBitdepthScale;
 
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+        bool useLongFilter = false;
+        if (largeBoundary)
+        {
+        const int indexB = Clip3<int>(0, MAX_QP, iQP + (betaOffsetDiv2 << 1));
+        const int beta = sm_betaTable[indexB] * iBitdepthScale;
+
+        const int dp0 = xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset);
+        const int dq0 = xCalcDQ(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset);
+        const int dp1 = xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset);
+        const int dq1 = xCalcDQ(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset);
+
+        const int d0 = dp0 + dq0;
+        const int d1 = dp1 + dq1;
+        const int d = d0 + d1;
+
+          if (d < beta)
+          {
+            useLongFilter = true;
+            const bool sw = xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset, 2 * d0, beta, iTc)
+                && xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset, 2 * d1, beta, iTc);
+
+            for (unsigned step = 0; step < uiLoopLength; step++)
+            {
+              xPelFilterChroma(piTmpSrcChroma + iSrcStep*(step + iIdx*uiLoopLength), iOffset, iTc, sw, bPartPNoFilter, bPartQNoFilter, clpRng, largeBoundary);
+            }
+          }
+        }
+        if ( !useLongFilter )
+        {
+          for (unsigned step = 0; step < uiLoopLength; step++)
+          {
+            xPelFilterChroma(piTmpSrcChroma + iSrcStep*(step + iIdx*uiLoopLength), iOffset, iTc, false, bPartPNoFilter, bPartQNoFilter, clpRng, largeBoundary);
+          }
+        }
+#else
         for( unsigned uiStep = 0; uiStep < uiLoopLength; uiStep++ )
         {
           xPelFilterChroma( piTmpSrcChroma + iSrcStep*( uiStep + iIdx*uiLoopLength ), iOffset, iTc, bPartPNoFilter, bPartQNoFilter, clpRng );
         }
+#endif
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+        }
+#endif
       }
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+      }// if ((ucBs == 2) || (bLBs && (ucBs == 1)))
+#endif
     }
   }
 }
@@ -865,7 +1174,106 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
  \param bFilterSecondQ  decision weak filter/no filter for partQ
  \param bitDepthLuma    luma bit depth
 */
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+inline void LoopFilter::xBilinearFilter(Pel* srcP, Pel* srcQ, int offset, int refMiddle, int refP, int refQ, int numberPSide, int numberQSide, const int* dbCoeffsP, const int* dbCoeffsQ, int tc) const
+{
+    int src;
+    const char tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
+    const char tc3[3] = { 6, 4, 2 };
+    const char *tcP  = (numberPSide == 3) ? tc3 : tc7;
+    const char *tcQ  = (numberQSide == 3) ? tc3 : tc7;
+    for (int pos = 0; pos < numberPSide; pos++)
+    {
+      src = srcP[-offset*pos];
+      int cvalue = (tc * tcP[pos]) >>1;
+      srcP[-offset * pos] = Clip3(src - cvalue, src + cvalue, ((refMiddle*dbCoeffsP[pos] + refP * (64 - dbCoeffsP[pos]) + 32) >> 6));
+    }
+    for (int pos = 0; pos < numberQSide; pos++)
+    {
+      src = srcQ[offset*pos];
+      int cvalue = (tc * tcQ[pos]) >> 1;
+      srcQ[offset*pos] = Clip3(src - cvalue, src + cvalue, ((refMiddle*dbCoeffsQ[pos] + refQ * (64 - dbCoeffsQ[pos]) + 32) >> 6));
+    }
+}
+
+inline void LoopFilter::xFilteringPandQ(Pel* src, int offset, int numberPSide, int numberQSide, int tc) const
+{
+  CHECK(numberPSide <= 3 && numberQSide <= 3, "Short filtering in long filtering function");
+  Pel* srcP = src-offset;
+  Pel* srcQ = src;
+   
+  int refP = 0;
+  int refQ = 0;
+  int refMiddle = 0;
+ 
+  const int dbCoeffs7[7] = { 59, 50, 41,32,23,14,5 };
+  const int dbCoeffs3[3] = { 53, 32, 11 };
+  const int dbCoeffs5[5] = { 58, 45, 32,19,6};
+  const int* dbCoeffsP   = numberPSide == 7 ? dbCoeffs7 : (numberPSide==5) ? dbCoeffs5 : dbCoeffs3;
+  const int* dbCoeffsQ   = numberQSide == 7 ? dbCoeffs7 : (numberQSide==5) ? dbCoeffs5 : dbCoeffs3;
+
+  switch (numberPSide)
+  {
+    case 7: refP = (srcP[-6*offset]   + srcP[-7 * offset] + 1) >> 1; break;
+    case 3: refP = (srcP[-2 * offset] + srcP[-3 * offset] + 1) >> 1; break;
+    case 5: refP = (srcP[-4 * offset] + srcP[-5 * offset] + 1) >> 1; break;
+  }
+
+  switch (numberQSide)
+  {
+    case 7: refQ = (srcQ[6 * offset] + srcQ[7 * offset] + 1) >> 1; break;
+    case 3: refQ = (srcQ[2 * offset] + srcQ[3 * offset] + 1) >> 1; break;
+    case 5: refQ = (srcQ[4 * offset] + srcQ[5 * offset] + 1) >> 1; break;
+  }
+
+  if (numberPSide == numberQSide)
+  {
+    if (numberPSide == 5)
+    {
+      refMiddle = (2 * (srcP[0] + srcQ[0] + srcP[-offset] + srcQ[offset] + srcP[-2 * offset] + srcQ[2 * offset]) + srcP[-3 * offset] + srcQ[3 * offset] + srcP[-4 * offset] + srcQ[4 * offset] + 8) >> 4;
+    }
+    else
+    {
+      refMiddle = (2 * (srcP[0] + srcQ[0]) + srcP[-offset] + srcQ[offset] + srcP[-2 * offset] + srcQ[2 * offset] + srcP[-3 * offset] + srcQ[3 * offset] + srcP[-4 * offset] + srcQ[4 * offset] + srcP[-5 * offset] + srcQ[5 * offset] + +srcP[-6 * offset] + srcQ[6 * offset] + 8) >> 4;
+    }
+  }
+  else
+  {
+    Pel* srcPt = srcP;
+    Pel* srcQt = srcQ;
+    int offsetP = -offset;
+    int offsetQ = offset;
+
+    int newNumberQSide = numberQSide;
+    int newNumberPSide = numberPSide;
+    if (numberQSide > numberPSide)
+    {
+      std::swap(srcPt, srcQt);
+      std::swap(offsetP, offsetQ);
+      newNumberQSide = numberPSide;
+      newNumberPSide = numberQSide;
+    }
+
+    if (newNumberPSide == 7 && newNumberQSide == 5)
+    {
+      refMiddle = (2 * (srcP[0] + srcQ[0] + srcP[-offset] + srcQ[offset]) + srcP[-2 * offset] + srcQ[2 * offset] + srcP[-3 * offset] + srcQ[3 * offset] + srcP[-4 * offset] + srcQ[4 * offset] + srcP[-5 * offset] + srcQ[5 * offset] + 8) >> 4;
+    }
+    else if (newNumberPSide == 7 && newNumberQSide == 3)
+    {
+      refMiddle = (2 * (srcPt[0] + srcQt[0]) + srcQt[0] + 2 * (srcQt[offsetQ] + srcQt[2 * offsetQ]) + srcPt[offsetP] + srcQt[offsetQ] + srcPt[2 * offsetP] + srcPt[3 * offsetP] + srcPt[4 * offsetP] + srcPt[5 * offsetP] + srcPt[6 * offsetP] + 8) >> 4;
+    }
+    else //if (newNumberPSide == 5 && newNumberQSide == 3)
+    {
+      refMiddle = (srcP[0] + srcQ[0] + srcP[-offset] + srcQ[offset] + srcP[-2 * offset] + srcQ[2 * offset] + srcP[-3 * offset] + srcQ[3 * offset] + 4) >> 3;
+    }
+  }
+  xBilinearFilter(srcP,srcQ,offset,refMiddle,refP,refQ,numberPSide,numberQSide,dbCoeffsP,dbCoeffsQ,tc);
+}
+
+inline void LoopFilter::xPelFilterLuma(Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const int iThrCut, const bool bFilterSecondP, const bool bFilterSecondQ, const ClpRng& clpRng, bool sidePisLarge, bool sideQisLarge, int maxFilterLengthP, int maxFilterLengthQ) const
+#else
 inline void LoopFilter::xPelFilterLuma( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const int iThrCut, const bool bFilterSecondP, const bool bFilterSecondQ, const ClpRng& clpRng ) const
+#endif
 {
   int delta;
 
@@ -878,14 +1286,39 @@ inline void LoopFilter::xPelFilterLuma( Pel* piSrc, const int iOffset, const int
   const Pel m7  = piSrc[ iOffset * 3];
   const Pel m0  = piSrc[-iOffset * 4];
 
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+  const Pel mP1 = piSrc[-iOffset * 5];
+  const Pel mP2 = piSrc[-iOffset * 6];
+  const Pel mP3 = piSrc[-iOffset * 7];
+  const Pel m8  = piSrc[ iOffset * 4];
+  const Pel m9  = piSrc[ iOffset * 5];
+  const Pel m10 = piSrc[ iOffset * 6];
+  const char tc3[3] = { 3, 2, 1};
+#endif
   if (sw)
   {
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+    if (sidePisLarge || sideQisLarge)
+    {
+      xFilteringPandQ(piSrc, iOffset, sidePisLarge ? maxFilterLengthP : 3, sideQisLarge ? maxFilterLengthQ : 3, tc);
+    }
+    else
+    {
+      piSrc[-iOffset]     = Clip3(m3 - tc3[0] * tc, m3 + tc3[0] * tc, ((m1 + 2 * m2 + 2 * m3 + 2 * m4 + m5 + 4) >> 3));
+      piSrc[0]            = Clip3(m4 - tc3[0] * tc, m4 + tc3[0] * tc, ((m2 + 2 * m3 + 2 * m4 + 2 * m5 + m6 + 4) >> 3));
+      piSrc[-iOffset * 2] = Clip3(m2 - tc3[1] * tc, m2 + tc3[1] * tc, ((m1 + m2 + m3 + m4 + 2) >> 2));
+      piSrc[iOffset]      = Clip3(m5 - tc3[1] * tc, m5 + tc3[1] * tc, ((m3 + m4 + m5 + m6 + 2) >> 2));
+      piSrc[-iOffset * 3] = Clip3(m1 - tc3[2] * tc, m1 + tc3[2] * tc, ((2 * m0 + 3 * m1 + m2 + m3 + m4 + 4) >> 3));
+      piSrc[iOffset * 2]  = Clip3(m6 - tc3[2] * tc, m6 + tc3[2] * tc, ((m3 + m4 + m5 + 3 * m6 + 2 * m7 + 4) >> 3));
+    }
+#else
     piSrc[-iOffset]     = Clip3( m3 - 2 * tc, m3 + 2 * tc, ( (     m1 + 2 * m2 + 2 * m3 + 2 * m4 +     m5 + 4 ) >> 3 ) );
     piSrc[ 0]           = Clip3( m4 - 2 * tc, m4 + 2 * tc, ( (     m2 + 2 * m3 + 2 * m4 + 2 * m5 +     m6 + 4 ) >> 3 ) );
     piSrc[-iOffset * 2] = Clip3( m2 - 2 * tc, m2 + 2 * tc, ( (     m1 +     m2 +     m3 +     m4 +          2 ) >> 2 ) );
     piSrc[ iOffset]     = Clip3( m5 - 2 * tc, m5 + 2 * tc, ( (     m3 +     m4 +     m5 +     m6 +          2 ) >> 2 ) );
     piSrc[-iOffset * 3] = Clip3( m1 - 2 * tc, m1 + 2 * tc, ( ( 2 * m0 + 3 * m1 +     m2 +     m3 +     m4 + 4 ) >> 3 ) );
     piSrc[ iOffset * 2] = Clip3( m6 - 2 * tc, m6 + 2 * tc, ( (     m3 +     m4 +     m5 + 3 * m6 + 2 * m7 + 4 ) >> 3 ) );
+#endif
   }
   else
   {
@@ -917,6 +1350,15 @@ inline void LoopFilter::xPelFilterLuma( Pel* piSrc, const int iOffset, const int
     piSrc[-iOffset    ] = m3;
     piSrc[-iOffset * 2] = m2;
     piSrc[-iOffset * 3] = m1;
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+    if (sidePisLarge)
+    {
+      piSrc[-iOffset * 4] = m0;
+      piSrc[-iOffset * 5] = mP1;
+      piSrc[-iOffset * 6] = mP2;
+      piSrc[-iOffset * 7] = mP3;
+    }
+#endif
   }
 
   if(bPartQNoFilter)
@@ -924,6 +1366,15 @@ inline void LoopFilter::xPelFilterLuma( Pel* piSrc, const int iOffset, const int
     piSrc[ 0          ] = m4;
     piSrc[ iOffset    ] = m5;
     piSrc[ iOffset * 2] = m6;
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+    if (sideQisLarge)
+    {
+      piSrc[iOffset * 3] = m7;
+      piSrc[iOffset * 4] = m8;
+      piSrc[iOffset * 5] = m9;
+      piSrc[iOffset * 6] = m10;
+    }
+#endif
   }
 }
 
@@ -937,10 +1388,41 @@ inline void LoopFilter::xPelFilterLuma( Pel* piSrc, const int iOffset, const int
  \param bPartQNoFilter  indicator to disable filtering on partQ
  \param bitDepthChroma  chroma bit depth
  */
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+inline void LoopFilter::xPelFilterChroma( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng, const bool largeBoundary ) const
+#else
 inline void LoopFilter::xPelFilterChroma( Pel* piSrc, const int iOffset, const int tc, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng ) const
+#endif
 {
   int delta;
 
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+  const Pel m0 = piSrc[-iOffset * 4];
+  const Pel m1 = piSrc[-iOffset * 3];
+  const Pel m2 = piSrc[-iOffset * 2];
+  const Pel m3 = piSrc[-iOffset];
+  const Pel m4 = piSrc[0];
+  const Pel m5 = piSrc[iOffset];
+  const Pel m6 = piSrc[iOffset * 2];
+  const Pel m7 = piSrc[iOffset * 3];
+
+  if (sw)
+  {
+      piSrc[-iOffset * 3] = Clip3(m1 - tc, m1 + tc, ((3 * m0 + 2 * m1 + m2 + m3 + m4 + 4) >> 3));       // p2
+      piSrc[-iOffset * 2] = Clip3(m2 - tc, m2 + tc, ((2 * m0 + m1 + 2 * m2 + m3 + m4 + m5 + 4) >> 3));  // p1
+      piSrc[-iOffset * 1] = Clip3(m3 - tc, m3 + tc, ((m0 + m1 + m2 + 2 * m3 + m4 + m5 + m6 + 4) >> 3)); // p0
+      piSrc[0]            = Clip3(m4 - tc, m4 + tc, ((m1 + m2 + m3 + 2 * m4 + m5 + m6 + m7 + 4) >> 3)); // q0
+      piSrc[iOffset * 1]  = Clip3(m5 - tc, m5 + tc, ((m2 + m3 + m4 + 2 * m5 + m6 + 2 * m7 + 4) >> 3));  // q1
+      piSrc[iOffset * 2]  = Clip3(m6 - tc, m6 + tc, ((m3 + m4 + m5 + 2 * m6 + 3 * m7 + 4) >> 3));       // q2
+  }
+  else
+  {
+      delta = Clip3(-tc, tc, ((((m4 - m3) << 2) + m2 - m5 + 4) >> 3));
+      piSrc[-iOffset] = ClipPel(m3 + delta, clpRng);
+      piSrc[0] = ClipPel(m4 - delta, clpRng);
+  }
+
+#else
   const Pel m4  = piSrc[ 0          ];
   const Pel m3  = piSrc[-iOffset    ];
   const Pel m5  = piSrc[ iOffset    ];
@@ -949,13 +1431,28 @@ inline void LoopFilter::xPelFilterChroma( Pel* piSrc, const int iOffset, const i
   delta           = Clip3( -tc, tc, ( ( ( ( m4 - m3 ) << 2 ) + m2 - m5 + 4 ) >> 3 ) );
   piSrc[-iOffset] = ClipPel( m3 + delta, clpRng );
   piSrc[ 0      ] = ClipPel( m4 - delta, clpRng );
+#endif
 
   if( bPartPNoFilter )
   {
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+    if (largeBoundary)
+    {
+      piSrc[-iOffset * 3] = m1; // p2
+      piSrc[-iOffset * 2] = m2; // p1 
+    }
+#endif
     piSrc[-iOffset] = m3;
   }
   if( bPartQNoFilter )
   {
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+    if (largeBoundary)
+    {
+      piSrc[iOffset * 1] = m5; // q1
+      piSrc[iOffset * 2] = m6; // q2
+    }
+#endif
     piSrc[ 0      ] = m4;
   }
 }
@@ -969,15 +1466,58 @@ inline void LoopFilter::xPelFilterChroma( Pel* piSrc, const int iOffset, const i
  \param tc              tc value
  \param piSrc           pointer to picture data
  */
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+inline bool LoopFilter::xUseStrongFiltering( Pel* piSrc, const int iOffset, const int d, const int beta, const int tc, bool sidePisLarge, bool sideQisLarge, int maxFilterLengthP, int maxFilterLengthQ ) const
+#else
 inline bool LoopFilter::xUseStrongFiltering( Pel* piSrc, const int iOffset, const int d, const int beta, const int tc ) const
+#endif
 {
   const Pel m4 = piSrc[ 0          ];
   const Pel m3 = piSrc[-iOffset    ];
   const Pel m7 = piSrc[ iOffset * 3];
   const Pel m0 = piSrc[-iOffset * 4];
-
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+  int       sp3      = abs(m0 - m3);
+  int       sq3      = abs(m7 - m4);
+  const int d_strong = sp3 + sq3;
+#else
   const int d_strong = abs( m0 - m3 ) + abs( m7 - m4 );
+#endif
 
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+  if (sidePisLarge || sideQisLarge)
+  {
+    Pel mP4;
+    Pel m11;
+    if (maxFilterLengthP == 5)
+    {
+      mP4 = piSrc[-iOffset * 6];
+    }
+    else
+    {
+      mP4 = piSrc[-iOffset * 8];
+    }
+    if (maxFilterLengthQ == 5)
+    {
+      m11 = piSrc[iOffset * 5];
+    }
+    else
+    {
+      m11 = piSrc[iOffset * 7];
+    }
+
+    if (sidePisLarge)
+    {
+      sp3 = (sp3 + abs(m0 - mP4) + 1) >> 1;
+    }
+    if (sideQisLarge)
+    {
+      sq3 = (sq3 + abs(m11 - m7) + 1) >> 1;
+    }
+    return ((sp3 + sq3) < (beta*3 >> 5)) && (d < (beta >> 2)) && (abs(m3 - m4) < ((tc * 5 + 1) >> 1));
+  }
+  else
+#endif
   return ( ( d_strong < ( beta >> 3 ) ) && ( d < ( beta >> 2 ) ) && ( abs( m3 - m4 ) < ( ( tc * 5 + 1 ) >> 1 ) ) );
 }
 

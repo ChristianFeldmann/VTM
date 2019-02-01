@@ -429,8 +429,13 @@ void initROM()
 
       const uint32_t  groupWidth     = 1 << log2CGWidth;
       const uint32_t  groupHeight    = 1 << log2CGHeight;
+#if JVET_M0257
+      const uint32_t  widthInGroups = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, blockWidth) >> log2CGWidth;
+      const uint32_t  heightInGroups = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, blockHeight) >> log2CGHeight;
+#else
       const uint32_t  widthInGroups  = blockWidth >> log2CGWidth;
       const uint32_t  heightInGroups = blockHeight >> log2CGHeight;
+#endif
 
       const uint32_t  groupSize      = groupWidth    * groupHeight;
       const uint32_t  totalGroups    = widthInGroups * heightInGroups;
@@ -442,7 +447,17 @@ void initROM()
         g_scanOrder     [SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
         g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
         g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
-
+#if JVET_M0257
+        if ( blockWidth > JVET_C0024_ZERO_OUT_TH || blockHeight > JVET_C0024_ZERO_OUT_TH )
+        {
+          for (uint32_t i = 0; i < totalValues; i++)
+          {
+            g_scanOrder[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][i] = totalValues - 1;
+            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0][i] = blockWidth - 1;
+            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1][i] = blockHeight - 1;
+          }
+        }
+#endif
 
         ScanGenerator fullBlockScan(widthInGroups, heightInGroups, groupWidth, scanType);
 
@@ -683,10 +698,12 @@ const uint32_t g_auiGoRicePosCoeff0[3][32] =
   {1, 1, 1, 1, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16,    16, 16, 16, 16},
   {1, 1, 2, 2, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 16, 16, 16,    16, 16, 16, 16}
 };
+#if !JVET_M0470
 const uint32_t g_auiGoRiceRange[MAX_GR_ORDER_RESIDUAL] =
 {
   6, 5, 6, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION
 };
+#endif
 
 #if HEVC_USE_SCALING_LISTS
 const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
@@ -806,6 +823,7 @@ const uint8_t g_NonMPM[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
 
+#if !JVET_M0328_KEEP_ONE_WEIGHT_GROUP
 const Pel g_trianglePelWeightedLuma[TRIANGLE_DIR_NUM][2][7] =
 { 
   { // TRIANGLE_DIR_135
@@ -843,9 +861,11 @@ const Pel g_trianglePelWeightedChroma[2][TRIANGLE_DIR_NUM][2][7] =
 
 const uint8_t g_triangleWeightLengthLuma[2] = { 5, 7 };
 const uint8_t g_triangleWeightLengthChroma[2][2] = { { 5, 7 }, { 3, 3 } };
+#endif
 
       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
 
+#if !JVET_M0883_TRIANGLE_SIGNALING
 const uint8_t g_triangleCombination[TRIANGLE_MAX_NUM_CANDS][3] =
 {
   { 0, 1, 0 }, { 1, 0, 1 }, { 1, 0, 2 }, { 0, 0, 1 }, { 0, 2, 0 }, 
@@ -865,4 +885,5 @@ const uint8_t g_triangleIdxBins[TRIANGLE_MAX_NUM_CANDS] =
    8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
   10, 10, 10, 10, 10, 10, 10, 10, 10, 10
 };
+#endif
 //! \}

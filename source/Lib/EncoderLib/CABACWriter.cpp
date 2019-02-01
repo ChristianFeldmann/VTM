@@ -902,6 +902,9 @@ void CABACWriter::cu_pred_data( const CodingUnit& cu )
   }
 
   imv_mode   ( cu );
+#if JVET_M0246_AFFINE_AMVR
+  affine_amvr_mode( cu );
+#endif
 
   cu_gbi_flag( cu );
 
@@ -1417,6 +1420,9 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
 #endif
   else
   {
+#if JVET_M0246_AFFINE_AMVR
+    int8_t affineMvdShift = pu.cu->imv ? ( pu.cu->imv == 1 ? -1 : 1 ) : 0;
+#endif
     inter_pred_idc( pu );
     affine_flag   ( *pu.cu );
 #if JVET_M0444_SMVD
@@ -1427,12 +1433,21 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       ref_idx     ( pu, REF_PIC_LIST_0 );
       if ( pu.cu->affine )
       {
+#if JVET_M0246_AFFINE_AMVR
+        mvd_coding( pu.mvdAffi[REF_PIC_LIST_0][0], affineMvdShift );
+        mvd_coding( pu.mvdAffi[REF_PIC_LIST_0][1], affineMvdShift );
+        if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
+        {
+          mvd_coding( pu.mvdAffi[REF_PIC_LIST_0][2], affineMvdShift );
+        }
+#else
         mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][0], 0);
         mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][1], 0);
         if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
         {
           mvd_coding(pu.mvdAffi[REF_PIC_LIST_0][2], 0);
         }
+#endif
       }
       else
       {
@@ -1451,12 +1466,21 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       {
         if ( pu.cu->affine )
         {
+#if JVET_M0246_AFFINE_AMVR
+          mvd_coding( pu.mvdAffi[REF_PIC_LIST_1][0], affineMvdShift );
+          mvd_coding( pu.mvdAffi[REF_PIC_LIST_1][1], affineMvdShift );
+          if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
+          {
+            mvd_coding( pu.mvdAffi[REF_PIC_LIST_1][2], affineMvdShift );
+          }
+#else
           mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][0], 0);
           mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][1], 0);
           if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
           {
             mvd_coding(pu.mvdAffi[REF_PIC_LIST_1][2], 0);
           }
+#endif
         }
         else
         {
@@ -1550,6 +1574,12 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
   {
     return;
   }
+#if JVET_M0246_AFFINE_AMVR
+  if ( cu.affine )
+  {
+    return;
+  }
+#endif
 
   bool bNonZeroMvd = CU::hasSubCUNonZeroMVd( cu );
   if( !bNonZeroMvd )
@@ -1574,6 +1604,33 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() IMVFlag=%d\n", cu.imv );
 }
+
+#if JVET_M0246_AFFINE_AMVR
+void CABACWriter::affine_amvr_mode( const CodingUnit& cu )
+{
+  const SPS* sps = cu.slice->getSPS();
+
+  if( !sps->getAffineAmvrEnabledFlag() || !cu.affine )
+  {
+    return;
+  }
+
+  if ( !CU::hasSubCUNonZeroAffineMVd( cu ) )
+  {
+    return;
+  }
+
+  m_BinEncoder.encodeBin( ( cu.imv > 0 ), Ctx::ImvFlag( 4 ) );
+  DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", ( cu.imv > 0 ), 4 );
+
+  if( cu.imv > 0 )
+  {
+    m_BinEncoder.encodeBin( ( cu.imv > 1 ), Ctx::ImvFlag( 5 ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", ( cu.imv > 1 ), 5 );
+  }
+  DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() IMVFlag=%d\n", cu.imv );
+}
+#endif
 
 void CABACWriter::merge_idx( const PredictionUnit& pu )
 {
@@ -1622,6 +1679,38 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
   {
     if( pu.cu->triangle )
     {
+#if JVET_M0883_TRIANGLE_SIGNALING
+      bool    splitDir = pu.triangleSplitDir;
+      uint8_t candIdx0 = pu.triangleMergeIdx0;
+      uint8_t candIdx1 = pu.triangleMergeIdx1;
+      DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_split_dir=%d\n", splitDir );
+      DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx0=%d\n", candIdx0 );
+      DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx1=%d\n", candIdx1 );
+      candIdx1 -= candIdx1 < candIdx0 ? 0 : 1;
+      auto encodeOneIdx = [this](uint8_t mrgIdx, int numCandminus1)
+      {
+        if(mrgIdx == 0)
+        {
+          this->m_BinEncoder.encodeBin( 0, Ctx::MergeIdx() );
+          return;
+        }
+        else
+        {
+          this->m_BinEncoder.encodeBin( 1, Ctx::MergeIdx() );
+          for( unsigned idx = 1; idx < numCandminus1; idx++ )
+          {
+            this->m_BinEncoder.encodeBinEP( mrgIdx == idx ? 0 : 1 );
+            if( mrgIdx == idx )
+            {
+              break;
+            }
+          }
+        }
+      };
+      m_BinEncoder.encodeBinEP(splitDir);
+      encodeOneIdx(candIdx0, TRIANGLE_MAX_NUM_UNI_CANDS - 1);
+      encodeOneIdx(candIdx1, TRIANGLE_MAX_NUM_UNI_CANDS - 2);
+#else
       if( pu.mergeIdx < 2 )
       {
         m_BinEncoder.encodeBin( 0, Ctx::TriangleIdx() );
@@ -1634,6 +1723,7 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
       }
 
       DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx=%d\n", pu.mergeIdx );
+#endif
       return;
     }
   int numCandminus1 = int( pu.cs->slice->getMaxNumMergeCand() ) - 1;
@@ -2080,12 +2170,19 @@ void CABACWriter::cbf_comp( const CodingStructure& cs, bool cbf, const CompArea&
 //--------------------------------------------------------------------------------
 //    void  mvd_coding( pu, refList )
 //================================================================================
-
+#if JVET_M0246_AFFINE_AMVR
+void CABACWriter::mvd_coding( const Mv &rMvd, int8_t imv )
+#else
 void CABACWriter::mvd_coding( const Mv &rMvd, uint8_t imv )
+#endif
 {
   int       horMvd = rMvd.getHor();
   int       verMvd = rMvd.getVer();
+#if JVET_M0246_AFFINE_AMVR
+  if ( imv > 0 )
+#else
   if( imv )
+#endif
   {
     CHECK( (horMvd % 4) != 0 && (verMvd % 4) != 0, "IMV: MVD is not a multiple of 4" );
     horMvd >>= 2;

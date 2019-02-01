@@ -1143,10 +1143,17 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     {
       const int  qp       = std::max( qpLoop, lowestQP );
       const bool lossless = useLossless && qpLoop == minQP;
-
+#if JVET_M0246_AFFINE_AMVR
+      if( m_pcEncCfg->getIMV() || m_pcEncCfg->getUseAffineAmvr() )
+#else
       if( m_pcEncCfg->getIMV() )
+#endif
       {
+#if JVET_M0246_AFFINE_AMVR
+        if( m_pcEncCfg->getIMV() == IMV_4PEL || m_pcEncCfg->getUseAffineAmvr() )
+#else
         if( m_pcEncCfg->getIMV() == IMV_4PEL )
+#endif
         {
           int imv = m_pcEncCfg->getIMV4PelFast() ? 3 : 2;
           m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME, EncTestModeOpts( imv << ETO_IMV_SHIFT ), qp, lossless } );
@@ -1400,6 +1407,9 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
 
         if (imvOpt == 3 && cuECtx.get<double>(BEST_NO_IMV_COST) * 1.06 < cuECtx.get<double>(BEST_IMV_COST))
         {
+#if JVET_M0246_AFFINE_AMVR
+          if ( !m_pcEncCfg->getUseAffineAmvr() )
+#endif
           return false;
         }
       }

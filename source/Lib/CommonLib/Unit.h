@@ -360,6 +360,11 @@ struct InterPredictionData
 {
   bool      mergeFlag;
   uint8_t     mergeIdx;
+#if JVET_M0883_TRIANGLE_SIGNALING
+  uint8_t     triangleSplitDir;
+  uint8_t     triangleMergeIdx0;
+  uint8_t     triangleMergeIdx1;
+#endif
   bool           mmvdMergeFlag;
   uint32_t       mmvdMergeIdx;
   uint8_t     interDir;
@@ -379,6 +384,9 @@ struct InterPredictionData
 #endif
   Mv        bv;                             // block vector for IBC
   Mv        bvd;                            // block vector difference for IBC
+#if JVET_M0823_MMVD_ENCOPT
+  uint8_t   mmvdEncOptMode;                  // 0: no action 1: skip chroma MC for MMVD candidate pre-selection 2: skip chroma MC and BIO for MMVD candidate pre-selection
+#endif
 };
 
 struct PredictionUnit : public UnitArea, public IntraPredictionData, public InterPredictionData

@@ -1025,6 +1025,13 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
     return;
   }
 
+#if JVET_M0246_AFFINE_AMVR
+  if ( cu.affine )
+  {
+    return;
+  }
+#endif
+
   const SPSNext& spsNext = cu.cs->sps->getSpsNext();
 
   unsigned value = 0;
@@ -1049,6 +1056,39 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
   cu.imv = value;
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() IMVFlag=%d\n", cu.imv );
 }
+
+#if JVET_M0246_AFFINE_AMVR
+void CABACReader::affine_amvr_mode( CodingUnit& cu, MergeCtx& mrgCtx )
+{
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__OTHER );
+
+  const SPS* sps = cu.slice->getSPS();
+
+  if( !sps->getAffineAmvrEnabledFlag() || !cu.affine )
+  {
+    return;
+  }
+
+  if ( !CU::hasSubCUNonZeroAffineMVd( cu ) )
+  {
+    return;
+  }
+
+  unsigned value = 0;
+  value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 4 ) );
+  DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 4 );
+
+  if( value )
+  {
+    value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 5 ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 5 );
+    value++;
+  }
+
+  cu.imv = value;
+  DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() IMVFlag=%d\n", cu.imv );
+}
+#endif
 
 void CABACReader::pred_mode( CodingUnit& cu )
 {
@@ -1161,7 +1201,9 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
   }
 
   imv_mode   ( cu, mrgCtx );
-
+#if JVET_M0246_AFFINE_AMVR
+  affine_amvr_mode( cu, mrgCtx );
+#endif
   cu_gbi_flag( cu );
 
 }
@@ -1775,6 +1817,38 @@ void CABACReader::merge_idx( PredictionUnit& pu )
   if( pu.cu->triangle )
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__TRIANGLE_INDEX );
+#if JVET_M0883_TRIANGLE_SIGNALING
+    bool    splitDir;
+    uint8_t candIdx0;
+    uint8_t candIdx1;
+    splitDir = m_BinDecoder.decodeBinEP();
+    auto decodeOneIdx = [this](int numCandminus1) -> uint8_t
+    {
+      uint8_t decIdx = 0;
+      if( numCandminus1 > 0 )
+      {
+        if( this->m_BinDecoder.decodeBin( Ctx::MergeIdx() ) )
+        {
+          decIdx++;
+          for( ; decIdx < numCandminus1; decIdx++ )
+          {
+            if( !this->m_BinDecoder.decodeBinEP() )
+              break;
+          }
+        }
+      }
+      return decIdx;
+    };
+    candIdx0 = decodeOneIdx(TRIANGLE_MAX_NUM_UNI_CANDS - 1);
+    candIdx1 = decodeOneIdx(TRIANGLE_MAX_NUM_UNI_CANDS - 2);
+    candIdx1 += candIdx1 >= candIdx0 ? 1 : 0;
+    DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_split_dir=%d\n", splitDir );
+    DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx0=%d\n", candIdx0 );
+    DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx1=%d\n", candIdx1 );
+    pu.triangleSplitDir = splitDir;
+    pu.triangleMergeIdx0 = candIdx0;
+    pu.triangleMergeIdx1 = candIdx1;
+#else
     if( m_BinDecoder.decodeBin( Ctx::TriangleIdx() ) == 0 )
     {
       pu.mergeIdx += m_BinDecoder.decodeBinEP();
@@ -1785,6 +1859,7 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     }
 
     DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx=%d\n", pu.mergeIdx );
+#endif
     return;
   }
 

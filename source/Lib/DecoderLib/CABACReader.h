@@ -107,6 +107,9 @@ public:
   void        merge_idx                 ( PredictionUnit&               pu );
   void        mmvd_merge_idx(PredictionUnit&               pu);
   void        imv_mode                  ( CodingUnit&                   cu,     MergeCtx&       mrgCtx );
+#if JVET_M0246_AFFINE_AMVR
+  void        affine_amvr_mode          ( CodingUnit&                   cu,     MergeCtx&       mrgCtx );
+#endif
   void        inter_pred_idc            ( PredictionUnit&               pu );
   void        ref_idx                   ( PredictionUnit&               pu,     RefPicList      eRefList );
   void        mvp_flag                  ( PredictionUnit&               pu,     RefPicList      eRefList );

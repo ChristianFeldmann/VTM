@@ -161,6 +161,9 @@ class GBiMotionParam
   bool       m_readOnlyAffine[2][2][33];
   Mv         m_mvAffine[2][2][33][3];
   Distortion m_distAffine[2][2][33];
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  int        m_mvpIdx[2][2][33];
+#endif
 
 public:
 
@@ -182,6 +185,9 @@ public:
     memset(m_dist, -1, 2 * 33 * sizeof(Distortion));
     memset(m_readOnlyAffine, false, 2 * 2 * 33 * sizeof(bool));
     memset(m_distAffine, -1, 2 * 2 * 33 * sizeof(Distortion));
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+    memset( m_mvpIdx, 0, 2 * 2 * 33 * sizeof( int ) );
+#endif
   }
 
   void setReadMode(bool b, uint32_t uiRefList, uint32_t uiRefIdx) { m_readOnly[uiRefList][uiRefIdx] = b; }
@@ -206,16 +212,30 @@ public:
 
   Mv& getAffineMv(uint32_t uiRefList, uint32_t uiRefIdx, uint32_t uiAffineMvIdx, int bP4) { return m_mvAffine[bP4][uiRefList][uiRefIdx][uiAffineMvIdx]; }
 
-  void copyAffineMvFrom(Mv(&racAffineMvs)[3], Distortion uiDist, uint32_t uiRefList, uint32_t uiRefIdx, int bP4)
+  void copyAffineMvFrom(Mv(&racAffineMvs)[3], Distortion uiDist, uint32_t uiRefList, uint32_t uiRefIdx, int bP4
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+                        , const int mvpIdx
+#endif
+  )
   {
     memcpy(m_mvAffine[bP4][uiRefList][uiRefIdx], racAffineMvs, 3 * sizeof(Mv));
     m_distAffine[bP4][uiRefList][uiRefIdx] = uiDist;
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+    m_mvpIdx[bP4][uiRefList][uiRefIdx]     = mvpIdx;
+#endif
   }
 
-  void copyAffineMvTo(Mv acAffineMvs[3], Distortion& ruiDist, uint32_t uiRefList, uint32_t uiRefIdx, int bP4)
+  void copyAffineMvTo(Mv acAffineMvs[3], Distortion& ruiDist, uint32_t uiRefList, uint32_t uiRefIdx, int bP4
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+                      , int& mvpIdx
+#endif
+  )
   {
     memcpy(acAffineMvs, m_mvAffine[bP4][uiRefList][uiRefIdx], 3 * sizeof(Mv));
     ruiDist = m_distAffine[bP4][uiRefList][uiRefIdx];
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+    mvpIdx  = m_mvpIdx[bP4][uiRefList][uiRefIdx];
+#endif
   }
 };
 struct LutMotionCand

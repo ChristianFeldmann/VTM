@@ -870,6 +870,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if JVET_M0246_AFFINE_AMVR
   ("AffineAmvr",                                      m_AffineAmvr,                                     false, "Eanble AMVR for affine inter mode")
 #endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
+#endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
   ( "IBCLocalSearchRangeY",                           m_IBCLocalSearchRangeY,                            128u, "Search range of IBC local search in y direction")
@@ -3186,6 +3189,10 @@ void EncAppCfg::xPrintParameter()
 #endif
 #if JVET_M0246_AFFINE_AMVR
     msg( VERBOSE, "AffineAmvr:%d ", m_AffineAmvr );
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+    m_AffineAmvrEncOpt = m_AffineAmvr ? m_AffineAmvrEncOpt : false;
+    msg( VERBOSE, "AffineAmvrEncOpt:%d ", m_AffineAmvrEncOpt );
 #endif
   }
     msg(VERBOSE, "IBC:%d ", m_IBCMode);

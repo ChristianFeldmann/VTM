@@ -1253,7 +1253,7 @@ const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
   {    1,   4,   4,   5,},
 #endif
 #else
-#if BD_AFFINE_AMVR
+#if JVET_M0246_AFFINE_AMVR
   { 212, 214, 230, 182, 212, 214 },
   { 212, 214, 230, 182, 212, 214 },
   { CNU, CNU, CNU, CNU, CNU, CNU },

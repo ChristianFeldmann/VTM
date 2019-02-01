@@ -50,14 +50,17 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0908_CIIP_DB                                1
+#define JVET_M0471_LONG_DEBLOCKING_FILTERS                1 
 #define JVET_M0427_INLOOP_RESHAPER                        1
-
 #define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
 
 #define JVET_M0257                                        1 // Scan only non zero-out regions of large TUs
 #define JVET_M0193_PAIR_AVG_REDUCTION                     1 //Use only one pairwise average candidate
 
 #define JVET_M0281_AMVP_ROUNDING                          1 // Perform all AMVP rounding before pruning even AMVR is off
+
+#define JVET_M0117_AMVP_LIST_GEN                          1 // AMVP candidate list generation simplification
 
 #define JVET_M0192_AFF_CHROMA_SIMPL                       1 // Affine chroma MV derivation simplification and rounding unification
 
@@ -114,6 +117,9 @@ typedef std::pair<int, int>  TrCost;
 #endif
 
 #define JVET_M0246_AFFINE_AMVR                            1
+#if JVET_M0246_AFFINE_AMVR
+#define JVET_M0247_AFFINE_AMVR_ENCOPT                     1
+#endif
 #define JVET_M0421_SPLIT_SIG                              1
 
 #define JVET_M0173_MOVE_GT2_TO_FIRST_PASS                 1 // Moving the gtr2 flag to the first coding pass

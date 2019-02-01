@@ -263,6 +263,9 @@ void EncApp::xInitLibCfg()
 #if JVET_M0246_AFFINE_AMVR
   m_cEncLib.setUseAffineAmvr                                     ( m_AffineAmvr );
 #endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  m_cEncLib.setUseAffineAmvrEncOpt                               ( m_AffineAmvrEncOpt );
+#endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
   m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );

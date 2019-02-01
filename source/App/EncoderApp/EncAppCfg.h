@@ -243,6 +243,9 @@ protected:
 #if JVET_M0246_AFFINE_AMVR
   bool      m_AffineAmvr;
 #endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  bool      m_AffineAmvrEncOpt;
+#endif
 
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;

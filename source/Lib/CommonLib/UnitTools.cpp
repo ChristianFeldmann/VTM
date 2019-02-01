@@ -4816,7 +4816,7 @@ bool TU::needsSqrt2Scale( const TransformUnit &tu, const ComponentID &compID )
 {
   const Size &size=tu.blocks[compID];
 #if JVET_M0464_UNI_MTS
-  const bool bTransformSkip = tu.mtsIdx==1;
+  const bool bTransformSkip = tu.mtsIdx==1 && isLuma(compID);
 #else
   const bool bTransformSkip = tu.transformSkip[compID];
 #endif

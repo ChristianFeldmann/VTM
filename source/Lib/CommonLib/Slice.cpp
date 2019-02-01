@@ -1752,6 +1752,9 @@ void Slice::updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu)
   if (cu.triangle) { return; }
 
   MotionInfo newMi = selectedPU->getMotionInfo();
+#if JVET_M0264_HMVP_WITH_GBIIDX
+    newMi.GBiIdx = (newMi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
+#endif
 #if JVET_M0483_IBC
   addMotionInfoToLUTs(lutMC, newMi, CU::isIBC(cu));
 #else

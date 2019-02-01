@@ -778,6 +778,9 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
 #endif
 #endif
     mrgCtx.interDirNeighbours[cnt] = miNeighbor.interDir;
+#if JVET_M0264_HMVP_WITH_GBIIDX
+    mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? miNeighbor.GBiIdx : GBI_DEFAULT;
+#endif
     mrgCtx.mvFieldNeighbours[cnt << 1].setMvField(miNeighbor.mv[0], miNeighbor.refIdx[0]);
     if (slice.isInterB())
     {
@@ -2314,20 +2317,12 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 
   {
     const PredictionUnit* tmpPU = cs.getPURestricted( posLB.offset( -1, 1 ), pu, pu.chType ); // getPUBelowLeft(idx, partIdxLB);
-#if JVET_M0483_IBC    
-    isScaledFlagLX = tmpPU != NULL && !CU::isIntra(*tmpPU->cu);
-#else
     isScaledFlagLX = tmpPU != NULL && CU::isInter( *tmpPU->cu );
-#endif
 
     if( !isScaledFlagLX )
     {
       tmpPU = cs.getPURestricted( posLB.offset( -1, 0 ), pu, pu.chType );
-#if JVET_M0483_IBC
-      isScaledFlagLX = tmpPU != NULL && !CU::isIntra(*tmpPU->cu);
-#else
       isScaledFlagLX = tmpPU != NULL && CU::isInter( *tmpPU->cu );
-#endif
     }
   }
 
@@ -2912,22 +2907,14 @@ bool PU::addMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &eRefPic
 
   neibPU = cs.getPURestricted( neibPos, pu, pu.chType );
 
-#if JVET_M0483_IBC
-  if (neibPU == NULL || neibPU->cu->predMode != pu.cu->predMode)
-#else
   if( neibPU == NULL || !CU::isInter( *neibPU->cu ) )
-#endif
   {
     return false;
   }
 
   const MotionInfo& neibMi        = neibPU->getMotionInfo( neibPos );
 
-#if JVET_M0483_IBC
-  const int        currRefPOC     = CU::isIBC(*pu.cu) ? cs.slice->getPOC() : cs.slice->getRefPic(eRefPicList, iRefIdx)->getPOC();
-#else
   const int        currRefPOC     = cs.slice->getRefPic( eRefPicList, iRefIdx )->getPOC();
-#endif
   const RefPicList eRefPicList2nd = ( eRefPicList == REF_PIC_LIST_0 ) ? REF_PIC_LIST_1 : REF_PIC_LIST_0;
 
   for( int predictorSource = 0; predictorSource < 2; predictorSource++ ) // examine the indicated reference picture list, then if not available, examine the other list.
@@ -2935,11 +2922,7 @@ bool PU::addMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &eRefPic
     const RefPicList eRefPicListIndex = ( predictorSource == 0 ) ? eRefPicList : eRefPicList2nd;
     const int        neibRefIdx       = neibMi.refIdx[eRefPicListIndex];
 
-#if JVET_M0483_IBC
-    if (neibRefIdx >= 0 && currRefPOC == (CU::isIBC(*neibPU->cu) ? cs.slice->getPOC() : cs.slice->getRefPOC(eRefPicListIndex, neibRefIdx)))
-#else
     if( neibRefIdx >= 0 && currRefPOC == cs.slice->getRefPOC( eRefPicListIndex, neibRefIdx ) )
-#endif
     {
       info.mvCand[info.numCand++] = neibMi.mv[eRefPicListIndex];
       return true;

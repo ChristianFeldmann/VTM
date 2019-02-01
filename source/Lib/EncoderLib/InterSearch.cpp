@@ -1286,6 +1286,11 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
 
 bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const int localSearchRangeX, const int localSearchRangeY, IbcHashMap& ibcHashMap)
 {
+#if JVET_M0483_IBC==0
+  // check only no greater than IBC_MAX_CAND_SIZE
+  if (cu.Y().width > IBC_MAX_CAND_SIZE || cu.Y().height > IBC_MAX_CAND_SIZE)
+    return false;
+#endif
   Mv           cMvSrchRngLT;
   Mv           cMvSrchRngRB;
 

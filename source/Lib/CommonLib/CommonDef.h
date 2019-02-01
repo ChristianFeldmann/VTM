@@ -404,7 +404,6 @@ static const int CHROMA_REFINEMENT_CANDIDATES = 8; /// 8 candidates BV to choose
 static const int IBC_FAST_METHOD_NOINTRA_IBCCBF0 = 0x01;
 static const int IBC_FAST_METHOD_BUFFERBV = 0X02;
 static const int IBC_FAST_METHOD_ADAPTIVE_SEARCHRANGE = 0X04;
-
 #if JVET_M0512_MOTION_BUFFER_COMPRESSION
 static constexpr int MV_EXPONENT_BITCOUNT    = 4;
 static constexpr int MV_MANTISSA_BITCOUNT    = 6;
@@ -412,7 +411,12 @@ static constexpr int MV_MANTISSA_UPPER_LIMIT = ((1 << (MV_MANTISSA_BITCOUNT - 1)
 static constexpr int MV_MANTISSA_LIMIT       = (1 << (MV_MANTISSA_BITCOUNT - 1));
 static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1);
 #endif
-
+#if JVET_M0427_INLOOP_RESHAPER
+static const int PIC_ANALYZE_CW_BINS =                           32;
+static const int PIC_CODE_CW_BINS =                              16;
+static const int FP_PREC =                                       14;
+static const int CSCALE_FP_PREC =                                11;
+#endif
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================

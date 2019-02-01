@@ -132,6 +132,11 @@ struct AreaBuf : public Size
 
   void toLast               ( const ClpRng& clpRng );
 
+#if JVET_M0427_INLOOP_RESHAPER
+  void rspSignal            ( std::vector<Pel>& pLUT );
+  void scaleSignal          ( const int scale, const bool dir , const ClpRng& clpRng);
+  T    computeAvg           ( ) const;
+#endif
         T& at( const int &x, const int &y )          { return buf[y * stride + x]; }
   const T& at( const int &x, const int &y ) const    { return buf[y * stride + x]; }
 

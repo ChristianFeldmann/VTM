@@ -262,7 +262,12 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-
+#if JVET_M0427_INLOOP_RESHAPER
+  bool      m_lumaReshapeEnable;
+  uint32_t  m_reshapeSignalType;
+  uint32_t  m_intraCMD;
+  ReshapeCW m_reshapeCW;
+#endif
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
   unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)

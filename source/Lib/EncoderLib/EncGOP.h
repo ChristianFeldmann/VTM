@@ -47,6 +47,9 @@
 #include "CommonLib/NAL.h"
 #include "EncSampleAdaptiveOffset.h"
 #include "EncAdaptiveLoopFilter.h"
+#if JVET_M0427_INLOOP_RESHAPER
+#include "EncReshape.h"
+#endif
 #include "EncSlice.h"
 #include "VLCWriter.h"
 #include "CABACWriter.h"
@@ -139,6 +142,9 @@ private:
   //--Adaptive Loop filter
   EncSampleAdaptiveOffset*  m_pcSAO;
   EncAdaptiveLoopFilter*    m_pcALF;
+#if JVET_M0427_INLOOP_RESHAPER
+  EncReshape*               m_pcReshaper;
+#endif
   RateCtrl*                 m_pcRateCtrl;
   // indicate sequence first
   bool                    m_bSeqFirst;

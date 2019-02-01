@@ -192,6 +192,14 @@ struct Picture : public UnitArea
   const CPelUnitBuf getOrigBuf(const UnitArea &unit) const;
          PelUnitBuf getOrigBuf();
   const CPelUnitBuf getOrigBuf() const;
+#if JVET_M0427_INLOOP_RESHAPER
+         PelBuf     getOrigBuf(const ComponentID compID);
+  const CPelBuf     getOrigBuf(const ComponentID compID) const;
+         PelUnitBuf getTrueOrigBuf();
+  const CPelUnitBuf getTrueOrigBuf() const;
+        PelBuf      getTrueOrigBuf(const CompArea &blk);
+  const CPelBuf     getTrueOrigBuf(const CompArea &blk) const;
+#endif
 
          PelBuf     getPredBuf(const CompArea &blk);
   const CPelBuf     getPredBuf(const CompArea &blk) const;

@@ -60,6 +60,9 @@ IntraSearch::IntraSearch()
   , m_pcEncCfg      (nullptr)
   , m_pcTrQuant     (nullptr)
   , m_pcRdCost      (nullptr)
+#if JVET_M0427_INLOOP_RESHAPER
+  , m_pcReshape     (nullptr)
+#endif
   , m_CABACEstimator(nullptr)
   , m_CtxCache      (nullptr)
   , m_isInitialized (false)
@@ -149,6 +152,9 @@ void IntraSearch::destroy()
     m_pSharedPredTransformSkip[ch] = nullptr;
   }
 
+#if JVET_M0427_INLOOP_RESHAPER
+  m_tmpStorageLCU.destroy();
+#endif
   m_isInitialized = false;
 }
 
@@ -168,6 +174,9 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
                         const uint32_t     maxCUWidth,
                         const uint32_t     maxCUHeight,
                         const uint32_t     maxTotalCUDepth
+#if JVET_M0427_INLOOP_RESHAPER
+                       , EncReshape*   pcReshape
+#endif
 )
 {
   CHECK(m_isInitialized, "Already initialized");
@@ -176,10 +185,16 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
   m_pcRdCost                     = pcRdCost;
   m_CABACEstimator               = CABACEstimator;
   m_CtxCache                     = ctxCache;
+#if JVET_M0427_INLOOP_RESHAPER
+  m_pcReshape                    = pcReshape;
+#endif
 
   const ChromaFormat cform = pcEncCfg->getChromaFormatIdc();
 
   IntraPrediction::init( cform, pcEncCfg->getBitDepth( CHANNEL_TYPE_LUMA ) );
+#if JVET_M0427_INLOOP_RESHAPER
+  m_tmpStorageLCU.create(UnitArea(cform, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
+#endif
 
   for( uint32_t ch = 0; ch < MAX_NUM_TBLOCKS; ch++ )
   {
@@ -363,6 +378,17 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
 
         const bool bUseHadamard = cu.transQuantBypass == 0;
 
+#if JVET_M0427_INLOOP_RESHAPER
+        if (cu.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+        {
+          CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
+          PelBuf tmpOrg = m_tmpStorageLCU.getBuf(tmpArea);
+          tmpOrg.copyFrom(piOrg);
+          tmpOrg.rspSignal(m_pcReshape->getFwdLUT());
+          m_pcRdCost->setDistParam(distParam, tmpOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, bUseHadamard);
+        }
+        else
+#endif
         m_pcRdCost->setDistParam(distParam, piOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, bUseHadamard);
 
         distParam.applyWeight = false;
@@ -688,8 +714,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
       csTemp->releaseIntermediateData();
     } // Mode loop
 
+#if JVET_M0427_INLOOP_RESHAPER
+    cs.useSubStructure(*csBest, partitioner.chType, pu.singleChan(CHANNEL_TYPE_LUMA), true, true, keepResi, keepResi);
+#else
     cs.useSubStructure( *csBest, partitioner.chType, pu.singleChan( CHANNEL_TYPE_LUMA ), KEEP_PRED_AND_RESI_SIGNALS, true, keepResi, keepResi );
-
+#endif
     csBest->releaseIntermediateData();
     //=== update PU data ====
     pu.intraDir[0] = uiBestPUMode;
@@ -908,6 +937,10 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
             saveCS.getPredBuf     ( area ).copyFrom( cs.getPredBuf   ( area ) );
             saveCS.getResiBuf     ( area ).copyFrom( cs.getResiBuf   ( area ) );
 #endif
+#if JVET_M0427_INLOOP_RESHAPER
+            saveCS.getPredBuf     ( area ).copyFrom( cs.getPredBuf   (area ) );
+            cs.picture->getPredBuf( area ).copyFrom( cs.getPredBuf   (area ) );
+#endif
             cs.picture->getRecoBuf( area ).copyFrom( cs.getRecoBuf( area ) );
 
             for( uint32_t j = 0; j < saveCS.tus.size(); j++ )
@@ -931,6 +964,11 @@ void IntraSearch::estIntraPredChromaQT(CodingUnit &cu, Partitioner &partitioner)
         cs.getPredBuf         ( area ).copyFrom( saveCS.getPredBuf( area ) );
         cs.getResiBuf         ( area ).copyFrom( saveCS.getResiBuf( area ) );
 #endif
+#if JVET_M0427_INLOOP_RESHAPER
+        cs.getPredBuf         ( area ).copyFrom( saveCS.getPredBuf( area ) );
+        cs.picture->getPredBuf( area ).copyFrom( cs.getPredBuf    ( area ) );
+#endif
+
         cs.picture->getRecoBuf( area ).copyFrom( cs.    getRecoBuf( area ) );
 
         for( uint32_t j = 0; j < saveCS.tus.size(); j++ )
@@ -967,6 +1005,9 @@ void IntraSearch::IPCMSearch(CodingStructure &cs, Partitioner& partitioner)
   cs.cost     = 0;
 
   cs.setDecomp(cs.area);
+#if JVET_M0427_INLOOP_RESHAPER
+  cs.picture->getPredBuf(cs.area).copyFrom(cs.getPredBuf());
+#endif 
 }
 
 void IntraSearch::xEncPCM(CodingStructure &cs, Partitioner& partitioner, const ComponentID &compID)
@@ -1274,8 +1315,33 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   DTRACE( g_trace_ctx, D_PRED, "@(%4d,%4d) [%2dx%2d] IMode=%d\n", tu.lx(), tu.ly(), tu.lwidth(), tu.lheight(), uiChFinalMode );
   //DTRACE_PEL_BUF( D_PRED, piPred, tu, tu.cu->predMode, COMPONENT_Y );
 
+#if JVET_M0427_INLOOP_RESHAPER
+  const Slice           &slice = *cs.slice;
+  bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode()));
+  if (flag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && isChroma(compID))
+  {
+    const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
+    const CompArea &areaY = CompArea(COMPONENT_Y, tu.chromaFormat, area );
+    PelBuf piPredY;
+    piPredY = cs.picture->getPredBuf(areaY);
+    const Pel avgLuma = piPredY.computeAvg();
+    int adj = m_pcReshape->calculateChromaAdj(avgLuma);
+    tu.setChromaAdj(adj);
+  }
+#endif
   //===== get residual signal =====
   piResi.copyFrom( piOrg  );
+#if JVET_M0427_INLOOP_RESHAPER
+  if (slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && compID==COMPONENT_Y)
+  {
+    CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
+    PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
+    tmpPred.copyFrom(piPred);
+    piResi.rspSignal(m_pcReshape->getFwdLUT());
+    piResi.subtract(tmpPred);
+  }
+  else
+#endif
   piResi.subtract( piPred );
 
   if (pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isLuma(compID))
@@ -1303,6 +1369,17 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   m_pcTrQuant->selectLambda(compID);
 #endif
 
+#if JVET_M0427_INLOOP_RESHAPER
+  flag =flag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
+  if (flag && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() )
+  {
+    int cResScaleInv = tu.getChromaAdj();
+    double cResScale = round((double)(1 << CSCALE_FP_PREC) / (double)cResScaleInv);
+    m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cResScale*cResScale));
+    piResi.scaleSignal(cResScaleInv, 1, tu.cu->cs->slice->clpRng(compID));
+  }
+#endif 
+
 #if JVET_M0464_UNI_MTS
   if( trModes )
   {
@@ -1329,19 +1406,51 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
 
   //===== reconstruction =====
+#if JVET_M0427_INLOOP_RESHAPER
+  if (flag && uiAbsSum > 0 && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() )
+  {
+    piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
+  }
+#endif
   if (bUseCrossCPrediction)
   {
     CrossComponentPrediction::crossComponentPrediction(tu, compID, cs.getResiBuf(tu.Y()), piResi, piResi, true);
   }
 
+#if JVET_M0427_INLOOP_RESHAPER
+  if (slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+  {
+    CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0,0), area.size());
+    PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
+    tmpPred.copyFrom(piPred);
+    piReco.reconstruct(tmpPred, piResi, cs.slice->clpRng(compID));
+  }
+  else 
+#endif
   piReco.reconstruct(piPred, piResi, cs.slice->clpRng( compID ));
 
   //===== update distortion =====
 #if WCG_EXT
+#if JVET_M0427_INLOOP_RESHAPER
+  if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcEncCfg->getReshaper()
+    && slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || (isChroma(compID) && m_pcEncCfg->getReshapeIntraCMD()))))
+#else
   if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() )
+#endif
   {
     const CPelBuf orgLuma = cs.getOrgBuf( cs.area.blocks[COMPONENT_Y] );
-    ruiDist += m_pcRdCost->getDistPart( piOrg, piReco, bitDepth, compID, DF_SSE_WTD, &orgLuma );
+#if JVET_M0427_INLOOP_RESHAPER
+    if (compID == COMPONENT_Y)
+    {
+      CompArea      tmpArea1(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
+      PelBuf tmpRecLuma = m_tmpStorageLCU.getBuf(tmpArea1);
+      tmpRecLuma.copyFrom(piReco);
+      tmpRecLuma.rspSignal(m_pcReshape->getInvLUT());
+      ruiDist += m_pcRdCost->getDistPart(piOrg, tmpRecLuma, sps.getBitDepth(toChannelType(compID)), compID, DF_SSE_WTD, &orgLuma);
+    }
+    else
+#endif
+      ruiDist += m_pcRdCost->getDistPart(piOrg, piReco, bitDepth, compID, DF_SSE_WTD, &orgLuma);
   }
   else
 #endif
@@ -1602,7 +1711,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 
         if( bestModeId[COMPONENT_Y] != lastCheckId )
         {
-#if KEEP_PRED_AND_RESI_SIGNALS
+#if KEEP_PRED_AND_RESI_SIGNALS || JVET_M0427_INLOOP_RESHAPER
           saveCS.getPredBuf( tu.Y() ).copyFrom( csFull->getPredBuf( tu.Y() ) );
 #endif
           saveCS.getRecoBuf( tu.Y() ).copyFrom( csFull->getRecoBuf( tu.Y() ) );
@@ -1622,7 +1731,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 
     if( bestModeId[COMPONENT_Y] != lastCheckId )
     {
-#if KEEP_PRED_AND_RESI_SIGNALS
+#if KEEP_PRED_AND_RESI_SIGNALS || JVET_M0427_INLOOP_RESHAPER
       csFull->getPredBuf( tu.Y() ).copyFrom( saveCS.getPredBuf( tu.Y() ) );
 #endif
       csFull->getRecoBuf( tu.Y() ).copyFrom( saveCS.getRecoBuf( tu.Y() ) );
@@ -1707,6 +1816,9 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
     {
       // otherwise this would've happened in useSubStructure
       cs.picture->getRecoBuf( currArea.Y() ).copyFrom( cs.getRecoBuf( currArea.Y() ) );
+#if JVET_M0427_INLOOP_RESHAPER
+      cs.picture->getPredBuf( currArea.Y() ).copyFrom( cs.getPredBuf( currArea.Y() ) );
+#endif
     }
 
     cs.cost = m_pcRdCost->calcRdCost( cs.fracBits, cs.dist );
@@ -1875,6 +1987,9 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
               saveCS.getPredBuf   (area).copyFrom(cs.getPredBuf   (area));
               saveCS.getOrgResiBuf(area).copyFrom(cs.getOrgResiBuf(area));
 #endif
+#if JVET_M0427_INLOOP_RESHAPER
+              saveCS.getPredBuf   (area).copyFrom(cs.getPredBuf   (area));
+#endif
               if( keepResi )
               {
                 saveCS.getResiBuf (area).copyFrom(cs.getResiBuf   (area));
@@ -1895,6 +2010,9 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
         cs.getPredBuf   (area).copyFrom(saveCS.getPredBuf   (area));
         cs.getOrgResiBuf(area).copyFrom(saveCS.getOrgResiBuf(area));
 #endif
+#if JVET_M0427_INLOOP_RESHAPER
+        cs.getPredBuf   (area).copyFrom(saveCS.getPredBuf   (area));
+#endif
         if( keepResi )
         {
           cs.getResiBuf (area).copyFrom(saveCS.getResiBuf   (area));
@@ -1906,6 +2024,9 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
         m_CABACEstimator->getCtx() = ctxBest;
       }
 
+#if JVET_M0427_INLOOP_RESHAPER
+      cs.picture->getPredBuf(area).copyFrom(cs.getPredBuf(area));
+#endif
       cs.picture->getRecoBuf(area).copyFrom(cs.getRecoBuf(area));
 
       cbfs.cbf(compID) = TU::getCbf(currTU, compID);

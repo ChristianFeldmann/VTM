@@ -232,6 +232,14 @@ void EncCu::destroy()
   delete[] m_pBestMotLUTs; m_pBestMotLUTs = nullptr;
   delete[] m_pTempMotLUTs; m_pTempMotLUTs = nullptr;
 
+#if JVET_M0427_INLOOP_RESHAPER && REUSE_CU_RESULTS
+  if (m_tmpStorageLCU)
+  {
+    m_tmpStorageLCU->destroy();
+    delete m_tmpStorageLCU;  m_tmpStorageLCU = nullptr;
+  }
+#endif
+
 #if REUSE_CU_RESULTS
   m_modeCtrl->destroy();
 
@@ -338,7 +346,15 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
 #if !JVET_M0255_FRACMMVD_SWITCH
   if (m_pcEncCfg->getIBCHashSearch() && ctuRsAddr == 0 && cs.slice->getSPS()->getSpsNext().getIBCMode())
   {
+#if JVET_M0427_INLOOP_RESHAPER
+    if (cs.slice->getSPS()->getUseReshaper() && m_pcReshape->getCTUFlag())
+      cs.picture->getOrigBuf(COMPONENT_Y).rspSignal(m_pcReshape->getFwdLUT());
+#endif
     m_ibcHashMap.rebuildPicHashMap(cs.picture->getOrigBuf());
+#if JVET_M0427_INLOOP_RESHAPER
+    if (cs.slice->getSPS()->getUseReshaper() && m_pcReshape->getCTUFlag())
+      cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
+#endif
   }
 #endif
   m_modeCtrl->initCTUEncoding( *cs.slice );
@@ -404,7 +420,11 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   );
 
   // all signals were already copied during compression if the CTU was split - at this point only the structures are copied to the top level CS
+#if JVET_M0427_INLOOP_RESHAPER
+  const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1;
+#else
   const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1 && KEEP_PRED_AND_RESI_SIGNALS;
+#endif
   cs.useSubStructure( *bestCS, partitioner->chType, CS::getArea( *bestCS, area, partitioner->chType ), copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals );
   cs.slice->copyMotionLUTs(bestMotCandLUTs, cs.slice->getMotionLUTs());
 
@@ -425,7 +445,11 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
       , bestMotCandLUTs
     );
 
+#if JVET_M0427_INLOOP_RESHAPER
+    const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1;
+#else
     const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1 && KEEP_PRED_AND_RESI_SIGNALS;
+#endif
     cs.useSubStructure( *bestCS, partitioner->chType, CS::getArea( *bestCS, area, partitioner->chType ), copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals );
   }
 
@@ -841,6 +865,9 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   {
     bestCS->slice->updateMotionLUTs(bestMotCandLUTs, (*bestCS->cus.back()));
   }
+#if JVET_M0427_INLOOP_RESHAPER
+  bestCS->picture->getPredBuf(currCsArea).copyFrom(bestCS->getPredBuf(currCsArea));
+#endif
   bestCS->picture->getRecoBuf( currCsArea ).copyFrom( bestCS->getRecoBuf( currCsArea ) );
   m_modeCtrl->finishCULevel( partitioner );
 
@@ -1212,6 +1239,10 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   m_CurrCtx++;
 
   tempCS->getRecoBuf().fill( 0 );
+
+#if JVET_M0427_INLOOP_RESHAPER
+  tempCS->getPredBuf().fill(0);
+#endif
   AffineMVInfo tmpMVInfo;
   bool isAffMVInfoSaved;
   m_pcInterSearch->savePrevAffMVInfo(0, tmpMVInfo, isAffMVInfoSaved);
@@ -1492,6 +1523,9 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
       if( !CS::isDualITree( *tempCS ) )
       {
         cu.cs->picture->getRecoBuf( cu.Y() ).copyFrom( cu.cs->getRecoBuf( COMPONENT_Y ) );
+#if JVET_M0427_INLOOP_RESHAPER
+        cu.cs->picture->getPredBuf(cu.Y()).copyFrom(cu.cs->getPredBuf(COMPONENT_Y));
+#endif
       }
     }
 
@@ -1992,11 +2026,29 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
               m_pcIntraSearch->switchBuffer(pu, COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, intraCnt));
             }
             pu.cs->getPredBuf(pu).copyFrom(acMergeBuffer[mergeCand]);
+#if JVET_M0427_INLOOP_RESHAPER
+            if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+            {
+              pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
+            }
+#endif
             m_pcIntraSearch->geneWeightedPred(COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, intraCnt));
 
             // calculate cost
+#if JVET_M0427_INLOOP_RESHAPER
+            if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+            {
+               pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getInvLUT());
+            }
+#endif
             distParam.cur = pu.cs->getPredBuf(pu).Y();
             Distortion sadValue = distParam.distFunc(distParam);
+#if JVET_M0427_INLOOP_RESHAPER 
+            if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+            {
+              pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
+            }
+#endif
             m_CABACEstimator->getCtx() = SubCtx(Ctx::MHIntraPredMode, ctxStartIntraMode);
             uint64_t fracModeBits = m_pcIntraSearch->xFracModeBitsIntra(pu, pu.intraDir[0], CHANNEL_TYPE_LUMA);
             double cost = (double)sadValue + (double)(bitsCand + 1) * sqrtLambdaForFirstPass + (double)fracModeBits * sqrtLambdaForFirstPassIntra;
@@ -2228,6 +2280,12 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           uint32_t bufIdx = (pu.intraDir[0] > 1) ? (pu.intraDir[0] == HOR_IDX ? 2 : 3) : pu.intraDir[0];
           PelBuf tmpBuf = tempCS->getPredBuf(pu).Y();
           tmpBuf.copyFrom(acMergeBuffer[uiMergeCand].Y());
+#if JVET_M0427_INLOOP_RESHAPER
+          if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+          {
+            tmpBuf.rspSignal(m_pcReshape->getFwdLUT());
+          }
+#endif
           m_pcIntraSearch->geneWeightedPred(COMPONENT_Y, tmpBuf, pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, bufIdx));
           tmpBuf = tempCS->getPredBuf(pu).Cb();
           tmpBuf.copyFrom(acMergeBuffer[uiMergeCand].Cb());
@@ -2970,6 +3028,18 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
       Picture* refPic = pu.cu->slice->getPic();
       const CPelBuf refBuf = refPic->getRecoBuf(pu.blocks[COMPONENT_Y]);
       const Pel*        piRefSrch = refBuf.buf;
+#if JVET_M0427_INLOOP_RESHAPER
+      if (tempCS->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+      {
+        const CompArea &area = cu.blocks[COMPONENT_Y];
+        CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
+        PelBuf tmpLuma = m_tmpStorageLCU->getBuf(tmpArea);
+        tmpLuma.copyFrom(tempCS->getOrgBuf().Y());
+        tmpLuma.rspSignal(m_pcReshape->getFwdLUT());
+        m_pcRdCost->setDistParam(distParam, tmpLuma, refBuf, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, bUseHadamard);
+      }
+      else
+#endif
       m_pcRdCost->setDistParam(distParam, tempCS->getOrgBuf().Y(), refBuf, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, bUseHadamard);
       int refStride = refBuf.stride;
       const UnitArea localUnitArea(tempCS->area.chromaFormat, Area(0, 0, tempCS->area.Y().width, tempCS->area.Y().height));
@@ -4005,9 +4075,26 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
       CPelBuf org  = tempCS->getOrgBuf ( compID );
 
 #if WCG_EXT
+#if JVET_M0427_INLOOP_RESHAPER
+      if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
+        m_pcEncCfg->getReshaper() && (tempCS->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())))
+#else
       if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() )
+#endif
       {
         const CPelBuf orgLuma = tempCS->getOrgBuf(tempCS->area.blocks[COMPONENT_Y]);
+#if JVET_M0427_INLOOP_RESHAPER
+        if (compID == COMPONENT_Y)
+        {
+          const CompArea &area = cu.blocks[COMPONENT_Y];
+          CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
+          PelBuf tmpRecLuma = m_tmpStorageLCU->getBuf(tmpArea);
+          tmpRecLuma.copyFrom(reco);
+          tmpRecLuma.rspSignal(m_pcReshape->getInvLUT());
+          finalDistortion += m_pcRdCost->getDistPart(org, tmpRecLuma, sps.getBitDepth(toChannelType(compID)), compID, DF_SSE_WTD, &orgLuma);
+        }
+        else
+#endif
         finalDistortion += m_pcRdCost->getDistPart( org, reco, sps.getBitDepth( toChannelType( compID ) ), compID, DF_SSE_WTD, &orgLuma );
       }
       else

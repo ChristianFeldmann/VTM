@@ -1483,7 +1483,15 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() || 
       ( pcSlice->getSPS()->getSpsNext().getIBCMode() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch() ) )
   {
+#if JVET_M0427_INLOOP_RESHAPER
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getSpsNext().getIBCMode())
+      cs.picture->getOrigBuf(COMPONENT_Y).rspSignal(m_pcLib->getReshaper()->getFwdLUT());
+#endif
     m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
+#if JVET_M0427_INLOOP_RESHAPER
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getSpsNext().getIBCMode())
+      cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
+#endif
   }
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
 #endif
@@ -1612,7 +1620,12 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       resetGbiCodingOrder(false, cs);
       m_pcInterSearch->initWeightIdxBits();
     }
-
+#if JVET_M0427_INLOOP_RESHAPER && REUSE_CU_RESULTS
+    if (pcSlice->getSPS()->getUseReshaper())
+    {
+      m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());
+    }
+#endif
 #if ENABLE_WPP_PARALLELISM
     pEncLib->getCuEncoder( dataId )->compressCtu( cs, ctuArea, ctuRsAddr, prevQP, currQP );
 #else

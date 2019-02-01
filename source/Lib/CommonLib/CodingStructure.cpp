@@ -969,6 +969,14 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
 
     // copy data to picture
     picture->getRecoBuf( area ).copyFrom( recoBuf );
+#if JVET_M0427_INLOOP_RESHAPER
+    CPelUnitBuf predBuf = other.getPredBuf(area);
+    if (parent)
+    {
+      getPredBuf(area).copyFrom(predBuf);
+    }
+    picture->getPredBuf(area).copyFrom(predBuf);
+#endif
   }
 }
 

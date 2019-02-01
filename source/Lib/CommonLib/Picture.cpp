@@ -742,6 +742,9 @@ void Picture::create(const ChromaFormat &_chromaFormat, const Size &size, const 
   if( !_decoder )
   {
     M_BUFS( 0, PIC_ORIGINAL ).    create( _chromaFormat, a );
+#if JVET_M0427_INLOOP_RESHAPER
+    M_BUFS( 0, PIC_TRUE_ORIGINAL ). create( _chromaFormat, a );
+#endif
   }
 #if !KEEP_PRED_AND_RESI_SIGNALS
 
@@ -846,6 +849,14 @@ const CPelUnitBuf Picture::getOrigBuf(const UnitArea &unit) const { return getBu
        PelUnitBuf Picture::getOrigBuf()                           { return M_BUFS(0,    PIC_ORIGINAL); }
 const CPelUnitBuf Picture::getOrigBuf()                     const { return M_BUFS(0,    PIC_ORIGINAL); }
 
+#if JVET_M0427_INLOOP_RESHAPER
+       PelBuf     Picture::getOrigBuf(const ComponentID compID)       { return getBuf(compID, PIC_ORIGINAL); }
+const CPelBuf     Picture::getOrigBuf(const ComponentID compID) const { return getBuf(compID, PIC_ORIGINAL); }
+       PelUnitBuf Picture::getTrueOrigBuf()                           { return M_BUFS(0, PIC_TRUE_ORIGINAL); }
+const CPelUnitBuf Picture::getTrueOrigBuf()                     const { return M_BUFS(0, PIC_TRUE_ORIGINAL); }
+       PelBuf     Picture::getTrueOrigBuf(const CompArea &blk)        { return getBuf(blk, PIC_TRUE_ORIGINAL); }
+const CPelBuf     Picture::getTrueOrigBuf(const CompArea &blk)  const { return getBuf(blk, PIC_TRUE_ORIGINAL); }
+#endif
        PelBuf     Picture::getPredBuf(const CompArea &blk)        { return getBuf(blk,  PIC_PREDICTION); }
 const CPelBuf     Picture::getPredBuf(const CompArea &blk)  const { return getBuf(blk,  PIC_PREDICTION); }
        PelUnitBuf Picture::getPredBuf(const UnitArea &unit)       { return getBuf(unit, PIC_PREDICTION); }

@@ -435,6 +435,9 @@ struct TransformUnit : public UnitArea
   CodingUnit      *cu;
   CodingStructure *cs;
   ChannelType      chType;
+ #if JVET_M0427_INLOOP_RESHAPER
+  int              m_chromaResScaleInv;
+#endif 
 
   uint8_t        depth;
 #if JVET_M0464_UNI_MTS
@@ -467,6 +470,10 @@ struct TransformUnit : public UnitArea
   const CCoeffBuf getCoeffs(const ComponentID id) const;
          PelBuf   getPcmbuf(const ComponentID id);
   const CPelBuf   getPcmbuf(const ComponentID id) const;
+#if JVET_M0427_INLOOP_RESHAPER
+        int       getChromaAdj( )                 const;
+        void      setChromaAdj(int i);
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   int64_t cacheId;

@@ -603,6 +603,40 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   // ADD_NEW_TOOL : (sps extension writer) write tool enabling flags and associated parameters here
 }
 
+#if JVET_M0427_INLOOP_RESHAPER
+void HLSWriter::codeReshaper(const SliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra)
+{
+  WRITE_FLAG(pSliceReshaperInfo.getSliceReshapeModelPresentFlag() ? 1 : 0, "tile_group_reshaper_model_present_flag");
+  if (pSliceReshaperInfo.getSliceReshapeModelPresentFlag())
+  {
+    WRITE_UVLC(pSliceReshaperInfo.reshaperModelMinBinIdx, "reshaper_model_min_bin_idx");
+    WRITE_UVLC(PIC_CODE_CW_BINS - 1 - pSliceReshaperInfo.reshaperModelMaxBinIdx, "reshaper_model_delta_max_bin_idx");
+    assert(pSliceReshaperInfo.maxNbitsNeededDeltaCW > 0);
+    WRITE_UVLC(pSliceReshaperInfo.maxNbitsNeededDeltaCW - 1, "reshaper_model_bin_delta_abs_cw_prec_minus1");
+
+    for (int i = pSliceReshaperInfo.reshaperModelMinBinIdx; i <= pSliceReshaperInfo.reshaperModelMaxBinIdx; i++)
+    {
+      int deltaCW = pSliceReshaperInfo.reshaperModelBinCWDelta[i];
+      int signCW = (deltaCW < 0) ? 1 : 0;
+      int absCW = (deltaCW < 0) ? (-deltaCW) : deltaCW;
+      WRITE_CODE(absCW, pSliceReshaperInfo.maxNbitsNeededDeltaCW, "reshaper_model_bin_delta_abs_CW");
+      if (absCW > 0)
+      {
+        WRITE_FLAG(signCW, "reshaper_model_bin_delta_sign_CW_flag");
+      }
+    }
+  }
+
+  WRITE_FLAG(pSliceReshaperInfo.getUseSliceReshaper() ? 1 : 0, "tile_group_reshaper_enable_flag");
+
+  if (!pSliceReshaperInfo.getUseSliceReshaper())
+    return;
+
+  if (!(pcSPS->getUseDualITree() && isIntra))
+    WRITE_FLAG(pSliceReshaperInfo.getSliceReshapeChromaAdj(), "tile_group_reshaper_chroma_residual_scale_flag");
+};
+#endif // #if JVET_M0427_INLOOP_RESHAPER
+
 void HLSWriter::codeSPS( const SPS* pcSPS )
 {
 
@@ -848,6 +882,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       }
     }
   }
+#if JVET_M0427_INLOOP_RESHAPER
+  WRITE_FLAG(pcSPS->getUseReshaper() ? 1 : 0, "sps_reshaper_enable_flag");
+#endif
   xWriteRbspTrailingBits();
 }
 
@@ -1351,6 +1388,13 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     {
       WRITE_FLAG(pcSlice->getLFCrossSliceBoundaryFlag()?1:0, "slice_loop_filter_across_slices_enabled_flag");
     }
+
+#if JVET_M0427_INLOOP_RESHAPER
+    if (pcSlice->getSPS()->getUseReshaper())
+    {
+      codeReshaper(pcSlice->getReshapeInfo(), pcSlice->getSPS(), pcSlice->isIntra());
+    }
+#endif
 #if HEVC_DEPENDENT_SLICES
   }
 #endif

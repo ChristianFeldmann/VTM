@@ -508,6 +508,9 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
   m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailable ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag());
   m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailable ( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag());
 #endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  m_stLFCUParam.internalEdge &= !cu.ispMode;
+#endif
 }
 
 unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos ) const

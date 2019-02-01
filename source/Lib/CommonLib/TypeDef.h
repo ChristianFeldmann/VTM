@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0102_INTRA_SUBPARTITIONS                    1
+
 #define JVET_M0303_IMPLICIT_MTS                           1 // Implicit transform selection (can be enabled with MTSImplicit encoder config parameter)
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
@@ -144,6 +146,10 @@ typedef std::pair<int, int>  TrCost;
 
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
+#if REUSE_CU_RESULTS && JVET_M0102_INTRA_SUBPARTITIONS
+#define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
+#define MAX_NUM_TUS                                       4
+#endif
 // clang-format on
 
 #ifndef JVET_B0051_NON_MPM_MODE
@@ -398,6 +404,17 @@ enum TransType
   NUM_TRANS_TYPE = 3,
   DCT2_EMT = 4
 };
+
+#if JVET_M0102_INTRA_SUBPARTITIONS
+enum ISPType
+{
+  NOT_INTRA_SUBPARTITIONS       = 0,
+  HOR_INTRA_SUBPARTITIONS       = 1,
+  VER_INTRA_SUBPARTITIONS       = 2,
+  NUM_INTRA_SUBPARTITIONS_MODES = 3,
+  CAN_USE_VER_AND_HORL_SPLITS   = 4
+};
+#endif
 
 enum RDPCMMode
 {

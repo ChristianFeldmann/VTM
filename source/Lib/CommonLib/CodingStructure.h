@@ -129,11 +129,19 @@ public:
 
   const CodingUnit     *getCU(const Position &pos, const ChannelType _chType) const;
   const PredictionUnit *getPU(const Position &pos, const ChannelType _chType) const;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  const TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1) const;
+#else
   const TransformUnit  *getTU(const Position &pos, const ChannelType _chType) const;
+#endif
 
   CodingUnit     *getCU(const Position &pos, const ChannelType _chType);
   PredictionUnit *getPU(const Position &pos, const ChannelType _chType);
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1);
+#else
   TransformUnit  *getTU(const Position &pos, const ChannelType _chType);
+#endif
 
   const CodingUnit     *getCU(const ChannelType &_chType) const { return getCU(area.blocks[_chType].pos(), _chType); }
   const PredictionUnit *getPU(const ChannelType &_chType) const { return getPU(area.blocks[_chType].pos(), _chType); }
@@ -171,6 +179,9 @@ public:
   static_vector<double, NUM_ENC_FEATURES> features;
 
   double      cost;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  double      lumaCost;
+#endif
   uint64_t      fracBits;
   Distortion  dist;
   Distortion  interHad;

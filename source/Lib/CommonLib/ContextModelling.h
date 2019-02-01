@@ -308,7 +308,11 @@ void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, uns
 unsigned CtxCUsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 unsigned CtxBTsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 #endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
+#else
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf );
+#endif
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );

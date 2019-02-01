@@ -153,6 +153,9 @@ struct CompArea : public Area
 
   const bool operator!=(const CompArea &other) const { return !(operator==(other)); }
 
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS 
+  void     resizeTo          (const Size& newSize)          { Size::resizeTo(newSize); }
+#endif
   void     repositionTo      (const Position& newPos)       { Position::repositionTo(newPos); }
   void     positionRelativeTo(const CompArea& origCompArea) { Position::relativeTo(origCompArea); }
 
@@ -214,6 +217,9 @@ struct UnitArea
     return true;
   }
 
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  void resizeTo    (const UnitArea& unit);
+#endif
   void repositionTo(const UnitArea& unit);
 
   const bool operator!=(const UnitArea &other) const { return !(*this == other); }
@@ -319,6 +325,9 @@ struct CodingUnit : public UnitArea
   bool           ibc;
 #if JVET_M0444_SMVD
   uint8_t          smvdMode;
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  uint8_t        ispMode;
 #endif
 
   CodingUnit() : chType( CH_L ) { }
@@ -464,6 +473,9 @@ struct TransformUnit : public UnitArea
 
   unsigned       idx;
   TransformUnit *next;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  TransformUnit *prev;
+#endif
 
   void init(TCoeff **coeffs, Pel **pcmbuf);
 

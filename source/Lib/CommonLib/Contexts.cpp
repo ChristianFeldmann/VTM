@@ -745,6 +745,24 @@ const CtxSet ContextSetCfg::QtRootCbf = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::QtCbf[] =
 {
+#if JVET_M0102_INTRA_SUBPARTITIONS
+#if JVET_M0453_CABAC_ENGINE
+  ContextSetCfg::addCtxSet
+  ({
+    {  155, 127, CNU, CNU},
+    {  141, 127, CNU, CNU},
+    {  CNU, 126, CNU, CNU},
+    {    4,   5, DWS, DWS},
+  }),
+#else
+  ContextSetCfg::addCtxSet
+  ({
+    { 140, 141, CNU, CNU},
+    { 155, 127, CNU, CNU},
+    { CNU, 126, CNU, CNU},
+  }),
+#endif
+#else
   ContextSetCfg::addCtxSet
   ({
 #if JVET_M0453_CABAC_ENGINE
@@ -758,6 +776,7 @@ const CtxSet ContextSetCfg::QtCbf[] =
     { CNU, 126, },
 #endif
   }),
+#endif
   ContextSetCfg::addCtxSet
   ({
 #if JVET_M0453_CABAC_ENGINE
@@ -1204,6 +1223,18 @@ const CtxSet ContextSetCfg::EMTCuFlag = ContextSetCfg::addCtxSet
   { 155, 141, 155, 155, 140, CNU, },
   { 141, 141, 141, 126, 155, CNU, },
   { CNU, CNU, 140, 155, 155, CNU, },
+#endif
+});
+#endif
+
+#if JVET_M0102_INTRA_SUBPARTITIONS
+const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet
+({
+  { CNU, CNU },
+  { CNU, CNU },
+  { CNU, CNU },
+#if JVET_M0453_CABAC_ENGINE
+  { DWS, DWS },
 #endif
 });
 #endif

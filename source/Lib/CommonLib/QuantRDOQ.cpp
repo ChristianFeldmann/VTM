@@ -581,6 +581,9 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   bool useRDOQ = useTransformSkip ? m_useRDOQTS : m_useRDOQ;
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  if( !tu.cu->ispMode || !isLuma(compID) )
+#endif
   {
     useRDOQ &= uiWidth > 2;
     useRDOQ &= uiHeight > 2;
@@ -624,6 +627,9 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   const bool extendedPrecision     = sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(chType);
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  const bool useIntraSubPartitions = tu.cu->ispMode && isLuma(compID);
+#endif
   /* for 422 chroma blocks, the effective scaling applied during transformation is not a power of 2, hence it cannot be
   * implemented as a bit-shift (the quantised result will be sqrt(2) * larger than required). Alternatively, adjust the
   * uiLog2TrSize applied in iTransformShift, such that the result is 1/sqrt(2) the required result (i.e. smaller)
@@ -1030,10 +1036,49 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   }
   else
   {
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    bool previousCbf       = tu.cbf[COMPONENT_Cb];
+    bool lastCbfIsInferred = false;
+    if( useIntraSubPartitions )
+    {
+      bool rootCbfSoFar       = false;
+      bool isLastSubPartition = CU::isISPLast(*tu.cu, tu.Y(), compID);
+      uint32_t nTus = tu.cu->ispMode == HOR_INTRA_SUBPARTITIONS ? tu.cu->lheight() >> g_aucLog2[tu.lheight()] : tu.cu->lwidth() >> g_aucLog2[tu.lwidth()];
+      if( isLastSubPartition )
+      {
+        TransformUnit* tuPointer = tu.cu->firstTU;
+        for( int tuIdx = 0; tuIdx < nTus - 1; tuIdx++ )
+        {
+          rootCbfSoFar |= TU::getCbfAtDepth(*tuPointer, COMPONENT_Y, tu.depth);
+          tuPointer     = tuPointer->next;
+        }
+        if( !rootCbfSoFar )
+        {
+          lastCbfIsInferred = true;
+        }
+      }
+      if( !lastCbfIsInferred )
+      {
+        previousCbf = TU::getPrevTuCbfAtDepth(tu, compID, tu.depth);
+      }
+    }
+    BinFracBits fracBitsQtCbf = fracBits.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( rect.compID, tu.depth, previousCbf, useIntraSubPartitions ) ) );
+
+    if( !lastCbfIsInferred )
+    {
+      d64BestCost  = d64BlockUncodedCost + xGetICost(fracBitsQtCbf.intBits[0]);
+      d64BaseCost += xGetICost(fracBitsQtCbf.intBits[1]);
+    }
+    else
+    {
+      d64BestCost  = d64BlockUncodedCost;
+    }
+#else
     BinFracBits fracBitsQtCbf = fracBits.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( rect.compID, tu.depth, tu.cbf[COMPONENT_Cb] ) ) );
 
     d64BestCost  = d64BlockUncodedCost + xGetICost( fracBitsQtCbf.intBits[0] );
     d64BaseCost += xGetICost( fracBitsQtCbf.intBits[1] );
+#endif
   }
 
   int lastBitsX[LAST_SIGNIFICANT_GROUPS] = { 0 };

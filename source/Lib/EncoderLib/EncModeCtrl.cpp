@@ -635,7 +635,15 @@ void BestEncInfoCache::create( const ChromaFormat chFmt )
 
               m_bestEncInfo[x][y][wIdx][hIdx]->cu.UnitArea::operator=( area );
               m_bestEncInfo[x][y][wIdx][hIdx]->pu.UnitArea::operator=( area );
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+              m_bestEncInfo[x][y][wIdx][hIdx]->numTus = 0;
+              for( int i = 0; i < MAX_NUM_TUS; i++ )
+              {
+                m_bestEncInfo[x][y][wIdx][hIdx]->tus[i].UnitArea::operator=(area);
+              }
+#else
               m_bestEncInfo[x][y][wIdx][hIdx]->tu.UnitArea::operator=( area );
+#endif
 
               m_bestEncInfo[x][y][wIdx][hIdx]->poc      = -1;
               m_bestEncInfo[x][y][wIdx][hIdx]->testMode = EncTestMode();
@@ -722,8 +730,13 @@ void BestEncInfoCache::init( const Slice &slice )
     }
   }
 
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  m_pCoeff  = new TCoeff[numCoeff*MAX_NUM_TUS];
+  m_pPcmBuf = new Pel   [numCoeff*MAX_NUM_TUS];
+#else
   m_pCoeff  = new TCoeff[numCoeff];
   m_pPcmBuf = new Pel   [numCoeff];
+#endif
 
   TCoeff *coeffPtr = m_pCoeff;
   Pel    *pcmPtr   = m_pPcmBuf;
@@ -743,6 +756,22 @@ void BestEncInfoCache::init( const Slice &slice )
             TCoeff *coeff[MAX_NUM_TBLOCKS] = { 0, };
             Pel    *pcmbf[MAX_NUM_TBLOCKS] = { 0, };
 
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+            for( int i = 0; i < MAX_NUM_TUS; i++ )
+            {
+              TransformUnit &tu = m_bestEncInfo[x][y][wIdx][hIdx]->tus[i];
+              const UnitArea &area = tu;
+
+              for( int i = 0; i < area.blocks.size(); i++ )
+              {
+                coeff[i] = coeffPtr; coeffPtr += area.blocks[i].area();
+                pcmbf[i] = pcmPtr;   pcmPtr += area.blocks[i].area();
+              }
+
+              tu.cs = &m_dummyCS;
+              tu.init(coeff, pcmbf);
+            }
+#else
             const UnitArea &area = m_bestEncInfo[x][y][wIdx][hIdx]->tu;
 
             for( int i = 0; i < area.blocks.size(); i++ )
@@ -753,6 +782,7 @@ void BestEncInfoCache::init( const Slice &slice )
 
             m_bestEncInfo[x][y][wIdx][hIdx]->tu.cs = &m_dummyCS;
             m_bestEncInfo[x][y][wIdx][hIdx]->tu.init( coeff, pcmbf );
+#endif
           }
         }
       }
@@ -762,7 +792,11 @@ void BestEncInfoCache::init( const Slice &slice )
 
 bool BestEncInfoCache::setFromCs( const CodingStructure& cs, const Partitioner& partitioner )
 {
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  if( cs.cus.size() != 1 || cs.pus.size() != 1 )
+#else
   if( cs.cus.size() != 1 || cs.tus.size() != 1 || cs.pus.size() != 1 )
+#endif
   {
     return false;
   }
@@ -775,13 +809,32 @@ bool BestEncInfoCache::setFromCs( const CodingStructure& cs, const Partitioner& 
   encInfo.poc            =  cs.picture->poc;
   encInfo.cu.repositionTo( *cs.cus.front() );
   encInfo.pu.repositionTo( *cs.pus.front() );
+#if !REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
   encInfo.tu.repositionTo( *cs.tus.front() );
+#endif
   encInfo.cu             = *cs.cus.front();
   encInfo.pu             = *cs.pus.front();
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  int tuIdx = 0;
+  for( auto tu : cs.tus )
+  {
+    encInfo.tus[tuIdx].repositionTo( *tu );
+    encInfo.tus[tuIdx].resizeTo( *tu );
+    for( auto &blk : tu->blocks )
+    {
+      if( blk.valid() )
+        encInfo.tus[tuIdx].copyComponentFrom( *tu, blk.compID );
+    }
+    tuIdx++;
+  }
+  CHECKD( cs.tus.size() > MAX_NUM_TUS, "Exceeding tus array boundaries" );
+  encInfo.numTus = cs.tus.size();
+#else
   for( auto &blk : cs.tus.front()->blocks )
   {
     if( blk.valid() ) encInfo.tu.copyComponentFrom( *cs.tus.front(), blk.compID );
   }
+#endif
   encInfo.testMode       = getCSEncMode( cs );
 
   return true;
@@ -830,18 +883,35 @@ bool BestEncInfoCache::setCsFrom( CodingStructure& cs, EncTestMode& testMode, co
 
   CodingUnit     &cu = cs.addCU( CS::getArea( cs, cs.area, partitioner.chType ), partitioner.chType );
   PredictionUnit &pu = cs.addPU( CS::getArea( cs, cs.area, partitioner.chType ), partitioner.chType );
+#if !REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
   TransformUnit  &tu = cs.addTU( CS::getArea( cs, cs.area, partitioner.chType ), partitioner.chType );
+#endif
 
   cu          .repositionTo( encInfo.cu );
   pu          .repositionTo( encInfo.pu );
+#if !REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
   tu          .repositionTo( encInfo.tu );
+#endif
 
   cu          = encInfo.cu;
   pu          = encInfo.pu;
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  CHECKD( !( encInfo.numTus > 0 ), "Empty tus array" );
+  for( int i = 0; i < encInfo.numTus; i++ )
+  {
+    TransformUnit  &tu = cs.addTU( encInfo.tus[i], partitioner.chType );
+
+    for( auto &blk : tu.blocks )
+    {
+      if( blk.valid() ) tu.copyComponentFrom( encInfo.tus[i], blk.compID );
+    }
+  }
+#else
   for( auto &blk : tu.blocks )
   {
     if( blk.valid() ) tu.copyComponentFrom( encInfo.tu, blk.compID );
   }
+#endif
 
   testMode    = encInfo.testMode;
 
@@ -1685,6 +1755,12 @@ bool EncModeCtrlMTnoRQT::useModeResult( const EncTestMode& encTestmode, CodingSt
     {
       cuECtx.bestEmtSize2Nx2N1stPass = tempCS->cost;
     }
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    if (!cu.ispMode)
+    {
+      cuECtx.bestCostEmtFirstPassNoIsp = tempCS->cost;
+    }
+#endif
   }
 #endif
 

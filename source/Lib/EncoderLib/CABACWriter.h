@@ -135,8 +135,13 @@ public:
   void        pcm_samples               ( const TransformUnit&          tu );
 
   // transform tree (clause 7.3.8.8)
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  void        transform_tree            ( const CodingStructure&        cs,       Partitioner&      pm,     CUCtx& cuCtx, ChromaCbfs& chromaCbfs, const PartSplit ispType = TU_NO_ISP, const int subTuIdx = -1 );
+  void        cbf_comp                  ( const CodingStructure&        cs,       bool              cbf,    const CompArea& area, unsigned depth, const bool prevCbCbf = false, const bool useISP = false );
+#else
   void        transform_tree            ( const CodingStructure&        cs,       Partitioner&      pm,     CUCtx& cuCtx,   ChromaCbfs& chromaCbfs );
   void        cbf_comp                  ( const CodingStructure&        cs,       bool              cbf,    const CompArea& area, unsigned depth, const bool prevCbCbf = false );
+#endif
 
   // mvd coding (clause 7.3.8.9)
 #if JVET_M0246_AFFINE_AMVR
@@ -157,6 +162,9 @@ public:
   void        transform_skip_flag       ( const TransformUnit&          tu,       ComponentID       compID );
   void        emt_tu_index              ( const TransformUnit&          tu );
   void        emt_cu_flag               ( const CodingUnit&             cu );
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  void        isp_mode                  ( const CodingUnit&             cu );
 #endif
   void        explicit_rdpcm_mode       ( const TransformUnit&          tu,       ComponentID       compID );
   void        last_sig_coeff            ( CoeffCodingContext&           cctx );

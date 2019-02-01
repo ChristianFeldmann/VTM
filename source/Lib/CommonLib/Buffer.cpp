@@ -389,12 +389,14 @@ void AreaBuf<Pel>::rspSignal(std::vector<Pel>& pLUT)
 {
   Pel* dst = buf;
   Pel* src = buf;
+#if !JVET_M0102_INTRA_SUBPARTITIONS
   if (width == 1)
   {
     THROW("Blocks of width = 1 not supported");
   }  
   else
   {
+#endif
     for (unsigned y = 0; y < height; y++)
     {
       for (unsigned x = 0; x < width; x++)
@@ -404,7 +406,9 @@ void AreaBuf<Pel>::rspSignal(std::vector<Pel>& pLUT)
       dst += stride;
       src += stride;
     }
+#if !JVET_M0102_INTRA_SUBPARTITIONS
   }
+#endif
 }
 
 template<>
@@ -456,13 +460,14 @@ template<>
 Pel AreaBuf <Pel> ::computeAvg() const
 {
   const Pel* src = buf;
-
+#if !JVET_M0102_INTRA_SUBPARTITIONS
   if (width == 1)
   {
     THROW("Blocks of width = 1 not supported");
   }
   else
   {
+#endif
     int32_t acc = 0;
 #define AVG_INC   \
     src +=       stride; 
@@ -471,7 +476,9 @@ Pel AreaBuf <Pel> ::computeAvg() const
 #undef AVG_INC
 #undef AVG_OP
     return Pel((acc + (area() >> 1)) / area());
+#if !JVET_M0102_INTRA_SUBPARTITIONS
   }
+#endif
 }
 
 #endif

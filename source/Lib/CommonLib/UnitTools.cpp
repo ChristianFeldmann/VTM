@@ -290,7 +290,175 @@ uint32_t CU::getNumNonZeroCoeffNonTs( const CodingUnit& cu )
   return count;
 }
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+bool CU::divideTuInRows( const CodingUnit &cu )
+{
+  CHECK( cu.ispMode != HOR_INTRA_SUBPARTITIONS && cu.ispMode != VER_INTRA_SUBPARTITIONS, "Intra Subpartitions type not recognized!" );
+  return cu.ispMode == HOR_INTRA_SUBPARTITIONS ? true : false;
+}
 
+bool CU::firstTestISPHorSplit( const int width, const int height, const ComponentID compID, const CodingUnit *cuLeft, const CodingUnit *cuAbove )
+{
+  //this function decides which split mode (horizontal or vertical) is tested first (encoder only)
+  //we check the logarithmic aspect ratios of the block
+  int aspectRatio = g_aucLog2[width] - g_aucLog2[height];
+  if( aspectRatio > 0 )
+  {
+    return true;
+  }
+  else if( aspectRatio < 0 )
+  {
+    return false;
+  }
+  else //if (aspectRatio == 0)
+  {
+    //we gather data from the neighboring CUs
+    const int cuLeftWidth    = cuLeft  != nullptr                                    ? cuLeft->blocks[compID].width   : -1;
+    const int cuLeftHeight   = cuLeft  != nullptr                                    ? cuLeft->blocks[compID].height  : -1;
+    const int cuAboveWidth   = cuAbove != nullptr                                    ? cuAbove->blocks[compID].width  : -1;
+    const int cuAboveHeight  = cuAbove != nullptr                                    ? cuAbove->blocks[compID].height : -1;
+    const int cuLeft1dSplit  = cuLeft  != nullptr &&  cuLeft->predMode == MODE_INTRA ? cuLeft->ispMode                :  0;
+    const int cuAbove1dSplit = cuAbove != nullptr && cuAbove->predMode == MODE_INTRA ? cuAbove->ispMode               :  0;
+    if( cuLeftWidth != -1 && cuAboveWidth == -1 )
+    {
+      int cuLeftAspectRatio = g_aucLog2[cuLeftWidth] - g_aucLog2[cuLeftHeight];
+      return cuLeftAspectRatio < 0 ? false : cuLeftAspectRatio > 0 ? true : cuLeft1dSplit == VER_INTRA_SUBPARTITIONS ? false : true;
+    }
+    else if( cuLeftWidth == -1 && cuAboveWidth != -1 )
+    {
+      int cuAboveAspectRatio = g_aucLog2[cuAboveWidth] - g_aucLog2[cuAboveHeight];
+      return cuAboveAspectRatio < 0 ? false : cuAboveAspectRatio > 0 ? true : cuAbove1dSplit == VER_INTRA_SUBPARTITIONS ? false : true;
+    }
+    else if( cuLeftWidth != -1 && cuAboveWidth != -1 )
+    {
+      int cuLeftAspectRatio = g_aucLog2[cuLeftWidth] - g_aucLog2[cuLeftHeight];
+      int cuAboveAspectRatio = g_aucLog2[cuAboveWidth] - g_aucLog2[cuAboveHeight];
+      if( cuLeftAspectRatio < 0 && cuAboveAspectRatio < 0 )
+      {
+        return false;
+      }
+      else if( cuLeftAspectRatio > 0 && cuAboveAspectRatio > 0 )
+      {
+        return true;
+      }
+      else if( cuLeftAspectRatio == 0 && cuAboveAspectRatio == 0 )
+      {
+        if( cuLeft1dSplit != 0 && cuAbove1dSplit != 0 )
+        {
+          return cuLeft1dSplit == VER_INTRA_SUBPARTITIONS && cuAbove1dSplit == VER_INTRA_SUBPARTITIONS ? false : true;
+        }
+        else if( cuLeft1dSplit != 0 && cuAbove1dSplit == 0 )
+        {
+          return cuLeft1dSplit == VER_INTRA_SUBPARTITIONS ? false : true;
+        }
+        else if( cuLeft1dSplit == 0 && cuAbove1dSplit != 0 )
+        {
+          return cuAbove1dSplit == VER_INTRA_SUBPARTITIONS ? false : true;
+        }
+        return true;
+      }
+      else
+      {
+        return cuLeftAspectRatio > cuAboveAspectRatio ? cuLeftAspectRatio > 0 : cuAboveAspectRatio > 0;
+      }
+      //return true;
+    }
+    return true;
+  }
+}
+
+PartSplit CU::getISPType( const CodingUnit &cu, const ComponentID compID )
+{
+  if( cu.ispMode && isLuma( compID ) )
+  {
+    const bool tuIsDividedInRows = CU::divideTuInRows( cu );
+
+    return tuIsDividedInRows ? TU_1D_HORZ_SPLIT : TU_1D_VERT_SPLIT;
+  }
+  return TU_NO_ISP;
+}
+
+bool CU::isISPLast( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID )
+{
+  PartSplit partitionType = CU::getISPType( cu, compID );
+
+  Area originalArea = cu.blocks[compID];
+  switch( partitionType )
+  {
+    case TU_1D_HORZ_SPLIT:
+      return tuArea.y + tuArea.height == originalArea.y + originalArea.height;
+    case TU_1D_VERT_SPLIT:
+      return tuArea.x + tuArea.width == originalArea.x + originalArea.width;
+    default:
+      THROW( "Unknown ISP processing order type!" );
+      return false;
+  }
+}
+
+bool CU::isISPFirst( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID )
+{
+  return tuArea == cu.firstTU->blocks[compID];
+}
+
+ISPType CU::canUseISPSplit( const CodingUnit &cu, const ComponentID compID )
+{
+  const int width     = cu.blocks[compID].width;
+  const int height    = cu.blocks[compID].height;
+  const int maxTrSize = cu.cs->sps->getMaxTrSize();
+  return CU::canUseISPSplit( width, height, maxTrSize );
+}
+
+ISPType CU::canUseISPSplit( const int width, const int height, const int maxTrSize )
+{
+  bool widthCannotBeUsed = false, heightCannotBeUsed = false;
+
+  const uint32_t minTuSizeForISP = MIN_TU_SIZE;
+  bool  notEnoughSamplesToSplit = ( g_aucLog2[width] + g_aucLog2[height] <= ( g_aucLog2[minTuSizeForISP] << 1 ) );
+  widthCannotBeUsed  = width  > maxTrSize || notEnoughSamplesToSplit;
+  heightCannotBeUsed = height > maxTrSize || notEnoughSamplesToSplit;
+
+  if( !widthCannotBeUsed && !heightCannotBeUsed )
+  {
+    return CAN_USE_VER_AND_HORL_SPLITS; //both splits can be used
+  }
+  else if( widthCannotBeUsed && !heightCannotBeUsed )
+  {
+    return VER_INTRA_SUBPARTITIONS; //only the vertical split can be performed
+  }
+  else if( !widthCannotBeUsed && heightCannotBeUsed )
+  {
+    return HOR_INTRA_SUBPARTITIONS; //only the horizontal split can be performed
+  }
+  else
+  {
+    return NOT_INTRA_SUBPARTITIONS; //neither of the splits can be used
+  }
+}
+
+uint32_t CU::getISPSplitDim( const int width, const int height, const PartSplit ispType )
+{
+  bool divideTuInRows = ispType == TU_1D_HORZ_SPLIT;
+  uint32_t splitDimensionSize, nonSplitDimensionSize, partitionSize, divShift = 2;
+
+  if( divideTuInRows )
+  {
+    splitDimensionSize    = height;
+    nonSplitDimensionSize = width;
+  }
+  else
+  {
+    splitDimensionSize    = width;
+    nonSplitDimensionSize = height;
+  }
+
+  const int minNumberOfSamplesPerCu = 1 << ( ( g_aucLog2[MIN_TU_SIZE] << 1 ) );
+  const int factorToMinSamples = nonSplitDimensionSize < minNumberOfSamplesPerCu ? minNumberOfSamplesPerCu >> g_aucLog2[nonSplitDimensionSize] : 1;
+  partitionSize = ( splitDimensionSize >> divShift ) < factorToMinSamples ? factorToMinSamples : ( splitDimensionSize >> divShift );
+
+  CHECK( g_aucLog2[partitionSize] + g_aucLog2[nonSplitDimensionSize] < g_aucLog2[minNumberOfSamplesPerCu], "A partition has less than the minimum amount of samples!" );
+  return partitionSize;
+}
+#endif
 
 
 PUTraverser CU::traversePUs( CodingUnit& cu )
@@ -319,6 +487,10 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
 {
   const int numMPMs = NUM_MOST_PROBABLE_MODES;
   const int extendRefLine = (channelType == CHANNEL_TYPE_LUMA) ? pu.multiRefIdx : 0;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  const ISPType ispType = isLuma( channelType ) ? ISPType( pu.cu->ispMode ) : NOT_INTRA_SUBPARTITIONS;
+  const bool isHorSplit = ispType == HOR_INTRA_SUBPARTITIONS;
+#endif
   {
     int numCand      = -1;
     int leftIntraDir = PLANAR_IDX, aboveIntraDir = PLANAR_IDX;
@@ -413,6 +585,116 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
         }
       }
     }
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    else if( ispType != NOT_INTRA_SUBPARTITIONS )
+    {
+      //default case
+      mpm[0] = PLANAR_IDX;
+      if( isHorSplit )
+      {
+        mpm[1] = HOR_IDX;
+        mpm[2] = 25;
+        mpm[3] = 10;
+        mpm[4] = 65;
+        mpm[5] = VER_IDX;
+      }
+      else
+      {
+        mpm[1] = VER_IDX;
+        mpm[2] = 43;
+        mpm[3] = 60;
+        mpm[4] = 3;
+        mpm[5] = HOR_IDX;
+      }
+      int canonicalMode = mpm[1];
+      if( leftIntraDir == aboveIntraDir ) //L=A
+      {
+        numCand = 1;
+        if( leftIntraDir > DC_IDX )
+        {
+          mpm[0] =     leftIntraDir;
+          mpm[1] = ( ( leftIntraDir + offset ) % mod ) + 2;
+          mpm[2] = ( ( leftIntraDir - 1 ) % mod ) + 2;
+          if( ( isHorSplit && leftIntraDir < DIA_IDX ) || ( !isHorSplit && leftIntraDir >= DIA_IDX ) )
+          {
+            mpm[3] = ( ( leftIntraDir + offset - 1 ) % mod ) + 2;
+            mpm[4] =   ( leftIntraDir                % mod ) + 2;
+            mpm[5] = ( ( leftIntraDir + offset - 2 ) % mod ) + 2;;
+          }
+          else
+          {
+            if( isHorSplit )
+            {
+              mpm[3] = HOR_IDX;
+              mpm[4] = 5;
+            }
+            else
+            {
+              mpm[3] = VER_IDX;
+              mpm[4] = VDIA_IDX - 3;
+            }
+            mpm[5] = PLANAR_IDX;
+          }
+        }
+      }
+      else //L!=A
+      {
+        numCand = 2;
+        if( ( leftIntraDir > DC_IDX ) && ( aboveIntraDir > DC_IDX ) )
+        {
+          int distLeftToCanonicalMode  = abs( leftIntraDir - canonicalMode );
+          int distAboveToCanonicalMode = abs( aboveIntraDir - canonicalMode );
+          mpm[0] = aboveIntraDir;
+          mpm[1] = leftIntraDir;
+          if( distLeftToCanonicalMode <= distAboveToCanonicalMode )
+          {
+            mpm[0] = leftIntraDir;
+            mpm[1] = aboveIntraDir;
+          }
+          int maxCandModeIdx = mpm[0] > mpm[1] ? 0 : 1;
+          int minCandModeIdx = 1 - maxCandModeIdx;
+          if( mpm[maxCandModeIdx] - mpm[minCandModeIdx] == 1 )
+          {
+            mpm[2] = ( ( mpm[minCandModeIdx] + offset )     % mod ) + 2;
+            mpm[3] = ( ( mpm[maxCandModeIdx] - 1 )          % mod ) + 2;
+            mpm[4] = ( ( mpm[minCandModeIdx] + offset - 1 ) % mod ) + 2;
+            mpm[5] =   ( mpm[maxCandModeIdx]                % mod ) + 2;
+          }
+          else if( mpm[maxCandModeIdx] - mpm[minCandModeIdx] >= 62 )
+          {
+            mpm[2] = ( ( mpm[minCandModeIdx] - 1 )          % mod ) + 2;
+            mpm[3] = ( ( mpm[maxCandModeIdx] + offset )     % mod ) + 2;
+            mpm[4] = ( ( mpm[minCandModeIdx] )              % mod ) + 2;
+            mpm[5] = ( ( mpm[maxCandModeIdx] + offset - 1 ) % mod ) + 2;
+          }
+          else if( mpm[maxCandModeIdx] - mpm[minCandModeIdx] == 2 )
+          {
+            mpm[2] = ( ( mpm[minCandModeIdx] - 1 )          % mod ) + 2;
+            mpm[3] = ( ( mpm[minCandModeIdx] + offset )     % mod ) + 2;
+            mpm[4] = ( ( mpm[maxCandModeIdx] - 1 )          % mod ) + 2;
+            mpm[5] = ( ( mpm[minCandModeIdx] + offset - 1 ) % mod ) + 2;
+          }
+          else
+          {
+            mpm[2] = ( ( mpm[minCandModeIdx] + offset )     % mod ) + 2;
+            mpm[3] = ( ( mpm[minCandModeIdx] - 1 )          % mod ) + 2;
+            mpm[4] = ( ( mpm[maxCandModeIdx] + offset )     % mod ) + 2;
+            mpm[5] = ( ( mpm[maxCandModeIdx] - 1 )          % mod ) + 2;
+          }
+        }
+        else if( leftIntraDir + aboveIntraDir > 2 )
+        {
+          //mpm[0] = PLANAR_IDX;
+          int angMode = leftIntraDir > DC_IDX ? leftIntraDir : aboveIntraDir;
+          mpm[1] = angMode;
+          mpm[2] = ( ( angMode + offset )     % mod ) + 2;
+          mpm[3] = ( ( angMode - 1 )          % mod ) + 2;
+          mpm[4] = ( ( angMode + offset - 1 ) % mod ) + 2;
+          mpm[5] = ( ( angMode )              % mod ) + 2;
+        }
+      }
+    }
+#endif
     else
     {
       mpm[0] = leftIntraDir;
@@ -4748,6 +5030,9 @@ bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
 
   tsAllowed &= tu.cs->pps->getUseTransformSkip();
   tsAllowed &= !tu.cu->transQuantBypass;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  tsAllowed &= ( !tu.cu->ispMode || !isLuma(compID) );
+#endif
 
   SizeType transformSkipMaxSize = 1 << maxSize;
   tsAllowed &= tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize;
@@ -4762,6 +5047,9 @@ bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
 
   mtsAllowed &= CU::isIntra( *tu.cu ) ? tu.cs->sps->getSpsNext().getUseIntraMTS() : tu.cs->sps->getSpsNext().getUseInterMTS();
   mtsAllowed &= ( tu.lwidth() <= maxSize && tu.lheight() <= maxSize );
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  mtsAllowed &= !tu.cu->ispMode;
+#endif
   return mtsAllowed;
 }
 #else
@@ -4925,7 +5213,57 @@ bool TU::needsQP3Offset(const TransformUnit &tu, const ComponentID &compID)
 #endif
 
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+TransformUnit* TU::getPrevTU( const TransformUnit &tu, const ComponentID compID )
+{
+  TransformUnit* prevTU = tu.prev;
 
+  if( prevTU != nullptr && ( prevTU->cu != tu.cu || !prevTU->blocks[compID].valid() ) )
+  {
+    prevTU = nullptr;
+  }
+
+  return prevTU;
+}
+
+bool TU::getPrevTuCbfAtDepth( const TransformUnit &currentTu, const ComponentID compID, const int trDepth )
+{
+  const TransformUnit* prevTU = getPrevTU( currentTu, compID );
+  return ( prevTU != nullptr ) ? TU::getCbfAtDepth( *prevTU, compID, trDepth ) : false;
+}
+
+void TU::getTransformTypeISP( const TransformUnit &tu, const ComponentID compID, int &typeH, int &typeV )
+{
+  typeH = DCT2, typeV = DCT2;
+  const int uiChFinalMode = PU::getFinalIntraMode( *tu.cu->firstPU, toChannelType( compID ) );
+  bool intraModeIsEven = uiChFinalMode % 2 == 0;
+
+  if( uiChFinalMode == DC_IDX || uiChFinalMode == 33 || uiChFinalMode == 35 )
+  {
+    typeH = DCT2;
+    typeV = typeH;
+  }
+  else if( uiChFinalMode == PLANAR_IDX || ( uiChFinalMode >= 31 && uiChFinalMode <= 37 ) )
+  {
+    typeH = DST7;
+    typeV = typeH;
+  }
+  else if( ( intraModeIsEven && uiChFinalMode >= 2 && uiChFinalMode <= 30 ) || ( !intraModeIsEven && uiChFinalMode >= 39 && uiChFinalMode <= 65 ) )
+  {
+    typeH = DST7;
+    typeV = DCT2;
+  }
+  else if( ( !intraModeIsEven && uiChFinalMode >= 3 && uiChFinalMode <= 29 ) || ( intraModeIsEven && uiChFinalMode >= 38 && uiChFinalMode <= 66 ) )
+  {
+    typeH = DCT2;
+    typeV = DST7;
+  }
+  //Size restriction for non-DCT-II transforms
+  Area tuArea = tu.blocks[compID];
+  typeH = tuArea.width  <= 2 || tuArea.width  >= 32 ? DCT2 : typeH;
+  typeV = tuArea.height <= 2 || tuArea.height >= 32 ? DCT2 : typeV;
+}
+#endif
 
 
 // other tools

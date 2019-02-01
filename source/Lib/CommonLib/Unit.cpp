@@ -189,6 +189,16 @@ bool UnitArea::contains( const UnitArea& other, const ChannelType chType ) const
   return any && ret;
 }
 
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+void UnitArea::resizeTo( const UnitArea& unitArea )
+{
+  for( uint32_t i = 0; i < blocks.size(); i++ )
+  {
+    blocks[i].resizeTo( unitArea.blocks[i] );
+  }
+}
+#endif
+
 void UnitArea::repositionTo(const UnitArea& unitArea)
 {
   for(uint32_t i = 0; i < blocks.size(); i++)
@@ -281,7 +291,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
 #if JVET_M0444_SMVD
   smvdMode        = other.smvdMode;
 #endif
-
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  ispMode           = other.ispMode;
+#endif
   return *this;
 }
 
@@ -322,6 +334,9 @@ void CodingUnit::initData()
   ibc               = false;
 #if JVET_M0444_SMVD
   smvdMode        = 0;
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  ispMode           = 0;
 #endif
 }
 

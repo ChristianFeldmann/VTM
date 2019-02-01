@@ -323,6 +323,9 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   m_modeCtrl->init( m_pcEncCfg, m_pcRateCtrl, m_pcRdCost );
 
   m_pcInterSearch->setModeCtrl( m_modeCtrl );
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  m_pcIntraSearch->setModeCtrl( m_modeCtrl );
+#endif
   ::memset(m_subMergeBlkSize, 0, sizeof(m_subMergeBlkSize));
   ::memset(m_subMergeBlkNum, 0, sizeof(m_subMergeBlkNum));
   m_prevPOC = MAX_UINT;
@@ -1464,6 +1467,13 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
   uint8_t considerEmtSecondPass = ( sps.getSpsNext().getUseIntraEMT() && isLuma( partitioner.chType ) && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT ) ? 1 : 0;
 #endif
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  bool   useIntraSubPartitions   = false;
+  double maxCostAllowedForChroma = MAX_DOUBLE;
+#if JVET_M0464_UNI_MTS
+  const  CodingUnit *bestCU      = bestCS->getCU( partitioner.chType );
+#endif
+#endif
   Distortion interHad = m_modeCtrl->getInterHad();
 
 
@@ -1504,6 +1514,9 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 #if !JVET_M0464_UNI_MTS
     cu.emtFlag          = emtCuFlag;
 #endif
+#if JVET_M0102_INTRA_SUBPARTITIONS 
+    cu.ispMode          = NOT_INTRA_SUBPARTITIONS;
+#endif
 
     CU::addPUs( cu );
 
@@ -1511,7 +1524,24 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
     if( isLuma( partitioner.chType ) )
     {
+#if JVET_M0102_INTRA_SUBPARTITIONS
+      //the Intra SubPartitions mode uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary lines 
+      const double bestCostSoFar = CS::isDualITree( *tempCS ) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
+      m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner, bestCostSoFar );
+
+      useIntraSubPartitions = cu.ispMode != NOT_INTRA_SUBPARTITIONS;
+      if( !CS::isDualITree( *tempCS ) )
+      {
+        tempCS->lumaCost = m_pcRdCost->calcRdCost( tempCS->fracBits, tempCS->dist );
+        if( useIntraSubPartitions )
+        {
+          //the difference between the best cost so far and the current luma cost is stored to avoid testing the Cr component if the cost of luma + Cb is larger than the best cost
+          maxCostAllowedForChroma = bestCS->cost < MAX_DOUBLE ? bestCS->cost - tempCS->lumaCost : MAX_DOUBLE;
+        }
+      }
+#else
       m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner );
+#endif
 
       if (m_pcEncCfg->getUsePbIntraFast() && tempCS->dist == std::numeric_limits<Distortion>::max()
           && tempCS->interHad == 0)
@@ -1537,7 +1567,21 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
     if( tempCS->area.chromaFormat != CHROMA_400 && ( partitioner.chType == CHANNEL_TYPE_CHROMA || !CS::isDualITree( *tempCS ) ) )
     {
+#if JVET_M0102_INTRA_SUBPARTITIONS
+      TUIntraSubPartitioner subTuPartitioner( partitioner );
+      m_pcIntraSearch->estIntraPredChromaQT( cu, ( !useIntraSubPartitions || ( CS::isDualITree( *cu.cs ) && !isLuma( CHANNEL_TYPE_CHROMA ) ) ) ? partitioner : subTuPartitioner, maxCostAllowedForChroma );
+      if( useIntraSubPartitions && !cu.ispMode )
+      {
+        //At this point the temp cost is larger than the best cost. Therefore, we can already skip the remaining calculations
+#if JVET_M0464_UNI_MTS
+        return;
+#else
+        continue;
+#endif
+      }
+#else
       m_pcIntraSearch->estIntraPredChromaQT( cu, partitioner );
+#endif
     }
 
     cu.rootCbf = false;
@@ -1563,6 +1607,9 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     }
     m_CABACEstimator->pred_mode      ( cu );
     m_CABACEstimator->extend_ref_line( cu );
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    m_CABACEstimator->isp_mode       ( cu );
+#endif
     m_CABACEstimator->cu_pred_data   ( cu );
     m_CABACEstimator->pcm_data       ( cu, partitioner );
 
@@ -1575,10 +1622,22 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     tempCS->fracBits = m_CABACEstimator->getEstFracBits();
     tempCS->cost     = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+#if !JVET_M0464_UNI_MTS
+    double bestIspCost = cu.ispMode ? CS::isDualITree(*tempCS) ? tempCS->cost : tempCS->lumaCost : MAX_DOUBLE;
+#endif
+    const double tmpCostWithoutSplitFlags = tempCS->cost;
+#endif
     xEncodeDontSplit( *tempCS, partitioner );
 
     xCheckDQP( *tempCS, partitioner );
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    if( tempCS->cost < bestCS->cost )
+    {
+      m_modeCtrl->setBestCostWithoutSplitFlags( tmpCostWithoutSplitFlags );
+    }
+#endif
 #if !JVET_M0464_UNI_MTS
     // we save the cost of the modes for the first EMT pass
     if( !emtCuFlag ) static_cast< double& >( costSize2Nx2NemtFirstPass ) = tempCS->cost;
@@ -1592,6 +1651,22 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
 #if !JVET_M0464_UNI_MTS
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    //we decide to skip the second emt pass or not according to the ISP results
+    if (considerEmtSecondPass && cu.ispMode && !emtCuFlag && tempCS->slice->isIntra())
+    {
+      double bestCostDct2NoIsp = m_modeCtrl->getEmtFirstPassNoIspCost();
+      CHECKD(bestCostDct2NoIsp <= bestIspCost, "wrong cost!");
+      double nSamples = (double)(cu.lwidth() << g_aucLog2[cu.lheight()]);
+      double threshold = 1 + 1.4 / sqrt(nSamples);
+      if (bestCostDct2NoIsp > bestIspCost*threshold)
+      {
+        skipSecondEmtPass = true;
+        m_modeCtrl->setSkipSecondEMTPass(true);
+        break;
+      }
+    }
+#endif
     //now we check whether the second pass of SIZE_2Nx2N and the whole Intra SIZE_NxN should be skipped or not
     if( !emtCuFlag && !tempCS->slice->isIntra() && bestCU && bestCU->predMode != MODE_INTRA && m_pcEncCfg->getFastInterEMT() )
     {

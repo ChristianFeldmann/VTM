@@ -205,6 +205,12 @@ struct ComprCUCtx
     , isLevelSplitParallel
                     ( false )
 #endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    , bestCostWithoutSplitFlags( MAX_DOUBLE )
+#if !JVET_M0464_UNI_MTS
+    , bestCostEmtFirstPassNoIsp( MAX_DOUBLE )
+#endif
+#endif
   {
     getAreaIdx( cs.area.Y(), *cs.pcv, cuX, cuY, cuW, cuH );
     partIdx = ( ( cuX << 8 ) | cuY );
@@ -238,6 +244,12 @@ struct ComprCUCtx
   Distortion                        interHad;
 #if ENABLE_SPLIT_PARALLELISM
   bool                              isLevelSplitParallel;
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  double                            bestCostWithoutSplitFlags;
+#if !JVET_M0464_UNI_MTS
+  double                            bestCostEmtFirstPassNoIsp;
+#endif
 #endif
 
   template<typename T> T    get( int ft )       const { return typeid(T) == typeid(double) ? (T&)extraFeaturesd[ft] : T(extraFeatures[ft]); }
@@ -324,6 +336,14 @@ public:
   bool getSkipSecondEMTPass           ()                  const { return m_ComprCUCtxList.back().skipSecondEMTPass;       }
   void setSkipSecondEMTPass           ( bool b )                {        m_ComprCUCtxList.back().skipSecondEMTPass = b;   }
 #endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  double getBestCostWithoutSplitFlags ()                  const { return m_ComprCUCtxList.back().bestCostWithoutSplitFlags;         }
+  void   setBestCostWithoutSplitFlags ( double cost )           { m_ComprCUCtxList.back().bestCostWithoutSplitFlags = cost;         }
+#if !JVET_M0464_UNI_MTS
+  double getEmtFirstPassNoIspCost     ()                  const { return m_ComprCUCtxList.back().bestCostEmtFirstPassNoIsp; }
+  void   setEmtFirstPassNoIspCost     ( double cost )           { m_ComprCUCtxList.back().bestCostEmtFirstPassNoIsp = cost; }
+#endif
+#endif
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );
@@ -406,7 +426,12 @@ struct BestEncodingInfo
 {
   CodingUnit     cu;
   PredictionUnit pu;
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  TransformUnit  tus[MAX_NUM_TUS];
+  size_t         numTus;
+#else
   TransformUnit  tu;
+#endif
   EncTestMode    testMode;
 
   int            poc;

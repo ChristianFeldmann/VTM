@@ -259,7 +259,11 @@ const PredictionUnit * CodingStructure::getPU( const Position &pos, const Channe
   }
 }
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+TransformUnit* CodingStructure::getTU( const Position &pos, const ChannelType effChType, const int subTuIdx )
+#else
 TransformUnit* CodingStructure::getTU( const Position &pos, const ChannelType effChType )
+#endif
 {
   const CompArea &_blk = area.blocks[effChType];
 
@@ -272,13 +276,45 @@ TransformUnit* CodingStructure::getTU( const Position &pos, const ChannelType ef
   {
     const unsigned idx = m_tuIdx[effChType][rsAddr( pos, _blk.pos(), _blk.width, unitScale[effChType] )];
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    if( idx != 0 )
+    {
+      unsigned extraIdx = 0;
+      if( isLuma( effChType ) )
+      {
+        const TransformUnit& tu = *tus[idx - 1];
+
+        if( tu.cu->ispMode ) // Intra SubPartitions mode
+        {
+          //we obtain the offset to index the corresponding sub-partition
+          if( subTuIdx != -1 )
+          {
+            extraIdx = subTuIdx;
+          }
+          else
+          {
+            while( pos != tus[idx - 1 + extraIdx]->blocks[getFirstComponentOfChannel( effChType )].pos() )
+            {
+              extraIdx++;
+            }
+          }
+        }
+      }
+      return tus[idx - 1 + extraIdx];
+    }
+#else
     if( idx != 0 )       return tus[ idx - 1 ];
+#endif
     else if( m_isTuEnc ) return parent->getTU( pos, effChType );
     else                 return nullptr;
   }
 }
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+const TransformUnit * CodingStructure::getTU( const Position &pos, const ChannelType effChType, const int subTuIdx ) const
+#else
 const TransformUnit * CodingStructure::getTU( const Position &pos, const ChannelType effChType ) const
+#endif
 {
   const CompArea &_blk = area.blocks[effChType];
 
@@ -290,8 +326,34 @@ const TransformUnit * CodingStructure::getTU( const Position &pos, const Channel
   else
   {
     const unsigned idx = m_tuIdx[effChType][rsAddr( pos, _blk.pos(), _blk.width, unitScale[effChType] )];
-
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    if( idx != 0 )
+    {
+      unsigned extraIdx = 0;
+      if( isLuma( effChType ) )
+      {
+        const TransformUnit& tu = *tus[idx - 1];
+        if( tu.cu->ispMode ) // Intra SubPartitions mode
+        {
+          //we obtain the offset to index the corresponding sub-partition
+          if( subTuIdx != -1 )
+          {
+            extraIdx = subTuIdx;
+          }
+          else
+          {
+            while( pos != tus[idx - 1 + extraIdx]->blocks[effChType].pos() )
+            {
+              extraIdx++;
+            }
+          }
+        }
+      }
+      return tus[idx - 1 + extraIdx];
+    }
+#else
     if( idx != 0 )       return tus[idx - 1];
+#endif
     else if( m_isTuEnc ) return parent->getTU( pos, effChType );
     else                 return nullptr;
   }
@@ -418,6 +480,9 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   tu->UnitArea::operator=( unit );
   tu->initData();
   tu->next   = nullptr;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  tu->prev   = nullptr;
+#endif
   tu->cs     = this;
   tu->cu     = m_isTuEnc ? cus[0] : getCU( unit.blocks[chType].pos(), chType );
   tu->chType = chType;
@@ -433,6 +498,9 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   if( prevTU && prevTU->cu == tu->cu )
   {
     prevTU->next = tu;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    tu->prev     = prevTU;
+#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
 
     CHECK( prevTU->cacheId != tu->cacheId, "Inconsintent cacheId between previous and current TU" );
@@ -470,11 +538,25 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
       const CompArea &_selfBlk = area.blocks[i];
       const CompArea     &_blk = tu-> blocks[i];
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+      bool isIspTu = tu->cu != nullptr && tu->cu->ispMode && isLuma( _blk.compID );
+
+      bool isFirstIspTu = false;
+      if( isIspTu )
+      {
+        isFirstIspTu = CU::isISPFirst( *tu->cu, _blk, getFirstComponentOfChannel( ChannelType( i ) ) );
+      }
+      if( !isIspTu || isFirstIspTu )
+#endif
       {
         const UnitScale& scale = unitScale[_blk.compID];
 
         const Area scaledSelf  = scale.scale( _selfBlk );
+#if JVET_M0102_INTRA_SUBPARTITIONS
+        const Area scaledBlk   = isIspTu ? scale.scale( tu->cu->blocks[i] ) : scale.scale( _blk );
+#else
         const Area scaledBlk   = scale.scale(     _blk );
+#endif
         unsigned *idxPtr       = m_tuIdx[i] + rsAddr( scaledBlk.pos(), scaledSelf.pos(), scaledSelf.width );
         CHECK( *idxPtr, "Overwriting a pre-existing value, should be '0'!" );
         AreaBuf<uint32_t>( idxPtr, scaledSelf.width, scaledBlk.size() ).fill( idx );
@@ -1000,6 +1082,9 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
   fracBits = 0;
   dist     = 0;
   cost     = MAX_DOUBLE;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  lumaCost = MAX_DOUBLE;
+#endif
   interHad = std::numeric_limits<Distortion>::max();
 }
 

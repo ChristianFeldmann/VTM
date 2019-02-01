@@ -89,6 +89,17 @@ namespace CU
   void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);
   uint8_t deriveGbiIdx                (uint8_t gbiLO, uint8_t gbiL1);
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  bool      divideTuInRows            ( const CodingUnit &cu );
+  bool      firstTestISPHorSplit      ( const int width, const int height,            const ComponentID compID, const CodingUnit *cuLeft = nullptr, const CodingUnit *cuAbove = nullptr );
+  PartSplit getISPType                ( const CodingUnit &cu,                         const ComponentID compID );
+  bool      isISPLast                 ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
+  bool      isISPFirst                ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
+  ISPType   canUseISPSplit            ( const CodingUnit &cu,                         const ComponentID compID );
+  ISPType   canUseISPSplit            ( const int width, const int height, const int maxTrSize = MAX_TU_SIZE );
+  uint32_t  getISPSplitDim            ( const int width, const int height, const PartSplit ispType );
+#endif
+
   PUTraverser traversePUs             (      CodingUnit& cu);
   TUTraverser traverseTUs             (      CodingUnit& cu);
   cPUTraverser traversePUs            (const CodingUnit& cu);
@@ -223,6 +234,11 @@ namespace TU
 #endif
 #else
   bool needsQP3Offset                 (const TransformUnit &tu, const ComponentID &compID);
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  TransformUnit* getPrevTU          ( const TransformUnit &tu, const ComponentID compID );
+  bool           getPrevTuCbfAtDepth( const TransformUnit &tu, const ComponentID compID, const int trDepth );
+  void           getTransformTypeISP( const TransformUnit &tu, const ComponentID compID, int &typeH, int &typeV );
 #endif
 }
 

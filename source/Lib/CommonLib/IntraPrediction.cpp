@@ -299,6 +299,9 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const ChannelType    channelType  = toChannelType( compID );
   const int            iWidth       = piPred.width;
   const int            iHeight      = piPred.height;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  const Size           cuSize       = Size( pu.cu->blocks[compId].width, pu.cu->blocks[compId].height );
+#endif
   const uint32_t           uiDirMode    = PU::getFinalIntraMode( pu, channelType );
 
 
@@ -306,8 +309,14 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   CHECK( g_aucLog2[iWidth] > 7, "Size not allowed" );
 
   const int  multiRefIdx = (compID == COMPONENT_Y) ? pu.multiRefIdx : 0;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  const bool useISP = pu.cu->ispMode && isLuma( compID );
+  const int whRatio = useISP ? std::max( unsigned( 1 ), cuSize.width / cuSize.height ) : std::max( unsigned( 1 ), cuSize.width / cuSize.height );
+  const int hwRatio = useISP ? std::max( unsigned( 1 ), cuSize.height / cuSize.width ) : std::max( unsigned( 1 ), cuSize.height / cuSize.width );
+#else
   int whRatio           = std::max(1, iWidth / iHeight);
   int hwRatio           = std::max(1, iHeight / iWidth);
+#endif
   const int  srcStride  = m_topRefLength  + 1 + (whRatio + 1) * multiRefIdx;
   const int  srcHStride = m_leftRefLength + 1 + (hwRatio + 1) * multiRefIdx;
 
@@ -323,18 +332,30 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
     case(VDIA_IDX):
       if (getWideAngle(iWidth, iHeight, uiDirMode) == static_cast<int>(uiDirMode)) // check if uiDirMode is not wide-angle
       {
+#if JVET_M0102_INTRA_SUBPARTITIONS
+        xPredIntraAng(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps, multiRefIdx, useFilteredPredSamples, useISP, cuSize );
+#else
         xPredIntraAng(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps
           , multiRefIdx
           , useFilteredPredSamples);
+#endif
         break;
       }
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    default:          xPredIntraAng(CPelBuf(getPredictorPtr(compID, false), srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps, multiRefIdx, useFilteredPredSamples, useISP, cuSize); break;
+#else
     default:          xPredIntraAng(CPelBuf(getPredictorPtr(compID, false), srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps
       , multiRefIdx
       , useFilteredPredSamples); break;
+#endif
   }
 
   bool pdpcCondition = (uiDirMode == PLANAR_IDX || uiDirMode == DC_IDX || uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  if( pdpcCondition && multiRefIdx == 0 && !useISP )
+#else
   if (pdpcCondition && multiRefIdx == 0)
+#endif
   {
     const CPelBuf srcBuf = CPelBuf(ptrSrc, srcStride, srcStride);
     PelBuf dstBuf = piPred;
@@ -445,11 +466,20 @@ void IntraPrediction::xPredIntraPlanar( const CPelBuf &pSrc, PelBuf &pDst, const
 {
   const uint32_t width  = pDst.width;
   const uint32_t height = pDst.height;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  const uint32_t log2W  = g_aucLog2[width  < 2 ? 2 : width];
+  const uint32_t log2H  = g_aucLog2[height < 2 ? 2 : height];
+#else
   const uint32_t log2W  = g_aucLog2[ width ];
   const uint32_t log2H  = g_aucLog2[ height ];
+#endif
 
   int leftColumn[MAX_CU_SIZE + 1], topRow[MAX_CU_SIZE + 1], bottomRow[MAX_CU_SIZE], rightColumn[MAX_CU_SIZE];
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  const uint32_t offset = 1 << (log2W + log2H);
+#else
   const uint32_t offset = width * height;
+#endif
 
   // Get left and above reference column and row
   for( int k = 0; k < width + 1; k++ )
@@ -561,17 +591,28 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   , int multiRefIdx
   , const bool enableBoundaryFilter )
 #else
+#if JVET_M0102_INTRA_SUBPARTITIONS
+void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps,
+                                           int      multiRefIdx,
+                                     const bool     useFilteredPredSamples ,
+                                     const bool     useISP,
+                                     const Size     cuSize )
+#else
 void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps
   , int multiRefIdx
   , const bool useFilteredPredSamples )
+#endif
 #endif
 {
   int width =int(pDst.width);
   int height=int(pDst.height);
 
   CHECK( !( dirMode > DC_IDX && dirMode < NUM_LUMA_MODE ), "Invalid intra dir" );
-
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  int              predMode           = useISP ? getWideAngle( cuSize.width, cuSize.height, dirMode ) : getWideAngle( cuSize.width, cuSize.height, dirMode );
+#else
   int              predMode           = getWideAngle(width, height, dirMode);
+#endif
   const bool       bIsModeVer         = predMode >= DIA_IDX;
   const int        intraPredAngleMode = (bIsModeVer) ? predMode - VER_IDX : -(predMode - HOR_IDX);
   const int        absAngMode         = abs(intraPredAngleMode);
@@ -595,8 +636,13 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   Pel  refAbove[2 * MAX_CU_SIZE + 3 + 33 * MAX_REF_LINE_IDX];
   Pel  refLeft [2 * MAX_CU_SIZE + 3 + 33 * MAX_REF_LINE_IDX];
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  const int whRatio = useISP ? std::max( unsigned( 1 ), cuSize.width / cuSize.height ) : std::max( unsigned( 1 ), cuSize.width / cuSize.height );
+  const int hwRatio = useISP ? std::max( unsigned( 1 ), cuSize.height / cuSize.width ) : std::max( unsigned( 1 ), cuSize.height / cuSize.width );
+#else
   int whRatio = std::max(1, width / height);
   int hwRatio = std::max(1, height / width);
+#endif
 
   // Initialize the Main and Left reference array.
   if (intraPredAngle < 0)
@@ -691,7 +737,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
         if( isLuma(channelType) )
         {
           Pel                        p[4];
+#if JVET_M0102_INTRA_SUBPARTITIONS
+          const bool                 useCubicFilter = useISP ? ( width <= 8 ) : ( !useFilteredPredSamples || multiRefIdx > 0 );
+#else
           const bool                 useCubicFilter = !useFilteredPredSamples || multiRefIdx > 0;
+#endif
           TFilterCoeff const * const f              = (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : g_intraGaussFilter[deltaFract];
 
           int         refMainIndex   = deltaInt + 1;
@@ -735,6 +785,10 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
       const int numModes = 8;
       const int scale = ((g_aucLog2[width] - 2 + g_aucLog2[height] - 2 + 2) >> 2);
       CHECK(scale < 0 || scale > 31, "PDPC: scale < 0 || scale > 31");
+#if JVET_M0102_INTRA_SUBPARTITIONS
+      if( !useISP )
+      {
+#endif
       if ((predMode == 2 || predMode == VDIA_IDX) && multiRefIdx == 0)
       {
         int wT = 16 >> std::min(31, ((y << 1) >> scale));
@@ -778,6 +832,9 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
           pDsty[x] = ClipPel((wL * left + (64 - wL) * pDsty[x] + 32) >> 6, clpRng);
         }
       }
+#if JVET_M0102_INTRA_SUBPARTITIONS
+      }
+#endif
     }
 #if HEVC_USE_HOR_VER_PREDFILTERING
     if( edgeFilter && absAng <= 1 )
@@ -945,7 +1002,11 @@ void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompAre
   Pel *refBufUnfiltered   = m_piYuvExt[area.compID][PRED_BUF_UNFILTERED];
   Pel *refBufFiltered     = m_piYuvExt[area.compID][PRED_BUF_FILTERED];
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  setReferenceArrayLengths( cu.ispMode && isLuma( area.compID ) ? cu.blocks[area.compID] : area );
+#else
   setReferenceArrayLengths(area);
+#endif
 
   // ----- Step 1: unfiltered reference samples -----
   xFillReferenceSamples( cs.picture->getRecoBuf( area ), refBufUnfiltered, area, cu );
@@ -971,13 +1032,25 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
   const int  tuHeight           = area.height;
   const int  predSize           = m_topRefLength;
   const int  predHSize          = m_leftRefLength;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  const int  cuWidth            = cu.blocks[area.compID].width;
+  const int  cuHeight           = cu.blocks[area.compID].height;
+  const int  whRatio            = cu.ispMode && isLuma(area.compID) ? std::max(1, cuWidth / cuHeight) : std::max(1, tuWidth / tuHeight);
+  const int  hwRatio            = cu.ispMode && isLuma(area.compID) ? std::max(1, cuHeight / cuWidth) : std::max(1, tuHeight / tuWidth);
+#else
   int whRatio                   = std::max(1, tuWidth / tuHeight);
   int hwRatio                   = std::max(1, tuHeight / tuWidth);
+#endif
   const int  predStride         = predSize + 1 + (whRatio + 1) * multiRefIdx;
 
   const bool noShift            = pcv.noChroma2x2 && area.width == 4; // don't shift on the lowest level (chroma not-split)
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  const int  unitWidth          = tuWidth  <= 2 && cu.ispMode && isLuma(area.compID) ? tuWidth  : pcv.minCUWidth  >> (noShift ? 0 : getComponentScaleX(area.compID, sps.getChromaFormatIdc()));
+  const int  unitHeight         = tuHeight <= 2 && cu.ispMode && isLuma(area.compID) ? tuHeight : pcv.minCUHeight >> (noShift ? 0 : getComponentScaleY(area.compID, sps.getChromaFormatIdc()));
+#else
   const int  unitWidth          = pcv.minCUWidth  >> (noShift ? 0 : getComponentScaleX( area.compID, sps.getChromaFormatIdc() ));
   const int  unitHeight         = pcv.minCUHeight >> (noShift ? 0 : getComponentScaleY( area.compID, sps.getChromaFormatIdc() ));
+#endif
 
   const int  totalAboveUnits    = (predSize + (unitWidth - 1)) / unitWidth;
   const int  totalLeftUnits     = (predHSize + (unitHeight - 1)) / unitHeight;
@@ -1293,6 +1366,9 @@ bool IntraPrediction::useFilteredIntraRefSamples( const ComponentID &compID, con
   if( sps.getSpsRangeExtension().getIntraSmoothingDisabledFlag() )                                       { return false; }
   if( !isLuma( chType ) && pu.chromaFormat != CHROMA_444 )                                               { return false; }
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  if( pu.cu->ispMode && isLuma(compID) )                                                                 { return false; }
+#endif
 
   if( !modeSpecific )                                                                                    { return true; }
 

@@ -50,8 +50,13 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
   , m_chType                    (toChannelType(m_compID))
   , m_width                     (tu.block(m_compID).width)
   , m_height                    (tu.block(m_compID).height)
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  , m_log2CGWidth               ( g_log2SbbSize[m_chType][ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][0] )
+  , m_log2CGHeight              ( g_log2SbbSize[m_chType][ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][1] )
+#else
   , m_log2CGWidth               ((m_width & 3) || (m_height & 3) ? 1 : 2)
   , m_log2CGHeight              ((m_width & 3) || (m_height & 3) ? 1 : 2)
+#endif
   , m_log2CGSize                (m_log2CGWidth + m_log2CGHeight)
 #if JVET_M0257
   , m_widthInGroups(std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_width) >> m_log2CGWidth)
@@ -74,10 +79,17 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
 #else
   , m_scanType                  (SCAN_DIAG)
 #endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  , m_scan                      (g_scanOrder     [m_chType][SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )])
+  , m_scanPosX                  (g_scanOrderPosXY[m_chType][SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )][0])
+  , m_scanPosY                  (g_scanOrderPosXY[m_chType][SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )][1])
+  , m_scanCG                    (g_scanOrder     [m_chType][SCAN_UNGROUPED  ][m_scanType][gp_sizeIdxInfo->idxFrom(m_widthInGroups)][gp_sizeIdxInfo->idxFrom(m_heightInGroups)])
+#else
   , m_scan                      (g_scanOrder     [SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )])
   , m_scanPosX                  (g_scanOrderPosXY[SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )][0])
   , m_scanPosY                  (g_scanOrderPosXY[SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )][1])
   , m_scanCG                    (g_scanOrder[SCAN_UNGROUPED  ][m_scanType][gp_sizeIdxInfo->idxFrom(m_widthInGroups)][gp_sizeIdxInfo->idxFrom(m_heightInGroups)])
+#endif
   , m_CtxSetLastX               (Ctx::LastX[m_chType])
   , m_CtxSetLastY               (Ctx::LastY[m_chType])
 #if JVET_M0257
@@ -314,8 +326,17 @@ unsigned DeriveCtx::CtxCUsplit( const CodingStructure& cs, Partitioner& partitio
 }
 #endif
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf, const int ispIdx )
+{
+  if( ispIdx && isLuma( compID ) )
+  {
+    return 2 + (int)prevCbCbf;
+  }
+#else
 unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf )
 {
+#endif
   if( compID == COMPONENT_Cr )
   {
     return ( prevCbCbf ? 1 : 0 );

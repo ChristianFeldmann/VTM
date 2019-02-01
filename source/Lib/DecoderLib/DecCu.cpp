@@ -253,7 +253,18 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   PelBuf pReco = cs.getRecoBuf( area );
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  if( !tu.cu->ispMode || !isLuma( compID ) )
+  {
+    cs.setDecomp( area );
+  }
+  else if( tu.cu->ispMode && isLuma( compID ) && CU::isISPFirst( *tu.cu, tu.blocks[compID], compID ) )
+  {
+    cs.setDecomp( tu.cu->blocks[compID] );
+  }
+#else
   cs.setDecomp( area );
+#endif
 
 #if JVET_M0427_INLOOP_RESHAPER
 #if REUSE_CU_RESULTS

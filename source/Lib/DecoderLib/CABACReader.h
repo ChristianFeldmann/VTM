@@ -145,8 +145,13 @@ public:
   void        emt_cu_flag               ( CodingUnit&                   cu );
 #endif
   void        explicit_rdpcm_mode       ( TransformUnit&                tu,     ComponentID     compID );
+#if JVET_M0297_32PT_MTS_ZERO_OUT
+  int         last_sig_coeff            ( CoeffCodingContext&           cctx,   TransformUnit& tu, ComponentID   compID );
+  void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff, const int stateTransTable, int& state, TransformUnit& tu, ComponentID compID );
+#else
   int         last_sig_coeff            ( CoeffCodingContext&           cctx );
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff, const int stateTransTable, int& state );
+#endif
 
   // cross component prediction (clause 7.3.8.12)
   void        cross_comp_pred           ( TransformUnit&                tu,     ComponentID     compID );

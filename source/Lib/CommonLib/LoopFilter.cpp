@@ -499,7 +499,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
   {
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
-     return 16;
+    return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
 #else
      return 2;
 #endif

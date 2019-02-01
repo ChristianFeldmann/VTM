@@ -771,6 +771,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if JVET_M0246_AFFINE_AMVR
   WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                             "sps_affine_amvr_enabled_flag" );
 #endif
+#if JVET_M0147_DMVR
+  WRITE_FLAG( pcSPS->getUseDMVR() ? 1 : 0,                                            "dmvr_enable_flag" );
+#endif
 #if HEVC_USE_SCALING_LISTS
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "scaling_list_enabled_flag" );
   if(pcSPS->getScalingListFlag())

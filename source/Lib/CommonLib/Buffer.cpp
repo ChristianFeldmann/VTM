@@ -299,6 +299,10 @@ PelBufferOps::PelBufferOps()
   calcBIOPar      = calcBIOParCore;
   calcBlkGradient = calcBlkGradientCore;
 
+#if JVET_M0147_DMVR
+  copyBuffer = copyBufferCore;
+  padding = paddingCore;
+#endif
 #if ENABLE_SIMD_OPT_GBI
   removeWeightHighFreq8 = removeWeightHighFreq;
   removeWeightHighFreq4 = removeWeightHighFreq;
@@ -313,6 +317,42 @@ PelBufferOps g_pelBufOP = PelBufferOps();
 #endif
 #endif
 
+#if JVET_M0147_DMVR
+void copyBufferCore(Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height)
+{
+  int numBytes = width * sizeof(Pel);
+  for (int i = 0; i < height; i++)
+  {
+    memcpy(dst + i * dstStride, src + i * srcStride, numBytes);
+  }
+}
+
+void paddingCore(Pel *ptr, int stride, int width, int height, int padSize)
+{
+  /*left and right padding*/
+  Pel *ptrTemp1 = ptr;
+  Pel *ptrTemp2 = ptr + (width - 1);
+  int offset = 0;
+  for (int i = 0; i < height; i++)
+  {
+    offset = stride * i;
+    for (int j = 1; j <= padSize; j++)
+    {
+      *(ptrTemp1 - j + offset) = *(ptrTemp1 + offset);
+      *(ptrTemp2 + j + offset) = *(ptrTemp2 + offset);
+    }
+  }
+  /*Top and Bottom padding*/
+  int numBytes = (width + padSize + padSize) * sizeof(Pel);
+  ptrTemp1 = (ptr - padSize);
+  ptrTemp2 = (ptr + (stride * (height - 1)) - padSize);
+  for (int i = 1; i <= padSize; i++)
+  {
+    memcpy(ptrTemp1 - (i * stride), (ptrTemp1), numBytes);
+    memcpy(ptrTemp2 + (i * stride), (ptrTemp2), numBytes);
+  }
+}
+#endif
 template<>
 void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng, const int8_t gbiIdx)
 {

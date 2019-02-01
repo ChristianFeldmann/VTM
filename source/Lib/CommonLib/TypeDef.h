@@ -116,6 +116,8 @@
 #define JVET_M0255_FRACMMVD_SWITCH                        1 // disable fractional MVD in MMVD adaptively
 #define JVET_M0823_MMVD_ENCOPT                            1 // encoder optimization for MMVD
 
+#define JVET_M0147_DMVR                                   1 //Decoder side Motion Vector Refinement
+
 #if JVET_M0464_UNI_MTS
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;

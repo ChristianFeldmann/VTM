@@ -1101,6 +1101,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_M0246_AFFINE_AMVR
   READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );             pcSPS->setAffineAmvrEnabledFlag ( uiCode != 0 );
 #endif
+#if JVET_M0147_DMVR
+  READ_FLAG(uiCode, "dmvr_enable_flag");                            pcSPS->setUseDMVR(uiCode != 0);
+#endif
 #if HEVC_USE_SCALING_LISTS
   READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
   if(pcSPS->getScalingListFlag())

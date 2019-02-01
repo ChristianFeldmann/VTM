@@ -1864,6 +1864,9 @@ SPS::SPS()
 #if JVET_M0246_AFFINE_AMVR
 , m_affineAmvrEnabledFlag     ( false )
 #endif
+#if JVET_M0147_DMVR
+, m_DMVR                      ( false )
+#endif
 #if HEVC_VPS
 , m_VPSId                     (  0)
 #endif

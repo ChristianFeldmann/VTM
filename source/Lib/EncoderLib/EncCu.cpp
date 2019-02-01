@@ -1829,6 +1829,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     mergeCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
   }
 
+#if JVET_M0147_DMVR
+  Mv   refinedMvdL0[MAX_NUM_PARTS_IN_CTU][MRG_MAX_NUM_CANDS];
+#endif
   setMergeBestSATDCost( MAX_DOUBLE );
 
   {
@@ -1979,14 +1982,38 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         mergeCtx.setMergeInfo( pu, uiMergeCand );
 
         PU::spanMotionInfo( pu, mergeCtx );
+#if JVET_M0147_DMVR
+        pu.mvRefine = true;
+#endif
         distParam.cur = singleMergeTempBuffer->Y();
         m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer);
         acMergeBuffer[uiMergeCand] = m_acRealMergeBuffer[uiMergeCand].getBuf(localUnitArea);
         acMergeBuffer[uiMergeCand].copyFrom(*singleMergeTempBuffer);
+#if JVET_M0147_DMVR
+        pu.mvRefine = false;
+#endif
         if( mergeCtx.interDirNeighbours[uiMergeCand] == 3 && mergeCtx.mrgTypeNeighbours[uiMergeCand] == MRG_TYPE_DEFAULT_N )
         {
           mergeCtx.mvFieldNeighbours[2*uiMergeCand].mv   = pu.mv[0];
           mergeCtx.mvFieldNeighbours[2*uiMergeCand+1].mv = pu.mv[1];
+#if JVET_M0147_DMVR
+          {
+            int dx, dy, i, j, num = 0;
+            dy = std::min<int>(pu.lumaSize().height, DMVR_SUBCU_HEIGHT);
+            dx = std::min<int>(pu.lumaSize().width, DMVR_SUBCU_WIDTH);
+            if (PU::checkDMVRCondition(pu))
+            {
+              for (i = 0; i < (pu.lumaSize().height); i += dy)
+              {
+                for (j = 0; j < (pu.lumaSize().width); j += dx)
+                {
+                  refinedMvdL0[num][uiMergeCand] = pu.mvdL0SubPu[num];
+                  num++;
+                }
+              }
+            }
+          }
+#endif
         }
 
         Distortion uiSad = distParam.distFunc(distParam);
@@ -2178,6 +2205,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         mergeCtx.setMmvdMergeCandiInfo(pu, mmvdMergeCand);
 
         PU::spanMotionInfo(pu, mergeCtx);
+#if JVET_M0147_DMVR
+        pu.mvRefine = true;
+#endif
         distParam.cur = singleMergeTempBuffer->Y();
 #if JVET_M0823_MMVD_ENCOPT
         pu.mmvdEncOptMode = (refineStep > 2 ? 2 : 1);
@@ -2185,6 +2215,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer);
 #if JVET_M0823_MMVD_ENCOPT
         pu.mmvdEncOptMode = 0;
+#endif
+#if JVET_M0147_DMVR // store the refined MV
+        pu.mvRefine = false;
 #endif
         Distortion uiSad = distParam.distFunc(distParam);
 
@@ -2345,6 +2378,24 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
       if( mrgTempBufSet )
       {
+#if JVET_M0147_DMVR
+        {
+          int dx, dy, i, j, num = 0;
+          dy = std::min<int>(pu.lumaSize().height, DMVR_SUBCU_HEIGHT);
+          dx = std::min<int>(pu.lumaSize().width, DMVR_SUBCU_WIDTH);
+          if (PU::checkDMVRCondition(pu))
+          {
+            for (i = 0; i < (pu.lumaSize().height); i += dy)
+            {
+              for (j = 0; j < (pu.lumaSize().width); j += dx)
+              {
+                pu.mvdL0SubPu[num] = refinedMvdL0[num][uiMergeCand];
+                num++;
+              }
+            }
+          }
+        }
+#endif
         if (pu.mhIntraFlag)
         {
           uint32_t bufIdx = (pu.intraDir[0] > 1) ? (pu.intraDir[0] == HOR_IDX ? 2 : 3) : pu.intraDir[0];
@@ -2385,8 +2436,13 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       }
       else
       {
+#if JVET_M0147_DMVR
+        pu.mvRefine = true;
+#endif
         m_pcInterSearch->motionCompensation( pu );
-        
+#if JVET_M0147_DMVR
+        pu.mvRefine = false;
+#endif        
       }
       if (!cu.mmvdSkip && !pu.mhIntraFlag && uiNoResidualPass != 0)
       {

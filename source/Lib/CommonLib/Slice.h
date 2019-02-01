@@ -989,6 +989,9 @@ private:
 #if JVET_M0246_AFFINE_AMVR
   bool              m_affineAmvrEnabledFlag;
 #endif
+#if JVET_M0147_DMVR
+  bool              m_DMVR;
+#endif
 #if HEVC_VPS
   int               m_VPSId;
 #endif
@@ -1248,7 +1251,10 @@ public:
   bool                    getDisFracMmvdEnabledFlag() const                                               { return m_disFracMmvdEnabledFlag; }
   void                    setDisFracMmvdEnabledFlag( bool b )                                             { m_disFracMmvdEnabledFlag = b;    }
 #endif
-
+#if JVET_M0147_DMVR
+  bool                    getUseDMVR()const                                                               { return m_DMVR; }
+  void                    setUseDMVR(bool b)                                                              { m_DMVR = b;    }
+#endif
   uint32_t                getMaxTLayers() const                                                           { return m_uiMaxTLayers; }
   void                    setMaxTLayers( uint32_t uiMaxTLayers )                                          { CHECK( uiMaxTLayers > MAX_TLAYER, "Invalid number T-layers" ); m_uiMaxTLayers = uiMaxTLayers; }
 

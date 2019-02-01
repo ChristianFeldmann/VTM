@@ -117,7 +117,7 @@ static const double AFFINE_ME_LIST_MVP_TH =                        1.0;
 // ====================================================================================================================
 // Common constants
 // ====================================================================================================================
-
+static const uint64_t   MAX_UINT64 =                  0xFFFFFFFFFFFFFFFFU;
 static const uint32_t   MAX_UINT =                            0xFFFFFFFFU; ///< max. value of unsigned 32-bit integer
 static const int    MAX_INT =                              2147483647; ///< max. value of signed 32-bit integer
 static const uint8_t  MAX_UCHAR =                                   255;
@@ -331,6 +331,14 @@ static const uint32_t LUMA_LEVEL_TO_DQP_LUT_MAXSIZE =                1024; ///< 
 #endif
 #if !JVET_M0464_UNI_MTS
 static const int NUM_EMT_CU_FLAG_CTX =                              6;      ///< number of context models for EMT CU-level flag
+#endif
+#if JVET_M0147_DMVR
+static const int DMVR_SUBCU_WIDTH = 16;
+static const int DMVR_SUBCU_HEIGHT = 16;
+static const int DMVR_SUBCU_WIDTH_LOG2 = 4;
+static const int DMVR_SUBCU_HEIGHT_LOG2 = 4;
+static const int MAX_NUM_SUBCU_DMVR = ((MAX_CU_SIZE * MAX_CU_SIZE) >> (DMVR_SUBCU_WIDTH_LOG2 + DMVR_SUBCU_HEIGHT_LOG2));
+static const int DMVR_NUM_ITERATION = 2;
 #endif
 
 //QTBT high level parameters

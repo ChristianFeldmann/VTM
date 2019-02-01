@@ -2377,6 +2377,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       m_pcLoopFilter->loopFilterPic( cs );
 
+#if JVET_M0147_DMVR 
+      CS::setRefinedMotionField(cs);
+#endif
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 1 ) ) );
 
       if( pcSlice->getSPS()->getSAOEnabledFlag() )

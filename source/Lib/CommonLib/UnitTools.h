@@ -49,6 +49,9 @@ namespace CS
   uint64_t getEstBits                   ( const CodingStructure &cs );
   UnitArea getArea                    ( const CodingStructure &cs, const UnitArea &area, const ChannelType chType );
   bool   isDualITree                  ( const CodingStructure &cs );
+#if JVET_M0147_DMVR
+  void   setRefinedMotionField(CodingStructure &cs);
+#endif
 }
 
 
@@ -151,6 +154,9 @@ namespace PU
   );
   bool getInterMergeSubPuRecurCand(const PredictionUnit &pu, MergeCtx &mrgCtx, const int count);
   bool isBiPredFromDifferentDir       (const PredictionUnit &pu);
+#if JVET_M0147_DMVR
+  bool isBiPredFromDifferentDirEqDistPoc(const PredictionUnit &pu);
+#endif
   void restrictBiPredMergeCands       (const PredictionUnit &pu, MergeCtx& mrgCtx);
 #if JVET_M0068_M0171_MMVD_CLEANUP
   void restrictBiPredMergeCandsOne    (PredictionUnit &pu);
@@ -175,6 +181,9 @@ namespace PU
   void getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred);
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
+#if JVET_M0147_DMVR
+  bool checkDMVRCondition(const PredictionUnit& pu);
+#endif
 }
 
 // TU tools

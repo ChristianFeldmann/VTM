@@ -92,6 +92,8 @@ private:
   inline void xPelFilterLuma      ( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const int iThrCut, const bool bFilterSecondP, const bool bFilterSecondQ, const ClpRng& clpRng, bool sidePisLarge = false, bool sideQisLarge = false, int maxFilterLengthP = 7, int maxFilterLengthQ = 7 ) const;
   inline void xPelFilterChroma    ( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng, const bool largeBoundary ) const;
   inline bool xUseStrongFiltering ( Pel* piSrc, const int iOffset, const int d, const int beta, const int tc, bool sidePisLarge = false, bool sideQisLarge = false, int maxFilterLengthP = 7, int maxFilterLengthQ = 7 ) const;//move the computation outside the function
+  inline unsigned BsSet(unsigned val, const ComponentID compIdx) const;
+  inline unsigned BsGet(unsigned val, const ComponentID compIdx) const;
 #else
   inline void xPelFilterLuma      ( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const int iThrCut, const bool bFilterSecondP, const bool bFilterSecondQ, const ClpRng& clpRng ) const;
   inline void xPelFilterChroma    ( Pel* piSrc, const int iOffset, const int tc,                const bool bPartPNoFilter, const bool bPartQNoFilter,                                                                          const ClpRng& clpRng ) const;

@@ -807,6 +807,9 @@ private:
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
   bool              m_cclmCollocatedChromaFlag;
 #endif
+#if JVET_M0303_IMPLICIT_MTS
+  bool              m_MTS;
+#endif
 #if JVET_M0464_UNI_MTS
   bool              m_IntraMTS;                   // 18
   bool              m_InterMTS;                   // 19
@@ -873,6 +876,15 @@ public:
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
   void      setCclmCollocatedChromaFlag( bool b )                                   { m_cclmCollocatedChromaFlag = b; }
   bool      getCclmCollocatedChromaFlag()                                 const     { return m_cclmCollocatedChromaFlag; }
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  void      setUseMTS             ( bool b )                                        { m_MTS = b; }
+  bool      getUseMTS             ()                                      const     { return m_MTS; }
+#if JVET_M0464_UNI_MTS
+  bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraMTS && !m_InterMTS; }
+#else
+  bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraEMT && !m_InterEMT; }
+#endif
 #endif
 #if JVET_M0464_UNI_MTS
   void      setUseIntraMTS        ( bool b )                                        { m_IntraMTS = b; }

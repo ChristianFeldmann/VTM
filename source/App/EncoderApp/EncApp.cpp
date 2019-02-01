@@ -240,6 +240,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
 #endif
+#if JVET_M0303_IMPLICIT_MTS
+  m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
+#endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );

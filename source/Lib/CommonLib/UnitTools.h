@@ -200,9 +200,18 @@ namespace TU
 #endif
   bool hasCrossCompPredInfo           (const TransformUnit &tu, const ComponentID &compID);
 
+
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+  bool needsSqrt2Scale                ( const TransformUnit &tu, const ComponentID &compID );
+#else
   bool needsSqrt2Scale                ( const Size& size );
+#endif
 #if HM_QTBT_AS_IN_JEM_QUANT
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+  bool needsBlockSizeTrafoScale       ( const TransformUnit &tu, const ComponentID &compID );
+#else
   bool needsBlockSizeTrafoScale       ( const Size& size );
+#endif
 #else
   bool needsQP3Offset                 (const TransformUnit &tu, const ComponentID &compID);
 #endif

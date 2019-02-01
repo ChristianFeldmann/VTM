@@ -435,7 +435,7 @@ void TrQuant::xITransformSkip(const CCoeffBuf     &pCoeff,
   }
 
   int iWHScale = 1;
-#if HM_QTBT_AS_IN_JEM_QUANT
+#if HM_QTBT_AS_IN_JEM_QUANT && !JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
   if( TU::needsBlockSizeTrafoScale( area ) )
   {
     iTransformShift += ADJ_QUANT_SHIFT;
@@ -762,7 +762,7 @@ void TrQuant::xTransformSkip(const TransformUnit &tu, const ComponentID &compID,
   }
 
   int iWHScale = 1;
-#if HM_QTBT_AS_IN_JEM_QUANT
+#if HM_QTBT_AS_IN_JEM_QUANT && !JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
   if( TU::needsBlockSizeTrafoScale( rect ) )
   {
     iTransformShift -= ADJ_DEQUANT_SHIFT;

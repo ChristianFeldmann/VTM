@@ -228,6 +228,8 @@ typedef std::pair<int, int>  TrCost;
 #define HM_JEM_CLIP_PEL                                   1   // ***
 #define HM_JEM_MERGE_CANDS                                0   // ***
 
+#define JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT 1
+
 #endif//JEM_COMP
 
 // ====================================================================================================================

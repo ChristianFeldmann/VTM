@@ -50,7 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_M0471_LONG_DEBLOCKING_FILTERS                1 
+#define JVET_M0471_LONG_DEBLOCKING_FILTERS                1
 #define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
 
 #define JVET_M0257                                        1 // Scan only non zero-out regions of large TUs
@@ -107,7 +107,7 @@
 #define JVET_M0464_UNI_MTS                                1
 #define JVET_M0068_M0171_MMVD_CLEANUP                     1 // MMVD cleanup with 1) flip removal, 2) L1 zero vector fix, 3) bi-pred restriction after merge/MMVD
 #define JVET_M0255_FRACMMVD_SWITCH                        1 // disable fractional MVD in MMVD adaptively
-#define JVET_M0854_FRACMMVD_SWITCH_FOR_UHD                1 // disable fractional MVD for UHD pictures
+#define JVET_M0854_FRACMMVD_SWITCH_FOR_UHD                1 // disable fractional MVD in MMVD for UHD pictures
 #define JVET_M0823_MMVD_ENCOPT                            1 // encoder optimization for MMVD
 
 #if JVET_M0464_UNI_MTS
@@ -122,7 +122,7 @@ typedef std::pair<int, int>  TrCost;
 
 #define REMOVE_BIN_DECISION_TREE                          1
 
-#define JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY       1 
+#define JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY       1
 
 // clang-format off
 #define JVET_M0453_CABAC_ENGINE                           1
@@ -282,7 +282,7 @@ typedef std::pair<int, int>  TrCost;
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
 #if ENABLE_SIMD_OPT_BUFFER
-#define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi   
+#define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi
 #endif
 
 // End of SIMD optimizations
@@ -917,7 +917,7 @@ enum MergeType
 {
   MRG_TYPE_DEFAULT_N        = 0, // 0
   MRG_TYPE_SUBPU_ATMVP,
-  MRG_TYPE_IBC,                  
+  MRG_TYPE_IBC,
   NUM_MRG_TYPE                   // 5
 };
 

@@ -296,6 +296,32 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       }
     }
   }
+#if JVET_M0908_CIIP_DB
+  if (cu.firstPU->mhIntraFlag)
+  {
+    const uint32_t dirMode = PU::getFinalIntraMode(*(cu.firstPU), cu.chType);
+    if (edgeDir == EDGE_VER && dirMode == HOR_IDX)
+    {
+      mvSubBlocks = true;
+      subBlockSize = std::max(8u, (area.width >> 2));
+      for (uint32_t off = subBlockSize; off < area.width; off += subBlockSize)
+      {
+        const Area mvBlockV(cu.Y().x + off, cu.Y().y, pcv.minCUWidth, cu.Y().height);
+        xSetEdgefilterMultiple(cu, EDGE_VER, mvBlockV, m_stLFCUParam.internalEdge, 1);
+      }
+    }
+    else if (edgeDir == EDGE_HOR && dirMode == VER_IDX)
+    {
+      mvSubBlocks = true;
+      subBlockSize = std::max(8u, (area.height >> 2));
+      for (uint32_t off = subBlockSize; off < area.height; off += subBlockSize)
+      {
+        const Area mvBlockH(cu.Y().x, cu.Y().y + off, cu.Y().width, pcv.minCUHeight);
+        xSetEdgefilterMultiple(cu, EDGE_HOR, mvBlockH, m_stLFCUParam.internalEdge, 1);
+      }
+    }
+  }
+#endif
 
   const unsigned uiPelsInPart = pcv.minCUWidth;
 
@@ -438,6 +464,10 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
 
 unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos ) const
 {
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+  // The boundary strength that is output by the function xGetBoundaryStrengthSingle is a multi component boundary strength that contains boundary strength for luma (bits 0 to 1), cb (bits 2 to 3) and cr (bits 4 to 5).
+#endif
+
   const Slice& sliceQ = *cu.slice;
 
   const Position& cuPosLuma = cu.lumaPos();
@@ -455,13 +485,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   if( ( MODE_INTRA == cuP.predMode ) || ( MODE_INTRA == cuQ.predMode ) )
   {
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
-    // The boundary strength that is output by the function xGetBoundaryStrengthSingle is a temporary boundary strength that contains both info for luma and chroma, where specific chroma component information related to chroma component cbf also is included.
-    // In addition to filter a chroma component if P or Q is intra, a chroma component can also be filtered if P and Q has non-zero chroma component tu coefficents. 
-    // Both luma and chroma can be filtered with a boundary strength of 2 when the temporary boundary strength is 16 (indicating intra)
-    // Luma can be filtered with a boundary strength of 1 if the temporary boundary strength is 8, 10, 12, 14 (indicating non-zero luma coeffs), or 1, 3, 5 or 7 (indicating motion difference)
-    // Chroma Cb component can be filtered with a boundary strength of 1 if the temporary boundary strength is 4,5,6,7,12 or 14 (indicating non-zero chroma Cb coeffs)
-    // Chroma Cr component can be filtered with a boundary strength of 1 if the temporary boundary strength is 2,3,6,7,10 or 14 (indicating non-zero chroma Cr coeffs)
-    return 16;
+    return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
 #else
     return 2;
 #endif
@@ -471,6 +495,16 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const TransformUnit& tuP = posP == cuP.lumaPos() ? *cuP.firstTU : *cuP.cs->getTU(posP, cuP.chType);
   const PreCalcValues& pcv = *cu.cs->pcv;
   const unsigned rasterIdx = getRasterIdx( posQ, pcv );
+#if JVET_M0908_CIIP_DB
+  if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
+  {
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+     return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
+#else
+     return 2;
+#endif
+  }
+#endif
 
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
   unsigned tmpBs = 0;
@@ -478,19 +512,19 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   // Y
   if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Y) || TU::getCbf(tuP, COMPONENT_Y)))
   {
-      tmpBs += 8;
+    tmpBs += BsSet(1, COMPONENT_Y);
   }
   // U
   if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cb) || TU::getCbf(tuP, COMPONENT_Cb)))
   {
-    tmpBs += 4;
+    tmpBs += BsSet(1, COMPONENT_Cb);
   }
   // V
   if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cr) || TU::getCbf(tuP, COMPONENT_Cr)))
   {
-    tmpBs += 2;
+    tmpBs += BsSet(1, COMPONENT_Cr);
   }
-  if ((tmpBs >> 3) & 0x01)
+  if (BsGet(tmpBs, COMPONENT_Y) == 1)
   {
     return tmpBs;
   }
@@ -501,7 +535,12 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     return 1;
   }
 #endif
-
+#if JVET_M0908_CIIP_DB
+  if ((cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
+  {
+    return 1;
+  }
+#endif
   // and now the pred
   const MotionInfo&     miQ = cuQ.cs->getMotionInfo( posQ );
   const MotionInfo&     miP = cuP.cs->getMotionInfo( posP );
@@ -684,20 +723,7 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
 
     uiBsAbsIdx = getRasterIdx( pos, pcv );
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
-    unsigned tmpBs = m_aapucBS[edgeDir][uiBsAbsIdx];
-
-    if ((tmpBs >> 4) & 0x01)
-    {
-      uiBs = 2;
-    }
-    else if (((tmpBs >> 3) & 0x01) || (tmpBs & 0x01))
-    {
-      uiBs = 1;
-    }
-    else
-    {
-      uiBs = 0;
-    }
+    uiBs = BsGet(m_aapucBS[edgeDir][uiBsAbsIdx], COMPONENT_Y);
 #else
     uiBs       = m_aapucBS[edgeDir][uiBsAbsIdx];
 #endif
@@ -748,7 +774,17 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
         if (sidePisLarge && maxFilterLengthP > 5)
         {
           // restrict filter length if sub-blocks are used (e.g affine or ATMVP)
+#if JVET_M0908_CIIP_DB
+          bool ciipSubBlock = false;
+          if (cuP.firstPU->mhIntraFlag)
+          {
+            const uint32_t dirMode = PU::getFinalIntraMode(*(cuP.firstPU), cuP.chType);
+            ciipSubBlock = edgeDir == EDGE_HOR ? dirMode == VER_IDX : dirMode == HOR_IDX;
+          }
+          if (cuP.affine || ciipSubBlock)
+#else
           if (cuP.affine)
+#endif
           {
             maxFilterLengthP = std::min(maxFilterLengthP, 5);
           }
@@ -945,9 +981,10 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
   unsigned uiNumParts =  ( edgeDir == EDGE_VER ) ? lumaSize.height / pcv.minCUHeight : lumaSize.width / pcv.minCUWidth ;
   int   uiNumPelsLuma = pcv.minCUWidth;
   unsigned uiBsAbsIdx;
-  unsigned ucBs;
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
-  bool dfChroma[2];
+  unsigned bS[2];
+#else
+  unsigned ucBs;
 #endif
 
   Pel* piTmpSrcCb = piSrcCb;
@@ -989,27 +1026,15 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
     unsigned tmpBs = m_aapucBS[edgeDir][uiBsAbsIdx];
 
-    if ((tmpBs >> 4) & 0x01)
-    {
-        ucBs = 2;
-    }
-    else if (((tmpBs >> 2) & 0x01) || ((tmpBs >> 1) & 0x01)) // cbf_cb or cbf_cr only
-    {
-        ucBs = 1;
-    }
-    else
-    {
-        ucBs = 0;
-    }
-
-    dfChroma[0] = ((((tmpBs >> 4) & 0x01) == 1) || (((tmpBs >> 2) & 0x01) == 1)); // cb
-    dfChroma[1] = ((((tmpBs >> 4) & 0x01) == 1) || (((tmpBs >> 1) & 0x01) == 1)); // cr
+    tmpBs = m_aapucBS[edgeDir][uiBsAbsIdx];
+    bS[0] = BsGet(tmpBs, COMPONENT_Cb);
+    bS[1] = BsGet(tmpBs, COMPONENT_Cr);
 #else
     ucBs       = m_aapucBS[edgeDir][uiBsAbsIdx];
 #endif
 
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
-    if (ucBs > 0)
+    if (bS[0] > 0 || bS[1] > 0)
 #else
     if (ucBs > 1)
 #endif
@@ -1061,13 +1086,11 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         largeBoundary = false;
       }
 
-      if ((ucBs == 2) || (largeBoundary && (ucBs == 1)))
-      {
 #endif
       for( int chromaIdx = 0; chromaIdx < 2; chromaIdx++ )
       {
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
-        if (dfChroma[chromaIdx])
+        if ((bS[chromaIdx] == 2) || (largeBoundary && (bS[chromaIdx] == 1)))
         {
 #endif
         const ClpRng& clpRng( cu.cs->slice->clpRng( ComponentID( chromaIdx + 1 )) );
@@ -1091,7 +1114,11 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
           iQP = getScaledChromaQP(iQP, sps.getChromaFormatIdc());
         }
 
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+        const int iIndexTC = Clip3<int>(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET * (bS[chromaIdx] - 1) + (tcOffsetDiv2 << 1));
+#else
         const int iIndexTC = Clip3<int>( 0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET*( ucBs - 1 ) + ( tcOffsetDiv2 << 1 ) );
+#endif
         const int iTc      = sm_tcTable[iIndexTC] * iBitdepthScale;
 
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
@@ -1139,9 +1166,6 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         }
 #endif
       }
-#if JVET_M0471_LONG_DEBLOCKING_FILTERS
-      }// if ((ucBs == 2) || (bLBs && (ucBs == 1)))
-#endif
     }
   }
 }
@@ -1518,5 +1542,10 @@ inline int LoopFilter::xCalcDQ( Pel* piSrc, const int iOffset ) const
 {
   return abs( piSrc[0] - 2 * piSrc[iOffset] + piSrc[iOffset * 2] );
 }
+
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+inline unsigned LoopFilter::BsSet(unsigned val, const ComponentID compIdx) const { return (val << (compIdx << 1)); }
+inline unsigned LoopFilter::BsGet(unsigned val, const ComponentID compIdx) const { return ((val >> (compIdx << 1)) & 3); }
+#endif
 
 //! \}

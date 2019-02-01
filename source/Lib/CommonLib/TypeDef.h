@@ -52,6 +52,7 @@
 
 #define JVET_M0303_IMPLICIT_MTS                           1 // Implicit transform selection (can be enabled with MTSImplicit encoder config parameter)
 
+#define JVET_M0908_CIIP_DB                                1
 #define JVET_M0471_LONG_DEBLOCKING_FILTERS                1 
 #define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
 

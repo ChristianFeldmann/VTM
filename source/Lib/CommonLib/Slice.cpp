@@ -576,7 +576,11 @@ int Slice::getNumRpsCurrTempList() const
       numRpsCurrTempList++;
     }
   }
+#if JVET_M0483_IBC
+  if (getSPS()->getIBCFlag())
+#else
   if (getSPS()->getSpsNext().getIBCMode())
+#endif
   {
     return numRpsCurrTempList + 1;
   }
@@ -1785,7 +1789,7 @@ unsigned Slice::getMinPictureDistance() const
 {
   int minPicDist = MAX_INT;
 #if JVET_M0483_IBC
-  if (getSPS()->getSpsNext().getIBCMode())
+  if (getSPS()->getIBCFlag())
   {
     minPicDist = 0;
   }
@@ -1972,6 +1976,9 @@ SPS::SPS()
 , m_spsNextExtension          (*this)
 , m_wrapAroundEnabledFlag     (false)
 , m_wrapAroundOffset          (  0)
+#if JVET_M0483_IBC
+, m_IBCFlag                   (  0)
+#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {

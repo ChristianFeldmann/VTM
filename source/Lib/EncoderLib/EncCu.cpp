@@ -675,7 +675,7 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 
   const UnitArea currCsArea = clipArea( CS::getArea( *bestCS, bestCS->area, partitioner.chType ), *tempCS->picture );
 #if JVET_M0483_IBC 
-  if (m_pImvTempCS && (!slice.isIntra() || slice.getSPS()->getSpsNext().getIBCMode()))
+  if (m_pImvTempCS && (!slice.isIntra() || slice.getSPS()->getIBCFlag()))
 #else
   if( m_pImvTempCS && !slice.isIntra() )
 #endif
@@ -704,7 +704,7 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     return;
   }
 #if JVET_M0483_IBC
-  if ((!slice.isIntra() || slice.getSPS()->getSpsNext().getIBCMode())
+  if ((!slice.isIntra() || slice.getSPS()->getIBCFlag())
 #else
   if (!slice.isIntra()
 #endif
@@ -863,7 +863,7 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   // QP from last processed CU for further processing
   bestCS->prevQP[partitioner.chType] = bestCS->cus.back()->qp;
 #if JVET_M0483_IBC
-  if ((!slice.isIntra() || slice.getSPS()->getSpsNext().getIBCMode())
+  if ((!slice.isIntra() || slice.getSPS()->getIBCFlag())
 #else
   if (!slice.isIntra() 
 #endif
@@ -1433,7 +1433,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     m_pcInterSearch->addAffMVInfo(tmpMVInfo);
 
 #if JVET_M0483_IBC
-  if ((!slice.isIntra() || slice.getSPS()->getSpsNext().getIBCMode())
+  if ((!slice.isIntra() || slice.getSPS()->getIBCFlag())
 #else
   if (!slice.isIntra()
 #endif
@@ -1557,7 +1557,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     }
 
 #if JVET_M0483_IBC
-    if ((!cu.cs->slice->isIntra() || cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+    if ((!cu.cs->slice->isIntra() || cu.cs->slice->getSPS()->getIBCFlag())
 #else
     if( !cu.cs->slice->isIntra() 
 #endif
@@ -1647,7 +1647,7 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
   }
 
 #if JVET_M0483_IBC
-  if ((!cu.cs->slice->isIntra() || cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  if ((!cu.cs->slice->isIntra() || cu.cs->slice->getSPS()->getIBCFlag())
 #else
   if( !cu.cs->slice->isIntra() 
 #endif
@@ -1876,7 +1876,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
     if( auto blkCache = dynamic_cast< CacheBlkInfoCtrl* >( m_modeCtrl ) )
     {
+#if JVET_M0483_IBC
+      if (slice.getSPS()->getIBCFlag())
+#else
       if (slice.getSPS()->getSpsNext().getIBCMode())
+#endif
       {
         ComprCUCtx cuECtx = m_modeCtrl->getComprCUCtx();
         bestIsSkip = blkCache->isSkip(tempCS->area) && cuECtx.bestCU;

@@ -1792,7 +1792,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
 
     // disable TMVP when current picture is the only ref picture
+#if JVET_M0483_IBC
+    if (pcSlice->isIRAP() && pcSlice->getSPS()->getIBCFlag())
+#else
     if (pcSlice->isIRAP() && pcSlice->getSPS()->getSpsNext().getIBCMode())
+#endif
     {
       pcSlice->setEnableTMVPFlag(0);
     }

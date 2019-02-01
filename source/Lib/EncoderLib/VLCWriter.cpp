@@ -551,7 +551,9 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
     WRITE_FLAG( spsNext.getUseAffineType() ? 1 : 0,                                             "affine_type_flag" );
   }
   WRITE_FLAG( spsNext.getUseGBi() ? 1 : 0,                                                      "gbi_flag" );
+#if JVET_M0483_IBC==0
   WRITE_FLAG(spsNext.getIBCMode() ? 1 : 0,                                                      "ibc_flag" );
+#endif
   for( int k = 0; k < SPSNext::NumReservedFlags; k++ )
   {
     WRITE_FLAG( 0,                                                                              "reserved_flag" );
@@ -615,6 +617,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG(pcSPS->getNoLadfConstraintFlag() ? 1 : 0, "no_ladf_constraint_flag");
   WRITE_FLAG(pcSPS->getNoDepQuantConstraintFlag() ? 1 : 0, "no_dep_quant_constraint_flag");
   WRITE_FLAG(pcSPS->getNoSignDataHidingConstraintFlag() ? 1 : 0, "no_sign_data_hiding_constraint_flag");
+#if JVET_M0483_IBC
+  WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0, "ibc_flag");
+#endif
 #if ENABLE_TRACING
   xTraceSPSHeader ();
 #endif
@@ -1271,7 +1276,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
     }
 #if JVET_M0483_IBC 
-    if (!cs.slice->isIntra() || cs.slice->getSPS()->getSpsNext().getIBCMode())
+    if (!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag())
     {
       CHECK(pcSlice->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
       WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");

@@ -714,7 +714,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 
   // skip flag
 #if JVET_M0483_IBC
-  if ((!cs.slice->isIntra() || cs.slice->getSPS()->getSpsNext().getIBCMode()) && cu.Y().valid())
+  if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag()) && cu.Y().valid())
 #else
   if (!cs.slice->isIntra() && cu.Y().valid())
 #endif
@@ -772,7 +772,7 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
   unsigned ctxId = DeriveCtx::CtxSkipFlag( cu );
 
 #if JVET_M0483_IBC
-  if (cu.slice->isIntra() && cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  if (cu.slice->isIntra() && cu.cs->slice->getSPS()->getIBCFlag())
   {
     m_BinEncoder.encodeBin((cu.skip), Ctx::SkipFlag(ctxId));
     DTRACE(g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0);
@@ -784,7 +784,7 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0 );
 #if JVET_M0483_IBC
-  if (cu.skip && cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  if (cu.skip && cu.cs->slice->getSPS()->getIBCFlag())
   {
     unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
     m_BinEncoder.encodeBin(CU::isIBC(cu) ? 1 : 0, Ctx::IBCFlag(ctxidx));
@@ -796,7 +796,7 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
       DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
     }
   }
-  if (cu.skip && !cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  if (cu.skip && !cu.cs->slice->getSPS()->getIBCFlag())
   {
     m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
     DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
@@ -814,7 +814,7 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 void CABACWriter::pred_mode( const CodingUnit& cu )
 {
 #if JVET_M0483_IBC
-  if (cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  if (cu.cs->slice->getSPS()->getIBCFlag())
   {
 #endif
 #if JVET_M0483_IBC
@@ -1846,7 +1846,7 @@ void CABACWriter::ref_idx( const PredictionUnit& pu, RefPicList eRefList )
   int numRef  = pu.cs->slice->getNumRefIdx(eRefList);
 
 #if JVET_M0483_IBC
-  if (eRefList == REF_PIC_LIST_0 && pu.cs->sps->getSpsNext().getIBCMode())
+  if (eRefList == REF_PIC_LIST_0 && pu.cs->sps->getIBCFlag())
   {
     if (CU::isIBC(*pu.cu))
       return;

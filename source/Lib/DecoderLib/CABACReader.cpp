@@ -886,7 +886,7 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
 
   // skip flag
 #if JVET_M0483_IBC
-  if ((!cs.slice->isIntra() || cs.slice->getSPS()->getSpsNext().getIBCMode()) && cu.Y().valid())
+  if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag()) && cu.Y().valid())
 #else
   if (!cs.slice->isIntra() && cu.Y().valid())
 #endif
@@ -953,7 +953,7 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__SKIP_FLAG );
 
 #if JVET_M0483_IBC
-  if (cu.slice->isIntra() && cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  if (cu.slice->isIntra() && cu.cs->slice->getSPS()->getIBCFlag())
   {
     cu.skip = false;
     cu.rootCbf = false;
@@ -979,7 +979,7 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
   DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, skip ? 1 : 0 );
 
 #if JVET_M0483_IBC
-  if (skip && cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  if (skip && cu.cs->slice->getSPS()->getIBCFlag())
   {
     unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
     if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
@@ -995,8 +995,8 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
     }
     DTRACE(g_trace_ctx, D_SYNTAX, "ibc() ctx=%d cu.predMode=%d\n", ctxidx, cu.predMode);
   }
-  if ((skip && CU::isInter(cu) && cu.cs->slice->getSPS()->getSpsNext().getIBCMode()) ||
-    (skip && !cu.cs->slice->getSPS()->getSpsNext().getIBCMode()))
+  if ((skip && CU::isInter(cu) && cu.cs->slice->getSPS()->getIBCFlag()) ||
+    (skip && !cu.cs->slice->getSPS()->getIBCFlag()))
 #else
   if( skip )
 #endif
@@ -1095,7 +1095,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__PRED_MODE );
 
 #if JVET_M0483_IBC
-  if (cu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  if (cu.cs->slice->getSPS()->getIBCFlag())
   {
     if (cu.cs->slice->isIntra())
     {

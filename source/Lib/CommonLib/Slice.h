@@ -1033,6 +1033,9 @@ private:
 
   bool              m_wrapAroundEnabledFlag;
   unsigned          m_wrapAroundOffset;
+#if JVET_M0483_IBC
+  unsigned          m_IBCFlag;
+#endif
 
 public:
 
@@ -1252,6 +1255,10 @@ public:
   bool                    getWrapAroundEnabledFlag() const                                                { return m_wrapAroundEnabledFlag;                                      }
   void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
   unsigned                getWrapAroundOffset() const                                                     { return m_wrapAroundOffset;                                           }
+#if JVET_M0483_IBC
+  void                    setIBCFlag(unsigned IBCFlag)                                                    { m_IBCFlag = IBCFlag; }
+  unsigned                getIBCFlag() const                                                              { return m_IBCFlag; }
+#endif
 };
 
 

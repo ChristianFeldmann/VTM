@@ -750,7 +750,7 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   if( cpyReco ) picture->getRecoBuf( clippedArea ).copyFrom( subRecoBuf );
 
 #if JVET_M0483_IBC 
-  if (!subStruct.m_isTuEnc && ((!slice->isIntra() || slice->getSPS()->getSpsNext().getIBCMode()) && subStruct.chType != CHANNEL_TYPE_CHROMA))
+  if (!subStruct.m_isTuEnc && ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && subStruct.chType != CHANNEL_TYPE_CHROMA))
 #else
   if (!subStruct.m_isTuEnc && (!slice->isIntra() && subStruct.chType != CHANNEL_TYPE_CHROMA))
 #endif
@@ -934,7 +934,7 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
   }
 
 #if JVET_M0483_IBC 
-  if (!other.slice->isIntra() || other.slice->getSPS()->getSpsNext().getIBCMode())
+  if (!other.slice->isIntra() || other.slice->getSPS()->getIBCFlag())
 #else
   if( !other.slice->isIntra() )
 #endif
@@ -993,7 +993,7 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
   }
 
 #if JVET_M0483_IBC
-  if (!skipMotBuf && (!parent || ((!slice->isIntra() || slice->getSPS()->getSpsNext().getIBCMode()) && !m_isTuEnc)))
+  if (!skipMotBuf && (!parent || ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && !m_isTuEnc)))
 #else
   if( !skipMotBuf && ( !parent || ( ( slice->getSliceType() != I_SLICE ) && !m_isTuEnc ) ) )
 #endif

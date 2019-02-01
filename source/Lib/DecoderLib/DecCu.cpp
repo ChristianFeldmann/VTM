@@ -705,15 +705,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               pu.mvpNum [eRefList] = amvpInfo.numCand;
 #if JVET_M0483_IBC==0
               Mv mvd = pu.mvd[eRefList];
-#if JVET_M0483_IBC 
-              if (CU::isIBC(cu))
-              {
-#if REUSE_CU_RESULTS
-                if (!cu.cs->pcv->isEncoder)
-#endif
-                  mvd <<= 2;
-              }
-#else
               if (eRefList == REF_PIC_LIST_0 && pu.cs->slice->getRefPic(eRefList, pu.refIdx[eRefList])->getPOC() == pu.cs->slice->getPOC())
               {
                 pu.cu->ibc = true;
@@ -722,7 +713,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #endif
                   mvd.changePrecision(MV_PRECISION_INT, MV_PRECISION_QUARTER);
               }
-#endif
               pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx[eRefList]] + mvd;
 #else
               pu.mv[eRefList] = amvpInfo.mvCand[pu.mvpIdx[eRefList]] + pu.mvd[eRefList];

@@ -498,7 +498,7 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   if (CU::isIBC(*pu.cu))
   {
     pu.bv = pu.mv[REF_PIC_LIST_0];
-    pu.bv >>= (2 + MV_FRACTIONAL_BITS_DIFF); // used for only integer resolution
+    pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
   }
 #else
   if (interDirNeighbours[candIdx] == 1 && pu.cs->slice->getRefPic(REF_PIC_LIST_0, mvFieldNeighbours[candIdx << 1].refIdx)->getPOC() == pu.cs->slice->getPOC())

@@ -1013,7 +1013,7 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
     if( isFirst )
     {
 #if JVET_M0483_IBC 
-      if ((!cs.slice->isIntra() || cs.slice->getSPS()->getSpsNext().getIBCMode())
+      if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag())
 #else
       if( !cs.slice->isIntra() 
 #endif

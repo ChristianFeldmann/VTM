@@ -3185,7 +3185,7 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
       const int        neibRefIdx = neibMi.refIdx[eRefPicListIndex];
 
 #if JVET_M0483_IBC
-      if (neibRefIdx >= 0 && (CU::isIBC(*pu.cu) || (CU::isIBC(*pu.cu) == false && currRefPOC == slice.getRefPOC(eRefPicListIndex, neibRefIdx))))
+      if (neibRefIdx >= 0 && (CU::isIBC(*pu.cu) || (currRefPOC == slice.getRefPOC(eRefPicListIndex, neibRefIdx))))
 #else
       if (neibRefIdx >= 0 && currRefPOC == slice.getRefPOC(eRefPicListIndex, neibRefIdx))
 #endif

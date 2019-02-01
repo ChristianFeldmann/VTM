@@ -897,8 +897,11 @@ void EncLib::xInitSPS(SPS &sps)
 #if JVET_M0246_AFFINE_AMVR
   sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
 #endif
-  sps.getSpsNext().setIBCMode               ( m_IBCMode );
-
+#if JVET_M0483_IBC
+  sps.setIBCFlag                            ( m_IBCMode);
+#else
+  sps.getSpsNext().setIBCMode               (m_IBCMode);
+#endif
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here

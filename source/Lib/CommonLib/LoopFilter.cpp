@@ -296,6 +296,32 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       }
     }
   }
+#if JVET_M0908_CIIP_DB
+  if (cu.firstPU->mhIntraFlag)
+  {
+    const uint32_t dirMode = PU::getFinalIntraMode(*(cu.firstPU), cu.chType);
+    if (edgeDir == EDGE_VER && dirMode == HOR_IDX)
+    {
+      mvSubBlocks = true;
+      subBlockSize = std::max(8u, (area.width >> 2));
+      for (uint32_t off = subBlockSize; off < area.width; off += subBlockSize)
+      {
+        const Area mvBlockV(cu.Y().x + off, cu.Y().y, pcv.minCUWidth, cu.Y().height);
+        xSetEdgefilterMultiple(cu, EDGE_VER, mvBlockV, m_stLFCUParam.internalEdge, 1);
+      }
+    }
+    else if (edgeDir == EDGE_HOR && dirMode == VER_IDX)
+    {
+      mvSubBlocks = true;
+      subBlockSize = std::max(8u, (area.height >> 2));
+      for (uint32_t off = subBlockSize; off < area.height; off += subBlockSize)
+      {
+        const Area mvBlockH(cu.Y().x, cu.Y().y + off, cu.Y().width, pcv.minCUHeight);
+        xSetEdgefilterMultiple(cu, EDGE_HOR, mvBlockH, m_stLFCUParam.internalEdge, 1);
+      }
+    }
+  }
+#endif
 
   const unsigned uiPelsInPart = pcv.minCUWidth;
 
@@ -469,6 +495,16 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const TransformUnit& tuP = posP == cuP.lumaPos() ? *cuP.firstTU : *cuP.cs->getTU(posP, cuP.chType);
   const PreCalcValues& pcv = *cu.cs->pcv;
   const unsigned rasterIdx = getRasterIdx( posQ, pcv );
+#if JVET_M0908_CIIP_DB
+  if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
+  {
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+     return 16;
+#else
+     return 2;
+#endif
+  }
+#endif
 
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
   unsigned tmpBs = 0;
@@ -499,7 +535,12 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     return 1;
   }
 #endif
-
+#if JVET_M0908_CIIP_DB
+  if ((cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
+  {
+    return 1;
+  }
+#endif
   // and now the pred
   const MotionInfo&     miQ = cuQ.cs->getMotionInfo( posQ );
   const MotionInfo&     miP = cuP.cs->getMotionInfo( posP );
@@ -733,7 +774,17 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
         if (sidePisLarge && maxFilterLengthP > 5)
         {
           // restrict filter length if sub-blocks are used (e.g affine or ATMVP)
+#if JVET_M0908_CIIP_DB
+          bool ciipSubBlock = false;
+          if (cuP.firstPU->mhIntraFlag)
+          {
+            const uint32_t dirMode = PU::getFinalIntraMode(*(cuP.firstPU), cuP.chType);
+            ciipSubBlock = edgeDir == EDGE_HOR ? dirMode == VER_IDX : dirMode == HOR_IDX;
+          }
+          if (cuP.affine || ciipSubBlock)
+#else
           if (cuP.affine)
+#endif
           {
             maxFilterLengthP = std::min(maxFilterLengthP, 5);
           }

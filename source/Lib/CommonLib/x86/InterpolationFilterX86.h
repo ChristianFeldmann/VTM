@@ -989,7 +989,7 @@ static void simdInterpolateN2_M4( const int16_t* src, int srcStride, int16_t *ds
 }
 #if JVET_M0147_DMVR
 #ifdef USE_AVX2
-static inline __m256i simdInterpolateLuma10Bit2P16(int16_t const *src1, int srcStride, __m256i *mmCoeff, const __m256i & mmOffset, int shift)
+static inline __m256i simdInterpolateLuma10Bit2P16(int16_t const *src1, int srcStride, __m256i *mmCoeff, const __m256i & mmOffset, __m128i &mmShift)
 {
   __m256i sumLo;
   {
@@ -999,12 +999,12 @@ static inline __m256i simdInterpolateLuma10Bit2P16(int16_t const *src1, int srcS
     __m256i lo1 = _mm256_mullo_epi16(mmPix1, mmCoeff[1]);
     sumLo = _mm256_add_epi16(lo0, lo1);
   }
-  sumLo = _mm256_srai_epi16(_mm256_add_epi16(sumLo, mmOffset), shift);
+  sumLo = _mm256_sra_epi16(_mm256_add_epi16(sumLo, mmOffset), mmShift);
   return(sumLo);
 }
 #endif
 
-static inline __m128i simdInterpolateLuma10Bit2P8(int16_t const *src1, int srcStride, __m128i *mmCoeff, const __m128i & mmOffset, int shift)
+static inline __m128i simdInterpolateLuma10Bit2P8(int16_t const *src1, int srcStride, __m128i *mmCoeff, const __m128i & mmOffset, __m128i &mmShift)
 {
   __m128i sumLo;
   {
@@ -1014,11 +1014,11 @@ static inline __m128i simdInterpolateLuma10Bit2P8(int16_t const *src1, int srcSt
     __m128i lo1 = _mm_mullo_epi16(mmPix1, mmCoeff[1]);
     sumLo = _mm_add_epi16(lo0, lo1);
   }
-  sumLo = _mm_srai_epi16(_mm_add_epi16(sumLo, mmOffset), shift);
+  sumLo = _mm_sra_epi16(_mm_add_epi16(sumLo, mmOffset), mmShift);
   return(sumLo);
 }
 
-static inline __m128i simdInterpolateLuma10Bit2P4(int16_t const *src, int srcStride, __m128i *mmCoeff, const __m128i & mmOffset, int shift)
+static inline __m128i simdInterpolateLuma10Bit2P4(int16_t const *src, int srcStride, __m128i *mmCoeff, const __m128i & mmOffset, __m128i &mmShift)
 {
   __m128i sumLo;
   {
@@ -1028,7 +1028,7 @@ static inline __m128i simdInterpolateLuma10Bit2P4(int16_t const *src, int srcStr
     __m128i lo1 = _mm_mullo_epi16(mmPix1, mmCoeff[1]);
     sumLo = _mm_add_epi16(lo0, lo1);
   }
-  sumLo = _mm_srai_epi16(_mm_add_epi16(sumLo, mmOffset), shift);
+  sumLo = _mm_sra_epi16(_mm_add_epi16(sumLo, mmOffset), mmShift);
   return sumLo;
 }
 
@@ -1037,6 +1037,7 @@ static void simdInterpolateN2_10BIT_M4(const int16_t* src, int srcStride, int16_
 {
   int row, col;
   __m128i mmOffset = _mm_set1_epi16(offset);
+  __m128i mmShift = _mm_set_epi64x(0, shift);
   __m128i mmCoeff[2];
   for (int n = 0; n < 2; n++)
     mmCoeff[n] = _mm_set1_epi16(c[n]);
@@ -1056,19 +1057,19 @@ static void simdInterpolateN2_10BIT_M4(const int16_t* src, int srcStride, int16_
     // multiple of 16
     for (; col < ((width >> 4) << 4); col += 16)
     {
-      __m256i mmFiltered = simdInterpolateLuma10Bit2P16(src + col, cStride, mm256Coeff, mm256Offset, shift);
+      __m256i mmFiltered = simdInterpolateLuma10Bit2P16(src + col, cStride, mm256Coeff, mm256Offset, mmShift);
       _mm256_storeu_si256((__m256i *)(dst + col), mmFiltered);
     }
 #endif
     // multiple of 8
     for (; col < ((width >> 3) << 3); col += 8)
     {
-      __m128i mmFiltered = simdInterpolateLuma10Bit2P8(src + col, cStride, mmCoeff, mmOffset, shift);
+      __m128i mmFiltered = simdInterpolateLuma10Bit2P8(src + col, cStride, mmCoeff, mmOffset, mmShift);
       _mm_storeu_si128((__m128i *)(dst + col), mmFiltered);
     }
 
     // last 4 samples
-    __m128i mmFiltered = simdInterpolateLuma10Bit2P4(src + col, cStride, mmCoeff, mmOffset, shift);
+    __m128i mmFiltered = simdInterpolateLuma10Bit2P4(src + col, cStride, mmCoeff, mmOffset, mmShift);
     _mm_storel_epi64((__m128i *)(dst + col), mmFiltered);
     src += srcStride;
     dst += dstStride;

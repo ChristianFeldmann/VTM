@@ -722,7 +722,7 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool canFastExit
   , int mmvdList
 #endif
 #if JVET_M0483_IBC
-  , bool ibc_flag
+  , bool ibcFlag
 #endif
 #if JVET_M0170_MRG_SHARELIST
   , bool isShared
@@ -747,15 +747,15 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
   }
 #if JVET_M0170_MRG_SHARELIST
 #if JVET_M0483_IBC
-  int num_avai_candInLUT = ibc_flag ? slice.getAvailableLUTIBCMrgNum() : (isShared ? slice.getAvailableLUTBkupMrgNum() : slice.getAvailableLUTMrgNum());
-  int offset = ibc_flag ? MAX_NUM_HMVP_CANDS : 0;
+  int num_avai_candInLUT = ibcFlag ? slice.getAvailableLUTIBCMrgNum() : (isShared ? slice.getAvailableLUTBkupMrgNum() : slice.getAvailableLUTMrgNum());
+  int offset = ibcFlag ? MAX_NUM_HMVP_CANDS : 0;
 #else
   int num_avai_candInLUT = (isShared ? slice.getAvailableLUTBkupMrgNum() : slice.getAvailableLUTMrgNum());
 #endif
 #else
 #if JVET_M0483_IBC
-  int num_avai_candInLUT = ibc_flag ? slice.getAvailableLUTIBCMrgNum() : slice.getAvailableLUTMrgNum();
-  int offset = ibc_flag ? MAX_NUM_HMVP_CANDS : 0;
+  int num_avai_candInLUT = ibcFlag ? slice.getAvailableLUTIBCMrgNum() : slice.getAvailableLUTMrgNum();
+  int offset = ibcFlag ? MAX_NUM_HMVP_CANDS : 0;
 #else
   int num_avai_candInLUT = slice.getAvailableLUTMrgNum();
 #endif
@@ -765,7 +765,7 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
   {
 #if JVET_M0170_MRG_SHARELIST
 #if JVET_M0483_IBC
-    miNeighbor = ibc_flag ? slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx + offset)
+    miNeighbor = ibcFlag ? slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx + offset)
                           : (isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx));
 #else
     miNeighbor = isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx);
@@ -828,8 +828,8 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
     mrgCtx.GBiIdx[ui] = GBI_DEFAULT;
     mrgCtx.interDirNeighbours[ui] = 0;
     mrgCtx.mrgTypeNeighbours[ui] = MRG_TYPE_IBC;
-    mrgCtx.mvFieldNeighbours[(ui << 1)].refIdx = NOT_VALID;
-    mrgCtx.mvFieldNeighbours[(ui << 1) + 1].refIdx = NOT_VALID;
+    mrgCtx.mvFieldNeighbours[ui * 2].refIdx = NOT_VALID;
+    mrgCtx.mvFieldNeighbours[ui * 2 + 1].refIdx = NOT_VALID;
   }
 
   mrgCtx.numValidMergeCand = maxNumMergeCand;
@@ -2234,13 +2234,9 @@ bool PU::getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv)
 }
 
 #if JVET_M0483_IBC
-/** Constructs a list of candidates for IBC AMVP (See specification, section "Derivation process for motion vector predictor candidates")
-* \param uiPartIdx
-* \param uiPartAddr
-* \param eRefPicList
-* \param iRefIdx
-* \param pInfo
-*/
+/** 
+ * Constructs a list of candidates for IBC AMVP (See specification, section "Derivation process for motion vector predictor candidates")
+ */
 void PU::fillIBCMvpCand(PredictionUnit &pu, AMVPInfo &amvpInfo)
 {
   CodingStructure &cs = *pu.cs;
@@ -2268,23 +2264,23 @@ void PU::fillIBCMvpCand(PredictionUnit &pu, AMVPInfo &amvpInfo)
   // Left predictor search
   if (isScaledFlagLX)
   {
-    bool bAdded = addIBCMVPCand(pu, posLB, MD_BELOW_LEFT, *pInfo);
+    bool isAdded = addIBCMVPCand(pu, posLB, MD_BELOW_LEFT, *pInfo);
 
-    if (!bAdded)
+    if (!isAdded)
     {
-      bAdded = addIBCMVPCand(pu, posLB, MD_LEFT, *pInfo);
+      isAdded = addIBCMVPCand(pu, posLB, MD_LEFT, *pInfo);
     }
   }
 
   // Above predictor search
   {
-    bool bAdded = addIBCMVPCand(pu, posRT, MD_ABOVE_RIGHT, *pInfo);
+    bool isAdded = addIBCMVPCand(pu, posRT, MD_ABOVE_RIGHT, *pInfo);
 
-    if (!bAdded)
+    if (!isAdded)
     {
-      bAdded = addIBCMVPCand(pu, posRT, MD_ABOVE, *pInfo);
+      isAdded = addIBCMVPCand(pu, posRT, MD_ABOVE, *pInfo);
 
-      if (!bAdded)
+      if (!isAdded)
       {
         addIBCMVPCand(pu, posLT, MD_ABOVE_LEFT, *pInfo);
       }

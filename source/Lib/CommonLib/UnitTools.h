@@ -136,7 +136,7 @@ namespace PU
     , int mmvdList
 #endif
 #if JVET_M0483_IBC
-    , bool ibc_flag
+    , bool ibcFlag
 #endif
 #if JVET_M0170_MRG_SHARELIST
     , bool isShared

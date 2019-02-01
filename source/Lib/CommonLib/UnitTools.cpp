@@ -4816,11 +4816,11 @@ bool TU::needsSqrt2Scale( const TransformUnit &tu, const ComponentID &compID )
 {
   const Size &size=tu.blocks[compID];
 #if JVET_M0464_UNI_MTS
-  const bool bTransformSkip = tu.mtsIdx==1 && isLuma(compID);
+  const bool isTransformSkip = tu.mtsIdx==1 && isLuma(compID);
 #else
-  const bool bTransformSkip = tu.transformSkip[compID];
+  const bool isTransformSkip = tu.transformSkip[compID];
 #endif
-  return (!bTransformSkip) && (((g_aucLog2[size.width] + g_aucLog2[size.height]) & 1) == 1);
+  return (!isTransformSkip) && (((g_aucLog2[size.width] + g_aucLog2[size.height]) & 1) == 1);
 }
 #else
 bool TU::needsSqrt2Scale( const Size& size )

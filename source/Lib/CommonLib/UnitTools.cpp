@@ -1022,7 +1022,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 
 #if JVET_L0090_PAIR_AVG
   // pairwise-average candidates
-  {
+#if JVET_M0193_PAIR_AVG_REDUCTION==0
     const int cutoff = std::min(cnt, 4);
     const int end = cutoff * (cutoff - 1) / 2;
     constexpr int PRIORITY_LIST0[] = { 0, 0, 1, 0, 1, 2 };
@@ -1032,49 +1032,34 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
     {
       const int i = PRIORITY_LIST0[idx];
       const int j = PRIORITY_LIST1[idx];
-
-      mrgCtx.mvFieldNeighbours[cnt * 2].setMvField(Mv(0, 0), NOT_VALID);
-      mrgCtx.mvFieldNeighbours[cnt * 2 + 1].setMvField(Mv(0, 0), NOT_VALID);
-      // calculate average MV for L0 and L1 seperately
-      unsigned char interDir = 0;
-
-      for (int refListId = 0; refListId < 1; refListId++)
-      {
-        const short refIdxI = mrgCtx.mvFieldNeighbours[i * 2 + refListId].refIdx;
-        const short refIdxJ = mrgCtx.mvFieldNeighbours[j * 2 + refListId].refIdx;
-
-        // both MVs are invalid, skip
-        if ((refIdxI == NOT_VALID) && (refIdxJ == NOT_VALID))
-        {
-          continue;
-        }
-
-        interDir += 1 << refListId;
-        // both MVs are valid, average these two MVs
-        if ((refIdxI != NOT_VALID) && (refIdxJ != NOT_VALID))
-        {
-          const Mv& MvI = mrgCtx.mvFieldNeighbours[i * 2 + refListId].mv;
-          const Mv& MvJ = mrgCtx.mvFieldNeighbours[j * 2 + refListId].mv;
-
-          // average two MVs
-          Mv avgMv = MvI;
-
-          avgMv += MvJ;
-          mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
-#if JVET_M0265_MV_ROUNDING_CLEANUP
-          roundAffineMv(avgMv.hor, avgMv.ver, 1);
 #else
-          avgMv.setHor(avgMv.getHor() / 2);
-          avgMv.setVer(avgMv.getVer() / 2);
+    if (cnt>1 && cnt <maxNumMergeCand)
+    {
 #endif
-          mrgCtx.mvFieldNeighbours[cnt * 2 + refListId].setMvField(avgMv, refIdxI);
-        }
-      }
-      mrgCtx.interDirNeighbours[cnt] = interDir;
-      if (interDir > 0)
-      {
-        cnt++;
-      }
+       mrgCtx.mvFieldNeighbours[cnt * 2    ].setMvField(Mv(0, 0), NOT_VALID);
+       mrgCtx.mvFieldNeighbours[cnt * 2 + 1].setMvField(Mv(0, 0), NOT_VALID);
+  
+#if JVET_M0193_PAIR_AVG_REDUCTION
+       const Mv& MvI = mrgCtx.mvFieldNeighbours[0 * 2].mv;
+       const Mv& MvJ = mrgCtx.mvFieldNeighbours[1 * 2].mv;
+#else
+       const Mv& MvI = mrgCtx.mvFieldNeighbours[i * 2 ].mv;
+       const Mv& MvJ = mrgCtx.mvFieldNeighbours[j * 2 ].mv;
+#endif
+       // average two MVs
+       Mv avgMv = MvI;
+
+       avgMv += MvJ;
+       mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
+#if JVET_M0265_MV_ROUNDING_CLEANUP
+       roundAffineMv(avgMv.hor, avgMv.ver, 1);
+#else
+       avgMv.setHor(avgMv.getHor() / 2);
+       avgMv.setVer(avgMv.getVer() / 2);
+#endif
+      mrgCtx.mvFieldNeighbours[cnt * 2 ].setMvField(avgMv, MAX_NUM_REF);
+      mrgCtx.interDirNeighbours[cnt] = 1;
+      cnt++;
     }
 
     // early termination
@@ -1082,7 +1067,6 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
     {
       return;
     }
-  }
 #endif
 
   mrgCtx.numValidMergeCand = cnt;
@@ -1652,6 +1636,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
           avgMv.setVer( avgMv.getVer() / 2 );
 #endif
 
+#if JVET_M0483_IBC==0
 #if JVET_M0193_PAIR_AVG_REDUCTION
           if (mrgCtx.mrgTypeNeighbours[0] == MRG_TYPE_IBC && mrgCtx.mrgTypeNeighbours[1] == MRG_TYPE_IBC && pu.cs->sps->getSpsNext().getIBCMode())
 #else
@@ -1662,7 +1647,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
              avgMv.setHor((avgMv.getHor() / 16) << 4);
              avgMv.setVer((avgMv.getVer() / 16) << 4);
           }
-
+#endif
           mrgCtx.mvFieldNeighbours[cnt * 2 + refListId].setMvField( avgMv, refIdxI );
         }
         // only one MV is valid, take the only one MV

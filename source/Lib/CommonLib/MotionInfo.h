@@ -106,11 +106,11 @@ struct MotionInfo
 #endif
   char     interDir;
   uint16_t   sliceIdx;
+  Mv      mv     [ NUM_REF_PIC_LIST_01 ];
+  int16_t   refIdx [ NUM_REF_PIC_LIST_01 ];
 #if JVET_M0264_HMVP_WITH_GBIIDX
   uint8_t         GBiIdx;
 #endif
-  Mv      mv     [ NUM_REF_PIC_LIST_01 ];
-  int16_t   refIdx [ NUM_REF_PIC_LIST_01 ];
   Mv      bv;
 #if JVET_M0483_IBC
 #if JVET_M0264_HMVP_WITH_GBIIDX
@@ -128,7 +128,7 @@ struct MotionInfo
 #if JVET_M0264_HMVP_WITH_GBIIDX
   MotionInfo() : isInter(false), interDir(0), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID }, GBiIdx(0) { }
 #else
-  MotionInfo()        : isInter(  false ), interDir( 0 ), sliceIdx( 0 ), refIdx{ NOT_VALID, NOT_VALID } { }
+  MotionInfo() : isInter(false), interDir( 0 ), sliceIdx( 0 ), refIdx{ NOT_VALID, NOT_VALID } { }
 #endif
   // ensure that MotionInfo(0) produces '\x000....' bit pattern - needed to work with AreaBuf - don't use this constructor for anything else
 #if JVET_M0264_HMVP_WITH_GBIIDX

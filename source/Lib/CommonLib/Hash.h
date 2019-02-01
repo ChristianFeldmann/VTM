@@ -53,7 +53,7 @@ struct BlockHash
 {
   short x;
   short y;
-  unsigned int hashValue2;
+  uint32_t hashValue2;
 };
 
 typedef std::vector<BlockHash>::iterator MapIterator;
@@ -66,23 +66,23 @@ typedef std::vector<BlockHash>::iterator MapIterator;
 struct TCRCCalculatorLight
 {
 public:
-  TCRCCalculatorLight(unsigned int bits, unsigned int truncPoly);
+  TCRCCalculatorLight(uint32_t bits, uint32_t truncPoly);
   ~TCRCCalculatorLight();
 
 public:
-  void processData(unsigned char* curData, unsigned int dataLength);
+  void processData(unsigned char* curData, uint32_t dataLength);
   void reset() { m_remainder = 0; }
-  unsigned int getCRC() { return m_remainder & m_finalResultMask; }
+  uint32_t getCRC() { return m_remainder & m_finalResultMask; }
 
 private:
   void xInitTable();
 
 private:
-  unsigned int m_remainder;
-  unsigned int m_truncPoly;
-  unsigned int m_bits;
-  unsigned int m_table[256];
-  unsigned int m_finalResultMask;
+  uint32_t m_remainder;
+  uint32_t m_truncPoly;
+  uint32_t m_bits;
+  uint32_t m_table[256];
+  uint32_t m_finalResultMask;
 };
 
 
@@ -93,29 +93,29 @@ public:
   ~TComHash();
   void create();
   void clearAll();
-  void addToTable(unsigned int hashValue, const BlockHash& blockHash);
-  int count(unsigned int hashValue);
-  int count(unsigned int hashValue) const;
-  MapIterator getFirstIterator(unsigned int hashValue);
-  const MapIterator getFirstIterator(unsigned int hashValue) const;
-  bool hasExactMatch(unsigned int hashValue1, unsigned int hashValue2);
+  void addToTable(uint32_t hashValue, const BlockHash& blockHash);
+  int count(uint32_t hashValue);
+  int count(uint32_t hashValue) const;
+  MapIterator getFirstIterator(uint32_t hashValue);
+  const MapIterator getFirstIterator(uint32_t hashValue) const;
+  bool hasExactMatch(uint32_t hashValue1, uint32_t hashValue2);
 
-  void generateBlock2x2HashValue(const PelUnitBuf &curPicBuf, int picWidth, int picHeight, const BitDepths bitDepths, unsigned int* picBlockHash[2], bool* picBlockSameInfo[3]);
-  void generateBlockHashValue(int picWidth, int picHeight, int width, int height, unsigned int* srcPicBlockHash[2], unsigned int* dstPicBlockHash[2], bool* srcPicBlockSameInfo[3], bool* dstPicBlockSameInfo[3]);
-  void generateRectangleHashValue(int picWidth, int picHeight, int width, int height, unsigned int* srcPicBlockHash[2], unsigned int* dstPicBlockHash[2], bool* srcPicBlockSameInfo[3], bool* dstPicBlockSameInfo[3]);
-  void addToHashMapByRowWithPrecalData(unsigned int* srcHash[2], bool* srcIsSame, int picWidth, int picHeight, int width, int height);
+  void generateBlock2x2HashValue(const PelUnitBuf &curPicBuf, int picWidth, int picHeight, const BitDepths bitDepths, uint32_t* picBlockHash[2], bool* picBlockSameInfo[3]);
+  void generateBlockHashValue(int picWidth, int picHeight, int width, int height, uint32_t* srcPicBlockHash[2], uint32_t* dstPicBlockHash[2], bool* srcPicBlockSameInfo[3], bool* dstPicBlockSameInfo[3]);
+  void generateRectangleHashValue(int picWidth, int picHeight, int width, int height, uint32_t* srcPicBlockHash[2], uint32_t* dstPicBlockHash[2], bool* srcPicBlockSameInfo[3], bool* dstPicBlockSameInfo[3]);
+  void addToHashMapByRowWithPrecalData(uint32_t* srcHash[2], bool* srcIsSame, int picWidth, int picHeight, int width, int height);
   bool isInitial() { return tableHasContent; }
   void setInitial() { tableHasContent = true; }
 
 
 
 public:
-  static unsigned int   getCRCValue1(unsigned char* p, int length);
-  static unsigned int   getCRCValue2(unsigned char* p, int length);
+  static uint32_t getCRCValue1(unsigned char* p, int length);
+  static uint32_t getCRCValue2(unsigned char* p, int length);
   static void getPixelsIn1DCharArrayByBlock2x2(const PelUnitBuf &curPicBuf, unsigned char* pixelsIn1D, int xStart, int yStart, const BitDepths& bitDepths, bool includeAllComponent = true);
   static bool isBlock2x2RowSameValue(unsigned char* p, bool includeAllComponent = true);
   static bool isBlock2x2ColSameValue(unsigned char* p, bool includeAllComponent = true);
-  static bool getBlockHashValue(const PelUnitBuf &curPicBuf, int width, int height, int xStart, int yStart, const BitDepths bitDepths, unsigned int& hashValue1, unsigned int& hashValue2);
+  static bool getBlockHashValue(const PelUnitBuf &curPicBuf, int width, int height, int xStart, int yStart, const BitDepths bitDepths, uint32_t& hashValue1, uint32_t& hashValue2);
   static void initBlockSizeToIndex();
 
 private:

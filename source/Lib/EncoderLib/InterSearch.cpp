@@ -1606,8 +1606,8 @@ int InterSearch::xHashInterPredME(const PredictionUnit& pu, RefPicList currRefPi
   int xPos = pu.cu->lumaPos().x;
   int yPos = pu.cu->lumaPos().y;
 
-  unsigned int hashValue1;
-  unsigned int hashValue2;
+  uint32_t hashValue1;
+  uint32_t hashValue2;
 
   if (!TComHash::getBlockHashValue((pu.cs->picture->getOrigBuf()), width, height, xPos, yPos, pu.cu->slice->getSPS()->getBitDepths(), hashValue1, hashValue2))
   {
@@ -1650,8 +1650,8 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
   int xPos = pu.cu->lumaPos().x;
   int yPos = pu.cu->lumaPos().y;
 
-  unsigned int hashValue1;
-  unsigned int hashValue2;
+  uint32_t hashValue1;
+  uint32_t hashValue2;
   Distortion bestCost = UINT64_MAX;
 
   if (!TComHash::getBlockHashValue((pu.cs->picture->getOrigBuf()), width, height, xPos, yPos, pu.cu->slice->getSPS()->getBitDepths(), hashValue1, hashValue2))

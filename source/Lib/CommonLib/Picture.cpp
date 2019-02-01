@@ -1173,14 +1173,14 @@ void Picture::addPictureToHashMapForInter()
 {
   int picWidth = slices[0]->getSPS()->getPicWidthInLumaSamples();
   int picHeight = slices[0]->getSPS()->getPicHeightInLumaSamples();
-  unsigned int* blockHashValues[2][2];
+  uint32_t* blockHashValues[2][2];
   bool* bIsBlockSame[2][3];
 
   for (int i = 0; i < 2; i++)
   {
     for (int j = 0; j < 2; j++)
     {
-      blockHashValues[i][j] = new unsigned int[picWidth*picHeight];
+      blockHashValues[i][j] = new uint32_t[picWidth*picHeight];
     }
 
     for (int j = 0; j < 3; j++)

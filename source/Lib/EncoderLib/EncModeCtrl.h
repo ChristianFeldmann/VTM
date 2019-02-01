@@ -54,6 +54,9 @@
 
 enum EncTestModeType
 {
+#if JVET_M0253_HASH_ME
+  ETM_HASH_INTER,
+#endif
   ETM_MERGE_SKIP,
   ETM_INTER_ME,
   ETM_AFFINE,
@@ -137,6 +140,9 @@ inline bool isModeInter( const EncTestMode& encTestmode ) // perhaps remove
           || encTestmode.type == ETM_MERGE_SKIP
           || encTestmode.type == ETM_AFFINE
           || encTestmode.type == ETM_MERGE_TRIANGLE
+#if JVET_M0253_HASH_ME
+          || encTestmode.type == ETM_HASH_INTER
+#endif
          );
 }
 
@@ -178,6 +184,10 @@ struct ComprCUCtx
     , testModes     (            )
     , lastTestMode  (            )
     , earlySkip     ( false      )
+#if JVET_M0253_HASH_ME
+    , isHashPerfectMatch
+                    ( false      )
+#endif
     , bestCS        ( nullptr    )
     , bestCU        ( nullptr    )
     , bestTU        ( nullptr    )
@@ -212,6 +222,9 @@ struct ComprCUCtx
   std::vector<EncTestMode>          testModes;
   EncTestMode                       lastTestMode;
   bool                              earlySkip;
+#if JVET_M0253_HASH_ME
+  bool                              isHashPerfectMatch;
+#endif
   CodingStructure                  *bestCS;
   CodingUnit                       *bestCU;
   TransformUnit                    *bestTU;
@@ -287,6 +300,10 @@ public:
   EncTestMode  currTestMode         () const;
   EncTestMode  lastTestMode         () const;
   void         setEarlySkipDetected ();
+#if JVET_M0253_HASH_ME
+  void         setIsHashPerfectMatch( bool b ) { m_ComprCUCtxList.back().isHashPerfectMatch = b; }
+  bool         getIsHashPerfectMatch() { return m_ComprCUCtxList.back().isHashPerfectMatch; }
+#endif
   virtual void setBest              ( CodingStructure& cs );
   bool         anyMode              () const;
 

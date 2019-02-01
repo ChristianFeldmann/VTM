@@ -46,7 +46,9 @@
 #include "Unit.h"
 #include "Slice.h"
 #include "CodingStructure.h"
-
+#if JVET_M0253_HASH_ME
+#include "Hash.h"
+#endif
 #include <deque>
 
 #if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
@@ -265,6 +267,13 @@ public:
 #endif
 #else
   PelStorage m_bufs[NUM_PIC_TYPES];
+#endif
+
+#if JVET_M0253_HASH_ME
+  TComHash           m_hashMap;
+  TComHash*          getHashMap() { return &m_hashMap; }
+  const TComHash*    getHashMap() const { return &m_hashMap; }
+  void               addPictureToHashMapForInter();
 #endif
 
   CodingStructure*   cs;

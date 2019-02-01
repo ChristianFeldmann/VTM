@@ -247,6 +247,9 @@ protected:
 #if JVET_M0246_AFFINE_AMVR
   bool      m_AffineAmvr;
 #endif
+#if JVET_M0253_HASH_ME
+  bool      m_HashME;
+#endif
 #if JVET_M0247_AFFINE_AMVR_ENCOPT
   bool      m_AffineAmvrEncOpt;
 #endif
@@ -774,6 +777,10 @@ public:
 #if JVET_M0255_FRACMMVD_SWITCH
   void      setAllowDisFracMMVD             ( bool b )       { m_allowDisFracMMVD = b;    }
   bool      getAllowDisFracMMVD             ()         const { return m_allowDisFracMMVD; }
+#endif
+#if JVET_M0253_HASH_ME
+  void      setUseHashME                    ( bool b )       { m_HashME = b; }
+  bool      getUseHashME                    ()         const { return m_HashME; }
 #endif
 #if JVET_M0246_AFFINE_AMVR
   void      setUseAffineAmvr                ( bool b )       { m_AffineAmvr = b;    }

@@ -52,6 +52,9 @@
 
 #include "CommonLib/AffineGradientSearch.h"
 #include "CommonLib/IbcHashMap.h"
+#if JVET_M0253_HASH_ME
+#include "CommonLib/Hash.h"
+#endif
 #include <unordered_map>
 #include <vector>
 #if JVET_M0427_INLOOP_RESHAPER
@@ -143,6 +146,12 @@ protected:
   CABACWriter*    m_CABACEstimator;
   CtxCache*       m_CtxCache;
   DistParam       m_cDistParam;
+
+#if JVET_M0253_HASH_ME
+  RefPicList      m_currRefPicList;
+  int             m_currRefPicIndex;
+  bool            m_skipFracME;
+#endif
 
   // Misc.
   Pel            *m_pTempPel;
@@ -273,6 +282,13 @@ public:
   void  xIBCEstimation   ( PredictionUnit& pu, PelUnitBuf& origBuf, Mv     *pcMvPred, Mv     &rcMv, Distortion &ruiCost, const int localSearchRangeX, const int localSearchRangeY);
   void  xIBCSearchMVCandUpdate  ( Distortion  uiSad, int x, int y, Distortion* uiSadBestCand, Mv* cMVCand);
   int   xIBCSearchMVChromaRefine( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, int cuPelX, int cuPelY, Distortion* uiSadBestCand, Mv*     cMVCand);
+#if JVET_M0253_HASH_ME
+  void addToSortList(std::list<BlockHash>& listBlockHash, std::list<int>& listCost, int cost, const BlockHash& blockHash);
+  bool predInterHashSearch(CodingUnit& cu, Partitioner& partitioner, bool& isPerfectMatch);
+  bool xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPicList, int& bestRefIndex, Mv& bestMv, Mv& bestMvd, int& bestMVPIndex, bool& isPerfectMatch);
+  int  xHashInterPredME(const PredictionUnit& pu, RefPicList currRefPicList, int currRefPicIndex, Mv bestMv[5]);
+  void selectMatchesInter(const MapIterator& itBegin, int count, std::list<BlockHash>& vecBlockHash, const BlockHash& currBlockHash);
+#endif
 protected:
 
   // -------------------------------------------------------------------------------------------------------------------

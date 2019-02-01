@@ -260,6 +260,10 @@ void EncApp::xInitLibCfg()
 #endif  
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
+#if JVET_M0253_HASH_ME
+  m_cEncLib.setUseHashME                                         ( m_HashME );
+#endif
+
 #if JVET_M0255_FRACMMVD_SWITCH
   m_cEncLib.setAllowDisFracMMVD                                  ( m_allowDisFracMMVD );
 #endif

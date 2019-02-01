@@ -219,7 +219,7 @@ InterpolationFilter::InterpolationFilter()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<bool isFirst, bool isLast>
 #if JVET_M0147_DMVR
-void InterpolationFilter::filterCopy( const ClpRng& clpRng, const Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height, bool biMC10BitOut)
+void InterpolationFilter::filterCopy( const ClpRng& clpRng, const Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height, bool biMCForDMVR)
 #else
 void InterpolationFilter::filterCopy( const ClpRng& clpRng, const Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height )
 #endif
@@ -249,7 +249,7 @@ void InterpolationFilter::filterCopy( const ClpRng& clpRng, const Pel *src, int 
     const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
 
 #if JVET_M0147_DMVR
-    if (biMC10BitOut)
+    if (biMCForDMVR)
     {
       int shift10BitOut, offset;
       if ((clpRng.bd - IF_INTERNAL_PREC_BILINEAR) > 0)
@@ -300,7 +300,7 @@ void InterpolationFilter::filterCopy( const ClpRng& clpRng, const Pel *src, int 
     const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
 
 #if JVET_M0147_DMVR
-    if (biMC10BitOut)
+    if (biMCForDMVR)
     {   
       int shift10BitOut, offset;
       if ((clpRng.bd - IF_INTERNAL_PREC_BILINEAR) > 0)
@@ -376,7 +376,7 @@ void InterpolationFilter::filterCopy( const ClpRng& clpRng, const Pel *src, int 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<int N, bool isVertical, bool isFirst, bool isLast>
 #if JVET_M0147_DMVR
-void InterpolationFilter::filter(const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, TFilterCoeff const *coeff, bool biMC10BitOut)
+void InterpolationFilter::filter(const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, TFilterCoeff const *coeff, bool biMCForDMVR)
 #else
 void InterpolationFilter::filter(const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, TFilterCoeff const *coeff)
 #endif
@@ -425,7 +425,7 @@ void InterpolationFilter::filter(const ClpRng& clpRng, Pel const *src, int srcSt
   }
 
 #if JVET_M0147_DMVR
-  if (biMC10BitOut)
+  if (biMCForDMVR)
   {
     shift = IF_FILTER_PREC_BILINEAR - (IF_INTERNAL_PREC_BILINEAR - clpRng.bd);
     offset = 1 << (shift - 1);
@@ -492,7 +492,7 @@ void InterpolationFilter::filter(const ClpRng& clpRng, Pel const *src, int srcSt
  */
 template<int N>
 #if JVET_M0147_DMVR
-void InterpolationFilter::filterHor(const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, bool isLast, TFilterCoeff const *coeff, bool biMC10BitOut)
+void InterpolationFilter::filterHor(const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, bool isLast, TFilterCoeff const *coeff, bool biMCForDMVR)
 #else
 void InterpolationFilter::filterHor(const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, bool isLast, TFilterCoeff const *coeff)
 #endif
@@ -501,7 +501,7 @@ void InterpolationFilter::filterHor(const ClpRng& clpRng, Pel const *src, int sr
   if( N == 8 )
   {
 #if JVET_M0147_DMVR
-    m_filterHor[0][1][isLast](clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMC10BitOut);
+    m_filterHor[0][1][isLast](clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMCForDMVR);
 #else
     m_filterHor[0][1][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff );
 #endif
@@ -509,7 +509,7 @@ void InterpolationFilter::filterHor(const ClpRng& clpRng, Pel const *src, int sr
   else if( N == 4 )
   {
 #if JVET_M0147_DMVR
-    m_filterHor[1][1][isLast](clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMC10BitOut);
+    m_filterHor[1][1][isLast](clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMCForDMVR);
 #else
     m_filterHor[1][1][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff );
 #endif 
@@ -517,7 +517,7 @@ void InterpolationFilter::filterHor(const ClpRng& clpRng, Pel const *src, int sr
   else if( N == 2 )
   {
 #if JVET_M0147_DMVR
-    m_filterHor[2][1][isLast](clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMC10BitOut);
+    m_filterHor[2][1][isLast](clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMCForDMVR);
 #else
     m_filterHor[2][1][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff );
 #endif
@@ -545,7 +545,7 @@ void InterpolationFilter::filterHor(const ClpRng& clpRng, Pel const *src, int sr
  */
 template<int N>
 #if JVET_M0147_DMVR
-void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, bool isFirst, bool isLast, TFilterCoeff const *coeff, bool biMC10BitOut)
+void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, bool isFirst, bool isLast, TFilterCoeff const *coeff, bool biMCForDMVR)
 #else
 void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, bool isFirst, bool isLast, TFilterCoeff const *coeff)
 #endif
@@ -554,7 +554,7 @@ void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int sr
   if( N == 8 )
   {
 #if JVET_M0147_DMVR
-    m_filterVer[0][isFirst][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMC10BitOut);
+    m_filterVer[0][isFirst][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMCForDMVR);
 #else
     m_filterVer[0][isFirst][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff );
 #endif
@@ -562,7 +562,7 @@ void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int sr
   else if( N == 4 )
   {
 #if JVET_M0147_DMVR
-    m_filterVer[1][isFirst][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMC10BitOut);
+    m_filterVer[1][isFirst][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMCForDMVR);
 #else
     m_filterVer[1][isFirst][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff );
 #endif
@@ -570,7 +570,7 @@ void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int sr
   else if( N == 2 )
   {
 #if JVET_M0147_DMVR
-    m_filterVer[2][isFirst][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMC10BitOut);
+    m_filterVer[2][isFirst][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMCForDMVR);
 #else
     m_filterVer[2][isFirst][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff );
 #endif
@@ -600,7 +600,7 @@ void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int sr
  * \param  bitDepth   Bit depth
  */
 #if JVET_M0147_DMVR
-void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMC10BitOut)
+void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR)
 #else
 void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx )
 #endif
@@ -608,7 +608,7 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
   if( frac == 0 )
   {
 #if JVET_M0147_DMVR
-    m_filterCopy[true][isLast](clpRng, src, srcStride, dst, dstStride, width, height, biMC10BitOut);
+    m_filterCopy[true][isLast](clpRng, src, srcStride, dst, dstStride, width, height, biMCForDMVR);
 #else
     m_filterCopy[true][isLast]( clpRng, src, srcStride, dst, dstStride, width, height );
 #endif
@@ -619,7 +619,7 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
     if( nFilterIdx == 1 )
     {
 #if JVET_M0147_DMVR
-      filterHor<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_bilinearFilterPrec4[frac], biMC10BitOut);
+      filterHor<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR);
 #else
       filterHor<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_bilinearFilter[frac]);
 #endif
@@ -627,7 +627,7 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
     else
     {
 #if JVET_M0147_DMVR
-      filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter[frac], biMC10BitOut);
+      filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter[frac], biMCForDMVR);
 #else
       filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter[frac] );
 #endif
@@ -638,7 +638,7 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
     const uint32_t csx = getComponentScaleX( compID, fmt );
     CHECK( frac < 0 || csx >= 2 || ( frac << ( 1 - csx ) ) >= CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
 #if JVET_M0147_DMVR
-    filterHor<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_chromaFilter[frac << ( 1 - csx )], biMC10BitOut);
+    filterHor<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_chromaFilter[frac << ( 1 - csx )], biMCForDMVR);
 #else
     filterHor<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_chromaFilter[frac << ( 1 - csx )] );
 #endif
@@ -663,7 +663,7 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
  * \param  bitDepth   Bit depth
  */
 #if JVET_M0147_DMVR
-void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMC10BitOut)
+void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR)
 #else
 void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx)
 #endif
@@ -671,7 +671,7 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
   if( frac == 0 )
   {
 #if JVET_M0147_DMVR
-    m_filterCopy[isFirst][isLast](clpRng, src, srcStride, dst, dstStride, width, height, biMC10BitOut);
+    m_filterCopy[isFirst][isLast](clpRng, src, srcStride, dst, dstStride, width, height, biMCForDMVR);
 #else
     m_filterCopy[isFirst][isLast]( clpRng, src, srcStride, dst, dstStride, width, height );
 #endif
@@ -682,7 +682,7 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
     if (nFilterIdx == 1)
     {
 #if JVET_M0147_DMVR
-      filterVer<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilterPrec4[frac], biMC10BitOut);        
+      filterVer<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR);        
 #else
       filterVer<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilter[frac]);
 #endif
@@ -690,7 +690,7 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
     else
     {
 #if JVET_M0147_DMVR
-      filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter[frac], biMC10BitOut);
+      filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter[frac], biMCForDMVR);
 #else
       filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter[frac] );
 #endif
@@ -701,7 +701,7 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
     const uint32_t csy = getComponentScaleY( compID, fmt );
     CHECK( frac < 0 || csy >= 2 || ( frac << ( 1 - csy ) ) >= CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
 #if JVET_M0147_DMVR
-    filterVer<NTAPS_CHROMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilter[frac << (1 - csy)], biMC10BitOut);
+    filterVer<NTAPS_CHROMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilter[frac << (1 - csy)], biMCForDMVR);
 #else
     filterVer<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilter[frac << ( 1 - csy )] );
 #endif

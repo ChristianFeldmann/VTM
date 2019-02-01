@@ -877,7 +877,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
 #endif
 #if JVET_M0147_DMVR
-  ("DMVR",                                            m_DMVR,        
+  ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
 #endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")

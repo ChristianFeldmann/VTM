@@ -119,7 +119,7 @@ protected:
     SAD_COUNT
   };
   Mv m_pSearchOffset[5] = { Mv(0, 1), Mv(0, -1), Mv(1, 0), Mv(-1, 0), Mv(0, 0) };
-  uint64_t m_SADsArray[((DMVR_NUM_ITERATION << 1) + 1) * ((DMVR_NUM_ITERATION << 1) + 1)];
+  uint64_t m_SADsArray[((2 * DMVR_NUM_ITERATION) + 1) * ((2 * DMVR_NUM_ITERATION) + 1)];
 #endif
  
   Pel*                 m_gradX0;
@@ -210,13 +210,13 @@ public:
 #endif
 #if JVET_M0147_DMVR
   void xPrefetchPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId);
-  void xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvSrc0, PelUnitBuf &pcYuvSrc1, PelUnitBuf &pcPad0, PelUnitBuf &pcPad1, const bool bBIOApplied
+  void xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvSrc0, PelUnitBuf &pcYuvSrc1, PelUnitBuf &pcPad0, PelUnitBuf &pcPad1, const bool bioApplied
     , const Mv startMV[NUM_REF_PIC_LIST_01]
   );
-  void xBIPMVRefine(int bd, Pel *pRefL0, Pel *pRefL1, uint64_t& minCost, int16_t *delta_mv, uint64_t *pSADsArray, int width, int height);
-  uint64_t xDMVRCost(int iBitDepth, Pel* pRef, uint32_t uiRefStride, const Pel* pOrg, uint32_t uiOrgStride, int iWidth, int iHeight);
+  void xBIPMVRefine(int bd, Pel *pRefL0, Pel *pRefL1, uint64_t& minCost, int16_t *deltaMV, uint64_t *pSADsArray, int width, int height);
+  uint64_t xDMVRCost(int bitDepth, Pel* pRef, uint32_t refStride, const Pel* pOrg, uint32_t orgStride, int width, int height);
   void xinitMC(PredictionUnit& pu, const ClpRngs &clpRngs);
-  void xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, const ClpRngs &clpRngs, const bool bBIOApplied );
+  void xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, const ClpRngs &clpRngs, const bool bioApplied );
 #endif
 
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE

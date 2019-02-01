@@ -194,7 +194,7 @@ static void fullPelCopyAVX2( const ClpRng& clpRng, const void*_src, int srcStrid
 
 template<X86_VEXT vext, bool isFirst, bool isLast>
 #if JVET_M0147_DMVR
-static void simdFilterCopy( const ClpRng& clpRng, const Pel* src, int srcStride, int16_t* dst, int dstStride, int width, int height, bool biMC10BitOut)
+static void simdFilterCopy( const ClpRng& clpRng, const Pel* src, int srcStride, int16_t* dst, int dstStride, int width, int height, bool biMCForDMVR)
 #else
 static void simdFilterCopy( const ClpRng& clpRng, const Pel* src, int srcStride, int16_t* dst, int dstStride, int width, int height )
 #endif
@@ -216,7 +216,7 @@ static void simdFilterCopy( const ClpRng& clpRng, const Pel* src, int srcStride,
 #endif
   { //Scalar
 #if JVET_M0147_DMVR
-    InterpolationFilter::filterCopy<isFirst, isLast>( clpRng, src, srcStride, dst, dstStride, width, height, biMC10BitOut);
+    InterpolationFilter::filterCopy<isFirst, isLast>( clpRng, src, srcStride, dst, dstStride, width, height, biMCForDMVR);
 #else
     InterpolationFilter::filterCopy<isFirst, isLast>( clpRng, src, srcStride, dst, dstStride, width, height );
 #endif
@@ -1031,17 +1031,6 @@ static inline __m128i simdInterpolateLuma10Bit2P4(int16_t const *src, int srcStr
   sumLo = _mm_srai_epi16(_mm_add_epi16(sumLo, mmOffset), shift);
   return sumLo;
 }
-// intermediate are not expected to cross 16 bit
-#if USE_AVX2
-static inline __m256i simdClip3_256(__m256i mmMin, __m256i mmMax, __m256i mmPix)
-{
-  __m256i mmMask = _mm256_cmpgt_epi16(mmPix, mmMin);
-  mmPix = _mm256_or_si256(_mm256_and_si256(mmMask, mmPix), _mm256_andnot_si256(mmMask, mmMin));
-  mmMask = _mm256_cmpgt_epi16(mmMax, mmPix);
-  mmPix = _mm256_or_si256(_mm256_and_si256(mmMask, mmPix), _mm256_andnot_si256(mmMask, mmMax));
-  return(mmPix);
-}
-#endif
 
 template<X86_VEXT vext, bool isLast>
 static void simdInterpolateN2_10BIT_M4(const int16_t* src, int srcStride, int16_t *dst, int dstStride, int cStride, int width, int height, int shift, int offset, const ClpRng& clpRng, int16_t const *c)
@@ -1049,16 +1038,14 @@ static void simdInterpolateN2_10BIT_M4(const int16_t* src, int srcStride, int16_
   int row, col;
   __m128i mmOffset = _mm_set1_epi16(offset);
   __m128i mmCoeff[2];
-  __m128i mmMin = _mm_set1_epi16(clpRng.min);
-  __m128i mmMax = _mm_set1_epi16(clpRng.max);
   for (int n = 0; n < 2; n++)
     mmCoeff[n] = _mm_set1_epi16(c[n]);
+
+  CHECK(isLast, "Not Supported");
 
 #if USE_AVX2
   __m256i mm256Offset = _mm256_set1_epi16(offset);
   __m256i mm256Coeff[2];
-  __m256i mm256Min = _mm256_set1_epi16(clpRng.min);
-  __m256i mm256Max = _mm256_set1_epi16(clpRng.max);
   for (int n = 0; n < 2; n++)
     mm256Coeff[n] = _mm256_set1_epi16(c[n]);
 #endif
@@ -1070,10 +1057,6 @@ static void simdInterpolateN2_10BIT_M4(const int16_t* src, int srcStride, int16_
     for (; col < ((width >> 4) << 4); col += 16)
     {
       __m256i mmFiltered = simdInterpolateLuma10Bit2P16(src + col, cStride, mm256Coeff, mm256Offset, shift);
-      if (isLast)
-      {
-        mmFiltered = simdClip3_256(mm256Min, mm256Max, mmFiltered);
-      }
       _mm256_storeu_si256((__m256i *)(dst + col), mmFiltered);
     }
 #endif
@@ -1081,19 +1064,11 @@ static void simdInterpolateN2_10BIT_M4(const int16_t* src, int srcStride, int16_
     for (; col < ((width >> 3) << 3); col += 8)
     {
       __m128i mmFiltered = simdInterpolateLuma10Bit2P8(src + col, cStride, mmCoeff, mmOffset, shift);
-      if (isLast)
-      {
-        mmFiltered = simdClip3(mmMin, mmMax, mmFiltered);
-      }
       _mm_storeu_si128((__m128i *)(dst + col), mmFiltered);
     }
 
     // last 4 samples
     __m128i mmFiltered = simdInterpolateLuma10Bit2P4(src + col, cStride, mmCoeff, mmOffset, shift);
-    if (isLast)
-    {
-      mmFiltered = simdClip3(mmMin, mmMax, mmFiltered);
-    }
     _mm_storel_epi64((__m128i *)(dst + col), mmFiltered);
     src += srcStride;
     dst += dstStride;
@@ -1103,7 +1078,7 @@ static void simdInterpolateN2_10BIT_M4(const int16_t* src, int srcStride, int16_
 
 template<X86_VEXT vext, int N, bool isVertical, bool isFirst, bool isLast>
 #if JVET_M0147_DMVR
-static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, TFilterCoeff const *coeff, bool biMC10BitOut)
+static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, TFilterCoeff const *coeff, bool biMCForDMVR)
 #else
 static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, TFilterCoeff const *coeff )
 #endif
@@ -1153,7 +1128,7 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
   }
 
 #if JVET_M0147_DMVR
-  if (biMC10BitOut)
+  if (biMCForDMVR)
   {
     shift = IF_FILTER_PREC_BILINEAR - (IF_INTERNAL_PREC_BILINEAR - clpRng.bd);
     offset = 1 << (shift - 1);
@@ -1208,7 +1183,7 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
       return;
     }
 #if JVET_M0147_DMVR
-    else if (biMC10BitOut)
+    else if (biMCForDMVR)
     {
       if (N == 2 && !(width & 0x03))
       {

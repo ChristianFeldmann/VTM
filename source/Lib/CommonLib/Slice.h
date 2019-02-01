@@ -855,9 +855,6 @@ private:
   bool              m_MTTEnabled;                 //
   bool              m_MHIntra;
   bool              m_Triangle;
-#if JVET_M0147_DMVR
-  bool              m_DMVR;
-#endif
 #if ENABLE_WPP_PARALLELISM
   bool              m_NextDQP;
 #endif
@@ -899,10 +896,6 @@ public:
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
-#if JVET_M0147_DMVR
-  void      setUseDMVR(bool b)                                                      { m_DMVR = b; }
-  bool      getUseDMVR()                                                   const    { return m_DMVR; }
-#endif
   void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
   bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }
   bool      getMTTEnabled         ()                                      const     { return m_MTTEnabled; }
@@ -995,6 +988,9 @@ private:
 
 #if JVET_M0246_AFFINE_AMVR
   bool              m_affineAmvrEnabledFlag;
+#endif
+#if JVET_M0147_DMVR
+  bool              m_DMVR;
 #endif
 #if HEVC_VPS
   int               m_VPSId;
@@ -1255,7 +1251,10 @@ public:
   bool                    getDisFracMmvdEnabledFlag() const                                               { return m_disFracMmvdEnabledFlag; }
   void                    setDisFracMmvdEnabledFlag( bool b )                                             { m_disFracMmvdEnabledFlag = b;    }
 #endif
-
+#if JVET_M0147_DMVR
+  bool                    getUseDMVR()const                                                               { return m_DMVR; }
+  void                    setUseDMVR(bool b)                                                              { m_DMVR = b;    }
+#endif
   uint32_t                getMaxTLayers() const                                                           { return m_uiMaxTLayers; }
   void                    setMaxTLayers( uint32_t uiMaxTLayers )                                          { CHECK( uiMaxTLayers > MAX_TLAYER, "Invalid number T-layers" ); m_uiMaxTLayers = uiMaxTLayers; }
 

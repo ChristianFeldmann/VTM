@@ -327,15 +327,15 @@ void copyBufferCore(Pel *src, int srcStride, Pel *dst, int dstStride, int width,
   }
 }
 
-void paddingCore(Pel *ptr, int iStride, int iWidth, int iHeight, int padSize)
+void paddingCore(Pel *ptr, int stride, int width, int height, int padSize)
 {
   /*left and right padding*/
   Pel *ptrTemp1 = ptr;
-  Pel *ptrTemp2 = ptr + (iWidth - 1);
+  Pel *ptrTemp2 = ptr + (width - 1);
   int offset = 0;
-  for (int i = 0; i < iHeight; i++)
+  for (int i = 0; i < height; i++)
   {
-    offset = iStride * i;
+    offset = stride * i;
     for (int j = 1; j <= padSize; j++)
     {
       *(ptrTemp1 - j + offset) = *(ptrTemp1 + offset);
@@ -343,13 +343,13 @@ void paddingCore(Pel *ptr, int iStride, int iWidth, int iHeight, int padSize)
     }
   }
   /*Top and Bottom padding*/
-  int numBytes = (iWidth + padSize + padSize) * sizeof(Pel);
+  int numBytes = (width + padSize + padSize) * sizeof(Pel);
   ptrTemp1 = (ptr - padSize);
-  ptrTemp2 = (ptr + (iStride * (iHeight - 1)) - padSize);
+  ptrTemp2 = (ptr + (stride * (height - 1)) - padSize);
   for (int i = 1; i <= padSize; i++)
   {
-    memcpy(ptrTemp1 - (i * iStride), (ptrTemp1), numBytes);
-    memcpy(ptrTemp2 + (i * iStride), (ptrTemp2), numBytes);
+    memcpy(ptrTemp1 - (i * stride), (ptrTemp1), numBytes);
+    memcpy(ptrTemp2 + (i * stride), (ptrTemp2), numBytes);
   }
 }
 #endif

@@ -1461,7 +1461,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #if JVET_M0147_DMVR
 bool PU::checkDMVRCondition(const PredictionUnit& pu)
 {
-  if (pu.cs->sps->getSpsNext().getUseDMVR())
+  if (pu.cs->sps->getUseDMVR())
   {
     return pu.mergeFlag
       && pu.mergeType == MRG_TYPE_DEFAULT_N
@@ -3878,12 +3878,12 @@ bool PU::isBiPredFromDifferentDirEqDistPoc(const PredictionUnit& pu)
 {
   if (pu.refIdx[0] >= 0 && pu.refIdx[1] >= 0)
   {
-    const int iPOC0 = pu.cu->slice->getRefPOC(REF_PIC_LIST_0, pu.refIdx[0]);
-    const int iPOC1 = pu.cu->slice->getRefPOC(REF_PIC_LIST_1, pu.refIdx[1]);
-    const int iPOC = pu.cu->slice->getPOC();
-    if ((iPOC - iPOC0)*(iPOC - iPOC1) < 0)
+    const int poc0 = pu.cu->slice->getRefPOC(REF_PIC_LIST_0, pu.refIdx[0]);
+    const int poc1 = pu.cu->slice->getRefPOC(REF_PIC_LIST_1, pu.refIdx[1]);
+    const int poc = pu.cu->slice->getPOC();
+    if ((poc - poc0)*(poc - poc1) < 0)
     {
-      if (abs(iPOC - iPOC0) == abs(iPOC - iPOC1))
+      if (abs(poc - poc0) == abs(poc - poc1))
       {
         return true;
       }

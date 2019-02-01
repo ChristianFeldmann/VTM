@@ -1810,9 +1810,6 @@ SPSNext::SPSNext( SPS& sps )
   , m_MTTEnabled                ( false )
   , m_MHIntra                   ( false )
   , m_Triangle                  ( false )
-#if JVET_M0147_DMVR
-  , m_DMVR                      ( false )
-#endif
 #if ENABLE_WPP_PARALLELISM
   , m_NextDQP                   ( false )
 #endif
@@ -1854,6 +1851,9 @@ SPS::SPS()
 , m_bNoSignDataHidingConstraintFlag(false)
 #if JVET_M0246_AFFINE_AMVR
 , m_affineAmvrEnabledFlag     ( false )
+#endif
+#if JVET_M0147_DMVR
+, m_DMVR                      ( false )
 #endif
 #if HEVC_VPS
 , m_VPSId                     (  0)

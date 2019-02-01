@@ -932,7 +932,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
 #endif
 #if JVET_M0147_DMVR
-  sps.getSpsNext().setUseDMVR               ( m_DMVR );
+  sps.setUseDMVR                            ( m_DMVR );
 #endif
   sps.getSpsNext().setIBCMode               ( m_IBCMode );
 

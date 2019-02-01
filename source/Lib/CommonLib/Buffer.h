@@ -96,7 +96,7 @@ extern PelBufferOps g_pelBufOP;
 
 
 #if JVET_M0147_DMVR
-void paddingCore(Pel *ptr, int iStride, int iWidth, int iHeight, int padSize);
+void paddingCore(Pel *ptr, int stride, int width, int height, int padSize);
 void copyBufferCore(Pel *src, int srcStride, Pel *Dst, int dstStride, int width, int height);
 #endif
 

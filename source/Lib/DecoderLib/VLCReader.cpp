@@ -829,9 +829,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   READ_FLAG( symbol,  "mtt_enabled_flag" );                       spsNext.setMTTMode                ( symbol );
   READ_FLAG( symbol,  "mhintra_flag" );                           spsNext.setUseMHIntra             ( symbol != 0 );
   READ_FLAG( symbol,    "triangle_flag" );                          spsNext.setUseTriangle            ( symbol != 0 );
-#if JVET_M0147_DMVR
-  READ_FLAG(symbol, "dmvr_enable_flag");                          spsNext.setUseDMVR                  (symbol != 0);
-#endif
 #if ENABLE_WPP_PARALLELISM
   READ_FLAG( symbol,  "next_dqp_enabled_flag" );                  spsNext.setUseNextDQP             ( symbol != 0 );
 #else
@@ -1103,6 +1100,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
 #if JVET_M0246_AFFINE_AMVR
   READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );             pcSPS->setAffineAmvrEnabledFlag ( uiCode != 0 );
+#endif
+#if JVET_M0147_DMVR
+  READ_FLAG(uiCode, "dmvr_enable_flag");                            pcSPS->setUseDMVR(uiCode != 0);
 #endif
 #if HEVC_USE_SCALING_LISTS
   READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );

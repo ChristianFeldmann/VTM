@@ -117,7 +117,7 @@ static const double AFFINE_ME_LIST_MVP_TH =                        1.0;
 // ====================================================================================================================
 // Common constants
 // ====================================================================================================================
-
+static const uint64_t   MAX_UINT64 =                  0xFFFFFFFFFFFFFFFFU;
 static const uint32_t   MAX_UINT =                            0xFFFFFFFFU; ///< max. value of unsigned 32-bit integer
 static const int    MAX_INT =                              2147483647; ///< max. value of signed 32-bit integer
 static const uint8_t  MAX_UCHAR =                                   255;

@@ -907,7 +907,7 @@ namespace DQIntern
     }
 
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-    void checkRdCosts( const ScanPosType spt, const PQData& pqDataA, const PQData& pqDataB, Decision& decisionA, Decision& decisionB, bool bZeroFix) const
+    void checkRdCosts( const ScanPosType spt, const PQData& pqDataA, const PQData& pqDataB, Decision& decisionA, Decision& decisionB, bool zeroFix) const
 #else
     void checkRdCosts( const ScanPosType spt, const PQData& pqDataA, const PQData& pqDataB, Decision& decisionA, Decision& decisionB) const
 #endif
@@ -923,7 +923,7 @@ namespace DQIntern
       int64_t         rdCostZ   = m_rdCost;
 #endif
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-      if( bZeroFix )
+      if( zeroFix )
       {
         rdCostZ = m_rdCost;
 #if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
@@ -1390,8 +1390,8 @@ namespace DQIntern
 
   private:
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-    void    xDecideAndUpdate  ( const TCoeff absCoeff, const ScanInfo& scanInfo, bool bZeroFix );
-    void    xDecide           ( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions, bool bZeroFix );
+    void    xDecideAndUpdate  ( const TCoeff absCoeff, const ScanInfo& scanInfo, bool zeroFix );
+    void    xDecide           ( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions, bool zeroFix );
 #else
     void    xDecideAndUpdate  ( const TCoeff absCoeff, const ScanInfo& scanInfo );
     void    xDecide           ( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions );
@@ -1434,7 +1434,7 @@ namespace DQIntern
 
 
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-  void DepQuant::xDecide( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions, bool bZeroFix)
+  void DepQuant::xDecide( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions, bool zeroFix)
 #else
   void DepQuant::xDecide( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions)
 #endif
@@ -1444,10 +1444,10 @@ namespace DQIntern
     PQData  pqData[4];
     m_quant.preQuantCoeff( absCoeff, pqData );
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-    m_prevStates[0].checkRdCosts( spt, pqData[0], pqData[2], decisions[0], decisions[2], bZeroFix);
-    m_prevStates[1].checkRdCosts( spt, pqData[0], pqData[2], decisions[2], decisions[0], bZeroFix);
-    m_prevStates[2].checkRdCosts( spt, pqData[3], pqData[1], decisions[1], decisions[3], bZeroFix);
-    m_prevStates[3].checkRdCosts( spt, pqData[3], pqData[1], decisions[3], decisions[1], bZeroFix);
+    m_prevStates[0].checkRdCosts( spt, pqData[0], pqData[2], decisions[0], decisions[2], zeroFix);
+    m_prevStates[1].checkRdCosts( spt, pqData[0], pqData[2], decisions[2], decisions[0], zeroFix);
+    m_prevStates[2].checkRdCosts( spt, pqData[3], pqData[1], decisions[1], decisions[3], zeroFix);
+    m_prevStates[3].checkRdCosts( spt, pqData[3], pqData[1], decisions[3], decisions[1], zeroFix);
 #else
     m_prevStates[0].checkRdCosts( spt, pqData[0], pqData[2], decisions[0], decisions[2]);
     m_prevStates[1].checkRdCosts( spt, pqData[0], pqData[2], decisions[2], decisions[0]);
@@ -1457,7 +1457,7 @@ namespace DQIntern
     if( spt==SCAN_EOCSBB )
     {
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-      if( bZeroFix )
+      if( zeroFix )
       {
         m_skipStates[0].checkRdCostSkipSbbZeroFix( decisions[0] );
         m_skipStates[1].checkRdCostSkipSbbZeroFix( decisions[1] );
@@ -1476,7 +1476,7 @@ namespace DQIntern
 #endif
     }
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-    if (!bZeroFix) {
+    if (!zeroFix) {
 #endif
     m_startState.checkRdCostStart( lastOffset, pqData[0], decisions[0] );
     m_startState.checkRdCostStart( lastOffset, pqData[2], decisions[2] );
@@ -1486,7 +1486,7 @@ namespace DQIntern
   }
 
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-  void DepQuant::xDecideAndUpdate( const TCoeff absCoeff, const ScanInfo& scanInfo, bool bZeroFix )
+  void DepQuant::xDecideAndUpdate( const TCoeff absCoeff, const ScanInfo& scanInfo, bool zeroFix )
 #else
   void DepQuant::xDecideAndUpdate( const TCoeff absCoeff, const ScanInfo& scanInfo )
 #endif
@@ -1496,7 +1496,7 @@ namespace DQIntern
     std::swap( m_prevStates, m_currStates );
 
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-    xDecide( scanInfo.spt, absCoeff, lastOffset(scanInfo.scanIdx), decisions, bZeroFix );
+    xDecide( scanInfo.spt, absCoeff, lastOffset(scanInfo.scanIdx), decisions, zeroFix );
 #else
     xDecide( scanInfo.spt, absCoeff, lastOffset(scanInfo.scanIdx), decisions);
 #endif
@@ -1577,8 +1577,8 @@ namespace DQIntern
 
 #if JVET_M0297_32PT_MTS_ZERO_OUT
     const CompArea& area = tu.blocks[compID];
-    const uint32_t iWidth = area.width;
-    const uint32_t iHeight = area.height;
+    const uint32_t width = area.width;
+    const uint32_t height = area.height;
 #endif
 
     //===== find first test position =====
@@ -1606,15 +1606,15 @@ namespace DQIntern
     m_startState.init();
 
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-    int iEffWidth = iWidth, iEffHeight = iHeight;
+    int effWidth = width, effHeight = height;
 #if JVET_M0464_UNI_MTS
     if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #else
     if( tu.cu->emtFlag && !tu.transformSkip[compID] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #endif
     {
-      iEffHeight = ( iHeight == 32 ) ? 16 : iHeight;
-      iEffWidth = ( iWidth == 32 ) ? 16 : iWidth;
+      effHeight = ( height == 32 ) ? 16 : height;
+      effWidth = ( width == 32 ) ? 16 : width;
     }
 #endif
 
@@ -1623,7 +1623,7 @@ namespace DQIntern
     {
       const ScanInfo& scanInfo = tuPars.m_scanInfo[ scanIdx ];
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-      xDecideAndUpdate( abs( tCoeff[ scanInfo.rasterPos ] ), scanInfo, ( iEffWidth < iWidth || iEffHeight < iHeight ) && ( scanInfo.posX >= iEffWidth || scanInfo.posY >= iEffHeight ) );
+      xDecideAndUpdate( abs( tCoeff[ scanInfo.rasterPos ] ), scanInfo, ( effWidth < width || effHeight < height ) && ( scanInfo.posX >= effWidth || scanInfo.posY >= effHeight ) );
 #else
       xDecideAndUpdate( abs( tCoeff[ scanInfo.rasterPos ] ), scanInfo );
 #endif

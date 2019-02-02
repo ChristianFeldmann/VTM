@@ -2510,8 +2510,8 @@ void CABACWriter::last_sig_coeff( CoeffCodingContext& cctx )
   unsigned GroupIdxY = g_uiGroupIdx[ posY ];
 
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-  unsigned uiMaxLastPosX = cctx.maxLastPosX();
-  unsigned uiMaxLastPosY = cctx.maxLastPosY();
+  unsigned maxLastPosX = cctx.maxLastPosX();
+  unsigned maxLastPosY = cctx.maxLastPosY();
 
 #if JVET_M0464_UNI_MTS
   if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
@@ -2519,8 +2519,8 @@ void CABACWriter::last_sig_coeff( CoeffCodingContext& cctx )
   if( tu.cu->emtFlag && !tu.transformSkip[ compID ] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #endif
   {
-    uiMaxLastPosX = ( tu.blocks[compID].width  == 32 ) ? g_uiGroupIdx[ 15 ] : uiMaxLastPosX;
-    uiMaxLastPosY = ( tu.blocks[compID].height == 32 ) ? g_uiGroupIdx[ 15 ] : uiMaxLastPosY;
+    maxLastPosX = ( tu.blocks[compID].width  == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosX;
+    maxLastPosY = ( tu.blocks[compID].height == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosY;
   }
 #endif
 
@@ -2529,7 +2529,7 @@ void CABACWriter::last_sig_coeff( CoeffCodingContext& cctx )
     m_BinEncoder.encodeBin( 1, cctx.lastXCtxId( CtxLast ) );
   }
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-  if( GroupIdxX < uiMaxLastPosX )
+  if( GroupIdxX < maxLastPosX )
 #else
   if( GroupIdxX < cctx.maxLastPosX() )
 #endif
@@ -2541,7 +2541,7 @@ void CABACWriter::last_sig_coeff( CoeffCodingContext& cctx )
     m_BinEncoder.encodeBin( 1, cctx.lastYCtxId( CtxLast ) );
   }
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-  if( GroupIdxY < uiMaxLastPosY )
+  if( GroupIdxY < maxLastPosY )
 #else
   if( GroupIdxY < cctx.maxLastPosY() )
 #endif

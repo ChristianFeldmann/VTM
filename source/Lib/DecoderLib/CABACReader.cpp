@@ -2668,8 +2668,8 @@ int CABACReader::last_sig_coeff( CoeffCodingContext& cctx )
 
   unsigned PosLastX = 0, PosLastY = 0;
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-  unsigned uiMaxLastPosX = cctx.maxLastPosX();
-  unsigned uiMaxLastPosY = cctx.maxLastPosY();
+  unsigned maxLastPosX = cctx.maxLastPosX();
+  unsigned maxLastPosY = cctx.maxLastPosY();
 
 #if JVET_M0464_UNI_MTS
   if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
@@ -2677,18 +2677,18 @@ int CABACReader::last_sig_coeff( CoeffCodingContext& cctx )
   if( tu.cu->emtFlag && !tu.transformSkip[ compID ] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #endif
   {
-    uiMaxLastPosX = ( tu.blocks[ compID ].width  == 32 ) ? g_uiGroupIdx[ 15 ] : uiMaxLastPosX;
-    uiMaxLastPosY = ( tu.blocks[ compID ].height == 32 ) ? g_uiGroupIdx[ 15 ] : uiMaxLastPosY;
+    maxLastPosX = ( tu.blocks[ compID ].width  == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosX;
+    maxLastPosY = ( tu.blocks[ compID ].height == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosY;
   }
 
-  for( ; PosLastX < uiMaxLastPosX; PosLastX++ )
+  for( ; PosLastX < maxLastPosX; PosLastX++ )
   {
     if( !m_BinDecoder.decodeBin( cctx.lastXCtxId( PosLastX ) ) )
     {
       break;
     }
   }
-  for( ; PosLastY < uiMaxLastPosY; PosLastY++ )
+  for( ; PosLastY < maxLastPosY; PosLastY++ )
   {
     if( !m_BinDecoder.decodeBin( cctx.lastYCtxId( PosLastY ) ) )
     {

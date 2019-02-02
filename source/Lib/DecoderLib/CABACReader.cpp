@@ -2708,7 +2708,11 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
 #endif
 
   // parse last coeff position
+#if JVET_M0297_32PT_MTS_ZERO_OUT
+  cctx.setScanPosLast( last_sig_coeff( cctx, tu, compID ) );
+#else
   cctx.setScanPosLast( last_sig_coeff( cctx ) );
+#endif
 
   // parse subblocks
   const int stateTransTab = ( tu.cs->slice->getDepQuantEnabledFlag() ? 32040 : 0 );
@@ -2725,7 +2729,11 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
     for( int subSetId = ( cctx.scanPosLast() >> cctx.log2CGSize() ); subSetId >= 0; subSetId--)
     {
       cctx.initSubblock       ( subSetId );
+#if JVET_M0297_32PT_MTS_ZERO_OUT
+      residual_coding_subblock( cctx, coeff, stateTransTab, state, tu, compID );
+#else
       residual_coding_subblock( cctx, coeff, stateTransTab, state );
+#endif
 #if !JVET_M0464_UNI_MTS
       if (useEmt)
       {
@@ -2959,11 +2967,44 @@ void CABACReader::explicit_rdpcm_mode( TransformUnit& tu, ComponentID compID )
 }
 
 
+#if JVET_M0297_32PT_MTS_ZERO_OUT
+int CABACReader::last_sig_coeff( CoeffCodingContext& cctx, TransformUnit& tu, ComponentID compID )
+#else
 int CABACReader::last_sig_coeff( CoeffCodingContext& cctx )
+#endif
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__LAST_SIG_X_Y, Size( cctx.width(), cctx.height() ), cctx.compID() );
 
   unsigned PosLastX = 0, PosLastY = 0;
+#if JVET_M0297_32PT_MTS_ZERO_OUT
+  unsigned maxLastPosX = cctx.maxLastPosX();
+  unsigned maxLastPosY = cctx.maxLastPosY();
+
+#if JVET_M0464_UNI_MTS
+  if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#else
+  if( tu.cu->emtFlag && !tu.transformSkip[ compID ] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
+  {
+    maxLastPosX = ( tu.blocks[ compID ].width  == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosX;
+    maxLastPosY = ( tu.blocks[ compID ].height == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosY;
+  }
+
+  for( ; PosLastX < maxLastPosX; PosLastX++ )
+  {
+    if( !m_BinDecoder.decodeBin( cctx.lastXCtxId( PosLastX ) ) )
+    {
+      break;
+    }
+  }
+  for( ; PosLastY < maxLastPosY; PosLastY++ )
+  {
+    if( !m_BinDecoder.decodeBin( cctx.lastYCtxId( PosLastY ) ) )
+    {
+      break;
+    }
+  }
+#else
   for( ; PosLastX < cctx.maxLastPosX(); PosLastX++ )
   {
     if( ! m_BinDecoder.decodeBin( cctx.lastXCtxId( PosLastX ) ) )
@@ -2978,6 +3019,7 @@ int CABACReader::last_sig_coeff( CoeffCodingContext& cctx )
       break;
     }
   }
+#endif
   if( PosLastX > 3 )
   {
     uint32_t uiTemp  = 0;
@@ -3024,7 +3066,11 @@ int CABACReader::last_sig_coeff( CoeffCodingContext& cctx )
 
 
 
+#if JVET_M0297_32PT_MTS_ZERO_OUT
+void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* coeff, const int stateTransTable, int& state, TransformUnit& tu, ComponentID compID )
+#else
 void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* coeff, const int stateTransTable, int& state )
+#endif
 {
   // NOTE: All coefficients of the subblock must be set to zero before calling this function
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
@@ -3047,7 +3093,23 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
   bool sigGroup = ( isLast || !minSubPos );
   if( !sigGroup )
   {
+#if JVET_M0297_32PT_MTS_ZERO_OUT
+#if JVET_M0464_UNI_MTS
+    if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#else
+    if( tu.cu->emtFlag && !tu.transformSkip[ compID ] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
+    {
+      sigGroup = ( ( tu.blocks[compID].height == 32 && cctx.cgPosY() >= ( 16 >> cctx.log2CGHeight() ) )
+                || ( tu.blocks[compID].width  == 32 && cctx.cgPosX() >= ( 16 >> cctx.log2CGWidth()  ) ) ) ? 0 : m_BinDecoder.decodeBin( cctx.sigGroupCtxId() );
+    }
+    else
+    {
+      sigGroup = m_BinDecoder.decodeBin(cctx.sigGroupCtxId());
+    }
+#else
     sigGroup = m_BinDecoder.decodeBin( cctx.sigGroupCtxId() );
+#endif
   }
   if( sigGroup )
   {

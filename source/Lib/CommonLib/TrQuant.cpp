@@ -122,6 +122,7 @@ TrQuant::~TrQuant()
       xFree( m_mtsCoeffs[i] );
       m_mtsCoeffs[i] = nullptr;
     }
+    delete[] m_mtsCoeffs;
     m_mtsCoeffs = nullptr;
   }
 #endif

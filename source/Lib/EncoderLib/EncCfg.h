@@ -218,6 +218,9 @@ protected:
 #if JVET_M0303_IMPLICIT_MTS
   int       m_ImplicitMTS;
 #endif
+#if JVET_M0140_SBT
+  bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
+#endif
   bool      m_LargeCTU;
   int       m_SubPuMvpMode;
   bool      m_Affine;
@@ -752,6 +755,10 @@ public:
 #if JVET_M0303_IMPLICIT_MTS
   void      setImplicitMTS                  ( bool b )       { m_ImplicitMTS = b; }
   bool      getImplicitMTS                  ()         const { return m_ImplicitMTS; }
+#endif
+#if JVET_M0140_SBT
+  void      setUseSBT                       ( bool b )       { m_SBT = b; }
+  bool      getUseSBT                       ()         const { return m_SBT; }
 #endif
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }

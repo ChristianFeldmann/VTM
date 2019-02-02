@@ -355,6 +355,33 @@ protected:
 //////////////////////////////////////////////////////////////////////////
 // some utility interfaces that expose some functionality that can be used without concerning about which particular controller is used
 //////////////////////////////////////////////////////////////////////////
+#if JVET_M0140_SBT
+struct SaveLoadStructSbt
+{
+  uint8_t  numPuInfoStored;
+  uint32_t puSse[SBT_NUM_SL];
+  uint8_t  puSbt[SBT_NUM_SL];
+  uint8_t  puTrs[SBT_NUM_SL];
+};
+
+class SaveLoadEncInfoSbt
+{
+protected:
+  void init( const Slice &slice );
+  void create();
+  void destroy();
+
+private:
+  SaveLoadStructSbt ****m_saveLoadSbt;
+  Slice const       *m_sliceSbt;
+
+public:
+  virtual  ~SaveLoadEncInfoSbt() { }
+  void     resetSaveloadSbt( int maxSbtSize );
+  uint16_t findBestSbt( const UnitArea& area, const uint32_t curPuSse );
+  bool     saveBestSbt( const UnitArea& area, const uint32_t curPuSse, const uint8_t curPuSbt, const uint8_t curPuTrs );
+};
+#endif
 
 static const int MAX_STORED_CU_INFO_REFS = 4;
 
@@ -480,6 +507,9 @@ public:
 class EncModeCtrlMTnoRQT : public EncModeCtrl, public CacheBlkInfoCtrl
 #if REUSE_CU_RESULTS
   , public BestEncInfoCache
+#endif
+#if JVET_M0140_SBT
+  , public SaveLoadEncInfoSbt
 #endif
 {
   enum ExtraFeatures

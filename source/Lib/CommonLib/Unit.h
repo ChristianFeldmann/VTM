@@ -308,6 +308,9 @@ struct CodingUnit : public UnitArea
   bool           ipcm;
   uint8_t          imv;
   bool           rootCbf;
+#if JVET_M0140_SBT
+  uint8_t        sbtInfo;
+#endif
 #if HEVC_TILES_WPP
   uint32_t           tileIdx;
 #endif
@@ -352,6 +355,14 @@ struct CodingUnit : public UnitArea
 
   int64_t cacheId;
   bool    cacheUsed;
+#endif
+#if JVET_M0140_SBT
+  const uint8_t     getSbtIdx() const { assert( ( ( sbtInfo >> 0 ) & 0xf ) < NUMBER_SBT_IDX ); return ( sbtInfo >> 0 ) & 0xf; }
+  const uint8_t     getSbtPos() const { return ( sbtInfo >> 4 ) & 0x3; }
+  void              setSbtIdx( uint8_t idx ) { CHECK( idx >= NUMBER_SBT_IDX, "sbt_idx wrong" ); sbtInfo = ( idx << 0 ) + ( sbtInfo & 0xf0 ); }
+  void              setSbtPos( uint8_t pos ) { CHECK( pos >= 4, "sbt_pos wrong" ); sbtInfo = ( pos << 4 ) + ( sbtInfo & 0xcf ); }
+  uint8_t           getSbtTuSplit() const;
+  const uint8_t     checkAllowedSbt() const;
 #endif
 };
 
@@ -460,6 +471,9 @@ struct TransformUnit : public UnitArea
 #else
   uint8_t        emtIdx;
 #endif
+#if JVET_M0140_SBT
+  bool           noResidual;
+#endif
   uint8_t        cbf        [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];
 #if !JVET_M0464_UNI_MTS
@@ -483,6 +497,9 @@ struct TransformUnit : public UnitArea
 
   TransformUnit& operator=(const TransformUnit& other);
   void copyComponentFrom  (const TransformUnit& other, const ComponentID compID);
+#if JVET_M0140_SBT
+  void checkTuNoResidual( unsigned idx );
+#endif
 
          CoeffBuf getCoeffs(const ComponentID id);
   const CCoeffBuf getCoeffs(const ComponentID id) const;

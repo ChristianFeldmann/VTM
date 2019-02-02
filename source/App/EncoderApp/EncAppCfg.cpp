@@ -856,6 +856,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if JVET_M0303_IMPLICIT_MTS
   ("MTSImplicit",                                     m_MTSImplicit,                                        0, "Enable implicit MTS (when explicit MTS is off)\n")
 #endif
+#if JVET_M0140_SBT
+  ( "SBT",                                            m_SBT,                                            false, "Enable Sub-Block Transform for inter blocks\n" )
+#endif
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
   ("GBi",                                             m_GBi,                                            false, "Enable Generalized Bi-prediction(GBi)")
   ("GBiFast",                                         m_GBiFast,                                        false, "Fast methods for Generalized Bi-prediction(GBi)\n")
@@ -3197,6 +3200,9 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "MTS: %1d(intra) %1d(inter) ", m_MTS & 1, ( m_MTS >> 1 ) & 1 );
 #else
     msg( VERBOSE, "EMT: %1d(intra) %1d(inter) ", m_EMT & 1, ( m_EMT >> 1 ) & 1 );
+#endif
+#if JVET_M0140_SBT
+    msg( VERBOSE, "SBT:%d ", m_SBT );
 #endif
     msg( VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
     msg( VERBOSE, "GBi:%d ", m_GBi );

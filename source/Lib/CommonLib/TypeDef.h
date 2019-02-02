@@ -117,6 +117,11 @@
 #endif
 #define JVET_M0502_PRED_MODE_CTX                          1
 
+#define JVET_M0140_SBT                                    1 // Sub-Block transform for Inter blocks
+#if JVET_M0140_SBT
+#define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
+#endif
+
 #define JVET_M0407_IBC_RANGE                              1 // extend IBC search range to some part of left CTU
 
 #define JVET_M0464_UNI_MTS                                1
@@ -419,6 +424,39 @@ enum ISPType
   VER_INTRA_SUBPARTITIONS       = 2,
   NUM_INTRA_SUBPARTITIONS_MODES = 3,
   CAN_USE_VER_AND_HORL_SPLITS   = 4
+};
+#endif
+
+#if JVET_M0140_SBT
+enum SbtIdx
+{
+  SBT_OFF_DCT  = 0,
+  SBT_VER_HALF = 1,
+  SBT_HOR_HALF = 2,
+  SBT_VER_QUAD = 3,
+  SBT_HOR_QUAD = 4,
+  NUMBER_SBT_IDX,
+  SBT_OFF_MTS, //note: must be after all SBT modes, only used in fast algorithm to discern the best mode is inter EMT
+};
+
+enum SbtPos
+{
+  SBT_POS0 = 0,
+  SBT_POS1 = 1,
+  NUMBER_SBT_POS
+};
+
+enum SbtMode
+{
+  SBT_VER_H0 = 0,
+  SBT_VER_H1 = 1,
+  SBT_HOR_H0 = 2,
+  SBT_HOR_H1 = 3,
+  SBT_VER_Q0 = 4,
+  SBT_VER_Q1 = 5,
+  SBT_HOR_Q0 = 6,
+  SBT_HOR_Q1 = 7,
+  NUMBER_SBT_MODE
 };
 #endif
 

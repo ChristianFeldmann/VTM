@@ -164,6 +164,14 @@ protected:
   bool            m_isInitialized;
   unsigned int    m_numBVs, m_numBV16s;
   Mv              m_acBVs[IBC_NUM_CANDIDATES];
+#if JVET_M0140_SBT
+  Distortion      m_estMinDistSbt[NUMBER_SBT_MODE + 1]; // estimated minimum SSE value of the PU if using a SBT mode
+  uint8_t         m_sbtRdoOrder[NUMBER_SBT_MODE];       // order of SBT mode in RDO
+  bool            m_skipSbtAll;                         // to skip all SBT modes for the current PU
+  uint8_t         m_histBestSbt;                        // historical best SBT mode for PU of certain SSE values
+  uint8_t         m_histBestMtsIdx;                     // historical best MTS idx  for PU of certain SSE values
+#endif
+
 public:
   InterSearch();
   virtual ~InterSearch();
@@ -185,6 +193,18 @@ public:
                                     );
 
   void destroy                      ();
+
+#if JVET_M0140_SBT
+  void       calcMinDistSbt         ( CodingStructure &cs, const CodingUnit& cu, const uint8_t sbtAllowed );
+  uint8_t    skipSbtByRDCost        ( int width, int height, int mtDepth, uint8_t sbtIdx, uint8_t sbtPos, double bestCost, Distortion distSbtOff, double costSbtOff, bool rootCbfSbtOff );
+  bool       getSkipSbtAll          ()                 { return m_skipSbtAll; }
+  void       setSkipSbtAll          ( bool skipAll )   { m_skipSbtAll = skipAll; }
+  uint8_t    getSbtRdoOrder         ( uint8_t idx )    { assert( m_sbtRdoOrder[idx] < NUMBER_SBT_MODE ); assert( (uint32_t)( m_estMinDistSbt[m_sbtRdoOrder[idx]] >> 2 ) < ( MAX_UINT >> 1 ) ); return m_sbtRdoOrder[idx]; }
+  Distortion getEstDistSbt          ( uint8_t sbtMode) { return m_estMinDistSbt[sbtMode]; }
+  void       initTuAnalyzer         ()                 { m_estMinDistSbt[NUMBER_SBT_MODE] = std::numeric_limits<uint64_t>::max(); m_skipSbtAll = false; }
+  void       setHistBestTrs         ( uint8_t sbtInfo, uint8_t mtsIdx ) { m_histBestSbt = sbtInfo; m_histBestMtsIdx = mtsIdx; }
+  void       initSbtRdoOrder        ( uint8_t sbtMode ) { m_sbtRdoOrder[0] = sbtMode; m_estMinDistSbt[0] = m_estMinDistSbt[sbtMode]; }
+#endif
 
   void setTempBuffers               (CodingStructure ****pSlitCS, CodingStructure ****pFullCS, CodingStructure **pSaveCS );
   void resetCtuRecord               ()             { m_ctuRecord.clear(); }

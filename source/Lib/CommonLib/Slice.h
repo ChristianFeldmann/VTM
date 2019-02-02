@@ -849,6 +849,10 @@ private:
   bool              m_IntraEMT;                   // 18
   bool              m_InterEMT;                   // 19
 #endif
+#if JVET_M0140_SBT
+  bool              m_SBT;
+  uint8_t           m_MaxSbtSize;
+#endif
   bool              m_Affine;
   bool              m_AffineType;
   bool              m_GBi;                        //
@@ -928,6 +932,12 @@ public:
   bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
   void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
   bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
+#endif
+#if JVET_M0140_SBT
+  void      setUseSBT             ( bool b )                                        { m_SBT = b; }
+  bool      getUseSBT             ()                                      const     { return m_SBT; }
+  void      setMaxSbtSize         ( uint8_t val )                                   { m_MaxSbtSize = val; }
+  uint8_t   getMaxSbtSize         ()                                      const     { return m_MaxSbtSize; }
 #endif
   void      setUseGBi             ( bool b )                                        { m_GBi = b; }
   bool      getUseGBi             ()                                      const     { return m_GBi; }

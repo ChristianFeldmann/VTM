@@ -1318,6 +1318,12 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
     {
       rqt_root_cbf( cu );
     }
+#if JVET_M0140_SBT
+    if( cu.rootCbf )
+    {
+      sbt_mode( cu );
+    }
+#endif
 
     if( !cu.rootCbf )
     {
@@ -1349,6 +1355,64 @@ void CABACWriter::rqt_root_cbf( const CodingUnit& cu )
   DTRACE( g_trace_ctx, D_SYNTAX, "rqt_root_cbf() ctx=0 root_cbf=%d pos=(%d,%d)\n", cu.rootCbf ? 1 : 0, cu.lumaPos().x, cu.lumaPos().y );
 }
 
+#if JVET_M0140_SBT
+void CABACWriter::sbt_mode( const CodingUnit& cu )
+{
+  uint8_t sbtAllowed = cu.checkAllowedSbt();
+  if( !sbtAllowed )
+  {
+    return;
+  }
+
+  SizeType cuWidth = cu.lwidth();
+  SizeType cuHeight = cu.lheight();
+  uint8_t sbtIdx = cu.getSbtIdx();
+  uint8_t sbtPos = cu.getSbtPos();
+
+  //bin - flag
+  bool sbtFlag = cu.sbtInfo != 0;
+  uint8_t ctxIdx = ( cuWidth * cuHeight <= 256 ) ? 1 : 0;
+  m_BinEncoder.encodeBin( sbtFlag, Ctx::SbtFlag( ctxIdx ) );
+  if( !sbtFlag )
+  {
+    return;
+  }
+
+  bool sbtQuadFlag = sbtIdx == SBT_HOR_QUAD || sbtIdx == SBT_VER_QUAD;
+  bool sbtHorFlag = sbtIdx == SBT_HOR_HALF || sbtIdx == SBT_HOR_QUAD;
+  bool sbtPosFlag = sbtPos == SBT_POS1;
+
+  uint8_t sbtVerHalfAllow = CU::targetSbtAllowed( SBT_VER_HALF, sbtAllowed );
+  uint8_t sbtHorHalfAllow = CU::targetSbtAllowed( SBT_HOR_HALF, sbtAllowed );
+  uint8_t sbtVerQuadAllow = CU::targetSbtAllowed( SBT_VER_QUAD, sbtAllowed );
+  uint8_t sbtHorQuadAllow = CU::targetSbtAllowed( SBT_HOR_QUAD, sbtAllowed );
+  //bin - type
+  if( ( sbtHorHalfAllow || sbtVerHalfAllow ) && ( sbtHorQuadAllow || sbtVerQuadAllow ) )
+  {
+    m_BinEncoder.encodeBin( sbtQuadFlag, Ctx::SbtQuadFlag( 0 ) );
+  }
+  else
+  {
+    assert( sbtQuadFlag == 0 );
+  }
+
+  //bin - dir
+  if( ( sbtQuadFlag && sbtVerQuadAllow && sbtHorQuadAllow ) || ( !sbtQuadFlag && sbtVerHalfAllow && sbtHorHalfAllow ) ) //both direction allowed
+  {
+    uint8_t ctxIdx = ( cuWidth == cuHeight ) ? 0 : ( cuWidth < cuHeight ? 1 : 2 );
+    m_BinEncoder.encodeBin( sbtHorFlag, Ctx::SbtHorFlag( ctxIdx ) );
+  }
+  else
+  {
+    assert( sbtHorFlag == ( ( sbtQuadFlag && sbtHorQuadAllow ) || ( !sbtQuadFlag && sbtHorHalfAllow ) ) );
+  }
+
+  //bin - pos
+  m_BinEncoder.encodeBin( sbtPosFlag, Ctx::SbtPosFlag( 0 ) );
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "sbt_mode() pos=(%d,%d) sbtInfo=%d\n", cu.lx(), cu.ly(), (int)cu.sbtInfo );
+}
+#endif
 
 void CABACWriter::end_of_ctu( const CodingUnit& cu, CUCtx& cuCtx )
 {
@@ -2080,6 +2144,11 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
 void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partitioner, CUCtx& cuCtx, ChromaCbfs& chromaCbfs )
 #endif
 {
+#if JVET_M0140_SBT
+  ChromaCbfs chromaCbfsLastDepth;
+  chromaCbfsLastDepth.Cb              = chromaCbfs.Cb;
+  chromaCbfsLastDepth.Cr              = chromaCbfs.Cr;
+#endif
   const UnitArea&       area          = partitioner.currArea();
 #if JVET_M0102_INTRA_SUBPARTITIONS
         int             subTuCounter  = subTuIdx;
@@ -2099,6 +2168,12 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
   {
     CHECK( !split, "transform split implied" );
   }
+#if JVET_M0140_SBT
+  else if( cu.sbtInfo && partitioner.canSplit( PartSplit( cu.getSbtTuSplit() ), cs ) )
+  {
+    CHECK( !split, "transform split implied - sbt" );
+  }
+#endif
   else
 #if JVET_M0102_INTRA_SUBPARTITIONS
   CHECK( split && !cu.ispMode, "transform split not allowed with QTBT" );
@@ -2120,6 +2195,9 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
       if( trDepth == 0 || chromaCbfs.Cb || chromaCbfISP )
       {
         chromaCbfs.Cb = TU::getCbfAtDepth( tu, COMPONENT_Cb, trDepth );
+#if JVET_M0140_SBT
+        if( !( cu.sbtInfo && trDepth == 1 ) )
+#endif
         cbf_comp( cs, chromaCbfs.Cb, area.blocks[COMPONENT_Cb], cbfDepth );
       }
       else
@@ -2130,6 +2208,9 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
       if( trDepth == 0 || chromaCbfs.Cr || chromaCbfISP )
       {
         chromaCbfs.Cr = TU::getCbfAtDepth( tu, COMPONENT_Cr, trDepth );
+#if JVET_M0140_SBT
+        if( !( cu.sbtInfo && trDepth == 1 ) )
+#endif
         cbf_comp( cs, chromaCbfs.Cr, area.blocks[COMPONENT_Cr], cbfDepth, chromaCbfs.Cb );
       }
       else
@@ -2140,6 +2221,9 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
       if( trDepth == 0 || chromaCbfs.Cb )
       {
         chromaCbfs.Cb = TU::getCbfAtDepth( tu, COMPONENT_Cb, trDepth );
+#if JVET_M0140_SBT
+        if( !( cu.sbtInfo && trDepth == 1 ) )
+#endif
         cbf_comp( cs, chromaCbfs.Cb, area.blocks[COMPONENT_Cb], trDepth );
       }
       else
@@ -2150,6 +2234,9 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
       if( trDepth == 0 || chromaCbfs.Cr )
       {
         chromaCbfs.Cr = TU::getCbfAtDepth( tu, COMPONENT_Cr,   trDepth );
+#if JVET_M0140_SBT
+        if( !( cu.sbtInfo && trDepth == 1 ) )
+#endif
         cbf_comp( cs, chromaCbfs.Cr, area.blocks[COMPONENT_Cr], trDepth, chromaCbfs.Cb );
       }
       else
@@ -2194,6 +2281,12 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
       partitioner.splitCurrArea( ispType, cs );
     }
 #endif
+#if JVET_M0140_SBT
+    else if( cu.sbtInfo && partitioner.canSplit( PartSplit( cu.getSbtTuSplit() ), cs ) )
+    {
+      partitioner.splitCurrArea( PartSplit( cu.getSbtTuSplit() ), cs );
+    }
+#endif
     else
       THROW( "Implicit TU split not available" );
 
@@ -2220,6 +2313,17 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
       {
         CHECK( !TU::getCbfAtDepth( tu, COMPONENT_Y, trDepth ), "Luma cbf must be true for inter units with no chroma coeffs" );
       }
+#if JVET_M0140_SBT
+      else if( cu.sbtInfo && tu.noResidual )
+      {
+        CHECK( TU::getCbfAtDepth( tu, COMPONENT_Y, trDepth ), "Luma cbf must be false for inter sbt no-residual tu" );
+      }
+      else if( cu.sbtInfo && !chromaCbfsLastDepth.sigChroma( area.chromaFormat ) )
+      {
+        assert( !tu.noResidual );
+        CHECK( !TU::getCbfAtDepth( tu, COMPONENT_Y, trDepth ), "Luma cbf must be true for inter sbt residual tu" );
+      }
+#endif
       else
       {
 #if JVET_M0102_INTRA_SUBPARTITIONS

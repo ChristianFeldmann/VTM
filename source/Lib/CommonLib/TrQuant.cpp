@@ -312,6 +312,41 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
     return;
 }
 #endif
+#if JVET_M0140_SBT
+  if( tu.cu->sbtInfo && compID == COMPONENT_Y )
+  {
+    uint8_t sbtIdx = tu.cu->getSbtIdx();
+    uint8_t sbtPos = tu.cu->getSbtPos();
+
+    if( sbtIdx == SBT_VER_HALF || sbtIdx == SBT_VER_QUAD )
+    {
+      assert( tu.lwidth() <= MTS_INTER_MAX_CU_SIZE );
+      if( tu.lheight() > MTS_INTER_MAX_CU_SIZE )
+      {
+        trTypeHor = trTypeVer = DCT2;
+      }
+      else
+      {
+        if( sbtPos == SBT_POS0 )  { trTypeHor = DCT8;  trTypeVer = DST7; }
+        else                      { trTypeHor = DST7;  trTypeVer = DST7; }
+      }
+    }
+    else
+    {
+      assert( tu.lheight() <= MTS_INTER_MAX_CU_SIZE );
+      if( tu.lwidth() > MTS_INTER_MAX_CU_SIZE )
+      {
+        trTypeHor = trTypeVer = DCT2;
+      }
+      else
+      {
+        if( sbtPos == SBT_POS0 )  { trTypeHor = DST7;  trTypeVer = DCT8; }
+        else                      { trTypeHor = DST7;  trTypeVer = DST7; }
+      }
+    }
+    return;
+  }
+#endif
   
 #if JVET_M0464_UNI_MTS
   if ( mtsActivated )
@@ -583,6 +618,15 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
   {
     tu.mtsIdx = it->first;
     CoeffBuf tempCoeff( m_mtsCoeffs[tu.mtsIdx], rect );
+#if JVET_M0140_SBT
+    if( tu.noResidual )
+    {
+      int sumAbs = 0;
+      trCosts.push_back( TrCost( sumAbs, pos++ ) );
+      it++;
+      continue;
+    }
+#endif
 
     if( isLuma(compID) && tu.mtsIdx == 1 )
     {
@@ -654,6 +698,15 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
 
   const CPelBuf resiBuf     = cs.getResiBuf(rect);
         CoeffBuf rpcCoeff   = tu.getCoeffs(compID);
+
+#if JVET_M0140_SBT
+  if( tu.noResidual )
+  {
+    uiAbsSum = 0;
+    TU::setCbfAtDepth( tu, compID, tu.depth, uiAbsSum > 0 );
+    return;
+  }
+#endif
 
   RDPCMMode rdpcmMode = RDPCM_OFF;
   rdpcmNxN(tu, compID, cQP, uiAbsSum, rdpcmMode);

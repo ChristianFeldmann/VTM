@@ -115,7 +115,19 @@ namespace CU
   int   getMaxNeighboriMVCandNum      (const CodingStructure& cs, const Position& pos);
   void  resetMVDandMV2Int             (      CodingUnit& cu, InterPrediction *interPred );
 
-
+#if JVET_M0140_SBT
+  uint8_t getSbtInfo                  (uint8_t idx, uint8_t pos);
+  uint8_t getSbtIdx                   (const uint8_t sbtInfo);
+  uint8_t getSbtPos                   (const uint8_t sbtInfo);
+  uint8_t getSbtMode                  (const uint8_t sbtIdx, const uint8_t sbtPos);
+  uint8_t getSbtIdxFromSbtMode        (const uint8_t sbtMode);
+  uint8_t getSbtPosFromSbtMode        (const uint8_t sbtMode);
+  uint8_t targetSbtAllowed            (uint8_t idx, uint8_t sbtAllowed);
+  uint8_t numSbtModeRdo               (uint8_t sbtAllowed);
+  bool    isMtsMode                   (const uint8_t sbtInfo);
+  bool    isSbtMode                   (const uint8_t sbtInfo);
+  bool    isSameSbtSize               (const uint8_t sbtInfo1, const uint8_t sbtInfo2);
+#endif
 }
 // PU tools
 namespace PU

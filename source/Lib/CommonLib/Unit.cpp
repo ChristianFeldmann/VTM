@@ -271,6 +271,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
+#if JVET_M0140_SBT
+  sbtInfo           = other.sbtInfo;
+#endif
 #if !JVET_M0464_UNI_MTS
   emtFlag           = other.emtFlag;
 #endif
@@ -317,6 +320,9 @@ void CodingUnit::initData()
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
+#if JVET_M0140_SBT
+  sbtInfo           = 0;
+#endif
 #if !JVET_M0464_UNI_MTS
   emtFlag           = 0;
 #endif
@@ -344,6 +350,70 @@ void CodingUnit::initData()
 #endif
 }
 
+#if JVET_M0140_SBT
+const uint8_t CodingUnit::checkAllowedSbt() const
+{
+  if( !slice->getSPS()->getSpsNext().getUseSBT() )
+  {
+    return 0;
+  }
+
+  //check on prediction mode
+  if( predMode == MODE_INTRA ) //intra
+  {
+    return 0;
+  }
+  if( firstPU->mhIntraFlag )
+  {
+    return 0;
+  }
+
+  uint8_t sbtAllowed = 0;
+  int cuWidth  = lwidth();
+  int cuHeight = lheight();
+  bool allow_type[NUMBER_SBT_IDX];
+  memset( allow_type, false, NUMBER_SBT_IDX * sizeof( bool ) );
+
+  //parameter
+  int maxSbtCUSize = cs->sps->getSpsNext().getMaxSbtSize();
+  int minSbtCUSize = 1 << ( MIN_CU_LOG2 + 1 );
+
+  //check on size
+  if( cuWidth > maxSbtCUSize || cuHeight > maxSbtCUSize )
+  {
+    return 0;
+  }
+
+  allow_type[SBT_VER_HALF] = cuWidth  >= minSbtCUSize;
+  allow_type[SBT_HOR_HALF] = cuHeight >= minSbtCUSize;
+  allow_type[SBT_VER_QUAD] = cuWidth  >= ( minSbtCUSize << 1 );
+  allow_type[SBT_HOR_QUAD] = cuHeight >= ( minSbtCUSize << 1 );
+
+  for( int i = 0; i < NUMBER_SBT_IDX; i++ )
+  {
+    sbtAllowed += (uint8_t)allow_type[i] << i;
+  }
+
+  return sbtAllowed;
+}
+
+uint8_t CodingUnit::getSbtTuSplit() const
+{
+  uint8_t sbtTuSplitType = 0;
+
+  switch( getSbtIdx() )
+  {
+  case SBT_VER_HALF: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_VER_HALF_POS0_SPLIT; break;
+  case SBT_HOR_HALF: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_HOR_HALF_POS0_SPLIT; break;
+  case SBT_VER_QUAD: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_VER_QUAD_POS0_SPLIT; break;
+  case SBT_HOR_QUAD: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_HOR_QUAD_POS0_SPLIT; break;
+  default: assert( 0 );  break;
+  }
+
+  assert( sbtTuSplitType <= SBT_HOR_QUAD_POS1_SPLIT && sbtTuSplitType >= SBT_VER_HALF_POS0_SPLIT );
+  return sbtTuSplitType;
+}
+#endif
 
 // ---------------------------------------------------------------------------
 // prediction unit method definitions
@@ -594,6 +664,9 @@ void TransformUnit::initData()
 #else
   emtIdx             = 0;
 #endif
+#if JVET_M0140_SBT
+  noResidual         = false;
+#endif
 #if JVET_M0427_INLOOP_RESHAPER
   m_chromaResScaleInv = 0;
 #endif
@@ -637,6 +710,9 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
 #else
   emtIdx             = other.emtIdx;
 #endif
+#if JVET_M0140_SBT
+  noResidual         = other.noResidual;
+#endif
   return *this;
 }
 
@@ -667,6 +743,9 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
     emtIdx         = other.emtIdx;
   }
 #endif
+#if JVET_M0140_SBT
+  noResidual       = other.noResidual;
+#endif
 }
 
        CoeffBuf TransformUnit::getCoeffs(const ComponentID id)       { return  CoeffBuf(m_coeffs[id], blocks[id]); }
@@ -674,6 +753,21 @@ const CCoeffBuf TransformUnit::getCoeffs(const ComponentID id) const { return CC
 
        PelBuf   TransformUnit::getPcmbuf(const ComponentID id)       { return  PelBuf  (m_pcmbuf[id], blocks[id]); }
 const CPelBuf   TransformUnit::getPcmbuf(const ComponentID id) const { return CPelBuf  (m_pcmbuf[id], blocks[id]); }
+
+#if JVET_M0140_SBT
+void TransformUnit::checkTuNoResidual( unsigned idx )
+{
+  if( CU::getSbtIdx( cu->sbtInfo ) == SBT_OFF_DCT )
+  {
+    return;
+  }
+
+  if( ( CU::getSbtPos( cu->sbtInfo ) == SBT_POS0 && idx == 1 ) || ( CU::getSbtPos( cu->sbtInfo ) == SBT_POS1 && idx == 0 ) )
+  {
+    noResidual = true;
+  }
+}
+#endif
 #if JVET_M0427_INLOOP_RESHAPER
 int          TransformUnit::getChromaAdj()                     const { return m_chromaResScaleInv; }
 void         TransformUnit::setChromaAdj(int i)                      { m_chromaResScaleInv = i;    }

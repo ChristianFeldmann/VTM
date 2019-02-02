@@ -910,6 +910,13 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
 #endif
+#if JVET_M0140_SBT
+  sps.getSpsNext().setUseSBT                ( m_SBT );
+  if( sps.getSpsNext().getUseSBT() )
+  {
+    sps.getSpsNext().setMaxSbtSize          ( m_iSourceWidth >= 1920 ? 64 : 32 );
+  }
+#endif
   sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
   sps.getSpsNext().setUseGBi                ( m_GBi );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET

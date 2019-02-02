@@ -294,6 +294,12 @@ public:
   static const CtxSet   EMTTuIndex;
   static const CtxSet   EMTCuFlag;
 #endif
+#if JVET_M0140_SBT
+  static const CtxSet   SbtFlag;
+  static const CtxSet   SbtQuadFlag;
+  static const CtxSet   SbtHorFlag;
+  static const CtxSet   SbtPosFlag;
+#endif
   static const CtxSet   CrossCompPred;
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;

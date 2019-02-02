@@ -5502,6 +5502,121 @@ int CU::getMaxNeighboriMVCandNum( const CodingStructure& cs, const Position& pos
   return maxImvNumCand;
 }
 
+#if JVET_M0140_SBT
+uint8_t CU::getSbtInfo( uint8_t idx, uint8_t pos )
+{
+  return ( pos << 4 ) + ( idx << 0 );
+}
+
+uint8_t CU::getSbtIdx( const uint8_t sbtInfo )
+{
+  return ( sbtInfo >> 0 ) & 0xf;
+}
+
+uint8_t CU::getSbtPos( const uint8_t sbtInfo )
+{
+  return ( sbtInfo >> 4 ) & 0x3;
+}
+
+uint8_t CU::getSbtMode( uint8_t sbtIdx, uint8_t sbtPos )
+{
+  uint8_t sbtMode = 0;
+  switch( sbtIdx )
+  {
+  case SBT_VER_HALF: sbtMode = sbtPos + SBT_VER_H0;  break;
+  case SBT_HOR_HALF: sbtMode = sbtPos + SBT_HOR_H0;  break;
+  case SBT_VER_QUAD: sbtMode = sbtPos + SBT_VER_Q0;  break;
+  case SBT_HOR_QUAD: sbtMode = sbtPos + SBT_HOR_Q0;  break;
+  default:           assert( 0 );
+  }
+
+  assert( sbtMode < NUMBER_SBT_MODE );
+  return sbtMode;
+}
+
+uint8_t CU::getSbtIdxFromSbtMode( uint8_t sbtMode )
+{
+  if( sbtMode <= SBT_VER_H1 )
+    return SBT_VER_HALF;
+  else if( sbtMode <= SBT_HOR_H1 )
+    return SBT_HOR_HALF;
+  else if( sbtMode <= SBT_VER_Q1 )
+    return SBT_VER_QUAD;
+  else if( sbtMode <= SBT_HOR_Q1 )
+    return SBT_HOR_QUAD;
+  else
+  {
+    assert( 0 );
+    return 0;
+  }
+}
+
+uint8_t CU::getSbtPosFromSbtMode( uint8_t sbtMode )
+{
+  if( sbtMode <= SBT_VER_H1 )
+    return sbtMode - SBT_VER_H0;
+  else if( sbtMode <= SBT_HOR_H1 )
+    return sbtMode - SBT_HOR_H0;
+  else if( sbtMode <= SBT_VER_Q1 )
+    return sbtMode - SBT_VER_Q0;
+  else if( sbtMode <= SBT_HOR_Q1 )
+    return sbtMode - SBT_HOR_Q0;
+  else
+  {
+    assert( 0 );
+    return 0;
+  }
+}
+
+uint8_t CU::targetSbtAllowed( uint8_t sbtIdx, uint8_t sbtAllowed )
+{
+  uint8_t val = 0;
+  switch( sbtIdx )
+  {
+  case SBT_VER_HALF: val = ( ( sbtAllowed >> SBT_VER_HALF ) & 0x1 ); break;
+  case SBT_HOR_HALF: val = ( ( sbtAllowed >> SBT_HOR_HALF ) & 0x1 ); break;
+  case SBT_VER_QUAD: val = ( ( sbtAllowed >> SBT_VER_QUAD ) & 0x1 ); break;
+  case SBT_HOR_QUAD: val = ( ( sbtAllowed >> SBT_HOR_QUAD ) & 0x1 ); break;
+  default:           CHECK( 1, "unknown SBT type" );
+  }
+  return val;
+}
+
+uint8_t CU::numSbtModeRdo( uint8_t sbtAllowed )
+{
+  uint8_t num = 0;
+  uint8_t sum = 0;
+  num = targetSbtAllowed( SBT_VER_HALF, sbtAllowed ) + targetSbtAllowed( SBT_HOR_HALF, sbtAllowed );
+  sum += std::min( SBT_NUM_RDO, ( num << 1 ) );
+  num = targetSbtAllowed( SBT_VER_QUAD, sbtAllowed ) + targetSbtAllowed( SBT_HOR_QUAD, sbtAllowed );
+  sum += std::min( SBT_NUM_RDO, ( num << 1 ) );
+  return sum;
+}
+
+bool CU::isMtsMode( const uint8_t sbtInfo )
+{
+  return getSbtIdx( sbtInfo ) == SBT_OFF_MTS;
+}
+
+bool CU::isSbtMode( const uint8_t sbtInfo )
+{
+  uint8_t sbtIdx = getSbtIdx( sbtInfo );
+  return sbtIdx >= SBT_VER_HALF && sbtIdx <= SBT_HOR_QUAD;
+}
+
+bool CU::isSameSbtSize( const uint8_t sbtInfo1, const uint8_t sbtInfo2 )
+{
+  uint8_t sbtIdx1 = getSbtIdxFromSbtMode( sbtInfo1 );
+  uint8_t sbtIdx2 = getSbtIdxFromSbtMode( sbtInfo2 );
+  if( sbtIdx1 == SBT_HOR_HALF || sbtIdx1 == SBT_VER_HALF )
+    return sbtIdx2 == SBT_HOR_HALF || sbtIdx2 == SBT_VER_HALF;
+  else if( sbtIdx1 == SBT_HOR_QUAD || sbtIdx1 == SBT_VER_QUAD )
+    return sbtIdx2 == SBT_HOR_QUAD || sbtIdx2 == SBT_VER_QUAD;
+  else
+    return false;
+}
+#endif
+
 bool CU::isGBiIdxCoded( const CodingUnit &cu )
 {
   if( cu.cs->sps->getSpsNext().getUseGBi() == false )
@@ -5657,6 +5772,9 @@ bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
 
   SizeType transformSkipMaxSize = 1 << maxSize;
   tsAllowed &= tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize;
+#if JVET_M0140_SBT
+  tsAllowed &= !tu.cu->sbtInfo;
+#endif
 
   return tsAllowed;
 }
@@ -5670,6 +5788,9 @@ bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
   mtsAllowed &= ( tu.lwidth() <= maxSize && tu.lheight() <= maxSize );
 #if JVET_M0102_INTRA_SUBPARTITIONS
   mtsAllowed &= !tu.cu->ispMode;
+#endif
+#if JVET_M0140_SBT
+  mtsAllowed &= !tu.cu->sbtInfo;
 #endif
   return mtsAllowed;
 }

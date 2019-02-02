@@ -1080,9 +1080,14 @@ private:
 
   bool              m_wrapAroundEnabledFlag;
   unsigned          m_wrapAroundOffset;
+#if JVET_M0483_IBC
+  unsigned          m_IBCFlag;
+#endif
+
 #if JVET_M0427_INLOOP_RESHAPER
   bool              m_lumaReshapeEnable;
 #endif
+
 public:
 
   SPS();
@@ -1307,6 +1312,10 @@ public:
 #if JVET_M0427_INLOOP_RESHAPER
   void                    setUseReshaper(bool b)                                                          { m_lumaReshapeEnable = b;                                                   }
   bool                    getUseReshaper() const                                                          { return m_lumaReshapeEnable;                                                }
+#endif
+#if JVET_M0483_IBC
+  void                    setIBCFlag(unsigned IBCFlag)                                                    { m_IBCFlag = IBCFlag; }
+  unsigned                getIBCFlag() const                                                              { return m_IBCFlag; }
 #endif
 };
 
@@ -2027,6 +2036,9 @@ public:
   void                        initMotionLUTs       ();
   void                        destroyMotionLUTs    ();
   void                        resetMotionLUTs();
+#if JVET_M0483_IBC
+  int                         getAvailableLUTIBCMrgNum() const { return m_MotionCandLut->currCntIBC; }
+#endif
   int                         getAvailableLUTMrgNum() const  { return m_MotionCandLut->currCnt; }
 #if JVET_M0170_MRG_SHARELIST
   int                         getAvailableLUTBkupMrgNum() const  { return m_MotionCandLuTsBkup->currCnt; }
@@ -2035,8 +2047,11 @@ public:
   MotionInfo                  getMotionInfoFromLUTs(int MotCandIdx) const;
   LutMotionCand*              getMotionLUTs() { return m_MotionCandLut; }
 
-
+#if JVET_M0483_IBC
+  void                        addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi, bool ibcflag);
+#else
   void                        addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi);
+#endif
 
   void                        updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu);
   void                        copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst);

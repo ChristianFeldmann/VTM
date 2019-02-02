@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0483_IBC                                    1 // Block level flag signaling and independent IBC mode
+
 #define JVET_M0102_INTRA_SUBPARTITIONS                    1
 
 #define JVET_M0303_IMPLICIT_MTS                           1 // Implicit transform selection (can be enabled with MTSImplicit encoder config parameter)
@@ -507,7 +509,12 @@ enum PredMode
 {
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
+#if JVET_M0483_IBC
+  MODE_IBC                   = 2,     ///< ibc-prediction mode
+  NUMBER_OF_PREDICTION_MODES = 3,
+#else
   NUMBER_OF_PREDICTION_MODES = 2,
+#endif
 };
 
 /// reference list index

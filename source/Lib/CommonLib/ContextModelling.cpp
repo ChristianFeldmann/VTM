@@ -482,6 +482,20 @@ unsigned DeriveCtx::CtxPredModeFlag( const CodingUnit& cu )
 }
 #endif
 
+#if JVET_M0483_IBC
+unsigned DeriveCtx::CtxIBCFlag(const CodingUnit& cu)
+{
+  const CodingStructure *cs = cu.cs;
+  unsigned ctxId = 0;
+  const CodingUnit *cuLeft = cs->getCURestricted(cu.lumaPos().offset(-1, 0), cu, CH_L);
+  ctxId = (cuLeft && CU::isIBC(*cuLeft)) ? 1 : 0;
+
+  const CodingUnit *cuAbove = cs->getCURestricted(cu.lumaPos().offset(0, -1), cu, CH_L);
+  ctxId = (cuAbove && CU::isIBC(*cuAbove)) ? 1 : 0;
+  return ctxId;
+}
+#endif
+
 void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 {
   CHECK( candIdx >= numValidMergeCand, "Merge candidate does not exist" );
@@ -501,12 +515,20 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   pu.mvpIdx [REF_PIC_LIST_1] = NOT_VALID;
   pu.mvpNum [REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum [REF_PIC_LIST_1] = NOT_VALID;
+#if JVET_M0483_IBC
+  if (CU::isIBC(*pu.cu))
+  {
+    pu.bv = pu.mv[REF_PIC_LIST_0];
+    pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
+  }
+#else
   if (interDirNeighbours[candIdx] == 1 && pu.cs->slice->getRefPic(REF_PIC_LIST_0, mvFieldNeighbours[candIdx << 1].refIdx)->getPOC() == pu.cs->slice->getPOC())
   {
     pu.cu->ibc = true;
     pu.bv = pu.mv[REF_PIC_LIST_0];
     pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
   }
+#endif
   pu.cu->GBiIdx = ( interDirNeighbours[candIdx] == 3 ) ? GBiIdx[candIdx] : GBI_DEFAULT;
 
 #if JVET_M0068_M0171_MMVD_CLEANUP

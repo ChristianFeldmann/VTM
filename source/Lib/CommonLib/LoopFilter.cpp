@@ -599,11 +599,17 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
 
   if (sliceQ.isInterB() || sliceP.isInterB())
   {
+#if JVET_M0483_IBC
+    const Picture *piRefP0 = (CU::isIBC(cuP) ? sliceP.getPic() : ((0 > miP.refIdx[0]) ? NULL : sliceP.getRefPic(REF_PIC_LIST_0, miP.refIdx[0])));
+    const Picture *piRefP1 = (CU::isIBC(cuP) ? NULL            : ((0 > miP.refIdx[1]) ? NULL : sliceP.getRefPic(REF_PIC_LIST_1, miP.refIdx[1])));
+    const Picture *piRefQ0 = (CU::isIBC(cuQ) ? sliceQ.getPic() : ((0 > miQ.refIdx[0]) ? NULL : sliceQ.getRefPic(REF_PIC_LIST_0, miQ.refIdx[0])));
+    const Picture *piRefQ1 = (CU::isIBC(cuQ) ? NULL            : ((0 > miQ.refIdx[1]) ? NULL : sliceQ.getRefPic(REF_PIC_LIST_1, miQ.refIdx[1])));
+#else
     const Picture *piRefP0 = ( 0 > miP.refIdx[0] ) ? NULL : sliceP.getRefPic( REF_PIC_LIST_0, miP.refIdx[0] );
     const Picture *piRefP1 = ( 0 > miP.refIdx[1] ) ? NULL : sliceP.getRefPic( REF_PIC_LIST_1, miP.refIdx[1] );
     const Picture *piRefQ0 = ( 0 > miQ.refIdx[0] ) ? NULL : sliceQ.getRefPic( REF_PIC_LIST_0, miQ.refIdx[0] );
     const Picture *piRefQ1 = ( 0 > miQ.refIdx[1] ) ? NULL : sliceQ.getRefPic( REF_PIC_LIST_1, miQ.refIdx[1] );
-
+#endif
     Mv mvP0, mvP1, mvQ0, mvQ1;
 
     if( 0 <= miP.refIdx[0] ) { mvP0 = miP.mv[0]; }
@@ -655,11 +661,17 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
 
 
   // pcSlice->isInterP()
+#if JVET_M0483_IBC
+  CHECK(CU::isInter(cuP) && 0 > miP.refIdx[0], "Invalid reference picture list index");
+  CHECK(CU::isInter(cuP) && 0 > miQ.refIdx[0], "Invalid reference picture list index");
+  const Picture *piRefP0 = (CU::isIBC(cuP) ? sliceP.getPic() : sliceP.getRefPic(REF_PIC_LIST_0, miP.refIdx[0]));
+  const Picture *piRefQ0 = (CU::isIBC(cuQ) ? sliceQ.getPic() : sliceQ.getRefPic(REF_PIC_LIST_0, miQ.refIdx[0]));
+#else
   CHECK(0 > miP.refIdx[0], "Invalid reference picture list index");
   CHECK(0 > miQ.refIdx[0], "Invalid reference picture list index");
   const Picture *piRefP0 = sliceP.getRefPic(REF_PIC_LIST_0, miP.refIdx[0]);
   const Picture *piRefQ0 = sliceQ.getRefPic(REF_PIC_LIST_0, miQ.refIdx[0]);
-
+#endif
   if (piRefP0 != piRefQ0)
   {
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS

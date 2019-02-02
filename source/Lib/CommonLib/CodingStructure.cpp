@@ -831,7 +831,11 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   if( cpyResi ) picture->getResiBuf( clippedArea ).copyFrom( subResiBuf );
   if( cpyReco ) picture->getRecoBuf( clippedArea ).copyFrom( subRecoBuf );
 
+#if JVET_M0483_IBC 
+  if (!subStruct.m_isTuEnc && ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && subStruct.chType != CHANNEL_TYPE_CHROMA))
+#else
   if (!subStruct.m_isTuEnc && (!slice->isIntra() && subStruct.chType != CHANNEL_TYPE_CHROMA))
+#endif
   {
     // copy motion buffer
     MotionBuf ownMB  = getMotionBuf          ( clippedArea );
@@ -1011,7 +1015,11 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
     pu = *ppu;
   }
 
+#if JVET_M0483_IBC 
+  if (!other.slice->isIntra() || other.slice->getSPS()->getIBCFlag())
+#else
   if( !other.slice->isIntra() )
+#endif
   {
     // copy motion buffer
     MotionBuf  ownMB = getMotionBuf();
@@ -1074,7 +1082,11 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
     isLossless            = _isLosses;
   }
 
+#if JVET_M0483_IBC
+  if (!skipMotBuf && (!parent || ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && !m_isTuEnc)))
+#else
   if( !skipMotBuf && ( !parent || ( ( slice->getSliceType() != I_SLICE ) && !m_isTuEnc ) ) )
+#endif
   {
     getMotionBuf()      .memset( 0 );
   }

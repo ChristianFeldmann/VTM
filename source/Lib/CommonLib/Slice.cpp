@@ -450,6 +450,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       pcRefPic = xGetLongTermRefPic(rcListPic, m_pRPS->getPOC(i), m_pRPS->getCheckLTMSBPresent(i));
     }
   }
+#if JVET_M0483_IBC==0
   if (getSPS()->getSpsNext().getIBCMode())
   {
     RefPicSetLtCurr[NumPicLtCurr] = getPic();
@@ -457,6 +458,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
     getPic()->longTerm = true;
     NumPicLtCurr++;
   }
+#endif
   // ref_pic_list_init
   Picture*  rpsCurrList0[MAX_NUM_REF+1];
   Picture*  rpsCurrList1[MAX_NUM_REF+1];
@@ -469,11 +471,13 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
     // - Otherwise, when the current picture contains a P or B slice, the value of NumPocTotalCurr shall not be equal to 0.
     if (getRapPicFlag())
     {
+#if JVET_M0483_IBC==0
       if (getSPS()->getSpsNext().getIBCMode())
       {
         CHECK(numPicTotalCurr != 1, "Invalid state");
       }
       else
+#endif
         CHECK(numPicTotalCurr != 0, "Invalid state");
     }
 
@@ -544,11 +548,13 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       m_bIsUsedAsLongTerm[REF_PIC_LIST_1][rIdx] = ( cIdx >= NumPicStCurr0 + NumPicStCurr1 );
     }
   }
+#if JVET_M0483_IBC==0
   if (getSPS()->getSpsNext().getIBCMode())
   {
     m_apcRefPicList[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = getPic();
     m_bIsUsedAsLongTerm[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = true;
   }
+#endif
     // For generalized B
   // note: maybe not existed case (always L0 is copied to L1 if L1 is empty)
   if( bCopyL0toL1ErrorCase && isInterB() && getNumRefIdx(REF_PIC_LIST_1) == 0)
@@ -579,7 +585,11 @@ int Slice::getNumRpsCurrTempList() const
       numRpsCurrTempList++;
     }
   }
+#if JVET_M0483_IBC
+  if (getSPS()->getIBCFlag())
+#else
   if (getSPS()->getSpsNext().getIBCMode())
+#endif
   {
     return numRpsCurrTempList + 1;
   }
@@ -1642,13 +1652,27 @@ void Slice::initMotionLUTs()
 {
   m_MotionCandLut = new LutMotionCand;
   m_MotionCandLut->currCnt = 0;
+#if JVET_M0483_IBC
+  m_MotionCandLut->currCntIBC = 0;
+#endif
   m_MotionCandLut->motionCand = nullptr;
+#if JVET_M0483_IBC
+  m_MotionCandLut->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS * 2];
+#else
   m_MotionCandLut->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+#endif
 #if  JVET_M0170_MRG_SHARELIST
   m_MotionCandLuTsBkup = new LutMotionCand;
   m_MotionCandLuTsBkup->currCnt = 0;
+#if JVET_M0483_IBC
+  m_MotionCandLuTsBkup->currCntIBC = 0;
+#endif
   m_MotionCandLuTsBkup->motionCand = nullptr;
+#if JVET_M0483_IBC
+  m_MotionCandLuTsBkup->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS * 2];
+#else
   m_MotionCandLuTsBkup->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+#endif
 #endif
 }
 void Slice::destroyMotionLUTs()
@@ -1667,8 +1691,14 @@ void Slice::destroyMotionLUTs()
 void Slice::resetMotionLUTs()
 {
   m_MotionCandLut->currCnt = 0;
+#if JVET_M0483_IBC
+  m_MotionCandLut->currCntIBC = 0;
+#endif
 #if  JVET_M0170_MRG_SHARELIST
   m_MotionCandLuTsBkup->currCnt = 0;
+#if JVET_M0483_IBC
+  m_MotionCandLuTsBkup->currCntIBC = 0;
+#endif
 #endif
 }
 
@@ -1683,8 +1713,46 @@ MotionInfo Slice::getMotionInfoFromLUTBkup(int MotCandIdx) const
 }
 #endif
 
+#if JVET_M0483_IBC
+void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi, bool ibcflag)
+#else
 void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi)
+#endif
 {
+#if JVET_M0483_IBC
+  int currCntIBC = ibcflag ? lutMC->currCntIBC : lutMC->currCnt;
+  int offset = ibcflag ? MAX_NUM_HMVP_CANDS : 0;
+  bool pruned = false;
+  int  sameCandIdx = 0;
+  for (int idx = 0; idx < currCntIBC; idx++)
+  {
+    if (lutMC->motionCand[idx + offset] == newMi)
+    {
+      sameCandIdx = idx;
+      pruned = true;
+      break;
+    }
+  }
+  if (pruned || currCntIBC == MAX_NUM_HMVP_CANDS)
+  {
+    memmove(&lutMC->motionCand[sameCandIdx + offset], &lutMC->motionCand[sameCandIdx + offset + 1],
+      sizeof(MotionInfo) * (currCntIBC - sameCandIdx - 1));
+    memcpy(&lutMC->motionCand[currCntIBC + offset - 1], &newMi, sizeof(MotionInfo));
+  }
+  else
+  {
+    if (ibcflag)
+    {
+      memcpy(&lutMC->motionCand[currCntIBC + offset], &newMi, sizeof(MotionInfo));
+      lutMC->currCntIBC++;
+    }
+    else
+    {
+      memcpy(&lutMC->motionCand[currCntIBC], &newMi, sizeof(MotionInfo));
+      lutMC->currCnt++;
+    }
+  }
+#else
   int currCnt = lutMC->currCnt ;
 
   bool pruned = false;
@@ -1708,6 +1776,7 @@ void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi)
   {
     memcpy(&lutMC->motionCand[lutMC->currCnt++], &newMi, sizeof(MotionInfo));
   }
+#endif
 }
 
 void Slice::updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu)
@@ -1716,22 +1785,37 @@ void Slice::updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu)
   if (cu.affine) { return; }
   if (cu.triangle) { return; }
 
-  MotionInfo newMi = selectedPU->getMotionInfo(); 
+  MotionInfo newMi = selectedPU->getMotionInfo();
 #if JVET_M0264_HMVP_WITH_GBIIDX
   newMi.GBiIdx = (newMi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
 #endif
+#if JVET_M0483_IBC
+  addMotionInfoToLUTs(lutMC, newMi, CU::isIBC(cu));
+#else
   addMotionInfoToLUTs(lutMC, newMi);
+#endif
 }
 
 void Slice::copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst)
 {
    memcpy(Dst->motionCand, Src->motionCand, sizeof(MotionInfo)*(std::min(Src->currCnt, MAX_NUM_HMVP_CANDS)));
    Dst->currCnt = Src->currCnt;
+#if JVET_M0483_IBC
+   memcpy(Dst->motionCand + MAX_NUM_HMVP_CANDS, Src->motionCand + MAX_NUM_HMVP_CANDS, sizeof(MotionInfo)*(std::min(Src->currCntIBC, MAX_NUM_HMVP_CANDS)));
+   Dst->currCntIBC = Src->currCntIBC;
+#endif
 }
 
 unsigned Slice::getMinPictureDistance() const
 {
   int minPicDist = MAX_INT;
+#if JVET_M0483_IBC
+  if (getSPS()->getIBCFlag())
+  {
+    minPicDist = 0;
+  }
+  else
+#endif
   if( ! isIntra() )
   {
     const int currPOC  = getPOC();
@@ -1916,6 +2000,9 @@ SPS::SPS()
 , m_spsNextExtension          (*this)
 , m_wrapAroundEnabledFlag     (false)
 , m_wrapAroundOffset          (  0)
+#if JVET_M0483_IBC
+, m_IBCFlag                   (  0)
+#endif
 #if JVET_M0427_INLOOP_RESHAPER
 , m_lumaReshapeEnable         (false)
 #endif

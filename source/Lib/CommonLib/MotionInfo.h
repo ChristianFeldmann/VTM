@@ -101,30 +101,49 @@ struct MvField
 struct MotionInfo
 {
   bool     isInter;
+#if JVET_M0483_IBC
+  bool     isIBCmot;
+#endif
   char     interDir;
   uint16_t   sliceIdx;
-
   Mv      mv     [ NUM_REF_PIC_LIST_01 ];
   int16_t   refIdx [ NUM_REF_PIC_LIST_01 ];
-  Mv      bv;
 #if JVET_M0264_HMVP_WITH_GBIIDX
   uint8_t         GBiIdx;
 #endif
+  Mv      bv;
+#if JVET_M0483_IBC
 #if JVET_M0264_HMVP_WITH_GBIIDX
-  MotionInfo()        : isInter(  false ), interDir( 0 ), sliceIdx( 0 ), refIdx{ NOT_VALID, NOT_VALID }, GBiIdx( 0 ) { }
+  MotionInfo() : isInter(false), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID }, GBiIdx(0) { }
 #else
-  MotionInfo()        : isInter(  false ), interDir( 0 ), sliceIdx( 0 ), refIdx{ NOT_VALID, NOT_VALID } { }
+  MotionInfo() : isInter(false), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID } { }
 #endif
   // ensure that MotionInfo(0) produces '\x000....' bit pattern - needed to work with AreaBuf - don't use this constructor for anything else
 #if JVET_M0264_HMVP_WITH_GBIIDX
-  MotionInfo( int i ) : isInter( i != 0 ), interDir( 0 ), sliceIdx( 0 ), refIdx{         0,         0 }, GBiIdx( 0 ) { CHECKD( i != 0, "The argument for this constructor has to be '0'" ); }
+  MotionInfo(int i) : isInter(i != 0), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ 0,         0 }, GBiIdx(0) { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
+#else
+  MotionInfo(int i) : isInter(i != 0), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ 0,         0 } { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
+#endif
+#else
+#if JVET_M0264_HMVP_WITH_GBIIDX
+  MotionInfo() : isInter(false), interDir(0), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID }, GBiIdx(0) { }
+#else
+  MotionInfo() : isInter(false), interDir( 0 ), sliceIdx( 0 ), refIdx{ NOT_VALID, NOT_VALID } { }
+#endif
+  // ensure that MotionInfo(0) produces '\x000....' bit pattern - needed to work with AreaBuf - don't use this constructor for anything else
+#if JVET_M0264_HMVP_WITH_GBIIDX
+  MotionInfo(int i) : isInter(i != 0), interDir(0), sliceIdx(0), refIdx{ 0,         0 }, GBiIdx(0) { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
 #else
   MotionInfo( int i ) : isInter( i != 0 ), interDir( 0 ), sliceIdx( 0 ), refIdx{         0,         0 } { CHECKD( i != 0, "The argument for this constructor has to be '0'" ); }
+#endif
 #endif
 
   bool operator==( const MotionInfo& mi ) const
   {
     if( isInter != mi.isInter  ) return false;
+#if JVET_M0483_IBC
+    if (isIBCmot != mi.isIBCmot) return false;
+#endif
     if( isInter )
     {
       if( sliceIdx != mi.sliceIdx ) return false;
@@ -242,5 +261,8 @@ struct LutMotionCand
 {
   MotionInfo*   motionCand;
   int  currCnt;
+#if JVET_M0483_IBC
+  int  currCntIBC;
+#endif
 };
 #endif // __MOTIONINFO__

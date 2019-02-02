@@ -149,6 +149,9 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
       switch( currCU.predMode )
       {
       case MODE_INTER:
+#if JVET_M0483_IBC
+      case MODE_IBC:
+#endif
         xReconInter( currCU );
         break;
       case MODE_INTRA:
@@ -458,10 +461,17 @@ void DecCu::xReconInter(CodingUnit &cu)
   m_pcIntraPred->geneIntrainterPred(cu);
 
   // inter prediction
+#if JVET_M0483_IBC
+  CHECK(CU::isIBC(cu) && cu.firstPU->mhIntraFlag, "IBC and MHIntra cannot be used together");
+  CHECK(CU::isIBC(cu) && cu.affine, "IBC and Affine cannot be used together");
+  CHECK(CU::isIBC(cu) && cu.triangle, "IBC and triangle cannot be used together");
+  CHECK(CU::isIBC(cu) && cu.firstPU->mmvdMergeFlag, "IBC and MMVD cannot be used together");
+#else
   CHECK(cu.ibc && cu.firstPU->mhIntraFlag, "IBC and MHIntra cannot be used together");
   CHECK(cu.ibc && cu.affine, "IBC and Affine cannot be used together");
   CHECK(cu.ibc && cu.triangle, "IBC and triangle cannot be used together");
   CHECK(cu.ibc && cu.firstPU->mmvdMergeFlag, "IBC and MMVD cannot be used together");
+#endif
   const bool luma = cu.Y().valid();
   const bool chroma = cu.Cb().valid();
   if (luma && chroma)
@@ -515,7 +525,11 @@ void DecCu::xReconInter(CodingUnit &cu)
         tmpPred.copyFrom(cs.getPredBuf(cu).get(COMPONENT_Y));
       }
 #endif
+#if JVET_M0483_IBC
+      if (!cu.firstPU->mhIntraFlag && !CU::isIBC(cu))
+#else
       if (!cu.firstPU->mhIntraFlag && !cu.ibc )
+#endif
         cs.getPredBuf(cu).get(COMPONENT_Y).rspSignal(m_pcReshape->getFwdLUT());
     }
 #endif
@@ -541,7 +555,11 @@ void DecCu::xReconInter(CodingUnit &cu)
   {
     cs.getRecoBuf(cu).copyClip(cs.getPredBuf(cu), cs.slice->clpRngs());
 #if JVET_M0427_INLOOP_RESHAPER
+#if JVET_M0483_IBC
+    if (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && !cu.firstPU->mhIntraFlag && !CU::isIBC(cu))
+#else
     if (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && !cu.firstPU->mhIntraFlag && !cu.ibc)
+#endif
     {
       cs.getRecoBuf(cu).get(COMPONENT_Y).rspSignal(m_pcReshape->getFwdLUT());
     }
@@ -615,7 +633,11 @@ void DecCu::xDecodeInterTexture(CodingUnit &cu)
         CompArea tmpArea(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());
         PelBuf tmpPred = m_tmpStorageLCU->getBuf(tmpArea);
         tmpPred.copyFrom(predY);
-        if (!cu.firstPU->mhIntraFlag && !cu.ibc)
+#if JVET_M0483_IBC
+      if (!cu.firstPU->mhIntraFlag && !CU::isIBC(cu))
+#else
+      if (!cu.firstPU->mhIntraFlag && !cu.ibc)
+#endif
           tmpPred.rspSignal(m_pcReshape->getFwdLUT());
         const Pel avgLuma = tmpPred.computeAvg();
         int adj = m_pcReshape->calculateChromaAdj(avgLuma);
@@ -718,6 +740,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           pu.shareParentPos = cu.shareParentPos;
           pu.shareParentSize = cu.shareParentSize;
 #endif
+#if JVET_M0483_IBC
+          if (CU::isIBC(*pu.cu))
+            PU::getIBCMergeCandidates(pu, mrgCtx, pu.mergeIdx);
+          else
+#endif
             PU::getInterMergeCandidates(pu, mrgCtx, 0, pu.mergeIdx);
 #if !JVET_M0068_M0171_MMVD_CLEANUP
             PU::restrictBiPredMergeCands(pu, mrgCtx);
@@ -809,16 +836,36 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
             }
           }
         }
+#if JVET_M0483_IBC
+        else if (CU::isIBC(*pu.cu) && pu.interDir == 1)
+        {
+          AMVPInfo amvpInfo;
+          PU::fillIBCMvpCand(pu, amvpInfo);
+          pu.mvpNum[REF_PIC_LIST_0] = amvpInfo.numCand;
+          Mv mvd = pu.mvd[REF_PIC_LIST_0];
+#if REUSE_CU_RESULTS
+          if (!cu.cs->pcv->isEncoder)
+#endif
+            mvd <<= 2;
+          pu.mv[REF_PIC_LIST_0] = amvpInfo.mvCand[pu.mvpIdx[REF_PIC_LIST_0]] + mvd;
+          pu.mv[REF_PIC_LIST_0].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
+        }
+#endif
         else
         {
           for ( uint32_t uiRefListIdx = 0; uiRefListIdx < 2; uiRefListIdx++ )
           {
             RefPicList eRefList = RefPicList( uiRefListIdx );
+#if JVET_M0483_IBC
+            if ((pu.cs->slice->getNumRefIdx(eRefList) > 0 || (eRefList == REF_PIC_LIST_0 && CU::isIBC(*pu.cu))) && (pu.interDir & (1 << uiRefListIdx)))
+#else
             if ( pu.cs->slice->getNumRefIdx( eRefList ) > 0 && ( pu.interDir & ( 1 << uiRefListIdx ) ) )
+#endif
             {
               AMVPInfo amvpInfo;
               PU::fillMvpCand(pu, eRefList, pu.refIdx[eRefList], amvpInfo);
               pu.mvpNum [eRefList] = amvpInfo.numCand;
+#if JVET_M0483_IBC==0
               Mv mvd = pu.mvd[eRefList];
               if (eRefList == REF_PIC_LIST_0 && pu.cs->slice->getRefPic(eRefList, pu.refIdx[eRefList])->getPOC() == pu.cs->slice->getPOC())
               {
@@ -829,6 +876,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
                   mvd.changePrecision(MV_PRECISION_INT, MV_PRECISION_QUARTER);
               }
               pu.mv     [eRefList] = amvpInfo.mvCand[pu.mvpIdx[eRefList]] + mvd;
+#else
+              pu.mv[eRefList] = amvpInfo.mvCand[pu.mvpIdx[eRefList]] + pu.mvd[eRefList];
+#endif
               pu.mv[eRefList].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
             }
           }

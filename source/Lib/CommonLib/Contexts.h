@@ -307,6 +307,9 @@ public:
 #if JVET_M0444_SMVD
   static const CtxSet   SmvdFlag;
 #endif
+#if JVET_M0483_IBC
+  static const CtxSet   IBCFlag;
+#endif
 #if JVET_M0102_INTRA_SUBPARTITIONS
   static const CtxSet   ISPMode;
 #endif

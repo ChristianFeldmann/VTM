@@ -414,7 +414,11 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   int iRefIdx = pu.refIdx[eRefPicList];
   Mv mv[3];
   bool isIBC = false;
+#if JVET_M0483_IBC
+  if (CU::isIBC(*pu.cu))
+#else
   if (pu.cs->slice->getRefPic(eRefPicList, iRefIdx)->getPOC() == pu.cs->slice->getPOC())
+#endif
   {
     isIBC = true;
   }
@@ -454,11 +458,27 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
     }
     else
     {
+#if JVET_M0483_IBC
+      if (isIBC)
+      {
+        xPredInterBlk(compID, pu, pu.cu->slice->getPic(), mv[0], pcYuvPred, bi, pu.cu->slice->clpRng(compID)
+          , bioApplied
+          , isIBC
+        );
+      }
+      else
+      {
+        xPredInterBlk(compID, pu, pu.cu->slice->getRefPic(eRefPicList, iRefIdx), mv[0], pcYuvPred, bi, pu.cu->slice->clpRng(compID)
+          , bioApplied
+          , isIBC
+        );
+      }
+#else     
       xPredInterBlk( compID, pu, pu.cu->slice->getRefPic( eRefPicList, iRefIdx ), mv[0], pcYuvPred, bi, pu.cu->slice->clpRng( compID )
                     , bioApplied
                     , isIBC
                     );
-
+#endif
     }
   }
 }
@@ -519,7 +539,13 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
 
     RefPicList eRefPicList = (refList ? REF_PIC_LIST_1 : REF_PIC_LIST_0);
 
+#if JVET_M0483_IBC
+    CHECK(CU::isIBC(*pu.cu) && eRefPicList != REF_PIC_LIST_0, "Invalid interdir for ibc mode");
+    CHECK(CU::isIBC(*pu.cu) && pu.refIdx[refList] != MAX_NUM_REF, "Invalid reference index for ibc mode");
+    CHECK((CU::isInter(*pu.cu) && pu.refIdx[refList] >= slice.getNumRefIdx(eRefPicList)), "Invalid reference index");
+#else
     CHECK( pu.refIdx[refList] >= slice.getNumRefIdx( eRefPicList ), "Invalid reference index" );
+#endif
     m_iRefListIdx = refList;
 
     PelUnitBuf pcMbBuf = ( pu.chromaFormat == CHROMA_400 ?

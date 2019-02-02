@@ -321,6 +321,9 @@ unsigned CtxTriangleFlag( const CodingUnit& cu );
 #if JVET_M0502_PRED_MODE_CTX
 unsigned CtxPredModeFlag( const CodingUnit& cu );
 #endif
+#if JVET_M0483_IBC
+unsigned CtxIBCFlag(const CodingUnit& cu);
+#endif
 }
 
 #endif // __CONTEXTMODELLING__

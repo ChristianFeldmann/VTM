@@ -937,8 +937,12 @@ void EncLib::xInitSPS(SPS &sps)
 #if JVET_M0147_DMVR
   sps.setUseDMVR                            ( m_DMVR );
 #endif
-  sps.getSpsNext().setIBCMode               ( m_IBCMode );
 
+#if JVET_M0483_IBC
+  sps.setIBCFlag                            ( m_IBCMode);
+#else
+  sps.getSpsNext().setIBCMode               (m_IBCMode);
+#endif
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
@@ -1442,11 +1446,13 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     }
   }
   CHECK(!(bestPos <= 15), "Unspecified error");
+#if JVET_M0483_IBC==0
   if (sps.getSpsNext().getIBCMode())
   {
     pps.setNumRefIdxL0DefaultActive(bestPos + 1);
   }
   else
+#endif
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());

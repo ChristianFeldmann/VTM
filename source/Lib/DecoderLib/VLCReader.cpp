@@ -821,7 +821,9 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
     READ_FLAG( symbol,  "affine_type_flag" );                       spsNext.setUseAffineType          ( symbol != 0 );
   }
   READ_FLAG( symbol,    "gbi_flag" );                               spsNext.setUseGBi                 ( symbol != 0 );
+#if JVET_M0483_IBC==0
   READ_FLAG( symbol, "ibc_flag");                                   spsNext.setIBCMode                ( symbol != 0 );
+#endif
   for( int k = 0; k < SPSNext::NumReservedFlags; k++ )
   {
     READ_FLAG( symbol,  "reserved_flag" );                          if( symbol != 0 ) EXIT("Incompatible version: SPSNext reserved flag not equal to zero (bitstream was probably created with newer software version)" );
@@ -925,6 +927,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "no_ladf_constraint_flag");                  pcSPS->setNoLadfConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_dep_quant_constraint_flag");             pcSPS->setNoDepQuantConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_sign_data_hiding_constraint_flag");      pcSPS->setNoSignDataHidingConstraintFlag(uiCode > 0 ? true : false);
+#if JVET_M0483_IBC
+  READ_FLAG(uiCode, "ibc_flag");                                 pcSPS->setIBCFlag(uiCode);
+#endif
 #if HEVC_VPS
   READ_CODE( 4,  uiCode, "sps_video_parameter_set_id");          pcSPS->setVPSId        ( uiCode );
 #endif
@@ -1806,10 +1811,21 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         }
       }
     }
-    if (!pcSlice->isIntra())
+
+#if JVET_M0483_IBC 
+    if (!pcSlice->isIntra() || sps->getIBCFlag())
     {
       READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
       pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
+    }
+#endif
+
+    if (!pcSlice->isIntra())
+    {
+#if JVET_M0483_IBC==0
+      READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
+      pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
+#endif
 
       if ( sps->getSBTMVPEnabledFlag() && !sps->getSpsNext().getUseAffine() ) // ATMVP only
       {

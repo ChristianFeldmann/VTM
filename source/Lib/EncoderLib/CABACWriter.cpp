@@ -713,7 +713,11 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
   }
 
   // skip flag
+#if JVET_M0483_IBC
+  if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag()) && cu.Y().valid())
+#else
   if (!cs.slice->isIntra() && cu.Y().valid())
+#endif
   {
     cu_skip_flag( cu );
   }
@@ -769,19 +773,86 @@ void CABACWriter::cu_transquant_bypass_flag( const CodingUnit& cu )
 void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 {
   unsigned ctxId = DeriveCtx::CtxSkipFlag( cu );
+
+#if JVET_M0483_IBC
+  if (cu.slice->isIntra() && cu.cs->slice->getSPS()->getIBCFlag())
+  {
+    m_BinEncoder.encodeBin((cu.skip), Ctx::SkipFlag(ctxId));
+    DTRACE(g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0);
+    return;
+  }
+#endif
+
   m_BinEncoder.encodeBin( ( cu.skip ), Ctx::SkipFlag( ctxId ) );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0 );
+#if JVET_M0483_IBC
+  if (cu.skip && cu.cs->slice->getSPS()->getIBCFlag())
+  {
+    unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
+    m_BinEncoder.encodeBin(CU::isIBC(cu) ? 1 : 0, Ctx::IBCFlag(ctxidx));
+    DTRACE(g_trace_ctx, D_SYNTAX, "ibc() ctx=%d cu.predMode=%d\n", ctxidx, cu.predMode);
+
+    if (CU::isInter(cu))
+    {
+      m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
+      DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
+    }
+  }
+  if (cu.skip && !cu.cs->slice->getSPS()->getIBCFlag())
+  {
+    m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
+    DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
+  }
+#else
   if (cu.skip)
   {
     m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
     DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
   }
+#endif
 }
 
 
 void CABACWriter::pred_mode( const CodingUnit& cu )
 {
+#if JVET_M0483_IBC
+  if (cu.cs->slice->getSPS()->getIBCFlag())
+  {
+#endif
+#if JVET_M0483_IBC
+    if (cu.cs->slice->isIntra())
+    {
+      unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
+      m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
+    }
+    else
+    {
+#if JVET_M0502_PRED_MODE_CTX
+      m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
+#else
+      m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode());
+#endif
+      if (!CU::isIntra(cu))
+      {
+        unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
+        m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
+      }
+    }
+  }
+  else
+  {
+    if (cu.cs->slice->isIntra())
+    {
+      return;
+    }
+#if JVET_M0502_PRED_MODE_CTX
+    m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
+#else
+    m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode());
+#endif
+  }
+#else
   if( cu.cs->slice->isIntra() )
   {
     return;
@@ -790,6 +861,7 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
   m_BinEncoder.encodeBin( ( CU::isIntra( cu ) ), Ctx::PredMode( DeriveCtx::CtxPredModeFlag( cu ) ) );
 #else
   m_BinEncoder.encodeBin( ( CU::isIntra( cu ) ), Ctx::PredMode() );
+#endif
 #endif
 }
 
@@ -1235,7 +1307,11 @@ void CABACWriter::intra_chroma_pred_mode( const PredictionUnit& pu )
 
 void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, CUCtx& cuCtx )
 {
+#if JVET_M0483_IBC
+  if (!CU::isIntra(cu))
+#else
   if( CU::isInter( cu ) )
+#endif
   {
     PredictionUnit& pu = *cu.firstPU;
     if( !pu.mergeFlag )
@@ -1336,6 +1412,13 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   }
   if( pu.mergeFlag )
   {
+#if JVET_M0483_IBC
+    if (CU::isIBC(*pu.cu))
+    {
+      merge_idx(pu);
+      return;
+    }
+#endif
     subblock_merge_flag( *pu.cu );
     MHIntra_flag( pu );
     if ( pu.mhIntraFlag )
@@ -1350,6 +1433,14 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
     else
     merge_idx    ( pu );
   }
+#if JVET_M0483_IBC
+  else if (CU::isIBC(*pu.cu))
+  {
+    ref_idx(pu, REF_PIC_LIST_0);
+    mvd_coding(pu.mvd[REF_PIC_LIST_0], pu.cu->imv);
+    mvp_flag(pu, REF_PIC_LIST_0);
+  }
+#endif
   else
   {
 #if JVET_M0246_AFFINE_AMVR
@@ -1483,6 +1574,14 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
   m_BinEncoder.encodeBin( pu.mergeFlag, Ctx::MergeFlag() );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_flag() merge=%d pos=(%d,%d) size=%dx%d\n", pu.mergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
+  
+#if JVET_M0483_IBC
+  if (pu.mergeFlag && CU::isIBC(*pu.cu))
+  {
+    return;
+  }
+#endif
+
   if (pu.mergeFlag)
   {
     m_BinEncoder.encodeBin(pu.mmvdMergeFlag, Ctx::MmvdFlag(0));
@@ -1512,7 +1611,11 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
   }
 
   unsigned ctxId = DeriveCtx::CtxIMVFlag( cu );
+#if JVET_M0483_IBC
+  if (CU::isIBC(cu) == false)
+#else
   if (!(cu.firstPU->interDir == 1 && cu.cs->slice->getRefPic(REF_PIC_LIST_0, cu.firstPU->refIdx[REF_PIC_LIST_0])->getPOC() == cu.cs->slice->getPOC())) // the first bin of IMV flag does need to be signaled in IBC block
+#endif
     m_BinEncoder.encodeBin( ( cu.imv > 0 ), Ctx::ImvFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", (cu.imv > 0), ctxId );
 
@@ -1764,6 +1867,15 @@ void CABACWriter::ref_idx( const PredictionUnit& pu, RefPicList eRefList )
 #endif
 
   int numRef  = pu.cs->slice->getNumRefIdx(eRefList);
+
+#if JVET_M0483_IBC
+  if (eRefList == REF_PIC_LIST_0 && pu.cs->sps->getIBCFlag())
+  {
+    if (CU::isIBC(*pu.cu))
+      return;
+  }
+#endif
+
   if( numRef <= 1 )
   {
     return;
@@ -2554,7 +2666,11 @@ void CABACWriter::emt_cu_flag( const CodingUnit& cu )
 #endif
   const CodingStructure& cs = *cu.cs;
 
+#if JVET_M0483_IBC
+  if (!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && !CU::isIntra(cu))) || isChroma(cu.chType))
+#else
   if( !( ( cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra( cu ) ) || ( cs.sps->getSpsNext().getUseInterEMT() && CU::isInter( cu ) ) ) || isChroma( cu.chType ) )
+#endif
   {
     return;
   }

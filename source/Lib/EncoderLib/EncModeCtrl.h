@@ -364,6 +364,9 @@ struct CodedCUInfo
   bool isIntra;
   bool isSkip;
   bool isMMVDSkip;
+#if JVET_M0483_IBC
+  bool isIBC;
+#endif
   bool validMv[NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 

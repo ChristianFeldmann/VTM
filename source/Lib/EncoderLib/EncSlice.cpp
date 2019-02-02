@@ -536,7 +536,11 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
  #endif
   if(rpcSlice->getPPS()->getSliceChromaQpFlag())
   {
+#if JVET_M0483_IBC
+    const bool bUseIntraOrPeriodicOffset = (rpcSlice->isIntra() && !rpcSlice->getSPS()->getIBCFlag()) || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);
+#else
     const bool bUseIntraOrPeriodicOffset = rpcSlice->isIntra() || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);
+#endif
     int cbQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(false) : m_pcCfg->getGOPEntry(iGOPid).m_CbQPoffset;
     int crQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(true)  : m_pcCfg->getGOPEntry(iGOPid).m_CrQPoffset;
 
@@ -1481,7 +1485,11 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #endif
 #if JVET_M0255_FRACMMVD_SWITCH
   if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() || 
+#if JVET_M0483_IBC
+      (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
+#else
       ( pcSlice->getSPS()->getSpsNext().getIBCMode() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch() ) )
+#endif
   {
 #if JVET_M0427_INLOOP_RESHAPER
     if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getSpsNext().getIBCMode())

@@ -1239,6 +1239,48 @@ const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet
 });
 #endif
 
+#if JVET_M0140_SBT
+const CtxSet ContextSetCfg::SbtFlag = ContextSetCfg::addCtxSet
+( {
+  {  CNU, CNU,},
+  {  CNU, CNU,},
+  {  CNU, CNU,},
+#if JVET_M0453_CABAC_ENGINE
+  {  DWS, DWS,},
+#endif
+} );
+
+const CtxSet ContextSetCfg::SbtQuadFlag = ContextSetCfg::addCtxSet
+( {
+  {  CNU,},
+  {  CNU,},
+  {  CNU,},
+#if JVET_M0453_CABAC_ENGINE
+  {  DWS,},
+#endif
+} );
+
+const CtxSet ContextSetCfg::SbtHorFlag = ContextSetCfg::addCtxSet
+( {
+  {  CNU, CNU, CNU,},
+  {  CNU, CNU, CNU,},
+  {  CNU, CNU, CNU,},
+#if JVET_M0453_CABAC_ENGINE
+  {  DWS, DWS, DWS,},
+#endif
+} );
+
+const CtxSet ContextSetCfg::SbtPosFlag = ContextSetCfg::addCtxSet
+( {
+  {  CNU,},
+  {  CNU,},
+  {  CNU,},
+#if JVET_M0453_CABAC_ENGINE
+  {  DWS,},
+#endif
+} );
+#endif
+
 const CtxSet ContextSetCfg::CrossCompPred = ContextSetCfg::addCtxSet
 ({
   {  154, 154, 154, 154, 154, 154, 154, 154, 154, 154,},

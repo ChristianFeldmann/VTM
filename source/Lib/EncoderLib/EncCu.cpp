@@ -713,6 +713,15 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   tempCS->chType = partitioner.chType;
   bestCS->chType = partitioner.chType;
   m_modeCtrl->initCULevel( partitioner, *tempCS );
+#if JVET_M0140_SBT
+  if( partitioner.currQtDepth == 0 && partitioner.currMtDepth == 0 && !tempCS->slice->isIntra() && ( sps.getSpsNext().getUseSBT() || sps.getSpsNext().getUseInterMTS() ) )
+  {
+    auto slsSbt = dynamic_cast<SaveLoadEncInfoSbt*>( m_modeCtrl );
+    int maxSLSize = sps.getSpsNext().getUseSBT() ? tempCS->slice->getSPS()->getSpsNext().getMaxSbtSize() : MTS_INTER_MAX_CU_SIZE;
+    slsSbt->resetSaveloadSbt( maxSLSize );
+  }
+  m_sbtCostSave[0] = m_sbtCostSave[1] = MAX_DOUBLE;
+#endif
 
   m_CurrCtx->start = m_CABACEstimator->getCtx();
 
@@ -4171,6 +4180,11 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
   CodingUnit*            cu        = tempCS->getCU( partitioner.chType );
   double   bestCostInternal        = MAX_DOUBLE;
   double           bestCost        = bestCS->cost;
+#if JVET_M0140_SBT
+  double           bestCostBegin   = bestCS->cost;
+  CodingUnit*      prevBestCU      = bestCS->getCU( partitioner.chType );
+  uint8_t          prevBestSbt     = ( prevBestCU == nullptr ) ? 0 : prevBestCU->sbtInfo;
+#endif
 #if !JVET_M0464_UNI_MTS
   const SPS&            sps        = *tempCS->sps;
   const int      maxSizeEMT        = EMT_INTER_MAX_CU_WITH_QTBT;
@@ -4211,6 +4225,51 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
       }
     }
   }
+#if JVET_M0140_SBT
+  const bool mtsAllowed = tempCS->sps->getSpsNext().getUseInterMTS() && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
+  uint8_t sbtAllowed = cu->checkAllowedSbt();
+  uint8_t numRDOTried = 0;
+  Distortion sbtOffDist = 0;
+  bool    sbtOffRootCbf = 0;
+  double  sbtOffCost      = MAX_DOUBLE;
+  double  currBestCost = MAX_DOUBLE;
+  bool    doPreAnalyzeResi = ( sbtAllowed || mtsAllowed ) && residualPass == 0;
+
+  m_pcInterSearch->initTuAnalyzer();
+  if( doPreAnalyzeResi )
+  {
+    m_pcInterSearch->calcMinDistSbt( *tempCS, *cu, sbtAllowed );
+  }
+
+  auto    slsSbt = dynamic_cast<SaveLoadEncInfoSbt*>( m_modeCtrl );
+  int     slShift = 4 + std::min( (int)gp_sizeIdxInfo->idxFrom( cu->lwidth() ) + (int)gp_sizeIdxInfo->idxFrom( cu->lheight() ), 9 );
+  Distortion curPuSse = m_pcInterSearch->getEstDistSbt( NUMBER_SBT_MODE );
+  uint8_t currBestSbt = 0;
+  uint8_t currBestTrs = MAX_UCHAR;
+  uint8_t histBestSbt = MAX_UCHAR;
+  uint8_t histBestTrs = MAX_UCHAR;
+  m_pcInterSearch->setHistBestTrs( MAX_UCHAR, MAX_UCHAR );
+  if( doPreAnalyzeResi )
+  {
+    if( m_pcInterSearch->getSkipSbtAll() && !mtsAllowed ) //emt is off
+    {
+      histBestSbt = 0; //try DCT2
+      m_pcInterSearch->setHistBestTrs( histBestSbt, histBestTrs );
+    }
+    else
+    {
+      assert( curPuSse != std::numeric_limits<uint64_t>::max() );
+      uint16_t compositeSbtTrs = slsSbt->findBestSbt( cu->cs->area, (uint32_t)( curPuSse >> slShift ) );
+      histBestSbt = ( compositeSbtTrs >> 0 ) & 0xff;
+      histBestTrs = ( compositeSbtTrs >> 8 ) & 0xff;
+      if( m_pcInterSearch->getSkipSbtAll() && CU::isSbtMode( histBestSbt ) ) //special case, skip SBT when loading SBT
+      {
+        histBestSbt = 0; //try DCT2
+      }
+      m_pcInterSearch->setHistBestTrs( histBestSbt, histBestTrs );
+    }
+  }
+#endif
 
 #if !JVET_M0464_UNI_MTS
   if( emtMode == 2 )
@@ -4254,14 +4313,24 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
 #if !JVET_M0464_UNI_MTS
     cu->emtFlag = curEmtMode;
 #endif
+#if JVET_M0140_SBT
+    cu->sbtInfo = 0;
+#endif
 
     const bool skipResidual = residualPass == 1;
+#if JVET_M0140_SBT // skip DCT-2 and EMT if historical best transform mode is SBT
+    if( skipResidual || histBestSbt == MAX_UCHAR || !CU::isSbtMode( histBestSbt ) )
+    {
+#endif
     m_pcInterSearch->encodeResAndCalcRdInterCU( *tempCS, partitioner, skipResidual );
-
+#if JVET_M0140_SBT
+    numRDOTried += mtsAllowed ? 2 : 1;
+#endif
     xEncodeDontSplit( *tempCS, partitioner );
 
     xCheckDQP( *tempCS, partitioner );
 
+#if !JVET_M0140_SBT //harmonize with GBI fast algorithm (move the code to the end of this function)
     if( ETM_INTER_ME == encTestMode.type )
     {
       if( equGBiCost != NULL )
@@ -4291,6 +4360,7 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
         }
       }
     }
+#endif
 
 #if !JVET_M0464_UNI_MTS
     double emtFirstPassCost = tempCS->cost;
@@ -4318,6 +4388,18 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
         return;
       }
     }
+#if JVET_M0140_SBT
+    currBestCost = tempCS->cost;
+    sbtOffCost = tempCS->cost;
+    sbtOffDist = tempCS->dist;
+    sbtOffRootCbf = cu->rootCbf;
+    currBestSbt = CU::getSbtInfo( cu->firstTU->mtsIdx > 1 ? SBT_OFF_MTS : SBT_OFF_DCT, 0 );
+    currBestTrs = cu->firstTU->mtsIdx;
+    if( cu->lwidth() <= MAX_TU_SIZE_FOR_PROFILE && cu->lheight() <= MAX_TU_SIZE_FOR_PROFILE )
+    {
+      CHECK( tempCS->tus.size() != 1, "tu must be only one" );
+    }
+#endif
 
 #if WCG_EXT
     DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda( true ) );
@@ -4341,7 +4423,199 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
       }
     }
 #endif
+#if JVET_M0140_SBT // skip DCT-2 and EMT
+    }
+#endif
+
+#if JVET_M0140_SBT //RDO for SBT
+    uint8_t numSbtRdo = CU::numSbtModeRdo( sbtAllowed );
+    //early termination if all SBT modes are not allowed
+    //normative
+    if( !sbtAllowed || skipResidual )
+    {
+      numSbtRdo = 0;
+    }
+    //fast algorithm
+    if( ( histBestSbt != MAX_UCHAR && !CU::isSbtMode( histBestSbt ) ) || m_pcInterSearch->getSkipSbtAll() )
+    {
+      numSbtRdo = 0;
+    }
+    if( bestCost != MAX_DOUBLE && sbtOffCost != MAX_DOUBLE )
+    {
+      double th = 1.07;
+      if( !( prevBestSbt == 0 || m_sbtCostSave[0] == MAX_DOUBLE ) )
+      {
+        assert( m_sbtCostSave[1] <= m_sbtCostSave[0] );
+        th *= ( m_sbtCostSave[0] / m_sbtCostSave[1] );
+      }
+      if( sbtOffCost > bestCost * th )
+      {
+        numSbtRdo = 0;
+      }
+    }
+    if( !sbtOffRootCbf && sbtOffCost != MAX_DOUBLE )
+    {
+      double th = Clip3( 0.05, 0.55, ( 27 - cu->qp ) * 0.02 + 0.35 );
+      if( sbtOffCost < m_pcRdCost->calcRdCost( ( cu->lwidth() * cu->lheight() ) << SCALE_BITS, 0 ) * th )
+      {
+        numSbtRdo = 0;
+      }
+    }
+
+    if( histBestSbt != MAX_UCHAR && numSbtRdo != 0 )
+    {
+      numSbtRdo = 1;
+      m_pcInterSearch->initSbtRdoOrder( CU::getSbtMode( CU::getSbtIdx( histBestSbt ), CU::getSbtPos( histBestSbt ) ) );
+    }
+
+    for( int sbtModeIdx = 0; sbtModeIdx < numSbtRdo; sbtModeIdx++ )
+    {
+      uint8_t sbtMode = m_pcInterSearch->getSbtRdoOrder( sbtModeIdx );
+      uint8_t sbtIdx = CU::getSbtIdxFromSbtMode( sbtMode );
+      uint8_t sbtPos = CU::getSbtPosFromSbtMode( sbtMode );
+
+      //fast algorithm (early skip, save & load)
+      if( histBestSbt == MAX_UCHAR )
+      {
+        uint8_t skipCode = m_pcInterSearch->skipSbtByRDCost( cu->lwidth(), cu->lheight(), cu->mtDepth, sbtIdx, sbtPos, bestCS->cost, sbtOffDist, sbtOffCost, sbtOffRootCbf );
+        if( skipCode != MAX_UCHAR )
+        {
+          continue;
+        }
+
+        if( sbtModeIdx > 0 )
+        {
+          uint8_t prevSbtMode = m_pcInterSearch->getSbtRdoOrder( sbtModeIdx - 1 );
+          //make sure the prevSbtMode is the same size as the current SBT mode (otherwise the estimated dist may not be comparable)
+          if( CU::isSameSbtSize( prevSbtMode, sbtMode ) )
+          {
+            Distortion currEstDist = m_pcInterSearch->getEstDistSbt( sbtMode );
+            Distortion prevEstDist = m_pcInterSearch->getEstDistSbt( prevSbtMode );
+            if( currEstDist > prevEstDist * 1.15 )
+            {
+              continue;
+            }
+          }
+        }
+      }
+
+      //init tempCS and TU
+      if( bestCost == bestCS->cost ) //The first EMT pass didn't become the bestCS, so we clear the TUs generated
+      {
+        tempCS->clearTUs();
+      }
+      else if( false == swapped )
+      {
+        tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+        tempCS->copyStructure( *bestCS, partitioner.chType );
+        tempCS->getPredBuf().copyFrom( bestCS->getPredBuf() );
+        bestCost = bestCS->cost;
+        cu = tempCS->getCU( partitioner.chType );
+        swapped = true;
+      }
+      else
+      {
+        tempCS->clearTUs();
+        bestCost = bestCS->cost;
+        cu = tempCS->getCU( partitioner.chType );
+      }
+
+      //we need to restart the distortion for the new tempCS, the bit count and the cost
+      tempCS->dist = 0;
+      tempCS->fracBits = 0;
+      tempCS->cost = MAX_DOUBLE;
+      cu->skip = false;
+
+      //set SBT info
+      cu->setSbtIdx( sbtIdx );
+      cu->setSbtPos( sbtPos );
+
+      //try residual coding
+      m_pcInterSearch->encodeResAndCalcRdInterCU( *tempCS, partitioner, skipResidual );
+      numRDOTried++;
+
+      xEncodeDontSplit( *tempCS, partitioner );
+
+      xCheckDQP( *tempCS, partitioner );
+
+      if( imvCS && ( tempCS->cost < imvCS->cost ) )
+      {
+        if( imvCS->cost != MAX_DOUBLE )
+        {
+          imvCS->initStructData( encTestMode.qp, encTestMode.lossless );
+        }
+        imvCS->copyStructure( *tempCS, partitioner.chType );
+      }
+
+      if( NULL != bestHasNonResi && ( bestCostInternal > tempCS->cost ) )
+      {
+        bestCostInternal = tempCS->cost;
+        if( !( tempCS->getPU( partitioner.chType )->mhIntraFlag ) )
+          *bestHasNonResi = !cu->rootCbf;
+      }
+
+      if( tempCS->cost < currBestCost )
+      {
+        currBestSbt = cu->sbtInfo;
+        currBestTrs = tempCS->tus[cu->sbtInfo ? cu->getSbtPos() : 0]->mtsIdx;
+        assert( currBestTrs == 0 || currBestTrs == 1 );
+        currBestCost = tempCS->cost;
+      }
+
+#if WCG_EXT
+      DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda( true ) );
+#else
+      DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda() );
+#endif
+      xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
+    }
+
+    if( bestCostBegin != bestCS->cost )
+    {
+      m_sbtCostSave[0] = sbtOffCost;
+      m_sbtCostSave[1] = currBestCost;
+    }
+#endif
   } //end emt loop
+
+#if JVET_M0140_SBT
+  if( histBestSbt == MAX_UCHAR && doPreAnalyzeResi && numRDOTried > 1 )
+  {
+    slsSbt->saveBestSbt( cu->cs->area, (uint32_t)( curPuSse >> slShift ), currBestSbt, currBestTrs );
+  }
+#endif
+#if JVET_M0140_SBT //harmonize with GBI fast algorithm (move the code here)
+  tempCS->cost = currBestCost;
+  if( ETM_INTER_ME == encTestMode.type )
+  {
+    if( equGBiCost != NULL )
+    {
+      if( tempCS->cost < ( *equGBiCost ) && cu->GBiIdx == GBI_DEFAULT )
+      {
+        ( *equGBiCost ) = tempCS->cost;
+      }
+    }
+    else
+    {
+      CHECK( equGBiCost == NULL, "equGBiCost == NULL" );
+    }
+    if( tempCS->slice->getCheckLDC() && !cu->imv && cu->GBiIdx != GBI_DEFAULT && tempCS->cost < m_bestGbiCost[1] )
+    {
+      if( tempCS->cost < m_bestGbiCost[0] )
+      {
+        m_bestGbiCost[1] = m_bestGbiCost[0];
+        m_bestGbiCost[0] = tempCS->cost;
+        m_bestGbiIdx[1] = m_bestGbiIdx[0];
+        m_bestGbiIdx[0] = cu->GBiIdx;
+      }
+      else
+      {
+        m_bestGbiCost[1] = tempCS->cost;
+        m_bestGbiIdx[1] = cu->GBiIdx;
+      }
+    }
+  }
+#endif
 }
 
 

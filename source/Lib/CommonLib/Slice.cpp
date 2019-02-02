@@ -1901,6 +1901,9 @@ SPSNext::SPSNext( SPS& sps )
   , m_IntraEMT                  ( false )
   , m_InterEMT                  ( false )
 #endif
+#if JVET_M0140_SBT
+  , m_SBT                       ( false )
+#endif
   , m_Affine                    ( false )
   , m_AffineType                ( false )
   , m_MTTEnabled                ( false )

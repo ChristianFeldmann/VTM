@@ -107,6 +107,9 @@ public:
   void        intra_chroma_pred_mode    ( const PredictionUnit&         pu );
   void        cu_residual               ( const CodingUnit&             cu,       Partitioner&      pm,         CUCtx& cuCtx );
   void        rqt_root_cbf              ( const CodingUnit&             cu );
+#if JVET_M0140_SBT
+  void        sbt_mode                  ( const CodingUnit&             cu );
+#endif
   void        end_of_ctu                ( const CodingUnit&             cu,       CUCtx&            cuCtx );
 
   // prediction unit (clause 7.3.8.6)

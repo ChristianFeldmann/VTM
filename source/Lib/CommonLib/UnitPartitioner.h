@@ -72,6 +72,16 @@ enum PartSplit
   TU_1D_HORZ_SPLIT,
   TU_1D_VERT_SPLIT,
 #endif
+#if JVET_M0140_SBT
+  SBT_VER_HALF_POS0_SPLIT,
+  SBT_VER_HALF_POS1_SPLIT,
+  SBT_HOR_HALF_POS0_SPLIT,
+  SBT_HOR_HALF_POS1_SPLIT,
+  SBT_VER_QUAD_POS0_SPLIT,
+  SBT_VER_QUAD_POS1_SPLIT,
+  SBT_HOR_QUAD_POS0_SPLIT,
+  SBT_HOR_QUAD_POS1_SPLIT,
+#endif
   NUM_PART_SPLIT,
   CU_MT_SPLIT             = 1000, ///< dummy element to indicate the MT (multi-type-tree) split
   CU_BT_SPLIT             = 1001, ///< dummy element to indicate the BT split
@@ -218,6 +228,9 @@ namespace PartitionerImpl
   Partitioning getMaxTuTiling    ( const UnitArea& curArea, const CodingStructure &cs );
 #if JVET_M0102_INTRA_SUBPARTITIONS
   void    getTUIntraSubPartitions( Partitioning &sub, const UnitArea &tuArea, const CodingStructure &cs, const PartSplit splitType );
+#endif
+#if JVET_M0140_SBT
+  Partitioning getSbtTuTiling    ( const UnitArea& curArea, const CodingStructure &cs, const PartSplit splitType );
 #endif
 };
 

@@ -555,6 +555,13 @@ void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
   }
 #endif
 
+#if JVET_M0140_SBT
+  WRITE_FLAG( spsNext.getUseSBT() ? 1 : 0,                                                      "sbt_enable_flag" );
+  if( spsNext.getUseSBT() )
+  {
+    WRITE_FLAG( spsNext.getMaxSbtSize() == 64 ? 1 : 0,                                          "max_sbt_size_64_flag" );
+  }
+#endif
   WRITE_FLAG( spsNext.getUseAffine() ? 1 : 0,                                                   "affine_flag" );
   if ( spsNext.getUseAffine() )
   {

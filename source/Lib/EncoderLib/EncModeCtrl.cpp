@@ -510,6 +510,106 @@ bool CacheBlkInfoCtrl::getMv( const UnitArea& area, const RefPicList refPicList,
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->validMv[refPicList][iRefIdx];
 }
 
+#if JVET_M0140_SBT
+void SaveLoadEncInfoSbt::init( const Slice &slice )
+{
+  m_sliceSbt = &slice;
+}
+
+void SaveLoadEncInfoSbt::create()
+{
+  int numSizeIdx = gp_sizeIdxInfo->idxFrom( SBT_MAX_SIZE ) - MIN_CU_LOG2 + 1;
+  int numPosIdx = MAX_CU_SIZE >> MIN_CU_LOG2;
+
+  m_saveLoadSbt = new SaveLoadStructSbt***[numPosIdx];
+
+  for( int xIdx = 0; xIdx < numPosIdx; xIdx++ )
+  {
+    m_saveLoadSbt[xIdx] = new SaveLoadStructSbt**[numPosIdx];
+    for( int yIdx = 0; yIdx < numPosIdx; yIdx++ )
+    {
+      m_saveLoadSbt[xIdx][yIdx] = new SaveLoadStructSbt*[numSizeIdx];
+      for( int wIdx = 0; wIdx < numSizeIdx; wIdx++ )
+      {
+        m_saveLoadSbt[xIdx][yIdx][wIdx] = new SaveLoadStructSbt[numSizeIdx];
+      }
+    }
+  }
+}
+
+void SaveLoadEncInfoSbt::destroy()
+{
+  int numSizeIdx = gp_sizeIdxInfo->idxFrom( SBT_MAX_SIZE ) - MIN_CU_LOG2 + 1;
+  int numPosIdx = MAX_CU_SIZE >> MIN_CU_LOG2;
+
+  for( int xIdx = 0; xIdx < numPosIdx; xIdx++ )
+  {
+    for( int yIdx = 0; yIdx < numPosIdx; yIdx++ )
+    {
+      for( int wIdx = 0; wIdx < numSizeIdx; wIdx++ )
+      {
+        delete[] m_saveLoadSbt[xIdx][yIdx][wIdx];
+      }
+      delete[] m_saveLoadSbt[xIdx][yIdx];
+    }
+    delete[] m_saveLoadSbt[xIdx];
+  }
+  delete[] m_saveLoadSbt;
+}
+
+uint16_t SaveLoadEncInfoSbt::findBestSbt( const UnitArea& area, const uint32_t curPuSse )
+{
+  unsigned idx1, idx2, idx3, idx4;
+  getAreaIdx( area.Y(), *m_sliceSbt->getPPS()->pcv, idx1, idx2, idx3, idx4 );
+  SaveLoadStructSbt* pSbtSave = &m_saveLoadSbt[idx1][idx2][idx3 - MIN_CU_LOG2][idx4 - MIN_CU_LOG2];
+
+  for( int i = 0; i < pSbtSave->numPuInfoStored; i++ )
+  {
+    if( curPuSse == pSbtSave->puSse[i] )
+    {
+      return pSbtSave->puSbt[i] + ( pSbtSave->puTrs[i] << 8 );
+    }
+  }
+
+  return MAX_UCHAR + ( MAX_UCHAR << 8 );
+}
+
+bool SaveLoadEncInfoSbt::saveBestSbt( const UnitArea& area, const uint32_t curPuSse, const uint8_t curPuSbt, const uint8_t curPuTrs )
+{
+  unsigned idx1, idx2, idx3, idx4;
+  getAreaIdx( area.Y(), *m_sliceSbt->getPPS()->pcv, idx1, idx2, idx3, idx4 );
+  SaveLoadStructSbt* pSbtSave = &m_saveLoadSbt[idx1][idx2][idx3 - MIN_CU_LOG2][idx4 - MIN_CU_LOG2];
+
+  if( pSbtSave->numPuInfoStored == SBT_NUM_SL )
+  {
+    return false;
+  }
+
+  pSbtSave->puSse[pSbtSave->numPuInfoStored] = curPuSse;
+  pSbtSave->puSbt[pSbtSave->numPuInfoStored] = curPuSbt;
+  pSbtSave->puTrs[pSbtSave->numPuInfoStored] = curPuTrs;
+  pSbtSave->numPuInfoStored++;
+  return true;
+}
+
+void SaveLoadEncInfoSbt::resetSaveloadSbt( int maxSbtSize )
+{
+  int numSizeIdx = gp_sizeIdxInfo->idxFrom( maxSbtSize ) - MIN_CU_LOG2 + 1;
+  int numPosIdx = MAX_CU_SIZE >> MIN_CU_LOG2;
+
+  for( int xIdx = 0; xIdx < numPosIdx; xIdx++ )
+  {
+    for( int yIdx = 0; yIdx < numPosIdx; yIdx++ )
+    {
+      for( int wIdx = 0; wIdx < numSizeIdx; wIdx++ )
+      {
+        memset( m_saveLoadSbt[xIdx][yIdx][wIdx], 0, numSizeIdx * sizeof( SaveLoadStructSbt ) );
+      }
+    }
+  }
+}
+#endif
+
 bool CacheBlkInfoCtrl::getInter(const UnitArea& area)
 {
   unsigned idx1, idx2, idx3, idx4;
@@ -952,12 +1052,18 @@ void EncModeCtrlMTnoRQT::create( const EncCfg& cfg )
 {
   CacheBlkInfoCtrl::create();
   BestEncInfoCache::create( cfg.getChromaFormatIdc() );
+#if JVET_M0140_SBT
+  SaveLoadEncInfoSbt::create();
+#endif
 }
 
 void EncModeCtrlMTnoRQT::destroy()
 {
   CacheBlkInfoCtrl::destroy();
   BestEncInfoCache::destroy();
+#if JVET_M0140_SBT
+  SaveLoadEncInfoSbt::destroy();
+#endif
 }
 
 #endif
@@ -966,6 +1072,9 @@ void EncModeCtrlMTnoRQT::initCTUEncoding( const Slice &slice )
   CacheBlkInfoCtrl::init( slice );
 #if REUSE_CU_RESULTS
   BestEncInfoCache::init( slice );
+#endif
+#if JVET_M0140_SBT
+  SaveLoadEncInfoSbt::init( slice );
 #endif
 
   CHECK( !m_ComprCUCtxList.empty(), "Mode list is not empty at the beginning of a CTU" );

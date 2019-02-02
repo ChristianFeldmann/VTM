@@ -227,6 +227,9 @@ protected:
 #if JVET_M0303_IMPLICIT_MTS
   int       m_MTSImplicit;
 #endif
+#if JVET_M0140_SBT
+  bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
+#endif
 
   bool      m_compositeRefEnabled;
   bool      m_GBi;

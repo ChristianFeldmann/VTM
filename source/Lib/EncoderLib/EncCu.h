@@ -152,6 +152,9 @@ private:
 #if SHARP_LUMA_DELTA_QP
   void    updateLambda      ( Slice* slice, double dQP );
 #endif
+#if JVET_M0140_SBT
+  double                m_sbtCostSave[2];
+#endif
 
 public:
   /// copy parameters from encoder class

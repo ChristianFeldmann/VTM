@@ -243,6 +243,9 @@ void EncApp::xInitLibCfg()
 #if JVET_M0303_IMPLICIT_MTS
   m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
 #endif
+#if JVET_M0140_SBT
+  m_cEncLib.setUseSBT                                            ( m_SBT );
+#endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );

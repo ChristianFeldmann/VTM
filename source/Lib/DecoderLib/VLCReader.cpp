@@ -815,6 +815,13 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   }
 #endif
 
+#if JVET_M0140_SBT
+  READ_FLAG( symbol,    "sbt_enable_flag" );                        spsNext.setUseSBT                 ( symbol != 0 );
+  if( spsNext.getUseSBT() )
+  {
+    READ_FLAG( symbol,  "max_sbt_size_64_flag" );                   spsNext.setMaxSbtSize             ( symbol ? 64 : 32 );
+  }
+#endif
   READ_FLAG( symbol,    "affine_flag" );                            spsNext.setUseAffine              ( symbol != 0 );
   if ( spsNext.getUseAffine() )
   {

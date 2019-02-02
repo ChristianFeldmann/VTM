@@ -255,6 +255,18 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
   case TU_MAX_TR_SPLIT:
     m_partStack.push_back( PartLevel( split, PartitionerImpl::getMaxTuTiling( currArea(), cs ) ) );
     break;
+#if JVET_M0140_SBT
+  case SBT_VER_HALF_POS0_SPLIT:
+  case SBT_VER_HALF_POS1_SPLIT:
+  case SBT_HOR_HALF_POS0_SPLIT:
+  case SBT_HOR_HALF_POS1_SPLIT:
+  case SBT_VER_QUAD_POS0_SPLIT:
+  case SBT_VER_QUAD_POS1_SPLIT:
+  case SBT_HOR_QUAD_POS0_SPLIT:
+  case SBT_HOR_QUAD_POS1_SPLIT:
+    m_partStack.push_back( PartLevel( split, PartitionerImpl::getSbtTuTiling( currArea(), cs, split ) ) );
+    break;
+#endif
   default:
     THROW( "Unknown split mode" );
     break;
@@ -269,6 +281,12 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
   {
     currTrDepth++;
   }
+#if JVET_M0140_SBT
+  else if( split >= SBT_VER_HALF_POS0_SPLIT && split <= SBT_HOR_QUAD_POS1_SPLIT )
+  {
+    currTrDepth++;
+  }
+#endif
   else
   {
     currTrDepth = 0;
@@ -418,6 +436,18 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   case TU_MAX_TR_SPLIT:
     return area.width > maxTrSize || area.height > maxTrSize;
     break;
+#if JVET_M0140_SBT
+  case SBT_VER_HALF_POS0_SPLIT:
+  case SBT_VER_HALF_POS1_SPLIT:
+  case SBT_HOR_HALF_POS0_SPLIT:
+  case SBT_HOR_HALF_POS1_SPLIT:
+  case SBT_VER_QUAD_POS0_SPLIT:
+  case SBT_VER_QUAD_POS1_SPLIT:
+  case SBT_HOR_QUAD_POS0_SPLIT:
+  case SBT_HOR_QUAD_POS1_SPLIT:
+    return currTrDepth == 0;
+    break;
+#endif
 #if JVET_M0421_SPLIT_SIG
   case CU_QUAD_SPLIT:
     return canQt;
@@ -622,6 +652,13 @@ void QTBTPartitioner::exitCurrSplit()
     CHECK( currTrDepth == 0, "TR depth is '0', although a TU split was performed" );
     currTrDepth--;
   }
+#if JVET_M0140_SBT
+  else if( currSplit >= SBT_VER_HALF_POS0_SPLIT && currSplit <= SBT_HOR_QUAD_POS1_SPLIT )
+  {
+    CHECK( currTrDepth == 0, "TR depth is '0', although a TU split was performed" );
+    currTrDepth--;
+  }
+#endif
   else
   {
     CHECK( currTrDepth > 0, "RQT found with QTBT partitioner" );
@@ -1111,3 +1148,64 @@ Partitioning PartitionerImpl::getMaxTuTiling( const UnitArea &cuArea, const Codi
 
   return ret;
 }
+
+#if JVET_M0140_SBT
+Partitioning PartitionerImpl::getSbtTuTiling( const UnitArea& cuArea, const CodingStructure &cs, const PartSplit splitType )
+{
+  Partitioning ret;
+  int numTiles = 2;
+  int widthFactor, heightFactor, xOffsetFactor, yOffsetFactor; // y = (x * factor) >> 2;
+  assert( splitType >= SBT_VER_HALF_POS0_SPLIT && splitType <= SBT_HOR_QUAD_POS1_SPLIT );
+
+  ret.resize( numTiles, cuArea );
+  for( int i = 0; i < numTiles; i++ )
+  {
+    if( splitType >= SBT_VER_QUAD_POS0_SPLIT )
+    {
+      if( splitType == SBT_HOR_QUAD_POS0_SPLIT || splitType == SBT_HOR_QUAD_POS1_SPLIT )
+      {
+        widthFactor = 4;
+        xOffsetFactor = 0;
+        heightFactor = ( ( i == 0 && splitType == SBT_HOR_QUAD_POS0_SPLIT ) || ( i == 1 && splitType == SBT_HOR_QUAD_POS1_SPLIT ) ) ? 1 : 3;
+        yOffsetFactor = ( i == 0 ) ? 0 : ( splitType == SBT_HOR_QUAD_POS0_SPLIT ? 1 : 3 );
+      }
+      else
+      {
+        widthFactor = ( ( i == 0 && splitType == SBT_VER_QUAD_POS0_SPLIT ) || ( i == 1 && splitType == SBT_VER_QUAD_POS1_SPLIT ) ) ? 1 : 3;
+        xOffsetFactor = ( i == 0 ) ? 0 : ( splitType == SBT_VER_QUAD_POS0_SPLIT ? 1 : 3 );
+        heightFactor = 4;
+        yOffsetFactor = 0;
+      }
+    }
+    else
+    {
+      if( splitType == SBT_HOR_HALF_POS0_SPLIT || splitType == SBT_HOR_HALF_POS1_SPLIT )
+      {
+        widthFactor = 4;
+        xOffsetFactor = 0;
+        heightFactor = 2;
+        yOffsetFactor = ( i == 0 ) ? 0 : 2;
+      }
+      else
+      {
+        widthFactor = 2;
+        xOffsetFactor = ( i == 0 ) ? 0 : 2;
+        heightFactor = 4;
+        yOffsetFactor = 0;
+      }
+    }
+
+    UnitArea& tile = ret[i];
+    for( CompArea &comp : tile.blocks )
+    {
+      if( !comp.valid() ) continue;
+      comp.x += ( comp.width  * xOffsetFactor ) >> 2;
+      comp.y += ( comp.height * yOffsetFactor ) >> 2;
+      comp.width = ( comp.width  * widthFactor ) >> 2;
+      comp.height = ( comp.height * heightFactor ) >> 2;
+    }
+  }
+
+  return ret;
+}
+#endif

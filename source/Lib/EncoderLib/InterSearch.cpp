@@ -113,6 +113,10 @@ InterSearch::InterSearch()
   m_affMVList = nullptr;
   m_affMVListSize = 0;
   m_affMVListIdx = 0;
+#if JVET_M0140_SBT
+  m_histBestSbt    = MAX_UCHAR;
+  m_histBestMtsIdx = MAX_UCHAR;
+#endif
 }
 
 
@@ -5928,6 +5932,12 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
     {
       CHECK( !bSubdiv, "Not performing the implicit TU split" );
     }
+#if JVET_M0140_SBT
+    else if( cu.sbtInfo && partitioner.canSplit( PartSplit( cu.getSbtTuSplit() ), cs ) )
+    {
+      CHECK( !bSubdiv, "Not performing the implicit TU split - sbt" );
+    }
+#endif
     else
     {
       CHECK( bSubdiv, "transformsplit not supported" );
@@ -5942,17 +5952,27 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
         if( firstCbfOfCU || TU::getCbfAtDepth( currTU, COMPONENT_Cb, currDepth - 1 ) )
         {
           const bool  chroma_cbf = TU::getCbfAtDepth( currTU, COMPONENT_Cb, currDepth );
+#if JVET_M0140_SBT
+          if( !( cu.sbtInfo && currDepth == 1 ) )
+#endif
           m_CABACEstimator->cbf_comp( cs, chroma_cbf, currArea.blocks[COMPONENT_Cb], currDepth );
         }
         if( firstCbfOfCU || TU::getCbfAtDepth( currTU, COMPONENT_Cr, currDepth - 1 ) )
         {
           const bool  chroma_cbf = TU::getCbfAtDepth( currTU, COMPONENT_Cr, currDepth );
+#if JVET_M0140_SBT
+          if( !( cu.sbtInfo && currDepth == 1 ) )
+#endif
           m_CABACEstimator->cbf_comp( cs, chroma_cbf, currArea.blocks[COMPONENT_Cr], currDepth, TU::getCbfAtDepth( currTU, COMPONENT_Cb, currDepth ) );
         }
       }
     }
 
+#if JVET_M0140_SBT
+    if( !bSubdiv && !( cu.sbtInfo && currTU.noResidual ) )
+#else
     if( !bSubdiv )
+#endif
     {
       m_CABACEstimator->cbf_comp( cs, TU::getCbfAtDepth( currTU, COMPONENT_Y, currDepth ), currArea.Y(), currDepth );
     }
@@ -5983,6 +6003,12 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
       {
         partitioner.splitCurrArea( TU_MAX_TR_SPLIT, cs );
       }
+#if JVET_M0140_SBT
+      else if( cu.sbtInfo && partitioner.canSplit( PartSplit( cu.getSbtTuSplit() ), cs ) )
+      {
+        partitioner.splitCurrArea( PartSplit( cu.getSbtTuSplit() ), cs );
+      }
+#endif
       else
         THROW( "Implicit TU split not available!" );
 
@@ -5995,6 +6021,253 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
     }
   }
 }
+
+#if JVET_M0140_SBT
+void InterSearch::calcMinDistSbt( CodingStructure &cs, const CodingUnit& cu, const uint8_t sbtAllowed )
+{
+  if( !sbtAllowed )
+  {
+    m_estMinDistSbt[NUMBER_SBT_MODE] = 0;
+    for( int comp = 0; comp < getNumberValidTBlocks( *cs.pcv ); comp++ )
+    {
+      const ComponentID compID = ComponentID( comp );
+      CPelBuf pred = cs.getPredBuf( compID );
+      CPelBuf org  = cs.getOrgBuf( compID );
+      m_estMinDistSbt[NUMBER_SBT_MODE] += m_pcRdCost->getDistPart( org, pred, cs.sps->getBitDepth( toChannelType( compID ) ), compID, DF_SSE );
+    }
+    return;
+  }
+
+  //SBT fast algorithm 2.1 : estimate a minimum RD cost of a SBT mode based on the luma distortion of uncoded part and coded part (assuming distorted can be reduced to 1/16); 
+  //                         if this cost is larger than the best cost, no need to try a specific SBT mode
+  int cuWidth  = cu.lwidth();
+  int cuHeight = cu.lheight();
+  int numPartX = cuWidth  >= 16 ? 4 : ( cuWidth  == 4 ? 1 : 2 );
+  int numPartY = cuHeight >= 16 ? 4 : ( cuHeight == 4 ? 1 : 2 );
+  Distortion dist[4][4];
+  memset( dist, 0, sizeof( Distortion ) * 16 );
+
+  for( uint32_t c = 0; c < getNumberValidTBlocks( *cs.pcv ); c++ )
+  {
+    const ComponentID compID   = ComponentID( c );
+    const CompArea&   compArea = cu.blocks[compID];
+    const CPelBuf orgPel  = cs.getOrgBuf( compArea );
+    const CPelBuf predPel = cs.getPredBuf( compArea );
+    int lengthX = compArea.width / numPartX;
+    int lengthY = compArea.height / numPartY;
+    int strideOrg  = orgPel.stride;
+    int stridePred = predPel.stride;
+    uint32_t   uiShift = DISTORTION_PRECISION_ADJUSTMENT( ( *cs.sps.getBitDepth( toChannelType( compID ) ) - 8 ) << 1 );
+    Intermediate_Int iTemp;
+
+    //calc distY of 16 sub parts
+    for( int j = 0; j < numPartY; j++ )
+    {
+      for( int i = 0; i < numPartX; i++ )
+      {
+        int posX = i * lengthX;
+        int posY = j * lengthY;
+        const Pel* ptrOrg  = orgPel.bufAt( posX, posY );
+        const Pel* ptrPred = predPel.bufAt( posX, posY );
+        Distortion uiSum = 0;
+        for( int n = 0; n < lengthY; n++ )
+        {
+          for( int m = 0; m < lengthX; m++ )
+          {
+            iTemp = ptrOrg[m] - ptrPred[m];
+            uiSum += Distortion( ( iTemp * iTemp ) >> uiShift );
+          }
+          ptrOrg += strideOrg;
+          ptrPred += stridePred;
+        }
+        if( isChroma( compID ) )
+        {
+          uiSum = (Distortion)( uiSum * m_pcRdCost->getChromaWeight() );
+        }
+        dist[j][i] += uiSum;
+      }
+    }
+  }
+
+  //SSE of a CU
+  m_estMinDistSbt[NUMBER_SBT_MODE] = 0;
+  for( int j = 0; j < numPartY; j++ )
+  {
+    for( int i = 0; i < numPartX; i++ )
+    {
+      m_estMinDistSbt[NUMBER_SBT_MODE] += dist[j][i];
+    }
+  }
+  //init per-mode dist
+  for( int i = SBT_VER_H0; i < NUMBER_SBT_MODE; i++ )
+  {
+    m_estMinDistSbt[i] = std::numeric_limits<uint64_t>::max();
+  }
+
+  //SBT fast algorithm 1: not try SBT if the residual is too small to compensate bits for encoding residual info
+  uint64_t minNonZeroResiFracBits = 12 << SCALE_BITS;
+  if( m_pcRdCost->calcRdCost( 0, m_estMinDistSbt[NUMBER_SBT_MODE] ) < m_pcRdCost->calcRdCost( minNonZeroResiFracBits, 0 ) )
+  {
+    m_skipSbtAll = true;
+    return;
+  }
+
+  //derive estimated minDist of SBT = zero-residual part distortion + non-zero residual part distortion / 16
+  int shift = 5;
+  Distortion distResiPart = 0, distNoResiPart = 0;
+
+  if( CU::targetSbtAllowed( SBT_VER_HALF, sbtAllowed ) )
+  {
+    int offsetResiPart = 0;
+    int offsetNoResiPart = numPartX / 2;
+    distResiPart = distNoResiPart = 0;
+    assert( numPartX >= 2 );
+    for( int j = 0; j < numPartY; j++ )
+    {
+      for( int i = 0; i < numPartX / 2; i++ )
+      {
+        distResiPart   += dist[j][i + offsetResiPart];
+        distNoResiPart += dist[j][i + offsetNoResiPart];
+      }
+    }
+    m_estMinDistSbt[SBT_VER_H0] = ( distResiPart >> shift ) + distNoResiPart;
+    m_estMinDistSbt[SBT_VER_H1] = ( distNoResiPart >> shift ) + distResiPart;
+  }
+
+  if( CU::targetSbtAllowed( SBT_HOR_HALF, sbtAllowed ) )
+  {
+    int offsetResiPart = 0;
+    int offsetNoResiPart = numPartY / 2;
+    assert( numPartY >= 2 );
+    distResiPart = distNoResiPart = 0;
+    for( int j = 0; j < numPartY / 2; j++ )
+    {
+      for( int i = 0; i < numPartX; i++ )
+      {
+        distResiPart   += dist[j + offsetResiPart][i];
+        distNoResiPart += dist[j + offsetNoResiPart][i];
+      }
+    }
+    m_estMinDistSbt[SBT_HOR_H0] = ( distResiPart >> shift ) + distNoResiPart;
+    m_estMinDistSbt[SBT_HOR_H1] = ( distNoResiPart >> shift ) + distResiPart;
+  }
+
+  if( CU::targetSbtAllowed( SBT_VER_QUAD, sbtAllowed ) )
+  {
+    assert( numPartX == 4 );
+    m_estMinDistSbt[SBT_VER_Q0] = m_estMinDistSbt[SBT_VER_Q1] = 0;
+    for( int j = 0; j < numPartY; j++ )
+    {
+      m_estMinDistSbt[SBT_VER_Q0] += dist[j][0] + ( ( dist[j][1] + dist[j][2] + dist[j][3] ) << shift );
+      m_estMinDistSbt[SBT_VER_Q1] += dist[j][3] + ( ( dist[j][0] + dist[j][1] + dist[j][2] ) << shift );
+    }
+    m_estMinDistSbt[SBT_VER_Q0] = m_estMinDistSbt[SBT_VER_Q0] >> shift;
+    m_estMinDistSbt[SBT_VER_Q1] = m_estMinDistSbt[SBT_VER_Q1] >> shift;
+  }
+
+  if( CU::targetSbtAllowed( SBT_HOR_QUAD, sbtAllowed ) )
+  {
+    assert( numPartY == 4 );
+    m_estMinDistSbt[SBT_HOR_Q0] = m_estMinDistSbt[SBT_HOR_Q1] = 0;
+    for( int i = 0; i < numPartX; i++ )
+    {
+      m_estMinDistSbt[SBT_HOR_Q0] += dist[0][i] + ( ( dist[1][i] + dist[2][i] + dist[3][i] ) << shift );
+      m_estMinDistSbt[SBT_HOR_Q1] += dist[3][i] + ( ( dist[0][i] + dist[1][i] + dist[2][i] ) << shift );
+    }
+    m_estMinDistSbt[SBT_HOR_Q0] = m_estMinDistSbt[SBT_HOR_Q0] >> shift;
+    m_estMinDistSbt[SBT_HOR_Q1] = m_estMinDistSbt[SBT_HOR_Q1] >> shift;
+  }
+
+  //SBT fast algorithm 5: try N SBT modes with the lowest distortion
+  Distortion temp[NUMBER_SBT_MODE];
+  memcpy( temp, m_estMinDistSbt, sizeof( Distortion ) * NUMBER_SBT_MODE );
+  memset( m_sbtRdoOrder, 255, NUMBER_SBT_MODE );
+  int startIdx = 0, numRDO;
+  numRDO = CU::targetSbtAllowed( SBT_VER_HALF, sbtAllowed ) + CU::targetSbtAllowed( SBT_HOR_HALF, sbtAllowed );
+  numRDO = std::min( ( numRDO << 1 ), SBT_NUM_RDO );
+  for( int i = startIdx; i < startIdx + numRDO; i++ )
+  {
+    Distortion minDist = std::numeric_limits<uint64_t>::max();
+    for( int n = SBT_VER_H0; n <= SBT_HOR_H1; n++ )
+    {
+      if( temp[n] < minDist )
+      {
+        minDist = temp[n];
+        m_sbtRdoOrder[i] = n;
+      }
+    }
+    temp[m_sbtRdoOrder[i]] = std::numeric_limits<uint64_t>::max();
+  }
+
+  startIdx += numRDO;
+  numRDO = CU::targetSbtAllowed( SBT_VER_QUAD, sbtAllowed ) + CU::targetSbtAllowed( SBT_HOR_QUAD, sbtAllowed );
+  numRDO = std::min( ( numRDO << 1 ), SBT_NUM_RDO );
+  for( int i = startIdx; i < startIdx + numRDO; i++ )
+  {
+    Distortion minDist = std::numeric_limits<uint64_t>::max();
+    for( int n = SBT_VER_Q0; n <= SBT_HOR_Q1; n++ )
+    {
+      if( temp[n] < minDist )
+      {
+        minDist = temp[n];
+        m_sbtRdoOrder[i] = n;
+      }
+    }
+    temp[m_sbtRdoOrder[i]] = std::numeric_limits<uint64_t>::max();
+  }
+}
+
+uint8_t InterSearch::skipSbtByRDCost( int width, int height, int mtDepth, uint8_t sbtIdx, uint8_t sbtPos, double bestCost, Distortion distSbtOff, double costSbtOff, bool rootCbfSbtOff )
+{
+  int sbtMode = CU::getSbtMode( sbtIdx, sbtPos );
+
+  //SBT fast algorithm 2.2 : estimate a minimum RD cost of a SBT mode based on the luma distortion of uncoded part and coded part (assuming distorted can be reduced to 1/16); 
+  //                         if this cost is larger than the best cost, no need to try a specific SBT mode
+  if( m_pcRdCost->calcRdCost( 11 << SCALE_BITS, m_estMinDistSbt[sbtMode] ) > bestCost )
+  {
+    return 0; //early skip type 0
+  }
+
+  if( costSbtOff != MAX_DOUBLE )
+  {
+    if( !rootCbfSbtOff )
+    {
+      //SBT fast algorithm 3: skip SBT when the residual is too small (estCost is more accurate than fast algorithm 1, counting PU mode bits)
+      uint64_t minNonZeroResiFracBits = 10 << SCALE_BITS;
+      Distortion distResiPart;
+      if( sbtIdx == SBT_VER_HALF || sbtIdx == SBT_HOR_HALF )
+      {
+        distResiPart = (Distortion)( ( ( m_estMinDistSbt[NUMBER_SBT_MODE] - m_estMinDistSbt[sbtMode] ) * 9 ) >> 4 );
+      }
+      else
+      {
+        distResiPart = (Distortion)( ( ( m_estMinDistSbt[NUMBER_SBT_MODE] - m_estMinDistSbt[sbtMode] ) * 3 ) >> 3 );
+      }
+
+      double estCost = ( costSbtOff - m_pcRdCost->calcRdCost( 0 << SCALE_BITS, distSbtOff ) ) + m_pcRdCost->calcRdCost( minNonZeroResiFracBits, m_estMinDistSbt[sbtMode] + distResiPart );
+      if( estCost > costSbtOff )
+      {
+        return 1;
+      }
+      if( estCost > bestCost )
+      {
+        return 2;
+      }
+    }
+    else
+    {
+      //SBT fast algorithm 4: skip SBT when an estimated RD cost is larger than the bestCost
+      double weight = sbtMode > SBT_HOR_H1 ? 0.4 : 0.6;
+      double estCost = ( ( costSbtOff - m_pcRdCost->calcRdCost( 0 << SCALE_BITS, distSbtOff ) ) * weight ) + m_pcRdCost->calcRdCost( 0 << SCALE_BITS, m_estMinDistSbt[sbtMode] );
+      if( estCost > bestCost )
+      {
+        return 3;
+      }
+    }
+  }
+  return MAX_UCHAR;
+}
+#endif
 
 void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &partitioner, Distortion *puiZeroDist /*= NULL*/
   , const bool luma, const bool chroma
@@ -6011,6 +6284,12 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
   const unsigned currDepth = partitioner.currTrDepth;
 
   bool bCheckFull  = !partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
+#if JVET_M0140_SBT
+  if( cu.sbtInfo && partitioner.canSplit( PartSplit( cu.getSbtTuSplit() ), cs ) )
+  {
+    bCheckFull = false;
+  }
+#endif
   bool bCheckSplit = !bCheckFull;
 
   // get temporary data
@@ -6040,6 +6319,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     tu.mtsIdx         = 0;
 #else
     tu.emtIdx         = 0;
+#endif
+#if JVET_M0140_SBT
+    tu.checkTuNoResidual( partitioner.currPartIdx() );
 #endif
 
 #if JVET_M0427_INLOOP_RESHAPER
@@ -6127,15 +6409,41 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       uint8_t nNumTransformCands = 1 + ( tsAllowed ? 1 : 0 ) + ( mtsAllowed ? 4 : 0 ); // DCT + TS + 4 MTS = 6 tests
       std::vector<TrMode> trModes;
       trModes.push_back( TrMode( 0, true ) ); //DCT2
+#if JVET_M0140_SBT
+      nNumTransformCands = 1;
+      //for a SBT-no-residual TU, the RDO process should be called once, in order to get the RD cost
+      if( tsAllowed && !tu.noResidual )
+#else
       if( tsAllowed )
+#endif
       {
         trModes.push_back( TrMode( 1, true ) );
+#if JVET_M0140_SBT
+        nNumTransformCands++;
+#endif
       }
+
+#if APPLY_SBT_SL_ON_MTS
+      //skip MTS if DCT2 is the best
+      if( mtsAllowed && ( !tu.cu->slice->getSPS()->getSpsNext().getUseSBT() || CU::getSbtIdx( m_histBestSbt ) != SBT_OFF_DCT ) )
+#else
       if( mtsAllowed )
+#endif
       {
         for( int i = 2; i < 6; i++ )
         {
+#if APPLY_SBT_SL_ON_MTS
+          //skip the non-best Mts mode
+          if( !tu.cu->slice->getSPS()->getSpsNext().getUseSBT() || ( m_histBestMtsIdx == MAX_UCHAR || m_histBestMtsIdx == i ) )
+          {
+#endif
           trModes.push_back( TrMode( i, true ) );
+#if JVET_M0140_SBT
+          nNumTransformCands++;
+#endif
+#if APPLY_SBT_SL_ON_MTS
+          }
+#endif
         }
       }
 #endif
@@ -6249,6 +6557,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
               nonCoeffDist = m_pcRdCost->getDistPart( zeroBuf, orgResi, channelBitDepth, compID, DF_SSE ); // initialized with zero residual distortion
             }
 
+#if JVET_M0140_SBT
+            if( !tu.noResidual )
+            {
+#endif
             const bool prevCbf = ( compID == COMPONENT_Cr ? tu.cbf[COMPONENT_Cb] : false );
             m_CABACEstimator->cbf_comp( *csFull, false, compArea, currDepth, prevCbf );
 
@@ -6256,6 +6568,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             {
               m_CABACEstimator->cross_comp_pred( tu, compID );
             }
+#if JVET_M0140_SBT
+            }
+#endif
 
             nonCoeffFracBits = m_CABACEstimator->getEstFracBits();
 #if WCG_EXT
@@ -6381,6 +6696,12 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
             isLastBest = isLastMode;
           }
+#if JVET_M0140_SBT
+          if( tu.noResidual )
+          {
+            CHECK( currCompFracBits > 0 || currAbsSum, "currCompFracBits > 0 when tu noResidual" );
+          }
+#endif
         }
       }
 
@@ -6394,7 +6715,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
     m_CABACEstimator->getCtx() = ctxStart;
     m_CABACEstimator->resetBits();
-
+#if JVET_M0140_SBT
+    if( !tu.noResidual )
+    {
+#endif
     static const ComponentID cbf_getComp[3] = { COMPONENT_Cb, COMPONENT_Cr, COMPONENT_Y };
     for( unsigned c = 0; c < numTBlocks; c++)
     {
@@ -6409,6 +6733,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         m_CABACEstimator->cbf_comp( *csFull, TU::getCbfAtDepth( tu, compID, currDepth ), tu.blocks[compID], currDepth, prevCbf );
       }
     }
+#if JVET_M0140_SBT
+    }
+#endif
 
     for (uint32_t ch = 0; ch < numValidComp; ch++)
     {
@@ -6430,6 +6757,12 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         uiSingleDist += uiSingleDistComp[compID];
       }
     }
+#if JVET_M0140_SBT
+    if( tu.noResidual )
+    {
+      CHECK( m_CABACEstimator->getEstFracBits() > 0, "no residual TU's bits shall be 0" );
+    }
+#endif
 
     csFull->fracBits += m_CABACEstimator->getEstFracBits();
     csFull->dist     += uiSingleDist;
@@ -6455,6 +6788,12 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     {
       partitioner.splitCurrArea( TU_MAX_TR_SPLIT, cs );
     }
+#if JVET_M0140_SBT
+    else if( cu.sbtInfo && partitioner.canSplit( PartSplit( cu.getSbtTuSplit() ), cs ) )
+    {
+      partitioner.splitCurrArea( PartSplit( cu.getSbtTuSplit() ), cs );
+    }
+#endif
     else
       THROW( "Implicit TU split not available!" );
 
@@ -6574,6 +6913,9 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   {
     cu.skip    = true;
     cu.rootCbf = false;
+#if JVET_M0140_SBT
+    CHECK( cu.sbtInfo != 0, "sbtInfo shall be 0 if CU has no residual" );
+#endif
     cs.getResiBuf().fill(0);
     {
       cs.getRecoBuf().copyFrom(cs.getPredBuf() );
@@ -6744,6 +7086,9 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
   if (zeroCost < cs.cost || !cu.rootCbf)
   {
+#if JVET_M0140_SBT
+    cu.sbtInfo = 0;
+#endif
     cu.rootCbf = false;
 
     cs.clearTUs();

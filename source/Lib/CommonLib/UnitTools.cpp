@@ -1381,10 +1381,13 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
        mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
 #if JVET_M0265_MV_ROUNDING_CLEANUP
        roundAffineMv(avgMv.hor, avgMv.ver, 1);
+       avgMv.roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT);
 #else
        avgMv.setHor(avgMv.getHor() / 2);
        avgMv.setVer(avgMv.getVer() / 2);
-#endif
+       avgMv.setHor((avgMv.getHor() / 16) << 4);
+       avgMv.setVer((avgMv.getVer() / 16) << 4);
+#endif 
       mrgCtx.mvFieldNeighbours[cnt * 2 ].setMvField(avgMv, MAX_NUM_REF);
       mrgCtx.interDirNeighbours[cnt] = 1;
       cnt++;

@@ -1100,7 +1100,11 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
     {
       mrgCtx.mvFieldNeighbours[(cnt << 1) + 1].setMvField(miNeighbor.mv[1], miNeighbor.refIdx[1]);
     }
+#if JVET_M0126_HMVP_MRG_PRUNING
+    if (mrgIdx > 2 || !xCheckSimilarMotion(cnt, prevCnt, mrgCtx, hasPruned))
+#else
     if (!xCheckSimilarMotion(cnt, prevCnt, mrgCtx, hasPruned))
+#endif
     {
 #if !JVET_L0090_PAIR_AVG
       isCandInter[cnt] = true;
@@ -1210,6 +1214,10 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
     return;
   }
 
+#if JVET_M0126_HMVP_MRG_PRUNING
+  int spatialCandPos = cnt;
+#endif
+
   // above right
   const PredictionUnit *puAboveRight = cs.getPURestricted(posRT.offset(1, -1), pu, pu.chType);
   bool isAvailableB0 = puAboveRight && isDiffMER(pu, *puAboveRight) && CU::isIBC(*puAboveRight->cu);
@@ -1314,7 +1322,13 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 #if JVET_L0090_PAIR_AVG
     bool bFound = addMergeHMVPCand(slice, mrgCtx, canFastExit
       , mrgCandIdx
-      , maxNumMergeCandMin1, cnt, cnt, isAvailableSubPu, subPuMvpPos
+      , maxNumMergeCandMin1, cnt
+#if JVET_M0126_HMVP_MRG_PRUNING
+      , spatialCandPos
+#else
+      , cnt
+#endif
+      , isAvailableSubPu, subPuMvpPos
 #if JVET_M0483_IBC
       , true
 #endif
@@ -1535,6 +1549,10 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   {
     return;
   }
+
+#if JVET_M0126_HMVP_MRG_PRUNING
+  int spatialCandPos = cnt;
+#endif
 
   // above right
   const PredictionUnit *puAboveRight = cs.getPURestricted( posRT.offset( 1, -1 ), pu, pu.chType );
@@ -1849,7 +1867,13 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #else
       , mrgCandIdx
 #endif
-      , maxNumMergeCandMin1, cnt, cnt, isAvailableSubPu, subPuMvpPos
+      , maxNumMergeCandMin1, cnt
+#if JVET_M0126_HMVP_MRG_PRUNING
+      , spatialCandPos
+#else
+      , cnt
+#endif
+      , isAvailableSubPu, subPuMvpPos
 #if JVET_M0483_IBC==0
       , mmvdList
 #endif

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0126_HMVP_MRG_PRUNING                       1 // HMVP merge candidates pruning simplification
+
 #define JVET_M0483_IBC                                    1 // Block level flag signaling and independent IBC mode
 
 #define JVET_M0102_INTRA_SUBPARTITIONS                    1

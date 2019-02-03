@@ -2205,18 +2205,18 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
         {
-          m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
+          m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
         }
         else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
         {
-          m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
+          m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
         }
         else
         {
           THROW("Reshaper for signal other than PQ and SDR currently not defined!");
         }
 
-        if (pcSlice->getSliceType() == I_SLICE || (pcSlice->getSliceType()==P_SLICE && m_pcCfg->getIBCMode()))
+        if (pcSlice->getSliceType() == I_SLICE )
         {
           if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
           {

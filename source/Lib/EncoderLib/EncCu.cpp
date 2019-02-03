@@ -714,10 +714,10 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   bestCS->chType = partitioner.chType;
   m_modeCtrl->initCULevel( partitioner, *tempCS );
 #if JVET_M0140_SBT
-  if( partitioner.currQtDepth == 0 && partitioner.currMtDepth == 0 && !tempCS->slice->isIntra() && ( sps.getSpsNext().getUseSBT() || sps.getSpsNext().getUseInterMTS() ) )
+  if( partitioner.currQtDepth == 0 && partitioner.currMtDepth == 0 && !tempCS->slice->isIntra() && ( sps.getUseSBT() || sps.getSpsNext().getUseInterMTS() ) )
   {
     auto slsSbt = dynamic_cast<SaveLoadEncInfoSbt*>( m_modeCtrl );
-    int maxSLSize = sps.getSpsNext().getUseSBT() ? tempCS->slice->getSPS()->getSpsNext().getMaxSbtSize() : MTS_INTER_MAX_CU_SIZE;
+    int maxSLSize = sps.getUseSBT() ? tempCS->slice->getSPS()->getMaxSbtSize() : MTS_INTER_MAX_CU_SIZE;
     slsSbt->resetSaveloadSbt( maxSLSize );
   }
   m_sbtCostSave[0] = m_sbtCostSave[1] = MAX_DOUBLE;
@@ -3504,6 +3504,9 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 #if !JVET_M0464_UNI_MTS
             cu.emtFlag = false;
 #endif
+#if JVET_M0140_SBT
+            cu.sbtInfo = 0;
+#endif
 
             PredictionUnit &pu = tempCS->addPU(cu, partitioner.chType);// tempCS->addPU(cu);
             pu.intraDir[0] = DC_IDX; // set intra pred for ibc block
@@ -3591,6 +3594,9 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
     cu.ibc = true;
 #endif
     cu.imv = 0;
+#if JVET_M0140_SBT
+    cu.sbtInfo = 0;
+#endif
 
     CU::addPUs(cu);
 

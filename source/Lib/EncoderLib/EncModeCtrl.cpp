@@ -743,7 +743,7 @@ void BestEncInfoCache::create( const ChromaFormat chFmt )
                 new ( &m_bestEncInfo[x][y][wIdx][hIdx]->tus[i] ) TransformUnit(area);
               }
 #else
-              m_bestEncInfo[x][y][wIdx][hIdx]->tu.UnitArea::operator=( area );
+              new ( &m_bestEncInfo[x][y][wIdx][hIdx]->tu ) TransformUnit(area);
 #endif
 
               m_bestEncInfo[x][y][wIdx][hIdx]->poc      = -1;

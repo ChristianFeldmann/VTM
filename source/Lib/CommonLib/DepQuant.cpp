@@ -402,7 +402,13 @@ namespace DQIntern
     m_chType              = chType;
     m_width               = width;
     m_height              = height;
+#if JVET_M0257
+    const uint32_t nonzeroWidth  = std::min<uint32_t>(JVET_C0024_ZERO_OUT_TH, m_width);
+    const uint32_t nonzeroHeight = std::min<uint32_t>(JVET_C0024_ZERO_OUT_TH, m_height);
+    m_numCoeff                   = nonzeroWidth * nonzeroHeight;
+#else
     m_numCoeff            = m_width * m_height;
+#endif
 #if JVET_M0102_INTRA_SUBPARTITIONS
     m_log2SbbWidth        = g_log2SbbSize[m_chType][ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][0];
     m_log2SbbHeight       = g_log2SbbSize[m_chType][ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][1];
@@ -415,8 +421,8 @@ namespace DQIntern
     m_sbbSize             = ( 1 << m_log2SbbSize );
     m_sbbMask             = m_sbbSize - 1;
 #if JVET_M0257
-    m_widthInSbb = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_width) >> m_log2SbbWidth;
-    m_heightInSbb = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_height) >> m_log2SbbHeight;
+    m_widthInSbb  = nonzeroWidth >> m_log2SbbWidth;
+    m_heightInSbb = nonzeroHeight >> m_log2SbbHeight;
 #else
     m_widthInSbb          = m_width  >> m_log2SbbWidth;
     m_heightInSbb         = m_height >> m_log2SbbHeight;

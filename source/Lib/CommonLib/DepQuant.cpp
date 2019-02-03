@@ -236,11 +236,11 @@ namespace DQIntern
             NbInfoSbb&     nbSbb  = sId2NbSbb[ scanId ];
             const int      begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
             int            cpos[5];
-            cpos[0] = ( posX + 1 < blockWidth                         ? ( raster2id[rpos+1           ] - begSbb < groupSize ? raster2id[rpos+1           ] - begSbb : 0 ) : 0 );
-            cpos[1] = ( posX + 2 < blockWidth                         ? ( raster2id[rpos+2           ] - begSbb < groupSize ? raster2id[rpos+2           ] - begSbb : 0 ) : 0 );
-            cpos[2] = ( posX + 1 < blockWidth && posY + 1 < blockHeight ? ( raster2id[rpos+1+blockWidth] - begSbb < groupSize ? raster2id[rpos+1+blockWidth] - begSbb : 0 ) : 0 );
-            cpos[3] = ( posY + 1 < blockHeight                         ? ( raster2id[rpos+  blockWidth] - begSbb < groupSize ? raster2id[rpos+  blockWidth] - begSbb : 0 ) : 0 );
-            cpos[4] = ( posY + 2 < blockHeight                         ? ( raster2id[rpos+2*blockWidth] - begSbb < groupSize ? raster2id[rpos+2*blockWidth] - begSbb : 0 ) : 0 );
+            cpos[0] = ( posX + 1 < blockWidth                         ? ( raster2id[rpos+1           ] < groupSize + begSbb ? raster2id[rpos+1           ] - begSbb : 0 ) : 0 );
+            cpos[1] = ( posX + 2 < blockWidth                         ? ( raster2id[rpos+2           ] < groupSize + begSbb ? raster2id[rpos+2           ] - begSbb : 0 ) : 0 );
+            cpos[2] = ( posX + 1 < blockWidth && posY + 1 < blockHeight ? ( raster2id[rpos+1+blockWidth] < groupSize + begSbb ? raster2id[rpos+1+blockWidth] - begSbb : 0 ) : 0 );
+            cpos[3] = ( posY + 1 < blockHeight                         ? ( raster2id[rpos+  blockWidth] < groupSize + begSbb ? raster2id[rpos+  blockWidth] - begSbb : 0 ) : 0 );
+            cpos[4] = ( posY + 2 < blockHeight                         ? ( raster2id[rpos+2*blockWidth] < groupSize + begSbb ? raster2id[rpos+2*blockWidth] - begSbb : 0 ) : 0 );
             for( nbSbb.num = 0; true; )
             {
               int nk = -1;
@@ -268,11 +268,11 @@ namespace DQIntern
             NbInfoOut&     nbOut  = sId2NbOut[ scanId ];
             const int      begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
             int            cpos[5];
-            cpos[0] = ( posX + 1 < blockWidth                         ? ( raster2id[rpos+1           ] - begSbb >= groupSize ? raster2id[rpos+1           ] : 0 ) : 0 );
-            cpos[1] = ( posX + 2 < blockWidth                         ? ( raster2id[rpos+2           ] - begSbb >= groupSize ? raster2id[rpos+2           ] : 0 ) : 0 );
-            cpos[2] = ( posX + 1 < blockWidth && posY + 1 < blockHeight ? ( raster2id[rpos+1+blockWidth] - begSbb >= groupSize ? raster2id[rpos+1+blockWidth] : 0 ) : 0 );
-            cpos[3] = ( posY + 1 < blockHeight                         ? ( raster2id[rpos+  blockWidth] - begSbb >= groupSize ? raster2id[rpos+  blockWidth] : 0 ) : 0 );
-            cpos[4] = ( posY + 2 < blockHeight                         ? ( raster2id[rpos+2*blockWidth] - begSbb >= groupSize ? raster2id[rpos+2*blockWidth] : 0 ) : 0 );
+            cpos[0] = ( posX + 1 < blockWidth                         ? ( raster2id[rpos+1           ] >= groupSize + begSbb ? raster2id[rpos+1           ] : 0 ) : 0 );
+            cpos[1] = ( posX + 2 < blockWidth                         ? ( raster2id[rpos+2           ] >= groupSize + begSbb ? raster2id[rpos+2           ] : 0 ) : 0 );
+            cpos[2] = ( posX + 1 < blockWidth && posY + 1 < blockHeight ? ( raster2id[rpos+1+blockWidth] >= groupSize + begSbb ? raster2id[rpos+1+blockWidth] : 0 ) : 0 );
+            cpos[3] = ( posY + 1 < blockHeight                         ? ( raster2id[rpos+  blockWidth] >= groupSize + begSbb ? raster2id[rpos+  blockWidth] : 0 ) : 0 );
+            cpos[4] = ( posY + 2 < blockHeight                         ? ( raster2id[rpos+2*blockWidth] >= groupSize + begSbb ? raster2id[rpos+2*blockWidth] : 0 ) : 0 );
             for( nbOut.num = 0; true; )
             {
               int nk = -1;
@@ -312,6 +312,7 @@ namespace DQIntern
           const int  begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
           for( int k = 0; k < nbOut.num; k++ )
           {
+            CHECK(begSbb > nbOut.outPos[k], "Position must be past sub block begin");
             nbOut.outPos[k] -= begSbb;
           }
           nbOut.maxDist -= scanId;

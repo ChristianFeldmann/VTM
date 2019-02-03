@@ -105,9 +105,13 @@ public:
 
   bool getSrcReshaped() { return m_srcReshaped; }
   void setSrcReshaped(bool b) { m_srcReshaped = b; }
-
+#if JVET_M0483_IBC
+  void preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT);
+  void preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT);
+#else
   void preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isIBC);
   void preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isIBC);
+#endif
   void bubbleSortDsd(double *array, int * idx, int n);
   void swap(int *xp, int *yp) { int temp = *xp;  *xp = *yp;  *yp = temp; }
   void swap(double *xp, double *yp) { double temp = *xp;  *xp = *yp;  *yp = temp; }

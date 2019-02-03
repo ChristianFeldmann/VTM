@@ -1807,7 +1807,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
 #if JVET_M0427_INLOOP_RESHAPER
   const Slice           &slice = *cs.slice;
+#if JVET_M0483_IBC
   bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
+#else
+  bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode()));
+#endif
   if (flag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && isChroma(compID))
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));

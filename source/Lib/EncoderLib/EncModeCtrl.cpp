@@ -727,6 +727,7 @@ void BestEncInfoCache::create( const ChromaFormat chFmt )
             if( gp_sizeIdxInfo->isCuSize( gp_sizeIdxInfo->sizeFrom( hIdx ) ) && y + ( gp_sizeIdxInfo->sizeFrom( hIdx ) >> MIN_CU_LOG2 ) <= ( MAX_CU_SIZE >> MIN_CU_LOG2 ) )
             {
               m_bestEncInfo[x][y][wIdx][hIdx] = new BestEncodingInfo;
+              ::memset(m_bestEncInfo[x][y][wIdx][hIdx], 0, sizeof(BestEncodingInfo));
 
               int w = gp_sizeIdxInfo->sizeFrom( wIdx );
               int h = gp_sizeIdxInfo->sizeFrom( hIdx );

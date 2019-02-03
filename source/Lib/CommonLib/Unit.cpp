@@ -353,13 +353,17 @@ void CodingUnit::initData()
 #if JVET_M0140_SBT
 const uint8_t CodingUnit::checkAllowedSbt() const
 {
-  if( !slice->getSPS()->getSpsNext().getUseSBT() )
+  if( !slice->getSPS()->getUseSBT() )
   {
     return 0;
   }
 
   //check on prediction mode
-  if( predMode == MODE_INTRA ) //intra
+#if JVET_M0483_IBC
+  if( predMode == MODE_INTRA || predMode == MODE_IBC ) //intra or IBC
+#else
+  if( predMode == MODE_INTRA || ibc ) //intra or IBC
+#endif
   {
     return 0;
   }
@@ -375,7 +379,7 @@ const uint8_t CodingUnit::checkAllowedSbt() const
   memset( allow_type, false, NUMBER_SBT_IDX * sizeof( bool ) );
 
   //parameter
-  int maxSbtCUSize = cs->sps->getSpsNext().getMaxSbtSize();
+  int maxSbtCUSize = cs->sps->getMaxSbtSize();
   int minSbtCUSize = 1 << ( MIN_CU_LOG2 + 1 );
 
   //check on size

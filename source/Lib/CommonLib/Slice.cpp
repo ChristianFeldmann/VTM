@@ -1901,9 +1901,6 @@ SPSNext::SPSNext( SPS& sps )
   , m_IntraEMT                  ( false )
   , m_InterEMT                  ( false )
 #endif
-#if JVET_M0140_SBT
-  , m_SBT                       ( false )
-#endif
   , m_Affine                    ( false )
   , m_AffineType                ( false )
   , m_MTTEnabled                ( false )
@@ -1953,6 +1950,10 @@ SPS::SPS()
 #endif
 #if JVET_M0147_DMVR
 , m_DMVR                      ( false )
+#endif
+#if JVET_M0140_SBT
+, m_SBT                       ( false )
+, m_MaxSbtSize                ( 32 ) 
 #endif
 #if HEVC_VPS
 , m_VPSId                     (  0)

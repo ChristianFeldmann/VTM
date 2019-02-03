@@ -6425,7 +6425,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
 #if APPLY_SBT_SL_ON_MTS
       //skip MTS if DCT2 is the best
-      if( mtsAllowed && ( !tu.cu->slice->getSPS()->getSpsNext().getUseSBT() || CU::getSbtIdx( m_histBestSbt ) != SBT_OFF_DCT ) )
+      if( mtsAllowed && ( !tu.cu->slice->getSPS()->getUseSBT() || CU::getSbtIdx( m_histBestSbt ) != SBT_OFF_DCT ) )
 #else
       if( mtsAllowed )
 #endif
@@ -6434,7 +6434,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         {
 #if APPLY_SBT_SL_ON_MTS
           //skip the non-best Mts mode
-          if( !tu.cu->slice->getSPS()->getSpsNext().getUseSBT() || ( m_histBestMtsIdx == MAX_UCHAR || m_histBestMtsIdx == i ) )
+          if( !tu.cu->slice->getSPS()->getUseSBT() || ( m_histBestMtsIdx == MAX_UCHAR || m_histBestMtsIdx == i ) )
           {
 #endif
           trModes.push_back( TrMode( i, true ) );

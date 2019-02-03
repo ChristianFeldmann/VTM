@@ -849,10 +849,6 @@ private:
   bool              m_IntraEMT;                   // 18
   bool              m_InterEMT;                   // 19
 #endif
-#if JVET_M0140_SBT
-  bool              m_SBT;
-  uint8_t           m_MaxSbtSize;
-#endif
   bool              m_Affine;
   bool              m_AffineType;
   bool              m_GBi;                        //
@@ -933,12 +929,6 @@ public:
   void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
   bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
 #endif
-#if JVET_M0140_SBT
-  void      setUseSBT             ( bool b )                                        { m_SBT = b; }
-  bool      getUseSBT             ()                                      const     { return m_SBT; }
-  void      setMaxSbtSize         ( uint8_t val )                                   { m_MaxSbtSize = val; }
-  uint8_t   getMaxSbtSize         ()                                      const     { return m_MaxSbtSize; }
-#endif
   void      setUseGBi             ( bool b )                                        { m_GBi = b; }
   bool      getUseGBi             ()                                      const     { return m_GBi; }
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
@@ -1001,6 +991,10 @@ private:
 #endif
 #if JVET_M0147_DMVR
   bool              m_DMVR;
+#endif
+#if JVET_M0140_SBT
+  bool              m_SBT;
+  uint8_t           m_MaxSbtSize;
 #endif
 #if HEVC_VPS
   int               m_VPSId;
@@ -1326,6 +1320,12 @@ public:
 #if JVET_M0483_IBC
   void                    setIBCFlag(unsigned IBCFlag)                                                    { m_IBCFlag = IBCFlag; }
   unsigned                getIBCFlag() const                                                              { return m_IBCFlag; }
+#endif
+#if JVET_M0140_SBT
+  void                    setUseSBT( bool b )                                                             { m_SBT = b; }
+  bool                    getUseSBT() const                                                               { return m_SBT; }
+  void                    setMaxSbtSize( uint8_t val )                                                    { m_MaxSbtSize = val; }
+  uint8_t                 getMaxSbtSize() const                                                           { return m_MaxSbtSize; }
 #endif
 };
 

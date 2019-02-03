@@ -169,6 +169,7 @@ namespace DQIntern
     ::memset( m_tuParameters,          0, sizeof(m_tuParameters) );
 
     uint32_t raster2id[ MAX_CU_SIZE * MAX_CU_SIZE ];
+    ::memset(raster2id, 0, sizeof(raster2id));
 
 #if JVET_M0102_INTRA_SUBPARTITIONS
     for( int ch = 0; ch < MAX_NUM_CHANNEL_TYPE; ch++ )

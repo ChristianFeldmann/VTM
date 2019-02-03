@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,6 @@
 
 #include "Rom.h"
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
 
 // DCT-2
 #define DEFINE_DCT2_P2_MATRIX(a) \
@@ -397,13 +396,23 @@ const TMatrixCoeff g_trCoreDCT8P8[TRANSFORM_NUMBER_OF_DIRECTIONS][8][8] =
 };
 const TMatrixCoeff g_trCoreDCT8P16[TRANSFORM_NUMBER_OF_DIRECTIONS][16][16] =
 {
+#if JVET_M0497_FAST_DST7
+  DEFINE_DCT8_P16_MATRIX(88,     88,     87,     85,     81,     77,     73,     68,     62,     55,     48,     40,     33,     25,     17,      8),
+  DEFINE_DCT8_P16_MATRIX(88,     88,     87,     85,     81,     77,     73,     68,     62,     55,     48,     40,     33,     25,     17,      8)
+#else
   DEFINE_DCT8_P16_MATRIX(90,     89,     87,     83,     81,     77,     72,     66,     62,     56,     49,     41,     33,     25,     17,      9),
   DEFINE_DCT8_P16_MATRIX(90,     89,     87,     83,     81,     77,     72,     66,     62,     56,     49,     41,     33,     25,     17,      9)
+#endif
 };
 const TMatrixCoeff g_trCoreDCT8P32[TRANSFORM_NUMBER_OF_DIRECTIONS][32][32] =
 {
+#if JVET_M0497_FAST_DST7
+  DEFINE_DCT8_P32_MATRIX(90,     90,     89,     88,     87,     86,     85,     84,     82,     80,     78,     77,     74,     72,     68,     66,     63,     60,     56,     53,     50,     46,     42,     38,     34,     30,     26,     21,     17,     13,      9,      4),
+  DEFINE_DCT8_P32_MATRIX(90,     90,     89,     88,     87,     86,     85,     84,     82,     80,     78,     77,     74,     72,     68,     66,     63,     60,     56,     53,     50,     46,     42,     38,     34,     30,     26,     21,     17,     13,      9,      4)
+#else
   DEFINE_DCT8_P32_MATRIX(90,     90,     89,     88,     88,     86,     85,     84,     82,     80,     78,     77,     74,     72,     68,     66,     63,     60,     56,     53,     50,     45,     42,     38,     34,     30,     26,     21,     17,     13,      9,      4),
   DEFINE_DCT8_P32_MATRIX(90,     90,     89,     88,     88,     86,     85,     84,     82,     80,     78,     77,     74,     72,     68,     66,     63,     60,     56,     53,     50,     45,     42,     38,     34,     30,     26,     21,     17,     13,      9,      4)
+#endif
 };
 
 // DST-7
@@ -419,14 +428,23 @@ const TMatrixCoeff g_trCoreDST7P8[TRANSFORM_NUMBER_OF_DIRECTIONS][8][8] =
 };
 const TMatrixCoeff g_trCoreDST7P16[TRANSFORM_NUMBER_OF_DIRECTIONS][16][16] =
 {
+#if JVET_M0497_FAST_DST7
+  DEFINE_DST7_P16_MATRIX(8,    17,    25,    33,    40,    48,    55,    62,    68,    73,    77,    81,    85,    87,    88,    88),
+  DEFINE_DST7_P16_MATRIX(8,    17,    25,    33,    40,    48,    55,    62,    68,    73,    77,    81,    85,    87,    88,    88)
+#else
   DEFINE_DST7_P16_MATRIX(9,    17,    25,    33,    41,    49,    56,    62,    66,    72,    77,    81,    83,    87,    89,    90),
   DEFINE_DST7_P16_MATRIX(9,    17,    25,    33,    41,    49,    56,    62,    66,    72,    77,    81,    83,    87,    89,    90)
+#endif
 };
 const TMatrixCoeff g_trCoreDST7P32[TRANSFORM_NUMBER_OF_DIRECTIONS][32][32] =
 {
+#if JVET_M0497_FAST_DST7
+  DEFINE_DST7_P32_MATRIX(4,     9,    13,    17,    21,    26,    30,    34,    38,    42,    46,    50,    53,    56,    60,    63,    66,    68,    72,    74,    77,    78,    80,    82,    84,    85,    86,    87,    88,    89,    90,    90),
+  DEFINE_DST7_P32_MATRIX(4,     9,    13,    17,    21,    26,    30,    34,    38,    42,    46,    50,    53,    56,    60,    63,    66,    68,    72,    74,    77,    78,    80,    82,    84,    85,    86,    87,    88,    89,    90,    90)
+#else
   DEFINE_DST7_P32_MATRIX(4,     9,    13,    17,    21,    26,    30,    34,    38,    42,    45,    50,    53,    56,    60,    63,    66,    68,    72,    74,    77,    78,    80,    82,    84,    85,    86,    88,    88,    89,    90,    90),
   DEFINE_DST7_P32_MATRIX(4,     9,    13,    17,    21,    26,    30,    34,    38,    42,    45,    50,    53,    56,    60,    63,    66,    68,    72,    74,    77,    78,    80,    82,    84,    85,    86,    88,    88,    89,    90,    90)
+#endif
 };
-#endif // JVET_L0285_8BIT_TRANSFORM_CORE
 
 //--------------------------------------------------------------------------------------------------

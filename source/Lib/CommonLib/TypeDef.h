@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,89 +50,119 @@
 #include <assert.h>
 #include <cassert>
 
-#define TRAINED_CABAC_INIT_TABLES                         1 // Trained values for VTM3
-#define JVET_L0410_TC_TAB                                 1 // Change TC table for QP 51-63
+#define JVET_M0297_32PT_MTS_ZERO_OUT                      1 // 32 point MTS based on skipping high frequency coefficients
 
-#define JVET_L0136_L0085_LM_RESTRICTED_LINEBUFFER         1 // line buffer restriction in LM prediction
-#define JVET_L0124_L0208_TRIANGLE                         1 // triangular shape prediction unit
+#define JVET_M0126_HMVP_MRG_PRUNING                       1 // HMVP merge candidates pruning simplification
 
-#define JVET_L0059_MTS_SIMP                               1 // Simpification on MTS signaling
-#define JVET_L0100_MULTI_HYPOTHESIS_INTRA                 1 // Combine intra mode with an extra merge indexed prediction
-#define JVET_L0165_6MPM                                   1 // Use 6 MPM for 67 intra prediction modes
-#define JVET_L0279_WAIP_CLEANUP                           1 // WAIP cleanup
+#define JVET_M0483_IBC                                    1 // Block level flag signaling and independent IBC mode
 
-#define JVET_L0118_ALIGN_MTS_INDEX                        1 // Align mts_index on intra and inter
+#define JVET_M0102_INTRA_SUBPARTITIONS                    1
 
-#define JVET_L0377_AMVR_ROUNDING_ALIGN                    1 // Align AMVR rounding for AMVP candidate
+#define JVET_M0303_IMPLICIT_MTS                           1 // Implicit transform selection (can be enabled with MTSImplicit encoder config parameter)
 
-#define JVET_L0285_8BIT_TRANSFORM_CORE                    1 // Primary transform using 8-bit cores
+#define FIX_DB_MAX_TRANSFORM_SIZE                         1
+#define JVET_M0908_CIIP_DB                                1
+#define JVET_M0471_LONG_DEBLOCKING_FILTERS                1 
+#define JVET_M0427_INLOOP_RESHAPER                        1
+#define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
 
-#define JVET_L0081_VPDU_SPLIT_CONSTRAINTS                 1 // VPDU constraints for binary and ternary partitions
+#define JVET_M0253_HASH_ME                                1
 
-#define JVET_L0104_NO_4x4BI_INTER_CU                      1 // Prohibit 4x4 bi-prediction for inter CU
-#define JVET_L0266_HMVP                                   1 //History-based MVP
-#if JVET_L0266_HMVP
-#define JVET_L0158_L0106_RESET_BUFFER                     1 //reset the history buffer on HMVP
+#define JVET_M0257                                        1 // Scan only non zero-out regions of large TUs
+#define JVET_M0193_PAIR_AVG_REDUCTION                     1 //Use only one pairwise average candidate
+
+#define JVET_M0281_AMVP_ROUNDING                          1 // Perform all AMVP rounding before pruning even AMVR is off
+
+#define JVET_M0117_AMVP_LIST_GEN                          1 // AMVP candidate list generation simplification
+
+#define JVET_M0192_AFF_CHROMA_SIMPL                       1 // Affine chroma MV derivation simplification and rounding unification
+
+#define JVET_M0116_ATMVP_LEFT_NB_FOR_OFFSET               1 // Only use left neighbor for ATMVP offset derivation, from M0273, M0240, M0116, M0338, M0204
+
+#define JVET_M0063_BDOF_FIX                               1 // BDOF bitdepth bugfix
+
+#define JVET_M0265_MV_ROUNDING_CLEANUP                    1 // Unify MV roundings and make SW/WD allignment
+#define JVET_M0883_TRIANGLE_SIGNALING                     1 // Using regular merge index signaling for triangle mode
+
+#define JVET_M0228_REMOVE_CPMV_COMPARE                    1 // Remove CPMV comparisons for construnted affine merge candidates from JVET-M0228, M0166, M0477
+
+#define JVET_M0145_AFFINE_MV_CLIP                         1 // Missing clipping for MV storage in affine
+
+#define JVET_M0264_HMVP_WITH_GBIIDX                       1 // Harmonization between HMVP and GBi
+
+#define JVET_M0381_ONE_CTX_FOR_SUBBLOCK_MRG_IDX           1 // CE2.2.2 a: one context for subblock Merge index
+
+#define JVET_M0118_M0185_TRIANGLE_FLAG_FIX                1 // Avoid signaling triangle flag if a CU uses MMVD or CIIP
+
+#define JVET_M0487_INT_EXTEND                             1  // CE9.1.1 b: integer reference samples as 1 extended samples
+
+#define JVET_M0444_SMVD                                   1 // SMVD mode
+
+#define JVET_M0170_MRG_SHARELIST                          1
+#if JVET_M0170_MRG_SHARELIST
+#define MRG_SHARELIST_SHARSIZE                            32
 #endif
 
-#define JVET_L0265_AFF_MINIMUM4X4                         1 //Affine 4x4 chroma subblock 
+#define JVET_M0064_CCLM_SIMPLIFICATION                    1
 
-#define JVET_L0111                                        1 // Max Tx size for skip
-#define JVET_L0553_FIX_INITQP                             1
-#define JVET_L0053_L0272_DM                               1 // use center position of luma block to derive DM
+#define JVET_M0142_CCLM_COLLOCATED_CHROMA                 1 // Adding support for chroma sample location type 2 in CCLM
 
-#define JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN               1 // Subsampled Laplacian calculation
+#define JVET_M0328_KEEP_ONE_WEIGHT_GROUP                  1
 
-#define JVET_L0191_LM_WO_LMS                              1 // NO LMS regression. min/max are used instead
+#define JVET_M0479_18BITS_MV_CLIP                         1
 
-#define JVET_L0338_MDLM                                   1 // multi-directional LM. L0338 test5.4.1,L0340 test5.6.1
+#define JVET_M0497_FAST_DST7                              1
+#if JVET_M0497_FAST_DST7
+#define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
+#endif
+#define JVET_M0502_PRED_MODE_CTX                          1
+
+#define JVET_M0140_SBT                                    1 // Sub-Block transform for Inter blocks
+#if JVET_M0140_SBT
+#define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
+#endif
+
+#define JVET_M0407_IBC_RANGE                              1 // extend IBC search range to some part of left CTU
+
+#define JVET_M0464_UNI_MTS                                1
+#define JVET_M0068_M0171_MMVD_CLEANUP                     1 // MMVD cleanup with 1) flip removal, 2) L1 zero vector fix, 3) bi-pred restriction after merge/MMVD
+#define JVET_M0255_FRACMMVD_SWITCH                        1 // disable fractional MVD in MMVD adaptively
+#define JVET_M0854_FRACMMVD_SWITCH_FOR_UHD                1 // disable fractional MVD for UHD pictures
+#define JVET_M0823_MMVD_ENCOPT                            1 // encoder optimization for MMVD
+
+#define JVET_M0147_DMVR                                   1 //Decoder side Motion Vector Refinement
+
+#if JVET_M0464_UNI_MTS
+typedef std::pair<int, bool> TrMode;
+typedef std::pair<int, int>  TrCost;
+#endif
+
+#define JVET_M0246_AFFINE_AMVR                            1
+#if JVET_M0246_AFFINE_AMVR
+#define JVET_M0247_AFFINE_AMVR_ENCOPT                     1
+#endif
+#define JVET_M0421_SPLIT_SIG                              1
+
+#define JVET_M0173_MOVE_GT2_TO_FIRST_PASS                 1 // Moving the gtr2 flag to the first coding pass
+
+#define REMOVE_BIN_DECISION_TREE                          1
+
+#define JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY       1 
+
+// clang-format off
+#define JVET_M0453_CABAC_ENGINE                           1
+#define JVET_M0512_MOTION_BUFFER_COMPRESSION              1
+#define JVET_M0238_PDPC_NO_INTERPOLATION                  1
+
+#define JVET_M0409_ATMVP_FIX                              1
 
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
-#define JVET_L0054_MMVD                                   1
-
-#define JVET_L0392_ALF_INIT_STATE                         1
-
-#define JVET_L0664_ALF_REMOVE_LUMA_5x5                    1
-
-#define JVET_L0083_ALF_FRAC_BIT                           1 // Reduce number of ALF fractional bit to 7   
-
-#define JVET_L0082_ALF_COEF_BITS                          1 // ALF filter coefficient bitwidth constraints
-
-#define JVET_L0194_ONE_CTX_FOR_MRG_IDX                    1 // one context for full-block Merge index
-
-#define JVET_L0361_SPLIT_CTX                              1 // context for cu-split-related flags
-
-#define JVET_L0274                                        1
-#define JVET_L0274_ENCODER_SPEED_UP                     ( 1 && JVET_L0274 ) // encoder speed-up by pre-calculating position dependent parameters
-
-#define L0074_SUBBLOCK_DEBLOCKING                         1
-
-#define JVET_L0260_AFFINE_ME                              1
-
-#define JVET_L0283_MULTI_REF_LINE                         1
-
-#define JVET_L0256_BIO                                    1
-
-#define JVET_L0646_GBI                                    1 // Generalized bi-prediction (GBi)
-
-#define JVET_L0628_4TAP_INTRA                             1 // 4-tap intra-interpolation filtering with switching between Gaussian and DCT-IF filters for luma component
-
-#define JVET_L0271_AFFINE_AMVP_SIMPLIFY                   1 // Simplification of affine AMVP list construction
-#define JVET_L0694_AFFINE_LINEBUFFER_CLEANUP              1 // L0045/L0047/L0694: Combination of affine mode clean up and line buffer reduction
-#define JVET_L0632_AFFINE_MERGE                           1 // L0142/L0632: Affine merge list construction
-#if JVET_L0632_AFFINE_MERGE
-#define JVET_L0369_SUBBLOCK_MERGE                         1 // Moving ATMVP into the sub-block merge list
-#endif
-
 #define REUSE_CU_RESULTS                                  1
-
-#define REMOVE_MV_ADAPT_PREC                              1 // remove the high precision flag in the MV class
-
-#define JVET_L0093_SIMP_PRUNE                             1
-
-#define JVET_L0257_ATMVP_COLBLK_CLIP                      1
-
-#define JVET_L0293_CPR                                    1 // current picture referencing or intra block copy mode
+#if REUSE_CU_RESULTS && JVET_M0102_INTRA_SUBPARTITIONS
+#define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
+#define MAX_NUM_TUS                                       4
+#endif
+// clang-format on
 
 #ifndef JVET_B0051_NON_MPM_MODE
 #define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )
@@ -172,10 +202,7 @@
 #define NUM_SPLIT_THREADS_IF_MSVC                         4
 
 #endif
-#define JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT   1
 
-#define JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK         1  // Fix sub-block size to 8x8 in ATMVP as proposed in L0198, L0468 and L0104
-#define JVET_L0198_ATMVP_SCAN_SIMP                        1  // Simplification for scan process in ATMVP cTMv derivation
 
 // ====================================================================================================================
 // NEXT software switches
@@ -192,7 +219,11 @@
 #endif
 #endif // ! ENABLE_TRACING
 
+#if JVET_M0427_INLOOP_RESHAPER
+#define WCG_EXT                                           1
+#else
 #define WCG_EXT                                           0 // part of JEM sharp Luma qp
+#endif
 #define WCG_WPSNR                                         WCG_EXT
 
 #if HEVC_TOOLS
@@ -210,8 +241,8 @@
 #define HEVC_TILES_WPP                                    1
 #else
 #define HEVC_USE_SIGN_HIDING                              1
+#define HEVC_TILES_WPP                                    1
 #endif
-
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
 
@@ -224,14 +255,11 @@
 #endif
 #define HM_CODED_CU_INFO                                  1   // like in JEM, when related CU is skipped, it stays like this even if a non skip mode wins...
 #define HM_4TAPIF_AS_IN_JEM                               1   // *** - PM: condition not well suited for 4-tap interpolation filters
-#define HM_EMT_NSST_AS_IN_JEM                             1   //
 #define HM_MDIS_AS_IN_JEM                                 1   // *** - PM: not filtering ref. samples for 64xn case and using Planar MDIS condition at encoder
 #define HM_JEM_CLIP_PEL                                   1   // ***
-#if JVET_L0093_SIMP_PRUNE
 #define HM_JEM_MERGE_CANDS                                0   // ***
-#else
-#define HM_JEM_MERGE_CANDS                                1   // ***
-#endif
+
+#define JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT 1 ///< When 1, do not scale transform skip blocks by sqrt(2) between (I)Transform and (I)Quantizer
 
 #endif//JEM_COMP
 
@@ -288,10 +316,9 @@
 #define ENABLE_SIMD_OPT_DIST                            ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for the distortion calculations(SAD,SSE,HADAMARD), no impact on RD performance
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
-#if ENABLE_SIMD_OPT_BUFFER && JVET_L0646_GBI
+#if ENABLE_SIMD_OPT_BUFFER
 #define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi   
 #endif
-#define ENABLE_SIMD_OPT_BIO                             ( JVET_L0256_BIO && ENABLE_SIMD_OPT )               ///< SIMD optimization for BIO
 
 // End of SIMD optimizations
 
@@ -390,6 +417,50 @@ enum TransType
   DCT2_EMT = 4
 };
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+enum ISPType
+{
+  NOT_INTRA_SUBPARTITIONS       = 0,
+  HOR_INTRA_SUBPARTITIONS       = 1,
+  VER_INTRA_SUBPARTITIONS       = 2,
+  NUM_INTRA_SUBPARTITIONS_MODES = 3,
+  CAN_USE_VER_AND_HORL_SPLITS   = 4
+};
+#endif
+
+#if JVET_M0140_SBT
+enum SbtIdx
+{
+  SBT_OFF_DCT  = 0,
+  SBT_VER_HALF = 1,
+  SBT_HOR_HALF = 2,
+  SBT_VER_QUAD = 3,
+  SBT_HOR_QUAD = 4,
+  NUMBER_SBT_IDX,
+  SBT_OFF_MTS, //note: must be after all SBT modes, only used in fast algorithm to discern the best mode is inter EMT
+};
+
+enum SbtPos
+{
+  SBT_POS0 = 0,
+  SBT_POS1 = 1,
+  NUMBER_SBT_POS
+};
+
+enum SbtMode
+{
+  SBT_VER_H0 = 0,
+  SBT_VER_H1 = 1,
+  SBT_HOR_H0 = 2,
+  SBT_HOR_H1 = 3,
+  SBT_VER_Q0 = 4,
+  SBT_VER_Q1 = 5,
+  SBT_HOR_Q0 = 6,
+  SBT_HOR_Q1 = 7,
+  NUMBER_SBT_MODE
+};
+#endif
+
 enum RDPCMMode
 {
   RDPCM_OFF             = 0,
@@ -476,19 +547,17 @@ enum DeblockEdgeDir
   NUM_EDGE_DIR = 2
 };
 
-/// supported partition shape
-enum PartSize
-{
-  SIZE_2Nx2N           = 0,           ///< symmetric motion partition,  2Nx2N
-  NUMBER_OF_PART_SIZES
-};
-
 /// supported prediction type
 enum PredMode
 {
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
+#if JVET_M0483_IBC
+  MODE_IBC                   = 2,     ///< ibc-prediction mode
+  NUMBER_OF_PREDICTION_MODES = 3,
+#else
   NUMBER_OF_PREDICTION_MODES = 2,
+#endif
 };
 
 /// reference list index
@@ -580,13 +649,9 @@ enum DFunc
   DF_DEFAULT_ORI      = DF_SSE_WTD+8,
 #endif
 
-#if JVET_L0256_BIO
   DF_SAD_INTERMEDIATE_BITDEPTH = 63,
 
   DF_TOTAL_FUNCTIONS = 64
-#else
-  DF_TOTAL_FUNCTIONS = 63
-#endif
 };
 
 /// motion vector predictor direction used in AMVP
@@ -936,21 +1001,25 @@ enum MergeType
 {
   MRG_TYPE_DEFAULT_N        = 0, // 0
   MRG_TYPE_SUBPU_ATMVP,
-#if JVET_L0293_CPR
-  MRG_TYPE_CPR,                  
-#endif
+  MRG_TYPE_IBC,                  
   NUM_MRG_TYPE                   // 5
 };
 
-#if JVET_L0124_L0208_TRIANGLE
 enum TriangleSplit
 {
   TRIANGLE_DIR_135 = 0,
   TRIANGLE_DIR_45,
   TRIANGLE_DIR_NUM
 };
-#endif
 
+#if JVET_M0170_MRG_SHARELIST
+enum SharedMrgState
+{
+  NO_SHARE            = 0,
+  GEN_ON_SHARED_BOUND = 1,
+  SHARING             = 2
+};
+#endif
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out
 //////////////////////////////////////////////////////////////////////////
@@ -1165,6 +1234,15 @@ enum MsgLevel
   VERBOSE = 5,
   DETAILS = 6
 };
+#if JVET_M0427_INLOOP_RESHAPER
+enum RESHAPE_SIGNAL_TYPE
+{
+  RESHAPE_SIGNAL_SDR = 0,
+  RESHAPE_SIGNAL_PQ  = 1,
+  RESHAPE_SIGNAL_HLG = 2,
+  RESHAPE_SIGNAL_NULL = 100,
+};
+#endif
 
 
 // ---------------------------------------------------------------------------
@@ -1504,9 +1582,6 @@ struct AlfFilterShape
 struct AlfSliceParam
 {
   bool                         enabledFlag[MAX_NUM_COMPONENT];                          // alf_slice_enable_flag, alf_chroma_idc
-#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
-  AlfFilterType                lumaFilterType;                                          // filter_type_flag
-#endif
   short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
   short                        chromaCoeff[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_coeff_chroma[i]
   short                        filterCoeffDeltaIdx[MAX_NUM_ALF_CLASSES];                // filter_coeff_delta[i]
@@ -1519,9 +1594,6 @@ struct AlfSliceParam
   void reset()
   {
     std::memset( enabledFlag, false, sizeof( enabledFlag ) );
-#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
-    lumaFilterType = ALF_FILTER_5;
-#endif
     std::memset( lumaCoeff, 0, sizeof( lumaCoeff ) );
     std::memset( chromaCoeff, 0, sizeof( chromaCoeff ) );
     std::memset( filterCoeffDeltaIdx, 0, sizeof( filterCoeffDeltaIdx ) );
@@ -1534,9 +1606,6 @@ struct AlfSliceParam
   const AlfSliceParam& operator = ( const AlfSliceParam& src )
   {
     std::memcpy( enabledFlag, src.enabledFlag, sizeof( enabledFlag ) );
-#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
-    lumaFilterType = src.lumaFilterType;
-#endif
     std::memcpy( lumaCoeff, src.lumaCoeff, sizeof( lumaCoeff ) );
     std::memcpy( chromaCoeff, src.chromaCoeff, sizeof( chromaCoeff ) );
     std::memcpy( filterCoeffDeltaIdx, src.filterCoeffDeltaIdx, sizeof( filterCoeffDeltaIdx ) );

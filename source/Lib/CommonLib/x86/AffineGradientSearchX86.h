@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -198,32 +198,16 @@ static void simdVerticalSobelFilter( Pel *const pPred, const int predStride, int
 template<X86_VEXT vext>
 static void simdEqualCoeffComputer( Pel *pResidue, int residueStride, int **ppDerivate, int derivateBufStride, int64_t( *pEqualCoeff )[7], int width, int height, bool b6Param )
 {
-#if JVET_L0260_AFFINE_ME
   __m128i mmFour;
-#else
-  __m128i mmTwo, mmFour;
-#endif
   __m128i mmTmp[4];
   __m128i mmIntermediate[4];
-#if JVET_L0260_AFFINE_ME
   __m128i mmIndxK, mmIndxJ;
-#else
-  __m128i mmIndxK, mmIndxJ[2];
-#endif
   __m128i mmResidue[2];
   __m128i mmC[12];
 
   // Add directly to indexes to get new index
-#if !JVET_L0260_AFFINE_ME
-  mmTwo = _mm_set1_epi32(2);
-#endif
   mmFour = _mm_set1_epi32(4);
-#if JVET_L0260_AFFINE_ME
   mmIndxJ = _mm_set1_epi32(-2);
-#else
-  mmIndxJ[0] = _mm_set1_epi32(-2);
-  mmIndxJ[1] = _mm_set1_epi32(-1);
-#endif
 
 
   int n = b6Param ? 6 : 4;
@@ -233,15 +217,9 @@ static void simdEqualCoeffComputer( Pel *pResidue, int residueStride, int **ppDe
   
   for ( int j = 0; j < height; j += 2 )
   {
-#if JVET_L0260_AFFINE_ME
     if (!(j & 3))
       mmIndxJ = _mm_add_epi32(mmIndxJ, mmFour);
     mmIndxK = _mm_set1_epi32(-2);
-#else
-    mmIndxJ[0] = _mm_add_epi32(mmIndxJ[0], mmTwo);
-    mmIndxJ[1] = _mm_add_epi32(mmIndxJ[1], mmTwo);
-    mmIndxK = _mm_set_epi32(-1, -2, -3, -4);
-#endif
     idx1 += (derivateBufStride << 1);
     idx2 += (derivateBufStride << 1);
 
@@ -258,26 +236,16 @@ static void simdEqualCoeffComputer( Pel *pResidue, int residueStride, int **ppDe
         mmC[2] = _mm_loadu_si128( (const __m128i*)&ppDerivate[1][idx1] );
         mmC[1] = _mm_mullo_epi32( mmIndxK, mmC[0] );
         mmC[3] = _mm_mullo_epi32( mmIndxK, mmC[2] );
-#if JVET_L0260_AFFINE_ME
         mmC[4] = _mm_mullo_epi32(mmIndxJ, mmC[0]);
         mmC[5] = _mm_mullo_epi32(mmIndxJ, mmC[2]);
-#else
-        mmC[4] = _mm_mullo_epi32(mmIndxJ[0], mmC[0]);
-        mmC[5] = _mm_mullo_epi32(mmIndxJ[0], mmC[2]);
-#endif
 
         // mmC[6-11] for iC[0-5] of 2nd row of pixels
         mmC[6] = _mm_loadu_si128( (const __m128i*)&ppDerivate[0][idx2] );
         mmC[8] = _mm_loadu_si128( (const __m128i*)&ppDerivate[1][idx2] );
         mmC[7] = _mm_mullo_epi32( mmIndxK, mmC[6] );
         mmC[9] = _mm_mullo_epi32( mmIndxK, mmC[8] );
-#if JVET_L0260_AFFINE_ME
         mmC[10] = _mm_mullo_epi32(mmIndxJ, mmC[6]);
         mmC[11] = _mm_mullo_epi32(mmIndxJ, mmC[8]);
-#else
-        mmC[10] = _mm_mullo_epi32(mmIndxJ[1], mmC[6]);
-        mmC[11] = _mm_mullo_epi32(mmIndxJ[1], mmC[8]);
-#endif
       }
       else
       {
@@ -285,13 +253,8 @@ static void simdEqualCoeffComputer( Pel *pResidue, int residueStride, int **ppDe
         mmC[0] = _mm_loadu_si128( (const __m128i*)&ppDerivate[0][idx1] );
         mmC[2] = _mm_loadu_si128( (const __m128i*)&ppDerivate[1][idx1] );
         mmC[1] = _mm_mullo_epi32( mmIndxK, mmC[0] );
-#if JVET_L0260_AFFINE_ME
         mmC[3] = _mm_mullo_epi32(mmIndxJ, mmC[0]);
         mmTmp[0] = _mm_mullo_epi32(mmIndxJ, mmC[2]);
-#else
-        mmC[3] = _mm_mullo_epi32(mmIndxJ[0], mmC[0]);
-        mmTmp[0] = _mm_mullo_epi32(mmIndxJ[0], mmC[2]);
-#endif
         mmTmp[1] = _mm_mullo_epi32( mmIndxK, mmC[2] );
         mmC[1] = _mm_add_epi32( mmC[1], mmTmp[0] );
         mmC[3] = _mm_sub_epi32( mmC[3], mmTmp[1] );
@@ -300,13 +263,8 @@ static void simdEqualCoeffComputer( Pel *pResidue, int residueStride, int **ppDe
         mmC[4] = _mm_loadu_si128( (const __m128i*)&ppDerivate[0][idx2] );
         mmC[6] = _mm_loadu_si128( (const __m128i*)&ppDerivate[1][idx2] );
         mmC[5] = _mm_mullo_epi32( mmIndxK, mmC[4] );
-#if JVET_L0260_AFFINE_ME
         mmC[7] = _mm_mullo_epi32(mmIndxJ, mmC[4]);
         mmTmp[2] = _mm_mullo_epi32(mmIndxJ, mmC[6]);
-#else
-        mmC[7] = _mm_mullo_epi32(mmIndxJ[1], mmC[4]);
-        mmTmp[2] = _mm_mullo_epi32(mmIndxJ[1], mmC[6]);
-#endif
         mmTmp[3] = _mm_mullo_epi32( mmIndxK, mmC[6] );
         mmC[5] = _mm_add_epi32( mmC[5], mmTmp[2] );
         mmC[7] = _mm_sub_epi32( mmC[7], mmTmp[3] );

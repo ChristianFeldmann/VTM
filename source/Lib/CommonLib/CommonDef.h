@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -110,16 +110,14 @@ typedef enum
   AFFINE_MODEL_NUM
 } EAffineModel;
 
-#if JVET_L0260_AFFINE_ME
 static const int AFFINE_ME_LIST_SIZE =                             4;
 static const int AFFINE_ME_LIST_SIZE_LD =                          3;
 static const double AFFINE_ME_LIST_MVP_TH =                        1.0;
-#endif
 
 // ====================================================================================================================
 // Common constants
 // ====================================================================================================================
-
+static const uint64_t   MAX_UINT64 =                  0xFFFFFFFFFFFFFFFFU;
 static const uint32_t   MAX_UINT =                            0xFFFFFFFFU; ///< max. value of unsigned 32-bit integer
 static const int    MAX_INT =                              2147483647; ///< max. value of signed 32-bit integer
 static const uint8_t  MAX_UCHAR =                                   255;
@@ -141,9 +139,7 @@ static const int AMVP_MAX_NUM_CANDS =                               2; ///< AMVP
 static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP: advanced motion vector prediction - max number of candidates
 static const int AMVP_DECIMATION_FACTOR =                           2;
 static const int MRG_MAX_NUM_CANDS =                                7; ///< MERGE
-#if JVET_L0632_AFFINE_MERGE
 static const int AFFINE_MRG_MAX_NUM_CANDS =                         5; ///< AFFINE MERGE
-#endif
 
 static const int MAX_TLAYER =                                       7; ///< Explicit temporal layer QP offset - max number of temporal layer
 
@@ -166,9 +162,11 @@ static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
 static const int MAX_CPB_CNT =                                     32; ///< Upper bound of (cpb_cnt_minus1 + 1)
 static const int MAX_NUM_LAYER_IDS =                               64;
-
+#if JVET_M0470
+static const int COEF_REMAIN_BIN_REDUCTION =                        5; ///< indicates the level at which the VLC transitions from Golomb-Rice to TU+EG(k)
+#else
 static const int COEF_REMAIN_BIN_REDUCTION =                        3; ///< indicates the level at which the VLC transitions from Golomb-Rice to TU+EG(k)
-
+#endif
 static const int CU_DQP_TU_CMAX =                                   5; ///< max number bins for truncated unary
 static const int CU_DQP_EG_k =                                      0; ///< expgolomb order
 
@@ -190,18 +188,12 @@ static const int ADJ_DEQUANT_SHIFT =            ( ADJ_QUANT_SHIFT + 1 );
 
 static const int RVM_VCEGAM10_M =                                   4;
 
-#if JVET_L0283_MULTI_REF_LINE
 static const int MAX_REF_LINE_IDX =                                 3; //highest refLine offset in the list
 static const int MRL_NUM_REF_LINES =                                3; //number of candidates in the array
 static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 3, 0 };
-#endif
 
 static const int NUM_LUMA_MODE =                                   67; ///< Planar + DC + 65 directional mode (4*16 + 1)
-#if JVET_L0338_MDLM
 static const int NUM_LMC_MODE =                                    1 + 2; ///< LMC + MDLM_T + MDLM_L
-#else
-static const int NUM_LMC_MODE = 1; ///< LMC
-#endif
 static const int NUM_INTRA_MODE = (NUM_LUMA_MODE + NUM_LMC_MODE);
 
 static const int NUM_DIR =           (((NUM_LUMA_MODE - 3) >> 2) + 1);
@@ -215,23 +207,21 @@ static const int NOMODE_IDX =                               MAX_UCHAR; ///< indi
 
 static const int NUM_CHROMA_MODE = (5 + NUM_LMC_MODE); ///< total number of chroma modes
 static const int LM_CHROMA_IDX = NUM_LUMA_MODE; ///< chroma mode index for derived from LM mode
-#if JVET_L0338_MDLM
 static const int MDLM_L_IDX =                          LM_CHROMA_IDX + 1; ///< MDLM_L
 static const int MDLM_T_IDX =                          LM_CHROMA_IDX + 2; ///< MDLM_T
-#endif
 static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chroma mode index for derived from luma intra mode
 
 static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes
 
-static const uint32_t  EMT_INTRA_MAX_CU =                              32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
-static const uint32_t  EMT_INTER_MAX_CU =                              32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
+#if JVET_M0464_UNI_MTS
+static const uint32_t  NUM_TRAFO_MODES_MTS =                            6; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
+static const uint32_t  MTS_INTRA_MAX_CU_SIZE =                         32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
+static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
+#else
 static const uint32_t  EMT_INTRA_MAX_CU_WITH_QTBT =                    32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  EMT_INTER_MAX_CU_WITH_QTBT =                    32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
-#if JVET_L0165_6MPM
-static const int NUM_MOST_PROBABLE_MODES = 6;
-#else
-static const int NUM_MOST_PROBABLE_MODES = 3;
 #endif
+static const int NUM_MOST_PROBABLE_MODES = 6;
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
 static const int FAST_UDI_MAX_RDMODE_NUM =              NUM_LUMA_MODE; ///< maximum number of RD comparison in fast-UDI estimation loop
@@ -247,9 +237,12 @@ static const int LOG2_MAX_NUM_ROWS_MINUS1 =                         7;
 
 static const int CABAC_INIT_PRESENT_FLAG =                          1;
 
-static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS   = 4;
-static const int CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 8;
-static const int VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE         = 2;   ///< additional precision bit for MV storage
+static const int MV_FRACTIONAL_BITS_INTERNAL                      = 4;
+static const int MV_FRACTIONAL_BITS_SIGNAL                        = 2;
+static const int MV_FRACTIONAL_BITS_DIFF = MV_FRACTIONAL_BITS_INTERNAL - MV_FRACTIONAL_BITS_SIGNAL;
+static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS_SIGNAL = 1 << MV_FRACTIONAL_BITS_SIGNAL;
+static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 1 << MV_FRACTIONAL_BITS_INTERNAL;
+static const int CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 1 << (MV_FRACTIONAL_BITS_INTERNAL + 1);
 
 static const int MAX_NUM_LONG_TERM_REF_PICS =                      33;
 static const int NUM_LONG_TERM_REF_PIC_SPS =                        0;
@@ -278,9 +271,7 @@ static const int MAX_TU_SIZE =                                    128;
 static const int MAX_LOG2_TU_SIZE_PLUS_ONE =                        8; ///< log2(MAX_TU_SIZE) + 1
 static const int MAX_NUM_PARTS_IN_CTU =                         ( ( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 ) );
 static const int MAX_TR_SIZE =                            MAX_CU_SIZE;
-#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
 static const int MAX_TU_SIZE_FOR_PROFILE =                         64;
-#endif
 static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         2;
 static const int MAX_CU_TILING_PARTITIONS = 1 << ( MAX_LOG2_DIFF_CU_TR_SIZE << 1 );
 
@@ -309,36 +300,26 @@ static const int MAX_GR_ORDER_RESIDUAL =                           10;
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
 
 
-#if JVET_L0054_MMVD
 static const int MMVD_REFINE_STEP =                                 8; ///< max number of distance step
 static const int MMVD_MAX_REFINE_NUM =                              (MMVD_REFINE_STEP * 4); ///< max number of candidate from a base candidate
 static const int MMVD_BASE_MV_NUM =                                 2; ///< max number of base candidate
 static const int MMVD_ADD_NUM =                                     (MMVD_MAX_REFINE_NUM * MMVD_BASE_MV_NUM);///< total number of mmvd candidate
 static const int MMVD_MRG_MAX_RD_NUM =                              MRG_MAX_NUM_CANDS;
 static const int MMVD_MRG_MAX_RD_BUF_NUM =                          (MMVD_MRG_MAX_RD_NUM + 1);///< increase buffer size by 1
-#endif
 
-#if JVET_L0274
 static const int MAX_NUM_REG_BINS_4x4SUBBLOCK =                    32; ///< max number of context-coded bins (incl. gt2 bins) per 4x4 subblock
 static const int MAX_NUM_GT2_BINS_4x4SUBBLOCK =                     4; ///< max number of gt2 bins per 4x4 subblock
 static const int MAX_NUM_REG_BINS_2x2SUBBLOCK =                     8; ///< max number of context-coded bins (incl. gt2 bins) per 2x2 subblock (chroma)
 static const int MAX_NUM_GT2_BINS_2x2SUBBLOCK =                     2; ///< max number of gt2 bins per 2x2 subblock (chroma)
-#endif
 
-#if JVET_L0256_BIO
 static const int BIO_EXTEND_SIZE              =                     1;
 static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE) * (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE);
-#endif
 
-#if JVET_L0646_GBI
 static const int GBI_NUM =                                          5; ///< the number of weight options
 static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
-#endif
-#if JVET_L0266_HMVP
-static const int MAX_NUM_HMVP_CANDS =                              6; ///< maximum number of HMVP candidates to be stored and used in merge list
+static const int MAX_NUM_HMVP_CANDS =                              5; ///< maximum number of HMVP candidates to be stored and used in merge list
 static const int MAX_NUM_HMVP_AVMPCANDS =                          4; ///< maximum number of HMVP candidates to be used in AMVP list
-#endif
 
 #if W0038_DB_OPT
 static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;
@@ -348,7 +329,17 @@ static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;
 static const uint32_t LUMA_LEVEL_TO_DQP_LUT_MAXSIZE =                1024; ///< max LUT size for QP offset based on luma
 
 #endif
+#if !JVET_M0464_UNI_MTS
 static const int NUM_EMT_CU_FLAG_CTX =                              6;      ///< number of context models for EMT CU-level flag
+#endif
+#if JVET_M0147_DMVR
+static const int DMVR_SUBCU_WIDTH = 16;
+static const int DMVR_SUBCU_HEIGHT = 16;
+static const int DMVR_SUBCU_WIDTH_LOG2 = 4;
+static const int DMVR_SUBCU_HEIGHT_LOG2 = 4;
+static const int MAX_NUM_SUBCU_DMVR = ((MAX_CU_SIZE * MAX_CU_SIZE) >> (DMVR_SUBCU_WIDTH_LOG2 + DMVR_SUBCU_HEIGHT_LOG2));
+static const int DMVR_NUM_ITERATION = 2;
+#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.
@@ -384,9 +375,7 @@ static const int    FAST_SKIP_DEPTH =                               2;
 static const double PBINTRA_RATIO     =                             1.1;
 static const int    NUM_MRG_SATD_CAND =                             4;
 static const double MRG_FAST_RATIO    =                             1.25;
-#if JVET_L0632_AFFINE_MERGE
-static const int    NUM_AFF_MRG_SATD_CAND =                         1;
-#endif
+static const int    NUM_AFF_MRG_SATD_CAND =                         2;
 
 static const double AMAXBT_TH32 =                                  15.0;
 static const double AMAXBT_TH64 =                                  30.0;
@@ -395,11 +384,7 @@ static const double AMAXBT_TH64 =                                  30.0;
 static const int MAX_DELTA_QP   =                                   7;      ///< maximum supported delta QP value
 static const int MAX_TESTED_QPs =   ( 1 + 1 + ( MAX_DELTA_QP << 1 ) );      ///< dqp=0 +- max_delta_qp + lossless mode
 
-#if JVET_L0285_8BIT_TRANSFORM_CORE
 static const int COM16_C806_TRANS_PREC =                            0;
-#else
-static const int COM16_C806_TRANS_PREC =                            2;
-#endif
 
 static const int NUM_MERGE_IDX_EXT_CTX =                            5;
 static const unsigned E0104_ALF_MAX_TEMPLAYERID =                  5;       // define to zero to switch of  code
@@ -412,30 +397,40 @@ static const int NTAPS_CHROMA             =                         4; ///< Numb
 static const int MAX_LADF_INTERVALS       =                         5; /// max number of luma adaptive deblocking filter qp offset intervals
 #endif
 
-#if JVET_L0256_BIO
 static const int NTAPS_BILINEAR           =                         2; ///< Number of taps for bilinear filter
-#endif
 
-#if JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
 static const int ATMVP_SUB_BLOCK_SIZE =                             3; ///< sub-block size for ATMVP
-#endif
-#if JVET_L0124_L0208_TRIANGLE
 static const int TRIANGLE_MAX_NUM_UNI_CANDS =                       5;
 static const int TRIANGLE_MAX_NUM_CANDS_MEM =                       7;
 static const int TRIANGLE_MAX_NUM_CANDS =                          40;
 static const int TRIANGLE_MAX_NUM_SATD_CANDS =                      3;
 static const int TRIANGLE_MIN_SIZE =                            8 * 8;
+
+#if JVET_M0140_SBT
+static const int SBT_MAX_SIZE =                                    64; ///< maximum CU size for using SBT
+static const int SBT_NUM_SL =                                      10; ///< maximum number of historical PU decision saved for a CU
+static const int SBT_NUM_RDO =                                      2; ///< maximum number of SBT mode tried for a PU 
 #endif
 
-#if JVET_L0293_CPR
-static const int CPR_MAX_CAND_SIZE = 16; // max block size for cpr search
-static const int CPR_NUM_CANDIDATES = 64; ///< Maximum number of candidates to store/test
+static const int IBC_MAX_CAND_SIZE = 16; // max block size for ibc search
+static const int IBC_NUM_CANDIDATES = 64; ///< Maximum number of candidates to store/test
 static const int CHROMA_REFINEMENT_CANDIDATES = 8; /// 8 candidates BV to choose from
-static const int CPR_FAST_METHOD_NOINTRA_CPRCBF0 = 0x01;
-static const int CPR_FAST_METHOD_BUFFERBV = 0X02;
-static const int CPR_FAST_METHOD_ADAPTIVE_SEARCHRANGE = 0X04;
+static const int IBC_FAST_METHOD_NOINTRA_IBCCBF0 = 0x01;
+static const int IBC_FAST_METHOD_BUFFERBV = 0X02;
+static const int IBC_FAST_METHOD_ADAPTIVE_SEARCHRANGE = 0X04;
+#if JVET_M0512_MOTION_BUFFER_COMPRESSION
+static constexpr int MV_EXPONENT_BITCOUNT    = 4;
+static constexpr int MV_MANTISSA_BITCOUNT    = 6;
+static constexpr int MV_MANTISSA_UPPER_LIMIT = ((1 << (MV_MANTISSA_BITCOUNT - 1)) - 1);
+static constexpr int MV_MANTISSA_LIMIT       = (1 << (MV_MANTISSA_BITCOUNT - 1));
+static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1);
 #endif
-
+#if JVET_M0427_INLOOP_RESHAPER
+static const int PIC_ANALYZE_CW_BINS =                           32;
+static const int PIC_CODE_CW_BINS =                              16;
+static const int FP_PREC =                                       14;
+static const int CSCALE_FP_PREC =                                11;
+#endif
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================
@@ -576,6 +571,45 @@ template <typename ValueType> inline ValueType leftShift       (const ValueType 
 template <typename ValueType> inline ValueType rightShift      (const ValueType value, const int shift) { return (shift >= 0) ? ( value                                  >> shift) : ( value                                   << -shift); }
 template <typename ValueType> inline ValueType leftShift_round (const ValueType value, const int shift) { return (shift >= 0) ? ( value                                  << shift) : ((value + (ValueType(1) << (-shift - 1))) >> -shift); }
 template <typename ValueType> inline ValueType rightShift_round(const ValueType value, const int shift) { return (shift >= 0) ? ((value + (ValueType(1) << (shift - 1))) >> shift) : ( value                                   << -shift); }
+
+static inline int floorLog2(uint32_t x)
+{
+  if (x == 0)
+  {
+    return -1;
+  }
+#ifdef __GNUC__
+  return 31 - __builtin_clz(x);
+#else
+  int result = 0;
+  if (x & 0xffff0000)
+  {
+    x >>= 16;
+    result += 16;
+  }
+  if (x & 0xff00)
+  {
+    x >>= 8;
+    result += 8;
+  }
+  if (x & 0xf0)
+  {
+    x >>= 4;
+    result += 4;
+  }
+  if (x & 0xc)
+  {
+    x >>= 2;
+    result += 2;
+  }
+  if (x & 0x2)
+  {
+    x >>= 1;
+    result += 1;
+  }
+  return result;
+#endif
+}
 
 //CASE-BREAK for breakpoints
 #if defined ( _MSC_VER ) && defined ( _DEBUG )

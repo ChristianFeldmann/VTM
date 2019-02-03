@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,10 @@ public:
   int             cgPosX          ()                        const { return m_subSetPosX; }
   unsigned        width           ()                        const { return m_width; }
   unsigned        height          ()                        const { return m_height; }
+#if JVET_M0297_32PT_MTS_ZERO_OUT
+  unsigned        log2CGWidth     ()                        const { return m_log2CGWidth; }
+  unsigned        log2CGHeight    ()                        const { return m_log2CGHeight; }
+#endif
   unsigned        log2CGSize      ()                        const { return m_log2CGSize; }
   unsigned        log2BlockWidth  ()                        const { return m_log2BlockWidth; }
   unsigned        log2BlockHeight ()                        const { return m_log2BlockHeight; }
@@ -107,10 +111,10 @@ public:
     const int     diag      = posX + posY;
     int           numPos    = 0;
     int           sumAbs    = 0;
-#if JVET_L0274
-#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(2+(a&1),a);numPos+=!!a;}
+#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
+#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(4+(a&1),a);numPos+=!!a;}
 #else
-#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(4-(a&1),a);numPos+=!!a;}
+#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(2+(a&1),a);numPos+=!!a;}
 #endif
     if( posX < m_width-1 )
     {
@@ -158,7 +162,6 @@ public:
   unsigned greater1CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[1]( offset ); }
   unsigned greater2CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[0]( offset ); }
 
-#if JVET_L0274
   unsigned templateAbsSum( int scanPos, const TCoeff* coeff )
   {
     const uint32_t  posY  = m_scanPosY[scanPos];
@@ -187,42 +190,11 @@ public:
     }
     return std::min(sum, 31);
   }
-#else
-  unsigned GoRiceParAbs( int scanPos, const TCoeff* coeff ) const
-  {
-#define UPDATE(x) sum+=abs(x)-!!x
-    const uint32_t    posY      = m_scanPosY[ scanPos ];
-    const uint32_t    posX      = m_scanPosX[ scanPos ];
-    const TCoeff* pData     = coeff + posX + posY * m_width;
-    int           sum       = 0;
-    if( posX < m_width-1 )
-    {
-      UPDATE( pData[1] );
-      if( posX < m_width-2 )
-      {
-        UPDATE( pData[2] );
-      }
-      if( posY < m_height-1 )
-      {
-        UPDATE( pData[m_width+1] );
-      }
-    }
-    if( posY < m_height-1 )
-    {
-      UPDATE( pData[m_width] );
-      if( posY < m_height-2 )
-      {
-        UPDATE( pData[m_width<<1] );
-      }
-    }
-#undef UPDATE
-    int     r = g_auiGoRicePars[ std::min( sum, 31 ) ];
-    return  r;
-  }
-#endif
 
+#if !JVET_M0464_UNI_MTS
   unsigned        emtNumSigCoeff()                          const { return m_emtNumSigCoeff; }
   void            setEmtNumSigCoeff( unsigned val )               { m_emtNumSigCoeff = val; }
+#endif
 
 private:
   // constant
@@ -273,7 +245,9 @@ private:
   CtxSet                    m_parFlagCtxSet;
   CtxSet                    m_gtxFlagCtxSet[2];
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
+#if !JVET_M0464_UNI_MTS
   unsigned                  m_emtNumSigCoeff;
+#endif
 };
 
 
@@ -299,9 +273,7 @@ public:
   ~MergeCtx() {}
 public:
   MvField       mvFieldNeighbours [ MRG_MAX_NUM_CANDS << 1 ]; // double length for mv of both lists
-#if JVET_L0646_GBI
   uint8_t       GBiIdx            [ MRG_MAX_NUM_CANDS      ];
-#endif
   unsigned char interDirNeighbours[ MRG_MAX_NUM_CANDS      ];
   MergeType     mrgTypeNeighbours [ MRG_MAX_NUM_CANDS      ];
   int           numValidMergeCand;
@@ -309,14 +281,11 @@ public:
 
   MotionBuf     subPuMvpMiBuf;
   MotionBuf     subPuMvpExtMiBuf;
-#if JVET_L0054_MMVD
   MvField mmvdBaseMv[MMVD_BASE_MV_NUM][2];
   void setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx);
-#endif
   void setMergeInfo( PredictionUnit& pu, int candIdx );
 };
 
-#if JVET_L0632_AFFINE_MERGE
 class AffineMergeCtx
 {
 public:
@@ -326,31 +295,38 @@ public:
   MvField       mvFieldNeighbours[AFFINE_MRG_MAX_NUM_CANDS << 1][3]; // double length for mv of both lists
   unsigned char interDirNeighbours[AFFINE_MRG_MAX_NUM_CANDS];
   EAffineModel  affineType[AFFINE_MRG_MAX_NUM_CANDS];
-#if JVET_L0646_GBI
   uint8_t       GBiIdx[AFFINE_MRG_MAX_NUM_CANDS];
-#endif
   int           numValidMergeCand;
   int           maxNumMergeCand;
 
-#if JVET_L0369_SUBBLOCK_MERGE
   MergeCtx     *mrgCtx;
   MergeType     mergeType[AFFINE_MRG_MAX_NUM_CANDS];
-#endif
 };
-#endif
 
 
 namespace DeriveCtx
 {
+#if JVET_M0421_SPLIT_SIG
+void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* canSplit = nullptr );
+#else
 unsigned CtxCUsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 unsigned CtxBTsplit   ( const CodingStructure& cs, Partitioner& partitioner );
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
+#else
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf );
+#endif
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
 unsigned CtxAffineFlag( const CodingUnit& cu );
-#if JVET_L0124_L0208_TRIANGLE
 unsigned CtxTriangleFlag( const CodingUnit& cu );
+#if JVET_M0502_PRED_MODE_CTX
+unsigned CtxPredModeFlag( const CodingUnit& cu );
+#endif
+#if JVET_M0483_IBC
+unsigned CtxIBCFlag(const CodingUnit& cu);
 #endif
 }
 

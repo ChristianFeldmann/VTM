@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -84,9 +84,9 @@ void EncLib::create ()
 {
   // initialize global variables
   initROM();
-
-
-
+#if JVET_M0253_HASH_ME
+  TComHash::initBlockSizeToIndex();
+#endif
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );
@@ -136,6 +136,12 @@ void EncLib::create ()
     m_cEncALF.create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );
   }
 
+#if JVET_M0427_INLOOP_RESHAPER
+  if (m_lumaReshapeEnable)
+  {
+    m_cReshaper.createEnc( getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_bitDepth[COMPONENT_Y]);
+  }
+#endif
   if ( m_RCEnableRateControl )
   {
     m_cRateCtrl.init(m_framesToBeEncoded, m_RCTargetBitrate, (int)((double)m_iFrameRate / m_temporalSubsampleRatio + 0.5), m_iGOPSize, m_iSourceWidth, m_iSourceHeight,
@@ -165,6 +171,9 @@ void EncLib::destroy ()
   m_cEncSAO.            destroy();
   m_cLoopFilter.        destroy();
   m_cRateCtrl.          destroy();
+#if JVET_M0427_INLOOP_RESHAPER
+  m_cReshaper.          destroy();
+#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
@@ -230,11 +239,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
     m_cRdCost[jId].setCostMode ( m_costMode );
-    m_cRdCost[jId].setUseQtbt  ( m_QTBT );
   }
 #else
   m_cRdCost.setCostMode ( m_costMode );
-  m_cRdCost.setUseQtbt  ( m_QTBT );
 #endif
 
   // initialize PPS
@@ -280,7 +287,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
                           true,
                           m_useTransformSkipFast
-                          , m_QTBT
     );
 
     // initialize encoder search class
@@ -313,7 +319,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
                    true,
                    m_useTransformSkipFast
-                   , m_QTBT
   );
 
   // initialize encoder search class
@@ -322,13 +327,21 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        &m_cTrQuant,
                        &m_cRdCost,
                        cabacEstimator,
-                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth );
+                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth 
+#if JVET_M0427_INLOOP_RESHAPER
+                     , &m_cReshaper
+#endif
+  );
   m_cInterSearch.init( this,
                        &m_cTrQuant,
                        m_iSearchRange,
                        m_bipredSearchRange,
                        m_motionEstimationSearchMethod,
-                       m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache() );
+    m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache()
+#if JVET_M0427_INLOOP_RESHAPER
+                     , &m_cReshaper
+#endif
+  );
 
   // link temporary buffets from intra search with inter search to avoid unneccessary memory overhead
   m_cInterSearch.setTempBuffers( m_cIntraSearch.getSplitCSBuf(), m_cIntraSearch.getFullCSBuf(), m_cIntraSearch.getSaveCSBuf() );
@@ -555,6 +568,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
+#if JVET_M0427_INLOOP_RESHAPER
+      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL).swap(*cPicYuvTrueOrg);
+#endif
 
       pcPicCurr->finalInit( *pSPS, *pPPS );
     }
@@ -760,6 +776,9 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   rpcPic->setBorderExtension( false );
   rpcPic->reconstructed = false;
   rpcPic->referenced = true;
+#if JVET_M0253_HASH_ME
+  rpcPic->getHashMap()->clearAll();
+#endif
 
   m_iPOCLast += (m_compositeRefEnabled ? 2 : 1);
   m_iNumPicRcvd++;
@@ -788,6 +807,35 @@ void EncLib::xInitVPS(VPS &vps, const SPS &sps)
 
 void EncLib::xInitSPS(SPS &sps)
 {
+  sps.setIntraOnlyConstraintFlag(m_intraConstraintFlag);
+  sps.setMaxBitDepthConstraintIdc(m_bitDepthConstraintValue - 8);
+  sps.setMaxChromaFormatConstraintIdc(m_chromaFormatConstraintValue);
+  sps.setFrameConstraintFlag(m_frameOnlyConstraintFlag);
+  sps.setNoQtbttDualTreeIntraConstraintFlag(!m_dualITree);
+  sps.setNoCclmConstraintFlag(m_LMChroma ? false : true);
+  sps.setNoSaoConstraintFlag(!m_bUseSAO);
+  sps.setNoAlfConstraintFlag(!m_alf);
+  sps.setNoPcmConstraintFlag(!m_usePCM);
+  sps.setNoTemporalMvpConstraintFlag(m_TMVPModeId ? false : true);
+  sps.setNoSbtmvpConstraintFlag(m_SubPuMvpMode ? false : true);
+  sps.setNoAmvrConstraintFlag(!m_bNoAmvrConstraintFlag);
+  sps.setNoAffineMotionConstraintFlag(!m_Affine);
+#if JVET_M0464_UNI_MTS
+#if JVET_M0303_IMPLICIT_MTS
+  sps.setNoMtsConstraintFlag((m_IntraMTS || m_InterMTS || m_ImplicitMTS) ? false : true);
+#else
+  sps.setNoMtsConstraintFlag((m_IntraMTS || m_InterMTS) ? false : true);
+#endif
+#else
+#if JVET_M0303_IMPLICIT_MTS
+  sps.setNoMtsConstraintFlag((m_IntraEMT || m_InterEMT || m_ImplicitMTS) ? false : true);
+#else
+  sps.setNoMtsConstraintFlag((m_IntraEMT || m_InterEMT) ? false : true);
+#endif
+#endif
+  sps.setNoLadfConstraintFlag(!m_LadfEnabled);
+  sps.setNoDepQuantConstraintFlag(!m_DepQuantEnabledFlag);
+  sps.setNoSignDataHidingConstraintFlag(!m_SignDataHidingEnabledFlag);
   ProfileTierLevel& profileTierLevel = *sps.getPTL()->getGeneralPTL();
   profileTierLevel.setLevelIdc                    (m_level);
   profileTierLevel.setTierFlag                    (m_levelTier);
@@ -828,41 +876,49 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setLog2DiffMaxMinCodingBlockSize(m_log2DiffMaxMinCodingBlockSize);
 
   sps.getSpsNext().setNextToolsEnabled      ( m_profile == Profile::NEXT );
-  sps.getSpsNext().setUseQTBT               ( m_QTBT );
-  sps.getSpsNext().setCTUSize               ( m_CTUSize );
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-  sps.getSpsNext().setSplitConsOverrideEnabledFlag( m_useSplitConsOverride );
-#endif
-  sps.getSpsNext().setMinQTSizes            ( m_uiMinQT );
-  sps.getSpsNext().setUseLargeCTU           ( m_LargeCTU );
-  sps.getSpsNext().setMaxBTDepth            ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
-  sps.getSpsNext().setUseDualITree          ( m_dualITree );
-  sps.getSpsNext().setSubPuMvpMode(m_SubPuMvpMode);
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  sps.getSpsNext().setSubPuMvpLog2Size(m_SubPuMvpLog2Size);
-#endif 
+  sps.setCTUSize                             ( m_CTUSize );
+  sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
+  sps.setMinQTSizes                          ( m_uiMinQT );
+  sps.getSpsNext().setUseLargeCTU            ( m_LargeCTU );
+  sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
+  sps.setUseDualITree                        ( m_dualITree );
+  sps.setSBTMVPEnabledFlag                  ( m_SubPuMvpMode );
   sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
   sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
-#if !REMOVE_MV_ADAPT_PREC
-  sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
-#endif
-#if JVET_L0256_BIO
-  sps.getSpsNext().setUseBIO                ( m_BIO );
-#endif
+  sps.setBDOFEnabledFlag                    ( m_BIO );
   sps.getSpsNext().setUseAffine             ( m_Affine );
   sps.getSpsNext().setUseAffineType         ( m_AffineType );
   sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );
   sps.getSpsNext().setMTTMode               ( m_MTTMode );
   sps.getSpsNext().setUseLMChroma           ( m_LMChroma ? true : false );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  sps.getSpsNext().setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
+#endif
 #if ENABLE_WPP_PARALLELISM
   sps.getSpsNext().setUseNextDQP            ( m_AltDQPCoding );
 #endif
+#if JVET_M0464_UNI_MTS
+#if JVET_M0303_IMPLICIT_MTS
+  sps.getSpsNext().setUseMTS                ( m_IntraMTS || m_InterMTS || m_ImplicitMTS );
+#endif
+  sps.getSpsNext().setUseIntraMTS           ( m_IntraMTS );
+  sps.getSpsNext().setUseInterMTS           ( m_InterMTS );
+#else
+#if JVET_M0303_IMPLICIT_MTS
+  sps.getSpsNext().setUseMTS                ( m_IntraEMT || m_InterEMT || m_ImplicitMTS );
+#endif
   sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
-  sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
-#if JVET_L0646_GBI
-  sps.getSpsNext().setUseGBi                ( m_GBi );
 #endif
+#if JVET_M0140_SBT
+  sps.getSpsNext().setUseSBT                ( m_SBT );
+  if( sps.getSpsNext().getUseSBT() )
+  {
+    sps.getSpsNext().setMaxSbtSize          ( m_iSourceWidth >= 1920 ? 64 : 32 );
+  }
+#endif
+  sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
+  sps.getSpsNext().setUseGBi                ( m_GBi );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   sps.getSpsNext().setLadfEnabled           ( m_LadfEnabled );
   if ( m_LadfEnabled )
@@ -877,19 +933,30 @@ void EncLib::xInitSPS(SPS &sps)
   }
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   sps.getSpsNext().setUseMHIntra            ( m_MHIntra );
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   sps.getSpsNext().setUseTriangle           ( m_Triangle );
+#if JVET_M0255_FRACMMVD_SWITCH
+  sps.setDisFracMmvdEnabledFlag             ( m_allowDisFracMMVD );
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
+#endif
+#if JVET_M0147_DMVR
+  sps.setUseDMVR                            ( m_DMVR );
 #endif
 
-#if JVET_L0293_CPR
-  sps.getSpsNext().setCPRMode               ( m_CPRMode );
-#endif 
+#if JVET_M0483_IBC
+  sps.setIBCFlag                            ( m_IBCMode);
+#else
+  sps.getSpsNext().setIBCMode               (m_IBCMode);
+#endif
+  sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
+  sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
-
-  int minCUSize = ( /*sps.getSpsNext().getUseQTBT() ? 1 << MIN_CU_LOG2 :*/ sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize() );
+#if JVET_M0427_INLOOP_RESHAPER
+  sps.setUseReshaper                        ( m_lumaReshapeEnable );
+#endif
+  int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;
   while(minCUSize > 1)
   {
@@ -900,7 +967,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setLog2MinCodingBlockSize(log2MinCUSize);
 
   sps.setPCMLog2MinSize (m_uiPCMLog2MinSize);
-  sps.setUsePCM        ( m_usePCM           );
+  sps.setPCMEnabledFlag        ( m_usePCM           );
   sps.setPCMLog2MaxSize( m_pcmLog2MaxSize  );
 
   sps.setQuadtreeTULog2MaxSize( m_uiQuadtreeTULog2MaxSize );
@@ -912,8 +979,6 @@ void EncLib::xInitSPS(SPS &sps)
 
   sps.setMaxTrSize   ( 1 << m_uiQuadtreeTULog2MaxSize );
 
-  sps.setUseAMP ( m_useAMP );
-
   for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
   {
     sps.setBitDepth      (ChannelType(channelType), m_bitDepth[channelType] );
@@ -921,7 +986,7 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setPCMBitDepth (ChannelType(channelType), m_PCMBitDepth[channelType]         );
   }
 
-  sps.setUseSAO( m_bUseSAO );
+  sps.setSAOEnabledFlag( m_bUseSAO );
 
   sps.setMaxTLayers( m_maxTempLayer );
   sps.setTemporalIdNestingFlag( ( m_maxTempLayer == 1 ) ? true : false );
@@ -939,7 +1004,7 @@ void EncLib::xInitSPS(SPS &sps)
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
   sps.setUseStrongIntraSmoothing( m_useStrongIntraSmoothing );
 #endif
-  sps.setUseALF( m_alf );
+  sps.setALFEnabledFlag( m_alf );
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
   if (sps.getVuiParametersPresentFlag())
@@ -1266,11 +1331,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     {
       baseQp = getBaseQP()-26;
     }
-#if JVET_L0553_FIX_INITQP
     const int maxDQP = 37;
-#else
-    const int maxDQP = 25;
-#endif
     const int minDQP = -26 + sps.getQpBDOffset(CHANNEL_TYPE_LUMA);
 
     pps.setPicInitQPMinus26( std::min( maxDQP, std::max( minDQP, baseQp ) ));
@@ -1320,7 +1381,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
  #endif
   pps.setSliceChromaQpFlag(bChromaDeltaQPEnabled);
 #endif
-  if (!pps.getSliceChromaQpFlag() && sps.getSpsNext().getUseDualITree() && (getChromaFormatIdc() != CHROMA_400))
+  if (
+    !pps.getSliceChromaQpFlag() && sps.getUseDualITree() 
+    && (getChromaFormatIdc() != CHROMA_400))
   {
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0);
   }
@@ -1390,8 +1453,8 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     }
   }
   CHECK(!(bestPos <= 15), "Unspecified error");
-#if JVET_L0293_CPR
-  if (sps.getSpsNext().getCPRMode())
+#if JVET_M0483_IBC==0
+  if (sps.getSpsNext().getIBCMode())
   {
     pps.setNumRefIdxL0DefaultActive(bestPos + 1);
   }

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,6 +72,9 @@ struct Size
   bool operator!=(const Size &other)      const { return (width != other.width) || (height != other.height); }
   bool operator==(const Size &other)      const { return (width == other.width) && (height == other.height); }
   uint32_t area()                             const { return (uint32_t) width * (uint32_t) height; }
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  void resizeTo(const Size newSize)             { width = newSize.width; height = newSize.height; }
+#endif
 };
 
 struct Area : public Position, public Size
@@ -114,7 +117,6 @@ struct UnitScale
   Size     scale( const Size     &size ) const { return { size.width >> posx, size.height >> posy }; }
   Area     scale( const Area    &_area ) const { return Area( scale( _area.pos() ), scale( _area.size() ) ); }
 };
-#if JVET_L0293_CPR
 namespace std
 {
   template <>
@@ -135,7 +137,6 @@ namespace std
     }
   };
 }
-#endif
 inline size_t rsAddr(const Position &pos, const uint32_t stride, const UnitScale &unitScale )
 {
   return (size_t)(stride >> unitScale.posx) * (size_t)(pos.y >> unitScale.posy) + (size_t)(pos.x >> unitScale.posx);

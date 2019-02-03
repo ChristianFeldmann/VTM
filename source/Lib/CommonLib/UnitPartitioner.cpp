@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -132,9 +132,7 @@ void Partitioner::copyState( const Partitioner& other )
 void AdaptiveDepthPartitioner::setMaxMinDepth( unsigned& minDepth, unsigned& maxDepth, const CodingStructure& cs ) const
 {
   unsigned          stdMinDepth = 0;
-  unsigned          stdMaxDepth = ( ( cs.sps->getSpsNext().getUseQTBT() )
-                                        ? g_aucLog2[cs.sps->getSpsNext().getCTUSize()] - g_aucLog2[cs.sps->getSpsNext().getMinQTSize( cs.slice->getSliceType(), chType )]
-                                        : cs.sps->getLog2DiffMaxMinCodingBlockSize() );
+  unsigned          stdMaxDepth = ( g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize( cs.slice->getSliceType(), chType )]);
   const Position    pos         = currArea().blocks[chType].pos();
   const unsigned    curSliceIdx = cs.slice->getIndependentSliceIdx();
 #if HEVC_TILES_WPP
@@ -247,7 +245,6 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
     break;
   case CU_HORZ_SPLIT:
   case CU_VERT_SPLIT:
-    CHECK( !cs.sps->getSpsNext().getUseQTBT(), "QTBT disabled" );
     m_partStack.push_back( PartLevel( split, PartitionerImpl::getCUSubPartitions( currArea(), cs, split ) ) );
     break;
   case CU_TRIH_SPLIT:
@@ -258,6 +255,18 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
   case TU_MAX_TR_SPLIT:
     m_partStack.push_back( PartLevel( split, PartitionerImpl::getMaxTuTiling( currArea(), cs ) ) );
     break;
+#if JVET_M0140_SBT
+  case SBT_VER_HALF_POS0_SPLIT:
+  case SBT_VER_HALF_POS1_SPLIT:
+  case SBT_HOR_HALF_POS0_SPLIT:
+  case SBT_HOR_HALF_POS1_SPLIT:
+  case SBT_VER_QUAD_POS0_SPLIT:
+  case SBT_VER_QUAD_POS1_SPLIT:
+  case SBT_HOR_QUAD_POS0_SPLIT:
+  case SBT_HOR_QUAD_POS1_SPLIT:
+    m_partStack.push_back( PartLevel( split, PartitionerImpl::getSbtTuTiling( currArea(), cs, split ) ) );
+    break;
+#endif
   default:
     THROW( "Unknown split mode" );
     break;
@@ -272,6 +281,12 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
   {
     currTrDepth++;
   }
+#if JVET_M0140_SBT
+  else if( split >= SBT_VER_HALF_POS0_SPLIT && split <= SBT_HOR_QUAD_POS1_SPLIT )
+  {
+    currTrDepth++;
+  }
+#endif
   else
   {
     currTrDepth = 0;
@@ -300,8 +315,97 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
   }
 }
 
+#if JVET_M0421_SPLIT_SIG
+void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& canQt, bool& canBh, bool& canBv, bool& canTh, bool& canTv )
+{
+  const PartSplit implicitSplit = m_partStack.back().checkdIfImplicit ? m_partStack.back().implicitSplit : getImplicitSplit( cs );
+  
+  const unsigned maxBTD         = cs.pcv->getMaxBtDepth( *cs.slice, chType ) + currImplicitBtDepth;
+  const unsigned maxBtSize      = cs.pcv->getMaxBtSize ( *cs.slice, chType );
+  const unsigned minBtSize      = cs.pcv->getMinBtSize ( *cs.slice, chType );
+  const unsigned maxTtSize      = cs.pcv->getMaxTtSize ( *cs.slice, chType );
+  const unsigned minTtSize      = cs.pcv->getMinTtSize ( *cs.slice, chType );
+  const unsigned minQtSize      = cs.pcv->getMinQtSize ( *cs.slice, chType );
+
+  canNo = canQt = canBh = canTh = canBv = canTv = true;
+  bool canBtt = currMtDepth < maxBTD;
+
+  // the minimal and maximal sizes are given in luma samples
+  const CompArea&  area  = currArea().Y();
+        PartLevel& level = m_partStack.back();
+
+  const PartSplit lastSplit = level.split;
+  const PartSplit parlSplit = lastSplit == CU_TRIH_SPLIT ? CU_HORZ_SPLIT : CU_VERT_SPLIT;
+
+  // don't allow QT-splitting below a BT split
+  if( lastSplit != CTU_LEVEL && lastSplit != CU_QUAD_SPLIT ) canQt = false;
+  if( area.width <= minQtSize )                              canQt = false;
+
+  if( implicitSplit != CU_DONT_SPLIT )
+  {
+    canNo = canTh = canTv = false;
+
+    canBh = implicitSplit == CU_HORZ_SPLIT;
+    canBv = implicitSplit == CU_VERT_SPLIT;
+
+    return;
+  }
+
+  if( ( lastSplit == CU_TRIH_SPLIT || lastSplit == CU_TRIV_SPLIT ) && currPartIdx() == 1 )
+  {
+    canBh = parlSplit != CU_HORZ_SPLIT;
+    canBv = parlSplit != CU_VERT_SPLIT;
+  }
+
+  if( canBtt && ( area.width <= minBtSize && area.height <= minBtSize )
+      && ( ( area.width <= minTtSize && area.height <= minTtSize )
+           || cs.sps->getSpsNext().getMTTMode() == 0 ) )
+  {
+    canBtt = false;
+  }
+  if( canBtt && ( area.width > maxBtSize || area.height > maxBtSize )
+      && ( ( area.width > maxTtSize || area.height > maxTtSize )
+           || cs.sps->getSpsNext().getMTTMode() == 0 ) )
+  {
+    canBtt = false;
+  }
+
+  if( !canBtt )
+  {
+    canBh = canTh = canBv = canTv = false;
+
+    return;
+  }
+
+  // specific check for BT splits
+  if( area.height <= minBtSize || area.height > maxBtSize )                            canBh = false;
+  if( area.width > MAX_TU_SIZE_FOR_PROFILE && area.height <= MAX_TU_SIZE_FOR_PROFILE ) canBh = false;
+
+  if( area.width <= minBtSize || area.width > maxBtSize )                              canBv = false;
+  if( area.width <= MAX_TU_SIZE_FOR_PROFILE && area.height > MAX_TU_SIZE_FOR_PROFILE ) canBv = false;
+
+  if( ( cs.sps->getSpsNext().getMTTMode() & 1 ) != 1 )                                 canTh = false;
+  if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize ) 
+                                                                                       canTh = false;
+  if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE )  canTh = false;
+
+  if( ( cs.sps->getSpsNext().getMTTMode() & 1 ) != 1 )                                 canTv = false;
+  if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize )
+                                                                                       canTv = false;
+  if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE )  canTv = false;
+}
+
+#endif
 bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs )
 {
+#if JVET_M0421_SPLIT_SIG
+  const CompArea area       = currArea().Y();
+  const unsigned maxTrSize  = cs.sps->getMaxTrSize();
+
+  bool canNo, canQt, canBh, canTh, canBv, canTv;
+
+  canSplit( cs, canNo, canQt, canBh, canBv, canTh, canTv );
+#else
   const PartSplit implicitSplit = getImplicitSplit( cs );
 
   // the minimal and maximal sizes are given in luma samples
@@ -322,6 +426,7 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
     return false;
   }
 
+#endif
   switch( split )
   {
   case CTU_LEVEL:
@@ -331,6 +436,32 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   case TU_MAX_TR_SPLIT:
     return area.width > maxTrSize || area.height > maxTrSize;
     break;
+#if JVET_M0140_SBT
+  case SBT_VER_HALF_POS0_SPLIT:
+  case SBT_VER_HALF_POS1_SPLIT:
+  case SBT_HOR_HALF_POS0_SPLIT:
+  case SBT_HOR_HALF_POS1_SPLIT:
+  case SBT_VER_QUAD_POS0_SPLIT:
+  case SBT_VER_QUAD_POS1_SPLIT:
+  case SBT_HOR_QUAD_POS0_SPLIT:
+  case SBT_HOR_QUAD_POS1_SPLIT:
+    return currTrDepth == 0;
+    break;
+#endif
+#if JVET_M0421_SPLIT_SIG
+  case CU_QUAD_SPLIT:
+    return canQt;
+  case CU_DONT_SPLIT:
+    return canNo;
+  case CU_HORZ_SPLIT:
+    return canBh;
+  case CU_VERT_SPLIT:
+    return canBv;
+  case CU_TRIH_SPLIT:
+    return canTh;
+  case CU_TRIV_SPLIT:
+    return canTv;
+#else
   case CU_QUAD_SPLIT:
   {
     // don't allow QT-splitting below a BT split
@@ -372,10 +503,16 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   }
     if( implicitSplit == split )                                   return true;
     if( implicitSplit != CU_DONT_SPLIT && implicitSplit != split ) return false;
+#endif
   case CU_MT_SPLIT:
+#if JVET_M0421_SPLIT_SIG
+    return ( canBh || canTh || canBv || canTv );
+#endif
   case CU_BT_SPLIT:
+#if JVET_M0421_SPLIT_SIG
+    return ( canBh || canBv );
+#else
   {
-    if( !cs.sps->getSpsNext().getUseQTBT() )                  return false;
     if( currMtDepth >= maxBTD )                               return false;
     if(      ( area.width <= minBtSize && area.height <= minBtSize )
         && ( ( area.width <= minTtSize && area.height <= minTtSize ) || cs.sps->getSpsNext().getMTTMode() == 0 ) ) return false;
@@ -386,45 +523,39 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
       return false;
     }
   }
+#endif
   break;
   default:
     THROW( "Unknown split mode" );
     return false;
     break;
   }
-
+#if !JVET_M0421_SPLIT_SIG
   // specific check for BT splits
   switch( split )
   {
   case CU_HORZ_SPLIT:
     if( area.height <= minBtSize || area.height > maxBtSize )     return false;
-#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
     if( area.width > MAX_TU_SIZE_FOR_PROFILE && area.height <= MAX_TU_SIZE_FOR_PROFILE ) return false;
-#endif
     break;
   case CU_VERT_SPLIT:
     if( area.width <= minBtSize || area.width > maxBtSize )       return false;
-#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
     if( area.width <= MAX_TU_SIZE_FOR_PROFILE && area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
-#endif
     break;
   case CU_TRIH_SPLIT:
     if( ( cs.sps->getSpsNext().getMTTMode() & 1 ) != 1 )          return false;
     if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize) return false;
-#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
     if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
-#endif
     break;
   case CU_TRIV_SPLIT:
     if( ( cs.sps->getSpsNext().getMTTMode() & 1 ) != 1 )          return false;
     if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize)  return false;
-#if JVET_L0081_VPDU_SPLIT_CONSTRAINTS
     if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
-#endif
     break;
   default:
     break;
   }
+#endif
 
   return true;
 }
@@ -474,6 +605,12 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
     {
       split = CU_QUAD_SPLIT;
     }
+#if JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY
+    if ((!isBlInPic || !isTrInPic) && (currArea().Y().width > MAX_TU_SIZE_FOR_PROFILE || currArea().Y().height > MAX_TU_SIZE_FOR_PROFILE))
+    {
+      split = CU_QUAD_SPLIT;
+    }
+#endif
   }
 
   m_partStack.back().checkdIfImplicit = true;
@@ -515,6 +652,13 @@ void QTBTPartitioner::exitCurrSplit()
     CHECK( currTrDepth == 0, "TR depth is '0', although a TU split was performed" );
     currTrDepth--;
   }
+#if JVET_M0140_SBT
+  else if( currSplit >= SBT_VER_HALF_POS0_SPLIT && currSplit <= SBT_HOR_QUAD_POS1_SPLIT )
+  {
+    CHECK( currTrDepth == 0, "TR depth is '0', although a TU split was performed" );
+    currTrDepth--;
+  }
+#endif
   else
   {
     CHECK( currTrDepth > 0, "RQT found with QTBT partitioner" );
@@ -564,6 +708,106 @@ bool QTBTPartitioner::hasNextPart()
   return ( ( m_partStack.back().idx + 1 ) < m_partStack.back().parts.size() );
 }
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+void TUIntraSubPartitioner::splitCurrArea( const PartSplit split, const CodingStructure& cs )
+{
+  switch( split )
+  {
+    case TU_1D_HORZ_SPLIT:
+    case TU_1D_VERT_SPLIT:
+    {
+      const UnitArea &area = currArea();
+      m_partStack.push_back( PartLevel() );
+      m_partStack.back().split = split;
+      PartitionerImpl::getTUIntraSubPartitions( m_partStack.back().parts, area, cs, split );
+      break;
+    }
+    case TU_MAX_TR_SPLIT: //we need this non ISP split because of the maxTrSize limitation
+      m_partStack.push_back( PartLevel( split, PartitionerImpl::getMaxTuTiling( currArea(), cs ) ) );
+      break;
+    default:
+      THROW( "Unknown ISP split mode" );
+      break;
+  }
+
+  currDepth++;
+  currTrDepth++; // we need this to identify the level. since the 1d partitions are forbidden if the RQT is on, there area no compatibility issues
+
+#if _DEBUG
+  m_currArea = m_partStack.back().parts.front();
+#endif
+}
+
+void TUIntraSubPartitioner::exitCurrSplit()
+{
+  PartSplit currSplit = m_partStack.back().split;
+
+  m_partStack.pop_back();
+
+  CHECK( currDepth == 0, "depth is '0', although a split was performed" );
+
+  currDepth--;
+  currTrDepth--;
+
+#if _DEBUG
+  m_currArea = m_partStack.back().parts[m_partStack.back().idx];
+#endif
+
+  CHECK( !( currSplit == TU_1D_HORZ_SPLIT || currSplit == TU_1D_VERT_SPLIT || currSplit == TU_MAX_TR_SPLIT ), "Unknown 1D partition split type!" );
+}
+
+bool TUIntraSubPartitioner::nextPart( const CodingStructure &cs, bool autoPop /*= false*/ )
+{
+  unsigned currIdx = ++m_partStack.back().idx;
+
+  m_partStack.back().checkdIfImplicit = false;
+  m_partStack.back().isImplicit = false;
+
+  if( currIdx < m_partStack.back().parts.size() )
+  {
+#if _DEBUG
+    m_currArea = m_partStack.back().parts[m_partStack.back().idx];
+#endif
+    return true;
+  }
+  else
+  {
+    if( autoPop ) exitCurrSplit();
+    return false;
+  }
+}
+
+bool TUIntraSubPartitioner::hasNextPart()
+{
+  return ( ( m_partStack.back().idx + 1 ) < m_partStack.back().parts.size() );
+}
+
+bool TUIntraSubPartitioner::canSplit( const PartSplit split, const CodingStructure &cs )
+{
+  //const PartSplit implicitSplit = getImplicitSplit(cs);
+  const UnitArea &area = currArea();
+
+  switch( split )
+  {
+    case TU_1D_HORZ_SPLIT:
+    {
+      return area.lheight() == m_partStack[0].parts[0].lheight();
+    }
+    case TU_1D_VERT_SPLIT:
+    {
+      return area.lwidth() == m_partStack[0].parts[0].lwidth();
+    }
+    case TU_MAX_TR_SPLIT:
+    {
+      //this split is performed implicitly with the other splits
+      return false;
+    }
+    default:
+      THROW( "Unknown 1-D split mode" );
+      break;
+  }
+}
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -572,14 +816,7 @@ bool QTBTPartitioner::hasNextPart()
 
 Partitioner* PartitionerFactory::get( const Slice& slice )
 {
-  if( slice.getSPS()->getSpsNext().getUseQTBT() )
-  {
-    return new QTBTPartitioner;
-  }
-  else
-  {
-    THROW( "Unknown partitioner!" );
-  }
+  return new QTBTPartitioner;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -779,6 +1016,63 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
   }
 }
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+void PartitionerImpl::getTUIntraSubPartitions( Partitioning &sub, const UnitArea &tuArea, const CodingStructure &cs, const PartSplit splitType )
+{
+  uint32_t nPartitions;
+  uint32_t splitDimensionSize = CU::getISPSplitDim( tuArea.lumaSize().width, tuArea.lumaSize().height, splitType );
+
+  bool isDualTree = CS::isDualITree( cs );
+
+  if( splitType == TU_1D_HORZ_SPLIT )
+  {
+    nPartitions = tuArea.lumaSize().height >> g_aucLog2[splitDimensionSize];
+
+    sub.resize( nPartitions );
+
+    for( uint32_t i = 0; i < nPartitions; i++ )
+    {
+      sub[i] = tuArea;
+      CompArea& blkY = sub[i].blocks[COMPONENT_Y];
+
+      blkY.height = splitDimensionSize;
+      blkY.y = i > 0 ? sub[i - 1].blocks[COMPONENT_Y].y + splitDimensionSize : blkY.y;
+
+      CHECK( sub[i].lumaSize().height < 1, "the cs split causes the block to be smaller than the minimal TU size" );
+    }
+  }
+  else if( splitType == TU_1D_VERT_SPLIT )
+  {
+    nPartitions = tuArea.lumaSize().width >> g_aucLog2[splitDimensionSize];
+
+    sub.resize( nPartitions );
+
+    for( uint32_t i = 0; i < nPartitions; i++ )
+    {
+      sub[i] = tuArea;
+      CompArea& blkY = sub[i].blocks[COMPONENT_Y];
+
+      blkY.width = splitDimensionSize;
+      blkY.x = i > 0 ? sub[i - 1].blocks[COMPONENT_Y].x + splitDimensionSize : blkY.x;
+      CHECK( sub[i].lumaSize().width < 1, "the split causes the block to be smaller than the minimal TU size" );
+    }
+  }
+  else
+  {
+    THROW( "Unknown TU sub-partitioning" );
+  }
+  //we only partition luma, so there is going to be only one chroma tu at the end (unless it is dual tree, in which case there won't be any chroma components)
+  uint32_t partitionsWithoutChroma = isDualTree ? nPartitions : nPartitions - 1;
+  for( uint32_t i = 0; i < partitionsWithoutChroma; i++ )
+  {
+    CompArea& blkCb = sub[i].blocks[COMPONENT_Cb];
+    CompArea& blkCr = sub[i].blocks[COMPONENT_Cr];
+    blkCb = CompArea();
+    blkCr = CompArea();
+  }
+}
+#endif
+
 static const int g_maxRtGridSize = 3;
 
 static const int g_zScanToX[1 << ( g_maxRtGridSize << 1 )] =
@@ -854,3 +1148,64 @@ Partitioning PartitionerImpl::getMaxTuTiling( const UnitArea &cuArea, const Codi
 
   return ret;
 }
+
+#if JVET_M0140_SBT
+Partitioning PartitionerImpl::getSbtTuTiling( const UnitArea& cuArea, const CodingStructure &cs, const PartSplit splitType )
+{
+  Partitioning ret;
+  int numTiles = 2;
+  int widthFactor, heightFactor, xOffsetFactor, yOffsetFactor; // y = (x * factor) >> 2;
+  assert( splitType >= SBT_VER_HALF_POS0_SPLIT && splitType <= SBT_HOR_QUAD_POS1_SPLIT );
+
+  ret.resize( numTiles, cuArea );
+  for( int i = 0; i < numTiles; i++ )
+  {
+    if( splitType >= SBT_VER_QUAD_POS0_SPLIT )
+    {
+      if( splitType == SBT_HOR_QUAD_POS0_SPLIT || splitType == SBT_HOR_QUAD_POS1_SPLIT )
+      {
+        widthFactor = 4;
+        xOffsetFactor = 0;
+        heightFactor = ( ( i == 0 && splitType == SBT_HOR_QUAD_POS0_SPLIT ) || ( i == 1 && splitType == SBT_HOR_QUAD_POS1_SPLIT ) ) ? 1 : 3;
+        yOffsetFactor = ( i == 0 ) ? 0 : ( splitType == SBT_HOR_QUAD_POS0_SPLIT ? 1 : 3 );
+      }
+      else
+      {
+        widthFactor = ( ( i == 0 && splitType == SBT_VER_QUAD_POS0_SPLIT ) || ( i == 1 && splitType == SBT_VER_QUAD_POS1_SPLIT ) ) ? 1 : 3;
+        xOffsetFactor = ( i == 0 ) ? 0 : ( splitType == SBT_VER_QUAD_POS0_SPLIT ? 1 : 3 );
+        heightFactor = 4;
+        yOffsetFactor = 0;
+      }
+    }
+    else
+    {
+      if( splitType == SBT_HOR_HALF_POS0_SPLIT || splitType == SBT_HOR_HALF_POS1_SPLIT )
+      {
+        widthFactor = 4;
+        xOffsetFactor = 0;
+        heightFactor = 2;
+        yOffsetFactor = ( i == 0 ) ? 0 : 2;
+      }
+      else
+      {
+        widthFactor = 2;
+        xOffsetFactor = ( i == 0 ) ? 0 : 2;
+        heightFactor = 4;
+        yOffsetFactor = 0;
+      }
+    }
+
+    UnitArea& tile = ret[i];
+    for( CompArea &comp : tile.blocks )
+    {
+      if( !comp.valid() ) continue;
+      comp.x += ( comp.width  * xOffsetFactor ) >> 2;
+      comp.y += ( comp.height * yOffsetFactor ) >> 2;
+      comp.width = ( comp.width  * widthFactor ) >> 2;
+      comp.height = ( comp.height * heightFactor ) >> 2;
+    }
+  }
+
+  return ret;
+}
+#endif

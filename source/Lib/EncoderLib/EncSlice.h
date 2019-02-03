@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -146,7 +146,9 @@ public:
   static
 #endif
   void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pcEncLib );
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  void    checkDisFracMmvd    ( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr );
+#endif
 
   // misc. functions
   void    setSearchRange      ( Slice* pcSlice  );                                  ///< set ME range adaptively
@@ -157,9 +159,7 @@ public:
   void    setSliceSegmentIdx  (uint32_t i)              { m_uiSliceSegmentIdx = i;          }
 
   SliceType getEncCABACTableIdx() const             { return m_encCABACTableIdx;        }
- #if JVET_L0293_CPR
   void    setEncCABACTableIdx (SliceType b)         { m_encCABACTableIdx = b; }
-#endif
 private:
   double  xGetQPValueAccordingToLambda ( double lambda );
 };

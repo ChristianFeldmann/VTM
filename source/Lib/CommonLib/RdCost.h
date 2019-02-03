@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -79,7 +79,6 @@ public:
   bool                  useMR;
   bool                  applyWeight;     // whether weighted prediction is used or not
   bool                  isBiPred;
-  bool                  isQtbt;
 
   const WPScalingParam *wpCur;           // weighted prediction scaling parameters for current ref
   ComponentID           compID;
@@ -108,23 +107,26 @@ private:
 #if WCG_EXT
   double                  m_dLambda_unadjusted; // TODO: check is necessary
   double                  m_DistScaleUnadjusted;
+#if JVET_M0427_INLOOP_RESHAPER
+  static std::vector<double> m_reshapeLumaLevelToWeightPLUT;
+  static std::vector<double> m_lumaLevelToWeightPLUT;
+  static uint32_t         m_signalType;
+  static double           m_chromaWeight;
+  static int              m_lumaBD;
+#else
   static double           m_lumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
+#endif
 #endif
   double                  m_DistScale;
   double                  m_dLambdaMotionSAD[2 /* 0=standard, 1=for transquant bypass when mixed-lossless cost evaluation enabled*/];
 
   // for motion cost
   Mv                      m_mvPredictor;
-#if JVET_L0293_CPR
   Mv                      m_bvPredictors[2];
-#endif
   double                  m_motionLambda;
   int                     m_iCostScale;
 
-  bool                    m_useQtbt;
-#if JVET_L0293_CPR
-  double                  m_dCost; // for cpr
-#endif
+  double                  m_dCost; // for ibc
 public:
   RdCost();
   virtual ~RdCost();
@@ -148,8 +150,6 @@ public:
 
   void          setCostMode(CostMode m) { m_costMode = m; }
 
-  void          setUseQtbt(bool b)    { m_useQtbt = b; }
-
   // Distortion Functions
   void          init();
 #ifdef TARGET_SIMD_X86
@@ -160,28 +160,17 @@ public:
 
   void           setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRefY , int iRefStride, int bitDepth, ComponentID compID, int subShiftMode = 0, int step = 1, bool useHadamard = false );
   void           setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &cur, int bitDepth, ComponentID compID, bool useHadamard = false );
-#if JVET_L0256_BIO
   void           setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, int iOrgStride, int iRefStride, int bitDepth, ComponentID compID, int width, int height, int subShiftMode = 0, int step = 1, bool useHadamard = false, bool bioApplied = false );
-#else
-  void           setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, int iOrgStride, int iRefStride, int bitDepth, ComponentID compID, int width, int height, int subShiftMode = 0, int step = 1, bool useHadamard = false );
-#endif
 
   double         getMotionLambda          ( bool bIsTransquantBypass ) { return m_dLambdaMotionSAD[(bIsTransquantBypass && m_costMode==COST_MIXED_LOSSLESS_LOSSY_CODING)?1:0]; }
   void           selectMotionLambda       ( bool bIsTransquantBypass ) { m_motionLambda = getMotionLambda( bIsTransquantBypass ); }
   void           setPredictor             ( const Mv& rcMv )
   {
     m_mvPredictor = rcMv;
-#if !REMOVE_MV_ADAPT_PREC
-    if( m_mvPredictor.highPrec )
-    {
-      m_mvPredictor = Mv( m_mvPredictor.hor >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE, m_mvPredictor.ver >> VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE, false );
-    }
-#endif
   }
   void           setCostScale             ( int iCostScale )           { m_iCostScale = iCostScale; }
   Distortion     getCost                  ( uint32_t b )                   { return Distortion( m_motionLambda * b ); }
-#if JVET_L0293_CPR
-  // for cpr
+  // for ibc
   void           getMotionCost(int add, bool isTransquantBypass) { m_dCost = m_dLambdaMotionSAD[(isTransquantBypass && m_costMode == COST_MIXED_LOSSLESS_LOSSY_CODING) ? 1 : 0] + add; }
 
   void    setPredictors(Mv* pcMv)
@@ -284,7 +273,6 @@ public:
 
     return length;
   }
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   void copyState( const RdCost& other );
@@ -310,6 +298,15 @@ public:
          void    saveUnadjustedLambda       ();
          void    initLumaLevelToWeightTable ();
   inline double  getWPSNRLumaLevelWeight    (int val) { return m_lumaLevelToWeightPLUT[val]; }
+#if JVET_M0427_INLOOP_RESHAPER
+  void           initLumaLevelToWeightTableReshape();
+  void           updateReshapeLumaLevelToWeightTableChromaMD (std::vector<Pel>& ILUT);
+  void           restoreReshapeLumaLevelToWeightTable        ();
+  inline double  getWPSNRReshapeLumaLevelWeight              (int val)                   { return m_reshapeLumaLevelToWeightPLUT[val]; }
+  void           setReshapeInfo                              (uint32_t type, int lumaBD) { m_signalType = type; m_lumaBD = lumaBD; }
+  void           updateReshapeLumaLevelToWeightTable         (SliceReshapeInfo &sliceReshape, Pel *wtTable, double cwt);
+  inline std::vector<double>& getLumaLevelWeightTable        ()                   { return m_lumaLevelToWeightPLUT; }
+#endif
 #endif
 
 private:
@@ -380,10 +377,8 @@ private:
   static Distortion xGetSAD_SIMD    ( const DistParam& pcDtParam );
   template< int iWidth, X86_VEXT vext >
   static Distortion xGetSAD_NxN_SIMD( const DistParam& pcDtParam );
-#if ENABLE_SIMD_OPT_BIO
   template< X86_VEXT vext >
   static Distortion xGetSAD_IBD_SIMD(const DistParam& pcDtParam);
-#endif
 
   template< typename Torg, typename Tcur, X86_VEXT vext >
   static Distortion xGetHADs_SIMD   ( const DistParam& pcDtParam );

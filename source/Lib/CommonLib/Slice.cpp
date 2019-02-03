@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,9 +41,7 @@
 #include "Picture.h"
 #include "dtrace_next.h"
 
-#if  JVET_L0266_HMVP
 #include "UnitTools.h"
-#endif
 
 //! \ingroup CommonLib
 //! \{
@@ -76,6 +74,9 @@ Slice::Slice()
 , m_signDataHidingEnabledFlag     ( false )
 #endif
 , m_bCheckLDC                     ( false )
+#if JVET_M0444_SMVD
+, m_biDirPred                    ( false )
+#endif
 , m_iSliceQpDelta                 ( 0 )
 , m_iDepth                        ( 0 )
 #if HEVC_VPS
@@ -90,8 +91,9 @@ Slice::Slice()
 , m_handleCraAsBlaFlag            ( false )
 , m_colRefIdx                     ( 0 )
 , m_maxNumMergeCand               ( 0 )
-#if JVET_L0632_AFFINE_MERGE
 , m_maxNumAffineMergeCand         ( 0 )
+#if JVET_M0255_FRACMMVD_SWITCH
+, m_disFracMMVD                   ( false )
 #endif
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
@@ -125,14 +127,9 @@ Slice::Slice()
 , m_temporalLayerNonReferenceFlag ( false )
 , m_LFCrossSliceBoundaryFlag      ( false )
 , m_enableTMVPFlag                ( true )
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-, m_subPuMvpSubBlkSizeSliceEnable(false)
-, m_subPuMvpSubBlkLog2Size       (2)
-#endif 
 , m_encCABACTableIdx              (I_SLICE)
 , m_iProcessingStartTime          ( 0 )
 , m_dProcessingTime               ( 0 )
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
 , m_splitConsOverrideFlag         ( false )
 , m_uiMinQTSize                   ( 0 )
 , m_uiMaxBTDepth                  ( 0 )
@@ -141,10 +138,10 @@ Slice::Slice()
 , m_uiMaxBTDepthIChroma           ( 0 )
 , m_uiMaxBTSizeIChroma            ( 0 )
 , m_uiMaxTTSizeIChroma            ( 0 )
-#endif
 , m_uiMaxBTSize                   ( 0 )
-#if  JVET_L0266_HMVP
 , m_MotionCandLut                (NULL)
+#if  JVET_M0170_MRG_SHARELIST
+, m_MotionCandLuTsBkup           (NULL)
 #endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
@@ -182,16 +179,21 @@ Slice::Slice()
     m_saoEnabledFlag[ch] = false;
   }
 
-#if  JVET_L0266_HMVP
   initMotionLUTs();
+
+#if JVET_M0427_INLOOP_RESHAPER
+  m_sliceReshapeInfo.setUseSliceReshaper(false);
+  m_sliceReshapeInfo.setSliceReshapeModelPresentFlag(false);
+  m_sliceReshapeInfo.setSliceReshapeChromaAdj(0);
+  m_sliceReshapeInfo.reshaperModelMinBinIdx = 0;
+  m_sliceReshapeInfo.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1;
+  memset(m_sliceReshapeInfo.reshaperModelBinCWDelta, 0, PIC_CODE_CW_BINS * sizeof(int));
 #endif
 }
 
 Slice::~Slice()
 {
-#if  JVET_L0266_HMVP
   destroyMotionLUTs();
-#endif
 }
 
 
@@ -208,29 +210,30 @@ void Slice::initSlice()
 
   m_bCheckLDC = false;
 
+#if JVET_M0444_SMVD
+  m_biDirPred = false;
+  m_symRefIdx[0] = -1;
+  m_symRefIdx[1] = -1;
+#endif
+
   for (uint32_t component = 0; component < MAX_NUM_COMPONENT; component++)
   {
     m_iSliceChromaQpDelta[component] = 0;
   }
 
   m_maxNumMergeCand = MRG_MAX_NUM_CANDS;
-#if JVET_L0632_AFFINE_MERGE
   m_maxNumAffineMergeCand = AFFINE_MRG_MAX_NUM_CANDS;
-#endif
 
   m_bFinalized=false;
 
+#if JVET_M0255_FRACMMVD_SWITCH
+  m_disFracMMVD          = false;
+#endif
   m_substreamSizes.clear();
   m_cabacInitFlag        = false;
   m_cabacWinUpdateMode   = 0;
   m_enableTMVPFlag       = true;
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  m_subPuMvpSubBlkSizeSliceEnable = false;
-  m_subPuMvpSubBlkLog2Size        = 2;
-#endif 
-#if  JVET_L0266_HMVP
   resetMotionLUTs();
-#endif
 }
 
 void Slice::setDefaultClpRng( const SPS& sps )
@@ -447,8 +450,8 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       pcRefPic = xGetLongTermRefPic(rcListPic, m_pRPS->getPOC(i), m_pRPS->getCheckLTMSBPresent(i));
     }
   }
-#if JVET_L0293_CPR
-  if (getSPS()->getSpsNext().getCPRMode())
+#if JVET_M0483_IBC==0
+  if (getSPS()->getSpsNext().getIBCMode())
   {
     RefPicSetLtCurr[NumPicLtCurr] = getPic();
     //getPic()->setIsLongTerm(true);
@@ -468,8 +471,8 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
     // - Otherwise, when the current picture contains a P or B slice, the value of NumPocTotalCurr shall not be equal to 0.
     if (getRapPicFlag())
     {
-#if JVET_L0293_CPR
-      if (getSPS()->getSpsNext().getCPRMode())
+#if JVET_M0483_IBC==0
+      if (getSPS()->getSpsNext().getIBCMode())
       {
         CHECK(numPicTotalCurr != 1, "Invalid state");
       }
@@ -545,8 +548,8 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
       m_bIsUsedAsLongTerm[REF_PIC_LIST_1][rIdx] = ( cIdx >= NumPicStCurr0 + NumPicStCurr1 );
     }
   }
-#if JVET_L0293_CPR
-  if (getSPS()->getSpsNext().getCPRMode())
+#if JVET_M0483_IBC==0
+  if (getSPS()->getSpsNext().getIBCMode())
   {
     m_apcRefPicList[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = getPic();
     m_bIsUsedAsLongTerm[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = true;
@@ -582,13 +585,15 @@ int Slice::getNumRpsCurrTempList() const
       numRpsCurrTempList++;
     }
   }
-#if JVET_L0293_CPR
-  if (getSPS()->getSpsNext().getCPRMode())
+#if JVET_M0483_IBC
+  if (getSPS()->getIBCFlag())
+#else
+  if (getSPS()->getSpsNext().getIBCMode())
+#endif
   {
     return numRpsCurrTempList + 1;
   }
   else
-#endif
     return numRpsCurrTempList;
 }
 
@@ -709,6 +714,9 @@ void Slice::decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& 
       if (rpcPic->getPOC() != pocCurr)
       {
         rpcPic->referenced = false;
+#if JVET_M0253_HASH_ME
+        rpcPic->getHashMap()->clearAll();
+#endif
       }
       iterPic++;
     }
@@ -736,6 +744,9 @@ void Slice::decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& 
           if (rpcPic->getPOC() != pocCurr && rpcPic->getPOC() != m_iLastIDR)
           {
             rpcPic->referenced = false;
+#if JVET_M0253_HASH_ME
+            rpcPic->getHashMap()->clearAll();
+#endif
           }
           iterPic++;
         }
@@ -753,6 +764,9 @@ void Slice::decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& 
           if (rpcPic->getPOC() != pocCurr && rpcPic->getPOC() != pocCRA)
           {
             rpcPic->referenced = false;
+#if JVET_M0253_HASH_ME
+            rpcPic->getHashMap()->clearAll();
+#endif
           }
           iterPic++;
         }
@@ -796,6 +810,13 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
 
   m_bCheckLDC             = pSrc->m_bCheckLDC;
   m_iSliceQpDelta        = pSrc->m_iSliceQpDelta;
+
+#if JVET_M0444_SMVD
+  m_biDirPred = pSrc->m_biDirPred;
+  m_symRefIdx[0] = pSrc->m_symRefIdx[0];
+  m_symRefIdx[1] = pSrc->m_symRefIdx[1];
+#endif
+
   for (uint32_t component = 0; component < MAX_NUM_COMPONENT; component++)
   {
     m_iSliceChromaQpDelta[component] = pSrc->m_iSliceChromaQpDelta[component];
@@ -875,16 +896,12 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_bLMvdL1Zero                   = pSrc->m_bLMvdL1Zero;
   m_LFCrossSliceBoundaryFlag      = pSrc->m_LFCrossSliceBoundaryFlag;
   m_enableTMVPFlag                = pSrc->m_enableTMVPFlag;
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  m_subPuMvpSubBlkSizeSliceEnable = pSrc->m_subPuMvpSubBlkSizeSliceEnable;
-  m_subPuMvpSubBlkLog2Size        = pSrc->m_subPuMvpSubBlkLog2Size;
-#endif 
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
-#if JVET_L0632_AFFINE_MERGE
   m_maxNumAffineMergeCand         = pSrc->m_maxNumAffineMergeCand;
+#if JVET_M0255_FRACMMVD_SWITCH
+  m_disFracMMVD                   = pSrc->m_disFracMMVD;
 #endif
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   m_splitConsOverrideFlag         = pSrc->m_splitConsOverrideFlag;
   m_uiMinQTSize                   = pSrc->m_uiMinQTSize;
   m_uiMaxBTDepth                  = pSrc->m_uiMaxBTDepth;
@@ -893,7 +910,6 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_uiMaxBTDepthIChroma           = pSrc->m_uiMaxBTDepthIChroma;
   m_uiMaxBTSizeIChroma            = pSrc->m_uiMaxBTSizeIChroma;
   m_uiMaxTTSizeIChroma            = pSrc->m_uiMaxTTSizeIChroma;
-#endif
   m_uiMaxBTSize                   = pSrc->m_uiMaxBTSize;
 }
 
@@ -1162,6 +1178,9 @@ void Slice::applyReferencePictureSet( PicList& rcListPic, const ReferencePicture
       pcPic->referenced = false;
       pcPic->usedByCurr = false;
       pcPic->longTerm   = false;
+#if JVET_M0253_HASH_ME
+      pcPic->getHashMap()->clearAll();
+#endif
     }
 
     // sanity checks
@@ -1629,13 +1648,32 @@ void Slice::stopProcessingTimer()
   m_dProcessingTime += (double)(clock()-m_iProcessingStartTime) / CLOCKS_PER_SEC;
   m_iProcessingStartTime = 0;
 }
-#if  JVET_L0266_HMVP
 void Slice::initMotionLUTs()
 {
   m_MotionCandLut = new LutMotionCand;
   m_MotionCandLut->currCnt = 0;
+#if JVET_M0483_IBC
+  m_MotionCandLut->currCntIBC = 0;
+#endif
   m_MotionCandLut->motionCand = nullptr;
+#if JVET_M0483_IBC
+  m_MotionCandLut->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS * 2];
+#else
   m_MotionCandLut->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+#endif
+#if  JVET_M0170_MRG_SHARELIST
+  m_MotionCandLuTsBkup = new LutMotionCand;
+  m_MotionCandLuTsBkup->currCnt = 0;
+#if JVET_M0483_IBC
+  m_MotionCandLuTsBkup->currCntIBC = 0;
+#endif
+  m_MotionCandLuTsBkup->motionCand = nullptr;
+#if JVET_M0483_IBC
+  m_MotionCandLuTsBkup->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS * 2];
+#else
+  m_MotionCandLuTsBkup->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
+#endif
+#endif
 }
 void Slice::destroyMotionLUTs()
 {
@@ -1643,21 +1681,78 @@ void Slice::destroyMotionLUTs()
   m_MotionCandLut->motionCand = nullptr;
   delete m_MotionCandLut;
   m_MotionCandLut = NULL;
+#if  JVET_M0170_MRG_SHARELIST
+  delete[] m_MotionCandLuTsBkup->motionCand;
+  m_MotionCandLuTsBkup->motionCand = nullptr;
+  delete m_MotionCandLuTsBkup;
+  m_MotionCandLuTsBkup = NULL;
+#endif
 }
 void Slice::resetMotionLUTs()
 {
   m_MotionCandLut->currCnt = 0;
+#if JVET_M0483_IBC
+  m_MotionCandLut->currCntIBC = 0;
+#endif
+#if  JVET_M0170_MRG_SHARELIST
+  m_MotionCandLuTsBkup->currCnt = 0;
+#if JVET_M0483_IBC
+  m_MotionCandLuTsBkup->currCntIBC = 0;
+#endif
+#endif
 }
 
 MotionInfo Slice::getMotionInfoFromLUTs(int MotCandIdx) const
 {
   return m_MotionCandLut->motionCand[MotCandIdx];
 }
-
-
-
-void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi)
+#if JVET_M0170_MRG_SHARELIST
+MotionInfo Slice::getMotionInfoFromLUTBkup(int MotCandIdx) const
 {
+  return m_MotionCandLuTsBkup->motionCand[MotCandIdx];
+}
+#endif
+
+#if JVET_M0483_IBC
+void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi, bool ibcflag)
+#else
+void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi)
+#endif
+{
+#if JVET_M0483_IBC
+  int currCntIBC = ibcflag ? lutMC->currCntIBC : lutMC->currCnt;
+  int offset = ibcflag ? MAX_NUM_HMVP_CANDS : 0;
+  bool pruned = false;
+  int  sameCandIdx = 0;
+  for (int idx = 0; idx < currCntIBC; idx++)
+  {
+    if (lutMC->motionCand[idx + offset] == newMi)
+    {
+      sameCandIdx = idx;
+      pruned = true;
+      break;
+    }
+  }
+  if (pruned || currCntIBC == MAX_NUM_HMVP_CANDS)
+  {
+    memmove(&lutMC->motionCand[sameCandIdx + offset], &lutMC->motionCand[sameCandIdx + offset + 1],
+      sizeof(MotionInfo) * (currCntIBC - sameCandIdx - 1));
+    memcpy(&lutMC->motionCand[currCntIBC + offset - 1], &newMi, sizeof(MotionInfo));
+  }
+  else
+  {
+    if (ibcflag)
+    {
+      memcpy(&lutMC->motionCand[currCntIBC + offset], &newMi, sizeof(MotionInfo));
+      lutMC->currCntIBC++;
+    }
+    else
+    {
+      memcpy(&lutMC->motionCand[currCntIBC], &newMi, sizeof(MotionInfo));
+      lutMC->currCnt++;
+    }
+  }
+#else
   int currCnt = lutMC->currCnt ;
 
   bool pruned = false;
@@ -1681,30 +1776,46 @@ void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi)
   {
     memcpy(&lutMC->motionCand[lutMC->currCnt++], &newMi, sizeof(MotionInfo));
   }
+#endif
 }
 
 void Slice::updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu)
 {
   PredictionUnit *selectedPU = cu.firstPU;
   if (cu.affine) { return; }
-#if JVET_L0124_L0208_TRIANGLE
   if (cu.triangle) { return; }
-#endif
 
-  MotionInfo newMi = selectedPU->getMotionInfo(); 
+  MotionInfo newMi = selectedPU->getMotionInfo();
+#if JVET_M0264_HMVP_WITH_GBIIDX
+  newMi.GBiIdx = (newMi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
+#endif
+#if JVET_M0483_IBC
+  addMotionInfoToLUTs(lutMC, newMi, CU::isIBC(cu));
+#else
   addMotionInfoToLUTs(lutMC, newMi);
+#endif
 }
 
 void Slice::copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst)
 {
    memcpy(Dst->motionCand, Src->motionCand, sizeof(MotionInfo)*(std::min(Src->currCnt, MAX_NUM_HMVP_CANDS)));
    Dst->currCnt = Src->currCnt;
-}
+#if JVET_M0483_IBC
+   memcpy(Dst->motionCand + MAX_NUM_HMVP_CANDS, Src->motionCand + MAX_NUM_HMVP_CANDS, sizeof(MotionInfo)*(std::min(Src->currCntIBC, MAX_NUM_HMVP_CANDS)));
+   Dst->currCntIBC = Src->currCntIBC;
 #endif
+}
 
 unsigned Slice::getMinPictureDistance() const
 {
   int minPicDist = MAX_INT;
+#if JVET_M0483_IBC
+  if (getSPS()->getIBCFlag())
+  {
+    minPicDist = 0;
+  }
+  else
+#endif
   if( ! isIntra() )
   {
     const int currPOC  = getPOC();
@@ -1776,29 +1887,28 @@ SPSNext::SPSNext( SPS& sps )
   : m_SPS                       ( sps )
   , m_NextEnabled               ( false )
   // disable all tool enabling flags by default
-  , m_QTBT                      ( false )
   , m_LargeCTU                  ( false )
-  , m_SubPuMvp                  ( false )
   , m_IMV                       ( false )
-#if !REMOVE_MV_ADAPT_PREC
-  , m_highPrecMv                ( false )
-#endif
-#if JVET_L0256_BIO
-  , m_BIO                       ( false )
-#endif
   , m_DisableMotionCompression  ( false )
   , m_LMChroma                  ( false )
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  , m_cclmCollocatedChromaFlag  ( false )
+#endif
+#if JVET_M0464_UNI_MTS
+  , m_IntraMTS                  ( false )
+  , m_InterMTS                  ( false )
+#else
   , m_IntraEMT                  ( false )
   , m_InterEMT                  ( false )
+#endif
+#if JVET_M0140_SBT
+  , m_SBT                       ( false )
+#endif
   , m_Affine                    ( false )
   , m_AffineType                ( false )
   , m_MTTEnabled                ( false )
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   , m_MHIntra                   ( false )
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   , m_Triangle                  ( false )
-#endif
 #if ENABLE_WPP_PARALLELISM
   , m_NextDQP                   ( false )
 #endif
@@ -1810,27 +1920,10 @@ SPSNext::SPSNext( SPS& sps )
 #endif
 
   // default values for additional parameters
-  , m_CTUSize                   ( 0 )
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-  , m_minQT                     { 0, 0, 0 }
-#else
-  , m_minQT                     { 0, 0 }
-#endif
-  , m_maxBTDepth                { MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
-  , m_maxBTSize                 { MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-  , m_maxTTSize                 { MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
-#endif
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  , m_subPuLog2Size             ( 0 )
-#endif
-  , m_subPuMrgMode              ( 0 )
   , m_ImvMode                   ( IMV_OFF )
   , m_MTTMode                   ( 0 )
     , m_compositeRefEnabled     ( false )
-#if JVET_L0293_CPR
-  , m_CPRMode                   ( 0 )
-#endif
+  , m_IBCMode                   ( 0 )
   // ADD_NEW_TOOL : (sps extension) add tool enabling flags here (with "false" as default values)
 {
 }
@@ -1838,6 +1931,29 @@ SPSNext::SPSNext( SPS& sps )
 
 SPS::SPS()
 : m_SPSId                     (  0)
+, m_bIntraOnlyConstraintFlag  (false)
+, m_maxBitDepthConstraintIdc  (  0)
+, m_maxChromaFormatConstraintIdc(CHROMA_420)
+, m_bFrameConstraintFlag  (false)
+, m_bNoQtbttDualTreeIntraConstraintFlag(false)
+, m_bNoCclmConstraintFlag     (false)
+, m_bNoSaoConstraintFlag      (false)
+, m_bNoAlfConstraintFlag      (false)
+, m_bNoPcmConstraintFlag      (false)
+, m_bNoTemporalMvpConstraintFlag(false)
+, m_bNoSbtmvpConstraintFlag   (false)
+, m_bNoAmvrConstraintFlag     (false)
+, m_bNoAffineMotionConstraintFlag(false)
+, m_bNoMtsConstraintFlag      (false)
+, m_bNoLadfConstraintFlag     (false)
+, m_bNoDepQuantConstraintFlag (false)
+, m_bNoSignDataHidingConstraintFlag(false)
+#if JVET_M0246_AFFINE_AMVR
+, m_affineAmvrEnabledFlag     ( false )
+#endif
+#if JVET_M0147_DMVR
+, m_DMVR                      ( false )
+#endif
 #if HEVC_VPS
 , m_VPSId                     (  0)
 #endif
@@ -1848,6 +1964,11 @@ SPS::SPS()
 , m_picHeightInLumaSamples    (288)
 , m_log2MinCodingBlockSize    (  0)
 , m_log2DiffMaxMinCodingBlockSize(0)
+, m_CTUSize(0)
+, m_minQT{ 0, 0, 0 }
+, m_maxBTDepth{ MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
+, m_maxBTSize{ MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
+, m_maxTTSize{ MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
 , m_uiMaxCUWidth              ( 32)
 , m_uiMaxCUHeight             ( 32)
 , m_uiMaxCodingDepth          (  3)
@@ -1857,14 +1978,19 @@ SPS::SPS()
 , m_uiQuadtreeTUMaxDepthInter (  0)
 , m_uiQuadtreeTUMaxDepthIntra (  0)
 // Tool list
-, m_usePCM                    (false)
+, m_pcmEnabledFlag            (false)
 , m_pcmLog2MaxSize            (  5)
 , m_uiPCMLog2MinSize          (  7)
 , m_bPCMFilterDisableFlag     (false)
+, m_sbtmvpEnabledFlag         (false)
+, m_bdofEnabledFlag           (false)
+#if JVET_M0255_FRACMMVD_SWITCH
+, m_disFracMmvdEnabledFlag    ( false )
+#endif
 , m_uiBitsForPOC              (  8)
 , m_numLongTermRefPicSPS      (  0)
 , m_uiMaxTrSize               ( 32)
-, m_bUseSAO                   (false)
+, m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
 #if HEVC_USE_SCALING_LISTS
 , m_scalingListEnabledFlag    (false)
@@ -1875,6 +2001,14 @@ SPS::SPS()
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_spsNextExtension          (*this)
+, m_wrapAroundEnabledFlag     (false)
+, m_wrapAroundOffset          (  0)
+#if JVET_M0483_IBC
+, m_IBCFlag                   (  0)
+#endif
+#if JVET_M0427_INLOOP_RESHAPER
+, m_lumaReshapeEnable         (false)
+#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
@@ -2622,11 +2756,9 @@ uint32_t PreCalcValues::getValIdx( const Slice &slice, const ChannelType chType 
 
 uint32_t PreCalcValues::getMaxBtDepth( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   if ( slice.getSplitConsOverrideFlag() )
     return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMaxBTDepth() : slice.getMaxBTDepthIChroma();
   else
-#endif
   return maxBtDepth[getValIdx( slice, chType )];
 }
 
@@ -2637,14 +2769,10 @@ uint32_t PreCalcValues::getMinBtSize( const Slice &slice, const ChannelType chTy
 
 uint32_t PreCalcValues::getMaxBtSize( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   if (slice.getSplitConsOverrideFlag())
     return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMaxBTSize() : slice.getMaxBTSizeIChroma();
   else
     return maxBtSize[getValIdx(slice, chType)];
-#else
-  return ( !slice.isIRAP() || isLuma( chType ) || ISingleTree ) ? slice.getMaxBTSize() : MAX_BT_SIZE_C;
-#endif
 }
 
 uint32_t PreCalcValues::getMinTtSize( const Slice &slice, const ChannelType chType ) const
@@ -2654,20 +2782,16 @@ uint32_t PreCalcValues::getMinTtSize( const Slice &slice, const ChannelType chTy
 
 uint32_t PreCalcValues::getMaxTtSize( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   if ( slice.getSplitConsOverrideFlag() )
     return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMaxTTSize() : slice.getMaxTTSizeIChroma();
   else
-#endif
   return maxTtSize[getValIdx( slice, chType )];
 }
 uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   if ( slice.getSplitConsOverrideFlag() )
     return (!slice.isIRAP() || isLuma(chType) || ISingleTree) ? slice.getMinQTSize() : slice.getMinQTSizeIChroma();
   else
-#endif
   return minQtSize[getValIdx( slice, chType )];
 }
 

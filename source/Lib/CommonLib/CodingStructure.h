@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -53,20 +53,21 @@ enum PictureType
 {
   PIC_RECONSTRUCTION = 0,
   PIC_ORIGINAL,
+#if JVET_M0427_INLOOP_RESHAPER
+  PIC_TRUE_ORIGINAL,
+#endif
   PIC_PREDICTION,
   PIC_RESIDUAL,
   PIC_ORG_RESI,
   NUM_PIC_TYPES
 };
-#if JVET_L0293_CPR
-enum CprLumaCoverage
+enum IbcLumaCoverage
 {
-  CPR_LUMA_COVERAGE_FULL = 0,
-  CPR_LUMA_COVERAGE_PARTIAL,
-  CPR_LUMA_COVERAGE_NONE,
-  NUM_CPR_LUMA_COVERAGE,
+  IBC_LUMA_COVERAGE_FULL = 0,
+  IBC_LUMA_COVERAGE_PARTIAL,
+  IBC_LUMA_COVERAGE_NONE,
+  NUM_IBC_LUMA_COVERAGE,
 };
-#endif
 extern XUCache g_globalUnitCache;
 
 // ---------------------------------------------------------------------------
@@ -81,18 +82,22 @@ public:
 
   Picture         *picture;
   CodingStructure *parent;
-
+#if JVET_M0246_AFFINE_AMVR
+  CodingStructure *bestCS;
+#endif
   Slice           *slice;
 
   UnitScale        unitScale[MAX_NUM_COMPONENT];
-#if JVET_L0293_CPR
   ChannelType chType;
-#endif
 
   int         baseQP;
   int         prevQP[MAX_NUM_CHANNEL_TYPE];
   int         currQP[MAX_NUM_CHANNEL_TYPE];
   int         chromaQpAdj;
+#if JVET_M0170_MRG_SHARELIST
+  Position    sharedBndPos;
+  Size        sharedBndSize;
+#endif
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;
@@ -124,11 +129,19 @@ public:
 
   const CodingUnit     *getCU(const Position &pos, const ChannelType _chType) const;
   const PredictionUnit *getPU(const Position &pos, const ChannelType _chType) const;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  const TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1) const;
+#else
   const TransformUnit  *getTU(const Position &pos, const ChannelType _chType) const;
+#endif
 
   CodingUnit     *getCU(const Position &pos, const ChannelType _chType);
   PredictionUnit *getPU(const Position &pos, const ChannelType _chType);
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1);
+#else
   TransformUnit  *getTU(const Position &pos, const ChannelType _chType);
+#endif
 
   const CodingUnit     *getCU(const ChannelType &_chType) const { return getCU(area.blocks[_chType].pos(), _chType); }
   const PredictionUnit *getPU(const ChannelType &_chType) const { return getPU(area.blocks[_chType].pos(), _chType); }
@@ -158,9 +171,7 @@ public:
   cCUTraverser    traverseCUs(const UnitArea& _unit, const ChannelType _chType) const;
   cPUTraverser    traversePUs(const UnitArea& _unit, const ChannelType _chType) const;
   cTUTraverser    traverseTUs(const UnitArea& _unit, const ChannelType _chType) const;
-#if JVET_L0293_CPR
-  CprLumaCoverage getCprLumaCoverage(const CompArea& chromaArea) const;
-#endif
+  IbcLumaCoverage getIbcLumaCoverage(const CompArea& chromaArea) const;
   // ---------------------------------------------------------------------------
   // encoding search utilities
   // ---------------------------------------------------------------------------
@@ -168,11 +179,14 @@ public:
   static_vector<double, NUM_ENC_FEATURES> features;
 
   double      cost;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  double      lumaCost;
+#endif
   uint64_t      fracBits;
   Distortion  dist;
   Distortion  interHad;
 
-  void initStructData  (const int &QP = -1, const bool &_isLosses = false, const bool &skipMotBuf = false);
+  void initStructData  (const int &QP = MAX_INT, const bool &_isLosses = false, const bool &skipMotBuf = false);
   void initSubStructure(      CodingStructure& cs, const ChannelType chType, const UnitArea &subArea, const bool &isTuEnc);
 
   void copyStructure   (const CodingStructure& cs, const ChannelType chType, const bool copyTUs = false, const bool copyRecoBuffer = false);

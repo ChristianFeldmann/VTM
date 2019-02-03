@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -76,7 +76,11 @@ private:
   void    xDestroyScalingList            ();
   void    xSetErrScaleCoeff              ( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp, const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths );
 #else
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+  double  xGetErrScaleCoeff              ( const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth);
+#else
   double  xGetErrScaleCoeff              ( SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth);
+#endif
 #endif
 
   // RDOQ functions
@@ -91,11 +95,9 @@ private:
                               const BinFracBits& fracBitsPar,
                               const BinFracBits& fracBitsGt1,
                               const BinFracBits& fracBitsGt2,
-#if JVET_L0274
                               const int          remGt2Bins,
                               const int          remRegBins,
                               unsigned           goRiceZero,
-#endif
                               uint16_t             ui16AbsGoRice,
                               int                iQBits,
                               double             errorScale,
@@ -106,11 +108,9 @@ private:
                               const BinFracBits& fracBitsPar,
                               const BinFracBits& fracBitsGt1,
                               const BinFracBits& fracBitsGt2,
-#if JVET_L0274
                               const int          remGt2Bins,
                               const int          remRegBins,
                               unsigned           goRiceZero,
-#endif
                               const uint16_t       ui16AbsGoRice,
                               const bool         useLimitedPrefixLength,
                               const int          maxLog2TrDynamicRange  ) const;

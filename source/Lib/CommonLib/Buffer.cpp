@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -62,7 +62,6 @@ void addAvgCore( const T* src1, int src1Stride, const T* src2, int src2Stride, T
 #undef ADD_AVG_CORE_INC
 }
 
-#if JVET_L0256_BIO
 void addBIOAvgCore(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
 {
   int b = 0;
@@ -92,18 +91,30 @@ void addBIOAvgCore(const Pel* src0, int src0Stride, const Pel* src1, int src1Str
   }
 }
 
+#if JVET_M0063_BDOF_FIX
+void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth)
+#else
 void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY)
+#endif
 {
   Pel* srcTmp = pSrc + srcStride + 1;
   Pel* gradXTmp = gradX + gradStride + 1;
   Pel* gradYTmp = gradY + gradStride + 1;
+#if JVET_M0063_BDOF_FIX
+  int  shift1 = std::max<int>(2, (IF_INTERNAL_PREC - bitDepth));
+#endif
 
   for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
   {
     for (int x = 0; x < (width - 2 * BIO_EXTEND_SIZE); x++)
     {
+#if JVET_M0063_BDOF_FIX
+      gradYTmp[x] = (srcTmp[x + srcStride] - srcTmp[x - srcStride]) >> shift1;
+      gradXTmp[x] = (srcTmp[x + 1] - srcTmp[x - 1]) >> shift1;
+#else
       gradYTmp[x] = (srcTmp[x + srcStride] - srcTmp[x - srcStride]) >> 4;
       gradXTmp[x] = (srcTmp[x + 1] - srcTmp[x - 1]) >> 4;
+#endif
     }
     gradXTmp += gradStride;
     gradYTmp += gradStride;
@@ -131,15 +142,29 @@ void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStr
   ::memcpy(gradYTmp + (height - 2 * BIO_EXTEND_SIZE)*gradStride, gradYTmp + (height - 2 * BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
 }
 
+#if JVET_M0063_BDOF_FIX
+void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
+#else
 void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG)
+#endif
 {
+#if JVET_M0063_BDOF_FIX
+  int shift4 = std::min<int>(8, (bitDepth - 4));
+  int shift5 = std::min<int>(5, (bitDepth - 7));
+#endif
   for (int y = 0; y < heightG; y++)
   {
     for (int x = 0; x < widthG; x++)
     {
+#if JVET_M0063_BDOF_FIX
+      int temp = (srcY0Temp[x] >> shift4) - (srcY1Temp[x] >> shift4);
+      int tempX = (gradX0[x] + gradX1[x]) >> shift5;
+      int tempY = (gradY0[x] + gradY1[x]) >> shift5;
+#else
       int temp = (srcY0Temp[x] >> 6) - (srcY1Temp[x] >> 6);
       int tempX = (gradX0[x] + gradX1[x]) >> 3;
       int tempY = (gradY0[x] + gradY1[x]) >> 3;
+#endif
       dotProductTemp1[x] = tempX * tempX;
       dotProductTemp2[x] = tempX * tempY;
       dotProductTemp3[x] = -tempX * temp;
@@ -192,9 +217,8 @@ void calcBlkGradientCore(int sx, int sy, int     *arraysGx2, int     *arraysGxGy
     GydI += width;
   }
 }
-#endif
 
-#if ENABLE_SIMD_OPT_GBI && JVET_L0646_GBI
+#if ENABLE_SIMD_OPT_GBI
 void removeWeightHighFreq(int16_t* dst, int dstStride, const int16_t* src, int srcStride, int width, int height, int shift, int gbiWeight)
 {
   int normalizer = ((1 << 16) + (gbiWeight > 0 ? (gbiWeight >> 1) : -(gbiWeight >> 1))) / gbiWeight;
@@ -270,13 +294,15 @@ PelBufferOps::PelBufferOps()
   linTf4 = linTfCore<Pel>;
   linTf8 = linTfCore<Pel>;
 
-#if JVET_L0256_BIO
   addBIOAvg4      = addBIOAvgCore;
   bioGradFilter   = gradFilterCore;
   calcBIOPar      = calcBIOParCore;
   calcBlkGradient = calcBlkGradientCore;
-#endif
 
+#if JVET_M0147_DMVR
+  copyBuffer = copyBufferCore;
+  padding = paddingCore;
+#endif
 #if ENABLE_SIMD_OPT_GBI
   removeWeightHighFreq8 = removeWeightHighFreq;
   removeWeightHighFreq4 = removeWeightHighFreq;
@@ -291,7 +317,42 @@ PelBufferOps g_pelBufOP = PelBufferOps();
 #endif
 #endif
 
-#if JVET_L0646_GBI
+#if JVET_M0147_DMVR
+void copyBufferCore(Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height)
+{
+  int numBytes = width * sizeof(Pel);
+  for (int i = 0; i < height; i++)
+  {
+    memcpy(dst + i * dstStride, src + i * srcStride, numBytes);
+  }
+}
+
+void paddingCore(Pel *ptr, int stride, int width, int height, int padSize)
+{
+  /*left and right padding*/
+  Pel *ptrTemp1 = ptr;
+  Pel *ptrTemp2 = ptr + (width - 1);
+  int offset = 0;
+  for (int i = 0; i < height; i++)
+  {
+    offset = stride * i;
+    for (int j = 1; j <= padSize; j++)
+    {
+      *(ptrTemp1 - j + offset) = *(ptrTemp1 + offset);
+      *(ptrTemp2 + j + offset) = *(ptrTemp2 + offset);
+    }
+  }
+  /*Top and Bottom padding*/
+  int numBytes = (width + padSize + padSize) * sizeof(Pel);
+  ptrTemp1 = (ptr - padSize);
+  ptrTemp2 = (ptr + (stride * (height - 1)) - padSize);
+  for (int i = 1; i <= padSize; i++)
+  {
+    memcpy(ptrTemp1 - (i * stride), (ptrTemp1), numBytes);
+    memcpy(ptrTemp2 + (i * stride), (ptrTemp2), numBytes);
+  }
+}
+#endif
 template<>
 void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng, const int8_t gbiIdx)
 {
@@ -321,6 +382,105 @@ void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBu
 #undef ADD_AVG_OP
 #undef ADD_AVG_INC
 }
+
+#if JVET_M0427_INLOOP_RESHAPER
+template<>
+void AreaBuf<Pel>::rspSignal(std::vector<Pel>& pLUT)
+{
+  Pel* dst = buf;
+  Pel* src = buf;
+#if !JVET_M0102_INTRA_SUBPARTITIONS
+  if (width == 1)
+  {
+    THROW("Blocks of width = 1 not supported");
+  }  
+  else
+  {
+#endif
+    for (unsigned y = 0; y < height; y++)
+    {
+      for (unsigned x = 0; x < width; x++)
+      {
+        dst[x] = pLUT[src[x]];
+      }
+      dst += stride;
+      src += stride;
+    }
+#if !JVET_M0102_INTRA_SUBPARTITIONS
+  }
+#endif
+}
+
+template<>
+void AreaBuf<Pel>::scaleSignal(const int scale, const bool dir, const ClpRng& clpRng)
+{
+  Pel* dst = buf;
+  Pel* src = buf;
+  int sign, absval;
+  int maxAbsclipBD = (1<<clpRng.bd) - 1;
+
+  if (dir) // forward
+  {
+    if (width == 1)
+    {
+      THROW("Blocks of width = 1 not supported");
+    }
+    else
+    {
+      for (unsigned y = 0; y < height; y++)
+      {
+        for (unsigned x = 0; x < width; x++)
+        {
+          sign = src[x] >= 0 ? 1 : -1;
+          absval = sign * src[x];
+          dst[x] = (Pel)Clip3(-maxAbsclipBD, maxAbsclipBD, sign * (((absval << CSCALE_FP_PREC) + (scale >> 1)) / scale));
+        }
+        dst += stride;
+        src += stride;
+      }
+    }
+  }
+  else // inverse
+  {
+    for (unsigned y = 0; y < height; y++)
+    {
+      for (unsigned x = 0; x < width; x++)
+      {
+        sign = src[x] >= 0 ? 1 : -1;
+        absval = sign * src[x];
+        dst[x] = sign * ((absval * scale + (1 << (CSCALE_FP_PREC - 1))) >> CSCALE_FP_PREC);
+      }
+      dst += stride;
+      src += stride;
+    }
+  }
+}
+
+template<>
+Pel AreaBuf <Pel> ::computeAvg() const
+{
+  const Pel* src = buf;
+#if !JVET_M0102_INTRA_SUBPARTITIONS
+  if (width == 1)
+  {
+    THROW("Blocks of width = 1 not supported");
+  }
+  else
+  {
+#endif
+    int32_t acc = 0;
+#define AVG_INC   \
+    src +=       stride; 
+#define AVG_OP(ADDR) acc += src[ADDR]
+    SIZE_AWARE_PER_EL_OP(AVG_OP, AVG_INC);
+#undef AVG_INC
+#undef AVG_OP
+    return Pel((acc + (area() >> 1)) / area());
+#if !JVET_M0102_INTRA_SUBPARTITIONS
+  }
+#endif
+}
+
 #endif
 
 template<>

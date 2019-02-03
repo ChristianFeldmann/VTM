@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -189,6 +189,16 @@ bool UnitArea::contains( const UnitArea& other, const ChannelType chType ) const
   return any && ret;
 }
 
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+void UnitArea::resizeTo( const UnitArea& unitArea )
+{
+  for( uint32_t i = 0; i < blocks.size(); i++ )
+  {
+    blocks[i].resizeTo( unitArea.blocks[i] );
+  }
+}
+#endif
+
 void UnitArea::repositionTo(const UnitArea& unitArea)
 {
   for(uint32_t i = 0; i < blocks.size(); i++)
@@ -246,39 +256,48 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
 {
   slice             = other.slice;
   predMode          = other.predMode;
-  partSize          = other.partSize;
   qtDepth           = other.qtDepth;
   depth             = other.depth;
   btDepth           = other.btDepth;
   mtDepth           = other.mtDepth;
   splitSeries       = other.splitSeries;
   skip              = other.skip;
-#if JVET_L0054_MMVD
   mmvdSkip = other.mmvdSkip;
-#endif
   affine            = other.affine;
   affineType        = other.affineType;
-#if JVET_L0124_L0208_TRIANGLE
   triangle          = other.triangle;
-#endif
   transQuantBypass  = other.transQuantBypass;
   ipcm              = other.ipcm;
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
+#if JVET_M0140_SBT
+  sbtInfo           = other.sbtInfo;
+#endif
+#if !JVET_M0464_UNI_MTS
   emtFlag           = other.emtFlag;
+#endif
 #if HEVC_TILES_WPP
   tileIdx           = other.tileIdx;
 #endif
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
-#if JVET_L0646_GBI
   GBiIdx            = other.GBiIdx;
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
+
+#if JVET_M0170_MRG_SHARELIST
+  shareParentPos    = other.shareParentPos;
+  shareParentSize   = other.shareParentSize;
 #endif
-#if JVET_L0293_CPR
-  cpr               = other.cpr;
+#if JVET_M0483_IBC==0
+  ibc               = other.ibc;
+#endif
+#if JVET_M0444_SMVD
+  smvdMode        = other.smvdMode;
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  ispMode           = other.ispMode;
 #endif
   return *this;
 }
@@ -286,42 +305,115 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
 void CodingUnit::initData()
 {
   predMode          = NUMBER_OF_PREDICTION_MODES;
-  partSize          = NUMBER_OF_PART_SIZES;
   qtDepth           = 0;
   depth             = 0;
   btDepth           = 0;
   mtDepth           = 0;
   splitSeries       = 0;
   skip              = false;
-#if JVET_L0054_MMVD
   mmvdSkip = false;
-#endif
   affine            = false;
   affineType        = 0;
-#if JVET_L0124_L0208_TRIANGLE
   triangle          = false;
-#endif
   transQuantBypass  = false;
   ipcm              = false;
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
+#if JVET_M0140_SBT
+  sbtInfo           = 0;
+#endif
+#if !JVET_M0464_UNI_MTS
   emtFlag           = 0;
+#endif
 #if HEVC_TILES_WPP
   tileIdx           = 0;
 #endif
   imv               = 0;
   imvNumCand        = 0;
-#if JVET_L0646_GBI
   GBiIdx            = GBI_DEFAULT;
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
+#if JVET_M0170_MRG_SHARELIST
+  shareParentPos = Position(-1, -1);
+  shareParentSize.width = -1;
+  shareParentSize.height = -1;
 #endif
-#if JVET_L0293_CPR
-  cpr               = false;
+#if JVET_M0483_IBC==0
+  ibc               = false;
+#endif
+#if JVET_M0444_SMVD
+  smvdMode        = 0;
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  ispMode           = 0;
 #endif
 }
 
+#if JVET_M0140_SBT
+const uint8_t CodingUnit::checkAllowedSbt() const
+{
+  if( !slice->getSPS()->getSpsNext().getUseSBT() )
+  {
+    return 0;
+  }
+
+  //check on prediction mode
+  if( predMode == MODE_INTRA ) //intra
+  {
+    return 0;
+  }
+  if( firstPU->mhIntraFlag )
+  {
+    return 0;
+  }
+
+  uint8_t sbtAllowed = 0;
+  int cuWidth  = lwidth();
+  int cuHeight = lheight();
+  bool allow_type[NUMBER_SBT_IDX];
+  memset( allow_type, false, NUMBER_SBT_IDX * sizeof( bool ) );
+
+  //parameter
+  int maxSbtCUSize = cs->sps->getSpsNext().getMaxSbtSize();
+  int minSbtCUSize = 1 << ( MIN_CU_LOG2 + 1 );
+
+  //check on size
+  if( cuWidth > maxSbtCUSize || cuHeight > maxSbtCUSize )
+  {
+    return 0;
+  }
+
+  allow_type[SBT_VER_HALF] = cuWidth  >= minSbtCUSize;
+  allow_type[SBT_HOR_HALF] = cuHeight >= minSbtCUSize;
+  allow_type[SBT_VER_QUAD] = cuWidth  >= ( minSbtCUSize << 1 );
+  allow_type[SBT_HOR_QUAD] = cuHeight >= ( minSbtCUSize << 1 );
+
+  for( int i = 0; i < NUMBER_SBT_IDX; i++ )
+  {
+    sbtAllowed += (uint8_t)allow_type[i] << i;
+  }
+
+  return sbtAllowed;
+}
+
+uint8_t CodingUnit::getSbtTuSplit() const
+{
+  uint8_t sbtTuSplitType = 0;
+
+  switch( getSbtIdx() )
+  {
+  case SBT_VER_HALF: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_VER_HALF_POS0_SPLIT; break;
+  case SBT_HOR_HALF: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_HOR_HALF_POS0_SPLIT; break;
+  case SBT_VER_QUAD: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_VER_QUAD_POS0_SPLIT; break;
+  case SBT_HOR_QUAD: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_HOR_QUAD_POS0_SPLIT; break;
+  default: assert( 0 );  break;
+  }
+
+  assert( sbtTuSplitType <= SBT_HOR_QUAD_POS1_SPLIT && sbtTuSplitType >= SBT_VER_HALF_POS0_SPLIT );
+  return sbtTuSplitType;
+}
+#endif
 
 // ---------------------------------------------------------------------------
 // prediction unit method definitions
@@ -335,22 +427,28 @@ void PredictionUnit::initData()
   // intra data - need this default initialization for PCM
   intraDir[0] = DC_IDX;
   intraDir[1] = PLANAR_IDX;
-#if JVET_L0283_MULTI_REF_LINE
   multiRefIdx = 0;
-#endif
 
   // inter data
   mergeFlag   = false;
   mergeIdx    = MAX_UCHAR;
-#if JVET_L0054_MMVD
+#if JVET_M0883_TRIANGLE_SIGNALING
+  triangleSplitDir  = MAX_UCHAR;
+  triangleMergeIdx0 = MAX_UCHAR;
+  triangleMergeIdx1 = MAX_UCHAR;
+#endif
   mmvdMergeFlag = false;
   mmvdMergeIdx = MAX_UINT;
-#endif
   interDir    = MAX_UCHAR;
   mergeType   = MRG_TYPE_DEFAULT_N;
-#if JVET_L0293_CPR
   bv.setZero();
   bvd.setZero();
+#if JVET_M0147_DMVR
+  mvRefine = false;
+  for (uint32_t i = 0; i < MAX_NUM_SUBCU_DMVR; i++)
+  {
+    mvdL0SubPu[i].setZero();
+  }
 #endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
@@ -363,15 +461,19 @@ void PredictionUnit::initData()
     {
       mvdAffi[i][j].setZero();
     }
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
     for ( uint32_t j = 0; j < 3; j++ )
     {
       mvAffi[i][j].setZero();
     }
-#endif
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   mhIntraFlag = false;
+#if JVET_M0170_MRG_SHARELIST
+  shareParentPos = Position(-1, -1);
+  shareParentSize.width = -1;
+  shareParentSize.height = -1;
+#endif
+#if JVET_M0823_MMVD_ENCOPT
+  mmvdEncOptMode = 0;
 #endif
 }
 
@@ -381,9 +483,7 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
   {
     intraDir[i] = predData.intraDir[i];
   }
-#if JVET_L0283_MULTI_REF_LINE
   multiRefIdx = predData.multiRefIdx;
-#endif
 
   return *this;
 }
@@ -392,15 +492,23 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
 {
   mergeFlag   = predData.mergeFlag;
   mergeIdx    = predData.mergeIdx;
-#if JVET_L0054_MMVD
+#if JVET_M0883_TRIANGLE_SIGNALING
+  triangleSplitDir  = predData.triangleSplitDir  ;
+  triangleMergeIdx0 = predData.triangleMergeIdx0 ;
+  triangleMergeIdx1 = predData.triangleMergeIdx1 ;
+#endif
   mmvdMergeFlag = predData.mmvdMergeFlag;
   mmvdMergeIdx = predData.mmvdMergeIdx;
-#endif
   interDir    = predData.interDir;
   mergeType   = predData.mergeType;
-#if JVET_L0293_CPR
   bv          = predData.bv;
   bvd         = predData.bvd;
+#if JVET_M0147_DMVR
+  mvRefine = predData.mvRefine;
+  for (uint32_t i = 0; i < MAX_NUM_SUBCU_DMVR; i++)
+  {
+    mvdL0SubPu[i] = predData.mvdL0SubPu[i];
+  }
 #endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
@@ -413,17 +521,16 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
     {
       mvdAffi[i][j] = predData.mvdAffi[i][j];
     }
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
     for ( uint32_t j = 0; j < 3; j++ )
     {
       mvAffi[i][j] = predData.mvAffi[i][j];
     }
-#endif
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   mhIntraFlag = predData.mhIntraFlag;
+#if JVET_M0170_MRG_SHARELIST
+  shareParentPos = predData.shareParentPos;
+  shareParentSize = predData.shareParentSize;
 #endif
-
   return *this;
 }
 
@@ -433,21 +540,27 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   {
     intraDir[ i ] = other.intraDir[ i ];
   }
-#if JVET_L0283_MULTI_REF_LINE
   multiRefIdx = other.multiRefIdx;
-#endif
 
   mergeFlag   = other.mergeFlag;
   mergeIdx    = other.mergeIdx;
-#if JVET_L0054_MMVD
+#if JVET_M0883_TRIANGLE_SIGNALING
+  triangleSplitDir  = other.triangleSplitDir  ;
+  triangleMergeIdx0 = other.triangleMergeIdx0 ;
+  triangleMergeIdx1 = other.triangleMergeIdx1 ;
+#endif
   mmvdMergeFlag = other.mmvdMergeFlag;
   mmvdMergeIdx = other.mmvdMergeIdx;
-#endif
   interDir    = other.interDir;
   mergeType   = other.mergeType;
-#if JVET_L0293_CPR
   bv          = other.bv;
   bvd         = other.bvd;
+#if JVET_M0147_DMVR
+  mvRefine = other.mvRefine;
+  for (uint32_t i = 0; i < MAX_NUM_SUBCU_DMVR; i++)
+  {
+    mvdL0SubPu[i] = other.mvdL0SubPu[i];
+  }
 #endif
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
@@ -460,17 +573,16 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
     {
       mvdAffi[i][j] = other.mvdAffi[i][j];
     }
-#if JVET_L0694_AFFINE_LINEBUFFER_CLEANUP
     for ( uint32_t j = 0; j < 3; j++ )
     {
       mvAffi[i][j] = other.mvAffi[i][j];
     }
-#endif
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   mhIntraFlag = other.mhIntraFlag;
+#if JVET_M0170_MRG_SHARELIST
+  shareParentPos = other.shareParentPos;
+  shareParentSize = other.shareParentSize;
 #endif
-
   return *this;
 }
 
@@ -541,12 +653,23 @@ void TransformUnit::initData()
   {
     cbf[i]           = 0;
     rdpcm[i]         = NUMBER_OF_RDPCM_MODES;
+#if !JVET_M0464_UNI_MTS
     transformSkip[i] = false;
+#endif
     compAlpha[i]     = 0;
   }
   depth              = 0;
+#if JVET_M0464_UNI_MTS
+  mtsIdx             = 0;
+#else
   emtIdx             = 0;
-
+#endif
+#if JVET_M0140_SBT
+  noResidual         = false;
+#endif
+#if JVET_M0427_INLOOP_RESHAPER
+  m_chromaResScaleInv = 0;
+#endif
 }
 
 void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf)
@@ -576,11 +699,20 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
 
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
+#if !JVET_M0464_UNI_MTS
     transformSkip[i] = other.transformSkip[i];
+#endif
     compAlpha[i]     = other.compAlpha[i];
   }
   depth              = other.depth;
+#if JVET_M0464_UNI_MTS
+  mtsIdx             = other.mtsIdx;
+#else
   emtIdx             = other.emtIdx;
+#endif
+#if JVET_M0140_SBT
+  noResidual         = other.noResidual;
+#endif
   return *this;
 }
 
@@ -597,15 +729,23 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 
   cbf[i]           = other.cbf[i];
   rdpcm[i]         = other.rdpcm[i];
+#if !JVET_M0464_UNI_MTS
   transformSkip[i] = other.transformSkip[i];
+#endif
   compAlpha[i]     = other.compAlpha[i];
 
   depth            = other.depth;
-
+#if JVET_M0464_UNI_MTS
+  mtsIdx           = isLuma( i ) ? other.mtsIdx : mtsIdx;
+#else
   if( isLuma( i ) )
   {
     emtIdx         = other.emtIdx;
   }
+#endif
+#if JVET_M0140_SBT
+  noResidual       = other.noResidual;
+#endif
 }
 
        CoeffBuf TransformUnit::getCoeffs(const ComponentID id)       { return  CoeffBuf(m_coeffs[id], blocks[id]); }
@@ -613,3 +753,22 @@ const CCoeffBuf TransformUnit::getCoeffs(const ComponentID id) const { return CC
 
        PelBuf   TransformUnit::getPcmbuf(const ComponentID id)       { return  PelBuf  (m_pcmbuf[id], blocks[id]); }
 const CPelBuf   TransformUnit::getPcmbuf(const ComponentID id) const { return CPelBuf  (m_pcmbuf[id], blocks[id]); }
+
+#if JVET_M0140_SBT
+void TransformUnit::checkTuNoResidual( unsigned idx )
+{
+  if( CU::getSbtIdx( cu->sbtInfo ) == SBT_OFF_DCT )
+  {
+    return;
+  }
+
+  if( ( CU::getSbtPos( cu->sbtInfo ) == SBT_POS0 && idx == 1 ) || ( CU::getSbtPos( cu->sbtInfo ) == SBT_POS1 && idx == 0 ) )
+  {
+    noResidual = true;
+  }
+}
+#endif
+#if JVET_M0427_INLOOP_RESHAPER
+int          TransformUnit::getChromaAdj()                     const { return m_chromaResScaleInv; }
+void         TransformUnit::setChromaAdj(int i)                      { m_chromaResScaleInv = i;    }
+#endif

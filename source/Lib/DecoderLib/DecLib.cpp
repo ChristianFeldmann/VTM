@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -168,18 +168,12 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
                 pcEncPic->cs->slice = pcEncPic->slices.back();
 
-                if ( pic->cs->sps->getUseSAO() )
+                if ( pic->cs->sps->getSAOEnabledFlag() )
                 {
                   pcEncPic->copySAO( *pic, 0 );
                 }
 
-                pcDecLib->executeLoopFilters();
-                if ( pic->cs->sps->getUseSAO() )
-                {
-                  pcEncPic->copySAO( *pic, 1 );
-                }
-
-                if( pic->cs->sps->getUseALF() )
+                if( pic->cs->sps->getALFEnabledFlag() )
                 {
                   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
                   {
@@ -190,6 +184,12 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   {
                     pcEncPic->slices[i]->getAlfSliceParam() = pic->slices[i]->getAlfSliceParam();
                   }
+                }
+
+                pcDecLib->executeLoopFilters();
+                if ( pic->cs->sps->getSAOEnabledFlag() )
+                {
+                  pcEncPic->copySAO( *pic, 1 );
                 }
 
                 pcEncPic->cs->copyStructure( *pic->cs, CH_L, true, true );
@@ -354,6 +354,9 @@ DecLib::DecLib()
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   , m_cacheModel()
 #endif
+#if JVET_M0427_INLOOP_RESHAPER
+  , m_cReshaper()
+#endif
   , m_pcPic(NULL)
   , m_prevPOC(MAX_INT)
   , m_prevTid0POC(0)
@@ -434,6 +437,10 @@ void DecLib::deletePicBuffer ( )
   m_cacheModel.reportSequence( );
   m_cacheModel.destroy( );
 #endif
+#if JVET_M0427_INLOOP_RESHAPER
+  m_cCuDecoder.destoryDecCuReshaprBuf();
+  m_cReshaper.destroy();
+#endif
 }
 
 Picture* DecLib::xGetNewPicBuffer ( const SPS &sps, const PPS &pps, const uint32_t temporalLayer )
@@ -508,19 +515,25 @@ void DecLib::executeLoopFilters()
 
   CodingStructure& cs = *m_pcPic->cs;
 
+#if JVET_M0427_INLOOP_RESHAPER
+  if (cs.sps->getUseReshaper() && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+  {
+      CHECK((m_cReshaper.getRecReshaped() == false), "Rec picture is not reshaped!");
+      m_pcPic->getRecoBuf(COMPONENT_Y).rspSignal(m_cReshaper.getInvLUT());
+      m_cReshaper.setRecReshaped(false);
+  }
+#endif
   // deblocking filter
   m_cLoopFilter.loopFilterPic( cs );
-
-#if DMVR_JVET_LOW_LATENCY_K0217
+#if JVET_M0147_DMVR
   CS::setRefinedMotionField(cs);
 #endif
-
-  if( cs.sps->getUseSAO() )
+  if( cs.sps->getSAOEnabledFlag() )
   {
     m_cSAO.SAOProcess( cs, cs.picture->getSAO() );
   }
 
-  if( cs.sps->getUseALF() )
+  if( cs.sps->getALFEnabledFlag() )
   {
     m_cALF.ALFProcess( cs, cs.slice->getAlfSliceParam() );
   }
@@ -742,7 +755,12 @@ void DecLib::xActivateParameterSets()
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
     m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
     m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc() );
-
+#if JVET_M0427_INLOOP_RESHAPER
+    if (sps->getUseReshaper())
+    {
+      m_cReshaper.createDec(sps->getBitDepth(CHANNEL_TYPE_LUMA));
+    }
+#endif
 
     bool isField = false;
     bool isTopField = false;
@@ -769,15 +787,20 @@ void DecLib::xActivateParameterSets()
 
     // Recursive structure
     m_cCuDecoder.init( &m_cTrQuant, &m_cIntraPred, &m_cInterPred );
-    m_cTrQuant.init( nullptr, sps->getMaxTrSize(), false, false, false, false, false, pps->pcv->rectCUs );
+#if JVET_M0427_INLOOP_RESHAPER
+    if (sps->getUseReshaper())
+    {
+      m_cCuDecoder.initDecCuReshaper(&m_cReshaper, sps->getChromaFormatIdc());
+    }
+#endif
+    m_cTrQuant.init( nullptr, sps->getMaxTrSize(), false, false, false, false, false );
 
     // RdCost
     m_cRdCost.setCostMode ( COST_STANDARD_LOSSY ); // not used in decoder side RdCost stuff -> set to default
-    m_cRdCost.setUseQtbt  ( sps->getSpsNext().getUseQTBT() );
 
     m_cSliceDecoder.create();
 
-    if( sps->getUseALF() )
+    if( sps->getALFEnabledFlag() )
     {
       m_cALF.create( sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), sps->getBitDepths().recon );
     }
@@ -1093,7 +1116,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     pcSlice->checkCRA(pcSlice->getRPS(), m_pocCRA, m_associatedIRAPType, m_cListPic );
     // Set reference list
     pcSlice->setRefPicList( m_cListPic, true, true );
-	
+
     if (!pcSlice->isIntra())
     {
       bool bLowDelay = true;
@@ -1120,6 +1143,84 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
       pcSlice->setCheckLDC(bLowDelay);
     }
+
+#if JVET_M0444_SMVD
+    if ( pcSlice->getCheckLDC() == false && pcSlice->getMvdL1ZeroFlag() == false )
+    {
+      int currPOC = pcSlice->getPOC();
+
+      int forwardPOC = currPOC;
+      int backwardPOC = currPOC;
+      int ref = 0;
+      int refIdx0 = -1;
+      int refIdx1 = -1;
+
+      // search nearest forward POC in List 0
+      for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); ref++ )
+      {
+        int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
+        if ( poc < currPOC && (poc > forwardPOC || refIdx0 == -1) )
+        {
+          forwardPOC = poc;
+          refIdx0 = ref;
+        }
+      }
+
+      // search nearest backward POC in List 1
+      for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); ref++ )
+      {
+        int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
+        if ( poc > currPOC && (poc < backwardPOC || refIdx1 == -1) )
+        {
+          backwardPOC = poc;
+          refIdx1 = ref;
+        }
+      }
+
+      if ( !(forwardPOC < currPOC && backwardPOC > currPOC) )
+      {
+        forwardPOC = currPOC;
+        backwardPOC = currPOC;
+        refIdx0 = -1;
+        refIdx1 = -1;
+
+        // search nearest backward POC in List 0
+        for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); ref++ )
+        {
+          int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
+          if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) )
+          {
+            backwardPOC = poc;
+            refIdx0 = ref;
+          }
+        }
+
+        // search nearest forward POC in List 1
+        for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); ref++ )
+        {
+          int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
+          if ( poc < currPOC && (poc > forwardPOC || refIdx1 == -1) )
+          {
+            forwardPOC = poc;
+            refIdx1 = ref;
+          }
+        }
+      }
+
+      if ( forwardPOC < currPOC && backwardPOC > currPOC )
+      {
+        pcSlice->setBiDirPred( true, refIdx0, refIdx1 );
+      }
+      else
+      {
+        pcSlice->setBiDirPred( false, -1, -1 );
+      }
+    }
+    else
+    {
+      pcSlice->setBiDirPred( false, -1, -1 );
+    }
+#endif
 
     //---------------
     pcSlice->setRefPOCList();
@@ -1155,13 +1256,59 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 #endif
 
+#if JVET_M0483_IBC
+  if (pcSlice->getSPS()->getIBCFlag() && pcSlice->getEnableTMVPFlag())
+#else
+  if (pcSlice->getSPS()->getSpsNext().getIBCMode() && pcSlice->getEnableTMVPFlag())
+#endif
+  {
+    CHECK(pcSlice->getRefPic(RefPicList(pcSlice->isInterB() ? 1 - pcSlice->getColFromL0Flag() : 0), pcSlice->getColRefIdx())->getPOC() == pcSlice->getPOC(), "curr ref picture cannot be collocated picture");
+  }
+
+#if JVET_M0427_INLOOP_RESHAPER
+  if (pcSlice->getSPS()->getUseReshaper())
+  {
+    m_cReshaper.copySliceReshaperInfo(m_cReshaper.getSliceReshaperInfo(), pcSlice->getReshapeInfo());
+    if (pcSlice->getReshapeInfo().getSliceReshapeModelPresentFlag())
+    {
+      m_cReshaper.constructReshaper();
+    }
+    else
+    {
+      m_cReshaper.setReshapeFlag(false);
+    }
+    if ((pcSlice->getSliceType() == I_SLICE|| (pcSlice->getSliceType() == P_SLICE && pcSlice->getSPS()->getSpsNext().getIBCMode()) ) && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+    {
+      m_cReshaper.setCTUFlag(false);
+      m_cReshaper.setRecReshaped(true);
+    }
+    else
+    {
+      if (m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+      {
+        m_cReshaper.setCTUFlag(true);
+        m_cReshaper.setRecReshaped(true);
+      }
+      else
+      {
+        m_cReshaper.setCTUFlag(false);
+        m_cReshaper.setRecReshaped(false);
+      }
+    }
+  }
+  else
+  {
+    m_cReshaper.setCTUFlag(false);
+    m_cReshaper.setRecReshaped(false);
+  }
+#endif
 
   //  Decode a picture
   m_cSliceDecoder.decompressSlice( pcSlice, &(nalu.getBitstream()) );
 
   m_bFirstSliceInPicture = false;
-#if JVET_L0293_CPR
-  if (pcSlice->getSPS()->getSpsNext().getCPRMode())
+#if JVET_M0483_IBC==0
+  if (pcSlice->getSPS()->getSpsNext().getIBCMode())
   {
     pcSlice->getPic()->longTerm = false;
   }

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -614,7 +614,7 @@ void SampleAdaptiveOffset::SAOProcess( CodingStructure& cs, SAOBlkParam* saoBlkP
 void SampleAdaptiveOffset::xPCMLFDisableProcess(CodingStructure& cs)
 {
   const PreCalcValues& pcv = *cs.pcv;
-  const bool bPCMFilter = (cs.sps->getUsePCM() && cs.sps->getPCMFilterDisableFlag()) ? true : false;
+  const bool bPCMFilter = (cs.sps->getPCMEnabledFlag() && cs.sps->getPCMFilterDisableFlag()) ? true : false;
 
   if( bPCMFilter || cs.pps->getTransquantBypassEnabledFlag() )
   {

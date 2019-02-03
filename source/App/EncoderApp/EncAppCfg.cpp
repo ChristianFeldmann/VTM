@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -799,12 +799,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("InterlacedSource",                                m_interlacedSourceFlag,                           false, "Indicate that source is interlaced")
   ("NonPackedSource",                                 m_nonPackedConstraintFlag,                        false, "Indicate that source does not contain frame packing")
   ("FrameOnly",                                       m_frameOnlyConstraintFlag,                        false, "Indicate that the bitstream contains only frames")
-  ("QTBT",                                            m_QTBT,                                           false, "Enable QTBT (0:off, 1:on)  [default: off]")
   ("MTT",                                             m_MTT,                                               0u, "Multi type tree type (0: off, 1:QTBT + triple split) [default: 0]")
   ("CTUSize",                                         m_uiCTUSize,                                       128u, "CTUSize (specifies the CTU size if QTBT is on) [default: 128]")
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   ("EnablePartitionConstraintsOverride",              m_SplitConsOverrideEnabledFlag,                    true, "Enable partition constraints override")
-#endif
   ("MinQTISlice",                                     m_uiMinQT[0],                                        8u, "MinQTISlice")
   ("MinQTLumaISlice",                                 m_uiMinQT[0],                                        8u, "MinQTLumaISlice")
   ("MinQTChromaISlice",                               m_uiMinQT[2],                                        4u, "MinQTChromaISlice")
@@ -816,33 +813,35 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("DualITree",                                       m_dualTree,                                       false, "Use separate QTBT trees for intra slice luma and chroma channel types")
   ("LargeCTU",                                        m_LargeCTU,                                       false, "Enable large CTU (0:off, 1:on)  [default: off]")
   ("SubPuMvp",                                       m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:ATMVP, 2:STMVP, 3:ATMVP+STMVP)  [default: off]")
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  ("SubPuMvpLog2Size",                               m_SubPuMvpLog2Size,                                   2u, "Sub-PU TMVP size index: 2^n")
-#endif
-#if !REMOVE_MV_ADAPT_PREC 
-  ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
-#endif
-#if !REMOVE_MV_ADAPT_PREC 
-  ("HighPrecMv",                                     m_highPrecisionMv,                                false, "High precision motion vectors for temporal merging (0:off, 1:on)  [default: off]")
-#endif
   ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
   ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
-#if JVET_L0256_BIO
   ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
-#endif    
   ("DisableMotCompression",                           m_DisableMotionCompression,                       false, "Disable motion data compression for all modes")
   ("IMV",                                             m_ImvMode,                                            2, "Adaptive MV precision Mode (IMV)\n"
                                                                                                                "\t0: disabled IMV\n"
                                                                                                                "\t1: IMV default (Full-Pel)\n"
                                                                                                                "\t2: IMV Full-Pel and 4-PEL\n")
   ("IMV4PelFast",                                     m_Imv4PelFast,                                        1, "Fast 4-Pel Adaptive MV precision Mode 0:disabled, 1:enabled)  [default: 1]")
-  ("IMVMaxCand",                                      m_ImvMaxCand,                                         4, "max IMV cand (QTBF off only)")
 #if ENABLE_WPP_PARALLELISM
   ("AltDQPCoding",                                    m_AltDQPCoding,                                   false, "Improved predictive delta-QP coding (0:off, 1:on)  [default: off]")
 #endif
   ("LMChroma",                                        m_LMChroma,                                           1, " LMChroma prediction "
                                                                                                                "\t0:  Disable LMChroma\n"
                                                                                                                "\t1:  Enable LMChroma\n")
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  ("CclmCollocatedChroma",                            m_cclmCollocatedChromaFlag,                       false, "Specifies the location of the top-left downsampled luma sample in cross-component linear model intra prediction relative to the top-left luma sample\n"
+                                                                                                               "\t0:  horizontally co-sited, vertically shifted by 0.5 units of luma samples\n"
+                                                                                                               "\t1:  collocated\n")
+#endif
+#if JVET_M0464_UNI_MTS
+  ("MTS",                                             m_MTS,                                                0, "Multiple Transform Set (MTS)\n"
+    "\t0:  Disable MTS\n"
+    "\t1:  Enable only Intra MTS\n"
+    "\t2:  Enable only Inter MTS\n"
+    "\t3:  Enable both Intra & Inter MTS\n")
+  ("MTSIntraMaxCand",                                 m_MTSIntraMaxCand,                                    3, "Number of additional candidates to test in encoder search for MTS in intra slices\n")
+  ("MTSInterMaxCand",                                 m_MTSInterMaxCand,                                    4, "Number of additional candidates to test in encoder search for MTS in inter slices\n")
+#else
   ("EMT,-emt",                                        m_EMT,                                                0, "Enhanced Multiple Transform (EMT)\n"
     "\t0:  Disable EMT\n"
     "\t1:  Enable only Intra EMT\n"
@@ -853,36 +852,57 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     "\t1:  Enable fast methods only for Intra EMT\n"
     "\t2:  Enable fast methods only for Inter EMT\n"
     "\t3:  Enable fast methods for both Intra & Inter EMT\n")
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  ("MTSImplicit",                                     m_MTSImplicit,                                        0, "Enable implicit MTS (when explicit MTS is off)\n")
+#endif
+#if JVET_M0140_SBT
+  ( "SBT",                                            m_SBT,                                            false, "Enable Sub-Block Transform for inter blocks\n" )
+#endif
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
-#if JVET_L0646_GBI
   ("GBi",                                             m_GBi,                                            false, "Enable Generalized Bi-prediction(GBi)")
   ("GBiFast",                                         m_GBiFast,                                        false, "Fast methods for Generalized Bi-prediction(GBi)\n")
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   ("LADF",                                            m_LadfEnabed,                                     false, "Luma adaptive deblocking filter QP Offset(L0414)")
   ("LadfNumIntervals",                                m_LadfNumIntervals,                                   3, "LADF number of intervals (2-5, inclusive)")
   ("LadfQpOffset",                                    cfg_LadfQpOffset,                      cfg_LadfQpOffset, "LADF QP offset")
   ("LadfIntervalLowerBound",                          cfg_LadfIntervalLowerBound,  cfg_LadfIntervalLowerBound, "LADF lower bound for 2nd lowest interval")
 #endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
+#if JVET_M0253_HASH_ME
+  ("HashME",                                          m_HashME,                                         false, "Enable hash motion estimation (0:off, 1:on)")
 #endif
 
-#if JVET_L0293_CPR
-  ( "CPR",                                            m_CPRMode,                                           0u, "CPRMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
-  ( "CPRLocalSearchRangeX",                           m_CPRLocalSearchRangeX,                            128u, "Search range of CPR local search in x direction")
-  ( "CPRLocalSearchRangeY",                           m_CPRLocalSearchRangeY,                            128u, "Search range of CPR local search in y direction")
-  ( "CPRHashSearch",                                  m_CPRHashSearch,                                     1u, "Hash based CPR search")
-  ( "CPRHashSearchMaxCand",                           m_CPRHashSearchMaxCand,                            256u, "Max candidates for hash based CPR search")
-  ( "CPRHashSearchRange4SmallBlk",                    m_CPRHashSearchRange4SmallBlk,                     256u, "Small block search range in based CPR search")
-  ( "CPRFastMethod",                                  m_CPRFastMethod,                                     6u, "Fast methods for CPR")
+#if JVET_M0255_FRACMMVD_SWITCH
+  ("AllowDisFracMMVD",                                m_allowDisFracMMVD,                               false, "Disable fractional MVD in MMVD mode adaptively")
 #endif
+#if JVET_M0246_AFFINE_AMVR
+  ("AffineAmvr",                                      m_AffineAmvr,                                     false, "Eanble AMVR for affine inter mode")
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
+#endif
+#if JVET_M0147_DMVR
+  ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
+#endif
+  ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
+  ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
+  ( "IBCLocalSearchRangeY",                           m_IBCLocalSearchRangeY,                            128u, "Search range of IBC local search in y direction")
+  ( "IBCHashSearch",                                  m_IBCHashSearch,                                     1u, "Hash based IBC search")
+  ( "IBCHashSearchMaxCand",                           m_IBCHashSearchMaxCand,                            256u, "Max candidates for hash based IBC search")
+  ( "IBCHashSearchRange4SmallBlk",                    m_IBCHashSearchRange4SmallBlk,                     256u, "Small block search range in based IBC search")
+  ( "IBCFastMethod",                                  m_IBCFastMethod,                                     6u, "Fast methods for IBC")
+
+  ("WrapAround",                                      m_wrapAround,                                     false, "Enable horizontal wrap-around motion compensation for inter prediction (0:off, 1:on)  [default: off]")
+  ("WrapAroundOffset",                                m_wrapAroundOffset,                                  0u, "Offset in luma samples used for computing the horizontal wrap-around position")
 
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
-
+#if JVET_M0427_INLOOP_RESHAPER
+  ("LumaReshapeEnable",                               m_lumaReshapeEnable,                              false, "Enable Reshaping for Luma Channel")
+  ("ReshapeSignalType",                               m_reshapeSignalType,                                 0u, "Input signal type: 0: SDR, 1:PQ, 2:HLG")
+  ("IntraCMD",                                        m_intraCMD,                                          0u, "IntraChroma MD: 0: none, 1:fixed to default wPSNR weight")
+#endif
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
   ("FastMrg",                                         m_useFastMrg,                                     false, "Fast methods for inter merge")
   ("PBIntraFast",                                     m_usePbIntraFast,                                 false, "Fast assertion if the intra mode is probable")
@@ -963,8 +983,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
   ("CbQpOffset,-cbqpofs",                             m_cbQpOffset,                                         0, "Chroma Cb QP Offset")
   ("CrQpOffset,-crqpofs",                             m_crQpOffset,                                         0, "Chroma Cr QP Offset")
-  ("CbQpOffsetDualTree",                              m_cbQpOffsetDualTree,                                 1, "Chroma Cb QP Offset for dual tree")
-  ("CrQpOffsetDualTree",                              m_crQpOffsetDualTree,                                 1, "Chroma Cr QP Offset for dual tree")
+  ("CbQpOffsetDualTree",                              m_cbQpOffsetDualTree,                                 0, "Chroma Cb QP Offset for dual tree")
+  ("CrQpOffsetDualTree",                              m_crQpOffsetDualTree,                                 0, "Chroma Cr QP Offset for dual tree")
 #if ER_CHROMA_QP_WCG_PPS
   ("WCGPPSEnable",                                    m_wcgChromaQpControl.enabled,                     false, "1: Enable the WCG PPS chroma modulation scheme. 0 (default) disabled")
   ("WCGPPSCbQpScale",                                 m_wcgChromaQpControl.chromaCbQpScale,               1.0, "WCG PPS Chroma Cb QP Scale")
@@ -1003,14 +1023,18 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("DeblockingFilterMetric",                          m_DeblockingFilterMetric,                         false)
 #endif
   // Coding tools
-  ("AMP",                                             m_enableAMP,                                       true, "Enable asymmetric motion partitions")
   ("CrossComponentPrediction",                        m_crossComponentPredictionEnabledFlag,            false, "Enable the use of cross-component prediction (not valid in V1 profiles)")
   ("ReconBasedCrossCPredictionEstimate",              m_reconBasedCrossCPredictionEstimate,             false, "When determining the alpha value for cross-component prediction, use the decoded residual rather than the pre-transform encoder-side residual")
   ("SaoLumaOffsetBitShift",                           saoOffsetBitShift[CHANNEL_TYPE_LUMA],                 0, "Specify the luma SAO bit-shift. If negative, automatically calculate a suitable value based upon bit depth and initial QP")
   ("SaoChromaOffsetBitShift",                         saoOffsetBitShift[CHANNEL_TYPE_CHROMA],               0, "Specify the chroma SAO bit-shift. If negative, automatically calculate a suitable value based upon bit depth and initial QP")
   ("TransformSkip",                                   m_useTransformSkip,                               false, "Intra transform skipping")
+#if JVET_M0464_UNI_MTS
+  ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast encoder search for transform skipping, winner takes it all mode.")
+  ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     5U, "Specify transform-skip maximum size. Minimum 2, Maximum 5. (not valid in V1 profiles)")
+#else
   ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast intra transform skipping")
   ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     2U, "Specify transform-skip maximum size. Minimum 2. (not valid in V1 profiles)")
+#endif
   ("ImplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT],        false, "Enable implicitly signalled residual DPCM for intra (also known as sample-adaptive intra predict) (not valid in V1 profiles)")
   ("ExplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT],        false, "Enable explicitly signalled residual DPCM for inter (not valid in V1 profiles)")
   ("ResidualRotation",                                m_transformSkipRotationEnabledFlag,               false, "Enable rotation of transform-skipped and transquant-bypassed TUs through 180 degrees prior to entropy coding (not valid in V1 profiles)")
@@ -1085,9 +1109,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    false )
 #endif
   ("MaxNumMergeCand",                                 m_maxNumMergeCand,                                   5u, "Maximum number of merge candidates")
-#if JVET_L0632_AFFINE_MERGE
   ("MaxNumAffineMergeCand",                           m_maxNumAffineMergeCand,                             5u, "Maximum number of affine merge candidates")
-#endif
   /* Misc. */
   ("SEIDecodedPictureHash,-dph",                      tmpDecodedPictureHashSEIMappedType,                   0, "Control generation of decode picture hash SEI messages\n"
                                                                                                                "\t3: checksum\n"
@@ -1834,6 +1856,14 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
+#if JVET_M0427_INLOOP_RESHAPER
+  m_reshapeCW.binCW.resize(3);
+  m_reshapeCW.rspFps = m_iFrameRate;
+  m_reshapeCW.rspIntraPeriod = m_iIntraPeriod;
+  m_reshapeCW.rspPicSize = m_iSourceWidth*m_iSourceHeight;
+  m_reshapeCW.rspFpsToIp = std::max(16, 16 * (int)(round((double)m_iFrameRate /16.0)));
+  m_reshapeCW.rspBaseQP = m_iQP;
+#endif
 #if ENABLE_TRACING
   g_trace_ctx = tracing_init(sTracingFile, sTracingRule);
   if( bTracingChannelsList && g_trace_ctx )
@@ -1870,21 +1900,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     if( ( 1u << m_tuLog2MaxSize         ) > m_uiCTUSize ) m_tuLog2MaxSize--;
   }
 
-  if( m_QTBT )
+  const int minCuSize = 1 << MIN_CU_LOG2;
+  m_uiMaxCodingDepth = 0;
+  while( ( m_uiCTUSize >> m_uiMaxCodingDepth ) > minCuSize )
   {
-    int minCuSize = 1 << MIN_CU_LOG2;
-    m_uiMaxCodingDepth = 0;
-    while( ( m_uiCTUSize >> m_uiMaxCodingDepth ) > minCuSize )
-    {
-      m_uiMaxCodingDepth++;
-    }
-    m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCodingDepth;
-    m_uiMaxCUWidth = m_uiMaxCUHeight = m_uiCTUSize;
-    m_uiMaxCUDepth = m_uiMaxCodingDepth;
-#if !JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-    m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCUDepth - 1;
-#endif
+    m_uiMaxCodingDepth++;
   }
+  m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCodingDepth;
+  m_uiMaxCUWidth = m_uiMaxCUHeight = m_uiCTUSize;
+  m_uiMaxCUDepth = m_uiMaxCodingDepth;
 
   // check validity of input parameters
   if( xCheckParameter() )
@@ -1892,22 +1916,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     // return check failed
     return false;
   }
-
-  if( !m_QTBT )
-  {
-    // compute actual CU depth with respect to config depth and max transform size
-    uint32_t uiAddCUDepth = 0;
-    while( ( m_uiMaxCUWidth >> m_uiMaxCUDepth ) > ( 1 << ( m_quadtreeTULog2MinSize + uiAddCUDepth ) ) )
-    {
-      uiAddCUDepth++;
-    }
-
-    m_uiMaxCodingDepth = m_uiMaxCUDepth + uiAddCUDepth; // if minimum TU larger than 4x4, allow for additional part indices for 4:2:2 SubTUs.
-    m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCUDepth - 1;
-
-    m_uiCTUSize = m_uiMaxCUWidth;
-  }
-
 
   // print-out parameters
   xPrintParameter();
@@ -1954,33 +1962,30 @@ bool EncAppCfg::xCheckParameter()
 #if ENABLE_WPP_PARALLELISM
     xConfirmPara( m_numWppThreads > 1, "WPP-style parallelization only supported with NEXT profile" );
 #endif
-    xConfirmPara( m_QTBT, "QTBT only allowed with NEXT profile" );
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_LargeCTU, "Large CTU is only allowed with NEXT profile" );
-    xConfirmPara( m_SubPuMvpMode != 0, "Sub-PU motion vector prediction is only allowed with NEXT profile" );
-#if !REMOVE_MV_ADAPT_PREC
-    xConfirmPara( m_highPrecisionMv, "High precision MV for temporal merging can only be used with NEXT profile" );
-    xConfirmPara( m_Affine, "Affine is only allowed with NEXT profile" );
-#endif
-#if JVET_L0256_BIO
-    xConfirmPara( m_BIO, "BIO only allowed with NEXT profile" );
-#endif
     xConfirmPara( m_DisableMotionCompression, "Disable motion data compression only allowed with NEXT profile" );
     xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
-#if JVET_L0293_CPR
-    xConfirmPara(m_CPRMode, "CPR Mode only allowed with NEXT profile");
-#endif
+    xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
+#if JVET_M0253_HASH_ME
+    xConfirmPara( m_HashME, "Hash motion estimation only allowed with NEXT profile" );
+#endif   
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
+#if JVET_M0464_UNI_MTS
+    xConfirmPara( m_MTS, "MTS only allowed with NEXT profile" );
+    xConfirmPara( m_MTSIntraMaxCand, "MTS only allowed with NEXT profile" );
+    xConfirmPara( m_MTSInterMaxCand, "MTS only allowed with NEXT profile" );
+#else
     xConfirmPara( m_EMT, "EMT only allowed with NEXT profile" );
     xConfirmPara( m_FastEMT, "EMT only allowed with NEXT profile" );
+#endif
     xConfirmPara( m_compositeRefEnabled, "Composite Reference Frame is only allowed with NEXT profile" );
-#if JVET_L0646_GBI
     xConfirmPara( m_GBi, "GBi is only allowed with NEXT profile" );
     xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
-#endif
-#if JVET_L0124_L0208_TRIANGLE
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
+#if JVET_M0147_DMVR
+    xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
 #endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
@@ -1989,10 +1994,6 @@ bool EncAppCfg::xCheckParameter()
 #if ENABLE_WPP_PARALLELISM
     xConfirmPara( !m_AltDQPCoding && ( m_numWppThreads + m_numWppExtraLines ) > 1, "Wavefront parallel encoding only supported with AltDQPCoding" );
 #endif
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-    xConfirmPara( m_SubPuMvpLog2Size < MIN_CU_LOG2,      "SubPuMvpLog2Size must be 2 or greater." );
-    xConfirmPara( m_SubPuMvpLog2Size > 6,                "SubPuMvpLog2Size must be 6 or smaller." );
-#endif 
     if( m_depQuantEnabledFlag )
     {
       xConfirmPara( !m_useRDOQ || !m_useRDOQTS, "RDOQ and RDOQTS must be equal to 1 if dependent quantization is enabled" );
@@ -2000,12 +2001,14 @@ bool EncAppCfg::xCheckParameter()
       xConfirmPara( m_signDataHidingEnabledFlag, "SignHideFlag must be equal to 0 if dependent quantization is enabled" );
 #endif
     }
-    xConfirmPara( !m_QTBT && m_MTT,                      "Multi type tree is an extension of QTBT, thus QTBT has to be enabled for MTT" );
 
-#if !REMOVE_MV_ADAPT_PREC 
-    xConfirmPara(m_Affine && !m_highPrecisionMv, "Affine is not yet implemented for HighPrecMv off.");
-#endif
+  }
 
+  if( m_wrapAround )
+  {
+    xConfirmPara( m_wrapAroundOffset == 0, "Wrap-around offset must be greater than 0" );
+    xConfirmPara( m_wrapAroundOffset > m_iSourceWidth, "Wrap-around offset must not be greater than the source picture width" );
+    xConfirmPara( m_wrapAroundOffset % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Wrap-around offset must be an integer multiple of the specified chroma subsampling" );
   }
 
 #if ENABLE_SPLIT_PARALLELISM
@@ -2046,16 +2049,9 @@ bool EncAppCfg::xCheckParameter()
 #endif
 
 
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   xConfirmPara( m_useAMaxBT && !m_SplitConsOverrideEnabledFlag, "AMaxBt can only be used with PartitionConstriantsOverride enabled" );
-#endif
-  xConfirmPara( m_useAMaxBT && !m_QTBT, "AMaxBT can only be used with QTBT!" );
-
-
-
-
-
-
+ 
+  
   xConfirmPara(m_bitstreamFileName.empty(), "A bitstream file name must be specified (BitstreamFile)");
   const uint32_t maxBitDepth=(m_chromaFormatIDC==CHROMA_400) ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]);
   xConfirmPara(m_bitDepthConstraint<maxBitDepth, "The internalBitDepth must not be greater than the bitDepthConstraint value");
@@ -2115,7 +2111,11 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_profile == Profile::MAINSTILLPICTURE && m_framesToBeEncoded > 1, "Number of frames to be encoded must be 1 when main still picture profile is used.");
 
     xConfirmPara(m_crossComponentPredictionEnabledFlag==true, "CrossComponentPrediction must not be used for non main-RExt profiles.");
+#if JVET_M0464_UNI_MTS
+    xConfirmPara(m_log2MaxTransformSkipBlockSize>=6, "Transform Skip Log2 Max Size must be less or equal to 5.");
+#else
     xConfirmPara(m_log2MaxTransformSkipBlockSize!=2, "Transform Skip Log2 Max Size must be 2 for V1 profiles.");
+#endif
     xConfirmPara(m_transformSkipRotationEnabledFlag==true, "UseResidualRotation must not be enabled for non main-RExt profiles.");
     xConfirmPara(m_transformSkipContextEnabledFlag==true, "UseSingleSignificanceMapContext must not be enabled for non main-RExt profiles.");
     xConfirmPara(m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT]==true, "ImplicitResidualDPCM must not be enabled for non main-RExt profiles.");
@@ -2204,6 +2204,7 @@ bool EncAppCfg::xCheckParameter()
 
   xConfirmPara (m_log2MaxTransformSkipBlockSize < 2, "Transform Skip Log2 Max Size must be at least 2 (4x4)");
 
+#if !JVET_M0464_UNI_MTS
   if (m_log2MaxTransformSkipBlockSize!=2 && m_useTransformSkipFast)
   {
     msg( WARNING, "***************************************************************************\n");
@@ -2212,6 +2213,7 @@ bool EncAppCfg::xCheckParameter()
     msg( WARNING, "**          It may be better to disable transform skip fast mode         **\n");
     msg( WARNING, "***************************************************************************\n");
   }
+#endif
 
   xConfirmPara( m_quadtreeTULog2MaxSize * m_tuLog2MaxSize >= 0, "Setting of TULog2MaxSize and QuadtreeTULog2MaxSize is mutually exclusive - use only one of the parameters" );
 
@@ -2251,10 +2253,25 @@ bool EncAppCfg::xCheckParameter()
 #if SHARP_LUMA_DELTA_QP
   xConfirmPara( m_lumaLevelToDeltaQPMapping.mode && m_uiDeltaQpRD > 0,                      "Luma-level-based Delta QP cannot be used together with slice level multiple-QP optimization\n" );
 #endif
-  if( !m_QTBT )
+#if JVET_M0427_INLOOP_RESHAPER
+  if (!m_lumaReshapeEnable)
   {
-    xConfirmPara( m_iMaxCuDQPDepth > m_uiMaxCUDepth - 1, "Absolute depth for a minimum CuDQP exceeds maximum coding unit depth" );
+    m_reshapeSignalType = RESHAPE_SIGNAL_NULL;
+    m_intraCMD = 0;
   }
+  if (m_lumaReshapeEnable && m_reshapeSignalType == RESHAPE_SIGNAL_PQ)
+  {
+    m_intraCMD = 1;
+  }
+  else if (m_lumaReshapeEnable && m_reshapeSignalType == RESHAPE_SIGNAL_SDR)
+  {
+    m_intraCMD = 0;
+  }
+  else
+  {
+    m_lumaReshapeEnable = false;
+  }
+#endif
 
   xConfirmPara( m_cbQpOffset < -12,   "Min. Chroma Cb QP Offset is -12" );
   xConfirmPara( m_cbQpOffset >  12,   "Max. Chroma Cb QP Offset is  12" );
@@ -2297,7 +2314,7 @@ bool EncAppCfg::xCheckParameter()
   {
     xConfirmPara( m_uiMaxCUHeight > 64, "CTU bigger than 64 only allowed with large CTU." );
     xConfirmPara( m_uiMaxCUWidth  > 64, "CTU bigger than 64 only allowed with large CTU." );
-    if( m_QTBT ) xConfirmPara( m_uiCTUSize > 64, "CTU bigger than 64 only allowed with large CTU." );
+    xConfirmPara( m_uiCTUSize > 64, "CTU bigger than 64 only allowed with large CTU." );
   }
 
   if( m_profile == Profile::NEXT )
@@ -2321,19 +2338,27 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
   xConfirmPara( m_maxNumMergeCand > MRG_MAX_NUM_CANDS, "MaxNumMergeCand must be no more than MRG_MAX_NUM_CANDS." );
 
-#if JVET_L0632_AFFINE_MERGE
   xConfirmPara( m_maxNumAffineMergeCand < 1, "MaxNumAffineMergeCand must be 1 or greater." );
   xConfirmPara( m_maxNumAffineMergeCand > AFFINE_MRG_MAX_NUM_CANDS, "MaxNumAffineMergeCand must be no more than AFFINE_MRG_MAX_NUM_CANDS." );
-#if JVET_L0369_SUBBLOCK_MERGE
   if ( m_Affine == 0 )
   {
     m_maxNumAffineMergeCand = m_SubPuMvpMode;
   }
-#endif
-#endif
 
+#if JVET_M0464_UNI_MTS
+  xConfirmPara( m_MTS < 0 || m_MTS > 3, "MTS must be greater than 0 smaller than 4" );
+  xConfirmPara( m_MTSIntraMaxCand < 0 || m_MTSIntraMaxCand > 5, "m_MTSIntraMaxCand must be greater than 0 and smaller than 6" );
+  xConfirmPara( m_MTSInterMaxCand < 0 || m_MTSInterMaxCand > 5, "m_MTSInterMaxCand must be greater than 0 and smaller than 6" );
+#if JVET_M0303_IMPLICIT_MTS
+  xConfirmPara( m_MTS != 0 && m_MTSImplicit != 0, "Both explicit and implicit MTS cannot be enabled at the same time" );
+#endif
+#else
   xConfirmPara( m_EMT < 0 || m_EMT >3, "EMT must be 0, 1, 2 or 3" );
   xConfirmPara( m_FastEMT < 0 || m_FastEMT >3, "FEMT must be 0, 1, 2 or 3" );
+#if JVET_M0303_IMPLICIT_MTS
+  xConfirmPara( m_EMT != 0 && m_MTSImplicit != 0, "Both explicit and implicit MTS cannot be enabled at the same time" );
+#endif
+#endif
   if( m_usePCM)
   {
     for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
@@ -3078,9 +3103,7 @@ void EncAppCfg::xPrintParameter()
   }
 
   msg( DETAILS, "Max Num Merge Candidates               : %d\n", m_maxNumMergeCand );
-#if JVET_L0632_AFFINE_MERGE
   msg( DETAILS, "Max Num Affine Merge Candidates        : %d\n", m_maxNumAffineMergeCand );
-#endif
   msg( DETAILS, "\n");
 
   msg( VERBOSE, "TOOL CFG: ");
@@ -3101,7 +3124,6 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "FDM:%d ", m_useFastDecisionForMerge            );
   msg( VERBOSE, "CFM:%d ", m_bUseCbfFastMode                    );
   msg( VERBOSE, "ESD:%d ", m_useEarlySkipDetection              );
-  msg( VERBOSE, "RQT:%d ", !m_QTBT                              );
   msg( VERBOSE, "TransformSkip:%d ",     m_useTransformSkip     );
   msg( VERBOSE, "TransformSkipFast:%d ", m_useTransformSkipFast );
   msg( VERBOSE, "TransformSkipLog2MaxSize:%d ", m_log2MaxTransformSkipBlockSize);
@@ -3158,50 +3180,70 @@ void EncAppCfg::xPrintParameter()
       msg( VERBOSE, "AffineType:%d ", m_AffineType );
     }
     msg(VERBOSE, "SubPuMvp:%d+%d ", m_SubPuMvpMode & 1, (m_SubPuMvpMode & 2) == 2);
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-    if (m_SubPuMvpMode != 0)
-    {
-      msg(VERBOSE, "SubPuMvpLog2Size:%d ", m_SubPuMvpLog2Size);
-  }
-#endif 
-    msg( VERBOSE, "QTBT:%d ", m_QTBT );
-    if( m_QTBT ) msg( VERBOSE, "DualITree:%d ", m_dualTree );
+    msg( VERBOSE, "DualITree:%d ", m_dualTree );
     msg( VERBOSE, "LargeCTU:%d ", m_LargeCTU );
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
-    if( !m_QTBT ) msg( VERBOSE, "IMVMaxCand:%d ", m_ImvMaxCand );
-#if !REMOVE_MV_ADAPT_PREC 
-    msg(VERBOSE, "HighPrecMv:%d ", m_highPrecisionMv);
-#endif
-#if JVET_L0256_BIO
     msg( VERBOSE, "BIO:%d ", m_BIO );
-#endif
     msg( VERBOSE, "DisMDC:%d ", m_DisableMotionCompression );
     msg( VERBOSE, "MTT:%d ", m_MTT );
 #if ENABLE_WPP_PARALLELISM
     msg( VERBOSE, "AltDQPCoding:%d ", m_AltDQPCoding );
 #endif
     msg( VERBOSE, "LMChroma:%d ", m_LMChroma );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+    if( m_LMChroma && m_chromaFormatIDC == CHROMA_420 )
+    {
+      msg( VERBOSE, "CclmCollocatedChroma:%d ", m_cclmCollocatedChromaFlag );
+    }
+#endif
+#if JVET_M0464_UNI_MTS
+    msg( VERBOSE, "MTS: %1d(intra) %1d(inter) ", m_MTS & 1, ( m_MTS >> 1 ) & 1 );
+#else
     msg( VERBOSE, "EMT: %1d(intra) %1d(inter) ", m_EMT & 1, ( m_EMT >> 1 ) & 1 );
-    msg(VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
-#if JVET_L0646_GBI
+#endif
+#if JVET_M0140_SBT
+    msg( VERBOSE, "SBT:%d ", m_SBT );
+#endif
+    msg( VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
     msg( VERBOSE, "GBi:%d ", m_GBi );
     msg( VERBOSE, "GBiFast:%d ", m_GBiFast );
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
     msg( VERBOSE, "LADF:%d ", m_LadfEnabed );
 #endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
-#endif
-#if JVET_L0124_L0208_TRIANGLE
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
+#if JVET_M0255_FRACMMVD_SWITCH
+    msg( VERBOSE, "AllowDisFracMMVD:%d ", m_allowDisFracMMVD );
+#endif
+#if JVET_M0246_AFFINE_AMVR
+    msg( VERBOSE, "AffineAmvr:%d ", m_AffineAmvr );
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+    m_AffineAmvrEncOpt = m_AffineAmvr ? m_AffineAmvrEncOpt : false;
+    msg( VERBOSE, "AffineAmvrEncOpt:%d ", m_AffineAmvrEncOpt );
+#endif
+#if JVET_M0147_DMVR
+    msg(VERBOSE, "DMVR:%d ", m_DMVR);
 #endif
   }
-#if JVET_L0293_CPR
-    msg(VERBOSE, "CPR:%d ", m_CPRMode);
+    msg(VERBOSE, "IBC:%d ", m_IBCMode);
+#if JVET_M0253_HASH_ME
+  msg( VERBOSE, "HashME:%d ", m_HashME );
 #endif
+  msg( VERBOSE, "WrapAround:%d ", m_wrapAround);
+  if( m_wrapAround )
+  {
+    msg( VERBOSE, "WrapAroundOffset:%d ", m_wrapAroundOffset );
+  }
   // ADD_NEW_TOOL (add some output indicating the usage of tools)
-
+#if JVET_M0427_INLOOP_RESHAPER
+    msg(VERBOSE, "Reshape:%d ", m_lumaReshapeEnable);
+    if (m_lumaReshapeEnable)
+    {
+      msg(VERBOSE, "(Sigal:%s ", m_reshapeSignalType==0? "SDR" : "HDR-PQ");
+      msg(VERBOSE, ") ");
+    }
+#endif
   msg( VERBOSE, "\nFAST TOOL CFG: " );
   if( m_LargeCTU )
   {
@@ -3210,10 +3252,14 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "FastMrg:%d ", m_useFastMrg );
   msg( VERBOSE, "PBIntraFast:%d ", m_usePbIntraFast );
   if( m_ImvMode == 2 ) msg( VERBOSE, "IMV4PelFast:%d ", m_Imv4PelFast );
+#if JVET_M0464_UNI_MTS
+  if( m_MTS ) msg( VERBOSE, "MTSMaxCand: %1d(intra) %1d(inter) ", m_MTSIntraMaxCand, m_MTSInterMaxCand );
+#else
   if( m_EMT ) msg( VERBOSE, "EMTFast: %1d(intra) %1d(inter) ", ( m_FastEMT & m_EMT & 1 ), ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
-  if( m_QTBT ) msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
-  if( m_QTBT ) msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
-  if( m_QTBT ) msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );
+#endif
+  msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
+  msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
+  msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );
 
   msg( VERBOSE, "NumSplitThreads:%d ", m_numSplitThreads );
   if( m_numSplitThreads > 1 )

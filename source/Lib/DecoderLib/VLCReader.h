@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -163,7 +163,9 @@ public:
   void  parseScalingList    ( ScalingList* scalingList );
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t sizeId, uint32_t listId);
 #endif
-
+#if JVET_M0427_INLOOP_RESHAPER
+  void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
+#endif
   void alf( AlfSliceParam& alfSliceParam );
   void alfFilter( AlfSliceParam& alfSliceParam, const bool isChroma );
 

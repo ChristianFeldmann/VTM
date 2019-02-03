@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,9 @@
 #include "CommonLib/NAL.h"
 #include "EncSampleAdaptiveOffset.h"
 #include "EncAdaptiveLoopFilter.h"
+#if JVET_M0427_INLOOP_RESHAPER
+#include "EncReshape.h"
+#endif
 #include "EncSlice.h"
 #include "VLCWriter.h"
 #include "CABACWriter.h"
@@ -139,6 +142,9 @@ private:
   //--Adaptive Loop filter
   EncSampleAdaptiveOffset*  m_pcSAO;
   EncAdaptiveLoopFilter*    m_pcALF;
+#if JVET_M0427_INLOOP_RESHAPER
+  EncReshape*               m_pcReshaper;
+#endif
   RateCtrl*                 m_pcRateCtrl;
   // indicate sequence first
   bool                    m_bSeqFirst;

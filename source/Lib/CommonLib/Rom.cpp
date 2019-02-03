@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -180,7 +180,7 @@ public:
     return rtn;
   }
 };
-#if JVET_L0191_LM_WO_LMS
+#if !JVET_M0064_CCLM_SIMPLIFICATION
 int g_aiLMDivTableLow[] = {
   0,     0,     21845, 0,     13107, 43690, 18724, 0,     50972, 39321, 53620, 21845, 15123, 9362,  4369,  0,     3855,
   58254, 17246, 52428, 49932, 59578, 25644, 43690, 28835, 40329, 16990, 37449, 56496, 34952, 4228,  0,     61564, 34695,
@@ -246,10 +246,6 @@ int g_aiLMDivTableHigh[] = {
   129,   129,   129,   129,   128,   128,   128,  128,
 };
 #endif
-#if !JVET_L0338_MDLM
-const int g_aiNonLMPosThrs[] = {  3,  1,  0 };
-#endif
-#if JVET_L0646_GBI
 const int8_t g_GbiLog2WeightBase = 3;
 const int8_t g_GbiWeightBase = (1 << g_GbiLog2WeightBase);
 const int8_t g_GbiWeights[GBI_NUM] = { -2, 3, 4, 5, 10 };
@@ -313,16 +309,38 @@ uint32_t deriveWeightIdxBits(uint8_t gbiIdx) // Note: align this with TEncSbac::
   }
   return numBits;
 }
-#endif
 
+#if JVET_M0102_INTRA_SUBPARTITIONS // define the sbb sizes
+uint32_t g_log2SbbSize[2][MAX_CU_DEPTH+1][MAX_CU_DEPTH+1][2] = 
+{
+  //===== luma =====
+  {
+    { {0,0}, {0,1}, {0,2}, {0,3}, {0,4}, {0,4}, {0,4}, {0,4} },
+    { {1,0}, {1,1}, {1,2}, {1,3}, {1,3}, {1,3}, {1,3}, {1,3} },
+    { {2,0}, {2,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {3,0}, {3,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {4,0}, {3,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {4,0}, {3,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {4,0}, {3,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {4,0}, {3,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} }
+  },
+  //===== chroma =====
+  {
+    { {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0} },
+    { {0,0}, {1,1}, {1,1}, {1,1}, {1,1}, {1,1}, {1,1}, {1,1} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} }
+  },
+};
+#endif
 // initialize ROM variables
 void initROM()
 {
-#if JVET_L0285_8BIT_TRANSFORM_CORE
   int c;
-#else
-  int i, c;
-#endif
 
 #if RExt__HIGH_BIT_DEPTH_SUPPORT
   {
@@ -372,51 +390,6 @@ void initROM()
     g_aucLog2    [i] = c;
   }
 
-#if !JVET_L0285_8BIT_TRANSFORM_CORE
-  c = 2; //for the 2x2 transforms if QTBT is on
-
-  const double PI = 3.14159265358979323846;
-
-  for (i = 0; i < g_numTransformMatrixSizes; i++)
-  {
-    TMatrixCoeff *iT = NULL;
-    const double s = sqrt((double)c) * (64 << COM16_C806_TRANS_PREC);
-
-    switch (i)
-    {
-      case 0: iT = g_aiTr2[0][0]; break;
-      case 1: iT = g_aiTr4[0][0]; break;
-      case 2: iT = g_aiTr8[0][0]; break;
-      case 3: iT = g_aiTr16[0][0]; break;
-      case 4: iT = g_aiTr32[0][0]; break;
-      case 5: iT = g_aiTr64[0][0]; break;
-      default: exit(0); break;
-    }
-
-    for (int k = 0; k < c; k++)
-    {
-      for (int n = 0; n < c; n++)
-      {
-        double w0, v;
-
-        // DCT-II
-        w0 = k == 0 ? sqrt(0.5) : 1;
-        v = cos(PI*(n + 0.5)*k / c) * w0 * sqrt(2.0 / c);
-        iT[DCT2*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-        // DCT-VIII
-        v = cos(PI*(k + 0.5)*(n + 0.5) / (c + 0.5)) * sqrt(2.0 / (c + 0.5));
-        iT[DCT8*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-        // DST-VII
-        v = sin(PI*(k + 0.5)*(n + 1) / (c + 0.5)) * sqrt(2.0 / (c + 0.5));
-        iT[DST7*c*c + k*c + n] = (int16_t)(s * v + (v > 0 ? 0.5 : -0.5));
-
-      }
-    }
-    c <<= 1;
-  }
-#endif
 
   gp_sizeIdxInfo = new SizeIndexInfoLog2();
   gp_sizeIdxInfo->init(MAX_CU_SIZE);
@@ -427,6 +400,10 @@ void initROM()
   SizeIndexInfoLog2 sizeInfo;
   sizeInfo.init(MAX_CU_SIZE);
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  for( int ch = 0; ch < MAX_NUM_CHANNEL_TYPE; ch++ )
+  {
+#endif
   // initialize scan orders
   for (uint32_t blockHeightIdx = 0; blockHeightIdx < sizeInfo.numAllHeights(); blockHeightIdx++)
   {
@@ -444,9 +421,15 @@ void initROM()
       {
         const CoeffScanType scanType = CoeffScanType(scanTypeIndex);
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+        g_scanOrder     [ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
+        g_scanOrderPosXY[ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
+        g_scanOrderPosXY[ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
+#else
         g_scanOrder     [SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
         g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
         g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
+#endif
 
         ScanGenerator fullBlockScan(blockWidth, blockHeight, blockWidth, scanType);
 
@@ -455,9 +438,15 @@ void initROM()
           const int rasterPos = fullBlockScan.GetNextIndex( 0, 0 );
           const int posY      = rasterPos / blockWidth;
           const int posX      = rasterPos - ( posY * blockWidth );
+#if JVET_M0102_INTRA_SUBPARTITIONS
+          g_scanOrder     [ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx]   [scanPosition] = rasterPos;
+          g_scanOrderPosXY[ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][0][scanPosition] = posX;
+          g_scanOrderPosXY[ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][1][scanPosition] = posY;
+#else
           g_scanOrder     [SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx]   [scanPosition] = rasterPos;
           g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][0][scanPosition] = posX;
           g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][1][scanPosition] = posY;
+#endif
         }
       }
 
@@ -466,10 +455,15 @@ void initROM()
         // size indizes greater than numIdxs are sizes than are only used when grouping - they will never come up as a block size - thus they can be skipped at this point
         for( uint32_t scanTypeIndex = 0; scanTypeIndex < SCAN_NUMBER_OF_TYPES; scanTypeIndex++ )
         {
+#if JVET_M0102_INTRA_SUBPARTITIONS
+          g_scanOrder     [ch][SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx]    = nullptr;
+          g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx][0] = nullptr;
+          g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx][1] = nullptr;
+#else
           g_scanOrder     [SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx]    = nullptr;
           g_scanOrderPosXY[SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx][0] = nullptr;
           g_scanOrderPosXY[SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx][1] = nullptr;
-
+#endif
         }
 
         continue;
@@ -478,13 +472,24 @@ void initROM()
       //--------------------------------------------------------------------------------------------------
 
       //grouped scan orders
+#if JVET_M0102_INTRA_SUBPARTITIONS
+      const uint32_t* log2Sbb        = g_log2SbbSize[ch][ g_aucLog2[blockWidth] ][ g_aucLog2[blockHeight] ];
+      const uint32_t  log2CGWidth    = log2Sbb[0];
+      const uint32_t  log2CGHeight   = log2Sbb[1];
+#else
       const uint32_t  log2CGWidth    = (blockWidth & 3) + (blockHeight & 3) > 0 ? 1 : 2;
       const uint32_t  log2CGHeight   = (blockWidth & 3) + (blockHeight & 3) > 0 ? 1 : 2;
+#endif
 
       const uint32_t  groupWidth     = 1 << log2CGWidth;
       const uint32_t  groupHeight    = 1 << log2CGHeight;
+#if JVET_M0257
+      const uint32_t  widthInGroups = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, blockWidth) >> log2CGWidth;
+      const uint32_t  heightInGroups = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, blockHeight) >> log2CGHeight;
+#else
       const uint32_t  widthInGroups  = blockWidth >> log2CGWidth;
       const uint32_t  heightInGroups = blockHeight >> log2CGHeight;
+#endif
 
       const uint32_t  groupSize      = groupWidth    * groupHeight;
       const uint32_t  totalGroups    = widthInGroups * heightInGroups;
@@ -493,10 +498,38 @@ void initROM()
       {
         const CoeffScanType scanType = CoeffScanType(scanTypeIndex);
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+        g_scanOrder     [ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
+        g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
+        g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
+#else
         g_scanOrder     [SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
         g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
         g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
-
+#endif
+#if JVET_M0257
+#if JVET_M0102_INTRA_SUBPARTITIONS
+        if ( blockWidth > JVET_C0024_ZERO_OUT_TH || blockHeight > JVET_C0024_ZERO_OUT_TH )
+        {
+          for (uint32_t i = 0; i < totalValues; i++)
+          {
+            g_scanOrder     [ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][i] = totalValues - 1;
+            g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0][i] = blockWidth - 1;
+            g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1][i] = blockHeight - 1;
+          }
+        }
+#else
+        if ( blockWidth > JVET_C0024_ZERO_OUT_TH || blockHeight > JVET_C0024_ZERO_OUT_TH )
+        {
+          for (uint32_t i = 0; i < totalValues; i++)
+          {
+            g_scanOrder[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][i] = totalValues - 1;
+            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0][i] = blockWidth - 1;
+            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1][i] = blockHeight - 1;
+          }
+        }
+#endif
+#endif
 
         ScanGenerator fullBlockScan(widthInGroups, heightInGroups, groupWidth, scanType);
 
@@ -516,9 +549,15 @@ void initROM()
             const int posY      = rasterPos / blockWidth;
             const int posX      = rasterPos - ( posY * blockWidth );
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+            g_scanOrder     [ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]   [groupOffsetScan + scanPosition] = rasterPos;
+            g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0][groupOffsetScan + scanPosition] = posX;
+            g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1][groupOffsetScan + scanPosition] = posY;
+#else
             g_scanOrder     [SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]   [groupOffsetScan + scanPosition] = rasterPos;
             g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0][groupOffsetScan + scanPosition] = posX;
             g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1][groupOffsetScan + scanPosition] = posY;
+#endif
           }
 
           fullBlockScan.GetNextIndex(0, 0);
@@ -528,8 +567,10 @@ void initROM()
       //--------------------------------------------------------------------------------------------------
     }
   }
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  }
+#endif
 
-#if JVET_L0124_L0208_TRIANGLE
   for( int idxH = MAX_CU_DEPTH - MIN_CU_LOG2; idxH >= 0; --idxH )
   {
     for( int idxW = MAX_CU_DEPTH - MIN_CU_LOG2; idxW >= 0; --idxW )
@@ -551,7 +592,6 @@ void initROM()
       }
     }
   }
-#endif
 }
 
 void destroyROM()
@@ -559,6 +599,31 @@ void destroyROM()
   unsigned numWidths = gp_sizeIdxInfo->numAllWidths();
   unsigned numHeights = gp_sizeIdxInfo->numAllHeights();
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  for( uint32_t ch = 0; ch < MAX_NUM_CHANNEL_TYPE; ch++ )
+  {
+    for( uint32_t groupTypeIndex = 0; groupTypeIndex < SCAN_NUMBER_OF_GROUP_TYPES; groupTypeIndex++ )
+    {
+      for( uint32_t scanOrderIndex = 0; scanOrderIndex < SCAN_NUMBER_OF_TYPES; scanOrderIndex++ )
+      {
+        for( uint32_t blockWidthIdx = 0; blockWidthIdx <= numWidths; blockWidthIdx++ )
+        {
+          for( uint32_t blockHeightIdx = 0; blockHeightIdx <= numHeights; blockHeightIdx++ )
+          {
+            delete[] g_scanOrder[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx];
+            g_scanOrder[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx] = nullptr;
+
+            delete[] g_scanOrderPosXY[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][0];
+            g_scanOrderPosXY[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][0] = nullptr;
+
+            delete[] g_scanOrderPosXY[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][1];
+            g_scanOrderPosXY[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][1] = nullptr;
+          }
+        }
+      }
+    }
+  }
+#else
   for (uint32_t groupTypeIndex = 0; groupTypeIndex < SCAN_NUMBER_OF_GROUP_TYPES; groupTypeIndex++)
   {
     for (uint32_t scanOrderIndex = 0; scanOrderIndex < SCAN_NUMBER_OF_TYPES; scanOrderIndex++)
@@ -580,6 +645,7 @@ void destroyROM()
       }
     }
   }
+#endif
 
   delete gp_sizeIdxInfo;
   gp_sizeIdxInfo = nullptr;
@@ -619,45 +685,9 @@ const int g_invQuantScales[SCALING_LIST_REM_NUM] =
 
 //--------------------------------------------------------------------------------------------------
 //structures
-//EMT transform sets
-const int g_aiTrSubsetIntra[3][2] = { { DST7, DCT8 }, { DST7, DCT8 }, { DST7, DCT8 } };
-#if JVET_L0118_ALIGN_MTS_INDEX
-const int g_aiTrSubsetInter[2] = { DST7, DCT8 };
-#else
-const int g_aiTrSubsetInter[4] = { DCT8, DST7 };
-#endif
-
-const uint8_t g_aucTrSetVert[NUM_INTRA_MODE - 1] =
-{//0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66
-   2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0
-};
-const uint8_t g_aucTrSetVert35[35] =
-{//0  1  2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26    27    28    29    30    31    32    33    34
-   2, 1, 0,    1,    0,    1,    0,    1,    0,    0,    0,    0,    0,    1,    0,    1,    0,    1,    0,    1,    0,    1,    0,    1,    2,    2,    2,    2,    2,    1,    0,    1,    0,    1,    0
-};
-const uint8_t g_aucTrSetHorz[NUM_INTRA_MODE - 1] =
-{//0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66
-   2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0
-};
-const uint8_t g_aucTrSetHorz35[35] =
-{//0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
-   2, 1, 0, 1, 0, 1, 0, 1, 2, 2, 2, 2, 2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0
-};
 
 //EMT threshold
-#if !JVET_L0059_MTS_SIMP
-const uint32_t g_EmtSigNumThr = 2;
-#endif
 
-#if !JVET_L0285_8BIT_TRANSFORM_CORE
-//EMT transform coeficient variable
-TMatrixCoeff g_aiTr2  [NUM_TRANS_TYPE][  2][  2];
-TMatrixCoeff g_aiTr4  [NUM_TRANS_TYPE][  4][  4];
-TMatrixCoeff g_aiTr8  [NUM_TRANS_TYPE][  8][  8];
-TMatrixCoeff g_aiTr16 [NUM_TRANS_TYPE][ 16][ 16];
-TMatrixCoeff g_aiTr32 [NUM_TRANS_TYPE][ 32][ 32];
-TMatrixCoeff g_aiTr64 [NUM_TRANS_TYPE][ 64][ 64];
-#endif
 
 //--------------------------------------------------------------------------------------------------
 //coefficients
@@ -713,7 +743,7 @@ const uint8_t g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE] =
 { 0, 1, 2, 2, 2, 2, 2, 2, 2, 3,  4,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 44, 44, 45, 46, 46, 46, 47, 48, 48, 48, 49, 50, 51, 52, 52, 52, 53, 54, 54, 54, 55, 56, 56, 56, 57, 58, 59, 60, DM_CHROMA_IDX };
 
 
-
+#if !REMOVE_BIN_DECISION_TREE
 // ====================================================================================================================
 // Decision tree templates
 // ====================================================================================================================
@@ -729,6 +759,7 @@ const DecisionTreeTemplate g_mtSplitDTT = compile(
               /*0*/ DTT_SPLIT_TT_VERT,
               /*1*/ DTT_SPLIT_BT_VERT ) ) ) );
 
+#endif
 
 
 // ====================================================================================================================
@@ -748,8 +779,13 @@ UnitScale g_miScaling( MIN_CU_LOG2, MIN_CU_LOG2 );
 // ====================================================================================================================
 
 // scanning order table
+#if JVET_M0102_INTRA_SUBPARTITIONS
+uint32_t* g_scanOrder     [2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
+uint32_t* g_scanOrderPosXY[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1][2];
+#else
 uint32_t* g_scanOrder     [SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
 uint32_t* g_scanOrderPosXY[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1][2];
+#endif
 
 const uint32_t ctxIndMap4x4[4 * 4] =
 {
@@ -764,7 +800,6 @@ const uint32_t g_uiMinInGroup[LAST_SIGNIFICANT_GROUPS] = { 0,1,2,3,4,6,8,12,16,2
 const uint32_t g_uiGroupIdx[MAX_TU_SIZE] = { 0,1,2,3,4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9, 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
 ,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12
 ,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13 };
-#if JVET_L0274
 const uint32_t g_auiGoRiceParsCoeff[32] =
 {
   0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3
@@ -775,19 +810,12 @@ const uint32_t g_auiGoRicePosCoeff0[3][32] =
   {1, 1, 1, 1, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16,    16, 16, 16, 16},
   {1, 1, 2, 2, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 16, 16, 16,    16, 16, 16, 16}
 };
-#else
-const uint32_t g_auiGoRicePars[ 32 ] =
-{
-  0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0,
-  0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 2, 2, 2, 2, 2, 2, 2
-};
-#endif
+#if !JVET_M0470
 const uint32_t g_auiGoRiceRange[MAX_GR_ORDER_RESIDUAL] =
 {
   6, 5, 6, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION
 };
+#endif
 
 #if HEVC_USE_SCALING_LISTS
 const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
@@ -907,7 +935,7 @@ const uint8_t g_NonMPM[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
 
-#if JVET_L0124_L0208_TRIANGLE
+#if !JVET_M0328_KEEP_ONE_WEIGHT_GROUP
 const Pel g_trianglePelWeightedLuma[TRIANGLE_DIR_NUM][2][7] =
 { 
   { // TRIANGLE_DIR_135
@@ -945,9 +973,11 @@ const Pel g_trianglePelWeightedChroma[2][TRIANGLE_DIR_NUM][2][7] =
 
 const uint8_t g_triangleWeightLengthLuma[2] = { 5, 7 };
 const uint8_t g_triangleWeightLengthChroma[2][2] = { { 5, 7 }, { 3, 3 } };
+#endif
 
       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
 
+#if !JVET_M0883_TRIANGLE_SIGNALING
 const uint8_t g_triangleCombination[TRIANGLE_MAX_NUM_CANDS][3] =
 {
   { 0, 1, 0 }, { 1, 0, 1 }, { 1, 0, 2 }, { 0, 0, 1 }, { 0, 2, 0 }, 

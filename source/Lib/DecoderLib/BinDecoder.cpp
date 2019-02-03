@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -182,8 +182,14 @@ unsigned BinDecoderBase::decodeBinsEP( unsigned numBins )
 
 unsigned BinDecoderBase::decodeRemAbsEP( unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange )
 {
+#if JVET_M0470
+  unsigned cutoff = COEF_REMAIN_BIN_REDUCTION;
+  unsigned prefix = 0;
+  useLimitedPrefixLength = true;
+#else
   unsigned cutoff = g_auiGoRiceRange[ goRicePar ];
   unsigned prefix = 0;
+#endif
   if( useLimitedPrefixLength )
   {
     const unsigned  maxPrefix = 32 - maxLog2TrDynamicRange;

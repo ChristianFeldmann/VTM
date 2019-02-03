@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -104,22 +104,7 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
       {
         Area blk( xPos, yPos, width, height );
         deriveClassification( m_classifier, tmpYuv.get( COMPONENT_Y ), blk );
-#if JVET_L0664_ALF_REMOVE_LUMA_5x5
         m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y]);
-#else
-        if( alfSliceParam.lumaFilterType == ALF_FILTER_5 )
-        {
-          m_filter5x5Blk( m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y] );
-        }
-        else if( alfSliceParam.lumaFilterType == ALF_FILTER_7 )
-        {
-          m_filter7x7Blk( m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y] );
-        }
-        else
-        {
-          CHECK( 0, "Wrong ALF filter type" );
-        }
-#endif
       }
 
       for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
@@ -143,11 +128,7 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
 void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, const bool bRedo )
 {
   int factor = ( 1 << ( m_NUM_BITS - 1 ) );
-#if JVET_L0664_ALF_REMOVE_LUMA_5x5
   AlfFilterType filterType = isLuma( channel ) ? ALF_FILTER_7 : ALF_FILTER_5;
-#else
-  AlfFilterType filterType = isLuma( channel ) ? alfSliceParam.lumaFilterType : ALF_FILTER_5;
-#endif
   int numClasses = isLuma( channel ) ? MAX_NUM_ALF_CLASSES : 1;
   int numCoeff = filterType == ALF_FILTER_5 ? 7 : 13;
   int numCoeffMinus1 = numCoeff - 1;
@@ -211,9 +192,6 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
   m_numCTUsInWidth = ( m_picWidth / m_maxCUWidth ) + ( ( m_picWidth % m_maxCUWidth ) ? 1 : 0 );
   m_numCTUsInHeight = ( m_picHeight / m_maxCUHeight ) + ( ( m_picHeight % m_maxCUHeight ) ? 1 : 0 );
   m_numCTUsInPic = m_numCTUsInHeight * m_numCTUsInWidth;
-#if !JVET_L0664_ALF_REMOVE_LUMA_5x5
-  m_filterShapes[CHANNEL_TYPE_LUMA].push_back( AlfFilterShape( 5 ) );
-#endif
   m_filterShapes[CHANNEL_TYPE_LUMA].push_back( AlfFilterShape( 7 ) );
   m_filterShapes[CHANNEL_TYPE_CHROMA].push_back( AlfFilterShape( 5 ) );
 
@@ -337,23 +315,12 @@ void AdaptiveLoopFilter::deriveClassificationBlk( AlfClassifier** classifier, in
       const Pel* pYup2 = src3 + pixY;
 
       const Pel y0 = pY[0] << 1;
-#if !JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN
-      const Pel y1 = pY[1] << 1;
-      const Pel yup0 = pYup[0] << 1;
-#endif
       const Pel yup1 = pYup[1] << 1;
 
-#if JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN
       pYver[j] = abs( y0 - pYdown[0] - pYup[0] ) + abs( yup1 - pY[1] - pYup2[1] );
       pYhor[j] = abs( y0 - pY[1] - pY[-1] ) + abs( yup1 - pYup[2] - pYup[0] );
       pYdig0[j] = abs( y0 - pYdown[-1] - pYup[1] ) + abs( yup1 - pY[0] - pYup2[2] );
       pYdig1[j] = abs( y0 - pYup[-1] - pYdown[1] ) + abs( yup1 - pYup2[0] - pY[2] );
-#else
-      pYver[j] = abs( y0 - pYdown[0] - pYup[0] ) + abs( y1 - pYdown[1] - pYup[1] ) + abs( yup0 - pY[0] - pYup2[0] ) + abs( yup1 - pY[1] - pYup2[1] );
-      pYhor[j] = abs( y0 - pY[1] - pY[-1] ) + abs( y1 - pY[2] - pY[0] ) + abs( yup0 - pYup[1] - pYup[-1] ) + abs( yup1 - pYup[2] - pYup[0] );
-      pYdig0[j] = abs( y0 - pYdown[-1] - pYup[1] ) + abs( y1 - pYdown[0] - pYup[2] ) + abs( yup0 - pY[-1] - pYup2[1] ) + abs( yup1 - pY[0] - pYup2[2] );
-      pYdig1[j] = abs( y0 - pYup[-1] - pYdown[1] ) + abs( y1 - pYup[0] - pYdown[2] ) + abs( yup0 - pYup2[-1] - pY[1] ) + abs( yup1 - pYup2[0] - pY[2] );
-#endif
 
       if( j > 4 && ( j - 6 ) % 4 == 0 )
       {
@@ -403,11 +370,7 @@ void AdaptiveLoopFilter::deriveClassificationBlk( AlfClassifier** classifier, in
       int sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j] + pYdig16[j];
 
       int tempAct = sumV + sumH;
-#if JVET_L0147_ALF_SUBSAMPLED_LAPLACIAN
       int activity = (Pel)Clip3<int>( 0, maxActivity, ( tempAct * 64 ) >> shift );
-#else
-      int activity = (Pel)Clip3<int>( 0, maxActivity, ( tempAct * 32 ) >> shift );
-#endif
       int classIdx = th[activity];
 
       int hv1, hv0, d1, d0, hvd1, hvd0;
@@ -509,11 +472,7 @@ void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf
 
   short *coef = filterSet;
 
-#if JVET_L0083_ALF_FRAC_BIT
   const int shift = m_NUM_BITS - 1;
-#else
-  const int shift = 9;
-#endif
 
   const int offset = 1 << ( shift - 1 );
 

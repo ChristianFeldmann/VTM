@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -37,6 +37,8 @@
 
 #include "BinaryDecisionTree.h"
 #include "CommonDef.h"
+
+#if !REMOVE_BIN_DECISION_TREE
 
 #include <algorithm>
 
@@ -183,3 +185,5 @@ void DecisionTree::reduce( unsigned offset /*= 0*/, int depth /*= -1 */ )
 
   isAvail[offset] = avail;
 }
+
+#endif

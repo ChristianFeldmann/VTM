@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -178,7 +178,29 @@ void EncGOP::init ( EncLib* pcEncLib )
   m_AUWriterIf = pcEncLib->getAUWriterIf();
 
 #if WCG_EXT
-  pcEncLib->getRdCost()->initLumaLevelToWeightTable();
+#if JVET_M0427_INLOOP_RESHAPER
+  if (m_pcCfg->getReshaper())
+  {
+    pcEncLib->getRdCost()->setReshapeInfo(m_pcCfg->getReshapeSignalType(), m_pcCfg->getBitDepth(CHANNEL_TYPE_LUMA));
+    pcEncLib->getRdCost()->initLumaLevelToWeightTableReshape();
+  }
+  else if (m_pcCfg->getLumaLevelToDeltaQPMapping().mode)
+  {
+#endif
+    pcEncLib->getRdCost()->initLumaLevelToWeightTable();
+#if JVET_M0427_INLOOP_RESHAPER
+  }
+  pcEncLib->getALF()->getLumaLevelWeightTable() = pcEncLib->getRdCost()->getLumaLevelWeightTable();
+  int alfWSSD = 0;
+  if (m_pcCfg->getReshaper() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ )
+  {
+    alfWSSD = 1;
+  }
+  pcEncLib->getALF()->setAlfWSSD(alfWSSD);
+#endif
+#endif
+#if JVET_M0427_INLOOP_RESHAPER
+  m_pcReshaper = pcEncLib->getReshaper();
 #endif
 }
 
@@ -1438,7 +1460,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->fieldPic = isField;
 #endif
 
-    pcSlice->setLastIDR(m_iLastIDR);
+    int pocBits = pcSlice->getSPS()->getBitsForPOC();
+    int pocMask = (1 << pocBits) - 1;
+    pcSlice->setLastIDR(m_iLastIDR & ~pocMask);
 #if HEVC_DEPENDENT_SLICES
     pcSlice->setSliceSegmentIdx(0);
 #endif
@@ -1454,8 +1478,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType(I_SLICE);
     }
-#if JVET_L0293_CPR
-    if (pcSlice->getSliceType() == I_SLICE && pcSlice->getSPS()->getSpsNext().getCPRMode())
+#if JVET_M0483_IBC ==0
+    if (pcSlice->getSliceType() == I_SLICE && pcSlice->getSPS()->getSpsNext().getIBCMode())
     {
       pcSlice->setSliceType(P_SLICE);
     }
@@ -1630,8 +1654,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && getPrepareLTRef()) {
       arrangeCompositeReference(pcSlice, rcListPic, pocCurr);
     }
-#if JVET_L0293_CPR
-    if (pcSlice->getSPS()->getSpsNext().getCPRMode())
+#if JVET_M0483_IBC==0
+    if (pcSlice->getSPS()->getSpsNext().getIBCMode())
     {
       if (m_pcCfg->getIntraPeriod() > 0 && pcSlice->getPOC() % m_pcCfg->getIntraPeriod() == 0)
       {
@@ -1645,6 +1669,74 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     //  Set reference list
     pcSlice->setRefPicList ( rcListPic );
 
+#if JVET_M0253_HASH_ME
+    if (m_pcCfg->getUseHashME())
+    {
+      PicList::iterator iterPic = rcListPic.begin();
+      while (iterPic != rcListPic.end())
+      {
+        Picture* refPic = *(iterPic++);
+
+        if (refPic->poc != pcPic->poc && refPic->referenced)
+        {
+          if (!refPic->getHashMap()->isInitial())
+          {
+            if (refPic->getPOC() == 0)
+            {
+              Pel* picSrc = refPic->getOrigBuf().get(COMPONENT_Y).buf;
+              int stridePic = refPic->getOrigBuf().get(COMPONENT_Y).stride;
+              int picWidth = pcSlice->getSPS()->getPicWidthInLumaSamples();
+              int picHeight = pcSlice->getSPS()->getPicHeightInLumaSamples();
+              int blockSize = 4;
+              int allNum = 0;
+              int simpleNum = 0;
+              for (int j = 0; j <= picHeight - blockSize; j += blockSize)
+              {
+                for (int i = 0; i <= picWidth - blockSize; i += blockSize)
+                {
+                  Pel* curBlock = picSrc + j * stridePic + i;
+                  bool isHorSame = true;
+                  for (int m = 0; m < blockSize&&isHorSame; m++)
+                  {
+                    for (int n = 1; n < blockSize&&isHorSame; n++)
+                    {
+                      if (curBlock[m*stridePic] != curBlock[m*stridePic + n])
+                      {
+                        isHorSame = false;
+                      }
+                    }
+                  }
+                  bool isVerSame = true;
+                  for (int m = 1; m < blockSize&&isVerSame; m++)
+                  {
+                    for (int n = 0; n < blockSize&&isVerSame; n++)
+                    {
+                      if (curBlock[n] != curBlock[m*stridePic + n])
+                      {
+                        isVerSame = false;
+                      }
+                    }
+                  }
+                  allNum++;
+                  if (isHorSame || isVerSame)
+                  {
+                    simpleNum++;
+                  }
+                }
+              }
+
+              if (simpleNum < 0.3*allNum)
+              {
+                m_pcCfg->setUseHashME(false);
+                break;
+              }
+            }
+            refPic->addPictureToHashMapForInter();
+          }
+        }
+      }
+    }
+#endif
     if( m_pcCfg->getUseAMaxBT() )
     {
       if( !pcSlice->isIRAP() )
@@ -1661,9 +1753,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         if( refLayer >= 0 && m_uiNumBlk[refLayer] != 0 )
         {
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
           pcSlice->setSplitConsOverrideFlag(true);
-#endif
           double dBlkSize = sqrt( ( double ) m_uiBlkSize[refLayer] / m_uiNumBlk[refLayer] );
           if( dBlkSize < AMAXBT_TH32 )
           {
@@ -1700,8 +1790,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType ( P_SLICE );
     }
-#if JVET_L0293_CPR
-    if (pcSlice->getSPS()->getSpsNext().getCPRMode() && pcSlice->getNumRefIdx(REF_PIC_LIST_0) == 1)
+#if JVET_M0483_IBC==0
+    if (pcSlice->getSPS()->getSpsNext().getIBCMode() && pcSlice->getNumRefIdx(REF_PIC_LIST_0) == 1)
     {
       m_pcSliceEncoder->setEncCABACTableIdx(P_SLICE);
     }
@@ -1791,6 +1881,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setEnableTMVPFlag(0);
     }
 
+    // disable TMVP when current picture is the only ref picture
+#if JVET_M0483_IBC
+    if (pcSlice->isIRAP() && pcSlice->getSPS()->getIBCFlag())
+#else
+    if (pcSlice->isIRAP() && pcSlice->getSPS()->getSpsNext().getIBCMode())
+#endif
+    {
+      pcSlice->setEnableTMVPFlag(0);
+    }
+
     // set adaptive search range for non-intra-slices
     if (m_pcCfg->getUseASR() && !pcSlice->isIRAP())
     {
@@ -1800,8 +1900,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     bool bGPBcheck=false;
     if ( pcSlice->getSliceType() == B_SLICE)
     {
-#if JVET_L0293_CPR
-      if (pcSlice->getSPS()->getSpsNext().getCPRMode())
+#if JVET_M0483_IBC==0
+      if (pcSlice->getSPS()->getSpsNext().getIBCMode())
       {
         if (pcSlice->getNumRefIdx(RefPicList(0)) - 1 == pcSlice->getNumRefIdx(RefPicList(1)))
         {
@@ -1844,6 +1944,81 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->slices[pcSlice->getSliceSegmentIdx()]->setMvdL1ZeroFlag(pcSlice->getMvdL1ZeroFlag());
 #endif
 
+#if JVET_M0444_SMVD
+    if ( pcSlice->getCheckLDC() == false && pcSlice->getMvdL1ZeroFlag() == false )
+    {
+      int currPOC = pcSlice->getPOC();
+
+      int forwardPOC = currPOC;
+      int backwardPOC = currPOC;
+      int ref = 0, refIdx0 = -1, refIdx1 = -1;
+
+      // search nearest forward POC in List 0
+      for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); ref++ )
+      {
+        int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
+        if ( poc < currPOC && (poc > forwardPOC || refIdx0 == -1) )
+        {
+          forwardPOC = poc;
+          refIdx0 = ref;
+        }
+      }
+
+      // search nearest backward POC in List 1
+      for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); ref++ )
+      {
+        int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
+        if ( poc > currPOC && (poc < backwardPOC || refIdx1 == -1) )
+        {
+          backwardPOC = poc;
+          refIdx1 = ref;
+        }
+      }
+
+      if ( !(forwardPOC < currPOC && backwardPOC > currPOC) )
+      {
+        forwardPOC = currPOC;
+        backwardPOC = currPOC;
+        refIdx0 = -1;
+        refIdx1 = -1;
+
+        // search nearest backward POC in List 0
+        for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); ref++ )
+        {
+          int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
+          if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) )
+          {
+            backwardPOC = poc;
+            refIdx0 = ref;
+          }
+        }
+
+        // search nearest forward POC in List 1
+        for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); ref++ )
+        {
+          int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
+          if ( poc < currPOC && (poc > forwardPOC || refIdx1 == -1) )
+          {
+            forwardPOC = poc;
+            refIdx1 = ref;
+          }
+        }
+      }
+
+      if ( forwardPOC < currPOC && backwardPOC > currPOC )
+      {
+        pcSlice->setBiDirPred( true, refIdx0, refIdx1 );
+      }
+      else
+      {
+        pcSlice->setBiDirPred( false, -1, -1 );
+      }
+    }
+    else
+    {
+      pcSlice->setBiDirPred( false, -1, -1 );
+    }
+#endif
 
     double lambda            = 0.0;
     int actualHeadBits       = 0;
@@ -1985,14 +2160,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->m_uEnerHpCtu.resize( numberOfCtusInFrame );
     pcPic->m_iOffsetCtu.resize( numberOfCtusInFrame );
 #endif
-    if (pcSlice->getSPS()->getUseSAO())
+    if (pcSlice->getSPS()->getSAOEnabledFlag())
     {
       pcPic->resizeSAO( numberOfCtusInFrame, 0 );
       pcPic->resizeSAO( numberOfCtusInFrame, 1 );
     }
 
     // it is used for signalling during CTU mode decision, i.e. before ALF processing
-    if( pcSlice->getSPS()->getUseALF() )
+    if( pcSlice->getSPS()->getALFEnabledFlag() )
     {
       pcPic->resizeAlfCtuEnableFlag( numberOfCtusInFrame );
       std::memset( pcSlice->getAlfSliceParam().enabledFlag, false, sizeof( pcSlice->getAlfSliceParam().enabledFlag ) );
@@ -2019,6 +2194,96 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     // now compress (trial encode) the various slice segments (slices, and dependent slices)
     {
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
+#if JVET_M0427_INLOOP_RESHAPER
+      if (pcSlice->getSPS()->getUseReshaper())
+      {
+        m_pcReshaper->getReshapeCW()->rspTid = pcSlice->getTLayer()+(pcSlice->isIntra()?0:1);
+        m_pcReshaper->getReshapeCW()->rspSliceQP = pcSlice->getSliceQp();
+
+        m_pcReshaper->setSrcReshaped(false);
+        m_pcReshaper->setRecReshaped(true);
+
+        if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
+        {
+          m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
+        }
+        else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
+        {
+          m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
+        }
+        else
+        {
+          THROW("Reshaper for signal other than PQ and SDR currently not defined!");
+        }
+
+        if (pcSlice->getSliceType() == I_SLICE || (pcSlice->getSliceType()==P_SLICE && m_pcCfg->getIBCMode()))
+        {
+          if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
+          {
+            m_pcReshaper->initLUTfromdQPModel();
+            m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTableChromaMD(m_pcReshaper->getInvLUT());
+          }
+          else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
+          {
+            if (m_pcReshaper->getReshapeFlag())
+            {
+              m_pcReshaper->constructReshaperSDR();
+              m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
+            }
+          }
+          else
+          {
+           THROW("Reshaper for other signal currently not defined!");
+          }
+
+          m_pcReshaper->setCTUFlag(false);
+          
+          //reshape original signal
+          if (m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
+          {
+            pcPic->getOrigBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getFwdLUT());
+            m_pcReshaper->setSrcReshaped(true);
+            m_pcReshaper->setRecReshaped(true);
+          }
+        }
+        else
+        {
+          if (!m_pcReshaper->getReshapeFlag())
+          {
+            m_pcReshaper->setCTUFlag(false);
+          }
+          else
+            m_pcReshaper->setCTUFlag(true);
+
+          m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(false);
+
+          if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ )
+          {
+            m_pcEncLib->getRdCost()->restoreReshapeLumaLevelToWeightTable();
+          }
+          else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
+          {
+            int modIP = pcPic->getPOC() - pcPic->getPOC() / m_pcCfg->getReshapeCW().rspFpsToIp * m_pcCfg->getReshapeCW().rspFpsToIp;
+            if (m_pcReshaper->getReshapeFlag() && m_pcCfg->getReshapeCW().rspIntraPeriod == -1 && modIP == 0)           // for LDB, update reshaping curve every second
+            {
+              m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(true);
+              m_pcReshaper->constructReshaperSDR();
+              m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
+            }
+          }
+          else
+          {
+            THROW("Reshaper for other signal currently not defined!");
+          }
+        }
+
+        m_pcReshaper->copySliceReshaperInfo(pcSlice->getReshapeInfo(), m_pcReshaper->getSliceReshaperInfo());
+      }
+      else
+      {
+        m_pcReshaper->setCTUFlag(false);
+      }
+#endif
 
       pcSlice->setSliceCurStartCtuTsAddr( 0 );
 #if HEVC_DEPENDENT_SLICES
@@ -2088,8 +2353,19 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       CodingStructure& cs = *pcPic->cs;
       pcSlice = pcPic->slices[0];
 
+#if JVET_M0427_INLOOP_RESHAPER 
+      if (pcSlice->getSPS()->getUseReshaper() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
+      {
+          CHECK((m_pcReshaper->getRecReshaped() == false), "Rec picture is not reshaped!");
+          pcPic->getRecoBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getInvLUT());
+          m_pcReshaper->setRecReshaped(false);
+
+          pcPic->getOrigBuf().copyFrom(pcPic->getTrueOrigBuf());
+      }
+#endif
+
       // SAO parameter estimation using non-deblocked pixels for CTU bottom and right boundary areas
-      if( pcSlice->getSPS()->getUseSAO() && m_pcCfg->getSaoCtuBoundary() )
+      if( pcSlice->getSPS()->getSAOEnabledFlag() && m_pcCfg->getSaoCtuBoundary() )
       {
         m_pcSAO->getPreDBFStatistics( cs );
       }
@@ -2113,20 +2389,24 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       m_pcLoopFilter->loopFilterPic( cs );
 
-#if DMVR_JVET_LOW_LATENCY_K0217 
+#if JVET_M0147_DMVR 
       CS::setRefinedMotionField(cs);
 #endif
-
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 1 ) ) );
 
-      if( pcSlice->getSPS()->getUseSAO() )
+      if( pcSlice->getSPS()->getSAOEnabledFlag() )
       {
         bool sliceEnabled[MAX_NUM_COMPONENT];
         m_pcSAO->initCABACEstimator( m_pcEncLib->getCABACEncoder(), m_pcEncLib->getCtxCache(), pcSlice );
+
+        m_pcSAO->SAOProcess( cs, sliceEnabled, pcSlice->getLambdas(),
+#if ENABLE_QPA
+                             (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP() ? m_pcEncLib->getRdCost (PARL_PARAM0 (0))->getChromaWeight() : 0.0),
+#endif
 #if K0238_SAO_GREEDY_MERGE_ENCODING
-        m_pcSAO->SAOProcess(cs, sliceEnabled, pcSlice->getLambdas(), m_pcCfg->getTestSAODisableAtPictureLevel(), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma(), m_pcCfg->getSaoCtuBoundary(), m_pcCfg->getSaoGreedyMergeEnc());
+                             m_pcCfg->getTestSAODisableAtPictureLevel(), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma(), m_pcCfg->getSaoCtuBoundary(), m_pcCfg->getSaoGreedyMergeEnc() );
 #else
-        m_pcSAO->SAOProcess(cs, sliceEnabled, pcSlice->getLambdas(), m_pcCfg->getTestSAODisableAtPictureLevel(), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma(), m_pcCfg->getSaoCtuBoundary());
+                             m_pcCfg->getTestSAODisableAtPictureLevel(), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma(), m_pcCfg->getSaoCtuBoundary() );
 #endif
         //assign SAO slice header
         for(int s=0; s< uiNumSliceSegments; s++)
@@ -2137,11 +2417,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
 
-      if( pcSlice->getSPS()->getUseALF() )
+      if( pcSlice->getSPS()->getALFEnabledFlag() )
       {
         AlfSliceParam alfSliceParam;
         m_pcALF->initCABACEstimator( m_pcEncLib->getCABACEncoder(), m_pcEncLib->getCtxCache(), pcSlice );
-        m_pcALF->ALFProcess( cs, pcSlice->getLambdas(), alfSliceParam );
+
+        m_pcALF->ALFProcess( cs, pcSlice->getLambdas(),
+#if ENABLE_QPA
+                             (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP() ? m_pcEncLib->getRdCost (PARL_PARAM0 (0))->getChromaWeight() : 0.0),
+#endif
+                             alfSliceParam );
         //assign ALF slice header
         for( int s = 0; s< uiNumSliceSegments; s++ )
         {
@@ -2157,7 +2442,18 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceQpBase( pcSlice->getSliceQp() );
 
-      if( pcSlice->getSPS()->getUseSAO() )
+#if ENABLE_QPA
+      if (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP())
+      {
+        const double picLambda = pcSlice->getLambdas()[0];
+
+        for (uint32_t ctuRsAddr = 0; ctuRsAddr < numberOfCtusInFrame; ctuRsAddr++)
+        {
+          pcPic->m_uEnerHpCtu[ctuRsAddr] = picLambda;  // initialize to slice lambda (just for safety)
+        }
+      }
+#endif
+      if( pcSlice->getSPS()->getSAOEnabledFlag() )
       {
         m_pcSAO->disabledRate( *pcPic->cs, pcPic->getSAO(1), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma());
       }
@@ -2408,7 +2704,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 0 ) ) );
 
     pcPic->reconstructed = true;
-#if JVET_L0293_CPR
+#if JVET_M0483_IBC ==0
     pcPic->longTerm = false;
 #endif
     m_bFirst = false;
@@ -2439,7 +2735,11 @@ void EncGOP::printOutSummary(uint32_t uiNumAllPicCoded, bool isField, const bool
   const bool    useWPSNR = m_pcEncLib->getUseWPSNR();
 #endif
 #if WCG_WPSNR
+#if JVET_M0427_INLOOP_RESHAPER
+  const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcCfg->getReshaper() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ);
+#else
   const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled();
+#endif
 #endif
 
   if( m_pcCfg->getDecodeBitstream(0).empty() && m_pcCfg->getDecodeBitstream(1).empty() && !m_pcCfg->useFastForwardToPOC() )
@@ -2625,10 +2925,6 @@ void EncGOP::xGetBuffer( PicList&                  rcListPic,
 #ifndef BETA
   #define BETA 0.5 // value between 0.0 and 1; use 0.0 to obtain traditional PSNR
 #endif
-#define GLOBAL_AVERAGING 1 // "global" averaging of a_k across a set instead of one picture
-#if FRAME_WEIGHTING
-static const uint32_t DQP[16] = { 4, 12, 11, 12,  9, 12, 11, 12,  6, 12, 11, 12,  9, 12, 11, 12 };
-#endif
 
 static inline double calcWeightedSquaredError(const CPelBuf& org,        const CPelBuf& rec,
                                               double &sumAct,            const uint32_t bitDepth,
@@ -2732,9 +3028,7 @@ uint64_t EncGOP::xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, 
       }
 
       double wmse = 0.0, sumAct = 0.0; // compute activity normalized SNR value
-#if !GLOBAL_AVERAGING
-      double numAct = 0.0;
-#endif
+
       for (y = 0; y < H; y += B)
       {
         for (x = 0; x < W; x += B)
@@ -2744,29 +3038,13 @@ uint64_t EncGOP::xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, 
                                            W,      H,
                                            x,      y,
                                            B,      B);
-#if !GLOBAL_AVERAGING
-          numAct += 1.0;
-#endif
         }
       }
 
       // integer weighted distortion
-#if GLOBAL_AVERAGING
-      sumAct = 32.0 * double(1 << BD);
-
-      if ((W << chromaShift) > 2048 && (H << chromaShift) > 1280) // for UHD/4K
-      {
-        sumAct *= 0.5;
-      }
-      else if ((W << chromaShift) <= 1024 || (H << chromaShift) <= 640) // 480p
-      {
-        sumAct *= 2.0;
-      }
+      sumAct = 16.0 * sqrt ((3840.0 * 2160.0) / double((W << chromaShift) * (H << chromaShift))) * double(1 << BD);
 
       return (wmse <= 0.0) ? 0 : uint64_t(wmse * pow(sumAct, BETA) + 0.5);
-#else
-      return (wmse <= 0.0 || numAct <= 0.0) ? 0 : uint64_t(wmse * pow(sumAct / numAct, BETA) + 0.5);
-#endif
     }
 #endif // ENABLE_QPA
     uiTotalDiff = 0;
@@ -2802,7 +3080,11 @@ uint64_t EncGOP::xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, 
 double EncGOP::xFindDistortionPlaneWPSNR(const CPelBuf& pic0, const CPelBuf& pic1, const uint32_t rshift, const CPelBuf& picLuma0,
   ComponentID compID, const ChromaFormat chfmt    )
 {
+#if JVET_M0427_INLOOP_RESHAPER
+  const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcCfg->getReshaper() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ);
+#else
   const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled();
+#endif
   if (!useLumaWPSNR)
   {
     return 0;
@@ -2935,13 +3217,21 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
   const CPelUnitBuf& pic = cPicD;
   CHECK(!(conversion == IPCOLOURSPACE_UNCHANGED), "Unspecified error");
 //  const CPelUnitBuf& org = (conversion != IPCOLOURSPACE_UNCHANGED) ? pcPic->getPicYuvTrueOrg()->getBuf() : pcPic->getPicYuvOrg()->getBuf();
+#if JVET_M0427_INLOOP_RESHAPER
+  const CPelUnitBuf& org = sps.getUseReshaper() ? pcPic->getTrueOrigBuf() : pcPic->getOrigBuf();
+#else
   const CPelUnitBuf& org = pcPic->getOrigBuf();
+#endif
 #if ENABLE_QPA
   const bool    useWPSNR = m_pcEncLib->getUseWPSNR();
 #endif
   double  dPSNR[MAX_NUM_COMPONENT];
 #if WCG_WPSNR
+#if JVET_M0427_INLOOP_RESHAPER
+  const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcCfg->getReshaper() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ);
+#else
   const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled();
+#endif
   double  dPSNRWeighted[MAX_NUM_COMPONENT];
   double  MSEyuvframeWeighted[MAX_NUM_COMPONENT];
 #endif
@@ -2971,12 +3261,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   const bool bPicIsField     = pcPic->fieldPic;
   const Slice*  pcSlice      = pcPic->slices[0];
-#if ENABLE_QPA && FRAME_WEIGHTING
-  const uint32_t    currDQP      = (pcSlice->getPOC() % m_pcEncLib->getIntraPeriod()) == 0 ? 0 : DQP[pcSlice->getPOC() % m_pcEncLib->getGOPSize()];
-  const double  frameWeight  = pow(2.0, (double)currDQP / -3.0);
 
-  if (useWPSNR) m_gcAnalyzeAll.addWeight(frameWeight);
-#endif
   for (int comp = 0; comp < ::getNumberValidComponents(formatD); comp++)
   {
     const ComponentID compID = ComponentID(comp);
@@ -2995,11 +3280,10 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     const uint32_t    bitDepth = sps.getBitDepth(toChannelType(compID));
 #if ENABLE_QPA
     const uint64_t uiSSDtemp = xFindDistortionPlane(recPB, orgPB, useWPSNR ? bitDepth : 0, ::getComponentScaleX(compID, format));
-    const uint32_t maxval = /*useWPSNR ? (1 << bitDepth) - 1 :*/ 255 << (bitDepth - 8); // fix with WPSNR: 1023 (4095) instead of 1020 (4080) for bit-depth 10 (12)
 #else
     const uint64_t uiSSDtemp = xFindDistortionPlane(recPB, orgPB, 0);
-    const uint32_t maxval = 255 << (bitDepth - 8);
 #endif
+    const uint32_t maxval = 255 << (bitDepth - 8);
     const uint32_t size   = width * height;
     const double fRefValue = (double)maxval * maxval * size;
     dPSNR[comp]       = uiSSDtemp ? 10.0 * log10(fRefValue / (double)uiSSDtemp) : 999.99;
@@ -3011,10 +3295,6 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       dPSNRWeighted[comp] = uiSSDtempWeighted ? 10.0 * log10(fRefValue / (double)uiSSDtempWeighted) : 999.99;
       MSEyuvframeWeighted[comp] = (double)uiSSDtempWeighted / size;
     }
-#endif
-
-#if ENABLE_QPA && FRAME_WEIGHTING
-    if (useWPSNR) m_gcAnalyzeAll.addWeightedSSD(frameWeight * (double)uiSSDtemp / fRefValue, compID);
 #endif
   }
 
@@ -3203,13 +3483,7 @@ void EncGOP::xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* 
 
   CHECK(!(acPicRecFields[0].chromaFormat==acPicRecFields[1].chromaFormat), "Unspecified error");
   const uint32_t numValidComponents = ::getNumberValidComponents( acPicRecFields[0].chromaFormat );
-#if ENABLE_QPA && FRAME_WEIGHTING
-  const Slice*  pcSlice      = pcPicOrgFirstField->slices[0];
-  const uint32_t    currDQP      = (pcSlice->getPOC() % m_pcEncLib->getIntraPeriod()) == 0 ? 0 : DQP[pcSlice->getPOC() % m_pcEncLib->getGOPSize()];
-  const double  frameWeight  = pow(2.0, (double)currDQP / -3.0);
 
-  if (useWPSNR) m_gcAnalyzeAll_in.addWeight(frameWeight);
-#endif
   for (int chan = 0; chan < numValidComponents; chan++)
   {
     const ComponentID ch=ComponentID(chan);
@@ -3230,18 +3504,11 @@ void EncGOP::xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* 
       uiSSDtemp += xFindDistortionPlane( acPicRecFields[fieldNum].get(ch), apcPicOrgFields[fieldNum]->getOrigBuf().get(ch), 0 );
 #endif
     }
-#if ENABLE_QPA
-    const uint32_t maxval = /*useWPSNR ? (1 << bitDepth) - 1 :*/ 255 << (bitDepth - 8); // fix with WPSNR: 1023 (4095) instead of 1020 (4080) for bit-depth 10 (12)
-#else
     const uint32_t maxval = 255 << (bitDepth - 8);
-#endif
     const uint32_t size   = width * height * 2;
     const double fRefValue = (double)maxval * maxval * size;
     dPSNR[ch]         = uiSSDtemp ? 10.0 * log10(fRefValue / (double)uiSSDtemp) : 999.99;
     MSEyuvframe[ch]   = (double)uiSSDtemp / size;
-#if ENABLE_QPA && FRAME_WEIGHTING
-    if (useWPSNR) m_gcAnalyzeAll_in.addWeightedSSD(frameWeight * (double)uiSSDtemp / fRefValue, ch);
-#endif
   }
 
   uint32_t uibits = 0; // the number of bits for the pair is not calculated here - instead the overall total is used elsewhere.

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -148,7 +148,6 @@ protected:
   bool      m_transformSkipRotationEnabledFlag;               ///< control flag for transform-skip/transquant-bypass residual rotation
   bool      m_transformSkipContextEnabledFlag;                ///< control flag for transform-skip/transquant-bypass single significance map context
   bool      m_rdpcmEnabledFlag[NUMBER_OF_RDPCM_SIGNALLING_MODES];///< control flags for residual DPCM
-  bool      m_enableAMP;
   bool      m_persistentRiceAdaptationEnabledFlag;            ///< control flag for Golomb-Rice parameter adaptation over each slice
   bool      m_cabacBypassAlignmentEnabledFlag;
 
@@ -196,11 +195,8 @@ protected:
   int       m_maxTempLayer;                                   ///< Max temporal layer
 
   // coding unit (CU) definition
-  bool      m_QTBT;
   unsigned  m_uiCTUSize;
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   bool      m_SplitConsOverrideEnabledFlag;
-#endif
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
   unsigned  m_uiMaxBTDepth;
   unsigned  m_uiMaxBTDepthI;
@@ -208,31 +204,36 @@ protected:
   bool      m_dualTree;
   bool      m_LargeCTU;
   int       m_SubPuMvpMode;
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  unsigned  m_SubPuMvpLog2Size;
-#endif 
   bool      m_Affine;
   bool      m_AffineType;
-#if !REMOVE_MV_ADAPT_PREC
-  bool      m_highPrecisionMv;
-#endif
-#if JVET_L0256_BIO
   bool      m_BIO;
-#endif
   bool      m_DisableMotionCompression;
   unsigned  m_MTT;
 #if ENABLE_WPP_PARALLELISM
   bool      m_AltDQPCoding;
 #endif
   int       m_LMChroma;
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  bool      m_cclmCollocatedChromaFlag;
+#endif
+#if JVET_M0464_UNI_MTS
+  int       m_MTS;                                            ///< XZ: Multiple Transform Set
+  int       m_MTSIntraMaxCand;                                ///< XZ: Number of additional candidates to test
+  int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test
+#else
   int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  int       m_MTSImplicit;
+#endif
+#if JVET_M0140_SBT
+  bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
+#endif
 
   bool      m_compositeRefEnabled;
-#if JVET_L0646_GBI
   bool      m_GBi;
   bool      m_GBiFast;
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool      m_LadfEnabed;
   int       m_LadfNumIntervals;
@@ -240,26 +241,42 @@ protected:
   int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   bool      m_MHIntra;
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   bool      m_Triangle;
+#if JVET_M0253_HASH_ME
+  bool      m_HashME;
+#endif
+#if JVET_M0255_FRACMMVD_SWITCH
+  bool      m_allowDisFracMMVD;
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  bool      m_AffineAmvr;
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  bool      m_AffineAmvrEncOpt;
+#endif
+#if JVET_M0147_DMVR
+  bool      m_DMVR;
 #endif
 
+  unsigned  m_IBCMode;
+  unsigned  m_IBCLocalSearchRangeX;
+  unsigned  m_IBCLocalSearchRangeY;
+  unsigned  m_IBCHashSearch;
+  unsigned  m_IBCHashSearchMaxCand;
+  unsigned  m_IBCHashSearchRange4SmallBlk;
+  unsigned  m_IBCFastMethod;
 
-#if JVET_L0293_CPR
-  unsigned  m_CPRMode;
-  unsigned  m_CPRLocalSearchRangeX;
-  unsigned  m_CPRLocalSearchRangeY;
-  unsigned  m_CPRHashSearch;
-  unsigned  m_CPRHashSearchMaxCand;
-  unsigned  m_CPRHashSearchRange4SmallBlk;
-  unsigned  m_CPRFastMethod;
-#endif    
-  
+  bool      m_wrapAround;
+  unsigned  m_wrapAroundOffset;
+
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-
+#if JVET_M0427_INLOOP_RESHAPER
+  bool      m_lumaReshapeEnable;
+  uint32_t  m_reshapeSignalType;
+  uint32_t  m_intraCMD;
+  ReshapeCW m_reshapeCW;
+#endif
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
   unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)
@@ -452,9 +469,7 @@ protected:
 
   uint32_t      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
-#if JVET_L0632_AFFINE_MERGE
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
-#endif
 
   int       m_TMVPModeId;
   bool      m_depQuantEnabledFlag;
@@ -525,7 +540,6 @@ protected:
   int       m_log2MaxMvLengthVertical;                        ///< Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
-  int       m_ImvMaxCand;                                     ///< imv max num cand for test (QTBT off only)
   std::string m_colourRemapSEIFileRoot;
 
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.

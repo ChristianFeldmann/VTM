@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -141,7 +141,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setAccessUnitDelimiter                               ( m_AccessUnitDelimiter );
 
   m_cEncLib.setMaxTempLayer                                      ( m_maxTempLayer );
-  m_cEncLib.setUseAMP( m_enableAMP );
 
   //===== Slice ========
 
@@ -211,42 +210,45 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseSelectiveRDOQ                                  ( m_useSelectiveRDOQ );
 #endif
   m_cEncLib.setRDpenalty                                         ( m_rdPenalty );
-  m_cEncLib.setQTBT                                              ( m_QTBT );
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
   m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
-#endif
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxBTDepth                                        ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   m_cEncLib.setDualITree                                         ( m_dualTree );
   m_cEncLib.setLargeCTU                                          ( m_LargeCTU );
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode );
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  m_cEncLib.setSubPuMvpLog2Size                                  ( m_SubPuMvpLog2Size );
-#endif 
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );
-#if !REMOVE_MV_ADAPT_PREC
-  m_cEncLib.setHighPrecisionMv                                   (m_highPrecisionMv);
-#endif
-#if JVET_L0256_BIO
   m_cEncLib.setBIO                                               (m_BIO);
-#endif
   m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );
   m_cEncLib.setMTTMode                                           ( m_MTT );
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
+#endif
 #if ENABLE_WPP_PARALLELISM
   m_cEncLib.setUseAltDQPCoding                                   ( m_AltDQPCoding );
 #endif
+#if JVET_M0464_UNI_MTS
+  m_cEncLib.setIntraMTS                                          ( m_MTS & 1 );
+  m_cEncLib.setIntraMTSMaxCand                                   ( m_MTSIntraMaxCand );
+  m_cEncLib.setInterMTS                                          ( ( m_MTS >> 1 ) & 1 );
+  m_cEncLib.setInterMTSMaxCand                                   ( m_MTSInterMaxCand );
+#else
   m_cEncLib.setIntraEMT                                          ( m_EMT & 1 );
   m_cEncLib.setFastIntraEMT                                      ( m_FastEMT & m_EMT & 1 );
   m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
+#endif
+#if JVET_M0140_SBT
+  m_cEncLib.setUseSBT                                            ( m_SBT );
+#endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
-#if JVET_L0646_GBI
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   m_cEncLib.setUseLadf                                           ( m_LadfEnabed );
   if ( m_LadfEnabed )
@@ -259,27 +261,39 @@ void EncApp::xInitLibCfg()
     }
   }
 #endif  
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
+#if JVET_M0253_HASH_ME
+  m_cEncLib.setUseHashME                                         ( m_HashME );
 #endif
 
-#if JVET_L0293_CPR
-  m_cEncLib.setCPRMode                                           ( m_CPRMode );
-  m_cEncLib.setCPRLocalSearchRangeX                              ( m_CPRLocalSearchRangeX );
-  m_cEncLib.setCPRLocalSearchRangeY                              ( m_CPRLocalSearchRangeY );
-  m_cEncLib.setCPRHashSearch                                     ( m_CPRHashSearch );
-  m_cEncLib.setCPRHashSearchMaxCand                              ( m_CPRHashSearchMaxCand );
-  m_cEncLib.setCPRHashSearchRange4SmallBlk                       ( m_CPRHashSearchRange4SmallBlk );
-  m_cEncLib.setCPRFastMethod                                     ( m_CPRFastMethod );
-#endif    
+#if JVET_M0255_FRACMMVD_SWITCH
+  m_cEncLib.setAllowDisFracMMVD                                  ( m_allowDisFracMMVD );
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  m_cEncLib.setUseAffineAmvr                                     ( m_AffineAmvr );
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  m_cEncLib.setUseAffineAmvrEncOpt                               ( m_AffineAmvrEncOpt );
+#endif
+#if JVET_M0147_DMVR
+  m_cEncLib.setDMVR                                              ( m_DMVR );
+#endif
+  m_cEncLib.setIBCMode                                           ( m_IBCMode );
+  m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
+  m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );
+  m_cEncLib.setIBCHashSearch                                     ( m_IBCHashSearch );
+  m_cEncLib.setIBCHashSearchMaxCand                              ( m_IBCHashSearchMaxCand );
+  m_cEncLib.setIBCHashSearchRange4SmallBlk                       ( m_IBCHashSearchRange4SmallBlk );
+  m_cEncLib.setIBCFastMethod                                     ( m_IBCFastMethod );
+
+  m_cEncLib.setUseWrapAround                                     ( m_wrapAround );
+  m_cEncLib.setWrapAroundOffset                                  ( m_wrapAroundOffset );
 
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
 
-  m_cEncLib.setMaxCUWidth                                        ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );
-  m_cEncLib.setMaxCUHeight                                       ( m_QTBT ? m_uiCTUSize : m_uiMaxCUWidth );
+  m_cEncLib.setMaxCUWidth                                        ( m_uiCTUSize );
+  m_cEncLib.setMaxCUHeight                                       ( m_uiCTUSize );
   m_cEncLib.setMaxCodingDepth                                    ( m_uiMaxCodingDepth );
   m_cEncLib.setLog2DiffMaxMinCodingBlockSize                     ( m_uiLog2DiffMaxMinCodingBlockSize );
   m_cEncLib.setQuadtreeTULog2MaxSize                             ( m_quadtreeTULog2MaxSize );
@@ -329,9 +343,7 @@ void EncApp::xInitLibCfg()
 
   m_cEncLib.setPCMLog2MaxSize                                    ( m_pcmLog2MaxSize);
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
-#if JVET_L0632_AFFINE_MERGE
   m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
-#endif
 
   //====== Weighted Prediction ========
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );
@@ -535,7 +547,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSummaryVerboseness                                ( m_summaryVerboseness );
   m_cEncLib.setIMV                                               ( m_ImvMode );
   m_cEncLib.setIMV4PelFast                                       ( m_Imv4PelFast );
-  m_cEncLib.setIMVMaxCand                                        ( m_ImvMaxCand );
   m_cEncLib.setDecodeBitstream                                   ( 0, m_decodeBitstreams[0] );
   m_cEncLib.setDecodeBitstream                                   ( 1, m_decodeBitstreams[1] );
   m_cEncLib.setSwitchPOC                                         ( m_switchPOC );
@@ -555,6 +566,12 @@ void EncApp::xInitLibCfg()
 
 #endif
   m_cEncLib.setUseALF                                            ( m_alf );
+#if JVET_M0427_INLOOP_RESHAPER
+  m_cEncLib.setReshaper                                          ( m_lumaReshapeEnable );
+  m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
+  m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
+  m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
+#endif  
 }
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList

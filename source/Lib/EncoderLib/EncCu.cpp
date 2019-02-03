@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,52 +64,74 @@ extern std::recursive_mutex g_cache_mutex;
 // ====================================================================================================================
 // Constructor / destructor / create / destroy
 // ====================================================================================================================
+#if JVET_M0883_TRIANGLE_SIGNALING
+const TriangleMotionInfo  EncCu::m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS] = 
+{
+  TriangleMotionInfo( 0, 1, 0 ), TriangleMotionInfo( 1, 0, 1 ), TriangleMotionInfo( 1, 0, 2 ), TriangleMotionInfo( 0, 0, 1 ), TriangleMotionInfo( 0, 2, 0 ),
+  TriangleMotionInfo( 1, 0, 3 ), TriangleMotionInfo( 1, 0, 4 ), TriangleMotionInfo( 1, 1, 0 ), TriangleMotionInfo( 0, 3, 0 ), TriangleMotionInfo( 0, 4, 0 ),
+  TriangleMotionInfo( 0, 0, 2 ), TriangleMotionInfo( 0, 1, 2 ), TriangleMotionInfo( 1, 1, 2 ), TriangleMotionInfo( 0, 0, 4 ), TriangleMotionInfo( 0, 0, 3 ),
+  TriangleMotionInfo( 0, 1, 3 ), TriangleMotionInfo( 0, 1, 4 ), TriangleMotionInfo( 1, 1, 4 ), TriangleMotionInfo( 1, 1, 3 ), TriangleMotionInfo( 1, 2, 1 ),
+  TriangleMotionInfo( 1, 2, 0 ), TriangleMotionInfo( 0, 2, 1 ), TriangleMotionInfo( 0, 4, 3 ), TriangleMotionInfo( 1, 3, 0 ), TriangleMotionInfo( 1, 3, 2 ),
+  TriangleMotionInfo( 1, 3, 4 ), TriangleMotionInfo( 1, 4, 0 ), TriangleMotionInfo( 1, 3, 1 ), TriangleMotionInfo( 1, 2, 3 ), TriangleMotionInfo( 1, 4, 1 ),
+  TriangleMotionInfo( 0, 4, 1 ), TriangleMotionInfo( 0, 2, 3 ), TriangleMotionInfo( 1, 4, 2 ), TriangleMotionInfo( 0, 3, 2 ), TriangleMotionInfo( 1, 4, 3 ),
+  TriangleMotionInfo( 0, 3, 1 ), TriangleMotionInfo( 0, 2, 4 ), TriangleMotionInfo( 1, 2, 4 ), TriangleMotionInfo( 0, 4, 2 ), TriangleMotionInfo( 0, 3, 4 ),
+};
+#endif
 
 void EncCu::create( EncCfg* encCfg )
 {
   unsigned      uiMaxWidth    = encCfg->getMaxCUWidth();
   unsigned      uiMaxHeight   = encCfg->getMaxCUHeight();
   ChromaFormat  chromaFormat  = encCfg->getChromaFormatIdc();
-  bool          BTnoRQT       = encCfg->getQTBT();
 
   unsigned      numWidths     = gp_sizeIdxInfo->numWidths();
   unsigned      numHeights    = gp_sizeIdxInfo->numHeights();
-  unsigned      maxMEPart     = BTnoRQT ? 1 : NUMBER_OF_PART_SIZES;
   m_pTempCS = new CodingStructure**  [numWidths];
   m_pBestCS = new CodingStructure**  [numWidths];
 
-#if JVET_L0266_HMVP
   m_pTempMotLUTs = new LutMotionCand**[numWidths];
   m_pBestMotLUTs = new LutMotionCand**[numWidths];
   m_pSplitTempMotLUTs = new LutMotionCand**[numWidths];
-#endif
 
   for( unsigned w = 0; w < numWidths; w++ )
   {
     m_pTempCS[w] = new CodingStructure*  [numHeights];
     m_pBestCS[w] = new CodingStructure*  [numHeights];
-#if JVET_L0266_HMVP
     m_pTempMotLUTs[w] = new LutMotionCand*[numHeights];
     m_pBestMotLUTs[w] = new LutMotionCand*[numHeights];
     m_pSplitTempMotLUTs[w] = new LutMotionCand*[numHeights];
-#endif
 
     for( unsigned h = 0; h < numHeights; h++ )
     {
       unsigned width  = gp_sizeIdxInfo->sizeFrom( w );
       unsigned height = gp_sizeIdxInfo->sizeFrom( h );
 
-      if( ( BTnoRQT || w == h ) && gp_sizeIdxInfo->isCuSize( width ) && gp_sizeIdxInfo->isCuSize( height ) )
+      if( gp_sizeIdxInfo->isCuSize( width ) && gp_sizeIdxInfo->isCuSize( height ) )
       {
         m_pTempCS[w][h] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
         m_pBestCS[w][h] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
 
         m_pTempCS[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
         m_pBestCS[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
-#if JVET_L0266_HMVP
         m_pTempMotLUTs[w][h] = new LutMotionCand ;
         m_pBestMotLUTs[w][h] = new LutMotionCand ;
         m_pSplitTempMotLUTs[w][h] = new LutMotionCand;
+#if JVET_M0483_IBC
+        m_pSplitTempMotLUTs[w][h]->currCnt = 0;
+        m_pSplitTempMotLUTs[w][h]->currCntIBC = 0;
+        m_pSplitTempMotLUTs[w][h]->motionCand = nullptr;
+        m_pSplitTempMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS * 2];
+
+        m_pTempMotLUTs[w][h]->currCnt = 0;
+        m_pTempMotLUTs[w][h]->currCntIBC = 0;
+        m_pTempMotLUTs[w][h]->motionCand = nullptr;
+        m_pTempMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS * 2];
+
+        m_pBestMotLUTs[w][h]->currCnt = 0;
+        m_pBestMotLUTs[w][h]->currCntIBC = 0;
+        m_pBestMotLUTs[w][h]->motionCand = nullptr;
+        m_pBestMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS * 2];
+#else
         m_pSplitTempMotLUTs[w][h]->currCnt = 0;
         m_pSplitTempMotLUTs[w][h]->motionCand = nullptr;
         m_pSplitTempMotLUTs[w][h]->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
@@ -127,11 +149,9 @@ void EncCu::create( EncCfg* encCfg )
       {
         m_pTempCS[w][h] = nullptr;
         m_pBestCS[w][h] = nullptr;
-#if JVET_L0266_HMVP
         m_pTempMotLUTs[w][h] = nullptr;
         m_pBestMotLUTs[w][h] = nullptr;
         m_pSplitTempMotLUTs[w][h] = nullptr;
-#endif
       }
     }
   }
@@ -139,70 +159,42 @@ void EncCu::create( EncCfg* encCfg )
   // WIA: only the weight==height case is relevant without QTBT
   m_pImvTempCS = nullptr;
 
-  if( IMV_OFF != encCfg->getIMV() && !BTnoRQT )
-  {
-    m_pImvTempCS = new CodingStructure**[numWidths];
-
-    for( unsigned w = 0; w < numWidths; w++ )
-    {
-      unsigned width  = gp_sizeIdxInfo->sizeFrom( w );
-      unsigned height = gp_sizeIdxInfo->sizeFrom( w );
-
-      m_pImvTempCS[w] = new CodingStructure*[maxMEPart];
-
-      for( unsigned p = 0; p < maxMEPart; p++ )
-      {
-        if( gp_sizeIdxInfo->isCuSize( width ) )
-        {
-          m_pImvTempCS[w][p] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
-          m_pImvTempCS[w][p]->create( chromaFormat, Area( 0, 0, width, height ), false );
-        }
-        else
-        {
-          m_pImvTempCS[w][p] = nullptr;
-        }
-      }
-    }
-  }
-
-
   m_cuChromaQpOffsetIdxPlus1 = 0;
 
   unsigned maxDepth = numWidths + numHeights;
 
-  if( encCfg->getQTBT() )
-  {
-    m_modeCtrl = new EncModeCtrlMTnoRQT();
-  }
-  else
-  {
-    THROW( "Unknown partitioner!" );
-  }
+  m_modeCtrl = new EncModeCtrlMTnoRQT();
 
 #if REUSE_CU_RESULTS
   m_modeCtrl->create( *encCfg );
 
 #endif
-#if JVET_L0054_MMVD
   for (unsigned ui = 0; ui < MMVD_MRG_MAX_RD_BUF_NUM; ui++)
-#else
-  for( unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++ )
-#endif
   {
     m_acMergeBuffer[ui].create( chromaFormat, Area( 0, 0, uiMaxWidth, uiMaxHeight ) );
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA && JVET_L0054_MMVD
   for (unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++)
   {
     m_acRealMergeBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
   }
+#if JVET_M0883_TRIANGLE_SIGNALING
+  for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_UNI_CANDS; ui++ )
+  {
+    for( unsigned uj = 0; uj < TRIANGLE_MAX_NUM_UNI_CANDS; uj++ )
+    {
+      if(ui == uj)
+        continue;
+      uint8_t idxBits0 = ui + (ui == TRIANGLE_MAX_NUM_UNI_CANDS - 1 ? 0 : 1);
+      uint8_t candIdx1Enc = uj - (uj > ui ? 1 : 0);
+      uint8_t idxBits1 = candIdx1Enc + (candIdx1Enc == TRIANGLE_MAX_NUM_UNI_CANDS - 2 ? 0 : 1);
+      m_triangleIdxBins[1][ui][uj] = m_triangleIdxBins[0][ui][uj] = 1 + idxBits0 + idxBits1;
+    }
+  }
 #endif
-#if JVET_L0124_L0208_TRIANGLE
   for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
   {
     m_acTriangleWeightedBuffer[ui].create( chromaFormat, Area( 0, 0, uiMaxWidth, uiMaxHeight ) );
   }
-#endif
 
   m_CtxBuffer.resize( maxDepth );
   m_CurrCtx = 0;
@@ -211,9 +203,6 @@ void EncCu::create( EncCfg* encCfg )
 
 void EncCu::destroy()
 {
-  bool          BTnoRQT   = m_pcEncCfg->getQTBT();
-  unsigned      maxMEPart = BTnoRQT ? 1 : NUMBER_OF_PART_SIZES;
-
   unsigned numWidths  = gp_sizeIdxInfo->numWidths();
   unsigned numHeights = gp_sizeIdxInfo->numHeights();
 
@@ -221,52 +210,51 @@ void EncCu::destroy()
   {
     for( unsigned h = 0; h < numHeights; h++ )
     {
-      if( BTnoRQT || w == h )
+      if( m_pBestCS[w][h] ) m_pBestCS[w][h]->destroy();
+      if( m_pTempCS[w][h] ) m_pTempCS[w][h]->destroy();
+
+      delete m_pBestCS[w][h];
+      delete m_pTempCS[w][h];
+      if (m_pTempMotLUTs[w][h])
       {
-        if( m_pBestCS[w][h] ) m_pBestCS[w][h]->destroy();
-        if( m_pTempCS[w][h] ) m_pTempCS[w][h]->destroy();
+        delete[] m_pTempMotLUTs[w][h]->motionCand;
+        m_pTempMotLUTs[w][h]->motionCand = nullptr;
+        delete m_pTempMotLUTs[w][h];
+      }
+      if (m_pBestMotLUTs[w][h])
+      {
+        delete[] m_pBestMotLUTs[w][h]->motionCand;
+        m_pBestMotLUTs[w][h]->motionCand = nullptr;
+        delete m_pBestMotLUTs[w][h];
+      }
 
-        delete m_pBestCS[w][h];
-        delete m_pTempCS[w][h];
-#if JVET_L0266_HMVP
-        if (m_pTempMotLUTs[w][h])
-        {
-          delete[] m_pTempMotLUTs[w][h]->motionCand;
-          m_pTempMotLUTs[w][h]->motionCand = nullptr;
-          delete[] m_pTempMotLUTs[w][h];
-        }
-        if (m_pBestMotLUTs[w][h])
-        {
-          delete[] m_pBestMotLUTs[w][h]->motionCand;
-          m_pBestMotLUTs[w][h]->motionCand = nullptr;
-          delete[] m_pBestMotLUTs[w][h];
-        }
-
-        if (m_pSplitTempMotLUTs[w][h])
-        {
-          delete[] m_pSplitTempMotLUTs[w][h]->motionCand;
-          m_pSplitTempMotLUTs[w][h]->motionCand = nullptr;
-          delete[] m_pSplitTempMotLUTs[w][h];
-        }
-#endif
+      if (m_pSplitTempMotLUTs[w][h])
+      {
+        delete[] m_pSplitTempMotLUTs[w][h]->motionCand;
+        m_pSplitTempMotLUTs[w][h]->motionCand = nullptr;
+        delete m_pSplitTempMotLUTs[w][h];
       }
     }
 
     delete[] m_pTempCS[w];
     delete[] m_pBestCS[w];
-#if JVET_L0266_HMVP
     delete[] m_pBestMotLUTs[w];
     delete[] m_pTempMotLUTs[w];
     delete[] m_pSplitTempMotLUTs[w];
-#endif
   }
 
   delete[] m_pBestCS; m_pBestCS = nullptr;
   delete[] m_pTempCS; m_pTempCS = nullptr;
-#if JVET_L0266_HMVP
   delete[] m_pSplitTempMotLUTs; m_pSplitTempMotLUTs = nullptr;
   delete[] m_pBestMotLUTs; m_pBestMotLUTs = nullptr;
   delete[] m_pTempMotLUTs; m_pTempMotLUTs = nullptr;
+
+#if JVET_M0427_INLOOP_RESHAPER && REUSE_CU_RESULTS
+  if (m_tmpStorageLCU)
+  {
+    m_tmpStorageLCU->destroy();
+    delete m_tmpStorageLCU;  m_tmpStorageLCU = nullptr;
+  }
 #endif
 
 #if REUSE_CU_RESULTS
@@ -281,38 +269,29 @@ void EncCu::destroy()
   {
     for( unsigned w = 0; w < numWidths; w++ )
     {
-      for( unsigned p = 0; p < maxMEPart; p++ )
+      if( m_pImvTempCS[w] )
       {
-        if( m_pImvTempCS[w][p] ) m_pImvTempCS[w][p]->destroy();
-        delete m_pImvTempCS[w][p];
+        m_pImvTempCS[w]->destroy();
+        delete[] m_pImvTempCS[w];
       }
-      delete[] m_pImvTempCS[w];
     }
 
     delete[] m_pImvTempCS;
     m_pImvTempCS = nullptr;
   }
 
-#if JVET_L0054_MMVD
   for (unsigned ui = 0; ui < MMVD_MRG_MAX_RD_BUF_NUM; ui++)
-#else
-  for( unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++ )
-#endif
   {
     m_acMergeBuffer[ui].destroy();
   }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA && JVET_L0054_MMVD
   for (unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++)
   {
     m_acRealMergeBuffer[ui].destroy();
   }
-#endif
-#if JVET_L0124_L0208_TRIANGLE
   for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
   {
     m_acTriangleWeightedBuffer[ui].destroy();
   }
-#endif
 }
 
 
@@ -341,6 +320,18 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   m_pcEncLib           = pcEncLib;
   m_dataId             = tId;
 #endif
+#if JVET_M0170_MRG_SHARELIST
+  m_shareState = NO_SHARE;
+  m_pcInterSearch->setShareState(0);
+  setShareStateDec(0);
+#endif
+
+#if JVET_M0170_MRG_SHARELIST
+  m_shareBndPosX = -1;
+  m_shareBndPosY = -1;
+  m_shareBndSizeW = 0;
+  m_shareBndSizeH = 0;
+#endif
 
 #if REUSE_CU_RESULTS
   DecCu::init( m_pcTrQuant, m_pcIntraSearch, m_pcInterSearch );
@@ -349,19 +340,21 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   m_modeCtrl->init( m_pcEncCfg, m_pcRateCtrl, m_pcRdCost );
 
   m_pcInterSearch->setModeCtrl( m_modeCtrl );
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  m_pcIntraSearch->setModeCtrl( m_modeCtrl );
+#endif
   ::memset(m_subMergeBlkSize, 0, sizeof(m_subMergeBlkSize));
   ::memset(m_subMergeBlkNum, 0, sizeof(m_subMergeBlkNum));
   m_prevPOC = MAX_UINT;
-#if !JVET_L0198_L0468_L0104_ATMVP_8x8SUB_BLOCK
-  m_clearSubMergeStatic = false;
-#endif
 
-#if JVET_L0293_CPR
-  if (m_pcEncCfg->getCPRHashSearch() && m_pcEncCfg->getCPRMode())
-  {
-    m_cprHashMap.init(m_pcEncCfg->getSourceWidth(), m_pcEncCfg->getSourceHeight());
-  }
+#if  JVET_M0255_FRACMMVD_SWITCH
+  if ( ( m_pcEncCfg->getIBCHashSearch() && m_pcEncCfg->getIBCMode() ) || m_pcEncCfg->getAllowDisFracMMVD() )
+#else
+  if (m_pcEncCfg->getIBCHashSearch() && m_pcEncCfg->getIBCMode())
 #endif
+  {
+    m_ibcHashMap.init(m_pcEncCfg->getSourceWidth(), m_pcEncCfg->getSourceHeight());
+  }
 }
 
 // ====================================================================================================================
@@ -370,10 +363,18 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
 
 void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsigned ctuRsAddr, const int prevQP[], const int currQP[] )
 {
-#if JVET_L0293_CPR
-  if (m_pcEncCfg->getCPRHashSearch() && ctuRsAddr == 0 && cs.slice->getSPS()->getSpsNext().getCPRMode())
+#if !JVET_M0255_FRACMMVD_SWITCH
+  if (m_pcEncCfg->getIBCHashSearch() && ctuRsAddr == 0 && cs.slice->getSPS()->getSpsNext().getIBCMode())
   {
-    m_cprHashMap.rebuildPicHashMap(cs.picture->getOrigBuf());
+#if JVET_M0427_INLOOP_RESHAPER
+    if (cs.slice->getSPS()->getUseReshaper() && m_pcReshape->getCTUFlag())
+      cs.picture->getOrigBuf(COMPONENT_Y).rspSignal(m_pcReshape->getFwdLUT());
+#endif
+    m_ibcHashMap.rebuildPicHashMap(cs.picture->getOrigBuf());
+#if JVET_M0427_INLOOP_RESHAPER
+    if (cs.slice->getSPS()->getUseReshaper() && m_pcReshape->getCTUFlag())
+      cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
+#endif
   }
 #endif
   m_modeCtrl->initCTUEncoding( *cs.slice );
@@ -397,39 +398,39 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   // init the partitioning manager
   Partitioner *partitioner = PartitionerFactory::get( *cs.slice );
   partitioner->initCtu( area, CH_L, *cs.slice );
-#if JVET_L0293_CPR
-  if (m_pcEncCfg->getCPRMode())
+  if (m_pcEncCfg->getIBCMode())
   {
     m_pcInterSearch->resetCtuRecord();
-    m_ctuCprSearchRangeX = m_pcEncCfg->getCPRLocalSearchRangeX();
-    m_ctuCprSearchRangeY = m_pcEncCfg->getCPRLocalSearchRangeY();
+    m_ctuIbcSearchRangeX = m_pcEncCfg->getIBCLocalSearchRangeX();
+    m_ctuIbcSearchRangeY = m_pcEncCfg->getIBCLocalSearchRangeY();
   }
-  if (m_pcEncCfg->getCPRMode() && m_pcEncCfg->getCPRHashSearch() && (m_pcEncCfg->getCPRFastMethod() & CPR_FAST_METHOD_ADAPTIVE_SEARCHRANGE))
+  if (m_pcEncCfg->getIBCMode() && m_pcEncCfg->getIBCHashSearch() && (m_pcEncCfg->getIBCFastMethod() & IBC_FAST_METHOD_ADAPTIVE_SEARCHRANGE))
   {
-    const int hashHitRatio = m_cprHashMap.getHashHitRatio(area.Y()); // in percent
+    const int hashHitRatio = m_ibcHashMap.getHashHitRatio(area.Y()); // in percent
     if (hashHitRatio < 5) // 5%
     {
-      m_ctuCprSearchRangeX >>= 1;
-      m_ctuCprSearchRangeY >>= 1;
+      m_ctuIbcSearchRangeX >>= 1;
+      m_ctuIbcSearchRangeY >>= 1;
     }
+#if JVET_M0483_IBC
+    if (cs.slice->getNumRefIdx(REF_PIC_LIST_0) > 0)
+#else
     if (cs.slice->getNumRefIdx(REF_PIC_LIST_0) > 1)
+#endif
     {
-      m_ctuCprSearchRangeX >>= 1;
-      m_ctuCprSearchRangeY >>= 1;
+      m_ctuIbcSearchRangeX >>= 1;
+      m_ctuIbcSearchRangeY >>= 1;
     }
   }
-#endif //CPR
   // init current context pointer
   m_CurrCtx = m_CtxBuffer.data();
 
   CodingStructure *tempCS = m_pTempCS[gp_sizeIdxInfo->idxFrom( area.lumaSize().width )][gp_sizeIdxInfo->idxFrom( area.lumaSize().height )];
   CodingStructure *bestCS = m_pBestCS[gp_sizeIdxInfo->idxFrom( area.lumaSize().width )][gp_sizeIdxInfo->idxFrom( area.lumaSize().height )];
-#if JVET_L0266_HMVP
   LutMotionCand *tempMotCandLUTs = m_pTempMotLUTs[gp_sizeIdxInfo->idxFrom(area.lumaSize().width)][gp_sizeIdxInfo->idxFrom(area.lumaSize().height)];
   LutMotionCand *bestMotCandLUTs = m_pBestMotLUTs[gp_sizeIdxInfo->idxFrom(area.lumaSize().width)][gp_sizeIdxInfo->idxFrom(area.lumaSize().height)];
   cs.slice->copyMotionLUTs(cs.slice->getMotionLUTs(), tempMotCandLUTs);
   cs.slice->copyMotionLUTs(cs.slice->getMotionLUTs(), bestMotCandLUTs);
-#endif
 
   cs.initSubStructure( *tempCS, partitioner->chType, partitioner->currArea(), false );
   cs.initSubStructure( *bestCS, partitioner->chType, partitioner->currArea(), false );
@@ -438,19 +439,18 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   tempCS->prevQP[CH_L] = bestCS->prevQP[CH_L] = prevQP[CH_L];
 
   xCompressCU( tempCS, bestCS, *partitioner
-#if JVET_L0266_HMVP
     , tempMotCandLUTs
     , bestMotCandLUTs
-#endif
   );
 
-
   // all signals were already copied during compression if the CTU was split - at this point only the structures are copied to the top level CS
+#if JVET_M0427_INLOOP_RESHAPER
+  const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1;
+#else
   const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1 && KEEP_PRED_AND_RESI_SIGNALS;
-  cs.useSubStructure( *bestCS, partitioner->chType, CS::getArea( *bestCS, area, partitioner->chType ), copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals );
-#if JVET_L0266_HMVP
-  cs.slice->copyMotionLUTs(bestMotCandLUTs, cs.slice->getMotionLUTs());
 #endif
+  cs.useSubStructure( *bestCS, partitioner->chType, CS::getArea( *bestCS, area, partitioner->chType ), copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals );
+  cs.slice->copyMotionLUTs(bestMotCandLUTs, cs.slice->getMotionLUTs());
 
   if( !cs.pcv->ISingleTree && cs.slice->isIRAP() && cs.pcv->chrFormat != CHROMA_400 )
   {
@@ -465,13 +465,15 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
     tempCS->prevQP[CH_C] = bestCS->prevQP[CH_C] = prevQP[CH_C];
 
     xCompressCU( tempCS, bestCS, *partitioner
-#if JVET_L0266_HMVP
       , tempMotCandLUTs
       , bestMotCandLUTs
-#endif
     );
 
+#if JVET_M0427_INLOOP_RESHAPER
+    const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1;
+#else
     const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1 && KEEP_PRED_AND_RESI_SIGNALS;
+#endif
     cs.useSubStructure( *bestCS, partitioner->chType, CS::getArea( *bestCS, area, partitioner->chType ), copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals );
   }
 
@@ -494,7 +496,6 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   // Ensure that a coding was found
   // Selected mode's RD-cost must be not MAX_DOUBLE.
   CHECK( bestCS->cus.empty()                                   , "No possible encoding found" );
-  CHECK( bestCS->cus[0]->partSize == NUMBER_OF_PART_SIZES      , "No possible encoding found" );
   CHECK( bestCS->cus[0]->predMode == NUMBER_OF_PREDICTION_MODES, "No possible encoding found" );
   CHECK( bestCS->cost             == MAX_DOUBLE                , "No possible encoding found" );
 }
@@ -616,15 +617,9 @@ int  EncCu::updateCtuDataISlice(const CPelBuf buf)
   return( iSumHad );
 }
 
-#if JVET_L0266_HMVP
 bool EncCu::xCheckBestMode( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
-#else
-void EncCu::xCheckBestMode( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
-#endif
 {
-#if JVET_L0266_HMVP
   bool bestCSUpdated = false;
-#endif
 
   if( !tempCS->cus.empty() )
   {
@@ -656,27 +651,32 @@ void EncCu::xCheckBestMode( CodingStructure *&tempCS, CodingStructure *&bestCS, 
       std::swap( tempCS, bestCS );
       // store temp best CI for next CU coding
       m_CurrCtx->best = m_CABACEstimator->getCtx();
-#if JVET_L0266_HMVP
       bestCSUpdated = true;
-#endif
     }
   }
 
   // reset context states
   m_CABACEstimator->getCtx() = m_CurrCtx->start;
-#if JVET_L0266_HMVP
   return bestCSUpdated;
-#endif
 
 }
 
 void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner
-#if JVET_L0266_HMVP
   , LutMotionCand *&tempMotCandLUTs
   , LutMotionCand *&bestMotCandLUTs
-#endif
 )
 {
+#if JVET_M0170_MRG_SHARELIST
+  if (m_shareState == NO_SHARE)
+  {
+    tempCS->sharedBndPos = tempCS->area.Y().lumaPos();
+    tempCS->sharedBndSize.width = tempCS->area.lwidth();
+    tempCS->sharedBndSize.height = tempCS->area.lheight();
+    bestCS->sharedBndPos = bestCS->area.Y().lumaPos();
+    bestCS->sharedBndSize.width = bestCS->area.lwidth();
+    bestCS->sharedBndSize.height = bestCS->area.lheight();
+  }
+#endif
 #if ENABLE_SPLIT_PARALLELISM
   CHECK( m_dataId != tempCS->picture->scheduler.getDataId(), "Working in the wrong dataId!" );
 
@@ -701,20 +701,27 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   const unsigned wIdx = gp_sizeIdxInfo->idxFrom( partitioner.currArea().lwidth()  );
 
   const UnitArea currCsArea = clipArea( CS::getArea( *bestCS, bestCS->area, partitioner.chType ), *tempCS->picture );
+#if JVET_M0483_IBC 
+  if (m_pImvTempCS && (!slice.isIntra() || slice.getSPS()->getIBCFlag()))
+#else
   if( m_pImvTempCS && !slice.isIntra() )
+#endif
   {
-    const unsigned maxMEPart = tempCS->pcv->only2Nx2N ? 1 : NUMBER_OF_PART_SIZES;
-    for( unsigned p = 0; p < maxMEPart; p++ )
-    {
-      tempCS->initSubStructure( *m_pImvTempCS[wIdx][p], partitioner.chType, partitioner.currArea(), false );
-    }
+    tempCS->initSubStructure( *m_pImvTempCS[wIdx], partitioner.chType, partitioner.currArea(), false );
   }
 
-#if JVET_L0293_CPR
   tempCS->chType = partitioner.chType;
   bestCS->chType = partitioner.chType;
-#endif
   m_modeCtrl->initCULevel( partitioner, *tempCS );
+#if JVET_M0140_SBT
+  if( partitioner.currQtDepth == 0 && partitioner.currMtDepth == 0 && !tempCS->slice->isIntra() && ( sps.getSpsNext().getUseSBT() || sps.getSpsNext().getUseInterMTS() ) )
+  {
+    auto slsSbt = dynamic_cast<SaveLoadEncInfoSbt*>( m_modeCtrl );
+    int maxSLSize = sps.getSpsNext().getUseSBT() ? tempCS->slice->getSPS()->getSpsNext().getMaxSbtSize() : MTS_INTER_MAX_CU_SIZE;
+    slsSbt->resetSaveloadSbt( maxSLSize );
+  }
+  m_sbtCostSave[0] = m_sbtCostSave[1] = MAX_DOUBLE;
+#endif
 
   m_CurrCtx->start = m_CABACEstimator->getCtx();
 
@@ -732,16 +739,16 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     m_modeCtrl->finishCULevel( partitioner );
     return;
   }
-#if JVET_L0266_HMVP
+#if JVET_M0483_IBC
+  if ((!slice.isIntra() || slice.getSPS()->getIBCFlag())
+#else
   if (!slice.isIntra()
-#if JVET_L0293_CPR
-    && tempCS->chType == CHANNEL_TYPE_LUMA
 #endif
+    && tempCS->chType == CHANNEL_TYPE_LUMA
     )
   {
     tempCS->slice->copyMotionLUTs(tempMotCandLUTs, tempCS->slice->getMotionLUTs());
   }
-#endif
 
   DTRACE_UPDATE( g_trace_ctx, std::make_pair( "cux", uiLPelX ) );
   DTRACE_UPDATE( g_trace_ctx, std::make_pair( "cuy", uiTPelY ) );
@@ -749,9 +756,31 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   DTRACE_UPDATE( g_trace_ctx, std::make_pair( "cuh", tempCS->area.lheight() ) );
   DTRACE( g_trace_ctx, D_COMMON, "@(%4d,%4d) [%2dx%2d]\n", tempCS->area.lx(), tempCS->area.ly(), tempCS->area.lwidth(), tempCS->area.lheight() );
 
+
+#if JVET_M0170_MRG_SHARELIST
+  int startShareThisLevel = 0;
+#endif
+#if JVET_M0246_AFFINE_AMVR 
+  m_pcInterSearch->resetSavedAffineMotion();
+#endif
+
   do
   {
-    const EncTestMode currTestMode = m_modeCtrl->currTestMode();
+    EncTestMode currTestMode = m_modeCtrl->currTestMode();
+
+    if (tempCS->pps->getUseDQP() && CS::isDualITree(*tempCS) && isChroma(partitioner.chType))
+    {
+      const Position chromaCentral(tempCS->area.Cb().chromaPos().offset(tempCS->area.Cb().chromaSize().width >> 1, tempCS->area.Cb().chromaSize().height >> 1));
+      const Position lumaRefPos(chromaCentral.x << getComponentScaleX(COMPONENT_Cb, tempCS->area.chromaFormat), chromaCentral.y << getComponentScaleY(COMPONENT_Cb, tempCS->area.chromaFormat));
+      const CodingStructure* baseCS = bestCS->picture->cs;
+      const CodingUnit* colLumaCu = baseCS->getCU(lumaRefPos, CHANNEL_TYPE_LUMA);
+      const TransformUnit*  tu = baseCS->getTU(lumaRefPos, CHANNEL_TYPE_LUMA);
+
+      if (colLumaCu && tu)
+      {
+        currTestMode.qp = colLumaCu->qp;
+      }
+    }
 
 #if SHARP_LUMA_DELTA_QP
     if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && partitioner.currDepth <= pps.getMaxCuDQPDepth() )
@@ -770,14 +799,32 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     {
       if( ( currTestMode.opts & ETO_IMV ) != 0 )
       {
+#if JVET_M0246_AFFINE_AMVR
+        tempCS->bestCS = bestCS;
+        xCheckRDCostInterIMV( tempCS, bestCS, partitioner, currTestMode );
+        tempCS->bestCS = nullptr;
+#else
         xCheckRDCostInterIMV(tempCS, bestCS, partitioner, currTestMode);
+#endif
       }
       else
       {
+#if JVET_M0246_AFFINE_AMVR
+        tempCS->bestCS = bestCS;
         xCheckRDCostInter( tempCS, bestCS, partitioner, currTestMode );
+        tempCS->bestCS = nullptr;
+#else
+        xCheckRDCostInter( tempCS, bestCS, partitioner, currTestMode );
+#endif
       }
 
     }
+#if JVET_M0253_HASH_ME
+    else if (currTestMode.type == ETM_HASH_INTER)
+    {
+      xCheckRDCostHashInter( tempCS, bestCS, partitioner, currTestMode );
+    }
+#endif
     else if( currTestMode.type == ETM_AFFINE )
     {
       xCheckRDCostAffineMerge2Nx2N( tempCS, bestCS, partitioner, currTestMode );
@@ -791,20 +838,14 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     else if( currTestMode.type == ETM_MERGE_SKIP )
     {
       xCheckRDCostMerge2Nx2N( tempCS, bestCS, partitioner, currTestMode );
-#if JVET_L0054_MMVD
       CodingUnit* cu = bestCS->getCU(partitioner.chType);
-#if JVET_L0293_CPR
       if (cu)
-#endif
       cu->mmvdSkip = cu->skip == false ? false : cu->mmvdSkip;
-#endif
     }
-#if JVET_L0124_L0208_TRIANGLE
     else if( currTestMode.type == ETM_MERGE_TRIANGLE )
     {
       xCheckRDCostMergeTriangle2Nx2N( tempCS, bestCS, partitioner, currTestMode );
     }
-#endif
     else if( currTestMode.type == ETM_INTRA )
     {
       xCheckRDCostIntra( tempCS, bestCS, partitioner, currTestMode );
@@ -813,32 +854,37 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     {
       xCheckIntraPCM( tempCS, bestCS, partitioner, currTestMode );
     }
-#if JVET_L0293_CPR
-    else if (currTestMode.type == ETM_CPR)
+    else if (currTestMode.type == ETM_IBC)
     {
-      xCheckRDCostCPRMode(tempCS, bestCS, partitioner, currTestMode);
+      xCheckRDCostIBCMode(tempCS, bestCS, partitioner, currTestMode);
     }
-    else if (currTestMode.type == ETM_CPR_MERGE)
+    else if (currTestMode.type == ETM_IBC_MERGE)
     {
-      xCheckRDCostCPRModeMerge2Nx2N(tempCS, bestCS, partitioner, currTestMode);
+      xCheckRDCostIBCModeMerge2Nx2N(tempCS, bestCS, partitioner, currTestMode);
     }
-#endif // CPR
     else if( isModeSplit( currTestMode ) )
     {
 
       xCheckModeSplit( tempCS, bestCS, partitioner, currTestMode
-#if JVET_L0266_HMVP
         , tempMotCandLUTs
         , bestMotCandLUTs
         , partitioner.currArea()
-#endif
       );
     }
     else
     {
-      THROW( "Don't know how to handle mode: type = " << currTestMode.type << ", size = " << currTestMode.partSize << ", options = " << currTestMode.opts );
+      THROW( "Don't know how to handle mode: type = " << currTestMode.type << ", options = " << currTestMode.opts );
     }
   } while( m_modeCtrl->nextMode( *tempCS, partitioner ) );
+
+#if JVET_M0170_MRG_SHARELIST
+  if(startShareThisLevel == 1)
+  {
+    m_shareState = NO_SHARE;
+    m_pcInterSearch->setShareState(m_shareState);
+    setShareStateDec(m_shareState);
+  }
+#endif
 
   //////////////////////////////////////////////////////////////////////////
   // Finishing CU
@@ -858,21 +904,24 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 
   // QP from last processed CU for further processing
   bestCS->prevQP[partitioner.chType] = bestCS->cus.back()->qp;
-#if JVET_L0266_HMVP
-  if (!slice.isIntra() 
-#if JVET_L0293_CPR
-    && bestCS->chType == CHANNEL_TYPE_LUMA
-#endif
-    && bestCS->cus.size() == 1 && bestCS->cus.back()->predMode == MODE_INTER 
-#if JVET_L0293_CPR
-    && bestCS->area.Y() == (*bestCS->cus.back()).Y()
+#if JVET_M0483_IBC
+  if ((!slice.isIntra() || slice.getSPS()->getIBCFlag())
 #else
-    && bestCS->area == *bestCS->cus.back()
+  if (!slice.isIntra() 
 #endif
+    && bestCS->chType == CHANNEL_TYPE_LUMA
+#if JVET_M0483_IBC
+    && bestCS->cus.size() == 1 && (bestCS->cus.back()->predMode == MODE_INTER || bestCS->cus.back()->predMode == MODE_IBC)
+#else
+    && bestCS->cus.size() == 1 && bestCS->cus.back()->predMode == MODE_INTER 
+#endif
+    && bestCS->area.Y() == (*bestCS->cus.back()).Y()
     )
   {
     bestCS->slice->updateMotionLUTs(bestMotCandLUTs, (*bestCS->cus.back()));
   }
+#if JVET_M0427_INLOOP_RESHAPER
+  bestCS->picture->getPredBuf(currCsArea).copyFrom(bestCS->getPredBuf(currCsArea));
 #endif
   bestCS->picture->getRecoBuf( currCsArea ).copyFrom( bestCS->getRecoBuf( currCsArea ) );
   m_modeCtrl->finishCULevel( partitioner );
@@ -887,7 +936,6 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   // Assert if Best prediction mode is NONE
   // Selected mode's RD-cost must be not MAX_DOUBLE.
   CHECK( bestCS->cus.empty()                                   , "No possible encoding found" );
-  CHECK( bestCS->cus[0]->partSize == NUMBER_OF_PART_SIZES      , "No possible encoding found" );
   CHECK( bestCS->cus[0]->predMode == NUMBER_OF_PREDICTION_MODES, "No possible encoding found" );
   CHECK( bestCS->cost             == MAX_DOUBLE                , "No possible encoding found" );
 }
@@ -1122,11 +1170,9 @@ void EncCu::copyState( EncCu* other, Partitioner& partitioner, const UnitArea& c
 #endif
 
 void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode
-#if JVET_L0266_HMVP
   , LutMotionCand* &tempMotCandLUTs
   , LutMotionCand* &bestMotCandLUTs
   , UnitArea  parArea
-#endif
 )
 {
   const int qp                = encTestMode.qp;
@@ -1136,14 +1182,10 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   const int oldPrevQp         = tempCS->prevQP[partitioner.chType];
   const uint32_t currDepth        = partitioner.currDepth;
 
-#if JVET_L0266_HMVP
   const unsigned wParIdx = gp_sizeIdxInfo->idxFrom(parArea.lwidth());
   const unsigned hParIdx = gp_sizeIdxInfo->idxFrom(parArea.lheight());
-#if JVET_L0293_CPR
   if (tempCS->chType == CHANNEL_TYPE_LUMA)
-#endif
   tempCS->slice->copyMotionLUTs(tempMotCandLUTs, m_pSplitTempMotLUTs[wParIdx][hParIdx]);
-#endif
 
   const PartSplit split = getPartSplit( encTestMode );
 
@@ -1153,48 +1195,112 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
   m_CABACEstimator->getCtx() = m_CurrCtx->start;
 
-  if( tempCS->sps->getSpsNext().getUseQTBT() )
+  const TempCtx ctxStartSP( m_CtxCache, SubCtx( Ctx::SplitFlag,   m_CABACEstimator->getCtx() ) );
+#if JVET_M0421_SPLIT_SIG
+  const TempCtx ctxStartQt( m_CtxCache, SubCtx( Ctx::SplitQtFlag, m_CABACEstimator->getCtx() ) );
+  const TempCtx ctxStartHv( m_CtxCache, SubCtx( Ctx::SplitHvFlag, m_CABACEstimator->getCtx() ) );
+  const TempCtx ctxStart12( m_CtxCache, SubCtx( Ctx::Split12Flag, m_CABACEstimator->getCtx() ) );
+#else
+  const TempCtx ctxStartBT( m_CtxCache, SubCtx( Ctx::BTSplitFlag, m_CABACEstimator->getCtx() ) );
+#endif
+
+  m_CABACEstimator->resetBits();
+
+#if JVET_M0421_SPLIT_SIG
+  m_CABACEstimator->split_cu_mode( split, *tempCS, partitioner );
+#else
+  if( partitioner.getImplicitSplit( *tempCS ) != CU_QUAD_SPLIT )
   {
-    const TempCtx ctxStartSP( m_CtxCache, SubCtx( Ctx::SplitFlag,   m_CABACEstimator->getCtx() ) );
-    const TempCtx ctxStartBT( m_CtxCache, SubCtx( Ctx::BTSplitFlag, m_CABACEstimator->getCtx() ) );
-
-    m_CABACEstimator->resetBits();
-
-    if( partitioner.getImplicitSplit( *tempCS ) != CU_QUAD_SPLIT )
+    if( partitioner.canSplit( CU_QUAD_SPLIT, *tempCS ) )
     {
-      if( partitioner.canSplit( CU_QUAD_SPLIT, *tempCS ) )
-      {
-        m_CABACEstimator->split_cu_flag( split == CU_QUAD_SPLIT, *tempCS, partitioner );
-      }
-      if( split != CU_QUAD_SPLIT )
-      {
-        m_CABACEstimator->split_cu_mode_mt( split, *tempCS, partitioner );
-      }
+      m_CABACEstimator->split_cu_flag( split == CU_QUAD_SPLIT, *tempCS, partitioner );
     }
-
-    const double factor = ( tempCS->currQP[partitioner.chType] > 30 ? 1.1 : 1.075 );
-    const double cost   = m_pcRdCost->calcRdCost( uint64_t( m_CABACEstimator->getEstFracBits() + ( ( bestCS->fracBits ) / factor ) ), Distortion( bestCS->dist / factor ) );
-
-    m_CABACEstimator->getCtx() = SubCtx( Ctx::SplitFlag,   ctxStartSP );
-    m_CABACEstimator->getCtx() = SubCtx( Ctx::BTSplitFlag, ctxStartBT );
-
-    if( cost > bestCS->cost )
+    if( split != CU_QUAD_SPLIT )
     {
-      xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
-      return;
+      m_CABACEstimator->split_cu_mode_mt( split, *tempCS, partitioner );
     }
   }
+#endif
+
+  const double factor = ( tempCS->currQP[partitioner.chType] > 30 ? 1.1 : 1.075 );
+  const double cost   = m_pcRdCost->calcRdCost( uint64_t( m_CABACEstimator->getEstFracBits() + ( ( bestCS->fracBits ) / factor ) ), Distortion( bestCS->dist / factor ) );
+
+  m_CABACEstimator->getCtx() = SubCtx( Ctx::SplitFlag,   ctxStartSP );
+#if JVET_M0421_SPLIT_SIG
+  m_CABACEstimator->getCtx() = SubCtx( Ctx::SplitQtFlag, ctxStartQt );
+  m_CABACEstimator->getCtx() = SubCtx( Ctx::SplitHvFlag, ctxStartHv );
+  m_CABACEstimator->getCtx() = SubCtx( Ctx::Split12Flag, ctxStart12 );
+#else
+  m_CABACEstimator->getCtx() = SubCtx( Ctx::BTSplitFlag, ctxStartBT );
+#endif
+
+  if( cost > bestCS->cost )
+  {
+    xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
+    return;
+  }
+
+#if JVET_M0170_MRG_SHARELIST
+  if (!slice.isIntra()
+    && tempCS->chType == CHANNEL_TYPE_LUMA
+    )
+  {
+    tempCS->slice->copyMotionLUTs(tempMotCandLUTs, tempCS->slice->getMotionLUTs());
+  }
+
+  int startShareThisLevel = 0;
+  const uint32_t uiLPelX = tempCS->area.Y().lumaPos().x;
+  const uint32_t uiTPelY = tempCS->area.Y().lumaPos().y;
+
+  int splitRatio = 1;
+  CHECK(!(split == CU_QUAD_SPLIT || split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT
+    || split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT), "invalid split type");
+  splitRatio = (split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT) ? 1 : 2;
+
+  bool isOneChildSmall = ((tempCS->area.lwidth())*(tempCS->area.lheight()) >> splitRatio) < MRG_SHARELIST_SHARSIZE;
+
+  if ((((tempCS->area.lwidth())*(tempCS->area.lheight())) > (MRG_SHARELIST_SHARSIZE * 1)))
+  {
+    m_shareState = NO_SHARE;
+  }
+
+  if (m_shareState == NO_SHARE)//init state
+  {
+    if (isOneChildSmall)
+    {
+      m_shareState = GEN_ON_SHARED_BOUND;//share start state
+      startShareThisLevel = 1;
+    }
+  }
+  if ((m_shareState == GEN_ON_SHARED_BOUND) && (!slice.isIntra()))
+  {
+#if JVET_M0170_MRG_SHARELIST
+    tempCS->slice->copyMotionLUTs(tempCS->slice->getMotionLUTs(), tempCS->slice->m_MotionCandLuTsBkup);
+    m_shareBndPosX = uiLPelX;
+    m_shareBndPosY = uiTPelY;
+    m_shareBndSizeW = tempCS->area.lwidth();
+    m_shareBndSizeH = tempCS->area.lheight();
+    m_shareState = SHARING;
+#endif
+  }
+
+
+  m_pcInterSearch->setShareState(m_shareState);
+  setShareStateDec(m_shareState);
+#endif
 
   partitioner.splitCurrArea( split, *tempCS );
 
   m_CurrCtx++;
 
   tempCS->getRecoBuf().fill( 0 );
-#if JVET_L0260_AFFINE_ME
+
+#if JVET_M0427_INLOOP_RESHAPER
+  tempCS->getPredBuf().fill(0);
+#endif
   AffineMVInfo tmpMVInfo;
   bool isAffMVInfoSaved;
   m_pcInterSearch->savePrevAffMVInfo(0, tmpMVInfo, isAffMVInfoSaved);
-#endif
 
   do
   {
@@ -1210,25 +1316,26 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
       tempCS->initSubStructure( *tempSubCS, partitioner.chType, subCUArea, false );
       tempCS->initSubStructure( *bestSubCS, partitioner.chType, subCUArea, false );
-#if JVET_L0266_HMVP
       LutMotionCand *tempSubMotCandLUTs = m_pTempMotLUTs[wIdx][hIdx];
       LutMotionCand *bestSubMotCandLUTs = m_pBestMotLUTs[wIdx][hIdx];
-#if JVET_L0293_CPR
       if (tempCS->chType == CHANNEL_TYPE_LUMA)
       {
-#endif
         tempCS->slice->copyMotionLUTs(tempMotCandLUTs, tempSubMotCandLUTs);
         tempCS->slice->copyMotionLUTs(tempMotCandLUTs, bestSubMotCandLUTs);
-#if JVET_L0293_CPR
       }
+#if JVET_M0170_MRG_SHARELIST
+      tempSubCS->sharedBndPos.x = (m_shareState == SHARING) ? m_shareBndPosX : tempSubCS->area.Y().lumaPos().x;
+      tempSubCS->sharedBndPos.y = (m_shareState == SHARING) ? m_shareBndPosY : tempSubCS->area.Y().lumaPos().y;
+      tempSubCS->sharedBndSize.width = (m_shareState == SHARING) ? m_shareBndSizeW : tempSubCS->area.lwidth();
+      tempSubCS->sharedBndSize.height = (m_shareState == SHARING) ? m_shareBndSizeH : tempSubCS->area.lheight();
+      bestSubCS->sharedBndPos.x = (m_shareState == SHARING) ? m_shareBndPosX : tempSubCS->area.Y().lumaPos().x;
+      bestSubCS->sharedBndPos.y = (m_shareState == SHARING) ? m_shareBndPosY : tempSubCS->area.Y().lumaPos().y;
+      bestSubCS->sharedBndSize.width = (m_shareState == SHARING) ? m_shareBndSizeW : tempSubCS->area.lwidth();
+      bestSubCS->sharedBndSize.height = (m_shareState == SHARING) ? m_shareBndSizeH : tempSubCS->area.lheight();
 #endif
-#endif
-
       xCompressCU( tempSubCS, bestSubCS, partitioner
-#if JVET_L0266_HMVP
         , tempSubMotCandLUTs
         , bestSubMotCandLUTs
-#endif
       );
 
       if( bestSubCS->cost == MAX_DOUBLE )
@@ -1237,31 +1344,21 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
         tempCS->cost = MAX_DOUBLE;
         m_CurrCtx--;
         partitioner.exitCurrSplit();
-#if JVET_L0266_HMVP
         bool bestCSUpdated =
-#endif
         xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
-#if JVET_L0266_HMVP
-#if JVET_L0293_CPR
         if (tempCS->chType == CHANNEL_TYPE_LUMA)
-#endif
         if (bestCSUpdated)
         {
           std::swap(tempMotCandLUTs, bestMotCandLUTs);
         }
-#endif
         return;
       }
 
       bool keepResi = KEEP_PRED_AND_RESI_SIGNALS;
       tempCS->useSubStructure( *bestSubCS, partitioner.chType, CS::getArea( *tempCS, subCUArea, partitioner.chType ), KEEP_PRED_AND_RESI_SIGNALS, true, keepResi, keepResi );
-#if JVET_L0266_HMVP
-#if JVET_L0293_CPR
       if (tempCS->chType == CHANNEL_TYPE_LUMA)
-#endif
       tempCS->slice->copyMotionLUTs(bestSubMotCandLUTs, tempMotCandLUTs);
-#endif
 
       if(currDepth < pps.getMaxCuDQPDepth())
       {
@@ -1275,6 +1372,15 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
   partitioner.exitCurrSplit();
 
+#if JVET_M0170_MRG_SHARELIST 
+  if (startShareThisLevel == 1)
+  {
+    m_shareState = NO_SHARE;
+    m_pcInterSearch->setShareState(m_shareState);
+    setShareStateDec(m_shareState);
+  }
+#endif
+
   m_CurrCtx--;
 
   // Finally, generate split-signaling bits for RD-cost check
@@ -1285,10 +1391,10 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 #if HM_QTBT_REPRODUCE_FAST_LCTU_BUG
 
     // LARGE CTU bug
-    if( m_pcEncCfg->getQTBT() && m_pcEncCfg->getUseFastLCTU() )
+    if( m_pcEncCfg->getUseFastLCTU() )
     {
       unsigned minDepth = 0;
-      unsigned maxDepth = g_aucLog2[tempCS->sps->getSpsNext().getCTUSize()] - g_aucLog2[tempCS->sps->getSpsNext().getMinQTSize( slice.getSliceType(), partitioner.chType )];
+      unsigned maxDepth = g_aucLog2[tempCS->sps->getCTUSize()] - g_aucLog2[tempCS->sps->getMinQTSize(slice.getSliceType(), partitioner.chType)];
 
       if( auto ad = dynamic_cast<AdaptiveDepthPartitioner*>( &partitioner ) )
       {
@@ -1307,6 +1413,9 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     {
       m_CABACEstimator->resetBits();
 
+#if JVET_M0421_SPLIT_SIG
+      m_CABACEstimator->split_cu_mode( split, *tempCS, partitioner );
+#else
       if( partitioner.canSplit( CU_QUAD_SPLIT, *tempCS ) )
       {
         m_CABACEstimator->split_cu_flag( split == CU_QUAD_SPLIT, *tempCS, partitioner );
@@ -1315,6 +1424,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       {
         m_CABACEstimator->split_cu_mode_mt( split, *tempCS, partitioner );
       }
+#endif
 
       tempCS->fracBits += m_CABACEstimator->getEstFracBits(); // split bits
     }
@@ -1365,21 +1475,18 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
 
   // RD check for sub partitioned coding structure.
-#if JVET_L0266_HMVP
   bool bestCSUpdated =
-#endif
   xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
-#if JVET_L0260_AFFINE_ME
   if (isAffMVInfoSaved)
     m_pcInterSearch->addAffMVInfo(tmpMVInfo);
-#endif
 
-#if JVET_L0266_HMVP
+#if JVET_M0483_IBC
+  if ((!slice.isIntra() || slice.getSPS()->getIBCFlag())
+#else
   if (!slice.isIntra()
-#if JVET_L0293_CPR
-    && tempCS->chType == CHANNEL_TYPE_LUMA
 #endif
+    && tempCS->chType == CHANNEL_TYPE_LUMA
     )
   {
     if (bestCSUpdated)
@@ -1388,7 +1495,6 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     }
     tempCS->slice->copyMotionLUTs(m_pSplitTempMotLUTs[wParIdx][hParIdx], tempMotCandLUTs);
   }
-#endif
 
   tempCS->releaseIntermediateData();
 
@@ -1398,24 +1504,32 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
 void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
+#if !JVET_M0464_UNI_MTS
   double bestInterCost             = m_modeCtrl->getBestInterCost();
   double costSize2Nx2NemtFirstPass = m_modeCtrl->getEmtSize2Nx2NFirstPassCost();
-  double costSizeNxNemtFirstPass   = MAX_DOUBLE;
   bool skipSecondEmtPass           = m_modeCtrl->getSkipSecondEMTPass();
   const SPS &sps                   = *tempCS->sps;
-  const PPS &pps              = *tempCS->pps;
+#endif
+  const PPS &pps      = *tempCS->pps;
+#if !JVET_M0464_UNI_MTS
   const CodingUnit *bestCU    = bestCS->getCU( partitioner.chType );
-  const int maxSizeEMT        = pps.pcv->noRQT ? EMT_INTRA_MAX_CU_WITH_QTBT : EMT_INTRA_MAX_CU;
-#if HM_EMT_NSST_AS_IN_JEM
+  const int maxSizeEMT        = EMT_INTRA_MAX_CU_WITH_QTBT;
   uint8_t considerEmtSecondPass = ( sps.getSpsNext().getUseIntraEMT() && isLuma( partitioner.chType ) && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT ) ? 1 : 0;
-#else
-  uint8_t considerEmtSecondPass = ( sps.getSpsNext().getUseIntraEMT() && isLuma( partitioner.chType ) && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT && nsstIdx == 0 ) ? 1 : 0;
 #endif
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  bool   useIntraSubPartitions   = false;
+  double maxCostAllowedForChroma = MAX_DOUBLE;
+#if JVET_M0464_UNI_MTS
+  const  CodingUnit *bestCU      = bestCS->getCU( partitioner.chType );
+#endif
+#endif
   Distortion interHad = m_modeCtrl->getInterHad();
 
 
-
+#if JVET_M0464_UNI_MTS
+  {
+#else
   for( uint8_t emtCuFlag = 0; emtCuFlag <= considerEmtSecondPass; emtCuFlag++ )
   {
     //Possible early EMT tests interruptions
@@ -1429,6 +1543,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     {
       continue;
     }
+#endif
 
     tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
 
@@ -1440,16 +1555,18 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
     cu.skip             = false;
-#if JVET_L0054_MMVD
     cu.mmvdSkip = false;
-#endif
-    cu.partSize         = encTestMode.partSize;
     cu.predMode         = MODE_INTRA;
     cu.transQuantBypass = encTestMode.lossless;
     cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
     cu.qp               = encTestMode.qp;
   //cu.ipcm             = false;
+#if !JVET_M0464_UNI_MTS
     cu.emtFlag          = emtCuFlag;
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS 
+    cu.ispMode          = NOT_INTRA_SUBPARTITIONS;
+#endif
 
     CU::addPUs( cu );
 
@@ -1457,7 +1574,24 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
     if( isLuma( partitioner.chType ) )
     {
+#if JVET_M0102_INTRA_SUBPARTITIONS
+      //the Intra SubPartitions mode uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary lines 
+      const double bestCostSoFar = CS::isDualITree( *tempCS ) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
+      m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner, bestCostSoFar );
+
+      useIntraSubPartitions = cu.ispMode != NOT_INTRA_SUBPARTITIONS;
+      if( !CS::isDualITree( *tempCS ) )
+      {
+        tempCS->lumaCost = m_pcRdCost->calcRdCost( tempCS->fracBits, tempCS->dist );
+        if( useIntraSubPartitions )
+        {
+          //the difference between the best cost so far and the current luma cost is stored to avoid testing the Cr component if the cost of luma + Cb is larger than the best cost
+          maxCostAllowedForChroma = bestCS->cost < MAX_DOUBLE ? bestCS->cost - tempCS->lumaCost : MAX_DOUBLE;
+        }
+      }
+#else
       m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner );
+#endif
 
       if (m_pcEncCfg->getUsePbIntraFast() && tempCS->dist == std::numeric_limits<Distortion>::max()
           && tempCS->interHad == 0)
@@ -1465,18 +1599,39 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
         interHad = 0;
         // JEM assumes only perfect reconstructions can from now on beat the inter mode
         m_modeCtrl->enforceInterHad( 0 );
+#if JVET_M0464_UNI_MTS
+        return;
+#else
         continue;
+#endif
       }
 
       if( !CS::isDualITree( *tempCS ) )
       {
         cu.cs->picture->getRecoBuf( cu.Y() ).copyFrom( cu.cs->getRecoBuf( COMPONENT_Y ) );
+#if JVET_M0427_INLOOP_RESHAPER
+        cu.cs->picture->getPredBuf(cu.Y()).copyFrom(cu.cs->getPredBuf(COMPONENT_Y));
+#endif
       }
     }
 
     if( tempCS->area.chromaFormat != CHROMA_400 && ( partitioner.chType == CHANNEL_TYPE_CHROMA || !CS::isDualITree( *tempCS ) ) )
     {
+#if JVET_M0102_INTRA_SUBPARTITIONS
+      TUIntraSubPartitioner subTuPartitioner( partitioner );
+      m_pcIntraSearch->estIntraPredChromaQT( cu, ( !useIntraSubPartitions || ( CS::isDualITree( *cu.cs ) && !isLuma( CHANNEL_TYPE_CHROMA ) ) ) ? partitioner : subTuPartitioner, maxCostAllowedForChroma );
+      if( useIntraSubPartitions && !cu.ispMode )
+      {
+        //At this point the temp cost is larger than the best cost. Therefore, we can already skip the remaining calculations
+#if JVET_M0464_UNI_MTS
+        return;
+#else
+        continue;
+#endif
+      }
+#else
       m_pcIntraSearch->estIntraPredChromaQT( cu, partitioner );
+#endif
     }
 
     cu.rootCbf = false;
@@ -1494,21 +1649,23 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
       m_CABACEstimator->cu_transquant_bypass_flag( cu );
     }
 
+#if JVET_M0483_IBC
+    if ((!cu.cs->slice->isIntra() || cu.cs->slice->getSPS()->getIBCFlag())
+#else
     if( !cu.cs->slice->isIntra() 
-#if JVET_L0293_CPR 
-      && cu.Y().valid()
 #endif
+      && cu.Y().valid()
       )
     {
       m_CABACEstimator->cu_skip_flag ( cu );
     }
     m_CABACEstimator->pred_mode      ( cu );
-#if JVET_L0283_MULTI_REF_LINE
     m_CABACEstimator->extend_ref_line( cu );
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    m_CABACEstimator->isp_mode       ( cu );
 #endif
     m_CABACEstimator->cu_pred_data   ( cu );
-    m_CABACEstimator->pcm_data       ( cu );
-
+    m_CABACEstimator->pcm_data       ( cu, partitioner );
 
     // Encode Coefficients
     CUCtx cuCtx;
@@ -1519,13 +1676,26 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     tempCS->fracBits = m_CABACEstimator->getEstFracBits();
     tempCS->cost     = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+#if !JVET_M0464_UNI_MTS
+    double bestIspCost = cu.ispMode ? CS::isDualITree(*tempCS) ? tempCS->cost : tempCS->lumaCost : MAX_DOUBLE;
+#endif
+    const double tmpCostWithoutSplitFlags = tempCS->cost;
+#endif
     xEncodeDontSplit( *tempCS, partitioner );
 
     xCheckDQP( *tempCS, partitioner );
 
-
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    if( tempCS->cost < bestCS->cost )
+    {
+      m_modeCtrl->setBestCostWithoutSplitFlags( tmpCostWithoutSplitFlags );
+    }
+#endif
+#if !JVET_M0464_UNI_MTS
     // we save the cost of the modes for the first EMT pass
-    if( !emtCuFlag ) static_cast< double& >( cu.partSize == SIZE_2Nx2N ? costSize2Nx2NemtFirstPass : costSizeNxNemtFirstPass ) = tempCS->cost;
+    if( !emtCuFlag ) static_cast< double& >( costSize2Nx2NemtFirstPass ) = tempCS->cost;
+#endif
 
 #if WCG_EXT
     DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda( true ) );
@@ -1534,9 +1704,25 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 #endif
     xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
-
+#if !JVET_M0464_UNI_MTS
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    //we decide to skip the second emt pass or not according to the ISP results
+    if (considerEmtSecondPass && cu.ispMode && !emtCuFlag && tempCS->slice->isIntra())
+    {
+      double bestCostDct2NoIsp = m_modeCtrl->getEmtFirstPassNoIspCost();
+      CHECKD(bestCostDct2NoIsp <= bestIspCost, "wrong cost!");
+      double nSamples = (double)(cu.lwidth() << g_aucLog2[cu.lheight()]);
+      double threshold = 1 + 1.4 / sqrt(nSamples);
+      if (bestCostDct2NoIsp > bestIspCost*threshold)
+      {
+        skipSecondEmtPass = true;
+        m_modeCtrl->setSkipSecondEMTPass(true);
+        break;
+      }
+    }
+#endif
     //now we check whether the second pass of SIZE_2Nx2N and the whole Intra SIZE_NxN should be skipped or not
-    if( !emtCuFlag && !tempCS->slice->isIntra() && bestCU && bestCU->predMode != MODE_INTRA && cu.partSize == SIZE_2Nx2N && m_pcEncCfg->getFastInterEMT() )
+    if( !emtCuFlag && !tempCS->slice->isIntra() && bestCU && bestCU->predMode != MODE_INTRA && m_pcEncCfg->getFastInterEMT() )
     {
       const double thEmtInterFastSkipIntra = 1.4; // Skip checking Intra if "2Nx2N using DCT2" is worse than best Inter mode
       if( costSize2Nx2NemtFirstPass > thEmtInterFastSkipIntra * bestInterCost )
@@ -1546,7 +1732,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
         break;
       }
     }
-
+#endif
   } //for emtCuFlag
 }
 
@@ -1554,7 +1740,7 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
 {
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
 
-  CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
+  CodingUnit &cu      = tempCS->addCU( CS::getArea( *tempCS, tempCS->area, partitioner.chType ), partitioner.chType );
 
   partitioner.setCUData( cu );
   cu.slice            = tempCS->slice;
@@ -1562,19 +1748,16 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
   cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
   cu.skip             = false;
-#if JVET_L0054_MMVD
   cu.mmvdSkip = false;
-#endif
-  cu.partSize         = SIZE_2Nx2N;
   cu.predMode         = MODE_INTRA;
   cu.transQuantBypass = encTestMode.lossless;
   cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
   cu.qp               = encTestMode.qp;
   cu.ipcm             = true;
 
-  tempCS->addPU(tempCS->area, partitioner.chType);
+  tempCS->addPU( CS::getArea( *tempCS, tempCS->area, partitioner.chType ), partitioner.chType );
 
-  tempCS->addTU( tempCS->area, partitioner.chType );
+  tempCS->addTU( CS::getArea( *tempCS, tempCS->area, partitioner.chType ), partitioner.chType );
 
   m_pcIntraSearch->IPCMSearch(*tempCS, partitioner);
 
@@ -1587,16 +1770,18 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
     m_CABACEstimator->cu_transquant_bypass_flag( cu );
   }
 
+#if JVET_M0483_IBC
+  if ((!cu.cs->slice->isIntra() || cu.cs->slice->getSPS()->getIBCFlag())
+#else
   if( !cu.cs->slice->isIntra() 
-#if JVET_L0293_CPR 
-    && cu.Y().valid()
 #endif
+    && cu.Y().valid()
     )
   {
     m_CABACEstimator->cu_skip_flag ( cu );
   }
   m_CABACEstimator->pred_mode      ( cu );
-  m_CABACEstimator->pcm_data       ( cu );
+  m_CABACEstimator->pcm_data       ( cu, partitioner );
 
 
   tempCS->fracBits = m_CABACEstimator->getEstFracBits();
@@ -1620,6 +1805,11 @@ void EncCu::xCheckDQP( CodingStructure& cs, Partitioner& partitioner, bool bKeep
   CHECK( !bKeepCtx && cs.cus.size() > 1, "bKeepCtx should never be set for non-split case" );
 
   if( !cs.pps->getUseDQP() )
+  {
+    return;
+  }
+
+  if (CS::isDualITree(cs) && isChroma(partitioner.chType))
   {
     return;
   }
@@ -1704,7 +1894,58 @@ void EncCu::xFillPCMBuffer( CodingUnit &cu )
     }
   }
 }
+#if JVET_M0253_HASH_ME
+void EncCu::xCheckRDCostHashInter( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
+{
+  bool isPerfectMatch = false;
 
+  tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
+  m_pcInterSearch->resetBufferedUniMotions();
+  m_pcInterSearch->setAffineModeSelected(false);
+  CodingUnit &cu = tempCS->addCU(tempCS->area, partitioner.chType);
+
+  partitioner.setCUData(cu);
+  cu.slice = tempCS->slice;
+  cu.skip = false;
+  cu.predMode = MODE_INTER;
+  cu.transQuantBypass = encTestMode.lossless;
+  cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
+  cu.qp = encTestMode.qp;
+#if !JVET_M0483_IBC
+  cu.ibc = false;
+#endif
+  CU::addPUs(cu);
+  cu.mmvdSkip = false;
+  cu.firstPU->mmvdMergeFlag = false;
+
+  if (m_pcInterSearch->predInterHashSearch(cu, partitioner, isPerfectMatch))
+  {
+    const unsigned wIdx = gp_sizeIdxInfo->idxFrom(tempCS->area.lwidth());
+    double equGBiCost = MAX_DOUBLE;
+
+#if JVET_M0464_UNI_MTS
+    xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, 0
+      , m_pImvTempCS ? m_pImvTempCS[wIdx] : NULL
+      , 0
+      , &equGBiCost
+#else
+    xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, 0
+      , m_pImvTempCS ? m_pImvTempCS[wIdx] : NULL
+      , 1
+      , 0
+      , &equGBiCost
+#endif
+    );
+  }
+  tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
+
+  if (cu.lwidth() != 64)
+  {
+    isPerfectMatch = false;
+  }
+  m_modeCtrl->setIsHashPerfectMatch(isPerfectMatch);
+}
+#endif
 
 void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
@@ -1717,21 +1958,21 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   MergeCtx mergeCtx;
   const SPS &sps = *tempCS->sps;
 
-  if( sps.getSpsNext().getUseSubPuMvp() )
+  if( sps.getSBTMVPEnabledFlag() )
   {
     Size bufSize = g_miScaling.scale( tempCS->area.lumaSize() );
     mergeCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
   }
 
-#if JVET_L0124_L0208_TRIANGLE
-  setMergeBestSATDCost( MAX_DOUBLE );
+#if JVET_M0147_DMVR
+  Mv   refinedMvdL0[MAX_NUM_PARTS_IN_CTU][MRG_MAX_NUM_CANDS];
 #endif
+  setMergeBestSATDCost( MAX_DOUBLE );
 
   {
     // first get merge candidates
     CodingUnit cu( tempCS->area );
     cu.cs       = tempCS;
-    cu.partSize = SIZE_2Nx2N;
     cu.predMode = MODE_INTER;
     cu.slice    = tempCS->slice;
 #if HEVC_TILES_WPP
@@ -1741,17 +1982,18 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     PredictionUnit pu( tempCS->area );
     pu.cu = &cu;
     pu.cs = tempCS;
+#if JVET_M0170_MRG_SHARELIST
+    pu.shareParentPos = tempCS->sharedBndPos;
+    pu.shareParentSize = tempCS->sharedBndSize;
+#endif
     PU::getInterMergeCandidates(pu, mergeCtx
-#if JVET_L0054_MMVD
       , 0
-#endif
     );
+#if !JVET_M0068_M0171_MMVD_CLEANUP
     PU::restrictBiPredMergeCands(pu, mergeCtx);
-#if JVET_L0054_MMVD
-    PU::getInterMMVDMergeCandidates(pu, mergeCtx);
 #endif
+    PU::getInterMMVDMergeCandidates(pu, mergeCtx);
   }
-#if JVET_L0054_MMVD
   bool candHasNoResidual[MRG_MAX_NUM_CANDS + MMVD_ADD_NUM];
   for (uint32_t ui = 0; ui < MRG_MAX_NUM_CANDS + MMVD_ADD_NUM; ui++)
   {
@@ -1760,9 +2002,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
   bool                                        bestIsSkip = false;
   bool                                        bestIsMMVDSkip = true;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   PelUnitBuf                                  acMergeBuffer[MRG_MAX_NUM_CANDS];
-#endif
   PelUnitBuf                                  acMergeRealBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
   PelUnitBuf *                                acMergeTempBuffer[MMVD_MRG_MAX_RD_NUM];
   PelUnitBuf *                                singleMergeTempBuffer;
@@ -1790,35 +2030,8 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       singleMergeTempBuffer = acMergeRealBuffer + i;
     }
   }
-#else
-  bool candHasNoResidual[MRG_MAX_NUM_CANDS];
-  for (uint32_t ui = 0; ui < mergeCtx.numValidMergeCand; ui++)
-  {
-    candHasNoResidual[ui] = false;
-  }
 
-  bool                                        bestIsSkip       = false;
-  unsigned                                    uiNumMrgSATDCand = mergeCtx.numValidMergeCand;
-  PelUnitBuf                                  acMergeBuffer    [ MRG_MAX_NUM_CANDS ];
-  static_vector<unsigned, MRG_MAX_NUM_CANDS>  RdModeList;
-  bool                                        mrgTempBufSet    = false;
-
-#if DMVR_JVET_LOW_LATENCY_K0217
-  Mv                                          refinedMvdL0[MRG_MAX_NUM_CANDS];
-#endif
-
-  for( unsigned i = 0; i < MRG_MAX_NUM_CANDS; i++ )
-  {
-    RdModeList.push_back( i );
-  }
-#endif
-
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-#if JVET_L0054_MMVD
   static_vector<unsigned, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM>  RdModeList2; // store the Intra mode for Intrainter
-#else
-  static_vector<unsigned, MRG_MAX_NUM_CANDS>  RdModeList2; // store the Intra mode for Intrainter
-#endif
   RdModeList2.clear();
   bool isIntrainterEnabled = sps.getSpsNext().getUseMHIntra();
   if (bestCS->area.lwidth() * bestCS->area.lheight() < 64 || bestCS->area.lwidth() >= MAX_CU_SIZE || bestCS->area.lheight() >= MAX_CU_SIZE)
@@ -1830,50 +2043,37 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   {
     isTestSkipMerge[idx] = false;
   }
-#endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
   if( m_pcEncCfg->getUseFastMerge() || isIntrainterEnabled)
-#else
-  if( m_pcEncCfg->getUseFastMerge() )
-#endif
   {
     uiNumMrgSATDCand = NUM_MRG_SATD_CAND;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     if (isIntrainterEnabled)
     {
       uiNumMrgSATDCand += 1;
     }
-#endif
     bestIsSkip       = false;
 
     if( auto blkCache = dynamic_cast< CacheBlkInfoCtrl* >( m_modeCtrl ) )
     {
-#if JVET_L0293_CPR
-      if (slice.getSPS()->getSpsNext().getCPRMode())
+#if JVET_M0483_IBC
+      if (slice.getSPS()->getIBCFlag())
+#else
+      if (slice.getSPS()->getSpsNext().getIBCMode())
+#endif
       {
         ComprCUCtx cuECtx = m_modeCtrl->getComprCUCtx();
         bestIsSkip = blkCache->isSkip(tempCS->area) && cuECtx.bestCU;
       }
       else
-#endif
       bestIsSkip = blkCache->isSkip( tempCS->area );
-#if JVET_L0054_MMVD
       bestIsMMVDSkip = blkCache->isMMVDSkip(tempCS->area);
-#endif
     }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     if (isIntrainterEnabled) // always perform low complexity check
     {
       bestIsSkip = false;
     }
-#endif
 
-#if JVET_L0054_MMVD
     static_vector<double, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM> candCostList;
-#else
-    static_vector<double, MRG_MAX_NUM_CANDS> candCostList;
-#endif
 
     // 1. Pass: get SATD-cost for selected candidates and reduce their count
     if( !bestIsSkip )
@@ -1883,9 +2083,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda( encTestMode.lossless );
 
       CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       const double sqrtLambdaForFirstPassIntra = m_pcRdCost->getMotionLambda(cu.transQuantBypass) / double(1 << SCALE_BITS);
-#endif
 
       partitioner.setCUData( cu );
       cu.slice            = tempCS->slice;
@@ -1893,13 +2091,8 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
       cu.skip             = false;
-#if JVET_L0054_MMVD
       cu.mmvdSkip = false;
-#endif
-#if JVET_L0124_L0208_TRIANGLE
       cu.triangle         = false;
-#endif
-      cu.partSize         = SIZE_2Nx2N;
     //cu.affine
       cu.predMode         = MODE_INTER;
     //cu.LICFlag
@@ -1915,44 +2108,54 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       m_pcRdCost->setDistParam (distParam, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y(), sps.getBitDepth (CHANNEL_TYPE_LUMA), COMPONENT_Y, bUseHadamard);
 
       const UnitArea localUnitArea( tempCS->area.chromaFormat, Area( 0, 0, tempCS->area.Y().width, tempCS->area.Y().height) );
-#if JVET_L0293_CPR
-      uint32_t cprCand = 0;
+#if JVET_M0483_IBC==0
+      uint32_t ibcCand = 0;
       uint32_t numValidMv = mergeCtx.numValidMergeCand;
 #endif
       for( uint32_t uiMergeCand = 0; uiMergeCand < mergeCtx.numValidMergeCand; uiMergeCand++ )
       {
-#if JVET_L0293_CPR
+#if JVET_M0483_IBC==0
         if ((mergeCtx.interDirNeighbours[uiMergeCand] == 1 || mergeCtx.interDirNeighbours[uiMergeCand] == 3) && tempCS->slice->getRefPic(REF_PIC_LIST_0, mergeCtx.mvFieldNeighbours[uiMergeCand << 1].refIdx)->getPOC() == tempCS->slice->getPOC())
         {
-          cprCand++;
+          ibcCand++;
           numValidMv--;
           continue;
         }
 #endif
-#if !JVET_L0054_MMVD
-        acMergeBuffer[uiMergeCand] = m_acMergeBuffer[uiMergeCand].getBuf( localUnitArea );
-#endif
         mergeCtx.setMergeInfo( pu, uiMergeCand );
 
         PU::spanMotionInfo( pu, mergeCtx );
-#if JVET_L0054_MMVD
+#if JVET_M0147_DMVR
+        pu.mvRefine = true;
+#endif
         distParam.cur = singleMergeTempBuffer->Y();
         m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer);
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         acMergeBuffer[uiMergeCand] = m_acRealMergeBuffer[uiMergeCand].getBuf(localUnitArea);
         acMergeBuffer[uiMergeCand].copyFrom(*singleMergeTempBuffer);
-#endif
-#else
-        distParam.cur = acMergeBuffer[uiMergeCand].Y();
-
-        m_pcInterSearch->motionCompensation( pu,  acMergeBuffer[uiMergeCand] );
+#if JVET_M0147_DMVR
+        pu.mvRefine = false;
 #endif
         if( mergeCtx.interDirNeighbours[uiMergeCand] == 3 && mergeCtx.mrgTypeNeighbours[uiMergeCand] == MRG_TYPE_DEFAULT_N )
         {
           mergeCtx.mvFieldNeighbours[2*uiMergeCand].mv   = pu.mv[0];
           mergeCtx.mvFieldNeighbours[2*uiMergeCand+1].mv = pu.mv[1];
-#if DMVR_JVET_LOW_LATENCY_K0217
-          refinedMvdL0[uiMergeCand] = pu.mvd[0];
+#if JVET_M0147_DMVR
+          {
+            int dx, dy, i, j, num = 0;
+            dy = std::min<int>(pu.lumaSize().height, DMVR_SUBCU_HEIGHT);
+            dx = std::min<int>(pu.lumaSize().width, DMVR_SUBCU_WIDTH);
+            if (PU::checkDMVRCondition(pu))
+            {
+              for (i = 0; i < (pu.lumaSize().height); i += dy)
+              {
+                for (j = 0; j < (pu.lumaSize().width); j += dx)
+                {
+                  refinedMvdL0[num][uiMergeCand] = pu.mvdL0SubPu[num];
+                  num++;
+                }
+              }
+            }
+          }
 #endif
         }
 
@@ -1962,24 +2165,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         {
           uiBitsCand--;
         }
-#if JVET_L0054_MMVD
         uiBitsCand++; // for mmvd_flag
-#endif
         double cost     = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
-#if JVET_L0054_MMVD
         insertPos = -1;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         updateDoubleCandList(uiMergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
-#else
-#if JVET_L0283_MULTI_REF_LINE
-        static_vector<int, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM> * nullList = nullptr;
-#endif
-        updateCandList(uiMergeCand, cost, RdModeList, candCostList
-#if JVET_L0283_MULTI_REF_LINE
-          , *nullList, -1
-#endif          
-          , uiNumMrgSATDCand, &insertPos);
-#endif
         if (insertPos != -1)
         {
           if (insertPos == RdModeList.size() - 1)
@@ -1995,36 +2184,19 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             swap(singleMergeTempBuffer, acMergeTempBuffer[insertPos]);
           }
         }
+#if JVET_M0483_IBC==0
+        CHECK(std::min(uiMergeCand + 1 - ibcCand, uiNumMrgSATDCand) != RdModeList.size(), "");
 #else
-
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-        updateDoubleCandList(uiMergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand);
-#else
-#if JVET_L0283_MULTI_REF_LINE
-        static_vector<int, MRG_MAX_NUM_CANDS> * nullList = nullptr;
-#endif
-        updateCandList( uiMergeCand, cost, RdModeList, candCostList
-#if JVET_L0283_MULTI_REF_LINE
-          , *nullList, -1
-#endif
-          , uiNumMrgSATDCand );
-#endif
-#endif
-#if JVET_L0293_CPR
-        CHECK(std::min(uiMergeCand + 1 - cprCand, uiNumMrgSATDCand) != RdModeList.size(), "");
-#else        
-        CHECK( std::min( uiMergeCand + 1, uiNumMrgSATDCand ) != RdModeList.size(), "" );
+        CHECK(std::min(uiMergeCand + 1, uiNumMrgSATDCand) != RdModeList.size(), "");
 #endif
       }
-#if JVET_L0293_CPR
+#if JVET_M0483_IBC==0
       if (numValidMv < uiNumMrgSATDCand)
         uiNumMrgSATDCand = numValidMv;
       if (numValidMv == 0)
         return;
 #endif
 
-
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       if (isIntrainterEnabled)
       {
         int numTestIntraMode = 4;
@@ -2040,7 +2212,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
         // save the to-be-tested merge candidates
         uint32_t MHIntraMergeCand[NUM_MRG_SATD_CAND];
-#if JVET_L0293_CPR
+#if JVET_M0483_IBC==0
         for (uint32_t mergeCnt = 0; mergeCnt < std::min(NUM_MRG_SATD_CAND, (const int) uiNumMrgSATDCand); mergeCnt++)
 #else
         for (uint32_t mergeCnt = 0; mergeCnt < NUM_MRG_SATD_CAND; mergeCnt++)
@@ -2048,18 +2220,14 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         {
           MHIntraMergeCand[mergeCnt] = RdModeList[mergeCnt];
         }
-#if JVET_L0293_CPR
+#if JVET_M0483_IBC==0
         for (uint32_t mergeCnt = 0; mergeCnt < std::min( std::min(NUM_MRG_SATD_CAND, (const int)uiNumMrgSATDCand), 4); mergeCnt++)
 #else
         for (uint32_t mergeCnt = 0; mergeCnt < std::min(NUM_MRG_SATD_CAND, 4); mergeCnt++)
 #endif
         {
           uint32_t mergeCand = MHIntraMergeCand[mergeCnt];
-#if JVET_L0054_MMVD
           acMergeBuffer[mergeCand] = m_acRealMergeBuffer[mergeCand].getBuf(localUnitArea);
-#else
-          acMergeBuffer[mergeCand] = m_acMergeBuffer[mergeCand].getBuf(localUnitArea);
-#endif
 
           // estimate merge bits
           uint32_t bitsCand = mergeCand + 1;
@@ -2096,21 +2264,34 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
               m_pcIntraSearch->switchBuffer(pu, COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, intraCnt));
             }
             pu.cs->getPredBuf(pu).copyFrom(acMergeBuffer[mergeCand]);
+#if JVET_M0427_INLOOP_RESHAPER
+            if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+            {
+              pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
+            }
+#endif
             m_pcIntraSearch->geneWeightedPred(COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, intraCnt));
 
             // calculate cost
+#if JVET_M0427_INLOOP_RESHAPER
+            if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+            {
+               pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getInvLUT());
+            }
+#endif
             distParam.cur = pu.cs->getPredBuf(pu).Y();
             Distortion sadValue = distParam.distFunc(distParam);
+#if JVET_M0427_INLOOP_RESHAPER 
+            if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+            {
+              pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
+            }
+#endif
             m_CABACEstimator->getCtx() = SubCtx(Ctx::MHIntraPredMode, ctxStartIntraMode);
             uint64_t fracModeBits = m_pcIntraSearch->xFracModeBitsIntra(pu, pu.intraDir[0], CHANNEL_TYPE_LUMA);
             double cost = (double)sadValue + (double)(bitsCand + 1) * sqrtLambdaForFirstPass + (double)fracModeBits * sqrtLambdaForFirstPassIntra;
-#if JVET_L0054_MMVD
             insertPos = -1;
             updateDoubleCandList(mergeCand + MRG_MAX_NUM_CANDS + MMVD_ADD_NUM, cost, RdModeList, candCostList, RdModeList2, pu.intraDir[0], uiNumMrgSATDCand, &insertPos);
-#else
-            updateDoubleCandList(mergeCand + MRG_MAX_NUM_CANDS + MRG_MAX_NUM_CANDS, cost, RdModeList, candCostList, RdModeList2, pu.intraDir[0], uiNumMrgSATDCand);
-#endif
-#if JVET_L0054_MMVD
             if (insertPos != -1)
             {
               for (int i = int(RdModeList.size()) - 1; i > insertPos; i--)
@@ -2119,7 +2300,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
               }
               swap(singleMergeTempBuffer, acMergeTempBuffer[insertPos]);
             }
-#endif
             // fast 2
             if (mergeCnt == 0 && cost < bestMHIntraCost)
             {
@@ -2131,13 +2311,13 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         pu.mhIntraFlag = false;
         m_CABACEstimator->getCtx() = ctxStart;
       }
-#endif
 
-#if JVET_L0054_MMVD
       cu.mmvdSkip = true;
       int tempNum = 0;
       tempNum = MMVD_ADD_NUM;
+#if !JVET_M0823_MMVD_ENCOPT
       bool allowDirection[4] = { true, true, true, true };
+#endif
       for (uint32_t mergeCand = mergeCtx.numValidMergeCand; mergeCand < mergeCtx.numValidMergeCand + tempNum; mergeCand++)
       {
         const int mmvdMergeCand = mergeCand - mergeCtx.numValidMergeCand;
@@ -2147,9 +2327,12 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         int bitsCand = 0;
         int baseIdx;
         int refineStep;
+#if !JVET_M0823_MMVD_ENCOPT
         int direction;
+#endif
         baseIdx = mmvdMergeCand / MMVD_MAX_REFINE_NUM;
         refineStep = (mmvdMergeCand - (baseIdx * MMVD_MAX_REFINE_NUM)) / 4;
+#if !JVET_M0823_MMVD_ENCOPT
         direction = (mmvdMergeCand - baseIdx * MMVD_MAX_REFINE_NUM - refineStep * 4) % 4;
         if (refineStep == 0)
         {
@@ -2159,6 +2342,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         {
           continue;
         }
+#endif
         bitsBaseIdx = baseIdx + 1;
         if (baseIdx == MMVD_BASE_MV_NUM - 1)
         {
@@ -2174,48 +2358,32 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         bitsCand = bitsBaseIdx + bitsRefineStep + bitsDirection;
         bitsCand++; // for mmvd_flag
 
-#if !JVET_L0054_MMVD
-        acMergeBuffer[mergeCand] = m_acMergeBuffer[mergeCand].getBuf(localUnitArea);
-#endif
         mergeCtx.setMmvdMergeCandiInfo(pu, mmvdMergeCand);
 
         PU::spanMotionInfo(pu, mergeCtx);
-#if JVET_L0054_MMVD
-        distParam.cur = singleMergeTempBuffer->Y();
-        m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer);
-#else
-        distParam.cur = acMergeBuffer[mergeCand].Y();
-        m_pcInterSearch->motionCompensation(pu, acMergeBuffer[mergeCand]);
+#if JVET_M0147_DMVR
+        pu.mvRefine = true;
 #endif
-
+        distParam.cur = singleMergeTempBuffer->Y();
+#if JVET_M0823_MMVD_ENCOPT
+        pu.mmvdEncOptMode = (refineStep > 2 ? 2 : 1);
+#endif
+        m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer);
+#if JVET_M0823_MMVD_ENCOPT
+        pu.mmvdEncOptMode = 0;
+#endif
+#if JVET_M0147_DMVR // store the refined MV
+        pu.mvRefine = false;
+#endif
         Distortion uiSad = distParam.distFunc(distParam);
 
 
-#if !JVET_L0054_MMVD
-        uint32_t bitsCand = mergeCand + 1;
-        if (mergeCand == tempCS->slice->getMaxNumMergeCand() - 1)
-        {
-          bitsCand--;
-        }
-#endif
         double cost = (double)uiSad + (double)bitsCand * sqrtLambdaForFirstPass;
-#if JVET_L0054_MMVD
+#if !JVET_M0823_MMVD_ENCOPT
         allowDirection[direction] = cost >  1.3 * candCostList[0] ? 0 : 1;
 #endif
-#if JVET_L0054_MMVD
         insertPos = -1;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         updateDoubleCandList(mergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
-#else
-#if JVET_L0283_MULTI_REF_LINE
-        static_vector<int, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM> * nullList = nullptr;
-#endif
-        updateCandList(mergeCand, cost, RdModeList, candCostList
-#if JVET_L0283_MULTI_REF_LINE
-          , *nullList, -1
-#endif
-          , uiNumMrgSATDCand, &insertPos);
-#endif
         if (insertPos != -1)
         {
           for (int i = int(RdModeList.size()) - 1; i > insertPos; i--)
@@ -2224,14 +2392,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           }
           swap(singleMergeTempBuffer, acMergeTempBuffer[insertPos]);
         }
-#else
-        updateCandList(mergeCand, cost, RdModeList, candCostList, uiNumMrgSATDCand);
-#endif
-#if !JVET_L0054_MMVD
-        CHECK(std::min(mergeCand + 1, uiNumMrgSATDCand) != RdModeList.size(), "");
-#endif
       }
-#endif
 
       // Try to limit number of candidates using SATD-costs
       for( uint32_t i = 1; i < uiNumMrgSATDCand; i++ )
@@ -2243,21 +2404,14 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
       }
 
-#if JVET_L0124_L0208_TRIANGLE
       setMergeBestSATDCost( candCostList[0] );
-#endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       if (isIntrainterEnabled)
       {
         pu.mhIntraFlag = true;
         for (uint32_t mergeCnt = 0; mergeCnt < uiNumMrgSATDCand; mergeCnt++)
         {
-#if JVET_L0054_MMVD
           if (RdModeList[mergeCnt] >= (MRG_MAX_NUM_CANDS + MMVD_ADD_NUM))
-#else
-          if (RdModeList[mergeCnt] >= (MRG_MAX_NUM_CANDS + MRG_MAX_NUM_CANDS))
-#endif
           {
             pu.intraDir[0] = RdModeList2[mergeCnt];
             pu.intraDir[1] = DM_CHROMA_IDX;
@@ -2274,13 +2428,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
         pu.mhIntraFlag = false;
       }
-#endif
 
       tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
     }
     else
     {
-#if JVET_L0054_MMVD
       if (bestIsMMVDSkip)
       {
         uiNumMrgSATDCand = mergeCtx.numValidMergeCand + MMVD_ADD_NUM;
@@ -2289,56 +2441,51 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       {
         uiNumMrgSATDCand = mergeCtx.numValidMergeCand;
       }
-#else
-      uiNumMrgSATDCand = mergeCtx.numValidMergeCand;
-#endif
     }
   }
 
+#if !JVET_M0253_HASH_ME
   const uint32_t iteration = encTestMode.lossless ? 1 : 2;
 
   // 2. Pass: check candidates using full RD test
   for( uint32_t uiNoResidualPass = 0; uiNoResidualPass < iteration; uiNoResidualPass++ )
+#else
+  uint32_t iteration;
+  uint32_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+  if (encTestMode.lossless)
+  {
+    iteration = 1;
+    iterationBegin = 0;
+  }
+  else
+  {
+    iteration = 2;
+  }
+  for (uint32_t uiNoResidualPass = iterationBegin; uiNoResidualPass < iteration; ++uiNoResidualPass)
+#endif
   {
     for( uint32_t uiMrgHADIdx = 0; uiMrgHADIdx < uiNumMrgSATDCand; uiMrgHADIdx++ )
     {
       uint32_t uiMergeCand = RdModeList[uiMrgHADIdx];
 
-
-#if JVET_L0293_CPR
-#if JVET_L0054_MMVD
+#if JVET_M0483_IBC==0
       if(uiMergeCand < mergeCtx.numValidMergeCand)
-#endif
         if ((mergeCtx.interDirNeighbours[uiMergeCand] == 1 || mergeCtx.interDirNeighbours[uiMergeCand] == 3) && tempCS->slice->getRefPic(REF_PIC_LIST_0, mergeCtx.mvFieldNeighbours[uiMergeCand << 1].refIdx)->getPOC() == tempCS->slice->getPOC())
         {
           continue;
         }
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-#if JVET_L0054_MMVD
       if (uiNoResidualPass != 0 && uiMergeCand >= (MRG_MAX_NUM_CANDS + MMVD_ADD_NUM)) // intrainter does not support skip mode
-#else
-      if (uiNoResidualPass != 0 && uiMergeCand >= (MRG_MAX_NUM_CANDS + MRG_MAX_NUM_CANDS)) // intrainter does not support skip mode
-#endif
       {
-#if JVET_L0054_MMVD
         uiMergeCand -= (MRG_MAX_NUM_CANDS + MMVD_ADD_NUM); // for skip, map back to normal merge candidate idx and try RDO
-#else
-        uiMergeCand -= (MRG_MAX_NUM_CANDS + MRG_MAX_NUM_CANDS); // for skip, map back to normal merge candidate idx and try RDO
-#endif
         if (isTestSkipMerge[uiMergeCand])
         {
           continue;
         }
       }
-#endif
 
-#if JVET_L0054_MMVD
       if (((uiNoResidualPass != 0) && candHasNoResidual[uiMrgHADIdx])
-#else
-      if( ( (uiNoResidualPass != 0) && candHasNoResidual[uiMergeCand] )
-#endif
        || ( (uiNoResidualPass == 0) && bestIsSkip ) )
       {
         continue;
@@ -2353,13 +2500,8 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
       cu.skip             = false;
-#if JVET_L0054_MMVD
       cu.mmvdSkip = false;
-#endif
-#if JVET_L0124_L0208_TRIANGLE
       cu.triangle         = false;
-#endif
-      cu.partSize         = SIZE_2Nx2N;
     //cu.affine
       cu.predMode         = MODE_INTER;
     //cu.LICFlag
@@ -2368,33 +2510,18 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       cu.qp               = encTestMode.qp;
       PredictionUnit &pu  = tempCS->addPU( cu, partitioner.chType );
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-#if JVET_L0054_MMVD
       if (uiNoResidualPass == 0 && uiMergeCand >= (MRG_MAX_NUM_CANDS + MMVD_ADD_NUM))
-#else
-      if (uiNoResidualPass == 0 && uiMergeCand >= (MRG_MAX_NUM_CANDS + MRG_MAX_NUM_CANDS))
-#endif
       {
-#if JVET_L0054_MMVD
         uiMergeCand -= (MRG_MAX_NUM_CANDS + MMVD_ADD_NUM);
         cu.mmvdSkip = false;
         mergeCtx.setMergeInfo(pu, uiMergeCand);
-#else
-        uiMergeCand -= (MRG_MAX_NUM_CANDS + MRG_MAX_NUM_CANDS);
-#endif
         pu.mhIntraFlag = true;
         pu.intraDir[0] = RdModeList2[uiMrgHADIdx];
         CHECK(pu.intraDir[0]<0 || pu.intraDir[0]>(NUM_LUMA_MODE - 1), "out of intra mode");
         pu.intraDir[1] = DM_CHROMA_IDX;
       }
-#endif
 
-#if JVET_L0054_MMVD
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       else if (uiMergeCand >= mergeCtx.numValidMergeCand && uiMergeCand < MRG_MAX_NUM_CANDS + MMVD_ADD_NUM)
-#else
-      if (uiMergeCand >= mergeCtx.numValidMergeCand)
-#endif
       {
         cu.mmvdSkip = true;
         mergeCtx.setMmvdMergeCandiInfo(pu, uiMergeCand - mergeCtx.numValidMergeCand);
@@ -2404,22 +2531,39 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         cu.mmvdSkip = false;
         mergeCtx.setMergeInfo(pu, uiMergeCand);
       }
-#else
-      mergeCtx.setMergeInfo( pu, uiMergeCand );
-#endif
       PU::spanMotionInfo( pu, mergeCtx );
 
       if( mrgTempBufSet )
       {
-#if DMVR_JVET_LOW_LATENCY_K0217
-        pu.mvd[0] = refinedMvdL0[uiMergeCand];
+#if JVET_M0147_DMVR
+        {
+          int dx, dy, i, j, num = 0;
+          dy = std::min<int>(pu.lumaSize().height, DMVR_SUBCU_HEIGHT);
+          dx = std::min<int>(pu.lumaSize().width, DMVR_SUBCU_WIDTH);
+          if (PU::checkDMVRCondition(pu))
+          {
+            for (i = 0; i < (pu.lumaSize().height); i += dy)
+            {
+              for (j = 0; j < (pu.lumaSize().width); j += dx)
+              {
+                pu.mvdL0SubPu[num] = refinedMvdL0[num][uiMergeCand];
+                num++;
+              }
+            }
+          }
+        }
 #endif
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
         if (pu.mhIntraFlag)
         {
           uint32_t bufIdx = (pu.intraDir[0] > 1) ? (pu.intraDir[0] == HOR_IDX ? 2 : 3) : pu.intraDir[0];
           PelBuf tmpBuf = tempCS->getPredBuf(pu).Y();
           tmpBuf.copyFrom(acMergeBuffer[uiMergeCand].Y());
+#if JVET_M0427_INLOOP_RESHAPER
+          if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+          {
+            tmpBuf.rspSignal(m_pcReshape->getFwdLUT());
+          }
+#endif
           m_pcIntraSearch->geneWeightedPred(COMPONENT_Y, tmpBuf, pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, bufIdx));
           tmpBuf = tempCS->getPredBuf(pu).Cb();
           tmpBuf.copyFrom(acMergeBuffer[uiMergeCand].Cb());
@@ -2430,7 +2574,13 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
         else
         {
-#if JVET_L0054_MMVD
+#if JVET_M0823_MMVD_ENCOPT
+          if (uiMergeCand >= mergeCtx.numValidMergeCand && uiMergeCand < MRG_MAX_NUM_CANDS + MMVD_ADD_NUM) {
+            pu.mmvdEncOptMode = 0;
+            m_pcInterSearch->motionCompensation(pu);
+          }
+          else
+#endif
           if (uiNoResidualPass != 0 && uiMergeCand < mergeCtx.numValidMergeCand && RdModeList[uiMrgHADIdx] >= (MRG_MAX_NUM_CANDS + MMVD_ADD_NUM))
           {
             tempCS->getPredBuf().copyFrom(acMergeBuffer[uiMergeCand]);
@@ -2439,52 +2589,34 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           {
             tempCS->getPredBuf().copyFrom(*acMergeTempBuffer[uiMrgHADIdx]);
           }
-#else
-          tempCS->getPredBuf().copyFrom(acMergeBuffer[uiMergeCand]);
-#endif
         }
-#else
-#if JVET_L0054_MMVD
-        tempCS->getPredBuf().copyFrom(*acMergeTempBuffer[uiMrgHADIdx]);
-#else
-        tempCS->getPredBuf().copyFrom( acMergeBuffer[ uiMergeCand ]);
-#endif
-#endif
       }
       else
       {
-        m_pcInterSearch->motionCompensation( pu );
-        
-      }
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
-#if JVET_L0054_MMVD
-      if (!cu.mmvdSkip && !pu.mhIntraFlag && uiNoResidualPass != 0)
-#else
-      if (!pu.mhIntraFlag && uiNoResidualPass != 0)
+#if JVET_M0147_DMVR
+        pu.mvRefine = true;
 #endif
+        m_pcInterSearch->motionCompensation( pu );
+#if JVET_M0147_DMVR
+        pu.mvRefine = false;
+#endif        
+      }
+      if (!cu.mmvdSkip && !pu.mhIntraFlag && uiNoResidualPass != 0)
       {
         CHECK(uiMergeCand >= mergeCtx.numValidMergeCand, "out of normal merge");
         isTestSkipMerge[uiMergeCand] = true;
       }
-#endif
 
-#if JVET_L0054_MMVD
+#if JVET_M0464_UNI_MTS
+      xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, uiNoResidualPass, NULL, uiNoResidualPass == 0 ? &candHasNoResidual[uiMrgHADIdx] : NULL );
+#else
       xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, uiNoResidualPass
         , NULL
         , 1
         , uiNoResidualPass == 0 ? &candHasNoResidual[uiMrgHADIdx] : NULL);
-#else
-      xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, uiNoResidualPass
-        , NULL
-        , 1
-        , uiNoResidualPass == 0 ? &candHasNoResidual[uiMergeCand] : NULL );
 #endif
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       if( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip && !pu.mhIntraFlag)
-#else
-      if( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip )
-#endif
       {
         bestIsSkip = bestCS->getCU( partitioner.chType )->rootCbf == 0;
       }
@@ -2524,7 +2656,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   }
 }
 
-#if JVET_L0124_L0208_TRIANGLE
 void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
   const Slice &slice = *tempCS->slice;
@@ -2540,16 +2671,12 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     trianglecandHasNoResidual[mergeCand] = false;
   }
 
-#if JVET_L0293_CPR
   bool bestIsSkip;
   CodingUnit* cuTemp = bestCS->getCU(partitioner.chType);
   if (cuTemp)
     bestIsSkip = m_pcEncCfg->getUseFastDecisionForMerge() ? bestCS->getCU(partitioner.chType)->rootCbf == 0 : false;
   else
     bestIsSkip = false;
-#else
-  bool                                            bestIsSkip             = m_pcEncCfg->getUseFastDecisionForMerge() ? bestCS->getCU( partitioner.chType )->rootCbf == 0 : false;
-#endif
   uint8_t                                         numTriangleCandidate   = TRIANGLE_MAX_NUM_CANDS;
   uint8_t                                         triangleNumMrgSATDCand = TRIANGLE_MAX_NUM_SATD_CANDS;
   PelUnitBuf                                      triangleBuffer[TRIANGLE_MAX_NUM_UNI_CANDS];
@@ -2574,16 +2701,14 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   {
     CodingUnit cu( tempCS->area );
     cu.cs       = tempCS;
-    cu.partSize = SIZE_2Nx2N;
     cu.predMode = MODE_INTER;
     cu.slice    = tempCS->slice;
-    cu.triangle = true;
-#if JVET_L0054_MMVD
-    cu.mmvdSkip = false;
-#endif    
-#if JVET_L0646_GBI
-    cu.GBiIdx   = GBI_DEFAULT;
+#if HEVC_TILES_WPP
+    cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
+    cu.triangle = true;
+    cu.mmvdSkip = false;
+    cu.GBiIdx   = GBI_DEFAULT;
 
     PredictionUnit pu( tempCS->area );
     pu.cu = &cu;
@@ -2616,19 +2741,17 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
       
     partitioner.setCUData( cu );
     cu.slice            = tempCS->slice;
+#if HEVC_TILES_WPP
+    cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
+#endif
     cu.skip             = false;
-    cu.partSize         = SIZE_2Nx2N;
     cu.predMode         = MODE_INTER;
     cu.transQuantBypass = encTestMode.lossless;
     cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
     cu.qp               = encTestMode.qp;
     cu.triangle         = true;
-#if JVET_L0054_MMVD
     cu.mmvdSkip         = false;
-#endif
-#if JVET_L0646_GBI
     cu.GBiIdx           = GBI_DEFAULT;
-#endif
 
     PredictionUnit &pu  = tempCS->addPU( cu, partitioner.chType );
       
@@ -2643,33 +2766,48 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
     for( uint8_t mergeCand = 0; mergeCand < numTriangleCandidate; mergeCand++ )
     {
+#if JVET_M0883_TRIANGLE_SIGNALING
+      bool    splitDir = m_triangleModeTest[mergeCand].m_splitDir;
+      uint8_t candIdx0 = m_triangleModeTest[mergeCand].m_candIdx0;
+      uint8_t candIdx1 = m_triangleModeTest[mergeCand].m_candIdx1;
+#else
       bool    splitDir = g_triangleCombination[mergeCand][0];
       uint8_t candIdx0 = g_triangleCombination[mergeCand][1];
       uint8_t candIdx1 = g_triangleCombination[mergeCand][2];
+#endif
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+      pu.triangleSplitDir = splitDir;
+      pu.triangleMergeIdx0 = candIdx0;
+      pu.triangleMergeIdx1 = candIdx1;
+#else
       pu.mergeIdx  = mergeCand;
+#endif
       pu.mergeFlag = true;
       triangleWeightedBuffer[mergeCand] = m_acTriangleWeightedBuffer[mergeCand].getBuf( localUnitArea );
       triangleBuffer[candIdx0] = m_acMergeBuffer[candIdx0].getBuf( localUnitArea );
       triangleBuffer[candIdx1] = m_acMergeBuffer[candIdx1].getBuf( localUnitArea );
 
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+      m_pcInterSearch->weightedTriangleBlk( pu, splitDir, CHANNEL_TYPE_LUMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+#else
       m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, CHANNEL_TYPE_LUMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
-      
+#endif
       distParam.cur = triangleWeightedBuffer[mergeCand].Y();
 
       Distortion uiSad = distParam.distFunc( distParam );
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+      uint32_t uiBitsCand = m_triangleIdxBins[splitDir][candIdx0][candIdx1];
+#else
       uint32_t uiBitsCand = g_triangleIdxBins[mergeCand];
+#endif
 
       double cost = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
 
-#if JVET_L0283_MULTI_REF_LINE
       static_vector<int, TRIANGLE_MAX_NUM_CANDS> * nullList = nullptr;
-#endif
       updateCandList( mergeCand, cost, triangleRdModeList, tianglecandCostList
-#if JVET_L0283_MULTI_REF_LINE
         , *nullList, -1
-#endif
         , triangleNumMrgSATDCand );
     }
         
@@ -2687,22 +2825,53 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     for( uint8_t i = 0; i < triangleNumMrgSATDCand; i++ )
     {
       uint8_t  mergeCand = triangleRdModeList[i];
+#if JVET_M0883_TRIANGLE_SIGNALING
+      bool     splitDir  = m_triangleModeTest[mergeCand].m_splitDir;
+      uint8_t  candIdx0  = m_triangleModeTest[mergeCand].m_candIdx0;
+      uint8_t  candIdx1  = m_triangleModeTest[mergeCand].m_candIdx1;
+#else
       bool     splitDir  = g_triangleCombination[mergeCand][0];
       uint8_t  candIdx0  = g_triangleCombination[mergeCand][1];
       uint8_t  candIdx1  = g_triangleCombination[mergeCand][2];
+#endif
         
+#if JVET_M0883_TRIANGLE_SIGNALING
+      pu.triangleSplitDir = splitDir;
+      pu.triangleMergeIdx0 = candIdx0;
+      pu.triangleMergeIdx1 = candIdx1;
+#else
       pu.mergeIdx  = mergeCand;
+#endif
       pu.mergeFlag = true;
                 
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+      m_pcInterSearch->weightedTriangleBlk( pu, splitDir, CHANNEL_TYPE_CHROMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+#else
       m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, CHANNEL_TYPE_CHROMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+#endif
     }
 
     tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
   }
 
   {
+#if !JVET_M0253_HASH_ME
     const uint8_t iteration = encTestMode.lossless ? 1 : 2;
     for( uint8_t noResidualPass = 0; noResidualPass < iteration; noResidualPass++ )
+#else
+    uint8_t iteration;
+    uint8_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+    if (encTestMode.lossless)
+    {
+      iteration = 1;
+      iterationBegin = 0;
+    }
+    else
+    {
+      iteration = 2;
+    }
+    for (uint8_t noResidualPass = iterationBegin; noResidualPass < iteration; ++noResidualPass)
+#endif
     {
       for( uint8_t mrgHADIdx = 0; mrgHADIdx < triangleNumMrgSATDCand; mrgHADIdx++ )
       {
@@ -2714,33 +2883,47 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
           continue;
         }
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+        bool    splitDir = m_triangleModeTest[mergeCand].m_splitDir;
+        uint8_t candIdx0 = m_triangleModeTest[mergeCand].m_candIdx0;
+        uint8_t candIdx1 = m_triangleModeTest[mergeCand].m_candIdx1;
+#else
         bool    splitDir = g_triangleCombination[mergeCand][0];
         uint8_t candIdx0 = g_triangleCombination[mergeCand][1];
         uint8_t candIdx1 = g_triangleCombination[mergeCand][2];
+#endif
 
         CodingUnit &cu = tempCS->addCU(tempCS->area, partitioner.chType);
 
         partitioner.setCUData(cu);
         cu.slice = tempCS->slice;
+#if HEVC_TILES_WPP
+        cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
+#endif
         cu.skip = false;
-        cu.partSize = SIZE_2Nx2N;
         cu.predMode = MODE_INTER;
         cu.transQuantBypass = encTestMode.lossless;
         cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
         cu.qp = encTestMode.qp;
         cu.triangle = true;
-#if JVET_L0054_MMVD
         cu.mmvdSkip = false;
-#endif
-#if JVET_L0646_GBI
         cu.GBiIdx   = GBI_DEFAULT;
-#endif
         PredictionUnit &pu = tempCS->addPU(cu, partitioner.chType);
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+        pu.triangleSplitDir = splitDir;
+        pu.triangleMergeIdx0 = candIdx0;
+        pu.triangleMergeIdx1 = candIdx1;
+#else
         pu.mergeIdx = mergeCand;
+#endif
         pu.mergeFlag = true;
 
+#if JVET_M0883_TRIANGLE_SIGNALING
+        PU::spanTriangleMotionInfo(pu, triangleMrgCtx, splitDir, candIdx0, candIdx1 );
+#else
         PU::spanTriangleMotionInfo(pu, triangleMrgCtx, mergeCand, splitDir, candIdx0, candIdx1 );
+#endif
 
         if( tempBufSet )
         {
@@ -2751,10 +2934,18 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
           triangleBuffer[candIdx0] = m_acMergeBuffer[candIdx0].getBuf( localUnitArea );
           triangleBuffer[candIdx1] = m_acMergeBuffer[candIdx1].getBuf( localUnitArea );
           PelUnitBuf predBuf         = tempCS->getPredBuf();
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+          m_pcInterSearch->weightedTriangleBlk( pu, splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+#else
           m_pcInterSearch->weightedTriangleBlk( pu, PU::getTriangleWeights(pu, triangleMrgCtx, candIdx0, candIdx1), splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
+#endif
         }
         
+#if JVET_M0464_UNI_MTS
+        xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, noResidualPass, NULL, ( noResidualPass == 0 ? &trianglecandHasNoResidual[mergeCand] : NULL ) );
+#else
         xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, noResidualPass, NULL, true, ( (noResidualPass == 0 ) ? &trianglecandHasNoResidual[mergeCand] : NULL ) );
+#endif
 
         if (m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip)
         {
@@ -2765,7 +2956,6 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     }   
   }
 }
-#endif
 
 void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
@@ -2779,7 +2969,6 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     return;
   }
 
-#if JVET_L0632_AFFINE_MERGE
   const Slice &slice = *tempCS->slice;
 
   CHECK( slice.getSliceType() == I_SLICE, "Affine Merge modes not available for I-slices" );
@@ -2789,29 +2978,24 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
   AffineMergeCtx affineMergeCtx;
   const SPS &sps = *tempCS->sps;
 
-#if JVET_L0369_SUBBLOCK_MERGE
   MergeCtx mrgCtx;
-  if ( sps.getSpsNext().getUseSubPuMvp() )
+  if ( sps.getSBTMVPEnabledFlag() )
   {
     Size bufSize = g_miScaling.scale( tempCS->area.lumaSize() );
     mrgCtx.subPuMvpMiBuf = MotionBuf( m_SubPuMiBuf, bufSize );
     affineMergeCtx.mrgCtx = &mrgCtx;
   }
-#endif
 
   {
     // first get merge candidates
     CodingUnit cu( tempCS->area );
     cu.cs = tempCS;
-    cu.partSize = SIZE_2Nx2N;
     cu.predMode = MODE_INTER;
     cu.slice = tempCS->slice;
 #if HEVC_TILES_WPP
     cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
-#if JVET_L0054_MMVD
     cu.mmvdSkip = false;
-#endif
 
     PredictionUnit pu( tempCS->area );
     pu.cu = &cu;
@@ -2869,7 +3053,6 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
       cu.skip = false;
-      cu.partSize = SIZE_2Nx2N;
       cu.affine = true;
       cu.predMode = MODE_INTER;
       cu.transQuantBypass = encTestMode.lossless;
@@ -2893,11 +3076,8 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
         pu.mergeFlag = true;
         pu.mergeIdx = uiMergeCand;
         cu.affineType = affineMergeCtx.affineType[uiMergeCand];
-#if JVET_L0646_GBI
         cu.GBiIdx = affineMergeCtx.GBiIdx[uiMergeCand];
-#endif
 
-#if JVET_L0369_SUBBLOCK_MERGE
         pu.mergeType = affineMergeCtx.mergeType[uiMergeCand];
         if ( pu.mergeType == MRG_TYPE_SUBPU_ATMVP )
         {
@@ -2907,14 +3087,11 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
         }
         else
         {
-#endif
           PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 0], REF_PIC_LIST_0 );
           PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 1], REF_PIC_LIST_1 );
 
           PU::spanMotionInfo( pu );
-#if JVET_L0369_SUBBLOCK_MERGE
         }
-#endif
 
         distParam.cur = acMergeBuffer[uiMergeCand].Y();
 
@@ -2927,13 +3104,9 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
           uiBitsCand--;
         }
         double cost = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
-#if JVET_L0283_MULTI_REF_LINE
         static_vector<int, AFFINE_MRG_MAX_NUM_CANDS> * nullList = nullptr;
-#endif
         updateCandList( uiMergeCand, cost, RdModeList, candCostList
-#if JVET_L0283_MULTI_REF_LINE
           , *nullList, -1
-#endif
           , uiNumMrgSATDCand );
 
         CHECK( std::min( uiMergeCand + 1, uiNumMrgSATDCand ) != RdModeList.size(), "" );
@@ -2957,10 +3130,25 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     }
   }
 
+#if !JVET_M0253_HASH_ME
   const uint32_t iteration = encTestMode.lossless ? 1 : 2;
 
   // 2. Pass: check candidates using full RD test
   for ( uint32_t uiNoResidualPass = 0; uiNoResidualPass < iteration; uiNoResidualPass++ )
+#else
+  uint32_t iteration;
+  uint32_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+  if (encTestMode.lossless)
+  {
+    iteration = 1;
+    iterationBegin = 0;
+  }
+  else
+  {
+    iteration = 2;
+  }
+  for (uint32_t uiNoResidualPass = iterationBegin; uiNoResidualPass < iteration; ++uiNoResidualPass)
+#endif
   {
     for ( uint32_t uiMrgHADIdx = 0; uiMrgHADIdx < uiNumMrgSATDCand; uiMrgHADIdx++ )
     {
@@ -2981,7 +3169,6 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
       cu.skip = false;
-      cu.partSize = SIZE_2Nx2N;
       cu.affine = true;
       cu.predMode = MODE_INTER;
       cu.transQuantBypass = encTestMode.lossless;
@@ -2994,11 +3181,8 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       pu.mergeIdx = uiMergeCand;
       pu.interDir = affineMergeCtx.interDirNeighbours[uiMergeCand];
       cu.affineType = affineMergeCtx.affineType[uiMergeCand];
-#if JVET_L0646_GBI
       cu.GBiIdx = affineMergeCtx.GBiIdx[uiMergeCand];
-#endif
 
-#if JVET_L0369_SUBBLOCK_MERGE
       pu.mergeType = affineMergeCtx.mergeType[uiMergeCand];
       if ( pu.mergeType == MRG_TYPE_SUBPU_ATMVP )
       {
@@ -3008,14 +3192,11 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       }
       else
       {
-#endif
         PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 0], REF_PIC_LIST_0 );
         PU::setAllAffineMvField( pu, affineMergeCtx.mvFieldNeighbours[(uiMergeCand << 1) + 1], REF_PIC_LIST_1 );
 
         PU::spanMotionInfo( pu );
-#if JVET_L0369_SUBBLOCK_MERGE
       }
-#endif
 
       if ( mrgTempBufSet )
       {
@@ -3026,7 +3207,11 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
         m_pcInterSearch->motionCompensation( pu );
       }
 
+#if JVET_M0464_UNI_MTS
+      xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, uiNoResidualPass, NULL, ( uiNoResidualPass == 0 ? &candHasNoResidual[uiMergeCand] : NULL ) );
+#else
       xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, uiNoResidualPass, NULL, true, ((uiNoResidualPass == 0) ? &candHasNoResidual[uiMergeCand] : NULL) );
+#endif
 
       if ( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip )
       {
@@ -3066,87 +3251,14 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       }
     }
   }
-#else
-  MvField       affineMvField[2][3];
-  unsigned char interDirNeighbours;
-  int           numValidMergeCand;
-  bool          hasNoResidual = false;
-#if JVET_L0646_GBI
-  uint8_t       gbiIdx = GBI_DEFAULT;
-#endif
-
-
-  tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
-
-  CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
-
-  partitioner.setCUData( cu );
-  cu.slice            = tempCS->slice;
-#if HEVC_TILES_WPP
-  cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
-  cu.skip             = false;
-#if JVET_L0054_MMVD
-  cu.mmvdSkip = false;
-#endif
-  cu.partSize         = encTestMode.partSize;
-  cu.affine           = true;
-  cu.predMode         = MODE_INTER;
-  cu.transQuantBypass = encTestMode.lossless;
-  cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
-  cu.qp               = encTestMode.qp;
-
-  CU::addPUs( cu );
-
-  cu.firstPU->mergeFlag = true;
-  cu.firstPU->mergeIdx  = 0;
-#if JVET_L0646_GBI
-  PU::getAffineMergeCand( *cu.firstPU, affineMvField, interDirNeighbours, gbiIdx, numValidMergeCand );
-#else
-  PU::getAffineMergeCand( *cu.firstPU, affineMvField, interDirNeighbours, numValidMergeCand );
-#endif
-  if( numValidMergeCand == -1 )
-  {
-    return;
-  }
-
-  cu.firstPU->interDir = interDirNeighbours;
-  PU::setAllAffineMvField( *cu.firstPU, affineMvField[REF_PIC_LIST_0], REF_PIC_LIST_0 );
-  PU::setAllAffineMvField( *cu.firstPU, affineMvField[REF_PIC_LIST_1], REF_PIC_LIST_1 );
-#if JVET_L0646_GBI
-  cu.GBiIdx = gbiIdx;
-#endif
-
-  PU::spanMotionInfo( *cu.firstPU );
-
-  m_pcInterSearch->motionCompensation( cu );
-
-  xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, 0
-    , NULL
-    , 1
-    , &hasNoResidual);
-
-  if( ! (encTestMode.lossless || hasNoResidual) )
-  {
-    tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
-    tempCS->copyStructure( *bestCS, partitioner.chType );
-    tempCS->getPredBuf().copyFrom( bestCS->getPredBuf() );
-
-    xEncodeInterResidual(tempCS, bestCS, partitioner, encTestMode, 1
-      , NULL
-      , 1
-      , &hasNoResidual);
-  }
-#endif
 }
-#if JVET_L0293_CPR
 //////////////////////////////////////////////////////////////////////////////////////////////
-// cpr merge/skip mode check
-void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
+// ibc merge/skip mode check
+void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
 {
-  assert(tempCS->chType != CHANNEL_TYPE_CHROMA); // chroma CPR is derived
+  assert(tempCS->chType != CHANNEL_TYPE_CHROMA); // chroma IBC is derived
 
-  if (tempCS->area.lwidth() > CPR_MAX_CAND_SIZE || tempCS->area.lheight() > CPR_MAX_CAND_SIZE) // currently only check 32x32 and below block for cpr merge/skip
+  if (tempCS->area.lwidth() > IBC_MAX_CAND_SIZE || tempCS->area.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
   {
     return;
   }
@@ -3156,7 +3268,7 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
   MergeCtx mergeCtx;
 
 
-  if (sps.getSpsNext().getUseSubPuMvp())
+  if (sps.getSBTMVPEnabledFlag())
   {
     Size bufSize = g_miScaling.scale(tempCS->area.lumaSize());
     mergeCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);
@@ -3166,9 +3278,12 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
     // first get merge candidates
     CodingUnit cu(tempCS->area);
     cu.cs = tempCS;
-    cu.partSize = SIZE_2Nx2N;
+#if JVET_M0483_IBC
+    cu.predMode = MODE_IBC;
+#else
     cu.predMode = MODE_INTER;
-    cu.cpr = true;
+    cu.ibc = true;
+#endif
     cu.slice = tempCS->slice;
 #if HEVC_TILES_WPP
     cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap(tempCS->area.lumaPos());
@@ -3176,18 +3291,20 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
     PredictionUnit pu(tempCS->area);
     pu.cu = &cu;
     pu.cs = tempCS;
-#if JVET_L0054_MMVD
     cu.mmvdSkip = false;
     pu.mmvdMergeFlag = false;
-#endif
-#if JVET_L0124_L0208_TRIANGLE
     cu.triangle = false;
+#if JVET_M0170_MRG_SHARELIST
+    pu.shareParentPos = tempCS->sharedBndPos;
+    pu.shareParentSize = tempCS->sharedBndSize;
 #endif
+#if JVET_M0483_IBC
+    PU::getIBCMergeCandidates(pu, mergeCtx);
+#else
     PU::getInterMergeCandidates(pu, mergeCtx
-#if JVET_L0054_MMVD
       , 0
-#endif
     );
+#endif
   }
 
   int candHasNoResidual[MRG_MAX_NUM_CANDS];
@@ -3218,33 +3335,43 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
       cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap(tempCS->area.lumaPos());
 #endif
       cu.skip = false;
-      cu.partSize = SIZE_2Nx2N;
+#if JVET_M0483_IBC
+      cu.predMode = MODE_IBC;
+#else
       cu.predMode = MODE_INTER;
-      cu.cpr = true;
+      cu.ibc = true;
+#endif
       cu.transQuantBypass = encTestMode.lossless;
       cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
       cu.qp = encTestMode.qp;
-#if JVET_L0054_MMVD
       cu.mmvdSkip = false;
-#endif
-#if JVET_L0124_L0208_TRIANGLE
       cu.triangle = false;
-#endif
       DistParam distParam;
       const bool bUseHadamard = !encTestMode.lossless;
       PredictionUnit &pu = tempCS->addPU(cu, partitioner.chType); //tempCS->addPU(cu);
-#if JVET_L0054_MMVD
       pu.mmvdMergeFlag = false;
-#endif
       Picture* refPic = pu.cu->slice->getPic();
       const CPelBuf refBuf = refPic->getRecoBuf(pu.blocks[COMPONENT_Y]);
       const Pel*        piRefSrch = refBuf.buf;
+#if JVET_M0427_INLOOP_RESHAPER
+      if (tempCS->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+      {
+        const CompArea &area = cu.blocks[COMPONENT_Y];
+        CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
+        PelBuf tmpLuma = m_tmpStorageLCU->getBuf(tmpArea);
+        tmpLuma.copyFrom(tempCS->getOrgBuf().Y());
+        tmpLuma.rspSignal(m_pcReshape->getFwdLUT());
+        m_pcRdCost->setDistParam(distParam, tmpLuma, refBuf, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, bUseHadamard);
+      }
+      else
+#endif
       m_pcRdCost->setDistParam(distParam, tempCS->getOrgBuf().Y(), refBuf, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, bUseHadamard);
       int refStride = refBuf.stride;
       const UnitArea localUnitArea(tempCS->area.chromaFormat, Area(0, 0, tempCS->area.Y().width, tempCS->area.Y().height));
       int numValidBv = mergeCtx.numValidMergeCand;
       for (unsigned int mergeCand = 0; mergeCand < mergeCtx.numValidMergeCand; mergeCand++)
       {
+#if JVET_M0483_IBC==0
         if (mergeCtx.interDirNeighbours[mergeCand] != 1)
         {
           numValidBv--;
@@ -3255,6 +3382,7 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
           numValidBv--;
           continue;
         }
+#endif
         mergeCtx.setMergeInfo(pu, mergeCand); // set bv info in merge mode
         const int cuPelX = pu.Y().x;
         const int cuPelY = pu.Y().y;
@@ -3282,14 +3410,10 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
           bitsCand--;
         }
         double cost = (double)sad + (double)bitsCand * sqrtLambdaForFirstPass;
-#if JVET_L0283_MULTI_REF_LINE
         static_vector<int, MRG_MAX_NUM_CANDS> * nullList = nullptr;
-#endif
 
         updateCandList(mergeCand, cost, RdModeList, candCostList
-#if JVET_L0283_MULTI_REF_LINE
           , *nullList, -1
-#endif 
          , numMrgSATDCand);
       }
 
@@ -3328,6 +3452,7 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
     for (unsigned int mrgHADIdx = 0; mrgHADIdx < numMrgSATDCand; mrgHADIdx++)
     {
       unsigned int mergeCand = RdModeList[mrgHADIdx];
+#if JVET_M0483_IBC==0
       if (mergeCtx.interDirNeighbours[mergeCand] != 1)
       {
         continue;
@@ -3336,10 +3461,14 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
       {
         continue;
       }
+#endif
       if (!(numResidualPass == 1 && candHasNoResidual[mergeCand] == 1))
       {
         if (!(bestIsSkip && (numResidualPass == 0)))
         {
+#if JVET_M0464_UNI_MTS
+          {
+#else
           unsigned char considerEmtSecondPass = 0;
           bool skipSecondEmtPass = true;
           bool hasResidual[2] = { false, false };
@@ -3352,6 +3481,7 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
             {
               continue;
             }
+#endif
 
             // first get merge candidates
             CodingUnit &cu = tempCS->addCU(CS::getArea(*tempCS, tempCS->area, (const ChannelType)partitioner.chType), (const ChannelType)partitioner.chType);
@@ -3362,29 +3492,29 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
             cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap(tempCS->area.lumaPos());
 #endif
             cu.skip = false;
-            cu.partSize = SIZE_2Nx2N;
+#if JVET_M0483_IBC
+            cu.predMode = MODE_IBC;
+#else
             cu.predMode = MODE_INTER;
-            cu.cpr = true;
+            cu.ibc = true;
+#endif
             cu.transQuantBypass = encTestMode.lossless;
             cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
             cu.qp = encTestMode.qp;
-
+#if !JVET_M0464_UNI_MTS
             cu.emtFlag = false;
+#endif
 
             PredictionUnit &pu = tempCS->addPU(cu, partitioner.chType);// tempCS->addPU(cu);
-            pu.intraDir[0] = DC_IDX; // set intra pred for cpr block
-            pu.intraDir[1] = PLANAR_IDX; // set intra pred for cpr block
-#if JVET_L0054_MMVD
+            pu.intraDir[0] = DC_IDX; // set intra pred for ibc block
+            pu.intraDir[1] = PLANAR_IDX; // set intra pred for ibc block
             cu.mmvdSkip = false;
             pu.mmvdMergeFlag = false;
-#endif
-#if JVET_L0124_L0208_TRIANGLE
             cu.triangle = false;
-#endif
             mergeCtx.setMergeInfo(pu, mergeCand);
             PU::spanMotionInfo(pu, mergeCtx);
 
-            assert(mergeCtx.mrgTypeNeighbours[mergeCand] == MRG_TYPE_CPR); //  should be CPR candidate at this round
+            assert(mergeCtx.mrgTypeNeighbours[mergeCand] == MRG_TYPE_IBC); //  should be IBC candidate at this round
             const bool chroma = !(CS::isDualITree(*tempCS));
 
             //  MC
@@ -3399,20 +3529,24 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
               xCheckDQP(*tempCS, partitioner);
             }
 
+#if !JVET_M0464_UNI_MTS
             hasResidual[emtCuFlag] = cu.rootCbf;
             emtCost[emtCuFlag] = tempCS->cost;
+#endif
 
             DTRACE_MODE_COST(*tempCS, m_pcRdCost->getLambda());
             xCheckBestMode(tempCS, bestCS, partitioner, encTestMode);
 
             tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
           }
+#if !JVET_M0464_UNI_MTS
           if (numResidualPass == 0 && (emtCost[0] <= emtCost[1] ? !hasResidual[0] : !hasResidual[1]))
 
             {
               // If no residual when allowing for one, then set mark to not try case where residual is forced to 0
               candHasNoResidual[mergeCand] = 1;
             }
+#endif
 
             if (m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip)
             {
@@ -3428,8 +3562,13 @@ void EncCu::xCheckRDCostCPRModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 
 }
 
-void EncCu::xCheckRDCostCPRMode(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
+void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
 {
+  if (tempCS->area.lwidth() > IBC_MAX_CAND_SIZE || tempCS->area.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
+  {
+    return;
+  }
+
     tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
 
     CodingUnit &cu = tempCS->addCU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
@@ -3440,32 +3579,38 @@ void EncCu::xCheckRDCostCPRMode(CodingStructure *&tempCS, CodingStructure *&best
     cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap(tempCS->area.lumaPos());
 #endif
     cu.skip = false;
-    cu.partSize = encTestMode.partSize;
+#if JVET_M0483_IBC
+    cu.predMode = MODE_IBC;
+#else
     cu.predMode = MODE_INTER;
+#endif
     cu.transQuantBypass = encTestMode.lossless;
     cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
     cu.qp = encTestMode.qp;
-    cu.cpr = true;
+#if JVET_M0483_IBC==0
+    cu.ibc = true;
+#endif
     cu.imv = 0;
 
     CU::addPUs(cu);
 
     PredictionUnit& pu = *cu.firstPU;
-#if JVET_L0054_MMVD
     cu.mmvdSkip = false;
     pu.mmvdMergeFlag = false;
-#endif
 
-    pu.intraDir[0] = DC_IDX; // set intra pred for cpr block
-    pu.intraDir[1] = PLANAR_IDX; // set intra pred for cpr block
+    pu.intraDir[0] = DC_IDX; // set intra pred for ibc block
+    pu.intraDir[1] = PLANAR_IDX; // set intra pred for ibc block
 
-    pu.interDir = 1; // use list 0 for CPR mode
+    pu.interDir = 1; // use list 0 for IBC mode
+#if JVET_M0483_IBC 
+    pu.refIdx[REF_PIC_LIST_0] = MAX_NUM_REF; // last idx in the list
+#else
     pu.refIdx[REF_PIC_LIST_0] = pu.cs->slice->getNumRefIdx(REF_PIC_LIST_0) - 1; // last idx in the list
-
+#endif
 
     if (partitioner.chType == CHANNEL_TYPE_LUMA)
     {
-      bool bValid = m_pcInterSearch->predCPRSearch(cu, partitioner, m_ctuCprSearchRangeX, m_ctuCprSearchRangeY, m_cprHashMap);
+      bool bValid = m_pcInterSearch->predIBCSearch(cu, partitioner, m_ctuIbcSearchRangeX, m_ctuIbcSearchRangeY, m_ibcHashMap);
 
       if (bValid)
       {
@@ -3474,6 +3619,9 @@ void EncCu::xCheckRDCostCPRMode(CodingStructure *&tempCS, CodingStructure *&best
         //  MC
         m_pcInterSearch->motionCompensation(pu, REF_PIC_LIST_0, true, chroma);
 
+#if JVET_M0464_UNI_MTS
+        {
+#else
         double    bestCost = bestCS->cost;
         unsigned char    considerEmtSecondPass = 0;
         bool      skipSecondEmtPass = true;
@@ -3489,13 +3637,16 @@ void EncCu::xCheckRDCostCPRMode(CodingStructure *&tempCS, CodingStructure *&best
           }
 
           tempCS->getCU(tempCS->chType)->emtFlag = emtCuFlag;
+#endif
 
           m_pcInterSearch->encodeResAndCalcRdInterCU(*tempCS, partitioner, false, true, chroma);
 
+#if !JVET_M0464_UNI_MTS
           if (m_pcEncCfg->getFastInterEMT())
           {
             emtFirstPassCost = (!emtCuFlag) ? tempCS->cost : emtFirstPassCost;
           }
+#endif
           xEncodeDontSplit(*tempCS, partitioner);
 
           if (tempCS->pps->getUseDQP() && (partitioner.currDepth) <= tempCS->pps->getMaxCuDQPDepth())
@@ -3506,6 +3657,7 @@ void EncCu::xCheckRDCostCPRMode(CodingStructure *&tempCS, CodingStructure *&best
           DTRACE_MODE_COST(*tempCS, m_pcRdCost->getLambda());
           xCheckBestMode(tempCS, bestCS, partitioner, encTestMode);
 
+#if !JVET_M0464_UNI_MTS
           //now we check whether the second pass should be skipped or not
           if (!emtCuFlag && considerEmtSecondPass)
           {
@@ -3534,6 +3686,7 @@ void EncCu::xCheckRDCostCPRMode(CodingStructure *&tempCS, CodingStructure *&best
               tempCS->cost = MAX_DOUBLE;
             }
           }
+#endif
         }
 
       } // bValid
@@ -3544,13 +3697,13 @@ void EncCu::xCheckRDCostCPRMode(CodingStructure *&tempCS, CodingStructure *&best
         tempCS->cost = MAX_DOUBLE;
       }
     }
- // chroma CU cpr comp
+ // chroma CU ibc comp
     else
     {
       bool success = true;
       // chroma tree, reuse luma bv at minimal block level
       // enabled search only when each chroma sub-block has a BV from its luma sub-block
-      assert(tempCS->getCprLumaCoverage(pu.Cb()) == CPR_LUMA_COVERAGE_FULL);
+      assert(tempCS->getIbcLumaCoverage(pu.Cb()) == IBC_LUMA_COVERAGE_FULL);
       // check if each BV for the chroma sub-block is valid
       //static const UInt unitArea = MIN_PU_SIZE * MIN_PU_SIZE;
       const CompArea lumaArea = CompArea(COMPONENT_Y, pu.chromaFormat, pu.Cb().lumaPos(), recalcSize(pu.chromaFormat, CHANNEL_TYPE_CHROMA, CHANNEL_TYPE_LUMA, pu.Cb().size()));
@@ -3585,7 +3738,7 @@ void EncCu::xCheckRDCostCPRMode(CodingStructure *&tempCS, CodingStructure *&best
 
       if (success)
       {
-        //pu.mergeType = MRG_TYPE_CPR;
+        //pu.mergeType = MRG_TYPE_IBC;
         m_pcInterSearch->motionCompensation(pu, REF_PIC_LIST_0, false, true); // luma=0, chroma=1
         m_pcInterSearch->encodeResAndCalcRdInterCU(*tempCS, partitioner, false, false, true);
 
@@ -3605,15 +3758,13 @@ void EncCu::xCheckRDCostCPRMode(CodingStructure *&tempCS, CodingStructure *&best
       }
     }
   }
-  // check cpr mode in encoder RD
+  // check ibc mode in encoder RD
   //////////////////////////////////////////////////////////////////////////////////////////////
-#endif // CPR
 
 void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
 
-#if JVET_L0646_GBI
   
   m_pcInterSearch->setAffineModeSelected(false);
 
@@ -3659,7 +3810,6 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
         continue;
       }
     }
-#endif
 
   CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
 
@@ -3669,10 +3819,7 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
   cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
   cu.skip             = false;
-#if JVET_L0054_MMVD
   cu.mmvdSkip = false;
-#endif
-  cu.partSize         = encTestMode.partSize;
 //cu.affine
   cu.predMode         = MODE_INTER;
   cu.transQuantBypass = encTestMode.lossless;
@@ -3680,17 +3827,14 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
   cu.qp               = encTestMode.qp;
   CU::addPUs( cu );
 
-#if JVET_L0646_GBI
   cu.GBiIdx = g_GbiSearchOrder[gbiLoopIdx];
   uint8_t gbiIdx = cu.GBiIdx;
   bool  testGbi = (gbiIdx != GBI_DEFAULT);
-#endif
 
   m_pcInterSearch->predInterSearch( cu, partitioner );
 
   const unsigned wIdx = gp_sizeIdxInfo->idxFrom( tempCS->area.lwidth () );
 
-#if JVET_L0646_GBI
   gbiIdx = CU::getValidGbiIdx(cu);
   if( testGbi && gbiIdx == GBI_DEFAULT ) // Enabled GBi but the search results is uni.
   {
@@ -3707,18 +3851,21 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
       isEqualUni = true;
     }
   }
-#endif
 
+#if JVET_M0464_UNI_MTS
   xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, 0
-    , m_pImvTempCS ? m_pImvTempCS[wIdx][encTestMode.partSize] : NULL
+                        , m_pImvTempCS ? m_pImvTempCS[wIdx] : NULL
+                        , 0
+                        , &equGBiCost
+#else
+  xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, 0
+    , m_pImvTempCS ? m_pImvTempCS[wIdx] : NULL
     , 1
     , 0
-#if JVET_L0646_GBI
     , &equGBiCost
 #endif
   );
 
-#if JVET_L0646_GBI
   if( g_GbiSearchOrder[gbiLoopIdx] == GBI_DEFAULT )
     m_pcInterSearch->setAffineModeSelected((bestCS->cus.front()->affine && !(bestCS->cus.front()->firstPU->mergeFlag)));
 
@@ -3743,7 +3890,6 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
     break;
   }
  }  // for( UChar gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
-#endif
 }
 
 
@@ -3753,9 +3899,7 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
   int iIMV = int( ( encTestMode.opts & ETO_IMV ) >> ETO_IMV_SHIFT );
-#if JVET_L0646_GBI
   m_pcInterSearch->setAffineModeSelected(false);
-#endif
   // Only int-Pel, 4-Pel and fast 4-Pel allowed
   CHECK( iIMV != 1 && iIMV != 2 && iIMV != 3, "Unsupported IMV Mode" );
   // Fast 4-Pel Mode
@@ -3767,21 +3911,6 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
 
   CodingStructure* pcCUInfo2Reuse = nullptr;
 
-  if( m_pImvTempCS && encTestMode.partSize != SIZE_2Nx2N && ( ( encTestMode.opts & ETO_FORCE_MERGE ) == 0 ) )
-  {
-    pcCUInfo2Reuse = m_pImvTempCS[gp_sizeIdxInfo->idxFrom( tempCS->area.lwidth() )][encTestMode.partSize];
-
-    if( pcCUInfo2Reuse != nullptr )
-    {
-      CHECK( tempCS->area != pcCUInfo2Reuse->area, " mismatch" );
-      tempCS->copyStructure( *pcCUInfo2Reuse, partitioner.chType );
-      tempCS->fracBits = 0;
-      tempCS->dist     = 0;
-      tempCS->cost     = MAX_DOUBLE;
-    }
-  }
-
-#if JVET_L0646_GBI
   m_pcInterSearch->resetBufferedUniMotions();
   int gbiLoopNum = (tempCS->slice->isInterB() ? GBI_NUM : 1);
   gbiLoopNum = (pcCUInfo2Reuse != NULL ? 1 : gbiLoopNum);
@@ -3792,6 +3921,9 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     gbiLoopNum = 1;
   }
 
+#if JVET_M0246_AFFINE_AMVR
+  bool validMode = false;
+#endif
   double curBestCost = bestCS->cost;
   double equGBiCost = MAX_DOUBLE;
 
@@ -3827,7 +3959,6 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     {
       continue;
     }
-#endif
 
   CodingUnit &cu = ( pcCUInfo2Reuse != nullptr ) ? *tempCS->getCU( partitioner.chType ) : tempCS->addCU( tempCS->area, partitioner.chType );
 
@@ -3839,10 +3970,7 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
     cu.skip             = false;
-#if JVET_L0054_MMVD
     cu.mmvdSkip = false;
-#endif
-    cu.partSize         = encTestMode.partSize;
   //cu.affine
     cu.predMode         = MODE_INTER;
     cu.transQuantBypass = encTestMode.lossless;
@@ -3853,7 +3981,6 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   }
   else
   {
-    CHECK( cu.partSize != encTestMode.partSize,    "Mismatch" );
     CHECK( cu.skip,                                "Mismatch" );
     CHECK( cu.qtDepth  != partitioner.currQtDepth, "Mismatch" );
     CHECK( cu.btDepth  != partitioner.currBtDepth, "Mismatch" );
@@ -3862,11 +3989,14 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   }
 
   cu.imv      = iIMV > 1 ? 2 : 1;
+#if !JVET_M0464_UNI_MTS
   cu.emtFlag  = false;
+#endif
 
-#if JVET_L0646_GBI
   bool testGbi;
   uint8_t gbiIdx;
+#if JVET_M0246_AFFINE_AMVR
+  bool affineAmvrEanbledFlag = cu.slice->getSPS()->getAffineAmvrEnabledFlag();
 #endif
   
   if( pcCUInfo2Reuse != nullptr )
@@ -3874,25 +4004,35 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
     // reuse the motion info from pcCUInfo2Reuse
     CU::resetMVDandMV2Int( cu, m_pcInterSearch );
 
-#if JVET_L0646_GBI
     CHECK(cu.GBiIdx < 0 || cu.GBiIdx >= GBI_NUM, "cu.GBiIdx < 0 || cu.GBiIdx >= GBI_NUM");
     gbiIdx = CU::getValidGbiIdx(cu);
     testGbi = (gbiIdx != GBI_DEFAULT);
-#endif
 
+#if JVET_M0246_AFFINE_AMVR
+    if ( !CU::hasSubCUNonZeroMVd( cu ) && !CU::hasSubCUNonZeroAffineMVd( cu ) )
+#else
     if( !CU::hasSubCUNonZeroMVd( cu ) )
+#endif
     {
-#if JVET_L0293_CPR
       if (m_modeCtrl->useModeResult(encTestModeBase, tempCS, partitioner))
       {
         std::swap(tempCS, bestCS);
         // store temp best CI for next CU coding
         m_CurrCtx->best = m_CABACEstimator->getCtx();
       }
+#if JVET_M0246_AFFINE_AMVR
+      if ( affineAmvrEanbledFlag )
+      {
+        tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+        continue;
+      }
+      else
+      {
+        return false;
+      }
 #else
-      m_modeCtrl->useModeResult( encTestModeBase, tempCS, partitioner );
-#endif
       return false;
+#endif
     }
     else
     {
@@ -3901,20 +4041,30 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   }
   else
   {
-#if JVET_L0646_GBI 
     cu.GBiIdx = g_GbiSearchOrder[gbiLoopIdx];
     gbiIdx = cu.GBiIdx;
     testGbi = (gbiIdx != GBI_DEFAULT);
+
+#if JVET_M0246_AFFINE_AMVR
+    cu.firstPU->interDir = 10;
 #endif
 
     m_pcInterSearch->predInterSearch( cu, partitioner );
 
-#if JVET_L0646_GBI
+#if JVET_M0246_AFFINE_AMVR
+    if ( cu.firstPU->interDir <= 3 )
+    {
+      gbiIdx = CU::getValidGbiIdx(cu);
+    }
+    else
+    {
+      return false;
+    }
+#else
     gbiIdx = CU::getValidGbiIdx(cu);
 #endif
   }
 
-#if JVET_L0646_GBI
   if( testGbi && gbiIdx == GBI_DEFAULT ) // Enabled GBi but the search results is uni.
   {
     tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
@@ -3930,33 +4080,48 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
       isEqualUni = true;
     }
   }
-#endif
 
+#if JVET_M0246_AFFINE_AMVR
+  if ( !CU::hasSubCUNonZeroMVd( cu ) && !CU::hasSubCUNonZeroAffineMVd( cu ) )
+#else
   if( !CU::hasSubCUNonZeroMVd( cu ) )
+#endif
   {
-#if JVET_L0293_CPR
     if (m_modeCtrl->useModeResult(encTestModeBase, tempCS, partitioner))
     {
       std::swap(tempCS, bestCS);
       // store temp best CI for next CU coding
       m_CurrCtx->best = m_CABACEstimator->getCtx();
     }
+#if JVET_M0246_AFFINE_AMVR
+    if ( affineAmvrEanbledFlag )
+    {
+      tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+      continue;
+    }
+    else
+    {
+      return false;
+    }
 #else
-    m_modeCtrl->useModeResult( encTestModeBase, tempCS, partitioner );
-#endif
     return false;
+#endif
   }
 
+#if JVET_M0464_UNI_MTS
+  xEncodeInterResidual( tempCS, bestCS, partitioner, encTestModeBase, 0
+                        , NULL
+                        , 0
+                        , &equGBiCost
+#else
   xEncodeInterResidual( tempCS, bestCS, partitioner, encTestModeBase, 0
     , NULL
     , true
     , 0
-#if JVET_L0646_GBI
     , &equGBiCost
 #endif
   );
 
-#if JVET_L0646_GBI
   tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
 
   double skipTH = MAX_DOUBLE;
@@ -3977,17 +4142,32 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   {
     break;
   }
- } // for( UChar gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
+#if JVET_M0246_AFFINE_AMVR
+  validMode = true;
 #endif
+ } // for( UChar gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
 
+#if JVET_M0246_AFFINE_AMVR
+  return tempCS->slice->getSPS()->getAffineAmvrEnabledFlag() ? validMode : true;
+#else
   return true;
+#endif
 }
 
+#if JVET_M0464_UNI_MTS
+void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
+                                  , CodingStructure *&bestCS
+                                  , Partitioner &partitioner
+                                  , const EncTestMode& encTestMode
+                                  , int residualPass
+                                  , CodingStructure* imvCS
+                                  , bool* bestHasNonResi
+                                  , double* equGBiCost
+#else
 void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, int residualPass
   , CodingStructure* imvCS
   , int emtMode
   , bool* bestHasNonResi
-#if JVET_L0646_GBI
   , double* equGBiCost
 #endif
   )
@@ -4000,14 +4180,23 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
   CodingUnit*            cu        = tempCS->getCU( partitioner.chType );
   double   bestCostInternal        = MAX_DOUBLE;
   double           bestCost        = bestCS->cost;
+#if JVET_M0140_SBT
+  double           bestCostBegin   = bestCS->cost;
+  CodingUnit*      prevBestCU      = bestCS->getCU( partitioner.chType );
+  uint8_t          prevBestSbt     = ( prevBestCU == nullptr ) ? 0 : prevBestCU->sbtInfo;
+#endif
+#if !JVET_M0464_UNI_MTS
   const SPS&            sps        = *tempCS->sps;
-  const int      maxSizeEMT        = tempCS->pcv->noRQT ? EMT_INTER_MAX_CU_WITH_QTBT : EMT_INTER_MAX_CU;
+  const int      maxSizeEMT        = EMT_INTER_MAX_CU_WITH_QTBT;
+#endif
   bool              swapped        = false; // avoid unwanted data copy
   bool             reloadCU        = false;
+#if !JVET_M0464_UNI_MTS
   const bool considerEmtSecondPass = emtMode && sps.getSpsNext().getUseInterEMT() && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT;
 
   int minEMTMode = 0;
   int maxEMTMode = (considerEmtSecondPass?1:0);
+#endif
 
   // Not allow very big |MVd| to avoid CABAC crash caused by too large MVd. Normally no impact on coding performance.
   const int maxMvd = 1 << 15;
@@ -4020,13 +4209,76 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
       return;
     }
   }
+  else
+  {
+    for (int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++)
+    {
+      if (pu.refIdx[refList] >= 0)
+      {
+        for (int ctrlP = 1 + (cu->affineType == AFFINEMODEL_6PARAM); ctrlP >= 0; ctrlP--)
+        {
+          if (pu.mvdAffi[refList][ctrlP].getAbsHor() >= maxMvd || pu.mvdAffi[refList][ctrlP].getAbsVer() >= maxMvd)
+          {
+            return;
+          }
+        }
+      }
+    }
+  }
+#if JVET_M0140_SBT
+  const bool mtsAllowed = tempCS->sps->getSpsNext().getUseInterMTS() && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
+  uint8_t sbtAllowed = cu->checkAllowedSbt();
+  uint8_t numRDOTried = 0;
+  Distortion sbtOffDist = 0;
+  bool    sbtOffRootCbf = 0;
+  double  sbtOffCost      = MAX_DOUBLE;
+  double  currBestCost = MAX_DOUBLE;
+  bool    doPreAnalyzeResi = ( sbtAllowed || mtsAllowed ) && residualPass == 0;
 
+  m_pcInterSearch->initTuAnalyzer();
+  if( doPreAnalyzeResi )
+  {
+    m_pcInterSearch->calcMinDistSbt( *tempCS, *cu, sbtAllowed );
+  }
+
+  auto    slsSbt = dynamic_cast<SaveLoadEncInfoSbt*>( m_modeCtrl );
+  int     slShift = 4 + std::min( (int)gp_sizeIdxInfo->idxFrom( cu->lwidth() ) + (int)gp_sizeIdxInfo->idxFrom( cu->lheight() ), 9 );
+  Distortion curPuSse = m_pcInterSearch->getEstDistSbt( NUMBER_SBT_MODE );
+  uint8_t currBestSbt = 0;
+  uint8_t currBestTrs = MAX_UCHAR;
+  uint8_t histBestSbt = MAX_UCHAR;
+  uint8_t histBestTrs = MAX_UCHAR;
+  m_pcInterSearch->setHistBestTrs( MAX_UCHAR, MAX_UCHAR );
+  if( doPreAnalyzeResi )
+  {
+    if( m_pcInterSearch->getSkipSbtAll() && !mtsAllowed ) //emt is off
+    {
+      histBestSbt = 0; //try DCT2
+      m_pcInterSearch->setHistBestTrs( histBestSbt, histBestTrs );
+    }
+    else
+    {
+      assert( curPuSse != std::numeric_limits<uint64_t>::max() );
+      uint16_t compositeSbtTrs = slsSbt->findBestSbt( cu->cs->area, (uint32_t)( curPuSse >> slShift ) );
+      histBestSbt = ( compositeSbtTrs >> 0 ) & 0xff;
+      histBestTrs = ( compositeSbtTrs >> 8 ) & 0xff;
+      if( m_pcInterSearch->getSkipSbtAll() && CU::isSbtMode( histBestSbt ) ) //special case, skip SBT when loading SBT
+      {
+        histBestSbt = 0; //try DCT2
+      }
+      m_pcInterSearch->setHistBestTrs( histBestSbt, histBestTrs );
+    }
+  }
+#endif
+
+#if !JVET_M0464_UNI_MTS
   if( emtMode == 2 )
   {
     minEMTMode = maxEMTMode = (cu->emtFlag?1:0);
   }
 
   for( int curEmtMode = minEMTMode; curEmtMode <= maxEMTMode; curEmtMode++ )
+#endif
   {
     if( reloadCU )
     {
@@ -4058,16 +4310,27 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
 
     reloadCU    = true; // enable cu reloading
     cu->skip    = false;
+#if !JVET_M0464_UNI_MTS
     cu->emtFlag = curEmtMode;
+#endif
+#if JVET_M0140_SBT
+    cu->sbtInfo = 0;
+#endif
 
     const bool skipResidual = residualPass == 1;
+#if JVET_M0140_SBT // skip DCT-2 and EMT if historical best transform mode is SBT
+    if( skipResidual || histBestSbt == MAX_UCHAR || !CU::isSbtMode( histBestSbt ) )
+    {
+#endif
     m_pcInterSearch->encodeResAndCalcRdInterCU( *tempCS, partitioner, skipResidual );
-
+#if JVET_M0140_SBT
+    numRDOTried += mtsAllowed ? 2 : 1;
+#endif
     xEncodeDontSplit( *tempCS, partitioner );
 
     xCheckDQP( *tempCS, partitioner );
 
-#if JVET_L0646_GBI
+#if !JVET_M0140_SBT //harmonize with GBI fast algorithm (move the code to the end of this function)
     if( ETM_INTER_ME == encTestMode.type )
     {
       if( equGBiCost != NULL )
@@ -4099,7 +4362,9 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
     }
 #endif
 
+#if !JVET_M0464_UNI_MTS
     double emtFirstPassCost = tempCS->cost;
+#endif
     if( imvCS && (tempCS->cost < imvCS->cost) )
     {
       if( imvCS->cost != MAX_DOUBLE )
@@ -4111,13 +4376,10 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
     if( NULL != bestHasNonResi && (bestCostInternal > tempCS->cost) )
     {
       bestCostInternal = tempCS->cost;
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
       if (!(tempCS->getPU(partitioner.chType)->mhIntraFlag))
-#endif
       *bestHasNonResi  = !cu->rootCbf;
     }
 
-#if JVET_L0100_MULTI_HYPOTHESIS_INTRA
     if (cu->rootCbf == false)
     {
       if (tempCS->getPU(partitioner.chType)->mhIntraFlag)
@@ -4125,6 +4387,17 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
         tempCS->cost = MAX_DOUBLE;
         return;
       }
+    }
+#if JVET_M0140_SBT
+    currBestCost = tempCS->cost;
+    sbtOffCost = tempCS->cost;
+    sbtOffDist = tempCS->dist;
+    sbtOffRootCbf = cu->rootCbf;
+    currBestSbt = CU::getSbtInfo( cu->firstTU->mtsIdx > 1 ? SBT_OFF_MTS : SBT_OFF_DCT, 0 );
+    currBestTrs = cu->firstTU->mtsIdx;
+    if( cu->lwidth() <= MAX_TU_SIZE_FOR_PROFILE && cu->lheight() <= MAX_TU_SIZE_FOR_PROFILE )
+    {
+      CHECK( tempCS->tus.size() != 1, "tu must be only one" );
     }
 #endif
 
@@ -4135,6 +4408,7 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
 #endif
     xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
+#if !JVET_M0464_UNI_MTS
     //now we check whether the second pass should be skipped or not
     if( !curEmtMode && maxEMTMode )
     {
@@ -4148,7 +4422,200 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
         maxEMTMode = 0; // do not test EMT
       }
     }
+#endif
+#if JVET_M0140_SBT // skip DCT-2 and EMT
+    }
+#endif
+
+#if JVET_M0140_SBT //RDO for SBT
+    uint8_t numSbtRdo = CU::numSbtModeRdo( sbtAllowed );
+    //early termination if all SBT modes are not allowed
+    //normative
+    if( !sbtAllowed || skipResidual )
+    {
+      numSbtRdo = 0;
+    }
+    //fast algorithm
+    if( ( histBestSbt != MAX_UCHAR && !CU::isSbtMode( histBestSbt ) ) || m_pcInterSearch->getSkipSbtAll() )
+    {
+      numSbtRdo = 0;
+    }
+    if( bestCost != MAX_DOUBLE && sbtOffCost != MAX_DOUBLE )
+    {
+      double th = 1.07;
+      if( !( prevBestSbt == 0 || m_sbtCostSave[0] == MAX_DOUBLE ) )
+      {
+        assert( m_sbtCostSave[1] <= m_sbtCostSave[0] );
+        th *= ( m_sbtCostSave[0] / m_sbtCostSave[1] );
+      }
+      if( sbtOffCost > bestCost * th )
+      {
+        numSbtRdo = 0;
+      }
+    }
+    if( !sbtOffRootCbf && sbtOffCost != MAX_DOUBLE )
+    {
+      double th = Clip3( 0.05, 0.55, ( 27 - cu->qp ) * 0.02 + 0.35 );
+      if( sbtOffCost < m_pcRdCost->calcRdCost( ( cu->lwidth() * cu->lheight() ) << SCALE_BITS, 0 ) * th )
+      {
+        numSbtRdo = 0;
+      }
+    }
+
+    if( histBestSbt != MAX_UCHAR && numSbtRdo != 0 )
+    {
+      numSbtRdo = 1;
+      m_pcInterSearch->initSbtRdoOrder( CU::getSbtMode( CU::getSbtIdx( histBestSbt ), CU::getSbtPos( histBestSbt ) ) );
+    }
+
+    for( int sbtModeIdx = 0; sbtModeIdx < numSbtRdo; sbtModeIdx++ )
+    {
+      uint8_t sbtMode = m_pcInterSearch->getSbtRdoOrder( sbtModeIdx );
+      uint8_t sbtIdx = CU::getSbtIdxFromSbtMode( sbtMode );
+      uint8_t sbtPos = CU::getSbtPosFromSbtMode( sbtMode );
+
+      //fast algorithm (early skip, save & load)
+      if( histBestSbt == MAX_UCHAR )
+      {
+        uint8_t skipCode = m_pcInterSearch->skipSbtByRDCost( cu->lwidth(), cu->lheight(), cu->mtDepth, sbtIdx, sbtPos, bestCS->cost, sbtOffDist, sbtOffCost, sbtOffRootCbf );
+        if( skipCode != MAX_UCHAR )
+        {
+          continue;
+        }
+
+        if( sbtModeIdx > 0 )
+        {
+          uint8_t prevSbtMode = m_pcInterSearch->getSbtRdoOrder( sbtModeIdx - 1 );
+          //make sure the prevSbtMode is the same size as the current SBT mode (otherwise the estimated dist may not be comparable)
+          if( CU::isSameSbtSize( prevSbtMode, sbtMode ) )
+          {
+            Distortion currEstDist = m_pcInterSearch->getEstDistSbt( sbtMode );
+            Distortion prevEstDist = m_pcInterSearch->getEstDistSbt( prevSbtMode );
+            if( currEstDist > prevEstDist * 1.15 )
+            {
+              continue;
+            }
+          }
+        }
+      }
+
+      //init tempCS and TU
+      if( bestCost == bestCS->cost ) //The first EMT pass didn't become the bestCS, so we clear the TUs generated
+      {
+        tempCS->clearTUs();
+      }
+      else if( false == swapped )
+      {
+        tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+        tempCS->copyStructure( *bestCS, partitioner.chType );
+        tempCS->getPredBuf().copyFrom( bestCS->getPredBuf() );
+        bestCost = bestCS->cost;
+        cu = tempCS->getCU( partitioner.chType );
+        swapped = true;
+      }
+      else
+      {
+        tempCS->clearTUs();
+        bestCost = bestCS->cost;
+        cu = tempCS->getCU( partitioner.chType );
+      }
+
+      //we need to restart the distortion for the new tempCS, the bit count and the cost
+      tempCS->dist = 0;
+      tempCS->fracBits = 0;
+      tempCS->cost = MAX_DOUBLE;
+      cu->skip = false;
+
+      //set SBT info
+      cu->setSbtIdx( sbtIdx );
+      cu->setSbtPos( sbtPos );
+
+      //try residual coding
+      m_pcInterSearch->encodeResAndCalcRdInterCU( *tempCS, partitioner, skipResidual );
+      numRDOTried++;
+
+      xEncodeDontSplit( *tempCS, partitioner );
+
+      xCheckDQP( *tempCS, partitioner );
+
+      if( imvCS && ( tempCS->cost < imvCS->cost ) )
+      {
+        if( imvCS->cost != MAX_DOUBLE )
+        {
+          imvCS->initStructData( encTestMode.qp, encTestMode.lossless );
+        }
+        imvCS->copyStructure( *tempCS, partitioner.chType );
+      }
+
+      if( NULL != bestHasNonResi && ( bestCostInternal > tempCS->cost ) )
+      {
+        bestCostInternal = tempCS->cost;
+        if( !( tempCS->getPU( partitioner.chType )->mhIntraFlag ) )
+          *bestHasNonResi = !cu->rootCbf;
+      }
+
+      if( tempCS->cost < currBestCost )
+      {
+        currBestSbt = cu->sbtInfo;
+        currBestTrs = tempCS->tus[cu->sbtInfo ? cu->getSbtPos() : 0]->mtsIdx;
+        assert( currBestTrs == 0 || currBestTrs == 1 );
+        currBestCost = tempCS->cost;
+      }
+
+#if WCG_EXT
+      DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda( true ) );
+#else
+      DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda() );
+#endif
+      xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
+    }
+
+    if( bestCostBegin != bestCS->cost )
+    {
+      m_sbtCostSave[0] = sbtOffCost;
+      m_sbtCostSave[1] = currBestCost;
+    }
+#endif
   } //end emt loop
+
+#if JVET_M0140_SBT
+  if( histBestSbt == MAX_UCHAR && doPreAnalyzeResi && numRDOTried > 1 )
+  {
+    slsSbt->saveBestSbt( cu->cs->area, (uint32_t)( curPuSse >> slShift ), currBestSbt, currBestTrs );
+  }
+#endif
+#if JVET_M0140_SBT //harmonize with GBI fast algorithm (move the code here)
+  tempCS->cost = currBestCost;
+  if( ETM_INTER_ME == encTestMode.type )
+  {
+    if( equGBiCost != NULL )
+    {
+      if( tempCS->cost < ( *equGBiCost ) && cu->GBiIdx == GBI_DEFAULT )
+      {
+        ( *equGBiCost ) = tempCS->cost;
+      }
+    }
+    else
+    {
+      CHECK( equGBiCost == NULL, "equGBiCost == NULL" );
+    }
+    if( tempCS->slice->getCheckLDC() && !cu->imv && cu->GBiIdx != GBI_DEFAULT && tempCS->cost < m_bestGbiCost[1] )
+    {
+      if( tempCS->cost < m_bestGbiCost[0] )
+      {
+        m_bestGbiCost[1] = m_bestGbiCost[0];
+        m_bestGbiCost[0] = tempCS->cost;
+        m_bestGbiIdx[1] = m_bestGbiIdx[0];
+        m_bestGbiIdx[0] = cu->GBiIdx;
+      }
+      else
+      {
+        m_bestGbiCost[1] = tempCS->cost;
+        m_bestGbiIdx[1] = cu->GBiIdx;
+      }
+    }
+  }
+#endif
 }
 
 
@@ -4156,6 +4623,9 @@ void EncCu::xEncodeDontSplit( CodingStructure &cs, Partitioner &partitioner )
 {
   m_CABACEstimator->resetBits();
 
+#if JVET_M0421_SPLIT_SIG
+  m_CABACEstimator->split_cu_mode( CU_DONT_SPLIT, cs, partitioner );
+#else
   {
     if( partitioner.canSplit( CU_QUAD_SPLIT, cs ) )
     {
@@ -4166,6 +4636,7 @@ void EncCu::xEncodeDontSplit( CodingStructure &cs, Partitioner &partitioner )
       m_CABACEstimator->split_cu_mode_mt( CU_DONT_SPLIT, cs, partitioner );
     }
   }
+#endif
 
   cs.fracBits += m_CABACEstimator->getEstFracBits(); // split bits
   cs.cost      = m_pcRdCost->calcRdCost( cs.fracBits, cs.dist );
@@ -4184,6 +4655,10 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
   if( bestEncCache->setCsFrom( *tempCS, cachedMode, partitioner ) )
   {
     CodingUnit& cu = *tempCS->cus.front();
+#if JVET_M0170_MRG_SHARELIST
+    cu.shareParentPos = tempCS->sharedBndPos;
+    cu.shareParentSize = tempCS->sharedBndSize;
+#endif
     partitioner.setCUData( cu );
 
     if( CU::isIntra( cu ) )
@@ -4212,9 +4687,26 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
       CPelBuf org  = tempCS->getOrgBuf ( compID );
 
 #if WCG_EXT
+#if JVET_M0427_INLOOP_RESHAPER
+      if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
+        m_pcEncCfg->getReshaper() && (tempCS->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())))
+#else
       if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() )
+#endif
       {
         const CPelBuf orgLuma = tempCS->getOrgBuf(tempCS->area.blocks[COMPONENT_Y]);
+#if JVET_M0427_INLOOP_RESHAPER
+        if (compID == COMPONENT_Y)
+        {
+          const CompArea &area = cu.blocks[COMPONENT_Y];
+          CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
+          PelBuf tmpRecLuma = m_tmpStorageLCU->getBuf(tmpArea);
+          tmpRecLuma.copyFrom(reco);
+          tmpRecLuma.rspSignal(m_pcReshape->getInvLUT());
+          finalDistortion += m_pcRdCost->getDistPart(org, tmpRecLuma, sps.getBitDepth(toChannelType(compID)), compID, DF_SSE_WTD, &orgLuma);
+        }
+        else
+#endif
         finalDistortion += m_pcRdCost->getDistPart( org, reco, sps.getBitDepth( toChannelType( compID ) ), compID, DF_SSE_WTD, &orgLuma );
       }
       else

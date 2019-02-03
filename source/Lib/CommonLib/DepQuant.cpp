@@ -236,11 +236,24 @@ namespace DQIntern
             NbInfoSbb&     nbSbb  = sId2NbSbb[ scanId ];
             const int      begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
             int            cpos[5];
-            cpos[0] = ( posX + 1 < blockWidth                         ? ( raster2id[rpos+1           ] < groupSize + begSbb ? raster2id[rpos+1           ] - begSbb : 0 ) : 0 );
-            cpos[1] = ( posX + 2 < blockWidth                         ? ( raster2id[rpos+2           ] < groupSize + begSbb ? raster2id[rpos+2           ] - begSbb : 0 ) : 0 );
-            cpos[2] = ( posX + 1 < blockWidth && posY + 1 < blockHeight ? ( raster2id[rpos+1+blockWidth] < groupSize + begSbb ? raster2id[rpos+1+blockWidth] - begSbb : 0 ) : 0 );
-            cpos[3] = ( posY + 1 < blockHeight                         ? ( raster2id[rpos+  blockWidth] < groupSize + begSbb ? raster2id[rpos+  blockWidth] - begSbb : 0 ) : 0 );
-            cpos[4] = ( posY + 2 < blockHeight                         ? ( raster2id[rpos+2*blockWidth] < groupSize + begSbb ? raster2id[rpos+2*blockWidth] - begSbb : 0 ) : 0 );
+
+            const bool condX1 = posX + 1 < blockWidth;
+            const bool condX2 = posX + 2 < blockWidth;
+            const bool condY1 = posY + 1 < blockHeight;
+            const bool condY2 = posY + 2 < blockHeight;
+
+            const int ras0 = condX1 ? raster2id[rpos + 1] : 0;
+            const int ras1 = condX2 ? raster2id[rpos + 2] : 0;
+            const int ras2 = condX1 && condY1 ? raster2id[rpos + 1 + blockWidth] : 0;
+            const int ras3 = condY1 ? raster2id[rpos + blockWidth] : 0;
+            const int ras4 = condY2 ? raster2id[rpos + 2 * blockWidth] : 0;
+
+            cpos[0] = ras0 >= begSbb && ras0 < groupSize + begSbb ? ras0 - begSbb : 0;
+            cpos[1] = ras1 >= begSbb && ras1 < groupSize + begSbb ? ras1 - begSbb : 0;
+            cpos[2] = ras2 >= begSbb && ras2 < groupSize + begSbb ? ras2 - begSbb : 0;
+            cpos[3] = ras3 >= begSbb && ras3 < groupSize + begSbb ? ras3 - begSbb : 0;
+            cpos[4] = ras4 >= begSbb && ras4 < groupSize + begSbb ? ras4 - begSbb : 0;
+
             for( nbSbb.num = 0; true; )
             {
               int nk = -1;

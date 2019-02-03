@@ -10,3 +10,4 @@ deploy
 *.suo
 .vs/
 .vscode/
+/cmake/CMakeBuild/bin/pyhhi

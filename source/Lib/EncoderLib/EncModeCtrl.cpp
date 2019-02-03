@@ -734,13 +734,13 @@ void BestEncInfoCache::create( const ChromaFormat chFmt )
 
               const UnitArea area( chFmt, Area( 0, 0, w, h ) );
 
-              m_bestEncInfo[x][y][wIdx][hIdx]->cu.UnitArea::operator=( area );
-              m_bestEncInfo[x][y][wIdx][hIdx]->pu.UnitArea::operator=( area );
+              new ( &m_bestEncInfo[x][y][wIdx][hIdx]->cu ) CodingUnit    ( area );
+              new ( &m_bestEncInfo[x][y][wIdx][hIdx]->pu ) PredictionUnit( area );
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
               m_bestEncInfo[x][y][wIdx][hIdx]->numTus = 0;
               for( int i = 0; i < MAX_NUM_TUS; i++ )
               {
-                m_bestEncInfo[x][y][wIdx][hIdx]->tus[i].UnitArea::operator=(area);
+                new ( &m_bestEncInfo[x][y][wIdx][hIdx]->tus[i] ) TransformUnit(area);
               }
 #else
               m_bestEncInfo[x][y][wIdx][hIdx]->tu.UnitArea::operator=( area );

@@ -84,9 +84,9 @@ void EncLib::create ()
 {
   // initialize global variables
   initROM();
-
-
-
+#if JVET_M0253_HASH_ME
+  TComHash::initBlockSizeToIndex();
+#endif
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );
@@ -136,6 +136,12 @@ void EncLib::create ()
     m_cEncALF.create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );
   }
 
+#if JVET_M0427_INLOOP_RESHAPER
+  if (m_lumaReshapeEnable)
+  {
+    m_cReshaper.createEnc( getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_bitDepth[COMPONENT_Y]);
+  }
+#endif
   if ( m_RCEnableRateControl )
   {
     m_cRateCtrl.init(m_framesToBeEncoded, m_RCTargetBitrate, (int)((double)m_iFrameRate / m_temporalSubsampleRatio + 0.5), m_iGOPSize, m_iSourceWidth, m_iSourceHeight,
@@ -165,6 +171,9 @@ void EncLib::destroy ()
   m_cEncSAO.            destroy();
   m_cLoopFilter.        destroy();
   m_cRateCtrl.          destroy();
+#if JVET_M0427_INLOOP_RESHAPER
+  m_cReshaper.          destroy();
+#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
@@ -318,13 +327,21 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        &m_cTrQuant,
                        &m_cRdCost,
                        cabacEstimator,
-                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth );
+                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth 
+#if JVET_M0427_INLOOP_RESHAPER
+                     , &m_cReshaper
+#endif
+  );
   m_cInterSearch.init( this,
                        &m_cTrQuant,
                        m_iSearchRange,
                        m_bipredSearchRange,
                        m_motionEstimationSearchMethod,
-                       m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache() );
+    m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache()
+#if JVET_M0427_INLOOP_RESHAPER
+                     , &m_cReshaper
+#endif
+  );
 
   // link temporary buffets from intra search with inter search to avoid unneccessary memory overhead
   m_cInterSearch.setTempBuffers( m_cIntraSearch.getSplitCSBuf(), m_cIntraSearch.getFullCSBuf(), m_cIntraSearch.getSaveCSBuf() );
@@ -551,6 +568,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
+#if JVET_M0427_INLOOP_RESHAPER
+      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL).swap(*cPicYuvTrueOrg);
+#endif
 
       pcPicCurr->finalInit( *pSPS, *pPPS );
     }
@@ -756,6 +776,9 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   rpcPic->setBorderExtension( false );
   rpcPic->reconstructed = false;
   rpcPic->referenced = true;
+#if JVET_M0253_HASH_ME
+  rpcPic->getHashMap()->clearAll();
+#endif
 
   m_iPOCLast += (m_compositeRefEnabled ? 2 : 1);
   m_iNumPicRcvd++;
@@ -798,9 +821,17 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setNoAmvrConstraintFlag(!m_bNoAmvrConstraintFlag);
   sps.setNoAffineMotionConstraintFlag(!m_Affine);
 #if JVET_M0464_UNI_MTS
+#if JVET_M0303_IMPLICIT_MTS
+  sps.setNoMtsConstraintFlag((m_IntraMTS || m_InterMTS || m_ImplicitMTS) ? false : true);
+#else
   sps.setNoMtsConstraintFlag((m_IntraMTS || m_InterMTS) ? false : true);
+#endif
+#else
+#if JVET_M0303_IMPLICIT_MTS
+  sps.setNoMtsConstraintFlag((m_IntraEMT || m_InterEMT || m_ImplicitMTS) ? false : true);
 #else
   sps.setNoMtsConstraintFlag((m_IntraEMT || m_InterEMT) ? false : true);
+#endif
 #endif
   sps.setNoLadfConstraintFlag(!m_LadfEnabled);
   sps.setNoDepQuantConstraintFlag(!m_DepQuantEnabledFlag);
@@ -867,11 +898,24 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseNextDQP            ( m_AltDQPCoding );
 #endif
 #if JVET_M0464_UNI_MTS
+#if JVET_M0303_IMPLICIT_MTS
+  sps.getSpsNext().setUseMTS                ( m_IntraMTS || m_InterMTS || m_ImplicitMTS );
+#endif
   sps.getSpsNext().setUseIntraMTS           ( m_IntraMTS );
   sps.getSpsNext().setUseInterMTS           ( m_InterMTS );
 #else
+#if JVET_M0303_IMPLICIT_MTS
+  sps.getSpsNext().setUseMTS                ( m_IntraEMT || m_InterEMT || m_ImplicitMTS );
+#endif
   sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
+#endif
+#if JVET_M0140_SBT
+  sps.getSpsNext().setUseSBT                ( m_SBT );
+  if( sps.getSpsNext().getUseSBT() )
+  {
+    sps.getSpsNext().setMaxSbtSize          ( m_iSourceWidth >= 1920 ? 64 : 32 );
+  }
 #endif
   sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
   sps.getSpsNext().setUseGBi                ( m_GBi );
@@ -894,12 +938,24 @@ void EncLib::xInitSPS(SPS &sps)
 #if JVET_M0255_FRACMMVD_SWITCH
   sps.setDisFracMmvdEnabledFlag             ( m_allowDisFracMMVD );
 #endif
-  sps.getSpsNext().setIBCMode               ( m_IBCMode );
+#if JVET_M0246_AFFINE_AMVR
+  sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
+#endif
+#if JVET_M0147_DMVR
+  sps.setUseDMVR                            ( m_DMVR );
+#endif
 
+#if JVET_M0483_IBC
+  sps.setIBCFlag                            ( m_IBCMode);
+#else
+  sps.getSpsNext().setIBCMode               (m_IBCMode);
+#endif
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
-
+#if JVET_M0427_INLOOP_RESHAPER
+  sps.setUseReshaper                        ( m_lumaReshapeEnable );
+#endif
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;
   while(minCUSize > 1)
@@ -1397,11 +1453,13 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     }
   }
   CHECK(!(bestPos <= 15), "Unspecified error");
+#if JVET_M0483_IBC==0
   if (sps.getSpsNext().getIBCMode())
   {
     pps.setNumRefIdxL0DefaultActive(bestPos + 1);
   }
   else
+#endif
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());

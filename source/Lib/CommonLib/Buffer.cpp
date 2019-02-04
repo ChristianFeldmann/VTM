@@ -299,6 +299,10 @@ PelBufferOps::PelBufferOps()
   calcBIOPar      = calcBIOParCore;
   calcBlkGradient = calcBlkGradientCore;
 
+#if JVET_M0147_DMVR
+  copyBuffer = copyBufferCore;
+  padding = paddingCore;
+#endif
 #if ENABLE_SIMD_OPT_GBI
   removeWeightHighFreq8 = removeWeightHighFreq;
   removeWeightHighFreq4 = removeWeightHighFreq;
@@ -313,6 +317,42 @@ PelBufferOps g_pelBufOP = PelBufferOps();
 #endif
 #endif
 
+#if JVET_M0147_DMVR
+void copyBufferCore(Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height)
+{
+  int numBytes = width * sizeof(Pel);
+  for (int i = 0; i < height; i++)
+  {
+    memcpy(dst + i * dstStride, src + i * srcStride, numBytes);
+  }
+}
+
+void paddingCore(Pel *ptr, int stride, int width, int height, int padSize)
+{
+  /*left and right padding*/
+  Pel *ptrTemp1 = ptr;
+  Pel *ptrTemp2 = ptr + (width - 1);
+  int offset = 0;
+  for (int i = 0; i < height; i++)
+  {
+    offset = stride * i;
+    for (int j = 1; j <= padSize; j++)
+    {
+      *(ptrTemp1 - j + offset) = *(ptrTemp1 + offset);
+      *(ptrTemp2 + j + offset) = *(ptrTemp2 + offset);
+    }
+  }
+  /*Top and Bottom padding*/
+  int numBytes = (width + padSize + padSize) * sizeof(Pel);
+  ptrTemp1 = (ptr - padSize);
+  ptrTemp2 = (ptr + (stride * (height - 1)) - padSize);
+  for (int i = 1; i <= padSize; i++)
+  {
+    memcpy(ptrTemp1 - (i * stride), (ptrTemp1), numBytes);
+    memcpy(ptrTemp2 + (i * stride), (ptrTemp2), numBytes);
+  }
+}
+#endif
 template<>
 void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng, const int8_t gbiIdx)
 {
@@ -342,6 +382,106 @@ void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBu
 #undef ADD_AVG_OP
 #undef ADD_AVG_INC
 }
+
+#if JVET_M0427_INLOOP_RESHAPER
+template<>
+void AreaBuf<Pel>::rspSignal(std::vector<Pel>& pLUT)
+{
+  Pel* dst = buf;
+  Pel* src = buf;
+#if !JVET_M0102_INTRA_SUBPARTITIONS
+  if (width == 1)
+  {
+    THROW("Blocks of width = 1 not supported");
+  }  
+  else
+  {
+#endif
+    for (unsigned y = 0; y < height; y++)
+    {
+      for (unsigned x = 0; x < width; x++)
+      {
+        dst[x] = pLUT[src[x]];
+      }
+      dst += stride;
+      src += stride;
+    }
+#if !JVET_M0102_INTRA_SUBPARTITIONS
+  }
+#endif
+}
+
+template<>
+void AreaBuf<Pel>::scaleSignal(const int scale, const bool dir, const ClpRng& clpRng)
+{
+  Pel* dst = buf;
+  Pel* src = buf;
+  int sign, absval;
+  int maxAbsclipBD = (1<<clpRng.bd) - 1;
+
+  if (dir) // forward
+  {
+    if (width == 1)
+    {
+      THROW("Blocks of width = 1 not supported");
+    }
+    else
+    {
+      for (unsigned y = 0; y < height; y++)
+      {
+        for (unsigned x = 0; x < width; x++)
+        {
+          sign = src[x] >= 0 ? 1 : -1;
+          absval = sign * src[x];
+          dst[x] = (Pel)Clip3(-maxAbsclipBD, maxAbsclipBD, sign * (((absval << CSCALE_FP_PREC) + (scale >> 1)) / scale));
+        }
+        dst += stride;
+        src += stride;
+      }
+    }
+  }
+  else // inverse
+  {
+    for (unsigned y = 0; y < height; y++)
+    {
+      for (unsigned x = 0; x < width; x++)
+      {
+        sign = src[x] >= 0 ? 1 : -1;
+        absval = sign * src[x];
+        dst[x] = sign * ((absval * scale + (1 << (CSCALE_FP_PREC - 1))) >> CSCALE_FP_PREC);
+      }
+      dst += stride;
+      src += stride;
+    }
+  }
+}
+
+template<>
+Pel AreaBuf <Pel> ::computeAvg() const
+{
+  const Pel* src = buf;
+#if !JVET_M0102_INTRA_SUBPARTITIONS
+  if (width == 1)
+  {
+    THROW("Blocks of width = 1 not supported");
+  }
+  else
+  {
+#endif
+    int32_t acc = 0;
+#define AVG_INC   \
+    src +=       stride; 
+#define AVG_OP(ADDR) acc += src[ADDR]
+    SIZE_AWARE_PER_EL_OP(AVG_OP, AVG_INC);
+#undef AVG_INC
+#undef AVG_OP
+    return Pel((acc + (area() >> 1)) / area());
+#if !JVET_M0102_INTRA_SUBPARTITIONS
+  }
+#endif
+}
+
+#endif
 
 template<>
 void AreaBuf<Pel>::addAvg( const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng)

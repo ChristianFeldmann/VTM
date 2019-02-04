@@ -224,6 +224,12 @@ protected:
   int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
 #endif
+#if JVET_M0303_IMPLICIT_MTS
+  int       m_MTSImplicit;
+#endif
+#if JVET_M0140_SBT
+  bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
+#endif
 
   bool      m_compositeRefEnabled;
   bool      m_GBi;
@@ -237,8 +243,20 @@ protected:
 
   bool      m_MHIntra;
   bool      m_Triangle;
+#if JVET_M0253_HASH_ME
+  bool      m_HashME;
+#endif
 #if JVET_M0255_FRACMMVD_SWITCH
   bool      m_allowDisFracMMVD;
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  bool      m_AffineAmvr;
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  bool      m_AffineAmvrEncOpt;
+#endif
+#if JVET_M0147_DMVR
+  bool      m_DMVR;
 #endif
 
   unsigned  m_IBCMode;
@@ -248,12 +266,17 @@ protected:
   unsigned  m_IBCHashSearchMaxCand;
   unsigned  m_IBCHashSearchRange4SmallBlk;
   unsigned  m_IBCFastMethod;
-  
+
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-
+#if JVET_M0427_INLOOP_RESHAPER
+  bool      m_lumaReshapeEnable;
+  uint32_t  m_reshapeSignalType;
+  uint32_t  m_intraCMD;
+  ReshapeCW m_reshapeCW;
+#endif
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
   unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)

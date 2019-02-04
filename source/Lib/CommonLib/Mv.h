@@ -51,6 +51,9 @@ enum MvPrecision
 {
   MV_PRECISION_4PEL     = 0,      // 4-pel
   MV_PRECISION_INT      = 2,      // 1-pel, shift 2 bits from 4-pel
+#if JVET_M0246_AFFINE_AMVR
+  MV_PRECISION_HALF     = 3,      // 1/2-pel
+#endif
   MV_PRECISION_QUARTER  = 4,      // 1/4-pel (the precision of regular MV difference signaling), shift 4 bits from 4-pel
   MV_PRECISION_INTERNAL = 6,      // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
 };

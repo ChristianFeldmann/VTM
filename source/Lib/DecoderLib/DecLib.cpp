@@ -391,6 +391,9 @@ DecLib::DecLib()
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   , m_cacheModel()
 #endif
+#if JVET_M0427_INLOOP_RESHAPER
+  , m_cReshaper()
+#endif
   , m_pcPic(NULL)
   , m_prevPOC(MAX_INT)
   , m_prevTid0POC(0)
@@ -475,6 +478,10 @@ void DecLib::deletePicBuffer ( )
   m_cacheModel.reportSequence( );
   m_cacheModel.destroy( );
 #endif
+#if JVET_M0427_INLOOP_RESHAPER
+  m_cCuDecoder.destoryDecCuReshaprBuf();
+  m_cReshaper.destroy();
+#endif
 }
 
 Picture* DecLib::xGetNewPicBuffer ( const SPS &sps, const PPS &pps, const uint32_t temporalLayer )
@@ -549,9 +556,19 @@ void DecLib::executeLoopFilters()
 
   CodingStructure& cs = *m_pcPic->cs;
 
+#if JVET_M0427_INLOOP_RESHAPER
+  if (cs.sps->getUseReshaper() && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+  {
+      CHECK((m_cReshaper.getRecReshaped() == false), "Rec picture is not reshaped!");
+      m_pcPic->getRecoBuf(COMPONENT_Y).rspSignal(m_cReshaper.getInvLUT());
+      m_cReshaper.setRecReshaped(false);
+  }
+#endif
   // deblocking filter
   m_cLoopFilter.loopFilterPic( cs );
-
+#if JVET_M0147_DMVR
+  CS::setRefinedMotionField(cs);
+#endif
   if( cs.sps->getSAOEnabledFlag() )
   {
     m_cSAO.SAOProcess( cs, cs.picture->getSAO() );
@@ -779,7 +796,12 @@ void DecLib::xActivateParameterSets()
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
     m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
     m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc() );
-
+#if JVET_M0427_INLOOP_RESHAPER
+    if (sps->getUseReshaper())
+    {
+      m_cReshaper.createDec(sps->getBitDepth(CHANNEL_TYPE_LUMA));
+    }
+#endif
 
     bool isField = false;
     bool isTopField = false;
@@ -806,6 +828,12 @@ void DecLib::xActivateParameterSets()
 
     // Recursive structure
     m_cCuDecoder.init( &m_cTrQuant, &m_cIntraPred, &m_cInterPred );
+#if JVET_M0427_INLOOP_RESHAPER
+    if (sps->getUseReshaper())
+    {
+      m_cCuDecoder.initDecCuReshaper(&m_cReshaper, sps->getChromaFormatIdc());
+    }
+#endif
     m_cTrQuant.init( nullptr, sps->getMaxTrSize(), false, false, false, false, false );
 
     // RdCost
@@ -1269,11 +1297,52 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 #endif
 
+#if JVET_M0483_IBC
+  if (pcSlice->getSPS()->getIBCFlag() && pcSlice->getEnableTMVPFlag())
+#else
   if (pcSlice->getSPS()->getSpsNext().getIBCMode() && pcSlice->getEnableTMVPFlag())
+#endif
   {
     CHECK(pcSlice->getRefPic(RefPicList(pcSlice->isInterB() ? 1 - pcSlice->getColFromL0Flag() : 0), pcSlice->getColRefIdx())->getPOC() == pcSlice->getPOC(), "curr ref picture cannot be collocated picture");
   }
 
+#if JVET_M0427_INLOOP_RESHAPER
+  if (pcSlice->getSPS()->getUseReshaper())
+  {
+    m_cReshaper.copySliceReshaperInfo(m_cReshaper.getSliceReshaperInfo(), pcSlice->getReshapeInfo());
+    if (pcSlice->getReshapeInfo().getSliceReshapeModelPresentFlag())
+    {
+      m_cReshaper.constructReshaper();
+    }
+    else
+    {
+      m_cReshaper.setReshapeFlag(false);
+    }
+    if ((pcSlice->getSliceType() == I_SLICE|| (pcSlice->getSliceType() == P_SLICE && pcSlice->getSPS()->getSpsNext().getIBCMode()) ) && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+    {
+      m_cReshaper.setCTUFlag(false);
+      m_cReshaper.setRecReshaped(true);
+    }
+    else
+    {
+      if (m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+      {
+        m_cReshaper.setCTUFlag(true);
+        m_cReshaper.setRecReshaped(true);
+      }
+      else
+      {
+        m_cReshaper.setCTUFlag(false);
+        m_cReshaper.setRecReshaped(false);
+      }
+    }
+  }
+  else
+  {
+    m_cReshaper.setCTUFlag(false);
+    m_cReshaper.setRecReshaped(false);
+  }
+#endif
 
   //  Decode a picture
 #if JVET_M0055_DEBUG_CTU
@@ -1283,10 +1352,12 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #endif
 
   m_bFirstSliceInPicture = false;
+#if JVET_M0483_IBC==0
   if (pcSlice->getSPS()->getSpsNext().getIBCMode())
   {
     pcSlice->getPic()->longTerm = false;
   }
+#endif
   m_uiSliceSegmentIdx++;
 
   return false;

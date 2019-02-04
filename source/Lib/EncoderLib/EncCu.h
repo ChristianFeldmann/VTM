@@ -152,11 +152,16 @@ private:
 #if SHARP_LUMA_DELTA_QP
   void    updateLambda      ( Slice* slice, double dQP );
 #endif
+#if JVET_M0140_SBT
+  double                m_sbtCostSave[2];
+#endif
 
 public:
   /// copy parameters from encoder class
   void  init                ( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int jId = 0 ) );
-
+#if JVET_M0427_INLOOP_RESHAPER && REUSE_CU_RESULTS
+  void setDecCuReshaperInEncCU(EncReshape* pcReshape, ChromaFormat chromaFormatIDC) { initDecCuReshaper((Reshape*) pcReshape, chromaFormatIDC); }
+#endif
   /// create internal buffers
   void  create              ( EncCfg* encCfg );
 
@@ -210,6 +215,9 @@ protected:
   void xCheckDQP              ( CodingStructure& cs, Partitioner& partitioner, bool bKeepCtx = false);
   void xFillPCMBuffer         ( CodingUnit &cu);
 
+#if JVET_M0253_HASH_ME
+  void xCheckRDCostHashInter  ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+#endif
   void xCheckRDCostAffineMerge2Nx2N
                               ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
   void xCheckRDCostInter      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );

@@ -291,6 +291,38 @@ struct HrdSubLayerInfo
   uint32_t duBitRateValue    [MAX_CPB_CNT][2];
 };
 
+#if JVET_M0427_INLOOP_RESHAPER
+class SliceReshapeInfo
+{
+public:
+  bool      sliceReshaperEnableFlag;
+  bool      sliceReshaperModelPresentFlag;
+  unsigned  enableChromaAdj;
+  uint32_t  reshaperModelMinBinIdx;
+  uint32_t  reshaperModelMaxBinIdx;
+  int       reshaperModelBinCWDelta[PIC_CODE_CW_BINS];
+  int       maxNbitsNeededDeltaCW;
+  void      setUseSliceReshaper(bool b)                                { sliceReshaperEnableFlag = b;            }
+  bool      getUseSliceReshaper() const                                { return sliceReshaperEnableFlag;         }
+  void      setSliceReshapeModelPresentFlag(bool b)                    { sliceReshaperModelPresentFlag = b;      }
+  bool      getSliceReshapeModelPresentFlag() const                    { return   sliceReshaperModelPresentFlag; }
+  void      setSliceReshapeChromaAdj(unsigned adj)                     { enableChromaAdj = adj;                  }
+  unsigned  getSliceReshapeChromaAdj() const                           { return enableChromaAdj;                 }
+};
+
+struct ReshapeCW
+{
+  std::vector<uint32_t> binCW;
+  int rspPicSize;
+  int rspIntraPeriod;
+  int rspFps;
+  int rspBaseQP;
+  int rspTid;
+  int rspSliceQP;
+  int rspFpsToIp;
+};
+#endif
+
 class HRD
 {
 private:
@@ -807,12 +839,19 @@ private:
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
   bool              m_cclmCollocatedChromaFlag;
 #endif
+#if JVET_M0303_IMPLICIT_MTS
+  bool              m_MTS;
+#endif
 #if JVET_M0464_UNI_MTS
   bool              m_IntraMTS;                   // 18
   bool              m_InterMTS;                   // 19
 #else
   bool              m_IntraEMT;                   // 18
   bool              m_InterEMT;                   // 19
+#endif
+#if JVET_M0140_SBT
+  bool              m_SBT;
+  uint8_t           m_MaxSbtSize;
 #endif
   bool              m_Affine;
   bool              m_AffineType;
@@ -874,6 +913,15 @@ public:
   void      setCclmCollocatedChromaFlag( bool b )                                   { m_cclmCollocatedChromaFlag = b; }
   bool      getCclmCollocatedChromaFlag()                                 const     { return m_cclmCollocatedChromaFlag; }
 #endif
+#if JVET_M0303_IMPLICIT_MTS
+  void      setUseMTS             ( bool b )                                        { m_MTS = b; }
+  bool      getUseMTS             ()                                      const     { return m_MTS; }
+#if JVET_M0464_UNI_MTS
+  bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraMTS && !m_InterMTS; }
+#else
+  bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraEMT && !m_InterEMT; }
+#endif
+#endif
 #if JVET_M0464_UNI_MTS
   void      setUseIntraMTS        ( bool b )                                        { m_IntraMTS = b; }
   bool      getUseIntraMTS        ()                                      const     { return m_IntraMTS; }
@@ -884,6 +932,12 @@ public:
   bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
   void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
   bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
+#endif
+#if JVET_M0140_SBT
+  void      setUseSBT             ( bool b )                                        { m_SBT = b; }
+  bool      getUseSBT             ()                                      const     { return m_SBT; }
+  void      setMaxSbtSize         ( uint8_t val )                                   { m_MaxSbtSize = val; }
+  uint8_t   getMaxSbtSize         ()                                      const     { return m_MaxSbtSize; }
 #endif
   void      setUseGBi             ( bool b )                                        { m_GBi = b; }
   bool      getUseGBi             ()                                      const     { return m_GBi; }
@@ -942,6 +996,12 @@ private:
   bool              m_bNoDepQuantConstraintFlag;
   bool              m_bNoSignDataHidingConstraintFlag;
 
+#if JVET_M0246_AFFINE_AMVR
+  bool              m_affineAmvrEnabledFlag;
+#endif
+#if JVET_M0147_DMVR
+  bool              m_DMVR;
+#endif
 #if HEVC_VPS
   int               m_VPSId;
 #endif
@@ -1030,6 +1090,13 @@ private:
 
   bool              m_wrapAroundEnabledFlag;
   unsigned          m_wrapAroundOffset;
+#if JVET_M0483_IBC
+  unsigned          m_IBCFlag;
+#endif
+
+#if JVET_M0427_INLOOP_RESHAPER
+  bool              m_lumaReshapeEnable;
+#endif
 
 public:
 
@@ -1199,7 +1266,10 @@ public:
   bool                    getDisFracMmvdEnabledFlag() const                                               { return m_disFracMmvdEnabledFlag; }
   void                    setDisFracMmvdEnabledFlag( bool b )                                             { m_disFracMmvdEnabledFlag = b;    }
 #endif
-
+#if JVET_M0147_DMVR
+  bool                    getUseDMVR()const                                                               { return m_DMVR; }
+  void                    setUseDMVR(bool b)                                                              { m_DMVR = b;    }
+#endif
   uint32_t                getMaxTLayers() const                                                           { return m_uiMaxTLayers; }
   void                    setMaxTLayers( uint32_t uiMaxTLayers )                                          { CHECK( uiMaxTLayers > MAX_TLAYER, "Invalid number T-layers" ); m_uiMaxTLayers = uiMaxTLayers; }
 
@@ -1228,6 +1298,10 @@ public:
   bool                    getUseStrongIntraSmoothing() const                                              { return m_useStrongIntraSmoothing;                                    }
 
 #endif
+#if JVET_M0246_AFFINE_AMVR
+  void                    setAffineAmvrEnabledFlag( bool val )                                            { m_affineAmvrEnabledFlag = val;                                       }
+  bool                    getAffineAmvrEnabledFlag() const                                                { return m_affineAmvrEnabledFlag;                                      }
+#endif
   bool                    getVuiParametersPresentFlag() const                                             { return m_vuiParametersPresentFlag;                                   }
   void                    setVuiParametersPresentFlag(bool b)                                             { m_vuiParametersPresentFlag = b;                                      }
   VUI*                    getVuiParameters()                                                              { return &m_vuiParameters;                                             }
@@ -1245,6 +1319,14 @@ public:
   bool                    getWrapAroundEnabledFlag() const                                                { return m_wrapAroundEnabledFlag;                                      }
   void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
   unsigned                getWrapAroundOffset() const                                                     { return m_wrapAroundOffset;                                           }
+#if JVET_M0427_INLOOP_RESHAPER
+  void                    setUseReshaper(bool b)                                                          { m_lumaReshapeEnable = b;                                                   }
+  bool                    getUseReshaper() const                                                          { return m_lumaReshapeEnable;                                                }
+#endif
+#if JVET_M0483_IBC
+  void                    setIBCFlag(unsigned IBCFlag)                                                    { m_IBCFlag = IBCFlag; }
+  unsigned                getIBCFlag() const                                                              { return m_IBCFlag; }
+#endif
 };
 
 
@@ -1674,6 +1756,9 @@ private:
 
   AlfSliceParam              m_alfSliceParam;
   LutMotionCand*             m_MotionCandLut;
+#if JVET_M0427_INLOOP_RESHAPER
+  SliceReshapeInfo           m_sliceReshapeInfo;
+#endif
 #if JVET_M0170_MRG_SHARELIST
 public:
   LutMotionCand*             m_MotionCandLuTsBkup;
@@ -1961,6 +2046,9 @@ public:
   void                        initMotionLUTs       ();
   void                        destroyMotionLUTs    ();
   void                        resetMotionLUTs();
+#if JVET_M0483_IBC
+  int                         getAvailableLUTIBCMrgNum() const { return m_MotionCandLut->currCntIBC; }
+#endif
   int                         getAvailableLUTMrgNum() const  { return m_MotionCandLut->currCnt; }
 #if JVET_M0170_MRG_SHARELIST
   int                         getAvailableLUTBkupMrgNum() const  { return m_MotionCandLuTsBkup->currCnt; }
@@ -1969,12 +2057,18 @@ public:
   MotionInfo                  getMotionInfoFromLUTs(int MotCandIdx) const;
   LutMotionCand*              getMotionLUTs() { return m_MotionCandLut; }
 
-
+#if JVET_M0483_IBC
+  void                        addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi, bool ibcflag);
+#else
   void                        addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi);
+#endif
 
   void                        updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu);
   void                        copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst);
-
+#if JVET_M0427_INLOOP_RESHAPER
+  const SliceReshapeInfo&     getReshapeInfo() const { return m_sliceReshapeInfo; }
+        SliceReshapeInfo&     getReshapeInfo()       { return m_sliceReshapeInfo; }
+#endif
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
   Picture*              xGetLongTermRefPic(PicList& rcListPic, int poc, bool pocHasMsb);

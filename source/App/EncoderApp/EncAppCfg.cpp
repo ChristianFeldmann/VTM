@@ -853,6 +853,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     "\t2:  Enable fast methods only for Inter EMT\n"
     "\t3:  Enable fast methods for both Intra & Inter EMT\n")
 #endif
+#if JVET_M0303_IMPLICIT_MTS
+  ("MTSImplicit",                                     m_MTSImplicit,                                        0, "Enable implicit MTS (when explicit MTS is off)\n")
+#endif
+#if JVET_M0140_SBT
+  ( "SBT",                                            m_SBT,                                            false, "Enable Sub-Block Transform for inter blocks\n" )
+#endif
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
   ("GBi",                                             m_GBi,                                            false, "Enable Generalized Bi-prediction(GBi)")
   ("GBiFast",                                         m_GBiFast,                                        false, "Fast methods for Generalized Bi-prediction(GBi)\n")
@@ -864,8 +870,21 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
+#if JVET_M0253_HASH_ME
+  ("HashME",                                          m_HashME,                                         false, "Enable hash motion estimation (0:off, 1:on)")
+#endif
+
 #if JVET_M0255_FRACMMVD_SWITCH
   ("AllowDisFracMMVD",                                m_allowDisFracMMVD,                               false, "Disable fractional MVD in MMVD mode adaptively")
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  ("AffineAmvr",                                      m_AffineAmvr,                                     false, "Eanble AMVR for affine inter mode")
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
+#endif
+#if JVET_M0147_DMVR
+  ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
 #endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
@@ -879,7 +898,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("WrapAroundOffset",                                m_wrapAroundOffset,                                  0u, "Offset in luma samples used for computing the horizontal wrap-around position")
 
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
-
+#if JVET_M0427_INLOOP_RESHAPER
+  ("LumaReshapeEnable",                               m_lumaReshapeEnable,                              false, "Enable Reshaping for Luma Channel")
+  ("ReshapeSignalType",                               m_reshapeSignalType,                                 0u, "Input signal type: 0: SDR, 1:PQ, 2:HLG")
+  ("IntraCMD",                                        m_intraCMD,                                          0u, "IntraChroma MD: 0: none, 1:fixed to default wPSNR weight")
+#endif
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
   ("FastMrg",                                         m_useFastMrg,                                     false, "Fast methods for inter merge")
   ("PBIntraFast",                                     m_usePbIntraFast,                                 false, "Fast assertion if the intra mode is probable")
@@ -1836,6 +1859,14 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
+#if JVET_M0427_INLOOP_RESHAPER
+  m_reshapeCW.binCW.resize(3);
+  m_reshapeCW.rspFps = m_iFrameRate;
+  m_reshapeCW.rspIntraPeriod = m_iIntraPeriod;
+  m_reshapeCW.rspPicSize = m_iSourceWidth*m_iSourceHeight;
+  m_reshapeCW.rspFpsToIp = std::max(16, 16 * (int)(round((double)m_iFrameRate /16.0)));
+  m_reshapeCW.rspBaseQP = m_iQP;
+#endif
 #if ENABLE_TRACING
   g_trace_ctx = tracing_init(sTracingFile, sTracingRule);
   if( bTracingChannelsList && g_trace_ctx )
@@ -1940,6 +1971,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
     xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
+#if JVET_M0253_HASH_ME
+    xConfirmPara( m_HashME, "Hash motion estimation only allowed with NEXT profile" );
+#endif   
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
 #if JVET_M0464_UNI_MTS
     xConfirmPara( m_MTS, "MTS only allowed with NEXT profile" );
@@ -1953,6 +1987,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_GBi, "GBi is only allowed with NEXT profile" );
     xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
+#if JVET_M0147_DMVR
+    xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
+#endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
   else
@@ -2219,6 +2256,25 @@ bool EncAppCfg::xCheckParameter()
 #if SHARP_LUMA_DELTA_QP
   xConfirmPara( m_lumaLevelToDeltaQPMapping.mode && m_uiDeltaQpRD > 0,                      "Luma-level-based Delta QP cannot be used together with slice level multiple-QP optimization\n" );
 #endif
+#if JVET_M0427_INLOOP_RESHAPER
+  if (!m_lumaReshapeEnable)
+  {
+    m_reshapeSignalType = RESHAPE_SIGNAL_NULL;
+    m_intraCMD = 0;
+  }
+  if (m_lumaReshapeEnable && m_reshapeSignalType == RESHAPE_SIGNAL_PQ)
+  {
+    m_intraCMD = 1;
+  }
+  else if (m_lumaReshapeEnable && m_reshapeSignalType == RESHAPE_SIGNAL_SDR)
+  {
+    m_intraCMD = 0;
+  }
+  else
+  {
+    m_lumaReshapeEnable = false;
+  }
+#endif
 
   xConfirmPara( m_cbQpOffset < -12,   "Min. Chroma Cb QP Offset is -12" );
   xConfirmPara( m_cbQpOffset >  12,   "Max. Chroma Cb QP Offset is  12" );
@@ -2296,9 +2352,15 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_MTS < 0 || m_MTS > 3, "MTS must be greater than 0 smaller than 4" );
   xConfirmPara( m_MTSIntraMaxCand < 0 || m_MTSIntraMaxCand > 5, "m_MTSIntraMaxCand must be greater than 0 and smaller than 6" );
   xConfirmPara( m_MTSInterMaxCand < 0 || m_MTSInterMaxCand > 5, "m_MTSInterMaxCand must be greater than 0 and smaller than 6" );
+#if JVET_M0303_IMPLICIT_MTS
+  xConfirmPara( m_MTS != 0 && m_MTSImplicit != 0, "Both explicit and implicit MTS cannot be enabled at the same time" );
+#endif
 #else
   xConfirmPara( m_EMT < 0 || m_EMT >3, "EMT must be 0, 1, 2 or 3" );
   xConfirmPara( m_FastEMT < 0 || m_FastEMT >3, "FEMT must be 0, 1, 2 or 3" );
+#if JVET_M0303_IMPLICIT_MTS
+  xConfirmPara( m_EMT != 0 && m_MTSImplicit != 0, "Both explicit and implicit MTS cannot be enabled at the same time" );
+#endif
 #endif
   if( m_usePCM)
   {
@@ -3142,6 +3204,9 @@ void EncAppCfg::xPrintParameter()
 #else
     msg( VERBOSE, "EMT: %1d(intra) %1d(inter) ", m_EMT & 1, ( m_EMT >> 1 ) & 1 );
 #endif
+#if JVET_M0140_SBT
+    msg( VERBOSE, "SBT:%d ", m_SBT );
+#endif
     msg( VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
     msg( VERBOSE, "GBi:%d ", m_GBi );
     msg( VERBOSE, "GBiFast:%d ", m_GBiFast );
@@ -3153,15 +3218,35 @@ void EncAppCfg::xPrintParameter()
 #if JVET_M0255_FRACMMVD_SWITCH
     msg( VERBOSE, "AllowDisFracMMVD:%d ", m_allowDisFracMMVD );
 #endif
+#if JVET_M0246_AFFINE_AMVR
+    msg( VERBOSE, "AffineAmvr:%d ", m_AffineAmvr );
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+    m_AffineAmvrEncOpt = m_AffineAmvr ? m_AffineAmvrEncOpt : false;
+    msg( VERBOSE, "AffineAmvrEncOpt:%d ", m_AffineAmvrEncOpt );
+#endif
+#if JVET_M0147_DMVR
+    msg(VERBOSE, "DMVR:%d ", m_DMVR);
+#endif
   }
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
+#if JVET_M0253_HASH_ME
+  msg( VERBOSE, "HashME:%d ", m_HashME );
+#endif
   msg( VERBOSE, "WrapAround:%d ", m_wrapAround);
   if( m_wrapAround )
   {
     msg( VERBOSE, "WrapAroundOffset:%d ", m_wrapAroundOffset );
   }
   // ADD_NEW_TOOL (add some output indicating the usage of tools)
-
+#if JVET_M0427_INLOOP_RESHAPER
+    msg(VERBOSE, "Reshape:%d ", m_lumaReshapeEnable);
+    if (m_lumaReshapeEnable)
+    {
+      msg(VERBOSE, "(Sigal:%s ", m_reshapeSignalType==0? "SDR" : "HDR-PQ");
+      msg(VERBOSE, ") ");
+    }
+#endif
   msg( VERBOSE, "\nFAST TOOL CFG: " );
   if( m_LargeCTU )
   {

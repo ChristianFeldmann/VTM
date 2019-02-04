@@ -182,8 +182,14 @@ unsigned BinDecoderBase::decodeBinsEP( unsigned numBins )
 
 unsigned BinDecoderBase::decodeRemAbsEP( unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange )
 {
+#if JVET_M0470
+  unsigned cutoff = COEF_REMAIN_BIN_REDUCTION;
+  unsigned prefix = 0;
+  useLimitedPrefixLength = true;
+#else
   unsigned cutoff = g_auiGoRiceRange[ goRicePar ];
   unsigned prefix = 0;
+#endif
   if( useLimitedPrefixLength )
   {
     const unsigned  maxPrefix = 32 - maxLog2TrDynamicRange;

@@ -43,7 +43,11 @@
 #include "CommonDef.h"
 
 static_assert( MAX_CU_TILING_PARTITIONS >= 4, "Minimum required number of partitions for the Partitioning type is 4!" );
+#if JVET_M0102_INTRA_SUBPARTITIONS
+typedef std::vector <UnitArea> Partitioning;
+#else
 typedef static_vector<UnitArea, MAX_CU_TILING_PARTITIONS> Partitioning;
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // PartManager class - manages the partitioning tree
@@ -63,6 +67,21 @@ enum PartSplit
   CU_TRIH_SPLIT,
   CU_TRIV_SPLIT,
   TU_MAX_TR_SPLIT,
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  TU_NO_ISP,
+  TU_1D_HORZ_SPLIT,
+  TU_1D_VERT_SPLIT,
+#endif
+#if JVET_M0140_SBT
+  SBT_VER_HALF_POS0_SPLIT,
+  SBT_VER_HALF_POS1_SPLIT,
+  SBT_HOR_HALF_POS0_SPLIT,
+  SBT_HOR_HALF_POS1_SPLIT,
+  SBT_VER_QUAD_POS0_SPLIT,
+  SBT_VER_QUAD_POS1_SPLIT,
+  SBT_HOR_QUAD_POS0_SPLIT,
+  SBT_HOR_QUAD_POS1_SPLIT,
+#endif
   NUM_PART_SPLIT,
   CU_MT_SPLIT             = 1000, ///< dummy element to indicate the MT (multi-type-tree) split
   CU_BT_SPLIT             = 1001, ///< dummy element to indicate the BT split
@@ -159,6 +178,37 @@ public:
   PartSplit getImplicitSplit      (                                                 const CodingStructure &cs );
 };
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+class TUIntraSubPartitioner : public Partitioner
+{
+public:
+  TUIntraSubPartitioner(Partitioner& _initialState)
+  {
+    //we copy the input partitioner data
+    m_partStack.push_back(PartLevel(TU_NO_ISP, { _initialState.currArea() }));
+
+    currDepth    = _initialState.currDepth;
+    currQtDepth  = _initialState.currQtDepth;
+    currTrDepth  = _initialState.currTrDepth;
+    currBtDepth  = _initialState.currBtDepth;
+    currMtDepth  = _initialState.currMtDepth;
+    chType       = _initialState.chType;
+#if _DEBUG
+    m_currArea   = _initialState.currArea();
+#endif
+  }
+
+  void initCtu               (const UnitArea& ctuArea, const ChannelType chType, const Slice& slice) {}; // not needed
+  void splitCurrArea         (const PartSplit split, const CodingStructure &cs);
+  void exitCurrSplit         ();
+  bool nextPart              (const CodingStructure &cs, bool autoPop = false);
+  bool hasNextPart           ();
+  void canSplit              (const CodingStructure &cs, bool& canNo, bool& canQt, bool& canBh, bool& canBv, bool& canTh, bool& canTv) {};
+  bool canSplit              (const PartSplit split, const CodingStructure &cs);
+  bool isSplitImplicit       (const PartSplit split, const CodingStructure &cs) { return false; }; //not needed
+  PartSplit getImplicitSplit (const CodingStructure &cs) { return CU_DONT_SPLIT; }; //not needed
+};
+#endif
 
 
 
@@ -176,6 +226,12 @@ namespace PartitionerImpl
 {
   Partitioning getCUSubPartitions( const UnitArea   &cuArea, const CodingStructure &cs, const PartSplit splitType = CU_QUAD_SPLIT );
   Partitioning getMaxTuTiling    ( const UnitArea& curArea, const CodingStructure &cs );
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  void    getTUIntraSubPartitions( Partitioning &sub, const UnitArea &tuArea, const CodingStructure &cs, const PartSplit splitType );
+#endif
+#if JVET_M0140_SBT
+  Partitioning getSbtTuTiling    ( const UnitArea& curArea, const CodingStructure &cs, const PartSplit splitType );
+#endif
 };
 
 #endif

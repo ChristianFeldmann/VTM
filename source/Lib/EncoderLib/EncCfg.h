@@ -215,6 +215,12 @@ protected:
   int       m_FastIntraEMT;
   int       m_FastInterEMT;
 #endif
+#if JVET_M0303_IMPLICIT_MTS
+  int       m_ImplicitMTS;
+#endif
+#if JVET_M0140_SBT
+  bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
+#endif
   bool      m_LargeCTU;
   int       m_SubPuMvpMode;
   bool      m_Affine;
@@ -241,6 +247,18 @@ protected:
 #if JVET_M0255_FRACMMVD_SWITCH
   bool      m_allowDisFracMMVD;
 #endif
+#if JVET_M0246_AFFINE_AMVR
+  bool      m_AffineAmvr;
+#endif
+#if JVET_M0253_HASH_ME
+  bool      m_HashME;
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  bool      m_AffineAmvrEncOpt;
+#endif
+#if JVET_M0147_DMVR
+  bool      m_DMVR;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -248,12 +266,17 @@ protected:
   unsigned  m_IBCHashSearchMaxCand;
   unsigned  m_IBCHashSearchRange4SmallBlk;
   unsigned  m_IBCFastMethod;
-  
+
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
-
+#if JVET_M0427_INLOOP_RESHAPER
+  bool      m_lumaReshapeEnable;
+  unsigned  m_reshapeSignalType;
+  unsigned  m_intraCMD;
+  ReshapeCW m_reshapeCW;
+#endif
   bool      m_useFastLCTU;
   bool      m_useFastMrg;
   bool      m_usePbIntraFast;
@@ -732,9 +755,14 @@ public:
   void      setInterEMT                     ( bool b )       { m_InterEMT = b; }
   bool      getInterEMT                     ()         const { return m_InterEMT; }
 #endif
-
-
-
+#if JVET_M0303_IMPLICIT_MTS
+  void      setImplicitMTS                  ( bool b )       { m_ImplicitMTS = b; }
+  bool      getImplicitMTS                  ()         const { return m_ImplicitMTS; }
+#endif
+#if JVET_M0140_SBT
+  void      setUseSBT                       ( bool b )       { m_SBT = b; }
+  bool      getUseSBT                       ()         const { return m_SBT; }
+#endif
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }
@@ -763,6 +791,22 @@ public:
   void      setAllowDisFracMMVD             ( bool b )       { m_allowDisFracMMVD = b;    }
   bool      getAllowDisFracMMVD             ()         const { return m_allowDisFracMMVD; }
 #endif
+#if JVET_M0253_HASH_ME
+  void      setUseHashME                    ( bool b )       { m_HashME = b; }
+  bool      getUseHashME                    ()         const { return m_HashME; }
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  void      setUseAffineAmvr                ( bool b )       { m_AffineAmvr = b;    }
+  bool      getUseAffineAmvr                ()         const { return m_AffineAmvr; }
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  void      setUseAffineAmvrEncOpt          ( bool b )       { m_AffineAmvrEncOpt = b;    }
+  bool      getUseAffineAmvrEncOpt          ()         const { return m_AffineAmvrEncOpt; }
+#endif
+#if JVET_M0147_DMVR
+  void      setDMVR                      ( bool b )       { m_DMVR = b; }
+  bool      getDMVR                      ()         const { return m_DMVR; }
+#endif
 
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }
@@ -786,7 +830,16 @@ public:
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 
-
+#if JVET_M0427_INLOOP_RESHAPER
+  void      setReshaper                     ( bool b )                   { m_lumaReshapeEnable = b; }
+  bool      getReshaper                     () const                     { return m_lumaReshapeEnable; }
+  void      setReshapeSignalType            ( uint32_t signalType )      { m_reshapeSignalType = signalType; }
+  uint32_t  getReshapeSignalType            () const                     { return m_reshapeSignalType; }
+  void      setReshapeIntraCMD              (uint32_t intraCMD)          { m_intraCMD = intraCMD; }
+  uint32_t  getReshapeIntraCMD              ()                           { return m_intraCMD; }
+  void      setReshapeCW                    (const ReshapeCW &reshapeCW) { m_reshapeCW = reshapeCW; }
+  const ReshapeCW& getReshapeCW             ()                           { return m_reshapeCW; }
+#endif
   void      setMaxCUWidth                   ( uint32_t  u )      { m_maxCUWidth  = u; }
   uint32_t      getMaxCUWidth                   () const         { return m_maxCUWidth; }
   void      setMaxCUHeight                  ( uint32_t  u )      { m_maxCUHeight = u; }

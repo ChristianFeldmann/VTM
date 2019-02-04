@@ -48,7 +48,9 @@
 #include "CommonLib/InterPrediction.h"
 #include "CommonLib/IntraPrediction.h"
 #include "CommonLib/Unit.h"
-
+#if JVET_M0427_INLOOP_RESHAPER
+#include "CommonLib/Reshape.h"
+#endif
 //! \ingroup DecoderLib
 //! \{
 
@@ -68,6 +70,12 @@ public:
 
   /// destroy internal buffers
   void  decompressCtu     ( CodingStructure& cs, const UnitArea& ctuArea );
+#if JVET_M0427_INLOOP_RESHAPER
+  Reshape*          m_pcReshape;
+  Reshape* getReshape     () { return m_pcReshape; }
+  void initDecCuReshaper  ( Reshape* pcReshape, ChromaFormat chromaFormatIDC) ;
+  void destoryDecCuReshaprBuf();
+#endif
 
 #if JVET_M0170_MRG_SHARELIST
   void setShareStateDec (int shareStateDecIn)  { m_shareStateDec = shareStateDecIn; }
@@ -87,7 +95,9 @@ protected:
   void xDecodeInterTU     ( TransformUnit&   tu, const ComponentID compID );
 
   void xDeriveCUMV        ( CodingUnit&      cu );
-
+#if JVET_M0427_INLOOP_RESHAPER
+  PelStorage        *m_tmpStorageLCU;
+#endif
 private:
   TrQuant*          m_pcTrQuant;
   IntraPrediction*  m_pcIntraPred;

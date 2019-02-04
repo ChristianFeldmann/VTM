@@ -240,6 +240,12 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
 #endif
+#if JVET_M0303_IMPLICIT_MTS
+  m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
+#endif
+#if JVET_M0140_SBT
+  m_cEncLib.setUseSBT                                            ( m_SBT );
+#endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
@@ -257,8 +263,21 @@ void EncApp::xInitLibCfg()
 #endif  
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
+#if JVET_M0253_HASH_ME
+  m_cEncLib.setUseHashME                                         ( m_HashME );
+#endif
+
 #if JVET_M0255_FRACMMVD_SWITCH
   m_cEncLib.setAllowDisFracMMVD                                  ( m_allowDisFracMMVD );
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  m_cEncLib.setUseAffineAmvr                                     ( m_AffineAmvr );
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  m_cEncLib.setUseAffineAmvrEncOpt                               ( m_AffineAmvrEncOpt );
+#endif
+#if JVET_M0147_DMVR
+  m_cEncLib.setDMVR                                              ( m_DMVR );
 #endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
@@ -550,6 +569,12 @@ void EncApp::xInitLibCfg()
 
 #endif
   m_cEncLib.setUseALF                                            ( m_alf );
+#if JVET_M0427_INLOOP_RESHAPER
+  m_cEncLib.setReshaper                                          ( m_lumaReshapeEnable );
+  m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
+  m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
+  m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
+#endif  
 }
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList

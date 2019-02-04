@@ -294,6 +294,12 @@ public:
   static const CtxSet   EMTTuIndex;
   static const CtxSet   EMTCuFlag;
 #endif
+#if JVET_M0140_SBT
+  static const CtxSet   SbtFlag;
+  static const CtxSet   SbtQuadFlag;
+  static const CtxSet   SbtHorFlag;
+  static const CtxSet   SbtPosFlag;
+#endif
   static const CtxSet   CrossCompPred;
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;
@@ -306,6 +312,12 @@ public:
   static const CtxSet   TriangleIdx;
 #if JVET_M0444_SMVD
   static const CtxSet   SmvdFlag;
+#endif
+#if JVET_M0483_IBC
+  static const CtxSet   IBCFlag;
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  static const CtxSet   ISPMode;
 #endif
   static const unsigned NumberOfContexts;
 

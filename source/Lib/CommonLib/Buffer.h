@@ -77,6 +77,10 @@ struct PelBufferOps
   void(*calcBIOPar)    (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG);
 #endif
   void(*calcBlkGradient)(int sx, int sy, int    *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize);
+#if JVET_M0147_DMVR
+  void(*copyBuffer)(Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height);
+  void(*padding)(Pel *dst, int stride, int width, int height, int padSize);
+#endif
 #if ENABLE_SIMD_OPT_GBI
   void ( *removeWeightHighFreq8)  ( Pel* src0, int src0Stride, const Pel* src1, int src1Stride, int width, int height, int shift, int gbiWeight);
   void ( *removeWeightHighFreq4)  ( Pel* src0, int src0Stride, const Pel* src1, int src1Stride, int width, int height, int shift, int gbiWeight);
@@ -88,6 +92,12 @@ struct PelBufferOps
 extern PelBufferOps g_pelBufOP;
 
 #endif
+#endif
+
+
+#if JVET_M0147_DMVR
+void paddingCore(Pel *ptr, int stride, int width, int height, int padSize);
+void copyBufferCore(Pel *src, int srcStride, Pel *Dst, int dstStride, int width, int height);
 #endif
 
 template<typename T>
@@ -132,6 +142,11 @@ struct AreaBuf : public Size
 
   void toLast               ( const ClpRng& clpRng );
 
+#if JVET_M0427_INLOOP_RESHAPER
+  void rspSignal            ( std::vector<Pel>& pLUT );
+  void scaleSignal          ( const int scale, const bool dir , const ClpRng& clpRng);
+  T    computeAvg           ( ) const;
+#endif
         T& at( const int &x, const int &y )          { return buf[y * stride + x]; }
   const T& at( const int &x, const int &y ) const    { return buf[y * stride + x]; }
 

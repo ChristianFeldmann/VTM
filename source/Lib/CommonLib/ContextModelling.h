@@ -70,6 +70,10 @@ public:
   int             cgPosX          ()                        const { return m_subSetPosX; }
   unsigned        width           ()                        const { return m_width; }
   unsigned        height          ()                        const { return m_height; }
+#if JVET_M0297_32PT_MTS_ZERO_OUT
+  unsigned        log2CGWidth     ()                        const { return m_log2CGWidth; }
+  unsigned        log2CGHeight    ()                        const { return m_log2CGHeight; }
+#endif
   unsigned        log2CGSize      ()                        const { return m_log2CGSize; }
   unsigned        log2BlockWidth  ()                        const { return m_log2BlockWidth; }
   unsigned        log2BlockHeight ()                        const { return m_log2BlockHeight; }
@@ -308,7 +312,11 @@ void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, uns
 unsigned CtxCUsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 unsigned CtxBTsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 #endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
+#else
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf );
+#endif
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
@@ -316,6 +324,9 @@ unsigned CtxAffineFlag( const CodingUnit& cu );
 unsigned CtxTriangleFlag( const CodingUnit& cu );
 #if JVET_M0502_PRED_MODE_CTX
 unsigned CtxPredModeFlag( const CodingUnit& cu );
+#endif
+#if JVET_M0483_IBC
+unsigned CtxIBCFlag(const CodingUnit& cu);
 #endif
 }
 

@@ -117,7 +117,7 @@ static const double AFFINE_ME_LIST_MVP_TH =                        1.0;
 // ====================================================================================================================
 // Common constants
 // ====================================================================================================================
-
+static const uint64_t   MAX_UINT64 =                  0xFFFFFFFFFFFFFFFFU;
 static const uint32_t   MAX_UINT =                            0xFFFFFFFFU; ///< max. value of unsigned 32-bit integer
 static const int    MAX_INT =                              2147483647; ///< max. value of signed 32-bit integer
 static const uint8_t  MAX_UCHAR =                                   255;
@@ -162,9 +162,11 @@ static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
 static const int MAX_CPB_CNT =                                     32; ///< Upper bound of (cpb_cnt_minus1 + 1)
 static const int MAX_NUM_LAYER_IDS =                               64;
-
+#if JVET_M0470
+static const int COEF_REMAIN_BIN_REDUCTION =                        5; ///< indicates the level at which the VLC transitions from Golomb-Rice to TU+EG(k)
+#else
 static const int COEF_REMAIN_BIN_REDUCTION =                        3; ///< indicates the level at which the VLC transitions from Golomb-Rice to TU+EG(k)
-
+#endif
 static const int CU_DQP_TU_CMAX =                                   5; ///< max number bins for truncated unary
 static const int CU_DQP_EG_k =                                      0; ///< expgolomb order
 
@@ -316,7 +318,7 @@ static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE
 static const int GBI_NUM =                                          5; ///< the number of weight options
 static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
-static const int MAX_NUM_HMVP_CANDS =                              6; ///< maximum number of HMVP candidates to be stored and used in merge list
+static const int MAX_NUM_HMVP_CANDS =                              5; ///< maximum number of HMVP candidates to be stored and used in merge list
 static const int MAX_NUM_HMVP_AVMPCANDS =                          4; ///< maximum number of HMVP candidates to be used in AMVP list
 
 #if W0038_DB_OPT
@@ -329,6 +331,14 @@ static const uint32_t LUMA_LEVEL_TO_DQP_LUT_MAXSIZE =                1024; ///< 
 #endif
 #if !JVET_M0464_UNI_MTS
 static const int NUM_EMT_CU_FLAG_CTX =                              6;      ///< number of context models for EMT CU-level flag
+#endif
+#if JVET_M0147_DMVR
+static const int DMVR_SUBCU_WIDTH = 16;
+static const int DMVR_SUBCU_HEIGHT = 16;
+static const int DMVR_SUBCU_WIDTH_LOG2 = 4;
+static const int DMVR_SUBCU_HEIGHT_LOG2 = 4;
+static const int MAX_NUM_SUBCU_DMVR = ((MAX_CU_SIZE * MAX_CU_SIZE) >> (DMVR_SUBCU_WIDTH_LOG2 + DMVR_SUBCU_HEIGHT_LOG2));
+static const int DMVR_NUM_ITERATION = 2;
 #endif
 
 //QTBT high level parameters
@@ -365,7 +375,7 @@ static const int    FAST_SKIP_DEPTH =                               2;
 static const double PBINTRA_RATIO     =                             1.1;
 static const int    NUM_MRG_SATD_CAND =                             4;
 static const double MRG_FAST_RATIO    =                             1.25;
-static const int    NUM_AFF_MRG_SATD_CAND =                         1;
+static const int    NUM_AFF_MRG_SATD_CAND =                         2;
 
 static const double AMAXBT_TH32 =                                  15.0;
 static const double AMAXBT_TH64 =                                  30.0;
@@ -396,13 +406,18 @@ static const int TRIANGLE_MAX_NUM_CANDS =                          40;
 static const int TRIANGLE_MAX_NUM_SATD_CANDS =                      3;
 static const int TRIANGLE_MIN_SIZE =                            8 * 8;
 
+#if JVET_M0140_SBT
+static const int SBT_MAX_SIZE =                                    64; ///< maximum CU size for using SBT
+static const int SBT_NUM_SL =                                      10; ///< maximum number of historical PU decision saved for a CU
+static const int SBT_NUM_RDO =                                      2; ///< maximum number of SBT mode tried for a PU 
+#endif
+
 static const int IBC_MAX_CAND_SIZE = 16; // max block size for ibc search
 static const int IBC_NUM_CANDIDATES = 64; ///< Maximum number of candidates to store/test
 static const int CHROMA_REFINEMENT_CANDIDATES = 8; /// 8 candidates BV to choose from
 static const int IBC_FAST_METHOD_NOINTRA_IBCCBF0 = 0x01;
 static const int IBC_FAST_METHOD_BUFFERBV = 0X02;
 static const int IBC_FAST_METHOD_ADAPTIVE_SEARCHRANGE = 0X04;
-
 #if JVET_M0512_MOTION_BUFFER_COMPRESSION
 static constexpr int MV_EXPONENT_BITCOUNT    = 4;
 static constexpr int MV_MANTISSA_BITCOUNT    = 6;
@@ -410,7 +425,12 @@ static constexpr int MV_MANTISSA_UPPER_LIMIT = ((1 << (MV_MANTISSA_BITCOUNT - 1)
 static constexpr int MV_MANTISSA_LIMIT       = (1 << (MV_MANTISSA_BITCOUNT - 1));
 static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1);
 #endif
-
+#if JVET_M0427_INLOOP_RESHAPER
+static const int PIC_ANALYZE_CW_BINS =                           32;
+static const int PIC_CODE_CW_BINS =                              16;
+static const int FP_PREC =                                       14;
+static const int CSCALE_FP_PREC =                                11;
+#endif
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================

@@ -54,6 +54,9 @@
 
 enum EncTestModeType
 {
+#if JVET_M0253_HASH_ME
+  ETM_HASH_INTER,
+#endif
   ETM_MERGE_SKIP,
   ETM_INTER_ME,
   ETM_AFFINE,
@@ -137,6 +140,9 @@ inline bool isModeInter( const EncTestMode& encTestmode ) // perhaps remove
           || encTestmode.type == ETM_MERGE_SKIP
           || encTestmode.type == ETM_AFFINE
           || encTestmode.type == ETM_MERGE_TRIANGLE
+#if JVET_M0253_HASH_ME
+          || encTestmode.type == ETM_HASH_INTER
+#endif
          );
 }
 
@@ -178,6 +184,10 @@ struct ComprCUCtx
     , testModes     (            )
     , lastTestMode  (            )
     , earlySkip     ( false      )
+#if JVET_M0253_HASH_ME
+    , isHashPerfectMatch
+                    ( false      )
+#endif
     , bestCS        ( nullptr    )
     , bestCU        ( nullptr    )
     , bestTU        ( nullptr    )
@@ -194,6 +204,12 @@ struct ComprCUCtx
 #if ENABLE_SPLIT_PARALLELISM
     , isLevelSplitParallel
                     ( false )
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    , bestCostWithoutSplitFlags( MAX_DOUBLE )
+#if !JVET_M0464_UNI_MTS
+    , bestCostEmtFirstPassNoIsp( MAX_DOUBLE )
+#endif
 #endif
   {
     getAreaIdx( cs.area.Y(), *cs.pcv, cuX, cuY, cuW, cuH );
@@ -212,6 +228,9 @@ struct ComprCUCtx
   std::vector<EncTestMode>          testModes;
   EncTestMode                       lastTestMode;
   bool                              earlySkip;
+#if JVET_M0253_HASH_ME
+  bool                              isHashPerfectMatch;
+#endif
   CodingStructure                  *bestCS;
   CodingUnit                       *bestCU;
   TransformUnit                    *bestTU;
@@ -225,6 +244,12 @@ struct ComprCUCtx
   Distortion                        interHad;
 #if ENABLE_SPLIT_PARALLELISM
   bool                              isLevelSplitParallel;
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  double                            bestCostWithoutSplitFlags;
+#if !JVET_M0464_UNI_MTS
+  double                            bestCostEmtFirstPassNoIsp;
+#endif
 #endif
 
   template<typename T> T    get( int ft )       const { return typeid(T) == typeid(double) ? (T&)extraFeaturesd[ft] : T(extraFeatures[ft]); }
@@ -287,6 +312,10 @@ public:
   EncTestMode  currTestMode         () const;
   EncTestMode  lastTestMode         () const;
   void         setEarlySkipDetected ();
+#if JVET_M0253_HASH_ME
+  void         setIsHashPerfectMatch( bool b ) { m_ComprCUCtxList.back().isHashPerfectMatch = b; }
+  bool         getIsHashPerfectMatch() { return m_ComprCUCtxList.back().isHashPerfectMatch; }
+#endif
   virtual void setBest              ( CodingStructure& cs );
   bool         anyMode              () const;
 
@@ -307,6 +336,14 @@ public:
   bool getSkipSecondEMTPass           ()                  const { return m_ComprCUCtxList.back().skipSecondEMTPass;       }
   void setSkipSecondEMTPass           ( bool b )                {        m_ComprCUCtxList.back().skipSecondEMTPass = b;   }
 #endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  double getBestCostWithoutSplitFlags ()                  const { return m_ComprCUCtxList.back().bestCostWithoutSplitFlags;         }
+  void   setBestCostWithoutSplitFlags ( double cost )           { m_ComprCUCtxList.back().bestCostWithoutSplitFlags = cost;         }
+#if !JVET_M0464_UNI_MTS
+  double getEmtFirstPassNoIspCost     ()                  const { return m_ComprCUCtxList.back().bestCostEmtFirstPassNoIsp; }
+  void   setEmtFirstPassNoIspCost     ( double cost )           { m_ComprCUCtxList.back().bestCostEmtFirstPassNoIsp = cost; }
+#endif
+#endif
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );
@@ -318,6 +355,33 @@ protected:
 //////////////////////////////////////////////////////////////////////////
 // some utility interfaces that expose some functionality that can be used without concerning about which particular controller is used
 //////////////////////////////////////////////////////////////////////////
+#if JVET_M0140_SBT
+struct SaveLoadStructSbt
+{
+  uint8_t  numPuInfoStored;
+  uint32_t puSse[SBT_NUM_SL];
+  uint8_t  puSbt[SBT_NUM_SL];
+  uint8_t  puTrs[SBT_NUM_SL];
+};
+
+class SaveLoadEncInfoSbt
+{
+protected:
+  void init( const Slice &slice );
+  void create();
+  void destroy();
+
+private:
+  SaveLoadStructSbt ****m_saveLoadSbt;
+  Slice const       *m_sliceSbt;
+
+public:
+  virtual  ~SaveLoadEncInfoSbt() { }
+  void     resetSaveloadSbt( int maxSbtSize );
+  uint16_t findBestSbt( const UnitArea& area, const uint32_t curPuSse );
+  bool     saveBestSbt( const UnitArea& area, const uint32_t curPuSse, const uint8_t curPuSbt, const uint8_t curPuTrs );
+};
+#endif
 
 static const int MAX_STORED_CU_INFO_REFS = 4;
 
@@ -327,6 +391,9 @@ struct CodedCUInfo
   bool isIntra;
   bool isSkip;
   bool isMMVDSkip;
+#if JVET_M0483_IBC
+  bool isIBC;
+#endif
   bool validMv[NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
@@ -389,7 +456,12 @@ struct BestEncodingInfo
 {
   CodingUnit     cu;
   PredictionUnit pu;
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  TransformUnit  tus[MAX_NUM_TUS];
+  size_t         numTus;
+#else
   TransformUnit  tu;
+#endif
   EncTestMode    testMode;
 
   int            poc;
@@ -435,6 +507,9 @@ public:
 class EncModeCtrlMTnoRQT : public EncModeCtrl, public CacheBlkInfoCtrl
 #if REUSE_CU_RESULTS
   , public BestEncInfoCache
+#endif
+#if JVET_M0140_SBT
+  , public SaveLoadEncInfoSbt
 #endif
 {
   enum ExtraFeatures

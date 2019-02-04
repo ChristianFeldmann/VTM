@@ -536,7 +536,11 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
  #endif
   if(rpcSlice->getPPS()->getSliceChromaQpFlag())
   {
+#if JVET_M0483_IBC
+    const bool bUseIntraOrPeriodicOffset = (rpcSlice->isIntra() && !rpcSlice->getSPS()->getIBCFlag()) || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);
+#else
     const bool bUseIntraOrPeriodicOffset = rpcSlice->isIntra() || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);
+#endif
     int cbQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(false) : m_pcCfg->getGOPEntry(iGOPid).m_CbQPoffset;
     int crQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(true)  : m_pcCfg->getGOPEntry(iGOPid).m_CrQPoffset;
 
@@ -1431,6 +1435,12 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
   {
     pcSlice->setDisFracMMVD( true );
   }
+#if JVET_M0854_FRACMMVD_SWITCH_FOR_UHD
+  if (!pcSlice->getDisFracMMVD()) {
+    bool useIntegerMVD = (pcPic->lwidth()*pcPic->lheight() > 1920 * 1080);
+    pcSlice->setDisFracMMVD( useIntegerMVD );
+  }
+#endif
 }
 #endif
 
@@ -1485,9 +1495,21 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #endif
 #if JVET_M0255_FRACMMVD_SWITCH
   if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() || 
+#if JVET_M0483_IBC
+      (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
+#else
       ( pcSlice->getSPS()->getSpsNext().getIBCMode() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch() ) )
+#endif
   {
+#if JVET_M0427_INLOOP_RESHAPER
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getSpsNext().getIBCMode())
+      cs.picture->getOrigBuf(COMPONENT_Y).rspSignal(m_pcLib->getReshaper()->getFwdLUT());
+#endif
     m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
+#if JVET_M0427_INLOOP_RESHAPER
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getSpsNext().getIBCMode())
+      cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
+#endif
   }
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
 #endif
@@ -1627,9 +1649,15 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       resetGbiCodingOrder(false, cs);
       m_pcInterSearch->initWeightIdxBits();
     }
+#if JVET_M0427_INLOOP_RESHAPER && REUSE_CU_RESULTS
+    if (pcSlice->getSPS()->getUseReshaper())
+    {
+      m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());
+    }
+#endif
 
 #if JVET_M0055_DEBUG_CTU
-    if( pCfg->getSwitchPOC() != pcPic->poc || ctuRsAddr >= pCfg->getDebugCTU() )
+  if (pCfg->getSwitchPOC() != pcPic->poc || ctuRsAddr >= pCfg->getDebugCTU())
 #endif
 #if ENABLE_WPP_PARALLELISM
     pEncLib->getCuEncoder( dataId )->compressCtu( cs, ctuArea, ctuRsAddr, prevQP, currQP );

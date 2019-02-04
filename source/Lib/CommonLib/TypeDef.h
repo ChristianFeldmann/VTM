@@ -52,8 +52,30 @@
 
 #define JVET_M0055_DEBUG_CTU                              1 // DebugCTU encoder debug option
 
+#define JVET_M0297_32PT_MTS_ZERO_OUT                      1 // 32 point MTS based on skipping high frequency coefficients
+
+#define JVET_M0126_HMVP_MRG_PRUNING                       1 // HMVP merge candidates pruning simplification
+
+#define JVET_M0483_IBC                                    1 // Block level flag signaling and independent IBC mode
+
+#define JVET_M0102_INTRA_SUBPARTITIONS                    1
+
+#define JVET_M0303_IMPLICIT_MTS                           1 // Implicit transform selection (can be enabled with MTSImplicit encoder config parameter)
+
+#define FIX_DB_MAX_TRANSFORM_SIZE                         1
+#define JVET_M0908_CIIP_DB                                1
+#define JVET_M0471_LONG_DEBLOCKING_FILTERS                1 
+#define JVET_M0427_INLOOP_RESHAPER                        1
+#define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
+
+#define JVET_M0253_HASH_ME                                1
+
 #define JVET_M0257                                        1 // Scan only non zero-out regions of large TUs
 #define JVET_M0193_PAIR_AVG_REDUCTION                     1 //Use only one pairwise average candidate
+
+#define JVET_M0281_AMVP_ROUNDING                          1 // Perform all AMVP rounding before pruning even AMVR is off
+
+#define JVET_M0117_AMVP_LIST_GEN                          1 // AMVP candidate list generation simplification
 
 #define JVET_M0192_AFF_CHROMA_SIMPL                       1 // Affine chroma MV derivation simplification and rounding unification
 
@@ -97,17 +119,30 @@
 #endif
 #define JVET_M0502_PRED_MODE_CTX                          1
 
+#define JVET_M0140_SBT                                    1 // Sub-Block transform for Inter blocks
+#if JVET_M0140_SBT
+#define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
+#endif
+
 #define JVET_M0407_IBC_RANGE                              1 // extend IBC search range to some part of left CTU
 
 #define JVET_M0464_UNI_MTS                                1
 #define JVET_M0068_M0171_MMVD_CLEANUP                     1 // MMVD cleanup with 1) flip removal, 2) L1 zero vector fix, 3) bi-pred restriction after merge/MMVD
 #define JVET_M0255_FRACMMVD_SWITCH                        1 // disable fractional MVD in MMVD adaptively
+#define JVET_M0854_FRACMMVD_SWITCH_FOR_UHD                1 // disable fractional MVD for UHD pictures
+#define JVET_M0823_MMVD_ENCOPT                            1 // encoder optimization for MMVD
+
+#define JVET_M0147_DMVR                                   1 //Decoder side Motion Vector Refinement
 
 #if JVET_M0464_UNI_MTS
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 #endif
 
+#define JVET_M0246_AFFINE_AMVR                            1
+#if JVET_M0246_AFFINE_AMVR
+#define JVET_M0247_AFFINE_AMVR_ENCOPT                     1
+#endif
 #define JVET_M0421_SPLIT_SIG                              1
 
 #define JVET_M0173_MOVE_GT2_TO_FIRST_PASS                 1 // Moving the gtr2 flag to the first coding pass
@@ -119,11 +154,16 @@ typedef std::pair<int, int>  TrCost;
 // clang-format off
 #define JVET_M0453_CABAC_ENGINE                           1
 #define JVET_M0512_MOTION_BUFFER_COMPRESSION              1
+#define JVET_M0238_PDPC_NO_INTERPOLATION                  1
 
 #define JVET_M0409_ATMVP_FIX                              1
 
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
+#if REUSE_CU_RESULTS && JVET_M0102_INTRA_SUBPARTITIONS
+#define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
+#define MAX_NUM_TUS                                       4
+#endif
 // clang-format on
 
 #ifndef JVET_B0051_NON_MPM_MODE
@@ -181,7 +221,11 @@ typedef std::pair<int, int>  TrCost;
 #endif
 #endif // ! ENABLE_TRACING
 
+#if JVET_M0427_INLOOP_RESHAPER
+#define WCG_EXT                                           1
+#else
 #define WCG_EXT                                           0 // part of JEM sharp Luma qp
+#endif
 #define WCG_WPSNR                                         WCG_EXT
 
 #if HEVC_TOOLS
@@ -216,6 +260,8 @@ typedef std::pair<int, int>  TrCost;
 #define HM_MDIS_AS_IN_JEM                                 1   // *** - PM: not filtering ref. samples for 64xn case and using Planar MDIS condition at encoder
 #define HM_JEM_CLIP_PEL                                   1   // ***
 #define HM_JEM_MERGE_CANDS                                0   // ***
+
+#define JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT 1 ///< When 1, do not scale transform skip blocks by sqrt(2) between (I)Transform and (I)Quantizer
 
 #endif//JEM_COMP
 
@@ -373,6 +419,50 @@ enum TransType
   DCT2_EMT = 4
 };
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+enum ISPType
+{
+  NOT_INTRA_SUBPARTITIONS       = 0,
+  HOR_INTRA_SUBPARTITIONS       = 1,
+  VER_INTRA_SUBPARTITIONS       = 2,
+  NUM_INTRA_SUBPARTITIONS_MODES = 3,
+  CAN_USE_VER_AND_HORL_SPLITS   = 4
+};
+#endif
+
+#if JVET_M0140_SBT
+enum SbtIdx
+{
+  SBT_OFF_DCT  = 0,
+  SBT_VER_HALF = 1,
+  SBT_HOR_HALF = 2,
+  SBT_VER_QUAD = 3,
+  SBT_HOR_QUAD = 4,
+  NUMBER_SBT_IDX,
+  SBT_OFF_MTS, //note: must be after all SBT modes, only used in fast algorithm to discern the best mode is inter EMT
+};
+
+enum SbtPos
+{
+  SBT_POS0 = 0,
+  SBT_POS1 = 1,
+  NUMBER_SBT_POS
+};
+
+enum SbtMode
+{
+  SBT_VER_H0 = 0,
+  SBT_VER_H1 = 1,
+  SBT_HOR_H0 = 2,
+  SBT_HOR_H1 = 3,
+  SBT_VER_Q0 = 4,
+  SBT_VER_Q1 = 5,
+  SBT_HOR_Q0 = 6,
+  SBT_HOR_Q1 = 7,
+  NUMBER_SBT_MODE
+};
+#endif
+
 enum RDPCMMode
 {
   RDPCM_OFF             = 0,
@@ -464,7 +554,12 @@ enum PredMode
 {
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
+#if JVET_M0483_IBC
+  MODE_IBC                   = 2,     ///< ibc-prediction mode
+  NUMBER_OF_PREDICTION_MODES = 3,
+#else
   NUMBER_OF_PREDICTION_MODES = 2,
+#endif
 };
 
 /// reference list index
@@ -1141,6 +1236,15 @@ enum MsgLevel
   VERBOSE = 5,
   DETAILS = 6
 };
+#if JVET_M0427_INLOOP_RESHAPER
+enum RESHAPE_SIGNAL_TYPE
+{
+  RESHAPE_SIGNAL_SDR = 0,
+  RESHAPE_SIGNAL_PQ  = 1,
+  RESHAPE_SIGNAL_HLG = 2,
+  RESHAPE_SIGNAL_NULL = 100,
+};
+#endif
 
 
 // ---------------------------------------------------------------------------

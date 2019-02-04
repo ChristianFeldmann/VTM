@@ -52,8 +52,14 @@
 
 #include "CommonLib/AffineGradientSearch.h"
 #include "CommonLib/IbcHashMap.h"
+#if JVET_M0253_HASH_ME
+#include "CommonLib/Hash.h"
+#endif
 #include <unordered_map>
 #include <vector>
+#if JVET_M0427_INLOOP_RESHAPER
+#include "EncReshape.h"
+#endif
 //! \ingroup EncoderLib
 //! \{
 
@@ -75,6 +81,20 @@ struct AffineMVInfo
   Mv  affMVs[2][33][3];
   int x, y, w, h;
 };
+
+#if JVET_M0246_AFFINE_AMVR
+typedef struct
+{
+  Mv acMvAffine4Para[2][2];
+  Mv acMvAffine6Para[2][3];
+  int16_t affine4ParaRefIdx[2];
+  int16_t affine6ParaRefIdx[2];
+  Distortion hevcCost[3];
+  Distortion affineCost[3];
+  bool affine4ParaAvail;
+  bool affine6ParaAvail;
+} EncAffineMotion;
+#endif
 
 /// encoder search class
 class InterSearch : public InterPrediction, CrossComponentPrediction, AffineGradientSearch
@@ -103,13 +123,18 @@ private:
   int             m_affMVListSize;
   int             m_affMVListMaxSize;
   Distortion      m_hevcCost;
-
+#if JVET_M0246_AFFINE_AMVR
+  EncAffineMotion m_affineMotion;
+#endif
 protected:
   // interface to option
   EncCfg*         m_pcEncCfg;
 
   // interface to classes
   TrQuant*        m_pcTrQuant;
+#if JVET_M0427_INLOOP_RESHAPER
+  EncReshape*     m_pcReshape;
+#endif
 
   // ME parameters
   int             m_iSearchRange;
@@ -122,6 +147,12 @@ protected:
   CtxCache*       m_CtxCache;
   DistParam       m_cDistParam;
 
+#if JVET_M0253_HASH_ME
+  RefPicList      m_currRefPicList;
+  int             m_currRefPicIndex;
+  bool            m_skipFracME;
+#endif
+
   // Misc.
   Pel            *m_pTempPel;
 
@@ -133,6 +164,14 @@ protected:
   bool            m_isInitialized;
   unsigned int    m_numBVs, m_numBV16s;
   Mv              m_acBVs[IBC_NUM_CANDIDATES];
+#if JVET_M0140_SBT
+  Distortion      m_estMinDistSbt[NUMBER_SBT_MODE + 1]; // estimated minimum SSE value of the PU if using a SBT mode
+  uint8_t         m_sbtRdoOrder[NUMBER_SBT_MODE];       // order of SBT mode in RDO
+  bool            m_skipSbtAll;                         // to skip all SBT modes for the current PU
+  uint8_t         m_histBestSbt;                        // historical best SBT mode for PU of certain SSE values
+  uint8_t         m_histBestMtsIdx;                     // historical best MTS idx  for PU of certain SSE values
+#endif
+
 public:
   InterSearch();
   virtual ~InterSearch();
@@ -148,9 +187,24 @@ public:
                                       RdCost*        pcRdCost,
                                       CABACWriter*   CABACEstimator,
                                       CtxCache*      ctxCache
+#if JVET_M0427_INLOOP_RESHAPER
+                                     , EncReshape*   m_pcReshape
+#endif
                                     );
 
   void destroy                      ();
+
+#if JVET_M0140_SBT
+  void       calcMinDistSbt         ( CodingStructure &cs, const CodingUnit& cu, const uint8_t sbtAllowed );
+  uint8_t    skipSbtByRDCost        ( int width, int height, int mtDepth, uint8_t sbtIdx, uint8_t sbtPos, double bestCost, Distortion distSbtOff, double costSbtOff, bool rootCbfSbtOff );
+  bool       getSkipSbtAll          ()                 { return m_skipSbtAll; }
+  void       setSkipSbtAll          ( bool skipAll )   { m_skipSbtAll = skipAll; }
+  uint8_t    getSbtRdoOrder         ( uint8_t idx )    { assert( m_sbtRdoOrder[idx] < NUMBER_SBT_MODE ); assert( (uint32_t)( m_estMinDistSbt[m_sbtRdoOrder[idx]] >> 2 ) < ( MAX_UINT >> 1 ) ); return m_sbtRdoOrder[idx]; }
+  Distortion getEstDistSbt          ( uint8_t sbtMode) { return m_estMinDistSbt[sbtMode]; }
+  void       initTuAnalyzer         ()                 { m_estMinDistSbt[NUMBER_SBT_MODE] = std::numeric_limits<uint64_t>::max(); m_skipSbtAll = false; }
+  void       setHistBestTrs         ( uint8_t sbtInfo, uint8_t mtsIdx ) { m_histBestSbt = sbtInfo; m_histBestMtsIdx = mtsIdx; }
+  void       initSbtRdoOrder        ( uint8_t sbtMode ) { m_sbtRdoOrder[0] = sbtMode; m_estMinDistSbt[0] = m_estMinDistSbt[sbtMode]; }
+#endif
 
   void setTempBuffers               (CodingStructure ****pSlitCS, CodingStructure ****pFullCS, CodingStructure **pSaveCS );
   void resetCtuRecord               ()             { m_ctuRecord.clear(); }
@@ -190,6 +244,10 @@ public:
       m_affMVListSize = std::min(m_affMVListSize + 1, m_affMVListMaxSize);
     }
   }
+#if JVET_M0246_AFFINE_AMVR
+  void resetSavedAffineMotion();
+  void storeAffineMotion( Mv acAffineMv[2][3], int16_t affineRefIdx[2], EAffineModel affineType, int gbiIdx );
+#endif
 protected:
 
   /// sub-function for motion vector refinement used in fractional-pel accuracy
@@ -244,6 +302,13 @@ public:
   void  xIBCEstimation   ( PredictionUnit& pu, PelUnitBuf& origBuf, Mv     *pcMvPred, Mv     &rcMv, Distortion &ruiCost, const int localSearchRangeX, const int localSearchRangeY);
   void  xIBCSearchMVCandUpdate  ( Distortion  uiSad, int x, int y, Distortion* uiSadBestCand, Mv* cMVCand);
   int   xIBCSearchMVChromaRefine( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, int cuPelX, int cuPelY, Distortion* uiSadBestCand, Mv*     cMVCand);
+#if JVET_M0253_HASH_ME
+  void addToSortList(std::list<BlockHash>& listBlockHash, std::list<int>& listCost, int cost, const BlockHash& blockHash);
+  bool predInterHashSearch(CodingUnit& cu, Partitioner& partitioner, bool& isPerfectMatch);
+  bool xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPicList, int& bestRefIndex, Mv& bestMv, Mv& bestMvd, int& bestMVPIndex, bool& isPerfectMatch);
+  int  xHashInterPredME(const PredictionUnit& pu, RefPicList currRefPicList, int currRefPicIndex, Mv bestMv[5]);
+  void selectMatchesInter(const MapIterator& itBegin, int count, std::list<BlockHash>& vecBlockHash, const BlockHash& currBlockHash);
+#endif
 protected:
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -280,7 +345,9 @@ protected:
                                     RefPicList            eRefPicList,
                                     int                   iRefIdx
                                   );
-
+#if JVET_M0246_AFFINE_AMVR
+  uint32_t xCalcAffineMVBits      ( PredictionUnit& pu, Mv mvCand[3], Mv mvPred[3], bool mvHighPrec = false );
+#endif
 
   void xCopyAMVPInfo              ( AMVPInfo*   pSrc, AMVPInfo* pDst );
   uint32_t xGetMvpIdxBits             ( int iIdx, int iNum );
@@ -382,6 +449,10 @@ protected:
                                     Mv              acMv[3],
                                     uint32_t&           ruiBits,
                                     Distortion&     ruiCost,
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+                                    int&            mvpIdx,
+                                    const AffineAMVPInfo& aamvpi,
+#endif
                                     bool            bBi = false
                                   );
 
@@ -408,7 +479,11 @@ protected:
   void xSymmetricMotionEstimation( PredictionUnit& pu, PelUnitBuf& origBuf, Mv& rcMvCurPred, Mv& rcMvTarPred, RefPicList eRefPicList, MvField& rCurMvField, MvField& rTarMvField, Distortion& ruiCost, int gbiIdx );
 #endif
 
-  bool xReadBufferedAffineUniMv   ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv acMvPred[3], Mv acMv[3], uint32_t& ruiBits, Distortion& ruiCost);
+  bool xReadBufferedAffineUniMv   ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv acMvPred[3], Mv acMv[3], uint32_t& ruiBits, Distortion& ruiCost
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+                                    , int& mvpIdx, const AffineAMVPInfo& aamvpi
+#endif
+  );
   double xGetMEDistortionWeight   ( uint8_t gbiIdx, RefPicList eRefPicList);
   bool xReadBufferedUniMv         ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost);
 
@@ -436,7 +511,9 @@ protected:
 
   void xExtDIFUpSamplingH         ( CPelBuf* pcPattern );
   void xExtDIFUpSamplingQ         ( CPelBuf* pcPatternKey, Mv halfPelRef );
-
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  uint32_t xDetermineBestMvp      ( PredictionUnit& pu, Mv acMvTemp[3], int& mvpIdx, const AffineAMVPInfo& aamvpi );
+#endif
   // -------------------------------------------------------------------------------------------------------------------
   // compute symbol bits
   // -------------------------------------------------------------------------------------------------------------------

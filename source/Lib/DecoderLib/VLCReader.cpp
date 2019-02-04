@@ -798,12 +798,29 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
     READ_FLAG( symbol,  "sps_cclm_collocated_chroma_flag" );        spsNext.setCclmCollocatedChromaFlag( symbol != 0 );
   }
 #endif
+
+#if JVET_M0303_IMPLICIT_MTS
+  READ_FLAG( symbol,    "mts_enabled_flag" );                       spsNext.setUseMTS                 ( symbol != 0 );
+  if ( spsNext.getUseMTS() )
+  {
+#endif
 #if JVET_M0464_UNI_MTS
-  READ_FLAG( symbol,    "mts_intra_enabled_flag" );                 spsNext.setUseIntraMTS            ( symbol != 0 );
-  READ_FLAG( symbol,    "mts_inter_enabled_flag" );                 spsNext.setUseInterMTS            ( symbol != 0 );
+    READ_FLAG( symbol,    "mts_intra_enabled_flag" );               spsNext.setUseIntraMTS            ( symbol != 0 );
+    READ_FLAG( symbol,    "mts_inter_enabled_flag" );               spsNext.setUseInterMTS            ( symbol != 0 );
 #else
-  READ_FLAG( symbol,    "emt_intra_enabled_flag" );                 spsNext.setUseIntraEMT            ( symbol != 0 );
-  READ_FLAG( symbol,    "emt_inter_enabled_flag" );                 spsNext.setUseInterEMT            ( symbol != 0 );
+    READ_FLAG( symbol,    "emt_intra_enabled_flag" );               spsNext.setUseIntraEMT            ( symbol != 0 );
+    READ_FLAG( symbol,    "emt_inter_enabled_flag" );               spsNext.setUseInterEMT            ( symbol != 0 );
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  }
+#endif
+
+#if JVET_M0140_SBT
+  READ_FLAG( symbol,    "sbt_enable_flag" );                        spsNext.setUseSBT                 ( symbol != 0 );
+  if( spsNext.getUseSBT() )
+  {
+    READ_FLAG( symbol,  "max_sbt_size_64_flag" );                   spsNext.setMaxSbtSize             ( symbol ? 64 : 32 );
+  }
 #endif
   READ_FLAG( symbol,    "affine_flag" );                            spsNext.setUseAffine              ( symbol != 0 );
   if ( spsNext.getUseAffine() )
@@ -811,7 +828,9 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
     READ_FLAG( symbol,  "affine_type_flag" );                       spsNext.setUseAffineType          ( symbol != 0 );
   }
   READ_FLAG( symbol,    "gbi_flag" );                               spsNext.setUseGBi                 ( symbol != 0 );
+#if JVET_M0483_IBC==0
   READ_FLAG( symbol, "ibc_flag");                                   spsNext.setIBCMode                ( symbol != 0 );
+#endif
   for( int k = 0; k < SPSNext::NumReservedFlags; k++ )
   {
     READ_FLAG( symbol,  "reserved_flag" );                          if( symbol != 0 ) EXIT("Incompatible version: SPSNext reserved flag not equal to zero (bitstream was probably created with newer software version)" );
@@ -853,6 +872,44 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   // ADD_NEW_TOOL : (sps extension parser) read tool enabling flags and associated parameters here
 }
 
+#if JVET_M0427_INLOOP_RESHAPER
+void HLSyntaxReader::parseReshaper(SliceReshapeInfo& info, const SPS* pcSPS, const bool isIntra)
+{
+  unsigned  symbol = 0;
+  READ_FLAG(symbol, "tile_group_reshaper_model_present_flag");                 info.setSliceReshapeModelPresentFlag(symbol == 1);
+  if (info.getSliceReshapeModelPresentFlag())
+  {
+    memset(info.reshaperModelBinCWDelta, 0, PIC_CODE_CW_BINS * sizeof(int));
+    READ_UVLC(symbol, "reshaper_model_min_bin_idx");                             info.reshaperModelMinBinIdx = symbol;
+    READ_UVLC(symbol, "reshaper_model_delta_max_bin_idx");                       info.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1 - symbol;
+    READ_UVLC(symbol, "reshaper_model_bin_delta_abs_cw_prec_minus1");            info.maxNbitsNeededDeltaCW = symbol + 1;
+    assert(info.maxNbitsNeededDeltaCW > 0);
+    for (uint32_t i = info.reshaperModelMinBinIdx; i <= info.reshaperModelMaxBinIdx; i++)
+    {
+      READ_CODE(info.maxNbitsNeededDeltaCW, symbol, "reshaper_model_bin_delta_abs_CW");
+      int absCW = symbol;
+      if (absCW > 0)
+      {
+        READ_CODE(1, symbol, "reshaper_model_bin_delta_sign_CW_flag");
+      }
+      int signCW = symbol;
+      info.reshaperModelBinCWDelta[i] = (1 - 2 * signCW) * absCW;
+    }
+  }
+  READ_FLAG(symbol, "tile_group_reshaper_enable_flag");           info.setUseSliceReshaper(symbol == 1);
+  if (info.getUseSliceReshaper())
+  {
+    if (!(pcSPS->getUseDualITree() && isIntra))
+    {
+      READ_FLAG(symbol, "slice_reshaper_ChromaAdj");                info.setSliceReshapeChromaAdj(symbol);
+    }
+    else
+    {
+      info.setSliceReshapeChromaAdj(0);
+    }
+  }
+}
+#endif
 void HLSyntaxReader::parseSPS(SPS* pcSPS)
 {
 #if ENABLE_TRACING
@@ -877,6 +934,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "no_ladf_constraint_flag");                  pcSPS->setNoLadfConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_dep_quant_constraint_flag");             pcSPS->setNoDepQuantConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_sign_data_hiding_constraint_flag");      pcSPS->setNoSignDataHidingConstraintFlag(uiCode > 0 ? true : false);
+#if JVET_M0483_IBC
+  READ_FLAG(uiCode, "ibc_flag");                                 pcSPS->setIBCFlag(uiCode);
+#endif
 #if HEVC_VPS
   READ_CODE( 4,  uiCode, "sps_video_parameter_set_id");          pcSPS->setVPSId        ( uiCode );
 #endif
@@ -1050,7 +1110,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_M0255_FRACMMVD_SWITCH
   READ_FLAG( uiCode,  "sps_fracmmvd_disabled_flag" );               pcSPS->setDisFracMmvdEnabledFlag ( uiCode != 0 );
 #endif
-
+#if JVET_M0246_AFFINE_AMVR
+  READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );             pcSPS->setAffineAmvrEnabledFlag ( uiCode != 0 );
+#endif
+#if JVET_M0147_DMVR
+  READ_FLAG(uiCode, "dmvr_enable_flag");                            pcSPS->setUseDMVR(uiCode != 0);
+#endif
 #if HEVC_USE_SCALING_LISTS
   READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
   if(pcSPS->getScalingListFlag())
@@ -1169,7 +1234,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       }
     }
   }
-
+#if JVET_M0427_INLOOP_RESHAPER
+  READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);
+#endif
   xReadRbspTrailingBits();
 }
 
@@ -1751,10 +1818,21 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         }
       }
     }
-    if (!pcSlice->isIntra())
+
+#if JVET_M0483_IBC 
+    if (!pcSlice->isIntra() || sps->getIBCFlag())
     {
       READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
       pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
+    }
+#endif
+
+    if (!pcSlice->isIntra())
+    {
+#if JVET_M0483_IBC==0
+      READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
+      pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
+#endif
 
       if ( sps->getSBTMVPEnabledFlag() && !sps->getSpsNext().getUseAffine() ) // ATMVP only
       {
@@ -1867,6 +1945,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       uiCode = pps->getLoopFilterAcrossSlicesEnabledFlag()?1:0;
     }
     pcSlice->setLFCrossSliceBoundaryFlag( (uiCode==1)?true:false);
+
+#if JVET_M0427_INLOOP_RESHAPER
+    if (sps->getUseReshaper())
+    {
+      parseReshaper(pcSlice->getReshapeInfo(), sps, pcSlice->isIntra());
+    }
+#endif
 #if HEVC_DEPENDENT_SLICES
   }
 #endif

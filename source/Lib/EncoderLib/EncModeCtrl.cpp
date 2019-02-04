@@ -727,23 +727,22 @@ void BestEncInfoCache::create( const ChromaFormat chFmt )
             if( gp_sizeIdxInfo->isCuSize( gp_sizeIdxInfo->sizeFrom( hIdx ) ) && y + ( gp_sizeIdxInfo->sizeFrom( hIdx ) >> MIN_CU_LOG2 ) <= ( MAX_CU_SIZE >> MIN_CU_LOG2 ) )
             {
               m_bestEncInfo[x][y][wIdx][hIdx] = new BestEncodingInfo;
-              ::memset(m_bestEncInfo[x][y][wIdx][hIdx], 0, sizeof(BestEncodingInfo));
 
               int w = gp_sizeIdxInfo->sizeFrom( wIdx );
               int h = gp_sizeIdxInfo->sizeFrom( hIdx );
 
               const UnitArea area( chFmt, Area( 0, 0, w, h ) );
 
-              m_bestEncInfo[x][y][wIdx][hIdx]->cu.UnitArea::operator=( area );
-              m_bestEncInfo[x][y][wIdx][hIdx]->pu.UnitArea::operator=( area );
+              new ( &m_bestEncInfo[x][y][wIdx][hIdx]->cu ) CodingUnit    ( area );
+              new ( &m_bestEncInfo[x][y][wIdx][hIdx]->pu ) PredictionUnit( area );
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
               m_bestEncInfo[x][y][wIdx][hIdx]->numTus = 0;
               for( int i = 0; i < MAX_NUM_TUS; i++ )
               {
-                m_bestEncInfo[x][y][wIdx][hIdx]->tus[i].UnitArea::operator=(area);
+                new ( &m_bestEncInfo[x][y][wIdx][hIdx]->tus[i] ) TransformUnit( area );
               }
 #else
-              m_bestEncInfo[x][y][wIdx][hIdx]->tu.UnitArea::operator=( area );
+              new ( &m_bestEncInfo[x][y][wIdx][hIdx]->tu ) TransformUnit( area );
 #endif
 
               m_bestEncInfo[x][y][wIdx][hIdx]->poc      = -1;

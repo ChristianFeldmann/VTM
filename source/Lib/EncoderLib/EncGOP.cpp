@@ -2299,7 +2299,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
 #endif
 
-
     if( encPic )
     // now compress (trial encode) the various slice segments (slices, and dependent slices)
     {

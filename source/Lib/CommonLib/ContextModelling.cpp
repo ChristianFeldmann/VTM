@@ -488,10 +488,10 @@ unsigned DeriveCtx::CtxIBCFlag(const CodingUnit& cu)
   const CodingStructure *cs = cu.cs;
   unsigned ctxId = 0;
   const CodingUnit *cuLeft = cs->getCURestricted(cu.lumaPos().offset(-1, 0), cu, CH_L);
-  ctxId = (cuLeft && CU::isIBC(*cuLeft)) ? 1 : 0;
+  ctxId += (cuLeft && CU::isIBC(*cuLeft)) ? 1 : 0;
 
   const CodingUnit *cuAbove = cs->getCURestricted(cu.lumaPos().offset(0, -1), cu, CH_L);
-  ctxId = (cuAbove && CU::isIBC(*cuAbove)) ? 1 : 0;
+  ctxId += (cuAbove && CU::isIBC(*cuAbove)) ? 1 : 0;
   return ctxId;
 }
 #endif

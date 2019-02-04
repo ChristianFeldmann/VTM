@@ -1092,9 +1092,6 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
 #endif
 #endif
     mrgCtx.interDirNeighbours[cnt] = miNeighbor.interDir;
-#if JVET_M0264_HMVP_WITH_GBIIDX
-    mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? miNeighbor.GBiIdx : GBI_DEFAULT;
-#endif
     mrgCtx.mvFieldNeighbours[cnt << 1].setMvField(miNeighbor.mv[0], miNeighbor.refIdx[0]);
     if (slice.isInterB())
     {
@@ -1108,6 +1105,9 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
     {
 #if !JVET_L0090_PAIR_AVG
       isCandInter[cnt] = true;
+#endif
+#if JVET_M0264_HMVP_WITH_GBIIDX
+      mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? miNeighbor.GBiIdx : GBI_DEFAULT;
 #endif
 #if JVET_M0483_IBC==0
       if (miNeighbor.interDir == 1 && slice.getRefPic(REF_PIC_LIST_0, miNeighbor.refIdx[0])->getPOC() == slice.getPOC())

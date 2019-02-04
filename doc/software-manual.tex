@@ -1914,6 +1914,63 @@ RCInitialCpbFullness should be smaller than or equal to 1.
 \\
 \end{OptionTableNoShorthand}
 
+
+
+%%
+%% Encoder debug parameters
+%%
+\begin{OptionTableNoShorthand}{Encoder debug parameters}{tab:encoder-debugging}
+
+\Option{DebugBitstream/DecodeBitstream1} &
+%\ShortOption{\None} &
+\Default{} &
+Specifies the first bit stream to be read until a pre-defined switch point is encountered.
+\\
+
+\Option{DecodeBitstream2} &
+%\ShortOption{\None} &
+\Default{} &
+Specifies the second bit stream, to be read after the first random access point after a QP switch point (specified using SwitchPOC and SwitchQP).
+\\
+
+\Option{DebugPOC} &
+%\ShortOption{\None} &
+\Default{-1} &
+Specifies a POC, at which a bit stream specified using DebugBitstream or DecodeBitstream1 is no longer read, but rather normal encoding is started.
+\\
+
+\Option{DebugCTU} &
+%\ShortOption{\None} &
+\Default{-1} &
+When the POC is encountered at which normal encoding is to be resumed, if set, this option specifies that CTUs up to the specified CTU(in raster scan addressing order are to be read from the specified bit stream, after which normal encoding is started the specified CTU.
+\\
+
+\Option{SwitchPOC} &
+%\ShortOption{\None} &
+\Default{-1} &
+Specifies a POC, at which the specified bit stream is no longer read, but rather normal encoding is started.
+\\
+
+\Option{SwitchDQP} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies a QP offset to be applied when normal encoding is started as specified by SwitchPOC.
+\\
+
+\Option{FastForwardToPOC} &
+%\ShortOption{\None} &
+\Default{0} &
+When encoding a bit streams, all frames that are not references including transitive references to the specified POC are skipped.
+\\
+\Option{StopAfterFFtoPOC} &
+%\ShortOption{\None} &
+\Default{false} &
+If enabled, causes the encoder to not encode any frame after the frame specified by FastForwardToPOC option, in encoding order.
+\\
+\end{OptionTableNoShorthand}
+
+
+
 %%
 %% VUI parameters
 %%

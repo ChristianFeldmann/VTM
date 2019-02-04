@@ -549,6 +549,9 @@ protected:
   int         m_verbosity;
 
   std::string m_decodeBitstreams[2];                          ///< filename for decode bitstreams.
+#if JVET_M0055_DEBUG_CTU
+  int         m_debugCTU;
+#endif  
   int         m_switchPOC;                                    ///< dbg poc.
   int         m_switchDQP;                                    ///< switch DQP.
   int         m_fastForwardToPOC;                             ///< get to encoding the specified POC as soon as possible by skipping temporal layers irrelevant for the specified POC

@@ -1060,12 +1060,26 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
     // copy data to picture
     picture->getRecoBuf( area ).copyFrom( recoBuf );
 #if JVET_M0427_INLOOP_RESHAPER
-    CPelUnitBuf predBuf = other.getPredBuf(area);
-    if (parent)
+    if (other.pcv->isEncoder)
     {
-      getPredBuf(area).copyFrom(predBuf);
+      CPelUnitBuf predBuf = other.getPredBuf(area);
+      if (parent)
+      {
+        getPredBuf(area).copyFrom(predBuf);
+      }
+      picture->getPredBuf(area).copyFrom(predBuf);
     }
-    picture->getPredBuf(area).copyFrom(predBuf);
+#endif
+#if JVET_M0055_DEBUG_CTU
+
+    // required for DebugCTU
+    int numCh = ::getNumberValidChannels( area.chromaFormat );
+    for( int i = 0; i < numCh; i++ )
+    {
+      const size_t _area = unitScale[i].scaleArea( area.blocks[i].area() );
+
+      memcpy( m_isDecomp[i], other.m_isDecomp[i], sizeof( *m_isDecomp[0] ) * _area );
+    }
 #endif
   }
 }

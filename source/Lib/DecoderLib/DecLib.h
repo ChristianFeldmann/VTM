@@ -62,8 +62,11 @@ class InputNALUnit;
 //! \ingroup DecoderLib
 //! \{
 
-bool tryDecodePicture( Picture* pcPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound = false );
-// ====================================================================================================================
+#if JVET_M0055_DEBUG_CTU
+bool tryDecodePicture( Picture* pcPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound = false, int debugCTU = -1, int debugPOC = -1 );
+#else
+ bool tryDecodePicture( Picture* pcPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound = false );
+#endif// ====================================================================================================================
 // Class definition
 // ====================================================================================================================
 
@@ -128,6 +131,10 @@ private:
   bool                    m_warningMessageSkipPicture;
 
   std::list<InputNALUnit*> m_prefixSEINALUs; /// Buffered up prefix SEI NAL Units.
+#if JVET_M0055_DEBUG_CTU
+  int                     m_debugPOC;
+  int                     m_debugCTU;
+#endif
 public:
   DecLib();
   virtual ~DecLib();
@@ -158,6 +165,12 @@ public:
   void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
   uint32_t  getNumberOfChecksumErrorsDetected() const { return m_numberOfChecksumErrorsDetected; }
 
+#if JVET_M0055_DEBUG_CTU
+  int  getDebugCTU( )               const { return m_debugCTU; }
+  void setDebugCTU( int debugCTU )        { m_debugCTU = debugCTU; }
+  int  getDebugPOC( )               const { return m_debugPOC; };
+  void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
+#endif
 protected:
   void  xUpdateRasInit(Slice* slice);
 

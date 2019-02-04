@@ -801,8 +801,10 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               //    Mv mv[3];
               CHECK( pu.refIdx[eRefList] < 0, "Unexpected negative refIdx." );
 #if JVET_M0246_AFFINE_AMVR
+#if !JVET_M0055_DEBUG_CTU 
               Mv tmpMvd[3];
               memcpy( tmpMvd, pu.mvdAffi[eRefList], 3 * sizeof( Mv ) );
+#endif
               const int imvShift = ( !cu.cs->pcv->isEncoder && pu.cu->imv == 2 ) ? MV_FRACTIONAL_BITS_DIFF : 0;
               pu.mvdAffi[eRefList][0] <<= imvShift;
               pu.mvdAffi[eRefList][1] <<= imvShift;
@@ -827,7 +829,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
                   mvLB.changePrecision( MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL );
                 }
               }
+#if !JVET_M0055_DEBUG_CTU //th this leads to different interpretation of mvdAffi at encoder and decoder
               memcpy( pu.mvdAffi[eRefList], tmpMvd, 3 * sizeof( Mv ) );
+#endif 
 #else
               Mv mvLT = affineAMVPInfo.mvCandLT[mvp_idx] + pu.mvdAffi[eRefList][0];
               Mv mvRT = affineAMVPInfo.mvCandRT[mvp_idx] + pu.mvdAffi[eRefList][1];

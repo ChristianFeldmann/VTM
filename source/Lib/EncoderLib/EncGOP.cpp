@@ -1229,11 +1229,29 @@ void trySkipOrDecodePicture( bool& decPic, bool& encPic, const EncCfg& cfg, Pict
       else
       {
         // update decode decision
+#if JVET_M0055_DEBUG_CTU
+        bool dbgCTU = cfg.getDebugCTU() != -1 && cfg.getSwitchPOC() == pcPic->getPOC();
+
+        if( ( bDecode1stPart = ( cfg.getSwitchPOC() != pcPic->getPOC() ) || dbgCTU ) && ( bDecode1stPart = tryDecodePicture( pcPic, pcPic->getPOC(), cfg.getDecodeBitstream( 0 ), false, cfg.getDebugCTU(), cfg.getSwitchPOC() ) ) )
+        {
+          if( dbgCTU )
+          {
+            encPic = true;
+            decPic = false;
+            bDecode1stPart = false;
+
+            return;
+          }
+          decPic = bDecode1stPart;
+          return;
+        }
+#else
         if( ( bDecode1stPart = ( cfg.getSwitchPOC() != pcPic->getPOC() )) && ( bDecode1stPart = tryDecodePicture( pcPic, pcPic->getPOC(), cfg.getDecodeBitstream( 0 ), false ) ) )
         {
           decPic = bDecode1stPart;
           return;
         }
+#endif
         else if( pcPic->getPOC() )
         {
           // reset decoder if used and not required any further
@@ -2190,111 +2208,113 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setSliceChromaQpDelta(COMPONENT_Cr, m_pcCfg->getChromaCrQpOffsetDualTree());
       m_pcSliceEncoder->setUpLambda(pcSlice, pcSlice->getLambdas()[0], pcSlice->getSliceQp());
     }
+#if JVET_M0427_INLOOP_RESHAPER
+    if (pcSlice->getSPS()->getUseReshaper())
+    {
+      m_pcReshaper->getReshapeCW()->rspTid = pcSlice->getTLayer() + (pcSlice->isIntra() ? 0 : 1);
+      m_pcReshaper->getReshapeCW()->rspSliceQP = pcSlice->getSliceQp();
+
+      m_pcReshaper->setSrcReshaped(false);
+      m_pcReshaper->setRecReshaped(true);
+
+      if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
+      {
+#if JVET_M0483_IBC
+        m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
+#else
+        m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
+#endif
+      }
+      else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
+      {
+#if JVET_M0483_IBC
+        m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
+#else
+        m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
+#endif
+      }
+      else
+      {
+        THROW("Reshaper for other signal currently not defined!");
+      }
+
+#if JVET_M0483_IBC
+      if (pcSlice->getSliceType() == I_SLICE )
+#else
+      if (pcSlice->getSliceType() == I_SLICE || (pcSlice->getSliceType() == P_SLICE && m_pcCfg->getIBCMode()))
+#endif
+      {
+        if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
+        {
+          m_pcReshaper->initLUTfromdQPModel();
+          m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTableChromaMD(m_pcReshaper->getInvLUT());
+        }
+        else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
+        {
+          if (m_pcReshaper->getReshapeFlag())
+          {
+            m_pcReshaper->constructReshaperSDR();
+            m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
+          }
+        }
+        else
+        {
+          THROW("Reshaper for other signal currently not defined!");
+        }
+
+        m_pcReshaper->setCTUFlag(false);
+
+        //reshape original signal
+        if (m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
+        {
+          pcPic->getOrigBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getFwdLUT());
+          m_pcReshaper->setSrcReshaped(true);
+          m_pcReshaper->setRecReshaped(true);
+        }
+      }
+      else
+      {
+        if (!m_pcReshaper->getReshapeFlag())
+        {
+          m_pcReshaper->setCTUFlag(false);
+        }
+        else
+          m_pcReshaper->setCTUFlag(true);
+
+        m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(false);
+
+        if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
+        {
+          m_pcEncLib->getRdCost()->restoreReshapeLumaLevelToWeightTable();
+        }
+        else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
+        {
+          int modIP = pcPic->getPOC() - pcPic->getPOC() / m_pcCfg->getReshapeCW().rspFpsToIp * m_pcCfg->getReshapeCW().rspFpsToIp;
+          if (m_pcReshaper->getReshapeFlag() && m_pcCfg->getReshapeCW().rspIntraPeriod == -1 && modIP == 0)           // for LDB, update reshaping curve every second
+          {
+            m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(true);
+            m_pcReshaper->constructReshaperSDR();
+            m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
+          }
+        }
+        else
+        {
+          THROW("Reshaper for other signal currently not defined!");
+        }
+      }
+
+      m_pcReshaper->copySliceReshaperInfo(pcSlice->getReshapeInfo(), m_pcReshaper->getSliceReshaperInfo());
+    }
+    else
+    {
+      m_pcReshaper->setCTUFlag(false);
+    }
+#endif
+
     if( encPic )
     // now compress (trial encode) the various slice segments (slices, and dependent slices)
     {
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
-#if JVET_M0427_INLOOP_RESHAPER
-      if (pcSlice->getSPS()->getUseReshaper())
-      {
-        m_pcReshaper->getReshapeCW()->rspTid = pcSlice->getTLayer()+(pcSlice->isIntra()?0:1);
-        m_pcReshaper->getReshapeCW()->rspSliceQP = pcSlice->getSliceQp();
-
-        m_pcReshaper->setSrcReshaped(false);
-        m_pcReshaper->setRecReshaped(true);
-
-        if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
-        {
-#if JVET_M0483_IBC
-          m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
-#else
-          m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
-#endif
-        }
-        else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
-        {
-#if JVET_M0483_IBC
-          m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
-#else
-          m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
-#endif
-        }
-        else
-        {
-          THROW("Reshaper for signal other than PQ and SDR currently not defined!");
-        }
-#if JVET_M0483_IBC
-        if (pcSlice->getSliceType() == I_SLICE )
-#else
-        if (pcSlice->getSliceType() == I_SLICE || (pcSlice->getSliceType() == P_SLICE && m_pcCfg->getIBCMode()))
-#endif
-        {
-          if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
-          {
-            m_pcReshaper->initLUTfromdQPModel();
-            m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTableChromaMD(m_pcReshaper->getInvLUT());
-          }
-          else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
-          {
-            if (m_pcReshaper->getReshapeFlag())
-            {
-              m_pcReshaper->constructReshaperSDR();
-              m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
-            }
-          }
-          else
-          {
-           THROW("Reshaper for other signal currently not defined!");
-          }
-
-          m_pcReshaper->setCTUFlag(false);
-          
-          //reshape original signal
-          if (m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
-          {
-            pcPic->getOrigBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getFwdLUT());
-            m_pcReshaper->setSrcReshaped(true);
-            m_pcReshaper->setRecReshaped(true);
-          }
-        }
-        else
-        {
-          if (!m_pcReshaper->getReshapeFlag())
-          {
-            m_pcReshaper->setCTUFlag(false);
-          }
-          else
-            m_pcReshaper->setCTUFlag(true);
-
-          m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(false);
-
-          if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ )
-          {
-            m_pcEncLib->getRdCost()->restoreReshapeLumaLevelToWeightTable();
-          }
-          else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
-          {
-            int modIP = pcPic->getPOC() - pcPic->getPOC() / m_pcCfg->getReshapeCW().rspFpsToIp * m_pcCfg->getReshapeCW().rspFpsToIp;
-            if (m_pcReshaper->getReshapeFlag() && m_pcCfg->getReshapeCW().rspIntraPeriod == -1 && modIP == 0)           // for LDB, update reshaping curve every second
-            {
-              m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(true);
-              m_pcReshaper->constructReshaperSDR();
-              m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
-            }
-          }
-          else
-          {
-            THROW("Reshaper for other signal currently not defined!");
-          }
-        }
-
-        m_pcReshaper->copySliceReshaperInfo(pcSlice->getReshapeInfo(), m_pcReshaper->getSliceReshaperInfo());
-      }
-      else
-      {
-        m_pcReshaper->setCTUFlag(false);
-      }
-#endif
 
       pcSlice->setSliceCurStartCtuTsAddr( 0 );
 #if HEVC_DEPENDENT_SLICES

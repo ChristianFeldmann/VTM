@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0055_DEBUG_CTU                              1 // DebugCTU encoder debug option
+
 #define JVET_M0297_32PT_MTS_ZERO_OUT                      1 // 32 point MTS based on skipping high frequency coefficients
 
 #define JVET_M0126_HMVP_MRG_PRUNING                       1 // HMVP merge candidates pruning simplification

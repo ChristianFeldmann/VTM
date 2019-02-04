@@ -195,9 +195,7 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   {
                     cu->slice = pcEncPic->cs->slice;
                   }
-#if JVET_L0266_HMVP
                   pcEncPic->cs->slice->copyMotionLUTs( pic->slices.back()->getMotionLUTs(), pcEncPic->slices.back()->getMotionLUTs());
-#endif
                 }
                 else
                 {

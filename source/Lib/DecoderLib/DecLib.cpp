@@ -166,6 +166,7 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
 #if JVET_M0055_DEBUG_CTU
                 if( debugCTU < 0 || poc != debugPOC )
+                {
 #endif
                 for( int i = 0; i < pic->slices.size(); i++ )
                 {
@@ -176,6 +177,9 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   }
                   pcEncPic->slices[i]->copySliceInfo( pic->slices[i], false );
                 }
+#if JVET_M0055_DEBUG_CTU
+                }
+#endif
 
                 pcEncPic->cs->slice = pcEncPic->slices.back();
 

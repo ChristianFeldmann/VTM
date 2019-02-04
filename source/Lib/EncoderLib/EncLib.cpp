@@ -911,10 +911,10 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
 #endif
 #if JVET_M0140_SBT
-  sps.getSpsNext().setUseSBT                ( m_SBT );
-  if( sps.getSpsNext().getUseSBT() )
+  sps.setUseSBT                             ( m_SBT );
+  if( sps.getUseSBT() )
   {
-    sps.getSpsNext().setMaxSbtSize          ( m_iSourceWidth >= 1920 ? 64 : 32 );
+    sps.setMaxSbtSize                       ( m_iSourceWidth >= 1920 ? 64 : 32 );
   }
 #endif
   sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );

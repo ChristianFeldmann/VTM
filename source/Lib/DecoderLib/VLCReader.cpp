@@ -815,13 +815,6 @@ void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
   }
 #endif
 
-#if JVET_M0140_SBT
-  READ_FLAG( symbol,    "sbt_enable_flag" );                        spsNext.setUseSBT                 ( symbol != 0 );
-  if( spsNext.getUseSBT() )
-  {
-    READ_FLAG( symbol,  "max_sbt_size_64_flag" );                   spsNext.setMaxSbtSize             ( symbol ? 64 : 32 );
-  }
-#endif
   READ_FLAG( symbol,    "affine_flag" );                            spsNext.setUseAffine              ( symbol != 0 );
   if ( spsNext.getUseAffine() )
   {
@@ -1125,6 +1118,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     {
       parseScalingList( &(pcSPS->getScalingList()) );
     }
+  }
+#endif
+#if JVET_M0140_SBT
+  READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
+  if( pcSPS->getUseSBT() )
+  {
+    READ_FLAG(uiCode, "max_sbt_size_64_flag");                      pcSPS->setMaxSbtSize(uiCode != 0 ? 64 : 32);
   }
 #endif
 

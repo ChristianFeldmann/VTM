@@ -1316,7 +1316,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     {
       m_cReshaper.setReshapeFlag(false);
     }
-    if ((pcSlice->getSliceType() == I_SLICE|| (pcSlice->getSliceType() == P_SLICE && pcSlice->getSPS()->getSpsNext().getIBCMode()) ) && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+#if JVET_M0483_IBC
+    if ((pcSlice->getSliceType() == I_SLICE) && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+#else
+    if ((pcSlice->getSliceType() == I_SLICE || (pcSlice->getSliceType() == P_SLICE && pcSlice->getSPS()->getSpsNext().getIBCMode())) && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+#endif
     {
       m_cReshaper.setCTUFlag(false);
       m_cReshaper.setRecReshaped(true);

@@ -169,6 +169,7 @@ namespace DQIntern
     ::memset( m_tuParameters,          0, sizeof(m_tuParameters) );
 
     uint32_t raster2id[ MAX_CU_SIZE * MAX_CU_SIZE ];
+    ::memset(raster2id, 0, sizeof(raster2id));
 
 #if JVET_M0102_INTRA_SUBPARTITIONS
     for( int ch = 0; ch < MAX_NUM_CHANNEL_TYPE; ch++ )
@@ -235,11 +236,24 @@ namespace DQIntern
             NbInfoSbb&     nbSbb  = sId2NbSbb[ scanId ];
             const int      begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
             int            cpos[5];
-            cpos[0] = ( posX < blockWidth -1                         ? ( raster2id[rpos+1           ] - begSbb < groupSize ? raster2id[rpos+1           ] - begSbb : 0 ) : 0 );
-            cpos[1] = ( posX < blockWidth -2                         ? ( raster2id[rpos+2           ] - begSbb < groupSize ? raster2id[rpos+2           ] - begSbb : 0 ) : 0 );
-            cpos[2] = ( posX < blockWidth -1 && posY < blockHeight-1 ? ( raster2id[rpos+1+blockWidth] - begSbb < groupSize ? raster2id[rpos+1+blockWidth] - begSbb : 0 ) : 0 );
-            cpos[3] = ( posY < blockHeight-1                         ? ( raster2id[rpos+  blockWidth] - begSbb < groupSize ? raster2id[rpos+  blockWidth] - begSbb : 0 ) : 0 );
-            cpos[4] = ( posY < blockHeight-2                         ? ( raster2id[rpos+2*blockWidth] - begSbb < groupSize ? raster2id[rpos+2*blockWidth] - begSbb : 0 ) : 0 );
+
+            const bool condX1 = posX + 1 < blockWidth;
+            const bool condX2 = posX + 2 < blockWidth;
+            const bool condY1 = posY + 1 < blockHeight;
+            const bool condY2 = posY + 2 < blockHeight;
+
+            const int ras0 = condX1 ? raster2id[rpos + 1] : 0;
+            const int ras1 = condX2 ? raster2id[rpos + 2] : 0;
+            const int ras2 = condX1 && condY1 ? raster2id[rpos + 1 + blockWidth] : 0;
+            const int ras3 = condY1 ? raster2id[rpos + blockWidth] : 0;
+            const int ras4 = condY2 ? raster2id[rpos + 2 * blockWidth] : 0;
+
+            cpos[0] = ras0 >= begSbb && ras0 < groupSize + begSbb ? ras0 - begSbb : 0;
+            cpos[1] = ras1 >= begSbb && ras1 < groupSize + begSbb ? ras1 - begSbb : 0;
+            cpos[2] = ras2 >= begSbb && ras2 < groupSize + begSbb ? ras2 - begSbb : 0;
+            cpos[3] = ras3 >= begSbb && ras3 < groupSize + begSbb ? ras3 - begSbb : 0;
+            cpos[4] = ras4 >= begSbb && ras4 < groupSize + begSbb ? ras4 - begSbb : 0;
+
             for( nbSbb.num = 0; true; )
             {
               int nk = -1;
@@ -267,11 +281,11 @@ namespace DQIntern
             NbInfoOut&     nbOut  = sId2NbOut[ scanId ];
             const int      begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
             int            cpos[5];
-            cpos[0] = ( posX < blockWidth -1                         ? ( raster2id[rpos+1           ] - begSbb >= groupSize ? raster2id[rpos+1           ] : 0 ) : 0 );
-            cpos[1] = ( posX < blockWidth -2                         ? ( raster2id[rpos+2           ] - begSbb >= groupSize ? raster2id[rpos+2           ] : 0 ) : 0 );
-            cpos[2] = ( posX < blockWidth -1 && posY < blockHeight-1 ? ( raster2id[rpos+1+blockWidth] - begSbb >= groupSize ? raster2id[rpos+1+blockWidth] : 0 ) : 0 );
-            cpos[3] = ( posY < blockHeight-1                         ? ( raster2id[rpos+  blockWidth] - begSbb >= groupSize ? raster2id[rpos+  blockWidth] : 0 ) : 0 );
-            cpos[4] = ( posY < blockHeight-2                         ? ( raster2id[rpos+2*blockWidth] - begSbb >= groupSize ? raster2id[rpos+2*blockWidth] : 0 ) : 0 );
+            cpos[0] = ( posX + 1 < blockWidth                         ? ( raster2id[rpos+1           ] >= groupSize + begSbb ? raster2id[rpos+1           ] : 0 ) : 0 );
+            cpos[1] = ( posX + 2 < blockWidth                         ? ( raster2id[rpos+2           ] >= groupSize + begSbb ? raster2id[rpos+2           ] : 0 ) : 0 );
+            cpos[2] = ( posX + 1 < blockWidth && posY + 1 < blockHeight ? ( raster2id[rpos+1+blockWidth] >= groupSize + begSbb ? raster2id[rpos+1+blockWidth] : 0 ) : 0 );
+            cpos[3] = ( posY + 1 < blockHeight                         ? ( raster2id[rpos+  blockWidth] >= groupSize + begSbb ? raster2id[rpos+  blockWidth] : 0 ) : 0 );
+            cpos[4] = ( posY + 2 < blockHeight                         ? ( raster2id[rpos+2*blockWidth] >= groupSize + begSbb ? raster2id[rpos+2*blockWidth] : 0 ) : 0 );
             for( nbOut.num = 0; true; )
             {
               int nk = -1;
@@ -311,6 +325,7 @@ namespace DQIntern
           const int  begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
           for( int k = 0; k < nbOut.num; k++ )
           {
+            CHECK(begSbb > nbOut.outPos[k], "Position must be past sub block begin");
             nbOut.outPos[k] -= begSbb;
           }
           nbOut.maxDist -= scanId;
@@ -401,7 +416,13 @@ namespace DQIntern
     m_chType              = chType;
     m_width               = width;
     m_height              = height;
+#if JVET_M0257
+    const uint32_t nonzeroWidth  = std::min<uint32_t>(JVET_C0024_ZERO_OUT_TH, m_width);
+    const uint32_t nonzeroHeight = std::min<uint32_t>(JVET_C0024_ZERO_OUT_TH, m_height);
+    m_numCoeff                   = nonzeroWidth * nonzeroHeight;
+#else
     m_numCoeff            = m_width * m_height;
+#endif
 #if JVET_M0102_INTRA_SUBPARTITIONS
     m_log2SbbWidth        = g_log2SbbSize[m_chType][ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][0];
     m_log2SbbHeight       = g_log2SbbSize[m_chType][ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][1];
@@ -414,8 +435,8 @@ namespace DQIntern
     m_sbbSize             = ( 1 << m_log2SbbSize );
     m_sbbMask             = m_sbbSize - 1;
 #if JVET_M0257
-    m_widthInSbb = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_width) >> m_log2SbbWidth;
-    m_heightInSbb = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_height) >> m_log2SbbHeight;
+    m_widthInSbb  = nonzeroWidth >> m_log2SbbWidth;
+    m_heightInSbb = nonzeroHeight >> m_log2SbbHeight;
 #else
     m_widthInSbb          = m_width  >> m_log2SbbWidth;
     m_heightInSbb         = m_height >> m_log2SbbHeight;

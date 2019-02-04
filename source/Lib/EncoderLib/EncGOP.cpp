@@ -2219,18 +2219,30 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
       {
+#if JVET_M0483_IBC
+        m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
+#else
         m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
+#endif
       }
       else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
       {
+#if JVET_M0483_IBC
+        m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
+#else
         m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree(), m_pcCfg->getIBCMode());
+#endif
       }
       else
       {
-        THROW("Reshaper for signal other than PQ and SDR currently not defined!");
+        THROW("Reshaper for other signal currently not defined!");
       }
 
+#if JVET_M0483_IBC
+      if (pcSlice->getSliceType() == I_SLICE )
+#else
       if (pcSlice->getSliceType() == I_SLICE || (pcSlice->getSliceType() == P_SLICE && m_pcCfg->getIBCMode()))
+#endif
       {
         if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
         {

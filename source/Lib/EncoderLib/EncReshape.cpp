@@ -107,7 +107,11 @@ void  EncReshape::destroy()
 \param   pcPic describe pointer of current coding picture
 \param   sliceType describe the slice type
 */
+#if JVET_M0483_IBC
+void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT)
+#else
 void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isIBC)
+#endif
 {
   if (m_lumaBD >= 10)
   {
@@ -119,11 +123,19 @@ void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const
     }
     else
     {
-      if (sliceType == I_SLICE || (sliceType==P_SLICE && isIBC) )             { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;  }
+#if JVET_M0483_IBC
+      if (sliceType == I_SLICE )                                              { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;  }
+#else
+      if (sliceType == I_SLICE || (sliceType == P_SLICE && isIBC))            { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;  }
+#endif
       else                                                                    { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = false; }
     }
-    if ((sliceType == I_SLICE || (sliceType == P_SLICE && isIBC)) && isDualT) { m_sliceReshapeInfo.enableChromaAdj = 0;                    }
-    else                                                                      { m_sliceReshapeInfo.enableChromaAdj = 1;                    }
+#if JVET_M0483_IBC
+    if (sliceType == I_SLICE  && isDualT)                                     { m_sliceReshapeInfo.enableChromaAdj = 0;                   }
+#else
+    if ((sliceType == I_SLICE || (sliceType == P_SLICE && isIBC)) && isDualT) { m_sliceReshapeInfo.enableChromaAdj = 0;                   }
+#endif
+    else                                                                      { m_sliceReshapeInfo.enableChromaAdj = 1;                   }
   }
   else
   {
@@ -138,14 +150,21 @@ void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const
 \param   sliceType describe the slice type
 \param   reshapeCW describe some input info
 */
+#if JVET_M0483_IBC
+void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT)
+#else
 void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isIBC)
+#endif
 {
   m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;
   m_sliceReshapeInfo.sliceReshaperEnableFlag = true;
 
   int modIP = pcPic->getPOC() - pcPic->getPOC() / reshapeCW.rspFpsToIp * reshapeCW.rspFpsToIp;
-
-  if (sliceType == I_SLICE || (reshapeCW.rspIntraPeriod == -1 && modIP == 0) || (sliceType== P_SLICE && isIBC))
+#if JVET_M0483_IBC
+  if (sliceType == I_SLICE || (reshapeCW.rspIntraPeriod == -1 && modIP == 0))
+#else
+  if (sliceType == I_SLICE || (reshapeCW.rspIntraPeriod == -1 && modIP == 0) || (sliceType == P_SLICE && isIBC))
+#endif
   {
     if (m_sliceReshapeInfo.sliceReshaperModelPresentFlag == true)
     {
@@ -460,7 +479,11 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
 
     }
     m_chromaAdj = m_sliceReshapeInfo.enableChromaAdj;
+#if JVET_M0483_IBC
+    if (sliceType == I_SLICE && isDualT)
+#else
     if ((sliceType == I_SLICE || (sliceType == P_SLICE && isIBC)) && isDualT)
+#endif
     {
         m_sliceReshapeInfo.enableChromaAdj = 0;
     }
@@ -1123,7 +1146,7 @@ void EncReshape::constructReshaperSDR()
   int16_t *tempFwdLUT = new int16_t[m_reshapeLUTSize + 1]();
   int i, j;
   int cwScaleBins1, cwScaleBins2;
-  int maxAllowedCW = totCW;
+  int maxAllowedCW = totCW-1;
 
   cwScaleBins1 = m_reshapeCW.binCW[0];
   cwScaleBins2 = m_reshapeCW.binCW[1];
@@ -1252,7 +1275,7 @@ void EncReshape::constructReshaperSDR()
 
   int sumBins = 0;
   for (i = 0; i < PIC_CODE_CW_BINS; i++)   { sumBins += m_binCW[i];  }
-  CHECK(sumBins > m_reshapeLUTSize, "SDR CW assignment is wrong!!");
+  CHECK(sumBins >= m_reshapeLUTSize, "SDR CW assignment is wrong!!");
   memset(tempFwdLUT, 0, (m_reshapeLUTSize + 1) * sizeof(int16_t));
   tempFwdLUT[0] = 0;
 

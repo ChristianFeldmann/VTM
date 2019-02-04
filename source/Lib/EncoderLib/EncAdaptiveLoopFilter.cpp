@@ -522,7 +522,7 @@ double EncAdaptiveLoopFilter::getFilterCoeffAndCost( CodingStructure& cs, double
     uiSliceFlag = lengthTruncatedUnary(alfChromaIdc, 3);
   }
 
-  double rate = uiCoeffBits + uiSliceFlag;  
+  double rate = uiCoeffBits + uiSliceFlag;
   m_CABACEstimator->resetBits();
   m_CABACEstimator->codeAlfCtuEnableFlags( cs, channel, &m_alfSliceParamTemp);
   rate += FracBitsScale * (double)m_CABACEstimator->getEstFracBits();
@@ -659,7 +659,7 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
     dist = deriveFilterCoeffs( covFrame, covMerged, alfShape, m_filterIndices[numFilters - 1], numFilters, errorForce0CoeffTab );
     // filter coeffs are stored in m_filterCoeffSet
     distForce0 = getDistForce0( alfShape, numFilters, errorForce0CoeffTab, codedVarBins );
-    coeffBits = deriveFilterCoefficientsPredictionMode( alfShape, m_filterCoeffSet, m_diffFilterCoeff, numFilters, predMode ); 
+    coeffBits = deriveFilterCoefficientsPredictionMode( alfShape, m_filterCoeffSet, m_diffFilterCoeff, numFilters, predMode );
     coeffBitsForce0 = getCostFilterCoeffForce0( alfShape, m_filterCoeffSet, numFilters, codedVarBins );
 
     cost = dist + m_lambda[COMPONENT_Y] * coeffBits;
@@ -1153,7 +1153,7 @@ double EncAdaptiveLoopFilter::deriveCoeffQuant( int *filterCoeffQuant, double **
   filterCoeffQuant[numCoeff - 1] = -quantCoeffSum;
   filterCoeff[numCoeff - 1] = filterCoeffQuant[numCoeff - 1] / double(factor);
 
-  
+
   //Restrict the range of the center coefficient
   int max_value_center = (2 * factor - 1) - factor;
   int min_value_center = 0 - factor;

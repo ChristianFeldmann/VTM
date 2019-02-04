@@ -831,7 +831,7 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   if( cpyResi ) picture->getResiBuf( clippedArea ).copyFrom( subResiBuf );
   if( cpyReco ) picture->getRecoBuf( clippedArea ).copyFrom( subRecoBuf );
 
-#if JVET_M0483_IBC 
+#if JVET_M0483_IBC
   if (!subStruct.m_isTuEnc && ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && subStruct.chType != CHANNEL_TYPE_CHROMA))
 #else
   if (!subStruct.m_isTuEnc && (!slice->isIntra() && subStruct.chType != CHANNEL_TYPE_CHROMA))
@@ -1015,7 +1015,7 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
     pu = *ppu;
   }
 
-#if JVET_M0483_IBC 
+#if JVET_M0483_IBC
   if (!other.slice->isIntra() || other.slice->getSPS()->getIBCFlag())
 #else
   if( !other.slice->isIntra() )
@@ -1126,7 +1126,7 @@ void CodingStructure::clearTUs()
     memset( m_tuIdx   [i],     0, sizeof( *m_tuIdx   [0] ) * _area );
   }
 
-  numCh = getNumberValidComponents( area.chromaFormat ); 
+  numCh = getNumberValidComponents( area.chromaFormat );
   for( int i = 0; i < numCh; i++ )
   {
     m_offsets[i] = 0;

@@ -327,8 +327,8 @@ protected:
 
   int       m_chromaCbQpOffset;                 //  Chroma Cb QP Offset (0:default)
   int       m_chromaCrQpOffset;                 //  Chroma Cr Qp Offset (0:default)
-  int       m_chromaCbQpOffsetDualTree;         //  Chroma Cb QP Offset for dual tree 
-  int       m_chromaCrQpOffsetDualTree;         //  Chroma Cr Qp Offset for dual tree 
+  int       m_chromaCbQpOffsetDualTree;         //  Chroma Cb QP Offset for dual tree
+  int       m_chromaCrQpOffsetDualTree;         //  Chroma Cr Qp Offset for dual tree
 #if ER_CHROMA_QP_WCG_PPS
   WCGChromaQPControl m_wcgChromaQpControl;                    ///< Wide-colour-gamut chroma QP control.
 #endif
@@ -1505,5 +1505,5 @@ public:
 };
 
 //! \}
-  
+
 #endif // !defined(AFX_TENCCFG_H__6B99B797_F4DA_4E46_8E78_7656339A6C41__INCLUDED_)

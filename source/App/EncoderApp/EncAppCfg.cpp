@@ -1338,13 +1338,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   po::ErrorReporter err;
   const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
 
-  if (m_compositeRefEnabled) 
+  if (m_compositeRefEnabled)
   {
-    for (int i = 0; i < m_iGOPSize; i++) 
+    for (int i = 0; i < m_iGOPSize; i++)
     {
       m_GOPList[i].m_POC *= 2;
       m_GOPList[i].m_deltaRPS *= 2;
-      for (int j = 0; j < m_GOPList[i].m_numRefPics; j++) 
+      for (int j = 0; j < m_GOPList[i].m_numRefPics; j++)
       {
         m_GOPList[i].m_referencePics[j] *= 2;
       }
@@ -1973,7 +1973,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
 #if JVET_M0253_HASH_ME
     xConfirmPara( m_HashME, "Hash motion estimation only allowed with NEXT profile" );
-#endif   
+#endif
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
 #if JVET_M0464_UNI_MTS
     xConfirmPara( m_MTS, "MTS only allowed with NEXT profile" );
@@ -2053,8 +2053,8 @@ bool EncAppCfg::xCheckParameter()
 
 
   xConfirmPara( m_useAMaxBT && !m_SplitConsOverrideEnabledFlag, "AMaxBt can only be used with PartitionConstriantsOverride enabled" );
- 
-  
+
+
   xConfirmPara(m_bitstreamFileName.empty(), "A bitstream file name must be specified (BitstreamFile)");
   const uint32_t maxBitDepth=(m_chromaFormatIDC==CHROMA_400) ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]);
   xConfirmPara(m_bitDepthConstraint<maxBitDepth, "The internalBitDepth must not be greater than the bitDepthConstraint value");

@@ -350,7 +350,7 @@ std::vector<std::vector<uint8_t>> ContextSetCfg::sm_InitTables( NUMBER_OF_SLICE_
 const CtxSet ContextSetCfg::SplitFlag = ContextSetCfg::addCtxSet
 ({
 #if JVET_M0421_SPLIT_SIG
-  // |-------- do split ctx -------------------| 
+  // |-------- do split ctx -------------------|
   {  93, 124, 141, 123, 125, 141, 139, 126, 157, },
   { 108, 139, 156, 138, 140, 141, 139, 141, 143, },
   { 153, 154, 172, 153, 140, 156, 154, 127, 159, },

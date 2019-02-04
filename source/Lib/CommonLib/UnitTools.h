@@ -158,7 +158,7 @@ namespace PU
   bool xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const MergeCtx mergeCandList, bool hasPruned[MRG_MAX_NUM_CANDS]);
 #if JVET_L0090_PAIR_AVG
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
-#if JVET_M0483_IBC==0 
+#if JVET_M0483_IBC==0
     , int mmvdList
 #endif
 #if JVET_M0483_IBC
@@ -170,7 +170,7 @@ namespace PU
   );
 #else
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter[MRG_MAX_NUM_CANDS], bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
-#if JVET_M0483_IBC==0 
+#if JVET_M0483_IBC==0
     , int mmvdList
 #endif
   );
@@ -183,7 +183,7 @@ namespace PU
   void getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgCtx );
   void getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx, const int mrgCandIdx = -1 );
   void setAllAffineMvField            (      PredictionUnit &pu, MvField *mvField, RefPicList eRefList );
-  void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList 
+  void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList
     , bool setHighPrec = false
   );
   bool getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx &mrgCtx, bool& LICFlag, const int count
@@ -301,7 +301,7 @@ uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeLi
       if (extendRef != -1)
       {
         extendRefList[currSize - i] = extendRefList[currSize - 1 - i];
-      }  
+      }
     }
     candModeList[currSize - shift] = uiMode;
     candCostList[currSize - shift] = uiCost;
@@ -375,7 +375,7 @@ uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candMode
     candCostList.insert(candCostList.end() - shift, cost);
     if (iserttPos != nullptr)
     {
-      *iserttPos = int(candModeList.size() - shift - 1);  
+      *iserttPos = int(candModeList.size() - shift - 1);
     }
     return 1;
   }

@@ -278,10 +278,10 @@ void InterpolationFilter::filterCopy( const ClpRng& clpRng, const Pel *src, int 
           src += srcStride;
           dst += dstStride;
         }
-      }      
+      }
     }
     else
-#endif 
+#endif
     for (row = 0; row < height; row++)
     {
       for (col = 0; col < width; col++)
@@ -301,7 +301,7 @@ void InterpolationFilter::filterCopy( const ClpRng& clpRng, const Pel *src, int 
 
 #if JVET_M0147_DMVR
     if (biMCForDMVR)
-    {   
+    {
       int shift10BitOut, offset;
       if ((clpRng.bd - IF_INTERNAL_PREC_BILINEAR) > 0)
       {
@@ -512,7 +512,7 @@ void InterpolationFilter::filterHor(const ClpRng& clpRng, Pel const *src, int sr
     m_filterHor[1][1][isLast](clpRng, src, srcStride, dst, dstStride, width, height, coeff, biMCForDMVR);
 #else
     m_filterHor[1][1][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, coeff );
-#endif 
+#endif
   }
   else if( N == 2 )
   {
@@ -682,7 +682,7 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
     if (nFilterIdx == 1)
     {
 #if JVET_M0147_DMVR
-      filterVer<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR);        
+      filterVer<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR);
 #else
       filterVer<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilter[frac]);
 #endif

@@ -193,7 +193,7 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
     m_triangleBuf.create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
 
     m_iRefListIdx = -1;
-  
+
     m_gradX0 = (Pel*)xMalloc(Pel, BIO_TEMP_BUFFER_SIZE);
     m_gradY0 = (Pel*)xMalloc(Pel, BIO_TEMP_BUFFER_SIZE);
     m_gradX1 = (Pel*)xMalloc(Pel, BIO_TEMP_BUFFER_SIZE);
@@ -204,7 +204,7 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
   m_cYuvPredTempDMVRL0 = (Pel*)xMalloc(Pel, (MAX_CU_SIZE + (2 * DMVR_NUM_ITERATION)) * (MAX_CU_SIZE + (2 * DMVR_NUM_ITERATION)));
   m_cYuvPredTempDMVRL1 = (Pel*)xMalloc(Pel, (MAX_CU_SIZE + (2 * DMVR_NUM_ITERATION)) * (MAX_CU_SIZE + (2 * DMVR_NUM_ITERATION)));
   for (uint32_t ch = 0; ch < MAX_NUM_COMPONENT; ch++)
-  {    
+  {
     m_cRefSamplesDMVRL0[ch] = (Pel*)xMalloc(Pel, (MAX_CU_SIZE + (2 * DMVR_NUM_ITERATION) + NTAPS_LUMA) * (MAX_CU_SIZE + (2 * DMVR_NUM_ITERATION) + NTAPS_LUMA));
     m_cRefSamplesDMVRL1[ch] = (Pel*)xMalloc(Pel, (MAX_CU_SIZE + (2 * DMVR_NUM_ITERATION) + NTAPS_LUMA) * (MAX_CU_SIZE + (2 * DMVR_NUM_ITERATION) + NTAPS_LUMA));
   }
@@ -404,8 +404,8 @@ void InterPrediction::xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred)
 }
 
 
-void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
-                                   , const bool& bioApplied 
+void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi
+                                   , const bool& bioApplied
                                    , const bool luma, const bool chroma
 )
 {
@@ -473,7 +473,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
           , isIBC
         );
       }
-#else     
+#else
       xPredInterBlk( compID, pu, pu.cu->slice->getRefPic( eRefPicList, iRefIdx ), mv[0], pcYuvPred, bi, pu.cu->slice->clpRng( compID )
                     , bioApplied
                     , isIBC
@@ -567,14 +567,14 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
     {
       if( ( (pps.getUseWP() && slice.getSliceType() == P_SLICE) || (pps.getWPBiPred() && slice.getSliceType() == B_SLICE) ) )
       {
-        xPredInterUni ( pu, eRefPicList, pcMbBuf, true 
+        xPredInterUni ( pu, eRefPicList, pcMbBuf, true
           , bioApplied
           , true, true
         );
       }
       else
       {
-        xPredInterUni( pu, eRefPicList, pcMbBuf, pu.cu->triangle 
+        xPredInterUni( pu, eRefPicList, pcMbBuf, pu.cu->triangle
           , bioApplied
           , true, true
         );
@@ -786,7 +786,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
     bioSampleExtendBilinearFilter(refBuf.buf, refBuf.stride, dstBuf.buf, dstBuf.stride, width - 2, height - 2, 1, xFrac, yFrac, rndRes, chFmt, clpRng);
 #endif
 
-    // restore data 
+    // restore data
     width = backupWidth;
     height = backupHeight;
     dstBuf.buf = backupDstBufPtr;
@@ -937,7 +937,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
           m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE)* MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1)] +
           m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1)* MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1)] +
           Mv(2, 2));
-        curMv.set(curMv.getHor() >> 2, curMv.getVer() >> 2);   
+        curMv.set(curMv.getHor() >> 2, curMv.getVer() >> 2);
 #endif
 #endif
         if (sps.getWrapAroundEnabledFlag())
@@ -1329,7 +1329,7 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
   }
 }
 
-void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBuf, const RefPicList &eRefPicList 
+void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBuf, const RefPicList &eRefPicList
   , const bool luma, const bool chroma
 )
 {
@@ -1358,7 +1358,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   {
     if( ( ( sliceType == P_SLICE && pps.getUseWP() ) || ( sliceType == B_SLICE && pps.getWPBiPred() ) ) )
     {
-      xPredInterUni         ( pu,          eRefPicList, predBuf, true 
+      xPredInterUni         ( pu,          eRefPicList, predBuf, true
         , false
         , true, true
       );
@@ -1366,7 +1366,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     }
     else
     {
-      xPredInterUni( pu, eRefPicList, predBuf, false 
+      xPredInterUni( pu, eRefPicList, predBuf, false
         , false
         , true, true
       );
@@ -1380,7 +1380,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     }
     else if( xCheckIdenticalMotion( pu ) )
     {
-      xPredInterUni( pu, REF_PIC_LIST_0, predBuf, false 
+      xPredInterUni( pu, REF_PIC_LIST_0, predBuf, false
         , false
         , true, true
       );
@@ -1393,7 +1393,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   return;
 }
 
-void InterPrediction::motionCompensation( CodingUnit &cu, const RefPicList &eRefPicList 
+void InterPrediction::motionCompensation( CodingUnit &cu, const RefPicList &eRefPicList
   , const bool luma, const bool chroma
 )
 {
@@ -1403,7 +1403,7 @@ void InterPrediction::motionCompensation( CodingUnit &cu, const RefPicList &eRef
 #if JVET_M0147_DMVR
     pu.mvRefine = true;
 #endif
-    motionCompensation( pu, predBuf, eRefPicList 
+    motionCompensation( pu, predBuf, eRefPicList
       , luma, chroma
     );
 #if JVET_M0147_DMVR
@@ -1412,12 +1412,12 @@ void InterPrediction::motionCompensation( CodingUnit &cu, const RefPicList &eRef
   }
 }
 
-void InterPrediction::motionCompensation( PredictionUnit &pu, const RefPicList &eRefPicList /*= REF_PIC_LIST_X*/ 
+void InterPrediction::motionCompensation( PredictionUnit &pu, const RefPicList &eRefPicList /*= REF_PIC_LIST_X*/
   , const bool luma, const bool chroma
 )
 {
   PelUnitBuf predBuf = pu.cs->getPredBuf( pu );
-  motionCompensation( pu, predBuf, eRefPicList 
+  motionCompensation( pu, predBuf, eRefPicList
     , luma, chroma
   );
 }
@@ -1447,11 +1447,11 @@ void InterPrediction::motionCompensation4Triangle( CodingUnit &cu, MergeCtx &tri
     const UnitArea localUnitArea( cu.cs->area.chromaFormat, Area( 0, 0, pu.lwidth(), pu.lheight() ) );
     PelUnitBuf tmpTriangleBuf = m_triangleBuf.getBuf( localUnitArea );
     PelUnitBuf predBuf        = cu.cs->getPredBuf( pu );
-     
+
     triangleMrgCtx.setMergeInfo( pu, candIdx0 );
     PU::spanMotionInfo( pu );
     motionCompensation( pu, tmpTriangleBuf );
-   
+
     triangleMrgCtx.setMergeInfo( pu, candIdx1 );
     PU::spanMotionInfo( pu );
     motionCompensation( pu, predBuf );
@@ -1525,7 +1525,7 @@ void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint
   const int32_t offsetDefault     = (1<<(shiftDefault-1)) + IF_INTERNAL_OFFS;
   const int32_t shiftWeighted     = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + log2WeightBase;
   const int32_t offsetWeighted    = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
-                                  
+
   const int32_t ratioWH           = (width > height) ? (width / height) : 1;
   const int32_t ratioHW           = (width > height) ? 1 : (height / width);
 #if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
@@ -1538,7 +1538,7 @@ void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint
         int32_t weightedStartPos  = ( splitDir == 0 ) ? ( 0 - (weightedLength >> 1) * ratioWH ) : ( width - ((weightedLength + 1) >> 1) * ratioWH );
         int32_t weightedEndPos    = weightedStartPos + weightedLength * ratioWH - 1;
         int32_t weightedPosoffset =( splitDir == 0 ) ? ratioWH : -ratioWH;
-  
+
 #if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
         Pel     tmpPelWeighted;
         int32_t weightIdx;
@@ -1546,7 +1546,7 @@ void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint
   const Pel*    tmpPelWeighted;
 #endif
         int32_t x, y, tmpX, tmpY, tmpWeightedStart, tmpWeightedEnd;
-  
+
   for( y = 0; y < height; y+= ratioHW )
   {
     for( tmpY = ratioHW; tmpY > 0; tmpY-- )
@@ -1901,15 +1901,15 @@ void InterPrediction::xinitMC(PredictionUnit& pu, const ClpRngs &clpRngs)
 }
 
 void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, const ClpRngs &clpRngs, const bool bioApplied)
-{  
+{
   int iterationCount = DMVR_NUM_ITERATION;
   /*Always High Precision*/
   int mvShift = MV_FRACTIONAL_BITS_INTERNAL;
-  
+
   /*use merge MV as starting MV*/
   Mv mergeMv[] = { pu.mv[REF_PIC_LIST_0] , pu.mv[REF_PIC_LIST_1] };
-  
-  m_biLinearBufStride = (MAX_CU_SIZE + (2 * DMVR_NUM_ITERATION));  
+
+  m_biLinearBufStride = (MAX_CU_SIZE + (2 * DMVR_NUM_ITERATION));
 
   int dy = std::min<int>(pu.lumaSize().height, DMVR_SUBCU_HEIGHT);
   int dx = std::min<int>(pu.lumaSize().width,  DMVR_SUBCU_WIDTH);
@@ -1936,9 +1936,9 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
   Pel *biLinearPredL1 = m_cYuvPredTempDMVRL1 + (iterationCount * m_biLinearBufStride) + iterationCount;
 
   Position puPos = pu.lumaPos();
-  
+
   int bd = pu.cs->slice->getClpRngs().comp[COMPONENT_Y].bd;
-  
+
   {
     int num = 0;
 
@@ -1946,7 +1946,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
     for (int y = puPos.y; y < (puPos.y + pu.lumaSize().height); y = y + dy, yStart = yStart + dy)
     {
       for (int x = puPos.x, xStart = 0; x < (puPos.x + pu.lumaSize().width); x = x + dx, xStart = xStart + dx)
-      {       
+      {
         uint64_t minCost = MAX_UINT64;
         bool notZeroCost = true;
         int16_t totalDeltaMV[2] = { 0,0 };
@@ -1996,7 +1996,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
         totalDeltaMV[0] = (totalDeltaMV[0] << mvShift);
         totalDeltaMV[1] = (totalDeltaMV[1] << mvShift);
         xDMVRSubPixelErrorSurface(notZeroCost, totalDeltaMV, deltaMV, pSADsArray);
-        
+
         pu.mvdL0SubPu[num] = Mv(totalDeltaMV[0], totalDeltaMV[1]);
 
         num++;
@@ -2022,7 +2022,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
 
     int x = 0, y = 0;
     int xStart = 0, yStart = 0;
-    int num = 0;    
+    int num = 0;
 
     int dstStride[MAX_NUM_COMPONENT] = { pcYuvDst.bufs[COMPONENT_Y].stride, pcYuvDst.bufs[COMPONENT_Cb].stride, pcYuvDst.bufs[COMPONENT_Cr].stride };
     for (y = puPos.y; y < (puPos.y + pu.lumaSize().height); y = y + dy, yStart = yStart + dy)

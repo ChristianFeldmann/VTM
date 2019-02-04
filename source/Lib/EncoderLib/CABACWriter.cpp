@@ -544,7 +544,7 @@ void CABACWriter::split_cu_mode( const PartSplit split, const CodingStructure& c
 
   unsigned ctxSplit = 0, ctxQtSplit = 0, ctxBttHV = 0, ctxBttH12 = 0, ctxBttV12;
   DeriveCtx::CtxSplit( cs, partitioner, ctxSplit, ctxQtSplit, ctxBttHV, ctxBttH12, ctxBttV12, canSpl );
-  
+
   const bool canSplit = canBh || canBv || canTh || canTv || canQt;
   const bool isNo     = split == CU_DONT_SPLIT;
 
@@ -749,7 +749,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 
   extend_ref_line(cu);
 
-#if JVET_M0102_INTRA_SUBPARTITIONS 
+#if JVET_M0102_INTRA_SUBPARTITIONS
   isp_mode( cu );
 #endif
 
@@ -878,7 +878,7 @@ void CABACWriter::pcm_data( const CodingUnit& cu, Partitioner& partitioner  )
 void CABACWriter::pcm_flag( const CodingUnit& cu, Partitioner& partitioner )
 {
   const SPS& sps = *cu.cs->sps;
-  if( !sps.getPCMEnabledFlag() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
+  if( !sps.getPCMEnabledFlag() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize())
       || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
   {
     return;
@@ -1165,7 +1165,7 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
   // prev_intra_luma_pred_flag
   const int numMPMs  = NUM_MOST_PROBABLE_MODES;
   unsigned  mpm_pred[numMPMs];
-  
+
   PU::getIntraMPMs( pu, mpm_pred );
 
   unsigned ipred_mode = pu.intraDir[0];
@@ -1638,7 +1638,7 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
   m_BinEncoder.encodeBin( pu.mergeFlag, Ctx::MergeFlag() );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_flag() merge=%d pos=(%d,%d) size=%dx%d\n", pu.mergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
-  
+
 #if JVET_M0483_IBC
   if (pu.mergeFlag && CU::isIBC(*pu.cu))
   {

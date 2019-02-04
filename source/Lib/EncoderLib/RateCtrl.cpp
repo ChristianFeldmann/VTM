@@ -1158,7 +1158,7 @@ double EncRCPic::calAverageLambda()
       if (m_LCUs[i].m_QP > 0 || m_encRCSeq->getAdaptiveBits() != 1)
       {
         m_validPixelsInPic += m_LCUs[i].m_numberOfPixel;
-        
+
         totalLambdas += log(m_LCUs[i].m_lambda);
         numTotalLCUs++;
       }

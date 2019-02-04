@@ -237,7 +237,7 @@ namespace std
     }
   };
 };
-void clipMv ( Mv& rcMv, const struct Position& pos, 
+void clipMv ( Mv& rcMv, const struct Position& pos,
               const struct Size& size,
               const class SPS& sps );
 

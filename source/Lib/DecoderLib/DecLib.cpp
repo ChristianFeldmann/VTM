@@ -447,7 +447,7 @@ void DecLib::destroy()
 
 void DecLib::init(
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
-  const std::string& cacheCfgFileName 
+  const std::string& cacheCfgFileName
 #endif
 )
 {

@@ -282,7 +282,7 @@ protected:
 public:
 
   virtual ~EncModeCtrl              () {}
-  
+
 #if REUSE_CU_RESULTS
   virtual void create               ( const EncCfg& cfg )                                                                   = 0;
   virtual void destroy              ()                                                                                      = 0;

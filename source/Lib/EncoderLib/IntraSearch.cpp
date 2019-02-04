@@ -1324,7 +1324,7 @@ void IntraSearch::IPCMSearch(CodingStructure &cs, Partitioner& partitioner)
   cs.setDecomp(cs.area);
 #if JVET_M0427_INLOOP_RESHAPER
   cs.picture->getPredBuf(cs.area).copyFrom(cs.getPredBuf());
-#endif 
+#endif
 }
 
 void IntraSearch::xEncPCM(CodingStructure &cs, Partitioner& partitioner, const ComponentID &compID)
@@ -1378,10 +1378,10 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
     // CU header
     if( isFirst )
     {
-#if JVET_M0483_IBC 
+#if JVET_M0483_IBC
       if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag())
 #else
-      if( !cs.slice->isIntra() 
+      if( !cs.slice->isIntra()
 #endif
         && cu.Y().valid()
         )
@@ -1537,7 +1537,7 @@ void IntraSearch::xEncSubdivCbfQT(CodingStructure &cs, Partitioner &partitioner,
   else
   {
 #if !JVET_M0464_UNI_MTS
-#if JVET_M0102_INTRA_SUBPARTITIONS 
+#if JVET_M0102_INTRA_SUBPARTITIONS
     if (!currCU.ispMode && isLuma( compID ) && currDepth == 0 && bLuma && TU::getCbfAtDepth( currTU, COMPONENT_Y, 0) ) m_CABACEstimator->emt_cu_flag( currCU );
 #else
     if( currDepth == 0 && bLuma && TU::getCbfAtDepth( currTU, COMPONENT_Y, 0 ) ) m_CABACEstimator->emt_cu_flag( currCU );
@@ -1688,7 +1688,7 @@ uint64_t IntraSearch::xGetIntraFracBitsQTSingleChromaComponent( CodingStructure 
 
   if( compID == COMPONENT_Cb )
   {
-    //intra mode coding 
+    //intra mode coding
     PredictionUnit &pu = *cs.getPU( partitioner.currArea().lumaPos(), partitioner.chType );
     m_CABACEstimator->intra_chroma_pred_mode( pu );
     //xEncIntraHeader(cs, partitioner, false, true);
@@ -1872,7 +1872,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cResScale*cResScale));
     piResi.scaleSignal(cResScaleInv, 1, tu.cu->cs->slice->clpRng(compID));
   }
-#endif 
+#endif
 
 #if JVET_M0102_INTRA_SUBPARTITIONS
   double diagRatio = 0, horVerRatio = 0;
@@ -1949,7 +1949,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     tmpPred.copyFrom(piPred);
     piReco.reconstruct(tmpPred, piResi, cs.slice->clpRng(compID));
   }
-  else 
+  else
 #endif
   piReco.reconstruct(piPred, piResi, cs.slice->clpRng( compID ));
 

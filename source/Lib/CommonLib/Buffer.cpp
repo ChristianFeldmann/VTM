@@ -393,7 +393,7 @@ void AreaBuf<Pel>::rspSignal(std::vector<Pel>& pLUT)
   if (width == 1)
   {
     THROW("Blocks of width = 1 not supported");
-  }  
+  }
   else
   {
 #endif
@@ -470,7 +470,7 @@ Pel AreaBuf <Pel> ::computeAvg() const
 #endif
     int32_t acc = 0;
 #define AVG_INC   \
-    src +=       stride; 
+    src +=       stride;
 #define AVG_OP(ADDR) acc += src[ADDR]
     SIZE_AWARE_PER_EL_OP(AVG_OP, AVG_INC);
 #undef AVG_INC

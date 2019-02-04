@@ -1494,7 +1494,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   }
 #endif
 #if JVET_M0255_FRACMMVD_SWITCH
-  if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() || 
+  if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() ||
 #if JVET_M0483_IBC
       (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
 #else

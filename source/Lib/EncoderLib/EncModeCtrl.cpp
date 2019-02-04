@@ -662,7 +662,7 @@ static bool isTheSameNbHood( const CodingUnit &cu, const CodingStructure& cs, co
   bool sharedListReuseMode = true;
   if(
       pu.mergeFlag == true &&
-      cu.affine == false &&    
+      cu.affine == false &&
       cu.predMode == MODE_INTER
     )
   {
@@ -802,14 +802,14 @@ void BestEncInfoCache::init( const Slice &slice )
   m_slice_bencinf = &slice;
 
   if( isInitialized ) return;
-  
+
   const unsigned numPos = MAX_CU_SIZE >> MIN_CU_LOG2;
 
   m_numWidths  = gp_sizeIdxInfo->numWidths();
   m_numHeights = gp_sizeIdxInfo->numHeights();
 
   size_t numCoeff = 0;
-  
+
   for( unsigned x = 0; x < numPos; x++ )
   {
     for( unsigned y = 0; y < numPos; y++ )
@@ -953,7 +953,7 @@ bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& pa
 #if JVET_M0170_MRG_SHARELIST
     , encInfo.pu, (cs.picture->Y().width), (cs.picture->Y().height)
 #endif
-) 
+)
 #if JVET_M0483_IBC
     || CU::isIBC(encInfo.cu)
 #else
@@ -976,7 +976,7 @@ bool BestEncInfoCache::setCsFrom( CodingStructure& cs, EncTestMode& testMode, co
 
   BestEncodingInfo& encInfo = *m_bestEncInfo[idx1][idx2][idx3][idx4];
 
-  if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner 
+  if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner
 #if JVET_M0170_MRG_SHARELIST
     , encInfo.pu, (cs.picture->Y().width), (cs.picture->Y().height)
 #endif
@@ -1186,7 +1186,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     switch (ibcLumaCoverage)
     {
     case IBC_LUMA_COVERAGE_FULL:
-      // check IBC 
+      // check IBC
       break;
     case IBC_LUMA_COVERAGE_PARTIAL:
       // do not check IBC
@@ -1507,10 +1507,10 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
       return true;
     CHECK( !slice.isIntra() && !cuECtx.bestTU, "No possible non-intra encoding for a P- or B-slice found" );
 
-    if( !( slice.isIRAP() || bestMode.type == ETM_INTRA || 
+    if( !( slice.isIRAP() || bestMode.type == ETM_INTRA ||
 #if JVET_M0483_IBC
       ((!m_pcEncCfg->getDisableIntraPUsInInterSlices()) && (!relatedCU.isInter || !relatedCU.isIBC) && (
-#else    
+#else
       ( ( !m_pcEncCfg->getDisableIntraPUsInInterSlices() ) && !relatedCU.isInter && (
 #endif
                                          ( cuECtx.bestTU->cbf[0] != 0 ) ||
@@ -1626,7 +1626,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
       return false;
     }
     if( encTestmode.type == ETM_MERGE_TRIANGLE && ( partitioner.currArea().lumaSize().area() < TRIANGLE_MIN_SIZE || relatedCU.isIntra ) )
-    { 
+    {
       return false;
     }
     return true;
@@ -1639,7 +1639,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     //////////////////////////////////////////////////////////////////////////
     int skipScore = 0;
 
-#if JVET_M0483_IBC 
+#if JVET_M0483_IBC
     if ((!slice.isIntra() || slice.getSPS()->getIBCFlag()) && cuECtx.get<bool>(IS_BEST_NOSPLIT_SKIP))
 #else
     if( !slice.isIntra() && cuECtx.get<bool>( IS_BEST_NOSPLIT_SKIP ) )

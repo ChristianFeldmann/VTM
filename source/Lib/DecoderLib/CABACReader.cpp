@@ -2876,6 +2876,8 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 
   if( !mtsAllowed && !tsAllowed ) return;
 
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[compID], compID );
+
   int symbol = 0;
   int ctxIdx = 0;
 

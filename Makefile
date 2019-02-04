@@ -44,7 +44,7 @@ else
   BUILD_CMD := $(BUILD_SCRIPT)
   ifeq ($(UNAME_S),Linux)
     # for Jenkins: run trace build only on Linux
-    TRACEBUILD := TRUE
+    LINUXBUILD := TRUE
   endif
   ifeq ($(UNAME_S),Darwin)
     # MAC
@@ -98,14 +98,6 @@ ifneq ($(static),)
 CONFIG_OPTIONS += -DBUILD_STATIC=$(static)
 endif
 
-# don't build, if TRACEBUILD option is not set (for selective Jenkins build)
-ifeq ($(TRACEBUILD),TRUE)
-CONFIG_OPTIONS += -DSET_ENABLE_TRACING=ON -DENABLE_TRACING=1
-TRACE_BUILD_CMD = $(BUILD_CMD)
-else
-TRACE_BUILD_CMD = echo TRACE BUILD DISABLED 
-endif
-
 BUILD_OPTIONS := $(CONFIG_OPTIONS) -b
 
 debug:
@@ -137,9 +129,11 @@ clean-p:
 configure:
 	$(BUILD_CMD) $(CONFIG_OPTIONS) $(CMAKE_OPTIONS) variant=debug,release,relwithdebinfo
 
-tracebuild:
+linuxbuild:
+ifeq ($(LINUXBUILD),TRUE)
 	# option for automated jenkins build
-	$(TRACE_BUILD_CMD) $(BUILD_JOBS) $(BUILD_OPTIONS) $(CMAKE_OPTIONS) variant=debug
+	$(BUILD_CMD) $(BUILD_JOBS) $(BUILD_OPTIONS) $(CMAKE_OPTIONS) variant=debug
+endif
 
 #
 # project specific targets

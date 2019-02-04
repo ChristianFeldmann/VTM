@@ -727,7 +727,6 @@ void BestEncInfoCache::create( const ChromaFormat chFmt )
             if( gp_sizeIdxInfo->isCuSize( gp_sizeIdxInfo->sizeFrom( hIdx ) ) && y + ( gp_sizeIdxInfo->sizeFrom( hIdx ) >> MIN_CU_LOG2 ) <= ( MAX_CU_SIZE >> MIN_CU_LOG2 ) )
             {
               m_bestEncInfo[x][y][wIdx][hIdx] = new BestEncodingInfo;
-              ::memset(m_bestEncInfo[x][y][wIdx][hIdx], 0, sizeof(BestEncodingInfo));
 
               int w = gp_sizeIdxInfo->sizeFrom( wIdx );
               int h = gp_sizeIdxInfo->sizeFrom( hIdx );
@@ -740,10 +739,10 @@ void BestEncInfoCache::create( const ChromaFormat chFmt )
               m_bestEncInfo[x][y][wIdx][hIdx]->numTus = 0;
               for( int i = 0; i < MAX_NUM_TUS; i++ )
               {
-                new ( &m_bestEncInfo[x][y][wIdx][hIdx]->tus[i] ) TransformUnit(area);
+                new ( &m_bestEncInfo[x][y][wIdx][hIdx]->tus[i] ) TransformUnit( area );
               }
 #else
-              new ( &m_bestEncInfo[x][y][wIdx][hIdx]->tu ) TransformUnit(area);
+              new ( &m_bestEncInfo[x][y][wIdx][hIdx]->tu ) TransformUnit( area );
 #endif
 
               m_bestEncInfo[x][y][wIdx][hIdx]->poc      = -1;

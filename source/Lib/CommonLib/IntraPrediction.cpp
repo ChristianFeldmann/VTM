@@ -311,8 +311,8 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const int  multiRefIdx = (compID == COMPONENT_Y) ? pu.multiRefIdx : 0;
 #if JVET_M0102_INTRA_SUBPARTITIONS
   const bool useISP = pu.cu->ispMode && isLuma( compID );
-  const int whRatio = useISP ? std::max( unsigned( 1 ), cuSize.width / cuSize.height ) : std::max( unsigned( 1 ), cuSize.width / cuSize.height );
-  const int hwRatio = useISP ? std::max( unsigned( 1 ), cuSize.height / cuSize.width ) : std::max( unsigned( 1 ), cuSize.height / cuSize.width );
+  const int whRatio = useISP ? std::max( unsigned( 1 ), cuSize.width / cuSize.height ) : std::max( 1, iWidth / iHeight );
+  const int hwRatio = useISP ? std::max( unsigned( 1 ), cuSize.height / cuSize.width ) : std::max( 1, iHeight / iWidth );
 #else
   int whRatio           = std::max(1, iWidth / iHeight);
   int hwRatio           = std::max(1, iHeight / iWidth);
@@ -330,7 +330,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
     case(2):
     case(DIA_IDX):
     case(VDIA_IDX):
-      if (getWideAngle(iWidth, iHeight, uiDirMode) == static_cast<int>(uiDirMode)) // check if uiDirMode is not wide-angle
+      if (getWideAngle(useISP ? cuSize.width : iWidth, useISP ? cuSize.height : iHeight, uiDirMode) == static_cast<int>(uiDirMode)) // check if uiDirMode is not wide-angle
       {
 #if JVET_M0102_INTRA_SUBPARTITIONS
         xPredIntraAng(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps, multiRefIdx, useFilteredPredSamples, useISP, cuSize );
@@ -609,7 +609,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
 
   CHECK( !( dirMode > DC_IDX && dirMode < NUM_LUMA_MODE ), "Invalid intra dir" );
 #if JVET_M0102_INTRA_SUBPARTITIONS
-  int              predMode           = useISP ? getWideAngle( cuSize.width, cuSize.height, dirMode ) : getWideAngle( cuSize.width, cuSize.height, dirMode );
+  int              predMode           = useISP ? getWideAngle( cuSize.width, cuSize.height, dirMode ) : getWideAngle( width, height, dirMode );
 #else
   int              predMode           = getWideAngle(width, height, dirMode);
 #endif
@@ -637,8 +637,8 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   Pel  refLeft [2 * MAX_CU_SIZE + 3 + 33 * MAX_REF_LINE_IDX];
 
 #if JVET_M0102_INTRA_SUBPARTITIONS
-  const int whRatio = useISP ? std::max( unsigned( 1 ), cuSize.width / cuSize.height ) : std::max( unsigned( 1 ), cuSize.width / cuSize.height );
-  const int hwRatio = useISP ? std::max( unsigned( 1 ), cuSize.height / cuSize.width ) : std::max( unsigned( 1 ), cuSize.height / cuSize.width );
+  const int whRatio = useISP ? std::max( unsigned( 1 ), cuSize.width / cuSize.height ) : std::max( 1, width / height );
+  const int hwRatio = useISP ? std::max( unsigned( 1 ), cuSize.height / cuSize.width ) : std::max( 1, height / width );
 #else
   int whRatio = std::max(1, width / height);
   int hwRatio = std::max(1, height / width);

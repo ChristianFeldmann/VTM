@@ -190,7 +190,6 @@ namespace DQIntern
 #endif
         const uint32_t      blockWidth    = (1 << hd);
         const uint32_t      blockHeight   = (1 << vd);
-        const uint32_t      totalValues   = blockWidth * blockHeight;
 #if JVET_M0102_INTRA_SUBPARTITIONS
         const uint32_t      log2CGWidth   = g_log2SbbSize[ch][hd][vd][0];
         const uint32_t      log2CGHeight  = g_log2SbbSize[ch][hd][vd][1];
@@ -217,6 +216,15 @@ namespace DQIntern
         NbInfoSbb*&         sId2NbSbb     = m_scanId2NbInfoSbbArray[hd][vd];
         NbInfoOut*&         sId2NbOut     = m_scanId2NbInfoOutArray[hd][vd];
 #endif
+        // consider only non-zero-out region
+#if JVET_M0257
+        const uint32_t      blkWidthNZOut = std::min<unsigned>( JVET_C0024_ZERO_OUT_TH, blockWidth  );
+        const uint32_t      blkHeightNZOut= std::min<unsigned>( JVET_C0024_ZERO_OUT_TH, blockHeight );
+#else
+        const uint32_t      blkWidthNZOut = blockWidth;
+        const uint32_t      blkHeightNZOut= blockHeight;
+#endif
+        const uint32_t      totalValues   = blkWidthNZOut * blkHeightNZOut;
 
         sId2NbSbb = new NbInfoSbb[ totalValues ];
         sId2NbOut = new NbInfoOut[ totalValues ];
@@ -237,22 +245,11 @@ namespace DQIntern
             const int      begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
             int            cpos[5];
 
-            const bool condX1 = posX + 1 < blockWidth;
-            const bool condX2 = posX + 2 < blockWidth;
-            const bool condY1 = posY + 1 < blockHeight;
-            const bool condY2 = posY + 2 < blockHeight;
-
-            const int ras0 = condX1 ? raster2id[rpos + 1] : 0;
-            const int ras1 = condX2 ? raster2id[rpos + 2] : 0;
-            const int ras2 = condX1 && condY1 ? raster2id[rpos + 1 + blockWidth] : 0;
-            const int ras3 = condY1 ? raster2id[rpos + blockWidth] : 0;
-            const int ras4 = condY2 ? raster2id[rpos + 2 * blockWidth] : 0;
-
-            cpos[0] = ras0 >= begSbb && ras0 < groupSize + begSbb ? ras0 - begSbb : 0;
-            cpos[1] = ras1 >= begSbb && ras1 < groupSize + begSbb ? ras1 - begSbb : 0;
-            cpos[2] = ras2 >= begSbb && ras2 < groupSize + begSbb ? ras2 - begSbb : 0;
-            cpos[3] = ras3 >= begSbb && ras3 < groupSize + begSbb ? ras3 - begSbb : 0;
-            cpos[4] = ras4 >= begSbb && ras4 < groupSize + begSbb ? ras4 - begSbb : 0;
+            cpos[0] = ( posX + 1 < blkWidthNZOut                              ? ( raster2id[rpos+1           ] < groupSize + begSbb ? raster2id[rpos+1           ] - begSbb : 0 ) : 0 );
+            cpos[1] = ( posX + 2 < blkWidthNZOut                              ? ( raster2id[rpos+2           ] < groupSize + begSbb ? raster2id[rpos+2           ] - begSbb : 0 ) : 0 );
+            cpos[2] = ( posX + 1 < blkWidthNZOut && posY + 1 < blkHeightNZOut ? ( raster2id[rpos+1+blockWidth] < groupSize + begSbb ? raster2id[rpos+1+blockWidth] - begSbb : 0 ) : 0 );
+            cpos[3] = ( posY + 1 < blkHeightNZOut                             ? ( raster2id[rpos+  blockWidth] < groupSize + begSbb ? raster2id[rpos+  blockWidth] - begSbb : 0 ) : 0 );
+            cpos[4] = ( posY + 2 < blkHeightNZOut                             ? ( raster2id[rpos+2*blockWidth] < groupSize + begSbb ? raster2id[rpos+2*blockWidth] - begSbb : 0 ) : 0 );
 
             for( nbSbb.num = 0; true; )
             {
@@ -281,11 +278,13 @@ namespace DQIntern
             NbInfoOut&     nbOut  = sId2NbOut[ scanId ];
             const int      begSbb = scanId - ( scanId & (groupSize-1) ); // first pos in current subblock
             int            cpos[5];
-            cpos[0] = ( posX + 1 < blockWidth                         ? ( raster2id[rpos+1           ] >= groupSize + begSbb ? raster2id[rpos+1           ] : 0 ) : 0 );
-            cpos[1] = ( posX + 2 < blockWidth                         ? ( raster2id[rpos+2           ] >= groupSize + begSbb ? raster2id[rpos+2           ] : 0 ) : 0 );
-            cpos[2] = ( posX + 1 < blockWidth && posY + 1 < blockHeight ? ( raster2id[rpos+1+blockWidth] >= groupSize + begSbb ? raster2id[rpos+1+blockWidth] : 0 ) : 0 );
-            cpos[3] = ( posY + 1 < blockHeight                         ? ( raster2id[rpos+  blockWidth] >= groupSize + begSbb ? raster2id[rpos+  blockWidth] : 0 ) : 0 );
-            cpos[4] = ( posY + 2 < blockHeight                         ? ( raster2id[rpos+2*blockWidth] >= groupSize + begSbb ? raster2id[rpos+2*blockWidth] : 0 ) : 0 );
+
+            cpos[0] = ( posX + 1 < blkWidthNZOut                              ? ( raster2id[rpos+1           ] >= groupSize + begSbb ? raster2id[rpos+1           ] : 0 ) : 0 );
+            cpos[1] = ( posX + 2 < blkWidthNZOut                              ? ( raster2id[rpos+2           ] >= groupSize + begSbb ? raster2id[rpos+2           ] : 0 ) : 0 );
+            cpos[2] = ( posX + 1 < blkWidthNZOut && posY + 1 < blkHeightNZOut ? ( raster2id[rpos+1+blockWidth] >= groupSize + begSbb ? raster2id[rpos+1+blockWidth] : 0 ) : 0 );
+            cpos[3] = ( posY + 1 < blkHeightNZOut                             ? ( raster2id[rpos+  blockWidth] >= groupSize + begSbb ? raster2id[rpos+  blockWidth] : 0 ) : 0 );
+            cpos[4] = ( posY + 2 < blkHeightNZOut                             ? ( raster2id[rpos+2*blockWidth] >= groupSize + begSbb ? raster2id[rpos+2*blockWidth] : 0 ) : 0 );
+
             for( nbOut.num = 0; true; )
             {
               int nk = -1;
@@ -1423,10 +1422,17 @@ namespace DQIntern
     if( decision.prevId > -2 )
     {
       const State* prvState = 0;
-      if( decision.prevId  >= 0 )
+      if( decision.prevId  >= 4 )
       {
-        prvState    = ( decision.prevId < 4 ? prevStates : skipStates - 4 ) +   decision.prevId;
-        m_numSigSbb = prvState->m_numSigSbb                                 + !!decision.absLevel;
+        CHECK( decision.absLevel != 0, "cannot happen" );
+        prvState    = skipStates + ( decision.prevId - 4 );
+        m_numSigSbb = 0;
+        ::memset( m_absLevelsAndCtxInit, 0, 16*sizeof(uint8_t) );
+      }
+      else if( decision.prevId  >= 0 )
+      {
+        prvState    = prevStates            +   decision.prevId;
+        m_numSigSbb = prvState->m_numSigSbb + !!decision.absLevel;
         ::memcpy( m_absLevelsAndCtxInit, prvState->m_absLevelsAndCtxInit, 16*sizeof(uint8_t) );
       }
       else

@@ -557,10 +557,8 @@ const CtxSet ContextSetCfg::MultiRefLineIdx = ContextSetCfg::addCtxSet
 #endif
 });
 
-const CtxSet ContextSetCfg::IPredMode[] =
-{
-  ContextSetCfg::addCtxSet
-  ({
+const CtxSet ContextSetCfg::IntraLumaMpmFlag = ContextSetCfg::addCtxSet
+({
 #if JVET_M0453_CABAC_ENGINE
     {  169,},
     {  169,},
@@ -571,29 +569,19 @@ const CtxSet ContextSetCfg::IPredMode[] =
     { 154, },
     { 156, },
 #endif
-  }),
-  ContextSetCfg::addCtxSet
-  ({
-#if JVET_M0453_CABAC_ENGINE
-    {  CNU, 137, 139, 140, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU,},
-    {  CNU, 138, 139, 169, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU,},
-    {  CNU, 154, 139, 154, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU,},
-    {  DWS,   5,   8,   9, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS,  },
-#else
-    { CNU, 152, 139, 154, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
-    { CNU, 138, 139, 169, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
-    { CNU, 109, 139, 154, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
-#endif
-  }),
-};
+});
 
-const CtxSet ContextSetCfg::PdpcFlag = ContextSetCfg::addCtxSet
+const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
 ({
-  {  107,},
-  {  107,},
-  {  139,},
 #if JVET_M0453_CABAC_ENGINE
-  { DWS, }
+  {  137, 139, 140,},
+  {  138, 139, 169,},
+  {  154, 139, 154,},
+  {    5,   8,   9,},
+#else
+  { 152, 139, 154,},
+  { 138, 139, 169,},
+  { 109, 139, 154,},
 #endif
 });
 
@@ -716,16 +704,6 @@ const CtxSet ContextSetCfg::Mvd = ContextSetCfg::addCtxSet
   { 169, 183, },
   { 155, 198, },
   { CNU, CNU, },
-#endif
-});
-
-const CtxSet ContextSetCfg::TransSubdivFlag = ContextSetCfg::addCtxSet
-({
-  {  224, 167, 122, 122, 122},
-  {  124, 138,  94,  94,  94},
-  {  153, 138, 138, 138, 138},
-#if JVET_M0453_CABAC_ENGINE
-  { DWS, DWS, DWS, DWS, DWS, }
 #endif
 });
 

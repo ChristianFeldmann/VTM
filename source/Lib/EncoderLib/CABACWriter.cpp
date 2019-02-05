@@ -1099,7 +1099,9 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
       CHECK(mpm_idx >= numMPMs, "use of non-MPM");
     }
     else
-    m_BinEncoder.encodeBin( mpm_idx < numMPMs, Ctx::IPredMode[0]() );
+    {
+      m_BinEncoder.encodeBin(mpm_idx < numMPMs, Ctx::IntraLumaMpmFlag());
+    }
 
     pu = pu->next;
   }
@@ -1188,7 +1190,9 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
     CHECK(mpm_idx >= numMPMs, "use of non-MPM");
   }
   else
-  m_BinEncoder.encodeBin( mpm_idx < numMPMs, Ctx::IPredMode[0]() );
+  {
+    m_BinEncoder.encodeBin(mpm_idx < numMPMs, Ctx::IntraLumaMpmFlag());
+  }
 
   // mpm_idx / rem_intra_luma_pred_mode
   if( mpm_idx < numMPMs )
@@ -1258,20 +1262,20 @@ void CABACWriter::intra_chroma_lmc_mode( const PredictionUnit& pu )
     }
     CHECK( symbol < 0, "invalid symbol found" );
 
-    unary_max_symbol( symbol, Ctx::IPredMode[1]( 2 ), Ctx::IPredMode[1]( 3 ), maxSymbol - 1 );
+    unary_max_symbol(symbol, Ctx::IntraChromaPredMode(1), Ctx::IntraChromaPredMode(2), maxSymbol - 1);
 }
 
 
 void CABACWriter::intra_chroma_pred_mode( const PredictionUnit& pu )
 {
   const unsigned intraDir = pu.intraDir[1];
+  const bool     isDerivedMode = intraDir == DM_CHROMA_IDX;
+
+  m_BinEncoder.encodeBin(isDerivedMode ? 0 : 1, Ctx::IntraChromaPredMode(0));
+
+  if (isDerivedMode)
   {
-    if( intraDir == DM_CHROMA_IDX )
-    {
-      m_BinEncoder.encodeBin( 0, Ctx::IPredMode[1]( 1 ) );
-      return;
-    }
-    m_BinEncoder.encodeBin( 1, Ctx::IPredMode[1]( 1 ) );
+    return;
   }
 
   // LM chroma mode

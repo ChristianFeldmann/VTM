@@ -347,7 +347,7 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
     return;
   }
 #endif
-  
+
 #if JVET_M0464_UNI_MTS
   if ( mtsActivated )
 #else
@@ -367,7 +367,7 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
         int indHor = tu.emtIdx &  1;
         int indVer = tu.emtIdx >> 1;
 #endif
-        
+
         trTypeHor = indHor ? DCT8 : DST7;
         trTypeVer = indVer ? DCT8 : DST7;
       }
@@ -380,7 +380,7 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
     int  height      = tu.blocks[compID].height;
     bool widthDstOk  = width  >= 4 && width  <= 16;
     bool heightDstOk = height >= 4 && height <= 16;
-    
+
     if ( width < height && widthDstOk )
       trTypeHor = DST7;
     else if ( height < width && heightDstOk )
@@ -406,34 +406,34 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
   const int      skipWidth              = width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight             = height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
 #endif
-  
+
 #if !JVET_M0102_INTRA_SUBPARTITIONS
   CHECK( shift_1st < 0, "Negative shift" );
   CHECK( shift_2nd < 0, "Negative shift" );
 #endif
-  
+
   int trTypeHor = DCT2;
   int trTypeVer = DCT2;
-  
+
   getTrTypes ( tu, compID, trTypeHor, trTypeVer );
 
 #if JVET_M0297_32PT_MTS_ZERO_OUT
   const int      skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
 #endif
-  
+
 #if RExt__DECODER_DEBUG_TOOL_STATISTICS
   if ( trTypeHor != DCT2 )
   {
     CodingStatistics::IncrementStatisticTool( CodingStatisticsClassType{ STATS__TOOL_EMT, uint32_t( width ), uint32_t( height ), compID } );
   }
 #endif
-  
+
   ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, TCoeff block[MAX_TU_SIZE * MAX_TU_SIZE] );
-  
+
   const Pel *resiBuf    = resi.buf;
   const int  resiStride = resi.stride;
-  
+
   for( int y = 0; y < height; y++ )
   {
     for( int x = 0; x < width; x++ )
@@ -441,7 +441,7 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
       block[( y * width ) + x] = resiBuf[( y * resiStride ) + x];
     }
   }
-  
+
 #if JVET_M0102_INTRA_SUBPARTITIONS
   if( width > 1 && height > 1 ) // 2-D transform
   {
@@ -451,12 +451,12 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
     CHECK( shift_2nd < 0, "Negative shift" );
 #endif
   TCoeff *tmp = ( TCoeff * ) alloca( width * height * sizeof( TCoeff ) );
-  
+
   fastFwdTrans[trTypeHor][transformWidthIndex ](block,        tmp, shift_1st, height,        0, skipWidth);
   fastFwdTrans[trTypeVer][transformHeightIndex](tmp, dstCoeff.buf, shift_2nd, width, skipWidth, skipHeight);
 #if JVET_M0102_INTRA_SUBPARTITIONS
   }
-  else if( height == 1 ) //1-D horizontal transform 
+  else if( height == 1 ) //1-D horizontal transform
   {
     const int      shift              = ((g_aucLog2[width ]) + bitDepth + TRANSFORM_MATRIX_SHIFT) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
     CHECK( shift < 0, "Negative shift" );
@@ -492,7 +492,7 @@ void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCo
   const int      skipWidth              = width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight             = height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
 #endif
-  
+
 #if !JVET_M0102_INTRA_SUBPARTITIONS
   CHECK( shift_1st < 0, "Negative shift" );
   CHECK( shift_2nd < 0, "Negative shift" );
@@ -500,19 +500,19 @@ void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCo
 
   int trTypeHor = DCT2;
   int trTypeVer = DCT2;
-  
+
   getTrTypes ( tu, compID, trTypeHor, trTypeVer );
 
 #if JVET_M0297_32PT_MTS_ZERO_OUT
   const int      skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
 #endif
-  
+
 #if !JVET_M0102_INTRA_SUBPARTITIONS
   TCoeff *tmp   = ( TCoeff * ) alloca( width * height * sizeof( TCoeff ) );
 #endif
   TCoeff *block = ( TCoeff * ) alloca( width * height * sizeof( TCoeff ) );
-  
+
 #if JVET_M0102_INTRA_SUBPARTITIONS
   if( width > 1 && height > 1 ) //2-D transform
   {
@@ -541,10 +541,10 @@ void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCo
     fastInvTrans[trTypeHor][transformWidthIndex]( pCoeff.buf, block, shift + 1, 1, 0, skipWidth, clipMinimum, clipMaximum );
   }
 #endif
-  
+
   Pel *resiBuf    = pResidual.buf;
   int  resiStride = pResidual.stride;
-  
+
   for( int y = 0; y < height; y++ )
   {
     for( int x = 0; x < width; x++ )
@@ -793,13 +793,13 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
 
 #if JVET_M0102_INTRA_SUBPARTITIONS
       //we do this only with the DCT-II coefficients
-      if( isLuma(compID) && 
+      if( isLuma(compID) &&
 #if JVET_M0464_UNI_MTS
         !loadTr && tu.mtsIdx == 0
 #else
         !tu.cu->emtFlag
 #endif
-        ) 
+        )
       {
         //it gets the distribution of the coefficients energy, which will be useful to discard ISP tests
         xGetCoeffEnergy( tu, compID, tempCoeff, diagRatio, horVerRatio );

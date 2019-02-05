@@ -195,7 +195,7 @@ void CDTrace::dtrace_block_vector( int k, const PredictionUnit &pu, std::string 
 }
 
 void CDTrace::dtrace_block_scalar(int k, const TransformUnit &tu, std::string stat_type, signed value, bool isChroma /*= false*/  )
-{ 
+{
   const CodingStructure& cs = *tu.cs;
 #if BLOCK_STATS_AS_CSV
   if(isChroma)
@@ -300,7 +300,7 @@ void retrieveTriangularMvInfo(const PredictionUnit& pu, MotionInfo& mi0, MotionI
         mi1.mv[0]     = mb.at(x, y).mv[0];
         mi1.mv[1]     = mb.at(x, y).mv[1];
         mi1.refIdx[0] = mb.at(x, y).refIdx[0];
-        mi1.refIdx[1] = mb.at(x, y).refIdx[1];        
+        mi1.refIdx[1] = mb.at(x, y).refIdx[1];
         foundMv[1] = true;
       }
       if (g_triangleMvStorage[triangleDir][idxH][idxW][y][x] == 2 && foundMv[0] == false && foundMv[1] == false)
@@ -334,7 +334,7 @@ void retrieveTrianglePolygon(const PredictionUnit& pu, std::vector<Position>& tr
 #else
   TriangleSplit triangleDir = TriangleSplit(g_triangleCombination[pu.mergeIdx][0]);
 #endif
-  Position TL = pu.Y().topLeft();  
+  Position TL = pu.Y().topLeft();
   Position TR = pu.Y().topRight();    TR = TR.offset(1, 0);
   Position BL = pu.Y().bottomLeft();  BL = BL.offset(0, 1);
   Position BR = pu.Y().bottomRight(); BR = BR.offset(1, 1);
@@ -345,7 +345,7 @@ void retrieveTrianglePolygon(const PredictionUnit& pu, std::vector<Position>& tr
     E = Position(pu.Y().width, pu.Y().height);
     triangle0.push_back(TL);
     triangle0.push_back(TR);
-    triangle0.push_back(BR);               
+    triangle0.push_back(BR);
     triangle1.push_back(TL);
     triangle1.push_back(BL);
     triangle1.push_back(BR);
@@ -356,7 +356,7 @@ void retrieveTrianglePolygon(const PredictionUnit& pu, std::vector<Position>& tr
     E = Position(pu.Y().width, 0);
     triangle0.push_back(TL);
     triangle0.push_back(TR);
-    triangle0.push_back(BL);               
+    triangle0.push_back(BL);
     triangle1.push_back(TR);
     triangle1.push_back(BL);
     triangle1.push_back(BR);
@@ -747,7 +747,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, tu, GetBlockStatisticName(BlockStatistic::TransformSkipFlag_Cb), tu.transformSkip[COMPONENT_Cb]);
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, tu, GetBlockStatisticName(BlockStatistic::TransformSkipFlag_Cr), tu.transformSkip[COMPONENT_Cr]);
 #endif
-        }        
+        }
       }
     }
   }
@@ -830,7 +830,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
         switch (pu.cu->predMode)
         {
           case MODE_INTRA:
-          {          
+          {
             if (pu.Y().valid())
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::Luma_IntraMode), PU::getFinalIntraMode(pu, ChannelType(chType)));
@@ -998,7 +998,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
             }
             if (CU::isGBiIdxCoded(cu))
             {
-              DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::GBIIndex), cu.GBiIdx);           
+              DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::GBIIndex), cu.GBiIdx);
             }
             break;
           }
@@ -1018,7 +1018,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
         }
       }
       if (cu.rootCbf || CU::isIntra(cu))
-      {        
+      {
         for (const TransformUnit &tu : CU::traverseTUs(cu))
         {
           if (tu.Y().valid())

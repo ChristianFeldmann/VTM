@@ -95,7 +95,7 @@ protected:
   PelStorage           m_triangleBuf;
   Mv*                  m_storedMv;
 #if JVET_M0147_DMVR
- /*buffers for bilinear Filter data for DMVR refinement*/  
+ /*buffers for bilinear Filter data for DMVR refinement*/
   Pel*                 m_cYuvPredTempDMVRL0;
   Pel*                 m_cYuvPredTempDMVRL1;
   int                  m_biLinearBufStride;
@@ -121,7 +121,7 @@ protected:
   Mv m_pSearchOffset[5] = { Mv(0, 1), Mv(0, -1), Mv(1, 0), Mv(-1, 0), Mv(0, 0) };
   uint64_t m_SADsArray[((2 * DMVR_NUM_ITERATION) + 1) * ((2 * DMVR_NUM_ITERATION) + 1)];
 #endif
- 
+
   Pel*                 m_gradX0;
   Pel*                 m_gradY0;
   Pel*                 m_gradX1;
@@ -134,8 +134,8 @@ protected:
 #if !JVET_M0487_INT_EXTEND
   void            bioSampleExtendBilinearFilter(Pel const* src, int srcStride, Pel *dst, int dstStride, int width, int height, int dim, int fracX, int fracY, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng);
 #endif
-  void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
-                                  , const bool& bioApplied 
+  void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi
+                                  , const bool& bioApplied
                                   , const bool luma, const bool chroma
   );
   void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred );

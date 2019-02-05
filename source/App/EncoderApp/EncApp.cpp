@@ -260,7 +260,7 @@ void EncApp::xInitLibCfg()
       m_cEncLib.setLadfIntervalLowerBound(m_LadfIntervalLowerBound[k], k);
     }
   }
-#endif  
+#endif
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
 #if JVET_M0253_HASH_ME
@@ -574,7 +574,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
   m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
   m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
-#endif  
+#endif
 }
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList

@@ -66,7 +66,7 @@ class IntraSearch : public IntraPrediction, CrossComponentPrediction
 {
 private:
 #if JVET_M0102_INTRA_SUBPARTITIONS
-  EncModeCtrl    *m_modeCtrl; 
+  EncModeCtrl    *m_modeCtrl;
 #endif
   Pel*            m_pSharedPredTransformSkip[MAX_NUM_TBLOCKS];
 

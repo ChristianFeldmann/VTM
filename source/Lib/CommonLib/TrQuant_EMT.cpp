@@ -1018,7 +1018,7 @@ void fastInverseDST7_B16(const TCoeff *src, TCoeff *dst, int shift, int line, in
 #if JVET_M0497_FAST_DST7 && !JVET_M0497_MATRIX_MULT
   int j, k;
   TCoeff a[5], b[5], c[5], d[5], t;
-  
+
   TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
 
   const TMatrixCoeff *iT = g_trCoreDST7P16[TRANSFORM_INVERSE][0];
@@ -1208,7 +1208,7 @@ void fastInverseDST7_B32(const TCoeff *src, TCoeff *dst, int shift, int line, in
 
     t[0] = iT[12] * src[6*line] + iT[25] * src[19*line];
     t[1] = iT[25] * src[6*line] - iT[12] * src[19*line];
-    
+
     dst[ 0] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[1][0] - iT[11] * a[8][0] + iT[13] * a[7][0] + iT[24] * a[4][5] - iT[1] * a[8][5] + iT[10] * a[1][5] + iT[14] * a[4][0] + iT[23] * a[7][5] + iT[2] * a[1][1] - iT[9] * a[8][1] + iT[15] * a[7][1] + iT[22] * a[4][4] - iT[3] * a[8][4] + iT[8] * a[1][4] + iT[16] * a[4][1] + iT[21] * a[7][4] + iT[4] * a[1][2] - iT[7] * a[8][2] + iT[17] * a[7][2] + iT[20] * a[4][3] - iT[5] * a[8][3] + iT[6] * a[1][3] + iT[18] * a[4][2] + iT[19] * a[7][3] + t[0] + add) >> shift);
     dst[ 1] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[4][2] - iT[11] * a[6][2] + iT[13] * a[0][3] + iT[24] * a[5][2] + iT[1] * a[2][0] + iT[10] * a[7][0] + iT[14] * a[5][5] - iT[23] * a[9][5] + iT[2] * a[7][2] + iT[9] * a[2][2] - iT[15] * a[9][3] + iT[22] * a[5][3] - iT[3] * a[6][0] - iT[8] * a[4][0] + iT[16] * a[5][0] + iT[21] * a[0][5] - iT[4] * a[4][1] - iT[7] * a[6][1] + iT[17] * a[0][4] + iT[20] * a[5][1] + iT[5] * a[2][1] + iT[6] * a[7][1] + iT[18] * a[5][4] - iT[19] * a[9][4] + t[1] + add) >> shift);
     dst[ 2] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[2][4] - iT[11] * a[3][4] + iT[13] * a[0][4] + iT[24] * a[1][4] + iT[1] * a[4][3] + iT[10] * a[7][2] + iT[14] * a[1][2] - iT[23] * a[8][2] + iT[2] * a[3][0] - iT[9] * a[6][5] - iT[15] * a[8][0] + iT[22] * a[9][5] - iT[3] * a[6][4] + iT[8] * a[3][1] + iT[16] * a[9][4] - iT[21] * a[8][1] + iT[4] * a[7][3] + iT[7] * a[4][2] - iT[17] * a[8][3] + iT[20] * a[1][3] - iT[5] * a[3][5] - iT[6] * a[2][5] + iT[18] * a[1][5] + iT[19] * a[0][5] + t[1] + add) >> shift);
@@ -1240,7 +1240,7 @@ void fastInverseDST7_B32(const TCoeff *src, TCoeff *dst, int shift, int line, in
     dst[19] = Clip3(outputMinimum, outputMaximum, (int)(iT[19] * b[0] + iT[ 4] * b[1] - iT[29] * b[2] + iT[ 9] * b[3] + iT[14] * b[4] - iT[24] * b[5] + add) >> shift);
     dst[24] = Clip3(outputMinimum, outputMaximum, (int)(iT[24] * b[0] - iT[ 9] * b[1] - iT[ 4] * b[2] + iT[19] * b[3] - iT[29] * b[4] + iT[14] * b[5] + add) >> shift);
     dst[29] = Clip3(outputMinimum, outputMaximum, (int)(iT[29] * b[0] - iT[24] * b[1] + iT[19] * b[2] - iT[14] * b[3] + iT[ 9] * b[4] - iT[ 4] * b[5] + add) >> shift);
-    
+
     dst[12] = Clip3(outputMinimum, outputMaximum, (int)(iT[12]*c[0] + iT[25]*c[1] + add) >> shift);
     dst[25] = Clip3(outputMinimum, outputMaximum, (int)(iT[25]*c[0] - iT[12]*c[1] + add) >> shift);
 
@@ -1411,7 +1411,7 @@ void fastInverseDCT8_B16(const TCoeff *src, TCoeff *dst, int shift, int line, in
 #if JVET_M0497_FAST_DST7 && !JVET_M0497_MATRIX_MULT
   int j, k;
   TCoeff a[5], b[5], c[5], d[5], t;
-  
+
   TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
 
   const TMatrixCoeff *iT = g_trCoreDST7P16[TRANSFORM_INVERSE][0];
@@ -1495,14 +1495,14 @@ void fastForwardDCT8_B32(const TCoeff *src, TCoeff *dst, int shift, int line, in
 
       b[k] = src[31-k] + src[20+k] - src[18-k] - src[7+k] + src[5-k];
     }
-    
+
     for (k = 0; k < 2; k++)
     {
       c[k] = src[31-k] + src[28+k] - src[26-k] - src[23+k] + src[21-k] + src[18+k] - src[16-k] - src[13+k] + src[11-k] + src[8+k] - src[6-k] - src[3+k] + src[1-k];
     }
-    
-    t[0] = iT[12] * src[19] + iT[25] * src[6]; 
-    t[1] = iT[12] * src[6] - iT[25] * src[19]; 
+
+    t[0] = iT[12] * src[19] + iT[25] * src[6];
+    t[1] = iT[12] * src[6] - iT[25] * src[19];
 
     dst[ 0 * line] = (   iT[0] * a[3][0] + iT[11] * a[6][5] + iT[13] * a[8][0] + iT[24] * a[9][5] + iT[1] * a[3][1] + iT[10] * a[6][4] + iT[14] * a[8][1] + iT[23] * a[9][4] + iT[2] * a[3][2] + iT[9] * a[6][3] + iT[15] * a[8][2] + iT[22] * a[9][3] + iT[3] * a[3][3] + iT[8] * a[6][2] + iT[16] * a[8][3] + iT[21] * a[9][2] + iT[4] * a[3][4] + iT[7] * a[6][1] + iT[17] * a[8][4] + iT[20] * a[9][1] + iT[5] * a[3][5] + iT[6] * a[6][0] + iT[18] * a[8][5] + iT[19] * a[9][0] + t[0] + add) >> shift;
     dst[ 1 * line] = (   iT[0] * a[5][2] - iT[11] * a[0][3] - iT[13] * a[4][2] - iT[24] * a[6][2] - iT[1] * a[9][1] - iT[10] * a[8][4] - iT[14] * a[3][4] - iT[23] * a[6][1] - iT[2] * a[0][0] + iT[9] * a[5][5] - iT[15] * a[6][5] - iT[22] * a[4][5] + iT[3] * a[5][3] - iT[8] * a[0][2] - iT[16] * a[4][3] - iT[21] * a[6][3] - iT[4] * a[9][0] - iT[7] * a[8][5] - iT[17] * a[3][5] - iT[20] * a[6][0] - iT[5] * a[0][1] + iT[6] * a[5][4] - iT[18] * a[6][4] - iT[19] * a[4][4] + t[1] + add) >> shift;
@@ -1535,7 +1535,7 @@ void fastForwardDCT8_B32(const TCoeff *src, TCoeff *dst, int shift, int line, in
     dst[17 * line] = ( - iT[29] * b[0] + iT[ 4] * b[1] + iT[24] * b[2] - iT[ 9] * b[3] - iT[19] * b[4] + iT[14] * b[5] + add) >> shift;
     dst[22 * line] = (   iT[19] * b[0] - iT[24] * b[1] + iT[ 4] * b[2] + iT[14] * b[3] - iT[29] * b[4] + iT[ 9] * b[5] + add) >> shift;
     dst[27 * line] = ( - iT[ 9] * b[0] + iT[19] * b[1] - iT[29] * b[2] + iT[24] * b[3] - iT[14] * b[4] + iT[ 4] * b[5] + add) >> shift;
-                       
+
     dst[ 6 * line] = (   iT[12] * c[0] + iT[25] * c[1] + add) >> shift;
     dst[19 * line] = ( - iT[25] * c[0] + iT[12] * c[1] + add) >> shift;
 
@@ -1600,8 +1600,8 @@ void fastInverseDCT8_B32(const TCoeff *src, TCoeff *dst, int shift, int line, in
       c[k] = src[(31 - k)*line] + src[(28 + k)*line] - src[(26 - k)*line] - src[(23 + k)*line] + src[(21 - k)*line] + src[(18 + k)*line] - src[(16 - k)*line] - src[(13 + k)*line] + src[(11 - k)*line] + src[(8 + k)*line] - src[(6 - k)*line] - src[(3 + k)*line] + src[(1 - k)*line];
     }
 
-    t[0] = iT[12] * src[19 * line] + iT[25] * src[ 6 * line]; 
-    t[1] = iT[12] * src[ 6 * line] - iT[25] * src[19 * line]; 
+    t[0] = iT[12] * src[19 * line] + iT[25] * src[ 6 * line];
+    t[1] = iT[12] * src[ 6 * line] - iT[25] * src[19 * line];
 
     dst[ 0] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[3][0] + iT[11] * a[6][5] + iT[13] * a[8][0] + iT[24] * a[9][5] + iT[1] * a[3][1] + iT[10] * a[6][4] + iT[14] * a[8][1] + iT[23] * a[9][4] + iT[2] * a[3][2] + iT[9] * a[6][3] + iT[15] * a[8][2] + iT[22] * a[9][3] + iT[3] * a[3][3] + iT[8] * a[6][2] + iT[16] * a[8][3] + iT[21] * a[9][2] + iT[4] * a[3][4] + iT[7] * a[6][1] + iT[17] * a[8][4] + iT[20] * a[9][1] + iT[5] * a[3][5] + iT[6] * a[6][0] + iT[18] * a[8][5] + iT[19] * a[9][0] + t[0] + add) >> shift);
     dst[ 1] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[5][2] - iT[11] * a[0][3] - iT[13] * a[4][2] - iT[24] * a[6][2] - iT[1] * a[9][1] - iT[10] * a[8][4] - iT[14] * a[3][4] - iT[23] * a[6][1] - iT[2] * a[0][0] + iT[9] * a[5][5] - iT[15] * a[6][5] - iT[22] * a[4][5] + iT[3] * a[5][3] - iT[8] * a[0][2] - iT[16] * a[4][3] - iT[21] * a[6][3] - iT[4] * a[9][0] - iT[7] * a[8][5] - iT[17] * a[3][5] - iT[20] * a[6][0] - iT[5] * a[0][1] + iT[6] * a[5][4] - iT[18] * a[6][4] - iT[19] * a[4][4] + t[1] + add) >> shift);

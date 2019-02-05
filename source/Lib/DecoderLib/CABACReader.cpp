@@ -690,7 +690,7 @@ PartSplit CABACReader::split_cu_mode( CodingStructure& cs, Partitioner &partitio
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__SPLIT_FLAG, partitioner.currArea().blocks[partitioner.chType].size(), partitioner.chType );
 
   PartSplit mode = CU_DONT_SPLIT;
-  
+
   bool canNo, canQt, canBh, canBv, canTh, canTv;
   partitioner.canSplit( cs, canNo, canQt, canBh, canBv, canTh, canTv );
 
@@ -813,7 +813,7 @@ PartSplit CABACReader::split_cu_mode_mt( CodingStructure& cs, Partitioner &parti
 
   dt.setAvail( DTT_SPLIT_BT_HORZ,  partitioner.canSplit( CU_HORZ_SPLIT, cs ) );
   dt.setAvail( DTT_SPLIT_BT_VERT,  partitioner.canSplit( CU_VERT_SPLIT, cs ) );
-  
+
   dt.setAvail( DTT_SPLIT_TT_HORZ,  partitioner.canSplit( CU_TRIH_SPLIT, cs ) );
   dt.setAvail( DTT_SPLIT_TT_VERT,  partitioner.canSplit( CU_TRIV_SPLIT, cs ) );
   dt.setAvail( DTT_SPLIT_NO_SPLIT, partitioner.canSplit( CU_DONT_SPLIT, cs ) );
@@ -971,7 +971,7 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
       cu.predMode = MODE_IBC;
       cu.mmvdSkip = false;
     }
-   
+
     return;
   }
 #endif
@@ -1164,7 +1164,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
 void CABACReader::pcm_flag( CodingUnit& cu, Partitioner &partitioner )
 {
   const SPS& sps = *cu.cs->sps;
-  if( !sps.getPCMEnabledFlag() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize()) 
+  if( !sps.getPCMEnabledFlag() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize())
       || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
   {
     cu.ipcm = false;
@@ -1822,7 +1822,7 @@ void CABACReader::merge_flag( PredictionUnit& pu )
   pu.mergeFlag = ( m_BinDecoder.decodeBin( Ctx::MergeFlag() ) );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_flag() merge=%d pos=(%d,%d) size=%dx%d\n", pu.mergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
-  
+
 #if JVET_M0483_IBC
   if (pu.mergeFlag && CU::isIBC(*pu.cu))
   {
@@ -2253,7 +2253,7 @@ void CABACReader::triangle_mode( CodingUnit& cu )
   {
     return;
   }
-  
+
 #if JVET_M0118_M0185_TRIANGLE_FLAG_FIX
   if ( cu.firstPU->mmvdMergeFlag || cu.mmvdSkip )
   {

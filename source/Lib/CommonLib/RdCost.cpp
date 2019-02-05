@@ -152,7 +152,7 @@ void RdCost::init()
   m_afpDistortFunc[DF_SAD_FULL_NBIT32 ] = RdCost::xGetSAD_full;
   m_afpDistortFunc[DF_SAD_FULL_NBIT64 ] = RdCost::xGetSAD_full;
   m_afpDistortFunc[DF_SAD_FULL_NBIT16N] = RdCost::xGetSAD_full;
-  
+
 #if WCG_EXT
   m_afpDistortFunc[DF_SSE_WTD   ] = RdCost::xGetSSE_WTD;
   m_afpDistortFunc[DF_SSE2_WTD  ] = RdCost::xGetSSE2_WTD;
@@ -2900,11 +2900,11 @@ void RdCost::initLumaLevelToWeightTable()
     else
 */
     { // set SDR weight table
-      y = 0.015*x - 1.5 - 6;   // this is the Equation used to derive the luma qp LUT for HDR in MPEG HDR anchor3.2 (JCTCX-X1020) 
+      y = 0.015*x - 1.5 - 6;   // this is the Equation used to derive the luma qp LUT for HDR in MPEG HDR anchor3.2 (JCTCX-X1020)
       y = y<-3 ? -3 : (y>6 ? 6 : y);
     }
-    
-    m_lumaLevelToWeightPLUT[i] = pow(2.0, y / 3.0);      // or power(10, dQp/10)      they are almost equal       
+
+    m_lumaLevelToWeightPLUT[i] = pow(2.0, y / 3.0);      // or power(10, dQp/10)      they are almost equal
   }
 }
 
@@ -2918,7 +2918,7 @@ void RdCost::initLumaLevelToWeightTableReshape()
     m_lumaLevelToWeightPLUT.resize(lutSize, 1.0);
   if (m_signalType == RESHAPE_SIGNAL_PQ)
   {
-    for (int i = 0; i < (1 << m_lumaBD); i++) 
+    for (int i = 0; i < (1 << m_lumaBD); i++)
     {
       double x = m_lumaBD < 10 ? i << (10 - m_lumaBD) : m_lumaBD > 10 ? i >> (m_lumaBD - 10) : i;
       double y;
@@ -2940,7 +2940,7 @@ void RdCost::updateReshapeLumaLevelToWeightTableChromaMD(std::vector<Pel>& ILUT)
 
 void RdCost::restoreReshapeLumaLevelToWeightTable()
 {
-  for (int i = 0; i < (1 << m_lumaBD); i++) 
+  for (int i = 0; i < (1 << m_lumaBD); i++)
   {
     m_reshapeLumaLevelToWeightPLUT.at(i) = m_lumaLevelToWeightPLUT.at(i);
   }
@@ -2964,7 +2964,7 @@ void RdCost::updateReshapeLumaLevelToWeightTable(SliceReshapeInfo &sliceReshape,
         {
           if (sliceReshape.reshaperModelBinCWDelta[i] == 1 || (sliceReshape.reshaperModelBinCWDelta[i] == -1 * histLens))
             weight = wBin;
-          else 
+          else
           {
             weight = (double)wtTable[i] / (double)histLens;
             weight = weight*weight;
@@ -2990,7 +2990,7 @@ void RdCost::updateReshapeLumaLevelToWeightTable(SliceReshapeInfo &sliceReshape,
 }
 #endif
 
-Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, const uint32_t uiShift, const Pel orgLuma) 
+Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, const uint32_t uiShift, const Pel orgLuma)
 {
   Distortion distortionVal = 0;
   Intermediate_Int iTemp = org - cur;
@@ -3003,7 +3003,7 @@ Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, con
   // use luma to get weight
 #if JVET_M0427_INLOOP_RESHAPER
   double weight = 1.0;
-  if (m_signalType == RESHAPE_SIGNAL_SDR) 
+  if (m_signalType == RESHAPE_SIGNAL_SDR)
   {
     if (compIdx == COMPONENT_Y)
     {
@@ -3011,7 +3011,7 @@ Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, con
     }
     else
     {
-      weight = m_chromaWeight; 
+      weight = m_chromaWeight;
     }
   }
   else
@@ -3053,7 +3053,7 @@ Distortion RdCost::xGetSSE_WTD( const DistParam &rcDtParam )
   {
     for (int n = 0; n < iCols; n++ )
     {
-      uiSum += getWeightedMSE(rcDtParam.compID, piOrg[n  ], piCur[n  ], uiShift, piOrgLuma[n<<cShift]); 
+      uiSum += getWeightedMSE(rcDtParam.compID, piOrg[n  ], piCur[n  ], uiShift, piOrgLuma[n<<cShift]);
     }
     piOrg += iStrideOrg;
     piCur += iStrideCur;
@@ -3069,7 +3069,7 @@ Distortion RdCost::xGetSSE2_WTD( const DistParam &rcDtParam )
     CHECK( rcDtParam.org.width != 2, "" );
     return RdCostWeightPrediction::xGetSSEw( rcDtParam ); // ignore it for now
   }
-  
+
   int  iRows = rcDtParam.org.height;
   const Pel* piOrg = rcDtParam.org.buf;
   const Pel* piCur = rcDtParam.cur.buf;
@@ -3138,7 +3138,7 @@ Distortion RdCost::xGetSSE8_WTD( const DistParam &rcDtParam )
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
- 
+
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
   for( ; iRows != 0; iRows-- )
@@ -3173,7 +3173,7 @@ Distortion RdCost::xGetSSE16_WTD( const DistParam &rcDtParam )
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-  
+
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
   for( ; iRows != 0; iRows-- )
@@ -3261,7 +3261,7 @@ Distortion RdCost::xGetSSE32_WTD( const DistParam &rcDtParam )
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-  
+
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
   for( ; iRows != 0; iRows-- )
@@ -3320,7 +3320,7 @@ Distortion RdCost::xGetSSE64_WTD( const DistParam &rcDtParam )
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t iStrideOrgLuma   = rcDtParam.orgLuma.stride;
   const size_t cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
- 
+
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth)) << 1;
   for( ; iRows != 0; iRows-- )

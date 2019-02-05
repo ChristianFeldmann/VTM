@@ -1332,7 +1332,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
       }
     }
-#if JVET_M0483_IBC 
+#if JVET_M0483_IBC
     if (!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag())
     {
       CHECK(pcSlice->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");

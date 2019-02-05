@@ -224,7 +224,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   omp_set_nested( true );
 #endif
 
-  if (sps0.getSpsNext().getUseCompositeRef()) 
+  if (sps0.getSpsNext().getUseCompositeRef())
   {
     sps0.setLongTermRefsPresent(true);
   }
@@ -327,7 +327,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        &m_cTrQuant,
                        &m_cRdCost,
                        cabacEstimator,
-                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth 
+                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
 #if JVET_M0427_INLOOP_RESHAPER
                      , &m_cReshaper
 #endif
@@ -365,7 +365,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if ENABLE_WPP_PARALLELISM
   m_entropyCodingSyncContextStateVec.resize( pps0.pcv->heightInCtus );
 #endif
-  if (sps0.getSpsNext().getUseCompositeRef()) 
+  if (sps0.getSpsNext().getUseCompositeRef())
   {
     Picture *picBg = new Picture;
     picBg->create(sps0.getChromaFormatIdc(), Size(sps0.getPicWidthInLumaSamples(), sps0.getPicHeightInLumaSamples()), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false);
@@ -1382,7 +1382,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setSliceChromaQpFlag(bChromaDeltaQPEnabled);
 #endif
   if (
-    !pps.getSliceChromaQpFlag() && sps.getUseDualITree() 
+    !pps.getSliceChromaQpFlag() && sps.getUseDualITree()
     && (getChromaFormatIdc() != CHROMA_400))
   {
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0);

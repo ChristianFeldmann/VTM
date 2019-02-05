@@ -193,7 +193,7 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
 
       double blockBinVarSum[PIC_ANALYZE_CW_BINS] = { 0.0 };
       uint32_t   bockBinCnt[PIC_ANALYZE_CW_BINS] = { 0 };
-      
+
       const int PIC_ANALYZE_WIN_SIZE = 5;
       const uint32_t winSize = PIC_ANALYZE_WIN_SIZE;
       const uint32_t winLens = (winSize - 1) >> 1;
@@ -313,7 +313,7 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
                   pWinY += stride;
                 }
               }
-              else                        // for the main area, calc the B-R point 
+              else                        // for the main area, calc the B-R point
               {
                 leftColSum[x + winLens] = topColSum[x + winLens];
                 leftColSumSq[x + winLens] = topColSumSq[x + winLens];
@@ -704,13 +704,13 @@ void EncReshape::deriveReshapeParametersSDRfromStats(uint32_t * blockBinCnt, dou
 
       if (maxBinVar > 2.4)
       {
-        if (binVarSortDsdCDF[firstBinVarLessThanVal4] > 0.88) 
+        if (binVarSortDsdCDF[firstBinVarLessThanVal4] > 0.88)
         {
           if (maxBinVar < 2.695)
           {
             *reshapeTH2 = 2.2;
           }
-          else 
+          else
           {
             if (binVarSortDsdCDF[firstBinVarLessThanVal3] < 0.45)
             {
@@ -728,7 +728,7 @@ void EncReshape::deriveReshapeParametersSDRfromStats(uint32_t * blockBinCnt, dou
             }
           }
         }
-        else 
+        else
         {
           if (maxBinVar > 2.8)
           {
@@ -882,7 +882,7 @@ void EncReshape::deriveReshapeParametersSDRfromStats(uint32_t * blockBinCnt, dou
     {
       *reshapeTH1 = 2.5;
       *reshapeTH2 = 4.5;
-      m_rateAdpMode = 1; 
+      m_rateAdpMode = 1;
 
       if (meanBinVar < 2.52)
       {
@@ -919,7 +919,7 @@ void EncReshape::deriveReshapeParametersSDRfromStats(uint32_t * blockBinCnt, dou
     else if (m_reshapeCW.rspPicSize > 660480)
     {
       *intraAdp = true;
-      m_rateAdpMode = 1;  
+      m_rateAdpMode = 1;
 
       if (binVarSortDsdCDF[firstBinVarLessThanVal4] > 0.6)
       {
@@ -933,7 +933,7 @@ void EncReshape::deriveReshapeParametersSDRfromStats(uint32_t * blockBinCnt, dou
           *reshapeTH1 = 2.4;
           *reshapeTH2 = 4.5;
           m_reshapeCW.binCW[0] = 40;
-          m_rateAdpMode = 0;  
+          m_rateAdpMode = 0;
         }
       }
       else
@@ -1150,7 +1150,7 @@ void EncReshape::constructReshaperSDR()
 
   cwScaleBins1 = m_reshapeCW.binCW[0];
   cwScaleBins2 = m_reshapeCW.binCW[1];
-  
+
   for (i = 0; i < histBins; i++)
     usedCW += m_binCW[i];
 

@@ -153,7 +153,7 @@ struct CompArea : public Area
 
   const bool operator!=(const CompArea &other) const { return !(operator==(other)); }
 
-#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS 
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
   void     resizeTo          (const Size& newSize)          { Size::resizeTo(newSize); }
 #endif
   void     repositionTo      (const Position& newPos)       { Position::repositionTo(newPos); }
@@ -463,7 +463,7 @@ struct TransformUnit : public UnitArea
   ChannelType      chType;
  #if JVET_M0427_INLOOP_RESHAPER
   int              m_chromaResScaleInv;
-#endif 
+#endif
 
   uint8_t        depth;
 #if JVET_M0464_UNI_MTS

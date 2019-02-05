@@ -409,7 +409,7 @@ static const int TRIANGLE_MIN_SIZE =                            8 * 8;
 #if JVET_M0140_SBT
 static const int SBT_MAX_SIZE =                                    64; ///< maximum CU size for using SBT
 static const int SBT_NUM_SL =                                      10; ///< maximum number of historical PU decision saved for a CU
-static const int SBT_NUM_RDO =                                      2; ///< maximum number of SBT mode tried for a PU 
+static const int SBT_NUM_RDO =                                      2; ///< maximum number of SBT mode tried for a PU
 #endif
 
 static const int IBC_MAX_CAND_SIZE = 16; // max block size for ibc search

@@ -1953,7 +1953,7 @@ SPS::SPS()
 #endif
 #if JVET_M0140_SBT
 , m_SBT                       ( false )
-, m_MaxSbtSize                ( 32 ) 
+, m_MaxSbtSize                ( 32 )
 #endif
 #if HEVC_VPS
 , m_VPSId                     (  0)

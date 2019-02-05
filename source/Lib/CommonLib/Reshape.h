@@ -96,7 +96,7 @@ public:
 };// END CLASS DEFINITION Reshape
 
 //! \}
-#endif // 
+#endif //
 #endif // __RESHAPE__
 
 

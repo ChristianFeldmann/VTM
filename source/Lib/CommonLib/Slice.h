@@ -1183,7 +1183,7 @@ public:
   unsigned                getMaxBTDepthIChroma()                                                    const { return m_maxBTDepth[2]; }
   void                    setMaxBTSize(unsigned    maxBTSize,
                                        unsigned    maxBTSizeI,
-                                       unsigned    maxBTSizeC) 
+                                       unsigned    maxBTSizeC)
                                                                                                           { m_maxBTSize[1] = maxBTSize; m_maxBTSize[0] = maxBTSizeI; m_maxBTSize[2] = maxBTSizeC; }
   unsigned                getMaxBTSize()                                                            const { return m_maxBTSize[1]; }
   unsigned                getMaxBTSizeI()                                                           const { return m_maxBTSize[0]; }
@@ -1252,7 +1252,7 @@ public:
 
   bool                    getSBTMVPEnabledFlag() const                                                    { return m_sbtmvpEnabledFlag; }
   void                    setSBTMVPEnabledFlag(bool b)                                                    { m_sbtmvpEnabledFlag = b; }
-  
+
   void                    setBDOFEnabledFlag(bool b)                                                      { m_bdofEnabledFlag = b; }
   bool                    getBDOFEnabledFlag() const                                                      { return m_bdofEnabledFlag; }
 

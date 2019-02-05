@@ -120,7 +120,7 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
     const ChannelType chType = ChannelType( ch );
 #if JVET_M0170_MRG_SHARELIST
     Position prevTmpPos;
-    prevTmpPos.x = -1; prevTmpPos.y = -1; 
+    prevTmpPos.x = -1; prevTmpPos.y = -1;
 #endif
 
     for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, chType ), chType ) )
@@ -133,7 +133,7 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
           m_shareStateDec = GEN_ON_SHARED_BOUND;
           cs.slice->copyMotionLUTs(cs.slice->getMotionLUTs(), cs.slice->m_MotionCandLuTsBkup);
         }
-        
+
         if (currCU.shareParentPos.x < 0)
         {
           m_shareStateDec = 0;
@@ -248,7 +248,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 #if JVET_M0427_INLOOP_RESHAPER
   flag = flag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
   if (flag && TU::getCbf(tu, compID) && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj())
-  {  
+  {
     piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
   }
 #endif
@@ -512,7 +512,7 @@ void DecCu::xReconInter(CodingUnit &cu)
 
   DTRACE    ( g_trace_ctx, D_TMP, "pred " );
   DTRACE_CRC( g_trace_ctx, D_TMP, *cu.cs, cu.cs->getPredBuf( cu ), &cu.Y() );
-    
+
   // inter recon
   xDecodeInterTexture(cu);
 
@@ -574,9 +574,9 @@ void DecCu::xReconInter(CodingUnit &cu)
     {
       cs.getRecoBuf(cu).get(COMPONENT_Y).rspSignal(m_pcReshape->getFwdLUT());
     }
-#endif 
+#endif
   }
-  
+
   DTRACE    ( g_trace_ctx, D_TMP, "reco " );
   DTRACE_CRC( g_trace_ctx, D_TMP, *cu.cs, cu.cs->getRecoBuf( cu ), &cu.Y() );
 

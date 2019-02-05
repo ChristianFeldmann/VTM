@@ -1089,7 +1089,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 
   READ_FLAG( uiCode, "sps_temporal_mvp_enabled_flag" );                  pcSPS->setSPSTemporalMVPEnabledFlag(uiCode);
-  
+
   if ( pcSPS->getSPSTemporalMVPEnabledFlag() )
   {
     READ_FLAG( uiCode,    "sps_sbtmvp_enabled_flag" );                   pcSPS->setSBTMVPEnabledFlag      ( uiCode != 0 );
@@ -1819,7 +1819,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
-#if JVET_M0483_IBC 
+#if JVET_M0483_IBC
     if (!pcSlice->isIntra() || sps->getIBCFlag())
     {
       READ_UVLC(uiCode, "six_minus_max_num_merge_cand");

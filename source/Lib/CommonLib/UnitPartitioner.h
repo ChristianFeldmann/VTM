@@ -169,7 +169,7 @@ public:
   void exitCurrSplit              ();
   bool nextPart                   ( const CodingStructure &cs, bool autoPop = false );
   bool hasNextPart                ();
-  
+
 #if JVET_M0421_SPLIT_SIG
   void canSplit                   ( const CodingStructure &cs, bool& canNo, bool& canQt, bool& canBh, bool& canBv, bool& canTh, bool& canTv );
 #endif

@@ -248,7 +248,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
   for( auto &currTU : CU::traverseTUs( cu ) )
   {
     const Area& areaTu    = cu.Y().valid() ? currTU.block( COMPONENT_Y ) : area;
-#if  JVET_M0471_LONG_DEBLOCKING_FILTERS 
+#if  JVET_M0471_LONG_DEBLOCKING_FILTERS
     const bool xOff = currTU.blocks[cu.chType].x != cu.blocks[cu.chType].x;
     const bool yOff = currTU.blocks[cu.chType].y != cu.blocks[cu.chType].y;
     if ((yOff != 0) && (edgeDir == EDGE_HOR))
@@ -418,7 +418,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
       if (edge == 0)
       {
-#if FIX_DB_MAX_TRANSFORM_SIZE 
+#if FIX_DB_MAX_TRANSFORM_SIZE
         xEdgeFilterLuma(cu, edgeDir, edge, maxFilterLengthP, maxFilterLengthQ);
 #else
         xEdgeFilterLuma(cu, edgeDir, edge, 7, maxFilterLength);
@@ -426,19 +426,19 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       }
       else
       {
-#if FIX_DB_MAX_TRANSFORM_SIZE 
+#if FIX_DB_MAX_TRANSFORM_SIZE
         if (implicitTU && ((edge % (maxTsize / 4)) == 0))
 #else
         if ( implicitTU && (edge == (64 / 4)) )
 #endif
         {
-#if FIX_DB_MAX_TRANSFORM_SIZE 
+#if FIX_DB_MAX_TRANSFORM_SIZE
           xEdgeFilterLuma(cu, edgeDir, edge, maxFilterLengthQ, maxFilterLengthQ);
 #else
           xEdgeFilterLuma(cu, edgeDir, edge, maxFilterLength, maxFilterLength);
 #endif
         }
-#if FIX_DB_MAX_TRANSFORM_SIZE 
+#if FIX_DB_MAX_TRANSFORM_SIZE
         else if ((edge == 2 || edge == (orthogonalLength - 2)) || (implicitTU && (((edge - 2) % ((maxTsize) / 4) == 0) || ((edge + 2) % ((maxTsize) / 4) == 0))))
 #else
         else if ( (edge == 2 || edge == (orthogonalLength - 2)) || (implicitTU && (edge == (56 / 4) || edge == (72 / 4))) )
@@ -1142,7 +1142,7 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
       const unsigned cuQWidth  = cuQ.block(COMPONENT_Cb).width;
       const unsigned cuQHeight = cuQ.block(COMPONENT_Cb).height;
 
-      bool largeBoundary = ((edgeDir == EDGE_VER && cuPWidth >= 8 && cuQWidth >= 8) || (edgeDir == EDGE_HOR && cuPHeight >= 8 && cuQHeight >= 8));      
+      bool largeBoundary = ((edgeDir == EDGE_VER && cuPWidth >= 8 && cuQWidth >= 8) || (edgeDir == EDGE_HOR && cuPHeight >= 8 && cuQHeight >= 8));
 
       if (edgeDir == EDGE_HOR && pos.y % cuP.slice->getSPS()->getCTUSize() == 0)
       {
@@ -1276,11 +1276,11 @@ inline void LoopFilter::xFilteringPandQ(Pel* src, int offset, int numberPSide, i
   CHECK(numberPSide <= 3 && numberQSide <= 3, "Short filtering in long filtering function");
   Pel* srcP = src-offset;
   Pel* srcQ = src;
-   
+
   int refP = 0;
   int refQ = 0;
   int refMiddle = 0;
- 
+
   const int dbCoeffs7[7] = { 59, 50, 41,32,23,14,5 };
   const int dbCoeffs3[3] = { 53, 32, 11 };
   const int dbCoeffs5[5] = { 58, 45, 32,19,6};
@@ -1514,7 +1514,7 @@ inline void LoopFilter::xPelFilterChroma( Pel* piSrc, const int iOffset, const i
     if (largeBoundary)
     {
       piSrc[-iOffset * 3] = m1; // p2
-      piSrc[-iOffset * 2] = m2; // p1 
+      piSrc[-iOffset * 2] = m2; // p1
     }
 #endif
     piSrc[-iOffset] = m3;

@@ -2384,7 +2384,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       CodingStructure& cs = *pcPic->cs;
       pcSlice = pcPic->slices[0];
 
-#if JVET_M0427_INLOOP_RESHAPER 
+#if JVET_M0427_INLOOP_RESHAPER
       if (pcSlice->getSPS()->getUseReshaper() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
       {
           CHECK((m_pcReshaper->getRecReshaped() == false), "Rec picture is not reshaped!");
@@ -2420,7 +2420,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       m_pcLoopFilter->loopFilterPic( cs );
 
-#if JVET_M0147_DMVR 
+#if JVET_M0147_DMVR
       CS::setRefinedMotionField(cs);
 #endif
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 1 ) ) );
@@ -2809,7 +2809,7 @@ void EncGOP::printOutSummary(uint32_t uiNumAllPicCoded, bool isField, const bool
 
   msg( DETAILS,"\n\nB Slices--------------------------------------------------------\n" );
   m_gcAnalyzeB.printOut('b', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths);
-  
+
 #if WCG_WPSNR
   if (useLumaWPSNR)
   {

@@ -212,11 +212,6 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
     }
   }
 
-  int shift = bitDepthY + 4;
-  for (int i = 32; i < 64; i++)
-  {
-    m_auShiftLM[i - 32] = ((1 << shift) + i / 2) / i;
-  }
   if (m_piTemp == nullptr)
   {
     m_piTemp = new Pel[(MAX_CU_SIZE + 1) * (MAX_CU_SIZE + 1)];

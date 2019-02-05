@@ -217,8 +217,13 @@ namespace DQIntern
         NbInfoOut*&         sId2NbOut     = m_scanId2NbInfoOutArray[hd][vd];
 #endif
         // consider only non-zero-out region
+#if JVET_M0257
         const uint32_t      blkWidthNZOut = std::min<unsigned>( JVET_C0024_ZERO_OUT_TH, blockWidth  );
         const uint32_t      blkHeightNZOut= std::min<unsigned>( JVET_C0024_ZERO_OUT_TH, blockHeight );
+#else
+        const uint32_t      blkWidthNZOut = blockWidth;
+        const uint32_t      blkHeightNZOut= blockHeight;
+#endif
         const uint32_t      totalValues   = blkWidthNZOut * blkHeightNZOut;
 
         sId2NbSbb = new NbInfoSbb[ totalValues ];

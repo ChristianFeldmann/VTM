@@ -394,9 +394,9 @@ const CtxSet ContextSetCfg::SplitHvFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::Split12Flag = ContextSetCfg::addCtxSet
 ({
-  { 140, 154, 140, 154, },
-  { 155, 169, 140, 154, },
-  { 155, 154, 155, 154, },
+  { 154, 140, 154, 140, },
+  { 169, 155, 154, 140, },
+  { 154, 155, 154, 155, },
 #if JVET_M0453_CABAC_ENGINE
   { DWS, DWS, DWS, DWS, },
 #endif

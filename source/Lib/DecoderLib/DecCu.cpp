@@ -905,6 +905,15 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         PU::spanMotionInfo( pu, mrgCtx );
       }
     }
+#if JVET_M0445_MCTS_DEC_CHECK
+    if( !cu.triangle )
+    {
+      if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
+      {
+        printf( "DECODER: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), pu.lwidth(), pu.lheight() );
+      }
+    }
+#endif
   }
 }
 //! \}

@@ -1663,6 +1663,12 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());
     }
 #endif
+#if JVET_M0445_MCTS
+    if( !cs.slice->isIntra() && pCfg->getMCTSEncConstraint() )
+    {
+      pcPic->mctsInfo.init( &cs, ctuRsAddr );
+    }
+#endif
 
 #if JVET_M0055_DEBUG_CTU
   if (pCfg->getSwitchPOC() != pcPic->poc || ctuRsAddr >= pCfg->getDebugCTU())

@@ -1492,9 +1492,13 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     if (cs.sps->getIBCMode() && !cuECtx.bestTU)
 #endif
       return true;
+ #if !JVET_M0445_MCTS
     CHECK( !slice.isIntra() && !cuECtx.bestTU, "No possible non-intra encoding for a P- or B-slice found" );
 
     if( !( slice.isIRAP() || bestMode.type == ETM_INTRA ||
+#else
+    if( !( slice.isIRAP() || bestMode.type == ETM_INTRA || !cuECtx.bestTU ||
+#endif
 #if JVET_M0483_IBC
       ((!m_pcEncCfg->getDisableIntraPUsInInterSlices()) && (!relatedCU.isInter || !relatedCU.isIBC) && (
 #else

@@ -51,6 +51,12 @@
 #if ENABLE_TRACING
 CDTrace *g_trace_ctx = NULL;
 #endif
+#if JVET_M0445_MCTS
+bool g_mctsEncConstraint = false;
+#endif
+#if JVET_M0445_MCTS_DEC_CHECK
+bool g_mctsDecCheckEnabled = false;
+#endif
 
 
 //! \ingroup CommonLib

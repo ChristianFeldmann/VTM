@@ -50,6 +50,10 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0445_MCTS                                   1 // Motion constrained tile sets
+#if JVET_M0445_MCTS
+#define JVET_M0445_MCTS_DEC_CHECK                         1 // Check at decoder side the MCTS restrictions
+#endif
 #define JCTVC_Y0038_PARAMS                                1
 
 #define JVET_M0600_RATE_CTRL                              1 //frame level bit allocation by qdf
@@ -259,6 +263,15 @@ typedef std::pair<int, int>  TrCost;
 #else
 #define HEVC_USE_SIGN_HIDING                              1
 #define HEVC_TILES_WPP                                    1
+#endif
+
+#if JVET_M0445_MCTS
+#ifndef HEVC_TILES_WPP 
+#define HEVC_TILES_WPP                                    1
+#endif
+#if !HEVC_TILES_WPP
+#error JVET_M0445_MCTS_NEEDS_TILES_ENABLED
+#endif
 #endif
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0

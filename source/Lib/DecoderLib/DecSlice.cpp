@@ -235,6 +235,12 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
       cs.slice->resetMotionLUTs();
     }
 
+#if JVET_M0445_MCTS_DEC_CHECK
+    if( !cs.slice->isIntra() )
+    {
+      pic->mctsInfo.init( &cs, getCtuAddr( ctuArea.lumaPos(), *( cs.pcv ) ) );
+    }
+#endif
 #if JVET_M0055_DEBUG_CTU
 
     if( ctuRsAddr == debugCTU )

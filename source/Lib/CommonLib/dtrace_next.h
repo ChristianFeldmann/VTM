@@ -141,6 +141,7 @@ enum DTRACE_CHANNEL
   D_RDOQ_MORE,
   D_RDOQ_COST,
   D_TMP,
+  D_MOT_FIELD,
   D_CRC
 #if K0149_BLOCK_STATISTICS
   ,
@@ -242,6 +243,7 @@ inline CDTrace* tracing_init( std::string& sTracingFile, std::string& sTracingRu
     _CNL_DEF( D_RDOQ_MORE ),
     _CNL_DEF( D_RDOQ_COST ),
     _CNL_DEF( D_TMP ),
+    _CNL_DEF( D_MOT_FIELD ),
     _CNL_DEF( D_CRC )
   #if K0149_BLOCK_STATISTICS
     ,

@@ -39,6 +39,9 @@
 
 #include "Buffer.h"
 #include "UnitTools.h"
+#if JVET_M0445_MCTS
+#include "MCTS.h"
+#endif
 
 #include <memory.h>
 #include <algorithm>
@@ -1447,10 +1450,27 @@ void InterPrediction::motionCompensation4Triangle( CodingUnit &cu, MergeCtx &tri
     PU::spanMotionInfo( pu );
     motionCompensation( pu, tmpTriangleBuf );
 
+#if JVET_M0445_MCTS_DEC_CHECK
+    {
+      if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
+      {
+        printf( "DECODER_TRIANGLE_PU: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), pu.lwidth(), pu.lheight() );
+      }
+    }
+#endif
+  
     triangleMrgCtx.setMergeInfo( pu, candIdx1 );
     PU::spanMotionInfo( pu );
     motionCompensation( pu, predBuf );
 
+#if JVET_M0445_MCTS_DEC_CHECK
+    {
+      if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
+      {
+        printf( "DECODER_TRIANGLE_PU: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), pu.lwidth(), pu.lheight() );
+      }
+    }
+#endif
 #if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
     weightedTriangleBlk( pu, splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, tmpTriangleBuf, predBuf );
 #else

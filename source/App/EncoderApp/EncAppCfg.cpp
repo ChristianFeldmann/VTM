@@ -1296,6 +1296,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("SEIGreenMetadataType",                            m_greenMetadataType,                                  0u, "Value for the green_metadata_type specifies the type of metadata that is present in the SEI message. If green_metadata_type is 1, then metadata enabling quality recovery after low-power encoding is present")
   ("SEIXSDMetricType",                                m_xsdMetricType,                                      0u, "Value for the xsd_metric_type indicates the type of the objective quality metric. PSNR is the only type currently supported")
+#if JVET_M0445_MCTS
+  ("MCTSEncConstraint",                               m_MCTSEncConstraint,                               false, "For MCTS, constrain motion vectors at tile boundaries")
+#endif
 #if ENABLE_TRACING
   ("TraceChannelsList",                               bTracingChannelsList,                              false, "List all available tracing channels")
   ("TraceRule",                                       sTracingRule,                               string( "" ), "Tracing rule (ex: \"D_CABAC:poc==8\" or \"D_REC_CB_LUMA:poc==8\")")
@@ -2840,6 +2843,30 @@ bool EncAppCfg::xCheckParameter()
 #endif
   }
 
+#if JVET_M0445_MCTS
+  g_mctsEncConstraint = m_MCTSEncConstraint;
+  if ((m_MCTSEncConstraint) && (m_bLFCrossTileBoundaryFlag))
+  {
+    printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling filtering across tile boundaries!\n");
+    m_bLFCrossTileBoundaryFlag = false;
+  }
+  if ((m_MCTSEncConstraint) && (m_TMVPModeId))
+  {
+    printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling TMVP!\n");
+    m_TMVPModeId = 0;
+  }
+
+  if ((m_MCTSEncConstraint) && ( m_alf ))
+  {
+    printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling ALF!\n");
+    m_alf = false;
+  }
+  if( ( m_MCTSEncConstraint ) && ( m_BIO ) )
+  {
+    printf( "Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling BIO!\n" );
+    m_BIO = false;
+  }
+#endif
 
   if (m_toneMappingInfoSEIEnabled)
   {
@@ -3137,6 +3164,9 @@ void EncAppCfg::xPrintParameter()
   {
     msg( VERBOSE, "A=%d ", m_sliceSegmentArgument);
   }
+#endif
+#if JVET_M0445_MCTS
+  msg( VERBOSE, "Tiles:%dx%d ", m_numTileColumnsMinus1 + 1, m_numTileRowsMinus1 + 1 );
 #endif
   msg( VERBOSE, "CIP:%d ", m_bUseConstrainedIntraPred);
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));

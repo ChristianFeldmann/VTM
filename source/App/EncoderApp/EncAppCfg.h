@@ -465,6 +465,10 @@ protected:
   uint32_t      m_greenMetadataType;
   uint32_t      m_xsdMetricType;
 
+#if JVET_M0445_MCTS
+  bool      m_MCTSEncConstraint;
+#endif
+
   // weighted prediction
   bool      m_useWeightedPred;                    ///< Use of weighted prediction in P slices
   bool      m_useWeightedBiPred;                  ///< Use of bi-directional weighted prediction in B slices

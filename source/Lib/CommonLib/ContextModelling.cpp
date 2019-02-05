@@ -284,8 +284,8 @@ void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, u
   //////////////////////////
   // CTX is h/v bt (0-3)
   //////////////////////////
-  ctxHorBt = ( partitioner.currBtDepth >= 2 ? 1 : 0 );
-  ctxVerBt = ( partitioner.currBtDepth >= 2 ? 3 : 2 );
+  ctxHorBt = ( partitioner.currMtDepth >= 2 ? 1 : 0 );
+  ctxVerBt = ( partitioner.currMtDepth >= 2 ? 3 : 2 );
 }
 #else
 unsigned DeriveCtx::CtxCUsplit( const CodingStructure& cs, Partitioner& partitioner )

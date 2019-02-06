@@ -81,13 +81,9 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
 #endif
 #if JVET_M0102_INTRA_SUBPARTITIONS
   , m_scan                      (g_scanOrder     [m_chType][SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )])
-  , m_scanPosX                  (g_scanOrderPosXY[m_chType][SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )][0])
-  , m_scanPosY                  (g_scanOrderPosXY[m_chType][SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )][1])
   , m_scanCG                    (g_scanOrder     [m_chType][SCAN_UNGROUPED  ][m_scanType][gp_sizeIdxInfo->idxFrom(m_widthInGroups)][gp_sizeIdxInfo->idxFrom(m_heightInGroups)])
 #else
   , m_scan                      (g_scanOrder     [SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )])
-  , m_scanPosX                  (g_scanOrderPosXY[SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )][0])
-  , m_scanPosY                  (g_scanOrderPosXY[SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )][1])
   , m_scanCG                    (g_scanOrder[SCAN_UNGROUPED  ][m_scanType][gp_sizeIdxInfo->idxFrom(m_widthInGroups)][gp_sizeIdxInfo->idxFrom(m_heightInGroups)])
 #endif
   , m_CtxSetLastX               (Ctx::LastX[m_chType])
@@ -159,7 +155,7 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
 void CoeffCodingContext::initSubblock( int SubsetId, bool sigGroupFlag )
 {
   m_subSetId                = SubsetId;
-  m_subSetPos               = m_scanCG[ m_subSetId ];
+  m_subSetPos               = m_scanCG[m_subSetId].idx;
   m_subSetPosY              = m_subSetPos / m_widthInGroups;
   m_subSetPosX              = m_subSetPos - ( m_subSetPosY * m_widthInGroups );
   m_minSubPos               = m_subSetId << m_log2CGSize;

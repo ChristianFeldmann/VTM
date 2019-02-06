@@ -1355,7 +1355,9 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
       mpmFlag[0] = true;
     }
     else
-    mpmFlag[k] = m_BinDecoder.decodeBin( Ctx::IPredMode[0]() );
+    {
+      mpmFlag[k] = m_BinDecoder.decodeBin(Ctx::IntraLumaMpmFlag());
+    }
   }
 
   PredictionUnit *pu = cu.firstPU;
@@ -1430,7 +1432,7 @@ bool CABACReader::intra_chroma_lmc_mode( PredictionUnit& pu )
 {
     int lmModeList[10];
     int maxSymbol = PU::getLMSymbolList(pu, lmModeList);
-    int symbol    = unary_max_symbol( Ctx::IPredMode[1]( 2 ), Ctx::IPredMode[1]( 3 ), maxSymbol - 1 );
+    int symbol    = unary_max_symbol(Ctx::IntraChromaPredMode(1), Ctx::IntraChromaPredMode(2), maxSymbol - 1);
     if ( lmModeList[ symbol ] != -1 )
     {
       pu.intraDir[1] = lmModeList[ symbol ];
@@ -1444,7 +1446,7 @@ void CABACReader::intra_chroma_pred_mode( PredictionUnit& pu )
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__INTRA_DIR_ANG, pu.cu->blocks[pu.chType].lumaSize(), CHANNEL_TYPE_CHROMA );
 
   {
-    if( m_BinDecoder.decodeBin( Ctx::IPredMode[1]( 1 ) ) == 0 )
+    if (m_BinDecoder.decodeBin(Ctx::IntraChromaPredMode(0)) == 0)
     {
       pu.intraDir[1] = DM_CHROMA_IDX;
       return;

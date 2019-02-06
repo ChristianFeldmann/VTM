@@ -258,8 +258,8 @@ public:
   static const CtxSet   PartSize;
   static const CtxSet   PredMode;
   static const CtxSet   MultiRefLineIdx;
-  static const CtxSet   IPredMode       [2];    // [ ChannelType ]
-  static const CtxSet   PdpcFlag;
+  static const CtxSet   IntraLumaMpmFlag;
+  static const CtxSet   IntraChromaPredMode;
   static const CtxSet   DeltaQP;
   static const CtxSet   InterDir;
   static const CtxSet   RefPic;
@@ -270,7 +270,6 @@ public:
   static const CtxSet   AffineType;
   static const CtxSet   AffMergeIdx;
   static const CtxSet   Mvd;
-  static const CtxSet   TransSubdivFlag;
   static const CtxSet   QtRootCbf;
   static const CtxSet   QtCbf           [3];    // [ channel ]
   static const CtxSet   SigCoeffGroup   [4];    // [ ChannelType ]

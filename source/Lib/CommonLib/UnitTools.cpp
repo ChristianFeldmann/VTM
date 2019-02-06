@@ -5727,14 +5727,6 @@ uint8_t CU::deriveGbiIdx( uint8_t gbiLO, uint8_t gbiL1 )
 
 // TU tools
 
-#if HEVC_USE_4x4_DSTVII
-bool TU::useDST(const TransformUnit &tu, const ComponentID &compID)
-{
-  return isLuma(compID) && tu.cu->predMode == MODE_INTRA;
-}
-
-#endif
-
 bool TU::isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID)
 {
   return tu.cs->sps->getSpsRangeExtension().getTransformSkipRotationEnabledFlag() && tu.blocks[compID].width == 4 && tu.cu->predMode == MODE_INTRA;

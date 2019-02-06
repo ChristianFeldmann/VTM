@@ -231,10 +231,8 @@ typedef std::pair<int, int>  TrCost;
 #if HEVC_TOOLS
 #define HEVC_USE_INTRA_SMOOTHING_T32                      1
 #define HEVC_USE_INTRA_SMOOTHING_T64                      1
-#define JEM_USE_INTRA_BOUNDARY                            1
 #define HEVC_USE_DC_PREDFILTERING                         1
 #define HEVC_USE_HOR_VER_PREDFILTERING                    1
-#define HEVC_USE_4x4_DSTVII                               1
 #define HEVC_USE_MDCS                                     1
 #define HEVC_USE_SIGN_HIDING                              1
 #define HEVC_USE_SCALING_LISTS                            1

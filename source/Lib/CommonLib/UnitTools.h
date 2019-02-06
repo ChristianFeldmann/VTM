@@ -232,9 +232,6 @@ namespace PU
 namespace TU
 {
   uint32_t getNumNonZeroCoeffsNonTS       (const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true);
-#if HEVC_USE_4x4_DSTVII
-  bool useDST                         (const TransformUnit &tu, const ComponentID &compID);
-#endif
   bool isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID);
   bool getCbf                         (const TransformUnit &tu, const ComponentID &compID);
   bool getCbfAtDepth                  (const TransformUnit &tu, const ComponentID &compID, const unsigned &depth);

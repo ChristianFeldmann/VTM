@@ -553,7 +553,7 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
   // vlc for all
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( isChroma || !alfSliceParam.coeffDeltaFlag || alfSliceParam.filterCoeffFlag[ind] )
+    if( isChroma || !alfSliceParam.coeffDeltaFlag || alfSliceParam.alfLumaCoeffFlag[ind] )
     {
       for( int i = 0; i < alfShape.numCoeff - 1; i++ )
       {
@@ -592,7 +592,7 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( !isChroma && !alfSliceParam.filterCoeffFlag[ind] && alfSliceParam.coeffDeltaFlag )
+    if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.coeffDeltaFlag )
     {
       continue;
     }
@@ -694,15 +694,15 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
     distReturn = dist;
     alfSliceParam.coeffDeltaFlag = 0;
     uiCoeffBits = coeffBits;
-    alfSliceParam.coeffDeltaPredModeFlag = bestPredMode;
+    alfSliceParam.alfLumaCoeffDeltaPredictionFlag = bestPredMode;
   }
   else
   {
     distReturn = distForce0;
     alfSliceParam.coeffDeltaFlag = 1;
     uiCoeffBits = coeffBitsForce0;
-    memcpy( alfSliceParam.filterCoeffFlag, codedVarBins, sizeof( codedVarBins ) );
-    alfSliceParam.coeffDeltaPredModeFlag = 0;
+    memcpy( alfSliceParam.alfLumaCoeffFlag, codedVarBins, sizeof( codedVarBins ) );
+    alfSliceParam.alfLumaCoeffDeltaPredictionFlag = 0;
 
     for( int varInd = 0; varInd < numFiltersBest; varInd++ )
     {
@@ -717,7 +717,7 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
   {
     for( int i = 0; i < alfShape.numCoeff; i++ )
     {
-      if( alfSliceParam.coeffDeltaPredModeFlag )
+      if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
       {
         alfSliceParam.lumaCoeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = m_diffFilterCoeff[ind][i];
       }

@@ -2520,21 +2520,21 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
 
     if( !alfSliceParam.coeffDeltaFlag )
     {
-      std::memset( alfSliceParam.filterCoeffFlag, true, sizeof( alfSliceParam.filterCoeffFlag ) );
+      std::memset( alfSliceParam.alfLumaCoeffFlag, true, sizeof( alfSliceParam.alfLumaCoeffFlag ) );
 
       if( alfSliceParam.numLumaFilters > 1 )
       {
-        READ_FLAG( code, "coeff_delta_pred_mode_flag" );
-        alfSliceParam.coeffDeltaPredModeFlag = code;
+        READ_FLAG( code, "alf_luma_coeff_delta_prediction_flag" );
+        alfSliceParam.alfLumaCoeffDeltaPredictionFlag = code;
       }
       else
       {
-        alfSliceParam.coeffDeltaPredModeFlag = 0;
+        alfSliceParam.alfLumaCoeffDeltaPredictionFlag = 0;
       }
     }
     else
     {
-      alfSliceParam.coeffDeltaPredModeFlag = 0;
+      alfSliceParam.alfLumaCoeffDeltaPredictionFlag = 0;
     }
   }
 
@@ -2562,8 +2562,8 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
     {
       for( int ind = 0; ind < alfSliceParam.numLumaFilters; ++ind )
       {
-        READ_FLAG( code, "filter_coefficient_flag[i]" );
-        alfSliceParam.filterCoeffFlag[ind] = code;
+        READ_FLAG( code, "alf_luma_coeff_flag[i]" );
+        alfSliceParam.alfLumaCoeffFlag[ind] = code;
       }
     }
   }
@@ -2571,7 +2571,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( !isChroma && !alfSliceParam.filterCoeffFlag[ind] && alfSliceParam.coeffDeltaFlag )
+    if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.coeffDeltaFlag )
     {
       memset( coeff + ind * MAX_NUM_ALF_LUMA_COEFF, 0, sizeof( *coeff ) * alfShape.numCoeff );
       continue;

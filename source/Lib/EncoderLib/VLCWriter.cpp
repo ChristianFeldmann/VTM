@@ -1793,7 +1793,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
     {
       if( alfSliceParam.numLumaFilters > 1 )
       {
-        WRITE_FLAG( alfSliceParam.coeffDeltaPredModeFlag, "coeff_delta_pred_mode_flag" );
+        WRITE_FLAG( alfSliceParam.alfLumaCoeffDeltaPredictionFlag, "alf_luma_coeff_delta_prediction_flag" );
       }
     }
   }
@@ -1808,7 +1808,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
   // vlc for all
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( isChroma || !alfSliceParam.coeffDeltaFlag || alfSliceParam.filterCoeffFlag[ind] )
+    if( isChroma || !alfSliceParam.coeffDeltaFlag || alfSliceParam.alfLumaCoeffFlag[ind] )
     {
       for( int i = 0; i < alfShape.numCoeff - 1; i++ )
       {
@@ -1842,7 +1842,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
     {
       for( int ind = 0; ind < numFilters; ++ind )
       {
-        WRITE_FLAG( alfSliceParam.filterCoeffFlag[ind], "filter_coefficient_flag[i]" );
+        WRITE_FLAG( alfSliceParam.alfLumaCoeffFlag[ind], "alf_luma_coeff_flag[i]" );
       }
     }
   }
@@ -1850,7 +1850,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( !isChroma && !alfSliceParam.filterCoeffFlag[ind] && alfSliceParam.coeffDeltaFlag )
+    if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.coeffDeltaFlag )
     {
       continue;
     }

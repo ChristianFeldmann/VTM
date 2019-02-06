@@ -92,8 +92,6 @@ extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSi
 // Scanning order & context mapping table
 // ====================================================================================================================
 
-extern const uint32_t   ctxIndMap4x4[4*4];
-
 extern const uint32_t   g_uiGroupIdx[ MAX_TU_SIZE ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
 extern const uint32_t   g_auiGoRiceParsCoeff     [ 32 ];
@@ -174,7 +172,6 @@ extern int            g_BlockSizeTrafoScale           [MAX_CU_SIZE + 1][MAX_CU_S
 extern int8_t          g_aucLog2                       [MAX_CU_SIZE + 1];
 extern int8_t          g_aucNextLog2        [MAX_CU_SIZE + 1];
 extern int8_t          g_aucPrevLog2        [MAX_CU_SIZE + 1];
-extern const int8_t    i2Log2Tab[257];
 
 inline bool is34( const SizeType& size )
 {
@@ -224,8 +221,6 @@ extern MsgLevel g_verbosity;
 extern int g_aiLMDivTableLow[];
 extern int g_aiLMDivTableHigh[];
 #endif
-
-extern const int g_aiNonLMPosThrs[];
 
 extern const int8_t g_GbiLog2WeightBase;
 extern const int8_t g_GbiWeightBase;

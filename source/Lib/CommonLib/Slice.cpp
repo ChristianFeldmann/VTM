@@ -451,7 +451,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
     }
   }
 #if JVET_M0483_IBC==0
-  if (getSPS()->getSpsNext().getIBCMode())
+  if (getSPS()->getIBCMode())
   {
     RefPicSetLtCurr[NumPicLtCurr] = getPic();
     //getPic()->setIsLongTerm(true);
@@ -472,7 +472,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
     if (getRapPicFlag())
     {
 #if JVET_M0483_IBC==0
-      if (getSPS()->getSpsNext().getIBCMode())
+      if (getSPS()->getIBCMode())
       {
         CHECK(numPicTotalCurr != 1, "Invalid state");
       }
@@ -549,7 +549,7 @@ void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool b
     }
   }
 #if JVET_M0483_IBC==0
-  if (getSPS()->getSpsNext().getIBCMode())
+  if (getSPS()->getIBCMode())
   {
     m_apcRefPicList[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = getPic();
     m_bIsUsedAsLongTerm[REF_PIC_LIST_0][m_aiNumRefIdx[REF_PIC_LIST_0] - 1] = true;
@@ -588,7 +588,7 @@ int Slice::getNumRpsCurrTempList() const
 #if JVET_M0483_IBC
   if (getSPS()->getIBCFlag())
 #else
-  if (getSPS()->getSpsNext().getIBCMode())
+  if (getSPS()->getIBCMode())
 #endif
   {
     return numRpsCurrTempList + 1;
@@ -1883,51 +1883,6 @@ SPSRExt::SPSRExt()
 }
 
 
-SPSNext::SPSNext( SPS& sps )
-  : m_SPS                       ( sps )
-  , m_NextEnabled               ( false )
-  // disable all tool enabling flags by default
-  , m_LargeCTU                  ( false )
-  , m_IMV                       ( false )
-  , m_DisableMotionCompression  ( false )
-  , m_LMChroma                  ( false )
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
-  , m_cclmCollocatedChromaFlag  ( false )
-#endif
-#if JVET_M0464_UNI_MTS
-  , m_IntraMTS                  ( false )
-  , m_InterMTS                  ( false )
-#else
-  , m_IntraEMT                  ( false )
-  , m_InterEMT                  ( false )
-#endif
-  , m_Affine                    ( false )
-  , m_AffineType                ( false )
-  , m_MTTEnabled                ( false )
-  , m_MHIntra                   ( false )
-  , m_Triangle                  ( false )
-#if ENABLE_WPP_PARALLELISM
-  , m_NextDQP                   ( false )
-#endif
-#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
-  , m_LadfEnabled               ( false )
-  , m_LadfNumIntervals          ( 0 )
-  , m_LadfQpOffset              { 0 }
-  , m_LadfIntervalLowerBound    { 0 }
-#endif
-
-  // default values for additional parameters
-  , m_ImvMode                   ( IMV_OFF )
-  , m_MTTMode                   ( 0 )
-    , m_compositeRefEnabled     ( false )
-#if !JVET_M0483_IBC
-  , m_IBCMode                   ( 0 )
-#endif
-// ADD_NEW_TOOL : (sps extension) add tool enabling flags here (with "false" as default values)
-{
-}
-
-
 SPS::SPS()
 : m_SPSId                     (  0)
 , m_bIntraOnlyConstraintFlag  (false)
@@ -2003,7 +1958,6 @@ SPS::SPS()
 #endif
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
-, m_spsNextExtension          (*this)
 , m_wrapAroundEnabledFlag     (false)
 , m_wrapAroundOffset          (  0)
 #if JVET_M0483_IBC
@@ -2012,6 +1966,44 @@ SPS::SPS()
 #if JVET_M0427_INLOOP_RESHAPER
 , m_lumaReshapeEnable         (false)
 #endif
+// KJS: BEGIN former SPSNext parameters
+, m_LargeCTU                  ( false )
+, m_IMV                       ( false )
+, m_DisableMotionCompression  ( false )
+, m_LMChroma                  ( false )
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+, m_cclmCollocatedChromaFlag  ( false )
+#endif
+#if JVET_M0464_UNI_MTS
+, m_IntraMTS                  ( false )
+, m_InterMTS                  ( false )
+#else
+, m_IntraEMT                  ( false )
+, m_InterEMT                  ( false )
+#endif
+, m_Affine                    ( false )
+, m_AffineType                ( false )
+, m_MTTEnabled                ( false )
+, m_MHIntra                   ( false )
+, m_Triangle                  ( false )
+#if ENABLE_WPP_PARALLELISM
+, m_NextDQP                   ( false )
+#endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+, m_LadfEnabled               ( false )
+, m_LadfNumIntervals          ( 0 )
+, m_LadfQpOffset              { 0 }
+, m_LadfIntervalLowerBound    { 0 }
+#endif
+
+// default values for additional parameters
+, m_ImvMode                   ( IMV_OFF )
+, m_MTTMode                   ( 0 )
+, m_compositeRefEnabled     ( false )
+#if !JVET_M0483_IBC
+, m_IBCMode                   ( 0 )
+#endif
+// KJS: END former SPSNext parameters
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {

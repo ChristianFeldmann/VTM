@@ -524,87 +524,6 @@ void HLSWriter::codeHrdParameters( const HRD *hrd, bool commonInfPresentFlag, ui
   }
 }
 
-
-void HLSWriter::codeSPSNext( const SPSNext& spsNext, const bool usePCM )
-{
-  // tool enabling flags
-  WRITE_FLAG( spsNext.getUseLargeCTU() ? 1 : 0,                                                 "large_ctu_flag" );
-  WRITE_FLAG( spsNext.getUseIMV() ? 1 : 0,                                                      "imv_enable_flag" );
-  WRITE_FLAG( spsNext.getDisableMotCompress() ? 1 : 0,                                          "disable_motion_compression_flag" );
-  WRITE_FLAG( spsNext.getUseLMChroma() ? 1 : 0,                                                 "lm_chroma_enabled_flag" );
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
-  if ( spsNext.getUseLMChroma() && spsNext.getSPS().getChromaFormatIdc() == CHROMA_420 )
-  {
-    WRITE_FLAG( spsNext.getCclmCollocatedChromaFlag() ? 1 : 0,                                  "sps_cclm_collocated_chroma_flag" );
-  }
-#endif
-
-#if JVET_M0303_IMPLICIT_MTS
-  WRITE_FLAG( spsNext.getUseMTS() ? 1 : 0,                                                      "mts_enabled_flag" );
-  if ( spsNext.getUseMTS() )
-  {
-#endif
-#if JVET_M0464_UNI_MTS
-    WRITE_FLAG( spsNext.getUseIntraMTS() ? 1 : 0,                                               "mts_intra_enabled_flag" );
-    WRITE_FLAG( spsNext.getUseInterMTS() ? 1 : 0,                                               "mts_inter_enabled_flag" );
-#else
-    WRITE_FLAG( spsNext.getUseIntraEMT() ? 1 : 0,                                               "emt_intra_enabled_flag" );
-    WRITE_FLAG( spsNext.getUseInterEMT() ? 1 : 0,                                               "emt_inter_enabled_flag" );
-#endif
-#if JVET_M0303_IMPLICIT_MTS
-  }
-#endif
-
-  WRITE_FLAG( spsNext.getUseAffine() ? 1 : 0,                                                   "affine_flag" );
-  if ( spsNext.getUseAffine() )
-  {
-    WRITE_FLAG( spsNext.getUseAffineType() ? 1 : 0,                                             "affine_type_flag" );
-  }
-  WRITE_FLAG( spsNext.getUseGBi() ? 1 : 0,                                                      "gbi_flag" );
-#if JVET_M0483_IBC==0
-  WRITE_FLAG(spsNext.getIBCMode() ? 1 : 0,                                                      "ibc_flag" );
-#endif
-  for( int k = 0; k < SPSNext::NumReservedFlags; k++ )
-  {
-    WRITE_FLAG( 0,                                                                              "reserved_flag" );
-  }
-
-  WRITE_FLAG( spsNext.getMTTEnabled() ? 1 : 0,                                                  "mtt_enabled_flag" );
-  WRITE_FLAG( spsNext.getUseMHIntra() ? 1 : 0,                                                  "mhintra_flag" );
-  WRITE_FLAG( spsNext.getUseTriangle() ? 1: 0,                                                  "triangle_flag" );
-#if ENABLE_WPP_PARALLELISM
-  WRITE_FLAG( spsNext.getUseNextDQP(),                                                          "next_dqp_enabled_flag" );
-#else
-  WRITE_FLAG( 0,                                                                                "reserved_flag" );
-#endif
-
-  // additional parameters
-
-  if( spsNext.getUseIMV() )
-  {
-    WRITE_UVLC( spsNext.getImvMode()-1,                                                         "imv_mode_minus1" );
-  }
-
-  if( spsNext.getMTTEnabled() )
-  {
-    WRITE_UVLC( spsNext.getMTTMode() - 1,                                                       "mtt_mode_minus1" );
-  }
-#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
-  WRITE_FLAG( spsNext.getLadfEnabled() ? 1 : 0,                                                 "sps_ladf_enabled_flag" );
-  if ( spsNext.getLadfEnabled() )
-  {
-    WRITE_CODE( spsNext.getLadfNumIntervals() - 2, 2,                                           "sps_num_ladf_intervals_minus2" );
-    WRITE_SVLC( spsNext.getLadfQpOffset( 0 ),                                                   "sps_ladf_lowest_interval_qp_offset");
-    for ( int k = 1; k< spsNext.getLadfNumIntervals(); k++ )
-    {
-      WRITE_SVLC( spsNext.getLadfQpOffset( k ),                                                 "sps_ladf_qp_offset" );
-      WRITE_UVLC( spsNext.getLadfIntervalLowerBound( k ) - spsNext.getLadfIntervalLowerBound( k - 1 ) - 1, "sps_ladf_delta_threshold_minus1" );
-    }
-  }
-#endif
-  // ADD_NEW_TOOL : (sps extension writer) write tool enabling flags and associated parameters here
-}
-
 #if JVET_M0427_INLOOP_RESHAPER
 void HLSWriter::codeReshaper(const SliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra)
 {
@@ -641,9 +560,14 @@ void HLSWriter::codeReshaper(const SliceReshapeInfo& pSliceReshaperInfo, const S
 
 void HLSWriter::codeSPS( const SPS* pcSPS )
 {
+#if ENABLE_TRACING
+  xTraceSPSHeader ();
+#endif
+#if HEVC_VPS
+  WRITE_CODE( pcSPS->getVPSId (),          4,       "sps_video_parameter_set_id" );
+#endif
+  WRITE_UVLC( pcSPS->getSPSId (),                   "sps_seq_parameter_set_id" );
 
-  const ChromaFormat format                = pcSPS->getChromaFormatIdc();
-  const bool         chromaEnabled         = isChromaEnabled(format);
   WRITE_FLAG(pcSPS->getIntraOnlyConstraintFlag() ? 1 : 0, "intra_only_constraint_flag");
   WRITE_CODE(pcSPS->getMaxBitDepthConstraintIdc(), 4, "max_bitdepth_constraint_idc");
   WRITE_CODE(pcSPS->getMaxChromaFormatConstraintIdc(), 2, "max_chroma_format_constraint_idc");
@@ -661,20 +585,17 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG(pcSPS->getNoLadfConstraintFlag() ? 1 : 0, "no_ladf_constraint_flag");
   WRITE_FLAG(pcSPS->getNoDepQuantConstraintFlag() ? 1 : 0, "no_dep_quant_constraint_flag");
   WRITE_FLAG(pcSPS->getNoSignDataHidingConstraintFlag() ? 1 : 0, "no_sign_data_hiding_constraint_flag");
-#if JVET_M0483_IBC
-  WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0, "ibc_flag");
-#endif
-#if ENABLE_TRACING
-  xTraceSPSHeader ();
-#endif
-#if HEVC_VPS
-  WRITE_CODE( pcSPS->getVPSId (),          4,       "sps_video_parameter_set_id" );
-#endif
+
+  // KJS: Marakech decision: sub-layers added back
+  CHECK( pcSPS->getMaxTLayers() == 0, "Maximum number of temporal sub-layers is '0'" );
   WRITE_CODE( pcSPS->getMaxTLayers() - 1,  3,       "sps_max_sub_layers_minus1" );
+
   WRITE_FLAG( pcSPS->getTemporalIdNestingFlag() ? 1 : 0, "sps_temporal_id_nesting_flag" );
   codePTL( pcSPS->getPTL(), true, pcSPS->getMaxTLayers() - 1 );
-  WRITE_UVLC( pcSPS->getSPSId (),                   "sps_seq_parameter_set_id" );
+
   WRITE_UVLC( int(pcSPS->getChromaFormatIdc ()),    "chroma_format_idc" );
+
+  const ChromaFormat format                = pcSPS->getChromaFormatIdc();
   if( format == CHROMA_444 )
   {
     WRITE_FLAG( 0,                                  "separate_colour_plane_flag");
@@ -684,6 +605,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_UVLC( pcSPS->getPicHeightInLumaSamples(),   "pic_height_in_luma_samples" );
   Window conf = pcSPS->getConformanceWindow();
 
+  // KJS: not removing yet
   WRITE_FLAG( conf.getWindowEnabledFlag(),          "conformance_window_flag" );
   if (conf.getWindowEnabledFlag())
   {
@@ -694,11 +616,13 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 
   WRITE_UVLC( pcSPS->getBitDepth(CHANNEL_TYPE_LUMA) - 8,                      "bit_depth_luma_minus8" );
-
+  
+  const bool         chromaEnabled         = isChromaEnabled(format);
   WRITE_UVLC( chromaEnabled ? (pcSPS->getBitDepth(CHANNEL_TYPE_CHROMA) - 8):0,  "bit_depth_chroma_minus8" );
 
   WRITE_UVLC( pcSPS->getBitsForPOC()-4,                 "log2_max_pic_order_cnt_lsb_minus4" );
 
+  // KJS: Marakech decision: sub-layers added back
   const bool subLayerOrderingInfoPresentFlag = 1;
   WRITE_FLAG(subLayerOrderingInfoPresentFlag,       "sps_sub_layer_ordering_info_present_flag");
   for(uint32_t i=0; i <= pcSPS->getMaxTLayers()-1; i++)
@@ -712,41 +636,43 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     }
   }
   CHECK( pcSPS->getMaxCUWidth() != pcSPS->getMaxCUHeight(),                          "Rectangular CTUs not supported" );
-  WRITE_FLAG(pcSPS->getUseDualITree(), "qtbt_dual_intra_tree");
-  WRITE_UVLC(g_aucLog2[pcSPS->getCTUSize()] - MIN_CU_LOG2, "log2_CTU_size_minus2");
+  WRITE_FLAG(pcSPS->getUseDualITree(), "qtbtt_dual_tree_intra_flag");
+  WRITE_UVLC(g_aucLog2[pcSPS->getCTUSize()] - MIN_CU_LOG2, "log2_ctu_size_minus2");
   WRITE_UVLC(pcSPS->getLog2MinCodingBlockSize() - 2, "log2_min_luma_coding_block_size_minus2");
-  WRITE_FLAG(pcSPS->getSplitConsOverrideEnabledFlag(), "sps_override_partition_constraints_enable_flag");
-  WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(I_SLICE)] - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_slice");
-  WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(B_SLICE)] - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_inter_slice");
-  WRITE_UVLC(pcSPS->getMaxBTDepth(), "sps_max_mtt_hierarchy_depth_inter_slices");
-  WRITE_UVLC(pcSPS->getMaxBTDepthI(), "sps_max_mtt_hierarchy_depth_intra_slices");
+  WRITE_FLAG(pcSPS->getSplitConsOverrideEnabledFlag(), "partition_constraints_override_enabled_flag");
+  WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(I_SLICE)] - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_tile_group_luma");
+  WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(B_SLICE)] - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_inter_tile_group");
+  WRITE_UVLC(pcSPS->getMaxBTDepth(), "sps_max_mtt_hierarchy_depth_inter_tile_group");
+  WRITE_UVLC(pcSPS->getMaxBTDepthI(), "sps_max_mtt_hierarchy_depth_intra_tile_group_luma");
   if (pcSPS->getMaxBTDepthI() != 0)
   {
-    WRITE_UVLC(g_aucLog2[pcSPS->getMaxBTSizeI()] - g_aucLog2[pcSPS->getMinQTSize(I_SLICE)], "sps_log2_diff_max_bt_min_qt_intra_slice");
-    WRITE_UVLC(g_aucLog2[pcSPS->getMaxTTSizeI()] - g_aucLog2[pcSPS->getMinQTSize(I_SLICE)], "sps_log2_diff_max_tt_min_qt_intra_slice");
+    WRITE_UVLC(g_aucLog2[pcSPS->getMaxBTSizeI()] - g_aucLog2[pcSPS->getMinQTSize(I_SLICE)], "sps_log2_diff_max_bt_min_qt_intra_tile_group_luma");
+    WRITE_UVLC(g_aucLog2[pcSPS->getMaxTTSizeI()] - g_aucLog2[pcSPS->getMinQTSize(I_SLICE)], "sps_log2_diff_max_tt_min_qt_intra_tile_group_luma");
   }
   if (pcSPS->getMaxBTDepth() != 0)
   {
-    WRITE_UVLC(g_aucLog2[pcSPS->getMaxBTSize()] - g_aucLog2[pcSPS->getMinQTSize(B_SLICE)], "sps_log2_diff_max_bt_min_qt_inter_slice");
-    WRITE_UVLC(g_aucLog2[pcSPS->getMaxTTSize()] - g_aucLog2[pcSPS->getMinQTSize(B_SLICE)], "sps_log2_diff_max_tt_min_qt_inter_slice");
+    WRITE_UVLC(g_aucLog2[pcSPS->getMaxBTSize()] - g_aucLog2[pcSPS->getMinQTSize(B_SLICE)], "sps_log2_diff_max_bt_min_qt_inter_tile_group");
+    WRITE_UVLC(g_aucLog2[pcSPS->getMaxTTSize()] - g_aucLog2[pcSPS->getMinQTSize(B_SLICE)], "sps_log2_diff_max_tt_min_qt_inter_tile_group");
   }
   if (pcSPS->getUseDualITree())
   {
-    WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)] - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_slice_chroma");
-    WRITE_UVLC(pcSPS->getMaxBTDepthIChroma(), "sps_max_mtt_hierarchy_depth_intra_slices_chroma");
+    WRITE_UVLC(g_aucLog2[pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)] - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_tile_group_chroma");
+    WRITE_UVLC(pcSPS->getMaxBTDepthIChroma(), "sps_max_mtt_hierarchy_depth_intra_tile_group_chroma");
     if (pcSPS->getMaxBTDepthIChroma() != 0)
     {
-      WRITE_UVLC(g_aucLog2[pcSPS->getMaxBTSizeIChroma()] - g_aucLog2[pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)], "sps_log2_diff_max_bt_min_qt_intra_slice_chroma");
-      WRITE_UVLC(g_aucLog2[pcSPS->getMaxTTSizeIChroma()] - g_aucLog2[pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)], "sps_log2_diff_max_tt_min_qt_intra_slice_chroma");
+      WRITE_UVLC(g_aucLog2[pcSPS->getMaxBTSizeIChroma()] - g_aucLog2[pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)], "sps_log2_diff_max_bt_min_qt_intra_tile_group_chroma");
+      WRITE_UVLC(g_aucLog2[pcSPS->getMaxTTSizeIChroma()] - g_aucLog2[pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)], "sps_log2_diff_max_tt_min_qt_intra_tile_group_chroma");
     }
   }
+  
+  // KJS: does not exist anymore -> remove?
   WRITE_UVLC( pcSPS->getQuadtreeTULog2MinSize() - 2,                                 "log2_min_luma_transform_block_size_minus2" );
-  WRITE_UVLC( pcSPS->getQuadtreeTULog2MaxSize() - pcSPS->getQuadtreeTULog2MinSize(), "log2_diff_max_min_luma_transform_block_size" );
+    WRITE_UVLC( pcSPS->getQuadtreeTULog2MaxSize() - pcSPS->getQuadtreeTULog2MinSize(), "log2_diff_max_min_luma_transform_block_size" );
 
   WRITE_FLAG( pcSPS->getSAOEnabledFlag(),                                            "sps_sao_enabled_flag");
   WRITE_FLAG( pcSPS->getALFEnabledFlag(),                                            "sps_alf_enabled_flag" );
 
-  WRITE_FLAG( pcSPS->getPCMEnabledFlag() ? 1 : 0,                                    "pcm_enabled_flag");
+  WRITE_FLAG( pcSPS->getPCMEnabledFlag() ? 1 : 0,                                    "sps_pcm_enabled_flag");
   if( pcSPS->getPCMEnabledFlag() )
   {
     WRITE_CODE( pcSPS->getPCMBitDepth(CHANNEL_TYPE_LUMA) - 1, 4,                            "pcm_sample_bit_depth_luma_minus1" );
@@ -769,27 +695,66 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( pcSPS->getSBTMVPEnabledFlag() ? 1 : 0,                               "sps_sbtmvp_enabled_flag");
   }
 
+  // KJS: sps_amvr_enabled_flag
+  WRITE_FLAG( pcSPS->getUseIMV() ? 1 : 0,                                                      "imv_enable_flag" );
+
   WRITE_FLAG( pcSPS->getBDOFEnabledFlag() ? 1 : 0,                                   "sps_bdof_enabled_flag" );
-#if JVET_M0255_FRACMMVD_SWITCH
-  WRITE_FLAG( pcSPS->getDisFracMmvdEnabledFlag() ? 1 : 0,                            "sps_fracmmvd_disabled_flag" );
-#endif
+
 #if JVET_M0246_AFFINE_AMVR
   WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                             "sps_affine_amvr_enabled_flag" );
 #endif
+
 #if JVET_M0147_DMVR
-  WRITE_FLAG( pcSPS->getUseDMVR() ? 1 : 0,                                            "dmvr_enable_flag" );
+  WRITE_FLAG( pcSPS->getUseDMVR() ? 1 : 0,                                            "sps_dmvr_enable_flag" );
 #endif
-#if HEVC_USE_SCALING_LISTS
-  WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "scaling_list_enabled_flag" );
-  if(pcSPS->getScalingListFlag())
+
+  // KJS: sps_cclm_enabled_flag
+  WRITE_FLAG( pcSPS->getUseLMChroma() ? 1 : 0,                                                 "lm_chroma_enabled_flag" );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  if ( pcSPS->getUseLMChroma() && pcSPS->getChromaFormatIdc() == CHROMA_420 )
   {
-    WRITE_FLAG( pcSPS->getScalingListPresentFlag() ? 1 : 0,                          "sps_scaling_list_data_present_flag" );
-    if(pcSPS->getScalingListPresentFlag())
-    {
-      codeScalingList( pcSPS->getScalingList() );
-    }
+    WRITE_FLAG( pcSPS->getCclmCollocatedChromaFlag() ? 1 : 0,                                  "sps_cclm_collocated_chroma_flag" );
   }
 #endif
+
+#if JVET_M0303_IMPLICIT_MTS
+  WRITE_FLAG( pcSPS->getUseMTS() ? 1 : 0,                                                      "mts_enabled_flag" );
+  if ( pcSPS->getUseMTS() )
+  {
+#endif
+#if JVET_M0464_UNI_MTS
+    WRITE_FLAG( pcSPS->getUseIntraMTS() ? 1 : 0,                                               "mts_intra_enabled_flag" );
+    WRITE_FLAG( pcSPS->getUseInterMTS() ? 1 : 0,                                               "mts_inter_enabled_flag" );
+#else
+    WRITE_FLAG( pcSPS->getUseIntraEMT() ? 1 : 0,                                               "emt_intra_enabled_flag" );
+    WRITE_FLAG( pcSPS->getUseInterEMT() ? 1 : 0,                                               "emt_inter_enabled_flag" );
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  }
+#endif
+  // KJS: sps_affine_enabled_flag
+  WRITE_FLAG( pcSPS->getUseAffine() ? 1 : 0,                                                   "affine_flag" );
+  if ( pcSPS->getUseAffine() )
+  {
+    WRITE_FLAG( pcSPS->getUseAffineType() ? 1 : 0,                                             "affine_type_flag" );
+  }
+  WRITE_FLAG( pcSPS->getUseGBi() ? 1 : 0,                                                      "gbi_flag" );
+#if JVET_M0483_IBC
+  WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0,                                                      "ibc_flag");
+#else
+  WRITE_FLAG(pcSPS->getIBCMode() ? 1 : 0,                                                      "ibc_flag" );
+#endif
+
+  // KJS: sps_ciip_enabled_flag
+  WRITE_FLAG( pcSPS->getUseMHIntra() ? 1 : 0,                                                  "mhintra_flag" );
+  
+  WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "triangle_flag" );
+
+  // KJS: not in draft yet
+#if JVET_M0255_FRACMMVD_SWITCH
+  WRITE_FLAG( pcSPS->getDisFracMmvdEnabledFlag() ? 1 : 0,                            "sps_fracmmvd_disabled_flag" );
+#endif
+  // KJS: not in draft yet
 #if JVET_M0140_SBT
   WRITE_FLAG( pcSPS->getUseSBT() ? 1 : 0,                                             "sbt_enable_flag");
   if( pcSPS->getUseSBT() )
@@ -797,9 +762,52 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(pcSPS->getMaxSbtSize() == 64 ? 1 : 0,                                  "max_sbt_size_64_flag");
   }
 #endif
+  // KJS: not in draft yet
+#if JVET_M0427_INLOOP_RESHAPER
+  WRITE_FLAG(pcSPS->getUseReshaper() ? 1 : 0, "sps_reshaper_enable_flag");
+#endif
+  
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  WRITE_FLAG( pcSPS->getLadfEnabled() ? 1 : 0,                                                 "sps_ladf_enabled_flag" );
+  if ( pcSPS->getLadfEnabled() )
+  {
+    WRITE_CODE( pcSPS->getLadfNumIntervals() - 2, 2,                                           "sps_num_ladf_intervals_minus2" );
+    WRITE_SVLC( pcSPS->getLadfQpOffset( 0 ),                                                   "sps_ladf_lowest_interval_qp_offset");
+    for ( int k = 1; k< pcSPS->getLadfNumIntervals(); k++ )
+    {
+      WRITE_SVLC( pcSPS->getLadfQpOffset( k ),                                                 "sps_ladf_qp_offset" );
+      WRITE_UVLC( pcSPS->getLadfIntervalLowerBound( k ) - pcSPS->getLadfIntervalLowerBound( k - 1 ) - 1, "sps_ladf_delta_threshold_minus1" );
+    }
+  }
+#endif
 
-  CHECK( pcSPS->getMaxTLayers() == 0, "Maximum number of T-layers is '0'" );
 
+  // KJS: BEGIN former SPSNext paramaters
+
+  // tool enabling flags
+  WRITE_FLAG( pcSPS->getUseLargeCTU() ? 1 : 0,                                                 "large_ctu_flag" );
+  WRITE_FLAG( pcSPS->getDisableMotCompress() ? 1 : 0,                                          "disable_motion_compression_flag" );
+  
+  WRITE_FLAG( pcSPS->getMTTEnabled() ? 1 : 0,                                                  "mtt_enabled_flag" );
+  
+#if ENABLE_WPP_PARALLELISM
+  WRITE_FLAG( pcSPS->getUseNextDQP(),                                                          "next_dqp_enabled_flag" );
+#endif
+  
+  // additional parameters
+  
+  if( pcSPS->getUseIMV() )
+  {
+    WRITE_UVLC( pcSPS->getImvMode()-1,                                                         "imv_mode_minus1" );
+  }
+  
+  if( pcSPS->getMTTEnabled() )
+  {
+    WRITE_UVLC( pcSPS->getMTTMode() - 1,                                                       "mtt_mode_minus1" );
+  }
+  // KJS: END former SPSNext paramaters
+
+  // KJS: referece picture sets to be replaced
   const RPSList* rpsList = pcSPS->getRPSList();
 
   WRITE_UVLC(rpsList->getNumberOfReferencePictureSets(), "num_short_term_ref_pic_sets" );
@@ -823,19 +831,31 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getUseStrongIntraSmoothing(),             "strong_intra_smoothing_enable_flag" );
 
 #endif
+
+  // KJS: remove scaling lists?
+#if HEVC_USE_SCALING_LISTS
+  WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "scaling_list_enabled_flag" );
+  if(pcSPS->getScalingListFlag())
+  {
+    WRITE_FLAG( pcSPS->getScalingListPresentFlag() ? 1 : 0,                          "sps_scaling_list_data_present_flag" );
+    if(pcSPS->getScalingListPresentFlag())
+    {
+      codeScalingList( pcSPS->getScalingList() );
+    }
+  }
+#endif
+  
+  // KJS: no VUI defined yet
   WRITE_FLAG( pcSPS->getVuiParametersPresentFlag(),            "vui_parameters_present_flag" );
   if (pcSPS->getVuiParametersPresentFlag())
   {
     codeVUI(pcSPS->getVuiParameters(), pcSPS);
   }
 
-  // KTA tools
-
   bool sps_extension_present_flag=false;
   bool sps_extension_flags[NUM_SPS_EXTENSION_FLAGS]={false};
 
   sps_extension_flags[SPS_EXT__REXT] = pcSPS->getSpsRangeExtension().settingsDifferFromDefaults();
-  sps_extension_flags[SPS_EXT__NEXT] = pcSPS->getSpsNext().nextToolsEnabled();
 
   // Other SPS extension flags checked here.
 
@@ -885,11 +905,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
           WRITE_FLAG( (spsRangeExtension.getCabacBypassAlignmentEnabledFlag() ? 1 : 0),       "cabac_bypass_alignment_enabled_flag" );
           break;
         }
-        case SPS_EXT__NEXT:
-        {
-          codeSPSNext( pcSPS->getSpsNext(), pcSPS->getPCMEnabledFlag() );
-          break;
-        }
         default:
           CHECK(sps_extension_flags[i]!=false, "Unknown PPS extension signalled"); // Should never get here with an active SPS extension flag.
           break;
@@ -897,9 +912,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       }
     }
   }
-#if JVET_M0427_INLOOP_RESHAPER
-  WRITE_FLAG(pcSPS->getUseReshaper() ? 1 : 0, "sps_reshaper_enable_flag");
-#endif
   xWriteRbspTrailingBits();
 }
 
@@ -1346,17 +1358,17 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       WRITE_UVLC( MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand" );
 #endif
 
-      if ( pcSlice->getSPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getSpsNext().getUseAffine() ) // ATMVP only
+      if ( pcSlice->getSPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // ATMVP only
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() != 1, "Sub-block merge can number should be 1" );
       }
       else
-      if ( !pcSlice->getSPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getSpsNext().getUseAffine() ) // both off
+      if ( !pcSlice->getSPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // both off
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() != 0, "Sub-block merge can number should be 0" );
       }
       else
-      if ( pcSlice->getSPS()->getSpsNext().getUseAffine() )
+      if ( pcSlice->getSPS()->getUseAffine() )
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() > AFFINE_MRG_MAX_NUM_CANDS, "More affine merge candidates signalled than supported" );
         WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_affine_merge_cand" );

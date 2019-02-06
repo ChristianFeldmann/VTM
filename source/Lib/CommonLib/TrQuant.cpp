@@ -293,13 +293,13 @@ void TrQuant::invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &
 void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer )
 {
 #if JVET_M0464_UNI_MTS
-  bool mtsActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getSpsNext().getUseIntraMTS() : tu.cs->sps->getSpsNext().getUseInterMTS();
+  bool mtsActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS();
 #else
-  bool emtActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getSpsNext().getUseIntraEMT() : tu.cs->sps->getSpsNext().getUseInterEMT();
+  bool emtActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraEMT() : tu.cs->sps->getUseInterEMT();
 #endif
 
 #if JVET_M0303_IMPLICIT_MTS
-  bool mtsImplicit  = CU::isIntra( *tu.cu ) && tu.cs->sps->getSpsNext().getUseImplicitMTS() && compID == COMPONENT_Y;
+  bool mtsImplicit  = CU::isIntra( *tu.cu ) && tu.cs->sps->getUseImplicitMTS() && compID == COMPONENT_Y;
 #endif
 
   trTypeHor = DCT2;

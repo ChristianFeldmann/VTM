@@ -782,89 +782,6 @@ void HLSyntaxReader::parseHrdParameters(HRD *hrd, bool commonInfPresentFlag, uin
   }
 }
 
-
-void HLSyntaxReader::parseSPSNext( SPSNext& spsNext, const bool usePCM )
-{
-  unsigned  symbol = 0;
-
-  // tool enabling flags
-  READ_FLAG( symbol,    "large_ctu_flag" );                         spsNext.setUseLargeCTU            ( symbol != 0 );
-  READ_FLAG( symbol,    "imv_enable_flag" );                        spsNext.setUseIMV                 ( symbol != 0 );
-  READ_FLAG( symbol,    "disable_motion_compression_flag" );        spsNext.setDisableMotCompress     ( symbol != 0 );
-  READ_FLAG( symbol,    "lm_chroma_enabled_flag" );                 spsNext.setUseLMChroma            ( symbol != 0 );
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
-  if ( spsNext.getUseLMChroma() && spsNext.getSPS().getChromaFormatIdc() == CHROMA_420 )
-  {
-    READ_FLAG( symbol,  "sps_cclm_collocated_chroma_flag" );        spsNext.setCclmCollocatedChromaFlag( symbol != 0 );
-  }
-#endif
-
-#if JVET_M0303_IMPLICIT_MTS
-  READ_FLAG( symbol,    "mts_enabled_flag" );                       spsNext.setUseMTS                 ( symbol != 0 );
-  if ( spsNext.getUseMTS() )
-  {
-#endif
-#if JVET_M0464_UNI_MTS
-    READ_FLAG( symbol,    "mts_intra_enabled_flag" );               spsNext.setUseIntraMTS            ( symbol != 0 );
-    READ_FLAG( symbol,    "mts_inter_enabled_flag" );               spsNext.setUseInterMTS            ( symbol != 0 );
-#else
-    READ_FLAG( symbol,    "emt_intra_enabled_flag" );               spsNext.setUseIntraEMT            ( symbol != 0 );
-    READ_FLAG( symbol,    "emt_inter_enabled_flag" );               spsNext.setUseInterEMT            ( symbol != 0 );
-#endif
-#if JVET_M0303_IMPLICIT_MTS
-  }
-#endif
-
-  READ_FLAG( symbol,    "affine_flag" );                            spsNext.setUseAffine              ( symbol != 0 );
-  if ( spsNext.getUseAffine() )
-  {
-    READ_FLAG( symbol,  "affine_type_flag" );                       spsNext.setUseAffineType          ( symbol != 0 );
-  }
-  READ_FLAG( symbol,    "gbi_flag" );                               spsNext.setUseGBi                 ( symbol != 0 );
-#if JVET_M0483_IBC==0
-  READ_FLAG( symbol, "ibc_flag");                                   spsNext.setIBCMode                ( symbol != 0 );
-#endif
-  for( int k = 0; k < SPSNext::NumReservedFlags; k++ )
-  {
-    READ_FLAG( symbol,  "reserved_flag" );                          if( symbol != 0 ) EXIT("Incompatible version: SPSNext reserved flag not equal to zero (bitstream was probably created with newer software version)" );
-  }
-  READ_FLAG( symbol,  "mtt_enabled_flag" );                       spsNext.setMTTMode                ( symbol );
-  READ_FLAG( symbol,  "mhintra_flag" );                           spsNext.setUseMHIntra             ( symbol != 0 );
-  READ_FLAG( symbol,    "triangle_flag" );                          spsNext.setUseTriangle            ( symbol != 0 );
-#if ENABLE_WPP_PARALLELISM
-  READ_FLAG( symbol,  "next_dqp_enabled_flag" );                  spsNext.setUseNextDQP             ( symbol != 0 );
-#else
-  READ_FLAG( symbol,  "reserved_flag" );                          CHECK( symbol, "reserved flag not 0!" );
-#endif
-
-  if( spsNext.getUseIMV() )
-  {
-    READ_UVLC( symbol, "imv_mode_minus1" );                         spsNext.setImvMode( ImvMode( symbol + 1 ) );
-  }
-  if( spsNext.getMTTEnabled() )
-  {
-    READ_UVLC( symbol,  "mtt_mode_minus1" );                        spsNext.setMTTMode( symbol + 1 );
-  }
-
-
-#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
-  READ_FLAG( symbol, "sps_ladf_enabled_flag" );                     spsNext.setLadfEnabled( symbol != 0 );
-  if ( spsNext.getLadfEnabled() )
-  {
-    int signedSymbol = 0;
-    READ_CODE( 2, symbol, "sps_num_ladf_intervals_minus2");         spsNext.setLadfNumIntervals( symbol + 2 );
-    READ_SVLC(signedSymbol, "sps_ladf_lowest_interval_qp_offset" );      spsNext.setLadfQpOffset( signedSymbol, 0 );
-    for ( int k = 1; k < spsNext.getLadfNumIntervals(); k++ )
-    {
-      READ_SVLC(signedSymbol, "sps_ladf_qp_offset" );                    spsNext.setLadfQpOffset( signedSymbol, k );
-      READ_UVLC( symbol, "sps_ladf_delta_threshold_minus1");
-      spsNext.setLadfIntervalLowerBound(symbol + spsNext.getLadfIntervalLowerBound(k - 1) + 1, k);
-    }
-  }
-#endif
-  // ADD_NEW_TOOL : (sps extension parser) read tool enabling flags and associated parameters here
-}
-
 #if JVET_M0427_INLOOP_RESHAPER
 void HLSyntaxReader::parseReshaper(SliceReshapeInfo& info, const SPS* pcSPS, const bool isIntra)
 {
@@ -905,11 +822,17 @@ void HLSyntaxReader::parseReshaper(SliceReshapeInfo& info, const SPS* pcSPS, con
 #endif
 void HLSyntaxReader::parseSPS(SPS* pcSPS)
 {
+  uint32_t  uiCode;
+
 #if ENABLE_TRACING
   xTraceSPSHeader ();
 #endif
+#if HEVC_VPS
+  READ_CODE( 4,  uiCode, "sps_video_parameter_set_id");          pcSPS->setVPSId        ( uiCode );
+#endif
+  READ_UVLC(     uiCode, "sps_seq_parameter_set_id" );           pcSPS->setSPSId( uiCode );
+  CHECK(uiCode > 15, "Invalid SPS id signalled");
 
-  uint32_t  uiCode;
   READ_FLAG(uiCode, "intra_only_constraint_flag");               pcSPS->setIntraOnlyConstraintFlag(uiCode > 0 ? true : false);
   READ_CODE(4, uiCode, "max_bitdepth_constraint_idc");           pcSPS->setMaxBitDepthConstraintIdc(uiCode);
   READ_CODE(2, uiCode, "max_chroma_format_constraint_idc");      pcSPS->setMaxChromaFormatConstraintIdc(uiCode);
@@ -927,28 +850,22 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "no_ladf_constraint_flag");                  pcSPS->setNoLadfConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_dep_quant_constraint_flag");             pcSPS->setNoDepQuantConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_sign_data_hiding_constraint_flag");      pcSPS->setNoSignDataHidingConstraintFlag(uiCode > 0 ? true : false);
-#if JVET_M0483_IBC
-  READ_FLAG(uiCode, "ibc_flag");                                 pcSPS->setIBCFlag(uiCode);
-#endif
-#if HEVC_VPS
-  READ_CODE( 4,  uiCode, "sps_video_parameter_set_id");          pcSPS->setVPSId        ( uiCode );
-#endif
+
+  // KJS: Marakech decision: sub-layers added back
   READ_CODE( 3,  uiCode, "sps_max_sub_layers_minus1" );          pcSPS->setMaxTLayers   ( uiCode+1 );
   CHECK(uiCode > 6, "Invalid maximum number of T-layer signalled");
-
   READ_FLAG( uiCode, "sps_temporal_id_nesting_flag" );           pcSPS->setTemporalIdNestingFlag ( uiCode > 0 ? true : false );
   if ( pcSPS->getMaxTLayers() == 1 )
   {
     // sps_temporal_id_nesting_flag must be 1 when sps_max_sub_layers_minus1 is 0
     CHECK( uiCode != 1, "Invalid maximum number of T-layers" );
   }
-
   parsePTL(pcSPS->getPTL(), 1, pcSPS->getMaxTLayers() - 1);
-  READ_UVLC(     uiCode, "sps_seq_parameter_set_id" );           pcSPS->setSPSId( uiCode );
-  CHECK(uiCode > 15, "Invalid SPS id signalled");
 
   READ_UVLC(     uiCode, "chroma_format_idc" );                  pcSPS->setChromaFormatIdc( ChromaFormat(uiCode) );
   CHECK(uiCode > 3, "Invalid chroma format signalled");
+
+  // KJS: ENABLE_CHROMA_422 does not exist anymore o.O
   if( pcSPS->getChromaFormatIdc() == CHROMA_422 )
   {
     EXIT( "Error:  4:2:2 chroma sampling format not supported with current compiler setting."
@@ -962,6 +879,8 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_UVLC (    uiCode, "pic_width_in_luma_samples" );          pcSPS->setPicWidthInLumaSamples ( uiCode    );
   READ_UVLC (    uiCode, "pic_height_in_luma_samples" );         pcSPS->setPicHeightInLumaSamples( uiCode    );
+
+  // KJS: not removing yet
   READ_FLAG(     uiCode, "conformance_window_flag");
   if (uiCode != 0)
   {
@@ -986,6 +905,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC( uiCode,    "log2_max_pic_order_cnt_lsb_minus4" );   pcSPS->setBitsForPOC( 4 + uiCode );
   CHECK(uiCode > 12, "Invalid code");
 
+  // KJS: Marakech decision: sub-layers added back
   uint32_t subLayerOrderingInfoPresentFlag;
   READ_FLAG(subLayerOrderingInfoPresentFlag, "sps_sub_layer_ordering_info_present_flag");
 
@@ -1015,8 +935,8 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   unsigned  maxBTSize[3] = { 0, 0, 0 };
   unsigned  maxTTSize[3] = { 0, 0, 0 };
-  READ_FLAG(uiCode, "qtbt_dual_intra_tree");                   pcSPS->setUseDualITree(uiCode);
-  READ_UVLC(uiCode, "log2_CTU_size_minus2");                   pcSPS->setCTUSize(1 << (uiCode + 2));
+  READ_FLAG(uiCode, "qtbtt_dual_tree_intra_flag");             pcSPS->setUseDualITree(uiCode);
+  READ_UVLC(uiCode, "log2_ctu_size_minus2");                   pcSPS->setCTUSize(1 << (uiCode + 2));
   pcSPS->setMaxCodingDepth(uiCode);
   pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode);
   pcSPS->setMaxCUWidth(pcSPS->getCTUSize());
@@ -1025,33 +945,33 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC(uiCode, "log2_min_luma_coding_block_size_minus2");
   int log2MinCUSize = uiCode + 2;
   pcSPS->setLog2MinCodingBlockSize(log2MinCUSize);
-  READ_FLAG(uiCode, "sps_override_partition_constraints_enable_flag"); pcSPS->setSplitConsOverrideEnabledFlag(uiCode);
-  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice");      minQT[0] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
-  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_slice");      minQT[1] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
-  READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_slices");     maxBTD[1] = uiCode;
-  READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slices");     maxBTD[0] = uiCode;
+  READ_FLAG(uiCode, "partition_constraints_override_enabled_flag"); pcSPS->setSplitConsOverrideEnabledFlag(uiCode);
+  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_tile_group_luma");      minQT[0] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
+  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_tile_group");      minQT[1] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
+  READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_tile_group");     maxBTD[1] = uiCode;
+  READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_tile_group_luma");     maxBTD[0] = uiCode;
 
   maxTTSize[0] = maxBTSize[0] = minQT[0];
   if (maxBTD[0] != 0)
   {
-    READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_slice");     maxBTSize[0] <<= uiCode;
-    READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_slice");     maxTTSize[0] <<= uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_tile_group_luma");     maxBTSize[0] <<= uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_tile_group_luma");     maxTTSize[0] <<= uiCode;
   }
   maxTTSize[1] = maxBTSize[1] = minQT[1];
   if (maxBTD[1] != 0)
   {
-    READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_inter_slice");     maxBTSize[1] <<= uiCode;
-    READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_inter_slice");     maxTTSize[1] <<= uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_inter_tile_group");     maxBTSize[1] <<= uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_inter_tile_group");     maxTTSize[1] <<= uiCode;
   }
   if (pcSPS->getUseDualITree())
   {
-    READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma"); minQT[2] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
-    READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slices_chroma"); maxBTD[2] = uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_tile_group_chroma"); minQT[2] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
+    READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_tile_group_chroma"); maxBTD[2] = uiCode;
     maxTTSize[2] = maxBTSize[2] = minQT[2];
     if (maxBTD[2] != 0)
     {
-      READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_slice_chroma");       maxBTSize[2] <<= uiCode;
-      READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_slice_chroma");       maxTTSize[2] <<= uiCode;
+      READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_tile_group_chroma");       maxBTSize[2] <<= uiCode;
+      READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_tile_group_chroma");       maxTTSize[2] <<= uiCode;
     }
 }
 
@@ -1064,15 +984,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     CHECK(log2MinCUSize + pcSPS->getLog2DiffMaxMinCodingBlockSize() < 5, "Invalid code");
   }
-  READ_UVLC( uiCode, "log2_min_luma_transform_block_size_minus2" );   pcSPS->setQuadtreeTULog2MinSize( uiCode + 2 );
 
+  // KJS: does not exist anymore -> remove!
+  READ_UVLC( uiCode, "log2_min_luma_transform_block_size_minus2" );   pcSPS->setQuadtreeTULog2MinSize( uiCode + 2 );
   READ_UVLC( uiCode, "log2_diff_max_min_luma_transform_block_size" ); pcSPS->setQuadtreeTULog2MaxSize( uiCode + pcSPS->getQuadtreeTULog2MinSize() );
   pcSPS->setMaxTrSize( 1<<(uiCode + pcSPS->getQuadtreeTULog2MinSize()) );
 
   READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );
 
-  READ_FLAG( uiCode, "pcm_enabled_flag" );                          pcSPS->setPCMEnabledFlag( uiCode ? true : false );
+  READ_FLAG( uiCode, "sps_pcm_enabled_flag" );                          pcSPS->setPCMEnabledFlag( uiCode ? true : false );
   if( pcSPS->getPCMEnabledFlag() )
   {
     READ_CODE( 4, uiCode, "pcm_sample_bit_depth_luma_minus1" );          pcSPS->setPCMBitDepth    ( CHANNEL_TYPE_LUMA, 1 + uiCode );
@@ -1099,27 +1020,65 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setSBTMVPEnabledFlag(false);
   }
 
-  READ_FLAG( uiCode, "sps_bdof_enable_flag" );                      pcSPS->setBDOFEnabledFlag ( uiCode != 0 );
-#if JVET_M0255_FRACMMVD_SWITCH
-  READ_FLAG( uiCode,  "sps_fracmmvd_disabled_flag" );               pcSPS->setDisFracMmvdEnabledFlag ( uiCode != 0 );
-#endif
+  // KJS: sps_amvr_enabled_flag
+  READ_FLAG( uiCode,    "imv_enable_flag" );                        pcSPS->setUseIMV                 ( uiCode != 0 );
+
+  READ_FLAG( uiCode, "sps_bdof_enabled_flag" );                      pcSPS->setBDOFEnabledFlag ( uiCode != 0 );
+
 #if JVET_M0246_AFFINE_AMVR
   READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );             pcSPS->setAffineAmvrEnabledFlag ( uiCode != 0 );
 #endif
+
 #if JVET_M0147_DMVR
-  READ_FLAG(uiCode, "dmvr_enable_flag");                            pcSPS->setUseDMVR(uiCode != 0);
+  READ_FLAG(uiCode, "sps_dmvr_enable_flag");                        pcSPS->setUseDMVR(uiCode != 0);
 #endif
-#if HEVC_USE_SCALING_LISTS
-  READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
-  if(pcSPS->getScalingListFlag())
+
+  // KJS: sps_cclm_enabled_flag
+  READ_FLAG( uiCode,    "lm_chroma_enabled_flag" );                 pcSPS->setUseLMChroma            ( uiCode != 0 );
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  if ( pcSPS->getUseLMChroma() && pcSPS->getChromaFormatIdc() == CHROMA_420 )
   {
-    READ_FLAG( uiCode, "sps_scaling_list_data_present_flag" );                 pcSPS->setScalingListPresentFlag ( uiCode );
-    if(pcSPS->getScalingListPresentFlag ())
-    {
-      parseScalingList( &(pcSPS->getScalingList()) );
-    }
+    READ_FLAG( uiCode,  "sps_cclm_collocated_chroma_flag" );        pcSPS->setCclmCollocatedChromaFlag( uiCode != 0 );
   }
 #endif
+
+#if JVET_M0303_IMPLICIT_MTS
+  READ_FLAG( uiCode,    "mts_enabled_flag" );                       pcSPS->setUseMTS                 ( uiCode != 0 );
+  if ( pcSPS->getUseMTS() )
+  {
+#endif
+#if JVET_M0464_UNI_MTS
+    READ_FLAG( uiCode,    "mts_intra_enabled_flag" );               pcSPS->setUseIntraMTS            ( uiCode != 0 );
+    READ_FLAG( uiCode,    "mts_inter_enabled_flag" );               pcSPS->setUseInterMTS            ( uiCode != 0 );
+#else
+    READ_FLAG( uiCode,    "emt_intra_enabled_flag" );               pcSPS->setUseIntraEMT            ( uiCode != 0 );
+    READ_FLAG( uiCode,    "emt_inter_enabled_flag" );               pcSPS->setUseInterEMT            ( uiCode != 0 );
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  }
+#endif
+  // KJS: sps_affine_enabled_flag
+  READ_FLAG( uiCode,    "affine_flag" );                            pcSPS->setUseAffine              ( uiCode != 0 );
+  if ( pcSPS->getUseAffine() )
+  {
+    READ_FLAG( uiCode,  "affine_type_flag" );                       pcSPS->setUseAffineType          ( uiCode != 0 );
+  }
+  READ_FLAG( uiCode,    "gbi_flag" );                               pcSPS->setUseGBi                 ( uiCode != 0 );
+#if JVET_M0483_IBC
+  READ_FLAG(uiCode, "ibc_flag");                                    pcSPS->setIBCFlag(uiCode);
+#else
+  READ_FLAG( uiCode, "ibc_flag");                                   pcSPS->setIBCMode                ( uiCode != 0 );
+#endif
+  // KJS: sps_ciip_enabled_flag
+  READ_FLAG( uiCode,     "mhintra_flag" );                           pcSPS->setUseMHIntra             ( uiCode != 0 );
+
+  READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
+
+  // KJS: not in draft yet
+#if JVET_M0255_FRACMMVD_SWITCH
+  READ_FLAG( uiCode,  "sps_fracmmvd_disabled_flag" );               pcSPS->setDisFracMmvdEnabledFlag ( uiCode != 0 );
+#endif
+  // KJS: not in draft yet
 #if JVET_M0140_SBT
   READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
   if( pcSPS->getUseSBT() )
@@ -1127,7 +1086,48 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG(uiCode, "max_sbt_size_64_flag");                      pcSPS->setMaxSbtSize(uiCode != 0 ? 64 : 32);
   }
 #endif
+  // KJS: not in draft yet
+#if JVET_M0427_INLOOP_RESHAPER
+  READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);
+#endif
+  
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  READ_FLAG( uiCode, "sps_ladf_enabled_flag" );                     pcSPS->setLadfEnabled( uiCode != 0 );
+  if ( pcSPS->getLadfEnabled() )
+  {
+    int signedSymbol = 0;
+    READ_CODE( 2, uiCode, "sps_num_ladf_intervals_minus2");         pcSPS->setLadfNumIntervals( uiCode + 2 );
+    READ_SVLC(signedSymbol, "sps_ladf_lowest_interval_qp_offset" );      pcSPS->setLadfQpOffset( signedSymbol, 0 );
+    for ( int k = 1; k < pcSPS->getLadfNumIntervals(); k++ )
+    {
+      READ_SVLC(signedSymbol, "sps_ladf_qp_offset" );                    pcSPS->setLadfQpOffset( signedSymbol, k );
+      READ_UVLC( uiCode, "sps_ladf_delta_threshold_minus1");
+      pcSPS->setLadfIntervalLowerBound(uiCode + pcSPS->getLadfIntervalLowerBound(k - 1) + 1, k);
+    }
+  }
+#endif
+  
+  // KJS: BEGIN former SPSNext parameters
+  READ_FLAG( uiCode,    "large_ctu_flag" );                         pcSPS->setUseLargeCTU            ( uiCode != 0 );
+  READ_FLAG( uiCode,    "disable_motion_compression_flag" );        pcSPS->setDisableMotCompress     ( uiCode != 0 );
+  
+  READ_FLAG( uiCode,     "mtt_enabled_flag" );                       pcSPS->setMTTMode                ( uiCode );
 
+#if ENABLE_WPP_PARALLELISM
+  READ_FLAG( uiCode,     "next_dqp_enabled_flag" );                  pcSPS->setUseNextDQP             ( uiCode != 0 );
+#endif
+  
+  if( pcSPS->getUseIMV() )
+  {
+    READ_UVLC( uiCode, "imv_mode_minus1" );                         pcSPS->setImvMode( ImvMode( uiCode + 1 ) );
+  }
+  if( pcSPS->getMTTEnabled() )
+  {
+    READ_UVLC( uiCode,  "mtt_mode_minus1" );                        pcSPS->setMTTMode( uiCode + 1 );
+  }
+  // KJS: END former SPSNext parameters
+
+  // KJS: referece picture sets to be replaced
   READ_UVLC( uiCode, "num_short_term_ref_pic_sets" );
   CHECK(uiCode > 64, "Invalid code");
   pcSPS->createRPSList(uiCode);
@@ -1153,10 +1153,26 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setUsedByCurrPicLtSPSFlag(k, uiCode?1:0);
     }
   }
+
+  // KJS: not found in draft -> does not exist
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
   READ_FLAG( uiCode, "strong_intra_smoothing_enable_flag" );      pcSPS->setUseStrongIntraSmoothing(uiCode);
-
 #endif
+
+  // KJS: remove scaling lists?
+#if HEVC_USE_SCALING_LISTS
+  READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
+  if(pcSPS->getScalingListFlag())
+  {
+    READ_FLAG( uiCode, "sps_scaling_list_data_present_flag" );                 pcSPS->setScalingListPresentFlag ( uiCode );
+    if(pcSPS->getScalingListPresentFlag ())
+    {
+      parseScalingList( &(pcSPS->getScalingList()) );
+    }
+  }
+#endif
+
+  // KJS: no VUI defined yet
   READ_FLAG( uiCode, "vui_parameters_present_flag" );             pcSPS->setVuiParametersPresentFlag(uiCode);
 
   if (pcSPS->getVuiParametersPresentFlag())
@@ -1164,7 +1180,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     parseVUI(pcSPS->getVuiParameters(), pcSPS);
   }
 
-
+  // KJS: no SPS extensions defined yet
 
   READ_FLAG( uiCode, "sps_extension_present_flag");
   if (uiCode)
@@ -1185,11 +1201,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     {
       READ_FLAG( uiCode, syntaxStrings[i] );
       sps_extension_flags[i] = uiCode!=0;
-    }
-
-    if( pcSPS->getPTL()->getGeneralPTL()->getProfileIdc() == Profile::NEXT )
-    {
-      pcSPS->getSpsNext().setNextToolsEnabled( true );
     }
 
     bool bSkipTrailingExtensionBits=false;
@@ -1214,12 +1225,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
             READ_FLAG( uiCode, "cabac_bypass_alignment_enabled_flag");      spsRangeExtension.setCabacBypassAlignmentEnabledFlag  (uiCode != 0);
           }
           break;
-        case SPS_EXT__NEXT:
-        {
-          CHECK( !pcSPS->getSpsNext().nextToolsEnabled(), "Got SPS Next extension in non NEXT profile" );
-          parseSPSNext( pcSPS->getSpsNext(), pcSPS->getPCMEnabledFlag() );
-          break;
-        }
         default:
           bSkipTrailingExtensionBits=true;
           break;
@@ -1234,9 +1239,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       }
     }
   }
-#if JVET_M0427_INLOOP_RESHAPER
-  READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);
-#endif
   xReadRbspTrailingBits();
 }
 
@@ -1834,16 +1836,16 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
 #endif
 
-      if ( sps->getSBTMVPEnabledFlag() && !sps->getSpsNext().getUseAffine() ) // ATMVP only
+      if ( sps->getSBTMVPEnabledFlag() && !sps->getUseAffine() ) // ATMVP only
       {
         pcSlice->setMaxNumAffineMergeCand( 1 );
       }
-      else if ( !sps->getSBTMVPEnabledFlag() && !sps->getSpsNext().getUseAffine() ) // both off
+      else if ( !sps->getSBTMVPEnabledFlag() && !sps->getUseAffine() ) // both off
       {
         pcSlice->setMaxNumAffineMergeCand( 0 );
       }
       else
-      if ( sps->getSpsNext().getUseAffine() )
+      if ( sps->getUseAffine() )
       {
         READ_UVLC( uiCode, "five_minus_max_num_affine_merge_cand" );
         pcSlice->setMaxNumAffineMergeCand( AFFINE_MRG_MAX_NUM_CANDS - uiCode );

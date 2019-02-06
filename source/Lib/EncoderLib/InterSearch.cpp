@@ -988,7 +988,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
 
         if (validCand)
         {
-          sad = m_pcRdCost->getBvCostMultiplePreds(xPred, yPred, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+          sad = m_pcRdCost->getBvCostMultiplePreds(xPred, yPred, pu.cs->sps->getImvMode() == IMV_4PEL);
           m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * yPred + xPred;
           sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1010,7 +1010,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
         continue;
       }
 
-      sad = m_pcRdCost->getBvCostMultiplePreds(0, y, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+      sad = m_pcRdCost->getBvCostMultiplePreds(0, y, pu.cs->sps->getImvMode() == IMV_4PEL);
       m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y;
       sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1035,7 +1035,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
         continue;
       }
 
-      sad = m_pcRdCost->getBvCostMultiplePreds(x, 0, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+      sad = m_pcRdCost->getBvCostMultiplePreds(x, 0, pu.cs->sps->getImvMode() == IMV_4PEL);
       m_cDistParam.cur.buf = piRefSrch + x;
       sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1056,7 +1056,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
     bestX = cMVCand[0].getHor();
     bestY = cMVCand[0].getVer();
     sadBest = sadBestCand[0];
-    if ((!bestX && !bestY) || (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL) <= 32))
+    if ((!bestX && !bestY) || (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getImvMode() == IMV_4PEL) <= 32))
     {
       //chroma refine
       bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
@@ -1086,7 +1086,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
             continue;
           }
 
-          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getImvMode() == IMV_4PEL);
           m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y + x;
           sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1097,7 +1097,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
       bestX = cMVCand[0].getHor();
       bestY = cMVCand[0].getVer();
       sadBest = sadBestCand[0];
-      if (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL) <= 16)
+      if (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getImvMode() == IMV_4PEL) <= 16)
       {
         //chroma refine
         bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
@@ -1126,7 +1126,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
             continue;
           }
 
-          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getImvMode() == IMV_4PEL);
           m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y + x;
           sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1150,7 +1150,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
       bestY = cMVCand[0].getVer();
       sadBest = sadBestCand[0];
 
-      if ((sadBest >= tempSadBest) || ((sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL)) <= 32))
+      if ((sadBest >= tempSadBest) || ((sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getImvMode() == IMV_4PEL)) <= 32))
       {
         //chroma refine
         bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
@@ -1183,7 +1183,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
             continue;
           }
 
-          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL);
+          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getImvMode() == IMV_4PEL);
           m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y + x;
           sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1395,7 +1395,7 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
     PU::fillMvpCand(pu, REF_PIC_LIST_0, pu.refIdx[REF_PIC_LIST_0], amvpInfo4Pel);
 #endif
 
-    pu.cu->imv = 0;// (Int)cu.cs->sps->getSpsNext().getUseIMV(); // set as IMV=0 initially
+    pu.cu->imv = 0;// (Int)cu.cs->sps->getUseIMV(); // set as IMV=0 initially
     Mv    cMv, cMvPred[2];
     AMVPInfo amvpInfo;
 #if JVET_M0483_IBC
@@ -1444,7 +1444,7 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
         bitsBVPBest = bitsBVPTemp;
         bvpIdxBest = bvpIdxTemp;
 
-        if (cu.cs->sps->getSpsNext().getImvMode() && cMv != cMvPred[bvpIdxTemp])
+        if (cu.cs->sps->getImvMode() && cMv != cMvPred[bvpIdxTemp])
           pu.cu->imv = 1; // set as full-pel
         else
           pu.cu->imv = 0; // set as fractional-pel
@@ -1455,7 +1455,7 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
 
 
       Mv mvPredQuadPel;
-      if ((cMv.getHor() % 4 == 0) && (cMv.getVer() % 4 == 0) && (pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL))
+      if ((cMv.getHor() % 4 == 0) && (cMv.getVer() % 4 == 0) && (pu.cs->sps->getImvMode() == IMV_4PEL))
       {
         mvPredQuadPel = amvpInfo4Pel.mvCand[bvpIdxTemp];// cMvPred[bvpIdxTemp];
 
@@ -1472,7 +1472,7 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
         bitsBVPBest = bitsBVPQP;
         bvpIdxBest = bvpIdxTemp;
 
-        if (cu.cs->sps->getSpsNext().getImvMode())
+        if (cu.cs->sps->getImvMode())
           pu.cu->imv = 2; // set as quad-pel
       }
 
@@ -1493,10 +1493,10 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
       pu.cu->imv = 0;
     if (pu.cu->imv == 2)
       assert((cMv.getHor() % 16 == 0) && (cMv.getVer() % 16 == 0));
-    if (cu.cs->sps->getSpsNext().getUseIMV())
+    if (cu.cs->sps->getUseIMV())
       assert(pu.cu->imv>0 || pu.mvd[REF_PIC_LIST_0] == Mv());
 
-    if (!cu.cs->sps->getSpsNext().getUseIMV())
+    if (!cu.cs->sps->getUseIMV())
       pu.mvd[REF_PIC_LIST_0] >>= (2);
 
 #if JVET_M0483_IBC
@@ -1558,7 +1558,7 @@ void InterSearch::xxIBCHashSearch(PredictionUnit& pu, Mv* mvPred, int numMvPred,
           }
 
           int costQuadPel = MAX_UINT;
-          if ((candMv.getHor() % 4 == 0) && (candMv.getVer() % 4 == 0) && (pu.cs->sps->getSpsNext().getImvMode() == IMV_4PEL))
+          if ((candMv.getHor() % 4 == 0) && (candMv.getVer() % 4 == 0) && (pu.cs->sps->getImvMode() == IMV_4PEL))
           {
             Mv mvPredQuadPel;
             int imvShift = 2;
@@ -1716,10 +1716,10 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
     RefPicList eRefPicList = (refList == 0) ? REF_PIC_LIST_0 : REF_PIC_LIST_1;
     int refPicNumber = pu.cu->slice->getNumRefIdx(eRefPicList);
 
-#if !JVET_M0483_IBC
-    if (pu.cs->slice->getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
+#if JVET_M0483_IBC
+    if (pu.cs->slice->getSPS()->getIBCFlag() && eRefPicList == REF_PIC_LIST_0)
 #else
-      if (pu.cs->slice->getSPS()->getIBCFlag() && eRefPicList == REF_PIC_LIST_0)
+    if (pu.cs->slice->getSPS()->getIBCMode() && eRefPicList == REF_PIC_LIST_0)
 #endif
     {
       refPicNumber--;
@@ -1952,8 +1952,8 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
 #if JVET_M0246_AFFINE_AMVR
   bool checkAffine    = pu.cu->imv == 0 || pu.cu->slice->getSPS()->getAffineAmvrEnabledFlag();
-  bool checkNonAffine = pu.cu->imv == 0 || ( pu.cu->slice->getSPS()->getSpsNext().getUseIMV() &&
-                                             pu.cu->imv <= pu.cu->slice->getSPS()->getSpsNext().getImvMode() );
+  bool checkNonAffine = pu.cu->imv == 0 || ( pu.cu->slice->getSPS()->getUseIMV() &&
+                                             pu.cu->imv <= pu.cu->slice->getSPS()->getImvMode() );
   CodingUnit *bestCU  = pu.cu->cs->bestCS != nullptr ? pu.cu->cs->bestCS->getCU( CHANNEL_TYPE_LUMA ) : nullptr;
 #if JVET_M0444_SMVD
   bool trySmvd        = ( bestCU != nullptr && pu.cu->imv == 2 && checkAffine ) ? ( !bestCU->firstPU->mergeFlag && !bestCU->affine ) : true;
@@ -2021,8 +2021,8 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       {
         RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
 #if JVET_M0483_IBC==0
-        int refPicNumber = cs.slice->getNumRefIdx(eRefPicList);
-        if (cs.slice->getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
+        int refPicNumber = cs.sl#ice->getNumRefIdx(eRefPicList);
+        if (cs.slice->getSPS()->getIBCMode() && eRefPicList == REF_PIC_LIST_0)
         {
           refPicNumber--;
         }
@@ -2077,7 +2077,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           {
             xMotionEstimation( pu, origBuf, eRefPicList, cMvPred[iRefList][iRefIdxTemp], iRefIdxTemp, cMvTemp[iRefList][iRefIdxTemp], aaiMvpIdx[iRefList][iRefIdxTemp], uiBitsTemp, uiCostTemp, amvp[eRefPicList] );
           }
-          if( cu.cs->sps->getSpsNext().getUseGBi() && cu.GBiIdx == GBI_DEFAULT && cu.cs->slice->isInterB() )
+          if( cu.cs->sps->getUseGBi() && cu.GBiIdx == GBI_DEFAULT && cu.cs->slice->isInterB() )
           {
             const bool checkIdentical = true;
             m_uniMotions.setReadMode(checkIdentical, (uint32_t)iRefList, (uint32_t)iRefIdxTemp);
@@ -2113,7 +2113,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         }
       }
 
-      if (cu.Y().width > 8 && cu.Y().height > 8 && cu.slice->getSPS()->getSpsNext().getUseAffine()
+      if (cu.Y().width > 8 && cu.Y().height > 8 && cu.slice->getSPS()->getUseAffine()
 #if JVET_M0246_AFFINE_AMVR
         && checkAffine
 #else
@@ -2236,7 +2236,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           iRefStart = 0;
           iRefEnd   = cs.slice->getNumRefIdx(eRefPicList)-1;
 #if JVET_M0483_IBC==0
-          if (cs.slice->getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
+          if (cs.slice->getSPS()->getIBCMode() && eRefPicList == REF_PIC_LIST_0)
           {
             iRefEnd--;
           }
@@ -2250,7 +2250,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
               continue;
             }
             uiBitsTemp = uiMbBits[2] + uiMotBits[1-iRefList];
-            uiBitsTemp += ((cs.slice->getSPS()->getSpsNext().getUseGBi() == true) ? getWeightIdxBits(gbiIdx) : 0);
+            uiBitsTemp += ((cs.slice->getSPS()->getUseGBi() == true) ? getWeightIdxBits(gbiIdx) : 0);
             if ( cs.slice->getNumRefIdx(eRefPicList) > 1 )
             {
               uiBitsTemp += iRefIdxTemp+1;
@@ -2279,7 +2279,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
               uiCostBi            = uiCostTemp;
               uiMotBits[iRefList] = uiBitsTemp - uiMbBits[2] - uiMotBits[1-iRefList];
-              uiMotBits[iRefList] -= ((cs.slice->getSPS()->getSpsNext().getUseGBi() == true) ? getWeightIdxBits(gbiIdx) : 0);
+              uiMotBits[iRefList] -= ((cs.slice->getSPS()->getUseGBi() == true) ? getWeightIdxBits(gbiIdx) : 0);
               uiBits[2]           = uiBitsTemp;
 
               if(iNumIter!=1)
@@ -2400,8 +2400,8 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           }
 
           bits = uiMbBits[2];
-          bits += 1; // add one bit for symmetrical MVD mode
-          bits += ((cs.slice->getSPS()->getSpsNext().getUseGBi() == true) ? getWeightIdxBits(gbiIdx) : 0);
+          bits += 1; // add one bit for #symmetrical MVD mode
+          bits += ((cs.slice->getSPS()->getUseGBi() == true) ? getWeightIdxBits(gbiIdx) : 0);
           symCost += m_pcRdCost->getCost(bits);
           cTarMvField.setMvField(cCurMvField.mv.getSymmvdMv(cMvPredSym[curRefList], cMvPredSym[tarRefList]), refIdxTar);
 
@@ -2506,7 +2506,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 #if JVET_M0246_AFFINE_AMVR
     }
 #endif
-    if (cu.Y().width > 8 && cu.Y().height > 8 && cu.slice->getSPS()->getSpsNext().getUseAffine()
+    if (cu.Y().width > 8 && cu.Y().height > 8 && cu.slice->getSPS()->getUseAffine()
 #if JVET_M0246_AFFINE_AMVR
       && checkAffine
 #else
@@ -2543,7 +2543,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       int refIdx4Para[2] = { -1, -1 };
 
       xPredAffineInterSearch(pu, origBuf, puIdx, uiLastModeTemp, uiAffineCost, cMvHevcTemp, acMvAffine4Para, refIdx4Para, gbiIdx, enforceGBiPred,
-        ((cu.slice->getSPS()->getSpsNext().getUseGBi() == true) ? getWeightIdxBits(gbiIdx) : 0));
+        ((cu.slice->getSPS()->getUseGBi() == true) ? getWeightIdxBits(gbiIdx) : 0));
 
 #if JVET_M0246_AFFINE_AMVR
       if ( pu.cu->imv == 0 )
@@ -2552,7 +2552,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       }
 #endif
 
-      if ( cu.slice->getSPS()->getSpsNext().getUseAffineType() )
+      if ( cu.slice->getSPS()->getUseAffineType() )
       {
         if ( uiAffineCost < uiHevcCost * 1.05 ) ///< condition for 6 parameter affine ME
         {
@@ -2585,7 +2585,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           Distortion uiAffine6Cost = std::numeric_limits<Distortion>::max();
           cu.affineType = AFFINEMODEL_6PARAM;
           xPredAffineInterSearch(pu, origBuf, puIdx, uiLastModeTemp, uiAffine6Cost, cMvHevcTemp, acMvAffine4Para, refIdx4Para, gbiIdx, enforceGBiPred,
-            ((cu.slice->getSPS()->getSpsNext().getUseGBi() == true) ? getWeightIdxBits(gbiIdx) : 0));
+            ((cu.slice->getSPS()->getUseGBi() == true) ? getWeightIdxBits(gbiIdx) : 0));
 
 #if JVET_M0246_AFFINE_AMVR
           if ( pu.cu->imv == 0 )
@@ -2945,7 +2945,7 @@ Distortion InterSearch::xGetAffineTemplateCost( PredictionUnit& pu, PelUnitBuf& 
 
 void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, RefPicList eRefPicList, Mv& rcMvPred, int iRefIdxPred, Mv& rcMv, int& riMVPIdx, uint32_t& ruiBits, Distortion& ruiCost, const AMVPInfo& amvpInfo, bool bBi)
 {
-  if( pu.cu->cs->sps->getSpsNext().getUseGBi() && pu.cu->GBiIdx != GBI_DEFAULT && !bBi && xReadBufferedUniMv(pu, eRefPicList, iRefIdxPred, rcMvPred, rcMv, ruiBits, ruiCost) )
+  if( pu.cu->cs->sps->getUseGBi() && pu.cu->GBiIdx != GBI_DEFAULT && !bBi && xReadBufferedUniMv(pu, eRefPicList, iRefIdxPred, rcMvPred, rcMv, ruiBits, ruiCost) )
   {
     return;
   }
@@ -2991,7 +2991,7 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
   cStruct.inCtuSearch = false;
   cStruct.zeroMV = false;
   {
-    if (pu.cs->sps->getSpsNext().getUseCompositeRef() && pu.cs->slice->getRefPic(eRefPicList, iRefIdxPred)->longTerm)
+    if (pu.cs->sps->getUseCompositeRef() && pu.cs->slice->getRefPic(eRefPicList, iRefIdxPred)->longTerm)
     {
       cStruct.inCtuSearch = true;
     }
@@ -3116,7 +3116,7 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
   sr.right  = mvBR.hor;
   sr.bottom = mvBR.ver;
 
-  if (pu.cs->sps->getSpsNext().getUseCompositeRef() && cStruct.inCtuSearch)
+  if (pu.cs->sps->getUseCompositeRef() && cStruct.inCtuSearch)
   {
     Position posRB = pu.Y().bottomRight();
     Position posTL = pu.Y().topLeft();
@@ -3817,7 +3817,7 @@ void InterSearch::xPatternSearchFracDIF(
 #endif
 
 
-  if (cStruct.imvShift || (pu.cs->sps->getSpsNext().getUseCompositeRef() && cStruct.zeroMV))
+  if (cStruct.imvShift || (pu.cs->sps->getUseCompositeRef() && cStruct.zeroMV))
   {
     m_pcRdCost->setDistParam( m_cDistParam, *cStruct.pcPatternKey, cStruct.piRefY + iOffset, cStruct.iRefStride, m_lumaClpRng.bd, COMPONENT_Y, 0, 1, m_pcEncCfg->getUseHADME() && !bIsLosslessCoded );
     ruiCost = m_cDistParam.distFunc( m_cDistParam );
@@ -4080,8 +4080,8 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   {
     RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
 #if JVET_M0483_IBC==0
-    int refPicNumber = slice.getNumRefIdx(eRefPicList);
-    if (slice.getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
+    int refPicNumber = s#lice.getNumRefIdx(eRefPicList);
+    if (slice.getSPS()->getIBCMode() && eRefPicList == REF_PIC_LIST_0)
     {
       refPicNumber--;
     }
@@ -4173,7 +4173,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 #endif
 
       if (pu.cu->affineType == AFFINEMODEL_4PARAM && m_affMVListSize
-        && (!pu.cu->cs->sps->getSpsNext().getUseGBi() || gbiIdx == GBI_DEFAULT)
+        && (!pu.cu->cs->sps->getUseGBi() || gbiIdx == GBI_DEFAULT)
         )
       {
         int shift = MAX_CU_DEPTH;
@@ -4401,7 +4401,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 #endif
         );
       }
-      if(pu.cu->cs->sps->getSpsNext().getUseGBi() && pu.cu->GBiIdx == GBI_DEFAULT && pu.cu->slice->isInterB())
+      if(pu.cu->cs->sps->getUseGBi() && pu.cu->GBiIdx == GBI_DEFAULT && pu.cu->slice->isInterB())
       {
         m_uniMotions.setReadModeAffine(true, (uint8_t)iRefList, (uint8_t)iRefIdxTemp, pu.cu->affineType);
         m_uniMotions.copyAffineMvFrom(cMvTemp[iRefList][iRefIdxTemp], uiCostTemp - m_pcRdCost->getCost(uiBitsTemp), (uint8_t)iRefList, (uint8_t)iRefIdxTemp, pu.cu->affineType
@@ -4449,9 +4449,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   {
     ::memcpy( mvAffine4Para, cMvTemp, sizeof( cMvTemp ) );
 #if JVET_M0246_AFFINE_AMVR
-    if ( pu.cu->imv == 0 && ( !pu.cu->cs->sps->getSpsNext().getUseGBi() || gbiIdx == GBI_DEFAULT ) )
+    if ( pu.cu->imv == 0 && ( !pu.cu->cs->sps->getUseGBi() || gbiIdx == GBI_DEFAULT ) )
 #else
-    if (!pu.cu->cs->sps->getSpsNext().getUseGBi() || gbiIdx == GBI_DEFAULT)
+    if (!pu.cu->cs->sps->getUseGBi() || gbiIdx == GBI_DEFAULT)
 #endif
     {
       AffineMVInfo *affMVInfo = m_affMVList + m_affMVListIdx;
@@ -4607,7 +4607,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
       iRefStart = 0;
       iRefEnd   = slice.getNumRefIdx(eRefPicList) - 1;
 #if JVET_M0483_IBC==0
-      if (slice.getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
+      if (slice.getSPS()->getIBCMode() && eRefPicList == REF_PIC_LIST_0)
       {
         iRefEnd--;
       }
@@ -4626,7 +4626,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
         }
         // update bits
         uiBitsTemp = uiMbBits[2] + uiMotBits[1-iRefList];
-        uiBitsTemp += ((pu.cu->slice->getSPS()->getSpsNext().getUseGBi() == true) ? gbiIdxBits : 0);
+        uiBitsTemp += ((pu.cu->slice->getSPS()->getUseGBi() == true) ? gbiIdxBits : 0);
         if( slice.getNumRefIdx(eRefPicList) > 1 )
         {
           uiBitsTemp += iRefIdxTemp+1;
@@ -4657,7 +4657,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 
           uiCostBi            = uiCostTemp;
           uiMotBits[iRefList] = uiBitsTemp - uiMbBits[2] - uiMotBits[1-iRefList];
-          uiMotBits[iRefList] -= ((pu.cu->slice->getSPS()->getSpsNext().getUseGBi() == true) ? gbiIdxBits : 0);
+          uiMotBits[iRefList] -= ((pu.cu->slice->getSPS()->getUseGBi() == true) ? gbiIdxBits : 0);
           uiBits[2]           = uiBitsTemp;
 
           if ( iNumIter != 1 ) // MC for next iter
@@ -4998,7 +4998,7 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
 #endif
                                            bool            bBi)
 {
-  if( pu.cu->cs->sps->getSpsNext().getUseGBi() && pu.cu->GBiIdx != GBI_DEFAULT && !bBi && xReadBufferedAffineUniMv(pu, eRefPicList, iRefIdxPred, acMvPred, acMv, ruiBits, ruiCost
+  if( pu.cu->cs->sps->getUseGBi() && pu.cu->GBiIdx != GBI_DEFAULT && !bBi && xReadBufferedAffineUniMv(pu, eRefPicList, iRefIdxPred, acMvPred, acMv, ruiBits, ruiCost
 #if JVET_M0247_AFFINE_AMVR_ENCOPT
       , mvpIdx, aamvpi
 #endif
@@ -5165,7 +5165,7 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
     iIterTime = bBi ? 3 : 5;
   }
 
-  if ( !pu.cu->cs->sps->getSpsNext().getUseAffineType() )
+  if ( !pu.cu->cs->sps->getUseAffineType() )
   {
     iIterTime = bBi ? 5 : 7;
   }
@@ -6455,7 +6455,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #if JVET_M0464_UNI_MTS
       const int numTransformCandidates = nNumTransformCands;
 #else
-      const int numEmtTransformCandidates   = isLuma(compID) && tu.cu->emtFlag && sps.getSpsNext().getUseInterEMT() ? 4 : 1;
+      const int numEmtTransformCandidates   = isLuma(compID) && tu.cu->emtFlag && sps.getUseInterEMT() ? 4 : 1;
       const int numTransformCandidates      = checkTransformSkip[compID] ? ( numEmtTransformCandidates + 1 ) : numEmtTransformCandidates;
       int lastTransformModeIndex            = numTransformCandidates - 1; //lastTransformModeIndex is the mode for transformSkip (if transformSkip is active)
 #endif

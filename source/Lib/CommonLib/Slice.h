@@ -877,7 +877,9 @@ private:
   unsigned    m_MTTMode;
 
   bool        m_compositeRefEnabled;        //composite longterm reference
+#if !JVET_M0483_IBC
   unsigned    m_IBCMode;
+#endif
 
 public:
   SPSNext( SPS& sps );
@@ -958,8 +960,10 @@ public:
   bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
   void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
+#if !JVET_M0483_IBC
   void      setIBCMode            (unsigned IBCMode)                                { m_IBCMode = IBCMode; }
   unsigned  getIBCMode            ()                                      const     { return m_IBCMode; }
+#endif
 };
 
 

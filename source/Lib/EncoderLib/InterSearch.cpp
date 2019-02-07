@@ -1716,7 +1716,11 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
     RefPicList eRefPicList = (refList == 0) ? REF_PIC_LIST_0 : REF_PIC_LIST_1;
     int refPicNumber = pu.cu->slice->getNumRefIdx(eRefPicList);
 
+#if !JVET_M0483_IBC
     if (pu.cs->slice->getSPS()->getSpsNext().getIBCMode() && eRefPicList == REF_PIC_LIST_0)
+#else
+      if (pu.cs->slice->getSPS()->getIBCFlag() && eRefPicList == REF_PIC_LIST_0)
+#endif
     {
       refPicNumber--;
     }

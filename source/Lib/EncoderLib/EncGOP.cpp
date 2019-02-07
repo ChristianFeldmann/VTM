@@ -186,8 +186,10 @@ void EncGOP::init ( EncLib* pcEncLib )
   }
   else if (m_pcCfg->getLumaLevelToDeltaQPMapping().mode)
   {
+    pcEncLib->getRdCost()->initLumaLevelToWeightTableReshape();
+#else
+  pcEncLib->getRdCost()->initLumaLevelToWeightTable();
 #endif
-    pcEncLib->getRdCost()->initLumaLevelToWeightTable();
 #if JVET_M0427_INLOOP_RESHAPER
   }
   pcEncLib->getALF()->getLumaLevelWeightTable() = pcEncLib->getRdCost()->getLumaLevelWeightTable();

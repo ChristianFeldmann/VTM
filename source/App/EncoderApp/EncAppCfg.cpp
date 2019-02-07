@@ -2257,6 +2257,11 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_lumaLevelToDeltaQPMapping.mode && m_uiDeltaQpRD > 0,                      "Luma-level-based Delta QP cannot be used together with slice level multiple-QP optimization\n" );
 #endif
 #if JVET_M0427_INLOOP_RESHAPER
+  if (m_lumaLevelToDeltaQPMapping.mode && m_lumaReshapeEnable)
+  {
+    msg(WARNING, "For HDR-PQ, reshaper should be used mutual-exclusively with Luma-level-based Delta QP. If use luma DQP, turn reshaper off.\n");
+    m_lumaReshapeEnable = false;
+  }
   if (!m_lumaReshapeEnable)
   {
     m_reshapeSignalType = RESHAPE_SIGNAL_NULL;

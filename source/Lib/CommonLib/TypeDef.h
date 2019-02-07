@@ -1587,7 +1587,7 @@ struct AlfSliceParam
   short                        filterCoeffDeltaIdx[MAX_NUM_ALF_CLASSES];                // filter_coeff_delta[i]
   bool                         alfLumaCoeffFlag[MAX_NUM_ALF_CLASSES];                   // alf_luma_coeff_flag[i]
   int                          numLumaFilters;                                          // number_of_filters_minus1 + 1
-  bool                         coeffDeltaFlag;                                          // alf_coefficients_delta_flag
+  bool                         alfLumaCoeffDeltaFlag;                                   // alf_luma_coeff_delta_flag
   bool                         alfLumaCoeffDeltaPredictionFlag;                         // alf_luma_coeff_delta_prediction_flag
   std::vector<AlfFilterShape>* filterShapes;
 
@@ -1599,7 +1599,7 @@ struct AlfSliceParam
     std::memset( filterCoeffDeltaIdx, 0, sizeof( filterCoeffDeltaIdx ) );
     std::memset( alfLumaCoeffFlag, true, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = 1;
-    coeffDeltaFlag = false;
+    alfLumaCoeffDeltaFlag = false;
     alfLumaCoeffDeltaPredictionFlag = false;
   }
 
@@ -1611,7 +1611,7 @@ struct AlfSliceParam
     std::memcpy( filterCoeffDeltaIdx, src.filterCoeffDeltaIdx, sizeof( filterCoeffDeltaIdx ) );
     std::memcpy( alfLumaCoeffFlag, src.alfLumaCoeffFlag, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = src.numLumaFilters;
-    coeffDeltaFlag = src.coeffDeltaFlag;
+    alfLumaCoeffDeltaFlag = src.alfLumaCoeffDeltaFlag;
     alfLumaCoeffDeltaPredictionFlag = src.alfLumaCoeffDeltaPredictionFlag;
     filterShapes = src.filterShapes;
     return *this;

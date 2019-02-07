@@ -2516,9 +2516,9 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
   if( !isChroma )
   {
     READ_FLAG( code, "alf_luma_coeff_delta_flag" );
-    alfSliceParam.coeffDeltaFlag = code;
+    alfSliceParam.alfLumaCoeffDeltaFlag = code;
 
-    if( !alfSliceParam.coeffDeltaFlag )
+    if( !alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       std::memset( alfSliceParam.alfLumaCoeffFlag, true, sizeof( alfSliceParam.alfLumaCoeffFlag ) );
 
@@ -2558,7 +2558,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
 
   if( !isChroma )
   {
-    if( alfSliceParam.coeffDeltaFlag )
+    if( alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       for( int ind = 0; ind < alfSliceParam.numLumaFilters; ++ind )
       {
@@ -2571,7 +2571,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.coeffDeltaFlag )
+    if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       memset( coeff + ind * MAX_NUM_ALF_LUMA_COEFF, 0, sizeof( *coeff ) * alfShape.numCoeff );
       continue;

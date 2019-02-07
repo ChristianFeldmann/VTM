@@ -314,7 +314,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
   // 2: EMT is being checked for current CU. Stored results of DCT2 can be utilized for speedup
   uint8_t emtUsageFlag = 0;
   const int maxSizeEMT = EMT_INTRA_MAX_CU_WITH_QTBT;
-  if( width <= maxSizeEMT && height <= maxSizeEMT && sps.getSpsNext().getUseIntraEMT() )
+  if( width <= maxSizeEMT && height <= maxSizeEMT && sps.getUseIntraEMT() )
   {
     emtUsageFlag = cu.emtFlag == 1 ? 2 : 1;
   }
@@ -1810,7 +1810,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #if JVET_M0483_IBC
   bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
 #else
-  bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode()));
+  bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getIBCMode()));
 #endif
   if (flag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && isChroma(compID))
   {
@@ -2456,7 +2456,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT(CodingStructure &cs, Partition
 #endif
 {
   UnitArea currArea                   = partitioner.currArea();
-  const bool keepResi                 = cs.sps->getSpsNext().getUseLMChroma() || KEEP_PRED_AND_RESI_SIGNALS;
+  const bool keepResi                 = cs.sps->getUseLMChroma() || KEEP_PRED_AND_RESI_SIGNALS;
   if( !currArea.Cb().valid() ) return ChromaCbfs( false );
 
 

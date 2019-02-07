@@ -349,7 +349,7 @@ unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, 
 
 unsigned DeriveCtx::CtxInterDir( const PredictionUnit& pu )
 {
-  if( pu.cs->sps->getSpsNext().getUseLargeCTU() )
+  if( pu.cs->sps->getUseLargeCTU() )
   {
     return Clip3( 0, 3, 7 - ( ( g_aucLog2[pu.lumaSize().width] + g_aucLog2[pu.lumaSize().height] + 1 ) >> 1 ) );    // VG-ASYMM DONE
   }

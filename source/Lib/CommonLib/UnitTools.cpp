@@ -190,7 +190,7 @@ int CU::predictQP( const CodingUnit& cu, const int prevQP )
   const CodingStructure &cs = *cu.cs;
 
 #if ENABLE_WPP_PARALLELISM
-  if( cs.sps->getSpsNext().getUseNextDQP() )
+  if( cs.sps->getUseNextDQP() )
   {
     // Inter-CTU 2D "planar"   c(orner)  a(bove)
     // predictor arrangement:  b(efore)  p(rediction)
@@ -799,7 +799,7 @@ bool PU::isLMCMode(unsigned mode)
 }
 bool PU::isLMCModeEnabled(const PredictionUnit &pu, unsigned mode)
 {
-  if ( pu.cs->sps->getSpsNext().getUseLMChroma() )
+  if ( pu.cs->sps->getUseLMChroma() )
   {
     return true;
   }
@@ -1915,7 +1915,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     if (cnt > 1 && cnt < maxNumMergeCand)
 #else
     // skip when only 1 candidate is added so far or one is BV and one is MV
-    if( cnt > 1 && cnt < maxNumMergeCand && !(mrgCtx.mrgTypeNeighbours[0] != mrgCtx.mrgTypeNeighbours[1] && pu.cs->sps->getSpsNext().getIBCMode()))
+    if( cnt > 1 && cnt < maxNumMergeCand && !(mrgCtx.mrgTypeNeighbours[0] != mrgCtx.mrgTypeNeighbours[1] && pu.cs->sps->getIBCMode()))
 #endif
 #else
     for( int idx = 0; idx < end && cnt != maxNumMergeCand; idx++ )
@@ -1934,7 +1934,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 
 #if !JVET_M0193_PAIR_AVG_REDUCTION && JVET_M0483_IBC==0
       // skip when one is BV and one is MV
-      if (mrgCtx.mrgTypeNeighbours[i] != mrgCtx.mrgTypeNeighbours[j] && pu.cs->sps->getSpsNext().getIBCMode())
+      if (mrgCtx.mrgTypeNeighbours[i] != mrgCtx.mrgTypeNeighbours[j] && pu.cs->sps->getIBCMode())
       {
         continue;
       }
@@ -1979,9 +1979,9 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 
 #if JVET_M0483_IBC==0
 #if JVET_M0193_PAIR_AVG_REDUCTION
-          if (mrgCtx.mrgTypeNeighbours[0] == MRG_TYPE_IBC && mrgCtx.mrgTypeNeighbours[1] == MRG_TYPE_IBC && pu.cs->sps->getSpsNext().getIBCMode())
+          if (mrgCtx.mrgTypeNeighbours[0] == MRG_TYPE_IBC && mrgCtx.mrgTypeNeighbours[1] == MRG_TYPE_IBC && pu.cs->sps->getIBCMode())
 #else
-          if (mrgCtx.mrgTypeNeighbours[i] == MRG_TYPE_IBC && mrgCtx.mrgTypeNeighbours[j] == MRG_TYPE_IBC && pu.cs->sps->getSpsNext().getIBCMode())
+          if (mrgCtx.mrgTypeNeighbours[i] == MRG_TYPE_IBC && mrgCtx.mrgTypeNeighbours[j] == MRG_TYPE_IBC && pu.cs->sps->getIBCMode())
 #endif
           {
              mrgCtx.mrgTypeNeighbours[cnt] = MRG_TYPE_IBC;
@@ -4003,7 +4003,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
     }
   }
 
-  if ( slice.getSPS()->getSpsNext().getUseAffine() )
+  if ( slice.getSPS()->getUseAffine() )
   {
     ///> Start: inherited affine candidates
     const PredictionUnit* npu[5];
@@ -4189,7 +4189,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       };
 
       int verNum[6] = { 3, 3, 3, 3, 2, 2 };
-      int startIdx = pu.cs->sps->getSpsNext().getUseAffineType() ? 0 : 4;
+      int startIdx = pu.cs->sps->getUseAffineType() ? 0 : 4;
       for ( int idx = startIdx; idx < modelNum; idx++ )
       {
         int modelIdx = order[idx];
@@ -4422,7 +4422,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
 )
 {
 #if !JVET_M0409_ATMVP_FIX && JVET_M0483_IBC==0
-  if (count == countIBC && pu.cs->slice->getSPS()->getSpsNext().getIBCMode())
+  if (count == countIBC && pu.cs->slice->getSPS()->getIBCMode())
     return false;
 #endif
   const Slice   &slice = *pu.cs->slice;
@@ -4547,7 +4547,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
       mi.isIBCmot = false;
       if (colMi.isInter && colMi.isIBCmot == false)
 #else
-      if (colMi.isInter && !((colMi.interDir == 1 || colMi.interDir == 3) && (pColPic->cs->slice->getRefPOC(REF_PIC_LIST_0, colMi.refIdx[0]) == pColPic->cs->slice->getPOC()) && pu.cs->sps->getSpsNext().getIBCMode()))
+      if (colMi.isInter && !((colMi.interDir == 1 || colMi.interDir == 3) && (pColPic->cs->slice->getRefPOC(REF_PIC_LIST_0, colMi.refIdx[0]) == pColPic->cs->slice->getPOC()) && pu.cs->sps->getIBCMode()))
 #endif
       {
         for (unsigned currRefListId = 0; currRefListId < (bBSlice ? 2 : 1); currRefListId++)
@@ -5619,7 +5619,7 @@ bool CU::isSameSbtSize( const uint8_t sbtInfo1, const uint8_t sbtInfo2 )
 
 bool CU::isGBiIdxCoded( const CodingUnit &cu )
 {
-  if( cu.cs->sps->getSpsNext().getUseGBi() == false )
+  if( cu.cs->sps->getUseGBi() == false )
   {
     CHECK(cu.GBiIdx != GBI_DEFAULT, "Error: cu.GBiIdx != GBI_DEFAULT");
     return false;
@@ -5776,7 +5776,7 @@ bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
   bool   mtsAllowed = compID == COMPONENT_Y;
   const int maxSize = CU::isIntra( *tu.cu ) ? MTS_INTRA_MAX_CU_SIZE : MTS_INTER_MAX_CU_SIZE;
 
-  mtsAllowed &= CU::isIntra( *tu.cu ) ? tu.cs->sps->getSpsNext().getUseIntraMTS() : tu.cs->sps->getSpsNext().getUseInterMTS();
+  mtsAllowed &= CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS();
   mtsAllowed &= ( tu.lwidth() <= maxSize && tu.lheight() <= maxSize );
 #if JVET_M0102_INTRA_SUBPARTITIONS
   mtsAllowed &= !tu.cu->ispMode;

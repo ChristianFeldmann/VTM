@@ -822,151 +822,6 @@ public:
 };
 
 
-class SPS;
-
-// Deprecated: SPSNext is going to be removed! Do not add any parameters to SPSNext
-class SPSNext
-{
-private:
-  SPS&  m_SPS;
-
-  bool              m_NextEnabled;
-  //=====  tool enabling flags (4 bytes - NOTE: last flag must be used for new extensions) =====
-  bool              m_LargeCTU;                   // 5
-  bool              m_IMV;                        // 9
-  bool              m_DisableMotionCompression;   // 13
-  bool              m_LMChroma;                   // 17
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
-  bool              m_cclmCollocatedChromaFlag;
-#endif
-#if JVET_M0303_IMPLICIT_MTS
-  bool              m_MTS;
-#endif
-#if JVET_M0464_UNI_MTS
-  bool              m_IntraMTS;                   // 18
-  bool              m_InterMTS;                   // 19
-#else
-  bool              m_IntraEMT;                   // 18
-  bool              m_InterEMT;                   // 19
-#endif
-  bool              m_Affine;
-  bool              m_AffineType;
-  bool              m_GBi;                        //
-  bool              m_MTTEnabled;                 //
-  bool              m_MHIntra;
-  bool              m_Triangle;
-#if ENABLE_WPP_PARALLELISM
-  bool              m_NextDQP;
-#endif
-#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
-  bool              m_LadfEnabled;
-  int               m_LadfNumIntervals;
-  int               m_LadfQpOffset[MAX_LADF_INTERVALS];
-  int               m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
-#endif
-
-public:
-  const static int  NumReservedFlags = 32 - 27; /* current number of tool enabling flags */
-
-private:
-  //=====  additional parameters  =====
-  // qtbt
-  //imv
-  ImvMode     m_ImvMode;
-  // multi type tree (QTBT + triple split)
-  unsigned    m_MTTMode;
-
-  bool        m_compositeRefEnabled;        //composite longterm reference
-#if !JVET_M0483_IBC
-  unsigned    m_IBCMode;
-#endif
-
-public:
-  SPSNext( SPS& sps );
-
-  const SPS&  getSPS              () const                                          { return m_SPS; }
-  SPS&        getSPS              ()                                                { return m_SPS; }
-  bool        nextToolsEnabled    () const                                          { return m_NextEnabled; }
-  void        setNextToolsEnabled ( bool next )                                     { m_NextEnabled = next; }
-
-  //=====  tool enabling flags and extension bit  =====
-  void      setUseLargeCTU        ( bool b )                                        { m_LargeCTU = b; }
-  bool      getUseLargeCTU        ()                                      const     { return m_LargeCTU; }
-  void      setUseIMV             ( bool b )                                        { m_IMV = b; }
-  bool      getUseIMV             ()                                      const     { return m_IMV; }
-  void      setUseAffine          ( bool b )                                        { m_Affine = b; }
-  bool      getUseAffine          ()                                      const     { return m_Affine; }
-  void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
-  bool      getUseAffineType      ()                                      const     { return m_AffineType; }
-  void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
-  bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }
-  bool      getMTTEnabled         ()                                      const     { return m_MTTEnabled; }
-#if ENABLE_WPP_PARALLELISM
-  void      setUseNextDQP         ( bool b )                                        { m_NextDQP = b; }
-  bool      getUseNextDQP         ()                                      const     { return m_NextDQP; }
-#endif
-  void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
-  bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
-  void      setCclmCollocatedChromaFlag( bool b )                                   { m_cclmCollocatedChromaFlag = b; }
-  bool      getCclmCollocatedChromaFlag()                                 const     { return m_cclmCollocatedChromaFlag; }
-#endif
-#if JVET_M0303_IMPLICIT_MTS
-  void      setUseMTS             ( bool b )                                        { m_MTS = b; }
-  bool      getUseMTS             ()                                      const     { return m_MTS; }
-#if JVET_M0464_UNI_MTS
-  bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraMTS && !m_InterMTS; }
-#else
-  bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraEMT && !m_InterEMT; }
-#endif
-#endif
-#if JVET_M0464_UNI_MTS
-  void      setUseIntraMTS        ( bool b )                                        { m_IntraMTS = b; }
-  bool      getUseIntraMTS        ()                                      const     { return m_IntraMTS; }
-  void      setUseInterMTS        ( bool b )                                        { m_InterMTS = b; }
-  bool      getUseInterMTS        ()                                      const     { return m_InterMTS; }
-#else
-  void      setUseIntraEMT        ( bool b )                                        { m_IntraEMT = b; }
-  bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
-  void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
-  bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
-#endif
-  void      setUseGBi             ( bool b )                                        { m_GBi = b; }
-  bool      getUseGBi             ()                                      const     { return m_GBi; }
-#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
-  void      setLadfEnabled        ( bool b )                                        { m_LadfEnabled = b; }
-  bool      getLadfEnabled        ()                                      const     { return m_LadfEnabled; }
-  void      setLadfNumIntervals   ( int i )                                         { m_LadfNumIntervals = i; }
-  int       getLadfNumIntervals   ()                                      const     { return m_LadfNumIntervals; }
-  void      setLadfQpOffset       ( int value, int idx )                            { m_LadfQpOffset[ idx ] = value; }
-  int       getLadfQpOffset       ( int idx )                             const     { return m_LadfQpOffset[ idx ]; }
-  void      setLadfIntervalLowerBound( int value, int idx )                         { m_LadfIntervalLowerBound[ idx ] = value; }
-  int       getLadfIntervalLowerBound( int idx )                          const     { return m_LadfIntervalLowerBound[ idx ]; }
-#endif
-  //=====  additional parameters  =====
-  // qtbt
-  // sub pu tmvp
-  void      setImvMode(ImvMode m) { m_ImvMode = m; m_IMV = m != 0;  }
-  ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
-
-  // multi type tree
-  unsigned  getMTTMode            ()                                      const     { return m_MTTMode; }
-  void      setMTTMode            ( unsigned    mode )                              { m_MTTMode = mode; m_MTTEnabled = ( m_MTTMode != 0 ); }
-
-  void      setUseCompositeRef(bool b) { m_compositeRefEnabled = b; }
-  bool      getUseCompositeRef()                                      const { return m_compositeRefEnabled; }
-
-  void      setUseMHIntra         ( bool b )                                        { m_MHIntra = b; }
-  bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
-  void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
-  bool      getUseTriangle        ()                                      const     { return m_Triangle; }
-#if !JVET_M0483_IBC
-  void      setIBCMode            (unsigned IBCMode)                                { m_IBCMode = IBCMode; }
-  unsigned  getIBCMode            ()                                      const     { return m_IBCMode; }
-#endif
-};
-
-
 /// SPS class
 class SPS
 {
@@ -1078,7 +933,6 @@ private:
   VUI               m_vuiParameters;
 
   SPSRExt           m_spsRangeExtension;
-  SPSNext           m_spsNextExtension;
 
   static const int  m_winUnitX[NUM_CHROMA_FORMAT];
   static const int  m_winUnitY[NUM_CHROMA_FORMAT];
@@ -1095,6 +949,51 @@ private:
 #if JVET_M0427_INLOOP_RESHAPER
   bool              m_lumaReshapeEnable;
 #endif
+  // KJS: BEGIN former SPSNext parameters
+  bool              m_LargeCTU;                   // 5
+  bool              m_IMV;                        // 9
+  bool              m_DisableMotionCompression;   // 13
+  bool              m_LMChroma;                   // 17
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  bool              m_cclmCollocatedChromaFlag;
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  bool              m_MTS;
+#endif
+#if JVET_M0464_UNI_MTS
+  bool              m_IntraMTS;                   // 18
+  bool              m_InterMTS;                   // 19
+#else
+  bool              m_IntraEMT;                   // 18
+  bool              m_InterEMT;                   // 19
+#endif
+  bool              m_Affine;
+  bool              m_AffineType;
+  bool              m_GBi;                        //
+  bool              m_MTTEnabled;                 //
+  bool              m_MHIntra;
+  bool              m_Triangle;
+#if ENABLE_WPP_PARALLELISM
+  bool              m_NextDQP;
+#endif
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  bool              m_LadfEnabled;
+  int               m_LadfNumIntervals;
+  int               m_LadfQpOffset[MAX_LADF_INTERVALS];
+  int               m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
+#endif
+    //=====  additional parameters  =====
+  //imv
+  ImvMode     m_ImvMode;
+  // multi type tree (QTBT + triple split)
+  unsigned    m_MTTMode;
+  
+  bool        m_compositeRefEnabled;        //composite longterm reference
+#if !JVET_M0483_IBC
+  unsigned    m_IBCMode;
+#endif
+  // KJS: END former SPSNext parameters
+
 
 public:
 
@@ -1310,9 +1209,6 @@ public:
   const SPSRExt&          getSpsRangeExtension() const                                                    { return m_spsRangeExtension;                                          }
   SPSRExt&                getSpsRangeExtension()                                                          { return m_spsRangeExtension;                                          }
 
-  const SPSNext&          getSpsNext() const                                                              { return m_spsNextExtension;                                           }
-  SPSNext&                getSpsNext()                                                                    { return m_spsNextExtension;                                           }
-
   void                    setWrapAroundEnabledFlag(bool b)                                                { m_wrapAroundEnabledFlag = b;                                         }
   bool                    getWrapAroundEnabledFlag() const                                                { return m_wrapAroundEnabledFlag;                                      }
   void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
@@ -1331,6 +1227,83 @@ public:
   void                    setMaxSbtSize( uint8_t val )                                                    { m_MaxSbtSize = val; }
   uint8_t                 getMaxSbtSize() const                                                           { return m_MaxSbtSize; }
 #endif
+  
+  // KJS: BEGIN former SPSNext parameters
+  void      setUseLargeCTU        ( bool b )                                        { m_LargeCTU = b; }
+  bool      getUseLargeCTU        ()                                      const     { return m_LargeCTU; }
+  void      setUseIMV             ( bool b )                                        { m_IMV = b; }
+  bool      getUseIMV             ()                                      const     { return m_IMV; }
+  void      setUseAffine          ( bool b )                                        { m_Affine = b; }
+  bool      getUseAffine          ()                                      const     { return m_Affine; }
+  void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
+  bool      getUseAffineType      ()                                      const     { return m_AffineType; }
+  void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
+  bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }
+  bool      getMTTEnabled         ()                                      const     { return m_MTTEnabled; }
+#if ENABLE_WPP_PARALLELISM
+  void      setUseNextDQP         ( bool b )                                        { m_NextDQP = b; }
+  bool      getUseNextDQP         ()                                      const     { return m_NextDQP; }
+#endif
+  void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
+  bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
+#if JVET_M0142_CCLM_COLLOCATED_CHROMA
+  void      setCclmCollocatedChromaFlag( bool b )                                   { m_cclmCollocatedChromaFlag = b; }
+  bool      getCclmCollocatedChromaFlag()                                 const     { return m_cclmCollocatedChromaFlag; }
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  void      setUseMTS             ( bool b )                                        { m_MTS = b; }
+  bool      getUseMTS             ()                                      const     { return m_MTS; }
+#if JVET_M0464_UNI_MTS
+  bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraMTS && !m_InterMTS; }
+#else
+  bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraEMT && !m_InterEMT; }
+#endif
+#endif
+#if JVET_M0464_UNI_MTS
+  void      setUseIntraMTS        ( bool b )                                        { m_IntraMTS = b; }
+  bool      getUseIntraMTS        ()                                      const     { return m_IntraMTS; }
+  void      setUseInterMTS        ( bool b )                                        { m_InterMTS = b; }
+  bool      getUseInterMTS        ()                                      const     { return m_InterMTS; }
+#else
+  void      setUseIntraEMT        ( bool b )                                        { m_IntraEMT = b; }
+  bool      getUseIntraEMT        ()                                      const     { return m_IntraEMT; }
+  void      setUseInterEMT        ( bool b )                                        { m_InterEMT = b; }
+  bool      getUseInterEMT        ()                                      const     { return m_InterEMT; }
+#endif
+  void      setUseGBi             ( bool b )                                        { m_GBi = b; }
+  bool      getUseGBi             ()                                      const     { return m_GBi; }
+#if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
+  void      setLadfEnabled        ( bool b )                                        { m_LadfEnabled = b; }
+  bool      getLadfEnabled        ()                                      const     { return m_LadfEnabled; }
+  void      setLadfNumIntervals   ( int i )                                         { m_LadfNumIntervals = i; }
+  int       getLadfNumIntervals   ()                                      const     { return m_LadfNumIntervals; }
+  void      setLadfQpOffset       ( int value, int idx )                            { m_LadfQpOffset[ idx ] = value; }
+  int       getLadfQpOffset       ( int idx )                             const     { return m_LadfQpOffset[ idx ]; }
+  void      setLadfIntervalLowerBound( int value, int idx )                         { m_LadfIntervalLowerBound[ idx ] = value; }
+  int       getLadfIntervalLowerBound( int idx )                          const     { return m_LadfIntervalLowerBound[ idx ]; }
+#endif
+  //=====  additional parameters  =====
+  // qtbt
+  // sub pu tmvp
+  void      setImvMode(ImvMode m) { m_ImvMode = m; m_IMV = m != 0;  }
+  ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
+  
+  // multi type tree
+  unsigned  getMTTMode            ()                                      const     { return m_MTTMode; }
+  void      setMTTMode            ( unsigned    mode )                              { m_MTTMode = mode; m_MTTEnabled = ( m_MTTMode != 0 ); }
+  
+  void      setUseCompositeRef(bool b) { m_compositeRefEnabled = b; }
+  bool      getUseCompositeRef()                                      const { return m_compositeRefEnabled; }
+  
+  void      setUseMHIntra         ( bool b )                                        { m_MHIntra = b; }
+  bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
+  void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
+  bool      getUseTriangle        ()                                      const     { return m_Triangle; }
+#if !JVET_M0483_IBC
+  void      setIBCMode            (unsigned IBCMode)                                { m_IBCMode = IBCMode; }
+  unsigned  getIBCMode            ()                                      const     { return m_IBCMode; }
+#endif
+  // KJS: END former SPSNext parameters
 };
 
 
@@ -2288,7 +2261,7 @@ public:
   PreCalcValues( const SPS& sps, const PPS& pps, bool _isEncoder )
     : chrFormat           ( sps.getChromaFormatIdc() )
     , multiBlock422       ( false )
-    , noMotComp           ( sps.getSpsNext().getDisableMotCompress() )
+    , noMotComp           ( sps.getDisableMotCompress() )
     , maxCUWidth          ( sps.getMaxCUWidth() )
     , maxCUHeight         ( sps.getMaxCUHeight() )
     , maxCUWidthMask      ( maxCUWidth  - 1 )

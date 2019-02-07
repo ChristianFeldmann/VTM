@@ -1006,7 +1006,7 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__OTHER );
 
-  if( !cu.cs->sps->getSpsNext().getUseIMV() )
+  if( !cu.cs->sps->getUseIMV() )
   {
     return;
   }
@@ -1024,7 +1024,7 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
   }
 #endif
 
-  const SPSNext& spsNext = cu.cs->sps->getSpsNext();
+  const SPS *sps = cu.cs->sps;
 
   unsigned value = 0;
   unsigned ctxId = DeriveCtx::CtxIMVFlag( cu );
@@ -1038,7 +1038,7 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, ctxId );
 
-  if( spsNext.getImvMode() == IMV_4PEL && value )
+  if( sps->getImvMode() == IMV_4PEL && value )
   {
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 3 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 3 );
@@ -1443,7 +1443,7 @@ void CABACReader::intra_chroma_pred_mode( PredictionUnit& pu )
   }
 
   // LM chroma mode
-  if( pu.cs->sps->getSpsNext().getUseLMChroma() )
+  if( pu.cs->sps->getUseLMChroma() )
   {
     if( intra_chroma_lmc_mode( pu ) )
     {
@@ -1771,7 +1771,7 @@ void CABACReader::subblock_merge_flag( CodingUnit& cu )
     return;
   }
 
-  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getUseAffine() || cu.cs->sps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__AFFINE_FLAG );
 
@@ -1783,7 +1783,7 @@ void CABACReader::subblock_merge_flag( CodingUnit& cu )
 
 void CABACReader::affine_flag( CodingUnit& cu )
 {
-  if ( !cu.cs->slice->isIntra() && cu.cs->sps->getSpsNext().getUseAffine() && cu.lumaSize().width > 8 && cu.lumaSize().height > 8 )
+  if ( !cu.cs->slice->isIntra() && cu.cs->sps->getUseAffine() && cu.lumaSize().width > 8 && cu.lumaSize().height > 8 )
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__AFFINE_FLAG );
 
@@ -1791,7 +1791,7 @@ void CABACReader::affine_flag( CodingUnit& cu )
     cu.affine = m_BinDecoder.decodeBin( Ctx::AffineFlag( ctxId ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "affine_flag() affine=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
 
-    if ( cu.affine && cu.cs->sps->getSpsNext().getUseAffineType() )
+    if ( cu.affine && cu.cs->sps->getUseAffineType() )
     {
       ctxId = 0;
       cu.affineType = m_BinDecoder.decodeBin( Ctx::AffineType( ctxId ) );
@@ -2109,7 +2109,7 @@ void CABACReader::mvp_flag( PredictionUnit& pu, RefPicList eRefList )
 
 void CABACReader::MHIntra_flag(PredictionUnit& pu)
 {
-  if (!pu.cs->sps->getSpsNext().getUseMHIntra())
+  if (!pu.cs->sps->getUseMHIntra())
   {
     pu.mhIntraFlag = false;
     return;
@@ -2239,7 +2239,7 @@ void CABACReader::triangle_mode( CodingUnit& cu )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__TRIANGLE_FLAG );
 
-  if( !cu.cs->slice->getSPS()->getSpsNext().getUseTriangle() || !cu.cs->slice->isInterB() || cu.lwidth() * cu.lheight() < TRIANGLE_MIN_SIZE || cu.affine )
+  if( !cu.cs->slice->getSPS()->getUseTriangle() || !cu.cs->slice->isInterB() || cu.lwidth() * cu.lheight() < TRIANGLE_MIN_SIZE || cu.affine )
   {
     return;
   }
@@ -2799,7 +2799,7 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
   int       state         = 0;
 
 #if !JVET_M0464_UNI_MTS
-  bool useEmt = ( cu.cs->sps->getSpsNext().getUseIntraEMT() && cu.predMode == MODE_INTRA ) || ( cu.cs->sps->getSpsNext().getUseInterEMT() && cu.predMode != MODE_INTRA );
+  bool useEmt = ( cu.cs->sps->getUseIntraEMT() && cu.predMode == MODE_INTRA ) || ( cu.cs->sps->getUseInterEMT() && cu.predMode != MODE_INTRA );
   useEmt = useEmt && isLuma(compID);
 #if JVET_M0102_INTRA_SUBPARTITIONS
   useEmt = useEmt && !cu.ispMode;
@@ -2945,9 +2945,9 @@ void CABACReader::emt_cu_flag( CodingUnit& cu )
   const CodingStructure &cs = *cu.cs;
 
 #if JVET_M0483_IBC
-  if (!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && !CU::isIntra(cu))) || isChroma(cu.chType))
+  if (!((cs.sps->getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getUseInterEMT() && !CU::isIntra(cu))) || isChroma(cu.chType))
 #else
-  if( !( ( cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra( cu ) ) || ( cs.sps->getSpsNext().getUseInterEMT() && CU::isInter( cu ) ) ) || isChroma( cu.chType ) )
+  if( !( ( cs.sps->getUseIntraEMT() && CU::isIntra( cu ) ) || ( cs.sps->getUseInterEMT() && CU::isInter( cu ) ) ) || isChroma( cu.chType ) )
 #endif
   {
     return;

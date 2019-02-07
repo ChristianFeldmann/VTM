@@ -275,8 +275,8 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setSliceBits(0);
   rpcSlice->setPic( pcPic );
   rpcSlice->initSlice();
-  int multipleFactor = pcPic->cs->sps->getSpsNext().getUseCompositeRef() ? 2 : 1;
-  if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && isEncodeLtRef)
+  int multipleFactor = pcPic->cs->sps->getUseCompositeRef() ? 2 : 1;
+  if (pcPic->cs->sps->getUseCompositeRef() && isEncodeLtRef)
   {
     rpcSlice->setPicOutputFlag(false);
   }
@@ -1498,23 +1498,23 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if JVET_M0483_IBC
       (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
 #else
-      ( pcSlice->getSPS()->getSpsNext().getIBCMode() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch() ) )
+      ( pcSlice->getSPS()->getIBCMode() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch() ) )
 #endif
   {
 #if JVET_M0427_INLOOP_RESHAPER
-#if !JVET_M0483_IBC
-    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getSpsNext().getIBCMode())
-#else
+#if JVET_M0483_IBC
     if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
+#else
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCMode())
 #endif
       cs.picture->getOrigBuf(COMPONENT_Y).rspSignal(m_pcLib->getReshaper()->getFwdLUT());
 #endif
     m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
 #if JVET_M0427_INLOOP_RESHAPER
-#if !JVET_M0483_IBC
-    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getSpsNext().getIBCMode())
-#else
+#if JVET_M0483_IBC
     if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
+#else
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCMode())
 #endif
       cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
 #endif

@@ -364,7 +364,7 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
 void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsigned ctuRsAddr, const int prevQP[], const int currQP[] )
 {
 #if !JVET_M0255_FRACMMVD_SWITCH
-  if (m_pcEncCfg->getIBCHashSearch() && ctuRsAddr == 0 && cs.slice->getSPS()->getSpsNext().getIBCMode())
+  if (m_pcEncCfg->getIBCHashSearch() && ctuRsAddr == 0 && cs.slice->getSPS()->getIBCMode())
   {
 #if JVET_M0427_INLOOP_RESHAPER
     if (cs.slice->getSPS()->getUseReshaper() && m_pcReshape->getCTUFlag())
@@ -714,7 +714,7 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   bestCS->chType = partitioner.chType;
   m_modeCtrl->initCULevel( partitioner, *tempCS );
 #if JVET_M0140_SBT
-  if( partitioner.currQtDepth == 0 && partitioner.currMtDepth == 0 && !tempCS->slice->isIntra() && ( sps.getUseSBT() || sps.getSpsNext().getUseInterMTS() ) )
+  if( partitioner.currQtDepth == 0 && partitioner.currMtDepth == 0 && !tempCS->slice->isIntra() && ( sps.getUseSBT() || sps.getUseInterMTS() ) )
   {
     auto slsSbt = dynamic_cast<SaveLoadEncInfoSbt*>( m_modeCtrl );
     int maxSLSize = sps.getUseSBT() ? tempCS->slice->getSPS()->getMaxSbtSize() : MTS_INTER_MAX_CU_SIZE;
@@ -1514,7 +1514,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 #if !JVET_M0464_UNI_MTS
   const CodingUnit *bestCU    = bestCS->getCU( partitioner.chType );
   const int maxSizeEMT        = EMT_INTRA_MAX_CU_WITH_QTBT;
-  uint8_t considerEmtSecondPass = ( sps.getSpsNext().getUseIntraEMT() && isLuma( partitioner.chType ) && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT ) ? 1 : 0;
+  uint8_t considerEmtSecondPass = ( sps.getUseIntraEMT() && isLuma( partitioner.chType ) && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT ) ? 1 : 0;
 #endif
 
 #if JVET_M0102_INTRA_SUBPARTITIONS
@@ -2033,7 +2033,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
   static_vector<unsigned, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM>  RdModeList2; // store the Intra mode for Intrainter
   RdModeList2.clear();
-  bool isIntrainterEnabled = sps.getSpsNext().getUseMHIntra();
+  bool isIntrainterEnabled = sps.getUseMHIntra();
   if (bestCS->area.lwidth() * bestCS->area.lheight() < 64 || bestCS->area.lwidth() >= MAX_CU_SIZE || bestCS->area.lheight() >= MAX_CU_SIZE)
   {
     isIntrainterEnabled = false;
@@ -2057,7 +2057,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if JVET_M0483_IBC
       if (slice.getSPS()->getIBCFlag())
 #else
-      if (slice.getSPS()->getSpsNext().getIBCMode())
+      if (slice.getSPS()->getIBCMode())
 #endif
       {
         ComprCUCtx cuECtx = m_modeCtrl->getComprCUCtx();
@@ -3782,7 +3782,7 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 
   m_pcInterSearch->resetBufferedUniMotions();
   int gbiLoopNum = (tempCS->slice->isInterB() ? GBI_NUM : 1);
-  gbiLoopNum = (tempCS->sps->getSpsNext().getUseGBi() ? gbiLoopNum : 1);
+  gbiLoopNum = (tempCS->sps->getUseGBi() ? gbiLoopNum : 1);
 
   if( tempCS->area.lwidth() * tempCS->area.lheight() < GBI_SIZE_CONSTRAINT )
   {
@@ -3920,7 +3920,7 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   m_pcInterSearch->resetBufferedUniMotions();
   int gbiLoopNum = (tempCS->slice->isInterB() ? GBI_NUM : 1);
   gbiLoopNum = (pcCUInfo2Reuse != NULL ? 1 : gbiLoopNum);
-  gbiLoopNum = (tempCS->slice->getSPS()->getSpsNext().getUseGBi() ? gbiLoopNum : 1);
+  gbiLoopNum = (tempCS->slice->getSPS()->getUseGBi() ? gbiLoopNum : 1);
 
   if( tempCS->area.lwidth() * tempCS->area.lheight() < GBI_SIZE_CONSTRAINT )
   {
@@ -4198,7 +4198,7 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
   bool              swapped        = false; // avoid unwanted data copy
   bool             reloadCU        = false;
 #if !JVET_M0464_UNI_MTS
-  const bool considerEmtSecondPass = emtMode && sps.getSpsNext().getUseInterEMT() && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT;
+  const bool considerEmtSecondPass = emtMode && sps.getUseInterEMT() && partitioner.currArea().lwidth() <= maxSizeEMT && partitioner.currArea().lheight() <= maxSizeEMT;
 
   int minEMTMode = 0;
   int maxEMTMode = (considerEmtSecondPass?1:0);
@@ -4232,7 +4232,7 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
     }
   }
 #if JVET_M0140_SBT
-  const bool mtsAllowed = tempCS->sps->getSpsNext().getUseInterMTS() && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
+  const bool mtsAllowed = tempCS->sps->getUseInterMTS() && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
   uint8_t sbtAllowed = cu->checkAllowedSbt();
   uint8_t numRDOTried = 0;
   Distortion sbtOffDist = 0;

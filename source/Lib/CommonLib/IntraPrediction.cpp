@@ -1639,7 +1639,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
         }
       }
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
-      else if( pu.cs->sps->getSpsNext().getCclmCollocatedChromaFlag() )
+      else if( pu.cs->sps->getCclmCollocatedChromaFlag() )
       {
         piSrc = pRecSrc0 - iRecStride2;
 
@@ -1686,7 +1686,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     for (int j = 0; j < uiCHeight + addedLeftBelow; j++)
     {
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
-      if( pu.cs->sps->getSpsNext().getCclmCollocatedChromaFlag() )
+      if( pu.cs->sps->getCclmCollocatedChromaFlag() )
       {
         if( j == 0 && !bAboveAvaillable )
         {
@@ -1722,7 +1722,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     for( int i = 0; i < uiCWidth; i++ )
     {
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
-      if( pu.cs->sps->getSpsNext().getCclmCollocatedChromaFlag() )
+      if( pu.cs->sps->getCclmCollocatedChromaFlag() )
       {
         if( i == 0 && !bLeftAvaillable )
         {

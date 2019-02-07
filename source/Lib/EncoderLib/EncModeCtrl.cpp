@@ -1144,8 +1144,8 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   cuECtx.set( BEST_HORZ_SPLIT_COST, MAX_DOUBLE );
   cuECtx.set( BEST_TRIH_SPLIT_COST, MAX_DOUBLE );
   cuECtx.set( BEST_TRIV_SPLIT_COST, MAX_DOUBLE );
-  cuECtx.set( DO_TRIH_SPLIT,        cs.sps->getSpsNext().getMTTMode() & 1 );
-  cuECtx.set( DO_TRIV_SPLIT,        cs.sps->getSpsNext().getMTTMode() & 1 );
+  cuECtx.set( DO_TRIH_SPLIT,        cs.sps->getMTTMode() & 1 );
+  cuECtx.set( DO_TRIV_SPLIT,        cs.sps->getMTTMode() & 1 );
   cuECtx.set( BEST_IMV_COST,        MAX_DOUBLE * .5 );
   cuECtx.set( BEST_NO_IMV_COST,     MAX_DOUBLE * .5 );
   cuECtx.set( QT_BEFORE_BT,         qtBeforeBt );
@@ -1308,7 +1308,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 #if JVET_M0483_IBC
     if (cs.sps->getIBCFlag() && checkIbc)
 #else
-    if (cs.sps->getSpsNext().getIBCMode() && checkIbc )
+    if (cs.sps->getIBCMode() && checkIbc )
 #endif
     {
       m_ComprCUCtxList.back().testModes.push_back({ ETM_IBC,         ETO_STANDARD,  qp, lossless });
@@ -1346,12 +1346,12 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       // add inter modes
       if( m_pcEncCfg->getUseEarlySkipDetection() )
       {
-        if( cs.sps->getSpsNext().getUseTriangle() && cs.slice->isInterB() )
+        if( cs.sps->getUseTriangle() && cs.slice->isInterB() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
         }
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
-        if ( cs.sps->getSpsNext().getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
+        if ( cs.sps->getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp, lossless } );
         }
@@ -1360,12 +1360,12 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       else
       {
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME,    ETO_STANDARD, qp, lossless } );
-        if( cs.sps->getSpsNext().getUseTriangle() && cs.slice->isInterB() )
+        if( cs.sps->getUseTriangle() && cs.slice->isInterB() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
         }
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
-        if ( cs.sps->getSpsNext().getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
+        if ( cs.sps->getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp, lossless } );
         }
@@ -1502,7 +1502,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
 #if JVET_M0483_IBC
     if (cs.sps->getIBCFlag() && !cuECtx.bestTU)
 #else
-    if (cs.sps->getSpsNext().getIBCMode() && !cuECtx.bestTU)
+    if (cs.sps->getIBCMode() && !cuECtx.bestTU)
 #endif
       return true;
     CHECK( !slice.isIntra() && !cuECtx.bestTU, "No possible non-intra encoding for a P- or B-slice found" );
@@ -1572,7 +1572,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
 #if JVET_M0483_IBC
     return sps.getIBCFlag() && width <= IBC_MAX_CAND_SIZE && partitioner.currArea().lumaSize().height <= IBC_MAX_CAND_SIZE;
 #else
-    return sps.getSpsNext().getIBCMode() && width <= IBC_MAX_CAND_SIZE && partitioner.currArea().lumaSize().height <= IBC_MAX_CAND_SIZE;
+    return sps.getIBCMode() && width <= IBC_MAX_CAND_SIZE && partitioner.currArea().lumaSize().height <= IBC_MAX_CAND_SIZE;
 #endif
   }
   else if( isModeInter( encTestmode ) )
@@ -1954,7 +1954,7 @@ bool EncModeCtrlMTnoRQT::useModeResult( const EncTestMode& encTestmode, CodingSt
     cuECtx.set( MAX_QT_SUB_DEPTH, maxQtD );
   }
 
-  if( ( tempCS->sps->getSpsNext().getMTTMode() & 1 ) == 1 )
+  if( ( tempCS->sps->getMTTMode() & 1 ) == 1 )
   {
     int maxMtD = tempCS->pcv->getMaxBtDepth( *tempCS->slice, partitioner.chType ) + partitioner.currImplicitBtDepth;
 

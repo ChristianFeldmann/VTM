@@ -1497,7 +1497,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setSliceType(I_SLICE);
     }
 #if JVET_M0483_IBC ==0
-    if (pcSlice->getSliceType() == I_SLICE && pcSlice->getSPS()->getSpsNext().getIBCMode())
+    if (pcSlice->getSliceType() == I_SLICE && pcSlice->getSPS()->getIBCMode())
     {
       pcSlice->setSliceType(P_SLICE);
     }
@@ -1546,7 +1546,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       setNewestBgPOC(pocCurr);
       setLastLTRefPoc(pocCurr);
     }
-    else if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && getLastLTRefPoc() >= 0 && getEncodedLTRef()==false && !getPicBg()->getSpliceFull() && (pocCurr - getLastLTRefPoc()) > (m_pcCfg->getFrameRate() * 2))
+    else if (pcPic->cs->sps->getUseCompositeRef() && getLastLTRefPoc() >= 0 && getEncodedLTRef()==false && !getPicBg()->getSpliceFull() && (pocCurr - getLastLTRefPoc()) > (m_pcCfg->getFrameRate() * 2))
     {
       setUseLTRef(false);
       setPrepareLTRef(false);
@@ -1555,7 +1555,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       setLastLTRefPoc(-1);
     }
 
-    if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && m_picBg->getSpliceFull() && getUseLTRef())
+    if (pcPic->cs->sps->getUseCompositeRef() && m_picBg->getSpliceFull() && getUseLTRef())
     {
       m_pcEncLib->selectReferencePictureSet(pcSlice, pocCurr, iGOPid, m_bgPOC);
     }
@@ -1669,11 +1669,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setNumRefIdx(REF_PIC_LIST_0, std::min(m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive, pcSlice->getRPS()->getNumberOfPictures()));
       pcSlice->setNumRefIdx(REF_PIC_LIST_1, std::min(m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive, pcSlice->getRPS()->getNumberOfPictures()));
     }
-    if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && getPrepareLTRef()) {
+    if (pcPic->cs->sps->getUseCompositeRef() && getPrepareLTRef()) {
       arrangeCompositeReference(pcSlice, rcListPic, pocCurr);
     }
 #if JVET_M0483_IBC==0
-    if (pcSlice->getSPS()->getSpsNext().getIBCMode())
+    if (pcSlice->getSPS()->getIBCMode())
     {
       if (m_pcCfg->getIntraPeriod() > 0 && pcSlice->getPOC() % m_pcCfg->getIntraPeriod() == 0)
       {
@@ -1809,7 +1809,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setSliceType ( P_SLICE );
     }
 #if JVET_M0483_IBC==0
-    if (pcSlice->getSPS()->getSpsNext().getIBCMode() && pcSlice->getNumRefIdx(REF_PIC_LIST_0) == 1)
+    if (pcSlice->getSPS()->getIBCMode() && pcSlice->getNumRefIdx(REF_PIC_LIST_0) == 1)
     {
       m_pcSliceEncoder->setEncCABACTableIdx(P_SLICE);
     }
@@ -1903,7 +1903,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #if JVET_M0483_IBC
     if (pcSlice->isIRAP() && pcSlice->getSPS()->getIBCFlag())
 #else
-    if (pcSlice->isIRAP() && pcSlice->getSPS()->getSpsNext().getIBCMode())
+    if (pcSlice->isIRAP() && pcSlice->getSPS()->getIBCMode())
 #endif
     {
       pcSlice->setEnableTMVPFlag(0);
@@ -1919,7 +1919,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if ( pcSlice->getSliceType() == B_SLICE)
     {
 #if JVET_M0483_IBC==0
-      if (pcSlice->getSPS()->getSpsNext().getIBCMode())
+      if (pcSlice->getSPS()->getIBCMode())
       {
         if (pcSlice->getNumRefIdx(RefPicList(0)) - 1 == pcSlice->getNumRefIdx(RefPicList(1)))
         {
@@ -2464,7 +2464,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           pcPic->slices[s]->setAlfSliceParam( alfSliceParam );
         }
       }
-      if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && getPrepareLTRef())
+      if (pcPic->cs->sps->getUseCompositeRef() && getPrepareLTRef())
       {
         updateCompositeReference(pcSlice, rcListPic, pocCurr);
       }
@@ -2740,7 +2740,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
     m_bFirst = false;
     m_iNumPicCoded++;
-    if (!(pcPic->cs->sps->getSpsNext().getUseCompositeRef() && isEncodeLtRef))
+    if (!(pcPic->cs->sps->getUseCompositeRef() && isEncodeLtRef))
       m_totalCoded ++;
     /* logging: insert a newline at end of picture period */
 

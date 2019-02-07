@@ -217,7 +217,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 #if JVET_M0483_IBC
   bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
 #else
-  bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode()));
+  bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()) || (slice.getSliceType() == P_SLICE && slice.getSPS()->getIBCMode()));
 #endif
   if (flag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && (compID != COMPONENT_Y))
   {
@@ -280,7 +280,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 #if JVET_M0483_IBC
   if (slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || slice.isIntra()) && compID == COMPONENT_Y)
 #else
-  if (slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || slice.isIntra() || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode())) && compID == COMPONENT_Y)
+  if (slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || slice.isIntra() || (slice.getSliceType() == P_SLICE && slice.getSPS()->getIBCMode())) && compID == COMPONENT_Y)
 #endif
   {
 #if REUSE_CU_RESULTS
@@ -303,7 +303,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 #if JVET_M0483_IBC
   if (slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || slice.isIntra()) && compID == COMPONENT_Y)
 #else
-  if (slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || slice.isIntra() || (slice.getSliceType() == P_SLICE && slice.getSPS()->getSpsNext().getIBCMode())) && compID == COMPONENT_Y)
+  if (slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || slice.isIntra() || (slice.getSliceType() == P_SLICE && slice.getSPS()->getIBCMode())) && compID == COMPONENT_Y)
 #endif
   {
 #if REUSE_CU_RESULTS

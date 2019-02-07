@@ -1302,7 +1302,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #if JVET_M0483_IBC
   if (pcSlice->getSPS()->getIBCFlag() && pcSlice->getEnableTMVPFlag())
 #else
-  if (pcSlice->getSPS()->getSpsNext().getIBCMode() && pcSlice->getEnableTMVPFlag())
+  if (pcSlice->getSPS()->getIBCMode() && pcSlice->getEnableTMVPFlag())
 #endif
   {
     CHECK(pcSlice->getRefPic(RefPicList(pcSlice->isInterB() ? 1 - pcSlice->getColFromL0Flag() : 0), pcSlice->getColRefIdx())->getPOC() == pcSlice->getPOC(), "curr ref picture cannot be collocated picture");
@@ -1323,7 +1323,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #if JVET_M0483_IBC
     if ((pcSlice->getSliceType() == I_SLICE) && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
 #else
-    if ((pcSlice->getSliceType() == I_SLICE || (pcSlice->getSliceType() == P_SLICE && pcSlice->getSPS()->getSpsNext().getIBCMode())) && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+    if ((pcSlice->getSliceType() == I_SLICE || (pcSlice->getSliceType() == P_SLICE && pcSlice->getSPS()->getIBCMode())) && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
 #endif
     {
       m_cReshaper.setCTUFlag(false);
@@ -1359,7 +1359,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   m_bFirstSliceInPicture = false;
 #if JVET_M0483_IBC==0
-  if (pcSlice->getSPS()->getSpsNext().getIBCMode())
+  if (pcSlice->getSPS()->getIBCMode())
   {
     pcSlice->getPic()->longTerm = false;
   }

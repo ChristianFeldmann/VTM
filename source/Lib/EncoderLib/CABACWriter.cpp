@@ -1279,7 +1279,7 @@ void CABACWriter::intra_chroma_pred_mode( const PredictionUnit& pu )
   }
 
   // LM chroma mode
-  if( pu.cs->sps->getSpsNext().getUseLMChroma() )
+  if( pu.cs->sps->getUseLMChroma() )
   {
     intra_chroma_lmc_mode( pu );
     if ( PU::isLMCMode( intraDir ) )
@@ -1612,7 +1612,7 @@ void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
     return;
   }
 
-  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getSpsNext().getUseAffine() || cu.cs->sps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getUseAffine() || cu.cs->sps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
   {
     unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
     m_BinEncoder.encodeBin( cu.affine, Ctx::AffineFlag( ctxId ) );
@@ -1622,13 +1622,13 @@ void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
 
 void CABACWriter::affine_flag( const CodingUnit& cu )
 {
-  if ( !cu.cs->slice->isIntra() && cu.cs->sps->getSpsNext().getUseAffine() && cu.lumaSize().width > 8 && cu.lumaSize().height > 8 )
+  if ( !cu.cs->slice->isIntra() && cu.cs->sps->getUseAffine() && cu.lumaSize().width > 8 && cu.lumaSize().height > 8 )
   {
     unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
     m_BinEncoder.encodeBin( cu.affine, Ctx::AffineFlag( ctxId ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "affine_flag() affine=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
 
-    if ( cu.affine && cu.cs->sps->getSpsNext().getUseAffineType() )
+    if ( cu.affine && cu.cs->sps->getUseAffineType() )
     {
       unsigned ctxId = 0;
       m_BinEncoder.encodeBin( cu.affineType, Ctx::AffineType( ctxId ) );
@@ -1659,9 +1659,9 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
 
 void CABACWriter::imv_mode( const CodingUnit& cu )
 {
-  const SPSNext& spsNext = cu.cs->sps->getSpsNext();
+  const SPS *sps = cu.cs->sps;
 
-  if( !spsNext.getUseIMV() )
+  if( !sps->getUseIMV() )
   {
     return;
   }
@@ -1687,7 +1687,7 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
     m_BinEncoder.encodeBin( ( cu.imv > 0 ), Ctx::ImvFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", (cu.imv > 0), ctxId );
 
-  if( spsNext.getImvMode() == IMV_4PEL && cu.imv > 0 )
+  if( sps->getImvMode() == IMV_4PEL && cu.imv > 0 )
   {
     m_BinEncoder.encodeBin( ( cu.imv > 1 ), Ctx::ImvFlag( 3 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", ( cu.imv > 1 ), 3 );
@@ -1985,7 +1985,7 @@ void CABACWriter::mvp_flag( const PredictionUnit& pu, RefPicList eRefList )
 
 void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
 {
-  if (!pu.cs->sps->getSpsNext().getUseMHIntra())
+  if (!pu.cs->sps->getUseMHIntra())
   {
     CHECK(pu.mhIntraFlag == true, "invalid MHIntra SPS");
     return;
@@ -2076,7 +2076,7 @@ void CABACWriter::MHIntra_luma_pred_modes(const CodingUnit& cu)
 
 void CABACWriter::triangle_mode( const CodingUnit& cu )
 {
-  if( !cu.cs->slice->getSPS()->getSpsNext().getUseTriangle() || !cu.cs->slice->isInterB() || cu.lwidth() * cu.lheight() < TRIANGLE_MIN_SIZE || cu.affine )
+  if( !cu.cs->slice->getSPS()->getUseTriangle() || !cu.cs->slice->isInterB() || cu.lwidth() * cu.lheight() < TRIANGLE_MIN_SIZE || cu.affine )
   {
     return;
   }
@@ -2647,7 +2647,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
   const int stateTab  = ( tu.cs->slice->getDepQuantEnabledFlag() ? 32040 : 0 );
   int       state     = 0;
 #if !JVET_M0464_UNI_MTS
-  bool useEmt = ( cu.cs->sps->getSpsNext().getUseIntraEMT() && cu.predMode == MODE_INTRA ) || ( cu.cs->sps->getSpsNext().getUseInterEMT() && cu.predMode != MODE_INTRA );
+  bool useEmt = ( cu.cs->sps->getUseIntraEMT() && cu.predMode == MODE_INTRA ) || ( cu.cs->sps->getUseInterEMT() && cu.predMode != MODE_INTRA );
   useEmt = useEmt && isLuma(compID);
 #if JVET_M0102_INTRA_SUBPARTITIONS
   useEmt = useEmt && !cu.ispMode;
@@ -2783,9 +2783,9 @@ void CABACWriter::emt_cu_flag( const CodingUnit& cu )
   const CodingStructure& cs = *cu.cs;
 
 #if JVET_M0483_IBC
-  if (!((cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getSpsNext().getUseInterEMT() && !CU::isIntra(cu))) || isChroma(cu.chType))
+  if (!((cs.sps->getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getUseInterEMT() && !CU::isIntra(cu))) || isChroma(cu.chType))
 #else
-  if( !( ( cs.sps->getSpsNext().getUseIntraEMT() && CU::isIntra( cu ) ) || ( cs.sps->getSpsNext().getUseInterEMT() && CU::isInter( cu ) ) ) || isChroma( cu.chType ) )
+  if( !( ( cs.sps->getUseIntraEMT() && CU::isIntra( cu ) ) || ( cs.sps->getUseInterEMT() && CU::isInter( cu ) ) ) || isChroma( cu.chType ) )
 #endif
   {
     return;

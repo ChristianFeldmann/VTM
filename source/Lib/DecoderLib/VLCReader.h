@@ -147,7 +147,6 @@ public:
 #if HEVC_VPS
   void  parseVPS            ( VPS* pcVPS );
 #endif
-  void  parseSPSNext        ( SPSNext& spsNext, const bool usePCM );
   void  parseSPS            ( SPS* pcSPS );
   void  parsePPS            ( PPS* pcPPS );
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );

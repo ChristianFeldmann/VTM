@@ -535,7 +535,7 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
   if( !isChroma )
   {
     iBits++;                                               // alf_coefficients_delta_flag
-    if( !alfSliceParam.coeffDeltaFlag )
+    if( !alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       if( alfSliceParam.numLumaFilters > 1 )
       {
@@ -553,7 +553,7 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
   // vlc for all
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( isChroma || !alfSliceParam.coeffDeltaFlag || alfSliceParam.alfLumaCoeffFlag[ind] )
+    if( isChroma || !alfSliceParam.alfLumaCoeffDeltaFlag || alfSliceParam.alfLumaCoeffFlag[ind] )
     {
       for( int i = 0; i < alfShape.numCoeff - 1; i++ )
       {
@@ -583,7 +583,7 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
 
   if( !isChroma )
   {
-    if( alfSliceParam.coeffDeltaFlag )
+    if( alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       iBits += numFilters;             //filter_coefficient_flag[i]
     }
@@ -592,7 +592,7 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.coeffDeltaFlag )
+    if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       continue;
     }
@@ -692,14 +692,14 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
   if (cost <= cost0)
   {
     distReturn = dist;
-    alfSliceParam.coeffDeltaFlag = 0;
+    alfSliceParam.alfLumaCoeffDeltaFlag = 0;
     uiCoeffBits = coeffBits;
     alfSliceParam.alfLumaCoeffDeltaPredictionFlag = bestPredMode;
   }
   else
   {
     distReturn = distForce0;
-    alfSliceParam.coeffDeltaFlag = 1;
+    alfSliceParam.alfLumaCoeffDeltaFlag = 1;
     uiCoeffBits = coeffBitsForce0;
     memcpy( alfSliceParam.alfLumaCoeffFlag, codedVarBins, sizeof( codedVarBins ) );
     alfSliceParam.alfLumaCoeffDeltaPredictionFlag = 0;

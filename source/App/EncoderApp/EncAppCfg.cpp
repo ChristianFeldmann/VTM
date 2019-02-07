@@ -3165,8 +3165,9 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "A=%d ", m_sliceSegmentArgument);
   }
 #endif
-#if JVET_M0445_MCTS
   msg( VERBOSE, "Tiles:%dx%d ", m_numTileColumnsMinus1 + 1, m_numTileRowsMinus1 + 1 );
+#if JVET_M0445_MCTS
+  msg( VERBOSE, "MCTS:%d ", m_MCTSEncConstraint );
 #endif
   msg( VERBOSE, "CIP:%d ", m_bUseConstrainedIntraPred);
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));

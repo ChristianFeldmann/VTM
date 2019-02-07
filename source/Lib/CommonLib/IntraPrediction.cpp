@@ -325,11 +325,13 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
     case(2):
     case(DIA_IDX):
     case(VDIA_IDX):
+#if JVET_M0102_INTRA_SUBPARTITIONS
       if (getWideAngle(useISP ? cuSize.width : iWidth, useISP ? cuSize.height : iHeight, uiDirMode) == static_cast<int>(uiDirMode)) // check if uiDirMode is not wide-angle
       {
-#if JVET_M0102_INTRA_SUBPARTITIONS
         xPredIntraAng(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps, multiRefIdx, useFilteredPredSamples, useISP, cuSize );
 #else
+      if (getWideAngle(iWidth, iHeight, uiDirMode) == static_cast<int>(uiDirMode)) // check if uiDirMode is not wide-angle
+      {
         xPredIntraAng(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps
           , multiRefIdx
           , useFilteredPredSamples);

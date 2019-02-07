@@ -213,13 +213,14 @@ typedef std::pair<int, int>  TrCost;
 
 #ifndef ENABLE_TRACING
 #define ENABLE_TRACING                                    0 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
+#endif
+
 #if ENABLE_TRACING
 #define K0149_BLOCK_STATISTICS                            1 // enables block statistics, which can be analysed with YUView (https://github.com/IENT/YUView)
 #if K0149_BLOCK_STATISTICS
 #define BLOCK_STATS_AS_CSV                                0 // statistics will be written in a comma separated value format. this is not supported by YUView
 #endif
 #endif
-#endif // ! ENABLE_TRACING
 
 #if JVET_M0427_INLOOP_RESHAPER
 #define WCG_EXT                                           1

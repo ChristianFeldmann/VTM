@@ -113,10 +113,6 @@ extern const uint8_t  g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE];
 // Mode-Dependent DST Matrices
 // ====================================================================================================================
 
-#if HEVC_USE_4x4_DSTVII
-extern const TMatrixCoeff g_as_DST_MAT_4 [TRANSFORM_NUMBER_OF_DIRECTIONS][4][4];
-#endif
-
 #if !JVET_M0464_UNI_MTS
 extern const uint32_t g_EmtSigNumThr;
 #endif

@@ -1920,8 +1920,10 @@ SPSNext::SPSNext( SPS& sps )
   , m_ImvMode                   ( IMV_OFF )
   , m_MTTMode                   ( 0 )
     , m_compositeRefEnabled     ( false )
+#if !JVET_M0483_IBC
   , m_IBCMode                   ( 0 )
-  // ADD_NEW_TOOL : (sps extension) add tool enabling flags here (with "false" as default values)
+#endif
+// ADD_NEW_TOOL : (sps extension) add tool enabling flags here (with "false" as default values)
 {
 }
 

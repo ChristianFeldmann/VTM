@@ -1502,12 +1502,20 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #endif
   {
 #if JVET_M0427_INLOOP_RESHAPER
+#if !JVET_M0483_IBC
     if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getSpsNext().getIBCMode())
+#else
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
+#endif
       cs.picture->getOrigBuf(COMPONENT_Y).rspSignal(m_pcLib->getReshaper()->getFwdLUT());
 #endif
     m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
 #if JVET_M0427_INLOOP_RESHAPER
+#if !JVET_M0483_IBC
     if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getSpsNext().getIBCMode())
+#else
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
+#endif
       cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
 #endif
   }

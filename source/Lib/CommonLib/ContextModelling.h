@@ -86,7 +86,7 @@ public:
   int             maxSubPos       ()                        const { return m_maxSubPos; }
   bool            isLast          ()                        const { return ( ( m_scanPosLast >> m_log2CGSize ) == m_subSetId ); }
   bool            isNotFirst      ()                        const { return ( m_subSetId != 0 ); }
-  bool            isSigGroup      ( int       scanPosCG )   const { return m_sigCoeffGroupFlag[ m_scanCG[ scanPosCG ] ]; }
+  bool            isSigGroup(int scanPosCG) const { return m_sigCoeffGroupFlag[m_scanCG[scanPosCG].idx]; }
   bool            isSigGroup      ()                        const { return m_sigCoeffGroupFlag[ m_subSetPos ]; }
 #if HEVC_USE_SIGN_HIDING
   bool            signHiding      ()                        const { return m_signHiding; }
@@ -94,9 +94,9 @@ public:
                                     int       posLast   )   const { return ( m_signHiding && ( posLast - posFirst >= SBH_THRESHOLD ) ); }
 #endif
   CoeffScanType   scanType        ()                        const { return m_scanType; }
-  unsigned        blockPos        ( int       scanPos   )   const { return m_scan[ scanPos ]; }
-  unsigned        posX            ( int       scanPos   )   const { return m_scanPosX[ scanPos ]; }
-  unsigned        posY            ( int       scanPos   )   const { return m_scanPosY[ scanPos ]; }
+  unsigned        blockPos(int scanPos) const { return m_scan[scanPos].idx; }
+  unsigned        posX(int scanPos) const { return m_scan[scanPos].x; }
+  unsigned        posY(int scanPos) const { return m_scan[scanPos].y; }
   unsigned        maxLastPosX     ()                        const { return m_maxLastPosX; }
   unsigned        maxLastPosY     ()                        const { return m_maxLastPosY; }
   unsigned        lastXCtxId      ( unsigned  posLastX  )   const { return m_CtxSetLastX( m_lastOffsetX + ( posLastX >> m_lastShiftX ) ); }
@@ -105,8 +105,8 @@ public:
 
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
-    const uint32_t    posY      = m_scanPosY[ scanPos ];
-    const uint32_t    posX      = m_scanPosX[ scanPos ];
+    const uint32_t posY      = m_scan[scanPos].y;
+    const uint32_t posX      = m_scan[scanPos].x;
     const TCoeff* pData     = coeff + posX + posY * m_width;
     const int     diag      = posX + posY;
     int           numPos    = 0;
@@ -164,8 +164,8 @@ public:
 
   unsigned templateAbsSum( int scanPos, const TCoeff* coeff )
   {
-    const uint32_t  posY  = m_scanPosY[scanPos];
-    const uint32_t  posX  = m_scanPosX[scanPos];
+    const uint32_t  posY  = m_scan[scanPos].y;
+    const uint32_t  posX  = m_scan[scanPos].x;
     const TCoeff*   pData = coeff + posX + posY * m_width;
     int             sum   = 0;
     if (posX < m_width - 1)
@@ -217,10 +217,8 @@ private:
   const bool                m_extendedPrecision;
   const int                 m_maxLog2TrDynamicRange;
   CoeffScanType             m_scanType;
-  const unsigned*           m_scan;
-  const unsigned*           m_scanPosX;
-  const unsigned*           m_scanPosY;
-  const unsigned*           m_scanCG;
+  const ScanElement *       m_scan;
+  const ScanElement *       m_scanCG;
   const CtxSet              m_CtxSetLastX;
   const CtxSet              m_CtxSetLastY;
   const unsigned            m_maxLastPosX;

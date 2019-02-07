@@ -64,13 +64,20 @@ void         generateTrafoBlockSizeScaling( SizeIndexInfo& sizeIdxInfo );
 // ====================================================================================================================
 
 // flexible conversion from relative to absolute index
+struct ScanElement
+{
+  uint32_t idx;
+  uint16_t x;
+  uint16_t y;
+};
+
 #if JVET_M0102_INTRA_SUBPARTITIONS
 extern       uint32_t   g_log2SbbSize   [2][MAX_CU_DEPTH+1][MAX_CU_DEPTH+1][2];
-extern       uint32_t*  g_scanOrder     [2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
-extern       uint32_t*  g_scanOrderPosXY[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1][2];
+extern ScanElement
+  *g_scanOrder[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
 #else
-extern       uint32_t*  g_scanOrder     [SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
-extern       uint32_t*  g_scanOrderPosXY[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1][2];
+extern ScanElement
+  *g_scanOrder[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
 #endif
 
 extern const int g_quantScales   [SCALING_LIST_REM_NUM];          // Q(QP%6)

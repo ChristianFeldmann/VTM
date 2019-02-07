@@ -115,10 +115,8 @@ namespace DQIntern
     unsigned          m_widthInSbb;
     unsigned          m_heightInSbb;
     CoeffScanType     m_scanType;
-    const unsigned*   m_scanSbbId2SbbPos;
-    const unsigned*   m_scanId2BlkPos;
-    const unsigned*   m_scanId2PosX;
-    const unsigned*   m_scanId2PosY;
+    const ScanElement *m_scanSbbId2SbbPos;
+    const ScanElement *m_scanId2BlkPos;
     const NbInfoSbb*  m_scanId2NbInfoSbb;
     const NbInfoOut*  m_scanId2NbInfoOut;
     ScanInfo*         m_scanInfo;
@@ -204,15 +202,11 @@ namespace DQIntern
         const SizeType      blkWidthIdx   = gp_sizeIdxInfo->idxFrom( blockWidth  );
         const SizeType      blkHeightIdx  = gp_sizeIdxInfo->idxFrom( blockHeight );
 #if JVET_M0102_INTRA_SUBPARTITIONS
-        const uint32_t*     scanId2RP     = g_scanOrder     [ch][SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx];
-        const uint32_t*     scanId2X      = g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx][0];
-        const uint32_t*     scanId2Y      = g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx][1];
+        const ScanElement * scanId2RP     = g_scanOrder[ch][SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx];
         NbInfoSbb*&         sId2NbSbb     = m_scanId2NbInfoSbbArray[hd][vd][ch];
         NbInfoOut*&         sId2NbOut     = m_scanId2NbInfoOutArray[hd][vd][ch];
 #else
-        const uint32_t*     scanId2RP     = g_scanOrder     [SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx];
-        const uint32_t*     scanId2X      = g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx][0];
-        const uint32_t*     scanId2Y      = g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx][1];
+        const ScanElement * scanId2RP     = g_scanOrder[SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx];
         NbInfoSbb*&         sId2NbSbb     = m_scanId2NbInfoSbbArray[hd][vd];
         NbInfoOut*&         sId2NbOut     = m_scanId2NbInfoOutArray[hd][vd];
 #endif
@@ -231,14 +225,14 @@ namespace DQIntern
 
         for( uint32_t scanId = 0; scanId < totalValues; scanId++ )
         {
-          raster2id[ scanId2RP[ scanId ] ] = scanId;
+          raster2id[scanId2RP[scanId].idx] = scanId;
         }
 
         for( unsigned scanId = 0; scanId < totalValues; scanId++ )
         {
-          const int posX = scanId2X [ scanId ];
-          const int posY = scanId2Y [ scanId ];
-          const int rpos = scanId2RP[ scanId ];
+          const int posX = scanId2RP[scanId].x;
+          const int posY = scanId2RP[scanId].y;
+          const int rpos = scanId2RP[scanId].idx;
           {
             //===== inside subband neighbours =====
             NbInfoSbb&     nbSbb  = sId2NbSbb[ scanId ];
@@ -454,8 +448,6 @@ namespace DQIntern
 #if JVET_M0102_INTRA_SUBPARTITIONS
     m_scanSbbId2SbbPos    = g_scanOrder     [ chType ][ SCAN_UNGROUPED   ][ m_scanType ][ hsbb ][ vsbb ];
     m_scanId2BlkPos       = g_scanOrder     [ chType ][ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ];
-    m_scanId2PosX         = g_scanOrderPosXY[ chType ][ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ][ 0 ];
-    m_scanId2PosY         = g_scanOrderPosXY[ chType ][ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ][ 1 ];
     int log2W             = g_aucLog2[ m_width  ];
     int log2H             = g_aucLog2[ m_height ];
     m_scanId2NbInfoSbb    = rom.getNbInfoSbb( log2W, log2H, chType );
@@ -463,8 +455,6 @@ namespace DQIntern
 #else
     m_scanSbbId2SbbPos    = g_scanOrder     [ SCAN_UNGROUPED   ][ m_scanType ][ hsbb ][ vsbb ];
     m_scanId2BlkPos       = g_scanOrder     [ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ];
-    m_scanId2PosX         = g_scanOrderPosXY[ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ][ 0 ];
-    m_scanId2PosY         = g_scanOrderPosXY[ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ][ 1 ];
     int log2W             = g_aucLog2[ m_width  ];
     int log2H             = g_aucLog2[ m_height ];
     m_scanId2NbInfoSbb    = rom.getNbInfoSbb( log2W, log2H );
@@ -483,8 +473,8 @@ namespace DQIntern
     scanInfo.sbbSize    = m_sbbSize;
     scanInfo.numSbb     = m_numSbb;
     scanInfo.scanIdx    = scanIdx;
-    scanInfo.rasterPos  = m_scanId2BlkPos[ scanIdx ];
-    scanInfo.sbbPos     = m_scanSbbId2SbbPos[ scanIdx >> m_log2SbbSize ];
+    scanInfo.rasterPos  = m_scanId2BlkPos[scanIdx].idx;
+    scanInfo.sbbPos     = m_scanSbbId2SbbPos[scanIdx >> m_log2SbbSize].idx;
     scanInfo.insidePos  = scanIdx & m_sbbMask;
     scanInfo.eosbb      = ( scanInfo.insidePos == 0 );
     scanInfo.spt        = SCAN_ISCSBB;
@@ -493,13 +483,13 @@ namespace DQIntern
     else if( scanInfo.eosbb && scanIdx > 0 && scanIdx < m_numCoeff - m_sbbSize )
       scanInfo.spt      = SCAN_EOCSBB;
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-    scanInfo.posX       = m_scanId2PosX[ scanIdx ];
-    scanInfo.posY       = m_scanId2PosY[ scanIdx ];
+    scanInfo.posX = m_scanId2BlkPos[scanIdx].x;
+    scanInfo.posY = m_scanId2BlkPos[scanIdx].y;
 #endif
     if( scanIdx )
     {
       const int nextScanIdx = scanIdx - 1;
-      const int diag        = m_scanId2PosX[ nextScanIdx ] + m_scanId2PosY[ nextScanIdx ];
+      const int diag        = m_scanId2BlkPos[nextScanIdx].x + m_scanId2BlkPos[nextScanIdx].y;
       if( m_chType == CHANNEL_TYPE_LUMA )
       {
         scanInfo.sigCtxOffsetNext = ( diag < 2 ? 12 : diag < 5 ?  6 : 0 );
@@ -514,7 +504,7 @@ namespace DQIntern
       scanInfo.nextNbInfoSbb      = m_scanId2NbInfoSbb[ nextScanIdx ];
       if( scanInfo.eosbb )
       {
-        const int nextSbbPos  = m_scanSbbId2SbbPos[ nextScanIdx >> m_log2SbbSize ];
+        const int nextSbbPos  = m_scanSbbId2SbbPos[nextScanIdx >> m_log2SbbSize].idx;
         const int nextSbbPosY = nextSbbPos               / m_widthInSbb;
         const int nextSbbPosX = nextSbbPos - nextSbbPosY * m_widthInSbb;
         scanInfo.nextSbbRight = ( nextSbbPosX < m_widthInSbb  - 1 ? nextSbbPos + 1            : 0 );
@@ -540,7 +530,7 @@ namespace DQIntern
     inline const CoeffFracBits *gtxFracBits(unsigned stateId) const { return m_gtxFracBits; }
     inline int32_t              lastOffset(unsigned scanIdx) const
     {
-      return m_lastBitsX[m_scanId2PosX[scanIdx]] + m_lastBitsY[m_scanId2PosY[scanIdx]];
+      return m_lastBitsX[m_scanId2Pos[scanIdx].x] + m_lastBitsY[m_scanId2Pos[scanIdx].y];
     }
 
   private:
@@ -557,8 +547,7 @@ namespace DQIntern
     static const unsigned sm_maxNumGtxCtx     = 21;
 
   private:
-    const unsigned*     m_scanId2PosX;
-    const unsigned*     m_scanId2PosY;
+    const ScanElement * m_scanId2Pos;
     int32_t             m_lastBitsX      [ MAX_TU_SIZE ];
     int32_t             m_lastBitsY      [ MAX_TU_SIZE ];
     BinFracBits         m_sigSbbFracBits [ sm_maxNumSigSbbCtx ];
@@ -568,8 +557,7 @@ namespace DQIntern
 
   void RateEstimator::initCtx( const TUParameters& tuPars, const TransformUnit& tu, const ComponentID compID, const FracBitsAccess& fracBitsAccess )
   {
-    m_scanId2PosX       = tuPars.m_scanId2PosX;
-    m_scanId2PosY       = tuPars.m_scanId2PosY;
+    m_scanId2Pos = tuPars.m_scanId2BlkPos;
     xSetSigSbbFracBits  ( fracBitsAccess, tuPars.m_chType );
     xSetSigFlagBits     ( fracBitsAccess, tuPars.m_chType );
     xSetGtxFlagBits     ( fracBitsAccess, tuPars.m_chType );
@@ -868,9 +856,9 @@ namespace DQIntern
     const CoeffScanType scanType  = SCAN_DIAG;
 #endif
 #if JVET_M0102_INTRA_SUBPARTITIONS
-    const unsigned*     scan      = g_scanOrder[ toChannelType(compID) ][ SCAN_GROUPED_4x4 ][ scanType ][ hsId ][ vsId ];
+    const ScanElement *scan = g_scanOrder[toChannelType(compID)][SCAN_GROUPED_4x4][scanType][hsId][vsId];
 #else
-    const unsigned*     scan      = g_scanOrder[ SCAN_GROUPED_4x4 ][ scanType ][ hsId ][ vsId ];
+    const ScanElement * scan      = g_scanOrder[SCAN_GROUPED_4x4][scanType][hsId][vsId];
 #endif
     const TCoeff*       qCoeff    = tu.getCoeffs( compID ).buf;
           TCoeff*       tCoeff    = recCoeff.buf;
@@ -880,7 +868,7 @@ namespace DQIntern
     int lastScanIdx = -1;
     for( int scanIdx = numCoeff - 1; scanIdx >= 0; scanIdx-- )
     {
-      if( qCoeff[ scan[ scanIdx ] ] )
+      if (qCoeff[scan[scanIdx].idx])
       {
         lastScanIdx = scanIdx;
         break;
@@ -930,7 +918,7 @@ namespace DQIntern
     //----- dequant coefficients -----
     for( int state = 0, scanIdx = lastScanIdx; scanIdx >= 0; scanIdx-- )
     {
-      const unsigned  rasterPos = scan  [ scanIdx   ];
+      const unsigned  rasterPos = scan[scanIdx].idx;
       const TCoeff&   level     = qCoeff[ rasterPos ];
       if( level )
       {
@@ -1677,7 +1665,7 @@ namespace DQIntern
     const TCoeff thres = m_quant.getLastThreshold();
     for( ; firstTestPos >= 0; firstTestPos-- )
     {
-      if( abs( tCoeff[ tuPars.m_scanId2BlkPos[firstTestPos] ] ) > thres )
+      if (abs(tCoeff[tuPars.m_scanId2BlkPos[firstTestPos].idx]) > thres)
       {
         break;
       }
@@ -1740,7 +1728,7 @@ namespace DQIntern
     for( ; decision.prevId >= 0; scanIdx++ )
     {
       decision          = m_trellis[ scanIdx ][ decision.prevId ];
-      int32_t blkpos    = tuPars.m_scanId2BlkPos[ scanIdx ];
+      int32_t blkpos    = tuPars.m_scanId2BlkPos[scanIdx].idx;
       qCoeff[ blkpos ]  = ( tCoeff[ blkpos ] < 0 ? -decision.absLevel : decision.absLevel );
       absSum           += decision.absLevel;
     }

@@ -416,16 +416,23 @@ void initROM()
       for (uint32_t scanTypeIndex = 0; scanTypeIndex < SCAN_NUMBER_OF_TYPES; scanTypeIndex++)
       {
         const CoeffScanType scanType = CoeffScanType(scanTypeIndex);
+        ScanElement *       scan     = nullptr;
+
+        if (blockWidthIdx < sizeInfo.numWidths() && blockHeightIdx < sizeInfo.numHeights())
+        {
+          scan = new ScanElement[totalValues];
+        }
 
 #if JVET_M0102_INTRA_SUBPARTITIONS
-        g_scanOrder     [ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
-        g_scanOrderPosXY[ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
-        g_scanOrderPosXY[ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
+        g_scanOrder[ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx] = scan;
 #else
-        g_scanOrder     [SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
-        g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
-        g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
+        g_scanOrder[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx] = scan;
 #endif
+
+        if (scan == nullptr)
+        {
+          continue;
+        }
 
         ScanGenerator fullBlockScan(blockWidth, blockHeight, blockWidth, scanType);
 
@@ -434,35 +441,11 @@ void initROM()
           const int rasterPos = fullBlockScan.GetNextIndex( 0, 0 );
           const int posY      = rasterPos / blockWidth;
           const int posX      = rasterPos - ( posY * blockWidth );
-#if JVET_M0102_INTRA_SUBPARTITIONS
-          g_scanOrder     [ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx]   [scanPosition] = rasterPos;
-          g_scanOrderPosXY[ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][0][scanPosition] = posX;
-          g_scanOrderPosXY[ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][1][scanPosition] = posY;
-#else
-          g_scanOrder     [SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx]   [scanPosition] = rasterPos;
-          g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][0][scanPosition] = posX;
-          g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][1][scanPosition] = posY;
-#endif
-        }
-      }
 
-      if( blockWidthIdx >= sizeInfo.numWidths() || blockHeightIdx >= sizeInfo.numHeights() )
-      {
-        // size indizes greater than numIdxs are sizes than are only used when grouping - they will never come up as a block size - thus they can be skipped at this point
-        for( uint32_t scanTypeIndex = 0; scanTypeIndex < SCAN_NUMBER_OF_TYPES; scanTypeIndex++ )
-        {
-#if JVET_M0102_INTRA_SUBPARTITIONS
-          g_scanOrder     [ch][SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx]    = nullptr;
-          g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx][0] = nullptr;
-          g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx][1] = nullptr;
-#else
-          g_scanOrder     [SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx]    = nullptr;
-          g_scanOrderPosXY[SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx][0] = nullptr;
-          g_scanOrderPosXY[SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx][1] = nullptr;
-#endif
+          scan[scanPosition].idx = rasterPos;
+          scan[scanPosition].x   = posX;
+          scan[scanPosition].y   = posY;
         }
-
-        continue;
       }
 
       //--------------------------------------------------------------------------------------------------
@@ -494,37 +477,24 @@ void initROM()
       {
         const CoeffScanType scanType = CoeffScanType(scanTypeIndex);
 
+        ScanElement *scan = new ScanElement[totalValues];
+
 #if JVET_M0102_INTRA_SUBPARTITIONS
-        g_scanOrder     [ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
-        g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
-        g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
+        g_scanOrder[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx] = scan;
 #else
-        g_scanOrder     [SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
-        g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
-        g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
+        g_scanOrder[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx] = scan;
 #endif
+
 #if JVET_M0257
-#if JVET_M0102_INTRA_SUBPARTITIONS
         if ( blockWidth > JVET_C0024_ZERO_OUT_TH || blockHeight > JVET_C0024_ZERO_OUT_TH )
         {
           for (uint32_t i = 0; i < totalValues; i++)
           {
-            g_scanOrder     [ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][i] = totalValues - 1;
-            g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0][i] = blockWidth - 1;
-            g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1][i] = blockHeight - 1;
+            scan[i].idx = totalValues - 1;
+            scan[i].x   = blockWidth - 1;
+            scan[i].y   = blockHeight - 1;
           }
         }
-#else
-        if ( blockWidth > JVET_C0024_ZERO_OUT_TH || blockHeight > JVET_C0024_ZERO_OUT_TH )
-        {
-          for (uint32_t i = 0; i < totalValues; i++)
-          {
-            g_scanOrder[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][i] = totalValues - 1;
-            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0][i] = blockWidth - 1;
-            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1][i] = blockHeight - 1;
-          }
-        }
-#endif
 #endif
 
         ScanGenerator fullBlockScan(widthInGroups, heightInGroups, groupWidth, scanType);
@@ -545,15 +515,9 @@ void initROM()
             const int posY      = rasterPos / blockWidth;
             const int posX      = rasterPos - ( posY * blockWidth );
 
-#if JVET_M0102_INTRA_SUBPARTITIONS
-            g_scanOrder     [ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]   [groupOffsetScan + scanPosition] = rasterPos;
-            g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0][groupOffsetScan + scanPosition] = posX;
-            g_scanOrderPosXY[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1][groupOffsetScan + scanPosition] = posY;
-#else
-            g_scanOrder     [SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]   [groupOffsetScan + scanPosition] = rasterPos;
-            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0][groupOffsetScan + scanPosition] = posX;
-            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1][groupOffsetScan + scanPosition] = posY;
-#endif
+            scan[groupOffsetScan + scanPosition].idx = rasterPos;
+            scan[groupOffsetScan + scanPosition].x   = posX;
+            scan[groupOffsetScan + scanPosition].y   = posY;
           }
 
           fullBlockScan.GetNextIndex(0, 0);
@@ -608,12 +572,6 @@ void destroyROM()
           {
             delete[] g_scanOrder[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx];
             g_scanOrder[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx] = nullptr;
-
-            delete[] g_scanOrderPosXY[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][0];
-            g_scanOrderPosXY[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][0] = nullptr;
-
-            delete[] g_scanOrderPosXY[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][1];
-            g_scanOrderPosXY[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][1] = nullptr;
           }
         }
       }
@@ -630,13 +588,6 @@ void destroyROM()
         {
           delete[] g_scanOrder[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx];
           g_scanOrder[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx] = nullptr;
-
-          delete[] g_scanOrderPosXY[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][0];
-          g_scanOrderPosXY[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][0] = nullptr;
-
-          delete[] g_scanOrderPosXY[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][1];
-          g_scanOrderPosXY[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][1] = nullptr;
-
         }
       }
     }
@@ -772,11 +723,9 @@ UnitScale g_miScaling( MIN_CU_LOG2, MIN_CU_LOG2 );
 
 // scanning order table
 #if JVET_M0102_INTRA_SUBPARTITIONS
-uint32_t* g_scanOrder     [2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
-uint32_t* g_scanOrderPosXY[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1][2];
+ScanElement *g_scanOrder[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
 #else
-uint32_t* g_scanOrder     [SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
-uint32_t* g_scanOrderPosXY[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1][2];
+ScanElement *g_scanOrder[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
 #endif
 
 const uint32_t g_uiMinInGroup[LAST_SIGNIFICANT_GROUPS] = { 0,1,2,3,4,6,8,12,16,24,32,48,64,96 };

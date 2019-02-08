@@ -1983,7 +1983,11 @@ bool EncModeCtrlMTnoRQT::useModeResult( const EncTestMode& encTestmode, CodingSt
   }
 
   // for now just a simple decision based on RD-cost or choose tempCS if bestCS is not yet coded
+#if JVET_M0428_ENC_DB_OPT
+  if( !cuECtx.bestCS || ( ( tempCS->features[ENC_FT_RD_COST] + ( tempCS->useDbCost ? tempCS->costDbOffset : 0 ) ) < ( cuECtx.bestCS->features[ENC_FT_RD_COST] + ( tempCS->useDbCost ? cuECtx.bestCS->costDbOffset : 0 ) ) ) )
+#else
   if( !cuECtx.bestCS || tempCS->features[ENC_FT_RD_COST] < cuECtx.bestCS->features[ENC_FT_RD_COST] )
+#endif
   {
     cuECtx.bestCS = tempCS;
     cuECtx.bestCU = tempCS->cus[0];

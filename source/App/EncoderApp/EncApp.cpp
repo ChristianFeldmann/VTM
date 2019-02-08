@@ -300,6 +300,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setQuadtreeTULog2MinSize                             ( m_quadtreeTULog2MinSize );
   m_cEncLib.setQuadtreeTUMaxDepthInter                           ( m_uiQuadtreeTUMaxDepthInter );
   m_cEncLib.setQuadtreeTUMaxDepthIntra                           ( m_uiQuadtreeTUMaxDepthIntra );
+#if JVET_M0428_ENC_DB_OPT
+  m_cEncLib.setUseEncDbOpt(m_encDbOpt);
+#endif
   m_cEncLib.setUseFastLCTU                                       ( m_useFastLCTU );
   m_cEncLib.setFastInterSearchMode                               ( m_fastInterSearchMode );
   m_cEncLib.setUseEarlyCU                                        ( m_bUseEarlyCU  );

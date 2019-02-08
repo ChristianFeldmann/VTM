@@ -46,6 +46,9 @@
 #include "CommonLib/Unit.h"
 #include "CommonLib/UnitPartitioner.h"
 #include "CommonLib/IbcHashMap.h"
+#if JVET_M0428_ENC_DB_OPT
+#include "CommonLib/LoopFilter.h"
+#endif
 
 #if REUSE_CU_RESULTS
 #include "DecoderLib/DecCu.h"
@@ -84,7 +87,9 @@ class EncCu
 #endif
 {
 private:
-
+#if JVET_M0428_ENC_DB_OPT
+  bool m_bestModeUpdated;
+#endif
   struct CtxPair
   {
     Ctx start;
@@ -116,6 +121,9 @@ private:
   TrQuant*              m_pcTrQuant;
   RdCost*               m_pcRdCost;
   EncSlice*             m_pcSliceEncoder;
+#if JVET_M0428_ENC_DB_OPT
+  LoopFilter*           m_pcLoopFilter;
+#endif
 
   CABACWriter*          m_CABACEstimator;
   RateCtrl*             m_pcRateCtrl;
@@ -190,6 +198,11 @@ public:
   ~EncCu();
 
 protected:
+
+#if JVET_M0428_ENC_DB_OPT
+  void xCalDebCost            ( CodingStructure &cs, Partitioner &partitioner, bool calDist = false );
+  Distortion getDistortionDb  ( CodingStructure &cs, CPelBuf org, CPelBuf reco, ComponentID compID, const CompArea& compArea, bool afterDb );
+#endif
 
   void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm
     , LutMotionCand *&tempMotCandLUTs

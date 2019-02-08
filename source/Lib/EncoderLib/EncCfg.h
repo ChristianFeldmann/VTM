@@ -277,6 +277,9 @@ protected:
   unsigned  m_intraCMD;
   ReshapeCW m_reshapeCW;
 #endif
+#if JVET_M0428_ENC_DB_OPT
+  bool      m_encDbOpt;
+#endif
   bool      m_useFastLCTU;
   bool      m_useFastMrg;
   bool      m_usePbIntraFast;
@@ -847,6 +850,10 @@ public:
   void      setMaxCodingDepth               ( uint32_t  u )      { m_maxTotalCUDepth = u; }
   uint32_t      getMaxCodingDepth               () const         { return m_maxTotalCUDepth; }
   void      setLog2DiffMaxMinCodingBlockSize( uint32_t  u )      { m_log2DiffMaxMinCodingBlockSize = u; }
+#if JVET_M0428_ENC_DB_OPT
+  void      setUseEncDbOpt                  ( bool  n )          { m_encDbOpt = n; }
+  bool      getUseEncDbOpt                  () const             { return m_encDbOpt; }
+#endif
 
   void      setUseFastLCTU                  ( bool  n )      { m_useFastLCTU = n; }
   bool      getUseFastLCTU                  () const         { return m_useFastLCTU; }

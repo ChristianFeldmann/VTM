@@ -58,11 +58,16 @@ private:
   static_vector<char, MAX_NUM_PARTS_IN_CTU> m_aapucBS       [NUM_EDGE_DIR];         ///< Bs for [Ver/Hor][Y/U/V][Blk_Idx]
   static_vector<bool, MAX_NUM_PARTS_IN_CTU> m_aapbEdgeFilter[NUM_EDGE_DIR];
   LFCUParam m_stLFCUParam;                   ///< status structure
-
+#if JVET_M0428_ENC_DB_OPT
+  PelStorage                   m_encPicYuvBuffer;
+  bool                         m_bEnc;
+#endif
 private:
+#if !JVET_M0428_ENC_DB_OPT
   /// CU-level deblocking function
   void xDeblockCU                 (       CodingUnit& cu, const DeblockEdgeDir edgeDir );
-
+#endif
+  
   // set / get functions
   void xSetLoopfilterParam        ( const CodingUnit& cu );
 
@@ -110,6 +115,14 @@ public:
 
   LoopFilter();
   ~LoopFilter();
+
+#if JVET_M0428_ENC_DB_OPT
+  /// CU-level deblocking function
+  void xDeblockCU(CodingUnit& cu, const DeblockEdgeDir edgeDir);
+  void  initEncPicYuvBuffer(ChromaFormat chromaFormat, int lumaWidth, int lumaHeight);
+  PelStorage& getDbEncPicYuvBuffer() { return m_encPicYuvBuffer; }
+  void  setEnc(bool b) { m_bEnc = b; }
+#endif
 
   void  create                    ( const unsigned uiMaxCUDepth );
   void  destroy                   ();

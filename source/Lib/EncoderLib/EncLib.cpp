@@ -130,7 +130,12 @@ void EncLib::create ()
   }
 
   m_cLoopFilter.create( m_maxTotalCUDepth );
-
+#if JVET_M0428_ENC_DB_OPT
+  if (!m_bLoopFilterDisable)
+  {
+    m_cLoopFilter.initEncPicYuvBuffer(m_chromaFormatIDC, getSourceWidth(), getSourceHeight());
+  }
+#endif
   if( m_alf )
   {
     m_cEncALF.create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );

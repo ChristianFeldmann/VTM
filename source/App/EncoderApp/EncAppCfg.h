@@ -277,6 +277,9 @@ protected:
   uint32_t  m_intraCMD;
   ReshapeCW m_reshapeCW;
 #endif
+#if JVET_M0428_ENC_DB_OPT
+  bool      m_encDbOpt;
+#endif
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
   unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)

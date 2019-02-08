@@ -4550,6 +4550,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
       if (colMi.isInter && !((colMi.interDir == 1 || colMi.interDir == 3) && (pColPic->cs->slice->getRefPOC(REF_PIC_LIST_0, colMi.refIdx[0]) == pColPic->cs->slice->getPOC()) && pu.cs->sps->getIBCMode()))
 #endif
       {
+        bool foundMV = false;
         for (unsigned currRefListId = 0; currRefListId < (bBSlice ? 2 : 1); currRefListId++)
         {
           RefPicList currRefPicList = RefPicList(currRefListId);
@@ -4557,9 +4558,18 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
           {
             mi.refIdx[currRefListId] = 0;
             mi.mv[currRefListId] = cColMv;
+            foundMV = true;
           }
         }
+        if (foundMV == false) 
+        {
+          // no motion vector is available so use default
+          mi.mv[0] = mrgCtx.mvFieldNeighbours[(count << 1) + 0].mv;
+          mi.mv[1] = mrgCtx.mvFieldNeighbours[(count << 1) + 1].mv;
+          mi.refIdx[0] = mrgCtx.mvFieldNeighbours[(count << 1) + 0].refIdx;
+          mi.refIdx[1] = mrgCtx.mvFieldNeighbours[(count << 1) + 1].refIdx;
         }
+      }
       else
       {
         // intra coded, in this case, no motion vector is available for list 0 or list 1, so use default

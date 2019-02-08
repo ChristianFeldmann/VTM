@@ -878,7 +878,6 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setCTUSize                             ( m_CTUSize );
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
   sps.setMinQTSizes                          ( m_uiMinQT );
-  sps.setUseLargeCTU            ( m_LargeCTU );
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   sps.setUseDualITree                        ( m_dualITree );
   sps.setSBTMVPEnabledFlag                  ( m_SubPuMvpMode );
@@ -887,14 +886,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setBDOFEnabledFlag                    ( m_BIO );
   sps.setUseAffine             ( m_Affine );
   sps.setUseAffineType         ( m_AffineType );
-  sps.setDisableMotCompress    ( m_DisableMotionCompression );
-  sps.setMTTMode               ( m_MTTMode );
   sps.setUseLMChroma           ( m_LMChroma ? true : false );
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
   sps.setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
-#endif
-#if ENABLE_WPP_PARALLELISM
-  sps.setUseNextDQP            ( m_AltDQPCoding );
 #endif
 #if JVET_M0464_UNI_MTS
 #if JVET_M0303_IMPLICIT_MTS

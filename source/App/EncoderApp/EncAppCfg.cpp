@@ -799,7 +799,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("InterlacedSource",                                m_interlacedSourceFlag,                           false, "Indicate that source is interlaced")
   ("NonPackedSource",                                 m_nonPackedConstraintFlag,                        false, "Indicate that source does not contain frame packing")
   ("FrameOnly",                                       m_frameOnlyConstraintFlag,                        false, "Indicate that the bitstream contains only frames")
-  ("MTT",                                             m_MTT,                                               0u, "Multi type tree type (0: off, 1:QTBT + triple split) [default: 0]")
   ("CTUSize",                                         m_uiCTUSize,                                       128u, "CTUSize (specifies the CTU size if QTBT is on) [default: 128]")
   ("EnablePartitionConstraintsOverride",              m_SplitConsOverrideEnabledFlag,                    true, "Enable partition constraints override")
   ("MinQTISlice",                                     m_uiMinQT[0],                                        8u, "MinQTISlice")
@@ -811,20 +810,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxBTDepthISliceL",                               m_uiMaxBTDepthI,                                     3u, "MaxBTDepthISliceL")
   ("MaxBTDepthISliceC",                               m_uiMaxBTDepthIChroma,                               3u, "MaxBTDepthISliceC")
   ("DualITree",                                       m_dualTree,                                       false, "Use separate QTBT trees for intra slice luma and chroma channel types")
-  ("LargeCTU",                                        m_LargeCTU,                                       false, "Enable large CTU (0:off, 1:on)  [default: off]")
   ("SubPuMvp",                                       m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:ATMVP, 2:STMVP, 3:ATMVP+STMVP)  [default: off]")
   ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
   ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
   ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
-  ("DisableMotCompression",                           m_DisableMotionCompression,                       false, "Disable motion data compression for all modes")
   ("IMV",                                             m_ImvMode,                                            2, "Adaptive MV precision Mode (IMV)\n"
                                                                                                                "\t0: disabled IMV\n"
                                                                                                                "\t1: IMV default (Full-Pel)\n"
                                                                                                                "\t2: IMV Full-Pel and 4-PEL\n")
   ("IMV4PelFast",                                     m_Imv4PelFast,                                        1, "Fast 4-Pel Adaptive MV precision Mode 0:disabled, 1:enabled)  [default: 1]")
-#if ENABLE_WPP_PARALLELISM
-  ("AltDQPCoding",                                    m_AltDQPCoding,                                   false, "Improved predictive delta-QP coding (0:off, 1:on)  [default: off]")
-#endif
   ("LMChroma",                                        m_LMChroma,                                           1, " LMChroma prediction "
                                                                                                                "\t0:  Disable LMChroma\n"
                                                                                                                "\t1:  Enable LMChroma\n")
@@ -1886,9 +1880,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
 
  #if QP_SWITCHING_FOR_PARALLEL
-  if( m_LargeCTU && ( m_iQP < 38 ) && ( m_iGOPSize > 4 ) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && ( m_iSourceHeight <= 1280 ) && ( m_iSourceWidth <= 2048 ) )
+  if( ( m_iQP < 38 ) && ( m_iGOPSize > 4 ) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && ( m_iSourceHeight <= 1280 ) && ( m_iSourceWidth <= 2048 ) )
  #else
-  if( m_LargeCTU && ( ( int ) m_fQP < 38 ) && ( m_iGOPSize > 4 ) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && ( m_iSourceHeight <= 1280 ) && ( m_iSourceWidth <= 2048 ) )
+  if( ( ( int ) m_fQP < 38 ) && ( m_iGOPSize > 4 ) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && ( m_iSourceHeight <= 1280 ) && ( m_iSourceWidth <= 2048 ) )
  #endif
 #else
   if( false )
@@ -1966,9 +1960,6 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_numWppThreads > 1, "WPP-style parallelization only supported with NEXT profile" );
 #endif
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
-    xConfirmPara( m_LargeCTU, "Large CTU is only allowed with NEXT profile" );
-    xConfirmPara( m_DisableMotionCompression, "Disable motion data compression only allowed with NEXT profile" );
-    xConfirmPara( m_MTT, "Multi type tree is only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
     xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
 #if JVET_M0253_HASH_ME
@@ -1994,9 +1985,6 @@ bool EncAppCfg::xCheckParameter()
   }
   else
   {
-#if ENABLE_WPP_PARALLELISM
-    xConfirmPara( !m_AltDQPCoding && ( m_numWppThreads + m_numWppExtraLines ) > 1, "Wavefront parallel encoding only supported with AltDQPCoding" );
-#endif
     if( m_depQuantEnabledFlag )
     {
       xConfirmPara( !m_useRDOQ || !m_useRDOQTS, "RDOQ and RDOQTS must be equal to 1 if dependent quantization is enabled" );
@@ -2312,13 +2300,6 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( (m_iSourceHeight % (m_uiMaxCUHeight >> (m_uiMaxCUDepth-1)))!=0,             "Resulting coded frame height must be a multiple of the minimum CU size");
 
   xConfirmPara( m_quadtreeTULog2MinSize < 2,                                        "QuadtreeTULog2MinSize must be 2 or greater." );
-
-  if( !m_LargeCTU )
-  {
-    xConfirmPara( m_uiMaxCUHeight > 64, "CTU bigger than 64 only allowed with large CTU." );
-    xConfirmPara( m_uiMaxCUWidth  > 64, "CTU bigger than 64 only allowed with large CTU." );
-    xConfirmPara( m_uiCTUSize > 64, "CTU bigger than 64 only allowed with large CTU." );
-  }
 
   if( m_profile == Profile::NEXT )
   {
@@ -3184,14 +3165,8 @@ void EncAppCfg::xPrintParameter()
     }
     msg(VERBOSE, "SubPuMvp:%d+%d ", m_SubPuMvpMode & 1, (m_SubPuMvpMode & 2) == 2);
     msg( VERBOSE, "DualITree:%d ", m_dualTree );
-    msg( VERBOSE, "LargeCTU:%d ", m_LargeCTU );
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
     msg( VERBOSE, "BIO:%d ", m_BIO );
-    msg( VERBOSE, "DisMDC:%d ", m_DisableMotionCompression );
-    msg( VERBOSE, "MTT:%d ", m_MTT );
-#if ENABLE_WPP_PARALLELISM
-    msg( VERBOSE, "AltDQPCoding:%d ", m_AltDQPCoding );
-#endif
     msg( VERBOSE, "LMChroma:%d ", m_LMChroma );
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
     if( m_LMChroma && m_chromaFormatIDC == CHROMA_420 )
@@ -3248,10 +3223,7 @@ void EncAppCfg::xPrintParameter()
     }
 #endif
   msg( VERBOSE, "\nFAST TOOL CFG: " );
-  if( m_LargeCTU )
-  {
-    msg( VERBOSE, "LCTUFast:%d ", m_useFastLCTU );
-  }
+  msg( VERBOSE, "LCTUFast:%d ", m_useFastLCTU );
   msg( VERBOSE, "FastMrg:%d ", m_useFastMrg );
   msg( VERBOSE, "PBIntraFast:%d ", m_usePbIntraFast );
   if( m_ImvMode == 2 ) msg( VERBOSE, "IMV4PelFast:%d ", m_Imv4PelFast );

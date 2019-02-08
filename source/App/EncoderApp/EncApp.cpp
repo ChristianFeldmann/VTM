@@ -215,19 +215,13 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxBTDepth                                        ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   m_cEncLib.setDualITree                                         ( m_dualTree );
-  m_cEncLib.setLargeCTU                                          ( m_LargeCTU );
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode );
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );
   m_cEncLib.setBIO                                               (m_BIO);
-  m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );
-  m_cEncLib.setMTTMode                                           ( m_MTT );
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
   m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
-#endif
-#if ENABLE_WPP_PARALLELISM
-  m_cEncLib.setUseAltDQPCoding                                   ( m_AltDQPCoding );
 #endif
 #if JVET_M0464_UNI_MTS
   m_cEncLib.setIntraMTS                                          ( m_MTS & 1 );

@@ -782,18 +782,8 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #endif
 
 
-  // KJS: BEGIN former SPSNext paramaters
+  // KJS: BEGIN former SPSNext parameters
 
-  // tool enabling flags
-  WRITE_FLAG( pcSPS->getUseLargeCTU() ? 1 : 0,                                                 "large_ctu_flag" );
-  WRITE_FLAG( pcSPS->getDisableMotCompress() ? 1 : 0,                                          "disable_motion_compression_flag" );
-  
-  WRITE_FLAG( pcSPS->getMTTEnabled() ? 1 : 0,                                                  "mtt_enabled_flag" );
-  
-#if ENABLE_WPP_PARALLELISM
-  WRITE_FLAG( pcSPS->getUseNextDQP(),                                                          "next_dqp_enabled_flag" );
-#endif
-  
   // additional parameters
   
   if( pcSPS->getUseIMV() )
@@ -801,13 +791,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_UVLC( pcSPS->getImvMode()-1,                                                         "imv_mode_minus1" );
   }
   
-  if( pcSPS->getMTTEnabled() )
-  {
-    WRITE_UVLC( pcSPS->getMTTMode() - 1,                                                       "mtt_mode_minus1" );
-  }
-  // KJS: END former SPSNext paramaters
+  // KJS: END former SPSNext parameters
 
-  // KJS: referece picture sets to be replaced
+  // KJS: reference picture sets to be replaced
   const RPSList* rpsList = pcSPS->getRPSList();
 
   WRITE_UVLC(rpsList->getNumberOfReferencePictureSets(), "num_short_term_ref_pic_sets" );

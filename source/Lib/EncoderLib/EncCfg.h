@@ -221,17 +221,11 @@ protected:
 #if JVET_M0140_SBT
   bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
 #endif
-  bool      m_LargeCTU;
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
   bool      m_BIO;
-  bool      m_DisableMotionCompression;
-  unsigned  m_MTTMode;
 
-#if ENABLE_WPP_PARALLELISM
-  bool      m_AltDQPCoding;
-#endif
   bool      m_compositeRefEnabled;        //composite reference
   bool      m_GBi;
   bool      m_GBiFast;
@@ -706,9 +700,6 @@ public:
   void      setDualITree                    ( bool b )       { m_dualITree = b; }
   bool      getDualITree                    ()         const { return m_dualITree; }
 
-  void      setLargeCTU                     ( bool b )       { m_LargeCTU = b; }
-  bool      getLargeCTU                     ()         const { return m_LargeCTU; }
-
   void      setUseLMChroma                  ( int n )        { m_LMChroma = n; }
   int       getUseLMChroma()                           const { return m_LMChroma; }
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
@@ -725,16 +716,6 @@ public:
   bool      getAffineType()                            const { return m_AffineType; }
   void      setBIO(bool b)                                   { m_BIO = b; }
   bool      getBIO()                                   const { return m_BIO; }
-  void      setDisableMotionCompression     ( bool b )       { m_DisableMotionCompression = b; }
-  bool      getDisableMotionCompression     ()         const { return m_DisableMotionCompression; }
-
-
-  void      setMTTMode                      ( unsigned u )   { m_MTTMode = u; }
-  unsigned  getMTTMode                      ()         const { return m_MTTMode; }
-#if ENABLE_WPP_PARALLELISM
-  void      setUseAltDQPCoding              ( bool b )       { m_AltDQPCoding = b; }
-  bool      getUseAltDQPCoding              ()         const { return m_AltDQPCoding; }
-#endif
 
 #if JVET_M0464_UNI_MTS
   void      setIntraMTSMaxCand              ( unsigned u )   { m_IntraMTSMaxCand = u; }

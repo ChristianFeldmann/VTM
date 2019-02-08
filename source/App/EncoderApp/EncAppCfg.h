@@ -202,16 +202,10 @@ protected:
   unsigned  m_uiMaxBTDepthI;
   unsigned  m_uiMaxBTDepthIChroma;
   bool      m_dualTree;
-  bool      m_LargeCTU;
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
   bool      m_BIO;
-  bool      m_DisableMotionCompression;
-  unsigned  m_MTT;
-#if ENABLE_WPP_PARALLELISM
-  bool      m_AltDQPCoding;
-#endif
   int       m_LMChroma;
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
   bool      m_cclmCollocatedChromaFlag;

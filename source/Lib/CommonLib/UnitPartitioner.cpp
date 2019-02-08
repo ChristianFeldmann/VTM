@@ -249,7 +249,6 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
     break;
   case CU_TRIH_SPLIT:
   case CU_TRIV_SPLIT:
-    CHECK( ( cs.sps->getMTTMode() & 1 ) != 1, "Triple splits are not allowed" );
     m_partStack.push_back( PartLevel( split, PartitionerImpl::getCUSubPartitions( currArea(), cs, split ) ) );
     break;
   case TU_MAX_TR_SPLIT:
@@ -358,14 +357,12 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   }
 
   if( canBtt && ( area.width <= minBtSize && area.height <= minBtSize )
-      && ( ( area.width <= minTtSize && area.height <= minTtSize )
-           || cs.sps->getMTTMode() == 0 ) )
+      && ( ( area.width <= minTtSize && area.height <= minTtSize ) ) )
   {
     canBtt = false;
   }
   if( canBtt && ( area.width > maxBtSize || area.height > maxBtSize )
-      && ( ( area.width > maxTtSize || area.height > maxTtSize )
-           || cs.sps->getMTTMode() == 0 ) )
+      && ( ( area.width > maxTtSize || area.height > maxTtSize ) ) )
   {
     canBtt = false;
   }
@@ -384,12 +381,10 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   if( area.width <= minBtSize || area.width > maxBtSize )                              canBv = false;
   if( area.width <= MAX_TU_SIZE_FOR_PROFILE && area.height > MAX_TU_SIZE_FOR_PROFILE ) canBv = false;
 
-  if( ( cs.sps->getMTTMode() & 1 ) != 1 )                                 canTh = false;
   if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize )
                                                                                        canTh = false;
   if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE )  canTh = false;
 
-  if( ( cs.sps->getMTTMode() & 1 ) != 1 )                                 canTv = false;
   if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize )
                                                                                        canTv = false;
   if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE )  canTv = false;
@@ -515,9 +510,9 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   {
     if( currMtDepth >= maxBTD )                               return false;
     if(      ( area.width <= minBtSize && area.height <= minBtSize )
-        && ( ( area.width <= minTtSize && area.height <= minTtSize ) || cs.sps->getMTTMode() == 0 ) ) return false;
+        && ( ( area.width <= minTtSize && area.height <= minTtSize ) ) ) return false;
     if(      ( area.width > maxBtSize || area.height > maxBtSize )
-        && ( ( area.width > maxTtSize || area.height > maxTtSize ) || cs.sps->getMTTMode() == 0 ) ) return false;
+        && ( ( area.width > maxTtSize || area.height > maxTtSize ) ) ) return false;
     if (CS::isDualITree(cs) && (area.width > 64 || area.height > 64))
     {
       return false;
@@ -543,12 +538,10 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
     if( area.width <= MAX_TU_SIZE_FOR_PROFILE && area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
     break;
   case CU_TRIH_SPLIT:
-    if( ( cs.sps->getMTTMode() & 1 ) != 1 )          return false;
     if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize) return false;
     if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
     break;
   case CU_TRIV_SPLIT:
-    if( ( cs.sps->getMTTMode() & 1 ) != 1 )          return false;
     if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize)  return false;
     if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
     break;

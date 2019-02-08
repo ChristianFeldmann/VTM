@@ -1687,10 +1687,18 @@ namespace DQIntern
 #if JVET_M0297_32PT_MTS_ZERO_OUT
     int effWidth = tuPars.m_width, effHeight = tuPars.m_height;
     bool zeroOut = false;
+#if JVET_M0140_SBT
+#if JVET_M0464_UNI_MTS
+    if( ( tu.mtsIdx > 1 || ( tu.cu->sbtInfo != 0 && tuPars.m_height <= 32 && tuPars.m_width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#else
+    if( ( ( tu.cu->emtFlag && !tu.transformSkip[ compID ] ) || ( tu.cu->sbtInfo != 0 && tuPars.m_height <= 32 && tuPars.m_width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
+#else
 #if JVET_M0464_UNI_MTS
     if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #else
     if( tu.cu->emtFlag && !tu.transformSkip[compID] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
 #endif
     {
       effHeight = ( tuPars.m_height == 32 ) ? 16 : tuPars.m_height;

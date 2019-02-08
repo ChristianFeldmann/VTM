@@ -2432,7 +2432,7 @@ bool HLSyntaxReader::xMoreRbspData()
 void HLSyntaxReader::alf( AlfSliceParam& alfSliceParam )
 {
   uint32_t code;
-  READ_FLAG( code, "alf_slice_enable_flag" );
+  READ_FLAG( code, "tile_group_alf_enabled_flag" );
   alfSliceParam.enabledFlag[COMPONENT_Y] = code ? true : false;
 
   if( !code )

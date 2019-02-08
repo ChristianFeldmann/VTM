@@ -2485,7 +2485,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
   bool        cbfLuma   = ( cbf[ COMPONENT_Y ] != 0 );
   bool        cbfChroma = false;
 
-  if( cu.chromaFormat != CHROMA_400 )
+  if( !lumaOnly )
   {
     if( tu.blocks[COMPONENT_Cb].valid() )
     {

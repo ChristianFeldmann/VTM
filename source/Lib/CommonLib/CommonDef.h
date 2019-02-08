@@ -53,9 +53,10 @@
 #include "TypeDef.h"
 #include "version.h"
 
+// MS Visual Studio before 2014 does not support required C++11 features
 #ifdef _MSC_VER
-#if _MSC_VER <= 1500
-inline int64_t abs (int64_t x) { return _abs64(x); };
+#if _MSC_VER < 1900
+#error "MS Visual Studio version not supported. Please upgrade to Visual Studio 2015 or higher (or use other compilers)"
 #endif
 #endif
 
@@ -66,7 +67,14 @@ inline int64_t abs (int64_t x) { return _abs64(x); };
 // Platform information
 // ====================================================================================================================
 
-#ifdef __GNUC__
+#ifdef __clang__
+#define NVM_COMPILEDBY  "[clang %d.%d.%d]", __clang_major__, __clang_minor__, __clang_patchlevel__
+#ifdef __IA64__
+#define NVM_ONARCH    "[on 64-bit] "
+#else
+#define NVM_ONARCH    "[on 32-bit] "
+#endif
+#elif __GNUC__
 #define NVM_COMPILEDBY  "[GCC %d.%d.%d]", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__
 #ifdef __IA64__
 #define NVM_ONARCH    "[on 64-bit] "

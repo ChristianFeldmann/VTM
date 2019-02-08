@@ -959,6 +959,7 @@ bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& pa
 #else
     || encInfo.cu.ibc
 #endif
+    || partitioner.currDepth <= cs.pps->getMaxCuDQPDepth() || cs.currQP[partitioner.chType] != encInfo.cu.qp
     )
   {
     return false;
@@ -980,7 +981,9 @@ bool BestEncInfoCache::setCsFrom( CodingStructure& cs, EncTestMode& testMode, co
 #if JVET_M0170_MRG_SHARELIST
     , encInfo.pu, (cs.picture->Y().width), (cs.picture->Y().height)
 #endif
-) )
+    )
+    || partitioner.currDepth <= cs.pps->getMaxCuDQPDepth() || cs.currQP[partitioner.chType] != encInfo.cu.qp
+    )
   {
     return false;
   }

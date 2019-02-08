@@ -1743,7 +1743,7 @@ bool HLSWriter::xFindMatchingLTRP(Slice* pcSlice, uint32_t *ltrpsIndex, int ltrp
 
 void HLSWriter::alf( const AlfSliceParam& alfSliceParam )
 {
-  WRITE_FLAG( alfSliceParam.enabledFlag[COMPONENT_Y], "alf_slice_enable_flag" );
+  WRITE_FLAG( alfSliceParam.enabledFlag[COMPONENT_Y], "tile_group_alf_enabled_flag" );
   if( !alfSliceParam.enabledFlag[COMPONENT_Y] )
   {
     return;

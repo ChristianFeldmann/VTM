@@ -186,6 +186,7 @@ void EncGOP::init ( EncLib* pcEncLib )
   }
   else if (m_pcCfg->getLumaLevelToDeltaQPMapping().mode)
   {
+    pcEncLib->getRdCost()->setReshapeInfo(RESHAPE_SIGNAL_PQ, m_pcCfg->getBitDepth(CHANNEL_TYPE_LUMA));
     pcEncLib->getRdCost()->initLumaLevelToWeightTableReshape();
 #else
   pcEncLib->getRdCost()->initLumaLevelToWeightTable();

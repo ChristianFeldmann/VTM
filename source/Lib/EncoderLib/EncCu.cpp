@@ -400,6 +400,10 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   partitioner->initCtu( area, CH_L, *cs.slice );
   if (m_pcEncCfg->getIBCMode())
   {
+    if (area.lx() == 0 && area.ly() == 0)
+    {
+      m_pcInterSearch->resetIbcSearch();
+    }
     m_pcInterSearch->resetCtuRecord();
     m_ctuIbcSearchRangeX = m_pcEncCfg->getIBCLocalSearchRangeX();
     m_ctuIbcSearchRangeY = m_pcEncCfg->getIBCLocalSearchRangeY();

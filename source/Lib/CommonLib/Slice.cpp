@@ -1967,9 +1967,7 @@ SPS::SPS()
 , m_lumaReshapeEnable         (false)
 #endif
 // KJS: BEGIN former SPSNext parameters
-, m_LargeCTU                  ( false )
 , m_IMV                       ( false )
-, m_DisableMotionCompression  ( false )
 , m_LMChroma                  ( false )
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
 , m_cclmCollocatedChromaFlag  ( false )
@@ -1983,12 +1981,8 @@ SPS::SPS()
 #endif
 , m_Affine                    ( false )
 , m_AffineType                ( false )
-, m_MTTEnabled                ( false )
 , m_MHIntra                   ( false )
 , m_Triangle                  ( false )
-#if ENABLE_WPP_PARALLELISM
-, m_NextDQP                   ( false )
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
 , m_LadfEnabled               ( false )
 , m_LadfNumIntervals          ( 0 )
@@ -1998,7 +1992,6 @@ SPS::SPS()
 
 // default values for additional parameters
 , m_ImvMode                   ( IMV_OFF )
-, m_MTTMode                   ( 0 )
 , m_compositeRefEnabled     ( false )
 #if !JVET_M0483_IBC
 , m_IBCMode                   ( 0 )

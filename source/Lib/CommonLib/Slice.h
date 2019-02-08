@@ -950,9 +950,7 @@ private:
   bool              m_lumaReshapeEnable;
 #endif
   // KJS: BEGIN former SPSNext parameters
-  bool              m_LargeCTU;                   // 5
   bool              m_IMV;                        // 9
-  bool              m_DisableMotionCompression;   // 13
   bool              m_LMChroma;                   // 17
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
   bool              m_cclmCollocatedChromaFlag;
@@ -970,12 +968,8 @@ private:
   bool              m_Affine;
   bool              m_AffineType;
   bool              m_GBi;                        //
-  bool              m_MTTEnabled;                 //
   bool              m_MHIntra;
   bool              m_Triangle;
-#if ENABLE_WPP_PARALLELISM
-  bool              m_NextDQP;
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool              m_LadfEnabled;
   int               m_LadfNumIntervals;
@@ -985,8 +979,6 @@ private:
     //=====  additional parameters  =====
   //imv
   ImvMode     m_ImvMode;
-  // multi type tree (QTBT + triple split)
-  unsigned    m_MTTMode;
   
   bool        m_compositeRefEnabled;        //composite longterm reference
 #if !JVET_M0483_IBC
@@ -1229,21 +1221,12 @@ public:
 #endif
   
   // KJS: BEGIN former SPSNext parameters
-  void      setUseLargeCTU        ( bool b )                                        { m_LargeCTU = b; }
-  bool      getUseLargeCTU        ()                                      const     { return m_LargeCTU; }
   void      setUseIMV             ( bool b )                                        { m_IMV = b; }
   bool      getUseIMV             ()                                      const     { return m_IMV; }
   void      setUseAffine          ( bool b )                                        { m_Affine = b; }
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
-  void      setDisableMotCompress ( bool b )                                        { m_DisableMotionCompression = b; }
-  bool      getDisableMotCompress ()                                      const     { return m_DisableMotionCompression; }
-  bool      getMTTEnabled         ()                                      const     { return m_MTTEnabled; }
-#if ENABLE_WPP_PARALLELISM
-  void      setUseNextDQP         ( bool b )                                        { m_NextDQP = b; }
-  bool      getUseNextDQP         ()                                      const     { return m_NextDQP; }
-#endif
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
@@ -1287,10 +1270,6 @@ public:
   // sub pu tmvp
   void      setImvMode(ImvMode m) { m_ImvMode = m; m_IMV = m != 0;  }
   ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
-  
-  // multi type tree
-  unsigned  getMTTMode            ()                                      const     { return m_MTTMode; }
-  void      setMTTMode            ( unsigned    mode )                              { m_MTTMode = mode; m_MTTEnabled = ( m_MTTMode != 0 ); }
   
   void      setUseCompositeRef(bool b) { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef()                                      const { return m_compositeRefEnabled; }
@@ -2261,7 +2240,6 @@ public:
   PreCalcValues( const SPS& sps, const PPS& pps, bool _isEncoder )
     : chrFormat           ( sps.getChromaFormatIdc() )
     , multiBlock422       ( false )
-    , noMotComp           ( sps.getDisableMotCompress() )
     , maxCUWidth          ( sps.getMaxCUWidth() )
     , maxCUHeight         ( sps.getMaxCUHeight() )
     , maxCUWidthMask      ( maxCUWidth  - 1 )
@@ -2294,7 +2272,6 @@ public:
 
   const ChromaFormat chrFormat;
   const bool         multiBlock422;
-  const bool         noMotComp;
   const unsigned     maxCUWidth;
   const unsigned     maxCUHeight;
   // to get CTU position, use (x & maxCUWidthMask) rather than (x % maxCUWidth)

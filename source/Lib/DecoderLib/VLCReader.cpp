@@ -1108,26 +1108,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
   
   // KJS: BEGIN former SPSNext parameters
-  READ_FLAG( uiCode,    "large_ctu_flag" );                         pcSPS->setUseLargeCTU            ( uiCode != 0 );
-  READ_FLAG( uiCode,    "disable_motion_compression_flag" );        pcSPS->setDisableMotCompress     ( uiCode != 0 );
-  
-  READ_FLAG( uiCode,     "mtt_enabled_flag" );                       pcSPS->setMTTMode                ( uiCode );
-
-#if ENABLE_WPP_PARALLELISM
-  READ_FLAG( uiCode,     "next_dqp_enabled_flag" );                  pcSPS->setUseNextDQP             ( uiCode != 0 );
-#endif
-  
   if( pcSPS->getUseIMV() )
   {
     READ_UVLC( uiCode, "imv_mode_minus1" );                         pcSPS->setImvMode( ImvMode( uiCode + 1 ) );
   }
-  if( pcSPS->getMTTEnabled() )
-  {
-    READ_UVLC( uiCode,  "mtt_mode_minus1" );                        pcSPS->setMTTMode( uiCode + 1 );
-  }
   // KJS: END former SPSNext parameters
 
-  // KJS: referece picture sets to be replaced
+  // KJS: reference picture sets to be replaced
   READ_UVLC( uiCode, "num_short_term_ref_pic_sets" );
   CHECK(uiCode > 64, "Invalid code");
   pcSPS->createRPSList(uiCode);

@@ -189,25 +189,6 @@ int CU::predictQP( const CodingUnit& cu, const int prevQP )
 {
   const CodingStructure &cs = *cu.cs;
 
-#if ENABLE_WPP_PARALLELISM
-  if( cs.sps->getUseNextDQP() )
-  {
-    // Inter-CTU 2D "planar"   c(orner)  a(bove)
-    // predictor arrangement:  b(efore)  p(rediction)
-
-    // restrict the lookup, as it might cross CTU/slice/tile boundaries
-    const CodingUnit *cuA = cs.getCURestricted( cu.blocks[cu.chType].pos().offset(  0, -1 ), cu, cu.chType );
-    const CodingUnit *cuB = cs.getCURestricted( cu.blocks[cu.chType].pos().offset( -1,  0 ), cu, cu.chType );
-    const CodingUnit *cuC = cs.getCURestricted( cu.blocks[cu.chType].pos().offset( -1, -1 ), cu, cu.chType );
-
-    const int a = cuA ? cuA->qp : cs.slice->getSliceQpBase();
-    const int b = cuB ? cuB->qp : cs.slice->getSliceQpBase();
-    const int c = cuC ? cuC->qp : cs.slice->getSliceQpBase();
-
-    return Clip3( ( a < b ? a : b ), ( a > b ? a : b ), a + b - c ); // derived from Martucci's Median Adaptive Prediction, 1990
-  }
-
-#endif
   // only predict within the same CTU, use HEVC's above+left prediction
   const int a = ( cu.blocks[cu.chType].y & ( cs.pcv->maxCUHeightMask >> getChannelTypeScaleY( cu.chType, cu.chromaFormat ) ) ) ? ( cs.getCU( cu.blocks[cu.chType].pos().offset( 0, -1 ), cu.chType ) )->qp : prevQP;
   const int b = ( cu.blocks[cu.chType].x & ( cs.pcv->maxCUWidthMask  >> getChannelTypeScaleX( cu.chType, cu.chromaFormat ) ) ) ? ( cs.getCU( cu.blocks[cu.chType].pos().offset( -1, 0 ), cu.chType ) )->qp : prevQP;
@@ -2344,7 +2325,7 @@ void PU::getInterMMVDMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx,
 bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList, const Position &_pos, Mv& rcMv, const int &refIdx )
 {
   // don't perform MV compression when generally disabled or subPuMvp is used
-  const unsigned scale = ( pu.cs->pcv->noMotComp ? 1 : 4 * std::max<int>(1, 4 * AMVP_DECIMATION_FACTOR / 4) );
+  const unsigned scale = 4 * std::max<int>(1, 4 * AMVP_DECIMATION_FACTOR / 4);
   const unsigned mask  = ~( scale - 1 );
 
   const Position pos = Position{ PosType( _pos.x & mask ), PosType( _pos.y & mask ) };

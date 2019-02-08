@@ -1147,8 +1147,8 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   cuECtx.set( BEST_HORZ_SPLIT_COST, MAX_DOUBLE );
   cuECtx.set( BEST_TRIH_SPLIT_COST, MAX_DOUBLE );
   cuECtx.set( BEST_TRIV_SPLIT_COST, MAX_DOUBLE );
-  cuECtx.set( DO_TRIH_SPLIT,        cs.sps->getMTTMode() & 1 );
-  cuECtx.set( DO_TRIV_SPLIT,        cs.sps->getMTTMode() & 1 );
+  cuECtx.set( DO_TRIH_SPLIT,        1 );
+  cuECtx.set( DO_TRIV_SPLIT,        1 );
   cuECtx.set( BEST_IMV_COST,        MAX_DOUBLE * .5 );
   cuECtx.set( BEST_NO_IMV_COST,     MAX_DOUBLE * .5 );
   cuECtx.set( QT_BEFORE_BT,         qtBeforeBt );
@@ -1957,31 +1957,28 @@ bool EncModeCtrlMTnoRQT::useModeResult( const EncTestMode& encTestmode, CodingSt
     cuECtx.set( MAX_QT_SUB_DEPTH, maxQtD );
   }
 
-  if( ( tempCS->sps->getMTTMode() & 1 ) == 1 )
+  int maxMtD = tempCS->pcv->getMaxBtDepth( *tempCS->slice, partitioner.chType ) + partitioner.currImplicitBtDepth;
+
+  if( encTestmode.type == ETM_SPLIT_BT_H )
   {
-    int maxMtD = tempCS->pcv->getMaxBtDepth( *tempCS->slice, partitioner.chType ) + partitioner.currImplicitBtDepth;
-
-    if( encTestmode.type == ETM_SPLIT_BT_H )
+    if( tempCS->cus.size() > 2 )
     {
-      if( tempCS->cus.size() > 2 )
-      {
-        int h_2   = tempCS->area.blocks[partitioner.chType].height / 2;
-        int cu1_h = tempCS->cus.front()->blocks[partitioner.chType].height;
-        int cu2_h = tempCS->cus.back() ->blocks[partitioner.chType].height;
+      int h_2   = tempCS->area.blocks[partitioner.chType].height / 2;
+      int cu1_h = tempCS->cus.front()->blocks[partitioner.chType].height;
+      int cu2_h = tempCS->cus.back() ->blocks[partitioner.chType].height;
 
-        cuECtx.set( DO_TRIH_SPLIT, cu1_h < h_2 || cu2_h < h_2 || partitioner.currMtDepth + 1 == maxMtD );
-      }
+      cuECtx.set( DO_TRIH_SPLIT, cu1_h < h_2 || cu2_h < h_2 || partitioner.currMtDepth + 1 == maxMtD );
     }
-    else if( encTestmode.type == ETM_SPLIT_BT_V )
+  }
+  else if( encTestmode.type == ETM_SPLIT_BT_V )
+  {
+    if( tempCS->cus.size() > 2 )
     {
-      if( tempCS->cus.size() > 2 )
-      {
-        int w_2   = tempCS->area.blocks[partitioner.chType].width / 2;
-        int cu1_w = tempCS->cus.front()->blocks[partitioner.chType].width;
-        int cu2_w = tempCS->cus.back() ->blocks[partitioner.chType].width;
+      int w_2   = tempCS->area.blocks[partitioner.chType].width / 2;
+      int cu1_w = tempCS->cus.front()->blocks[partitioner.chType].width;
+      int cu2_w = tempCS->cus.back() ->blocks[partitioner.chType].width;
 
-        cuECtx.set( DO_TRIV_SPLIT, cu1_w < w_2 || cu2_w < w_2 || partitioner.currMtDepth + 1 == maxMtD );
-      }
+      cuECtx.set( DO_TRIV_SPLIT, cu1_w < w_2 || cu2_w < w_2 || partitioner.currMtDepth + 1 == maxMtD );
     }
   }
 

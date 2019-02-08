@@ -420,8 +420,10 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     {
       // this should always be true
       CHECK( !pu.Y().valid(), "PU is not valid" );
+#if ENABLE_JVET_L0283_MRL
       bool isFirstLineOfCtu = (((pu.block(COMPONENT_Y).y)&((pu.cs->sps)->getMaxCUWidth() - 1)) == 0);
       int numOfPassesExtendRef = (isFirstLineOfCtu ? 1 : MRL_NUM_REF_LINES);
+#endif
       pu.multiRefIdx = 0;
 
       //===== init pattern for luma prediction =====
@@ -567,6 +569,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
           std::copy_n( uiRdModeList.begin(), numModesForFullRD, m_rdModeListWithoutMrl.begin() );
         }
 #endif
+#if ENABLE_JVET_L0283_MRL
         pu.multiRefIdx = 1;
         const int  numMPMs = NUM_MOST_PROBABLE_MODES;
         unsigned  multiRefMPM [numMPMs];
@@ -609,6 +612,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
             }
           }
         }
+#endif
         CandCostList.resize(numModesForFullRD);
         extendRefList.resize(numModesForFullRD);
         if( m_pcEncCfg->getFastUDIUseMPMEnabled() )

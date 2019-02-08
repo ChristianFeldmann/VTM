@@ -3108,9 +3108,9 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
           uiBitsCand--;
         }
         double cost = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
-        static_vector<int, AFFINE_MRG_MAX_NUM_CANDS> * nullList = nullptr;
+        static_vector<int, AFFINE_MRG_MAX_NUM_CANDS> emptyList;
         updateCandList( uiMergeCand, cost, RdModeList, candCostList
-          , *nullList, -1
+          , emptyList, -1
           , uiNumMrgSATDCand );
 
         CHECK( std::min( uiMergeCand + 1, uiNumMrgSATDCand ) != RdModeList.size(), "" );

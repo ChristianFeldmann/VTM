@@ -158,6 +158,7 @@ typedef std::pair<int, int>  TrCost;
 
 #define JVET_M0409_ATMVP_FIX                              1
 
+#define ENABLE_JVET_L0283_MRL                             1 // 1: Enable MRL, 0: Disable MRL
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
 #if REUSE_CU_RESULTS && JVET_M0102_INTRA_SUBPARTITIONS

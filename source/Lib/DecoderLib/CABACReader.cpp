@@ -1283,6 +1283,10 @@ void CABACReader::xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol)
 
 void CABACReader::extend_ref_line(CodingUnit& cu)
 {
+#if !ENABLE_JVET_L0283_MRL
+  return;
+#endif
+
   if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType))
   {
     cu.firstPU->multiRefIdx = 0;

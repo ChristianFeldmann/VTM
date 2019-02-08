@@ -996,6 +996,10 @@ void CABACWriter::xWriteTruncBinCode(uint32_t symbol, uint32_t maxSymbol)
 
 void CABACWriter::extend_ref_line(const PredictionUnit& pu)
 {
+#if !ENABLE_JVET_L0283_MRL
+  return;
+#endif
+
   const CodingUnit& cu = *pu.cu;
   if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType))
   {
@@ -1023,6 +1027,10 @@ void CABACWriter::extend_ref_line(const PredictionUnit& pu)
 
 void CABACWriter::extend_ref_line(const CodingUnit& cu)
 {
+#if !ENABLE_JVET_L0283_MRL
+  return;
+#endif
+
   if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType))
   {
     return;

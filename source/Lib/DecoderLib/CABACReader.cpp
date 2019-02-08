@@ -2655,7 +2655,11 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
   CodingUnit& cu         = *tu.cu;
   bool        lumaOnly   = ( cu.chromaFormat == CHROMA_400 || !tu.blocks[COMPONENT_Cb].valid() );
   bool        cbfLuma    = ( tu.cbf[ COMPONENT_Y ] != 0 );
+#if JVET_M0102_INTRA_SUBPARTITIONS
   bool        cbfChroma  = ( lumaOnly ? false : ( chromaCbfs.Cb || chromaCbfs.Cr ) );
+#else
+  bool        cbfChroma  = ( cu.chromaFormat == CHROMA_400 ? false : ( chromaCbfs.Cb || chromaCbfs.Cr ) );
+#endif
 
   if( cbfLuma || cbfChroma )
   {

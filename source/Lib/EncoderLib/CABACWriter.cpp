@@ -2485,7 +2485,11 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
   bool        cbfLuma   = ( cbf[ COMPONENT_Y ] != 0 );
   bool        cbfChroma = false;
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
   if( !lumaOnly )
+#else
+  if( cu.chromaFormat != CHROMA_400 )
+#endif
   {
     if( tu.blocks[COMPONENT_Cb].valid() )
     {

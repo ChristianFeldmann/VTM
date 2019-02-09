@@ -2670,10 +2670,28 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
   {
     cctx.initSubblock       ( subSetId, sigGroupFlags[subSetId] );
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-    residual_coding_subblock( cctx, coeff, stateTab, state, tu, compID );
+#if JVET_M0140_SBT
+#if JVET_M0464_UNI_MTS
+    if( ( tu.mtsIdx > 1 || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #else
-    residual_coding_subblock( cctx, coeff, stateTab, state );
+    if( ( ( tu.cu->emtFlag && !tu.transformSkip[ compID ] ) || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #endif
+#else
+#if JVET_M0464_UNI_MTS
+    if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#else
+    if( tu.cu->emtFlag && !tu.transformSkip[ compID ] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
+#endif
+    {
+      if( ( tu.blocks[ compID ].height == 32 && cctx.cgPosY() >= ( 16 >> cctx.log2CGHeight() ) )
+       || ( tu.blocks[ compID ].width  == 32 && cctx.cgPosX() >= ( 16 >> cctx.log2CGWidth()  ) ) )
+      {
+        continue;
+      }
+    }
+#endif
+    residual_coding_subblock( cctx, coeff, stateTab, state );
 
 #if !JVET_M0464_UNI_MTS
     if (useEmt)
@@ -2908,10 +2926,18 @@ void CABACWriter::last_sig_coeff( CoeffCodingContext& cctx )
   unsigned maxLastPosX = cctx.maxLastPosX();
   unsigned maxLastPosY = cctx.maxLastPosY();
 
+#if JVET_M0140_SBT
+#if JVET_M0464_UNI_MTS
+  if( ( tu.mtsIdx > 1 || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#else
+  if( ( ( tu.cu->emtFlag && !tu.transformSkip[ compID ] ) || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
+#else
 #if JVET_M0464_UNI_MTS
   if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #else
   if( tu.cu->emtFlag && !tu.transformSkip[ compID ] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
 #endif
   {
     maxLastPosX = ( tu.blocks[compID].width  == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosX;
@@ -2963,11 +2989,7 @@ void CABACWriter::last_sig_coeff( CoeffCodingContext& cctx )
 
 
 
-#if JVET_M0297_32PT_MTS_ZERO_OUT
-void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoeff* coeff, const int stateTransTable, int& state, const TransformUnit& tu, ComponentID compID )
-#else
 void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoeff* coeff, const int stateTransTable, int& state )
-#endif
 {
   //===== init =====
   const int   minSubPos   = cctx.minSubPos();
@@ -2978,21 +3000,6 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
   //===== encode significant_coeffgroup_flag =====
   if( !isLast && cctx.isNotFirst() )
   {
-#if JVET_M0297_32PT_MTS_ZERO_OUT
-#if JVET_M0464_UNI_MTS
-    if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#else
-    if( tu.cu->emtFlag && !tu.transformSkip[ compID ] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#endif
-    {
-      if( ( tu.blocks[compID].height == 32 && cctx.cgPosY() >= ( 16 >> cctx.log2CGHeight() ) )
-       || ( tu.blocks[compID].width  == 32 && cctx.cgPosX() >= ( 16 >> cctx.log2CGWidth()  ) ) )
-      {
-        return;
-      }
-    }
-#endif
-
     if( cctx.isSigGroup() )
     {
       m_BinEncoder.encodeBin( 1, cctx.sigGroupCtxId() );

@@ -2818,10 +2818,27 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
     {
       cctx.initSubblock       ( subSetId );
 #if JVET_M0297_32PT_MTS_ZERO_OUT
-      residual_coding_subblock( cctx, coeff, stateTransTab, state, tu, compID );
+#if JVET_M0140_SBT
+#if JVET_M0464_UNI_MTS
+      if( ( tu.mtsIdx > 1 || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #else
-      residual_coding_subblock( cctx, coeff, stateTransTab, state );
+      if( ( ( tu.cu->emtFlag && !tu.transformSkip[ compID ] ) || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #endif
+#else
+#if JVET_M0464_UNI_MTS
+      if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#else
+      if( tu.cu->emtFlag && !tu.transformSkip[ compID ] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
+#endif
+      {
+        if( ( tu.blocks[ compID ].height == 32 && cctx.cgPosY() >= ( 16 >> cctx.log2CGHeight() ) ) || ( tu.blocks[ compID ].width == 32 && cctx.cgPosX() >= ( 16 >> cctx.log2CGWidth() ) ) )
+        {
+          continue;
+        }
+      }
+#endif
+      residual_coding_subblock( cctx, coeff, stateTransTab, state );
 #if !JVET_M0464_UNI_MTS
       if (useEmt)
       {
@@ -3070,10 +3087,18 @@ int CABACReader::last_sig_coeff( CoeffCodingContext& cctx )
   unsigned maxLastPosX = cctx.maxLastPosX();
   unsigned maxLastPosY = cctx.maxLastPosY();
 
+#if JVET_M0140_SBT
+#if JVET_M0464_UNI_MTS
+  if( ( tu.mtsIdx > 1 || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#else
+  if( ( ( tu.cu->emtFlag && !tu.transformSkip[ compID ] ) || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
+#else
 #if JVET_M0464_UNI_MTS
   if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #else
   if( tu.cu->emtFlag && !tu.transformSkip[ compID ] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
 #endif
   {
     maxLastPosX = ( tu.blocks[ compID ].width  == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosX;
@@ -3156,11 +3181,7 @@ int CABACReader::last_sig_coeff( CoeffCodingContext& cctx )
 
 
 
-#if JVET_M0297_32PT_MTS_ZERO_OUT
-void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* coeff, const int stateTransTable, int& state, TransformUnit& tu, ComponentID compID )
-#else
 void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* coeff, const int stateTransTable, int& state )
-#endif
 {
   // NOTE: All coefficients of the subblock must be set to zero before calling this function
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
@@ -3183,23 +3204,7 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
   bool sigGroup = ( isLast || !minSubPos );
   if( !sigGroup )
   {
-#if JVET_M0297_32PT_MTS_ZERO_OUT
-#if JVET_M0464_UNI_MTS
-    if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#else
-    if( tu.cu->emtFlag && !tu.transformSkip[ compID ] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#endif
-    {
-      sigGroup = ( ( tu.blocks[compID].height == 32 && cctx.cgPosY() >= ( 16 >> cctx.log2CGHeight() ) )
-                || ( tu.blocks[compID].width  == 32 && cctx.cgPosX() >= ( 16 >> cctx.log2CGWidth()  ) ) ) ? 0 : m_BinDecoder.decodeBin( cctx.sigGroupCtxId() );
-    }
-    else
-    {
-      sigGroup = m_BinDecoder.decodeBin(cctx.sigGroupCtxId());
-    }
-#else
     sigGroup = m_BinDecoder.decodeBin( cctx.sigGroupCtxId() );
-#endif
   }
   if( sigGroup )
   {

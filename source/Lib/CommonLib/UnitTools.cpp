@@ -5135,6 +5135,8 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
     {
       triangleMrgCtx.interDirNeighbours[triangleMrgCtx.numValidMergeCand] = 1;
       triangleMrgCtx.mvFieldNeighbours[triangleMrgCtx.numValidMergeCand << 1].setMvField(Mv(0, 0), cnt);
+      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + 1].refIdx = NOT_VALID;
+      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + 1].mv = Mv();
       triangleMrgCtx.numValidMergeCand++;
 
       if( triangleMrgCtx.numValidMergeCand == TRIANGLE_MAX_NUM_UNI_CANDS )
@@ -5144,6 +5146,8 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
 
       triangleMrgCtx.interDirNeighbours[triangleMrgCtx.numValidMergeCand] = 2;
       triangleMrgCtx.mvFieldNeighbours [(triangleMrgCtx.numValidMergeCand << 1) + 1 ].setMvField(Mv(0, 0), cnt);
+      triangleMrgCtx.mvFieldNeighbours[triangleMrgCtx.numValidMergeCand << 1].refIdx = NOT_VALID;
+      triangleMrgCtx.mvFieldNeighbours[triangleMrgCtx.numValidMergeCand << 1].mv = Mv();
       triangleMrgCtx.numValidMergeCand++;
 
       cnt = (cnt + 1) % numRefIdx;

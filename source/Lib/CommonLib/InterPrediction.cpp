@@ -439,12 +439,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
          pu.cu->lumaSize(),
          sps);
 
-#if JVET_M0823_MMVD_ENCOPT
-  int numOfPass = (pu.mmvdMergeFlag && pu.mmvdEncOptMode) ? 1 : (std::min((int)pcYuvPred.bufs.size(), m_maxCompIDToPred + 1));
-  for (uint32_t comp = COMPONENT_Y; comp < numOfPass; comp++)
-#else
   for( uint32_t comp = COMPONENT_Y; comp < pcYuvPred.bufs.size() && comp <= m_maxCompIDToPred; comp++ )
-#endif
   {
     const ComponentID compID = ComponentID( comp );
     if (compID == COMPONENT_Y && !luma)
@@ -1334,7 +1329,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
 )
 {
   // dual tree handling for IBC as the only ref
-  if (!luma || !chroma)
+  if ((!luma || !chroma) && eRefPicList == REF_PIC_LIST_0)
   {
     if (!luma && chroma)
     {

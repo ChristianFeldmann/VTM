@@ -6959,7 +6959,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
       {
         const CPelBuf orgLuma = cs.getOrgBuf( cs.area.blocks[COMPONENT_Y] );
 #if JVET_M0427_INLOOP_RESHAPER
-        if (compID == COMPONENT_Y)
+        if (compID == COMPONENT_Y && !(m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()))
         {
           const CompArea &areaY = cu.Y();
           CompArea      tmpArea1(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());
@@ -7190,7 +7190,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     {
       const CPelBuf orgLuma = cs.getOrgBuf( cs.area.blocks[COMPONENT_Y] );
 #if JVET_M0427_INLOOP_RESHAPER
-      if (compID == COMPONENT_Y)
+      if (compID == COMPONENT_Y && !(m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()) )
       {
         const CompArea &areaY = cu.Y();
         CompArea      tmpArea1(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());

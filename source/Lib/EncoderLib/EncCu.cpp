@@ -4705,7 +4705,7 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
       {
         const CPelBuf orgLuma = tempCS->getOrgBuf(tempCS->area.blocks[COMPONENT_Y]);
 #if JVET_M0427_INLOOP_RESHAPER
-        if (compID == COMPONENT_Y)
+        if (compID == COMPONENT_Y && !(m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()))
         {
           const CompArea &area = cu.blocks[COMPONENT_Y];
           CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());

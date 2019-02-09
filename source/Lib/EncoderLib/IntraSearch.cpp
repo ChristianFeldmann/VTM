@@ -1968,7 +1968,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   {
     const CPelBuf orgLuma = cs.getOrgBuf( cs.area.blocks[COMPONENT_Y] );
 #if JVET_M0427_INLOOP_RESHAPER
-    if (compID == COMPONENT_Y)
+    if (compID == COMPONENT_Y  && !(m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()))
     {
       CompArea      tmpArea1(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
       PelBuf tmpRecLuma = m_tmpStorageLCU.getBuf(tmpArea1);

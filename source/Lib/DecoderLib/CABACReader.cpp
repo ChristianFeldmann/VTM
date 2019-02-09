@@ -1006,7 +1006,7 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__OTHER );
 
-  if( !cu.cs->sps->getUseIMV() )
+  if( !cu.cs->sps->getAMVREnabledFlag() )
   {
     return;
   }
@@ -1038,7 +1038,7 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, ctxId );
 
-  if( sps->getImvMode() == IMV_4PEL && value )
+  if( sps->getAMVREnabledFlag() && value )
   {
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 3 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 3 );

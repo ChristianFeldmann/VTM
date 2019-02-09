@@ -1020,8 +1020,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setSBTMVPEnabledFlag(false);
   }
 
-  // KJS: sps_amvr_enabled_flag
-  READ_FLAG( uiCode,    "imv_enable_flag" );                        pcSPS->setUseIMV                 ( uiCode != 0 );
+  READ_FLAG( uiCode,  "sps_amvr_enabled_flag" );                     pcSPS->setAMVREnabledFlag ( uiCode != 0 );
 
   READ_FLAG( uiCode, "sps_bdof_enabled_flag" );                      pcSPS->setBDOFEnabledFlag ( uiCode != 0 );
 
@@ -1106,14 +1105,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     }
   }
 #endif
-  
-  // KJS: BEGIN former SPSNext parameters
-  if( pcSPS->getUseIMV() )
-  {
-    READ_UVLC( uiCode, "imv_mode_minus1" );                         pcSPS->setImvMode( ImvMode( uiCode + 1 ) );
-  }
-  // KJS: END former SPSNext parameters
-
+ 
   // KJS: reference picture sets to be replaced
   READ_UVLC( uiCode, "num_short_term_ref_pic_sets" );
   CHECK(uiCode > 64, "Invalid code");

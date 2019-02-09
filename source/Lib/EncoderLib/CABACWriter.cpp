@@ -1669,7 +1669,7 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
 {
   const SPS *sps = cu.cs->sps;
 
-  if( !sps->getUseIMV() )
+  if( !sps->getAMVREnabledFlag() )
   {
     return;
   }
@@ -1695,7 +1695,7 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
     m_BinEncoder.encodeBin( ( cu.imv > 0 ), Ctx::ImvFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", (cu.imv > 0), ctxId );
 
-  if( sps->getImvMode() == IMV_4PEL && cu.imv > 0 )
+  if( sps->getAMVREnabledFlag() && cu.imv > 0 )
   {
     m_BinEncoder.encodeBin( ( cu.imv > 1 ), Ctx::ImvFlag( 3 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", ( cu.imv > 1 ), 3 );

@@ -2370,10 +2370,12 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         distParam.cur = singleMergeTempBuffer->Y();
 #if JVET_M0823_MMVD_ENCOPT
         pu.mmvdEncOptMode = (refineStep > 2 ? 2 : 1);
-#endif
-        m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer);
-#if JVET_M0823_MMVD_ENCOPT
+        CHECK(!pu.mmvdMergeFlag, "MMVD merge should be set");
+        // Don't do chroma MC here
+        m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer, REF_PIC_LIST_X, true, false);
         pu.mmvdEncOptMode = 0;
+#else
+        m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer);
 #endif
 #if JVET_M0147_DMVR // store the refined MV
         pu.mvRefine = false;

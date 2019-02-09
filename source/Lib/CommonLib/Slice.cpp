@@ -585,15 +585,13 @@ int Slice::getNumRpsCurrTempList() const
       numRpsCurrTempList++;
     }
   }
-#if JVET_M0483_IBC
+#if JVET_M0483_IBC==0
   if (getSPS()->getIBCFlag())
-#else
-  if (getSPS()->getIBCMode())
-#endif
   {
     return numRpsCurrTempList + 1;
   }
   else
+#endif
     return numRpsCurrTempList;
 }
 

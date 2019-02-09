@@ -521,16 +521,13 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
 
   const Slice& sliceQ = *cu.slice;
 
-  const Position& cuPosLuma = cu.lumaPos();
   int shiftHor = cu.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cu.firstPU->chromaFormat);
   int shiftVer = cu.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cu.firstPU->chromaFormat);
   const Position& posQ = Position{ localPos.x >> shiftHor,  localPos.y >> shiftVer };
   const Position  posP  = ( edgeDir == EDGE_VER ) ? posQ.offset( -1, 0 ) : posQ.offset( 0, -1 );
 
-  const bool sameCU     = posP.x >= cuPosLuma.x && posP.y >= cuPosLuma.y;
-
   const CodingUnit& cuQ = cu;
-  const CodingUnit& cuP = sameCU ? cu : *cu.cs->getCU( posP, cu.chType );
+  const CodingUnit& cuP = *cu.cs->getCU( posP, cu.chType );
 
   //-- Set BS for Intra MB : BS = 4 or 3
   if( ( MODE_INTRA == cuP.predMode ) || ( MODE_INTRA == cuQ.predMode ) )
@@ -542,8 +539,8 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
 #endif
   }
 
-  const TransformUnit& tuQ = posQ == cuQ.lumaPos() ? *cuQ.firstTU : *cuQ.cs->getTU(posQ, cuQ.chType);
-  const TransformUnit& tuP = posP == cuP.lumaPos() ? *cuP.firstTU : *cuP.cs->getTU(posP, cuP.chType);
+  const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
+  const TransformUnit& tuP = *cuP.cs->getTU(posP, cuP.chType);
   const PreCalcValues& pcv = *cu.cs->pcv;
   const unsigned rasterIdx = getRasterIdx( posQ, pcv );
 #if JVET_M0908_CIIP_DB
@@ -592,9 +589,19 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     return 1;
   }
 #endif
+
+#if JVET_M0471_LONG_DEBLOCKING_FILTERS
+  if ( !cu.Y().valid() )
+  {
+    return tmpBs;
+  }
+#endif
+
   // and now the pred
-  const MotionInfo&     miQ = cuQ.cs->getMotionInfo( posQ );
-  const MotionInfo&     miP = cuP.cs->getMotionInfo( posP );
+  const Position& lumaPosQ  = Position{ localPos.x,  localPos.y };
+  const Position  lumaPosP  = ( edgeDir == EDGE_VER ) ? lumaPosQ.offset( -1, 0 ) : lumaPosQ.offset( 0, -1 );
+  const MotionInfo&     miQ = cuQ.cs->getMotionInfo( lumaPosQ );
+  const MotionInfo&     miP = cuP.cs->getMotionInfo( lumaPosP );
   const Slice&       sliceP = *cuP.slice;
 
   if (sliceQ.isInterB() || sliceP.isInterB())

@@ -2530,7 +2530,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
   // derive maxGolombIdx
   AlfFilterShape alfShape( isChroma ? 5 : 7 );
   const int maxGolombIdx = AdaptiveLoopFilter::getMaxGolombIdx( alfShape.filterType );
-  READ_UVLC( code, "min_golomb_order" );
+  READ_UVLC( code, isChroma ? "alf_chroma_min_eg_order_minus1" : "alf_luma_min_eg_order_minus1" );
 
   int kMin = code + 1;
   static int kMinTab[MAX_NUM_ALF_COEFF];
@@ -2539,7 +2539,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
 
   for( int idx = 0; idx < maxGolombIdx; idx++ )
   {
-    READ_FLAG( code, "golomb_order_increase_flag" );
+    READ_FLAG( code, isChroma ? "alf_chroma_eg_order_increase_flag"  : "alf_luma_eg_order_increase_flag" );
     CHECK( code > 1, "Wrong golomb_order_increase_flag" );
     kMinTab[idx] = kMin + code;
     kMin = kMinTab[idx];

@@ -1824,13 +1824,13 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
   int kMin = EncAdaptiveLoopFilter::getGolombKMin( alfShape, numFilters, kMinTab, bitsCoeffScan );
 
   // Golomb parameters
-  WRITE_UVLC( kMin - 1, "min_golomb_order" );
+  WRITE_UVLC( kMin - 1,  isChroma ? "alf_chroma_min_eg_order_minus1" : "alf_luma_min_eg_order_minus1" );
 
   for( int idx = 0; idx < maxGolombIdx; idx++ )
   {
     bool golombOrderIncreaseFlag = ( kMinTab[idx] != kMin ) ? true : false;
     CHECK( !( kMinTab[idx] <= kMin + 1 ), "ALF Golomb parameter not consistent" );
-    WRITE_FLAG( golombOrderIncreaseFlag, "golomb_order_increase_flag" );
+    WRITE_FLAG( golombOrderIncreaseFlag, isChroma ? "alf_chroma_eg_order_increase_flag"  : "alf_luma_eg_order_increase_flag" );
     kMin = kMinTab[idx];
   }
 

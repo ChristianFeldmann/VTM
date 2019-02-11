@@ -950,7 +950,7 @@ private:
   bool              m_lumaReshapeEnable;
 #endif
   // KJS: BEGIN former SPSNext parameters
-  bool              m_IMV;                        // 9
+  bool              m_AMVREnabledFlag;
   bool              m_LMChroma;                   // 17
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
   bool              m_cclmCollocatedChromaFlag;
@@ -976,9 +976,6 @@ private:
   int               m_LadfQpOffset[MAX_LADF_INTERVALS];
   int               m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
-    //=====  additional parameters  =====
-  //imv
-  ImvMode     m_ImvMode;
   
   bool        m_compositeRefEnabled;        //composite longterm reference
 #if !JVET_M0483_IBC
@@ -1221,8 +1218,8 @@ public:
 #endif
   
   // KJS: BEGIN former SPSNext parameters
-  void      setUseIMV             ( bool b )                                        { m_IMV = b; }
-  bool      getUseIMV             ()                                      const     { return m_IMV; }
+  void      setAMVREnabledFlag    ( bool b )                                        { m_AMVREnabledFlag = b; }
+  bool      getAMVREnabledFlag    ()                                      const     { return m_AMVREnabledFlag; }
   void      setUseAffine          ( bool b )                                        { m_Affine = b; }
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
@@ -1265,12 +1262,7 @@ public:
   void      setLadfIntervalLowerBound( int value, int idx )                         { m_LadfIntervalLowerBound[ idx ] = value; }
   int       getLadfIntervalLowerBound( int idx )                          const     { return m_LadfIntervalLowerBound[ idx ]; }
 #endif
-  //=====  additional parameters  =====
-  // qtbt
-  // sub pu tmvp
-  void      setImvMode(ImvMode m) { m_ImvMode = m; m_IMV = m != 0;  }
-  ImvMode   getImvMode            ()                                      const     { return m_ImvMode; }
-  
+  // KJS: this is encoder only, right?  
   void      setUseCompositeRef(bool b) { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef()                                      const { return m_compositeRefEnabled; }
   

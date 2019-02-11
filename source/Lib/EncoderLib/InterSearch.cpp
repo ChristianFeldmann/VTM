@@ -988,7 +988,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
 
         if (validCand)
         {
-          sad = m_pcRdCost->getBvCostMultiplePreds(xPred, yPred, pu.cs->sps->getImvMode() == IMV_4PEL);
+          sad = m_pcRdCost->getBvCostMultiplePreds(xPred, yPred, pu.cs->sps->getAMVREnabledFlag());
           m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * yPred + xPred;
           sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1010,7 +1010,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
         continue;
       }
 
-      sad = m_pcRdCost->getBvCostMultiplePreds(0, y, pu.cs->sps->getImvMode() == IMV_4PEL);
+      sad = m_pcRdCost->getBvCostMultiplePreds(0, y, pu.cs->sps->getAMVREnabledFlag());
       m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y;
       sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1035,7 +1035,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
         continue;
       }
 
-      sad = m_pcRdCost->getBvCostMultiplePreds(x, 0, pu.cs->sps->getImvMode() == IMV_4PEL);
+      sad = m_pcRdCost->getBvCostMultiplePreds(x, 0, pu.cs->sps->getAMVREnabledFlag());
       m_cDistParam.cur.buf = piRefSrch + x;
       sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1056,7 +1056,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
     bestX = cMVCand[0].getHor();
     bestY = cMVCand[0].getVer();
     sadBest = sadBestCand[0];
-    if ((!bestX && !bestY) || (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getImvMode() == IMV_4PEL) <= 32))
+    if ((!bestX && !bestY) || (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getAMVREnabledFlag()) <= 32))
     {
       //chroma refine
       bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
@@ -1086,7 +1086,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
             continue;
           }
 
-          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getImvMode() == IMV_4PEL);
+          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getAMVREnabledFlag());
           m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y + x;
           sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1097,7 +1097,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
       bestX = cMVCand[0].getHor();
       bestY = cMVCand[0].getVer();
       sadBest = sadBestCand[0];
-      if (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getImvMode() == IMV_4PEL) <= 16)
+      if (sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getAMVREnabledFlag()) <= 16)
       {
         //chroma refine
         bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
@@ -1126,7 +1126,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
             continue;
           }
 
-          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getImvMode() == IMV_4PEL);
+          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getAMVREnabledFlag());
           m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y + x;
           sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1150,7 +1150,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
       bestY = cMVCand[0].getVer();
       sadBest = sadBestCand[0];
 
-      if ((sadBest >= tempSadBest) || ((sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getImvMode() == IMV_4PEL)) <= 32))
+      if ((sadBest >= tempSadBest) || ((sadBest - m_pcRdCost->getBvCostMultiplePreds(bestX, bestY, pu.cs->sps->getAMVREnabledFlag())) <= 32))
       {
         //chroma refine
         bestCandIdx = xIBCSearchMVChromaRefine(pu, roiWidth, roiHeight, cuPelX, cuPelY, sadBestCand, cMVCand);
@@ -1183,7 +1183,7 @@ void InterSearch::xIntraPatternSearch(PredictionUnit& pu, IntTZSearchStruct&  cS
             continue;
           }
 
-          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getImvMode() == IMV_4PEL);
+          sad = m_pcRdCost->getBvCostMultiplePreds(x, y, pu.cs->sps->getAMVREnabledFlag());
           m_cDistParam.cur.buf = piRefSrch + cStruct.iRefStride * y + x;
           sad += m_cDistParam.distFunc(m_cDistParam);
 
@@ -1444,7 +1444,7 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
         bitsBVPBest = bitsBVPTemp;
         bvpIdxBest = bvpIdxTemp;
 
-        if (cu.cs->sps->getImvMode() && cMv != cMvPred[bvpIdxTemp])
+        if (cu.cs->sps->getAMVREnabledFlag() && cMv != cMvPred[bvpIdxTemp])
           pu.cu->imv = 1; // set as full-pel
         else
           pu.cu->imv = 0; // set as fractional-pel
@@ -1455,7 +1455,7 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
 
 
       Mv mvPredQuadPel;
-      if ((cMv.getHor() % 4 == 0) && (cMv.getVer() % 4 == 0) && (pu.cs->sps->getImvMode() == IMV_4PEL))
+      if ((cMv.getHor() % 4 == 0) && (cMv.getVer() % 4 == 0) && (pu.cs->sps->getAMVREnabledFlag()))
       {
         mvPredQuadPel = amvpInfo4Pel.mvCand[bvpIdxTemp];// cMvPred[bvpIdxTemp];
 
@@ -1472,7 +1472,7 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
         bitsBVPBest = bitsBVPQP;
         bvpIdxBest = bvpIdxTemp;
 
-        if (cu.cs->sps->getImvMode())
+        if (cu.cs->sps->getAMVREnabledFlag())
           pu.cu->imv = 2; // set as quad-pel
       }
 
@@ -1493,10 +1493,10 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
       pu.cu->imv = 0;
     if (pu.cu->imv == 2)
       assert((cMv.getHor() % 16 == 0) && (cMv.getVer() % 16 == 0));
-    if (cu.cs->sps->getUseIMV())
+    if (cu.cs->sps->getAMVREnabledFlag())
       assert(pu.cu->imv>0 || pu.mvd[REF_PIC_LIST_0] == Mv());
 
-    if (!cu.cs->sps->getUseIMV())
+    if (!cu.cs->sps->getAMVREnabledFlag())
       pu.mvd[REF_PIC_LIST_0] >>= (2);
 
 #if JVET_M0483_IBC
@@ -1558,7 +1558,7 @@ void InterSearch::xxIBCHashSearch(PredictionUnit& pu, Mv* mvPred, int numMvPred,
           }
 
           int costQuadPel = MAX_UINT;
-          if ((candMv.getHor() % 4 == 0) && (candMv.getVer() % 4 == 0) && (pu.cs->sps->getImvMode() == IMV_4PEL))
+          if ((candMv.getHor() % 4 == 0) && (candMv.getVer() % 4 == 0) && (pu.cs->sps->getAMVREnabledFlag()))
           {
             Mv mvPredQuadPel;
             int imvShift = 2;
@@ -1952,8 +1952,8 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
 #if JVET_M0246_AFFINE_AMVR
   bool checkAffine    = pu.cu->imv == 0 || pu.cu->slice->getSPS()->getAffineAmvrEnabledFlag();
-  bool checkNonAffine = pu.cu->imv == 0 || ( pu.cu->slice->getSPS()->getUseIMV() &&
-                                             pu.cu->imv <= pu.cu->slice->getSPS()->getImvMode() );
+  bool checkNonAffine = pu.cu->imv == 0 || ( pu.cu->slice->getSPS()->getAMVREnabledFlag() &&
+                                             pu.cu->imv <= (pu.cu->slice->getSPS()->getAMVREnabledFlag() ? IMV_4PEL : 0));
   CodingUnit *bestCU  = pu.cu->cs->bestCS != nullptr ? pu.cu->cs->bestCS->getCU( CHANNEL_TYPE_LUMA ) : nullptr;
 #if JVET_M0444_SMVD
   bool trySmvd        = ( bestCU != nullptr && pu.cu->imv == 2 && checkAffine ) ? ( !bestCU->firstPU->mergeFlag && !bestCU->affine ) : true;

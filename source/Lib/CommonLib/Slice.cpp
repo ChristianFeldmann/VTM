@@ -1965,7 +1965,7 @@ SPS::SPS()
 , m_lumaReshapeEnable         (false)
 #endif
 // KJS: BEGIN former SPSNext parameters
-, m_IMV                       ( false )
+, m_AMVREnabledFlag                       ( false )
 , m_LMChroma                  ( false )
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
 , m_cclmCollocatedChromaFlag  ( false )
@@ -1987,9 +1987,6 @@ SPS::SPS()
 , m_LadfQpOffset              { 0 }
 , m_LadfIntervalLowerBound    { 0 }
 #endif
-
-// default values for additional parameters
-, m_ImvMode                   ( IMV_OFF )
 , m_compositeRefEnabled     ( false )
 #if !JVET_M0483_IBC
 , m_IBCMode                   ( 0 )

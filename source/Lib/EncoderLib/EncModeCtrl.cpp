@@ -1335,15 +1335,8 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       if( m_pcEncCfg->getIMV() )
 #endif
       {
-#if JVET_M0246_AFFINE_AMVR
-        if( m_pcEncCfg->getIMV() == IMV_4PEL || m_pcEncCfg->getUseAffineAmvr() )
-#else
-        if( m_pcEncCfg->getIMV() == IMV_4PEL )
-#endif
-        {
-          int imv = m_pcEncCfg->getIMV4PelFast() ? 3 : 2;
-          m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME, EncTestModeOpts( imv << ETO_IMV_SHIFT ), qp, lossless } );
-        }
+        int imv = m_pcEncCfg->getIMV4PelFast() ? 3 : 2;
+        m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME, EncTestModeOpts( imv << ETO_IMV_SHIFT ), qp, lossless } );
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME, EncTestModeOpts( 1 << ETO_IMV_SHIFT ), qp, lossless } );
       }
       // add inter modes

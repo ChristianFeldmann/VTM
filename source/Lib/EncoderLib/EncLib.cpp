@@ -881,8 +881,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   sps.setUseDualITree                        ( m_dualITree );
   sps.setSBTMVPEnabledFlag                  ( m_SubPuMvpMode );
-  sps.setImvMode               ( ImvMode(m_ImvMode) );
-  sps.setUseIMV                ( m_ImvMode != IMV_OFF );
+  sps.setAMVREnabledFlag                ( m_ImvMode != IMV_OFF );
   sps.setBDOFEnabledFlag                    ( m_BIO );
   sps.setUseAffine             ( m_Affine );
   sps.setUseAffineType         ( m_AffineType );

@@ -695,8 +695,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( pcSPS->getSBTMVPEnabledFlag() ? 1 : 0,                               "sps_sbtmvp_enabled_flag");
   }
 
-  // KJS: sps_amvr_enabled_flag
-  WRITE_FLAG( pcSPS->getUseIMV() ? 1 : 0,                                                      "imv_enable_flag" );
+  WRITE_FLAG( pcSPS->getAMVREnabledFlag() ? 1 : 0,                                   "sps_amvr_enabled_flag" );
 
   WRITE_FLAG( pcSPS->getBDOFEnabledFlag() ? 1 : 0,                                   "sps_bdof_enabled_flag" );
 
@@ -780,18 +779,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     }
   }
 #endif
-
-
-  // KJS: BEGIN former SPSNext parameters
-
-  // additional parameters
-  
-  if( pcSPS->getUseIMV() )
-  {
-    WRITE_UVLC( pcSPS->getImvMode()-1,                                                         "imv_mode_minus1" );
-  }
-  
-  // KJS: END former SPSNext parameters
 
   // KJS: reference picture sets to be replaced
   const RPSList* rpsList = pcSPS->getRPSList();

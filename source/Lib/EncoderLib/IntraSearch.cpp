@@ -777,6 +777,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
       {
         uiRdModeList.resize( std::min<size_t>( uiRdModeList.size(), 2 ) );
 #if JVET_M0102_INTRA_SUBPARTITIONS
+        extendRefList.resize( std::min<size_t>( extendRefList.size(), 2 ) ); 
         if( nOptionsForISP > 1 )
         {
           m_rdModeListWithoutMrlHor.resize( std::min<size_t>( m_rdModeListWithoutMrlHor.size(), 2 ) );
@@ -788,6 +789,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
       {
         uiRdModeList.resize( std::min<size_t>( uiRdModeList.size(), 1 ) );
 #if JVET_M0102_INTRA_SUBPARTITIONS
+        extendRefList.resize( std::min<size_t>( extendRefList.size(), 1 ) );
         if( nOptionsForISP > 1 )
         {
           m_rdModeListWithoutMrlHor.resize( std::min<size_t>( m_rdModeListWithoutMrlHor.size(), 1 ) );

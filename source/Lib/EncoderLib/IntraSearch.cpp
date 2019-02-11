@@ -855,19 +855,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
           {
             continue;
           }
-          if( uiOrgMode <= DC_IDX )
+          if( ( m_intraModeHorVerRatio.at( bestNormalIntraModeIndex ) > 1.25 && tuIsDividedInRows ) || ( m_intraModeHorVerRatio.at( bestNormalIntraModeIndex ) < 0.8 && !tuIsDividedInRows ) )
           {
-            if( ( m_intraModeHorVerRatio.at( bestNormalIntraModeIndex ) > 1.25 && tuIsDividedInRows ) || ( m_intraModeHorVerRatio.at( bestNormalIntraModeIndex ) < 0.8 && !tuIsDividedInRows ) )
-            {
-              continue;
-            }
-          }
-          else
-          {
-            if( ( m_intraModeHorVerRatio.at( bestNormalIntraModeIndex ) > 1.25 && tuIsDividedInRows ) || ( m_intraModeHorVerRatio.at( bestNormalIntraModeIndex ) < 0.8 && !tuIsDividedInRows ) )
-            {
-              continue;
-            }
+            continue;
           }
         }
         else
@@ -2384,7 +2374,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
           //more restrictive exit condition
           bool tuIsDividedInRows = CU::divideTuInRows( cu );
           int nSubPartitions = tuIsDividedInRows ? cu.lheight() >> g_aucLog2[cu.firstTU->lheight()] : cu.lwidth() >> g_aucLog2[cu.firstTU->lwidth()];
-          double threshold = nSubPartitions == 2 ? 0.95 : subTuCounter == 0 ? 0.67 : subTuCounter == 1 ? 0.83 : 0.91;
+          double threshold = nSubPartitions == 2 ? 0.95 : subTuCounter == 1 ? 0.83 : 0.91;
           if( subTuCounter < nSubPartitions && csSplit->cost > bestCostSoFar*threshold )
           {
             earlySkipISP    = true;

@@ -194,6 +194,7 @@ void InterSearch::init( EncCfg*        pcEncCfg,
                         int            iSearchRange,
                         int            bipredSearchRange,
                         MESearchMethod motionEstimationSearchMethod,
+                        bool           useCompositeRef,
                         const uint32_t     maxCUWidth,
                         const uint32_t     maxCUHeight,
                         const uint32_t     maxTotalCUDepth,
@@ -215,6 +216,7 @@ void InterSearch::init( EncCfg*        pcEncCfg,
   m_motionEstimationSearchMethod = motionEstimationSearchMethod;
   m_CABACEstimator               = CABACEstimator;
   m_CtxCache                     = ctxCache;
+  m_useCompositeRef              = useCompositeRef;
 #if JVET_M0427_INLOOP_RESHAPER
   m_pcReshape                    = pcReshape;
 #endif
@@ -2991,7 +2993,7 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
   cStruct.inCtuSearch = false;
   cStruct.zeroMV = false;
   {
-    if (pu.cs->sps->getUseCompositeRef() && pu.cs->slice->getRefPic(eRefPicList, iRefIdxPred)->longTerm)
+    if (m_useCompositeRef && pu.cs->slice->getRefPic(eRefPicList, iRefIdxPred)->longTerm)
     {
       cStruct.inCtuSearch = true;
     }
@@ -3116,7 +3118,7 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
   sr.right  = mvBR.hor;
   sr.bottom = mvBR.ver;
 
-  if (pu.cs->sps->getUseCompositeRef() && cStruct.inCtuSearch)
+  if (m_useCompositeRef && cStruct.inCtuSearch)
   {
     Position posRB = pu.Y().bottomRight();
     Position posTL = pu.Y().topLeft();
@@ -3817,7 +3819,7 @@ void InterSearch::xPatternSearchFracDIF(
 #endif
 
 
-  if (cStruct.imvShift || (pu.cs->sps->getUseCompositeRef() && cStruct.zeroMV))
+  if (cStruct.imvShift || (m_useCompositeRef && cStruct.zeroMV))
   {
     m_pcRdCost->setDistParam( m_cDistParam, *cStruct.pcPatternKey, cStruct.piRefY + iOffset, cStruct.iRefStride, m_lumaClpRng.bd, COMPONENT_Y, 0, 1, m_pcEncCfg->getUseHADME() && !bIsLosslessCoded );
     ruiCost = m_cDistParam.distFunc( m_cDistParam );

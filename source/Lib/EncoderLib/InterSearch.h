@@ -164,6 +164,7 @@ protected:
   bool            m_isInitialized;
   unsigned int    m_numBVs, m_numBV16s;
   Mv              m_acBVs[IBC_NUM_CANDIDATES];
+  bool            m_useCompositeRef;
 #if JVET_M0140_SBT
   Distortion      m_estMinDistSbt[NUMBER_SBT_MODE + 1]; // estimated minimum SSE value of the PU if using a SBT mode
   uint8_t         m_sbtRdoOrder[NUMBER_SBT_MODE];       // order of SBT mode in RDO
@@ -181,6 +182,7 @@ public:
                                       int            iSearchRange,
                                       int            bipredSearchRange,
                                       MESearchMethod motionEstimationSearchMethod,
+                                      bool           useCompositeRef,
                                       const uint32_t     maxCUWidth,
                                       const uint32_t     maxCUHeight,
                                       const uint32_t     maxTotalCUDepth,

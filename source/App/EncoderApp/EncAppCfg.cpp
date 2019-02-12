@@ -1880,9 +1880,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
 #if ENABLE_QPA_SUB_CTU
  #if QP_SWITCHING_FOR_PARALLEL
-  if (m_LargeCTU && (m_iQP < 38) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && (m_iSourceWidth <= 2048) && (m_iSourceHeight <= 1280)
+  if ((m_iQP < 38) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && (m_iSourceWidth <= 2048) && (m_iSourceHeight <= 1280)
  #else
-  if (m_LargeCTU && ((int)m_fQP < 38) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && (m_iSourceWidth <= 2048) && (m_iSourceHeight <= 1280)
+  if (((int)m_fQP < 38) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && (m_iSourceWidth <= 2048) && (m_iSourceHeight <= 1280)
  #endif
       && ((1 << (std::max (m_quadtreeTULog2MaxSize, m_tuLog2MaxSize) + 1)) == m_uiCTUSize) && (m_iSourceWidth > 512 || m_iSourceHeight > 320))
   {

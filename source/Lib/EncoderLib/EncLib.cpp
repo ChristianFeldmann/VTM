@@ -224,7 +224,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   omp_set_nested( true );
 #endif
 
-  if (sps0.getUseCompositeRef())
+  if (getUseCompositeRef())
   {
     sps0.setLongTermRefsPresent(true);
   }
@@ -255,7 +255,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     xInitPPS(pps1, sps0);
   }
 #endif
-  if (sps0.getUseCompositeRef())
+  if (getUseCompositeRef())
   {
     PPS &pps2 = *(m_ppsMap.allocatePS(2));
     xInitPPS(pps2, sps0);
@@ -337,6 +337,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        m_iSearchRange,
                        m_bipredSearchRange,
                        m_motionEstimationSearchMethod,
+                       getUseCompositeRef(),
     m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache()
 #if JVET_M0427_INLOOP_RESHAPER
                      , &m_cReshaper
@@ -365,7 +366,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if ENABLE_WPP_PARALLELISM
   m_entropyCodingSyncContextStateVec.resize( pps0.pcv->heightInCtus );
 #endif
-  if (sps0.getUseCompositeRef())
+  if (getUseCompositeRef())
   {
     Picture *picBg = new Picture;
     picBg->create(sps0.getChromaFormatIdc(), Size(sps0.getPicWidthInLumaSamples(), sps0.getPicHeightInLumaSamples()), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false);
@@ -909,7 +910,6 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setMaxSbtSize                       ( m_iSourceWidth >= 1920 ? 64 : 32 );
   }
 #endif
-  sps.setUseCompositeRef       ( m_compositeRefEnabled );
   sps.setUseGBi                ( m_GBi );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   sps.setLadfEnabled           ( m_LadfEnabled );

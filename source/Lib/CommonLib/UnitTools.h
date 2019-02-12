@@ -49,6 +49,9 @@ namespace CS
   uint64_t getEstBits                   ( const CodingStructure &cs );
   UnitArea getArea                    ( const CodingStructure &cs, const UnitArea &area, const ChannelType chType );
   bool   isDualITree                  ( const CodingStructure &cs );
+#if JVET_M0147_DMVR
+  void   setRefinedMotionField(CodingStructure &cs);
+#endif
 }
 
 
@@ -57,6 +60,9 @@ namespace CU
 {
   bool isIntra                        (const CodingUnit &cu);
   bool isInter                        (const CodingUnit &cu);
+#if JVET_M0483_IBC
+  bool isIBC                          (const CodingUnit &cu);
+#endif
   bool isRDPCMEnabled                 (const CodingUnit &cu);
   bool isLosslessCoded                (const CodingUnit &cu);
   uint32_t getIntraSizeIdx                (const CodingUnit &cu);
@@ -86,16 +92,42 @@ namespace CU
   void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);
   uint8_t deriveGbiIdx                (uint8_t gbiLO, uint8_t gbiL1);
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  bool      divideTuInRows            ( const CodingUnit &cu );
+  bool      firstTestISPHorSplit      ( const int width, const int height,            const ComponentID compID, const CodingUnit *cuLeft = nullptr, const CodingUnit *cuAbove = nullptr );
+  PartSplit getISPType                ( const CodingUnit &cu,                         const ComponentID compID );
+  bool      isISPLast                 ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
+  bool      isISPFirst                ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
+  ISPType   canUseISPSplit            ( const CodingUnit &cu,                         const ComponentID compID );
+  ISPType   canUseISPSplit            ( const int width, const int height, const int maxTrSize = MAX_TU_SIZE );
+  uint32_t  getISPSplitDim            ( const int width, const int height, const PartSplit ispType );
+#endif
+
   PUTraverser traversePUs             (      CodingUnit& cu);
   TUTraverser traverseTUs             (      CodingUnit& cu);
   cPUTraverser traversePUs            (const CodingUnit& cu);
   cTUTraverser traverseTUs            (const CodingUnit& cu);
 
   bool  hasSubCUNonZeroMVd            (const CodingUnit& cu);
+#if JVET_M0246_AFFINE_AMVR
+  bool  hasSubCUNonZeroAffineMVd      ( const CodingUnit& cu );
+#endif
   int   getMaxNeighboriMVCandNum      (const CodingStructure& cs, const Position& pos);
   void  resetMVDandMV2Int             (      CodingUnit& cu, InterPrediction *interPred );
 
-
+#if JVET_M0140_SBT
+  uint8_t getSbtInfo                  (uint8_t idx, uint8_t pos);
+  uint8_t getSbtIdx                   (const uint8_t sbtInfo);
+  uint8_t getSbtPos                   (const uint8_t sbtInfo);
+  uint8_t getSbtMode                  (const uint8_t sbtIdx, const uint8_t sbtPos);
+  uint8_t getSbtIdxFromSbtMode        (const uint8_t sbtMode);
+  uint8_t getSbtPosFromSbtMode        (const uint8_t sbtMode);
+  uint8_t targetSbtAllowed            (uint8_t idx, uint8_t sbtAllowed);
+  uint8_t numSbtModeRdo               (uint8_t sbtAllowed);
+  bool    isMtsMode                   (const uint8_t sbtInfo);
+  bool    isSbtMode                   (const uint8_t sbtInfo);
+  bool    isSameSbtSize               (const uint8_t sbtInfo1, const uint8_t sbtInfo2);
+#endif
 }
 // PU tools
 namespace PU
@@ -107,11 +139,18 @@ namespace PU
   void getInterMergeCandidates        (const PredictionUnit &pu, MergeCtx& mrgCtx,
     int mmvdList,
     const int& mrgCandIdx = -1 );
+#if JVET_M0483_IBC
+  void getIBCMergeCandidates          (const PredictionUnit &pu, MergeCtx& mrgCtx, const int& mrgCandIdx = -1);
+#endif
   void getInterMMVDMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const int& mrgCandIdx = -1);
   int getDistScaleFactor(const int &currPOC, const int &currRefPOC, const int &colPOC, const int &colRefPOC);
   bool isDiffMER                      (const PredictionUnit &pu, const PredictionUnit &pu2);
   bool getColocatedMVP                (const PredictionUnit &pu, const RefPicList &eRefPicList, const Position &pos, Mv& rcMv, const int &refIdx);
   void fillMvpCand                    (      PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AMVPInfo &amvpInfo );
+#if JVET_M0483_IBC
+  void fillIBCMvpCand                 (PredictionUnit &pu, AMVPInfo &amvpInfo);
+  bool addIBCMVPCand                  (const PredictionUnit &pu, const Position &pos, const MvpDir &eDir, AMVPInfo &amvpInfo);
+#endif
   void fillAffineMvpCand              (      PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AffineAMVPInfo &affiAMVPInfo);
   bool addMVPCandUnscaled             (const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &amvpInfo);
   bool addMVPCandWithScaling          (const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &amvpInfo);
@@ -119,14 +158,21 @@ namespace PU
   bool xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const MergeCtx mergeCandList, bool hasPruned[MRG_MAX_NUM_CANDS]);
 #if JVET_L0090_PAIR_AVG
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
+#if JVET_M0483_IBC==0
     , int mmvdList
+#endif
+#if JVET_M0483_IBC
+    , bool ibcFlag
+#endif
 #if JVET_M0170_MRG_SHARELIST
     , bool isShared
 #endif
   );
 #else
   bool addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter[MRG_MAX_NUM_CANDS], bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
+#if JVET_M0483_IBC==0
     , int mmvdList
+#endif
   );
 #endif
   void addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList, const RefPicList eRefPicList2nd, const int currRefPOC, AMVPInfo &info, uint8_t imv);
@@ -137,17 +183,22 @@ namespace PU
   void getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgCtx );
   void getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx, const int mrgCandIdx = -1 );
   void setAllAffineMvField            (      PredictionUnit &pu, MvField *mvField, RefPicList eRefList );
-  void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList 
+  void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList
     , bool setHighPrec = false
   );
   bool getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx &mrgCtx, bool& LICFlag, const int count
     , int mmvdList
 #if !JVET_M0409_ATMVP_FIX
+#if JVET_M0483_IBC==0
     , const int countIBC
+#endif
 #endif
   );
   bool getInterMergeSubPuRecurCand(const PredictionUnit &pu, MergeCtx &mrgCtx, const int count);
   bool isBiPredFromDifferentDir       (const PredictionUnit &pu);
+#if JVET_M0147_DMVR
+  bool isBiPredFromDifferentDirEqDistPoc(const PredictionUnit &pu);
+#endif
   void restrictBiPredMergeCands       (const PredictionUnit &pu, MergeCtx& mrgCtx);
 #if JVET_M0068_M0171_MMVD_CLEANUP
   void restrictBiPredMergeCandsOne    (PredictionUnit &pu);
@@ -160,21 +211,27 @@ namespace PU
   int  getNarrowShape                 (const int width, const int height);
   void getTriangleMergeCandidates     (const PredictionUnit &pu, MergeCtx &triangleMrgCtx);
   bool isUniqueTriangleCandidates     (const PredictionUnit &pu, MergeCtx &triangleMrgCtx);
+#if !JVET_M0328_KEEP_ONE_WEIGHT_GROUP
   bool getTriangleWeights             (const PredictionUnit &pu, MergeCtx &triangleMrgCtx, const uint8_t candIdx0, const uint8_t candIdx1);
+#endif
+#if JVET_M0883_TRIANGLE_SIGNALING
+  void spanTriangleMotionInfo         (      PredictionUnit &pu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1);
+#else
   void spanTriangleMotionInfo         (      PredictionUnit &pu, MergeCtx &triangleMrgCtx, const uint8_t mergeIdx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1);
+#endif
   int32_t mappingRefPic               (const PredictionUnit &pu, int32_t refPicPoc, bool targetRefPicList);
   void getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred);
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
+#if JVET_M0147_DMVR
+  bool checkDMVRCondition(const PredictionUnit& pu);
+#endif
 }
 
 // TU tools
 namespace TU
 {
   uint32_t getNumNonZeroCoeffsNonTS       (const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true);
-#if HEVC_USE_4x4_DSTVII
-  bool useDST                         (const TransformUnit &tu, const ComponentID &compID);
-#endif
   bool isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID);
   bool getCbf                         (const TransformUnit &tu, const ComponentID &compID);
   bool getCbfAtDepth                  (const TransformUnit &tu, const ComponentID &compID, const unsigned &depth);
@@ -191,11 +248,25 @@ namespace TU
 #endif
   bool hasCrossCompPredInfo           (const TransformUnit &tu, const ComponentID &compID);
 
+
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+  bool needsSqrt2Scale                ( const TransformUnit &tu, const ComponentID &compID );
+#else
   bool needsSqrt2Scale                ( const Size& size );
+#endif
 #if HM_QTBT_AS_IN_JEM_QUANT
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+  bool needsBlockSizeTrafoScale       ( const TransformUnit &tu, const ComponentID &compID );
+#else
   bool needsBlockSizeTrafoScale       ( const Size& size );
+#endif
 #else
   bool needsQP3Offset                 (const TransformUnit &tu, const ComponentID &compID);
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  TransformUnit* getPrevTU          ( const TransformUnit &tu, const ComponentID compID );
+  bool           getPrevTuCbfAtDepth( const TransformUnit &tu, const ComponentID compID, const int trDepth );
+  void           getTransformTypeISP( const TransformUnit &tu, const ComponentID compID, int &typeH, int &typeV );
 #endif
 }
 
@@ -227,7 +298,7 @@ uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeLi
       if (extendRef != -1)
       {
         extendRefList[currSize - i] = extendRefList[currSize - 1 - i];
-      }  
+      }
     }
     candModeList[currSize - shift] = uiMode;
     candCostList[currSize - shift] = uiCost;
@@ -301,7 +372,7 @@ uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candMode
     candCostList.insert(candCostList.end() - shift, cost);
     if (iserttPos != nullptr)
     {
-      *iserttPos = int(candModeList.size() - shift - 1);  
+      *iserttPos = int(candModeList.size() - shift - 1);
     }
     return 1;
   }

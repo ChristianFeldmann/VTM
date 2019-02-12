@@ -120,7 +120,6 @@ public:
   void  setBitstream            ( OutputBitstream* p )  { m_pcBitIf = p;  }
   uint32_t  getNumberOfWrittenBits  ()                      { return m_pcBitIf->getNumberOfWrittenBits();  }
   void  codeVUI                 ( const VUI *pcVUI, const SPS* pcSPS );
-  void  codeSPSNext             ( const SPSNext& spsNext, const bool usePCM );
   void  codeSPS                 ( const SPS* pcSPS );
   void  codePPS                 ( const PPS* pcPPS );
 #if HEVC_VPS
@@ -145,6 +144,9 @@ private:
   void alfGolombEncode( const int coeff, const int k );
   void truncatedUnaryEqProb( int symbol, int maxSymbol );
 
+#if JVET_M0427_INLOOP_RESHAPER
+  void  codeReshaper            ( const SliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra);
+#endif
 };
 
 //! \}

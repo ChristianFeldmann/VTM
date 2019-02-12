@@ -107,7 +107,7 @@ inline void dtraceModeCost(CodingStructure &cs, double lambda)
     cs.cus[0]->predMode,
     cs.cus[0]->skip,
     cs.pus[0]->mergeFlag,
-    0, 0, 
+    0, 0,
     imvVal,
     0, 0,
           intraModeL, intraModeC,

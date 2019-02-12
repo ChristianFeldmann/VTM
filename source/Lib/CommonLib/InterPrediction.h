@@ -94,7 +94,34 @@ protected:
   int                  m_iRefListIdx;
   PelStorage           m_triangleBuf;
   Mv*                  m_storedMv;
- 
+#if JVET_M0147_DMVR
+ /*buffers for bilinear Filter data for DMVR refinement*/
+  Pel*                 m_cYuvPredTempDMVRL0;
+  Pel*                 m_cYuvPredTempDMVRL1;
+  int                  m_biLinearBufStride;
+  /*buffers for padded data*/
+  PelUnitBuf           m_cYuvRefBuffDMVRL0;
+  PelUnitBuf           m_cYuvRefBuffDMVRL1;
+  Pel*                 m_cRefSamplesDMVRL0[MAX_NUM_COMPONENT];
+  Pel*                 m_cRefSamplesDMVRL1[MAX_NUM_COMPONENT];
+  enum SAD_POINT_INDEX
+  {
+    NOT_AVAILABLE = -1,
+    SAD_BOTTOM = 0,
+    SAD_TOP,
+    SAD_RIGHT,
+    SAD_LEFT,
+    SAD_TOP_LEFT,
+    SAD_TOP_RIGHT,
+    SAD_BOTTOM_LEFT,
+    SAD_BOTTOM_RIGHT,
+    SAD_CENTER,
+    SAD_COUNT
+  };
+  Mv m_pSearchOffset[5] = { Mv(0, 1), Mv(0, -1), Mv(1, 0), Mv(-1, 0), Mv(0, 0) };
+  uint64_t m_SADsArray[((2 * DMVR_NUM_ITERATION) + 1) * ((2 * DMVR_NUM_ITERATION) + 1)];
+#endif
+
   Pel*                 m_gradX0;
   Pel*                 m_gradY0;
   Pel*                 m_gradX1;
@@ -107,24 +134,45 @@ protected:
 #if !JVET_M0487_INT_EXTEND
   void            bioSampleExtendBilinearFilter(Pel const* src, int srcStride, Pel *dst, int dstStride, int width, int height, int dim, int fracX, int fracY, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng);
 #endif
-  void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi 
-                                  , const bool& bioApplied 
+  void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi
+                                  , const bool& bioApplied
                                   , const bool luma, const bool chroma
   );
   void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred );
+#if JVET_M0147_DMVR
+  void xPredInterBlk            ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
+                                 , const bool& bioApplied
+                                 , bool isIBC
+                                 , SizeType dmvrWidth = 0
+                                 , SizeType dmvrHeight = 0
+                                 , bool bilinearMC = false
+                                 , Pel *srcPadBuf = NULL
+                                 , int32_t srcPadStride = 0
+                                 );
+#else
   void xPredInterBlk            ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
                                  , const bool& bioApplied
                                  , bool isIBC
                                  );
+#endif
 
   void xAddBIOAvg4              (const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng);
+#if JVET_M0063_BDOF_FIX
+  void xBioGradFilter           (Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, int bitDepth);
+  void xCalcBIOPar              (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, int bitDepth);
+#else
   void xBioGradFilter           (Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY);
   void xCalcBIOPar              (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG);
+#endif
   void xCalcBlkGradient         (int sx, int sy, int    *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize);
   void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied );
   void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng );
 
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+  void xWeightedTriangleBlk     ( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
+#else
   void xWeightedTriangleBlk     ( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, const bool weights, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
+#endif
 
   static bool xCheckIdenticalMotion( const PredictionUnit& pu );
 
@@ -155,7 +203,21 @@ public:
   );
 
   void    motionCompensation4Triangle( CodingUnit &cu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 );
+#if JVET_M0328_KEEP_ONE_WEIGHT_GROUP
+  void    weightedTriangleBlk        ( PredictionUnit &pu, const bool splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
+#else
   void    weightedTriangleBlk        ( PredictionUnit &pu, bool weights, const bool splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
+#endif
+#if JVET_M0147_DMVR
+  void xPrefetchPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId);
+  void xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvSrc0, PelUnitBuf &pcYuvSrc1, PelUnitBuf &pcPad0, PelUnitBuf &pcPad1, const bool bioApplied
+    , const Mv startMV[NUM_REF_PIC_LIST_01]
+  );
+  void xBIPMVRefine(int bd, Pel *pRefL0, Pel *pRefL1, uint64_t& minCost, int16_t *deltaMV, uint64_t *pSADsArray, int width, int height);
+  uint64_t xDMVRCost(int bitDepth, Pel* pRef, uint32_t refStride, const Pel* pOrg, uint32_t orgStride, int width, int height);
+  void xinitMC(PredictionUnit& pu, const ClpRngs &clpRngs);
+  void xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, const ClpRngs &clpRngs, const bool bioApplied );
+#endif
 
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   void    cacheAssign( CacheModel *cache );

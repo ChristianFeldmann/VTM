@@ -742,10 +742,16 @@ void Picture::create(const ChromaFormat &_chromaFormat, const Size &size, const 
   if( !_decoder )
   {
     M_BUFS( 0, PIC_ORIGINAL ).    create( _chromaFormat, a );
+#if JVET_M0427_INLOOP_RESHAPER
+    M_BUFS( 0, PIC_TRUE_ORIGINAL ). create( _chromaFormat, a );
+#endif
   }
 #if !KEEP_PRED_AND_RESI_SIGNALS
 
   m_ctuArea = UnitArea( _chromaFormat, Area( Position{ 0, 0 }, Size( _maxCUSize, _maxCUSize ) ) );
+#endif
+#if JVET_M0253_HASH_ME
+  m_hashMap.clearAll();
 #endif
 }
 
@@ -762,7 +768,9 @@ void Picture::destroy()
   {
     M_BUFS( jId, t ).destroy();
   }
-
+#if JVET_M0253_HASH_ME
+  m_hashMap.clearAll();
+#endif
   if( cs )
   {
     cs->destroy();
@@ -846,6 +854,14 @@ const CPelUnitBuf Picture::getOrigBuf(const UnitArea &unit) const { return getBu
        PelUnitBuf Picture::getOrigBuf()                           { return M_BUFS(0,    PIC_ORIGINAL); }
 const CPelUnitBuf Picture::getOrigBuf()                     const { return M_BUFS(0,    PIC_ORIGINAL); }
 
+#if JVET_M0427_INLOOP_RESHAPER
+       PelBuf     Picture::getOrigBuf(const ComponentID compID)       { return getBuf(compID, PIC_ORIGINAL); }
+const CPelBuf     Picture::getOrigBuf(const ComponentID compID) const { return getBuf(compID, PIC_ORIGINAL); }
+       PelUnitBuf Picture::getTrueOrigBuf()                           { return M_BUFS(0, PIC_TRUE_ORIGINAL); }
+const CPelUnitBuf Picture::getTrueOrigBuf()                     const { return M_BUFS(0, PIC_TRUE_ORIGINAL); }
+       PelBuf     Picture::getTrueOrigBuf(const CompArea &blk)        { return getBuf(blk, PIC_TRUE_ORIGINAL); }
+const CPelBuf     Picture::getTrueOrigBuf(const CompArea &blk)  const { return getBuf(blk, PIC_TRUE_ORIGINAL); }
+#endif
        PelBuf     Picture::getPredBuf(const CompArea &blk)        { return getBuf(blk,  PIC_PREDICTION); }
 const CPelBuf     Picture::getPredBuf(const CompArea &blk)  const { return getBuf(blk,  PIC_PREDICTION); }
        PelUnitBuf Picture::getPredBuf(const UnitArea &unit)       { return getBuf(unit, PIC_PREDICTION); }
@@ -1011,7 +1027,7 @@ void Picture::extendPicBorder()
       {
         for (int x = 0; x < xmargin; x++ )
         {
-          pi[ -xmargin + x ] = pi[ -xmargin + x + xoffset ];
+          pi[ -x - 1       ] = pi[ -x - 1       + xoffset ];
           pi[  p.width + x ] = pi[  p.width + x - xoffset ];
         }
         pi += p.stride;
@@ -1162,3 +1178,64 @@ bool Picture::getSpliceFull()
     return false;
   return true;
 }
+
+#if JVET_M0253_HASH_ME
+void Picture::addPictureToHashMapForInter()
+{
+  int picWidth = slices[0]->getSPS()->getPicWidthInLumaSamples();
+  int picHeight = slices[0]->getSPS()->getPicHeightInLumaSamples();
+  uint32_t* blockHashValues[2][2];
+  bool* bIsBlockSame[2][3];
+
+  for (int i = 0; i < 2; i++)
+  {
+    for (int j = 0; j < 2; j++)
+    {
+      blockHashValues[i][j] = new uint32_t[picWidth*picHeight];
+    }
+
+    for (int j = 0; j < 3; j++)
+    {
+      bIsBlockSame[i][j] = new bool[picWidth*picHeight];
+    }
+  }
+
+  m_hashMap.create();
+  m_hashMap.generateBlock2x2HashValue(getOrigBuf(), picWidth, picHeight, slices[0]->getSPS()->getBitDepths(), blockHashValues[0], bIsBlockSame[0]);//2x2
+  m_hashMap.generateBlockHashValue(picWidth, picHeight, 4, 4, blockHashValues[0], blockHashValues[1], bIsBlockSame[0], bIsBlockSame[1]);//4x4
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[1], bIsBlockSame[1][2], picWidth, picHeight, 4, 4);
+
+  m_hashMap.generateRectangleHashValue(picWidth, picHeight, 8, 4, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//8x4
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 8, 4);
+
+  m_hashMap.generateRectangleHashValue(picWidth, picHeight, 4, 8, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//4x8
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 4, 8);
+
+  m_hashMap.generateBlockHashValue(picWidth, picHeight, 8, 8, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//8x8
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 8, 8);
+
+  m_hashMap.generateBlockHashValue(picWidth, picHeight, 16, 16, blockHashValues[0], blockHashValues[1], bIsBlockSame[0], bIsBlockSame[1]);//16x16
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[1], bIsBlockSame[1][2], picWidth, picHeight, 16, 16);
+
+  m_hashMap.generateBlockHashValue(picWidth, picHeight, 32, 32, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//32x32
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 32, 32);
+
+  m_hashMap.generateBlockHashValue(picWidth, picHeight, 64, 64, blockHashValues[0], blockHashValues[1], bIsBlockSame[0], bIsBlockSame[1]);//64x64
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[1], bIsBlockSame[1][2], picWidth, picHeight, 64, 64);
+
+  m_hashMap.setInitial();
+
+  for (int i = 0; i < 2; i++)
+  {
+    for (int j = 0; j < 2; j++)
+    {
+      delete[] blockHashValues[i][j];
+    }
+
+    for (int j = 0; j < 3; j++)
+    {
+      delete[] bIsBlockSame[i][j];
+    }
+  }
+}
+#endif

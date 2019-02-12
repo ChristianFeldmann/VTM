@@ -208,7 +208,7 @@ static int getGlaringColorQPOffset (Picture* const pcPic, const int ctuAddr, con
   const uint32_t chrHeight  = pcv.maxCUHeight >> getChannelTypeScaleY (CH_C, chrFmt);
   const int      midLevel   = 1 << (bitDepth - 1);
   int chrValue = MAX_INT;
-  avgLumaValue = (startAddr < boundingAddr) ? 0 : (uint32_t)pcPic->getOrigBuf().Y().mean();
+  avgLumaValue = (startAddr < boundingAddr) ? 0 : (uint32_t)pcPic->getOrigBuf().Y().computeAvg();
 
   if (ctuAddr >= 0) // luma
   {
@@ -238,9 +238,9 @@ static int getGlaringColorQPOffset (Picture* const pcPic, const int ctuAddr, con
     {
       const CompArea chrArea = clipArea (CompArea (compID, chrFmt, Area ((ctuAddr % pcv.widthInCtus) * chrWidth, (ctuAddr / pcv.widthInCtus) * chrHeight, chrWidth, chrHeight)), pcPic->block (compID));
 
-      avgCompValue = pcPic->getOrigBuf (chrArea).mean();
+      avgCompValue = pcPic->getOrigBuf (chrArea).computeAvg();
     }
-    else avgCompValue = pcPic->getOrigBuf (pcPic->block (compID)).mean();
+    else avgCompValue = pcPic->getOrigBuf (pcPic->block (compID)).computeAvg();
 
     if (chrValue > avgCompValue) chrValue = avgCompValue; // minimum of the DC offsets
   }
@@ -292,7 +292,7 @@ static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, 
         // change mean picture QP index based on picture's average luma value (Sharp)
         if (pcEncCfg->getLumaLevelToDeltaQPMapping().mode == LUMALVL_TO_DQP_NUM_MODES)
         {
-          if (meanLuma == MAX_UINT) meanLuma = pcPic->getOrigBuf().Y().mean();
+          if (meanLuma == MAX_UINT) meanLuma = pcPic->getOrigBuf().Y().computeAvg();
 
           averageAdaptedLumaQP = Clip3 (0, MAX_QP, averageAdaptedLumaQP + lumaDQPOffset (meanLuma, iBitDepth));
         }
@@ -339,8 +339,8 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setSliceBits(0);
   rpcSlice->setPic( pcPic );
   rpcSlice->initSlice();
-  int multipleFactor = pcPic->cs->sps->getSpsNext().getUseCompositeRef() ? 2 : 1;
-  if (pcPic->cs->sps->getSpsNext().getUseCompositeRef() && isEncodeLtRef)
+  int multipleFactor = pcPic->cs->sps->getUseCompositeRef() ? 2 : 1;
+  if (pcPic->cs->sps->getUseCompositeRef() && isEncodeLtRef)
   {
     rpcSlice->setPicOutputFlag(false);
   }
@@ -600,7 +600,11 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
  #endif
   if(rpcSlice->getPPS()->getSliceChromaQpFlag())
   {
+#if JVET_M0483_IBC
+    const bool bUseIntraOrPeriodicOffset = (rpcSlice->isIntra() && !rpcSlice->getSPS()->getIBCFlag()) || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);
+#else
     const bool bUseIntraOrPeriodicOffset = rpcSlice->isIntra() || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);
+#endif
     int cbQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(false) : m_pcCfg->getGOPEntry(iGOPid).m_CbQPoffset;
     int crQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(true)  : m_pcCfg->getGOPEntry(iGOPid).m_CrQPoffset;
 
@@ -883,7 +887,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
                                          picOrig.height, picOrig.width,  iBitDepth);
       hpEnerAvg += hpEner;
       pcPic->m_uEnerHpCtu[ctuRsAddr] = hpEner;
-      pcPic->m_iOffsetCtu[ctuRsAddr] = pcPic->getOrigBuf (ctuArea).mean();
+      pcPic->m_iOffsetCtu[ctuRsAddr] = pcPic->getOrigBuf (ctuArea).computeAvg();
     }
 
     hpEnerAvg /= double (boundingAddr - startAddr);
@@ -1131,7 +1135,7 @@ static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea,
         {
           const CompArea subArea = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (x, y, mts, mts)), pcPic->Y());
 
-          subMLV[addr] = pcPic->getOrigBuf (subArea).mean();
+          subMLV[addr] = pcPic->getOrigBuf (subArea).computeAvg();
         }
 #endif
       }
@@ -1337,9 +1341,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   //   effectively disabling the slice-segment-mode.
 
   Slice* const pcSlice    = pcPic->slices[getSliceSegmentIdx()];
-#if HEVC_TILES_WPP
-  const TileMap&  tileMap = *pcPic->tileMap;
-#endif
   uint32_t  startCtuTsAddr;
   uint32_t  boundingCtuTsAddr;
 
@@ -1411,6 +1412,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #if HEVC_TILES_WPP
   // Adjust initial state if this is the start of a dependent slice.
   {
+    const TileMap&  tileMap                 = *pcPic->tileMap;
     const uint32_t      ctuRsAddr               = tileMap.getCtuTsToRsAddrMap( startCtuTsAddr);
     const uint32_t      currentTileIdx          = tileMap.getTileIdxMap(ctuRsAddr);
     const Tile&     currentTile             = tileMap.tiles[currentTileIdx];
@@ -1453,7 +1455,11 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   cs.pcv      = pcSlice->getPPS()->pcv;
   cs.fracBits = 0;
 
-  if (startCtuTsAddr == 0)
+#if JVET_M0055_DEBUG_CTU
+  if( startCtuTsAddr == 0 && ( pcSlice->getPOC() != m_pcCfg->getSwitchPOC() || -1 == m_pcCfg->getDebugCTU() ) )
+#else
+  if( startCtuTsAddr == 0 )
+#endif
   {
     cs.initStructData (pcSlice->getSliceQp(), pcSlice->getPPS()->getTransquantBypassEnabledFlag());
   }
@@ -1530,8 +1536,54 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 
 }
 
+#if JVET_M0255_FRACMMVD_SWITCH
+void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr )
+{
+  CodingStructure&  cs            = *pcPic->cs;
+  Slice* pcSlice                  = cs.slice;
+  const PreCalcValues& pcv        = *cs.pcv;
+  const uint32_t    widthInCtus   = pcv.widthInCtus;
+#if HEVC_TILES_WPP
+  const TileMap&  tileMap         = *pcPic->tileMap;
+#endif
+  const uint32_t hashThreshold    = 20;
+  uint32_t totalCtu               = 0;
+  uint32_t hashRatio              = 0;
 
+  if ( !pcSlice->getSPS()->getDisFracMmvdEnabledFlag() )
+  {
+    return;
+  }
 
+  for ( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
+  {
+#if HEVC_TILES_WPP
+    const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap( ctuTsAddr );
+#else
+    const uint32_t ctuRsAddr = ctuTsAddr;
+#endif
+    const uint32_t ctuXPosInCtus        = ctuRsAddr % widthInCtus;
+    const uint32_t ctuYPosInCtus        = ctuRsAddr / widthInCtus;
+
+    const Position pos ( ctuXPosInCtus * pcv.maxCUWidth, ctuYPosInCtus * pcv.maxCUHeight );
+    const UnitArea ctuArea( cs.area.chromaFormat, Area( pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight ) );
+
+    hashRatio += m_pcCuEncoder->getIbcHashMap().getHashHitRatio( ctuArea.Y() );
+    totalCtu++;
+  }
+
+  if ( hashRatio > totalCtu * hashThreshold )
+  {
+    pcSlice->setDisFracMMVD( true );
+  }
+#if JVET_M0854_FRACMMVD_SWITCH_FOR_UHD
+  if (!pcSlice->getDisFracMMVD()) {
+    bool useIntegerMVD = (pcPic->lwidth()*pcPic->lheight() > 1920 * 1080);
+    pcSlice->setDisFracMMVD( useIntegerMVD );
+  }
+#endif
+}
+#endif
 
 void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pEncLib )
 {
@@ -1582,14 +1634,49 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if HEVC_DEPENDENT_SLICES
   }
 #endif
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() ||
+#if JVET_M0483_IBC
+      (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
+#else
+      ( pcSlice->getSPS()->getIBCMode() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch() ) )
+#endif
+  {
+#if JVET_M0427_INLOOP_RESHAPER
+#if JVET_M0483_IBC
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
+#else
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCMode())
+#endif
+      cs.picture->getOrigBuf(COMPONENT_Y).rspSignal(m_pcLib->getReshaper()->getFwdLUT());
+#endif
+    m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
+#if JVET_M0427_INLOOP_RESHAPER
+#if JVET_M0483_IBC
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
+#else
+    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCMode())
+#endif
+      cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
+#endif
+  }
+  checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
+#endif
   // for every CTU in the slice segment (may terminate sooner if there is a byte limit on the slice-segment)
   for( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
   {
+#if JVET_M0055_DEBUG_CTU
+#if HEVC_TILES_WPP
+    const int32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap( ctuTsAddr );
+#else
+    const int32_t ctuRsAddr = ctuTsAddr;
+#endif
+#else
 #if HEVC_TILES_WPP
     const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap(ctuTsAddr);
 #else
     const uint32_t ctuRsAddr = ctuTsAddr;
+#endif
 #endif
 
 #if HEVC_TILES_WPP
@@ -1604,6 +1691,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     const UnitArea ctuArea( cs.area.chromaFormat, Area( pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight ) );
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
+#if JVET_M0055_DEBUG_CTU
+    if( pCfg->getSwitchPOC() != pcPic->poc || -1 == pCfg->getDebugCTU() )
+#endif
     if ( pcSlice->getSliceType() != I_SLICE && ctuXPosInCtus == 0)
     {
       pcSlice->resetMotionLUTs();
@@ -1714,7 +1804,16 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       resetGbiCodingOrder(false, cs);
       m_pcInterSearch->initWeightIdxBits();
     }
+#if JVET_M0427_INLOOP_RESHAPER && REUSE_CU_RESULTS
+    if (pcSlice->getSPS()->getUseReshaper())
+    {
+      m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());
+    }
+#endif
 
+#if JVET_M0055_DEBUG_CTU
+  if (pCfg->getSwitchPOC() != pcPic->poc || ctuRsAddr >= pCfg->getDebugCTU())
+#endif
 #if ENABLE_WPP_PARALLELISM
     pEncLib->getCuEncoder( dataId )->compressCtu( cs, ctuArea, ctuRsAddr, prevQP, currQP );
 #else

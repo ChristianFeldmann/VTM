@@ -50,6 +50,50 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_M0055_DEBUG_CTU                              1 // DebugCTU encoder debug option
+
+#define JVET_M0297_32PT_MTS_ZERO_OUT                      1 // 32 point MTS based on skipping high frequency coefficients
+
+#define JVET_M0126_HMVP_MRG_PRUNING                       1 // HMVP merge candidates pruning simplification
+
+#define JVET_M0483_IBC                                    1 // Block level flag signaling and independent IBC mode
+
+#define JVET_M0102_INTRA_SUBPARTITIONS                    1
+
+#define JVET_M0303_IMPLICIT_MTS                           1 // Implicit transform selection (can be enabled with MTSImplicit encoder config parameter)
+
+#define FIX_DB_MAX_TRANSFORM_SIZE                         1
+#define JVET_M0908_CIIP_DB                                1
+#define JVET_M0471_LONG_DEBLOCKING_FILTERS                1
+#define JVET_M0427_INLOOP_RESHAPER                        1
+#define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
+
+#define JVET_M0253_HASH_ME                                1
+
+#define JVET_M0257                                        1 // Scan only non zero-out regions of large TUs
+#define JVET_M0193_PAIR_AVG_REDUCTION                     1 //Use only one pairwise average candidate
+
+#define JVET_M0281_AMVP_ROUNDING                          1 // Perform all AMVP rounding before pruning even AMVR is off
+
+#define JVET_M0117_AMVP_LIST_GEN                          1 // AMVP candidate list generation simplification
+
+#define JVET_M0192_AFF_CHROMA_SIMPL                       1 // Affine chroma MV derivation simplification and rounding unification
+
+#define JVET_M0116_ATMVP_LEFT_NB_FOR_OFFSET               1 // Only use left neighbor for ATMVP offset derivation, from M0273, M0240, M0116, M0338, M0204
+
+#define JVET_M0063_BDOF_FIX                               1 // BDOF bitdepth bugfix
+
+#define JVET_M0265_MV_ROUNDING_CLEANUP                    1 // Unify MV roundings and make SW/WD allignment
+#define JVET_M0883_TRIANGLE_SIGNALING                     1 // Using regular merge index signaling for triangle mode
+
+#define JVET_M0228_REMOVE_CPMV_COMPARE                    1 // Remove CPMV comparisons for construnted affine merge candidates from JVET-M0228, M0166, M0477
+
+#define JVET_M0145_AFFINE_MV_CLIP                         1 // Missing clipping for MV storage in affine
+
+#define JVET_M0264_HMVP_WITH_GBIIDX                       1 // Harmonization between HMVP and GBi
+
+#define JVET_M0381_ONE_CTX_FOR_SUBBLOCK_MRG_IDX           1 // CE2.2.2 a: one context for subblock Merge index
+
 #define JVET_M0118_M0185_TRIANGLE_FLAG_FIX                1 // Avoid signaling triangle flag if a CU uses MMVD or CIIP
 
 #define JVET_M0487_INT_EXTEND                             1  // CE9.1.1 b: integer reference samples as 1 extended samples
@@ -65,6 +109,7 @@
 
 #define JVET_M0142_CCLM_COLLOCATED_CHROMA                 1 // Adding support for chroma sample location type 2 in CCLM
 
+#define JVET_M0328_KEEP_ONE_WEIGHT_GROUP                  1
 
 #define JVET_M0479_18BITS_MV_CLIP                         1
 
@@ -74,31 +119,52 @@
 #endif
 #define JVET_M0502_PRED_MODE_CTX                          1
 
+#define JVET_M0140_SBT                                    1 // Sub-Block transform for Inter blocks
+#if JVET_M0140_SBT
+#define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
+#endif
+
 #define JVET_M0407_IBC_RANGE                              1 // extend IBC search range to some part of left CTU
 
 #define JVET_M0464_UNI_MTS                                1
 #define JVET_M0068_M0171_MMVD_CLEANUP                     1 // MMVD cleanup with 1) flip removal, 2) L1 zero vector fix, 3) bi-pred restriction after merge/MMVD
+#define JVET_M0255_FRACMMVD_SWITCH                        1 // disable fractional MVD in MMVD adaptively
+#define JVET_M0854_FRACMMVD_SWITCH_FOR_UHD                1 // disable fractional MVD for UHD pictures
+#define JVET_M0823_MMVD_ENCOPT                            1 // encoder optimization for MMVD
+
+#define JVET_M0147_DMVR                                   1 //Decoder side Motion Vector Refinement
 
 #if JVET_M0464_UNI_MTS
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 #endif
 
+#define JVET_M0246_AFFINE_AMVR                            1
+#if JVET_M0246_AFFINE_AMVR
+#define JVET_M0247_AFFINE_AMVR_ENCOPT                     1
+#endif
 #define JVET_M0421_SPLIT_SIG                              1
 
 #define JVET_M0173_MOVE_GT2_TO_FIRST_PASS                 1 // Moving the gtr2 flag to the first coding pass
 
 #define REMOVE_BIN_DECISION_TREE                          1
 
-#define JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY       1 
+#define JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY       1
 
 // clang-format off
 #define JVET_M0453_CABAC_ENGINE                           1
+#define JVET_M0512_MOTION_BUFFER_COMPRESSION              1
+#define JVET_M0238_PDPC_NO_INTERPOLATION                  1
 
 #define JVET_M0409_ATMVP_FIX                              1
 
+#define ENABLE_JVET_L0283_MRL                             1 // 1: Enable MRL, 0: Disable MRL
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
+#if REUSE_CU_RESULTS && JVET_M0102_INTRA_SUBPARTITIONS
+#define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
+#define MAX_NUM_TUS                                       4
+#endif
 // clang-format on
 
 #ifndef JVET_B0051_NON_MPM_MODE
@@ -148,24 +214,27 @@ typedef std::pair<int, int>  TrCost;
 
 #ifndef ENABLE_TRACING
 #define ENABLE_TRACING                                    0 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
+#endif
+
 #if ENABLE_TRACING
 #define K0149_BLOCK_STATISTICS                            1 // enables block statistics, which can be analysed with YUView (https://github.com/IENT/YUView)
 #if K0149_BLOCK_STATISTICS
 #define BLOCK_STATS_AS_CSV                                0 // statistics will be written in a comma separated value format. this is not supported by YUView
 #endif
 #endif
-#endif // ! ENABLE_TRACING
 
+#if JVET_M0427_INLOOP_RESHAPER
+#define WCG_EXT                                           1
+#else
 #define WCG_EXT                                           0 // part of JEM sharp Luma qp
+#endif
 #define WCG_WPSNR                                         WCG_EXT
 
 #if HEVC_TOOLS
 #define HEVC_USE_INTRA_SMOOTHING_T32                      1
 #define HEVC_USE_INTRA_SMOOTHING_T64                      1
-#define JEM_USE_INTRA_BOUNDARY                            1
 #define HEVC_USE_DC_PREDFILTERING                         1
 #define HEVC_USE_HOR_VER_PREDFILTERING                    1
-#define HEVC_USE_4x4_DSTVII                               1
 #define HEVC_USE_MDCS                                     1
 #define HEVC_USE_SIGN_HIDING                              1
 #define HEVC_USE_SCALING_LISTS                            1
@@ -191,6 +260,8 @@ typedef std::pair<int, int>  TrCost;
 #define HM_MDIS_AS_IN_JEM                                 1   // *** - PM: not filtering ref. samples for 64xn case and using Planar MDIS condition at encoder
 #define HM_JEM_CLIP_PEL                                   1   // ***
 #define HM_JEM_MERGE_CANDS                                0   // ***
+
+#define JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT 1 ///< When 1, do not scale transform skip blocks by sqrt(2) between (I)Transform and (I)Quantizer
 
 #endif//JEM_COMP
 
@@ -248,7 +319,7 @@ typedef std::pair<int, int>  TrCost;
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
 #if ENABLE_SIMD_OPT_BUFFER
-#define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi   
+#define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi
 #endif
 
 // End of SIMD optimizations
@@ -348,6 +419,50 @@ enum TransType
   DCT2_EMT = 4
 };
 
+#if JVET_M0102_INTRA_SUBPARTITIONS
+enum ISPType
+{
+  NOT_INTRA_SUBPARTITIONS       = 0,
+  HOR_INTRA_SUBPARTITIONS       = 1,
+  VER_INTRA_SUBPARTITIONS       = 2,
+  NUM_INTRA_SUBPARTITIONS_MODES = 3,
+  CAN_USE_VER_AND_HORL_SPLITS   = 4
+};
+#endif
+
+#if JVET_M0140_SBT
+enum SbtIdx
+{
+  SBT_OFF_DCT  = 0,
+  SBT_VER_HALF = 1,
+  SBT_HOR_HALF = 2,
+  SBT_VER_QUAD = 3,
+  SBT_HOR_QUAD = 4,
+  NUMBER_SBT_IDX,
+  SBT_OFF_MTS, //note: must be after all SBT modes, only used in fast algorithm to discern the best mode is inter EMT
+};
+
+enum SbtPos
+{
+  SBT_POS0 = 0,
+  SBT_POS1 = 1,
+  NUMBER_SBT_POS
+};
+
+enum SbtMode
+{
+  SBT_VER_H0 = 0,
+  SBT_VER_H1 = 1,
+  SBT_HOR_H0 = 2,
+  SBT_HOR_H1 = 3,
+  SBT_VER_Q0 = 4,
+  SBT_VER_Q1 = 5,
+  SBT_HOR_Q0 = 6,
+  SBT_HOR_Q1 = 7,
+  NUMBER_SBT_MODE
+};
+#endif
+
 enum RDPCMMode
 {
   RDPCM_OFF             = 0,
@@ -439,7 +554,12 @@ enum PredMode
 {
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
+#if JVET_M0483_IBC
+  MODE_IBC                   = 2,     ///< ibc-prediction mode
+  NUMBER_OF_PREDICTION_MODES = 3,
+#else
   NUMBER_OF_PREDICTION_MODES = 2,
+#endif
 };
 
 /// reference list index
@@ -883,7 +1003,7 @@ enum MergeType
 {
   MRG_TYPE_DEFAULT_N        = 0, // 0
   MRG_TYPE_SUBPU_ATMVP,
-  MRG_TYPE_IBC,                  
+  MRG_TYPE_IBC,
   NUM_MRG_TYPE                   // 5
 };
 
@@ -1116,6 +1236,15 @@ enum MsgLevel
   VERBOSE = 5,
   DETAILS = 6
 };
+#if JVET_M0427_INLOOP_RESHAPER
+enum RESHAPE_SIGNAL_TYPE
+{
+  RESHAPE_SIGNAL_SDR = 0,
+  RESHAPE_SIGNAL_PQ  = 1,
+  RESHAPE_SIGNAL_HLG = 2,
+  RESHAPE_SIGNAL_NULL = 100,
+};
+#endif
 
 
 // ---------------------------------------------------------------------------
@@ -1458,10 +1587,10 @@ struct AlfSliceParam
   short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
   short                        chromaCoeff[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_coeff_chroma[i]
   short                        filterCoeffDeltaIdx[MAX_NUM_ALF_CLASSES];                // filter_coeff_delta[i]
-  bool                         filterCoeffFlag[MAX_NUM_ALF_CLASSES];                    // filter_coefficient_flag[i]
+  bool                         alfLumaCoeffFlag[MAX_NUM_ALF_CLASSES];                   // alf_luma_coeff_flag[i]
   int                          numLumaFilters;                                          // number_of_filters_minus1 + 1
-  bool                         coeffDeltaFlag;                                          // alf_coefficients_delta_flag
-  bool                         coeffDeltaPredModeFlag;                                  // coeff_delta_pred_mode_flag
+  bool                         alfLumaCoeffDeltaFlag;                                   // alf_luma_coeff_delta_flag
+  bool                         alfLumaCoeffDeltaPredictionFlag;                         // alf_luma_coeff_delta_prediction_flag
   std::vector<AlfFilterShape>* filterShapes;
 
   void reset()
@@ -1470,10 +1599,10 @@ struct AlfSliceParam
     std::memset( lumaCoeff, 0, sizeof( lumaCoeff ) );
     std::memset( chromaCoeff, 0, sizeof( chromaCoeff ) );
     std::memset( filterCoeffDeltaIdx, 0, sizeof( filterCoeffDeltaIdx ) );
-    std::memset( filterCoeffFlag, true, sizeof( filterCoeffFlag ) );
+    std::memset( alfLumaCoeffFlag, true, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = 1;
-    coeffDeltaFlag = false;
-    coeffDeltaPredModeFlag = false;
+    alfLumaCoeffDeltaFlag = false;
+    alfLumaCoeffDeltaPredictionFlag = false;
   }
 
   const AlfSliceParam& operator = ( const AlfSliceParam& src )
@@ -1482,10 +1611,10 @@ struct AlfSliceParam
     std::memcpy( lumaCoeff, src.lumaCoeff, sizeof( lumaCoeff ) );
     std::memcpy( chromaCoeff, src.chromaCoeff, sizeof( chromaCoeff ) );
     std::memcpy( filterCoeffDeltaIdx, src.filterCoeffDeltaIdx, sizeof( filterCoeffDeltaIdx ) );
-    std::memcpy( filterCoeffFlag, src.filterCoeffFlag, sizeof( filterCoeffFlag ) );
+    std::memcpy( alfLumaCoeffFlag, src.alfLumaCoeffFlag, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = src.numLumaFilters;
-    coeffDeltaFlag = src.coeffDeltaFlag;
-    coeffDeltaPredModeFlag = src.coeffDeltaPredModeFlag;
+    alfLumaCoeffDeltaFlag = src.alfLumaCoeffDeltaFlag;
+    alfLumaCoeffDeltaPredictionFlag = src.alfLumaCoeffDeltaPredictionFlag;
     filterShapes = src.filterShapes;
     return *this;
   }

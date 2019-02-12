@@ -215,19 +215,13 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxBTDepth                                        ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   m_cEncLib.setDualITree                                         ( m_dualTree );
-  m_cEncLib.setLargeCTU                                          ( m_LargeCTU );
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode );
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );
   m_cEncLib.setBIO                                               (m_BIO);
-  m_cEncLib.setDisableMotionCompression                          ( m_DisableMotionCompression );
-  m_cEncLib.setMTTMode                                           ( m_MTT );
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
   m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
-#endif
-#if ENABLE_WPP_PARALLELISM
-  m_cEncLib.setUseAltDQPCoding                                   ( m_AltDQPCoding );
 #endif
 #if JVET_M0464_UNI_MTS
   m_cEncLib.setIntraMTS                                          ( m_MTS & 1 );
@@ -239,6 +233,12 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setFastIntraEMT                                      ( m_FastEMT & m_EMT & 1 );
   m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
   m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
+#endif
+#if JVET_M0140_SBT
+  m_cEncLib.setUseSBT                                            ( m_SBT );
 #endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseGBi                                            ( m_GBi );
@@ -254,10 +254,25 @@ void EncApp::xInitLibCfg()
       m_cEncLib.setLadfIntervalLowerBound(m_LadfIntervalLowerBound[k], k);
     }
   }
-#endif  
+#endif
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
+#if JVET_M0253_HASH_ME
+  m_cEncLib.setUseHashME                                         ( m_HashME );
+#endif
 
+#if JVET_M0255_FRACMMVD_SWITCH
+  m_cEncLib.setAllowDisFracMMVD                                  ( m_allowDisFracMMVD );
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  m_cEncLib.setUseAffineAmvr                                     ( m_AffineAmvr );
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  m_cEncLib.setUseAffineAmvrEncOpt                               ( m_AffineAmvrEncOpt );
+#endif
+#if JVET_M0147_DMVR
+  m_cEncLib.setDMVR                                              ( m_DMVR );
+#endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
   m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );
@@ -534,6 +549,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setForceDecodeBitstream1                             ( m_forceDecodeBitstream1 );
   m_cEncLib.setStopAfterFFtoPOC                                  ( m_stopAfterFFtoPOC );
   m_cEncLib.setBs2ModPOCAndType                                  ( m_bs2ModPOCAndType );
+#if JVET_M0055_DEBUG_CTU
+  m_cEncLib.setDebugCTU                                          ( m_debugCTU );
+#endif
 #if ENABLE_SPLIT_PARALLELISM
   m_cEncLib.setNumSplitThreads                                   ( m_numSplitThreads );
   m_cEncLib.setForceSingleSplitThread                            ( m_forceSplitSequential );
@@ -545,6 +563,12 @@ void EncApp::xInitLibCfg()
 
 #endif
   m_cEncLib.setUseALF                                            ( m_alf );
+#if JVET_M0427_INLOOP_RESHAPER
+  m_cEncLib.setReshaper                                          ( m_lumaReshapeEnable );
+  m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
+  m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
+  m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
+#endif
 }
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList

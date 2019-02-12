@@ -70,6 +70,10 @@ public:
   int             cgPosX          ()                        const { return m_subSetPosX; }
   unsigned        width           ()                        const { return m_width; }
   unsigned        height          ()                        const { return m_height; }
+#if JVET_M0297_32PT_MTS_ZERO_OUT
+  unsigned        log2CGWidth     ()                        const { return m_log2CGWidth; }
+  unsigned        log2CGHeight    ()                        const { return m_log2CGHeight; }
+#endif
   unsigned        log2CGSize      ()                        const { return m_log2CGSize; }
   unsigned        log2BlockWidth  ()                        const { return m_log2BlockWidth; }
   unsigned        log2BlockHeight ()                        const { return m_log2BlockHeight; }
@@ -82,7 +86,7 @@ public:
   int             maxSubPos       ()                        const { return m_maxSubPos; }
   bool            isLast          ()                        const { return ( ( m_scanPosLast >> m_log2CGSize ) == m_subSetId ); }
   bool            isNotFirst      ()                        const { return ( m_subSetId != 0 ); }
-  bool            isSigGroup      ( int       scanPosCG )   const { return m_sigCoeffGroupFlag[ m_scanCG[ scanPosCG ] ]; }
+  bool            isSigGroup(int scanPosCG) const { return m_sigCoeffGroupFlag[m_scanCG[scanPosCG].idx]; }
   bool            isSigGroup      ()                        const { return m_sigCoeffGroupFlag[ m_subSetPos ]; }
 #if HEVC_USE_SIGN_HIDING
   bool            signHiding      ()                        const { return m_signHiding; }
@@ -90,9 +94,9 @@ public:
                                     int       posLast   )   const { return ( m_signHiding && ( posLast - posFirst >= SBH_THRESHOLD ) ); }
 #endif
   CoeffScanType   scanType        ()                        const { return m_scanType; }
-  unsigned        blockPos        ( int       scanPos   )   const { return m_scan[ scanPos ]; }
-  unsigned        posX            ( int       scanPos   )   const { return m_scanPosX[ scanPos ]; }
-  unsigned        posY            ( int       scanPos   )   const { return m_scanPosY[ scanPos ]; }
+  unsigned        blockPos(int scanPos) const { return m_scan[scanPos].idx; }
+  unsigned        posX(int scanPos) const { return m_scan[scanPos].x; }
+  unsigned        posY(int scanPos) const { return m_scan[scanPos].y; }
   unsigned        maxLastPosX     ()                        const { return m_maxLastPosX; }
   unsigned        maxLastPosY     ()                        const { return m_maxLastPosY; }
   unsigned        lastXCtxId      ( unsigned  posLastX  )   const { return m_CtxSetLastX( m_lastOffsetX + ( posLastX >> m_lastShiftX ) ); }
@@ -101,8 +105,8 @@ public:
 
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
-    const uint32_t    posY      = m_scanPosY[ scanPos ];
-    const uint32_t    posX      = m_scanPosX[ scanPos ];
+    const uint32_t posY      = m_scan[scanPos].y;
+    const uint32_t posX      = m_scan[scanPos].x;
     const TCoeff* pData     = coeff + posX + posY * m_width;
     const int     diag      = posX + posY;
     int           numPos    = 0;
@@ -160,8 +164,8 @@ public:
 
   unsigned templateAbsSum( int scanPos, const TCoeff* coeff )
   {
-    const uint32_t  posY  = m_scanPosY[scanPos];
-    const uint32_t  posX  = m_scanPosX[scanPos];
+    const uint32_t  posY  = m_scan[scanPos].y;
+    const uint32_t  posX  = m_scan[scanPos].x;
     const TCoeff*   pData = coeff + posX + posY * m_width;
     int             sum   = 0;
     if (posX < m_width - 1)
@@ -213,10 +217,8 @@ private:
   const bool                m_extendedPrecision;
   const int                 m_maxLog2TrDynamicRange;
   CoeffScanType             m_scanType;
-  const unsigned*           m_scan;
-  const unsigned*           m_scanPosX;
-  const unsigned*           m_scanPosY;
-  const unsigned*           m_scanCG;
+  const ScanElement *       m_scan;
+  const ScanElement *       m_scanCG;
   const CtxSet              m_CtxSetLastX;
   const CtxSet              m_CtxSetLastY;
   const unsigned            m_maxLastPosX;
@@ -308,7 +310,11 @@ void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, uns
 unsigned CtxCUsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 unsigned CtxBTsplit   ( const CodingStructure& cs, Partitioner& partitioner );
 #endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
+#else
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf );
+#endif
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
@@ -316,6 +322,9 @@ unsigned CtxAffineFlag( const CodingUnit& cu );
 unsigned CtxTriangleFlag( const CodingUnit& cu );
 #if JVET_M0502_PRED_MODE_CTX
 unsigned CtxPredModeFlag( const CodingUnit& cu );
+#endif
+#if JVET_M0483_IBC
+unsigned CtxIBCFlag(const CodingUnit& cu);
 #endif
 }
 

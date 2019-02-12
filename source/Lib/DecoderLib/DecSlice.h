@@ -77,7 +77,11 @@ public:
   void  create            ();
   void  destroy           ();
 
+#if JVET_M0055_DEBUG_CTU
+  void  decompressSlice   ( Slice* slice, InputBitstream* bitstream, int debugCTU );
+#else
   void  decompressSlice   ( Slice* slice, InputBitstream* bitstream );
+#endif
 };
 
 //! \}

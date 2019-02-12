@@ -43,6 +43,8 @@ else
   UNAME_S := $(shell uname -s)
   BUILD_CMD := $(BUILD_SCRIPT)
   ifeq ($(UNAME_S),Linux)
+    # for Jenkins: run trace build only on Linux
+    LINUXBUILD := TRUE
   endif
   ifeq ($(UNAME_S),Darwin)
     # MAC
@@ -126,6 +128,12 @@ clean-p:
 
 configure:
 	$(BUILD_CMD) $(CONFIG_OPTIONS) $(CMAKE_OPTIONS) variant=debug,release,relwithdebinfo
+
+linuxbuild:
+ifeq ($(LINUXBUILD),TRUE)
+	# option for automated jenkins build
+	$(BUILD_CMD) $(BUILD_JOBS) $(BUILD_OPTIONS) $(CMAKE_OPTIONS) variant=debug
+endif
 
 #
 # project specific targets

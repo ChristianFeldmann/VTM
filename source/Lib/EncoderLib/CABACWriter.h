@@ -107,6 +107,9 @@ public:
   void        intra_chroma_pred_mode    ( const PredictionUnit&         pu );
   void        cu_residual               ( const CodingUnit&             cu,       Partitioner&      pm,         CUCtx& cuCtx );
   void        rqt_root_cbf              ( const CodingUnit&             cu );
+#if JVET_M0140_SBT
+  void        sbt_mode                  ( const CodingUnit&             cu );
+#endif
   void        end_of_ctu                ( const CodingUnit&             cu,       CUCtx&            cuCtx );
 
   // prediction unit (clause 7.3.8.6)
@@ -117,6 +120,9 @@ public:
   void        merge_idx                 ( const PredictionUnit&         pu );
   void        mmvd_merge_idx(const PredictionUnit&         pu);
   void        imv_mode                  ( const CodingUnit&             cu );
+#if JVET_M0246_AFFINE_AMVR
+  void        affine_amvr_mode          ( const CodingUnit&             cu );
+#endif
   void        inter_pred_idc            ( const PredictionUnit&         pu );
   void        ref_idx                   ( const PredictionUnit&         pu,       RefPicList        eRefList );
   void        mvp_flag                  ( const PredictionUnit&         pu,       RefPicList        eRefList );
@@ -132,12 +138,20 @@ public:
   void        pcm_samples               ( const TransformUnit&          tu );
 
   // transform tree (clause 7.3.8.8)
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  void        transform_tree            ( const CodingStructure&        cs,       Partitioner&      pm,     CUCtx& cuCtx, ChromaCbfs& chromaCbfs, const PartSplit ispType = TU_NO_ISP, const int subTuIdx = -1 );
+  void        cbf_comp                  ( const CodingStructure&        cs,       bool              cbf,    const CompArea& area, unsigned depth, const bool prevCbCbf = false, const bool useISP = false );
+#else
   void        transform_tree            ( const CodingStructure&        cs,       Partitioner&      pm,     CUCtx& cuCtx,   ChromaCbfs& chromaCbfs );
   void        cbf_comp                  ( const CodingStructure&        cs,       bool              cbf,    const CompArea& area, unsigned depth, const bool prevCbCbf = false );
+#endif
 
   // mvd coding (clause 7.3.8.9)
+#if JVET_M0246_AFFINE_AMVR
+  void        mvd_coding                ( const Mv &rMvd, int8_t imv );
+#else
   void        mvd_coding                ( const Mv &rMvd, uint8_t imv );
-
+#endif
   // transform unit (clause 7.3.8.10)
   void        transform_unit            ( const TransformUnit&          tu,       CUCtx&            cuCtx,  ChromaCbfs& chromaCbfs );
   void        cu_qp_delta               ( const CodingUnit&             cu,       int               predQP, const int8_t qp );
@@ -152,9 +166,16 @@ public:
   void        emt_tu_index              ( const TransformUnit&          tu );
   void        emt_cu_flag               ( const CodingUnit&             cu );
 #endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  void        isp_mode                  ( const CodingUnit&             cu );
+#endif
   void        explicit_rdpcm_mode       ( const TransformUnit&          tu,       ComponentID       compID );
+#if JVET_M0297_32PT_MTS_ZERO_OUT
+  void        last_sig_coeff            ( CoeffCodingContext&           cctx,     const TransformUnit& tu, ComponentID       compID );
+#else
   void        last_sig_coeff            ( CoeffCodingContext&           cctx );
-  void        residual_coding_subblock  ( CoeffCodingContext&           cctx,     const TCoeff*     coeff, const int stateTransTable, int& state   );
+#endif
+  void        residual_coding_subblock  ( CoeffCodingContext&           cctx,     const TCoeff*     coeff, const int stateTransTable, int& state );
 
   // cross component prediction (clause 7.3.8.12)
   void        cross_comp_pred           ( const TransformUnit&          tu,       ComponentID       compID );

@@ -68,6 +68,16 @@ class EncSlice;
 // ====================================================================================================================
 
 /// CU encoder class
+#if JVET_M0883_TRIANGLE_SIGNALING
+struct TriangleMotionInfo
+{
+  uint8_t   m_splitDir;
+  uint8_t   m_candIdx0;
+  uint8_t   m_candIdx1;
+
+  TriangleMotionInfo ( uint8_t splitDir, uint8_t candIdx0, uint8_t candIdx1 ): m_splitDir(splitDir), m_candIdx0(candIdx0), m_candIdx1(candIdx1) { }
+};
+#endif
 class EncCu
 #if REUSE_CU_RESULTS
   : DecCu
@@ -135,14 +145,23 @@ private:
 #endif
   int                   m_bestGbiIdx[2];
   double                m_bestGbiCost[2];
+#if JVET_M0883_TRIANGLE_SIGNALING
+  static const TriangleMotionInfo  m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
+  uint8_t                          m_triangleIdxBins[2][TRIANGLE_MAX_NUM_UNI_CANDS][TRIANGLE_MAX_NUM_UNI_CANDS];
+#endif
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
   void    updateLambda      ( Slice* slice, const int dQP, const bool updateRdCostLambda );
+#endif
+#if JVET_M0140_SBT
+  double                m_sbtCostSave[2];
 #endif
 
 public:
   /// copy parameters from encoder class
   void  init                ( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int jId = 0 ) );
-
+#if JVET_M0427_INLOOP_RESHAPER && REUSE_CU_RESULTS
+  void setDecCuReshaperInEncCU(EncReshape* pcReshape, ChromaFormat chromaFormatIDC) { initDecCuReshaper((Reshape*) pcReshape, chromaFormatIDC); }
+#endif
   /// create internal buffers
   void  create              ( EncCfg* encCfg );
 
@@ -159,6 +178,10 @@ public:
 
   void   setMergeBestSATDCost(double cost) { m_mergeBestSATDCost = cost; }
   double getMergeBestSATDCost()            { return m_mergeBestSATDCost; }
+#if JVET_M0255_FRACMMVD_SWITCH
+  IbcHashMap& getIbcHashMap()              { return m_ibcHashMap;        }
+  EncCfg*     getEncCfg()            const { return m_pcEncCfg;          }
+#endif
 
 #if JVET_M0170_MRG_SHARELIST
   Position shareParentPos;
@@ -192,6 +215,9 @@ protected:
   void xCheckDQP              ( CodingStructure& cs, Partitioner& partitioner, bool bKeepCtx = false);
   void xFillPCMBuffer         ( CodingUnit &cu);
 
+#if JVET_M0253_HASH_ME
+  void xCheckRDCostHashInter  ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+#endif
   void xCheckRDCostAffineMerge2Nx2N
                               ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
   void xCheckRDCostInter      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );

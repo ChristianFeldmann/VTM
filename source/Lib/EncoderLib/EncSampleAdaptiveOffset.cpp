@@ -799,7 +799,7 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
   SAOBlkParam modeParam;
   double minCost, modeCost;
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING 
+#if K0238_SAO_GREEDY_MERGE_ENCODING
   double minCost2 = 0;
   std::vector<SAOStatData**> groupBlkStat;
   if (isGreedymergeEncoding)
@@ -919,7 +919,7 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
       reconParams[ctuRsAddr] = codedParams[ctuRsAddr];
       reconstructBlkSAOParam(reconParams[ctuRsAddr], mergeList);
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING  
+#if K0238_SAO_GREEDY_MERGE_ENCODING
       if (isGreedymergeEncoding)
       {
         if (ctuRsAddr == (mergeCtuAddr - 1))
@@ -1037,7 +1037,7 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
       {
 #endif
       offsetCTU(area, srcYuv, resYuv, reconParams[ctuRsAddr], cs);
-#if K0238_SAO_GREEDY_MERGE_ENCODING 
+#if K0238_SAO_GREEDY_MERGE_ENCODING
       }
 #endif
 

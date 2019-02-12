@@ -56,7 +56,11 @@
 #include "CommonLib/CodingStatistics.h"
 #endif
 
+#if JVET_M0055_DEBUG_CTU
+bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound /* = false */, int debugCTU /* = -1*/, int debugPOC /* = -1*/ )
+#else
 bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound /* = false */ )
+#endif
 {
   int      poc;
   PicList* pcListPic = NULL;
@@ -91,6 +95,10 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 #endif
       );
 
+#if JVET_M0055_DEBUG_CTU
+      pcDecLib->setDebugCTU( debugCTU );
+      pcDecLib->setDebugPOC( debugPOC );
+#endif
       pcDecLib->setDecodedPictureHashSEIEnabled( true );
 
       bFirstCall = false;
@@ -156,6 +164,10 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
                 CHECK( expectedPoc != poc, "mismatch in POC - check encoder configuration" );
 
+#if JVET_M0055_DEBUG_CTU
+                if( debugCTU < 0 || poc != debugPOC )
+                {
+#endif
                 for( int i = 0; i < pic->slices.size(); i++ )
                 {
                   if( pcEncPic->slices.size() <= i )
@@ -165,9 +177,33 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   }
                   pcEncPic->slices[i]->copySliceInfo( pic->slices[i], false );
                 }
+#if JVET_M0055_DEBUG_CTU
+                }
+#endif
 
                 pcEncPic->cs->slice = pcEncPic->slices.back();
 
+#if JVET_M0055_DEBUG_CTU
+                if( debugCTU >= 0 && poc == debugPOC )
+                {
+                  pcEncPic->cs->initStructData();
+
+                  pcEncPic->cs->copyStructure( *pic->cs, CH_L, true, true );
+
+                  if( CS::isDualITree( *pcEncPic->cs ) )
+                  {
+                    pcEncPic->cs->copyStructure( *pic->cs, CH_C, true, true );
+                  }
+
+                  for( auto &cu : pcEncPic->cs->cus )
+                  {
+                    cu->slice = pcEncPic->cs->slice;
+                  }
+                  pcEncPic->cs->slice->copyMotionLUTs( pic->slices.back()->getMotionLUTs(), pcEncPic->slices.back()->getMotionLUTs());
+                }
+                else
+                {
+#endif
                 if ( pic->cs->sps->getSAOEnabledFlag() )
                 {
                   pcEncPic->copySAO( *pic, 0 );
@@ -198,6 +234,9 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                 {
                   pcEncPic->cs->copyStructure( *pic->cs, CH_C, true, true );
                 }
+#if JVET_M0055_DEBUG_CTU
+                }
+#endif
                 goOn = false; // exit the loop return
                 bRet = true;
                 break;
@@ -354,6 +393,9 @@ DecLib::DecLib()
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   , m_cacheModel()
 #endif
+#if JVET_M0427_INLOOP_RESHAPER
+  , m_cReshaper()
+#endif
   , m_pcPic(NULL)
   , m_prevPOC(MAX_INT)
   , m_prevTid0POC(0)
@@ -370,6 +412,10 @@ DecLib::DecLib()
   , m_numberOfChecksumErrorsDetected(0)
   , m_warningMessageSkipPicture(false)
   , m_prefixSEINALUs()
+#if JVET_M0055_DEBUG_CTU
+  , m_debugPOC( -1 )
+  , m_debugCTU( -1 )
+#endif
 {
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
@@ -401,7 +447,7 @@ void DecLib::destroy()
 
 void DecLib::init(
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
-  const std::string& cacheCfgFileName 
+  const std::string& cacheCfgFileName
 #endif
 )
 {
@@ -433,6 +479,10 @@ void DecLib::deletePicBuffer ( )
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   m_cacheModel.reportSequence( );
   m_cacheModel.destroy( );
+#endif
+#if JVET_M0427_INLOOP_RESHAPER
+  m_cCuDecoder.destoryDecCuReshaprBuf();
+  m_cReshaper.destroy();
 #endif
 }
 
@@ -508,9 +558,19 @@ void DecLib::executeLoopFilters()
 
   CodingStructure& cs = *m_pcPic->cs;
 
+#if JVET_M0427_INLOOP_RESHAPER
+  if (cs.sps->getUseReshaper() && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+  {
+      CHECK((m_cReshaper.getRecReshaped() == false), "Rec picture is not reshaped!");
+      m_pcPic->getRecoBuf(COMPONENT_Y).rspSignal(m_cReshaper.getInvLUT());
+      m_cReshaper.setRecReshaped(false);
+  }
+#endif
   // deblocking filter
   m_cLoopFilter.loopFilterPic( cs );
-
+#if JVET_M0147_DMVR
+  CS::setRefinedMotionField(cs);
+#endif
   if( cs.sps->getSAOEnabledFlag() )
   {
     m_cSAO.SAOProcess( cs, cs.picture->getSAO() );
@@ -738,7 +798,12 @@ void DecLib::xActivateParameterSets()
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
     m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
     m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc() );
-
+#if JVET_M0427_INLOOP_RESHAPER
+    if (sps->getUseReshaper())
+    {
+      m_cReshaper.createDec(sps->getBitDepth(CHANNEL_TYPE_LUMA));
+    }
+#endif
 
     bool isField = false;
     bool isTopField = false;
@@ -765,6 +830,12 @@ void DecLib::xActivateParameterSets()
 
     // Recursive structure
     m_cCuDecoder.init( &m_cTrQuant, &m_cIntraPred, &m_cInterPred );
+#if JVET_M0427_INLOOP_RESHAPER
+    if (sps->getUseReshaper())
+    {
+      m_cCuDecoder.initDecCuReshaper(&m_cReshaper, sps->getChromaFormatIdc());
+    }
+#endif
     m_cTrQuant.init( nullptr, sps->getMaxTrSize(), false, false, false, false, false );
 
     // RdCost
@@ -1228,20 +1299,71 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 #endif
 
-  if (pcSlice->getSPS()->getSpsNext().getIBCMode() && pcSlice->getEnableTMVPFlag())
+#if JVET_M0483_IBC
+  if (pcSlice->getSPS()->getIBCFlag() && pcSlice->getEnableTMVPFlag())
+#else
+  if (pcSlice->getSPS()->getIBCMode() && pcSlice->getEnableTMVPFlag())
+#endif
   {
     CHECK(pcSlice->getRefPic(RefPicList(pcSlice->isInterB() ? 1 - pcSlice->getColFromL0Flag() : 0), pcSlice->getColRefIdx())->getPOC() == pcSlice->getPOC(), "curr ref picture cannot be collocated picture");
   }
 
+#if JVET_M0427_INLOOP_RESHAPER
+  if (pcSlice->getSPS()->getUseReshaper())
+  {
+    m_cReshaper.copySliceReshaperInfo(m_cReshaper.getSliceReshaperInfo(), pcSlice->getReshapeInfo());
+    if (pcSlice->getReshapeInfo().getSliceReshapeModelPresentFlag())
+    {
+      m_cReshaper.constructReshaper();
+    }
+    else
+    {
+      m_cReshaper.setReshapeFlag(false);
+    }
+#if JVET_M0483_IBC
+    if ((pcSlice->getSliceType() == I_SLICE) && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+#else
+    if ((pcSlice->getSliceType() == I_SLICE || (pcSlice->getSliceType() == P_SLICE && pcSlice->getSPS()->getIBCMode())) && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+#endif
+    {
+      m_cReshaper.setCTUFlag(false);
+      m_cReshaper.setRecReshaped(true);
+    }
+    else
+    {
+      if (m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+      {
+        m_cReshaper.setCTUFlag(true);
+        m_cReshaper.setRecReshaped(true);
+      }
+      else
+      {
+        m_cReshaper.setCTUFlag(false);
+        m_cReshaper.setRecReshaped(false);
+      }
+    }
+  }
+  else
+  {
+    m_cReshaper.setCTUFlag(false);
+    m_cReshaper.setRecReshaped(false);
+  }
+#endif
 
   //  Decode a picture
+#if JVET_M0055_DEBUG_CTU
+  m_cSliceDecoder.decompressSlice( pcSlice, &( nalu.getBitstream() ), ( m_pcPic->poc == getDebugPOC() ? getDebugCTU() : -1 ) );
+#else
   m_cSliceDecoder.decompressSlice( pcSlice, &(nalu.getBitstream()) );
+#endif
 
   m_bFirstSliceInPicture = false;
-  if (pcSlice->getSPS()->getSpsNext().getIBCMode())
+#if JVET_M0483_IBC==0
+  if (pcSlice->getSPS()->getIBCMode())
   {
     pcSlice->getPic()->longTerm = false;
   }
+#endif
   m_uiSliceSegmentIdx++;
 
   return false;

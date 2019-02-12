@@ -53,6 +53,9 @@
 #include "InterSearch.h"
 #include "IntraSearch.h"
 #include "EncSampleAdaptiveOffset.h"
+#if JVET_M0427_INLOOP_RESHAPER
+#include "EncReshape.h"
+#endif
 #include "EncAdaptiveLoopFilter.h"
 #include "RateCtrl.h"
 
@@ -96,6 +99,10 @@ private:
   CABACEncoder             *m_CABACEncoder;
 #else
   CABACEncoder              m_CABACEncoder;
+#endif
+
+#if JVET_M0427_INLOOP_RESHAPER
+  EncReshape                m_cReshaper;                        ///< reshaper class
 #endif
 
   // processing unit
@@ -219,6 +226,9 @@ public:
   int                    getNumCuEncStacks()              const { return m_numCuEncStacks; }
 #endif
 
+#if JVET_M0427_INLOOP_RESHAPER
+  EncReshape*            getReshaper()                          { return  &m_cReshaper; }
+#endif
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function
   // -------------------------------------------------------------------------------------------------------------------

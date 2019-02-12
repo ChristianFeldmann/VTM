@@ -40,6 +40,9 @@
 #include "CommonLib/CodingStructure.h"
 
 #define AlfCtx(c) SubCtx( Ctx::ctbAlfFlag, c )
+#if JVET_M0427_INLOOP_RESHAPER
+std::vector<double> EncAdaptiveLoopFilter::m_lumaLevelToWeightPLUT;
+#endif
 
 EncAdaptiveLoopFilter::EncAdaptiveLoopFilter()
   : m_CABACEstimator( nullptr )
@@ -55,6 +58,10 @@ EncAdaptiveLoopFilter::EncAdaptiveLoopFilter()
   m_filterCoeffQuant = nullptr;
   m_filterCoeffSet = nullptr;
   m_diffFilterCoeff = nullptr;
+
+#if JVET_M0427_INLOOP_RESHAPER
+  m_alfWSSD = 0;
+#endif
 }
 
 void EncAdaptiveLoopFilter::create( const int picWidth, const int picHeight, const ChromaFormat chromaFormatIDC, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE], const int internalBitDepth[MAX_NUM_CHANNEL_TYPE] )
@@ -515,7 +522,7 @@ double EncAdaptiveLoopFilter::getFilterCoeffAndCost( CodingStructure& cs, double
     uiSliceFlag = lengthTruncatedUnary(alfChromaIdc, 3);
   }
 
-  double rate = uiCoeffBits + uiSliceFlag;  
+  double rate = uiCoeffBits + uiSliceFlag;
   m_CABACEstimator->resetBits();
   m_CABACEstimator->codeAlfCtuEnableFlags( cs, channel, &m_alfSliceParamTemp);
   rate += FracBitsScale * (double)m_CABACEstimator->getEstFracBits();
@@ -528,7 +535,7 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
   if( !isChroma )
   {
     iBits++;                                               // alf_coefficients_delta_flag
-    if( !alfSliceParam.coeffDeltaFlag )
+    if( !alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       if( alfSliceParam.numLumaFilters > 1 )
       {
@@ -546,7 +553,7 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
   // vlc for all
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( isChroma || !alfSliceParam.coeffDeltaFlag || alfSliceParam.filterCoeffFlag[ind] )
+    if( isChroma || !alfSliceParam.alfLumaCoeffDeltaFlag || alfSliceParam.alfLumaCoeffFlag[ind] )
     {
       for( int i = 0; i < alfShape.numCoeff - 1; i++ )
       {
@@ -576,7 +583,7 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
 
   if( !isChroma )
   {
-    if( alfSliceParam.coeffDeltaFlag )
+    if( alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       iBits += numFilters;             //filter_coefficient_flag[i]
     }
@@ -585,7 +592,7 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( !isChroma && !alfSliceParam.filterCoeffFlag[ind] && alfSliceParam.coeffDeltaFlag )
+    if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       continue;
     }
@@ -652,7 +659,7 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
     dist = deriveFilterCoeffs( covFrame, covMerged, alfShape, m_filterIndices[numFilters - 1], numFilters, errorForce0CoeffTab );
     // filter coeffs are stored in m_filterCoeffSet
     distForce0 = getDistForce0( alfShape, numFilters, errorForce0CoeffTab, codedVarBins );
-    coeffBits = deriveFilterCoefficientsPredictionMode( alfShape, m_filterCoeffSet, m_diffFilterCoeff, numFilters, predMode ); 
+    coeffBits = deriveFilterCoefficientsPredictionMode( alfShape, m_filterCoeffSet, m_diffFilterCoeff, numFilters, predMode );
     coeffBitsForce0 = getCostFilterCoeffForce0( alfShape, m_filterCoeffSet, numFilters, codedVarBins );
 
     cost = dist + m_lambda[COMPONENT_Y] * coeffBits;
@@ -685,17 +692,17 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
   if (cost <= cost0)
   {
     distReturn = dist;
-    alfSliceParam.coeffDeltaFlag = 0;
+    alfSliceParam.alfLumaCoeffDeltaFlag = 0;
     uiCoeffBits = coeffBits;
-    alfSliceParam.coeffDeltaPredModeFlag = bestPredMode;
+    alfSliceParam.alfLumaCoeffDeltaPredictionFlag = bestPredMode;
   }
   else
   {
     distReturn = distForce0;
-    alfSliceParam.coeffDeltaFlag = 1;
+    alfSliceParam.alfLumaCoeffDeltaFlag = 1;
     uiCoeffBits = coeffBitsForce0;
-    memcpy( alfSliceParam.filterCoeffFlag, codedVarBins, sizeof( codedVarBins ) );
-    alfSliceParam.coeffDeltaPredModeFlag = 0;
+    memcpy( alfSliceParam.alfLumaCoeffFlag, codedVarBins, sizeof( codedVarBins ) );
+    alfSliceParam.alfLumaCoeffDeltaPredictionFlag = 0;
 
     for( int varInd = 0; varInd < numFiltersBest; varInd++ )
     {
@@ -710,7 +717,7 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
   {
     for( int i = 0; i < alfShape.numCoeff; i++ )
     {
-      if( alfSliceParam.coeffDeltaPredModeFlag )
+      if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
       {
         alfSliceParam.lumaCoeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = m_diffFilterCoeff[ind][i];
       }
@@ -1146,7 +1153,7 @@ double EncAdaptiveLoopFilter::deriveCoeffQuant( int *filterCoeffQuant, double **
   filterCoeffQuant[numCoeff - 1] = -quantCoeffSum;
   filterCoeff[numCoeff - 1] = filterCoeffQuant[numCoeff - 1] / double(factor);
 
-  
+
   //Restrict the range of the center coefficient
   int max_value_center = (2 * factor - 1) - factor;
   int min_value_center = 0 - factor;
@@ -1472,16 +1479,44 @@ void EncAdaptiveLoopFilter::getBlkStats( AlfCovariance* alfCovariace, const AlfF
         classIdx = cl.classIdx;
       }
 
+#if JVET_M0427_INLOOP_RESHAPER
+      double weight = 1.0;
+      if (m_alfWSSD)
+      {
+        weight = m_lumaLevelToWeightPLUT[org[j]];
+      }
+#endif
       int yLocal = org[j] - rec[j];
       calcCovariance( ELocal, rec + j, recStride, shape.pattern.data(), shape.filterLength >> 1, transposeIdx );
       for( int k = 0; k < shape.numCoeff; k++ )
       {
         for( int l = k; l < shape.numCoeff; l++ )
         {
+#if JVET_M0427_INLOOP_RESHAPER
+          if (m_alfWSSD)
+          {
+            alfCovariace[classIdx].E[k][l] += weight * (double)(ELocal[k] * ELocal[l]);
+          }
+          else
+#endif
           alfCovariace[classIdx].E[k][l] += ELocal[k] * ELocal[l];
         }
+#if JVET_M0427_INLOOP_RESHAPER
+        if (m_alfWSSD)
+        {
+          alfCovariace[classIdx].y[k] += weight * (double)(ELocal[k] * yLocal);
+        }
+        else
+#endif
         alfCovariace[classIdx].y[k] += ELocal[k] * yLocal;
       }
+#if JVET_M0427_INLOOP_RESHAPER
+      if (m_alfWSSD)
+      {
+        alfCovariace[classIdx].pixAcc += weight * (double)(yLocal * yLocal);
+      }
+      else
+#endif
       alfCovariace[classIdx].pixAcc += yLocal * yLocal;
     }
     org += orgStride;

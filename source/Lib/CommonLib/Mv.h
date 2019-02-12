@@ -51,6 +51,9 @@ enum MvPrecision
 {
   MV_PRECISION_4PEL     = 0,      // 4-pel
   MV_PRECISION_INT      = 2,      // 1-pel, shift 2 bits from 4-pel
+#if JVET_M0246_AFFINE_AMVR
+  MV_PRECISION_HALF     = 3,      // 1/2-pel
+#endif
   MV_PRECISION_QUARTER  = 4,      // 1/4-pel (the precision of regular MV difference signaling), shift 4 bits from 4-pel
   MV_PRECISION_INTERNAL = 6,      // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
 };
@@ -213,6 +216,14 @@ public:
     return Mv(tarMvPred.hor - hor + curMvPred.hor, tarMvPred.ver - ver + curMvPred.ver);
   }
 #endif
+
+#if JVET_M0145_AFFINE_MV_CLIP
+  void clipToStorageBitDepth()
+  {
+    hor = Clip3( -(1 << 17), (1 << 17) - 1, hor );
+    ver = Clip3( -(1 << 17), (1 << 17) - 1, ver );
+  }
+#endif
 };// END CLASS DEFINITION MV
 
 namespace std
@@ -226,7 +237,7 @@ namespace std
     }
   };
 };
-void clipMv ( Mv& rcMv, const struct Position& pos, 
+void clipMv ( Mv& rcMv, const struct Position& pos,
               const struct Size& size,
               const class SPS& sps );
 

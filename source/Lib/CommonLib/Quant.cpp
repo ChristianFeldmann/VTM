@@ -313,8 +313,13 @@ void Quant::dequant(const TransformUnit &tu,
   const int QP_rem = cQP.rem;
 
 #if HM_QTBT_AS_IN_JEM_QUANT
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+  const bool needsScalingCorrection = TU::needsBlockSizeTrafoScale( tu, compID );
+  const int  NEScale    = TU::needsSqrt2Scale( tu, compID ) ? 181 : 1;
+#else
   const bool needsScalingCorrection = TU::needsBlockSizeTrafoScale( tu.block( compID ) );
   const int  NEScale    = TU::needsSqrt2Scale( tu.blocks[compID] ) ? 181 : 1;
+#endif
 #if HEVC_USE_SCALING_LISTS
   const int  rightShift = (needsScalingCorrection ?   8 : 0 ) + (IQUANT_SHIFT - (iTransformShift + QP_per)) + (enableScalingLists ? LOG2_SCALING_LIST_NEUTRAL_VALUE : 0);
 #else
@@ -767,7 +772,11 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 
     int iWHScale = 1;
 #if HM_QTBT_AS_IN_JEM_QUANT
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+    if( TU::needsBlockSizeTrafoScale( tu, compID ) )
+#else
     if( TU::needsBlockSizeTrafoScale( rect ) )
+#endif
     {
       iTransformShift += ADJ_QUANT_SHIFT;
       iWHScale = 181;
@@ -863,7 +872,11 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   int iWHScale = 1;
 #if HM_QTBT_AS_IN_JEM_QUANT
+#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
+  if( TU::needsBlockSizeTrafoScale( tu, compID ) )
+#else
   if( TU::needsBlockSizeTrafoScale( rect ) )
+#endif
   {
     iTransformShift += ADJ_QUANT_SHIFT;
     iWHScale = 181;

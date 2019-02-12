@@ -202,16 +202,10 @@ protected:
   unsigned  m_uiMaxBTDepthI;
   unsigned  m_uiMaxBTDepthIChroma;
   bool      m_dualTree;
-  bool      m_LargeCTU;
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
   bool      m_BIO;
-  bool      m_DisableMotionCompression;
-  unsigned  m_MTT;
-#if ENABLE_WPP_PARALLELISM
-  bool      m_AltDQPCoding;
-#endif
   int       m_LMChroma;
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
   bool      m_cclmCollocatedChromaFlag;
@@ -223,6 +217,12 @@ protected:
 #else
   int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
   int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
+#endif
+#if JVET_M0303_IMPLICIT_MTS
+  int       m_MTSImplicit;
+#endif
+#if JVET_M0140_SBT
+  bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
 #endif
 
   bool      m_compositeRefEnabled;
@@ -237,7 +237,21 @@ protected:
 
   bool      m_MHIntra;
   bool      m_Triangle;
-
+#if JVET_M0253_HASH_ME
+  bool      m_HashME;
+#endif
+#if JVET_M0255_FRACMMVD_SWITCH
+  bool      m_allowDisFracMMVD;
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  bool      m_AffineAmvr;
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  bool      m_AffineAmvrEncOpt;
+#endif
+#if JVET_M0147_DMVR
+  bool      m_DMVR;
+#endif
 
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
@@ -246,12 +260,17 @@ protected:
   unsigned  m_IBCHashSearchMaxCand;
   unsigned  m_IBCHashSearchRange4SmallBlk;
   unsigned  m_IBCFastMethod;
-  
+
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-
+#if JVET_M0427_INLOOP_RESHAPER
+  bool      m_lumaReshapeEnable;
+  uint32_t  m_reshapeSignalType;
+  uint32_t  m_intraCMD;
+  ReshapeCW m_reshapeCW;
+#endif
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
   unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)
@@ -524,6 +543,9 @@ protected:
   int         m_verbosity;
 
   std::string m_decodeBitstreams[2];                          ///< filename for decode bitstreams.
+#if JVET_M0055_DEBUG_CTU
+  int         m_debugCTU;
+#endif  
   int         m_switchPOC;                                    ///< dbg poc.
   int         m_switchDQP;                                    ///< switch DQP.
   int         m_fastForwardToPOC;                             ///< get to encoding the specified POC as soon as possible by skipping temporal layers irrelevant for the specified POC

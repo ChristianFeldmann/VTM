@@ -215,17 +215,17 @@ protected:
   int       m_FastIntraEMT;
   int       m_FastInterEMT;
 #endif
-  bool      m_LargeCTU;
+#if JVET_M0303_IMPLICIT_MTS
+  int       m_ImplicitMTS;
+#endif
+#if JVET_M0140_SBT
+  bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
+#endif
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
   bool      m_BIO;
-  bool      m_DisableMotionCompression;
-  unsigned  m_MTTMode;
 
-#if ENABLE_WPP_PARALLELISM
-  bool      m_AltDQPCoding;
-#endif
   bool      m_compositeRefEnabled;        //composite reference
   bool      m_GBi;
   bool      m_GBiFast;
@@ -238,7 +238,21 @@ protected:
 
   bool      m_MHIntra;
   bool      m_Triangle;
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  bool      m_allowDisFracMMVD;
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  bool      m_AffineAmvr;
+#endif
+#if JVET_M0253_HASH_ME
+  bool      m_HashME;
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  bool      m_AffineAmvrEncOpt;
+#endif
+#if JVET_M0147_DMVR
+  bool      m_DMVR;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -246,12 +260,17 @@ protected:
   unsigned  m_IBCHashSearchMaxCand;
   unsigned  m_IBCHashSearchRange4SmallBlk;
   unsigned  m_IBCFastMethod;
-  
+
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
-
+#if JVET_M0427_INLOOP_RESHAPER
+  bool      m_lumaReshapeEnable;
+  unsigned  m_reshapeSignalType;
+  unsigned  m_intraCMD;
+  ReshapeCW m_reshapeCW;
+#endif
   bool      m_useFastLCTU;
   bool      m_useFastMrg;
   bool      m_usePbIntraFast;
@@ -302,8 +321,8 @@ protected:
 
   int       m_chromaCbQpOffset;                 //  Chroma Cb QP Offset (0:default)
   int       m_chromaCrQpOffset;                 //  Chroma Cr Qp Offset (0:default)
-  int       m_chromaCbQpOffsetDualTree;         //  Chroma Cb QP Offset for dual tree 
-  int       m_chromaCrQpOffsetDualTree;         //  Chroma Cr Qp Offset for dual tree 
+  int       m_chromaCbQpOffsetDualTree;         //  Chroma Cb QP Offset for dual tree
+  int       m_chromaCrQpOffsetDualTree;         //  Chroma Cr Qp Offset for dual tree
 #if ER_CHROMA_QP_WCG_PPS
   WCGChromaQPControl m_wcgChromaQpControl;                    ///< Wide-colour-gamut chroma QP control.
 #endif
@@ -547,6 +566,9 @@ protected:
   int         m_switchDQP;                                    ///< dqp applied to  switchPOC and subsequent pictures.
   int         m_fastForwardToPOC;                             ///<
   bool        m_stopAfterFFtoPOC;                             ///<
+#if JVET_M0055_DEBUG_CTU
+  int         m_debugCTU;                                     ///< dbg ctu
+#endif
   bool        m_bs2ModPOCAndType;
 
 
@@ -678,9 +700,6 @@ public:
   void      setDualITree                    ( bool b )       { m_dualITree = b; }
   bool      getDualITree                    ()         const { return m_dualITree; }
 
-  void      setLargeCTU                     ( bool b )       { m_LargeCTU = b; }
-  bool      getLargeCTU                     ()         const { return m_LargeCTU; }
-
   void      setUseLMChroma                  ( int n )        { m_LMChroma = n; }
   int       getUseLMChroma()                           const { return m_LMChroma; }
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
@@ -697,16 +716,6 @@ public:
   bool      getAffineType()                            const { return m_AffineType; }
   void      setBIO(bool b)                                   { m_BIO = b; }
   bool      getBIO()                                   const { return m_BIO; }
-  void      setDisableMotionCompression     ( bool b )       { m_DisableMotionCompression = b; }
-  bool      getDisableMotionCompression     ()         const { return m_DisableMotionCompression; }
-
-
-  void      setMTTMode                      ( unsigned u )   { m_MTTMode = u; }
-  unsigned  getMTTMode                      ()         const { return m_MTTMode; }
-#if ENABLE_WPP_PARALLELISM
-  void      setUseAltDQPCoding              ( bool b )       { m_AltDQPCoding = b; }
-  bool      getUseAltDQPCoding              ()         const { return m_AltDQPCoding; }
-#endif
 
 #if JVET_M0464_UNI_MTS
   void      setIntraMTSMaxCand              ( unsigned u )   { m_IntraMTSMaxCand = u; }
@@ -727,9 +736,14 @@ public:
   void      setInterEMT                     ( bool b )       { m_InterEMT = b; }
   bool      getInterEMT                     ()         const { return m_InterEMT; }
 #endif
-
-
-
+#if JVET_M0303_IMPLICIT_MTS
+  void      setImplicitMTS                  ( bool b )       { m_ImplicitMTS = b; }
+  bool      getImplicitMTS                  ()         const { return m_ImplicitMTS; }
+#endif
+#if JVET_M0140_SBT
+  void      setUseSBT                       ( bool b )       { m_SBT = b; }
+  bool      getUseSBT                       ()         const { return m_SBT; }
+#endif
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }
@@ -754,7 +768,26 @@ public:
   bool      getUseMHIntra                   ()         const { return m_MHIntra; }
   void      setUseTriangle                  ( bool b )       { m_Triangle = b; }
   bool      getUseTriangle                  ()         const { return m_Triangle; }
-
+#if JVET_M0255_FRACMMVD_SWITCH
+  void      setAllowDisFracMMVD             ( bool b )       { m_allowDisFracMMVD = b;    }
+  bool      getAllowDisFracMMVD             ()         const { return m_allowDisFracMMVD; }
+#endif
+#if JVET_M0253_HASH_ME
+  void      setUseHashME                    ( bool b )       { m_HashME = b; }
+  bool      getUseHashME                    ()         const { return m_HashME; }
+#endif
+#if JVET_M0246_AFFINE_AMVR
+  void      setUseAffineAmvr                ( bool b )       { m_AffineAmvr = b;    }
+  bool      getUseAffineAmvr                ()         const { return m_AffineAmvr; }
+#endif
+#if JVET_M0247_AFFINE_AMVR_ENCOPT
+  void      setUseAffineAmvrEncOpt          ( bool b )       { m_AffineAmvrEncOpt = b;    }
+  bool      getUseAffineAmvrEncOpt          ()         const { return m_AffineAmvrEncOpt; }
+#endif
+#if JVET_M0147_DMVR
+  void      setDMVR                      ( bool b )       { m_DMVR = b; }
+  bool      getDMVR                      ()         const { return m_DMVR; }
+#endif
 
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }
@@ -778,7 +811,16 @@ public:
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 
-
+#if JVET_M0427_INLOOP_RESHAPER
+  void      setReshaper                     ( bool b )                   { m_lumaReshapeEnable = b; }
+  bool      getReshaper                     () const                     { return m_lumaReshapeEnable; }
+  void      setReshapeSignalType            ( uint32_t signalType )      { m_reshapeSignalType = signalType; }
+  uint32_t  getReshapeSignalType            () const                     { return m_reshapeSignalType; }
+  void      setReshapeIntraCMD              (uint32_t intraCMD)          { m_intraCMD = intraCMD; }
+  uint32_t  getReshapeIntraCMD              ()                           { return m_intraCMD; }
+  void      setReshapeCW                    (const ReshapeCW &reshapeCW) { m_reshapeCW = reshapeCW; }
+  const ReshapeCW& getReshapeCW             ()                           { return m_reshapeCW; }
+#endif
   void      setMaxCUWidth                   ( uint32_t  u )      { m_maxCUWidth  = u; }
   uint32_t      getMaxCUWidth                   () const         { return m_maxCUWidth; }
   void      setMaxCUHeight                  ( uint32_t  u )      { m_maxCUHeight = u; }
@@ -1420,7 +1462,10 @@ public:
   bool         getStopAfterFFtoPOC()                           const { return m_stopAfterFFtoPOC; }
   void         setBs2ModPOCAndType( bool b )                         { m_bs2ModPOCAndType = b; }
   bool         getBs2ModPOCAndType()                           const { return m_bs2ModPOCAndType; }
-
+#if JVET_M0055_DEBUG_CTU
+  void         setDebugCTU( int i )                                  { m_debugCTU = i; }
+  int          getDebugCTU()                                   const { return m_debugCTU; }
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   void         setNumSplitThreads( int n )                           { m_numSplitThreads = n; }
@@ -1441,5 +1486,5 @@ public:
 };
 
 //! \}
-  
+
 #endif // !defined(AFX_TENCCFG_H__6B99B797_F4DA_4E46_8E78_7656339A6C41__INCLUDED_)

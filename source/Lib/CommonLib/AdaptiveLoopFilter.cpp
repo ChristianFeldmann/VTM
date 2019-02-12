@@ -135,7 +135,7 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
   int numFilters = isLuma( channel ) ? alfSliceParam.numLumaFilters : 1;
   short* coeff = isLuma( channel ) ? alfSliceParam.lumaCoeff : alfSliceParam.chromaCoeff;
 
-  if( alfSliceParam.coeffDeltaPredModeFlag && isLuma( channel ) )
+  if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag && isLuma( channel ) )
   {
     for( int i = 1; i < numFilters; i++ )
     {
@@ -167,7 +167,7 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
     memcpy( m_coeffFinal + classIdx * MAX_NUM_ALF_LUMA_COEFF, coeff + filterIdx * MAX_NUM_ALF_LUMA_COEFF, sizeof( int16_t ) * numCoeff );
   }
 
-  if( bRedo && alfSliceParam.coeffDeltaPredModeFlag )
+  if( bRedo && alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
   {
     for( int i = numFilters - 1; i > 0; i-- )
     {

@@ -4437,26 +4437,7 @@ void EncCu::xCalDebCost(CodingStructure &cs, Partitioner &partitioner, bool calD
     distTmp = distTmp < 0 ? -distTmp : distTmp;
     cs.costDbOffset = sign * m_pcRdCost->calcRdCost(0, distTmp);
   }
-  /*
-  else if (calDist)
-  {
-    const UnitArea currCsArea = clipArea(CS::getArea(cs, cs.area, partitioner.chType), *cs.picture);
-    ComponentID compStr = (CS::isDualITree(cs) && !isLuma(partitioner.chType)) ? COMPONENT_Cb : COMPONENT_Y;
-    ComponentID compEnd = (CS::isDualITree(cs) && isLuma(partitioner.chType)) ? COMPONENT_Y : COMPONENT_Cr;
-    Distortion finalDistortion = 0;
-    for (int comp = compStr; comp <= compEnd; comp++)
-    {
-      const ComponentID compID = ComponentID(comp);
-      CPelBuf org = cs.getOrgBuf(compID);
-      CPelBuf reco = cs.getRecoBuf(compID);
-      finalDistortion += getDistortionDb(cs, org, reco, compID, currCsArea.block(compID), false);
-    }
-    //updated cost
-    cs.dist = finalDistortion;
-    cs.cost = m_pcRdCost->calcRdCost(cs.fracBits, cs.dist);
-    cs.costDbOffset = 0;
-  }
-  */
+
   m_pcLoopFilter->setEnc(false);
 }
 

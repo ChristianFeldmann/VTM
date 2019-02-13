@@ -2319,6 +2319,8 @@ void PU::getInterMMVDMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx,
       mrgCtx.mmvdBaseMv[k][0] = MvField(Mv(0, 0), 0);
       mrgCtx.mmvdBaseMv[k][0] = MvField(Mv(0, 0), 0);
 #endif
+      mrgCtx.GBiIdx[k] = GBI_DEFAULT;
+      mrgCtx.interDirNeighbours[k] = (mrgCtx.mmvdBaseMv[k][0].refIdx >= 0) + (mrgCtx.mmvdBaseMv[k][1].refIdx >= 0) * 2;
     }
   }
 }

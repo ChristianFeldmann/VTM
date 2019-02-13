@@ -1549,7 +1549,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       setNewestBgPOC(pocCurr);
       setLastLTRefPoc(pocCurr);
     }
-    else if (pcPic->cs->sps->getUseCompositeRef() && getLastLTRefPoc() >= 0 && getEncodedLTRef()==false && !getPicBg()->getSpliceFull() && (pocCurr - getLastLTRefPoc()) > (m_pcCfg->getFrameRate() * 2))
+    else if (m_pcCfg->getUseCompositeRef() && getLastLTRefPoc() >= 0 && getEncodedLTRef()==false && !getPicBg()->getSpliceFull() && (pocCurr - getLastLTRefPoc()) > (m_pcCfg->getFrameRate() * 2))
     {
       setUseLTRef(false);
       setPrepareLTRef(false);
@@ -1558,7 +1558,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       setLastLTRefPoc(-1);
     }
 
-    if (pcPic->cs->sps->getUseCompositeRef() && m_picBg->getSpliceFull() && getUseLTRef())
+    if (m_pcCfg->getUseCompositeRef() && m_picBg->getSpliceFull() && getUseLTRef())
     {
       m_pcEncLib->selectReferencePictureSet(pcSlice, pocCurr, iGOPid, m_bgPOC);
     }
@@ -1672,7 +1672,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setNumRefIdx(REF_PIC_LIST_0, std::min(m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive, pcSlice->getRPS()->getNumberOfPictures()));
       pcSlice->setNumRefIdx(REF_PIC_LIST_1, std::min(m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive, pcSlice->getRPS()->getNumberOfPictures()));
     }
-    if (pcPic->cs->sps->getUseCompositeRef() && getPrepareLTRef()) {
+    if (m_pcCfg->getUseCompositeRef() && getPrepareLTRef()) {
       arrangeCompositeReference(pcSlice, rcListPic, pocCurr);
     }
 #if JVET_M0483_IBC==0
@@ -2475,7 +2475,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           pcPic->slices[s]->setAlfSliceParam( alfSliceParam );
         }
       }
-      if (pcPic->cs->sps->getUseCompositeRef() && getPrepareLTRef())
+      if (m_pcCfg->getUseCompositeRef() && getPrepareLTRef())
       {
         updateCompositeReference(pcSlice, rcListPic, pocCurr);
       }
@@ -2751,7 +2751,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
     m_bFirst = false;
     m_iNumPicCoded++;
-    if (!(pcPic->cs->sps->getUseCompositeRef() && isEncodeLtRef))
+    if (!(m_pcCfg->getUseCompositeRef() && isEncodeLtRef))
       m_totalCoded ++;
     /* logging: insert a newline at end of picture period */
 

@@ -339,8 +339,8 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setSliceBits(0);
   rpcSlice->setPic( pcPic );
   rpcSlice->initSlice();
-  int multipleFactor = pcPic->cs->sps->getUseCompositeRef() ? 2 : 1;
-  if (pcPic->cs->sps->getUseCompositeRef() && isEncodeLtRef)
+  int multipleFactor = m_pcCfg->getUseCompositeRef() ? 2 : 1;
+  if (m_pcCfg->getUseCompositeRef() && isEncodeLtRef)
   {
     rpcSlice->setPicOutputFlag(false);
   }

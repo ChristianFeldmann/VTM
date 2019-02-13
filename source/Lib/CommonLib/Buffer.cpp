@@ -448,7 +448,12 @@ void AreaBuf<Pel>::scaleSignal(const int scale, const bool dir, const ClpRng& cl
       {
         sign = src[x] >= 0 ? 1 : -1;
         absval = sign * src[x];
-        dst[x] = sign * ((absval * scale + (1 << (CSCALE_FP_PREC - 1))) >> CSCALE_FP_PREC);
+        int val = sign * ((absval * scale + (1 << (CSCALE_FP_PREC - 1))) >> CSCALE_FP_PREC);
+        if (sizeof(Pel) == 2) // avoid overflow when storing data
+        {
+           val = Clip3<int>(-32768, 32767, val);
+        }
+        dst[x] = (Pel)val;
       }
       dst += stride;
       src += stride;

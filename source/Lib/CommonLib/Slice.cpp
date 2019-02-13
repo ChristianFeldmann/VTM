@@ -1964,7 +1964,6 @@ SPS::SPS()
 #if JVET_M0427_INLOOP_RESHAPER
 , m_lumaReshapeEnable         (false)
 #endif
-// KJS: BEGIN former SPSNext parameters
 , m_AMVREnabledFlag                       ( false )
 , m_LMChroma                  ( false )
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
@@ -1987,11 +1986,9 @@ SPS::SPS()
 , m_LadfQpOffset              { 0 }
 , m_LadfIntervalLowerBound    { 0 }
 #endif
-, m_compositeRefEnabled     ( false )
 #if !JVET_M0483_IBC
 , m_IBCMode                   ( 0 )
 #endif
-// KJS: END former SPSNext parameters
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {

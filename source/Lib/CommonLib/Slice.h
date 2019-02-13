@@ -949,9 +949,8 @@ private:
 #if JVET_M0427_INLOOP_RESHAPER
   bool              m_lumaReshapeEnable;
 #endif
-  // KJS: BEGIN former SPSNext parameters
   bool              m_AMVREnabledFlag;
-  bool              m_LMChroma;                   // 17
+  bool              m_LMChroma;
 #if JVET_M0142_CCLM_COLLOCATED_CHROMA
   bool              m_cclmCollocatedChromaFlag;
 #endif
@@ -977,12 +976,9 @@ private:
   int               m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
   
-  bool        m_compositeRefEnabled;        //composite longterm reference
 #if !JVET_M0483_IBC
   unsigned    m_IBCMode;
 #endif
-  // KJS: END former SPSNext parameters
-
 
 public:
 
@@ -1217,7 +1213,6 @@ public:
   uint8_t                 getMaxSbtSize() const                                                           { return m_MaxSbtSize; }
 #endif
   
-  // KJS: BEGIN former SPSNext parameters
   void      setAMVREnabledFlag    ( bool b )                                        { m_AMVREnabledFlag = b; }
   bool      getAMVREnabledFlag    ()                                      const     { return m_AMVREnabledFlag; }
   void      setUseAffine          ( bool b )                                        { m_Affine = b; }
@@ -1262,10 +1257,7 @@ public:
   void      setLadfIntervalLowerBound( int value, int idx )                         { m_LadfIntervalLowerBound[ idx ] = value; }
   int       getLadfIntervalLowerBound( int idx )                          const     { return m_LadfIntervalLowerBound[ idx ]; }
 #endif
-  // KJS: this is encoder only, right?  
-  void      setUseCompositeRef(bool b) { m_compositeRefEnabled = b; }
-  bool      getUseCompositeRef()                                      const { return m_compositeRefEnabled; }
-  
+ 
   void      setUseMHIntra         ( bool b )                                        { m_MHIntra = b; }
   bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
   void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
@@ -1274,7 +1266,6 @@ public:
   void      setIBCMode            (unsigned IBCMode)                                { m_IBCMode = IBCMode; }
   unsigned  getIBCMode            ()                                      const     { return m_IBCMode; }
 #endif
-  // KJS: END former SPSNext parameters
 };
 
 

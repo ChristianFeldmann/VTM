@@ -2664,6 +2664,9 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 #if JVET_M0102_INTRA_SUBPARTITIONS
   useEmt = useEmt && !cu.ispMode;
 #endif
+#if JVET_M0140_SBT
+  useEmt = useEmt && !cu.sbtInfo;
+#endif
 #endif
 
   for( int subSetId = ( cctx.scanPosLast() >> cctx.log2CGSize() ); subSetId >= 0; subSetId--)
@@ -2775,6 +2778,12 @@ void CABACWriter::transform_skip_flag( const TransformUnit& tu, ComponentID comp
   {
     return;
   }
+#if JVET_M0140_SBT
+  if( tu.cu->sbtInfo )
+  {
+    return;
+  }
+#endif
   m_BinEncoder.encodeBin( tu.transformSkip[compID], Ctx::TransformSkipFlag(toChannelType(compID)) );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "transform_skip_flag() etype=%d pos=(%d,%d) trSkip=%d\n", compID, tu.blocks[compID].x, tu.blocks[compID].y, (int)tu.transformSkip[compID] );
@@ -2806,6 +2815,12 @@ void CABACWriter::emt_cu_flag( const CodingUnit& cu )
 {
 #if JVET_M0102_INTRA_SUBPARTITIONS
   if ( CU::isIntra( cu ) && cu.ispMode )
+  {
+    return;
+  }
+#endif
+#if JVET_M0140_SBT
+  if( cu.sbtInfo )
   {
     return;
   }

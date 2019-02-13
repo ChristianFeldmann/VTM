@@ -6396,6 +6396,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       {
         checkTransformSkip[compID]  &= !tu.cu->emtFlag;
       }
+#if JVET_M0140_SBT
+      checkTransformSkip[compID] &= !tu.cu->sbtInfo;
+#endif
 #endif
 
       const bool isCrossCPredictionAvailable = TU::hasCrossCompPredInfo( tu, compID );
@@ -6457,8 +6460,13 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #if JVET_M0464_UNI_MTS
       const int numTransformCandidates = nNumTransformCands;
 #else
+#if JVET_M0140_SBT
+      const int numEmtTransformCandidates   = isLuma(compID) && tu.cu->emtFlag && sps.getUseInterEMT() && (m_histBestMtsIdx == MAX_UCHAR || !sps.getUseSBT()) ? 4 : 1;
+      const int numTransformCandidates      = tu.noResidual ? 1 : (checkTransformSkip[compID] ? (numEmtTransformCandidates + 1) : numEmtTransformCandidates);
+#else
       const int numEmtTransformCandidates   = isLuma(compID) && tu.cu->emtFlag && sps.getUseInterEMT() ? 4 : 1;
       const int numTransformCandidates      = checkTransformSkip[compID] ? ( numEmtTransformCandidates + 1 ) : numEmtTransformCandidates;
+#endif
       int lastTransformModeIndex            = numTransformCandidates - 1; //lastTransformModeIndex is the mode for transformSkip (if transformSkip is active)
 #endif
       const bool isOneMode                  = crossCPredictionModesToTest == 1 && numTransformCandidates == 1;
@@ -6492,7 +6500,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             tu.mtsIdx = trModes[transformMode].first;
           }
 #else
+#if JVET_M0140_SBT
+          if( isLuma( compID ) ) tu.emtIdx = (m_histBestMtsIdx == MAX_UCHAR || !sps.getUseSBT()) ? transformMode : m_histBestMtsIdx;
+#else
           if( isLuma( compID ) ) tu.emtIdx = transformMode;
+#endif
           tu.transformSkip[compID]  = checkTransformSkip[compID] && transformMode == lastTransformModeIndex;
 #endif
           tu.compAlpha[compID]      = bUseCrossCPrediction ? preCalcAlpha : 0;

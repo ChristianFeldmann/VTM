@@ -718,10 +718,18 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   bestCS->chType = partitioner.chType;
   m_modeCtrl->initCULevel( partitioner, *tempCS );
 #if JVET_M0140_SBT
+#if JVET_M0464_UNI_MTS
   if( partitioner.currQtDepth == 0 && partitioner.currMtDepth == 0 && !tempCS->slice->isIntra() && ( sps.getUseSBT() || sps.getUseInterMTS() ) )
+#else
+  if( partitioner.currQtDepth == 0 && partitioner.currMtDepth == 0 && !tempCS->slice->isIntra() && ( sps.getUseSBT() || sps.getUseInterEMT() ) )
+#endif
   {
     auto slsSbt = dynamic_cast<SaveLoadEncInfoSbt*>( m_modeCtrl );
+#if JVET_M0464_UNI_MTS
     int maxSLSize = sps.getUseSBT() ? tempCS->slice->getSPS()->getMaxSbtSize() : MTS_INTER_MAX_CU_SIZE;
+#else
+    int maxSLSize = sps.getUseSBT() ? tempCS->slice->getSPS()->getMaxSbtSize() : EMT_INTER_MAX_CU_WITH_QTBT;
+#endif
     slsSbt->resetSaveloadSbt( maxSLSize );
   }
   m_sbtCostSave[0] = m_sbtCostSave[1] = MAX_DOUBLE;
@@ -4237,7 +4245,11 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
     }
   }
 #if JVET_M0140_SBT
+#if JVET_M0464_UNI_MTS
   const bool mtsAllowed = tempCS->sps->getUseInterMTS() && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
+#else
+  const bool mtsAllowed = considerEmtSecondPass;
+#endif
   uint8_t sbtAllowed = cu->checkAllowedSbt();
   uint8_t numRDOTried = 0;
   Distortion sbtOffDist = 0;
@@ -4335,7 +4347,11 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
 #endif
     m_pcInterSearch->encodeResAndCalcRdInterCU( *tempCS, partitioner, skipResidual );
 #if JVET_M0140_SBT
+#if JVET_M0464_UNI_MTS
     numRDOTried += mtsAllowed ? 2 : 1;
+#else
+    numRDOTried++;
+#endif
 #endif
     xEncodeDontSplit( *tempCS, partitioner );
 
@@ -4400,12 +4416,31 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
       }
     }
 #if JVET_M0140_SBT
+#if JVET_M0464_UNI_MTS
     currBestCost = tempCS->cost;
     sbtOffCost = tempCS->cost;
     sbtOffDist = tempCS->dist;
     sbtOffRootCbf = cu->rootCbf;
     currBestSbt = CU::getSbtInfo( cu->firstTU->mtsIdx > 1 ? SBT_OFF_MTS : SBT_OFF_DCT, 0 );
     currBestTrs = cu->firstTU->mtsIdx;
+#else
+    if( curEmtMode == 0 )
+    {
+      currBestCost = tempCS->cost;
+      sbtOffCost = tempCS->cost;
+      sbtOffDist = tempCS->dist;
+      sbtOffRootCbf = cu->rootCbf;
+    }
+    else
+    {
+      if( tempCS->cost < currBestCost )
+      {
+        currBestSbt = CU::getSbtInfo(SBT_OFF_MTS, 0);
+        currBestTrs = cu->firstTU->emtIdx;
+        currBestCost = tempCS->cost;
+      }
+    }
+#endif
     if( cu->lwidth() <= MAX_TU_SIZE_FOR_PROFILE && cu->lheight() <= MAX_TU_SIZE_FOR_PROFILE )
     {
       CHECK( tempCS->tus.size() != 1, "tu must be only one" );
@@ -4421,7 +4456,11 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
 
 #if !JVET_M0464_UNI_MTS
     //now we check whether the second pass should be skipped or not
+#if JVET_M0140_SBT
+    if( !curEmtMode && maxEMTMode && !CU::isMtsMode(histBestSbt) )
+#else
     if( !curEmtMode && maxEMTMode )
+#endif
     {
       const double thresholdToSkipEmtSecondPass = 1.1; // Skip checking EMT transforms
       const bool bCond1 = !cu->firstTU->cbf[COMPONENT_Y];
@@ -4439,10 +4478,20 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
 #endif
 
 #if JVET_M0140_SBT //RDO for SBT
+#if !JVET_M0464_UNI_MTS // skip EMT
+    if( histBestSbt != MAX_UCHAR && !CU::isMtsMode(histBestSbt) )
+    {
+      maxEMTMode = 0;
+    }
+#endif
     uint8_t numSbtRdo = CU::numSbtModeRdo( sbtAllowed );
     //early termination if all SBT modes are not allowed
     //normative
+#if JVET_M0464_UNI_MTS
     if( !sbtAllowed || skipResidual )
+#else
+    if( !sbtAllowed || skipResidual || cu->emtFlag )
+#endif
     {
       numSbtRdo = 0;
     }
@@ -4535,6 +4584,9 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
       tempCS->dist = 0;
       tempCS->fracBits = 0;
       tempCS->cost = MAX_DOUBLE;
+#if !JVET_M0464_UNI_MTS
+      cu->emtFlag = curEmtMode;
+#endif
       cu->skip = false;
 
       //set SBT info
@@ -4568,7 +4620,11 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
       if( tempCS->cost < currBestCost )
       {
         currBestSbt = cu->sbtInfo;
+#if JVET_M0464_UNI_MTS
         currBestTrs = tempCS->tus[cu->sbtInfo ? cu->getSbtPos() : 0]->mtsIdx;
+#else
+        currBestTrs = tempCS->tus[cu->sbtInfo ? cu->getSbtPos() : 0]->emtIdx;
+#endif
         assert( currBestTrs == 0 || currBestTrs == 1 );
         currBestCost = tempCS->cost;
       }

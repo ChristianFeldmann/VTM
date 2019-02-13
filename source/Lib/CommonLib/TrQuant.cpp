@@ -320,8 +320,13 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
 
     if( sbtIdx == SBT_VER_HALF || sbtIdx == SBT_VER_QUAD )
     {
+#if JVET_M0464_UNI_MTS
       assert( tu.lwidth() <= MTS_INTER_MAX_CU_SIZE );
       if( tu.lheight() > MTS_INTER_MAX_CU_SIZE )
+#else
+      assert( tu.lwidth() <= EMT_INTER_MAX_CU_WITH_QTBT );
+      if( tu.lheight() > EMT_INTER_MAX_CU_WITH_QTBT )
+#endif
       {
         trTypeHor = trTypeVer = DCT2;
       }
@@ -333,8 +338,13 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
     }
     else
     {
+#if JVET_M0464_UNI_MTS
       assert( tu.lheight() <= MTS_INTER_MAX_CU_SIZE );
       if( tu.lwidth() > MTS_INTER_MAX_CU_SIZE )
+#else
+      assert( tu.lheight() <= EMT_INTER_MAX_CU_WITH_QTBT );
+      if( tu.lwidth() > EMT_INTER_MAX_CU_WITH_QTBT )
+#endif
       {
         trTypeHor = trTypeVer = DCT2;
       }

@@ -813,14 +813,19 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setMaxChromaFormatConstraintIdc(m_chromaFormatConstraintValue);
   sps.setFrameConstraintFlag(m_frameOnlyConstraintFlag);
   sps.setNoQtbttDualTreeIntraConstraintFlag(!m_dualITree);
-  sps.setNoCclmConstraintFlag(m_LMChroma ? false : true);
   sps.setNoSaoConstraintFlag(!m_bUseSAO);
   sps.setNoAlfConstraintFlag(!m_alf);
   sps.setNoPcmConstraintFlag(!m_usePCM);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  sps.setNoRefWraparoundConstraintFlag(!m_bNoRefWraparoundConstraintFlag);
+#endif
   sps.setNoTemporalMvpConstraintFlag(m_TMVPModeId ? false : true);
   sps.setNoSbtmvpConstraintFlag(m_SubPuMvpMode ? false : true);
   sps.setNoAmvrConstraintFlag(!m_bNoAmvrConstraintFlag);
-  sps.setNoAffineMotionConstraintFlag(!m_Affine);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  sps.setNoBdofConstraintFlag(!m_BIO);
+#endif
+  sps.setNoCclmConstraintFlag(m_LMChroma ? false : true);
 #if JVET_M0464_UNI_MTS
 #if JVET_M0303_IMPLICIT_MTS
   sps.setNoMtsConstraintFlag((m_IntraMTS || m_InterMTS || m_ImplicitMTS) ? false : true);
@@ -834,7 +839,17 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setNoMtsConstraintFlag((m_IntraEMT || m_InterEMT) ? false : true);
 #endif
 #endif
+  sps.setNoAffineMotionConstraintFlag(!m_Affine);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  sps.setNoGbiConstraintFlag(!m_GBi);
+  sps.setNoMhIntraConstraintFlag(!m_MHIntra);
+  sps.setNoTriangleConstraintFlag(!m_Triangle);
+#endif
   sps.setNoLadfConstraintFlag(!m_LadfEnabled);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  sps.setNoCurrPicRefConstraintFlag(!m_IBCMode);
+  sps.setNoQpDeltaConstraintFlag(!m_bNoQpDeltaConstraintFlag);
+#endif
   sps.setNoDepQuantConstraintFlag(!m_DepQuantEnabledFlag);
   sps.setNoSignDataHidingConstraintFlag(!m_SignDataHidingEnabledFlag);
   ProfileTierLevel& profileTierLevel = *sps.getPTL()->getGeneralPTL();

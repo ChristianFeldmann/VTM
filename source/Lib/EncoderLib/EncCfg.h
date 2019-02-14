@@ -139,16 +139,31 @@ protected:
   uint32_t  m_maxChromaFormatConstraintIdc;
   bool      m_bFrameConstraintFlag;
   bool      m_bNoQtbttDualTreeIntraConstraintFlag;
-  bool      m_bNoCclmConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
   bool      m_bNoPcmConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      m_bNoRefWraparoundConstraintFlag;
+#endif
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
   bool      m_bNoAmvrConstraintFlag;
-  bool      m_bNoAffineMotionConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      m_bNoBdofConstraintFlag;
+#endif
+  bool      m_bNoCclmConstraintFlag;
   bool      m_bNoMtsConstraintFlag;
+  bool      m_bNoAffineMotionConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      m_bNoGbiConstraintFlag;
+  bool      m_bNoMhIntraConstraintFlag;
+  bool      m_bNoTriangleConstraintFlag;
+#endif
   bool      m_bNoLadfConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      m_bNoCurrPicRefConstraintFlag;
+  bool      m_bNoQpDeltaConstraintFlag;
+#endif
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
 
@@ -612,26 +627,48 @@ public:
   void      setFrameConstraintFlag(bool bVal) { m_bFrameConstraintFlag = bVal; }
   bool      getNoQtbttDualTreeIntraConstraintFlag() const { return m_bNoQtbttDualTreeIntraConstraintFlag; }
   void      setNoQtbttDualTreeIntraConstraintFlag(bool bVal) { m_bNoQtbttDualTreeIntraConstraintFlag = bVal; }
-  bool      getNoCclmConstraintFlag() const { return m_bNoCclmConstraintFlag; }
-  void      setNoCclmConstraintFlag(bool bVal) { m_bNoCclmConstraintFlag = bVal; }
   bool      getNoSaoConstraintFlag() const { return m_bNoSaoConstraintFlag; }
   void      setNoSaoConstraintFlag(bool bVal) { m_bNoSaoConstraintFlag = bVal; }
   bool      getNoAlfConstraintFlag() const { return m_bNoAlfConstraintFlag; }
   void      setNoAlfConstraintFlag(bool bVal) { m_bNoAlfConstraintFlag = bVal; }
   bool      getNoPcmConstraintFlag() const { return m_bNoPcmConstraintFlag; }
   void      setNoPcmConstraintFlag(bool bVal) { m_bNoPcmConstraintFlag = bVal; }
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      getNoRefWraparoundConstraintFlag() const { return m_bNoRefWraparoundConstraintFlag; }
+  void      setNoRefWraparoundConstraintFlag(bool bVal) { m_bNoRefWraparoundConstraintFlag = bVal; }
+#endif
   bool      getNoTemporalMvpConstraintFlag() const { return m_bNoTemporalMvpConstraintFlag; }
   void      setNoTemporalMvpConstraintFlag(bool bVal) { m_bNoTemporalMvpConstraintFlag = bVal; }
   bool      getNoSbtmvpConstraintFlag() const { return m_bNoSbtmvpConstraintFlag; }
   void      setNoSbtmvpConstraintFlag(bool bVal) { m_bNoSbtmvpConstraintFlag = bVal; }
   bool      getNoAmvrConstraintFlag() const { return m_bNoAmvrConstraintFlag; }
   void      setNoAmvrConstraintFlag(bool bVal) { m_bNoAmvrConstraintFlag = bVal; }
-  bool      getNoAffineMotionConstraintFlag() const { return m_bNoAffineMotionConstraintFlag; }
-  void      setNoAffineMotionConstraintFlag(bool bVal) { m_bNoAffineMotionConstraintFlag = bVal; }
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      getNoBdofConstraintFlag() const { return m_bNoBdofConstraintFlag; }
+  void      setNoBdofConstraintFlag(bool bVal) { m_bNoBdofConstraintFlag = bVal; }
+#endif
+  bool      getNoCclmConstraintFlag() const { return m_bNoCclmConstraintFlag; }
+  void      setNoCclmConstraintFlag(bool bVal) { m_bNoCclmConstraintFlag = bVal; }
   bool      getNoMtsConstraintFlag() const { return m_bNoMtsConstraintFlag; }
   void      setNoMtsConstraintFlag(bool bVal) { m_bNoMtsConstraintFlag = bVal; }
+  bool      getNoAffineMotionConstraintFlag() const { return m_bNoAffineMotionConstraintFlag; }
+  void      setNoAffineMotionConstraintFlag(bool bVal) { m_bNoAffineMotionConstraintFlag = bVal; }
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      getNoGbiConstraintFlag() const { return m_bNoGbiConstraintFlag; }
+  void      setNoGbiConstraintFlag(bool bVal) { m_bNoGbiConstraintFlag = bVal; }
+  bool      getNoMhIntraConstraintFlag() const { return m_bNoMhIntraConstraintFlag; }
+  void      setNoMhIntraConstraintFlag(bool bVal) { m_bNoMhIntraConstraintFlag = bVal; }
+  bool      getNoTriangleConstraintFlag() const { return m_bNoTriangleConstraintFlag; }
+  void      setNoTriangleConstraintFlag(bool bVal) { m_bNoTriangleConstraintFlag = bVal; }
+#endif
   bool      getNoLadfConstraintFlag() const { return m_bNoLadfConstraintFlag; }
   void      setNoLadfConstraintFlag(bool bVal) { m_bNoLadfConstraintFlag = bVal; }
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      getNoCurrPicRefConstraintFlag() const { return m_bNoCurrPicRefConstraintFlag; }
+  void      setNoCurrPicRefConstraintFlag(bool bVal) { m_bNoCurrPicRefConstraintFlag = bVal; }
+  bool      getNoQpDeltaConstraintFlag() const { return m_bNoQpDeltaConstraintFlag; }
+  void      setNoQpDeltaConstraintFlag(bool bVal) { m_bNoQpDeltaConstraintFlag = bVal; }
+#endif
   bool      getNoDepQuantConstraintFlag() const { return m_bNoDepQuantConstraintFlag; }
   void      setNoDepQuantConstraintFlag(bool bVal) { m_bNoDepQuantConstraintFlag = bVal; }
   bool      getNoSignDataHidingConstraintFlag() const { return m_bNoSignDataHidingConstraintFlag; }

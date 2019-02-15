@@ -217,6 +217,9 @@ public:
   );
   int getReferencePictureSetIdxForSOP(int POCCurr, int GOPid );
 
+#if JCTVC_Y0038_PARAMS
+  void                   setParamSetChanged(int spsId, int ppsId);
+#endif
   bool                   PPSNeedsWriting(int ppsId);
   bool                   SPSNeedsWriting(int spsId);
   const PPS* getPPS( int Id ) { return m_ppsMap.getPS( Id); }

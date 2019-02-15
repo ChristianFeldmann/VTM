@@ -2512,9 +2512,20 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       /////////////////////////////////////////////////////////////////////////////////////////////////// File writing
 
       // write various parameter sets
+#if JCTVC_Y0038_PARAMS
+      bool writePS = m_bSeqFirst || (m_pcCfg->getReWriteParamSets() && (pcSlice->isIRAP()));
+      if (writePS)
+      {
+        m_pcEncLib->setParamSetChanged(pcSlice->getSPS()->getSPSId(), pcSlice->getPPS()->getPPSId());
+      }
+      actualTotalBits += xWriteParameterSets(accessUnit, pcSlice, writePS);
+      
+      if (writePS)
+#else
       actualTotalBits += xWriteParameterSets( accessUnit, pcSlice, m_bSeqFirst );
 
       if ( m_bSeqFirst )
+#endif
       {
         // create prefix SEI messages at the beginning of the sequence
         CHECK(!(leadingSeiMessages.empty()), "Unspecified error");

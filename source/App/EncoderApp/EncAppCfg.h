@@ -150,6 +150,9 @@ protected:
   bool      m_rdpcmEnabledFlag[NUMBER_OF_RDPCM_SIGNALLING_MODES];///< control flags for residual DPCM
   bool      m_persistentRiceAdaptationEnabledFlag;            ///< control flag for Golomb-Rice parameter adaptation over each slice
   bool      m_cabacBypassAlignmentEnabledFlag;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  bool      m_useFastISP;                                    ///< flag for enabling fast methods for ISP
+#endif
 
   // coding quality
 #if QP_SWITCHING_FOR_PARALLEL

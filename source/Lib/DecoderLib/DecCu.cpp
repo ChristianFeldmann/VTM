@@ -777,7 +777,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         if (cu.imv && !cu.cs->pcv->isEncoder)
 #endif
 #else
+#if JVET_M0246_AFFINE_AMVR
+        if (cu.imv && !pu.cu->affine)
+#else
         if (cu.imv)
+#endif
 #endif
         {
           PU::applyImv(pu, mrgCtx, m_pcInterPred);

@@ -47,7 +47,7 @@
 #include "CommonLib/UnitPartitioner.h"
 #include "CommonLib/IbcHashMap.h"
 
-#if REUSE_CU_RESULTS || JVET_M0170_MRG_SHARELIST
+#if REUSE_CU_RESULTS || JVET_M0170_MRG_SHARELIST || JVET_M0427_INLOOP_RESHAPER
 #include "DecoderLib/DecCu.h"
 #endif
 

@@ -176,11 +176,6 @@ void RdCost::init()
 
   m_motionLambda               = 0;
   m_iCostScale                 = 0;
-#if JVET_M0427_INLOOP_RESHAPER
-  m_signalType                 = RESHAPE_SIGNAL_NULL;
-  m_chromaWeight               = 1.0;
-  m_lumaBD                     = 10;
-#endif
 }
 
 
@@ -2868,9 +2863,9 @@ Distortion RdCost::xGetHADs( const DistParam &rcDtParam )
 
 #if WCG_EXT
 #if JVET_M0427_INLOOP_RESHAPER
-uint32_t   RdCost::m_signalType;
-double     RdCost::m_chromaWeight;
-int        RdCost::m_lumaBD;
+uint32_t   RdCost::m_signalType                 = RESHAPE_SIGNAL_NULL;
+double     RdCost::m_chromaWeight               = 1.0;
+int        RdCost::m_lumaBD                     = 10;
 std::vector<double> RdCost::m_reshapeLumaLevelToWeightPLUT;
 std::vector<double> RdCost::m_lumaLevelToWeightPLUT;
 #else

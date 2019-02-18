@@ -676,6 +676,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   TCoeff *deltaU       = m_deltaU;
 #endif
 
+  memset(piDstCoeff, 0, sizeof(*piDstCoeff) * uiMaxNumCoeff);
   memset( m_pdCostCoeff,  0, sizeof( double ) *  uiMaxNumCoeff );
   memset( m_pdCostSig,    0, sizeof( double ) *  uiMaxNumCoeff );
 #if HEVC_USE_SIGN_HIDING

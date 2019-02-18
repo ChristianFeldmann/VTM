@@ -47,7 +47,7 @@
 #include "CommonLib/UnitPartitioner.h"
 #include "CommonLib/IbcHashMap.h"
 
-#if REUSE_CU_RESULTS
+#if REUSE_CU_RESULTS || JVET_M0170_MRG_SHARELIST
 #include "DecoderLib/DecCu.h"
 #endif
 
@@ -79,7 +79,7 @@ struct TriangleMotionInfo
 };
 #endif
 class EncCu
-#if REUSE_CU_RESULTS
+#if REUSE_CU_RESULTS || JVET_M0170_MRG_SHARELIST || JVET_M0427_INLOOP_RESHAPER
   : DecCu
 #endif
 {
@@ -159,7 +159,7 @@ private:
 public:
   /// copy parameters from encoder class
   void  init                ( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int jId = 0 ) );
-#if JVET_M0427_INLOOP_RESHAPER && REUSE_CU_RESULTS
+#if JVET_M0427_INLOOP_RESHAPER
   void setDecCuReshaperInEncCU(EncReshape* pcReshape, ChromaFormat chromaFormatIDC) { initDecCuReshaper((Reshape*) pcReshape, chromaFormatIDC); }
 #endif
   /// create internal buffers

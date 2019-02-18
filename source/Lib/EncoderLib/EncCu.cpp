@@ -165,10 +165,8 @@ void EncCu::create( EncCfg* encCfg )
 
   m_modeCtrl = new EncModeCtrlMTnoRQT();
 
-#if REUSE_CU_RESULTS
   m_modeCtrl->create( *encCfg );
 
-#endif
   for (unsigned ui = 0; ui < MMVD_MRG_MAX_RD_BUF_NUM; ui++)
   {
     m_acMergeBuffer[ui].create( chromaFormat, Area( 0, 0, uiMaxWidth, uiMaxHeight ) );
@@ -333,7 +331,7 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   m_shareBndSizeH = 0;
 #endif
 
-#if REUSE_CU_RESULTS
+#if REUSE_CU_RESULTS || JVET_M0170_MRG_SHARELIST || JVET_M0427_INLOOP_RESHAPER
   DecCu::init( m_pcTrQuant, m_pcIntraSearch, m_pcInterSearch );
 
 #endif

@@ -1657,7 +1657,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       resetGbiCodingOrder(false, cs);
       m_pcInterSearch->initWeightIdxBits();
     }
-#if JVET_M0427_INLOOP_RESHAPER && REUSE_CU_RESULTS
+#if JVET_M0427_INLOOP_RESHAPER
     if (pcSlice->getSPS()->getUseReshaper())
     {
       m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());

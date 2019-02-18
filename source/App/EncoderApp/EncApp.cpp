@@ -116,6 +116,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setIntraPeriod                                       ( m_iIntraPeriod );
   m_cEncLib.setDecodingRefreshType                               ( m_iDecodingRefreshType );
   m_cEncLib.setGOPSize                                           ( m_iGOPSize );
+#if JCTVC_Y0038_PARAMS
+  m_cEncLib.setReWriteParamSets                                  ( m_rewriteParamSets );
+#endif
   m_cEncLib.setGopList                                           ( m_GOPList );
   m_cEncLib.setExtraRPSs                                         ( m_extraRPSs );
   for(int i = 0; i < MAX_TLAYER; i++)

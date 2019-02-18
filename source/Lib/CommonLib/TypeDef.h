@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JCTVC_Y0038_PARAMS                                1
+
 #define JVET_M0451_INTEROPERABILITY_POINT_SYNTAX          1 
 
 #define JVET_M0055_DEBUG_CTU                              1 // DebugCTU encoder debug option

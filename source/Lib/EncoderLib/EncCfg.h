@@ -184,6 +184,9 @@ protected:
   //====== Coding Structure ========
   uint32_t      m_uiIntraPeriod;                    // TODO: make this an int - it can be -1!
   uint32_t      m_uiDecodingRefreshType;            ///< the type of decoding refresh employed for the random access.
+#if JCTVC_Y0038_PARAMS
+  bool      m_rewriteParamSets;
+#endif
   int       m_iGOPSize;
   GOPEntry  m_GOPList[MAX_GOP];
   int       m_extraRPSs;
@@ -703,6 +706,9 @@ public:
   //====== Coding Structure ========
   void      setIntraPeriod                  ( int   i )      { m_uiIntraPeriod = (uint32_t)i; }
   void      setDecodingRefreshType          ( int   i )      { m_uiDecodingRefreshType = (uint32_t)i; }
+#if JCTVC_Y0038_PARAMS
+  void      setReWriteParamSets             ( bool  b )      { m_rewriteParamSets = b; }
+#endif
   void      setGOPSize                      ( int   i )      { m_iGOPSize = i; }
   void      setGopList                      ( const GOPEntry GOPList[MAX_GOP] ) {  for ( int i = 0; i < MAX_GOP; i++ ) m_GOPList[i] = GOPList[i]; }
   void      setExtraRPSs                    ( int   i )      { m_extraRPSs = i; }
@@ -973,6 +979,9 @@ public:
   //==== Coding Structure ========
   uint32_t      getIntraPeriod                  () const     { return  m_uiIntraPeriod; }
   uint32_t      getDecodingRefreshType          () const     { return  m_uiDecodingRefreshType; }
+#if JCTVC_Y0038_PARAMS
+  bool      getReWriteParamSets             ()  const    { return m_rewriteParamSets; }
+#endif
   int       getGOPSize                      () const     { return  m_iGOPSize; }
   int       getMaxDecPicBuffering           (uint32_t tlayer) { return m_maxDecPicBuffering[tlayer]; }
   int       getNumReorderPics               (uint32_t tlayer) { return m_numReorderPics[tlayer]; }

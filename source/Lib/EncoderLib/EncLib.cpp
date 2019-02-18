@@ -1852,6 +1852,14 @@ void  EncCfg::xCheckGSParameters()
 #endif
 }
 
+#if JCTVC_Y0038_PARAMS
+void EncLib::setParamSetChanged(int spsId, int ppsId)
+{
+  m_ppsMap.setChangedFlag(ppsId);
+  m_spsMap.setChangedFlag(spsId);
+}
+#endif
+
 bool EncLib::PPSNeedsWriting(int ppsId)
 {
   bool bChanged=m_ppsMap.getChangedFlag(ppsId);

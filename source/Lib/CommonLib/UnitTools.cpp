@@ -1136,9 +1136,15 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 
   int cnt = 0;
 
+#if JVET_M0170_MRG_SHARELIST
+  const Position posLT = pu.shareParentPos;
+  const Position posRT = pu.shareParentPos.offset(pu.shareParentSize.width - 1, 0);
+  const Position posLB = pu.shareParentPos.offset(0, pu.shareParentSize.height - 1);
+#else
   const Position posLT = pu.Y().topLeft();
   const Position posRT = pu.Y().topRight();
   const Position posLB = pu.Y().bottomLeft();
+#endif
 
   MotionInfo miAbove, miLeft, miAboveLeft, miAboveRight, miBelowLeft;
 

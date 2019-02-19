@@ -127,7 +127,7 @@ void LoopFilter::create( const unsigned uiMaxCUDepth )
     m_aapbEdgeFilter[edgeDir].resize( numPartitions );
   }
 #if JVET_M0428_ENC_DB_OPT
-  m_bEnc = false;
+  m_enc = false;
 #endif
 }
 
@@ -747,7 +747,7 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
   const PreCalcValues& pcv = *cu.cs->pcv;
 
 #if JVET_M0428_ENC_DB_OPT
-  PelBuf        picYuvRec = m_bEnc ? m_encPicYuvBuffer.getBuf(lumaArea) : cu.cs->getRecoBuf(lumaArea);
+  PelBuf        picYuvRec = m_enc ? m_encPicYuvBuffer.getBuf( lumaArea ) : cu.cs->getRecoBuf( lumaArea );
 #else
   PelBuf        picYuvRec = cu.cs->getRecoBuf( lumaArea );
 #endif
@@ -1023,8 +1023,8 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
   const PreCalcValues& pcv = *cu.cs->pcv;
   unsigned  rasterIdx      = getRasterIdx( lumaPos, pcv );
 #if JVET_M0428_ENC_DB_OPT
-  PelBuf     picYuvRecCb = m_bEnc ? m_encPicYuvBuffer.getBuf(cu.block(COMPONENT_Cb)) : cu.cs->getRecoBuf(cu.block(COMPONENT_Cb));
-  PelBuf     picYuvRecCr = m_bEnc ? m_encPicYuvBuffer.getBuf(cu.block(COMPONENT_Cr)) : cu.cs->getRecoBuf(cu.block(COMPONENT_Cr));
+  PelBuf     picYuvRecCb = m_enc ? m_encPicYuvBuffer.getBuf(cu.block(COMPONENT_Cb)) : cu.cs->getRecoBuf(cu.block(COMPONENT_Cb));
+  PelBuf     picYuvRecCr = m_enc ? m_encPicYuvBuffer.getBuf(cu.block(COMPONENT_Cr)) : cu.cs->getRecoBuf(cu.block(COMPONENT_Cr));
 #else
   PelBuf     picYuvRecCb   = cu.cs->getRecoBuf( cu.block(COMPONENT_Cb) );
   PelBuf     picYuvRecCr   = cu.cs->getRecoBuf( cu.block(COMPONENT_Cr) );

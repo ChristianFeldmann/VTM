@@ -1732,7 +1732,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 #endif
 
 #if JVET_M0428_ENC_DB_OPT
-    xCalDebCost(*tempCS, partitioner);
+    xCalDebCost( *tempCS, partitioner );
     tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
 #endif
 
@@ -1836,7 +1836,7 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
   xCheckDQP( *tempCS, partitioner );
 
 #if JVET_M0428_ENC_DB_OPT
-  xCalDebCost(*tempCS, partitioner);
+  xCalDebCost( *tempCS, partitioner );
   tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
 #endif
 
@@ -1991,8 +1991,10 @@ void EncCu::xCheckRDCostHashInter( CodingStructure *&tempCS, CodingStructure *&b
     );
 
 #if JVET_M0428_ENC_DB_OPT
-    if (m_bestModeUpdated && bestCS->cost != MAX_DOUBLE)
-      xCalDebCost(*bestCS, partitioner);
+    if ( m_bestModeUpdated && bestCS->cost != MAX_DOUBLE )
+    {
+      xCalDebCost( *bestCS, partitioner );
+    }
 #endif
   }
   tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
@@ -2716,7 +2718,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   }
 #if JVET_M0428_ENC_DB_OPT
   if ( m_bestModeUpdated && bestCS->cost != MAX_DOUBLE )
+  {
     xCalDebCost( *bestCS, partitioner );
+  }
 #endif
 }
 
@@ -3023,7 +3027,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   }
 #if JVET_M0428_ENC_DB_OPT
   if ( m_bestModeUpdated && bestCS->cost != MAX_DOUBLE )
+  {
     xCalDebCost( *bestCS, partitioner );
+  }
 #endif
 }
 
@@ -3324,8 +3330,10 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     }
   }
 #if JVET_M0428_ENC_DB_OPT
-  if (m_bestModeUpdated && bestCS->cost != MAX_DOUBLE)
-    xCalDebCost(*bestCS, partitioner);
+  if ( m_bestModeUpdated && bestCS->cost != MAX_DOUBLE )
+  {
+    xCalDebCost( *bestCS, partitioner );
+  }
 #endif
 }
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -3645,7 +3653,9 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
   }
 #if JVET_M0428_ENC_DB_OPT
   if ( m_bestModeUpdated && bestCS->cost != MAX_DOUBLE )
+  {
     xCalDebCost( *bestCS, partitioner );
+  }
 #endif
 }
 
@@ -3755,7 +3765,9 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
 #if JVET_M0428_ENC_DB_OPT
           tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
           if ( m_bestModeUpdated )
+          {
             xCalDebCost( *tempCS, partitioner );
+          }
 #endif
 
           DTRACE_MODE_COST(*tempCS, m_pcRdCost->getLambda());
@@ -3857,8 +3869,10 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
         xCheckDQP(*tempCS, partitioner);
 #if JVET_M0428_ENC_DB_OPT
         tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
-        if (m_bestModeUpdated)
-          xCalDebCost(*tempCS, partitioner);
+        if ( m_bestModeUpdated )
+        {
+          xCalDebCost( *tempCS, partitioner );
+        }
 #endif
 
         DTRACE_MODE_COST(*tempCS, m_pcRdCost->getLambda());
@@ -4013,8 +4027,10 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
   }
  }  // for( UChar gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
 #if JVET_M0428_ENC_DB_OPT
- if ( m_bestModeUpdated && bestCS->cost != MAX_DOUBLE )
-   xCalDebCost( *bestCS, partitioner );
+  if ( m_bestModeUpdated && bestCS->cost != MAX_DOUBLE )
+  {
+    xCalDebCost( *bestCS, partitioner );
+  }
 #endif
 }
 
@@ -4278,8 +4294,10 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
  } // for( UChar gbiLoopIdx = 0; gbiLoopIdx < gbiLoopNum; gbiLoopIdx++ )
 
 #if JVET_M0428_ENC_DB_OPT
- if ( m_bestModeUpdated && bestCS->cost != MAX_DOUBLE )
-   xCalDebCost( *bestCS, partitioner );
+  if ( m_bestModeUpdated && bestCS->cost != MAX_DOUBLE )
+  {
+    xCalDebCost( *bestCS, partitioner );
+  }
 #endif
 
 #if JVET_M0246_AFFINE_AMVR
@@ -4290,51 +4308,55 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
 }
 
 #if JVET_M0428_ENC_DB_OPT
-void EncCu::xCalDebCost(CodingStructure &cs, Partitioner &partitioner, bool calDist)
+void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool calDist )
 {
-  if (cs.cost == MAX_DOUBLE)
+  if ( cs.cost == MAX_DOUBLE )
+  {
     cs.costDbOffset = 0;
+  }
 
-  if (cs.slice->getDeblockingFilterDisable() || (!m_pcEncCfg->getUseEncDbOpt() && !calDist))
+  if ( cs.slice->getDeblockingFilterDisable() || ( !m_pcEncCfg->getUseEncDbOpt() && !calDist ) )
+  {
     return;
+  }
 
   m_pcLoopFilter->setEnc(true);
   const ChromaFormat format = cs.area.chromaFormat;
   CodingUnit*                cu = cs.getCU(partitioner.chType);
-  const Position lumaPos = cu->Y().valid() ? cu->Y().pos() : recalcPosition(format, cu->chType, CHANNEL_TYPE_LUMA, cu->blocks[cu->chType].pos());
-  bool topEdgeAvai  = lumaPos.y > 0 && ((lumaPos.y % 8) == 0);
-  bool leftEdgeAvai = lumaPos.x > 0 && ((lumaPos.x % 8) == 0);
+  const Position lumaPos = cu->Y().valid() ? cu->Y().pos() : recalcPosition( format, cu->chType, CHANNEL_TYPE_LUMA, cu->blocks[cu->chType].pos() );
+  bool topEdgeAvai  = lumaPos.y > 0 && ( ( lumaPos.y % 8 ) == 0 );
+  bool leftEdgeAvai = lumaPos.x > 0 && ( ( lumaPos.x % 8 ) == 0 );
   bool anyEdgeAvai = topEdgeAvai || leftEdgeAvai;
   cs.costDbOffset = 0;
 
-  if (calDist)
+  if ( calDist )
   {
-    const UnitArea currCsArea = clipArea(CS::getArea(cs, cs.area, partitioner.chType), *cs.picture);
-    ComponentID compStr = (CS::isDualITree(cs) && !isLuma(partitioner.chType)) ? COMPONENT_Cb : COMPONENT_Y;
-    ComponentID compEnd = (CS::isDualITree(cs) && isLuma(partitioner.chType)) ? COMPONENT_Y : COMPONENT_Cr;
+    const UnitArea currCsArea = clipArea( CS::getArea( cs, cs.area, partitioner.chType ), *cs.picture );
+    ComponentID compStr = ( CS::isDualITree( cs ) && !isLuma( partitioner.chType ) ) ? COMPONENT_Cb : COMPONENT_Y;
+    ComponentID compEnd = ( CS::isDualITree( cs ) && isLuma( partitioner.chType ) ) ? COMPONENT_Y : COMPONENT_Cr;
     Distortion finalDistortion = 0;
-    for (int comp = compStr; comp <= compEnd; comp++)
+    for ( int comp = compStr; comp <= compEnd; comp++ )
     {
-      const ComponentID compID = ComponentID(comp);
-      CPelBuf org = cs.getOrgBuf(compID);
-      CPelBuf reco = cs.getRecoBuf(compID);
-      finalDistortion += getDistortionDb(cs, org, reco, compID, currCsArea.block(compID), false);
+      const ComponentID compID = ComponentID( comp );
+      CPelBuf org = cs.getOrgBuf( compID );
+      CPelBuf reco = cs.getRecoBuf( compID );
+      finalDistortion += getDistortionDb( cs, org, reco, compID, currCsArea.block( compID ), false );
     }
     //updated distortion
     cs.dist = finalDistortion;
   }
 
-  if (anyEdgeAvai && m_pcEncCfg->getUseEncDbOpt())
+  if ( anyEdgeAvai && m_pcEncCfg->getUseEncDbOpt() )
   {
-    ComponentID compStr = (CS::isDualITree(cs) && !isLuma(partitioner.chType)) ? COMPONENT_Cb : COMPONENT_Y;
-    ComponentID compEnd = (CS::isDualITree(cs) && isLuma(partitioner.chType)) ? COMPONENT_Y : COMPONENT_Cr;
+    ComponentID compStr = ( CS::isDualITree( cs ) && !isLuma( partitioner.chType ) ) ? COMPONENT_Cb : COMPONENT_Y;
+    ComponentID compEnd = ( CS::isDualITree( cs ) &&  isLuma( partitioner.chType ) ) ? COMPONENT_Y : COMPONENT_Cr;
 
-    const UnitArea currCsArea = clipArea(CS::getArea(cs, cs.area, partitioner.chType), *cs.picture);
+    const UnitArea currCsArea = clipArea( CS::getArea( cs, cs.area, partitioner.chType ), *cs.picture );
 
     PelStorage&          picDbBuf = m_pcLoopFilter->getDbEncPicYuvBuffer();
 
     //deblock neighbour pixels
-    const Size     lumaSize = cu->Y().valid() ? cu->Y().size() : recalcSize(format, cu->chType, CHANNEL_TYPE_LUMA, cu->blocks[cu->chType].size());
+    const Size     lumaSize = cu->Y().valid() ? cu->Y().size() : recalcSize( format, cu->chType, CHANNEL_TYPE_LUMA, cu->blocks[cu->chType].size() );
 
 #if  JVET_M0471_LONG_DEBLOCKING_FILTERS
     const int verOffset = lumaPos.y > 7 ? 8 : 4;
@@ -4343,67 +4365,67 @@ void EncCu::xCalDebCost(CodingStructure &cs, Partitioner &partitioner, bool calD
     const int verOffset = 4;
     const int horOffset = 4;
 #endif
-    const UnitArea areaTop(format, Area(lumaPos.x, lumaPos.y - verOffset, lumaSize.width, verOffset));
-    const UnitArea areaLeft(format, Area(lumaPos.x - horOffset, lumaPos.y, horOffset, lumaSize.height));
-    for (int compIdx = compStr; compIdx <= compEnd; compIdx++)
+    const UnitArea areaTop(  format, Area( lumaPos.x, lumaPos.y - verOffset, lumaSize.width, verOffset  ) );
+    const UnitArea areaLeft( format, Area( lumaPos.x - horOffset, lumaPos.y, horOffset, lumaSize.height ) );
+    for ( int compIdx = compStr; compIdx <= compEnd; compIdx++ )
     {
       ComponentID compId = (ComponentID)compIdx;
 
       //Copy current CU's reco to Deblock Pic Buffer
-      const CompArea&  curCompArea = currCsArea.block(compId);
-      picDbBuf.getBuf(curCompArea).copyFrom(cs.getRecoBuf(curCompArea));
+      const CompArea&  curCompArea = currCsArea.block( compId );
+      picDbBuf.getBuf( curCompArea ).copyFrom( cs.getRecoBuf( curCompArea ) );
 #if JVET_M0427_INLOOP_RESHAPER
-      if (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+      if ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma( compId ) )
       {
-        picDbBuf.getBuf(curCompArea).rspSignal(m_pcReshape->getInvLUT());
+        picDbBuf.getBuf( curCompArea ).rspSignal( m_pcReshape->getInvLUT() );
       }
 #endif
 
       //left neighbour
-      if (leftEdgeAvai)
+      if ( leftEdgeAvai )
       {
         const CompArea&  compArea = areaLeft.block(compId);
-        picDbBuf.getBuf(compArea).copyFrom(cs.picture->getRecoBuf(compArea));
+        picDbBuf.getBuf( compArea ).copyFrom( cs.picture->getRecoBuf( compArea ) );
 #if JVET_M0427_INLOOP_RESHAPER       
-        if (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+        if ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma( compId ) )
         {
-          picDbBuf.getBuf(compArea).rspSignal(m_pcReshape->getInvLUT());
+          picDbBuf.getBuf( compArea ).rspSignal( m_pcReshape->getInvLUT() );
         }
 #endif
       }
       //top neighbour
-      if (topEdgeAvai)
+      if ( topEdgeAvai )
       {
-        const CompArea&  compArea = areaTop.block(compId);
-        picDbBuf.getBuf(compArea).copyFrom(cs.picture->getRecoBuf(compArea));
+        const CompArea&  compArea = areaTop.block( compId );
+        picDbBuf.getBuf( compArea ).copyFrom( cs.picture->getRecoBuf( compArea ) );
 #if JVET_M0427_INLOOP_RESHAPER
-        if (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+        if ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma( compId ) )
         {
-          picDbBuf.getBuf(compArea).rspSignal(m_pcReshape->getInvLUT());
+          picDbBuf.getBuf( compArea ).rspSignal( m_pcReshape->getInvLUT() );
         }
 #endif
       }
     }
 
     //deblock
-    if (leftEdgeAvai)
+    if ( leftEdgeAvai )
     {
-      m_pcLoopFilter->xDeblockCU(*cu, EDGE_VER);
+      m_pcLoopFilter->xDeblockCU( *cu, EDGE_VER );
     }
 
     if (topEdgeAvai)
     {
-      m_pcLoopFilter->xDeblockCU(*cu, EDGE_HOR);
+      m_pcLoopFilter->xDeblockCU( *cu, EDGE_HOR );
     }
 
     //update current CU SSE
     Distortion distCur = 0;
-    for (int compIdx = compStr; compIdx <= compEnd; compIdx++)
+    for ( int compIdx = compStr; compIdx <= compEnd; compIdx++ )
     {
       ComponentID compId = (ComponentID)compIdx;
-      CPelBuf reco = picDbBuf.getBuf(currCsArea.block(compId));
-      CPelBuf org = cs.getOrgBuf(compId);
-      distCur += getDistortionDb(cs, org, reco, compId, currCsArea.block(compId), true);
+      CPelBuf reco = picDbBuf.getBuf( currCsArea.block( compId ) );
+      CPelBuf org = cs.getOrgBuf( compId );
+      distCur += getDistortionDb( cs, org, reco, compId, currCsArea.block( compId ), true );
     }
 
     //calculate difference between DB_before_SSE and DB_after_SSE for neighbouring CUs
@@ -4411,23 +4433,23 @@ void EncCu::xCalDebCost(CodingStructure &cs, Partitioner &partitioner, bool calD
     for (int compIdx = compStr; compIdx <= compEnd; compIdx++)
     {
       ComponentID compId = (ComponentID)compIdx;
-      if (leftEdgeAvai)
+      if ( leftEdgeAvai )
       {
-        const CompArea&  compArea = areaLeft.block(compId);
-        CPelBuf org = cs.picture->getOrigBuf(compArea);
-        CPelBuf reco = cs.picture->getRecoBuf(compArea);
-        CPelBuf recoDb = picDbBuf.getBuf(compArea);
-        distBeforeDb += getDistortionDb(cs, org, reco,   compId, compArea, false);
-        distAfterDb  += getDistortionDb(cs, org, recoDb, compId, compArea, true);
+        const CompArea&  compArea = areaLeft.block( compId );
+        CPelBuf org = cs.picture->getOrigBuf( compArea );
+        CPelBuf reco = cs.picture->getRecoBuf( compArea );
+        CPelBuf recoDb = picDbBuf.getBuf( compArea );
+        distBeforeDb += getDistortionDb( cs, org, reco,   compId, compArea, false );
+        distAfterDb  += getDistortionDb( cs, org, recoDb, compId, compArea, true  );
       }
-      if (topEdgeAvai)
+      if ( topEdgeAvai )
       {
-        const CompArea&  compArea = areaTop.block(compId);
-        CPelBuf org = cs.picture->getOrigBuf(compArea);
-        CPelBuf reco = cs.picture->getRecoBuf(compArea);
-        CPelBuf recoDb = picDbBuf.getBuf(compArea);
-        distBeforeDb += getDistortionDb(cs, org, reco,   compId, compArea, false);
-        distAfterDb  += getDistortionDb(cs, org, recoDb, compId, compArea, true);
+        const CompArea&  compArea = areaTop.block( compId );
+        CPelBuf org = cs.picture->getOrigBuf( compArea );
+        CPelBuf reco = cs.picture->getRecoBuf( compArea );
+        CPelBuf recoDb = picDbBuf.getBuf( compArea );
+        distBeforeDb += getDistortionDb( cs, org, reco,   compId, compArea, false );
+        distAfterDb  += getDistortionDb( cs, org, recoDb, compId, compArea, true  );
       }
     }
 
@@ -4435,60 +4457,60 @@ void EncCu::xCalDebCost(CodingStructure &cs, Partitioner &partitioner, bool calD
     int64_t distTmp = distCur - cs.dist + distAfterDb - distBeforeDb;
     int sign = distTmp < 0 ? -1 : 1;
     distTmp = distTmp < 0 ? -distTmp : distTmp;
-    cs.costDbOffset = sign * m_pcRdCost->calcRdCost(0, distTmp);
+    cs.costDbOffset = sign * m_pcRdCost->calcRdCost( 0, distTmp );
   }
 
-  m_pcLoopFilter->setEnc(false);
+  m_pcLoopFilter->setEnc( false );
 }
 
-Distortion EncCu::getDistortionDb(CodingStructure &cs, CPelBuf org, CPelBuf reco, ComponentID compID, const CompArea& compArea, bool afterDb)
+Distortion EncCu::getDistortionDb( CodingStructure &cs, CPelBuf org, CPelBuf reco, ComponentID compID, const CompArea& compArea, bool afterDb )
 {
   Distortion dist = 0;
 #if WCG_EXT
-  CPelBuf orgLuma = cs.picture->getOrigBuf(compArea);
+  CPelBuf orgLuma = cs.picture->getOrigBuf( compArea );
 #if JVET_M0427_INLOOP_RESHAPER
-  if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
-    m_pcEncCfg->getReshaper() && (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())))
+  if ( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
+    m_pcEncCfg->getReshaper() && ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() ) ) )
 #else
-  if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled())
+  if ( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() )
 #endif
   {
 #if JVET_M0427_INLOOP_RESHAPER
-    if (compID == COMPONENT_Y && !afterDb)
+    if ( compID == COMPONENT_Y && !afterDb )
     {
-      CompArea    tmpArea(COMPONENT_Y, cs.area.chromaFormat, Position(0, 0), compArea.size());
-      PelBuf tmpRecLuma = m_tmpStorageLCU->getBuf(tmpArea);
-      tmpRecLuma.copyFrom(reco);
-      tmpRecLuma.rspSignal(m_pcReshape->getInvLUT());
-      dist += m_pcRdCost->getDistPart(org, tmpRecLuma, cs.sps->getBitDepth(toChannelType(compID)), compID, DF_SSE_WTD, &orgLuma);
+      CompArea    tmpArea( COMPONENT_Y, cs.area.chromaFormat, Position( 0, 0 ), compArea.size() );
+      PelBuf tmpRecLuma = m_tmpStorageLCU->getBuf( tmpArea );
+      tmpRecLuma.copyFrom( reco );
+      tmpRecLuma.rspSignal( m_pcReshape->getInvLUT() );
+      dist += m_pcRdCost->getDistPart( org, tmpRecLuma, cs.sps->getBitDepth( toChannelType( compID ) ), compID, DF_SSE_WTD, &orgLuma );
     }
     else
 #endif
     {
-      dist += m_pcRdCost->getDistPart(org, reco, cs.sps->getBitDepth(toChannelType(compID)), compID, DF_SSE_WTD, &orgLuma);
+      dist += m_pcRdCost->getDistPart( org, reco, cs.sps->getBitDepth( toChannelType( compID ) ), compID, DF_SSE_WTD, &orgLuma );
     }
   }
 #if JVET_M0427_INLOOP_RESHAPER
-  else if (m_pcEncCfg->getReshaper() && cs.slice->getReshapeInfo().getUseSliceReshaper() && cs.slice->isIntra()) //intra slice
+  else if ( m_pcEncCfg->getReshaper() && cs.slice->getReshapeInfo().getUseSliceReshaper() && cs.slice->isIntra() ) //intra slice
   {
-    if (compID == COMPONENT_Y && afterDb)
+    if ( compID == COMPONENT_Y && afterDb )
     {
-      CompArea    tmpArea(COMPONENT_Y, cs.area.chromaFormat, Position(0, 0), compArea.size());
-      PelBuf tmpRecLuma = m_tmpStorageLCU->getBuf(tmpArea);
-      tmpRecLuma.copyFrom(reco);
-      tmpRecLuma.rspSignal(m_pcReshape->getFwdLUT());
-      dist += m_pcRdCost->getDistPart(org, tmpRecLuma, cs.sps->getBitDepth(toChannelType(compID)), compID, DF_SSE);
+      CompArea    tmpArea( COMPONENT_Y, cs.area.chromaFormat, Position( 0, 0 ), compArea.size() );
+      PelBuf tmpRecLuma = m_tmpStorageLCU->getBuf( tmpArea );
+      tmpRecLuma.copyFrom( reco );
+      tmpRecLuma.rspSignal( m_pcReshape->getFwdLUT() );
+      dist += m_pcRdCost->getDistPart( org, tmpRecLuma, cs.sps->getBitDepth( toChannelType( compID ) ), compID, DF_SSE );
     }
     else
     {
-      dist += m_pcRdCost->getDistPart(org, reco, cs.sps->getBitDepth(toChannelType(compID)), compID, DF_SSE);
+      dist += m_pcRdCost->getDistPart( org, reco, cs.sps->getBitDepth(toChannelType( compID ) ), compID, DF_SSE );
     }
   }
 #endif
   else
 #endif
   {
-    dist = m_pcRdCost->getDistPart(org, reco, cs.sps->getBitDepth(toChannelType(compID)), compID, DF_SSE);
+    dist = m_pcRdCost->getDistPart( org, reco, cs.sps->getBitDepth( toChannelType( compID ) ), compID, DF_SSE );
   }
   return dist;
 }

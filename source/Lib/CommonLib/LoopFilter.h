@@ -60,7 +60,7 @@ private:
   LFCUParam m_stLFCUParam;                   ///< status structure
 #if JVET_M0428_ENC_DB_OPT
   PelStorage                   m_encPicYuvBuffer;
-  bool                         m_bEnc;
+  bool                         m_enc;
 #endif
 private:
 #if !JVET_M0428_ENC_DB_OPT
@@ -121,7 +121,7 @@ public:
   void xDeblockCU(CodingUnit& cu, const DeblockEdgeDir edgeDir);
   void  initEncPicYuvBuffer(ChromaFormat chromaFormat, int lumaWidth, int lumaHeight);
   PelStorage& getDbEncPicYuvBuffer() { return m_encPicYuvBuffer; }
-  void  setEnc(bool b) { m_bEnc = b; }
+  void  setEnc(bool b) { m_enc = b; }
 #endif
 
   void  create                    ( const unsigned uiMaxCUDepth );

@@ -4476,6 +4476,8 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   if (mi.isInter)
 #endif
   {
+    mrgCtx.interDirNeighbours[count] = 0;
+
     for (unsigned currRefListId = 0; currRefListId < (bBSlice ? 2 : 1); currRefListId++)
     {
       RefPicList  currRefPicList = RefPicList(currRefListId);
@@ -5626,9 +5628,12 @@ bool CU::isGBiIdxCoded( const CodingUnit &cu )
     return false;
   }
 
-  if( cu.firstPU->interDir == 3 && !cu.firstPU->mergeFlag )
+  if( !cu.firstPU->mergeFlag )
   {
-    return true;
+    if( cu.firstPU->interDir == 3 )
+    {
+      return true;
+    }
   }
 
   return false;

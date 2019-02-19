@@ -1031,25 +1031,12 @@ static bool interHadActive( const ComprCUCtx& ctx )
 // EncModeCtrlQTBT
 //////////////////////////////////////////////////////////////////////////
 
-EncModeCtrlMTnoRQT::EncModeCtrlMTnoRQT()
-{
-#if !REUSE_CU_RESULTS
-  CacheBlkInfoCtrl::create();
-#endif
-}
-
-EncModeCtrlMTnoRQT::~EncModeCtrlMTnoRQT()
-{
-#if !REUSE_CU_RESULTS
-  CacheBlkInfoCtrl::destroy();
-#endif
-}
-
-#if REUSE_CU_RESULTS
 void EncModeCtrlMTnoRQT::create( const EncCfg& cfg )
 {
   CacheBlkInfoCtrl::create();
+#if REUSE_CU_RESULTS
   BestEncInfoCache::create( cfg.getChromaFormatIdc() );
+#endif
 #if JVET_M0140_SBT
   SaveLoadEncInfoSbt::create();
 #endif
@@ -1058,13 +1045,14 @@ void EncModeCtrlMTnoRQT::create( const EncCfg& cfg )
 void EncModeCtrlMTnoRQT::destroy()
 {
   CacheBlkInfoCtrl::destroy();
+#if REUSE_CU_RESULTS
   BestEncInfoCache::destroy();
+#endif
 #if JVET_M0140_SBT
   SaveLoadEncInfoSbt::destroy();
 #endif
 }
 
-#endif
 void EncModeCtrlMTnoRQT::initCTUEncoding( const Slice &slice )
 {
   CacheBlkInfoCtrl::init( slice );

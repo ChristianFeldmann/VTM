@@ -2812,6 +2812,9 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
 #if JVET_M0102_INTRA_SUBPARTITIONS
   useEmt = useEmt && !cu.ispMode;
 #endif
+#if JVET_M0140_SBT
+  useEmt = useEmt && !cu.sbtInfo;
+#endif
 #endif
 
     for( int subSetId = ( cctx.scanPosLast() >> cctx.log2CGSize() ); subSetId >= 0; subSetId--)
@@ -2922,6 +2925,13 @@ void CABACReader::transform_skip_flag( TransformUnit& tu, ComponentID compID )
     tu.transformSkip[compID] = false;
     return;
   }
+#if JVET_M0140_SBT
+  if( tu.cu->sbtInfo )
+  {
+    tu.transformSkip[compID] = false;
+    return;
+  }
+#endif
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET2( STATS__CABAC_BITS__TRANSFORM_SKIP_FLAGS, compID );
 
   bool tskip = m_BinDecoder.decodeBin( Ctx::TransformSkipFlag( toChannelType( compID ) ) );
@@ -2963,6 +2973,12 @@ void CABACReader::emt_cu_flag( CodingUnit& cu )
 {
 #if JVET_M0102_INTRA_SUBPARTITIONS
   if ( CU::isIntra( cu ) && cu.ispMode )
+  {
+    return;
+  }
+#endif
+#if JVET_M0140_SBT
+  if( cu.sbtInfo )
   {
     return;
   }

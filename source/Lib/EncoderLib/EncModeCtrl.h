@@ -283,10 +283,8 @@ public:
 
   virtual ~EncModeCtrl              () {}
 
-#if REUSE_CU_RESULTS
   virtual void create               ( const EncCfg& cfg )                                                                   = 0;
   virtual void destroy              ()                                                                                      = 0;
-#endif
   virtual void initCTUEncoding      ( const Slice &slice )                                                                  = 0;
   virtual void initCULevel          ( Partitioner &partitioner, const CodingStructure& cs )                                 = 0;
   virtual void finishCULevel        ( Partitioner &partitioner )                                                            = 0;
@@ -539,13 +537,8 @@ class EncModeCtrlMTnoRQT : public EncModeCtrl, public CacheBlkInfoCtrl
 
 public:
 
-  EncModeCtrlMTnoRQT ();
-  ~EncModeCtrlMTnoRQT();
-
-#if REUSE_CU_RESULTS
   virtual void create             ( const EncCfg& cfg );
   virtual void destroy            ();
-#endif
   virtual void initCTUEncoding    ( const Slice &slice );
   virtual void initCULevel        ( Partitioner &partitioner, const CodingStructure& cs );
   virtual void finishCULevel      ( Partitioner &partitioner );

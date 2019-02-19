@@ -387,6 +387,8 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
       m_useAdpCW = false;
       m_chromaWeight = 1.0;
       m_sliceReshapeInfo.enableChromaAdj = 1;
+      m_rateAdpMode                      = 0;
+      m_tcase                            = 0;
       bool   intraAdp = false;
       bool   interAdp = true;
       double reshapeTH1 = 0.0;

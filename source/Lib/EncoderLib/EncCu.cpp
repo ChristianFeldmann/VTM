@@ -1281,7 +1281,11 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       startShareThisLevel = 1;
     }
   }
+#if JVET_M0483_IBC
+  if ((m_shareState == GEN_ON_SHARED_BOUND) && (!slice.isIntra() || slice.getSPS()->getIBCFlag()))
+#else
   if ((m_shareState == GEN_ON_SHARED_BOUND) && (!slice.isIntra()))
+#endif
   {
 #if JVET_M0170_MRG_SHARELIST
     tempCS->slice->copyMotionLUTs(tempCS->slice->getMotionLUTs(), tempCS->slice->m_MotionCandLuTsBkup);

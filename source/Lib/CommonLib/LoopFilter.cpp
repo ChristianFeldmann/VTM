@@ -126,7 +126,19 @@ void LoopFilter::create( const unsigned uiMaxCUDepth )
     m_aapucBS       [edgeDir].resize( numPartitions );
     m_aapbEdgeFilter[edgeDir].resize( numPartitions );
   }
+#if JVET_M0428_ENC_DB_OPT
+  m_enc = false;
+#endif
 }
+
+#if JVET_M0428_ENC_DB_OPT
+void LoopFilter::initEncPicYuvBuffer(ChromaFormat chromaFormat, int lumaWidth, int lumaHeight)
+{
+  const UnitArea picArea(chromaFormat, Area(0, 0, lumaWidth, lumaHeight));
+  m_encPicYuvBuffer.destroy();
+  m_encPicYuvBuffer.create(picArea);
+}
+#endif
 
 void LoopFilter::destroy()
 {
@@ -135,6 +147,9 @@ void LoopFilter::destroy()
     m_aapucBS       [edgeDir].clear();
     m_aapbEdgeFilter[edgeDir].clear();
   }
+#if JVET_M0428_ENC_DB_OPT
+  m_encPicYuvBuffer.destroy();
+#endif
 }
 
 /**
@@ -738,7 +753,11 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
   const CompArea&  lumaArea = cu.block(COMPONENT_Y);
   const PreCalcValues& pcv = *cu.cs->pcv;
 
+#if JVET_M0428_ENC_DB_OPT
+  PelBuf        picYuvRec = m_enc ? m_encPicYuvBuffer.getBuf( lumaArea ) : cu.cs->getRecoBuf( lumaArea );
+#else
   PelBuf        picYuvRec = cu.cs->getRecoBuf( lumaArea );
+#endif
   Pel           *piSrc    = picYuvRec.buf;
   const int     iStride   = picYuvRec.stride;
   Pel           *piTmpSrc = piSrc;
@@ -1010,9 +1029,13 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
   const PreCalcValues& pcv = *cu.cs->pcv;
   unsigned  rasterIdx      = getRasterIdx( lumaPos, pcv );
-
+#if JVET_M0428_ENC_DB_OPT
+  PelBuf     picYuvRecCb = m_enc ? m_encPicYuvBuffer.getBuf(cu.block(COMPONENT_Cb)) : cu.cs->getRecoBuf(cu.block(COMPONENT_Cb));
+  PelBuf     picYuvRecCr = m_enc ? m_encPicYuvBuffer.getBuf(cu.block(COMPONENT_Cr)) : cu.cs->getRecoBuf(cu.block(COMPONENT_Cr));
+#else
   PelBuf     picYuvRecCb   = cu.cs->getRecoBuf( cu.block(COMPONENT_Cb) );
   PelBuf     picYuvRecCr   = cu.cs->getRecoBuf( cu.block(COMPONENT_Cr) );
+#endif
   Pel       *piSrcCb       = picYuvRecCb.buf;
   Pel       *piSrcCr       = picYuvRecCr.buf;
   const int  iStride       = picYuvRecCb.stride;

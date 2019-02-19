@@ -179,6 +179,10 @@ public:
   static_vector<double, NUM_ENC_FEATURES> features;
 
   double      cost;
+#if JVET_M0428_ENC_DB_OPT
+  bool        useDbCost;
+  double      costDbOffset;
+#endif
 #if JVET_M0102_INTRA_SUBPARTITIONS
   double      lumaCost;
 #endif

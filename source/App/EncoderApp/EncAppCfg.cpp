@@ -891,6 +891,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("WrapAroundOffset",                                m_wrapAroundOffset,                                  0u, "Offset in luma samples used for computing the horizontal wrap-around position")
 
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
+#if JVET_M0428_ENC_DB_OPT
+  ("EncDbOpt",                                        m_encDbOpt,                                       false, "Encoder optimization with deblocking filter")
+#endif
 #if JVET_M0427_INLOOP_RESHAPER
   ("LumaReshapeEnable",                               m_lumaReshapeEnable,                              false, "Enable Reshaping for Luma Channel")
   ("ReshapeSignalType",                               m_reshapeSignalType,                                 0u, "Input signal type: 0: SDR, 1:PQ, 2:HLG")
@@ -3230,6 +3233,9 @@ void EncAppCfg::xPrintParameter()
       msg(VERBOSE, "(Sigal:%s ", m_reshapeSignalType==0? "SDR" : "HDR-PQ");
       msg(VERBOSE, ") ");
     }
+#endif
+#if JVET_M0428_ENC_DB_OPT
+    msg(VERBOSE, "EncDbOpt:%d ", m_encDbOpt);
 #endif
   msg( VERBOSE, "\nFAST TOOL CFG: " );
   msg( VERBOSE, "LCTUFast:%d ", m_useFastLCTU );

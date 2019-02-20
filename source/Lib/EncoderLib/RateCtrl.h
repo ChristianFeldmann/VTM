@@ -74,6 +74,20 @@ const double g_RCBetaMaxValue  = -0.1;
 #define BETA1     1.2517
 #define BETA2     1.7860
 
+#if JVET_M0600_RATE_CTRL
+#define QDF_PARA_LEV_1_1 0.5847  
+#define QDF_PARA_LEV_1_2 -0.0782
+
+#define QDF_PARA_LEV_2_1 0.5468   
+#define QDF_PARA_LEV_2_2 -0.1364
+
+#define QDF_PARA_LEV_3_1 0.6539
+#define QDF_PARA_LEV_3_2 -0.203
+
+#define QDF_PARA_LEV_4_1 0.8623
+#define QDF_PARA_LEV_4_2 -0.4676
+#endif
+
 struct TRCLCU
 {
   int m_actualBits;
@@ -93,6 +107,9 @@ struct TRCParameter
   double m_alpha;
   double m_beta;
   int    m_validPix;
+#if JVET_M0600_RATE_CTRL
+  double m_skipRatio; 
+#endif
 };
 
 class EncRCSeq
@@ -239,8 +256,11 @@ public:
   double getLCUEstLambdaAndQP(double bpp, int clipPicQP, int *estQP);
   double getLCUEstLambda( double bpp );
   int    getLCUEstQP( double lambda, int clipPicQP );
-
+#if JVET_M0600_RATE_CTRL
+  void updateAfterCTU(int LCUIdx, int bits, int QP, double lambda, double skipRatio, bool updateLCUParameter = true);
+#else
   void updateAfterCTU( int LCUIdx, int bits, int QP, double lambda, bool updateLCUParameter = true );
+#endif
   void updateAfterPicture( int actualHeaderBits, int actualTotalBits, double averageQP, double averageLambda, bool isIRAP);
 
   void addToPictureLsit( list<EncRCPic*>& listPreviousPictures );

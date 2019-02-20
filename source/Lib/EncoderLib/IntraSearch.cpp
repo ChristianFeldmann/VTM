@@ -900,6 +900,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
       if( cu.ispMode && !csTemp->cus[0]->firstTU->cbf[COMPONENT_Y] )
       {
         csTemp->cost = MAX_DOUBLE;
+#if JVET_M0428_ENC_DB_OPT
+        csTemp->costDbOffset = 0;
+#endif
       }
 #else
       xRecurIntraCodingLumaQT( *csTemp, partitioner );

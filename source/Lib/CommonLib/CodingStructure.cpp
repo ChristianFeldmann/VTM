@@ -751,6 +751,11 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
 {
   CHECK( this == &subStruct, "Trying to init self as sub-structure" );
 
+#if JVET_M0428_ENC_DB_OPT
+  subStruct.useDbCost = false;
+  subStruct.costDbOffset = 0;
+#endif
+
   for( uint32_t i = 0; i < subStruct.area.blocks.size(); i++ )
   {
     CHECKD( subStruct.area.blocks[i].size() != subArea.blocks[i].size(), "Trying to init sub-structure of incompatible size" );
@@ -852,7 +857,9 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
       fracBits += subStruct.fracBits;
       dist     += subStruct.dist;
       cost     += subStruct.cost;
-
+#if JVET_M0428_ENC_DB_OPT
+      costDbOffset += subStruct.costDbOffset;
+#endif
       if( parent )
       {
         // allow this to be false at the top level
@@ -916,7 +923,9 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   fracBits += subStruct.fracBits;
   dist     += subStruct.dist;
   cost     += subStruct.cost;
-
+#if JVET_M0428_ENC_DB_OPT
+  costDbOffset += subStruct.costDbOffset;
+#endif
   if( parent )
   {
     // allow this to be false at the top level
@@ -978,7 +987,9 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
   fracBits = other.fracBits;
   dist     = other.dist;
   cost     = other.cost;
-
+#if JVET_M0428_ENC_DB_OPT
+  costDbOffset = other.costDbOffset;
+#endif
   CHECKD( area != other.area, "Incompatible sizes" );
 
   const UnitArea dualITreeArea = CS::getArea( *this, this->area, chType );
@@ -1110,6 +1121,10 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
   cost     = MAX_DOUBLE;
 #if JVET_M0102_INTRA_SUBPARTITIONS
   lumaCost = MAX_DOUBLE;
+#endif
+#if JVET_M0428_ENC_DB_OPT
+  costDbOffset = 0;
+  useDbCost = false;
 #endif
   interHad = std::numeric_limits<Distortion>::max();
 }

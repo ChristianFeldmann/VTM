@@ -2844,7 +2844,6 @@ bool EncAppCfg::xCheckParameter()
   }
 
 #if JVET_M0445_MCTS
-  g_mctsEncConstraint = m_MCTSEncConstraint;
   if ((m_MCTSEncConstraint) && (m_bLFCrossTileBoundaryFlag))
   {
     printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling filtering across tile boundaries!\n");

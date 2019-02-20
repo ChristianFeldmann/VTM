@@ -5524,17 +5524,14 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
         MCTSHelper::clipMvToArea( acMvTemp[i], pu.cu->Y(), pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu ), *pu.cs->sps );
       }
       else
-#endif
-#if JVET_M0445_MCTS
-      if( m_pcEncCfg->getMCTSEncConstraint() )
       {
-        MCTSHelper::clipMvToArea( acMvTemp[i], pu.cu->Y(), pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu ), *pu.cs->sps );
-      }
-      else
 #endif
       clipMv(acMvTemp[i], pu.cu->lumaPos(),
              pu.cu->lumaSize(),
              *pu.cs->sps);
+#if JVET_M0445_MCTS
+      }
+#endif
     }
 
 #if JVET_M0247_AFFINE_AMVR_ENCOPT

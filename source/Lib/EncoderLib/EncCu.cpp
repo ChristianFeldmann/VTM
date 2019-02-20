@@ -2234,7 +2234,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         {
           uiBitsCand--;
         }
+#if !JVET_MMVD_OFF_MACRO
         uiBitsCand++; // for mmvd_flag
+#endif
         double cost     = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
         insertPos = -1;
         updateDoubleCandList(uiMergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
@@ -2380,7 +2382,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         pu.mhIntraFlag = false;
         m_CABACEstimator->getCtx() = ctxStart;
       }
-
+#if !JVET_MMVD_OFF_MACRO
       cu.mmvdSkip = true;
       int tempNum = 0;
       tempNum = MMVD_ADD_NUM;
@@ -2464,7 +2466,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           swap(singleMergeTempBuffer, acMergeTempBuffer[insertPos]);
         }
       }
-
+#endif
       // Try to limit number of candidates using SATD-costs
       for( uint32_t i = 1; i < uiNumMrgSATDCand; i++ )
       {

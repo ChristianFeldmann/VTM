@@ -2029,6 +2029,9 @@ public:
 #if JVET_M0170_MRG_SHARELIST
   int                         getAvailableLUTBkupMrgNum() const  { return m_MotionCandLuTsBkup->currCnt; }
   MotionInfo                  getMotionInfoFromLUTBkup(int MotCandIdx) const;
+#if JVET_M0483_IBC
+  int                         getAvailableLUTBkupIBCMrgNum() const { return m_MotionCandLuTsBkup->currCntIBC; }
+#endif
 #endif
   MotionInfo                  getMotionInfoFromLUTs(int MotCandIdx) const;
   LutMotionCand*              getMotionLUTs() { return m_MotionCandLut; }

@@ -1042,7 +1042,7 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
   }
 #if JVET_M0170_MRG_SHARELIST
 #if JVET_M0483_IBC
-  int num_avai_candInLUT = ibcFlag ? slice.getAvailableLUTIBCMrgNum() : (isShared ? slice.getAvailableLUTBkupMrgNum() : slice.getAvailableLUTMrgNum());
+  int num_avai_candInLUT = ibcFlag ? (isShared ? slice.getAvailableLUTBkupIBCMrgNum() : slice.getAvailableLUTIBCMrgNum()) : (isShared ? slice.getAvailableLUTBkupMrgNum() : slice.getAvailableLUTMrgNum());
   int offset = ibcFlag ? MAX_NUM_HMVP_CANDS : 0;
 #else
   int num_avai_candInLUT = (isShared ? slice.getAvailableLUTBkupMrgNum() : slice.getAvailableLUTMrgNum());
@@ -1060,8 +1060,8 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
   {
 #if JVET_M0170_MRG_SHARELIST
 #if JVET_M0483_IBC
-    miNeighbor = ibcFlag ? slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx + offset)
-                          : (isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx));
+    miNeighbor = ibcFlag ? (isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx + offset) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx + offset))
+      : (isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx));
 #else
     miNeighbor = isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx);
 #endif
@@ -1306,6 +1306,10 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
     bool isAvailableSubPu = false;
     unsigned subPuMvpPos = 0;
 
+#if JVET_M0170_MRG_SHARELIST
+    bool  isShared = ((pu.Y().lumaSize().width != pu.shareParentSize.width) || (pu.Y().lumaSize().height != pu.shareParentSize.height));
+#endif
+
 #if JVET_L0090_PAIR_AVG
     bool bFound = addMergeHMVPCand(slice, mrgCtx, canFastExit
       , mrgCandIdx
@@ -1320,7 +1324,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
       , true
 #endif
 #if JVET_M0170_MRG_SHARELIST
-      , false
+      , isShared
 #endif
     );
 #else

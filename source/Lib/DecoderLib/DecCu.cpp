@@ -112,7 +112,7 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
   {
     m_shareStateDec = NO_SHARE;
   }
-  bool sharePrepareCondition = ((!cs.pcv->isEncoder) && (!(cs.slice->isIntra())));
+  bool sharePrepareCondition = ((!cs.pcv->isEncoder) && (!(cs.slice->isIntra()) || cs.slice->getSPS()->getIBCFlag()));
 #endif
 
   for( int ch = 0; ch < maxNumChannelType; ch++ )

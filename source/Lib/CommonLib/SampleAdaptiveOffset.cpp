@@ -634,13 +634,17 @@ void SampleAdaptiveOffset::xPCMLFDisableProcess(CodingStructure& cs)
 void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea)
 {
   const SPS& sps = *cs.sps;
-
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+  uint32_t numComponents = CS::isDualITree(cs) ? 1 : m_numberOfComponents;
+#endif
   for( auto &cu : cs.traverseCUs( ctuArea, CH_L ) )
   {
     // restore PCM samples
     if( ( cu.ipcm && sps.getPCMFilterDisableFlag() ) || CU::isLosslessCoded( cu ) )
     {
+#if !JVET_M0277_FIX_PCM_DISABLEFILTER
       const uint32_t numComponents = m_numberOfComponents;
+#endif
 
       for( uint32_t comp = 0; comp < numComponents; comp++ )
       {
@@ -648,6 +652,23 @@ void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea
       }
     }
   }
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+  numComponents = m_numberOfComponents;
+  if (CS::isDualITree(cs) && numComponents)
+  {
+    for (auto &cu : cs.traverseCUs(ctuArea, CH_C))
+    {
+      // restore PCM samples
+      if ((cu.ipcm && sps.getPCMFilterDisableFlag()) || CU::isLosslessCoded(cu))
+      {
+        for (uint32_t comp = 1; comp < numComponents; comp++)
+        {
+          xPCMSampleRestoration(cu, ComponentID(comp));
+        }
+      }
+    }
+  }
+#endif
 }
 
 void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID)

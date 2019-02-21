@@ -104,7 +104,13 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
       {
         Area blk( xPos, yPos, width, height );
         deriveClassification( m_classifier, tmpYuv.get( COMPONENT_Y ), blk );
-        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y]);
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+        Area blkPCM(xPos, yPos, width, height);
+        resetPCMBlkClassInfo(cs, m_classifier, tmpYuv.get(COMPONENT_Y), blkPCM);
+        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y], cs );
+#else
+        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y] );
+#endif
       }
 
       for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
@@ -117,7 +123,11 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
         {
           Area blk( xPos >> chromaScaleX, yPos >> chromaScaleY, width >> chromaScaleX, height >> chromaScaleY );
 
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+          m_filter5x5Blk( m_classifier, recYuv, tmpYuv, blk, compID, alfSliceParam.chromaCoeff, m_clpRngs.comp[compIdx], cs );
+#else
           m_filter5x5Blk( m_classifier, recYuv, tmpYuv, blk, compID, alfSliceParam.chromaCoeff, m_clpRngs.comp[compIdx] );
+#endif
         }
       }
       ctuIdx++;
@@ -272,6 +282,57 @@ void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const
     }
   }
 }
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+void AdaptiveLoopFilter::resetPCMBlkClassInfo(CodingStructure & cs,  AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk)
+{
+  if ( !cs.sps->getPCMFilterDisableFlag() )
+  {
+    return;
+  }
+
+  int height = blk.pos().y + blk.height;
+  int width = blk.pos().x + blk.width;
+  const int clsSizeY = 4;
+  const int clsSizeX = 4;
+  int classIdx = m_ALF_UNUSED_CLASSIDX;
+  int transposeIdx = m_ALF_UNUSED_TRANSPOSIDX;
+
+  for( int i = blk.pos().y; i < height; i += m_CLASSIFICATION_BLK_SIZE )
+  {
+    int nHeight = std::min(i + m_CLASSIFICATION_BLK_SIZE, height) - i;
+
+    for( int j = blk.pos().x; j < width; j += m_CLASSIFICATION_BLK_SIZE )
+    {
+      int nWidth = std::min(j + m_CLASSIFICATION_BLK_SIZE, width) - j;
+      int posX = j;
+      int posY = i;
+
+      for( int subi = 0; subi < nHeight; subi += clsSizeY )
+      {
+        for( int subj = 0; subj < nWidth; subj += clsSizeX )
+        {
+          int yOffset = subi + posY;
+          int xOffset = subj + posX;
+          Position pos(xOffset, yOffset);
+
+          const CodingUnit* cu = cs.getCU(pos, CH_L);
+          if ( cu->ipcm )
+          {
+            AlfClassifier *cl0 = classifier[yOffset] + xOffset;
+            AlfClassifier *cl1 = classifier[yOffset + 1] + xOffset;
+            AlfClassifier *cl2 = classifier[yOffset + 2] + xOffset;
+            AlfClassifier *cl3 = classifier[yOffset + 3] + xOffset;
+            cl0[0] = cl0[1] = cl0[2] = cl0[3] =
+            cl1[0] = cl1[1] = cl1[2] = cl1[3] =
+            cl2[0] = cl2[1] = cl2[2] = cl2[3] =
+            cl3[0] = cl3[1] = cl3[2] = cl3[3] = AlfClassifier(classIdx, transposeIdx);
+          }
+        }
+      }
+    }
+  }
+}
+#endif
 
 void AdaptiveLoopFilter::deriveClassificationBlk( AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift )
 {
@@ -445,13 +506,23 @@ void AdaptiveLoopFilter::deriveClassificationBlk( AlfClassifier** classifier, in
 }
 
 template<AlfFilterType filtType>
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs )
+#else
 void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng )
+#endif
 {
   const bool bChroma = isChroma( compId );
   if( bChroma )
   {
     CHECK( filtType != 0, "Chroma needs to have filtType == 0" );
   }
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+  const SPS*     sps = cs.slice->getSPS();
+  bool isDualTree =CS::isDualITree(cs);
+  bool isPCMFilterDisabled = sps->getPCMFilterDisableFlag();
+  ChromaFormat nChromaFormat = sps->getChromaFormatIdc();
+#endif
 
   const CPelBuf srcLuma = recSrc.get( compId );
   PelBuf dstLuma = recDst.get( compId );
@@ -516,8 +587,26 @@ void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf
       {
         AlfClassifier& cl = pClass[j];
         transposeIdx = cl.transposeIdx;
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+        if( isPCMFilterDisabled && cl.classIdx== m_ALF_UNUSED_CLASSIDX && transposeIdx== m_ALF_UNUSED_TRANSPOSIDX )
+        {
+          continue;
+        }
+#endif
         coef = filterSet + cl.classIdx * MAX_NUM_ALF_LUMA_COEFF;
       }
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+      else if( isPCMFilterDisabled )
+      {
+        Position pos(i, j);
+        CodingUnit* cu = isDualTree ? cs.getCU( recalcPosition(nChromaFormat, CH_L, CH_C, pos), CH_C ): cs.getCU(pos, CH_L);
+        if ( cu->ipcm )
+        {
+          continue;
+        }
+      }
+#endif
+
 
       if( filtType == ALF_FILTER_7 )
       {

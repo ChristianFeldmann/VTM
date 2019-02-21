@@ -142,6 +142,11 @@
 
 #define JVET_M0147_DMVR                                   1 //Decoder side Motion Vector Refinement
 
+#define JVET_M0277_FIX_PCM_DISABLEFILTER                  1 // Fixes of enabling pcm_loop_filter_disabled_flag with PCM mode
+#if JVET_M0277_FIX_PCM_DISABLEFILTER
+#define FIX_PCM                                           1 // Fix PCM bugs in VTM3
+#endif
+
 #if JVET_M0464_UNI_MTS
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;

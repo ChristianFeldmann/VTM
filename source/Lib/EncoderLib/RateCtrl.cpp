@@ -409,38 +409,47 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
         lambdaRatio[14] = lambdaLev5 / lambdaLev1;
         lambdaRatio[15] = lambdaLev5 / lambdaLev1;
 #if JVET_M0600_RATE_CTRL
-        double QDF_lev0_1 = Clip3(0.12, 0.9, QDF_PARA_LEV_1_1*encRCSeq->getPicPara(2).m_skipRatio + QDF_PARA_LEV_1_2);
-        double QDF_lev0_2 = Clip3(0.13, 0.9, QDF_PARA_LEV_2_1*encRCSeq->getPicPara(3).m_skipRatio + QDF_PARA_LEV_2_2);
-        double QDF_lev0_3 = Clip3(0.15, 0.9, QDF_PARA_LEV_3_1*encRCSeq->getPicPara(4).m_skipRatio + QDF_PARA_LEV_3_2);
-        double QDF_lev0_4 = Clip3(0.20, 0.9, QDF_PARA_LEV_4_1*encRCSeq->getPicPara(5).m_skipRatio + QDF_PARA_LEV_4_2);
-        double QDF_lev1_2 = Clip3(0.09, 0.9, QDF_lev0_2*(1 - QDF_lev0_1));
-        double QDF_lev1_3 = Clip3(0.12, 0.9, QDF_lev0_3*(1 - QDF_lev0_1));
-        double QDF_lev1_4 = Clip3(0.14, 0.9, QDF_lev0_4*(1 - QDF_lev0_1));
-        double QDF_lev2_3 = Clip3(0.06, 0.9, QDF_lev0_3*(1 - QDF_lev0_2));
-        double QDF_lev2_4 = Clip3(0.09, 0.9, QDF_lev0_4*(1 - QDF_lev0_2));
-        double QDF_lev3_4 = Clip3(0.10, 0.9, QDF_lev0_4*(1 - QDF_lev0_3));
-        double para_lev_0 = 1 / (1 + 2 * (QDF_lev0_1 + 2 * QDF_lev0_2 + 4 * QDF_lev0_3 + 8 * QDF_lev0_4));
-        double para_lev_1 = 1 / (1 + (3 * QDF_lev1_2 + 5 * QDF_lev1_3 + 8 * QDF_lev1_4));
-        double para_lev_2 = 1 / (1 + 2 * QDF_lev2_3 + 4 * QDF_lev2_4);
-        double para_lev_3 = 1 / (1 + 2 * QDF_lev3_4);
-        double para_lev_4 = 1 / (1.0);
+        const double qdfParaLev2A = 0.5847;
+        const double qdfParaLev2B = -0.0782;
+        const double qdfParaLev3A = 0.5468;
+        const double qdfParaLev3B = -0.1364;
+        const double qdfParaLev4A = 0.6539;
+        const double qdfParaLev4B = -0.203;
+        const double qdfParaLev5A = 0.8623;
+        const double qdfParaLev5B = -0.4676;
+        double qdfLev1Lev2 = Clip3(0.12, 0.9, qdfParaLev2A * encRCSeq->getPicPara(2).m_skipRatio + qdfParaLev2B);
+        double qdfLev1Lev3 = Clip3(0.13, 0.9, qdfParaLev3A * encRCSeq->getPicPara(3).m_skipRatio + qdfParaLev3B);
+        double qdfLev1Lev4 = Clip3(0.15, 0.9, qdfParaLev4A * encRCSeq->getPicPara(4).m_skipRatio + qdfParaLev4B);
+        double qdfLev1Lev5 = Clip3(0.20, 0.9, qdfParaLev5A * encRCSeq->getPicPara(5).m_skipRatio + qdfParaLev5B);
+        double qdfLev2Lev3 = Clip3(0.09, 0.9, qdfLev1Lev3 * (1 - qdfLev1Lev2));
+        double qdfLev2Lev4 = Clip3(0.12, 0.9, qdfLev1Lev4 * (1 - qdfLev1Lev2));
+        double qdfLev2Lev5 = Clip3(0.14, 0.9, qdfLev1Lev5 * (1 - qdfLev1Lev2));
+        double qdfLev3Lev4 = Clip3(0.06, 0.9, qdfLev1Lev4 * (1 - qdfLev1Lev3));
+        double qdfLev3Lev5 = Clip3(0.09, 0.9, qdfLev1Lev5 * (1 - qdfLev1Lev3));
+        double qdfLev4Lev5 = Clip3(0.10, 0.9, qdfLev1Lev5 * (1 - qdfLev1Lev4));
+
+        lambdaLev1 = 1 / (1 + 2 * (qdfLev1Lev2 + 2 * qdfLev1Lev3 + 4 * qdfLev1Lev4 + 8 * qdfLev1Lev5));
+        lambdaLev2 = 1 / (1 + (3 * qdfLev2Lev3 + 5 * qdfLev2Lev4 + 8 * qdfLev2Lev5));
+        lambdaLev3 = 1 / (1 + 2 * qdfLev3Lev4 + 4 * qdfLev3Lev5);
+        lambdaLev4 = 1 / (1 + 2 * qdfLev4Lev5);
+        lambdaLev5 = 1 / (1.0);
 
         lambdaRatio[0] = 1.0;
-        lambdaRatio[1] = para_lev_1 / para_lev_0;
-        lambdaRatio[2] = para_lev_2 / para_lev_0;
-        lambdaRatio[3] = para_lev_3 / para_lev_0;
-        lambdaRatio[4] = para_lev_4 / para_lev_0;
-        lambdaRatio[5] = para_lev_4 / para_lev_0;
-        lambdaRatio[6] = para_lev_3 / para_lev_0;
-        lambdaRatio[7] = para_lev_4 / para_lev_0;
-        lambdaRatio[8] = para_lev_4 / para_lev_0;
-        lambdaRatio[9] = para_lev_2 / para_lev_0;
-        lambdaRatio[10] = para_lev_3 / para_lev_0;
-        lambdaRatio[11] = para_lev_4 / para_lev_0;
-        lambdaRatio[12] = para_lev_4 / para_lev_0;
-        lambdaRatio[13] = para_lev_3 / para_lev_0;
-        lambdaRatio[14] = para_lev_4 / para_lev_0;
-        lambdaRatio[15] = para_lev_4 / para_lev_0;
+        lambdaRatio[1] = lambdaLev2 / lambdaLev1;
+        lambdaRatio[2] = lambdaLev3 / lambdaLev1;
+        lambdaRatio[3] = lambdaLev4 / lambdaLev1;
+        lambdaRatio[4] = lambdaLev5 / lambdaLev1;
+        lambdaRatio[5] = lambdaLev5 / lambdaLev1;
+        lambdaRatio[6] = lambdaLev4 / lambdaLev1;
+        lambdaRatio[7] = lambdaLev5 / lambdaLev1;
+        lambdaRatio[8] = lambdaLev5 / lambdaLev1;
+        lambdaRatio[9] = lambdaLev3 / lambdaLev1;
+        lambdaRatio[10] = lambdaLev4 / lambdaLev1;
+        lambdaRatio[11] = lambdaLev5 / lambdaLev1;
+        lambdaRatio[12] = lambdaLev5 / lambdaLev1;
+        lambdaRatio[13] = lambdaLev4 / lambdaLev1;
+        lambdaRatio[14] = lambdaLev5 / lambdaLev1;
+        lambdaRatio[15] = lambdaLev5 / lambdaLev1;
 #endif
       }
     }

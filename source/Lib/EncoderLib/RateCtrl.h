@@ -74,20 +74,6 @@ const double g_RCBetaMaxValue  = -0.1;
 #define BETA1     1.2517
 #define BETA2     1.7860
 
-#if JVET_M0600_RATE_CTRL
-#define QDF_PARA_LEV_1_1 0.5847  
-#define QDF_PARA_LEV_1_2 -0.0782
-
-#define QDF_PARA_LEV_2_1 0.5468   
-#define QDF_PARA_LEV_2_2 -0.1364
-
-#define QDF_PARA_LEV_3_1 0.6539
-#define QDF_PARA_LEV_3_2 -0.203
-
-#define QDF_PARA_LEV_4_1 0.8623
-#define QDF_PARA_LEV_4_2 -0.4676
-#endif
-
 struct TRCLCU
 {
   int m_actualBits;

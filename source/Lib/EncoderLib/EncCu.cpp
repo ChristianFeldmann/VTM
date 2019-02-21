@@ -1267,7 +1267,11 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   }
 
 #if JVET_M0170_MRG_SHARELIST
+#if JVET_M0483_IBC
+  if ((!slice.isIntra() || slice.getSPS()->getIBCFlag())
+#else
   if (!slice.isIntra()
+#endif
     && tempCS->chType == CHANNEL_TYPE_LUMA
     )
   {

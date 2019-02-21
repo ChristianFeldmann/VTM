@@ -909,6 +909,13 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_uiMaxBTSizeIChroma            = pSrc->m_uiMaxBTSizeIChroma;
   m_uiMaxTTSizeIChroma            = pSrc->m_uiMaxTTSizeIChroma;
   m_uiMaxBTSize                   = pSrc->m_uiMaxBTSize;
+
+  m_depQuantEnabledFlag           = pSrc->m_depQuantEnabledFlag;
+  m_signDataHidingEnabledFlag     = pSrc->m_signDataHidingEnabledFlag;
+
+#if JVET_M0427_INLOOP_RESHAPER
+  m_sliceReshapeInfo              = pSrc->m_sliceReshapeInfo;
+#endif
 }
 
 

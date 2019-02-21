@@ -967,7 +967,7 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
 void EncCu::updateLambda (Slice* slice, const int dQP, const bool updateRdCostLambda)
 {
-#if WCG_EXT
+#if WCG_EXT && !ENABLE_QPA_SUB_CTU
   int    NumberBFrames = ( m_pcEncCfg->getGOPSize() - 1 );
   int    SHIFT_QP = 12;
   double dLambda_scale = 1.0 - Clip3( 0.0, 0.5, 0.05*(double)(slice->getPic()->fieldPic ? NumberBFrames/2 : NumberBFrames) );

@@ -247,13 +247,11 @@ void CABACReader::sao( CodingStructure& cs, unsigned ctuRsAddr )
   int             sao_merge_type          = -1;
   const Position  pos( rx * cs.pcv->maxCUWidth, ry * cs.pcv->maxCUHeight );
   const unsigned  curSliceIdx = cs.slice->getIndependentSliceIdx();
-#if HEVC_TILES_WPP
-  const unsigned  curTileIdx  = cs.picture->tileMap->getTileIdxMap( pos );
-#endif
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__SAO );
 
 #if HEVC_TILES_WPP
+  const unsigned  curTileIdx  = cs.picture->tileMap->getTileIdxMap( pos );
   if( cs.getCURestricted( pos.offset(-(int)cs.pcv->maxCUWidth, 0), curSliceIdx, curTileIdx, CH_L ) )
 #else
   if( cs.getCURestricted( pos.offset(-(int)cs.pcv->maxCUWidth, 0), curSliceIdx, CH_L ) )

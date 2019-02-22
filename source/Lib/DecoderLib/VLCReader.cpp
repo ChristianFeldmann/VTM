@@ -1767,12 +1767,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       parsePredWeightTable(pcSlice, sps);
       pcSlice->initWpScaling(sps);
     }
-    READ_FLAG( uiCode, "dep_quant_enable_flag" );
+    READ_FLAG( uiCode, "dep_quant_enabled_flag" );
     pcSlice->setDepQuantEnabledFlag( uiCode != 0 );
 #if HEVC_USE_SIGN_HIDING
     if( !pcSlice->getDepQuantEnabledFlag() )
     {
-      READ_FLAG( uiCode, "sign_data_hiding_enable_flag" );
+      READ_FLAG( uiCode, "sign_data_hiding_enabled_flag" );
       pcSlice->setSignDataHidingEnabledFlag( uiCode != 0 );
     }
 #endif

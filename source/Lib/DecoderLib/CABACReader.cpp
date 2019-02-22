@@ -1209,18 +1209,13 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
     return;
   }
 
-  uint8_t gbiIdx = GBI_DEFAULT;
-
   CHECK(!(GBI_NUM > 1 && (GBI_NUM == 2 || (GBI_NUM & 0x01) == 1)), " !( GBI_NUM > 1 && ( GBI_NUM == 2 || ( GBI_NUM & 0x01 ) == 1 ) ) ");
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__GBI_IDX);
 
-  int ctxId = 0;
-
   uint32_t idx = 0;
-  uint32_t symbol;
 
-  symbol = (m_BinDecoder.decodeBin(Ctx::GBiIdx(ctxId)));
+  uint32_t symbol = m_BinDecoder.decodeBin(Ctx::GBiIdx(0));
 
   int32_t numGBi = (cu.slice->getCheckLDC()) ? 5 : 3;
 
@@ -1234,7 +1229,7 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
 
     for(int ui = 0; ui < prefixNumBits; ++ui)
     {
-      symbol = (m_BinDecoder.decodeBin(Ctx::GBiIdx(ctxIdGBi)));
+      symbol = m_BinDecoder.decodeBin(Ctx::GBiIdx(ctxIdGBi));
 
       if (symbol == 1)
       {
@@ -1245,7 +1240,7 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
     }
   }
 
-  gbiIdx = (uint8_t)g_GbiParsingOrder[idx];
+  uint8_t gbiIdx = (uint8_t)g_GbiParsingOrder[idx];
   CU::setGbiIdx(cu, gbiIdx);
 
   DTRACE(g_trace_ctx, D_SYNTAX, "cu_gbi_flag() gbi_idx=%d\n", cu.GBiIdx ? 1 : 0);

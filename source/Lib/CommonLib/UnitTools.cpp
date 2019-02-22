@@ -5775,7 +5775,7 @@ bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
   bool   mtsAllowed = compID == COMPONENT_Y;
   const int maxSize = CU::isIntra( *tu.cu ) ? MTS_INTRA_MAX_CU_SIZE : MTS_INTER_MAX_CU_SIZE;
 
-  mtsAllowed &= CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS();
+  mtsAllowed &= CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS() && CU::isInter( *tu.cu );
   mtsAllowed &= ( tu.lwidth() <= maxSize && tu.lheight() <= maxSize );
 #if JVET_M0102_INTRA_SUBPARTITIONS
   mtsAllowed &= !tu.cu->ispMode;

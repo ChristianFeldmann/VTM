@@ -4606,7 +4606,7 @@ void EncCu::xEncodeInterResidual( CodingStructure *&tempCS, CodingStructure *&be
   }
 #if JVET_M0140_SBT
 #if JVET_M0464_UNI_MTS
-  const bool mtsAllowed = tempCS->sps->getUseInterMTS() && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
+  const bool mtsAllowed = tempCS->sps->getUseInterMTS() && CU::isInter( *cu ) && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
 #else
   const bool mtsAllowed = considerEmtSecondPass;
 #endif

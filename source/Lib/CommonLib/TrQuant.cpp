@@ -293,7 +293,7 @@ void TrQuant::invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &
 void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer )
 {
 #if JVET_M0464_UNI_MTS
-  bool mtsActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS();
+  bool mtsActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS() && CU::isInter( *tu.cu );
 #else
   bool emtActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraEMT() : tu.cs->sps->getUseInterEMT();
 #endif

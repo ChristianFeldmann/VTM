@@ -295,7 +295,7 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
 #if JVET_M0464_UNI_MTS
   bool mtsActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS() && CU::isInter( *tu.cu );
 #else
-  bool emtActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraEMT() : tu.cs->sps->getUseInterEMT();
+  bool emtActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraEMT() : tu.cs->sps->getUseInterEMT() && CU::isInter( *tu.cu );
 #endif
 
 #if JVET_M0303_IMPLICIT_MTS

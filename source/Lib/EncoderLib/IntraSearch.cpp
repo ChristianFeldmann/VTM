@@ -811,6 +811,45 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
       }
     }
 
+#if JVET_M0102_INTRA_SUBPARTITIONS && JVET_M0464_UNI_MTS
+    if ( nOptionsForISP > 1 )
+    {
+      //we create a single full RD list that includes all intra modes using regular intra, MRL and ISP
+      auto* firstIspList  = ispOptions[1] == HOR_INTRA_SUBPARTITIONS ? &m_rdModeListWithoutMrlHor : &m_rdModeListWithoutMrlVer;
+      auto* secondIspList = ispOptions[1] == HOR_INTRA_SUBPARTITIONS ? &m_rdModeListWithoutMrlVer : &m_rdModeListWithoutMrlHor;
+
+      if ( m_pcEncCfg->getUseFastISP() )
+      {
+        // find the first non-MRL mode
+        size_t indexFirstMode = std::find( extendRefList.begin(), extendRefList.end(), 0 ) - extendRefList.begin();
+        // if not found, just take the last mode
+        if( indexFirstMode >= extendRefList.size() ) indexFirstMode = extendRefList.size() - 1;
+        // move the mode indicated by indexFirstMode to the beginning
+        for( int idx = ((int)indexFirstMode) - 1; idx >= 0; idx-- )
+        {
+          std::swap( extendRefList[idx], extendRefList[idx + 1] );
+          std::swap( uiRdModeList [idx], uiRdModeList [idx + 1] );
+        }
+        //insert all ISP modes after the first non-mrl mode
+        uiRdModeList.insert( uiRdModeList.begin() + 1, secondIspList->begin(), secondIspList->end() );
+        uiRdModeList.insert( uiRdModeList.begin() + 1, firstIspList->begin() , firstIspList->end()  );
+
+        extendRefList.insert( extendRefList.begin() + 1, secondIspList->size(), MRL_NUM_REF_LINES + ispOptions[2] ); 
+        extendRefList.insert( extendRefList.begin() + 1, firstIspList->size() , MRL_NUM_REF_LINES + ispOptions[1] ); 
+      }
+      else
+      {
+        //insert all ISP modes at the end of the current list
+        uiRdModeList.insert( uiRdModeList.end(), secondIspList->begin(), secondIspList->end() );
+        uiRdModeList.insert( uiRdModeList.end(), firstIspList->begin() , firstIspList->end()  );
+
+        extendRefList.insert( extendRefList.end(), secondIspList->size(), MRL_NUM_REF_LINES + ispOptions[2] );
+        extendRefList.insert( extendRefList.end(), firstIspList->size() , MRL_NUM_REF_LINES + ispOptions[1] );
+      }
+    }
+    CHECKD(uiRdModeList.size() != extendRefList.size(),"uiRdModeList and extendRefList do not have the same size!");
+#endif
+
     //===== check modes (using r-d costs) =====
     uint32_t       uiBestPUMode  = 0;
     int            bestExtendRef = 0;
@@ -830,12 +869,21 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     int       bestNormalIntraModeIndex    = -1;
     uint8_t   bestIspOption               = NOT_INTRA_SUBPARTITIONS;
     TUIntraSubPartitioner subTuPartitioner( partitioner );
-#if !JVET_M0464_UNI_MTS
+#if JVET_M0464_UNI_MTS
+    bool      ispHorAllZeroCbfs = false, ispVerAllZeroCbfs = false;
+
+    for (uint32_t uiMode = 0; uiMode < numModesForFullRD; uiMode++)
+    {
+      // set luma prediction mode
+      uint32_t uiOrgMode = uiRdModeList[uiMode];
+
+      cu.ispMode = extendRefList[uiMode] > MRL_NUM_REF_LINES ? extendRefList[uiMode] - MRL_NUM_REF_LINES : NOT_INTRA_SUBPARTITIONS;
+#else
     if ( !cu.ispMode && !cu.emtFlag )
     {
       m_modeCtrl->setEmtFirstPassNoIspCost( MAX_DOUBLE );
     }
-#endif
+
     for( uint32_t ispOptionIdx = 0; ispOptionIdx < nOptionsForISP; ispOptionIdx++ )
     {
       cu.ispMode = ispOptions[ispOptionIdx];
@@ -844,7 +892,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
       {
         // set luma prediction mode
         uint32_t uiOrgMode = cu.ispMode == NOT_INTRA_SUBPARTITIONS ? uiRdModeList[uiMode] : cu.ispMode == HOR_INTRA_SUBPARTITIONS ? m_rdModeListWithoutMrlHor[uiMode] : m_rdModeListWithoutMrlVer[uiMode];
-
+#endif
         pu.intraDir[0] = uiOrgMode;
 
         int multiRefIdx = 0;
@@ -853,6 +901,12 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
         {
           intraSubPartitionsProcOrder = CU::getISPType( cu, COMPONENT_Y );
           bool tuIsDividedInRows = CU::divideTuInRows( cu );
+#if JVET_M0464_UNI_MTS
+          if ( ( tuIsDividedInRows && ispHorAllZeroCbfs ) || ( !tuIsDividedInRows && ispVerAllZeroCbfs ) )
+          {
+            continue;
+          }
+#endif
           if( m_intraModeDiagRatio.at( bestNormalIntraModeIndex ) > 1.25 )
           {
             continue;
@@ -894,11 +948,25 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
       }
       else
       {
+#if JVET_M0464_UNI_MTS
+        xRecurIntraCodingLumaQT( *csTemp, partitioner, bestIspOption ? bestCurrentCost : MAX_DOUBLE, -1, TU_NO_ISP, bestIspOption );
+#else
         xRecurIntraCodingLumaQT( *csTemp, partitioner, MAX_DOUBLE, -1 );
+#endif
       }
 
       if( cu.ispMode && !csTemp->cus[0]->firstTU->cbf[COMPONENT_Y] )
       {
+#if JVET_M0464_UNI_MTS
+        if ( cu.ispMode == HOR_INTRA_SUBPARTITIONS )
+        {
+          ispHorAllZeroCbfs |= ( m_pcEncCfg->getUseFastISP() && csTemp->tus[0]->lheight() > 2 && csTemp->cost >= bestCurrentCost );
+        }
+        else
+        {
+          ispVerAllZeroCbfs |= ( m_pcEncCfg->getUseFastISP() && csTemp->tus[0]->lwidth() > 2 && csTemp->cost >= bestCurrentCost );
+        }
+#endif
         csTemp->cost = MAX_DOUBLE;
 #if JVET_M0428_ENC_DB_OPT
         csTemp->costDbOffset = 0;
@@ -962,8 +1030,8 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
     {
       m_modeCtrl->setEmtFirstPassNoIspCost(csBest->cost);
     }
-#endif
     }
+#endif
     cu.ispMode = bestIspOption;
 #endif
 
@@ -1983,7 +2051,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 }
 
 #if JVET_M0102_INTRA_SUBPARTITIONS
+#if JVET_M0464_UNI_MTS
+void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &partitioner, const double bestCostSoFar, const int subTuIdx, const PartSplit ispType, const bool ispIsCurrentWinnder )
+#else
 void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &partitioner, const double bestCostSoFar, const int subTuIdx, const PartSplit ispType )
+#endif
 {
         int   subTuCounter = subTuIdx;
   const UnitArea &currArea = partitioner.currArea();
@@ -2125,6 +2197,10 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 #endif
 
 #if JVET_M0464_UNI_MTS
+#if JVET_M0102_INTRA_SUBPARTITIONS
+    double bestDCT2cost = MAX_DOUBLE;
+    double threshold = m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinnder && nNumTransformCands > 1 ? 1 + 1.4 / sqrt( cu.lwidth() * cu.lheight() ) : 1;
+#endif
     for( int modeId = firstCheckId; modeId < nNumTransformCands; modeId++ )
     {
       if( !cbfDCT2 || ( m_pcEncCfg->getUseTransformSkipFast() && bestModeId[COMPONENT_Y] == 1 ) )
@@ -2135,6 +2211,13 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       {
         continue;
       }
+#if JVET_M0102_INTRA_SUBPARTITIONS
+      //we compare the DCT-II cost against the best ISP cost so far (except for TS)
+      if ( m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinnder && trModes[modeId].first != 0 && ( trModes[modeId].first != 1 || !tsAllowed ) && bestDCT2cost > bestCostSoFar * threshold )
+      {
+        continue;
+      }
+#endif
       tu.mtsIdx = trModes[modeId].first;
 #else
     for( int modeId = firstCheckId; modeId <= lastCheckId; modeId++ )
@@ -2250,6 +2333,13 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 #endif
         singleCostTmp     = m_pcRdCost->calcRdCost( singleTmpFracBits, singleDistTmpLuma );
       }
+
+#if JVET_M0102_INTRA_SUBPARTITIONS && JVET_M0464_UNI_MTS
+      if ( !cu.ispMode && nNumTransformCands > 1 && modeId == firstCheckId )
+      {
+        bestDCT2cost = singleCostTmp;
+      }
+#endif
 
       if (singleCostTmp < dSingleCost)
       {

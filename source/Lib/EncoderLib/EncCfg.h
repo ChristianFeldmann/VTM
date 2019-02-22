@@ -396,6 +396,9 @@ protected:
   int*      m_aidQP;
   uint32_t      m_uiDeltaQpRD;
   bool      m_bFastDeltaQP;
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  bool      m_useFastISP;
+#endif
 
   bool      m_bUseConstrainedIntraPred;
   bool      m_bFastUDIUseMPMEnabled;
@@ -1120,6 +1123,10 @@ public:
   void setLog2MaxTransformSkipBlockSize                ( uint32_t u )    { m_log2MaxTransformSkipBlockSize  = u;       }
   bool getIntraSmoothingDisabledFlag               ()      const { return m_intraSmoothingDisabledFlag; }
   void setIntraSmoothingDisabledFlag               (bool bValue) { m_intraSmoothingDisabledFlag=bValue; }
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  bool getUseFastISP                                   ()         { return m_useFastISP;    }
+  void setUseFastISP                                   ( bool b ) { m_useFastISP  = b;   }
+#endif
 
   const int* getdQPs                        () const { return m_aidQP;       }
   uint32_t      getDeltaQpRD                    () const { return m_uiDeltaQpRD; }

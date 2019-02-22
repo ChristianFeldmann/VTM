@@ -1036,6 +1036,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast intra transform skipping")
   ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     2U, "Specify transform-skip maximum size. Minimum 2. (not valid in V1 profiles)")
 #endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  ("ISPFast",                                         m_useFastISP,                                     false, "Fast encoder search for ISP")
+#endif
   ("ImplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT],        false, "Enable implicitly signalled residual DPCM for intra (also known as sample-adaptive intra predict) (not valid in V1 profiles)")
   ("ExplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT],        false, "Enable explicitly signalled residual DPCM for inter (not valid in V1 profiles)")
   ("ResidualRotation",                                m_transformSkipRotationEnabledFlag,               false, "Enable rotation of transform-skipped and transquant-bypassed TUs through 180 degrees prior to entropy coding (not valid in V1 profiles)")
@@ -3246,6 +3249,9 @@ void EncAppCfg::xPrintParameter()
   if( m_MTS ) msg( VERBOSE, "MTSMaxCand: %1d(intra) %1d(inter) ", m_MTSIntraMaxCand, m_MTSInterMaxCand );
 #else
   if( m_EMT ) msg( VERBOSE, "EMTFast: %1d(intra) %1d(inter) ", ( m_FastEMT & m_EMT & 1 ), ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
+#endif
+#if JVET_M0102_INTRA_SUBPARTITIONS
+  msg( VERBOSE, "ISPFast:%d ", m_useFastISP );
 #endif
   msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
   msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );

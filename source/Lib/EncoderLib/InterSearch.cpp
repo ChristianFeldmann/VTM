@@ -1756,6 +1756,9 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
         PU::fillMvpCand(pu, eRefPicList, refIdx, currAMVPInfo4Pel);
         pu.cu->imv = 1;
         PU::fillMvpCand(pu, eRefPicList, refIdx, currAMVPInfoPel);
+        AMVPInfo currAMVPInfoQPel;
+        pu.cu->imv = 0;
+        PU::fillMvpCand(pu, eRefPicList, refIdx, currAMVPInfoQPel);
         CHECK(currAMVPInfoPel.numCand <= 1, "Wrong")
 
         const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf().get(COMPONENT_Y).buf;
@@ -1772,11 +1775,11 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
           int curMVPIdx = 0;
           unsigned int curMVPbits = MAX_UINT;
           Mv cMv((*it).x - currBlockHash.x, (*it).y - currBlockHash.y);
+          cMv.changePrecisionAmvr(MV_PRECISION_INT, MV_PRECISION_QUARTER);
 
           for (int mvpIdxTemp = 0; mvpIdxTemp < 2; mvpIdxTemp++)
           {
-            Mv cMvPredPel = currAMVPInfoPel.mvCand[mvpIdxTemp];
-            cMvPredPel >>= 2;
+            Mv cMvPredPel = currAMVPInfoQPel.mvCand[mvpIdxTemp];
             m_pcRdCost->setPredictor(cMvPredPel);
 
             unsigned int tempMVPbits = m_pcRdCost->getBitsOfVectorWithPredictor(cMv.getHor(), cMv.getVer(), 0);
@@ -1785,22 +1788,34 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
             {
               curMVPbits = tempMVPbits;
               curMVPIdx = mvpIdxTemp;
-              pu.cu->imv = 1;
+              pu.cu->imv = 0;
             }
 
-            if ((cMv.getHor() % 4 == 0) && (cMv.getVer() % 4 == 0))
+            if (pu.cu->slice->getSPS()->getAMVREnabledFlag() && (cMv.getHor() % 4 == 0) && (cMv.getVer() % 4 == 0))
             {
-              unsigned int bitsMVP4Pel = MAX_UINT;
-              Mv mvPredQuadPel = currAMVPInfo4Pel.mvCand[mvpIdxTemp];
-              mvPredQuadPel >>= 4;
-              m_pcRdCost->setPredictor(mvPredQuadPel);
-              bitsMVP4Pel = m_pcRdCost->getBitsOfVectorWithPredictor(cMv.getHor() >> 2, cMv.getVer() >> 2, 0);
-
-              if (bitsMVP4Pel < curMVPbits)
+              unsigned int bitsMVP1Pel = MAX_UINT;
+              Mv mvPred1Pel = currAMVPInfoPel.mvCand[mvpIdxTemp];
+              m_pcRdCost->setPredictor(mvPred1Pel);
+              bitsMVP1Pel = m_pcRdCost->getBitsOfVectorWithPredictor(cMv.getHor(), cMv.getVer(), 2);
+              if (bitsMVP1Pel < curMVPbits)
               {
-                curMVPbits = bitsMVP4Pel;
+                curMVPbits = bitsMVP1Pel;
                 curMVPIdx = mvpIdxTemp;
-                pu.cu->imv = 2;
+                pu.cu->imv = 1;
+              }
+
+              if ((cMv.getHor() % 16 == 0) && (cMv.getVer() % 16 == 0))
+              {
+                unsigned int bitsMVP4Pel = MAX_UINT;
+                Mv mvPred4Pel = currAMVPInfo4Pel.mvCand[mvpIdxTemp];
+                m_pcRdCost->setPredictor(mvPred4Pel);
+                bitsMVP1Pel = m_pcRdCost->getBitsOfVectorWithPredictor(cMv.getHor(), cMv.getVer(), 4);
+                if (bitsMVP4Pel < curMVPbits)
+                {
+                  curMVPbits = bitsMVP4Pel;
+                  curMVPIdx = mvpIdxTemp;
+                  pu.cu->imv = 2;
+                }
               }
             }
           }
@@ -1821,7 +1836,6 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
 
           if (currCost < bestCost)
           {
-            cMv <<= 2;
             bestCost = currCost;
             bestRefPicList = eRefPicList;
             bestRefIndex = refIdx;
@@ -1835,6 +1849,10 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
             else if (pu.cu->imv == 1)
             {
               bestMvd = cMv - currAMVPInfoPel.mvCand[curMVPIdx];
+            }
+            else
+            {
+              bestMvd = cMv - currAMVPInfoQPel.mvCand[curMVPIdx];
             }
           }
         }

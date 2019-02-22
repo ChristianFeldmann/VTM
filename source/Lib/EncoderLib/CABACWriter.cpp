@@ -2679,7 +2679,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
   const int stateTab  = ( tu.cs->slice->getDepQuantEnabledFlag() ? 32040 : 0 );
   int       state     = 0;
 #if !JVET_M0464_UNI_MTS
-  bool useEmt = ( cu.cs->sps->getUseIntraEMT() && cu.predMode == MODE_INTRA ) || ( cu.cs->sps->getUseInterEMT() && cu.predMode != MODE_INTRA );
+  bool useEmt = ( cu.cs->sps->getUseIntraEMT() && cu.predMode == MODE_INTRA ) || ( cu.cs->sps->getUseInterEMT() && cu.predMode == MODE_INTER );
   useEmt = useEmt && isLuma(compID);
 #if JVET_M0102_INTRA_SUBPARTITIONS
   useEmt = useEmt && !cu.ispMode;
@@ -2848,7 +2848,7 @@ void CABACWriter::emt_cu_flag( const CodingUnit& cu )
   const CodingStructure& cs = *cu.cs;
 
 #if JVET_M0483_IBC
-  if (!((cs.sps->getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getUseInterEMT() && !CU::isIntra(cu))) || isChroma(cu.chType))
+  if (!((cs.sps->getUseIntraEMT() && CU::isIntra(cu)) || (cs.sps->getUseInterEMT() && CU::isInter(cu))) || isChroma(cu.chType))
 #else
   if( !( ( cs.sps->getUseIntraEMT() && CU::isIntra( cu ) ) || ( cs.sps->getUseInterEMT() && CU::isInter( cu ) ) ) || isChroma( cu.chType ) )
 #endif

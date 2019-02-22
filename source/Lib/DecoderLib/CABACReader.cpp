@@ -951,6 +951,7 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
     cu.mmvdSkip = false;
     unsigned ctxId = DeriveCtx::CtxSkipFlag(cu);
     unsigned skip = m_BinDecoder.decodeBin(Ctx::SkipFlag(ctxId));
+    DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, skip ? 1 : 0 );
     if (skip)
     {
       cu.skip = true;

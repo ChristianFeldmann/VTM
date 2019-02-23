@@ -4484,7 +4484,7 @@ Distortion EncCu::getDistortionDb( CodingStructure &cs, CPelBuf org, CPelBuf rec
 {
   Distortion dist = 0;
 #if WCG_EXT
-  CPelBuf orgLuma = cs.picture->getOrigBuf( compArea );
+  CPelBuf orgLuma = cs.picture->getOrigBuf( cs.area.blocks[COMPONENT_Y] );
 #if JVET_M0427_INLOOP_RESHAPER
   if ( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
     m_pcEncCfg->getReshaper() && ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() ) ) )
@@ -4493,7 +4493,7 @@ Distortion EncCu::getDistortionDb( CodingStructure &cs, CPelBuf org, CPelBuf rec
 #endif
   {
 #if JVET_M0427_INLOOP_RESHAPER
-    if ( compID == COMPONENT_Y && !afterDb )
+    if ( compID == COMPONENT_Y && !afterDb && !m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled())
     {
       CompArea    tmpArea( COMPONENT_Y, cs.area.chromaFormat, Position( 0, 0 ), compArea.size() );
       PelBuf tmpRecLuma = m_tmpStorageLCU->getBuf( tmpArea );
@@ -5102,12 +5102,18 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
       xReconInter( cu );
     }
 
+    Distortion finalDistortion = 0;
 #if JVET_M0428_ENC_DB_OPT
     tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
-    xCalDebCost( *tempCS, partitioner, true );
-#else
+    if ( m_pcEncCfg->getUseEncDbOpt() )
+    {
+      xCalDebCost( *tempCS, partitioner, true );
+      finalDistortion = tempCS->dist;
+    }
+    else
+    {
+#endif
     const SPS &sps = *tempCS->sps;
-    Distortion finalDistortion = 0;
     const int  numValidComponents = getNumberValidComponents( tempCS->area.chromaFormat );
 
     for( int comp = 0; comp < numValidComponents; comp++ )
@@ -5149,6 +5155,8 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
 #endif
       finalDistortion += m_pcRdCost->getDistPart( org, reco, sps.getBitDepth( toChannelType( compID ) ), compID, DF_SSE );
     }
+#if JVET_M0428_ENC_DB_OPT
+    }
 #endif
 
     m_CABACEstimator->getCtx() = m_CurrCtx->start;
@@ -5159,9 +5167,8 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
     cuCtx.isChromaQpAdjCoded = true;
     m_CABACEstimator->coding_unit( cu, partitioner, cuCtx );
 
-#if JVET_M0428_ENC_DB_OPT == 0
+
     tempCS->dist     = finalDistortion;
-#endif
     tempCS->fracBits = m_CABACEstimator->getEstFracBits();
     tempCS->cost     = m_pcRdCost->calcRdCost( tempCS->fracBits, tempCS->dist );
 

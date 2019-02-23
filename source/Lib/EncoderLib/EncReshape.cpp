@@ -113,7 +113,7 @@ void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const
 void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isIBC)
 #endif
 {
-  if (m_lumaBD >= 10)
+  if (m_lumaBD == 10)
   {
     m_sliceReshapeInfo.sliceReshaperEnableFlag = true;
     if (reshapeCW.rspIntraPeriod == 1)
@@ -1097,14 +1097,14 @@ void EncReshape::initLUTfromdQPModel()
     absDeltaCW = (deltaCW < 0) ? (-deltaCW) : deltaCW;
     if (absDeltaCW > maxAbsDeltaCW)     {      maxAbsDeltaCW = absDeltaCW;    }
   }
-  m_sliceReshapeInfo.maxNbitsNeededDeltaCW = g_aucLog2[maxAbsDeltaCW << 1];
+  m_sliceReshapeInfo.maxNbitsNeededDeltaCW = std::max(1, 1 + floorLog2(maxAbsDeltaCW));
 
   for (int i = 0; i < pwlFwdLUTsize; i++)
   {
     int16_t Y1 = m_reshapePivot[i];
     int16_t Y2 = m_reshapePivot[i + 1];
     m_fwdLUT[i*pwlFwdBinLen] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)Y1);
-    int log2PwlFwdBinLen = g_aucLog2[pwlFwdBinLen];
+    int log2PwlFwdBinLen = floorLog2(pwlFwdBinLen);
     int32_t scale = ((int32_t)(Y2 - Y1) * (1 << FP_PREC) + (1 << (log2PwlFwdBinLen - 1))) >> (log2PwlFwdBinLen);
     for (int j = 1; j < pwlFwdBinLen; j++)
     {
@@ -1144,7 +1144,7 @@ void EncReshape::constructReshaperSDR()
   int totCW = bdShift != 0 ? (bdShift > 0 ? m_reshapeLUTSize / (1<<bdShift) : m_reshapeLUTSize * (1 << (-bdShift))) : m_reshapeLUTSize;
   int histBins = PIC_ANALYZE_CW_BINS;
   int histLenth = totCW/histBins;
-  int log2HistLenth = g_aucLog2[histLenth];
+  int log2HistLenth = floorLog2(histLenth);
   int16_t *tempFwdLUT = new int16_t[m_reshapeLUTSize + 1]();
   int i, j;
   int cwScaleBins1, cwScaleBins2;
@@ -1270,10 +1270,10 @@ void EncReshape::constructReshaperSDR()
     absDeltaCW = (deltaCW < 0) ? (-deltaCW) : deltaCW;
     if (absDeltaCW > maxAbsDeltaCW)      {      maxAbsDeltaCW = absDeltaCW;    }
   }
-  m_sliceReshapeInfo.maxNbitsNeededDeltaCW = std::max(1, (int)g_aucLog2[maxAbsDeltaCW << 1]);
+  m_sliceReshapeInfo.maxNbitsNeededDeltaCW = std::max(1, 1 + floorLog2(maxAbsDeltaCW));
 
   histLenth = m_initCW;
-  log2HistLenth = g_aucLog2[histLenth];
+  log2HistLenth = floorLog2(histLenth);
 
   int sumBins = 0;
   for (i = 0; i < PIC_CODE_CW_BINS; i++)   { sumBins += m_binCW[i];  }

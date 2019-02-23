@@ -199,7 +199,7 @@ void Reshape::constructReshaper()
 
     m_fwdLUT[i*pwlFwdBinLen] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)Y1);
 
-    int log2PwlFwdBinLen = g_aucLog2[pwlFwdBinLen];
+    int log2PwlFwdBinLen = floorLog2(pwlFwdBinLen);
 
     int32_t scale = ((int32_t)(Y2 - Y1) * (1 << FP_PREC) + (1 << (log2PwlFwdBinLen - 1))) >> (log2PwlFwdBinLen);
     for (int j = 1; j < pwlFwdBinLen; j++)

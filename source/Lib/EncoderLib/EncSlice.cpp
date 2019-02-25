@@ -1744,6 +1744,14 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       double actualLambda = pRdCost->getLambda();
       int numberOfEffectivePixels    = 0;
 
+#if JVET_M0600_RATE_CTRL
+      int numberOfSkipPixel = 0;
+      for (auto &cu : cs.traverseCUs(ctuArea, CH_L))
+      {
+        numberOfSkipPixel += cu.skip*cu.lumaSize().area();
+      }
+#endif
+
       for( auto &cu : cs.traverseCUs( ctuArea, CH_L ) )
       {
         if( !cu.skip || cu.rootCbf )
@@ -1752,7 +1760,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
           break;
         }
       }
-
+#if JVET_M0600_RATE_CTRL
+      double skipRatio = (double)numberOfSkipPixel / ctuArea.lumaSize().area();
+#endif
       CodingUnit* cu = cs.getCU( ctuArea.lumaPos(), CH_L );
 
       if ( numberOfEffectivePixels == 0 )
@@ -1764,8 +1774,13 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
         actualQP = cu->qp;
       }
       pRdCost->setLambda(oldLambda, pcSlice->getSPS()->getBitDepths());
+#if JVET_M0600_RATE_CTRL
+      pRateCtrl->getRCPic()->updateAfterCTU(pRateCtrl->getRCPic()->getLCUCoded(), actualBits, actualQP, actualLambda, skipRatio,
+        pcSlice->isIRAP() ? 0 : pCfg->getLCULevelRC());
+#else
       pRateCtrl->getRCPic()->updateAfterCTU( pRateCtrl->getRCPic()->getLCUCoded(), actualBits, actualQP, actualLambda,
                                              pcSlice->isIRAP() ? 0 : pCfg->getLCULevelRC() );
+#endif
     }
 #if ENABLE_QPA
     else if (pCfg->getUsePerceptQPA() && pcSlice->getPPS()->getUseDQP())

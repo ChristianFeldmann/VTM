@@ -52,6 +52,8 @@
 
 #define JCTVC_Y0038_PARAMS                                1
 
+#define JVET_M0600_RATE_CTRL                              1 //frame level bit allocation by qdf 
+
 #define JVET_M0451_INTEROPERABILITY_POINT_SYNTAX          1 
 
 #define JVET_M0428_ENC_DB_OPT                             1 // Encoder optimization with deblocking filter

@@ -631,7 +631,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 
   WRITE_UVLC( pcSPS->getBitDepth(CHANNEL_TYPE_LUMA) - 8,                      "bit_depth_luma_minus8" );
-  
+
   const bool         chromaEnabled         = isChromaEnabled(format);
   WRITE_UVLC( chromaEnabled ? (pcSPS->getBitDepth(CHANNEL_TYPE_CHROMA) - 8):0,  "bit_depth_chroma_minus8" );
 
@@ -679,7 +679,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_UVLC(g_aucLog2[pcSPS->getMaxTTSizeIChroma()] - g_aucLog2[pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)], "sps_log2_diff_max_tt_min_qt_intra_tile_group_chroma");
     }
   }
-  
+
   // KJS: does not exist anymore -> remove?
   WRITE_UVLC( pcSPS->getQuadtreeTULog2MinSize() - 2,                                 "log2_min_luma_transform_block_size_minus2" );
     WRITE_UVLC( pcSPS->getQuadtreeTULog2MaxSize() - pcSPS->getQuadtreeTULog2MinSize(), "log2_diff_max_min_luma_transform_block_size" );
@@ -761,7 +761,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   // KJS: sps_ciip_enabled_flag
   WRITE_FLAG( pcSPS->getUseMHIntra() ? 1 : 0,                                                  "mhintra_flag" );
-  
+
   WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "triangle_flag" );
 
   // KJS: not in draft yet
@@ -780,7 +780,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if JVET_M0427_INLOOP_RESHAPER
   WRITE_FLAG(pcSPS->getUseReshaper() ? 1 : 0, "sps_reshaper_enable_flag");
 #endif
-  
+
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   WRITE_FLAG( pcSPS->getLadfEnabled() ? 1 : 0,                                                 "sps_ladf_enabled_flag" );
   if ( pcSPS->getLadfEnabled() )
@@ -832,7 +832,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     }
   }
 #endif
-  
+
   // KJS: no VUI defined yet
   WRITE_FLAG( pcSPS->getVuiParametersPresentFlag(),            "vui_parameters_present_flag" );
   if (pcSPS->getVuiParametersPresentFlag())

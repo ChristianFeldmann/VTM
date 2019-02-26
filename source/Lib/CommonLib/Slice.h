@@ -990,7 +990,7 @@ private:
   int               m_LadfQpOffset[MAX_LADF_INTERVALS];
   int               m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
-  
+
 #if !JVET_M0483_IBC
   unsigned    m_IBCMode;
 #endif
@@ -1249,7 +1249,7 @@ public:
   void                    setMaxSbtSize( uint8_t val )                                                    { m_MaxSbtSize = val; }
   uint8_t                 getMaxSbtSize() const                                                           { return m_MaxSbtSize; }
 #endif
-  
+
   void      setAMVREnabledFlag    ( bool b )                                        { m_AMVREnabledFlag = b; }
   bool      getAMVREnabledFlag    ()                                      const     { return m_AMVREnabledFlag; }
   void      setUseAffine          ( bool b )                                        { m_Affine = b; }
@@ -1294,7 +1294,7 @@ public:
   void      setLadfIntervalLowerBound( int value, int idx )                         { m_LadfIntervalLowerBound[ idx ] = value; }
   int       getLadfIntervalLowerBound( int idx )                          const     { return m_LadfIntervalLowerBound[ idx ]; }
 #endif
- 
+
   void      setUseMHIntra         ( bool b )                                        { m_MHIntra = b; }
   bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
   void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }

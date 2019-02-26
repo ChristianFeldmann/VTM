@@ -5227,6 +5227,7 @@ void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, c
 
   MotionInfo biMv;
   biMv.isInter  = true;
+  biMv.sliceIdx = pu.cs->slice->getIndependentSliceIdx();
 
   if( triangleMrgCtx.interDirNeighbours[candIdx0] == 1 && triangleMrgCtx.interDirNeighbours[candIdx1] == 2 )
   {
@@ -5301,6 +5302,7 @@ void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, c
         mb.at( x, y ).refIdx[1] = biMv.refIdx[1];
         mb.at( x, y ).mv    [0] = biMv.mv    [0];
         mb.at( x, y ).mv    [1] = biMv.mv    [1];
+        mb.at( x, y ).sliceIdx  = biMv.sliceIdx;
       }
       else if( g_triangleMvStorage[splitDir][idxH][idxW][y][x] == 0 )
       {
@@ -5310,6 +5312,7 @@ void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, c
         mb.at( x, y ).refIdx[1] = triangleMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
         mb.at( x, y ).mv    [0] = triangleMrgCtx.mvFieldNeighbours[ candIdx0 << 1     ].mv;
         mb.at( x, y ).mv    [1] = triangleMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].mv;
+        mb.at( x, y ).sliceIdx  = biMv.sliceIdx;
       }
       else
       {
@@ -5319,6 +5322,7 @@ void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, c
         mb.at( x, y ).refIdx[1] = triangleMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
         mb.at( x, y ).mv    [0] = triangleMrgCtx.mvFieldNeighbours[ candIdx1 << 1     ].mv;
         mb.at( x, y ).mv    [1] = triangleMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
+        mb.at( x, y ).sliceIdx  = biMv.sliceIdx;
       }
     }
   }

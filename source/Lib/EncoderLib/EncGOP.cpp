@@ -2519,7 +2519,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         m_pcEncLib->setParamSetChanged(pcSlice->getSPS()->getSPSId(), pcSlice->getPPS()->getPPSId());
       }
       actualTotalBits += xWriteParameterSets(accessUnit, pcSlice, writePS);
-      
+
       if (writePS)
 #else
       actualTotalBits += xWriteParameterSets( accessUnit, pcSlice, m_bSeqFirst );

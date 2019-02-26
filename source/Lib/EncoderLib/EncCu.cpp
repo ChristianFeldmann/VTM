@@ -4403,7 +4403,7 @@ void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool cal
       {
         const CompArea&  compArea = areaLeft.block(compId);
         picDbBuf.getBuf( compArea ).copyFrom( cs.picture->getRecoBuf( compArea ) );
-#if JVET_M0427_INLOOP_RESHAPER       
+#if JVET_M0427_INLOOP_RESHAPER
         if ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma( compId ) )
         {
           picDbBuf.getBuf( compArea ).rspSignal( m_pcReshape->getInvLUT() );

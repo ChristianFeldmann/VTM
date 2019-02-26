@@ -67,7 +67,7 @@ private:
   /// CU-level deblocking function
   void xDeblockCU                 (       CodingUnit& cu, const DeblockEdgeDir edgeDir );
 #endif
-  
+
   // set / get functions
   void xSetLoopfilterParam        ( const CodingUnit& cu );
 

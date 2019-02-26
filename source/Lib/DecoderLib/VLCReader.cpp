@@ -1104,7 +1104,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_M0427_INLOOP_RESHAPER
   READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);
 #endif
-  
+
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   READ_FLAG( uiCode, "sps_ladf_enabled_flag" );                     pcSPS->setLadfEnabled( uiCode != 0 );
   if ( pcSPS->getLadfEnabled() )
@@ -1120,7 +1120,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     }
   }
 #endif
- 
+
   // KJS: reference picture sets to be replaced
   READ_UVLC( uiCode, "num_short_term_ref_pic_sets" );
   CHECK(uiCode > 64, "Invalid code");

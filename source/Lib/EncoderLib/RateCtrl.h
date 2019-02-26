@@ -94,7 +94,7 @@ struct TRCParameter
   double m_beta;
   int    m_validPix;
 #if JVET_M0600_RATE_CTRL
-  double m_skipRatio; 
+  double m_skipRatio;
 #endif
 };
 

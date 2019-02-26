@@ -777,7 +777,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
       {
         uiRdModeList.resize( std::min<size_t>( uiRdModeList.size(), 2 ) );
 #if JVET_M0102_INTRA_SUBPARTITIONS
-        extendRefList.resize( std::min<size_t>( extendRefList.size(), 2 ) ); 
+        extendRefList.resize( std::min<size_t>( extendRefList.size(), 2 ) );
         if( nOptionsForISP > 1 )
         {
           m_rdModeListWithoutMrlHor.resize( std::min<size_t>( m_rdModeListWithoutMrlHor.size(), 2 ) );
@@ -834,8 +834,8 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
         uiRdModeList.insert( uiRdModeList.begin() + 1, secondIspList->begin(), secondIspList->end() );
         uiRdModeList.insert( uiRdModeList.begin() + 1, firstIspList->begin() , firstIspList->end()  );
 
-        extendRefList.insert( extendRefList.begin() + 1, secondIspList->size(), MRL_NUM_REF_LINES + ispOptions[2] ); 
-        extendRefList.insert( extendRefList.begin() + 1, firstIspList->size() , MRL_NUM_REF_LINES + ispOptions[1] ); 
+        extendRefList.insert( extendRefList.begin() + 1, secondIspList->size(), MRL_NUM_REF_LINES + ispOptions[2] );
+        extendRefList.insert( extendRefList.begin() + 1, firstIspList->size() , MRL_NUM_REF_LINES + ispOptions[1] );
       }
       else
       {

@@ -339,7 +339,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner )
   int ispOptions[NUM_INTRA_SUBPARTITIONS_MODES] = { 0 };
   if( nOptionsForISP > 1 )
   {
-    auto splitsThatCanBeUsedForISP = CU::canUseISPSplit( width, height, cu.cs->sps->getMaxTrSize() );
+#if MAX_TB_SIZE_SIGNALLING
+    auto splitsThatCanBeUsedForISP = CU::canUseISPSplit( width, height, cu.cs->sps->getMaxTbSize() );
+#else
+    auto splitsThatCanBeUsedForISP = CU::canUseISPSplit( width, height, MAX_TB_SIZEY );
+#endif
     if( splitsThatCanBeUsedForISP == CAN_USE_VER_AND_HORL_SPLITS )
     {
       const CodingUnit* cuLeft  = cu.ispMode != NOT_INTRA_SUBPARTITIONS ? cs.getCU( cs.area.blocks[partitioner.chType].pos().offset( -1, 0 ), partitioner.chType ) : nullptr;

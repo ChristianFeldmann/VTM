@@ -840,7 +840,11 @@ void DecLib::xActivateParameterSets()
       m_cCuDecoder.initDecCuReshaper(&m_cReshaper, sps->getChromaFormatIdc());
     }
 #endif
-    m_cTrQuant.init( nullptr, sps->getMaxTrSize(), false, false, false, false, false );
+#if MAX_TB_SIZE_SIGNALLING
+    m_cTrQuant.init( nullptr, sps->getMaxTbSize(), false, false, false, false, false );
+#else
+    m_cTrQuant.init( nullptr, MAX_TB_SIZEY, false, false, false, false, false );
+#endif
 
     // RdCost
     m_cRdCost.setCostMode ( COST_STANDARD_LOSSY ); // not used in decoder side RdCost stuff -> set to default

@@ -284,7 +284,12 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
     // initialize transform & quantization class
     m_cTrQuant[jId].init( jId == 0 ? nullptr : m_cTrQuant[0].getQuant(),
-                          1 << m_uiQuadtreeTULog2MaxSize,
+#if MAX_TB_SIZE_SIGNALLING
+                          1 << m_log2MaxTbSize,
+
+#else
+                          MAX_TB_SIZEY,
+#endif
                           m_useRDOQ,
                           m_useRDOQTS,
 #if T0196_SELECTIVE_RDOQ
@@ -316,7 +321,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
   // initialize transform & quantization class
   m_cTrQuant.init( nullptr,
-                   1 << m_uiQuadtreeTULog2MaxSize,
+#if MAX_TB_SIZE_SIGNALLING
+                   1 << m_log2MaxTbSize,
+#else
+                   MAX_TB_SIZEY,
+#endif
                    m_useRDOQ,
                    m_useRDOQTS,
 #if T0196_SELECTIVE_RDOQ
@@ -982,14 +991,11 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setPCMEnabledFlag        ( m_usePCM           );
   sps.setPCMLog2MaxSize( m_pcmLog2MaxSize  );
 
-  sps.setQuadtreeTULog2MaxSize( m_uiQuadtreeTULog2MaxSize );
-  sps.setQuadtreeTULog2MinSize( m_uiQuadtreeTULog2MinSize );
-  sps.setQuadtreeTUMaxDepthInter( m_uiQuadtreeTUMaxDepthInter    );
-  sps.setQuadtreeTUMaxDepthIntra( m_uiQuadtreeTUMaxDepthIntra    );
-
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 
-  sps.setMaxTrSize   ( 1 << m_uiQuadtreeTULog2MaxSize );
+#if MAX_TB_SIZE_SIGNALLING
+  sps.setLog2MaxTbSize   ( m_log2MaxTbSize );
+#endif
 
   for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
   {

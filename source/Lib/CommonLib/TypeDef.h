@@ -153,6 +153,8 @@
 #define FIX_PCM                                           1 // Fix PCM bugs in VTM3
 #endif
 
+#define MAX_TB_SIZE_SIGNALLING                            0
+
 #if JVET_M0464_UNI_MTS
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;

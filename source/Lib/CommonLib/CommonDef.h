@@ -153,6 +153,12 @@ static const int MAX_TLAYER =                                       7; ///< Expl
 
 static const int ADAPT_SR_SCALE =                                   1; ///< division factor for adaptive search range
 
+static const int MIN_TB_LOG2_SIZEY = 2;
+static const int MAX_TB_LOG2_SIZEY = 6;
+
+static const int MIN_TB_SIZEY = 1 << MIN_TB_LOG2_SIZEY;
+static const int MAX_TB_SIZEY = 1 << MAX_TB_LOG2_SIZEY;
+
 static const int MAX_NUM_PICS_IN_SOP =                           1024;
 
 static const int MAX_NESTING_NUM_OPS =                           1024;

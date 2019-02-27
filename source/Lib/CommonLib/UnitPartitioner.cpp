@@ -395,7 +395,11 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
 {
 #if JVET_M0421_SPLIT_SIG
   const CompArea area       = currArea().Y();
-  const unsigned maxTrSize  = cs.sps->getMaxTrSize();
+#if MAX_TB_SIZE_SIGNALLING
+  const unsigned maxTrSize  = cs.sps->getMaxTbSize();
+#else
+  const unsigned maxTrSize  = MAX_TB_SIZEY;
+#endif
 
   bool canNo, canQt, canBh, canTh, canBv, canTv;
 
@@ -411,7 +415,11 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   const unsigned minBtSize      = cs.pcv->getMinBtSize( *cs.slice, chType );
   const unsigned maxTtSize      = cs.pcv->getMaxTtSize( *cs.slice, chType );
   const unsigned minTtSize      = cs.pcv->getMinTtSize( *cs.slice, chType );
-  const unsigned maxTrSize      = cs.sps->getMaxTrSize();
+#if MAX_TB_SIZE_SIGNALLING
+  const unsigned maxTrSize  = cs.sps->getMaxTbSize();
+#else
+  const unsigned maxTrSize  = MAX_TB_SIZEY;
+#endif
 
   const PartSplit lastSplit = m_partStack.back().split;
   const PartSplit parlSplit = lastSplit == CU_TRIH_SPLIT ? CU_HORZ_SPLIT : CU_VERT_SPLIT;
@@ -1107,7 +1115,11 @@ Partitioning PartitionerImpl::getMaxTuTiling( const UnitArea &cuArea, const Codi
   static_assert( MAX_LOG2_DIFF_CU_TR_SIZE <= g_maxRtGridSize, "Z-scan tables are only provided for MAX_LOG2_DIFF_CU_TR_SIZE for up to 3 (8x8 tiling)!" );
 
   const CompArea area = cuArea.Y().valid() ? cuArea.Y() : cuArea.Cb();
-  const int maxTrSize = cs.sps->getMaxTrSize() >> ( isLuma( area.compID ) ? 0 : 1 );
+#if MAX_TB_SIZE_SIGNALLING
+  const int maxTrSize = cs.sps->getMaxTbSize() >> ( isLuma( area.compID ) ? 0 : 1 );
+#else
+  const int maxTrSize = MAX_TB_SIZEY >> ( isLuma( area.compID ) ? 0 : 1 );
+#endif
   const int numTilesH = std::max<int>( 1, area.width  / maxTrSize );
   const int numTilesV = std::max<int>( 1, area.height / maxTrSize );
   const int numTiles  = numTilesH * numTilesV;

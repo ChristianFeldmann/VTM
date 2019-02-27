@@ -182,8 +182,11 @@ void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, Pel
   const uint32_t uiWidth      = area.width;
   const uint32_t uiHeight     = area.height;
 
-  CHECK( uiWidth > tu.cs->sps->getMaxTrSize() || uiHeight > tu.cs->sps->getMaxTrSize(), "Maximal allowed transformation size exceeded!" );
-
+#if MAX_TB_SIZE_SIGNALLING
+  CHECK( uiWidth > tu.cs->sps->getMaxTbSize() || uiHeight > tu.cs->sps->getMaxTbSize(), "Maximal allowed transformation size exceeded!" );
+#else
+  CHECK( uiWidth > MAX_TB_SIZEY || uiHeight > MAX_TB_SIZEY, "Maximal allowed transformation size exceeded!" );
+#endif
   if (tu.cu->transQuantBypass)
   {
     // where should this logic go?
@@ -633,14 +636,17 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
 #endif
 {
         CodingStructure &cs = *tu.cs;
-  const SPS &sps            = *cs.sps;
   const CompArea &rect      = tu.blocks[compID];
   const uint32_t width      = rect.width;
   const uint32_t height     = rect.height;
 
   const CPelBuf  resiBuf    = cs.getResiBuf(rect);
 
-  CHECK( sps.getMaxTrSize() < width, "Unsupported transformation size" );
+#if MAX_TB_SIZE_SIGNALLING
+  CHECK( cs.sps->getMaxTbSize() < width, "Unsupported transformation size" );
+#else
+  CHECK( MAX_TB_SIZEY < width, "Unsupported transformation size" );
+#endif
 
   int pos = 0;
   std::vector<TrCost> trCosts;
@@ -723,7 +729,6 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
 #endif
 {
         CodingStructure &cs = *tu.cs;
-  const SPS &sps            = *cs.sps;
   const CompArea &rect      = tu.blocks[compID];
   const uint32_t uiWidth        = rect.width;
   const uint32_t uiHeight       = rect.height;
@@ -773,7 +778,12 @@ void TrQuant::transformNxN(TransformUnit &tu, const ComponentID &compID, const Q
     }
     else
     {
-      CHECK( sps.getMaxTrSize() < uiWidth, "Unsupported transformation size" );
+#if MAX_TB_SIZE_SIGNALLING
+      CHECK( cs.sps->getMaxTbSize() < uiWidth, "Unsupported transformation size" );
+
+#else
+      CHECK( MAX_TB_SIZEY < uiWidth, "Unsupported transformation size" );
+#endif
 
 #if JVET_M0464_UNI_MTS
       CoeffBuf tempCoeff( loadTr ? m_mtsCoeffs[tu.mtsIdx] : m_plTempCoeff, rect );

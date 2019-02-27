@@ -392,7 +392,11 @@ ISPType CU::canUseISPSplit( const CodingUnit &cu, const ComponentID compID )
 {
   const int width     = cu.blocks[compID].width;
   const int height    = cu.blocks[compID].height;
-  const int maxTrSize = cu.cs->sps->getMaxTrSize();
+#if MAX_TB_SIZE_SIGNALLING
+  const int maxTrSize = cu.cs->sps->getMaxTbSize();
+#else
+  const int maxTrSize = MAX_TB_SIZEY;
+#endif
   return CU::canUseISPSplit( width, height, maxTrSize );
 }
 

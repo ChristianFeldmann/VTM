@@ -1951,10 +1951,6 @@ SPS::SPS()
 , m_uiMaxCUHeight             ( 32)
 , m_uiMaxCodingDepth          (  3)
 , m_bLongTermRefsPresent      (false)
-, m_uiQuadtreeTULog2MaxSize   (  0)
-, m_uiQuadtreeTULog2MinSize   (  0)
-, m_uiQuadtreeTUMaxDepthInter (  0)
-, m_uiQuadtreeTUMaxDepthIntra (  0)
 // Tool list
 , m_pcmEnabledFlag            (false)
 , m_pcmLog2MaxSize            (  5)
@@ -1967,7 +1963,9 @@ SPS::SPS()
 #endif
 , m_uiBitsForPOC              (  8)
 , m_numLongTermRefPicSPS      (  0)
-, m_uiMaxTrSize               ( 32)
+#if MAX_TB_SIZE_SIGNALLING
+, m_log2MaxTbSize             (  6)
+#endif
 , m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
 #if HEVC_USE_SCALING_LISTS

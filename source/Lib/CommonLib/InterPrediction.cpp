@@ -1784,10 +1784,10 @@ void InterPrediction::xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYu
     Mv cMv = pu.mv[refId];
     m_iRefListIdx = refId;
     const Picture* refPic = pu.cu->slice->getRefPic(refId, pu.refIdx[refId]);
-    clipMv(cMv, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps);
+    Mv cMvClipped = cMv;
+    clipMv(cMvClipped, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps);
 
     Mv startMv = mergeMV[refId];
-    clipMv(startMv, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps);
 
     for (int compID = 0; compID < MAX_NUM_COMPONENT; compID++)
     {
@@ -1813,7 +1813,7 @@ void InterPrediction::xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYu
       offset += (deltaIntMvY)* pcPadTemp.bufs[compID].stride;
       offset += (deltaIntMvX);
       PelBuf &srcBuf = pcPadTemp.bufs[compID];
-      xPredInterBlk((ComponentID)compID, pu, refPic, cMv, pcYUVTemp, true, pu.cs->slice->getClpRngs().comp[compID],
+      xPredInterBlk((ComponentID)compID, pu, refPic, cMvClipped, pcYUVTemp, true, pu.cs->slice->getClpRngs().comp[compID],
         bioApplied, false, 0, 0, 0, (srcBuf.buf + offset), pcPadTemp.bufs[compID].stride);
     }
     pcYUVTemp = pcYuvSrc1;

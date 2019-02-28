@@ -1409,13 +1409,25 @@ void IntraSearch::xEncPCM(CodingStructure &cs, Partitioner& partitioner, const C
   CPelBuf   orgBuf  = cs.getOrgBuf  ( area );
 
   CHECK(pcmShiftRight < 0, "Negative shift");
-
+#if JVET_M0427_INLOOP_RESHAPER
+  CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
+  PelBuf tempOrgBuf = m_tmpStorageLCU.getBuf(tmpArea);
+  tempOrgBuf.copyFrom(orgBuf);
+  if (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+  {
+    tempOrgBuf.rspSignal(m_pcReshape->getFwdLUT());
+  }
+#endif
   for (uint32_t uiY = 0; uiY < pcmBuf.height; uiY++)
   {
     for (uint32_t uiX = 0; uiX < pcmBuf.width; uiX++)
     {
       // Encode
+#if JVET_M0427_INLOOP_RESHAPER
+      pcmBuf.at(uiX, uiY) = tempOrgBuf.at(uiX, uiY) >> pcmShiftRight;
+#else
       pcmBuf.at(uiX, uiY) = orgBuf.at(uiX, uiY) >> pcmShiftRight;
+#endif
       // Reconstruction
       recBuf.at(uiX, uiY) = pcmBuf.at(uiX, uiY) << pcmShiftRight;
     }

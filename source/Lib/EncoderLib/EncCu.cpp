@@ -1974,7 +1974,18 @@ void EncCu::xFillPCMBuffer( CodingUnit &cu )
       const CPelBuf source      = tu.cs->getOrgBuf( compArea );
              PelBuf destination = tu.getPcmbuf( compID );
 
-      destination.copyFrom( source );
+#if JVET_M0427_INLOOP_RESHAPER
+      if (tu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+      {
+        CompArea    tmpArea(COMPONENT_Y, compArea.chromaFormat, Position(0, 0), compArea.size());
+        PelBuf tempOrgBuf = m_tmpStorageLCU->getBuf(tmpArea);
+        tempOrgBuf.copyFrom(source);
+        tempOrgBuf.rspSignal(m_pcReshape->getFwdLUT());
+        destination.copyFrom(tempOrgBuf);
+      }
+      else
+#endif
+        destination.copyFrom( source );
     }
   }
 }

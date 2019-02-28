@@ -567,6 +567,7 @@ void DecLib::executeLoopFilters()
       CHECK((m_cReshaper.getRecReshaped() == false), "Rec picture is not reshaped!");
       m_pcPic->getRecoBuf(COMPONENT_Y).rspSignal(m_cReshaper.getInvLUT());
       m_cReshaper.setRecReshaped(false);
+      m_cSAO.setReshaper(&m_cReshaper);
   }
 #endif
   // deblocking filter

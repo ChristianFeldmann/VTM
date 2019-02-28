@@ -668,8 +668,14 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 
   if( slice.getUseChromaQpAdj() )
   {
+#if JVET_M0113_M0188_QG_SIZE
+    // TODO M0133 : double check encoder decisions with respect to chroma QG detection and actual encode
+    int lgMinCuSize = sps.getLog2MinCodingBlockSize() +
+      std::max<int>( 0, sps.getLog2DiffMaxMinCodingBlockSize() - int( pps.getPpsRangeExtension().getCuChromaQpOffsetSubdiv()/2 ) );
+#else
     int lgMinCuSize = sps.getLog2MinCodingBlockSize() +
       std::max<int>( 0, sps.getLog2DiffMaxMinCodingBlockSize() - int( pps.getPpsRangeExtension().getDiffCuChromaQpOffsetDepth() ) );
+#endif
     m_cuChromaQpOffsetIdxPlus1 = ( ( uiLPelX >> lgMinCuSize ) + ( uiTPelY >> lgMinCuSize ) ) % ( pps.getPpsRangeExtension().getChromaQpOffsetListLen() + 1 );
   }
 
@@ -711,7 +717,11 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     }
 
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
+#if JVET_M0113_M0188_QG_SIZE
+    if (partitioner.currQgEnable() && (
+#else
     if (partitioner.currDepth <= pps.getMaxCuDQPDepth() && (
+#endif
 #if SHARP_LUMA_DELTA_QP
         (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()) ||
 #endif
@@ -1127,12 +1137,14 @@ void EncCu::copyState( EncCu* other, Partitioner& partitioner, const UnitArea& c
 void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
   const int qp                = encTestMode.qp;
-  const PPS &pps              = *tempCS->pps;
   const Slice &slice          = *tempCS->slice;
   const bool bIsLosslessMode  = false; // False at this level. Next level down may set it to true.
   const int oldPrevQp         = tempCS->prevQP[partitioner.chType];
   const auto oldMotionLut     = tempCS->motionLut;
-  const uint32_t currDepth = partitioner.currDepth;
+#if !JVET_M0113_M0188_QG_SIZE
+  const PPS &pps              = *tempCS->pps;
+  const uint32_t currDepth    = partitioner.currDepth;
+#endif
 
   const PartSplit split = getPartSplit( encTestMode );
 
@@ -1253,6 +1265,9 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 #endif
 
   partitioner.splitCurrArea( split, *tempCS );
+#if JVET_M0113_M0188_QG_SIZE
+  bool qgEnableChildren = partitioner.currQgEnable(); // QG possible at children level
+#endif
 
   m_CurrCtx++;
 
@@ -1308,7 +1323,11 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       bool keepResi = KEEP_PRED_AND_RESI_SIGNALS;
       tempCS->useSubStructure( *bestSubCS, partitioner.chType, CS::getArea( *tempCS, subCUArea, partitioner.chType ), KEEP_PRED_AND_RESI_SIGNALS, true, keepResi, keepResi );
 
+#if JVET_M0113_M0188_QG_SIZE
+      if( partitioner.currQgEnable() )
+#else
       if(currDepth < pps.getMaxCuDQPDepth())
+#endif
       {
         tempCS->prevQP[partitioner.chType] = bestSubCS->prevQP[partitioner.chType];
       }
@@ -1381,6 +1400,9 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   tempCS->cost = m_pcRdCost->calcRdCost( tempCS->fracBits, tempCS->dist );
 
   // Check Delta QP bits for splitted structure
+#if JVET_M0113_M0188_QG_SIZE
+  if( !qgEnableChildren ) // check at deepest QG level only
+#endif
   xCheckDQP( *tempCS, partitioner, true );
 
   // If the configuration being tested exceeds the maximum number of bytes for a slice / slice-segment, then
@@ -1772,15 +1794,23 @@ void EncCu::xCheckDQP( CodingStructure& cs, Partitioner& partitioner, bool bKeep
     return;
   }
 
+#if JVET_M0113_M0188_QG_SIZE
+  if( !partitioner.currQgEnable() ) // do not consider split or leaf/not leaf QG condition (checked by caller)
+#else
+  // partitioner.currDepth != cs.pps->getMaxCuDQPDepth() means we are not at leaf QG level (condition needed to call predictQP only once per QG)
   if( bKeepCtx && partitioner.currDepth != cs.pps->getMaxCuDQPDepth() )
+#endif
   {
     return;
   }
 
+#if !JVET_M0113_M0188_QG_SIZE
+  // not split or implicit, and deeper than QG (never happens with JVET_M0113_M0188_QG_SIZE)
   if( !bKeepCtx && partitioner.currDepth > cs.pps->getMaxCuDQPDepth() )
   {
     return;
   }
+#endif
 
   CodingUnit* cuFirst = cs.getCU( partitioner.chType );
 
@@ -3581,7 +3611,11 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
             xCheckDQP (*tempCS, partitioner);
 #else
             // this if-check is redundant
+#if JVET_M0113_M0188_QG_SIZE
+            if (tempCS->pps->getUseDQP() && partitioner.currQgEnable())
+#else
             if (tempCS->pps->getUseDQP() && (partitioner.currDepth) <= tempCS->pps->getMaxCuDQPDepth())
+#endif
             {
               xCheckDQP(*tempCS, partitioner);
             }
@@ -3727,7 +3761,11 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
           xCheckDQP (*tempCS, partitioner);
 #else
           // this if-check is redundant
+#if JVET_M0113_M0188_QG_SIZE
+          if (tempCS->pps->getUseDQP() && partitioner.currQgEnable())
+#else
           if (tempCS->pps->getUseDQP() && (partitioner.currDepth) <= tempCS->pps->getMaxCuDQPDepth())
+#endif
           {
             xCheckDQP(*tempCS, partitioner);
           }

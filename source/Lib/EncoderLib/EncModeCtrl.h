@@ -345,7 +345,11 @@ public:
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );
+#if JVET_M0113_M0188_QG_SIZE
+  void xGetMinMaxQP     ( int& iMinQP, int& iMaxQP, const CodingStructure& cs, const Partitioner &pm, const int baseQP, const SPS& sps, const PPS& pps, const PartSplit splitMode );
+#else
   void xGetMinMaxQP     ( int& iMinQP, int& iMaxQP, const CodingStructure& cs, const Partitioner &pm, const int baseQP, const SPS& sps, const PPS& pps, const bool splitMode );
+#endif
   int  xComputeDQP      ( const CodingStructure &cs, const Partitioner &pm );
 };
 

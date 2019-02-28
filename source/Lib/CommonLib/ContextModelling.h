@@ -249,13 +249,22 @@ class CUCtx
 {
 public:
   CUCtx()              : isDQPCoded(false), isChromaQpAdjCoded(false),
+#if JVET_M0113_M0188_QG_SIZE
+                         qgStart(false),
+#endif
                          numNonZeroCoeffNonTs(0) {}
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
+#if JVET_M0113_M0188_QG_SIZE
+                         qgStart(false),
+#endif
                          numNonZeroCoeffNonTs(0), qp(_qp) {}
   ~CUCtx() {}
 public:
   bool      isDQPCoded;
   bool      isChromaQpAdjCoded;
+#if JVET_M0113_M0188_QG_SIZE
+  bool      qgStart;
+#endif
   uint32_t      numNonZeroCoeffNonTs;
   int8_t     qp;                   // used as a previous(last) QP and for QP prediction
 };

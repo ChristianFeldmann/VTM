@@ -1330,7 +1330,11 @@ private:
   bool             m_crossComponentPredictionEnabledFlag;
 
   // Chroma QP Adjustments
+#if JVET_M0113_M0188_QG_SIZE
+  int              m_cuChromaQpOffsetSubdiv;
+#else
   int              m_diffCuChromaQpOffsetDepth;
+#endif
   int              m_chromaQpOffsetListLen; // size (excludes the null entry used in the following array).
   ChromaQpAdj      m_ChromaQpAdjTableIncludingNullEntry[1+MAX_QP_OFFSET_LIST_SIZE]; //!< Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
 
@@ -1356,8 +1360,13 @@ public:
 
   void                   clearChromaQpOffsetList()                                        { m_chromaQpOffsetListLen = 0;                    }
 
+#if JVET_M0113_M0188_QG_SIZE
+  uint32_t               getCuChromaQpOffsetSubdiv () const                               { return m_cuChromaQpOffsetSubdiv;                }
+  void                   setCuChromaQpOffsetSubdiv ( uint32_t u )                         { m_cuChromaQpOffsetSubdiv = u;                   }
+#else
   uint32_t                   getDiffCuChromaQpOffsetDepth () const                            { return m_diffCuChromaQpOffsetDepth;             }
   void                   setDiffCuChromaQpOffsetDepth ( uint32_t u )                          { m_diffCuChromaQpOffsetDepth = u;                }
+#endif
 
   bool                   getChromaQpOffsetListEnabledFlag() const                         { return getChromaQpOffsetListLen()>0;            }
   int                    getChromaQpOffsetListLen() const                                 { return m_chromaQpOffsetListLen;                 }
@@ -1395,7 +1404,11 @@ private:
   bool             m_bSliceChromaQpFlag;       // slicelevel_chroma_qp_flag
 
   // access channel
-  uint32_t             m_uiMaxCuDQPDepth;
+#if JVET_M0113_M0188_QG_SIZE
+  uint32_t         m_cuQpDeltaSubdiv;           // cu_qp_delta_subdiv
+#else
+  uint32_t         m_uiMaxCuDQPDepth;
+#endif
 
   int              m_chromaCbQpOffset;
   int              m_chromaCrQpOffset;
@@ -1463,8 +1476,13 @@ public:
   bool                   getSliceChromaQpFlag() const                                     { return  m_bSliceChromaQpFlag;                 }
   void                   setSliceChromaQpFlag( bool b )                                   { m_bSliceChromaQpFlag = b;                     }
 
+#if JVET_M0113_M0188_QG_SIZE
+  void                   setCuQpDeltaSubdiv( uint32_t u )                                 { m_cuQpDeltaSubdiv = u;                         }
+  uint32_t               getCuQpDeltaSubdiv() const                                       { return m_cuQpDeltaSubdiv;                      }
+#else
   void                   setMaxCuDQPDepth( uint32_t u )                                       { m_uiMaxCuDQPDepth = u;                        }
   uint32_t                   getMaxCuDQPDepth() const                                         { return m_uiMaxCuDQPDepth;                     }
+#endif
 
   void                   setQpOffset(ComponentID compID, int i )
   {

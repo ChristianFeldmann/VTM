@@ -413,12 +413,21 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   READ_FLAG( uiCode, "cu_qp_delta_enabled_flag" );            pcPPS->setUseDQP( uiCode ? true : false );
   if( pcPPS->getUseDQP() )
   {
+#if JVET_M0113_M0188_QG_SIZE
+    READ_UVLC( uiCode, "cu_qp_delta_subdiv" );
+    pcPPS->setCuQpDeltaSubdiv( uiCode );
+#else
     READ_UVLC( uiCode, "diff_cu_qp_delta_depth" );
     pcPPS->setMaxCuDQPDepth( uiCode );
+#endif
   }
   else
   {
+#if JVET_M0113_M0188_QG_SIZE
+    pcPPS->setCuQpDeltaSubdiv( 0 );
+#else
     pcPPS->setMaxCuDQPDepth( 0 );
+#endif
   }
   READ_SVLC( iCode, "pps_cb_qp_offset");
   pcPPS->setQpOffset(COMPONENT_Cb, iCode);
@@ -561,11 +570,19 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
           if (uiCode == 0)
           {
             ppsRangeExtension.clearChromaQpOffsetList();
+#if JVET_M0113_M0188_QG_SIZE
+            ppsRangeExtension.setCuChromaQpOffsetSubdiv(0);
+#else
             ppsRangeExtension.setDiffCuChromaQpOffsetDepth(0);
+#endif
           }
           else
           {
+#if JVET_M0113_M0188_QG_SIZE
+            READ_UVLC(uiCode, "cu_chroma_qp_offset_subdiv"); ppsRangeExtension.setCuChromaQpOffsetSubdiv(uiCode);
+#else
             READ_UVLC(uiCode, "diff_cu_chroma_qp_offset_depth"); ppsRangeExtension.setDiffCuChromaQpOffsetDepth(uiCode);
+#endif
             uint32_t tableSizeMinus1 = 0;
             READ_UVLC(tableSizeMinus1, "chroma_qp_offset_list_len_minus1");
             CHECK(tableSizeMinus1 >= MAX_QP_OFFSET_LIST_SIZE, "Table size exceeds maximum");

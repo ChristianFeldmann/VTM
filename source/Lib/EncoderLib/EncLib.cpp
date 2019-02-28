@@ -777,7 +777,11 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
     rpcPic->create( sps.getChromaFormatIdc(), Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples()), sps.getMaxCUWidth(), sps.getMaxCUWidth()+16, false );
     if ( getUseAdaptiveQP() )
     {
+#if JVET_M0113_M0188_QG_SIZE
+      const uint32_t iMaxDQPLayer = pps.getCuQpDeltaSubdiv()/2+1;
+#else
       const uint32_t iMaxDQPLayer = pps.getMaxCuDQPDepth()+1;
+#endif
       rpcPic->aqlayer.resize( iMaxDQPLayer );
       for (uint32_t d = 0; d < iMaxDQPLayer; d++)
       {
@@ -1269,7 +1273,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setSPSId(sps.getSPSId());
 
   pps.setConstrainedIntraPred( m_bUseConstrainedIntraPred );
+#if JVET_M0113_M0188_QG_SIZE
+  bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
+#else
   bool bUseDQP = (getMaxCuDQPDepth() > 0)? true : false;
+#endif
 
   if((getMaxDeltaQP() != 0 )|| getUseAdaptiveQP())
   {
@@ -1285,7 +1293,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 #if ENABLE_QPA
   if (getUsePerceptQPA() && !bUseDQP)
   {
+#if JVET_M0113_M0188_QG_SIZE
+    CHECK( m_cuQpDeltaSubdiv != 0, "max. delta-QP subdiv must be zero!" );
+#else
     CHECK( m_iMaxCuDQPDepth != 0, "max. delta-QP depth must be zero!" );
+#endif
     bUseDQP = (getBaseQP() < 38) && (getSourceWidth() > 512 || getSourceHeight() > 320);
   }
 #endif
@@ -1299,29 +1311,51 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   if ( m_RCEnableRateControl )
   {
     pps.setUseDQP(true);
+#if JVET_M0113_M0188_QG_SIZE
+    pps.setCuQpDeltaSubdiv( 0 );
+#else
     pps.setMaxCuDQPDepth( 0 );
+#endif
   }
   else if(bUseDQP)
   {
     pps.setUseDQP(true);
+#if JVET_M0113_M0188_QG_SIZE
+    pps.setCuQpDeltaSubdiv( m_cuQpDeltaSubdiv );
+#else
     pps.setMaxCuDQPDepth( m_iMaxCuDQPDepth );
+#endif
   }
   else
   {
     pps.setUseDQP(false);
+#if JVET_M0113_M0188_QG_SIZE
+    pps.setCuQpDeltaSubdiv( 0 );
+#else
     pps.setMaxCuDQPDepth( 0 );
+#endif
   }
 
+#if JVET_M0113_M0188_QG_SIZE
+  if ( m_cuChromaQpOffsetSubdiv >= 0 )
+  {
+    pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(m_cuChromaQpOffsetSubdiv);
+#else
   if ( m_diffCuChromaQpOffsetDepth >= 0 )
   {
     pps.getPpsRangeExtension().setDiffCuChromaQpOffsetDepth(m_diffCuChromaQpOffsetDepth);
+#endif
     pps.getPpsRangeExtension().clearChromaQpOffsetList();
     pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6);
     /* todo, insert table entries from command line (NB, 0 should not be touched) */
   }
   else
   {
+#if JVET_M0113_M0188_QG_SIZE
+    pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(0);
+#else
     pps.getPpsRangeExtension().setDiffCuChromaQpOffsetDepth(0);
+#endif
     pps.getPpsRangeExtension().clearChromaQpOffsetList();
   }
   pps.getPpsRangeExtension().setCrossComponentPredictionEnabledFlag(m_crossComponentPredictionEnabledFlag);

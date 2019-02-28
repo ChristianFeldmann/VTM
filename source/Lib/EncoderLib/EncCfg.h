@@ -335,8 +335,13 @@ protected:
 
   //====== Quality control ========
   int       m_iMaxDeltaQP;                      //  Max. absolute delta QP (1:default)
+#if JVET_M0113_M0188_QG_SIZE
+  int       m_cuQpDeltaSubdiv;                  //  Max. subdivision level for a CuDQP (0:default)
+  int       m_cuChromaQpOffsetSubdiv;           ///< If negative, then do not apply chroma qp offsets.
+#else
   int       m_iMaxCuDQPDepth;                   //  Max. depth for a minimum CuDQP (0:default)
   int       m_diffCuChromaQpOffsetDepth;        ///< If negative, then do not apply chroma qp offsets.
+#endif
 
   int       m_chromaCbQpOffset;                 //  Chroma Cb QP Offset (0:default)
   int       m_chromaCrQpOffset;                 //  Chroma Cr Qp Offset (0:default)
@@ -923,10 +928,16 @@ public:
 
   //====== Quality control ========
   void      setMaxDeltaQP                   ( int   i )      { m_iMaxDeltaQP = i; }
+#if JVET_M0113_M0188_QG_SIZE
+  void      setCuQpDeltaSubdiv              ( int   i )      { m_cuQpDeltaSubdiv = i; }
+  int       getCuChromaQpOffsetSubdiv       ()         const { return m_cuChromaQpOffsetSubdiv;  }
+  void      setCuChromaQpOffsetSubdiv       (int value)      { m_cuChromaQpOffsetSubdiv = value; }
+#else
   void      setMaxCuDQPDepth                ( int   i )      { m_iMaxCuDQPDepth = i; }
 
   int       getDiffCuChromaQpOffsetDepth    ()         const { return m_diffCuChromaQpOffsetDepth;  }
   void      setDiffCuChromaQpOffsetDepth    (int value)      { m_diffCuChromaQpOffsetDepth = value; }
+#endif
 
   void      setChromaCbQpOffset             ( int   i )      { m_chromaCbQpOffset = i; }
   void      setChromaCrQpOffset             ( int   i )      { m_chromaCrQpOffset = i; }
@@ -1030,7 +1041,11 @@ public:
 
   //==== Quality control ========
   int       getMaxDeltaQP                   () const { return m_iMaxDeltaQP; }
+#if JVET_M0113_M0188_QG_SIZE
+  int       getCuQpDeltaSubdiv              () const { return m_cuQpDeltaSubdiv; }
+#else
   int       getMaxCuDQPDepth                () const { return m_iMaxCuDQPDepth; }
+#endif
   bool      getUseAdaptiveQP                () const { return m_bUseAdaptiveQP; }
   int       getQPAdaptationRange            () const { return m_iQPAdaptationRange; }
 #if ENABLE_QPA

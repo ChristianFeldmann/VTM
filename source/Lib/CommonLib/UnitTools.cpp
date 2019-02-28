@@ -196,6 +196,7 @@ int CU::predictQP( const CodingUnit& cu, const int prevQP )
   return ( a + b + 1 ) >> 1;
 }
 
+#if !JVET_M0113_M0188_QG_SIZE
 bool CU::isQGStart( const CodingUnit& cu, Partitioner& partitioner )
 {
   int maxDqpDepth = cu.slice->getPPS()->getMaxCuDQPDepth();
@@ -211,6 +212,7 @@ bool CU::isQGStart( const CodingUnit& cu, Partitioner& partitioner )
   else
     return true;
 }
+#endif
 
 uint32_t CU::getNumPUs( const CodingUnit& cu )
 {

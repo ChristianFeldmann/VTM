@@ -216,8 +216,13 @@ void EncApp::xInitLibCfg()
 
   //====== Quality control ========
   m_cEncLib.setMaxDeltaQP                                        ( m_iMaxDeltaQP  );
+#if JVET_M0113_M0188_QG_SIZE
+  m_cEncLib.setCuQpDeltaSubdiv                                   ( m_cuQpDeltaSubdiv );
+  m_cEncLib.setCuChromaQpOffsetSubdiv                            ( m_cuChromaQpOffsetSubdiv );
+#else
   m_cEncLib.setMaxCuDQPDepth                                     ( m_iMaxCuDQPDepth  );
   m_cEncLib.setDiffCuChromaQpOffsetDepth                         ( m_diffCuChromaQpOffsetDepth );
+#endif
   m_cEncLib.setChromaCbQpOffset                                  ( m_cbQpOffset     );
   m_cEncLib.setChromaCrQpOffset                                  ( m_crQpOffset  );
   m_cEncLib.setChromaCbQpOffsetDualTree                          ( m_cbQpOffsetDualTree );

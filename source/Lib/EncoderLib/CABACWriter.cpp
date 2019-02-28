@@ -375,22 +375,40 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
   const CodingUnit &cu        = *cs.getCU( currArea.blocks[partitioner.chType], partitioner.chType );
 
   // Reset delta QP coding flag and ChromaQPAdjustemt coding flag
+#if JVET_M0113_M0188_QG_SIZE
+  if( pps.getUseDQP() && partitioner.currQgEnable() )
+  {
+    cuCtx.qgStart    = true;
+    cuCtx.isDQPCoded          = false;
+  }
+  if( cs.slice->getUseChromaQpAdj() && partitioner.currQgChromaEnable() )
+#else
   if( pps.getUseDQP() && partitioner.currDepth <= pps.getMaxCuDQPDepth() )
   {
     cuCtx.isDQPCoded          = false;
   }
   if( cs.slice->getUseChromaQpAdj() && partitioner.currDepth <= pps.getPpsRangeExtension().getDiffCuChromaQpOffsetDepth() )
+#endif
   {
     cuCtx.isChromaQpAdjCoded  = false;
   }
   // Reset delta QP coding flag and ChromaQPAdjustemt coding flag
   if (CS::isDualITree(cs) && pPartitionerChroma != nullptr)
   {
+#if JVET_M0113_M0188_QG_SIZE
+    if (pps.getUseDQP() && pPartitionerChroma->currQgEnable())
+    {
+      pCuCtxChroma->qgStart    = true;
+      pCuCtxChroma->isDQPCoded = false;
+    }
+    if (cs.slice->getUseChromaQpAdj() && pPartitionerChroma->currQgChromaEnable())
+#else
     if (pps.getUseDQP() && pPartitionerChroma->currDepth <= pps.getMaxCuDQPDepth())
     {
       pCuCtxChroma->isDQPCoded = false;
     }
     if (cs.slice->getUseChromaQpAdj() && pPartitionerChroma->currDepth <= pps.getPpsRangeExtension().getDiffCuChromaQpOffsetDepth())
+#endif
     {
       pCuCtxChroma->isChromaQpAdjCoded = false;
     }
@@ -521,8 +539,14 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
 
 #endif
   // Predict QP on start of quantization group
+#if JVET_M0113_M0188_QG_SIZE
+  if( cuCtx.qgStart )
+  {
+    cuCtx.qgStart = false;
+#else
   if( pps.getUseDQP() && !cuCtx.isDQPCoded && CU::isQGStart( cu, partitioner ) )
   {
+#endif
     cuCtx.qp = CU::predictQP( cu, cuCtx.qp );
   }
 

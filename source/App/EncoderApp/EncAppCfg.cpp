@@ -997,8 +997,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("DeltaQpRD,-dqr",                                  m_uiDeltaQpRD,                                       0u, "max dQp offset for slice")
   ("MaxDeltaQP,d",                                    m_iMaxDeltaQP,                                        0, "max dQp offset for block")
+#if JVET_M0113_M0188_QG_SIZE
+  ("MaxCuDQPSubdiv,-dqd",                             m_cuQpDeltaSubdiv,                                    0, "Maximum subdiv for CU luma Qp adjustment")
+  ("MaxCuChromaQpOffsetSubdiv",                       m_cuChromaQpOffsetSubdiv,                            -1, "Maximum subdiv for CU chroma Qp adjustment - set less than 0 to disable")
+#else
   ("MaxCuDQPDepth,-dqd",                              m_iMaxCuDQPDepth,                                     0, "max depth for a minimum CuDQP")
   ("MaxCUChromaQpAdjustmentDepth",                    m_diffCuChromaQpOffsetDepth,                         -1, "Maximum depth for CU chroma Qp adjustment - set less than 0 to disable")
+#endif
   ("FastDeltaQP",                                     m_bFastDeltaQP,                                   false, "Fast Delta QP Algorithm")
 #if SHARP_LUMA_DELTA_QP
   ("LumaLevelToDeltaQPMode",                          lumaLevelToDeltaQPMode,                              0u, "Luma based Delta QP 0(default): not used. 1: Based on CTU average, 2: Based on Max luma in CTU")
@@ -1573,7 +1578,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                            !m_enableIntraReferenceSmoothing          ||
                                            m_persistentRiceAdaptationEnabledFlag     ||
                                            m_log2MaxTransformSkipBlockSize!=2;
+#if JVET_M0113_M0188_QG_SIZE
+      const bool bUsingChromaQPAdjustment= m_cuChromaQpOffsetSubdiv >= 0;
+#else
       const bool bUsingChromaQPAdjustment= m_diffCuChromaQpOffsetDepth >= 0;
+#endif
       const bool bUsingExtendedPrecision = m_extendedPrecisionProcessingFlag;
       if (m_onePictureOnlyConstraintFlag)
       {
@@ -2121,7 +2130,11 @@ bool EncAppCfg::xCheckParameter()
                                            !m_enableIntraReferenceSmoothing          ||
                                            m_persistentRiceAdaptationEnabledFlag     ||
                                            m_log2MaxTransformSkipBlockSize!=2;
+#if JVET_M0113_M0188_QG_SIZE
+      const bool bUsingChromaQPTool      = m_cuChromaQpOffsetSubdiv >= 0;
+#else
       const bool bUsingChromaQPTool      = m_diffCuChromaQpOffsetDepth >= 0;
+#endif
       const bool bUsingExtendedPrecision = m_extendedPrecisionProcessingFlag;
 
       xConfirmPara((m_chromaFormatConstraint==CHROMA_420 || m_chromaFormatConstraint==CHROMA_400) && bUsingChromaQPTool, "CU Chroma QP adjustment cannot be used for 4:0:0 or 4:2:0 RExt profiles");
@@ -3088,7 +3101,11 @@ void EncAppCfg::xPrintParameter()
 #else
   msg( DETAILS, "QP                                     : %5.2f\n", m_fQP );
 #endif
+#if JVET_M0113_M0188_QG_SIZE
+  msg( DETAILS, "Max dQP signaling subdiv               : %d\n", m_cuQpDeltaSubdiv);
+#else
   msg( DETAILS, "Max dQP signaling depth                : %d\n", m_iMaxCuDQPDepth);
+#endif
 
   msg( DETAILS, "Cb QP Offset (dual tree)               : %d (%d)\n", m_cbQpOffset, m_cbQpOffsetDualTree);
   msg( DETAILS, "Cr QP Offset (dual tree)               : %d (%d)\n", m_crQpOffset, m_crQpOffsetDualTree);
@@ -3100,7 +3117,11 @@ void EncAppCfg::xPrintParameter()
   msg( DETAILS, "PCM sample bit depth                   : (Y:%d, C:%d)\n", m_bPCMInputBitDepthFlag ? m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA] : m_internalBitDepth[CHANNEL_TYPE_LUMA],
                                                                     m_bPCMInputBitDepthFlag ? m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] : m_internalBitDepth[CHANNEL_TYPE_CHROMA] );
   msg( DETAILS, "Intra reference smoothing              : %s\n", (m_enableIntraReferenceSmoothing           ? "Enabled" : "Disabled") );
+#if JVET_M0113_M0188_QG_SIZE
+  msg( DETAILS, "cu_chroma_qp_offset_subdiv             : %d\n", m_cuChromaQpOffsetSubdiv);
+#else
   msg( DETAILS, "diff_cu_chroma_qp_offset_depth         : %d\n", m_diffCuChromaQpOffsetDepth);
+#endif
   msg( DETAILS, "extended_precision_processing_flag     : %s\n", (m_extendedPrecisionProcessingFlag         ? "Enabled" : "Disabled") );
   msg( DETAILS, "implicit_rdpcm_enabled_flag            : %s\n", (m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT] ? "Enabled" : "Disabled") );
   msg( DETAILS, "explicit_rdpcm_enabled_flag            : %s\n", (m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT] ? "Enabled" : "Disabled") );

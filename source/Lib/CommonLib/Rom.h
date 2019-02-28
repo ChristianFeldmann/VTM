@@ -262,5 +262,9 @@ extern const uint8_t g_triangleCombination[TRIANGLE_MAX_NUM_CANDS][3];
 extern const uint8_t g_triangleIdxBins[TRIANGLE_MAX_NUM_CANDS];
 #endif
 
+#if JVET_M0445_MCTS_DEC_CHECK
+extern bool g_mctsDecCheckEnabled;
+#endif
+
 #endif  //__TCOMROM__
 

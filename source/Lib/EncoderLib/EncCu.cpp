@@ -44,6 +44,9 @@
 #include "CommonLib/dtrace_codingstruct.h"
 #include "CommonLib/Picture.h"
 #include "CommonLib/UnitTools.h"
+#if JVET_M0445_MCTS
+#include "MCTS.h"
+#endif
 
 
 #include "CommonLib/dtrace_buffer.h"
@@ -2645,6 +2648,14 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       }
       PU::spanMotionInfo( pu, mergeCtx );
 
+#if JVET_M0445_MCTS 
+      if( m_pcEncCfg->getMCTSEncConstraint() && ( !( MCTSHelper::checkMvBufferForMCTSConstraint( pu ) ) ) )
+      {
+        // Do not use this mode
+        tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+        continue;
+      }
+#endif
       if( mrgTempBufSet )
       {
 #if JVET_M0147_DMVR
@@ -2730,7 +2741,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
       if( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip && !pu.mhIntraFlag)
       {
+#if JVET_M0445_MCTS
+        bestIsSkip = !bestCS->cus.empty() && bestCS->getCU( partitioner.chType )->rootCbf == 0;
+#else
         bestIsSkip = bestCS->getCU( partitioner.chType )->rootCbf == 0;
+#endif
       }
       tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
     }// end loop uiMrgHADIdx
@@ -2840,6 +2855,14 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
       triangleMrgCtx.setMergeInfo( pu, mergeCand );
       PU::spanMotionInfo( pu, triangleMrgCtx );
 
+#if JVET_M0445_MCTS
+      if( m_pcEncCfg->getMCTSEncConstraint() && ( !( MCTSHelper::checkMvBufferForMCTSConstraint( pu ) ) ) )
+      {
+        // Do not use this mode
+        tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+        return;
+      }
+#endif      
       m_pcInterSearch->motionCompensation( pu, triangleBuffer[mergeCand] );
     }
   }
@@ -3045,6 +3068,14 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
         PU::spanTriangleMotionInfo(pu, triangleMrgCtx, mergeCand, splitDir, candIdx0, candIdx1 );
 #endif
 
+#if JVET_M0445_MCTS
+        if( m_pcEncCfg->getMCTSEncConstraint() && ( !( MCTSHelper::checkMvBufferForMCTSConstraint( *cu.firstPU ) ) ) )
+        {
+          // Do not use this mode
+          tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+          return;
+        }
+#endif
         if( tempBufSet )
         {
           tempCS->getPredBuf().copyFrom( triangleWeightedBuffer[mergeCand] );
@@ -3326,6 +3357,14 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
         PU::spanMotionInfo( pu );
       }
 
+#if JVET_M0445_MCTS
+      if( m_pcEncCfg->getMCTSEncConstraint() && ( !( MCTSHelper::checkMvBufferForMCTSConstraint( *cu.firstPU ) ) ) )
+      {
+        // Do not use this mode
+        tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+        return;
+      }
+#endif
       if ( mrgTempBufSet )
       {
         tempCS->getPredBuf().copyFrom( acMergeBuffer[uiMergeCand] );
@@ -4271,6 +4310,14 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
 #endif
   }
 
+#if JVET_M0445_MCTS 
+  if( m_pcEncCfg->getMCTSEncConstraint() && ( ( cu.firstPU->refIdx[L0] < 0 && cu.firstPU->refIdx[L1] < 0 ) || ( !( MCTSHelper::checkMvBufferForMCTSConstraint( *cu.firstPU ) ) ) ) )
+  {
+    // Do not use this mode
+    tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+    continue;
+  }
+#endif
   if( testGbi && gbiIdx == GBI_DEFAULT ) // Enabled GBi but the search results is uni.
   {
     tempCS->initStructData(encTestMode.qp, encTestMode.lossless);

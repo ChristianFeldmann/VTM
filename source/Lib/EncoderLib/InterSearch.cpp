@@ -45,6 +45,9 @@
 #include "CommonLib/UnitTools.h"
 #include "CommonLib/dtrace_next.h"
 #include "CommonLib/dtrace_buffer.h"
+#if JVET_M0445_MCTS
+#include "CommonLib/MCTS.h"
+#endif
 
 #include "EncModeCtrl.h"
 #include "EncLib.h"
@@ -1945,7 +1948,11 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
   AMVPInfo     aacAMVPInfo[2][33];
 
   int          iRefIdx[2]={0,0}; //If un-initialized, may cause SEGV in bi-directional prediction iterative stage.
+#if JVET_M0445_MCTS
+  int          iRefIdxBi[2] = { -1, -1 };
+#else
   int          iRefIdxBi[2];
+#endif
 
   uint32_t         uiMbBits[3] = {1, 1, 0};
 
@@ -2149,6 +2156,9 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         && (cu.slice->getCheckLDC() || gbiIdx == GBI_DEFAULT || !m_affineModeSelected || !m_pcEncCfg->getUseGBiFast())
         )
       {
+#if JVET_M0445_MCTS
+        bool doBiPred = true;
+#endif
         cMvBi[0] = cMv[0];
         cMvBi[1] = cMv[1];
         iRefIdxBi[0] = iRefIdx[0];
@@ -2172,6 +2182,21 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           pu.refIdx[REF_PIC_LIST_1] = iRefIdxBi[1];
           pu.mvpIdx[REF_PIC_LIST_1] = bestBiPMvpL1;
 
+#if JVET_M0445_MCTS
+            if( m_pcEncCfg->getMCTSEncConstraint() )
+            {
+              Mv restrictedMv = pu.mv[REF_PIC_LIST_1];
+              Area curTileAreaRestricted;
+              curTileAreaRestricted = pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu );
+              MCTSHelper::clipMvToArea( restrictedMv, pu.cu->Y(), curTileAreaRestricted, *pu.cs->sps );
+              // If sub-pel filter samples are not inside of allowed area
+              if( restrictedMv != pu.mv[REF_PIC_LIST_1] )
+              {
+                uiCostBi = std::numeric_limits<Distortion>::max();
+                doBiPred = false;
+              }
+            }
+#endif
           PelUnitBuf predBufTmp = m_tmpPredStorage[REF_PIC_LIST_1].getBuf( UnitAreaRelative(cu, pu) );
           motionCompensation( pu, predBufTmp, REF_PIC_LIST_1 );
 
@@ -2200,6 +2225,10 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           uiBits[2] = uiMbBits[2] + uiMotBits[0] + uiMotBits[1];
         }
 
+#if JVET_M0445_MCTS
+        if( doBiPred )
+        {
+#endif
         // 4-times iteration (default)
         int iNumIter = 4;
 
@@ -2330,6 +2359,9 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
             break;
           }
         } // for loop-iter
+#if JVET_M0445_MCTS
+        }
+#endif
         cu.refIdxBi[0] = iRefIdxBi[0];
         cu.refIdxBi[1] = iRefIdxBi[1];
 
@@ -2425,6 +2457,13 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           symCost += m_pcRdCost->getCost(bits);
           cTarMvField.setMvField(cCurMvField.mv.getSymmvdMv(cMvPredSym[curRefList], cMvPredSym[tarRefList]), refIdxTar);
 
+#if JVET_M0445_MCTS
+          if( m_pcEncCfg->getMCTSEncConstraint() )
+          {
+            if( !( MCTSHelper::checkMvForMCTSConstraint( pu, cCurMvField.mv ) && MCTSHelper::checkMvForMCTSConstraint( pu, cTarMvField.mv ) ) )
+              symCost = std::numeric_limits<Distortion>::max();
+          }
+#endif
           // save results
           if ( symCost < uiCostBi )
           {
@@ -2648,6 +2687,15 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         uiAffineCost += m_pcRdCost->getCost( 1 ); // add one bit for affine_type
       }
 
+#if JVET_M0445_MCTS
+      if( uiAffineCost < uiHevcCost )
+      {
+        if( m_pcEncCfg->getMCTSEncConstraint() && !MCTSHelper::checkMvBufferForMCTSConstraint( pu ) )
+        {
+          uiAffineCost = std::numeric_limits<Distortion>::max();
+        }
+      }
+#endif
       if ( uiHevcCost <= uiAffineCost )
       {
         // set hevc me result
@@ -3086,6 +3134,20 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
   // sub-pel refinement for sub-pel resolution
   if( pu.cu->imv == 0 )
   {
+#if JVET_M0445_MCTS
+    if( m_pcEncCfg->getMCTSEncConstraint() )
+    {
+      Area curTileAreaSubPelRestricted = pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu );
+      Area targetArea = pu.cu->Y();
+      targetArea.repositionTo( targetArea.offset( rcMv.getHor(), rcMv.getVer() ) );
+      // If sub-pel filter samples are not inside of allowed area
+      // Variant 1: clip full-pel vector, do sub-pel refinement for clipped MV
+      if( !curTileAreaSubPelRestricted.contains( targetArea ) )
+      {
+        MCTSHelper::clipMvToArea( rcMv, pu.cu->Y(), curTileAreaSubPelRestricted, *pu.cs->sps, 0 );
+      }
+    }
+#endif
     xPatternSearchFracDIF( pu, eRefPicList, iRefIdxPred, cStruct, rcMv, cMvHalf, cMvQter, ruiCost );
     m_pcRdCost->setCostScale( 0 );
     rcMv <<= 2;
@@ -3121,12 +3183,29 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
   Mv mvTL(cFPMvPred.getHor() - (iSrchRng << iMvShift), cFPMvPred.getVer() - (iSrchRng << iMvShift));
   Mv mvBR(cFPMvPred.getHor() + (iSrchRng << iMvShift), cFPMvPred.getVer() + (iSrchRng << iMvShift));
 
+#if JVET_M0445_MCTS
+  if (m_pcEncCfg->getMCTSEncConstraint())
+  {
+    MCTSHelper::clipMvToArea( mvTL, pu.Y(), pu.cs->picture->mctsInfo.getTileArea(), *pu.cs->sps );
+    MCTSHelper::clipMvToArea( mvBR, pu.Y(), pu.cs->picture->mctsInfo.getTileArea(), *pu.cs->sps );
+  }
+  else
+  {
+    xClipMv( mvTL, pu.cu->lumaPos(),
+            pu.cu->lumaSize(),
+            *pu.cs->sps );
+    xClipMv( mvBR, pu.cu->lumaPos(),
+            pu.cu->lumaSize(),
+            *pu.cs->sps );
+  }
+#else
   xClipMv( mvTL, pu.cu->lumaPos(),
           pu.cu->lumaSize(),
           *pu.cs->sps );
   xClipMv( mvBR, pu.cu->lumaPos(),
           pu.cu->lumaSize(),
           *pu.cs->sps );
+#endif
 
   mvTL.divideByPowerOf2( iMvShift );
   mvBR.divideByPowerOf2( iMvShift );
@@ -3270,6 +3349,13 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
 
   int iSearchRange = m_iSearchRange;
   rcMv.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
+#if JVET_M0445_MCTS
+  if( m_pcEncCfg->getMCTSEncConstraint() )
+  {
+    MCTSHelper::clipMvToArea( rcMv, pu.Y(), pu.cs->picture->mctsInfo.getTileArea(), *pu.cs->sps );
+  }
+  else
+#endif
   clipMv( rcMv, pu.cu->lumaPos(),
           pu.cu->lumaSize(),
           *pu.cs->sps );
@@ -3306,6 +3392,13 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
   {
     Mv integerMv2Nx2NPred = *pIntegerMv2Nx2NPred;
     integerMv2Nx2NPred.changePrecision(MV_PRECISION_INT, MV_PRECISION_INTERNAL);
+#if JVET_M0445_MCTS
+    if( m_pcEncCfg->getMCTSEncConstraint() )
+    {
+      MCTSHelper::clipMvToArea( integerMv2Nx2NPred, pu.Y(), pu.cs->picture->mctsInfo.getTileArea(), *pu.cs->sps );
+    }
+    else
+#endif
     clipMv( integerMv2Nx2NPred, pu.cu->lumaPos(),
             pu.cu->lumaSize(),
             *pu.cs->sps );
@@ -3758,14 +3851,37 @@ void InterSearch::xPatternSearchIntRefine(PredictionUnit& pu, IntTZSearchStruct&
       cTestMv[iMVPIdx] += cBaseMvd[iMVPIdx];
       cTestMv[iMVPIdx] += amvpInfo.mvCand[iMVPIdx];
 
+#if JVET_M0445_MCTS
+      // MCTS and IMV
+      if( m_pcEncCfg->getMCTSEncConstraint() )
+      {
+        Mv cTestMVRestr = cTestMv[iMVPIdx];
+        cTestMVRestr.changePrecision( MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL );
+        MCTSHelper::clipMvToArea( cTestMVRestr, pu.cu->Y(), pu.cs->picture->mctsInfo.getTileAreaIntPelRestricted( pu ), *pu.cs->sps );
+        cTestMVRestr.changePrecision( MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER );
+
+        if( cTestMVRestr != cTestMv[iMVPIdx] )
+        {
+          // Skip this IMV pos, cause clipping affects IMV scaling
+          continue;
+        }
+      }
+#endif
       if ( iMVPIdx == 0 || cTestMv[0] != cTestMv[1])
       {
         Mv cTempMV = cTestMv[iMVPIdx];
+#if JVET_M0445_MCTS
+        if( !m_pcEncCfg->getMCTSEncConstraint() )
+        {
+#endif
         cTempMV.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
         clipMv(cTempMV, pu.cu->lumaPos(),
                pu.cu->lumaSize(),
                sps);
         cTempMV.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_M0445_MCTS
+        }
+#endif
         m_cDistParam.cur.buf = cStruct.piRefY  + cStruct.iRefStride * (cTempMV.getVer() >>  2) + (cTempMV.getHor() >> 2);
         uiDist = uiSATD = (Distortion) (m_cDistParam.distFunc( m_cDistParam ) * fWeight);
       }
@@ -3788,6 +3904,13 @@ void InterSearch::xPatternSearchIntRefine(PredictionUnit& pu, IntTZSearchStruct&
       }
     }
   }
+#if JVET_M0445_MCTS
+  if( uiBestDist == std::numeric_limits<Distortion>::max() )
+  {
+    ruiCost = std::numeric_limits<Distortion>::max();
+    return;
+  }
+#endif
 
   rcMv = cBestMv;
   rcMvPred = amvpInfo.mvCand[iBestMVPIdx];
@@ -3961,6 +4084,13 @@ Distortion InterSearch::xSymmeticRefineMvSearch( PredictionUnit &pu, PelUnitBuf&
       MvField mvCand = mvCurCenter, mvPair;
       mvCand.mv += mvOffset;
 
+#if JVET_M0445_MCTS
+      if( m_pcEncCfg->getMCTSEncConstraint() )
+      {
+        if( !( MCTSHelper::checkMvForMCTSConstraint( pu, mvCand.mv ) ) )
+          continue; // Skip this this pos
+      }
+#endif
       // get MVD cost
       m_pcRdCost->setPredictor( rcMvCurPred );
       m_pcRdCost->setCostScale( 0 );
@@ -3970,6 +4100,13 @@ Distortion InterSearch::xSymmeticRefineMvSearch( PredictionUnit &pu, PelUnitBuf&
       // get MVD pair and set target MV
       mvPair.refIdx = rTarMvField.refIdx;
       mvPair.mv.set( rcMvTarPred.hor - (mvCand.mv.hor - rcMvCurPred.hor), rcMvTarPred.ver - (mvCand.mv.ver - rcMvCurPred.ver) );
+#if JVET_M0445_MCTS
+      if( m_pcEncCfg->getMCTSEncConstraint() )
+      {
+        if( !( MCTSHelper::checkMvForMCTSConstraint( pu, mvPair.mv ) ) )
+          continue; // Skip this this pos
+      }
+#endif
       uiCost += xGetSymmetricCost( pu, origBuf, eRefPicList, mvCand, mvPair, gbiIdx );
       if ( uiCost < uiMinCost )
       {
@@ -4515,6 +4652,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
     ::memcpy( aaiMvpIdxBi, aaiMvpIdx, sizeof(aaiMvpIdx) );
 
     uint32_t uiMotBits[2];
+#if JVET_M0445_MCTS
+    bool doBiPred = true;
+#endif
 
     if ( slice.getMvdL1ZeroFlag() ) // GPB, list 1 only use Mvp
     {
@@ -4531,6 +4671,27 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
       ::memcpy( cMvTemp[1][bestBiPRefIdxL1],   pcMvTemp, sizeof(Mv)*3 );
       iRefIdxBi[1] = bestBiPRefIdxL1;
 
+#if JVET_M0445_MCTS
+      if( m_pcEncCfg->getMCTSEncConstraint() )
+      {
+        Area curTileAreaRestricted;
+        curTileAreaRestricted = pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu );
+        for( int i = 0; i < mvNum; i++ )
+        {
+          Mv restrictedMv = pcMvTemp[i];
+          restrictedMv.changePrecision( MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL );
+          MCTSHelper::clipMvToArea( restrictedMv, pu.cu->Y(), curTileAreaRestricted, *pu.cs->sps );
+          restrictedMv.changePrecision( MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER );
+
+          // If sub-pel filter samples are not inside of allowed area
+          if( restrictedMv != pcMvTemp[i] )
+          {
+            uiCostBi = std::numeric_limits<Distortion>::max();
+            doBiPred = false;
+          }
+        }
+      }
+#endif
       // Get list1 prediction block
       PU::setAllAffineMv( pu, cMvBi[1][0], cMvBi[1][1], cMvBi[1][2], REF_PIC_LIST_1
 #if JVET_M0246_AFFINE_AMVR
@@ -4566,6 +4727,10 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
       uiBits[2] = uiMbBits[2] + uiMotBits[0] + uiMotBits[1];
     }
 
+#if JVET_M0445_MCTS
+    if( doBiPred )
+    {
+#endif
     // 4-times iteration (default)
     int iNumIter = 4;
     // fast encoder setting or GPB: only one iteration
@@ -4713,6 +4878,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
         break;
       }
     } // for loop-iter
+#if JVET_M0445_MCTS
+    }
+#endif
   } // if (B_SLICE)
 
   pu.mv    [REF_PIC_LIST_0] = Mv();
@@ -5094,6 +5262,19 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
   uint32_t uiBitsBest = 0;
 
   // do motion compensation with origin mv
+#if JVET_M0445_MCTS
+  if( m_pcEncCfg->getMCTSEncConstraint() )
+  {
+    Area curTileAreaRestricted = pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu );
+    MCTSHelper::clipMvToArea( acMvTemp[0], pu.cu->Y(), curTileAreaRestricted, *pu.cs->sps );
+    MCTSHelper::clipMvToArea( acMvTemp[1], pu.cu->Y(), curTileAreaRestricted, *pu.cs->sps );
+    if( pu.cu->affineType == AFFINEMODEL_6PARAM )
+    {
+      MCTSHelper::clipMvToArea( acMvTemp[2], pu.cu->Y(), curTileAreaRestricted, *pu.cs->sps );
+    }
+  }
+  else
+#endif
   clipMv( acMvTemp[0], pu.cu->lumaPos(),
           pu.cu->lumaSize(),
           *pu.cs->sps );
@@ -5337,9 +5518,20 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
         acMvTemp[i].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
       }
 #endif
+#if JVET_M0445_MCTS
+      if( m_pcEncCfg->getMCTSEncConstraint() )
+      {
+        MCTSHelper::clipMvToArea( acMvTemp[i], pu.cu->Y(), pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu ), *pu.cs->sps );
+      }
+      else
+      {
+#endif
       clipMv(acMvTemp[i], pu.cu->lumaPos(),
              pu.cu->lumaSize(),
              *pu.cs->sps);
+#if JVET_M0445_MCTS
+      }
+#endif
     }
 
 #if JVET_M0247_AFFINE_AMVR_ENCOPT

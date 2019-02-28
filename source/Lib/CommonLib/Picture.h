@@ -49,6 +49,9 @@
 #if JVET_M0253_HASH_ME
 #include "Hash.h"
 #endif
+#if JVET_M0445_MCTS
+#include "MCTS.h"
+#endif
 #include <deque>
 
 #if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
@@ -286,6 +289,9 @@ public:
 
 #if HEVC_TILES_WPP
   TileMap*     tileMap;
+#endif
+#if JVET_M0445_MCTS
+  MCTSInfo     mctsInfo;
 #endif
   std::vector<AQpLayer*> aqlayer;
 

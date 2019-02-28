@@ -73,6 +73,9 @@ protected:
   bool          m_packedYUVMode;                      ///< If true, output 10-bit and 12-bit YUV data as 5-byte and 3-byte (respectively) packed YUV data
   std::string   m_cacheCfgFile;                       ///< Config file of cache model
   int           m_statMode;                           ///< Config statistic mode (0 - bit stat, 1 - tool stat, 3 - both)
+#if JVET_M0445_MCTS_DEC_CHECK
+  bool          m_mctsCheck;
+#endif
 
 public:
   DecAppCfg();

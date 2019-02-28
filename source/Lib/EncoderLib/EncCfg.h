@@ -478,6 +478,9 @@ protected:
   bool      m_SOPDescriptionSEIEnabled;
   bool      m_scalableNestingSEIEnabled;
   bool      m_tmctsSEIEnabled;
+#if JVET_M0445_MCTS
+  bool      m_MCTSEncConstraint;
+#endif
   bool      m_timeCodeSEIEnabled;
   int       m_timeCodeSEINumTs;
   SEITimeSet   m_timeSetArray[MAX_TIMECODE_SEI_SETS];
@@ -1278,6 +1281,10 @@ public:
   bool  getScalableNestingSEIEnabled() const                         { return m_scalableNestingSEIEnabled; }
   void  setTMCTSSEIEnabled(bool b)                                   { m_tmctsSEIEnabled = b; }
   bool  getTMCTSSEIEnabled()                                         { return m_tmctsSEIEnabled; }
+#if JVET_M0445_MCTS
+  void  setMCTSEncConstraint(bool b)                                 { m_MCTSEncConstraint = b; }
+  bool  getMCTSEncConstraint()                                       { return m_MCTSEncConstraint; }
+#endif
   void  setTimeCodeSEIEnabled(bool b)                                { m_timeCodeSEIEnabled = b; }
   bool  getTimeCodeSEIEnabled()                                      { return m_timeCodeSEIEnabled; }
   void  setNumberOfTimeSets(int value)                               { m_timeCodeSEINumTs = value; }

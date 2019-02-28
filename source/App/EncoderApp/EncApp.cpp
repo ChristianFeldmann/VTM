@@ -435,6 +435,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSOPDescriptionSEIEnabled                          ( m_SOPDescriptionSEIEnabled );
   m_cEncLib.setScalableNestingSEIEnabled                         ( m_scalableNestingSEIEnabled );
   m_cEncLib.setTMCTSSEIEnabled                                   ( m_tmctsSEIEnabled );
+#if JVET_M0445_MCTS
+  m_cEncLib.setMCTSEncConstraint                                 ( m_MCTSEncConstraint);
+#endif
   m_cEncLib.setTimeCodeSEIEnabled                                ( m_timeCodeSEIEnabled );
   m_cEncLib.setNumberOfTimeSets                                  ( m_timeCodeSEINumTs );
   for(int i = 0; i < m_timeCodeSEINumTs; i++)

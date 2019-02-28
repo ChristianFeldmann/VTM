@@ -398,6 +398,46 @@ static bool readPlane(Pel* dst,
   return true;
 }
 
+static bool verifyPlane(Pel* dst,
+                      uint32_t stride444,
+                      uint32_t width444,
+                      uint32_t height444,
+                      uint32_t padX444,
+                      uint32_t padY444,
+                      const ComponentID compID,
+                      const ChromaFormat cFormat,
+                      const uint32_t bitDepth)
+{
+  const uint32_t csx =getComponentScaleX(compID, cFormat);
+  const uint32_t csy =getComponentScaleY(compID, cFormat);
+  
+#if EXTENSION_360_VIDEO
+  const uint32_t stride = stride444;
+#else
+  const uint32_t stride = stride444>>csx;
+#endif
+  const uint32_t fullWidth  = (width444 + padX444) >> csx;
+  const uint32_t fullHeight = (height444 +padY444) >> csy;
+  
+  Pel  *dstBuf              = dst;
+  
+  const Pel mask = ~((1 << bitDepth) - 1);
+  
+  for (uint32_t y = 0; y < fullHeight; y++, dstBuf+= stride)
+  {
+    for (uint32_t x = 0; x < fullWidth; x++)
+    {
+      if ( (dstBuf[x] & mask) != 0)
+      {
+        return false;
+      }
+    }
+  }
+  
+  return true;
+}
+
+
 /**
  * Write an image plane (width444*height444 pixels) from src into output stream fd.
  *
@@ -844,6 +884,11 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
     if ( ! readPlane( dst, m_cHandle, is16bit, stride444, width444, height444, pad_h444, pad_v444, compID, picOrg.chromaFormat, format, m_fileBitdepth[chType]))
     {
       return false;
+    }
+    
+    if (! verifyPlane( dst, stride444, width444, height444, pad_h444, pad_v444, compID, format, m_fileBitdepth[chType]) )
+    {
+       EXIT("Source image contains values outside the specified bit range!");
     }
 
     if( (size_t)compID < picOrg.bufs.size() )

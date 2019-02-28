@@ -145,8 +145,9 @@ struct AreaBuf : public Size
 #if JVET_M0427_INLOOP_RESHAPER
   void rspSignal            ( std::vector<Pel>& pLUT );
   void scaleSignal          ( const int scale, const bool dir , const ClpRng& clpRng);
-  T    computeAvg           ( ) const;
 #endif
+  T    computeAvg           ( ) const;
+
         T& at( const int &x, const int &y )          { return buf[y * stride + x]; }
   const T& at( const int &x, const int &y ) const    { return buf[y * stride + x]; }
 
@@ -566,6 +567,7 @@ void AreaBuf<T>::extendBorderPel( unsigned margin )
     ::memcpy( p - ( y + 1 ) * s, p, sizeof( T ) * ( w + ( margin << 1 ) ) );
   }
 }
+
 template<typename T>
 T AreaBuf<T>::meanDiff( const AreaBuf<const T> &other ) const
 {
@@ -629,6 +631,33 @@ void AreaBuf<T>::transposedFrom( const AreaBuf<const T> &other )
   }
 }
 
+template<typename T>
+T AreaBuf <T> ::computeAvg() const
+{
+#if !JVET_M0102_INTRA_SUBPARTITIONS
+  if (width == 1)
+  {
+    THROW("Blocks of width = 1 not supported");
+  }
+  else
+  {
+#endif
+    const T* src = buf;
+#if ENABLE_QPA
+    int64_t  acc = 0; // for picture-wise use in getGlaringColorQPOffset() and applyQPAdaptationChroma()
+#else
+    int32_t  acc = 0;
+#endif
+#define AVG_INC      src += stride
+#define AVG_OP(ADDR) acc += src[ADDR]
+    SIZE_AWARE_PER_EL_OP(AVG_OP, AVG_INC);
+#undef AVG_INC
+#undef AVG_OP
+    return T ((acc + (area() >> 1)) / area());
+#if !JVET_M0102_INTRA_SUBPARTITIONS
+  }
+#endif
+}
 
 #ifndef DONT_UNDEF_SIZE_AWARE_PER_EL_OP
 #undef SIZE_AWARE_PER_EL_OP

@@ -157,8 +157,8 @@ private:
   static const TriangleMotionInfo  m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
   uint8_t                          m_triangleIdxBins[2][TRIANGLE_MAX_NUM_UNI_CANDS][TRIANGLE_MAX_NUM_UNI_CANDS];
 #endif
-#if SHARP_LUMA_DELTA_QP
-  void    updateLambda      ( Slice* slice, double dQP );
+#if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
+  void    updateLambda      ( Slice* slice, const int dQP, const bool updateRdCostLambda );
 #endif
 #if JVET_M0140_SBT
   double                m_sbtCostSave[2];

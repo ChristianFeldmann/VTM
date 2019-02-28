@@ -457,7 +457,7 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   cs.useSubStructure( *bestCS, partitioner->chType, CS::getArea( *bestCS, area, partitioner->chType ), copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals );
   cs.slice->copyMotionLUTs(bestMotCandLUTs, cs.slice->getMotionLUTs());
 
-  if( !cs.pcv->ISingleTree && cs.slice->isIRAP() && cs.pcv->chrFormat != CHROMA_400 )
+  if (CS::isDualITree (cs) && isChromaEnabled (cs.pcv->chrFormat))
   {
     m_CABACEstimator->getCtx() = m_CurrCtx->start;
 
@@ -784,7 +784,7 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   {
     EncTestMode currTestMode = m_modeCtrl->currTestMode();
 
-    if (tempCS->pps->getUseDQP() && CS::isDualITree(*tempCS) && isChroma(partitioner.chType))
+    if (pps.getUseDQP() && CS::isDualITree(*tempCS) && isChroma(partitioner.chType))
     {
       const Position chromaCentral(tempCS->area.Cb().chromaPos().offset(tempCS->area.Cb().chromaSize().width >> 1, tempCS->area.Cb().chromaSize().height >> 1));
       const Position lumaRefPos(chromaCentral.x << getComponentScaleX(COMPONENT_Cb, tempCS->area.chromaFormat), chromaCentral.y << getComponentScaleY(COMPONENT_Cb, tempCS->area.chromaFormat));
@@ -797,15 +797,24 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
       }
     }
 
+#if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
+    if (partitioner.currDepth <= pps.getMaxCuDQPDepth() && (
 #if SHARP_LUMA_DELTA_QP
-    if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && partitioner.currDepth <= pps.getMaxCuDQPDepth() )
+        (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()) ||
+#endif
+#if ENABLE_QPA_SUB_CTU
+        (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && pps.getUseDQP())
+#else
+        false
+#endif
+      ))
     {
 #if ENABLE_SPLIT_PARALLELISM
       CHECK( tempCS->picture->scheduler.getSplitJobId() > 0, "Changing lambda is only allowed in the master thread!" );
 #endif
       if (currTestMode.qp >= 0)
       {
-        updateLambda(&slice, currTestMode.qp);
+        updateLambda (&slice, currTestMode.qp, CS::isDualITree (*tempCS) || (partitioner.currDepth == 0));
       }
     }
 #endif
@@ -955,10 +964,10 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   CHECK( bestCS->cost             == MAX_DOUBLE                , "No possible encoding found" );
 }
 
-#if SHARP_LUMA_DELTA_QP
-void EncCu::updateLambda( Slice* slice, double dQP )
+#if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
+void EncCu::updateLambda (Slice* slice, const int dQP, const bool updateRdCostLambda)
 {
-#if WCG_EXT
+#if WCG_EXT && !ENABLE_QPA_SUB_CTU
   int    NumberBFrames = ( m_pcEncCfg->getGOPSize() - 1 );
   int    SHIFT_QP = 12;
   double dLambda_scale = 1.0 - Clip3( 0.0, 0.5, 0.05*(double)(slice->getPic()->fieldPic ? NumberBFrames/2 : NumberBFrames) );
@@ -1020,14 +1029,19 @@ void EncCu::updateLambda( Slice* slice, double dQP )
   dLambda *= lambdaModifier;
 
   int qpBDoffset = slice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA);
-  int iQP = Clip3(-qpBDoffset, MAX_QP, (int)floor(dQP + 0.5));
+  int iQP = Clip3(-qpBDoffset, MAX_QP, (int)floor((double)dQP + 0.5));
   m_pcSliceEncoder->setUpLambda(slice, dLambda, iQP);
 
 #else
-  int iQP = (int)dQP;
+  int iQP = dQP;
   const double oldQP     = (double)slice->getSliceQpBase();
+#if ENABLE_QPA_SUB_CTU
+  const double oldLambda = (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && slice->getPPS()->getUseDQP()) ? slice->getLambdas()[0] :
+                           m_pcSliceEncoder->calculateLambda (slice, m_pcSliceEncoder->getGopId(), slice->getDepth(), oldQP, oldQP, iQP);
+#else
   const double oldLambda = m_pcSliceEncoder->calculateLambda (slice, m_pcSliceEncoder->getGopId(), slice->getDepth(), oldQP, oldQP, iQP);
-  const double newLambda = oldLambda * pow (2.0, (dQP - oldQP) / 3.0);
+#endif
+  const double newLambda = oldLambda * pow (2.0, ((double)dQP - oldQP) / 3.0);
 #if RDOQ_CHROMA_LAMBDA
   const double chromaLambda = newLambda / m_pcRdCost->getChromaWeight();
   const double lambdaArray[MAX_NUM_COMPONENT] = {newLambda, chromaLambda, chromaLambda};
@@ -1035,7 +1049,10 @@ void EncCu::updateLambda( Slice* slice, double dQP )
 #else
   m_pcTrQuant->setLambda (newLambda);
 #endif
-  m_pcRdCost->setLambda( newLambda, slice->getSPS()->getBitDepths() );
+  if (updateRdCostLambda)
+  {
+    m_pcRdCost->setLambda (newLambda, slice->getSPS()->getBitDepths());
+  }
 #endif
 }
 #endif
@@ -1257,10 +1274,15 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 #endif
 
 #if JVET_M0428_ENC_DB_OPT
-  if (cost > bestCS->cost + bestCS->costDbOffset)
+  if (cost > bestCS->cost + bestCS->costDbOffset
 #else
-  if( cost > bestCS->cost )
+  if (cost > bestCS->cost
 #endif
+#if ENABLE_QPA_SUB_CTU
+    || (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && pps.getUseDQP() && (pps.getMaxCuDQPDepth() > 0) && (split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT) &&
+        (partitioner.currArea().lwidth() == tempCS->pcv->maxCUWidth) && (partitioner.currArea().lheight() == tempCS->pcv->maxCUHeight)) // force quad-split or no split at CTU level
+#endif
+    )
   {
     xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
     return;
@@ -3633,10 +3655,15 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
             m_pcInterSearch->encodeResAndCalcRdInterCU(*tempCS, partitioner, (numResidualPass != 0), true, chroma);
             xEncodeDontSplit(*tempCS, partitioner);
 
+#if ENABLE_QPA_SUB_CTU
+            xCheckDQP (*tempCS, partitioner);
+#else
+            // this if-check is redundant
             if (tempCS->pps->getUseDQP() && (partitioner.currDepth) <= tempCS->pps->getMaxCuDQPDepth())
             {
               xCheckDQP(*tempCS, partitioner);
             }
+#endif
 
 #if !JVET_M0464_UNI_MTS
             hasResidual[emtCuFlag] = cu.rootCbf;
@@ -3774,10 +3801,15 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
 #endif
           xEncodeDontSplit(*tempCS, partitioner);
 
+#if ENABLE_QPA_SUB_CTU
+          xCheckDQP (*tempCS, partitioner);
+#else
+          // this if-check is redundant
           if (tempCS->pps->getUseDQP() && (partitioner.currDepth) <= tempCS->pps->getMaxCuDQPDepth())
           {
             xCheckDQP(*tempCS, partitioner);
           }
+#endif
 
 #if JVET_M0428_ENC_DB_OPT
           tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();

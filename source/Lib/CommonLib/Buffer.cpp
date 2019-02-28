@@ -460,32 +460,6 @@ void AreaBuf<Pel>::scaleSignal(const int scale, const bool dir, const ClpRng& cl
     }
   }
 }
-
-template<>
-Pel AreaBuf <Pel> ::computeAvg() const
-{
-  const Pel* src = buf;
-#if !JVET_M0102_INTRA_SUBPARTITIONS
-  if (width == 1)
-  {
-    THROW("Blocks of width = 1 not supported");
-  }
-  else
-  {
-#endif
-    int32_t acc = 0;
-#define AVG_INC   \
-    src +=       stride;
-#define AVG_OP(ADDR) acc += src[ADDR]
-    SIZE_AWARE_PER_EL_OP(AVG_OP, AVG_INC);
-#undef AVG_INC
-#undef AVG_OP
-    return Pel((acc + (area() >> 1)) / area());
-#if !JVET_M0102_INTRA_SUBPARTITIONS
-  }
-#endif
-}
-
 #endif
 
 template<>

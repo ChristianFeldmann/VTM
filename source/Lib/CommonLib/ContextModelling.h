@@ -75,9 +75,6 @@ public:
   unsigned        log2CGHeight    ()                        const { return m_log2CGHeight; }
 #endif
   unsigned        log2CGSize      ()                        const { return m_log2CGSize; }
-  unsigned        log2BlockWidth  ()                        const { return m_log2BlockWidth; }
-  unsigned        log2BlockHeight ()                        const { return m_log2BlockHeight; }
-  unsigned        log2BlockSize   ()                        const { return m_log2BlockSize; }
   bool            extPrec         ()                        const { return m_extendedPrecision; }
   int             maxLog2TrDRange ()                        const { return m_maxLog2TrDynamicRange; }
   unsigned        maxNumCoeff     ()                        const { return m_maxNumCoeff; }
@@ -209,7 +206,6 @@ private:
   const unsigned            m_heightInGroups;
   const unsigned            m_log2BlockWidth;
   const unsigned            m_log2BlockHeight;
-  const unsigned            m_log2BlockSize;
   const unsigned            m_maxNumCoeff;
 #if HEVC_USE_SIGN_HIDING
   const bool                m_signHiding;

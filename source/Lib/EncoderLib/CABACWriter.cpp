@@ -942,23 +942,20 @@ void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
   CHECK(!(GBI_NUM > 1 && (GBI_NUM == 2 || (GBI_NUM & 0x01) == 1)), " !( GBI_NUM > 1 && ( GBI_NUM == 2 || ( GBI_NUM & 0x01 ) == 1 ) ) ");
   const uint8_t gbiCodingIdx = (uint8_t)g_GbiCodingOrder[CU::getValidGbiIdx(cu)];
 
-  int ctxId = 0;
+  const int32_t numGBi = (cu.slice->getCheckLDC()) ? 5 : 3;
 
-  int32_t numGBi = (cu.slice->getCheckLDC()) ? 5 : 3;
-
-  m_BinEncoder.encodeBin((gbiCodingIdx == 0 ? 1 : 0), Ctx::GBiIdx(ctxId));
+  m_BinEncoder.encodeBin((gbiCodingIdx == 0 ? 1 : 0), Ctx::GBiIdx(0));
 
   if(numGBi > 2 && gbiCodingIdx != 0)
   {
-    uint32_t prefixNumBits = numGBi - 2;
-    uint32_t step = 1;
-    uint8_t prefixSymbol = gbiCodingIdx;
+    const uint32_t prefixNumBits = numGBi - 2;
+    const uint32_t step = 1;
 
     int ctxIdGBi = 4;
     uint8_t idx = 1;
     for(int ui = 0; ui < prefixNumBits; ++ui)
     {
-      if (prefixSymbol == idx)
+      if (gbiCodingIdx == idx)
       {
         m_BinEncoder.encodeBin(1, Ctx::GBiIdx(ctxIdGBi));
         break;

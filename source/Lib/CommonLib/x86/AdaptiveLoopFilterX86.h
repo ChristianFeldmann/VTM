@@ -412,6 +412,7 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 #if JVET_M0277_FIX_PCM_DISABLEFILTER
         if( isPCMFilterDisabled && cl.classIdx == AdaptiveLoopFilter::m_ALF_UNUSED_CLASSIDX && transposeIdx == AdaptiveLoopFilter::m_ALF_UNUSED_TRANSPOSIDX )
         {
+          pRec += 4;
           continue;
         }
 #endif
@@ -421,9 +422,10 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
       else if ( isPCMFilterDisabled )
       {
         Position pos(i, j);
-        CodingUnit* cu = isDualTree ? cs.getCU(recalcPosition(nChromaFormat, CH_L, CH_C, pos), CH_C) : cs.getCU(pos, CH_L);
+        CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
         if ( cu->ipcm )
         {
+          pRec += 4;
           continue;
         }
       }
@@ -662,6 +664,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 #if JVET_M0277_FIX_PCM_DISABLEFILTER
         if ( isPCMFilterDisabled && cl.classIdx == AdaptiveLoopFilter::m_ALF_UNUSED_CLASSIDX && transposeIdx == AdaptiveLoopFilter::m_ALF_UNUSED_TRANSPOSIDX )
         {
+          pRec += 4;
           continue;
         }
 #endif
@@ -671,9 +674,10 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
       else if ( isPCMFilterDisabled )
       {
         Position pos(i, j);
-        CodingUnit* cu = isDualTree ? cs.getCU(recalcPosition(nChromaFormat, CH_L, CH_C, pos), CH_C) : cs.getCU(pos, CH_L);
+        CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
         if ( cu->ipcm )
         {
+          pRec += 4;
           continue;
         }
       }

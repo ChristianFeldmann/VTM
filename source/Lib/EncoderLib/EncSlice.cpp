@@ -1694,7 +1694,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if JVET_M0055_DEBUG_CTU
     if( pCfg->getSwitchPOC() != pcPic->poc || -1 == pCfg->getDebugCTU() )
 #endif
-    if ( pcSlice->getSliceType() != I_SLICE && ctuXPosInCtus == 0)
+    if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == 0)
     {
       pcSlice->resetMotionLUTs();
     }

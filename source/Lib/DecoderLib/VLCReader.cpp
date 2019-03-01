@@ -1775,6 +1775,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       READ_FLAG( uiCode, "sign_data_hiding_enabled_flag" );
       pcSlice->setSignDataHidingEnabledFlag( uiCode != 0 );
     }
+    else {
+      pcSlice->setSignDataHidingEnabledFlag( 0 );
+    }
 #endif
     if (
       sps->getSplitConsOverrideEnabledFlag()

@@ -4536,11 +4536,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
 
       MotionInfo mi;
 
-      // initialize to default vector in case no motion vector is available
-      mi.mv[0] = mrgCtx.mvFieldNeighbours[(count << 1) + 0].mv;
-      mi.mv[1] = mrgCtx.mvFieldNeighbours[(count << 1) + 1].mv;
-      mi.refIdx[0] = mrgCtx.mvFieldNeighbours[(count << 1) + 0].refIdx;
-      mi.refIdx[1] = mrgCtx.mvFieldNeighbours[(count << 1) + 1].refIdx;
+      found = false;
       mi.isInter = true;
       mi.sliceIdx = slice.getIndependentSliceIdx();
 #if JVET_M0483_IBC
@@ -4557,8 +4553,16 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
           {
             mi.refIdx[currRefListId] = 0;
             mi.mv[currRefListId] = cColMv;
+            found = true;
           }
         }
+      }      
+      if (!found)
+      {
+        mi.mv[0] = mrgCtx.mvFieldNeighbours[(count << 1) + 0].mv;
+        mi.mv[1] = mrgCtx.mvFieldNeighbours[(count << 1) + 1].mv;
+        mi.refIdx[0] = mrgCtx.mvFieldNeighbours[(count << 1) + 0].refIdx;
+        mi.refIdx[1] = mrgCtx.mvFieldNeighbours[(count << 1) + 1].refIdx;
       }
 
       mi.interDir = (mi.refIdx[0] != -1 ? 1 : 0) + (mi.refIdx[1] != -1 ? 2 : 0);

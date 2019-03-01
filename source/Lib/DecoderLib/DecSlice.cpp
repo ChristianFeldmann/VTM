@@ -230,7 +230,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
       resetGbiCodingOrder(true, cs);
     }
 
-    if (ctuXPosInCtus == 0)
+    if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == 0)
     {
       cs.slice->resetMotionLUTs();
     }

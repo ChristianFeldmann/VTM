@@ -1755,7 +1755,7 @@ void InterPrediction::xBIPMVRefine(int bd, Pel *pRefL0, Pel *pRefL1, uint64_t& m
   const int32_t refStrideL1 = m_biLinearBufStride;
   Pel *pRefL0Orig = pRefL0;
   Pel *pRefL1Orig = pRefL1;
-  for (int nIdx = SAD_BOTTOM; nIdx <= SAD_TOP_LEFT; ++nIdx)
+  for (int nIdx = 0; (nIdx < 25); ++nIdx)
   {
     int32_t sadOffset = ((m_pSearchOffset[nIdx].getVer() * ((2 * DMVR_NUM_ITERATION) + 1)) + m_pSearchOffset[nIdx].getHor());
     pRefL0 = pRefL0Orig + m_pSearchOffset[nIdx].hor + (m_pSearchOffset[nIdx].ver * refStrideL0);
@@ -1764,19 +1764,6 @@ void InterPrediction::xBIPMVRefine(int bd, Pel *pRefL0, Pel *pRefL1, uint64_t& m
     {
       const uint64_t cost = xDMVRCost(bd, pRefL0, refStrideL0, pRefL1, refStrideL1, width, height);
       *(pSADsArray + sadOffset) = cost;
-    }
-    if (nIdx == SAD_LEFT)
-    {
-      int32_t down = -1, right = -1;
-      if (pSADsArray[(((2 * DMVR_NUM_ITERATION) + 1))] < pSADsArray[-(((2 * DMVR_NUM_ITERATION) + 1))])
-      {
-        down = 1;
-      }
-      if (pSADsArray[1] < pSADsArray[-1])
-      {
-        right = 1;
-      }
-      m_pSearchOffset[SAD_TOP_LEFT].set(right, down);
     }
     if (*(pSADsArray + sadOffset) < minCost)
     {
@@ -1856,7 +1843,8 @@ void xDMVRSubPixelErrorSurface(bool notZeroCost, int16_t *totalDeltaMV, int16_t 
 
   int sadStride = (((2 * DMVR_NUM_ITERATION) + 1));
   uint64_t sadbuffer[5];
-  if (notZeroCost && deltaMV[0] == 0 && deltaMV[1] == 0)
+  if (notZeroCost && (abs(totalDeltaMV[0]) != (2 << MV_FRACTIONAL_BITS_INTERNAL))
+    && (abs(totalDeltaMV[1]) != (2 << MV_FRACTIONAL_BITS_INTERNAL)))
   {
     int32_t tempDeltaMv[2] = { 0,0 };
     sadbuffer[0] = pSADsArray[0];
@@ -1917,7 +1905,7 @@ void InterPrediction::xinitMC(PredictionUnit& pu, const ClpRngs &clpRngs)
 
 void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, const ClpRngs &clpRngs, const bool bioApplied)
 {
-  int iterationCount = DMVR_NUM_ITERATION;
+  int iterationCount = 1;
   /*Always High Precision*/
   int mvShift = MV_FRACTIONAL_BITS_INTERNAL;
 
@@ -1947,8 +1935,8 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
   xinitMC(pu, clpRngs);
 
   // point mc buffer to cetre point to avoid multiplication to reach each iteration to the begining
-  Pel *biLinearPredL0 = m_cYuvPredTempDMVRL0 + (iterationCount * m_biLinearBufStride) + iterationCount;
-  Pel *biLinearPredL1 = m_cYuvPredTempDMVRL1 + (iterationCount * m_biLinearBufStride) + iterationCount;
+  Pel *biLinearPredL0 = m_cYuvPredTempDMVRL0 + (DMVR_NUM_ITERATION * m_biLinearBufStride) + DMVR_NUM_ITERATION;
+  Pel *biLinearPredL1 = m_cYuvPredTempDMVRL1 + (DMVR_NUM_ITERATION * m_biLinearBufStride) + DMVR_NUM_ITERATION;
 
   Position puPos = pu.lumaPos();
 

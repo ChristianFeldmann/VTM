@@ -1472,10 +1472,6 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
         m_CABACEstimator->cu_skip_flag( cu );
         m_CABACEstimator->pred_mode   ( cu );
       }
-      m_CABACEstimator->extend_ref_line(cu);
-#if JVET_M0102_INTRA_SUBPARTITIONS
-      m_CABACEstimator->isp_mode      ( cu );
-#endif
       if( CU::isIntra(cu) )
       {
         m_CABACEstimator->pcm_data( cu, partitioner );
@@ -1484,6 +1480,10 @@ void IntraSearch::xEncIntraHeader(CodingStructure &cs, Partitioner &partitioner,
           return;
         }
       }
+      m_CABACEstimator->extend_ref_line(cu);
+#if JVET_M0102_INTRA_SUBPARTITIONS
+      m_CABACEstimator->isp_mode      ( cu );
+#endif
     }
 
     PredictionUnit &pu = *cs.getPU(partitioner.currArea().lumaPos(), partitioner.chType);

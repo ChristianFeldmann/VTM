@@ -708,6 +708,31 @@ void CodingStructure::createInternals( const UnitArea& _unit, const bool isTopLa
   initStructData();
 }
 
+void CodingStructure::addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> &lut, const MotionInfo &mi)
+{
+  size_t currCnt = lut.size();
+
+  bool pruned      = false;
+  int  sameCandIdx = 0;
+
+  for (int idx = 0; idx < currCnt; idx++)
+  {
+    if (lut[idx] == mi)
+    {
+      sameCandIdx = idx;
+      pruned      = true;
+      break;
+    }
+  }
+
+  if (pruned || currCnt == lut.capacity())
+  {
+    lut.erase(lut.begin() + sameCandIdx);
+  }
+
+  lut.push_back(mi);
+}
+
 void CodingStructure::rebindPicBufs()
 {
   CHECK( parent, "rebindPicBufs can only be used for the top level CodingStructure" );
@@ -785,6 +810,8 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
 
   subStruct.m_isTuEnc = isTuEnc;
 
+  subStruct.motionLut = motionLut;
+
   subStruct.initStructData( currQP[_chType], isLossless );
 
   if( isTuEnc )
@@ -847,6 +874,8 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
     CMotionBuf subMB = subStruct.getMotionBuf( clippedArea );
 
     ownMB.copyFrom( subMB );
+
+    motionLut = subStruct.motionLut;
   }
 #if ENABLE_WPP_PARALLELISM
 
@@ -1037,6 +1066,8 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
     CMotionBuf subMB = other.getMotionBuf();
 
     ownMB.copyFrom( subMB );
+
+    motionLut = other.motionLut;
   }
 
   if( copyTUs )

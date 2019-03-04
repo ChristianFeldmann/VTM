@@ -232,7 +232,16 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 
     if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == 0)
     {
-      cs.slice->resetMotionLUTs();
+      cs.motionLut.lut.resize(0);
+#if JVET_M0483_IBC
+      cs.motionLut.lutIbc.resize(0);
+#endif
+#if JVET_M0170_MRG_SHARELIST
+      cs.motionLut.lutShare.resize(0);
+#if JVET_M0483_IBC
+      cs.motionLut.lutShareIbc.resize(0);
+#endif
+#endif
     }
 
 #if JVET_M0445_MCTS_DEC_CHECK

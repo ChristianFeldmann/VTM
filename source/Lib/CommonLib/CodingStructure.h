@@ -211,6 +211,10 @@ public:
   std::vector<PredictionUnit*> pus;
   std::vector< TransformUnit*> tus;
 
+  LutMotionCand motionLut;
+
+  void addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS>& lut, const MotionInfo &mi);
+
 private:
 
   // needed for TU encoding

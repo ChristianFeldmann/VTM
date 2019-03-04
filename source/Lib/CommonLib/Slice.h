@@ -1721,13 +1721,8 @@ private:
   uint32_t                       m_uiMaxBTSize;
 
   AlfSliceParam              m_alfSliceParam;
-  LutMotionCand*             m_MotionCandLut;
 #if JVET_M0427_INLOOP_RESHAPER
   SliceReshapeInfo           m_sliceReshapeInfo;
-#endif
-#if JVET_M0170_MRG_SHARELIST
-public:
-  LutMotionCand*             m_MotionCandLuTsBkup;
 #endif
 public:
                               Slice();
@@ -2009,31 +2004,7 @@ public:
 
   void                        setAlfSliceParam( AlfSliceParam& alfSliceParam ) { m_alfSliceParam = alfSliceParam; }
   AlfSliceParam&              getAlfSliceParam() { return m_alfSliceParam; }
-  void                        initMotionLUTs       ();
-  void                        destroyMotionLUTs    ();
-  void                        resetMotionLUTs();
-#if JVET_M0483_IBC
-  int                         getAvailableLUTIBCMrgNum() const { return m_MotionCandLut->currCntIBC; }
-#endif
-  int                         getAvailableLUTMrgNum() const  { return m_MotionCandLut->currCnt; }
-#if JVET_M0170_MRG_SHARELIST
-  int                         getAvailableLUTBkupMrgNum() const  { return m_MotionCandLuTsBkup->currCnt; }
-  MotionInfo                  getMotionInfoFromLUTBkup(int MotCandIdx) const;
-#if JVET_M0483_IBC
-  int                         getAvailableLUTBkupIBCMrgNum() const { return m_MotionCandLuTsBkup->currCntIBC; }
-#endif
-#endif
-  MotionInfo                  getMotionInfoFromLUTs(int MotCandIdx) const;
-  LutMotionCand*              getMotionLUTs() { return m_MotionCandLut; }
 
-#if JVET_M0483_IBC
-  void                        addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi, bool ibcflag);
-#else
-  void                        addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi);
-#endif
-
-  void                        updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu);
-  void                        copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst);
 #if JVET_M0427_INLOOP_RESHAPER
   const SliceReshapeInfo&     getReshapeInfo() const { return m_sliceReshapeInfo; }
         SliceReshapeInfo&     getReshapeInfo()       { return m_sliceReshapeInfo; }

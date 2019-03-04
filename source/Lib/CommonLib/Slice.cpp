@@ -139,10 +139,6 @@ Slice::Slice()
 , m_uiMaxBTSizeIChroma            ( 0 )
 , m_uiMaxTTSizeIChroma            ( 0 )
 , m_uiMaxBTSize                   ( 0 )
-, m_MotionCandLut                (NULL)
-#if  JVET_M0170_MRG_SHARELIST
-, m_MotionCandLuTsBkup           (NULL)
-#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -179,8 +175,6 @@ Slice::Slice()
     m_saoEnabledFlag[ch] = false;
   }
 
-  initMotionLUTs();
-
 #if JVET_M0427_INLOOP_RESHAPER
   m_sliceReshapeInfo.setUseSliceReshaper(false);
   m_sliceReshapeInfo.setSliceReshapeModelPresentFlag(false);
@@ -193,7 +187,6 @@ Slice::Slice()
 
 Slice::~Slice()
 {
-  destroyMotionLUTs();
 }
 
 
@@ -233,7 +226,6 @@ void Slice::initSlice()
   m_cabacInitFlag        = false;
   m_cabacWinUpdateMode   = 0;
   m_enableTMVPFlag       = true;
-  resetMotionLUTs();
 }
 
 void Slice::setDefaultClpRng( const SPS& sps )
@@ -1652,163 +1644,6 @@ void Slice::stopProcessingTimer()
 {
   m_dProcessingTime += (double)(clock()-m_iProcessingStartTime) / CLOCKS_PER_SEC;
   m_iProcessingStartTime = 0;
-}
-void Slice::initMotionLUTs()
-{
-  m_MotionCandLut = new LutMotionCand;
-  m_MotionCandLut->currCnt = 0;
-#if JVET_M0483_IBC
-  m_MotionCandLut->currCntIBC = 0;
-#endif
-  m_MotionCandLut->motionCand = nullptr;
-#if JVET_M0483_IBC
-  m_MotionCandLut->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS * 2];
-#else
-  m_MotionCandLut->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
-#endif
-#if  JVET_M0170_MRG_SHARELIST
-  m_MotionCandLuTsBkup = new LutMotionCand;
-  m_MotionCandLuTsBkup->currCnt = 0;
-#if JVET_M0483_IBC
-  m_MotionCandLuTsBkup->currCntIBC = 0;
-#endif
-  m_MotionCandLuTsBkup->motionCand = nullptr;
-#if JVET_M0483_IBC
-  m_MotionCandLuTsBkup->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS * 2];
-#else
-  m_MotionCandLuTsBkup->motionCand = new MotionInfo[MAX_NUM_HMVP_CANDS];
-#endif
-#endif
-}
-void Slice::destroyMotionLUTs()
-{
-  delete[] m_MotionCandLut->motionCand;
-  m_MotionCandLut->motionCand = nullptr;
-  delete m_MotionCandLut;
-  m_MotionCandLut = NULL;
-#if  JVET_M0170_MRG_SHARELIST
-  delete[] m_MotionCandLuTsBkup->motionCand;
-  m_MotionCandLuTsBkup->motionCand = nullptr;
-  delete m_MotionCandLuTsBkup;
-  m_MotionCandLuTsBkup = NULL;
-#endif
-}
-void Slice::resetMotionLUTs()
-{
-  m_MotionCandLut->currCnt = 0;
-#if JVET_M0483_IBC
-  m_MotionCandLut->currCntIBC = 0;
-#endif
-#if  JVET_M0170_MRG_SHARELIST
-  m_MotionCandLuTsBkup->currCnt = 0;
-#if JVET_M0483_IBC
-  m_MotionCandLuTsBkup->currCntIBC = 0;
-#endif
-#endif
-}
-
-MotionInfo Slice::getMotionInfoFromLUTs(int MotCandIdx) const
-{
-  return m_MotionCandLut->motionCand[MotCandIdx];
-}
-#if JVET_M0170_MRG_SHARELIST
-MotionInfo Slice::getMotionInfoFromLUTBkup(int MotCandIdx) const
-{
-  return m_MotionCandLuTsBkup->motionCand[MotCandIdx];
-}
-#endif
-
-#if JVET_M0483_IBC
-void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi, bool ibcflag)
-#else
-void Slice::addMotionInfoToLUTs(LutMotionCand* lutMC, MotionInfo newMi)
-#endif
-{
-#if JVET_M0483_IBC
-  int currCntIBC = ibcflag ? lutMC->currCntIBC : lutMC->currCnt;
-  int offset = ibcflag ? MAX_NUM_HMVP_CANDS : 0;
-  bool pruned = false;
-  int  sameCandIdx = 0;
-  for (int idx = 0; idx < currCntIBC; idx++)
-  {
-    if (lutMC->motionCand[idx + offset] == newMi)
-    {
-      sameCandIdx = idx;
-      pruned = true;
-      break;
-    }
-  }
-  if (pruned || currCntIBC == MAX_NUM_HMVP_CANDS)
-  {
-    memmove(&lutMC->motionCand[sameCandIdx + offset], &lutMC->motionCand[sameCandIdx + offset + 1],
-      sizeof(MotionInfo) * (currCntIBC - sameCandIdx - 1));
-    memcpy(&lutMC->motionCand[currCntIBC + offset - 1], &newMi, sizeof(MotionInfo));
-  }
-  else
-  {
-    if (ibcflag)
-    {
-      memcpy(&lutMC->motionCand[currCntIBC + offset], &newMi, sizeof(MotionInfo));
-      lutMC->currCntIBC++;
-    }
-    else
-    {
-      memcpy(&lutMC->motionCand[currCntIBC], &newMi, sizeof(MotionInfo));
-      lutMC->currCnt++;
-    }
-  }
-#else
-  int currCnt = lutMC->currCnt ;
-
-  bool pruned = false;
-  int  sameCandIdx = 0;
-  for (int idx = 0; idx < currCnt; idx++)
-  {
-    if (lutMC->motionCand[idx] == newMi)
-    {
-      sameCandIdx = idx;
-      pruned = true;
-      break;
-    }
-  }
-  if (pruned || lutMC->currCnt == MAX_NUM_HMVP_CANDS)
-  {
-    memmove(&lutMC->motionCand[sameCandIdx], &lutMC->motionCand[sameCandIdx + 1],
-            sizeof(MotionInfo) * (currCnt - sameCandIdx - 1));
-    memcpy(&lutMC->motionCand[lutMC->currCnt-1], &newMi, sizeof(MotionInfo));
-  }
-  else
-  {
-    memcpy(&lutMC->motionCand[lutMC->currCnt++], &newMi, sizeof(MotionInfo));
-  }
-#endif
-}
-
-void Slice::updateMotionLUTs(LutMotionCand* lutMC, CodingUnit & cu)
-{
-  PredictionUnit *selectedPU = cu.firstPU;
-  if (cu.affine) { return; }
-  if (cu.triangle) { return; }
-
-  MotionInfo newMi = selectedPU->getMotionInfo();
-#if JVET_M0264_HMVP_WITH_GBIIDX
-  newMi.GBiIdx = (newMi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
-#endif
-#if JVET_M0483_IBC
-  addMotionInfoToLUTs(lutMC, newMi, CU::isIBC(cu));
-#else
-  addMotionInfoToLUTs(lutMC, newMi);
-#endif
-}
-
-void Slice::copyMotionLUTs(LutMotionCand* Src, LutMotionCand* Dst)
-{
-   memcpy(Dst->motionCand, Src->motionCand, sizeof(MotionInfo)*(std::min(Src->currCnt, MAX_NUM_HMVP_CANDS)));
-   Dst->currCnt = Src->currCnt;
-#if JVET_M0483_IBC
-   memcpy(Dst->motionCand + MAX_NUM_HMVP_CANDS, Src->motionCand + MAX_NUM_HMVP_CANDS, sizeof(MotionInfo)*(std::min(Src->currCntIBC, MAX_NUM_HMVP_CANDS)));
-   Dst->currCntIBC = Src->currCntIBC;
-#endif
 }
 
 unsigned Slice::getMinPictureDistance() const

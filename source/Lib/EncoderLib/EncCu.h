@@ -111,9 +111,6 @@ private:
 
   CodingStructure    ***m_pTempCS;
   CodingStructure    ***m_pBestCS;
-  LutMotionCand      ***m_pTempMotLUTs;
-  LutMotionCand      ***m_pBestMotLUTs;
-  LutMotionCand      ***m_pSplitTempMotLUTs;
   //  Access channel
   EncCfg*               m_pcEncCfg;
   IntraSearch*          m_pcIntraSearch;
@@ -204,10 +201,7 @@ protected:
   Distortion getDistortionDb  ( CodingStructure &cs, CPelBuf org, CPelBuf reco, ComponentID compID, const CompArea& compArea, bool afterDb );
 #endif
 
-  void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm
-    , LutMotionCand *&tempMotCandLUTs
-    , LutMotionCand *&bestMotCandLUTs
-  );
+  void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm );
 #if ENABLE_SPLIT_PARALLELISM
   void xCompressCUParallel    ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm );
   void copyState              ( EncCu* other, Partitioner& pm, const UnitArea& currArea, const bool isDist );
@@ -216,11 +210,7 @@ protected:
   bool
     xCheckBestMode         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestmode );
 
-  void xCheckModeSplit        ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode
-    , LutMotionCand* &tempMotCandLUTs
-    , LutMotionCand* &bestMotCandLUTs
-    , UnitArea  parArea
-  );
+  void xCheckModeSplit        ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
 
   void xCheckRDCostIntra      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
   void xCheckIntraPCM         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );

@@ -846,7 +846,7 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
           if( i &  1 ) blk.x += blk.width;
         }
 
-        CHECK( sub[i].lumaSize().height < MIN_TU_SIZE, "the split causes the block to be smaller than the minimal TU size" );
+        CHECK( sub[i].lumaSize().height < MIN_TB_SIZEY, "the split causes the block to be smaller than the minimal TU size" );
       }
 
       return sub;
@@ -943,7 +943,7 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
         if (i == 1) blk.y += blk.height;
       }
 
-      CHECK(sub[i].lumaSize().height < MIN_TU_SIZE, "the cs split causes the block to be smaller than the minimal TU size");
+      CHECK(sub[i].lumaSize().height < MIN_TB_SIZEY, "the cs split causes the block to be smaller than the minimal TU size");
     }
 
     return sub;
@@ -962,7 +962,7 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
         if( i == 1 ) blk.x += blk.width;
       }
 
-      CHECK( sub[i].lumaSize().width < MIN_TU_SIZE, "the split causes the block to be smaller than the minimal TU size" );
+      CHECK( sub[i].lumaSize().width < MIN_TB_SIZEY, "the split causes the block to be smaller than the minimal TU size" );
     }
 
     return sub;
@@ -983,7 +983,7 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
         if( i == 2 )        blk.y       += 3 * blk.height;
       }
 
-      CHECK( sub[i].lumaSize().height < MIN_TU_SIZE, "the cs split causes the block to be smaller than the minimal TU size" );
+      CHECK( sub[i].lumaSize().height < MIN_TB_SIZEY, "the cs split causes the block to be smaller than the minimal TU size" );
     }
 
     return sub;
@@ -1005,7 +1005,7 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
         if( i == 2 )        blk.x      += 3 * blk.width;
       }
 
-      CHECK( sub[i].lumaSize().width < MIN_TU_SIZE, "the cs split causes the block to be smaller than the minimal TU size" );
+      CHECK( sub[i].lumaSize().width < MIN_TB_SIZEY, "the cs split causes the block to be smaller than the minimal TU size" );
     }
 
     return sub;

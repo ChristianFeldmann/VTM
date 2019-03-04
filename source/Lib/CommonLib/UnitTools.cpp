@@ -404,7 +404,7 @@ ISPType CU::canUseISPSplit( const int width, const int height, const int maxTrSi
 {
   bool widthCannotBeUsed = false, heightCannotBeUsed = false;
 
-  const uint32_t minTuSizeForISP = MIN_TU_SIZE;
+  const uint32_t minTuSizeForISP = MIN_TB_SIZEY;
   bool  notEnoughSamplesToSplit = ( g_aucLog2[width] + g_aucLog2[height] <= ( g_aucLog2[minTuSizeForISP] << 1 ) );
   widthCannotBeUsed  = width  > maxTrSize || notEnoughSamplesToSplit;
   heightCannotBeUsed = height > maxTrSize || notEnoughSamplesToSplit;
@@ -443,7 +443,7 @@ uint32_t CU::getISPSplitDim( const int width, const int height, const PartSplit 
     nonSplitDimensionSize = height;
   }
 
-  const int minNumberOfSamplesPerCu = 1 << ( ( g_aucLog2[MIN_TU_SIZE] << 1 ) );
+  const int minNumberOfSamplesPerCu = 1 << ( ( g_aucLog2[MIN_TB_SIZEY] << 1 ) );
   const int factorToMinSamples = nonSplitDimensionSize < minNumberOfSamplesPerCu ? minNumberOfSamplesPerCu >> g_aucLog2[nonSplitDimensionSize] : 1;
   partitionSize = ( splitDimensionSize >> divShift ) < factorToMinSamples ? factorToMinSamples : ( splitDimensionSize >> divShift );
 

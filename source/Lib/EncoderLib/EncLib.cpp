@@ -147,7 +147,16 @@ void EncLib::create ()
 #if JVET_M0427_INLOOP_RESHAPER
   if (m_lumaReshapeEnable)
   {
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+    m_cReshaper = new EncReshape[m_numCuEncStacks];
+
+    for (int jId = 0; jId < m_numCuEncStacks; jId++)
+    {
+      m_cReshaper[jId].createEnc(getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_bitDepth[COMPONENT_Y]);
+    }
+#else
     m_cReshaper.createEnc( getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_bitDepth[COMPONENT_Y]);
+#endif
   }
 #endif
   if ( m_RCEnableRateControl )
@@ -180,7 +189,14 @@ void EncLib::destroy ()
   m_cLoopFilter.        destroy();
   m_cRateCtrl.          destroy();
 #if JVET_M0427_INLOOP_RESHAPER
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+  for (int jId = 0; jId < m_numCuEncStacks; jId++)
+  {
+    m_cReshaper[jId].   destroy();
+  }
+#else
   m_cReshaper.          destroy();
+#endif
 #endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
@@ -315,13 +331,22 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                               &m_cTrQuant[jId],
                               &m_cRdCost[jId],
                               cabacEstimator,
-                              getCtxCache( jId ), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth );
+                              getCtxCache( jId ), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
+#if JVET_M0427_INLOOP_RESHAPER
+                            , &m_cReshaper[jId]
+#endif
+    );
     m_cInterSearch[jId].init( this,
                               &m_cTrQuant[jId],
                               m_iSearchRange,
                               m_bipredSearchRange,
                               m_motionEstimationSearchMethod,
-                              m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost[jId], cabacEstimator, getCtxCache( jId ) );
+                              getUseCompositeRef(),
+                              m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost[jId], cabacEstimator, getCtxCache( jId )
+#if JVET_M0427_INLOOP_RESHAPER
+                           , &m_cReshaper[jId]
+#endif
+    );
 
     // link temporary buffets from intra search with inter search to avoid unnecessary memory overhead
     m_cInterSearch[jId].setTempBuffers( m_cIntraSearch[jId].getSplitCSBuf(), m_cIntraSearch[jId].getFullCSBuf(), m_cIntraSearch[jId].getSaveCSBuf() );

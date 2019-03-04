@@ -99,6 +99,10 @@ public:
   ReshapeCW * getReshapeCW() { return &m_reshapeCW; }
   Pel * getWeightTable() { return m_cwLumaWeight; }
   double getCWeight() { return m_chromaWeight; }
+
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+  void copyState(const EncReshape& other);
+#endif
 };// END CLASS DEFINITION EncReshape
 
 //! \}

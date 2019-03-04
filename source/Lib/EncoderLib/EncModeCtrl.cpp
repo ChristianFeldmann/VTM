@@ -621,6 +621,13 @@ bool SaveLoadEncInfoSbt::saveBestSbt( const UnitArea& area, const uint32_t curPu
   return true;
 }
 
+#if ENABLE_SPLIT_PARALLELISM
+void SaveLoadEncInfoSbt::copyState(const SaveLoadEncInfoSbt &other)
+{
+  m_sliceSbt = other.m_sliceSbt;
+}
+#endif
+
 void SaveLoadEncInfoSbt::resetSaveloadSbt( int maxSbtSize )
 {
   int numSizeIdx = gp_sizeIdxInfo->idxFrom( maxSbtSize ) - MIN_CU_LOG2 + 1;
@@ -917,6 +924,10 @@ void BestEncInfoCache::init( const Slice &slice )
       }
     }
   }
+#if ENABLE_SPLIT_PARALLELISM
+
+  m_currTemporalId = 0;
+#endif
 }
 
 bool BestEncInfoCache::setFromCs( const CodingStructure& cs, const Partitioner& partitioner )
@@ -1061,6 +1072,70 @@ bool BestEncInfoCache::setCsFrom( CodingStructure& cs, EncTestMode& testMode, co
 
   return true;
 }
+
+#if ENABLE_SPLIT_PARALLELISM
+void BestEncInfoCache::copyState(const BestEncInfoCache &other, const UnitArea &area)
+{
+  m_slice_bencinf = other.m_slice_bencinf;
+
+  m_currTemporalId = other.m_currTemporalId;
+
+  if( m_slice_bencinf->isIntra() ) return;
+
+  const int cuSizeMask = m_slice_bencinf->getSPS()->getMaxCUWidth() - 1;
+
+  const int minPosX = ( area.lx() & cuSizeMask ) >> MIN_CU_LOG2;
+  const int minPosY = ( area.ly() & cuSizeMask ) >> MIN_CU_LOG2;
+  const int maxPosX = ( area.Y().bottomRight().x & cuSizeMask ) >> MIN_CU_LOG2;
+  const int maxPosY = ( area.Y().bottomRight().y & cuSizeMask ) >> MIN_CU_LOG2;
+
+  for( unsigned x = minPosX; x <= maxPosX; x++ )
+  {
+    for( unsigned y = minPosY; y <= maxPosY; y++ )
+    {
+      for( int wIdx = 0; wIdx < gp_sizeIdxInfo->numWidths(); wIdx++ )
+      {
+        const int width = gp_sizeIdxInfo->sizeFrom( wIdx );
+
+        if( m_bestEncInfo[x][y][wIdx] && width <= area.lwidth() && x + ( width >> MIN_CU_LOG2 ) <= ( maxPosX + 1 ) )
+        {
+          for( int hIdx = 0; hIdx < gp_sizeIdxInfo->numHeights(); hIdx++ )
+          {
+            const int height = gp_sizeIdxInfo->sizeFrom( hIdx );
+
+            if( gp_sizeIdxInfo->isCuSize( height ) && height <= area.lheight() && y + ( height >> MIN_CU_LOG2 ) <= ( maxPosY + 1 ) )
+            {
+              if( other.m_bestEncInfo[x][y][wIdx][hIdx]->temporalId > m_bestEncInfo[x][y][wIdx][hIdx]->temporalId )
+              {
+                memcpy( m_bestEncInfo[x][y][wIdx][hIdx], other.m_bestEncInfo[x][y][wIdx][hIdx], sizeof( BestEncodingInfo ) );
+                m_bestEncInfo[x][y][wIdx][hIdx]->temporalId = m_currTemporalId;
+              }
+            }
+            else if( y + ( height >> MIN_CU_LOG2 ) > maxPosY + 1 )
+            {
+              break;;
+            }
+          }
+        }
+        else if( x + ( width >> MIN_CU_LOG2 ) > maxPosX + 1 )
+        {
+          break;
+        }
+      }
+    }
+  }
+}
+
+void BestEncInfoCache::touch(const UnitArea &area)
+{
+  unsigned idx1, idx2, idx3, idx4;
+  getAreaIdx(area.Y(), *m_slice_bencinf->getPPS()->pcv, idx1, idx2, idx3, idx4);
+  BestEncodingInfo &encInfo = *m_bestEncInfo[idx1][idx2][idx3][idx4];
+
+  encInfo.temporalId   = m_currTemporalId;
+}
+
+#endif
 
 #endif
 
@@ -1961,7 +2036,10 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           relatedCU.isIntra   = true;
         }
 #if ENABLE_SPLIT_PARALLELISM
-        touch( partitioner.currArea() );
+#if REUSE_CU_RESULTS
+        BestEncInfoCache::touch(partitioner.currArea());
+#endif
+        CacheBlkInfoCtrl::touch(partitioner.currArea());
 #endif
         cuECtx.set( IS_BEST_NOSPLIT_SKIP, bestCU->skip );
       }
@@ -2109,6 +2187,10 @@ void EncModeCtrlMTnoRQT::copyState( const EncModeCtrl& other, const UnitArea& ar
 
   this->EncModeCtrl        ::copyState( *pOther, area );
   this->CacheBlkInfoCtrl   ::copyState( *pOther, area );
+#if REUSE_CU_RESULTS
+  this->BestEncInfoCache   ::copyState( *pOther, area );
+#endif
+  this->SaveLoadEncInfoSbt ::copyState( *pOther );
 
   m_skipThreshold = pOther->m_skipThreshold;
 }

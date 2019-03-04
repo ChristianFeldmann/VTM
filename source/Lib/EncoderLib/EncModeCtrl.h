@@ -369,7 +369,13 @@ struct SaveLoadStructSbt
 class SaveLoadEncInfoSbt
 {
 protected:
+#if ENABLE_SPLIT_PARALLELISM
+public:
+#endif
   void init( const Slice &slice );
+#if ENABLE_SPLIT_PARALLELISM
+protected:
+#endif
   void create();
   void destroy();
 
@@ -382,6 +388,9 @@ public:
   void     resetSaveloadSbt( int maxSbtSize );
   uint16_t findBestSbt( const UnitArea& area, const uint32_t curPuSse );
   bool     saveBestSbt( const UnitArea& area, const uint32_t curPuSse, const uint8_t curPuSbt, const uint8_t curPuTrs );
+#if ENABLE_SPLIT_PARALLELISM
+  void     copyState(const SaveLoadEncInfoSbt& other);
+#endif
 };
 #endif
 
@@ -467,6 +476,10 @@ struct BestEncodingInfo
   EncTestMode    testMode;
 
   int            poc;
+
+#if ENABLE_SPLIT_PARALLELISM
+  int64_t        temporalId;
+#endif
 };
 
 class BestEncInfoCache
@@ -480,23 +493,31 @@ private:
   Pel                *m_pPcmBuf;
   CodingStructure     m_dummyCS;
   XUCache             m_dummyCache;
+#if ENABLE_SPLIT_PARALLELISM
+  int64_t m_currTemporalId;
+#endif
 
 protected:
 
   void create   ( const ChromaFormat chFmt );
   void destroy  ();
-  void init     ( const Slice &slice );
 
   bool setFromCs( const CodingStructure& cs, const Partitioner& partitioner );
-  bool isValid  ( const CodingStructure& cs, const Partitioner& partitioner, int qp );
+  bool isValid  ( const CodingStructure &cs, const Partitioner &partitioner, int qp );
 
-  // TODO: implement copyState
-
+#if ENABLE_SPLIT_PARALLELISM
+  void touch    ( const UnitArea& area );
+#endif
 public:
 
   BestEncInfoCache() : m_slice_bencinf( nullptr ), m_dummyCS( m_dummyCache.cuCache, m_dummyCache.puCache, m_dummyCache.tuCache ) {}
   virtual ~BestEncInfoCache() {}
 
+#if ENABLE_SPLIT_PARALLELISM
+  void     copyState( const BestEncInfoCache &other, const UnitArea &area );
+  void     tick     () { m_currTemporalId++; CHECK( m_currTemporalId <= 0, "Problem with integer overflow!" ); }
+#endif
+  void     init     ( const Slice &slice );
   bool     setCsFrom( CodingStructure& cs, EncTestMode& testMode, const Partitioner& partitioner ) const;
 };
 

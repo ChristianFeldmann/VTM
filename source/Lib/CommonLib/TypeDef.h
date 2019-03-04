@@ -81,7 +81,7 @@
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 #define JVET_M0908_CIIP_DB                                1
 #define JVET_M0471_LONG_DEBLOCKING_FILTERS                1
-#define JVET_M0427_INLOOP_RESHAPER                        1
+#define JVET_M0427_INLOOP_RESHAPER                        0
 #define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
 
 #define JVET_M0253_HASH_ME                                1
@@ -185,7 +185,7 @@ typedef std::pair<int, int>  TrCost;
 
 #define ENABLE_JVET_L0283_MRL                             1 // 1: Enable MRL, 0: Disable MRL
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
-#define REUSE_CU_RESULTS                                  1
+#define REUSE_CU_RESULTS                                  0
 #if REUSE_CU_RESULTS && JVET_M0102_INTRA_SUBPARTITIONS
 #define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
 #define MAX_NUM_TUS                                       4
@@ -221,7 +221,7 @@ typedef std::pair<int, int>  TrCost;
 
 #endif
 #ifndef ENABLE_SPLIT_PARALLELISM
-#define ENABLE_SPLIT_PARALLELISM                          0
+#define ENABLE_SPLIT_PARALLELISM                          1
 #endif
 #if ENABLE_SPLIT_PARALLELISM
 #define PARL_SPLIT_MAX_NUM_JOBS                           6                             // number of parallel jobs that can be defined and need memory allocated

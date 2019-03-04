@@ -324,13 +324,30 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
     {
       EncCu*            jobEncCu  = m_pcEncLib->getCuEncoder( cs.picture->scheduler.getSplitDataId( jId ) );
       CacheBlkInfoCtrl* cacheCtrl = dynamic_cast< CacheBlkInfoCtrl* >( jobEncCu->m_modeCtrl );
+#if REUSE_CU_RESULTS
+      BestEncInfoCache* bestCache = dynamic_cast< BestEncInfoCache* >( jobEncCu->m_modeCtrl );
+#endif
+      SaveLoadEncInfoSbt *sbtCache = dynamic_cast< SaveLoadEncInfoSbt* >( jobEncCu->m_modeCtrl );
       if( cacheCtrl )
       {
         cacheCtrl->init( *cs.slice );
       }
+#if REUSE_CU_RESULTS
+      if (bestCache)
+      {
+        bestCache->init(*cs.slice);
+      }
+#endif
+      if (sbtCache)
+      {
+        sbtCache->init(*cs.slice);
+      }
     }
   }
 
+#if REUSE_CU_RESULTS
+  if( auto* cacheCtrl = dynamic_cast<BestEncInfoCache*>( m_modeCtrl ) ) { cacheCtrl->tick(); }
+#endif
   if( auto* cacheCtrl = dynamic_cast<CacheBlkInfoCtrl*>( m_modeCtrl ) ) { cacheCtrl->tick(); }
 #endif
   // init the partitioning manager
@@ -658,6 +675,16 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     int maxSLSize = sps.getUseSBT() ? tempCS->slice->getSPS()->getMaxSbtSize() : EMT_INTER_MAX_CU_WITH_QTBT;
 #endif
     slsSbt->resetSaveloadSbt( maxSLSize );
+#if ENABLE_SPLIT_PARALLELISM
+    if (m_pcEncCfg->getNumSplitThreads() > 1)
+    {
+      for (int jId = 1; jId < NUM_RESERVERD_SPLIT_JOBS; jId++)
+      {
+        auto slsSbt = dynamic_cast<SaveLoadEncInfoSbt *>(m_pcEncLib->getCuEncoder(jId)->m_modeCtrl);
+        slsSbt->resetSaveloadSbt(maxSLSize);
+      }
+    }
+#endif
   }
   m_sbtCostSave[0] = m_sbtCostSave[1] = MAX_DOUBLE;
 #endif
@@ -1010,12 +1037,14 @@ void EncCu::xCompressCUParallel( CodingStructure *&tempCS, CodingStructure *&bes
   const int      wppTId   = picture->scheduler.getWppThreadId();
 #endif
   const bool doParallel   = !m_pcEncCfg->getForceSingleSplitThread();
+#if 1
 #if _MSC_VER && ENABLE_WPP_PARALLELISM
 #pragma omp parallel for schedule(dynamic,1) num_threads(NUM_SPLIT_THREADS_IF_MSVC) if(doParallel)
 #else
   omp_set_num_threads( m_pcEncCfg->getNumSplitThreads() );
 
 #pragma omp parallel for schedule(dynamic,1) if(doParallel)
+#endif
 #endif
   for( int jId = 1; jId <= numJobs; jId++ )
   {
@@ -1029,6 +1058,9 @@ void EncCu::xCompressCUParallel( CodingStructure *&tempCS, CodingStructure *&bes
     Partitioner* jobPartitioner = PartitionerFactory::get( *tempCS->slice );
     EncCu*       jobCuEnc       = m_pcEncLib->getCuEncoder( picture->scheduler.getSplitDataId( jId ) );
     auto*        jobBlkCache    = dynamic_cast<CacheBlkInfoCtrl*>( jobCuEnc->m_modeCtrl );
+#if REUSE_CU_RESULTS
+    auto*        jobBestCache   = dynamic_cast<BestEncInfoCache*>( jobCuEnc->m_modeCtrl );
+#endif
 
     jobPartitioner->copyState( partitioner );
     jobCuEnc      ->copyState( this, *jobPartitioner, currArea, true );
@@ -1038,6 +1070,13 @@ void EncCu::xCompressCUParallel( CodingStructure *&tempCS, CodingStructure *&bes
       jobBlkCache->tick();
     }
 
+#if REUSE_CU_RESULTS
+    if( jobBestCache )
+    {
+      jobBestCache->tick();
+    }
+
+#endif
     CodingStructure *&jobBest = jobCuEnc->m_pBestCS[wIdx][hIdx];
     CodingStructure *&jobTemp = jobCuEnc->m_pTempCS[wIdx][hIdx];
 
@@ -1094,7 +1133,22 @@ void EncCu::xCompressCUParallel( CodingStructure *&tempCS, CodingStructure *&bes
 
     blkCache->tick();
   }
+#if REUSE_CU_RESULTS
 
+  if( auto *blkCache = dynamic_cast<BestEncInfoCache*>( m_modeCtrl ) )
+  {
+    for( int jId = 1; jId <= numJobs; jId++ )
+    {
+      if( !jobUsed[jId] || jId == bestJId ) continue;
+
+      auto *jobBlkCache = dynamic_cast<BestEncInfoCache*>( m_pcEncLib->getCuEncoder( picture->scheduler.getSplitDataId( jId ) )->m_modeCtrl );
+      CHECK( !jobBlkCache, "If own mode controller has blk info cache capability so should all other mode controllers!" );
+      blkCache->BestEncInfoCache::copyState( *jobBlkCache, partitioner.currArea() );
+    }
+
+    blkCache->tick();
+  }
+#endif
 }
 
 void EncCu::copyState( EncCu* other, Partitioner& partitioner, const UnitArea& currArea, const bool isDist )
@@ -1110,7 +1164,7 @@ void EncCu::copyState( EncCu* other, Partitioner& partitioner, const UnitArea& c
   else
   {
           CodingStructure* dst =        m_pBestCS[wIdx][hIdx];
-    const CodingStructure *src = other->m_pBestCS[wIdx][hIdx];
+    const CodingStructure* src = other->m_pBestCS[wIdx][hIdx];
     bool keepResi = KEEP_PRED_AND_RESI_SIGNALS;
 
     dst->useSubStructure( *src, partitioner.chType, currArea, KEEP_PRED_AND_RESI_SIGNALS, true, keepResi, keepResi );
@@ -1129,6 +1183,7 @@ void EncCu::copyState( EncCu* other, Partitioner& partitioner, const UnitArea& c
   m_modeCtrl     ->copyState( *other->m_modeCtrl, partitioner.currArea() );
   m_pcRdCost     ->copyState( *other->m_pcRdCost );
   m_pcTrQuant    ->copyState( *other->m_pcTrQuant );
+  //m_pcReshape    ->copyState( *other->m_pcReshape );
 
   m_CABACEstimator->getCtx() = other->m_CABACEstimator->getCtx();
 }

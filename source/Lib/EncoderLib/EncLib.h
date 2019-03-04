@@ -102,7 +102,11 @@ private:
 #endif
 
 #if JVET_M0427_INLOOP_RESHAPER
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+  EncReshape               *m_cReshaper;                        ///< reshaper class
+#else
   EncReshape                m_cReshaper;                        ///< reshaper class
+#endif
 #endif
 
   // processing unit
@@ -242,7 +246,11 @@ public:
 #endif
 
 #if JVET_M0427_INLOOP_RESHAPER
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+  EncReshape*            getReshaper( int jId = 0 )             { return  &m_cReshaper[jId]; }
+#else
   EncReshape*            getReshaper()                          { return  &m_cReshaper; }
+#endif
 #endif
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function

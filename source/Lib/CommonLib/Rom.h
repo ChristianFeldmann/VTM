@@ -99,7 +99,7 @@ extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSi
 // Scanning order & context mapping table
 // ====================================================================================================================
 
-extern const uint32_t   g_uiGroupIdx[ MAX_TU_SIZE ];
+extern const uint32_t   g_uiGroupIdx[ MAX_TB_SIZEY ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
 extern const uint32_t   g_auiGoRiceParsCoeff     [ 32 ];
 extern const uint32_t   g_auiGoRicePosCoeff0[ 3 ][ 32 ];

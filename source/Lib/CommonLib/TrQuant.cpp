@@ -442,7 +442,7 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
   }
 #endif
 
-  ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, TCoeff block[MAX_TU_SIZE * MAX_TU_SIZE] );
+  ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, TCoeff block[MAX_TB_SIZEY * MAX_TB_SIZEY] );
 
   const Pel *resiBuf    = resi.buf;
   const int  resiStride = resi.stride;
@@ -965,7 +965,7 @@ void TrQuant::rdpcmNxN(TransformUnit &tu, const ComponentID &compID, const QpPar
 
     RDPCMMode bestMode = NUMBER_OF_RDPCM_MODES;
     TCoeff    bestAbsSum = std::numeric_limits<TCoeff>::max();
-    TCoeff    bestCoefficients[MAX_TU_SIZE * MAX_TU_SIZE];
+    TCoeff    bestCoefficients[MAX_TB_SIZEY * MAX_TB_SIZEY];
 
     for (uint32_t modeIndex = 0; modeIndex < NUMBER_OF_RDPCM_MODES; modeIndex++)
     {

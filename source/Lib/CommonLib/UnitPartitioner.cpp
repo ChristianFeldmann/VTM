@@ -376,18 +376,18 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
   // specific check for BT splits
   if( area.height <= minBtSize || area.height > maxBtSize )                            canBh = false;
-  if( area.width > MAX_TU_SIZE_FOR_PROFILE && area.height <= MAX_TU_SIZE_FOR_PROFILE ) canBh = false;
+  if( area.width > MAX_TB_SIZEY && area.height <= MAX_TB_SIZEY ) canBh = false;
 
   if( area.width <= minBtSize || area.width > maxBtSize )                              canBv = false;
-  if( area.width <= MAX_TU_SIZE_FOR_PROFILE && area.height > MAX_TU_SIZE_FOR_PROFILE ) canBv = false;
+  if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) canBv = false;
 
   if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize )
                                                                                        canTh = false;
-  if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE )  canTh = false;
+  if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTh = false;
 
   if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize )
                                                                                        canTv = false;
-  if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE )  canTv = false;
+  if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTv = false;
 }
 
 #endif
@@ -539,19 +539,19 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   {
   case CU_HORZ_SPLIT:
     if( area.height <= minBtSize || area.height > maxBtSize )     return false;
-    if( area.width > MAX_TU_SIZE_FOR_PROFILE && area.height <= MAX_TU_SIZE_FOR_PROFILE ) return false;
+    if( area.width > MAX_TB_SIZEY && area.height <= MAX_TB_SIZEY ) return false;
     break;
   case CU_VERT_SPLIT:
     if( area.width <= minBtSize || area.width > maxBtSize )       return false;
-    if( area.width <= MAX_TU_SIZE_FOR_PROFILE && area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
+    if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) return false;
     break;
   case CU_TRIH_SPLIT:
     if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize) return false;
-    if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
+    if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY ) return false;
     break;
   case CU_TRIV_SPLIT:
     if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize)  return false;
-    if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
+    if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY ) return false;
     break;
   default:
     break;
@@ -607,7 +607,7 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
       split = CU_QUAD_SPLIT;
     }
 #if JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY
-    if ((!isBlInPic || !isTrInPic) && (currArea().Y().width > MAX_TU_SIZE_FOR_PROFILE || currArea().Y().height > MAX_TU_SIZE_FOR_PROFILE))
+    if ((!isBlInPic || !isTrInPic) && (currArea().Y().width > MAX_TB_SIZEY || currArea().Y().height > MAX_TB_SIZEY))
     {
       split = CU_QUAD_SPLIT;
     }

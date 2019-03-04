@@ -548,8 +548,8 @@ namespace DQIntern
 
   private:
     const ScanElement * m_scanId2Pos;
-    int32_t             m_lastBitsX      [ MAX_TU_SIZE ];
-    int32_t             m_lastBitsY      [ MAX_TU_SIZE ];
+    int32_t             m_lastBitsX      [ MAX_TB_SIZEY ];
+    int32_t             m_lastBitsY      [ MAX_TB_SIZEY ];
     BinFracBits         m_sigSbbFracBits [ sm_maxNumSigSbbCtx ];
     BinFracBits         m_sigFracBits    [ sm_numCtxSetsSig   ][ sm_maxNumSigCtx ];
     CoeffFracBits       m_gtxFracBits                          [ sm_maxNumGtxCtx ];
@@ -1001,7 +1001,7 @@ namespace DQIntern
     SbbCtx                      m_allSbbCtx  [8];
     SbbCtx*                     m_currSbbCtx;
     SbbCtx*                     m_prevSbbCtx;
-    uint8_t                     m_memory[ 8 * ( MAX_TU_SIZE * MAX_TU_SIZE + MLS_GRP_NUM ) ];
+    uint8_t                     m_memory[ 8 * ( MAX_TB_SIZEY * MAX_TB_SIZEY + MLS_GRP_NUM ) ];
   };
 
 #define RICEMAX 32
@@ -1499,7 +1499,7 @@ namespace DQIntern
     State*      m_skipStates;
     State       m_startState;
     Quantizer   m_quant;
-    Decision    m_trellis[ MAX_TU_SIZE * MAX_TU_SIZE ][ 8 ];
+    Decision    m_trellis[ MAX_TB_SIZEY * MAX_TB_SIZEY ][ 8 ];
   };
 
 

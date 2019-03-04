@@ -369,8 +369,11 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
   unsigned int orthogonalLength = 1;
   unsigned int orthogonalIncrement = 1;
 #if FIX_DB_MAX_TRANSFORM_SIZE
-  int maxTsize = 64;
-  maxTsize = 1 << cu.slice->getSPS()->getQuadtreeTULog2MaxSize();
+#if MAX_TB_SIZE_SIGNALLING
+  const int maxTsize = cu.slice->getSPS()->getMaxTbSize();
+#else
+  const int maxTsize = MAX_TB_SIZEY;
+#endif
 #endif
 #if JVET_M0471_LONG_DEBLOCKING_FILTERS
 #if FIX_DB_MAX_TRANSFORM_SIZE

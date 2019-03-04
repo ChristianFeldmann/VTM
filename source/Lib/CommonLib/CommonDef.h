@@ -153,6 +153,12 @@ static const int MAX_TLAYER =                                       7; ///< Expl
 
 static const int ADAPT_SR_SCALE =                                   1; ///< division factor for adaptive search range
 
+static const int MIN_TB_LOG2_SIZEY = 2;
+static const int MAX_TB_LOG2_SIZEY = 6;
+
+static const int MIN_TB_SIZEY = 1 << MIN_TB_LOG2_SIZEY;
+static const int MAX_TB_SIZEY = 1 << MAX_TB_LOG2_SIZEY;
+
 static const int MAX_NUM_PICS_IN_SOP =                           1024;
 
 static const int MAX_NESTING_NUM_OPS =                           1024;
@@ -274,12 +280,7 @@ static const int MAX_CU_DEPTH =                                     7; ///< log2
 static const int MAX_CU_SIZE =                        1<<MAX_CU_DEPTH;
 static const int MIN_CU_LOG2 =                                      2;
 static const int MIN_PU_SIZE =                                      4;
-static const int MIN_TU_SIZE =                                      4;
-static const int MAX_TU_SIZE =                                    128;
-static const int MAX_LOG2_TU_SIZE_PLUS_ONE =                        8; ///< log2(MAX_TU_SIZE) + 1
 static const int MAX_NUM_PARTS_IN_CTU =                         ( ( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 ) );
-static const int MAX_TR_SIZE =                            MAX_CU_SIZE;
-static const int MAX_TU_SIZE_FOR_PROFILE =                         64;
 static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         2;
 static const int MAX_CU_TILING_PARTITIONS = 1 << ( MAX_LOG2_DIFF_CU_TR_SIZE << 1 );
 

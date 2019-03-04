@@ -376,18 +376,18 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
   // specific check for BT splits
   if( area.height <= minBtSize || area.height > maxBtSize )                            canBh = false;
-  if( area.width > MAX_TU_SIZE_FOR_PROFILE && area.height <= MAX_TU_SIZE_FOR_PROFILE ) canBh = false;
+  if( area.width > MAX_TB_SIZEY && area.height <= MAX_TB_SIZEY ) canBh = false;
 
   if( area.width <= minBtSize || area.width > maxBtSize )                              canBv = false;
-  if( area.width <= MAX_TU_SIZE_FOR_PROFILE && area.height > MAX_TU_SIZE_FOR_PROFILE ) canBv = false;
+  if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) canBv = false;
 
   if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize )
                                                                                        canTh = false;
-  if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE )  canTh = false;
+  if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTh = false;
 
   if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize )
                                                                                        canTv = false;
-  if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE )  canTv = false;
+  if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTv = false;
 }
 
 #endif
@@ -395,7 +395,11 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
 {
 #if JVET_M0421_SPLIT_SIG
   const CompArea area       = currArea().Y();
-  const unsigned maxTrSize  = cs.sps->getMaxTrSize();
+#if MAX_TB_SIZE_SIGNALLING
+  const unsigned maxTrSize  = cs.sps->getMaxTbSize();
+#else
+  const unsigned maxTrSize  = MAX_TB_SIZEY;
+#endif
 
   bool canNo, canQt, canBh, canTh, canBv, canTv;
 
@@ -411,7 +415,11 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   const unsigned minBtSize      = cs.pcv->getMinBtSize( *cs.slice, chType );
   const unsigned maxTtSize      = cs.pcv->getMaxTtSize( *cs.slice, chType );
   const unsigned minTtSize      = cs.pcv->getMinTtSize( *cs.slice, chType );
-  const unsigned maxTrSize      = cs.sps->getMaxTrSize();
+#if MAX_TB_SIZE_SIGNALLING
+  const unsigned maxTrSize  = cs.sps->getMaxTbSize();
+#else
+  const unsigned maxTrSize  = MAX_TB_SIZEY;
+#endif
 
   const PartSplit lastSplit = m_partStack.back().split;
   const PartSplit parlSplit = lastSplit == CU_TRIH_SPLIT ? CU_HORZ_SPLIT : CU_VERT_SPLIT;
@@ -531,19 +539,19 @@ bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs
   {
   case CU_HORZ_SPLIT:
     if( area.height <= minBtSize || area.height > maxBtSize )     return false;
-    if( area.width > MAX_TU_SIZE_FOR_PROFILE && area.height <= MAX_TU_SIZE_FOR_PROFILE ) return false;
+    if( area.width > MAX_TB_SIZEY && area.height <= MAX_TB_SIZEY ) return false;
     break;
   case CU_VERT_SPLIT:
     if( area.width <= minBtSize || area.width > maxBtSize )       return false;
-    if( area.width <= MAX_TU_SIZE_FOR_PROFILE && area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
+    if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) return false;
     break;
   case CU_TRIH_SPLIT:
     if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize) return false;
-    if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
+    if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY ) return false;
     break;
   case CU_TRIV_SPLIT:
     if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize)  return false;
-    if( area.width > MAX_TU_SIZE_FOR_PROFILE || area.height > MAX_TU_SIZE_FOR_PROFILE ) return false;
+    if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY ) return false;
     break;
   default:
     break;
@@ -599,7 +607,7 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
       split = CU_QUAD_SPLIT;
     }
 #if JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY
-    if ((!isBlInPic || !isTrInPic) && (currArea().Y().width > MAX_TU_SIZE_FOR_PROFILE || currArea().Y().height > MAX_TU_SIZE_FOR_PROFILE))
+    if ((!isBlInPic || !isTrInPic) && (currArea().Y().width > MAX_TB_SIZEY || currArea().Y().height > MAX_TB_SIZEY))
     {
       split = CU_QUAD_SPLIT;
     }
@@ -838,7 +846,7 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
           if( i &  1 ) blk.x += blk.width;
         }
 
-        CHECK( sub[i].lumaSize().height < MIN_TU_SIZE, "the split causes the block to be smaller than the minimal TU size" );
+        CHECK( sub[i].lumaSize().height < MIN_TB_SIZEY, "the split causes the block to be smaller than the minimal TU size" );
       }
 
       return sub;
@@ -935,7 +943,7 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
         if (i == 1) blk.y += blk.height;
       }
 
-      CHECK(sub[i].lumaSize().height < MIN_TU_SIZE, "the cs split causes the block to be smaller than the minimal TU size");
+      CHECK(sub[i].lumaSize().height < MIN_TB_SIZEY, "the cs split causes the block to be smaller than the minimal TU size");
     }
 
     return sub;
@@ -954,7 +962,7 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
         if( i == 1 ) blk.x += blk.width;
       }
 
-      CHECK( sub[i].lumaSize().width < MIN_TU_SIZE, "the split causes the block to be smaller than the minimal TU size" );
+      CHECK( sub[i].lumaSize().width < MIN_TB_SIZEY, "the split causes the block to be smaller than the minimal TU size" );
     }
 
     return sub;
@@ -975,7 +983,7 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
         if( i == 2 )        blk.y       += 3 * blk.height;
       }
 
-      CHECK( sub[i].lumaSize().height < MIN_TU_SIZE, "the cs split causes the block to be smaller than the minimal TU size" );
+      CHECK( sub[i].lumaSize().height < MIN_TB_SIZEY, "the cs split causes the block to be smaller than the minimal TU size" );
     }
 
     return sub;
@@ -997,7 +1005,7 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
         if( i == 2 )        blk.x      += 3 * blk.width;
       }
 
-      CHECK( sub[i].lumaSize().width < MIN_TU_SIZE, "the cs split causes the block to be smaller than the minimal TU size" );
+      CHECK( sub[i].lumaSize().width < MIN_TB_SIZEY, "the cs split causes the block to be smaller than the minimal TU size" );
     }
 
     return sub;
@@ -1107,7 +1115,11 @@ Partitioning PartitionerImpl::getMaxTuTiling( const UnitArea &cuArea, const Codi
   static_assert( MAX_LOG2_DIFF_CU_TR_SIZE <= g_maxRtGridSize, "Z-scan tables are only provided for MAX_LOG2_DIFF_CU_TR_SIZE for up to 3 (8x8 tiling)!" );
 
   const CompArea area = cuArea.Y().valid() ? cuArea.Y() : cuArea.Cb();
-  const int maxTrSize = cs.sps->getMaxTrSize() >> ( isLuma( area.compID ) ? 0 : 1 );
+#if MAX_TB_SIZE_SIGNALLING
+  const int maxTrSize = cs.sps->getMaxTbSize() >> ( isLuma( area.compID ) ? 0 : 1 );
+#else
+  const int maxTrSize = MAX_TB_SIZEY >> ( isLuma( area.compID ) ? 0 : 1 );
+#endif
   const int numTilesH = std::max<int>( 1, area.width  / maxTrSize );
   const int numTilesV = std::max<int>( 1, area.height / maxTrSize );
   const int numTiles  = numTilesH * numTilesV;

@@ -299,11 +299,9 @@ protected:
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
 
-  //======= Transform =============
-  uint32_t      m_uiQuadtreeTULog2MaxSize;
-  uint32_t      m_uiQuadtreeTULog2MinSize;
-  uint32_t      m_uiQuadtreeTUMaxDepthInter;
-  uint32_t      m_uiQuadtreeTUMaxDepthIntra;
+#if MAX_TB_SIZE_SIGNALLING
+  uint32_t  m_log2MaxTbSize;
+#endif
 
   //====== Loop/Deblock Filter ========
   bool      m_bLoopFilterDisable;
@@ -899,11 +897,9 @@ public:
   void      setUseContentBasedFastQtbt      ( bool b )       { m_contentBasedFastQtbt = b; }
   bool      getUseContentBasedFastQtbt      () const         { return m_contentBasedFastQtbt; }
 
-  //======== Transform =============
-  void      setQuadtreeTULog2MaxSize        ( uint32_t  u )      { m_uiQuadtreeTULog2MaxSize = u; }
-  void      setQuadtreeTULog2MinSize        ( uint32_t  u )      { m_uiQuadtreeTULog2MinSize = u; }
-  void      setQuadtreeTUMaxDepthInter      ( uint32_t  u )      { m_uiQuadtreeTUMaxDepthInter = u; }
-  void      setQuadtreeTUMaxDepthIntra      ( uint32_t  u )      { m_uiQuadtreeTUMaxDepthIntra = u; }
+#if MAX_TB_SIZE_SIGNALLING
+  void      setLog2MaxTbSize                ( uint32_t  u )   { m_log2MaxTbSize = u; }
+#endif
 
   //====== Loop/Deblock Filter ========
   void      setLoopFilterDisable            ( bool  b )      { m_bLoopFilterDisable       = b; }
@@ -1011,12 +1007,6 @@ public:
 
   bool      getAccessUnitDelimiter() const  { return m_AccessUnitDelimiter; }
   void      setAccessUnitDelimiter(bool val){ m_AccessUnitDelimiter = val; }
-
-  //======== Transform =============
-  uint32_t      getQuadtreeTULog2MaxSize        ()      const { return m_uiQuadtreeTULog2MaxSize; }
-  uint32_t      getQuadtreeTULog2MinSize        ()      const { return m_uiQuadtreeTULog2MinSize; }
-  uint32_t      getQuadtreeTUMaxDepthInter      ()      const { return m_uiQuadtreeTUMaxDepthInter; }
-  uint32_t      getQuadtreeTUMaxDepthIntra      ()      const { return m_uiQuadtreeTUMaxDepthIntra; }
 
   //==== Loop/Deblock Filter ========
   bool      getLoopFilterDisable            ()      { return  m_bLoopFilterDisable;       }

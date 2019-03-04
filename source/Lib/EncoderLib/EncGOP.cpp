@@ -2184,7 +2184,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if (pcSlice->getPPS()->getUseDQP() && pcSlice->getPPS()->getMaxCuDQPDepth() > 0)
     {
       const PreCalcValues &pcv = *pcPic->cs->pcv;
-      const unsigned   mtsLog2 = (unsigned)g_aucLog2[std::min (pcPic->cs->sps->getMaxTrSize(), pcv.maxCUWidth)];
+#if MAX_TB_SIZE_SIGNALLING
+      const unsigned   mtsLog2 = (unsigned)g_aucLog2[std::min (pcPic->cs->sps->getMaxTbSize(), pcv.maxCUWidth)];
+#else
+      const unsigned   mtsLog2 = (unsigned)g_aucLog2[std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth)];
+#endif
       pcPic->m_subCtuQP.resize ((pcv.maxCUWidth >> mtsLog2) * (pcv.maxCUHeight >> mtsLog2));
     }
  #endif
@@ -4049,8 +4053,12 @@ void EncGOP::applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices )
 
   Pel* tempRec = Rec;
   const Slice* pcSlice = pcPic->slices[0];
-  uint32_t log2maxTB = pcSlice->getSPS()->getQuadtreeTULog2MaxSize();
-  uint32_t maxTBsize = (1<<log2maxTB);
+#if MAX_TB_SIZE_SIGNALLING
+  const uint32_t log2maxTB = pcSlice->getSPS()->getLog2MaxTbSize();
+#else
+  const uint32_t log2maxTB = MAX_TB_LOG2_SIZEY;
+#endif
+  const uint32_t maxTBsize = (1<<log2maxTB);
   const uint32_t minBlockArtSize = 8;
   const uint32_t noCol = (picWidth>>log2maxTB);
   const uint32_t noRows = (picHeight>>log2maxTB);

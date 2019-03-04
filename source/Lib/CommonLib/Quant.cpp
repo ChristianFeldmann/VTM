@@ -744,7 +744,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
     const TCoeff entropyCodingMaximum =  (1 << maxLog2TrDynamicRange) - 1;
 
 #if HEVC_USE_SIGN_HIDING
-    TCoeff deltaU[MAX_TU_SIZE * MAX_TU_SIZE];
+    TCoeff deltaU[MAX_TB_SIZEY * MAX_TB_SIZEY];
 #endif
 #if HEVC_USE_SCALING_LISTS
     int scalingListType = getScalingListType(tu.cu->predMode, compID);

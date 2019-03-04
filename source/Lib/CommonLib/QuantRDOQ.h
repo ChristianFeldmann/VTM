@@ -132,15 +132,15 @@ private:
   double  m_errScaleNoScalingList[SCALING_LIST_SIZE_NUM][SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM][SCALING_LIST_REM_NUM]; ///< array of quantization matrix coefficient 4x4
 #endif
   // temporary buffers for RDOQ
-  double m_pdCostCoeff        [MAX_TU_SIZE * MAX_TU_SIZE];
-  double m_pdCostSig          [MAX_TU_SIZE * MAX_TU_SIZE];
-  double m_pdCostCoeff0       [MAX_TU_SIZE * MAX_TU_SIZE];
-  double m_pdCostCoeffGroupSig[(MAX_TU_SIZE * MAX_TU_SIZE) >> MLS_CG_SIZE]; // even if CG size is 2 (if one of the sides is 2) instead of 4, there should be enough space
+  double m_pdCostCoeff        [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  double m_pdCostSig          [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  double m_pdCostCoeff0       [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  double m_pdCostCoeffGroupSig[(MAX_TB_SIZEY * MAX_TB_SIZEY) >> MLS_CG_SIZE]; // even if CG size is 2 (if one of the sides is 2) instead of 4, there should be enough space
 #if HEVC_USE_SIGN_HIDING
-  int    m_rateIncUp          [MAX_TU_SIZE * MAX_TU_SIZE];
-  int    m_rateIncDown        [MAX_TU_SIZE * MAX_TU_SIZE];
-  int    m_sigRateDelta       [MAX_TU_SIZE * MAX_TU_SIZE];
-  TCoeff m_deltaU             [MAX_TU_SIZE * MAX_TU_SIZE];
+  int    m_rateIncUp          [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  int    m_rateIncDown        [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  int    m_sigRateDelta       [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  TCoeff m_deltaU             [MAX_TB_SIZEY * MAX_TB_SIZEY];
 #endif
 };// END CLASS DEFINITION QuantRDOQ
 

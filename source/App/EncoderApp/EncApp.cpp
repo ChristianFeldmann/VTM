@@ -293,10 +293,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMaxCUHeight                                       ( m_uiCTUSize );
   m_cEncLib.setMaxCodingDepth                                    ( m_uiMaxCodingDepth );
   m_cEncLib.setLog2DiffMaxMinCodingBlockSize                     ( m_uiLog2DiffMaxMinCodingBlockSize );
-  m_cEncLib.setQuadtreeTULog2MaxSize                             ( m_quadtreeTULog2MaxSize );
-  m_cEncLib.setQuadtreeTULog2MinSize                             ( m_quadtreeTULog2MinSize );
-  m_cEncLib.setQuadtreeTUMaxDepthInter                           ( m_uiQuadtreeTUMaxDepthInter );
-  m_cEncLib.setQuadtreeTUMaxDepthIntra                           ( m_uiQuadtreeTUMaxDepthIntra );
+#if MAX_TB_SIZE_SIGNALLING
+  m_cEncLib.setLog2MaxTbSize                                     ( m_log2MaxTbSize );
+#endif
 #if JVET_M0428_ENC_DB_OPT
   m_cEncLib.setUseEncDbOpt(m_encDbOpt);
 #endif

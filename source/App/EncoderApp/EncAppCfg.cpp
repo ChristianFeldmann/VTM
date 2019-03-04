@@ -913,14 +913,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxCUSize,s",                                     m_uiMaxCUHeight,                                    64u, "Maximum CU size")
   ("MaxPartitionDepth,h",                             m_uiMaxCUDepth,                                      4u, "CU depth")
 
-  ("QuadtreeTULog2MaxSize",                           m_quadtreeTULog2MaxSize,                             -1, "Maximum TU size in logarithm base 2")
-  ("QuadtreeTULog2MinSize",                           m_quadtreeTULog2MinSize,                              2, "Minimum TU size in logarithm base 2")
-
-  ("QuadtreeTUMaxDepthIntra",                         m_uiQuadtreeTUMaxDepthIntra,                         1u, "Depth of TU tree for intra CUs")
-  ("QuadtreeTUMaxDepthInter",                         m_uiQuadtreeTUMaxDepthInter,                         2u, "Depth of TU tree for inter CUs")
-
-
-  ("TULog2MaxSize",                                   m_tuLog2MaxSize,                                     -1, "Maximum TU size in logarithm base 2 (for use with NEXT-Profile)")
+#if MAX_TB_SIZE_SIGNALLING
+  ("Log2MaxTbSize",                                   m_log2MaxTbSize,                                      6, "Maximum transform block size in logarithm base 2 (Default: 6)")
+#endif
 
   // Coding structure paramters
   ("IntraPeriod,-ip",                                 m_iIntraPeriod,                                      -1, "Intra period in frames, (-1: only first frame)")
@@ -1898,7 +1893,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
  #else
   if (((int)m_fQP < 38) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && (m_iSourceWidth <= 2048) && (m_iSourceHeight <= 1280)
  #endif
-      && ((1 << (std::max (m_quadtreeTULog2MaxSize, m_tuLog2MaxSize) + 1)) == m_uiCTUSize) && (m_iSourceWidth > 512 || m_iSourceHeight > 320))
+#if MAX_TB_SIZE_SIGNALLING
+      && ((1 << (m_log2MaxTbSize + 1)) == m_uiCTUSize) && (m_iSourceWidth > 512 || m_iSourceHeight > 320))
+#else
+    && ((1 << (MAX_TB_LOG2_SIZEY + 1)) == m_uiCTUSize) && (m_iSourceWidth > 512 || m_iSourceHeight > 320))
+#endif
   {
     m_iMaxCuDQPDepth = 1;
   }
@@ -1914,8 +1913,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     msg( WARNING, "*************************************************************************\n" );
 
     m_uiCTUSize = m_uiMaxCUWidth;
-    if( ( 1u << m_quadtreeTULog2MaxSize ) > m_uiCTUSize ) m_quadtreeTULog2MaxSize--;
-    if( ( 1u << m_tuLog2MaxSize         ) > m_uiCTUSize ) m_tuLog2MaxSize--;
+#if MAX_TB_SIZE_SIGNALLING
+    if( ( 1u << m_log2MaxTbSize         ) > m_uiCTUSize ) m_log2MaxTbSize--;
+#endif
   }
 #endif
 #endif // ENABLE_QPA
@@ -2229,12 +2229,6 @@ bool EncAppCfg::xCheckParameter()
   }
 #endif
 
-  xConfirmPara( m_quadtreeTULog2MaxSize * m_tuLog2MaxSize >= 0, "Setting of TULog2MaxSize and QuadtreeTULog2MaxSize is mutually exclusive - use only one of the parameters" );
-
-  if( m_quadtreeTULog2MaxSize < 0 ) m_quadtreeTULog2MaxSize = m_tuLog2MaxSize;
-
-  xConfirmPara( m_quadtreeTULog2MaxSize < 0, "Maximal TU size is invalid" );
-
   if( m_SubPuMvpMode == 3 && m_maxNumMergeCand < 7 )
   {
     msg( WARNING, "****************************************************************************\n" );
@@ -2327,26 +2321,9 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( (m_iSourceWidth  % (m_uiMaxCUWidth  >> (m_uiMaxCUDepth-1)))!=0,             "Resulting coded frame width must be a multiple of the minimum CU size");
   xConfirmPara( (m_iSourceHeight % (m_uiMaxCUHeight >> (m_uiMaxCUDepth-1)))!=0,             "Resulting coded frame height must be a multiple of the minimum CU size");
 
-  xConfirmPara( m_quadtreeTULog2MinSize < 2,                                        "QuadtreeTULog2MinSize must be 2 or greater." );
-
-  if( m_profile == Profile::NEXT )
-  {
-    xConfirmPara( m_quadtreeTULog2MaxSize > 7,                                      "QuadtreeTULog2MaxSize must be 7 or smaller." );
-  }
-  else
-  {
-    xConfirmPara( m_quadtreeTULog2MaxSize > 5,                                      "QuadtreeTULog2MaxSize must be 5 or smaller." );
-  }
-  xConfirmPara( m_quadtreeTULog2MaxSize < m_quadtreeTULog2MinSize,                  "QuadtreeTULog2MaxSize must be greater than or equal to m_uiQuadtreeTULog2MinSize.");
-
-  xConfirmPara( (1<<m_quadtreeTULog2MaxSize) > m_uiMaxCUWidth,                      "QuadtreeTULog2MaxSize must be log2(maxCUSize) or smaller.");
-  xConfirmPara( ( 1 << m_quadtreeTULog2MinSize ) >= ( m_uiMaxCUWidth  >> (m_uiMaxCUDepth-1)), "QuadtreeTULog2MinSize must not be greater than or equal to minimum CU size" );
-  xConfirmPara( ( 1 << m_quadtreeTULog2MinSize ) >= ( m_uiMaxCUHeight >> (m_uiMaxCUDepth-1)), "QuadtreeTULog2MinSize must not be greater than or equal to minimum CU size" );
-  xConfirmPara( m_uiQuadtreeTUMaxDepthInter < 1,                                                       "QuadtreeTUMaxDepthInter must be greater than or equal to 1" );
-  xConfirmPara( m_uiMaxCUWidth < ( 1 << (m_quadtreeTULog2MinSize + m_uiQuadtreeTUMaxDepthInter - 1) ), "QuadtreeTUMaxDepthInter must be less than or equal to the difference between log2(maxCUSize) and QuadtreeTULog2MinSize plus 1" );
-  xConfirmPara( m_uiQuadtreeTUMaxDepthIntra < 1,                                                       "QuadtreeTUMaxDepthIntra must be greater than or equal to 1" );
-  xConfirmPara( m_uiMaxCUWidth < ( 1 << (m_quadtreeTULog2MinSize + m_uiQuadtreeTUMaxDepthIntra - 1) ), "QuadtreeTUMaxDepthInter must be less than or equal to the difference between log2(maxCUSize) and QuadtreeTULog2MinSize plus 1" );
-
+#if MAX_TB_SIZE_SIGNALLING
+  xConfirmPara( m_log2MaxTbSize > 6, "Log2MaxTbSize must be 6 or smaller." );
+#endif
   xConfirmPara( m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
   xConfirmPara( m_maxNumMergeCand > MRG_MAX_NUM_CANDS, "MaxNumMergeCand must be no more than MRG_MAX_NUM_CANDS." );
 
@@ -3060,9 +3037,9 @@ void EncAppCfg::xPrintParameter()
     msg( DETAILS, "Profile                                : %s\n", profileToString(m_profile) );
   }
   msg( DETAILS, "CU size / depth / total-depth          : %d / %d / %d\n", m_uiMaxCUWidth, m_uiMaxCUDepth, m_uiMaxCodingDepth );
-  msg( DETAILS, "RQT trans. size (min / max)            : %d / %d\n", 1 << m_quadtreeTULog2MinSize, 1 << m_quadtreeTULog2MaxSize );
-  msg( DETAILS, "Max RQT depth inter                    : %d\n", m_uiQuadtreeTUMaxDepthInter);
-  msg( DETAILS, "Max RQT depth intra                    : %d\n", m_uiQuadtreeTUMaxDepthIntra);
+#if MAX_TB_SIZE_SIGNALLING
+  msg( DETAILS, "Max TB size                            : %d \n", 1 << m_log2MaxTbSize );
+#endif
   msg( DETAILS, "Min PCM size                           : %d\n", 1 << m_uiPCMLog2MinSize);
   msg( DETAILS, "Motion search range                    : %d\n", m_iSearchRange );
   msg( DETAILS, "Intra period                           : %d\n", m_iIntraPeriod );

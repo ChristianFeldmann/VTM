@@ -902,10 +902,6 @@ private:
   int               m_numReorderPics[MAX_TLAYER];
 
   // Tool list
-  uint32_t              m_uiQuadtreeTULog2MaxSize;
-  uint32_t              m_uiQuadtreeTULog2MinSize;
-  uint32_t              m_uiQuadtreeTUMaxDepthInter;
-  uint32_t              m_uiQuadtreeTUMaxDepthIntra;
   bool                  m_pcmEnabledFlag;
   uint32_t              m_pcmLog2MaxSize;
   uint32_t              m_uiPCMLog2MinSize;
@@ -925,8 +921,9 @@ private:
   uint32_t              m_numLongTermRefPicSPS;
   uint32_t              m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
   bool              m_usedByCurrPicLtSPSFlag[MAX_NUM_LONG_TERM_REF_PICS];
-  // Max physical transform size
-  uint32_t              m_uiMaxTrSize;
+#if MAX_TB_SIZE_SIGNALLING
+  uint32_t          m_log2MaxTbSize;
+#endif
 
   bool              m_saoEnabledFlag;
 
@@ -1138,14 +1135,6 @@ public:
   uint32_t                    getPCMLog2MinSize() const                                                       { return  m_uiPCMLog2MinSize;                                          }
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
-  void                    setQuadtreeTULog2MaxSize( uint32_t u )                                              { m_uiQuadtreeTULog2MaxSize = u;                                       }
-  uint32_t                    getQuadtreeTULog2MaxSize() const                                                { return m_uiQuadtreeTULog2MaxSize;                                    }
-  void                    setQuadtreeTULog2MinSize( uint32_t u )                                              { m_uiQuadtreeTULog2MinSize = u;                                       }
-  uint32_t                    getQuadtreeTULog2MinSize() const                                                { return m_uiQuadtreeTULog2MinSize;                                    }
-  void                    setQuadtreeTUMaxDepthInter( uint32_t u )                                            { m_uiQuadtreeTUMaxDepthInter = u;                                     }
-  void                    setQuadtreeTUMaxDepthIntra( uint32_t u )                                            { m_uiQuadtreeTUMaxDepthIntra = u;                                     }
-  uint32_t                    getQuadtreeTUMaxDepthInter() const                                              { return m_uiQuadtreeTUMaxDepthInter;                                  }
-  uint32_t                    getQuadtreeTUMaxDepthIntra() const                                              { return m_uiQuadtreeTUMaxDepthIntra;                                  }
   void                    setNumReorderPics(int i, uint32_t tlayer)                                           { m_numReorderPics[tlayer] = i;                                        }
   int                     getNumReorderPics(uint32_t tlayer) const                                            { return m_numReorderPics[tlayer];                                     }
   void                    createRPSList( int numRPS );
@@ -1155,10 +1144,11 @@ public:
   void                    setLongTermRefsPresent(bool b)                                                  { m_bLongTermRefsPresent=b;                                            }
   bool                    getSPSTemporalMVPEnabledFlag() const                                            { return m_SPSTemporalMVPEnabledFlag;                                  }
   void                    setSPSTemporalMVPEnabledFlag(bool b)                                            { m_SPSTemporalMVPEnabledFlag=b;                                       }
-  // physical transform
-  void                    setMaxTrSize( uint32_t u )                                                          { m_uiMaxTrSize = u;                                                   }
-  uint32_t                    getMaxTrSize() const                                                            { return  m_uiMaxTrSize;                                               }
-
+#if MAX_TB_SIZE_SIGNALLING
+  void                    setLog2MaxTbSize( uint32_t u )                                                  { m_log2MaxTbSize = u;                                                 }
+  uint32_t                getLog2MaxTbSize() const                                                        { return  m_log2MaxTbSize;                                             }
+  uint32_t                getMaxTbSize() const                                                            { return  1 << m_log2MaxTbSize;                                        }
+#endif
   // Bit-depth
   int                     getBitDepth(ChannelType type) const                                             { return m_bitDepths.recon[type];                                      }
   void                    setBitDepth(ChannelType type, int u )                                           { m_bitDepths.recon[type] = u;                                         }

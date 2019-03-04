@@ -1099,7 +1099,11 @@ static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea,
 #if SHARP_LUMA_DELTA_QP
     const int   lumaCtuDQP = useSharpLumaDQP ? lumaDQPOffset ((uint32_t)pcPic->m_uEnerHpCtu[ctuAddr], bitDepth) : 0;
 #endif
-    const unsigned     mts = std::min (cs.sps->getMaxTrSize(), pcv.maxCUWidth);
+#if MAX_TB_SIZE_SIGNALLING
+    const unsigned     mts = std::min (cs.sps->getMaxTbSize(), pcv.maxCUWidth);
+#else
+    const unsigned     mts = std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth);
+#endif
     const unsigned mtsLog2 = (unsigned)g_aucLog2[mts];
     const unsigned  stride = pcv.maxCUWidth >> mtsLog2;
     unsigned numAct = 0;    // number of block activities

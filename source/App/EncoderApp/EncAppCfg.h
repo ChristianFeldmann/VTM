@@ -300,14 +300,9 @@ protected:
   int       m_numWppExtraLines;
   bool      m_ensureWppBitEqual;
 
-  // transfom unit (TU) definition
-  int       m_quadtreeTULog2MaxSize;
-  int       m_quadtreeTULog2MinSize;
-  int       m_tuLog2MaxSize;
-
-  uint32_t      m_uiQuadtreeTUMaxDepthInter;
-  uint32_t      m_uiQuadtreeTUMaxDepthIntra;
-
+#if MAX_TB_SIZE_SIGNALLING
+  int       m_log2MaxTbSize;
+#endif
   // coding tools (bit-depth)
   int       m_inputBitDepth   [MAX_NUM_CHANNEL_TYPE];         ///< bit-depth of input file
   int       m_outputBitDepth  [MAX_NUM_CHANNEL_TYPE];         ///< bit-depth of output file

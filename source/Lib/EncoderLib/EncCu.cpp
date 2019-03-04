@@ -1301,7 +1301,6 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 #endif
         m_CurrCtx--;
         partitioner.exitCurrSplit();
-        bool bestCSUpdated =
         xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
         return;
       }
@@ -1433,7 +1432,6 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 #endif
 
   // RD check for sub partitioned coding structure.
-  bool bestCSUpdated =
   xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 
   if (isAffMVInfoSaved)

@@ -237,6 +237,16 @@ int EncGOP::xWritePPS (AccessUnit &accessUnit, const PPS *pps)
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
 
+#if JVET_M0132
+int EncGOP::xWriteAPS(AccessUnit &accessUnit, APS *aps)
+{
+  OutputNALUnit nalu(NAL_UNIT_APS);
+  m_HLSWriter->setBitstream(&nalu.m_Bitstream);
+  m_HLSWriter->codeAPS(aps);
+  accessUnit.push_back(new NALUnitEBSP(nalu));
+  return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
+}
+#endif
 
 int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst)
 {
@@ -2545,6 +2555,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         xWriteAccessUnitDelimiter(accessUnit, pcSlice);
       }
+#if JVET_M0132
+      if (pcSlice->getSPS()->getALFEnabledFlag() && pcSlice->getAlfSliceParam().enabledFlag[COMPONENT_Y])
+      {
+        pcSlice->setAPSId(pcSlice->getAPS()->getAPSId());
+        pcSlice->getAPS()->setAlfAPSParam(pcSlice->getAlfSliceParam());
+        actualTotalBits += xWriteAPS(accessUnit, pcSlice->getAPS());
+      }
+#endif
 
       // reset presence of BP SEI indication
       m_bufferingPeriodSEIPresentInAU = false;

@@ -86,6 +86,9 @@ const char* nalUnitTypeToString(NalUnitType type)
 #endif
   case NAL_UNIT_SPS:                    return "SPS";
   case NAL_UNIT_PPS:                    return "PPS";
+#if JVET_M0132
+  case NAL_UNIT_APS:                    return "APS";
+#endif
   case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
   case NAL_UNIT_EOS:                    return "EOS";
   case NAL_UNIT_EOB:                    return "EOB";

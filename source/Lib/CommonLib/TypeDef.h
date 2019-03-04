@@ -328,6 +328,7 @@ typedef std::pair<int, int>  TrCost;
 #define X0038_LAMBDA_FROM_QP_CAPABILITY                   1 ///< This approach derives lambda from QP+QPoffset+QPoffset2. QPoffset2 is derived from QP+QPoffset using a linear model that is clipped between 0 and 3.
                                                             // To use this capability enable config parameter LambdaFromQpEnable
 
+#define JVET_M0132                                        1
 // ====================================================================================================================
 // Tool Switches
 // ====================================================================================================================
@@ -973,6 +974,9 @@ enum NalUnitType
 #endif
   NAL_UNIT_SPS,                     // 33
   NAL_UNIT_PPS,                     // 34
+#if JVET_M0132
+  NAL_UNIT_APS,                     //NAL unit type number needs to be reaaranged.
+#endif
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 35
   NAL_UNIT_EOS,                     // 36
   NAL_UNIT_EOB,                     // 37

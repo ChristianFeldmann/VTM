@@ -221,6 +221,9 @@ const char * NALU_TYPE[] =
 #endif
     "SPS_NUT",
     "PPS_NUT",
+#if JVET_M0132
+    "APS_NUT",
+#endif
     "AUD_NUT",
     "EOS_NUT",
     "EOB_NUT",

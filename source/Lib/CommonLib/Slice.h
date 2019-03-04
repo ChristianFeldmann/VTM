@@ -1573,6 +1573,24 @@ public:
   PPSRExt&               getPpsRangeExtension()                                           { return m_ppsRangeExtension;                   }
 };
 
+#if JVET_M0132
+class APS
+{
+private:
+  int                    m_APSId;                    // adaptation_parameter_set_id
+  AlfSliceParam          m_alfAPSParam;
+
+public:
+  APS();
+  virtual                ~APS();
+
+  int                    getAPSId() const                                                 { return m_APSId;                               }
+  void                   setAPSId(int i)                                                  { m_APSId = i;                                  }
+
+  void                   setAlfAPSParam(AlfSliceParam& alfAPSParam)                       { m_alfAPSParam = alfAPSParam;                  }
+  AlfSliceParam          getAlfAPSParam()                                                 { return m_alfAPSParam;                         }
+};
+#endif
 struct WPScalingParam
 {
   // Explicit weighted prediction parameters parsed in slice header,
@@ -1730,6 +1748,10 @@ private:
   uint32_t                   m_uiMaxTTSizeIChroma;
   uint32_t                       m_uiMaxBTSize;
 
+#if JVET_M0132
+  int                        m_iAPSId;
+  APS*                       m_pcAPS;
+#endif
   AlfSliceParam              m_alfSliceParam;
   LutMotionCand*             m_MotionCandLut;
 #if JVET_M0427_INLOOP_RESHAPER
@@ -1756,6 +1778,12 @@ public:
 
   void                        setPPSId( int PPSId )                                  { m_iPPSId = PPSId;                                             }
   int                         getPPSId() const                                       { return m_iPPSId;                                              }
+#if JVET_M0132
+  void                        setAPS(APS* pcAPS)                                     { m_pcAPS = pcAPS; m_iAPSId = (pcAPS) ? pcAPS->getAPSId() : -1; }
+  APS*                        getAPS()                                               { return m_pcAPS;                                               }
+  void                        setAPSId(int APSId)                                    { m_iAPSId = APSId;                                             }
+  int                         getAPSId() const                                       { return m_iAPSId;                                              }
+#endif
   void                        setPicOutputFlag( bool b   )                           { m_PicOutputFlag = b;                                          }
   bool                        getPicOutputFlag() const                               { return m_PicOutputFlag;                                       }
   void                        setSaoEnabledFlag(ChannelType chType, bool s)          {m_saoEnabledFlag[chType] =s;                                   }
@@ -2239,6 +2267,14 @@ public:
   //! \returns true, if activation is successful
   bool           activatePPS(int ppsId, bool isIRAP);
 
+#if JVET_M0132
+  void           storeAPS(APS *aps, const std::vector<uint8_t> &naluData)    { m_apsMap.storePS(aps->getAPSId(), aps, &naluData); };
+  APS*           getAPS(int apsId)                                           { return m_apsMap.getPS(apsId);                      };
+  bool           getAPSChangedFlag(int apsId) const                          { return m_apsMap.getChangedFlag(apsId);             }
+  void           clearAPSChangedFlag(int apsId)                              { m_apsMap.clearChangedFlag(apsId);                  }
+  APS*           getFirstAPS()                                               { return m_apsMap.getFirstPS();                      };
+  bool           activateAPS(int apsId);
+#endif
 #if HEVC_VPS
   const VPS*     getActiveVPS()const                                         { return m_vpsMap.getPS(m_activeVPSId); };
 #endif
@@ -2250,6 +2286,9 @@ protected:
 #endif
   ParameterSetMap<SPS> m_spsMap;
   ParameterSetMap<PPS> m_ppsMap;
+#if JVET_M0132
+  ParameterSetMap<APS> m_apsMap;
+#endif
 
 #if HEVC_VPS
   int m_activeVPSId; // -1 for nothing active

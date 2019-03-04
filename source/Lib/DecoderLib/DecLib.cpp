@@ -739,6 +739,13 @@ void DecLib::xActivateParameterSets()
 {
   if (m_bFirstSliceInPicture)
   {
+#if JVET_M0132
+    APS *aps = m_parameterSetManager.getAPS(m_apcSlicePilot->getAPSId()); // this is a temporary APS object. Do not store this value
+    if (m_apcSlicePilot->getAPSId() != -1)
+    {
+      CHECK(aps == 0, "No APS present");
+    }
+#endif
     const PPS *pps = m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId()); // this is a temporary PPS object. Do not store this value
     CHECK(pps == 0, "No PPS present");
 
@@ -771,7 +778,11 @@ void DecLib::xActivateParameterSets()
 
     m_apcSlicePilot->applyReferencePictureSet(m_cListPic, m_apcSlicePilot->getRPS());
 
+#if JVET_M0132
+    m_pcPic->finalInit(*sps, *pps, *aps);
+#else
     m_pcPic->finalInit( *sps, *pps );
+#endif
 
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
     m_pcPic->cs->createCoeffs();
@@ -785,6 +796,9 @@ void DecLib::xActivateParameterSets()
     Slice *pSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
 
     // Update the PPS and SPS pointers with the ones of the picture.
+#if JVET_M0132
+    aps= pSlice->getAPS();
+#endif
     pps=pSlice->getPPS();
     sps=pSlice->getSPS();
 
@@ -792,6 +806,9 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->slice = pSlice;
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
+#if JVET_M0132
+    m_pcPic->cs->aps   = aps;
+#endif
 #if HEVC_VPS
     m_pcPic->cs->vps   = pSlice->getVPS();
 #endif
@@ -863,11 +880,16 @@ void DecLib::xActivateParameterSets()
 
     const SPS *sps = pSlice->getSPS();
     const PPS *pps = pSlice->getPPS();
-
+#if JVET_M0132
+    APS *aps = pSlice->getAPS();
+#endif
     // fix Parameter Sets, now that we have the real slice
     m_pcPic->cs->slice = pSlice;
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
+#if JVET_M0132
+    m_pcPic->cs->aps   = aps;
+#endif
 #if HEVC_VPS
     m_pcPic->cs->vps   = pSlice->getVPS();
 #endif
@@ -882,6 +904,12 @@ void DecLib::xActivateParameterSets()
     {
       EXIT("Error - a new PPS has been decoded while processing a picture");
     }
+#if JVET_M0132
+    if (m_parameterSetManager.getAPSChangedFlag(aps->getAPSId()))
+    {
+      EXIT("Error - a new APS has been decoded while processing a picture");
+    }
+#endif
 
     xParsePrefixSEImessages();
 
@@ -1046,6 +1074,13 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
     m_apcSlicePilot->setPOC( m_apcSlicePilot->getPOC() & (iMaxPOClsb - 1) );
     xUpdatePreviousTid0POC(m_apcSlicePilot);
+#if JVET_M0132
+    if (m_apcSlicePilot->getAPSId() != -1)
+    {
+      APS *aps = m_parameterSetManager.getAPS(m_apcSlicePilot->getAPSId());
+      CHECK(aps == 0, "No APS present");
+    }
+#endif
   }
 
   // Skip pictures due to random access
@@ -1401,6 +1436,15 @@ void DecLib::xDecodePPS( InputNALUnit& nalu )
   m_parameterSetManager.storePPS( pps, nalu.getBitstream().getFifo() );
 }
 
+#if JVET_M0132
+void DecLib::xDecodeAPS(InputNALUnit& nalu)
+{
+  APS* aps = new APS();
+  m_HLSReader.setBitstream(&nalu.getBitstream());
+  m_HLSReader.parseAPS(aps);
+  m_parameterSetManager.storeAPS(aps, nalu.getBitstream().getFifo());
+}
+#endif
 bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
 {
   bool ret;
@@ -1426,6 +1470,11 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_PPS:
       xDecodePPS( nalu );
       return false;
+#if JVET_M0132
+    case NAL_UNIT_APS:
+      xDecodeAPS(nalu);
+      return false;
+#endif
 
     case NAL_UNIT_PREFIX_SEI:
       // Buffer up prefix SEI messages until SPS of associated VCL is known.

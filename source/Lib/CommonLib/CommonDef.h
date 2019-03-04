@@ -186,6 +186,9 @@ static const int C2FLAG_NUMBER =                                    1; ///< maxi
 static const int MAX_NUM_VPS =                                     16;
 static const int MAX_NUM_SPS =                                     16;
 static const int MAX_NUM_PPS =                                     64;
+#if JVET_M0132
+static const int MAX_NUM_APS =                                     32;  //Currently APS ID has 5 bits
+#endif
 
 static const int MLS_GRP_NUM =                                   1024; ///< Max number of coefficient groups, max(16, 256)
 

@@ -149,6 +149,9 @@ public:
 #endif
   void  parseSPS            ( SPS* pcSPS );
   void  parsePPS            ( PPS* pcPPS );
+#if JVET_M0132
+  void  parseAPS            ( APS* pcAPS);
+#endif
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
   void  parsePTL            ( PTL *rpcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1 );
   void  parseProfileTier    ( ProfileTierLevel *ptl, const bool bIsSubLayer );
@@ -165,7 +168,9 @@ public:
 #if JVET_M0427_INLOOP_RESHAPER
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
 #endif
+#if !JVET_M0132
   void alf( AlfSliceParam& alfSliceParam );
+#endif
   void alfFilter( AlfSliceParam& alfSliceParam, const bool isChroma );
 
 private:

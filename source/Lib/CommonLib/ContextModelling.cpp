@@ -67,7 +67,6 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
 #endif
   , m_log2BlockWidth            (g_aucLog2[m_width])
   , m_log2BlockHeight           (g_aucLog2[m_height])
-  , m_log2BlockSize             ((m_log2BlockWidth + m_log2BlockHeight)>>1)
   , m_maxNumCoeff               (m_width * m_height)
 #if HEVC_USE_SIGN_HIDING
   , m_signHiding                (signHide)

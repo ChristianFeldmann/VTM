@@ -1736,12 +1736,12 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
       m_CABACEstimator->cu_skip_flag ( cu );
     }
     m_CABACEstimator->pred_mode      ( cu );
+    m_CABACEstimator->pcm_data       ( cu, partitioner );
     m_CABACEstimator->extend_ref_line( cu );
 #if JVET_M0102_INTRA_SUBPARTITIONS
     m_CABACEstimator->isp_mode       ( cu );
 #endif
     m_CABACEstimator->cu_pred_data   ( cu );
-    m_CABACEstimator->pcm_data       ( cu, partitioner );
 
     // Encode Coefficients
     CUCtx cuCtx;

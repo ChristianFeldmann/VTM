@@ -1156,8 +1156,8 @@ void CABACReader::pred_mode( CodingUnit& cu )
 void CABACReader::pcm_flag( CodingUnit& cu, Partitioner &partitioner )
 {
   const SPS& sps = *cu.cs->sps;
-  if( !sps.getPCMEnabledFlag() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize())
-      || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
+  if( !sps.getPCMEnabledFlag() || cu.lwidth() > (1 << sps.getPCMLog2MaxSize()) || cu.lwidth() < (1 << sps.getPCMLog2MinSize())
+      || cu.lheight() > (1 << sps.getPCMLog2MaxSize()) || cu.lheight() < (1 << sps.getPCMLog2MinSize()) )
   {
     cu.ipcm = false;
     return;
@@ -1285,7 +1285,7 @@ void CABACReader::extend_ref_line(CodingUnit& cu)
   return;
 #endif
 
-  if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType))
+  if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.ipcm)
   {
     cu.firstPU->multiRefIdx = 0;
     return;
@@ -3024,7 +3024,7 @@ void CABACReader::emt_cu_flag( CodingUnit& cu )
 #if JVET_M0102_INTRA_SUBPARTITIONS
 void CABACReader::isp_mode( CodingUnit& cu )
 {
-  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx )
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm )
   {
     cu.ispMode = NOT_INTRA_SUBPARTITIONS;
     return;

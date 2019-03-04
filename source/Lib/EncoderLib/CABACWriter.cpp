@@ -897,8 +897,8 @@ void CABACWriter::pcm_data( const CodingUnit& cu, Partitioner& partitioner  )
 void CABACWriter::pcm_flag( const CodingUnit& cu, Partitioner& partitioner )
 {
   const SPS& sps = *cu.cs->sps;
-  if( !sps.getPCMEnabledFlag() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize())
-      || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
+  if( !sps.getPCMEnabledFlag() || cu.lwidth() > (1 << sps.getPCMLog2MaxSize()) || cu.lwidth() < (1 << sps.getPCMLog2MinSize())
+      || cu.lheight() > (1 << sps.getPCMLog2MaxSize()) || cu.lheight() < (1 << sps.getPCMLog2MinSize()) )
   {
     return;
   }
@@ -1047,7 +1047,7 @@ void CABACWriter::extend_ref_line(const CodingUnit& cu)
   return;
 #endif
 
-  if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType))
+  if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.ipcm)
   {
     return;
   }
@@ -2877,7 +2877,7 @@ void CABACWriter::emt_cu_flag( const CodingUnit& cu )
 #if JVET_M0102_INTRA_SUBPARTITIONS
 void CABACWriter::isp_mode( const CodingUnit& cu )
 {
-  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx )
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm )
   {
     CHECK( cu.ispMode != NOT_INTRA_SUBPARTITIONS, "error: cu.intraSubPartitions != 0" );
     return;

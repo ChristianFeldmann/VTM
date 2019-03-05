@@ -132,6 +132,9 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         {
           m_shareStateDec = GEN_ON_SHARED_BOUND;
           cs.motionLut.lutShare = cs.motionLut.lut;
+#if JVET_M0483_IBC
+          cs.motionLut.lutShareIbc = cs.motionLut.lutIbc;
+#endif
         }
 
         if (currCU.shareParentPos.x < 0)

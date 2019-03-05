@@ -1749,8 +1749,8 @@ private:
   uint32_t                       m_uiMaxBTSize;
 
 #if JVET_M0132
-  int                        m_iAPSId;
-  APS*                       m_pcAPS;
+  int                        m_apsId;
+  APS*                       m_aps;
 #endif
   AlfSliceParam              m_alfSliceParam;
   LutMotionCand*             m_MotionCandLut;
@@ -1779,10 +1779,10 @@ public:
   void                        setPPSId( int PPSId )                                  { m_iPPSId = PPSId;                                             }
   int                         getPPSId() const                                       { return m_iPPSId;                                              }
 #if JVET_M0132
-  void                        setAPS(APS* pcAPS)                                     { m_pcAPS = pcAPS; m_iAPSId = (pcAPS) ? pcAPS->getAPSId() : -1; }
-  APS*                        getAPS()                                               { return m_pcAPS;                                               }
-  void                        setAPSId(int APSId)                                    { m_iAPSId = APSId;                                             }
-  int                         getAPSId() const                                       { return m_iAPSId;                                              }
+  void                        setAPS(APS* aps)                                     { m_aps = aps; m_apsId = (aps) ? aps->getAPSId() : -1; }
+  APS*                        getAPS()                                               { return m_aps;                                               }
+  void                        setAPSId(int apsId)                                    { m_apsId = apsId;                                             }
+  int                         getAPSId() const                                       { return m_apsId;                                              }
 #endif
   void                        setPicOutputFlag( bool b   )                           { m_PicOutputFlag = b;                                          }
   bool                        getPicOutputFlag() const                               { return m_PicOutputFlag;                                       }

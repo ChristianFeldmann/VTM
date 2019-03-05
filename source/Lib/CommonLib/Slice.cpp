@@ -140,8 +140,8 @@ Slice::Slice()
 , m_uiMaxTTSizeIChroma            ( 0 )
 , m_uiMaxBTSize                   ( 0 )
 #if JVET_M0132
-, m_iAPSId                        ( -1 )
-, m_pcAPS                        (NULL)
+, m_apsId                        ( -1 )
+, m_aps                          (NULL)
 #endif
 , m_MotionCandLut                (NULL)
 #if  JVET_M0170_MRG_SHARELIST

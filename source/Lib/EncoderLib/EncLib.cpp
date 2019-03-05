@@ -1902,9 +1902,9 @@ void EncLib::setParamSetChanged(int spsId, int ppsId)
 #if JVET_M0132
 bool EncLib::APSNeedsWriting(int apsId)
 {
-  bool bChanged = m_apsMap.getChangedFlag(apsId);
+  bool isChanged = m_apsMap.getChangedFlag(apsId);
   m_apsMap.clearChangedFlag(apsId);
-  return bChanged;
+  return isChanged;
 }
 #endif
 

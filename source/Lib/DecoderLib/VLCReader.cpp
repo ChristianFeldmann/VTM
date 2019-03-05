@@ -608,15 +608,15 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 }
 
 #if JVET_M0132
-void HLSyntaxReader::parseAPS(APS* pcAPS)
+void HLSyntaxReader::parseAPS(APS* aps)
 {
-  uint32_t  uiCode;
+  uint32_t  code;
 
-  READ_CODE(5, uiCode, "adaptation_parameter_set_id");
-  pcAPS->setAPSId(uiCode);
+  READ_CODE(5, code, "adaptation_parameter_set_id");
+  aps->setAPSId(code);
 
-  uint32_t  code = 1;
-  AlfSliceParam param = pcAPS->getAlfAPSParam();
+  //uint32_t  code = 1;
+  AlfSliceParam param = aps->getAlfAPSParam();
   param.enabledFlag[COMPONENT_Y] = true;
 
   int alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
@@ -644,7 +644,7 @@ void HLSyntaxReader::parseAPS(APS* pcAPS)
   {
     alfFilter(param, true);
   }
-  pcAPS->setAlfAPSParam(param);
+  aps->setAlfAPSParam(param);
 
   xReadRbspTrailingBits();
 }
@@ -1651,7 +1651,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         READ_CODE(5, uiCode, "tile_group_aps_id"); 
         pcSlice->setAPSId(uiCode);
         pcSlice->setAPS(parameterSetManager->getAPS(uiCode));
-        pcSlice->setAlfSliceParam(pcSlice->getAPS()->getAlfAPSParam());
+        AlfSliceParam alfParam = pcSlice->getAPS()->getAlfAPSParam();
+        pcSlice->setAlfSliceParam(alfParam);
         pcSlice->getAlfSliceParam().enabledFlag[COMPONENT_Y] = true;
       }
       else

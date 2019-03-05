@@ -104,21 +104,11 @@ protected:
   PelUnitBuf           m_cYuvRefBuffDMVRL1;
   Pel*                 m_cRefSamplesDMVRL0[MAX_NUM_COMPONENT];
   Pel*                 m_cRefSamplesDMVRL1[MAX_NUM_COMPONENT];
-  enum SAD_POINT_INDEX
-  {
-    NOT_AVAILABLE = -1,
-    SAD_BOTTOM = 0,
-    SAD_TOP,
-    SAD_RIGHT,
-    SAD_LEFT,
-    SAD_TOP_LEFT,
-    SAD_TOP_RIGHT,
-    SAD_BOTTOM_LEFT,
-    SAD_BOTTOM_RIGHT,
-    SAD_CENTER,
-    SAD_COUNT
-  };
-  Mv m_pSearchOffset[5] = { Mv(0, 1), Mv(0, -1), Mv(1, 0), Mv(-1, 0), Mv(0, 0) };
+  Mv m_pSearchOffset[25] = { Mv(-2,-2), Mv(-1,-2), Mv(0,-2), Mv(1,-2), Mv(2,-2),
+                             Mv(-2,-1), Mv(-1,-1), Mv(0,-1), Mv(1,-1), Mv(2,-1),
+                             Mv(-2, 0), Mv(-1, 0), Mv(0, 0), Mv(1, 0), Mv(2, 0),
+                             Mv(-2, 1), Mv(-1, 1), Mv(0, 1), Mv(1, 1), Mv(2, 1),
+                             Mv(-2, 2), Mv(-1, 2), Mv(0, 2), Mv(1, 2), Mv(2, 2) };
   uint64_t m_SADsArray[((2 * DMVR_NUM_ITERATION) + 1) * ((2 * DMVR_NUM_ITERATION) + 1)];
 #endif
 

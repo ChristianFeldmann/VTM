@@ -560,7 +560,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
   const TransformUnit& tuP = *cuP.cs->getTU(posP, cuP.chType);
   const PreCalcValues& pcv = *cu.cs->pcv;
-  const unsigned rasterIdx = getRasterIdx( posQ, pcv );
+  const unsigned rasterIdx = getRasterIdx( Position{ localPos.x,  localPos.y }, pcv );
 #if JVET_M0908_CIIP_DB
   if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
   {

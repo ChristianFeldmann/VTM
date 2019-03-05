@@ -1308,13 +1308,12 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #endif
 
 #if JVET_M0483_IBC
-  if (pcSlice->getSPS()->getIBCFlag() && pcSlice->getEnableTMVPFlag())
 #else
   if (pcSlice->getSPS()->getIBCMode() && pcSlice->getEnableTMVPFlag())
-#endif
   {
     CHECK(pcSlice->getRefPic(RefPicList(pcSlice->isInterB() ? 1 - pcSlice->getColFromL0Flag() : 0), pcSlice->getColRefIdx())->getPOC() == pcSlice->getPOC(), "curr ref picture cannot be collocated picture");
   }
+#endif
 
 #if JVET_M0427_INLOOP_RESHAPER
   if (pcSlice->getSPS()->getUseReshaper())

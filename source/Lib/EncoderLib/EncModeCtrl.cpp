@@ -157,7 +157,12 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
     minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - deltaQP );
     maxQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP + deltaQP );
   }
+#if ENABLE_QPA_SUB_CTU
   else if( qgEnableChildren ) // more splits and not the deepest QG level
+#warning TODO: OR with relevant conditions, but keep compatibility with QP-RDO
+#else
+  else if( qgEnableChildren ) // more splits and not the deepest QG level
+#endif
   {
     minQP = baseQP;
     maxQP = baseQP;
@@ -169,7 +174,7 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
   }
 
 #if SHARP_LUMA_DELTA_QP
-  if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() )
+  if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && (!CS::isDualITree (cs) || isLuma (partitioner.chType)))
   {
     minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - m_lumaQPOffset );
     maxQP = minQP;
@@ -229,6 +234,7 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
     minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - m_lumaQPOffset );
     maxQP = minQP;
   }
+#endif
 #endif
 }
 

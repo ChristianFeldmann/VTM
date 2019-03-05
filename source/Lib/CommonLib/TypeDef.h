@@ -368,11 +368,11 @@ typedef std::pair<int, int>  TrCost;
 #define W0038_DB_OPT                                      1 ///< adaptive DB parameter selection, LoopFilterOffsetInPPS and LoopFilterDisable are set to 0 and DeblockingFilterMetric=2;
 #define W0038_CQP_ADJ                                     1 ///< chroma QP adjustment based on TL, CQPTLAdjustEnabled is set to 1;
 
+#define JVET_M0113_M0188_QG_SIZE                          1 ///< JVET-M0113/M0188 quantization groups based on area
 #define SHARP_LUMA_DELTA_QP                               1 ///< include non-normative LCU deltaQP and normative chromaQP change
 #define ER_CHROMA_QP_WCG_PPS                              1 ///< Chroma QP model for WCG used in Anchor 3.2
 #define ENABLE_QPA                                        1 ///< Non-normative perceptual QP adaptation according to JVET-H0047 and JVET-K0206. Deactivated by default, activated using encoder arguments --PerceptQPA=1 --SliceChromaQPOffsetPeriodicity=1
-#define ENABLE_QPA_SUB_CTU                              ( 1 && ENABLE_QPA ) ///< when maximum delta-QP depth is greater than zero, use sub-CTU QPA
-#define JVET_M0113_M0188_QG_SIZE                          1 ///< JVET-M0113/M0188 quantization groups based on area
+#define ENABLE_QPA_SUB_CTU                              ( !JVET_M0113_M0188_QG_SIZE && ENABLE_QPA ) ///< when maximum delta-QP depth is greater than zero, use sub-CTU QPA
 
 
 #define RDOQ_CHROMA                                       1 ///< use of RDOQ in chroma

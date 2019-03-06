@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010 - 2018, ITU/ISO/IEC
+ * Copyright (c) 2010 - 2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,13 @@
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE_PRINT_FRAME -1
 #endif
 
+enum CacheAddressMap
+{
+  CACHE_MODE_1D = 0,
+  CACHE_MODE_2D,
+  MAX_NUM_CACHE_MODE
+};
+
 namespace po = df::program_options_lite;
 
 void* cache_mem_align_malloc(int size, int alignSize)
@@ -73,7 +80,10 @@ void* cache_mem_align_malloc(int size, int alignSize)
 
 void cache_mem_align_free(void *ptr)
 {
-  free(*(((void **)ptr) - 1));
+  if ( ptr )
+  {
+    free(*(((void **)ptr) - 1));
+  }
 }
 
 CacheModel::CacheModel()
@@ -133,6 +143,9 @@ void CacheModel::xConfigure(const std::string& filename )
   ("CacheLineSize", m_cacheLineSize,   128, "Cache line size")
   ("NumCacheLine",  m_numCacheLine,     32, "Number of cache line")
   ("NumWay",        m_numWay,            4, "Number of way")
+  ("CacheAddrMode", m_cacheAddrMode,     0, "Address mapping mode 0 : linear address 1 : 2D address")
+  ("BlkWidth",      m_cacheBlkWidth,    32, "Block width in 2D address mode")
+  ("BlkHeight",     m_cacheBlkHeight,   16, "Block height in 2D address mode")
   ("FrameReport",   m_frameReport,   false, "Report in each frame" )
   ;
 
@@ -143,6 +156,13 @@ void CacheModel::xConfigure(const std::string& filename )
   {
     fprintf( stderr, "cache line size is bigger that memory alignment\n" );
     fprintf( stderr, "This may lead mismatch among enviroments\n" );
+  }
+  if ( m_cacheAddrMode == CACHE_MODE_2D )
+  {
+    int blkSize = m_cacheBlkWidth * m_cacheBlkHeight;
+    if ( m_cacheLineSize % blkSize != 0 && blkSize % m_cacheLineSize ) {
+      THROW("CacheLineSize shall be multiple of BlkWidth x BlkHeight or BlkWidth x BlkHeight shall be multiple of CacheLineSize in 2D mode");
+    }
   }
 }
 
@@ -248,18 +268,22 @@ void CacheModel::accumulateFrame( )
 // report bandwidth, hit ratio and so on in a Frame
 void CacheModel::reportFrame( )
 {
-  if ( m_cacheEnable && m_frameReport )
+  if ( m_cacheEnable )
   {
-    int hitCount = 0;
-
-    for ( int i = 0 ; i < m_cacheSize ; i++ )
+    if ( m_frameReport )
     {
-      hitCount += m_hitCount[ i ];
-    }
+      int hitCount = 0;
 
-    fprintf( stdout, "Cache Statics in frame %d\n", m_frameCount++ );
-    fprintf( stdout, "Hit ratio %5.2f [%%]\n", (100 * (double)(hitCount)) / m_totalAccess );
-    fprintf( stdout, "Required bandwidth %.1f [MB]\n", ((double)(m_missHitCount) * m_cacheLineSize) / (1024 * 1024) );
+      for ( int i = 0 ; i < m_cacheSize ; i++ )
+      {
+        hitCount += m_hitCount[ i ];
+      }
+
+      fprintf( stdout, "Cache Statics in frame %d\n", m_frameCount );
+      fprintf( stdout, "Hit ratio %5.2f [%%]\n", (100 * (double)(hitCount)) / m_totalAccess );
+      fprintf( stdout, "Required bandwidth %.1f [MB]\n", ((double)(m_missHitCount) * m_cacheLineSize) / (1024 * 1024) );
+    }
+    m_frameCount++;
   }
 }
 
@@ -288,6 +312,7 @@ void CacheModel::setRefPicture( const Picture *refPic, const ComponentID CompID 
     m_refPoc = refPic->getPOC();
     m_base   = refPic->getOrigin( PIC_RECONSTRUCTION, CompID );
     m_compID = CompID;
+    m_picWidth = refPic->getRecoBuf( CompID ).stride;
 }
 
 bool CacheModel::xIsCacheHit( int pos, size_t addr )
@@ -382,6 +407,31 @@ void CacheModel::xUpdateCacheStatus( int entry, int way )
   xUpdatePLRUStatus( entry, way );
 }
 
+size_t CacheModel::xMapAddress( size_t offset ) {
+
+  size_t ret;
+  size_t xInPic, yInPic, blkPosX, blkPosY, xInBlk, yInBlk;
+
+  switch ( m_cacheAddrMode ) {
+    case CACHE_MODE_1D : // diret mapping
+      return offset;
+    case CACHE_MODE_2D : // 2D address mapping
+      xInPic  = offset % m_picWidth;
+      yInPic  = offset / m_picWidth;
+      blkPosX = xInPic / m_cacheBlkWidth;
+      blkPosY = yInPic / m_cacheBlkHeight;
+      xInBlk  = xInPic % m_cacheBlkWidth;
+      yInBlk  = yInPic % m_cacheBlkHeight;
+      ret  = m_picWidth * blkPosY * m_cacheBlkHeight;
+      ret += blkPosX * m_cacheBlkWidth * m_cacheBlkHeight;
+      ret += yInBlk * m_cacheBlkWidth;
+      ret += xInBlk;
+      return ret;
+    default :
+      THROW( "Unknown address mode " << m_cacheAddrMode );
+      return 0;
+  }
+}
 
 // check cache hit/miss
 void CacheModel::cacheAccess( const Pel *addr, const std::string& fileName, const int lineNum )
@@ -391,7 +441,7 @@ void CacheModel::cacheAccess( const Pel *addr, const std::string& fileName, cons
     return;
   }
   bool hit = false;
-  size_t cacheAddr = ((size_t) (addr - m_base)) >> m_shift;
+  size_t cacheAddr = xMapAddress( (size_t) (addr - m_base) ) >> m_shift;
   int  entry = (int) (cacheAddr % m_numCacheLine);
   int  pos   = entry * m_numWay;
   int  way;

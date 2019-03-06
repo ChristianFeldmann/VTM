@@ -114,7 +114,6 @@ Area MCTSHelper::getTileArea( const CodingStructure* cs, const int ctuAddr )
   return Area( tileLeftTopPelPosX, tileLeftTopPelPosY, tileRightBottomPelPosX - tileLeftTopPelPosX + 1, tileRightBottomPelPosY - tileLeftTopPelPosY + 1 );
 }
 
-#if JVET_M0445_MCTS_FIX_FOR_DMVR
 bool MCTSHelper::isRefBlockAtRestrictedTileBoundary( const PredictionUnit &pu )
 {
   const Area& tileArea = pu.cs->picture->mctsInfo.getTileArea();
@@ -139,7 +138,6 @@ bool MCTSHelper::isRefBlockAtRestrictedTileBoundary( const PredictionUnit &pu )
   }
   return false;
 }
-#endif
 
 static void getMotInfoBlockPartPos( const PredictionUnit& pu, int xOff, int yOff, const Mv& mv, int& ruiPredXLeft, int& ruiPredYTop, int& ruiPredXRight, int& ruiPredYBottom )
 {

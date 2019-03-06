@@ -114,6 +114,33 @@ Area MCTSHelper::getTileArea( const CodingStructure* cs, const int ctuAddr )
   return Area( tileLeftTopPelPosX, tileLeftTopPelPosY, tileRightBottomPelPosX - tileLeftTopPelPosX + 1, tileRightBottomPelPosY - tileLeftTopPelPosY + 1 );
 }
 
+#if JVET_M0445_MCTS_FIX_FOR_DMVR
+bool MCTSHelper::isRefBlockAtRestrictedTileBoundary( const PredictionUnit &pu )
+{
+  const Area& tileArea = pu.cs->picture->mctsInfo.getTileArea();
+  const int mvPrecBits = MV_FRACTIONAL_BITS_INTERNAL;
+
+  for( int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++ )
+  {
+    if( pu.refIdx[refList] >= 0 )
+    {
+      const Mv& mv = pu.mv[refList];
+      Area targetBlock( pu.Y().offset( mv.getHor() >> mvPrecBits, mv.getVer() >> mvPrecBits ), pu.Y().size() );
+      // NOTE: at boundary take sub-pel filter samples into account
+      if(
+        targetBlock.x < tileArea.x + 3 ||
+        targetBlock.y < tileArea.y + 3 ||
+        targetBlock.bottomRight().x > tileArea.bottomRight().x - 4 ||
+        targetBlock.bottomRight().y > tileArea.bottomRight().y - 4 )
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+#endif
+
 static void getMotInfoBlockPartPos( const PredictionUnit& pu, int xOff, int yOff, const Mv& mv, int& ruiPredXLeft, int& ruiPredYTop, int& ruiPredXRight, int& ruiPredYBottom )
 {
   const int mvFracBits = MV_FRACTIONAL_BITS_INTERNAL;

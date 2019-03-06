@@ -2119,9 +2119,6 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
       && PU::isBiPredFromDifferentDirEqDistPoc(pu)
       && (pu.lheight() >= 8)
       && ((pu.lheight() * pu.lwidth()) >= 64)
-#if JVET_M0445_MCTS_FIX_FOR_DMVR
-      && !MCTSHelper::isRefBlockAtRestrictedTileBoundary( pu )
-#endif
       ;
   }
   else

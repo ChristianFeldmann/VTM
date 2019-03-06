@@ -1696,7 +1696,6 @@ private:
   std::vector<uint32_t>          m_substreamSizes;
 
   bool                       m_cabacInitFlag;
-  int                        m_cabacWinUpdateMode;
 
   bool                       m_bLMvdL1Zero;
   bool                       m_temporalLayerNonReferenceFlag;
@@ -1980,8 +1979,6 @@ public:
 
   void                        setCabacInitFlag( bool val )                           { m_cabacInitFlag = val;                                        } //!< set CABAC initial flag
   bool                        getCabacInitFlag()                               const { return m_cabacInitFlag;                                       } //!< get CABAC initial flag
-  void                        setCabacWinUpdateMode( int mode )                      { m_cabacWinUpdateMode = mode;                                  }
-  int                         getCabacWinUpdateMode()                          const { return m_cabacWinUpdateMode;                                  }
   bool                        getTemporalLayerNonReferenceFlag()               const { return m_temporalLayerNonReferenceFlag;                       }
   void                        setTemporalLayerNonReferenceFlag(bool x)               { m_temporalLayerNonReferenceFlag = x;                          }
   void                        setLFCrossSliceBoundaryFlag( bool   val )              { m_LFCrossSliceBoundaryFlag = val;                             }

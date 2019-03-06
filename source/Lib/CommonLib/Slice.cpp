@@ -122,7 +122,6 @@ Slice::Slice()
 , m_bTestWeightBiPred             ( false )
 , m_substreamSizes                ( )
 , m_cabacInitFlag                 ( false )
-, m_cabacWinUpdateMode            ( 0 )
 , m_bLMvdL1Zero                   ( false )
 , m_temporalLayerNonReferenceFlag ( false )
 , m_LFCrossSliceBoundaryFlag      ( false )
@@ -231,7 +230,6 @@ void Slice::initSlice()
 #endif
   m_substreamSizes.clear();
   m_cabacInitFlag        = false;
-  m_cabacWinUpdateMode   = 0;
   m_enableTMVPFlag       = true;
   resetMotionLUTs();
 }
@@ -889,7 +887,6 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   }
 
   m_cabacInitFlag                 = pSrc->m_cabacInitFlag;
-  m_cabacWinUpdateMode            = pSrc->m_cabacWinUpdateMode;
 
   m_bLMvdL1Zero                   = pSrc->m_bLMvdL1Zero;
   m_LFCrossSliceBoundaryFlag      = pSrc->m_LFCrossSliceBoundaryFlag;

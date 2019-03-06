@@ -146,7 +146,7 @@ static const int NOT_VALID =                                       -1;
 static const int AMVP_MAX_NUM_CANDS =                               2; ///< AMVP: advanced motion vector prediction - max number of final candidates
 static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP: advanced motion vector prediction - max number of candidates
 static const int AMVP_DECIMATION_FACTOR =                           2;
-static const int MRG_MAX_NUM_CANDS =                                7; ///< MERGE
+static const int MRG_MAX_NUM_CANDS =                                6; ///< MERGE
 static const int AFFINE_MRG_MAX_NUM_CANDS =                         5; ///< AFFINE MERGE
 
 static const int MAX_TLAYER =                                       7; ///< Explicit temporal layer QP offset - max number of temporal layer
@@ -327,7 +327,7 @@ static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE
 static const int GBI_NUM =                                          5; ///< the number of weight options
 static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
-static const int MAX_NUM_HMVP_CANDS =                              5; ///< maximum number of HMVP candidates to be stored and used in merge list
+static const int MAX_NUM_HMVP_CANDS =                              (MRG_MAX_NUM_CANDS-1); ///< maximum number of HMVP candidates to be stored and used in merge list
 static const int MAX_NUM_HMVP_AVMPCANDS =                          4; ///< maximum number of HMVP candidates to be used in AMVP list
 
 #if W0038_DB_OPT

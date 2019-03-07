@@ -51,28 +51,6 @@
 // Class definition
 // ====================================================================================================================
 
-struct ModelInfo
-{
-  unsigned fullRangeInputFlag;
-  unsigned scaleIntPrec;
-  unsigned scaleInt;
-  unsigned scaleFracPrec;
-  unsigned scaleFrac;
-  unsigned scaleSign;
-  unsigned offsetIntPrec;
-  unsigned offsetInt;
-  unsigned offsetFracPrec;
-  unsigned offsetFrac;
-  unsigned offsetSign;
-  unsigned minMaxQPAbsPrec;
-  unsigned maxQPAbs;
-  unsigned maxQPSign;
-  unsigned minQPAbs;
-  unsigned minQPSign;
-  unsigned scaleAbs;
-  unsigned offsetAbs;
-};
-
 class EncReshape : public Reshape
 {
 private:
@@ -90,7 +68,6 @@ private:
   int                     m_rateAdpMode;
   bool                    m_useAdpCW;
   uint16_t                m_initCWAnalyze;
-  ModelInfo               m_dQPModel;
   ReshapeCW               m_reshapeCW;
   Pel                     m_cwLumaWeight[PIC_CODE_CW_BINS];
   double                  m_chromaWeight;
@@ -118,34 +95,10 @@ public:
   void deriveReshapeParametersSDRfromStats(uint32_t *, double*, double* reshapeTH1, double* reshapeTH2, bool *intraAdp, bool *interAdp);
   void deriveReshapeParameters(double *array, int start, int end, ReshapeCW respCW, double &alpha, double &beta);
   void initLUTfromdQPModel();
-  int  calcEXP2(int val);
   void constructReshaperSDR();
   ReshapeCW * getReshapeCW() { return &m_reshapeCW; }
   Pel * getWeightTable() { return m_cwLumaWeight; }
   double getCWeight() { return m_chromaWeight; }
-
-  void initModelParam(double scale = 0.015, double offset = -7.5, int QPMax = 6, int QPMin = -3)
-  {
-    /// dQP model:  dQP = clip3(QPMin, QPMax, dScale*Y+dOffset);
-    m_dQPModel.fullRangeInputFlag = 0;
-    m_dQPModel.scaleIntPrec = 0;
-    m_dQPModel.scaleFracPrec = 16;
-    m_dQPModel.offsetIntPrec = 3;
-    m_dQPModel.offsetFracPrec = 1;
-    m_dQPModel.minMaxQPAbsPrec = 3;
-    m_dQPModel.scaleSign = scale < 0 ? 1 : 0;
-    m_dQPModel.scaleAbs = unsigned((scale < 0 ? -scale : scale) * (1 << m_dQPModel.scaleFracPrec));
-    m_dQPModel.scaleInt = m_dQPModel.scaleAbs >> m_dQPModel.scaleFracPrec;
-    m_dQPModel.scaleFrac = m_dQPModel.scaleAbs - (m_dQPModel.scaleInt << m_dQPModel.scaleFracPrec);
-    m_dQPModel.offsetSign = offset < 0 ? 1 : 0;
-    m_dQPModel.offsetAbs = unsigned((offset < 0 ? -offset : offset) * (1 << m_dQPModel.offsetFracPrec));
-    m_dQPModel.offsetInt = m_dQPModel.offsetAbs >> m_dQPModel.offsetFracPrec;
-    m_dQPModel.offsetFrac = m_dQPModel.offsetAbs - (m_dQPModel.offsetInt << m_dQPModel.offsetFracPrec);
-    m_dQPModel.maxQPSign = QPMax < 0 ? 1 : 0;
-    m_dQPModel.maxQPAbs = m_dQPModel.maxQPSign ? -QPMax : QPMax;
-    m_dQPModel.minQPSign = QPMin < 0 ? 1 : 0;
-    m_dQPModel.minQPAbs = m_dQPModel.minQPSign ? -QPMin : QPMin;
-  }
 };// END CLASS DEFINITION EncReshape
 
 //! \}

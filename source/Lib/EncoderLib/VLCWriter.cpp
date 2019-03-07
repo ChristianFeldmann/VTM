@@ -368,6 +368,10 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 #if JVET_M0132
 void HLSWriter::codeAPS( APS* pcAPS)
 {
+#if ENABLE_TRACING
+  xTraceAPSHeader();
+#endif
+
   AlfSliceParam param = pcAPS->getAlfAPSParam();
   WRITE_CODE(pcAPS->getAPSId(), 5, "adaptation_parameter_set_id");
 

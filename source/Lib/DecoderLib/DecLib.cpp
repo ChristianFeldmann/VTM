@@ -759,6 +759,11 @@ void DecLib::xActivateParameterSets()
     m_parameterSetManager.clearSPSChangedFlag(sps->getSPSId());
     m_parameterSetManager.clearPPSChangedFlag(pps->getPPSId());
 
+#if JVET_M0132  //Hendry
+    if (aps != 0)
+      m_parameterSetManager.clearAPSChangedFlag(aps->getAPSId());
+#endif
+
     if (false == m_parameterSetManager.activatePPS(m_apcSlicePilot->getPPSId(),m_apcSlicePilot->isIRAP()))
     {
       THROW("Parameter set activation failed!");
@@ -905,7 +910,7 @@ void DecLib::xActivateParameterSets()
       EXIT("Error - a new PPS has been decoded while processing a picture");
     }
 #if JVET_M0132
-    if (m_parameterSetManager.getAPSChangedFlag(aps->getAPSId()))
+    if (aps && m_parameterSetManager.getAPSChangedFlag(aps->getAPSId()))
     {
       EXIT("Error - a new APS has been decoded while processing a picture");
     }

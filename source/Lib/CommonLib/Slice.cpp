@@ -2854,6 +2854,13 @@ void xTracePPSHeader()
   DTRACE( g_trace_ctx, D_HEADER, "=========== Picture Parameter Set  ===========\n" );
 }
 
+#if JVET_M0132
+void xTraceAPSHeader()
+{
+  DTRACE(g_trace_ctx, D_HEADER, "=========== Adaptation Parameter Set  ===========\n");
+}
+#endif
+
 void xTraceSliceHeader()
 {
   DTRACE( g_trace_ctx, D_HEADER, "=========== Slice ===========\n" );

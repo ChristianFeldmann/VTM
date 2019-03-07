@@ -610,12 +610,15 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 #if JVET_M0132
 void HLSyntaxReader::parseAPS(APS* aps)
 {
+#if ENABLE_TRACING
+  xTraceAPSHeader();
+#endif
+
   uint32_t  code;
 
   READ_CODE(5, code, "adaptation_parameter_set_id");
   aps->setAPSId(code);
 
-  //uint32_t  code = 1;
   AlfSliceParam param = aps->getAlfAPSParam();
   param.enabledFlag[COMPONENT_Y] = true;
 
@@ -649,6 +652,7 @@ void HLSyntaxReader::parseAPS(APS* aps)
   xReadRbspTrailingBits();
 }
 #endif
+
 void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
 {
 #if ENABLE_TRACING

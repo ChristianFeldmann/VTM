@@ -2383,6 +2383,9 @@ void xTraceVPSHeader();
 #endif
 void xTraceSPSHeader();
 void xTracePPSHeader();
+#if JVET_M0132
+void xTraceAPSHeader();
+#endif
 void xTraceSliceHeader();
 void xTraceAccessUnitDelimiter();
 #endif

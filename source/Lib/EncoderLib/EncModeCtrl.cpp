@@ -273,7 +273,9 @@ int EncModeCtrl::calculateLumaDQP( const CPelBuf& rcOrg )
     avg = ( double ) maxVal * m_pcEncCfg->getLumaLevelToDeltaQPMapping().maxMethodWeight;
   }
 #endif
-  int lumaIdx = Clip3<int>( 0, int( LUMA_LEVEL_TO_DQP_LUT_MAXSIZE ) - 1, int( avg + 0.5 ) );
+  int lumaBD = m_pcEncCfg->getBitDepth(CHANNEL_TYPE_LUMA);
+  int lumaIdxOrg = Clip3<int>(0, int(1 << lumaBD) - 1, int(avg + 0.5));
+  int lumaIdx = lumaBD < 10 ? lumaIdxOrg << (10 - lumaBD) : lumaBD > 10 ? lumaIdxOrg >> (lumaBD - 10) : lumaIdxOrg;
   int QP = m_lumaLevelToDeltaQPLUT[lumaIdx];
   return QP;
 }

@@ -1799,6 +1799,15 @@ void InterPrediction::xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYu
     Mv startMv = mergeMV[refId];
     clipMv(startMv, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps);
 
+#if JVET_M0445_MCTS_DEC_CHECK
+    if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvForMCTSConstraint( pu, startMv, MV_PRECISION_INTERNAL ) )
+    {
+      const Area& tileArea = pu.cs->picture->mctsInfo.getTileArea();
+      printf( "Attempt an access over tile boundary at block %d,%d %d,%d with MV %d,%d (in Tile TL: %d,%d BR: %d,%d)\n",
+        pu.lx(), pu.ly(), pu.lwidth(), pu.lheight(), startMv.getHor(), startMv.getVer(), tileArea.topLeft().x, tileArea.topLeft().y, tileArea.bottomRight().x, tileArea.bottomRight().y );
+      THROW( "MCTS constraint failed!" );
+    }
+#endif
     for (int compID = 0; compID < MAX_NUM_COMPONENT; compID++)
     {
       int mvshiftTemp = mvShift + getComponentScaleX((ComponentID)compID, pu.chromaFormat);

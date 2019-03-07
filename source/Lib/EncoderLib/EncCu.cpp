@@ -2649,7 +2649,8 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       PU::spanMotionInfo( pu, mergeCtx );
 
 #if JVET_M0445_MCTS 
-      if( m_pcEncCfg->getMCTSEncConstraint() && ( !( MCTSHelper::checkMvBufferForMCTSConstraint( pu ) ) ) )
+      bool isDMVR = PU::checkDMVRCondition( pu );
+      if( ( isDMVR && MCTSHelper::isRefBlockAtRestrictedTileBoundary( pu ) ) || ( !isDMVR && !( MCTSHelper::checkMvBufferForMCTSConstraint( pu ) ) ) )
       {
         // Do not use this mode
         tempCS->initStructData( encTestMode.qp, encTestMode.lossless );

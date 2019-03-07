@@ -60,7 +60,7 @@ void MCTSInfo::init( CodingStructure* cs, int ctuAddr )
 
 Area MCTSInfo::getTileAreaSubPelRestricted( const PredictionUnit &pu )
 {
-  const int offLT = 4;
+  const int offLT = 3;
   const int offRB = 4;
   return MCTSHelper::getTileAreaRestricted( m_tileArea, offLT, offRB );
 }
@@ -260,19 +260,23 @@ bool MCTSHelper::checkMvBufferForMCTSConstraint( const PredictionUnit &pu, bool 
 
   return true;
 }
-
-bool MCTSHelper::checkMvForMCTSConstraint( const PredictionUnit &pu, const Mv& mv )
+bool MCTSHelper::checkMvIsNotInRestrictedArea( const PredictionUnit &pu, const Mv& mv, const Area& restrArea, const MvPrecision mvPrec )
 {
-  Mv cTestMVRestr = mv;
-  cTestMVRestr.changePrecision( MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL );
-  MCTSHelper::clipMvToArea( cTestMVRestr, pu.Y(), pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu ), *pu.cs->sps );
-  cTestMVRestr.changePrecision( MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER );
-  if( cTestMVRestr != mv )
+  CHECKD( mvPrec < MV_PRECISION_INT, "Wrong MV precision!" );
+  Mv testMv = mv;
+  testMv >>= mvPrec - MV_PRECISION_INT;
+  Area targetArea = pu.Y();
+  targetArea.repositionTo( targetArea.offset( testMv.getHor(), testMv.getVer() ) );
+  if( !restrArea.contains( targetArea ) )
   {
     // Skip this pos
     return false;
   }
   return true;
+}
+bool MCTSHelper::checkMvForMCTSConstraint( const PredictionUnit &pu, const Mv& mv, const MvPrecision mvPrec )
+{
+  return checkMvIsNotInRestrictedArea( pu, mv, pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu ), mvPrec );
 }
 
 #endif

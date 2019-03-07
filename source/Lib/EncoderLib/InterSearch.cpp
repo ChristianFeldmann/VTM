@@ -3138,13 +3138,14 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
     if( m_pcEncCfg->getMCTSEncConstraint() )
     {
       Area curTileAreaSubPelRestricted = pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu );
-      Area targetArea = pu.cu->Y();
-      targetArea.repositionTo( targetArea.offset( rcMv.getHor(), rcMv.getVer() ) );
-      // If sub-pel filter samples are not inside of allowed area
-      // Variant 1: clip full-pel vector, do sub-pel refinement for clipped MV
-      if( !curTileAreaSubPelRestricted.contains( targetArea ) )
+      // Area adjustment, because subpel refinement is going to (x-1;y-1) direction
+      curTileAreaSubPelRestricted.x += 1;
+      curTileAreaSubPelRestricted.y += 1;
+      curTileAreaSubPelRestricted.width -= 1;
+      curTileAreaSubPelRestricted.height -= 1;
+      if( ! MCTSHelper::checkMvIsNotInRestrictedArea( pu, rcMv, curTileAreaSubPelRestricted, MV_PRECISION_INT ) )
       {
-        MCTSHelper::clipMvToArea( rcMv, pu.cu->Y(), curTileAreaSubPelRestricted, *pu.cs->sps, 0 );
+        MCTSHelper::clipMvToArea( rcMv, pu.Y(), curTileAreaSubPelRestricted, *pu.cs->sps, 0 );
       }
     }
 #endif

@@ -5649,11 +5649,11 @@ bool CU::isGBiIdxCoded( const CodingUnit &cu )
 #if JVET_M0111_WP_GBI
 		WPScalingParam *wp0;
 		WPScalingParam *wp1;
-		int iRefIdx0 = cu.firstPU->refIdx[REF_PIC_LIST_0];
-		int iRefIdx1 = cu.firstPU->refIdx[REF_PIC_LIST_1];
+		int refIdx0 = cu.firstPU->refIdx[REF_PIC_LIST_0];
+		int refIdx1 = cu.firstPU->refIdx[REF_PIC_LIST_1];
 
-		cu.cs->slice->getWpScaling(REF_PIC_LIST_0, iRefIdx0, wp0);
-		cu.cs->slice->getWpScaling(REF_PIC_LIST_1, iRefIdx1, wp1);
+		cu.cs->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
+		cu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
 		if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
 			|| wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag)
 			)

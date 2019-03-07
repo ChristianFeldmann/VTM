@@ -1979,7 +1979,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 #if JVET_M0111_WP_GBI
   WPScalingParam *wp0;
   WPScalingParam *wp1;
-  int try_bipred = 0;
+  int tryBipred = 0;
 #endif
 #if JVET_M0246_AFFINE_AMVR
   bool checkAffine    = pu.cu->imv == 0 || pu.cu->slice->getSPS()->getAffineAmvrEnabledFlag();
@@ -2164,7 +2164,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         bool doBiPred = true;
 #endif
 #if JVET_M0111_WP_GBI
-		try_bipred = 1;
+		tryBipred = 1;
 #endif
         cMvBi[0] = cMv[0];
         cMvBi[1] = cMv[1];
@@ -2513,7 +2513,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
     uiBits [1] = bitsValidList1;
     uiCost [1] = costValidList1;
 #if JVET_M0111_WP_GBI
-	if (cu.cs->pps->getWPBiPred() == true && try_bipred && (gbiIdx != GBI_DEFAULT))
+	if (cu.cs->pps->getWPBiPred() == true && tryBipred && (gbiIdx != GBI_DEFAULT))
 	{
 		CHECK(iRefIdxBi[0]<0, "Invalid picture reference index");
 		CHECK(iRefIdxBi[1]<0, "Invalid picture reference index");
@@ -4243,7 +4243,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   const bool affineAmvrEnabled = pu.cu->slice->getSPS()->getAffineAmvrEnabledFlag();
 #endif
 #if  JVET_M0111_WP_GBI
-  int try_bipred = 0;
+  int tryBipred = 0;
   WPScalingParam *wp0;
   WPScalingParam *wp1;
 #endif
@@ -4669,7 +4669,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   if ( slice.isInterB() && !PU::isBipredRestriction(pu) )
   {
 #if  JVET_M0111_WP_GBI
-	  try_bipred = 1;
+	  tryBipred = 1;
 #endif
     // Set as best list0 and list1
     iRefIdxBi[0] = iRefIdx[0];
@@ -4934,7 +4934,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   uiBits[1]  = bitsValidList1;
   uiCost[1]  = costValidList1;
 #if JVET_M0111_WP_GBI
-  if (pu.cs->pps->getWPBiPred() == true && try_bipred && (gbiIdx != GBI_DEFAULT))
+  if (pu.cs->pps->getWPBiPred() == true && tryBipred && (gbiIdx != GBI_DEFAULT))
   {
 	  CHECK(iRefIdxBi[0]<0, "Invalid picture reference index");
 	  CHECK(iRefIdxBi[1]<0, "Invalid picture reference index");

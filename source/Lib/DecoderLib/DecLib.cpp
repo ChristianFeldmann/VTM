@@ -393,11 +393,11 @@ DecLib::DecLib()
   , m_seiReader()
   , m_cLoopFilter()
   , m_cSAO()
-#if JVET_J0090_MEMORY_BANDWITH_MEASURE
-  , m_cacheModel()
-#endif
 #if JVET_M0427_INLOOP_RESHAPER
   , m_cReshaper()
+#endif
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+  , m_cacheModel()
 #endif
   , m_pcPic(NULL)
   , m_prevPOC(MAX_INT)

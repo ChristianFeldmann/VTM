@@ -242,7 +242,11 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
 int EncModeCtrl::xComputeDQP( const CodingStructure &cs, const Partitioner &partitioner )
 {
   Picture* picture    = cs.picture;
+#if JVET_M0113_M0188_QG_SIZE
+  unsigned uiAQDepth  = std::min( partitioner.currSubdiv/2, ( uint32_t ) picture->aqlayer.size() - 1 );
+#else
   unsigned uiAQDepth  = std::min( partitioner.currDepth, ( uint32_t ) picture->aqlayer.size() - 1 );
+#endif
   AQpLayer* pcAQLayer = picture->aqlayer[uiAQDepth];
 
   double dMaxQScale   = pow( 2.0, m_pcEncCfg->getQPAdaptationRange() / 6.0 );

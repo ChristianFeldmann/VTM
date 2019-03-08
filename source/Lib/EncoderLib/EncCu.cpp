@@ -2648,7 +2648,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       }
       PU::spanMotionInfo( pu, mergeCtx );
 
-#if JVET_M0445_MCTS 
+#if JVET_M0445_MCTS && JVET_M0147_DMVR
       bool isDMVR = PU::checkDMVRCondition( pu );
       if( ( isDMVR && MCTSHelper::isRefBlockAtRestrictedTileBoundary( pu ) ) || ( !isDMVR && !( MCTSHelper::checkMvBufferForMCTSConstraint( pu ) ) ) )
       {

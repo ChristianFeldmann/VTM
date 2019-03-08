@@ -52,7 +52,7 @@
 
 #define JVET_M0111_WP_GBI                                 1 // Block level control gbi according to WP
 
-#define JVET_M0445_MCTS                                   1 // Motion constrained tile sets
+#define JVET_M0445_MCTS                                   0 // Motion constrained tile sets
 #if JVET_M0445_MCTS
 #define JVET_M0445_MCTS_DEC_CHECK                         1 // Check at decoder side the MCTS restrictions
 #endif

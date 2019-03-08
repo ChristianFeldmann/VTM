@@ -202,7 +202,6 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   {
                     cu->slice = pcEncPic->cs->slice;
                   }
-                  pcEncPic->cs->slice->copyMotionLUTs( pic->slices.back()->getMotionLUTs(), pcEncPic->slices.back()->getMotionLUTs());
                 }
                 else
                 {

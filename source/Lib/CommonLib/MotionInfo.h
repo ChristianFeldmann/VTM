@@ -259,10 +259,15 @@ public:
 };
 struct LutMotionCand
 {
-  MotionInfo*   motionCand;
-  int  currCnt;
+  static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lut;
 #if JVET_M0483_IBC
-  int  currCntIBC;
+  static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutIbc;
+#endif
+#if JVET_M0170_MRG_SHARELIST
+  static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShare;
+#if JVET_M0483_IBC
+  static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShareIbc;
+#endif
 #endif
 };
 #endif // __MOTIONINFO__

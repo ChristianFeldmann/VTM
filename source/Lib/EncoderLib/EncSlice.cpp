@@ -1700,7 +1700,16 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #endif
     if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == 0)
     {
-      pcSlice->resetMotionLUTs();
+      cs.motionLut.lut.resize(0);
+#if JVET_M0483_IBC
+      cs.motionLut.lutIbc.resize(0);
+#endif
+#if JVET_M0170_MRG_SHARELIST
+      cs.motionLut.lutShare.resize(0);
+#if JVET_M0483_IBC
+      cs.motionLut.lutShareIbc.resize(0);
+#endif
+#endif
     }
 
 #if ENABLE_WPP_PARALLELISM

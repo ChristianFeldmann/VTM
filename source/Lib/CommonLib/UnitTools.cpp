@@ -1016,7 +1016,7 @@ bool PU::xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const 
 
 #if JVET_L0090_PAIR_AVG
 
-bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
+bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
 #if JVET_M0483_IBC==0
   , int mmvdList
 #endif
@@ -1029,7 +1029,7 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool canFastExit
 )
 #else
 
-bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter[MRG_MAX_NUM_CANDS], bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
+bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, bool isCandInter[MRG_MAX_NUM_CANDS], bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
   , int mmvdList
 )
 #endif
@@ -1037,6 +1037,7 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
 #if JVET_M0483_IBC==0
   int mrgCandIdxIBC = mrgCandIdx;
 #endif
+  const Slice& slice = *cs.slice;
   MotionInfo miNeighbor;
   bool hasPruned[MRG_MAX_NUM_CANDS];
   memset(hasPruned, 0, MRG_MAX_NUM_CANDS * sizeof(bool));
@@ -1044,38 +1045,24 @@ bool PU::addMergeHMVPCand(const Slice &slice, MergeCtx& mrgCtx, bool isCandInter
   {
     hasPruned[subPuMvpPos] = true;
   }
+#if JVET_M0483_IBC
 #if JVET_M0170_MRG_SHARELIST
-#if JVET_M0483_IBC
-  int num_avai_candInLUT = ibcFlag ? (isShared ? slice.getAvailableLUTBkupIBCMrgNum() : slice.getAvailableLUTIBCMrgNum()) : (isShared ? slice.getAvailableLUTBkupMrgNum() : slice.getAvailableLUTMrgNum());
-  int offset = ibcFlag ? MAX_NUM_HMVP_CANDS : 0;
+  auto &lut = ibcFlag ? ( isShared ? cs.motionLut.lutShareIbc : cs.motionLut.lutIbc ) : ( isShared ? cs.motionLut.lutShare : cs.motionLut.lut );
 #else
-  int num_avai_candInLUT = (isShared ? slice.getAvailableLUTBkupMrgNum() : slice.getAvailableLUTMrgNum());
+  auto &lut = ibcFlag ? cs.motionLut.lutIbc : cs.motionLut.lut;
 #endif
 #else
-#if JVET_M0483_IBC
-  int num_avai_candInLUT = ibcFlag ? slice.getAvailableLUTIBCMrgNum() : slice.getAvailableLUTMrgNum();
-  int offset = ibcFlag ? MAX_NUM_HMVP_CANDS : 0;
+#if JVET_M0170_MRG_SHARELIST
+  auto &lut = isShared ? cs.motionLut.lutShare : cs.motionLut.lut;
 #else
-  int num_avai_candInLUT = slice.getAvailableLUTMrgNum();
+  auto &lut = cs.motionLut.lut;
 #endif
 #endif
+  int num_avai_candInLUT = (int) lut.size();
 
   for (int mrgIdx = 1; mrgIdx <= num_avai_candInLUT; mrgIdx++)
   {
-#if JVET_M0170_MRG_SHARELIST
-#if JVET_M0483_IBC
-    miNeighbor = ibcFlag ? (isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx + offset) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx + offset))
-      : (isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx));
-#else
-    miNeighbor = isShared ? slice.getMotionInfoFromLUTBkup(num_avai_candInLUT - mrgIdx) : slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx);
-#endif
-#else
-#if JVET_M0483_IBC
-    miNeighbor = slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx + offset);
-#else
-    miNeighbor = slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx);
-#endif
-#endif
+    miNeighbor = lut[num_avai_candInLUT - mrgIdx];
     mrgCtx.interDirNeighbours[cnt] = miNeighbor.interDir;
     mrgCtx.mvFieldNeighbours[cnt << 1].setMvField(miNeighbor.mv[0], miNeighbor.refIdx[0]);
     if (slice.isInterB())
@@ -1315,7 +1302,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 #endif
 
 #if JVET_L0090_PAIR_AVG
-    bool bFound = addMergeHMVPCand(slice, mrgCtx, canFastExit
+    bool bFound = addMergeHMVPCand(cs, mrgCtx, canFastExit
       , mrgCandIdx
       , maxNumMergeCandMin1, cnt
 #if JVET_M0126_HMVP_MRG_PRUNING
@@ -1859,7 +1846,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #if JVET_M0170_MRG_SHARELIST
     bool  isShared = ((pu.Y().lumaSize().width != pu.shareParentSize.width) || (pu.Y().lumaSize().height != pu.shareParentSize.height));
 #endif
-    bool bFound = addMergeHMVPCand(slice, mrgCtx, canFastExit
+    bool bFound = addMergeHMVPCand(cs, mrgCtx, canFastExit
 #if JVET_M0483_IBC==0
       , (mmvdList != 0 && mrgCandIdx != -1) ? (const int) mrgCandIdxIBC : mrgCandIdx
 #else
@@ -3511,11 +3498,11 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
   int i = 0;
 #endif
 #if JVET_M0483_IBC
-  int offset = CU::isIBC(*pu.cu) ? MAX_NUM_HMVP_CANDS : 0;
-  int num_avai_candInLUT = CU::isIBC(*pu.cu) ? slice.getAvailableLUTIBCMrgNum() : slice.getAvailableLUTMrgNum();
+  auto &lut = CU::isIBC(*pu.cu) ? pu.cs->motionLut.lutIbc : pu.cs->motionLut.lut;
 #else
-  int num_avai_candInLUT = slice.getAvailableLUTMrgNum();
+  auto &lut = pu.cs->motionLut.lut;
 #endif
+  int num_avai_candInLUT = (int) lut.size();
   int num_allowedCand = std::min(MAX_NUM_HMVP_AVMPCANDS, num_avai_candInLUT);
 
   for (int mrgIdx = 1; mrgIdx <= num_allowedCand; mrgIdx++)
@@ -3525,17 +3512,9 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
       return;
     }
 #if JVET_M0117_AMVP_LIST_GEN
-#if JVET_M0483_IBC
-    neibMi = slice.getMotionInfoFromLUTs(mrgIdx - 1 + offset) ;
+    neibMi = lut[mrgIdx - 1];
 #else
-    neibMi = slice.getMotionInfoFromLUTs(mrgIdx - 1);
-#endif
-#else
-#if JVET_M0483_IBC
-    neibMi = slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx + offset);
-#else
-    neibMi = slice.getMotionInfoFromLUTs(num_avai_candInLUT - mrgIdx);
-#endif
+    neibMi = lut[num_avai_candInLUT - mrgIdx];
 #endif
 
     for (int predictorSource = 0; predictorSource < 2; predictorSource++)

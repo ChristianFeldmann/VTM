@@ -1426,6 +1426,11 @@ public:
                                                   for ( int k = 0; k < numEl; k++) *it++ = val;
                                                   return const_cast<iterator>( _pos ); }
 #endif
+
+  void            erase( const_iterator _pos )  { iterator it   = const_cast<iterator>( _pos ) - 1;
+                                                  iterator last = end() - 1;
+                                                  while( ++it != last ) *it = *( it + 1 );
+                                                  _size--; }
 };
 
 

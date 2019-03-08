@@ -131,7 +131,10 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         if ((currCU.shareParentPos.x >= 0) && (!(currCU.shareParentPos.x == prevTmpPos.x && currCU.shareParentPos.y == prevTmpPos.y)))
         {
           m_shareStateDec = GEN_ON_SHARED_BOUND;
-          cs.slice->copyMotionLUTs(cs.slice->getMotionLUTs(), cs.slice->m_MotionCandLuTsBkup);
+          cs.motionLut.lutShare = cs.motionLut.lut;
+#if JVET_M0483_IBC
+          cs.motionLut.lutShareIbc = cs.motionLut.lutIbc;
+#endif
         }
 
         if (currCU.shareParentPos.x < 0)
@@ -495,7 +498,21 @@ void DecCu::xReconInter(CodingUnit &cu)
   }
   }
   if (cu.Y().valid())
-  cu.slice->updateMotionLUTs(cu.slice->getMotionLUTs(), cu);
+  {
+    const PredictionUnit &pu = *cu.firstPU;
+    if (!cu.affine && !cu.triangle)
+    {
+      MotionInfo mi = pu.getMotionInfo();
+#if JVET_M0264_HMVP_WITH_GBIIDX
+      mi.GBiIdx = (mi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
+#endif
+#if JVET_M0483_IBC
+      cu.cs->addMiToLut(CU::isIBC(cu) ? cu.cs->motionLut.lutIbc : cu.cs->motionLut.lut, mi );
+#else
+      cu.cs->addMiToLut(cu.cs->motionLut.lut, mi);
+#endif
+    }
+  }
 
   if (cu.firstPU->mhIntraFlag)
   {

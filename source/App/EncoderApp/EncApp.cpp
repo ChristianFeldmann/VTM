@@ -112,6 +112,52 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setConformanceWindow                                 ( m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom );
   m_cEncLib.setFramesToBeEncoded                                 ( m_framesToBeEncoded );
 
+  //====== SPS constraint flags =======
+  m_cEncLib.setIntraOnlyConstraintFlag                           ( m_intraConstraintFlag );
+  m_cEncLib.setMaxBitDepthConstraintIdc                          ( m_bitDepthConstraint - 8 );
+  m_cEncLib.setMaxChromaFormatConstraintIdc                      ( m_chromaFormatConstraint );
+  m_cEncLib.setFrameConstraintFlag                               ( m_bFrameConstraintFlag );
+  m_cEncLib.setNoQtbttDualTreeIntraConstraintFlag                ( !m_dualTree );
+  m_cEncLib.setNoSaoConstraintFlag                               ( !m_bUseSAO );
+  m_cEncLib.setNoAlfConstraintFlag                               ( !m_alf );
+  m_cEncLib.setNoPcmConstraintFlag                               ( !m_usePCM );
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  m_cEncLib.setNoRefWraparoundConstraintFlag                     ( m_bNoRefWraparoundConstraintFlag );
+#endif
+  m_cEncLib.setNoTemporalMvpConstraintFlag                       ( m_TMVPModeId ? false : true );
+  m_cEncLib.setNoSbtmvpConstraintFlag                            ( m_SubPuMvpMode ? false : true );
+  m_cEncLib.setNoAmvrConstraintFlag                              ( m_bNoAmvrConstraintFlag );
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  m_cEncLib.setNoBdofConstraintFlag                              ( !m_BIO );
+#endif
+  m_cEncLib.setNoCclmConstraintFlag                              ( m_LMChroma ? false : true );
+#if JVET_M0464_UNI_MTS
+#if JVET_M0303_IMPLICIT_MTS
+  m_cEncLib.setNoMtsConstraintFlag                               ( (m_MTS || m_MTSImplicit) ? false : true );
+#else
+  m_cEncLib.setNoMtsConstraintFlag                               ( m_MTS ? false : true );
+#endif
+#else
+#if JVET_M0303_IMPLICIT_MTS
+  m_cEncLib.setNoMtsConstraintFlag                               ( (m_EMT || m_MTSImplicit) ? false : true );
+#else
+  m_cEncLib.setNoMtsConstraintFlag                               ( m_EMT ? false : true );
+#endif
+#endif
+  m_cEncLib.setNoAffineMotionConstraintFlag                      ( !m_Affine );
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  m_cEncLib.setNoGbiConstraintFlag                               ( !m_GBi );
+  m_cEncLib.setNoMhIntraConstraintFlag                           ( !m_MHIntra );
+  m_cEncLib.setNoTriangleConstraintFlag                          ( !m_Triangle );
+#endif
+  m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  m_cEncLib.setNoCurrPicRefConstraintFlag                        ( !m_IBCMode );
+  m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
+#endif
+  m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
+  m_cEncLib.setNoSignDataHidingConstraintFlag                    ( !m_signDataHidingEnabledFlag );
+
   //====== Coding Structure ========
   m_cEncLib.setIntraPeriod                                       ( m_iIntraPeriod );
   m_cEncLib.setDecodingRefreshType                               ( m_iDecodingRefreshType );

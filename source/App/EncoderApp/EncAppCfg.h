@@ -117,6 +117,39 @@ protected:
   bool      m_bClipOutputVideoToRec709Range;
   bool      m_packedYUVMode;                                  ///< If true, output 10-bit and 12-bit YUV data as 5-byte and 3-byte (respectively) packed YUV data
 
+  bool      m_bIntraOnlyConstraintFlag;
+  uint32_t  m_maxBitDepthConstraintIdc;
+  uint32_t  m_maxChromaFormatConstraintIdc;
+  bool      m_bFrameConstraintFlag;
+  bool      m_bNoQtbttDualTreeIntraConstraintFlag;
+  bool      m_bNoSaoConstraintFlag;
+  bool      m_bNoAlfConstraintFlag;
+  bool      m_bNoPcmConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      m_bNoRefWraparoundConstraintFlag;
+#endif
+  bool      m_bNoTemporalMvpConstraintFlag;
+  bool      m_bNoSbtmvpConstraintFlag;
+  bool      m_bNoAmvrConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      m_bNoBdofConstraintFlag;
+#endif
+  bool      m_bNoCclmConstraintFlag;
+  bool      m_bNoMtsConstraintFlag;
+  bool      m_bNoAffineMotionConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      m_bNoGbiConstraintFlag;
+  bool      m_bNoMhIntraConstraintFlag;
+  bool      m_bNoTriangleConstraintFlag;
+#endif
+  bool      m_bNoLadfConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool      m_bNoCurrPicRefConstraintFlag;
+  bool      m_bNoQpDeltaConstraintFlag;
+#endif
+  bool      m_bNoDepQuantConstraintFlag;
+  bool      m_bNoSignDataHidingConstraintFlag;
+
   // profile/level
   Profile::Name m_profile;
   Level::Tier   m_levelTier;

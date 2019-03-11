@@ -345,32 +345,6 @@ void initROM()
 {
   int c;
 
-#if RExt__HIGH_BIT_DEPTH_SUPPORT
-  {
-    c = 64;
-    const double s = sqrt((double)c) * (64 << COM16_C806_TRANS_PREC);
-
-
-    for (int k = 0; k < c; k++)
-    {
-      for (int n = 0; n < c; n++)
-      {
-        double w0, v;
-        const double PI = 3.14159265358979323846;
-
-        // DCT-II
-        w0 = k == 0 ? sqrt(0.5) : 1;
-        v = cos(PI*(n + 0.5)*k / c) * w0 * sqrt(2.0 / c);
-        short sv = (short)(s * v + (v > 0 ? 0.5 : -0.5));
-        if (g_aiT64[0][0][c*c + k*c + n] != sv)
-        {
-          msg(WARNING, "trap");
-        }
-      }
-    }
-  }
-#endif
-
   // g_aucConvertToBit[ x ]: log2(x/4), if x=4 -> 0, x=8 -> 1, x=16 -> 2, ...
   // g_aucLog2[ x ]: log2(x), if x=1 -> 0, x=2 -> 1, x=4 -> 2, x=8 -> 3, x=16 -> 4, ...
   ::memset(g_aucLog2, 0, sizeof(g_aucLog2));

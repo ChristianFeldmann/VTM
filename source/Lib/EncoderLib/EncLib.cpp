@@ -822,50 +822,39 @@ void EncLib::xInitVPS(VPS &vps, const SPS &sps)
 
 void EncLib::xInitSPS(SPS &sps)
 {
-  sps.setIntraOnlyConstraintFlag(m_intraConstraintFlag);
-  sps.setMaxBitDepthConstraintIdc(m_bitDepthConstraintValue - 8);
-  sps.setMaxChromaFormatConstraintIdc(m_chromaFormatConstraintValue);
+  sps.setIntraOnlyConstraintFlag(m_bIntraOnlyConstraintFlag);
+  sps.setMaxBitDepthConstraintIdc(m_maxBitDepthConstraintIdc);
+  sps.setMaxChromaFormatConstraintIdc(m_maxChromaFormatConstraintIdc);
   sps.setFrameConstraintFlag(m_frameOnlyConstraintFlag);
-  sps.setNoQtbttDualTreeIntraConstraintFlag(!m_dualITree);
-  sps.setNoSaoConstraintFlag(!m_bUseSAO);
-  sps.setNoAlfConstraintFlag(!m_alf);
-  sps.setNoPcmConstraintFlag(!m_usePCM);
+  sps.setNoQtbttDualTreeIntraConstraintFlag(m_bNoQtbttDualTreeIntraConstraintFlag);
+  sps.setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
+  sps.setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
+  sps.setNoPcmConstraintFlag(m_bNoPcmConstraintFlag);
 #if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
-  sps.setNoRefWraparoundConstraintFlag(!m_bNoRefWraparoundConstraintFlag);
+  sps.setNoRefWraparoundConstraintFlag(m_bNoRefWraparoundConstraintFlag);
 #endif
-  sps.setNoTemporalMvpConstraintFlag(m_TMVPModeId ? false : true);
-  sps.setNoSbtmvpConstraintFlag(m_SubPuMvpMode ? false : true);
-  sps.setNoAmvrConstraintFlag(!m_bNoAmvrConstraintFlag);
+  sps.setNoTemporalMvpConstraintFlag(m_bNoTemporalMvpConstraintFlag);
+  sps.setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
+  sps.setNoAmvrConstraintFlag(m_bNoAmvrConstraintFlag);
 #if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
-  sps.setNoBdofConstraintFlag(!m_BIO);
+  sps.setNoBdofConstraintFlag(m_bNoBdofConstraintFlag);
 #endif
-  sps.setNoCclmConstraintFlag(m_LMChroma ? false : true);
-#if JVET_M0464_UNI_MTS
-#if JVET_M0303_IMPLICIT_MTS
-  sps.setNoMtsConstraintFlag((m_IntraMTS || m_InterMTS || m_ImplicitMTS) ? false : true);
-#else
-  sps.setNoMtsConstraintFlag((m_IntraMTS || m_InterMTS) ? false : true);
-#endif
-#else
-#if JVET_M0303_IMPLICIT_MTS
-  sps.setNoMtsConstraintFlag((m_IntraEMT || m_InterEMT || m_ImplicitMTS) ? false : true);
-#else
-  sps.setNoMtsConstraintFlag((m_IntraEMT || m_InterEMT) ? false : true);
-#endif
-#endif
-  sps.setNoAffineMotionConstraintFlag(!m_Affine);
+  sps.setNoCclmConstraintFlag(m_bNoCclmConstraintFlag);
+  sps.setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
+  sps.setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
 #if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
-  sps.setNoGbiConstraintFlag(!m_GBi);
-  sps.setNoMhIntraConstraintFlag(!m_MHIntra);
-  sps.setNoTriangleConstraintFlag(!m_Triangle);
+  sps.setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
+  sps.setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
+  sps.setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
 #endif
-  sps.setNoLadfConstraintFlag(!m_LadfEnabled);
+  sps.setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
 #if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
-  sps.setNoCurrPicRefConstraintFlag(!m_IBCMode);
-  sps.setNoQpDeltaConstraintFlag(!m_bNoQpDeltaConstraintFlag);
+  sps.setNoCurrPicRefConstraintFlag(m_bNoCurrPicRefConstraintFlag);
+  sps.setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
 #endif
-  sps.setNoDepQuantConstraintFlag(!m_DepQuantEnabledFlag);
-  sps.setNoSignDataHidingConstraintFlag(!m_SignDataHidingEnabledFlag);
+  sps.setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
+  sps.setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
+
   ProfileTierLevel& profileTierLevel = *sps.getPTL()->getGeneralPTL();
   profileTierLevel.setLevelIdc                    (m_level);
   profileTierLevel.setTierFlag                    (m_levelTier);

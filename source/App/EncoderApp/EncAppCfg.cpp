@@ -108,6 +108,38 @@ EncAppCfg::EncAppCfg()
 , m_snrInternalColourSpace(false)
 , m_outputInternalColourSpace(false)
 , m_packedYUVMode(false)
+, m_bIntraOnlyConstraintFlag(false)
+, m_maxBitDepthConstraintIdc(0)
+, m_maxChromaFormatConstraintIdc(CHROMA_420)
+, m_bFrameConstraintFlag(false)
+, m_bNoQtbttDualTreeIntraConstraintFlag(false)
+, m_bNoSaoConstraintFlag(false)
+, m_bNoAlfConstraintFlag(false)
+, m_bNoPcmConstraintFlag(false)
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+, m_bNoRefWraparoundConstraintFlag(false)
+#endif
+, m_bNoTemporalMvpConstraintFlag(false)
+, m_bNoSbtmvpConstraintFlag(false)
+, m_bNoAmvrConstraintFlag(false)
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+, m_bNoBdofConstraintFlag(false)
+#endif
+, m_bNoCclmConstraintFlag(false)
+, m_bNoMtsConstraintFlag(false)
+, m_bNoAffineMotionConstraintFlag(false)
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+, m_bNoGbiConstraintFlag(false)
+, m_bNoMhIntraConstraintFlag(false)
+, m_bNoTriangleConstraintFlag(false)
+#endif
+, m_bNoLadfConstraintFlag(false)
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+, m_bNoCurrPicRefConstraintFlag(false)
+, m_bNoQpDeltaConstraintFlag(false)
+#endif
+, m_bNoDepQuantConstraintFlag(false)
+, m_bNoSignDataHidingConstraintFlag(false)
 #if EXTENSION_360_VIDEO
 , m_ext360(*this)
 #endif

@@ -247,7 +247,7 @@ void FDReader::parseFillerData(InputBitstream* bs, uint32_t &fdSize)
   while( m_pcBitstream->getNumBitsLeft() >8 )
   {
     READ_CODE (8, ffByte, "ff_byte");
-    CHECK(ffByte!=0xff, "Invalid fillter data not '0xff'");
+    CHECK(ffByte!=0xff, "Invalid filler data : not '0xff'");
     fdSize++;
   }
   xReadRbspTrailingBits();

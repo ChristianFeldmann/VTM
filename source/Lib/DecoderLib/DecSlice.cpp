@@ -99,7 +99,10 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 
   cs.picture->resizeSAO(cs.pcv->sizeInCtus, 0);
 
-  cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
+  if (slice->getSliceCurStartCtuTsAddr() == 0)
+  {
+    cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
+  }
 
   const unsigned numSubstreams = slice->getNumberOfSubstreamSizes() + 1;
 

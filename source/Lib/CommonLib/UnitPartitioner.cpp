@@ -131,6 +131,8 @@ void Partitioner::copyState( const Partitioner& other )
   currTrDepth = other.currTrDepth;
 #if JVET_M0113_M0188_QG_SIZE
   currSubdiv  = other.currSubdiv;
+  currQgPos   = other.currQgPos;
+  currQgChromaPos = other.currQgChromaPos;
 #endif
   currImplicitBtDepth
               = other.currImplicitBtDepth;
@@ -241,6 +243,8 @@ void QTBTPartitioner::initCtu( const UnitArea& ctuArea, const ChannelType _chTyp
   currQtDepth = 0;
 #if JVET_M0113_M0188_QG_SIZE
   currSubdiv  = 0;
+  currQgPos   = ctuArea.lumaPos();
+  currQgChromaPos = ctuArea.chromaPos();
 #endif
   currImplicitBtDepth = 0;
   chType      = _chType;
@@ -344,8 +348,14 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
 #endif
   }
 #if JVET_M0113_M0188_QG_SIZE
-  m_partStack.back().qgEnable       = qgEnable       && (currSubdiv <= cs.pps->getCuQpDeltaSubdiv());
-  m_partStack.back().qgChromaEnable = qgChromaEnable && (currSubdiv <= cs.pps->getPpsRangeExtension().getCuChromaQpOffsetSubdiv());
+  qgEnable       &= (currSubdiv <= cs.pps->getCuQpDeltaSubdiv());
+  qgChromaEnable &= (currSubdiv <= cs.pps->getPpsRangeExtension().getCuChromaQpOffsetSubdiv());
+  m_partStack.back().qgEnable       = qgEnable;
+  m_partStack.back().qgChromaEnable = qgChromaEnable;
+  if (qgEnable)
+    currQgPos = currArea().lumaPos();
+  if (qgChromaEnable)
+    currQgChromaPos = currArea().chromaPos();
 #endif
 }
 
@@ -667,6 +677,10 @@ void QTBTPartitioner::exitCurrSplit()
   currDepth--;
 #if JVET_M0113_M0188_QG_SIZE
   currSubdiv--;
+  if( currQgEnable() )
+    currQgPos = currArea().lumaPos();
+  if( currQgChromaEnable() )
+    currQgChromaPos = currArea().chromaPos();
 #endif
 #if _DEBUG
   m_currArea = m_partStack.back().parts[m_partStack.back().idx];
@@ -740,6 +754,12 @@ bool QTBTPartitioner::nextPart( const CodingStructure &cs, bool autoPop /*= fals
       else               currSubdiv++;
 #endif
     }
+#if JVET_M0113_M0188_QG_SIZE
+  if( currQgEnable() )
+    currQgPos = currArea().lumaPos();
+  if( currQgChromaEnable() )
+    currQgChromaPos = currArea().chromaPos();
+#endif
 #if _DEBUG
     m_currArea = m_partStack.back().parts[currIdx];
 #endif

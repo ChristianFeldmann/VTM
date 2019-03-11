@@ -779,6 +779,8 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 #if REUSE_CU_RESULTS
     else if( currTestMode.type == ETM_RECO_CACHED )
     {
+#pragma message "TODO: fix missing currQP init for RECO_CACHED ?"
+//      tempCS->currQP[partitioner.chType] = currTestMode.qp;
       xReuseCachedResult( tempCS, bestCS, partitioner );
     }
 #endif
@@ -1141,7 +1143,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   const bool bIsLosslessMode  = false; // False at this level. Next level down may set it to true.
   const int oldPrevQp         = tempCS->prevQP[partitioner.chType];
   const auto oldMotionLut     = tempCS->motionLut;
-#if !JVET_M0113_M0188_QG_SIZE
+#if !JVET_M0113_M0188_QG_SIZE || ENABLE_QPA_SUB_CTU
   const PPS &pps              = *tempCS->pps;
   const uint32_t currDepth    = partitioner.currDepth;
 #endif
@@ -1206,8 +1208,13 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   if (cost > bestCS->cost
 #endif
 #if ENABLE_QPA_SUB_CTU
+#if JVET_M0113_M0188_QG_SIZE
+    || (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && pps.getUseDQP() && (pps.getCuQpDeltaSubdiv() > 0) && (split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT) &&
+        (currDepth == 0)) // force quad-split or no split at CTU level
+#else
     || (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && pps.getUseDQP() && (pps.getMaxCuDQPDepth() > 0) && (split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT) &&
         (partitioner.currArea().lwidth() == tempCS->pcv->maxCUWidth) && (partitioner.currArea().lheight() == tempCS->pcv->maxCUHeight)) // force quad-split or no split at CTU level
+#endif
 #endif
     )
   {

@@ -129,6 +129,8 @@ public:
   unsigned currMtDepth;
 #if JVET_M0113_M0188_QG_SIZE
   unsigned currSubdiv;
+  Position currQgPos;
+  Position currQgChromaPos;
 #endif
 
   unsigned currImplicitBtDepth;

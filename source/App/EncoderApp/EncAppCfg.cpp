@@ -1940,7 +1940,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     && ((1 << (MAX_TB_LOG2_SIZEY + 1)) == m_uiCTUSize) && (m_iSourceWidth > 512 || m_iSourceHeight > 320))
 #endif
   {
+#if JVET_M0113_M0188_QG_SIZE
+    m_cuQpDeltaSubdiv = 2;
+#else
     m_iMaxCuDQPDepth = 1;
+#endif
   }
 #else
  #if QP_SWITCHING_FOR_PARALLEL

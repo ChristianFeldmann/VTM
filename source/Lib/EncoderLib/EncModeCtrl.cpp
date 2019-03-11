@@ -158,8 +158,8 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
     maxQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP + deltaQP );
   }
 #if ENABLE_QPA_SUB_CTU
-  else if( qgEnableChildren ) // more splits and not the deepest QG level
-#warning TODO: OR with relevant conditions, but keep compatibility with QP-RDO
+  else if( qgEnableChildren || (pps.getUseDQP() && pps.getCuQpDeltaSubdiv() > 0 && (!CS::isDualITree (cs) || isLuma (partitioner.chType)))) // more splits and not the deepest QG level
+#pragma message "TODO: repair compatibility with QP-RDO"
 #else
   else if( qgEnableChildren ) // more splits and not the deepest QG level
 #endif
@@ -1139,7 +1139,7 @@ void EncModeCtrlMTnoRQT::initCTUEncoding( const Slice &slice )
   }
 }
 
-#if ENABLE_QPA_SUB_CTU
+#if ENABLE_QPA_SUB_CTU && !JVET_M0113_M0188_QG_SIZE
 static Position getMaxLumaDQPDepthPos (const CodingStructure &cs, const Partitioner &partitioner)
 {
   if (partitioner.currDepth <= cs.pps->getMaxCuDQPDepth())
@@ -1215,13 +1215,21 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       baseQP = Clip3(-cs.sps->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, baseQP + xComputeDQP(cs, partitioner));
     }
 #if ENABLE_QPA_SUB_CTU
+#if JVET_M0113_M0188_QG_SIZE
+    else if (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && cs.pps->getUseDQP() && cs.pps->getCuQpDeltaSubdiv() > 0)
+#else
     else if (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && cs.pps->getUseDQP() && cs.pps->getMaxCuDQPDepth() > 0)
+#endif
     {
       const PreCalcValues &pcv = *cs.pcv;
 
       if ((partitioner.currArea().lwidth() < pcv.maxCUWidth) && (partitioner.currArea().lheight() < pcv.maxCUHeight) && cs.picture)
       {
+#if JVET_M0113_M0188_QG_SIZE
+        const Position    &pos = partitioner.currQgPos;
+#else
         const Position    &pos = getMaxLumaDQPDepthPos (cs, partitioner);
+#endif
 #if MAX_TB_SIZE_SIGNALLING
         const unsigned mtsLog2 = (unsigned)g_aucLog2[std::min (cs.sps->getMaxTbSize(), pcv.maxCUWidth)];
 #else

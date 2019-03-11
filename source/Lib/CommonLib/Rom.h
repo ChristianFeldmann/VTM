@@ -162,9 +162,6 @@ enum SplitDecisionTree
 // decision tree for multi-type tree split decision
 extern const DecisionTreeTemplate g_mtSplitDTT;
 
-// decision tree for QTBT split
-extern const DecisionTreeTemplate g_qtbtSplitDTT;
-
 #endif
 
 // ====================================================================================================================

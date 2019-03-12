@@ -174,12 +174,6 @@ private:
                        double*        diagRatio,
                        double*        horVerRatio );
 #endif
-
-#ifdef TARGET_SIMD_X86
-  template<X86_VEXT vext>
-  void _initTrQuantX86();
-  void initTrQuantX86();
-#endif
 };// END CLASS DEFINITION TrQuant
 
 //! \}

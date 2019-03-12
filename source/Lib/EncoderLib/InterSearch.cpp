@@ -2052,7 +2052,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       {
         RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
 #if JVET_M0483_IBC==0
-        int refPicNumber = cs.sl#ice->getNumRefIdx(eRefPicList);
+        int refPicNumber = cs.slice->getNumRefIdx(eRefPicList);
         if (cs.slice->getSPS()->getIBCMode() && eRefPicList == REF_PIC_LIST_0)
         {
           refPicNumber--;
@@ -4263,7 +4263,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   {
     RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
 #if JVET_M0483_IBC==0
-    int refPicNumber = s#lice.getNumRefIdx(eRefPicList);
+    int refPicNumber = slice.getNumRefIdx(eRefPicList);
     if (slice.getSPS()->getIBCMode() && eRefPicList == REF_PIC_LIST_0)
     {
       refPicNumber--;

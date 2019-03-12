@@ -1339,7 +1339,7 @@ namespace DQIntern
           UPDATE(4);
         }
 #undef UPDATE
-        sumAbs = std::min(31, sumAbs);
+        sumAbs = std::min<TCoeff>(31, sumAbs);
         m_goRicePar = g_auiGoRiceParsCoeff[sumAbs];
         m_goRiceZero = m_goRiceZeroArray[sumAbs];
       }

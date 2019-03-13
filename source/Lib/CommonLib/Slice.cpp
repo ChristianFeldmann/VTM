@@ -138,6 +138,10 @@ Slice::Slice()
 , m_uiMaxBTSizeIChroma            ( 0 )
 , m_uiMaxTTSizeIChroma            ( 0 )
 , m_uiMaxBTSize                   ( 0 )
+#if JVET_M0132
+, m_apsId                        ( -1 )
+, m_aps                          (NULL)
+#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -1932,6 +1936,16 @@ PPS::~PPS()
   delete pcv;
 }
 
+#if JVET_M0132
+APS::APS()
+: m_APSId(0)
+{
+}
+
+APS::~APS()
+{
+}
+#endif
 ReferencePictureSet::ReferencePictureSet()
 : m_numberOfPictures (0)
 , m_numberOfNegativePictures (0)
@@ -2410,6 +2424,9 @@ ParameterSetManager::ParameterSetManager()
 : m_spsMap(MAX_NUM_SPS)
 #endif
 , m_ppsMap(MAX_NUM_PPS)
+#if JVET_M0132
+, m_apsMap(MAX_NUM_APS)
+#endif
 #if HEVC_VPS
 , m_activeVPSId(-1)
 #endif
@@ -2520,6 +2537,28 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
   return false;
 }
 
+#if JVET_M0132
+bool ParameterSetManager::activateAPS(int apsId)
+{
+  APS *aps = m_apsMap.getPS(apsId);
+  if (aps)
+  {
+    m_apsMap.setActive(apsId);
+    return true;
+  }
+  else
+  {
+    msg(WARNING, "Warning: tried to activate non-existing APS.");
+  }
+  return false;
+}
+
+template <>
+void ParameterSetMap<APS>::setID(APS* parameterSet, const int psId)
+{
+  parameterSet->setAPSId(psId);
+}
+#endif
 template <>
 void ParameterSetMap<PPS>::setID(PPS* parameterSet, const int psId)
 {
@@ -2644,6 +2683,13 @@ void xTracePPSHeader()
 {
   DTRACE( g_trace_ctx, D_HEADER, "=========== Picture Parameter Set  ===========\n" );
 }
+
+#if JVET_M0132
+void xTraceAPSHeader()
+{
+  DTRACE(g_trace_ctx, D_HEADER, "=========== Adaptation Parameter Set  ===========\n");
+}
+#endif
 
 void xTraceSliceHeader()
 {

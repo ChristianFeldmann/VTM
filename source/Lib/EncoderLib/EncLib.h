@@ -116,6 +116,9 @@ private:
   // SPS
   ParameterSetMap<SPS>      m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
   ParameterSetMap<PPS>      m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
+#if JVET_M0132
+  ParameterSetMap<APS>      m_apsMap;                             ///< APS. This is the base value. This is copied to PicSym
+#endif
   // RD cost computation
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   RdCost                   *m_cRdCost;                            ///< RD cost computation class
@@ -150,6 +153,9 @@ protected:
 #endif
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
+#if JVET_M0132
+  void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options
+#endif
 #if HEVC_USE_SCALING_LISTS
   void  xInitScalingLists (SPS &sps, PPS &pps);   ///< initialize scaling lists
 #endif
@@ -220,9 +226,15 @@ public:
 #if JCTVC_Y0038_PARAMS
   void                   setParamSetChanged(int spsId, int ppsId);
 #endif
+#if JVET_M0132
+  bool                   APSNeedsWriting(int apsId);
+#endif
   bool                   PPSNeedsWriting(int ppsId);
   bool                   SPSNeedsWriting(int spsId);
   const PPS* getPPS( int Id ) { return m_ppsMap.getPS( Id); }
+#if JVET_M0132
+  const APS*             getAPS(int Id) { return m_apsMap.getPS(Id); }
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   void                   setNumCuEncStacks( int n )             { m_numCuEncStacks = n; }

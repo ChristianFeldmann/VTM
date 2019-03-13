@@ -1812,7 +1812,7 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
                 unsigned int bitsMVP4Pel = MAX_UINT;
                 Mv mvPred4Pel = currAMVPInfo4Pel.mvCand[mvpIdxTemp];
                 m_pcRdCost->setPredictor(mvPred4Pel);
-                bitsMVP1Pel = m_pcRdCost->getBitsOfVectorWithPredictor(cMv.getHor(), cMv.getVer(), 4);
+                bitsMVP4Pel = m_pcRdCost->getBitsOfVectorWithPredictor(cMv.getHor(), cMv.getVer(), 4);
                 if (bitsMVP4Pel < curMVPbits)
                 {
                   curMVPbits = bitsMVP4Pel;

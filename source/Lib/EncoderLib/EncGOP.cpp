@@ -2180,8 +2180,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #if ENABLE_QPA
     pcPic->m_uEnerHpCtu.resize (numberOfCtusInFrame);
     pcPic->m_iOffsetCtu.resize (numberOfCtusInFrame);
- #if ENABLE_QPA_SUB_CTU
+#if ENABLE_QPA_SUB_CTU
+#if JVET_M0113_M0188_QG_SIZE
+    if (pcSlice->getPPS()->getUseDQP() && pcSlice->getPPS()->getCuQpDeltaSubdiv() > 0)
+#else
     if (pcSlice->getPPS()->getUseDQP() && pcSlice->getPPS()->getMaxCuDQPDepth() > 0)
+#endif
     {
       const PreCalcValues &pcv = *pcPic->cs->pcv;
 #if MAX_TB_SIZE_SIGNALLING
@@ -2191,7 +2195,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
       pcPic->m_subCtuQP.resize ((pcv.maxCUWidth >> mtsLog2) * (pcv.maxCUHeight >> mtsLog2));
     }
- #endif
+#endif
 #endif
     if (pcSlice->getSPS()->getSAOEnabledFlag())
     {

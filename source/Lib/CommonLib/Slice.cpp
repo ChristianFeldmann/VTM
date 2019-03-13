@@ -1879,7 +1879,11 @@ const int SPS::m_winUnitY[]={1,2,1,1};
 PPSRExt::PPSRExt()
 : m_log2MaxTransformSkipBlockSize      (2)
 , m_crossComponentPredictionEnabledFlag(false)
+#if JVET_M0113_M0188_QG_SIZE
+, m_cuChromaQpOffsetSubdiv             (0)
+#else
 , m_diffCuChromaQpOffsetDepth          (0)
+#endif
 , m_chromaQpOffsetListLen              (0)
 // m_ChromaQpAdjTableIncludingNullEntry initialized below
 // m_log2SaoOffsetScale initialized below
@@ -1899,7 +1903,11 @@ PPS::PPS()
 , m_useDQP                           (false)
 , m_bConstrainedIntraPred            (false)
 , m_bSliceChromaQpFlag               (false)
+#if JVET_M0113_M0188_QG_SIZE
+, m_cuQpDeltaSubdiv                  (0)
+#else
 , m_uiMaxCuDQPDepth                  (0)
+#endif
 , m_chromaCbQpOffset                 (0)
 , m_chromaCrQpOffset                 (0)
 , m_numRefIdxL0DefaultActive         (1)

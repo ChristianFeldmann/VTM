@@ -77,7 +77,9 @@ namespace CU
   uint32_t getCtuAddr                     (const CodingUnit &cu);
 
   int  predictQP                      (const CodingUnit& cu, const int prevQP );
+#if !JVET_M0113_M0188_QG_SIZE
   bool isQGStart                      (const CodingUnit& cu, Partitioner& partitioner ); // check if start of a Quantization Group
+#endif
 
   uint32_t getNumPUs                      (const CodingUnit& cu);
   void addPUs                         (      CodingUnit& cu);

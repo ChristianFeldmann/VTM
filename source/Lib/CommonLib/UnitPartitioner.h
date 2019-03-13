@@ -100,6 +100,10 @@ struct PartLevel
   PartSplit    implicitSplit;
   PartSplit    firstSubPartSplit;
   bool         canQtSplit;
+#if JVET_M0113_M0188_QG_SIZE
+  bool         qgEnable;
+  bool         qgChromaEnable;
+#endif
 
   PartLevel();
   PartLevel( const PartSplit _split, const Partitioning&  _parts );
@@ -123,6 +127,11 @@ public:
   unsigned currTrDepth;
   unsigned currBtDepth;
   unsigned currMtDepth;
+#if JVET_M0113_M0188_QG_SIZE
+  unsigned currSubdiv;
+  Position currQgPos;
+  Position currQgChromaPos;
+#endif
 
   unsigned currImplicitBtDepth;
   ChannelType chType;
@@ -133,6 +142,10 @@ public:
   const UnitArea&  currArea               () const { return currPartLevel().parts[currPartIdx()]; }
   const unsigned   currPartIdx            () const { return currPartLevel().idx; }
   const PartitioningStack& getPartStack   () const { return m_partStack; }
+#if JVET_M0113_M0188_QG_SIZE
+  const bool currQgEnable                 () const { return currPartLevel().qgEnable; }
+  const bool currQgChromaEnable           () const { return currPartLevel().qgChromaEnable; }
+#endif
 
   SplitSeries getSplitSeries              () const;
 

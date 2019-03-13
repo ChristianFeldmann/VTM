@@ -132,7 +132,11 @@ void EncModeCtrl::setBest( CodingStructure& cs )
   }
 }
 
+#if JVET_M0113_M0188_QG_SIZE
+void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& cs, const Partitioner &partitioner, const int baseQP, const SPS& sps, const PPS& pps, const PartSplit splitMode )
+#else
 void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& cs, const Partitioner &partitioner, const int baseQP, const SPS& sps, const PPS& pps, const bool splitMode )
+#endif
 {
   if( m_pcEncCfg->getUseRateCtrl() )
   {
@@ -141,6 +145,29 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
     return;
   }
 
+#if JVET_M0113_M0188_QG_SIZE
+  const unsigned subdivIncr = (splitMode == CU_QUAD_SPLIT) ? 2 : (splitMode == CU_BT_SPLIT) ? 1 : 0;
+  const bool qgEnable = partitioner.currQgEnable(); // QG possible at current level
+  const bool qgEnableChildren = qgEnable && ((partitioner.currSubdiv + subdivIncr) <= pps.getCuQpDeltaSubdiv()) && (subdivIncr > 0); // QG possible at next level
+  const bool isLeafQG = (qgEnable && !qgEnableChildren);
+
+  if( isLeafQG ) // QG at deepest level
+  {
+    int deltaQP = m_pcEncCfg->getMaxDeltaQP();
+    minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - deltaQP );
+    maxQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP + deltaQP );
+  }
+  else if( qgEnableChildren ) // more splits and not the deepest QG level
+  {
+    minQP = baseQP;
+    maxQP = baseQP;
+  }
+  else // deeper than QG
+  {
+    minQP = cs.currQP[partitioner.chType];
+    maxQP = cs.currQP[partitioner.chType];
+  }
+#else
   const uint32_t currDepth = partitioner.currDepth;
 
   if( !splitMode )
@@ -187,6 +214,7 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
       maxQP = cs.currQP[partitioner.chType];
     }
   }
+#endif
 #if SHARP_LUMA_DELTA_QP
 
   if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && (!CS::isDualITree (cs) || isLuma (partitioner.chType)))
@@ -201,7 +229,11 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
 int EncModeCtrl::xComputeDQP( const CodingStructure &cs, const Partitioner &partitioner )
 {
   Picture* picture    = cs.picture;
+#if JVET_M0113_M0188_QG_SIZE
+  unsigned uiAQDepth  = std::min( partitioner.currSubdiv/2, ( uint32_t ) picture->aqlayer.size() - 1 );
+#else
   unsigned uiAQDepth  = std::min( partitioner.currDepth, ( uint32_t ) picture->aqlayer.size() - 1 );
+#endif
   AQpLayer* pcAQLayer = picture->aqlayer[uiAQDepth];
 
   double dMaxQScale   = pow( 2.0, m_pcEncCfg->getQPAdaptationRange() / 6.0 );
@@ -956,7 +988,11 @@ bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& pa
 #else
     || encInfo.cu.ibc
 #endif
+#if JVET_M0113_M0188_QG_SIZE
+    || partitioner.currQgEnable() || cs.currQP[partitioner.chType] != encInfo.cu.qp
+#else
     || partitioner.currDepth <= cs.pps->getMaxCuDQPDepth() || cs.currQP[partitioner.chType] != encInfo.cu.qp
+#endif
     )
   {
     return false;
@@ -979,7 +1015,11 @@ bool BestEncInfoCache::setCsFrom( CodingStructure& cs, EncTestMode& testMode, co
     , encInfo.pu, (cs.picture->Y().width), (cs.picture->Y().height)
 #endif
     )
+#if JVET_M0113_M0188_QG_SIZE
+    || partitioner.currQgEnable() || cs.currQP[partitioner.chType] != encInfo.cu.qp
+#else
     || partitioner.currDepth <= cs.pps->getMaxCuDQPDepth() || cs.currQP[partitioner.chType] != encInfo.cu.qp
+#endif
     )
   {
     return false;
@@ -1086,7 +1126,7 @@ void EncModeCtrlMTnoRQT::initCTUEncoding( const Slice &slice )
   }
 }
 
-#if ENABLE_QPA_SUB_CTU
+#if ENABLE_QPA_SUB_CTU && !JVET_M0113_M0188_QG_SIZE
 static Position getMaxLumaDQPDepthPos (const CodingStructure &cs, const Partitioner &partitioner)
 {
   if (partitioner.currDepth <= cs.pps->getMaxCuDQPDepth())
@@ -1162,13 +1202,21 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       baseQP = Clip3(-cs.sps->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, baseQP + xComputeDQP(cs, partitioner));
     }
 #if ENABLE_QPA_SUB_CTU
+#if JVET_M0113_M0188_QG_SIZE
+    else if (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && cs.pps->getUseDQP() && cs.pps->getCuQpDeltaSubdiv() > 0)
+#else
     else if (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && cs.pps->getUseDQP() && cs.pps->getMaxCuDQPDepth() > 0)
+#endif
     {
       const PreCalcValues &pcv = *cs.pcv;
 
       if ((partitioner.currArea().lwidth() < pcv.maxCUWidth) && (partitioner.currArea().lheight() < pcv.maxCUHeight) && cs.picture)
       {
+#if JVET_M0113_M0188_QG_SIZE
+        const Position    &pos = partitioner.currQgPos;
+#else
         const Position    &pos = getMaxLumaDQPDepthPos (cs, partitioner);
+#endif
 #if MAX_TB_SIZE_SIGNALLING
         const unsigned mtsLog2 = (unsigned)g_aucLog2[std::min (cs.sps->getMaxTbSize(), pcv.maxCUWidth)];
 #else
@@ -1181,7 +1229,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     }
 #endif
 #if SHARP_LUMA_DELTA_QP
+#if JVET_M0113_M0188_QG_SIZE
+    if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && partitioner.currQgEnable())
+#else
     if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && partitioner.currDepth <= cs.pps->getMaxCuDQPDepth())
+#endif
     {
       CompArea clipedArea = clipArea( cs.area.Y(), cs.picture->Y() );
       // keep using the same m_QP_LUMA_OFFSET in the same CTU
@@ -1192,7 +1244,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   int minQP = baseQP;
   int maxQP = baseQP;
 
+#if JVET_M0113_M0188_QG_SIZE
+  xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, CU_QUAD_SPLIT );
+#else
   xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, true );
+#endif
   bool checkIbc = true;
   if (cs.chType == CHANNEL_TYPE_CHROMA)
   {
@@ -1247,6 +1303,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     }
   }
 
+#if JVET_M0113_M0188_QG_SIZE
+  int minQPq = minQP;
+  int maxQPq = maxQP;
+  xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, CU_BT_SPLIT );
+#endif
   if( partitioner.canSplit( CU_VERT_SPLIT, cs ) )
   {
     // add split modes
@@ -1277,7 +1338,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 
   if( cuECtx.get<bool>( QT_BEFORE_BT ) )
   {
+#if JVET_M0113_M0188_QG_SIZE
+    for( int qp = maxQPq; qp >= minQPq; qp-- )
+#else
     for( int qp = maxQP; qp >= minQP; qp-- )
+#endif
     {
       m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_QT, ETO_STANDARD, qp, false } );
     }
@@ -1285,7 +1350,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 
   m_ComprCUCtxList.back().testModes.push_back( { ETM_POST_DONT_SPLIT } );
 
+#if JVET_M0113_M0188_QG_SIZE
+  xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, CU_DONT_SPLIT );
+#else
   xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, false );
+#endif
 
   bool useLossless = false;
   int  lowestQP = minQP;

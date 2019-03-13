@@ -167,14 +167,6 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
     minQP = cs.currQP[partitioner.chType];
     maxQP = cs.currQP[partitioner.chType];
   }
-
-#if SHARP_LUMA_DELTA_QP
-  if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && (!CS::isDualITree (cs) || isLuma (partitioner.chType)))
-  {
-    minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - m_lumaQPOffset );
-    maxQP = minQP;
-  }
-#endif
 #else
   const uint32_t currDepth = partitioner.currDepth;
 
@@ -222,6 +214,7 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
       maxQP = cs.currQP[partitioner.chType];
     }
   }
+#endif
 #if SHARP_LUMA_DELTA_QP
 
   if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && (!CS::isDualITree (cs) || isLuma (partitioner.chType)))
@@ -229,7 +222,6 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
     minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - m_lumaQPOffset );
     maxQP = minQP;
   }
-#endif
 #endif
 }
 

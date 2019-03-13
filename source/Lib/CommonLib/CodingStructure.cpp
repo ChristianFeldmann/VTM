@@ -802,6 +802,9 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.vps       = vps;
 #endif
   subStruct.pps       = pps;
+#if JVET_M0132_APS
+  subStruct.aps       = aps;
+#endif
   subStruct.slice     = slice;
   subStruct.baseQP    = baseQP;
   subStruct.prevQP[_chType]

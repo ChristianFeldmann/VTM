@@ -60,7 +60,7 @@
 EncLib::EncLib()
   : m_spsMap( MAX_NUM_SPS )
   , m_ppsMap( MAX_NUM_PPS )
-#if JVET_M0132
+#if JVET_M0132_APS
   , m_apsMap( MAX_NUM_APS )
 #endif
   , m_AUWriterIf( nullptr )
@@ -217,7 +217,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
   SPS &sps0=*(m_spsMap.allocatePS(0)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
   PPS &pps0=*(m_ppsMap.allocatePS(0));
-#if JVET_M0132
+#if JVET_M0132_APS
   APS &aps0=*(m_apsMap.allocatePS(0));
 #endif
 
@@ -257,7 +257,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
   // initialize PPS
   xInitPPS(pps0, sps0);
-#if JVET_M0132
+#if JVET_M0132_APS
   // initialize APS
   xInitAPS(aps0);
 #endif
@@ -395,7 +395,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     Picture *picBg = new Picture;
     picBg->create(sps0.getChromaFormatIdc(), Size(sps0.getPicWidthInLumaSamples(), sps0.getPicHeightInLumaSamples()), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false);
     picBg->getRecoBuf().fill(0);
-#if JVET_M0132
+#if JVET_M0132_APS
     picBg->finalInit(sps0, pps0, aps0);
 #else
     picBg->finalInit(sps0, pps0);
@@ -550,7 +550,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     const SPS *sps = m_spsMap.getPS(pps->getSPSId());
 
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
-#if JVET_M0132
+#if JVET_M0132_APS
     APS *aps = m_apsMap.getPS(0);
     picCurr->finalInit(*sps, *pps, *aps);
 #else
@@ -606,7 +606,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL).swap(*cPicYuvTrueOrg);
 #endif
 
-#if JVET_M0132
+#if JVET_M0132_APS
       APS *pAPS = m_apsMap.getPS(0);
       pcPicCurr->finalInit(*pSPS, *pPPS, *pAPS);
 #else
@@ -706,7 +706,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 
-#if JVET_M0132
+#if JVET_M0132_APS
         APS *pAPS = m_apsMap.getPS(0);
         pcField->finalInit(*pSPS, *pPPS, *pAPS);
 #else
@@ -1516,7 +1516,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.pcv = new PreCalcValues( sps, pps, true );
 }
 
-#if JVET_M0132
+#if JVET_M0132_APS
 void EncLib::xInitAPS(APS &aps)
 {
   //Do nothing now
@@ -1894,7 +1894,7 @@ void EncLib::setParamSetChanged(int spsId, int ppsId)
   m_spsMap.setChangedFlag(spsId);
 }
 #endif
-#if JVET_M0132
+#if JVET_M0132_APS
 bool EncLib::APSNeedsWriting(int apsId)
 {
   bool isChanged = m_apsMap.getChangedFlag(apsId);

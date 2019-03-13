@@ -233,7 +233,7 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
-#if JVET_M0132
+#if JVET_M0132_APS
   void finalInit(const SPS& sps, const PPS& pps, APS& aps);
 #else
   void finalInit( const SPS& sps, const PPS& pps );

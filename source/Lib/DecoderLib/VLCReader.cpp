@@ -607,7 +607,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   xReadRbspTrailingBits();
 }
 
-#if JVET_M0132
+#if JVET_M0132_APS
 void HLSyntaxReader::parseAPS(APS* aps)
 {
 #if ENABLE_TRACING
@@ -1647,22 +1647,20 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
     if( sps->getALFEnabledFlag() )
     {
-#if JVET_M0132
+#if JVET_M0132_APS
       READ_FLAG(uiCode, "tile_group_alf_enabled_flag");
       if (uiCode)
       {
         READ_CODE(5, uiCode, "tile_group_aps_id"); 
         pcSlice->setAPSId(uiCode);
         pcSlice->setAPS(parameterSetManager->getAPS(uiCode));
-        AlfSliceParam alfParam = pcSlice->getAPS()->getAlfAPSParam();
-        pcSlice->setAlfSliceParam(alfParam);
-        pcSlice->getAlfSliceParam().enabledFlag[COMPONENT_Y] = true;
+        pcSlice->setTileGroupAlfEnabledFlag(true);
       }
       else
       {
-        pcSlice->getAlfSliceParam().enabledFlag[COMPONENT_Y] = false;
-        pcSlice->getAlfSliceParam().enabledFlag[COMPONENT_Cb] = false;
-        pcSlice->getAlfSliceParam().enabledFlag[COMPONENT_Cr] = false;
+        pcSlice->setTileGroupAlfEnabledFlag(false);
+        pcSlice->setAPSId(-1);
+        pcSlice->setAPS(nullptr);
       }
 #else
       alf( pcSlice->getAlfSliceParam() );
@@ -2491,7 +2489,7 @@ bool HLSyntaxReader::xMoreRbspData()
   return (cnt>0);
 }
 
-#if !JVET_M0132
+#if !JVET_M0132_APS
 void HLSyntaxReader::alf( AlfSliceParam& alfSliceParam )
 {
   uint32_t code;

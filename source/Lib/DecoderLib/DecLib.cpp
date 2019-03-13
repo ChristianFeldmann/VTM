@@ -220,7 +220,13 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
                   for( int i = 0; i < pic->slices.size(); i++ )
                   {
+#if JVET_M0132_APS
+                    pcEncPic->slices[i]->setAPSId(pic->slices[i]->getAPSId());
+                    pcEncPic->slices[i]->setAPS( pic->slices[i]->getAPS());
+                    pcEncPic->slices[i]->setTileGroupAlfEnabledFlag( pic->slices[i]->getTileGroupAlfEnabledFlag());
+#else
                     pcEncPic->slices[i]->getAlfSliceParam() = pic->slices[i]->getAlfSliceParam();
+#endif
                   }
                 }
 
@@ -581,7 +587,20 @@ void DecLib::executeLoopFilters()
 
   if( cs.sps->getALFEnabledFlag() )
   {
+#if JVET_M0132_APS
+    if (cs.slice->getTileGroupAlfEnabledFlag())
+    {
+      // ALF decodes the differentially coded coefficients and stores them in the parameters structure.
+      // Code could be restructured to do directly after parsing. So far we just pass a fresh non-const
+      // copy in case the APS gets used more than once.
+
+      AlfSliceParam alfParamCopy = cs.aps->getAlfAPSParam();
+      m_cALF.ALFProcess(cs, alfParamCopy);
+    }
+#else
     m_cALF.ALFProcess( cs, cs.slice->getAlfSliceParam() );
+#endif
+
   }
 }
 
@@ -738,7 +757,7 @@ void DecLib::xActivateParameterSets()
 {
   if (m_bFirstSliceInPicture)
   {
-#if JVET_M0132
+#if JVET_M0132_APS
     APS *aps = m_parameterSetManager.getAPS(m_apcSlicePilot->getAPSId()); // this is a temporary APS object. Do not store this value
     if (m_apcSlicePilot->getAPSId() != -1)
     {
@@ -758,15 +777,21 @@ void DecLib::xActivateParameterSets()
     m_parameterSetManager.clearSPSChangedFlag(sps->getSPSId());
     m_parameterSetManager.clearPPSChangedFlag(pps->getPPSId());
 
-#if JVET_M0132  //Hendry
-    if (aps != 0)
-      m_parameterSetManager.clearAPSChangedFlag(aps->getAPSId());
-#endif
-
     if (false == m_parameterSetManager.activatePPS(m_apcSlicePilot->getPPSId(),m_apcSlicePilot->isIRAP()))
     {
       THROW("Parameter set activation failed!");
     }
+
+#if JVET_M0132_APS
+    if (aps)
+    {
+      m_parameterSetManager.clearAPSChangedFlag(aps->getAPSId());
+      if (false == m_parameterSetManager.activateAPS(m_apcSlicePilot->getAPSId()))
+      {
+        THROW("APS activation failed!");
+      }
+    }
+#endif
 
     xParsePrefixSEImessages();
 
@@ -782,7 +807,7 @@ void DecLib::xActivateParameterSets()
 
     m_apcSlicePilot->applyReferencePictureSet(m_cListPic, m_apcSlicePilot->getRPS());
 
-#if JVET_M0132
+#if JVET_M0132_APS
     m_pcPic->finalInit(*sps, *pps, *aps);
 #else
     m_pcPic->finalInit( *sps, *pps );
@@ -800,7 +825,7 @@ void DecLib::xActivateParameterSets()
     Slice *pSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
 
     // Update the PPS and SPS pointers with the ones of the picture.
-#if JVET_M0132
+#if JVET_M0132_APS
     aps= pSlice->getAPS();
 #endif
     pps=pSlice->getPPS();
@@ -810,7 +835,7 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->slice = pSlice;
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
-#if JVET_M0132
+#if JVET_M0132_APS
     m_pcPic->cs->aps   = aps;
 #endif
 #if HEVC_VPS
@@ -888,14 +913,14 @@ void DecLib::xActivateParameterSets()
 
     const SPS *sps = pSlice->getSPS();
     const PPS *pps = pSlice->getPPS();
-#if JVET_M0132
+#if JVET_M0132_APS
     APS *aps = pSlice->getAPS();
 #endif
     // fix Parameter Sets, now that we have the real slice
     m_pcPic->cs->slice = pSlice;
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
-#if JVET_M0132
+#if JVET_M0132_APS
     m_pcPic->cs->aps   = aps;
 #endif
 #if HEVC_VPS
@@ -912,7 +937,7 @@ void DecLib::xActivateParameterSets()
     {
       EXIT("Error - a new PPS has been decoded while processing a picture");
     }
-#if JVET_M0132
+#if JVET_M0132_APS
     if (aps && m_parameterSetManager.getAPSChangedFlag(aps->getAPSId()))
     {
       EXIT("Error - a new APS has been decoded while processing a picture");
@@ -1082,7 +1107,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
     m_apcSlicePilot->setPOC( m_apcSlicePilot->getPOC() & (iMaxPOClsb - 1) );
     xUpdatePreviousTid0POC(m_apcSlicePilot);
-#if JVET_M0132
+#if JVET_M0132_APS
     if (m_apcSlicePilot->getAPSId() != -1)
     {
       APS *aps = m_parameterSetManager.getAPS(m_apcSlicePilot->getAPSId());
@@ -1443,7 +1468,7 @@ void DecLib::xDecodePPS( InputNALUnit& nalu )
   m_parameterSetManager.storePPS( pps, nalu.getBitstream().getFifo() );
 }
 
-#if JVET_M0132
+#if JVET_M0132_APS
 void DecLib::xDecodeAPS(InputNALUnit& nalu)
 {
   APS* aps = new APS();
@@ -1477,7 +1502,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_PPS:
       xDecodePPS( nalu );
       return false;
-#if JVET_M0132
+#if JVET_M0132_APS
     case NAL_UNIT_APS:
       xDecodeAPS(nalu);
       return false;

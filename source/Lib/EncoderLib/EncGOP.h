@@ -281,7 +281,7 @@ protected:
 #endif
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps);
-#if JVET_M0132
+#if JVET_M0132_APS
   int xWriteAPS(AccessUnit &accessUnit, APS *aps);
 #endif
   int xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);

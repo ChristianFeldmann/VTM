@@ -365,7 +365,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   xWriteRbspTrailingBits();
 }
 
-#if JVET_M0132
+#if JVET_M0132_APS
 void HLSWriter::codeAPS( APS* pcAPS)
 {
 #if ENABLE_TRACING
@@ -1210,9 +1210,10 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     if( pcSlice->getSPS()->getALFEnabledFlag() )
     {
-#if JVET_M0132
-      WRITE_FLAG(pcSlice->getAlfSliceParam().enabledFlag[COMPONENT_Y], "tile_group_alf_enabled_flag");
-      if (pcSlice->getAlfSliceParam().enabledFlag[COMPONENT_Y])
+#if JVET_M0132_APS
+      const int alfEnabled = pcSlice->getAPS()->getAlfAPSParam().enabledFlag[COMPONENT_Y] ? 1 : 0;
+      WRITE_FLAG( alfEnabled, "tile_group_alf_enabled_flag");
+      if (alfEnabled)
       {
         WRITE_CODE(pcSlice->getAPSId(), 5, "tile_group_aps_id");
       }
@@ -1768,7 +1769,7 @@ bool HLSWriter::xFindMatchingLTRP(Slice* pcSlice, uint32_t *ltrpsIndex, int ltrp
   return false;
 }
 
-#if !JVET_M0132
+#if !JVET_M0132_APS
 void HLSWriter::alf( const AlfSliceParam& alfSliceParam )
 {
   WRITE_FLAG( alfSliceParam.enabledFlag[COMPONENT_Y], "tile_group_alf_enabled_flag" );

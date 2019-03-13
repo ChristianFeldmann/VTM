@@ -237,7 +237,7 @@ int EncGOP::xWritePPS (AccessUnit &accessUnit, const PPS *pps)
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
 
-#if JVET_M0132
+#if JVET_M0132_APS
 int EncGOP::xWriteAPS(AccessUnit &accessUnit, APS *aps)
 {
   OutputNALUnit nalu(NAL_UNIT_APS);
@@ -2213,7 +2213,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if( pcSlice->getSPS()->getALFEnabledFlag() )
     {
       pcPic->resizeAlfCtuEnableFlag( numberOfCtusInFrame );
+#if JVET_M0132_APS
+      // reset the APS ALF parameters
+      AlfSliceParam newALFParam;
+      pcSlice->getAPS()->setAlfAPSParam(newALFParam);
+#else
       std::memset( pcSlice->getAlfSliceParam().enabledFlag, false, sizeof( pcSlice->getAlfSliceParam().enabledFlag ) );
+#endif
     }
 
     bool decPic = false;
@@ -2484,10 +2490,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
                              alfSliceParam );
         //assign ALF slice header
+#if JVET_M0132_APS
+        pcPic->cs->aps->setAlfAPSParam(alfSliceParam);
+#else
         for( int s = 0; s< uiNumSliceSegments; s++ )
         {
           pcPic->slices[s]->setAlfSliceParam( alfSliceParam );
         }
+#endif
       }
       if (m_pcCfg->getUseCompositeRef() && getPrepareLTRef())
       {
@@ -2559,12 +2569,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         xWriteAccessUnitDelimiter(accessUnit, pcSlice);
       }
-#if JVET_M0132
-      if (pcSlice->getSPS()->getALFEnabledFlag() && pcSlice->getAlfSliceParam().enabledFlag[COMPONENT_Y])
+#if JVET_M0132_APS
+      if (pcSlice->getSPS()->getALFEnabledFlag() && pcSlice->getAPS()->getAlfAPSParam().enabledFlag[COMPONENT_Y])
       {
+        pcSlice->setTileGroupAlfEnabledFlag(true);
         pcSlice->setAPSId(pcSlice->getAPS()->getAPSId());
-        pcSlice->getAPS()->setAlfAPSParam(pcSlice->getAlfSliceParam());
         actualTotalBits += xWriteAPS(accessUnit, pcSlice->getAPS());
+      }
+      else
+      {
+        pcSlice->setTileGroupAlfEnabledFlag(false);
       }
 #endif
 

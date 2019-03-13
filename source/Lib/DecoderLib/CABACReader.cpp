@@ -143,10 +143,16 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 
   sao( cs, ctuRsAddr );
 
+#if !JVET_M0132_APS
   AlfSliceParam& alfSliceParam = cs.slice->getAlfSliceParam();
-
-  if( cs.sps->getALFEnabledFlag() && ( alfSliceParam.enabledFlag[COMPONENT_Y] || alfSliceParam.enabledFlag[COMPONENT_Cb] || alfSliceParam.enabledFlag[COMPONENT_Cr] ) )
+  if (cs.sps->getALFEnabledFlag() && (alfSliceParam.enabledFlag[COMPONENT_Y] || alfSliceParam.enabledFlag[COMPONENT_Cb] || alfSliceParam.enabledFlag[COMPONENT_Cr]))
   {
+#else
+  if (cs.sps->getALFEnabledFlag() && (cs.slice->getTileGroupAlfEnabledFlag()))
+  {
+    CHECK(cs.aps == nullptr, "APS not initialized");
+    const AlfSliceParam& alfSliceParam = cs.aps->getAlfAPSParam();
+#endif
 
     const PreCalcValues& pcv = *cs.pcv;
     int                 frame_width_in_ctus = pcv.widthInCtus;

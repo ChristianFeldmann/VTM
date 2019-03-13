@@ -1563,7 +1563,7 @@ public:
   PPSRExt&               getPpsRangeExtension()                                           { return m_ppsRangeExtension;                   }
 };
 
-#if JVET_M0132
+#if JVET_M0132_APS
 class APS
 {
 private:
@@ -1578,7 +1578,7 @@ public:
   void                   setAPSId(int i)                                                  { m_APSId = i;                                  }
 
   void                   setAlfAPSParam(AlfSliceParam& alfAPSParam)                       { m_alfAPSParam = alfAPSParam;                  }
-  AlfSliceParam          getAlfAPSParam()                                                 { return m_alfAPSParam;                         }
+  const AlfSliceParam&   getAlfAPSParam() const                                           { return m_alfAPSParam;                         }
 };
 #endif
 struct WPScalingParam
@@ -1737,11 +1737,15 @@ private:
   uint32_t                   m_uiMaxTTSizeIChroma;
   uint32_t                       m_uiMaxBTSize;
 
-#if JVET_M0132
+#if JVET_M0132_APS
   int                        m_apsId;
   APS*                       m_aps;
 #endif
+#if !JVET_M0132_APS
   AlfSliceParam              m_alfSliceParam;
+#else
+  bool                       m_tileGroupAlfEnabledFlag;
+#endif
 #if JVET_M0427_INLOOP_RESHAPER
   SliceReshapeInfo           m_sliceReshapeInfo;
 #endif
@@ -1762,7 +1766,7 @@ public:
 
   void                        setPPSId( int PPSId )                                  { m_iPPSId = PPSId;                                             }
   int                         getPPSId() const                                       { return m_iPPSId;                                              }
-#if JVET_M0132
+#if JVET_M0132_APS
   void                        setAPS(APS* aps)                                     { m_aps = aps; m_apsId = (aps) ? aps->getAPSId() : -1; }
   APS*                        getAPS()                                               { return m_aps;                                               }
   void                        setAPSId(int apsId)                                    { m_apsId = apsId;                                             }
@@ -2027,8 +2031,13 @@ public:
   void resetProcessingTime()       { m_dProcessingTime = m_iProcessingStartTime = 0; }
   double getProcessingTime() const { return m_dProcessingTime; }
 
+#if !JVET_M0132_APS
   void                        setAlfSliceParam( AlfSliceParam& alfSliceParam ) { m_alfSliceParam = alfSliceParam; }
   AlfSliceParam&              getAlfSliceParam() { return m_alfSliceParam; }
+#else
+  bool                        getTileGroupAlfEnabledFlag() const { return m_tileGroupAlfEnabledFlag; }
+  void                        setTileGroupAlfEnabledFlag(bool b) { m_tileGroupAlfEnabledFlag = b; }
+#endif
 
 #if JVET_M0427_INLOOP_RESHAPER
   const SliceReshapeInfo&     getReshapeInfo() const { return m_sliceReshapeInfo; }
@@ -2225,7 +2234,7 @@ public:
   //! \returns true, if activation is successful
   bool           activatePPS(int ppsId, bool isIRAP);
 
-#if JVET_M0132
+#if JVET_M0132_APS
   void           storeAPS(APS *aps, const std::vector<uint8_t> &naluData)    { m_apsMap.storePS(aps->getAPSId(), aps, &naluData); };
   APS*           getAPS(int apsId)                                           { return m_apsMap.getPS(apsId);                      };
   bool           getAPSChangedFlag(int apsId) const                          { return m_apsMap.getChangedFlag(apsId);             }
@@ -2244,7 +2253,7 @@ protected:
 #endif
   ParameterSetMap<SPS> m_spsMap;
   ParameterSetMap<PPS> m_ppsMap;
-#if JVET_M0132
+#if JVET_M0132_APS
   ParameterSetMap<APS> m_apsMap;
 #endif
 
@@ -2341,7 +2350,7 @@ void xTraceVPSHeader();
 #endif
 void xTraceSPSHeader();
 void xTracePPSHeader();
-#if JVET_M0132
+#if JVET_M0132_APS
 void xTraceAPSHeader();
 #endif
 void xTraceSliceHeader();

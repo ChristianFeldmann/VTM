@@ -904,7 +904,7 @@ void EncApp::rateStatsAccum(const AccessUnit& au, const std::vector<uint32_t>& a
 #endif
     case NAL_UNIT_SPS:
     case NAL_UNIT_PPS:
-#if JVET_M0132
+#if JVET_M0132_APS
     case NAL_UNIT_APS:
 #endif
       m_essentialBytes += *it_stats;
@@ -923,7 +923,7 @@ void EncApp::printRateSummary()
   msg( DETAILS,"Bytes written to file: %u (%.3f kbps)\n", m_totalBytes, 0.008 * m_totalBytes / time );
   if (m_summaryVerboseness > 0)
   {
-#if JVET_M0132
+#if JVET_M0132_APS
     msg(DETAILS, "Bytes for SPS/PPS/APS/Slice (Incl. Annex B): %u (%.3f kbps)\n", m_essentialBytes, 0.008 * m_essentialBytes / time);
 #else
     msg( DETAILS,"Bytes for SPS/PPS/Slice (Incl. Annex B): %u (%.3f kbps)\n", m_essentialBytes, 0.008 * m_essentialBytes / time );

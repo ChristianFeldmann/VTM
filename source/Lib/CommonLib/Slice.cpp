@@ -138,7 +138,7 @@ Slice::Slice()
 , m_uiMaxBTSizeIChroma            ( 0 )
 , m_uiMaxTTSizeIChroma            ( 0 )
 , m_uiMaxBTSize                   ( 0 )
-#if JVET_M0132
+#if JVET_M0132_APS
 , m_apsId                        ( -1 )
 , m_aps                          (NULL)
 #endif
@@ -1936,7 +1936,7 @@ PPS::~PPS()
   delete pcv;
 }
 
-#if JVET_M0132
+#if JVET_M0132_APS
 APS::APS()
 : m_APSId(0)
 {
@@ -2424,7 +2424,7 @@ ParameterSetManager::ParameterSetManager()
 : m_spsMap(MAX_NUM_SPS)
 #endif
 , m_ppsMap(MAX_NUM_PPS)
-#if JVET_M0132
+#if JVET_M0132_APS
 , m_apsMap(MAX_NUM_APS)
 #endif
 #if HEVC_VPS
@@ -2537,7 +2537,7 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
   return false;
 }
 
-#if JVET_M0132
+#if JVET_M0132_APS
 bool ParameterSetManager::activateAPS(int apsId)
 {
   APS *aps = m_apsMap.getPS(apsId);
@@ -2684,7 +2684,7 @@ void xTracePPSHeader()
   DTRACE( g_trace_ctx, D_HEADER, "=========== Picture Parameter Set  ===========\n" );
 }
 
-#if JVET_M0132
+#if JVET_M0132_APS
 void xTraceAPSHeader()
 {
   DTRACE(g_trace_ctx, D_HEADER, "=========== Adaptation Parameter Set  ===========\n");

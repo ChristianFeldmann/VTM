@@ -101,7 +101,7 @@ public:
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;
-#if JVET_M0132
+#if JVET_M0132_APS
   APS *      aps;
 #endif
 #if HEVC_VPS

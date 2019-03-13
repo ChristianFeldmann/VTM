@@ -157,12 +157,7 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
     minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - deltaQP );
     maxQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP + deltaQP );
   }
-#if ENABLE_QPA_SUB_CTU
-  else if( qgEnableChildren || (pps.getUseDQP() && pps.getCuQpDeltaSubdiv() > 0 && (!CS::isDualITree (cs) || isLuma (partitioner.chType)))) // more splits and not the deepest QG level
-#pragma message "TODO: repair compatibility with QP-RDO"
-#else
   else if( qgEnableChildren ) // more splits and not the deepest QG level
-#endif
   {
     minQP = baseQP;
     maxQP = baseQP;

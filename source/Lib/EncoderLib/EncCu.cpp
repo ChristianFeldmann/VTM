@@ -779,8 +779,6 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 #if REUSE_CU_RESULTS
     else if( currTestMode.type == ETM_RECO_CACHED )
     {
-#pragma message "TODO: fix missing currQP init for RECO_CACHED ?"
-//      tempCS->currQP[partitioner.chType] = currTestMode.qp;
       xReuseCachedResult( tempCS, bestCS, partitioner );
     }
 #endif

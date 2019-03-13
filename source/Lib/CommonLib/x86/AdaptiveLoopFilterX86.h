@@ -365,6 +365,9 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 
   const int clsSizeY = 4;
   const int clsSizeX = 4;
+  
+  bool pcmFlags2x2[4] = {0,0,0,0};
+  Pel  pcmRec2x2[16];
 
   CHECK( startHeight % clsSizeY, "Wrong startHeight in filtering" );
   CHECK( startWidth % clsSizeX, "Wrong startWidth in filtering" );
@@ -412,6 +415,7 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 #if JVET_M0277_FIX_PCM_DISABLEFILTER
         if( isPCMFilterDisabled && cl.classIdx == AdaptiveLoopFilter::m_ALF_UNUSED_CLASSIDX && transposeIdx == AdaptiveLoopFilter::m_ALF_UNUSED_TRANSPOSIDX )
         {
+          pRec += 4;
           continue;
         }
 #endif
@@ -420,10 +424,35 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 #if JVET_M0277_FIX_PCM_DISABLEFILTER
       else if ( isPCMFilterDisabled )
       {
-        Position pos(i, j);
-        CodingUnit* cu = isDualTree ? cs.getCU(recalcPosition(nChromaFormat, CH_L, CH_C, pos), CH_C) : cs.getCU(pos, CH_L);
-        if ( cu->ipcm )
+        int  blkX, blkY;
+        bool *flags  = pcmFlags2x2;
+        Pel  *pcmRec = pcmRec2x2;
+
+        // check which chroma 2x2 blocks use PCM
+        // chroma PCM may not be aligned with 4x4 ALF processing grid
+        for( blkY=0; blkY<4; blkY+=2 ) 
         {
+          for( blkX=0; blkX<4; blkX+=2 ) 
+          {
+            Position pos(j+startWidth+blkX, i+startHeight+blkY);
+            CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
+            *flags++ = cu->ipcm ? 1 : 0;
+
+            // save original samples from 2x2 PCM blocks
+            if( cu->ipcm ) 
+            {
+              *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+0)];
+              *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+1)];
+              *pcmRec++ = pRec[(blkY+1)*dstStride + (blkX+0)];
+              *pcmRec++ = pRec[(blkY+1)*dstStride + (blkX+1)];
+            }
+          }
+        }
+
+        // skip entire 4x4 if all chroma 2x2 blocks use PCM
+        if( pcmFlags2x2[0] && pcmFlags2x2[1] && pcmFlags2x2[2] && pcmFlags2x2[3] )
+        {
+          pRec += 4;
           continue;
         }
       }
@@ -544,6 +573,28 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
       } //<-- end of k-loop
 
       pRec -= ( 4 * dstStride );
+      
+      // restore 2x2 PCM chroma blocks
+      if( bChroma && isPCMFilterDisabled )
+      {
+        int  blkX, blkY;
+        bool *flags  = pcmFlags2x2;
+        Pel  *pcmRec = pcmRec2x2;
+        for( blkY=0; blkY<4; blkY+=2 ) 
+        {
+          for( blkX=0; blkX<4; blkX+=2 ) 
+          {
+            if( *flags++ ) 
+            {
+              pRec[(blkY+0)*dstStride + (blkX+0)] = *pcmRec++;
+              pRec[(blkY+0)*dstStride + (blkX+1)] = *pcmRec++;
+              pRec[(blkY+1)*dstStride + (blkX+0)] = *pcmRec++;
+              pRec[(blkY+1)*dstStride + (blkX+1)] = *pcmRec++;
+            }
+          }
+        }
+      }
+
       pRec += 4;
     }
 
@@ -614,6 +665,9 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 
   const int clsSizeY = 4;
   const int clsSizeX = 4;
+  
+  bool pcmFlags2x2[4] = {0,0,0,0};
+  Pel  pcmRec2x2[16];
 
   CHECK( startHeight % clsSizeY, "Wrong startHeight in filtering" );
   CHECK( startWidth % clsSizeX, "Wrong startWidth in filtering" );
@@ -662,6 +716,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 #if JVET_M0277_FIX_PCM_DISABLEFILTER
         if ( isPCMFilterDisabled && cl.classIdx == AdaptiveLoopFilter::m_ALF_UNUSED_CLASSIDX && transposeIdx == AdaptiveLoopFilter::m_ALF_UNUSED_TRANSPOSIDX )
         {
+          pRec += 4;
           continue;
         }
 #endif
@@ -670,10 +725,35 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 #if JVET_M0277_FIX_PCM_DISABLEFILTER
       else if ( isPCMFilterDisabled )
       {
-        Position pos(i, j);
-        CodingUnit* cu = isDualTree ? cs.getCU(recalcPosition(nChromaFormat, CH_L, CH_C, pos), CH_C) : cs.getCU(pos, CH_L);
-        if ( cu->ipcm )
+        int  blkX, blkY;
+        bool *flags  = pcmFlags2x2;
+        Pel  *pcmRec = pcmRec2x2;
+
+        // check which chroma 2x2 blocks use PCM
+        // chroma PCM may not be aligned with 4x4 ALF processing grid
+        for( blkY=0; blkY<4; blkY+=2 )
         {
+          for( blkX=0; blkX<4; blkX+=2 )
+          {
+            Position pos(j+startWidth+blkX, i+startHeight+blkY);
+            CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
+            *flags++ = cu->ipcm ? 1 : 0;
+
+            // save original samples from 2x2 PCM blocks
+            if( cu->ipcm ) 
+            {
+              *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+0)];
+              *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+1)];
+              *pcmRec++ = pRec[(blkY+1)*dstStride + (blkX+0)];
+              *pcmRec++ = pRec[(blkY+1)*dstStride + (blkX+1)];
+            }
+          }
+        }
+
+        // skip entire 4x4 if all chroma 2x2 blocks use PCM
+        if( pcmFlags2x2[0] && pcmFlags2x2[1] && pcmFlags2x2[2] && pcmFlags2x2[3] )
+        {
+          pRec += 4;
           continue;
         }
       }
@@ -812,6 +892,28 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
       }
 
       pRec -= ( 4 * dstStride );
+            
+      // restore 2x2 PCM chroma blocks
+      if( bChroma && isPCMFilterDisabled )
+      {
+        int  blkX, blkY;
+        bool *flags  = pcmFlags2x2;
+        Pel  *pcmRec = pcmRec2x2;
+        for( blkY=0; blkY<4; blkY+=2 )
+        {
+          for( blkX=0; blkX<4; blkX+=2 )
+          {
+            if( *flags++ ) 
+            {
+              pRec[(blkY+0)*dstStride + (blkX+0)] = *pcmRec++;
+              pRec[(blkY+0)*dstStride + (blkX+1)] = *pcmRec++;
+              pRec[(blkY+1)*dstStride + (blkX+0)] = *pcmRec++;
+              pRec[(blkY+1)*dstStride + (blkX+1)] = *pcmRec++;
+            }
+          }
+        }
+      }
+
       pRec += 4;
     }
 

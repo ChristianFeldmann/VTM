@@ -282,6 +282,8 @@ typedef std::pair<int, int>  TrCost;
 
 #define JVET_M0132_APS                                    1  // APS
 
+#define JVET_M0101_HLS                                    1  // joint HLS syntax
+
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
 
 
@@ -935,6 +937,57 @@ enum PPSExtensionFlagIndex
 //       effort can be done without use of macros to alter the names used to indicate the different NAL unit types.
 enum NalUnitType
 {
+#if JVET_M0101_HLS
+  NAL_UNIT_CODED_SLICE_TRAIL = 0, // 0
+  NAL_UNIT_CODED_SLICE_STSA,      // 1
+
+  //KJS: keep RADL/RASL since there is no real decision on these types yet
+  NAL_UNIT_CODED_SLICE_RADL,      // 2   should be NAL_UNIT_RESERVED_VCL_2,
+  NAL_UNIT_CODED_SLICE_RASL,      // 3   should be NAL_UNIT_RESERVED_VCL_3,
+  
+  NAL_UNIT_RESERVED_VCL_4,
+  NAL_UNIT_RESERVED_VCL_5,
+  NAL_UNIT_RESERVED_VCL_6,
+  NAL_UNIT_RESERVED_VCL_7,
+  
+  NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 8
+  NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 9
+  NAL_UNIT_CODED_SLICE_CRA,         // 10
+  
+  NAL_UNIT_RESERVED_IRAP_VCL11,
+  NAL_UNIT_RESERVED_IRAP_VCL12,
+  NAL_UNIT_RESERVED_IRAP_VCL13,
+
+  NAL_UNIT_RESERVED_VCL14,
+
+#if HEVC_VPS
+  NAL_UNIT_VPS,                     // probably not coming back
+#else
+  NAL_UNIT_RESERVED_VCL15,
+#endif
+
+  NAL_UNIT_RESERVED_NVCL16,         // probably DPS
+
+  NAL_UNIT_SPS,                     // 17
+  NAL_UNIT_PPS,                     // 18
+#if JVET_M0132_APS
+  NAL_UNIT_APS,                     // 19 NAL unit type number needs to be reaaranged.
+#endif
+  NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 20
+  NAL_UNIT_EOS,                     // 21
+  NAL_UNIT_EOB,                     // 22
+  NAL_UNIT_PREFIX_SEI,              // 23
+  NAL_UNIT_SUFFIX_SEI,              // 24
+  NAL_UNIT_FILLER_DATA,             // 25  keep: may be added with HRD 
+
+  NAL_UNIT_RESERVED_NVCL26,
+  NAL_UNIT_RESERVED_NVCL27,
+  NAL_UNIT_UNSPECIFIED_28,
+  NAL_UNIT_UNSPECIFIED_29,
+  NAL_UNIT_UNSPECIFIED_30,
+  NAL_UNIT_UNSPECIFIED_31,
+  NAL_UNIT_INVALID,
+#else
   NAL_UNIT_CODED_SLICE_TRAIL_N = 0, // 0
   NAL_UNIT_CODED_SLICE_TRAIL_R,     // 1
 
@@ -1016,6 +1069,7 @@ enum NalUnitType
   NAL_UNIT_UNSPECIFIED_62,
   NAL_UNIT_UNSPECIFIED_63,
   NAL_UNIT_INVALID,
+#endif
 };
 
 #if SHARP_LUMA_DELTA_QP

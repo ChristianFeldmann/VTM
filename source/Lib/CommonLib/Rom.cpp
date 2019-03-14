@@ -65,6 +65,30 @@ const char* nalUnitTypeToString(NalUnitType type)
 {
   switch (type)
   {
+#if JVET_M0101_HLS
+  case NAL_UNIT_CODED_SLICE_TRAIL:      return "TRAIL";
+  case NAL_UNIT_CODED_SLICE_STSA:       return "STSA";
+  case NAL_UNIT_CODED_SLICE_IDR_W_RADL: return "IDR_W_RADL";
+  case NAL_UNIT_CODED_SLICE_IDR_N_LP:   return "IDR_N_LP";
+  case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
+  case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";
+  case NAL_UNIT_CODED_SLICE_RASL:       return "RASL";
+#if HEVC_VPS
+  case NAL_UNIT_VPS:                    return "VPS";
+#endif
+  case NAL_UNIT_SPS:                    return "SPS";
+  case NAL_UNIT_PPS:                    return "PPS";
+#if JVET_M0132_APS
+  case NAL_UNIT_APS:                    return "APS";
+#endif
+  case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
+  case NAL_UNIT_EOS:                    return "EOS";
+  case NAL_UNIT_EOB:                    return "EOB";
+  case NAL_UNIT_FILLER_DATA:            return "FILLER";
+  case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
+  case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
+  default:                              return "UNK";
+#else
   case NAL_UNIT_CODED_SLICE_TRAIL_R:    return "TRAIL_R";
   case NAL_UNIT_CODED_SLICE_TRAIL_N:    return "TRAIL_N";
   case NAL_UNIT_CODED_SLICE_TSA_R:      return "TSA_R";
@@ -96,6 +120,7 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
   case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
   default:                              return "UNK";
+#endif
   }
 }
 

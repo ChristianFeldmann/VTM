@@ -888,6 +888,7 @@ void EncApp::rateStatsAccum(const AccessUnit& au, const std::vector<uint32_t>& a
   {
     switch ((*it_au)->m_nalUnitType)
     {
+#if !JVET_M0101_HLS
     case NAL_UNIT_CODED_SLICE_TRAIL_R:
     case NAL_UNIT_CODED_SLICE_TRAIL_N:
     case NAL_UNIT_CODED_SLICE_TSA_R:
@@ -904,6 +905,15 @@ void EncApp::rateStatsAccum(const AccessUnit& au, const std::vector<uint32_t>& a
     case NAL_UNIT_CODED_SLICE_RADL_R:
     case NAL_UNIT_CODED_SLICE_RASL_N:
     case NAL_UNIT_CODED_SLICE_RASL_R:
+#else
+    case NAL_UNIT_CODED_SLICE_TRAIL:
+    case NAL_UNIT_CODED_SLICE_STSA:
+    case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
+    case NAL_UNIT_CODED_SLICE_IDR_N_LP:
+    case NAL_UNIT_CODED_SLICE_CRA:
+    case NAL_UNIT_CODED_SLICE_RADL:
+    case NAL_UNIT_CODED_SLICE_RASL:
+#endif
 #if HEVC_VPS
     case NAL_UNIT_VPS:
 #endif

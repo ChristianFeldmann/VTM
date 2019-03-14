@@ -88,7 +88,7 @@ Slice::Slice()
 , m_colFromL0Flag                 ( true )
 , m_noOutputPriorPicsFlag         ( false )
 , m_noRaslOutputFlag              ( false )
-, m_handleCraAsBlaFlag            ( false )
+, m_handleCraAsCvsStartFlag            ( false )
 , m_colRefIdx                     ( 0 )
 , m_maxNumMergeCand               ( 0 )
 , m_maxNumAffineMergeCand         ( 0 )
@@ -123,7 +123,9 @@ Slice::Slice()
 , m_substreamSizes                ( )
 , m_cabacInitFlag                 ( false )
 , m_bLMvdL1Zero                   ( false )
+#if !JVET_M0101_HLS
 , m_temporalLayerNonReferenceFlag ( false )
+#endif
 , m_LFCrossSliceBoundaryFlag      ( false )
 , m_enableTMVPFlag                ( true )
 , m_encCABACTableIdx              (I_SLICE)
@@ -247,10 +249,12 @@ bool Slice::getRapPicFlag() const
 {
   return getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL
       || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP
+#if !JVET_M0101_HLS
       || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP
       || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
       || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
-      || getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA;
+#endif
+    || getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA;
 }
 
 
@@ -660,6 +664,7 @@ void Slice::checkCRA(const ReferencePictureSet *pReferencePictureSet, int& pocCR
     pocCRA = getPOC();
     associatedIRAPType = getNalUnitType();
   }
+#if !JVET_M0101_HLS
   else if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
          || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
          || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP ) // BLA picture found
@@ -667,6 +672,7 @@ void Slice::checkCRA(const ReferencePictureSet *pReferencePictureSet, int& pocCR
     pocCRA = getPOC();
     associatedIRAPType = getNalUnitType();
   }
+#endif
 }
 
 /** Function for marking the reference pictures when an IDR/CRA/CRANT/BLA/BLANT is encountered.
@@ -692,11 +698,16 @@ void Slice::decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& 
   Picture* rpcPic;
   int      pocCurr = getPOC();
 
+#if !JVET_M0101_HLS
   if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
     || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
     || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP
     || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL
     || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP )  // IDR or BLA picture
+#else
+  if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL
+    || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP)  // IDR picture
+#endif
   {
     // mark all pictures as not used for reference
     PicList::iterator        iterPic       = rcListPic.begin();
@@ -712,12 +723,14 @@ void Slice::decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& 
       }
       iterPic++;
     }
+#if !JVET_M0101_HLS
     if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
       || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
       || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP )
     {
       pocCRA = pocCurr;
     }
+#endif
     if (bEfficientFieldIRAPEnabled)
     {
       bRefreshPending = true;
@@ -960,25 +973,41 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
   if(this->getAssociatedIRAPPOC() > this->getPOC())
   {
     // Do not check IRAP pictures since they may get a POC lower than their associated IRAP
+#if !JVET_M0101_HLS
     if(nalUnitType < NAL_UNIT_CODED_SLICE_BLA_W_LP ||
        nalUnitType > NAL_UNIT_RESERVED_IRAP_VCL23)
+#else
+    if (nalUnitType < NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
+        nalUnitType > NAL_UNIT_RESERVED_IRAP_VCL13)
+#endif
     {
+#if !JVET_M0101_HLS
       CHECK( nalUnitType != NAL_UNIT_CODED_SLICE_RASL_N &&
              nalUnitType != NAL_UNIT_CODED_SLICE_RASL_R &&
              nalUnitType != NAL_UNIT_CODED_SLICE_RADL_N &&
              nalUnitType != NAL_UNIT_CODED_SLICE_RADL_R, "Invalid NAL unit type");
+#else
+      CHECK(nalUnitType != NAL_UNIT_CODED_SLICE_RASL &&
+            nalUnitType != NAL_UNIT_CODED_SLICE_RADL, "Invalid NAL unit type");
+#endif
     }
   }
 
   // When a picture is a trailing picture, it shall not be a RADL or RASL picture.
   if(this->getAssociatedIRAPPOC() < this->getPOC())
   {
+#if !JVET_M0101_HLS
     CHECK( nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
            nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R ||
            nalUnitType == NAL_UNIT_CODED_SLICE_RADL_N ||
            nalUnitType == NAL_UNIT_CODED_SLICE_RADL_R, "Invalid NAL unit type" );
+#else
+    CHECK(nalUnitType == NAL_UNIT_CODED_SLICE_RASL ||
+          nalUnitType == NAL_UNIT_CODED_SLICE_RADL, "Invalid NAL unit type");
+#endif
   }
 
+#if !JVET_M0101_HLS
   // No RASL pictures shall be present in the bitstream that are associated
   // with a BLA picture having nal_unit_type equal to BLA_W_RADL or BLA_N_LP.
   if(nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
@@ -987,11 +1016,16 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
     CHECK (this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL ||
            this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_N_LP, "Invalid NAL unit type");
   }
+#endif
 
   // No RASL pictures shall be present in the bitstream that are associated with
   // an IDR picture.
+#if !JVET_M0101_HLS
   if(nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
      nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R)
+#else
+  if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL)
+#endif
   {
     CHECK( this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_IDR_N_LP   ||
            this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL, "Invalid NAL unit type");
@@ -1000,11 +1034,19 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
   // No RADL pictures shall be present in the bitstream that are associated with
   // a BLA picture having nal_unit_type equal to BLA_N_LP or that are associated
   // with an IDR picture having nal_unit_type equal to IDR_N_LP.
+#if !JVET_M0101_HLS
   if(nalUnitType == NAL_UNIT_CODED_SLICE_RADL_N ||
      nalUnitType == NAL_UNIT_CODED_SLICE_RADL_R)
+#else
+  if (nalUnitType == NAL_UNIT_CODED_SLICE_RADL)
+#endif
   {
+#if !JVET_M0101_HLS
     CHECK (this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_N_LP   ||
            this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_IDR_N_LP, "Invalid NAL unit type");
+#else
+    CHECK (this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_IDR_N_LP, "Invalid NAL unit type");
+#endif
   }
 
   // loop through all pictures in the reference picture buffer
@@ -1027,12 +1069,18 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
     // (Note that any picture following in output order would be present in the DPB)
     if(pcSlice->getPicOutputFlag() == 1 && !this->getNoOutputPriorPicsFlag())
     {
+#if !JVET_M0101_HLS
       if(nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP    ||
          nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP    ||
          nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL  ||
          nalUnitType == NAL_UNIT_CODED_SLICE_CRA         ||
          nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP    ||
          nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL)
+#else
+      if (nalUnitType == NAL_UNIT_CODED_SLICE_CRA ||
+          nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP ||
+          nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL)
+#endif
       {
         CHECK(pcPic->poc >= this->getPOC(), "Invalid POC");
       }
@@ -1043,8 +1091,12 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
     // picture in output order.
     if(pcSlice->getPicOutputFlag() == 1)
     {
+#if !JVET_M0101_HLS
       if((nalUnitType == NAL_UNIT_CODED_SLICE_RADL_N ||
           nalUnitType == NAL_UNIT_CODED_SLICE_RADL_R))
+#else
+      if (nalUnitType == NAL_UNIT_CODED_SLICE_RADL)
+#endif
       {
         // rpcPic precedes the IRAP in decoding order
         if(this->getAssociatedIRAPPOC() > pcSlice->getAssociatedIRAPPOC())
@@ -1060,10 +1112,15 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
     // When a picture is a leading picture, it shall precede, in decoding order,
     // all trailing pictures that are associated with the same IRAP picture.
-      if(nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
+#if !JVET_M0101_HLS
+    if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
          nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R ||
          nalUnitType == NAL_UNIT_CODED_SLICE_RADL_N ||
          nalUnitType == NAL_UNIT_CODED_SLICE_RADL_R)
+#else
+    if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL ||
+        nalUnitType == NAL_UNIT_CODED_SLICE_RADL )
+#endif
       {
         if(pcSlice->getAssociatedIRAPPOC() == this->getAssociatedIRAPPOC())
         {
@@ -1075,17 +1132,29 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
     // Any RASL picture associated with a CRA or BLA picture shall precede any
     // RADL picture associated with the CRA or BLA picture in output order
+#if !JVET_M0101_HLS
     if(nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
        nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R)
+#else
+    if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL)
+#endif
     {
+#if !JVET_M0101_HLS
       if((this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_N_LP   ||
           this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_W_LP   ||
           this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL ||
-          this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_CRA)       &&
+          this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_CRA) &&
+#else
+      if ((this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_CRA) &&
+#endif
           this->getAssociatedIRAPPOC() == pcSlice->getAssociatedIRAPPOC())
       {
+#if !JVET_M0101_HLS
         if(pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL_N ||
            pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL_R)
+#else
+        if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL)
+#endif
         {
           CHECK( pcPic->poc <= this->getPOC(), "Invalid POC");
         }
@@ -1094,15 +1163,22 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
     // Any RASL picture associated with a CRA picture shall follow, in output
     // order, any IRAP picture that precedes the CRA picture in decoding order.
+#if !JVET_M0101_HLS
     if(nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
        nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R)
+#else
+    if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL)
+#endif
     {
       if(this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_CRA)
       {
-        if(pcSlice->getPOC() < this->getAssociatedIRAPPOC() &&
-           (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP   ||
+        if(pcSlice->getPOC() < this->getAssociatedIRAPPOC() && 
+          (
+#if !JVET_M0101_HLS
+            pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP   ||
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP   ||
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL ||
+#endif
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP   ||
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA))
@@ -1187,15 +1263,19 @@ void Slice::applyReferencePictureSet( PicList& rcListPic, const ReferencePicture
       //check that pictures of higher temporal layers are not used
       CHECK( pcPic->usedByCurr && !(pcPic->layer<=this->getTLayer()), "Invalid state");
       //check that pictures of higher or equal temporal layer are not in the RPS if the current picture is a TSA picture
+#if !JVET_M0101_HLS
       if( this->getNalUnitType() == NAL_UNIT_CODED_SLICE_TSA_R || this->getNalUnitType() == NAL_UNIT_CODED_SLICE_TSA_N)
       {
         CHECK( !(pcPic->layer<this->getTLayer()), "Invalid state");
       }
+#endif
+#if !JVET_M0101_HLS
       //check that pictures marked as temporal layer non-reference pictures are not used for reference
       if( pcPic->poc != this->getPOC() && (pcPic->layer == this->getTLayer()))
       {
         CHECK( pcPic->usedByCurr && pcPic->slices[0]->getTemporalLayerNonReferenceFlag(), "Invalid state");
       }
+#endif
     }
   }
 }
@@ -1726,6 +1806,7 @@ SPSRExt::SPSRExt()
 
 SPS::SPS()
 : m_SPSId                     (  0)
+#if !JVET_M0101_HLS
 , m_bIntraOnlyConstraintFlag  (false)
 , m_maxBitDepthConstraintIdc  (  0)
 , m_maxChromaFormatConstraintIdc(CHROMA_420)
@@ -1758,6 +1839,7 @@ SPS::SPS()
 #endif
 , m_bNoDepQuantConstraintFlag (false)
 , m_bNoSignDataHidingConstraintFlag(false)
+#endif
 #if JVET_M0246_AFFINE_AMVR
 , m_affineAmvrEnabledFlag     ( false )
 #endif
@@ -2579,6 +2661,7 @@ void ParameterSetMap<SPS>::setID(SPS* parameterSet, const int psId)
   parameterSet->setSPSId(psId);
 }
 
+#if !JVET_M0101_HLS
 ProfileTierLevel::ProfileTierLevel()
   : m_profileSpace    (0)
   , m_tierFlag        (Level::MAIN)
@@ -2597,6 +2680,16 @@ PTL::PTL()
   ::memset(m_subLayerProfilePresentFlag, 0, sizeof(m_subLayerProfilePresentFlag));
   ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));
 }
+#else
+ProfileTierLevel::ProfileTierLevel()
+  : m_tierFlag        (Level::MAIN)
+  , m_profileIdc      (Profile::NONE)
+  , m_levelIdc        (Level::NONE)
+{
+  ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));
+  ::memset(m_subLayerLevelIdc, Level::NONE, sizeof(m_subLayerLevelIdc          ));
+}
+#endif
 
 void calculateParameterSetChangedFlag(bool &bChanged, const std::vector<uint8_t> *pOldData, const std::vector<uint8_t> *pNewData)
 {

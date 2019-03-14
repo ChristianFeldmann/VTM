@@ -109,6 +109,9 @@ public:
 
 protected:
   void xReadRbspTrailingBits();
+#if JVET_M0101_HLS
+  bool isByteAligned() { return (m_pcBitstream->getNumBitsUntilByteAligned() != 0 ); }
+#endif
 };
 
 
@@ -153,8 +156,13 @@ public:
   void  parseAPS            ( APS* pcAPS);
 #endif
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
+#if !JVET_M0101_HLS
   void  parsePTL            ( PTL *rpcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1 );
   void  parseProfileTier    ( ProfileTierLevel *ptl, const bool bIsSubLayer );
+#else
+  void  parseConstraintInfo   (ConstraintInfo *cinfo);
+  void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
+#endif
   void  parseHrdParameters  ( HRD *hrd, bool cprms_present_flag, uint32_t tempLevelHigh );
   void  parseSliceHeader    ( Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseTerminatingBit ( uint32_t& ruiBit );

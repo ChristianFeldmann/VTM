@@ -191,14 +191,178 @@ private:
 };
 #endif
 
+#if JVET_M0101_HLS
+class ConstraintInfo
+{
+  bool              m_progressiveSourceFlag;
+  bool              m_interlacedSourceFlag;
+  bool              m_nonPackedConstraintFlag;
+  bool              m_frameOnlyConstraintFlag;
+  bool              m_intraOnlyConstraintFlag;
+  uint32_t          m_maxBitDepthConstraintIdc;
+  ChromaFormat      m_maxChromaFormatConstraintIdc;
+  bool              m_onePictureOnlyConstraintFlag;
+  bool              m_lowerBitRateConstraintFlag;
+
+  bool              m_noQtbttDualTreeIntraConstraintFlag;
+  bool              m_noSaoConstraintFlag;
+  bool              m_noAlfConstraintFlag;
+  bool              m_noPcmConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool              m_noRefWraparoundConstraintFlag;
+#endif
+  bool              m_noTemporalMvpConstraintFlag;
+  bool              m_noSbtmvpConstraintFlag;
+  bool              m_noAmvrConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool              m_noBdofConstraintFlag;
+#endif
+  bool              m_noCclmConstraintFlag;
+  bool              m_noMtsConstraintFlag;
+  bool              m_noAffineMotionConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool              m_noGbiConstraintFlag;
+  bool              m_noMhIntraConstraintFlag;
+  bool              m_noTriangleConstraintFlag;
+#endif
+  bool              m_noLadfConstraintFlag;
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool              m_noCurrPicRefConstraintFlag;
+  bool              m_noQpDeltaConstraintFlag;
+#endif
+  bool              m_noDepQuantConstraintFlag;
+  bool              m_noSignDataHidingConstraintFlag;
+
+public:
+  ConstraintInfo()
+    : m_progressiveSourceFlag (false)
+    , m_interlacedSourceFlag (false)
+    , m_nonPackedConstraintFlag (false)
+    , m_frameOnlyConstraintFlag  (false)
+    , m_intraOnlyConstraintFlag  (false)
+    , m_maxBitDepthConstraintIdc  (  0)
+    , m_maxChromaFormatConstraintIdc(CHROMA_420)
+    , m_noQtbttDualTreeIntraConstraintFlag(false)
+    , m_noSaoConstraintFlag      (false)
+    , m_noAlfConstraintFlag      (false)
+    , m_noPcmConstraintFlag      (false)
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+    , m_noRefWraparoundConstraintFlag(false)
+#endif
+    , m_noTemporalMvpConstraintFlag(false)
+    , m_noSbtmvpConstraintFlag   (false)
+    , m_noAmvrConstraintFlag     (false)
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+    , m_noBdofConstraintFlag     (false)
+#endif
+    , m_noCclmConstraintFlag     (false)
+    , m_noMtsConstraintFlag      (false)
+    , m_noAffineMotionConstraintFlag(false)
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+    , m_noGbiConstraintFlag      (false)
+    , m_noMhIntraConstraintFlag  (false)
+    , m_noTriangleConstraintFlag (false)
+#endif
+    , m_noLadfConstraintFlag     (false)
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+    , m_noCurrPicRefConstraintFlag(false)
+    , m_noQpDeltaConstraintFlag  (false)
+#endif
+    , m_noDepQuantConstraintFlag (false)
+    , m_noSignDataHidingConstraintFlag(false)
+  {}
+  
+  bool          getProgressiveSourceFlag() const { return m_progressiveSourceFlag; }
+  void          setProgressiveSourceFlag(bool b) { m_progressiveSourceFlag = b; }
+
+  bool          getInterlacedSourceFlag() const { return m_interlacedSourceFlag; }
+  void          setInterlacedSourceFlag(bool b) { m_interlacedSourceFlag = b; }
+
+  bool          getNonPackedConstraintFlag() const { return m_nonPackedConstraintFlag; }
+  void          setNonPackedConstraintFlag(bool b) { m_nonPackedConstraintFlag = b; }
+
+  bool          getFrameOnlyConstraintFlag() const { return m_frameOnlyConstraintFlag; }
+  void          setFrameOnlyConstraintFlag(bool b) { m_frameOnlyConstraintFlag = b; }
+
+  uint32_t      getMaxBitDepthConstraintIdc() const { return m_maxBitDepthConstraintIdc; }
+  void          setMaxBitDepthConstraintIdc(uint32_t bitDepth) { m_maxBitDepthConstraintIdc = bitDepth; }
+
+  ChromaFormat  getMaxChromaFormatConstraintIdc() const { return m_maxChromaFormatConstraintIdc; }
+  void          setMaxChromaFormatConstraintIdc(ChromaFormat fmt) { m_maxChromaFormatConstraintIdc = fmt; }
+
+  bool          getIntraOnlyConstraintFlag() const { return m_intraOnlyConstraintFlag; }
+  void          setIntraOnlyConstraintFlag(bool b) { m_intraOnlyConstraintFlag = b; }
+
+  bool          getOnePictureOnlyConstraintFlag() const { return m_onePictureOnlyConstraintFlag; }
+  void          setOnePictureOnlyConstraintFlag(bool b) { m_onePictureOnlyConstraintFlag = b; }
+
+  bool          getLowerBitRateConstraintFlag() const { return m_lowerBitRateConstraintFlag; }
+  void          setLowerBitRateConstraintFlag(bool b) { m_lowerBitRateConstraintFlag = b; }
+
+  bool          getNoQtbttDualTreeIntraConstraintFlag() const { return m_noQtbttDualTreeIntraConstraintFlag; }
+  void          setNoQtbttDualTreeIntraConstraintFlag(bool bVal) { m_noQtbttDualTreeIntraConstraintFlag = bVal; }
+  bool          getNoSaoConstraintFlag() const { return m_noSaoConstraintFlag; }
+  void          setNoSaoConstraintFlag(bool bVal) { m_noSaoConstraintFlag = bVal; }
+  bool          getNoAlfConstraintFlag() const { return m_noAlfConstraintFlag; }
+  void          setNoAlfConstraintFlag(bool bVal) { m_noAlfConstraintFlag = bVal; }
+  bool          getNoPcmConstraintFlag() const { return m_noPcmConstraintFlag; }
+  void          setNoPcmConstraintFlag(bool bVal) { m_noPcmConstraintFlag = bVal; }
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool          getNoRefWraparoundConstraintFlag() const { return m_noRefWraparoundConstraintFlag; }
+  void          setNoRefWraparoundConstraintFlag(bool bVal) { m_noRefWraparoundConstraintFlag = bVal; }
+#endif
+  bool          getNoTemporalMvpConstraintFlag() const { return m_noTemporalMvpConstraintFlag; }
+  void          setNoTemporalMvpConstraintFlag(bool bVal) { m_noTemporalMvpConstraintFlag = bVal; }
+  bool          getNoSbtmvpConstraintFlag() const { return m_noSbtmvpConstraintFlag; }
+  void          setNoSbtmvpConstraintFlag(bool bVal) { m_noSbtmvpConstraintFlag = bVal; }
+  bool          getNoAmvrConstraintFlag() const { return m_noAmvrConstraintFlag; }
+  void          setNoAmvrConstraintFlag(bool bVal) { m_noAmvrConstraintFlag = bVal; }
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool          getNoBdofConstraintFlag() const { return m_noBdofConstraintFlag; }
+  void          setNoBdofConstraintFlag(bool bVal) { m_noBdofConstraintFlag = bVal; }
+#endif
+  bool          getNoCclmConstraintFlag() const { return m_noCclmConstraintFlag; }
+  void          setNoCclmConstraintFlag(bool bVal) { m_noCclmConstraintFlag = bVal; }
+  bool          getNoMtsConstraintFlag() const { return m_noMtsConstraintFlag; }
+  void          setNoMtsConstraintFlag(bool bVal) { m_noMtsConstraintFlag = bVal; }
+  bool          getNoAffineMotionConstraintFlag() const { return m_noAffineMotionConstraintFlag; }
+  void          setNoAffineMotionConstraintFlag(bool bVal) { m_noAffineMotionConstraintFlag = bVal; }
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool          getNoGbiConstraintFlag() const { return m_noGbiConstraintFlag; }
+  void          setNoGbiConstraintFlag(bool bVal) { m_noGbiConstraintFlag = bVal; }
+  bool          getNoMhIntraConstraintFlag() const { return m_noMhIntraConstraintFlag; }
+  void          setNoMhIntraConstraintFlag(bool bVal) { m_noMhIntraConstraintFlag = bVal; }
+  bool          getNoTriangleConstraintFlag() const { return m_noTriangleConstraintFlag; }
+  void          setNoTriangleConstraintFlag(bool bVal) { m_noTriangleConstraintFlag = bVal; }
+#endif
+  bool          getNoLadfConstraintFlag() const { return m_noLadfConstraintFlag; }
+  void          setNoLadfConstraintFlag(bool bVal) { m_noLadfConstraintFlag = bVal; }
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  bool          getNoCurrPicRefConstraintFlag() const { return m_noCurrPicRefConstraintFlag; }
+  void          setNoCurrPicRefConstraintFlag(bool bVal) { m_noCurrPicRefConstraintFlag = bVal; }
+  bool          getNoQpDeltaConstraintFlag() const { return m_noQpDeltaConstraintFlag; }
+  void          setNoQpDeltaConstraintFlag(bool bVal) { m_noQpDeltaConstraintFlag = bVal; }
+#endif
+  bool          getNoDepQuantConstraintFlag() const { return m_noDepQuantConstraintFlag; }
+  void          setNoDepQuantConstraintFlag(bool bVal) { m_noDepQuantConstraintFlag = bVal; }
+  bool          getNoSignDataHidingConstraintFlag() const { return m_noSignDataHidingConstraintFlag; }
+  void          setNoSignDataHidingConstraintFlag(bool bVal) { m_noSignDataHidingConstraintFlag = bVal; }
+};
+#endif
+
 class ProfileTierLevel
 {
+#if !JVET_M0101_HLS
   int               m_profileSpace;
+#endif
   Level::Tier       m_tierFlag;
   Profile::Name     m_profileIdc;
+#if !JVET_M0101_HLS
   bool              m_profileCompatibilityFlag[32];
+#endif
   Level::Name       m_levelIdc;
 
+#if !JVET_M0101_HLS
   bool              m_progressiveSourceFlag;
   bool              m_interlacedSourceFlag;
   bool              m_nonPackedConstraintFlag;
@@ -208,12 +372,18 @@ class ProfileTierLevel
   bool              m_intraConstraintFlag;
   bool              m_onePictureOnlyConstraintFlag;
   bool              m_lowerBitRateConstraintFlag;
+#else
+  ConstraintInfo    m_constraintInfo;
+  bool              m_subLayerLevelPresentFlag[MAX_TLAYER - 1];
+  Level::Name       m_subLayerLevelIdc[MAX_TLAYER - 1];
+#endif
 
 public:
                 ProfileTierLevel();
-
+#if !JVET_M0101_HLS
   int           getProfileSpace() const                     { return m_profileSpace;                }
   void          setProfileSpace(int x)                      { m_profileSpace = x;                   }
+#endif
 
   Level::Tier   getTierFlag() const                         { return m_tierFlag;                    }
   void          setTierFlag(Level::Tier x)                  { m_tierFlag = x;                       }
@@ -221,12 +391,15 @@ public:
   Profile::Name getProfileIdc() const                       { return m_profileIdc;                  }
   void          setProfileIdc(Profile::Name x)              { m_profileIdc = x;                     }
 
+#if !JVET_M0101_HLS
   bool          getProfileCompatibilityFlag(int i) const    { return m_profileCompatibilityFlag[i]; }
   void          setProfileCompatibilityFlag(int i, bool x)  { m_profileCompatibilityFlag[i] = x;    }
+#endif
 
   Level::Name   getLevelIdc() const                         { return m_levelIdc;                    }
   void          setLevelIdc(Level::Name x)                  { m_levelIdc = x;                       }
 
+#if !JVET_M0101_HLS
   bool          getProgressiveSourceFlag() const            { return m_progressiveSourceFlag;       }
   void          setProgressiveSourceFlag(bool b)            { m_progressiveSourceFlag = b;          }
 
@@ -253,9 +426,23 @@ public:
 
   bool          getLowerBitRateConstraintFlag() const       { return m_lowerBitRateConstraintFlag;  }
   void          setLowerBitRateConstraintFlag(bool b)       { m_lowerBitRateConstraintFlag = b;     }
+#endif
+
+#if JVET_M0101_HLS
+  ConstraintInfo*         getConstraintInfo()              { return &m_constraintInfo; }
+  const ConstraintInfo*   getConstraintInfo() const        { return &m_constraintInfo; }
+
+  bool                    getSubLayerLevelPresentFlag(int i) const     { return m_subLayerLevelPresentFlag[i];   }
+  void                    setSubLayerLevelPresentFlag(int i, bool x)   { m_subLayerLevelPresentFlag[i] = x;      }
+
+  Level::Name             getSubLayerLevelIdc(int i) const             { return m_subLayerLevelIdc[i];   }
+  void                    setSubLayerLevelIdc(int i, Level::Name x)    { m_subLayerLevelIdc[i] = x;      }
+#endif
+
 };
 
 
+#if !JVET_M0101_HLS
 class PTL
 {
   ProfileTierLevel m_generalPTL;
@@ -276,6 +463,7 @@ public:
   ProfileTierLevel*       getSubLayerPTL(int i)                        { return &m_subLayerPTL[i];               }
   const ProfileTierLevel* getSubLayerPTL(int i) const                  { return &m_subLayerPTL[i];               }
 };
+#endif
 
 struct HrdSubLayerInfo
 {
@@ -827,6 +1015,7 @@ class SPS
 {
 private:
   int               m_SPSId;
+#if !JVET_M0101_HLS
   bool              m_bIntraOnlyConstraintFlag;
   uint32_t          m_maxBitDepthConstraintIdc;
   uint32_t          m_maxChromaFormatConstraintIdc;
@@ -859,6 +1048,7 @@ private:
 #endif
   bool              m_bNoDepQuantConstraintFlag;
   bool              m_bNoSignDataHidingConstraintFlag;
+#endif
 
 #if JVET_M0246_AFFINE_AMVR
   bool              m_affineAmvrEnabledFlag;
@@ -948,7 +1138,11 @@ private:
 
   static const int  m_winUnitX[NUM_CHROMA_FORMAT];
   static const int  m_winUnitY[NUM_CHROMA_FORMAT];
+#if !JVET_M0101_HLS
   PTL               m_pcPTL;
+#else
+  ProfileTierLevel  m_profileTierLevel;
+#endif
 
   bool              m_alfEnabledFlag;
 
@@ -1001,6 +1195,7 @@ public:
   int                     getVPSId() const                                                                { return m_VPSId;                                                      }
   void                    setVPSId(int i)                                                                 { m_VPSId = i;                                                         }
 #endif
+#if !JVET_M0101_HLS
   bool                    getIntraOnlyConstraintFlag() const                                              { return m_bIntraOnlyConstraintFlag;                                   }
   void                    setIntraOnlyConstraintFlag(bool bVal)                                           { m_bIntraOnlyConstraintFlag = bVal;                                   }
   uint32_t                getMaxBitDepthConstraintIdc() const                                             { return m_maxBitDepthConstraintIdc;                                   }
@@ -1057,6 +1252,7 @@ public:
   void                    setNoDepQuantConstraintFlag(bool bVal)                                          { m_bNoDepQuantConstraintFlag = bVal;                                  }
   bool                    getNoSignDataHidingConstraintFlag() const                                       { return m_bNoSignDataHidingConstraintFlag;                            }
   void                    setNoSignDataHidingConstraintFlag(bool bVal)                                    { m_bNoSignDataHidingConstraintFlag = bVal;                            }
+#endif
   int                     getSPSId() const                                                                { return m_SPSId;                                                      }
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
   ChromaFormat            getChromaFormatIdc () const                                                     { return m_chromaFormatIdc;                                            }
@@ -1215,8 +1411,13 @@ public:
   void                    setVuiParametersPresentFlag(bool b)                                             { m_vuiParametersPresentFlag = b;                                      }
   VUI*                    getVuiParameters()                                                              { return &m_vuiParameters;                                             }
   const VUI*              getVuiParameters() const                                                        { return &m_vuiParameters;                                             }
+#if !JVET_M0101_HLS
   const PTL*              getPTL() const                                                                  { return &m_pcPTL;                                                     }
   PTL*                    getPTL()                                                                        { return &m_pcPTL;                                                     }
+#else
+  const ProfileTierLevel* getProfileTierLevel() const                                                     { return &m_profileTierLevel; }
+  ProfileTierLevel*       getProfileTierLevel()                                                           { return &m_profileTierLevel; }
+#endif
 
   const SPSRExt&          getSpsRangeExtension() const                                                    { return m_spsRangeExtension;                                          }
   SPSRExt&                getSpsRangeExtension()                                                          { return m_spsRangeExtension;                                          }
@@ -1688,7 +1889,7 @@ private:
 
   bool                       m_noOutputPriorPicsFlag;
   bool                       m_noRaslOutputFlag;
-  bool                       m_handleCraAsBlaFlag;
+  bool                       m_handleCraAsCvsStartFlag;
 
   uint32_t                       m_colRefIdx;
   uint32_t                       m_maxNumMergeCand;
@@ -1734,7 +1935,9 @@ private:
   bool                       m_cabacInitFlag;
 
   bool                       m_bLMvdL1Zero;
+#if !JVET_M0101_HLS
   bool                       m_temporalLayerNonReferenceFlag;
+#endif
   bool                       m_LFCrossSliceBoundaryFlag;
 
   bool                       m_enableTMVPFlag;
@@ -1840,14 +2043,21 @@ public:
   bool                        getMvdL1ZeroFlag() const                               { return m_bLMvdL1Zero;                                         }
   int                         getNumRpsCurrTempList() const;
   int                         getList1IdxToList0Idx( int list1Idx ) const            { return m_list1IdxToList0Idx[list1Idx];                        }
+#if !JVET_M0101_HLS
   bool                        isReferenceNalu() const                                { return ((getNalUnitType() <= NAL_UNIT_RESERVED_VCL_R15) && (getNalUnitType()%2 != 0)) || ((getNalUnitType() >= NAL_UNIT_CODED_SLICE_BLA_W_LP) && (getNalUnitType() <= NAL_UNIT_RESERVED_IRAP_VCL23) ); }
+#endif
   void                        setPOC( int i )                                        { m_iPOC              = i;                                      }
   void                        setNalUnitType( NalUnitType e )                        { m_eNalUnitType      = e;                                      }
   NalUnitType                 getNalUnitType() const                                 { return m_eNalUnitType;                                        }
   bool                        getRapPicFlag() const;
   bool                        getIdrPicFlag() const                                  { return getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP; }
+#if !JVET_M0101_HLS
   bool                        isIRAP() const                                         { return (getNalUnitType() >= 16) && (getNalUnitType() <= 23);  }
   bool                        isIDRorBLA() const                                      { return (getNalUnitType() >= 16) && (getNalUnitType() <= 20);  }
+#else
+  bool                        isIRAP() const { return (getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (getNalUnitType() <= NAL_UNIT_RESERVED_IRAP_VCL13); }
+  bool                        isIDRorBLA() const { return (getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (getNalUnitType() <= NAL_UNIT_CODED_SLICE_IDR_N_LP); }
+#endif
   void                        checkCRA(const ReferencePictureSet *pReferencePictureSet, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic);
   void                        decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& rcListPic, const bool bEfficientFieldIRAPEnabled);
   void                        setSliceType( SliceType e )                            { m_eSliceType        = e;                                      }
@@ -1960,8 +2170,8 @@ public:
   void                        setNoRaslOutputFlag( bool val )                        { m_noRaslOutputFlag = val;                                     }
   bool                        getNoRaslOutputFlag() const                            { return m_noRaslOutputFlag;                                    }
 
-  void                        setHandleCraAsBlaFlag( bool val )                      { m_handleCraAsBlaFlag = val;                                   }
-  bool                        getHandleCraAsBlaFlag() const                          { return m_handleCraAsBlaFlag;                                  }
+  void                        setHandleCraAsCvsStartFlag( bool val )                 { m_handleCraAsCvsStartFlag = val;                                   }
+  bool                        getHandleCraAsCvsStartFlag() const                     { return m_handleCraAsCvsStartFlag;                                  }
 
   void                        setSliceMode( SliceConstraint mode )                   { m_sliceMode = mode;                                           }
   SliceConstraint             getSliceMode() const                                   { return m_sliceMode;                                           }
@@ -2024,8 +2234,10 @@ public:
 
   void                        setCabacInitFlag( bool val )                           { m_cabacInitFlag = val;                                        } //!< set CABAC initial flag
   bool                        getCabacInitFlag()                               const { return m_cabacInitFlag;                                       } //!< get CABAC initial flag
+#if !JVET_M0101_HLS
   bool                        getTemporalLayerNonReferenceFlag()               const { return m_temporalLayerNonReferenceFlag;                       }
   void                        setTemporalLayerNonReferenceFlag(bool x)               { m_temporalLayerNonReferenceFlag = x;                          }
+#endif
   void                        setLFCrossSliceBoundaryFlag( bool   val )              { m_LFCrossSliceBoundaryFlag = val;                             }
   bool                        getLFCrossSliceBoundaryFlag()                    const { return m_LFCrossSliceBoundaryFlag;                            }
 

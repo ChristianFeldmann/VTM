@@ -221,7 +221,7 @@ typedef std::pair<int, int>  TrCost;
 
 #endif
 #ifndef ENABLE_SPLIT_PARALLELISM
-#define ENABLE_SPLIT_PARALLELISM                          1
+#define ENABLE_SPLIT_PARALLELISM                          0
 #endif
 #if ENABLE_SPLIT_PARALLELISM
 #define PARL_SPLIT_MAX_NUM_JOBS                           6                             // number of parallel jobs that can be defined and need memory allocated

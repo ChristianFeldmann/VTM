@@ -91,6 +91,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
   cs.slice            = slice;
   cs.sps              = sps;
   cs.pps              = slice->getPPS();
+#if JVET_M0132_APS
+  cs.aps              = slice->getAPS();
+#endif
 #if HEVC_VPS
   cs.vps              = slice->getVPS();
 #endif

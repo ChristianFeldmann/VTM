@@ -122,6 +122,9 @@ public:
   void  codeVUI                 ( const VUI *pcVUI, const SPS* pcSPS );
   void  codeSPS                 ( const SPS* pcSPS );
   void  codePPS                 ( const PPS* pcPPS );
+#if JVET_M0132_APS
+  void  codeAPS                 ( APS* pcAPS);
+#endif
 #if HEVC_VPS
   void  codeVPS                 ( const VPS* pcVPS );
 #endif
@@ -136,7 +139,9 @@ public:
   void  codeScalingList         ( const ScalingList &scalingList );
 #endif
 
+#if !JVET_M0132_APS
   void alf( const AlfSliceParam& alfSliceParam );
+#endif
   void alfFilter( const AlfSliceParam& alfSliceParam, const bool isChroma );
 
 private:

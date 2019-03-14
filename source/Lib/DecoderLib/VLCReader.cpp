@@ -624,6 +624,52 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   xReadRbspTrailingBits();
 }
 
+#if JVET_M0132_APS
+void HLSyntaxReader::parseAPS(APS* aps)
+{
+#if ENABLE_TRACING
+  xTraceAPSHeader();
+#endif
+
+  uint32_t  code;
+
+  READ_CODE(5, code, "adaptation_parameter_set_id");
+  aps->setAPSId(code);
+
+  AlfSliceParam param = aps->getAlfAPSParam();
+  param.enabledFlag[COMPONENT_Y] = true;
+
+  int alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
+  param.enabledFlag[COMPONENT_Cb] = alfChromaIdc >> 1;
+  param.enabledFlag[COMPONENT_Cr] = alfChromaIdc & 1;
+
+  xReadTruncBinCode(code, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
+  param.numLumaFilters = code + 1;
+  if (param.numLumaFilters > 1)
+  {
+    for (int i = 0; i < MAX_NUM_ALF_CLASSES; i++)
+    {
+      xReadTruncBinCode(code, param.numLumaFilters);
+      param.filterCoeffDeltaIdx[i] = code;
+    }
+  }
+  else
+  {
+    memset(param.filterCoeffDeltaIdx, 0, sizeof(param.filterCoeffDeltaIdx));
+  }
+
+  alfFilter(param, false);
+
+  if (alfChromaIdc)
+  {
+    alfFilter(param, true);
+  }
+  aps->setAlfAPSParam(param);
+
+  xReadRbspTrailingBits();
+}
+#endif
+
 void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
 {
 #if ENABLE_TRACING
@@ -1618,7 +1664,24 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
     if( sps->getALFEnabledFlag() )
     {
+#if JVET_M0132_APS
+      READ_FLAG(uiCode, "tile_group_alf_enabled_flag");
+      if (uiCode)
+      {
+        READ_CODE(5, uiCode, "tile_group_aps_id"); 
+        pcSlice->setAPSId(uiCode);
+        pcSlice->setAPS(parameterSetManager->getAPS(uiCode));
+        pcSlice->setTileGroupAlfEnabledFlag(true);
+      }
+      else
+      {
+        pcSlice->setTileGroupAlfEnabledFlag(false);
+        pcSlice->setAPSId(-1);
+        pcSlice->setAPS(nullptr);
+      }
+#else
       alf( pcSlice->getAlfSliceParam() );
+#endif
     }
 
     if (pcSlice->getIdrPicFlag())
@@ -2443,6 +2506,7 @@ bool HLSyntaxReader::xMoreRbspData()
   return (cnt>0);
 }
 
+#if !JVET_M0132_APS
 void HLSyntaxReader::alf( AlfSliceParam& alfSliceParam )
 {
   uint32_t code;
@@ -2481,6 +2545,7 @@ void HLSyntaxReader::alf( AlfSliceParam& alfSliceParam )
     alfFilter( alfSliceParam, true );
   }
 }
+#endif
 
 int HLSyntaxReader::alfGolombDecode( const int k )
 {

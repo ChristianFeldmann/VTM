@@ -278,6 +278,8 @@ typedef std::pair<int, int>  TrCost;
 #endif
 #endif
 
+#define JVET_M0132_APS                                    1  // APS
+
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
 
 
@@ -978,6 +980,9 @@ enum NalUnitType
 #endif
   NAL_UNIT_SPS,                     // 33
   NAL_UNIT_PPS,                     // 34
+#if JVET_M0132_APS
+  NAL_UNIT_APS,                     //NAL unit type number needs to be reaaranged.
+#endif
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 35
   NAL_UNIT_EOS,                     // 36
   NAL_UNIT_EOB,                     // 37
@@ -1640,6 +1645,11 @@ struct AlfSliceParam
   bool                         alfLumaCoeffDeltaFlag;                                   // alf_luma_coeff_delta_flag
   bool                         alfLumaCoeffDeltaPredictionFlag;                         // alf_luma_coeff_delta_prediction_flag
   std::vector<AlfFilterShape>* filterShapes;
+
+  AlfSliceParam()
+  {
+    reset();
+  }
 
   void reset()
   {

@@ -373,6 +373,37 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   xWriteRbspTrailingBits();
 }
 
+#if JVET_M0132_APS
+void HLSWriter::codeAPS( APS* pcAPS)
+{
+#if ENABLE_TRACING
+  xTraceAPSHeader();
+#endif
+
+  AlfSliceParam param = pcAPS->getAlfAPSParam();
+  WRITE_CODE(pcAPS->getAPSId(), 5, "adaptation_parameter_set_id");
+
+  const int alfChromaIdc = param.enabledFlag[COMPONENT_Cb] * 2 + param.enabledFlag[COMPONENT_Cr];
+  truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
+
+  xWriteTruncBinCode(param.numLumaFilters - 1, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
+  if (param.numLumaFilters > 1)
+  {
+    for (int i = 0; i < MAX_NUM_ALF_CLASSES; i++)
+    {
+      xWriteTruncBinCode((uint32_t)param.filterCoeffDeltaIdx[i], param.numLumaFilters);  //filter_coeff_delta[i]
+    }
+  }
+
+  alfFilter(param, false);
+
+  if (alfChromaIdc)
+  {
+    alfFilter(param, true);
+  }
+  xWriteRbspTrailingBits();
+}
+#endif
 void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
 {
 #if ENABLE_TRACING
@@ -1187,7 +1218,16 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     if( pcSlice->getSPS()->getALFEnabledFlag() )
     {
+#if JVET_M0132_APS
+      const int alfEnabled = pcSlice->getAPS()->getAlfAPSParam().enabledFlag[COMPONENT_Y] ? 1 : 0;
+      WRITE_FLAG( alfEnabled, "tile_group_alf_enabled_flag");
+      if (alfEnabled)
+      {
+        WRITE_CODE(pcSlice->getAPSId(), 5, "tile_group_aps_id");
+      }
+#else
       alf( pcSlice->getAlfSliceParam() );
+#endif
     }
 
     //check if numrefidxes match the defaults. If not, override
@@ -1737,6 +1777,7 @@ bool HLSWriter::xFindMatchingLTRP(Slice* pcSlice, uint32_t *ltrpsIndex, int ltrp
   return false;
 }
 
+#if !JVET_M0132_APS
 void HLSWriter::alf( const AlfSliceParam& alfSliceParam )
 {
   WRITE_FLAG( alfSliceParam.enabledFlag[COMPONENT_Y], "tile_group_alf_enabled_flag" );
@@ -1764,6 +1805,7 @@ void HLSWriter::alf( const AlfSliceParam& alfSliceParam )
     alfFilter( alfSliceParam, true );
   }
 }
+#endif
 
 void HLSWriter::alfGolombEncode( int coeff, int k )
 {

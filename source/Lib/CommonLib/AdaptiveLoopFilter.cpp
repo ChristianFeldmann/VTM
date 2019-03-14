@@ -174,7 +174,7 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
   for( int classIdx = 0; classIdx < numClasses; classIdx++ )
   {
     int filterIdx = alfSliceParam.filterCoeffDeltaIdx[classIdx];
-    memcpy( m_coeffFinal + classIdx * MAX_NUM_ALF_LUMA_COEFF, coeff + filterIdx * MAX_NUM_ALF_LUMA_COEFF, sizeof( int16_t ) * numCoeff );
+    memcpy( m_coeffFinal + classIdx * MAX_NUM_ALF_LUMA_COEFF, coeff + filterIdx * MAX_NUM_ALF_LUMA_COEFF, sizeof( short ) * numCoeff );
   }
 
   if( bRedo && alfSliceParam.alfLumaCoeffDeltaPredictionFlag )

@@ -1003,8 +1003,6 @@ void Picture::finishParallelPart( const UnitArea& area )
     const int destID = scheduler.getSplitPicId( tId );
 
     M_BUFS( destID, PIC_RECONSTRUCTION ).subBuf( clipdArea ).copyFrom( M_BUFS( sourceID, PIC_RECONSTRUCTION ).subBuf( clipdArea ) );
-    M_BUFS( destID, PIC_PREDICTION     )                    .copyFrom( M_BUFS( sourceID, PIC_PREDICTION     )                     );
-    M_BUFS( destID, PIC_RESIDUAL       )                    .copyFrom( M_BUFS( sourceID, PIC_RESIDUAL       )                     );
   }
 }
 

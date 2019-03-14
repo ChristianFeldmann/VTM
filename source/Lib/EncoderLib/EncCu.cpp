@@ -1164,11 +1164,8 @@ void EncCu::copyState( EncCu* other, Partitioner& partitioner, const UnitArea& c
     const CodingStructure* src = other->m_pBestCS[wIdx][hIdx];
     bool keepResi = KEEP_PRED_AND_RESI_SIGNALS;
 
-#if JVET_M0427_INLOOP_RESHAPER
-    dst->useSubStructure( *src, partitioner.chType, currArea, true, true, keepResi, true );
-#else
     dst->useSubStructure( *src, partitioner.chType, currArea, KEEP_PRED_AND_RESI_SIGNALS, true, keepResi, keepResi );
-#endif
+
     dst->cost           =  src->cost;
     dst->dist           =  src->dist;
     dst->fracBits       =  src->fracBits;

@@ -2235,6 +2235,7 @@ int EncModeCtrlMTnoRQT::getNumParallelJobs( const CodingStructure &cs, Partition
 bool EncModeCtrlMTnoRQT::isParallelSplit( const CodingStructure &cs, Partitioner& partitioner ) const
 {
   if( partitioner.getImplicitSplit( cs ) != CU_DONT_SPLIT || cs.picture->scheduler.getSplitJobId() != 0 ) return false;
+  if( partitioner.currDepth <= cs.pps->getMaxCuDQPDepth() ) return false;
   const int numJobs = getNumParallelJobs( cs, partitioner );
   const int numPxl  = partitioner.currArea().Y().area();
   const int parlAt  = m_pcEncCfg->getNumSplitThreads() <= 3 ? 1024 : 256;

@@ -327,7 +327,9 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
 #if REUSE_CU_RESULTS
       BestEncInfoCache* bestCache = dynamic_cast< BestEncInfoCache* >( jobEncCu->m_modeCtrl );
 #endif
+#if JVET_M0140_SBT
       SaveLoadEncInfoSbt *sbtCache = dynamic_cast< SaveLoadEncInfoSbt* >( jobEncCu->m_modeCtrl );
+#endif
       if( cacheCtrl )
       {
         cacheCtrl->init( *cs.slice );
@@ -338,10 +340,12 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
         bestCache->init(*cs.slice);
       }
 #endif
+#if JVET_M0140_SBT
       if (sbtCache)
       {
         sbtCache->init(*cs.slice);
       }
+#endif
     }
   }
 
@@ -1065,16 +1069,9 @@ void EncCu::xCompressCUParallel( CodingStructure *&tempCS, CodingStructure *&bes
     jobPartitioner->copyState( partitioner );
     jobCuEnc      ->copyState( this, *jobPartitioner, currArea, true );
 
-    if( jobBlkCache )
-    {
-      jobBlkCache->tick();
-    }
-
+    if( jobBlkCache  ) { jobBlkCache ->tick(); }
 #if REUSE_CU_RESULTS
-    if( jobBestCache )
-    {
-      jobBestCache->tick();
-    }
+    if( jobBestCache ) { jobBestCache->tick(); }
 
 #endif
     CodingStructure *&jobBest = jobCuEnc->m_pBestCS[wIdx][hIdx];
@@ -1167,7 +1164,11 @@ void EncCu::copyState( EncCu* other, Partitioner& partitioner, const UnitArea& c
     const CodingStructure* src = other->m_pBestCS[wIdx][hIdx];
     bool keepResi = KEEP_PRED_AND_RESI_SIGNALS;
 
+#if JVET_M0427_INLOOP_RESHAPER
+    dst->useSubStructure( *src, partitioner.chType, currArea, true, true, keepResi, true );
+#else
     dst->useSubStructure( *src, partitioner.chType, currArea, KEEP_PRED_AND_RESI_SIGNALS, true, keepResi, keepResi );
+#endif
     dst->cost           =  src->cost;
     dst->dist           =  src->dist;
     dst->fracBits       =  src->fracBits;
@@ -1183,7 +1184,14 @@ void EncCu::copyState( EncCu* other, Partitioner& partitioner, const UnitArea& c
   m_modeCtrl     ->copyState( *other->m_modeCtrl, partitioner.currArea() );
   m_pcRdCost     ->copyState( *other->m_pcRdCost );
   m_pcTrQuant    ->copyState( *other->m_pcTrQuant );
-  //m_pcReshape    ->copyState( *other->m_pcReshape );
+#if JVET_M0427_INLOOP_RESHAPER
+  if( m_pcEncCfg->getReshaper() )
+  {
+    EncReshape *encReshapeThis  = dynamic_cast<EncReshape*>(       m_pcReshape);
+    EncReshape *encReshapeOther = dynamic_cast<EncReshape*>(other->m_pcReshape);
+    encReshapeThis->copyState( *encReshapeOther );
+  }
+#endif
 
   m_CABACEstimator->getCtx() = other->m_CABACEstimator->getCtx();
 }

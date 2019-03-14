@@ -145,11 +145,12 @@ void EncLib::create ()
   }
 
 #if JVET_M0427_INLOOP_RESHAPER
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+  m_cReshaper = new EncReshape[m_numCuEncStacks];
+#endif
   if (m_lumaReshapeEnable)
   {
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
-    m_cReshaper = new EncReshape[m_numCuEncStacks];
-
     for (int jId = 0; jId < m_numCuEncStacks; jId++)
     {
       m_cReshaper[jId].createEnc(getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_bitDepth[COMPONENT_Y]);
@@ -628,7 +629,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
 #if JVET_M0427_INLOOP_RESHAPER
-      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL).swap(*cPicYuvTrueOrg);
+      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap(*cPicYuvTrueOrg );
 #endif
 
 #if JVET_M0132_APS

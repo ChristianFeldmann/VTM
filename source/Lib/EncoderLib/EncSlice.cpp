@@ -1829,6 +1829,13 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     if (pcSlice->getSPS()->getUseReshaper())
     {
       m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());
+
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+      for (int jId = 1; jId < m_pcLib->getNumCuEncStacks(); jId++)
+      {
+        m_pcLib->getCuEncoder(jId)->setDecCuReshaperInEncCU(m_pcLib->getReshaper(jId), pcSlice->getSPS()->getChromaFormatIdc());
+      }
+#endif
     }
 #endif
 #if JVET_M0445_MCTS

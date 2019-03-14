@@ -1076,9 +1076,9 @@ bool BestEncInfoCache::setCsFrom( CodingStructure& cs, EncTestMode& testMode, co
 #if ENABLE_SPLIT_PARALLELISM
 void BestEncInfoCache::copyState(const BestEncInfoCache &other, const UnitArea &area)
 {
-  m_slice_bencinf = other.m_slice_bencinf;
-
+  m_slice_bencinf  = other.m_slice_bencinf;
   m_currTemporalId = other.m_currTemporalId;
+#if 0
 
   if( m_slice_bencinf->isIntra() ) return;
 
@@ -1124,6 +1124,7 @@ void BestEncInfoCache::copyState(const BestEncInfoCache &other, const UnitArea &
       }
     }
   }
+#endif
 }
 
 void BestEncInfoCache::touch(const UnitArea &area)
@@ -1132,7 +1133,7 @@ void BestEncInfoCache::touch(const UnitArea &area)
   getAreaIdx(area.Y(), *m_slice_bencinf->getPPS()->pcv, idx1, idx2, idx3, idx4);
   BestEncodingInfo &encInfo = *m_bestEncInfo[idx1][idx2][idx3][idx4];
 
-  encInfo.temporalId   = m_currTemporalId;
+  encInfo.temporalId = m_currTemporalId;
 }
 
 #endif
@@ -2190,38 +2191,40 @@ void EncModeCtrlMTnoRQT::copyState( const EncModeCtrl& other, const UnitArea& ar
 #if REUSE_CU_RESULTS
   this->BestEncInfoCache   ::copyState( *pOther, area );
 #endif
+#if JVET_M0140_SBT
   this->SaveLoadEncInfoSbt ::copyState( *pOther );
+#endif
 
   m_skipThreshold = pOther->m_skipThreshold;
 }
 
 int EncModeCtrlMTnoRQT::getNumParallelJobs( const CodingStructure &cs, Partitioner& partitioner ) const
 {
-  int numJobs = 1; // for no-split coding
+  int numJobs = 0;
 
-  if( partitioner.canSplit( CU_QUAD_SPLIT, cs ) )
+  if(      partitioner.canSplit( CU_TRIH_SPLIT, cs ) )
   {
-    numJobs = 2;
+    numJobs = 6;
   }
-
-  if( partitioner.canSplit( CU_VERT_SPLIT, cs ) )
-  {
-    numJobs = 3;
-  }
-
-  if( partitioner.canSplit( CU_HORZ_SPLIT, cs ) )
-  {
-    numJobs = 4;
-  }
-
-  if( partitioner.canSplit( CU_TRIV_SPLIT, cs ) )
+  else if( partitioner.canSplit( CU_TRIV_SPLIT, cs ) )
   {
     numJobs = 5;
   }
-
-  if( partitioner.canSplit( CU_TRIH_SPLIT, cs ) )
+  else if( partitioner.canSplit( CU_HORZ_SPLIT, cs ) )
   {
-    numJobs = 6;
+    numJobs = 4;
+  }
+  else if (partitioner.canSplit(CU_VERT_SPLIT, cs))
+  {
+    numJobs = 3;
+  }
+  else if( partitioner.canSplit( CU_QUAD_SPLIT, cs ) )
+  {
+    numJobs = 2;
+  }
+  else if( partitioner.canSplit( CU_DONT_SPLIT, cs ) )
+  {
+    numJobs = 1;
   }
 
   CHECK( numJobs >= NUM_RESERVERD_SPLIT_JOBS, "More jobs specified than allowed" );
@@ -2259,26 +2262,10 @@ bool EncModeCtrlMTnoRQT::parallelJobSelector( const EncTestMode& encTestmode, co
     return encTestmode.type == ETM_SPLIT_QT;
     break;
   case 3:
-    switch( encTestmode.type )
-    {
-    case ETM_SPLIT_BT_V:
-      return true;
-      break;
-    default:
-      return false;
-      break;
-    }
+    return encTestmode.type == ETM_SPLIT_BT_V;
     break;
   case 4:
-    switch( encTestmode.type )
-    {
-    case ETM_SPLIT_BT_H:
-      return true;
-      break;
-    default:
-      return false;
-      break;
-    }
+    return encTestmode.type == ETM_SPLIT_BT_H;
     break;
   case 5:
     return encTestmode.type == ETM_SPLIT_TT_V;

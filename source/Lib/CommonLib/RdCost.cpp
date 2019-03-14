@@ -191,6 +191,10 @@ void RdCost::copyState( const RdCost& other )
   m_motionLambda  = other.m_motionLambda;
   m_iCostScale    = other.m_iCostScale;
   memcpy( m_dLambdaMotionSAD, other.m_dLambdaMotionSAD, sizeof( m_dLambdaMotionSAD ) );
+#if WCG_EXT
+  m_dLambda_unadjusted  = other.m_dLambda_unadjusted ;
+  m_DistScaleUnadjusted = other.m_DistScaleUnadjusted;
+#endif
 }
 #endif
 

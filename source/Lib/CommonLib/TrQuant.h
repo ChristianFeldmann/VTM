@@ -130,8 +130,6 @@ protected:
   bool     m_bEnc;
   bool     m_useTransformSkipFast;
 
-  bool     m_rectTUs;
-
   bool     m_scalingListEnabledFlag;
 
 private:

@@ -1461,7 +1461,7 @@ void InterPrediction::motionCompensation4Triangle( CodingUnit &cu, MergeCtx &tri
       }
     }
 #endif
-  
+
     triangleMrgCtx.setMergeInfo( pu, candIdx1 );
     PU::spanMotionInfo( pu );
     motionCompensation( pu, predBuf );

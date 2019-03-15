@@ -365,7 +365,7 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 
   const int clsSizeY = 4;
   const int clsSizeX = 4;
-  
+
   bool pcmFlags2x2[4] = {0,0,0,0};
   Pel  pcmRec2x2[16];
 
@@ -430,16 +430,16 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 
         // check which chroma 2x2 blocks use PCM
         // chroma PCM may not be aligned with 4x4 ALF processing grid
-        for( blkY=0; blkY<4; blkY+=2 ) 
+        for( blkY=0; blkY<4; blkY+=2 )
         {
-          for( blkX=0; blkX<4; blkX+=2 ) 
+          for( blkX=0; blkX<4; blkX+=2 )
           {
             Position pos(j+startWidth+blkX, i+startHeight+blkY);
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
             *flags++ = cu->ipcm ? 1 : 0;
 
             // save original samples from 2x2 PCM blocks
-            if( cu->ipcm ) 
+            if( cu->ipcm )
             {
               *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+0)];
               *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+1)];
@@ -573,18 +573,18 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
       } //<-- end of k-loop
 
       pRec -= ( 4 * dstStride );
-      
+
       // restore 2x2 PCM chroma blocks
       if( bChroma && isPCMFilterDisabled )
       {
         int  blkX, blkY;
         bool *flags  = pcmFlags2x2;
         Pel  *pcmRec = pcmRec2x2;
-        for( blkY=0; blkY<4; blkY+=2 ) 
+        for( blkY=0; blkY<4; blkY+=2 )
         {
-          for( blkX=0; blkX<4; blkX+=2 ) 
+          for( blkX=0; blkX<4; blkX+=2 )
           {
-            if( *flags++ ) 
+            if( *flags++ )
             {
               pRec[(blkY+0)*dstStride + (blkX+0)] = *pcmRec++;
               pRec[(blkY+0)*dstStride + (blkX+1)] = *pcmRec++;
@@ -665,7 +665,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 
   const int clsSizeY = 4;
   const int clsSizeX = 4;
-  
+
   bool pcmFlags2x2[4] = {0,0,0,0};
   Pel  pcmRec2x2[16];
 
@@ -740,7 +740,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
             *flags++ = cu->ipcm ? 1 : 0;
 
             // save original samples from 2x2 PCM blocks
-            if( cu->ipcm ) 
+            if( cu->ipcm )
             {
               *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+0)];
               *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+1)];
@@ -892,7 +892,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
       }
 
       pRec -= ( 4 * dstStride );
-            
+
       // restore 2x2 PCM chroma blocks
       if( bChroma && isPCMFilterDisabled )
       {
@@ -903,7 +903,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         {
           for( blkX=0; blkX<4; blkX+=2 )
           {
-            if( *flags++ ) 
+            if( *flags++ )
             {
               pRec[(blkY+0)*dstStride + (blkX+0)] = *pcmRec++;
               pRec[(blkY+0)*dstStride + (blkX+1)] = *pcmRec++;

@@ -550,7 +550,7 @@ void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf
   int transposeIdx = 0;
   const int clsSizeY = 4;
   const int clsSizeX = 4;
-  
+
   bool pcmFlags2x2[4] = {0,0,0,0};
 
   CHECK( startHeight % clsSizeY, "Wrong startHeight in filtering" );
@@ -605,9 +605,9 @@ void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf
 
         // check which chroma 2x2 blocks use PCM
         // chroma PCM may not be aligned with 4x4 ALF processing grid
-        for( blkY=0; blkY<4; blkY+=2 ) 
+        for( blkY=0; blkY<4; blkY+=2 )
         {
-          for( blkX=0; blkX<4; blkX+=2 ) 
+          for( blkX=0; blkX<4; blkX+=2 )
           {
             Position pos(j+startWidth+blkX, i+startHeight+blkY);
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
@@ -677,11 +677,11 @@ void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf
 
         for( int jj = 0; jj < clsSizeX; jj++ )
         {
-          
+
           // skip 2x2 PCM chroma blocks
           if( bChroma && isPCMFilterDisabled )
           {
-            if( pcmFlags2x2[2*(ii>>1) + (jj>>1)] ) 
+            if( pcmFlags2x2[2*(ii>>1) + (jj>>1)] )
             {
               pImg0++;
               pImg1++;

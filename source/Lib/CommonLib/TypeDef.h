@@ -56,6 +56,10 @@
 #if JVET_M0445_MCTS
 #define JVET_M0445_MCTS_DEC_CHECK                         1 // Check at decoder side the MCTS restrictions
 #endif
+
+#define JVET_M0415_WRAPAROUND_HLS                         1 // HLS for Wrap-around MC
+
+
 #define JCTVC_Y0038_PARAMS                                1
 
 #define JVET_M0600_RATE_CTRL                              1 //frame level bit allocation by qdf

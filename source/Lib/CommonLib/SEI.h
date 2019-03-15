@@ -556,7 +556,6 @@ class SEITempMotionConstrainedTileSets: public SEI
     public:
       int     m_mcts_id;
       bool    m_display_tile_set_flag;
-      int     m_num_tile_rects_in_set; //_minus1;
       bool    m_exact_sample_value_match_flag;
       bool    m_mcts_tier_level_idc_present_flag;
       bool    m_mcts_tier_flag;

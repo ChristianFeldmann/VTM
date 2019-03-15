@@ -4555,7 +4555,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
             found = true;
           }
         }
-      }      
+      }
       if (!found)
       {
         mi.mv[0] = mrgCtx.mvFieldNeighbours[(count << 1) + 0].mv;

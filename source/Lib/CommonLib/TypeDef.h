@@ -272,7 +272,7 @@ typedef std::pair<int, int>  TrCost;
 #endif
 
 #if JVET_M0445_MCTS
-#ifndef HEVC_TILES_WPP 
+#ifndef HEVC_TILES_WPP
 #define HEVC_TILES_WPP                                    1
 #endif
 #if !HEVC_TILES_WPP

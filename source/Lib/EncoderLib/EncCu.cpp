@@ -2772,7 +2772,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
         tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
         return;
       }
-#endif      
+#endif
       m_pcInterSearch->motionCompensation( pu, triangleBuffer[mergeCand] );
     }
   }
@@ -4228,7 +4228,7 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
 #endif
   }
 
-#if JVET_M0445_MCTS 
+#if JVET_M0445_MCTS
   if( m_pcEncCfg->getMCTSEncConstraint() && ( ( cu.firstPU->refIdx[L0] < 0 && cu.firstPU->refIdx[L1] < 0 ) || ( !( MCTSHelper::checkMvBufferForMCTSConstraint( *cu.firstPU ) ) ) ) )
   {
     // Do not use this mode

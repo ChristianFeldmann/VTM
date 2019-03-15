@@ -1131,12 +1131,12 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
 #if JVET_M0147_DMVR
   if (biMCForDMVR)
   {
-    if( isFirst ) 
+    if( isFirst )
     {
       shift = IF_FILTER_PREC_BILINEAR - (IF_INTERNAL_PREC_BILINEAR - clpRng.bd);
       offset = 1 << (shift - 1);
     }
-    else 
+    else
     {
       shift = 4;
       offset = 1 << (shift - 1);

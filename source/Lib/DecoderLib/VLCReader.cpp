@@ -1668,7 +1668,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       READ_FLAG(uiCode, "tile_group_alf_enabled_flag");
       if (uiCode)
       {
-        READ_CODE(5, uiCode, "tile_group_aps_id"); 
+        READ_CODE(5, uiCode, "tile_group_aps_id");
         pcSlice->setAPSId(uiCode);
         pcSlice->setAPS(parameterSetManager->getAPS(uiCode));
         pcSlice->setTileGroupAlfEnabledFlag(true);

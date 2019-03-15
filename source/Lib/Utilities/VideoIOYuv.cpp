@@ -410,7 +410,7 @@ static bool verifyPlane(Pel* dst,
 {
   const uint32_t csx =getComponentScaleX(compID, cFormat);
   const uint32_t csy =getComponentScaleY(compID, cFormat);
-  
+
 #if EXTENSION_360_VIDEO
   const uint32_t stride = stride444;
 #else
@@ -418,11 +418,11 @@ static bool verifyPlane(Pel* dst,
 #endif
   const uint32_t fullWidth  = (width444 + padX444) >> csx;
   const uint32_t fullHeight = (height444 +padY444) >> csy;
-  
+
   Pel  *dstBuf              = dst;
-  
+
   const Pel mask = ~((1 << bitDepth) - 1);
-  
+
   for (uint32_t y = 0; y < fullHeight; y++, dstBuf+= stride)
   {
     for (uint32_t x = 0; x < fullWidth; x++)
@@ -433,7 +433,7 @@ static bool verifyPlane(Pel* dst,
       }
     }
   }
-  
+
   return true;
 }
 
@@ -885,7 +885,7 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
     {
       return false;
     }
-    
+
     if (! verifyPlane( dst, stride444, width444, height444, pad_h444, pad_v444, compID, format, m_fileBitdepth[chType]) )
     {
        EXIT("Source image contains values outside the specified bit range!");

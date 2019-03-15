@@ -1829,14 +1829,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
     xUpdateRasInit( pcSlice );
 
-    // Do decoding refresh marking if any
-#if COM16_C806_ALF_TEMPPRED_NUM
-    if ( pcSlice->getPendingRasInit() || pcSlice->isIDRorBLA() )
-    {
-      m_pcALF->refreshAlfTempPred();
-    }
-#endif
-
     if ( pcSlice->getPendingRasInit() )
     {
       // this ensures that independently encoded bitstream chunks can be combined to bit-equal

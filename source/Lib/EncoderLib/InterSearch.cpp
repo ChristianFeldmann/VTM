@@ -1721,21 +1721,23 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
     RefPicList eRefPicList = (refList == 0) ? REF_PIC_LIST_0 : REF_PIC_LIST_1;
     int refPicNumber = pu.cu->slice->getNumRefIdx(eRefPicList);
 
-#if JVET_M0483_IBC
+#if !JVET_M0483_IBC
     if (pu.cs->slice->getSPS()->getIBCFlag() && eRefPicList == REF_PIC_LIST_0)
-#else
-    if (pu.cs->slice->getSPS()->getIBCMode() && eRefPicList == REF_PIC_LIST_0)
-#endif
     {
       refPicNumber--;
     }
+#endif
 
     for (int refIdx = 0; refIdx < refPicNumber; refIdx++)
     {
-      int bitsOnRefIdx = refIdx + 1;
-      if (refIdx + 1 == refPicNumber)
+      int bitsOnRefIdx = 1;
+      if (refPicNumber > 1)
       {
-        bitsOnRefIdx--;
+        bitsOnRefIdx += refIdx + 1;
+        if (refIdx == refPicNumber - 1)
+        {
+          bitsOnRefIdx--;
+        }
       }
 
       if (refList == 0 || pu.cu->slice->getList1IdxToList0Idx(refIdx) < 0)
@@ -1778,7 +1780,7 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
           int curMVPIdx = 0;
           unsigned int curMVPbits = MAX_UINT;
           Mv cMv((*it).x - currBlockHash.x, (*it).y - currBlockHash.y);
-          cMv.changePrecisionAmvr(MV_PRECISION_INT, MV_PRECISION_QUARTER);
+          cMv.changePrecision(MV_PRECISION_INT, MV_PRECISION_QUARTER);
 
           for (int mvpIdxTemp = 0; mvpIdxTemp < 2; mvpIdxTemp++)
           {
@@ -1794,7 +1796,7 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
               pu.cu->imv = 0;
             }
 
-            if (pu.cu->slice->getSPS()->getAMVREnabledFlag() && (cMv.getHor() % 4 == 0) && (cMv.getVer() % 4 == 0))
+            if (pu.cu->slice->getSPS()->getAMVREnabledFlag())
             {
               unsigned int bitsMVP1Pel = MAX_UINT;
               Mv mvPred1Pel = currAMVPInfoPel.mvCand[mvpIdxTemp];

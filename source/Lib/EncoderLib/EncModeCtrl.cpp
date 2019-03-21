@@ -1326,7 +1326,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, true );
 #endif
   bool checkIbc = true;
-  if (cs.chType == CHANNEL_TYPE_CHROMA)
+    if (cs.chType == CHANNEL_TYPE_CHROMA)
   {
     IbcLumaCoverage ibcLumaCoverage = cs.getIbcLumaCoverage(cs.area.Cb());
     switch (ibcLumaCoverage)
@@ -2235,13 +2235,17 @@ int EncModeCtrlMTnoRQT::getNumParallelJobs( const CodingStructure &cs, Partition
 bool EncModeCtrlMTnoRQT::isParallelSplit( const CodingStructure &cs, Partitioner& partitioner ) const
 {
   if( partitioner.getImplicitSplit( cs ) != CU_DONT_SPLIT || cs.picture->scheduler.getSplitJobId() != 0 ) return false;
-  if( partitioner.currDepth <= cs.pps->getMaxCuDQPDepth() ) return false;
+#if JVET_M0113_M0188_QG_SIZE
+  if( cs.pps->getUseDQP() && partitioner.currQgEnable() ) return false;
+#else
+  if( cs.pps->getUseDQP() && partitioner.currDepth <= cs.pps->getMaxCuDQPDepth() ) return false;
+#endif
   const int numJobs = getNumParallelJobs( cs, partitioner );
   const int numPxl  = partitioner.currArea().Y().area();
   const int parlAt  = m_pcEncCfg->getNumSplitThreads() <= 3 ? 1024 : 256;
   if(  cs.slice->isIntra() && numJobs > 2 && ( numPxl == parlAt || !partitioner.canSplit( CU_QUAD_SPLIT, cs ) ) ) return true;
   if( !cs.slice->isIntra() && numJobs > 1 && ( numPxl == parlAt || !partitioner.canSplit( CU_QUAD_SPLIT, cs ) ) ) return true;
-  return false;
+  return false; 
 }
 
 bool EncModeCtrlMTnoRQT::parallelJobSelector( const EncTestMode& encTestmode, const CodingStructure &cs, Partitioner& partitioner ) const

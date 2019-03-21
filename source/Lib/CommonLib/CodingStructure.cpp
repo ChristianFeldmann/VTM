@@ -867,9 +867,9 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   if( cpyReco ) picture->getRecoBuf( clippedArea ).copyFrom( subRecoBuf );
 
 #if JVET_M0483_IBC
-  if (!subStruct.m_isTuEnc && ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && subStruct.chType != CHANNEL_TYPE_CHROMA))
+  if (!subStruct.m_isTuEnc && ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && chType != CHANNEL_TYPE_CHROMA))
 #else
-  if (!subStruct.m_isTuEnc && (!slice->isIntra() && subStruct.chType != CHANNEL_TYPE_CHROMA))
+  if (!subStruct.m_isTuEnc && (!slice->isIntra() && chType != CHANNEL_TYPE_CHROMA))
 #endif
   {
     // copy motion buffer
@@ -1148,6 +1148,10 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
 #endif
   {
     getMotionBuf()      .memset( 0 );
+  }
+  if( parent )
+  {
+    motionLut = parent->motionLut;
   }
 
   fracBits = 0;

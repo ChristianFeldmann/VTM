@@ -176,6 +176,8 @@ void InterSearch::setTempBuffers( CodingStructure ****pSplitCS, CodingStructure 
 void InterSearch::copyState( const InterSearch& other )
 {
   memcpy( m_aaiAdaptSR, other.m_aaiAdaptSR, sizeof( m_aaiAdaptSR ) );
+  m_affineMotion = other.m_affineMotion;
+  m_uniMotions   = other.m_uniMotions;
 }
 #endif
 

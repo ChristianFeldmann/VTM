@@ -4109,7 +4109,6 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
 
   m_pcInterSearch->resetBufferedUniMotions();
   int gbiLoopNum = (tempCS->slice->isInterB() ? GBI_NUM : 1);
-  gbiLoopNum = gbiLoopNum;
   gbiLoopNum = (tempCS->slice->getSPS()->getUseGBi() ? gbiLoopNum : 1);
 
   if( tempCS->area.lwidth() * tempCS->area.lheight() < GBI_SIZE_CONSTRAINT )

@@ -1326,7 +1326,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, true );
 #endif
   bool checkIbc = true;
-    if (cs.chType == CHANNEL_TYPE_CHROMA)
+  if (cs.chType == CHANNEL_TYPE_CHROMA)
   {
     IbcLumaCoverage ibcLumaCoverage = cs.getIbcLumaCoverage(cs.area.Cb());
     switch (ibcLumaCoverage)

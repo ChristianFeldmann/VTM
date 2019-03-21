@@ -1149,10 +1149,6 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
   {
     getMotionBuf()      .memset( 0 );
   }
-  if( parent )
-  {
-    motionLut = parent->motionLut;
-  }
 
   fracBits = 0;
   dist     = 0;

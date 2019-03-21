@@ -4112,11 +4112,9 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
 
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
 
-  CodingStructure* pcCUInfo2Reuse = nullptr;
-
   m_pcInterSearch->resetBufferedUniMotions();
   int gbiLoopNum = (tempCS->slice->isInterB() ? GBI_NUM : 1);
-  gbiLoopNum = (pcCUInfo2Reuse != NULL ? 1 : gbiLoopNum);
+  gbiLoopNum = gbiLoopNum;
   gbiLoopNum = (tempCS->slice->getSPS()->getUseGBi() ? gbiLoopNum : 1);
 
   if( tempCS->area.lwidth() * tempCS->area.lheight() < GBI_SIZE_CONSTRAINT )
@@ -4163,33 +4161,22 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
       continue;
     }
 
-  CodingUnit &cu = ( pcCUInfo2Reuse != nullptr ) ? *tempCS->getCU( partitioner.chType ) : tempCS->addCU( tempCS->area, partitioner.chType );
+  CodingUnit &cu = tempCS->addCU( tempCS->area, partitioner.chType );
 
-  if( pcCUInfo2Reuse == nullptr )
-  {
-    partitioner.setCUData( cu );
-    cu.slice            = tempCS->slice;
+  partitioner.setCUData( cu );
+  cu.slice            = tempCS->slice;
 #if HEVC_TILES_WPP
-    cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
+  cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
 #endif
-    cu.skip             = false;
-    cu.mmvdSkip = false;
-  //cu.affine
-    cu.predMode         = MODE_INTER;
-    cu.transQuantBypass = encTestMode.lossless;
-    cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
-    cu.qp               = encTestMode.qp;
+  cu.skip             = false;
+  cu.mmvdSkip = false;
+//cu.affine
+  cu.predMode         = MODE_INTER;
+  cu.transQuantBypass = encTestMode.lossless;
+  cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
+  cu.qp               = encTestMode.qp;
 
-    CU::addPUs( cu );
-  }
-  else
-  {
-    CHECK( cu.skip,                                "Mismatch" );
-    CHECK( cu.qtDepth  != partitioner.currQtDepth, "Mismatch" );
-    CHECK( cu.btDepth  != partitioner.currBtDepth, "Mismatch" );
-    CHECK( cu.mtDepth  != partitioner.currMtDepth, "Mismatch" );
-    CHECK( cu.depth    != partitioner.currDepth,   "Mismatch" );
-  }
+  CU::addPUs( cu );
 
   cu.imv      = iIMV > 1 ? 2 : 1;
 #if !JVET_M0464_UNI_MTS
@@ -4202,71 +4189,28 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   bool affineAmvrEanbledFlag = cu.slice->getSPS()->getAffineAmvrEnabledFlag();
 #endif
 
-  if( pcCUInfo2Reuse != nullptr )
+  cu.GBiIdx = g_GbiSearchOrder[gbiLoopIdx];
+  gbiIdx = cu.GBiIdx;
+  testGbi = (gbiIdx != GBI_DEFAULT);
+
+#if JVET_M0246_AFFINE_AMVR
+  cu.firstPU->interDir = 10;
+#endif
+
+  m_pcInterSearch->predInterSearch( cu, partitioner );
+
+#if JVET_M0246_AFFINE_AMVR
+  if ( cu.firstPU->interDir <= 3 )
   {
-    // reuse the motion info from pcCUInfo2Reuse
-    CU::resetMVDandMV2Int( cu, m_pcInterSearch );
-
-    CHECK(cu.GBiIdx < 0 || cu.GBiIdx >= GBI_NUM, "cu.GBiIdx < 0 || cu.GBiIdx >= GBI_NUM");
     gbiIdx = CU::getValidGbiIdx(cu);
-    testGbi = (gbiIdx != GBI_DEFAULT);
-
-#if JVET_M0246_AFFINE_AMVR
-    if ( !CU::hasSubCUNonZeroMVd( cu ) && !CU::hasSubCUNonZeroAffineMVd( cu ) )
-#else
-    if( !CU::hasSubCUNonZeroMVd( cu ) )
-#endif
-    {
-      if (m_modeCtrl->useModeResult(encTestModeBase, tempCS, partitioner))
-      {
-        std::swap(tempCS, bestCS);
-        // store temp best CI for next CU coding
-        m_CurrCtx->best = m_CABACEstimator->getCtx();
-      }
-#if JVET_M0246_AFFINE_AMVR
-      if ( affineAmvrEanbledFlag )
-      {
-        tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
-        continue;
-      }
-      else
-      {
-        return false;
-      }
-#else
-      return false;
-#endif
-    }
-    else
-    {
-      m_pcInterSearch->motionCompensation( cu );
-    }
   }
   else
   {
-    cu.GBiIdx = g_GbiSearchOrder[gbiLoopIdx];
-    gbiIdx = cu.GBiIdx;
-    testGbi = (gbiIdx != GBI_DEFAULT);
-
-#if JVET_M0246_AFFINE_AMVR
-    cu.firstPU->interDir = 10;
-#endif
-
-    m_pcInterSearch->predInterSearch( cu, partitioner );
-
-#if JVET_M0246_AFFINE_AMVR
-    if ( cu.firstPU->interDir <= 3 )
-    {
-      gbiIdx = CU::getValidGbiIdx(cu);
-    }
-    else
-    {
-      return false;
-    }
-#else
-    gbiIdx = CU::getValidGbiIdx(cu);
-#endif
+    return false;
   }
+#else
+  gbiIdx = CU::getValidGbiIdx(cu);
+#endif
 
 #if JVET_M0445_MCTS
   if( m_pcEncCfg->getMCTSEncConstraint() && ( ( cu.firstPU->refIdx[L0] < 0 && cu.firstPU->refIdx[L1] < 0 ) || ( !( MCTSHelper::checkMvBufferForMCTSConstraint( *cu.firstPU ) ) ) ) )

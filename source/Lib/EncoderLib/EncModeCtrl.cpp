@@ -1078,7 +1078,6 @@ void BestEncInfoCache::copyState(const BestEncInfoCache &other, const UnitArea &
 {
   m_slice_bencinf  = other.m_slice_bencinf;
   m_currTemporalId = other.m_currTemporalId;
-#if 0
 
   if( m_slice_bencinf->isIntra() ) return;
 
@@ -1107,8 +1106,14 @@ void BestEncInfoCache::copyState(const BestEncInfoCache &other, const UnitArea &
             {
               if( other.m_bestEncInfo[x][y][wIdx][hIdx]->temporalId > m_bestEncInfo[x][y][wIdx][hIdx]->temporalId )
               {
-                memcpy( m_bestEncInfo[x][y][wIdx][hIdx], other.m_bestEncInfo[x][y][wIdx][hIdx], sizeof( BestEncodingInfo ) );
-                m_bestEncInfo[x][y][wIdx][hIdx]->temporalId = m_currTemporalId;
+                m_bestEncInfo[x][y][wIdx][hIdx]->cu       = other.m_bestEncInfo[x][y][wIdx][hIdx]->cu;
+                m_bestEncInfo[x][y][wIdx][hIdx]->pu       = other.m_bestEncInfo[x][y][wIdx][hIdx]->pu;
+                m_bestEncInfo[x][y][wIdx][hIdx]->numTus   = other.m_bestEncInfo[x][y][wIdx][hIdx]->numTus;
+                m_bestEncInfo[x][y][wIdx][hIdx]->poc      = other.m_bestEncInfo[x][y][wIdx][hIdx]->poc;
+                m_bestEncInfo[x][y][wIdx][hIdx]->testMode = other.m_bestEncInfo[x][y][wIdx][hIdx]->testMode;
+
+                for( int i = 0; i < m_bestEncInfo[x][y][wIdx][hIdx]->numTus; i++ )
+                  m_bestEncInfo[x][y][wIdx][hIdx]->tus[i] = other.m_bestEncInfo[x][y][wIdx][hIdx]->tus[i];
               }
             }
             else if( y + ( height >> MIN_CU_LOG2 ) > maxPosY + 1 )
@@ -1124,7 +1129,6 @@ void BestEncInfoCache::copyState(const BestEncInfoCache &other, const UnitArea &
       }
     }
   }
-#endif
 }
 
 void BestEncInfoCache::touch(const UnitArea &area)
@@ -2214,7 +2218,7 @@ int EncModeCtrlMTnoRQT::getNumParallelJobs( const CodingStructure &cs, Partition
   {
     numJobs = 4;
   }
-  else if (partitioner.canSplit(CU_VERT_SPLIT, cs))
+  else if( partitioner.canSplit( CU_VERT_SPLIT, cs ) )
   {
     numJobs = 3;
   }

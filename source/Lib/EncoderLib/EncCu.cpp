@@ -628,8 +628,6 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   const uint32_t uiLPelX  = tempCS->area.Y().lumaPos().x;
   const uint32_t uiTPelY  = tempCS->area.Y().lumaPos().y;
 
-  const unsigned wIdx = gp_sizeIdxInfo->idxFrom( partitioner.currArea().lwidth()  );
-
   const UnitArea currCsArea = clipArea( CS::getArea( *bestCS, bestCS->area, partitioner.chType ), *tempCS->picture );
 
   tempCS->chType = partitioner.chType;
@@ -1969,7 +1967,6 @@ void EncCu::xCheckRDCostHashInter( CodingStructure *&tempCS, CodingStructure *&b
 
   if (m_pcInterSearch->predInterHashSearch(cu, partitioner, isPerfectMatch))
   {
-    const unsigned wIdx = gp_sizeIdxInfo->idxFrom(tempCS->area.lwidth());
     double equGBiCost = MAX_DOUBLE;
 
 #if JVET_M0428_ENC_DB_OPT
@@ -4027,8 +4024,6 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
   bool  testGbi = (gbiIdx != GBI_DEFAULT);
 
   m_pcInterSearch->predInterSearch( cu, partitioner );
-
-  const unsigned wIdx = gp_sizeIdxInfo->idxFrom( tempCS->area.lwidth () );
 
   gbiIdx = CU::getValidGbiIdx(cu);
   if( testGbi && gbiIdx == GBI_DEFAULT ) // Enabled GBi but the search results is uni.

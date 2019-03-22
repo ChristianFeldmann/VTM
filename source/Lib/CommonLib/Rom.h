@@ -57,8 +57,6 @@
 void         initROM();
 void         destroyROM();
 
-void         generateTrafoBlockSizeScaling( SizeIndexInfo& sizeIdxInfo );
-
 // ====================================================================================================================
 // Data structure related table & variable
 // ====================================================================================================================
@@ -168,7 +166,6 @@ extern const DecisionTreeTemplate g_mtSplitDTT;
 // Misc.
 // ====================================================================================================================
 extern SizeIndexInfo* gp_sizeIdxInfo;
-extern int            g_BlockSizeTrafoScale           [MAX_CU_SIZE + 1][MAX_CU_SIZE + 1][2];
 extern int8_t          g_aucLog2                       [MAX_CU_SIZE + 1];
 extern int8_t          g_aucNextLog2        [MAX_CU_SIZE + 1];
 extern int8_t          g_aucPrevLog2        [MAX_CU_SIZE + 1];

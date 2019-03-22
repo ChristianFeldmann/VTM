@@ -371,8 +371,6 @@ void initROM()
   gp_sizeIdxInfo->init(MAX_CU_SIZE);
 
 
-  generateTrafoBlockSizeScaling(*gp_sizeIdxInfo);
-
   SizeIndexInfoLog2 sizeInfo;
   sizeInfo.init(MAX_CU_SIZE);
 
@@ -578,24 +576,6 @@ void destroyROM()
   gp_sizeIdxInfo = nullptr;
 }
 
-
-
-void generateTrafoBlockSizeScaling(SizeIndexInfo& sizeIdxInfo)
-{
-  for (SizeType y = 0; y < sizeIdxInfo.numHeights(); y++)
-  {
-    for (SizeType x = 0; x < sizeIdxInfo.numWidths(); x++)
-    {
-      SizeType h = sizeIdxInfo.sizeFrom(y);
-      SizeType w = sizeIdxInfo.sizeFrom(x);
-      double factor = sqrt(h) * sqrt(w) / (double)(1 << ((g_aucLog2[h] + g_aucLog2[w]) / 2));
-
-      g_BlockSizeTrafoScale[h][w][0] = ((int)(factor + 0.9) != 1) ? (int)(factor * (double)(1 << ADJ_QUANT_SHIFT)) : 1;
-      g_BlockSizeTrafoScale[h][w][1] = ((int)(factor + 0.9) != 1) ? (int)((double)(1 << ADJ_DEQUANT_SHIFT) / factor + 0.5) : 1;
-    }
-  }
-}
-
 // ====================================================================================================================
 // Data structure related table & variable
 // ====================================================================================================================
@@ -689,7 +669,6 @@ const DecisionTreeTemplate g_mtSplitDTT = compile(
 // Misc.
 // ====================================================================================================================
 SizeIndexInfo*           gp_sizeIdxInfo = NULL;
-int                      g_BlockSizeTrafoScale[MAX_CU_SIZE + 1][MAX_CU_SIZE + 1][2];
 int8_t                    g_aucLog2    [MAX_CU_SIZE + 1];
 int8_t                    g_aucNextLog2[MAX_CU_SIZE + 1];
 int8_t                    g_aucPrevLog2[MAX_CU_SIZE + 1];

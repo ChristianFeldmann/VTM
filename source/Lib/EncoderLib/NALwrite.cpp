@@ -44,7 +44,7 @@ using namespace std;
 //! \ingroup EncoderLib
 //! \{
 
-static const uint8_t emulation_prevention_three_byte[] = {3};
+static const uint8_t emulation_prevention_three_byte = 3;
 
 void writeNalUnitHeader(ostream& out, OutputNALUnit& nalu)       // nal_unit_header()
 {
@@ -95,7 +95,7 @@ void write(ostream& out, OutputNALUnit& nalu)
     const uint8_t v=(*it);
     if (zeroCount==2 && v<=3)
     {
-      outputBuffer[outputAmount++]=emulation_prevention_three_byte[0];
+      outputBuffer[outputAmount++]=emulation_prevention_three_byte;
       zeroCount=0;
     }
 
@@ -117,7 +117,7 @@ void write(ostream& out, OutputNALUnit& nalu)
    */
   if (zeroCount>0)
   {
-    outputBuffer[outputAmount++]=emulation_prevention_three_byte[0];
+    outputBuffer[outputAmount++]=emulation_prevention_three_byte;
   }
   out.write(reinterpret_cast<const char*>(&(*outputBuffer.begin())), outputAmount);
 }

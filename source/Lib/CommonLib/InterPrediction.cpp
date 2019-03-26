@@ -828,12 +828,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   int blockWidth = AFFINE_MIN_BLOCK_SIZE;
   int blockHeight = AFFINE_MIN_BLOCK_SIZE;
 
-  blockWidth  >>= iScaleX;
-  blockHeight >>= iScaleY;
-
-  blockWidth =  std::max(blockWidth, AFFINE_MIN_BLOCK_SIZE);
-  blockHeight = std::max(blockHeight, AFFINE_MIN_BLOCK_SIZE);
-
   CHECK(blockWidth  > (width >> iScaleX ), "Sub Block width  > Block width");
   CHECK(blockHeight > (height >> iScaleX), "Sub Block height > Block height");
   const int MVBUFFER_SIZE = MAX_CU_SIZE / MIN_PU_SIZE;

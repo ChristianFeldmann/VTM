@@ -855,6 +855,7 @@ void EncLib::xInitVPS(VPS &vps, const SPS &sps)
 
 void EncLib::xInitSPS(SPS &sps)
 {
+#if !JVET_M0101_HLS
   sps.setIntraOnlyConstraintFlag(m_bIntraOnlyConstraintFlag);
   sps.setMaxBitDepthConstraintIdc(m_maxBitDepthConstraintIdc);
   sps.setMaxChromaFormatConstraintIdc(m_maxChromaFormatConstraintIdc);
@@ -913,7 +914,50 @@ void EncLib::xInitSPS(SPS &sps)
     /* A Profile::MAIN10 decoder can always decode Profile::MAIN */
     profileTierLevel.setProfileCompatibilityFlag( Profile::MAIN10, 1 );
   }
+#else
+  ProfileTierLevel* profileTierLevel = sps.getProfileTierLevel();
+  ConstraintInfo* cinfo = profileTierLevel->getConstraintInfo();
+  cinfo->setProgressiveSourceFlag       (m_progressiveSourceFlag);
+  cinfo->setInterlacedSourceFlag        (m_interlacedSourceFlag);
+  cinfo->setNonPackedConstraintFlag     (m_nonPackedConstraintFlag);
+  cinfo->setFrameOnlyConstraintFlag     (m_frameOnlyConstraintFlag);
+  cinfo->setIntraOnlyConstraintFlag         (m_intraConstraintFlag);
+  cinfo->setMaxBitDepthConstraintIdc    (m_maxBitDepthConstraintIdc);
+  cinfo->setMaxChromaFormatConstraintIdc((ChromaFormat)m_maxChromaFormatConstraintIdc);
+  cinfo->setNoQtbttDualTreeIntraConstraintFlag(m_bNoQtbttDualTreeIntraConstraintFlag);
+  cinfo->setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
+  cinfo->setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
+  cinfo->setNoPcmConstraintFlag(m_bNoPcmConstraintFlag);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  cinfo->setNoRefWraparoundConstraintFlag(m_bNoRefWraparoundConstraintFlag);
+#endif
+  cinfo->setNoTemporalMvpConstraintFlag(m_bNoTemporalMvpConstraintFlag);
+  cinfo->setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
+  cinfo->setNoAmvrConstraintFlag(m_bNoAmvrConstraintFlag);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  cinfo->setNoBdofConstraintFlag(m_bNoBdofConstraintFlag);
+#endif
+  cinfo->setNoCclmConstraintFlag(m_bNoCclmConstraintFlag);
+  cinfo->setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
+  cinfo->setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  cinfo->setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
+  cinfo->setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
+  cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
+#endif
+  cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  cinfo->setNoCurrPicRefConstraintFlag(m_bNoCurrPicRefConstraintFlag);
+  cinfo->setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
+#endif
+  cinfo->setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
+  cinfo->setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
 
+  profileTierLevel->setLevelIdc                    (m_level);
+  profileTierLevel->setTierFlag                    (m_levelTier);
+  profileTierLevel->setProfileIdc                  (m_profile);
+
+#endif
   /* XXX: should Main be marked as compatible with still picture? */
   /* XXX: may be a good idea to refactor the above into a function
    * that chooses the actual compatibility based upon options */

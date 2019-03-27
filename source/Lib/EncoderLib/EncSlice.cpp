@@ -426,6 +426,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   // Non-referenced frame marking
   // ------------------------------------------------------------------------------------------------------------------
 
+#if !JVET_M0101_HLS
   if(pocLast == 0)
   {
     rpcSlice->setTemporalLayerNonReferenceFlag(false);
@@ -434,6 +435,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   {
     rpcSlice->setTemporalLayerNonReferenceFlag(!m_pcCfg->getGOPEntry(iGOPid).m_refPic);
   }
+#endif
   pcPic->referenced = true;
 
   // ------------------------------------------------------------------------------------------------------------------

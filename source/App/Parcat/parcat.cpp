@@ -102,6 +102,7 @@ const bool verbose = false;
 
 const char * NALU_TYPE[] =
 {
+#if !JVET_M0101_HLS
     "TRAIL_N",
     "TRAIL_R",
     "TSA_N",
@@ -150,6 +151,53 @@ const char * NALU_TYPE[] =
     "FD_NUT",
     "PREFIX_SEI_NUT",
     "SUFFIX_SEI_NUT",
+#else
+    "NAL_UNIT_CODED_SLICE_TRAIL",
+    "NAL_UNIT_CODED_SLICE_STSA",
+    "NAL_UNIT_CODED_SLICE_RADL",
+    "NAL_UNIT_CODED_SLICE_RASL",
+    "NAL_UNIT_RESERVED_VCL_4",
+    "NAL_UNIT_RESERVED_VCL_5",
+    "NAL_UNIT_RESERVED_VCL_6",
+    "NAL_UNIT_RESERVED_VCL_7",
+
+    "NAL_UNIT_CODED_SLICE_IDR_W_RADL",
+    "NAL_UNIT_CODED_SLICE_IDR_N_LP",
+    "NAL_UNIT_CODED_SLICE_CRA",
+
+    "NAL_UNIT_RESERVED_IRAP_VCL11",
+    "NAL_UNIT_RESERVED_IRAP_VCL12",
+    "NAL_UNIT_RESERVED_IRAP_VCL13",
+
+    "NAL_UNIT_RESERVED_VCL14",
+
+#if HEVC_VPS
+    "NAL_UNIT_VPS",
+#else
+    "NAL_UNIT_RESERVED_VCL15",
+#endif
+
+    "NAL_UNIT_RESERVED_NVCL16",
+
+    "NAL_UNIT_SPS",
+    "NAL_UNIT_PPS",
+#if JVET_M0132_APS
+    "NAL_UNIT_APS",
+#endif
+    "NAL_UNIT_ACCESS_UNIT_DELIMITER",
+    "NAL_UNIT_EOS",
+    "NAL_UNIT_EOB",
+    "NAL_UNIT_PREFIX_SEI",
+    "NAL_UNIT_SUFFIX_SEI",
+    "NAL_UNIT_FILLER_DATA",
+
+    "NAL_UNIT_RESERVED_NVCL26",
+    "NAL_UNIT_RESERVED_NVCL27",
+    "NAL_UNIT_UNSPECIFIED_28",
+    "NAL_UNIT_UNSPECIFIED_29",
+    "NAL_UNIT_UNSPECIFIED_30",
+    "NAL_UNIT_UNSPECIFIED_31"
+#endif
 };
 
 int calc_poc(int iPOClsb, int prevTid0POC, int getBitsForPOC, int nalu_type)
@@ -171,6 +219,7 @@ int calc_poc(int iPOClsb, int prevTid0POC, int getBitsForPOC, int nalu_type)
   {
     iPOCmsb = iPrevPOCmsb;
   }
+#if !JVET_M0101_HLS
   if ( nalu_type == NAL_UNIT_CODED_SLICE_BLA_W_LP
     || nalu_type == NAL_UNIT_CODED_SLICE_BLA_W_RADL
     || nalu_type == NAL_UNIT_CODED_SLICE_BLA_N_LP )
@@ -178,6 +227,7 @@ int calc_poc(int iPOClsb, int prevTid0POC, int getBitsForPOC, int nalu_type)
     // For BLA picture types, POCmsb is set to 0.
     iPOCmsb = 0;
   }
+#endif
 
   return iPOCmsb + iPOClsb;
 }
@@ -228,7 +278,11 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       int offset = 16;
 
       offset += 1; //first_slice_segment_in_pic_flag
+#if !JVET_M0101_HLS
       if (nalu_type >= NAL_UNIT_CODED_SLICE_BLA_W_LP && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL23)
+#else
+      if (nalu_type >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL13)
+#endif
       {
         offset += 1; //no_output_of_prior_pics_flag
       }

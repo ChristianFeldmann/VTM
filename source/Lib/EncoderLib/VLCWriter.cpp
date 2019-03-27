@@ -605,6 +605,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if HEVC_VPS
   WRITE_CODE( pcSPS->getVPSId (),          4,       "sps_video_parameter_set_id" );
 #endif
+#if !JVET_M0101_HLS
   WRITE_UVLC( pcSPS->getSPSId (),                   "sps_seq_parameter_set_id" );
 
   WRITE_FLAG(pcSPS->getIntraOnlyConstraintFlag() ? 1 : 0, "intra_only_constraint_flag");
@@ -640,12 +641,21 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG(pcSPS->getNoDepQuantConstraintFlag() ? 1 : 0, "no_dep_quant_constraint_flag");
   WRITE_FLAG(pcSPS->getNoSignDataHidingConstraintFlag() ? 1 : 0, "no_sign_data_hiding_constraint_flag");
 
-  // KJS: Marakech decision: sub-layers added back
   CHECK( pcSPS->getMaxTLayers() == 0, "Maximum number of temporal sub-layers is '0'" );
   WRITE_CODE( pcSPS->getMaxTLayers() - 1,  3,       "sps_max_sub_layers_minus1" );
 
   WRITE_FLAG( pcSPS->getTemporalIdNestingFlag() ? 1 : 0, "sps_temporal_id_nesting_flag" );
   codePTL( pcSPS->getPTL(), true, pcSPS->getMaxTLayers() - 1 );
+#else
+  CHECK(pcSPS->getMaxTLayers() == 0, "Maximum number of temporal sub-layers is '0'");
+
+  WRITE_CODE(pcSPS->getMaxTLayers() - 1, 3, "sps_max_sub_layers_minus1");
+  WRITE_CODE(0,                          5, "sps_reserved_zero_5bits");
+
+  codeProfileTierLevel( pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1 );
+
+  WRITE_UVLC(pcSPS->getSPSId (), "sps_seq_parameter_set_id");
+#endif
 
   WRITE_UVLC( int(pcSPS->getChromaFormatIdc ()),    "chroma_format_idc" );
 
@@ -1478,7 +1488,79 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
 }
 
+#if JVET_M0101_HLS
+void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
+{
+  WRITE_FLAG(cinfo->getProgressiveSourceFlag(),   "general_progressive_source_flag"         );
+  WRITE_FLAG(cinfo->getInterlacedSourceFlag(),    "general_interlaced_source_flag"          );
+  WRITE_FLAG(cinfo->getNonPackedConstraintFlag(), "general_non_packed_constraint_flag"      );
+  WRITE_FLAG(cinfo->getFrameOnlyConstraintFlag(), "general_frame_only_constraint_flag"      );
+  WRITE_FLAG(cinfo->getIntraOnlyConstraintFlag(),     "intra_only_constraint_flag"      );
 
+  WRITE_CODE(cinfo->getMaxBitDepthConstraintIdc(), 4, "max_bitdepth_constraint_idc" );
+  WRITE_CODE(cinfo->getMaxChromaFormatConstraintIdc(), 2, "max_chroma_format_constraint_idc" );
+
+  WRITE_FLAG(cinfo->getNoQtbttDualTreeIntraConstraintFlag() ? 1 : 0, "no_qtbtt_dual_tree_intra_constraint_flag");
+  WRITE_FLAG(cinfo->getNoSaoConstraintFlag() ? 1 : 0, "no_sao_constraint_flag");
+  WRITE_FLAG(cinfo->getNoAlfConstraintFlag() ? 1 : 0, "no_alf_constraint_flag");
+  WRITE_FLAG(cinfo->getNoPcmConstraintFlag() ? 1 : 0, "no_pcm_constraint_flag");
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  WRITE_FLAG(cinfo->getNoRefWraparoundConstraintFlag() ? 1 : 0, "no_ref_wraparound_constraint_flag");
+#endif
+  WRITE_FLAG(cinfo->getNoTemporalMvpConstraintFlag() ? 1 : 0, "no_temporal_mvp_constraint_flag");
+  WRITE_FLAG(cinfo->getNoSbtmvpConstraintFlag() ? 1 : 0, "no_sbtmvp_constraint_flag");
+  WRITE_FLAG(cinfo->getNoAmvrConstraintFlag() ? 1 : 0, "no_amvr_constraint_flag");
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  WRITE_FLAG(cinfo->getNoBdofConstraintFlag() ? 1 : 0, "no_bdof_constraint_flag");
+#endif
+  WRITE_FLAG(cinfo->getNoCclmConstraintFlag() ? 1 : 0, "no_cclm_constraint_flag");
+  WRITE_FLAG(cinfo->getNoMtsConstraintFlag() ? 1 : 0, "no_mts_constraint_flag");
+  WRITE_FLAG(cinfo->getNoAffineMotionConstraintFlag() ? 1 : 0, "no_affine_motion_constraint_flag");
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  WRITE_FLAG(cinfo->getNoGbiConstraintFlag() ? 1 : 0, "no_gbi_constraint_flag");
+  WRITE_FLAG(cinfo->getNoMhIntraConstraintFlag() ? 1 : 0, "no_mh_intra_constraint_flag");
+  WRITE_FLAG(cinfo->getNoTriangleConstraintFlag() ? 1 : 0, "no_triangle_constraint_flag");
+#endif
+  WRITE_FLAG(cinfo->getNoLadfConstraintFlag() ? 1 : 0, "no_ladf_constraint_flag");
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  WRITE_FLAG(cinfo->getNoCurrPicRefConstraintFlag() ? 1 : 0, "no_curr_pic_ref_constraint_flag");
+  WRITE_FLAG(cinfo->getNoQpDeltaConstraintFlag() ? 1 : 0, "no_qp_delta_constraint_flag");
+#endif
+  WRITE_FLAG(cinfo->getNoDepQuantConstraintFlag() ? 1 : 0, "no_dep_quant_constraint_flag");
+  WRITE_FLAG(cinfo->getNoSignDataHidingConstraintFlag() ? 1 : 0, "no_sign_data_hiding_constraint_flag");
+}
+
+
+void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 )
+{
+  WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
+  WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
+
+  codeConstraintInfo(ptl->getConstraintInfo());
+
+  WRITE_CODE( int(ptl->getLevelIdc()), 8 ,     "general_level_idc"                     );
+
+  for (int i = 0; i < maxNumSubLayersMinus1; i++)
+  {
+    WRITE_FLAG( ptl->getSubLayerLevelPresentFlag(i),   "sub_layer_level_present_flag[i]" );
+  }
+
+  while (!xIsByteAligned())
+  {
+    WRITE_FLAG(0, "ptl_alignment_zero_bit");
+  }
+
+  for(int i = 0; i < maxNumSubLayersMinus1; i++)
+  {
+    if( ptl->getSubLayerLevelPresentFlag(i) )
+    {
+      WRITE_CODE( int(ptl->getSubLayerLevelIdc(i)), 8, "sub_layer_level_idc[i]" );
+    }
+  }
+
+}
+
+#else
 void HLSWriter::codePTL( const PTL* pcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1)
 {
   if(profilePresentFlag)
@@ -1561,6 +1643,7 @@ void HLSWriter::codeProfileTier( const ProfileTierLevel* ptl, const bool /*bIsSu
   WRITE_FLAG(false,   PTL_TRACE_TEXT("reserved_zero_bit" ));
 #undef PTL_TRACE_TEXT
 }
+#endif
 
 #if HEVC_TILES_WPP
 /**

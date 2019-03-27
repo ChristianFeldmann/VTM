@@ -88,6 +88,9 @@ protected:
   void  xWriteFlagTr          ( uint32_t value,               const char *pSymbolName);
 #endif
   void  xWriteRbspTrailingBits();
+#if JVET_M0101_HLS
+  bool xIsByteAligned()      {return (m_pcBitIf->getNumBitsUntilByteAligned() != 0); } ;
+#endif
 };
 
 
@@ -129,8 +132,13 @@ public:
   void  codeVPS                 ( const VPS* pcVPS );
 #endif
   void  codeSliceHeader         ( Slice* pcSlice );
+#if !JVET_M0101_HLS
   void  codePTL                 ( const PTL* pcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1);
   void  codeProfileTier         ( const ProfileTierLevel* ptl, const bool bIsSubLayer );
+#else
+  void  codeConstraintInfo      ( const ConstraintInfo* cinfo );
+  void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );
+#endif
   void  codeHrdParameters       ( const HRD *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 );
 #if HEVC_TILES_WPP
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );

@@ -553,7 +553,11 @@ void TileMap::initTileMap( const SPS& sps, const PPS& pps )
   // Tile size check
   int minWidth  = 1;
   int minHeight = 1;
+#if !JVET_M0101_HLS
   const int profileIdc = sps.getPTL()->getGeneralPTL()->getProfileIdc();
+#else
+  const int profileIdc = sps.getProfileTierLevel()->getProfileIdc();
+#endif
   if (  profileIdc == Profile::MAIN || profileIdc == Profile::MAIN10)
   {
     if (pps.getTilesEnabledFlag())

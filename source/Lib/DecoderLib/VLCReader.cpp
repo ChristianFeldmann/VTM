@@ -893,6 +893,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if HEVC_VPS
   READ_CODE( 4,  uiCode, "sps_video_parameter_set_id");          pcSPS->setVPSId        ( uiCode );
 #endif
+#if !JVET_M0101_HLS
   READ_UVLC(     uiCode, "sps_seq_parameter_set_id" );           pcSPS->setSPSId( uiCode );
   CHECK(uiCode > 15, "Invalid SPS id signalled");
 
@@ -938,7 +939,17 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     // sps_temporal_id_nesting_flag must be 1 when sps_max_sub_layers_minus1 is 0
     CHECK( uiCode != 1, "Invalid maximum number of T-layers" );
   }
-  parsePTL(pcSPS->getPTL(), 1, pcSPS->getMaxTLayers() - 1);
+  parsePTL(pcSPS->getPTL(), true, pcSPS->getMaxTLayers() - 1);
+#else
+  READ_CODE(3, uiCode, "sps_max_sub_layers_minus1");          pcSPS->setMaxTLayers   (uiCode + 1);
+  CHECK(uiCode > 6, "Invalid maximum number of T-layer signalled");
+  READ_CODE(5, uiCode, "sps_reserved_zero_5bits");
+  CHECK(uiCode != 0, "sps_reserved_zero_5bits not equal to zero");
+
+  parseProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
+
+  READ_UVLC(uiCode, "sps_seq_parameter_set_id");           pcSPS->setSPSId(uiCode);
+#endif
 
   READ_UVLC(     uiCode, "chroma_format_idc" );                  pcSPS->setChromaFormatIdc( ChromaFormat(uiCode) );
   CHECK(uiCode > 3, "Invalid chroma format signalled");
@@ -1058,10 +1069,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setMaxBTSize(maxBTSize[1], maxBTSize[0], maxBTSize[2]);
   pcSPS->setMaxTTSize(maxTTSize[1], maxTTSize[0], maxTTSize[2]);
 
+#if !JVET_M0101_HLS
   if (pcSPS->getPTL()->getGeneralPTL()->getLevelIdc() >= Level::LEVEL5)
   {
     CHECK(log2MinCUSize + pcSPS->getLog2DiffMaxMinCodingBlockSize() < 5, "Invalid code");
   }
+#endif
 
 #if MAX_TB_SIZE_SIGNALLING
   // KJS: Not in syntax
@@ -1511,6 +1524,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       {
         iPOCmsb = iPrevPOCmsb;
       }
+#if !JVET_M0101_HLS
       if ( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
            || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
            || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP )
@@ -1518,6 +1532,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         // For BLA picture types, POCmsb is set to 0.
         iPOCmsb = 0;
       }
+#endif
       pcSlice->setPOC              (iPOCmsb+iPOClsb);
 
       ReferencePictureSet* rps;
@@ -1633,6 +1648,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         offset += rps->getNumberOfLongtermPictures();
         rps->setNumberOfPictures(offset);
       }
+#if !JVET_M0101_HLS
       if ( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
            || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
            || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP )
@@ -1642,6 +1658,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         (*rps)=ReferencePictureSet();
         pcSlice->setRPS(rps);
       }
+#endif
       if (sps->getSPSTemporalMVPEnabledFlag())
       {
         READ_FLAG( uiCode, "slice_temporal_mvp_enabled_flag" );
@@ -2119,8 +2136,81 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   return;
 }
 
+#if JVET_M0101_HLS
+void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
+{
+  uint32_t symbol;
+  READ_FLAG(symbol,  "general_progressive_source_flag"          ); cinfo->setProgressiveSourceFlag(symbol ? true : false);
+  READ_FLAG(symbol,  "general_interlaced_source_flag"           ); cinfo->setInterlacedSourceFlag(symbol ? true : false);
+  READ_FLAG(symbol,  "general_non_packed_constraint_flag"       ); cinfo->setNonPackedConstraintFlag(symbol ? true : false);
+  READ_FLAG(symbol,  "general_frame_only_constraint_flag"       ); cinfo->setFrameOnlyConstraintFlag(symbol ? true : false);
+  READ_FLAG(symbol,  "intra_only_constraint_flag"               ); cinfo->setIntraOnlyConstraintFlag(symbol ? true : false);
+
+  READ_CODE(4, symbol,  "max_bitdepth_constraint_idc"              ); cinfo->setMaxBitDepthConstraintIdc(symbol);
+  READ_CODE(2, symbol,  "max_chroma_format_constraint_idc"         ); cinfo->setMaxChromaFormatConstraintIdc((ChromaFormat)symbol);
+  
+  READ_FLAG(symbol,  "no_qtbtt_dual_tree_intra_constraint_flag" ); cinfo->setNoQtbttDualTreeIntraConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol,  "no_sao_constraint_flag");                    cinfo->setNoSaoConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol,  "no_alf_constraint_flag");                    cinfo->setNoAlfConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol,  "no_pcm_constraint_flag");                    cinfo->setNoPcmConstraintFlag(symbol > 0 ? true : false);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  READ_FLAG(symbol,  "no_ref_wraparound_constraint_flag");         cinfo->setNoRefWraparoundConstraintFlag(symbol > 0 ? true : false);
+#endif
+  READ_FLAG(symbol,  "no_temporal_mvp_constraint_flag");           cinfo->setNoTemporalMvpConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol,  "no_sbtmvp_constraint_flag");                 cinfo->setNoSbtmvpConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol,  "no_amvr_constraint_flag");                   cinfo->setNoAmvrConstraintFlag(symbol > 0 ? true : false);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  READ_FLAG(symbol,  "no_bdof_constraint_flag");                   cinfo->setNoBdofConstraintFlag(symbol > 0 ? true : false);
+#endif
+  READ_FLAG(symbol, "no_cclm_constraint_flag");                    cinfo->setNoCclmConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol, "no_mts_constraint_flag");                     cinfo->setNoMtsConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol, "no_affine_motion_constraint_flag");           cinfo->setNoAffineMotionConstraintFlag(symbol > 0 ? true : false);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  READ_FLAG(symbol, "no_gbi_constraint_flag");                     cinfo->setNoGbiConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol, "no_mh_intra_constraint_flag");                cinfo->setNoMhIntraConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol, "no_triangle_constraint_flag");                cinfo->setNoTriangleConstraintFlag(symbol > 0 ? true : false);
+#endif
+  READ_FLAG(symbol, "no_ladf_constraint_flag");                    cinfo->setNoLadfConstraintFlag(symbol > 0 ? true : false);
+#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
+  READ_FLAG(symbol, "no_curr_pic_ref_constraint_flag");            cinfo->setNoCurrPicRefConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol, "no_qp_delta_constraint_flag");                cinfo->setNoQpDeltaConstraintFlag(symbol > 0 ? true : false);
+#endif
+  READ_FLAG(symbol, "no_dep_quant_constraint_flag");               cinfo->setNoDepQuantConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol, "no_sign_data_hiding_constraint_flag");        cinfo->setNoSignDataHidingConstraintFlag(symbol > 0 ? true : false);
+}
 
 
+void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubLayersMinus1)
+{
+  uint32_t symbol;
+  READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
+  READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
+
+  parseConstraintInfo( ptl->getConstraintInfo() );
+
+  READ_CODE(8 , symbol,   "general_level_idc"                ); ptl->setLevelIdc    (Level::Name(symbol));
+
+  for (int i = 0; i < maxNumSubLayersMinus1; i++)
+  {
+    READ_FLAG( symbol, "sub_layer_level_present_flag[i]"   ); ptl->setSubLayerLevelPresentFlag  (i, symbol);
+  }
+
+  while (!isByteAligned())
+  {
+    READ_FLAG(    symbol,   "ptl_alignment_zero_bit"        ); CHECK (symbol != 0, "ptl_alignment_zero_bit not equal to zero");
+  }
+
+  for (int i = 0; i < maxNumSubLayersMinus1; i++)
+  {
+    if (ptl->getSubLayerLevelPresentFlag(i))
+    {
+      READ_CODE(8 , symbol,   "sub_layer_level_idc"                ); ptl->setSubLayerLevelIdc    (i, Level::Name(symbol));
+    }
+  }
+}
+
+
+#else
 void HLSyntaxReader::parsePTL( PTL *rpcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1 )
 {
   uint32_t uiCode;
@@ -2228,6 +2318,7 @@ void HLSyntaxReader::parseProfileTier(ProfileTierLevel *ptl, const bool /*bIsSub
   }
 #undef PTL_TRACE_TEXT
 }
+#endif
 
 void HLSyntaxReader::parseTerminatingBit( uint32_t& ruiBit )
 {

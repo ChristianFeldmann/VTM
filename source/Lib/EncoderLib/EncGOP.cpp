@@ -995,7 +995,11 @@ void EfficientFieldIRAPMapping::initialize(const bool isField, const int gopSize
 
       // check if POC corresponds to IRAP
       NalUnitType tmpUnitType = pEncGop->getNalUnitType(pocCurr, lastIDR, isField);
+#if !JVET_M0101_HLS
       if(tmpUnitType >= NAL_UNIT_CODED_SLICE_BLA_W_LP && tmpUnitType <= NAL_UNIT_CODED_SLICE_CRA) // if picture is an IRAP
+#else
+      if (tmpUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && tmpUnitType <= NAL_UNIT_CODED_SLICE_CRA) // if picture is an IRAP
+#endif
       {
         if(pocCurr%2 == 0 && iGOPid < gopSize-1 && pCfg->getGOPEntry(iGOPid).m_POC == pCfg->getGOPEntry(iGOPid+1).m_POC-1)
         { // if top field and following picture in enc order is associated bottom field
@@ -1517,6 +1521,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
     // Set the nal unit type
     pcSlice->setNalUnitType(getNalUnitType(pocCurr, m_iLastIDR, isField));
+#if !JVET_M0101_HLS
     if(pcSlice->getTemporalLayerNonReferenceFlag())
     {
       if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_TRAIL_R &&
@@ -1534,15 +1539,22 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         pcSlice->setNalUnitType(NAL_UNIT_CODED_SLICE_RASL_N);
       }
     }
+#endif
 
     if (m_pcCfg->getEfficientFieldIRAPEnabled())
     {
+#if !JVET_M0101_HLS
       if ( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA )  // IRAP picture
+#else
+      if ( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL
+        || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP
+        || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)  // IRAP picture
+#endif
       {
         m_associatedIRAPType = pcSlice->getNalUnitType();
         m_associatedIRAPPOC = pocCurr;
@@ -1578,12 +1590,18 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
     if (!m_pcCfg->getEfficientFieldIRAPEnabled())
     {
+#if !JVET_M0101_HLS
       if ( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA )  // IRAP picture
+#else
+      if ( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL
+        || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP
+        || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)  // IRAP picture
+#endif
       {
         m_associatedIRAPType = pcSlice->getNalUnitType();
         m_associatedIRAPPOC = pocCurr;
@@ -1593,7 +1611,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
 
     if ((pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPS(), false, m_iLastRecoveryPicPOC, m_pcCfg->getDecodingRefreshType() == 3) != 0) || (pcSlice->isIRAP())
+#if !JVET_M0101_HLS
       || (m_pcCfg->getEfficientFieldIRAPEnabled() && isField && pcSlice->getAssociatedIRAPType() >= NAL_UNIT_CODED_SLICE_BLA_W_LP && pcSlice->getAssociatedIRAPType() <= NAL_UNIT_CODED_SLICE_CRA && pcSlice->getAssociatedIRAPPOC() == pcSlice->getPOC()+1)
+#else
+      || (m_pcCfg->getEfficientFieldIRAPEnabled() && isField && pcSlice->getAssociatedIRAPType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && pcSlice->getAssociatedIRAPType() <= NAL_UNIT_CODED_SLICE_CRA && pcSlice->getAssociatedIRAPPOC() == pcSlice->getPOC() + 1)
+#endif
       )
     {
       pcSlice->createExplicitReferencePictureSetFromReference(rcListPic, pcSlice->getRPS(), pcSlice->isIRAP(), m_iLastRecoveryPicPOC, m_pcCfg->getDecodingRefreshType() == 3, m_pcCfg->getEfficientFieldIRAPEnabled()
@@ -1604,12 +1626,18 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcSlice->applyReferencePictureSet(rcListPic, pcSlice->getRPS());
 
     if(pcSlice->getTLayer() > 0
+#if !JVET_M0101_HLS
       &&  !( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL_N     // Check if not a leading picture
           || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL_R
           || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL_N
           || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL_R )
+#else
+      && !(pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL     // Check if not a leading picture
+        || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL)
+#endif
         )
     {
+#if !JVET_M0101_HLS
       if(pcSlice->isTemporalLayerSwitchingPoint(rcListPic) || pcSlice->getSPS()->getTemporalIdNestingFlag())
       {
         if(pcSlice->getTemporalLayerNonReferenceFlag())
@@ -1622,6 +1650,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
       else if(pcSlice->isStepwiseTemporalLayerSwitchingPointCandidate(rcListPic))
+#else
+    if (pcSlice->isStepwiseTemporalLayerSwitchingPointCandidate(rcListPic))
+#endif
       {
         bool isSTSA=true;
         for(int ii=iGOPid+1;(ii<m_pcCfg->getGOPSize() && isSTSA==true);ii++)
@@ -1655,6 +1686,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
         if(isSTSA==true)
         {
+#if !JVET_M0101_HLS
           if(pcSlice->getTemporalLayerNonReferenceFlag())
           {
             pcSlice->setNalUnitType(NAL_UNIT_CODED_SLICE_STSA_N);
@@ -1663,6 +1695,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           {
             pcSlice->setNalUnitType(NAL_UNIT_CODED_SLICE_STSA_R);
           }
+#else
+          pcSlice->setNalUnitType(NAL_UNIT_CODED_SLICE_STSA);
+#endif
         }
       }
     }
@@ -2615,7 +2650,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         pcSlice->setNoRaslOutputFlag(false);
         if (pcSlice->isIRAP())
         {
+#if !JVET_M0101_HLS
           if (pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_BLA_W_LP && pcSlice->getNalUnitType() <= NAL_UNIT_CODED_SLICE_IDR_N_LP)
+#else
+          if (pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && pcSlice->getNalUnitType() <= NAL_UNIT_CODED_SLICE_IDR_N_LP)
+#endif
           {
             pcSlice->setNoRaslOutputFlag(true);
           }
@@ -3634,7 +3673,11 @@ NalUnitType EncGOP::getNalUnitType(int pocCurr, int lastIDR, bool isField)
   if (m_pcCfg->getEfficientFieldIRAPEnabled() && isField && pocCurr == (m_pcCfg->getUseCompositeRef() ? 2: 1))
   {
     // to avoid the picture becoming an IRAP
+#if !JVET_M0101_HLS
     return NAL_UNIT_CODED_SLICE_TRAIL_R;
+#else
+    return NAL_UNIT_CODED_SLICE_TRAIL;
+#endif
   }
 
   if (m_pcCfg->getDecodingRefreshType() != 3 && (pocCurr - isField) % (m_pcCfg->getIntraPeriod() * (m_pcCfg->getUseCompositeRef() ? 2 : 1)) == 0)
@@ -3657,17 +3700,29 @@ NalUnitType EncGOP::getNalUnitType(int pocCurr, int lastIDR, bool isField)
       // picture can be still decodable when random accessing to a CRA/CRANT/BLA/BLANT picture by
       // controlling the reference pictures used for encoding that leading picture. Such a leading
       // picture need not be marked as a TFD picture.
+#if !JVET_M0101_HLS
       return NAL_UNIT_CODED_SLICE_RASL_R;
+#else
+      return NAL_UNIT_CODED_SLICE_RASL;
+#endif
     }
   }
   if (lastIDR>0)
   {
     if (pocCurr < lastIDR)
     {
+#if !JVET_M0101_HLS
       return NAL_UNIT_CODED_SLICE_RADL_R;
+#else
+      return NAL_UNIT_CODED_SLICE_RADL;
+#endif
     }
   }
+#if !JVET_M0101_HLS
   return NAL_UNIT_CODED_SLICE_TRAIL_R;
+#else
+  return NAL_UNIT_CODED_SLICE_TRAIL;
+#endif
 }
 
 void EncGOP::xUpdateRasInit(Slice* slice)

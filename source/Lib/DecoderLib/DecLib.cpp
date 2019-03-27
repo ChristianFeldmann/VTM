@@ -1001,12 +1001,14 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #endif
 
   m_apcSlicePilot->setNalUnitType(nalu.m_nalUnitType);
+#if !JVET_M0101_HLS
   bool nonReferenceFlag = (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_TRAIL_N ||
                            m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_TSA_N   ||
                            m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_STSA_N  ||
                            m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL_N  ||
                            m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL_N);
   m_apcSlicePilot->setTemporalLayerNonReferenceFlag(nonReferenceFlag);
+#endif
   m_apcSlicePilot->setTLayer(nalu.m_temporalId);
 
   m_HLSReader.setBitstream( &nalu.getBitstream() );
@@ -1055,9 +1057,14 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   //For inference of NoOutputOfPriorPicsFlag
   if (m_apcSlicePilot->getRapPicFlag())
   {
+#if !JVET_M0101_HLS
     if ((m_apcSlicePilot->getNalUnitType() >= NAL_UNIT_CODED_SLICE_BLA_W_LP && m_apcSlicePilot->getNalUnitType() <= NAL_UNIT_CODED_SLICE_IDR_N_LP) ||
         (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence) ||
-        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsBlaFlag()))
+        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()))
+#else
+    if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence) ||
+        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()))
+#endif
     {
       m_apcSlicePilot->setNoRaslOutputFlag(true);
     }
@@ -1090,7 +1097,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 
   //For inference of PicOutputFlag
+#if !JVET_M0101_HLS
   if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL_N || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL_R)
+#else
+  if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL)
+#endif
   {
     if ( m_craNoRaslOutputFlag )
     {
@@ -1125,12 +1136,14 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     return false;
   }
   // Skip TFD pictures associated with BLA/BLANT pictures
+#if !JVET_M0101_HLS
   if (isSkipPictureForBLA(iPOCLastDisplay))
   {
     m_prevSliceSkipped = true;
     m_skippedPOC = m_apcSlicePilot->getPOC();
     return false;
   }
+#endif
 
   // clear previous slice skipped flag
   m_prevSliceSkipped = false;
@@ -1524,6 +1537,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
       }
       return false;
 
+#if !JVET_M0101_HLS
     case NAL_UNIT_CODED_SLICE_TRAIL_R:
     case NAL_UNIT_CODED_SLICE_TRAIL_N:
     case NAL_UNIT_CODED_SLICE_TSA_R:
@@ -1540,6 +1554,15 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_CODED_SLICE_RADL_R:
     case NAL_UNIT_CODED_SLICE_RASL_N:
     case NAL_UNIT_CODED_SLICE_RASL_R:
+#else
+    case NAL_UNIT_CODED_SLICE_TRAIL:
+    case NAL_UNIT_CODED_SLICE_STSA:
+    case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
+    case NAL_UNIT_CODED_SLICE_IDR_N_LP:
+    case NAL_UNIT_CODED_SLICE_CRA:
+    case NAL_UNIT_CODED_SLICE_RADL:
+    case NAL_UNIT_CODED_SLICE_RASL:
+#endif
       ret = xDecodeSlice(nalu, iSkipFrame, iPOCLastDisplay);
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
       if ( ret )
@@ -1580,7 +1603,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
         msg( NOTICE, "Note: found NAL_UNIT_FILLER_DATA with %u bytes payload.\n", size);
         return false;
       }
-
+#if !JVET_M0101_HLS
     case NAL_UNIT_RESERVED_VCL_N10:
     case NAL_UNIT_RESERVED_VCL_R11:
     case NAL_UNIT_RESERVED_VCL_N12:
@@ -1602,10 +1625,25 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
 #if !HEVC_VPS
     case NAL_UNIT_RESERVED_32:
 #endif
+#else
+    case NAL_UNIT_RESERVED_VCL_4:
+    case NAL_UNIT_RESERVED_VCL_5:
+    case NAL_UNIT_RESERVED_VCL_6:
+    case NAL_UNIT_RESERVED_VCL_7:
+
+    case NAL_UNIT_RESERVED_IRAP_VCL11:
+    case NAL_UNIT_RESERVED_IRAP_VCL12:
+    case NAL_UNIT_RESERVED_IRAP_VCL13:
+
+    case NAL_UNIT_RESERVED_VCL14:
+#if !HEVC_VPS
+    case NAL_UNIT_RESERVED_VCL15:
+#endif
+#endif
       msg( NOTICE, "Note: found reserved VCL NAL unit.\n");
       xParsePrefixSEIsForUnknownVCLNal();
       return false;
-
+#if !JVET_M0101_HLS
     case NAL_UNIT_RESERVED_NVCL41:
     case NAL_UNIT_RESERVED_NVCL42:
     case NAL_UNIT_RESERVED_NVCL43:
@@ -1613,8 +1651,14 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_RESERVED_NVCL45:
     case NAL_UNIT_RESERVED_NVCL46:
     case NAL_UNIT_RESERVED_NVCL47:
+#else
+    case NAL_UNIT_RESERVED_NVCL16:
+    case NAL_UNIT_RESERVED_NVCL26:
+    case NAL_UNIT_RESERVED_NVCL27:
+#endif
       msg( NOTICE, "Note: found reserved NAL unit.\n");
       return false;
+#if !JVET_M0101_HLS
     case NAL_UNIT_UNSPECIFIED_48:
     case NAL_UNIT_UNSPECIFIED_49:
     case NAL_UNIT_UNSPECIFIED_50:
@@ -1631,6 +1675,12 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_UNSPECIFIED_61:
     case NAL_UNIT_UNSPECIFIED_62:
     case NAL_UNIT_UNSPECIFIED_63:
+#else
+    case NAL_UNIT_UNSPECIFIED_28:
+    case NAL_UNIT_UNSPECIFIED_29:
+    case NAL_UNIT_UNSPECIFIED_30:
+    case NAL_UNIT_UNSPECIFIED_31:
+#endif
       msg( NOTICE, "Note: found unspecified NAL unit.\n");
       return false;
     default:
@@ -1641,6 +1691,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
   return false;
 }
 
+#if !JVET_M0101_HLS
 /** Function for checking if picture should be skipped because of association with a previous BLA picture
  *  This function skips all TFD pictures that follow a BLA picture in decoding order and precede it in output order.
  */
@@ -1654,6 +1705,7 @@ bool DecLib::isSkipPictureForBLA( int& iPOCLastDisplay )
   }
   return false;
 }
+#endif
 
 /** Function for checking if picture should be skipped because of random access. This function checks the skipping of pictures in the case of -s option random access.
  *  All pictures prior to the random access point indicated by the counter iSkipFrame are skipped.
@@ -1673,10 +1725,14 @@ bool DecLib::isRandomAccessSkipPicture( int& iSkipFrame, int& iPOCLastDisplay )
   }
   else if (m_pocRandomAccess == MAX_INT) // start of random access point, m_pocRandomAccess has not been set yet.
   {
+#if !JVET_M0101_HLS
     if (   m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA
         || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
         || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP
         || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL )
+#else
+    if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA )
+#endif
     {
       // set the POC random access since we need to skip the reordered pictures in the case of CRA/CRANT/BLA/BLANT.
       m_pocRandomAccess = m_apcSlicePilot->getPOC();
@@ -1696,7 +1752,11 @@ bool DecLib::isRandomAccessSkipPicture( int& iSkipFrame, int& iPOCLastDisplay )
     }
   }
   // skip the reordered pictures, if necessary
+#if !JVET_M0101_HLS
   else if (m_apcSlicePilot->getPOC() < m_pocRandomAccess && (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL_R || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL_N))
+#else
+  else if (m_apcSlicePilot->getPOC() < m_pocRandomAccess && (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL))
+#endif
   {
     iPOCLastDisplay++;
     return true;

@@ -921,8 +921,8 @@ void CABACWriter::pcm_data( const CodingUnit& cu, Partitioner& partitioner  )
 void CABACWriter::pcm_flag( const CodingUnit& cu, Partitioner& partitioner )
 {
   const SPS& sps = *cu.cs->sps;
-  if( !sps.getPCMEnabledFlag() || cu.lwidth() > (1 << sps.getPCMLog2MaxSize()) || cu.lwidth() < (1 << sps.getPCMLog2MinSize())
-      || cu.lheight() > (1 << sps.getPCMLog2MaxSize()) || cu.lheight() < (1 << sps.getPCMLog2MinSize()) )
+  if( !sps.getPCMEnabledFlag() || partitioner.currArea().lwidth() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lwidth() < (1 << sps.getPCMLog2MinSize())
+      || partitioner.currArea().lheight() > (1 << sps.getPCMLog2MaxSize()) || partitioner.currArea().lheight() < (1 << sps.getPCMLog2MinSize()) )
   {
     return;
   }

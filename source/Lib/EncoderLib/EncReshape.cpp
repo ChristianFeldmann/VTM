@@ -1284,7 +1284,6 @@ void EncReshape::copyState(const EncReshape &other)
   m_rateAdpMode     = other.m_rateAdpMode;
   m_useAdpCW        = other.m_useAdpCW;
   m_initCWAnalyze   = other.m_initCWAnalyze;
-  m_dQPModel        = other.m_dQPModel;
   m_reshapeCW       = other.m_reshapeCW;
   memcpy( m_cwLumaWeight, other.m_cwLumaWeight, sizeof( m_cwLumaWeight ) );
   m_chromaWeight    = other.m_chromaWeight;

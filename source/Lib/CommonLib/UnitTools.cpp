@@ -2613,14 +2613,13 @@ void PU::fillIBCMvpCand(PredictionUnit &pu, AMVPInfo &amvpInfo)
   Position posLB = pu.Y().bottomLeft();
 
   bool isScaledFlagLX = false; /// variable name from specification; true when the PUs below left or left are available (availableA0 || availableA1).
+
+  const PredictionUnit* tmpPU = cs.getPURestricted(posLB.offset(-1, 1), pu, pu.chType); // getPUBelowLeft(idx, partIdxLB);
+  isScaledFlagLX = tmpPU != NULL && CU::isIBC(*tmpPU->cu);
+  if (!isScaledFlagLX)
   {
-    const PredictionUnit* tmpPU = cs.getPURestricted(posLB.offset(-1, 1), pu, pu.chType); // getPUBelowLeft(idx, partIdxLB);
+    tmpPU = cs.getPURestricted(posLB.offset(-1, 0), pu, pu.chType);
     isScaledFlagLX = tmpPU != NULL && CU::isIBC(*tmpPU->cu);
-    if (!isScaledFlagLX)
-    {
-      tmpPU = cs.getPURestricted(posLB.offset(-1, 0), pu, pu.chType);
-      isScaledFlagLX = tmpPU != NULL && CU::isIBC(*tmpPU->cu);
-    }
   }
 
   // Left predictor search
@@ -2635,20 +2634,24 @@ void PU::fillIBCMvpCand(PredictionUnit &pu, AMVPInfo &amvpInfo)
   }
 
   // Above predictor search
+  bool isAdded = addIBCMVPCand(pu, posRT, MD_ABOVE_RIGHT, *pInfo);
+
+  if (!isAdded)
   {
-    bool isAdded = addIBCMVPCand(pu, posRT, MD_ABOVE_RIGHT, *pInfo);
+    isAdded = addIBCMVPCand(pu, posRT, MD_ABOVE, *pInfo);
 
     if (!isAdded)
     {
-      isAdded = addIBCMVPCand(pu, posRT, MD_ABOVE, *pInfo);
-
-      if (!isAdded)
-      {
-        addIBCMVPCand(pu, posLT, MD_ABOVE_LEFT, *pInfo);
-      }
+      addIBCMVPCand(pu, posLT, MD_ABOVE_LEFT, *pInfo);
     }
   }
 
+#if JVET_M0281_AMVP_ROUNDING || JVET_M0117_AMVP_LIST_GEN
+  for( int i = 0; i < pInfo->numCand; i++ )
+  {
+    pInfo->mvCand[i].roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
+  }
+#else
   if (pu.cu->imv != 0)
   {
     for (int i = 0; i < pInfo->numCand; i++)
@@ -2656,6 +2659,7 @@ void PU::fillIBCMvpCand(PredictionUnit &pu, AMVPInfo &amvpInfo)
       pInfo->mvCand[i].roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
     }
   }
+#endif
 
   if (pInfo->numCand == 2)
   {
@@ -2684,7 +2688,9 @@ void PU::fillIBCMvpCand(PredictionUnit &pu, AMVPInfo &amvpInfo)
   for (Mv &mv : pInfo->mvCand)
   {
     mv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if !JVET_M0281_AMVP_ROUNDING && !JVET_M0117_AMVP_LIST_GEN
     mv.roundToAmvrSignalPrecision(MV_PRECISION_QUARTER, pu.cu->imv);
+#endif
   }
 }
 

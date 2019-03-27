@@ -113,7 +113,7 @@ void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const
 void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isIBC)
 #endif
 {
-  if (m_lumaBD == 10)
+  if (m_lumaBD >= 10)
   {
     m_sliceReshapeInfo.sliceReshaperEnableFlag = true;
     if (reshapeCW.rspIntraPeriod == 1)
@@ -1028,54 +1028,33 @@ void EncReshape::deriveReshapeParameters(double *array, int start, int end, Resh
 */
 void EncReshape::initLUTfromdQPModel()
 {
-  initModelParam();
   int pwlFwdLUTsize = PIC_CODE_CW_BINS;
   int pwlFwdBinLen = m_reshapeLUTSize / PIC_CODE_CW_BINS;
-  int p1 = m_dQPModel.scaleFracPrec;
-  int p2 = m_dQPModel.offsetFracPrec;
-  int totalShift = p1 + p2;
-  int scaleFP = (1 - 2 * m_dQPModel.scaleSign)  * m_dQPModel.scaleAbs;
-  int offsetFP = (1 - 2 * m_dQPModel.offsetSign) * m_dQPModel.offsetAbs;
-  int maxQP = (1 - 2 * m_dQPModel.maxQPSign)  * m_dQPModel.maxQPAbs;
-  int minQP = (1 - 2 * m_dQPModel.minQPSign)  * m_dQPModel.minQPAbs;
-  int maxFP = maxQP * (1 << totalShift);
-  int minFP = minQP * (1 << totalShift);
-  int temp, signval, absval;
-  int dQPDiv6FP;
-  int32_t * slopeLUT = new int32_t[m_reshapeLUTSize]();
-  int32_t * fwdLUTHighPrec = new int32_t[m_reshapeLUTSize]();
-
+  double lumaDQP = 0.0;
+  double * slopeLUT = new double[m_reshapeLUTSize]();
+  double * fwdLUTHighPrec = new double[m_reshapeLUTSize]();
   for (int i = 0; i < m_reshapeLUTSize; i++)
   {
     int inputY = m_lumaBD < 10 ? i << (10 - m_lumaBD) : m_lumaBD > 10 ? i >> (m_lumaBD - 10) : i;
-    temp = int64_t((scaleFP*inputY) * (1 << p2)) + int64_t(offsetFP * (1 << p1));
-    temp = temp > maxFP ? maxFP : temp < minFP ? minFP : temp;
-    signval = temp >= 0 ? 1 : -1;
-    absval = signval * temp;
-    dQPDiv6FP = signval * (((absval + 3) / 6 + (1 << (totalShift - 17))) >> (totalShift - 16));
-    slopeLUT[i] = calcEXP2(dQPDiv6FP);
+    lumaDQP = 0.015*(double)inputY - 7.5;
+    lumaDQP = lumaDQP<-3 ? -3 : (lumaDQP>6 ? 6 : lumaDQP);
+    slopeLUT[i] = pow(2.0, lumaDQP / 6.0);
   }
-
-  if (m_dQPModel.fullRangeInputFlag == 0)
-  {
-    for (int i = 0; i < (16 << (m_lumaBD - 8)); i++)                    {      slopeLUT[i] = 0;    }
-    for (int i = (235 << (m_lumaBD - 8)); i < m_reshapeLUTSize; i++)    {      slopeLUT[i] = 0;    }
-  }
-
+  for (int i = 0; i < (16 << (m_lumaBD - 8)); i++) { slopeLUT[i] = 0.0; }
+  for (int i = (235 << (m_lumaBD - 8)); i < m_reshapeLUTSize; i++) { slopeLUT[i] = 0.0; }
   for (int i = 0; i < m_reshapeLUTSize - 1; i++)
     fwdLUTHighPrec[i + 1] = fwdLUTHighPrec[i] + slopeLUT[i];
-  if (slopeLUT != nullptr)   {    delete[] slopeLUT;    slopeLUT = nullptr;  }
+  if (slopeLUT != nullptr) { delete[] slopeLUT;    slopeLUT = nullptr; }
 
-  int max_Y = (fwdLUTHighPrec[m_reshapeLUTSize - 1] + (1 << 7)) >> 8;
-  int Roffset = max_Y >> 1;
+  double maxY = fwdLUTHighPrec[m_reshapeLUTSize - 1];
   for (int i = 0; i < m_reshapeLUTSize; i++)
   {
-    m_fwdLUT[i] = (short)(((fwdLUTHighPrec[i] >> 8) * (m_reshapeLUTSize - 1) + Roffset) / max_Y);
+    m_fwdLUT[i] = (int16_t)((fwdLUTHighPrec[i] / maxY * (double)(m_reshapeLUTSize - 1)) + 0.5);
   }
 
   if (fwdLUTHighPrec != nullptr)   {    delete[] fwdLUTHighPrec;    fwdLUTHighPrec = nullptr;  }
   m_sliceReshapeInfo.reshaperModelMinBinIdx = 1;
-  m_sliceReshapeInfo.reshaperModelMaxBinIdx = 14;
+  m_sliceReshapeInfo.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS-2;
 
   for (int i = 0; i < pwlFwdLUTsize; i++)
   {
@@ -1114,27 +1093,6 @@ void EncReshape::initLUTfromdQPModel()
   }
   reverseLUT(m_fwdLUT, m_invLUT, m_reshapeLUTSize);
   updateChromaScaleLUT();
-}
-
-
-/**
--Perform fixe point exp2 calculation
-\param   val  input value
-\retval  output value = exp2(val)
-*/
-int EncReshape::calcEXP2(int val)
-{
-  int32_t i, f, r, s;
-  r = 0x00000e20;
-
-  i = ((int32_t)(val)+0x8000) & ~0xffff;
-  f = (int32_t)(val)-i;
-  s = ((15 << 16) - i) >> 16;
-
-  r = (r * f + 0x3e1cc333) >> 17;
-  r = (r * f + 0x58bd46a6) >> 16;
-  r = r * f + 0x7ffde4a3;
-  return (uint32_t)r >> s;
 }
 
 void EncReshape::constructReshaperSDR()

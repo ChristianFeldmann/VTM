@@ -79,6 +79,9 @@ public:
 
 #if JVET_M0170_MRG_SHARELIST
   void setShareStateDec (int shareStateDecIn)  { m_shareStateDec = shareStateDecIn; }
+#if ENABLE_SPLIT_PARALLELISM
+  int  getShareStateDec () const { return m_shareStateDec; }
+#endif
 #endif
   /// reconstruct Ctu information
 protected:

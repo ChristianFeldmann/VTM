@@ -1267,6 +1267,42 @@ void EncReshape::constructReshaperSDR()
   updateChromaScaleLUT();
 }
 
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+void EncReshape::copyState(const EncReshape &other)
+{
+  m_srcReshaped     = other.m_srcReshaped;
+  m_picWidth        = other.m_picWidth;
+  m_picHeight       = other.m_picHeight;
+  m_maxCUWidth      = other.m_maxCUWidth;
+  m_maxCUHeight     = other.m_maxCUHeight;
+  m_widthInCtus     = other.m_widthInCtus;
+  m_heightInCtus    = other.m_heightInCtus;
+  m_numCtuInFrame   = other.m_numCtuInFrame;
+  m_exceedSTD       = other.m_exceedSTD;
+  m_binImportance   = other.m_binImportance;
+  m_tcase           = other.m_tcase;
+  m_rateAdpMode     = other.m_rateAdpMode;
+  m_useAdpCW        = other.m_useAdpCW;
+  m_initCWAnalyze   = other.m_initCWAnalyze;
+  m_reshapeCW       = other.m_reshapeCW;
+  memcpy( m_cwLumaWeight, other.m_cwLumaWeight, sizeof( m_cwLumaWeight ) );
+  m_chromaWeight    = other.m_chromaWeight;
+  m_chromaAdj       = other.m_chromaAdj;
+
+  m_sliceReshapeInfo = other.m_sliceReshapeInfo;
+  m_CTUFlag          = other.m_CTUFlag;
+  m_recReshaped      = other.m_recReshaped;
+  m_invLUT           = other.m_invLUT;
+  m_fwdLUT           = other.m_fwdLUT;
+  m_chromaAdjHelpLUT = other.m_chromaAdjHelpLUT;
+  m_binCW            = other.m_binCW;
+  m_initCW           = other.m_initCW;
+  m_reshape          = other.m_reshape;
+  m_reshapePivot     = other.m_reshapePivot;
+  m_lumaBD           = other.m_lumaBD;
+  m_reshapeLUTSize   = other.m_reshapeLUTSize;
+}
+#endif
 #endif
 //
 //! \}

@@ -214,6 +214,9 @@ public:
 #endif
 #if JVET_M0170_MRG_SHARELIST
   void    setShareState(int shareStateIn) {m_shareState = shareStateIn;}
+#if ENABLE_SPLIT_PARALLELISM
+  int     getShareState() const { return m_shareState; }
+#endif
 #endif
 };
 

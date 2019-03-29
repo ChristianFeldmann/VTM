@@ -175,11 +175,6 @@ void InterSearch::setTempBuffers( CodingStructure ****pSplitCS, CodingStructure 
 #if ENABLE_SPLIT_PARALLELISM
 void InterSearch::copyState( const InterSearch& other )
 {
-  if( !m_pcEncCfg->getQTBT() )
-  {
-    memcpy( m_integerMv2Nx2N, other.m_integerMv2Nx2N, sizeof( m_integerMv2Nx2N ) );
-  }
-
   memcpy( m_aaiAdaptSR, other.m_aaiAdaptSR, sizeof( m_aaiAdaptSR ) );
 }
 #endif

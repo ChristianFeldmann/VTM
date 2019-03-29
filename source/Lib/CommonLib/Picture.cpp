@@ -1088,12 +1088,20 @@ void Picture::extendPicBorder()
 
 PelBuf Picture::getBuf( const ComponentID compID, const PictureType &type )
 {
-  return M_BUFS( type == PIC_ORIGINAL ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
+#if JVET_M0427_INLOOP_RESHAPER
+  return M_BUFS( ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
+#else
+  return M_BUFS( ( type == PIC_ORIGINAL ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
+#endif
 }
 
 const CPelBuf Picture::getBuf( const ComponentID compID, const PictureType &type ) const
 {
-  return M_BUFS( type == PIC_ORIGINAL ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
+#if JVET_M0427_INLOOP_RESHAPER
+  return M_BUFS( ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
+#else
+  return M_BUFS( ( type == PIC_ORIGINAL ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
+#endif
 }
 
 PelBuf Picture::getBuf( const CompArea &blk, const PictureType &type )
@@ -1104,7 +1112,11 @@ PelBuf Picture::getBuf( const CompArea &blk, const PictureType &type )
   }
 
 #if ENABLE_SPLIT_PARALLELISM
-  const int jId = type == PIC_ORIGINAL ? 0 : scheduler.getSplitPicId();
+#if JVET_M0427_INLOOP_RESHAPER
+  const int jId = ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
+#else
+  const int jId = ( type == PIC_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
+#endif
 
 #endif
 #if !KEEP_PRED_AND_RESI_SIGNALS
@@ -1129,7 +1141,11 @@ const CPelBuf Picture::getBuf( const CompArea &blk, const PictureType &type ) co
   }
 
 #if ENABLE_SPLIT_PARALLELISM
-  const int jId = type == PIC_ORIGINAL ? 0 : scheduler.getSplitPicId();
+#if JVET_M0427_INLOOP_RESHAPER
+  const int jId = ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
+#else
+  const int jId = ( type == PIC_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
+#endif
 
 #endif
 #if !KEEP_PRED_AND_RESI_SIGNALS
@@ -1173,7 +1189,11 @@ const CPelUnitBuf Picture::getBuf( const UnitArea &unit, const PictureType &type
 Pel* Picture::getOrigin( const PictureType &type, const ComponentID compID ) const
 {
 #if ENABLE_SPLIT_PARALLELISM
-  const int jId = type == PIC_ORIGINAL ? 0 : scheduler.getSplitPicId();
+#if JVET_M0427_INLOOP_RESHAPER
+  const int jId = ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
+#else
+  const int jId = ( type == PIC_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
+#endif
 #endif
   return M_BUFS( jId, type ).getOrigin( compID );
 

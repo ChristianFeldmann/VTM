@@ -69,7 +69,11 @@ protected:
   int                     m_reshapeLUTSize;
 public:
   Reshape();
+#if ENABLE_SPLIT_PARALLELISM
+  virtual ~Reshape();
+#else
   ~Reshape();
+#endif
 
   void createDec(int bitDepth);
   void destroy();

@@ -125,7 +125,6 @@ private:
   CABACWriter*          m_CABACEstimator;
   RateCtrl*             m_pcRateCtrl;
   IbcHashMap            m_ibcHashMap;
-  CodingStructure     **m_pImvTempCS;
   EncModeCtrl          *m_modeCtrl;
 #if JVET_M0170_MRG_SHARELIST
   int                  m_shareState;
@@ -140,9 +139,7 @@ private:
   PelStorage            m_acTriangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS]; // to store weighted prediction pixles
   double                m_mergeBestSATDCost;
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];
-  unsigned int          m_subMergeBlkSize[10];
-  unsigned int          m_subMergeBlkNum[10];
-  unsigned int          m_prevPOC;
+
   int                   m_ctuIbcSearchRangeX;
   int                   m_ctuIbcSearchRangeY;
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
@@ -188,10 +185,6 @@ public:
   EncCfg*     getEncCfg()            const { return m_pcEncCfg;          }
 #endif
 
-#if JVET_M0170_MRG_SHARELIST
-  Position shareParentPos;
-  Size     shareParentSize;
-#endif
   ~EncCu();
 
 protected:
@@ -237,13 +230,11 @@ protected:
                              , Partitioner &partitioner
                              , const EncTestMode& encTestMode
                              , int residualPass       = 0
-                             , CodingStructure* imvCS = NULL
                              , bool* bestHasNonResi   = NULL
                              , double* equGBiCost     = NULL
                            );
 #else
   void xEncodeInterResidual   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, int residualPass = 0
-    , CodingStructure* imvCS = NULL
     , int emtMode = 1
     , bool* bestHasNonResi = NULL
     , double* equGBiCost = NULL

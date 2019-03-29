@@ -4226,12 +4226,13 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       affMrgCtx.interDirNeighbours[cnt] = 3;
     }
     affMrgCtx.affineType[cnt] = AFFINEMODEL_4PARAM;
-    cnt++;
 
-    if ( cnt == maxNumAffineMergeCand )
+    if ( cnt == mrgCandIdx )
     {
       return;
     }
+    cnt++;
+    affMrgCtx.numValidMergeCand++;
   }
 }
 

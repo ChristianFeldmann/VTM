@@ -110,7 +110,7 @@ public:
 protected:
   void xReadRbspTrailingBits();
 #if JVET_M0101_HLS
-  bool isByteAligned() { return (m_pcBitstream->getNumBitsUntilByteAligned() != 0 ); }
+  bool isByteAligned() { return (m_pcBitstream->getNumBitsUntilByteAligned() == 0 ); }
 #endif
 };
 

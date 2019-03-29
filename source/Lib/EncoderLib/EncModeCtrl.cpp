@@ -215,14 +215,6 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
     }
   }
 #endif
-#if SHARP_LUMA_DELTA_QP
-
-  if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && (!CS::isDualITree (cs) || isLuma (partitioner.chType)))
-  {
-    minQP = Clip3( -sps.getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, baseQP - m_lumaQPOffset );
-    maxQP = minQP;
-  }
-#endif
 }
 
 
@@ -1309,15 +1301,17 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     }
 #endif
 #if SHARP_LUMA_DELTA_QP
-#if JVET_M0113_M0188_QG_SIZE
-    if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && partitioner.currQgEnable())
-#else
-    if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() && partitioner.currDepth <= cs.pps->getMaxCuDQPDepth())
-#endif
+    if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled())
     {
-      CompArea clipedArea = clipArea( cs.area.Y(), cs.picture->Y() );
-      // keep using the same m_QP_LUMA_OFFSET in the same CTU
-      m_lumaQPOffset = calculateLumaDQP( cs.getOrgBuf( clipedArea ) );
+#if JVET_M0113_M0188_QG_SIZE
+      if (partitioner.currQgEnable())
+#else
+      if (partitioner.currDepth <= cs.pps->getMaxCuDQPDepth())
+#endif
+      {
+        m_lumaQPOffset = calculateLumaDQP (cs.getOrgBuf (clipArea (cs.area.Y(), cs.picture->Y())));
+      }
+      baseQP = Clip3 (-cs.sps->getQpBDOffset (CHANNEL_TYPE_LUMA), MAX_QP, baseQP - m_lumaQPOffset);
     }
 #endif
   }

@@ -1549,7 +1549,7 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
     WRITE_FLAG( ptl->getSubLayerLevelPresentFlag(i),   "sub_layer_level_present_flag[i]" );
   }
 
-  while (!xIsByteAligned())
+  while (!isByteAligned())
   {
     WRITE_FLAG(0, "ptl_alignment_zero_bit");
   }

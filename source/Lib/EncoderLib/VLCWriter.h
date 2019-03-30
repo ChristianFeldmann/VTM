@@ -89,7 +89,7 @@ protected:
 #endif
   void  xWriteRbspTrailingBits();
 #if JVET_M0101_HLS
-  bool xIsByteAligned()      {return (m_pcBitIf->getNumBitsUntilByteAligned() != 0); } ;
+  bool isByteAligned()      { return (m_pcBitIf->getNumBitsUntilByteAligned() == 0); } ;
 #endif
 };
 

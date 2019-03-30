@@ -266,14 +266,21 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     int poc = -1;
     int poc_lsb = -1;
     int new_poc = -1;
-
+#if PRINT_NALUS
+    printf("NALU type: %s\n", NALU_TYPE[nalu_type]);
+#endif
+    
     if(nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)
     {
       poc = 0;
       new_poc = *poc_base + poc;
     }
 
+#if !JVET_M0101_HLS
     if(nalu_type < 32 && nalu_type != NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type != NAL_UNIT_CODED_SLICE_IDR_N_LP)
+#else
+      if(nalu_type < 15 && nalu_type != NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type != NAL_UNIT_CODED_SLICE_IDR_N_LP)
+#endif
     {
       int offset = 16;
 

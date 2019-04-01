@@ -46,13 +46,9 @@
 #include "CommonLib/Unit.h"
 #include "CommonLib/UnitPartitioner.h"
 #include "CommonLib/IbcHashMap.h"
-#if JVET_M0428_ENC_DB_OPT
 #include "CommonLib/LoopFilter.h"
-#endif
 
-#if REUSE_CU_RESULTS || JVET_M0170_MRG_SHARELIST || JVET_M0427_INLOOP_RESHAPER
 #include "DecoderLib/DecCu.h"
-#endif
 
 #include "CABACWriter.h"
 #include "IntraSearch.h"
@@ -71,7 +67,6 @@ class EncSlice;
 // ====================================================================================================================
 
 /// CU encoder class
-#if JVET_M0883_TRIANGLE_SIGNALING
 struct TriangleMotionInfo
 {
   uint8_t   m_splitDir;
@@ -80,16 +75,11 @@ struct TriangleMotionInfo
 
   TriangleMotionInfo ( uint8_t splitDir, uint8_t candIdx0, uint8_t candIdx1 ): m_splitDir(splitDir), m_candIdx0(candIdx0), m_candIdx1(candIdx1) { }
 };
-#endif
 class EncCu
-#if REUSE_CU_RESULTS || JVET_M0170_MRG_SHARELIST || JVET_M0427_INLOOP_RESHAPER
   : DecCu
-#endif
 {
 private:
-#if JVET_M0428_ENC_DB_OPT
   bool m_bestModeUpdated;
-#endif
   struct CtxPair
   {
     Ctx start;
@@ -118,21 +108,17 @@ private:
   TrQuant*              m_pcTrQuant;
   RdCost*               m_pcRdCost;
   EncSlice*             m_pcSliceEncoder;
-#if JVET_M0428_ENC_DB_OPT
   LoopFilter*           m_pcLoopFilter;
-#endif
 
   CABACWriter*          m_CABACEstimator;
   RateCtrl*             m_pcRateCtrl;
   IbcHashMap            m_ibcHashMap;
   EncModeCtrl          *m_modeCtrl;
-#if JVET_M0170_MRG_SHARELIST
   int                  m_shareState;
   uint32_t             m_shareBndPosX;
   uint32_t             m_shareBndPosY;
   SizeType             m_shareBndSizeW;
   SizeType             m_shareBndSizeH;
-#endif
 
   PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
   PelStorage            m_acRealMergeBuffer[MRG_MAX_NUM_CANDS];
@@ -147,23 +133,17 @@ private:
 #endif
   int                   m_bestGbiIdx[2];
   double                m_bestGbiCost[2];
-#if JVET_M0883_TRIANGLE_SIGNALING
   static const TriangleMotionInfo  m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
   uint8_t                          m_triangleIdxBins[2][TRIANGLE_MAX_NUM_UNI_CANDS][TRIANGLE_MAX_NUM_UNI_CANDS];
-#endif
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
   void    updateLambda      ( Slice* slice, const int dQP, const bool updateRdCostLambda );
 #endif
-#if JVET_M0140_SBT
   double                m_sbtCostSave[2];
-#endif
 
 public:
   /// copy parameters from encoder class
   void  init                ( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int jId = 0 ) );
-#if JVET_M0427_INLOOP_RESHAPER
   void setDecCuReshaperInEncCU(EncReshape* pcReshape, ChromaFormat chromaFormatIDC) { initDecCuReshaper((Reshape*) pcReshape, chromaFormatIDC); }
-#endif
   /// create internal buffers
   void  create              ( EncCfg* encCfg );
 
@@ -180,19 +160,15 @@ public:
 
   void   setMergeBestSATDCost(double cost) { m_mergeBestSATDCost = cost; }
   double getMergeBestSATDCost()            { return m_mergeBestSATDCost; }
-#if JVET_M0255_FRACMMVD_SWITCH
   IbcHashMap& getIbcHashMap()              { return m_ibcHashMap;        }
   EncCfg*     getEncCfg()            const { return m_pcEncCfg;          }
-#endif
 
   ~EncCu();
 
 protected:
 
-#if JVET_M0428_ENC_DB_OPT
   void xCalDebCost            ( CodingStructure &cs, Partitioner &partitioner, bool calDist = false );
   Distortion getDistortionDb  ( CodingStructure &cs, CPelBuf org, CPelBuf reco, ComponentID compID, const CompArea& compArea, bool afterDb );
-#endif
 
   void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm );
 #if ENABLE_SPLIT_PARALLELISM
@@ -211,9 +187,7 @@ protected:
   void xCheckDQP              ( CodingStructure& cs, Partitioner& partitioner, bool bKeepCtx = false);
   void xFillPCMBuffer         ( CodingUnit &cu);
 
-#if JVET_M0253_HASH_ME
   void xCheckRDCostHashInter  ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
-#endif
   void xCheckRDCostAffineMerge2Nx2N
                               ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
   void xCheckRDCostInter      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
@@ -224,7 +198,6 @@ protected:
 
   void xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
 
-#if JVET_M0464_UNI_MTS
   void xEncodeInterResidual(   CodingStructure *&tempCS
                              , CodingStructure *&bestCS
                              , Partitioner &partitioner
@@ -233,13 +206,6 @@ protected:
                              , bool* bestHasNonResi   = NULL
                              , double* equGBiCost     = NULL
                            );
-#else
-  void xEncodeInterResidual   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, int residualPass = 0
-    , int emtMode = 1
-    , bool* bestHasNonResi = NULL
-    , double* equGBiCost = NULL
-  );
-#endif
 #if REUSE_CU_RESULTS
   void xReuseCachedResult     ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &Partitioner );
 #endif

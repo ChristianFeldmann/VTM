@@ -90,17 +90,11 @@ protected:
     , int multiRefIdx
     , const bool enableBoundaryFilter = true );
 #else
-#if JVET_M0102_INTRA_SUBPARTITIONS
   void xPredIntraAng              ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps,
                                           int  multiRefIdx,
                                     const bool useFilteredPredSamples,
                                     const bool useISP = false,
                                     const Size cuSize = Size( 0, 0 ) );
-#else
-  void xPredIntraAng              ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps
-    , int multiRefIdx
-    , const bool useFilteredPredSamples );
-#endif
 #endif
   Pel  xGetPredValDc              ( const CPelBuf &pSrc, const Size &dstSize );
 

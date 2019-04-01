@@ -101,49 +101,21 @@ struct MvField
 struct MotionInfo
 {
   bool     isInter;
-#if JVET_M0483_IBC
   bool     isIBCmot;
-#endif
   char     interDir;
   uint16_t   sliceIdx;
   Mv      mv     [ NUM_REF_PIC_LIST_01 ];
   int16_t   refIdx [ NUM_REF_PIC_LIST_01 ];
-#if JVET_M0264_HMVP_WITH_GBIIDX
   uint8_t         GBiIdx;
-#endif
   Mv      bv;
-#if JVET_M0483_IBC
-#if JVET_M0264_HMVP_WITH_GBIIDX
   MotionInfo() : isInter(false), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID }, GBiIdx(0) { }
-#else
-  MotionInfo() : isInter(false), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID } { }
-#endif
   // ensure that MotionInfo(0) produces '\x000....' bit pattern - needed to work with AreaBuf - don't use this constructor for anything else
-#if JVET_M0264_HMVP_WITH_GBIIDX
   MotionInfo(int i) : isInter(i != 0), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ 0,         0 }, GBiIdx(0) { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
-#else
-  MotionInfo(int i) : isInter(i != 0), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ 0,         0 } { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
-#endif
-#else
-#if JVET_M0264_HMVP_WITH_GBIIDX
-  MotionInfo() : isInter(false), interDir(0), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID }, GBiIdx(0) { }
-#else
-  MotionInfo() : isInter(false), interDir( 0 ), sliceIdx( 0 ), refIdx{ NOT_VALID, NOT_VALID } { }
-#endif
-  // ensure that MotionInfo(0) produces '\x000....' bit pattern - needed to work with AreaBuf - don't use this constructor for anything else
-#if JVET_M0264_HMVP_WITH_GBIIDX
-  MotionInfo(int i) : isInter(i != 0), interDir(0), sliceIdx(0), refIdx{ 0,         0 }, GBiIdx(0) { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
-#else
-  MotionInfo( int i ) : isInter( i != 0 ), interDir( 0 ), sliceIdx( 0 ), refIdx{         0,         0 } { CHECKD( i != 0, "The argument for this constructor has to be '0'" ); }
-#endif
-#endif
 
   bool operator==( const MotionInfo& mi ) const
   {
     if( isInter != mi.isInter  ) return false;
-#if JVET_M0483_IBC
     if (isIBCmot != mi.isIBCmot) return false;
-#endif
     if( isInter )
     {
       if( sliceIdx != mi.sliceIdx ) return false;
@@ -180,9 +152,7 @@ class GBiMotionParam
   bool       m_readOnlyAffine[2][2][33];
   Mv         m_mvAffine[2][2][33][3];
   Distortion m_distAffine[2][2][33];
-#if JVET_M0247_AFFINE_AMVR_ENCOPT
   int        m_mvpIdx[2][2][33];
-#endif
 
 public:
 
@@ -204,9 +174,7 @@ public:
     memset(m_dist, -1, 2 * 33 * sizeof(Distortion));
     memset(m_readOnlyAffine, false, 2 * 2 * 33 * sizeof(bool));
     memset(m_distAffine, -1, 2 * 2 * 33 * sizeof(Distortion));
-#if JVET_M0247_AFFINE_AMVR_ENCOPT
     memset( m_mvpIdx, 0, 2 * 2 * 33 * sizeof( int ) );
-#endif
   }
 
   void setReadMode(bool b, uint32_t uiRefList, uint32_t uiRefIdx) { m_readOnly[uiRefList][uiRefIdx] = b; }
@@ -232,42 +200,28 @@ public:
   Mv& getAffineMv(uint32_t uiRefList, uint32_t uiRefIdx, uint32_t uiAffineMvIdx, int bP4) { return m_mvAffine[bP4][uiRefList][uiRefIdx][uiAffineMvIdx]; }
 
   void copyAffineMvFrom(Mv(&racAffineMvs)[3], Distortion uiDist, uint32_t uiRefList, uint32_t uiRefIdx, int bP4
-#if JVET_M0247_AFFINE_AMVR_ENCOPT
                         , const int mvpIdx
-#endif
   )
   {
     memcpy(m_mvAffine[bP4][uiRefList][uiRefIdx], racAffineMvs, 3 * sizeof(Mv));
     m_distAffine[bP4][uiRefList][uiRefIdx] = uiDist;
-#if JVET_M0247_AFFINE_AMVR_ENCOPT
     m_mvpIdx[bP4][uiRefList][uiRefIdx]     = mvpIdx;
-#endif
   }
 
   void copyAffineMvTo(Mv acAffineMvs[3], Distortion& ruiDist, uint32_t uiRefList, uint32_t uiRefIdx, int bP4
-#if JVET_M0247_AFFINE_AMVR_ENCOPT
                       , int& mvpIdx
-#endif
   )
   {
     memcpy(acAffineMvs, m_mvAffine[bP4][uiRefList][uiRefIdx], 3 * sizeof(Mv));
     ruiDist = m_distAffine[bP4][uiRefList][uiRefIdx];
-#if JVET_M0247_AFFINE_AMVR_ENCOPT
     mvpIdx  = m_mvpIdx[bP4][uiRefList][uiRefIdx];
-#endif
   }
 };
 struct LutMotionCand
 {
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lut;
-#if JVET_M0483_IBC
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutIbc;
-#endif
-#if JVET_M0170_MRG_SHARELIST
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShare;
-#if JVET_M0483_IBC
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShareIbc;
-#endif
-#endif
 };
 #endif // __MOTIONINFO__

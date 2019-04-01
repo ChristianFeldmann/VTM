@@ -301,11 +301,7 @@ void Quant::dequant(const TransformUnit &tu,
   CHECK(uiWidth > m_uiMaxTrSize, "Unsupported transformation size");
 
   // Represents scaling through forward transform
-#if JVET_M0464_UNI_MTS
   const bool bClipTransformShiftTo0 = tu.mtsIdx!=1 && sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
-#else
-  const bool bClipTransformShiftTo0 = (tu.transformSkip[compID] != 0) && sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
-#endif
   const int  originalTransformShift = getTransformShift(channelBitDepth, area.size(), maxLog2TrDynamicRange);
   const int  iTransformShift        = bClipTransformShiftTo0 ? std::max<int>(0, originalTransformShift) : originalTransformShift;
 
@@ -313,13 +309,8 @@ void Quant::dequant(const TransformUnit &tu,
   const int QP_rem = cQP.rem;
 
 #if HM_QTBT_AS_IN_JEM_QUANT
-#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
   const bool needsScalingCorrection = TU::needsBlockSizeTrafoScale( tu, compID );
   const int  NEScale    = TU::needsSqrt2Scale( tu, compID ) ? 181 : 1;
-#else
-  const bool needsScalingCorrection = TU::needsBlockSizeTrafoScale( tu.block( compID ) );
-  const int  NEScale    = TU::needsSqrt2Scale( tu.blocks[compID] ) ? 181 : 1;
-#endif
 #if HEVC_USE_SCALING_LISTS
   const int  rightShift = (needsScalingCorrection ?   8 : 0 ) + (IQUANT_SHIFT - (iTransformShift + QP_per)) + (enableScalingLists ? LOG2_SCALING_LIST_NEUTRAL_VALUE : 0);
 #else
@@ -726,11 +717,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
   const CCoeffBuf &piCoef   = pSrc;
         CoeffBuf   piQCoef  = tu.getCoeffs(compID);
 
-#if JVET_M0464_UNI_MTS
   const bool useTransformSkip      = tu.mtsIdx==1;
-#else
-  const bool useTransformSkip      = tu.transformSkip[compID];
-#endif
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
   {
@@ -772,11 +759,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 
     int iWHScale = 1;
 #if HM_QTBT_AS_IN_JEM_QUANT
-#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
     if( TU::needsBlockSizeTrafoScale( tu, compID ) )
-#else
-    if( TU::needsBlockSizeTrafoScale( rect ) )
-#endif
     {
       iTransformShift += ADJ_QUANT_SHIFT;
       iWHScale = 181;
@@ -837,11 +820,7 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   const CCoeffBuf piCoef    = pSrc;
 
-#if JVET_M0464_UNI_MTS
   const bool useTransformSkip      = tu.mtsIdx==1;
-#else
-  const bool useTransformSkip      = tu.transformSkip[compID];
-#endif
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
 #if HEVC_USE_SCALING_LISTS
@@ -872,11 +851,7 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   int iWHScale = 1;
 #if HM_QTBT_AS_IN_JEM_QUANT
-#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
   if( TU::needsBlockSizeTrafoScale( tu, compID ) )
-#else
-  if( TU::needsBlockSizeTrafoScale( rect ) )
-#endif
   {
     iTransformShift += ADJ_QUANT_SHIFT;
     iWHScale = 181;

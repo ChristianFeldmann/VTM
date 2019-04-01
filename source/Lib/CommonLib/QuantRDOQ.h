@@ -76,11 +76,7 @@ private:
   void    xDestroyScalingList            ();
   void    xSetErrScaleCoeff              ( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp, const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths );
 #else
-#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
   double  xGetErrScaleCoeff              ( const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth);
-#else
-  double  xGetErrScaleCoeff              ( SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth);
-#endif
 #endif
 
   // RDOQ functions

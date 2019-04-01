@@ -46,12 +46,8 @@
 #include "Unit.h"
 #include "Slice.h"
 #include "CodingStructure.h"
-#if JVET_M0253_HASH_ME
 #include "Hash.h"
-#endif
-#if JVET_M0445_MCTS
 #include "MCTS.h"
-#endif
 #include <deque>
 
 #if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
@@ -197,14 +193,12 @@ struct Picture : public UnitArea
   const CPelUnitBuf getOrigBuf(const UnitArea &unit) const;
          PelUnitBuf getOrigBuf();
   const CPelUnitBuf getOrigBuf() const;
-#if JVET_M0427_INLOOP_RESHAPER
          PelBuf     getOrigBuf(const ComponentID compID);
   const CPelBuf     getOrigBuf(const ComponentID compID) const;
          PelUnitBuf getTrueOrigBuf();
   const CPelUnitBuf getTrueOrigBuf() const;
         PelBuf      getTrueOrigBuf(const CompArea &blk);
   const CPelBuf     getTrueOrigBuf(const CompArea &blk) const;
-#endif
 
          PelBuf     getPredBuf(const CompArea &blk);
   const CPelBuf     getPredBuf(const CompArea &blk) const;
@@ -233,11 +227,7 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
-#if JVET_M0132_APS
   void finalInit(const SPS& sps, const PPS& pps, APS& aps);
-#else
-  void finalInit( const SPS& sps, const PPS& pps );
-#endif
 
   int  getPOC()                               const { return poc; }
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
@@ -276,12 +266,10 @@ public:
   PelStorage m_bufs[NUM_PIC_TYPES];
 #endif
 
-#if JVET_M0253_HASH_ME
   TComHash           m_hashMap;
   TComHash*          getHashMap() { return &m_hashMap; }
   const TComHash*    getHashMap() const { return &m_hashMap; }
   void               addPictureToHashMapForInter();
-#endif
 
   CodingStructure*   cs;
   std::deque<Slice*> slices;
@@ -294,9 +282,7 @@ public:
 #if HEVC_TILES_WPP
   TileMap*     tileMap;
 #endif
-#if JVET_M0445_MCTS
   MCTSInfo     mctsInfo;
-#endif
   std::vector<AQpLayer*> aqlayer;
 
 #if !KEEP_PRED_AND_RESI_SIGNALS

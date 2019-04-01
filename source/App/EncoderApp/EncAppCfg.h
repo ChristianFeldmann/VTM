@@ -125,28 +125,20 @@ protected:
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
   bool      m_bNoPcmConstraintFlag;
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      m_bNoRefWraparoundConstraintFlag;
-#endif
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
   bool      m_bNoAmvrConstraintFlag;
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      m_bNoBdofConstraintFlag;
-#endif
   bool      m_bNoCclmConstraintFlag;
   bool      m_bNoMtsConstraintFlag;
   bool      m_bNoAffineMotionConstraintFlag;
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      m_bNoGbiConstraintFlag;
   bool      m_bNoMhIntraConstraintFlag;
   bool      m_bNoTriangleConstraintFlag;
-#endif
   bool      m_bNoLadfConstraintFlag;
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      m_bNoCurrPicRefConstraintFlag;
   bool      m_bNoQpDeltaConstraintFlag;
-#endif
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
 
@@ -186,9 +178,7 @@ protected:
   bool      m_rdpcmEnabledFlag[NUMBER_OF_RDPCM_SIGNALLING_MODES];///< control flags for residual DPCM
   bool      m_persistentRiceAdaptationEnabledFlag;            ///< control flag for Golomb-Rice parameter adaptation over each slice
   bool      m_cabacBypassAlignmentEnabledFlag;
-#if JVET_M0102_INTRA_SUBPARTITIONS
   bool      m_useFastISP;                                    ///< flag for enabling fast methods for ISP
-#endif
 
   // coding quality
 #if QP_SWITCHING_FOR_PARALLEL
@@ -205,13 +195,8 @@ protected:
   int*      m_aidQP;                                          ///< array of slice QP values
   int       m_iMaxDeltaQP;                                    ///< max. |delta QP|
   uint32_t      m_uiDeltaQpRD;                                    ///< dQP range for multi-pass slice QP optimization
-#if JVET_M0113_M0188_QG_SIZE
   int       m_cuQpDeltaSubdiv;                                ///< Maximum subdiv for CU luma Qp adjustment (0:default)
   int       m_cuChromaQpOffsetSubdiv;                         ///< If negative, then do not apply chroma qp offsets.
-#else
-  int       m_iMaxCuDQPDepth;                                 ///< Max. depth for a minimum CuDQPSize (0:default)
-  int       m_diffCuChromaQpOffsetDepth;                      ///< If negative, then do not apply chroma qp offsets.
-#endif
   bool      m_bFastDeltaQP;                                   ///< Fast Delta QP (false:default)
 
   int       m_cbQpOffset;                                     ///< Chroma Cb QP Offset (0:default)
@@ -251,23 +236,12 @@ protected:
   bool      m_AffineType;
   bool      m_BIO;
   int       m_LMChroma;
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
   bool      m_cclmCollocatedChromaFlag;
-#endif
-#if JVET_M0464_UNI_MTS
   int       m_MTS;                                            ///< XZ: Multiple Transform Set
   int       m_MTSIntraMaxCand;                                ///< XZ: Number of additional candidates to test
   int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test
-#else
-  int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
-  int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
-#endif
-#if JVET_M0303_IMPLICIT_MTS
   int       m_MTSImplicit;
-#endif
-#if JVET_M0140_SBT
   bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
-#endif
 
   bool      m_compositeRefEnabled;
   bool      m_GBi;
@@ -281,21 +255,11 @@ protected:
 
   bool      m_MHIntra;
   bool      m_Triangle;
-#if JVET_M0253_HASH_ME
   bool      m_HashME;
-#endif
-#if JVET_M0255_FRACMMVD_SWITCH
   bool      m_allowDisFracMMVD;
-#endif
-#if JVET_M0246_AFFINE_AMVR
   bool      m_AffineAmvr;
-#endif
-#if JVET_M0247_AFFINE_AMVR_ENCOPT
   bool      m_AffineAmvrEncOpt;
-#endif
-#if JVET_M0147_DMVR
   bool      m_DMVR;
-#endif
 
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
@@ -309,15 +273,11 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-#if JVET_M0427_INLOOP_RESHAPER
   bool      m_lumaReshapeEnable;
   uint32_t  m_reshapeSignalType;
   uint32_t  m_intraCMD;
   ReshapeCW m_reshapeCW;
-#endif
-#if JVET_M0428_ENC_DB_OPT
   bool      m_encDbOpt;
-#endif
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
   unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)
@@ -498,9 +458,7 @@ protected:
   uint32_t      m_greenMetadataType;
   uint32_t      m_xsdMetricType;
 
-#if JVET_M0445_MCTS
   bool      m_MCTSEncConstraint;
-#endif
 
   // weighted prediction
   bool      m_useWeightedPred;                    ///< Use of weighted prediction in P slices
@@ -589,9 +547,7 @@ protected:
   int         m_verbosity;
 
   std::string m_decodeBitstreams[2];                          ///< filename for decode bitstreams.
-#if JVET_M0055_DEBUG_CTU
   int         m_debugCTU;
-#endif
   int         m_switchPOC;                                    ///< dbg poc.
   int         m_switchDQP;                                    ///< switch DQP.
   int         m_fastForwardToPOC;                             ///< get to encoding the specified POC as soon as possible by skipping temporal layers irrelevant for the specified POC

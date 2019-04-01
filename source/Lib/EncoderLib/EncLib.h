@@ -53,9 +53,7 @@
 #include "InterSearch.h"
 #include "IntraSearch.h"
 #include "EncSampleAdaptiveOffset.h"
-#if JVET_M0427_INLOOP_RESHAPER
 #include "EncReshape.h"
-#endif
 #include "EncAdaptiveLoopFilter.h"
 #include "RateCtrl.h"
 
@@ -101,12 +99,10 @@ private:
   CABACEncoder              m_CABACEncoder;
 #endif
 
-#if JVET_M0427_INLOOP_RESHAPER
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   EncReshape               *m_cReshaper;                        ///< reshaper class
 #else
   EncReshape                m_cReshaper;                        ///< reshaper class
-#endif
 #endif
 
   // processing unit
@@ -120,9 +116,7 @@ private:
   // SPS
   ParameterSetMap<SPS>      m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
   ParameterSetMap<PPS>      m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
-#if JVET_M0132_APS
   ParameterSetMap<APS>      m_apsMap;                             ///< APS. This is the base value. This is copied to PicSym
-#endif
   // RD cost computation
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   RdCost                   *m_cRdCost;                            ///< RD cost computation class
@@ -157,9 +151,7 @@ protected:
 #endif
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
-#if JVET_M0132_APS
   void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options
-#endif
 #if HEVC_USE_SCALING_LISTS
   void  xInitScalingLists (SPS &sps, PPS &pps);   ///< initialize scaling lists
 #endif
@@ -230,27 +222,21 @@ public:
 #if JCTVC_Y0038_PARAMS
   void                   setParamSetChanged(int spsId, int ppsId);
 #endif
-#if JVET_M0132_APS
   bool                   APSNeedsWriting(int apsId);
-#endif
   bool                   PPSNeedsWriting(int ppsId);
   bool                   SPSNeedsWriting(int spsId);
   const PPS* getPPS( int Id ) { return m_ppsMap.getPS( Id); }
-#if JVET_M0132_APS
   const APS*             getAPS(int Id) { return m_apsMap.getPS(Id); }
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   void                   setNumCuEncStacks( int n )             { m_numCuEncStacks = n; }
   int                    getNumCuEncStacks()              const { return m_numCuEncStacks; }
 #endif
 
-#if JVET_M0427_INLOOP_RESHAPER
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   EncReshape*            getReshaper( int jId = 0 )             { return  &m_cReshaper[jId]; }
 #else
   EncReshape*            getReshaper()                          { return  &m_cReshaper; }
-#endif
 #endif
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function

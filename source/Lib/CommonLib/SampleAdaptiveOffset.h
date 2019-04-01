@@ -40,9 +40,7 @@
 
 #include "CommonDef.h"
 #include "Unit.h"
-#if JVET_M0427_INLOOP_RESHAPER
 #include "Reshape.h"
-#endif
 //! \ingroup CommonLib
 //! \{
 
@@ -72,9 +70,7 @@ public:
   void create( int picWidth, int picHeight, ChromaFormat format, uint32_t maxCUWidth, uint32_t maxCUHeight, uint32_t maxCUDepth, uint32_t lumaBitShift, uint32_t chromaBitShift );
   void destroy();
   static int getMaxOffsetQVal(const int channelBitDepth) { return (1<<(std::min<int>(channelBitDepth,MAX_SAO_TRUNCATED_BITDEPTH)-5))-1; } //Table 9-32, inclusive
-#if JVET_M0427_INLOOP_RESHAPER
   void setReshaper(Reshape * p) { m_pcReshape = p; }
-#endif
 protected:
   void deriveLoopFilterBoundaryAvailibility(CodingStructure& cs, const Position &pos,
     bool& isLeftAvail,
@@ -97,9 +93,7 @@ protected:
   void xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea);
   void xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID);
   void xReconstructBlkSAOParams(CodingStructure& cs, SAOBlkParam* saoBlkParams);
-#if JVET_M0427_INLOOP_RESHAPER
   Reshape* m_pcReshape;
-#endif
 protected:
   uint32_t m_offsetStepLog2[MAX_NUM_COMPONENT]; //offset step
   PelStorage m_tempBuf;

@@ -53,20 +53,14 @@
 #include "CommonLib/AdaptiveLoopFilter.h"
 #include "CommonLib/SEI.h"
 #include "CommonLib/Unit.h"
-#if JVET_M0427_INLOOP_RESHAPER
 #include "CommonLib/Reshape.h"
-#endif
 
 class InputNALUnit;
 
 //! \ingroup DecoderLib
 //! \{
 
-#if JVET_M0055_DEBUG_CTU
 bool tryDecodePicture( Picture* pcPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound = false, int debugCTU = -1, int debugPOC = -1 );
-#else
- bool tryDecodePicture( Picture* pcPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound = false );
-#endif// ====================================================================================================================
 // Class definition
 // ====================================================================================================================
 
@@ -100,9 +94,7 @@ private:
   LoopFilter              m_cLoopFilter;
   SampleAdaptiveOffset    m_cSAO;
   AdaptiveLoopFilter      m_cALF;
-#if JVET_M0427_INLOOP_RESHAPER
   Reshape                 m_cReshaper;                        ///< reshaper class
-#endif
   // decoder side RD cost computation
   RdCost                  m_cRdCost;                      ///< RD cost computation class
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
@@ -132,10 +124,8 @@ private:
   bool                    m_warningMessageSkipPicture;
 
   std::list<InputNALUnit*> m_prefixSEINALUs; /// Buffered up prefix SEI NAL Units.
-#if JVET_M0055_DEBUG_CTU
   int                     m_debugPOC;
   int                     m_debugCTU;
-#endif
 public:
   DecLib();
   virtual ~DecLib();
@@ -166,12 +156,10 @@ public:
   void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
   uint32_t  getNumberOfChecksumErrorsDetected() const { return m_numberOfChecksumErrorsDetected; }
 
-#if JVET_M0055_DEBUG_CTU
   int  getDebugCTU( )               const { return m_debugCTU; }
   void setDebugCTU( int debugCTU )        { m_debugCTU = debugCTU; }
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
-#endif
 protected:
   void  xUpdateRasInit(Slice* slice);
 
@@ -185,9 +173,7 @@ protected:
 #endif
   void      xDecodeSPS( InputNALUnit& nalu );
   void      xDecodePPS( InputNALUnit& nalu );
-#if JVET_M0132_APS
   void      xDecodeAPS(InputNALUnit& nalu);
-#endif
 #if !JVET_M0101_HLS
   void      xUpdatePreviousTid0POC( Slice *pSlice ) { if ((pSlice->getTLayer()==0) && (pSlice->isReferenceNalu() && (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RASL_R)&& (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RADL_R))) { m_prevTid0POC=pSlice->getPOC(); } }
 #else

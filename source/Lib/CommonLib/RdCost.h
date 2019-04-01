@@ -107,15 +107,11 @@ private:
 #if WCG_EXT
   double                  m_dLambda_unadjusted; // TODO: check is necessary
   double                  m_DistScaleUnadjusted;
-#if JVET_M0427_INLOOP_RESHAPER
   static std::vector<double> m_reshapeLumaLevelToWeightPLUT;
   static std::vector<double> m_lumaLevelToWeightPLUT;
   static uint32_t         m_signalType;
   static double           m_chromaWeight;
   static int              m_lumaBD;
-#else
-  static double           m_lumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
-#endif
 #endif
   double                  m_DistScale;
   double                  m_dLambdaMotionSAD[2 /* 0=standard, 1=for transquant bypass when mixed-lossless cost evaluation enabled*/];
@@ -298,7 +294,6 @@ public:
          void    saveUnadjustedLambda       ();
          void    initLumaLevelToWeightTable ();
   inline double  getWPSNRLumaLevelWeight    (int val) { return m_lumaLevelToWeightPLUT[val]; }
-#if JVET_M0427_INLOOP_RESHAPER
   void           initLumaLevelToWeightTableReshape();
   void           updateReshapeLumaLevelToWeightTableChromaMD (std::vector<Pel>& ILUT);
   void           restoreReshapeLumaLevelToWeightTable        ();
@@ -306,7 +301,6 @@ public:
   void           setReshapeInfo                              (uint32_t type, int lumaBD) { m_signalType = type; m_lumaBD = lumaBD; }
   void           updateReshapeLumaLevelToWeightTable         (SliceReshapeInfo &sliceReshape, Pel *wtTable, double cwt);
   inline std::vector<double>& getLumaLevelWeightTable        ()                   { return m_lumaLevelToWeightPLUT; }
-#endif
 #endif
 
 private:

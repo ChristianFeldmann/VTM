@@ -87,21 +87,8 @@ public:
 
   void invTransformNxN  (TransformUnit &tu, const ComponentID &compID, PelBuf &pResi, const QpParam &cQPs);
 
-#if JVET_M0464_UNI_MTS
-#if JVET_M0102_INTRA_SUBPARTITIONS
   void transformNxN     ( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, std::vector<TrMode>* trModes, const int maxCand, double* diagRatio = nullptr, double* horVerRatio = nullptr );
   void transformNxN     ( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, const bool loadTr = false, double* diagRatio = nullptr, double* horVerRatio = nullptr );
-#else
-  void transformNxN     (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, std::vector<TrMode>* trModes, const int maxCand);
-  void transformNxN     (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, const bool loadTr=false);
-#endif
-#else
-#if JVET_M0102_INTRA_SUBPARTITIONS
-  void transformNxN     (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, double* diagRatio = nullptr, double* horVerRatio = nullptr);
-#else
-  void transformNxN     (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx);
-#endif
-#endif
   void rdpcmNxN         (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum,       RDPCMMode &rdpcmMode);
   void applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const RDPCMMode &rdpcmMode);
 
@@ -134,9 +121,7 @@ protected:
 
 private:
   Quant    *m_quant;          //!< Quantizer
-#if JVET_M0464_UNI_MTS
   TCoeff** m_mtsCoeffs;
-#endif
 
 
   // forward Transform
@@ -164,14 +149,12 @@ private:
                  const TransformUnit &tu,
                  const ComponentID   &component);
 
-#if JVET_M0102_INTRA_SUBPARTITIONS
   void xGetCoeffEnergy(
                        TransformUnit  &tu,
                  const ComponentID    &compID,
                  const CoeffBuf       &coeffs,
                        double*        diagRatio,
                        double*        horVerRatio );
-#endif
 };// END CLASS DEFINITION TrQuant
 
 //! \}

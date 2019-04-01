@@ -181,9 +181,7 @@ const char * NALU_TYPE[] =
 
     "NAL_UNIT_SPS",
     "NAL_UNIT_PPS",
-#if JVET_M0132_APS
     "NAL_UNIT_APS",
-#endif
     "NAL_UNIT_ACCESS_UNIT_DELIMITER",
     "NAL_UNIT_EOS",
     "NAL_UNIT_EOB",
@@ -266,9 +264,6 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     int poc = -1;
     int poc_lsb = -1;
     int new_poc = -1;
-#if PRINT_NALUS
-    printf("NALU type: %s\n", NALU_TYPE[nalu_type]);
-#endif
     
     if(nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)
     {
@@ -339,11 +334,7 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
 #if HEVC_VPS
     if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP )) || ((idx>1 && !idr_found) && ( nalu_type == NAL_UNIT_VPS || nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS))
 #else
-#if JVET_M0132_APS
     if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_APS))
-#else
-    if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS ))
-#endif
 #endif
       || (nalu_type == NAL_UNIT_SUFFIX_SEI && skip_next_sei))
     {

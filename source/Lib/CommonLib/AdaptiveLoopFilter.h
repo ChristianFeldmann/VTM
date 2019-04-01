@@ -41,9 +41,7 @@
 #include "CommonDef.h"
 
 #include "Unit.h"
-#if JVET_M0277_FIX_PCM_DISABLEFILTER
 #include "UnitTools.h"
-#endif
 struct AlfClassifier
 {
   AlfClassifier() {}
@@ -70,10 +68,8 @@ class AdaptiveLoopFilter
 public:
   static constexpr int   m_NUM_BITS = 8;
   static constexpr int   m_CLASSIFICATION_BLK_SIZE = 32;  //non-normative, local buffer size
-#if JVET_M0277_FIX_PCM_DISABLEFILTER
   static constexpr int m_ALF_UNUSED_CLASSIDX = 255;
   static constexpr int m_ALF_UNUSED_TRANSPOSIDX = 255;
-#endif
 
   AdaptiveLoopFilter();
   virtual ~AdaptiveLoopFilter() {}
@@ -84,28 +80,17 @@ public:
   void destroy();
   static void deriveClassificationBlk( AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift );
   void deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk );
-#if JVET_M0277_FIX_PCM_DISABLEFILTER
   void resetPCMBlkClassInfo(CodingStructure & cs, AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk);
-#endif
   template<AlfFilterType filtType>
-#if JVET_M0277_FIX_PCM_DISABLEFILTER
   static void filterBlk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs );
-#else
-  static void filterBlk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng );
-#endif
   inline static int getMaxGolombIdx( AlfFilterType filterType )
   {
     return filterType == ALF_FILTER_5 ? 2 : 3;
   }
 
   void( *m_deriveClassificationBlk )( AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift );
-#if JVET_M0277_FIX_PCM_DISABLEFILTER
   void( *m_filter5x5Blk )( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs );
   void( *m_filter7x7Blk )( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs );
-#else
-  void( *m_filter5x5Blk )( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng );
-  void( *m_filter7x7Blk )( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng );
-#endif
 
 #ifdef TARGET_SIMD_X86
   void initAdaptiveLoopFilterX86();

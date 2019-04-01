@@ -70,11 +70,7 @@ void DecSlice::init( CABACDecoder* cabacDecoder, DecCu* pcCuDecoder )
   m_pcCuDecoder     = pcCuDecoder;
 }
 
-#if JVET_M0055_DEBUG_CTU
 void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int debugCTU )
-#else
-void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
-#endif
 {
   //-- For time output for each slice
   slice->startProcessingTimer();
@@ -91,9 +87,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
   cs.slice            = slice;
   cs.sps              = sps;
   cs.pps              = slice->getPPS();
-#if JVET_M0132_APS
   cs.aps              = slice->getAPS();
-#endif
 #if HEVC_VPS
   cs.vps              = slice->getVPS();
 #endif
@@ -239,31 +233,21 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
     if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == 0)
     {
       cs.motionLut.lut.resize(0);
-#if JVET_M0483_IBC
       cs.motionLut.lutIbc.resize(0);
-#endif
-#if JVET_M0170_MRG_SHARELIST
       cs.motionLut.lutShare.resize(0);
-#if JVET_M0483_IBC
       cs.motionLut.lutShareIbc.resize(0);
-#endif
-#endif
     }
 
-#if JVET_M0445_MCTS_DEC_CHECK
     if( !cs.slice->isIntra() )
     {
       pic->mctsInfo.init( &cs, getCtuAddr( ctuArea.lumaPos(), *( cs.pcv ) ) );
     }
-#endif
-#if JVET_M0055_DEBUG_CTU
 
     if( ctuRsAddr == debugCTU )
     {
       isLastCtuOfSliceSegment = true; // get out here
       break;
     }
-#endif
     isLastCtuOfSliceSegment = cabacReader.coding_tree_unit( cs, ctuArea, pic->m_prevQP, ctuRsAddr );
 
     m_pcCuDecoder->decompressCtu( cs, ctuArea );

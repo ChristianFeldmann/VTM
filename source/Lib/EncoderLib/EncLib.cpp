@@ -60,9 +60,7 @@
 EncLib::EncLib()
   : m_spsMap( MAX_NUM_SPS )
   , m_ppsMap( MAX_NUM_PPS )
-#if JVET_M0132_APS
   , m_apsMap( MAX_NUM_APS )
-#endif
   , m_AUWriterIf( nullptr )
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   , m_cacheModel()
@@ -87,9 +85,7 @@ void EncLib::create ()
 {
   // initialize global variables
   initROM();
-#if JVET_M0253_HASH_ME
   TComHash::initBlockSizeToIndex();
-#endif
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );
@@ -133,18 +129,15 @@ void EncLib::create ()
   }
 
   m_cLoopFilter.create( m_maxTotalCUDepth );
-#if JVET_M0428_ENC_DB_OPT
   if ( !m_bLoopFilterDisable )
   {
     m_cLoopFilter.initEncPicYuvBuffer( m_chromaFormatIDC, getSourceWidth(), getSourceHeight() );
   }
-#endif
   if( m_alf )
   {
     m_cEncALF.create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );
   }
 
-#if JVET_M0427_INLOOP_RESHAPER
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   m_cReshaper = new EncReshape[m_numCuEncStacks];
 #endif
@@ -159,7 +152,6 @@ void EncLib::create ()
     m_cReshaper.createEnc( getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_bitDepth[COMPONENT_Y]);
 #endif
   }
-#endif
   if ( m_RCEnableRateControl )
   {
     m_cRateCtrl.init(m_framesToBeEncoded, m_RCTargetBitrate, (int)((double)m_iFrameRate / m_temporalSubsampleRatio + 0.5), m_iGOPSize, m_iSourceWidth, m_iSourceHeight,
@@ -189,7 +181,6 @@ void EncLib::destroy ()
   m_cEncSAO.            destroy();
   m_cLoopFilter.        destroy();
   m_cRateCtrl.          destroy();
-#if JVET_M0427_INLOOP_RESHAPER
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   for (int jId = 0; jId < m_numCuEncStacks; jId++)
   {
@@ -197,7 +188,6 @@ void EncLib::destroy ()
   }
 #else
   m_cReshaper.          destroy();
-#endif
 #endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
@@ -234,9 +224,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
   SPS &sps0=*(m_spsMap.allocatePS(0)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
   PPS &pps0=*(m_ppsMap.allocatePS(0));
-#if JVET_M0132_APS
   APS &aps0=*(m_apsMap.allocatePS(0));
-#endif
 
   // initialize SPS
   xInitSPS(sps0);
@@ -274,10 +262,8 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
   // initialize PPS
   xInitPPS(pps0, sps0);
-#if JVET_M0132_APS
   // initialize APS
   xInitAPS(aps0);
-#endif
   xInitRPS(sps0, isFieldCoding);
 
 #if ER_CHROMA_QP_WCG_PPS
@@ -333,9 +319,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                               &m_cRdCost[jId],
                               cabacEstimator,
                               getCtxCache( jId ), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
-#if JVET_M0427_INLOOP_RESHAPER
                             , &m_cReshaper[jId]
-#endif
     );
     m_cInterSearch[jId].init( this,
                               &m_cTrQuant[jId],
@@ -344,9 +328,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                               m_motionEstimationSearchMethod,
                               getUseCompositeRef(),
                               m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost[jId], cabacEstimator, getCtxCache( jId )
-#if JVET_M0427_INLOOP_RESHAPER
                            , &m_cReshaper[jId]
-#endif
     );
 
     // link temporary buffets from intra search with inter search to avoid unnecessary memory overhead
@@ -378,9 +360,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        &m_cRdCost,
                        cabacEstimator,
                        getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
-#if JVET_M0427_INLOOP_RESHAPER
                      , &m_cReshaper
-#endif
   );
   m_cInterSearch.init( this,
                        &m_cTrQuant,
@@ -389,9 +369,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        m_motionEstimationSearchMethod,
                        getUseCompositeRef(),
     m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache()
-#if JVET_M0427_INLOOP_RESHAPER
                      , &m_cReshaper
-#endif
   );
 
   // link temporary buffets from intra search with inter search to avoid unneccessary memory overhead
@@ -421,11 +399,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     Picture *picBg = new Picture;
     picBg->create(sps0.getChromaFormatIdc(), Size(sps0.getPicWidthInLumaSamples(), sps0.getPicHeightInLumaSamples()), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false);
     picBg->getRecoBuf().fill(0);
-#if JVET_M0132_APS
     picBg->finalInit(sps0, pps0, aps0);
-#else
-    picBg->finalInit(sps0, pps0);
-#endif
     picBg->allocateNewSlice();
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
     m_cGOPEncoder.setPicBg(picBg);
@@ -576,12 +550,8 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     const SPS *sps = m_spsMap.getPS(pps->getSPSId());
 
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
-#if JVET_M0132_APS
     APS *aps = m_apsMap.getPS(0);
     picCurr->finalInit(*sps, *pps, *aps);
-#else
-    picCurr->finalInit(*sps, *pps);
-#endif
     picCurr->poc = m_iPOCLast - 1;
     m_iPOCLast -= 2;
     if (getUseAdaptiveQP())
@@ -628,16 +598,10 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
-#if JVET_M0427_INLOOP_RESHAPER
       pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap(*cPicYuvTrueOrg );
-#endif
 
-#if JVET_M0132_APS
       APS *pAPS = m_apsMap.getPS(0);
       pcPicCurr->finalInit(*pSPS, *pPPS, *pAPS);
-#else
-      pcPicCurr->finalInit( *pSPS, *pPPS );
-#endif
     }
 
     pcPicCurr->poc = m_iPOCLast;
@@ -732,12 +696,8 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 
-#if JVET_M0132_APS
         APS *pAPS = m_apsMap.getPS(0);
         pcField->finalInit(*pSPS, *pPPS, *pAPS);
-#else
-        pcField->finalInit( *pSPS, *pPPS );
-#endif
       }
 
       pcField->poc = m_iPOCLast;
@@ -832,11 +792,7 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
     rpcPic->create( sps.getChromaFormatIdc(), Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples()), sps.getMaxCUWidth(), sps.getMaxCUWidth()+16, false );
     if ( getUseAdaptiveQP() )
     {
-#if JVET_M0113_M0188_QG_SIZE
       const uint32_t iMaxDQPLayer = pps.getCuQpDeltaSubdiv()/2+1;
-#else
-      const uint32_t iMaxDQPLayer = pps.getMaxCuDQPDepth()+1;
-#endif
       rpcPic->aqlayer.resize( iMaxDQPLayer );
       for (uint32_t d = 0; d < iMaxDQPLayer; d++)
       {
@@ -850,9 +806,7 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   rpcPic->setBorderExtension( false );
   rpcPic->reconstructed = false;
   rpcPic->referenced = true;
-#if JVET_M0253_HASH_ME
   rpcPic->getHashMap()->clearAll();
-#endif
 
   m_iPOCLast += (m_compositeRefEnabled ? 2 : 1);
   m_iNumPicRcvd++;
@@ -890,28 +844,20 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
   sps.setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
   sps.setNoPcmConstraintFlag(m_bNoPcmConstraintFlag);
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   sps.setNoRefWraparoundConstraintFlag(m_bNoRefWraparoundConstraintFlag);
-#endif
   sps.setNoTemporalMvpConstraintFlag(m_bNoTemporalMvpConstraintFlag);
   sps.setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
   sps.setNoAmvrConstraintFlag(m_bNoAmvrConstraintFlag);
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   sps.setNoBdofConstraintFlag(m_bNoBdofConstraintFlag);
-#endif
   sps.setNoCclmConstraintFlag(m_bNoCclmConstraintFlag);
   sps.setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
   sps.setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   sps.setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
   sps.setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
   sps.setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
-#endif
   sps.setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   sps.setNoCurrPicRefConstraintFlag(m_bNoCurrPicRefConstraintFlag);
   sps.setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
-#endif
   sps.setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
   sps.setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
 
@@ -954,28 +900,20 @@ void EncLib::xInitSPS(SPS &sps)
   cinfo->setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
   cinfo->setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
   cinfo->setNoPcmConstraintFlag(m_bNoPcmConstraintFlag);
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   cinfo->setNoRefWraparoundConstraintFlag(m_bNoRefWraparoundConstraintFlag);
-#endif
   cinfo->setNoTemporalMvpConstraintFlag(m_bNoTemporalMvpConstraintFlag);
   cinfo->setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
   cinfo->setNoAmvrConstraintFlag(m_bNoAmvrConstraintFlag);
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   cinfo->setNoBdofConstraintFlag(m_bNoBdofConstraintFlag);
-#endif
   cinfo->setNoCclmConstraintFlag(m_bNoCclmConstraintFlag);
   cinfo->setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
   cinfo->setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   cinfo->setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
   cinfo->setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
   cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
-#endif
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   cinfo->setNoCurrPicRefConstraintFlag(m_bNoCurrPicRefConstraintFlag);
   cinfo->setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
-#endif
   cinfo->setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
   cinfo->setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
 
@@ -1008,29 +946,15 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setUseAffine             ( m_Affine );
   sps.setUseAffineType         ( m_AffineType );
   sps.setUseLMChroma           ( m_LMChroma ? true : false );
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
   sps.setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
-#endif
-#if JVET_M0464_UNI_MTS
-#if JVET_M0303_IMPLICIT_MTS
   sps.setUseMTS                ( m_IntraMTS || m_InterMTS || m_ImplicitMTS );
-#endif
   sps.setUseIntraMTS           ( m_IntraMTS );
   sps.setUseInterMTS           ( m_InterMTS );
-#else
-#if JVET_M0303_IMPLICIT_MTS
-  sps.setUseMTS                ( m_IntraEMT || m_InterEMT || m_ImplicitMTS );
-#endif
-  sps.setUseIntraEMT           ( m_IntraEMT );
-  sps.setUseInterEMT           ( m_InterEMT );
-#endif
-#if JVET_M0140_SBT
   sps.setUseSBT                             ( m_SBT );
   if( sps.getUseSBT() )
   {
     sps.setMaxSbtSize                       ( m_iSourceWidth >= 1920 ? 64 : 32 );
   }
-#endif
   sps.setUseGBi                ( m_GBi );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   sps.setLadfEnabled           ( m_LadfEnabled );
@@ -1048,27 +972,15 @@ void EncLib::xInitSPS(SPS &sps)
 
   sps.setUseMHIntra            ( m_MHIntra );
   sps.setUseTriangle           ( m_Triangle );
-#if JVET_M0255_FRACMMVD_SWITCH
   sps.setDisFracMmvdEnabledFlag             ( m_allowDisFracMMVD );
-#endif
-#if JVET_M0246_AFFINE_AMVR
   sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
-#endif
-#if JVET_M0147_DMVR
   sps.setUseDMVR                            ( m_DMVR );
-#endif
 
-#if JVET_M0483_IBC
   sps.setIBCFlag                            ( m_IBCMode);
-#else
-  sps.setIBCMode               (m_IBCMode);
-#endif
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
-#if JVET_M0427_INLOOP_RESHAPER
   sps.setUseReshaper                        ( m_lumaReshapeEnable );
-#endif
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;
   while(minCUSize > 1)
@@ -1372,11 +1284,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setSPSId(sps.getSPSId());
 
   pps.setConstrainedIntraPred( m_bUseConstrainedIntraPred );
-#if JVET_M0113_M0188_QG_SIZE
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
-#else
-  bool bUseDQP = (getMaxCuDQPDepth() > 0)? true : false;
-#endif
 
   if((getMaxDeltaQP() != 0 )|| getUseAdaptiveQP())
   {
@@ -1392,11 +1300,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 #if ENABLE_QPA
   if (getUsePerceptQPA() && !bUseDQP)
   {
-#if JVET_M0113_M0188_QG_SIZE
     CHECK( m_cuQpDeltaSubdiv != 0, "max. delta-QP subdiv must be zero!" );
-#else
-    CHECK( m_iMaxCuDQPDepth != 0, "max. delta-QP depth must be zero!" );
-#endif
     bUseDQP = (getBaseQP() < 38) && (getSourceWidth() > 512 || getSourceHeight() > 320);
   }
 #endif
@@ -1410,51 +1314,29 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   if ( m_RCEnableRateControl )
   {
     pps.setUseDQP(true);
-#if JVET_M0113_M0188_QG_SIZE
     pps.setCuQpDeltaSubdiv( 0 );
-#else
-    pps.setMaxCuDQPDepth( 0 );
-#endif
   }
   else if(bUseDQP)
   {
     pps.setUseDQP(true);
-#if JVET_M0113_M0188_QG_SIZE
     pps.setCuQpDeltaSubdiv( m_cuQpDeltaSubdiv );
-#else
-    pps.setMaxCuDQPDepth( m_iMaxCuDQPDepth );
-#endif
   }
   else
   {
     pps.setUseDQP(false);
-#if JVET_M0113_M0188_QG_SIZE
     pps.setCuQpDeltaSubdiv( 0 );
-#else
-    pps.setMaxCuDQPDepth( 0 );
-#endif
   }
 
-#if JVET_M0113_M0188_QG_SIZE
   if ( m_cuChromaQpOffsetSubdiv >= 0 )
   {
     pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(m_cuChromaQpOffsetSubdiv);
-#else
-  if ( m_diffCuChromaQpOffsetDepth >= 0 )
-  {
-    pps.getPpsRangeExtension().setDiffCuChromaQpOffsetDepth(m_diffCuChromaQpOffsetDepth);
-#endif
     pps.getPpsRangeExtension().clearChromaQpOffsetList();
     pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6);
     /* todo, insert table entries from command line (NB, 0 should not be touched) */
   }
   else
   {
-#if JVET_M0113_M0188_QG_SIZE
     pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(0);
-#else
-    pps.getPpsRangeExtension().setDiffCuChromaQpOffsetDepth(0);
-#endif
     pps.getPpsRangeExtension().clearChromaQpOffsetList();
   }
   pps.getPpsRangeExtension().setCrossComponentPredictionEnabledFlag(m_crossComponentPredictionEnabledFlag);
@@ -1593,13 +1475,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     }
   }
   CHECK(!(bestPos <= 15), "Unspecified error");
-#if JVET_M0483_IBC==0
-  if (sps.getIBCMode())
-  {
-    pps.setNumRefIdxL0DefaultActive(bestPos + 1);
-  }
-  else
-#endif
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());
@@ -1620,12 +1495,10 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.pcv = new PreCalcValues( sps, pps, true );
 }
 
-#if JVET_M0132_APS
 void EncLib::xInitAPS(APS &aps)
 {
   //Do nothing now
 }
-#endif
 //Function for initializing m_RPSList, a list of ReferencePictureSet, based on the GOPEntry objects read from the config file.
 void EncLib::xInitRPS(SPS &sps, bool isFieldCoding)
 {
@@ -1998,14 +1871,12 @@ void EncLib::setParamSetChanged(int spsId, int ppsId)
   m_spsMap.setChangedFlag(spsId);
 }
 #endif
-#if JVET_M0132_APS
 bool EncLib::APSNeedsWriting(int apsId)
 {
   bool isChanged = m_apsMap.getChangedFlag(apsId);
   m_apsMap.clearChangedFlag(apsId);
   return isChanged;
 }
-#endif
 
 bool EncLib::PPSNeedsWriting(int ppsId)
 {

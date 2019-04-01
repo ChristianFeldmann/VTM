@@ -50,147 +50,29 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_M0111_WP_GBI                                 1 // Block level control gbi according to WP
-
-#define JVET_M0445_MCTS                                   1 // Motion constrained tile sets
-#if JVET_M0445_MCTS
-#define JVET_M0445_MCTS_DEC_CHECK                         1 // Check at decoder side the MCTS restrictions
-#endif
-
-#define JVET_M0415_WRAPAROUND_HLS                         1 // HLS for Wrap-around MC
-
-
 #define JCTVC_Y0038_PARAMS                                1
-
-#define JVET_M0600_RATE_CTRL                              1 //frame level bit allocation by qdf
-
-#define JVET_M0451_INTEROPERABILITY_POINT_SYNTAX          1
-
-#define JVET_M0428_ENC_DB_OPT                             1 // Encoder optimization with deblocking filter
 
 #define JVET_MMVD_OFF_MACRO                               0
 
-#define JVET_M0055_DEBUG_CTU                              1 // DebugCTU encoder debug option
-
-#define JVET_M0297_32PT_MTS_ZERO_OUT                      1 // 32 point MTS based on skipping high frequency coefficients
-
-#define JVET_M0126_HMVP_MRG_PRUNING                       1 // HMVP merge candidates pruning simplification
-
-#define JVET_M0483_IBC                                    1 // Block level flag signaling and independent IBC mode
-
-#define JVET_M0102_INTRA_SUBPARTITIONS                    1
-
-#define JVET_M0303_IMPLICIT_MTS                           1 // Implicit transform selection (can be enabled with MTSImplicit encoder config parameter)
-
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
-#define JVET_M0908_CIIP_DB                                1
-#define JVET_M0471_LONG_DEBLOCKING_FILTERS                1
-#define JVET_M0427_INLOOP_RESHAPER                        1
-#define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
 
-#define JVET_M0253_HASH_ME                                1
-
-#define JVET_M0257                                        1 // Scan only non zero-out regions of large TUs
-#define JVET_M0193_PAIR_AVG_REDUCTION                     1 //Use only one pairwise average candidate
-
-#define JVET_M0281_AMVP_ROUNDING                          1 // Perform all AMVP rounding before pruning even AMVR is off
-
-#define JVET_M0117_AMVP_LIST_GEN                          1 // AMVP candidate list generation simplification
-
-#define JVET_M0192_AFF_CHROMA_SIMPL                       1 // Affine chroma MV derivation simplification and rounding unification
-
-#define JVET_M0116_ATMVP_LEFT_NB_FOR_OFFSET               1 // Only use left neighbor for ATMVP offset derivation, from M0273, M0240, M0116, M0338, M0204
-
-#define JVET_M0063_BDOF_FIX                               1 // BDOF bitdepth bugfix
-
-#define JVET_M0265_MV_ROUNDING_CLEANUP                    1 // Unify MV roundings and make SW/WD allignment
-#define JVET_M0883_TRIANGLE_SIGNALING                     1 // Using regular merge index signaling for triangle mode
-
-#define JVET_M0228_REMOVE_CPMV_COMPARE                    1 // Remove CPMV comparisons for construnted affine merge candidates from JVET-M0228, M0166, M0477
-
-#define JVET_M0145_AFFINE_MV_CLIP                         1 // Missing clipping for MV storage in affine
-
-#define JVET_M0264_HMVP_WITH_GBIIDX                       1 // Harmonization between HMVP and GBi
-
-#define JVET_M0381_ONE_CTX_FOR_SUBBLOCK_MRG_IDX           1 // CE2.2.2 a: one context for subblock Merge index
-
-#define JVET_M0118_M0185_TRIANGLE_FLAG_FIX                1 // Avoid signaling triangle flag if a CU uses MMVD or CIIP
-
-#define JVET_M0487_INT_EXTEND                             1  // CE9.1.1 b: integer reference samples as 1 extended samples
-
-#define JVET_M0444_SMVD                                   1 // SMVD mode
-
-#define JVET_M0170_MRG_SHARELIST                          1
-#if JVET_M0170_MRG_SHARELIST
 #define MRG_SHARELIST_SHARSIZE                            32
-#endif
 
-#define JVET_M0064_CCLM_SIMPLIFICATION                    1
-
-#define JVET_M0142_CCLM_COLLOCATED_CHROMA                 1 // Adding support for chroma sample location type 2 in CCLM
-
-#define JVET_M0328_KEEP_ONE_WEIGHT_GROUP                  1
-
-#define JVET_M0479_18BITS_MV_CLIP                         1
-
-#define JVET_M0497_FAST_DST7                              1
-#if JVET_M0497_FAST_DST7
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
-#endif
-#define JVET_M0502_PRED_MODE_CTX                          1
 
-#define JVET_M0140_SBT                                    1 // Sub-Block transform for Inter blocks
-#if JVET_M0140_SBT
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
-#endif
-
-#define JVET_M0407_IBC_RANGE                              1 // extend IBC search range to some part of left CTU
-
-#define JVET_M0464_UNI_MTS                                1
-#define JVET_M0068_M0171_MMVD_CLEANUP                     1 // MMVD cleanup with 1) flip removal, 2) L1 zero vector fix, 3) bi-pred restriction after merge/MMVD
-#define JVET_M0255_FRACMMVD_SWITCH                        1 // disable fractional MVD in MMVD adaptively
-#define JVET_M0854_FRACMMVD_SWITCH_FOR_UHD                1 // disable fractional MVD for UHD pictures
-#define JVET_M0823_MMVD_ENCOPT                            1 // encoder optimization for MMVD
-
-#define JVET_M0147_DMVR                                   1 //Decoder side Motion Vector Refinement
-
-#define JVET_M0277_FIX_PCM_DISABLEFILTER                  1 // Fixes of enabling pcm_loop_filter_disabled_flag with PCM mode
-#if JVET_M0277_FIX_PCM_DISABLEFILTER
 #define FIX_PCM                                           1 // Fix PCM bugs in VTM3
-#endif
 
 #define MAX_TB_SIZE_SIGNALLING                            0
 
-#if JVET_M0464_UNI_MTS
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
-#endif
-
-#define JVET_M0246_AFFINE_AMVR                            1
-#if JVET_M0246_AFFINE_AMVR
-#define JVET_M0247_AFFINE_AMVR_ENCOPT                     1
-#endif
-#define JVET_M0421_SPLIT_SIG                              1
-
-#define JVET_M0173_MOVE_GT2_TO_FIRST_PASS                 1 // Moving the gtr2 flag to the first coding pass
-
-#define REMOVE_BIN_DECISION_TREE                          1
-
-#define JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY       1
-
-#define JVET_M0685                                        1
 
 // clang-format off
-#define JVET_M0453_CABAC_ENGINE                           1
-#define JVET_M0512_MOTION_BUFFER_COMPRESSION              1
-#define JVET_M0238_PDPC_NO_INTERPOLATION                  1
-
-#define JVET_M0409_ATMVP_FIX                              1
-
 #define ENABLE_JVET_L0283_MRL                             1 // 1: Enable MRL, 0: Disable MRL
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
-#if REUSE_CU_RESULTS && JVET_M0102_INTRA_SUBPARTITIONS
+#if REUSE_CU_RESULTS
 #define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
 #define MAX_NUM_TUS                                       4
 #endif
@@ -252,11 +134,7 @@ typedef std::pair<int, int>  TrCost;
 #endif
 #endif
 
-#if JVET_M0427_INLOOP_RESHAPER
 #define WCG_EXT                                           1
-#else
-#define WCG_EXT                                           0 // part of JEM sharp Luma qp
-#endif
 #define WCG_WPSNR                                         WCG_EXT
 
 #if HEVC_TOOLS
@@ -275,16 +153,12 @@ typedef std::pair<int, int>  TrCost;
 #define HEVC_TILES_WPP                                    1
 #endif
 
-#if JVET_M0445_MCTS
 #ifndef HEVC_TILES_WPP
 #define HEVC_TILES_WPP                                    1
 #endif
 #if !HEVC_TILES_WPP
 #error JVET_M0445_MCTS_NEEDS_TILES_ENABLED
 #endif
-#endif
-
-#define JVET_M0132_APS                                    1  // APS
 
 #define JVET_M0101_HLS                                    1  // joint HLS syntax
 
@@ -303,7 +177,6 @@ typedef std::pair<int, int>  TrCost;
 #define HM_JEM_CLIP_PEL                                   1   // ***
 #define HM_JEM_MERGE_CANDS                                0   // ***
 
-#define JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT 1 ///< When 1, do not scale transform skip blocks by sqrt(2) between (I)Transform and (I)Quantizer
 
 #endif//JEM_COMP
 
@@ -378,7 +251,6 @@ typedef std::pair<int, int>  TrCost;
 #define W0038_DB_OPT                                      1 ///< adaptive DB parameter selection, LoopFilterOffsetInPPS and LoopFilterDisable are set to 0 and DeblockingFilterMetric=2;
 #define W0038_CQP_ADJ                                     1 ///< chroma QP adjustment based on TL, CQPTLAdjustEnabled is set to 1;
 
-#define JVET_M0113_M0188_QG_SIZE                          1 ///< JVET-M0113/M0188 quantization groups based on area
 #define SHARP_LUMA_DELTA_QP                               1 ///< include non-normative LCU deltaQP and normative chromaQP change
 #define ER_CHROMA_QP_WCG_PPS                              1 ///< Chroma QP model for WCG used in Anchor 3.2
 #define ENABLE_QPA                                        1 ///< Non-normative perceptual QP adaptation according to JVET-H0047 and JVET-K0206. Deactivated by default, activated using encoder arguments --PerceptQPA=1 --SliceChromaQPOffsetPeriodicity=1
@@ -462,7 +334,6 @@ enum TransType
   DCT2_EMT = 4
 };
 
-#if JVET_M0102_INTRA_SUBPARTITIONS
 enum ISPType
 {
   NOT_INTRA_SUBPARTITIONS       = 0,
@@ -471,9 +342,7 @@ enum ISPType
   NUM_INTRA_SUBPARTITIONS_MODES = 3,
   CAN_USE_VER_AND_HORL_SPLITS   = 4
 };
-#endif
 
-#if JVET_M0140_SBT
 enum SbtIdx
 {
   SBT_OFF_DCT  = 0,
@@ -504,7 +373,6 @@ enum SbtMode
   SBT_HOR_Q1 = 7,
   NUMBER_SBT_MODE
 };
-#endif
 
 enum RDPCMMode
 {
@@ -597,12 +465,8 @@ enum PredMode
 {
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
-#if JVET_M0483_IBC
   MODE_IBC                   = 2,     ///< ibc-prediction mode
   NUMBER_OF_PREDICTION_MODES = 3,
-#else
-  NUMBER_OF_PREDICTION_MODES = 2,
-#endif
 };
 
 /// reference list index
@@ -682,7 +546,6 @@ enum DFunc
   DF_SAD_FULL_NBIT64  = DF_SAD_FULL_NBIT+6,    ///<  64xM SAD with full bit usage
   DF_SAD_FULL_NBIT16N = DF_SAD_FULL_NBIT+7,    ///< 16NxM SAD with full bit usage
 
-#if WCG_EXT
   DF_SSE_WTD          = 54,                ///< general size SSE
   DF_SSE2_WTD         = DF_SSE_WTD+1,      ///<   4xM SSE
   DF_SSE4_WTD         = DF_SSE_WTD+2,      ///<   4xM SSE
@@ -692,7 +555,6 @@ enum DFunc
   DF_SSE64_WTD        = DF_SSE_WTD+6,      ///<  64xM SSE
   DF_SSE16N_WTD       = DF_SSE_WTD+7,      ///< 16NxM SSE
   DF_DEFAULT_ORI      = DF_SSE_WTD+8,
-#endif
 
   DF_SAD_INTERMEDIATE_BITDEPTH = 63,
 
@@ -974,9 +836,7 @@ enum NalUnitType
 
   NAL_UNIT_SPS,                     // 17
   NAL_UNIT_PPS,                     // 18
-#if JVET_M0132_APS
   NAL_UNIT_APS,                     // 19 NAL unit type number needs to be reaaranged.
-#endif
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 20
   NAL_UNIT_EOS,                     // 21
   NAL_UNIT_EOB,                     // 22
@@ -1039,9 +899,7 @@ enum NalUnitType
 #endif
   NAL_UNIT_SPS,                     // 33
   NAL_UNIT_PPS,                     // 34
-#if JVET_M0132_APS
   NAL_UNIT_APS,                     //NAL unit type number needs to be reaaranged.
-#endif
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 35
   NAL_UNIT_EOS,                     // 36
   NAL_UNIT_EOB,                     // 37
@@ -1081,12 +939,7 @@ enum LumaLevelToDQPMode
 {
   LUMALVL_TO_DQP_DISABLED   = 0,
   LUMALVL_TO_DQP_AVG_METHOD = 1, // use average of CTU to determine luma level
-#if !WCG_EXT
-  LUMALVL_TO_DQP_MAX_METHOD = 2,  // use maximum value of CTU to determine luma level
-  LUMALVL_TO_DQP_NUM_MODES  = 3
-#else
   LUMALVL_TO_DQP_NUM_MODES  = 2
-#endif
 };
 #endif
 
@@ -1112,14 +965,12 @@ enum TriangleSplit
   TRIANGLE_DIR_NUM
 };
 
-#if JVET_M0170_MRG_SHARELIST
 enum SharedMrgState
 {
   NO_SHARE            = 0,
   GEN_ON_SHARED_BOUND = 1,
   SHARING             = 2
 };
-#endif
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out
 //////////////////////////////////////////////////////////////////////////
@@ -1334,7 +1185,6 @@ enum MsgLevel
   VERBOSE = 5,
   DETAILS = 6
 };
-#if JVET_M0427_INLOOP_RESHAPER
 enum RESHAPE_SIGNAL_TYPE
 {
   RESHAPE_SIGNAL_SDR = 0,
@@ -1342,7 +1192,6 @@ enum RESHAPE_SIGNAL_TYPE
   RESHAPE_SIGNAL_HLG = 2,
   RESHAPE_SIGNAL_NULL = 100,
 };
-#endif
 
 
 // ---------------------------------------------------------------------------
@@ -1483,7 +1332,6 @@ public:
                                                   while( first != last ) *it++ = *first++;
                                                   return const_cast<iterator>( _pos ); }
 
-#if JVET_M0102_INTRA_SUBPARTITIONS && JVET_M0464_UNI_MTS
   iterator        insert( const_iterator _pos, size_t numEl, const T& val )
                                                 { //const difference_type numEl = last - first;
                                                   CHECKD( _size + numEl >= N, "capacity exceeded" );
@@ -1491,7 +1339,6 @@ public:
                                                   iterator it = const_cast<iterator>( _pos ); _size += numEl;
                                                   for ( int k = 0; k < numEl; k++) *it++ = val;
                                                   return const_cast<iterator>( _pos ); }
-#endif
 
   void            erase( const_iterator _pos )  { iterator it   = const_cast<iterator>( _pos ) - 1;
                                                   iterator last = end() - 1;

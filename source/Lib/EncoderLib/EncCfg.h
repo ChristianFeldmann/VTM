@@ -142,28 +142,20 @@ protected:
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
   bool      m_bNoPcmConstraintFlag;
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      m_bNoRefWraparoundConstraintFlag;
-#endif
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
   bool      m_bNoAmvrConstraintFlag;
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      m_bNoBdofConstraintFlag;
-#endif
   bool      m_bNoCclmConstraintFlag;
   bool      m_bNoMtsConstraintFlag;
   bool      m_bNoAffineMotionConstraintFlag;
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      m_bNoGbiConstraintFlag;
   bool      m_bNoMhIntraConstraintFlag;
   bool      m_bNoTriangleConstraintFlag;
-#endif
   bool      m_bNoLadfConstraintFlag;
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      m_bNoCurrPicRefConstraintFlag;
   bool      m_bNoQpDeltaConstraintFlag;
-#endif
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
 
@@ -219,26 +211,13 @@ protected:
   unsigned  m_log2DiffMaxMinCodingBlockSize;
 
   int       m_LMChroma;
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
   bool      m_cclmCollocatedChromaFlag;
-#endif
-#if JVET_M0464_UNI_MTS
   int       m_IntraMTS;
   int       m_InterMTS;
   int       m_IntraMTSMaxCand;
   int       m_InterMTSMaxCand;
-#else
-  int       m_IntraEMT;
-  int       m_InterEMT;
-  int       m_FastIntraEMT;
-  int       m_FastInterEMT;
-#endif
-#if JVET_M0303_IMPLICIT_MTS
   int       m_ImplicitMTS;
-#endif
-#if JVET_M0140_SBT
   bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
-#endif
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
@@ -256,21 +235,11 @@ protected:
 
   bool      m_MHIntra;
   bool      m_Triangle;
-#if JVET_M0255_FRACMMVD_SWITCH
   bool      m_allowDisFracMMVD;
-#endif
-#if JVET_M0246_AFFINE_AMVR
   bool      m_AffineAmvr;
-#endif
-#if JVET_M0253_HASH_ME
   bool      m_HashME;
-#endif
-#if JVET_M0247_AFFINE_AMVR_ENCOPT
   bool      m_AffineAmvrEncOpt;
-#endif
-#if JVET_M0147_DMVR
   bool      m_DMVR;
-#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -283,15 +252,11 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
-#if JVET_M0427_INLOOP_RESHAPER
   bool      m_lumaReshapeEnable;
   unsigned  m_reshapeSignalType;
   unsigned  m_intraCMD;
   ReshapeCW m_reshapeCW;
-#endif
-#if JVET_M0428_ENC_DB_OPT
   bool      m_encDbOpt;
-#endif
   bool      m_useFastLCTU;
   bool      m_useFastMrg;
   bool      m_usePbIntraFast;
@@ -335,13 +300,8 @@ protected:
 
   //====== Quality control ========
   int       m_iMaxDeltaQP;                      //  Max. absolute delta QP (1:default)
-#if JVET_M0113_M0188_QG_SIZE
   int       m_cuQpDeltaSubdiv;                  //  Max. subdivision level for a CuDQP (0:default)
   int       m_cuChromaQpOffsetSubdiv;           ///< If negative, then do not apply chroma qp offsets.
-#else
-  int       m_iMaxCuDQPDepth;                   //  Max. depth for a minimum CuDQP (0:default)
-  int       m_diffCuChromaQpOffsetDepth;        ///< If negative, then do not apply chroma qp offsets.
-#endif
 
   int       m_chromaCbQpOffset;                 //  Chroma Cb QP Offset (0:default)
   int       m_chromaCrQpOffset;                 //  Chroma Cr Qp Offset (0:default)
@@ -399,9 +359,7 @@ protected:
   int*      m_aidQP;
   uint32_t      m_uiDeltaQpRD;
   bool      m_bFastDeltaQP;
-#if JVET_M0102_INTRA_SUBPARTITIONS
   bool      m_useFastISP;
-#endif
 
   bool      m_bUseConstrainedIntraPred;
   bool      m_bFastUDIUseMPMEnabled;
@@ -481,9 +439,7 @@ protected:
   bool      m_SOPDescriptionSEIEnabled;
   bool      m_scalableNestingSEIEnabled;
   bool      m_tmctsSEIEnabled;
-#if JVET_M0445_MCTS
   bool      m_MCTSEncConstraint;
-#endif
   bool      m_timeCodeSEIEnabled;
   int       m_timeCodeSEINumTs;
   SEITimeSet   m_timeSetArray[MAX_TIMECODE_SEI_SETS];
@@ -596,9 +552,7 @@ protected:
   int         m_switchDQP;                                    ///< dqp applied to  switchPOC and subsequent pictures.
   int         m_fastForwardToPOC;                             ///<
   bool        m_stopAfterFFtoPOC;                             ///<
-#if JVET_M0055_DEBUG_CTU
   int         m_debugCTU;                                     ///< dbg ctu
-#endif
   bool        m_bs2ModPOCAndType;
 
 
@@ -648,42 +602,34 @@ public:
   void      setNoAlfConstraintFlag(bool bVal) { m_bNoAlfConstraintFlag = bVal; }
   bool      getNoPcmConstraintFlag() const { return m_bNoPcmConstraintFlag; }
   void      setNoPcmConstraintFlag(bool bVal) { m_bNoPcmConstraintFlag = bVal; }
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      getNoRefWraparoundConstraintFlag() const { return m_bNoRefWraparoundConstraintFlag; }
   void      setNoRefWraparoundConstraintFlag(bool bVal) { m_bNoRefWraparoundConstraintFlag = bVal; }
-#endif
   bool      getNoTemporalMvpConstraintFlag() const { return m_bNoTemporalMvpConstraintFlag; }
   void      setNoTemporalMvpConstraintFlag(bool bVal) { m_bNoTemporalMvpConstraintFlag = bVal; }
   bool      getNoSbtmvpConstraintFlag() const { return m_bNoSbtmvpConstraintFlag; }
   void      setNoSbtmvpConstraintFlag(bool bVal) { m_bNoSbtmvpConstraintFlag = bVal; }
   bool      getNoAmvrConstraintFlag() const { return m_bNoAmvrConstraintFlag; }
   void      setNoAmvrConstraintFlag(bool bVal) { m_bNoAmvrConstraintFlag = bVal; }
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      getNoBdofConstraintFlag() const { return m_bNoBdofConstraintFlag; }
   void      setNoBdofConstraintFlag(bool bVal) { m_bNoBdofConstraintFlag = bVal; }
-#endif
   bool      getNoCclmConstraintFlag() const { return m_bNoCclmConstraintFlag; }
   void      setNoCclmConstraintFlag(bool bVal) { m_bNoCclmConstraintFlag = bVal; }
   bool      getNoMtsConstraintFlag() const { return m_bNoMtsConstraintFlag; }
   void      setNoMtsConstraintFlag(bool bVal) { m_bNoMtsConstraintFlag = bVal; }
   bool      getNoAffineMotionConstraintFlag() const { return m_bNoAffineMotionConstraintFlag; }
   void      setNoAffineMotionConstraintFlag(bool bVal) { m_bNoAffineMotionConstraintFlag = bVal; }
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      getNoGbiConstraintFlag() const { return m_bNoGbiConstraintFlag; }
   void      setNoGbiConstraintFlag(bool bVal) { m_bNoGbiConstraintFlag = bVal; }
   bool      getNoMhIntraConstraintFlag() const { return m_bNoMhIntraConstraintFlag; }
   void      setNoMhIntraConstraintFlag(bool bVal) { m_bNoMhIntraConstraintFlag = bVal; }
   bool      getNoTriangleConstraintFlag() const { return m_bNoTriangleConstraintFlag; }
   void      setNoTriangleConstraintFlag(bool bVal) { m_bNoTriangleConstraintFlag = bVal; }
-#endif
   bool      getNoLadfConstraintFlag() const { return m_bNoLadfConstraintFlag; }
   void      setNoLadfConstraintFlag(bool bVal) { m_bNoLadfConstraintFlag = bVal; }
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   bool      getNoCurrPicRefConstraintFlag() const { return m_bNoCurrPicRefConstraintFlag; }
   void      setNoCurrPicRefConstraintFlag(bool bVal) { m_bNoCurrPicRefConstraintFlag = bVal; }
   bool      getNoQpDeltaConstraintFlag() const { return m_bNoQpDeltaConstraintFlag; }
   void      setNoQpDeltaConstraintFlag(bool bVal) { m_bNoQpDeltaConstraintFlag = bVal; }
-#endif
   bool      getNoDepQuantConstraintFlag() const { return m_bNoDepQuantConstraintFlag; }
   void      setNoDepQuantConstraintFlag(bool bVal) { m_bNoDepQuantConstraintFlag = bVal; }
   bool      getNoSignDataHidingConstraintFlag() const { return m_bNoSignDataHidingConstraintFlag; }
@@ -757,10 +703,8 @@ public:
 
   void      setUseLMChroma                  ( int n )        { m_LMChroma = n; }
   int       getUseLMChroma()                           const { return m_LMChroma; }
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
   void      setCclmCollocatedChromaFlag     ( bool b )       { m_cclmCollocatedChromaFlag = b; }
   bool      getCclmCollocatedChromaFlag     ()         const { return m_cclmCollocatedChromaFlag; }
-#endif
 
   void      setSubPuMvpMode(int n)          { m_SubPuMvpMode = n; }
   bool      getSubPuMvpMode()         const { return m_SubPuMvpMode; }
@@ -772,7 +716,6 @@ public:
   void      setBIO(bool b)                                   { m_BIO = b; }
   bool      getBIO()                                   const { return m_BIO; }
 
-#if JVET_M0464_UNI_MTS
   void      setIntraMTSMaxCand              ( unsigned u )   { m_IntraMTSMaxCand = u; }
   unsigned  getIntraMTSMaxCand              ()         const { return m_IntraMTSMaxCand; }
   void      setInterMTSMaxCand              ( unsigned u )   { m_InterMTSMaxCand = u; }
@@ -781,24 +724,10 @@ public:
   bool      getIntraMTS                     ()         const { return m_IntraMTS; }
   void      setInterMTS                     ( bool b )       { m_InterMTS = b; }
   bool      getInterMTS                     ()         const { return m_InterMTS; }
-#else
-  void      setFastIntraEMT                 ( bool b )       { m_FastIntraEMT = b; }
-  bool      getFastIntraEMT                 ()         const { return m_FastIntraEMT; }
-  void      setFastInterEMT                 ( bool b )       { m_FastInterEMT = b; }
-  bool      getFastInterEMT                 ()         const { return m_FastInterEMT; }
-  void      setIntraEMT                     ( bool b )       { m_IntraEMT = b; }
-  bool      getIntraEMT                     ()         const { return m_IntraEMT; }
-  void      setInterEMT                     ( bool b )       { m_InterEMT = b; }
-  bool      getInterEMT                     ()         const { return m_InterEMT; }
-#endif
-#if JVET_M0303_IMPLICIT_MTS
   void      setImplicitMTS                  ( bool b )       { m_ImplicitMTS = b; }
   bool      getImplicitMTS                  ()         const { return m_ImplicitMTS; }
-#endif
-#if JVET_M0140_SBT
   void      setUseSBT                       ( bool b )       { m_SBT = b; }
   bool      getUseSBT                       ()         const { return m_SBT; }
-#endif
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }
@@ -823,26 +752,16 @@ public:
   bool      getUseMHIntra                   ()         const { return m_MHIntra; }
   void      setUseTriangle                  ( bool b )       { m_Triangle = b; }
   bool      getUseTriangle                  ()         const { return m_Triangle; }
-#if JVET_M0255_FRACMMVD_SWITCH
   void      setAllowDisFracMMVD             ( bool b )       { m_allowDisFracMMVD = b;    }
   bool      getAllowDisFracMMVD             ()         const { return m_allowDisFracMMVD; }
-#endif
-#if JVET_M0253_HASH_ME
   void      setUseHashME                    ( bool b )       { m_HashME = b; }
   bool      getUseHashME                    ()         const { return m_HashME; }
-#endif
-#if JVET_M0246_AFFINE_AMVR
   void      setUseAffineAmvr                ( bool b )       { m_AffineAmvr = b;    }
   bool      getUseAffineAmvr                ()         const { return m_AffineAmvr; }
-#endif
-#if JVET_M0247_AFFINE_AMVR_ENCOPT
   void      setUseAffineAmvrEncOpt          ( bool b )       { m_AffineAmvrEncOpt = b;    }
   bool      getUseAffineAmvrEncOpt          ()         const { return m_AffineAmvrEncOpt; }
-#endif
-#if JVET_M0147_DMVR
   void      setDMVR                      ( bool b )       { m_DMVR = b; }
   bool      getDMVR                      ()         const { return m_DMVR; }
-#endif
 
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }
@@ -866,7 +785,6 @@ public:
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
 
-#if JVET_M0427_INLOOP_RESHAPER
   void      setReshaper                     ( bool b )                   { m_lumaReshapeEnable = b; }
   bool      getReshaper                     () const                     { return m_lumaReshapeEnable; }
   void      setReshapeSignalType            ( uint32_t signalType )      { m_reshapeSignalType = signalType; }
@@ -875,7 +793,6 @@ public:
   uint32_t  getReshapeIntraCMD              ()                           { return m_intraCMD; }
   void      setReshapeCW                    (const ReshapeCW &reshapeCW) { m_reshapeCW = reshapeCW; }
   const ReshapeCW& getReshapeCW             ()                           { return m_reshapeCW; }
-#endif
   void      setMaxCUWidth                   ( uint32_t  u )      { m_maxCUWidth  = u; }
   uint32_t      getMaxCUWidth                   () const         { return m_maxCUWidth; }
   void      setMaxCUHeight                  ( uint32_t  u )      { m_maxCUHeight = u; }
@@ -883,10 +800,8 @@ public:
   void      setMaxCodingDepth               ( uint32_t  u )      { m_maxTotalCUDepth = u; }
   uint32_t      getMaxCodingDepth               () const         { return m_maxTotalCUDepth; }
   void      setLog2DiffMaxMinCodingBlockSize( uint32_t  u )      { m_log2DiffMaxMinCodingBlockSize = u; }
-#if JVET_M0428_ENC_DB_OPT
   void      setUseEncDbOpt                  ( bool  n )          { m_encDbOpt = n; }
   bool      getUseEncDbOpt                  () const             { return m_encDbOpt; }
-#endif
 
   void      setUseFastLCTU                  ( bool  n )      { m_useFastLCTU = n; }
   bool      getUseFastLCTU                  () const         { return m_useFastLCTU; }
@@ -928,16 +843,9 @@ public:
 
   //====== Quality control ========
   void      setMaxDeltaQP                   ( int   i )      { m_iMaxDeltaQP = i; }
-#if JVET_M0113_M0188_QG_SIZE
   void      setCuQpDeltaSubdiv              ( int   i )      { m_cuQpDeltaSubdiv = i; }
   int       getCuChromaQpOffsetSubdiv       ()         const { return m_cuChromaQpOffsetSubdiv;  }
   void      setCuChromaQpOffsetSubdiv       (int value)      { m_cuChromaQpOffsetSubdiv = value; }
-#else
-  void      setMaxCuDQPDepth                ( int   i )      { m_iMaxCuDQPDepth = i; }
-
-  int       getDiffCuChromaQpOffsetDepth    ()         const { return m_diffCuChromaQpOffsetDepth;  }
-  void      setDiffCuChromaQpOffsetDepth    (int value)      { m_diffCuChromaQpOffsetDepth = value; }
-#endif
 
   void      setChromaCbQpOffset             ( int   i )      { m_chromaCbQpOffset = i; }
   void      setChromaCrQpOffset             ( int   i )      { m_chromaCrQpOffset = i; }
@@ -1041,11 +949,7 @@ public:
 
   //==== Quality control ========
   int       getMaxDeltaQP                   () const { return m_iMaxDeltaQP; }
-#if JVET_M0113_M0188_QG_SIZE
   int       getCuQpDeltaSubdiv              () const { return m_cuQpDeltaSubdiv; }
-#else
-  int       getMaxCuDQPDepth                () const { return m_iMaxCuDQPDepth; }
-#endif
   bool      getUseAdaptiveQP                () const { return m_bUseAdaptiveQP; }
   int       getQPAdaptationRange            () const { return m_iQPAdaptationRange; }
 #if ENABLE_QPA
@@ -1131,10 +1035,8 @@ public:
   void setLog2MaxTransformSkipBlockSize                ( uint32_t u )    { m_log2MaxTransformSkipBlockSize  = u;       }
   bool getIntraSmoothingDisabledFlag               ()      const { return m_intraSmoothingDisabledFlag; }
   void setIntraSmoothingDisabledFlag               (bool bValue) { m_intraSmoothingDisabledFlag=bValue; }
-#if JVET_M0102_INTRA_SUBPARTITIONS
   bool getUseFastISP                                   ()         { return m_useFastISP;    }
   void setUseFastISP                                   ( bool b ) { m_useFastISP  = b;   }
-#endif
 
   const int* getdQPs                        () const { return m_aidQP;       }
   uint32_t      getDeltaQpRD                    () const { return m_uiDeltaQpRD; }
@@ -1286,10 +1188,8 @@ public:
   bool  getScalableNestingSEIEnabled() const                         { return m_scalableNestingSEIEnabled; }
   void  setTMCTSSEIEnabled(bool b)                                   { m_tmctsSEIEnabled = b; }
   bool  getTMCTSSEIEnabled()                                         { return m_tmctsSEIEnabled; }
-#if JVET_M0445_MCTS
   void  setMCTSEncConstraint(bool b)                                 { m_MCTSEncConstraint = b; }
   bool  getMCTSEncConstraint()                                       { return m_MCTSEncConstraint; }
-#endif
   void  setTimeCodeSEIEnabled(bool b)                                { m_timeCodeSEIEnabled = b; }
   bool  getTimeCodeSEIEnabled()                                      { return m_timeCodeSEIEnabled; }
   void  setNumberOfTimeSets(int value)                               { m_timeCodeSEINumTs = value; }
@@ -1534,10 +1434,8 @@ public:
   bool         getStopAfterFFtoPOC()                           const { return m_stopAfterFFtoPOC; }
   void         setBs2ModPOCAndType( bool b )                         { m_bs2ModPOCAndType = b; }
   bool         getBs2ModPOCAndType()                           const { return m_bs2ModPOCAndType; }
-#if JVET_M0055_DEBUG_CTU
   void         setDebugCTU( int i )                                  { m_debugCTU = i; }
   int          getDebugCTU()                                   const { return m_debugCTU; }
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   void         setNumSplitThreads( int n )                           { m_numSplitThreads = n; }

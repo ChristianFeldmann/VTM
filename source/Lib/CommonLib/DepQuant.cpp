@@ -87,10 +87,8 @@ namespace DQIntern
     NbInfoSbb     nextNbInfoSbb;
     int           nextSbbRight;
     int           nextSbbBelow;
-#if JVET_M0297_32PT_MTS_ZERO_OUT
     int           posX;
     int           posY;
-#endif
   };
 
   class Rom;
@@ -130,13 +128,8 @@ namespace DQIntern
     Rom() : m_scansInitialized(false) {}
     ~Rom() { xUninitScanArrays(); }
     void                init        ()                       { xInitScanArrays(); }
-#if JVET_M0102_INTRA_SUBPARTITIONS
     const NbInfoSbb*    getNbInfoSbb( int hd, int vd, int ch ) const { return m_scanId2NbInfoSbbArray[hd][vd][ch]; }
     const NbInfoOut*    getNbInfoOut( int hd, int vd, int ch ) const { return m_scanId2NbInfoOutArray[hd][vd][ch]; }
-#else
-    const NbInfoSbb*    getNbInfoSbb( int hd, int vd ) const { return m_scanId2NbInfoSbbArray[hd][vd]; }
-    const NbInfoOut*    getNbInfoOut( int hd, int vd ) const { return m_scanId2NbInfoOutArray[hd][vd]; }
-#endif
     const TUParameters* getTUPars   ( const CompArea& area, const ComponentID compID ) const
     {
       return m_tuParameters[g_aucLog2[area.width]][g_aucLog2[area.height]][toChannelType(compID)];
@@ -146,13 +139,8 @@ namespace DQIntern
     void  xUninitScanArrays ();
   private:
     bool          m_scansInitialized;
-#if JVET_M0102_INTRA_SUBPARTITIONS
     NbInfoSbb*    m_scanId2NbInfoSbbArray[ MAX_CU_DEPTH+1 ][ MAX_CU_DEPTH+1 ][ MAX_NUM_CHANNEL_TYPE ];
     NbInfoOut*    m_scanId2NbInfoOutArray[ MAX_CU_DEPTH+1 ][ MAX_CU_DEPTH+1 ][ MAX_NUM_CHANNEL_TYPE ];
-#else
-    NbInfoSbb*    m_scanId2NbInfoSbbArray[ MAX_CU_DEPTH+1 ][ MAX_CU_DEPTH+1 ];
-    NbInfoOut*    m_scanId2NbInfoOutArray[ MAX_CU_DEPTH+1 ][ MAX_CU_DEPTH+1 ];
-#endif
     TUParameters* m_tuParameters         [ MAX_CU_DEPTH+1 ][ MAX_CU_DEPTH+1 ][ MAX_NUM_CHANNEL_TYPE ];
   };
 
@@ -169,7 +157,6 @@ namespace DQIntern
     uint32_t raster2id[ MAX_CU_SIZE * MAX_CU_SIZE ];
     ::memset(raster2id, 0, sizeof(raster2id));
 
-#if JVET_M0102_INTRA_SUBPARTITIONS
     for( int ch = 0; ch < MAX_NUM_CHANNEL_TYPE; ch++ )
     {
     for( int hd = 0; hd <= MAX_CU_DEPTH; hd++ )
@@ -180,44 +167,22 @@ namespace DQIntern
         {
           continue;
         }
-#else
-    for( int hd = 1; hd <= MAX_CU_DEPTH; hd++ )
-    {
-      for( int vd = 1; vd <= MAX_CU_DEPTH; vd++ )
-      {
-#endif
         const uint32_t      blockWidth    = (1 << hd);
         const uint32_t      blockHeight   = (1 << vd);
-#if JVET_M0102_INTRA_SUBPARTITIONS
         const uint32_t      log2CGWidth   = g_log2SbbSize[ch][hd][vd][0];
         const uint32_t      log2CGHeight  = g_log2SbbSize[ch][hd][vd][1];
-#else
-        const uint32_t      log2CGWidth   = (blockWidth & 3) + (blockHeight & 3) > 0 ? 1 : 2;
-        const uint32_t      log2CGHeight  = (blockWidth & 3) + (blockHeight & 3) > 0 ? 1 : 2;
-#endif
         const uint32_t      groupWidth    = 1 << log2CGWidth;
         const uint32_t      groupHeight   = 1 << log2CGHeight;
         const uint32_t      groupSize     = groupWidth * groupHeight;
         const CoeffScanType scanType      = SCAN_DIAG;
         const SizeType      blkWidthIdx   = gp_sizeIdxInfo->idxFrom( blockWidth  );
         const SizeType      blkHeightIdx  = gp_sizeIdxInfo->idxFrom( blockHeight );
-#if JVET_M0102_INTRA_SUBPARTITIONS
         const ScanElement * scanId2RP     = g_scanOrder[ch][SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx];
         NbInfoSbb*&         sId2NbSbb     = m_scanId2NbInfoSbbArray[hd][vd][ch];
         NbInfoOut*&         sId2NbOut     = m_scanId2NbInfoOutArray[hd][vd][ch];
-#else
-        const ScanElement * scanId2RP     = g_scanOrder[SCAN_GROUPED_4x4][scanType][blkWidthIdx][blkHeightIdx];
-        NbInfoSbb*&         sId2NbSbb     = m_scanId2NbInfoSbbArray[hd][vd];
-        NbInfoOut*&         sId2NbOut     = m_scanId2NbInfoOutArray[hd][vd];
-#endif
         // consider only non-zero-out region
-#if JVET_M0257
         const uint32_t      blkWidthNZOut = std::min<unsigned>( JVET_C0024_ZERO_OUT_TH, blockWidth  );
         const uint32_t      blkHeightNZOut= std::min<unsigned>( JVET_C0024_ZERO_OUT_TH, blockHeight );
-#else
-        const uint32_t      blkWidthNZOut = blockWidth;
-        const uint32_t      blkHeightNZOut= blockHeight;
-#endif
         const uint32_t      totalValues   = blkWidthNZOut * blkHeightNZOut;
 
         sId2NbSbb = new NbInfoSbb[ totalValues ];
@@ -324,19 +289,10 @@ namespace DQIntern
           nbOut.maxDist -= scanId;
         }
 
-#if JVET_M0102_INTRA_SUBPARTITIONS
         m_tuParameters[hd][vd][ch] = new TUParameters( *this, blockWidth, blockHeight, ChannelType(ch) );
-#else
-        for( int chId = 0; chId < MAX_NUM_CHANNEL_TYPE; chId++ )
-        {
-          m_tuParameters[hd][vd][chId] = new TUParameters( *this, blockWidth, blockHeight, ChannelType(chId) );
-        }
-#endif
       }
     }
-#if JVET_M0102_INTRA_SUBPARTITIONS
     }
-#endif
     m_scansInitialized = true;
   }
 
@@ -346,7 +302,6 @@ namespace DQIntern
     {
       return;
     }
-#if JVET_M0102_INTRA_SUBPARTITIONS
     for( int hd = 0; hd <= MAX_CU_DEPTH; hd++ )
     {
       for( int vd = 0; vd <= MAX_CU_DEPTH; vd++ )
@@ -371,32 +326,6 @@ namespace DQIntern
         }
       }
     }
-#else
-    for( int hd = 0; hd <= MAX_CU_DEPTH; hd++ )
-    {
-      for( int vd = 0; vd <= MAX_CU_DEPTH; vd++ )
-      {
-        NbInfoSbb*& sId2NbSbb = m_scanId2NbInfoSbbArray[hd][vd];
-        NbInfoOut*& sId2NbOut = m_scanId2NbInfoOutArray[hd][vd];
-        if( sId2NbSbb )
-        {
-          delete [] sId2NbSbb;
-        }
-        if( sId2NbOut )
-        {
-          delete [] sId2NbOut;
-        }
-        for( int chId = 0; chId < MAX_NUM_CHANNEL_TYPE; chId++ )
-        {
-          TUParameters*& tuPars = m_tuParameters[hd][vd][chId];
-          if( tuPars )
-          {
-            delete tuPars;
-          }
-        }
-      }
-    }
-#endif
     m_scansInitialized = false;
   }
 
@@ -409,31 +338,16 @@ namespace DQIntern
     m_chType              = chType;
     m_width               = width;
     m_height              = height;
-#if JVET_M0257
     const uint32_t nonzeroWidth  = std::min<uint32_t>(JVET_C0024_ZERO_OUT_TH, m_width);
     const uint32_t nonzeroHeight = std::min<uint32_t>(JVET_C0024_ZERO_OUT_TH, m_height);
     m_numCoeff                   = nonzeroWidth * nonzeroHeight;
-#else
-    m_numCoeff            = m_width * m_height;
-#endif
-#if JVET_M0102_INTRA_SUBPARTITIONS
     m_log2SbbWidth        = g_log2SbbSize[m_chType][ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][0];
     m_log2SbbHeight       = g_log2SbbSize[m_chType][ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][1];
-#else
-    const bool      no4x4 = ( ( m_width & 3 ) != 0 || ( m_height & 3 ) != 0 );
-    m_log2SbbWidth        = ( no4x4 ? 1 : 2 );
-    m_log2SbbHeight       = ( no4x4 ? 1 : 2 );
-#endif
     m_log2SbbSize         = m_log2SbbWidth + m_log2SbbHeight;
     m_sbbSize             = ( 1 << m_log2SbbSize );
     m_sbbMask             = m_sbbSize - 1;
-#if JVET_M0257
     m_widthInSbb  = nonzeroWidth >> m_log2SbbWidth;
     m_heightInSbb = nonzeroHeight >> m_log2SbbHeight;
-#else
-    m_widthInSbb          = m_width  >> m_log2SbbWidth;
-    m_heightInSbb         = m_height >> m_log2SbbHeight;
-#endif
     m_numSbb              = m_widthInSbb * m_heightInSbb;
 #if HEVC_USE_MDCS
 #error "MDCS is not supported" // use different function...
@@ -445,21 +359,12 @@ namespace DQIntern
     SizeType        vsbb  = gp_sizeIdxInfo->idxFrom( m_heightInSbb );
     SizeType        hsId  = gp_sizeIdxInfo->idxFrom( m_width  );
     SizeType        vsId  = gp_sizeIdxInfo->idxFrom( m_height );
-#if JVET_M0102_INTRA_SUBPARTITIONS
     m_scanSbbId2SbbPos    = g_scanOrder     [ chType ][ SCAN_UNGROUPED   ][ m_scanType ][ hsbb ][ vsbb ];
     m_scanId2BlkPos       = g_scanOrder     [ chType ][ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ];
     int log2W             = g_aucLog2[ m_width  ];
     int log2H             = g_aucLog2[ m_height ];
     m_scanId2NbInfoSbb    = rom.getNbInfoSbb( log2W, log2H, chType );
     m_scanId2NbInfoOut    = rom.getNbInfoOut( log2W, log2H, chType );
-#else
-    m_scanSbbId2SbbPos    = g_scanOrder     [ SCAN_UNGROUPED   ][ m_scanType ][ hsbb ][ vsbb ];
-    m_scanId2BlkPos       = g_scanOrder     [ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ];
-    int log2W             = g_aucLog2[ m_width  ];
-    int log2H             = g_aucLog2[ m_height ];
-    m_scanId2NbInfoSbb    = rom.getNbInfoSbb( log2W, log2H );
-    m_scanId2NbInfoOut    = rom.getNbInfoOut( log2W, log2H );
-#endif
     m_scanInfo            = new ScanInfo[ m_numCoeff ];
     for( int scanIdx = 0; scanIdx < m_numCoeff; scanIdx++ )
     {
@@ -482,10 +387,8 @@ namespace DQIntern
       scanInfo.spt      = SCAN_SOCSBB;
     else if( scanInfo.eosbb && scanIdx > 0 && scanIdx < m_numCoeff - m_sbbSize )
       scanInfo.spt      = SCAN_EOCSBB;
-#if JVET_M0297_32PT_MTS_ZERO_OUT
     scanInfo.posX = m_scanId2BlkPos[scanIdx].x;
     scanInfo.posY = m_scanId2BlkPos[scanIdx].y;
-#endif
     if( scanIdx )
     {
       const int nextScanIdx = scanIdx - 1;
@@ -575,7 +478,6 @@ namespace DQIntern
     }
     else
     {
-#if JVET_M0102_INTRA_SUBPARTITIONS
       BinFracBits bits;
       bool prevLumaCbf           = false;
       bool lastCbfIsInferred     = false;
@@ -609,10 +511,6 @@ namespace DQIntern
         bits = fracBitsAccess.getFracBitsArray(Ctx::QtCbf[compID](DeriveCtx::CtxQtCbf(compID, tu.depth, tu.cbf[COMPONENT_Cb])));
       }
       cbfDeltaBits = lastCbfIsInferred ? 0 : int32_t(bits.intBits[1]) - int32_t(bits.intBits[0]);
-#else
-      BinFracBits bits = fracBitsAccess.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( compID, tu.depth, tu.cbf[COMPONENT_Cb] ) ) );
-      cbfDeltaBits = int32_t( bits.intBits[1] ) - int32_t( bits.intBits[0] );
-#endif
     }
 
     static const unsigned prefixCtx[] = { 0, 0, 0, 3, 6, 10, 15, 21 };
@@ -632,11 +530,7 @@ namespace DQIntern
       const unsigned      lastShift   = ( compID == COMPONENT_Y ? (log2Size+1)>>2 : Clip3<unsigned>(0,2,size>>3) );
       const unsigned      lastOffset  = ( compID == COMPONENT_Y ? ( prefixCtx[log2Size] ) : 0 );
       uint32_t            sumFBits    = 0;
-#if JVET_M0257
       unsigned            maxCtxId    = g_uiGroupIdx[std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, size) - 1];
-#else
-      unsigned            maxCtxId    = g_uiGroupIdx[ size - 1 ];
-#endif
       for( unsigned ctxId = 0; ctxId < maxCtxId; ctxId++ )
       {
         const BinFracBits bits  = fracBitsAccess.getFracBitsArray( ctxSetLast( lastOffset + ( ctxId >> lastShift ) ) );
@@ -644,11 +538,7 @@ namespace DQIntern
         sumFBits               +=            bits.intBits[1];
       }
       ctxBits  [ maxCtxId ]     = sumFBits + ( maxCtxId>3 ? ((maxCtxId-2)>>1)<<SCALE_BITS : 0 ) + bitOffset;
-#if JVET_M0257
       for (unsigned pos = 0; pos < std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, size); pos++)
-#else
-      for( unsigned pos = 0; pos < size; pos++ )
-#endif
       {
         lastBits[ pos ]         = ctxBits[ g_uiGroupIdx[ pos ] ];
       }
@@ -793,24 +683,15 @@ namespace DQIntern
     const int         channelBitDepth       = sps.getBitDepth( chType );
     const int         maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange( chType );
     const int         nomTransformShift     = getTransformShift( channelBitDepth, area.size(), maxLog2TrDynamicRange );
-#if JVET_M0464_UNI_MTS
     const bool        clipTransformShift    = ( tu.mtsIdx==1 && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag() );
-#else
-    const bool        clipTransformShift    = ( tu.transformSkip[ compID ] && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag() );
-#endif
     const int         transformShift        = ( clipTransformShift ? std::max<int>( 0, nomTransformShift ) : nomTransformShift );
 
     // quant parameters
     m_QShift                    = QUANT_SHIFT  - 1 + qpPer + transformShift;
     m_QAdd                      = -( ( 3 << m_QShift ) >> 1 );
 #if HM_QTBT_AS_IN_JEM_QUANT
-#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
     Intermediate_Int  invShift  = IQUANT_SHIFT + 1 - qpPer - transformShift + ( TU::needsBlockSizeTrafoScale( tu, compID ) ? ADJ_DEQUANT_SHIFT : 0 );
     m_QScale                    = ( TU::needsSqrt2Scale( tu, compID ) ? ( g_quantScales[ qpRem ] * 181 ) >> 7 : g_quantScales[ qpRem ] );
-#else
-    Intermediate_Int  invShift  = IQUANT_SHIFT + 1 - qpPer - transformShift + ( TU::needsBlockSizeTrafoScale( area ) ? ADJ_DEQUANT_SHIFT : 0 );
-    m_QScale                    = ( TU::needsSqrt2Scale( area ) ? ( g_quantScales[ qpRem ] * 181 ) >> 7 : g_quantScales[ qpRem ] );
-#endif
 #else
     Intermediate_Int  invShift  = IQUANT_SHIFT + 1 - qpPer - transformShift;
     m_QScale                    = g_quantScales   [ qpRem ];
@@ -855,11 +736,7 @@ namespace DQIntern
 #else
     const CoeffScanType scanType  = SCAN_DIAG;
 #endif
-#if JVET_M0102_INTRA_SUBPARTITIONS
     const ScanElement *scan = g_scanOrder[toChannelType(compID)][SCAN_GROUPED_4x4][scanType][hsId][vsId];
-#else
-    const ScanElement * scan      = g_scanOrder[SCAN_GROUPED_4x4][scanType][hsId][vsId];
-#endif
     const TCoeff*       qCoeff    = tu.getCoeffs( compID ).buf;
           TCoeff*       tCoeff    = recCoeff.buf;
 
@@ -890,20 +767,11 @@ namespace DQIntern
     const TCoeff      minTCoeff             = -( 1 << maxLog2TrDynamicRange );
     const TCoeff      maxTCoeff             =  ( 1 << maxLog2TrDynamicRange ) - 1;
     const int         nomTransformShift     = getTransformShift( channelBitDepth, area.size(), maxLog2TrDynamicRange );
-#if JVET_M0464_UNI_MTS
     const bool        clipTransformShift    = ( tu.mtsIdx==1 && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag() );
-#else
-    const bool        clipTransformShift    = ( tu.transformSkip[ compID ] && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag() );
-#endif
     const int         transformShift        = ( clipTransformShift ? std::max<int>( 0, nomTransformShift ) : nomTransformShift );
 #if HM_QTBT_AS_IN_JEM_QUANT
-#if JVET_M0119_NO_TRANSFORM_SKIP_QUANTISATION_ADJUSTMENT
     Intermediate_Int  shift                 = IQUANT_SHIFT + 1 - qpPer - transformShift + ( TU::needsBlockSizeTrafoScale( tu, compID ) ? ADJ_DEQUANT_SHIFT : 0 );
     Intermediate_Int  invQScale             = g_invQuantScales[ qpRem ] * ( TU::needsSqrt2Scale( tu, compID ) ? 181 : 1 );
-#else
-    Intermediate_Int  shift                 = IQUANT_SHIFT + 1 - qpPer - transformShift + ( TU::needsBlockSizeTrafoScale( area ) ? ADJ_DEQUANT_SHIFT : 0 );
-    Intermediate_Int  invQScale             = g_invQuantScales[ qpRem ] * ( TU::needsSqrt2Scale( area ) ? 181 : 1 );
-#endif
 #else
     Intermediate_Int  shift                 = IQUANT_SHIFT + 1 - qpPer - transformShift;
     Intermediate_Int  invQScale             = g_invQuantScales[ qpRem ];
@@ -1005,7 +873,6 @@ namespace DQIntern
   };
 
 #define RICEMAX 32
-#if JVET_M0470
   const int32_t g_goRiceBits[4][RICEMAX] =
   {
       { 32768,	65536,	98304,	131072,	163840,	196608,	262144,	262144,	327680,	327680,	327680,	327680,	393216,	393216,	393216,	393216,	393216,	393216,	393216,	393216,	458752,	458752,	458752,	458752,	458752,	458752,	458752,	458752,	458752,	458752,	458752,	458752},
@@ -1013,15 +880,6 @@ namespace DQIntern
       { 98304,	98304,	98304,	98304,	131072,	131072,	131072,	131072,	163840,	163840,	163840,	163840,	196608,	196608,	196608,	196608,	229376,	229376,	229376,	229376,	262144,	262144,	262144,	262144,	327680,	327680,	327680,	327680,	327680,	327680,	327680,	327680},
       { 131072,	131072,	131072,	131072,	131072,	131072,	131072,	131072,	163840,	163840,	163840,	163840,	163840,	163840,	163840,	163840,	196608,	196608,	196608,	196608,	196608,	196608,	196608,	196608,	229376,	229376,	229376,	229376,	229376,	229376,	229376,	229376}
   };
-#else
-  const int32_t g_goRiceBits[4][RICEMAX] =
-  {
-    {  32768,  65536,  98304, 131072, 163840, 196608, 229376, 294912, 294912, 360448, 360448, 360448, 360448, 425984, 425984, 425984, 425984, 425984, 425984, 425984, 425984, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520, 491520 },
-    {  65536,  65536,  98304,  98304, 131072, 131072, 163840, 163840, 196608, 196608, 229376, 229376, 294912, 294912, 294912, 294912, 360448, 360448, 360448, 360448, 360448, 360448, 360448, 360448, 425984, 425984, 425984, 425984, 425984, 425984, 425984, 425984 },
-    {  98304,  98304,  98304,  98304, 131072, 131072, 131072, 131072, 163840, 163840, 163840, 163840, 196608, 196608, 196608, 196608, 229376, 229376, 229376, 229376, 262144, 262144, 262144, 262144, 294912, 294912, 294912, 294912, 360448, 360448, 360448, 360448 },
-    { 131072, 131072, 131072, 131072, 131072, 131072, 131072, 131072, 163840, 163840, 163840, 163840, 163840, 163840, 163840, 163840, 196608, 196608, 196608, 196608, 196608, 196608, 196608, 196608, 229376, 229376, 229376, 229376, 229376, 229376, 229376, 229376 }
-  };
-#endif
 
   class State
   {
@@ -1038,11 +896,7 @@ namespace DQIntern
     {
       m_rdCost        = std::numeric_limits<int64_t>::max()>>1;
       m_numSigSbb     = 0;
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
       m_remRegBins    = 4;  // just large enough for last scan pos
-#else
-      m_remRegBins    = 3;  // just large enough for last scan pos
-#endif
       m_refSbbCtxId   = -1;
       m_sigFracBits   = m_sigFracBitsArray[ 0 ];
       m_coeffFracBits = m_gtxFracBitsArray[ 0 ];
@@ -1056,11 +910,7 @@ namespace DQIntern
       int64_t         rdCostA   = m_rdCost + pqDataA.deltaDist;
       int64_t         rdCostB   = m_rdCost + pqDataB.deltaDist;
       int64_t         rdCostZ   = m_rdCost;
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
       if( m_remRegBins >= 4 )
-#else
-      if( m_remRegBins >= 3 )
-#endif
       {
         if( pqDataA.absLevel < 4 )
           rdCostA += m_coeffFracBits.bits[pqDataA.absLevel];
@@ -1156,7 +1006,6 @@ namespace DQIntern
       }
     }
 
-#if JVET_M0297_32PT_MTS_ZERO_OUT
     inline void checkRdCostSkipSbbZeroOut(Decision &decision) const
     {
       int64_t rdCost = m_rdCost + m_sbbFracBits.intBits[0];
@@ -1164,7 +1013,6 @@ namespace DQIntern
       decision.absLevel = 0;
       decision.prevId = 4 + m_stateId;
     }
-#endif
 
   private:
     int64_t                   m_rdCost;
@@ -1209,22 +1057,14 @@ namespace DQIntern
         m_sbbFracBits           = prvState->m_sbbFracBits;
         m_remRegBins            = prvState->m_remRegBins - 1;
         m_goRicePar             = prvState->m_goRicePar;
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
         if( m_remRegBins >= 4 )
-#else
-        if( m_remRegBins >= 3 )
-#endif
         {
           TCoeff rem = (decision.absLevel - 4) >> 1;
           if( m_goRicePar < 3 && rem > (3<<m_goRicePar)-1 )
           {
             m_goRicePar++;
           }
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
           m_remRegBins -= (decision.absLevel < 2 ? decision.absLevel : 3);
-#else
-          m_remRegBins -= std::min<TCoeff>( decision.absLevel, 2 );
-#endif
         }
         ::memcpy( m_absLevelsAndCtxInit, prvState->m_absLevelsAndCtxInit, 48*sizeof(uint8_t) );
       }
@@ -1234,19 +1074,11 @@ namespace DQIntern
         m_refSbbCtxId   = -1;
         if ( scanInfo.sbbSize == 4 )
         {
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
           m_remRegBins = MAX_NUM_REG_BINS_2x2SUBBLOCK - (decision.absLevel < 2 ? decision.absLevel : 3);
-#else
-          m_remRegBins  = MAX_NUM_REG_BINS_2x2SUBBLOCK - MAX_NUM_GT2_BINS_2x2SUBBLOCK - std::min<TCoeff>( decision.absLevel, 2 );
-#endif
         }
         else
         {
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
           m_remRegBins = MAX_NUM_REG_BINS_4x4SUBBLOCK - (decision.absLevel < 2 ? decision.absLevel : 3);
-#else
-          m_remRegBins  = MAX_NUM_REG_BINS_4x4SUBBLOCK - MAX_NUM_GT2_BINS_4x4SUBBLOCK - std::min<TCoeff>( decision.absLevel, 2 );
-#endif
         }
         m_goRicePar     = ( ((decision.absLevel - 4) >> 1) > (3<<0)-1 ? 1 : 0 );
         ::memset( m_absLevelsAndCtxInit, 0, 48*sizeof(uint8_t) );
@@ -1255,20 +1087,12 @@ namespace DQIntern
       uint8_t* levels               = reinterpret_cast<uint8_t*>(m_absLevelsAndCtxInit);
       levels[ scanInfo.insidePos ]  = (uint8_t)std::min<TCoeff>( 255, decision.absLevel );
 
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
       if (m_remRegBins >= 4)
-#else
-      if (m_remRegBins >= 3)
-#endif
       {
         TCoeff  tinit = m_absLevelsAndCtxInit[8 + scanInfo.nextInsidePos];
         TCoeff  sumAbs1 = (tinit >> 3) & 31;
         TCoeff  sumNum = tinit & 7;
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
 #define UPDATE(k) {TCoeff t=levels[scanInfo.nextNbInfoSbb.inPos[k]]; sumAbs1+=std::min<TCoeff>(4+(t&1),t); sumNum+=!!t; }
-#else
-#define UPDATE(k) {TCoeff t=levels[scanInfo.nextNbInfoSbb.inPos[k]]; sumAbs1+=std::min<TCoeff>(2+(t&1),t); sumNum+=!!t; }
-#endif
         if (numIPos == 1)
         {
           UPDATE(0);
@@ -1406,19 +1230,11 @@ namespace DQIntern
     currState.m_numSigSbb     = 0;
     if (scanInfo.sbbSize == 4)
     {
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
       currState.m_remRegBins  = MAX_NUM_REG_BINS_2x2SUBBLOCK;
-#else
-      currState.m_remRegBins  = MAX_NUM_REG_BINS_2x2SUBBLOCK - MAX_NUM_GT2_BINS_2x2SUBBLOCK;
-#endif
     }
     else
     {
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
       currState.m_remRegBins  = MAX_NUM_REG_BINS_4x4SUBBLOCK;
-#else
-      currState.m_remRegBins  = MAX_NUM_REG_BINS_4x4SUBBLOCK - MAX_NUM_GT2_BINS_4x4SUBBLOCK;
-#endif
     }
     currState.m_goRicePar     = 0;
     currState.m_refSbbCtxId   = currState.m_stateId;
@@ -1433,11 +1249,7 @@ namespace DQIntern
       if( nbOut->num )
       {
         TCoeff sumAbs = 0, sumAbs1 = 0, sumNum = 0;
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
 #define UPDATE(k) {TCoeff t=absLevels[nbOut->outPos[k]]; sumAbs+=t; sumAbs1+=std::min<TCoeff>(4+(t&1),t); sumNum+=!!t; }
-#else
-#define UPDATE(k) {TCoeff t=absLevels[nbOut->outPos[k]]; sumAbs+=t; sumAbs1+=std::min<TCoeff>(2+(t&1),t); sumNum+=!!t; }
-#endif
         UPDATE(0);
         if( nbOut->num > 1 )
         {
@@ -1483,13 +1295,8 @@ namespace DQIntern
     void    dequant ( const TransformUnit& tu,  CoeffBuf& recCoeff, const ComponentID compID, const QpParam& cQP )  const;
 
   private:
-#if JVET_M0297_32PT_MTS_ZERO_OUT
     void    xDecideAndUpdate  ( const TCoeff absCoeff, const ScanInfo& scanInfo, bool zeroOut );
     void    xDecide           ( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions, bool zeroOut );
-#else
-    void    xDecideAndUpdate  ( const TCoeff absCoeff, const ScanInfo& scanInfo );
-    void    xDecide           ( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions );
-#endif
 
   private:
     CommonCtx   m_commonCtx;
@@ -1527,15 +1334,10 @@ namespace DQIntern
 #undef  DINIT
 
 
-#if JVET_M0297_32PT_MTS_ZERO_OUT
   void DepQuant::xDecide( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions, bool zeroOut)
-#else
-  void DepQuant::xDecide( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions)
-#endif
   {
     ::memcpy( decisions, startDec, 8*sizeof(Decision) );
 
-#if JVET_M0297_32PT_MTS_ZERO_OUT
     if( zeroOut )
     {
       if( spt==SCAN_EOCSBB )
@@ -1547,7 +1349,6 @@ namespace DQIntern
       }
       return;
     }
-#endif
 
     PQData  pqData[4];
     m_quant.preQuantCoeff( absCoeff, pqData );
@@ -1566,21 +1367,13 @@ namespace DQIntern
     m_startState.checkRdCostStart( lastOffset, pqData[2], decisions[2] );
   }
 
-#if JVET_M0297_32PT_MTS_ZERO_OUT
   void DepQuant::xDecideAndUpdate( const TCoeff absCoeff, const ScanInfo& scanInfo, bool zeroOut )
-#else
-  void DepQuant::xDecideAndUpdate( const TCoeff absCoeff, const ScanInfo& scanInfo )
-#endif
   {
     Decision* decisions = m_trellis[ scanInfo.scanIdx ];
 
     std::swap( m_prevStates, m_currStates );
 
-#if JVET_M0297_32PT_MTS_ZERO_OUT
     xDecide( scanInfo.spt, absCoeff, lastOffset(scanInfo.scanIdx), decisions, zeroOut );
-#else
-    xDecide( scanInfo.spt, absCoeff, lastOffset(scanInfo.scanIdx), decisions);
-#endif
 
     if( scanInfo.scanIdx )
     {
@@ -1593,11 +1386,7 @@ namespace DQIntern
         m_currStates[3].updateStateEOS( scanInfo, m_prevStates, m_skipStates, decisions[3] );
         ::memcpy( decisions+4, decisions, 4*sizeof(Decision) );
       }
-#if JVET_M0297_32PT_MTS_ZERO_OUT
       else if( !zeroOut )
-#else
-      else
-#endif
       {
         switch( scanInfo.nextNbInfoSbb.num )
         {
@@ -1684,38 +1473,20 @@ namespace DQIntern
     }
     m_startState.init();
 
-#if JVET_M0297_32PT_MTS_ZERO_OUT
     int effWidth = tuPars.m_width, effHeight = tuPars.m_height;
     bool zeroOut = false;
-#if JVET_M0140_SBT
-#if JVET_M0464_UNI_MTS
     if( ( tu.mtsIdx > 1 || ( tu.cu->sbtInfo != 0 && tuPars.m_height <= 32 && tuPars.m_width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#else
-    if( ( ( tu.cu->emtFlag && !tu.transformSkip[ compID ] ) || ( tu.cu->sbtInfo != 0 && tuPars.m_height <= 32 && tuPars.m_width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#endif
-#else
-#if JVET_M0464_UNI_MTS
-    if( tu.mtsIdx > 1 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#else
-    if( tu.cu->emtFlag && !tu.transformSkip[compID] && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#endif
-#endif
     {
       effHeight = ( tuPars.m_height == 32 ) ? 16 : tuPars.m_height;
       effWidth = ( tuPars.m_width == 32 ) ? 16 : tuPars.m_width;
       zeroOut  = ( effHeight < tuPars.m_height || effWidth < tuPars.m_width );
     }
-#endif
 
     //===== populate trellis =====
     for( int scanIdx = firstTestPos; scanIdx >= 0; scanIdx-- )
     {
       const ScanInfo& scanInfo = tuPars.m_scanInfo[ scanIdx ];
-#if JVET_M0297_32PT_MTS_ZERO_OUT
       xDecideAndUpdate( abs( tCoeff[ scanInfo.rasterPos ] ), scanInfo, zeroOut && ( scanInfo.posX >= effWidth || scanInfo.posY >= effHeight ) );
-#else
-      xDecideAndUpdate( abs( tCoeff[ scanInfo.rasterPos ] ), scanInfo );
-#endif
     }
 
     //===== find best path =====

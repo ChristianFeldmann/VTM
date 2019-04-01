@@ -53,9 +53,7 @@ enum PictureType
 {
   PIC_RECONSTRUCTION = 0,
   PIC_ORIGINAL,
-#if JVET_M0427_INLOOP_RESHAPER
   PIC_TRUE_ORIGINAL,
-#endif
   PIC_PREDICTION,
   PIC_RESIDUAL,
   PIC_ORG_RESI,
@@ -82,9 +80,7 @@ public:
 
   Picture         *picture;
   CodingStructure *parent;
-#if JVET_M0246_AFFINE_AMVR
   CodingStructure *bestCS;
-#endif
   Slice           *slice;
 
   UnitScale        unitScale[MAX_NUM_COMPONENT];
@@ -94,16 +90,12 @@ public:
   int         prevQP[MAX_NUM_CHANNEL_TYPE];
   int         currQP[MAX_NUM_CHANNEL_TYPE];
   int         chromaQpAdj;
-#if JVET_M0170_MRG_SHARELIST
   Position    sharedBndPos;
   Size        sharedBndSize;
-#endif
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;
-#if JVET_M0132_APS
   APS *      aps;
-#endif
 #if HEVC_VPS
   const VPS *vps;
 #endif
@@ -132,19 +124,11 @@ public:
 
   const CodingUnit     *getCU(const Position &pos, const ChannelType _chType) const;
   const PredictionUnit *getPU(const Position &pos, const ChannelType _chType) const;
-#if JVET_M0102_INTRA_SUBPARTITIONS
   const TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1) const;
-#else
-  const TransformUnit  *getTU(const Position &pos, const ChannelType _chType) const;
-#endif
 
   CodingUnit     *getCU(const Position &pos, const ChannelType _chType);
   PredictionUnit *getPU(const Position &pos, const ChannelType _chType);
-#if JVET_M0102_INTRA_SUBPARTITIONS
   TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1);
-#else
-  TransformUnit  *getTU(const Position &pos, const ChannelType _chType);
-#endif
 
   const CodingUnit     *getCU(const ChannelType &_chType) const { return getCU(area.blocks[_chType].pos(), _chType); }
   const PredictionUnit *getPU(const ChannelType &_chType) const { return getPU(area.blocks[_chType].pos(), _chType); }
@@ -182,13 +166,9 @@ public:
   static_vector<double, NUM_ENC_FEATURES> features;
 
   double      cost;
-#if JVET_M0428_ENC_DB_OPT
   bool        useDbCost;
   double      costDbOffset;
-#endif
-#if JVET_M0102_INTRA_SUBPARTITIONS
   double      lumaCost;
-#endif
   uint64_t      fracBits;
   Distortion  dist;
   Distortion  interHad;

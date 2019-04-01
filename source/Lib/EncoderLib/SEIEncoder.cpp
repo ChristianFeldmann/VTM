@@ -359,7 +359,6 @@ void SEIEncoder::initSEITempMotionConstrainedTileSets (SEITempMotionConstrainedT
 
   if(pps->getTilesEnabledFlag())
   {
-#if JVET_M0445_MCTS
     if (m_pcCfg->getMCTSEncConstraint())
     {
       sei->m_mc_all_tiles_exact_sample_value_match_flag = true;
@@ -370,7 +369,6 @@ void SEIEncoder::initSEITempMotionConstrainedTileSets (SEITempMotionConstrainedT
     }
     else
     {
-#endif
     sei->m_mc_all_tiles_exact_sample_value_match_flag = false;
     sei->m_each_tile_one_tile_set_flag                = false;
     sei->m_limited_tile_set_display_flag              = false;
@@ -391,9 +389,7 @@ void SEIEncoder::initSEITempMotionConstrainedTileSets (SEITempMotionConstrainedT
       sei->tileSetData(i).m_mcts_tier_level_idc_present_flag = false;
     }
   }
-#if JVET_M0445_MCTS
   }
-#endif
   else
   {
     CHECK(!(!"Tile is not enabled"), "Unspecified error");

@@ -193,11 +193,7 @@ static void fullPelCopyAVX2( const ClpRng& clpRng, const void*_src, int srcStrid
 
 
 template<X86_VEXT vext, bool isFirst, bool isLast>
-#if JVET_M0147_DMVR
 static void simdFilterCopy( const ClpRng& clpRng, const Pel* src, int srcStride, int16_t* dst, int dstStride, int width, int height, bool biMCForDMVR)
-#else
-static void simdFilterCopy( const ClpRng& clpRng, const Pel* src, int srcStride, int16_t* dst, int dstStride, int width, int height )
-#endif
 {
 #if !HM_JEM_CLIP_PEL
   if( vext >= AVX2 && ( width % 16 ) == 0 )
@@ -215,11 +211,7 @@ static void simdFilterCopy( const ClpRng& clpRng, const Pel* src, int srcStride,
   else
 #endif
   { //Scalar
-#if JVET_M0147_DMVR
     InterpolationFilter::filterCopy<isFirst, isLast>( clpRng, src, srcStride, dst, dstStride, width, height, biMCForDMVR);
-#else
-    InterpolationFilter::filterCopy<isFirst, isLast>( clpRng, src, srcStride, dst, dstStride, width, height );
-#endif
   }
 }
 
@@ -987,7 +979,6 @@ static void simdInterpolateN2_M4( const int16_t* src, int srcStride, int16_t *ds
     dst += dstStride;
   }
 }
-#if JVET_M0147_DMVR
 #ifdef USE_AVX2
 static inline __m256i simdInterpolateLuma10Bit2P16(int16_t const *src1, int srcStride, __m256i *mmCoeff, const __m256i & mmOffset, __m128i &mmShift)
 {
@@ -1075,14 +1066,9 @@ static void simdInterpolateN2_10BIT_M4(const int16_t* src, int srcStride, int16_
     dst += dstStride;
   }
 }
-#endif
 
 template<X86_VEXT vext, int N, bool isVertical, bool isFirst, bool isLast>
-#if JVET_M0147_DMVR
 static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, TFilterCoeff const *coeff, bool biMCForDMVR)
-#else
-static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, TFilterCoeff const *coeff )
-#endif
 {
   int row, col;
 
@@ -1128,7 +1114,6 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
     offset = ( isFirst ) ? -IF_INTERNAL_OFFS << shift : 0;
   }
 
-#if JVET_M0147_DMVR
   if (biMCForDMVR)
   {
     if( isFirst )
@@ -1142,7 +1127,6 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
       offset = 1 << (shift - 1);
     }
   }
-#endif
   if( clpRng.bd <= 10 )
   {
     if( N == 8 && !( width & 0x07 ) )
@@ -1191,7 +1175,6 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
         simdInterpolateVerM4<vext, 4, isLast>( src, srcStride, dst, dstStride, width, height, shift, offset, clpRng, c );
       return;
     }
-#if JVET_M0147_DMVR
     else if (biMCForDMVR)
     {
       if (N == 2 && !(width & 0x03))
@@ -1200,7 +1183,6 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
         return;
       }
     }
-#endif
     else if( N == 2 && !( width & 0x07 ) )
     {
       simdInterpolateN2_M8<vext, isLast>( src, srcStride, dst, dstStride, cStride, width, height, shift, offset, clpRng, c );

@@ -746,17 +746,13 @@ void Picture::create(const ChromaFormat &_chromaFormat, const Size &size, const 
   if( !_decoder )
   {
     M_BUFS( 0, PIC_ORIGINAL ).    create( _chromaFormat, a );
-#if JVET_M0427_INLOOP_RESHAPER
     M_BUFS( 0, PIC_TRUE_ORIGINAL ). create( _chromaFormat, a );
-#endif
   }
 #if !KEEP_PRED_AND_RESI_SIGNALS
 
   m_ctuArea = UnitArea( _chromaFormat, Area( Position{ 0, 0 }, Size( _maxCUSize, _maxCUSize ) ) );
 #endif
-#if JVET_M0253_HASH_ME
   m_hashMap.clearAll();
-#endif
 }
 
 void Picture::destroy()
@@ -772,9 +768,7 @@ void Picture::destroy()
   {
     M_BUFS( jId, t ).destroy();
   }
-#if JVET_M0253_HASH_ME
   m_hashMap.clearAll();
-#endif
   if( cs )
   {
     cs->destroy();
@@ -858,14 +852,12 @@ const CPelUnitBuf Picture::getOrigBuf(const UnitArea &unit) const { return getBu
        PelUnitBuf Picture::getOrigBuf()                           { return M_BUFS(0,    PIC_ORIGINAL); }
 const CPelUnitBuf Picture::getOrigBuf()                     const { return M_BUFS(0,    PIC_ORIGINAL); }
 
-#if JVET_M0427_INLOOP_RESHAPER
        PelBuf     Picture::getOrigBuf(const ComponentID compID)       { return getBuf(compID, PIC_ORIGINAL); }
 const CPelBuf     Picture::getOrigBuf(const ComponentID compID) const { return getBuf(compID, PIC_ORIGINAL); }
        PelUnitBuf Picture::getTrueOrigBuf()                           { return M_BUFS(0, PIC_TRUE_ORIGINAL); }
 const CPelUnitBuf Picture::getTrueOrigBuf()                     const { return M_BUFS(0, PIC_TRUE_ORIGINAL); }
        PelBuf     Picture::getTrueOrigBuf(const CompArea &blk)        { return getBuf(blk, PIC_TRUE_ORIGINAL); }
 const CPelBuf     Picture::getTrueOrigBuf(const CompArea &blk)  const { return getBuf(blk, PIC_TRUE_ORIGINAL); }
-#endif
        PelBuf     Picture::getPredBuf(const CompArea &blk)        { return getBuf(blk,  PIC_PREDICTION); }
 const CPelBuf     Picture::getPredBuf(const CompArea &blk)  const { return getBuf(blk,  PIC_PREDICTION); }
        PelUnitBuf Picture::getPredBuf(const UnitArea &unit)       { return getBuf(unit, PIC_PREDICTION); }
@@ -885,11 +877,7 @@ const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit)     const { return g
        PelUnitBuf Picture::getRecoBuf()                               { return M_BUFS(scheduler.getSplitPicId(), PIC_RECONSTRUCTION); }
 const CPelUnitBuf Picture::getRecoBuf()                         const { return M_BUFS(scheduler.getSplitPicId(), PIC_RECONSTRUCTION); }
 
-#if JVET_M0132_APS
 void Picture::finalInit(const SPS& sps, const PPS& pps, APS& aps)
-#else
-void Picture::finalInit( const SPS& sps, const PPS& pps )
-#endif
 {
   for( auto &sei : SEIs )
   {
@@ -925,9 +913,7 @@ void Picture::finalInit( const SPS& sps, const PPS& pps )
   cs->picture = this;
   cs->slice   = nullptr;  // the slices for this picture have not been set at this point. update cs->slice after swapSliceObject()
   cs->pps     = &pps;
-#if JVET_M0132_APS
   cs->aps = &aps;
-#endif
 #if HEVC_VPS
   cs->vps     = nullptr;
 #endif
@@ -950,9 +936,7 @@ void Picture::allocateNewSlice()
   slices.push_back(new Slice);
   Slice& slice = *slices.back();
 
-#if JVET_M0132_APS
   slice.setAPS(cs->aps);
-#endif
   slice.setPPS( cs->pps);
   slice.setSPS( cs->sps);
   if(slices.size()>=2)
@@ -966,17 +950,13 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
 {
   p->setSPS(cs->sps);
   p->setPPS(cs->pps);
-#if JVET_M0132_APS
   p->setAPS(cs->aps);
-#endif
 
   Slice * pTmp = slices[i];
   slices[i] = p;
   pTmp->setSPS(0);
   pTmp->setPPS(0);
-#if JVET_M0132_APS
   pTmp->setAPS(0);
-#endif
   return pTmp;
 }
 
@@ -1088,20 +1068,12 @@ void Picture::extendPicBorder()
 
 PelBuf Picture::getBuf( const ComponentID compID, const PictureType &type )
 {
-#if JVET_M0427_INLOOP_RESHAPER
   return M_BUFS( ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
-#else
-  return M_BUFS( ( type == PIC_ORIGINAL ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
-#endif
 }
 
 const CPelBuf Picture::getBuf( const ComponentID compID, const PictureType &type ) const
 {
-#if JVET_M0427_INLOOP_RESHAPER
   return M_BUFS( ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
-#else
-  return M_BUFS( ( type == PIC_ORIGINAL ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
-#endif
 }
 
 PelBuf Picture::getBuf( const CompArea &blk, const PictureType &type )
@@ -1112,11 +1084,7 @@ PelBuf Picture::getBuf( const CompArea &blk, const PictureType &type )
   }
 
 #if ENABLE_SPLIT_PARALLELISM
-#if JVET_M0427_INLOOP_RESHAPER
   const int jId = ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
-#else
-  const int jId = ( type == PIC_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
-#endif
 
 #endif
 #if !KEEP_PRED_AND_RESI_SIGNALS
@@ -1141,11 +1109,7 @@ const CPelBuf Picture::getBuf( const CompArea &blk, const PictureType &type ) co
   }
 
 #if ENABLE_SPLIT_PARALLELISM
-#if JVET_M0427_INLOOP_RESHAPER
   const int jId = ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
-#else
-  const int jId = ( type == PIC_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
-#endif
 
 #endif
 #if !KEEP_PRED_AND_RESI_SIGNALS
@@ -1189,11 +1153,7 @@ const CPelUnitBuf Picture::getBuf( const UnitArea &unit, const PictureType &type
 Pel* Picture::getOrigin( const PictureType &type, const ComponentID compID ) const
 {
 #if ENABLE_SPLIT_PARALLELISM
-#if JVET_M0427_INLOOP_RESHAPER
   const int jId = ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
-#else
-  const int jId = ( type == PIC_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
-#endif
 #endif
   return M_BUFS( jId, type ).getOrigin( compID );
 
@@ -1219,7 +1179,6 @@ bool Picture::getSpliceFull()
   return true;
 }
 
-#if JVET_M0253_HASH_ME
 void Picture::addPictureToHashMapForInter()
 {
   int picWidth = slices[0]->getSPS()->getPicWidthInLumaSamples();
@@ -1278,4 +1237,3 @@ void Picture::addPictureToHashMapForInter()
     }
   }
 }
-#endif

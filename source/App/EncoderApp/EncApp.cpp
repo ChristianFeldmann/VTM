@@ -121,40 +121,20 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoSaoConstraintFlag                               ( !m_bUseSAO );
   m_cEncLib.setNoAlfConstraintFlag                               ( !m_alf );
   m_cEncLib.setNoPcmConstraintFlag                               ( !m_usePCM );
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   m_cEncLib.setNoRefWraparoundConstraintFlag                     ( m_bNoRefWraparoundConstraintFlag );
-#endif
   m_cEncLib.setNoTemporalMvpConstraintFlag                       ( m_TMVPModeId ? false : true );
   m_cEncLib.setNoSbtmvpConstraintFlag                            ( m_SubPuMvpMode ? false : true );
   m_cEncLib.setNoAmvrConstraintFlag                              ( m_bNoAmvrConstraintFlag );
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   m_cEncLib.setNoBdofConstraintFlag                              ( !m_BIO );
-#endif
   m_cEncLib.setNoCclmConstraintFlag                              ( m_LMChroma ? false : true );
-#if JVET_M0464_UNI_MTS
-#if JVET_M0303_IMPLICIT_MTS
   m_cEncLib.setNoMtsConstraintFlag                               ( (m_MTS || m_MTSImplicit) ? false : true );
-#else
-  m_cEncLib.setNoMtsConstraintFlag                               ( m_MTS ? false : true );
-#endif
-#else
-#if JVET_M0303_IMPLICIT_MTS
-  m_cEncLib.setNoMtsConstraintFlag                               ( (m_EMT || m_MTSImplicit) ? false : true );
-#else
-  m_cEncLib.setNoMtsConstraintFlag                               ( m_EMT ? false : true );
-#endif
-#endif
   m_cEncLib.setNoAffineMotionConstraintFlag                      ( !m_Affine );
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   m_cEncLib.setNoGbiConstraintFlag                               ( !m_GBi );
   m_cEncLib.setNoMhIntraConstraintFlag                           ( !m_MHIntra );
   m_cEncLib.setNoTriangleConstraintFlag                          ( !m_Triangle );
-#endif
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
-#if JVET_M0451_INTEROPERABILITY_POINT_SYNTAX
   m_cEncLib.setNoCurrPicRefConstraintFlag                        ( !m_IBCMode );
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
-#endif
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
   m_cEncLib.setNoSignDataHidingConstraintFlag                    ( !m_signDataHidingEnabledFlag );
 
@@ -216,13 +196,8 @@ void EncApp::xInitLibCfg()
 
   //====== Quality control ========
   m_cEncLib.setMaxDeltaQP                                        ( m_iMaxDeltaQP  );
-#if JVET_M0113_M0188_QG_SIZE
   m_cEncLib.setCuQpDeltaSubdiv                                   ( m_cuQpDeltaSubdiv );
   m_cEncLib.setCuChromaQpOffsetSubdiv                            ( m_cuChromaQpOffsetSubdiv );
-#else
-  m_cEncLib.setMaxCuDQPDepth                                     ( m_iMaxCuDQPDepth  );
-  m_cEncLib.setDiffCuChromaQpOffsetDepth                         ( m_diffCuChromaQpOffsetDepth );
-#endif
   m_cEncLib.setChromaCbQpOffset                                  ( m_cbQpOffset     );
   m_cEncLib.setChromaCrQpOffset                                  ( m_crQpOffset  );
   m_cEncLib.setChromaCbQpOffsetDualTree                          ( m_cbQpOffsetDualTree );
@@ -274,26 +249,13 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setAffineType                                        ( m_AffineType );
   m_cEncLib.setBIO                                               (m_BIO);
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
   m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
-#endif
-#if JVET_M0464_UNI_MTS
   m_cEncLib.setIntraMTS                                          ( m_MTS & 1 );
   m_cEncLib.setIntraMTSMaxCand                                   ( m_MTSIntraMaxCand );
   m_cEncLib.setInterMTS                                          ( ( m_MTS >> 1 ) & 1 );
   m_cEncLib.setInterMTSMaxCand                                   ( m_MTSInterMaxCand );
-#else
-  m_cEncLib.setIntraEMT                                          ( m_EMT & 1 );
-  m_cEncLib.setFastIntraEMT                                      ( m_FastEMT & m_EMT & 1 );
-  m_cEncLib.setInterEMT                                          ( ( m_EMT >> 1 ) & 1 );
-  m_cEncLib.setFastInterEMT                                      ( ( m_FastEMT >> 1 ) & ( m_EMT >> 1 ) & 1 );
-#endif
-#if JVET_M0303_IMPLICIT_MTS
   m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
-#endif
-#if JVET_M0140_SBT
   m_cEncLib.setUseSBT                                            ( m_SBT );
-#endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
@@ -311,22 +273,12 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
-#if JVET_M0253_HASH_ME
   m_cEncLib.setUseHashME                                         ( m_HashME );
-#endif
 
-#if JVET_M0255_FRACMMVD_SWITCH
   m_cEncLib.setAllowDisFracMMVD                                  ( m_allowDisFracMMVD );
-#endif
-#if JVET_M0246_AFFINE_AMVR
   m_cEncLib.setUseAffineAmvr                                     ( m_AffineAmvr );
-#endif
-#if JVET_M0247_AFFINE_AMVR_ENCOPT
   m_cEncLib.setUseAffineAmvrEncOpt                               ( m_AffineAmvrEncOpt );
-#endif
-#if JVET_M0147_DMVR
   m_cEncLib.setDMVR                                              ( m_DMVR );
-#endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
   m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );
@@ -347,9 +299,7 @@ void EncApp::xInitLibCfg()
 #if MAX_TB_SIZE_SIGNALLING
   m_cEncLib.setLog2MaxTbSize                                     ( m_log2MaxTbSize );
 #endif
-#if JVET_M0428_ENC_DB_OPT
   m_cEncLib.setUseEncDbOpt(m_encDbOpt);
-#endif
   m_cEncLib.setUseFastLCTU                                       ( m_useFastLCTU );
   m_cEncLib.setFastInterSearchMode                               ( m_fastInterSearchMode );
   m_cEncLib.setUseEarlyCU                                        ( m_bUseEarlyCU  );
@@ -382,9 +332,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseBLambdaForNonKeyLowDelayPictures               ( m_bUseBLambdaForNonKeyLowDelayPictures );
   m_cEncLib.setPCMLog2MinSize                                    ( m_uiPCMLog2MinSize);
   m_cEncLib.setUsePCM                                            ( m_usePCM );
-#if JVET_M0102_INTRA_SUBPARTITIONS
   m_cEncLib.setUseFastISP                                        ( m_useFastISP );
-#endif
 
   // set internal bit-depth and constants
   for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
@@ -485,9 +433,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSOPDescriptionSEIEnabled                          ( m_SOPDescriptionSEIEnabled );
   m_cEncLib.setScalableNestingSEIEnabled                         ( m_scalableNestingSEIEnabled );
   m_cEncLib.setTMCTSSEIEnabled                                   ( m_tmctsSEIEnabled );
-#if JVET_M0445_MCTS
   m_cEncLib.setMCTSEncConstraint                                 ( m_MCTSEncConstraint);
-#endif
   m_cEncLib.setTimeCodeSEIEnabled                                ( m_timeCodeSEIEnabled );
   m_cEncLib.setNumberOfTimeSets                                  ( m_timeCodeSEINumTs );
   for(int i = 0; i < m_timeCodeSEINumTs; i++)
@@ -611,9 +557,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setForceDecodeBitstream1                             ( m_forceDecodeBitstream1 );
   m_cEncLib.setStopAfterFFtoPOC                                  ( m_stopAfterFFtoPOC );
   m_cEncLib.setBs2ModPOCAndType                                  ( m_bs2ModPOCAndType );
-#if JVET_M0055_DEBUG_CTU
   m_cEncLib.setDebugCTU                                          ( m_debugCTU );
-#endif
 #if ENABLE_SPLIT_PARALLELISM
   m_cEncLib.setNumSplitThreads                                   ( m_numSplitThreads );
   m_cEncLib.setForceSingleSplitThread                            ( m_forceSplitSequential );
@@ -625,12 +569,10 @@ void EncApp::xInitLibCfg()
 
 #endif
   m_cEncLib.setUseALF                                            ( m_alf );
-#if JVET_M0427_INLOOP_RESHAPER
   m_cEncLib.setReshaper                                          ( m_lumaReshapeEnable );
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
   m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
   m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
-#endif
 }
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList
@@ -919,9 +861,7 @@ void EncApp::rateStatsAccum(const AccessUnit& au, const std::vector<uint32_t>& a
 #endif
     case NAL_UNIT_SPS:
     case NAL_UNIT_PPS:
-#if JVET_M0132_APS
     case NAL_UNIT_APS:
-#endif
       m_essentialBytes += *it_stats;
       break;
     default:
@@ -938,11 +878,7 @@ void EncApp::printRateSummary()
   msg( DETAILS,"Bytes written to file: %u (%.3f kbps)\n", m_totalBytes, 0.008 * m_totalBytes / time );
   if (m_summaryVerboseness > 0)
   {
-#if JVET_M0132_APS
     msg(DETAILS, "Bytes for SPS/PPS/APS/Slice (Incl. Annex B): %u (%.3f kbps)\n", m_essentialBytes, 0.008 * m_essentialBytes / time);
-#else
-    msg( DETAILS,"Bytes for SPS/PPS/Slice (Incl. Annex B): %u (%.3f kbps)\n", m_essentialBytes, 0.008 * m_essentialBytes / time );
-#endif
   }
 }
 

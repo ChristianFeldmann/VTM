@@ -602,11 +602,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
  #endif
   if(rpcSlice->getPPS()->getSliceChromaQpFlag())
   {
-#if JVET_M0483_IBC
     const bool bUseIntraOrPeriodicOffset = (rpcSlice->isIntra() && !rpcSlice->getSPS()->getIBCFlag()) || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);
-#else
-    const bool bUseIntraOrPeriodicOffset = rpcSlice->isIntra() || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);
-#endif
     int cbQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(false) : m_pcCfg->getGOPEntry(iGOPid).m_CbQPoffset;
     int crQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(true)  : m_pcCfg->getGOPEntry(iGOPid).m_CrQPoffset;
 
@@ -1044,7 +1040,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
 
       pcPic->m_iOffsetCtu[ctuRsAddr] = (Pel)iQPAdapt; // adapted QPs
 
-#if ENABLE_QPA_SUB_CTU && JVET_M0113_M0188_QG_SIZE
+#if ENABLE_QPA_SUB_CTU
       if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getCuQpDeltaSubdiv() == 0)  // reduce local DQP rate peaks
 #elif ENABLE_QPA_SUB_CTU
       if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getMaxCuDQPDepth() == 0)  // reduce local DQP rate peaks
@@ -1092,11 +1088,7 @@ static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea,
   const int       bitDepth = cs.slice->getSPS()->getBitDepth (CHANNEL_TYPE_LUMA); // overall image bit-depth
   const int   adaptedCtuQP = pcPic ? pcPic->m_iOffsetCtu[ctuAddr] : cs.slice->getSliceQpBase();
 
-#if JVET_M0113_M0188_QG_SIZE
   if (!pcPic || cs.pps->getCuQpDeltaSubdiv() == 0) return adaptedCtuQP;
-#else
-  if (!pcPic || cs.pps->getMaxCuDQPDepth() == 0) return adaptedCtuQP;
-#endif
 
   for (unsigned addr = 0; addr < cs.picture->m_subCtuQP.size(); addr++)
   {
@@ -1467,11 +1459,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   cs.pcv      = pcSlice->getPPS()->pcv;
   cs.fracBits = 0;
 
-#if JVET_M0055_DEBUG_CTU
   if( startCtuTsAddr == 0 && ( pcSlice->getPOC() != m_pcCfg->getSwitchPOC() || -1 == m_pcCfg->getDebugCTU() ) )
-#else
-  if( startCtuTsAddr == 0 )
-#endif
   {
     cs.initStructData (pcSlice->getSliceQp(), pcSlice->getPPS()->getTransquantBypassEnabledFlag());
   }
@@ -1548,7 +1536,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 
 }
 
-#if JVET_M0255_FRACMMVD_SWITCH
 void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr )
 {
   CodingStructure&  cs            = *pcPic->cs;
@@ -1588,14 +1575,11 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
   {
     pcSlice->setDisFracMMVD( true );
   }
-#if JVET_M0854_FRACMMVD_SWITCH_FOR_UHD
   if (!pcSlice->getDisFracMMVD()) {
     bool useIntegerMVD = (pcPic->lwidth()*pcPic->lheight() > 1920 * 1080);
     pcSlice->setDisFracMMVD( useIntegerMVD );
   }
-#endif
 }
-#endif
 
 void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pEncLib )
 {
@@ -1646,49 +1630,23 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if HEVC_DEPENDENT_SLICES
   }
 #endif
-#if JVET_M0255_FRACMMVD_SWITCH
   if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() ||
-#if JVET_M0483_IBC
       (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
-#else
-      ( pcSlice->getSPS()->getIBCMode() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch() ) )
-#endif
   {
-#if JVET_M0427_INLOOP_RESHAPER
-#if JVET_M0483_IBC
     if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
-#else
-    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCMode())
-#endif
       cs.picture->getOrigBuf(COMPONENT_Y).rspSignal(m_pcLib->getReshaper()->getFwdLUT());
-#endif
     m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
-#if JVET_M0427_INLOOP_RESHAPER
-#if JVET_M0483_IBC
     if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
-#else
-    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCMode())
-#endif
       cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
-#endif
   }
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
-#endif
   // for every CTU in the slice segment (may terminate sooner if there is a byte limit on the slice-segment)
   for( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
   {
-#if JVET_M0055_DEBUG_CTU
 #if HEVC_TILES_WPP
     const int32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap( ctuTsAddr );
 #else
     const int32_t ctuRsAddr = ctuTsAddr;
-#endif
-#else
-#if HEVC_TILES_WPP
-    const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap(ctuTsAddr);
-#else
-    const uint32_t ctuRsAddr = ctuTsAddr;
-#endif
 #endif
 
 #if HEVC_TILES_WPP
@@ -1703,21 +1661,13 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     const UnitArea ctuArea( cs.area.chromaFormat, Area( pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight ) );
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
-#if JVET_M0055_DEBUG_CTU
     if( pCfg->getSwitchPOC() != pcPic->poc || -1 == pCfg->getDebugCTU() )
-#endif
     if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == 0)
     {
       cs.motionLut.lut.resize(0);
-#if JVET_M0483_IBC
       cs.motionLut.lutIbc.resize(0);
-#endif
-#if JVET_M0170_MRG_SHARELIST
       cs.motionLut.lutShare.resize(0);
-#if JVET_M0483_IBC
       cs.motionLut.lutShareIbc.resize(0);
-#endif
-#endif
     }
 
 #if ENABLE_WPP_PARALLELISM
@@ -1825,7 +1775,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       resetGbiCodingOrder(false, cs);
       m_pcInterSearch->initWeightIdxBits();
     }
-#if JVET_M0427_INLOOP_RESHAPER
     if (pcSlice->getSPS()->getUseReshaper())
     {
       m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());
@@ -1837,17 +1786,12 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       }
 #endif
     }
-#endif
-#if JVET_M0445_MCTS
     if( !cs.slice->isIntra() && pCfg->getMCTSEncConstraint() )
     {
       pcPic->mctsInfo.init( &cs, ctuRsAddr );
     }
-#endif
 
-#if JVET_M0055_DEBUG_CTU
   if (pCfg->getSwitchPOC() != pcPic->poc || ctuRsAddr >= pCfg->getDebugCTU())
-#endif
 #if ENABLE_WPP_PARALLELISM
     pEncLib->getCuEncoder( dataId )->compressCtu( cs, ctuArea, ctuRsAddr, prevQP, currQP );
 #else
@@ -1925,13 +1869,11 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       double actualLambda = pRdCost->getLambda();
       int numberOfEffectivePixels    = 0;
 
-#if JVET_M0600_RATE_CTRL
       int numberOfSkipPixel = 0;
       for (auto &cu : cs.traverseCUs(ctuArea, CH_L))
       {
         numberOfSkipPixel += cu.skip*cu.lumaSize().area();
       }
-#endif
 
       for( auto &cu : cs.traverseCUs( ctuArea, CH_L ) )
       {
@@ -1941,9 +1883,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
           break;
         }
       }
-#if JVET_M0600_RATE_CTRL
       double skipRatio = (double)numberOfSkipPixel / ctuArea.lumaSize().area();
-#endif
       CodingUnit* cu = cs.getCU( ctuArea.lumaPos(), CH_L );
 
       if ( numberOfEffectivePixels == 0 )
@@ -1955,13 +1895,8 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
         actualQP = cu->qp;
       }
       pRdCost->setLambda(oldLambda, pcSlice->getSPS()->getBitDepths());
-#if JVET_M0600_RATE_CTRL
       pRateCtrl->getRCPic()->updateAfterCTU(pRateCtrl->getRCPic()->getLCUCoded(), actualBits, actualQP, actualLambda, skipRatio,
         pcSlice->isIRAP() ? 0 : pCfg->getLCULevelRC());
-#else
-      pRateCtrl->getRCPic()->updateAfterCTU( pRateCtrl->getRCPic()->getLCUCoded(), actualBits, actualQP, actualLambda,
-                                             pcSlice->isIRAP() ? 0 : pCfg->getLCULevelRC() );
-#endif
     }
 #if ENABLE_QPA && !ENABLE_QPA_SUB_CTU
     else if (pCfg->getUsePerceptQPA() && pcSlice->getPPS()->getUseDQP())

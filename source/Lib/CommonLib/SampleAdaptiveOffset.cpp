@@ -634,17 +634,12 @@ void SampleAdaptiveOffset::xPCMLFDisableProcess(CodingStructure& cs)
 void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea)
 {
   const SPS& sps = *cs.sps;
-#if JVET_M0277_FIX_PCM_DISABLEFILTER
   uint32_t numComponents = CS::isDualITree(cs) ? 1 : m_numberOfComponents;
-#endif
   for( auto &cu : cs.traverseCUs( ctuArea, CH_L ) )
   {
     // restore PCM samples
     if( ( cu.ipcm && sps.getPCMFilterDisableFlag() ) || CU::isLosslessCoded( cu ) )
     {
-#if !JVET_M0277_FIX_PCM_DISABLEFILTER
-      const uint32_t numComponents = m_numberOfComponents;
-#endif
 
       for( uint32_t comp = 0; comp < numComponents; comp++ )
       {
@@ -652,7 +647,6 @@ void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea
       }
     }
   }
-#if JVET_M0277_FIX_PCM_DISABLEFILTER
   numComponents = m_numberOfComponents;
   if (CS::isDualITree(cs) && numComponents)
   {
@@ -668,7 +662,6 @@ void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea
       }
     }
   }
-#endif
 }
 
 void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID)
@@ -683,12 +676,10 @@ void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const Component
              PelBuf dstBuf  = cu.cs->getRecoBuf( currTU.block(compID) );
 
       dstBuf.copyFrom( pcmBuf );
-#if JVET_M0427_INLOOP_RESHAPER
       if (cu.slice->getReshapeInfo().getUseSliceReshaper() && isLuma(compID))
       {
         dstBuf.rspSignal(m_pcReshape->getInvLUT());
       }
-#endif
     }
 
     return;
@@ -707,12 +698,10 @@ void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const Component
       dstBuf.at(x,y) = (pcmBuf.at(x,y) << uiPcmLeftShiftBit);
     }
   }
-#if JVET_M0427_INLOOP_RESHAPER
   if (cu.slice->getReshapeInfo().getUseSliceReshaper() && isLuma(compID))
   {
     dstBuf.rspSignal(m_pcReshape->getInvLUT());
   }
-#endif
 }
 
 void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure& cs, const Position &pos,

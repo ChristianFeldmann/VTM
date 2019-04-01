@@ -142,9 +142,7 @@ void EncRCSeq::create( int totalFrames, int targetBitrate, int frameRate, int GO
     m_picPara[i].m_alpha = 0.0;
     m_picPara[i].m_beta  = 0.0;
     m_picPara[i].m_validPix = -1;
-#if JVET_M0600_RATE_CTRL
     m_picPara[i].m_skipRatio = 0.0;
-#endif
   }
 
   if ( m_useLCUSeparateModel )
@@ -158,9 +156,7 @@ void EncRCSeq::create( int totalFrames, int targetBitrate, int frameRate, int GO
         m_LCUPara[i][j].m_alpha = 0.0;
         m_LCUPara[i][j].m_beta  = 0.0;
         m_LCUPara[i][j].m_validPix = -1;
-#if JVET_M0600_RATE_CTRL
         m_LCUPara[i][j].m_skipRatio = 0.0;
-#endif
       }
     }
   }
@@ -408,7 +404,6 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
         lambdaRatio[13] = lambdaLev4 / lambdaLev1;
         lambdaRatio[14] = lambdaLev5 / lambdaLev1;
         lambdaRatio[15] = lambdaLev5 / lambdaLev1;
-#if JVET_M0600_RATE_CTRL
         const double qdfParaLev2A = 0.5847;
         const double qdfParaLev2B = -0.0782;
         const double qdfParaLev3A = 0.5468;
@@ -450,7 +445,6 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
         lambdaRatio[13] = lambdaLev4 / lambdaLev1;
         lambdaRatio[14] = lambdaLev5 / lambdaLev1;
         lambdaRatio[15] = lambdaLev5 / lambdaLev1;
-#endif
       }
     }
 
@@ -1057,11 +1051,7 @@ int EncRCPic::getLCUEstQP( double lambda, int clipPicQP )
   return estQP;
 }
 
-#if JVET_M0600_RATE_CTRL
 void EncRCPic::updateAfterCTU(int LCUIdx, int bits, int QP, double lambda, double skipRatio, bool updateLCUParameter)
-#else
-void EncRCPic::updateAfterCTU( int LCUIdx, int bits, int QP, double lambda, bool updateLCUParameter )
-#endif
 {
   m_LCUs[LCUIdx].m_actualBits = bits;
   m_LCUs[LCUIdx].m_QP         = QP;
@@ -1102,9 +1092,7 @@ void EncRCPic::updateAfterCTU( int LCUIdx, int bits, int QP, double lambda, bool
     TRCParameter rcPara;
     rcPara.m_alpha = alpha;
     rcPara.m_beta  = beta;
-#if JVET_M0600_RATE_CTRL
     rcPara.m_skipRatio = skipRatio;
-#endif
     if (QP == g_RCInvalidQPValue && m_encRCSeq->getAdaptiveBits() == 1)
     {
       rcPara.m_validPix = 0;
@@ -1145,9 +1133,7 @@ void EncRCPic::updateAfterCTU( int LCUIdx, int bits, int QP, double lambda, bool
   TRCParameter rcPara;
   rcPara.m_alpha = alpha;
   rcPara.m_beta  = beta;
-#if JVET_M0600_RATE_CTRL
   rcPara.m_skipRatio = skipRatio;
-#endif
   if (QP == g_RCInvalidQPValue && m_encRCSeq->getAdaptiveBits() == 1)
   {
     rcPara.m_validPix = 0;
@@ -1260,7 +1246,6 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
 
   double alpha = m_encRCSeq->getPicPara( m_frameLevel ).m_alpha;
   double beta  = m_encRCSeq->getPicPara( m_frameLevel ).m_beta;
-#if JVET_M0600_RATE_CTRL //calculate the skipRatio of picture
   double skipRatio = 0;
   int numOfSkipPixel = 0;
   for (int LCUIdx = 0; LCUIdx < m_numberOfLCU; LCUIdx++)
@@ -1268,7 +1253,6 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
     numOfSkipPixel += int(m_encRCSeq->getLCUPara(m_frameLevel, LCUIdx).m_skipRatio*m_LCUs[LCUIdx].m_numberOfPixel);
   }
   skipRatio = (double)numOfSkipPixel / (double)m_numberOfPixel;
-#endif
 
   if (isIRAP)
   {
@@ -1293,9 +1277,7 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
       TRCParameter rcPara;
       rcPara.m_alpha = alpha;
       rcPara.m_beta  = beta;
-#if JVET_M0600_RATE_CTRL
       rcPara.m_skipRatio = skipRatio;
-#endif
       double avgMSE = getPicMSE();
       double updatedK = picActualBpp * averageLambda / avgMSE;
       double updatedC = avgMSE / pow(picActualBpp, -updatedK);
@@ -1330,9 +1312,7 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
   TRCParameter rcPara;
   rcPara.m_alpha = alpha;
   rcPara.m_beta  = beta;
-#if JVET_M0600_RATE_CTRL
   rcPara.m_skipRatio = skipRatio;
-#endif
   double picActualBpp = (double)m_picActualBits / (double)m_validPixelsInPic;
 
   double avgMSE = getPicMSE();

@@ -49,7 +49,6 @@
 // ====================================================================================================================
 // Constructor / destructor / initialize
 // ====================================================================================================================
-#if JVET_M0445_MCTS
 
 void MCTSInfo::init( CodingStructure* cs, int ctuAddr )
 {
@@ -279,6 +278,5 @@ bool MCTSHelper::checkMvForMCTSConstraint( const PredictionUnit &pu, const Mv& m
   return checkMvIsNotInRestrictedArea( pu, mv, pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu ), mvPrec );
 }
 
-#endif
 
 //! \}

@@ -335,16 +335,10 @@ void RdCost::setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, 
   rcDP.cur.stride = iRefStride;
   rcDP.cur.width  = width;
   rcDP.cur.height = height;
-#if JVET_M0147_DMVR
   rcDP.subShift = subShiftMode;
-#endif
   rcDP.step       = step;
   rcDP.maximumDistortionForEarlyExit = std::numeric_limits<Distortion>::max();
-#if JVET_M0147_DMVR
   CHECK( useHadamard || rcDP.useMR, "only used in xDMVRCost with these default parameters (so far...)" );
-#else
-  CHECK( useHadamard || rcDP.useMR || subShiftMode > 0, "only used in xDirectMCCost with these default parameters (so far...)" );
-#endif
   if ( bioApplied )
   {
     rcDP.distFunc = m_afpDistortFunc[ DF_SAD_INTERMEDIATE_BITDEPTH ];
@@ -2866,15 +2860,11 @@ Distortion RdCost::xGetHADs( const DistParam &rcDtParam )
 
 
 #if WCG_EXT
-#if JVET_M0427_INLOOP_RESHAPER
 uint32_t   RdCost::m_signalType                 = RESHAPE_SIGNAL_NULL;
 double     RdCost::m_chromaWeight               = 1.0;
 int        RdCost::m_lumaBD                     = 10;
 std::vector<double> RdCost::m_reshapeLumaLevelToWeightPLUT;
 std::vector<double> RdCost::m_lumaLevelToWeightPLUT;
-#else
-double RdCost::m_lumaLevelToWeightPLUT[LUMA_LEVEL_TO_DQP_LUT_MAXSIZE];
-#endif
 
 void RdCost::saveUnadjustedLambda()
 {
@@ -2907,7 +2897,6 @@ void RdCost::initLumaLevelToWeightTable()
   }
 }
 
-#if JVET_M0427_INLOOP_RESHAPER
 void RdCost::initLumaLevelToWeightTableReshape()
 {
   int lutSize = 1 << m_lumaBD;
@@ -2987,7 +2976,6 @@ void RdCost::updateReshapeLumaLevelToWeightTable(SliceReshapeInfo &sliceReshape,
     THROW("updateReshapeLumaLevelToWeightTable not support other signal types!!");
   }
 }
-#endif
 
 Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, const uint32_t uiShift, const Pel orgLuma)
 {
@@ -3000,7 +2988,6 @@ Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, con
      CHECK(org!=orgLuma, "");
   }
   // use luma to get weight
-#if JVET_M0427_INLOOP_RESHAPER
   double weight = 1.0;
   if (m_signalType == RESHAPE_SIGNAL_SDR)
   {
@@ -3017,15 +3004,8 @@ Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, con
   {
     weight = m_reshapeLumaLevelToWeightPLUT[orgLuma];
   }
-#else
-  double weight = m_lumaLevelToWeightPLUT[orgLuma];
-#endif
-#if JVET_M0427_INLOOP_RESHAPER // FIXED_PT_WD_CALCULATION
   int64_t fixedPTweight = (int64_t)(weight * (double)(1 << 16));
   Intermediate_Int mse = Intermediate_Int((fixedPTweight*(iTemp*iTemp) + (1 << 15)) >> 16);
-#else
-  Intermediate_Int mse = Intermediate_Int(weight*(double)iTemp*(double)iTemp+0.5);
-#endif
   distortionVal = Distortion( mse >> uiShift);
   return distortionVal;
 }

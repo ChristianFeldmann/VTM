@@ -69,18 +69,11 @@ struct PelBufferOps
   void ( *linTf4 )        ( const Pel* src0, int src0Stride,                                  Pel *dst, int dstStride, int width, int height, int scale, int shift, int offset, const ClpRng& clpRng, bool bClip );
   void ( *linTf8 )        ( const Pel* src0, int src0Stride,                                  Pel *dst, int dstStride, int width, int height, int scale, int shift, int offset, const ClpRng& clpRng, bool bClip );
   void(*addBIOAvg4)    (const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng);
-#if JVET_M0063_BDOF_FIX
   void(*bioGradFilter) (Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth);
   void(*calcBIOPar)    (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth);
-#else
-  void(*bioGradFilter) (Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY);
-  void(*calcBIOPar)    (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG);
-#endif
   void(*calcBlkGradient)(int sx, int sy, int    *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize);
-#if JVET_M0147_DMVR
   void(*copyBuffer)(Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height);
   void(*padding)(Pel *dst, int stride, int width, int height, int padSize);
-#endif
 #if ENABLE_SIMD_OPT_GBI
   void ( *removeWeightHighFreq8)  ( Pel* src0, int src0Stride, const Pel* src1, int src1Stride, int width, int height, int shift, int gbiWeight);
   void ( *removeWeightHighFreq4)  ( Pel* src0, int src0Stride, const Pel* src1, int src1Stride, int width, int height, int shift, int gbiWeight);
@@ -95,10 +88,8 @@ extern PelBufferOps g_pelBufOP;
 #endif
 
 
-#if JVET_M0147_DMVR
 void paddingCore(Pel *ptr, int stride, int width, int height, int padSize);
 void copyBufferCore(Pel *src, int srcStride, Pel *Dst, int dstStride, int width, int height);
-#endif
 
 template<typename T>
 struct AreaBuf : public Size
@@ -142,10 +133,8 @@ struct AreaBuf : public Size
 
   void toLast               ( const ClpRng& clpRng );
 
-#if JVET_M0427_INLOOP_RESHAPER
   void rspSignal            ( std::vector<Pel>& pLUT );
   void scaleSignal          ( const int scale, const bool dir , const ClpRng& clpRng);
-#endif
   T    computeAvg           ( ) const;
 
         T& at( const int &x, const int &y )          { return buf[y * stride + x]; }
@@ -634,14 +623,6 @@ void AreaBuf<T>::transposedFrom( const AreaBuf<const T> &other )
 template<typename T>
 T AreaBuf <T> ::computeAvg() const
 {
-#if !JVET_M0102_INTRA_SUBPARTITIONS
-  if (width == 1)
-  {
-    THROW("Blocks of width = 1 not supported");
-  }
-  else
-  {
-#endif
     const T* src = buf;
 #if ENABLE_QPA
     int64_t  acc = 0; // for picture-wise use in getGlaringColorQPOffset() and applyQPAdaptationChroma()
@@ -654,9 +635,6 @@ T AreaBuf <T> ::computeAvg() const
 #undef AVG_INC
 #undef AVG_OP
     return T ((acc + (area() >> 1)) / area());
-#if !JVET_M0102_INTRA_SUBPARTITIONS
-  }
-#endif
 }
 
 #ifndef DONT_UNDEF_SIZE_AWARE_PER_EL_OP

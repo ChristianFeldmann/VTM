@@ -45,7 +45,6 @@
 #include "CommonDef.h"
 #include "Rom.h"
 #include "CommonLib/Picture.h"
-#if JVET_M0427_INLOOP_RESHAPER
 //! \ingroup CommonLib
 //! \{
 // ====================================================================================================================
@@ -100,7 +99,6 @@ public:
 };// END CLASS DEFINITION Reshape
 
 //! \}
-#endif //
 #endif // __RESHAPE__
 
 

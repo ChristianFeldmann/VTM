@@ -176,11 +176,7 @@ static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
 static const int MAX_CPB_CNT =                                     32; ///< Upper bound of (cpb_cnt_minus1 + 1)
 static const int MAX_NUM_LAYER_IDS =                               64;
-#if JVET_M0470
 static const int COEF_REMAIN_BIN_REDUCTION =                        5; ///< indicates the level at which the VLC transitions from Golomb-Rice to TU+EG(k)
-#else
-static const int COEF_REMAIN_BIN_REDUCTION =                        3; ///< indicates the level at which the VLC transitions from Golomb-Rice to TU+EG(k)
-#endif
 static const int CU_DQP_TU_CMAX =                                   5; ///< max number bins for truncated unary
 static const int CU_DQP_EG_k =                                      0; ///< expgolomb order
 
@@ -192,9 +188,7 @@ static const int C2FLAG_NUMBER =                                    1; ///< maxi
 static const int MAX_NUM_VPS =                                     16;
 static const int MAX_NUM_SPS =                                     16;
 static const int MAX_NUM_PPS =                                     64;
-#if JVET_M0132_APS
 static const int MAX_NUM_APS =                                     32;  //Currently APS ID has 5 bits
-#endif
 
 static const int MLS_GRP_NUM =                                   1024; ///< Max number of coefficient groups, max(16, 256)
 
@@ -230,14 +224,9 @@ static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chro
 
 static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes
 
-#if JVET_M0464_UNI_MTS
 static const uint32_t  NUM_TRAFO_MODES_MTS =                            6; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTRA_MAX_CU_SIZE =                         32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
-#else
-static const uint32_t  EMT_INTRA_MAX_CU_WITH_QTBT =                    32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
-static const uint32_t  EMT_INTER_MAX_CU_WITH_QTBT =                    32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
-#endif
 static const int NUM_MOST_PROBABLE_MODES = 6;
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
@@ -341,17 +330,12 @@ static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;
 static const uint32_t LUMA_LEVEL_TO_DQP_LUT_MAXSIZE =                1024; ///< max LUT size for QP offset based on luma
 
 #endif
-#if !JVET_M0464_UNI_MTS
-static const int NUM_EMT_CU_FLAG_CTX =                              6;      ///< number of context models for EMT CU-level flag
-#endif
-#if JVET_M0147_DMVR
 static const int DMVR_SUBCU_WIDTH = 16;
 static const int DMVR_SUBCU_HEIGHT = 16;
 static const int DMVR_SUBCU_WIDTH_LOG2 = 4;
 static const int DMVR_SUBCU_HEIGHT_LOG2 = 4;
 static const int MAX_NUM_SUBCU_DMVR = ((MAX_CU_SIZE * MAX_CU_SIZE) >> (DMVR_SUBCU_WIDTH_LOG2 + DMVR_SUBCU_HEIGHT_LOG2));
 static const int DMVR_NUM_ITERATION = 2;
-#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.
@@ -418,11 +402,9 @@ static const int TRIANGLE_MAX_NUM_CANDS =                          40;
 static const int TRIANGLE_MAX_NUM_SATD_CANDS =                      3;
 static const int TRIANGLE_MIN_SIZE =                            8 * 8;
 
-#if JVET_M0140_SBT
 static const int SBT_MAX_SIZE =                                    64; ///< maximum CU size for using SBT
 static const int SBT_NUM_SL =                                      10; ///< maximum number of historical PU decision saved for a CU
 static const int SBT_NUM_RDO =                                      2; ///< maximum number of SBT mode tried for a PU
-#endif
 
 static const int IBC_MAX_CAND_SIZE = 16; // max block size for ibc search
 static const int IBC_NUM_CANDIDATES = 64; ///< Maximum number of candidates to store/test
@@ -430,19 +412,15 @@ static const int CHROMA_REFINEMENT_CANDIDATES = 8; /// 8 candidates BV to choose
 static const int IBC_FAST_METHOD_NOINTRA_IBCCBF0 = 0x01;
 static const int IBC_FAST_METHOD_BUFFERBV = 0X02;
 static const int IBC_FAST_METHOD_ADAPTIVE_SEARCHRANGE = 0X04;
-#if JVET_M0512_MOTION_BUFFER_COMPRESSION
 static constexpr int MV_EXPONENT_BITCOUNT    = 4;
 static constexpr int MV_MANTISSA_BITCOUNT    = 6;
 static constexpr int MV_MANTISSA_UPPER_LIMIT = ((1 << (MV_MANTISSA_BITCOUNT - 1)) - 1);
 static constexpr int MV_MANTISSA_LIMIT       = (1 << (MV_MANTISSA_BITCOUNT - 1));
 static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1);
-#endif
-#if JVET_M0427_INLOOP_RESHAPER
 static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;
 static const int FP_PREC =                                       14;
 static const int CSCALE_FP_PREC =                                11;
-#endif
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================

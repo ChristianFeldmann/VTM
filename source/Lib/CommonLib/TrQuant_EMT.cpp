@@ -947,7 +947,7 @@ void fastInverseDST7_B8(const TCoeff *src, TCoeff *dst, int shift, int line, int
 
 void fastForwardDST7_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
-#if JVET_M0497_FAST_DST7 && !JVET_M0497_MATRIX_MULT
+#if !JVET_M0497_MATRIX_MULT
   int j, k;
   TCoeff a[5], b[5], c[5], d[5], t;
   TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
@@ -1015,7 +1015,7 @@ void fastForwardDST7_B16(const TCoeff *src, TCoeff *dst, int shift, int line, in
 
 void fastInverseDST7_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
-#if JVET_M0497_FAST_DST7 && !JVET_M0497_MATRIX_MULT
+#if !JVET_M0497_MATRIX_MULT
   int j, k;
   TCoeff a[5], b[5], c[5], d[5], t;
 
@@ -1074,7 +1074,7 @@ void fastInverseDST7_B16(const TCoeff *src, TCoeff *dst, int shift, int line, in
 
 void fastForwardDST7_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
-#if JVET_M0497_FAST_DST7 && !JVET_M0497_MATRIX_MULT
+#if !JVET_M0497_MATRIX_MULT
   int j, k;
   TCoeff a[10][6];
   TCoeff t[2];
@@ -1173,7 +1173,7 @@ void fastForwardDST7_B32(const TCoeff *src, TCoeff *dst, int shift, int line, in
 
 void fastInverseDST7_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
-#if JVET_M0497_FAST_DST7 && !JVET_M0497_MATRIX_MULT
+#if !JVET_M0497_MATRIX_MULT
   int j, k;
   TCoeff a[10][6];
   TCoeff t[2];
@@ -1340,7 +1340,7 @@ void fastInverseDCT8_B8(const TCoeff *src, TCoeff *dst, int shift, int line, int
 
 void fastForwardDCT8_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
-#if JVET_M0497_FAST_DST7 && !JVET_M0497_MATRIX_MULT
+#if !JVET_M0497_MATRIX_MULT
   int j, k;
   TCoeff a[5], b[5], c[5], d[5], t;
   TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
@@ -1408,7 +1408,7 @@ void fastForwardDCT8_B16(const TCoeff *src, TCoeff *dst, int shift, int line, in
 
 void fastInverseDCT8_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
-#if JVET_M0497_FAST_DST7 && !JVET_M0497_MATRIX_MULT
+#if !JVET_M0497_MATRIX_MULT
   int j, k;
   TCoeff a[5], b[5], c[5], d[5], t;
 
@@ -1465,7 +1465,7 @@ void fastInverseDCT8_B16(const TCoeff *src, TCoeff *dst, int shift, int line, in
 
 void fastForwardDCT8_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
-#if JVET_M0497_FAST_DST7 && !JVET_M0497_MATRIX_MULT
+#if !JVET_M0497_MATRIX_MULT
   int j, k;
   TCoeff a[10][6];
   TCoeff t[2];
@@ -1565,7 +1565,7 @@ void fastForwardDCT8_B32(const TCoeff *src, TCoeff *dst, int shift, int line, in
 
 void fastInverseDCT8_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
-#if JVET_M0497_FAST_DST7 && !JVET_M0497_MATRIX_MULT
+#if !JVET_M0497_MATRIX_MULT
   int j, k;
   TCoeff a[10][6];
   TCoeff t[2];

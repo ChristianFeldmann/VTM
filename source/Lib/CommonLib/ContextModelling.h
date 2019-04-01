@@ -70,10 +70,8 @@ public:
   int             cgPosX          ()                        const { return m_subSetPosX; }
   unsigned        width           ()                        const { return m_width; }
   unsigned        height          ()                        const { return m_height; }
-#if JVET_M0297_32PT_MTS_ZERO_OUT
   unsigned        log2CGWidth     ()                        const { return m_log2CGWidth; }
   unsigned        log2CGHeight    ()                        const { return m_log2CGHeight; }
-#endif
   unsigned        log2CGSize      ()                        const { return m_log2CGSize; }
   bool            extPrec         ()                        const { return m_extendedPrecision; }
   int             maxLog2TrDRange ()                        const { return m_maxLog2TrDynamicRange; }
@@ -108,11 +106,7 @@ public:
     const int     diag      = posX + posY;
     int           numPos    = 0;
     int           sumAbs    = 0;
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
 #define UPDATE(x) {int a=abs(x);sumAbs+=std::min(4+(a&1),a);numPos+=!!a;}
-#else
-#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(2+(a&1),a);numPos+=!!a;}
-#endif
     if( posX < m_width-1 )
     {
       UPDATE( pData[1] );
@@ -188,10 +182,6 @@ public:
     return std::min(sum, 31);
   }
 
-#if !JVET_M0464_UNI_MTS
-  unsigned        emtNumSigCoeff()                          const { return m_emtNumSigCoeff; }
-  void            setEmtNumSigCoeff( unsigned val )               { m_emtNumSigCoeff = val; }
-#endif
 
 private:
   // constant
@@ -239,9 +229,6 @@ private:
   CtxSet                    m_parFlagCtxSet;
   CtxSet                    m_gtxFlagCtxSet[2];
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
-#if !JVET_M0464_UNI_MTS
-  unsigned                  m_emtNumSigCoeff;
-#endif
 };
 
 
@@ -249,22 +236,16 @@ class CUCtx
 {
 public:
   CUCtx()              : isDQPCoded(false), isChromaQpAdjCoded(false),
-#if JVET_M0113_M0188_QG_SIZE
                          qgStart(false),
-#endif
                          numNonZeroCoeffNonTs(0) {}
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
-#if JVET_M0113_M0188_QG_SIZE
                          qgStart(false),
-#endif
                          numNonZeroCoeffNonTs(0), qp(_qp) {}
   ~CUCtx() {}
 public:
   bool      isDQPCoded;
   bool      isChromaQpAdjCoded;
-#if JVET_M0113_M0188_QG_SIZE
   bool      qgStart;
-#endif
   uint32_t      numNonZeroCoeffNonTs;
   int8_t     qp;                   // used as a previous(last) QP and for QP prediction
 };
@@ -309,28 +290,15 @@ public:
 
 namespace DeriveCtx
 {
-#if JVET_M0421_SPLIT_SIG
 void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* canSplit = nullptr );
-#else
-unsigned CtxCUsplit   ( const CodingStructure& cs, Partitioner& partitioner );
-unsigned CtxBTsplit   ( const CodingStructure& cs, Partitioner& partitioner );
-#endif
-#if JVET_M0102_INTRA_SUBPARTITIONS
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
-#else
-unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf );
-#endif
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
 unsigned CtxAffineFlag( const CodingUnit& cu );
 unsigned CtxTriangleFlag( const CodingUnit& cu );
-#if JVET_M0502_PRED_MODE_CTX
 unsigned CtxPredModeFlag( const CodingUnit& cu );
-#endif
-#if JVET_M0483_IBC
 unsigned CtxIBCFlag(const CodingUnit& cu);
-#endif
 }
 
 #endif // __CONTEXTMODELLING__

@@ -38,7 +38,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#if JVET_M0427_INLOOP_RESHAPER
  //! \ingroup CommonLib
  //! \{
 
@@ -228,7 +227,6 @@ void Reshape::updateChromaScaleLUT()
       m_chromaAdjHelpLUT[i] = CW_bin_SC_LUT[Clip3((uint16_t)1, (uint16_t)64, (uint16_t)(binCW >> 1)) - 1];
   }
 }
-#endif
 
 
 //

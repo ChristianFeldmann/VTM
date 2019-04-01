@@ -64,14 +64,7 @@ enum class BlockStatistic {
   QP,
   SplitSeries,
   TransQuantBypassFlag,
-#if JVET_M0464_UNI_MTS
   MTSIdx,
-#else
-  EMTFlag,
-  TransformSkipFlag_Y,
-  TransformSkipFlag_Cb,
-  TransformSkipFlag_Cr,
-#endif
 
   // intra
   IPCM,
@@ -123,9 +116,6 @@ enum class BlockStatistic {
   QP_Chroma,
   SplitSeries_Chroma,
   TransQuantBypassFlag_Chroma,
-#if !JVET_M0464_UNI_MTS
-  EMTFlag_Chroma, // this is called flag, though the type is UChar ?!
-#endif
 
   // intra
   IPCM_Chroma,
@@ -156,13 +146,7 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::Luma_IntraMode,         std::tuple<std::string, BlockStatisticType, std::string>{"Luma_IntraMode",              BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_MODE) + "]"}},
   { BlockStatistic::Chroma_IntraMode,       std::tuple<std::string, BlockStatisticType, std::string>{"Chroma_IntraMode",            BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_MODE) + "]"}},
   { BlockStatistic::SkipFlag,               std::tuple<std::string, BlockStatisticType, std::string>{"SkipFlag",                    BlockStatisticType::Flag,                   ""}},
-#if JVET_M0464_UNI_MTS
   { BlockStatistic::MTSIdx,                 std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Y",         BlockStatisticType::Integer,                ""}},
-#else
-  { BlockStatistic::TransformSkipFlag_Y,    std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Y",         BlockStatisticType::Flag,                   ""}},
-  { BlockStatistic::TransformSkipFlag_Cb,   std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Cb",        BlockStatisticType::Flag,                   ""}},
-  { BlockStatistic::TransformSkipFlag_Cr,   std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Cr",        BlockStatisticType::Flag,                   ""}},
-#endif
   { BlockStatistic::Depth,                  std::tuple<std::string, BlockStatisticType, std::string>{"Depth",                       BlockStatisticType::Integer,                "[0, 7]"}},
   { BlockStatistic::QT_Depth,               std::tuple<std::string, BlockStatisticType, std::string>{"QT_Depth",                    BlockStatisticType::Integer,                "[0, 7]"}},
   { BlockStatistic::BT_Depth,               std::tuple<std::string, BlockStatisticType, std::string>{"BT_Depth",                    BlockStatisticType::Integer,                "[0, 7]"}},
@@ -189,9 +173,6 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::AffineMVL0,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineMVL0",                  BlockStatisticType::AffineTFVectors,        "Scale: 4"}},
   { BlockStatistic::AffineMVL1,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineMVL1",                  BlockStatisticType::AffineTFVectors,        "Scale: 4"}},
   { BlockStatistic::AffineType,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineType",                  BlockStatisticType::Flag,                   ""} },
-#if !JVET_M0464_UNI_MTS
-  { BlockStatistic::EMTFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"EMTFlag",                     BlockStatisticType::Flag,                   ""}},
-#endif
   { BlockStatistic::MotionBufL0,            std::tuple<std::string, BlockStatisticType, std::string>{"MotionBufL0",                 BlockStatisticType::Vector,                 "Scale: 16"}},
   { BlockStatistic::MotionBufL1,            std::tuple<std::string, BlockStatisticType, std::string>{"MotionBufL1",                 BlockStatisticType::Vector,                 "Scale: 16"}},
   { BlockStatistic::MultiRefIdx,            std::tuple<std::string, BlockStatisticType, std::string>{"MultiRefIdx",                 BlockStatisticType::Integer,                "[0, 1]"}},
@@ -214,9 +195,6 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::QP_Chroma,                     std::tuple<std::string, BlockStatisticType, std::string>{"QP_Chroma",                          BlockStatisticType::Integer,                "[0, 51]"}},
   { BlockStatistic::SplitSeries_Chroma,            std::tuple<std::string, BlockStatisticType, std::string>{"SplitSeries_Chroma",                 BlockStatisticType::Integer,                "[0, " + std::to_string(std::numeric_limits<SplitSeries>::max()) + "]"}},
   { BlockStatistic::TransQuantBypassFlag_Chroma,   std::tuple<std::string, BlockStatisticType, std::string>{"TransQuantBypassFlag_Chroma",        BlockStatisticType::Flag,                   ""}},
-#if !JVET_M0464_UNI_MTS
-  { BlockStatistic::EMTFlag_Chroma,                std::tuple<std::string, BlockStatisticType, std::string>{"EMTFlag_Chroma",                     BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
-#endif
   { BlockStatistic::IPCM_Chroma,                   std::tuple<std::string, BlockStatisticType, std::string>{"IPCM_Chroma",                        BlockStatisticType::Flag,                   ""}},
 
 };

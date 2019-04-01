@@ -38,7 +38,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#if JVET_M0427_INLOOP_RESHAPER
 //! \ingroup EncLib
 //! \{
 
@@ -107,11 +106,7 @@ void  EncReshape::destroy()
 \param   pcPic describe pointer of current coding picture
 \param   sliceType describe the slice type
 */
-#if JVET_M0483_IBC
 void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT)
-#else
-void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isIBC)
-#endif
 {
   if (m_lumaBD >= 10)
   {
@@ -123,18 +118,10 @@ void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const
     }
     else
     {
-#if JVET_M0483_IBC
       if (sliceType == I_SLICE )                                              { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;  }
-#else
-      if (sliceType == I_SLICE || (sliceType == P_SLICE && isIBC))            { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;  }
-#endif
       else                                                                    { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = false; }
     }
-#if JVET_M0483_IBC
     if (sliceType == I_SLICE  && isDualT)                                     { m_sliceReshapeInfo.enableChromaAdj = 0;                   }
-#else
-    if ((sliceType == I_SLICE || (sliceType == P_SLICE && isIBC)) && isDualT) { m_sliceReshapeInfo.enableChromaAdj = 0;                   }
-#endif
     else                                                                      { m_sliceReshapeInfo.enableChromaAdj = 1;                   }
   }
   else
@@ -150,21 +137,13 @@ void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const
 \param   sliceType describe the slice type
 \param   reshapeCW describe some input info
 */
-#if JVET_M0483_IBC
 void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT)
-#else
-void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT, bool isIBC)
-#endif
 {
   m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;
   m_sliceReshapeInfo.sliceReshaperEnableFlag = true;
 
   int modIP = pcPic->getPOC() - pcPic->getPOC() / reshapeCW.rspFpsToIp * reshapeCW.rspFpsToIp;
-#if JVET_M0483_IBC
   if (sliceType == I_SLICE || (reshapeCW.rspIntraPeriod == -1 && modIP == 0))
-#else
-  if (sliceType == I_SLICE || (reshapeCW.rspIntraPeriod == -1 && modIP == 0) || (sliceType == P_SLICE && isIBC))
-#endif
   {
     if (m_sliceReshapeInfo.sliceReshaperModelPresentFlag == true)
     {
@@ -481,11 +460,7 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
 
     }
     m_chromaAdj = m_sliceReshapeInfo.enableChromaAdj;
-#if JVET_M0483_IBC
     if (sliceType == I_SLICE && isDualT)
-#else
-    if ((sliceType == I_SLICE || (sliceType == P_SLICE && isIBC)) && isDualT)
-#endif
     {
         m_sliceReshapeInfo.enableChromaAdj = 0;
     }
@@ -1302,7 +1277,6 @@ void EncReshape::copyState(const EncReshape &other)
   m_lumaBD           = other.m_lumaBD;
   m_reshapeLUTSize   = other.m_reshapeLUTSize;
 }
-#endif
 #endif
 //
 //! \}

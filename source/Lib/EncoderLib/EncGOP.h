@@ -47,6 +47,7 @@
 #include "CommonLib/NAL.h"
 #include "EncSampleAdaptiveOffset.h"
 #include "EncAdaptiveLoopFilter.h"
+#include "EncReshape.h"
 #include "EncSlice.h"
 #include "VLCWriter.h"
 #include "CABACWriter.h"
@@ -139,6 +140,7 @@ private:
   //--Adaptive Loop filter
   EncSampleAdaptiveOffset*  m_pcSAO;
   EncAdaptiveLoopFilter*    m_pcALF;
+  EncReshape*               m_pcReshaper;
   RateCtrl*                 m_pcRateCtrl;
   // indicate sequence first
   bool                    m_bSeqFirst;
@@ -275,6 +277,7 @@ protected:
 #endif
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps);
+  int xWriteAPS(AccessUnit &accessUnit, APS *aps);
   int xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);
 
   void applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices );

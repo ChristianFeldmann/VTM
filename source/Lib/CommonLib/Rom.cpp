@@ -51,6 +51,7 @@
 #if ENABLE_TRACING
 CDTrace *g_trace_ctx = NULL;
 #endif
+bool g_mctsDecCheckEnabled = false;
 
 
 //! \ingroup CommonLib
@@ -62,6 +63,28 @@ const char* nalUnitTypeToString(NalUnitType type)
 {
   switch (type)
   {
+#if JVET_M0101_HLS
+  case NAL_UNIT_CODED_SLICE_TRAIL:      return "TRAIL";
+  case NAL_UNIT_CODED_SLICE_STSA:       return "STSA";
+  case NAL_UNIT_CODED_SLICE_IDR_W_RADL: return "IDR_W_RADL";
+  case NAL_UNIT_CODED_SLICE_IDR_N_LP:   return "IDR_N_LP";
+  case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
+  case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";
+  case NAL_UNIT_CODED_SLICE_RASL:       return "RASL";
+#if HEVC_VPS
+  case NAL_UNIT_VPS:                    return "VPS";
+#endif
+  case NAL_UNIT_SPS:                    return "SPS";
+  case NAL_UNIT_PPS:                    return "PPS";
+  case NAL_UNIT_APS:                    return "APS";
+  case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
+  case NAL_UNIT_EOS:                    return "EOS";
+  case NAL_UNIT_EOB:                    return "EOB";
+  case NAL_UNIT_FILLER_DATA:            return "FILLER";
+  case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
+  case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
+  default:                              return "UNK";
+#else
   case NAL_UNIT_CODED_SLICE_TRAIL_R:    return "TRAIL_R";
   case NAL_UNIT_CODED_SLICE_TRAIL_N:    return "TRAIL_N";
   case NAL_UNIT_CODED_SLICE_TSA_R:      return "TSA_R";
@@ -83,6 +106,7 @@ const char* nalUnitTypeToString(NalUnitType type)
 #endif
   case NAL_UNIT_SPS:                    return "SPS";
   case NAL_UNIT_PPS:                    return "PPS";
+  case NAL_UNIT_APS:                    return "APS";
   case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
   case NAL_UNIT_EOS:                    return "EOS";
   case NAL_UNIT_EOB:                    return "EOB";
@@ -90,6 +114,7 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
   case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
   default:                              return "UNK";
+#endif
   }
 }
 
@@ -180,72 +205,6 @@ public:
     return rtn;
   }
 };
-#if !JVET_M0064_CCLM_SIMPLIFICATION
-int g_aiLMDivTableLow[] = {
-  0,     0,     21845, 0,     13107, 43690, 18724, 0,     50972, 39321, 53620, 21845, 15123, 9362,  4369,  0,     3855,
-  58254, 17246, 52428, 49932, 59578, 25644, 43690, 28835, 40329, 16990, 37449, 56496, 34952, 4228,  0,     61564, 34695,
-  29959, 29127, 15941, 41391, 26886, 26214, 28771, 24966, 6096,  29789, 23301, 45590, 25098, 21845, 30761, 47185, 1285,
-  20164, 34622, 41263, 36938, 18724, 49439, 61016, 51095, 17476, 23635, 2114,  16644, 0,     16131, 63550, 9781,  50115,
-  52238, 14979, 2769,  14563, 49376, 40738, 53302, 20695, 7660,  13443, 37330, 13107, 5663,  14385, 38689, 12483, 771,
-  3048,  18832, 47662, 23563, 11650, 11522, 22795, 45100, 12549, 55878, 43690, 41213, 48148, 64212, 23592, 57100, 33410,
-  17815, 10082, 9986,  17311, 31849, 53399, 16233, 51237, 27159, 9362,  63216, 57487, 57557, 63276, 8962,  25547, 47362,
-  8738,  40621, 11817, 53281, 33825, 18874, 8322,  2064,  0,     2032,  8065,  18009, 31775, 49275, 4890,  29612, 57825,
-  23918, 58887, 31589, 7489,  52056, 34152, 19248, 7281,  63728, 57456, 53944, 53137, 54979, 59419, 868,   10347, 22273,
-  36598, 53274, 6721,  27967, 51433, 11540, 39321, 3663,  35599, 4020,  39960, 12312, 52112, 28255, 6241,  51575, 33153,
-  16479, 1524,  53792, 42184, 32206, 23831, 17031, 11781, 8054,  5825,  5069,  5761,  7878,  11397, 16295, 22550, 30139,
-  39042, 49238, 60707, 7891,  21845, 37012, 53374, 5377,  24074, 43912, 64874, 21406, 44564, 3260,  28550, 54882, 16705,
-  45075, 8907,  39258, 5041,  37314, 4993,  39135, 8655,  44613, 15924, 53648, 26699, 604,   40884, 16458, 58386, 35585,
-  13579, 57895, 37449, 17767, 64376, 46192, 28743, 12019, 61546, 46244, 31638, 17720, 4481,  57448, 45541, 34288, 23681,
-  13710, 4369,  61185, 53078, 45578, 38676, 32366, 26640, 21491, 16912, 12896, 9437,  6527,  4161,  2331,  1032,  257,
-  0,     255,   1016,  2277,  4032,  6277,  9004,  12210, 15887, 20031, 24637, 29699, 35213, 41173, 47574, 54411, 61680,
-  3840,  11959, 20494, 29443, 38801, 48562, 58724, 3744,  14693, 26028, 37746, 49844, 62316, 9624,  22834, 36408, 50342,
-  64632, 13737, 28728, 44063, 59740, 10219, 26568, 43249, 60257, 12055, 29709, 47682, 434,   19033, 37941, 57155, 11136,
-  30953, 51067, 5938,  26637, 47624, 3360,  24916, 46751, 3328,  25716, 48376, 5770,  28967, 52428, 10616, 34599, 58840,
-  17799, 42547, 2010,  27256, 52748, 12947, 38924, 65140, 26056, 52743, 14127, 41277, 3120,  30726, 58555, 21072, 49344,
-  12300, 41007, 4394,  33530, 62876, 26896, 56659, 21092, 51264, 16103, 46678, 11915, 42886, 8515,  39875, 5890,  37632,
-  4027,  36145, 2912,  35400, 2534,  35385, 2880,  36089, 3939,  37500, 5698,  39605, 8147,  42395, 11275, 45857, 15069,
-  49982, 19521, 54758, 24619, 60175, 30353, 688,   36713, 7357,  43690, 14639, 51274, 22522, 59455, 30999, 2688,  40059,
-  12037, 49693, 21956, 59894, 32437, 5117,  43471, 16425, 55050, 28273, 1630,  40655, 14275, 53561, 27441, 1449,  41120,
-  15382, 55305, 29818, 4453,  44748, 19629, 60166, 35288, 10529, 51425, 26902, 2496,  43742, 19567, 61042, 37095, 13261,
-  55074, 31463, 7962,  50106, 26824, 3649,  46117, 23157, 302,   43088, 20442, 63436, 40997, 18660, 61961, 39826, 17792,
-  61393, 39557, 17819, 61715, 40171, 18724, 62908, 41651, 20489, 64956, 43980, 23096, 2304,  47139, 26529, 6009,  51115,
-  30773, 10519, 55890, 35811, 15819, 61448, 41628, 21892, 2240,  48208, 28724, 9322,  55538, 36301, 17144, 63604, 44608,
-  25692, 6855,  53632, 34952, 16349, 63360, 44911, 26539, 8242,  55557, 37410, 19338, 1340,  48951, 31099, 13320, 61149,
-  43513, 25949, 8456,  56569, 39216, 21932, 4718,  53109, 36031, 19022, 2080,  50741, 33933, 17191, 516,   49441, 32896,
-  16416, 0,
-};
-int g_aiLMDivTableHigh[] = {
-  65536, 32768, 21845, 16384, 13107, 10922, 9362, 8192, 7281, 6553, 5957, 5461, 5041, 4681, 4369, 4096, 3855, 3640,
-  3449,  3276,  3120,  2978,  2849,  2730,  2621, 2520, 2427, 2340, 2259, 2184, 2114, 2048, 1985, 1927, 1872, 1820,
-  1771,  1724,  1680,  1638,  1598,  1560,  1524, 1489, 1456, 1424, 1394, 1365, 1337, 1310, 1285, 1260, 1236, 1213,
-  1191,  1170,  1149,  1129,  1110,  1092,  1074, 1057, 1040, 1024, 1008, 992,  978,  963,  949,  936,  923,  910,
-  897,   885,   873,   862,   851,   840,   829,  819,  809,  799,  789,  780,  771,  762,  753,  744,  736,  728,
-  720,   712,   704,   697,   689,   682,   675,  668,  661,  655,  648,  642,  636,  630,  624,  618,  612,  606,
-  601,   595,   590,   585,   579,   574,   569,  564,  560,  555,  550,  546,  541,  537,  532,  528,  524,  520,
-  516,   512,   508,   504,   500,   496,   492,  489,  485,  481,  478,  474,  471,  468,  464,  461,  458,  455,
-  451,   448,   445,   442,   439,   436,   434,  431,  428,  425,  422,  420,  417,  414,  412,  409,  407,  404,
-  402,   399,   397,   394,   392,   390,   387,  385,  383,  381,  378,  376,  374,  372,  370,  368,  366,  364,
-  362,   360,   358,   356,   354,   352,   350,  348,  346,  344,  343,  341,  339,  337,  336,  334,  332,  330,
-  329,   327,   326,   324,   322,   321,   319,  318,  316,  315,  313,  312,  310,  309,  307,  306,  304,  303,
-  302,   300,   299,   297,   296,   295,   293,  292,  291,  289,  288,  287,  286,  284,  283,  282,  281,  280,
-  278,   277,   276,   275,   274,   273,   271,  270,  269,  268,  267,  266,  265,  264,  263,  262,  261,  260,
-  259,   258,   257,   256,   255,   254,   253,  252,  251,  250,  249,  248,  247,  246,  245,  244,  243,  242,
-  241,   240,   240,   239,   238,   237,   236,  235,  234,  234,  233,  232,  231,  230,  229,  229,  228,  227,
-  226,   225,   225,   224,   223,   222,   222,  221,  220,  219,  219,  218,  217,  217,  216,  215,  214,  214,
-  213,   212,   212,   211,   210,   210,   209,  208,  208,  207,  206,  206,  205,  204,  204,  203,  202,  202,
-  201,   201,   200,   199,   199,   198,   197,  197,  196,  196,  195,  195,  194,  193,  193,  192,  192,  191,
-  191,   190,   189,   189,   188,   188,   187,  187,  186,  186,  185,  185,  184,  184,  183,  183,  182,  182,
-  181,   181,   180,   180,   179,   179,   178,  178,  177,  177,  176,  176,  175,  175,  174,  174,  173,  173,
-  172,   172,   172,   171,   171,   170,   170,  169,  169,  168,  168,  168,  167,  167,  166,  166,  165,  165,
-  165,   164,   164,   163,   163,   163,   162,  162,  161,  161,  161,  160,  160,  159,  159,  159,  158,  158,
-  157,   157,   157,   156,   156,   156,   155,  155,  154,  154,  154,  153,  153,  153,  152,  152,  152,  151,
-  151,   151,   150,   150,   149,   149,   149,  148,  148,  148,  147,  147,  147,  146,  146,  146,  145,  145,
-  145,   144,   144,   144,   144,   143,   143,  143,  142,  142,  142,  141,  141,  141,  140,  140,  140,  140,
-  139,   139,   139,   138,   138,   138,   137,  137,  137,  137,  136,  136,  136,  135,  135,  135,  135,  134,
-  134,   134,   134,   133,   133,   133,   132,  132,  132,  132,  131,  131,  131,  131,  130,  130,  130,  130,
-  129,   129,   129,   129,   128,   128,   128,  128,
-};
-#endif
 const int8_t g_GbiLog2WeightBase = 3;
 const int8_t g_GbiWeightBase = (1 << g_GbiLog2WeightBase);
 const int8_t g_GbiWeights[GBI_NUM] = { -2, 3, 4, 5, 10 };
@@ -310,40 +269,35 @@ uint32_t deriveWeightIdxBits(uint8_t gbiIdx) // Note: align this with TEncSbac::
   return numBits;
 }
 
+uint32_t g_log2SbbSize[2][MAX_CU_DEPTH+1][MAX_CU_DEPTH+1][2] =
+{
+  //===== luma =====
+  {
+    { {0,0}, {0,1}, {0,2}, {0,3}, {0,4}, {0,4}, {0,4}, {0,4} },
+    { {1,0}, {1,1}, {1,2}, {1,3}, {1,3}, {1,3}, {1,3}, {1,3} },
+    { {2,0}, {2,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {3,0}, {3,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {4,0}, {3,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {4,0}, {3,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {4,0}, {3,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {4,0}, {3,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} }
+  },
+  //===== chroma =====
+  {
+    { {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0} },
+    { {0,0}, {1,1}, {1,1}, {1,1}, {1,1}, {1,1}, {1,1}, {1,1} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} },
+    { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} }
+  },
+};
 // initialize ROM variables
 void initROM()
 {
   int c;
-
-#if RExt__HIGH_BIT_DEPTH_SUPPORT
-  {
-    c = 64;
-    const double s = sqrt((double)c) * (64 << COM16_C806_TRANS_PREC);
-
-
-    for (int k = 0; k < c; k++)
-    {
-      for (int n = 0; n < c; n++)
-      {
-        double w0, v;
-        const double PI = 3.14159265358979323846;
-
-        // DCT-II
-        w0 = k == 0 ? sqrt(0.5) : 1;
-        v = cos(PI*(n + 0.5)*k / c) * w0 * sqrt(2.0 / c);
-        short sv = (short)(s * v + (v > 0 ? 0.5 : -0.5));
-        if (g_aiT64[0][0][c*c + k*c + n] != sv)
-        {
-          msg(WARNING, "trap");
-        }
-      }
-    }
-  }
-#endif
-
-
-
-
 
   // g_aucConvertToBit[ x ]: log2(x/4), if x=4 -> 0, x=8 -> 1, x=16 -> 2, ...
   // g_aucLog2[ x ]: log2(x), if x=1 -> 0, x=2 -> 1, x=4 -> 2, x=8 -> 3, x=16 -> 4, ...
@@ -368,11 +322,11 @@ void initROM()
   gp_sizeIdxInfo->init(MAX_CU_SIZE);
 
 
-  generateTrafoBlockSizeScaling(*gp_sizeIdxInfo);
-
   SizeIndexInfoLog2 sizeInfo;
   sizeInfo.init(MAX_CU_SIZE);
 
+  for( int ch = 0; ch < MAX_NUM_CHANNEL_TYPE; ch++ )
+  {
   // initialize scan orders
   for (uint32_t blockHeightIdx = 0; blockHeightIdx < sizeInfo.numAllHeights(); blockHeightIdx++)
   {
@@ -389,10 +343,19 @@ void initROM()
       for (uint32_t scanTypeIndex = 0; scanTypeIndex < SCAN_NUMBER_OF_TYPES; scanTypeIndex++)
       {
         const CoeffScanType scanType = CoeffScanType(scanTypeIndex);
+        ScanElement *       scan     = nullptr;
 
-        g_scanOrder     [SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
-        g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
-        g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
+        if (blockWidthIdx < sizeInfo.numWidths() && blockHeightIdx < sizeInfo.numHeights())
+        {
+          scan = new ScanElement[totalValues];
+        }
+
+        g_scanOrder[ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx] = scan;
+
+        if (scan == nullptr)
+        {
+          continue;
+        }
 
         ScanGenerator fullBlockScan(blockWidth, blockHeight, blockWidth, scanType);
 
@@ -401,36 +364,24 @@ void initROM()
           const int rasterPos = fullBlockScan.GetNextIndex( 0, 0 );
           const int posY      = rasterPos / blockWidth;
           const int posX      = rasterPos - ( posY * blockWidth );
-          g_scanOrder     [SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx]   [scanPosition] = rasterPos;
-          g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][0][scanPosition] = posX;
-          g_scanOrderPosXY[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx][1][scanPosition] = posY;
+
+          scan[scanPosition].idx = rasterPos;
+          scan[scanPosition].x   = posX;
+          scan[scanPosition].y   = posY;
         }
-      }
-
-      if( blockWidthIdx >= sizeInfo.numWidths() || blockHeightIdx >= sizeInfo.numHeights() )
-      {
-        // size indizes greater than numIdxs are sizes than are only used when grouping - they will never come up as a block size - thus they can be skipped at this point
-        for( uint32_t scanTypeIndex = 0; scanTypeIndex < SCAN_NUMBER_OF_TYPES; scanTypeIndex++ )
-        {
-          g_scanOrder     [SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx]    = nullptr;
-          g_scanOrderPosXY[SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx][0] = nullptr;
-          g_scanOrderPosXY[SCAN_GROUPED_4x4][scanTypeIndex][blockWidthIdx][blockHeightIdx][1] = nullptr;
-
-        }
-
-        continue;
       }
 
       //--------------------------------------------------------------------------------------------------
 
       //grouped scan orders
-      const uint32_t  log2CGWidth    = (blockWidth & 3) + (blockHeight & 3) > 0 ? 1 : 2;
-      const uint32_t  log2CGHeight   = (blockWidth & 3) + (blockHeight & 3) > 0 ? 1 : 2;
+      const uint32_t* log2Sbb        = g_log2SbbSize[ch][ g_aucLog2[blockWidth] ][ g_aucLog2[blockHeight] ];
+      const uint32_t  log2CGWidth    = log2Sbb[0];
+      const uint32_t  log2CGHeight   = log2Sbb[1];
 
       const uint32_t  groupWidth     = 1 << log2CGWidth;
       const uint32_t  groupHeight    = 1 << log2CGHeight;
-      const uint32_t  widthInGroups  = blockWidth >> log2CGWidth;
-      const uint32_t  heightInGroups = blockHeight >> log2CGHeight;
+      const uint32_t  widthInGroups = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, blockWidth) >> log2CGWidth;
+      const uint32_t  heightInGroups = std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, blockHeight) >> log2CGHeight;
 
       const uint32_t  groupSize      = groupWidth    * groupHeight;
       const uint32_t  totalGroups    = widthInGroups * heightInGroups;
@@ -439,10 +390,19 @@ void initROM()
       {
         const CoeffScanType scanType = CoeffScanType(scanTypeIndex);
 
-        g_scanOrder     [SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]    = new uint32_t[totalValues];
-        g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0] = new uint32_t[totalValues];
-        g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1] = new uint32_t[totalValues];
+        ScanElement *scan = new ScanElement[totalValues];
 
+        g_scanOrder[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx] = scan;
+
+        if ( blockWidth > JVET_C0024_ZERO_OUT_TH || blockHeight > JVET_C0024_ZERO_OUT_TH )
+        {
+          for (uint32_t i = 0; i < totalValues; i++)
+          {
+            scan[i].idx = totalValues - 1;
+            scan[i].x   = blockWidth - 1;
+            scan[i].y   = blockHeight - 1;
+          }
+        }
 
         ScanGenerator fullBlockScan(widthInGroups, heightInGroups, groupWidth, scanType);
 
@@ -462,9 +422,9 @@ void initROM()
             const int posY      = rasterPos / blockWidth;
             const int posX      = rasterPos - ( posY * blockWidth );
 
-            g_scanOrder     [SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx]   [groupOffsetScan + scanPosition] = rasterPos;
-            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][0][groupOffsetScan + scanPosition] = posX;
-            g_scanOrderPosXY[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx][1][groupOffsetScan + scanPosition] = posY;
+            scan[groupOffsetScan + scanPosition].idx = rasterPos;
+            scan[groupOffsetScan + scanPosition].x   = posX;
+            scan[groupOffsetScan + scanPosition].y   = posY;
           }
 
           fullBlockScan.GetNextIndex(0, 0);
@@ -473,6 +433,7 @@ void initROM()
 
       //--------------------------------------------------------------------------------------------------
     }
+  }
   }
 
   for( int idxH = MAX_CU_DEPTH - MIN_CU_LOG2; idxH >= 0; --idxH )
@@ -503,23 +464,19 @@ void destroyROM()
   unsigned numWidths = gp_sizeIdxInfo->numAllWidths();
   unsigned numHeights = gp_sizeIdxInfo->numAllHeights();
 
-  for (uint32_t groupTypeIndex = 0; groupTypeIndex < SCAN_NUMBER_OF_GROUP_TYPES; groupTypeIndex++)
+  for( uint32_t ch = 0; ch < MAX_NUM_CHANNEL_TYPE; ch++ )
   {
-    for (uint32_t scanOrderIndex = 0; scanOrderIndex < SCAN_NUMBER_OF_TYPES; scanOrderIndex++)
+    for( uint32_t groupTypeIndex = 0; groupTypeIndex < SCAN_NUMBER_OF_GROUP_TYPES; groupTypeIndex++ )
     {
-      for (uint32_t blockWidthIdx = 0; blockWidthIdx <= numWidths; blockWidthIdx++)
+      for( uint32_t scanOrderIndex = 0; scanOrderIndex < SCAN_NUMBER_OF_TYPES; scanOrderIndex++ )
       {
-        for (uint32_t blockHeightIdx = 0; blockHeightIdx <= numHeights; blockHeightIdx++)
+        for( uint32_t blockWidthIdx = 0; blockWidthIdx <= numWidths; blockWidthIdx++ )
         {
-          delete[] g_scanOrder[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx];
-          g_scanOrder[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx] = nullptr;
-
-          delete[] g_scanOrderPosXY[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][0];
-          g_scanOrderPosXY[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][0] = nullptr;
-
-          delete[] g_scanOrderPosXY[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][1];
-          g_scanOrderPosXY[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx][1] = nullptr;
-
+          for( uint32_t blockHeightIdx = 0; blockHeightIdx <= numHeights; blockHeightIdx++ )
+          {
+            delete[] g_scanOrder[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx];
+            g_scanOrder[ch][groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx] = nullptr;
+          }
         }
       }
     }
@@ -527,24 +484,6 @@ void destroyROM()
 
   delete gp_sizeIdxInfo;
   gp_sizeIdxInfo = nullptr;
-}
-
-
-
-void generateTrafoBlockSizeScaling(SizeIndexInfo& sizeIdxInfo)
-{
-  for (SizeType y = 0; y < sizeIdxInfo.numHeights(); y++)
-  {
-    for (SizeType x = 0; x < sizeIdxInfo.numWidths(); x++)
-    {
-      SizeType h = sizeIdxInfo.sizeFrom(y);
-      SizeType w = sizeIdxInfo.sizeFrom(x);
-      double factor = sqrt(h) * sqrt(w) / (double)(1 << ((g_aucLog2[h] + g_aucLog2[w]) / 2));
-
-      g_BlockSizeTrafoScale[h][w][0] = ((int)(factor + 0.9) != 1) ? (int)(factor * (double)(1 << ADJ_QUANT_SHIFT)) : 1;
-      g_BlockSizeTrafoScale[h][w][1] = ((int)(factor + 0.9) != 1) ? (int)((double)(1 << ADJ_DEQUANT_SHIFT) / factor + 0.5) : 1;
-    }
-  }
 }
 
 // ====================================================================================================================
@@ -563,10 +502,6 @@ const int g_invQuantScales[SCALING_LIST_REM_NUM] =
 
 //--------------------------------------------------------------------------------------------------
 //structures
-
-//EMT threshold
-
-
 //--------------------------------------------------------------------------------------------------
 //coefficients
 //--------------------------------------------------------------------------------------------------
@@ -621,30 +556,12 @@ const uint8_t g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE] =
 { 0, 1, 2, 2, 2, 2, 2, 2, 2, 3,  4,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 44, 44, 45, 46, 46, 46, 47, 48, 48, 48, 49, 50, 51, 52, 52, 52, 53, 54, 54, 54, 55, 56, 56, 56, 57, 58, 59, 60, DM_CHROMA_IDX };
 
 
-#if !REMOVE_BIN_DECISION_TREE
-// ====================================================================================================================
-// Decision tree templates
-// ====================================================================================================================
-
-const DecisionTreeTemplate g_mtSplitDTT = compile(
-  decision( DTT_SPLIT_DO_SPLIT_DECISION,
-  /*0*/ DTT_SPLIT_NO_SPLIT,
-  /*1*/ decision( DTT_SPLIT_HV_DECISION,
-        /*0*/ decision( DTT_SPLIT_H_IS_BT_12_DECISION,
-              /*0*/ DTT_SPLIT_TT_HORZ,
-              /*1*/ DTT_SPLIT_BT_HORZ ),
-        /*1*/ decision( DTT_SPLIT_V_IS_BT_12_DECISION,
-              /*0*/ DTT_SPLIT_TT_VERT,
-              /*1*/ DTT_SPLIT_BT_VERT ) ) ) );
-
-#endif
 
 
 // ====================================================================================================================
 // Misc.
 // ====================================================================================================================
 SizeIndexInfo*           gp_sizeIdxInfo = NULL;
-int                      g_BlockSizeTrafoScale[MAX_CU_SIZE + 1][MAX_CU_SIZE + 1][2];
 int8_t                    g_aucLog2    [MAX_CU_SIZE + 1];
 int8_t                    g_aucNextLog2[MAX_CU_SIZE + 1];
 int8_t                    g_aucPrevLog2[MAX_CU_SIZE + 1];
@@ -657,22 +574,10 @@ UnitScale g_miScaling( MIN_CU_LOG2, MIN_CU_LOG2 );
 // ====================================================================================================================
 
 // scanning order table
-uint32_t* g_scanOrder     [SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
-uint32_t* g_scanOrderPosXY[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1][2];
-
-const uint32_t ctxIndMap4x4[4 * 4] =
-{
-  0, 1, 4, 5,
-  2, 3, 4, 5,
-  6, 6, 8, 8,
-  7, 7, 8, 8
-};
-
+ScanElement *g_scanOrder[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
 
 const uint32_t g_uiMinInGroup[LAST_SIGNIFICANT_GROUPS] = { 0,1,2,3,4,6,8,12,16,24,32,48,64,96 };
-const uint32_t g_uiGroupIdx[MAX_TU_SIZE] = { 0,1,2,3,4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9, 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
-,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12
-,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13 };
+const uint32_t g_uiGroupIdx[MAX_TB_SIZEY] = { 0,1,2,3,4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9, 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11 };
 const uint32_t g_auiGoRiceParsCoeff[32] =
 {
   0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3
@@ -682,10 +587,6 @@ const uint32_t g_auiGoRicePosCoeff0[3][32] =
   {0, 0, 0, 0, 0, 1, 2,    2, 2, 2, 2, 2, 4, 4,    4, 4, 4, 4,  4,  4,  4,  4,  4,  8,  8,  8,  8,  8,     8,  8,  8,  8},
   {1, 1, 1, 1, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16,    16, 16, 16, 16},
   {1, 1, 2, 2, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 16, 16, 16,    16, 16, 16, 16}
-};
-const uint32_t g_auiGoRiceRange[MAX_GR_ORDER_RESIDUAL] =
-{
-  6, 5, 6, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION
 };
 
 #if HEVC_USE_SCALING_LISTS
@@ -795,74 +696,7 @@ const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM] = { 4, 16, 64, 256, 102
 const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 2,  4,  8,  16,   32,   64,   128 };
 #endif
 
-const uint8_t g_NonMPM[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7,
-7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
 
-const Pel g_trianglePelWeightedLuma[TRIANGLE_DIR_NUM][2][7] =
-{ 
-  { // TRIANGLE_DIR_135
-    { 1, 2, 4, 6, 7, 0, 0 },
-    { 1, 2, 3, 4, 5, 6, 7 }
-  },
-  { // TRIANGLE_DIR_45
-    { 7, 6, 4, 2, 1, 0, 0 },
-    { 7, 6, 5, 4, 3, 2, 1 }
-  }
-};
-const Pel g_trianglePelWeightedChroma[2][TRIANGLE_DIR_NUM][2][7] =
-{
-  { // 444 format
-    { // TRIANGLE_DIR_135
-      { 1, 2, 4, 6, 7, 0, 0 },
-      { 1, 2, 3, 4, 5, 6, 7 }
-    },
-    { // TRIANGLE_DIR_45
-      { 7, 6, 4, 2, 1, 0, 0 },
-      { 7, 6, 5, 4, 3, 2, 1 }
-    }
-  },
-  { // 420 format
-    { // TRIANGLE_DIR_135
-      { 1, 4, 7, 0, 0, 0, 0 },
-      { 2, 4, 6, 0, 0, 0, 0 }
-    },
-    { // TRIANGLE_DIR_45
-      { 7, 4, 1, 0, 0, 0, 0 },
-      { 6, 4, 2, 0, 0, 0, 0 }
-    }
-  }
-};
+uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
 
-const uint8_t g_triangleWeightLengthLuma[2] = { 5, 7 };
-const uint8_t g_triangleWeightLengthChroma[2][2] = { { 5, 7 }, { 3, 3 } };
-
-      uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
-
-const uint8_t g_triangleCombination[TRIANGLE_MAX_NUM_CANDS][3] =
-{
-  { 0, 1, 0 }, { 1, 0, 1 }, { 1, 0, 2 }, { 0, 0, 1 }, { 0, 2, 0 }, 
-  { 1, 0, 3 }, { 1, 0, 4 }, { 1, 1, 0 }, { 0, 3, 0 }, { 0, 4, 0 }, 
-  { 0, 0, 2 }, { 0, 1, 2 }, { 1, 1, 2 }, { 0, 0, 4 }, { 0, 0, 3 }, 
-  { 0, 1, 3 }, { 0, 1, 4 }, { 1, 1, 4 }, { 1, 1, 3 }, { 1, 2, 1 }, 
-  { 1, 2, 0 }, { 0, 2, 1 }, { 0, 4, 3 }, { 1, 3, 0 }, { 1, 3, 2 }, 
-  { 1, 3, 4 }, { 1, 4, 0 }, { 1, 3, 1 }, { 1, 2, 3 }, { 1, 4, 1 }, 
-  { 0, 4, 1 }, { 0, 2, 3 }, { 1, 4, 2 }, { 0, 3, 2 }, { 1, 4, 3 }, 
-  { 0, 3, 1 }, { 0, 2, 4 }, { 1, 2, 4 }, { 0, 4, 2 }, { 0, 3, 4 }, 
-};
-
-const uint8_t g_triangleIdxBins[TRIANGLE_MAX_NUM_CANDS] =
-{
-   2,  2,  4,  4,  4,  4,  6,  6,  6,  6,
-   6,  6,  6,  6,  8,  8,  8,  8,  8,  8,
-   8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
-  10, 10, 10, 10, 10, 10, 10, 10, 10, 10
-};
 //! \}

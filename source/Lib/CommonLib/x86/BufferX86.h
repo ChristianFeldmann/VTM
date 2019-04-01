@@ -128,6 +128,123 @@ void addAvg_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int s
   }
 }
 
+template<X86_VEXT vext>
+void copyBufferSimd(Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height)
+{
+  __m128i x;
+#ifdef USE_AVX2
+  __m256i x16;
+#endif
+  int j, temp;
+  for (int i = 0; i < height; i++)
+  {
+    j = 0;
+    temp = width;
+#ifdef USE_AVX2
+    while ((temp >> 4) > 0)
+    {
+      x16 = _mm256_loadu_si256((const __m256i*)(&src[i * srcStride + j]));
+      _mm256_storeu_si256((__m256i*)(&dst[i * dstStride + j]), x16);
+      j += 16;
+      temp -= 16;
+    }
+#endif
+    while ((temp >> 3) > 0)
+    {
+      x = _mm_loadu_si128((const __m128i*)(&src[ i * srcStride + j]));
+      _mm_storeu_si128((__m128i*)(&dst[ i * dstStride + j]), x);
+      j += 8;
+      temp -= 8;
+    }
+    while ((temp >> 2) > 0)
+    {
+      x = _mm_loadl_epi64((const __m128i*)(&src[i * srcStride + j]));
+      _mm_storel_epi64((__m128i*)(&dst[i*dstStride + j]), x);
+      j += 4;
+      temp -= 4;
+    }
+    while (temp > 0)
+    {
+      dst[i * dstStride + j] = src[i * srcStride + j];
+      j++;
+      temp--;
+    }
+  }
+}
+
+
+template<X86_VEXT vext>
+void paddingSimd(Pel *dst, int stride, int width, int height, int padSize)
+{
+  __m128i x;
+#ifdef USE_AVX2
+  __m256i x16;
+#endif
+  int temp, j;
+  for (int i = 1; i <= padSize; i++)
+  {
+    j = 0;
+    temp = width;
+#ifdef USE_AVX2
+    while ((temp >> 4) > 0)
+    {
+
+      x16 = _mm256_loadu_si256((const __m256i*)(&(dst[j])));
+      _mm256_storeu_si256((__m256i*)(dst + j - i*stride), x16);
+      x16 = _mm256_loadu_si256((const __m256i*)(dst + j + (height - 1)*stride));
+      _mm256_storeu_si256((__m256i*)(dst + j + (height - 1 + i)*stride), x16);
+
+
+      j = j + 16;
+      temp = temp - 16;
+    }
+#endif
+    while ((temp >> 3) > 0)
+    {
+
+      x = _mm_loadu_si128((const __m128i*)(&(dst[j])));
+      _mm_storeu_si128((__m128i*)(dst + j - i*stride), x);
+      x = _mm_loadu_si128((const __m128i*)(dst + j + (height - 1)*stride));
+      _mm_storeu_si128((__m128i*)(dst + j + (height - 1 + i)*stride), x);
+
+      j = j + 8;
+      temp = temp - 8;
+    }
+    while ((temp >> 2) > 0)
+    {
+      x = _mm_loadl_epi64((const __m128i*)(&dst[j]));
+      _mm_storel_epi64((__m128i*)(dst + j - i*stride), x);
+      x = _mm_loadl_epi64((const __m128i*)(dst + j + (height - 1)*stride));
+      _mm_storel_epi64((__m128i*)(dst + j + (height - 1 + i)*stride), x);
+
+      j = j + 4;
+      temp = temp - 4;
+    }
+    while (temp > 0)
+    {
+      dst[j - i*stride] = dst[j];
+      dst[j + (height - 1 + i)*stride] = dst[j + (height - 1)*stride];
+      j++;
+      temp--;
+    }
+  }
+
+
+  //Left and Right Padding
+  Pel* ptr1 = dst - padSize*stride;
+  Pel* ptr2 = dst - padSize*stride + width - 1;
+  int offset = 0;
+  for (int i = 0; i < height + 2 * padSize; i++)
+  {
+    offset = stride * i;
+    for (int j = 1; j <= padSize; j++)
+    {
+      *(ptr1 - j + offset) = *(ptr1 + offset);
+      *(ptr2 + j + offset) = *(ptr2 + offset);
+    }
+
+  }
+}
 template< X86_VEXT vext >
 void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
 {
@@ -162,7 +279,7 @@ void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1St
 }
 
 template< X86_VEXT vext >
-void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY)
+void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth)
 {
   __m128i vzero = _mm_setzero_si128();
   Pel* srcTmp = src + srcStride + 1;
@@ -171,6 +288,8 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
 
   int widthInside = width - 2 * BIO_EXTEND_SIZE;
   int heightInside = height - 2 * BIO_EXTEND_SIZE;
+  int shift1 = std::max<int>(2, (14 - bitDepth));
+
 
   assert((widthInside & 3) == 0);
 
@@ -184,8 +303,8 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
       __m128i mmPixLeft = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - 1)));
       __m128i mmPixRight = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + 1)));
 
-      __m128i mmGradVer = _mm_srai_epi32(_mm_sub_epi32(mmPixBottom, mmPixTop), 4);
-      __m128i mmGradHor = _mm_srai_epi32(_mm_sub_epi32(mmPixRight, mmPixLeft), 4);
+      __m128i mmGradVer = _mm_sra_epi32(_mm_sub_epi32(mmPixBottom, mmPixTop), _mm_cvtsi32_si128(shift1));
+      __m128i mmGradHor = _mm_sra_epi32(_mm_sub_epi32(mmPixRight, mmPixLeft), _mm_cvtsi32_si128(shift1));
       mmGradVer = _mm_packs_epi32(mmGradVer, vzero);
       mmGradHor = _mm_packs_epi32(mmGradHor, vzero);
 
@@ -220,23 +339,25 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
 }
 
 template< X86_VEXT vext >
-void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG)
+void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
 {
+  int shift4 = std::min<int>(8, (bitDepth - 4));
+  int shift5 = std::min<int>(5, (bitDepth - 7));
   for (int y = 0; y < heightG; y++)
   {
     int x = 0;
     for (; x < ((widthG >> 3) << 3); x += 8)
     {
-      __m128i mmSrcY0Temp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY0Temp + x)), 6);
-      __m128i mmSrcY1Temp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY1Temp + x)), 6);
+      __m128i mmSrcY0Temp = _mm_sra_epi16(_mm_loadu_si128((__m128i*)(srcY0Temp + x)), _mm_cvtsi32_si128(shift4));
+      __m128i mmSrcY1Temp = _mm_sra_epi16(_mm_loadu_si128((__m128i*)(srcY1Temp + x)), _mm_cvtsi32_si128(shift4));
       __m128i mmGradX0 = _mm_loadu_si128((__m128i*)(gradX0 + x));
       __m128i mmGradX1 = _mm_loadu_si128((__m128i*)(gradX1 + x));
       __m128i mmGradY0 = _mm_loadu_si128((__m128i*)(gradY0 + x));
       __m128i mmGradY1 = _mm_loadu_si128((__m128i*)(gradY1 + x));
 
       __m128i mmTemp1 = _mm_sub_epi16(mmSrcY1Temp, mmSrcY0Temp);
-      __m128i mmTempX = _mm_srai_epi16(_mm_add_epi16(mmGradX0, mmGradX1), 3);
-      __m128i mmTempY = _mm_srai_epi16(_mm_add_epi16(mmGradY0, mmGradY1), 3);
+      __m128i mmTempX = _mm_sra_epi16(_mm_add_epi16(mmGradX0, mmGradX1), _mm_cvtsi32_si128(shift5));
+      __m128i mmTempY = _mm_sra_epi16(_mm_add_epi16(mmGradY0, mmGradY1), _mm_cvtsi32_si128(shift5));
 
       // m_piDotProductTemp1
       __m128i mm_b = _mm_mulhi_epi16(mmTempX, mmTempX);
@@ -291,16 +412,16 @@ void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX
 
     for (; x < ((widthG >> 2) << 2); x += 4)
     {
-      __m128i mmSrcY0Temp = _mm_srai_epi16(_mm_loadl_epi64((__m128i*)(srcY0Temp + x)), 6);
-      __m128i mmSrcY1Temp = _mm_srai_epi16(_mm_loadl_epi64((__m128i*)(srcY1Temp + x)), 6);
+      __m128i mmSrcY0Temp = _mm_sra_epi16(_mm_loadl_epi64((__m128i*)(srcY0Temp + x)), _mm_cvtsi32_si128(shift4));
+      __m128i mmSrcY1Temp = _mm_sra_epi16(_mm_loadl_epi64((__m128i*)(srcY1Temp + x)), _mm_cvtsi32_si128(shift4));
       __m128i mmGradX0 = _mm_loadl_epi64((__m128i*)(gradX0 + x));
       __m128i mmGradX1 = _mm_loadl_epi64((__m128i*)(gradX1 + x));
       __m128i mmGradY0 = _mm_loadl_epi64((__m128i*)(gradY0 + x));
       __m128i mmGradY1 = _mm_loadl_epi64((__m128i*)(gradY1 + x));
 
       __m128i mmTemp1 = _mm_sub_epi16(mmSrcY1Temp, mmSrcY0Temp);
-      __m128i mmTempX = _mm_srai_epi16(_mm_add_epi16(mmGradX0, mmGradX1), 3);
-      __m128i mmTempY = _mm_srai_epi16(_mm_add_epi16(mmGradY0, mmGradY1), 3);
+      __m128i mmTempX = _mm_sra_epi16(_mm_add_epi16(mmGradX0, mmGradX1), _mm_cvtsi32_si128(shift5));
+      __m128i mmTempY = _mm_sra_epi16(_mm_add_epi16(mmGradY0, mmGradY1), _mm_cvtsi32_si128(shift5));
 
       // m_piDotProductTemp1
       __m128i mm_b = _mm_mulhi_epi16(mmTempX, mmTempX);
@@ -340,9 +461,9 @@ void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX
 
     for (; x < widthG; x++)
     {
-      int temp = (srcY0Temp[x] >> 6) - (srcY1Temp[x] >> 6);
-      int tempX = (gradX0[x] + gradX1[x]) >> 3;
-      int tempY = (gradY0[x] + gradY1[x]) >> 3;
+      int temp = (srcY0Temp[x] >> shift4) - (srcY1Temp[x] >> shift4);
+      int tempX = (gradX0[x] + gradX1[x]) >> shift5;
+      int tempY = (gradY0[x] + gradY1[x]) >> shift5;
       dotProductTemp1[x] = tempX * tempX;
       dotProductTemp2[x] = tempX * tempY;
       dotProductTemp3[x] = -tempX * temp;
@@ -446,7 +567,7 @@ void reco_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int src
           __m256i vdest = _mm256_lddqu_si256( ( const __m256i * )&src0[col] );
           __m256i vsrc1 = _mm256_lddqu_si256( ( const __m256i * )&src1[col] );
 
-          vdest = _mm256_add_epi16( vdest, vsrc1 );
+          vdest = _mm256_adds_epi16( vdest, vsrc1 );
           vdest = _mm256_min_epi16( vbdmax, _mm256_max_epi16( vbdmin, vdest ) );
 
           _mm256_storeu_si256( ( __m256i * )&dst[col], vdest );
@@ -470,7 +591,7 @@ void reco_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int src
           __m128i vdest = _mm_loadu_si128( ( const __m128i * )&src0[col] );
           __m128i vsrc1 = _mm_loadu_si128( ( const __m128i * )&src1[col] );
 
-          vdest = _mm_add_epi16( vdest, vsrc1 );
+          vdest = _mm_adds_epi16( vdest, vsrc1 );
           vdest = _mm_min_epi16( vbdmax, _mm_max_epi16( vbdmin, vdest ) );
 
           _mm_storeu_si128( ( __m128i * )&dst[col], vdest );
@@ -494,7 +615,7 @@ void reco_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int src
         __m128i vsrc = _mm_loadl_epi64( ( const __m128i * )&src0[col] );
         __m128i vdst = _mm_loadl_epi64( ( const __m128i * )&src1[col] );
 
-        vdst = _mm_add_epi16( vdst, vsrc );
+        vdst = _mm_adds_epi16( vdst, vsrc );
         vdst = _mm_min_epi16( vbdmax, _mm_max_epi16( vbdmin, vdst ) );
 
         _mm_storel_epi64( ( __m128i * )&dst[col], vdst );
@@ -801,6 +922,8 @@ void PelBufferOps::_initPelBufOpsX86()
   calcBIOPar      = calcBIOPar_SSE<vext>;
   calcBlkGradient = calcBlkGradient_SSE<vext>;
 
+  copyBuffer = copyBufferSimd<vext>;
+  padding    = paddingSimd<vext>;
   reco8 = reco_SSE<vext, 8>;
   reco4 = reco_SSE<vext, 4>;
 

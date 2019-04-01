@@ -70,10 +70,9 @@ public:
   int             cgPosX          ()                        const { return m_subSetPosX; }
   unsigned        width           ()                        const { return m_width; }
   unsigned        height          ()                        const { return m_height; }
+  unsigned        log2CGWidth     ()                        const { return m_log2CGWidth; }
+  unsigned        log2CGHeight    ()                        const { return m_log2CGHeight; }
   unsigned        log2CGSize      ()                        const { return m_log2CGSize; }
-  unsigned        log2BlockWidth  ()                        const { return m_log2BlockWidth; }
-  unsigned        log2BlockHeight ()                        const { return m_log2BlockHeight; }
-  unsigned        log2BlockSize   ()                        const { return m_log2BlockSize; }
   bool            extPrec         ()                        const { return m_extendedPrecision; }
   int             maxLog2TrDRange ()                        const { return m_maxLog2TrDynamicRange; }
   unsigned        maxNumCoeff     ()                        const { return m_maxNumCoeff; }
@@ -82,7 +81,7 @@ public:
   int             maxSubPos       ()                        const { return m_maxSubPos; }
   bool            isLast          ()                        const { return ( ( m_scanPosLast >> m_log2CGSize ) == m_subSetId ); }
   bool            isNotFirst      ()                        const { return ( m_subSetId != 0 ); }
-  bool            isSigGroup      ( int       scanPosCG )   const { return m_sigCoeffGroupFlag[ m_scanCG[ scanPosCG ] ]; }
+  bool            isSigGroup(int scanPosCG) const { return m_sigCoeffGroupFlag[m_scanCG[scanPosCG].idx]; }
   bool            isSigGroup      ()                        const { return m_sigCoeffGroupFlag[ m_subSetPos ]; }
 #if HEVC_USE_SIGN_HIDING
   bool            signHiding      ()                        const { return m_signHiding; }
@@ -90,9 +89,9 @@ public:
                                     int       posLast   )   const { return ( m_signHiding && ( posLast - posFirst >= SBH_THRESHOLD ) ); }
 #endif
   CoeffScanType   scanType        ()                        const { return m_scanType; }
-  unsigned        blockPos        ( int       scanPos   )   const { return m_scan[ scanPos ]; }
-  unsigned        posX            ( int       scanPos   )   const { return m_scanPosX[ scanPos ]; }
-  unsigned        posY            ( int       scanPos   )   const { return m_scanPosY[ scanPos ]; }
+  unsigned        blockPos(int scanPos) const { return m_scan[scanPos].idx; }
+  unsigned        posX(int scanPos) const { return m_scan[scanPos].x; }
+  unsigned        posY(int scanPos) const { return m_scan[scanPos].y; }
   unsigned        maxLastPosX     ()                        const { return m_maxLastPosX; }
   unsigned        maxLastPosY     ()                        const { return m_maxLastPosY; }
   unsigned        lastXCtxId      ( unsigned  posLastX  )   const { return m_CtxSetLastX( m_lastOffsetX + ( posLastX >> m_lastShiftX ) ); }
@@ -101,17 +100,13 @@ public:
 
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
-    const uint32_t    posY      = m_scanPosY[ scanPos ];
-    const uint32_t    posX      = m_scanPosX[ scanPos ];
+    const uint32_t posY      = m_scan[scanPos].y;
+    const uint32_t posX      = m_scan[scanPos].x;
     const TCoeff* pData     = coeff + posX + posY * m_width;
     const int     diag      = posX + posY;
     int           numPos    = 0;
     int           sumAbs    = 0;
-#if JVET_M0173_MOVE_GT2_TO_FIRST_PASS
 #define UPDATE(x) {int a=abs(x);sumAbs+=std::min(4+(a&1),a);numPos+=!!a;}
-#else
-#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(2+(a&1),a);numPos+=!!a;}
-#endif
     if( posX < m_width-1 )
     {
       UPDATE( pData[1] );
@@ -160,8 +155,8 @@ public:
 
   unsigned templateAbsSum( int scanPos, const TCoeff* coeff )
   {
-    const uint32_t  posY  = m_scanPosY[scanPos];
-    const uint32_t  posX  = m_scanPosX[scanPos];
+    const uint32_t  posY  = m_scan[scanPos].y;
+    const uint32_t  posX  = m_scan[scanPos].x;
     const TCoeff*   pData = coeff + posX + posY * m_width;
     int             sum   = 0;
     if (posX < m_width - 1)
@@ -187,10 +182,6 @@ public:
     return std::min(sum, 31);
   }
 
-#if !JVET_M0464_UNI_MTS
-  unsigned        emtNumSigCoeff()                          const { return m_emtNumSigCoeff; }
-  void            setEmtNumSigCoeff( unsigned val )               { m_emtNumSigCoeff = val; }
-#endif
 
 private:
   // constant
@@ -205,7 +196,6 @@ private:
   const unsigned            m_heightInGroups;
   const unsigned            m_log2BlockWidth;
   const unsigned            m_log2BlockHeight;
-  const unsigned            m_log2BlockSize;
   const unsigned            m_maxNumCoeff;
 #if HEVC_USE_SIGN_HIDING
   const bool                m_signHiding;
@@ -213,10 +203,8 @@ private:
   const bool                m_extendedPrecision;
   const int                 m_maxLog2TrDynamicRange;
   CoeffScanType             m_scanType;
-  const unsigned*           m_scan;
-  const unsigned*           m_scanPosX;
-  const unsigned*           m_scanPosY;
-  const unsigned*           m_scanCG;
+  const ScanElement *       m_scan;
+  const ScanElement *       m_scanCG;
   const CtxSet              m_CtxSetLastX;
   const CtxSet              m_CtxSetLastY;
   const unsigned            m_maxLastPosX;
@@ -241,9 +229,6 @@ private:
   CtxSet                    m_parFlagCtxSet;
   CtxSet                    m_gtxFlagCtxSet[2];
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
-#if !JVET_M0464_UNI_MTS
-  unsigned                  m_emtNumSigCoeff;
-#endif
 };
 
 
@@ -251,13 +236,16 @@ class CUCtx
 {
 public:
   CUCtx()              : isDQPCoded(false), isChromaQpAdjCoded(false),
+                         qgStart(false),
                          numNonZeroCoeffNonTs(0) {}
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
+                         qgStart(false),
                          numNonZeroCoeffNonTs(0), qp(_qp) {}
   ~CUCtx() {}
 public:
   bool      isDQPCoded;
   bool      isChromaQpAdjCoded;
+  bool      qgStart;
   uint32_t      numNonZeroCoeffNonTs;
   int8_t     qp;                   // used as a previous(last) QP and for QP prediction
 };
@@ -302,21 +290,15 @@ public:
 
 namespace DeriveCtx
 {
-#if JVET_M0421_SPLIT_SIG
 void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* canSplit = nullptr );
-#else
-unsigned CtxCUsplit   ( const CodingStructure& cs, Partitioner& partitioner );
-unsigned CtxBTsplit   ( const CodingStructure& cs, Partitioner& partitioner );
-#endif
-unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf );
+unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
 unsigned CtxAffineFlag( const CodingUnit& cu );
 unsigned CtxTriangleFlag( const CodingUnit& cu );
-#if JVET_M0502_PRED_MODE_CTX
 unsigned CtxPredModeFlag( const CodingUnit& cu );
-#endif
+unsigned CtxIBCFlag(const CodingUnit& cu);
 }
 
 #endif // __CONTEXTMODELLING__

@@ -46,10 +46,9 @@
 #include "CommonLib/Unit.h"
 #include "CommonLib/UnitPartitioner.h"
 #include "CommonLib/IbcHashMap.h"
+#include "CommonLib/LoopFilter.h"
 
-#if REUSE_CU_RESULTS
 #include "DecoderLib/DecCu.h"
-#endif
 
 #include "CABACWriter.h"
 #include "IntraSearch.h"
@@ -68,13 +67,19 @@ class EncSlice;
 // ====================================================================================================================
 
 /// CU encoder class
+struct TriangleMotionInfo
+{
+  uint8_t   m_splitDir;
+  uint8_t   m_candIdx0;
+  uint8_t   m_candIdx1;
+
+  TriangleMotionInfo ( uint8_t splitDir, uint8_t candIdx0, uint8_t candIdx1 ): m_splitDir(splitDir), m_candIdx0(candIdx0), m_candIdx1(candIdx1) { }
+};
 class EncCu
-#if REUSE_CU_RESULTS
   : DecCu
-#endif
 {
 private:
-
+  bool m_bestModeUpdated;
   struct CtxPair
   {
     Ctx start;
@@ -96,9 +101,6 @@ private:
 
   CodingStructure    ***m_pTempCS;
   CodingStructure    ***m_pBestCS;
-  LutMotionCand      ***m_pTempMotLUTs;
-  LutMotionCand      ***m_pBestMotLUTs;
-  LutMotionCand      ***m_pSplitTempMotLUTs;
   //  Access channel
   EncCfg*               m_pcEncCfg;
   IntraSearch*          m_pcIntraSearch;
@@ -106,20 +108,24 @@ private:
   TrQuant*              m_pcTrQuant;
   RdCost*               m_pcRdCost;
   EncSlice*             m_pcSliceEncoder;
+  LoopFilter*           m_pcLoopFilter;
 
   CABACWriter*          m_CABACEstimator;
   RateCtrl*             m_pcRateCtrl;
   IbcHashMap            m_ibcHashMap;
-  CodingStructure     **m_pImvTempCS;
   EncModeCtrl          *m_modeCtrl;
+  int                  m_shareState;
+  uint32_t             m_shareBndPosX;
+  uint32_t             m_shareBndPosY;
+  SizeType             m_shareBndSizeW;
+  SizeType             m_shareBndSizeH;
+
   PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
   PelStorage            m_acRealMergeBuffer[MRG_MAX_NUM_CANDS];
   PelStorage            m_acTriangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS]; // to store weighted prediction pixles
   double                m_mergeBestSATDCost;
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];
-  unsigned int          m_subMergeBlkSize[10];
-  unsigned int          m_subMergeBlkNum[10];
-  unsigned int          m_prevPOC;
+
   int                   m_ctuIbcSearchRangeX;
   int                   m_ctuIbcSearchRangeY;
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
@@ -127,14 +133,17 @@ private:
 #endif
   int                   m_bestGbiIdx[2];
   double                m_bestGbiCost[2];
-#if SHARP_LUMA_DELTA_QP
-  void    updateLambda      ( Slice* slice, double dQP );
+  static const TriangleMotionInfo  m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
+  uint8_t                          m_triangleIdxBins[2][TRIANGLE_MAX_NUM_UNI_CANDS][TRIANGLE_MAX_NUM_UNI_CANDS];
+#if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
+  void    updateLambda      ( Slice* slice, const int dQP, const bool updateRdCostLambda );
 #endif
+  double                m_sbtCostSave[2];
 
 public:
   /// copy parameters from encoder class
   void  init                ( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int jId = 0 ) );
-
+  void setDecCuReshaperInEncCU(EncReshape* pcReshape, ChromaFormat chromaFormatIDC) { initDecCuReshaper((Reshape*) pcReshape, chromaFormatIDC); }
   /// create internal buffers
   void  create              ( EncCfg* encCfg );
 
@@ -151,15 +160,17 @@ public:
 
   void   setMergeBestSATDCost(double cost) { m_mergeBestSATDCost = cost; }
   double getMergeBestSATDCost()            { return m_mergeBestSATDCost; }
+  IbcHashMap& getIbcHashMap()              { return m_ibcHashMap;        }
+  EncCfg*     getEncCfg()            const { return m_pcEncCfg;          }
 
   ~EncCu();
 
 protected:
 
-  void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm
-    , LutMotionCand *&tempMotCandLUTs
-    , LutMotionCand *&bestMotCandLUTs
-  );
+  void xCalDebCost            ( CodingStructure &cs, Partitioner &partitioner, bool calDist = false );
+  Distortion getDistortionDb  ( CodingStructure &cs, CPelBuf org, CPelBuf reco, ComponentID compID, const CompArea& compArea, bool afterDb );
+
+  void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm );
 #if ENABLE_SPLIT_PARALLELISM
   void xCompressCUParallel    ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm );
   void copyState              ( EncCu* other, Partitioner& pm, const UnitArea& currArea, const bool isDist );
@@ -168,11 +179,7 @@ protected:
   bool
     xCheckBestMode         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestmode );
 
-  void xCheckModeSplit        ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode
-    , LutMotionCand* &tempMotCandLUTs
-    , LutMotionCand* &bestMotCandLUTs
-    , UnitArea  parArea
-  );
+  void xCheckModeSplit        ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
 
   void xCheckRDCostIntra      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
   void xCheckIntraPCM         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
@@ -180,6 +187,7 @@ protected:
   void xCheckDQP              ( CodingStructure& cs, Partitioner& partitioner, bool bKeepCtx = false);
   void xFillPCMBuffer         ( CodingUnit &cu);
 
+  void xCheckRDCostHashInter  ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
   void xCheckRDCostAffineMerge2Nx2N
                               ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
   void xCheckRDCostInter      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
@@ -190,24 +198,14 @@ protected:
 
   void xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
 
-#if JVET_M0464_UNI_MTS
   void xEncodeInterResidual(   CodingStructure *&tempCS
                              , CodingStructure *&bestCS
                              , Partitioner &partitioner
                              , const EncTestMode& encTestMode
                              , int residualPass       = 0
-                             , CodingStructure* imvCS = NULL
                              , bool* bestHasNonResi   = NULL
                              , double* equGBiCost     = NULL
                            );
-#else
-  void xEncodeInterResidual   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, int residualPass = 0
-    , CodingStructure* imvCS = NULL
-    , int emtMode = 1
-    , bool* bestHasNonResi = NULL
-    , double* equGBiCost = NULL
-  );
-#endif
 #if REUSE_CU_RESULTS
   void xReuseCachedResult     ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &Partitioner );
 #endif

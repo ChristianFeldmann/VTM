@@ -53,6 +53,7 @@ enum PictureType
 {
   PIC_RECONSTRUCTION = 0,
   PIC_ORIGINAL,
+  PIC_TRUE_ORIGINAL,
   PIC_PREDICTION,
   PIC_RESIDUAL,
   PIC_ORG_RESI,
@@ -79,7 +80,7 @@ public:
 
   Picture         *picture;
   CodingStructure *parent;
-
+  CodingStructure *bestCS;
   Slice           *slice;
 
   UnitScale        unitScale[MAX_NUM_COMPONENT];
@@ -89,9 +90,12 @@ public:
   int         prevQP[MAX_NUM_CHANNEL_TYPE];
   int         currQP[MAX_NUM_CHANNEL_TYPE];
   int         chromaQpAdj;
+  Position    sharedBndPos;
+  Size        sharedBndSize;
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;
+  APS *      aps;
 #if HEVC_VPS
   const VPS *vps;
 #endif
@@ -120,11 +124,11 @@ public:
 
   const CodingUnit     *getCU(const Position &pos, const ChannelType _chType) const;
   const PredictionUnit *getPU(const Position &pos, const ChannelType _chType) const;
-  const TransformUnit  *getTU(const Position &pos, const ChannelType _chType) const;
+  const TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1) const;
 
   CodingUnit     *getCU(const Position &pos, const ChannelType _chType);
   PredictionUnit *getPU(const Position &pos, const ChannelType _chType);
-  TransformUnit  *getTU(const Position &pos, const ChannelType _chType);
+  TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1);
 
   const CodingUnit     *getCU(const ChannelType &_chType) const { return getCU(area.blocks[_chType].pos(), _chType); }
   const PredictionUnit *getPU(const ChannelType &_chType) const { return getPU(area.blocks[_chType].pos(), _chType); }
@@ -162,6 +166,9 @@ public:
   static_vector<double, NUM_ENC_FEATURES> features;
 
   double      cost;
+  bool        useDbCost;
+  double      costDbOffset;
+  double      lumaCost;
   uint64_t      fracBits;
   Distortion  dist;
   Distortion  interHad;
@@ -186,6 +193,10 @@ public:
   std::vector<    CodingUnit*> cus;
   std::vector<PredictionUnit*> pus;
   std::vector< TransformUnit*> tus;
+
+  LutMotionCand motionLut;
+
+  void addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS>& lut, const MotionInfo &mi);
 
 private:
 

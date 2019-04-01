@@ -51,6 +51,7 @@ enum MvPrecision
 {
   MV_PRECISION_4PEL     = 0,      // 4-pel
   MV_PRECISION_INT      = 2,      // 1-pel, shift 2 bits from 4-pel
+  MV_PRECISION_HALF     = 3,      // 1/2-pel
   MV_PRECISION_QUARTER  = 4,      // 1/4-pel (the precision of regular MV difference signaling), shift 4 bits from 4-pel
   MV_PRECISION_INTERNAL = 6,      // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
 };
@@ -165,13 +166,8 @@ public:
 
   const Mv scaleMv( int iScale ) const
   {
-#if JVET_M0479_18BITS_MV_CLIP
     const int mvx = Clip3( -131072, 131071, (iScale * getHor() + 127 + (iScale * getHor() < 0)) >> 8 );
     const int mvy = Clip3( -131072, 131071, (iScale * getVer() + 127 + (iScale * getVer() < 0)) >> 8 );
-#else
-    const int mvx = Clip3( -32768, 32767, (iScale * getHor() + 127 + (iScale * getHor() < 0)) >> 8 );
-    const int mvy = Clip3( -32768, 32767, (iScale * getVer() + 127 + (iScale * getVer() < 0)) >> 8 );
-#endif
     return Mv( mvx, mvy );
   }
 
@@ -207,12 +203,16 @@ public:
     roundToPrecision(src, m_amvrPrecision[amvr]);
   }
 
-#if JVET_M0444_SMVD
   Mv getSymmvdMv(const Mv& curMvPred, const Mv& tarMvPred)
   {
     return Mv(tarMvPred.hor - hor + curMvPred.hor, tarMvPred.ver - ver + curMvPred.ver);
   }
-#endif
+
+  void clipToStorageBitDepth()
+  {
+    hor = Clip3( -(1 << 17), (1 << 17) - 1, hor );
+    ver = Clip3( -(1 << 17), (1 << 17) - 1, ver );
+  }
 };// END CLASS DEFINITION MV
 
 namespace std
@@ -226,7 +226,7 @@ namespace std
     }
   };
 };
-void clipMv ( Mv& rcMv, const struct Position& pos, 
+void clipMv ( Mv& rcMv, const struct Position& pos,
               const struct Size& size,
               const class SPS& sps );
 

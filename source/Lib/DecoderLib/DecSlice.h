@@ -77,7 +77,7 @@ public:
   void  create            ();
   void  destroy           ();
 
-  void  decompressSlice   ( Slice* slice, InputBitstream* bitstream );
+  void  decompressSlice   ( Slice* slice, InputBitstream* bitstream, int debugCTU );
 };
 
 //! \}

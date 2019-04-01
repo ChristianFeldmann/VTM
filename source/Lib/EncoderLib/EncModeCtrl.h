@@ -54,6 +54,7 @@
 
 enum EncTestModeType
 {
+  ETM_HASH_INTER,
   ETM_MERGE_SKIP,
   ETM_INTER_ME,
   ETM_AFFINE,
@@ -137,6 +138,7 @@ inline bool isModeInter( const EncTestMode& encTestmode ) // perhaps remove
           || encTestmode.type == ETM_MERGE_SKIP
           || encTestmode.type == ETM_AFFINE
           || encTestmode.type == ETM_MERGE_TRIANGLE
+          || encTestmode.type == ETM_HASH_INTER
          );
 }
 
@@ -178,23 +180,20 @@ struct ComprCUCtx
     , testModes     (            )
     , lastTestMode  (            )
     , earlySkip     ( false      )
+    , isHashPerfectMatch
+                    ( false      )
     , bestCS        ( nullptr    )
     , bestCU        ( nullptr    )
     , bestTU        ( nullptr    )
     , extraFeatures (            )
     , extraFeaturesd(            )
     , bestInterCost ( MAX_DOUBLE )
-#if !JVET_M0464_UNI_MTS
-    , bestEmtSize2Nx2N1stPass
-                    ( MAX_DOUBLE )
-    , skipSecondEMTPass
-                    ( false   )
-#endif
     , interHad      (std::numeric_limits<Distortion>::max())
 #if ENABLE_SPLIT_PARALLELISM
     , isLevelSplitParallel
                     ( false )
 #endif
+    , bestCostWithoutSplitFlags( MAX_DOUBLE )
   {
     getAreaIdx( cs.area.Y(), *cs.pcv, cuX, cuY, cuW, cuH );
     partIdx = ( ( cuX << 8 ) | cuY );
@@ -212,20 +211,18 @@ struct ComprCUCtx
   std::vector<EncTestMode>          testModes;
   EncTestMode                       lastTestMode;
   bool                              earlySkip;
+  bool                              isHashPerfectMatch;
   CodingStructure                  *bestCS;
   CodingUnit                       *bestCU;
   TransformUnit                    *bestTU;
   static_vector<int64_t,  30>         extraFeatures;
   static_vector<double, 30>         extraFeaturesd;
   double                            bestInterCost;
-#if !JVET_M0464_UNI_MTS
-  double                            bestEmtSize2Nx2N1stPass;
-  bool                              skipSecondEMTPass;
-#endif
   Distortion                        interHad;
 #if ENABLE_SPLIT_PARALLELISM
   bool                              isLevelSplitParallel;
 #endif
+  double                            bestCostWithoutSplitFlags;
 
   template<typename T> T    get( int ft )       const { return typeid(T) == typeid(double) ? (T&)extraFeaturesd[ft] : T(extraFeatures[ft]); }
   template<typename T> void set( int ft, T val )      { extraFeatures [ft] = int64_t( val ); }
@@ -257,11 +254,9 @@ protected:
 public:
 
   virtual ~EncModeCtrl              () {}
-  
-#if REUSE_CU_RESULTS
+
   virtual void create               ( const EncCfg& cfg )                                                                   = 0;
   virtual void destroy              ()                                                                                      = 0;
-#endif
   virtual void initCTUEncoding      ( const Slice &slice )                                                                  = 0;
   virtual void initCULevel          ( Partitioner &partitioner, const CodingStructure& cs )                                 = 0;
   virtual void finishCULevel        ( Partitioner &partitioner )                                                            = 0;
@@ -287,6 +282,8 @@ public:
   EncTestMode  currTestMode         () const;
   EncTestMode  lastTestMode         () const;
   void         setEarlySkipDetected ();
+  void         setIsHashPerfectMatch( bool b ) { m_ComprCUCtxList.back().isHashPerfectMatch = b; }
+  bool         getIsHashPerfectMatch() { return m_ComprCUCtxList.back().isHashPerfectMatch; }
   virtual void setBest              ( CodingStructure& cs );
   bool         anyMode              () const;
 
@@ -302,15 +299,12 @@ public:
   double getBestInterCost             ()                  const { return m_ComprCUCtxList.back().bestInterCost;           }
   Distortion getInterHad              ()                  const { return m_ComprCUCtxList.back().interHad;                }
   void enforceInterHad                ( Distortion had )        {        m_ComprCUCtxList.back().interHad = had;          }
-#if !JVET_M0464_UNI_MTS
-  double getEmtSize2Nx2NFirstPassCost ()                  const { return m_ComprCUCtxList.back().bestEmtSize2Nx2N1stPass; }
-  bool getSkipSecondEMTPass           ()                  const { return m_ComprCUCtxList.back().skipSecondEMTPass;       }
-  void setSkipSecondEMTPass           ( bool b )                {        m_ComprCUCtxList.back().skipSecondEMTPass = b;   }
-#endif
+  double getBestCostWithoutSplitFlags ()                  const { return m_ComprCUCtxList.back().bestCostWithoutSplitFlags;         }
+  void   setBestCostWithoutSplitFlags ( double cost )           { m_ComprCUCtxList.back().bestCostWithoutSplitFlags = cost;         }
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );
-  void xGetMinMaxQP     ( int& iMinQP, int& iMaxQP, const CodingStructure& cs, const Partitioner &pm, const int baseQP, const SPS& sps, const PPS& pps, const bool splitMode );
+  void xGetMinMaxQP     ( int& iMinQP, int& iMaxQP, const CodingStructure& cs, const Partitioner &pm, const int baseQP, const SPS& sps, const PPS& pps, const PartSplit splitMode );
   int  xComputeDQP      ( const CodingStructure &cs, const Partitioner &pm );
 };
 
@@ -318,6 +312,40 @@ protected:
 //////////////////////////////////////////////////////////////////////////
 // some utility interfaces that expose some functionality that can be used without concerning about which particular controller is used
 //////////////////////////////////////////////////////////////////////////
+struct SaveLoadStructSbt
+{
+  uint8_t  numPuInfoStored;
+  uint32_t puSse[SBT_NUM_SL];
+  uint8_t  puSbt[SBT_NUM_SL];
+  uint8_t  puTrs[SBT_NUM_SL];
+};
+
+class SaveLoadEncInfoSbt
+{
+protected:
+#if ENABLE_SPLIT_PARALLELISM
+public:
+#endif
+  void init( const Slice &slice );
+#if ENABLE_SPLIT_PARALLELISM
+protected:
+#endif
+  void create();
+  void destroy();
+
+private:
+  SaveLoadStructSbt ****m_saveLoadSbt;
+  Slice const       *m_sliceSbt;
+
+public:
+  virtual  ~SaveLoadEncInfoSbt() { }
+  void     resetSaveloadSbt( int maxSbtSize );
+  uint16_t findBestSbt( const UnitArea& area, const uint32_t curPuSse );
+  bool     saveBestSbt( const UnitArea& area, const uint32_t curPuSse, const uint8_t curPuSbt, const uint8_t curPuTrs );
+#if ENABLE_SPLIT_PARALLELISM
+  void     copyState(const SaveLoadEncInfoSbt& other);
+#endif
+};
 
 static const int MAX_STORED_CU_INFO_REFS = 4;
 
@@ -327,6 +355,7 @@ struct CodedCUInfo
   bool isIntra;
   bool isSkip;
   bool isMMVDSkip;
+  bool isIBC;
   bool validMv[NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
@@ -389,10 +418,19 @@ struct BestEncodingInfo
 {
   CodingUnit     cu;
   PredictionUnit pu;
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  TransformUnit  tus[MAX_NUM_TUS];
+  size_t         numTus;
+#else
   TransformUnit  tu;
+#endif
   EncTestMode    testMode;
 
   int            poc;
+
+#if ENABLE_SPLIT_PARALLELISM
+  int64_t        temporalId;
+#endif
 };
 
 class BestEncInfoCache
@@ -406,23 +444,31 @@ private:
   Pel                *m_pPcmBuf;
   CodingStructure     m_dummyCS;
   XUCache             m_dummyCache;
+#if ENABLE_SPLIT_PARALLELISM
+  int64_t m_currTemporalId;
+#endif
 
 protected:
 
   void create   ( const ChromaFormat chFmt );
   void destroy  ();
-  void init     ( const Slice &slice );
 
   bool setFromCs( const CodingStructure& cs, const Partitioner& partitioner );
-  bool isValid  ( const CodingStructure& cs, const Partitioner& partitioner, int qp );
+  bool isValid  ( const CodingStructure &cs, const Partitioner &partitioner, int qp );
 
-  // TODO: implement copyState
-
+#if ENABLE_SPLIT_PARALLELISM
+  void touch    ( const UnitArea& area );
+#endif
 public:
 
   BestEncInfoCache() : m_slice_bencinf( nullptr ), m_dummyCS( m_dummyCache.cuCache, m_dummyCache.puCache, m_dummyCache.tuCache ) {}
   virtual ~BestEncInfoCache() {}
 
+#if ENABLE_SPLIT_PARALLELISM
+  void     copyState( const BestEncInfoCache &other, const UnitArea &area );
+  void     tick     () { m_currTemporalId++; CHECK( m_currTemporalId <= 0, "Problem with integer overflow!" ); }
+#endif
+  void     init     ( const Slice &slice );
   bool     setCsFrom( CodingStructure& cs, EncTestMode& testMode, const Partitioner& partitioner ) const;
 };
 
@@ -436,6 +482,7 @@ class EncModeCtrlMTnoRQT : public EncModeCtrl, public CacheBlkInfoCtrl
 #if REUSE_CU_RESULTS
   , public BestEncInfoCache
 #endif
+  , public SaveLoadEncInfoSbt
 {
   enum ExtraFeatures
   {
@@ -464,13 +511,8 @@ class EncModeCtrlMTnoRQT : public EncModeCtrl, public CacheBlkInfoCtrl
 
 public:
 
-  EncModeCtrlMTnoRQT ();
-  ~EncModeCtrlMTnoRQT();
-
-#if REUSE_CU_RESULTS
   virtual void create             ( const EncCfg& cfg );
   virtual void destroy            ();
-#endif
   virtual void initCTUEncoding    ( const Slice &slice );
   virtual void initCULevel        ( Partitioner &partitioner, const CodingStructure& cs );
   virtual void finishCULevel      ( Partitioner &partitioner );

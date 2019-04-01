@@ -141,6 +141,7 @@ void readNalUnitHeader(InputNALUnit& nalu)
     if ( nalu.m_temporalId )
     {
 #if HEVC_VPS
+#if !JVET_M0101_HLS
       CHECK(  nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP
            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
@@ -153,6 +154,17 @@ void readNalUnitHeader(InputNALUnit& nalu)
            || nalu.m_nalUnitType == NAL_UNIT_EOB
             , "Invalid NAL type" );
 #else
+      CHECK(  nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
+           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
+           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+           || nalu.m_nalUnitType == NAL_UNIT_VPS
+           || nalu.m_nalUnitType == NAL_UNIT_SPS
+           || nalu.m_nalUnitType == NAL_UNIT_EOS
+           || nalu.m_nalUnitType == NAL_UNIT_EOB
+           , "Invalid NAL type" );
+#endif
+#else
+#if !JVET_M0101_HLS
       CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP
            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
@@ -163,15 +175,30 @@ void readNalUnitHeader(InputNALUnit& nalu)
            || nalu.m_nalUnitType == NAL_UNIT_EOS
            || nalu.m_nalUnitType == NAL_UNIT_EOB
            , "Invalid NAL type");
+#else
+      CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
+         || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
+         || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+         || nalu.m_nalUnitType == NAL_UNIT_SPS
+         || nalu.m_nalUnitType == NAL_UNIT_EOS
+         || nalu.m_nalUnitType == NAL_UNIT_EOB
+         , "Invalid NAL type");
 #endif
+#endif
+
     }
     else
     {
+#if !JVET_M0101_HLS
       CHECK(  nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TSA_R
            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TSA_N
            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_R
            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_N
             , "Invalid NAL type" );
+#else
+      CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
+         , "Invalid NAL type");
+#endif
     }
   }
 }

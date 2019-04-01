@@ -146,7 +146,7 @@ public:
   static
 #endif
   void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pcEncLib );
-
+  void    checkDisFracMmvd    ( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr );
 
   // misc. functions
   void    setSearchRange      ( Slice* pcSlice  );                                  ///< set ME range adaptively

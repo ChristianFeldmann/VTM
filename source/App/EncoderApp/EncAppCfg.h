@@ -117,6 +117,31 @@ protected:
   bool      m_bClipOutputVideoToRec709Range;
   bool      m_packedYUVMode;                                  ///< If true, output 10-bit and 12-bit YUV data as 5-byte and 3-byte (respectively) packed YUV data
 
+  bool      m_bIntraOnlyConstraintFlag;
+  uint32_t  m_maxBitDepthConstraintIdc;
+  uint32_t  m_maxChromaFormatConstraintIdc;
+  bool      m_bFrameConstraintFlag;
+  bool      m_bNoQtbttDualTreeIntraConstraintFlag;
+  bool      m_bNoSaoConstraintFlag;
+  bool      m_bNoAlfConstraintFlag;
+  bool      m_bNoPcmConstraintFlag;
+  bool      m_bNoRefWraparoundConstraintFlag;
+  bool      m_bNoTemporalMvpConstraintFlag;
+  bool      m_bNoSbtmvpConstraintFlag;
+  bool      m_bNoAmvrConstraintFlag;
+  bool      m_bNoBdofConstraintFlag;
+  bool      m_bNoCclmConstraintFlag;
+  bool      m_bNoMtsConstraintFlag;
+  bool      m_bNoAffineMotionConstraintFlag;
+  bool      m_bNoGbiConstraintFlag;
+  bool      m_bNoMhIntraConstraintFlag;
+  bool      m_bNoTriangleConstraintFlag;
+  bool      m_bNoLadfConstraintFlag;
+  bool      m_bNoCurrPicRefConstraintFlag;
+  bool      m_bNoQpDeltaConstraintFlag;
+  bool      m_bNoDepQuantConstraintFlag;
+  bool      m_bNoSignDataHidingConstraintFlag;
+
   // profile/level
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
@@ -135,6 +160,9 @@ protected:
   int       m_iIntraPeriod;                                   ///< period of I-slice (random access period)
   int       m_iDecodingRefreshType;                           ///< random access type
   int       m_iGOPSize;                                       ///< GOP size of hierarchical structure
+#if JCTVC_Y0038_PARAMS
+  bool      m_rewriteParamSets;                              ///< Flag to enable rewriting of parameter sets at random access points
+#endif
   int       m_extraRPSs;                                      ///< extra RPSs added to handle CRA
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
@@ -150,6 +178,7 @@ protected:
   bool      m_rdpcmEnabledFlag[NUMBER_OF_RDPCM_SIGNALLING_MODES];///< control flags for residual DPCM
   bool      m_persistentRiceAdaptationEnabledFlag;            ///< control flag for Golomb-Rice parameter adaptation over each slice
   bool      m_cabacBypassAlignmentEnabledFlag;
+  bool      m_useFastISP;                                    ///< flag for enabling fast methods for ISP
 
   // coding quality
 #if QP_SWITCHING_FOR_PARALLEL
@@ -166,8 +195,8 @@ protected:
   int*      m_aidQP;                                          ///< array of slice QP values
   int       m_iMaxDeltaQP;                                    ///< max. |delta QP|
   uint32_t      m_uiDeltaQpRD;                                    ///< dQP range for multi-pass slice QP optimization
-  int       m_iMaxCuDQPDepth;                                 ///< Max. depth for a minimum CuDQPSize (0:default)
-  int       m_diffCuChromaQpOffsetDepth;                      ///< If negative, then do not apply chroma qp offsets.
+  int       m_cuQpDeltaSubdiv;                                ///< Maximum subdiv for CU luma Qp adjustment (0:default)
+  int       m_cuChromaQpOffsetSubdiv;                         ///< If negative, then do not apply chroma qp offsets.
   bool      m_bFastDeltaQP;                                   ///< Fast Delta QP (false:default)
 
   int       m_cbQpOffset;                                     ///< Chroma Cb QP Offset (0:default)
@@ -202,28 +231,17 @@ protected:
   unsigned  m_uiMaxBTDepthI;
   unsigned  m_uiMaxBTDepthIChroma;
   bool      m_dualTree;
-  bool      m_LargeCTU;
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
   bool      m_BIO;
-  bool      m_DisableMotionCompression;
-  unsigned  m_MTT;
-#if ENABLE_WPP_PARALLELISM
-  bool      m_AltDQPCoding;
-#endif
   int       m_LMChroma;
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
   bool      m_cclmCollocatedChromaFlag;
-#endif
-#if JVET_M0464_UNI_MTS
   int       m_MTS;                                            ///< XZ: Multiple Transform Set
   int       m_MTSIntraMaxCand;                                ///< XZ: Number of additional candidates to test
   int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test
-#else
-  int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
-  int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
-#endif
+  int       m_MTSImplicit;
+  bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
 
   bool      m_compositeRefEnabled;
   bool      m_GBi;
@@ -237,7 +255,11 @@ protected:
 
   bool      m_MHIntra;
   bool      m_Triangle;
-
+  bool      m_HashME;
+  bool      m_allowDisFracMMVD;
+  bool      m_AffineAmvr;
+  bool      m_AffineAmvrEncOpt;
+  bool      m_DMVR;
 
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
@@ -246,12 +268,16 @@ protected:
   unsigned  m_IBCHashSearchMaxCand;
   unsigned  m_IBCHashSearchRange4SmallBlk;
   unsigned  m_IBCFastMethod;
-  
+
   bool      m_wrapAround;
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-
+  bool      m_lumaReshapeEnable;
+  uint32_t  m_reshapeSignalType;
+  uint32_t  m_intraCMD;
+  ReshapeCW m_reshapeCW;
+  bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
   unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)
@@ -272,14 +298,9 @@ protected:
   int       m_numWppExtraLines;
   bool      m_ensureWppBitEqual;
 
-  // transfom unit (TU) definition
-  int       m_quadtreeTULog2MaxSize;
-  int       m_quadtreeTULog2MinSize;
-  int       m_tuLog2MaxSize;
-
-  uint32_t      m_uiQuadtreeTUMaxDepthInter;
-  uint32_t      m_uiQuadtreeTUMaxDepthIntra;
-
+#if MAX_TB_SIZE_SIGNALLING
+  int       m_log2MaxTbSize;
+#endif
   // coding tools (bit-depth)
   int       m_inputBitDepth   [MAX_NUM_CHANNEL_TYPE];         ///< bit-depth of input file
   int       m_outputBitDepth  [MAX_NUM_CHANNEL_TYPE];         ///< bit-depth of output file
@@ -437,6 +458,8 @@ protected:
   uint32_t      m_greenMetadataType;
   uint32_t      m_xsdMetricType;
 
+  bool      m_MCTSEncConstraint;
+
   // weighted prediction
   bool      m_useWeightedPred;                    ///< Use of weighted prediction in P slices
   bool      m_useWeightedBiPred;                  ///< Use of bi-directional weighted prediction in B slices
@@ -524,6 +547,7 @@ protected:
   int         m_verbosity;
 
   std::string m_decodeBitstreams[2];                          ///< filename for decode bitstreams.
+  int         m_debugCTU;
   int         m_switchPOC;                                    ///< dbg poc.
   int         m_switchDQP;                                    ///< switch DQP.
   int         m_fastForwardToPOC;                             ///< get to encoding the specified POC as soon as possible by skipping temporal layers irrelevant for the specified POC

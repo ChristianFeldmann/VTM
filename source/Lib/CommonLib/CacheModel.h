@@ -65,6 +65,9 @@ private:
   int           m_numCacheLine;    // # of cache line
   int           m_numWay;          // # of way
   int           m_cacheSize;       // total entry numer (line number * way)
+  int           m_cacheAddrMode;   // cache address mode
+  int           m_cacheBlkWidth;   // block width in 2D access
+  int           m_cacheBlkHeight;  // block height in 2D access
   // cache parameters for address calc
   int           m_shift;
   // cache entry
@@ -76,6 +79,7 @@ private:
   int           m_refPoc;
   Pel*          m_base;
   ComponentID   m_compID;
+  int           m_picWidth;
   // PLRU parameters
   int           m_treeDepth;
   int*          m_treeStatus;
@@ -109,6 +113,7 @@ protected:
   int xCalcTreeSize( int way );
   int xCalcPower( int num );
   int xGetWay( int entry );
+  size_t xMapAddress( size_t offset );
   void xConfigure(const std::string& filename);
   void xUpdateCache( int entry, size_t addr );
   void xUpdateCacheStatus( int entry, int way );

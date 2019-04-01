@@ -151,6 +151,10 @@ class EncAdaptiveLoopFilter : public AdaptiveLoopFilter
 public:
   static constexpr int   m_MAX_SCAN_VAL = 11;
   static constexpr int   m_MAX_EXP_GOLOMB = 16;
+  int m_alfWSSD;
+  inline void           setAlfWSSD(int alfWSSD) { m_alfWSSD = alfWSSD; }
+  static std::vector<double>  m_lumaLevelToWeightPLUT;
+  inline std::vector<double>& getLumaLevelWeightTable() { return m_lumaLevelToWeightPLUT; }
 
 private:
   AlfCovariance***       m_alfCovariance[MAX_NUM_COMPONENT];          // [compIdx][shapeIdx][ctbAddr][classIdx]

@@ -214,7 +214,7 @@ static void simdEqualCoeffComputer( Pel *pResidue, int residueStride, int **ppDe
   int idx1 = 0, idx2 = 0;
   idx1 = -2 * derivateBufStride - 4;
   idx2 = -derivateBufStride - 4;
-  
+
   for ( int j = 0; j < height; j += 2 )
   {
     if (!(j & 3))

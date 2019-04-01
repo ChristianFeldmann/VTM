@@ -48,7 +48,7 @@
 #include "CommonLib/InterPrediction.h"
 #include "CommonLib/IntraPrediction.h"
 #include "CommonLib/Unit.h"
-
+#include "CommonLib/Reshape.h"
 //! \ingroup DecoderLib
 //! \{
 
@@ -68,7 +68,15 @@ public:
 
   /// destroy internal buffers
   void  decompressCtu     ( CodingStructure& cs, const UnitArea& ctuArea );
+  Reshape*          m_pcReshape;
+  Reshape* getReshape     () { return m_pcReshape; }
+  void initDecCuReshaper  ( Reshape* pcReshape, ChromaFormat chromaFormatIDC) ;
+  void destoryDecCuReshaprBuf();
 
+  void setShareStateDec (int shareStateDecIn)  { m_shareStateDec = shareStateDecIn; }
+#if ENABLE_SPLIT_PARALLELISM
+  int  getShareStateDec () const { return m_shareStateDec; }
+#endif
   /// reconstruct Ctu information
 protected:
   void xIntraRecQT        ( CodingUnit&      cu, const ChannelType chType );
@@ -84,12 +92,13 @@ protected:
   void xDecodeInterTU     ( TransformUnit&   tu, const ComponentID compID );
 
   void xDeriveCUMV        ( CodingUnit&      cu );
-
+  PelStorage        *m_tmpStorageLCU;
 private:
   TrQuant*          m_pcTrQuant;
   IntraPrediction*  m_pcIntraPred;
   InterPrediction*  m_pcInterPred;
 
+  int               m_shareStateDec;
 
   MotionInfo        m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
 

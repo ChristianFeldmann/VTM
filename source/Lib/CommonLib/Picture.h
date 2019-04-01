@@ -46,7 +46,8 @@
 #include "Unit.h"
 #include "Slice.h"
 #include "CodingStructure.h"
-
+#include "Hash.h"
+#include "MCTS.h"
 #include <deque>
 
 #if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
@@ -192,6 +193,12 @@ struct Picture : public UnitArea
   const CPelUnitBuf getOrigBuf(const UnitArea &unit) const;
          PelUnitBuf getOrigBuf();
   const CPelUnitBuf getOrigBuf() const;
+         PelBuf     getOrigBuf(const ComponentID compID);
+  const CPelBuf     getOrigBuf(const ComponentID compID) const;
+         PelUnitBuf getTrueOrigBuf();
+  const CPelUnitBuf getTrueOrigBuf() const;
+        PelBuf      getTrueOrigBuf(const CompArea &blk);
+  const CPelBuf     getTrueOrigBuf(const CompArea &blk) const;
 
          PelBuf     getPredBuf(const CompArea &blk);
   const CPelBuf     getPredBuf(const CompArea &blk) const;
@@ -220,7 +227,7 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
-  void finalInit( const SPS& sps, const PPS& pps );
+  void finalInit(const SPS& sps, const PPS& pps, APS& aps);
 
   int  getPOC()                               const { return poc; }
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
@@ -259,6 +266,11 @@ public:
   PelStorage m_bufs[NUM_PIC_TYPES];
 #endif
 
+  TComHash           m_hashMap;
+  TComHash*          getHashMap() { return &m_hashMap; }
+  const TComHash*    getHashMap() const { return &m_hashMap; }
+  void               addPictureToHashMapForInter();
+
   CodingStructure*   cs;
   std::deque<Slice*> slices;
   SEIMessages        SEIs;
@@ -270,6 +282,7 @@ public:
 #if HEVC_TILES_WPP
   TileMap*     tileMap;
 #endif
+  MCTSInfo     mctsInfo;
   std::vector<AQpLayer*> aqlayer;
 
 #if !KEEP_PRED_AND_RESI_SIGNALS
@@ -297,6 +310,9 @@ public:
 #if ENABLE_QPA
   std::vector<double>     m_uEnerHpCtu;                         ///< CTU-wise L2 or squared L1 norm of high-passed luma input
   std::vector<Pel>        m_iOffsetCtu;                         ///< CTU-wise DC offset (later QP index offset) of luma input
+ #if ENABLE_QPA_SUB_CTU
+  std::vector<int8_t>     m_subCtuQP;                           ///< sub-CTU-wise adapted QPs for delta-QP depth of 1 or more
+ #endif
 #endif
 
   std::vector<SAOBlkParam> m_sao[2];

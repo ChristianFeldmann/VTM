@@ -947,23 +947,314 @@ void fastInverseDST7_B8(const TCoeff *src, TCoeff *dst, int shift, int line, int
 
 void fastForwardDST7_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
+#if !JVET_M0497_MATRIX_MULT
+  int j, k;
+  TCoeff a[5], b[5], c[5], d[5], t;
+  TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
+
+  const TMatrixCoeff *iT = g_trCoreDST7P16[TRANSFORM_FORWARD][0];
+
+  TCoeff *pCoef = dst;
+  const int  reducedLine = line - iSkipLine;
+  const int  cutoff = 16 - iSkipLine2;
+
+  for (j = 0; j < reducedLine; j++)
+  {
+    for (k = 0; k < 5; k++)
+    {
+      a[k] = src[    k] + src[11 + k];
+      b[k] = src[9 - k] + src[11 + k];
+      c[k] = src[    k] - src[ 9 - k];
+      d[k] = src[    k] + src[ 9 - k] - src[11 + k];
+    }
+
+    t = iT[10] * src[10];
+
+    dst[ 1 * line] = ( iT[ 2]*d[0] + iT[ 5]*d[1] + iT[ 8]*d[2] + iT[11]*d[3] + iT[14]*d[4] + add) >> shift;
+    dst[ 4 * line] = ( iT[ 8]*d[0] + iT[14]*d[1] + iT[ 5]*d[2] - iT[ 2]*d[3] - iT[11]*d[4] + add) >> shift;
+    dst[ 7 * line] = ( iT[14]*d[0] + iT[ 2]*d[1] - iT[11]*d[2] - iT[ 5]*d[3] + iT[ 8]*d[4] + add) >> shift;
+    dst[10 * line] = ( iT[11]*d[0] - iT[ 8]*d[1] - iT[ 2]*d[2] + iT[14]*d[3] - iT[ 5]*d[4] + add) >> shift;
+    dst[13 * line] = ( iT[ 5]*d[0] - iT[11]*d[1] + iT[14]*d[2] - iT[ 8]*d[3] + iT[ 2]*d[4] + add) >> shift;
+
+    dst[5 * line] = ( iT[10] * (src[0] + src[1] - src[3] - src[4] + src[6] + src[7] - src[9] - src[10] + src[12] + src[13] - src[15]) + add) >> shift;
+
+    dst[ 0 * line] = ( iT[0]*a[0] + iT[9]*b[0] + iT[1]*a[1] + iT[8]*b[1] + iT[2]*a[2] + iT[7]*b[2] + iT[3]*a[3] + iT[6]*b[3] + iT[4]*a[4] + iT[5]*b[4] + t + add ) >> shift;
+    dst[ 2 * line] = ( iT[4]*c[0] - iT[5]*b[0] + iT[9]*c[1] - iT[0]*b[1] + iT[6]*c[2] + iT[3]*a[2] + iT[1]*c[3] + iT[8]*a[3] + iT[7]*a[4] + iT[2]*b[4] - t + add ) >> shift;
+    dst[ 3 * line] = ( iT[6]*a[0] + iT[3]*b[0] + iT[2]*c[1] + iT[7]*a[1] + iT[9]*c[2] + iT[0]*a[2] + iT[4]*c[3] - iT[5]*b[3] - iT[1]*a[4] - iT[8]*b[4] + t + add ) >> shift;
+    dst[ 6 * line] = ( iT[8]*a[0] + iT[1]*c[0] + iT[6]*c[1] - iT[3]*b[1] - iT[5]*a[2] - iT[4]*b[2] - iT[7]*c[3] - iT[2]*a[3] - iT[0]*c[4] + iT[9]*b[4] + t + add ) >> shift;
+    dst[ 8 * line] = ( iT[4]*c[0] + iT[5]*a[0] - iT[0]*c[1] + iT[9]*b[1] - iT[3]*c[2] - iT[6]*a[2] + iT[1]*c[3] - iT[8]*b[3] + iT[2]*c[4] + iT[7]*a[4] - t + add ) >> shift;
+    dst[ 9 * line] = ( iT[7]*c[0] + iT[2]*a[0] - iT[4]*a[1] - iT[5]*b[1] - iT[8]*c[2] + iT[1]*b[2] + iT[9]*a[3] + iT[0]*b[3] + iT[3]*c[4] - iT[6]*b[4] + t + add ) >> shift;
+    dst[11 * line] = ( iT[9]*a[0] + iT[0]*b[0] - iT[8]*c[1] - iT[1]*a[1] + iT[2]*c[2] - iT[7]*b[2] + iT[6]*a[3] + iT[3]*b[3] - iT[5]*c[4] - iT[4]*a[4] - t + add ) >> shift;
+    dst[12 * line] = ( iT[7]*c[0] - iT[2]*b[0] - iT[5]*c[1] - iT[4]*a[1] + iT[8]*a[2] + iT[1]*b[2] - iT[0]*a[3] - iT[9]*b[3] - iT[6]*c[4] + iT[3]*b[4] + t + add ) >> shift;
+    dst[14 * line] = ( iT[3]*a[0] + iT[6]*b[0] - iT[7]*a[1] - iT[2]*b[1] + iT[0]*c[2] + iT[9]*a[2] - iT[4]*c[3] - iT[5]*a[3] + iT[8]*c[4] + iT[1]*a[4] - t + add ) >> shift;
+    dst[15 * line] = ( iT[1]*c[0] - iT[8]*b[0] - iT[3]*c[1] + iT[6]*b[1] + iT[5]*c[2] - iT[4]*b[2] - iT[7]*c[3] + iT[2]*b[3] + iT[9]*c[4] - iT[0]*b[4] + t + add ) >> shift;
+
+    src += 16;
+    dst++;
+  }
+
+  if (iSkipLine)
+  {
+    dst = pCoef + reducedLine;
+    for (j = 0; j < cutoff; j++)
+    {
+      memset(dst, 0, sizeof(TCoeff)*iSkipLine);
+      dst += line;
+    }
+  }
+
+  if (iSkipLine2)
+  {
+    dst = pCoef + line * cutoff;
+    memset(dst, 0, sizeof(TCoeff) * line * iSkipLine2);
+  }
+#else
   _fastForwardMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_trCoreDST7P16[TRANSFORM_FORWARD][0] );
+#endif
 }
 
 void fastInverseDST7_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
+#if !JVET_M0497_MATRIX_MULT
+  int j, k;
+  TCoeff a[5], b[5], c[5], d[5], t;
+
+  TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
+
+  const TMatrixCoeff *iT = g_trCoreDST7P16[TRANSFORM_INVERSE][0];
+
+  const int  reducedLine = line - iSkipLine;
+
+  for (j = 0; j < reducedLine; j++)
+  {
+    for (k = 0; k < 5; k++)
+    {
+      a[k] = src[       k * line] + src[(10 - k) * line];
+      b[k] = src[(11 + k) * line] + src[(10 - k) * line];
+      c[k] = src[       k * line] - src[(11 + k) * line];
+      d[k] = src[       k * line] + src[(11 + k) * line] - src[(10 - k)*line];
+    }
+
+    t = iT[10] * src[5 * line];
+
+    dst[ 2] = Clip3(outputMinimum, outputMaximum, (int)( iT[ 2]*d[0] + iT[ 8]*d[1] + iT[14]*d[2] + iT[11]*d[3] + iT[ 5]*d[4] + add ) >> shift);
+    dst[ 5] = Clip3(outputMinimum, outputMaximum, (int)( iT[ 5]*d[0] + iT[14]*d[1] + iT[ 2]*d[2] - iT[ 8]*d[3] - iT[11]*d[4] + add ) >> shift);
+    dst[ 8] = Clip3(outputMinimum, outputMaximum, (int)( iT[ 8]*d[0] + iT[ 5]*d[1] - iT[11]*d[2] - iT[ 2]*d[3] + iT[14]*d[4] + add ) >> shift);
+    dst[11] = Clip3(outputMinimum, outputMaximum, (int)( iT[11]*d[0] - iT[ 2]*d[1] - iT[ 5]*d[2] + iT[14]*d[3] - iT[ 8]*d[4] + add ) >> shift);
+    dst[14] = Clip3(outputMinimum, outputMaximum, (int)( iT[14]*d[0] - iT[11]*d[1] + iT[ 8]*d[2] - iT[ 5]*d[3] + iT[ 2]*d[4] + add ) >> shift);
+
+    dst[10] = Clip3(outputMinimum, outputMaximum, (int)( iT[10]*(src[ 0*line]-src[ 2*line]+src[ 3*line]-src[5*line]
+                                                                +src[ 6*line]-src[ 8*line]+src[ 9*line]-src[11*line]
+                                                                +src[12*line]-src[14*line]+src[15*line]) + add ) >> shift);
+
+    dst[ 0] = Clip3(outputMinimum, outputMaximum, (int)( iT[0]*a[0] + iT[9]*b[0] + iT[2]*a[1] + iT[7]*b[1] + iT[4]*a[2] + iT[5]*b[2] + iT[6]*a[3] + iT[3]*b[3] + iT[8]*a[4] + iT[1]*b[4] + t + add ) >> shift);
+    dst[ 1] = Clip3(outputMinimum, outputMaximum, (int)( iT[1]*c[0] - iT[8]*b[0] + iT[5]*c[1] - iT[4]*b[1] + iT[9]*c[2] - iT[0]*b[2] + iT[2]*a[3] + iT[7]*c[3] + iT[6]*a[4] + iT[3]*c[4] + t + add ) >> shift);
+    dst[ 3] = Clip3(outputMinimum, outputMaximum, (int)( iT[3]*a[0] + iT[6]*b[0] + iT[0]*c[1] + iT[9]*a[1] + iT[1]*a[2] + iT[8]*c[2] + iT[4]*c[3] - iT[5]*b[3] - iT[2]*a[4] - iT[7]*b[4] - t + add ) >> shift);
+    dst[ 4] = Clip3(outputMinimum, outputMaximum, (int)( iT[4]*c[0] - iT[5]*b[0] + iT[6]*c[1] + iT[3]*a[1] + iT[7]*a[2] + iT[2]*b[2] - iT[1]*c[3] + iT[8]*b[3] - iT[9]*c[4] - iT[0]*a[4] - t + add ) >> shift);
+    dst[ 6] = Clip3(outputMinimum, outputMaximum, (int)( iT[6]*a[0] + iT[3]*b[0] + iT[9]*c[1] + iT[0]*a[1] - iT[1]*a[2] - iT[8]*b[2] - iT[4]*c[3] - iT[5]*a[3] - iT[2]*c[4] + iT[7]*b[4] + t + add ) >> shift);
+    dst[ 7] = Clip3(outputMinimum, outputMaximum, (int)( iT[7]*c[0] - iT[2]*b[0] + iT[8]*a[1] + iT[1]*b[1] - iT[6]*c[2] + iT[3]*b[2] - iT[9]*a[3] - iT[0]*b[3] + iT[5]*c[4] - iT[4]*b[4] + t + add ) >> shift);
+    dst[ 9] = Clip3(outputMinimum, outputMaximum, (int)( iT[9]*a[0] + iT[0]*b[0] + iT[2]*c[1] - iT[7]*b[1] - iT[5]*c[2] - iT[4]*a[2] + iT[3]*a[3] + iT[6]*b[3] + iT[8]*c[4] - iT[1]*b[4] - t + add ) >> shift);
+    dst[12] = Clip3(outputMinimum, outputMaximum, (int)( iT[1]*c[0] + iT[8]*a[0] - iT[5]*a[1] - iT[4]*b[1] - iT[0]*c[2] + iT[9]*b[2] + iT[7]*c[3] - iT[2]*b[3] - iT[6]*c[4] - iT[3]*a[4] + t + add ) >> shift);
+    dst[13] = Clip3(outputMinimum, outputMaximum, (int)( iT[7]*c[0] + iT[2]*a[0] - iT[8]*c[1] + iT[1]*b[1] + iT[3]*c[2] - iT[6]*b[2] + iT[0]*a[3] + iT[9]*b[3] - iT[5]*a[4] - iT[4]*b[4] + t + add ) >> shift);
+    dst[15] = Clip3(outputMinimum, outputMaximum, (int)( iT[4]*c[0] + iT[5]*a[0] - iT[3]*c[1] - iT[6]*a[1] + iT[2]*c[2] + iT[7]*a[2] - iT[1]*c[3] - iT[8]*a[3] + iT[0]*c[4] + iT[9]*a[4] - t + add ) >> shift);
+
+    src++;
+    dst += 16;
+  }
+
+  if (iSkipLine)
+  {
+    memset(dst, 0, (iSkipLine * 16) * sizeof(TCoeff));
+  }
+#else
   _fastInverseMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_trCoreDST7P16[TRANSFORM_INVERSE][0]);
+#endif
 }
 
 
 void fastForwardDST7_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
+#if !JVET_M0497_MATRIX_MULT
+  int j, k;
+  TCoeff a[10][6];
+  TCoeff t[2];
+  TCoeff b[6];
+  TCoeff c[2];
+
+  TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
+  const TMatrixCoeff *iT = g_trCoreDST7P32[TRANSFORM_FORWARD][0];
+  TCoeff *pCoef = dst;
+  const int  reducedLine = line - iSkipLine;
+  const int  cutoff = 32 - iSkipLine2;
+
+  for (j = 0; j < reducedLine; j++)
+  {
+    for (k = 0; k < 6; k++)
+    {
+      a[0][k] = src[     k] - src[11 - k];
+      a[1][k] = src[     k] + src[13 + k];
+      a[2][k] = src[     k] + src[24 - k];
+      a[3][k] = src[     k] - src[26 + k];
+      a[4][k] = src[ 6 + k] + src[18 - k];
+      a[5][k] = src[ 6 + k] + src[19 + k];
+      a[6][k] = src[ 6 + k] - src[31 - k];
+      a[7][k] = src[13 + k] - src[24 - k];
+      a[8][k] = src[13 + k] + src[26 + k];
+      a[9][k] = src[19 + k] + src[31 - k];
+
+      b[k] = src[k] + src[11 - k] - src[13 + k] - src[24 - k] + src[26 + k];
+    }
+    for (k = 0; k < 2; k++)
+    {
+      c[k] = src[k] + src[3 - k] - src[5 + k] - src[8 - k] + src[10 + k] + src[13 - k] - src[15 + k] - src[18 - k] + src[20 + k] + src[23 - k] - src[25 + k] - src[28 - k] + src[30 + k];
+    }
+
+    t[0] = iT[12] * src[12] + iT[25] * src[25];
+    t[1] = iT[12] * src[25] - iT[25] * src[12];
+
+    dst[ 0 * line] = ( iT[0] * a[3][0] + iT[11] * a[6][5] + iT[13] * a[8][0] + iT[24] * a[9][5] + iT[1] * a[3][1] + iT[10] * a[6][4] + iT[14] * a[8][1] + iT[23] * a[9][4] + iT[2] * a[3][2] + iT[9] * a[6][3] + iT[15] * a[8][2] + iT[22] * a[9][3] + iT[3] * a[3][3] + iT[8] * a[6][2] + iT[16] * a[8][3] + iT[21] * a[9][2] + iT[4] * a[3][4] + iT[7] * a[6][1] + iT[17] * a[8][4] + iT[20] * a[9][1] + iT[5] * a[3][5] + iT[6] * a[6][0] + iT[18] * a[8][5] + iT[19] * a[9][0] + t[0] + add) >> shift;
+    dst[ 1 * line] = (-iT[0] * a[5][2] + iT[11] * a[0][3] + iT[13] * a[4][2] + iT[24] * a[6][2] + iT[1] * a[9][1] + iT[10] * a[8][4] + iT[14] * a[3][4] + iT[23] * a[6][1] + iT[2] * a[0][0] - iT[9] * a[5][5] + iT[15] * a[6][5] + iT[22] * a[4][5] - iT[3] * a[5][3] + iT[8] * a[0][2] + iT[16] * a[4][3] + iT[21] * a[6][3] + iT[4] * a[9][0] + iT[7] * a[8][5] + iT[17] * a[3][5] + iT[20] * a[6][0] + iT[5] * a[0][1] - iT[6] * a[5][4] + iT[18] * a[6][4] + iT[19] * a[4][4] - t[1] + add) >> shift;
+    dst[ 3 * line] = (-iT[0] * a[9][4] - iT[11] * a[5][4] + iT[13] * a[2][1] - iT[24] * a[7][1] - iT[1] * a[0][3] - iT[10] * a[1][3] + iT[14] * a[3][3] + iT[23] * a[2][3] + iT[2] * a[8][5] + iT[9] * a[9][0] + iT[15] * a[6][0] + iT[22] * a[3][5] - iT[3] * a[1][4] - iT[8] * a[0][4] + iT[16] * a[2][4] + iT[21] * a[3][4] - iT[4] * a[5][3] - iT[7] * a[9][3] - iT[17] * a[7][2] + iT[20] * a[2][2] + iT[5] * a[8][0] + iT[6] * a[1][0] - iT[18] * a[4][5] - iT[19] * a[7][0] + t[1] + add) >> shift;
+    dst[ 4 * line] = (-iT[0] * a[3][2] - iT[11] * a[2][2] + iT[13] * a[1][2] + iT[24] * a[0][2] + iT[1] * a[6][0] + iT[10] * a[3][5] + iT[14] * a[9][0] + iT[23] * a[8][5] - iT[2] * a[2][3] - iT[9] * a[3][3] + iT[15] * a[0][3] + iT[22] * a[1][3] - iT[3] * a[7][0] + iT[8] * a[2][0] - iT[16] * a[9][5] - iT[21] * a[5][5] + iT[4] * a[4][4] + iT[7] * a[6][4] + iT[17] * a[0][1] - iT[20] * a[5][4] - iT[5] * a[7][4] - iT[6] * a[4][1] + iT[18] * a[8][4] + iT[19] * a[1][4] - t[0] + add) >> shift;
+    dst[ 5 * line] = (-iT[0] * a[3][5] - iT[11] * a[6][0] - iT[13] * a[8][5] - iT[24] * a[9][0] + iT[1] * a[6][5] + iT[10] * a[3][0] + iT[14] * a[9][5] + iT[23] * a[8][0] - iT[2] * a[7][4] + iT[9] * a[2][4] - iT[15] * a[9][1] - iT[22] * a[5][1] - iT[3] * a[7][1] - iT[8] * a[4][4] + iT[16] * a[8][1] + iT[21] * a[1][1] + iT[4] * a[6][2] + iT[7] * a[4][2] - iT[17] * a[5][2] + iT[20] * a[0][3] - iT[5] * a[3][2] - iT[6] * a[2][2] + iT[18] * a[1][2] + iT[19] * a[0][2] + t[0] + add) >> shift;
+    dst[ 8 * line] = ( iT[0] * a[9][3] + iT[11] * a[8][2] + iT[13] * a[3][2] + iT[24] * a[6][3] + iT[1] * a[1][5] + iT[10] * a[0][5] - iT[14] * a[2][5] - iT[23] * a[3][5] - iT[2] * a[1][3] - iT[9] * a[8][3] + iT[15] * a[7][3] + iT[22] * a[4][2] - iT[3] * a[9][5] - iT[8] * a[5][5] + iT[16] * a[2][0] - iT[21] * a[7][0] - iT[4] * a[1][1] - iT[7] * a[0][1] + iT[17] * a[2][1] + iT[20] * a[3][1] + iT[5] * a[5][1] + iT[6] * a[9][1] + iT[18] * a[7][4] - iT[19] * a[2][4] + t[1] + add) >> shift;
+    dst[ 9 * line] = (-iT[0] * a[2][1] - iT[11] * a[3][1] + iT[13] * a[0][1] + iT[24] * a[1][1] + iT[1] * a[7][3] - iT[10] * a[2][3] + iT[14] * a[9][2] + iT[23] * a[5][2] + iT[2] * a[4][0] + iT[9] * a[7][5] - iT[15] * a[1][5] - iT[22] * a[8][5] + iT[3] * a[3][4] + iT[8] * a[2][4] - iT[16] * a[1][4] - iT[21] * a[0][4] + iT[4] * a[6][3] + iT[7] * a[3][2] + iT[17] * a[9][3] + iT[20] * a[8][2] + iT[5] * a[4][5] + iT[6] * a[6][5] + iT[18] * a[0][0] - iT[19] * a[5][5] - t[0] + add) >> shift;
+    dst[10 * line] = (-iT[0] * a[6][1] - iT[11] * a[4][1] + iT[13] * a[5][1] - iT[24] * a[0][4] + iT[1] * a[2][2] - iT[10] * a[7][2] - iT[14] * a[5][3] - iT[23] * a[9][3] + iT[2] * a[6][4] + iT[9] * a[4][4] - iT[15] * a[5][4] + iT[22] * a[0][1] - iT[3] * a[2][5] + iT[8] * a[7][5] + iT[16] * a[5][0] + iT[21] * a[9][0] - iT[4] * a[7][0] - iT[7] * a[4][5] + iT[17] * a[8][0] + iT[20] * a[1][0] + iT[5] * a[4][2] + iT[6] * a[7][3] - iT[18] * a[1][3] - iT[19] * a[8][3] + t[0] + add) >> shift;
+    dst[11 * line] = ( iT[0] * a[1][3] + iT[11] * a[0][3] - iT[13] * a[2][3] - iT[24] * a[3][3] + iT[1] * a[9][1] + iT[10] * a[5][1] - iT[14] * a[2][4] + iT[23] * a[7][4] + iT[2] * a[8][0] + iT[9] * a[9][5] + iT[15] * a[6][5] + iT[22] * a[3][0] - iT[3] * a[0][2] + iT[8] * a[5][3] - iT[16] * a[6][3] - iT[21] * a[4][3] - iT[4] * a[5][0] + iT[7] * a[0][5] + iT[17] * a[4][0] + iT[20] * a[6][0] - iT[5] * a[9][4] - iT[6] * a[5][4] + iT[18] * a[2][1] - iT[19] * a[7][1] - t[1] + add) >> shift;
+    dst[13 * line] = (-iT[0] * a[0][0] - iT[11] * a[1][0] + iT[13] * a[3][0] + iT[24] * a[2][0] - iT[1] * a[5][4] + iT[10] * a[0][1] + iT[14] * a[4][4] + iT[23] * a[6][4] + iT[2] * a[9][3] + iT[9] * a[5][3] - iT[15] * a[2][2] + iT[22] * a[7][2] - iT[3] * a[8][3] - iT[8] * a[9][2] - iT[16] * a[6][2] - iT[21] * a[3][3] + iT[4] * a[1][4] + iT[7] * a[8][4] - iT[17] * a[7][4] - iT[20] * a[4][1] - iT[5] * a[0][5] - iT[6] * a[1][5] + iT[18] * a[3][5] + iT[19] * a[2][5] + t[1] + add) >> shift;
+    dst[14 * line] = ( iT[0] * a[4][2] + iT[11] * a[7][3] - iT[13] * a[1][3] - iT[24] * a[8][3] + iT[1] * a[4][1] + iT[10] * a[6][1] + iT[14] * a[0][4] - iT[23] * a[5][1] - iT[2] * a[3][0] - iT[9] * a[2][0] + iT[15] * a[1][0] + iT[22] * a[0][0] - iT[3] * a[6][3] - iT[8] * a[4][3] + iT[16] * a[5][3] - iT[21] * a[0][2] - iT[4] * a[7][5] - iT[7] * a[4][0] + iT[17] * a[8][5] + iT[20] * a[1][5] + iT[5] * a[6][4] + iT[6] * a[3][1] + iT[18] * a[9][4] + iT[19] * a[8][1] - t[0] + add) >> shift;
+    dst[15 * line] = (-iT[0] * a[7][4] - iT[11] * a[4][1] + iT[13] * a[8][4] + iT[24] * a[1][4] + iT[1] * a[2][2] + iT[10] * a[3][2] - iT[14] * a[0][2] - iT[23] * a[1][2] + iT[2] * a[2][1] - iT[9] * a[7][1] - iT[15] * a[5][4] - iT[22] * a[9][4] - iT[3] * a[7][5] + iT[8] * a[2][5] - iT[16] * a[9][0] - iT[21] * a[5][0] - iT[4] * a[2][0] - iT[7] * a[3][0] + iT[17] * a[0][0] + iT[20] * a[1][0] - iT[5] * a[2][3] + iT[6] * a[7][3] + iT[18] * a[5][2] + iT[19] * a[9][2] + t[0] + add) >> shift;
+    dst[16 * line] = (-iT[0] * a[0][1] + iT[11] * a[5][4] - iT[13] * a[6][4] - iT[24] * a[4][4] + iT[1] * a[0][3] - iT[10] * a[5][2] + iT[14] * a[6][2] + iT[23] * a[4][2] - iT[2] * a[0][5] + iT[9] * a[5][0] - iT[15] * a[6][0] - iT[22] * a[4][0] - iT[3] * a[0][4] - iT[8] * a[1][4] + iT[16] * a[3][4] + iT[21] * a[2][4] + iT[4] * a[0][2] + iT[7] * a[1][2] - iT[17] * a[3][2] - iT[20] * a[2][2] - iT[5] * a[0][0] - iT[6] * a[1][0] + iT[18] * a[3][0] + iT[19] * a[2][0] - t[1] + add) >> shift;
+    dst[18 * line] = ( iT[0] * a[0][5] + iT[11] * a[1][5] - iT[13] * a[3][5] - iT[24] * a[2][5] - iT[1] * a[1][0] - iT[10] * a[0][0] + iT[14] * a[2][0] + iT[23] * a[3][0] - iT[2] * a[5][1] + iT[9] * a[0][4] + iT[15] * a[4][1] + iT[22] * a[6][1] - iT[3] * a[8][1] - iT[8] * a[1][1] + iT[16] * a[4][4] + iT[21] * a[7][1] - iT[4] * a[9][2] - iT[7] * a[5][2] + iT[17] * a[2][3] - iT[20] * a[7][3] - iT[5] * a[9][3] - iT[6] * a[8][2] - iT[18] * a[3][2] - iT[19] * a[6][3] + t[1] + add) >> shift;
+    dst[20 * line] = (-iT[0] * a[4][0] - iT[11] * a[6][0] - iT[13] * a[0][5] + iT[24] * a[5][0] + iT[1] * a[6][5] + iT[10] * a[4][5] - iT[14] * a[5][5] + iT[23] * a[0][0] - iT[2] * a[6][1] - iT[9] * a[3][4] - iT[15] * a[9][1] - iT[22] * a[8][4] + iT[3] * a[4][4] + iT[8] * a[7][1] - iT[16] * a[1][1] - iT[21] * a[8][1] - iT[4] * a[3][3] - iT[7] * a[2][3] + iT[17] * a[1][3] + iT[20] * a[0][3] + iT[5] * a[7][2] - iT[6] * a[2][2] + iT[18] * a[9][3] + iT[19] * a[5][3] + t[0] + add) >> shift;
+    dst[21 * line] = (-iT[0] * a[1][2] - iT[11] * a[8][2] + iT[13] * a[7][2] + iT[24] * a[4][3] - iT[1] * a[1][5] - iT[10] * a[8][5] + iT[14] * a[7][5] + iT[23] * a[4][0] - iT[2] * a[5][2] - iT[9] * a[9][2] - iT[15] * a[7][3] + iT[22] * a[2][3] - iT[3] * a[5][5] - iT[8] * a[9][5] - iT[16] * a[7][0] + iT[21] * a[2][0] - iT[4] * a[8][1] - iT[7] * a[9][4] - iT[17] * a[6][4] - iT[20] * a[3][1] - iT[5] * a[8][4] - iT[6] * a[9][1] - iT[18] * a[6][1] - iT[19] * a[3][4] - t[1] + add) >> shift;
+    dst[23 * line] = (-iT[0] * a[8][4] - iT[11] * a[9][1] - iT[13] * a[6][1] - iT[24] * a[3][4] + iT[1] * a[8][2] + iT[10] * a[1][2] - iT[14] * a[4][3] - iT[23] * a[7][2] + iT[2] * a[0][1] + iT[9] * a[1][1] - iT[15] * a[3][1] - iT[22] * a[2][1] - iT[3] * a[5][0] - iT[8] * a[9][0] - iT[16] * a[7][5] + iT[21] * a[2][5] + iT[4] * a[9][5] + iT[7] * a[8][0] + iT[17] * a[3][0] + iT[20] * a[6][5] - iT[5] * a[5][2] + iT[6] * a[0][3] + iT[18] * a[4][2] + iT[19] * a[6][2] + t[1] + add) >> shift;
+    dst[24 * line] = (-iT[0] * a[2][3] + iT[11] * a[7][3] + iT[13] * a[5][2] + iT[24] * a[9][2] + iT[1] * a[4][1] + iT[10] * a[7][4] - iT[14] * a[1][4] - iT[23] * a[8][4] - iT[2] * a[4][5] - iT[9] * a[7][0] + iT[15] * a[1][0] + iT[22] * a[8][0] + iT[3] * a[4][3] + iT[8] * a[6][3] + iT[16] * a[0][2] - iT[21] * a[5][3] - iT[4] * a[2][5] - iT[7] * a[3][5] + iT[17] * a[0][5] + iT[20] * a[1][5] + iT[5] * a[2][1] + iT[6] * a[3][1] - iT[18] * a[0][1] - iT[19] * a[1][1] - t[0] + add) >> shift;
+    dst[25 * line] = ( iT[0] * a[4][5] + iT[11] * a[6][5] + iT[13] * a[0][0] - iT[24] * a[5][5] + iT[1] * a[3][1] + iT[10] * a[2][1] - iT[14] * a[1][1] - iT[23] * a[0][1] - iT[2] * a[7][2] - iT[9] * a[4][3] + iT[15] * a[8][2] + iT[22] * a[1][2] - iT[3] * a[6][2] - iT[8] * a[3][3] - iT[16] * a[9][2] - iT[21] * a[8][3] - iT[4] * a[2][4] + iT[7] * a[7][4] + iT[17] * a[5][1] + iT[20] * a[9][1] + iT[5] * a[4][0] + iT[6] * a[6][0] + iT[18] * a[0][5] - iT[19] * a[5][0] + t[0] + add) >> shift;
+    dst[26 * line] = ( iT[0] * a[8][0] + iT[11] * a[1][0] - iT[13] * a[4][5] - iT[24] * a[7][0] + iT[1] * a[5][4] + iT[10] * a[9][4] + iT[14] * a[7][1] - iT[23] * a[2][1] - iT[2] * a[1][2] - iT[9] * a[0][2] + iT[15] * a[2][2] + iT[22] * a[3][2] - iT[3] * a[9][2] - iT[8] * a[8][3] - iT[16] * a[3][3] - iT[21] * a[6][2] + iT[4] * a[0][4] - iT[7] * a[5][1] + iT[17] * a[6][1] + iT[20] * a[4][1] + iT[5] * a[8][5] + iT[6] * a[1][5] - iT[18] * a[4][0] - iT[19] * a[7][5] - t[1] + add) >> shift;
+    dst[28 * line] = (-iT[0] * a[5][1] - iT[11] * a[9][1] - iT[13] * a[7][4] + iT[24] * a[2][4] + iT[1] * a[8][2] + iT[10] * a[9][3] + iT[14] * a[6][3] + iT[23] * a[3][2] - iT[2] * a[9][4] - iT[9] * a[8][1] - iT[15] * a[3][1] - iT[22] * a[6][4] + iT[3] * a[9][0] + iT[8] * a[5][0] - iT[16] * a[2][5] + iT[21] * a[7][5] - iT[4] * a[5][5] + iT[7] * a[0][0] + iT[17] * a[4][5] + iT[20] * a[6][5] + iT[5] * a[1][3] + iT[6] * a[0][3] - iT[18] * a[2][3] - iT[19] * a[3][3] + t[1] + add) >> shift;
+    dst[29 * line] = (-iT[0] * a[6][4] - iT[11] * a[3][1] - iT[13] * a[9][4] - iT[24] * a[8][1] + iT[1] * a[7][3] + iT[10] * a[4][2] - iT[14] * a[8][3] - iT[23] * a[1][3] + iT[2] * a[3][5] + iT[9] * a[2][5] - iT[15] * a[1][5] - iT[22] * a[0][5] - iT[3] * a[2][4] - iT[8] * a[3][4] + iT[16] * a[0][4] + iT[21] * a[1][4] - iT[4] * a[4][3] - iT[7] * a[7][2] + iT[17] * a[1][2] + iT[20] * a[8][2] + iT[5] * a[3][0] + iT[6] * a[6][5] + iT[18] * a[8][0] + iT[19] * a[9][5] - t[0] + add) >> shift;
+    dst[30 * line] = (-iT[0] * a[7][2] + iT[11] * a[2][2] - iT[13] * a[9][3] - iT[24] * a[5][3] - iT[1] * a[6][0] - iT[10] * a[4][0] + iT[14] * a[5][0] - iT[23] * a[0][5] - iT[2] * a[4][2] - iT[9] * a[6][2] - iT[15] * a[0][3] + iT[22] * a[5][2] + iT[3] * a[2][0] - iT[8] * a[7][0] - iT[16] * a[5][5] - iT[21] * a[9][5] + iT[4] * a[7][1] - iT[7] * a[2][1] + iT[17] * a[9][4] + iT[20] * a[5][4] + iT[5] * a[6][1] + iT[6] * a[4][1] - iT[18] * a[5][1] + iT[19] * a[0][4] + t[0] + add) >> shift;
+    dst[31 * line] = (-iT[0] * a[8][5] - iT[11] * a[1][5] + iT[13] * a[4][0] + iT[24] * a[7][5] + iT[1] * a[1][0] + iT[10] * a[8][0] - iT[14] * a[7][0] - iT[23] * a[4][5] + iT[2] * a[8][4] + iT[9] * a[1][4] - iT[15] * a[4][1] - iT[22] * a[7][4] - iT[3] * a[1][1] - iT[8] * a[8][1] + iT[16] * a[7][1] + iT[21] * a[4][4] - iT[4] * a[8][3] - iT[7] * a[1][3] + iT[17] * a[4][2] + iT[20] * a[7][3] + iT[5] * a[1][2] + iT[6] * a[8][2] - iT[18] * a[7][2] - iT[19] * a[4][3] - t[1] + add) >> shift;
+
+    dst[ 2 * line] = (iT[ 4]*b[0] + iT[ 9]*b[1] + iT[14]*b[2] + iT[19]*b[3] + iT[24]*b[4] + iT[29]*b[5] + add) >> shift;
+    dst[ 7 * line] = (iT[14]*b[0] + iT[29]*b[1] + iT[19]*b[2] + iT[ 4]*b[3] - iT[ 9]*b[4] - iT[24]*b[5] + add) >> shift;
+    dst[12 * line] = (iT[24]*b[0] + iT[14]*b[1] - iT[ 9]*b[2] - iT[29]*b[3] - iT[ 4]*b[4] + iT[19]*b[5] + add) >> shift;
+    dst[17 * line] = (iT[29]*b[0] - iT[ 4]*b[1] - iT[24]*b[2] + iT[ 9]*b[3] + iT[19]*b[4] - iT[14]*b[5] + add) >> shift;
+    dst[22 * line] = (iT[19]*b[0] - iT[24]*b[1] + iT[ 4]*b[2] + iT[14]*b[3] - iT[29]*b[4] + iT[ 9]*b[5] + add) >> shift;
+    dst[27 * line] = (iT[ 9]*b[0] - iT[19]*b[1] + iT[29]*b[2] - iT[24]*b[3] + iT[14]*b[4] - iT[ 4]*b[5] + add) >> shift;
+
+    dst[ 6 * line] = (iT[12]*c[0] + iT[25]*c[1] + add) >> shift;
+    dst[19 * line] = (iT[25]*c[0] - iT[12]*c[1] + add) >> shift;
+
+    src += 32;
+    dst++;
+  }
+
+  if (iSkipLine)
+  {
+    dst = pCoef + reducedLine;
+    for (j = 0; j < cutoff; j++)
+    {
+      memset(dst, 0, sizeof(TCoeff)*iSkipLine);
+      dst += line;
+    }
+  }
+
+  if (iSkipLine2)
+  {
+    dst = pCoef + line * cutoff;
+    memset(dst, 0, sizeof(TCoeff) * line * iSkipLine2);
+  }
+#else
   _fastForwardMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_trCoreDST7P32[TRANSFORM_FORWARD][0] );
+#endif
 }
 
 void fastInverseDST7_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
+#if !JVET_M0497_MATRIX_MULT
+  int j, k;
+  TCoeff a[10][6];
+  TCoeff t[2];
+  TCoeff b[6];
+  TCoeff c[2];
+
+  TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
+  const TMatrixCoeff *iT = g_trCoreDST7P32[TRANSFORM_INVERSE][0];
+  const int  reducedLine = line - iSkipLine;
+
+  for (j = 0; j < reducedLine; j++)
+  {
+    for (k = 0; k < 6; k++)
+    {
+      a[0][k] = src[      k  * line] + src[(12 - k) * line];
+      a[1][k] = src[      k  * line] - src[(13 + k) * line];
+      a[2][k] = src[      k  * line] + src[(25 - k) * line];
+      a[3][k] = src[      k  * line] - src[(26 + k) * line];
+      a[4][k] = src[( 7 + k) * line] + src[(18 - k) * line];
+      a[5][k] = src[( 7 + k) * line] - src[(20 + k) * line];
+      a[6][k] = src[( 7 + k) * line] + src[(31 - k) * line];
+      a[7][k] = src[(13 + k) * line] + src[(25 - k) * line];
+      a[8][k] = src[(13 + k) * line] - src[(26 + k) * line];
+      a[9][k] = src[(20 + k) * line] + src[(31 - k) * line];
+
+      b[k] = src[k * line] - src[(12-k) * line] + src[(13+k) * line] - src[(25-k) * line] + src[(26+k) * line];
+    }
+    for (k = 0; k < 2; k++)
+    {
+      c[k] = src[k * line] - src[(4-k) * line] + src[(5+k) * line] - src[(9-k) * line] + src[(10+k) * line] - src[(14-k) * line] + src[(15+k)*line] - src[(19-k)*line] + src[(20+k)*line] - src[(24-k)*line] + src[(25+k)*line] - src[(29-k)*line] + src[(30+k)*line];
+    }
+
+    t[0] = iT[12] * src[6*line] + iT[25] * src[19*line];
+    t[1] = iT[25] * src[6*line] - iT[12] * src[19*line];
+
+    dst[ 0] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[1][0] - iT[11] * a[8][0] + iT[13] * a[7][0] + iT[24] * a[4][5] - iT[1] * a[8][5] + iT[10] * a[1][5] + iT[14] * a[4][0] + iT[23] * a[7][5] + iT[2] * a[1][1] - iT[9] * a[8][1] + iT[15] * a[7][1] + iT[22] * a[4][4] - iT[3] * a[8][4] + iT[8] * a[1][4] + iT[16] * a[4][1] + iT[21] * a[7][4] + iT[4] * a[1][2] - iT[7] * a[8][2] + iT[17] * a[7][2] + iT[20] * a[4][3] - iT[5] * a[8][3] + iT[6] * a[1][3] + iT[18] * a[4][2] + iT[19] * a[7][3] + t[0] + add) >> shift);
+    dst[ 1] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[4][2] - iT[11] * a[6][2] + iT[13] * a[0][3] + iT[24] * a[5][2] + iT[1] * a[2][0] + iT[10] * a[7][0] + iT[14] * a[5][5] - iT[23] * a[9][5] + iT[2] * a[7][2] + iT[9] * a[2][2] - iT[15] * a[9][3] + iT[22] * a[5][3] - iT[3] * a[6][0] - iT[8] * a[4][0] + iT[16] * a[5][0] + iT[21] * a[0][5] - iT[4] * a[4][1] - iT[7] * a[6][1] + iT[17] * a[0][4] + iT[20] * a[5][1] + iT[5] * a[2][1] + iT[6] * a[7][1] + iT[18] * a[5][4] - iT[19] * a[9][4] + t[1] + add) >> shift);
+    dst[ 2] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[2][4] - iT[11] * a[3][4] + iT[13] * a[0][4] + iT[24] * a[1][4] + iT[1] * a[4][3] + iT[10] * a[7][2] + iT[14] * a[1][2] - iT[23] * a[8][2] + iT[2] * a[3][0] - iT[9] * a[6][5] - iT[15] * a[8][0] + iT[22] * a[9][5] - iT[3] * a[6][4] + iT[8] * a[3][1] + iT[16] * a[9][4] - iT[21] * a[8][1] + iT[4] * a[7][3] + iT[7] * a[4][2] - iT[17] * a[8][3] + iT[20] * a[1][3] - iT[5] * a[3][5] - iT[6] * a[2][5] + iT[18] * a[1][5] + iT[19] * a[0][5] + t[1] + add) >> shift);
+    dst[ 3] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[5][4] + iT[11] * a[0][1] - iT[13] * a[4][4] - iT[24] * a[6][4] - iT[1] * a[1][3] - iT[10] * a[0][3] + iT[14] * a[2][3] + iT[23] * a[3][3] - iT[2] * a[0][4] - iT[9] * a[1][4] + iT[15] * a[3][4] + iT[22] * a[2][4] + iT[3] * a[0][0] + iT[8] * a[5][5] - iT[16] * a[6][5] - iT[21] * a[4][5] + iT[4] * a[5][0] - iT[7] * a[9][0] + iT[17] * a[7][5] + iT[20] * a[2][5] - iT[5] * a[8][2] + iT[6] * a[9][3] - iT[18] * a[6][3] + iT[19] * a[3][2] + t[0] + add) >> shift);
+    dst[ 5] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[1][5] + iT[11] * a[8][5] - iT[13] * a[7][5] - iT[24] * a[4][0] + iT[1] * a[5][1] + iT[10] * a[0][4] - iT[14] * a[4][1] - iT[23] * a[6][1] - iT[2] * a[8][3] + iT[9] * a[9][2] - iT[15] * a[6][2] + iT[22] * a[3][3] - iT[3] * a[0][2] - iT[8] * a[1][2] + iT[16] * a[3][2] + iT[21] * a[2][2] - iT[4] * a[9][4] + iT[7] * a[5][4] + iT[17] * a[2][1] + iT[20] * a[7][1] + iT[5] * a[1][0] - iT[6] * a[8][0] + iT[18] * a[7][0] + iT[19] * a[4][5] - t[0] + add) >> shift);
+    dst[ 6] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[7][5] - iT[11] * a[2][5] + iT[13] * a[9][0] - iT[24] * a[5][0] + iT[1] * a[3][4] - iT[10] * a[6][1] - iT[14] * a[8][4] + iT[23] * a[9][1] + iT[2] * a[4][2] + iT[9] * a[7][3] + iT[15] * a[1][3] - iT[22] * a[8][3] - iT[3] * a[2][2] - iT[8] * a[3][2] + iT[16] * a[0][2] + iT[21] * a[1][2] - iT[4] * a[6][4] - iT[7] * a[4][4] + iT[17] * a[5][4] + iT[20] * a[0][1] + iT[5] * a[7][0] + iT[6] * a[2][0] - iT[18] * a[9][5] + iT[19] * a[5][5] - t[1] + add) >> shift);
+    dst[ 7] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[6][3] - iT[11] * a[4][3] + iT[13] * a[5][3] + iT[24] * a[0][2] + iT[1] * a[7][1] + iT[10] * a[4][4] - iT[14] * a[8][1] + iT[23] * a[1][1] - iT[2] * a[7][5] - iT[9] * a[4][0] + iT[15] * a[8][5] - iT[22] * a[1][5] + iT[3] * a[7][3] + iT[8] * a[2][3] - iT[16] * a[9][2] + iT[21] * a[5][2] - iT[4] * a[6][5] + iT[7] * a[3][0] + iT[17] * a[9][5] - iT[20] * a[8][0] + iT[5] * a[6][1] - iT[6] * a[3][4] - iT[18] * a[9][1] + iT[19] * a[8][4] - t[1] + add) >> shift);
+    dst[ 8] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[1][1] - iT[11] * a[0][1] + iT[13] * a[2][1] + iT[24] * a[3][1] + iT[1] * a[1][3] - iT[10] * a[8][3] + iT[14] * a[7][3] + iT[23] * a[4][2] - iT[2] * a[9][1] + iT[9] * a[8][4] - iT[15] * a[3][4] + iT[22] * a[6][1] + iT[3] * a[5][5] + iT[8] * a[0][0] - iT[16] * a[4][5] - iT[21] * a[6][5] + iT[4] * a[0][5] + iT[7] * a[1][5] - iT[17] * a[3][5] - iT[20] * a[2][5] + iT[5] * a[5][3] - iT[6] * a[9][3] + iT[18] * a[7][2] + iT[19] * a[2][2] - t[0] + add) >> shift);
+    dst[10] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[8][3] - iT[11] * a[1][3] - iT[13] * a[4][2] - iT[24] * a[7][3] - iT[1] * a[8][0] + iT[10] * a[1][0] + iT[14] * a[4][5] + iT[23] * a[7][0] + iT[2] * a[5][3] + iT[9] * a[0][2] - iT[15] * a[4][3] - iT[22] * a[6][3] - iT[3] * a[5][0] - iT[8] * a[0][5] + iT[16] * a[4][0] + iT[21] * a[6][0] + iT[4] * a[1][4] + iT[7] * a[0][4] - iT[17] * a[2][4] - iT[20] * a[3][4] - iT[5] * a[1][1] - iT[6] * a[0][1] + iT[18] * a[2][1] + iT[19] * a[3][1] + t[0] + add) >> shift);
+    dst[11] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[7][0] + iT[11] * a[2][0] - iT[13] * a[9][5] + iT[24] * a[5][5] + iT[1] * a[2][5] + iT[10] * a[7][5] + iT[14] * a[5][0] - iT[23] * a[9][0] - iT[2] * a[2][1] - iT[9] * a[3][1] + iT[15] * a[0][1] + iT[22] * a[1][1] - iT[3] * a[7][4] - iT[8] * a[4][1] + iT[16] * a[8][4] - iT[21] * a[1][4] + iT[4] * a[3][2] - iT[7] * a[6][3] - iT[17] * a[8][2] + iT[20] * a[9][3] + iT[5] * a[4][2] + iT[6] * a[6][2] - iT[18] * a[0][3] - iT[19] * a[5][2] + t[1] + add) >> shift);
+    dst[13] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[9][5] - iT[11] * a[8][0] + iT[13] * a[3][0] - iT[24] * a[6][5] - iT[1] * a[8][5] + iT[10] * a[9][0] - iT[14] * a[6][0] + iT[23] * a[3][5] + iT[2] * a[5][4] - iT[9] * a[9][4] + iT[15] * a[7][1] + iT[22] * a[2][1] - iT[3] * a[1][4] + iT[8] * a[8][4] - iT[16] * a[7][4] - iT[21] * a[4][1] - iT[4] * a[0][2] - iT[7] * a[5][3] + iT[17] * a[6][3] + iT[20] * a[4][3] + iT[5] * a[0][3] + iT[6] * a[1][3] - iT[18] * a[3][3] - iT[19] * a[2][3] + t[0] + add) >> shift);
+    dst[15] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[9][1] + iT[11] * a[5][1] + iT[13] * a[2][4] + iT[24] * a[7][4] + iT[1] * a[9][3] - iT[10] * a[5][3] - iT[14] * a[2][2] - iT[23] * a[7][2] - iT[2] * a[9][5] + iT[9] * a[5][5] + iT[15] * a[2][0] + iT[22] * a[7][0] + iT[3] * a[9][4] - iT[8] * a[8][1] + iT[16] * a[3][1] - iT[21] * a[6][4] - iT[4] * a[9][2] + iT[7] * a[8][3] - iT[17] * a[3][3] + iT[20] * a[6][2] + iT[5] * a[9][0] - iT[6] * a[8][5] + iT[18] * a[3][5] - iT[19] * a[6][0] - t[0] + add) >> shift);
+    dst[16] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[4][4] + iT[11] * a[7][1] + iT[13] * a[1][1] - iT[24] * a[8][1] + iT[1] * a[6][2] - iT[10] * a[3][3] - iT[14] * a[9][2] + iT[23] * a[8][3] - iT[2] * a[6][1] - iT[9] * a[4][1] + iT[15] * a[5][1] + iT[22] * a[0][4] - iT[3] * a[4][5] - iT[8] * a[6][5] + iT[16] * a[0][0] + iT[21] * a[5][5] - iT[4] * a[6][0] + iT[7] * a[3][5] + iT[17] * a[9][0] - iT[20] * a[8][5] + iT[5] * a[6][3] + iT[6] * a[4][3] - iT[18] * a[5][3] - iT[19] * a[0][2] - t[1] + add) >> shift);
+    dst[17] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[7][2] - iT[11] * a[4][3] + iT[13] * a[8][2] - iT[24] * a[1][2] + iT[1] * a[7][1] + iT[10] * a[2][1] - iT[14] * a[9][4] + iT[23] * a[5][4] - iT[2] * a[3][5] + iT[9] * a[6][0] + iT[15] * a[8][5] - iT[22] * a[9][0] - iT[3] * a[2][3] - iT[8] * a[7][3] - iT[16] * a[5][2] + iT[21] * a[9][2] + iT[4] * a[4][5] + iT[7] * a[7][0] + iT[17] * a[1][0] - iT[20] * a[8][0] - iT[5] * a[2][4] - iT[6] * a[3][4] + iT[18] * a[0][4] + iT[19] * a[1][4] - t[1] + add) >> shift);
+    dst[18] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[9][0] + iT[11] * a[8][5] - iT[13] * a[3][5] + iT[24] * a[6][0] + iT[1] * a[5][1] - iT[10] * a[9][1] + iT[14] * a[7][4] + iT[23] * a[2][4] + iT[2] * a[0][3] + iT[9] * a[5][2] - iT[15] * a[6][2] - iT[22] * a[4][2] + iT[3] * a[1][2] + iT[8] * a[0][2] - iT[16] * a[2][2] - iT[21] * a[3][2] - iT[4] * a[8][1] + iT[7] * a[1][1] + iT[17] * a[4][4] + iT[20] * a[7][1] + iT[5] * a[9][5] - iT[6] * a[8][0] + iT[18] * a[3][0] - iT[19] * a[6][5] - t[0] + add) >> shift);
+    dst[20] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[8][2] - iT[11] * a[9][3] + iT[13] * a[6][3] - iT[24] * a[3][2] + iT[1] * a[0][1] + iT[10] * a[5][4] - iT[14] * a[6][4] - iT[23] * a[4][4] + iT[2] * a[1][5] + iT[9] * a[0][5] - iT[15] * a[2][5] - iT[22] * a[3][5] - iT[3] * a[9][2] + iT[8] * a[5][2] + iT[16] * a[2][3] + iT[21] * a[7][3] + iT[4] * a[5][5] - iT[7] * a[9][5] + iT[17] * a[7][0] + iT[20] * a[2][0] + iT[5] * a[0][4] + iT[6] * a[5][1] - iT[18] * a[6][1] - iT[19] * a[4][1] + t[0] + add) >> shift);
+    dst[21] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[2][1] - iT[11] * a[7][1] - iT[13] * a[5][4] + iT[24] * a[9][4] - iT[1] * a[6][2] - iT[10] * a[4][2] + iT[14] * a[5][2] + iT[23] * a[0][3] - iT[2] * a[2][4] - iT[9] * a[7][4] - iT[15] * a[5][1] + iT[22] * a[9][1] - iT[3] * a[6][5] - iT[8] * a[4][5] + iT[16] * a[5][5] + iT[21] * a[0][0] - iT[4] * a[4][0] - iT[7] * a[7][5] - iT[17] * a[1][5] + iT[20] * a[8][5] - iT[5] * a[7][2] - iT[6] * a[4][3] + iT[18] * a[8][2] - iT[19] * a[1][2] + t[1] + add) >> shift);
+    dst[22] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[6][1] - iT[11] * a[3][4] - iT[13] * a[9][1] + iT[24] * a[8][4] + iT[1] * a[4][3] + iT[10] * a[6][3] - iT[14] * a[0][2] - iT[23] * a[5][3] + iT[2] * a[7][0] + iT[9] * a[4][5] - iT[15] * a[8][0] + iT[22] * a[1][0] - iT[3] * a[3][1] + iT[8] * a[6][4] + iT[16] * a[8][1] - iT[21] * a[9][4] - iT[4] * a[2][3] - iT[7] * a[3][3] + iT[17] * a[0][3] + iT[20] * a[1][3] - iT[5] * a[7][5] - iT[6] * a[2][5] + iT[18] * a[9][0] - iT[19] * a[5][0] + t[1] + add) >> shift);
+    dst[23] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[0][3] - iT[11] * a[1][3] + iT[13] * a[3][3] + iT[24] * a[2][3] - iT[1] * a[8][0] + iT[10] * a[9][5] - iT[14] * a[6][5] + iT[23] * a[3][0] + iT[2] * a[8][2] - iT[9] * a[1][2] - iT[15] * a[4][3] - iT[22] * a[7][2] + iT[3] * a[0][5] + iT[8] * a[5][0] - iT[16] * a[6][0] - iT[21] * a[4][0] + iT[4] * a[8][4] - iT[7] * a[9][1] + iT[17] * a[6][1] - iT[20] * a[3][4] - iT[5] * a[5][4] - iT[6] * a[0][1] + iT[18] * a[4][4] + iT[19] * a[6][4] + t[0] + add) >> shift);
+    dst[26] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[3][0] - iT[11] * a[2][0] + iT[13] * a[1][0] + iT[24] * a[0][0] - iT[1] * a[2][5] - iT[10] * a[3][5] + iT[14] * a[0][5] + iT[23] * a[1][5] + iT[2] * a[4][4] + iT[9] * a[6][4] - iT[15] * a[0][1] - iT[22] * a[5][4] - iT[3] * a[4][1] - iT[8] * a[7][4] - iT[16] * a[1][4] + iT[21] * a[8][4] + iT[4] * a[2][2] + iT[7] * a[7][2] + iT[17] * a[5][3] - iT[20] * a[9][3] + iT[5] * a[3][3] - iT[6] * a[6][2] - iT[18] * a[8][3] + iT[19] * a[9][2] - t[1] + add) >> shift);
+    dst[27] = Clip3(outputMinimum, outputMaximum, (int)(-iT[0] * a[3][3] + iT[11] * a[6][2] + iT[13] * a[8][3] - iT[24] * a[9][2] - iT[1] * a[2][0] - iT[10] * a[3][0] + iT[14] * a[0][0] + iT[23] * a[1][0] - iT[2] * a[6][3] + iT[9] * a[3][2] + iT[15] * a[9][3] - iT[22] * a[8][2] - iT[3] * a[4][0] - iT[8] * a[6][0] + iT[16] * a[0][5] + iT[21] * a[5][0] - iT[4] * a[7][4] - iT[7] * a[2][4] + iT[17] * a[9][1] - iT[20] * a[5][1] - iT[5] * a[4][4] - iT[6] * a[7][1] - iT[18] * a[1][1] + iT[19] * a[8][1] - t[1] + add) >> shift);
+    dst[28] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[0][4] + iT[11] * a[5][1] - iT[13] * a[6][1] - iT[24] * a[4][1] + iT[1] * a[9][3] - iT[10] * a[8][2] + iT[14] * a[3][2] - iT[23] * a[6][3] - iT[2] * a[1][0] - iT[9] * a[0][0] + iT[15] * a[2][0] + iT[22] * a[3][0] + iT[3] * a[8][1] - iT[8] * a[9][4] + iT[16] * a[6][4] - iT[21] * a[3][1] - iT[4] * a[5][2] - iT[7] * a[0][3] + iT[17] * a[4][2] + iT[20] * a[6][2] + iT[5] * a[1][5] - iT[6] * a[8][5] + iT[18] * a[7][5] + iT[19] * a[4][0] - t[0] + add) >> shift);
+    dst[30] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[5][3] - iT[11] * a[9][3] + iT[13] * a[7][2] + iT[24] * a[2][2] + iT[1] * a[0][1] + iT[10] * a[1][1] - iT[14] * a[3][1] - iT[23] * a[2][1] + iT[2] * a[9][0] - iT[9] * a[5][0] - iT[15] * a[2][5] - iT[22] * a[7][5] - iT[3] * a[5][2] + iT[8] * a[9][2] - iT[16] * a[7][3] - iT[21] * a[2][3] - iT[4] * a[0][0] - iT[7] * a[1][0] + iT[17] * a[3][0] + iT[20] * a[2][0] - iT[5] * a[9][1] + iT[6] * a[5][1] + iT[18] * a[2][4] + iT[19] * a[7][4] + t[0] + add) >> shift);
+    dst[31] = Clip3(outputMinimum, outputMaximum, (int)( iT[0] * a[3][5] + iT[11] * a[2][5] - iT[13] * a[1][5] - iT[24] * a[0][5] - iT[1] * a[3][4] - iT[10] * a[2][4] + iT[14] * a[1][4] + iT[23] * a[0][4] + iT[2] * a[3][3] + iT[9] * a[2][3] - iT[15] * a[1][3] - iT[22] * a[0][3] - iT[3] * a[3][2] - iT[8] * a[2][2] + iT[16] * a[1][2] + iT[21] * a[0][2] + iT[4] * a[3][1] + iT[7] * a[2][1] - iT[17] * a[1][1] - iT[20] * a[0][1] - iT[5] * a[3][0] - iT[6] * a[2][0] + iT[18] * a[1][0] + iT[19] * a[0][0] + t[1] + add) >> shift);
+
+    dst[ 4] = Clip3(outputMinimum, outputMaximum, (int)(iT[ 4] * b[0] + iT[14] * b[1] + iT[24] * b[2] + iT[29] * b[3] + iT[19] * b[4] + iT[ 9] * b[5] + add) >> shift);
+    dst[ 9] = Clip3(outputMinimum, outputMaximum, (int)(iT[ 9] * b[0] + iT[29] * b[1] + iT[14] * b[2] - iT[ 4] * b[3] - iT[24] * b[4] - iT[19] * b[5] + add) >> shift);
+    dst[14] = Clip3(outputMinimum, outputMaximum, (int)(iT[14] * b[0] + iT[19] * b[1] - iT[ 9] * b[2] - iT[24] * b[3] + iT[ 4] * b[4] + iT[29] * b[5] + add) >> shift);
+    dst[19] = Clip3(outputMinimum, outputMaximum, (int)(iT[19] * b[0] + iT[ 4] * b[1] - iT[29] * b[2] + iT[ 9] * b[3] + iT[14] * b[4] - iT[24] * b[5] + add) >> shift);
+    dst[24] = Clip3(outputMinimum, outputMaximum, (int)(iT[24] * b[0] - iT[ 9] * b[1] - iT[ 4] * b[2] + iT[19] * b[3] - iT[29] * b[4] + iT[14] * b[5] + add) >> shift);
+    dst[29] = Clip3(outputMinimum, outputMaximum, (int)(iT[29] * b[0] - iT[24] * b[1] + iT[19] * b[2] - iT[14] * b[3] + iT[ 9] * b[4] - iT[ 4] * b[5] + add) >> shift);
+
+    dst[12] = Clip3(outputMinimum, outputMaximum, (int)(iT[12]*c[0] + iT[25]*c[1] + add) >> shift);
+    dst[25] = Clip3(outputMinimum, outputMaximum, (int)(iT[25]*c[0] - iT[12]*c[1] + add) >> shift);
+
+    src++;
+    dst += 32;
+  }
+
+  if (iSkipLine)
+  {
+    memset(dst, 0, (iSkipLine * 32) * sizeof(TCoeff));
+  }
+#else
   _fastInverseMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_trCoreDST7P32[TRANSFORM_INVERSE][0] );
+#endif
 }
 
 
@@ -1049,22 +1340,314 @@ void fastInverseDCT8_B8(const TCoeff *src, TCoeff *dst, int shift, int line, int
 
 void fastForwardDCT8_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
+#if !JVET_M0497_MATRIX_MULT
+  int j, k;
+  TCoeff a[5], b[5], c[5], d[5], t;
+  TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
+
+  const TMatrixCoeff *iT = g_trCoreDST7P16[TRANSFORM_FORWARD][0];
+
+  TCoeff *pCoef = dst;
+  const int  reducedLine = line - iSkipLine;
+  const int  cutoff = 16 - iSkipLine2;
+
+  for (j = 0; j < reducedLine; j++)
+  {
+    for (k = 0; k < 5; k++)
+    {
+      a[k] = src[15 - k] + src[ 4 - k];
+      b[k] = src[ 6 + k] + src[ 4 - k];
+      c[k] = src[15 - k] - src[ 6 + k];
+      d[k] = src[15 - k] + src[ 6 + k] - src[ 4 - k];
+    }
+
+    t = iT[10] * src[5];
+
+    dst[ 1 * line] = ( - iT[ 2]*d[0] - iT[ 5]*d[1] - iT[ 8]*d[2] - iT[11]*d[3] - iT[14]*d[4] + add) >> shift;
+    dst[ 4 * line] = (   iT[ 8]*d[0] + iT[14]*d[1] + iT[ 5]*d[2] - iT[ 2]*d[3] - iT[11]*d[4] + add) >> shift;
+    dst[ 7 * line] = ( - iT[14]*d[0] - iT[ 2]*d[1] + iT[11]*d[2] + iT[ 5]*d[3] - iT[ 8]*d[4] + add) >> shift;
+    dst[10 * line] = (   iT[11]*d[0] - iT[ 8]*d[1] - iT[ 2]*d[2] + iT[14]*d[3] - iT[ 5]*d[4] + add) >> shift;
+    dst[13 * line] = ( - iT[ 5]*d[0] + iT[11]*d[1] - iT[14]*d[2] + iT[ 8]*d[3] - iT[ 2]*d[4] + add) >> shift;
+
+    dst[ 5 * line] = ( - iT[10] * (src[15] + src[14] - src[12] - src[11] + src[9] + src[8] - src[6] - src[5] + src[3] + src[2] - src[0]) + add) >> shift;
+
+    dst[ 0 * line] = (   iT[0]*a[0] + iT[9]*b[0] + iT[1]*a[1] + iT[8]*b[1] + iT[2]*a[2] + iT[7]*b[2] + iT[3]*a[3] + iT[6]*b[3] + iT[4]*a[4] + iT[5]*b[4] + t + add ) >> shift;
+    dst[ 2 * line] = (   iT[4]*c[0] - iT[5]*b[0] + iT[9]*c[1] - iT[0]*b[1] + iT[6]*c[2] + iT[3]*a[2] + iT[1]*c[3] + iT[8]*a[3] + iT[7]*a[4] + iT[2]*b[4] - t + add ) >> shift;
+    dst[ 3 * line] = ( - iT[6]*a[0] - iT[3]*b[0] - iT[2]*c[1] - iT[7]*a[1] - iT[9]*c[2] - iT[0]*a[2] - iT[4]*c[3] + iT[5]*b[3] + iT[1]*a[4] + iT[8]*b[4] - t + add ) >> shift;
+    dst[ 6 * line] = (   iT[8]*a[0] + iT[1]*c[0] + iT[6]*c[1] - iT[3]*b[1] - iT[5]*a[2] - iT[4]*b[2] - iT[7]*c[3] - iT[2]*a[3] - iT[0]*c[4] + iT[9]*b[4] + t + add ) >> shift;
+    dst[ 8 * line] = (   iT[4]*c[0] + iT[5]*a[0] - iT[0]*c[1] + iT[9]*b[1] - iT[3]*c[2] - iT[6]*a[2] + iT[1]*c[3] - iT[8]*b[3] + iT[2]*c[4] + iT[7]*a[4] - t + add ) >> shift;
+    dst[ 9 * line] = ( - iT[7]*c[0] - iT[2]*a[0] + iT[4]*a[1] + iT[5]*b[1] + iT[8]*c[2] - iT[1]*b[2] - iT[9]*a[3] - iT[0]*b[3] - iT[3]*c[4] + iT[6]*b[4] - t + add ) >> shift;
+    dst[11 * line] = ( - iT[9]*a[0] - iT[0]*b[0] + iT[8]*c[1] + iT[1]*a[1] - iT[2]*c[2] + iT[7]*b[2] - iT[6]*a[3] - iT[3]*b[3] + iT[5]*c[4] + iT[4]*a[4] + t + add ) >> shift;
+    dst[12 * line] = (   iT[7]*c[0] - iT[2]*b[0] - iT[5]*c[1] - iT[4]*a[1] + iT[8]*a[2] + iT[1]*b[2] - iT[0]*a[3] - iT[9]*b[3] - iT[6]*c[4] + iT[3]*b[4] + t + add ) >> shift;
+    dst[14 * line] = (   iT[3]*a[0] + iT[6]*b[0] - iT[7]*a[1] - iT[2]*b[1] + iT[0]*c[2] + iT[9]*a[2] - iT[4]*c[3] - iT[5]*a[3] + iT[8]*c[4] + iT[1]*a[4] - t + add ) >> shift;
+    dst[15 * line] = ( - iT[1]*c[0] + iT[8]*b[0] + iT[3]*c[1] - iT[6]*b[1] - iT[5]*c[2] + iT[4]*b[2] + iT[7]*c[3] - iT[2]*b[3] - iT[9]*c[4] + iT[0]*b[4] - t + add ) >> shift;
+
+    src += 16;
+    dst++;
+  }
+
+  if (iSkipLine)
+  {
+    dst = pCoef + reducedLine;
+    for (j = 0; j < cutoff; j++)
+    {
+      memset(dst, 0, sizeof(TCoeff)*iSkipLine);
+      dst += line;
+    }
+  }
+
+  if (iSkipLine2)
+  {
+    dst = pCoef + line * cutoff;
+    memset(dst, 0, sizeof(TCoeff) * line * iSkipLine2);
+  }
+#else
   _fastForwardMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_trCoreDCT8P16[TRANSFORM_FORWARD][0] );
+#endif
 }
 
 void fastInverseDCT8_B16(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
+#if !JVET_M0497_MATRIX_MULT
+  int j, k;
+  TCoeff a[5], b[5], c[5], d[5], t;
+
+  TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
+
+  const TMatrixCoeff *iT = g_trCoreDST7P16[TRANSFORM_INVERSE][0];
+
+  const int reducedLine = line - iSkipLine;
+
+  for (j = 0; j < reducedLine; j++)
+  {
+    for (k = 0; k < 5; k++)
+    {
+      a[k] = src[(15 - k ) * line] + src[( 4 - k) * line];
+      b[k] = src[( 6 + k ) * line] + src[( 4 - k) * line];
+      c[k] = src[(15 - k ) * line] - src[( 6 + k) * line];
+      d[k] = src[(15 - k ) * line] + src[( 6 + k) * line] - src[(4 - k) * line];
+    }
+
+    t = iT[10] * src[5*line];
+
+    dst[ 1] = Clip3(outputMinimum, outputMaximum, (int)( - iT[ 2]*d[0] - iT[ 5]*d[1] - iT[ 8]*d[2] - iT[11]*d[3] - iT[14]*d[4] + add) >> shift);
+    dst[ 4] = Clip3(outputMinimum, outputMaximum, (int)(   iT[ 8]*d[0] + iT[14]*d[1] + iT[ 5]*d[2] - iT[ 2]*d[3] - iT[11]*d[4] + add) >> shift);
+    dst[ 7] = Clip3(outputMinimum, outputMaximum, (int)( - iT[14]*d[0] - iT[ 2]*d[1] + iT[11]*d[2] + iT[ 5]*d[3] - iT[ 8]*d[4] + add) >> shift);
+    dst[10] = Clip3(outputMinimum, outputMaximum, (int)(   iT[11]*d[0] - iT[ 8]*d[1] - iT[ 2]*d[2] + iT[14]*d[3] - iT[ 5]*d[4] + add) >> shift);
+    dst[13] = Clip3(outputMinimum, outputMaximum, (int)( - iT[ 5]*d[0] + iT[11]*d[1] - iT[14]*d[2] + iT[ 8]*d[3] - iT[ 2]*d[4] + add) >> shift);
+
+    dst[ 5] = Clip3(outputMinimum, outputMaximum, (int)( - iT[10] * (src[15 * line] + src[14 * line] - src[12 * line] - src[11 * line] + src[9 * line] + src[8 * line] - src[6 * line] - src[5 * line] + src[3 * line] + src[2 * line] - src[0 * line]) + add) >> shift);
+
+    dst[ 0] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0]*a[0] + iT[9]*b[0] + iT[1]*a[1] + iT[8]*b[1] + iT[2]*a[2] + iT[7]*b[2] + iT[3]*a[3] + iT[6]*b[3] + iT[4]*a[4] + iT[5]*b[4] + t + add ) >> shift );
+    dst[ 2] = Clip3(outputMinimum, outputMaximum, (int)(   iT[4]*c[0] - iT[5]*b[0] + iT[9]*c[1] - iT[0]*b[1] + iT[6]*c[2] + iT[3]*a[2] + iT[1]*c[3] + iT[8]*a[3] + iT[7]*a[4] + iT[2]*b[4] - t + add ) >> shift );
+    dst[ 3] = Clip3(outputMinimum, outputMaximum, (int)( - iT[6]*a[0] - iT[3]*b[0] - iT[2]*c[1] - iT[7]*a[1] - iT[9]*c[2] - iT[0]*a[2] - iT[4]*c[3] + iT[5]*b[3] + iT[1]*a[4] + iT[8]*b[4] - t + add ) >> shift );
+    dst[ 6] = Clip3(outputMinimum, outputMaximum, (int)(   iT[8]*a[0] + iT[1]*c[0] + iT[6]*c[1] - iT[3]*b[1] - iT[5]*a[2] - iT[4]*b[2] - iT[7]*c[3] - iT[2]*a[3] - iT[0]*c[4] + iT[9]*b[4] + t + add ) >> shift );
+    dst[ 8] = Clip3(outputMinimum, outputMaximum, (int)(   iT[4]*c[0] + iT[5]*a[0] - iT[0]*c[1] + iT[9]*b[1] - iT[3]*c[2] - iT[6]*a[2] + iT[1]*c[3] - iT[8]*b[3] + iT[2]*c[4] + iT[7]*a[4] - t + add ) >> shift );
+    dst[ 9] = Clip3(outputMinimum, outputMaximum, (int)( - iT[7]*c[0] - iT[2]*a[0] + iT[4]*a[1] + iT[5]*b[1] + iT[8]*c[2] - iT[1]*b[2] - iT[9]*a[3] - iT[0]*b[3] - iT[3]*c[4] + iT[6]*b[4] - t + add ) >> shift );
+    dst[11] = Clip3(outputMinimum, outputMaximum, (int)( - iT[9]*a[0] - iT[0]*b[0] + iT[8]*c[1] + iT[1]*a[1] - iT[2]*c[2] + iT[7]*b[2] - iT[6]*a[3] - iT[3]*b[3] + iT[5]*c[4] + iT[4]*a[4] + t + add ) >> shift );
+    dst[12] = Clip3(outputMinimum, outputMaximum, (int)(   iT[7]*c[0] - iT[2]*b[0] - iT[5]*c[1] - iT[4]*a[1] + iT[8]*a[2] + iT[1]*b[2] - iT[0]*a[3] - iT[9]*b[3] - iT[6]*c[4] + iT[3]*b[4] + t + add ) >> shift );
+    dst[14] = Clip3(outputMinimum, outputMaximum, (int)(   iT[3]*a[0] + iT[6]*b[0] - iT[7]*a[1] - iT[2]*b[1] + iT[0]*c[2] + iT[9]*a[2] - iT[4]*c[3] - iT[5]*a[3] + iT[8]*c[4] + iT[1]*a[4] - t + add ) >> shift );
+    dst[15] = Clip3(outputMinimum, outputMaximum, (int)( - iT[1]*c[0] + iT[8]*b[0] + iT[3]*c[1] - iT[6]*b[1] - iT[5]*c[2] + iT[4]*b[2] + iT[7]*c[3] - iT[2]*b[3] - iT[9]*c[4] + iT[0]*b[4] - t + add ) >> shift );
+
+    src++;
+    dst += 16;
+  }
+
+  if (iSkipLine)
+  {
+    memset(dst, 0, (iSkipLine * 16) * sizeof(TCoeff));
+  }
+#else
   _fastInverseMM< 16 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_trCoreDCT8P16[TRANSFORM_INVERSE][0] );
+#endif
 }
 
 
 void fastForwardDCT8_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2)
 {
+#if !JVET_M0497_MATRIX_MULT
+  int j, k;
+  TCoeff a[10][6];
+  TCoeff t[2];
+  TCoeff b[6];
+  TCoeff c[2];
+
+  TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
+  const TMatrixCoeff *iT = g_trCoreDST7P32[TRANSFORM_FORWARD][0];
+  TCoeff *pCoef = dst;
+  const int  reducedLine = line - iSkipLine;
+  const int  cutoff = 32 - iSkipLine2;
+
+  for (j = 0; j < reducedLine; j++)
+  {
+    for (k = 0; k < 6; k++)
+    {
+      a[0][k] = src[31-k] - src[20+k];
+      a[1][k] = src[31-k] + src[18-k];
+      a[2][k] = src[31-k] + src[ 7+k];
+      a[3][k] = src[31-k] - src[ 5-k];
+      a[4][k] = src[25-k] + src[13+k];
+      a[5][k] = src[25-k] + src[12-k];
+      a[6][k] = src[25-k] - src[   k];
+      a[7][k] = src[18-k] - src[ 7+k];
+      a[8][k] = src[18-k] + src[ 5-k];
+      a[9][k] = src[12-k] + src[   k];
+
+      b[k] = src[31-k] + src[20+k] - src[18-k] - src[7+k] + src[5-k];
+    }
+
+    for (k = 0; k < 2; k++)
+    {
+      c[k] = src[31-k] + src[28+k] - src[26-k] - src[23+k] + src[21-k] + src[18+k] - src[16-k] - src[13+k] + src[11-k] + src[8+k] - src[6-k] - src[3+k] + src[1-k];
+    }
+
+    t[0] = iT[12] * src[19] + iT[25] * src[6];
+    t[1] = iT[12] * src[6] - iT[25] * src[19];
+
+    dst[ 0 * line] = (   iT[0] * a[3][0] + iT[11] * a[6][5] + iT[13] * a[8][0] + iT[24] * a[9][5] + iT[1] * a[3][1] + iT[10] * a[6][4] + iT[14] * a[8][1] + iT[23] * a[9][4] + iT[2] * a[3][2] + iT[9] * a[6][3] + iT[15] * a[8][2] + iT[22] * a[9][3] + iT[3] * a[3][3] + iT[8] * a[6][2] + iT[16] * a[8][3] + iT[21] * a[9][2] + iT[4] * a[3][4] + iT[7] * a[6][1] + iT[17] * a[8][4] + iT[20] * a[9][1] + iT[5] * a[3][5] + iT[6] * a[6][0] + iT[18] * a[8][5] + iT[19] * a[9][0] + t[0] + add) >> shift;
+    dst[ 1 * line] = (   iT[0] * a[5][2] - iT[11] * a[0][3] - iT[13] * a[4][2] - iT[24] * a[6][2] - iT[1] * a[9][1] - iT[10] * a[8][4] - iT[14] * a[3][4] - iT[23] * a[6][1] - iT[2] * a[0][0] + iT[9] * a[5][5] - iT[15] * a[6][5] - iT[22] * a[4][5] + iT[3] * a[5][3] - iT[8] * a[0][2] - iT[16] * a[4][3] - iT[21] * a[6][3] - iT[4] * a[9][0] - iT[7] * a[8][5] - iT[17] * a[3][5] - iT[20] * a[6][0] - iT[5] * a[0][1] + iT[6] * a[5][4] - iT[18] * a[6][4] - iT[19] * a[4][4] + t[1] + add) >> shift;
+    dst[ 3 * line] = (   iT[0] * a[9][4] + iT[11] * a[5][4] - iT[13] * a[2][1] + iT[24] * a[7][1] + iT[1] * a[0][3] + iT[10] * a[1][3] - iT[14] * a[3][3] - iT[23] * a[2][3] - iT[2] * a[8][5] - iT[9] * a[9][0] - iT[15] * a[6][0] - iT[22] * a[3][5] + iT[3] * a[1][4] + iT[8] * a[0][4] - iT[16] * a[2][4] - iT[21] * a[3][4] + iT[4] * a[5][3] + iT[7] * a[9][3] + iT[17] * a[7][2] - iT[20] * a[2][2] - iT[5] * a[8][0] - iT[6] * a[1][0] + iT[18] * a[4][5] + iT[19] * a[7][0] - t[1] + add) >> shift;
+    dst[ 4 * line] = ( - iT[0] * a[3][2] - iT[11] * a[2][2] + iT[13] * a[1][2] + iT[24] * a[0][2] + iT[1] * a[6][0] + iT[10] * a[3][5] + iT[14] * a[9][0] + iT[23] * a[8][5] - iT[2] * a[2][3] - iT[9] * a[3][3] + iT[15] * a[0][3] + iT[22] * a[1][3] - iT[3] * a[7][0] + iT[8] * a[2][0] - iT[16] * a[9][5] - iT[21] * a[5][5] + iT[4] * a[4][4] + iT[7] * a[6][4] + iT[17] * a[0][1] - iT[20] * a[5][4] - iT[5] * a[7][4] - iT[6] * a[4][1] + iT[18] * a[8][4] + iT[19] * a[1][4] - t[0] + add) >> shift;
+    dst[ 5 * line] = (   iT[0] * a[3][5] + iT[11] * a[6][0] + iT[13] * a[8][5] + iT[24] * a[9][0] - iT[1] * a[6][5] - iT[10] * a[3][0] - iT[14] * a[9][5] - iT[23] * a[8][0] + iT[2] * a[7][4] - iT[9] * a[2][4] + iT[15] * a[9][1] + iT[22] * a[5][1] + iT[3] * a[7][1] + iT[8] * a[4][4] - iT[16] * a[8][1] - iT[21] * a[1][1] - iT[4] * a[6][2] - iT[7] * a[4][2] + iT[17] * a[5][2] - iT[20] * a[0][3] + iT[5] * a[3][2] + iT[6] * a[2][2] - iT[18] * a[1][2] - iT[19] * a[0][2] - t[0] + add) >> shift;
+    dst[ 8 * line] = (   iT[0] * a[9][3] + iT[11] * a[8][2] + iT[13] * a[3][2] + iT[24] * a[6][3] + iT[1] * a[1][5] + iT[10] * a[0][5] - iT[14] * a[2][5] - iT[23] * a[3][5] - iT[2] * a[1][3] - iT[9] * a[8][3] + iT[15] * a[7][3] + iT[22] * a[4][2] - iT[3] * a[9][5] - iT[8] * a[5][5] + iT[16] * a[2][0] - iT[21] * a[7][0] - iT[4] * a[1][1] - iT[7] * a[0][1] + iT[17] * a[2][1] + iT[20] * a[3][1] + iT[5] * a[5][1] + iT[6] * a[9][1] + iT[18] * a[7][4] - iT[19] * a[2][4] + t[1] + add) >> shift;
+    dst[ 9 * line] = (   iT[0] * a[2][1] + iT[11] * a[3][1] - iT[13] * a[0][1] - iT[24] * a[1][1] - iT[1] * a[7][3] + iT[10] * a[2][3] - iT[14] * a[9][2] - iT[23] * a[5][2] - iT[2] * a[4][0] - iT[9] * a[7][5] + iT[15] * a[1][5] + iT[22] * a[8][5] - iT[3] * a[3][4] - iT[8] * a[2][4] + iT[16] * a[1][4] + iT[21] * a[0][4] - iT[4] * a[6][3] - iT[7] * a[3][2] - iT[17] * a[9][3] - iT[20] * a[8][2] - iT[5] * a[4][5] - iT[6] * a[6][5] - iT[18] * a[0][0] + iT[19] * a[5][5] + t[0] + add) >> shift;
+    dst[10 * line] = ( - iT[0] * a[6][1] - iT[11] * a[4][1] + iT[13] * a[5][1] - iT[24] * a[0][4] + iT[1] * a[2][2] - iT[10] * a[7][2] - iT[14] * a[5][3] - iT[23] * a[9][3] + iT[2] * a[6][4] + iT[9] * a[4][4] - iT[15] * a[5][4] + iT[22] * a[0][1] - iT[3] * a[2][5] + iT[8] * a[7][5] + iT[16] * a[5][0] + iT[21] * a[9][0] - iT[4] * a[7][0] - iT[7] * a[4][5] + iT[17] * a[8][0] + iT[20] * a[1][0] + iT[5] * a[4][2] + iT[6] * a[7][3] - iT[18] * a[1][3] - iT[19] * a[8][3] + t[0] + add) >> shift;
+    dst[11 * line] = ( - iT[0] * a[1][3] - iT[11] * a[0][3] + iT[13] * a[2][3] + iT[24] * a[3][3] - iT[1] * a[9][1] - iT[10] * a[5][1] + iT[14] * a[2][4] - iT[23] * a[7][4] - iT[2] * a[8][0] - iT[9] * a[9][5] - iT[15] * a[6][5] - iT[22] * a[3][0] + iT[3] * a[0][2] - iT[8] * a[5][3] + iT[16] * a[6][3] + iT[21] * a[4][3] + iT[4] * a[5][0] - iT[7] * a[0][5] - iT[17] * a[4][0] - iT[20] * a[6][0] + iT[5] * a[9][4] + iT[6] * a[5][4] - iT[18] * a[2][1] + iT[19] * a[7][1] + t[1] + add) >> shift;
+    dst[13 * line] = (   iT[0] * a[0][0] + iT[11] * a[1][0] - iT[13] * a[3][0] - iT[24] * a[2][0] + iT[1] * a[5][4] - iT[10] * a[0][1] - iT[14] * a[4][4] - iT[23] * a[6][4] - iT[2] * a[9][3] - iT[9] * a[5][3] + iT[15] * a[2][2] - iT[22] * a[7][2] + iT[3] * a[8][3] + iT[8] * a[9][2] + iT[16] * a[6][2] + iT[21] * a[3][3] - iT[4] * a[1][4] - iT[7] * a[8][4] + iT[17] * a[7][4] + iT[20] * a[4][1] + iT[5] * a[0][5] + iT[6] * a[1][5] - iT[18] * a[3][5] - iT[19] * a[2][5] - t[1] + add) >> shift;
+    dst[14 * line] = (   iT[0] * a[4][2] + iT[11] * a[7][3] - iT[13] * a[1][3] - iT[24] * a[8][3] + iT[1] * a[4][1] + iT[10] * a[6][1] + iT[14] * a[0][4] - iT[23] * a[5][1] - iT[2] * a[3][0] - iT[9] * a[2][0] + iT[15] * a[1][0] + iT[22] * a[0][0] - iT[3] * a[6][3] - iT[8] * a[4][3] + iT[16] * a[5][3] - iT[21] * a[0][2] - iT[4] * a[7][5] - iT[7] * a[4][0] + iT[17] * a[8][5] + iT[20] * a[1][5] + iT[5] * a[6][4] + iT[6] * a[3][1] + iT[18] * a[9][4] + iT[19] * a[8][1] - t[0] + add) >> shift;
+    dst[15 * line] = (   iT[0] * a[7][4] + iT[11] * a[4][1] - iT[13] * a[8][4] - iT[24] * a[1][4] - iT[1] * a[2][2] - iT[10] * a[3][2] + iT[14] * a[0][2] + iT[23] * a[1][2] - iT[2] * a[2][1] + iT[9] * a[7][1] + iT[15] * a[5][4] + iT[22] * a[9][4] + iT[3] * a[7][5] - iT[8] * a[2][5] + iT[16] * a[9][0] + iT[21] * a[5][0] + iT[4] * a[2][0] + iT[7] * a[3][0] - iT[17] * a[0][0] - iT[20] * a[1][0] + iT[5] * a[2][3] - iT[6] * a[7][3] - iT[18] * a[5][2] - iT[19] * a[9][2] - t[0] + add) >> shift;
+    dst[16 * line] = ( - iT[0] * a[0][1] + iT[11] * a[5][4] - iT[13] * a[6][4] - iT[24] * a[4][4] + iT[1] * a[0][3] - iT[10] * a[5][2] + iT[14] * a[6][2] + iT[23] * a[4][2] - iT[2] * a[0][5] + iT[9] * a[5][0] - iT[15] * a[6][0] - iT[22] * a[4][0] - iT[3] * a[0][4] - iT[8] * a[1][4] + iT[16] * a[3][4] + iT[21] * a[2][4] + iT[4] * a[0][2] + iT[7] * a[1][2] - iT[17] * a[3][2] - iT[20] * a[2][2] - iT[5] * a[0][0] - iT[6] * a[1][0] + iT[18] * a[3][0] + iT[19] * a[2][0] - t[1] + add) >> shift;
+    dst[18 * line] = (   iT[0] * a[0][5] + iT[11] * a[1][5] - iT[13] * a[3][5] - iT[24] * a[2][5] - iT[1] * a[1][0] - iT[10] * a[0][0] + iT[14] * a[2][0] + iT[23] * a[3][0] - iT[2] * a[5][1] + iT[9] * a[0][4] + iT[15] * a[4][1] + iT[22] * a[6][1] - iT[3] * a[8][1] - iT[8] * a[1][1] + iT[16] * a[4][4] + iT[21] * a[7][1] - iT[4] * a[9][2] - iT[7] * a[5][2] + iT[17] * a[2][3] - iT[20] * a[7][3] - iT[5] * a[9][3] - iT[6] * a[8][2] - iT[18] * a[3][2] - iT[19] * a[6][3] + t[1] + add) >> shift;
+    dst[20 * line] = ( - iT[0] * a[4][0] - iT[11] * a[6][0] - iT[13] * a[0][5] + iT[24] * a[5][0] + iT[1] * a[6][5] + iT[10] * a[4][5] - iT[14] * a[5][5] + iT[23] * a[0][0] - iT[2] * a[6][1] - iT[9] * a[3][4] - iT[15] * a[9][1] - iT[22] * a[8][4] + iT[3] * a[4][4] + iT[8] * a[7][1] - iT[16] * a[1][1] - iT[21] * a[8][1] - iT[4] * a[3][3] - iT[7] * a[2][3] + iT[17] * a[1][3] + iT[20] * a[0][3] + iT[5] * a[7][2] - iT[6] * a[2][2] + iT[18] * a[9][3] + iT[19] * a[5][3] + t[0] + add) >> shift;
+    dst[21 * line] = (   iT[0] * a[1][2] + iT[11] * a[8][2] - iT[13] * a[7][2] - iT[24] * a[4][3] + iT[1] * a[1][5] + iT[10] * a[8][5] - iT[14] * a[7][5] - iT[23] * a[4][0] + iT[2] * a[5][2] + iT[9] * a[9][2] + iT[15] * a[7][3] - iT[22] * a[2][3] + iT[3] * a[5][5] + iT[8] * a[9][5] + iT[16] * a[7][0] - iT[21] * a[2][0] + iT[4] * a[8][1] + iT[7] * a[9][4] + iT[17] * a[6][4] + iT[20] * a[3][1] + iT[5] * a[8][4] + iT[6] * a[9][1] + iT[18] * a[6][1] + iT[19] * a[3][4] + t[1] + add) >> shift;
+    dst[23 * line] = (   iT[0] * a[8][4] + iT[11] * a[9][1] + iT[13] * a[6][1] + iT[24] * a[3][4] - iT[1] * a[8][2] - iT[10] * a[1][2] + iT[14] * a[4][3] + iT[23] * a[7][2] - iT[2] * a[0][1] - iT[9] * a[1][1] + iT[15] * a[3][1] + iT[22] * a[2][1] + iT[3] * a[5][0] + iT[8] * a[9][0] + iT[16] * a[7][5] - iT[21] * a[2][5] - iT[4] * a[9][5] - iT[7] * a[8][0] - iT[17] * a[3][0] - iT[20] * a[6][5] + iT[5] * a[5][2] - iT[6] * a[0][3] - iT[18] * a[4][2] - iT[19] * a[6][2] - t[1] + add) >> shift;
+    dst[24 * line] = ( - iT[0] * a[2][3] + iT[11] * a[7][3] + iT[13] * a[5][2] + iT[24] * a[9][2] + iT[1] * a[4][1] + iT[10] * a[7][4] - iT[14] * a[1][4] - iT[23] * a[8][4] - iT[2] * a[4][5] - iT[9] * a[7][0] + iT[15] * a[1][0] + iT[22] * a[8][0] + iT[3] * a[4][3] + iT[8] * a[6][3] + iT[16] * a[0][2] - iT[21] * a[5][3] - iT[4] * a[2][5] - iT[7] * a[3][5] + iT[17] * a[0][5] + iT[20] * a[1][5] + iT[5] * a[2][1] + iT[6] * a[3][1] - iT[18] * a[0][1] - iT[19] * a[1][1] - t[0] + add) >> shift;
+    dst[25 * line] = ( - iT[0] * a[4][5] - iT[11] * a[6][5] - iT[13] * a[0][0] + iT[24] * a[5][5] - iT[1] * a[3][1] - iT[10] * a[2][1] + iT[14] * a[1][1] + iT[23] * a[0][1] + iT[2] * a[7][2] + iT[9] * a[4][3] - iT[15] * a[8][2] - iT[22] * a[1][2] + iT[3] * a[6][2] + iT[8] * a[3][3] + iT[16] * a[9][2] + iT[21] * a[8][3] + iT[4] * a[2][4] - iT[7] * a[7][4] - iT[17] * a[5][1] - iT[20] * a[9][1] - iT[5] * a[4][0] - iT[6] * a[6][0] - iT[18] * a[0][5] + iT[19] * a[5][0] - t[0] + add) >> shift;
+    dst[26 * line] = (   iT[0] * a[8][0] + iT[11] * a[1][0] - iT[13] * a[4][5] - iT[24] * a[7][0] + iT[1] * a[5][4] + iT[10] * a[9][4] + iT[14] * a[7][1] - iT[23] * a[2][1] - iT[2] * a[1][2] - iT[9] * a[0][2] + iT[15] * a[2][2] + iT[22] * a[3][2] - iT[3] * a[9][2] - iT[8] * a[8][3] - iT[16] * a[3][3] - iT[21] * a[6][2] + iT[4] * a[0][4] - iT[7] * a[5][1] + iT[17] * a[6][1] + iT[20] * a[4][1] + iT[5] * a[8][5] + iT[6] * a[1][5] - iT[18] * a[4][0] - iT[19] * a[7][5] - t[1] + add) >> shift;
+    dst[28 * line] = ( - iT[0] * a[5][1] - iT[11] * a[9][1] - iT[13] * a[7][4] + iT[24] * a[2][4] + iT[1] * a[8][2] + iT[10] * a[9][3] + iT[14] * a[6][3] + iT[23] * a[3][2] - iT[2] * a[9][4] - iT[9] * a[8][1] - iT[15] * a[3][1] - iT[22] * a[6][4] + iT[3] * a[9][0] + iT[8] * a[5][0] - iT[16] * a[2][5] + iT[21] * a[7][5] - iT[4] * a[5][5] + iT[7] * a[0][0] + iT[17] * a[4][5] + iT[20] * a[6][5] + iT[5] * a[1][3] + iT[6] * a[0][3] - iT[18] * a[2][3] - iT[19] * a[3][3] + t[1] + add) >> shift;
+    dst[29 * line] = (   iT[0] * a[6][4] + iT[11] * a[3][1] + iT[13] * a[9][4] + iT[24] * a[8][1] - iT[1] * a[7][3] - iT[10] * a[4][2] + iT[14] * a[8][3] + iT[23] * a[1][3] - iT[2] * a[3][5] - iT[9] * a[2][5] + iT[15] * a[1][5] + iT[22] * a[0][5] + iT[3] * a[2][4] + iT[8] * a[3][4] - iT[16] * a[0][4] - iT[21] * a[1][4] + iT[4] * a[4][3] + iT[7] * a[7][2] - iT[17] * a[1][2] - iT[20] * a[8][2] - iT[5] * a[3][0] - iT[6] * a[6][5] - iT[18] * a[8][0] - iT[19] * a[9][5] + t[0] + add) >> shift;
+    dst[30 * line] = ( - iT[0] * a[7][2] + iT[11] * a[2][2] - iT[13] * a[9][3] - iT[24] * a[5][3] - iT[1] * a[6][0] - iT[10] * a[4][0] + iT[14] * a[5][0] - iT[23] * a[0][5] - iT[2] * a[4][2] - iT[9] * a[6][2] - iT[15] * a[0][3] + iT[22] * a[5][2] + iT[3] * a[2][0] - iT[8] * a[7][0] - iT[16] * a[5][5] - iT[21] * a[9][5] + iT[4] * a[7][1] - iT[7] * a[2][1] + iT[17] * a[9][4] + iT[20] * a[5][4] + iT[5] * a[6][1] + iT[6] * a[4][1] - iT[18] * a[5][1] + iT[19] * a[0][4] + t[0] + add) >> shift;
+    dst[31 * line] = (   iT[0] * a[8][5] + iT[11] * a[1][5] - iT[13] * a[4][0] - iT[24] * a[7][5] - iT[1] * a[1][0] - iT[10] * a[8][0] + iT[14] * a[7][0] + iT[23] * a[4][5] - iT[2] * a[8][4] - iT[9] * a[1][4] + iT[15] * a[4][1] + iT[22] * a[7][4] + iT[3] * a[1][1] + iT[8] * a[8][1] - iT[16] * a[7][1] - iT[21] * a[4][4] + iT[4] * a[8][3] + iT[7] * a[1][3] - iT[17] * a[4][2] - iT[20] * a[7][3] - iT[5] * a[1][2] - iT[6] * a[8][2] + iT[18] * a[7][2] + iT[19] * a[4][3] + t[1] + add) >> shift;
+
+    dst[ 2 * line] = (   iT[ 4] * b[0] + iT[ 9] * b[1] + iT[14] * b[2] + iT[19] * b[3] + iT[24] * b[4] + iT[29] * b[5] + add) >> shift;
+    dst[ 7 * line] = ( - iT[14] * b[0] - iT[29] * b[1] - iT[19] * b[2] - iT[ 4] * b[3] + iT[ 9] * b[4] + iT[24] * b[5] + add) >> shift;
+    dst[12 * line] = (   iT[24] * b[0] + iT[14] * b[1] - iT[ 9] * b[2] - iT[29] * b[3] - iT[ 4] * b[4] + iT[19] * b[5] + add) >> shift;
+    dst[17 * line] = ( - iT[29] * b[0] + iT[ 4] * b[1] + iT[24] * b[2] - iT[ 9] * b[3] - iT[19] * b[4] + iT[14] * b[5] + add) >> shift;
+    dst[22 * line] = (   iT[19] * b[0] - iT[24] * b[1] + iT[ 4] * b[2] + iT[14] * b[3] - iT[29] * b[4] + iT[ 9] * b[5] + add) >> shift;
+    dst[27 * line] = ( - iT[ 9] * b[0] + iT[19] * b[1] - iT[29] * b[2] + iT[24] * b[3] - iT[14] * b[4] + iT[ 4] * b[5] + add) >> shift;
+
+    dst[ 6 * line] = (   iT[12] * c[0] + iT[25] * c[1] + add) >> shift;
+    dst[19 * line] = ( - iT[25] * c[0] + iT[12] * c[1] + add) >> shift;
+
+    src += 32;
+    dst++;
+  }
+
+  if (iSkipLine)
+  {
+    dst = pCoef + reducedLine;
+    for (j = 0; j < cutoff; j++)
+    {
+      memset(dst, 0, sizeof(TCoeff)*iSkipLine);
+      dst += line;
+    }
+  }
+
+  if (iSkipLine2)
+  {
+    dst = pCoef + line * cutoff;
+    memset(dst, 0, sizeof(TCoeff) * line * iSkipLine2);
+  }
+#else
   _fastForwardMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, g_trCoreDCT8P32[TRANSFORM_FORWARD][0] );
+#endif
 }
 
 void fastInverseDCT8_B32(const TCoeff *src, TCoeff *dst, int shift, int line, int iSkipLine, int iSkipLine2, const TCoeff outputMinimum, const TCoeff outputMaximum)
 {
+#if !JVET_M0497_MATRIX_MULT
+  int j, k;
+  TCoeff a[10][6];
+  TCoeff t[2];
+  TCoeff b[6];
+  TCoeff c[2];
+  TCoeff add = (shift > 0) ? (1 << (shift - 1)) : 0;
+
+  const TMatrixCoeff *iT = g_trCoreDST7P32[TRANSFORM_INVERSE][0];
+
+  const int  reducedLine = line - iSkipLine;
+
+  for (j = 0; j < reducedLine; j++)
+  {
+    for (k = 0; k < 6; k++)
+    {
+      a[0][k] = src[(31 - k)*line] - src[(20 + k)*line];
+      a[1][k] = src[(31 - k)*line] + src[(18 - k)*line];
+      a[2][k] = src[(31 - k)*line] + src[( 7 + k)*line];
+      a[3][k] = src[(31 - k)*line] - src[( 5 - k)*line];
+      a[4][k] = src[(25 - k)*line] + src[(13 + k)*line];
+      a[5][k] = src[(25 - k)*line] + src[(12 - k)*line];
+      a[6][k] = src[(25 - k)*line] - src[      k *line];
+      a[7][k] = src[(18 - k)*line] - src[( 7 + k)*line];
+      a[8][k] = src[(18 - k)*line] + src[( 5 - k)*line];
+      a[9][k] = src[(12 - k)*line] + src[      k *line];
+
+      b[k] = src[(31 - k)*line] + src[(20 + k)*line] - src[(18 - k)*line] - src[(7 + k)*line] + src[(5 - k)*line];
+    }
+
+    for (k = 0; k < 2; k++)
+    {
+      c[k] = src[(31 - k)*line] + src[(28 + k)*line] - src[(26 - k)*line] - src[(23 + k)*line] + src[(21 - k)*line] + src[(18 + k)*line] - src[(16 - k)*line] - src[(13 + k)*line] + src[(11 - k)*line] + src[(8 + k)*line] - src[(6 - k)*line] - src[(3 + k)*line] + src[(1 - k)*line];
+    }
+
+    t[0] = iT[12] * src[19 * line] + iT[25] * src[ 6 * line];
+    t[1] = iT[12] * src[ 6 * line] - iT[25] * src[19 * line];
+
+    dst[ 0] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[3][0] + iT[11] * a[6][5] + iT[13] * a[8][0] + iT[24] * a[9][5] + iT[1] * a[3][1] + iT[10] * a[6][4] + iT[14] * a[8][1] + iT[23] * a[9][4] + iT[2] * a[3][2] + iT[9] * a[6][3] + iT[15] * a[8][2] + iT[22] * a[9][3] + iT[3] * a[3][3] + iT[8] * a[6][2] + iT[16] * a[8][3] + iT[21] * a[9][2] + iT[4] * a[3][4] + iT[7] * a[6][1] + iT[17] * a[8][4] + iT[20] * a[9][1] + iT[5] * a[3][5] + iT[6] * a[6][0] + iT[18] * a[8][5] + iT[19] * a[9][0] + t[0] + add) >> shift);
+    dst[ 1] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[5][2] - iT[11] * a[0][3] - iT[13] * a[4][2] - iT[24] * a[6][2] - iT[1] * a[9][1] - iT[10] * a[8][4] - iT[14] * a[3][4] - iT[23] * a[6][1] - iT[2] * a[0][0] + iT[9] * a[5][5] - iT[15] * a[6][5] - iT[22] * a[4][5] + iT[3] * a[5][3] - iT[8] * a[0][2] - iT[16] * a[4][3] - iT[21] * a[6][3] - iT[4] * a[9][0] - iT[7] * a[8][5] - iT[17] * a[3][5] - iT[20] * a[6][0] - iT[5] * a[0][1] + iT[6] * a[5][4] - iT[18] * a[6][4] - iT[19] * a[4][4] + t[1] + add) >> shift);
+    dst[ 3] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[9][4] + iT[11] * a[5][4] - iT[13] * a[2][1] + iT[24] * a[7][1] + iT[1] * a[0][3] + iT[10] * a[1][3] - iT[14] * a[3][3] - iT[23] * a[2][3] - iT[2] * a[8][5] - iT[9] * a[9][0] - iT[15] * a[6][0] - iT[22] * a[3][5] + iT[3] * a[1][4] + iT[8] * a[0][4] - iT[16] * a[2][4] - iT[21] * a[3][4] + iT[4] * a[5][3] + iT[7] * a[9][3] + iT[17] * a[7][2] - iT[20] * a[2][2] - iT[5] * a[8][0] - iT[6] * a[1][0] + iT[18] * a[4][5] + iT[19] * a[7][0] - t[1] + add) >> shift);
+    dst[ 4] = Clip3(outputMinimum, outputMaximum, (int)( - iT[0] * a[3][2] - iT[11] * a[2][2] + iT[13] * a[1][2] + iT[24] * a[0][2] + iT[1] * a[6][0] + iT[10] * a[3][5] + iT[14] * a[9][0] + iT[23] * a[8][5] - iT[2] * a[2][3] - iT[9] * a[3][3] + iT[15] * a[0][3] + iT[22] * a[1][3] - iT[3] * a[7][0] + iT[8] * a[2][0] - iT[16] * a[9][5] - iT[21] * a[5][5] + iT[4] * a[4][4] + iT[7] * a[6][4] + iT[17] * a[0][1] - iT[20] * a[5][4] - iT[5] * a[7][4] - iT[6] * a[4][1] + iT[18] * a[8][4] + iT[19] * a[1][4] - t[0] + add) >> shift);
+    dst[ 5] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[3][5] + iT[11] * a[6][0] + iT[13] * a[8][5] + iT[24] * a[9][0] - iT[1] * a[6][5] - iT[10] * a[3][0] - iT[14] * a[9][5] - iT[23] * a[8][0] + iT[2] * a[7][4] - iT[9] * a[2][4] + iT[15] * a[9][1] + iT[22] * a[5][1] + iT[3] * a[7][1] + iT[8] * a[4][4] - iT[16] * a[8][1] - iT[21] * a[1][1] - iT[4] * a[6][2] - iT[7] * a[4][2] + iT[17] * a[5][2] - iT[20] * a[0][3] + iT[5] * a[3][2] + iT[6] * a[2][2] - iT[18] * a[1][2] - iT[19] * a[0][2] - t[0] + add) >> shift);
+    dst[ 8] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[9][3] + iT[11] * a[8][2] + iT[13] * a[3][2] + iT[24] * a[6][3] + iT[1] * a[1][5] + iT[10] * a[0][5] - iT[14] * a[2][5] - iT[23] * a[3][5] - iT[2] * a[1][3] - iT[9] * a[8][3] + iT[15] * a[7][3] + iT[22] * a[4][2] - iT[3] * a[9][5] - iT[8] * a[5][5] + iT[16] * a[2][0] - iT[21] * a[7][0] - iT[4] * a[1][1] - iT[7] * a[0][1] + iT[17] * a[2][1] + iT[20] * a[3][1] + iT[5] * a[5][1] + iT[6] * a[9][1] + iT[18] * a[7][4] - iT[19] * a[2][4] + t[1] + add) >> shift);
+    dst[ 9] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[2][1] + iT[11] * a[3][1] - iT[13] * a[0][1] - iT[24] * a[1][1] - iT[1] * a[7][3] + iT[10] * a[2][3] - iT[14] * a[9][2] - iT[23] * a[5][2] - iT[2] * a[4][0] - iT[9] * a[7][5] + iT[15] * a[1][5] + iT[22] * a[8][5] - iT[3] * a[3][4] - iT[8] * a[2][4] + iT[16] * a[1][4] + iT[21] * a[0][4] - iT[4] * a[6][3] - iT[7] * a[3][2] - iT[17] * a[9][3] - iT[20] * a[8][2] - iT[5] * a[4][5] - iT[6] * a[6][5] - iT[18] * a[0][0] + iT[19] * a[5][5] + t[0] + add) >> shift);
+    dst[10] = Clip3(outputMinimum, outputMaximum, (int)( - iT[0] * a[6][1] - iT[11] * a[4][1] + iT[13] * a[5][1] - iT[24] * a[0][4] + iT[1] * a[2][2] - iT[10] * a[7][2] - iT[14] * a[5][3] - iT[23] * a[9][3] + iT[2] * a[6][4] + iT[9] * a[4][4] - iT[15] * a[5][4] + iT[22] * a[0][1] - iT[3] * a[2][5] + iT[8] * a[7][5] + iT[16] * a[5][0] + iT[21] * a[9][0] - iT[4] * a[7][0] - iT[7] * a[4][5] + iT[17] * a[8][0] + iT[20] * a[1][0] + iT[5] * a[4][2] + iT[6] * a[7][3] - iT[18] * a[1][3] - iT[19] * a[8][3] + t[0] + add) >> shift);
+    dst[11] = Clip3(outputMinimum, outputMaximum, (int)( - iT[0] * a[1][3] - iT[11] * a[0][3] + iT[13] * a[2][3] + iT[24] * a[3][3] - iT[1] * a[9][1] - iT[10] * a[5][1] + iT[14] * a[2][4] - iT[23] * a[7][4] - iT[2] * a[8][0] - iT[9] * a[9][5] - iT[15] * a[6][5] - iT[22] * a[3][0] + iT[3] * a[0][2] - iT[8] * a[5][3] + iT[16] * a[6][3] + iT[21] * a[4][3] + iT[4] * a[5][0] - iT[7] * a[0][5] - iT[17] * a[4][0] - iT[20] * a[6][0] + iT[5] * a[9][4] + iT[6] * a[5][4] - iT[18] * a[2][1] + iT[19] * a[7][1] + t[1] + add) >> shift);
+    dst[13] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[0][0] + iT[11] * a[1][0] - iT[13] * a[3][0] - iT[24] * a[2][0] + iT[1] * a[5][4] - iT[10] * a[0][1] - iT[14] * a[4][4] - iT[23] * a[6][4] - iT[2] * a[9][3] - iT[9] * a[5][3] + iT[15] * a[2][2] - iT[22] * a[7][2] + iT[3] * a[8][3] + iT[8] * a[9][2] + iT[16] * a[6][2] + iT[21] * a[3][3] - iT[4] * a[1][4] - iT[7] * a[8][4] + iT[17] * a[7][4] + iT[20] * a[4][1] + iT[5] * a[0][5] + iT[6] * a[1][5] - iT[18] * a[3][5] - iT[19] * a[2][5] - t[1] + add) >> shift);
+    dst[14] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[4][2] + iT[11] * a[7][3] - iT[13] * a[1][3] - iT[24] * a[8][3] + iT[1] * a[4][1] + iT[10] * a[6][1] + iT[14] * a[0][4] - iT[23] * a[5][1] - iT[2] * a[3][0] - iT[9] * a[2][0] + iT[15] * a[1][0] + iT[22] * a[0][0] - iT[3] * a[6][3] - iT[8] * a[4][3] + iT[16] * a[5][3] - iT[21] * a[0][2] - iT[4] * a[7][5] - iT[7] * a[4][0] + iT[17] * a[8][5] + iT[20] * a[1][5] + iT[5] * a[6][4] + iT[6] * a[3][1] + iT[18] * a[9][4] + iT[19] * a[8][1] - t[0] + add) >> shift);
+    dst[15] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[7][4] + iT[11] * a[4][1] - iT[13] * a[8][4] - iT[24] * a[1][4] - iT[1] * a[2][2] - iT[10] * a[3][2] + iT[14] * a[0][2] + iT[23] * a[1][2] - iT[2] * a[2][1] + iT[9] * a[7][1] + iT[15] * a[5][4] + iT[22] * a[9][4] + iT[3] * a[7][5] - iT[8] * a[2][5] + iT[16] * a[9][0] + iT[21] * a[5][0] + iT[4] * a[2][0] + iT[7] * a[3][0] - iT[17] * a[0][0] - iT[20] * a[1][0] + iT[5] * a[2][3] - iT[6] * a[7][3] - iT[18] * a[5][2] - iT[19] * a[9][2] - t[0] + add) >> shift);
+    dst[16] = Clip3(outputMinimum, outputMaximum, (int)( - iT[0] * a[0][1] + iT[11] * a[5][4] - iT[13] * a[6][4] - iT[24] * a[4][4] + iT[1] * a[0][3] - iT[10] * a[5][2] + iT[14] * a[6][2] + iT[23] * a[4][2] - iT[2] * a[0][5] + iT[9] * a[5][0] - iT[15] * a[6][0] - iT[22] * a[4][0] - iT[3] * a[0][4] - iT[8] * a[1][4] + iT[16] * a[3][4] + iT[21] * a[2][4] + iT[4] * a[0][2] + iT[7] * a[1][2] - iT[17] * a[3][2] - iT[20] * a[2][2] - iT[5] * a[0][0] - iT[6] * a[1][0] + iT[18] * a[3][0] + iT[19] * a[2][0] - t[1] + add) >> shift);
+    dst[18] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[0][5] + iT[11] * a[1][5] - iT[13] * a[3][5] - iT[24] * a[2][5] - iT[1] * a[1][0] - iT[10] * a[0][0] + iT[14] * a[2][0] + iT[23] * a[3][0] - iT[2] * a[5][1] + iT[9] * a[0][4] + iT[15] * a[4][1] + iT[22] * a[6][1] - iT[3] * a[8][1] - iT[8] * a[1][1] + iT[16] * a[4][4] + iT[21] * a[7][1] - iT[4] * a[9][2] - iT[7] * a[5][2] + iT[17] * a[2][3] - iT[20] * a[7][3] - iT[5] * a[9][3] - iT[6] * a[8][2] - iT[18] * a[3][2] - iT[19] * a[6][3] + t[1] + add) >> shift);
+    dst[20] = Clip3(outputMinimum, outputMaximum, (int)( - iT[0] * a[4][0] - iT[11] * a[6][0] - iT[13] * a[0][5] + iT[24] * a[5][0] + iT[1] * a[6][5] + iT[10] * a[4][5] - iT[14] * a[5][5] + iT[23] * a[0][0] - iT[2] * a[6][1] - iT[9] * a[3][4] - iT[15] * a[9][1] - iT[22] * a[8][4] + iT[3] * a[4][4] + iT[8] * a[7][1] - iT[16] * a[1][1] - iT[21] * a[8][1] - iT[4] * a[3][3] - iT[7] * a[2][3] + iT[17] * a[1][3] + iT[20] * a[0][3] + iT[5] * a[7][2] - iT[6] * a[2][2] + iT[18] * a[9][3] + iT[19] * a[5][3] + t[0] + add) >> shift);
+    dst[21] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[1][2] + iT[11] * a[8][2] - iT[13] * a[7][2] - iT[24] * a[4][3] + iT[1] * a[1][5] + iT[10] * a[8][5] - iT[14] * a[7][5] - iT[23] * a[4][0] + iT[2] * a[5][2] + iT[9] * a[9][2] + iT[15] * a[7][3] - iT[22] * a[2][3] + iT[3] * a[5][5] + iT[8] * a[9][5] + iT[16] * a[7][0] - iT[21] * a[2][0] + iT[4] * a[8][1] + iT[7] * a[9][4] + iT[17] * a[6][4] + iT[20] * a[3][1] + iT[5] * a[8][4] + iT[6] * a[9][1] + iT[18] * a[6][1] + iT[19] * a[3][4] + t[1] + add) >> shift);
+    dst[23] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[8][4] + iT[11] * a[9][1] + iT[13] * a[6][1] + iT[24] * a[3][4] - iT[1] * a[8][2] - iT[10] * a[1][2] + iT[14] * a[4][3] + iT[23] * a[7][2] - iT[2] * a[0][1] - iT[9] * a[1][1] + iT[15] * a[3][1] + iT[22] * a[2][1] + iT[3] * a[5][0] + iT[8] * a[9][0] + iT[16] * a[7][5] - iT[21] * a[2][5] - iT[4] * a[9][5] - iT[7] * a[8][0] - iT[17] * a[3][0] - iT[20] * a[6][5] + iT[5] * a[5][2] - iT[6] * a[0][3] - iT[18] * a[4][2] - iT[19] * a[6][2] - t[1] + add) >> shift);
+    dst[24] = Clip3(outputMinimum, outputMaximum, (int)( - iT[0] * a[2][3] + iT[11] * a[7][3] + iT[13] * a[5][2] + iT[24] * a[9][2] + iT[1] * a[4][1] + iT[10] * a[7][4] - iT[14] * a[1][4] - iT[23] * a[8][4] - iT[2] * a[4][5] - iT[9] * a[7][0] + iT[15] * a[1][0] + iT[22] * a[8][0] + iT[3] * a[4][3] + iT[8] * a[6][3] + iT[16] * a[0][2] - iT[21] * a[5][3] - iT[4] * a[2][5] - iT[7] * a[3][5] + iT[17] * a[0][5] + iT[20] * a[1][5] + iT[5] * a[2][1] + iT[6] * a[3][1] - iT[18] * a[0][1] - iT[19] * a[1][1] - t[0] + add) >> shift);
+    dst[25] = Clip3(outputMinimum, outputMaximum, (int)( - iT[0] * a[4][5] - iT[11] * a[6][5] - iT[13] * a[0][0] + iT[24] * a[5][5] - iT[1] * a[3][1] - iT[10] * a[2][1] + iT[14] * a[1][1] + iT[23] * a[0][1] + iT[2] * a[7][2] + iT[9] * a[4][3] - iT[15] * a[8][2] - iT[22] * a[1][2] + iT[3] * a[6][2] + iT[8] * a[3][3] + iT[16] * a[9][2] + iT[21] * a[8][3] + iT[4] * a[2][4] - iT[7] * a[7][4] - iT[17] * a[5][1] - iT[20] * a[9][1] - iT[5] * a[4][0] - iT[6] * a[6][0] - iT[18] * a[0][5] + iT[19] * a[5][0] - t[0] + add) >> shift);
+    dst[26] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[8][0] + iT[11] * a[1][0] - iT[13] * a[4][5] - iT[24] * a[7][0] + iT[1] * a[5][4] + iT[10] * a[9][4] + iT[14] * a[7][1] - iT[23] * a[2][1] - iT[2] * a[1][2] - iT[9] * a[0][2] + iT[15] * a[2][2] + iT[22] * a[3][2] - iT[3] * a[9][2] - iT[8] * a[8][3] - iT[16] * a[3][3] - iT[21] * a[6][2] + iT[4] * a[0][4] - iT[7] * a[5][1] + iT[17] * a[6][1] + iT[20] * a[4][1] + iT[5] * a[8][5] + iT[6] * a[1][5] - iT[18] * a[4][0] - iT[19] * a[7][5] - t[1] + add) >> shift);
+    dst[28] = Clip3(outputMinimum, outputMaximum, (int)( - iT[0] * a[5][1] - iT[11] * a[9][1] - iT[13] * a[7][4] + iT[24] * a[2][4] + iT[1] * a[8][2] + iT[10] * a[9][3] + iT[14] * a[6][3] + iT[23] * a[3][2] - iT[2] * a[9][4] - iT[9] * a[8][1] - iT[15] * a[3][1] - iT[22] * a[6][4] + iT[3] * a[9][0] + iT[8] * a[5][0] - iT[16] * a[2][5] + iT[21] * a[7][5] - iT[4] * a[5][5] + iT[7] * a[0][0] + iT[17] * a[4][5] + iT[20] * a[6][5] + iT[5] * a[1][3] + iT[6] * a[0][3] - iT[18] * a[2][3] - iT[19] * a[3][3] + t[1] + add) >> shift);
+    dst[29] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[6][4] + iT[11] * a[3][1] + iT[13] * a[9][4] + iT[24] * a[8][1] - iT[1] * a[7][3] - iT[10] * a[4][2] + iT[14] * a[8][3] + iT[23] * a[1][3] - iT[2] * a[3][5] - iT[9] * a[2][5] + iT[15] * a[1][5] + iT[22] * a[0][5] + iT[3] * a[2][4] + iT[8] * a[3][4] - iT[16] * a[0][4] - iT[21] * a[1][4] + iT[4] * a[4][3] + iT[7] * a[7][2] - iT[17] * a[1][2] - iT[20] * a[8][2] - iT[5] * a[3][0] - iT[6] * a[6][5] - iT[18] * a[8][0] - iT[19] * a[9][5] + t[0] + add) >> shift);
+    dst[30] = Clip3(outputMinimum, outputMaximum, (int)( - iT[0] * a[7][2] + iT[11] * a[2][2] - iT[13] * a[9][3] - iT[24] * a[5][3] - iT[1] * a[6][0] - iT[10] * a[4][0] + iT[14] * a[5][0] - iT[23] * a[0][5] - iT[2] * a[4][2] - iT[9] * a[6][2] - iT[15] * a[0][3] + iT[22] * a[5][2] + iT[3] * a[2][0] - iT[8] * a[7][0] - iT[16] * a[5][5] - iT[21] * a[9][5] + iT[4] * a[7][1] - iT[7] * a[2][1] + iT[17] * a[9][4] + iT[20] * a[5][4] + iT[5] * a[6][1] + iT[6] * a[4][1] - iT[18] * a[5][1] + iT[19] * a[0][4] + t[0] + add) >> shift);
+    dst[31] = Clip3(outputMinimum, outputMaximum, (int)(   iT[0] * a[8][5] + iT[11] * a[1][5] - iT[13] * a[4][0] - iT[24] * a[7][5] - iT[1] * a[1][0] - iT[10] * a[8][0] + iT[14] * a[7][0] + iT[23] * a[4][5] - iT[2] * a[8][4] - iT[9] * a[1][4] + iT[15] * a[4][1] + iT[22] * a[7][4] + iT[3] * a[1][1] + iT[8] * a[8][1] - iT[16] * a[7][1] - iT[21] * a[4][4] + iT[4] * a[8][3] + iT[7] * a[1][3] - iT[17] * a[4][2] - iT[20] * a[7][3] - iT[5] * a[1][2] - iT[6] * a[8][2] + iT[18] * a[7][2] + iT[19] * a[4][3] + t[1] + add) >> shift);
+
+    dst[ 2] = Clip3(outputMinimum, outputMaximum, (int)(   iT[ 4] * b[0] + iT[ 9] * b[1] + iT[14] * b[2] + iT[19] * b[3] + iT[24] * b[4] + iT[29] * b[5] + add) >> shift);
+    dst[ 7] = Clip3(outputMinimum, outputMaximum, (int)( - iT[14] * b[0] - iT[29] * b[1] - iT[19] * b[2] - iT[ 4] * b[3] + iT[ 9] * b[4] + iT[24] * b[5] + add) >> shift);
+    dst[12] = Clip3(outputMinimum, outputMaximum, (int)(   iT[24] * b[0] + iT[14] * b[1] - iT[ 9] * b[2] - iT[29] * b[3] - iT[ 4] * b[4] + iT[19] * b[5] + add) >> shift);
+    dst[17] = Clip3(outputMinimum, outputMaximum, (int)( - iT[29] * b[0] + iT[ 4] * b[1] + iT[24] * b[2] - iT[ 9] * b[3] - iT[19] * b[4] + iT[14] * b[5] + add) >> shift);
+    dst[22] = Clip3(outputMinimum, outputMaximum, (int)(   iT[19] * b[0] - iT[24] * b[1] + iT[ 4] * b[2] + iT[14] * b[3] - iT[29] * b[4] + iT[ 9] * b[5] + add) >> shift);
+    dst[27] = Clip3(outputMinimum, outputMaximum, (int)( - iT[ 9] * b[0] + iT[19] * b[1] - iT[29] * b[2] + iT[24] * b[3] - iT[14] * b[4] + iT[ 4] * b[5] + add) >> shift);
+
+    dst[ 6] = Clip3(outputMinimum, outputMaximum, (int)(   iT[12] * c[0] + iT[25] * c[1] + add) >> shift);
+    dst[19] = Clip3(outputMinimum, outputMaximum, (int)( - iT[25] * c[0] + iT[12] * c[1] + add) >> shift);
+
+    src++;
+    dst += 32;
+  }
+
+  if (iSkipLine)
+  {
+    memset(dst, 0, (iSkipLine * 32) * sizeof(TCoeff));
+  }
+#else
   _fastInverseMM< 32 >( src, dst, shift, line, iSkipLine, iSkipLine2, outputMinimum, outputMaximum, g_trCoreDCT8P32[TRANSFORM_INVERSE][0] );
+#endif
 }
 

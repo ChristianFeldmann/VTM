@@ -70,7 +70,7 @@ void DecSlice::init( CABACDecoder* cabacDecoder, DecCu* pcCuDecoder )
   m_pcCuDecoder     = pcCuDecoder;
 }
 
-void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
+void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int debugCTU )
 {
   //-- For time output for each slice
   slice->startProcessingTimer();
@@ -87,6 +87,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
   cs.slice            = slice;
   cs.sps              = sps;
   cs.pps              = slice->getPPS();
+  cs.aps              = slice->getAPS();
 #if HEVC_VPS
   cs.vps              = slice->getVPS();
 #endif
@@ -95,7 +96,10 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 
   cs.picture->resizeSAO(cs.pcv->sizeInCtus, 0);
 
-  cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
+  if (slice->getSliceCurStartCtuTsAddr() == 0)
+  {
+    cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
+  }
 
   const unsigned numSubstreams = slice->getNumberOfSubstreamSizes() + 1;
 
@@ -226,11 +230,24 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
       resetGbiCodingOrder(true, cs);
     }
 
-    if (cs.slice->getSliceType() != I_SLICE && ctuXPosInCtus == 0)
+    if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == 0)
     {
-      cs.slice->resetMotionLUTs();
+      cs.motionLut.lut.resize(0);
+      cs.motionLut.lutIbc.resize(0);
+      cs.motionLut.lutShare.resize(0);
+      cs.motionLut.lutShareIbc.resize(0);
     }
 
+    if( !cs.slice->isIntra() )
+    {
+      pic->mctsInfo.init( &cs, getCtuAddr( ctuArea.lumaPos(), *( cs.pcv ) ) );
+    }
+
+    if( ctuRsAddr == debugCTU )
+    {
+      isLastCtuOfSliceSegment = true; // get out here
+      break;
+    }
     isLastCtuOfSliceSegment = cabacReader.coding_tree_unit( cs, ctuArea, pic->m_prevQP, ctuRsAddr );
 
     m_pcCuDecoder->decompressCtu( cs, ctuArea );

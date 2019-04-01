@@ -87,12 +87,8 @@ public:
 
   void invTransformNxN  (TransformUnit &tu, const ComponentID &compID, PelBuf &pResi, const QpParam &cQPs);
 
-#if JVET_M0464_UNI_MTS
-  void transformNxN     (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, std::vector<TrMode>* trModes, const int maxCand);
-  void transformNxN     (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, const bool loadTr=false);
-#else
-  void transformNxN     (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx);
-#endif
+  void transformNxN     ( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, std::vector<TrMode>* trModes, const int maxCand, double* diagRatio = nullptr, double* horVerRatio = nullptr );
+  void transformNxN     ( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, const bool loadTr = false, double* diagRatio = nullptr, double* horVerRatio = nullptr );
   void rdpcmNxN         (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum,       RDPCMMode &rdpcmMode);
   void applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const RDPCMMode &rdpcmMode);
 
@@ -121,15 +117,11 @@ protected:
   bool     m_bEnc;
   bool     m_useTransformSkipFast;
 
-  bool     m_rectTUs;
-
   bool     m_scalingListEnabledFlag;
 
 private:
   Quant    *m_quant;          //!< Quantizer
-#if JVET_M0464_UNI_MTS
   TCoeff** m_mtsCoeffs;
-#endif
 
 
   // forward Transform
@@ -157,12 +149,12 @@ private:
                  const TransformUnit &tu,
                  const ComponentID   &component);
 
-
-#ifdef TARGET_SIMD_X86
-  template<X86_VEXT vext>
-  void _initTrQuantX86();
-  void initTrQuantX86();
-#endif
+  void xGetCoeffEnergy(
+                       TransformUnit  &tu,
+                 const ComponentID    &compID,
+                 const CoeffBuf       &coeffs,
+                       double*        diagRatio,
+                       double*        horVerRatio );
 };// END CLASS DEFINITION TrQuant
 
 //! \}

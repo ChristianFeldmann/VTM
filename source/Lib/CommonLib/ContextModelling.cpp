@@ -447,11 +447,43 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
     {
       const int scale = PU::getDistScaleFactor(currPoc, poc0, currPoc, poc1);
       tempMv[1] = tempMv[0];
+#if LTRP_MMVD_FIX
+      const bool bIsL0RefLongTerm = slice.getRefPic(REF_PIC_LIST_0, refList0)->longTerm;
+      const bool bIsL1RefLongTerm = slice.getRefPic(REF_PIC_LIST_1, refList1)->longTerm;
+      if (bIsL0RefLongTerm || bIsL1RefLongTerm)
+      {
+        if ((poc1 - currPoc)*(poc0 - currPoc) > 0)
+        {
+          tempMv[0] = tempMv[1];
+        }
+        else
+        {
+          tempMv[0].set(-1 * tempMv[1].getHor(), -1 * tempMv[1].getVer());
+        }
+      }
+      else
+#endif
       tempMv[0] = tempMv[1].scaleMv(scale);
     }
     else
     {
       const int scale = PU::getDistScaleFactor(currPoc, poc1, currPoc, poc0);
+#if LTRP_MMVD_FIX
+      const bool bIsL0RefLongTerm = slice.getRefPic(REF_PIC_LIST_0, refList0)->longTerm;
+      const bool bIsL1RefLongTerm = slice.getRefPic(REF_PIC_LIST_1, refList1)->longTerm;
+      if (bIsL0RefLongTerm || bIsL1RefLongTerm)
+      {
+        if ((poc1 - currPoc)*(poc0 - currPoc) > 0)
+        {
+          tempMv[1] = tempMv[0];
+        }
+        else
+        {
+          tempMv[1].set(-1 * tempMv[0].getHor(), -1 * tempMv[0].getVer());
+        }
+      }
+      else
+#endif
       tempMv[1] = tempMv[0].scaleMv(scale);
     }
 

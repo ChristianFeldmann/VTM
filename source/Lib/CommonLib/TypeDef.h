@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0449_MMVD_SIMP                              1 // Configurable number of mmvd distance entries used
+
 #define JVET_N0137_DUALTREE_CHROMA_SIZE                   1
 
 #define JVET_N0335_N0085_MV_ROUNDING                      1  // MV rounding unification

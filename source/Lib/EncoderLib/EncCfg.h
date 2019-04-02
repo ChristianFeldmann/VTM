@@ -240,6 +240,9 @@ protected:
   bool      m_HashME;
   bool      m_AffineAmvrEncOpt;
   bool      m_DMVR;
+#if JVET_N0449_MMVD_SIMP
+  int       m_MmvdDisNum;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -762,7 +765,10 @@ public:
   bool      getUseAffineAmvrEncOpt          ()         const { return m_AffineAmvrEncOpt; }
   void      setDMVR                      ( bool b )       { m_DMVR = b; }
   bool      getDMVR                      ()         const { return m_DMVR; }
-
+#if JVET_N0449_MMVD_SIMP
+  void      setMmvdDisNum                   ( int b )        { m_MmvdDisNum = b; }
+  int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
+#endif
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }
   void      setIBCLocalSearchRangeX         (unsigned n)     { m_IBCLocalSearchRangeX = n; }

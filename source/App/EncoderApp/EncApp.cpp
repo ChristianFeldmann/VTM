@@ -279,6 +279,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseAffineAmvr                                     ( m_AffineAmvr );
   m_cEncLib.setUseAffineAmvrEncOpt                               ( m_AffineAmvrEncOpt );
   m_cEncLib.setDMVR                                              ( m_DMVR );
+#if JVET_N0449_MMVD_SIMP
+  m_cEncLib.setMmvdDisNum                                        (m_MmvdDisNum);
+#endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
   m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );

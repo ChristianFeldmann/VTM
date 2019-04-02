@@ -524,5 +524,16 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
 
   pu.cu->GBiIdx = (interDirNeighbours[fPosBaseIdx] == 3) ? GBiIdx[fPosBaseIdx] : GBI_DEFAULT;
 
+#if JVET_N0334_MVCLIPPING
+  for (int refList = 0; refList < 2; refList++)
+  {
+    if (pu.refIdx[refList] >= 0)
+    {
+      pu.mv[refList].clipToStorageBitDepth();
+    }
+  }
+#endif
+
+
   PU::restrictBiPredMergeCandsOne(pu);
 }

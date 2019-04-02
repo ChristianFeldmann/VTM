@@ -160,6 +160,9 @@ namespace PU
   void setAllAffineMvField            (      PredictionUnit &pu, MvField *mvField, RefPicList eRefList );
   void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList
     , bool setHighPrec = false
+#if JVET_N0334_MVCLIPPING
+    , bool clipCPMVs = false
+#endif
   );
   bool getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx &mrgCtx, bool& LICFlag, const int count
     , int mmvdList

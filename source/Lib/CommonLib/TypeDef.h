@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0334_MVCLIPPING                             1  // prevention of MV stroage overflow and alignment with spec of MV/CPMV modular for AMVP mode
+
 #define JVET_N0477_LMCS_CLEANUP                           1
 #define JVET_N0220_LMCS_SIMPLIFICATION                    1
 

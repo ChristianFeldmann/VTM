@@ -61,6 +61,10 @@ class Mv
 {
 private:
   static const MvPrecision m_amvrPrecision[3];
+#if JVET_N0334_MVCLIPPING
+  static const int mvClipPeriod = (1 << 18);
+  static const int halMvClipPeriod = (1 << 17);
+#endif
 
 public:
   int   hor;     ///< horizontal component of motion vector
@@ -213,6 +217,15 @@ public:
     hor = Clip3( -(1 << 17), (1 << 17) - 1, hor );
     ver = Clip3( -(1 << 17), (1 << 17) - 1, ver );
   }
+#if JVET_N0334_MVCLIPPING
+  void mvCliptoStorageBitDepth()  // periodic clipping
+  {
+    hor = (hor + mvClipPeriod) & (mvClipPeriod - 1);
+    hor = (hor >= halMvClipPeriod) ? (hor - mvClipPeriod) : hor;
+    ver = (ver + mvClipPeriod) & (mvClipPeriod - 1);
+    ver = (ver >= halMvClipPeriod) ? (ver - mvClipPeriod) : ver;
+  }
+#endif
 };// END CLASS DEFINITION MV
 
 namespace std

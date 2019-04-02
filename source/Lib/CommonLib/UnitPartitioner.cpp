@@ -351,6 +351,9 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
   // the minimal and maximal sizes are given in luma samples
   const CompArea&  area  = currArea().Y();
+#if JVET_N0137_DUALTREE_CHROMA_SIZE
+  const CompArea&  areaC = currArea().Cb();
+#endif
         PartLevel& level = m_partStack.back();
 
   const PartSplit lastSplit = level.split;
@@ -359,7 +362,9 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   // don't allow QT-splitting below a BT split
   if( lastSplit != CTU_LEVEL && lastSplit != CU_QUAD_SPLIT ) canQt = false;
   if( area.width <= minQtSize )                              canQt = false;
-
+#if JVET_N0137_DUALTREE_CHROMA_SIZE
+  if( chType == CHANNEL_TYPE_CHROMA && areaC.width <= MIN_DUALTREE_CHROMA_WIDTH ) canQt = false;
+#endif
   if( implicitSplit != CU_DONT_SPLIT )
   {
     canNo = canTh = canTv = false;
@@ -397,17 +402,26 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   // specific check for BT splits
   if( area.height <= minBtSize || area.height > maxBtSize )                            canBh = false;
   if( area.width > MAX_TB_SIZEY && area.height <= MAX_TB_SIZEY ) canBh = false;
-
+#if JVET_N0137_DUALTREE_CHROMA_SIZE
+  if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBh = false;
+#endif
   if( area.width <= minBtSize || area.width > maxBtSize )                              canBv = false;
   if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) canBv = false;
-
+#if JVET_N0137_DUALTREE_CHROMA_SIZE
+  if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBv = false;
+#endif
   if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize )
                                                                                        canTh = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTh = false;
-
+#if JVET_N0137_DUALTREE_CHROMA_SIZE
+  if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE*2 )     canTh = false;
+#endif
   if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize )
                                                                                        canTv = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTv = false;
+#if JVET_N0137_DUALTREE_CHROMA_SIZE
+  if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE*2 )     canTv = false;
+#endif
 }
 
 bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs )

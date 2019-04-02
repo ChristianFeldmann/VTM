@@ -125,6 +125,14 @@ public:
   //! shift right with rounding
   void divideByPowerOf2 (const int i)
   {
+#if JVET_N0335_N0085_MV_ROUNDING
+    if (i != 0)
+    {
+      const int offset = (1 << (i - 1));
+      hor = (hor + offset - (hor >= 0)) >> i;
+      ver = (ver + offset - (ver >= 0)) >> i;
+    }
+#else
 #if ME_ENABLE_ROUNDING_OF_MVS
     const int offset = (i == 0) ? 0 : 1 << (i - 1);
     hor += offset;
@@ -132,6 +140,7 @@ public:
 #endif
     hor >>= i;
     ver >>= i;
+#endif
   }
 
   const Mv& operator<<= (const int i)
@@ -143,8 +152,17 @@ public:
 
   const Mv& operator>>= ( const int i )
   {
+#if JVET_N0335_N0085_MV_ROUNDING
+    if (i != 0)
+    {
+      const int offset = (1 << (i - 1));
+      hor = (hor + offset - (hor >= 0)) >> i;
+      ver = (ver + offset - (ver >= 0)) >> i;
+  }
+#else
     hor >>= i;
     ver >>= i;
+#endif
     return  *this;
   }
 
@@ -170,8 +188,13 @@ public:
 
   const Mv scaleMv( int iScale ) const
   {
+#if JVET_N0335_N0085_MV_ROUNDING
+    const int mvx = Clip3(-131072, 131071, (iScale * getHor() + 128 - (iScale * getHor() >= 0)) >> 8);
+    const int mvy = Clip3(-131072, 131071, (iScale * getVer() + 128 - (iScale * getVer() >= 0)) >> 8);
+#else
     const int mvx = Clip3( -131072, 131071, (iScale * getHor() + 127 + (iScale * getHor() < 0)) >> 8 );
     const int mvy = Clip3( -131072, 131071, (iScale * getVer() + 127 + (iScale * getVer() < 0)) >> 8 );
+#endif
     return Mv( mvx, mvy );
   }
 
@@ -186,8 +209,13 @@ public:
     {
       const int rightShift = -shift;
       const int nOffset = 1 << (rightShift - 1);
+#if JVET_N0335_N0085_MV_ROUNDING
+      hor = hor >= 0 ? (hor + nOffset - 1) >> rightShift : (hor + nOffset) >> rightShift;
+      ver = ver >= 0 ? (ver + nOffset - 1) >> rightShift : (ver + nOffset) >> rightShift;
+#else
       hor = hor >= 0 ? (hor + nOffset) >> rightShift : -((-hor + nOffset) >> rightShift);
       ver = ver >= 0 ? (ver + nOffset) >> rightShift : -((-ver + nOffset) >> rightShift);
+#endif
     }
   }
 

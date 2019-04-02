@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0449_MMVD_SIMP                              1 // Configurable number of mmvd distance entries used
 #define JVET_N0332_LTRP_MMVD_FIX                          1 // MMVD scaling considering LTRPs from N0332
 
 #define JVET_N0477_LMCS_CLEANUP                           1

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0335_N0085_MV_ROUNDING                      1  // MV rounding unification
+
 #define JVET_N0477_LMCS_CLEANUP                           1
 #define JVET_N0220_LMCS_SIMPLIFICATION                    1
 

@@ -938,7 +938,11 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   const int   bitDepth = clipBitDepths.recon[toChannelType(COMPONENT_Y)];
   const int   shiftNum = IF_INTERNAL_PREC + 1 - bitDepth;
   const int   offset = (1 << (shiftNum - 1)) + 2 * IF_INTERNAL_OFFS;
+#if JVET_N0325_BDOF 
+  const int   limit = (1<<(std::max<int>(5, bitDepth - 7)));
+#else
   const int   limit = (bitDepth>12)? 2 : ((int)1 << (4 + IF_INTERNAL_PREC - bitDepth - 5));
+#endif
 
   int*     dotProductTemp1 = m_dotProduct1;
   int*     dotProductTemp2 = m_dotProduct2;

@@ -206,6 +206,9 @@ public:
   static const CtxSet   PredMode;
   static const CtxSet   MultiRefLineIdx;
   static const CtxSet   IntraLumaMpmFlag;
+#if JVET_N0185_UNIFIED_MPM
+  static const CtxSet   HarmonizedMPMIdx;
+#endif
   static const CtxSet   IntraChromaPredMode;
   static const CtxSet   DeltaQP;
   static const CtxSet   InterDir;

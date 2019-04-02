@@ -459,9 +459,11 @@ cTUTraverser CU::traverseTUs( const CodingUnit& cu )
 int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType &channelType /*= CHANNEL_TYPE_LUMA*/ )
 {
   const int numMPMs = NUM_MOST_PROBABLE_MODES;
+#if !JVET_N0185_UNIFIED_MPM
   const int extendRefLine = (channelType == CHANNEL_TYPE_LUMA) ? pu.multiRefIdx : 0;
   const ISPType ispType = isLuma( channelType ) ? ISPType( pu.cu->ispMode ) : NOT_INTRA_SUBPARTITIONS;
   const bool isHorSplit = ispType == HOR_INTRA_SUBPARTITIONS;
+#endif
   {
     int numCand      = -1;
     int leftIntraDir = PLANAR_IDX, aboveIntraDir = PLANAR_IDX;
@@ -489,6 +491,7 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     const int offset = (int)NUM_LUMA_MODE - 6;
     const int mod = offset + 3;
 
+#if !JVET_N0185_UNIFIED_MPM
     if (extendRefLine)
     {
       int modeIdx = 0;
@@ -665,9 +668,15 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
       }
     }
     else
+#endif
     {
+#if JVET_N0185_UNIFIED_MPM
+      mpm[0] = PLANAR_IDX;
+      mpm[1] = DC_IDX;
+#else
       mpm[0] = leftIntraDir;
       mpm[1] = (mpm[0] == PLANAR_IDX) ? DC_IDX : PLANAR_IDX;
+#endif
       mpm[2] = VER_IDX;
       mpm[3] = HOR_IDX;
       mpm[4] = VER_IDX - 4;
@@ -678,26 +687,53 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
         numCand = 1;
         if (leftIntraDir > DC_IDX)
         {
+#if JVET_N0185_UNIFIED_MPM
+          mpm[0] = PLANAR_IDX;
+          mpm[1] = leftIntraDir;
+          mpm[2] = ((leftIntraDir + offset) % mod) + 2;
+          mpm[3] = ((leftIntraDir - 1) % mod) + 2;
+          mpm[4] = DC_IDX;
+          mpm[5] = ((leftIntraDir + offset - 1) % mod) + 2;
+#else
           mpm[0] = leftIntraDir;
           mpm[1] = PLANAR_IDX;
           mpm[2] = DC_IDX;
           mpm[3] = ((leftIntraDir + offset) % mod) + 2;
           mpm[4] = ((leftIntraDir - 1) % mod) + 2;
           mpm[5] = ((leftIntraDir + offset - 1) % mod) + 2;
+#endif
         }
       }
       else //L!=A
       {
         numCand = 2;
+#if !JVET_N0185_UNIFIED_MPM
         mpm[0] = leftIntraDir;
         mpm[1] = aboveIntraDir;
+#endif
+#if JVET_N0185_UNIFIED_MPM
+        int  maxCandModeIdx = mpm[0] > mpm[1] ? 0 : 1;
+#else
         bool maxCandModeIdx = mpm[0] > mpm[1] ? 0 : 1;
+#endif
 
         if ((leftIntraDir > DC_IDX) && (aboveIntraDir > DC_IDX))
         {
+#if JVET_N0185_UNIFIED_MPM
+          mpm[0] = PLANAR_IDX;
+          mpm[1] = leftIntraDir;
+          mpm[2] = aboveIntraDir;
+          maxCandModeIdx = mpm[1] > mpm[2] ? 1 : 2;
+          int minCandModeIdx = mpm[1] > mpm[2] ? 2 : 1;
+#else
           mpm[2] = PLANAR_IDX;
+#endif
           mpm[3] = DC_IDX;
+#if JVET_N0185_UNIFIED_MPM
+          if ((mpm[maxCandModeIdx] - mpm[minCandModeIdx] < 63) && (mpm[maxCandModeIdx] - mpm[minCandModeIdx] > 1))
+#else
           if ((mpm[maxCandModeIdx] - mpm[!maxCandModeIdx] < 63) && (mpm[maxCandModeIdx] - mpm[!maxCandModeIdx] > 1))
+#endif
           {
             mpm[4] = ((mpm[maxCandModeIdx] + offset) % mod) + 2;
             mpm[5] = ((mpm[maxCandModeIdx] - 1) % mod) + 2;
@@ -710,7 +746,14 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
         }
         else if (leftIntraDir + aboveIntraDir >= 2)
         {
+#if JVET_N0185_UNIFIED_MPM
+          mpm[0] = PLANAR_IDX;
+          mpm[1] = (leftIntraDir < aboveIntraDir) ? aboveIntraDir : leftIntraDir;
+          maxCandModeIdx = 1;
+          mpm[2] = DC_IDX;
+#else
           mpm[2] = (mpm[!maxCandModeIdx] == PLANAR_IDX) ? DC_IDX : PLANAR_IDX;
+#endif
           mpm[3] = ((mpm[maxCandModeIdx] + offset) % mod) + 2;
           mpm[4] = ((mpm[maxCandModeIdx] - 1) % mod) + 2;
           mpm[5] = ((mpm[maxCandModeIdx] + offset - 1) % mod) + 2;

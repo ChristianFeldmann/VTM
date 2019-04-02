@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0483_DISABLE_SBT_FOR_TPM                    1
+
 #define JVET_N0242_NON_LINEAR_ALF                         1 // enable CE5-3.2, Non-linear ALF based on clipping function
 
 #define JVET_N0449_MMVD_SIMP                              1 // Configurable number of mmvd distance entries used

@@ -240,6 +240,9 @@ protected:
   bool      m_HashME;
   bool      m_AffineAmvrEncOpt;
   bool      m_DMVR;
+#if JVET_N0449_MMVD_SIMP
+  int       m_MmvdDisNum;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -263,6 +266,10 @@ protected:
   bool      m_useAMaxBT;
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
+#if JVET_N0242_NON_LINEAR_ALF
+  bool      m_useNonLinearAlfLuma;
+  bool      m_useNonLinearAlfChroma;
+#endif
 
 #if MAX_TB_SIZE_SIGNALLING
   uint32_t  m_log2MaxTbSize;
@@ -762,7 +769,10 @@ public:
   bool      getUseAffineAmvrEncOpt          ()         const { return m_AffineAmvrEncOpt; }
   void      setDMVR                      ( bool b )       { m_DMVR = b; }
   bool      getDMVR                      ()         const { return m_DMVR; }
-
+#if JVET_N0449_MMVD_SIMP
+  void      setMmvdDisNum                   ( int b )        { m_MmvdDisNum = b; }
+  int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
+#endif
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }
   void      setIBCLocalSearchRangeX         (unsigned n)     { m_IBCLocalSearchRangeX = n; }
@@ -816,6 +826,12 @@ public:
   bool      getUseE0023FastEnc              () const         { return m_e0023FastEnc; }
   void      setUseContentBasedFastQtbt      ( bool b )       { m_contentBasedFastQtbt = b; }
   bool      getUseContentBasedFastQtbt      () const         { return m_contentBasedFastQtbt; }
+#if JVET_N0242_NON_LINEAR_ALF
+  void      setUseNonLinearAlfLuma          ( bool b )       { m_useNonLinearAlfLuma = b; }
+  bool      getUseNonLinearAlfLuma          () const         { return m_useNonLinearAlfLuma; }
+  void      setUseNonLinearAlfChroma        ( bool b )       { m_useNonLinearAlfChroma = b; }
+  bool      getUseNonLinearAlfChroma        () const         { return m_useNonLinearAlfChroma; }
+#endif
 
 #if MAX_TB_SIZE_SIGNALLING
   void      setLog2MaxTbSize                ( uint32_t  u )   { m_log2MaxTbSize = u; }

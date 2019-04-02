@@ -42,6 +42,7 @@
 
 #include "Unit.h"
 #include "UnitTools.h"
+
 struct AlfClassifier
 {
   AlfClassifier() {}
@@ -66,6 +67,16 @@ enum Direction
 class AdaptiveLoopFilter
 {
 public:
+#if JVET_N0242_NON_LINEAR_ALF
+  static inline int clipALF(const int clip, const short ref, const short val0, const short val1)
+  {
+    return Clip3<int>(-clip, +clip, val0-ref) + Clip3<int>(-clip, +clip, val1-ref);
+  }
+
+  static constexpr int AlfNumClippingValues[MAX_NUM_CHANNEL_TYPE] = { 4, 4 };
+  static constexpr int MaxAlfNumClippingValues = 4;
+
+#endif
   static constexpr int   m_NUM_BITS = 8;
   static constexpr int   m_CLASSIFICATION_BLK_SIZE = 32;  //non-normative, local buffer size
   static constexpr int m_ALF_UNUSED_CLASSIDX = 255;
@@ -82,15 +93,24 @@ public:
   void deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk );
   void resetPCMBlkClassInfo(CodingStructure & cs, AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk);
   template<AlfFilterType filtType>
+#if JVET_N0242_NON_LINEAR_ALF
+  static void filterBlk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs );
+#else
   static void filterBlk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs );
+#endif
   inline static int getMaxGolombIdx( AlfFilterType filterType )
   {
     return filterType == ALF_FILTER_5 ? 2 : 3;
   }
 
   void( *m_deriveClassificationBlk )( AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift );
+#if JVET_N0242_NON_LINEAR_ALF
+  void( *m_filter5x5Blk )( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs );
+  void( *m_filter7x7Blk )( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs );
+#else
   void( *m_filter5x5Blk )( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs );
   void( *m_filter7x7Blk )( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs );
+#endif
 
 #ifdef TARGET_SIMD_X86
   void initAdaptiveLoopFilterX86();
@@ -99,9 +119,16 @@ public:
 #endif
 
 protected:
+#if JVET_N0242_NON_LINEAR_ALF
+  Pel                          m_alfClippingValues[MAX_NUM_CHANNEL_TYPE][MaxAlfNumClippingValues];
+#endif
   std::vector<AlfFilterShape>  m_filterShapes[MAX_NUM_CHANNEL_TYPE];
   AlfClassifier**              m_classifier;
   short                        m_coeffFinal[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+#if JVET_N0242_NON_LINEAR_ALF
+  short                        m_clippFinal[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+  short                        m_chromaClippFinal[MAX_NUM_ALF_LUMA_COEFF];
+#endif
   int**                        m_laplacian[NUM_DIRECTIONS];
   uint8_t*                       m_ctuEnableFlag[MAX_NUM_COMPONENT];
   PelStorage                   m_tempBuf;

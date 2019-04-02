@@ -359,7 +359,10 @@ static const int    MIN_BT_SIZE_C       =                           4;      ///<
 
 static const int    MAX_TT_SIZE_INTER  =                           64;      ///< for initialization, [1<<MIN_CU_LOG2, 64]
 static const int    MIN_TT_SIZE_INTER  =                            4;      ///<
-
+#if JVET_N0137_DUALTREE_CHROMA_SIZE
+static const int    MIN_DUALTREE_CHROMA_WIDTH  =                    4;
+static const int    MIN_DUALTREE_CHROMA_SIZE   =                   16;
+#endif
 static const SplitSeries SPLIT_BITS         =                       5;
 static const SplitSeries SPLIT_DMULT        =                       5;
 static const SplitSeries SPLIT_MASK         =                      31;      ///< = (1 << SPLIT_BITS) - 1

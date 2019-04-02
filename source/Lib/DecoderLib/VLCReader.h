@@ -177,7 +177,11 @@ public:
 private:
   int truncatedUnaryEqProb( const int maxSymbol );
   void xReadTruncBinCode( uint32_t& ruiSymbol, const int uiMaxSymbol );
+#if JVET_N0242_NON_LINEAR_ALF
+  int  alfGolombDecode( const int k, const bool signed_val=true );
+#else
   int  alfGolombDecode( const int k );
+#endif
 
 protected:
   bool  xMoreRbspData();

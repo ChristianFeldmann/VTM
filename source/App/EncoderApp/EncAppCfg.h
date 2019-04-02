@@ -260,7 +260,9 @@ protected:
   bool      m_AffineAmvr;
   bool      m_AffineAmvrEncOpt;
   bool      m_DMVR;
-
+#if JVET_N0449_MMVD_SIMP
+  int       m_MmvdDisNum;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -290,6 +292,10 @@ protected:
   bool      m_useFastMrg;
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
+#if JVET_N0242_NON_LINEAR_ALF
+  bool      m_useNonLinearAlfLuma;
+  bool      m_useNonLinearAlfChroma;
+#endif
 
 
   int       m_numSplitThreads;

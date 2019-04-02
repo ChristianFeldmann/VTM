@@ -279,6 +279,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseAffineAmvr                                     ( m_AffineAmvr );
   m_cEncLib.setUseAffineAmvrEncOpt                               ( m_AffineAmvrEncOpt );
   m_cEncLib.setDMVR                                              ( m_DMVR );
+#if JVET_N0449_MMVD_SIMP
+  m_cEncLib.setMmvdDisNum                                        (m_MmvdDisNum);
+#endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
   m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );
@@ -311,6 +314,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseAMaxBT                                         ( m_useAMaxBT );
   m_cEncLib.setUseE0023FastEnc                                   ( m_e0023FastEnc );
   m_cEncLib.setUseContentBasedFastQtbt                           ( m_contentBasedFastQtbt );
+#if JVET_N0242_NON_LINEAR_ALF
+  m_cEncLib.setUseNonLinearAlfLuma                               ( m_useNonLinearAlfLuma );
+  m_cEncLib.setUseNonLinearAlfChroma                             ( m_useNonLinearAlfChroma );
+#endif
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );
   m_cEncLib.setUseReconBasedCrossCPredictionEstimate             ( m_reconBasedCrossCPredictionEstimate );
   m_cEncLib.setLog2SaoOffsetScale                                ( CHANNEL_TYPE_LUMA  , m_log2SaoOffsetScale[CHANNEL_TYPE_LUMA]   );

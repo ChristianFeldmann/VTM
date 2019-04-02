@@ -52,6 +52,16 @@
 
 #define JVET_N0483_DISABLE_SBT_FOR_TPM                    1
 
+#define JVET_N0242_NON_LINEAR_ALF                         1 // enable CE5-3.2, Non-linear ALF based on clipping function
+
+#define JVET_N0449_MMVD_SIMP                              1 // Configurable number of mmvd distance entries used
+
+#define JVET_N0137_DUALTREE_CHROMA_SIZE                   1
+
+#define JVET_N0335_N0085_MV_ROUNDING                      1  // MV rounding unification
+
+#define JVET_N0332_LTRP_MMVD_FIX                          1 // MMVD scaling considering LTRPs from N0332
+
 #define JVET_N0477_LMCS_CLEANUP                           1
 #define JVET_N0220_LMCS_SIMPLIFICATION                    1
 
@@ -1549,8 +1559,17 @@ struct AlfFilterShape
 struct AlfSliceParam
 {
   bool                         enabledFlag[MAX_NUM_COMPONENT];                          // alf_slice_enable_flag, alf_chroma_idc
+#if JVET_N0242_NON_LINEAR_ALF
+  bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE];                     // alf_nonlinear_enable_flag[Luma/Chroma]
+#endif
   short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
+#if JVET_N0242_NON_LINEAR_ALF
+  short                        lumaClipp[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_clipp_luma_[i][j]
+#endif
   short                        chromaCoeff[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_coeff_chroma[i]
+#if JVET_N0242_NON_LINEAR_ALF
+  short                        chromaClipp[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_clipp_chroma[i]
+#endif
   short                        filterCoeffDeltaIdx[MAX_NUM_ALF_CLASSES];                // filter_coeff_delta[i]
   bool                         alfLumaCoeffFlag[MAX_NUM_ALF_CLASSES];                   // alf_luma_coeff_flag[i]
   int                          numLumaFilters;                                          // number_of_filters_minus1 + 1
@@ -1566,8 +1585,17 @@ struct AlfSliceParam
   void reset()
   {
     std::memset( enabledFlag, false, sizeof( enabledFlag ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memset( nonLinearFlag, false, sizeof( nonLinearFlag ) );
+#endif
     std::memset( lumaCoeff, 0, sizeof( lumaCoeff ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memset( lumaClipp, 0, sizeof( lumaClipp ) );
+#endif
     std::memset( chromaCoeff, 0, sizeof( chromaCoeff ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memset( chromaClipp, 0, sizeof( chromaClipp ) );
+#endif
     std::memset( filterCoeffDeltaIdx, 0, sizeof( filterCoeffDeltaIdx ) );
     std::memset( alfLumaCoeffFlag, true, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = 1;
@@ -1578,8 +1606,17 @@ struct AlfSliceParam
   const AlfSliceParam& operator = ( const AlfSliceParam& src )
   {
     std::memcpy( enabledFlag, src.enabledFlag, sizeof( enabledFlag ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memcpy( nonLinearFlag, src.nonLinearFlag, sizeof( nonLinearFlag ) );
+#endif
     std::memcpy( lumaCoeff, src.lumaCoeff, sizeof( lumaCoeff ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memcpy( lumaClipp, src.lumaClipp, sizeof( lumaClipp ) );
+#endif
     std::memcpy( chromaCoeff, src.chromaCoeff, sizeof( chromaCoeff ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memcpy( chromaClipp, src.chromaClipp, sizeof( chromaClipp ) );
+#endif
     std::memcpy( filterCoeffDeltaIdx, src.filterCoeffDeltaIdx, sizeof( filterCoeffDeltaIdx ) );
     std::memcpy( alfLumaCoeffFlag, src.alfLumaCoeffFlag, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = src.numLumaFilters;

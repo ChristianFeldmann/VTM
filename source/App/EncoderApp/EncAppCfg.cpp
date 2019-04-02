@@ -874,6 +874,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AffineAmvr",                                      m_AffineAmvr,                                     false, "Eanble AMVR for affine inter mode")
   ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
+#if JVET_N0449_MMVD_SIMP
+  ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
+#endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
   ( "IBCLocalSearchRangeY",                           m_IBCLocalSearchRangeY,                            128u, "Search range of IBC local search in y direction")
@@ -896,6 +899,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AMaxBT",                                          m_useAMaxBT,                                      false, "Adaptive maximal BT-size")
   ("E0023FastEnc",                                    m_e0023FastEnc,                                    true, "Fast encoding setting for QTBT (proposal E0023)")
   ("ContentBasedFastQtbt",                            m_contentBasedFastQtbt,                           false, "Signal based QTBT speed-up")
+#if JVET_N0242_NON_LINEAR_ALF
+  ("UseNonLinearAlfLuma",                             m_useNonLinearAlfLuma,                             true, "Non-linear adaptive loop filters for Luma Channel")
+  ("UseNonLinearAlfChroma",                           m_useNonLinearAlfChroma,                           true, "Non-linear adaptive loop filters for Chroma Channels")
+#endif
   // Unit definition parameters
   ("MaxCUWidth",                                      m_uiMaxCUWidth,                                     64u)
   ("MaxCUHeight",                                     m_uiMaxCUHeight,                                    64u)
@@ -1973,6 +1980,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
     xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
+#if JVET_N0449_MMVD_SIMP
+    xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
+#endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
   else
@@ -3159,6 +3169,9 @@ void EncAppCfg::xPrintParameter()
     m_AffineAmvrEncOpt = m_AffineAmvr ? m_AffineAmvrEncOpt : false;
     msg( VERBOSE, "AffineAmvrEncOpt:%d ", m_AffineAmvrEncOpt );
     msg(VERBOSE, "DMVR:%d ", m_DMVR);
+#if JVET_N0449_MMVD_SIMP
+    msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
+#endif
   }
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
   msg( VERBOSE, "HashME:%d ", m_HashME );
@@ -3185,6 +3198,10 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
   msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
   msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );
+#if JVET_N0242_NON_LINEAR_ALF
+  msg( VERBOSE, "UseNonLinearALFLuma:%d ", m_useNonLinearAlfLuma );
+  msg( VERBOSE, "UseNonLinearALFChroma:%d ", m_useNonLinearAlfChroma );
+#endif
 
   msg( VERBOSE, "NumSplitThreads:%d ", m_numSplitThreads );
   if( m_numSplitThreads > 1 )

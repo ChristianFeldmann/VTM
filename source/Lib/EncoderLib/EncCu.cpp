@@ -1999,6 +1999,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         int refineStep;
         baseIdx = mmvdMergeCand / MMVD_MAX_REFINE_NUM;
         refineStep = (mmvdMergeCand - (baseIdx * MMVD_MAX_REFINE_NUM)) / 4;
+#if JVET_N0449_MMVD_SIMP
+        if (refineStep >= m_pcEncCfg->getMmvdDisNum())
+          continue;
+#endif
         bitsBaseIdx = baseIdx + 1;
         if (baseIdx == MMVD_BASE_MV_NUM - 1)
         {

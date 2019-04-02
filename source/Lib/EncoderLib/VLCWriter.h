@@ -149,7 +149,11 @@ public:
 
 private:
   void xWriteTruncBinCode( uint32_t uiSymbol, const int uiMaxSymbol );
+#if JVET_N0242_NON_LINEAR_ALF
+  void alfGolombEncode( const int coeff, const int k, const bool signed_coeff=true );
+#else
   void alfGolombEncode( const int coeff, const int k );
+#endif
   void truncatedUnaryEqProb( int symbol, int maxSymbol );
 
   void  codeReshaper            ( const SliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra);

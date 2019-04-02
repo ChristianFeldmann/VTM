@@ -899,6 +899,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AMaxBT",                                          m_useAMaxBT,                                      false, "Adaptive maximal BT-size")
   ("E0023FastEnc",                                    m_e0023FastEnc,                                    true, "Fast encoding setting for QTBT (proposal E0023)")
   ("ContentBasedFastQtbt",                            m_contentBasedFastQtbt,                           false, "Signal based QTBT speed-up")
+#if JVET_N0242_NON_LINEAR_ALF
+  ("UseNonLinearAlfLuma",                             m_useNonLinearAlfLuma,                             true, "Non-linear adaptive loop filters for Luma Channel")
+  ("UseNonLinearAlfChroma",                           m_useNonLinearAlfChroma,                           true, "Non-linear adaptive loop filters for Chroma Channels")
+#endif
   // Unit definition parameters
   ("MaxCUWidth",                                      m_uiMaxCUWidth,                                     64u)
   ("MaxCUHeight",                                     m_uiMaxCUHeight,                                    64u)
@@ -3194,6 +3198,10 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
   msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
   msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );
+#if JVET_N0242_NON_LINEAR_ALF
+  msg( VERBOSE, "UseNonLinearALFLuma:%d ", m_useNonLinearAlfLuma );
+  msg( VERBOSE, "UseNonLinearALFChroma:%d ", m_useNonLinearAlfChroma );
+#endif
 
   msg( VERBOSE, "NumSplitThreads:%d ", m_numSplitThreads );
   if( m_numSplitThreads > 1 )

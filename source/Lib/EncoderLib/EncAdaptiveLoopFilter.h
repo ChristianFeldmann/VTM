@@ -41,20 +41,46 @@
 #include "CommonLib/AdaptiveLoopFilter.h"
 
 #include "CABACWriter.h"
+#if JVET_N0242_NON_LINEAR_ALF
+#include "EncCfg.h"
+#endif
 
 struct AlfCovariance
 {
+#if JVET_N0242_NON_LINEAR_ALF
+  static constexpr int MaxAlfNumClippingValues = AdaptiveLoopFilter::MaxAlfNumClippingValues;
+  using TE = double[MAX_NUM_ALF_LUMA_COEFF][MAX_NUM_ALF_LUMA_COEFF];
+  using Ty = double[MAX_NUM_ALF_LUMA_COEFF];
+  using TKE = TE[AdaptiveLoopFilter::MaxAlfNumClippingValues][AdaptiveLoopFilter::MaxAlfNumClippingValues];
+  using TKy = Ty[AdaptiveLoopFilter::MaxAlfNumClippingValues];
+#endif
+
   int numCoeff;
+#if JVET_N0242_NON_LINEAR_ALF
+  int numBins;
+  TKy y;
+  TKE E;
+#else
   double *y;
   double **E;
+#endif
   double pixAcc;
 
   AlfCovariance() {}
   ~AlfCovariance() {}
 
+#if JVET_N0242_NON_LINEAR_ALF
+  void create( int size, int num_bins = MaxAlfNumClippingValues )
+#else
   void create( int size )
+#endif
   {
     numCoeff = size;
+#if JVET_N0242_NON_LINEAR_ALF
+    numBins = num_bins;
+    std::memset( y, 0, sizeof( y ) );
+    std::memset( E, 0, sizeof( E ) );
+#else
 
     y = new double[numCoeff];
     E = new double*[numCoeff];
@@ -63,10 +89,12 @@ struct AlfCovariance
     {
       E[i] = new double[numCoeff];
     }
+#endif
   }
 
   void destroy()
   {
+#if !JVET_N0242_NON_LINEAR_ALF
     for( int i = 0; i < numCoeff; i++ )
     {
       delete[] E[i];
@@ -78,25 +106,46 @@ struct AlfCovariance
 
     delete[] y;
     y = nullptr;
+#endif
   }
 
+#if JVET_N0242_NON_LINEAR_ALF
+  void reset( int num_bins = -1 )
+#else
   void reset()
+#endif
   {
+#if JVET_N0242_NON_LINEAR_ALF
+    if ( num_bins > 0 )
+      numBins = num_bins;
+#endif
     pixAcc = 0;
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memset( y, 0, sizeof( y ) );
+    std::memset( E, 0, sizeof( E ) );
+#else
     std::memset( y, 0, sizeof( *y ) * numCoeff );
     for( int i = 0; i < numCoeff; i++ )
     {
       std::memset( E[i], 0, sizeof( *E[i] ) * numCoeff );
     }
+#endif
   }
 
   const AlfCovariance& operator=( const AlfCovariance& src )
   {
+#if JVET_N0242_NON_LINEAR_ALF
+    numCoeff = src.numCoeff;
+    numBins = src.numBins;
+    std::memcpy( E, src.E, sizeof( E ) );
+    std::memcpy( y, src.y, sizeof( y ) );
+#else
     for( int i = 0; i < numCoeff; i++ )
     {
       std::memcpy( E[i], src.E[i], sizeof( *E[i] ) * numCoeff );
     }
     std::memcpy( y, src.y, sizeof( *y ) * numCoeff );
+#endif
     pixAcc = src.pixAcc;
 
     return *this;
@@ -104,6 +153,30 @@ struct AlfCovariance
 
   void add( const AlfCovariance& lhs, const AlfCovariance& rhs )
   {
+#if JVET_N0242_NON_LINEAR_ALF
+    numCoeff = lhs.numCoeff;
+    numBins = lhs.numBins;
+    for( int b0 = 0; b0 < numBins; b0++ )
+    {
+      for( int b1 = 0; b1 < numBins; b1++ )
+      {
+        for( int j = 0; j < numCoeff; j++ )
+        {
+          for( int i = 0; i < numCoeff; i++ )
+          {
+            E[b0][b1][j][i] = lhs.E[b0][b1][j][i] + rhs.E[b0][b1][j][i];
+          }
+        }
+      }
+    }
+    for( int b = 0; b < numBins; b++ )
+    {
+      for( int j = 0; j < numCoeff; j++ )
+      {
+        y[b][j] = lhs.y[b][j] + rhs.y[b][j];
+      }
+    }
+#else
     for( int j = 0; j < numCoeff; j++ )
     {
       for( int i = 0; i < numCoeff; i++ )
@@ -112,11 +185,34 @@ struct AlfCovariance
       }
       y[j] = lhs.y[j] + rhs.y[j];
     }
+#endif
     pixAcc = lhs.pixAcc + rhs.pixAcc;
   }
 
   const AlfCovariance& operator+= ( const AlfCovariance& src )
   {
+#if JVET_N0242_NON_LINEAR_ALF
+    for( int b0 = 0; b0 < numBins; b0++ )
+    {
+      for( int b1 = 0; b1 < numBins; b1++ )
+      {
+        for( int j = 0; j < numCoeff; j++ )
+        {
+          for( int i = 0; i < numCoeff; i++ )
+          {
+            E[b0][b1][j][i] += src.E[b0][b1][j][i];
+          }
+        }
+      }
+    }
+    for( int b = 0; b < numBins; b++ )
+    {
+      for( int j = 0; j < numCoeff; j++ )
+      {
+        y[b][j] += src.y[b][j];
+      }
+    }
+#else
     for( int j = 0; j < numCoeff; j++ )
     {
       for( int i = 0; i < numCoeff; i++ )
@@ -125,6 +221,7 @@ struct AlfCovariance
       }
       y[j] += src.y[j];
     }
+#endif
     pixAcc += src.pixAcc;
 
     return *this;
@@ -132,6 +229,28 @@ struct AlfCovariance
 
   const AlfCovariance& operator-= ( const AlfCovariance& src )
   {
+#if JVET_N0242_NON_LINEAR_ALF
+    for( int b0 = 0; b0 < numBins; b0++ )
+    {
+      for( int b1 = 0; b1 < numBins; b1++ )
+      {
+        for( int j = 0; j < numCoeff; j++ )
+        {
+          for( int i = 0; i < numCoeff; i++ )
+          {
+            E[b0][b1][j][i] -= src.E[b0][b1][j][i];
+          }
+        }
+      }
+    }
+    for( int b = 0; b < numBins; b++ )
+    {
+      for( int j = 0; j < numCoeff; j++ )
+      {
+        y[b][j] -= src.y[b][j];
+      }
+    }
+#else
     for( int j = 0; j < numCoeff; j++ )
     {
       for( int i = 0; i < numCoeff; i++ )
@@ -140,10 +259,55 @@ struct AlfCovariance
       }
       y[j] -= src.y[j];
     }
+#endif
     pixAcc -= src.pixAcc;
 
     return *this;
   }
+
+#if JVET_N0242_NON_LINEAR_ALF
+  void setEyFromClip(const int* clip, TE _E, Ty _y, int size) const
+  {
+    for (int k=0; k<size; k++)
+    {
+      _y[k] = y[clip[k]][k];
+      for (int l=0; l<size; l++)
+      {
+        _E[k][l] = E[clip[k]][clip[l]][k][l];
+      }
+    }
+  }
+
+  double optimizeFilter(const int* clip, double *f, int size) const
+  {
+    gnsSolveByChol( clip, f, size );
+    return calculateError( clip, f );
+  }
+
+  double optimizeFilter(const AlfFilterShape& alfShape, int* clip, double *f, bool optimize_clip) const;
+  double optimizeFilterClip(const AlfFilterShape& alfShape, int* clip) const
+  {
+    Ty f;
+    return optimizeFilter(alfShape, clip, f, true);
+  }
+
+  double calculateError( const int *clip ) const;
+  double calculateError( const int *clip, const double *coeff ) const { return calculateError(clip, coeff, numCoeff); }
+  double calculateError( const int *clip, const double *coeff, const int numCoeff ) const;
+  double calcErrorForCoeffs( const int *clip, const int *coeff, const int numCoeff, const int bitDepth ) const;
+
+  void getClipMax(const AlfFilterShape& alfShape, int *clip_max) const;
+  void reduceClipCost(const AlfFilterShape& alfShape, int *clip) const;
+
+private:
+  // Cholesky decomposition
+
+  int  gnsSolveByChol( const int *clip, double *x, int numEq ) const;
+  int  gnsSolveByChol( TE LHS, double* rhs, double *x, int numEq ) const;
+  void gnsBacksubstitution( TE R, double* z, int size, double* A ) const;
+  void gnsTransposeBacksubstitution( TE U, double* rhs, double* x, int order ) const;
+  int  gnsCholeskyDec( TE inpMatr, TE outMatr, int numEq ) const;
+#endif
 };
 
 class EncAdaptiveLoopFilter : public AdaptiveLoopFilter
@@ -157,6 +321,9 @@ public:
   inline std::vector<double>& getLumaLevelWeightTable() { return m_lumaLevelToWeightPLUT; }
 
 private:
+#if JVET_N0242_NON_LINEAR_ALF
+  const EncCfg*          m_encCfg;
+#endif
   AlfCovariance***       m_alfCovariance[MAX_NUM_COMPONENT];          // [compIdx][shapeIdx][ctbAddr][classIdx]
   AlfCovariance**        m_alfCovarianceFrame[MAX_NUM_CHANNEL_TYPE];   // [CHANNEL][shapeIdx][classIdx]
   uint8_t*                 m_ctuEnableFlagTmp[MAX_NUM_COMPONENT];
@@ -164,13 +331,21 @@ private:
   //for RDO
   AlfSliceParam          m_alfSliceParamTemp;
   AlfCovariance          m_alfCovarianceMerged[ALF_NUM_OF_FILTER_TYPES][MAX_NUM_ALF_CLASSES + 1];
+#if JVET_N0242_NON_LINEAR_ALF
+  int                    m_alfClipMerged[ALF_NUM_OF_FILTER_TYPES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF];
+#endif
   CABACWriter*           m_CABACEstimator;
   CtxCache*              m_CtxCache;
   double                 m_lambda[MAX_NUM_COMPONENT];
   const double           FracBitsScale = 1.0 / double( 1 << SCALE_BITS );
 
+#if !JVET_N0242_NON_LINEAR_ALF
   int*                   m_filterCoeffQuant;
+#endif
   int**                  m_filterCoeffSet;
+#if JVET_N0242_NON_LINEAR_ALF
+  int**                  m_filterClippSet;
+#endif
   int**                  m_diffFilterCoeff;
   int                    m_kMinTab[MAX_NUM_ALF_LUMA_COEFF];
   int                    m_bitsCoeffScan[m_MAX_SCAN_VAL][m_MAX_EXP_GOLOMB];
@@ -186,9 +361,17 @@ public:
 #endif
                    AlfSliceParam& alfSliceParam );
   void initCABACEstimator( CABACEncoder* cabacEncoder, CtxCache* ctxCache, Slice* pcSlice );
+#if JVET_N0242_NON_LINEAR_ALF
+  void create( const EncCfg* encCfg, const int picWidth, const int picHeight, const ChromaFormat chromaFormatIDC, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE], const int internalBitDepth[MAX_NUM_CHANNEL_TYPE] );
+#else
   void create( const int picWidth, const int picHeight, const ChromaFormat chromaFormatIDC, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE], const int internalBitDepth[MAX_NUM_CHANNEL_TYPE] );
+#endif
   void destroy();
+#if JVET_N0242_NON_LINEAR_ALF
+  static int lengthGolomb( int coeffVal, int k, bool signed_coeff=true );
+#else
   static int lengthGolomb( int coeffVal, int k );
+#endif
   static int getGolombKMin( AlfFilterShape& alfShape, const int numFilters, int kMinTab[MAX_NUM_ALF_LUMA_COEFF], int bitsCoeffScan[m_MAX_SCAN_VAL][m_MAX_EXP_GOLOMB] );
 
 private:
@@ -199,21 +382,41 @@ private:
                    );
 
   void   copyAlfSliceParam( AlfSliceParam& alfSliceParamDst, AlfSliceParam& alfSliceParamSrc, ChannelType channel );
+#if JVET_N0242_NON_LINEAR_ALF
+  double mergeFiltersAndCost( AlfSliceParam& alfSliceParam, AlfFilterShape& alfShape, AlfCovariance* covFrame, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], int& uiCoeffBits );
+#else
   double mergeFiltersAndCost( AlfSliceParam& alfSliceParam, AlfFilterShape& alfShape, AlfCovariance* covFrame, AlfCovariance* covMerged, int& uiCoeffBits );
+#endif
 
   void   getFrameStats( ChannelType channel, int iShapeIdx );
   void   getFrameStat( AlfCovariance* frameCov, AlfCovariance** ctbCov, uint8_t* ctbEnableFlags, const int numClasses );
   void   deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnitBuf& recYuv );
+#if JVET_N0242_NON_LINEAR_ALF
+  void   getBlkStats( AlfCovariance* alfCovariace, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, Pel* rec, const int recStride, const CompArea& area, const ChannelType channel );
+  void   calcCovariance( int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride, const AlfFilterShape& shape, const int transposeIdx, const ChannelType channel );
+  void   mergeClasses( const AlfFilterShape& alfShape, AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], const int numClasses, short filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES] );
+#else
   void   getBlkStats( AlfCovariance* alfCovariace, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, Pel* rec, const int recStride, const CompArea& area );
   void   calcCovariance( int *ELocal, const Pel *rec, const int stride, const int *filterPattern, const int halfFilterLength, const int transposeIdx );
   void   mergeClasses( AlfCovariance* cov, AlfCovariance* covMerged, const int numClasses, short filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES] );
+#endif
 
+#if !JVET_N0242_NON_LINEAR_ALF
   double calculateError( AlfCovariance& cov );
   double calcErrorForCoeffs( double **E, double *y, int *coeff, const int numCoeff, const int bitDepth );
+#endif
   double getFilterCoeffAndCost( CodingStructure& cs, double distUnfilter, ChannelType channel, bool bReCollectStat, int iShapeIdx, int& uiCoeffBits );
+#if JVET_N0242_NON_LINEAR_ALF
+  double deriveFilterCoeffs( AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], AlfFilterShape& alfShape, short* filterIndices, int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2] );
+#else
   double deriveFilterCoeffs( AlfCovariance* cov, AlfCovariance* covMerged, AlfFilterShape& alfShape, short* filterIndices, int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2] );
+#endif
   int    deriveFilterCoefficientsPredictionMode( AlfFilterShape& alfShape, int **filterSet, int** filterCoeffDiff, const int numFilters, int& predMode );
+#if JVET_N0242_NON_LINEAR_ALF
+  double deriveCoeffQuant( int *filterClipp, int *filterCoeffQuant, const AlfCovariance& cov, const AlfFilterShape& shape, const int bitDepth, const bool optimizeClip );
+#else
   double deriveCoeffQuant( int *filterCoeffQuant, double **E, double *y, const int numCoeff, std::vector<int>& weights, const int bitDepth, const bool bChroma = false );
+#endif
   double deriveCtbAlfEnableFlags( CodingStructure& cs, const int iShapeIdx, ChannelType channel,
 #if ENABLE_QPA
                                   const double chromaWeight,
@@ -229,7 +432,13 @@ private:
 
   int    getCostFilterCoeffForce0( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters, bool* codedVarBins );
   int    getCostFilterCoeff( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters );
+#if JVET_N0242_NON_LINEAR_ALF
+  int    getCostFilterClipp( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters );
+#endif
   int    lengthFilterCoeffs( AlfFilterShape& alfShape, const int numFilters, int **FilterCoeff, int* kMinTab );
+#if JVET_N0242_NON_LINEAR_ALF
+  int    lengthFilterClipps( AlfFilterShape& alfShape, const int numFilters, int **FilterCoeff, int* kMinTab );
+#endif
   double getDistForce0( AlfFilterShape& alfShape, const int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2], bool* codedVarBins );
   int    getCoeffRate( AlfSliceParam& alfSliceParam, bool isChroma );
 
@@ -237,12 +446,14 @@ private:
   double getUnfilteredDistortion( AlfCovariance* cov, const int numClasses );
   double getFilteredDistortion( AlfCovariance* cov, const int numClasses, const int numFiltersMinus1, const int numCoeff );
 
+#if !JVET_N0242_NON_LINEAR_ALF
   // Cholesky decomposition
   int  gnsSolveByChol( double **LHS, double *rhs, double *x, int numEq );
   void gnsBacksubstitution( double R[MAX_NUM_ALF_COEFF][MAX_NUM_ALF_COEFF], double* z, int size, double* A );
   void gnsTransposeBacksubstitution( double U[MAX_NUM_ALF_COEFF][MAX_NUM_ALF_COEFF], double* rhs, double* x, int order );
   int  gnsCholeskyDec( double **inpMatr, double outMatr[MAX_NUM_ALF_COEFF][MAX_NUM_ALF_COEFF], int numEq );
 
+#endif
   void setEnableFlag( AlfSliceParam& alfSlicePara, ChannelType channel, bool val );
   void setEnableFlag( AlfSliceParam& alfSlicePara, ChannelType channel, uint8_t** ctuFlags );
   void setCtuEnableFlag( uint8_t** ctuFlags, ChannelType channel, uint8_t val );

@@ -317,12 +317,18 @@ static void simdDeriveClassificationBlk( AlfClassifier** classifier, int** lapla
 }
 
 template<X86_VEXT vext>
+#if JVET_N0242_NON_LINEAR_ALF
+static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs )
+#else
 static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs )
+#endif
 {
+#if !JVET_N0242_NON_LINEAR_ALF
   static const unsigned char mask05[16] = { 8, 9, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
   static const unsigned char mask03[16] = { 4, 5, 2, 3, 0, 1, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
   static const unsigned char mask_c[16] = { 0, 1, 8, 9, 4, 5, 14, 15, 2, 3, 10, 11, 12, 13, 6, 7 };
 
+#endif
   const bool bChroma = isChroma( compId );
 
   const SPS*     sps = cs.slice->getSPS();
@@ -336,6 +342,7 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   const int srcStride = srcLuma.stride;
   const int dstStride = dstLuma.stride;
 
+#if !JVET_N0242_NON_LINEAR_ALF
   const Pel* srcExt = srcLuma.buf;
   Pel* dst = dstLuma.buf;
 
@@ -344,6 +351,7 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   short *coef = filterSet;
   const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5;
 
+#endif
   const int numBitsMinus1 = AdaptiveLoopFilter::m_NUM_BITS - 1;
   const int offset = ( 1 << ( AdaptiveLoopFilter::m_NUM_BITS - 2 ) );
 
@@ -352,56 +360,162 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   const int startWidth = blk.x;
   const int endWidth = blk.x + blk.width;
 
+#if JVET_N0242_NON_LINEAR_ALF
+  const Pel* src = srcLuma.buf;
+  Pel* dst = dstLuma.buf + startHeight * dstStride;
+
+  const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4;
+  const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4;
+
+  short *coef[2] = { filterSet, filterSet };
+  short *clip[2] = { fClipSet, fClipSet };
+
+  int transposeIdx[2] = {0, 0};
+#else
   Pel* imgYRecPost = dst;
   imgYRecPost += startHeight * dstStride;
 
   int transposeIdx = 0;
 
+#endif
   const int clsSizeY = 4;
   const int clsSizeX = 4;
 
+#if JVET_N0242_NON_LINEAR_ALF
+  bool pcmFlags2x2[8] = {0,0,0,0,0,0,0,0};
+  Pel  pcmRec2x2[32];
+#else
   bool pcmFlags2x2[4] = {0,0,0,0};
   Pel  pcmRec2x2[16];
+#endif
 
   CHECK( startHeight % clsSizeY, "Wrong startHeight in filtering" );
   CHECK( startWidth % clsSizeX, "Wrong startWidth in filtering" );
   CHECK( ( endHeight - startHeight ) % clsSizeY, "Wrong endHeight in filtering" );
   CHECK( ( endWidth - startWidth ) % clsSizeX, "Wrong endWidth in filtering" );
 
+#if !JVET_N0242_NON_LINEAR_ALF
   const Pel* imgYRec = srcExt;
 
   Pel *pRec;
+#endif
   AlfClassifier *pClass = nullptr;
 
+#if JVET_N0242_NON_LINEAR_ALF
+  int dstStride2 = dstStride * clsSizeY;
+#endif
   int srcStride2 = srcStride * clsSizeY;
 
   const __m128i mmOffset = _mm_set1_epi32( offset );
+#if JVET_N0242_NON_LINEAR_ALF
+  const __m128i mmMin = _mm_set1_epi16( clpRng.min );
+  const __m128i mmMax = _mm_set1_epi16( clpRng.max );
+#else
   const __m128i mmMin = _mm_set1_epi32( clpRng.min );
   const __m128i mmMax = _mm_set1_epi32( clpRng.max );
+#endif
 
+#if JVET_N0242_NON_LINEAR_ALF
+  const unsigned char *filterCoeffIdx[2];
+  Pel filterCoeff[MAX_NUM_ALF_LUMA_COEFF][2];
+  Pel filterClipp[MAX_NUM_ALF_LUMA_COEFF][2];
+
+  pImgYPad0 = src + startHeight * srcStride + startWidth;
+#else
   const __m128i xmm10 = _mm_loadu_si128( ( __m128i* )mask03 );
   const __m128i mm_mask05 = _mm_loadu_si128( ( __m128i* )mask05 );
 
   pImgYPad0 = imgYRec + startHeight * srcStride + startWidth;
+#endif
   pImgYPad1 = pImgYPad0 + srcStride;
   pImgYPad2 = pImgYPad0 - srcStride;
   pImgYPad3 = pImgYPad1 + srcStride;
   pImgYPad4 = pImgYPad2 - srcStride;
+#if !JVET_N0242_NON_LINEAR_ALF
   pImgYPad5 = pImgYPad3 + srcStride;
+#endif
 
+#if JVET_N0242_NON_LINEAR_ALF
+  Pel* pRec0 = dst + startWidth;
+  Pel* pRec1;
+#else
   pRec = imgYRecPost + startWidth;
+#endif
 
+#if JVET_N0242_NON_LINEAR_ALF
+  for( int i = 0; i < endHeight - startHeight; i += clsSizeY )
+#else
   for( int i = 0; i < endHeight - startHeight; i += 4 )
+#endif
   {
+#if !JVET_N0242_NON_LINEAR_ALF
     pRec = imgYRecPost + startWidth + i * dstStride;
 
+#endif
     if( !bChroma )
     {
       pClass = classifier[startHeight + i] + startWidth;
     }
 
+#if JVET_N0242_NON_LINEAR_ALF
+    for( int j = 0; j < endWidth - startWidth; j += 8 )
+#else
     for( int j = 0; j < endWidth - startWidth; j += 4 )
+#endif
     {
+#if JVET_N0242_NON_LINEAR_ALF
+      for( int k = 0; k < 2; ++k )
+      {
+        if( !bChroma )
+        {
+          const AlfClassifier& cl = pClass[j+4*k];
+          transposeIdx[k] = cl.transposeIdx;
+          coef[k] = filterSet + cl.classIdx * MAX_NUM_ALF_LUMA_COEFF;
+          clip[k] = fClipSet + cl.classIdx * MAX_NUM_ALF_LUMA_COEFF;
+          if ( isPCMFilterDisabled && cl.classIdx == AdaptiveLoopFilter::m_ALF_UNUSED_CLASSIDX && transposeIdx[k] == AdaptiveLoopFilter::m_ALF_UNUSED_TRANSPOSIDX )
+          {
+            // Note that last one (i.e. filterCoeff[6][k]) is not unused with JVET_N0242_NON_LINEAR_ALF; could be simplified
+            static const unsigned char _filterCoeffIdx[7] = { 0, 0, 0, 0, 0, 0, 0 };
+            static short _identityFilterCoeff[] = { 0 };
+            static short _identityFilterClipp[] = { 0 };
+            filterCoeffIdx[k] = _filterCoeffIdx;
+            coef[k] = _identityFilterCoeff;
+            clip[k] = _identityFilterClipp;
+          }
+          else if( transposeIdx[k] == 1 )
+          {
+            static const unsigned char _filterCoeffIdx[7] = { 4, 1, 5, 3, 0, 2, 6 };
+            filterCoeffIdx[k] = _filterCoeffIdx;
+          }
+          else if( transposeIdx[k] == 2 )
+          {
+            static const unsigned char _filterCoeffIdx[7] = { 0, 3, 2, 1, 4, 5, 6 };
+            filterCoeffIdx[k] = _filterCoeffIdx;
+          }
+          else if( transposeIdx[k] == 3 )
+          {
+            static const unsigned char _filterCoeffIdx[7] = { 4, 3, 5, 1, 0, 2, 6 };
+            filterCoeffIdx[k] = _filterCoeffIdx;
+          }
+          else
+          {
+            static const unsigned char _filterCoeffIdx[7] = { 0, 1, 2, 3, 4, 5, 6 };
+            filterCoeffIdx[k] = _filterCoeffIdx;
+          }
+        }
+        else
+        {
+          static const unsigned char _filterCoeffIdx[7] = { 0, 1, 2, 3, 4, 5, 6 };
+          filterCoeffIdx[k] = _filterCoeffIdx;
+        }
+
+        for ( int i=0; i < 7; ++i )
+        {
+          filterCoeff[i][k] = coef[k][filterCoeffIdx[k][i]];
+          filterClipp[i][k] = clip[k][filterCoeffIdx[k][i]];
+        }
+      }
+#else
       if( !bChroma )
       {
         AlfClassifier& cl = pClass[j];
@@ -464,13 +578,223 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         c0 = _mm_shuffle_epi8( c0, xmm10 );
       }
 
+#endif
       pImg0 = pImgYPad0 + j;
       pImg1 = pImgYPad1 + j;
       pImg2 = pImgYPad2 + j;
       pImg3 = pImgYPad3 + j;
       pImg4 = pImgYPad4 + j;
+#if !JVET_N0242_NON_LINEAR_ALF
       pImg5 = pImgYPad5 + j;
+#endif
 
+#if JVET_N0242_NON_LINEAR_ALF
+      pRec1 = pRec0 + j;
+
+      if ( bChroma && isPCMFilterDisabled )
+      {
+        int  blkX, blkY;
+        bool *flags  = pcmFlags2x2;
+        Pel  *pcmRec = pcmRec2x2;
+
+        // check which chroma 2x2 blocks use PCM
+        // chroma PCM may not be aligned with 4x4 ALF processing grid
+        for( blkY=0; blkY<4; blkY+=2 )
+        {
+          for( blkX=0; blkX<8; blkX+=2 )
+          {
+            Position pos(j+startWidth+blkX, i+startHeight+blkY);
+            CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
+            *flags++ = cu->ipcm ? 1 : 0;
+
+            // save original samples from 2x2 PCM blocks
+            if( cu->ipcm )
+            {
+              *pcmRec++ = pRec1[(blkY+0)*dstStride + (blkX+0)];
+              *pcmRec++ = pRec1[(blkY+0)*dstStride + (blkX+1)];
+              *pcmRec++ = pRec1[(blkY+1)*dstStride + (blkX+0)];
+              *pcmRec++ = pRec1[(blkY+1)*dstStride + (blkX+1)];
+            }
+          }
+        }
+      }
+
+      __m128i xmmNull = _mm_setzero_si128();
+
+      for( int ii = 0; ii < clsSizeY; ii++ )
+      {
+        __m128i clipp, clipm;
+        __m128i coeffa, coeffb;
+        __m128i xmmCur = _mm_lddqu_si128( ( __m128i* ) ( pImg0 + 0 ) );
+
+        // coeff 0 and 1
+        __m128i xmm00 = _mm_lddqu_si128( ( __m128i* ) ( pImg3 + 0 ) );
+        xmm00 = _mm_sub_epi16( xmm00, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[0][0], filterClipp[0][0], filterClipp[0][0], filterClipp[0][0],
+                                filterClipp[0][1], filterClipp[0][1], filterClipp[0][1], filterClipp[0][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm00 = _mm_min_epi16( xmm00, clipp );
+        xmm00 = _mm_max_epi16( xmm00, clipm );
+
+        __m128i xmm01 = _mm_lddqu_si128( ( __m128i* ) ( pImg4 + 0 ) );
+        xmm01 = _mm_sub_epi16( xmm01, xmmCur );
+        xmm01 = _mm_min_epi16( xmm01, clipp );
+        xmm01 = _mm_max_epi16( xmm01, clipm );
+
+        xmm00 = _mm_add_epi16( xmm00, xmm01 );
+
+        __m128i xmm10 = _mm_lddqu_si128( ( __m128i* ) ( pImg1 + 1 ) );
+        xmm10 = _mm_sub_epi16( xmm10, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[1][0], filterClipp[1][0], filterClipp[1][0], filterClipp[1][0],
+                                filterClipp[1][1], filterClipp[1][1], filterClipp[1][1], filterClipp[1][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm10 = _mm_min_epi16( xmm10, clipp );
+        xmm10 = _mm_max_epi16( xmm10, clipm );
+
+        __m128i xmm11 = _mm_lddqu_si128( ( __m128i* ) ( pImg2 - 1 ) );
+        xmm11 = _mm_sub_epi16( xmm11, xmmCur );
+        xmm11 = _mm_min_epi16( xmm11, clipp );
+        xmm11 = _mm_max_epi16( xmm11, clipm );
+
+        xmm10 = _mm_add_epi16( xmm10, xmm11 );
+
+        // 4 first samples
+        coeffa = _mm_set1_epi16( filterCoeff[0][0] );
+        coeffb = _mm_set1_epi16( filterCoeff[1][0] );
+        __m128i xmm0 = _mm_unpacklo_epi16( xmm00, xmm10 );
+        __m128i xmmS0 = _mm_madd_epi16( xmm0, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        // 4 next samples
+        coeffa = _mm_set1_epi16( filterCoeff[0][1] );
+        coeffb = _mm_set1_epi16( filterCoeff[1][1] );
+        __m128i xmm1 = _mm_unpackhi_epi16( xmm00, xmm10 );
+        __m128i xmmS1 = _mm_madd_epi16( xmm1, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        // coeff 2 and 3
+        __m128i xmm20 = _mm_lddqu_si128( ( __m128i* ) ( pImg1 + 0 ) );
+        xmm20 = _mm_sub_epi16( xmm20, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[2][0], filterClipp[2][0], filterClipp[2][0], filterClipp[2][0],
+                                filterClipp[2][1], filterClipp[2][1], filterClipp[2][1], filterClipp[2][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm20 = _mm_min_epi16( xmm20, clipp );
+        xmm20 = _mm_max_epi16( xmm20, clipm );
+
+        __m128i xmm21 = _mm_lddqu_si128( ( __m128i* ) ( pImg2 + 0 ) );
+        xmm21 = _mm_sub_epi16( xmm21, xmmCur );
+        xmm21 = _mm_min_epi16( xmm21, clipp );
+        xmm21 = _mm_max_epi16( xmm21, clipm );
+
+        xmm20 = _mm_add_epi16( xmm20, xmm21 );
+
+        __m128i xmm30 = _mm_lddqu_si128( ( __m128i* ) ( pImg1 - 1 ) );
+        xmm30 = _mm_sub_epi16( xmm30, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[3][0], filterClipp[3][0], filterClipp[3][0], filterClipp[3][0],
+                                filterClipp[3][1], filterClipp[3][1], filterClipp[3][1], filterClipp[3][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm30 = _mm_min_epi16( xmm30, clipp );
+        xmm30 = _mm_max_epi16( xmm30, clipm );
+
+        __m128i xmm31 = _mm_lddqu_si128( ( __m128i* ) ( pImg2 + 1 ) );
+        xmm31 = _mm_sub_epi16( xmm31, xmmCur );
+        xmm31 = _mm_min_epi16( xmm31, clipp );
+        xmm31 = _mm_max_epi16( xmm31, clipm );
+
+        xmm30 = _mm_add_epi16( xmm30, xmm31 );
+
+        // 4 first samples
+        coeffa = _mm_set1_epi16( filterCoeff[2][0] );
+        coeffb = _mm_set1_epi16( filterCoeff[3][0] );
+        xmm0 = _mm_unpacklo_epi16( xmm20, xmm30 );
+        __m128i xmmSt = _mm_madd_epi16( xmm0, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS0 = _mm_add_epi32(xmmS0, xmmSt);
+
+        // 4 next samples
+        coeffa = _mm_set1_epi16( filterCoeff[2][1] );
+        coeffb = _mm_set1_epi16( filterCoeff[3][1] );
+        xmm1 = _mm_unpackhi_epi16( xmm20, xmm30 );
+        xmmSt = _mm_madd_epi16( xmm1, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS1 = _mm_add_epi32(xmmS1, xmmSt);
+
+        // coeff 4 and 5
+        __m128i xmm40 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 + 2 ) );
+        xmm40 = _mm_sub_epi16( xmm40, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[4][0], filterClipp[4][0], filterClipp[4][0], filterClipp[4][0],
+                                filterClipp[4][1], filterClipp[4][1], filterClipp[4][1], filterClipp[4][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm40 = _mm_min_epi16( xmm40, clipp );
+        xmm40 = _mm_max_epi16( xmm40, clipm );
+
+        __m128i xmm41 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 - 2 ) );
+        xmm41 = _mm_sub_epi16( xmm41, xmmCur );
+        xmm41 = _mm_min_epi16( xmm41, clipp );
+        xmm41 = _mm_max_epi16( xmm41, clipm );
+
+        xmm40 = _mm_add_epi16( xmm40, xmm41 );
+
+        __m128i xmm50 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 + 1 ) );
+        xmm50 = _mm_sub_epi16( xmm50, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[5][0], filterClipp[5][0], filterClipp[5][0], filterClipp[5][0],
+                                filterClipp[5][1], filterClipp[5][1], filterClipp[5][1], filterClipp[5][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm50 = _mm_min_epi16( xmm50, clipp );
+        xmm50 = _mm_max_epi16( xmm50, clipm );
+
+        __m128i xmm51 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 - 1 ) );
+        xmm51 = _mm_sub_epi16( xmm51, xmmCur );
+        xmm51 = _mm_min_epi16( xmm51, clipp );
+        xmm51 = _mm_max_epi16( xmm51, clipm );
+
+        xmm50 = _mm_add_epi16( xmm50, xmm51 );
+
+        // 4 first samples
+        coeffa = _mm_set1_epi16( filterCoeff[4][0] );
+        coeffb = _mm_set1_epi16( filterCoeff[5][0] );
+        xmm0 = _mm_unpacklo_epi16( xmm40, xmm50 );
+        xmmSt = _mm_madd_epi16( xmm0, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS0 = _mm_add_epi32(xmmS0, xmmSt);
+
+        // 4 next samples
+        coeffa = _mm_set1_epi16( filterCoeff[4][1] );
+        coeffb = _mm_set1_epi16( filterCoeff[5][1] );
+        xmm1 = _mm_unpackhi_epi16( xmm40, xmm50 );
+        xmmSt = _mm_madd_epi16( xmm1, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS1 = _mm_add_epi32(xmmS1, xmmSt);
+
+        // finish
+        xmmS0 = _mm_add_epi32( xmmS0, mmOffset );
+        xmmS0 = _mm_srai_epi32( xmmS0, numBitsMinus1 );
+        xmmS1 = _mm_add_epi32( xmmS1, mmOffset );
+        xmmS1 = _mm_srai_epi32( xmmS1, numBitsMinus1 );
+
+        xmmS0 = _mm_packs_epi32( xmmS0, xmmS1 );
+        // coeff 6
+        xmmS0 = _mm_add_epi16(xmmS0, xmmCur);
+        xmmS0 = _mm_min_epi16( mmMax, _mm_max_epi16( xmmS0, mmMin ) );
+
+        if( j + 8 <= endWidth - startWidth )
+        {
+          _mm_storeu_si128( ( __m128i* )( pRec1 ), xmmS0 );
+        }
+        else if( j + 6 == endWidth - startWidth )
+        {
+          xmmS0 = _mm_blend_epi16( xmmS0, xmmCur, 0xC0 );
+          _mm_storeu_si128( ( __m128i* )( pRec1 ), xmmS0 );
+        }
+        else if( j + 4 == endWidth - startWidth )
+        {
+          xmmS0 = _mm_blend_epi16( xmmS0, xmmCur, 0xF0 );
+          _mm_storeu_si128( ( __m128i* )( pRec1 ), xmmS0 );
+        }
+        else
+        {
+          xmmS0 = _mm_blend_epi16( xmmS0, xmmCur, 0xFC );
+          _mm_storeu_si128( ( __m128i* )( pRec1 ), xmmS0 );
+        }
+#else
       for( int k = 0; k < 4; k++ )
       {
         __m128i xmm4 = _mm_lddqu_si128( ( __m128i* ) ( pImg4 ) );
@@ -552,14 +876,43 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         _mm_storel_epi64( ( __m128i* )( pRec ), xmm12 );
 
         pRec += dstStride;
+#endif
 
         pImg0 += srcStride;
         pImg1 += srcStride;
         pImg2 += srcStride;
         pImg3 += srcStride;
         pImg4 += srcStride;
+#if !JVET_N0242_NON_LINEAR_ALF
         pImg5 += srcStride;
+#endif
 
+#if JVET_N0242_NON_LINEAR_ALF
+        pRec1 += dstStride;
+      }
+      pRec1 -= dstStride2;
+      // restore 2x2 PCM chroma blocks
+      if( bChroma && isPCMFilterDisabled )
+      {
+        int  blkX, blkY;
+        bool *flags  = pcmFlags2x2;
+        Pel  *pcmRec = pcmRec2x2;
+        for( blkY=0; blkY<4; blkY+=2 )
+        {
+          for( blkX=0; blkX<8; blkX+=2 )
+          {
+            if( *flags++ )
+            {
+              pRec1[(blkY+0)*dstStride + (blkX+0)] = *pcmRec++;
+              pRec1[(blkY+0)*dstStride + (blkX+1)] = *pcmRec++;
+              pRec1[(blkY+1)*dstStride + (blkX+0)] = *pcmRec++;
+              pRec1[(blkY+1)*dstStride + (blkX+1)] = *pcmRec++;
+            }
+          }
+        }
+      }
+
+#else
       } //<-- end of k-loop
 
       pRec -= ( 4 * dstStride );
@@ -586,22 +939,34 @@ static void simdFilter5x5Blk( AlfClassifier** classifier, const PelUnitBuf &recD
       }
 
       pRec += 4;
+#endif
     }
 
+#if JVET_N0242_NON_LINEAR_ALF
+    pRec0 += dstStride2;
+#else
     pRec += 4 * dstStride;
+#endif
 
     pImgYPad0 += srcStride2;
     pImgYPad1 += srcStride2;
     pImgYPad2 += srcStride2;
     pImgYPad3 += srcStride2;
     pImgYPad4 += srcStride2;
+#if !JVET_N0242_NON_LINEAR_ALF
     pImgYPad5 += srcStride2;
+#endif
   }
 }
 
 template<X86_VEXT vext>
+#if JVET_N0242_NON_LINEAR_ALF
+static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs )
+#else
 static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs )
+#endif
 {
+#if !JVET_N0242_NON_LINEAR_ALF
   static const unsigned char mask0[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 6, 7, 4, 5, 2, 3 };
   static const unsigned char mask00[16] = { 2, 3, 0, 1, 0, 0, 0, 0, 8, 9, 0, 0, 0, 0, 0, 1 };
   static const unsigned char mask02[16] = { 0, 0, 0, 0, 2, 3, 10, 11, 0, 0, 10, 11, 2, 3, 0, 0 };
@@ -609,12 +974,15 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   static const unsigned char mask22[16] = { 14, 15, 0, 0, 6, 7, 4, 5, 12, 13, 0, 0, 8, 9, 0, 1 };
   static const unsigned char mask35[16] = { 4, 5, 2, 3, 0, 1, 14, 15, 12, 13, 10, 11, 8, 9, 6, 7 };
 
+#endif
   const bool bChroma = isChroma( compId );
 
+#if !JVET_N0242_NON_LINEAR_ALF
   if( bChroma )
   {
     CHECK( 0, "Chroma doesn't support 7x7" );
   }
+#endif
   const SPS*     sps = cs.slice->getSPS();
   bool isDualTree = CS::isDualITree(cs);
   bool isPCMFilterDisabled = sps->getPCMFilterDisableFlag();
@@ -625,6 +993,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   const int srcStride = srcLuma.stride;
   const int dstStride = dstLuma.stride;
 
+#if !JVET_N0242_NON_LINEAR_ALF
   const Pel* srcExt = srcLuma.buf;
   Pel* dst = dstLuma.buf;
 
@@ -634,6 +1003,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4;
   const Pel *pImg5, *pImg6;
 
+#endif
   const int numBitsMinus1 = AdaptiveLoopFilter::m_NUM_BITS - 1;
   const int offset = ( 1 << ( AdaptiveLoopFilter::m_NUM_BITS - 2 ) );
 
@@ -642,37 +1012,70 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   const int startWidth = blk.x;
   const int endWidth = blk.x + blk.width;
 
+#if JVET_N0242_NON_LINEAR_ALF
+  const Pel* src = srcLuma.buf;
+  Pel* dst = dstLuma.buf + startHeight * dstStride;
+
+  const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4, *pImgYPad5, *pImgYPad6;
+  const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
+
+  short *coef[2] = { filterSet, filterSet };
+  short *clip[2] = { fClipSet, fClipSet };
+
+  int transposeIdx[2] = {0, 0};
+#else
   Pel* imgYRecPost = dst;
   imgYRecPost += startHeight * dstStride;
 
   int transposeIdx = 0;
 
+#endif
   const int clsSizeY = 4;
   const int clsSizeX = 4;
 
+#if JVET_N0242_NON_LINEAR_ALF
+  bool pcmFlags2x2[8] = {0,0,0,0,0,0,0,0};
+  Pel  pcmRec2x2[32];
+#else
   bool pcmFlags2x2[4] = {0,0,0,0};
   Pel  pcmRec2x2[16];
+#endif
 
   CHECK( startHeight % clsSizeY, "Wrong startHeight in filtering" );
   CHECK( startWidth % clsSizeX, "Wrong startWidth in filtering" );
   CHECK( ( endHeight - startHeight ) % clsSizeY, "Wrong endHeight in filtering" );
   CHECK( ( endWidth - startWidth ) % clsSizeX, "Wrong endWidth in filtering" );
 
+#if !JVET_N0242_NON_LINEAR_ALF
   const Pel* imgYRec = srcExt;
 
   Pel *pRec;
+#endif
   AlfClassifier *pClass = nullptr;
 
   int dstStride2 = dstStride * clsSizeY;
   int srcStride2 = srcStride * clsSizeY;
 
   const __m128i mmOffset = _mm_set1_epi32( offset );
+#if JVET_N0242_NON_LINEAR_ALF
+  const __m128i mmMin = _mm_set1_epi16( clpRng.min );
+  const __m128i mmMax = _mm_set1_epi16( clpRng.max );
+#else
   const __m128i mmMin = _mm_set1_epi32( clpRng.min );
   const __m128i mmMax = _mm_set1_epi32( clpRng.max );
+#endif
 
+#if JVET_N0242_NON_LINEAR_ALF
+  const unsigned char *filterCoeffIdx[2];
+  Pel filterCoeff[MAX_NUM_ALF_LUMA_COEFF][2];
+  Pel filterClipp[MAX_NUM_ALF_LUMA_COEFF][2];
+
+  pImgYPad0 = src + startHeight * srcStride + startWidth;
+#else
   const __m128i xmm10 = _mm_loadu_si128( ( __m128i* )mask35 );
 
   pImgYPad0 = imgYRec + startHeight * srcStride + startWidth;
+#endif
   pImgYPad1 = pImgYPad0 + srcStride;
   pImgYPad2 = pImgYPad0 - srcStride;
   pImgYPad3 = pImgYPad1 + srcStride;
@@ -680,19 +1083,87 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   pImgYPad5 = pImgYPad3 + srcStride;
   pImgYPad6 = pImgYPad4 - srcStride;
 
+#if JVET_N0242_NON_LINEAR_ALF
+  Pel* pRec0 = dst + startWidth;
+  Pel* pRec1;
+#else
   pRec = imgYRecPost + startWidth;
+#endif
 
+#if JVET_N0242_NON_LINEAR_ALF
+  for( int i = 0; i < endHeight - startHeight; i += clsSizeY )
+#else
   for( int i = 0; i < endHeight - startHeight; i += 4 )
+#endif
   {
+#if !JVET_N0242_NON_LINEAR_ALF
     pRec = imgYRecPost + startWidth + i * dstStride;
 
+#endif
     if( !bChroma )
     {
       pClass = classifier[startHeight + i] + startWidth;
     }
 
+#if JVET_N0242_NON_LINEAR_ALF
+    for( int j = 0; j < endWidth - startWidth; j += 8 )
+#else
     for( int j = 0; j < endWidth - startWidth; j += 4 )
+#endif
     {
+#if JVET_N0242_NON_LINEAR_ALF
+      for( int k = 0; k < 2; ++k )
+      {
+        if( !bChroma )
+        {
+          const AlfClassifier& cl = pClass[j+4*k];
+          transposeIdx[k] = cl.transposeIdx;
+          coef[k] = filterSet + cl.classIdx * MAX_NUM_ALF_LUMA_COEFF;
+          clip[k] = fClipSet + cl.classIdx * MAX_NUM_ALF_LUMA_COEFF;
+          if ( isPCMFilterDisabled && cl.classIdx == AdaptiveLoopFilter::m_ALF_UNUSED_CLASSIDX && transposeIdx[k] == AdaptiveLoopFilter::m_ALF_UNUSED_TRANSPOSIDX )
+          {
+            // Note that last one (i.e. filterCoeff[12][k]) is not unused with JVET_N0242_NON_LINEAR_ALF; could be simplified
+            static const unsigned char _filterCoeffIdx[13] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+            static short _identityFilterCoeff[] = { 0 };
+            static short _identityFilterClipp[] = { 0 };
+            filterCoeffIdx[k] = _filterCoeffIdx;
+            coef[k] = _identityFilterCoeff;
+            clip[k] = _identityFilterClipp;
+          }
+          else if( transposeIdx[k] == 1 )
+          {
+            static const unsigned char _filterCoeffIdx[13] = { 9, 4, 10, 8, 1, 5, 11, 7, 3, 0, 2, 6, 12 };
+            filterCoeffIdx[k] = _filterCoeffIdx;
+          }
+          else if( transposeIdx[k] == 2 )
+          {
+            static const unsigned char _filterCoeffIdx[13] = { 0, 3, 2, 1, 8, 7, 6, 5, 4, 9, 10, 11, 12 };
+            filterCoeffIdx[k] = _filterCoeffIdx;
+          }
+          else if( transposeIdx[k] == 3 )
+          {
+            static const unsigned char _filterCoeffIdx[13] = { 9, 8, 10, 4, 3, 7, 11, 5, 1, 0, 2, 6, 12 };
+            filterCoeffIdx[k] = _filterCoeffIdx;
+          }
+          else
+          {
+            static const unsigned char _filterCoeffIdx[13] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+            filterCoeffIdx[k] = _filterCoeffIdx;
+          }
+        }
+        else
+        {
+          static const unsigned char _filterCoeffIdx[13] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+          filterCoeffIdx[k] = _filterCoeffIdx;
+        }
+
+        for ( int i=0; i < 13; ++i )
+        {
+          filterCoeff[i][k] = coef[k][filterCoeffIdx[k][i]];
+          filterClipp[i][k] = clip[k][filterCoeffIdx[k][i]];
+        }
+      }
+#else
       if( !bChroma )
       {
         AlfClassifier& cl = pClass[j];
@@ -773,6 +1244,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
       {
         c2 = _mm_shuffle_epi8( c2, xmm10 );
       }
+ #endif
 
       pImg0 = pImgYPad0 + j;
       pImg1 = pImgYPad1 + j;
@@ -782,6 +1254,357 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
       pImg5 = pImgYPad5 + j;
       pImg6 = pImgYPad6 + j;
 
+#if JVET_N0242_NON_LINEAR_ALF
+      pRec1 = pRec0 + j;
+
+      if ( bChroma && isPCMFilterDisabled )
+      {
+        int  blkX, blkY;
+        bool *flags  = pcmFlags2x2;
+        Pel  *pcmRec = pcmRec2x2;
+
+        // check which chroma 2x2 blocks use PCM
+        // chroma PCM may not be aligned with 4x4 ALF processing grid
+        for( blkY=0; blkY<4; blkY+=2 )
+        {
+          for( blkX=0; blkX<8; blkX+=2 )
+          {
+            Position pos(j+startWidth+blkX, i+startHeight+blkY);
+            CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
+            *flags++ = cu->ipcm ? 1 : 0;
+
+            // save original samples from 2x2 PCM blocks
+            if( cu->ipcm )
+            {
+              *pcmRec++ = pRec1[(blkY+0)*dstStride + (blkX+0)];
+              *pcmRec++ = pRec1[(blkY+0)*dstStride + (blkX+1)];
+              *pcmRec++ = pRec1[(blkY+1)*dstStride + (blkX+0)];
+              *pcmRec++ = pRec1[(blkY+1)*dstStride + (blkX+1)];
+            }
+          }
+        }
+      }
+
+      __m128i xmmNull = _mm_setzero_si128();
+
+      for( int ii = 0; ii < clsSizeY; ii++ )
+      {
+        __m128i clipp, clipm;
+        __m128i coeffa, coeffb;
+        __m128i xmmCur = _mm_lddqu_si128( ( __m128i* ) ( pImg0 + 0 ) );
+
+        // coeff 0 and 1
+        __m128i xmm00 = _mm_lddqu_si128( ( __m128i* ) ( pImg5 + 0 ) );
+        xmm00 = _mm_sub_epi16( xmm00, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[0][0], filterClipp[0][0], filterClipp[0][0], filterClipp[0][0],
+                                filterClipp[0][1], filterClipp[0][1], filterClipp[0][1], filterClipp[0][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm00 = _mm_min_epi16( xmm00, clipp );
+        xmm00 = _mm_max_epi16( xmm00, clipm );
+
+        __m128i xmm01 = _mm_lddqu_si128( ( __m128i* ) ( pImg6 + 0 ) );
+        xmm01 = _mm_sub_epi16( xmm01, xmmCur );
+        xmm01 = _mm_min_epi16( xmm01, clipp );
+        xmm01 = _mm_max_epi16( xmm01, clipm );
+
+        xmm00 = _mm_add_epi16( xmm00, xmm01 );
+
+        __m128i xmm10 = _mm_lddqu_si128( ( __m128i* ) ( pImg3 + 1 ) );
+        xmm10 = _mm_sub_epi16( xmm10, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[1][0], filterClipp[1][0], filterClipp[1][0], filterClipp[1][0],
+                                filterClipp[1][1], filterClipp[1][1], filterClipp[1][1], filterClipp[1][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm10 = _mm_min_epi16( xmm10, clipp );
+        xmm10 = _mm_max_epi16( xmm10, clipm );
+
+        __m128i xmm11 = _mm_lddqu_si128( ( __m128i* ) ( pImg4 - 1 ) );
+        xmm11 = _mm_sub_epi16( xmm11, xmmCur );
+        xmm11 = _mm_min_epi16( xmm11, clipp );
+        xmm11 = _mm_max_epi16( xmm11, clipm );
+
+        xmm10 = _mm_add_epi16( xmm10, xmm11 );
+
+        // 4 first samples
+        coeffa = _mm_set1_epi16( filterCoeff[0][0] );
+        coeffb = _mm_set1_epi16( filterCoeff[1][0] );
+        __m128i xmm0 = _mm_unpacklo_epi16( xmm00, xmm10 );
+        __m128i xmmS0 = _mm_madd_epi16( xmm0, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        // 4 next samples
+        coeffa = _mm_set1_epi16( filterCoeff[0][1] );
+        coeffb = _mm_set1_epi16( filterCoeff[1][1] );
+        __m128i xmm1 = _mm_unpackhi_epi16( xmm00, xmm10 );
+        __m128i xmmS1 = _mm_madd_epi16( xmm1, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        // coeff 2 and 3
+        __m128i xmm20 = _mm_lddqu_si128( ( __m128i* ) ( pImg3 + 0 ) );
+        xmm20 = _mm_sub_epi16( xmm20, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[2][0], filterClipp[2][0], filterClipp[2][0], filterClipp[2][0],
+                                filterClipp[2][1], filterClipp[2][1], filterClipp[2][1], filterClipp[2][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm20 = _mm_min_epi16( xmm20, clipp );
+        xmm20 = _mm_max_epi16( xmm20, clipm );
+
+        __m128i xmm21 = _mm_lddqu_si128( ( __m128i* ) ( pImg4 + 0 ) );
+        xmm21 = _mm_sub_epi16( xmm21, xmmCur );
+        xmm21 = _mm_min_epi16( xmm21, clipp );
+        xmm21 = _mm_max_epi16( xmm21, clipm );
+
+        xmm20 = _mm_add_epi16( xmm20, xmm21 );
+
+        __m128i xmm30 = _mm_lddqu_si128( ( __m128i* ) ( pImg3 - 1 ) );
+        xmm30 = _mm_sub_epi16( xmm30, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[3][0], filterClipp[3][0], filterClipp[3][0], filterClipp[3][0],
+                                filterClipp[3][1], filterClipp[3][1], filterClipp[3][1], filterClipp[3][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm30 = _mm_min_epi16( xmm30, clipp );
+        xmm30 = _mm_max_epi16( xmm30, clipm );
+
+        __m128i xmm31 = _mm_lddqu_si128( ( __m128i* ) ( pImg4 + 1 ) );
+        xmm31 = _mm_sub_epi16( xmm31, xmmCur );
+        xmm31 = _mm_min_epi16( xmm31, clipp );
+        xmm31 = _mm_max_epi16( xmm31, clipm );
+
+        xmm30 = _mm_add_epi16( xmm30, xmm31 );
+
+        // 4 first samples
+        coeffa = _mm_set1_epi16( filterCoeff[2][0] );
+        coeffb = _mm_set1_epi16( filterCoeff[3][0] );
+        xmm0 = _mm_unpacklo_epi16( xmm20, xmm30 );
+        __m128i xmmSt = _mm_madd_epi16( xmm0, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS0 = _mm_add_epi32(xmmS0, xmmSt);
+
+        // 4 next samples
+        coeffa = _mm_set1_epi16( filterCoeff[2][1] );
+        coeffb = _mm_set1_epi16( filterCoeff[3][1] );
+        xmm1 = _mm_unpackhi_epi16( xmm20, xmm30 );
+        xmmSt = _mm_madd_epi16( xmm1, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS1 = _mm_add_epi32(xmmS1, xmmSt);
+
+        // coeff 4 and 5
+        __m128i xmm40 = _mm_lddqu_si128( ( __m128i* ) ( pImg1 + 2 ) );
+        xmm40 = _mm_sub_epi16( xmm40, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[4][0], filterClipp[4][0], filterClipp[4][0], filterClipp[4][0],
+                                filterClipp[4][1], filterClipp[4][1], filterClipp[4][1], filterClipp[4][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm40 = _mm_min_epi16( xmm40, clipp );
+        xmm40 = _mm_max_epi16( xmm40, clipm );
+
+        __m128i xmm41 = _mm_lddqu_si128( ( __m128i* ) ( pImg2 - 2 ) );
+        xmm41 = _mm_sub_epi16( xmm41, xmmCur );
+        xmm41 = _mm_min_epi16( xmm41, clipp );
+        xmm41 = _mm_max_epi16( xmm41, clipm );
+
+        xmm40 = _mm_add_epi16( xmm40, xmm41 );
+
+        __m128i xmm50 = _mm_lddqu_si128( ( __m128i* ) ( pImg1 + 1 ) );
+        xmm50 = _mm_sub_epi16( xmm50, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[5][0], filterClipp[5][0], filterClipp[5][0], filterClipp[5][0],
+                                filterClipp[5][1], filterClipp[5][1], filterClipp[5][1], filterClipp[5][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm50 = _mm_min_epi16( xmm50, clipp );
+        xmm50 = _mm_max_epi16( xmm50, clipm );
+
+        __m128i xmm51 = _mm_lddqu_si128( ( __m128i* ) ( pImg2 - 1 ) );
+        xmm51 = _mm_sub_epi16( xmm51, xmmCur );
+        xmm51 = _mm_min_epi16( xmm51, clipp );
+        xmm51 = _mm_max_epi16( xmm51, clipm );
+
+        xmm50 = _mm_add_epi16( xmm50, xmm51 );
+
+        // 4 first samples
+        coeffa = _mm_set1_epi16( filterCoeff[4][0] );
+        coeffb = _mm_set1_epi16( filterCoeff[5][0] );
+        xmm0 = _mm_unpacklo_epi16( xmm40, xmm50 );
+        xmmSt = _mm_madd_epi16( xmm0, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS0 = _mm_add_epi32(xmmS0, xmmSt);
+
+        // 4 next samples
+        coeffa = _mm_set1_epi16( filterCoeff[4][1] );
+        coeffb = _mm_set1_epi16( filterCoeff[5][1] );
+        xmm1 = _mm_unpackhi_epi16( xmm40, xmm50 );
+        xmmSt = _mm_madd_epi16( xmm1, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS1 = _mm_add_epi32(xmmS1, xmmSt);
+
+
+        // coeff 6 and 7
+        __m128i xmm60 = _mm_lddqu_si128( ( __m128i* ) ( pImg1 + 0 ) );
+        xmm60 = _mm_sub_epi16( xmm60, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[6][0], filterClipp[6][0], filterClipp[6][0], filterClipp[6][0],
+                                filterClipp[6][1], filterClipp[6][1], filterClipp[6][1], filterClipp[6][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm60 = _mm_min_epi16( xmm60, clipp );
+        xmm60 = _mm_max_epi16( xmm60, clipm );
+
+        __m128i xmm61 = _mm_lddqu_si128( ( __m128i* ) ( pImg2 + 0 ) );
+        xmm61 = _mm_sub_epi16( xmm61, xmmCur );
+        xmm61 = _mm_min_epi16( xmm61, clipp );
+        xmm61 = _mm_max_epi16( xmm61, clipm );
+
+        xmm60 = _mm_add_epi16( xmm60, xmm61 );
+
+        __m128i xmm70 = _mm_lddqu_si128( ( __m128i* ) ( pImg1 - 1 ) );
+        xmm70 = _mm_sub_epi16( xmm70, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[7][0], filterClipp[7][0], filterClipp[7][0], filterClipp[7][0],
+                                filterClipp[7][1], filterClipp[7][1], filterClipp[7][1], filterClipp[7][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm70 = _mm_min_epi16( xmm70, clipp );
+        xmm70 = _mm_max_epi16( xmm70, clipm );
+
+        __m128i xmm71 = _mm_lddqu_si128( ( __m128i* ) ( pImg2 + 1 ) );
+        xmm71 = _mm_sub_epi16( xmm71, xmmCur );
+        xmm71 = _mm_min_epi16( xmm71, clipp );
+        xmm71 = _mm_max_epi16( xmm71, clipm );
+
+        xmm70 = _mm_add_epi16( xmm70, xmm71 );
+
+        // 4 first samples
+        coeffa = _mm_set1_epi16( filterCoeff[6][0] );
+        coeffb = _mm_set1_epi16( filterCoeff[7][0] );
+        xmm0 = _mm_unpacklo_epi16( xmm60, xmm70 );
+        xmmSt = _mm_madd_epi16( xmm0, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS0 = _mm_add_epi32(xmmS0, xmmSt);
+
+        // 4 next samples
+        coeffa = _mm_set1_epi16( filterCoeff[6][1] );
+        coeffb = _mm_set1_epi16( filterCoeff[7][1] );
+        xmm1 = _mm_unpackhi_epi16( xmm60, xmm70 );
+        xmmSt = _mm_madd_epi16( xmm1, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS1 = _mm_add_epi32(xmmS1, xmmSt);
+
+
+        // coeff 8 and 9
+        __m128i xmm80 = _mm_lddqu_si128( ( __m128i* ) ( pImg1 - 2 ) );
+        xmm80 = _mm_sub_epi16( xmm80, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[8][0], filterClipp[8][0], filterClipp[8][0], filterClipp[8][0],
+                                filterClipp[8][1], filterClipp[8][1], filterClipp[8][1], filterClipp[8][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm80 = _mm_min_epi16( xmm80, clipp );
+        xmm80 = _mm_max_epi16( xmm80, clipm );
+
+        __m128i xmm81 = _mm_lddqu_si128( ( __m128i* ) ( pImg2 + 2 ) );
+        xmm81 = _mm_sub_epi16( xmm81, xmmCur );
+        xmm81 = _mm_min_epi16( xmm81, clipp );
+        xmm81 = _mm_max_epi16( xmm81, clipm );
+
+        xmm80 = _mm_add_epi16( xmm80, xmm81 );
+
+        __m128i xmm90 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 + 3 ) );
+        xmm90 = _mm_sub_epi16( xmm90, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[9][0], filterClipp[9][0], filterClipp[9][0], filterClipp[9][0],
+                                filterClipp[9][1], filterClipp[9][1], filterClipp[9][1], filterClipp[9][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm90 = _mm_min_epi16( xmm90, clipp );
+        xmm90 = _mm_max_epi16( xmm90, clipm );
+
+        __m128i xmm91 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 - 3 ) );
+        xmm91 = _mm_sub_epi16( xmm91, xmmCur );
+        xmm91 = _mm_min_epi16( xmm91, clipp );
+        xmm91 = _mm_max_epi16( xmm91, clipm );
+
+        xmm90 = _mm_add_epi16( xmm90, xmm91 );
+
+        // 4 first samples
+        coeffa = _mm_set1_epi16( filterCoeff[8][0] );
+        coeffb = _mm_set1_epi16( filterCoeff[9][0] );
+        xmm0 = _mm_unpacklo_epi16( xmm80, xmm90 );
+        xmmSt = _mm_madd_epi16( xmm0, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS0 = _mm_add_epi32(xmmS0, xmmSt);
+
+        // 4 next samples
+        coeffa = _mm_set1_epi16( filterCoeff[8][1] );
+        coeffb = _mm_set1_epi16( filterCoeff[9][1] );
+        xmm1 = _mm_unpackhi_epi16( xmm80, xmm90 );
+        xmmSt = _mm_madd_epi16( xmm1, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS1 = _mm_add_epi32(xmmS1, xmmSt);
+
+
+        // coeff 10 and 11
+        __m128i xmm100 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 + 2 ) );
+        xmm100 = _mm_sub_epi16( xmm100, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[10][0], filterClipp[10][0], filterClipp[10][0], filterClipp[10][0],
+                                filterClipp[10][1], filterClipp[10][1], filterClipp[10][1], filterClipp[10][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm100 = _mm_min_epi16( xmm100, clipp );
+        xmm100 = _mm_max_epi16( xmm100, clipm );
+
+        __m128i xmm101 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 - 2 ) );
+        xmm101 = _mm_sub_epi16( xmm101, xmmCur );
+        xmm101 = _mm_min_epi16( xmm101, clipp );
+        xmm101 = _mm_max_epi16( xmm101, clipm );
+
+        xmm100 = _mm_add_epi16( xmm100, xmm101 );
+
+        __m128i xmm110 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 + 1 ) );
+        xmm110 = _mm_sub_epi16( xmm110, xmmCur );
+        clipp = _mm_setr_epi16( filterClipp[11][0], filterClipp[11][0], filterClipp[11][0], filterClipp[11][0],
+                                filterClipp[11][1], filterClipp[11][1], filterClipp[11][1], filterClipp[11][1] );
+        clipm = _mm_sub_epi16( xmmNull, clipp );
+        xmm110 = _mm_min_epi16( xmm110, clipp );
+        xmm110 = _mm_max_epi16( xmm110, clipm );
+
+        __m128i xmm111 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 - 1 ) );
+        xmm111 = _mm_sub_epi16( xmm111, xmmCur );
+        xmm111 = _mm_min_epi16( xmm111, clipp );
+        xmm111 = _mm_max_epi16( xmm111, clipm );
+
+        xmm110 = _mm_add_epi16( xmm110, xmm111 );
+
+        // 4 first samples
+        coeffa = _mm_set1_epi16( filterCoeff[10][0] );
+        coeffb = _mm_set1_epi16( filterCoeff[11][0] );
+        xmm0 = _mm_unpacklo_epi16( xmm100, xmm110 );
+        xmmSt = _mm_madd_epi16( xmm0, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS0 = _mm_add_epi32(xmmS0, xmmSt);
+
+        // 4 next samples
+        coeffa = _mm_set1_epi16( filterCoeff[10][1] );
+        coeffb = _mm_set1_epi16( filterCoeff[11][1] );
+        xmm1 = _mm_unpackhi_epi16( xmm100, xmm110 );
+        xmmSt = _mm_madd_epi16( xmm1, _mm_unpackhi_epi16( coeffa, coeffb ) );
+
+        xmmS1 = _mm_add_epi32(xmmS1, xmmSt);
+
+        // finish
+        xmmS0 = _mm_add_epi32( xmmS0, mmOffset );
+        xmmS0 = _mm_srai_epi32( xmmS0, numBitsMinus1 );
+        xmmS1 = _mm_add_epi32( xmmS1, mmOffset );
+        xmmS1 = _mm_srai_epi32( xmmS1, numBitsMinus1 );
+
+        xmmS0 = _mm_packs_epi32( xmmS0, xmmS1 );
+        // coeff 12
+        xmmS0 = _mm_add_epi16(xmmS0, xmmCur);
+        xmmS0 = _mm_min_epi16( mmMax, _mm_max_epi16( xmmS0, mmMin ) );
+
+        if( j + 8 <= endWidth - startWidth )
+        {
+          _mm_storeu_si128( ( __m128i* )( pRec1 ), xmmS0 );
+        }
+        else if( j + 6 == endWidth - startWidth )
+        {
+          xmmS0 = _mm_blend_epi16( xmmS0, xmmCur, 0xC0 );
+          _mm_storeu_si128( ( __m128i* )( pRec1 ), xmmS0 );
+        }
+        else if( j + 4 == endWidth - startWidth )
+        {
+          xmmS0 = _mm_blend_epi16( xmmS0, xmmCur, 0xF0 );
+          _mm_storeu_si128( ( __m128i* )( pRec1 ), xmmS0 );
+        }
+        else
+        {
+          xmmS0 = _mm_blend_epi16( xmmS0, xmmCur, 0xFC );
+          _mm_storeu_si128( ( __m128i* )( pRec1 ), xmmS0 );
+        }
+#else
       for( int k = 0; k < 4; k++ )
       {
         __m128i xmm6 = _mm_lddqu_si128( ( __m128i* ) pImg6 );
@@ -861,6 +1684,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         _mm_storel_epi64( ( __m128i* )( pRec ), xmm12 );
 
         pRec += dstStride;
+#endif
 
         pImg0 += srcStride;
         pImg1 += srcStride;
@@ -869,6 +1693,33 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         pImg4 += srcStride;
         pImg5 += srcStride;
         pImg6 += srcStride;
+#if JVET_N0242_NON_LINEAR_ALF
+
+        pRec1 += dstStride;
+      }
+      pRec1 -= dstStride2;
+      // restore 2x2 PCM chroma blocks
+      if( bChroma && isPCMFilterDisabled )
+      {
+        int  blkX, blkY;
+        bool *flags  = pcmFlags2x2;
+        Pel  *pcmRec = pcmRec2x2;
+        for( blkY=0; blkY<4; blkY+=2 )
+        {
+          for( blkX=0; blkX<8; blkX+=2 )
+          {
+            if( *flags++ )
+            {
+              pRec1[(blkY+0)*dstStride + (blkX+0)] = *pcmRec++;
+              pRec1[(blkY+0)*dstStride + (blkX+1)] = *pcmRec++;
+              pRec1[(blkY+1)*dstStride + (blkX+0)] = *pcmRec++;
+              pRec1[(blkY+1)*dstStride + (blkX+1)] = *pcmRec++;
+            }
+          }
+        }
+      }
+
+#else
       }
 
       pRec -= ( 4 * dstStride );
@@ -895,9 +1746,14 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
       }
 
       pRec += 4;
+#endif
     }
 
+#if JVET_N0242_NON_LINEAR_ALF
+    pRec0 += dstStride2;
+#else
     pRec += dstStride2;
+#endif
 
     pImgYPad0 += srcStride2;
     pImgYPad1 += srcStride2;

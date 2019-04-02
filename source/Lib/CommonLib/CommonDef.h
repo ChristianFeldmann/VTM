@@ -359,7 +359,10 @@ static const int    MIN_BT_SIZE_C       =                           4;      ///<
 
 static const int    MAX_TT_SIZE_INTER  =                           64;      ///< for initialization, [1<<MIN_CU_LOG2, 64]
 static const int    MIN_TT_SIZE_INTER  =                            4;      ///<
-
+#if JVET_N0137_DUALTREE_CHROMA_SIZE
+static const int    MIN_DUALTREE_CHROMA_WIDTH  =                    4;
+static const int    MIN_DUALTREE_CHROMA_SIZE   =                   16;
+#endif
 static const SplitSeries SPLIT_BITS         =                       5;
 static const SplitSeries SPLIT_DMULT        =                       5;
 static const SplitSeries SPLIT_MASK         =                      31;      ///< = (1 << SPLIT_BITS) - 1
@@ -419,7 +422,11 @@ static constexpr int MV_MANTISSA_LIMIT       = (1 << (MV_MANTISSA_BITCOUNT - 1))
 static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1);
 static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;
+#if JVET_N0220_LMCS_SIMPLIFICATION
+static const int FP_PREC =                                       11;
+#else
 static const int FP_PREC =                                       14;
+#endif
 static const int CSCALE_FP_PREC =                                11;
 // ====================================================================================================================
 // Macro functions

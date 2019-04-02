@@ -1527,7 +1527,13 @@ void InterSearch::xxIBCHashSearch(PredictionUnit& pu, Mv* mvPred, int numMvPred,
             int imvShift = 2;
             int offset = 1 << (imvShift - 1);
 
+#if JVET_N0335_N0085_MV_ROUNDING
+            int x = (mvPred[n].hor + offset - (mvPred[n].hor >= 0)) >> 2;
+            int y = (mvPred[n].ver + offset - (mvPred[n].ver >= 0)) >> 2;
+            mvPredQuadPel.set(x, y);
+#else            
             mvPredQuadPel.set(((mvPred[n].hor + offset) >> 2), ((mvPred[n].ver + offset) >> 2));
+#endif
 
             m_pcRdCost->setPredictor(mvPredQuadPel);
 
@@ -4264,8 +4270,14 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
         int shift = MAX_CU_DEPTH;
         int vx2 = (mvFour[0].getHor() << shift) - ((mvFour[1].getVer() - mvFour[0].getVer()) << (shift + g_aucLog2[pu.lheight()] - g_aucLog2[pu.lwidth()]));
         int vy2 = (mvFour[0].getVer() << shift) + ((mvFour[1].getHor() - mvFour[0].getHor()) << (shift + g_aucLog2[pu.lheight()] - g_aucLog2[pu.lwidth()]));
+#if JVET_N0335_N0085_MV_ROUNDING
+        int offset = (1 << (shift - 1));
+        vx2 = (vx2 + offset - (vx2 >= 0)) >> shift;
+        vy2 = (vy2 + offset - (vy2 >= 0)) >> shift;
+#else
         vx2 >>= shift;
         vy2 >>= shift;
+#endif
         mvFour[2].hor = vx2;
         mvFour[2].ver = vy2;
         mvFour[2].clipToStorageBitDepth();

@@ -874,6 +874,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AffineAmvr",                                      m_AffineAmvr,                                     false, "Eanble AMVR for affine inter mode")
   ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
+#if JVET_N0449_MMVD_SIMP
+  ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
+#endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
   ( "IBCLocalSearchRangeY",                           m_IBCLocalSearchRangeY,                            128u, "Search range of IBC local search in y direction")
@@ -1973,6 +1976,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
     xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
+#if JVET_N0449_MMVD_SIMP
+    xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
+#endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
   else
@@ -1991,7 +1997,8 @@ bool EncAppCfg::xCheckParameter()
   {
     xConfirmPara( m_wrapAroundOffset == 0, "Wrap-around offset must be greater than 0" );
     xConfirmPara( m_wrapAroundOffset > m_iSourceWidth, "Wrap-around offset must not be greater than the source picture width" );
-    xConfirmPara( m_wrapAroundOffset % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Wrap-around offset must be an integer multiple of the specified chroma subsampling" );
+    int minCUSize =  m_uiCTUSize >> m_uiLog2DiffMaxMinCodingBlockSize;
+    xConfirmPara( m_wrapAroundOffset % minCUSize != 0, "Wrap-around offset must be an integer multiple of the specified minimum CU size" );
   }
 
 #if ENABLE_SPLIT_PARALLELISM
@@ -3158,6 +3165,9 @@ void EncAppCfg::xPrintParameter()
     m_AffineAmvrEncOpt = m_AffineAmvr ? m_AffineAmvrEncOpt : false;
     msg( VERBOSE, "AffineAmvrEncOpt:%d ", m_AffineAmvrEncOpt );
     msg(VERBOSE, "DMVR:%d ", m_DMVR);
+#if JVET_N0449_MMVD_SIMP
+    msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
+#endif
   }
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
   msg( VERBOSE, "HashME:%d ", m_HashME );

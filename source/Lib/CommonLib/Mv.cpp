@@ -45,8 +45,13 @@ const MvPrecision Mv::m_amvrPrecision[3] = { MV_PRECISION_QUARTER, MV_PRECISION_
 void roundAffineMv( int& mvx, int& mvy, int nShift )
 {
   const int nOffset = 1 << (nShift - 1);
+#if JVET_N0335_N0085_MV_ROUNDING
+  mvx = (mvx + nOffset - (mvx >= 0)) >> nShift;
+  mvy = (mvy + nOffset - (mvy >= 0)) >> nShift;
+#else
   mvx = mvx >= 0 ? (mvx + nOffset) >> nShift : -((-mvx + nOffset) >> nShift);
   mvy = mvy >= 0 ? (mvy + nOffset) >> nShift : -((-mvy + nOffset) >> nShift);
+#endif
 }
 
 void clipMv( Mv& rcMv, const Position& pos,

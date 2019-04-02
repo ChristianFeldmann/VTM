@@ -338,6 +338,12 @@ const uint8_t CodingUnit::checkAllowedSbt() const
   {
     return 0;
   }
+#if JVET_N0483_DISABLE_SBT_FOR_TPM
+  if( triangle )
+  {
+    return 0;
+  }
+#endif
 
   uint8_t sbtAllowed = 0;
   int cuWidth  = lwidth();

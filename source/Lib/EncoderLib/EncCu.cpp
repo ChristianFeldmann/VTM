@@ -1137,9 +1137,15 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       startShareThisLevel = 1;
     }
   }
+#if JVET_N0266_SMALL_BLOCKS
+  if ( m_shareState == GEN_ON_SHARED_BOUND && slice.getSPS()->getIBCFlag() )
+#else
   if ((m_shareState == GEN_ON_SHARED_BOUND) && (!slice.isIntra() || slice.getSPS()->getIBCFlag()))
+#endif
   {
+#if !JVET_N0266_SMALL_BLOCKS
     tempCS->motionLut.lutShare = tempCS->motionLut.lut;
+#endif
     tempCS->motionLut.lutShareIbc = tempCS->motionLut.lutIbc;
     m_shareBndPosX = uiLPelX;
     m_shareBndPosY = uiTPelY;

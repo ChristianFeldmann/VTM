@@ -220,7 +220,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     {
       cs.motionLut.lut.resize(0);
       cs.motionLut.lutIbc.resize(0);
+#if !JVET_N0266_SMALL_BLOCKS
       cs.motionLut.lutShare.resize(0);
+#endif
       cs.motionLut.lutShareIbc.resize(0);
     }
 

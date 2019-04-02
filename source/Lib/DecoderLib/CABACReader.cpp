@@ -746,7 +746,12 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
 #endif
     return;
   }
-
+#if JVET_N0266_SMALL_BLOCKS
+  if ( !cu.cs->slice->getSPS()->getIBCFlag() && cu.lwidth() == 4 && cu.lheight() == 4 )
+  {
+    return;
+  }
+#endif
   unsigned ctxId  = DeriveCtx::CtxSkipFlag(cu);
   unsigned skip   = m_BinDecoder.decodeBin( Ctx::SkipFlag(ctxId) );
 
@@ -757,6 +762,16 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
 #if JVET_N0318_N0467_IBC_SIZE
     if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
     {
+#endif
+#if JVET_N0266_SMALL_BLOCKS
+      if ( cu.lwidth() == 4 && cu.lheight() == 4 )
+      {
+        cu.skip     = true;
+        cu.rootCbf  = false;
+        cu.predMode = MODE_IBC;
+        cu.mmvdSkip = false;
+        return;
+      }
 #endif
     unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
     if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
@@ -895,7 +910,11 @@ void CABACReader::pred_mode( CodingUnit& cu )
 
   if (cu.cs->slice->getSPS()->getIBCFlag())
   {
+#if JVET_N0266_SMALL_BLOCKS
+    if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) )
+#else
     if (cu.cs->slice->isIntra())
+#endif
     {
       cu.predMode = MODE_INTRA;
 #if JVET_N0318_N0467_IBC_SIZE
@@ -937,7 +956,11 @@ void CABACReader::pred_mode( CodingUnit& cu )
   }
   else
   {
+#if JVET_N0266_SMALL_BLOCKS
+    if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) || m_BinDecoder.decodeBin( Ctx::PredMode( DeriveCtx::CtxPredModeFlag( cu ) ) ) )
+#else
     if (cu.cs->slice->isIntra() || m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))))
+#endif
     {
       cu.predMode = MODE_INTRA;
     }

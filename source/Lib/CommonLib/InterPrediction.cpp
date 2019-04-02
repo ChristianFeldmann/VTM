@@ -449,6 +449,9 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   int iRefIdx = pu.refIdx[eRefPicList];
   Mv mv[3];
   bool isIBC = false;
+#if JVET_N0266_SMALL_BLOCKS
+  CHECK( !CU::isIBC( *pu.cu ) && pu.lwidth() == 4 && pu.lheight() == 4, "invalid 4x4 inter blocks" );
+#endif
   if (CU::isIBC(*pu.cu))
   {
     isIBC = true;
@@ -506,7 +509,9 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
 {
   const PPS   &pps   = *pu.cs->pps;
   const Slice &slice = *pu.cs->slice;
-
+#if JVET_N0266_SMALL_BLOCKS
+  CHECK( !pu.cu->affine && pu.refIdx[0] >= 0 && pu.refIdx[1] >= 0 && ( pu.lwidth() + pu.lheight() == 12 ), "invalid 4x8/8x4 bi-predicted blocks" );
+#endif
   bool bioApplied = false;
   if (pu.cs->sps->getBDOFEnabledFlag())
   {
@@ -521,7 +526,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
       if (biocheck0
         && biocheck1
         && PU::isBiPredFromDifferentDir(pu)
+#if JVET_N0266_SMALL_BLOCKS
+        && pu.Y().height != 4
+#else
         && !(pu.Y().height == 4 || (pu.Y().width == 4 && pu.Y().height == 8))
+#endif
        )
       {
         bioApplied = true;
@@ -820,6 +829,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
 
   const int shift = iBit - 4 + MV_FRACTIONAL_BITS_INTERNAL;
 
+
   // get prediction block by block
   for ( int h = 0; h < cxHeight; h += blockHeight )
   {
@@ -831,6 +841,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
       {
         iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
         iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
+
         roundAffineMv(iMvScaleTmpHor, iMvScaleTmpVer, shift);
         Mv tmpMv(iMvScaleTmpHor, iMvScaleTmpVer);
         tmpMv.clipToStorageBitDepth();

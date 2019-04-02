@@ -1991,7 +1991,8 @@ bool EncAppCfg::xCheckParameter()
   {
     xConfirmPara( m_wrapAroundOffset == 0, "Wrap-around offset must be greater than 0" );
     xConfirmPara( m_wrapAroundOffset > m_iSourceWidth, "Wrap-around offset must not be greater than the source picture width" );
-    xConfirmPara( m_wrapAroundOffset % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Wrap-around offset must be an integer multiple of the specified chroma subsampling" );
+    int minCUSize =  m_uiCTUSize >> m_uiLog2DiffMaxMinCodingBlockSize;
+    xConfirmPara( m_wrapAroundOffset % minCUSize != 0, "Wrap-around offset must be an integer multiple of the specified minimum CU size" );
   }
 
 #if ENABLE_SPLIT_PARALLELISM

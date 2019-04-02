@@ -292,6 +292,10 @@ protected:
   bool      m_useFastMrg;
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
+#if JVET_N0242_NON_LINEAR_ALF
+  bool      m_useNonLinearAlfLuma;
+  bool      m_useNonLinearAlfChroma;
+#endif
 
 
   int       m_numSplitThreads;

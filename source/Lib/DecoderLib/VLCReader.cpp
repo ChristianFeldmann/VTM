@@ -625,6 +625,17 @@ void HLSyntaxReader::parseAPS(APS* aps)
   param.enabledFlag[COMPONENT_Cb] = alfChromaIdc >> 1;
   param.enabledFlag[COMPONENT_Cr] = alfChromaIdc & 1;
 
+#if JVET_N0242_NON_LINEAR_ALF
+  READ_FLAG( code, "alf_luma_clip" );
+  param.nonLinearFlag[CHANNEL_TYPE_LUMA] = code ? true : false;
+
+  if( alfChromaIdc )
+  {
+    READ_FLAG( code, "alf_chroma_clip" );
+    param.nonLinearFlag[CHANNEL_TYPE_CHROMA] = code ? true : false;
+  }
+#endif
+
   xReadTruncBinCode(code, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
   param.numLumaFilters = code + 1;
   if (param.numLumaFilters > 1)
@@ -2522,8 +2533,11 @@ bool HLSyntaxReader::xMoreRbspData()
   return (cnt>0);
 }
 
-
+#if JVET_N0242_NON_LINEAR_ALF
+int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
+#else
 int HLSyntaxReader::alfGolombDecode( const int k )
+#endif
 {
   uint32_t uiSymbol;
   int q = -1;
@@ -2555,7 +2569,11 @@ int HLSyntaxReader::alfGolombDecode( const int k )
     }
   }
   nr += q * m;                    // add the bits and the multiple of M
+#if JVET_N0242_NON_LINEAR_ALF
+  if( signed_val && nr != 0 )
+#else
   if( nr != 0 )
+#endif
   {
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
     xReadFlag( uiSymbol, "" );
@@ -2604,6 +2622,9 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
   static int kMinTab[MAX_NUM_ALF_COEFF];
   const int numFilters = isChroma ? 1 : alfSliceParam.numLumaFilters;
   short* coeff = isChroma ? alfSliceParam.chromaCoeff : alfSliceParam.lumaCoeff;
+#if JVET_N0242_NON_LINEAR_ALF
+  short* clipp = isChroma ? alfSliceParam.chromaClipp : alfSliceParam.lumaClipp;
+#endif
 
   for( int idx = 0; idx < maxGolombIdx; idx++ )
   {
@@ -2639,6 +2660,70 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
       coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( kMinTab[alfShape.golombIdx[i]] );
     }
   }
+#if JVET_N0242_NON_LINEAR_ALF
+
+  // Clipping values coding
+  if ( alfSliceParam.nonLinearFlag[isChroma] )
+  {
+    READ_UVLC( code, "clip_min_golomb_order" );
+
+    kMin = code + 1;
+
+    for( int idx = 0; idx < maxGolombIdx; idx++ )
+    {
+      READ_FLAG( code, "clip_golomb_order_increase_flag" );
+      CHECK( code > 1, "Wrong golomb_order_increase_flag" );
+      kMinTab[idx] = kMin + code;
+      kMin = kMinTab[idx];
+    }
+
+    short recCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+    if( isChroma )
+    {
+      memcpy( recCoeff, coeff, sizeof(short) * MAX_NUM_ALF_CHROMA_COEFF );
+    }
+    else
+    {
+      memcpy( recCoeff, coeff, sizeof(short) * numFilters * MAX_NUM_ALF_LUMA_COEFF );
+
+      if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
+      {
+        for( int i = 1; i < numFilters; i++ )
+        {
+          for( int j = 0; j < alfShape.numCoeff - 1; j++ )
+          {
+            recCoeff[i * MAX_NUM_ALF_LUMA_COEFF + j] += recCoeff[( i - 1 ) * MAX_NUM_ALF_LUMA_COEFF + j];
+          }
+        }
+      }
+    }
+
+    // Filter coefficients
+    for( int ind = 0; ind < numFilters; ++ind )
+    {
+      if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.alfLumaCoeffDeltaFlag )
+      {
+        std::fill_n( clipp + ind * MAX_NUM_ALF_LUMA_COEFF, alfShape.numCoeff, 0 );
+        continue;
+      }
+
+      for( int i = 0; i < alfShape.numCoeff - 1; i++ )
+      {
+        if( recCoeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] )
+          clipp[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( kMinTab[alfShape.golombIdx[i]], false );
+        else
+          clipp[ind * MAX_NUM_ALF_LUMA_COEFF + i] = 0;
+      }
+    }
+  }
+  else
+  {
+    for( int ind = 0; ind < numFilters; ++ind )
+    {
+      std::fill_n( clipp + ind * MAX_NUM_ALF_LUMA_COEFF, alfShape.numCoeff, 0 );
+    }
+  }
+#endif
 }
 
 int HLSyntaxReader::truncatedUnaryEqProb( const int maxSymbol )

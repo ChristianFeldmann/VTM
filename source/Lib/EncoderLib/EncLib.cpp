@@ -135,7 +135,11 @@ void EncLib::create ()
   }
   if( m_alf )
   {
+#if JVET_N0242_NON_LINEAR_ALF
+    m_cEncALF.create( this, getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );
+#else
     m_cEncALF.create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );
+#endif
   }
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM

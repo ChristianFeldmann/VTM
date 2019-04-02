@@ -3788,6 +3788,34 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
       }
     }
   }
+#if JVET_N0334_MVCLIPPING
+  // avoid MV exceeding 18-bit dynamic range
+  const int maxMv = 1 << 17;
+  if (!cu->affine && !pu.mergeFlag)
+  {
+    if ( (pu.refIdx[0] >= 0 && (pu.mv[0].getAbsHor() >= maxMv || pu.mv[0].getAbsVer() >= maxMv))
+      || (pu.refIdx[1] >= 0 && (pu.mv[1].getAbsHor() >= maxMv || pu.mv[1].getAbsVer() >= maxMv)))
+    {
+      return;
+    }
+  }
+  if (cu->affine && !pu.mergeFlag)
+  {
+    for (int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++)
+    {
+      if (pu.refIdx[refList] >= 0)
+      {
+        for (int ctrlP = 1 + (cu->affineType == AFFINEMODEL_6PARAM); ctrlP >= 0; ctrlP--)
+        {
+          if (pu.mvAffi[refList][ctrlP].getAbsHor() >= maxMv || pu.mvAffi[refList][ctrlP].getAbsVer() >= maxMv)
+          {
+            return;
+          }
+        }
+      }
+    }
+  }
+#endif
   const bool mtsAllowed = tempCS->sps->getUseInterMTS() && CU::isInter( *cu ) && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
   uint8_t sbtAllowed = cu->checkAllowedSbt();
   uint8_t numRDOTried = 0;

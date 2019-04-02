@@ -745,7 +745,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
                   mvLB.changePrecision( MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL );
                 }
               }
+#if JVET_N0334_MVCLIPPING
+              PU::setAllAffineMv(pu, mvLT, mvRT, mvLB, eRefList, false, true);
+#else
               PU::setAllAffineMv( pu, mvLT, mvRT, mvLB, eRefList );
+#endif
             }
           }
         }
@@ -761,6 +765,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
             mvd <<= 2;
           pu.mv[REF_PIC_LIST_0] = amvpInfo.mvCand[pu.mvpIdx[REF_PIC_LIST_0]] + mvd;
           pu.mv[REF_PIC_LIST_0].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
+#if JVET_N0334_MVCLIPPING
+          pu.mv[REF_PIC_LIST_0].mvCliptoStorageBitDepth();
+#endif
         }
         else
         {
@@ -774,6 +781,9 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               pu.mvpNum [eRefList] = amvpInfo.numCand;
               pu.mv[eRefList] = amvpInfo.mvCand[pu.mvpIdx[eRefList]] + pu.mvd[eRefList];
               pu.mv[eRefList].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
+#if JVET_N0334_MVCLIPPING
+              pu.mv[eRefList].mvCliptoStorageBitDepth();
+#endif
             }
           }
         }

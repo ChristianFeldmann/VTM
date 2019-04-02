@@ -87,6 +87,10 @@ void CS::setRefinedMotionField(CodingStructure &cs)
             subPu.mv[1] = pu.mv[1];
             subPu.mv[REF_PIC_LIST_0] += pu.mvdL0SubPu[num];
             subPu.mv[REF_PIC_LIST_1] -= pu.mvdL0SubPu[num];
+#if JVET_N0334_MVCLIPPING
+            subPu.mv[REF_PIC_LIST_0].clipToStorageBitDepth();
+            subPu.mv[REF_PIC_LIST_1].clipToStorageBitDepth();
+#endif
             pu.mvdL0SubPu[num].setZero();
             num++;
             PU::spanMotionInfo(subPu);
@@ -3223,16 +3227,25 @@ void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], 
       case 1: // 1 : LT, RT, RB
         cMv[l][2].hor = cMv[l][3].hor + cMv[l][0].hor - cMv[l][1].hor;
         cMv[l][2].ver = cMv[l][3].ver + cMv[l][0].ver - cMv[l][1].ver;
+#if JVET_N0334_MVCLIPPING
+        cMv[l][2].clipToStorageBitDepth();
+#endif
         break;
 
       case 2: // 2 : LT, LB, RB
         cMv[l][1].hor = cMv[l][3].hor + cMv[l][0].hor - cMv[l][2].hor;
         cMv[l][1].ver = cMv[l][3].ver + cMv[l][0].ver - cMv[l][2].ver;
+#if JVET_N0334_MVCLIPPING
+        cMv[l][1].clipToStorageBitDepth();
+#endif
         break;
 
       case 3: // 3 : RT, LB, RB
         cMv[l][0].hor = cMv[l][1].hor + cMv[l][2].hor - cMv[l][3].hor;
         cMv[l][0].ver = cMv[l][1].ver + cMv[l][2].ver - cMv[l][3].ver;
+#if JVET_N0334_MVCLIPPING
+        cMv[l][0].clipToStorageBitDepth();
+#endif
         break;
 
       case 4: // 4 : LT, RT
@@ -3243,6 +3256,9 @@ void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], 
         vy = (cMv[l][0].ver << shift) - ((cMv[l][2].hor - cMv[l][0].hor) << shiftHtoW);
         roundAffineMv( vx, vy, shift );
         cMv[l][1].set( vx, vy );
+#if JVET_N0334_MVCLIPPING
+        cMv[l][1].clipToStorageBitDepth();
+#endif
         break;
 
       default:
@@ -3684,7 +3700,11 @@ void PU::setAllAffineMvField( PredictionUnit &pu, MvField *mvField, RefPicList e
   pu.refIdx[eRefList] = mvField[0].refIdx;
 }
 
+#if JVET_N0334_MVCLIPPING
+void PU::setAllAffineMv(PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList, bool setHighPrec, bool clipCPMVs)
+#else
 void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList, bool setHighPrec)
+#endif
 {
   int width  = pu.Y().width;
   int shift = MAX_CU_DEPTH;
@@ -3694,6 +3714,17 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
     affRT.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
     affLB.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
   }
+#if JVET_N0334_MVCLIPPING
+  if (clipCPMVs)
+  {
+    affLT.mvCliptoStorageBitDepth();
+    affRT.mvCliptoStorageBitDepth();
+    if (pu.cu->affineType == AFFINEMODEL_6PARAM)
+    {
+      affLB.mvCliptoStorageBitDepth();
+    }
+  }
+#endif
   int deltaMvHorX, deltaMvHorY, deltaMvVerX, deltaMvVerY;
   deltaMvHorX = (affRT - affLT).getHor() << (shift - g_aucLog2[width]);
   deltaMvHorY = (affRT - affLT).getVer() << (shift - g_aucLog2[width]);
@@ -4098,6 +4129,9 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
       pu.mvpIdx[0] = mvp_idx;
       pu.mv    [0] = amvpInfo.mvCand[mvp_idx] + pu.mvd[0];
       pu.mv[0].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
+#if JVET_N0334_MVCLIPPING
+      pu.mv[0].mvCliptoStorageBitDepth();
+#endif
     }
 
     if (pu.interDir != 1 /* PRED_L0 */)
@@ -4113,6 +4147,9 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
       pu.mvpIdx[1] = mvp_idx;
       pu.mv    [1] = amvpInfo.mvCand[mvp_idx] + pu.mvd[1];
       pu.mv[1].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
+#if JVET_N0334_MVCLIPPING
+      pu.mv[1].mvCliptoStorageBitDepth();
+#endif
     }
   }
   else

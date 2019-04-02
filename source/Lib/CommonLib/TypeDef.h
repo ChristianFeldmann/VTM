@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0332_LTRP_MMVD_FIX                          1 // MMVD scaling considering LTRPs from N0332
+
 #define JVET_N0477_LMCS_CLEANUP                           1
 #define JVET_N0220_LMCS_SIMPLIFICATION                    1
 

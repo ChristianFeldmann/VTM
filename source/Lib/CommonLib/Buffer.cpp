@@ -407,6 +407,9 @@ void AreaBuf<Pel>::scaleSignal(const int scale, const bool dir, const ClpRng& cl
     {
       for (unsigned x = 0; x < width; x++)
       {
+#if JVET_N0220_LMCS_SIMPLIFICATION
+        src[x] = (Pel)Clip3((Pel)(-maxAbsclipBD - 1), (Pel)maxAbsclipBD, src[x]);
+#endif
         sign = src[x] >= 0 ? 1 : -1;
         absval = sign * src[x];
         int val = sign * ((absval * scale + (1 << (CSCALE_FP_PREC - 1))) >> CSCALE_FP_PREC);

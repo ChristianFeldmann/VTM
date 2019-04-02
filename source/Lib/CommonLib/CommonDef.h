@@ -419,7 +419,11 @@ static constexpr int MV_MANTISSA_LIMIT       = (1 << (MV_MANTISSA_BITCOUNT - 1))
 static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1);
 static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;
+#if JVET_N0220_LMCS_SIMPLIFICATION
+static const int FP_PREC =                                       11;
+#else
 static const int FP_PREC =                                       14;
+#endif
 static const int CSCALE_FP_PREC =                                11;
 // ====================================================================================================================
 // Macro functions

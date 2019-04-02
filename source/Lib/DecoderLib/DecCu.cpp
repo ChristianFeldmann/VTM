@@ -203,7 +203,11 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   }
   const Slice           &slice = *cs.slice;
   bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
+#if JVET_N0477_LMCS_CLEANUP
+  if (flag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && (compID != COMPONENT_Y) && (tu.cbf[COMPONENT_Cb] || tu.cbf[COMPONENT_Cr]))
+#else
   if (flag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && (compID != COMPONENT_Y))
+#endif
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
     const CompArea &areaY = CompArea(COMPONENT_Y, tu.chromaFormat, area);
@@ -571,7 +575,11 @@ void DecCu::xDecodeInterTexture(CodingUnit &cu)
     {
       CodingStructure  &cs = *cu.cs;
       const Slice &slice = *cs.slice;
+#if JVET_N0477_LMCS_CLEANUP
+      if (slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && slice.getReshapeInfo().getSliceReshapeChromaAdj() && (compID == COMPONENT_Y) && (currTU.cbf[COMPONENT_Cb] || currTU.cbf[COMPONENT_Cr]))
+#else
       if (slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && slice.getReshapeInfo().getSliceReshapeChromaAdj() && (compID == COMPONENT_Y))
+#endif
       {
         const CompArea &areaY = currTU.blocks[COMPONENT_Y];
         PelBuf predY = cs.getPredBuf(areaY);

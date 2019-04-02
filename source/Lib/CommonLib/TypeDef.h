@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0220_LMCS_SIMPLIFICATION                    1
+
 #define JCTVC_Y0038_PARAMS                                1
 
 #define JVET_MMVD_OFF_MACRO                               0

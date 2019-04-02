@@ -110,12 +110,19 @@ void Reshape::reverseLUT(std::vector<Pel>& inputLUT, std::vector<Pel>& outputLUT
   for (i = m_reshapePivot[m_sliceReshapeInfo.reshaperModelMaxBinIdx + 1]; i < m_reshapeLUTSize; i++)
     outputLUT[i] = outputLUT[m_reshapePivot[m_sliceReshapeInfo.reshaperModelMaxBinIdx + 1]];
 
+#if JVET_N0220_LMCS_SIMPLIFICATION
+  for (i = 0; i < lutSize; i++)
+  {
+    outputLUT[i] = Clip3((Pel)0, (Pel)((1<<m_lumaBD)-1), outputLUT[i]);
+  }
+#else
   bool clipRange = ((m_sliceReshapeInfo.reshaperModelMinBinIdx > 0) && (m_sliceReshapeInfo.reshaperModelMaxBinIdx < (PIC_CODE_CW_BINS - 1)));
   for (i = 0; i < lutSize; i++)
   {
     if (clipRange) outputLUT[i] = Clip3((Pel)(16<<(m_lumaBD-8)), (Pel)(235<<(m_lumaBD-8)), outputLUT[i]);
     else           outputLUT[i] = Clip3((Pel)0, (Pel)((1<<m_lumaBD)-1), outputLUT[i]);
   }
+#endif
 }
 
 
@@ -217,6 +224,16 @@ void Reshape::constructReshaper()
 */
 void Reshape::updateChromaScaleLUT()
 {
+#if JVET_N0220_LMCS_SIMPLIFICATION
+  for (int i = 0; i < PIC_CODE_CW_BINS; i++)
+  {
+    uint16_t binCW = m_lumaBD > 10 ? (m_binCW[i] >> (m_lumaBD - 10)) : m_lumaBD < 10 ? (m_binCW[i] << (10 -m_lumaBD)): m_binCW[i];
+    if (binCW == 0)
+      m_chromaAdjHelpLUT[i] = 1 << CSCALE_FP_PREC;
+    else
+      m_chromaAdjHelpLUT[i] = m_initCW * (1 << CSCALE_FP_PREC) / binCW;
+  }
+#else
   const int16_t  CW_bin_SC_LUT[2 * PIC_ANALYZE_CW_BINS] = { 16384, 16384, 16384, 16384, 16384, 16384, 16384, 8192, 8192, 8192, 8192, 5461, 5461, 5461, 5461, 4096, 4096, 4096, 4096, 3277, 3277, 3277, 3277, 2731, 2731, 2731, 2731, 2341, 2341, 2341, 2048, 2048, 2048, 1820, 1820, 1820, 1638, 1638, 1638, 1638, 1489, 1489, 1489, 1489, 1365, 1365, 1365, 1365, 1260, 1260, 1260, 1260, 1170, 1170, 1170, 1170, 1092, 1092, 1092, 1092, 1024, 1024, 1024, 1024 }; //p=11
   for (int i = 0; i < PIC_CODE_CW_BINS; i++)
   {
@@ -226,6 +243,7 @@ void Reshape::updateChromaScaleLUT()
     else
       m_chromaAdjHelpLUT[i] = CW_bin_SC_LUT[Clip3((uint16_t)1, (uint16_t)64, (uint16_t)(binCW >> 1)) - 1];
   }
+#endif
 }
 
 

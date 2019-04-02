@@ -366,7 +366,50 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
 
   pu.cu->affine = isAffine;
 }
+#if JVET_N0178_IMPLICIT_BDOF_SPLIT
+void InterPrediction::xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList /*= REF_PIC_LIST_X*/)
+{
+  // compute the location of the current PU
+  Position puPos = pu.lumaPos();
+  Size puSize = pu.lumaSize();
 
+  PredictionUnit subPu;
+
+  subPu.cs = pu.cs;
+  subPu.cu = pu.cu;
+  subPu.mergeType = pu.mergeType;
+  subPu.mmvdMergeFlag = pu.mmvdMergeFlag;
+  subPu.mmvdEncOptMode = pu.mmvdEncOptMode;
+  subPu.mergeFlag = pu.mergeFlag;
+  subPu.mvRefine = pu.mvRefine;
+  subPu.refIdx[0] = pu.refIdx[0];
+  subPu.refIdx[1] = pu.refIdx[1];
+  int  fstStart = puPos.y;
+  int  secStart = puPos.x;
+  int  fstEnd = puPos.y + puSize.height;
+  int  secEnd = puPos.x + puSize.width;
+  int  fstStep = std::min((int)MAX_BDOF_APPLICATION_REGION, (int)puSize.height);
+  int  secStep = std::min((int)MAX_BDOF_APPLICATION_REGION, (int)puSize.width);
+  for (int fstDim = fstStart; fstDim < fstEnd; fstDim += fstStep)
+  {
+    for (int secDim = secStart; secDim < secEnd; secDim += secStep)
+    {
+      int x = secDim;
+      int y = fstDim;
+      int dx = secStep;
+      int dy = fstStep;
+
+      const MotionInfo &curMi = pu.getMotionInfo(Position{ x, y });
+
+      subPu.UnitArea::operator=(UnitArea(pu.chromaFormat, Area(x, y, dx, dy)));
+      subPu = curMi;
+      PelUnitBuf subPredBuf = predBuf.subBuf(UnitAreaRelative(pu, subPu));
+
+      motionCompensation(subPu, subPredBuf, eRefPicList);
+    }
+  }
+}
+#endif
 void InterPrediction::xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred)
 {
   // separated tree, chroma
@@ -1164,6 +1207,49 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   }
   else
   {
+
+#if JVET_N0178_IMPLICIT_BDOF_SPLIT
+    bool bioApplied = false;
+    const Slice &slice = *pu.cs->slice;
+    if (pu.cs->sps->getBDOFEnabledFlag())
+    {
+
+      if (pu.cu->affine || m_subPuMC)
+      {
+        bioApplied = false;
+      }
+      else
+      {
+        const bool biocheck0 = !(pps.getWPBiPred() && slice.getSliceType() == B_SLICE);
+        const bool biocheck1 = !(pps.getUseWP() && slice.getSliceType() == P_SLICE);
+        if (biocheck0
+          && biocheck1
+          && PU::isBiPredFromDifferentDir(pu)
+          && !(pu.Y().height == 4 || (pu.Y().width == 4 && pu.Y().height == 8))
+          )
+        {
+          bioApplied = true;
+        }
+      }
+
+      if (bioApplied && pu.cu->smvdMode) {
+        bioApplied = false;
+      }
+      if (pu.cu->cs->sps->getUseGBi() && bioApplied && pu.cu->GBiIdx != GBI_DEFAULT) {
+        bioApplied = false;
+      }
+      if (pu.mmvdEncOptMode == 2 && pu.mmvdMergeFlag) {
+        bioApplied = false;
+      }
+    }
+    bool dmvrApplied = false;
+    dmvrApplied = (pu.mvRefine) && PU::checkDMVRCondition(pu);
+    if ((pu.lumaSize().width > MAX_BDOF_APPLICATION_REGION || pu.lumaSize().height > MAX_BDOF_APPLICATION_REGION) && pu.mergeType != MRG_TYPE_SUBPU_ATMVP && (bioApplied && !dmvrApplied))
+    {
+      xSubPuBio(pu, predBuf, eRefPicList);
+    }
+    else
+#endif
     if (pu.mergeType != MRG_TYPE_DEFAULT_N && pu.mergeType != MRG_TYPE_IBC)
     {
       xSubPuMC( pu, predBuf, eRefPicList );

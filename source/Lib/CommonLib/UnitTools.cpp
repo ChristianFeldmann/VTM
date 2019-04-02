@@ -3100,8 +3100,11 @@ bool PU::isBipredRestriction(const PredictionUnit &pu)
   }
   return false;
 }
-
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], int8_t neighGbi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgType)
+#else
 void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgType )
+#endif
 {
   int cuW = pu.Y().width;
   int cuH = pu.Y().height;
@@ -3113,6 +3116,9 @@ void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], 
   Mv cMv[2][4];
   int refIdx[2] = { -1, -1 };
   int dir = 0;
+#if  JVET_N0481_BCW_CONSTRUCTED_AFFINE
+  int8_t gbiIdx = GBI_DEFAULT;
+#endif
   EAffineModel curType = (verNum == 2) ? AFFINEMODEL_4PARAM : AFFINEMODEL_6PARAM;
 
   if ( verNum == 2 )
@@ -3135,6 +3141,16 @@ void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], 
         }
       }
     }
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
+    if (dir == 3)
+    {
+      if (neighGbi[idx0] == neighGbi[idx1])
+      {
+        gbiIdx = neighGbi[idx0];
+      }
+    }
+
+#endif
   }
   else if ( verNum == 3 )
   {
@@ -3156,6 +3172,31 @@ void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], 
         }
       }
     }
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
+    int gbiClass[5] = { -1,0,0,0,1 };
+    if (dir == 3)
+    {
+      if (neighGbi[idx0] == neighGbi[idx1] && gbiClass[neighGbi[idx0]] == gbiClass[neighGbi[idx2]])
+      {
+        gbiIdx = neighGbi[idx0];
+      }
+      else if (neighGbi[idx0] == neighGbi[idx2] && gbiClass[neighGbi[idx0]] == gbiClass[neighGbi[idx1]])
+      {
+        gbiIdx = neighGbi[idx0];
+
+      }
+      else if (neighGbi[idx1] == neighGbi[idx2] && gbiClass[neighGbi[idx0]] == gbiClass[neighGbi[idx1]])
+      {
+        gbiIdx = neighGbi[idx1];
+      }
+      else
+      {
+        gbiIdx = GBI_DEFAULT;
+      }
+
+    }
+
+#endif
   }
 
   if ( dir == 0 )
@@ -3229,6 +3270,9 @@ void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], 
   }
   affMrgType.interDirNeighbours[affMrgType.numValidMergeCand] = dir;
   affMrgType.affineType[affMrgType.numValidMergeCand] = curType;
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
+  affMrgType.GBiIdx[affMrgType.numValidMergeCand] = gbiIdx;
+#endif
   affMrgType.numValidMergeCand++;
 
 
@@ -3435,7 +3479,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
     {
       MotionInfo mi[4];
       bool isAvailable[4] = { false };
-
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+      int8_t neighGbi[4] = { GBI_DEFAULT };
+#endif
       // control point: LT B2->B3->A2
       const Position posLT[3] = { pu.Y().topLeft().offset( -1, -1 ), pu.Y().topLeft().offset( 0, -1 ), pu.Y().topLeft().offset( -1, 0 ) };
       for ( int i = 0; i < 3; i++ )
@@ -3448,6 +3494,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         {
           isAvailable[0] = true;
           mi[0] = puNeigh->getMotionInfo( pos );
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+          neighGbi[0] = puNeigh->cu->GBiIdx;
+#endif
           break;
         }
       }
@@ -3465,6 +3514,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         {
           isAvailable[1] = true;
           mi[1] = puNeigh->getMotionInfo( pos );
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+          neighGbi[1] = puNeigh->cu->GBiIdx;
+#endif
           break;
         }
       }
@@ -3482,6 +3534,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         {
           isAvailable[2] = true;
           mi[2] = puNeigh->getMotionInfo( pos );
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+          neighGbi[2] = puNeigh->cu->GBiIdx;
+#endif
           break;
         }
       }
@@ -3565,7 +3620,11 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       for ( int idx = startIdx; idx < modelNum; idx++ )
       {
         int modelIdx = order[idx];
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
+        getAffineControlPointCand(pu, mi, neighGbi, isAvailable, model[modelIdx], modelIdx, verNum[modelIdx], affMrgCtx);
+#else
         getAffineControlPointCand( pu, mi, isAvailable, model[modelIdx], modelIdx, verNum[modelIdx], affMrgCtx );
+#endif
         if ( affMrgCtx.numValidMergeCand != 0 && affMrgCtx.numValidMergeCand - 1 == mrgCandIdx )
         {
           return;

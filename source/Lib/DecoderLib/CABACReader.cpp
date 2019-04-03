@@ -973,7 +973,9 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
     uint32_t prefixNumBits = numGBi - 2;
     uint32_t step = 1;
 
+#if !JVET_N0286_SIMPLIFIED_GBI_IDX
     unsigned ctxIdGBi = 4;
+#endif
     idx = 1;
 
     for(int ui = 0; ui < prefixNumBits; ++ui)
@@ -988,7 +990,9 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
       {
         break;
       }
+#if !JVET_N0286_SIMPLIFIED_GBI_IDX
       ctxIdGBi += step;
+#endif
       idx += step;
     }
   }

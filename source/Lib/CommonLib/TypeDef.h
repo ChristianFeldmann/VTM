@@ -73,7 +73,7 @@
 
 #define JVET_N0271_SIMPLFIED_CCLM                         1 // Simplified CCLM parameter derivation in JVET-N0271
 
-#define JVET_N0178_IMPLICIT_BDOF_SPLIT					  1
+#define JVET_N0178_IMPLICIT_BDOF_SPLIT                    1
 
 #define JCTVC_Y0038_PARAMS                                1
 

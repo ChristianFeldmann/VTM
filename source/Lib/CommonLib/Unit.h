@@ -309,9 +309,7 @@ struct CodingUnit : public UnitArea
   uint8_t          imv;
   bool           rootCbf;
   uint8_t        sbtInfo;
-#if HEVC_TILES_WPP
   uint32_t           tileIdx;
-#endif
   uint8_t         GBiIdx;
   int             refIdxBi[2];
   // needed for fast imv mode decisions

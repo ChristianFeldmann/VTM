@@ -387,7 +387,6 @@ protected:
   bool      m_bPCMInputBitDepthFlag;
   bool      m_bPCMFilterDisableFlag;
   bool      m_intraSmoothingDisabledFlag;
-#if HEVC_TILES_WPP
   bool      m_loopFilterAcrossTilesEnabledFlag;
   bool      m_tileUniformSpacingFlag;
   int       m_iNumColumnsMinus1;
@@ -396,7 +395,6 @@ protected:
   std::vector<int> m_tileRowHeight;
 
   bool      m_entropyCodingSyncEnabledFlag;
-#endif
 
   HashType  m_decodedPictureHashSEIType;
   bool      m_bufferingPeriodSEIEnabled;
@@ -532,9 +530,7 @@ protected:
   bool      m_pocProportionalToTimingFlag;                    ///< Indicates that the POC value is proportional to the output time w.r.t. first picture in CVS
   int       m_numTicksPocDiffOneMinus1;                       ///< Number of ticks minus 1 that for a POC difference of one
   bool      m_bitstreamRestrictionFlag;                       ///< Signals whether bitstream restriction parameters are present
-#if HEVC_TILES_WPP
   bool      m_tilesFixedStructureFlag;                        ///< Indicates that each active picture parameter set has the same values of the syntax elements related to tiles
-#endif
   bool      m_motionVectorsOverPicBoundariesFlag;             ///< Indicates that no samples outside the picture boundaries are used for inter prediction
   int       m_minSpatialSegmentationIdc;                      ///< Indicates the maximum size of the spatial segments in the pictures in the coded video sequence
   int       m_maxBytesPerPicDenom;                            ///< Indicates a number of bytes not exceeded by the sum of the sizes of the VCL NAL units associated with any coded picture
@@ -578,10 +574,8 @@ protected:
 
 public:
   EncCfg()
- #if HEVC_TILES_WPP
   : m_tileColumnWidth()
   , m_tileRowHeight()
-#endif
   {
     m_PCMBitDepth[CHANNEL_TYPE_LUMA]=8;
     m_PCMBitDepth[CHANNEL_TYPE_CHROMA]=8;
@@ -1089,7 +1083,6 @@ public:
   void  setSaoGreedyMergeEnc           (bool val)                    { m_saoGreedyMergeEnc = val; }
   bool  getSaoGreedyMergeEnc           ()                            { return m_saoGreedyMergeEnc; }
 #endif
-#if HEVC_TILES_WPP
   void  setLFCrossTileBoundaryFlag               ( bool   val  )     { m_loopFilterAcrossTilesEnabledFlag = val; }
   bool  getLFCrossTileBoundaryFlag               ()                  { return m_loopFilterAcrossTilesEnabledFlag;   }
   void  setTileUniformSpacingFlag      ( bool b )                    { m_tileUniformSpacingFlag = b; }
@@ -1102,12 +1095,9 @@ public:
   int   getNumRowsMinus1               ()                            { return m_iNumRowsMinus1; }
   void  setRowHeight ( const std::vector<int>& rowHeight)            { m_tileRowHeight = rowHeight; }
   uint32_t  getRowHeight                   ( uint32_t rowIdx )               { return m_tileRowHeight[rowIdx]; }
-#endif
   void  xCheckGSParameters();
-#if HEVC_TILES_WPP
   void  setEntropyCodingSyncEnabledFlag(bool b)                      { m_entropyCodingSyncEnabledFlag = b; }
   bool  getEntropyCodingSyncEnabledFlag() const                      { return m_entropyCodingSyncEnabledFlag; }
-#endif
   void  setDecodedPictureHashSEIType(HashType m)                     { m_decodedPictureHashSEIType = m; }
   HashType getDecodedPictureHashSEIType() const                      { return m_decodedPictureHashSEIType; }
   void  setBufferingPeriodSEIEnabled(bool b)                         { m_bufferingPeriodSEIEnabled = b; }
@@ -1373,10 +1363,8 @@ public:
   void         setNumTicksPocDiffOneMinus1(int x)                    { m_numTicksPocDiffOneMinus1 = x;       }
   bool         getBitstreamRestrictionFlag()                         { return m_bitstreamRestrictionFlag; }
   void         setBitstreamRestrictionFlag(bool i)                   { m_bitstreamRestrictionFlag = i; }
-#if HEVC_TILES_WPP
   bool         getTilesFixedStructureFlag()                          { return m_tilesFixedStructureFlag; }
   void         setTilesFixedStructureFlag(bool i)                    { m_tilesFixedStructureFlag = i; }
-#endif
   bool         getMotionVectorsOverPicBoundariesFlag()               { return m_motionVectorsOverPicBoundariesFlag; }
   void         setMotionVectorsOverPicBoundariesFlag(bool i)         { m_motionVectorsOverPicBoundariesFlag = i; }
   int          getMinSpatialSegmentationIdc()                        { return m_minSpatialSegmentationIdc; }

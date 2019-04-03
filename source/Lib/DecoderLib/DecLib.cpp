@@ -1161,21 +1161,15 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   // When decoding the slice header, the stored start and end addresses were actually RS addresses, not TS addresses.
   // Now, having set up the maps, convert them to the correct form.
-#if HEVC_TILES_WPP
   const TileMap& tileMap = *(m_pcPic->tileMap);
-#endif
 #if HEVC_DEPENDENT_SLICES
-#if HEVC_TILES_WPP
   pcSlice->setSliceSegmentCurStartCtuTsAddr( tileMap.getCtuRsToTsAddrMap(pcSlice->getSliceSegmentCurStartCtuTsAddr()) );
   pcSlice->setSliceSegmentCurEndCtuTsAddr( tileMap.getCtuRsToTsAddrMap(pcSlice->getSliceSegmentCurEndCtuTsAddr()) );
-#endif
   if(!pcSlice->getDependentSliceSegmentFlag())
   {
 #endif
-#if HEVC_TILES_WPP
     pcSlice->setSliceCurStartCtuTsAddr( tileMap.getCtuRsToTsAddrMap(pcSlice->getSliceCurStartCtuTsAddr()) );
     pcSlice->setSliceCurEndCtuTsAddr( tileMap.getCtuRsToTsAddrMap(pcSlice->getSliceCurEndCtuTsAddr()) );
-#endif
 #if HEVC_DEPENDENT_SLICES
   }
 #endif

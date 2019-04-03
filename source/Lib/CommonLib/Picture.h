@@ -115,7 +115,6 @@ class AQpLayer;
 
 typedef std::list<SEI*> SEIMessages;
 
-#if HEVC_TILES_WPP
 class Tile
 {
 private:
@@ -168,7 +167,6 @@ struct TileMap
   void initCtuTsRsAddrMap();
   uint32_t calculateNextCtuRSAddr( const uint32_t currCtuRsAddr ) const;
 };
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 #define M_BUFS(JID,PID) m_bufs[JID][PID]
@@ -279,9 +277,7 @@ public:
   Slice        *swapSliceObject(Slice * p, uint32_t i);
   void         clearSliceBuffer();
 
-#if HEVC_TILES_WPP
   TileMap*     tileMap;
-#endif
   MCTSInfo     mctsInfo;
   std::vector<AQpLayer*> aqlayer;
 

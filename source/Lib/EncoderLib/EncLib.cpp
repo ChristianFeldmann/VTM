@@ -1060,9 +1060,7 @@ void EncLib::xInitSPS(SPS &sps)
     pcVUI->getTimingInfo()->setPocProportionalToTimingFlag(getPocProportionalToTimingFlag());
     pcVUI->getTimingInfo()->setNumTicksPocDiffOneMinus1   (getNumTicksPocDiffOneMinus1()   );
     pcVUI->setBitstreamRestrictionFlag(getBitstreamRestrictionFlag());
-#if HEVC_TILES_WPP
     pcVUI->setTilesFixedStructureFlag(getTilesFixedStructureFlag());
-#endif
     pcVUI->setMotionVectorsOverPicBoundariesFlag(getMotionVectorsOverPicBoundariesFlag());
     pcVUI->setMinSpatialSegmentationIdc(getMinSpatialSegmentationIdc());
     pcVUI->setMaxBytesPerPicDenom(getMaxBytesPerPicDenom());
@@ -1414,10 +1412,8 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0);
   }
 
-#if HEVC_TILES_WPP
   pps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
   pps.setTilesEnabledFlag( (m_iNumColumnsMinus1 > 0 || m_iNumRowsMinus1 > 0) );
-#endif
   pps.setUseWP( m_useWeightedPred );
   pps.setWPBiPred( m_useWeightedBiPred );
   pps.setOutputFlagPresentFlag( false );
@@ -1492,9 +1488,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   }
 #endif
 
-#if HEVC_TILES_WPP
   xInitPPSforTiles(pps);
-#endif
 
   pps.pcv = new PreCalcValues( sps, pps, true );
 }
@@ -1793,7 +1787,6 @@ int EncLib::getReferencePictureSetIdxForSOP(int POCCurr, int GOPid )
   return rpsIdx;
 }
 
-#if HEVC_TILES_WPP
 void  EncLib::xInitPPSforTiles(PPS &pps)
 {
   pps.setTileUniformSpacingFlag( m_tileUniformSpacingFlag );
@@ -1808,11 +1801,9 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
 
   // # substreams is "per tile" when tiles are independent.
 }
-#endif
 
 void  EncCfg::xCheckGSParameters()
 {
-#if HEVC_TILES_WPP
   int   iWidthInCU = ( m_iSourceWidth%m_maxCUWidth ) ? m_iSourceWidth/m_maxCUWidth + 1 : m_iSourceWidth/m_maxCUWidth;
   int   iHeightInCU = ( m_iSourceHeight%m_maxCUHeight ) ? m_iSourceHeight/m_maxCUHeight + 1 : m_iSourceHeight/m_maxCUHeight;
   uint32_t  uiCummulativeColumnWidth = 0;
@@ -1865,7 +1856,6 @@ void  EncCfg::xCheckGSParameters()
       EXIT( "The height of the row is too large." );
     }
   }
-#endif
 }
 
 #if JCTVC_Y0038_PARAMS

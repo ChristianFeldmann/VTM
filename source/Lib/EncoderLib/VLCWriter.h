@@ -138,9 +138,7 @@ public:
   void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );
 #endif
   void  codeHrdParameters       ( const HRD *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 );
-#if HEVC_TILES_WPP
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );
-#endif
 #if HEVC_USE_SCALING_LISTS
   void  codeScalingList         ( const ScalingList &scalingList );
 #endif

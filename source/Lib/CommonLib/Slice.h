@@ -778,9 +778,7 @@ private:
   bool       m_frameFieldInfoPresentFlag;
   bool       m_hrdParametersPresentFlag;
   bool       m_bitstreamRestrictionFlag;
-#if HEVC_TILES_WPP
   bool       m_tilesFixedStructureFlag;
-#endif
   bool       m_motionVectorsOverPicBoundariesFlag;
   bool       m_restrictedRefPicListsFlag;
   int        m_minSpatialSegmentationIdc;
@@ -814,9 +812,7 @@ public:
     , m_frameFieldInfoPresentFlag         (false)
     , m_hrdParametersPresentFlag          (false)
     , m_bitstreamRestrictionFlag          (false)
-#if HEVC_TILES_WPP
     , m_tilesFixedStructureFlag           (false)
-#endif
     , m_motionVectorsOverPicBoundariesFlag(true)
     , m_restrictedRefPicListsFlag         (1)
     , m_minSpatialSegmentationIdc         (0)
@@ -895,10 +891,8 @@ public:
   bool              getBitstreamRestrictionFlag() const                    { return m_bitstreamRestrictionFlag;             }
   void              setBitstreamRestrictionFlag(bool i)                    { m_bitstreamRestrictionFlag = i;                }
 
-#if HEVC_TILES_WPP
   bool              getTilesFixedStructureFlag() const                     { return m_tilesFixedStructureFlag;              }
   void              setTilesFixedStructureFlag(bool i)                     { m_tilesFixedStructureFlag = i;                 }
-#endif
 
   bool              getMotionVectorsOverPicBoundariesFlag() const          { return m_motionVectorsOverPicBoundariesFlag;   }
   void              setMotionVectorsOverPicBoundariesFlag(bool i)          { m_motionVectorsOverPicBoundariesFlag = i;      }
@@ -1515,7 +1509,6 @@ private:
 #if HEVC_DEPENDENT_SLICES
   bool             m_dependentSliceSegmentsEnabledFlag; //!< Indicates the presence of dependent slices
 #endif
-#if HEVC_TILES_WPP
   bool             m_tilesEnabledFlag;                  //!< Indicates the presence of tiles
   bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
 
@@ -1525,7 +1518,6 @@ private:
   int              m_numTileRowsMinus1;
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
-#endif
 
   bool             m_cabacInitPresentFlag;
 
@@ -1608,15 +1600,12 @@ public:
   bool                   getUseTransformSkip() const                                      { return m_useTransformSkip;                    }
   void                   setUseTransformSkip( bool b )                                    { m_useTransformSkip  = b;                      }
 
-#if HEVC_TILES_WPP
   void                   setLoopFilterAcrossTilesEnabledFlag(bool b)                      { m_loopFilterAcrossTilesEnabledFlag = b;       }
   bool                   getLoopFilterAcrossTilesEnabledFlag() const                      { return m_loopFilterAcrossTilesEnabledFlag;    }
-#endif
 #if HEVC_DEPENDENT_SLICES
   bool                   getDependentSliceSegmentsEnabledFlag() const                     { return m_dependentSliceSegmentsEnabledFlag;   }
   void                   setDependentSliceSegmentsEnabledFlag(bool val)                   { m_dependentSliceSegmentsEnabledFlag = val;    }
 #endif
-#if HEVC_TILES_WPP
   bool                   getEntropyCodingSyncEnabledFlag() const                          { return m_entropyCodingSyncEnabledFlag;        }
   void                   setEntropyCodingSyncEnabledFlag(bool val)                        { m_entropyCodingSyncEnabledFlag = val;         }
 
@@ -1632,7 +1621,6 @@ public:
   int                    getNumTileRowsMinus1() const                                     { return m_numTileRowsMinus1;                   }
   void                   setTileRowHeight(const std::vector<int>& rowHeight)              { m_tileRowHeight = rowHeight;                  }
   uint32_t                   getTileRowHeight(uint32_t rowIdx) const                              { return m_tileRowHeight[rowIdx];               }
-#endif
 
   void                   setCabacInitPresentFlag( bool flag )                             { m_cabacInitPresentFlag = flag;                }
   bool                   getCabacInitPresentFlag() const                                  { return m_cabacInitPresentFlag;                }
@@ -2058,12 +2046,10 @@ public:
   SliceConstraint             getSliceSegmentMode() const                            { return m_sliceSegmentMode;                                    }
   void                        setSliceSegmentArgument( uint32_t uiArgument )             { m_sliceSegmentArgument = uiArgument;                          }
   uint32_t                        getSliceSegmentArgument() const                        { return m_sliceSegmentArgument;                                }
-#if HEVC_TILES_WPP
   void                        setSliceSegmentCurStartCtuTsAddr( uint32_t ctuTsAddr )     { m_sliceSegmentCurStartCtuTsAddr = ctuTsAddr;                  } // CTU Tile-scan address (as opposed to raster-scan)
   uint32_t                        getSliceSegmentCurStartCtuTsAddr() const               { return m_sliceSegmentCurStartCtuTsAddr;                       } // CTU Tile-scan address (as opposed to raster-scan)
   void                        setSliceSegmentCurEndCtuTsAddr( uint32_t ctuTsAddr )       { m_sliceSegmentCurEndCtuTsAddr = ctuTsAddr;                    } // CTU Tile-scan address (as opposed to raster-scan)
   uint32_t                        getSliceSegmentCurEndCtuTsAddr() const                 { return m_sliceSegmentCurEndCtuTsAddr;                         } // CTU Tile-scan address (as opposed to raster-scan)
-#endif
 #endif
   void                        setSliceBits( uint32_t uiVal )                             { m_sliceBits = uiVal;                                          }
   uint32_t                        getSliceBits() const                                   { return m_sliceBits;                                           }

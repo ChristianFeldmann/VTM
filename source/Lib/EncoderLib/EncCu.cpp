@@ -1273,17 +1273,11 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   // The exception is each slice / slice-segment must have at least one CTU.
   if (bestCS->cost != MAX_DOUBLE)
   {
-#if HEVC_TILES_WPP
     const TileMap& tileMap = *tempCS->picture->tileMap;
-#endif
-#if HEVC_TILES_WPP || HEVC_DEPENDENT_SLICES
     const uint32_t CtuAddr             = CU::getCtuAddr( *bestCS->getCU( partitioner.chType ) );
-#endif
     const bool isEndOfSlice        =    slice.getSliceMode() == FIXED_NUMBER_OF_BYTES
                                       && ((slice.getSliceBits() + CS::getEstBits(*bestCS)) > slice.getSliceArgument() << 3)
-#if HEVC_TILES_WPP
                                       && CtuAddr != tileMap.getCtuTsToRsAddrMap(slice.getSliceCurStartCtuTsAddr())
-#endif
 #if HEVC_DEPENDENT_SLICES
                                       && CtuAddr != tileMap.getCtuTsToRsAddrMap(slice.getSliceSegmentCurStartCtuTsAddr());
 #else
@@ -1342,9 +1336,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
     partitioner.setCUData( cu );
     cu.slice            = tempCS->slice;
-#if HEVC_TILES_WPP
     cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
     cu.skip             = false;
     cu.mmvdSkip = false;
     cu.predMode         = MODE_INTRA;
@@ -1472,9 +1464,7 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
 
   partitioner.setCUData( cu );
   cu.slice            = tempCS->slice;
-#if HEVC_TILES_WPP
   cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
   cu.skip             = false;
   cu.mmvdSkip = false;
   cu.predMode         = MODE_INTRA;
@@ -1697,9 +1687,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     cu.cs       = tempCS;
     cu.predMode = MODE_INTER;
     cu.slice    = tempCS->slice;
-#if HEVC_TILES_WPP
     cu.tileIdx  = tempCS->picture->tileMap->getTileIdxMap(tempCS->area.lumaPos());
-#endif
 
     PredictionUnit pu( tempCS->area );
     pu.cu = &cu;
@@ -1800,9 +1788,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
       partitioner.setCUData( cu );
       cu.slice            = tempCS->slice;
-#if HEVC_TILES_WPP
       cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
       cu.skip             = false;
       cu.mmvdSkip = false;
       cu.triangle         = false;
@@ -2133,9 +2119,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
       partitioner.setCUData( cu );
       cu.slice            = tempCS->slice;
-#if HEVC_TILES_WPP
       cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
       cu.skip             = false;
       cu.mmvdSkip = false;
       cu.triangle         = false;
@@ -2337,9 +2321,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     cu.cs       = tempCS;
     cu.predMode = MODE_INTER;
     cu.slice    = tempCS->slice;
-#if HEVC_TILES_WPP
     cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
     cu.triangle = true;
     cu.mmvdSkip = false;
     cu.GBiIdx   = GBI_DEFAULT;
@@ -2381,9 +2363,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
     partitioner.setCUData( cu );
     cu.slice            = tempCS->slice;
-#if HEVC_TILES_WPP
     cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
     cu.skip             = false;
     cu.predMode         = MODE_INTER;
     cu.transQuantBypass = encTestMode.lossless;
@@ -2494,9 +2474,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
         partitioner.setCUData(cu);
         cu.slice = tempCS->slice;
-#if HEVC_TILES_WPP
         cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
         cu.skip = false;
         cu.predMode = MODE_INTER;
         cu.transQuantBypass = encTestMode.lossless;
@@ -2583,9 +2561,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     cu.cs = tempCS;
     cu.predMode = MODE_INTER;
     cu.slice = tempCS->slice;
-#if HEVC_TILES_WPP
     cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
     cu.mmvdSkip = false;
 
     PredictionUnit pu( tempCS->area );
@@ -2640,9 +2616,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 
       partitioner.setCUData( cu );
       cu.slice = tempCS->slice;
-#if HEVC_TILES_WPP
       cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
       cu.skip = false;
       cu.affine = true;
       cu.predMode = MODE_INTER;
@@ -2749,9 +2723,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 
       partitioner.setCUData( cu );
       cu.slice = tempCS->slice;
-#if HEVC_TILES_WPP
       cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
       cu.skip = false;
       cu.affine = true;
       cu.predMode = MODE_INTER;
@@ -2870,9 +2842,7 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
     cu.cs = tempCS;
     cu.predMode = MODE_IBC;
     cu.slice = tempCS->slice;
-#if HEVC_TILES_WPP
     cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap(tempCS->area.lumaPos());
-#endif
     PredictionUnit pu(tempCS->area);
     pu.cu = &cu;
     pu.cs = tempCS;
@@ -2908,9 +2878,7 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 
       partitioner.setCUData(cu);
       cu.slice = tempCS->slice;
-#if HEVC_TILES_WPP
       cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap(tempCS->area.lumaPos());
-#endif
       cu.skip = false;
       cu.predMode = MODE_IBC;
       cu.transQuantBypass = encTestMode.lossless;
@@ -3022,9 +2990,7 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 
             partitioner.setCUData(cu);
             cu.slice = tempCS->slice;
-#if HEVC_TILES_WPP
             cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap(tempCS->area.lumaPos());
-#endif
             cu.skip = false;
             cu.predMode = MODE_IBC;
             cu.transQuantBypass = encTestMode.lossless;
@@ -3100,9 +3066,7 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
 
     partitioner.setCUData(cu);
     cu.slice = tempCS->slice;
-#if HEVC_TILES_WPP
     cu.tileIdx = tempCS->picture->tileMap->getTileIdxMap(tempCS->area.lumaPos());
-#endif
     cu.skip = false;
     cu.predMode = MODE_IBC;
     cu.transQuantBypass = encTestMode.lossless;
@@ -3298,9 +3262,7 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 
   partitioner.setCUData( cu );
   cu.slice            = tempCS->slice;
-#if HEVC_TILES_WPP
   cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
   cu.skip             = false;
   cu.mmvdSkip = false;
 //cu.affine
@@ -3437,9 +3399,7 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
 
   partitioner.setCUData( cu );
   cu.slice            = tempCS->slice;
-#if HEVC_TILES_WPP
   cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-#endif
   cu.skip             = false;
   cu.mmvdSkip = false;
 //cu.affine

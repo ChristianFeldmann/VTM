@@ -1338,15 +1338,9 @@ const CPelUnitBuf CodingStructure::getBuf( const UnitArea &unit, const PictureTy
 const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const CodingUnit& curCu, const ChannelType _chType ) const
 {
   const CodingUnit* cu = getCU( pos, _chType );
-#if HEVC_TILES_WPP
   // exists       same slice and tile                  cu precedes curCu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   if( cu && CU::isSameSliceAndTile( *cu, curCu ) && ( cu->cs != curCu.cs || cu->idx <= curCu.idx ) )
-#else
-  // exists       same slice                          cu precedes curCu in encoding order
-  //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if(cu && CU::isSameSlice(*cu, curCu) && (cu->cs != curCu.cs || cu->idx <= curCu.idx))
-#endif
   {
     return cu;
   }
@@ -1356,32 +1350,18 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   }
 }
 
-#if HEVC_TILES_WPP
 const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType ) const
 {
   const CodingUnit* cu = getCU( pos, _chType );
   return ( cu && cu->slice->getIndependentSliceIdx() == curSliceIdx && cu->tileIdx == curTileIdx ) ? cu : nullptr;
 }
-#else
-const CodingUnit* CodingStructure::getCURestricted(const Position &pos, const unsigned curSliceIdx, const ChannelType _chType) const
-{
-  const CodingUnit* cu = getCU(pos, _chType);
-  return (cu && cu->slice->getIndependentSliceIdx() == curSliceIdx ) ? cu : nullptr;
-}
-#endif
 
 const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, const PredictionUnit& curPu, const ChannelType _chType ) const
 {
   const PredictionUnit* pu = getPU( pos, _chType );
-#if HEVC_TILES_WPP
   // exists       same slice and tile                  pu precedes curPu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   if( pu && CU::isSameSliceAndTile( *pu->cu, *curPu.cu ) && ( pu->cs != curPu.cs || pu->idx <= curPu.idx ) )
-#else
-  // exists       same slice                           pu precedes curPu in encoding order
-  //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if(pu && CU::isSameSlice(*pu->cu, *curPu.cu) && (pu->cs != curPu.cs || pu->idx <= curPu.idx))
-#endif
   {
     return pu;
   }
@@ -1394,15 +1374,9 @@ const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, con
 const TransformUnit* CodingStructure::getTURestricted( const Position &pos, const TransformUnit& curTu, const ChannelType _chType ) const
 {
   const TransformUnit* tu = getTU( pos, _chType );
-#if HEVC_TILES_WPP
   // exists       same slice and tile                  tu precedes curTu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   if( tu && CU::isSameSliceAndTile( *tu->cu, *curTu.cu ) && ( tu->cs != curTu.cs || tu->idx <= curTu.idx ) )
-#else
-  // exists       same slice                           tu precedes curTu in encoding order
-  //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if(tu && CU::isSameSlice(*tu->cu, *curTu.cu) && (tu->cs != curTu.cs || tu->idx <= curTu.idx))
-#endif
   {
     return tu;
   }

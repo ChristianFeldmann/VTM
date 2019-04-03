@@ -68,9 +68,7 @@ protected:
   void xWriteSEIToneMappingInfo(const SEIToneMappingInfo& sei);
   void xWriteSEISOPDescription(const SEISOPDescription& sei);
   void xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableNesting& sei, const SPS *sps);
-#if HEVC_TILES_WPP
   void xWriteSEITempMotionConstrainedTileSets(const SEITempMotionConstrainedTileSets& sei);
-#endif
   void xWriteSEITimeCode(const SEITimeCode& sei);
   void xWriteSEIChromaResamplingFilterHint(const SEIChromaResamplingFilterHint& sei);
   void xWriteSEIKneeFunctionInfo(const SEIKneeFunctionInfo &sei);

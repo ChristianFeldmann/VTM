@@ -158,9 +158,7 @@ protected:
   void  xInitPPSforLT(PPS& pps);
   void  xInitHrdParameters(SPS &sps);                 ///< initialize HRD parameters
 
-#if HEVC_TILES_WPP
   void  xInitPPSforTiles  (PPS &pps);
-#endif
   void  xInitRPS          (SPS &sps, bool isFieldCoding);           ///< initialize PPS from encoder options
 
 public:

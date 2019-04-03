@@ -310,6 +310,17 @@ const CtxSet ContextSetCfg::IntraLumaMpmFlag = ContextSetCfg::addCtxSet
   { 6, },
 });
 
+#if JVET_N0185_UNIFIED_MPM
+const CtxSet ContextSetCfg::IntraLumaPlanarFlag = ContextSetCfg::addCtxSet
+({
+
+  { 154, 154, },
+  { 154, 154, },
+  { 154, 154, },
+  { 6,   6,   },
+});
+#endif
+
 const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
 ({
   {  137, 139, 140,},

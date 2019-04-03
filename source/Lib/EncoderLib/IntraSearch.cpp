@@ -534,7 +534,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           {
             initIntraPatternChType(cu, pu.Y(), IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Y, pu, false, pu));
           }
+#if JVET_N0185_UNIFIED_MPM
+          for (int x = 1; x < numMPMs; x++)
+#else
           for (int x = 0; x < numMPMs; x++)
+#endif
           {
             uint32_t mode = multiRefMPM[x];
             {
@@ -798,7 +802,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         {
           multiRefIdx = extendRefList[uiMode];
           pu.multiRefIdx = multiRefIdx;
+#if !JVET_N0185_UNIFIED_MPM
           CHECK( pu.multiRefIdx && ( pu.intraDir[0] == DC_IDX || pu.intraDir[0] == PLANAR_IDX ), "ERL" );
+#else
+          CHECK( pu.multiRefIdx && (pu.intraDir[0] == PLANAR_IDX), "ERL" );
+#endif
         }
 
 

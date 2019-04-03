@@ -945,7 +945,13 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
     if( mpm_idx < numMPMs )
     {
       {
+#if JVET_N0185_UNIFIED_MPM
+        unsigned ctx = (pu->cu->ispMode == NOT_INTRA_SUBPARTITIONS ? 1 : 0);
+        if (pu->multiRefIdx == 0)
+          m_BinEncoder.encodeBin(mpm_idx > 0, Ctx::IntraLumaPlanarFlag(ctx));
+#else
         m_BinEncoder.encodeBinEP( mpm_idx > 0 );
+#endif
         if( mpm_idx )
         {
           m_BinEncoder.encodeBinEP( mpm_idx > 1 );
@@ -1024,7 +1030,13 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
   if( mpm_idx < numMPMs )
   {
     {
+#if JVET_N0185_UNIFIED_MPM
+      unsigned ctx = (pu.cu->ispMode == NOT_INTRA_SUBPARTITIONS ? 1 : 0);
+      if (pu.multiRefIdx == 0)
+        m_BinEncoder.encodeBin( mpm_idx > 0, Ctx::IntraLumaPlanarFlag(ctx) );
+#else
       m_BinEncoder.encodeBinEP( mpm_idx > 0 );
+#endif
       if( mpm_idx )
       {
         m_BinEncoder.encodeBinEP( mpm_idx > 1 );

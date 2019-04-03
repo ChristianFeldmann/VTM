@@ -70,6 +70,7 @@
 
 #define JVET_N0477_LMCS_CLEANUP                           1
 #define JVET_N0220_LMCS_SIMPLIFICATION                    1
+#define JVET_N0185_UNIFIED_MPM                            1
 
 #define JVET_N0271_SIMPLFIED_CCLM                         1 // Simplified CCLM parameter derivation in JVET-N0271
 

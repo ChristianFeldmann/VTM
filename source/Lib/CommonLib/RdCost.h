@@ -179,7 +179,11 @@ public:
 
   inline Distortion getBvCostMultiplePreds(int x, int y, bool useIMV)
   {
+#if JVET_N0329_IBC_SEARCH_IMP
+    return Distortion(m_dCost * getBitsMultiplePreds(x, y, useIMV));
+#else
     return Distortion((m_dCost * getBitsMultiplePreds(x, y, useIMV)) / 65536.0);
+#endif
   }
 
   unsigned int    getBitsMultiplePreds(int x, int y, bool useIMV)

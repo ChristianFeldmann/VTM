@@ -118,6 +118,9 @@ private:
   int             m_affMVListMaxSize;
   Distortion      m_hevcCost;
   EncAffineMotion m_affineMotion;
+#if JVET_N0329_IBC_SEARCH_IMP
+  PatentBvCand    m_defaultCachedBvs;
+#endif
 protected:
   // interface to option
   EncCfg*         m_pcEncCfg;
@@ -150,8 +153,14 @@ protected:
   Mv              m_integerMv2Nx2N              [NUM_REF_PIC_LIST_01][MAX_NUM_REF];
 
   bool            m_isInitialized;
+
+#if JVET_N0329_IBC_SEARCH_IMP
+  Mv              m_acBVs[2 * IBC_NUM_CANDIDATES];
+  unsigned int    m_numBVs;
+#else
   unsigned int    m_numBVs, m_numBV16s;
   Mv              m_acBVs[IBC_NUM_CANDIDATES];
+#endif
   bool            m_useCompositeRef;
   Distortion      m_estMinDistSbt[NUMBER_SBT_MODE + 1]; // estimated minimum SSE value of the PU if using a SBT mode
   uint8_t         m_sbtRdoOrder[NUMBER_SBT_MODE];       // order of SBT mode in RDO
@@ -281,7 +290,18 @@ public:
   bool  predIBCSearch           ( CodingUnit& cu, Partitioner& partitioner, const int localSearchRangeX, const int localSearchRangeY, IbcHashMap& ibcHashMap);
   void  xIntraPatternSearch         ( PredictionUnit& pu, IntTZSearchStruct&  cStruct, Mv& rcMv, Distortion&  ruiCost, Mv* cMvSrchRngLT, Mv* cMvSrchRngRB, Mv* pcMvPred);
   void  xSetIntraSearchRange        ( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, const int localSearchRangeX, const int localSearchRangeY, Mv& rcMvSrchRngLT, Mv& rcMvSrchRngRB);
+#if JVET_N0329_IBC_SEARCH_IMP
+  void  resetIbcSearch()
+  {
+    for (int i = 0; i < IBC_NUM_CANDIDATES; i++)
+    {
+      m_defaultCachedBvs.m_bvCands[i].setZero();
+    }
+    m_defaultCachedBvs.currCnt = 0;
+  }
+#else
   void  resetIbcSearch() { m_numBVs = m_numBV16s = 0; }
+#endif
   void  xIBCEstimation   ( PredictionUnit& pu, PelUnitBuf& origBuf, Mv     *pcMvPred, Mv     &rcMv, Distortion &ruiCost, const int localSearchRangeX, const int localSearchRangeY);
   void  xIBCSearchMVCandUpdate  ( Distortion  uiSad, int x, int y, Distortion* uiSadBestCand, Mv* cMVCand);
   int   xIBCSearchMVChromaRefine( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, int cuPelX, int cuPelY, Distortion* uiSadBestCand, Mv*     cMVCand);

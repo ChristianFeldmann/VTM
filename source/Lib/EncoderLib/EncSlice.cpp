@@ -738,6 +738,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setMaxBTSizeIChroma( rpcSlice->getSPS()->getMaxBTSizeIChroma() );
     rpcSlice->setMaxTTSizeIChroma( rpcSlice->getSPS()->getMaxTTSizeIChroma() );
   }
+#if JVET_N0329_IBC_SEARCH_IMP 
+  rpcSlice->setDisableSATDForRD(false);
+#endif
 }
 
 
@@ -1584,11 +1587,20 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() ||
       (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
   {
+#if JVET_N0329_IBC_SEARCH_IMP
+    m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap(cs.picture->getTrueOrigBuf());
+    if (m_pcCfg->getIntraPeriod() != -1)
+    {
+      int hashBlkHitPerc = m_pcCuEncoder->getIbcHashMap().calHashBlkMatchPerc(cs.area.Y());
+      cs.slice->setDisableSATDForRD(hashBlkHitPerc > 59);
+    }
+#else
     if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
       cs.picture->getOrigBuf(COMPONENT_Y).rspSignal(m_pcLib->getReshaper()->getFwdLUT());
     m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
     if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
       cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
+#endif
   }
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
   // for every CTU in the slice segment (may terminate sooner if there is a byte limit on the slice-segment)

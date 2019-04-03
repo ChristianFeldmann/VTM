@@ -1828,6 +1828,9 @@ private:
   int                        m_apsId;
   APS*                       m_aps;
   bool                       m_tileGroupAlfEnabledFlag;
+#if JVET_N0329_IBC_SEARCH_IMP 
+  bool                       m_disableSATDForRd;
+#endif
   SliceReshapeInfo           m_sliceReshapeInfo;
 public:
                               Slice();
@@ -2114,7 +2117,10 @@ public:
 
   bool                        getTileGroupAlfEnabledFlag() const { return m_tileGroupAlfEnabledFlag; }
   void                        setTileGroupAlfEnabledFlag(bool b) { m_tileGroupAlfEnabledFlag = b; }
-
+#if JVET_N0329_IBC_SEARCH_IMP 
+  void                        setDisableSATDForRD(bool b) { m_disableSATDForRd = b; }
+  bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
+#endif
   const SliceReshapeInfo&     getReshapeInfo() const { return m_sliceReshapeInfo; }
         SliceReshapeInfo&     getReshapeInfo()       { return m_sliceReshapeInfo; }
 protected:

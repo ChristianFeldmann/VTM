@@ -2186,9 +2186,121 @@ bool PU::isDiffMER(const PredictionUnit &pu1, const PredictionUnit &pu2)
 
   return false;
 }
-void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
-{
 
+#if JVET_N0329_IBC_SEARCH_IMP
+bool PU::isAddNeighborMv(const Mv& currMv, Mv* neighborMvs, int numNeighborMv)
+{
+  bool existed = false;
+  for (uint32_t cand = 0; cand < numNeighborMv && !existed; cand++)
+  {
+    if (currMv == neighborMvs[cand])
+    {
+      existed = true;
+    }
+  }
+
+  if (!existed)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+#endif
+
+#if JVET_N0329_IBC_SEARCH_IMP
+void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* mvPred, int& nbPred)
+#else
+void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
+#endif
+{
+#if JVET_N0329_IBC_SEARCH_IMP
+  const PreCalcValues   &pcv = *pu.cs->pcv;
+  const int  cuWidth = pu.blocks[COMPONENT_Y].width;
+  const int  cuHeight = pu.blocks[COMPONENT_Y].height;
+  const int  log2UnitWidth = g_aucLog2[pcv.minCUWidth];
+  const int  log2UnitHeight = g_aucLog2[pcv.minCUHeight];
+  const int  totalAboveUnits = (cuWidth >> log2UnitWidth) + 1;
+  const int  totalLeftUnits = (cuHeight >> log2UnitHeight) + 1;
+
+  nbPred = 0;
+  Position posLT = pu.Y().topLeft();
+
+  // above-left
+  const PredictionUnit *aboveLeftPU = pu.cs->getPURestricted(posLT.offset(-1, -1), pu, pu.cs->chType);
+  if (aboveLeftPU && CU::isIBC(*aboveLeftPU->cu))
+  {
+    if (isAddNeighborMv(aboveLeftPU->bv, mvPred, nbPred))
+    {
+      mvPred[nbPred++] = aboveLeftPU->bv;
+    }
+  }
+
+  // above neighbors
+  for (uint32_t dx = 0; dx < totalAboveUnits && nbPred < IBC_NUM_CANDIDATES; dx++)
+  {
+    const PredictionUnit* tmpPU = pu.cs->getPURestricted(posLT.offset((dx << log2UnitWidth), -1), pu, pu.cs->chType);
+    if (tmpPU && CU::isIBC(*tmpPU->cu))
+    {
+      if (isAddNeighborMv(tmpPU->bv, mvPred, nbPred))
+      {
+        mvPred[nbPred++] = tmpPU->bv;
+      }
+    }
+  }
+
+  // left neighbors
+  for (uint32_t dy = 0; dy < totalLeftUnits && nbPred < IBC_NUM_CANDIDATES; dy++)
+  {
+    const PredictionUnit* tmpPU = pu.cs->getPURestricted(posLT.offset(-1, (dy << log2UnitHeight)), pu, pu.cs->chType);
+    if (tmpPU && CU::isIBC(*tmpPU->cu))
+    {
+      if (isAddNeighborMv(tmpPU->bv, mvPred, nbPred))
+      {
+        mvPred[nbPred++] = tmpPU->bv;
+      }
+    }
+  }
+
+  size_t numAvaiCandInLUT = pu.cs->motionLut.lutIbc.size();
+  for (uint32_t cand = 0; cand < numAvaiCandInLUT && nbPred < IBC_NUM_CANDIDATES; cand++)
+  {
+    MotionInfo neibMi = pu.cs->motionLut.lutIbc[cand];
+    if (isAddNeighborMv(neibMi.bv, mvPred, nbPred))
+    {
+      mvPred[nbPred++] = neibMi.bv;
+    }
+  }
+
+  bool isBvCandDerived[IBC_NUM_CANDIDATES];
+  ::memset(isBvCandDerived, false, IBC_NUM_CANDIDATES);
+
+  int curNbPred = nbPred;
+  if (curNbPred < IBC_NUM_CANDIDATES)
+  {
+    do
+    {
+      curNbPred = nbPred;
+      for (uint32_t idx = 0; idx < curNbPred && nbPred < IBC_NUM_CANDIDATES; idx++)
+      {
+        if (!isBvCandDerived[idx])
+        {
+          Mv derivedBv;
+          if (getDerivedBV(pu, mvPred[idx], derivedBv))
+          {
+            if (isAddNeighborMv(derivedBv, mvPred, nbPred))
+            {
+              mvPred[nbPred++] = derivedBv;
+            }
+          }
+          isBvCandDerived[idx] = true;
+        }
+      }
+    } while (nbPred > curNbPred && nbPred < IBC_NUM_CANDIDATES);
+  }
+#else
   //-- Get Spatial MV
   Position posLT = pu.Y().topLeft();
   Position posRT = pu.Y().topRight();
@@ -2257,6 +2369,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
     if (getDerivedBV(pu, MvPred[nbPred - 1], MvPred[nbPred]))
       nbPred++;
   }
+#endif
 }
 
 bool PU::getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv)

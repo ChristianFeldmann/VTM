@@ -1533,7 +1533,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     if( lastTestMode().type != ETM_INTRA && cuECtx.bestCS && cuECtx.bestCU && interHadActive( cuECtx ) )
     {
       // Get SATD threshold from best Inter-CU
+#if JVET_N0329_IBC_SEARCH_IMP
+      if (!cs.slice->isIRAP() && m_pcEncCfg->getUsePbIntraFast() && !cs.slice->getDisableSATDForRD())
+#else
       if( !cs.slice->isIRAP() && m_pcEncCfg->getUsePbIntraFast() )
+#endif
       {
         CodingUnit* bestCU = cuECtx.bestCU;
         if (bestCU && !CU::isIntra(*bestCU))

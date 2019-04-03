@@ -184,7 +184,12 @@ namespace PU
   bool isUniqueTriangleCandidates     (const PredictionUnit &pu, MergeCtx &triangleMrgCtx);
   void spanTriangleMotionInfo         (      PredictionUnit &pu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1);
   int32_t mappingRefPic               (const PredictionUnit &pu, int32_t refPicPoc, bool targetRefPicList);
+#if JVET_N0329_IBC_SEARCH_IMP
+  bool isAddNeighborMv  (const Mv& currMv, Mv* neighborMvs, int numNeighborMv);
+  void getIbcMVPsEncOnly(PredictionUnit &pu, Mv* mvPred, int& nbPred);
+#else
   void getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred);
+#endif
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
   bool checkDMVRCondition(const PredictionUnit& pu);

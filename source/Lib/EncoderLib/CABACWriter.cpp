@@ -761,19 +761,29 @@ void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
     const uint32_t prefixNumBits = numGBi - 2;
     const uint32_t step = 1;
 
+#if !JVET_N0286_SIMPLIFIED_GBI_IDX
     int ctxIdGBi = 4;
+#endif
     uint8_t idx = 1;
     for(int ui = 0; ui < prefixNumBits; ++ui)
     {
       if (gbiCodingIdx == idx)
       {
+#if JVET_N0286_SIMPLIFIED_GBI_IDX
+        m_BinEncoder.encodeBinEP(1);
+#else
         m_BinEncoder.encodeBin(1, Ctx::GBiIdx(ctxIdGBi));
+#endif
         break;
       }
       else
       {
+#if JVET_N0286_SIMPLIFIED_GBI_IDX
+        m_BinEncoder.encodeBinEP(0);
+#else
         m_BinEncoder.encodeBin(0, Ctx::GBiIdx(ctxIdGBi));
         ctxIdGBi += step;
+#endif
         idx += step;
       }
     }

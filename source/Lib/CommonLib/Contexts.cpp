@@ -368,11 +368,18 @@ const CtxSet ContextSetCfg::AffMergeIdx = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::GBiIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_N0286_SIMPLIFIED_GBI_IDX
+  { 228, },
+  { 242, },
+  { CNU, },
+  { 4, },
+#else
   // 4 ctx for 1st bin; 1 ctx for each of rest bins
   { 228, CNU, CNU, CNU, 125, 155, 175, },
   { 242, CNU, CNU, CNU, 154, 170, 237, },
   { CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
   { 4, DWS, DWS, DWS, 4, 0, 0, },
+#endif
 });
 
 const CtxSet ContextSetCfg::Mvd = ContextSetCfg::addCtxSet

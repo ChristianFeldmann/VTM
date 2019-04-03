@@ -772,12 +772,20 @@ void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
     {
       if (gbiCodingIdx == idx)
       {
+#if JVET_N0286_SIMPLIFIED_GBI_IDX
+        m_BinEncoder.encodeBinEP(1);
+#else
         m_BinEncoder.encodeBin(1, Ctx::GBiIdx(ctxIdGBi));
+#endif
         break;
       }
       else
       {
+#if JVET_N0286_SIMPLIFIED_GBI_IDX
+        m_BinEncoder.encodeBinEP(0);
+#else
         m_BinEncoder.encodeBin(0, Ctx::GBiIdx(ctxIdGBi));
+#endif
         ctxIdGBi += step;
         idx += step;
       }

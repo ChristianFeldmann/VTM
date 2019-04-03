@@ -978,7 +978,11 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
 
     for(int ui = 0; ui < prefixNumBits; ++ui)
     {
+#if JVET_N0286_SIMPLIFIED_GBI_IDX
+      symbol = m_BinDecoder.decodeBinEP();
+#else
       symbol = m_BinDecoder.decodeBin(Ctx::GBiIdx(ctxIdGBi));
+#endif
 
       if (symbol == 1)
       {

@@ -1110,7 +1110,7 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
 #if JVET_N0185_UNIFIED_MPM 
         unsigned ctx = (pu->cu->ispMode == NOT_INTRA_SUBPARTITIONS ? 1 : 0);
         if (pu->multiRefIdx == 0)
-          ipred_idx = m_BinDecoder.decodeBin(Ctx::HarmonizedMPMIdx(ctx));
+          ipred_idx = m_BinDecoder.decodeBin(Ctx::IntraLumaPlanarFlag(ctx));
         else
           ipred_idx = 1;
 #else

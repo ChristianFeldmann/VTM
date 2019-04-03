@@ -1232,13 +1232,16 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
         }
       }
 
-      if (bioApplied && pu.cu->smvdMode) {
+      if (bioApplied && pu.cu->smvdMode) 
+	  {
         bioApplied = false;
       }
-      if (pu.cu->cs->sps->getUseGBi() && bioApplied && pu.cu->GBiIdx != GBI_DEFAULT) {
+      if (pu.cu->cs->sps->getUseGBi() && bioApplied && pu.cu->GBiIdx != GBI_DEFAULT) 
+	  {
         bioApplied = false;
       }
-      if (pu.mmvdEncOptMode == 2 && pu.mmvdMergeFlag) {
+      if (pu.mmvdEncOptMode == 2 && pu.mmvdMergeFlag) 
+	  {
         bioApplied = false;
       }
     }

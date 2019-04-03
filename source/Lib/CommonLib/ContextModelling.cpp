@@ -300,6 +300,7 @@ unsigned DeriveCtx::CtxSkipFlag( const CodingUnit& cu )
 }
 
 
+#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
 unsigned DeriveCtx::CtxIMVFlag( const CodingUnit& cu )
 {
   const CodingStructure *cs = cu.cs;
@@ -329,6 +330,7 @@ unsigned DeriveCtx::CtxTriangleFlag( const CodingUnit& cu )
 
   return ctxId;
 }
+#endif
 
 unsigned DeriveCtx::CtxPredModeFlag( const CodingUnit& cu )
 {

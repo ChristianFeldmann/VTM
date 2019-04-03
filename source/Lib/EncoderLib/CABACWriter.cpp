@@ -1465,15 +1465,27 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
     return;
   }
 
+#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
   unsigned ctxId = DeriveCtx::CtxIMVFlag( cu );
+#endif
   if (CU::isIBC(cu) == false)
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+    m_BinEncoder.encodeBin( (cu.imv > 0), Ctx::ImvFlag( 0 ) );
+  DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", (cu.imv > 0), 0 );
+#else
     m_BinEncoder.encodeBin( ( cu.imv > 0 ), Ctx::ImvFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", (cu.imv > 0), ctxId );
+#endif
 
   if( sps->getAMVREnabledFlag() && cu.imv > 0 )
   {
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+    m_BinEncoder.encodeBin( (cu.imv > 1), Ctx::ImvFlag( 1 ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", (cu.imv > 1), 1 );
+#else
     m_BinEncoder.encodeBin( ( cu.imv > 1 ), Ctx::ImvFlag( 3 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", ( cu.imv > 1 ), 3 );
+#endif
   }
 
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() IMVFlag=%d\n", cu.imv );
@@ -1493,13 +1505,23 @@ void CABACWriter::affine_amvr_mode( const CodingUnit& cu )
     return;
   }
 
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+  m_BinEncoder.encodeBin( (cu.imv > 0), Ctx::ImvFlag( 2 ) );
+  DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", (cu.imv > 0), 2 );
+#else
   m_BinEncoder.encodeBin( ( cu.imv > 0 ), Ctx::ImvFlag( 4 ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", ( cu.imv > 0 ), 4 );
+#endif
 
   if( cu.imv > 0 )
   {
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+    m_BinEncoder.encodeBin( (cu.imv > 1), Ctx::ImvFlag( 3 ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", (cu.imv > 1), 3 );
+#else
     m_BinEncoder.encodeBin( ( cu.imv > 1 ), Ctx::ImvFlag( 5 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", ( cu.imv > 1 ), 5 );
+#endif
   }
   DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() IMVFlag=%d\n", cu.imv );
 }
@@ -1839,9 +1861,13 @@ void CABACWriter::triangle_mode( const CodingUnit& cu )
     return;
   }
 
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+  m_BinEncoder.encodeBin( cu.triangle, Ctx::TriangleFlag(0) );
+#else
   unsigned flag_idx     = DeriveCtx::CtxTriangleFlag( cu );
 
   m_BinEncoder.encodeBin( cu.triangle, Ctx::TriangleFlag(flag_idx) );
+#endif
 
   DTRACE( g_trace_ctx, D_SYNTAX, "triangle_mode() triangle_mode=%d pos=(%d,%d) size: %dx%d\n", cu.triangle, cu.Y().x, cu.Y().y, cu.lumaSize().width, cu.lumaSize().height );
 }

@@ -724,10 +724,17 @@ const CtxSet ContextSetCfg::ChromaQpAdjIdc = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+  { 212, 180, 183, 242, },
+  { 213, 166, 198, 244, },
+  { CNU, 152, CNU, CNU, },
+  { 1, 5, 1, 0, },
+#else
   { 212, 199, 215, 180, 183, 242, },
   { 213, 229, 244, 166, 198, 244, },
   { CNU, CNU, CNU, 152, CNU, CNU, },
   { 1, 4, 4, 5, 1, 0, },
+#endif
 });
 
 const CtxSet ContextSetCfg::ctbAlfFlag =
@@ -759,10 +766,17 @@ const CtxSet ContextSetCfg::MHIntraPredMode = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::TriangleFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+  { 149, },
+  { 151, },
+  { CNU, },
+  { 8, },
+#else
   { 149, 123, 123, },
   { 151, 152, 138, },
   { CNU, CNU, CNU, },
   { 8, 12, 9, },
+#endif
 });
 
 const CtxSet ContextSetCfg::TriangleIdx = ContextSetCfg::addCtxSet

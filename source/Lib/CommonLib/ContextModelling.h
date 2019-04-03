@@ -294,9 +294,13 @@ void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, uns
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
+#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
+#endif
 unsigned CtxAffineFlag( const CodingUnit& cu );
+#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
 unsigned CtxTriangleFlag( const CodingUnit& cu );
+#endif
 unsigned CtxPredModeFlag( const CodingUnit& cu );
 unsigned CtxIBCFlag(const CodingUnit& cu);
 }

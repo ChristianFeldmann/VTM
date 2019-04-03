@@ -801,17 +801,29 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
   const SPS *sps = cu.cs->sps;
 
   unsigned value = 0;
+#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
   unsigned ctxId = DeriveCtx::CtxIMVFlag( cu );
+#endif
   if (CU::isIBC(cu))
     value = 1;
   else
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+    value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 0 ) );
+  DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 0 );
+#else
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( ctxId ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, ctxId );
+#endif
 
   if( sps->getAMVREnabledFlag() && value )
   {
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+    value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 1 ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 1 );
+#else
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 3 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 3 );
+#endif
     value++;
   }
 
@@ -836,13 +848,23 @@ void CABACReader::affine_amvr_mode( CodingUnit& cu, MergeCtx& mrgCtx )
   }
 
   unsigned value = 0;
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+  value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 2 ) );
+  DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 2 );
+#else
   value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 4 ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 4 );
+#endif
 
   if( value )
   {
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+    value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 3 ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 3 );
+#else
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 5 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 5 );
+#endif
     value++;
   }
 
@@ -1934,8 +1956,12 @@ void CABACReader::triangle_mode( CodingUnit& cu )
     return;
   }
 
+#if JVET_N600_AMVR_TPM_CTX_REDUCTION
+  cu.triangle = m_BinDecoder.decodeBin( Ctx::TriangleFlag(0) );
+#else
   unsigned flag_idx = DeriveCtx::CtxTriangleFlag( cu );
   cu.triangle = m_BinDecoder.decodeBin( Ctx::TriangleFlag(flag_idx) );
+#endif
 
 
   DTRACE( g_trace_ctx, D_SYNTAX, "triangle_mode() triangle_mode=%d pos=(%d,%d) size: %dx%d\n", cu.triangle, cu.Y().x, cu.Y().y, cu.lumaSize().width, cu.lumaSize().height );

@@ -1803,7 +1803,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       PredictionUnit &pu  = tempCS->addPU( cu, partitioner.chType );
 
       DistParam distParam;
+#if JVET_N0329_IBC_SEARCH_IMP
+      const bool bUseHadamard = !encTestMode.lossless && !tempCS->slice->getDisableSATDForRD();
+#else
       const bool bUseHadamard= !encTestMode.lossless;
+#endif
       m_pcRdCost->setDistParam (distParam, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y(), sps.getBitDepth (CHANNEL_TYPE_LUMA), COMPONENT_Y, bUseHadamard);
 
       const UnitArea localUnitArea( tempCS->area.chromaFormat, Area( 0, 0, tempCS->area.Y().width, tempCS->area.Y().height) );
@@ -2308,7 +2312,11 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   }
 
   DistParam distParam;
+#if JVET_N0329_IBC_SEARCH_IMP 
+  const bool useHadamard = !encTestMode.lossless && !tempCS->slice->getDisableSATDForRD();
+#else
   const bool useHadamard = !encTestMode.lossless;
+#endif
   m_pcRdCost->setDistParam( distParam, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y(), sps.getBitDepth( CHANNEL_TYPE_LUMA ), COMPONENT_Y, useHadamard );
 
   const UnitArea localUnitArea( tempCS->area.chromaFormat, Area( 0, 0, tempCS->area.Y().width, tempCS->area.Y().height) );
@@ -2627,7 +2635,11 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       PredictionUnit &pu = tempCS->addPU( cu, partitioner.chType );
 
       DistParam distParam;
+#if JVET_N0329_IBC_SEARCH_IMP
+      const bool bUseHadamard = !encTestMode.lossless && !tempCS->slice->getDisableSATDForRD();
+#else
       const bool bUseHadamard = !encTestMode.lossless;
+#endif
       m_pcRdCost->setDistParam( distParam, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y(), sps.getBitDepth( CHANNEL_TYPE_LUMA ), COMPONENT_Y, bUseHadamard );
 
       const UnitArea localUnitArea( tempCS->area.chromaFormat, Area( 0, 0, tempCS->area.Y().width, tempCS->area.Y().height ) );
@@ -2887,7 +2899,11 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
       cu.mmvdSkip = false;
       cu.triangle = false;
       DistParam distParam;
+#if JVET_N0329_IBC_SEARCH_IMP
+      const bool bUseHadamard = !encTestMode.lossless && !cu.slice->getDisableSATDForRD();
+#else
       const bool bUseHadamard = !encTestMode.lossless;
+#endif
       PredictionUnit &pu = tempCS->addPU(cu, partitioner.chType); //tempCS->addPU(cu);
       pu.mmvdMergeFlag = false;
       Picture* refPic = pu.cu->slice->getPic();

@@ -678,7 +678,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     // after this point, don't use numModesForFullRD
 
     // PBINTRA fast
+#if JVET_N0329_IBC_SEARCH_IMP
+    if (m_pcEncCfg->getUsePbIntraFast() && !cs.slice->isIntra() && uiRdModeList.size() < numModesAvailable && !cs.slice->getDisableSATDForRD())
+#else
     if( m_pcEncCfg->getUsePbIntraFast() && !cs.slice->isIntra() && uiRdModeList.size() < numModesAvailable )
+#endif
     {
       if( CandHadList.size() < 3 || CandHadList[2] > cs.interHad * PBINTRA_RATIO )
       {
@@ -976,7 +980,11 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
       }
 
       DistParam distParam;
+#if JVET_N0329_IBC_SEARCH_IMP
+      const bool useHadamard = !cu.transQuantBypass;
+#else
       const bool useHadamard = true;
+#endif
       pu.intraDir[1] = MDLM_L_IDX; // temporary assigned, just to indicate this is a MDLM mode. for luma down-sampling operation.
 
       initIntraPatternChType(cu, pu.Cb());

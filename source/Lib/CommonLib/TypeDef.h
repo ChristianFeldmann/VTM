@@ -58,6 +58,8 @@
 
 #define JVET_N0242_NON_LINEAR_ALF                         1 // enable CE5-3.2, Non-linear ALF based on clipping function
 
+#define JVET_N0329_IBC_SEARCH_IMP                         1 // IBC encoder-side improvement
+
 #define JVET_N0325_BDOF                                   1  // unified right-shifts for BDOF derivation
 
 #define JVET_N0449_MMVD_SIMP                              1 // Configurable number of mmvd distance entries used

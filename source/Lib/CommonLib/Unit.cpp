@@ -272,9 +272,7 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
   sbtInfo           = other.sbtInfo;
-#if HEVC_TILES_WPP
   tileIdx           = other.tileIdx;
-#endif
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
   GBiIdx            = other.GBiIdx;
@@ -307,9 +305,7 @@ void CodingUnit::initData()
   chromaQpAdj       = 0;
   rootCbf           = true;
   sbtInfo           = 0;
-#if HEVC_TILES_WPP
   tileIdx           = 0;
-#endif
   imv               = 0;
   imvNumCand        = 0;
   GBiIdx            = GBI_DEFAULT;

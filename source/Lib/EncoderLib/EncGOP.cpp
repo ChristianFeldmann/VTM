@@ -501,14 +501,12 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(sei);
   }
 
-#if HEVC_TILES_WPP
   if(m_pcCfg->getTMCTSSEIEnabled())
   {
     SEITempMotionConstrainedTileSets *sei = new SEITempMotionConstrainedTileSets;
     m_seiEncoder.initSEITempMotionConstrainedTileSets(sei, pps);
     seiMessages.push_back(sei);
   }
-#endif
 
   if(m_pcCfg->getTimeCodeSEIEnabled())
   {
@@ -2137,13 +2135,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     // Allocate some coders, now the number of tiles are known.
     const uint32_t numberOfCtusInFrame = pcPic->cs->pcv->sizeInCtus;
-#if HEVC_TILES_WPP
     const int numSubstreamsColumns = (pcSlice->getPPS()->getNumTileColumnsMinus1() + 1);
     const int numSubstreamRows     = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag() ? pcPic->cs->pcv->heightInCtus : (pcSlice->getPPS()->getNumTileRowsMinus1() + 1);
     const int numSubstreams        = numSubstreamRows * numSubstreamsColumns;
-#else
-    const int numSubstreams        = 1;
-#endif
     std::vector<OutputBitstream> substreamsOut(numSubstreams);
 
 #if ENABLE_QPA
@@ -2583,13 +2577,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           // The final bitstream is either nalu.m_Bitstream or pcBitstreamRedirect;
           // Complete the slice header info.
           m_HLSWriter->setBitstream( &nalu.m_Bitstream );
-#if HEVC_TILES_WPP
           m_HLSWriter->codeTilesWPPEntryPoint( pcSlice );
-#endif
 
           // Append substreams...
           OutputBitstream *pcOut = pcBitstreamRedirect;
-#if HEVC_TILES_WPP
 #if HEVC_DEPENDENT_SLICES
 
           const int numZeroSubstreamsAtStartOfSlice = pcPic->tileMap->getSubstreamForCtuAddr(pcSlice->getSliceSegmentCurStartCtuTsAddr(), false, pcSlice);
@@ -2597,10 +2588,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           const int numZeroSubstreamsAtStartOfSlice  = pcPic->tileMap->getSubstreamForCtuAddr(pcSlice->getSliceCurStartCtuTsAddr(), false, pcSlice);
 #endif
           const int numSubstreamsToCode  = pcSlice->getNumberOfSubstreamSizes()+1;
-#else
-          const int numZeroSubstreamsAtStartOfSlice  = 0;
-          const int numSubstreamsToCode  = pcSlice->getNumberOfSubstreamSizes()+1;
-#endif
           for ( uint32_t ui = 0 ; ui < numSubstreamsToCode; ui++ )
           {
             pcOut->addSubstream(&(substreamsOut[ui+numZeroSubstreamsAtStartOfSlice]));

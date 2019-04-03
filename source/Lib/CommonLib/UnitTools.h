@@ -65,10 +65,8 @@ namespace CU
 
   bool isSameCtu                      (const CodingUnit &cu, const CodingUnit &cu2);
   bool isSameSlice                    (const CodingUnit &cu, const CodingUnit &cu2);
-#if HEVC_TILES_WPP
   bool isSameTile                     (const CodingUnit &cu, const CodingUnit &cu2);
   bool isSameSliceAndTile             (const CodingUnit &cu, const CodingUnit &cu2);
-#endif
   bool isLastSubCUOfCtu               (const CodingUnit &cu);
   uint32_t getCtuAddr                     (const CodingUnit &cu);
 

@@ -468,7 +468,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSEIGreenMetadataType                              ( uint8_t(m_greenMetadataType) );
   m_cEncLib.setSEIXSDMetricType                                  ( uint8_t(m_xsdMetricType) );
 
-#if HEVC_TILES_WPP
   m_cEncLib.setTileUniformSpacingFlag                            ( m_tileUniformSpacingFlag );
   m_cEncLib.setNumColumnsMinus1                                  ( m_numTileColumnsMinus1 );
   m_cEncLib.setNumRowsMinus1                                     ( m_numTileRowsMinus1 );
@@ -477,9 +476,7 @@ void EncApp::xInitLibCfg()
     m_cEncLib.setColumnWidth                                     ( m_tileColumnWidth );
     m_cEncLib.setRowHeight                                       ( m_tileRowHeight );
   }
-#endif
   m_cEncLib.xCheckGSParameters();
-#if HEVC_TILES_WPP
   int uiTilesCount = (m_numTileRowsMinus1+1) * (m_numTileColumnsMinus1+1);
   if(uiTilesCount == 1)
   {
@@ -487,7 +484,6 @@ void EncApp::xInitLibCfg()
   }
   m_cEncLib.setLFCrossTileBoundaryFlag                           ( m_bLFCrossTileBoundaryFlag );
   m_cEncLib.setEntropyCodingSyncEnabledFlag                      ( m_entropyCodingSyncEnabledFlag );
-#endif
   m_cEncLib.setTMVPModeId                                        ( m_TMVPModeId );
 #if HEVC_USE_SCALING_LISTS
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
@@ -540,9 +536,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPocProportionalToTimingFlag                       ( m_pocProportionalToTimingFlag );
   m_cEncLib.setNumTicksPocDiffOneMinus1                          ( m_numTicksPocDiffOneMinus1    );
   m_cEncLib.setBitstreamRestrictionFlag                          ( m_bitstreamRestrictionFlag );
-#if HEVC_TILES_WPP
   m_cEncLib.setTilesFixedStructureFlag                           ( m_tilesFixedStructureFlag );
-#endif
   m_cEncLib.setMotionVectorsOverPicBoundariesFlag                ( m_motionVectorsOverPicBoundariesFlag );
   m_cEncLib.setMinSpatialSegmentationIdc                         ( m_minSpatialSegmentationIdc );
   m_cEncLib.setMaxBytesPerPicDenom                               ( m_maxBytesPerPicDenom );

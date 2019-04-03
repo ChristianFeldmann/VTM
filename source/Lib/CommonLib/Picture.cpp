@@ -436,7 +436,6 @@ bool Scheduler::getNextCtu( Position& pos, int ctuLine, int offset)
 // picture methods
 // ---------------------------------------------------------------------------
 
-#if HEVC_TILES_WPP
 
 Tile::Tile()
 : m_tileWidthInCtus     (0)
@@ -711,13 +710,10 @@ uint32_t TileMap::getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool bAdd
   }
   return subStrm;
 }
-#endif
 
 Picture::Picture()
 {
-#if HEVC_TILES_WPP
   tileMap              = nullptr;
-#endif
   cs                   = nullptr;
   m_bIsBorderExtended  = false;
   usedByCurr           = false;
@@ -788,14 +784,12 @@ void Picture::destroy()
   }
   SEIs.clear();
 
-#if HEVC_TILES_WPP
   if ( tileMap )
   {
     tileMap->destroy();
     delete tileMap;
     tileMap = nullptr;
   }
-#endif
   if (m_spliceIdx)
   {
     delete[] m_spliceIdx;
@@ -886,14 +880,12 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS& aps)
   SEIs.clear();
   clearSliceBuffer();
 
-#if HEVC_TILES_WPP
   if( tileMap )
   {
     tileMap->destroy();
     delete tileMap;
     tileMap = nullptr;
   }
-#endif
 
   const ChromaFormat chromaFormatIDC = sps.getChromaFormatIdc();
   const int          iWidth = sps.getPicWidthInLumaSamples();
@@ -919,10 +911,8 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS& aps)
 #endif
   cs->pcv     = pps.pcv;
 
-#if HEVC_TILES_WPP
   tileMap = new TileMap;
   tileMap->create( sps, pps );
-#endif
   if (m_spliceIdx == NULL)
   {
     m_ctuNums = cs->pcv->sizeInCtus;

@@ -350,7 +350,6 @@ void SEIEncoder::initTemporalLevel0IndexSEI(SEITemporalLevel0Index *temporalLeve
   temporalLevel0IndexSEI->rapIdx = m_rapIdx;
 }
 
-#if HEVC_TILES_WPP
 void SEIEncoder::initSEITempMotionConstrainedTileSets (SEITempMotionConstrainedTileSets *sei, const PPS *pps)
 {
   CHECK(!(m_isInitialized), "Unspecified error");
@@ -395,7 +394,6 @@ void SEIEncoder::initSEITempMotionConstrainedTileSets (SEITempMotionConstrainedT
     CHECK(!(!"Tile is not enabled"), "Unspecified error");
   }
 }
-#endif
 
 void SEIEncoder::initSEIKneeFunctionInfo(SEIKneeFunctionInfo *seiKneeFunctionInfo)
 {

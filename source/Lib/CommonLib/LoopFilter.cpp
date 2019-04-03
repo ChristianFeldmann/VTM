@@ -84,7 +84,6 @@ inline static uint32_t getRasterIdx(const Position& pos, const PreCalcValues& pc
 // utility functions
 // ====================================================================================================================
 
-#if HEVC_TILES_WPP
 static bool isAvailableLeft( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction )
 {
   return ( ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) ) && ( !bEnforceTileRestriction || CU::isSameTile( cu, cu2 ) ) );
@@ -94,12 +93,6 @@ static bool isAvailableAbove( const CodingUnit& cu, const CodingUnit& cu2, const
 {
   return ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) ) && ( !bEnforceTileRestriction || CU::isSameTile( cu, cu2 ) );
 }
-#else
-static bool isAvailable( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction )
-{
-  return ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) );
-}
-#endif
 
 
 // ====================================================================================================================
@@ -486,9 +479,7 @@ void LoopFilter::xSetEdgefilterMultiple( const CodingUnit&    cu,
 void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
 {
   const Slice& slice = *cu.slice;
-#if HEVC_TILES_WPP
   const PPS&   pps   = *cu.cs->pps;
-#endif
 
   if( slice.getDeblockingFilterDisable() )
   {
@@ -499,13 +490,8 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
   const Position& pos = cu.blocks[cu.chType].pos();
 
   m_stLFCUParam.internalEdge = true;
-#if HEVC_TILES_WPP
   m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
   m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
-#else
-  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailable ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag());
-  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailable ( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag());
-#endif
   m_stLFCUParam.internalEdge &= !cu.ispMode;
 }
 
@@ -743,19 +729,11 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
-#if HEVC_TILES_WPP
         CHECK( !isAvailableLeft( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() ), "Neighbour not available" );
-#else
-        CHECK( !isAvailable( cu, cuP, !slice.getLFCrossSliceBoundaryFlag() ), "Neighbour not available" );
-#endif
       }
       else  // (iDir == EDGE_HOR)
       {
-#if HEVC_TILES_WPP
         CHECK( !isAvailableAbove( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() ), "Neighbour not available" );
-#else
-        CHECK( !isAvailable( cu, cuP, !slice.getLFCrossSliceBoundaryFlag() ), "Neighbour not available" );
-#endif
       }
 
       iQP = (cuP.qp + cuQ.qp + 1) >> 1;
@@ -1022,19 +1000,11 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
       if (edgeDir == EDGE_VER)
       {
-#if HEVC_TILES_WPP
         CHECK(!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
-#else
-        CHECK(!isAvailable(cu, cuP, !slice.getLFCrossSliceBoundaryFlag()), "Neighbour not available");
-#endif
       }
       else  // (iDir == EDGE_HOR)
       {
-#if HEVC_TILES_WPP
         CHECK(!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
-#else
-        CHECK(!isAvailable(cu, cuP, !slice.getLFCrossSliceBoundaryFlag()), "Neighbour not available");
-#endif
       }
 
       bPartPNoFilter = bPartQNoFilter = false;

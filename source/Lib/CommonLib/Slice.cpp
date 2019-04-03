@@ -1907,14 +1907,12 @@ PPS::PPS()
 #if HEVC_DEPENDENT_SLICES
 , m_dependentSliceSegmentsEnabledFlag(false)
 #endif
-#if HEVC_TILES_WPP
 , m_tilesEnabledFlag                 (false)
 , m_entropyCodingSyncEnabledFlag     (false)
 , m_loopFilterAcrossTilesEnabledFlag (true)
 , m_uniformSpacingFlag               (false)
 , m_numTileColumnsMinus1             (0)
 , m_numTileRowsMinus1                (0)
-#endif
 , m_cabacInitPresentFlag             (false)
 , m_sliceHeaderExtensionPresentFlag  (false)
 , m_loopFilterAcrossSlicesEnabledFlag(false)

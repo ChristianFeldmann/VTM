@@ -1778,28 +1778,108 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
   Pel *src = srcColor0 - srcStride;
   Pel *cur = curChroma0 - curStride;
+#if !JVET_N0271_SIMPLFIED_CCLM
   int minDim = 1;
+#endif
   int actualTopTemplateSampNum = 0;
   int actualLeftTemplateSampNum = 0;
   if (curChromaMode == MDLM_T_IDX)
   {
     leftAvailable = 0;
+#if JVET_N0271_SIMPLFIED_CCLM
+    avaiAboveRightUnits = avaiAboveRightUnits > (cHeight/unitWidth) ?  cHeight/unitWidth : avaiAboveRightUnits;
+#endif
     actualTopTemplateSampNum = unitWidth*(avaiAboveUnits + avaiAboveRightUnits);
+#if !JVET_N0271_SIMPLFIED_CCLM
     minDim = actualTopTemplateSampNum;
+#endif
   }
   else if (curChromaMode == MDLM_L_IDX)
   {
     aboveAvailable = 0;
+#if JVET_N0271_SIMPLFIED_CCLM
+     avaiLeftBelowUnits = avaiLeftBelowUnits > (cWidth/unitHeight) ? cWidth/unitHeight : avaiLeftBelowUnits;
+#endif
     actualLeftTemplateSampNum = unitHeight*(avaiLeftUnits + avaiLeftBelowUnits);
+#if !JVET_N0271_SIMPLFIED_CCLM
     minDim = actualLeftTemplateSampNum;
+#endif
   }
   else if (curChromaMode == LM_CHROMA_IDX)
   {
     actualTopTemplateSampNum = cWidth;
     actualLeftTemplateSampNum = cHeight;
+#if !JVET_N0271_SIMPLFIED_CCLM
     minDim = leftAvailable && aboveAvailable ? 1 << g_aucPrevLog2[std::min(actualLeftTemplateSampNum, actualTopTemplateSampNum)]
       : 1 << g_aucPrevLog2[leftAvailable ? actualLeftTemplateSampNum : actualTopTemplateSampNum];
+#endif
   }
+#if JVET_N0271_SIMPLFIED_CCLM
+  int startPos[2]; //0:Above, 1: Left
+  int pickStep[2];
+
+  int aboveIs4 = leftAvailable  ? 0 : 1;
+  int leftIs4 =  aboveAvailable ? 0 : 1;
+
+  startPos[0] = actualTopTemplateSampNum >> (2 + aboveIs4);
+  pickStep[0] = std::max(1, actualTopTemplateSampNum >> (1 + aboveIs4));
+
+  startPos[1] = actualLeftTemplateSampNum >> (2 + leftIs4);
+  pickStep[1] = std::max(1, actualLeftTemplateSampNum >> (1 + leftIs4));
+
+  Pel selectLumaPix[4];
+  Pel selectChromaPix[4];
+
+  int cntT, cntL;
+  cntT = cntL = 0;
+  int cnt = 0;
+  if (aboveAvailable)
+  {
+    cntT = std::min(actualTopTemplateSampNum, (1 + aboveIs4) << 1);
+    src = srcColor0 - srcStride;
+    cur = curChroma0 - curStride;
+    for (int pos = startPos[0]; cnt < cntT; pos += pickStep[0], cnt++)
+    {
+      selectLumaPix[cnt] = src[pos];
+      selectChromaPix[cnt] = cur[pos];
+    }
+  }
+
+  if (leftAvailable)
+  {
+    cntL = std::min(actualLeftTemplateSampNum, ( 1 + leftIs4 ) << 1 );
+    src = srcColor0 - 1;
+    cur = curChroma0 - 1;
+    for (int pos = startPos[1], cnt = 0; cnt < cntL; pos += pickStep[1], cnt++)
+    {
+      selectLumaPix[cnt + cntT] = src[pos * srcStride];
+      selectChromaPix[cnt+ cntT] = cur[pos * curStride];
+    }
+  }
+  cnt = cntL + cntT;
+ 
+  if (cnt == 2)
+  {
+    selectLumaPix[3] = selectLumaPix[0]; selectChromaPix[3] = selectChromaPix[0];
+    selectLumaPix[2] = selectLumaPix[1]; selectChromaPix[2] = selectChromaPix[1];
+    selectLumaPix[0] = selectLumaPix[1]; selectChromaPix[0] = selectChromaPix[1];
+    selectLumaPix[1] = selectLumaPix[3]; selectChromaPix[1] = selectChromaPix[3];
+  }
+
+  int minGrpIdx[2] = { 0, 2 };
+  int maxGrpIdx[2] = { 1, 3 };
+  int *tmpMinGrp = minGrpIdx;
+  int *tmpMaxGrp = maxGrpIdx;
+  if (selectLumaPix[tmpMinGrp[0]] > selectLumaPix[tmpMinGrp[1]]) std::swap(tmpMinGrp[0], tmpMinGrp[1]);
+  if (selectLumaPix[tmpMaxGrp[0]] > selectLumaPix[tmpMaxGrp[1]]) std::swap(tmpMaxGrp[0], tmpMaxGrp[1]);
+  if (selectLumaPix[tmpMinGrp[0]] > selectLumaPix[tmpMaxGrp[1]]) std::swap(tmpMinGrp, tmpMaxGrp);
+  if (selectLumaPix[tmpMinGrp[1]] > selectLumaPix[tmpMaxGrp[0]]) std::swap(tmpMinGrp[1], tmpMaxGrp[0]);
+
+  minLuma[0] = (selectLumaPix[tmpMinGrp[0]] + selectLumaPix[tmpMinGrp[1]] + 1 )>>1;
+  minLuma[1] = (selectChromaPix[tmpMinGrp[0]] + selectChromaPix[tmpMinGrp[1]] + 1) >> 1;
+  maxLuma[0] = (selectLumaPix[tmpMaxGrp[0]] + selectLumaPix[tmpMaxGrp[1]] + 1 )>>1;
+  maxLuma[1] = (selectChromaPix[tmpMaxGrp[0]] + selectChromaPix[tmpMaxGrp[1]] + 1) >> 1;
+#else
   int numSteps = minDim;
 
   if (aboveAvailable)
@@ -1842,6 +1922,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
       }
     }
   }
+#endif
 
   if (leftAvailable || aboveAvailable)
   {

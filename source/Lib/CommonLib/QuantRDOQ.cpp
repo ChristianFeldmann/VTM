@@ -763,7 +763,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
         uint32_t    goRiceZero    = 0;
         if( remRegBins < 4 )
         {
-          unsigned  sumAbs        = cctx.templateAbsSum( iScanPos, piDstCoeff );
+          unsigned  sumAbs        = cctx.templateAbsSum( iScanPos, piDstCoeff
+#if JVET_N0188_UNIFY_RICEPARA
+            , 0
+#endif
+          );
           goRiceParam             = g_auiGoRiceParsCoeff   [ sumAbs ];
           goRiceZero              = g_auiGoRicePosCoeff0[0][ sumAbs ];
         }
@@ -826,11 +830,16 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
         }
         else if( remRegBins >= 4 )
         {
+#if JVET_N0188_UNIFY_RICEPARA
+          int  sumAll = cctx.templateAbsSum(iScanPos, piDstCoeff, 4);
+          goRiceParam = g_auiGoRiceParsCoeff[sumAll];
+#else
           const uint32_t baseLevel = 4;
           if( goRiceParam < 3 && ((uiLevel-baseLevel)>>1) > (3<<goRiceParam)-1 )
           {
             goRiceParam++;
           }
+#endif
           remRegBins -= (uiLevel < 2 ? uiLevel : 3) + (iScanPos != iLastScanPos);
         }
       }

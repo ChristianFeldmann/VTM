@@ -1059,11 +1059,13 @@ namespace DQIntern
         m_goRicePar             = prvState->m_goRicePar;
         if( m_remRegBins >= 4 )
         {
+#if !JVET_N0188_UNIFY_RICEPARA
           TCoeff rem = (decision.absLevel - 4) >> 1;
           if( m_goRicePar < 3 && rem > (3<<m_goRicePar)-1 )
           {
             m_goRicePar++;
           }
+#endif
           m_remRegBins -= (decision.absLevel < 2 ? decision.absLevel : 3);
         }
         ::memcpy( m_absLevelsAndCtxInit, prvState->m_absLevelsAndCtxInit, 48*sizeof(uint8_t) );
@@ -1080,7 +1082,9 @@ namespace DQIntern
         {
           m_remRegBins = MAX_NUM_REG_BINS_4x4SUBBLOCK - (decision.absLevel < 2 ? decision.absLevel : 3);
         }
+#if !JVET_N0188_UNIFY_RICEPARA
         m_goRicePar     = ( ((decision.absLevel - 4) >> 1) > (3<<0)-1 ? 1 : 0 );
+#endif
         ::memset( m_absLevelsAndCtxInit, 0, 48*sizeof(uint8_t) );
       }
 
@@ -1127,6 +1131,44 @@ namespace DQIntern
         TCoeff sumGt1 = sumAbs1 - sumNum;
         m_sigFracBits = m_sigFracBitsArray[scanInfo.sigCtxOffsetNext + (sumAbs1 < 5 ? sumAbs1 : 5)];
         m_coeffFracBits = m_gtxFracBitsArray[scanInfo.gtxCtxOffsetNext + (sumGt1 < 4 ? sumGt1 : 4)];
+ 
+#if JVET_N0188_UNIFY_RICEPARA
+        TCoeff  sumAbs = m_absLevelsAndCtxInit[8 + scanInfo.nextInsidePos] >> 8;
+#define UPDATE(k) {TCoeff t=levels[scanInfo.nextNbInfoSbb.inPos[k]]; sumAbs+=t; }
+        if (numIPos == 1)
+        {
+          UPDATE(0);
+        }
+        else if (numIPos == 2)
+        {
+          UPDATE(0);
+          UPDATE(1);
+        }
+        else if (numIPos == 3)
+        {
+          UPDATE(0);
+          UPDATE(1);
+          UPDATE(2);
+        }
+        else if (numIPos == 4)
+        {
+          UPDATE(0);
+          UPDATE(1);
+          UPDATE(2);
+          UPDATE(3);
+        }
+        else if (numIPos == 5)
+        {
+          UPDATE(0);
+          UPDATE(1);
+          UPDATE(2);
+          UPDATE(3);
+          UPDATE(4);
+        }
+#undef UPDATE
+        int sumAll = std::max(std::min(31, (int)sumAbs - 4 * 5), 0);
+        m_goRicePar = g_auiGoRiceParsCoeff[sumAll];
+#endif
       }
       else
       {

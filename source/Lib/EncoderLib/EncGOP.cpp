@@ -2192,6 +2192,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       // overwrite chroma qp offset for dual tree
       pcSlice->setSliceChromaQpDelta(COMPONENT_Cb, m_pcCfg->getChromaCbQpOffsetDualTree());
       pcSlice->setSliceChromaQpDelta(COMPONENT_Cr, m_pcCfg->getChromaCrQpOffsetDualTree());
+#if JVET_N0054_JOINT_CHROMA
+      pcSlice->setSliceChromaQpDelta(JOINT_CbCr,   m_pcCfg->getChromaCbCrQpOffsetDualTree());
+#endif
       m_pcSliceEncoder->setUpLambda(pcSlice, pcSlice->getLambdas()[0], pcSlice->getSliceQp());
     }
     if (pcSlice->getSPS()->getUseReshaper())

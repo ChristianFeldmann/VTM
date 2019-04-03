@@ -440,6 +440,9 @@ struct TransformUnit : public UnitArea
   uint8_t        depth;
   uint8_t        mtsIdx;
   bool           noResidual;
+#if JVET_N0054_JOINT_CHROMA
+  uint8_t        jointCbCr;
+#endif
   uint8_t        cbf        [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];
   int8_t        compAlpha   [ MAX_NUM_TBLOCKS ];

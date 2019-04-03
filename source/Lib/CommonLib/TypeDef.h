@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0054_JOINT_CHROMA                           1 // Joint chroma residual coding mode
+
 #define JVET_N0334_MVCLIPPING                             1 // prevention of MV stroage overflow and alignment with spec of MV/CPMV modular for AMVP mode
 
 #define JVET_N0481_BCW_CONSTRUCTED_AFFINE                 1
@@ -447,6 +449,9 @@ enum ComponentID
   COMPONENT_Cb        = 1,
   COMPONENT_Cr        = 2,
   MAX_NUM_COMPONENT   = 3,
+#if JVET_N0054_JOINT_CHROMA
+  JOINT_CbCr          = MAX_NUM_COMPONENT,
+#endif
   MAX_NUM_TBLOCKS     = MAX_NUM_COMPONENT
 };
 

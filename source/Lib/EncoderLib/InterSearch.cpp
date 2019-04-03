@@ -6394,7 +6394,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
               }
             }
 
+#if JVET_N0054_JOINT_CHROMA
+            if( !isLastMode || (compID != COMPONENT_Y && !tu.noResidual) )
+#else
             if( !isLastMode )
+#endif
             {
               bestTU.copyComponentFrom( tu, compID );
               saveCS.getResiBuf( compArea ).copyFrom( csFull->getResiBuf( compArea ) );
@@ -6417,6 +6421,115 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       }
     } // component loop
 
+#if JVET_N0054_JOINT_CHROMA
+    if ( chroma && tu.blocks[COMPONENT_Cb].valid() )
+    {
+      const CompArea& cbArea = tu.blocks[COMPONENT_Cb];
+      const CompArea& crArea = tu.blocks[COMPONENT_Cr];
+      
+      bool checkJointCbCr = !tu.noResidual && (TU::getCbf(tu, COMPONENT_Cb) || TU::getCbf(tu, COMPONENT_Cr));
+
+      if ( checkJointCbCr )
+      {
+        const int  channelBitDepth  = sps.getBitDepth(toChannelType(COMPONENT_Cb));
+        double     minCostCbCr      = minCost[COMPONENT_Cb] + minCost[COMPONENT_Cr];
+        bool       isLastBest       = false;
+        TCoeff     currAbsSum       = 0;
+        uint64_t   currCompFracBits = 0;
+        Distortion currCompDistCb   = 0;
+        Distortion currCompDistCr   = 0;
+        double     currCompCost     = 0;
+        
+        tu.jointCbCr = 1;
+        tu.getCoeffs(COMPONENT_Cr).fill(0);
+        
+        const QpParam cQP(tu, COMPONENT_Cb);  // note: uses tu.transformSkip[compID]
+        
+#if RDOQ_CHROMA_LAMBDA
+        m_pcTrQuant->selectLambda(COMPONENT_Cb);
+#endif
+        // Lambda is loosened for the joint mode with respect to single modes as the same residual is used for both chroma blocks
+        m_pcTrQuant->setLambda( 0.60 * m_pcTrQuant->getLambda() );
+        
+        m_CABACEstimator->getCtx() = ctxStart;
+        m_CABACEstimator->resetBits();
+        
+        // Copy the original residual into the residual buffer
+        csFull->getResiBuf(cbArea).copyFrom(cs.getOrgResiBuf(cbArea));
+        csFull->getResiBuf(crArea).copyFrom(cs.getOrgResiBuf(crArea));
+        
+        // Create joint residual and store it for Cb component: jointResi = (cbResi - crResi)/2
+        PelBuf cbResi = csFull->getResiBuf( cbArea );
+        PelBuf crResi = csFull->getResiBuf( crArea );
+        
+        cbResi.subtractAndHalve( crResi );
+        
+        bool reshape = slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && slice.getReshapeInfo().getSliceReshapeChromaAdj() && tu.blocks[COMPONENT_Cb].width*tu.blocks[COMPONENT_Cb].height > 4 ;
+        
+        if ( reshape )
+        {
+          double cRescale = round((double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj()));
+          m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cRescale*cRescale));
+          
+          cbResi.scaleSignal(tu.getChromaAdj(), 1, tu.cu->cs->slice->clpRng(COMPONENT_Cb));
+        }
+        
+        m_pcTrQuant->transformNxN(tu, COMPONENT_Cb, cQP, currAbsSum, m_CABACEstimator->getCtx());
+        
+        if (currAbsSum > 0)
+        {
+          // Set cfb also for Cr
+          TU::setCbfAtDepth (tu, COMPONENT_Cr, tu.depth, true);
+          
+          m_CABACEstimator->cbf_comp( *csFull, true, cbArea, currDepth, false );
+          m_CABACEstimator->cbf_comp( *csFull, true, crArea, currDepth, true );
+          
+          m_CABACEstimator->residual_coding( tu, COMPONENT_Cb );
+          m_CABACEstimator->joint_cb_cr    ( tu ); // Could also call residual coding for Cr where this flag is sent
+          
+          currCompFracBits = m_CABACEstimator->getEstFracBits();
+          
+          m_pcTrQuant->invTransformNxN(tu, COMPONENT_Cb, cbResi, cQP);
+          
+          if ( reshape )
+            cbResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(COMPONENT_Cb));;
+          
+          crResi.copyAndNegate( cbResi );
+          
+          currCompDistCb = m_pcRdCost->getDistPart(csFull->getOrgResiBuf(cbArea), cbResi, channelBitDepth, COMPONENT_Cb, DF_SSE);
+          currCompDistCr = m_pcRdCost->getDistPart(csFull->getOrgResiBuf(crArea), crResi, channelBitDepth, COMPONENT_Cr, DF_SSE);
+#if WCG_EXT
+          currCompCost   = m_pcRdCost->calcRdCost(currCompFracBits, currCompDistCr + currCompDistCb, false);
+#else
+          currCompCost   = m_pcRdCost->calcRdCost(currCompFracBits, currCompDistCr + currCompDistCb);
+#endif
+        }
+        else
+          currCompCost = MAX_DOUBLE;
+        
+        // evaluate
+        if( currCompCost < minCostCbCr )
+        {
+          uiAbsSum[COMPONENT_Cb]         = currAbsSum;
+          uiAbsSum[COMPONENT_Cr]         = currAbsSum;
+          uiSingleDistComp[COMPONENT_Cb] = currCompDistCb;
+          uiSingleDistComp[COMPONENT_Cr] = currCompDistCr;
+          minCostCbCr                    = currCompCost;
+          isLastBest                     = true;
+        }
+
+        if( !isLastBest )
+        {
+          // copy component
+          tu.copyComponentFrom( bestTU, COMPONENT_Cb );
+          tu.copyComponentFrom( bestTU, COMPONENT_Cr );
+          csFull->getResiBuf( cbArea ).copyFrom( saveCS.getResiBuf( cbArea ) );
+          csFull->getResiBuf( crArea ).copyFrom( saveCS.getResiBuf( crArea ) );
+        }
+      }
+    }
+#endif // JVET_N0054_JOINT_CHROMA
+    
     m_CABACEstimator->getCtx() = ctxStart;
     m_CABACEstimator->resetBits();
     if( !tu.noResidual )

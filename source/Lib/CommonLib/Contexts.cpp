@@ -771,6 +771,16 @@ const CtxSet ContextSetCfg::IBCFlag = ContextSetCfg::addCtxSet
   { 5, 5, 8, },
 });
 
+#if JVET_N0054_JOINT_CHROMA
+const CtxSet ContextSetCfg::JointCbCrFlag = ContextSetCfg::addCtxSet
+({
+  { CNU, },
+  { CNU, },
+  { CNU, },
+  { DWS, },
+});
+#endif
+
 const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_InitTables[0].size();
 
 

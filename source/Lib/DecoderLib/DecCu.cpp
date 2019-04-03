@@ -222,6 +222,12 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   const QpParam cQP( tu, compID );
 
+#if JVET_N0054_JOINT_CHROMA
+  // Joint chroma residual mode: Cr uses negative of the signalled Cb residual
+  if ( tu.jointCbCr && compID == COMPONENT_Cr )
+    piResi.copyAndNegate( cs.getResiBuf( tu.blocks[COMPONENT_Cb] ) );
+  else
+#endif
   if( TU::getCbf( tu, compID ) )
   {
     m_pcTrQuant->invTransformNxN( tu, compID, piResi, cQP );
@@ -235,6 +241,9 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   flag = flag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
   if (flag && TU::getCbf(tu, compID) && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj())
   {
+#if JVET_N0054_JOINT_CHROMA
+    if ( !(tu.jointCbCr && compID == COMPONENT_Cr) ) // // Joint chroma residual mode: chroma scaling took place already when doing Cb
+#endif
     piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
   }
   if( isChroma(compID) && tu.compAlpha[compID] != 0 )
@@ -537,6 +546,12 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
 
   const QpParam cQP(currTU, compID);
 
+#if JVET_N0054_JOINT_CHROMA
+  // Joint chroma residual mode: Cr uses negative of the signalled Cb residual
+  if ( currTU.jointCbCr && compID == COMPONENT_Cr )
+    resiBuf.copyAndNegate( cs.getResiBuf( currTU.blocks[COMPONENT_Cb] ) );
+  else
+#endif
   if( TU::getCbf( currTU, compID ) )
   {
     m_pcTrQuant->invTransformNxN( currTU, compID, resiBuf, cQP );
@@ -550,6 +565,9 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
   const Slice           &slice = *cs.slice;
   if ( slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && isChroma(compID) && TU::getCbf(currTU, compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() && currTU.blocks[compID].width*currTU.blocks[compID].height > 4 )
   {
+#if JVET_N0054_JOINT_CHROMA
+    if ( !(currTU.jointCbCr && compID == COMPONENT_Cr) ) // Joint chroma residual mode: chroma scaling took place already when doing Cb
+#endif
     resiBuf.scaleSignal(currTU.getChromaAdj(), 0, currTU.cu->cs->slice->clpRng(compID));
   }
   if( isChroma( compID ) && currTU.compAlpha[compID] != 0 )

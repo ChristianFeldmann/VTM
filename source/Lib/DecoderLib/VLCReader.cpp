@@ -430,6 +430,13 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) < -12, "Invalid Cr QP offset" );
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) >  12, "Invalid Cr QP offset" );
 
+#if JVET_N0054_JOINT_CHROMA
+  READ_SVLC( iCode, "pps_cb_cr_qp_offset");
+  pcPPS->setQpOffset(JOINT_CbCr, iCode);
+  CHECK( pcPPS->getQpOffset(JOINT_CbCr) < -12, "Invalid CbCr QP offset" );
+  CHECK( pcPPS->getQpOffset(JOINT_CbCr) >  12, "Invalid CbCr QP offset" );
+#endif
+  
   CHECK(MAX_NUM_COMPONENT>3, "Invalid maximal number of components");
 
   READ_FLAG( uiCode, "pps_slice_chroma_qp_offsets_present_flag" );
@@ -1926,6 +1933,15 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         CHECK( pcSlice->getSliceChromaQpDelta(COMPONENT_Cr) >  12, "Invalid chroma QP offset" );
         CHECK( (pps->getQpOffset(COMPONENT_Cr) + pcSlice->getSliceChromaQpDelta(COMPONENT_Cr)) < -12, "Invalid chroma QP offset" );
         CHECK( (pps->getQpOffset(COMPONENT_Cr) + pcSlice->getSliceChromaQpDelta(COMPONENT_Cr)) >  12, "Invalid chroma QP offset" );
+
+#if JVET_N0054_JOINT_CHROMA
+        READ_SVLC( iCode, "slice_cb_cr_qp_offset" );
+        pcSlice->setSliceChromaQpDelta(JOINT_CbCr, iCode );
+        CHECK( pcSlice->getSliceChromaQpDelta(JOINT_CbCr) < -12, "Invalid chroma QP offset" );
+        CHECK( pcSlice->getSliceChromaQpDelta(JOINT_CbCr) >  12, "Invalid chroma QP offset" );
+        CHECK( (pps->getQpOffset(JOINT_CbCr) + pcSlice->getSliceChromaQpDelta(JOINT_CbCr)) < -12, "Invalid chroma QP offset" );
+        CHECK( (pps->getQpOffset(JOINT_CbCr) + pcSlice->getSliceChromaQpDelta(JOINT_CbCr)) >  12, "Invalid chroma QP offset" );
+#endif
       }
     }
 

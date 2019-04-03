@@ -173,6 +173,9 @@ static const int MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1 =         1;
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;
 static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
+#if JVET_N0178_IMPLICIT_BDOF_SPLIT
+static const int MAX_BDOF_APPLICATION_REGION =                     16;
+#endif
 
 static const int MAX_CPB_CNT =                                     32; ///< Upper bound of (cpb_cnt_minus1 + 1)
 static const int MAX_NUM_LAYER_IDS =                               64;

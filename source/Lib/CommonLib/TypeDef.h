@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0318_N0467_IBC_SIZE                         1 // IBC flag dependent on CU size and disabling 128x128 IBC mode
+
 #define JVET_N0462_FIX_CTX_MODELING                       1 // Fix context modeling of inter_pred_idc
 
 #define JVET_N0286_SIMPLIFIED_GBI_IDX                     1 // Simplified coding of the GBi index

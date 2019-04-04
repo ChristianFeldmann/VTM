@@ -1323,6 +1323,19 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
     }
 #endif
 
+#if JVET_N0317_ADD_ZERO_BV
+    while (cnt < maxNumMergeCand)
+    {
+      mrgCtx.mvFieldNeighbours[cnt * 2].setMvField(Mv(0, 0), MAX_NUM_REF);
+      mrgCtx.interDirNeighbours[cnt] = 1;
+      cnt++;
+      if (mrgCandIdx == cnt && canFastExit)
+      {
+        return;
+      }
+    }
+#endif
+
   mrgCtx.numValidMergeCand = cnt;
 
 }

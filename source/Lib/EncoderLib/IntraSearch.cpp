@@ -393,9 +393,14 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         PelBuf piOrg         = cs.getOrgBuf(area);
         PelBuf piPred        = cs.getPredBuf(area);
 
+#if JVET_N0363_INTRA_COST_MOD
+        DistParam distParamSad;
+        DistParam distParamHad;
+#else
         DistParam distParam;
 
         const bool bUseHadamard = cu.transQuantBypass == 0;
+#endif
 
         if (cu.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
         {
@@ -403,12 +408,29 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           PelBuf tmpOrg = m_tmpStorageLCU.getBuf(tmpArea);
           tmpOrg.copyFrom(piOrg);
           tmpOrg.rspSignal(m_pcReshape->getFwdLUT());
+#if JVET_N0363_INTRA_COST_MOD
+          m_pcRdCost->setDistParam(distParamSad, tmpOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, false); // Use SAD cost
+          m_pcRdCost->setDistParam(distParamHad, tmpOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y,  true); // Use HAD (SATD) cost
+#else
           m_pcRdCost->setDistParam(distParam, tmpOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, bUseHadamard);
+#endif
         }
         else
+#if JVET_N0363_INTRA_COST_MOD
+        {
+          m_pcRdCost->setDistParam(distParamSad, piOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, false); // Use SAD cost
+          m_pcRdCost->setDistParam(distParamHad, piOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y,  true); // Use HAD (SATD) cost
+        }
+#else
         m_pcRdCost->setDistParam(distParam, piOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, bUseHadamard);
+#endif
 
+#if JVET_N0363_INTRA_COST_MOD
+        distParamSad.applyWeight = false;
+        distParamHad.applyWeight = false;
+#else
         distParam.applyWeight = false;
+#endif
 
         bool bSatdChecked[NUM_INTRA_MODE];
         memset( bSatdChecked, 0, sizeof( bSatdChecked ) );
@@ -437,8 +459,14 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             {
               predIntraAng( COMPONENT_Y, piPred, pu, IntraPrediction::useFilteredIntraRefSamples( COMPONENT_Y, pu, true, pu ) );
             }
+#if JVET_N0363_INTRA_COST_MOD
+            // Use the min between SAD and HAD as the cost criterion
+            // SAD is scaled by 2 to align with the scaling of HAD
+            uiSad += std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
+#else
             // use Hadamard transform here
             uiSad += distParam.distFunc(distParam);
+#endif
 
             // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been pre-estimated.
             m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaMpmFlag, ctxStartIntraMode);
@@ -491,8 +519,15 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
                   predIntraAng(COMPONENT_Y, piPred, pu,
                                IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Y, pu, true, pu));
                 }
+                
+#if JVET_N0363_INTRA_COST_MOD
+                // Use the min between SAD and SATD as the cost criterion
+                // SAD is scaled by 2 to align with the scaling of HAD
+                Distortion sad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
+#else
                 // use Hadamard transform here
                 Distortion sad = distParam.distFunc(distParam);
+#endif
 
                 // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been pre-estimated.
                 m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaMpmFlag, ctxStartIntraMode);
@@ -553,8 +588,14 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
                 predIntraAng(COMPONENT_Y, piPred, pu, IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Y, pu, true, pu));
               }
 
+#if JVET_N0363_INTRA_COST_MOD
+              // Use the min between SAD and SATD as the cost criterion
+              // SAD is scaled by 2 to align with the scaling of HAD
+              Distortion sad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
+#else
               // use Hadamard transform here
               Distortion sad = distParam.distFunc(distParam);
+#endif
 
               // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been pre-estimated.
               m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaMpmFlag, ctxStartIntraMode);

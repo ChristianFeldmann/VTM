@@ -2711,11 +2711,11 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
   //===== coeff bypass ====
   for( int scanPos = firstPosMode2; scanPos >= minSubPos; scanPos-- )
   {
-    int       sumAll    = cctx.templateAbsSum(scanPos, coeff
 #if JVET_N0188_UNIFY_RICEPARA
-      , 0
+    int       sumAll = cctx.templateAbsSum(scanPos, coeff, 0);
+#else
+    int       sumAll    = cctx.templateAbsSum(scanPos, coeff);
 #endif
-    );
     int       rice      = g_auiGoRiceParsCoeff                        [sumAll];
     int       pos0      = g_auiGoRicePosCoeff0[std::max(0, state - 1)][sumAll];
     int       rem       = m_BinDecoder.decodeRemAbsEP( rice, cctx.extPrec(), cctx.maxLog2TrDRange() );

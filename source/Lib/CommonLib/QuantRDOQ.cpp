@@ -763,11 +763,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
         uint32_t    goRiceZero    = 0;
         if( remRegBins < 4 )
         {
-          unsigned  sumAbs        = cctx.templateAbsSum( iScanPos, piDstCoeff
 #if JVET_N0188_UNIFY_RICEPARA
-            , 0
+          unsigned  sumAbs = cctx.templateAbsSum( iScanPos, piDstCoeff, 0 );
+#else
+          unsigned  sumAbs        = cctx.templateAbsSum( iScanPos, piDstCoeff );
 #endif
-          );
           goRiceParam             = g_auiGoRiceParsCoeff   [ sumAbs ];
           goRiceZero              = g_auiGoRicePosCoeff0[0][ sumAbs ];
         }

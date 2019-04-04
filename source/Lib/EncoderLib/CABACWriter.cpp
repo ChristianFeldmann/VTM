@@ -2579,11 +2579,11 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
   {
     TCoeff    Coeff     = coeff[ cctx.blockPos( scanPos ) ];
     unsigned  absLevel  = abs( Coeff );
-    int       sumAll    = cctx.templateAbsSum(scanPos, coeff
 #if JVET_N0188_UNIFY_RICEPARA
-      , 0
+    int       sumAll = cctx.templateAbsSum(scanPos, coeff, 0);
+#else
+    int       sumAll    = cctx.templateAbsSum(scanPos, coeff);
 #endif
-    );
     int       rice      = g_auiGoRiceParsCoeff                        [sumAll];
     int       pos0      = g_auiGoRicePosCoeff0[std::max(0, state - 1)][sumAll];
     unsigned  rem       = ( absLevel == 0 ? pos0 : absLevel <= pos0 ? absLevel-1 : absLevel );

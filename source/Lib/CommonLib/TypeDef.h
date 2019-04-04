@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0317_ADD_ZERO_BV                            1
+
 #define JVET_N0462_FIX_CTX_MODELING                       1 // Fix context modeling of inter_pred_idc
 
 #define JVET_N0286_SIMPLIFIED_GBI_IDX                     1 // Simplified coding of the GBi index

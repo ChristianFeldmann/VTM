@@ -82,6 +82,8 @@
 
 #define JVET_N0178_IMPLICIT_BDOF_SPLIT                    1
 
+#define JVET_N0383_IBC_COL_VPDU_REMOVE                    1
+
 #define JCTVC_Y0038_PARAMS                                1
 
 #define JVET_MMVD_OFF_MACRO                               0

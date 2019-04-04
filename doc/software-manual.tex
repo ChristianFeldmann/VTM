@@ -1397,6 +1397,13 @@ and cr_qp_offset, that are transmitted in the PPS.  Valid values are in
 the range $[-12, 12]$.
 \\
 
+\Option{CbCrQpOffset (-cbcrqpofs)} &
+\Default{-1} &
+Global offset to apply to the luma QP to derive the QP for joint Cb-Cr
+residual coding mode.  This option corresponds to the value of cb_cr_qp_offset
+transmitted in the PPS.  Valid values are in the range $[-12, 12]$.
+\\
+
 \Option{LumaLevelToDeltaQPMode} &
 \Default{0} &
 Luma-level based Delta QP modulation.

@@ -152,8 +152,11 @@ public:
   unsigned parityCtxIdAbs   ( uint8_t offset )  const { return m_parFlagCtxSet   ( offset ); }
   unsigned greater1CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[1]( offset ); }
   unsigned greater2CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[0]( offset ); }
-
+#if JVET_N0188_UNIFY_RICEPARA
+  unsigned templateAbsSum( int scanPos, const TCoeff* coeff, int baseLevel )
+#else
   unsigned templateAbsSum( int scanPos, const TCoeff* coeff )
+#endif
   {
     const uint32_t  posY  = m_scan[scanPos].y;
     const uint32_t  posX  = m_scan[scanPos].x;
@@ -179,7 +182,11 @@ public:
         sum += abs(pData[m_width << 1]);
       }
     }
+#if JVET_N0188_UNIFY_RICEPARA
+    return std::max(std::min(sum - 5 * baseLevel, 31), 0);
+#else
     return std::min(sum, 31);
+#endif
   }
 
 

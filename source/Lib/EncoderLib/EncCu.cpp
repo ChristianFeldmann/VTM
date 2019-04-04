@@ -2832,10 +2832,17 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 {
   assert(tempCS->chType != CHANNEL_TYPE_CHROMA); // chroma IBC is derived
 
+#if JVET_N0318_N0467_IBC_SIZE
+  if (tempCS->area.lwidth() == 128 && tempCS->area.lheight() == 128) // disable 128x128 IBC mode
+  {
+    return;
+  }
+#else
   if (tempCS->area.lwidth() > IBC_MAX_CAND_SIZE || tempCS->area.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
   {
     return;
   }
+#endif
   const SPS &sps = *tempCS->sps;
 
   tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
@@ -3069,10 +3076,17 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 
 void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
 {
+#if JVET_N0318_N0467_IBC_SIZE
+  if (tempCS->area.lwidth() == 128 && tempCS->area.lheight() == 128) // disable 128x128 IBC mode
+  {
+    return;
+  }
+#else
   if (tempCS->area.lwidth() > IBC_MAX_CAND_SIZE || tempCS->area.lheight() > IBC_MAX_CAND_SIZE) // currently only check 32x32 and below block for ibc merge/skip
   {
     return;
   }
+#endif
 
     tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
 

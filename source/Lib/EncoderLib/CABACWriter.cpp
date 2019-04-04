@@ -636,8 +636,15 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 
   if (cu.slice->isIntra() && cu.cs->slice->getSPS()->getIBCFlag())
   {
+#if JVET_N0318_N0467_IBC_SIZE
+    if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+    {
+#endif
     m_BinEncoder.encodeBin((cu.skip), Ctx::SkipFlag(ctxId));
     DTRACE(g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0);
+#if JVET_N0318_N0467_IBC_SIZE
+    }
+#endif
     return;
   }
 
@@ -646,9 +653,16 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
   DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0 );
   if (cu.skip && cu.cs->slice->getSPS()->getIBCFlag())
   {
+#if JVET_N0318_N0467_IBC_SIZE
+    if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+    {
+#endif
     unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
     m_BinEncoder.encodeBin(CU::isIBC(cu) ? 1 : 0, Ctx::IBCFlag(ctxidx));
     DTRACE(g_trace_ctx, D_SYNTAX, "ibc() ctx=%d cu.predMode=%d\n", ctxidx, cu.predMode);
+#if JVET_N0318_N0467_IBC_SIZE
+    }
+#endif
 #if !JVET_MMVD_OFF_MACRO
     if (CU::isInter(cu))
     {
@@ -673,16 +687,30 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
   {
     if (cu.cs->slice->isIntra())
     {
+#if JVET_N0318_N0467_IBC_SIZE
+      if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+      {
+#endif
       unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
       m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
+#if JVET_N0318_N0467_IBC_SIZE
+      }
+#endif
     }
     else
     {
       m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
       if (!CU::isIntra(cu))
       {
+#if JVET_N0318_N0467_IBC_SIZE
+        if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+        {
+#endif
         unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
         m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
+#if JVET_N0318_N0467_IBC_SIZE
+        }
+#endif
       }
     }
   }

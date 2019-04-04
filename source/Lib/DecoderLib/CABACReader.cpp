@@ -727,6 +727,10 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
     cu.rootCbf = false;
     cu.predMode = MODE_INTRA;
     cu.mmvdSkip = false;
+#if JVET_N0318_N0467_IBC_SIZE
+    if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+    {
+#endif
     unsigned ctxId = DeriveCtx::CtxSkipFlag(cu);
     unsigned skip = m_BinDecoder.decodeBin(Ctx::SkipFlag(ctxId));
     DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, skip ? 1 : 0 );
@@ -737,7 +741,9 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
       cu.predMode = MODE_IBC;
       cu.mmvdSkip = false;
     }
-
+#if JVET_N0318_N0467_IBC_SIZE
+    }
+#endif
     return;
   }
 
@@ -748,6 +754,10 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
 
   if (skip && cu.cs->slice->getSPS()->getIBCFlag())
   {
+#if JVET_N0318_N0467_IBC_SIZE
+    if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+    {
+#endif
     unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
     if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
     {
@@ -761,6 +771,13 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
       cu.predMode = MODE_INTER;
     }
     DTRACE(g_trace_ctx, D_SYNTAX, "ibc() ctx=%d cu.predMode=%d\n", ctxidx, cu.predMode);
+#if JVET_N0318_N0467_IBC_SIZE
+    }
+    else
+    {
+      cu.predMode = MODE_INTER;
+    }
+#endif
   }
   if ((skip && CU::isInter(cu) && cu.cs->slice->getSPS()->getIBCFlag()) ||
     (skip && !cu.cs->slice->getSPS()->getIBCFlag()))
@@ -881,11 +898,18 @@ void CABACReader::pred_mode( CodingUnit& cu )
     if (cu.cs->slice->isIntra())
     {
       cu.predMode = MODE_INTRA;
+#if JVET_N0318_N0467_IBC_SIZE
+      if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+      {
+#endif
       unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
       if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
       {
         cu.predMode = MODE_IBC;
       }
+#if JVET_N0318_N0467_IBC_SIZE
+      }
+#endif
     }
     else
     {
@@ -896,11 +920,18 @@ void CABACReader::pred_mode( CodingUnit& cu )
       else
       {
         cu.predMode = MODE_INTER;
+#if JVET_N0318_N0467_IBC_SIZE
+        if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+        {
+#endif
         unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
         if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
         {
           cu.predMode = MODE_IBC;
         }
+#if JVET_N0318_N0467_IBC_SIZE
+        }
+#endif
       }
     }
   }

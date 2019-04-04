@@ -1634,7 +1634,12 @@ void CABACWriter::mmvd_merge_idx(const PredictionUnit& pu)
   var1 = (mvpIdx - (var0 * MMVD_MAX_REFINE_NUM)) / 4;
   var2 = mvpIdx - (var0 * MMVD_MAX_REFINE_NUM) - var1 * 4;
 
+#if JVET_N0448_N0380
+  int numCand = int(pu.cs->slice->getMaxNumMergeCand());
+  int numCandminus1_base = (numCand > 1) ? MMVD_BASE_MV_NUM - 1 : 0;
+#else
   int numCandminus1_base = MMVD_BASE_MV_NUM - 1;
+#endif
   if (numCandminus1_base > 0)
   {
     if (var0 == 0)

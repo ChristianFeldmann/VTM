@@ -2051,7 +2051,7 @@ void PU::getInterMMVDMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx,
         break;
     }
   }
-
+#if !JVET_N0448_N0380
   if (currBaseNum < MMVD_BASE_MV_NUM)
   {
     for (k = currBaseNum; k < MMVD_BASE_MV_NUM; k++)
@@ -2063,6 +2063,7 @@ void PU::getInterMMVDMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx,
       mrgCtx.interDirNeighbours[k] = (mrgCtx.mmvdBaseMv[k][0].refIdx >= 0) + (mrgCtx.mmvdBaseMv[k][1].refIdx >= 0) * 2;
     }
   }
+#endif
 }
 bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList, const Position &_pos, Mv& rcMv, const int &refIdx )
 {

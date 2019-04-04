@@ -1939,7 +1939,7 @@ bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, i
       const Position refPosCol64x64 = {offset64x, offset64y};
       if (pu.cs->isDecomp(refPosCol64x64, toChannelType(COMPONENT_Y)))
         return false;
-#if JVET_N0383_IBC_COL_VPDU_REMOVE
+#if JVET_N0383_N0251_IBC_COL_VPDU_REMOVE
       if (refPosCol64x64 == pu.Y().topLeft())
         return false;
 #endif

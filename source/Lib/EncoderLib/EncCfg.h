@@ -314,6 +314,10 @@ protected:
   int       m_chromaCrQpOffset;                 //  Chroma Cr Qp Offset (0:default)
   int       m_chromaCbQpOffsetDualTree;         //  Chroma Cb QP Offset for dual tree
   int       m_chromaCrQpOffsetDualTree;         //  Chroma Cr Qp Offset for dual tree
+#if JVET_N0054_JOINT_CHROMA
+  int       m_chromaCbCrQpOffset;               //  QP Offset for the joint Cb-Cr mode
+  int       m_chromaCbCrQpOffsetDualTree;       //  QP Offset for the joint Cb-Cr mode in dual tree
+#endif
 #if ER_CHROMA_QP_WCG_PPS
   WCGChromaQPControl m_wcgChromaQpControl;                    ///< Wide-colour-gamut chroma QP control.
 #endif
@@ -863,6 +867,11 @@ public:
   void      setChromaCrQpOffsetDualTree     ( int   i )      { m_chromaCrQpOffsetDualTree = i; }
   int       getChromaCbQpOffsetDualTree     ()         const { return m_chromaCbQpOffsetDualTree; }
   int       getChromaCrQpOffsetDualTree     ()         const { return m_chromaCrQpOffsetDualTree; }
+#if JVET_N0054_JOINT_CHROMA
+  void      setChromaCbCrQpOffset           ( int   i )      { m_chromaCbCrQpOffset = i; }
+  void      setChromaCbCrQpOffsetDualTree   ( int   i )      { m_chromaCbCrQpOffsetDualTree = i; }
+  int       getChromaCbCrQpOffsetDualTree   ()         const { return m_chromaCbCrQpOffsetDualTree; }
+#endif
 #if ER_CHROMA_QP_WCG_PPS
   void      setWCGChromaQpControl           ( const WCGChromaQPControl &ctrl )     { m_wcgChromaQpControl = ctrl; }
   const WCGChromaQPControl &getWCGChromaQPControl () const { return m_wcgChromaQpControl; }

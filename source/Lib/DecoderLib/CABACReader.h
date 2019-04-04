@@ -130,6 +130,9 @@ public:
   void        explicit_rdpcm_mode       ( TransformUnit&                tu,     ComponentID     compID );
   int         last_sig_coeff            ( CoeffCodingContext&           cctx,   TransformUnit& tu, ComponentID   compID );
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff, const int stateTransTable, int& state );
+#if JVET_N0054_JOINT_CHROMA
+  void        joint_cb_cr               ( TransformUnit&                tu );
+#endif
 
   // cross component prediction (clause 7.3.8.12)
   void        cross_comp_pred           ( TransformUnit&                tu,     ComponentID     compID );

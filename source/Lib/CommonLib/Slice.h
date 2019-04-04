@@ -1497,6 +1497,9 @@ private:
 
   int              m_chromaCbQpOffset;
   int              m_chromaCrQpOffset;
+#if JVET_N0054_JOINT_CHROMA
+  int              m_chromaCbCrQpOffset;
+#endif
 
   uint32_t             m_numRefIdxL0DefaultActive;
   uint32_t             m_numRefIdxL1DefaultActive;
@@ -1572,6 +1575,12 @@ public:
     {
       m_chromaCrQpOffset = i;
     }
+#if JVET_N0054_JOINT_CHROMA
+    else if (compID==JOINT_CbCr)
+    {
+      m_chromaCbCrQpOffset = i;
+    }
+#endif
     else
     {
       THROW( "Invalid chroma QP offset" );
@@ -1579,7 +1588,11 @@ public:
   }
   int                    getQpOffset(ComponentID compID) const
   {
+#if JVET_N0054_JOINT_CHROMA
+    return (compID==COMPONENT_Y) ? 0 : (compID==COMPONENT_Cb ? m_chromaCbQpOffset : compID==COMPONENT_Cr ? m_chromaCrQpOffset : m_chromaCbCrQpOffset );
+#else
     return (compID==COMPONENT_Y) ? 0 : (compID==COMPONENT_Cb ? m_chromaCbQpOffset : m_chromaCrQpOffset );
+#endif
   }
 
   void                   setNumRefIdxL0DefaultActive(uint32_t ui)                             { m_numRefIdxL0DefaultActive=ui;                }
@@ -1740,7 +1753,11 @@ private:
 
   //  Data
   int                        m_iSliceQpDelta;
+#if JVET_N0054_JOINT_CHROMA
+  int                        m_iSliceChromaQpDelta[MAX_NUM_COMPONENT+1];
+#else
   int                        m_iSliceChromaQpDelta[MAX_NUM_COMPONENT];
+#endif
   Picture*                   m_apcRefPicList [NUM_REF_PIC_LIST_01][MAX_NUM_REF+1];
   int                        m_aiRefPOCList  [NUM_REF_PIC_LIST_01][MAX_NUM_REF+1];
   bool                       m_bIsUsedAsLongTerm[NUM_REF_PIC_LIST_01][MAX_NUM_REF+1];

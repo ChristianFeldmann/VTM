@@ -613,6 +613,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   {
     rpcSlice->setSliceChromaQpDelta( COMPONENT_Cb, 0 );
     rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
+#if JVET_N0054_JOINT_CHROMA
+    rpcSlice->setSliceChromaQpDelta( JOINT_CbCr, 0 );
+#endif
   }
 #endif
 
@@ -671,6 +674,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 #if !W0038_CQP_ADJ
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cb, 0 );
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
+#if JVET_N0054_JOINT_CHROMA
+  rpcSlice->setSliceChromaQpDelta( JOINT_CbCr,   0 );
+#endif
 #endif
   rpcSlice->setUseChromaQpAdj( rpcSlice->getPPS()->getPpsRangeExtension().getChromaQpOffsetListEnabledFlag() );
   rpcSlice->setNumRefIdx(REF_PIC_LIST_0,m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive);

@@ -2404,10 +2404,29 @@ void CABACReader::cu_chroma_qp_offset( CodingUnit& cu )
 //    void        residual_coding_subblock( coeffCtx )
 //================================================================================
 
+#if JVET_N0054_JOINT_CHROMA
+void CABACReader::joint_cb_cr( TransformUnit& tu )
+{
+  tu.jointCbCr = m_BinDecoder.decodeBin( Ctx::JointCbCrFlag( 0 ) );
+}
+#endif
+
 void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
 {
   const CodingUnit& cu = *tu.cu;
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_coding() etype=%d pos=(%d,%d) size=%dx%d predMode=%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height, cu.predMode );
+
+#if JVET_N0054_JOINT_CHROMA
+  // Joint Cb-Cr residual mode is signalled if both Cb and Cr cbfs are true
+  if ( compID == COMPONENT_Cr && TU::getCbf( tu, COMPONENT_Cb ) )
+  {
+    joint_cb_cr( tu );
+    
+    // No Cr residual in bitstream in joint Cb-Cr residual mode
+    if ( tu.jointCbCr )
+      return;
+  }
+#endif
 
   // parse transform skip and explicit rdpcm mode
   mts_coding         ( tu, compID );

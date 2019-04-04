@@ -252,6 +252,9 @@ public:
   static const CtxSet   SmvdFlag;
   static const CtxSet   IBCFlag;
   static const CtxSet   ISPMode;
+#if JVET_N0054_JOINT_CHROMA
+  static const CtxSet   JointCbCrFlag;
+#endif
   static const unsigned NumberOfContexts;
 
   // combined sets for less complex copying

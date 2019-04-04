@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0054_JOINT_CHROMA                           1 // Joint chroma residual coding mode
+
 #define JVET_N0317_ADD_ZERO_BV                            1
 
 #define JVET_N0318_N0467_IBC_SIZE                         1 // IBC flag dependent on CU size and disabling 128x128 IBC mode
@@ -458,6 +460,9 @@ enum ComponentID
   COMPONENT_Cb        = 1,
   COMPONENT_Cr        = 2,
   MAX_NUM_COMPONENT   = 3,
+#if JVET_N0054_JOINT_CHROMA
+  JOINT_CbCr          = MAX_NUM_COMPONENT,
+#endif
   MAX_NUM_TBLOCKS     = MAX_NUM_COMPONENT
 };
 

@@ -149,6 +149,9 @@ Slice::Slice()
     m_lambdas            [component] = 0.0;
     m_iSliceChromaQpDelta[component] = 0;
   }
+#if JVET_N0054_JOINT_CHROMA
+  m_iSliceChromaQpDelta[JOINT_CbCr] = 0;
+#endif
 
   initEqualRef();
 
@@ -208,6 +211,9 @@ void Slice::initSlice()
   {
     m_iSliceChromaQpDelta[component] = 0;
   }
+#if JVET_N0054_JOINT_CHROMA
+  m_iSliceChromaQpDelta[JOINT_CbCr] = 0;
+#endif
 
   m_maxNumMergeCand = MRG_MAX_NUM_CANDS;
   m_maxNumAffineMergeCand = AFFINE_MRG_MAX_NUM_CANDS;
@@ -776,6 +782,10 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   {
     m_iSliceChromaQpDelta[component] = pSrc->m_iSliceChromaQpDelta[component];
   }
+#if JVET_N0054_JOINT_CHROMA
+  m_iSliceChromaQpDelta[JOINT_CbCr] = pSrc->m_iSliceChromaQpDelta[JOINT_CbCr];
+#endif
+  
   for (i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     for (j = 0; j < MAX_NUM_REF; j++)
@@ -1900,6 +1910,9 @@ PPS::PPS()
 , m_cuQpDeltaSubdiv                  (0)
 , m_chromaCbQpOffset                 (0)
 , m_chromaCrQpOffset                 (0)
+#if JVET_N0054_JOINT_CHROMA
+, m_chromaCbCrQpOffset               (0)
+#endif
 , m_numRefIdxL0DefaultActive         (1)
 , m_numRefIdxL1DefaultActive         (1)
 , m_TransquantBypassEnabledFlag      (false)

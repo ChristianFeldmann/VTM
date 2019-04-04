@@ -202,6 +202,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setChromaCrQpOffset                                  ( m_crQpOffset  );
   m_cEncLib.setChromaCbQpOffsetDualTree                          ( m_cbQpOffsetDualTree );
   m_cEncLib.setChromaCrQpOffsetDualTree                          ( m_crQpOffsetDualTree );
+#if JVET_N0054_JOINT_CHROMA
+  m_cEncLib.setChromaCbCrQpOffset                                ( m_cbCrQpOffset         );
+  m_cEncLib.setChromaCbCrQpOffsetDualTree                        ( m_cbCrQpOffsetDualTree );
+#endif
 #if ER_CHROMA_QP_WCG_PPS
   m_cEncLib.setWCGChromaQpControl                                ( m_wcgChromaQpControl );
 #endif

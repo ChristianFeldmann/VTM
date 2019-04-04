@@ -1372,12 +1372,18 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     const int crQP =(int)(dcrQP + ( dcrQP < 0 ? -0.5 : 0.5) );
     pps.setQpOffset(COMPONENT_Cb, Clip3( -12, 12, min(0, cbQP) + m_chromaCbQpOffset ));
     pps.setQpOffset(COMPONENT_Cr, Clip3( -12, 12, min(0, crQP) + m_chromaCrQpOffset));
+#if JVET_N0054_JOINT_CHROMA
+    pps.setQpOffset(JOINT_CbCr,   Clip3( -12, 12, ( min(0, cbQP) + min(0, crQP) ) / 2 + m_chromaCbCrQpOffset));
+#endif
   }
   else
   {
 #endif
   pps.setQpOffset(COMPONENT_Cb, m_chromaCbQpOffset );
   pps.setQpOffset(COMPONENT_Cr, m_chromaCrQpOffset );
+#if JVET_N0054_JOINT_CHROMA
+  pps.setQpOffset(JOINT_CbCr, m_chromaCbCrQpOffset );
+#endif
 #if ER_CHROMA_QP_WCG_PPS
   }
 #endif
@@ -1409,7 +1415,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     !pps.getSliceChromaQpFlag() && sps.getUseDualITree()
     && (getChromaFormatIdc() != CHROMA_400))
   {
+#if JVET_N0054_JOINT_CHROMA
+    pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0 || m_chromaCbCrQpOffsetDualTree != 0);
+#else
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0);
+#endif
   }
 
   pps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );

@@ -1397,6 +1397,20 @@ and cr_qp_offset, that are transmitted in the PPS.  Valid values are in
 the range $[-12, 12]$.
 \\
 
+\Option{CbCrQpOffset (-cbcrqpofs)} &
+\Default{-1} &
+Global offset to apply to the luma QP to derive the QP for joint Cb-Cr
+residual coding mode.  This option corresponds to the value of cb_cr_qp_offset
+transmitted in the PPS.  Valid values are in the range $[-12, 12]$.
+\\
+
+\Option{CbCrQpOffsetDualTree} &
+\Default{0} &
+Tile group QP offset for joint Cb-Cr residual coding mode when separate luma and
+chroma trees are used.  This option corresponds to the value of tile_group_cb_cr_qp_offset
+transmitted in the tile group header. Valid values are in the range $[-12, 12]$.
+\\
+
 \Option{LumaLevelToDeltaQPMode} &
 \Default{0} &
 Luma-level based Delta QP modulation.

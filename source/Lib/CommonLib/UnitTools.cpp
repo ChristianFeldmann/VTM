@@ -1938,12 +1938,21 @@ bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, i
   }
 
   // in the same CTU line
+#if JVET_N0175_N0251_N0384_IBC_SMALL_CTU
+  int numLeftCTUs = (1 << ((7 - ctuSizeLog2) << 1)) - ((ctuSizeLog2 < 7) ? 1 : 0);
+  if ((refRightX >> ctuSizeLog2 <= xPos >> ctuSizeLog2) && (refLeftX >> ctuSizeLog2 >= (xPos >> ctuSizeLog2) - numLeftCTUs))
+#else
   if ((refRightX >> ctuSizeLog2 <= xPos >> ctuSizeLog2) && (refLeftX >> ctuSizeLog2 >= (xPos >> ctuSizeLog2) - 1))
+#endif
   {
 
     // in the same CTU, or left CTU
     // if part of ref block is in the left CTU, some area can be referred from the not-yet updated local CTU buffer
+#if JVET_N0175_N0251_N0384_IBC_SMALL_CTU
+    if (((refLeftX >> ctuSizeLog2) == ((xPos >> ctuSizeLog2) - 1)) && (ctuSizeLog2 == 7))
+#else
     if ((refLeftX >> ctuSizeLog2) == ((xPos >> ctuSizeLog2) - 1))
+#endif
     {
       // ref block's collocated block in current CTU
       const Position refPosCol = pu.Y().topLeft().offset(xBv + ctuSize, yBv);

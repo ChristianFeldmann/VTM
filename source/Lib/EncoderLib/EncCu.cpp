@@ -1977,7 +1977,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if !JVET_MMVD_OFF_MACRO
       cu.mmvdSkip = true;
       int tempNum = 0;
+#if JVET_N0448_N0380
+      tempNum = (mergeCtx.numValidMergeCand > 1) ? MMVD_ADD_NUM : MMVD_ADD_NUM >> 1;
+#else
       tempNum = MMVD_ADD_NUM;
+#endif
       for (uint32_t mergeCand = mergeCtx.numValidMergeCand; mergeCand < mergeCtx.numValidMergeCand + tempNum; mergeCand++)
       {
         const int mmvdMergeCand = mergeCand - mergeCtx.numValidMergeCand;
@@ -2076,7 +2080,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     {
       if (bestIsMMVDSkip)
       {
+#if JVET_N0448_N0380
+        uiNumMrgSATDCand = mergeCtx.numValidMergeCand + ((mergeCtx.numValidMergeCand > 1) ? MMVD_ADD_NUM : MMVD_ADD_NUM >> 1);
+#else
         uiNumMrgSATDCand = mergeCtx.numValidMergeCand + MMVD_ADD_NUM;
+#endif
       }
       else
       {

@@ -1709,7 +1709,12 @@ void CABACReader::mmvd_merge_idx(PredictionUnit& pu)
 
   mvpIdx = (var + dir0)*(MMVD_MAX_REFINE_NUM*MMVD_BASE_MV_NUM);
 
+#if JVET_N0448_N0380
+  int numCand = int(pu.cs->slice->getMaxNumMergeCand());
+  int numCandminus1_base = (numCand > 1) ? MMVD_BASE_MV_NUM - 1 : 0;
+#else
   int numCandminus1_base = MMVD_BASE_MV_NUM - 1;
+#endif
   var0 = 0;
   if (numCandminus1_base > 0)
   {

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0448_N0380                                  1 // When MaxNumMergeCand is 1, MMVD_BASE_MV_NUM is inferred to be 1.
+
 #define JVET_N0054_JOINT_CHROMA                           1 // Joint chroma residual coding mode
 
 #define JVET_N0317_ADD_ZERO_BV                            1

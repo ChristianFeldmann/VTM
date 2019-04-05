@@ -3121,6 +3121,11 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
     cu.mmvdSkip = false;
     pu.mmvdMergeFlag = false;
 
+#if JVET_N0843_BVP_SIMPLIFICATION
+    pu.shareParentPos  = tempCS->sharedBndPos;
+    pu.shareParentSize = tempCS->sharedBndSize;
+#endif
+
     pu.intraDir[0] = DC_IDX; // set intra pred for ibc block
     pu.intraDir[1] = PLANAR_IDX; // set intra pred for ibc block
 

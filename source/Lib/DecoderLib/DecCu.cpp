@@ -713,6 +713,10 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     }
     else
     {
+#if JVET_N0843_BVP_SIMPLIFICATION
+      pu.shareParentPos = cu.shareParentPos;
+      pu.shareParentSize = cu.shareParentSize;
+#endif
 #if REUSE_CU_RESULTS
       if ( cu.imv && !pu.cu->affine && !cu.cs->pcv->isEncoder )
 #else

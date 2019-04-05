@@ -506,6 +506,14 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
 {
   const PPS   &pps   = *pu.cs->pps;
   const Slice &slice = *pu.cs->slice;
+#if JVET_N0146_DMVR_BDOF_CONDITION
+  WPScalingParam *wp0;
+  WPScalingParam *wp1;
+  int refIdx0 = pu.refIdx[REF_PIC_LIST_0];
+  int refIdx1 = pu.refIdx[REF_PIC_LIST_1];
+  pu.cs->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
+  pu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
+#endif
 
   bool bioApplied = false;
   if (pu.cs->sps->getBDOFEnabledFlag())
@@ -516,7 +524,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
     }
     else
     {
+#if JVET_N0146_DMVR_BDOF_CONDITION
+      const bool biocheck0 = !((wp0[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Y].bPresentFlag) && slice.getSliceType() == B_SLICE);
+#else
       const bool biocheck0 = !(pps.getWPBiPred() && slice.getSliceType() == B_SLICE);
+#endif
       const bool biocheck1 = !(pps.getUseWP() && slice.getSliceType() == P_SLICE);
       if (biocheck0
         && biocheck1
@@ -588,6 +600,33 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
       }
     }
   }
+#if JVET_N0146_DMVR_BDOF_CONDITION
+  CPelUnitBuf srcPred0 = ( pu.chromaFormat == CHROMA_400 ?
+                           CPelUnitBuf(pu.chromaFormat, PelBuf(m_acYuvPred[0][0], pcYuvPred.Y())) :
+                           CPelUnitBuf(pu.chromaFormat, PelBuf(m_acYuvPred[0][0], pcYuvPred.Y()), PelBuf(m_acYuvPred[0][1], pcYuvPred.Cb()), PelBuf(m_acYuvPred[0][2], pcYuvPred.Cr())) );
+  CPelUnitBuf srcPred1 = ( pu.chromaFormat == CHROMA_400 ?
+                           CPelUnitBuf(pu.chromaFormat, PelBuf(m_acYuvPred[1][0], pcYuvPred.Y())) :
+                           CPelUnitBuf(pu.chromaFormat, PelBuf(m_acYuvPred[1][0], pcYuvPred.Y()), PelBuf(m_acYuvPred[1][1], pcYuvPred.Cb()), PelBuf(m_acYuvPred[1][2], pcYuvPred.Cr())) );
+  if( (!dmvrApplied) && (!bioApplied) && pps.getWPBiPred() && slice.getSliceType() == B_SLICE && pu.cu->GBiIdx==GBI_DEFAULT)
+  {
+    xWeightedPredictionBi( pu, srcPred0, srcPred1, pcYuvPred, m_maxCompIDToPred );
+  }
+  else if( pps.getUseWP() && slice.getSliceType() == P_SLICE )
+  {
+    xWeightedPredictionUni( pu, srcPred0, REF_PIC_LIST_0, pcYuvPred, -1, m_maxCompIDToPred );
+  }
+  else
+  {
+    if (dmvrApplied)
+    {
+      xProcessDMVR(pu, pcYuvPred, slice.clpRngs(), bioApplied);
+    }
+    else
+    {
+      xWeightedAverage( pu, srcPred0, srcPred1, pcYuvPred, slice.getSPS()->getBitDepths(), slice.clpRngs(), bioApplied );
+    }
+  }
+#else
   if (dmvrApplied)
   {
     xProcessDMVR(pu, pcYuvPred, slice.clpRngs(), bioApplied);
@@ -615,6 +654,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
     xWeightedAverage( pu, srcPred0, srcPred1, pcYuvPred, slice.getSPS()->getBitDepths(), slice.clpRngs(), bioApplied );
     }
   }
+#endif
 }
 
 void InterPrediction::xPredInterBlk ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
@@ -1140,7 +1180,28 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
         pcYuvDst.bufs[0].addAvg(CPelBuf(pSrcY0, src0Stride, pu.lumaSize()), CPelBuf(pSrcY1, src1Stride, pu.lumaSize()), clpRngs.comp[0]);
       }
     }
+#if JVET_N0146_DMVR_BDOF_CONDITION
+    if (pu.cs->pps->getWPBiPred())
+    {
+      const int iRefIdx0 = pu.refIdx[0];
+      const int iRefIdx1 = pu.refIdx[1];
+      WPScalingParam  *pwp0;
+      WPScalingParam  *pwp1;
+      getWpScaling(pu.cu->slice, iRefIdx0, iRefIdx1, pwp0, pwp1);
+      if (!bioApplied)
+      {
+        addWeightBiComponent(pcYuvSrc0, pcYuvSrc1, pu.cu->slice->clpRngs(), pwp0, pwp1, pcYuvDst, true, COMPONENT_Y);
+      }
+      addWeightBiComponent(pcYuvSrc0, pcYuvSrc1, pu.cu->slice->clpRngs(), pwp0, pwp1, pcYuvDst, true, COMPONENT_Cb);
+      addWeightBiComponent(pcYuvSrc0, pcYuvSrc1, pu.cu->slice->clpRngs(), pwp0, pwp1, pcYuvDst, true, COMPONENT_Cr);
+    }
+    else
+    {
+      pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, bioApplied);
+    }
+#else
     pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, bioApplied);
+#endif
   }
   else if( iRefIdx0 >= 0 && iRefIdx1 < 0 )
   {

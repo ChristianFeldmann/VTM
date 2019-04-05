@@ -1877,6 +1877,14 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 }
 bool PU::checkDMVRCondition(const PredictionUnit& pu)
 {
+#if JVET_N0146_DMVR_BDOF_CONDITION
+    WPScalingParam *wp0;
+    WPScalingParam *wp1;
+    int refIdx0 = pu.refIdx[REF_PIC_LIST_0];
+    int refIdx1 = pu.refIdx[REF_PIC_LIST_1];
+    pu.cs->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
+    pu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
+#endif
   if (pu.cs->sps->getUseDMVR())
   {
     return pu.mergeFlag
@@ -1887,6 +1895,10 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
       && PU::isBiPredFromDifferentDirEqDistPoc(pu)
       && (pu.lheight() >= 8)
       && ((pu.lheight() * pu.lwidth()) >= 64)
+#if JVET_N0146_DMVR_BDOF_CONDITION
+      && (pu.cu->GBiIdx == GBI_DEFAULT)
+      && ((!wp0[COMPONENT_Y].bPresentFlag) && (!wp1[COMPONENT_Y].bPresentFlag))
+#endif
       ;
   }
   else

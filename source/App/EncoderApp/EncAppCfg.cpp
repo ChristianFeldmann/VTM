@@ -2187,7 +2187,6 @@ bool EncAppCfg::xCheckParameter()
     msg( WARNING, "**          advanced sup-pu temporal merging modes are enabled.           **\n" );
     msg( WARNING, "****************************************************************************\n" );
   }
-#if !JVET_N0448_N0380
   else if( m_SubPuMvpMode != 0 && m_maxNumMergeCand < 6 )
   {
     msg( WARNING, "****************************************************************************\n" );
@@ -2195,7 +2194,6 @@ bool EncAppCfg::xCheckParameter()
     msg( WARNING, "**          an advanced sup-pu temporal merging mode is enabled.          **\n" );
     msg( WARNING, "****************************************************************************\n" );
   }
-#endif
   xConfirmPara( m_iQP < -6 * (m_internalBitDepth[CHANNEL_TYPE_LUMA] - 8) || m_iQP > MAX_QP, "QP exceeds supported range (-QpBDOffsety to 63)" );
 #if W0038_DB_OPT
   xConfirmPara( m_deblockingFilterMetric!=0 && (m_bLoopFilterDisable || m_loopFilterOffsetInPPS), "If DeblockingFilterMetric is non-zero then both LoopFilterDisable and LoopFilterOffsetInPPS must be 0");

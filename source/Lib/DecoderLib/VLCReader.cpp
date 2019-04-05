@@ -937,12 +937,15 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC(     uiCode, "chroma_format_idc" );                  pcSPS->setChromaFormatIdc( ChromaFormat(uiCode) );
   CHECK(uiCode > 3, "Invalid chroma format signalled");
 
+#if !JVET_N0671_CHROMA_FORMAT_422
   // KJS: ENABLE_CHROMA_422 does not exist anymore o.O
-  if( pcSPS->getChromaFormatIdc() == CHROMA_422 )
+  if (pcSPS->getChromaFormatIdc() == CHROMA_422)
   {
-    EXIT( "Error:  4:2:2 chroma sampling format not supported with current compiler setting."
-          "\n        Set compiler flag \"ENABLE_CHROMA_422\" equal to 1 for enabling 4:2:2.\n" );
+    EXIT("Error:  4:2:2 chroma sampling format not supported with current compiler setting."
+      "\n        Set compiler flag \"JVET_N0671_CHROMA_FORMAT_422\" equal to 1 for enabling 4:2:2.\n");
   }
+#endif //!JVET_N0671_CHROMA_FORMAT_422
+
 
   if( pcSPS->getChromaFormatIdc() == CHROMA_444 )
   {

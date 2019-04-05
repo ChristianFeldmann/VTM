@@ -759,12 +759,10 @@ void DecLib::xActivateParameterSets()
 
     xParsePrefixSEImessages();
 
-#if RExt__HIGH_BIT_DEPTH_SUPPORT==0
     if (sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag() || sps->getBitDepth(CHANNEL_TYPE_LUMA)>12 || sps->getBitDepth(CHANNEL_TYPE_CHROMA)>12 )
     {
       THROW("High bit depth support must be enabled at compile-time in order to decode this bitstream\n");
     }
-#endif
 
     //  Get a new picture buffer. This will also set up m_pcPic, and therefore give us a SPS and PPS pointer that we can use.
     m_pcPic = xGetNewPicBuffer (*sps, *pps, m_apcSlicePilot->getTLayer());

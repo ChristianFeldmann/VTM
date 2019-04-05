@@ -3024,8 +3024,12 @@ Distortion RdCost::xGetSSE_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const int  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
+#if JVET_N0671_RDCOST_FIX
+  const int cShift = 0;
+#else
   const int  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-
+#endif
+  
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
   for( ; iRows != 0; iRows-- )
@@ -3056,7 +3060,12 @@ Distortion RdCost::xGetSSE2_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma           = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
+#if JVET_N0671_RDCOST_FIX
+  const size_t  cShift = 0;
+#else
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
+#endif
+
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
   for( ; iRows != 0; iRows-- )
@@ -3085,7 +3094,12 @@ Distortion RdCost::xGetSSE4_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
+#if JVET_N0671_RDCOST_FIX
+  const size_t  cShift = 0;
+#else
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
+#endif
+
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
   for( ; iRows != 0; iRows-- )
@@ -3116,7 +3130,11 @@ Distortion RdCost::xGetSSE8_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
+#if JVET_N0671_RDCOST_FIX
+  const size_t  cShift = 0;
+#else
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
+#endif
 
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
@@ -3151,8 +3169,11 @@ Distortion RdCost::xGetSSE16_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
+#if JVET_N0671_RDCOST_FIX
+  const size_t  cShift = 0;
+#else
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-
+#endif
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
   for( ; iRows != 0; iRows-- )
@@ -3194,7 +3215,11 @@ Distortion RdCost::xGetSSE16N_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
+#if JVET_N0671_RDCOST_FIX
+  const size_t  cShift = 0;
+#else
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
+#endif
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
   for( ; iRows != 0; iRows-- )
@@ -3239,7 +3264,11 @@ Distortion RdCost::xGetSSE32_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
+#if JVET_N0671_RDCOST_FIX
+  const size_t  cShift = 0;
+#else
   const size_t  cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
+#endif
 
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
@@ -3298,7 +3327,11 @@ Distortion RdCost::xGetSSE64_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t iStrideOrgLuma   = rcDtParam.orgLuma.stride;
-  const size_t cShift           = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
+#if JVET_N0671_RDCOST_FIX
+  const size_t  cShift = 0;
+#else
+  const size_t  cShift          = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
+#endif
 
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth)) << 1;

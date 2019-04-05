@@ -903,6 +903,11 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
 #else
   ColourSpaceConvert( picOrg, pic, ipcsc, true);
 #endif
+
+#if JVET_N0671_RGB
+  picOrg.copyFrom(pic);
+#endif
+
   return true;
 }
 

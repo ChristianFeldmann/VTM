@@ -2036,8 +2036,11 @@ bool EncAppCfg::xCheckParameter()
 
 
   xConfirmPara(m_bitstreamFileName.empty(), "A bitstream file name must be specified (BitstreamFile)");
+#if !JVET_N0671_SUPPRESS_WARNINGS
   const uint32_t maxBitDepth=(m_chromaFormatIDC==CHROMA_400) ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]);
-  xConfirmPara(m_bitDepthConstraint<maxBitDepth, "The internalBitDepth must not be greater than the bitDepthConstraint value");
+  xConfirmPara(m_bitDepthConstraint < maxBitDepth, "The internalBitDepth must not be greater than the bitDepthConstraint value");
+#endif // !JVET_N0671_SUPPRESS_WARNINGS
+
   xConfirmPara(m_chromaFormatConstraint<m_chromaFormatIDC, "The chroma format used must not be greater than the chromaFormatConstraint value");
 
   if (m_profile==Profile::MAINREXT || m_profile==Profile::HIGHTHROUGHPUTREXT)
@@ -2105,13 +2108,15 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_enableIntraReferenceSmoothing==false, "EnableIntraReferenceSmoothing must be enabled for non main-RExt profiles.");
     xConfirmPara(m_cabacBypassAlignmentEnabledFlag, "AlignCABACBeforeBypass cannot be enabled for non main-RExt profiles.");
   }
-  xConfirmPara( m_chromaFormatIDC==CHROMA_422, "4:2:2 chroma sampling format not supported with current compiler setting. Set compiler flag \"ENABLE_CHROMA_422\" equal to 1 for enabling 4:2:2.\n\n" );
+#if !JVET_N0671_CHROMA_FORMAT_422
+  xConfirmPara(m_chromaFormatIDC == CHROMA_422, "4:2:2 chroma sampling format not supported with current compiler setting. Set compiler flag \"JVET_N0671_CHROMA_FORMAT_422\" equal to 1 for enabling 4:2:2.\n\n");
+#endif // !JVET_N0671_CHROMA_FORMAT_422
+
 
   // check range of parameters
   xConfirmPara( m_inputBitDepth[CHANNEL_TYPE_LUMA  ] < 8,                                   "InputBitDepth must be at least 8" );
   xConfirmPara( m_inputBitDepth[CHANNEL_TYPE_CHROMA] < 8,                                   "InputBitDepthC must be at least 8" );
 
-#if !RExt__HIGH_BIT_DEPTH_SUPPORT
   if (m_extendedPrecisionProcessingFlag)
   {
     for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
@@ -2126,7 +2131,6 @@ bool EncAppCfg::xCheckParameter()
       xConfirmPara((m_internalBitDepth[channelType] > 12) , "Model is not configured to support high enough internal accuracies - enable RExt__HIGH_BIT_DEPTH_SUPPORT to use increased precision internal data types etc...");
     }
   }
-#endif
 
   xConfirmPara( (m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ] < m_inputBitDepth[CHANNEL_TYPE_LUMA  ]), "MSB-extended bit depth for luma channel (--MSBExtendedBitDepth) must be greater than or equal to input bit depth for luma channel (--InputBitDepth)" );
   xConfirmPara( (m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] < m_inputBitDepth[CHANNEL_TYPE_CHROMA]), "MSB-extended bit depth for chroma channel (--MSBExtendedBitDepthC) must be greater than or equal to input bit depth for chroma channel (--InputBitDepthC)" );

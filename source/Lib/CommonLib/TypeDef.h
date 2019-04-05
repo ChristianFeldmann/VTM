@@ -61,7 +61,6 @@
 #define JVET_N0671_DMVR                                   1
 
 #define JVET_N0671_RDCOST_FIX                             1
-#define JVET_N0671_SUPPRESS_WARNINGS                      1
 #define JVET_N0671_INTRA_TPM_ALIGNWITH420                 1
 
 #endif //JVET_N0671
@@ -279,6 +278,12 @@ typedef std::pair<int, int>  TrCost;
 // Tool Switches
 // ====================================================================================================================
 
+
+// This can be enabled by the makefile
+#ifndef RExt__HIGH_BIT_DEPTH_SUPPORT
+#define RExt__HIGH_BIT_DEPTH_SUPPORT                      0 ///< 0 (default) use data type definitions for 8-10 bit video, 1 = use larger data types to allow for up to 16-bit video (originally developed as part of N0188)
+#endif
+
 // SIMD optimizations
 #define SIMD_ENABLE                                       1
 #define ENABLE_SIMD_OPT                                 ( SIMD_ENABLE && !RExt__HIGH_BIT_DEPTH_SUPPORT )    ///< SIMD optimizations, no impact on RD performance
@@ -320,7 +325,13 @@ typedef std::pair<int, int>  TrCost;
 // Derived macros
 // ====================================================================================================================
 
+#if RExt__HIGH_BIT_DEPTH_SUPPORT
 #define FULL_NBIT                                         1 ///< When enabled, use distortion measure derived from all bits of source data, otherwise discard (bitDepth - 8) least-significant bits of distortion
+#define RExt__HIGH_PRECISION_FORWARD_TRANSFORM            1 ///< 0 use original 6-bit transform matrices for both forward and inverse transform, 1 (default) = use original matrices for inverse transform and high precision matrices for forward transform
+#else
+#define FULL_NBIT                                         1 ///< When enabled, use distortion measure derived from all bits of source data, otherwise discard (bitDepth - 8) least-significant bits of distortion
+#define RExt__HIGH_PRECISION_FORWARD_TRANSFORM            0 ///< 0 (default) use original 6-bit transform matrices for both forward and inverse transform, 1 = use original matrices for inverse transform and high precision matrices for forward transform
+#endif
 
 #if FULL_NBIT
 #define DISTORTION_PRECISION_ADJUSTMENT(x)                0
@@ -330,18 +341,34 @@ typedef std::pair<int, int>  TrCost;
 #endif
 
 // ====================================================================================================================
+// Error checks
+// ====================================================================================================================
+
+#if ((RExt__HIGH_PRECISION_FORWARD_TRANSFORM != 0) && (RExt__HIGH_BIT_DEPTH_SUPPORT == 0))
+#error ERROR: cannot enable RExt__HIGH_PRECISION_FORWARD_TRANSFORM without RExt__HIGH_BIT_DEPTH_SUPPORT
+#endif
+
+// ====================================================================================================================
 // Named numerical types
 // ====================================================================================================================
 
-typedef       int16_t         Pel;               ///< pixel type
+#if RExt__HIGH_BIT_DEPTH_SUPPORT
+typedef       int             Pel;               ///< pixel type
+typedef       int64_t           TCoeff;            ///< transform coefficient
+typedef       int             TMatrixCoeff;      ///< transform matrix coefficient
+typedef       int16_t           TFilterCoeff;      ///< filter coefficient
+typedef       int64_t           Intermediate_Int;  ///< used as intermediate value in calculations
+typedef       uint64_t          Intermediate_UInt; ///< used as intermediate value in calculations
+#else
+typedef       int16_t           Pel;               ///< pixel type
 typedef       int             TCoeff;            ///< transform coefficient
-typedef       int16_t         TMatrixCoeff;      ///< transform matrix coefficient
-typedef       int16_t         TFilterCoeff;      ///< filter coefficient
+typedef       int16_t           TMatrixCoeff;      ///< transform matrix coefficient
+typedef       int16_t           TFilterCoeff;      ///< filter coefficient
 typedef       int             Intermediate_Int;  ///< used as intermediate value in calculations
-typedef       uint32_t        Intermediate_UInt; ///< used as intermediate value in calculations
+typedef       uint32_t            Intermediate_UInt; ///< used as intermediate value in calculations
+#endif
 
-
-typedef       uint64_t        SplitSeries;       ///< used to encoded the splits that caused a particular CU size
+typedef       uint64_t          SplitSeries;       ///< used to encoded the splits that caused a particular CU size
 
 typedef       uint64_t        Distortion;        ///< distortion measurement
 

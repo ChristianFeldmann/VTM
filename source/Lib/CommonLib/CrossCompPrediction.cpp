@@ -92,9 +92,11 @@ void CrossComponentPrediction::crossComponentPrediction(        TransformUnit &t
   const int alpha = tu.compAlpha[compID];
   const int diffBitDepth = tu.cs->sps->getDifferentialLumaChromaBitDepth();
 
+#if !RExt__HIGH_BIT_DEPTH_SUPPORT
   ClpRng clpRng; //not limited by adaptive clipping
   clpRng.min = std::numeric_limits<Pel>::min();
   clpRng.max = std::numeric_limits<Pel>::max();
+#endif
 
   for( int y = 0; y < piResiT.height; y++ )
   {
@@ -105,10 +107,17 @@ void CrossComponentPrediction::crossComponentPrediction(        TransformUnit &t
       // or to be representable in a bitDepthY+4 or bitDepthC+4 signed integer.
       //  The result of the constraint is that for 8/10/12bit profiles, the input values
       //  can be represented within a 16-bit Pel-type.
+#if RExt__HIGH_BIT_DEPTH_SUPPORT
+      for( int x = 0; x < piResiT.width; x++ )
+      {
+        piResiT.at( x, y ) = piResiC.at( x, y ) + ( ( alpha * rightShift( piResiL.at( x, y ), diffBitDepth ) ) >> 3 );
+      }
+#else
       for( int x = 0; x < piResiT.width; x++ )
       {
         piResiT.at( x, y ) = ClipPel<int>( piResiC.at( x, y ) + ( ( alpha * rightShift<int>( int( piResiL.at( x, y ) ), diffBitDepth ) ) >> 3 ), clpRng );
       }
+#endif
     }
     else
     {

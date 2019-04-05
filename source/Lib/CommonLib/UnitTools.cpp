@@ -1073,7 +1073,11 @@ bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, bool isCa
     {
       mrgCtx.mvFieldNeighbours[(cnt << 1) + 1].setMvField(miNeighbor.mv[1], miNeighbor.refIdx[1]);
     }
+#if JVET_N0843_BVP_SIMPLIFICATION
+    if (mrgIdx > 2 || (mrgIdx > 1 && ibcFlag) || !xCheckSimilarMotion(cnt, prevCnt, mrgCtx, hasPruned))
+#else
     if (mrgIdx > 2 || !xCheckSimilarMotion(cnt, prevCnt, mrgCtx, hasPruned))
+#endif
     {
 #if !JVET_L0090_PAIR_AVG
       isCandInter[cnt] = true;
@@ -1114,7 +1118,9 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 
   int cnt = 0;
 
+#if JVET_N0843_BVP_SIMPLIFICATION==0
   const Position posLT = pu.shareParentPos;
+#endif
   const Position posRT = pu.shareParentPos.offset(pu.shareParentSize.width - 1, 0);
   const Position posLB = pu.shareParentPos.offset(0, pu.shareParentSize.height - 1);
 
@@ -1175,6 +1181,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 
   int spatialCandPos = cnt;
 
+#if JVET_N0843_BVP_SIMPLIFICATION==0
   // above right
   const PredictionUnit *puAboveRight = cs.getPURestricted(posRT.offset(1, -1), pu, pu.chType);
   bool isAvailableB0 = puAboveRight && isDiffMER(pu, *puAboveRight) && CU::isIBC(*puAboveRight->cu);
@@ -1269,8 +1276,13 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
   {
     return;
   }
+#endif
 
+#if JVET_N0843_BVP_SIMPLIFICATION
+  int maxNumMergeCandMin1 = maxNumMergeCand;
+#else
   int maxNumMergeCandMin1 = maxNumMergeCand - 1;
+#endif
   if (cnt != maxNumMergeCandMin1)
   {
     bool isAvailableSubPu = false;
@@ -1299,7 +1311,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
     }
   }
 
-#if JVET_L0090_PAIR_AVG
+#if JVET_L0090_PAIR_AVG && JVET_N0843_BVP_SIMPLIFICATION==0
   // pairwise-average candidates
     if (cnt>1 && cnt <maxNumMergeCand)
     {
@@ -2435,12 +2447,15 @@ bool PU::getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv)
  */
 void PU::fillIBCMvpCand(PredictionUnit &pu, AMVPInfo &amvpInfo)
 {
+#if JVET_N0843_BVP_SIMPLIFICATION==0
   CodingStructure &cs = *pu.cs;
+#endif
 
   AMVPInfo *pInfo = &amvpInfo;
 
   pInfo->numCand = 0;
 
+#if JVET_N0843_BVP_SIMPLIFICATION==0
   //-- Get Spatial MV
   Position posLT = pu.Y().topLeft();
   Position posRT = pu.Y().topRight();
@@ -2508,10 +2523,26 @@ void PU::fillIBCMvpCand(PredictionUnit &pu, AMVPInfo &amvpInfo)
     pInfo->mvCand[pInfo->numCand] = Mv(0, 0);
     pInfo->numCand++;
   }
+#endif
+
+#if JVET_N0843_BVP_SIMPLIFICATION
+  MergeCtx mergeCtx;
+  PU::getIBCMergeCandidates(pu, mergeCtx, AMVP_MAX_NUM_CANDS - 1);
+  int candIdx = 0;
+  while (pInfo->numCand < AMVP_MAX_NUM_CANDS)
+  {
+    pInfo->mvCand[pInfo->numCand] = mergeCtx.mvFieldNeighbours[(candIdx << 1) + 0].mv;;
+    pInfo->numCand++;
+    candIdx++;
+  }
+#endif
 
   for (Mv &mv : pInfo->mvCand)
   {
     mv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+#if JVET_N0843_BVP_SIMPLIFICATION
+    mv.roundToAmvrSignalPrecision(MV_PRECISION_QUARTER, pu.cu->imv);
+#endif
   }
 }
 

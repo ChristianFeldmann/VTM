@@ -650,11 +650,11 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
     m_BinEncoder.encodeBin(CU::isIBC(cu) ? 1 : 0, Ctx::IBCFlag(ctxidx));
     DTRACE(g_trace_ctx, D_SYNTAX, "ibc() ctx=%d cu.predMode=%d\n", ctxidx, cu.predMode);
 #if !JVET_MMVD_OFF_MACRO
-    if (CU::isInter(cu)
 #if JVET_N0127_MMVD_SPS_FLAG 
-      && cu.cs->slice->getSPS()->getUseMMVD()
-#endif    
-      )
+    if (CU::isInter(cu) && cu.cs->slice->getSPS()->getUseMMVD())
+#else
+    if (CU::isInter(cu))
+#endif
     {
       m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
       DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
@@ -662,11 +662,11 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 #endif
   }
 #if !JVET_MMVD_OFF_MACRO
-  if (cu.skip && !cu.cs->slice->getSPS()->getIBCFlag()
 #if JVET_N0127_MMVD_SPS_FLAG 
-    && cu.cs->slice->getSPS()->getUseMMVD()
-#endif    
-    )
+  if (cu.skip && !cu.cs->slice->getSPS()->getIBCFlag() && cu.cs->slice->getSPS()->getUseMMVD())
+#else
+  if (cu.skip && !cu.cs->slice->getSPS()->getIBCFlag())
+#endif
   {
     m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
     DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
@@ -1456,11 +1456,11 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
     return;
   }
 #if !JVET_MMVD_OFF_MACRO
-  if (pu.mergeFlag
 #if JVET_N0127_MMVD_SPS_FLAG 
-    && pu.cs->sps->getUseMMVD()
-#endif    
-    )
+  if (pu.mergeFlag && pu.cs->sps->getUseMMVD())
+#else
+  if (pu.mergeFlag)
+#endif
   {
     m_BinEncoder.encodeBin(pu.mmvdMergeFlag, Ctx::MmvdFlag(0));
     DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);

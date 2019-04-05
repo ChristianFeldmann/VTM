@@ -1853,8 +1853,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if !JVET_MMVD_OFF_MACRO
 #if JVET_N0127_MMVD_SPS_FLAG 
         if ( pu.cs->sps->getUseMMVD() )
-#endif 
+          uiBitsCand++; // for mmvd_flag
+#else
         uiBitsCand++; // for mmvd_flag
+#endif
 #endif
         double cost     = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
         insertPos = -1;

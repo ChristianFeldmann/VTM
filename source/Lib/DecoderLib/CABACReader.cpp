@@ -1572,11 +1572,11 @@ void CABACReader::merge_flag( PredictionUnit& pu )
 #if JVET_MMVD_OFF_MACRO
   pu.mmvdMergeFlag = false;
 #else
-  if (pu.mergeFlag
 #if JVET_N0127_MMVD_SPS_FLAG 
-    && pu.cs->sps->getUseMMVD()
-#endif  
-    )
+  if (pu.mergeFlag && pu.cs->sps->getUseMMVD())
+#else
+  if (pu.mergeFlag)
+#endif
   {
     pu.mmvdMergeFlag = (m_BinDecoder.decodeBin(Ctx::MmvdFlag(0)));
     DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);

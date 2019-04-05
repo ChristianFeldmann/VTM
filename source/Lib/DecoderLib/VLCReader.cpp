@@ -1094,7 +1094,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );             pcSPS->setAffineAmvrEnabledFlag ( uiCode != 0 );
 
   READ_FLAG(uiCode, "sps_dmvr_enable_flag");                        pcSPS->setUseDMVR(uiCode != 0);
-
+#if JVET_N0127_MMVD_SPS_FLAG 
+  READ_FLAG(uiCode, "sps_mmvd_enable_flag");                        pcSPS->setUseMMVD(uiCode != 0);
+#endif
   // KJS: sps_cclm_enabled_flag
   READ_FLAG( uiCode,    "lm_chroma_enabled_flag" );                 pcSPS->setUseLMChroma            ( uiCode != 0 );
   if ( pcSPS->getUseLMChroma() && pcSPS->getChromaFormatIdc() == CHROMA_420 )
@@ -1122,7 +1124,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
 
   // KJS: not in draft yet
+#if JVET_N0127_MMVD_SPS_FLAG 
+  if ( pcSPS->getUseMMVD() )
+  {
+    READ_FLAG(uiCode, "sps_fracmmvd_disabled_flag");               pcSPS->setDisFracMmvdEnabledFlag   ( uiCode != 0 );
+  }
+#else
   READ_FLAG( uiCode,  "sps_fracmmvd_disabled_flag" );               pcSPS->setDisFracMmvdEnabledFlag ( uiCode != 0 );
+#endif
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
   if( pcSPS->getUseSBT() )

@@ -768,9 +768,20 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
 #if JVET_MMVD_OFF_MACRO
     cu.mmvdSkip = false;
 #else
-    unsigned mmvdSkip = m_BinDecoder.decodeBin(Ctx::MmvdFlag(0));
-    cu.mmvdSkip = mmvdSkip;
-    DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, mmvdSkip ? 1 : 0);
+#if JVET_N0127_MMVD_SPS_FLAG 
+    if (cu.cs->slice->getSPS()->getUseMMVD())
+    {
+#endif
+      unsigned mmvdSkip = m_BinDecoder.decodeBin(Ctx::MmvdFlag(0));
+      cu.mmvdSkip = mmvdSkip;
+      DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, mmvdSkip ? 1 : 0);
+#if JVET_N0127_MMVD_SPS_FLAG 
+    }
+    else
+    {
+      cu.mmvdSkip = false;
+    }
+#endif  
 #endif
     cu.skip     = true;
     cu.rootCbf  = false;
@@ -1561,11 +1572,21 @@ void CABACReader::merge_flag( PredictionUnit& pu )
 #if JVET_MMVD_OFF_MACRO
   pu.mmvdMergeFlag = false;
 #else
-  if (pu.mergeFlag)
+  if (pu.mergeFlag
+#if JVET_N0127_MMVD_SPS_FLAG 
+    && pu.cs->sps->getUseMMVD()
+#endif  
+    )
   {
     pu.mmvdMergeFlag = (m_BinDecoder.decodeBin(Ctx::MmvdFlag(0)));
     DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
   }
+#if JVET_N0127_MMVD_SPS_FLAG 
+  else
+  {
+    pu.mmvdMergeFlag = false;
+  }
+#endif 
 #endif
 }
 

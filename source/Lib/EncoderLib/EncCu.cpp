@@ -1851,6 +1851,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           uiBitsCand--;
         }
 #if !JVET_MMVD_OFF_MACRO
+#if JVET_N0127_MMVD_SPS_FLAG 
+        if ( pu.cs->sps->getUseMMVD() )
+#endif 
         uiBitsCand++; // for mmvd_flag
 #endif
         double cost     = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
@@ -1978,6 +1981,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       cu.mmvdSkip = true;
       int tempNum = 0;
       tempNum = MMVD_ADD_NUM;
+#if JVET_N0127_MMVD_SPS_FLAG 
+      if ( pu.cs->sps->getUseMMVD() )
+#endif 
       for (uint32_t mergeCand = mergeCtx.numValidMergeCand; mergeCand < mergeCtx.numValidMergeCand + tempNum; mergeCand++)
       {
         const int mmvdMergeCand = mergeCand - mergeCtx.numValidMergeCand;

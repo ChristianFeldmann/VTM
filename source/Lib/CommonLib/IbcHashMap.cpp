@@ -446,7 +446,15 @@ int IbcHashMap::calHashBlkMatchPerc(const Area& lumaArea)
       total++;
     }
   }
-  return 100 * hit / total;
+
+  if (total == 0)
+  {
+    return 0;
+  }
+  else
+  {
+    return 100 * hit / total;
+  }
 }
 #endif
 //! \}

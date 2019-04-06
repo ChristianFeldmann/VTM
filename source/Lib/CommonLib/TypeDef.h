@@ -104,6 +104,8 @@
 
 #define JVET_N0383_N0251_IBC_COL_VPDU_REMOVE              1
 
+#define JVET_N0407_DMVR_CU_SIZE_RESTRICTION               1 // Disable 4xN/8x8 CUs for DMVR
+
 #define JCTVC_Y0038_PARAMS                                1
 
 #define JVET_MMVD_OFF_MACRO                               0

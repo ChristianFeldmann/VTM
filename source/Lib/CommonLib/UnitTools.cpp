@@ -1898,7 +1898,12 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
       && !pu.cu->mmvdSkip
       && PU::isBiPredFromDifferentDirEqDistPoc(pu)
       && (pu.lheight() >= 8)
+#if JVET_N0407_DMVR_CU_SIZE_RESTRICTION
+      && (pu.lwidth() >= 8)
+      && ((pu.lheight() * pu.lwidth()) >= 128)
+#else
       && ((pu.lheight() * pu.lwidth()) >= 64)
+#endif
       ;
   }
   else

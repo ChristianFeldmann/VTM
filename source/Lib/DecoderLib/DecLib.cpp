@@ -1210,7 +1210,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       pcSlice->setCheckLDC(bLowDelay);
     }
 
+#if JVET_N0235_SMVD_SPS
+    if (pcSlice->getSPS()->getUseSMVD() && pcSlice->getCheckLDC() == false && pcSlice->getMvdL1ZeroFlag() == false)
+#else
     if ( pcSlice->getCheckLDC() == false && pcSlice->getMvdL1ZeroFlag() == false )
+#endif
     {
       int currPOC = pcSlice->getPOC();
 

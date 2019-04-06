@@ -261,6 +261,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
   m_cEncLib.setUseSBT                                            ( m_SBT );
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
+#if JVET_N0235_SMVD_SPS
+  m_cEncLib.setUseSMVD                                           ( m_SMVD );
+#endif
   m_cEncLib.setUseGBi                                            ( m_GBi );
   m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET

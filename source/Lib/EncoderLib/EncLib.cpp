@@ -959,6 +959,9 @@ void EncLib::xInitSPS(SPS &sps)
   {
     sps.setMaxSbtSize                       ( m_iSourceWidth >= 1920 ? 64 : 32 );
   }
+#if JVET_N0235_SMVD_SPS
+  sps.setUseSMVD                ( m_SMVD );
+#endif
   sps.setUseGBi                ( m_GBi );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   sps.setLadfEnabled           ( m_LadfEnabled );

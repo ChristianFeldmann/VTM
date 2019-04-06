@@ -857,6 +857,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MTSInterMaxCand",                                 m_MTSInterMaxCand,                                    4, "Number of additional candidates to test in encoder search for MTS in inter slices\n")
   ("MTSImplicit",                                     m_MTSImplicit,                                        0, "Enable implicit MTS (when explicit MTS is off)\n")
   ( "SBT",                                            m_SBT,                                            false, "Enable Sub-Block Transform for inter blocks\n" )
+#if JVET_N0235_SMVD_SPS
+  ("SMVD",                                            m_SMVD,                                           false, "Enable Symmetric MVD\n")
+#endif
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
   ("GBi",                                             m_GBi,                                            false, "Enable Generalized Bi-prediction(GBi)")
   ("GBiFast",                                         m_GBiFast,                                        false, "Fast methods for Generalized Bi-prediction(GBi)\n")
@@ -1964,6 +1967,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_MTS, "MTS only allowed with NEXT profile" );
     xConfirmPara( m_MTSIntraMaxCand, "MTS only allowed with NEXT profile" );
     xConfirmPara( m_MTSInterMaxCand, "MTS only allowed with NEXT profile" );
+#if JVET_N0235_SMVD_SPS
+    xConfirmPara( m_SMVD, "SMVD is only allowed with NEXT profile" );
+#endif
     xConfirmPara( m_compositeRefEnabled, "Composite Reference Frame is only allowed with NEXT profile" );
     xConfirmPara( m_GBi, "GBi is only allowed with NEXT profile" );
     xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
@@ -3138,6 +3144,9 @@ void EncAppCfg::xPrintParameter()
     }
     msg( VERBOSE, "MTS: %1d(intra) %1d(inter) ", m_MTS & 1, ( m_MTS >> 1 ) & 1 );
     msg( VERBOSE, "SBT:%d ", m_SBT );
+#if JVET_N0235_SMVD_SPS
+    msg( VERBOSE, "SMVD:%d ", m_SMVD );
+#endif
     msg( VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
     msg( VERBOSE, "GBi:%d ", m_GBi );
     msg( VERBOSE, "GBiFast:%d ", m_GBiFast );

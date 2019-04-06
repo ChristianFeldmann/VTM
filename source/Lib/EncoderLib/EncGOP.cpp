@@ -1934,7 +1934,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->slices[pcSlice->getSliceSegmentIdx()]->setMvdL1ZeroFlag(pcSlice->getMvdL1ZeroFlag());
 #endif
 
+#if JVET_N0235_SMVD_SPS
+    if ( pcSlice->getSPS()->getUseSMVD() && pcSlice->getCheckLDC() == false && pcSlice->getMvdL1ZeroFlag() == false )
+#else
     if ( pcSlice->getCheckLDC() == false && pcSlice->getMvdL1ZeroFlag() == false )
+#endif
     {
       int currPOC = pcSlice->getPOC();
 

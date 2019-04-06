@@ -1109,6 +1109,9 @@ private:
   bool              m_MTS;
   bool              m_IntraMTS;                   // 18
   bool              m_InterMTS;                   // 19
+#if JVET_N0235_SMVD_SPS
+  bool              m_SMVD;
+#endif
   bool              m_Affine;
   bool              m_AffineType;
   bool              m_GBi;                        //
@@ -1374,6 +1377,10 @@ public:
   bool      getUseIntraMTS        ()                                      const     { return m_IntraMTS; }
   void      setUseInterMTS        ( bool b )                                        { m_InterMTS = b; }
   bool      getUseInterMTS        ()                                      const     { return m_InterMTS; }
+#if JVET_N0235_SMVD_SPS
+  void      setUseSMVD(bool b)                                                      { m_SMVD = b; }
+  bool      getUseSMVD()                                                  const     { return m_SMVD; }
+#endif
   void      setUseGBi             ( bool b )                                        { m_GBi = b; }
   bool      getUseGBi             ()                                      const     { return m_GBi; }
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET

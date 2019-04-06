@@ -625,6 +625,7 @@ static bool isTheSameNbHood( const CodingUnit &cu, const CodingStructure& cs, co
 
   const UnitArea &cmnAnc = ps[i - 1].parts[ps[i - 1].idx];
   const UnitArea cuArea  = CS::getArea( cs, cu, partitioner.chType );
+#if !JVET_N0266_SMALL_BLOCKS
   bool sharedListReuseMode = true;
   if(
       pu.mergeFlag == true &&
@@ -648,6 +649,7 @@ static bool isTheSameNbHood( const CodingUnit &cu, const CodingStructure& cs, co
   {
     sharedListReuseMode = true;
   }
+#endif
 //#endif
 
   for( int i = 0; i < cmnAnc.blocks.size(); i++ )
@@ -657,11 +659,12 @@ static bool isTheSameNbHood( const CodingUnit &cu, const CodingStructure& cs, co
       return false;
     }
   }
+#if !JVET_N0266_SMALL_BLOCKS
   if(!sharedListReuseMode)
   {
     return false;
   }
-
+#endif
 
   return true;
 }
@@ -1348,7 +1351,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   }
 
   // add first pass modes
+#if JVET_N0266_SMALL_BLOCKS
+  if ( !m_slice->isIRAP() && !( cs.area.lwidth() == 4 && cs.area.lheight() == 4 ) )
+#else
   if( !m_slice->isIRAP() )
+#endif
   {
     for( int qpLoop = maxQP; qpLoop >= minQP; qpLoop-- )
     {
@@ -1513,6 +1520,12 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     // INTRA MODES
     if (cs.sps->getIBCFlag() && !cuECtx.bestTU)
       return true;
+#if JVET_N0266_SMALL_BLOCKS
+    if ( partitioner.currArea().lumaSize().width == 4 && partitioner.currArea().lumaSize().height == 4 && !slice.isIntra() && !cuECtx.bestTU )
+    {
+      return true;
+    }
+#endif
     if( !( slice.isIRAP() || bestMode.type == ETM_INTRA || !cuECtx.bestTU ||
       ((!m_pcEncCfg->getDisableIntraPUsInInterSlices()) && (!relatedCU.isInter || !relatedCU.isIBC) && (
                                          ( cuECtx.bestTU->cbf[0] != 0 ) ||

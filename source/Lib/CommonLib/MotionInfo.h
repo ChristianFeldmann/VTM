@@ -221,7 +221,9 @@ struct LutMotionCand
 {
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lut;
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutIbc;
+#if !JVET_N0266_SMALL_BLOCKS
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShare;
+#endif
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShareIbc;
 };
 #if JVET_N0329_IBC_SEARCH_IMP

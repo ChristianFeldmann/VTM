@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0470_SMVD_FIX                               1 // remove mvd_l1_zero_flag condition, align to spec text.
+
 #define JVET_N0235_SMVD_SPS                               1
 
 #define JVET_N0843_BVP_SIMPLIFICATION                     1

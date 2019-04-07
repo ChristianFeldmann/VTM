@@ -1935,7 +1935,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
 
 #if JVET_N0235_SMVD_SPS
-    if ( pcSlice->getSPS()->getUseSMVD() && pcSlice->getCheckLDC() == false && pcSlice->getMvdL1ZeroFlag() == false )
+    if ( pcSlice->getSPS()->getUseSMVD() && pcSlice->getCheckLDC() == false
+#if !JVET_N0470_SMVD_FIX
+      && pcSlice->getMvdL1ZeroFlag() == false 
+#endif
+      )
 #else
     if ( pcSlice->getCheckLDC() == false && pcSlice->getMvdL1ZeroFlag() == false )
 #endif

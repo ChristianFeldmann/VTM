@@ -50,6 +50,10 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0470_SMVD_FIX                               1 // remove mvd_l1_zero_flag condition, align to spec text.
+
+#define JVET_N0235_SMVD_SPS                               1
+
 #define JVET_N0671                                        1
 
 #if JVET_N0671
@@ -64,10 +68,6 @@
 #define JVET_N0671_INTRA_TPM_ALIGNWITH420                 1
 
 #endif //JVET_N0671
-
-#define JVET_N0470_SMVD_FIX                               1 // remove mvd_l1_zero_flag condition, align to spec text.
-
-#define JVET_N0235_SMVD_SPS                               1
 
 #define JVET_N0843_BVP_SIMPLIFICATION                     1
 

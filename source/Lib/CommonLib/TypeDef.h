@@ -65,10 +65,14 @@
 
 #endif //JVET_N0671
 
+#define JVET_N0470_SMVD_FIX                               1 // remove mvd_l1_zero_flag condition, align to spec text.
+
+#define JVET_N0235_SMVD_SPS                               1
+
 #define JVET_N0843_BVP_SIMPLIFICATION                     1
 
 #define JVET_N0448_N0380                                  1 // When MaxNumMergeCand is 1, MMVD_BASE_MV_NUM is inferred to be 1.
-
+#define JVET_N0266_SMALL_BLOCKS                           1 // remove 4x4 uni-pred, 4x8/8x4 bi-pred from regular inter modes
 #define JVET_N0054_JOINT_CHROMA                           1 // Joint chroma residual coding mode
 
 #define JVET_N0317_ADD_ZERO_BV                            1
@@ -114,8 +118,9 @@
 #define JVET_N0271_SIMPLFIED_CCLM                         1 // Simplified CCLM parameter derivation in JVET-N0271
 
 #define JVET_N0178_IMPLICIT_BDOF_SPLIT                    1
-
 #define JVET_N0383_N0251_IBC_COL_VPDU_REMOVE              1
+
+#define JVET_N0407_DMVR_CU_SIZE_RESTRICTION               1 // Disable 4xN/8x8 CUs for DMVR
 
 #define JCTVC_Y0038_PARAMS                                1
 

@@ -247,6 +247,9 @@ protected:
   int       m_MTSImplicit;
   bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
 
+#if JVET_N0235_SMVD_SPS
+  bool      m_SMVD;
+#endif
   bool      m_compositeRefEnabled;
   bool      m_GBi;
   bool      m_GBiFast;

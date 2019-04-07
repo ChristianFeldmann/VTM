@@ -223,6 +223,9 @@ protected:
   bool      m_AffineType;
   bool      m_BIO;
 
+#if JVET_N0235_SMVD_SPS
+  bool      m_SMVD;
+#endif
   bool      m_compositeRefEnabled;        //composite reference
   bool      m_GBi;
   bool      m_GBiFast;
@@ -736,6 +739,10 @@ public:
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }
+#if JVET_N0235_SMVD_SPS
+  void      setUseSMVD                      ( bool b )       { m_SMVD = b; }
+  bool      getUseSMVD                      ()         const { return m_SMVD; }
+#endif
   void      setUseGBi                       ( bool b )       { m_GBi = b; }
   bool      getUseGBi                       ()         const { return m_GBi; }
   void      setUseGBiFast                   ( uint32_t b )   { m_GBiFast = b; }

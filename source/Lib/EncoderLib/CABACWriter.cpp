@@ -647,7 +647,12 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 #endif
     return;
   }
-
+#if JVET_N0266_SMALL_BLOCKS
+  if ( !cu.cs->slice->getSPS()->getIBCFlag() && cu.lwidth() == 4 && cu.lheight() == 4 )
+  {
+    return;
+  }
+#endif
   m_BinEncoder.encodeBin( ( cu.skip ), Ctx::SkipFlag( ctxId ) );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0 );
@@ -656,6 +661,12 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 #if JVET_N0318_N0467_IBC_SIZE
     if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
     {
+#endif
+#if JVET_N0266_SMALL_BLOCKS
+      if ( cu.lwidth() == 4 && cu.lheight() == 4 )
+      {
+        return;
+      }
 #endif
     unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
     m_BinEncoder.encodeBin(CU::isIBC(cu) ? 1 : 0, Ctx::IBCFlag(ctxidx));
@@ -685,7 +696,11 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
 {
   if (cu.cs->slice->getSPS()->getIBCFlag())
   {
+#if JVET_N0266_SMALL_BLOCKS
+    if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) )
+#else
     if (cu.cs->slice->isIntra())
+#endif
     {
 #if JVET_N0318_N0467_IBC_SIZE
       if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
@@ -716,7 +731,11 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
   }
   else
   {
+#if JVET_N0266_SMALL_BLOCKS
+    if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) )
+#else
     if (cu.cs->slice->isIntra())
+#endif
     {
       return;
     }

@@ -1061,7 +1061,11 @@ bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, bool isCa
   {
     hasPruned[subPuMvpPos] = true;
   }
+#if JVET_N0266_SMALL_BLOCKS
+  auto &lut = ibcFlag ? ( isShared ? cs.motionLut.lutShareIbc : cs.motionLut.lutIbc ) : cs.motionLut.lut;
+#else
   auto &lut = ibcFlag ? ( isShared ? cs.motionLut.lutShareIbc : cs.motionLut.lutIbc ) : ( isShared ? cs.motionLut.lutShare : cs.motionLut.lut );
+#endif
   int num_avai_candInLUT = (int) lut.size();
 
   for (int mrgIdx = 1; mrgIdx <= num_avai_candInLUT; mrgIdx++)
@@ -1387,10 +1391,15 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 
   int cnt = 0;
 
-
+#if JVET_N0266_SMALL_BLOCKS
+  const Position posLT = pu.Y().topLeft();
+  const Position posRT = pu.Y().topRight();
+  const Position posLB = pu.Y().bottomLeft();
+#else
   const Position posLT = pu.shareParentPos;
   const Position posRT = pu.shareParentPos.offset(pu.shareParentSize.width - 1, 0);
   const Position posLB = pu.shareParentPos.offset(0, pu.shareParentSize.height - 1);
+#endif
   MotionInfo miAbove, miLeft, miAboveLeft, miAboveRight, miBelowLeft;
 
   //left
@@ -1613,15 +1622,23 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   {
     //>> MTK colocated-RightBottom
     // offset the pos to be sure to "point" to the same position the uiAbsPartIdx would've pointed to
+#if JVET_N0266_SMALL_BLOCKS
+    Position posRB = pu.Y().bottomRight().offset( -3, -3 );
+#else
     Position posRB = pu.shareParentPos.offset(pu.shareParentSize.width-3, pu.shareParentSize.height - 3);
+#endif
     const PreCalcValues& pcv = *cs.pcv;
 
     Position posC0;
+#if JVET_N0266_SMALL_BLOCKS
+    Position posC1 = pu.Y().center();
+#else
     Position posC1 = pu.shareParentPos.offset((pu.shareParentSize.width/2), (pu.shareParentSize.height/2));
-
+#endif
     bool C0Avail = false;
+#if !JVET_N0266_SMALL_BLOCKS
     bool C1Avail = (posC1.x < pcv.lumaWidth) && (posC1.y  < pcv.lumaHeight);
-
+#endif
     if (((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight))
     {
       {
@@ -1656,8 +1673,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     int       dir         = 0;
     unsigned  uiArrayAddr = cnt;
     bool      bExistMV    = ( C0Avail && getColocatedMVP(pu, REF_PIC_LIST_0, posC0, cColMv, iRefIdx ) )
+#if JVET_N0266_SMALL_BLOCKS
+                              || getColocatedMVP( pu, REF_PIC_LIST_0, posC1, cColMv, iRefIdx );
+#else
                                       || ( C1Avail && getColocatedMVP(pu, REF_PIC_LIST_0, posC1, cColMv, iRefIdx ));
-
+#endif
     if (bExistMV)
     {
       dir     |= 1;
@@ -1667,7 +1687,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     if (slice.isInterB())
     {
       bExistMV = ( C0Avail && getColocatedMVP(pu, REF_PIC_LIST_1, posC0, cColMv, iRefIdx ) )
+#if JVET_N0266_SMALL_BLOCKS
+                   || getColocatedMVP( pu, REF_PIC_LIST_1, posC1, cColMv, iRefIdx );
+#else
                            || (C1Avail &&  getColocatedMVP(pu, REF_PIC_LIST_1, posC1, cColMv, iRefIdx ) );
+#endif
       if (bExistMV)
       {
         dir     |= 2;
@@ -1719,7 +1743,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     bool isAvailableSubPu = false;
     unsigned subPuMvpPos = 0;
 #if JVET_L0090_PAIR_AVG
+#if JVET_N0266_SMALL_BLOCKS
+    bool isShared = false;
+#else
     bool  isShared = ((pu.Y().lumaSize().width != pu.shareParentSize.width) || (pu.Y().lumaSize().height != pu.shareParentSize.height));
+#endif
     bool bFound = addMergeHMVPCand(cs, mrgCtx, canFastExit
       , mrgCandIdx
       , maxNumMergeCandMin1, cnt
@@ -1902,7 +1930,12 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
       && !pu.cu->mmvdSkip
       && PU::isBiPredFromDifferentDirEqDistPoc(pu)
       && (pu.lheight() >= 8)
+#if JVET_N0407_DMVR_CU_SIZE_RESTRICTION
+      && (pu.lwidth() >= 8)
+      && ((pu.lheight() * pu.lwidth()) >= 128)
+#else
       && ((pu.lheight() * pu.lwidth()) >= 64)
+#endif
       ;
   }
   else
@@ -2661,8 +2694,9 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     Position posC0;
     bool C0Avail = false;
     Position posC1 = pu.Y().center();
+#if !JVET_N0266_SMALL_BLOCKS
     bool C1Avail =  ( posC1.x  < pcv.lumaWidth ) && ( posC1.y < pcv.lumaHeight ) ;
-
+#endif
     Mv cColMv;
 
     if( ( ( posRB.x + pcv.minCUWidth ) < pcv.lumaWidth ) && ( ( posRB.y + pcv.minCUHeight ) < pcv.lumaHeight ) )
@@ -2691,8 +2725,11 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
         posC0 = posRB.offset(4, 4);
       }
     }
-
+#if JVET_N0266_SMALL_BLOCKS
+    if ( ( C0Avail && getColocatedMVP( pu, eRefPicList, posC0, cColMv, refIdx_Col ) ) || getColocatedMVP( pu, eRefPicList, posC1, cColMv, refIdx_Col ) )
+#else
     if ((C0Avail && getColocatedMVP(pu, eRefPicList, posC0, cColMv, refIdx_Col)) || (C1Avail && getColocatedMVP(pu, eRefPicList, posC1, cColMv, refIdx_Col)))
+#endif
     {
       cColMv.roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
       pInfo->mvCand[pInfo->numCand++] = cColMv;
@@ -3025,8 +3062,9 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       Position posC0;
       bool C0Avail = false;
       Position posC1 = pu.Y().center();
+#if !JVET_N0266_SMALL_BLOCKS
       bool C1Avail =  ( posC1.x  < pcv.lumaWidth ) && ( posC1.y < pcv.lumaHeight ) ;
-
+#endif
       Mv cColMv;
       if ( ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight) )
       {
@@ -3054,8 +3092,11 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
           posC0 = posRB.offset( 4, 4 );
         }
       }
-
+#if JVET_N0266_SMALL_BLOCKS
+      if ( ( C0Avail && getColocatedMVP( pu, eRefPicList, posC0, cColMv, refIdxCol ) ) || getColocatedMVP( pu, eRefPicList, posC1, cColMv, refIdxCol ) )
+#else
       if ( (C0Avail && getColocatedMVP( pu, eRefPicList, posC0, cColMv, refIdxCol )) || (C1Avail && getColocatedMVP( pu, eRefPicList, posC1, cColMv, refIdxCol ) ) )
+#endif
       {
         if ( pu.cu->imv == 0 )
         {
@@ -3318,6 +3359,13 @@ bool PU::isBipredRestriction(const PredictionUnit &pu)
   {
     return true;
   }
+#if JVET_N0266_SMALL_BLOCKS
+  /* disable bi-prediction for 4x8/8x4 */
+  if ( pu.cu->lumaSize().width + pu.cu->lumaSize().height == 12 )
+  {
+    return true;
+  }
+#endif
   return false;
 }
 #if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
@@ -3966,12 +4014,14 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
 
   MotionBuf mb = pu.getMotionBuf();
   int mvScaleTmpHor, mvScaleTmpVer;
+
   for ( int h = 0; h < pu.Y().height; h += blockHeight )
   {
     for ( int w = 0; w < pu.Y().width; w += blockWidth )
     {
       mvScaleTmpHor = mvScaleHor + deltaMvHorX * (halfBW + w) + deltaMvVerX * (halfBH + h);
       mvScaleTmpVer = mvScaleVer + deltaMvHorY * (halfBW + w) + deltaMvVerY * (halfBH + h);
+
       roundAffineMv( mvScaleTmpHor, mvScaleTmpVer, shift );
       Mv curMv(mvScaleTmpHor, mvScaleTmpVer);
       curMv.clipToStorageBitDepth();
@@ -4577,8 +4627,9 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
     Position posC0;
     Position posC1 = pu.Y().center();
     bool isAvailableC0 = false;
+#if !JVET_N0266_SMALL_BLOCKS
     bool isAvailableC1 = (posC1.x < pcv.lumaWidth) && (posC1.y < pcv.lumaHeight);
-
+#endif
     if (((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight))
     {
       Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
@@ -4640,7 +4691,11 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
 
     // C1
     temporalMv.interDir = 0;
+#if JVET_N0266_SMALL_BLOCKS
+    existMV = getColocatedMVP( pu, REF_PIC_LIST_0, posC1, cColMv, refIdx );
+#else
     existMV    = isAvailableC1 && getColocatedMVP(pu, REF_PIC_LIST_0, posC1, cColMv, refIdx );
+#endif
     if( existMV )
     {
       temporalMv.isInter   = true;
@@ -4648,7 +4703,11 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
       temporalMv.mv[0]     = cColMv;
       temporalMv.refIdx[0] = refIdx;
     }
+#if JVET_N0266_SMALL_BLOCKS
+    existMV = getColocatedMVP( pu, REF_PIC_LIST_1, posC1, cColMv, refIdx );
+#else
     existMV    = isAvailableC1 && getColocatedMVP(pu, REF_PIC_LIST_1, posC1, cColMv, refIdx );
+#endif
     if( existMV )
     {
       temporalMv.interDir |= 2;

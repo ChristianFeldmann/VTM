@@ -58,11 +58,10 @@ private:
   static_vector<char, MAX_NUM_PARTS_IN_CTU> m_aapucBS       [NUM_EDGE_DIR];         ///< Bs for [Ver/Hor][Y/U/V][Blk_Idx]
   static_vector<bool, MAX_NUM_PARTS_IN_CTU> m_aapbEdgeFilter[NUM_EDGE_DIR];
   LFCUParam m_stLFCUParam;                   ///< status structure
-
+  PelStorage                   m_encPicYuvBuffer;
+  bool                         m_enc;
 private:
-  /// CU-level deblocking function
-  void xDeblockCU                 (       CodingUnit& cu, const DeblockEdgeDir edgeDir );
-  
+
   // set / get functions
   void xSetLoopfilterParam        ( const CodingUnit& cu );
 
@@ -75,29 +74,20 @@ private:
                                     const Area&           area,
                                     const bool            bValue,
                                     const bool            EdgeIdx = false );
-#if JVET_M0471_LONG_DEBLOCKING_FILTERS
   void xEdgeFilterLuma            ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge, const int initialMaxFilterLengthP, const int initialMaxFilterLengthQ );
-#else
-  void xEdgeFilterLuma            ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge );
-#endif
   void xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge);
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   void deriveLADFShift( const Pel* src, const int stride, int& shift, const DeblockEdgeDir edgeDir, const SPS sps );
 #endif
 
-#if JVET_M0471_LONG_DEBLOCKING_FILTERS
   inline void xBilinearFilter     ( Pel* srcP, Pel* srcQ, int offset, int refMiddle, int refP, int refQ, int numberPSide, int numberQSide, const int* dbCoeffsP, const int* dbCoeffsQ, int tc ) const;
   inline void xFilteringPandQ     ( Pel* src, int offset, int numberPSide, int numberQSide, int tc ) const;
   inline void xPelFilterLuma      ( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const int iThrCut, const bool bFilterSecondP, const bool bFilterSecondQ, const ClpRng& clpRng, bool sidePisLarge = false, bool sideQisLarge = false, int maxFilterLengthP = 7, int maxFilterLengthQ = 7 ) const;
   inline void xPelFilterChroma    ( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng, const bool largeBoundary ) const;
   inline bool xUseStrongFiltering ( Pel* piSrc, const int iOffset, const int d, const int beta, const int tc, bool sidePisLarge = false, bool sideQisLarge = false, int maxFilterLengthP = 7, int maxFilterLengthQ = 7 ) const;//move the computation outside the function
-#else
-  inline void xPelFilterLuma      ( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const int iThrCut, const bool bFilterSecondP, const bool bFilterSecondQ, const ClpRng& clpRng ) const;
-  inline void xPelFilterChroma    ( Pel* piSrc, const int iOffset, const int tc,                const bool bPartPNoFilter, const bool bPartQNoFilter,                                                                          const ClpRng& clpRng ) const;
-
-  inline bool xUseStrongFiltering ( Pel* piSrc, const int iOffset, const int d, const int beta, const int tc ) const;
-#endif
+  inline unsigned BsSet(unsigned val, const ComponentID compIdx) const;
+  inline unsigned BsGet(unsigned val, const ComponentID compIdx) const;
 
   inline int xCalcDP              ( Pel* piSrc, const int iOffset ) const;
   inline int xCalcDQ              ( Pel* piSrc, const int iOffset ) const;
@@ -108,6 +98,12 @@ public:
 
   LoopFilter();
   ~LoopFilter();
+
+  /// CU-level deblocking function
+  void xDeblockCU(CodingUnit& cu, const DeblockEdgeDir edgeDir);
+  void  initEncPicYuvBuffer(ChromaFormat chromaFormat, int lumaWidth, int lumaHeight);
+  PelStorage& getDbEncPicYuvBuffer() { return m_encPicYuvBuffer; }
+  void  setEnc(bool b) { m_enc = b; }
 
   void  create                    ( const unsigned uiMaxCUDepth );
   void  destroy                   ();

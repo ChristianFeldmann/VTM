@@ -53,14 +53,14 @@
 #include "CommonLib/AdaptiveLoopFilter.h"
 #include "CommonLib/SEI.h"
 #include "CommonLib/Unit.h"
+#include "CommonLib/Reshape.h"
 
 class InputNALUnit;
 
 //! \ingroup DecoderLib
 //! \{
 
-bool tryDecodePicture( Picture* pcPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound = false );
-// ====================================================================================================================
+bool tryDecodePicture( Picture* pcPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound = false, int debugCTU = -1, int debugPOC = -1 );
 // Class definition
 // ====================================================================================================================
 
@@ -94,13 +94,15 @@ private:
   LoopFilter              m_cLoopFilter;
   SampleAdaptiveOffset    m_cSAO;
   AdaptiveLoopFilter      m_cALF;
+  Reshape                 m_cReshaper;                        ///< reshaper class
   // decoder side RD cost computation
   RdCost                  m_cRdCost;                      ///< RD cost computation class
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   CacheModel              m_cacheModel;
 #endif
-
+#if !JVET_M0101_HLS
   bool isSkipPictureForBLA(int& iPOCLastDisplay);
+#endif
   bool isRandomAccessSkipPicture(int& iSkipFrame,  int& iPOCLastDisplay);
   Picture*                m_pcPic;
   uint32_t                    m_uiSliceSegmentIdx;
@@ -122,6 +124,8 @@ private:
   bool                    m_warningMessageSkipPicture;
 
   std::list<InputNALUnit*> m_prefixSEINALUs; /// Buffered up prefix SEI NAL Units.
+  int                     m_debugPOC;
+  int                     m_debugCTU;
 public:
   DecLib();
   virtual ~DecLib();
@@ -152,6 +156,10 @@ public:
   void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
   uint32_t  getNumberOfChecksumErrorsDetected() const { return m_numberOfChecksumErrorsDetected; }
 
+  int  getDebugCTU( )               const { return m_debugCTU; }
+  void setDebugCTU( int debugCTU )        { m_debugCTU = debugCTU; }
+  int  getDebugPOC( )               const { return m_debugPOC; };
+  void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
 protected:
   void  xUpdateRasInit(Slice* slice);
 
@@ -165,7 +173,12 @@ protected:
 #endif
   void      xDecodeSPS( InputNALUnit& nalu );
   void      xDecodePPS( InputNALUnit& nalu );
+  void      xDecodeAPS(InputNALUnit& nalu);
+#if !JVET_M0101_HLS
   void      xUpdatePreviousTid0POC( Slice *pSlice ) { if ((pSlice->getTLayer()==0) && (pSlice->isReferenceNalu() && (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RASL_R)&& (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RADL_R))) { m_prevTid0POC=pSlice->getPOC(); } }
+#else
+  void      xUpdatePreviousTid0POC(Slice *pSlice) { if ((pSlice->getTLayer() == 0) && (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RASL) && (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RADL))  { m_prevTid0POC = pSlice->getPOC(); }  }
+#endif
   void      xParsePrefixSEImessages();
   void      xParsePrefixSEIsForUnknownVCLNal();
 

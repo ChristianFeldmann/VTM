@@ -70,16 +70,14 @@ void DecSlice::init( CABACDecoder* cabacDecoder, DecCu* pcCuDecoder )
   m_pcCuDecoder     = pcCuDecoder;
 }
 
-void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
+void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int debugCTU )
 {
   //-- For time output for each slice
   slice->startProcessingTimer();
 
   const SPS*     sps          = slice->getSPS();
   Picture*       pic          = slice->getPic();
-#if HEVC_TILES_WPP
   const TileMap& tileMap      = *pic->tileMap;
-#endif
   CABACReader&   cabacReader  = *m_CABACDecoder->getCABACReader( 0 );
 
   // setup coding structure
@@ -87,6 +85,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
   cs.slice            = slice;
   cs.sps              = sps;
   cs.pps              = slice->getPPS();
+  cs.aps              = slice->getAPS();
 #if HEVC_VPS
   cs.vps              = slice->getVPS();
 #endif
@@ -95,7 +94,10 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 
   cs.picture->resizeSAO(cs.pcv->sizeInCtus, 0);
 
-  cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
+  if (slice->getSliceCurStartCtuTsAddr() == 0)
+  {
+    cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
+  }
 
   const unsigned numSubstreams = slice->getNumberOfSubstreamSizes() + 1;
 
@@ -114,7 +116,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 #endif
 #if HEVC_DEPENDENT_SLICES
   const int       startCtuRsAddr          = startCtuTsAddr;
-#elif HEVC_TILES_WPP
+#else
   const int       startCtuRsAddr          = tileMap.getCtuTsToRsAddrMap(startCtuTsAddr);
 #endif
   const unsigned  numCtusInFrame          = cs.pcv->sizeInCtus;
@@ -122,9 +124,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 #if HEVC_DEPENDENT_SLICES
   const bool      depSliceSegmentsEnabled = cs.pps->getDependentSliceSegmentsEnabledFlag();
 #endif
-#if HEVC_TILES_WPP
   const bool      wavefrontsEnabled       = cs.pps->getEntropyCodingSyncEnabledFlag();
-#endif
 
   cabacReader.initBitstream( ppcSubstreams[0] );
   cabacReader.initCtxModels( *slice );
@@ -146,7 +146,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
   // This calculates the common offset for all substreams in this slice.
 #if HEVC_DEPENDENT_SLICES
   const unsigned subStreamOffset = tileMap.getSubstreamForCtuAddr( startCtuRsAddr, true, slice );
-#elif HEVC_TILES_WPP
+#else
   const unsigned  subStreamOffset         = tileMap.getSubstreamForCtuAddr(startCtuRsAddr, true, slice);
 #endif
 
@@ -170,22 +170,14 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
   bool isLastCtuOfSliceSegment = false;
   for( unsigned ctuTsAddr = startCtuTsAddr; !isLastCtuOfSliceSegment && ctuTsAddr < numCtusInFrame; ctuTsAddr++ )
   {
-#if HEVC_TILES_WPP
     const unsigned  ctuRsAddr             = tileMap.getCtuTsToRsAddrMap(ctuTsAddr);
     const Tile&     currentTile           = tileMap.tiles[ tileMap.getTileIdxMap(ctuRsAddr) ];
     const unsigned  firstCtuRsAddrOfTile  = currentTile.getFirstCtuRsAddr();
     const unsigned  tileXPosInCtus        = firstCtuRsAddrOfTile % widthInCtus;
     const unsigned  tileYPosInCtus        = firstCtuRsAddrOfTile / widthInCtus;
-#else
-    const unsigned  ctuRsAddr             = ctuTsAddr;
-#endif
     const unsigned  ctuXPosInCtus         = ctuRsAddr % widthInCtus;
     const unsigned  ctuYPosInCtus         = ctuRsAddr / widthInCtus;
-#if HEVC_TILES_WPP
     const unsigned  subStrmId             = tileMap.getSubstreamForCtuAddr( ctuRsAddr, true, slice ) - subStreamOffset;
-#else
-    const unsigned  subStrmId             = 0;
-#endif
     const unsigned  maxCUSize             = sps->getMaxCUWidth();
     Position pos( ctuXPosInCtus*maxCUSize, ctuYPosInCtus*maxCUSize) ;
     UnitArea ctuArea(cs.area.chromaFormat, Area( pos.x, pos.y, maxCUSize, maxCUSize ) );
@@ -194,7 +186,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
 
     cabacReader.initBitstream( ppcSubstreams[subStrmId] );
 
-#if HEVC_TILES_WPP
     // set up CABAC contexts' state for this CTU
     if( ctuRsAddr == firstCtuRsAddrOfTile )
     {
@@ -218,7 +209,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
       }
       pic->m_prevQP[0] = pic->m_prevQP[1] = slice->getSliceQp();
     }
-#endif
 
     bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
     if(updateGbiCodingOrder)
@@ -226,21 +216,34 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
       resetGbiCodingOrder(true, cs);
     }
 
-    if (cs.slice->getSliceType() != I_SLICE && ctuXPosInCtus == 0)
+    if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == 0)
     {
-      cs.slice->resetMotionLUTs();
+      cs.motionLut.lut.resize(0);
+      cs.motionLut.lutIbc.resize(0);
+#if !JVET_N0266_SMALL_BLOCKS
+      cs.motionLut.lutShare.resize(0);
+#endif
+      cs.motionLut.lutShareIbc.resize(0);
     }
 
+    if( !cs.slice->isIntra() )
+    {
+      pic->mctsInfo.init( &cs, getCtuAddr( ctuArea.lumaPos(), *( cs.pcv ) ) );
+    }
+
+    if( ctuRsAddr == debugCTU )
+    {
+      isLastCtuOfSliceSegment = true; // get out here
+      break;
+    }
     isLastCtuOfSliceSegment = cabacReader.coding_tree_unit( cs, ctuArea, pic->m_prevQP, ctuRsAddr );
 
     m_pcCuDecoder->decompressCtu( cs, ctuArea );
 
-#if HEVC_TILES_WPP
     if( ctuXPosInCtus == tileXPosInCtus+1 && wavefrontsEnabled )
     {
       m_entropyCodingSyncContextState = cabacReader.getCtx();
     }
-#endif
 
 
     if( isLastCtuOfSliceSegment )
@@ -258,7 +261,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
       slice->setSliceSegmentCurEndCtuTsAddr( ctuTsAddr+1 );
 #endif
     }
-#if HEVC_TILES_WPP
     else if( ( ctuXPosInCtus + 1 == tileXPosInCtus + currentTile.getTileWidthInCtus () ) &&
              ( ctuYPosInCtus + 1 == tileYPosInCtus + currentTile.getTileHeightInCtus() || wavefrontsEnabled ) )
     {
@@ -270,7 +272,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream )
       cabacReader.remaining_bytes( true );
 #endif
     }
-#endif
   }
   CHECK( !isLastCtuOfSliceSegment, "Last CTU of slice segment not signalled as such" );
 

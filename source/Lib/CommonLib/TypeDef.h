@@ -50,89 +50,91 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_M0471_LONG_DEBLOCKING_FILTERS                1
-#define JVET_M0470                                        1 // Fixed GR/TU+EG-k transition point, use limited prefix length for escape codes
+#define JVET_N0146_DMVR_BDOF_CONDITION                    1 // JVET-N146/N0162/N0442/N0153/N0262/N0440/N0086 applicable condition of DMVR and BDOF
 
-#define JVET_M0257                                        1 // Scan only non zero-out regions of large TUs
-#define JVET_M0193_PAIR_AVG_REDUCTION                     1 //Use only one pairwise average candidate
+#define JVET_N0470_SMVD_FIX                               1 // remove mvd_l1_zero_flag condition, align to spec text.
 
-#define JVET_M0281_AMVP_ROUNDING                          1 // Perform all AMVP rounding before pruning even AMVR is off
+#define JVET_N0235_SMVD_SPS                               1
 
-#define JVET_M0117_AMVP_LIST_GEN                          1 // AMVP candidate list generation simplification
+#define JVET_N0843_BVP_SIMPLIFICATION                     1
 
-#define JVET_M0192_AFF_CHROMA_SIMPL                       1 // Affine chroma MV derivation simplification and rounding unification
+#define JVET_N0448_N0380                                  1 // When MaxNumMergeCand is 1, MMVD_BASE_MV_NUM is inferred to be 1.
+#define JVET_N0266_SMALL_BLOCKS                           1 // remove 4x4 uni-pred, 4x8/8x4 bi-pred from regular inter modes
+#define JVET_N0054_JOINT_CHROMA                           1 // Joint chroma residual coding mode
 
-#define JVET_M0116_ATMVP_LEFT_NB_FOR_OFFSET               1 // Only use left neighbor for ATMVP offset derivation, from M0273, M0240, M0116, M0338, M0204
+#define JVET_N0317_ADD_ZERO_BV                            1
 
-#define JVET_M0063_BDOF_FIX                               1 // BDOF bitdepth bugfix
+#define JVET_N0318_N0467_IBC_SIZE                         1 // IBC flag dependent on CU size and disabling 128x128 IBC mode
 
-#define JVET_M0265_MV_ROUNDING_CLEANUP                    1 // Unify MV roundings and make SW/WD allignment
-#define JVET_M0883_TRIANGLE_SIGNALING                     1 // Using regular merge index signaling for triangle mode
+#define JVET_N0462_FIX_CTX_MODELING                       1 // Fix context modeling of inter_pred_idc
 
-#define JVET_M0228_REMOVE_CPMV_COMPARE                    1 // Remove CPMV comparisons for construnted affine merge candidates from JVET-M0228, M0166, M0477
+#define JVET_N0175_N0251_N0384_IBC_SMALL_CTU              1 // IBC search range arrangement for small CTU sizes
 
-#define JVET_M0145_AFFINE_MV_CLIP                         1 // Missing clipping for MV storage in affine
+#define JVET_N0286_SIMPLIFIED_GBI_IDX                     1 // Simplified coding of the GBi index
 
-#define JVET_M0264_HMVP_WITH_GBIIDX                       1 // Harmonization between HMVP and GBi
+#define JVET_N600_AMVR_TPM_CTX_REDUCTION                  1
 
-#define JVET_M0381_ONE_CTX_FOR_SUBBLOCK_MRG_IDX           1 // CE2.2.2 a: one context for subblock Merge index
+#define JVET_N0188_UNIFY_RICEPARA                         1
 
-#define JVET_M0118_M0185_TRIANGLE_FLAG_FIX                1 // Avoid signaling triangle flag if a CU uses MMVD or CIIP
+#define JVET_N0334_MVCLIPPING                             1 // prevention of MV stroage overflow and alignment with spec of MV/CPMV modular for AMVP mode
 
-#define JVET_M0487_INT_EXTEND                             1  // CE9.1.1 b: integer reference samples as 1 extended samples
+#define JVET_N0481_BCW_CONSTRUCTED_AFFINE                 1
 
-#define JVET_M0444_SMVD                                   1 // SMVD mode
+#define JVET_N0483_DISABLE_SBT_FOR_TPM                    1
 
-#define JVET_M0170_MRG_SHARELIST                          1
-#if JVET_M0170_MRG_SHARELIST
+#define JVET_N0242_NON_LINEAR_ALF                         1 // enable CE5-3.2, Non-linear ALF based on clipping function
+
+#define JVET_N0329_IBC_SEARCH_IMP                         1 // IBC encoder-side improvement
+
+#define JVET_N0325_BDOF                                   1  // unified right-shifts for BDOF derivation
+
+#define JVET_N0449_MMVD_SIMP                              1 // Configurable number of mmvd distance entries used
+
+#define JVET_N0363_INTRA_COST_MOD                         1 // Modified cost criterion for intra encoder search
+
+#define JVET_N0137_DUALTREE_CHROMA_SIZE                   1
+
+#define JVET_N0335_N0085_MV_ROUNDING                      1  // MV rounding unification
+
+#define JVET_N0332_LTRP_MMVD_FIX                          1 // MMVD scaling considering LTRPs from N0332
+
+#define JVET_N0477_LMCS_CLEANUP                           1
+#define JVET_N0220_LMCS_SIMPLIFICATION                    1
+#define JVET_N0185_UNIFIED_MPM                            1
+
+#define JVET_N0271_SIMPLFIED_CCLM                         1 // Simplified CCLM parameter derivation in JVET-N0271
+
+#define JVET_N0178_IMPLICIT_BDOF_SPLIT                    1
+#define JVET_N0383_N0251_IBC_COL_VPDU_REMOVE              1
+
+#define JVET_N0407_DMVR_CU_SIZE_RESTRICTION               1 // Disable 4xN/8x8 CUs for DMVR
+
+#define JCTVC_Y0038_PARAMS                                1
+
+#define JVET_MMVD_OFF_MACRO                               0
+
+#define FIX_DB_MAX_TRANSFORM_SIZE                         1
+
 #define MRG_SHARELIST_SHARSIZE                            32
-#endif
 
-#define JVET_M0064_CCLM_SIMPLIFICATION                    1
-
-#define JVET_M0142_CCLM_COLLOCATED_CHROMA                 1 // Adding support for chroma sample location type 2 in CCLM
-
-#define JVET_M0328_KEEP_ONE_WEIGHT_GROUP                  1
-
-#define JVET_M0479_18BITS_MV_CLIP                         1
-
-#define JVET_M0497_FAST_DST7                              1
-#if JVET_M0497_FAST_DST7
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
-#endif
-#define JVET_M0502_PRED_MODE_CTX                          1
 
-#define JVET_M0407_IBC_RANGE                              1 // extend IBC search range to some part of left CTU
+#define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
+#define FIX_PCM                                           1 // Fix PCM bugs in VTM3
 
-#define JVET_M0464_UNI_MTS                                1
-#define JVET_M0068_M0171_MMVD_CLEANUP                     1 // MMVD cleanup with 1) flip removal, 2) L1 zero vector fix, 3) bi-pred restriction after merge/MMVD
-#define JVET_M0255_FRACMMVD_SWITCH                        1 // disable fractional MVD in MMVD adaptively
-#define JVET_M0854_FRACMMVD_SWITCH_FOR_UHD                1 // disable fractional MVD in MMVD for UHD pictures
-#define JVET_M0823_MMVD_ENCOPT                            1 // encoder optimization for MMVD
+#define MAX_TB_SIZE_SIGNALLING                            0
 
-#if JVET_M0464_UNI_MTS
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
-#endif
-
-#define JVET_M0246_AFFINE_AMVR                            1
-#define JVET_M0421_SPLIT_SIG                              1
-
-#define JVET_M0173_MOVE_GT2_TO_FIRST_PASS                 1 // Moving the gtr2 flag to the first coding pass
-
-#define REMOVE_BIN_DECISION_TREE                          1
-
-#define JVET_M0446_M0888_M0905_VPDU_AT_PIC_BOUNDARY       1
 
 // clang-format off
-#define JVET_M0453_CABAC_ENGINE                           1
-#define JVET_M0512_MOTION_BUFFER_COMPRESSION              1
-#define JVET_M0238_PDPC_NO_INTERPOLATION                  1
-
-#define JVET_M0409_ATMVP_FIX                              1
-
+#define ENABLE_JVET_L0283_MRL                             1 // 1: Enable MRL, 0: Disable MRL
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
+#if REUSE_CU_RESULTS
+#define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
+#define MAX_NUM_TUS                                       4
+#endif
 // clang-format on
 
 #ifndef JVET_B0051_NON_MPM_MODE
@@ -182,34 +184,34 @@ typedef std::pair<int, int>  TrCost;
 
 #ifndef ENABLE_TRACING
 #define ENABLE_TRACING                                    0 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
+#endif
+
 #if ENABLE_TRACING
 #define K0149_BLOCK_STATISTICS                            1 // enables block statistics, which can be analysed with YUView (https://github.com/IENT/YUView)
 #if K0149_BLOCK_STATISTICS
 #define BLOCK_STATS_AS_CSV                                0 // statistics will be written in a comma separated value format. this is not supported by YUView
 #endif
 #endif
-#endif // ! ENABLE_TRACING
 
-#define WCG_EXT                                           0 // part of JEM sharp Luma qp
+#define WCG_EXT                                           1
 #define WCG_WPSNR                                         WCG_EXT
 
 #if HEVC_TOOLS
 #define HEVC_USE_INTRA_SMOOTHING_T32                      1
 #define HEVC_USE_INTRA_SMOOTHING_T64                      1
-#define JEM_USE_INTRA_BOUNDARY                            1
 #define HEVC_USE_DC_PREDFILTERING                         1
 #define HEVC_USE_HOR_VER_PREDFILTERING                    1
-#define HEVC_USE_4x4_DSTVII                               1
 #define HEVC_USE_MDCS                                     1
 #define HEVC_USE_SIGN_HIDING                              1
 #define HEVC_USE_SCALING_LISTS                            1
 #define HEVC_VPS                                          1
 #define HEVC_DEPENDENT_SLICES                             1
-#define HEVC_TILES_WPP                                    1
 #else
 #define HEVC_USE_SIGN_HIDING                              1
-#define HEVC_TILES_WPP                                    1
 #endif
+
+
+#define JVET_M0101_HLS                                    1  // joint HLS syntax
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
 
@@ -225,6 +227,7 @@ typedef std::pair<int, int>  TrCost;
 #define HM_MDIS_AS_IN_JEM                                 1   // *** - PM: not filtering ref. samples for 64xn case and using Planar MDIS condition at encoder
 #define HM_JEM_CLIP_PEL                                   1   // ***
 #define HM_JEM_MERGE_CANDS                                0   // ***
+
 
 #endif//JEM_COMP
 
@@ -302,7 +305,7 @@ typedef std::pair<int, int>  TrCost;
 #define SHARP_LUMA_DELTA_QP                               1 ///< include non-normative LCU deltaQP and normative chromaQP change
 #define ER_CHROMA_QP_WCG_PPS                              1 ///< Chroma QP model for WCG used in Anchor 3.2
 #define ENABLE_QPA                                        1 ///< Non-normative perceptual QP adaptation according to JVET-H0047 and JVET-K0206. Deactivated by default, activated using encoder arguments --PerceptQPA=1 --SliceChromaQPOffsetPeriodicity=1
-
+#define ENABLE_QPA_SUB_CTU                              ( 1 && ENABLE_QPA ) ///< when maximum delta-QP depth is greater than zero, use sub-CTU QPA
 
 
 #define RDOQ_CHROMA                                       1 ///< use of RDOQ in chroma
@@ -382,6 +385,46 @@ enum TransType
   DCT2_EMT = 4
 };
 
+enum ISPType
+{
+  NOT_INTRA_SUBPARTITIONS       = 0,
+  HOR_INTRA_SUBPARTITIONS       = 1,
+  VER_INTRA_SUBPARTITIONS       = 2,
+  NUM_INTRA_SUBPARTITIONS_MODES = 3,
+  CAN_USE_VER_AND_HORL_SPLITS   = 4
+};
+
+enum SbtIdx
+{
+  SBT_OFF_DCT  = 0,
+  SBT_VER_HALF = 1,
+  SBT_HOR_HALF = 2,
+  SBT_VER_QUAD = 3,
+  SBT_HOR_QUAD = 4,
+  NUMBER_SBT_IDX,
+  SBT_OFF_MTS, //note: must be after all SBT modes, only used in fast algorithm to discern the best mode is inter EMT
+};
+
+enum SbtPos
+{
+  SBT_POS0 = 0,
+  SBT_POS1 = 1,
+  NUMBER_SBT_POS
+};
+
+enum SbtMode
+{
+  SBT_VER_H0 = 0,
+  SBT_VER_H1 = 1,
+  SBT_HOR_H0 = 2,
+  SBT_HOR_H1 = 3,
+  SBT_VER_Q0 = 4,
+  SBT_VER_Q1 = 5,
+  SBT_HOR_Q0 = 6,
+  SBT_HOR_Q1 = 7,
+  NUMBER_SBT_MODE
+};
+
 enum RDPCMMode
 {
   RDPCM_OFF             = 0,
@@ -432,6 +475,9 @@ enum ComponentID
   COMPONENT_Cb        = 1,
   COMPONENT_Cr        = 2,
   MAX_NUM_COMPONENT   = 3,
+#if JVET_N0054_JOINT_CHROMA
+  JOINT_CbCr          = MAX_NUM_COMPONENT,
+#endif
   MAX_NUM_TBLOCKS     = MAX_NUM_COMPONENT
 };
 
@@ -473,7 +519,8 @@ enum PredMode
 {
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
-  NUMBER_OF_PREDICTION_MODES = 2,
+  MODE_IBC                   = 2,     ///< ibc-prediction mode
+  NUMBER_OF_PREDICTION_MODES = 3,
 };
 
 /// reference list index
@@ -553,7 +600,6 @@ enum DFunc
   DF_SAD_FULL_NBIT64  = DF_SAD_FULL_NBIT+6,    ///<  64xM SAD with full bit usage
   DF_SAD_FULL_NBIT16N = DF_SAD_FULL_NBIT+7,    ///< 16NxM SAD with full bit usage
 
-#if WCG_EXT
   DF_SSE_WTD          = 54,                ///< general size SSE
   DF_SSE2_WTD         = DF_SSE_WTD+1,      ///<   4xM SSE
   DF_SSE4_WTD         = DF_SSE_WTD+2,      ///<   4xM SSE
@@ -563,7 +609,6 @@ enum DFunc
   DF_SSE64_WTD        = DF_SSE_WTD+6,      ///<  64xM SSE
   DF_SSE16N_WTD       = DF_SSE_WTD+7,      ///< 16NxM SSE
   DF_DEFAULT_ORI      = DF_SSE_WTD+8,
-#endif
 
   DF_SAD_INTERMEDIATE_BITDEPTH = 63,
 
@@ -660,12 +705,8 @@ enum SliceConstraint
   NO_SLICES              = 0,          ///< don't use slices / slice segments
   FIXED_NUMBER_OF_CTU    = 1,          ///< Limit maximum number of largest coding tree units in a slice / slice segments
   FIXED_NUMBER_OF_BYTES  = 2,          ///< Limit maximum number of bytes in a slice / slice segment
-#if HEVC_TILES_WPP
   FIXED_NUMBER_OF_TILES  = 3,          ///< slices / slice segments span an integer number of tiles
   NUMBER_OF_SLICE_CONSTRAINT_MODES = 4
-#else
-  NUMBER_OF_SLICE_CONSTRAINT_MODES = 3
-#endif
 };
 
 // For use with decoded picture hash SEI messages, generated by encoder.
@@ -812,6 +853,55 @@ enum PPSExtensionFlagIndex
 //       effort can be done without use of macros to alter the names used to indicate the different NAL unit types.
 enum NalUnitType
 {
+#if JVET_M0101_HLS
+  NAL_UNIT_CODED_SLICE_TRAIL = 0, // 0
+  NAL_UNIT_CODED_SLICE_STSA,      // 1
+
+  //KJS: keep RADL/RASL since there is no real decision on these types yet
+  NAL_UNIT_CODED_SLICE_RADL,      // 2   should be NAL_UNIT_RESERVED_VCL_2,
+  NAL_UNIT_CODED_SLICE_RASL,      // 3   should be NAL_UNIT_RESERVED_VCL_3,
+  
+  NAL_UNIT_RESERVED_VCL_4,
+  NAL_UNIT_RESERVED_VCL_5,
+  NAL_UNIT_RESERVED_VCL_6,
+  NAL_UNIT_RESERVED_VCL_7,
+  
+  NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 8
+  NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 9
+  NAL_UNIT_CODED_SLICE_CRA,         // 10
+  
+  NAL_UNIT_RESERVED_IRAP_VCL11,
+  NAL_UNIT_RESERVED_IRAP_VCL12,
+  NAL_UNIT_RESERVED_IRAP_VCL13,
+
+  NAL_UNIT_RESERVED_VCL14,
+
+#if HEVC_VPS
+  NAL_UNIT_VPS,                     // probably not coming back
+#else
+  NAL_UNIT_RESERVED_VCL15,
+#endif
+
+  NAL_UNIT_RESERVED_NVCL16,         // probably DPS
+
+  NAL_UNIT_SPS,                     // 17
+  NAL_UNIT_PPS,                     // 18
+  NAL_UNIT_APS,                     // 19 NAL unit type number needs to be reaaranged.
+  NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 20
+  NAL_UNIT_EOS,                     // 21
+  NAL_UNIT_EOB,                     // 22
+  NAL_UNIT_PREFIX_SEI,              // 23
+  NAL_UNIT_SUFFIX_SEI,              // 24
+  NAL_UNIT_FILLER_DATA,             // 25  keep: may be added with HRD 
+
+  NAL_UNIT_RESERVED_NVCL26,
+  NAL_UNIT_RESERVED_NVCL27,
+  NAL_UNIT_UNSPECIFIED_28,
+  NAL_UNIT_UNSPECIFIED_29,
+  NAL_UNIT_UNSPECIFIED_30,
+  NAL_UNIT_UNSPECIFIED_31,
+  NAL_UNIT_INVALID,
+#else
   NAL_UNIT_CODED_SLICE_TRAIL_N = 0, // 0
   NAL_UNIT_CODED_SLICE_TRAIL_R,     // 1
 
@@ -859,6 +949,7 @@ enum NalUnitType
 #endif
   NAL_UNIT_SPS,                     // 33
   NAL_UNIT_PPS,                     // 34
+  NAL_UNIT_APS,                     //NAL unit type number needs to be reaaranged.
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 35
   NAL_UNIT_EOS,                     // 36
   NAL_UNIT_EOB,                     // 37
@@ -890,6 +981,7 @@ enum NalUnitType
   NAL_UNIT_UNSPECIFIED_62,
   NAL_UNIT_UNSPECIFIED_63,
   NAL_UNIT_INVALID,
+#endif
 };
 
 #if SHARP_LUMA_DELTA_QP
@@ -897,12 +989,7 @@ enum LumaLevelToDQPMode
 {
   LUMALVL_TO_DQP_DISABLED   = 0,
   LUMALVL_TO_DQP_AVG_METHOD = 1, // use average of CTU to determine luma level
-#if !WCG_EXT
-  LUMALVL_TO_DQP_MAX_METHOD = 2,  // use maximum value of CTU to determine luma level
-  LUMALVL_TO_DQP_NUM_MODES  = 3
-#else
   LUMALVL_TO_DQP_NUM_MODES  = 2
-#endif
 };
 #endif
 
@@ -928,14 +1015,12 @@ enum TriangleSplit
   TRIANGLE_DIR_NUM
 };
 
-#if JVET_M0170_MRG_SHARELIST
 enum SharedMrgState
 {
   NO_SHARE            = 0,
   GEN_ON_SHARED_BOUND = 1,
   SHARING             = 2
 };
-#endif
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out
 //////////////////////////////////////////////////////////////////////////
@@ -1150,6 +1235,13 @@ enum MsgLevel
   VERBOSE = 5,
   DETAILS = 6
 };
+enum RESHAPE_SIGNAL_TYPE
+{
+  RESHAPE_SIGNAL_SDR = 0,
+  RESHAPE_SIGNAL_PQ  = 1,
+  RESHAPE_SIGNAL_HLG = 2,
+  RESHAPE_SIGNAL_NULL = 100,
+};
 
 
 // ---------------------------------------------------------------------------
@@ -1289,6 +1381,19 @@ public:
                                                   iterator it = const_cast<iterator>( _pos ); _size += numEl;
                                                   while( first != last ) *it++ = *first++;
                                                   return const_cast<iterator>( _pos ); }
+
+  iterator        insert( const_iterator _pos, size_t numEl, const T& val )
+                                                { //const difference_type numEl = last - first;
+                                                  CHECKD( _size + numEl >= N, "capacity exceeded" );
+                                                  for( difference_type i = _size - 1; i >= _pos - _arr; i-- ) _arr[i + numEl] = _arr[i];
+                                                  iterator it = const_cast<iterator>( _pos ); _size += numEl;
+                                                  for ( int k = 0; k < numEl; k++) *it++ = val;
+                                                  return const_cast<iterator>( _pos ); }
+
+  void            erase( const_iterator _pos )  { iterator it   = const_cast<iterator>( _pos ) - 1;
+                                                  iterator last = end() - 1;
+                                                  while( ++it != last ) *it = *( it + 1 );
+                                                  _size--; }
 };
 
 
@@ -1489,37 +1594,69 @@ struct AlfFilterShape
 struct AlfSliceParam
 {
   bool                         enabledFlag[MAX_NUM_COMPONENT];                          // alf_slice_enable_flag, alf_chroma_idc
+#if JVET_N0242_NON_LINEAR_ALF
+  bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE];                     // alf_nonlinear_enable_flag[Luma/Chroma]
+#endif
   short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
+#if JVET_N0242_NON_LINEAR_ALF
+  short                        lumaClipp[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_clipp_luma_[i][j]
+#endif
   short                        chromaCoeff[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_coeff_chroma[i]
+#if JVET_N0242_NON_LINEAR_ALF
+  short                        chromaClipp[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_clipp_chroma[i]
+#endif
   short                        filterCoeffDeltaIdx[MAX_NUM_ALF_CLASSES];                // filter_coeff_delta[i]
-  bool                         filterCoeffFlag[MAX_NUM_ALF_CLASSES];                    // filter_coefficient_flag[i]
+  bool                         alfLumaCoeffFlag[MAX_NUM_ALF_CLASSES];                   // alf_luma_coeff_flag[i]
   int                          numLumaFilters;                                          // number_of_filters_minus1 + 1
-  bool                         coeffDeltaFlag;                                          // alf_coefficients_delta_flag
-  bool                         coeffDeltaPredModeFlag;                                  // coeff_delta_pred_mode_flag
+  bool                         alfLumaCoeffDeltaFlag;                                   // alf_luma_coeff_delta_flag
+  bool                         alfLumaCoeffDeltaPredictionFlag;                         // alf_luma_coeff_delta_prediction_flag
   std::vector<AlfFilterShape>* filterShapes;
+
+  AlfSliceParam()
+  {
+    reset();
+  }
 
   void reset()
   {
     std::memset( enabledFlag, false, sizeof( enabledFlag ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memset( nonLinearFlag, false, sizeof( nonLinearFlag ) );
+#endif
     std::memset( lumaCoeff, 0, sizeof( lumaCoeff ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memset( lumaClipp, 0, sizeof( lumaClipp ) );
+#endif
     std::memset( chromaCoeff, 0, sizeof( chromaCoeff ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memset( chromaClipp, 0, sizeof( chromaClipp ) );
+#endif
     std::memset( filterCoeffDeltaIdx, 0, sizeof( filterCoeffDeltaIdx ) );
-    std::memset( filterCoeffFlag, true, sizeof( filterCoeffFlag ) );
+    std::memset( alfLumaCoeffFlag, true, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = 1;
-    coeffDeltaFlag = false;
-    coeffDeltaPredModeFlag = false;
+    alfLumaCoeffDeltaFlag = false;
+    alfLumaCoeffDeltaPredictionFlag = false;
   }
 
   const AlfSliceParam& operator = ( const AlfSliceParam& src )
   {
     std::memcpy( enabledFlag, src.enabledFlag, sizeof( enabledFlag ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memcpy( nonLinearFlag, src.nonLinearFlag, sizeof( nonLinearFlag ) );
+#endif
     std::memcpy( lumaCoeff, src.lumaCoeff, sizeof( lumaCoeff ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memcpy( lumaClipp, src.lumaClipp, sizeof( lumaClipp ) );
+#endif
     std::memcpy( chromaCoeff, src.chromaCoeff, sizeof( chromaCoeff ) );
+#if JVET_N0242_NON_LINEAR_ALF
+    std::memcpy( chromaClipp, src.chromaClipp, sizeof( chromaClipp ) );
+#endif
     std::memcpy( filterCoeffDeltaIdx, src.filterCoeffDeltaIdx, sizeof( filterCoeffDeltaIdx ) );
-    std::memcpy( filterCoeffFlag, src.filterCoeffFlag, sizeof( filterCoeffFlag ) );
+    std::memcpy( alfLumaCoeffFlag, src.alfLumaCoeffFlag, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = src.numLumaFilters;
-    coeffDeltaFlag = src.coeffDeltaFlag;
-    coeffDeltaPredModeFlag = src.coeffDeltaPredModeFlag;
+    alfLumaCoeffDeltaFlag = src.alfLumaCoeffDeltaFlag;
+    alfLumaCoeffDeltaPredictionFlag = src.alfLumaCoeffDeltaPredictionFlag;
     filterShapes = src.filterShapes;
     return *this;
   }

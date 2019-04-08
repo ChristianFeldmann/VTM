@@ -65,9 +65,7 @@ private:
 #if HEVC_DEPENDENT_SLICES
   Ctx             m_lastSliceSegmentEndContextState;    ///< context storage for state at the end of the previous slice-segment (used for dependent slices only).
 #endif
-#if HEVC_TILES_WPP
   Ctx             m_entropyCodingSyncContextState;      ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
-#endif
 
 public:
   DecSlice();
@@ -77,7 +75,7 @@ public:
   void  create            ();
   void  destroy           ();
 
-  void  decompressSlice   ( Slice* slice, InputBitstream* bitstream );
+  void  decompressSlice   ( Slice* slice, InputBitstream* bitstream, int debugCTU );
 };
 
 //! \}

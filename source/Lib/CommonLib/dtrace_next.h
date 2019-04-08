@@ -130,7 +130,6 @@ enum DTRACE_CHANNEL
   D_QP,                   // final CU QP at reading/writing stage
   D_QP_PER_CTU,           // final QP per CTU at reading
   D_MISC,                 // Miscellaneous
-  D_DECISIONTREE,         // decision tree tracing
   D_TU_ABS_SUM,
   D_EST_FRAC_BITS,
   D_INTRA_COST,           //intra cost
@@ -141,6 +140,7 @@ enum DTRACE_CHANNEL
   D_RDOQ_MORE,
   D_RDOQ_COST,
   D_TMP,
+  D_MOT_FIELD,
   D_CRC
 #if K0149_BLOCK_STATISTICS
   ,
@@ -231,7 +231,6 @@ inline CDTrace* tracing_init( std::string& sTracingFile, std::string& sTracingRu
     _CNL_DEF( D_QP ),
     _CNL_DEF( D_QP_PER_CTU ),
     _CNL_DEF( D_MISC ),
-    _CNL_DEF( D_DECISIONTREE ),
     _CNL_DEF( D_TU_ABS_SUM ),
     _CNL_DEF( D_EST_FRAC_BITS ),
     _CNL_DEF( D_INTRA_COST ),
@@ -242,6 +241,7 @@ inline CDTrace* tracing_init( std::string& sTracingFile, std::string& sTracingRu
     _CNL_DEF( D_RDOQ_MORE ),
     _CNL_DEF( D_RDOQ_COST ),
     _CNL_DEF( D_TMP ),
+    _CNL_DEF( D_MOT_FIELD ),
     _CNL_DEF( D_CRC )
   #if K0149_BLOCK_STATISTICS
     ,

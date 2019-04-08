@@ -53,6 +53,7 @@ enum PictureType
 {
   PIC_RECONSTRUCTION = 0,
   PIC_ORIGINAL,
+  PIC_TRUE_ORIGINAL,
   PIC_PREDICTION,
   PIC_RESIDUAL,
   PIC_ORG_RESI,
@@ -79,9 +80,7 @@ public:
 
   Picture         *picture;
   CodingStructure *parent;
-#if JVET_M0246_AFFINE_AMVR
   CodingStructure *bestCS;
-#endif
   Slice           *slice;
 
   UnitScale        unitScale[MAX_NUM_COMPONENT];
@@ -91,13 +90,12 @@ public:
   int         prevQP[MAX_NUM_CHANNEL_TYPE];
   int         currQP[MAX_NUM_CHANNEL_TYPE];
   int         chromaQpAdj;
-#if JVET_M0170_MRG_SHARELIST
   Position    sharedBndPos;
   Size        sharedBndSize;
-#endif
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;
+  APS *      aps;
 #if HEVC_VPS
   const VPS *vps;
 #endif
@@ -126,11 +124,11 @@ public:
 
   const CodingUnit     *getCU(const Position &pos, const ChannelType _chType) const;
   const PredictionUnit *getPU(const Position &pos, const ChannelType _chType) const;
-  const TransformUnit  *getTU(const Position &pos, const ChannelType _chType) const;
+  const TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1) const;
 
   CodingUnit     *getCU(const Position &pos, const ChannelType _chType);
   PredictionUnit *getPU(const Position &pos, const ChannelType _chType);
-  TransformUnit  *getTU(const Position &pos, const ChannelType _chType);
+  TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1);
 
   const CodingUnit     *getCU(const ChannelType &_chType) const { return getCU(area.blocks[_chType].pos(), _chType); }
   const PredictionUnit *getPU(const ChannelType &_chType) const { return getPU(area.blocks[_chType].pos(), _chType); }
@@ -140,11 +138,7 @@ public:
   PredictionUnit *getPU(const ChannelType &_chType ) { return getPU(area.blocks[_chType].pos(), _chType); }
   TransformUnit  *getTU(const ChannelType &_chType ) { return getTU(area.blocks[_chType].pos(), _chType); }
 
-#if HEVC_TILES_WPP
   const CodingUnit     *getCURestricted(const Position &pos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType) const;
-#else
-  const CodingUnit     *getCURestricted(const Position &pos, const unsigned curSliceIdx,                            const ChannelType _chType) const;
-#endif
   const CodingUnit     *getCURestricted(const Position &pos, const CodingUnit& curCu,                               const ChannelType _chType) const;
   const PredictionUnit *getPURestricted(const Position &pos, const PredictionUnit& curPu,                           const ChannelType _chType) const;
   const TransformUnit  *getTURestricted(const Position &pos, const TransformUnit& curTu,                            const ChannelType _chType) const;
@@ -168,6 +162,9 @@ public:
   static_vector<double, NUM_ENC_FEATURES> features;
 
   double      cost;
+  bool        useDbCost;
+  double      costDbOffset;
+  double      lumaCost;
   uint64_t      fracBits;
   Distortion  dist;
   Distortion  interHad;
@@ -192,6 +189,10 @@ public:
   std::vector<    CodingUnit*> cus;
   std::vector<PredictionUnit*> pus;
   std::vector< TransformUnit*> tus;
+
+  LutMotionCand motionLut;
+
+  void addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS>& lut, const MotionInfo &mi);
 
 private:
 

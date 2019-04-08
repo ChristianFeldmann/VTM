@@ -634,17 +634,31 @@ void SampleAdaptiveOffset::xPCMLFDisableProcess(CodingStructure& cs)
 void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea)
 {
   const SPS& sps = *cs.sps;
-
+  uint32_t numComponents = CS::isDualITree(cs) ? 1 : m_numberOfComponents;
   for( auto &cu : cs.traverseCUs( ctuArea, CH_L ) )
   {
     // restore PCM samples
     if( ( cu.ipcm && sps.getPCMFilterDisableFlag() ) || CU::isLosslessCoded( cu ) )
     {
-      const uint32_t numComponents = m_numberOfComponents;
 
       for( uint32_t comp = 0; comp < numComponents; comp++ )
       {
         xPCMSampleRestoration( cu, ComponentID( comp ) );
+      }
+    }
+  }
+  numComponents = m_numberOfComponents;
+  if (CS::isDualITree(cs) && numComponents)
+  {
+    for (auto &cu : cs.traverseCUs(ctuArea, CH_C))
+    {
+      // restore PCM samples
+      if ((cu.ipcm && sps.getPCMFilterDisableFlag()) || CU::isLosslessCoded(cu))
+      {
+        for (uint32_t comp = 1; comp < numComponents; comp++)
+        {
+          xPCMSampleRestoration(cu, ComponentID(comp));
+        }
       }
     }
   }
@@ -662,6 +676,10 @@ void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const Component
              PelBuf dstBuf  = cu.cs->getRecoBuf( currTU.block(compID) );
 
       dstBuf.copyFrom( pcmBuf );
+      if (cu.slice->getReshapeInfo().getUseSliceReshaper() && isLuma(compID))
+      {
+        dstBuf.rspSignal(m_pcReshape->getInvLUT());
+      }
     }
 
     return;
@@ -679,6 +697,10 @@ void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const Component
     {
       dstBuf.at(x,y) = (pcmBuf.at(x,y) << uiPcmLeftShiftBit);
     }
+  }
+  if (cu.slice->getReshapeInfo().getUseSliceReshaper() && isLuma(compID))
+  {
+    dstBuf.rspSignal(m_pcReshape->getInvLUT());
   }
 }
 
@@ -742,7 +764,6 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
     }
   }
 
-#if HEVC_TILES_WPP
   // check cross tile flags
   const bool isLoopFilterAcrossTilePPS = cs.pps->getLoopFilterAcrossTilesEnabledFlag();
   if (!isLoopFilterAcrossTilePPS)
@@ -756,7 +777,6 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
     isBelowLeftAvail  = (!isBelowLeftAvail)  ? false : CU::isSameTile(*cuCurr, *cuBelowLeft);
     isBelowRightAvail = (!isBelowRightAvail) ? false : CU::isSameTile(*cuCurr, *cuBelowRight);
   }
-#endif
 }
 
 //! \}

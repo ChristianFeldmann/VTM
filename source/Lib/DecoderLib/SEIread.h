@@ -75,9 +75,7 @@ protected:
   void xParseSEIToneMappingInfo               (SEIToneMappingInfo& sei,               uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEISOPDescription                (SEISOPDescription &sei,                uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIScalableNesting               (SEIScalableNesting& sei, const NalUnitType nalUnitType, uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream);
-#if HEVC_TILES_WPP
   void xParseSEITempMotionConstraintsTileSets (SEITempMotionConstrainedTileSets& sei, uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
-#endif
   void xParseSEITimeCode                      (SEITimeCode& sei,                      uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIChromaResamplingFilterHint    (SEIChromaResamplingFilterHint& sei,    uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIKneeFunctionInfo              (SEIKneeFunctionInfo& sei,              uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);

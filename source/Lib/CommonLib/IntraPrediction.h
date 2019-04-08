@@ -74,8 +74,6 @@ private:
 
   static const uint8_t m_aucIntraFilter[MAX_NUM_CHANNEL_TYPE][MAX_INTRA_FILTER_DEPTHS];
 
-  unsigned m_auShiftLM[32]; // Table for substituting division operation by multiplication
-
   Pel* m_piTemp;
   Pel* m_pMdlmTemp; // for MDLM mode
 protected:
@@ -92,14 +90,16 @@ protected:
     , int multiRefIdx
     , const bool enableBoundaryFilter = true );
 #else
-  void xPredIntraAng              ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps
-    , int multiRefIdx
-    , const bool useFilteredPredSamples );
+  void xPredIntraAng              ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps,
+                                          int  multiRefIdx,
+                                    const bool useFilteredPredSamples,
+                                    const bool useISP = false,
+                                    const Size cuSize = Size( 0, 0 ) );
 #endif
   Pel  xGetPredValDc              ( const CPelBuf &pSrc, const Size &dstSize );
 
   void xFillReferenceSamples      ( const CPelBuf &recoBuf,      Pel* refBufUnfiltered, const CompArea &area, const CodingUnit &cu );
-  void xFilterReferenceSamples    ( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps 
+  void xFilterReferenceSamples    ( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps
     , int multiRefIdx
   );
 

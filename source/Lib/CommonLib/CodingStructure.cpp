@@ -62,9 +62,7 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
   : area      ()
   , picture   ( nullptr )
   , parent    ( nullptr )
-#if JVET_M0246_AFFINE_AMVR
   , bestCS    ( nullptr )
-#endif
   , m_isTuEnc ( false )
   , m_cuCache ( cuCache )
   , m_puCache ( puCache )
@@ -259,7 +257,7 @@ const PredictionUnit * CodingStructure::getPU( const Position &pos, const Channe
   }
 }
 
-TransformUnit* CodingStructure::getTU( const Position &pos, const ChannelType effChType )
+TransformUnit* CodingStructure::getTU( const Position &pos, const ChannelType effChType, const int subTuIdx )
 {
   const CompArea &_blk = area.blocks[effChType];
 
@@ -272,13 +270,37 @@ TransformUnit* CodingStructure::getTU( const Position &pos, const ChannelType ef
   {
     const unsigned idx = m_tuIdx[effChType][rsAddr( pos, _blk.pos(), _blk.width, unitScale[effChType] )];
 
-    if( idx != 0 )       return tus[ idx - 1 ];
+    if( idx != 0 )
+    {
+      unsigned extraIdx = 0;
+      if( isLuma( effChType ) )
+      {
+        const TransformUnit& tu = *tus[idx - 1];
+
+        if( tu.cu->ispMode ) // Intra SubPartitions mode
+        {
+          //we obtain the offset to index the corresponding sub-partition
+          if( subTuIdx != -1 )
+          {
+            extraIdx = subTuIdx;
+          }
+          else
+          {
+            while( pos != tus[idx - 1 + extraIdx]->blocks[getFirstComponentOfChannel( effChType )].pos() )
+            {
+              extraIdx++;
+            }
+          }
+        }
+      }
+      return tus[idx - 1 + extraIdx];
+    }
     else if( m_isTuEnc ) return parent->getTU( pos, effChType );
     else                 return nullptr;
   }
 }
 
-const TransformUnit * CodingStructure::getTU( const Position &pos, const ChannelType effChType ) const
+const TransformUnit * CodingStructure::getTU( const Position &pos, const ChannelType effChType, const int subTuIdx ) const
 {
   const CompArea &_blk = area.blocks[effChType];
 
@@ -290,8 +312,30 @@ const TransformUnit * CodingStructure::getTU( const Position &pos, const Channel
   else
   {
     const unsigned idx = m_tuIdx[effChType][rsAddr( pos, _blk.pos(), _blk.width, unitScale[effChType] )];
-
-    if( idx != 0 )       return tus[idx - 1];
+    if( idx != 0 )
+    {
+      unsigned extraIdx = 0;
+      if( isLuma( effChType ) )
+      {
+        const TransformUnit& tu = *tus[idx - 1];
+        if( tu.cu->ispMode ) // Intra SubPartitions mode
+        {
+          //we obtain the offset to index the corresponding sub-partition
+          if( subTuIdx != -1 )
+          {
+            extraIdx = subTuIdx;
+          }
+          else
+          {
+            while( pos != tus[idx - 1 + extraIdx]->blocks[effChType].pos() )
+            {
+              extraIdx++;
+            }
+          }
+        }
+      }
+      return tus[idx - 1 + extraIdx];
+    }
     else if( m_isTuEnc ) return parent->getTU( pos, effChType );
     else                 return nullptr;
   }
@@ -418,6 +462,7 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   tu->UnitArea::operator=( unit );
   tu->initData();
   tu->next   = nullptr;
+  tu->prev   = nullptr;
   tu->cs     = this;
   tu->cu     = m_isTuEnc ? cus[0] : getCU( unit.blocks[chType].pos(), chType );
   tu->chType = chType;
@@ -433,6 +478,7 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   if( prevTU && prevTU->cu == tu->cu )
   {
     prevTU->next = tu;
+    tu->prev     = prevTU;
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
 
     CHECK( prevTU->cacheId != tu->cacheId, "Inconsintent cacheId between previous and current TU" );
@@ -470,11 +516,19 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
       const CompArea &_selfBlk = area.blocks[i];
       const CompArea     &_blk = tu-> blocks[i];
 
+      bool isIspTu = tu->cu != nullptr && tu->cu->ispMode && isLuma( _blk.compID );
+
+      bool isFirstIspTu = false;
+      if( isIspTu )
+      {
+        isFirstIspTu = CU::isISPFirst( *tu->cu, _blk, getFirstComponentOfChannel( ChannelType( i ) ) );
+      }
+      if( !isIspTu || isFirstIspTu )
       {
         const UnitScale& scale = unitScale[_blk.compID];
 
         const Area scaledSelf  = scale.scale( _selfBlk );
-        const Area scaledBlk   = scale.scale(     _blk );
+        const Area scaledBlk   = isIspTu ? scale.scale( tu->cu->blocks[i] ) : scale.scale( _blk );
         unsigned *idxPtr       = m_tuIdx[i] + rsAddr( scaledBlk.pos(), scaledSelf.pos(), scaledSelf.width );
         CHECK( *idxPtr, "Overwriting a pre-existing value, should be '0'!" );
         AreaBuf<uint32_t>( idxPtr, scaledSelf.width, scaledBlk.size() ).fill( idx );
@@ -626,6 +680,31 @@ void CodingStructure::createInternals( const UnitArea& _unit, const bool isTopLa
   initStructData();
 }
 
+void CodingStructure::addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> &lut, const MotionInfo &mi)
+{
+  size_t currCnt = lut.size();
+
+  bool pruned      = false;
+  int  sameCandIdx = 0;
+
+  for (int idx = 0; idx < currCnt; idx++)
+  {
+    if (lut[idx] == mi)
+    {
+      sameCandIdx = idx;
+      pruned      = true;
+      break;
+    }
+  }
+
+  if (pruned || currCnt == lut.capacity())
+  {
+    lut.erase(lut.begin() + sameCandIdx);
+  }
+
+  lut.push_back(mi);
+}
+
 void CodingStructure::rebindPicBufs()
 {
   CHECK( parent, "rebindPicBufs can only be used for the top level CodingStructure" );
@@ -669,6 +748,9 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
 {
   CHECK( this == &subStruct, "Trying to init self as sub-structure" );
 
+  subStruct.useDbCost = false;
+  subStruct.costDbOffset = 0;
+
   for( uint32_t i = 0; i < subStruct.area.blocks.size(); i++ )
   {
     CHECKD( subStruct.area.blocks[i].size() != subArea.blocks[i].size(), "Trying to init sub-structure of incompatible size" );
@@ -690,6 +772,7 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.vps       = vps;
 #endif
   subStruct.pps       = pps;
+  subStruct.aps       = aps;
   subStruct.slice     = slice;
   subStruct.baseQP    = baseQP;
   subStruct.prevQP[_chType]
@@ -697,6 +780,8 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.pcv       = pcv;
 
   subStruct.m_isTuEnc = isTuEnc;
+
+  subStruct.motionLut = motionLut;
 
   subStruct.initStructData( currQP[_chType], isLossless );
 
@@ -749,13 +834,15 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   if( cpyResi ) picture->getResiBuf( clippedArea ).copyFrom( subResiBuf );
   if( cpyReco ) picture->getRecoBuf( clippedArea ).copyFrom( subRecoBuf );
 
-  if (!subStruct.m_isTuEnc && (!slice->isIntra() && subStruct.chType != CHANNEL_TYPE_CHROMA))
+  if (!subStruct.m_isTuEnc && ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && chType != CHANNEL_TYPE_CHROMA))
   {
     // copy motion buffer
     MotionBuf ownMB  = getMotionBuf          ( clippedArea );
     CMotionBuf subMB = subStruct.getMotionBuf( clippedArea );
 
     ownMB.copyFrom( subMB );
+
+    motionLut = subStruct.motionLut;
   }
 #if ENABLE_WPP_PARALLELISM
 
@@ -766,7 +853,7 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
       fracBits += subStruct.fracBits;
       dist     += subStruct.dist;
       cost     += subStruct.cost;
-
+      costDbOffset += subStruct.costDbOffset;
       if( parent )
       {
         // allow this to be false at the top level
@@ -830,7 +917,7 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   fracBits += subStruct.fracBits;
   dist     += subStruct.dist;
   cost     += subStruct.cost;
-
+  costDbOffset += subStruct.costDbOffset;
   if( parent )
   {
     // allow this to be false at the top level
@@ -892,7 +979,7 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
   fracBits = other.fracBits;
   dist     = other.dist;
   cost     = other.cost;
-
+  costDbOffset = other.costDbOffset;
   CHECKD( area != other.area, "Incompatible sizes" );
 
   const UnitArea dualITreeArea = CS::getArea( *this, this->area, chType );
@@ -929,13 +1016,15 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
     pu = *ppu;
   }
 
-  if( !other.slice->isIntra() )
+  if (!other.slice->isIntra() || other.slice->getSPS()->getIBCFlag())
   {
     // copy motion buffer
     MotionBuf  ownMB = getMotionBuf();
     CMotionBuf subMB = other.getMotionBuf();
 
     ownMB.copyFrom( subMB );
+
+    motionLut = other.motionLut;
   }
 
   if( copyTUs )
@@ -969,6 +1058,24 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
 
     // copy data to picture
     picture->getRecoBuf( area ).copyFrom( recoBuf );
+    if (other.pcv->isEncoder)
+    {
+      CPelUnitBuf predBuf = other.getPredBuf(area);
+      if (parent)
+      {
+        getPredBuf(area).copyFrom(predBuf);
+      }
+      picture->getPredBuf(area).copyFrom(predBuf);
+    }
+
+    // required for DebugCTU
+    int numCh = ::getNumberValidChannels( area.chromaFormat );
+    for( int i = 0; i < numCh; i++ )
+    {
+      const size_t _area = unitScale[i].scaleArea( area.blocks[i].area() );
+
+      memcpy( m_isDecomp[i], other.m_isDecomp[i], sizeof( *m_isDecomp[0] ) * _area );
+    }
   }
 }
 
@@ -984,7 +1091,7 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
     isLossless            = _isLosses;
   }
 
-  if( !skipMotBuf && ( !parent || ( ( slice->getSliceType() != I_SLICE ) && !m_isTuEnc ) ) )
+  if (!skipMotBuf && (!parent || ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && !m_isTuEnc)))
   {
     getMotionBuf()      .memset( 0 );
   }
@@ -992,6 +1099,9 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
   fracBits = 0;
   dist     = 0;
   cost     = MAX_DOUBLE;
+  lumaCost = MAX_DOUBLE;
+  costDbOffset = 0;
+  useDbCost = false;
   interHad = std::numeric_limits<Distortion>::max();
 }
 
@@ -1007,7 +1117,7 @@ void CodingStructure::clearTUs()
     memset( m_tuIdx   [i],     0, sizeof( *m_tuIdx   [0] ) * _area );
   }
 
-  numCh = getNumberValidComponents( area.chromaFormat ); 
+  numCh = getNumberValidComponents( area.chromaFormat );
   for( int i = 0; i < numCh; i++ )
   {
     m_offsets[i] = 0;
@@ -1228,15 +1338,9 @@ const CPelUnitBuf CodingStructure::getBuf( const UnitArea &unit, const PictureTy
 const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const CodingUnit& curCu, const ChannelType _chType ) const
 {
   const CodingUnit* cu = getCU( pos, _chType );
-#if HEVC_TILES_WPP
   // exists       same slice and tile                  cu precedes curCu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   if( cu && CU::isSameSliceAndTile( *cu, curCu ) && ( cu->cs != curCu.cs || cu->idx <= curCu.idx ) )
-#else
-  // exists       same slice                          cu precedes curCu in encoding order
-  //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if(cu && CU::isSameSlice(*cu, curCu) && (cu->cs != curCu.cs || cu->idx <= curCu.idx))
-#endif
   {
     return cu;
   }
@@ -1246,32 +1350,18 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   }
 }
 
-#if HEVC_TILES_WPP
 const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType ) const
 {
   const CodingUnit* cu = getCU( pos, _chType );
   return ( cu && cu->slice->getIndependentSliceIdx() == curSliceIdx && cu->tileIdx == curTileIdx ) ? cu : nullptr;
 }
-#else
-const CodingUnit* CodingStructure::getCURestricted(const Position &pos, const unsigned curSliceIdx, const ChannelType _chType) const
-{
-  const CodingUnit* cu = getCU(pos, _chType);
-  return (cu && cu->slice->getIndependentSliceIdx() == curSliceIdx ) ? cu : nullptr;
-}
-#endif
 
 const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, const PredictionUnit& curPu, const ChannelType _chType ) const
 {
   const PredictionUnit* pu = getPU( pos, _chType );
-#if HEVC_TILES_WPP
   // exists       same slice and tile                  pu precedes curPu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   if( pu && CU::isSameSliceAndTile( *pu->cu, *curPu.cu ) && ( pu->cs != curPu.cs || pu->idx <= curPu.idx ) )
-#else
-  // exists       same slice                           pu precedes curPu in encoding order
-  //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if(pu && CU::isSameSlice(*pu->cu, *curPu.cu) && (pu->cs != curPu.cs || pu->idx <= curPu.idx))
-#endif
   {
     return pu;
   }
@@ -1284,15 +1374,9 @@ const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, con
 const TransformUnit* CodingStructure::getTURestricted( const Position &pos, const TransformUnit& curTu, const ChannelType _chType ) const
 {
   const TransformUnit* tu = getTU( pos, _chType );
-#if HEVC_TILES_WPP
   // exists       same slice and tile                  tu precedes curTu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   if( tu && CU::isSameSliceAndTile( *tu->cu, *curTu.cu ) && ( tu->cs != curTu.cs || tu->idx <= curTu.idx ) )
-#else
-  // exists       same slice                           tu precedes curTu in encoding order
-  //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if(tu && CU::isSameSlice(*tu->cu, *curTu.cu) && (tu->cs != curTu.cs || tu->idx <= curTu.idx))
-#endif
   {
     return tu;
   }

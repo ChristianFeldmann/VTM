@@ -48,6 +48,7 @@
 #include "CommonLib/TrQuant.h"
 #include "CommonLib/Unit.h"
 #include "CommonLib/RdCost.h"
+#include "EncReshape.h"
 
 //! \ingroup EncoderLib
 //! \{
@@ -62,6 +63,7 @@ class EncModeCtrl;
 class IntraSearch : public IntraPrediction, CrossComponentPrediction
 {
 private:
+  EncModeCtrl    *m_modeCtrl;
   Pel*            m_pSharedPredTransformSkip[MAX_NUM_TBLOCKS];
 
   XUCache         m_unitCache;
@@ -75,13 +77,14 @@ private:
   CodingStructure **m_pSaveCS;
 
   //cost variables for the EMT algorithm and new modes list
-#if !JVET_M0464_UNI_MTS
-  double m_bestModeCostStore[4];                                    // RD cost of the best mode for each PU using DCT2
-  double m_modeCostStore    [4][NUM_LUMA_MODE];                         // RD cost of each mode for each PU using DCT2
-  uint32_t   m_savedRdModeList  [4][NUM_LUMA_MODE], m_savedNumRdModes[4];
-  int        m_savedExtendRefList[4][NUM_LUMA_MODE];
-#endif
+  static_vector<uint32_t, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrl;
+  static_vector<uint32_t, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlHor;
+  static_vector<uint32_t, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlVer;
 
+  static_vector<double, FAST_UDI_MAX_RDMODE_NUM> m_intraModeDiagRatio;
+  static_vector<double, FAST_UDI_MAX_RDMODE_NUM> m_intraModeHorVerRatio;
+  static_vector<int,    FAST_UDI_MAX_RDMODE_NUM> m_intraModeTestedNormalIntra;
+  PelStorage      m_tmpStorageLCU;
 protected:
   // interface to option
   EncCfg*         m_pcEncCfg;
@@ -89,6 +92,7 @@ protected:
   // interface to classes
   TrQuant*        m_pcTrQuant;
   RdCost*         m_pcRdCost;
+  EncReshape*     m_pcReshape;
 
   // RD computation
   CABACWriter*    m_CABACEstimator;
@@ -109,6 +113,7 @@ public:
                                     const uint32_t     maxCUWidth,
                                     const uint32_t     maxCUHeight,
                                     const uint32_t     maxTotalCUDepth
+                                  , EncReshape*   m_pcReshape
                                   );
 
   void destroy                    ();
@@ -117,10 +122,12 @@ public:
   CodingStructure****getFullCSBuf () { return m_pFullCS; }
   CodingStructure  **getSaveCSBuf () { return m_pSaveCS; }
 
+  void setModeCtrl                ( EncModeCtrl *modeCtrl ) { m_modeCtrl = modeCtrl; }
+
 public:
 
-  void estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm );
-  void estIntraPredChromaQT       (CodingUnit &cu, Partitioner& pm);
+  void estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm, const double bestCostSoFar  = MAX_DOUBLE );
+  void estIntraPredChromaQT       ( CodingUnit &cu, Partitioner& pm, const double maxCostAllowed = MAX_DOUBLE );
   void IPCMSearch                 (CodingStructure &cs, Partitioner& partitioner);
   uint64_t xFracModeBitsIntra     (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
 
@@ -136,23 +143,19 @@ protected:
   // Intra search
   // -------------------------------------------------------------------------------------------------------------------
 
-  void xEncIntraHeader            (CodingStructure &cs, Partitioner& pm, const bool &bLuma, const bool &bChroma);
-  void xEncSubdivCbfQT            (CodingStructure &cs, Partitioner& pm, const bool &bLuma, const bool &bChroma);
-  uint64_t xGetIntraFracBitsQT      (CodingStructure &cs, Partitioner& pm, const bool &bLuma, const bool &bChroma);
+  void     xEncIntraHeader                         ( CodingStructure &cs, Partitioner& pm, const bool &luma, const bool &chroma, const int subTuIdx = -1 );
+  void     xEncSubdivCbfQT                         ( CodingStructure &cs, Partitioner& pm, const bool &luma, const bool &chroma, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP );
+  uint64_t xGetIntraFracBitsQT                     ( CodingStructure &cs, Partitioner& pm, const bool &luma, const bool &chroma, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP );
+  uint64_t xGetIntraFracBitsQTSingleChromaComponent( CodingStructure &cs, Partitioner& pm, const ComponentID compID );
 
   uint64_t xGetIntraFracBitsQTChroma(TransformUnit& tu, const ComponentID &compID);
-  void xEncCoeffQT                (CodingStructure &cs, Partitioner& pm, const ComponentID &compID);
+  void xEncCoeffQT                                 ( CodingStructure &cs, Partitioner& pm, const ComponentID compID, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP );
 
 
-#if JVET_M0464_UNI_MTS
   void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr, std::vector<TrMode>* trModes=nullptr, const bool loadTr=false );
-#else
-  void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr );
-#endif
 
-  ChromaCbfs xRecurIntraChromaCodingQT  (CodingStructure &cs, Partitioner& pm);
-
-  void xRecurIntraCodingLumaQT    ( CodingStructure &cs, Partitioner& pm );
+  ChromaCbfs xRecurIntraChromaCodingQT( CodingStructure &cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE,                          const PartSplit ispType = TU_NO_ISP );
+  void       xRecurIntraCodingLumaQT  ( CodingStructure &cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP, const bool ispIsCurrentWinnder = false );
 
 
   void encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, PelBuf &pDst, const uint32_t &uiDirMode );

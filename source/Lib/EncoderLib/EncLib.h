@@ -53,6 +53,7 @@
 #include "InterSearch.h"
 #include "IntraSearch.h"
 #include "EncSampleAdaptiveOffset.h"
+#include "EncReshape.h"
 #include "EncAdaptiveLoopFilter.h"
 #include "RateCtrl.h"
 
@@ -98,6 +99,12 @@ private:
   CABACEncoder              m_CABACEncoder;
 #endif
 
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+  EncReshape               *m_cReshaper;                        ///< reshaper class
+#else
+  EncReshape                m_cReshaper;                        ///< reshaper class
+#endif
+
   // processing unit
   EncGOP                    m_cGOPEncoder;                        ///< GOP encoder
   EncSlice                  m_cSliceEncoder;                      ///< slice encoder
@@ -109,6 +116,7 @@ private:
   // SPS
   ParameterSetMap<SPS>      m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
   ParameterSetMap<PPS>      m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
+  ParameterSetMap<APS>      m_apsMap;                             ///< APS. This is the base value. This is copied to PicSym
   // RD cost computation
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   RdCost                   *m_cRdCost;                            ///< RD cost computation class
@@ -143,15 +151,14 @@ protected:
 #endif
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
+  void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options
 #if HEVC_USE_SCALING_LISTS
   void  xInitScalingLists (SPS &sps, PPS &pps);   ///< initialize scaling lists
 #endif
   void  xInitPPSforLT(PPS& pps);
   void  xInitHrdParameters(SPS &sps);                 ///< initialize HRD parameters
 
-#if HEVC_TILES_WPP
   void  xInitPPSforTiles  (PPS &pps);
-#endif
   void  xInitRPS          (SPS &sps, bool isFieldCoding);           ///< initialize PPS from encoder options
 
 public:
@@ -210,15 +217,25 @@ public:
   );
   int getReferencePictureSetIdxForSOP(int POCCurr, int GOPid );
 
+#if JCTVC_Y0038_PARAMS
+  void                   setParamSetChanged(int spsId, int ppsId);
+#endif
+  bool                   APSNeedsWriting(int apsId);
   bool                   PPSNeedsWriting(int ppsId);
   bool                   SPSNeedsWriting(int spsId);
   const PPS* getPPS( int Id ) { return m_ppsMap.getPS( Id); }
+  const APS*             getAPS(int Id) { return m_apsMap.getPS(Id); }
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   void                   setNumCuEncStacks( int n )             { m_numCuEncStacks = n; }
   int                    getNumCuEncStacks()              const { return m_numCuEncStacks; }
 #endif
 
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+  EncReshape*            getReshaper( int jId = 0 )             { return  &m_cReshaper[jId]; }
+#else
+  EncReshape*            getReshaper()                          { return  &m_cReshaper; }
+#endif
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function
   // -------------------------------------------------------------------------------------------------------------------

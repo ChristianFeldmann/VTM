@@ -312,6 +312,9 @@ class CMakeLauncher(object):
                 self._add_common_cmake_build_options(cmake_argv, params)
                 self._add_cmake_build_jobs_option(cmake_argv, params.cmk_generator_alias, params.cmk_build_jobs)
                 self._add_cmake_build_verbosity_option(cmake_argv, params.cmk_generator_alias, params.cmk_build_verbosity)
+                if params.cmk_generator_alias.startswith('vs'):
+                    # msbuild option to disable node reuse -> jenkins build seems to idle at the end.
+                    self._add_cmake_build_tool_options(cmake_argv, ['/nr:false'])
                 if cmake_argv_optional:
                     self._add_cmake_build_tool_options(cmake_argv, cmake_argv_optional)
                 retv = self.launch_cmake(cmake_argv)

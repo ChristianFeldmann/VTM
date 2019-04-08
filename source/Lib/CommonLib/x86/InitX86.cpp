@@ -171,7 +171,7 @@ void AdaptiveLoopFilter::initAdaptiveLoopFilterX86()
 void IbcHashMap::initIbcHashMapX86()
 {
   auto vext = read_x86_extension_flags();
-  switch (vext) 
+  switch (vext)
   {
   case AVX512:
   case AVX2:

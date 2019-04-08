@@ -117,6 +117,31 @@ protected:
   bool      m_bClipOutputVideoToRec709Range;
   bool      m_packedYUVMode;                                  ///< If true, output 10-bit and 12-bit YUV data as 5-byte and 3-byte (respectively) packed YUV data
 
+  bool      m_bIntraOnlyConstraintFlag;
+  uint32_t  m_maxBitDepthConstraintIdc;
+  uint32_t  m_maxChromaFormatConstraintIdc;
+  bool      m_bFrameConstraintFlag;
+  bool      m_bNoQtbttDualTreeIntraConstraintFlag;
+  bool      m_bNoSaoConstraintFlag;
+  bool      m_bNoAlfConstraintFlag;
+  bool      m_bNoPcmConstraintFlag;
+  bool      m_bNoRefWraparoundConstraintFlag;
+  bool      m_bNoTemporalMvpConstraintFlag;
+  bool      m_bNoSbtmvpConstraintFlag;
+  bool      m_bNoAmvrConstraintFlag;
+  bool      m_bNoBdofConstraintFlag;
+  bool      m_bNoCclmConstraintFlag;
+  bool      m_bNoMtsConstraintFlag;
+  bool      m_bNoAffineMotionConstraintFlag;
+  bool      m_bNoGbiConstraintFlag;
+  bool      m_bNoMhIntraConstraintFlag;
+  bool      m_bNoTriangleConstraintFlag;
+  bool      m_bNoLadfConstraintFlag;
+  bool      m_bNoCurrPicRefConstraintFlag;
+  bool      m_bNoQpDeltaConstraintFlag;
+  bool      m_bNoDepQuantConstraintFlag;
+  bool      m_bNoSignDataHidingConstraintFlag;
+
   // profile/level
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
@@ -135,6 +160,9 @@ protected:
   int       m_iIntraPeriod;                                   ///< period of I-slice (random access period)
   int       m_iDecodingRefreshType;                           ///< random access type
   int       m_iGOPSize;                                       ///< GOP size of hierarchical structure
+#if JCTVC_Y0038_PARAMS
+  bool      m_rewriteParamSets;                              ///< Flag to enable rewriting of parameter sets at random access points
+#endif
   int       m_extraRPSs;                                      ///< extra RPSs added to handle CRA
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
@@ -150,6 +178,7 @@ protected:
   bool      m_rdpcmEnabledFlag[NUMBER_OF_RDPCM_SIGNALLING_MODES];///< control flags for residual DPCM
   bool      m_persistentRiceAdaptationEnabledFlag;            ///< control flag for Golomb-Rice parameter adaptation over each slice
   bool      m_cabacBypassAlignmentEnabledFlag;
+  bool      m_useFastISP;                                    ///< flag for enabling fast methods for ISP
 
   // coding quality
 #if QP_SWITCHING_FOR_PARALLEL
@@ -166,14 +195,18 @@ protected:
   int*      m_aidQP;                                          ///< array of slice QP values
   int       m_iMaxDeltaQP;                                    ///< max. |delta QP|
   uint32_t      m_uiDeltaQpRD;                                    ///< dQP range for multi-pass slice QP optimization
-  int       m_iMaxCuDQPDepth;                                 ///< Max. depth for a minimum CuDQPSize (0:default)
-  int       m_diffCuChromaQpOffsetDepth;                      ///< If negative, then do not apply chroma qp offsets.
+  int       m_cuQpDeltaSubdiv;                                ///< Maximum subdiv for CU luma Qp adjustment (0:default)
+  int       m_cuChromaQpOffsetSubdiv;                         ///< If negative, then do not apply chroma qp offsets.
   bool      m_bFastDeltaQP;                                   ///< Fast Delta QP (false:default)
 
   int       m_cbQpOffset;                                     ///< Chroma Cb QP Offset (0:default)
   int       m_crQpOffset;                                     ///< Chroma Cr QP Offset (0:default)
   int       m_cbQpOffsetDualTree;                             ///< Chroma Cb QP Offset for dual tree (overwrite m_cbQpOffset for dual tree)
   int       m_crQpOffsetDualTree;                             ///< Chroma Cr QP Offset for dual tree (overwrite m_crQpOffset for dual tree)
+#if JVET_N0054_JOINT_CHROMA
+  int       m_cbCrQpOffset;                                   ///< QP Offset for joint Cb-Cr mode
+  int       m_cbCrQpOffsetDualTree;                           ///< QP Offset for joint Cb-Cr mode (overwrite m_cbCrQpOffset for dual tree)
+#endif
 #if ER_CHROMA_QP_WCG_PPS
   WCGChromaQPControl m_wcgChromaQpControl;                    ///< Wide-colour-gamut chroma QP control.
 #endif
@@ -202,29 +235,21 @@ protected:
   unsigned  m_uiMaxBTDepthI;
   unsigned  m_uiMaxBTDepthIChroma;
   bool      m_dualTree;
-  bool      m_LargeCTU;
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
   bool      m_BIO;
-  bool      m_DisableMotionCompression;
-  unsigned  m_MTT;
-#if ENABLE_WPP_PARALLELISM
-  bool      m_AltDQPCoding;
-#endif
   int       m_LMChroma;
-#if JVET_M0142_CCLM_COLLOCATED_CHROMA
   bool      m_cclmCollocatedChromaFlag;
-#endif
-#if JVET_M0464_UNI_MTS
   int       m_MTS;                                            ///< XZ: Multiple Transform Set
   int       m_MTSIntraMaxCand;                                ///< XZ: Number of additional candidates to test
   int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test
-#else
-  int       m_EMT;                                            ///< XZ: Enhanced Multiple Transform
-  int       m_FastEMT;                                        ///< XZ: Fast Methods of Enhanced Multiple Transform
-#endif
+  int       m_MTSImplicit;
+  bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
 
+#if JVET_N0235_SMVD_SPS
+  bool      m_SMVD;
+#endif
   bool      m_compositeRefEnabled;
   bool      m_GBi;
   bool      m_GBiFast;
@@ -237,13 +262,14 @@ protected:
 
   bool      m_MHIntra;
   bool      m_Triangle;
-#if JVET_M0255_FRACMMVD_SWITCH
+  bool      m_HashME;
   bool      m_allowDisFracMMVD;
-#endif
-#if JVET_M0246_AFFINE_AMVR
   bool      m_AffineAmvr;
+  bool      m_AffineAmvrEncOpt;
+  bool      m_DMVR;
+#if JVET_N0449_MMVD_SIMP
+  int       m_MmvdDisNum;
 #endif
-
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -256,7 +282,11 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-
+  bool      m_lumaReshapeEnable;
+  uint32_t  m_reshapeSignalType;
+  uint32_t  m_intraCMD;
+  ReshapeCW m_reshapeCW;
+  bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
   unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)
@@ -269,6 +299,10 @@ protected:
   bool      m_useFastMrg;
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
+#if JVET_N0242_NON_LINEAR_ALF
+  bool      m_useNonLinearAlfLuma;
+  bool      m_useNonLinearAlfChroma;
+#endif
 
 
   int       m_numSplitThreads;
@@ -277,14 +311,9 @@ protected:
   int       m_numWppExtraLines;
   bool      m_ensureWppBitEqual;
 
-  // transfom unit (TU) definition
-  int       m_quadtreeTULog2MaxSize;
-  int       m_quadtreeTULog2MinSize;
-  int       m_tuLog2MaxSize;
-
-  uint32_t      m_uiQuadtreeTUMaxDepthInter;
-  uint32_t      m_uiQuadtreeTUMaxDepthIntra;
-
+#if MAX_TB_SIZE_SIGNALLING
+  int       m_log2MaxTbSize;
+#endif
   // coding tools (bit-depth)
   int       m_inputBitDepth   [MAX_NUM_CHANNEL_TYPE];         ///< bit-depth of input file
   int       m_outputBitDepth  [MAX_NUM_CHANNEL_TYPE];         ///< bit-depth of output file
@@ -356,7 +385,6 @@ protected:
 #endif
 
   bool      m_bLFCrossSliceBoundaryFlag;  ///< 1: filter across slice boundaries 0: do not filter across slice boundaries
-#if HEVC_TILES_WPP
   bool      m_bLFCrossTileBoundaryFlag;   ///< 1: filter across tile boundaries  0: do not filter across tile boundaries
   bool      m_tileUniformSpacingFlag;
   int       m_numTileColumnsMinus1;
@@ -364,7 +392,6 @@ protected:
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
   bool      m_entropyCodingSyncEnabledFlag;
-#endif
 
   bool      m_bUseConstrainedIntraPred;                       ///< flag for using constrained intra prediction
   bool      m_bFastUDIUseMPMEnabled;
@@ -442,6 +469,8 @@ protected:
   uint32_t      m_greenMetadataType;
   uint32_t      m_xsdMetricType;
 
+  bool      m_MCTSEncConstraint;
+
   // weighted prediction
   bool      m_useWeightedPred;                    ///< Use of weighted prediction in P slices
   bool      m_useWeightedBiPred;                  ///< Use of bi-directional weighted prediction in B slices
@@ -509,9 +538,7 @@ protected:
   bool      m_pocProportionalToTimingFlag;                    ///< Indicates that the POC value is proportional to the output time w.r.t. first picture in CVS
   int       m_numTicksPocDiffOneMinus1;                       ///< Number of ticks minus 1 that for a POC difference of one
   bool      m_bitstreamRestrictionFlag;                       ///< Signals whether bitstream restriction parameters are present
-#if HEVC_TILES_WPP
   bool      m_tilesFixedStructureFlag;                        ///< Indicates that each active picture parameter set has the same values of the syntax elements related to tiles
-#endif
   bool      m_motionVectorsOverPicBoundariesFlag;             ///< Indicates that no samples outside the picture boundaries are used for inter prediction
   int       m_minSpatialSegmentationIdc;                      ///< Indicates the maximum size of the spatial segments in the pictures in the coded video sequence
   int       m_maxBytesPerPicDenom;                            ///< Indicates a number of bytes not exceeded by the sum of the sizes of the VCL NAL units associated with any coded picture
@@ -529,6 +556,7 @@ protected:
   int         m_verbosity;
 
   std::string m_decodeBitstreams[2];                          ///< filename for decode bitstreams.
+  int         m_debugCTU;
   int         m_switchPOC;                                    ///< dbg poc.
   int         m_switchDQP;                                    ///< switch DQP.
   int         m_fastForwardToPOC;                             ///< get to encoding the specified POC as soon as possible by skipping temporal layers irrelevant for the specified POC

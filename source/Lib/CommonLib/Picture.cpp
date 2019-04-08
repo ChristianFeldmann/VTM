@@ -436,7 +436,6 @@ bool Scheduler::getNextCtu( Position& pos, int ctuLine, int offset)
 // picture methods
 // ---------------------------------------------------------------------------
 
-#if HEVC_TILES_WPP
 
 Tile::Tile()
 : m_tileWidthInCtus     (0)
@@ -553,7 +552,11 @@ void TileMap::initTileMap( const SPS& sps, const PPS& pps )
   // Tile size check
   int minWidth  = 1;
   int minHeight = 1;
+#if !JVET_M0101_HLS
   const int profileIdc = sps.getPTL()->getGeneralPTL()->getProfileIdc();
+#else
+  const int profileIdc = sps.getProfileTierLevel()->getProfileIdc();
+#endif
   if (  profileIdc == Profile::MAIN || profileIdc == Profile::MAIN10)
   {
     if (pps.getTilesEnabledFlag())
@@ -707,13 +710,10 @@ uint32_t TileMap::getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool bAdd
   }
   return subStrm;
 }
-#endif
 
 Picture::Picture()
 {
-#if HEVC_TILES_WPP
   tileMap              = nullptr;
-#endif
   cs                   = nullptr;
   m_bIsBorderExtended  = false;
   usedByCurr           = false;
@@ -742,11 +742,13 @@ void Picture::create(const ChromaFormat &_chromaFormat, const Size &size, const 
   if( !_decoder )
   {
     M_BUFS( 0, PIC_ORIGINAL ).    create( _chromaFormat, a );
+    M_BUFS( 0, PIC_TRUE_ORIGINAL ). create( _chromaFormat, a );
   }
 #if !KEEP_PRED_AND_RESI_SIGNALS
 
   m_ctuArea = UnitArea( _chromaFormat, Area( Position{ 0, 0 }, Size( _maxCUSize, _maxCUSize ) ) );
 #endif
+  m_hashMap.clearAll();
 }
 
 void Picture::destroy()
@@ -762,7 +764,7 @@ void Picture::destroy()
   {
     M_BUFS( jId, t ).destroy();
   }
-
+  m_hashMap.clearAll();
   if( cs )
   {
     cs->destroy();
@@ -782,14 +784,12 @@ void Picture::destroy()
   }
   SEIs.clear();
 
-#if HEVC_TILES_WPP
   if ( tileMap )
   {
     tileMap->destroy();
     delete tileMap;
     tileMap = nullptr;
   }
-#endif
   if (m_spliceIdx)
   {
     delete[] m_spliceIdx;
@@ -846,6 +846,12 @@ const CPelUnitBuf Picture::getOrigBuf(const UnitArea &unit) const { return getBu
        PelUnitBuf Picture::getOrigBuf()                           { return M_BUFS(0,    PIC_ORIGINAL); }
 const CPelUnitBuf Picture::getOrigBuf()                     const { return M_BUFS(0,    PIC_ORIGINAL); }
 
+       PelBuf     Picture::getOrigBuf(const ComponentID compID)       { return getBuf(compID, PIC_ORIGINAL); }
+const CPelBuf     Picture::getOrigBuf(const ComponentID compID) const { return getBuf(compID, PIC_ORIGINAL); }
+       PelUnitBuf Picture::getTrueOrigBuf()                           { return M_BUFS(0, PIC_TRUE_ORIGINAL); }
+const CPelUnitBuf Picture::getTrueOrigBuf()                     const { return M_BUFS(0, PIC_TRUE_ORIGINAL); }
+       PelBuf     Picture::getTrueOrigBuf(const CompArea &blk)        { return getBuf(blk, PIC_TRUE_ORIGINAL); }
+const CPelBuf     Picture::getTrueOrigBuf(const CompArea &blk)  const { return getBuf(blk, PIC_TRUE_ORIGINAL); }
        PelBuf     Picture::getPredBuf(const CompArea &blk)        { return getBuf(blk,  PIC_PREDICTION); }
 const CPelBuf     Picture::getPredBuf(const CompArea &blk)  const { return getBuf(blk,  PIC_PREDICTION); }
        PelUnitBuf Picture::getPredBuf(const UnitArea &unit)       { return getBuf(unit, PIC_PREDICTION); }
@@ -865,7 +871,7 @@ const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit)     const { return g
        PelUnitBuf Picture::getRecoBuf()                               { return M_BUFS(scheduler.getSplitPicId(), PIC_RECONSTRUCTION); }
 const CPelUnitBuf Picture::getRecoBuf()                         const { return M_BUFS(scheduler.getSplitPicId(), PIC_RECONSTRUCTION); }
 
-void Picture::finalInit( const SPS& sps, const PPS& pps )
+void Picture::finalInit(const SPS& sps, const PPS& pps, APS& aps)
 {
   for( auto &sei : SEIs )
   {
@@ -874,14 +880,12 @@ void Picture::finalInit( const SPS& sps, const PPS& pps )
   SEIs.clear();
   clearSliceBuffer();
 
-#if HEVC_TILES_WPP
   if( tileMap )
   {
     tileMap->destroy();
     delete tileMap;
     tileMap = nullptr;
   }
-#endif
 
   const ChromaFormat chromaFormatIDC = sps.getChromaFormatIdc();
   const int          iWidth = sps.getPicWidthInLumaSamples();
@@ -901,15 +905,14 @@ void Picture::finalInit( const SPS& sps, const PPS& pps )
   cs->picture = this;
   cs->slice   = nullptr;  // the slices for this picture have not been set at this point. update cs->slice after swapSliceObject()
   cs->pps     = &pps;
+  cs->aps = &aps;
 #if HEVC_VPS
   cs->vps     = nullptr;
 #endif
   cs->pcv     = pps.pcv;
 
-#if HEVC_TILES_WPP
   tileMap = new TileMap;
   tileMap->create( sps, pps );
-#endif
   if (m_spliceIdx == NULL)
   {
     m_ctuNums = cs->pcv->sizeInCtus;
@@ -923,6 +926,7 @@ void Picture::allocateNewSlice()
   slices.push_back(new Slice);
   Slice& slice = *slices.back();
 
+  slice.setAPS(cs->aps);
   slice.setPPS( cs->pps);
   slice.setSPS( cs->sps);
   if(slices.size()>=2)
@@ -936,11 +940,13 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
 {
   p->setSPS(cs->sps);
   p->setPPS(cs->pps);
+  p->setAPS(cs->aps);
 
   Slice * pTmp = slices[i];
   slices[i] = p;
   pTmp->setSPS(0);
   pTmp->setPPS(0);
+  pTmp->setAPS(0);
   return pTmp;
 }
 
@@ -1052,12 +1058,12 @@ void Picture::extendPicBorder()
 
 PelBuf Picture::getBuf( const ComponentID compID, const PictureType &type )
 {
-  return M_BUFS( type == PIC_ORIGINAL ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
+  return M_BUFS( ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
 }
 
 const CPelBuf Picture::getBuf( const ComponentID compID, const PictureType &type ) const
 {
-  return M_BUFS( type == PIC_ORIGINAL ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
+  return M_BUFS( ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );
 }
 
 PelBuf Picture::getBuf( const CompArea &blk, const PictureType &type )
@@ -1068,7 +1074,7 @@ PelBuf Picture::getBuf( const CompArea &blk, const PictureType &type )
   }
 
 #if ENABLE_SPLIT_PARALLELISM
-  const int jId = type == PIC_ORIGINAL ? 0 : scheduler.getSplitPicId();
+  const int jId = ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
 
 #endif
 #if !KEEP_PRED_AND_RESI_SIGNALS
@@ -1093,7 +1099,7 @@ const CPelBuf Picture::getBuf( const CompArea &blk, const PictureType &type ) co
   }
 
 #if ENABLE_SPLIT_PARALLELISM
-  const int jId = type == PIC_ORIGINAL ? 0 : scheduler.getSplitPicId();
+  const int jId = ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
 
 #endif
 #if !KEEP_PRED_AND_RESI_SIGNALS
@@ -1137,7 +1143,7 @@ const CPelUnitBuf Picture::getBuf( const UnitArea &unit, const PictureType &type
 Pel* Picture::getOrigin( const PictureType &type, const ComponentID compID ) const
 {
 #if ENABLE_SPLIT_PARALLELISM
-  const int jId = type == PIC_ORIGINAL ? 0 : scheduler.getSplitPicId();
+  const int jId = ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL ) ? 0 : scheduler.getSplitPicId();
 #endif
   return M_BUFS( jId, type ).getOrigin( compID );
 
@@ -1161,4 +1167,63 @@ bool Picture::getSpliceFull()
   if (count < m_ctuNums * 0.25)
     return false;
   return true;
+}
+
+void Picture::addPictureToHashMapForInter()
+{
+  int picWidth = slices[0]->getSPS()->getPicWidthInLumaSamples();
+  int picHeight = slices[0]->getSPS()->getPicHeightInLumaSamples();
+  uint32_t* blockHashValues[2][2];
+  bool* bIsBlockSame[2][3];
+
+  for (int i = 0; i < 2; i++)
+  {
+    for (int j = 0; j < 2; j++)
+    {
+      blockHashValues[i][j] = new uint32_t[picWidth*picHeight];
+    }
+
+    for (int j = 0; j < 3; j++)
+    {
+      bIsBlockSame[i][j] = new bool[picWidth*picHeight];
+    }
+  }
+
+  m_hashMap.create();
+  m_hashMap.generateBlock2x2HashValue(getOrigBuf(), picWidth, picHeight, slices[0]->getSPS()->getBitDepths(), blockHashValues[0], bIsBlockSame[0]);//2x2
+  m_hashMap.generateBlockHashValue(picWidth, picHeight, 4, 4, blockHashValues[0], blockHashValues[1], bIsBlockSame[0], bIsBlockSame[1]);//4x4
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[1], bIsBlockSame[1][2], picWidth, picHeight, 4, 4);
+
+  m_hashMap.generateRectangleHashValue(picWidth, picHeight, 8, 4, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//8x4
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 8, 4);
+
+  m_hashMap.generateRectangleHashValue(picWidth, picHeight, 4, 8, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//4x8
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 4, 8);
+
+  m_hashMap.generateBlockHashValue(picWidth, picHeight, 8, 8, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//8x8
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 8, 8);
+
+  m_hashMap.generateBlockHashValue(picWidth, picHeight, 16, 16, blockHashValues[0], blockHashValues[1], bIsBlockSame[0], bIsBlockSame[1]);//16x16
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[1], bIsBlockSame[1][2], picWidth, picHeight, 16, 16);
+
+  m_hashMap.generateBlockHashValue(picWidth, picHeight, 32, 32, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//32x32
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 32, 32);
+
+  m_hashMap.generateBlockHashValue(picWidth, picHeight, 64, 64, blockHashValues[0], blockHashValues[1], bIsBlockSame[0], bIsBlockSame[1]);//64x64
+  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[1], bIsBlockSame[1][2], picWidth, picHeight, 64, 64);
+
+  m_hashMap.setInitial();
+
+  for (int i = 0; i < 2; i++)
+  {
+    for (int j = 0; j < 2; j++)
+    {
+      delete[] blockHashValues[i][j];
+    }
+
+    for (int j = 0; j < 3; j++)
+    {
+      delete[] bIsBlockSame[i][j];
+    }
+  }
 }

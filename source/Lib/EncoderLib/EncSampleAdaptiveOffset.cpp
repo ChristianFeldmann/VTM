@@ -799,7 +799,7 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
   SAOBlkParam modeParam;
   double minCost, modeCost;
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING 
+#if K0238_SAO_GREEDY_MERGE_ENCODING
   double minCost2 = 0;
   std::vector<SAOStatData**> groupBlkStat;
   if (isGreedymergeEncoding)
@@ -919,7 +919,7 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
       reconParams[ctuRsAddr] = codedParams[ctuRsAddr];
       reconstructBlkSAOParam(reconParams[ctuRsAddr], mergeList);
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING  
+#if K0238_SAO_GREEDY_MERGE_ENCODING
       if (isGreedymergeEncoding)
       {
         if (ctuRsAddr == (mergeCtuAddr - 1))
@@ -1037,7 +1037,7 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
       {
 #endif
       offsetCTU(area, srcYuv, resYuv, reconParams[ctuRsAddr], cs);
-#if K0238_SAO_GREEDY_MERGE_ENCODING 
+#if K0238_SAO_GREEDY_MERGE_ENCODING
       }
 #endif
 
@@ -1503,9 +1503,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
 
 void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure& cs, const Position &pos, bool& isLeftAvail, bool& isAboveAvail, bool& isAboveLeftAvail) const
 {
-#if HEVC_TILES_WPP
   bool isLoopFiltAcrossTilePPS = cs.pps->getLoopFilterAcrossTilesEnabledFlag();
-#endif
 
   const int width = cs.pcv->maxCUWidth;
   const int height = cs.pcv->maxCUHeight;
@@ -1520,14 +1518,12 @@ void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructu
     isAboveLeftAvail = (cuAboveLeft != NULL) ? ( !CU::isSameSlice(*cuCurr, *cuAboveLeft) ? cuCurr->slice->getLFCrossSliceBoundaryFlag() : true ) : false;
   }
 
-#if HEVC_TILES_WPP
   if (!isLoopFiltAcrossTilePPS)
   {
     isLeftAvail      = (!isLeftAvail)      ? false : CU::isSameTile(*cuCurr, *cuLeft);
     isAboveAvail     = (!isAboveAvail)     ? false : CU::isSameTile(*cuCurr, *cuAbove);
     isAboveLeftAvail = (!isAboveLeftAvail) ? false : CU::isSameTile(*cuCurr, *cuAboveLeft);
   }
-#endif
 }
 
 //! \}

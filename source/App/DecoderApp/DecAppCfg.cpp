@@ -112,6 +112,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
                                                                                    "\t2: enable tool statistic\n"
                                                                                    "\t3: enable bit and tool statistic\n")
 #endif
+  ("MCTSCheck",                m_mctsCheck,                           false,       "If enabled, the decoder checks for violations of mc_exact_sample_value_match_flag in Temporal MCTS ")
   ;
 
   po::setDefaults(opts);
@@ -148,6 +149,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
   }
 #endif
 
+  g_mctsDecCheckEnabled = m_mctsCheck;
   // Chroma output bit-depth
   if( m_outputBitDepth[CHANNEL_TYPE_LUMA] != 0 && m_outputBitDepth[CHANNEL_TYPE_CHROMA] == 0 )
   {
@@ -230,6 +232,7 @@ DecAppCfg::DecAppCfg()
 , m_bClipOutputVideoToRec709Range(false)
 , m_packedYUVMode(false)
 , m_statMode(0)
+, m_mctsCheck(false)
 {
   for (uint32_t channelTypeIndex = 0; channelTypeIndex < MAX_NUM_CHANNEL_TYPE; channelTypeIndex++)
   {

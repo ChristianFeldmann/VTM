@@ -41,8 +41,6 @@
 #include "CommonDef.h"
 #include "Common.h"
 
-#include "BinaryDecisionTree.h"
-
 #include <stdio.h>
 #include <iostream>
 
@@ -57,15 +55,21 @@
 void         initROM();
 void         destroyROM();
 
-void         generateTrafoBlockSizeScaling( SizeIndexInfo& sizeIdxInfo );
-
 // ====================================================================================================================
 // Data structure related table & variable
 // ====================================================================================================================
 
 // flexible conversion from relative to absolute index
-extern       uint32_t*  g_scanOrder     [SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
-extern       uint32_t*  g_scanOrderPosXY[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1][2];
+struct ScanElement
+{
+  uint32_t idx;
+  uint16_t x;
+  uint16_t y;
+};
+
+extern       uint32_t   g_log2SbbSize   [2][MAX_CU_DEPTH+1][MAX_CU_DEPTH+1][2];
+extern ScanElement
+  *g_scanOrder[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
 
 extern const int g_quantScales   [SCALING_LIST_REM_NUM];          // Q(QP%6)
 extern const int g_invQuantScales[SCALING_LIST_REM_NUM];          // IQ(QP%6)
@@ -86,9 +90,7 @@ extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSi
 // Scanning order & context mapping table
 // ====================================================================================================================
 
-extern const uint32_t   ctxIndMap4x4[4*4];
-
-extern const uint32_t   g_uiGroupIdx[ MAX_TU_SIZE ];
+extern const uint32_t   g_uiGroupIdx[ MAX_TB_SIZEY ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
 extern const uint32_t   g_auiGoRiceParsCoeff     [ 32 ];
 extern const uint32_t   g_auiGoRicePosCoeff0[ 3 ][ 32 ];
@@ -109,13 +111,6 @@ extern const uint8_t  g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE];
 // Mode-Dependent DST Matrices
 // ====================================================================================================================
 
-#if HEVC_USE_4x4_DSTVII
-extern const TMatrixCoeff g_as_DST_MAT_4 [TRANSFORM_NUMBER_OF_DIRECTIONS][4][4];
-#endif
-
-#if !JVET_M0464_UNI_MTS
-extern const uint32_t g_EmtSigNumThr;
-#endif
 
 extern const TMatrixCoeff g_trCoreDCT2P2  [TRANSFORM_NUMBER_OF_DIRECTIONS][  2][  2];
 extern const TMatrixCoeff g_trCoreDCT2P4  [TRANSFORM_NUMBER_OF_DIRECTIONS][  4][  4];
@@ -134,41 +129,14 @@ extern const TMatrixCoeff g_trCoreDST7P8  [TRANSFORM_NUMBER_OF_DIRECTIONS][  8][
 extern const TMatrixCoeff g_trCoreDST7P16 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 16][ 16];
 extern const TMatrixCoeff g_trCoreDST7P32 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 32][ 32];
 
-#if !REMOVE_BIN_DECISION_TREE
-// ====================================================================================================================
-// Decision tree templates
-// ====================================================================================================================
-
-enum SplitDecisionTree
-{
-  DTT_SPLIT_DO_SPLIT_DECISION = 0, // decision node
-  DTT_SPLIT_NO_SPLIT          = 1, // end-node
-  DTT_SPLIT_BT_HORZ           = 2, // end-node - id same as CU_HORZ_SPLIT
-  DTT_SPLIT_BT_VERT           = 3, // end-node - id same as CU_VERT_SPLIT
-  DTT_SPLIT_TT_HORZ           = 4, // end-node - id same as CU_TRIH_SPLIT
-  DTT_SPLIT_TT_VERT           = 5, // end-node - id same as CU_TRIV_SPLIT
-  DTT_SPLIT_HV_DECISION,           // decision node
-  DTT_SPLIT_H_IS_BT_12_DECISION,   // decision node
-  DTT_SPLIT_V_IS_BT_12_DECISION,   // decision node
-};
-
-// decision tree for multi-type tree split decision
-extern const DecisionTreeTemplate g_mtSplitDTT;
-
-// decision tree for QTBT split
-extern const DecisionTreeTemplate g_qtbtSplitDTT;
-
-#endif
 
 // ====================================================================================================================
 // Misc.
 // ====================================================================================================================
 extern SizeIndexInfo* gp_sizeIdxInfo;
-extern int            g_BlockSizeTrafoScale           [MAX_CU_SIZE + 1][MAX_CU_SIZE + 1][2];
 extern int8_t          g_aucLog2                       [MAX_CU_SIZE + 1];
 extern int8_t          g_aucNextLog2        [MAX_CU_SIZE + 1];
 extern int8_t          g_aucPrevLog2        [MAX_CU_SIZE + 1];
-extern const int8_t    i2Log2Tab[257];
 
 inline bool is34( const SizeType& size )
 {
@@ -214,12 +182,6 @@ extern const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
 
 extern MsgLevel g_verbosity;
 
-#if !JVET_M0064_CCLM_SIMPLIFICATION
-extern int g_aiLMDivTableLow[];
-extern int g_aiLMDivTableHigh[];
-#endif
-
-extern const int g_aiNonLMPosThrs[];
 
 extern const int8_t g_GbiLog2WeightBase;
 extern const int8_t g_GbiWeightBase;
@@ -246,17 +208,9 @@ constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 
 
 //! \}
 
-#if !JVET_M0328_KEEP_ONE_WEIGHT_GROUP
-extern const Pel     g_trianglePelWeightedLuma[TRIANGLE_DIR_NUM][2][7];
-extern const Pel     g_trianglePelWeightedChroma[2][TRIANGLE_DIR_NUM][2][7];
-extern const uint8_t g_triangleWeightLengthLuma[2];
-extern const uint8_t g_triangleWeightLengthChroma[2][2];
-#endif
 extern       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
-#if !JVET_M0883_TRIANGLE_SIGNALING
-extern const uint8_t g_triangleCombination[TRIANGLE_MAX_NUM_CANDS][3];
-extern const uint8_t g_triangleIdxBins[TRIANGLE_MAX_NUM_CANDS];
-#endif
+
+extern bool g_mctsDecCheckEnabled;
 
 #endif  //__TCOMROM__
 

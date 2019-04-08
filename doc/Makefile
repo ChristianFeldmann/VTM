@@ -6,7 +6,12 @@ LATEX:=$(shell which xelatex || which pdflatex || which latex)
 BIBTOOL:=$(shell which bibtool || echo \\\# skipping bibtool )
 BIBTOOL_DB=~/mpeg/doc/bib/jctvc.bib
 
+LATEXFLAGS:="-shell-escape"
+
 all: $(DOCNUM).pdf
+
+clean:
+	rm -fr _minted-software-manual software-manual.bbl software-manual.blg software-manual.lot software-manual.out software-manual.log software-manual.toc software-manual.aux software-manual.pdf
 
 %.aux: %.tex
 	$(LATEX) $(LATEXFLAGS) $<

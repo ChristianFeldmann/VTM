@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0146_DMVR_BDOF_CONDITION                    1 // JVET-N146/N0162/N0442/N0153/N0262/N0440/N0086 applicable condition of DMVR and BDOF
+
 #define JVET_N0470_SMVD_FIX                               1 // remove mvd_l1_zero_flag condition, align to spec text.
 
 #define JVET_N0235_SMVD_SPS                               1

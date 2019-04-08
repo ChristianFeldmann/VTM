@@ -50,8 +50,13 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
   , m_chType                    (toChannelType(m_compID))
   , m_width                     (tu.block(m_compID).width)
   , m_height                    (tu.block(m_compID).height)
+#if JVET_N0103_CGSIZE_HARMONIZATION
+  , m_log2CGWidth               ( g_log2SbbSize[ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][0] )
+  , m_log2CGHeight              ( g_log2SbbSize[ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][1] )
+#else
   , m_log2CGWidth               ( g_log2SbbSize[m_chType][ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][0] )
   , m_log2CGHeight              ( g_log2SbbSize[m_chType][ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][1] )
+#endif
   , m_log2CGSize                (m_log2CGWidth + m_log2CGHeight)
   , m_widthInGroups(std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_width) >> m_log2CGWidth)
   , m_heightInGroups(std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_height) >> m_log2CGHeight)
@@ -68,8 +73,13 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
 #else
   , m_scanType                  (SCAN_DIAG)
 #endif
+#if JVET_N0103_CGSIZE_HARMONIZATION
+  , m_scan                      (g_scanOrder     [SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )])
+  , m_scanCG                    (g_scanOrder     [SCAN_UNGROUPED  ][m_scanType][gp_sizeIdxInfo->idxFrom(m_widthInGroups)][gp_sizeIdxInfo->idxFrom(m_heightInGroups)])
+#else
   , m_scan                      (g_scanOrder     [m_chType][SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )])
   , m_scanCG                    (g_scanOrder     [m_chType][SCAN_UNGROUPED  ][m_scanType][gp_sizeIdxInfo->idxFrom(m_widthInGroups)][gp_sizeIdxInfo->idxFrom(m_heightInGroups)])
+#endif
   , m_CtxSetLastX               (Ctx::LastX[m_chType])
   , m_CtxSetLastY               (Ctx::LastY[m_chType])
   , m_maxLastPosX(g_uiGroupIdx[std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_width) - 1])

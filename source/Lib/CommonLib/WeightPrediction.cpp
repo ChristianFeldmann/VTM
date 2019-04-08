@@ -229,9 +229,9 @@ void WeightPrediction::addWeightBiComponent(const CPelUnitBuf          &pcYuvSrc
 
   const ComponentID compID = ComponentID(Comp);
 
-  const Pel* pSrc0 = pcYuvSrc0.bufs[compID].buf;
-  const Pel* pSrc1 = pcYuvSrc1.bufs[compID].buf;
-        Pel* pDst  = rpcYuvDst.bufs[compID].buf;
+  const Pel* src0 = pcYuvSrc0.bufs[compID].buf;
+  const Pel* src1 = pcYuvSrc1.bufs[compID].buf;
+        Pel* dst  = rpcYuvDst.bufs[compID].buf;
 
   // Luma : --------------------------------------------
   const ClpRng& clpRng = clpRngs.comp[compID];
@@ -242,33 +242,33 @@ void WeightPrediction::addWeightBiComponent(const CPelUnitBuf          &pcYuvSrc
   const int  shift    = wp0[compID].shift + shiftNum;
   const int  round    = (enableRounding[compID] && (shift > 0)) ? (1 << (shift - 1)) : 0;
   const int  w1       = wp1[compID].w;
-  const int  iHeight  = rpcYuvDst.bufs[compID].height;
-  const int  iWidth   = rpcYuvDst.bufs[compID].width;
+  const int  height  = rpcYuvDst.bufs[compID].height;
+  const int  width   = rpcYuvDst.bufs[compID].width;
 
-  const uint32_t iSrc0Stride = pcYuvSrc0.bufs[compID].stride;
-  const uint32_t iSrc1Stride = pcYuvSrc1.bufs[compID].stride;
-  const uint32_t iDstStride =  rpcYuvDst.bufs[compID].stride;
+  const uint32_t src0Stride = pcYuvSrc0.bufs[compID].stride;
+  const uint32_t src1Stride = pcYuvSrc1.bufs[compID].stride;
+  const uint32_t dstStride =  rpcYuvDst.bufs[compID].stride;
 
-  for (int y = iHeight - 1; y >= 0; y--)
+  for (int y = height - 1; y >= 0; y--)
   {
     // do it in batches of 4 (partial unroll)
-    int x = iWidth - 1;
+    int x = width - 1;
 
     for (; x >= 3; )
     {
-      pDst[x] = weightBidir(w0, pSrc0[x], w1, pSrc1[x], round, shift, offset, clpRng ); x--;
-      pDst[x] = weightBidir(w0, pSrc0[x], w1, pSrc1[x], round, shift, offset, clpRng ); x--;
-      pDst[x] = weightBidir(w0, pSrc0[x], w1, pSrc1[x], round, shift, offset, clpRng ); x--;
-      pDst[x] = weightBidir(w0, pSrc0[x], w1, pSrc1[x], round, shift, offset, clpRng ); x--;
+      dst[x] = weightBidir(w0, src0[x], w1, src1[x], round, shift, offset, clpRng ); x--;
+      dst[x] = weightBidir(w0, src0[x], w1, src1[x], round, shift, offset, clpRng ); x--;
+      dst[x] = weightBidir(w0, src0[x], w1, src1[x], round, shift, offset, clpRng ); x--;
+      dst[x] = weightBidir(w0, src0[x], w1, src1[x], round, shift, offset, clpRng ); x--;
     }
     for (; x >= 0; x--)
     {
-      pDst[x] = weightBidir(w0, pSrc0[x], w1, pSrc1[x], round, shift, offset, clpRng );
+      dst[x] = weightBidir(w0, src0[x], w1, src1[x], round, shift, offset, clpRng );
     }
 
-    pSrc0 += iSrc0Stride;
-    pSrc1 += iSrc1Stride;
-    pDst += iDstStride;
+    src0 += src0Stride;
+    src1 += src1Stride;
+    dst += dstStride;
   } // y loop
 }
 #endif

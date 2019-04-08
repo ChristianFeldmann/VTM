@@ -269,6 +269,20 @@ uint32_t deriveWeightIdxBits(uint8_t gbiIdx) // Note: align this with TEncSbac::
   return numBits;
 }
 
+#if JVET_N0103_CGSIZE_HARMONIZATION
+uint32_t g_log2SbbSize[MAX_CU_DEPTH + 1][MAX_CU_DEPTH + 1][2] =
+//===== luma/chroma =====
+{
+  { { 0,0 },{ 0,1 },{ 0,2 },{ 0,3 },{ 0,4 },{ 0,4 },{ 0,4 },{ 0,4 } },
+  { { 1,0 },{ 1,1 },{ 1,1 },{ 1,3 },{ 1,3 },{ 1,3 },{ 1,3 },{ 1,3 } },
+  { { 2,0 },{ 1,1 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 } },
+  { { 3,0 },{ 3,1 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 } },
+  { { 4,0 },{ 3,1 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 } },
+  { { 4,0 },{ 3,1 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 } },
+  { { 4,0 },{ 3,1 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 } },
+  { { 4,0 },{ 3,1 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 },{ 2,2 } }
+};
+#else
 uint32_t g_log2SbbSize[2][MAX_CU_DEPTH+1][MAX_CU_DEPTH+1][2] =
 {
   //===== luma =====
@@ -294,6 +308,7 @@ uint32_t g_log2SbbSize[2][MAX_CU_DEPTH+1][MAX_CU_DEPTH+1][2] =
     { {0,0}, {1,1}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2}, {2,2} }
   },
 };
+#endif
 // initialize ROM variables
 void initROM()
 {
@@ -325,8 +340,10 @@ void initROM()
   SizeIndexInfoLog2 sizeInfo;
   sizeInfo.init(MAX_CU_SIZE);
 
+#if !JVET_N0103_CGSIZE_HARMONIZATION
   for( int ch = 0; ch < MAX_NUM_CHANNEL_TYPE; ch++ )
   {
+#endif
   // initialize scan orders
   for (uint32_t blockHeightIdx = 0; blockHeightIdx < sizeInfo.numAllHeights(); blockHeightIdx++)
   {
@@ -350,7 +367,11 @@ void initROM()
           scan = new ScanElement[totalValues];
         }
 
+#if JVET_N0103_CGSIZE_HARMONIZATION
+        g_scanOrder[SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx] = scan;
+#else
         g_scanOrder[ch][SCAN_UNGROUPED][scanType][blockWidthIdx][blockHeightIdx] = scan;
+#endif
 
         if (scan == nullptr)
         {
@@ -374,7 +395,11 @@ void initROM()
       //--------------------------------------------------------------------------------------------------
 
       //grouped scan orders
+#if JVET_N0103_CGSIZE_HARMONIZATION
+      const uint32_t* log2Sbb        = g_log2SbbSize[g_aucLog2[blockWidth]][g_aucLog2[blockHeight]];
+#else
       const uint32_t* log2Sbb        = g_log2SbbSize[ch][ g_aucLog2[blockWidth] ][ g_aucLog2[blockHeight] ];
+#endif
       const uint32_t  log2CGWidth    = log2Sbb[0];
       const uint32_t  log2CGHeight   = log2Sbb[1];
 
@@ -392,7 +417,11 @@ void initROM()
 
         ScanElement *scan = new ScanElement[totalValues];
 
+#if JVET_N0103_CGSIZE_HARMONIZATION
+        g_scanOrder[SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx] = scan;
+#else
         g_scanOrder[ch][SCAN_GROUPED_4x4][scanType][blockWidthIdx][blockHeightIdx] = scan;
+#endif
 
         if ( blockWidth > JVET_C0024_ZERO_OUT_TH || blockHeight > JVET_C0024_ZERO_OUT_TH )
         {
@@ -434,7 +463,9 @@ void initROM()
       //--------------------------------------------------------------------------------------------------
     }
   }
+#if !JVET_N0103_CGSIZE_HARMONIZATION
   }
+#endif
 
   for( int idxH = MAX_CU_DEPTH - MIN_CU_LOG2; idxH >= 0; --idxH )
   {
@@ -464,6 +495,22 @@ void destroyROM()
   unsigned numWidths = gp_sizeIdxInfo->numAllWidths();
   unsigned numHeights = gp_sizeIdxInfo->numAllHeights();
 
+#if JVET_N0103_CGSIZE_HARMONIZATION
+  for (uint32_t groupTypeIndex = 0; groupTypeIndex < SCAN_NUMBER_OF_GROUP_TYPES; groupTypeIndex++)
+  {
+    for (uint32_t scanOrderIndex = 0; scanOrderIndex < SCAN_NUMBER_OF_TYPES; scanOrderIndex++)
+    {
+      for (uint32_t blockWidthIdx = 0; blockWidthIdx <= numWidths; blockWidthIdx++)
+      {
+        for (uint32_t blockHeightIdx = 0; blockHeightIdx <= numHeights; blockHeightIdx++)
+        {
+          delete[] g_scanOrder[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx];
+          g_scanOrder[groupTypeIndex][scanOrderIndex][blockWidthIdx][blockHeightIdx] = nullptr;
+        }
+      }
+    }
+  }
+#else
   for( uint32_t ch = 0; ch < MAX_NUM_CHANNEL_TYPE; ch++ )
   {
     for( uint32_t groupTypeIndex = 0; groupTypeIndex < SCAN_NUMBER_OF_GROUP_TYPES; groupTypeIndex++ )
@@ -481,6 +528,7 @@ void destroyROM()
       }
     }
   }
+#endif
 
   delete gp_sizeIdxInfo;
   gp_sizeIdxInfo = nullptr;
@@ -574,7 +622,11 @@ UnitScale g_miScaling( MIN_CU_LOG2, MIN_CU_LOG2 );
 // ====================================================================================================================
 
 // scanning order table
+#if JVET_N0103_CGSIZE_HARMONIZATION
+ScanElement *g_scanOrder[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
+#else
 ScanElement *g_scanOrder[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
+#endif
 
 const uint32_t g_uiMinInGroup[LAST_SIGNIFICANT_GROUPS] = { 0,1,2,3,4,6,8,12,16,24,32,48,64,96 };
 const uint32_t g_uiGroupIdx[MAX_TB_SIZEY] = { 0,1,2,3,4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9, 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11 };

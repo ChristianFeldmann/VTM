@@ -67,9 +67,15 @@ struct ScanElement
   uint16_t y;
 };
 
+#if JVET_N0103_CGSIZE_HARMONIZATION
+extern       uint32_t   g_log2SbbSize[MAX_CU_DEPTH + 1][MAX_CU_DEPTH + 1][2];
+extern ScanElement
+  *g_scanOrder[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
+#else
 extern       uint32_t   g_log2SbbSize   [2][MAX_CU_DEPTH+1][MAX_CU_DEPTH+1][2];
 extern ScanElement
   *g_scanOrder[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
+#endif
 
 extern const int g_quantScales   [SCALING_LIST_REM_NUM];          // Q(QP%6)
 extern const int g_invQuantScales[SCALING_LIST_REM_NUM];          // IQ(QP%6)

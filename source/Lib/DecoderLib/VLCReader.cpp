@@ -938,7 +938,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   CHECK(uiCode > 3, "Invalid chroma format signalled");
 
 #if !JVET_N0671_CHROMA_FORMAT_422
-  // KJS: ENABLE_CHROMA_422 does not exist anymore o.O
   if (pcSPS->getChromaFormatIdc() == CHROMA_422)
   {
     EXIT("Error:  4:2:2 chroma sampling format not supported with current compiler setting."

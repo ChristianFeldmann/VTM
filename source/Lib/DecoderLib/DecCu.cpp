@@ -188,9 +188,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   const uint32_t uiChFinalMode  = PU::getFinalIntraMode( pu, chType );
 
   //===== init availability pattern =====
-
-  const bool bUseFilteredPredictions = IntraPrediction::useFilteredIntraRefSamples( compID, pu, true, tu );
-  m_pcIntraPred->initIntraPatternChType( *tu.cu, area, bUseFilteredPredictions );
+  m_pcIntraPred->initIntraPatternChType( *tu.cu, area);
 
   //===== get prediction signal =====
   if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
@@ -201,7 +199,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   }
   else
   {
-    m_pcIntraPred->predIntraAng( compID, piPred, pu, bUseFilteredPredictions );
+    m_pcIntraPred->predIntraAng( compID, piPred, pu );
   }
   const Slice           &slice = *cs.slice;
   bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));

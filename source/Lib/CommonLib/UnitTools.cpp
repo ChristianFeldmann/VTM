@@ -5568,6 +5568,7 @@ bool TU::getPrevTuCbfAtDepth( const TransformUnit &currentTu, const ComponentID 
   return ( prevTU != nullptr ) ? TU::getCbfAtDepth( *prevTU, compID, trDepth ) : false;
 }
 
+#if !JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
 void TU::getTransformTypeISP( const TransformUnit &tu, const ComponentID compID, int &typeH, int &typeV )
 {
   typeH = DCT2, typeV = DCT2;
@@ -5600,7 +5601,80 @@ void TU::getTransformTypeISP( const TransformUnit &tu, const ComponentID compID,
   typeV = tuArea.height <= 2 || tuArea.height >= 32 ? DCT2 : typeV;
 }
 
+#endif
 
+#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
+void TU::getTrTypes ( const TransformUnit &tu, const ComponentID compID, int &trTypeHor, int &trTypeVer )
+{
+  const bool isExplicitMTS = (CU::isIntra(*tu.cu) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS() && CU::isInter(*tu.cu)) && isLuma(compID);
+  const bool isImplicitMTS = CU::isIntra(*tu.cu) && tu.cs->sps->getUseImplicitMTS() && isLuma(compID);
+  const bool isISP         = CU::isIntra(*tu.cu) && tu.cu->ispMode && isLuma(compID);
+  const bool isSBT         = CU::isInter(*tu.cu) && tu.cu->sbtInfo && isLuma(compID);
+
+  trTypeHor = DCT2;
+  trTypeVer = DCT2;
+
+  if (isImplicitMTS || isISP)
+  {
+    int  width       = tu.blocks[compID].width;
+    int  height      = tu.blocks[compID].height;
+    bool widthDstOk  = width  >= 4 && width  <= 16;
+    bool heightDstOk = height >= 4 && height <= 16;
+
+    if (widthDstOk)
+      trTypeHor = DST7;
+    if (heightDstOk)
+      trTypeVer = DST7;
+    return;
+  }
+
+  if( isSBT )
+  {
+    uint8_t sbtIdx = tu.cu->getSbtIdx();
+    uint8_t sbtPos = tu.cu->getSbtPos();
+
+    if( sbtIdx == SBT_VER_HALF || sbtIdx == SBT_VER_QUAD )
+    {
+      assert( tu.lwidth() <= MTS_INTER_MAX_CU_SIZE );
+      if( tu.lheight() > MTS_INTER_MAX_CU_SIZE )
+      {
+        trTypeHor = trTypeVer = DCT2;
+      }
+      else
+      {
+        if( sbtPos == SBT_POS0 )  { trTypeHor = DCT8;  trTypeVer = DST7; }
+        else                      { trTypeHor = DST7;  trTypeVer = DST7; }
+      }
+    }
+    else
+    {
+      assert( tu.lheight() <= MTS_INTER_MAX_CU_SIZE );
+      if( tu.lwidth() > MTS_INTER_MAX_CU_SIZE )
+      {
+        trTypeHor = trTypeVer = DCT2;
+      }
+      else
+      {
+        if( sbtPos == SBT_POS0 )  { trTypeHor = DST7;  trTypeVer = DCT8; }
+        else                      { trTypeHor = DST7;  trTypeVer = DST7; }
+      }
+    }
+    return;
+  }
+
+  if ( isExplicitMTS )
+  {
+    if ( tu.mtsIdx > 1 )
+    {
+      int indHor = ( tu.mtsIdx - 2 ) &  1;
+      int indVer = ( tu.mtsIdx - 2 ) >> 1;
+
+      trTypeHor = indHor ? DCT8 : DST7;
+      trTypeVer = indVer ? DCT8 : DST7;
+    }
+  }
+}
+#endif
 // other tools
 
 uint32_t getCtuAddr( const Position& pos, const PreCalcValues& pcv )

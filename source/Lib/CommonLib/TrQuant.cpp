@@ -281,6 +281,7 @@ void TrQuant::invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &
 // Logical transform
 // ------------------------------------------------------------------------------------------------
 
+#if !JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
 void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer )
 {
   bool mtsActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS() && CU::isInter( *tu.cu );
@@ -358,6 +359,7 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
       trTypeHor = trTypeVer = DST7;
   }
 }
+#endif
 
 void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, CoeffBuf &dstCoeff, const int width, const int height )
 {
@@ -371,7 +373,11 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
   int trTypeHor = DCT2;
   int trTypeVer = DCT2;
 
+#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
+  TU::getTrTypes ( tu, compID, trTypeHor, trTypeVer );
+#else
   getTrTypes ( tu, compID, trTypeHor, trTypeVer );
+#endif
 
   const int      skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
@@ -439,7 +445,11 @@ void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCo
   int trTypeHor = DCT2;
   int trTypeVer = DCT2;
 
+#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
+  TU::getTrTypes ( tu, compID, trTypeHor, trTypeVer );
+#else
   getTrTypes ( tu, compID, trTypeHor, trTypeVer );
+#endif
 
   const int      skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;

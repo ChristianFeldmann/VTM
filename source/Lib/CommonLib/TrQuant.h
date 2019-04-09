@@ -78,8 +78,9 @@ public:
                     const bool useTransformSkipFast = false
   );
 
+#if !JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
   void getTrTypes( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer );
-
+#endif
 
 protected:
 

@@ -288,48 +288,38 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
 
   }
 
-void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu, const bool useFilteredPredSamples )
+void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu)
 {
   const ComponentID    compID       = MAP_CHROMA( compId );
   const ChannelType    channelType  = toChannelType( compID );
   const int            iWidth       = piPred.width;
   const int            iHeight      = piPred.height;
-  const Size           cuSize       = Size( pu.cu->blocks[compId].width, pu.cu->blocks[compId].height );
-  const uint32_t           uiDirMode    = PU::getFinalIntraMode( pu, channelType );
+
+  const uint32_t       uiDirMode    = PU::getFinalIntraMode( pu, channelType );
 
 
   CHECK( g_aucLog2[iWidth] < 2 && pu.cs->pcv->noChroma2x2, "Size not allowed" );
   CHECK( g_aucLog2[iWidth] > 7, "Size not allowed" );
 
-  const int  multiRefIdx = (compID == COMPONENT_Y) ? pu.multiRefIdx : 0;
-  const bool useISP = pu.cu->ispMode && isLuma( compID );
-  const int whRatio = useISP ? std::max( unsigned( 1 ), cuSize.width / cuSize.height ) : std::max( 1, iWidth / iHeight );
-  const int hwRatio = useISP ? std::max( unsigned( 1 ), cuSize.height / cuSize.width ) : std::max( 1, iHeight / iWidth );
+  const int multiRefIdx = m_ipaParam.multiRefIndex;
+  const int whRatio     = m_ipaParam.whRatio;
+  const int hwRatio     = m_ipaParam.hwRatio;
+
   const int  srcStride  = m_topRefLength  + 1 + (whRatio + 1) * multiRefIdx;
   const int  srcHStride = m_leftRefLength + 1 + (hwRatio + 1) * multiRefIdx;
 
-  Pel *ptrSrc = getPredictorPtr(compID, useFilteredPredSamples);
+  const CPelBuf & srcBuf = CPelBuf(getPredictorPtr(compID), srcStride, srcHStride);
   const ClpRng& clpRng(pu.cu->cs->slice->clpRng(compID));
 
   switch (uiDirMode)
   {
-    case(PLANAR_IDX): xPredIntraPlanar(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, *pu.cs->sps); break;
-    case(DC_IDX):     xPredIntraDc(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, false); break;
-    case(2):
-    case(DIA_IDX):
-    case(VDIA_IDX):
-      if (getWideAngle(useISP ? cuSize.width : iWidth, useISP ? cuSize.height : iHeight, uiDirMode) == static_cast<int>(uiDirMode)) // check if uiDirMode is not wide-angle
-      {
-        xPredIntraAng(CPelBuf(ptrSrc, srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps, multiRefIdx, useFilteredPredSamples, useISP, cuSize );
-        break;
-      }
-    default:          xPredIntraAng(CPelBuf(getPredictorPtr(compID, false), srcStride, srcHStride), piPred, channelType, uiDirMode, clpRng, *pu.cs->sps, multiRefIdx, useFilteredPredSamples, useISP, cuSize); break;
+    case(PLANAR_IDX): xPredIntraPlanar(srcBuf, piPred); break;
+    case(DC_IDX):     xPredIntraDc(srcBuf, piPred, channelType, false); break;
+    default:          xPredIntraAng(srcBuf, piPred, channelType, clpRng); break;
   }
 
-  bool pdpcCondition = (uiDirMode == PLANAR_IDX || uiDirMode == DC_IDX || uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
-  if( pdpcCondition && multiRefIdx == 0 && !useISP )
+  if (m_ipaParam.applyPDPC)
   {
-    const CPelBuf srcBuf = CPelBuf(ptrSrc, srcStride, srcStride);
     PelBuf dstBuf = piPred;
     const int scale = ((g_aucLog2[iWidth] - 2 + g_aucLog2[iHeight] - 2 + 2) >> 2);
     CHECK(scale < 0 || scale > 31, "PDPC: scale < 0 || scale > 31");
@@ -434,7 +424,7 @@ void IntraPrediction::xFilterGroup(Pel* pMulDst[], int i, Pel const * const piSr
  */
 
 //NOTE: Bit-Limit - 24-bit source
-void IntraPrediction::xPredIntraPlanar( const CPelBuf &pSrc, PelBuf &pDst, const SPS& sps )
+void IntraPrediction::xPredIntraPlanar( const CPelBuf &pSrc, PelBuf &pDst )
 {
   const uint32_t width  = pDst.width;
   const uint32_t height = pDst.height;
@@ -536,7 +526,93 @@ void IntraPrediction::xDCPredFiltering(const CPelBuf &pSrc, PelBuf &pDst, const 
 }
 #endif
 
-// Function for deriving the angular Intra predictions
+// Function for initialization of intra prediction parameters
+void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompArea area, const SPS& sps)
+{
+  const ComponentID compId = area.compID;
+  const ChannelType chType = toChannelType(compId);
+
+  const bool        useISP = NOT_INTRA_SUBPARTITIONS != pu.cu->ispMode && isLuma( chType );
+
+  const Size   cuSize    = Size( pu.cu->blocks[compId].width, pu.cu->blocks[compId].height );
+  const Size   puSize    = Size( area.width, area.height );
+  const Size&  blockSize = useISP ? cuSize : puSize;
+  const int      dirMode = PU::getFinalIntraMode(pu, chType);
+  const int     predMode = getWideAngle( blockSize.width, blockSize.height, dirMode );
+
+  m_ipaParam.whRatio              = std::max( unsigned( 1 ), blockSize.width  / blockSize.height ) ;
+  m_ipaParam.hwRatio              = std::max( unsigned( 1 ), blockSize.height / blockSize.width  ) ;
+  m_ipaParam.isModeVer            = predMode >= DIA_IDX;
+  m_ipaParam.multiRefIndex        = isLuma (chType) ? pu.multiRefIdx : 0 ;
+  m_ipaParam.refFilterFlag        = false;
+  m_ipaParam.interpolationFlag    = false;
+  m_ipaParam.applyPDPC            = !useISP && m_ipaParam.multiRefIndex == 0;
+
+  const int    intraPredAngleMode = (m_ipaParam.isModeVer) ? predMode - VER_IDX : -(predMode - HOR_IDX);
+
+
+  int absAng = 0;
+  if (dirMode > DC_IDX && dirMode < NUM_LUMA_MODE) // intraPredAngle for directional modes
+  {
+    static const int angTable[32]    = { 0,    1,    2,    3,    4,    6,     8,   10,   12,   14,   16,   18,   20,   23,   26,   29,   32,   35,   39,  45,  51,  57,  64,  73,  86, 102, 128, 171, 256, 341, 512, 1024 };
+    static const int invAngTable[32] = { 0, 8192, 4096, 2731, 2048, 1365,  1024,  819,  683,  585,  512,  455,  410,  356,  315,  282,  256,  234,  210, 182, 160, 144, 128, 112,  95,  80,  64,  48,  32,  24,  16,    8 }; // (256 * 32) / Angle
+
+    const int     absAngMode         = abs(intraPredAngleMode);
+    const int     signAng            = intraPredAngleMode < 0 ? -1 : 1;
+                  absAng             = angTable  [absAngMode];
+
+    m_ipaParam.invAngle              = invAngTable[absAngMode];
+    m_ipaParam.intraPredAngle        = signAng * absAng;
+    m_ipaParam.applyPDPC            &= m_ipaParam.intraPredAngle == 0 || m_ipaParam.intraPredAngle >= 12; // intra prediction modes: HOR, VER, x, where x>=VDIA-8 or x<=2+8
+  }
+
+  // high level conditions and DC intra prediction 
+  if(   sps.getSpsRangeExtension().getIntraSmoothingDisabledFlag() 
+#if JVET_N0671_INTRA_TPM_ALIGNWITH420
+    || !isLuma( chType ) 
+#else
+    || ( !isLuma( chType ) && pu.chromaFormat != CHROMA_444 )
+#endif
+    || useISP
+    || m_ipaParam.multiRefIndex
+    || DC_IDX == dirMode
+    )
+  {   
+    if (useISP)
+    {
+      m_ipaParam.interpolationFlag = (m_ipaParam.isModeVer ? puSize.width : puSize.height) > 8 ? true : false ;
+    }
+  }
+  else if (dirMode == PLANAR_IDX) // Planar intra prediction 
+  {
+    m_ipaParam.refFilterFlag = puSize.width * puSize.height > 32 ? true : false;
+  }
+  else if (!useISP)// HOR, VER and angular modes (MDIS)
+  {
+    bool filterFlag = false; 
+
+    if (predMode != dirMode ) // wide-anlge mode
+    {
+      filterFlag = true;
+    }
+    else
+    {
+      const int diff = std::min<int>( abs( dirMode - HOR_IDX ), abs( dirMode - VER_IDX ) );
+      const int log2Size = ((g_aucLog2[puSize.width] + g_aucLog2[puSize.height]) >> 1);
+      CHECK( log2Size >= MAX_INTRA_FILTER_DEPTHS, "Size not supported" );
+      filterFlag = (diff > m_aucIntraFilter[chType][log2Size]);
+    }
+
+    // Selelection of either ([1 2 1] / 4 ) refrence filter OR Gaussian 4-tap interpolation filter
+    if (filterFlag)
+    {
+      const bool isRefFilter       =  isIntegerSlope(absAng); 
+      m_ipaParam.refFilterFlag     =  isRefFilter;
+      m_ipaParam.interpolationFlag = !isRefFilter;
+    }
+  }
+}
+
 
 /** Function for deriving the simplified angular intra predictions.
 *
@@ -549,39 +625,18 @@ void IntraPrediction::xDCPredFiltering(const CPelBuf &pSrc, PelBuf &pDst, const 
 * from the extended main reference.
 */
 //NOTE: Bit-Limit - 25-bit source
-#if HEVC_USE_HOR_VER_PREDFILTERING
-void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const bool bEnableEdgeFilters, const SPS& sps
-  , int multiRefIdx
-  , const bool enableBoundaryFilter )
-#else
-void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const uint32_t dirMode, const ClpRng& clpRng, const SPS& sps,
-                                           int      multiRefIdx,
-                                     const bool     useFilteredPredSamples ,
-                                     const bool     useISP,
-                                     const Size     cuSize )
-#endif
+
+void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const ClpRng& clpRng)
 {
   int width =int(pDst.width);
   int height=int(pDst.height);
 
-  CHECK( !( dirMode > DC_IDX && dirMode < NUM_LUMA_MODE ), "Invalid intra dir" );
-  int              predMode           = useISP ? getWideAngle( cuSize.width, cuSize.height, dirMode ) : getWideAngle( width, height, dirMode );
-  const bool       bIsModeVer         = predMode >= DIA_IDX;
-  const int        intraPredAngleMode = (bIsModeVer) ? predMode - VER_IDX : -(predMode - HOR_IDX);
-  const int        absAngMode         = abs(intraPredAngleMode);
-  const int        signAng            = intraPredAngleMode < 0 ? -1 : 1;
-#if HEVC_USE_HOR_VER_PREDFILTERING
-  const bool       edgeFilter         = bEnableEdgeFilters && isLuma(channelType) && (width <= MAXIMUM_INTRA_FILTERED_WIDTH) && (height <= MAXIMUM_INTRA_FILTERED_HEIGHT);
-#endif
-
-  // Set bitshifts and scale the angle parameter to block size
-
-  static const int angTable[32]    = { 0,    1,    2,    3,    4,    6,     8,   10,   12,   14,   16,   18,   20,   23,   26,   29,   32,   35,   39,  45,  51,  57,  64,  73,  86, 102, 128, 171, 256, 341, 512, 1024 };
-  static const int invAngTable[32] = { 0, 8192, 4096, 2731, 2048, 1365,  1024,  819,  683,  585,  512,  455,  410,  356,  315,  282,  256,  234,  210, 182, 160, 144, 128, 112,  95,  80,  64,  48,  32,  24,  16,    8 }; // (256 * 32) / Angle
-
-  int invAngle                    = invAngTable[absAngMode];
-  int absAng                      = angTable   [absAngMode];
-  int intraPredAngle              = signAng * absAng;
+  const bool bIsModeVer     = m_ipaParam.isModeVer;
+  const int  whRatio        = m_ipaParam.whRatio;
+  const int  hwRatio        = m_ipaParam.hwRatio;
+  const int  multiRefIdx    = m_ipaParam.multiRefIndex;            
+  const int  intraPredAngle = m_ipaParam.intraPredAngle;
+  const int  invAngle       = m_ipaParam.invAngle;
 
   Pel* refMain;
   Pel* refSide;
@@ -589,16 +644,14 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   Pel  refAbove[2 * MAX_CU_SIZE + 3 + 33 * MAX_REF_LINE_IDX];
   Pel  refLeft [2 * MAX_CU_SIZE + 3 + 33 * MAX_REF_LINE_IDX];
 
-  const int whRatio = useISP ? std::max( unsigned( 1 ), cuSize.width / cuSize.height ) : std::max( 1, width / height );
-  const int hwRatio = useISP ? std::max( unsigned( 1 ), cuSize.height / cuSize.width ) : std::max( 1, height / width );
-
   // Initialize the Main and Left reference array.
   if (intraPredAngle < 0)
   {
-    auto width    = int(pDst.width) +1;
-    auto height   = int(pDst.height)+1;
-    auto lastIdx  = (bIsModeVer ? width : height) + multiRefIdx;
-    auto firstIdx = ( ((bIsModeVer ? height : width) -1) * intraPredAngle ) >> 5;
+    const int width    = pDst.width + 1;
+    const int height   = pDst.height + 1;
+    const int lastIdx  = (bIsModeVer ? width : height) + multiRefIdx;
+    const int firstIdx = (((bIsModeVer ? height : width) - 1) * intraPredAngle) >> 5;
+
     for (int x = 0; x < width + 1 + multiRefIdx; x++)
     {
       refAbove[x + height - 1] = pSrc.at( x, 0 );
@@ -680,12 +733,12 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
       const int deltaInt   = deltaPos >> 5;
       const int deltaFract = deltaPos & (32 - 1);
 
-      if (absAng != 0 && absAng != 32)
+      if ( !isIntegerSlope( abs(intraPredAngle) ) )
       {
         if( isLuma(channelType) )
         {
           Pel                        p[4];
-          const bool                 useCubicFilter = useISP ? ( width <= 8 ) : ( !useFilteredPredSamples || multiRefIdx > 0 );
+          const bool                 useCubicFilter = !m_ipaParam.interpolationFlag;
           TFilterCoeff const * const f              = (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : g_intraGaussFilter[deltaFract];
 
           int         refMainIndex   = deltaInt + 1;
@@ -726,50 +779,49 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
           pDsty[x] = refMain[x + deltaInt + 1];
         }
       }
-      const int numModes = 8;
       const int scale = ((g_aucLog2[width] - 2 + g_aucLog2[height] - 2 + 2) >> 2);
       CHECK(scale < 0 || scale > 31, "PDPC: scale < 0 || scale > 31");
-      if( !useISP )
+      if (m_ipaParam.applyPDPC)
       {
-      if ((predMode == 2 || predMode == VDIA_IDX) && multiRefIdx == 0)
-      {
-        int wT = 16 >> std::min(31, ((y << 1) >> scale));
-
-        for (int x = 0; x < width; x++)
+        if (m_ipaParam.intraPredAngle == 32) // intra prediction modes: 2 and VDIA 
         {
-          int wL = 16 >> std::min(31, ((x << 1) >> scale));
-          if (wT + wL == 0) break;
+          int wT = 16 >> std::min(31, ((y << 1) >> scale));
 
-          int c = x + y + 1;
-          if (c >= 2 * height) { wL = 0; }
-          if (c >= 2 * width)  { wT = 0; }
-          const Pel left = (wL != 0) ? refSide[c + 1] : 0;
-          const Pel top  = (wT != 0) ? refMain[c + 1] : 0;
+          for (int x = 0; x < width; x++)
+          {
+            int wL = 16 >> std::min(31, ((x << 1) >> scale));
+            if (wT + wL == 0) break;
 
-          pDsty[x] = ClipPel((wL * left + wT * top + (64 - wL - wT) * pDsty[x] + 32) >> 6, clpRng);
+            int c = x + y + 1;
+            if (c >= 2 * height) { wL = 0; }
+            if (c >= 2 * width)  { wT = 0; }
+            const Pel left = (wL != 0) ? refSide[c + 1] : 0;
+            const Pel top  = (wT != 0) ? refMain[c + 1] : 0;
+
+            pDsty[x] = ClipPel((wL * left + wT * top + (64 - wL - wT) * pDsty[x] + 32) >> 6, clpRng);
+          }
         }
-      }
-      else if (((predMode >= VDIA_IDX - numModes && predMode != VDIA_IDX) || (predMode != 2 && predMode <= (2 + numModes))) && multiRefIdx == 0)
-      {
-        int invAngleSum0 = 2;
-        for (int x = 0; x < width; x++)
+        else
         {
-          invAngleSum0 += invAngle;
-          int deltaPos0 = invAngleSum0 >> 2;
-          int deltaFrac0 = deltaPos0 & 63;
-          int deltaInt0 = deltaPos0 >> 6;
+          int invAngleSum0 = 2;
+          for (int x = 0; x < width; x++)
+          {
+            invAngleSum0 += invAngle;
+            int deltaPos0 = invAngleSum0 >> 2;
+            int deltaFrac0 = deltaPos0 & 63;
+            int deltaInt0 = deltaPos0 >> 6;
 
-          int deltay = y + deltaInt0 + 1;
-          if (deltay >(bIsModeVer ? m_leftRefLength : m_topRefLength) - 1) break;
+            int deltay = y + deltaInt0 + 1;
+            if (deltay >(bIsModeVer ? m_leftRefLength : m_topRefLength) - 1) break;
 
-          int wL = 32 >> std::min(31, ((x << 1) >> scale));
-          if (wL == 0) break;
-          Pel *p = refSide + deltay;
+            int wL = 32 >> std::min(31, ((x << 1) >> scale));
+            if (wL == 0) break;
+            Pel *p = refSide + deltay;
 
-          Pel left = p[deltaFrac0 >> 5];
-          pDsty[x] = ClipPel((wL * left + (64 - wL) * pDsty[x] + 32) >> 6, clpRng);
+            Pel left = p[deltaFrac0 >> 5];
+            pDsty[x] = ClipPel((wL * left + (64 - wL) * pDsty[x] + 32) >> 6, clpRng);
+          }
         }
-      }
       }
     }
 #if HEVC_USE_HOR_VER_PREDFILTERING
@@ -907,15 +959,14 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
 
   const PredictionUnit* pu = cu.firstPU;
 
-  bool isUseFilter = IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Y, *pu, true, *pu);
-  initIntraPatternChType(cu, pu->Y(), isUseFilter);
-  predIntraAng(COMPONENT_Y, cu.cs->getPredBuf(*pu).Y(), *pu, isUseFilter);
-  isUseFilter = IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Cb, *pu, true, *pu);
-  initIntraPatternChType(cu, pu->Cb(), isUseFilter);
-  predIntraAng(COMPONENT_Cb, cu.cs->getPredBuf(*pu).Cb(), *pu, isUseFilter);
-  isUseFilter = IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Cr, *pu, true, *pu);
-  initIntraPatternChType(cu, pu->Cr(), isUseFilter);
-  predIntraAng(COMPONENT_Cr, cu.cs->getPredBuf(*pu).Cr(), *pu, isUseFilter);
+  initIntraPatternChType(cu, pu->Y());
+  predIntraAng(COMPONENT_Y, cu.cs->getPredBuf(*pu).Y(), *pu);
+
+  initIntraPatternChType(cu, pu->Cb());
+  predIntraAng(COMPONENT_Cb, cu.cs->getPredBuf(*pu).Cb(), *pu);
+
+  initIntraPatternChType(cu, pu->Cr());
+  predIntraAng(COMPONENT_Cr, cu.cs->getPredBuf(*pu).Cr(), *pu);
 
   for (int currCompID = 0; currCompID < 3; currCompID++)
   {
@@ -931,9 +982,14 @@ inline int  isLeftAvailable       ( const CodingUnit &cu, const ChannelType &chT
 inline int  isAboveRightAvailable ( const CodingUnit &cu, const ChannelType &chType, const Position &posRT, const uint32_t uiNumUnitsInPU, const uint32_t unitHeight, bool *validFlags );
 inline int  isBelowLeftAvailable  ( const CodingUnit &cu, const ChannelType &chType, const Position &posLB, const uint32_t uiNumUnitsInPU, const uint32_t unitHeight, bool *validFlags );
 
-void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompArea &area, const bool bFilterRefSamples)
+void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag)
 {
   const CodingStructure& cs   = *cu.cs;
+
+  if (!forceRefFilterFlag)
+  {
+    initPredIntraParams(*cu.firstPU, area, *cs.sps);
+  }
 
   Pel *refBufUnfiltered   = m_piYuvExt[area.compID][PRED_BUF_UNFILTERED];
   Pel *refBufFiltered     = m_piYuvExt[area.compID][PRED_BUF_FILTERED];
@@ -943,11 +999,9 @@ void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompAre
   // ----- Step 1: unfiltered reference samples -----
   xFillReferenceSamples( cs.picture->getRecoBuf( area ), refBufUnfiltered, area, cu );
   // ----- Step 2: filtered reference samples -----
-  if( bFilterRefSamples )
+  if( m_ipaParam.refFilterFlag || forceRefFilterFlag )
   {
-    xFilterReferenceSamples( refBufUnfiltered, refBufFiltered, area, *cs.sps
-      , cu.firstPU->multiRefIdx
-    );
+    xFilterReferenceSamples( refBufUnfiltered, refBufFiltered, area, *cs.sps, cu.firstPU->multiRefIdx );
   }
 }
 

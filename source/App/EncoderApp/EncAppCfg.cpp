@@ -1968,9 +1968,6 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
     xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
-#if JVET_N0127_MMVD_SPS_FLAG 
-    xConfirmPara(m_MMVD, "MMVD only allowed with NEXT profile");
-#endif
 #if JVET_N0449_MMVD_SIMP
     xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
 #endif

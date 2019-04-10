@@ -798,6 +798,47 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   }
 }
 
+#if JVET_N0068_AFFINE_MEM_BW
+bool InterPrediction::isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType ) 
+{
+  int s4 = ( 4 << 11 );
+  int filterTap = 6;
+
+  if ( predType == 3 )
+  {
+    int refBlkWidth  = std::max( std::max( 0, 4 * a + s4 ), std::max( 4 * c, 4 * a + 4 * c + s4 ) ) - std::min( std::min( 0, 4 * a + s4 ), std::min( 4 * c, 4 * a + 4 * c + s4 ) );
+    int refBlkHeight = std::max( std::max( 0, 4 * b ), std::max( 4 * d + s4, 4 * b + 4 * d + s4 ) ) - std::min( std::min( 0, 4 * b ), std::min( 4 * d + s4, 4 * b + 4 * d + s4 ) );
+    refBlkWidth  = ( refBlkWidth >> 11 ) + filterTap + 3;
+    refBlkHeight = ( refBlkHeight >> 11 ) + filterTap + 3;
+
+    if ( refBlkWidth * refBlkHeight > ( filterTap + 9 ) * ( filterTap + 9 ) )
+    {
+      return true;
+    }
+  }
+  else
+  {
+    int refBlkWidth  = std::max( 0, 4 * a + s4 ) - std::min( 0, 4 * a + s4 );
+    int refBlkHeight = std::max( 0, 4 * b ) - std::min( 0, 4 * b );
+    refBlkWidth  = ( refBlkWidth >> 11 ) + filterTap + 3;
+    refBlkHeight = ( refBlkHeight >> 11 ) + filterTap + 3;
+    if ( refBlkWidth * refBlkHeight > ( filterTap + 9 ) * ( filterTap + 5 ) )
+    {
+      return true;
+    }
+
+    refBlkWidth  = std::max( 0, 4 * c ) - std::min( 0, 4 * c );
+    refBlkHeight = std::max( 0, 4 * d + s4 ) - std::min( 0, 4 * d + s4 );
+    refBlkWidth  = ( refBlkWidth >> 11 ) + filterTap + 3;
+    refBlkHeight = ( refBlkHeight >> 11 ) + filterTap + 3;
+    if ( refBlkWidth * refBlkHeight > ( filterTap + 5 ) * ( filterTap + 9 ) )
+    {
+      return true;
+    }
+  }
+  return false;
+}
+#endif
 void InterPrediction::xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng )
 {
   if ( (pu.cu->affineType == AFFINEMODEL_6PARAM && _mv[0] == _mv[1] && _mv[0] == _mv[2])
@@ -873,6 +914,13 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   const int vFilterSize = isLuma(compID) ? NTAPS_LUMA : NTAPS_CHROMA;
 
   const int shift = iBit - 4 + MV_FRACTIONAL_BITS_INTERNAL;
+#if JVET_N0068_AFFINE_MEM_BW
+  bool subblkMVSpreadOverLimit = false;
+  if ( isSubblockVectorSpreadOverLimit( iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY, pu.interDir ) )
+  {
+    subblkMVSpreadOverLimit = true;
+  }
+#endif
 
 
   // get prediction block by block
@@ -888,9 +936,20 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
       if(compID == COMPONENT_Y)
 #endif //JVET_N0671_AFFINE
       {
-        iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
-        iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
-
+#if JVET_N0068_AFFINE_MEM_BW
+        if ( !subblkMVSpreadOverLimit )
+        {
+#endif
+          iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
+          iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
+#if JVET_N0068_AFFINE_MEM_BW
+        }
+        else
+        {
+          iMvScaleTmpHor = iMvScaleHor + iDMvHorX * ( cxWidth >> 1 ) + iDMvVerX * ( cxHeight >> 1 );
+          iMvScaleTmpVer = iMvScaleVer + iDMvHorY * ( cxWidth >> 1 ) + iDMvVerY * ( cxHeight >> 1 );
+        }
+#endif
         roundAffineMv(iMvScaleTmpHor, iMvScaleTmpVer, shift);
         Mv tmpMv(iMvScaleTmpHor, iMvScaleTmpVer);
         tmpMv.clipToStorageBitDepth();

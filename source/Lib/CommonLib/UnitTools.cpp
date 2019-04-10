@@ -4032,14 +4032,30 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
 
   MotionBuf mb = pu.getMotionBuf();
   int mvScaleTmpHor, mvScaleTmpVer;
-
+#if JVET_N0068_AFFINE_MEM_BW
+  bool subblkMVSpreadOverLimit = false;
+  InterPrediction temp;
+  subblkMVSpreadOverLimit = temp.isSubblockVectorSpreadOverLimit( deltaMvHorX, deltaMvHorY, deltaMvVerX, deltaMvVerY, pu.interDir );
+#endif
   for ( int h = 0; h < pu.Y().height; h += blockHeight )
   {
     for ( int w = 0; w < pu.Y().width; w += blockWidth )
     {
-      mvScaleTmpHor = mvScaleHor + deltaMvHorX * (halfBW + w) + deltaMvVerX * (halfBH + h);
-      mvScaleTmpVer = mvScaleVer + deltaMvHorY * (halfBW + w) + deltaMvVerY * (halfBH + h);
+#if JVET_N0068_AFFINE_MEM_BW
+      if ( !subblkMVSpreadOverLimit )
+      {
+#endif
+        mvScaleTmpHor = mvScaleHor + deltaMvHorX * (halfBW + w) + deltaMvVerX * (halfBH + h);
+        mvScaleTmpVer = mvScaleVer + deltaMvHorY * (halfBW + w) + deltaMvVerY * (halfBH + h);
 
+#if JVET_N0068_AFFINE_MEM_BW
+      }
+      else
+      {
+        mvScaleTmpHor = mvScaleHor + deltaMvHorX * ( pu.Y().width >> 1 ) + deltaMvVerX * ( pu.Y().height >> 1 );
+        mvScaleTmpVer = mvScaleVer + deltaMvHorY * ( pu.Y().width >> 1 ) + deltaMvVerY * ( pu.Y().height >> 1 );
+      }
+#endif
       roundAffineMv( mvScaleTmpHor, mvScaleTmpVer, shift );
       Mv curMv(mvScaleTmpHor, mvScaleTmpVer);
       curMv.clipToStorageBitDepth();

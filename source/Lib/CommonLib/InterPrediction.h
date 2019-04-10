@@ -191,7 +191,7 @@ public:
   int     getShareState() const { return m_shareState; }
 #endif
 #if JVET_N0068_AFFINE_MEM_BW
-  bool isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType );
+  static bool isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType );
 #endif
 };
 

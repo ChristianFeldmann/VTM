@@ -103,6 +103,8 @@
 
 #define JVET_N0483_DISABLE_SBT_FOR_TPM                    1
 
+#define JVET_N0180_ALF_LINE_BUFFER_REDUCTION              1 // Line buffer reduction for ALF using symmetric padding
+
 #define JVET_N0242_NON_LINEAR_ALF                         1 // enable CE5-3.2, Non-linear ALF based on clipping function
 
 #define JVET_N0329_IBC_SEARCH_IMP                         1 // IBC encoder-side improvement

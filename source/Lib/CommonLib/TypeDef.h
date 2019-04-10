@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0308_MAX_CU_SIZE_FOR_ISP                    1
+
 #define JVET_N0280_RESIDUAL_CODING_TS                     1
 
 #define JVET_N0103_CGSIZE_HARMONIZATION                   1 // Chroma CG sizes aligned to luma CG sizes

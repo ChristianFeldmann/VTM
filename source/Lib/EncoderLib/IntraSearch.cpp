@@ -1863,7 +1863,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
 }
 
-void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &partitioner, const double bestCostSoFar, const int subTuIdx, const PartSplit ispType, const bool ispIsCurrentWinnder )
+void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &partitioner, const double bestCostSoFar, const int subTuIdx, const PartSplit ispType, const bool ispIsCurrentWinner )
 {
         int   subTuCounter = subTuIdx;
   const UnitArea &currArea = partitioner.currArea();
@@ -1954,7 +1954,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
     bool    cbfDCT2  = true;
 
     double bestDCT2cost = MAX_DOUBLE;
-    double threshold = m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinnder && nNumTransformCands > 1 ? 1 + 1.4 / sqrt( cu.lwidth() * cu.lheight() ) : 1;
+    double threshold = m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinner && nNumTransformCands > 1 ? 1 + 1.4 / sqrt( cu.lwidth() * cu.lheight() ) : 1;
     for( int modeId = firstCheckId; modeId < nNumTransformCands; modeId++ )
     {
       if( !cbfDCT2 || ( m_pcEncCfg->getUseTransformSkipFast() && bestModeId[COMPONENT_Y] == 1 ) )
@@ -1966,7 +1966,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         continue;
       }
       //we compare the DCT-II cost against the best ISP cost so far (except for TS)
-      if ( m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinnder && trModes[modeId].first != 0 && ( trModes[modeId].first != 1 || !tsAllowed ) && bestDCT2cost > bestCostSoFar * threshold )
+      if ( m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinner && trModes[modeId].first != 0 && ( trModes[modeId].first != 1 || !tsAllowed ) && bestDCT2cost > bestCostSoFar * threshold )
       {
         continue;
       }

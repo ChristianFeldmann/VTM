@@ -346,6 +346,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseBLambdaForNonKeyLowDelayPictures               ( m_bUseBLambdaForNonKeyLowDelayPictures );
   m_cEncLib.setPCMLog2MinSize                                    ( m_uiPCMLog2MinSize);
   m_cEncLib.setUsePCM                                            ( m_usePCM );
+#if INCLUDE_ISP_CFG_FLAG
+  m_cEncLib.setUseISP                                            ( m_ISP );
+#endif
   m_cEncLib.setUseFastISP                                        ( m_useFastISP );
 
   // set internal bit-depth and constants

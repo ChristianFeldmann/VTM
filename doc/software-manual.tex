@@ -1771,6 +1771,20 @@ Enables or disables the use of a deblocking across tile boundaries.
 Enables or disables the use of asymmetric motion partitions.
 \\
 
+\Option{ISP} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the Intra Sub-Partitions coding mode.
+\\
+
+\Option{ISPFast} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables reduced testing of non-DCT-II transforms if ISP is likely to become the best mode for a given CU.
+\par
+This option has no effect if either ISP or MTS are disabled.
+\\
+
 \Option{SAO} &
 %\ShortOption{\None} &
 \Default{true} &

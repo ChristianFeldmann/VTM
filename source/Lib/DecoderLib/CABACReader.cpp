@@ -2562,7 +2562,11 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 
 void CABACReader::isp_mode( CodingUnit& cu )
 {
+#if INCLUDE_ISP_CFG_FLAG
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() )
+#else
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm )
+#endif
   {
     cu.ispMode = NOT_INTRA_SUBPARTITIONS;
     return;

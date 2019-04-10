@@ -2467,7 +2467,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 
 void CABACWriter::isp_mode( const CodingUnit& cu )
 {
+#if INCLUDE_ISP_CFG_FLAG
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() )
+#else
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm )
+#endif
   {
     CHECK( cu.ispMode != NOT_INTRA_SUBPARTITIONS, "error: cu.intraSubPartitions != 0" );
     return;

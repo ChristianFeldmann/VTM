@@ -987,6 +987,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
+#if INCLUDE_ISP_CFG_FLAG
+  sps.setUseISP                             ( m_ISP );
+#endif
   sps.setUseReshaper                        ( m_lumaReshapeEnable );
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;

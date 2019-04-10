@@ -390,8 +390,14 @@ ISPType CU::canUseISPSplit( const int width, const int height, const int maxTrSi
 
   const uint32_t minTuSizeForISP = MIN_TB_SIZEY;
   bool  notEnoughSamplesToSplit = ( g_aucLog2[width] + g_aucLog2[height] <= ( g_aucLog2[minTuSizeForISP] << 1 ) );
+#if JVET_N0308_MAX_CU_SIZE_FOR_ISP
+  bool  cuSizeLargerThanMaxTrSize = width  > maxTrSize || height > maxTrSize;
+  widthCannotBeUsed  = cuSizeLargerThanMaxTrSize || notEnoughSamplesToSplit;
+  heightCannotBeUsed = cuSizeLargerThanMaxTrSize || notEnoughSamplesToSplit;
+#else
   widthCannotBeUsed  = width  > maxTrSize || notEnoughSamplesToSplit;
   heightCannotBeUsed = height > maxTrSize || notEnoughSamplesToSplit;
+#endif
 
   if( !widthCannotBeUsed && !heightCannotBeUsed )
   {

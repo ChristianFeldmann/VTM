@@ -813,6 +813,63 @@ const CtxSet ContextSetCfg::JointCbCrFlag = ContextSetCfg::addCtxSet
 });
 #endif
 
+#if JVET_N0280_RESIDUAL_CODING_TS
+const CtxSet ContextSetCfg::TsSigCoeffGroup =
+{
+  ContextSetCfg::addCtxSet
+  ({
+    {  CNU, CNU, CNU,  },
+    {  CNU, CNU, CNU,  },
+    {  CNU, CNU, CNU,  },
+    {  DWS, DWS, DWS,  },
+  }),
+};
+
+const CtxSet ContextSetCfg::TsSigFlag =
+{
+  ContextSetCfg::addCtxSet
+  ({
+    {  CNU, CNU, CNU, },
+    {  CNU, CNU, CNU, },
+    {  CNU, CNU, CNU, },
+    {  DWS, DWS, DWS, },
+  }),
+};
+
+const CtxSet ContextSetCfg::TsParFlag =
+{
+  ContextSetCfg::addCtxSet
+  ({
+    {  CNU  },
+    {  CNU  },
+    {  CNU  },
+    {  DWS  },
+  }),
+};
+
+const CtxSet ContextSetCfg::TsGtxFlag =
+{
+  ContextSetCfg::addCtxSet
+  ({
+    {  CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU,  },
+    {  CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU,  },
+    {  CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU,  },
+    {  DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS,  },
+  }),
+};
+
+const CtxSet ContextSetCfg::TsResidualSign =
+{
+  ContextSetCfg::addCtxSet
+  ({
+    {  CNU,  },
+    {  CNU,  },
+    {  CNU,  },
+    {  DWS,  },
+   }),
+};
+#endif
+
 const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_InitTables[0].size();
 
 

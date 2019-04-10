@@ -603,7 +603,11 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
     if (filterFlag)
     {
       const bool isRefFilter       =  isIntegerSlope(absAng); 
+#if JVET_N0435_WAIP_HARMONIZATION
+      m_ipaParam.refFilterFlag = isRefFilter && puSize.width * puSize.height > 32;
+#else
       m_ipaParam.refFilterFlag     =  isRefFilter;
+#endif
       m_ipaParam.interpolationFlag = !isRefFilter;
     }
   }

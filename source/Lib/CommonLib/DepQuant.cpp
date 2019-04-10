@@ -757,11 +757,19 @@ namespace DQIntern
     const int         maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange( chType );
     const int         nomTransformShift     = getTransformShift( channelBitDepth, area.size(), maxLog2TrDynamicRange );
     const bool        clipTransformShift    = ( tu.mtsIdx==1 && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag() );
+#if JVET_N0246_MODIFIED_QUANTSCALES
+    const bool    needsSqrt2ScaleAdjustment = TU::needsSqrt2Scale(tu, compID);
+    const int         transformShift        = ( clipTransformShift ? std::max<int>( 0, nomTransformShift ) : nomTransformShift ) + (needsSqrt2ScaleAdjustment?-1:0);
+#else
     const int         transformShift        = ( clipTransformShift ? std::max<int>( 0, nomTransformShift ) : nomTransformShift );
-
+#endif
     // quant parameters
     m_QShift                    = QUANT_SHIFT  - 1 + qpPer + transformShift;
     m_QAdd                      = -( ( 3 << m_QShift ) >> 1 );
+#if JVET_N0246_MODIFIED_QUANTSCALES
+    Intermediate_Int  invShift  = IQUANT_SHIFT + 1 - qpPer - transformShift;
+    m_QScale                    = g_quantScales[needsSqrt2ScaleAdjustment?1:0][ qpRem ];
+#else // JVET_N0246_MODIFIED_QUANTSCALES
 #if HM_QTBT_AS_IN_JEM_QUANT
     Intermediate_Int  invShift  = IQUANT_SHIFT + 1 - qpPer - transformShift + ( TU::needsBlockSizeTrafoScale( tu, compID ) ? ADJ_DEQUANT_SHIFT : 0 );
     m_QScale                    = ( TU::needsSqrt2Scale( tu, compID ) ? ( g_quantScales[ qpRem ] * 181 ) >> 7 : g_quantScales[ qpRem ] );
@@ -769,12 +777,18 @@ namespace DQIntern
     Intermediate_Int  invShift  = IQUANT_SHIFT + 1 - qpPer - transformShift;
     m_QScale                    = g_quantScales   [ qpRem ];
 #endif
+#endif // JVET_N0246_MODIFIED_QUANTSCALES
     const unsigned    qIdxBD    = std::min<unsigned>( maxLog2TrDynamicRange + 1, 8*sizeof(Intermediate_Int) + invShift - IQUANT_SHIFT - 1 );
     m_maxQIdx                   = ( 1 << (qIdxBD-1) ) - 4;
     m_thresLast                 = TCoeff( ( int64_t(3) << m_QShift ) / ( 4 * m_QScale ) );
     m_thresSSbb                 = TCoeff( ( int64_t(3) << m_QShift ) / ( 4 * m_QScale ) );
 
     // distortion calculation parameters
+#if JVET_N0246_MODIFIED_QUANTSCALES
+    const int64_t qScale        = m_QScale;
+    const int nomDShift =
+      SCALE_BITS - 2 * (nomTransformShift + DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth)) + m_QShift + (needsSqrt2ScaleAdjustment ? 1 : 0);
+#else // JVET_N0246_MODIFIED_QUANTSCALES
     const int64_t qScale        = g_quantScales[ qpRem ];
 #if HM_QTBT_AS_IN_JEM_QUANT
     const int nomDShift =
@@ -783,6 +797,7 @@ namespace DQIntern
     const int nomDShift = SCALE_BITS - 2 * (nomTransformShift + DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth))
                           + m_QShift + (TU::needsQP3Offset(tu, compID) ? 1 : 0);
 #endif
+#endif // JVET_N0246_MODIFIED_QUANTSCALES
     const double  qScale2       = double( qScale * qScale );
     const double  nomDistFactor = ( nomDShift < 0 ? 1.0/(double(int64_t(1)<<(-nomDShift))*qScale2*lambda) : double(int64_t(1)<<nomDShift)/(qScale2*lambda) );
     const int64_t pow2dfShift   = (int64_t)( nomDistFactor * qScale2 ) + 1;
@@ -845,6 +860,12 @@ namespace DQIntern
     const TCoeff      maxTCoeff             =  ( 1 << maxLog2TrDynamicRange ) - 1;
     const int         nomTransformShift     = getTransformShift( channelBitDepth, area.size(), maxLog2TrDynamicRange );
     const bool        clipTransformShift    = ( tu.mtsIdx==1 && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag() );
+#if JVET_N0246_MODIFIED_QUANTSCALES
+    const bool    needsSqrt2ScaleAdjustment = TU::needsSqrt2Scale(tu, compID);
+    const int         transformShift        = ( clipTransformShift ? std::max<int>( 0, nomTransformShift ) : nomTransformShift ) + (needsSqrt2ScaleAdjustment?-1:0);
+    Intermediate_Int  shift                 = IQUANT_SHIFT + 1 - qpPer - transformShift;
+    Intermediate_Int  invQScale             = g_invQuantScales[needsSqrt2ScaleAdjustment?1:0][ qpRem ];
+#else // JVET_N0246_MODIFIED_QUANTSCALES
     const int         transformShift        = ( clipTransformShift ? std::max<int>( 0, nomTransformShift ) : nomTransformShift );
 #if HM_QTBT_AS_IN_JEM_QUANT
     Intermediate_Int  shift                 = IQUANT_SHIFT + 1 - qpPer - transformShift + ( TU::needsBlockSizeTrafoScale( tu, compID ) ? ADJ_DEQUANT_SHIFT : 0 );
@@ -853,6 +874,7 @@ namespace DQIntern
     Intermediate_Int  shift                 = IQUANT_SHIFT + 1 - qpPer - transformShift;
     Intermediate_Int  invQScale             = g_invQuantScales[ qpRem ];
 #endif
+#endif // JVET_N0246_MODIFIED_QUANTSCALES
     if( shift < 0 )
     {
       invQScale <<= -shift;

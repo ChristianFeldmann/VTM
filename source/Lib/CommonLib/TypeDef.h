@@ -176,6 +176,8 @@ typedef std::pair<int, int>  TrCost;
 #define HEVC_TOOLS                                        0
 #endif
 
+#define JVET_N0246_MODIFIED_QUANTSCALES                   1
+
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE                0
 #endif

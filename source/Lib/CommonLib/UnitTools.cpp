@@ -4033,9 +4033,7 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
   MotionBuf mb = pu.getMotionBuf();
   int mvScaleTmpHor, mvScaleTmpVer;
 #if JVET_N0068_AFFINE_MEM_BW
-  bool subblkMVSpreadOverLimit = false;
-  InterPrediction temp;
-  subblkMVSpreadOverLimit = temp.isSubblockVectorSpreadOverLimit( deltaMvHorX, deltaMvHorY, deltaMvVerX, deltaMvVerY, pu.interDir );
+  const bool subblkMVSpreadOverLimit = InterPrediction::isSubblockVectorSpreadOverLimit( deltaMvHorX, deltaMvHorY, deltaMvVerX, deltaMvVerY, pu.interDir );
 #endif
   for ( int h = 0; h < pu.Y().height; h += blockHeight )
   {

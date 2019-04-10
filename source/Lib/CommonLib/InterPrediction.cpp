@@ -915,13 +915,8 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
 
   const int shift = iBit - 4 + MV_FRACTIONAL_BITS_INTERNAL;
 #if JVET_N0068_AFFINE_MEM_BW
-  bool subblkMVSpreadOverLimit = false;
-  if ( isSubblockVectorSpreadOverLimit( iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY, pu.interDir ) )
-  {
-    subblkMVSpreadOverLimit = true;
-  }
+  const bool subblkMVSpreadOverLimit = isSubblockVectorSpreadOverLimit( iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY, pu.interDir );
 #endif
-
 
   // get prediction block by block
   for ( int h = 0; h < cxHeight; h += blockHeight )

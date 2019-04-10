@@ -1058,7 +1058,7 @@ private:
 
   bool              m_sbtmvpEnabledFlag;
   bool              m_bdofEnabledFlag;
-  bool              m_disFracMmvdEnabledFlag;
+  bool              m_fpelMmvdEnabledFlag;
   uint32_t              m_uiBitsForPOC;
   uint32_t              m_numLongTermRefPicSPS;
   uint32_t              m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
@@ -1298,8 +1298,8 @@ public:
   void                    setBDOFEnabledFlag(bool b)                                                      { m_bdofEnabledFlag = b; }
   bool                    getBDOFEnabledFlag() const                                                      { return m_bdofEnabledFlag; }
 
-  bool                    getDisFracMmvdEnabledFlag() const                                               { return m_disFracMmvdEnabledFlag; }
-  void                    setDisFracMmvdEnabledFlag( bool b )                                             { m_disFracMmvdEnabledFlag = b;    }
+  bool                    getFpelMmvdEnabledFlag() const                                                  { return m_fpelMmvdEnabledFlag; }
+  void                    setFpelMmvdEnabledFlag( bool b )                                                { m_fpelMmvdEnabledFlag = b;    }
   bool                    getUseDMVR()const                                                               { return m_DMVR; }
   void                    setUseDMVR(bool b)                                                              { m_DMVR = b;    }
   uint32_t                getMaxTLayers() const                                                           { return m_uiMaxTLayers; }

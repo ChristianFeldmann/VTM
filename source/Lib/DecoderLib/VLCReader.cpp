@@ -1131,10 +1131,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   // KJS: sps_ciip_enabled_flag
   READ_FLAG( uiCode,     "mhintra_flag" );                           pcSPS->setUseMHIntra             ( uiCode != 0 );
 
+  READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );               pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
+
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
 
-  // KJS: not in draft yet
-  READ_FLAG( uiCode,  "sps_fracmmvd_disabled_flag" );               pcSPS->setDisFracMmvdEnabledFlag ( uiCode != 0 );
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
   if( pcSPS->getUseSBT() )
@@ -1898,7 +1898,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         READ_UVLC( uiCode, "five_minus_max_num_affine_merge_cand" );
         pcSlice->setMaxNumAffineMergeCand( AFFINE_MRG_MAX_NUM_CANDS - uiCode );
       }
-      if ( sps->getDisFracMmvdEnabledFlag() )
+      if ( sps->getFpelMmvdEnabledFlag() )
       {
         READ_FLAG( uiCode, "tile_group_fracmmvd_disabled_flag" );
         pcSlice->setDisFracMMVD( uiCode ? true : false );

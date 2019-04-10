@@ -782,10 +782,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   // KJS: sps_ciip_enabled_flag
   WRITE_FLAG( pcSPS->getUseMHIntra() ? 1 : 0,                                                  "mhintra_flag" );
 
+  WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
+
   WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "triangle_flag" );
 
-  // KJS: not in draft yet
-  WRITE_FLAG( pcSPS->getDisFracMmvdEnabledFlag() ? 1 : 0,                            "sps_fracmmvd_disabled_flag" );
   // KJS: not in draft yet
   WRITE_FLAG( pcSPS->getUseSBT() ? 1 : 0,                                             "sbt_enable_flag");
   if( pcSPS->getUseSBT() )
@@ -1370,7 +1370,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         CHECK( pcSlice->getMaxNumAffineMergeCand() > AFFINE_MRG_MAX_NUM_CANDS, "More affine merge candidates signalled than supported" );
         WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_affine_merge_cand" );
       }
-      if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() )
+      if ( pcSlice->getSPS()->getFpelMmvdEnabledFlag() )
       {
         WRITE_FLAG( pcSlice->getDisFracMMVD(), "tile_group_fracmmvd_disabled_flag" );
       }

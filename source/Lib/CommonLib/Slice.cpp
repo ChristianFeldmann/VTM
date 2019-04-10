@@ -1814,7 +1814,7 @@ SPS::SPS()
 , m_bPCMFilterDisableFlag     (false)
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
-, m_disFracMmvdEnabledFlag    ( false )
+, m_fpelMmvdEnabledFlag       ( false )
 , m_uiBitsForPOC              (  8)
 , m_numLongTermRefPicSPS      (  0)
 #if MAX_TB_SIZE_SIGNALLING

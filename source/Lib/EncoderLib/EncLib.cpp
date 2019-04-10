@@ -979,7 +979,7 @@ void EncLib::xInitSPS(SPS &sps)
 
   sps.setUseMHIntra            ( m_MHIntra );
   sps.setUseTriangle           ( m_Triangle );
-  sps.setDisFracMmvdEnabledFlag             ( m_allowDisFracMMVD );
+  sps.setFpelMmvdEnabledFlag             ( m_allowDisFracMMVD );
   sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
   sps.setUseDMVR                            ( m_DMVR );
 

@@ -373,6 +373,9 @@ protected:
   int*      m_aidQP;
   uint32_t      m_uiDeltaQpRD;
   bool      m_bFastDeltaQP;
+#if INCLUDE_ISP_CFG_FLAG
+  bool      m_ISP;
+#endif
   bool      m_useFastISP;
 
   bool      m_bUseConstrainedIntraPred;
@@ -799,7 +802,10 @@ public:
   unsigned  getWrapAroundOffset             ()         const { return m_wrapAroundOffset; }
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
-
+#if INCLUDE_ISP_CFG_FLAG
+  void      setUseISP                       ( bool b )       { m_ISP = b; }
+  bool      getUseISP                       ()         const { return m_ISP; }
+#endif
   void      setReshaper                     ( bool b )                   { m_lumaReshapeEnable = b; }
   bool      getReshaper                     () const                     { return m_lumaReshapeEnable; }
   void      setReshapeSignalType            ( uint32_t signalType )      { m_reshapeSignalType = signalType; }

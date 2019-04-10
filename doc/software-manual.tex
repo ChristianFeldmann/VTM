@@ -1137,7 +1137,14 @@ elements.
 \par
 See section~\ref{sec:gop-structure} for further details.
 \\
+
+\Option{ReWriteParamSets} &
+%\ShortOption{-ip} &
+\Default{$0$} &
+Enable writing of parameter sets (SPS, PPS, etc.) before every (intra) random access point to enable true random access.
+\\
 \end{OptionTableNoShorthand}
+
 
 %%
 %% Motion estimation parameters
@@ -1762,6 +1769,20 @@ Enables or disables the use of a deblocking across tile boundaries.
 %\ShortOption{\None} &
 \Default{true} &
 Enables or disables the use of asymmetric motion partitions.
+\\
+
+\Option{ISP} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the Intra Sub-Partitions coding mode.
+\\
+
+\Option{ISPFast} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables reduced testing of non-DCT-II transforms if ISP is likely to become the best mode for a given CU.
+\par
+This option has no effect if either ISP or MTS are disabled.
 \\
 
 \Option{SAO} &

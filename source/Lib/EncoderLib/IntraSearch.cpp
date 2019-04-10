@@ -292,7 +292,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
   const int width   = partitioner.currArea().lwidth();
   const int height  = partitioner.currArea().lheight();
+#if INCLUDE_ISP_CFG_FLAG
+  int nOptionsForISP = sps.getUseISP() ? NUM_INTRA_SUBPARTITIONS_MODES : 1;
+#else
   int nOptionsForISP = NUM_INTRA_SUBPARTITIONS_MODES;
+#endif
   double bestCurrentCost = bestCostSoFar;
 
   int ispOptions[NUM_INTRA_SUBPARTITIONS_MODES] = { 0 };
@@ -383,7 +387,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       pu.multiRefIdx = 0;
 
       //===== init pattern for luma prediction =====
-      initIntraPatternChType( cu, pu.Y(), IntraPrediction::useFilteredIntraRefSamples( COMPONENT_Y, pu, false, pu ) );
+      initIntraPatternChType( cu, pu.Y(), true);
       if( numModesForFullRD != numModesAvailable )
       {
         CHECK( numModesForFullRD >= numModesAvailable, "Too many modes for full RD search" );
@@ -451,13 +455,14 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
             pu.intraDir[0] = modeIdx;
 
+            initPredIntraParams(pu, pu.Y(), sps);
             if( useDPCMForFirstPassIntraEstimation( pu, uiMode ) )
             {
               encPredIntraDPCM( COMPONENT_Y, piOrg, piPred, uiMode );
             }
             else
             {
-              predIntraAng( COMPONENT_Y, piPred, pu, IntraPrediction::useFilteredIntraRefSamples( COMPONENT_Y, pu, true, pu ) );
+              predIntraAng( COMPONENT_Y, piPred, pu);
             }
 #if JVET_N0363_INTRA_COST_MOD
             // Use the min between SAD and HAD as the cost criterion
@@ -510,14 +515,14 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
               {
                 pu.intraDir[0] = mode;
 
+                initPredIntraParams(pu, pu.Y(), sps);
                 if (useDPCMForFirstPassIntraEstimation(pu, mode))
                 {
                   encPredIntraDPCM(COMPONENT_Y, piOrg, piPred, mode);
                 }
                 else
                 {
-                  predIntraAng(COMPONENT_Y, piPred, pu,
-                               IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Y, pu, true, pu));
+                  predIntraAng(COMPONENT_Y, piPred, pu );
                 }
                 
 #if JVET_N0363_INTRA_COST_MOD
@@ -567,7 +572,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
           pu.multiRefIdx = multiRefIdx;
           {
-            initIntraPatternChType(cu, pu.Y(), IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Y, pu, false, pu));
+            initIntraPatternChType(cu, pu.Y(), true);
           }
 #if JVET_N0185_UNIFIED_MPM
           for (int x = 1; x < numMPMs; x++)
@@ -578,6 +583,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             uint32_t mode = multiRefMPM[x];
             {
               pu.intraDir[0] = mode;
+              initPredIntraParams(pu, pu.Y(), sps);
 
               if (useDPCMForFirstPassIntraEstimation(pu, mode))
               {
@@ -585,7 +591,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
               }
               else
               {
-                predIntraAng(COMPONENT_Y, piPred, pu, IntraPrediction::useFilteredIntraRefSamples(COMPONENT_Y, pu, true, pu));
+                predIntraAng(COMPONENT_Y, piPred, pu);
               }
 
 #if JVET_N0363_INTRA_COST_MOD
@@ -1062,7 +1068,8 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
         }
         else
         {
-          predIntraAng(COMPONENT_Cb, predCb, pu, false);
+          initPredIntraParams(pu, pu.Cb(), *pu.cs->sps);
+          predIntraAng(COMPONENT_Cb, predCb, pu);
         }
 
         sad += distParam.distFunc(distParam);
@@ -1080,7 +1087,8 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
         }
         else
         {
-          predIntraAng(COMPONENT_Cr, predCr, pu, false);
+          initPredIntraParams(pu, pu.Cr(), *pu.cs->sps);
+          predIntraAng(COMPONENT_Cr, predCr, pu);
         }
         sad += distParam.distFunc(distParam);
         satdSortedCost[idx] = sad;
@@ -1581,6 +1589,9 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
 
   CodingStructure &cs                       = *tu.cs;
+#if JVET_N0671_RDCOST_FIX
+  m_pcRdCost->setChromaFormat(cs.sps->getChromaFormatIdc());
+#endif
 
   const CompArea      &area                 = tu.blocks[compID];
   const SPS           &sps                  = *cs.sps;
@@ -1600,7 +1611,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
   const bool           bUseCrossCPrediction = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isChroma( compID ) && PU::isChromaIntraModeCrossCheckMode( pu ) && checkCrossCPrediction;
   const bool           ccUseRecoResi        = m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate();
+#if INCLUDE_ISP_CFG_FLAG
+  const bool           ispSplitIsAllowed    = sps.getUseISP() && CU::canUseISPSplit( *tu.cu, compID );
+#else
   const bool           ispSplitIsAllowed    = CU::canUseISPSplit( *tu.cu, compID );
+#endif
 
 
   //===== init availability pattern =====
@@ -1613,8 +1628,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   PelBuf sharedPredTS( m_pSharedPredTransformSkip[compID], area );
   if( default0Save1Load2 != 2 )
   {
-    const bool bUseFilteredPredictions = IntraPrediction::useFilteredIntraRefSamples( compID, pu, true, tu );
-    initIntraPatternChType( *tu.cu, area, bUseFilteredPredictions );
+    initIntraPatternChType( *tu.cu, area );
 
     //===== get prediction signal =====
     if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
@@ -1626,7 +1640,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     }
     else
     {
-      predIntraAng( compID, piPred, pu, bUseFilteredPredictions );
+      predIntraAng( compID, piPred, pu );
     }
 
 
@@ -1746,9 +1760,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     tu.mtsIdx = trModes->at(0).first;
   }
   m_pcTrQuant->transformNxN( tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr, &diagRatio, &horVerRatio );
-  if (!tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed &&
-    tu.mtsIdx == 0
-    )
+#if INCLUDE_ISP_CFG_FLAG
+    if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == 0 && ispSplitIsAllowed )
+#else
+  if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == 0 )
+#endif
   {
     m_intraModeDiagRatio        .push_back(diagRatio);
     m_intraModeHorVerRatio      .push_back(horVerRatio);
@@ -2248,14 +2264,12 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
     
     // Do predictions here to avoid repeating the "default0Save1Load2" stuff
     int  predMode   = PU::getFinalIntraMode( pu, CHANNEL_TYPE_CHROMA );
-    bool refFiltCb  = IntraPrediction::useFilteredIntraRefSamples( COMPONENT_Cb, pu, true, currTU );
-    bool refFiltCr  = IntraPrediction::useFilteredIntraRefSamples( COMPONENT_Cr, pu, true, currTU );
     
     PelBuf piPredCb = cs.getPredBuf(cbArea);
     PelBuf piPredCr = cs.getPredBuf(crArea);
     
-    initIntraPatternChType( *currTU.cu, cbArea, refFiltCb );
-    initIntraPatternChType( *currTU.cu, crArea, refFiltCr );
+    initIntraPatternChType( *currTU.cu, cbArea);
+    initIntraPatternChType( *currTU.cu, crArea);
     
     if( PU::isLMCMode( predMode ) )
     {
@@ -2265,8 +2279,8 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
     }
     else
     {
-      predIntraAng( COMPONENT_Cb, piPredCb, pu, refFiltCb );
-      predIntraAng( COMPONENT_Cr, piPredCr, pu, refFiltCr );
+      predIntraAng( COMPONENT_Cb, piPredCb, pu);
+      predIntraAng( COMPONENT_Cr, piPredCr, pu);
     }
 #endif
 

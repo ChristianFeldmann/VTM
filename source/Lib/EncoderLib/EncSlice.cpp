@@ -1515,7 +1515,7 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
   uint32_t totalCtu               = 0;
   uint32_t hashRatio              = 0;
 
-  if ( !pcSlice->getSPS()->getDisFracMmvdEnabledFlag() )
+  if ( !pcSlice->getSPS()->getFpelMmvdEnabledFlag() )
   {
     return;
   }
@@ -1590,7 +1590,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if HEVC_DEPENDENT_SLICES
   }
 #endif
-  if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() ||
+  if ( pcSlice->getSPS()->getFpelMmvdEnabledFlag() ||
       (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
   {
 #if JVET_N0329_IBC_SEARCH_IMP

@@ -52,6 +52,10 @@
 
 #define JVET_N0068_AFFINE_MEM_BW                          1 // memory bandwidth reduction for affine mode
 
+#define JVET_N0308_MAX_CU_SIZE_FOR_ISP                    1
+
+#define JVET_N0280_RESIDUAL_CODING_TS                     1
+
 #define JVET_N0103_CGSIZE_HARMONIZATION                   1 // Chroma CG sizes aligned to luma CG sizes
 
 #define JVET_N0146_DMVR_BDOF_CONDITION                    1 // JVET-N146/N0162/N0442/N0153/N0262/N0440/N0086 applicable condition of DMVR and BDOF
@@ -60,10 +64,27 @@
 
 #define JVET_N0235_SMVD_SPS                               1
 
+#define JVET_N0671                                        1
+
+#if JVET_N0671
+#define JVET_N0671_CHROMA_FORMAT_422                      1
+#define JVET_N0671_RGB                                    1
+
+#define JVET_N0671_CCLM                                   1
+#define JVET_N0671_AFFINE                                 1
+#define JVET_N0671_DMVR                                   1
+
+#define JVET_N0671_RDCOST_FIX                             1
+#define JVET_N0671_INTRA_TPM_ALIGNWITH420                 1
+
+#endif //JVET_N0671
+
 #define JVET_N0843_BVP_SIMPLIFICATION                     1
 
 #define JVET_N0448_N0380                                  1 // When MaxNumMergeCand is 1, MMVD_BASE_MV_NUM is inferred to be 1.
+
 #define JVET_N0266_SMALL_BLOCKS                           1 // remove 4x4 uni-pred, 4x8/8x4 bi-pred from regular inter modes
+
 #define JVET_N0054_JOINT_CHROMA                           1 // Joint chroma residual coding mode
 
 #define JVET_N0317_ADD_ZERO_BV                            1
@@ -113,6 +134,9 @@
 
 #define JVET_N0407_DMVR_CU_SIZE_RESTRICTION               1 // Disable 4xN/8x8 CUs for DMVR
 
+#define JVET_N0196_SIX_TAP_FILTERS                        1 // 6-tap filters for affine motion compensation
+
+
 #define JCTVC_Y0038_PARAMS                                1
 
 #define JVET_MMVD_OFF_MACRO                               0
@@ -132,6 +156,7 @@ typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 
 // clang-format off
+#define INCLUDE_ISP_CFG_FLAG                              1
 #define ENABLE_JVET_L0283_MRL                             1 // 1: Enable MRL, 0: Disable MRL
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1

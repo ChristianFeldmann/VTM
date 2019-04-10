@@ -1788,6 +1788,9 @@ SPS::SPS()
 , m_DMVR                      ( false )
 , m_SBT                       ( false )
 , m_MaxSbtSize                ( 32 )
+#if INCLUDE_ISP_CFG_FLAG
+, m_ISP                       ( false )
+#endif
 #if HEVC_VPS
 , m_VPSId                     (  0)
 #endif
@@ -1814,7 +1817,7 @@ SPS::SPS()
 , m_bPCMFilterDisableFlag     (false)
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
-, m_disFracMmvdEnabledFlag    ( false )
+, m_fpelMmvdEnabledFlag       ( false )
 , m_uiBitsForPOC              (  8)
 , m_numLongTermRefPicSPS      (  0)
 #if MAX_TB_SIZE_SIGNALLING

@@ -937,12 +937,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC(     uiCode, "chroma_format_idc" );                  pcSPS->setChromaFormatIdc( ChromaFormat(uiCode) );
   CHECK(uiCode > 3, "Invalid chroma format signalled");
 
-  // KJS: ENABLE_CHROMA_422 does not exist anymore o.O
-  if( pcSPS->getChromaFormatIdc() == CHROMA_422 )
+#if !JVET_N0671_CHROMA_FORMAT_422
+  if (pcSPS->getChromaFormatIdc() == CHROMA_422)
   {
-    EXIT( "Error:  4:2:2 chroma sampling format not supported with current compiler setting."
-          "\n        Set compiler flag \"ENABLE_CHROMA_422\" equal to 1 for enabling 4:2:2.\n" );
+    EXIT("Error:  4:2:2 chroma sampling format not supported with current compiler setting."
+      "\n        Set compiler flag \"JVET_N0671_CHROMA_FORMAT_422\" equal to 1 for enabling 4:2:2.\n");
   }
+#endif //!JVET_N0671_CHROMA_FORMAT_422
+
 
   if( pcSPS->getChromaFormatIdc() == CHROMA_444 )
   {
@@ -1129,10 +1131,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   // KJS: sps_ciip_enabled_flag
   READ_FLAG( uiCode,     "mhintra_flag" );                           pcSPS->setUseMHIntra             ( uiCode != 0 );
 
+  READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );               pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
+
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
 
-  // KJS: not in draft yet
-  READ_FLAG( uiCode,  "sps_fracmmvd_disabled_flag" );               pcSPS->setDisFracMmvdEnabledFlag ( uiCode != 0 );
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
   if( pcSPS->getUseSBT() )
@@ -1141,6 +1143,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);
+#if INCLUDE_ISP_CFG_FLAG
+  READ_FLAG(uiCode, "isp_enable_flag");                            pcSPS->setUseISP(uiCode != 0);
+#endif
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   READ_FLAG( uiCode, "sps_ladf_enabled_flag" );                     pcSPS->setLadfEnabled( uiCode != 0 );
@@ -1896,7 +1901,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         READ_UVLC( uiCode, "five_minus_max_num_affine_merge_cand" );
         pcSlice->setMaxNumAffineMergeCand( AFFINE_MRG_MAX_NUM_CANDS - uiCode );
       }
-      if ( sps->getDisFracMmvdEnabledFlag() )
+      if ( sps->getFpelMmvdEnabledFlag() )
       {
         READ_FLAG( uiCode, "tile_group_fracmmvd_disabled_flag" );
         pcSlice->setDisFracMMVD( uiCode ? true : false );

@@ -6301,6 +6301,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 {
   const UnitArea& currArea = partitioner.currArea();
   const SPS &sps           = *cs.sps;
+#if JVET_N0671_RDCOST_FIX
+  m_pcRdCost->setChromaFormat(sps.getChromaFormatIdc());
+#endif
+
   const uint32_t numValidComp  = getNumberValidComponents( sps.getChromaFormatIdc() );
   const uint32_t numTBlocks    = getNumberValidTBlocks   ( *cs.pcv );
   const CodingUnit &cu = *cs.getCU(partitioner.chType);
@@ -6935,6 +6939,10 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   , const bool luma, const bool chroma
 )
 {
+#if JVET_N0671_RDCOST_FIX
+  m_pcRdCost->setChromaFormat(cs.sps->getChromaFormatIdc());
+#endif
+
   CodingUnit &cu = *cs.getCU( partitioner.chType );
 
   const ChromaFormat format     = cs.area.chromaFormat;;

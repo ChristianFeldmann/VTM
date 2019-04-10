@@ -144,6 +144,10 @@ public:
   void        explicit_rdpcm_mode       ( const TransformUnit&          tu,       ComponentID       compID );
   void        last_sig_coeff            ( CoeffCodingContext&           cctx,     const TransformUnit& tu, ComponentID       compID );
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,     const TCoeff*     coeff, const int stateTransTable, int& state );
+#if JVET_N0280_RESIDUAL_CODING_TS
+  void        residual_codingTS         ( const TransformUnit&          tu,       ComponentID       compID );
+  void        residual_coding_subblockTS( CoeffCodingContext&           cctx,     const TCoeff*     coeff  );
+#endif
 #if JVET_N0054_JOINT_CHROMA
   void        joint_cb_cr               ( const TransformUnit&          tu );
 #endif

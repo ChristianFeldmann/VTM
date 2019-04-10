@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0280_RESIDUAL_CODING_TS                     1
+
 #define JVET_N0103_CGSIZE_HARMONIZATION                   1 // Chroma CG sizes aligned to luma CG sizes
 
 #define JVET_N0146_DMVR_BDOF_CONDITION                    1 // JVET-N146/N0162/N0442/N0153/N0262/N0440/N0086 applicable condition of DMVR and BDOF
@@ -61,7 +63,9 @@
 #define JVET_N0843_BVP_SIMPLIFICATION                     1
 
 #define JVET_N0448_N0380                                  1 // When MaxNumMergeCand is 1, MMVD_BASE_MV_NUM is inferred to be 1.
+
 #define JVET_N0266_SMALL_BLOCKS                           1 // remove 4x4 uni-pred, 4x8/8x4 bi-pred from regular inter modes
+
 #define JVET_N0054_JOINT_CHROMA                           1 // Joint chroma residual coding mode
 
 #define JVET_N0317_ADD_ZERO_BV                            1

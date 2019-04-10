@@ -61,6 +61,12 @@ public:
 public:
   void  resetSigGroup   ()                      { m_sigCoeffGroupFlag.reset( m_subSetPos ); }
   void  setSigGroup     ()                      { m_sigCoeffGroupFlag.set( m_subSetPos ); }
+#if JVET_N0280_RESIDUAL_CODING_TS
+  bool  noneSigGroup    ()                      { return m_sigCoeffGroupFlag.none(); }
+  int   lastSubSet      ()                      { return ( maxNumCoeff() - 1 ) >> log2CGSize(); }
+  bool  isLastSubSet    ()                      { return lastSubSet() == m_subSetId; }
+  bool  only1stSigGroup ()                      { return m_sigCoeffGroupFlag.count()-m_sigCoeffGroupFlag[lastSubSet()]==0; }
+#endif
   void  setScanPosLast  ( int       posLast )   { m_scanPosLast = posLast; }
 public:
   ComponentID     compID          ()                        const { return m_compID; }
@@ -96,7 +102,14 @@ public:
   unsigned        maxLastPosY     ()                        const { return m_maxLastPosY; }
   unsigned        lastXCtxId      ( unsigned  posLastX  )   const { return m_CtxSetLastX( m_lastOffsetX + ( posLastX >> m_lastShiftX ) ); }
   unsigned        lastYCtxId      ( unsigned  posLastY  )   const { return m_CtxSetLastY( m_lastOffsetY + ( posLastY >> m_lastShiftY ) ); }
+#if JVET_N0280_RESIDUAL_CODING_TS
+  bool            isContextCoded  ()                              { return --m_remainingContextBins >= 0; }
+  int             numCtxBins      ()                        const { return   m_remainingContextBins;      }
+  void            setNumCtxBins   ( int n )                       {          m_remainingContextBins  = n; }
+  unsigned        sigGroupCtxId   ( bool ts = false     )   const { return ts ? m_sigGroupCtxIdTS : m_sigGroupCtxId; }
+#else
   unsigned        sigGroupCtxId   ()                        const { return m_sigGroupCtxId; }
+#endif
 
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
@@ -189,6 +202,56 @@ public:
 #endif
   }
 
+#if JVET_N0280_RESIDUAL_CODING_TS
+  unsigned sigCtxIdAbsTS( int scanPos, const TCoeff* coeff )
+  {
+    const uint32_t  posY   = m_scan[scanPos].y;
+    const uint32_t  posX   = m_scan[scanPos].x;
+    const TCoeff*   posC   = coeff + posX + posY * m_width;
+    int             numPos = 0;
+#define UPDATE(x) {int a=abs(x);numPos+=!!a;}
+    if( posX > 0 )
+    {
+      UPDATE( posC[-1] );
+    }
+    if( posY > 0 )
+    {
+      UPDATE( posC[-(int)m_width] );
+    }
+#undef UPDATE
+
+    return m_tsSigFlagCtxSet( numPos );
+  }
+
+  unsigned parityCtxIdAbsTS   ()                  const { return m_tsParFlagCtxSet(      0 ); }
+  unsigned greaterXCtxIdAbsTS ( uint8_t offset )  const { return m_tsGtxFlagCtxSet( offset ); }
+
+  unsigned templateAbsSumTS( int scanPos, const TCoeff* coeff )
+  {
+    const uint32_t  posY  = m_scan[scanPos].y;
+    const uint32_t  posX  = m_scan[scanPos].x;
+    const TCoeff*   posC  = coeff + posX + posY * m_width;
+    int             sum   = 0;
+    if (posX > 0)
+    {
+      sum += abs(posC[-1]);
+    }
+    if (posY > 0)
+    {
+      sum += abs(posC[-(int)m_width]);
+    }
+
+    const uint32_t auiGoRicePars[32] =
+    {
+      0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0,
+      0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 2, 2, 2, 2, 2, 2, 2
+    };
+
+    return auiGoRicePars[ std::min(sum, 31) ];
+  }
+#endif
 
 private:
   // constant
@@ -235,6 +298,13 @@ private:
   CtxSet                    m_sigFlagCtxSet[3];
   CtxSet                    m_parFlagCtxSet;
   CtxSet                    m_gtxFlagCtxSet[2];
+#if JVET_N0280_RESIDUAL_CODING_TS
+  unsigned                  m_sigGroupCtxIdTS;
+  CtxSet                    m_tsSigFlagCtxSet;
+  CtxSet                    m_tsParFlagCtxSet;
+  CtxSet                    m_tsGtxFlagCtxSet;
+  int                       m_remainingContextBins;
+#endif
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
 };
 

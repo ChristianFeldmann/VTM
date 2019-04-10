@@ -120,6 +120,37 @@ private:
   inline double xGetICost            ( double dRate                                                      ) const;
   inline double xGetIEPRate          (                                                                   ) const;
 
+#if JVET_N0280_RESIDUAL_CODING_TS
+  void xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &coeffs, TCoeff &absSum, const QpParam &qp, const Ctx &ctx );
+
+  inline uint32_t xGetCodedLevelTS(       double&             codedCost,
+                                          double&             codedCost0,
+                                          double&             codedCostSig,
+                                          Intermediate_Int    levelDouble,
+                                          uint32_t            maxAbsLevel,
+                                    const BinFracBits*        fracBitsSig,
+                                    const BinFracBits&        fracBitsPar,
+                                    const CoeffCodingContext& cctx,
+                                    const FracBitsAccess&     fracBitsAccess,
+                                    const BinFracBits&        fracBitsSign,
+                                    const uint8_t             sign,
+                                          uint16_t            ricePar,
+                                          int                 qBits,
+                                          double              errorScale,
+                                          bool                isLast,
+                                          bool                useLimitedPrefixLength,
+                                    const int                 maxLog2TrDynamicRange ) const;
+
+  inline int xGetICRateTS   ( const uint32_t            absLevel,
+                              const BinFracBits&        fracBitsPar,
+                              const CoeffCodingContext& cctx,
+                              const FracBitsAccess&     fracBitsAccess,
+                              const BinFracBits&        fracBitsSign,
+                              const uint8_t             sign,
+                              const uint16_t            ricePar,
+                              const bool                useLimitedPrefixLength,
+                              const int                 maxLog2TrDynamicRange  ) const;
+#endif
 private:
 #if HEVC_USE_SCALING_LISTS
   bool    m_isErrScaleListOwner;

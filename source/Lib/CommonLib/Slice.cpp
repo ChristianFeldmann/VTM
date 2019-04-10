@@ -1788,6 +1788,9 @@ SPS::SPS()
 , m_DMVR                      ( false )
 , m_SBT                       ( false )
 , m_MaxSbtSize                ( 32 )
+#if INCLUDE_ISP_CFG_FLAG
+, m_ISP                       ( false )
+#endif
 #if HEVC_VPS
 , m_VPSId                     (  0)
 #endif

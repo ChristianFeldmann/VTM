@@ -1014,6 +1014,9 @@ private:
   bool              m_DMVR;
   bool              m_SBT;
   uint8_t           m_MaxSbtSize;
+#if INCLUDE_ISP_CFG_FLAG
+  bool              m_ISP;
+#endif
 #if HEVC_VPS
   int               m_VPSId;
 #endif
@@ -1357,6 +1360,10 @@ public:
   unsigned                getIBCFlag() const                                                              { return m_IBCFlag; }
   void                    setUseSBT( bool b )                                                             { m_SBT = b; }
   bool                    getUseSBT() const                                                               { return m_SBT; }
+#if INCLUDE_ISP_CFG_FLAG
+  void                    setUseISP( bool b )                                                             { m_ISP = b; }
+  bool                    getUseISP() const                                                               { return m_ISP; }
+#endif
   void                    setMaxSbtSize( uint8_t val )                                                    { m_MaxSbtSize = val; }
   uint8_t                 getMaxSbtSize() const                                                           { return m_MaxSbtSize; }
 

@@ -857,6 +857,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MTSInterMaxCand",                                 m_MTSInterMaxCand,                                    4, "Number of additional candidates to test in encoder search for MTS in inter slices\n")
   ("MTSImplicit",                                     m_MTSImplicit,                                        0, "Enable implicit MTS (when explicit MTS is off)\n")
   ( "SBT",                                            m_SBT,                                            false, "Enable Sub-Block Transform for inter blocks\n" )
+#if INCLUDE_ISP_CFG_FLAG
+  ( "ISP",                                            m_ISP,                                            false, "Enable Intra Sub-Partitions\n" )
+#endif
 #if JVET_N0235_SMVD_SPS
   ("SMVD",                                            m_SMVD,                                           false, "Enable Symmetric MVD\n")
 #endif
@@ -3147,6 +3150,9 @@ void EncAppCfg::xPrintParameter()
     }
     msg( VERBOSE, "MTS: %1d(intra) %1d(inter) ", m_MTS & 1, ( m_MTS >> 1 ) & 1 );
     msg( VERBOSE, "SBT:%d ", m_SBT );
+#if INCLUDE_ISP_CFG_FLAG
+    msg( VERBOSE, "ISP:%d ", m_ISP );
+#endif
 #if JVET_N0235_SMVD_SPS
     msg( VERBOSE, "SMVD:%d ", m_SMVD );
 #endif
@@ -3188,7 +3194,11 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "PBIntraFast:%d ", m_usePbIntraFast );
   if( m_ImvMode ) msg( VERBOSE, "IMV4PelFast:%d ", m_Imv4PelFast );
   if( m_MTS ) msg( VERBOSE, "MTSMaxCand: %1d(intra) %1d(inter) ", m_MTSIntraMaxCand, m_MTSInterMaxCand );
+#if INCLUDE_ISP_CFG_FLAG
+  if( m_ISP ) msg( VERBOSE, "ISPFast:%d ", m_useFastISP );
+#else
   msg( VERBOSE, "ISPFast:%d ", m_useFastISP );
+#endif
   msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
   msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
   msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );

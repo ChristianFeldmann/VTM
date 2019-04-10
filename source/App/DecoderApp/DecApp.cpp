@@ -252,10 +252,15 @@ uint32_t DecApp::decode()
         m_cDecLib.setFirstSliceInPicture (false);
       }
       // write reconstruction to file -- for additional bumping as defined in C.5.2.3
+#if JVET_N0067_NAL_Unit_Header
+      if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL_15)
+        || (nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu.m_nalUnitType <= NAL_UNIT_CODED_SLICE_GRA)))
+#else
 #if !JVET_M0101_HLS
       if(!bNewPicture && nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL_N && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL31)
 #else
       if (!bNewPicture && nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL15)
+#endif
 #endif
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );

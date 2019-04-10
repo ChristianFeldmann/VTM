@@ -102,6 +102,40 @@ const bool verbose = false;
 
 const char * NALU_TYPE[] =
 {
+#if JVET_N0067_NAL_Unit_Header
+    "NAL_UNIT_PPS",
+    "NAL_UNIT_ACCESS_UNIT_DELIMITER",
+    "NAL_UNIT_PREFIX_SEI",
+    "NAL_UNIT_SUFFIX_SEI",
+    "NAL_UNIT_APS",
+    "NAL_UNIT_RESERVED_NVCL_5",
+    "NAL_UNIT_RESERVED_NVCL_6",
+    "NAL_UNIT_RESERVED_NVCL_7",
+    "NAL_UNIT_CODED_SLICE_TRAIL",
+    "NAL_UNIT_CODED_SLICE_STSA",
+    "NAL_UNIT_CODED_SLICE_RADL",
+    "NAL_UNIT_CODED_SLICE_RASL",
+    "NAL_UNIT_RESERVED_VCL_12",
+    "NAL_UNIT_RESERVED_VCL_13",
+    "NAL_UNIT_RESERVED_VCL_14",
+    "NAL_UNIT_RESERVED_VCL_15",
+    "NAL_UNIT_DPS",
+    "NAL_UNIT_SPS",
+    "NAL_UNIT_EOS",
+    "NAL_UNIT_EOB",
+    "NAL_UNIT_VPS",
+    "NAL_UNIT_RESERVED_NVCL_21",
+    "NAL_UNIT_RESERVED_NVCL_22",
+    "NAL_UNIT_RESERVED_NVCL_23",
+    "NAL_UNIT_CODED_SLICE_IDR_W_RADL",
+    "NAL_UNIT_CODED_SLICE_IDR_N_LP",
+    "NAL_UNIT_CODED_SLICE_CRA",
+    "NAL_UNIT_CODED_SLICE_GRA",
+    "NAL_UNIT_UNSPECIFIED_28",
+    "NAL_UNIT_UNSPECIFIED_29",
+    "NAL_UNIT_UNSPECIFIED_30",
+    "NAL_UNIT_UNSPECIFIED_31"
+#else
 #if !JVET_M0101_HLS
     "TRAIL_N",
     "TRAIL_R",
@@ -196,6 +230,7 @@ const char * NALU_TYPE[] =
     "NAL_UNIT_UNSPECIFIED_30",
     "NAL_UNIT_UNSPECIFIED_31"
 #endif
+#endif
 };
 
 int calc_poc(int iPOClsb, int prevTid0POC, int getBitsForPOC, int nalu_type)
@@ -280,10 +315,14 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       int offset = 16;
 
       offset += 1; //first_slice_segment_in_pic_flag
+#if JVET_N0067_NAL_Unit_Header
+      if (nalu_type >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type <= NAL_UNIT_CODED_SLICE_CRA)
+#else
 #if !JVET_M0101_HLS
       if (nalu_type >= NAL_UNIT_CODED_SLICE_BLA_W_LP && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL23)
 #else
       if (nalu_type >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL13)
+#endif
 #endif
       {
         offset += 1; //no_output_of_prior_pics_flag

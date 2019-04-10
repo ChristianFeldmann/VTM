@@ -1512,6 +1512,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_EOB:
       return false;
 
+#if !JVET_N0067_NAL_Unit_Header
     case NAL_UNIT_FILLER_DATA:
       {
         FDReader fdReader;
@@ -1520,6 +1521,13 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
         msg( NOTICE, "Note: found NAL_UNIT_FILLER_DATA with %u bytes payload.\n", size);
         return false;
       }
+#endif
+#if JVET_N0067_NAL_Unit_Header
+    case NAL_UNIT_RESERVED_VCL_12:
+    case NAL_UNIT_RESERVED_VCL_13:
+    case NAL_UNIT_RESERVED_VCL_14:
+    case NAL_UNIT_RESERVED_VCL_15:
+#else
 #if !JVET_M0101_HLS
     case NAL_UNIT_RESERVED_VCL_N10:
     case NAL_UNIT_RESERVED_VCL_R11:
@@ -1557,9 +1565,18 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_RESERVED_VCL15:
 #endif
 #endif
+#endif
       msg( NOTICE, "Note: found reserved VCL NAL unit.\n");
       xParsePrefixSEIsForUnknownVCLNal();
       return false;
+#if JVET_N0067_NAL_Unit_Header
+    case NAL_UNIT_RESERVED_NVCL_5:
+    case NAL_UNIT_RESERVED_NVCL_6:
+    case NAL_UNIT_RESERVED_NVCL_7:
+    case NAL_UNIT_RESERVED_NVCL_21:
+    case NAL_UNIT_RESERVED_NVCL_22:
+    case NAL_UNIT_RESERVED_NVCL_23:
+#else
 #if !JVET_M0101_HLS
     case NAL_UNIT_RESERVED_NVCL41:
     case NAL_UNIT_RESERVED_NVCL42:
@@ -1572,6 +1589,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_RESERVED_NVCL16:
     case NAL_UNIT_RESERVED_NVCL26:
     case NAL_UNIT_RESERVED_NVCL27:
+#endif
 #endif
       msg( NOTICE, "Note: found reserved NAL unit.\n");
       return false;

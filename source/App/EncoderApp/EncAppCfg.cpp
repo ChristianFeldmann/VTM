@@ -2111,7 +2111,10 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_enableIntraReferenceSmoothing==false, "EnableIntraReferenceSmoothing must be enabled for non main-RExt profiles.");
     xConfirmPara(m_cabacBypassAlignmentEnabledFlag, "AlignCABACBeforeBypass cannot be enabled for non main-RExt profiles.");
   }
-  xConfirmPara( m_chromaFormatIDC==CHROMA_422, "4:2:2 chroma sampling format not supported with current compiler setting. Set compiler flag \"ENABLE_CHROMA_422\" equal to 1 for enabling 4:2:2.\n\n" );
+#if !JVET_N0671_CHROMA_FORMAT_422
+  xConfirmPara(m_chromaFormatIDC == CHROMA_422, "4:2:2 chroma sampling format not supported with current compiler setting. Set compiler flag \"JVET_N0671_CHROMA_FORMAT_422\" equal to 1 for enabling 4:2:2.\n\n");
+#endif // !JVET_N0671_CHROMA_FORMAT_422
+
 
   // check range of parameters
   xConfirmPara( m_inputBitDepth[CHANNEL_TYPE_LUMA  ] < 8,                                   "InputBitDepth must be at least 8" );

@@ -60,6 +60,21 @@
 
 #define JVET_N0235_SMVD_SPS                               1
 
+#define JVET_N0671                                        1
+
+#if JVET_N0671
+#define JVET_N0671_CHROMA_FORMAT_422                      1
+#define JVET_N0671_RGB                                    1
+
+#define JVET_N0671_CCLM                                   1
+#define JVET_N0671_AFFINE                                 1
+#define JVET_N0671_DMVR                                   1
+
+#define JVET_N0671_RDCOST_FIX                             1
+#define JVET_N0671_INTRA_TPM_ALIGNWITH420                 1
+
+#endif //JVET_N0671
+
 #define JVET_N0843_BVP_SIMPLIFICATION                     1
 
 #define JVET_N0448_N0380                                  1 // When MaxNumMergeCand is 1, MMVD_BASE_MV_NUM is inferred to be 1.

@@ -987,7 +987,11 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
 
     uiIntraMode = lumaPU.intraDir[0];
   }
+#if JVET_N0671_CHROMA_FORMAT_422
+  if( pu.chromaFormat == CHROMA_422 && !isLuma( chType ) && uiIntraMode < NUM_LUMA_MODE ) // map directional, planar and dc
+#else
   if( pu.chromaFormat == CHROMA_422 && !isLuma( chType ) )
+#endif //JVET_N0671_CHROMA_FORMAT_422
   {
     uiIntraMode = g_chroma422IntraAngleMappingTable[uiIntraMode];
   }

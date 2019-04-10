@@ -3706,6 +3706,9 @@ Distortion EncCu::getDistortionDb( CodingStructure &cs, CPelBuf org, CPelBuf rec
 {
   Distortion dist = 0;
 #if WCG_EXT
+#if JVET_N0671_RDCOST_FIX
+  m_pcRdCost->setChromaFormat(cs.sps->getChromaFormatIdc());
+#endif 
   CPelBuf orgLuma = cs.picture->getOrigBuf( cs.area.blocks[COMPONENT_Y] );
   if ( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
     m_pcEncCfg->getReshaper() && ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() ) ) )
@@ -4139,6 +4142,9 @@ void EncCu::xEncodeDontSplit( CodingStructure &cs, Partitioner &partitioner )
 #if REUSE_CU_RESULTS
 void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner )
 {
+#if JVET_N0671_RDCOST_FIX
+  m_pcRdCost->setChromaFormat(tempCS->sps->getChromaFormatIdc());
+#endif
   BestEncInfoCache* bestEncCache = dynamic_cast<BestEncInfoCache*>( m_modeCtrl );
   CHECK( !bestEncCache, "If this mode is chosen, mode controller has to implement the mode caching capabilities" );
   EncTestMode cachedMode;

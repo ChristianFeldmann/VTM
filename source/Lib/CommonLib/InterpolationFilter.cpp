@@ -54,6 +54,28 @@ CacheModel* InterpolationFilter::m_cacheModel;
 // ====================================================================================================================
 // Tables
 // ====================================================================================================================
+#if JVET_N0196_SIX_TAP_FILTERS
+const TFilterCoeff InterpolationFilter::m_lumaFilter4x4[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA] =
+{
+  {  0, 0,   0, 64,  0,   0,  0,  0 },
+  {  0, 1,  -3, 63,  4,  -2,  1,  0 },
+  {  0, 1,  -5, 62,  8,  -3,  1,  0 },
+  {  0, 2,  -8, 60, 13,  -4,  1,  0 },
+  {  0, 3, -10, 58, 17,  -5,  1,  0 }, //1/4
+  {  0, 3, -11, 52, 26,  -8,  2,  0 },
+  {  0, 2,  -9, 47, 31, -10,  3,  0 },
+  {  0, 3, -11, 45, 34, -10,  3,  0 },
+  {  0, 3, -11, 40, 40, -11,  3,  0 }, //1/2
+  {  0, 3, -10, 34, 45, -11,  3,  0 },
+  {  0, 3, -10, 31, 47,  -9,  2,  0 },
+  {  0, 2,  -8, 26, 52, -11,  3,  0 },
+  {  0, 1,  -5, 17, 58, -10,  3,  0 }, //3/4
+  {  0, 1,  -4, 13, 60,  -8,  2,  0 },
+  {  0, 1,  -3,  8, 62,  -5,  1,  0 },
+  {  0, 1,  -2,  4, 63,  -3,  1,  0 }
+};
+#endif
+
 const TFilterCoeff InterpolationFilter::m_lumaFilter[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA] =
 {
   {  0, 0,   0, 64,  0,   0,  0,  0 },
@@ -573,7 +595,18 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
     }
     else
     {
+#if JVET_N0196_SIX_TAP_FILTERS
+      if ((width == 4 && height == 4) || (width == 4 && height == (4 + NTAPS_LUMA - 1)))
+      {
+        filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter4x4[frac], biMCForDMVR);
+      }
+      else
+      {
+#endif
       filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter[frac], biMCForDMVR);
+#if JVET_N0196_SIX_TAP_FILTERS
+      }
+#endif
     }
   }
   else
@@ -616,7 +649,18 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
     }
     else
     {
+#if JVET_N0196_SIX_TAP_FILTERS
+      if (width == 4 && height == 4)
+      {
+        filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter4x4[frac], biMCForDMVR);
+      }
+      else
+      {
+#endif
       filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter[frac], biMCForDMVR);
+#if JVET_N0196_SIX_TAP_FILTERS
+      }
+#endif
     }
   }
   else

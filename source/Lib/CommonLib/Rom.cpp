@@ -538,6 +538,19 @@ void destroyROM()
 // Data structure related table & variable
 // ====================================================================================================================
 
+#if JVET_N0246_MODIFIED_QUANTSCALES
+const int g_quantScales[2][SCALING_LIST_REM_NUM] = // can be represented as a 9 element table
+{
+    { 26214,23302,20560,18396,16384,14564 },
+    { 18396,16384,14564,13107,11651,10280 } // Note: last 3 values of second row == half of the first 3 values of the first row
+};
+
+const int g_invQuantScales[2][SCALING_LIST_REM_NUM] = // can be represented as a 9 element table
+{
+  { 40,45,51,57,64,72 },
+  { 57,64,72,80,90,102 } // Note: last 3 values of second row == double of the first 3 values of the first row
+};
+#else
 const int g_quantScales[SCALING_LIST_REM_NUM] =
 {
   26214,23302,20560,18396,16384,14564
@@ -547,6 +560,7 @@ const int g_invQuantScales[SCALING_LIST_REM_NUM] =
 {
   40,45,51,57,64,72
 };
+#endif
 
 //--------------------------------------------------------------------------------------------------
 //structures

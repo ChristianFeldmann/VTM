@@ -77,8 +77,13 @@ extern ScanElement
   *g_scanOrder[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
 #endif
 
+#if JVET_N0246_MODIFIED_QUANTSCALES
+extern const int g_quantScales   [2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIST_REM_NUM];          // Q(QP%6)
+extern const int g_invQuantScales[2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIST_REM_NUM];          // IQ(QP%6)
+#else
 extern const int g_quantScales   [SCALING_LIST_REM_NUM];          // Q(QP%6)
 extern const int g_invQuantScales[SCALING_LIST_REM_NUM];          // IQ(QP%6)
+#endif
 
 static const int g_numTransformMatrixSizes = 6;
 static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };

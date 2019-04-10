@@ -197,8 +197,10 @@ static const int MLS_GRP_NUM =                                   1024; ///< Max 
 
 static const int MLS_CG_SIZE =                                      4; ///< Coefficient group size of 4x4; = MLS_CG_LOG2_WIDTH + MLS_CG_LOG2_HEIGHT
 
+#if !JVET_N0246_MODIFIED_QUANTSCALES
 static const int ADJ_QUANT_SHIFT =                                  7;
 static const int ADJ_DEQUANT_SHIFT =            ( ADJ_QUANT_SHIFT + 1 );
+#endif
 
 static const int RVM_VCEGAM10_M =                                   4;
 

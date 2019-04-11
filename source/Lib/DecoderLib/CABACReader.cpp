@@ -2456,6 +2456,7 @@ void CABACReader::cu_chroma_qp_offset( CodingUnit& cu )
 #if JVET_N0054_JOINT_CHROMA
 void CABACReader::joint_cb_cr( TransformUnit& tu )
 {
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__JOINT_CB_CR, tu.blocks[COMPONENT_Cr].lumaSize(), CHANNEL_TYPE_CHROMA );
   tu.jointCbCr = m_BinDecoder.decodeBin( Ctx::JointCbCrFlag( 0 ) );
 }
 #endif

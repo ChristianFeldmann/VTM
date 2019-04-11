@@ -281,22 +281,54 @@ void TrQuant::invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &
 // Logical transform
 // ------------------------------------------------------------------------------------------------
 
-#if !JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
+#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
+void TrQuant::getTrTypes(const TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer)
+#else
 void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer )
+#endif
 {
+#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
+  const bool isExplicitMTS = (CU::isIntra(*tu.cu) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS() && CU::isInter(*tu.cu)) && isLuma(compID);
+  const bool isImplicitMTS = CU::isIntra(*tu.cu) && tu.cs->sps->getUseImplicitMTS() && isLuma(compID);
+  const bool isISP = CU::isIntra(*tu.cu) && tu.cu->ispMode && isLuma(compID);
+  const bool isSBT = CU::isInter(*tu.cu) && tu.cu->sbtInfo && isLuma(compID);
+#else
   bool mtsActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS() && CU::isInter( *tu.cu );
-
   bool mtsImplicit  = CU::isIntra( *tu.cu ) && tu.cs->sps->getUseImplicitMTS() && compID == COMPONENT_Y;
+#endif
 
   trTypeHor = DCT2;
   trTypeVer = DCT2;
 
+#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
+  if (isImplicitMTS || isISP)
+  {
+    int  width = tu.blocks[compID].width;
+    int  height = tu.blocks[compID].height;
+    bool widthDstOk = width >= 4 && width <= 16;
+    bool heightDstOk = height >= 4 && height <= 16;
+
+    if (widthDstOk)
+      trTypeHor = DST7;
+    if (heightDstOk)
+      trTypeVer = DST7;
+    return;
+  }
+#endif
+
+#if !JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
   if (tu.cu->ispMode && isLuma(compID))
   {
     TU::getTransformTypeISP(tu, compID, trTypeHor, trTypeVer);
     return;
-}
+  }
+#endif
+
+#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
+  if (isSBT)
+#else
   if( tu.cu->sbtInfo && compID == COMPONENT_Y )
+#endif
   {
     uint8_t sbtIdx = tu.cu->getSbtIdx();
     uint8_t sbtPos = tu.cu->getSbtPos();
@@ -330,6 +362,19 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
     return;
   }
 
+#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
+  if (isExplicitMTS)
+  {
+    if (tu.mtsIdx > 1)
+    {
+      int indHor = (tu.mtsIdx - 2) & 1;
+      int indVer = (tu.mtsIdx - 2) >> 1;
+
+      trTypeHor = indHor ? DCT8 : DST7;
+      trTypeVer = indVer ? DCT8 : DST7;
+    }
+  }
+#else
   if ( mtsActivated )
   {
     if( compID == COMPONENT_Y )
@@ -358,8 +403,10 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
     else if ( width == height && widthDstOk )
       trTypeHor = trTypeVer = DST7;
   }
-}
 #endif
+}
+
+
 
 void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, CoeffBuf &dstCoeff, const int width, const int height )
 {
@@ -373,11 +420,7 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
   int trTypeHor = DCT2;
   int trTypeVer = DCT2;
 
-#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
-  TU::getTrTypes ( tu, compID, trTypeHor, trTypeVer );
-#else
   getTrTypes ( tu, compID, trTypeHor, trTypeVer );
-#endif
 
   const int      skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
@@ -445,11 +488,7 @@ void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCo
   int trTypeHor = DCT2;
   int trTypeVer = DCT2;
 
-#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
-  TU::getTrTypes ( tu, compID, trTypeHor, trTypeVer );
-#else
   getTrTypes ( tu, compID, trTypeHor, trTypeVer );
-#endif
 
   const int      skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;

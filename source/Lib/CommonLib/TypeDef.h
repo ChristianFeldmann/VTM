@@ -50,7 +50,13 @@
 #include <assert.h>
 #include <cassert>
 
+
+
+
 #define JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP             1 // JVET-N0866: unified transform derivation for ISP and implicit MTS (combining JVET-N0172, JVET-N0375, JVET-N0419 and JVET-N0420)
+
+
+
 
 #define JVET_N0103_CGSIZE_HARMONIZATION                   1 // Chroma CG sizes aligned to luma CG sizes
 

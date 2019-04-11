@@ -223,9 +223,6 @@ namespace TU
 #if !JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
   void           getTransformTypeISP( const TransformUnit &tu, const ComponentID compID, int &typeH, int &typeV );
 #endif
-#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
-  void          getTrTypes         ( const TransformUnit &tu, const ComponentID compID, int &trTypeHor, int &trTypeVer);
-#endif
 
 }
 

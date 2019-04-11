@@ -835,6 +835,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxBTDepthISliceC",                               m_uiMaxBTDepthIChroma,                               3u, "MaxBTDepthISliceC")
   ("DualITree",                                       m_dualTree,                                       false, "Use separate QTBT trees for intra slice luma and chroma channel types")
   ("SubPuMvp",                                       m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:ATMVP, 2:STMVP, 3:ATMVP+STMVP)  [default: off]")
+#if JVET_N0127_MMVD_SPS_FLAG 
+  ("MMVD",                                           m_MMVD,                                            true, "Enable Merge mode with Motion Vector Difference (0:off, 1:on)  [default: 1]")
+#endif 
   ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
   ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
   ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
@@ -3134,6 +3137,9 @@ void EncAppCfg::xPrintParameter()
   if( m_profile == Profile::NEXT )
   {
     msg( VERBOSE, "\nNEXT TOOL CFG: " );
+#if JVET_N0127_MMVD_SPS_FLAG 
+    msg( VERBOSE, "MMVD:%d ", m_MMVD);
+#endif
     msg( VERBOSE, "Affine:%d ", m_Affine );
     if ( m_Affine )
     {
@@ -3164,7 +3170,13 @@ void EncAppCfg::xPrintParameter()
 #endif
     msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
+#if JVET_N0127_MMVD_SPS_FLAG 
+    m_allowDisFracMMVD = m_MMVD ? m_allowDisFracMMVD : false;
+    if ( m_MMVD )
+      msg(VERBOSE, "AllowDisFracMMVD:%d ", m_allowDisFracMMVD);
+#else
     msg( VERBOSE, "AllowDisFracMMVD:%d ", m_allowDisFracMMVD );
+#endif
     msg( VERBOSE, "AffineAmvr:%d ", m_AffineAmvr );
     m_AffineAmvrEncOpt = m_AffineAmvr ? m_AffineAmvrEncOpt : false;
     msg( VERBOSE, "AffineAmvrEncOpt:%d ", m_AffineAmvrEncOpt );

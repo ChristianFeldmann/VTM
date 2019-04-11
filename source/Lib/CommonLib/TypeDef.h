@@ -95,6 +95,8 @@
 
 #define JVET_N0175_N0251_N0384_IBC_SMALL_CTU              1 // IBC search range arrangement for small CTU sizes
 
+#define JVET_N0127_MMVD_SPS_FLAG                          1
+
 #define JVET_N0286_SIMPLIFIED_GBI_IDX                     1 // Simplified coding of the GBi index
 
 #define JVET_N600_AMVR_TPM_CTX_REDUCTION                  1

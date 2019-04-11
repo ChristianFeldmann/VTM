@@ -1786,6 +1786,9 @@ SPS::SPS()
 #endif
 , m_affineAmvrEnabledFlag     ( false )
 , m_DMVR                      ( false )
+#if JVET_N0127_MMVD_SPS_FLAG 
+, m_MMVD                      ( false )
+#endif
 , m_SBT                       ( false )
 , m_MaxSbtSize                ( 32 )
 #if INCLUDE_ISP_CFG_FLAG

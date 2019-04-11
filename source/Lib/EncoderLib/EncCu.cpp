@@ -1857,7 +1857,12 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           uiBitsCand--;
         }
 #if !JVET_MMVD_OFF_MACRO
+#if JVET_N0127_MMVD_SPS_FLAG 
+        if ( pu.cs->sps->getUseMMVD() )
+          uiBitsCand++; // for mmvd_flag
+#else
         uiBitsCand++; // for mmvd_flag
+#endif
 #endif
         double cost     = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
         insertPos = -1;
@@ -1980,69 +1985,75 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         m_CABACEstimator->getCtx() = ctxStart;
       }
 #if !JVET_MMVD_OFF_MACRO
-      cu.mmvdSkip = true;
-      int tempNum = 0;
-#if JVET_N0448_N0380
-      tempNum = (mergeCtx.numValidMergeCand > 1) ? MMVD_ADD_NUM : MMVD_ADD_NUM >> 1;
-#else
-      tempNum = MMVD_ADD_NUM;
-#endif
-      for (uint32_t mergeCand = mergeCtx.numValidMergeCand; mergeCand < mergeCtx.numValidMergeCand + tempNum; mergeCand++)
+#if JVET_N0127_MMVD_SPS_FLAG 
+      if ( pu.cs->sps->getUseMMVD() )
       {
-        const int mmvdMergeCand = mergeCand - mergeCtx.numValidMergeCand;
-        int bitsBaseIdx = 0;
-        int bitsRefineStep = 0;
-        int bitsDirection = 2;
-        int bitsCand = 0;
-        int baseIdx;
-        int refineStep;
-        baseIdx = mmvdMergeCand / MMVD_MAX_REFINE_NUM;
-        refineStep = (mmvdMergeCand - (baseIdx * MMVD_MAX_REFINE_NUM)) / 4;
-#if JVET_N0449_MMVD_SIMP
-        if (refineStep >= m_pcEncCfg->getMmvdDisNum())
-          continue;
+#endif 
+        cu.mmvdSkip = true;
+#if JVET_N0448_N0380
+        const int tempNum = (mergeCtx.numValidMergeCand > 1) ? MMVD_ADD_NUM : MMVD_ADD_NUM >> 1;
+#else
+        const int tempNum = MMVD_ADD_NUM;
 #endif
-        bitsBaseIdx = baseIdx + 1;
-        if (baseIdx == MMVD_BASE_MV_NUM - 1)
+        for (uint32_t mergeCand = mergeCtx.numValidMergeCand; mergeCand < mergeCtx.numValidMergeCand + tempNum; mergeCand++)
         {
-          bitsBaseIdx--;
-        }
-
-        bitsRefineStep = refineStep + 1;
-        if (refineStep == MMVD_REFINE_STEP - 1)
-        {
-          bitsRefineStep--;
-        }
-
-        bitsCand = bitsBaseIdx + bitsRefineStep + bitsDirection;
-        bitsCand++; // for mmvd_flag
-
-        mergeCtx.setMmvdMergeCandiInfo(pu, mmvdMergeCand);
-
-        PU::spanMotionInfo(pu, mergeCtx);
-        pu.mvRefine = true;
-        distParam.cur = singleMergeTempBuffer->Y();
-        pu.mmvdEncOptMode = (refineStep > 2 ? 2 : 1);
-        CHECK(!pu.mmvdMergeFlag, "MMVD merge should be set");
-        // Don't do chroma MC here
-        m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer, REF_PIC_LIST_X, true, false);
-        pu.mmvdEncOptMode = 0;
-        pu.mvRefine = false;
-        Distortion uiSad = distParam.distFunc(distParam);
-
-
-        double cost = (double)uiSad + (double)bitsCand * sqrtLambdaForFirstPass;
-        insertPos = -1;
-        updateDoubleCandList(mergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
-        if (insertPos != -1)
-        {
-          for (int i = int(RdModeList.size()) - 1; i > insertPos; i--)
+          const int mmvdMergeCand = mergeCand - mergeCtx.numValidMergeCand;
+          int bitsBaseIdx = 0;
+          int bitsRefineStep = 0;
+          int bitsDirection = 2;
+          int bitsCand = 0;
+          int baseIdx;
+          int refineStep;
+          baseIdx = mmvdMergeCand / MMVD_MAX_REFINE_NUM;
+          refineStep = (mmvdMergeCand - (baseIdx * MMVD_MAX_REFINE_NUM)) / 4;
+#if JVET_N0449_MMVD_SIMP
+          if (refineStep >= m_pcEncCfg->getMmvdDisNum())
+            continue;
+#endif
+          bitsBaseIdx = baseIdx + 1;
+          if (baseIdx == MMVD_BASE_MV_NUM - 1)
           {
-            swap(acMergeTempBuffer[i - 1], acMergeTempBuffer[i]);
+            bitsBaseIdx--;
           }
-          swap(singleMergeTempBuffer, acMergeTempBuffer[insertPos]);
+
+          bitsRefineStep = refineStep + 1;
+          if (refineStep == MMVD_REFINE_STEP - 1)
+          {
+            bitsRefineStep--;
+          }
+
+          bitsCand = bitsBaseIdx + bitsRefineStep + bitsDirection;
+          bitsCand++; // for mmvd_flag
+
+          mergeCtx.setMmvdMergeCandiInfo(pu, mmvdMergeCand);
+
+          PU::spanMotionInfo(pu, mergeCtx);
+          pu.mvRefine = true;
+          distParam.cur = singleMergeTempBuffer->Y();
+          pu.mmvdEncOptMode = (refineStep > 2 ? 2 : 1);
+          CHECK(!pu.mmvdMergeFlag, "MMVD merge should be set");
+          // Don't do chroma MC here
+          m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer, REF_PIC_LIST_X, true, false);
+          pu.mmvdEncOptMode = 0;
+          pu.mvRefine = false;
+          Distortion uiSad = distParam.distFunc(distParam);
+
+
+          double cost = (double)uiSad + (double)bitsCand * sqrtLambdaForFirstPass;
+          insertPos = -1;
+          updateDoubleCandList(mergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
+          if (insertPos != -1)
+          {
+            for (int i = int(RdModeList.size()) - 1; i > insertPos; i--)
+            {
+              swap(acMergeTempBuffer[i - 1], acMergeTempBuffer[i]);
+            }
+            swap(singleMergeTempBuffer, acMergeTempBuffer[insertPos]);
+          }
         }
+#if JVET_N0127_MMVD_SPS_FLAG 
       }
+#endif
 #endif
       // Try to limit number of candidates using SATD-costs
       for( uint32_t i = 1; i < uiNumMrgSATDCand; i++ )

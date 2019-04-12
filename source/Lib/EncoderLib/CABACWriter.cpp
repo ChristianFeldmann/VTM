@@ -683,7 +683,11 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
       if (cu.cs->slice->getSPS()->getUseMMVD())
       {
 #endif
+#if JVET_N0266_SMALL_BLOCKS
+      bool isCUWithOnlyRegularAndMMVD=((cu.firstPU->lwidth() == 8 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 8));
+#else
       bool isCUWithOnlyRegularAndMMVD=((cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 8 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 8));
+#endif
       if (isCUWithOnlyRegularAndMMVD)
       {
         CHECK(cu.mmvdSkip==cu.firstPU->regularMergeFlag, "mmvdSkip_flag must be !regularMergeFlag");
@@ -720,7 +724,11 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
   if (cu.cs->slice->getSPS()->getUseMMVD())
     {
 #endif
+#if JVET_N0266_SMALL_BLOCKS
+    bool isCUWithOnlyRegularAndMMVD=((cu.firstPU->lwidth() == 8 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 8));
+#else
     bool isCUWithOnlyRegularAndMMVD=((cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 8 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 8));
+#endif
     if (isCUWithOnlyRegularAndMMVD)
     {
       CHECK(cu.mmvdSkip==cu.firstPU->regularMergeFlag, "mmvdSkip_flag must be !regularMergeFlag");
@@ -1582,7 +1590,11 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
   if (pu.cs->sps->getUseMMVD())
   {
 #endif
+#if JVET_N0266_SMALL_BLOCKS
+    bool isCUWithOnlyRegularAndMMVD=((pu.lwidth() == 8 && pu.lheight() == 4) || (pu.lwidth() == 4 && pu.lheight() == 8));
+#else
     bool isCUWithOnlyRegularAndMMVD=((pu.lwidth() == 4 && pu.lheight() == 4) || (pu.lwidth() == 8 && pu.lheight() == 4) || (pu.lwidth() == 4 && pu.lheight() == 8));
+#endif
     if (isCUWithOnlyRegularAndMMVD)
     {
       CHECK(pu.mmvdMergeFlag==pu.regularMergeFlag, "mmvdMergeFlag must be !regularMergeFlag");

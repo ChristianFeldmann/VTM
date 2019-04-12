@@ -263,8 +263,8 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
   m_filterShapes[CHANNEL_TYPE_LUMA].push_back( AlfFilterShape( 7 ) );
   m_filterShapes[CHANNEL_TYPE_CHROMA].push_back( AlfFilterShape( 5 ) );
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-  m_alfVBLumaPos = m_maxCUHeight - JVET_N0180_ALF_VB_POS_ABOVE_CTUROW_LUMA;
-  m_alfVBChmaPos = (m_maxCUHeight >> ((m_chromaFormat == CHROMA_420) ? 1 : 0)) - JVET_N0180_ALF_VB_POS_ABOVE_CTUROW_CHMA;
+  m_alfVBLumaPos = m_maxCUHeight - ALF_VB_POS_ABOVE_CTUROW_LUMA;
+  m_alfVBChmaPos = (m_maxCUHeight >> ((m_chromaFormat == CHROMA_420) ? 1 : 0)) - ALF_VB_POS_ABOVE_CTUROW_CHMA;
 
   m_alfVBLumaCTUHeight = m_maxCUHeight;
   m_alfVBChmaCTUHeight = (m_maxCUHeight >> ((m_chromaFormat == CHROMA_420) ? 1 : 0));

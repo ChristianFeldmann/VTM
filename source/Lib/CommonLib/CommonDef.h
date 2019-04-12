@@ -326,8 +326,8 @@ static const int MAX_NUM_HMVP_CANDS =                              (MRG_MAX_NUM_
 static const int MAX_NUM_HMVP_AVMPCANDS =                          4; ///< maximum number of HMVP candidates to be used in AMVP list
 
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-static const int JVET_N0180_ALF_VB_POS_ABOVE_CTUROW_LUMA = 4;
-static const int JVET_N0180_ALF_VB_POS_ABOVE_CTUROW_CHMA = 2;
+static const int ALF_VB_POS_ABOVE_CTUROW_LUMA = 4;
+static const int ALF_VB_POS_ABOVE_CTUROW_CHMA = 2;
 #endif
 
 #if W0038_DB_OPT

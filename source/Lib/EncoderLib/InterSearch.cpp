@@ -2788,6 +2788,9 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         // set hevc me result
         cu.affine = false;
         pu.mergeFlag = bMergeFlag;
+#if JVET_N0324_REGULAR_MRG_FLAG
+        pu.regularMergeFlag = false;
+#endif
         pu.mergeIdx = uiMRGIndex;
         pu.interDir = uiInterDir;
         cu.smvdMode = iSymMode;
@@ -4296,7 +4299,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 
   pu.cu->affine = true;
   pu.mergeFlag = false;
-
+#if JVET_N0324_REGULAR_MRG_FLAG
+  pu.regularMergeFlag = false;
+#endif
   if( gbiIdx != GBI_DEFAULT )
   {
     pu.cu->GBiIdx = gbiIdx;
@@ -7016,14 +7021,27 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     }
     else
     {
+#if JVET_N0324_REGULAR_MRG_FLAG
+      if (pu.regularMergeFlag)
+      {
+        m_CABACEstimator->merge_idx(pu);
+      }
+      else
+      {
+#endif
     m_CABACEstimator->subblock_merge_flag( cu );
+#if !JVET_N0324_REGULAR_MRG_FLAG
     m_CABACEstimator->triangle_mode ( cu );
+#endif
     if (cu.mmvdSkip)
     {
       m_CABACEstimator->mmvd_merge_idx(pu);
     }
     else
     m_CABACEstimator->merge_idx     ( pu );
+#if JVET_N0324_REGULAR_MRG_FLAG
+      }
+#endif
     }
 
     cs.dist     = distortion;
@@ -7227,14 +7245,27 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
     }
 
     m_CABACEstimator->cu_skip_flag  ( cu );
+#if JVET_N0324_REGULAR_MRG_FLAG
+    if (cu.firstPU->regularMergeFlag)
+    {
+      m_CABACEstimator->merge_idx(*cu.firstPU);
+    }
+    else
+    {
+#endif
     m_CABACEstimator->subblock_merge_flag( cu );
+#if !JVET_N0324_REGULAR_MRG_FLAG
     m_CABACEstimator->triangle_mode ( cu );
+#endif
     if (cu.mmvdSkip)
     {
       m_CABACEstimator->mmvd_merge_idx(*cu.firstPU);
     }
     else
     m_CABACEstimator->merge_idx     ( *cu.firstPU );
+#if JVET_N0324_REGULAR_MRG_FLAG
+    }
+#endif
     fracBits   += m_CABACEstimator->getEstFracBits();
   }
   else

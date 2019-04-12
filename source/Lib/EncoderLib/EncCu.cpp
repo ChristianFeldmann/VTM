@@ -1704,6 +1704,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       , 0
     );
     PU::getInterMMVDMergeCandidates(pu, mergeCtx);
+#if JVET_N0324_REGULAR_MRG_FLAG
+    pu.regularMergeFlag = true;
+#endif
   }
   bool candHasNoResidual[MRG_MAX_NUM_CANDS + MMVD_ADD_NUM];
   for (uint32_t ui = 0; ui < MRG_MAX_NUM_CANDS + MMVD_ADD_NUM; ui++)
@@ -1962,7 +1965,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             }
             m_CABACEstimator->getCtx() = SubCtx(Ctx::MHIntraPredMode, ctxStartIntraMode);
             uint64_t fracModeBits = m_pcIntraSearch->xFracModeBitsIntra(pu, pu.intraDir[0], CHANNEL_TYPE_LUMA);
+#if JVET_N0324_REGULAR_MRG_FLAG
+            double cost = (double)sadValue + (double)(bitsCand + 9) * sqrtLambdaForFirstPass + (double)fracModeBits * sqrtLambdaForFirstPassIntra;
+#else
             double cost = (double)sadValue + (double)(bitsCand + 1) * sqrtLambdaForFirstPass + (double)fracModeBits * sqrtLambdaForFirstPassIntra;
+#endif
             insertPos = -1;
             updateDoubleCandList(mergeCand + MRG_MAX_NUM_CANDS + MMVD_ADD_NUM, cost, RdModeList, candCostList, RdModeList2, pu.intraDir[0], uiNumMrgSATDCand, &insertPos);
             if (insertPos != -1)
@@ -2023,8 +2030,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           }
 
           bitsCand = bitsBaseIdx + bitsRefineStep + bitsDirection;
+#if JVET_N0324_REGULAR_MRG_FLAG
+          bitsCand += 7;
+#else
           bitsCand++; // for mmvd_flag
-
+#endif
           mergeCtx.setMmvdMergeCandiInfo(pu, mmvdMergeCand);
 
           PU::spanMotionInfo(pu, mergeCtx);
@@ -2165,6 +2175,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         cu.mmvdSkip = false;
         mergeCtx.setMergeInfo(pu, uiMergeCand);
         pu.mhIntraFlag = true;
+#if JVET_N0324_REGULAR_MRG_FLAG
+        pu.regularMergeFlag = false;
+#endif
         pu.intraDir[0] = RdModeList2[uiMrgHADIdx];
         CHECK(pu.intraDir[0]<0 || pu.intraDir[0]>(NUM_LUMA_MODE - 1), "out of intra mode");
         pu.intraDir[1] = DM_CHROMA_IDX;
@@ -2361,7 +2374,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     PredictionUnit pu( tempCS->area );
     pu.cu = &cu;
     pu.cs = tempCS;
-
+#if JVET_N0324_REGULAR_MRG_FLAG
+    pu.regularMergeFlag = false;
+#endif
 
     PU::getTriangleMergeCandidates( pu, triangleMrgCtx );
     for( uint8_t mergeCand = 0; mergeCand < TRIANGLE_MAX_NUM_UNI_CANDS; mergeCand++ )
@@ -2426,6 +2441,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
       pu.triangleMergeIdx0 = candIdx0;
       pu.triangleMergeIdx1 = candIdx1;
       pu.mergeFlag = true;
+#if JVET_N0324_REGULAR_MRG_FLAG
+      pu.regularMergeFlag = false;
+#endif
       triangleWeightedBuffer[mergeCand] = m_acTriangleWeightedBuffer[mergeCand].getBuf( localUnitArea );
       triangleBuffer[candIdx0] = m_acMergeBuffer[candIdx0].getBuf( localUnitArea );
       triangleBuffer[candIdx1] = m_acMergeBuffer[candIdx1].getBuf( localUnitArea );
@@ -2467,7 +2485,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
       pu.triangleMergeIdx0 = candIdx0;
       pu.triangleMergeIdx1 = candIdx1;
       pu.mergeFlag = true;
-
+#if JVET_N0324_REGULAR_MRG_FLAG
+      pu.regularMergeFlag = false;
+#endif
       m_pcInterSearch->weightedTriangleBlk( pu, splitDir, CHANNEL_TYPE_CHROMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
     }
 
@@ -2521,7 +2541,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
         pu.triangleMergeIdx0 = candIdx0;
         pu.triangleMergeIdx1 = candIdx1;
         pu.mergeFlag = true;
-
+#if JVET_N0324_REGULAR_MRG_FLAG
+        pu.regularMergeFlag = false;
+#endif
         PU::spanTriangleMotionInfo(pu, triangleMrgCtx, splitDir, candIdx0, candIdx1 );
 
         if( m_pcEncCfg->getMCTSEncConstraint() && ( !( MCTSHelper::checkMvBufferForMCTSConstraint( *cu.firstPU ) ) ) )
@@ -2599,7 +2621,9 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     PredictionUnit pu( tempCS->area );
     pu.cu = &cu;
     pu.cs = tempCS;
-
+#if JVET_N0324_REGULAR_MRG_FLAG
+    pu.regularMergeFlag = false;
+#endif
     PU::getAffineMergeCand( pu, affineMergeCtx );
 
     if ( affineMergeCtx.numValidMergeCand <= 0 )
@@ -2675,6 +2699,9 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
         // set merge information
         pu.interDir = affineMergeCtx.interDirNeighbours[uiMergeCand];
         pu.mergeFlag = true;
+#if JVET_N0324_REGULAR_MRG_FLAG
+        pu.regularMergeFlag = false;
+#endif
         pu.mergeIdx = uiMergeCand;
         cu.affineType = affineMergeCtx.affineType[uiMergeCand];
         cu.GBiIdx = affineMergeCtx.GBiIdx[uiMergeCand];
@@ -2891,6 +2918,9 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
     pu.cs = tempCS;
     cu.mmvdSkip = false;
     pu.mmvdMergeFlag = false;
+#if JVET_N0324_REGULAR_MRG_FLAG
+    pu.regularMergeFlag = false;
+#endif
     cu.triangle = false;
     pu.shareParentPos = tempCS->sharedBndPos;
     pu.shareParentSize = tempCS->sharedBndSize;
@@ -2937,6 +2967,9 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 #endif
       PredictionUnit &pu = tempCS->addPU(cu, partitioner.chType); //tempCS->addPU(cu);
       pu.mmvdMergeFlag = false;
+#if JVET_N0324_REGULAR_MRG_FLAG
+      pu.regularMergeFlag = false;
+#endif
       Picture* refPic = pu.cu->slice->getPic();
       const CPelBuf refBuf = refPic->getRecoBuf(pu.blocks[COMPONENT_Y]);
       const Pel*        piRefSrch = refBuf.buf;
@@ -3050,6 +3083,9 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
             pu.intraDir[1] = PLANAR_IDX; // set intra pred for ibc block
             cu.mmvdSkip = false;
             pu.mmvdMergeFlag = false;
+#if JVET_N0324_REGULAR_MRG_FLAG
+            pu.regularMergeFlag = false;
+#endif
             cu.triangle = false;
             mergeCtx.setMergeInfo(pu, mergeCand);
             PU::spanMotionInfo(pu, mergeCtx);
@@ -3136,7 +3172,9 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
     PredictionUnit& pu = *cu.firstPU;
     cu.mmvdSkip = false;
     pu.mmvdMergeFlag = false;
-
+#if JVET_N0324_REGULAR_MRG_FLAG
+    pu.regularMergeFlag = false;
+#endif
 #if JVET_N0843_BVP_SIMPLIFICATION
     pu.shareParentPos  = tempCS->sharedBndPos;
     pu.shareParentSize = tempCS->sharedBndSize;

@@ -201,6 +201,9 @@ public:
   static const CtxSet   Split12Flag;
   static const CtxSet   SkipFlag;
   static const CtxSet   MergeFlag;
+#if JVET_N0324_REGULAR_MRG_FLAG
+  static const CtxSet   RegularMergeFlag;
+#endif
   static const CtxSet   MergeIdx;
   static const CtxSet   PartSize;
   static const CtxSet   PredMode;

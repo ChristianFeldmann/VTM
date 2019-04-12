@@ -657,7 +657,9 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   {
     cu_transquant_bypass_flag( cu );
   }
-
+#if JVET_N0324_REGULAR_MRG_FLAG
+  PredictionUnit&    pu = cs.addPU(cu, partitioner.chType);
+#endif
   // skip flag
   if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag()) && cu.Y().valid())
   {
@@ -668,7 +670,9 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   if( cu.skip )
   {
     cs.addTU         ( cu, partitioner.chType );
+#if !JVET_N0324_REGULAR_MRG_FLAG
     PredictionUnit&    pu = cs.addPU( cu, partitioner.chType );
+#endif
     pu.shareParentPos = cu.shareParentPos;
     pu.shareParentSize = cu.shareParentSize;
     MergeCtx           mrgCtx;
@@ -680,8 +684,9 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   pred_mode ( cu );
 
   // --> create PUs
+#if !JVET_N0324_REGULAR_MRG_FLAG
   CU::addPUs( cu );
-
+#endif
   // pcm samples
   if( CU::isIntra(cu) )
   {
@@ -780,6 +785,9 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
       cu.rootCbf = false;
       cu.predMode = MODE_IBC;
       cu.mmvdSkip = false;
+#if JVET_N0324_REGULAR_MRG_FLAG
+      cu.firstPU->regularMergeFlag = false;
+#endif
     }
     else
     {
@@ -797,6 +805,44 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
   if ((skip && CU::isInter(cu) && cu.cs->slice->getSPS()->getIBCFlag()) ||
     (skip && !cu.cs->slice->getSPS()->getIBCFlag()))
   {
+#if JVET_N0324_REGULAR_MRG_FLAG
+    unsigned regularMergeFlag = (m_BinDecoder.decodeBin(Ctx::RegularMergeFlag(0)));
+    DTRACE(g_trace_ctx, D_SYNTAX, "regular_merge_flag() ctx=%d regularMergeFlag=%d\n", 0, regularMergeFlag?1:0);
+    cu.firstPU->regularMergeFlag = regularMergeFlag;
+    if (cu.firstPU->regularMergeFlag)
+    {
+      cu.mmvdSkip = false;
+      cu.firstPU->mmvdMergeFlag = false;
+      cu.firstPU->mhIntraFlag = false;
+      cu.affine = false;
+      cu.triangle = false;
+    }
+    else 
+    {
+#if JVET_N0127_MMVD_SPS_FLAG 
+    if (cu.cs->slice->getSPS()->getUseMMVD())
+    {
+#endif
+      bool isCUWithOnlyRegularAndMMVD=((cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 8 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 8));
+      if (isCUWithOnlyRegularAndMMVD)
+      {
+        cu.mmvdSkip = !(cu.firstPU->regularMergeFlag);
+      }
+      else
+      {
+        unsigned mmvdSkip = m_BinDecoder.decodeBin(Ctx::MmvdFlag(0));
+        cu.mmvdSkip = mmvdSkip;
+        DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, mmvdSkip ? 1 : 0);
+      }
+#if JVET_N0127_MMVD_SPS_FLAG 
+    }
+    else
+    {
+      cu.mmvdSkip = false;
+    }
+#endif  
+    }
+#else
 #if JVET_MMVD_OFF_MACRO
     cu.mmvdSkip = false;
 #else
@@ -814,6 +860,7 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
       cu.mmvdSkip = false;
     }
 #endif  
+#endif
 #endif
     cu.skip     = true;
     cu.rootCbf  = false;
@@ -1454,6 +1501,14 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     }
     else
     {
+#if JVET_N0324_REGULAR_MRG_FLAG
+      if (pu.regularMergeFlag)
+      {
+        merge_idx(pu);
+      }
+      else
+      {
+#endif
     subblock_merge_flag( *pu.cu );
     MHIntra_flag(pu);
     if (pu.mhIntraFlag)
@@ -1461,13 +1516,23 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
       MHIntra_luma_pred_modes(*pu.cu);
       pu.intraDir[1] = DM_CHROMA_IDX;
     }
+#if JVET_N0324_REGULAR_MRG_FLAG
+    else
+    {      
+      pu.cu->triangle = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && !pu.cu->affine && !pu.mmvdMergeFlag && !pu.cu->mmvdSkip;
+    }
+#else
     triangle_mode( *pu.cu );
+#endif
     if (pu.mmvdMergeFlag)
     {
       mmvd_merge_idx(pu);
     }
     else
       merge_data   ( pu );
+#if JVET_N0324_REGULAR_MRG_FLAG
+      }
+#endif
     }
   }
   else if (CU::isIBC(*pu.cu))
@@ -1621,8 +1686,49 @@ void CABACReader::merge_flag( PredictionUnit& pu )
   if (pu.mergeFlag && CU::isIBC(*pu.cu))
   {
     pu.mmvdMergeFlag = false;
+#if JVET_N0324_REGULAR_MRG_FLAG
+    pu.regularMergeFlag = false;
+#endif
     return;
   }
+#if JVET_N0324_REGULAR_MRG_FLAG
+  if (pu.mergeFlag)
+  {
+    pu.regularMergeFlag = (m_BinDecoder.decodeBin(Ctx::RegularMergeFlag(1)));
+    DTRACE(g_trace_ctx, D_SYNTAX, "regular_merge_flag() ctx=%d pu.regularMergeFlag=%d\n", 1, pu.regularMergeFlag?1:0);
+    if (pu.regularMergeFlag)
+    {
+      pu.mmvdMergeFlag = false;
+      pu.mhIntraFlag = false;
+      pu.cu->affine = false;
+      pu.cu->triangle = false;
+    }
+    else 
+    {
+#if JVET_N0127_MMVD_SPS_FLAG 
+      if (pu.cs->sps->getUseMMVD())
+      {
+#endif
+      bool isCUWithOnlyRegularAndMMVD=((pu.lwidth() == 4 && pu.lheight() == 4) || (pu.lwidth() == 8 && pu.lheight() == 4) || (pu.lwidth() == 4 && pu.lheight() == 8));
+      if (isCUWithOnlyRegularAndMMVD)
+      {
+      pu.mmvdMergeFlag = !(pu.regularMergeFlag);
+      }
+      else
+      {
+      pu.mmvdMergeFlag = (m_BinDecoder.decodeBin(Ctx::MmvdFlag(0)));
+      DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+      }
+#if JVET_N0127_MMVD_SPS_FLAG 
+      }
+      else
+      {
+        pu.mmvdMergeFlag = false;
+      }
+#endif 
+    }
+  }
+#else
 #if JVET_MMVD_OFF_MACRO
   pu.mmvdMergeFlag = false;
 #else
@@ -1641,6 +1747,7 @@ void CABACReader::merge_flag( PredictionUnit& pu )
     pu.mmvdMergeFlag = false;
   }
 #endif 
+#endif
 #endif
 }
 

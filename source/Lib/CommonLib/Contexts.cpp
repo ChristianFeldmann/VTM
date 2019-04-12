@@ -245,7 +245,15 @@ const CtxSet ContextSetCfg::MergeFlag = ContextSetCfg::addCtxSet
   { 153, },
   { 5, },
 });
-
+#if JVET_N0324_REGULAR_MRG_FLAG
+const CtxSet ContextSetCfg::RegularMergeFlag = ContextSetCfg::addCtxSet
+({
+  { 111, 111, },
+  { 111, 111, },
+  { 153, 153, },
+  { 5, 5, },
+  });
+#endif
 const CtxSet ContextSetCfg::MergeIdx = ContextSetCfg::addCtxSet
 ({
   { 138, },

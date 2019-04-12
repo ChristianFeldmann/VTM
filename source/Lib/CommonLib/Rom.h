@@ -105,7 +105,6 @@ extern const uint32_t   g_uiGroupIdx[ MAX_TB_SIZEY ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
 extern const uint32_t   g_auiGoRiceParsCoeff     [ 32 ];
 extern const uint32_t   g_auiGoRicePosCoeff0[ 3 ][ 32 ];
-extern const uint32_t   g_auiGoRiceRange[ MAX_GR_ORDER_RESIDUAL ];                  //!< maximum value coded with Rice codes
 
 // ====================================================================================================================
 // Intra prediction table

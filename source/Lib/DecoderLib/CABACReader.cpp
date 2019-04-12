@@ -820,30 +820,30 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
     else 
     {
 #if JVET_N0127_MMVD_SPS_FLAG 
-    if (cu.cs->slice->getSPS()->getUseMMVD())
-    {
+      if (cu.cs->slice->getSPS()->getUseMMVD())
+      {
 #endif
 #if JVET_N0266_SMALL_BLOCKS
-      bool isCUWithOnlyRegularAndMMVD=((cu.firstPU->lwidth() == 8 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 8));
+        bool isCUWithOnlyRegularAndMMVD=((cu.firstPU->lwidth() == 8 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 8));
 #else
-      bool isCUWithOnlyRegularAndMMVD=((cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 8 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 8));
+        bool isCUWithOnlyRegularAndMMVD=((cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 8 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 8));
 #endif
-      if (isCUWithOnlyRegularAndMMVD)
-      {
-        cu.mmvdSkip = !(cu.firstPU->regularMergeFlag);
+        if (isCUWithOnlyRegularAndMMVD)
+        {
+          cu.mmvdSkip = !(cu.firstPU->regularMergeFlag);
+        }
+        else
+        {
+          unsigned mmvdSkip = m_BinDecoder.decodeBin(Ctx::MmvdFlag(0));
+          cu.mmvdSkip = mmvdSkip;
+          DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, mmvdSkip ? 1 : 0);
+        }
+#if JVET_N0127_MMVD_SPS_FLAG 
       }
       else
       {
-        unsigned mmvdSkip = m_BinDecoder.decodeBin(Ctx::MmvdFlag(0));
-        cu.mmvdSkip = mmvdSkip;
-        DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, mmvdSkip ? 1 : 0);
+        cu.mmvdSkip = false;
       }
-#if JVET_N0127_MMVD_SPS_FLAG 
-    }
-    else
-    {
-      cu.mmvdSkip = false;
-    }
 #endif  
     }
 #else
@@ -1513,27 +1513,27 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
       else
       {
 #endif
-    subblock_merge_flag( *pu.cu );
-    MHIntra_flag(pu);
-    if (pu.mhIntraFlag)
-    {
-      MHIntra_luma_pred_modes(*pu.cu);
-      pu.intraDir[1] = DM_CHROMA_IDX;
-    }
+        subblock_merge_flag( *pu.cu );
+        MHIntra_flag(pu);
+        if (pu.mhIntraFlag)
+        {
+          MHIntra_luma_pred_modes(*pu.cu);
+          pu.intraDir[1] = DM_CHROMA_IDX;
+        }
 #if JVET_N0324_REGULAR_MRG_FLAG
-    else
-    {      
-      pu.cu->triangle = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && !pu.cu->affine && !pu.mmvdMergeFlag && !pu.cu->mmvdSkip;
-    }
+        else
+        {      
+          pu.cu->triangle = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && !pu.cu->affine && !pu.mmvdMergeFlag && !pu.cu->mmvdSkip;
+        }
 #else
-    triangle_mode( *pu.cu );
+        triangle_mode( *pu.cu );
 #endif
-    if (pu.mmvdMergeFlag)
-    {
-      mmvd_merge_idx(pu);
-    }
-    else
-      merge_data   ( pu );
+        if (pu.mmvdMergeFlag)
+        {
+          mmvd_merge_idx(pu);
+        }
+        else
+          merge_data   ( pu );
 #if JVET_N0324_REGULAR_MRG_FLAG
       }
 #endif
@@ -1714,19 +1714,19 @@ void CABACReader::merge_flag( PredictionUnit& pu )
       {
 #endif
 #if JVET_N0266_SMALL_BLOCKS
-      bool isCUWithOnlyRegularAndMMVD=((pu.lwidth() == 8 && pu.lheight() == 4) || (pu.lwidth() == 4 && pu.lheight() == 8));
+        bool isCUWithOnlyRegularAndMMVD=((pu.lwidth() == 8 && pu.lheight() == 4) || (pu.lwidth() == 4 && pu.lheight() == 8));
 #else
-      bool isCUWithOnlyRegularAndMMVD=((pu.lwidth() == 4 && pu.lheight() == 4) || (pu.lwidth() == 8 && pu.lheight() == 4) || (pu.lwidth() == 4 && pu.lheight() == 8));
+        bool isCUWithOnlyRegularAndMMVD=((pu.lwidth() == 4 && pu.lheight() == 4) || (pu.lwidth() == 8 && pu.lheight() == 4) || (pu.lwidth() == 4 && pu.lheight() == 8));
 #endif
-      if (isCUWithOnlyRegularAndMMVD)
-      {
-      pu.mmvdMergeFlag = !(pu.regularMergeFlag);
-      }
-      else
-      {
-      pu.mmvdMergeFlag = (m_BinDecoder.decodeBin(Ctx::MmvdFlag(0)));
-      DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
-      }
+        if (isCUWithOnlyRegularAndMMVD)
+        {
+          pu.mmvdMergeFlag = !(pu.regularMergeFlag);
+        }
+        else
+        {
+          pu.mmvdMergeFlag = (m_BinDecoder.decodeBin(Ctx::MmvdFlag(0)));
+          DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+        }
 #if JVET_N0127_MMVD_SPS_FLAG 
       }
       else

@@ -7029,16 +7029,16 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
       else
       {
 #endif
-    m_CABACEstimator->subblock_merge_flag( cu );
+        m_CABACEstimator->subblock_merge_flag( cu );
 #if !JVET_N0324_REGULAR_MRG_FLAG
-    m_CABACEstimator->triangle_mode ( cu );
+        m_CABACEstimator->triangle_mode ( cu );
 #endif
-    if (cu.mmvdSkip)
-    {
-      m_CABACEstimator->mmvd_merge_idx(pu);
-    }
-    else
-    m_CABACEstimator->merge_idx     ( pu );
+        if (cu.mmvdSkip)
+        {
+          m_CABACEstimator->mmvd_merge_idx(pu);
+        }
+        else
+          m_CABACEstimator->merge_idx     ( pu );
 #if JVET_N0324_REGULAR_MRG_FLAG
       }
 #endif
@@ -7253,16 +7253,16 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
     else
     {
 #endif
-    m_CABACEstimator->subblock_merge_flag( cu );
+      m_CABACEstimator->subblock_merge_flag( cu );
 #if !JVET_N0324_REGULAR_MRG_FLAG
-    m_CABACEstimator->triangle_mode ( cu );
+      m_CABACEstimator->triangle_mode ( cu );
 #endif
-    if (cu.mmvdSkip)
-    {
-      m_CABACEstimator->mmvd_merge_idx(*cu.firstPU);
-    }
-    else
-    m_CABACEstimator->merge_idx     ( *cu.firstPU );
+      if (cu.mmvdSkip)
+      {
+        m_CABACEstimator->mmvd_merge_idx(*cu.firstPU);
+      }
+      else
+        m_CABACEstimator->merge_idx     ( *cu.firstPU );
 #if JVET_N0324_REGULAR_MRG_FLAG
     }
 #endif

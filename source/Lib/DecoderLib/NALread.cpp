@@ -111,13 +111,13 @@ static void xTraceNalUnitHeader(InputNALUnit& nalu)
 {
   DTRACE( g_trace_ctx, D_NALUNITHEADER, "*********** NAL UNIT (%s) ***********\n", nalUnitTypeToString(nalu.m_nalUnitType) );
   #if JVET_N0067_NAL_Unit_Header
-  bool m_zeroTidRequiredFlag = 0;
+  bool zeroTidRequiredFlag = 0;
   if((nalu.m_nalUnitType >= 16) && (nalu.m_nalUnitType <= 31)) {
-    m_zeroTidRequiredFlag = 1;
+    zeroTidRequiredFlag = 1;
   }
-  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "zero_tid_required_flag", 1, m_zeroTidRequiredFlag );
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "zero_tid_required_flag", 1, zeroTidRequiredFlag );
   DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_temporal_id_plus1", 3, nalu.m_temporalId + 1 );
-  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nal_unit_type_lsb", 4, (nalu.m_nalUnitType) - (m_zeroTidRequiredFlag << 4));
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nal_unit_type_lsb", 4, (nalu.m_nalUnitType) - (zeroTidRequiredFlag << 4));
   DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_layer_id", 7, nalu.m_nuhLayerId );
   DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_reserved_zero_bit", 1, 0 );
   #else
@@ -134,25 +134,17 @@ void readNalUnitHeader(InputNALUnit& nalu)
   InputBitstream& bs = nalu.getBitstream();
 
 #if JVET_N0067_NAL_Unit_Header
-  bool m_zeroTidRequiredFlag = bs.read(1);            // zero_tid_required_flag
+  bool zeroTidRequiredFlag = bs.read(1);              // zero_tid_required_flag
   nalu.m_temporalId = bs.read(3) - 1;                 // nuh_temporal_id_plus1
-  if(nalu.m_temporalId < 0) { 
-    THROW( "Temporal ID is negative." );
-  }
+  CHECK(nalu.m_temporalId < 0, "Temporal ID is negative.");
   //When zero_tid_required_flag is equal to 1, the value of nuh_temporal_id_plus1 shall be equal to 1.
-  if((m_zeroTidRequiredFlag == 1) && (nalu.m_temporalId != 0)) { 
-    THROW( "Temporal ID is not '0' when zero tid is required." );
-  }
+  CHECK((zeroTidRequiredFlag == 1) && (nalu.m_temporalId != 0), "Temporal ID is not '0' when zero tid is required.");
   uint32_t m_nalUnitTypeLsb = bs.read(4);             // nal_unit_type_lsb
-  nalu.m_nalUnitType = (NalUnitType) ((m_zeroTidRequiredFlag << 4) + m_nalUnitTypeLsb);
+  nalu.m_nalUnitType = (NalUnitType) ((zeroTidRequiredFlag << 4) + m_nalUnitTypeLsb);
   nalu.m_nuhLayerId = bs.read(7);                     // nuh_layer_id 
-  if((nalu.m_nuhLayerId < 0) || (nalu.m_nuhLayerId > 126)) { 
-    THROW( "Layer ID out of range" );
-  }
+  CHECK((nalu.m_nuhLayerId < 0) || (nalu.m_nuhLayerId > 126), "Layer ID out of range");
   uint32_t nuh_reserved_zero_bit = bs.read(1);        // nuh_reserved_zero_bit
-  if(nuh_reserved_zero_bit != 0) { 
-    THROW( "Reserved zero bit is not '0'" );
-  }
+  CHECK(nuh_reserved_zero_bit != 0, "Reserved zero bit is not '0'");
 #else
   bool forbidden_zero_bit = bs.read(1);           // forbidden_zero_bit
   if(forbidden_zero_bit != 0) { THROW( "Forbidden zero-bit not '0'" );}

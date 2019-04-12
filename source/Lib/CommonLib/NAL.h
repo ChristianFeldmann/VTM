@@ -48,32 +48,20 @@ class OutputBitstream;
 struct NALUnit
 {
   NalUnitType m_nalUnitType; ///< nal_unit_type
-#if JVET_N0067_NAL_Unit_Header
-  uint32_t        m_zeroTidRequiredFlag;  ///< zero_tid_required_flag
-#endif
   uint32_t        m_temporalId;  ///< temporal_id
   uint32_t        m_nuhLayerId;  ///< nuh_layer_id
 
   NALUnit(const NALUnit &src)
   :m_nalUnitType (src.m_nalUnitType)
-#if JVET_N0067_NAL_Unit_Header
-  ,m_zeroTidRequiredFlag (src.m_zeroTidRequiredFlag)
-#endif
   ,m_temporalId  (src.m_temporalId)
   ,m_nuhLayerId  (src.m_nuhLayerId)
   { }
   /** construct an NALunit structure with given header values. */
   NALUnit(
     NalUnitType nalUnitType,
-#if JVET_N0067_NAL_Unit_Header
-    int         zeroTidRequiredFlag = 0,
-#endif
     int         temporalId = 0,
     int         nuhLayerId = 0)
     :m_nalUnitType (nalUnitType)
-#if JVET_N0067_NAL_Unit_Header
-    ,m_zeroTidRequiredFlag (zeroTidRequiredFlag)
-#endif
     ,m_temporalId  (temporalId)
     ,m_nuhLayerId  (nuhLayerId)
   {}

@@ -2040,8 +2040,8 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   startPos[1] = actualLeftTemplateSampNum >> (2 + leftIs4);
   pickStep[1] = std::max(1, actualLeftTemplateSampNum >> (1 + leftIs4));
 
-  Pel selectLumaPix[4];
-  Pel selectChromaPix[4];
+  Pel selectLumaPix[4] = { 0, 0, 0, 0 };
+  Pel selectChromaPix[4] = { 0, 0, 0, 0 };
 
   int cntT, cntL;
   cntT = cntL = 0;

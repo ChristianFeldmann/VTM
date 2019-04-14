@@ -138,6 +138,7 @@
 
 #define JVET_N0196_SIX_TAP_FILTERS                        1 // 6-tap filters for affine motion compensation
 
+#define JVET_N0213_TMVP_REMOVAL                           1 // Remove TMVP candidates from merge and amvp mode with samples <= 32
 
 #define JCTVC_Y0038_PARAMS                                1
 

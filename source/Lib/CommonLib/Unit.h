@@ -315,6 +315,10 @@ struct CodingUnit : public UnitArea
   uint32_t           tileIdx;
   uint8_t         GBiIdx;
   int             refIdxBi[2];
+#if JVET_N0217_MATRIX_INTRAPRED
+  bool           mipFlag;
+#endif
+
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
   Position       shareParentPos;

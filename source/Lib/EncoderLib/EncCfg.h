@@ -279,6 +279,9 @@ protected:
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
 #endif
+#if JVET_N0217_MATRIX_INTRAPRED
+  bool      m_MIP;
+#endif
 
 #if MAX_TB_SIZE_SIGNALLING
   uint32_t  m_log2MaxTbSize;
@@ -859,6 +862,10 @@ public:
   bool      getUseNonLinearAlfLuma          () const         { return m_useNonLinearAlfLuma; }
   void      setUseNonLinearAlfChroma        ( bool b )       { m_useNonLinearAlfChroma = b; }
   bool      getUseNonLinearAlfChroma        () const         { return m_useNonLinearAlfChroma; }
+#endif
+#if JVET_N0217_MATRIX_INTRAPRED
+  void      setUseMIP                       ( bool b )       { m_MIP = b; }
+  bool      getUseMIP                       () const         { return m_MIP; }
 #endif
 
 #if MAX_TB_SIZE_SIGNALLING

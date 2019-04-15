@@ -1441,6 +1441,10 @@ bool IntraPrediction::useFilteredIntraRefSamples( const ComponentID &compID, con
 
   if( pu.cu->ispMode && isLuma(compID) )                                                                 { return false; }
 
+#if JVET_N0217_MATRIX_INTRAPRED
+  if( PU::isMIP( pu, chType ) )                                                                          { return false; }
+#endif
+
   if( !modeSpecific )                                                                                    { return true; }
 
   if (pu.multiRefIdx)                                                                                    { return false; }
@@ -2271,5 +2275,29 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
     iShift = 0;
   }
 }
+
+#if JVET_N0217_MATRIX_INTRAPRED
+void IntraPrediction::initIntraMip( const PredictionUnit &pu )
+{
+  CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+
+  // derive above and left availability
+  AvailableInfo availInfo = PU::getAvailableInfoLuma(pu);
+
+  // prepare input (boundary) data for prediction
+  m_matrixIntraPred.prepareInputForPred(pu.cs->picture->getRecoBuf(COMPONENT_Y), pu.Y(), pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA), availInfo);
+}
+
+void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu )
+{
+  CHECK( compId != COMPONENT_Y, "Error: chroma not supported" );
+  CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+  CHECK( pu.lwidth() != (1 << g_aucLog2[pu.lwidth()]) || pu.lheight() != (1 << g_aucLog2[pu.lheight()]), "Error: expecting blocks of size 2^M x 2^N" );
+
+  // generate mode-specific prediction
+  const int bitDepth = pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA);
+  m_matrixIntraPred.predBlock( pu.Y(), pu.intraDir[CHANNEL_TYPE_LUMA], piPred, bitDepth );
+}
+#endif
 
 //! \}

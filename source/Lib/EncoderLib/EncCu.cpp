@@ -1467,8 +1467,10 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     }
     m_CABACEstimator->pred_mode      ( cu );
     m_CABACEstimator->pcm_data       ( cu, partitioner );
+#if !JVET_N0217_MATRIX_INTRAPRED
     m_CABACEstimator->extend_ref_line( cu );
     m_CABACEstimator->isp_mode       ( cu );
+#endif
     m_CABACEstimator->cu_pred_data   ( cu );
 #if JVET_N0413_RDPCM
     m_CABACEstimator->bdpcm_mode     ( cu, ComponentID(partitioner.chType) );
@@ -2592,9 +2594,13 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
       double cost = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
 
+#if !JVET_N0217_MATRIX_INTRAPRED
       static_vector<int, TRIANGLE_MAX_NUM_CANDS> * nullList = nullptr;
+#endif
       updateCandList( mergeCand, cost, triangleRdModeList, tianglecandCostList
+#if !JVET_N0217_MATRIX_INTRAPRED
         , *nullList, -1
+#endif
         , triangleNumMrgSATDCand );
     }
 
@@ -2872,9 +2878,13 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
           uiBitsCand--;
         }
         double cost = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
+#if !JVET_N0217_MATRIX_INTRAPRED
         static_vector<int, AFFINE_MRG_MAX_NUM_CANDS> emptyList;
+#endif
         updateCandList( uiMergeCand, cost, RdModeList, candCostList
+#if !JVET_N0217_MATRIX_INTRAPRED
           , emptyList, -1
+#endif
           , uiNumMrgSATDCand );
 
         CHECK( std::min( uiMergeCand + 1, uiNumMrgSATDCand ) != RdModeList.size(), "" );
@@ -3156,10 +3166,14 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
           bitsCand--;
         }
         double cost = (double)sad + (double)bitsCand * sqrtLambdaForFirstPass;
+#if !JVET_N0217_MATRIX_INTRAPRED
         static_vector<int, MRG_MAX_NUM_CANDS> * nullList = nullptr;
+#endif
 
         updateCandList(mergeCand, cost, RdModeList, candCostList
+#if !JVET_N0217_MATRIX_INTRAPRED
           , *nullList, -1
+#endif 
          , numMrgSATDCand);
       }
 

@@ -915,6 +915,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("UseNonLinearAlfLuma",                             m_useNonLinearAlfLuma,                             true, "Non-linear adaptive loop filters for Luma Channel")
   ("UseNonLinearAlfChroma",                           m_useNonLinearAlfChroma,                           true, "Non-linear adaptive loop filters for Chroma Channels")
 #endif
+#if JVET_N0217_MATRIX_INTRAPRED
+  ("MIP",                                             m_MIP,                                             true,  "Enable MIP (matrix-based intra prediction)")
+#endif
   // Unit definition parameters
   ("MaxCUWidth",                                      m_uiMaxCUWidth,                                     64u)
   ("MaxCUHeight",                                     m_uiMaxCUHeight,                                    64u)
@@ -3219,6 +3222,9 @@ void EncAppCfg::xPrintParameter()
       msg(VERBOSE, "(Sigal:%s ", m_reshapeSignalType==0? "SDR" : "HDR-PQ");
       msg(VERBOSE, ") ");
     }
+#if JVET_N0217_MATRIX_INTRAPRED
+    msg(VERBOSE, "MIP:%d ", m_MIP);
+#endif
     msg(VERBOSE, "EncDbOpt:%d ", m_encDbOpt);
   msg( VERBOSE, "\nFAST TOOL CFG: " );
   msg( VERBOSE, "LCTUFast:%d ", m_useFastLCTU );

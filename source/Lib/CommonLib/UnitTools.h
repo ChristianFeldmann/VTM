@@ -125,6 +125,13 @@ namespace PU
 {
   int  getLMSymbolList(const PredictionUnit &pu, int *pModeList);
   int  getIntraMPMs(const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA);
+#if JVET_N0217_MATRIX_INTRAPRED  
+  bool          isMIP                 (const PredictionUnit &pu, const ChannelType &chType = CHANNEL_TYPE_LUMA);
+  int           getMipMPMs            (const PredictionUnit &pu, unsigned *mpm);
+  int           getMipSizeId          (const PredictionUnit &pu);
+  uint32_t      getIntraDirLuma       (const PredictionUnit &pu);
+  AvailableInfo getAvailableInfoLuma  (const PredictionUnit &pu);
+#endif
   void getIntraChromaCandModes        (const PredictionUnit &pu, unsigned modeList[NUM_CHROMA_MODE]);
   uint32_t getFinalIntraMode              (const PredictionUnit &pu, const ChannelType &chType);
   void getInterMergeCandidates        (const PredictionUnit &pu, MergeCtx& mrgCtx,
@@ -233,10 +240,17 @@ namespace TU
 }
 
 uint32_t getCtuAddr        (const Position& pos, const PreCalcValues &pcv);
+#if JVET_N0217_MATRIX_INTRAPRED
+int  getNumModesMip   (const Size& block);
+int  getNumEpBinsMip  (const Size& block);
+bool mipModesAvailable(const Size& block);
+#endif
 
 template<typename T, size_t N>
 uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList
+#if !JVET_N0217_MATRIX_INTRAPRED
   , static_vector<int, N>& extendRefList, int extendRef
+#endif  
   , size_t uiFastCandNum = N, int* iserttPos = nullptr)
 {
   CHECK( std::min( uiFastCandNum, candModeList.size() ) != std::min( uiFastCandNum, candCostList.size() ), "Sizes do not match!" );
@@ -257,17 +271,21 @@ uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeLi
     {
       candModeList[currSize - i] = candModeList[currSize - 1 - i];
       candCostList[currSize - i] = candCostList[currSize - 1 - i];
+#if !JVET_N0217_MATRIX_INTRAPRED
       if (extendRef != -1)
       {
         extendRefList[currSize - i] = extendRefList[currSize - 1 - i];
       }
+#endif
     }
     candModeList[currSize - shift] = uiMode;
     candCostList[currSize - shift] = uiCost;
+#if !JVET_N0217_MATRIX_INTRAPRED
     if (extendRef != -1)
     {
       extendRefList[currSize - shift] = extendRef;
     }
+#endif
     if (iserttPos != nullptr)
     {
       *iserttPos = int(currSize - shift);
@@ -278,10 +296,12 @@ uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeLi
   {
     candModeList.insert( candModeList.end() - shift, uiMode );
     candCostList.insert( candCostList.end() - shift, uiCost );
+#if !JVET_N0217_MATRIX_INTRAPRED
     if (extendRef != -1)
     {
       extendRefList.insert(extendRefList.end() - shift, extendRef);
     }
+#endif
     if (iserttPos != nullptr)
     {
       *iserttPos = int(candModeList.size() - shift - 1);

@@ -286,6 +286,10 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   shareParentSize   = other.shareParentSize;
   smvdMode        = other.smvdMode;
   ispMode           = other.ispMode;
+#if JVET_N0217_MATRIX_INTRAPRED
+  mipFlag           = other.mipFlag;
+#endif
+
   return *this;
 }
 
@@ -322,6 +326,9 @@ void CodingUnit::initData()
   shareParentSize.height = -1;
   smvdMode        = 0;
   ispMode           = 0;
+#if JVET_N0217_MATRIX_INTRAPRED
+  mipFlag           = false;
+#endif
 }
 
 const uint8_t CodingUnit::checkAllowedSbt() const

@@ -473,6 +473,9 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
   const bool isHorSplit = ispType == HOR_INTRA_SUBPARTITIONS;
 #endif
   {
+#if JVET_N0217_MATRIX_INTRAPRED
+    CHECK(channelType != CHANNEL_TYPE_LUMA, "Not harmonized yet");
+#endif
     int numCand      = -1;
     int leftIntraDir = PLANAR_IDX, aboveIntraDir = PLANAR_IDX;
 
@@ -484,14 +487,22 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
     const PredictionUnit *puLeft = pu.cs->getPURestricted(posLB.offset(-1, 0), pu, channelType);
     if (puLeft && CU::isIntra(*puLeft->cu))
     {
+#if JVET_N0217_MATRIX_INTRAPRED
+      leftIntraDir = PU::getIntraDirLuma( *puLeft );
+#else
       leftIntraDir = puLeft->intraDir[channelType];
+#endif
     }
 
     // Get intra direction of above PU
     const PredictionUnit *puAbove = pu.cs->getPURestricted(posRT.offset(0, -1), pu, channelType);
     if (puAbove && CU::isIntra(*puAbove->cu) && CU::isSameCtu(*pu.cu, *puAbove->cu))
     {
+#if JVET_N0217_MATRIX_INTRAPRED
+      aboveIntraDir = PU::getIntraDirLuma( *puAbove );
+#else
       aboveIntraDir = puAbove->intraDir[channelType];
+#endif
     }
 
     CHECK(2 >= numMPMs, "Invalid number of most probable modes");
@@ -777,6 +788,195 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
   }
 }
 
+#if JVET_N0217_MATRIX_INTRAPRED
+bool PU::isMIP(const PredictionUnit &pu, const ChannelType &chType)
+{
+  return (chType == CHANNEL_TYPE_LUMA && pu.cu->mipFlag);
+}
+
+int PU::getMipSizeId(const PredictionUnit &pu)
+{
+  if ((pu.lwidth() == 4) && (pu.lheight() == 4))
+  {
+    return 0; // MIP with 16x4 matrix 
+  }
+  else if (pu.lwidth() <= 8 && pu.lheight() <= 8)
+  {
+    return 1; // MIP with 16x8 matrix
+  }
+  else
+  {
+    return 2; // MIP with 64x8 matrix
+  }
+}
+
+int PU::getMipMPMs(const PredictionUnit &pu, unsigned *mpm)
+{
+  const CompArea &area = pu.block( getFirstComponentOfChannel( CHANNEL_TYPE_LUMA ) );
+  const Position &pos = area.pos();
+
+  bool realMode = false;
+
+  // Get intra mode of left PU
+  int leftIntraMode = -1;
+  const PredictionUnit *puLeft = pu.cs->getPURestricted( pos.offset( -1, 0 ), pu, CHANNEL_TYPE_LUMA );
+
+  if( puLeft && CU::isIntra( *puLeft->cu ) )
+  {
+    if( PU::isMIP( *puLeft ) )
+    {
+      if (getMipSizeId(*puLeft) == getMipSizeId(pu))
+      {
+        leftIntraMode = puLeft->intraDir[CHANNEL_TYPE_LUMA];
+        realMode = true;
+      }
+    }
+    else
+    {
+      leftIntraMode = g_mapAngular33ToMip[getMipSizeId(pu)][g_intraMode65to33AngMapping[puLeft->intraDir[CHANNEL_TYPE_LUMA]]];
+    }
+  }
+
+  // Get intra mode of above PU
+  int aboveIntraMode = -1;
+  const PredictionUnit *puAbove = pu.cs->getPURestricted( pos.offset( 0, -1 ), pu, CHANNEL_TYPE_LUMA );
+
+  if( puAbove && CU::isIntra( *puAbove->cu ) )
+  {
+    if( PU::isMIP( *puAbove ) )
+    {
+      if (getMipSizeId(*puAbove) == getMipSizeId(pu))
+      {
+        aboveIntraMode = puAbove->intraDir[CHANNEL_TYPE_LUMA];
+        realMode = true;
+      }
+    }
+    else
+    {
+      aboveIntraMode = g_mapAngular33ToMip[getMipSizeId(pu)][g_intraMode65to33AngMapping[puAbove->intraDir[CHANNEL_TYPE_LUMA]]];
+    }
+  }
+
+  // derive MPMs
+  CHECKD(NUM_MPM_MIP != 3, "Error: wrong number of MPMs for MIP");
+
+  const int* modeList = g_sortedMipMpms[getMipSizeId(pu)];
+
+  int numCand = 0;
+  if( leftIntraMode == aboveIntraMode )
+  {
+    if( leftIntraMode > -1 )
+    {
+      mpm[0] = leftIntraMode;
+      numCand = 1;
+
+      if( leftIntraMode != modeList[0] )
+      {
+        mpm[1] = modeList[0];
+        mpm[2] = (leftIntraMode != modeList[1]) ? modeList[1] : modeList[2];
+      }
+      else
+      {
+        mpm[1] = modeList[1];
+        mpm[2] = modeList[2];
+      }
+    }
+    else
+    {
+      mpm[0] = modeList[0];
+      mpm[1] = modeList[1];
+      mpm[2] = modeList[2];
+    }
+  }
+  else
+  {
+    if( leftIntraMode > -1 && aboveIntraMode > -1 )
+    {
+      mpm[0] = leftIntraMode;
+      mpm[1] = aboveIntraMode;
+      numCand = 2;
+
+      int index = 0;
+      for( int i = 0; i < 3; i++ )
+      {
+        if( (leftIntraMode != modeList[i]) && (aboveIntraMode != modeList[i]) )
+        {
+          index = i;
+          break;
+        }
+      }
+      CHECK( index > 2, "Error" );
+      mpm[2] = modeList[index];
+    }
+    else
+    {
+      mpm[0] = leftIntraMode > -1 ? leftIntraMode : aboveIntraMode;
+      numCand = 1;
+
+      if( mpm[0] != modeList[0] )
+      {
+        mpm[1] = modeList[0];
+        mpm[2] = (mpm[0] != modeList[1]) ? modeList[1] : modeList[2];
+      }
+      else
+      {
+        mpm[1] = modeList[1];
+        mpm[2] = modeList[2];
+      }
+    }
+  }
+
+  return (realMode ? numCand : 0);
+}
+
+uint32_t PU::getIntraDirLuma( const PredictionUnit &pu )
+{
+  if (isMIP(pu))
+  {
+    return g_mapMipToAngular65[getMipSizeId(pu)][pu.intraDir[CHANNEL_TYPE_LUMA]];
+  }
+  else
+  {
+    return pu.intraDir[CHANNEL_TYPE_LUMA];
+  }
+}
+
+AvailableInfo PU::getAvailableInfoLuma(const PredictionUnit &pu)
+{
+  const Area puArea = pu.Y();
+  const CodingStructure &cs = *pu.cs;
+  CHECK(cs.pps->getConstrainedIntraPred(), "Error: constrained intra prediction not supported");
+
+  AvailableInfo availInfo(0, 0);
+
+  // above
+  const int unitWidth = cs.pcv->minCUWidth;
+  const int numAboveUnits = (puArea.width + (unitWidth - 1)) / unitWidth;
+  for (int uX = 0; uX < numAboveUnits; uX++)
+  {
+    const Position topPos = puArea.offset(availInfo.maxPosTop, -1);
+    const CodingUnit* pcCUAbove = cs.isDecomp(topPos, CHANNEL_TYPE_LUMA) ? cs.getCURestricted(topPos, *(pu.cu), CHANNEL_TYPE_LUMA) : nullptr;
+    if (!pcCUAbove) { break; }
+
+    availInfo.maxPosTop += unitWidth;
+  }
+
+  // left
+  const int unitHeight = cs.pcv->minCUHeight;
+  const int numLeftUnits = (puArea.height + (unitHeight - 1)) / unitHeight;
+  for (int uY = 0; uY < numLeftUnits; uY++)
+  {
+    const Position leftPos = puArea.offset(-1, availInfo.maxPosLeft);
+    const CodingUnit* pcCULeft = cs.isDecomp(leftPos, CHANNEL_TYPE_LUMA) ? cs.getCURestricted(leftPos, *(pu.cu), CHANNEL_TYPE_LUMA) : nullptr;
+    if (!pcCULeft) { break; }
+
+    availInfo.maxPosLeft += unitHeight;
+  }
+
+  CHECKD(availInfo.maxPosTop > puArea.width || availInfo.maxPosLeft > puArea.height, "Error");
+  return availInfo;
+}
+#endif
 
 void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NUM_CHROMA_MODE] )
 {
@@ -793,7 +993,11 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
     Position topLeftPos = pu.blocks[pu.chType].lumaPos();
     Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
     const PredictionUnit *lumaPU = CS::isDualITree( *pu.cs ) ? pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : &pu;
+#if JVET_N0217_MATRIX_INTRAPRED
+    const uint32_t lumaMode = PU::getIntraDirLuma( *lumaPU );
+#else
     const uint32_t lumaMode = lumaPU->intraDir[CHANNEL_TYPE_LUMA];
+#endif
     for( int i = 0; i < 4; i++ )
     {
       if( lumaMode == modeList[i] )
@@ -993,7 +1197,11 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
     Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
     const PredictionUnit &lumaPU = CS::isDualITree( *pu.cs ) ? *pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : *pu.cs->getPU( topLeftPos, CHANNEL_TYPE_LUMA );
 
+#if JVET_N0217_MATRIX_INTRAPRED
+    uiIntraMode = PU::getIntraDirLuma( lumaPU );
+#else
     uiIntraMode = lumaPU.intraDir[0];
+#endif
   }
 #if JVET_N0671_CHROMA_FORMAT_422
   if( pu.chromaFormat == CHROMA_422 && !isLuma( chType ) && uiIntraMode < NUM_LUMA_MODE ) // map directional, planar and dc
@@ -5716,6 +5924,40 @@ uint32_t getCtuAddr( const Position& pos, const PreCalcValues& pcv )
 {
   return ( pos.x >> pcv.maxCUWidthLog2 ) + ( pos.y >> pcv.maxCUHeightLog2 ) * pcv.widthInCtus;
 }
+
+#if JVET_N0217_MATRIX_INTRAPRED
+int getNumModesMip(const Size& block)
+{
+  if (block.width > (4 * block.height) || block.height > (4 * block.width))
+  {
+    return 0;
+  }
+
+  if( block.width == 4 && block.height == 4 )
+  {
+    return 35;
+  }
+  else if (block.width <= 8 && block.height <= 8)
+  {
+    return 19;
+  }
+  else
+  {
+    return 11;
+  }
+}
+
+int getNumEpBinsMip(const Size& block)
+{
+  int numModes = getNumModesMip(block);
+  return int(std::ceil((std::log2(numModes - NUM_MPM_MIP - 1))));
+}
+
+bool mipModesAvailable(const Size& block)
+{
+  return (getNumModesMip(block));
+}
+#endif
 
 
 

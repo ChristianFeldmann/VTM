@@ -44,6 +44,9 @@
 #include "Buffer.h"
 #include "Picture.h"
 
+#if JVET_N0217_MATRIX_INTRAPRED
+#include "MatrixIntraPrediction.h"
+#endif
 
 //! \ingroup CommonLib
 //! \{
@@ -102,6 +105,10 @@ private:
 
   Pel* m_piTemp;
   Pel* m_pMdlmTemp; // for MDLM mode
+#if JVET_N0217_MATRIX_INTRAPRED
+  MatrixIntraPrediction m_matrixIntraPred;
+#endif
+
 protected:
 
   ChromaFormat  m_currChromaFormat;
@@ -158,7 +165,14 @@ public:
   /// set parameters from CU data for accessing intra data
   void initIntraPatternChType     (const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers 
 
-static bool useFilteredIntraRefSamples( const ComponentID &compID, const PredictionUnit &pu, bool modeSpecific, const UnitArea &tuArea );
+
+#if JVET_N0217_MATRIX_INTRAPRED
+  // Matrix-based intra prediction
+  void initIntraMip               (const PredictionUnit &pu);
+  void predIntraMip               (const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu);
+#endif
+
+  static bool useFilteredIntraRefSamples( const ComponentID &compID, const PredictionUnit &pu, bool modeSpecific, const UnitArea &tuArea );
   static bool useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode);
 
   void geneWeightedPred           (const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf);

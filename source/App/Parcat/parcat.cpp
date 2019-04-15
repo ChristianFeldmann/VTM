@@ -295,7 +295,14 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     p += nal_start;
 
     std::vector<uint8_t> nalu(p, p + nal_end - nal_start);
+#if JVET_N0067_NAL_Unit_Header
+    int nalu_header = nalu[0];
+    bool zeroTidRequiredFlag = (nalu_header & ( 1 << 7 )) >> 7;
+    int nalUnitTypeLsb = (((1 << 4) - 1) & nalu_header);
+    int nalu_type = ((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
+#else
     int nalu_type = nalu[0] >> 1;
+#endif
     int poc = -1;
     int poc_lsb = -1;
     int new_poc = -1;
@@ -305,11 +312,14 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       poc = 0;
       new_poc = *poc_base + poc;
     }
-
+#if JVET_N0067_NAL_Unit_Header
+      if((nalu_type > 7 && nalu_type < 15) || nalu_type == NAL_UNIT_CODED_SLICE_CRA)
+#else
 #if !JVET_M0101_HLS
     if(nalu_type < 32 && nalu_type != NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type != NAL_UNIT_CODED_SLICE_IDR_N_LP)
 #else
       if(nalu_type < 15 && nalu_type != NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type != NAL_UNIT_CODED_SLICE_IDR_N_LP)
+#endif
 #endif
     {
       int offset = 16;

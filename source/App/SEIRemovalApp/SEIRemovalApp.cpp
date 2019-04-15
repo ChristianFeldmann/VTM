@@ -78,8 +78,8 @@ void read2(InputNALUnit& nalu)
   CHECK(nalu.m_temporalId < 0, "Temporal ID is negative.");
   //When zero_tid_required_flag is equal to 1, the value of nuh_temporal_id_plus1 shall be equal to 1.
   CHECK((zeroTidRequiredFlag == 1) && (nalu.m_temporalId != 0), "Temporal ID is not '0' when zero tid is required.");
-  uint32_t m_nalUnitTypeLsb = bs.read(4);             // nal_unit_type_lsb
-  nalu.m_nalUnitType = (NalUnitType) ((zeroTidRequiredFlag << 4) + m_nalUnitTypeLsb);
+  uint32_t nalUnitTypeLsb = bs.read(4);             // nal_unit_type_lsb
+  nalu.m_nalUnitType = (NalUnitType) ((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
   nalu.m_nuhLayerId = bs.read(7);                     // nuh_layer_id 
   CHECK((nalu.m_nuhLayerId < 0) || (nalu.m_nuhLayerId > 126), "Layer ID out of range");
   uint32_t nuh_reserved_zero_bit = bs.read(1);        // nuh_reserved_zero_bit

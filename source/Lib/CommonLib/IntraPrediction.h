@@ -115,7 +115,11 @@ protected:
 
   void initPredIntraParams        ( const PredictionUnit & pu,  const CompArea compArea, const SPS& sps );
 
+#if JVET_N0435_WAIP_HARMONIZATION
+  static bool isIntegerSlope(const int absAng) { return (0 == (absAng & 0x1F)); }
+#else
   static bool isIntegerSlope      ( const int absAng ) { return (0 == (absAng & 0x1F)) && absAng <=32; }  //  integer-slope modes 2, DIA_IDX and VDIA_IDX.  "absAng <=32" restricts wide-angle integer modes 
+#endif
 
   Pel  xGetPredValDc              ( const CPelBuf &pSrc, const Size &dstSize );
 

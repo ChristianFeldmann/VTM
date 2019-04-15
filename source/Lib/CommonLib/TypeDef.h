@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0435_WAIP_HARMONIZATION                     1
+
 #define JVET_N0168_AMVR_ME_MODIFICATION                   1 // Correct the cost and bits calculation in encoder side
 
 #define JVET_N0068_AFFINE_MEM_BW                          1 // memory bandwidth reduction for affine mode

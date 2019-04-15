@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0168_AMVR_ME_MODIFICATION                   1 // Correct the cost and bits calculation in encoder side
+
 #define JVET_N0068_AFFINE_MEM_BW                          1 // memory bandwidth reduction for affine mode
 
 #define JVET_N0308_MAX_CU_SIZE_FOR_ISP                    1

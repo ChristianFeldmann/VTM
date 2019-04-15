@@ -1012,8 +1012,14 @@ private:
 
   bool              m_affineAmvrEnabledFlag;
   bool              m_DMVR;
+#if JVET_N0127_MMVD_SPS_FLAG 
+  bool              m_MMVD;
+#endif
   bool              m_SBT;
   uint8_t           m_MaxSbtSize;
+#if INCLUDE_ISP_CFG_FLAG
+  bool              m_ISP;
+#endif
 #if HEVC_VPS
   int               m_VPSId;
 #endif
@@ -1058,7 +1064,7 @@ private:
 
   bool              m_sbtmvpEnabledFlag;
   bool              m_bdofEnabledFlag;
-  bool              m_disFracMmvdEnabledFlag;
+  bool              m_fpelMmvdEnabledFlag;
   uint32_t              m_uiBitsForPOC;
   uint32_t              m_numLongTermRefPicSPS;
   uint32_t              m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
@@ -1298,10 +1304,14 @@ public:
   void                    setBDOFEnabledFlag(bool b)                                                      { m_bdofEnabledFlag = b; }
   bool                    getBDOFEnabledFlag() const                                                      { return m_bdofEnabledFlag; }
 
-  bool                    getDisFracMmvdEnabledFlag() const                                               { return m_disFracMmvdEnabledFlag; }
-  void                    setDisFracMmvdEnabledFlag( bool b )                                             { m_disFracMmvdEnabledFlag = b;    }
+  bool                    getFpelMmvdEnabledFlag() const                                                  { return m_fpelMmvdEnabledFlag; }
+  void                    setFpelMmvdEnabledFlag( bool b )                                                { m_fpelMmvdEnabledFlag = b;    }
   bool                    getUseDMVR()const                                                               { return m_DMVR; }
   void                    setUseDMVR(bool b)                                                              { m_DMVR = b;    }
+#if JVET_N0127_MMVD_SPS_FLAG 
+  bool                    getUseMMVD()const                                                               { return m_MMVD; }
+  void                    setUseMMVD(bool b)                                                              { m_MMVD = b;    }
+#endif
   uint32_t                getMaxTLayers() const                                                           { return m_uiMaxTLayers; }
   void                    setMaxTLayers( uint32_t uiMaxTLayers )                                          { CHECK( uiMaxTLayers > MAX_TLAYER, "Invalid number T-layers" ); m_uiMaxTLayers = uiMaxTLayers; }
 
@@ -1357,6 +1367,10 @@ public:
   unsigned                getIBCFlag() const                                                              { return m_IBCFlag; }
   void                    setUseSBT( bool b )                                                             { m_SBT = b; }
   bool                    getUseSBT() const                                                               { return m_SBT; }
+#if INCLUDE_ISP_CFG_FLAG
+  void                    setUseISP( bool b )                                                             { m_ISP = b; }
+  bool                    getUseISP() const                                                               { return m_ISP; }
+#endif
   void                    setMaxSbtSize( uint8_t val )                                                    { m_MaxSbtSize = val; }
   uint8_t                 getMaxSbtSize() const                                                           { return m_MaxSbtSize; }
 

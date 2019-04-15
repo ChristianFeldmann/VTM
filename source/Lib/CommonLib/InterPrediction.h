@@ -190,6 +190,9 @@ public:
 #if ENABLE_SPLIT_PARALLELISM
   int     getShareState() const { return m_shareState; }
 #endif
+#if JVET_N0068_AFFINE_MEM_BW
+  static bool isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType );
+#endif
 };
 
 //! \}

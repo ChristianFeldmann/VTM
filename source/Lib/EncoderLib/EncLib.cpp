@@ -979,7 +979,12 @@ void EncLib::xInitSPS(SPS &sps)
 
   sps.setUseMHIntra            ( m_MHIntra );
   sps.setUseTriangle           ( m_Triangle );
-  sps.setDisFracMmvdEnabledFlag             ( m_allowDisFracMMVD );
+#if JVET_N0127_MMVD_SPS_FLAG 
+  sps.setUseMMVD               ( m_MMVD );
+  sps.setFpelMmvdEnabledFlag   (( m_MMVD ) ? m_allowDisFracMMVD : false);
+#else
+  sps.setFpelMmvdEnabledFlag             ( m_allowDisFracMMVD );
+#endif
   sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
   sps.setUseDMVR                            ( m_DMVR );
 
@@ -987,6 +992,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
+#if INCLUDE_ISP_CFG_FLAG
+  sps.setUseISP                             ( m_ISP );
+#endif
   sps.setUseReshaper                        ( m_lumaReshapeEnable );
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;

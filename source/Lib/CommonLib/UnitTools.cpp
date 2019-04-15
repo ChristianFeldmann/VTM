@@ -390,8 +390,14 @@ ISPType CU::canUseISPSplit( const int width, const int height, const int maxTrSi
 
   const uint32_t minTuSizeForISP = MIN_TB_SIZEY;
   bool  notEnoughSamplesToSplit = ( g_aucLog2[width] + g_aucLog2[height] <= ( g_aucLog2[minTuSizeForISP] << 1 ) );
+#if JVET_N0308_MAX_CU_SIZE_FOR_ISP
+  bool  cuSizeLargerThanMaxTrSize = width  > maxTrSize || height > maxTrSize;
+  widthCannotBeUsed  = cuSizeLargerThanMaxTrSize || notEnoughSamplesToSplit;
+  heightCannotBeUsed = cuSizeLargerThanMaxTrSize || notEnoughSamplesToSplit;
+#else
   widthCannotBeUsed  = width  > maxTrSize || notEnoughSamplesToSplit;
   heightCannotBeUsed = height > maxTrSize || notEnoughSamplesToSplit;
+#endif
 
   if( !widthCannotBeUsed && !heightCannotBeUsed )
   {
@@ -987,7 +993,11 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
 
     uiIntraMode = lumaPU.intraDir[0];
   }
+#if JVET_N0671_CHROMA_FORMAT_422
+  if( pu.chromaFormat == CHROMA_422 && !isLuma( chType ) && uiIntraMode < NUM_LUMA_MODE ) // map directional, planar and dc
+#else
   if( pu.chromaFormat == CHROMA_422 && !isLuma( chType ) )
+#endif //JVET_N0671_CHROMA_FORMAT_422
   {
     uiIntraMode = g_chroma422IntraAngleMappingTable[uiIntraMode];
   }
@@ -1614,7 +1624,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     return;
   }
 
+#if JVET_N0213_TMVP_REMOVAL
+  if (slice.getEnableTMVPFlag() && (pu.lumaSize().width + pu.lumaSize().height > 12))
+#else
   if (slice.getEnableTMVPFlag())
+#endif
   {
     //>> MTK colocated-RightBottom
     // offset the pos to be sure to "point" to the same position the uiAbsPartIdx would've pointed to
@@ -2690,7 +2704,11 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     }
   }
 
+#if JVET_N0213_TMVP_REMOVAL
+  if (cs.slice->getEnableTMVPFlag() && pInfo->numCand < AMVP_MAX_NUM_CANDS && (pu.lumaSize().width + pu.lumaSize().height > 12))
+#else
   if( cs.slice->getEnableTMVPFlag() && pInfo->numCand < AMVP_MAX_NUM_CANDS )
+#endif
   {
     // Get Temporal Motion Predictor
     const int refIdx_Col = refIdx;
@@ -4022,14 +4040,28 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
 
   MotionBuf mb = pu.getMotionBuf();
   int mvScaleTmpHor, mvScaleTmpVer;
-
+#if JVET_N0068_AFFINE_MEM_BW
+  const bool subblkMVSpreadOverLimit = InterPrediction::isSubblockVectorSpreadOverLimit( deltaMvHorX, deltaMvHorY, deltaMvVerX, deltaMvVerY, pu.interDir );
+#endif
   for ( int h = 0; h < pu.Y().height; h += blockHeight )
   {
     for ( int w = 0; w < pu.Y().width; w += blockWidth )
     {
-      mvScaleTmpHor = mvScaleHor + deltaMvHorX * (halfBW + w) + deltaMvVerX * (halfBH + h);
-      mvScaleTmpVer = mvScaleVer + deltaMvHorY * (halfBW + w) + deltaMvVerY * (halfBH + h);
+#if JVET_N0068_AFFINE_MEM_BW
+      if ( !subblkMVSpreadOverLimit )
+      {
+#endif
+        mvScaleTmpHor = mvScaleHor + deltaMvHorX * (halfBW + w) + deltaMvVerX * (halfBH + h);
+        mvScaleTmpVer = mvScaleVer + deltaMvHorY * (halfBW + w) + deltaMvVerY * (halfBH + h);
 
+#if JVET_N0068_AFFINE_MEM_BW
+      }
+      else
+      {
+        mvScaleTmpHor = mvScaleHor + deltaMvHorX * ( pu.Y().width >> 1 ) + deltaMvVerX * ( pu.Y().height >> 1 );
+        mvScaleTmpVer = mvScaleVer + deltaMvHorY * ( pu.Y().width >> 1 ) + deltaMvVerY * ( pu.Y().height >> 1 );
+      }
+#endif
       roundAffineMv( mvScaleTmpHor, mvScaleTmpVer, shift );
       Mv curMv(mvScaleTmpHor, mvScaleTmpVer);
       curMv.clipToStorageBitDepth();

@@ -988,7 +988,11 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
         }
 
 #endif
+#if JVET_N0246_MODIFIED_QUANTSCALES
+        const uint32_t uRefScale  = g_invQuantScales[0][iQPAdapt % 6] << ((iQPAdapt / 6) + bitDepth - 4);
+#else
         const uint32_t uRefScale  = g_invQuantScales[iQPAdapt % 6] << ((iQPAdapt / 6) + bitDepth - 4);
+#endif
         const CompArea subArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area ((ctuRsAddr % pcv.widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / pcv.widthInCtus) * pcv.maxCUHeight, pcv.maxCUWidth, pcv.maxCUHeight)), pcPic->Y());
         const Pel*     pSrc       = pcPic->getOrigBuf (subArea).buf;
         const SizeType iSrcStride = pcPic->getOrigBuf (subArea).stride;
@@ -1515,7 +1519,7 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
   uint32_t totalCtu               = 0;
   uint32_t hashRatio              = 0;
 
-  if ( !pcSlice->getSPS()->getDisFracMmvdEnabledFlag() )
+  if ( !pcSlice->getSPS()->getFpelMmvdEnabledFlag() )
   {
     return;
   }
@@ -1590,7 +1594,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if HEVC_DEPENDENT_SLICES
   }
 #endif
-  if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() ||
+  if ( pcSlice->getSPS()->getFpelMmvdEnabledFlag() ||
       (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
   {
 #if JVET_N0329_IBC_SEARCH_IMP

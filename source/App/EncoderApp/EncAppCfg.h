@@ -178,6 +178,9 @@ protected:
   bool      m_rdpcmEnabledFlag[NUMBER_OF_RDPCM_SIGNALLING_MODES];///< control flags for residual DPCM
   bool      m_persistentRiceAdaptationEnabledFlag;            ///< control flag for Golomb-Rice parameter adaptation over each slice
   bool      m_cabacBypassAlignmentEnabledFlag;
+#if INCLUDE_ISP_CFG_FLAG
+  bool      m_ISP;
+#endif
   bool      m_useFastISP;                                    ///< flag for enabling fast methods for ISP
 
   // coding quality
@@ -267,6 +270,9 @@ protected:
   bool      m_AffineAmvr;
   bool      m_AffineAmvrEncOpt;
   bool      m_DMVR;
+#if JVET_N0127_MMVD_SPS_FLAG 
+  bool      m_MMVD;
+#endif
 #if JVET_N0449_MMVD_SIMP
   int       m_MmvdDisNum;
 #endif

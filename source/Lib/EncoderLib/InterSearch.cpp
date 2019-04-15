@@ -3952,7 +3952,11 @@ void InterSearch::xPatternSearchIntRefine(PredictionUnit& pu, IntTZSearchStruct&
       int iMvBits = m_auiMVPIdxCost[iMVPIdx][AMVP_MAX_NUM_CANDS];
       m_pcRdCost->setPredictor( amvpInfo.mvCand[iMVPIdx] );
       iMvBits += m_pcRdCost->getBitsOfVectorWithPredictor( cTestMv[iMVPIdx].getHor(), cTestMv[iMVPIdx].getVer(), cStruct.imvShift );
+#if JVET_N0168_AMVR_ME_MODIFICATION
+      uiDist += m_pcRdCost->getCost(iMvBits);
+#else
       uiDist += m_pcRdCost->getCostOfVectorWithPredictor( cTestMv[iMVPIdx].getHor(), cTestMv[iMVPIdx].getVer(), cStruct.imvShift );
+#endif
 
       if (uiDist < uiBestDist)
       {
@@ -3982,7 +3986,9 @@ void InterSearch::xPatternSearchIntRefine(PredictionUnit& pu, IntTZSearchStruct&
   ruiCost = uiBestDist - m_pcRdCost->getCost(iBestBits) + m_pcRdCost->getCost(ruiBits);
   // taken from JEM 5.0
   // verify since it makes no sense to add rate for MVDs twicce
+#if JVET_N0168_AMVR_ME_MODIFICATION == 0
   ruiBits += m_pcRdCost->getBitsOfVectorWithPredictor(rcMv.getHor(), rcMv.getVer(), cStruct.imvShift);
+#endif
 
   return;
 }
@@ -4306,7 +4312,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   for ( int iRefList = 0; iRefList < iNumPredDir; iRefList++ )
   {
     RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
-
+#if JVET_N0068_AFFINE_MEM_BW
+    pu.interDir = ( iRefList ? 2 : 1 );
+#endif
     for (int iRefIdxTemp = 0; iRefIdxTemp < slice.getNumRefIdx(eRefPicList); iRefIdxTemp++)
     {
       // Get RefIdx bits
@@ -4645,7 +4653,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   if ( slice.isInterB() && !PU::isBipredRestriction(pu) )
   {
 	  tryBipred = 1;
-
+#if JVET_N0068_AFFINE_MEM_BW
+    pu.interDir = 3;
+#endif
     // Set as best list0 and list1
     iRefIdxBi[0] = iRefIdx[0];
     iRefIdxBi[1] = iRefIdx[1];
@@ -4901,7 +4911,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   {
     lastMode = 2;
     affineCost = uiCostBi;
-
+#if JVET_N0068_AFFINE_MEM_BW
+    pu.interDir = 3;
+#endif
     PU::setAllAffineMv( pu, cMvBi[0][0], cMvBi[0][1], cMvBi[0][2], REF_PIC_LIST_0
       , changeToHighPrec
     );
@@ -4922,7 +4934,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
       }
     }
 
+#if !JVET_N0068_AFFINE_MEM_BW
     pu.interDir = 3;
+#endif
 
     pu.mvpIdx[REF_PIC_LIST_0] = aaiMvpIdxBi[0][iRefIdxBi[0]];
     pu.mvpNum[REF_PIC_LIST_0] = aaiMvpNum[0][iRefIdxBi[0]];
@@ -4933,7 +4947,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   {
     lastMode = 0;
     affineCost = uiCost[0];
-
+#if JVET_N0068_AFFINE_MEM_BW
+    pu.interDir = 1;
+#endif
     PU::setAllAffineMv( pu, aacMv[0][0], aacMv[0][1], aacMv[0][2], REF_PIC_LIST_0
       , changeToHighPrec
     );
@@ -4947,8 +4963,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
         pu.mvdAffi[0][verIdx] = pu.mvdAffi[0][verIdx] - pu.mvdAffi[0][0];
       }
     }
-
+#if !JVET_N0068_AFFINE_MEM_BW
     pu.interDir = 1;
+#endif
 
     pu.mvpIdx[REF_PIC_LIST_0] = aaiMvpIdx[0][iRefIdx[0]];
     pu.mvpNum[REF_PIC_LIST_0] = aaiMvpNum[0][iRefIdx[0]];
@@ -4957,7 +4974,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   {
     lastMode = 1;
     affineCost = uiCost[1];
-
+#if JVET_N0068_AFFINE_MEM_BW
+    pu.interDir = 2;
+#endif
     PU::setAllAffineMv( pu, aacMv[1][0], aacMv[1][1], aacMv[1][2], REF_PIC_LIST_1
       , changeToHighPrec
     );
@@ -4971,8 +4990,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
         pu.mvdAffi[1][verIdx] = pu.mvdAffi[1][verIdx] - pu.mvdAffi[1][0];
       }
     }
-
+#if !JVET_N0068_AFFINE_MEM_BW
     pu.interDir = 2;
+#endif
 
     pu.mvpIdx[REF_PIC_LIST_1] = aaiMvpIdx[1][iRefIdx[1]];
     pu.mvpNum[REF_PIC_LIST_1] = aaiMvpNum[1][iRefIdx[1]];
@@ -6287,6 +6307,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 {
   const UnitArea& currArea = partitioner.currArea();
   const SPS &sps           = *cs.sps;
+#if JVET_N0671_RDCOST_FIX
+  m_pcRdCost->setChromaFormat(sps.getChromaFormatIdc());
+#endif
+
   const uint32_t numValidComp  = getNumberValidComponents( sps.getChromaFormatIdc() );
   const uint32_t numTBlocks    = getNumberValidTBlocks   ( *cs.pcv );
   const CodingUnit &cu = *cs.getCU(partitioner.chType);
@@ -6921,6 +6945,10 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   , const bool luma, const bool chroma
 )
 {
+#if JVET_N0671_RDCOST_FIX
+  m_pcRdCost->setChromaFormat(cs.sps->getChromaFormatIdc());
+#endif
+
   CodingUnit &cu = *cs.getCU( partitioner.chType );
 
   const ChromaFormat format     = cs.area.chromaFormat;;

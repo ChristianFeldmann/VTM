@@ -286,6 +286,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseAffineAmvr                                     ( m_AffineAmvr );
   m_cEncLib.setUseAffineAmvrEncOpt                               ( m_AffineAmvrEncOpt );
   m_cEncLib.setDMVR                                              ( m_DMVR );
+#if JVET_N0127_MMVD_SPS_FLAG 
+  m_cEncLib.setMMVD                                              ( m_MMVD );
+#endif
 #if JVET_N0449_MMVD_SIMP
   m_cEncLib.setMmvdDisNum                                        (m_MmvdDisNum);
 #endif
@@ -346,6 +349,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseBLambdaForNonKeyLowDelayPictures               ( m_bUseBLambdaForNonKeyLowDelayPictures );
   m_cEncLib.setPCMLog2MinSize                                    ( m_uiPCMLog2MinSize);
   m_cEncLib.setUsePCM                                            ( m_usePCM );
+#if INCLUDE_ISP_CFG_FLAG
+  m_cEncLib.setUseISP                                            ( m_ISP );
+#endif
   m_cEncLib.setUseFastISP                                        ( m_useFastISP );
 
   // set internal bit-depth and constants

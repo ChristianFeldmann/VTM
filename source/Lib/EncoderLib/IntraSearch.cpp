@@ -486,11 +486,13 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
 #if JVET_N0363_INTRA_COST_MOD
             double cost = ( double ) minSadHad + (double)fracModeBits * sqrtLambdaForFirstPass;
+
+            DTRACE(g_trace_ctx, D_INTRA_COST, "IntraHAD: %u, %llu, %f (%d)\n", minSadHad, fracModeBits, cost, uiMode);
 #else
             double cost = ( double ) uiSad + ( double ) fracModeBits * sqrtLambdaForFirstPass;
-#endif
 
             DTRACE( g_trace_ctx, D_INTRA_COST, "IntraHAD: %u, %llu, %f (%d)\n", uiSad, fracModeBits, cost, uiMode );
+#endif
 
             updateCandList( uiMode, cost,  uiRdModeList, CandCostList
               , extendRefList, 0

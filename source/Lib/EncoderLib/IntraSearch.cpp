@@ -443,7 +443,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           for( int modeIdx = 0; modeIdx < numModesAvailable; modeIdx++ )
           {
             uint32_t       uiMode = modeIdx;
+#if JVET_N0363_INTRA_COST_MOD
+            Distortion minSadHad = 0;
+#else
             Distortion uiSad  = 0;
+#endif
 
             // Skip checking extended Angular modes in the first round of SATD
             if( uiMode > DC_IDX && ( uiMode & 1 ) )
@@ -467,7 +471,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_N0363_INTRA_COST_MOD
             // Use the min between SAD and HAD as the cost criterion
             // SAD is scaled by 2 to align with the scaling of HAD
-            uiSad += std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
+            minSadHad += std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
 #else
             // use Hadamard transform here
             uiSad += distParam.distFunc(distParam);
@@ -480,16 +484,26 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
             uint64_t fracModeBits = xFracModeBitsIntra(pu, uiMode, CHANNEL_TYPE_LUMA);
 
+#if JVET_N0363_INTRA_COST_MOD
+            double cost = ( double ) minSadHad + (double)fracModeBits * sqrtLambdaForFirstPass;
+#else
             double cost = ( double ) uiSad + ( double ) fracModeBits * sqrtLambdaForFirstPass;
+#endif
 
             DTRACE( g_trace_ctx, D_INTRA_COST, "IntraHAD: %u, %llu, %f (%d)\n", uiSad, fracModeBits, cost, uiMode );
 
             updateCandList( uiMode, cost,  uiRdModeList, CandCostList
               , extendRefList, 0
               , numModesForFullRD + extraModes );
+#if JVET_N0363_INTRA_COST_MOD
+            updateCandList(uiMode, (double) minSadHad, uiHadModeList, CandHadList
+              , *nullList, -1
+              , 3 + extraModes);
+#else
             updateCandList(uiMode, (double) uiSad, uiHadModeList, CandHadList
               , *nullList, -1
               , 3 + extraModes);
+#endif
           }
         } // NSSTFlag
 
@@ -528,7 +542,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_N0363_INTRA_COST_MOD
                 // Use the min between SAD and SATD as the cost criterion
                 // SAD is scaled by 2 to align with the scaling of HAD
-                Distortion sad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
+                Distortion minSadHad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
 #else
                 // use Hadamard transform here
                 Distortion sad = distParam.distFunc(distParam);
@@ -541,14 +555,25 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
                 uint64_t fracModeBits = xFracModeBitsIntra(pu, mode, CHANNEL_TYPE_LUMA);
 
+#if JVET_N0363_INTRA_COST_MOD
+                double cost = (double) minSadHad + (double) fracModeBits * sqrtLambdaForFirstPass;
+#else
                 double cost = (double) sad + (double) fracModeBits * sqrtLambdaForFirstPass;
+#endif
 
                 updateCandList(mode, cost, uiRdModeList, CandCostList
                   , extendRefList, 0
                   , numModesForFullRD);
+#if JVET_N0363_INTRA_COST_MOD
+
+                updateCandList(mode, (double)minSadHad, uiHadModeList, CandHadList
+                  , *nullList, -1
+                  , 3);
+#else
                 updateCandList(mode, (double)sad, uiHadModeList, CandHadList
                   , *nullList, -1
                   , 3);
+#endif
 
                 bSatdChecked[mode] = true;
               }
@@ -597,7 +622,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_N0363_INTRA_COST_MOD
               // Use the min between SAD and SATD as the cost criterion
               // SAD is scaled by 2 to align with the scaling of HAD
-              Distortion sad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
+              Distortion minSadHad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
 #else
               // use Hadamard transform here
               Distortion sad = distParam.distFunc(distParam);
@@ -610,7 +635,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
               uint64_t fracModeBits = xFracModeBitsIntra(pu, mode, CHANNEL_TYPE_LUMA);
 
+#if JVET_N0363_INTRA_COST_MOD
+              double cost = (double)minSadHad + (double)fracModeBits * sqrtLambdaForFirstPass;
+#else
               double cost = (double)sad + (double)fracModeBits * sqrtLambdaForFirstPass;
+#endif
               updateCandList(mode, cost, uiRdModeList, CandCostList, extendRefList, multiRefIdx, numModesForFullRD);
             }
           }

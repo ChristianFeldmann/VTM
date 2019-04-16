@@ -106,12 +106,6 @@ static inline uint64_t getTotalFracBits(const uint32_t width, const uint32_t hei
 //Intra prediction  ====================================================================================================
 //======================================================================================================================
 
-static inline bool filterIntraReferenceSamples (const ChannelType chType, const ChromaFormat chFmt, const bool intraReferenceSmoothingDisabled)
-{
-  return (!intraReferenceSmoothingDisabled) && (isLuma(chType) || (chFmt == CHROMA_444));
-}
-
-
 //------------------------------------------------
 
 static inline int getTransformShift(const int channelBitDepth, const Size size, const int maxLog2TrDynamicRange)

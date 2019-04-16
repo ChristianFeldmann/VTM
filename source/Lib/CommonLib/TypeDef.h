@@ -144,6 +144,9 @@
 
 #define JVET_N0213_TMVP_REMOVAL                           1 // Remove TMVP candidates from merge and amvp mode with samples <= 32
 
+#define JVET_N0492_NO_HIERARCH_CBF                        1 // Allow CBFs writing for leaf TU only
+
+
 #define JCTVC_Y0038_PARAMS                                1
 
 #define JVET_MMVD_OFF_MACRO                               0

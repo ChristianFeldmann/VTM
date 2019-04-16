@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0251_ITEM4_IBC_LOCAL_SEARCH_RANGE           1
+
 #define JVET_N0435_WAIP_HARMONIZATION                     1
 
 #define JVET_N0168_AMVR_ME_MODIFICATION                   1 // Correct the cost and bits calculation in encoder side

@@ -1498,6 +1498,17 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
   const int cuPelX = pu.Y().x;
   const int cuPelY = pu.Y().y;
 
+#if JVET_N0251_ITEM4_IBC_LOCAL_SEARCH_RANGE
+  const int lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
+  const int ctuSizeLog2 = g_aucLog2[lcuWidth];
+  int numLeftCTUs = (1 << ((7 - ctuSizeLog2) << 1)) - ((ctuSizeLog2 < 7) ? 1 : 0);
+
+  srLeft = -(numLeftCTUs * lcuWidth + (cuPelX % lcuWidth));
+  srTop = -(cuPelY % lcuWidth);
+
+  srRight = lcuWidth - (cuPelX % lcuWidth) - iRoiWidth;
+  srBottom = lcuWidth - (cuPelY % lcuWidth) - iRoiHeight;
+#else
   const int iPicWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
   const int iPicHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
 
@@ -1506,6 +1517,7 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
 
   srRight = std::min(iPicWidth - cuPelX - iRoiWidth, localSearchRangeX);
   srBottom = std::min(iPicHeight - cuPelY - iRoiHeight, localSearchRangeY);
+#endif
 
   rcMvSrchRngLT.setHor(srLeft);
   rcMvSrchRngLT.setVer(srTop);

@@ -2000,10 +2000,16 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
   const unsigned        trDepth       = partitioner.currTrDepth;
   const bool            split         = ( tu.depth > trDepth );
   const bool            chromaCbfISP  = area.blocks[COMPONENT_Cb].valid() && cu.ispMode && !split;
+#if JVET_N0492_NO_HIERARCH_CBF
+  bool max_tu_split = false;
+#endif
 
   // split_transform_flag
   if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
   {
+#if JVET_N0492_NO_HIERARCH_CBF
+    max_tu_split = true;
+#endif
     CHECK( !split, "transform split implied" );
   }
   else if( cu.sbtInfo && partitioner.canSplit( PartSplit( cu.getSbtTuSplit() ), cs ) )
@@ -2019,27 +2025,39 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
   {
     {
       unsigned cbfDepth = chromaCbfISP ? trDepth - 1 : trDepth;
-      if( trDepth == 0 || chromaCbfs.Cb || chromaCbfISP )
+#if JVET_N0492_NO_HIERARCH_CBF
+      if (!max_tu_split || chromaCbfISP)
+#else
+      if (trDepth == 0 || chromaCbfs.Cb || chromaCbfISP)
+#endif
       {
         chromaCbfs.Cb = TU::getCbfAtDepth( tu, COMPONENT_Cb, trDepth );
         if( !( cu.sbtInfo && trDepth == 1 ) )
         cbf_comp( cs, chromaCbfs.Cb, area.blocks[COMPONENT_Cb], cbfDepth );
       }
+#if !JVET_N0492_NO_HIERARCH_CBF
       else
       {
         CHECK( TU::getCbfAtDepth( tu, COMPONENT_Cb, cbfDepth ) != chromaCbfs.Cb, "incorrect Cb cbf" );
       }
+#endif
 
-      if( trDepth == 0 || chromaCbfs.Cr || chromaCbfISP )
+#if JVET_N0492_NO_HIERARCH_CBF
+      if (!max_tu_split || chromaCbfISP)
+#else
+      if (trDepth == 0 || chromaCbfs.Cr || chromaCbfISP)
+#endif
       {
         chromaCbfs.Cr = TU::getCbfAtDepth( tu, COMPONENT_Cr, trDepth );
         if( !( cu.sbtInfo && trDepth == 1 ) )
         cbf_comp( cs, chromaCbfs.Cr, area.blocks[COMPONENT_Cr], cbfDepth, chromaCbfs.Cb );
       }
+#if !JVET_N0492_NO_HIERARCH_CBF
       else
       {
         CHECK( TU::getCbfAtDepth( tu, COMPONENT_Cr, cbfDepth ) != chromaCbfs.Cr, "incorrect Cr cbf" );
       }
+#endif
     }
   }
   else if( CS::isDualITree( cs ) )

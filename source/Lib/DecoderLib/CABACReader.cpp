@@ -2111,6 +2111,11 @@ void CABACReader::transform_tree( CodingStructure &cs, Partitioner &partitioner,
   bool split = false;
 
   split = partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
+
+#if JVET_N0492_NO_HIERARCH_CBF
+  bool max_tu_split = split;
+#endif
+
   if( cu.sbtInfo && partitioner.canSplit( PartSplit( cu.getSbtTuSplit() ), cs ) )
   {
     split = true;
@@ -2126,15 +2131,24 @@ void CABACReader::transform_tree( CodingStructure &cs, Partitioner &partitioner,
   if( area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && ( !CS::isDualITree( cs ) || partitioner.chType == CHANNEL_TYPE_CHROMA ) && ( !cu.ispMode || chromaCbfISP ) )
   {
     const int cbfDepth = chromaCbfISP ? trDepth - 1 : trDepth;
-    if (chromaCbfs.Cb)
+#if JVET_N0492_NO_HIERARCH_CBF
+    if (!max_tu_split)
+#endif
     {
-      if (!(cu.sbtInfo && trDepth == 1))
-        chromaCbfs.Cb &= cbf_comp(cs, area.blocks[COMPONENT_Cb], cbfDepth);
-    }
-    if (chromaCbfs.Cr)
-    {
-      if (!(cu.sbtInfo && trDepth == 1))
-        chromaCbfs.Cr &= cbf_comp(cs, area.blocks[COMPONENT_Cr], cbfDepth, chromaCbfs.Cb);
+#if !JVET_N0492_NO_HIERARCH_CBF
+      if (chromaCbfs.Cb)
+#endif
+      {
+        if (!(cu.sbtInfo && trDepth == 1))
+          chromaCbfs.Cb &= cbf_comp(cs, area.blocks[COMPONENT_Cb], cbfDepth);
+      }
+#if !JVET_N0492_NO_HIERARCH_CBF
+      if (chromaCbfs.Cr)
+#endif
+      {
+        if (!(cu.sbtInfo && trDepth == 1))
+          chromaCbfs.Cr &= cbf_comp(cs, area.blocks[COMPONENT_Cr], cbfDepth, chromaCbfs.Cb);
+      }
     }
   }
   else if( CS::isDualITree( cs ) )

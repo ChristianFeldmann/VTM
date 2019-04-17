@@ -917,6 +917,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
 #if JVET_N0217_MATRIX_INTRAPRED
   ("MIP",                                             m_MIP,                                             true,  "Enable MIP (matrix-based intra prediction)")
+  ("FastMIP",                                         m_useFastMIP,                                     false,  "Fast encoder search for MIP (matrix-based intra prediction)")
 #endif
   // Unit definition parameters
   ("MaxCUWidth",                                      m_uiMaxCUWidth,                                     64u)
@@ -3243,6 +3244,9 @@ void EncAppCfg::xPrintParameter()
 #if JVET_N0242_NON_LINEAR_ALF
   msg( VERBOSE, "UseNonLinearALFLuma:%d ", m_useNonLinearAlfLuma );
   msg( VERBOSE, "UseNonLinearALFChroma:%d ", m_useNonLinearAlfChroma );
+#endif
+#if JVET_N0217_MATRIX_INTRAPRED
+  if( m_MIP ) msg(VERBOSE, "FastMIP:%d ", m_useFastMIP);
 #endif
 
   msg( VERBOSE, "NumSplitThreads:%d ", m_numSplitThreads );

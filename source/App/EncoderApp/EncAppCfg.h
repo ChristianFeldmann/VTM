@@ -314,6 +314,7 @@ protected:
 #endif
 #if JVET_N0217_MATRIX_INTRAPRED
   bool      m_MIP;
+  bool      m_useFastMIP;
 #endif
 
 

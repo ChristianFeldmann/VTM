@@ -333,6 +333,7 @@ void EncApp::xInitLibCfg()
 #endif
 #if JVET_N0217_MATRIX_INTRAPRED
   m_cEncLib.setUseMIP                                            ( m_MIP );
+  m_cEncLib.setUseFastMIP                                        ( m_useFastMIP );
 #endif
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );
   m_cEncLib.setUseReconBasedCrossCPredictionEstimate             ( m_reconBasedCrossCPredictionEstimate );

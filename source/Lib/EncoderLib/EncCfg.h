@@ -281,6 +281,7 @@ protected:
 #endif
 #if JVET_N0217_MATRIX_INTRAPRED
   bool      m_MIP;
+  bool      m_useFastMIP;
 #endif
 
 #if MAX_TB_SIZE_SIGNALLING
@@ -866,6 +867,8 @@ public:
 #if JVET_N0217_MATRIX_INTRAPRED
   void      setUseMIP                       ( bool b )       { m_MIP = b; }
   bool      getUseMIP                       () const         { return m_MIP; }
+  void      setUseFastMIP                   ( bool b )       { m_useFastMIP = b; }
+  bool      getUseFastMIP                   () const         { return m_useFastMIP; }
 #endif
 
 #if MAX_TB_SIZE_SIGNALLING

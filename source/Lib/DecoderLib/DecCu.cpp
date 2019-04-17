@@ -656,6 +656,10 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       {
         if( pu.cu->triangle )
         {
+#if JVET_N0340_TRI_MERGE_CAND && !JVET_N0266_SMALL_BLOCKS
+          pu.shareParentPos = cu.shareParentPos;
+          pu.shareParentSize = cu.shareParentSize;
+#endif
           PU::getTriangleMergeCandidates( pu, m_triangleMrgCtx );
         }
         else

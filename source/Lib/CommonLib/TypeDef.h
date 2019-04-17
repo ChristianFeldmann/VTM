@@ -150,6 +150,7 @@
 
 #define JVET_N0492_NO_HIERARCH_CBF                        1 // Allow CBFs writing for leaf TU only
 
+#define JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES  1 // JVET-N0473, JVET-N0098: Deblocking of ISP/SBT TU boundaries
 
 #define JCTVC_Y0038_PARAMS                                1
 

@@ -286,7 +286,11 @@ TransformUnit* CodingStructure::getTU( const Position &pos, const ChannelType ef
           }
           else
           {
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+            while( !tus[idx - 1 + extraIdx]->blocks[getFirstComponentOfChannel( effChType )].contains( pos ) )
+#else
             while( pos != tus[idx - 1 + extraIdx]->blocks[getFirstComponentOfChannel( effChType )].pos() )
+#endif
             {
               extraIdx++;
             }

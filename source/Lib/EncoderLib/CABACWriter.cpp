@@ -595,6 +595,9 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 
   // prediction mode and partitioning data
   pred_mode ( cu );
+#if JVET_N0413_RDPCM
+  bdpcm_mode( cu, ComponentID( partitioner.chType ) );
+#endif
 
 #if FIX_PCM
   // pcm samples
@@ -807,7 +810,20 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
     m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
   }
 }
+#if JVET_N0413_RDPCM
+void CABACWriter::bdpcm_mode( const CodingUnit& cu, const ComponentID compID )
+{
+  if( !CU::bdpcmAllowed( cu, compID ) ) return;
 
+  m_BinEncoder.encodeBin( cu.bdpcmMode > 0 ? 1 : 0, Ctx::BDPCMMode( 0 ) );
+
+  if( cu.bdpcmMode )
+  {
+    m_BinEncoder.encodeBin( cu.bdpcmMode > 1 ? 1 : 0, Ctx::BDPCMMode( 1 ) );
+  }
+  DTRACE( g_trace_ctx, D_SYNTAX, "bdpcm_mode() x=%d, y=%d, w=%d, h=%d, bdpcm=%d\n", cu.lumaPos().x, cu.lumaPos().y, cu.lwidth(), cu.lheight(), cu.bdpcmMode );
+}
+#endif
 void CABACWriter::pcm_data( const CodingUnit& cu, Partitioner& partitioner  )
 {
   pcm_flag( cu, partitioner );
@@ -949,7 +965,11 @@ void CABACWriter::extend_ref_line(const PredictionUnit& pu)
 #endif
 
   const CodingUnit& cu = *pu.cu;
+#if JVET_N0413_RDPCM
+  if( !cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma( cu.chType ) || cu.bdpcmMode )
+#else
   if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType))
+#endif
   {
     return;
   }
@@ -979,7 +999,11 @@ void CABACWriter::extend_ref_line(const CodingUnit& cu)
   return;
 #endif
 
+#if JVET_N0413_RDPCM
+  if ( !cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.ipcm || cu.bdpcmMode )
+#else
   if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.ipcm)
+#endif
   {
     return;
   }
@@ -1018,6 +1042,17 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
   {
     return;
   }
+
+#if JVET_N0413_RDPCM
+  if( cu.bdpcmMode )
+  {
+    PredictionUnit *pu = cu.firstPU;
+    unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
+    PU::getIntraMPMs( *pu, mpm_pred );
+    cu.firstPU->intraDir[0] = mpm_pred[0];
+    return;
+  }
+#endif
 
   const int numMPMs   = NUM_MOST_PROBABLE_MODES;
   const int numBlocks = CU::getNumPUs( cu );
@@ -1122,6 +1157,9 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
 void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
 {
 
+#if JVET_N0413_RDPCM
+  if( pu.cu->bdpcmMode ) return;
+#endif
   // prev_intra_luma_pred_flag
   const int numMPMs  = NUM_MOST_PROBABLE_MODES;
   unsigned  mpm_pred[numMPMs];
@@ -2270,8 +2308,18 @@ void CABACWriter::cbf_comp( const CodingStructure& cs, bool cbf, const CompArea&
 {
   const unsigned  ctxId   = DeriveCtx::CtxQtCbf( area.compID, depth, prevCbCbf, useISP && isLuma(area.compID) );
   const CtxSet&   ctxSet  = Ctx::QtCbf[ area.compID ];
-
+#if JVET_N0413_RDPCM
+  if( area.compID == COMPONENT_Y && cs.getCU( area.pos(), ChannelType( area.compID ) )->bdpcmMode )
+  {
+    m_BinEncoder.encodeBin( cbf, ctxSet( 4 ) );
+  }
+  else
+  {
   m_BinEncoder.encodeBin( cbf, ctxSet( ctxId ) );
+  }
+#else
+  m_BinEncoder.encodeBin( cbf, ctxSet( ctxId ) );
+#endif
   DTRACE( g_trace_ctx, D_SYNTAX, "cbf_comp() etype=%d pos=(%d,%d) ctx=%d cbf=%d\n", area.compID, area.x, area.y, ctxId, cbf );
 }
 
@@ -2487,7 +2535,11 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
   explicit_rdpcm_mode( tu, compID );
 
 #if JVET_N0280_RESIDUAL_CODING_TS
+#if JVET_N0413_RDPCM
+  if( isLuma( compID ) && ( tu.mtsIdx == 1 || tu.cu->bdpcmMode ) )
+#else
   if( isLuma( compID ) && tu.mtsIdx==1 )
+#endif
   {
     residual_codingTS( tu, compID );
     return;
@@ -2605,9 +2657,17 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 void CABACWriter::isp_mode( const CodingUnit& cu )
 {
 #if INCLUDE_ISP_CFG_FLAG
+#if JVET_N0413_RDPCM
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() || cu.bdpcmMode )
+#else
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() )
+#endif
+#else
+#if JVET_N0413_RDPCM
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || cu.bdpcmMode )
 #else
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm )
+#endif
 #endif
   {
     CHECK( cu.ispMode != NOT_INTRA_SUBPARTITIONS, "error: cu.intraSubPartitions != 0" );
@@ -2880,7 +2940,11 @@ void CABACWriter::residual_codingTS( const TransformUnit& tu, ComponentID compID
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_codingTS() etype=%d pos=(%d,%d) size=%dx%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height );
 
   // init coeff coding context
+#if JVET_N0413_RDPCM
+  CoeffCodingContext  cctx    ( tu, compID, false, tu.cu->bdpcmMode );
+#else
   CoeffCodingContext  cctx    ( tu, compID, false );
+#endif
   const TCoeff*       coeff   = tu.getCoeffs( compID ).buf;
 
   cctx.setNumCtxBins( 2 * tu.lwidth()*tu.lheight() );
@@ -2973,7 +3037,11 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
       int sign = Coeff < 0;
       if( cctx.isContextCoded() )
       {
+#if JVET_N0413_RDPCM
+        m_BinEncoder.encodeBin( sign, Ctx::TsResidualSign( cctx.bdpcm() ? 1 : 0 ) );
+#else
         m_BinEncoder.encodeBin( sign, Ctx::TsResidualSign( toChannelType( cctx.compID() ) ) );
+#endif
       }
       else
       {

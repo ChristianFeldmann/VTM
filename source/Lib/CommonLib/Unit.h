@@ -305,6 +305,9 @@ struct CodingUnit : public UnitArea
   int            affineType;
   bool           triangle;
   bool           transQuantBypass;
+#if JVET_N0413_RDPCM
+  int            bdpcmMode;
+#endif
   bool           ipcm;
   uint8_t          imv;
   bool           rootCbf;

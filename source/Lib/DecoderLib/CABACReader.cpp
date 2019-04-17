@@ -681,6 +681,9 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
 
   // prediction mode and partitioning data
   pred_mode ( cu );
+#if JVET_N0413_RDPCM
+  bdpcm_mode( cu, ComponentID( partitioner.chType ) );
+#endif
 
   // --> create PUs
 #if !JVET_N0324_REGULAR_MRG_FLAG
@@ -1031,7 +1034,23 @@ void CABACReader::pred_mode( CodingUnit& cu )
     }
   }
 }
+#if JVET_N0413_RDPCM
+void CABACReader::bdpcm_mode( CodingUnit& cu, const ComponentID compID )
+{
+  cu.bdpcmMode = 0;
 
+  if( !CU::bdpcmAllowed( cu, compID ) ) return;
+
+  cu.bdpcmMode = m_BinDecoder.decodeBin( Ctx::BDPCMMode( 0 ) );
+
+  if( cu.bdpcmMode )
+  {
+    cu.bdpcmMode += m_BinDecoder.decodeBin( Ctx::BDPCMMode( 1 ) );
+  }
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "bdpcm_mode() x=%d, y=%d, w=%d, h=%d, bdpcm=%d\n", cu.lumaPos().x, cu.lumaPos().y, cu.lwidth(), cu.lheight(), cu.bdpcmMode );
+}
+#endif
 void CABACReader::pcm_flag( CodingUnit& cu, Partitioner &partitioner )
 {
   const SPS& sps = *cu.cs->sps;
@@ -1162,8 +1181,11 @@ void CABACReader::extend_ref_line(CodingUnit& cu)
 #if !ENABLE_JVET_L0283_MRL
   return;
 #endif
-
+#if JVET_N0413_RDPCM
+  if ( !cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.ipcm || cu.bdpcmMode )
+#else
   if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.ipcm)
+#endif
   {
     cu.firstPU->multiRefIdx = 0;
     return;
@@ -1208,6 +1230,16 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
     return;
   }
 
+#if JVET_N0413_RDPCM
+  if( cu.bdpcmMode )
+  {
+    PredictionUnit *pu = cu.firstPU;
+    unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
+    PU::getIntraMPMs(*pu, mpm_pred);
+    cu.firstPU->intraDir[0] = mpm_pred[0];
+    return;
+  }
+#endif
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__INTRA_DIR_ANG, cu.lumaSize(), CHANNEL_TYPE_LUMA );
 
   // prev_intra_luma_pred_flag
@@ -2411,7 +2443,19 @@ bool CABACReader::cbf_comp( CodingStructure& cs, const CompArea& area, unsigned 
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__QT_CBF, area.size(), area.compID);
 
+#if JVET_N0413_RDPCM
+  unsigned  cbf = 0;
+  if( area.compID == COMPONENT_Y && cs.getCU( area.pos(), ChannelType( area.compID ) )->bdpcmMode )
+  {
+    cbf = m_BinDecoder.decodeBin( ctxSet( 4 ) );
+  }
+  else
+  {
+    cbf = m_BinDecoder.decodeBin( ctxSet( ctxId ) );
+  }
+#else
   const unsigned  cbf = m_BinDecoder.decodeBin( ctxSet( ctxId ) );
+#endif
 
   DTRACE( g_trace_ctx, D_SYNTAX, "cbf_comp() etype=%d pos=(%d,%d) ctx=%d cbf=%d\n", area.compID, area.x, area.y, ctxId, cbf );
   return cbf;
@@ -2611,7 +2655,11 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
   explicit_rdpcm_mode( tu, compID );
 
 #if JVET_N0280_RESIDUAL_CODING_TS
+#if JVET_N0413_RDPCM
+  if( isLuma( compID ) && ( tu.mtsIdx == 1 || tu.cu->bdpcmMode ) )
+#else
   if( isLuma( compID ) && tu.mtsIdx == 1 )
+#endif
   {
     residual_codingTS( tu, compID );
     return;
@@ -2669,6 +2717,9 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
   const bool  tsAllowed = TU::isTSAllowed ( tu, compID );
   const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
 
+#if JVET_N0413_RDPCM
+  if( tu.cu->bdpcmMode ) tu.mtsIdx = 1;
+#endif
   if( !mtsAllowed && !tsAllowed ) return;
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[compID], compID );
@@ -2713,9 +2764,17 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 void CABACReader::isp_mode( CodingUnit& cu )
 {
 #if INCLUDE_ISP_CFG_FLAG
+#if JVET_N0413_RDPCM
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() || cu.bdpcmMode )
+#else
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() )
+#endif
+#else
+#if JVET_N0413_RDPCM
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || cu.bdpcmMode )
 #else
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm )
+#endif
 #endif
   {
     cu.ispMode = NOT_INTRA_SUBPARTITIONS;
@@ -3038,7 +3097,11 @@ void CABACReader::residual_codingTS( TransformUnit& tu, ComponentID compID )
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_codingTS() etype=%d pos=(%d,%d) size=%dx%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height );
 
   // init coeff coding context
+#if JVET_N0413_RDPCM
+  CoeffCodingContext  cctx    ( tu, compID, false, tu.cu->bdpcmMode );
+#else
   CoeffCodingContext  cctx    ( tu, compID, false );
+#endif
   TCoeff*             coeff   = tu.getCoeffs( compID ).buf;
 
   cctx.setNumCtxBins( 2 * tu.lwidth()*tu.lheight() );
@@ -3125,7 +3188,11 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
       int sign;
       if( cctx.isContextCoded() )
       {
+#if JVET_N0413_RDPCM
+        sign = m_BinDecoder.decodeBin( Ctx::TsResidualSign(  cctx.bdpcm() ? 1 : 0 ) );
+#else
         sign = m_BinDecoder.decodeBin( Ctx::TsResidualSign( toChannelType( cctx.compID() ) ) );
+#endif
       }
       else
       {

@@ -749,6 +749,13 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const CodingUnit& cuQ = cu;
   const CodingUnit& cuP = *cu.cs->getCU( posP, cu.chType );
 
+#if JVET_N0413_RDPCM
+  if( ( MODE_INTRA == cuP.predMode && cuP.bdpcmMode ) && ( MODE_INTRA == cuQ.predMode && cuQ.bdpcmMode ) )
+  {
+    return 0;
+  }
+#endif
+
   //-- Set BS for Intra MB : BS = 4 or 3
   if( ( MODE_INTRA == cuP.predMode ) || ( MODE_INTRA == cuQ.predMode ) )
   {

@@ -223,6 +223,9 @@ public:
   static const CtxSet   AffineType;
   static const CtxSet   AffMergeIdx;
   static const CtxSet   Mvd;
+#if JVET_N0413_RDPCM
+  static const CtxSet   BDPCMMode;
+#endif
   static const CtxSet   QtRootCbf;
   static const CtxSet   QtCbf           [3];    // [ channel ]
   static const CtxSet   SigCoeffGroup   [4];    // [ ChannelType ]

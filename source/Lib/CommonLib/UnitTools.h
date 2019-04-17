@@ -84,6 +84,10 @@ namespace CU
   uint8_t getValidGbiIdx              (const CodingUnit& cu);
   void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);
   uint8_t deriveGbiIdx                (uint8_t gbiLO, uint8_t gbiL1);
+#if JVET_N0413_RDPCM
+  bool bdpcmAllowed                   (const CodingUnit& cu, const ComponentID compID);
+#endif
+
 
   bool      divideTuInRows            ( const CodingUnit &cu );
   bool      firstTestISPHorSplit      ( const int width, const int height,            const ComponentID compID, const CodingUnit *cuLeft = nullptr, const CodingUnit *cuAbove = nullptr );

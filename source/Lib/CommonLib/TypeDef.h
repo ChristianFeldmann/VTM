@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0413_RDPCM                                  1 // Residual DPCM JVET-N0413/N0214
+
 #define JVET_N0324_REGULAR_MRG_FLAG                       1
 
 #define JVET_N0251_ITEM4_IBC_LOCAL_SEARCH_RANGE           1

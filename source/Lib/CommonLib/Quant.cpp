@@ -141,6 +141,82 @@ Quant::~Quant()
 #endif
 }
 
+#if JVET_N0413_RDPCM
+void invResDPCM( const TransformUnit &tu, const ComponentID &compID, CoeffBuf &dstBuf )
+{
+  const CompArea &rect = tu.blocks[compID];
+  const int      wdt = rect.width;
+  const int      hgt = rect.height;
+  const CCoeffBuf pcCoeff = tu.getCoeffs(compID);
+
+  const TCoeff* pcCoef = &pcCoeff.buf[0];
+  TCoeff* pDst = &dstBuf.buf[0];
+
+  if( tu.cu->bdpcmMode == 1 )
+  {
+    for( int y = 0; y < hgt; y++ )
+    {
+      pDst[0] = pcCoef[0];
+      for( int x = 1; x < wdt; x++ )
+      {
+        pDst[x] = pDst[x - 1] + pcCoef[x];
+      }
+      pcCoef += pcCoeff.stride;
+      pDst += dstBuf.stride;
+    }
+  }
+  else
+  {
+    for( int x = 0; x < wdt; x++ )
+    {
+      pDst[x] = pcCoef[x];
+    }
+    for( int y = 0; y < hgt - 1; y++ )
+    {
+      for( int x = 0; x < wdt; x++ )
+      {
+        pDst[dstBuf.stride + x] = pDst[x] + pcCoef[pcCoeff.stride + x];
+      }
+      pcCoef += pcCoeff.stride;
+      pDst += dstBuf.stride;
+    }
+  }
+}
+
+void fwdResDPCM( TransformUnit &tu, const ComponentID &compID )
+{
+  const CompArea &rect = tu.blocks[compID];
+  const int      wdt = rect.width;
+  const int      hgt = rect.height;
+  CoeffBuf       piQCoef = tu.getCoeffs(compID);
+
+  TCoeff* pCoef = &piQCoef.buf[0];
+
+  if( tu.cu->bdpcmMode == 1 )
+  {
+    for( int y = 0; y < hgt; y++ )
+    {
+      for( int x = wdt - 1; x > 0; x-- )
+      {
+        pCoef[x] -= pCoef[x - 1];
+      }
+      pCoef += piQCoef.stride;
+    }
+  }
+  else
+  {
+    pCoef += piQCoef.stride * (hgt - 1);
+    for( int y = 0; y < hgt - 1; y++ )
+    {
+      for ( int x = 0; x < wdt; x++ )
+      {
+        pCoef[x] -= pCoef[x - piQCoef.stride];
+      }
+      pCoef -= piQCoef.stride;
+    }
+  }
+}
+#endif
 
 #if HEVC_USE_SIGN_HIDING
 // To minimize the distortion only. No rate is considered.
@@ -288,7 +364,9 @@ void Quant::dequant(const TransformUnit &tu,
   const CompArea       &area               = tu.blocks[compID];
   const uint32_t            uiWidth            = area.width;
   const uint32_t            uiHeight           = area.height;
+#if !JVET_N0413_RDPCM
   const TCoeff   *const piQCoef            = tu.getCoeffs(compID).buf;
+#endif
         TCoeff   *const piCoef             = dstCoeff.buf;
   const uint32_t            numSamplesInBlock  = uiWidth * uiHeight;
   const int             maxLog2TrDynamicRange = sps->getMaxLog2TrDynamicRange(toChannelType(compID));
@@ -301,6 +379,19 @@ void Quant::dequant(const TransformUnit &tu,
 #endif
   const int             channelBitDepth    = sps->getBitDepth(toChannelType(compID));
 
+#if JVET_N0413_RDPCM
+  const TCoeff          *pInput;
+  if( tu.cu->bdpcmMode && isLuma(compID) )
+  {
+    invResDPCM( tu, compID, dstCoeff );
+    pInput = piCoef;
+  }
+  else
+  {
+    pInput = tu.getCoeffs(compID).buf;
+  }
+  const TCoeff          *const piQCoef = pInput;
+#endif
 #if HEVC_USE_SCALING_LISTS
   CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
 #endif
@@ -853,6 +944,12 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 
       piQCoef.buf[uiBlockPos] = Clip3<TCoeff>( entropyCodingMinimum, entropyCodingMaximum, quantisedCoefficient );
     } // for n
+#if JVET_N0413_RDPCM
+    if( tu.cu->bdpcmMode && isLuma(compID) )
+    {
+      fwdResDPCM( tu, compID );
+    }
+#endif
 #if HEVC_USE_SIGN_HIDING
     if( cctx.signHiding() && uiWidth>=4 && uiHeight>=4 )
     {

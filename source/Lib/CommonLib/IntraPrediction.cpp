@@ -294,9 +294,11 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const ChannelType    channelType  = toChannelType( compID );
   const int            iWidth       = piPred.width;
   const int            iHeight      = piPred.height;
-
+#if JVET_N0413_RDPCM
+  const uint32_t       uiDirMode    = isLuma( compId ) && pu.cu->bdpcmMode ? BDPCM_IDX : PU::getFinalIntraMode( pu, channelType );
+#else
   const uint32_t       uiDirMode    = PU::getFinalIntraMode( pu, channelType );
-
+#endif
 
   CHECK( g_aucLog2[iWidth] < 2 && pu.cs->pcv->noChroma2x2, "Size not allowed" );
   CHECK( g_aucLog2[iWidth] > 7, "Size not allowed" );
@@ -315,6 +317,9 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   {
     case(PLANAR_IDX): xPredIntraPlanar(srcBuf, piPred); break;
     case(DC_IDX):     xPredIntraDc(srcBuf, piPred, channelType, false); break;
+#if JVET_N0413_RDPCM
+    case(BDPCM_IDX):  xPredIntraBDPCM(srcBuf, piPred, pu.cu->bdpcmMode, clpRng); break;
+#endif
     default:          xPredIntraAng(srcBuf, piPred, channelType, clpRng); break;
   }
 
@@ -853,6 +858,44 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   }
 }
 
+#if JVET_N0413_RDPCM
+void IntraPrediction::xPredIntraBDPCM(const CPelBuf &pSrc, PelBuf &pDst, const uint32_t dirMode, const ClpRng& clpRng )
+{
+  const int wdt = pDst.width;
+  const int hgt = pDst.height;
+
+  const int strideP = pDst.stride;
+  const int strideS = pSrc.stride;
+
+  CHECK( !( dirMode == 1 || dirMode == 2 ), "Incorrect BDPCM mode parameter." );
+
+  Pel* pPred = &pDst.buf[0];
+  if( dirMode == 1 )
+  {
+    Pel  val;
+    for( int y = 0; y < hgt; y++ )
+    {
+      val = pSrc.buf[(y + 1) * strideS];
+      for( int x = 0; x < wdt; x++ )
+      {
+        pPred[x] = val;
+      }
+      pPred += strideP;
+    }
+  }
+  else
+  {
+    for( int y = 0; y < hgt; y++ )
+    {
+      for( int x = 0; x < wdt; x++ )
+      {
+        pPred[x] = pSrc.buf[x + 1];
+      }
+      pPred += strideP;
+    }
+  }
+}
+#endif
 
 bool IntraPrediction::useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode)
 {
@@ -1348,6 +1391,9 @@ bool IntraPrediction::useFilteredIntraRefSamples( const ComponentID &compID, con
   if( !isLuma( chType ) )                                                                                { return false; }
 #else
   if( !isLuma( chType ) && pu.chromaFormat != CHROMA_444 )                                               { return false; }
+#endif
+#if JVET_N0413_RDPCM
+  if(  isLuma( chType ) && pu.cu->bdpcmMode )                                                            { return false; }
 #endif
 
   if( pu.cu->ispMode && isLuma(compID) )                                                                 { return false; }

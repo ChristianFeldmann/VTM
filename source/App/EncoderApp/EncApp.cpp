@@ -292,6 +292,9 @@ void EncApp::xInitLibCfg()
 #if JVET_N0449_MMVD_SIMP
   m_cEncLib.setMmvdDisNum                                        (m_MmvdDisNum);
 #endif
+#if JVET_N0413_RDPCM
+  m_cEncLib.setRDPCM                                              ( m_RdpcmMode );
+#endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
   m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );

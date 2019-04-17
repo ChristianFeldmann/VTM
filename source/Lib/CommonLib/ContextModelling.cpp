@@ -42,7 +42,11 @@
 
 
 #if HEVC_USE_SIGN_HIDING
+#if JVET_N0413_RDPCM
+CoeffCodingContext::CoeffCodingContext( const TransformUnit& tu, ComponentID component, bool signHide, bool bdpcm )
+#else
 CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID component, bool signHide)
+#endif
 #else
 CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID component )
 #endif
@@ -109,6 +113,9 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
   , m_tsGtxFlagCtxSet           ( Ctx::TsGtxFlag )
 #endif
   , m_sigCoeffGroupFlag         ()
+#if JVET_N0413_RDPCM
+  , m_bdpcm                     (bdpcm)
+#endif
 {
   // LOGTODO
   unsigned log2sizeX = m_log2BlockWidth;

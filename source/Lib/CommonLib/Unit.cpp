@@ -403,6 +403,9 @@ void PredictionUnit::initData()
 
   // inter data
   mergeFlag   = false;
+#if JVET_N0324_REGULAR_MRG_FLAG
+  regularMergeFlag = false;
+#endif
   mergeIdx    = MAX_UCHAR;
   triangleSplitDir  = MAX_UCHAR;
   triangleMergeIdx0 = MAX_UCHAR;
@@ -455,6 +458,9 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
 PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
 {
   mergeFlag   = predData.mergeFlag;
+#if JVET_N0324_REGULAR_MRG_FLAG
+  regularMergeFlag = predData.regularMergeFlag;
+#endif
   mergeIdx    = predData.mergeIdx;
   triangleSplitDir  = predData.triangleSplitDir  ;
   triangleMergeIdx0 = predData.triangleMergeIdx0 ;
@@ -501,6 +507,9 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   multiRefIdx = other.multiRefIdx;
 
   mergeFlag   = other.mergeFlag;
+#if JVET_N0324_REGULAR_MRG_FLAG
+  regularMergeFlag = other.regularMergeFlag;
+#endif
   mergeIdx    = other.mergeIdx;
   triangleSplitDir  = other.triangleSplitDir  ;
   triangleMergeIdx0 = other.triangleMergeIdx0 ;

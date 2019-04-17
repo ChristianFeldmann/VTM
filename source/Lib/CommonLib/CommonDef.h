@@ -197,8 +197,10 @@ static const int MLS_GRP_NUM =                                   1024; ///< Max 
 
 static const int MLS_CG_SIZE =                                      4; ///< Coefficient group size of 4x4; = MLS_CG_LOG2_WIDTH + MLS_CG_LOG2_HEIGHT
 
+#if !JVET_N0246_MODIFIED_QUANTSCALES
 static const int ADJ_QUANT_SHIFT =                                  7;
 static const int ADJ_DEQUANT_SHIFT =            ( ADJ_QUANT_SHIFT + 1 );
+#endif
 
 static const int RVM_VCEGAM10_M =                                   4;
 
@@ -324,6 +326,11 @@ static const int GBI_DEFAULT =                                      ((uint8_t)(G
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
 static const int MAX_NUM_HMVP_CANDS =                              (MRG_MAX_NUM_CANDS-1); ///< maximum number of HMVP candidates to be stored and used in merge list
 static const int MAX_NUM_HMVP_AVMPCANDS =                          4; ///< maximum number of HMVP candidates to be used in AMVP list
+
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+static const int ALF_VB_POS_ABOVE_CTUROW_LUMA = 4;
+static const int ALF_VB_POS_ABOVE_CTUROW_CHMA = 2;
+#endif
 
 #if W0038_DB_OPT
 static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;

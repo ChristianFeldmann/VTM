@@ -361,6 +361,9 @@ struct IntraPredictionData
 struct InterPredictionData
 {
   bool      mergeFlag;
+#if JVET_N0324_REGULAR_MRG_FLAG
+  bool      regularMergeFlag;
+#endif
   uint8_t     mergeIdx;
   uint8_t     triangleSplitDir;
   uint8_t     triangleMergeIdx0;

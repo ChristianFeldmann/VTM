@@ -390,8 +390,14 @@ ISPType CU::canUseISPSplit( const int width, const int height, const int maxTrSi
 
   const uint32_t minTuSizeForISP = MIN_TB_SIZEY;
   bool  notEnoughSamplesToSplit = ( g_aucLog2[width] + g_aucLog2[height] <= ( g_aucLog2[minTuSizeForISP] << 1 ) );
+#if JVET_N0308_MAX_CU_SIZE_FOR_ISP
+  bool  cuSizeLargerThanMaxTrSize = width  > maxTrSize || height > maxTrSize;
+  widthCannotBeUsed  = cuSizeLargerThanMaxTrSize || notEnoughSamplesToSplit;
+  heightCannotBeUsed = cuSizeLargerThanMaxTrSize || notEnoughSamplesToSplit;
+#else
   widthCannotBeUsed  = width  > maxTrSize || notEnoughSamplesToSplit;
   heightCannotBeUsed = height > maxTrSize || notEnoughSamplesToSplit;
+#endif
 
   if( !widthCannotBeUsed && !heightCannotBeUsed )
   {
@@ -987,7 +993,11 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
 
     uiIntraMode = lumaPU.intraDir[0];
   }
+#if JVET_N0671_CHROMA_FORMAT_422
+  if( pu.chromaFormat == CHROMA_422 && !isLuma( chType ) && uiIntraMode < NUM_LUMA_MODE ) // map directional, planar and dc
+#else
   if( pu.chromaFormat == CHROMA_422 && !isLuma( chType ) )
+#endif //JVET_N0671_CHROMA_FORMAT_422
   {
     uiIntraMode = g_chroma422IntraAngleMappingTable[uiIntraMode];
   }
@@ -1614,7 +1624,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     return;
   }
 
+#if JVET_N0213_TMVP_REMOVAL
+  if (slice.getEnableTMVPFlag() && (pu.lumaSize().width + pu.lumaSize().height > 12))
+#else
   if (slice.getEnableTMVPFlag())
+#endif
   {
     //>> MTK colocated-RightBottom
     // offset the pos to be sure to "point" to the same position the uiAbsPartIdx would've pointed to
@@ -2313,7 +2327,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
   Position posLT = pu.Y().topLeft();
 
   // above-left
-  const PredictionUnit *aboveLeftPU = pu.cs->getPURestricted(posLT.offset(-1, -1), pu, pu.cs->chType);
+  const PredictionUnit *aboveLeftPU = pu.cs->getPURestricted(posLT.offset(-1, -1), pu, CHANNEL_TYPE_LUMA);
   if (aboveLeftPU && CU::isIBC(*aboveLeftPU->cu))
   {
     if (isAddNeighborMv(aboveLeftPU->bv, mvPred, nbPred))
@@ -2325,7 +2339,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
   // above neighbors
   for (uint32_t dx = 0; dx < totalAboveUnits && nbPred < IBC_NUM_CANDIDATES; dx++)
   {
-    const PredictionUnit* tmpPU = pu.cs->getPURestricted(posLT.offset((dx << log2UnitWidth), -1), pu, pu.cs->chType);
+    const PredictionUnit* tmpPU = pu.cs->getPURestricted(posLT.offset((dx << log2UnitWidth), -1), pu, CHANNEL_TYPE_LUMA);
     if (tmpPU && CU::isIBC(*tmpPU->cu))
     {
       if (isAddNeighborMv(tmpPU->bv, mvPred, nbPred))
@@ -2338,7 +2352,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
   // left neighbors
   for (uint32_t dy = 0; dy < totalLeftUnits && nbPred < IBC_NUM_CANDIDATES; dy++)
   {
-    const PredictionUnit* tmpPU = pu.cs->getPURestricted(posLT.offset(-1, (dy << log2UnitHeight)), pu, pu.cs->chType);
+    const PredictionUnit* tmpPU = pu.cs->getPURestricted(posLT.offset(-1, (dy << log2UnitHeight)), pu, CHANNEL_TYPE_LUMA);
     if (tmpPU && CU::isIBC(*tmpPU->cu))
     {
       if (isAddNeighborMv(tmpPU->bv, mvPred, nbPred))
@@ -2394,7 +2408,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
 
   //left
   const PredictionUnit *neibLeftPU = NULL;
-  neibLeftPU = pu.cs->getPURestricted(posLB.offset(-1, 0), pu, pu.cs->chType);
+  neibLeftPU = pu.cs->getPURestricted(posLB.offset(-1, 0), pu, CHANNEL_TYPE_LUMA);
   left = (neibLeftPU) ? CU::isIBC(*neibLeftPU->cu) : 0;
 
   if (left)
@@ -2406,7 +2420,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
 
   //above
   const PredictionUnit *neibAbovePU = NULL;
-  neibAbovePU = pu.cs->getPURestricted(posRT.offset(0, -1), pu, pu.cs->chType);
+  neibAbovePU = pu.cs->getPURestricted(posRT.offset(0, -1), pu, CHANNEL_TYPE_LUMA);
   above = (neibAbovePU) ? CU::isIBC(*neibAbovePU->cu) : 0;
 
   if (above)
@@ -2418,7 +2432,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
 
   // Below Left predictor search
   const PredictionUnit *neibBelowLeftPU = NULL;
-  neibBelowLeftPU = pu.cs->getPURestricted(posLB.offset(-1, 1), pu, pu.cs->chType);
+  neibBelowLeftPU = pu.cs->getPURestricted(posLB.offset(-1, 1), pu, CHANNEL_TYPE_LUMA);
   unsigned int belowLeft = (neibBelowLeftPU) ? CU::isIBC(*neibBelowLeftPU->cu) : 0;
 
   if (belowLeft)
@@ -2431,7 +2445,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
 
   // Above Right predictor search
   const PredictionUnit *neibAboveRightPU = NULL;
-  neibAboveRightPU = pu.cs->getPURestricted(posRT.offset(1, -1), pu, pu.cs->chType);
+  neibAboveRightPU = pu.cs->getPURestricted(posRT.offset(1, -1), pu, CHANNEL_TYPE_LUMA);
   unsigned int aboveRight = (neibAboveRightPU) ? CU::isIBC(*neibAboveRightPU->cu) : 0;
 
   if (aboveRight)
@@ -2444,7 +2458,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
 
   // Above Left predictor search
   const PredictionUnit *neibAboveLeftPU = NULL;
-  neibAboveLeftPU = pu.cs->getPURestricted(posLT.offset(-1, -1), pu, pu.cs->chType);
+  neibAboveLeftPU = pu.cs->getPURestricted(posLT.offset(-1, -1), pu, CHANNEL_TYPE_LUMA);
   unsigned int aboveLeft = (neibAboveLeftPU) ? CU::isIBC(*neibAboveLeftPU->cu) : 0;
 
   if (aboveLeft)
@@ -2472,7 +2486,7 @@ bool PU::getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv)
   }
 
   const PredictionUnit *neibRefPU = NULL;
-  neibRefPU = pu.cs->getPURestricted(pu.lumaPos().offset(offsetX, offsetY), pu, pu.cs->chType);
+  neibRefPU = pu.cs->getPURestricted(pu.lumaPos().offset(offsetX, offsetY), pu, CHANNEL_TYPE_LUMA);
 
   bool isIBC = (neibRefPU) ? CU::isIBC(*neibRefPU->cu) : 0;
   if (isIBC)
@@ -2690,7 +2704,11 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     }
   }
 
+#if JVET_N0213_TMVP_REMOVAL
+  if (cs.slice->getEnableTMVPFlag() && pInfo->numCand < AMVP_MAX_NUM_CANDS && (pu.lumaSize().width + pu.lumaSize().height > 12))
+#else
   if( cs.slice->getEnableTMVPFlag() && pInfo->numCand < AMVP_MAX_NUM_CANDS )
+#endif
   {
     // Get Temporal Motion Predictor
     const int refIdx_Col = refIdx;
@@ -4022,14 +4040,28 @@ void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPi
 
   MotionBuf mb = pu.getMotionBuf();
   int mvScaleTmpHor, mvScaleTmpVer;
-
+#if JVET_N0068_AFFINE_MEM_BW
+  const bool subblkMVSpreadOverLimit = InterPrediction::isSubblockVectorSpreadOverLimit( deltaMvHorX, deltaMvHorY, deltaMvVerX, deltaMvVerY, pu.interDir );
+#endif
   for ( int h = 0; h < pu.Y().height; h += blockHeight )
   {
     for ( int w = 0; w < pu.Y().width; w += blockWidth )
     {
-      mvScaleTmpHor = mvScaleHor + deltaMvHorX * (halfBW + w) + deltaMvVerX * (halfBH + h);
-      mvScaleTmpVer = mvScaleVer + deltaMvHorY * (halfBW + w) + deltaMvVerY * (halfBH + h);
+#if JVET_N0068_AFFINE_MEM_BW
+      if ( !subblkMVSpreadOverLimit )
+      {
+#endif
+        mvScaleTmpHor = mvScaleHor + deltaMvHorX * (halfBW + w) + deltaMvVerX * (halfBH + h);
+        mvScaleTmpVer = mvScaleVer + deltaMvHorY * (halfBW + w) + deltaMvVerY * (halfBH + h);
 
+#if JVET_N0068_AFFINE_MEM_BW
+      }
+      else
+      {
+        mvScaleTmpHor = mvScaleHor + deltaMvHorX * ( pu.Y().width >> 1 ) + deltaMvVerX * ( pu.Y().height >> 1 );
+        mvScaleTmpVer = mvScaleVer + deltaMvHorY * ( pu.Y().width >> 1 ) + deltaMvVerY * ( pu.Y().height >> 1 );
+      }
+#endif
       roundAffineMv( mvScaleTmpHor, mvScaleTmpVer, shift );
       Mv curMv(mvScaleTmpHor, mvScaleTmpVer);
       curMv.clipToStorageBitDepth();

@@ -835,6 +835,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxBTDepthISliceC",                               m_uiMaxBTDepthIChroma,                               3u, "MaxBTDepthISliceC")
   ("DualITree",                                       m_dualTree,                                       false, "Use separate QTBT trees for intra slice luma and chroma channel types")
   ("SubPuMvp",                                       m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:ATMVP, 2:STMVP, 3:ATMVP+STMVP)  [default: off]")
+#if JVET_N0127_MMVD_SPS_FLAG 
+  ("MMVD",                                           m_MMVD,                                            true, "Enable Merge mode with Motion Vector Difference (0:off, 1:on)  [default: 1]")
+#endif 
   ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
   ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
   ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
@@ -857,6 +860,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MTSInterMaxCand",                                 m_MTSInterMaxCand,                                    4, "Number of additional candidates to test in encoder search for MTS in inter slices\n")
   ("MTSImplicit",                                     m_MTSImplicit,                                        0, "Enable implicit MTS (when explicit MTS is off)\n")
   ( "SBT",                                            m_SBT,                                            false, "Enable Sub-Block Transform for inter blocks\n" )
+#if INCLUDE_ISP_CFG_FLAG
+  ( "ISP",                                            m_ISP,                                            false, "Enable Intra Sub-Partitions\n" )
+#endif
 #if JVET_N0235_SMVD_SPS
   ("SMVD",                                            m_SMVD,                                           false, "Enable Symmetric MVD\n")
 #endif
@@ -2111,7 +2117,10 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_enableIntraReferenceSmoothing==false, "EnableIntraReferenceSmoothing must be enabled for non main-RExt profiles.");
     xConfirmPara(m_cabacBypassAlignmentEnabledFlag, "AlignCABACBeforeBypass cannot be enabled for non main-RExt profiles.");
   }
-  xConfirmPara( m_chromaFormatIDC==CHROMA_422, "4:2:2 chroma sampling format not supported with current compiler setting. Set compiler flag \"ENABLE_CHROMA_422\" equal to 1 for enabling 4:2:2.\n\n" );
+#if !JVET_N0671_CHROMA_FORMAT_422
+  xConfirmPara(m_chromaFormatIDC == CHROMA_422, "4:2:2 chroma sampling format not supported with current compiler setting. Set compiler flag \"JVET_N0671_CHROMA_FORMAT_422\" equal to 1 for enabling 4:2:2.\n\n");
+#endif // !JVET_N0671_CHROMA_FORMAT_422
+
 
   // check range of parameters
   xConfirmPara( m_inputBitDepth[CHANNEL_TYPE_LUMA  ] < 8,                                   "InputBitDepth must be at least 8" );
@@ -3128,6 +3137,9 @@ void EncAppCfg::xPrintParameter()
   if( m_profile == Profile::NEXT )
   {
     msg( VERBOSE, "\nNEXT TOOL CFG: " );
+#if JVET_N0127_MMVD_SPS_FLAG 
+    msg( VERBOSE, "MMVD:%d ", m_MMVD);
+#endif
     msg( VERBOSE, "Affine:%d ", m_Affine );
     if ( m_Affine )
     {
@@ -3144,6 +3156,9 @@ void EncAppCfg::xPrintParameter()
     }
     msg( VERBOSE, "MTS: %1d(intra) %1d(inter) ", m_MTS & 1, ( m_MTS >> 1 ) & 1 );
     msg( VERBOSE, "SBT:%d ", m_SBT );
+#if INCLUDE_ISP_CFG_FLAG
+    msg( VERBOSE, "ISP:%d ", m_ISP );
+#endif
 #if JVET_N0235_SMVD_SPS
     msg( VERBOSE, "SMVD:%d ", m_SMVD );
 #endif
@@ -3155,7 +3170,13 @@ void EncAppCfg::xPrintParameter()
 #endif
     msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
+#if JVET_N0127_MMVD_SPS_FLAG 
+    m_allowDisFracMMVD = m_MMVD ? m_allowDisFracMMVD : false;
+    if ( m_MMVD )
+      msg(VERBOSE, "AllowDisFracMMVD:%d ", m_allowDisFracMMVD);
+#else
     msg( VERBOSE, "AllowDisFracMMVD:%d ", m_allowDisFracMMVD );
+#endif
     msg( VERBOSE, "AffineAmvr:%d ", m_AffineAmvr );
     m_AffineAmvrEncOpt = m_AffineAmvr ? m_AffineAmvrEncOpt : false;
     msg( VERBOSE, "AffineAmvrEncOpt:%d ", m_AffineAmvrEncOpt );
@@ -3185,7 +3206,11 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "PBIntraFast:%d ", m_usePbIntraFast );
   if( m_ImvMode ) msg( VERBOSE, "IMV4PelFast:%d ", m_Imv4PelFast );
   if( m_MTS ) msg( VERBOSE, "MTSMaxCand: %1d(intra) %1d(inter) ", m_MTSIntraMaxCand, m_MTSInterMaxCand );
+#if INCLUDE_ISP_CFG_FLAG
+  if( m_ISP ) msg( VERBOSE, "ISPFast:%d ", m_useFastISP );
+#else
   msg( VERBOSE, "ISPFast:%d ", m_useFastISP );
+#endif
   msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
   msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
   msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );

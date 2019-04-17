@@ -1498,6 +1498,17 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
   const int cuPelX = pu.Y().x;
   const int cuPelY = pu.Y().y;
 
+#if JVET_N0251_ITEM4_IBC_LOCAL_SEARCH_RANGE
+  const int lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
+  const int ctuSizeLog2 = g_aucLog2[lcuWidth];
+  int numLeftCTUs = (1 << ((7 - ctuSizeLog2) << 1)) - ((ctuSizeLog2 < 7) ? 1 : 0);
+
+  srLeft = -(numLeftCTUs * lcuWidth + (cuPelX % lcuWidth));
+  srTop = -(cuPelY % lcuWidth);
+
+  srRight = lcuWidth - (cuPelX % lcuWidth) - iRoiWidth;
+  srBottom = lcuWidth - (cuPelY % lcuWidth) - iRoiHeight;
+#else
   const int iPicWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
   const int iPicHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
 
@@ -1506,6 +1517,7 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
 
   srRight = std::min(iPicWidth - cuPelX - iRoiWidth, localSearchRangeX);
   srBottom = std::min(iPicHeight - cuPelY - iRoiHeight, localSearchRangeY);
+#endif
 
   rcMvSrchRngLT.setHor(srLeft);
   rcMvSrchRngLT.setVer(srTop);
@@ -1675,7 +1687,7 @@ void InterSearch::xxIBCHashSearch(PredictionUnit& pu, Mv* mvPred, int numMvPred,
     for (std::vector<Position>::iterator pos = candPos.begin(); pos != candPos.end(); pos++)
     {
       Position bottomRight = pos->offset(pu.Y().width - 1, pu.Y().height - 1);
-      if (pu.cs->isDecomp(*pos, pu.cs->chType) && pu.cs->isDecomp(bottomRight, pu.cs->chType))
+      if (pu.cs->isDecomp(*pos, CHANNEL_TYPE_LUMA) && pu.cs->isDecomp(bottomRight, CHANNEL_TYPE_LUMA))
       {
         Position tmp = *pos - pu.Y().pos();
         Mv candMv;
@@ -2788,6 +2800,9 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         // set hevc me result
         cu.affine = false;
         pu.mergeFlag = bMergeFlag;
+#if JVET_N0324_REGULAR_MRG_FLAG
+        pu.regularMergeFlag = false;
+#endif
         pu.mergeIdx = uiMRGIndex;
         pu.interDir = uiInterDir;
         cu.smvdMode = iSymMode;
@@ -3952,7 +3967,11 @@ void InterSearch::xPatternSearchIntRefine(PredictionUnit& pu, IntTZSearchStruct&
       int iMvBits = m_auiMVPIdxCost[iMVPIdx][AMVP_MAX_NUM_CANDS];
       m_pcRdCost->setPredictor( amvpInfo.mvCand[iMVPIdx] );
       iMvBits += m_pcRdCost->getBitsOfVectorWithPredictor( cTestMv[iMVPIdx].getHor(), cTestMv[iMVPIdx].getVer(), cStruct.imvShift );
+#if JVET_N0168_AMVR_ME_MODIFICATION
+      uiDist += m_pcRdCost->getCost(iMvBits);
+#else
       uiDist += m_pcRdCost->getCostOfVectorWithPredictor( cTestMv[iMVPIdx].getHor(), cTestMv[iMVPIdx].getVer(), cStruct.imvShift );
+#endif
 
       if (uiDist < uiBestDist)
       {
@@ -3982,7 +4001,9 @@ void InterSearch::xPatternSearchIntRefine(PredictionUnit& pu, IntTZSearchStruct&
   ruiCost = uiBestDist - m_pcRdCost->getCost(iBestBits) + m_pcRdCost->getCost(ruiBits);
   // taken from JEM 5.0
   // verify since it makes no sense to add rate for MVDs twicce
+#if JVET_N0168_AMVR_ME_MODIFICATION == 0
   ruiBits += m_pcRdCost->getBitsOfVectorWithPredictor(rcMv.getHor(), rcMv.getVer(), cStruct.imvShift);
+#endif
 
   return;
 }
@@ -4296,7 +4317,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
 
   pu.cu->affine = true;
   pu.mergeFlag = false;
-
+#if JVET_N0324_REGULAR_MRG_FLAG
+  pu.regularMergeFlag = false;
+#endif
   if( gbiIdx != GBI_DEFAULT )
   {
     pu.cu->GBiIdx = gbiIdx;
@@ -4306,7 +4329,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   for ( int iRefList = 0; iRefList < iNumPredDir; iRefList++ )
   {
     RefPicList  eRefPicList = ( iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
-
+#if JVET_N0068_AFFINE_MEM_BW
+    pu.interDir = ( iRefList ? 2 : 1 );
+#endif
     for (int iRefIdxTemp = 0; iRefIdxTemp < slice.getNumRefIdx(eRefPicList); iRefIdxTemp++)
     {
       // Get RefIdx bits
@@ -4645,7 +4670,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   if ( slice.isInterB() && !PU::isBipredRestriction(pu) )
   {
 	  tryBipred = 1;
-
+#if JVET_N0068_AFFINE_MEM_BW
+    pu.interDir = 3;
+#endif
     // Set as best list0 and list1
     iRefIdxBi[0] = iRefIdx[0];
     iRefIdxBi[1] = iRefIdx[1];
@@ -4901,7 +4928,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   {
     lastMode = 2;
     affineCost = uiCostBi;
-
+#if JVET_N0068_AFFINE_MEM_BW
+    pu.interDir = 3;
+#endif
     PU::setAllAffineMv( pu, cMvBi[0][0], cMvBi[0][1], cMvBi[0][2], REF_PIC_LIST_0
       , changeToHighPrec
     );
@@ -4922,7 +4951,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
       }
     }
 
+#if !JVET_N0068_AFFINE_MEM_BW
     pu.interDir = 3;
+#endif
 
     pu.mvpIdx[REF_PIC_LIST_0] = aaiMvpIdxBi[0][iRefIdxBi[0]];
     pu.mvpNum[REF_PIC_LIST_0] = aaiMvpNum[0][iRefIdxBi[0]];
@@ -4933,7 +4964,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   {
     lastMode = 0;
     affineCost = uiCost[0];
-
+#if JVET_N0068_AFFINE_MEM_BW
+    pu.interDir = 1;
+#endif
     PU::setAllAffineMv( pu, aacMv[0][0], aacMv[0][1], aacMv[0][2], REF_PIC_LIST_0
       , changeToHighPrec
     );
@@ -4947,8 +4980,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
         pu.mvdAffi[0][verIdx] = pu.mvdAffi[0][verIdx] - pu.mvdAffi[0][0];
       }
     }
-
+#if !JVET_N0068_AFFINE_MEM_BW
     pu.interDir = 1;
+#endif
 
     pu.mvpIdx[REF_PIC_LIST_0] = aaiMvpIdx[0][iRefIdx[0]];
     pu.mvpNum[REF_PIC_LIST_0] = aaiMvpNum[0][iRefIdx[0]];
@@ -4957,7 +4991,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   {
     lastMode = 1;
     affineCost = uiCost[1];
-
+#if JVET_N0068_AFFINE_MEM_BW
+    pu.interDir = 2;
+#endif
     PU::setAllAffineMv( pu, aacMv[1][0], aacMv[1][1], aacMv[1][2], REF_PIC_LIST_1
       , changeToHighPrec
     );
@@ -4971,8 +5007,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
         pu.mvdAffi[1][verIdx] = pu.mvdAffi[1][verIdx] - pu.mvdAffi[1][0];
       }
     }
-
+#if !JVET_N0068_AFFINE_MEM_BW
     pu.interDir = 2;
+#endif
 
     pu.mvpIdx[REF_PIC_LIST_1] = aaiMvpIdx[1][iRefIdx[1]];
     pu.mvpNum[REF_PIC_LIST_1] = aaiMvpNum[1][iRefIdx[1]];
@@ -6287,6 +6324,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 {
   const UnitArea& currArea = partitioner.currArea();
   const SPS &sps           = *cs.sps;
+#if JVET_N0671_RDCOST_FIX
+  m_pcRdCost->setChromaFormat(sps.getChromaFormatIdc());
+#endif
+
   const uint32_t numValidComp  = getNumberValidComponents( sps.getChromaFormatIdc() );
   const uint32_t numTBlocks    = getNumberValidTBlocks   ( *cs.pcv );
   const CodingUnit &cu = *cs.getCU(partitioner.chType);
@@ -6921,6 +6962,10 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   , const bool luma, const bool chroma
 )
 {
+#if JVET_N0671_RDCOST_FIX
+  m_pcRdCost->setChromaFormat(cs.sps->getChromaFormatIdc());
+#endif
+
   CodingUnit &cu = *cs.getCU( partitioner.chType );
 
   const ChromaFormat format     = cs.area.chromaFormat;;
@@ -6994,14 +7039,27 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     }
     else
     {
-    m_CABACEstimator->subblock_merge_flag( cu );
-    m_CABACEstimator->triangle_mode ( cu );
-    if (cu.mmvdSkip)
-    {
-      m_CABACEstimator->mmvd_merge_idx(pu);
-    }
-    else
-    m_CABACEstimator->merge_idx     ( pu );
+#if JVET_N0324_REGULAR_MRG_FLAG
+      if (pu.regularMergeFlag)
+      {
+        m_CABACEstimator->merge_idx(pu);
+      }
+      else
+      {
+#endif
+        m_CABACEstimator->subblock_merge_flag( cu );
+#if !JVET_N0324_REGULAR_MRG_FLAG
+        m_CABACEstimator->triangle_mode ( cu );
+#endif
+        if (cu.mmvdSkip)
+        {
+          m_CABACEstimator->mmvd_merge_idx(pu);
+        }
+        else
+          m_CABACEstimator->merge_idx     ( pu );
+#if JVET_N0324_REGULAR_MRG_FLAG
+      }
+#endif
     }
 
     cs.dist     = distortion;
@@ -7205,14 +7263,27 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
     }
 
     m_CABACEstimator->cu_skip_flag  ( cu );
-    m_CABACEstimator->subblock_merge_flag( cu );
-    m_CABACEstimator->triangle_mode ( cu );
-    if (cu.mmvdSkip)
+#if JVET_N0324_REGULAR_MRG_FLAG
+    if (cu.firstPU->regularMergeFlag)
     {
-      m_CABACEstimator->mmvd_merge_idx(*cu.firstPU);
+      m_CABACEstimator->merge_idx(*cu.firstPU);
     }
     else
-    m_CABACEstimator->merge_idx     ( *cu.firstPU );
+    {
+#endif
+      m_CABACEstimator->subblock_merge_flag( cu );
+#if !JVET_N0324_REGULAR_MRG_FLAG
+      m_CABACEstimator->triangle_mode ( cu );
+#endif
+      if (cu.mmvdSkip)
+      {
+        m_CABACEstimator->mmvd_merge_idx(*cu.firstPU);
+      }
+      else
+        m_CABACEstimator->merge_idx     ( *cu.firstPU );
+#if JVET_N0324_REGULAR_MRG_FLAG
+    }
+#endif
     fracBits   += m_CABACEstimator->getEstFracBits();
   }
   else

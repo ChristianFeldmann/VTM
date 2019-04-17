@@ -117,10 +117,24 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
         deriveClassification( m_classifier, tmpYuv.get( COMPONENT_Y ), blk );
         Area blkPCM(xPos, yPos, width, height);
         resetPCMBlkClassInfo(cs, m_classifier, tmpYuv.get(COMPONENT_Y), blkPCM);
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0242_NON_LINEAR_ALF
-        m_filter7x7Blk( m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clippFinal, m_clpRngs.comp[COMPONENT_Y], cs );
+        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clippFinal, m_clpRngs.comp[COMPONENT_Y], cs
+          , m_alfVBLumaCTUHeight
+          , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+        );
 #else
-        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y], cs );
+        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y], cs
+          , m_alfVBLumaCTUHeight
+          , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+        );
+#endif
+#else
+#if JVET_N0242_NON_LINEAR_ALF
+        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clippFinal, m_clpRngs.comp[COMPONENT_Y], cs);
+#else
+        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y], cs);
+#endif
 #endif
       }
 
@@ -133,11 +147,25 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
         if( m_ctuEnableFlag[compIdx][ctuIdx] )
         {
           Area blk( xPos >> chromaScaleX, yPos >> chromaScaleY, width >> chromaScaleX, height >> chromaScaleY );
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+#if JVET_N0242_NON_LINEAR_ALF
+          m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, compID, alfSliceParam.chromaCoeff, m_chromaClippFinal, m_clpRngs.comp[compIdx], cs
+            , m_alfVBChmaCTUHeight
+            , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos)
+          );
+#else
+          m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, compID, alfSliceParam.chromaCoeff, m_clpRngs.comp[compIdx], cs
+            , m_alfVBChmaCTUHeight
+            , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos)
+          );
+#endif
+#else
 
 #if JVET_N0242_NON_LINEAR_ALF
           m_filter5x5Blk( m_classifier, recYuv, tmpYuv, blk, compID, alfSliceParam.chromaCoeff, m_chromaClippFinal, m_clpRngs.comp[compIdx], cs );
 #else
           m_filter5x5Blk( m_classifier, recYuv, tmpYuv, blk, compID, alfSliceParam.chromaCoeff, m_clpRngs.comp[compIdx], cs );
+#endif
 #endif
         }
       }
@@ -234,6 +262,13 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
   m_numCTUsInPic = m_numCTUsInHeight * m_numCTUsInWidth;
   m_filterShapes[CHANNEL_TYPE_LUMA].push_back( AlfFilterShape( 7 ) );
   m_filterShapes[CHANNEL_TYPE_CHROMA].push_back( AlfFilterShape( 5 ) );
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+  m_alfVBLumaPos = m_maxCUHeight - ALF_VB_POS_ABOVE_CTUROW_LUMA;
+  m_alfVBChmaPos = (m_maxCUHeight >> ((m_chromaFormat == CHROMA_420) ? 1 : 0)) - ALF_VB_POS_ABOVE_CTUROW_CHMA;
+
+  m_alfVBLumaCTUHeight = m_maxCUHeight;
+  m_alfVBChmaCTUHeight = (m_maxCUHeight >> ((m_chromaFormat == CHROMA_420) ? 1 : 0));
+#endif
 
 #if JVET_N0242_NON_LINEAR_ALF
   static_assert( AlfNumClippingValues[CHANNEL_TYPE_LUMA] > 0, "AlfNumClippingValues[CHANNEL_TYPE_LUMA] must be at least one" );
@@ -332,8 +367,15 @@ void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const
     for( int j = blk.pos().x; j < width; j += m_CLASSIFICATION_BLK_SIZE )
     {
       int nWidth = std::min( j + m_CLASSIFICATION_BLK_SIZE, width ) - j;
-
-      m_deriveClassificationBlk( classifier, m_laplacian, srcLuma, Area( j, i, nWidth, nHeight ), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4 );
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION   
+      m_deriveClassificationBlk(classifier, m_laplacian, srcLuma, Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4
+        , m_alfVBLumaCTUHeight
+        , ((i + nHeight >= m_picHeight) ? m_picHeight : m_alfVBLumaPos)
+      );
+#else
+      m_deriveClassificationBlk(classifier, m_laplacian, srcLuma, Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4);
+#endif
+     
     }
   }
 }
@@ -387,7 +429,11 @@ void AdaptiveLoopFilter::resetPCMBlkClassInfo(CodingStructure & cs,  AlfClassifi
   }
 }
 
-void AdaptiveLoopFilter::deriveClassificationBlk( AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift )
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION  
+void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift,  int vbCTUHeight, int vbPos)
+#else
+void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift)
+#endif
 {
   static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
   const int stride = srcLuma.stride;
@@ -414,7 +460,16 @@ void AdaptiveLoopFilter::deriveClassificationBlk( AlfClassifier** classifier, in
     const Pel *src1 = &src[yoffset];
     const Pel *src2 = &src[yoffset + stride];
     const Pel *src3 = &src[yoffset + stride * 2];
-
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION    
+    if (((posY - 2 + i) > 0) && ((posY - 2 + i) % vbCTUHeight) == (vbPos - 2))
+    {
+      src3 = &src[yoffset + stride];
+    }
+    else if (((posY - 2 + i) > 0) && ((posY - 2 + i) % vbCTUHeight) == vbPos)
+    {
+      src0 = &src[yoffset];
+    }
+#endif 
     int* pYver = laplacian[VER][i];
     int* pYhor = laplacian[HOR][i];
     int* pYdig0 = laplacian[DIAG0][i];
@@ -478,13 +533,50 @@ void AdaptiveLoopFilter::deriveClassificationBlk( AlfClassifier** classifier, in
 
     for( int j = 0; j < blk.width; j += clsSizeX )
     {
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+      int sumV = 0; int sumH = 0; int sumD0 = 0; int sumD1 = 0;
+      if (((i + posY) % vbCTUHeight) == (vbPos - 4))
+      {
+        sumV = pYver[j] + pYver2[j] + pYver4[j];
+        sumH = pYhor[j] + pYhor2[j] + pYhor4[j];
+        sumD0 = pYdig0[j] + pYdig02[j] + pYdig04[j];
+        sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j];
+      }
+      else if (((i + posY) % vbCTUHeight) == vbPos)
+      {
+        sumV = pYver2[j] + pYver4[j] + pYver6[j];
+        sumH = pYhor2[j] + pYhor4[j] + pYhor6[j];
+        sumD0 = pYdig02[j] + pYdig04[j] + pYdig06[j];
+        sumD1 = pYdig12[j] + pYdig14[j] + pYdig16[j];
+      }
+      else
+      {
+        sumV = pYver[j] + pYver2[j] + pYver4[j] + pYver6[j];
+        sumH = pYhor[j] + pYhor2[j] + pYhor4[j] + pYhor6[j];
+        sumD0 = pYdig0[j] + pYdig02[j] + pYdig04[j] + pYdig06[j];
+        sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j] + pYdig16[j];
+      }
+#else
       int sumV = pYver[j] + pYver2[j] + pYver4[j] + pYver6[j];
       int sumH = pYhor[j] + pYhor2[j] + pYhor4[j] + pYhor6[j];
       int sumD0 = pYdig0[j] + pYdig02[j] + pYdig04[j] + pYdig06[j];
       int sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j] + pYdig16[j];
+#endif
 
       int tempAct = sumV + sumH;
-      int activity = (Pel)Clip3<int>( 0, maxActivity, ( tempAct * 64 ) >> shift );
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+      int activity = 0;
+      if ((((i + posY) % vbCTUHeight) == (vbPos - 4)) || (((i + posY) % vbCTUHeight) == vbPos))
+      {
+        activity = (Pel)Clip3<int>(0, maxActivity, (tempAct * 96) >> shift);
+      }
+      else
+      {
+        activity = (Pel)Clip3<int>(0, maxActivity, (tempAct * 64) >> shift);
+      }
+#else
+      int activity = (Pel)Clip3<int>(0, maxActivity, (tempAct * 64) >> shift);
+#endif
       int classIdx = th[activity];
 
       int hv1, hv0, d1, d0, hvd1, hvd0;
@@ -559,11 +651,20 @@ void AdaptiveLoopFilter::deriveClassificationBlk( AlfClassifier** classifier, in
 }
 
 template<AlfFilterType filtType>
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0242_NON_LINEAR_ALF
-void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs )
+void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
 #else
-void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs )
+void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
 #endif
+#else
+#if JVET_N0242_NON_LINEAR_ALF
+void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs)
+#else
+void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs)
+#endif
+#endif
+
 {
   const bool bChroma = isChroma( compId );
   if( bChroma )
@@ -756,6 +857,29 @@ void AdaptiveLoopFilter::filterBlk( AlfClassifier** classifier, const PelUnitBuf
         pImg6 = pImgYPad6 + j + ii * srcStride;
 
         pRec1 = pRec0 + j + ii * dstStride;
+
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+        if ((startHeight + i + ii) % vbCTUHeight < vbPos && ((startHeight + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
+        {
+          pImg1 = ((startHeight + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
+          pImg3 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
+          pImg5 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
+
+          pImg2 = ((startHeight + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
+          pImg4 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
+          pImg6 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg4 : pImg6;
+        }
+        else if ((startHeight + i + ii) % vbCTUHeight >= vbPos && ((startHeight + i + ii) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
+        {
+          pImg2 = ((startHeight + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
+          pImg4 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
+          pImg6 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg4 : pImg6;
+
+          pImg1 = ((startHeight + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
+          pImg3 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
+          pImg5 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
+        }
+#endif
 
         for( int jj = 0; jj < clsSizeX; jj++ )
         {

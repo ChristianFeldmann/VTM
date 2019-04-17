@@ -134,7 +134,6 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         }
         prevTmpPos = currCU.shareParentPos;
       }
-      cs.chType = chType;
       if (currCU.predMode != MODE_INTRA && currCU.Y().valid())
       {
         xDeriveCUMV(currCU);

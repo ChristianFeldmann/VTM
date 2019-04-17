@@ -754,8 +754,11 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
 void TrQuant::xGetCoeffEnergy( TransformUnit &tu, const ComponentID &compID, const CoeffBuf& coeffs, double* diagRatio, double* horVerRatio )
 {
   if( nullptr == diagRatio || nullptr == horVerRatio ) return;
-
+#if INCLUDE_ISP_CFG_FLAG
+  if( tu.cu->predMode == MODE_INTRA && !tu.cu->ispMode && isLuma( compID ) && tu.cs->sps->getUseISP() && CU::canUseISPSplit( *tu.cu, compID ) != NOT_INTRA_SUBPARTITIONS )
+#else
   if( tu.cu->predMode == MODE_INTRA && !tu.cu->ispMode && isLuma( compID ) && CU::canUseISPSplit( *tu.cu, compID ) != NOT_INTRA_SUBPARTITIONS )
+#endif
   {
     const int width   = tu.cu->blocks[compID].width;
     const int height  = tu.cu->blocks[compID].height;

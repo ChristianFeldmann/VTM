@@ -243,6 +243,9 @@ protected:
   bool      m_HashME;
   bool      m_AffineAmvrEncOpt;
   bool      m_DMVR;
+#if JVET_N0127_MMVD_SPS_FLAG 
+  bool      m_MMVD;
+#endif
 #if JVET_N0449_MMVD_SIMP
   int       m_MmvdDisNum;
 #endif
@@ -373,6 +376,9 @@ protected:
   int*      m_aidQP;
   uint32_t      m_uiDeltaQpRD;
   bool      m_bFastDeltaQP;
+#if INCLUDE_ISP_CFG_FLAG
+  bool      m_ISP;
+#endif
   bool      m_useFastISP;
 
   bool      m_bUseConstrainedIntraPred;
@@ -774,6 +780,10 @@ public:
   bool      getUseAffineAmvrEncOpt          ()         const { return m_AffineAmvrEncOpt; }
   void      setDMVR                      ( bool b )       { m_DMVR = b; }
   bool      getDMVR                      ()         const { return m_DMVR; }
+#if JVET_N0127_MMVD_SPS_FLAG 
+  void      setMMVD                         (bool b)         { m_MMVD = b;    }
+  bool      getMMVD                         ()         const { return m_MMVD; }
+#endif
 #if JVET_N0449_MMVD_SIMP
   void      setMmvdDisNum                   ( int b )        { m_MmvdDisNum = b; }
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
@@ -799,7 +809,10 @@ public:
   unsigned  getWrapAroundOffset             ()         const { return m_wrapAroundOffset; }
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
-
+#if INCLUDE_ISP_CFG_FLAG
+  void      setUseISP                       ( bool b )       { m_ISP = b; }
+  bool      getUseISP                       ()         const { return m_ISP; }
+#endif
   void      setReshaper                     ( bool b )                   { m_lumaReshapeEnable = b; }
   bool      getReshaper                     () const                     { return m_lumaReshapeEnable; }
   void      setReshapeSignalType            ( uint32_t signalType )      { m_reshapeSignalType = signalType; }

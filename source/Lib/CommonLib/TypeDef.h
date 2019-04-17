@@ -50,13 +50,21 @@
 #include <assert.h>
 #include <cassert>
 
-
-
-
 #define JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP             1 // JVET-N0866: unified transform derivation for ISP and implicit MTS (combining JVET-N0172, JVET-N0375, JVET-N0419 and JVET-N0420)
 
+#define JVET_N0324_REGULAR_MRG_FLAG                       1
 
+#define JVET_N0251_ITEM4_IBC_LOCAL_SEARCH_RANGE           1
 
+#define JVET_N0435_WAIP_HARMONIZATION                     1
+
+#define JVET_N0168_AMVR_ME_MODIFICATION                   1 // Correct the cost and bits calculation in encoder side
+
+#define JVET_N0068_AFFINE_MEM_BW                          1 // memory bandwidth reduction for affine mode
+
+#define JVET_N0308_MAX_CU_SIZE_FOR_ISP                    1
+
+#define JVET_N0280_RESIDUAL_CODING_TS                     1
 
 #define JVET_N0103_CGSIZE_HARMONIZATION                   1 // Chroma CG sizes aligned to luma CG sizes
 
@@ -66,10 +74,27 @@
 
 #define JVET_N0235_SMVD_SPS                               1
 
+#define JVET_N0671                                        1
+
+#if JVET_N0671
+#define JVET_N0671_CHROMA_FORMAT_422                      1
+#define JVET_N0671_RGB                                    1
+
+#define JVET_N0671_CCLM                                   1
+#define JVET_N0671_AFFINE                                 1
+#define JVET_N0671_DMVR                                   1
+
+#define JVET_N0671_RDCOST_FIX                             1
+#define JVET_N0671_INTRA_TPM_ALIGNWITH420                 1
+
+#endif //JVET_N0671
+
 #define JVET_N0843_BVP_SIMPLIFICATION                     1
 
 #define JVET_N0448_N0380                                  1 // When MaxNumMergeCand is 1, MMVD_BASE_MV_NUM is inferred to be 1.
+
 #define JVET_N0266_SMALL_BLOCKS                           1 // remove 4x4 uni-pred, 4x8/8x4 bi-pred from regular inter modes
+
 #define JVET_N0054_JOINT_CHROMA                           1 // Joint chroma residual coding mode
 
 #define JVET_N0317_ADD_ZERO_BV                            1
@@ -79,6 +104,8 @@
 #define JVET_N0462_FIX_CTX_MODELING                       1 // Fix context modeling of inter_pred_idc
 
 #define JVET_N0175_N0251_N0384_IBC_SMALL_CTU              1 // IBC search range arrangement for small CTU sizes
+
+#define JVET_N0127_MMVD_SPS_FLAG                          1
 
 #define JVET_N0286_SIMPLIFIED_GBI_IDX                     1 // Simplified coding of the GBi index
 
@@ -91,6 +118,8 @@
 #define JVET_N0481_BCW_CONSTRUCTED_AFFINE                 1
 
 #define JVET_N0483_DISABLE_SBT_FOR_TPM                    1
+
+#define JVET_N0180_ALF_LINE_BUFFER_REDUCTION              1 // Line buffer reduction for ALF using symmetric padding
 
 #define JVET_N0242_NON_LINEAR_ALF                         1 // enable CE5-3.2, Non-linear ALF based on clipping function
 
@@ -119,6 +148,14 @@
 
 #define JVET_N0407_DMVR_CU_SIZE_RESTRICTION               1 // Disable 4xN/8x8 CUs for DMVR
 
+#define JVET_N0196_SIX_TAP_FILTERS                        1 // 6-tap filters for affine motion compensation
+
+#define JVET_N0213_TMVP_REMOVAL                           1 // Remove TMVP candidates from merge and amvp mode with samples <= 32
+
+#define JVET_N0492_NO_HIERARCH_CBF                        1 // Allow CBFs writing for leaf TU only
+
+#define JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES  1 // JVET-N0473, JVET-N0098: Deblocking of ISP/SBT TU boundaries
+
 #define JCTVC_Y0038_PARAMS                                1
 
 #define JVET_MMVD_OFF_MACRO                               0
@@ -138,6 +175,7 @@ typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 
 // clang-format off
+#define INCLUDE_ISP_CFG_FLAG                              1
 #define ENABLE_JVET_L0283_MRL                             1 // 1: Enable MRL, 0: Disable MRL
 #define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
 #define REUSE_CU_RESULTS                                  1
@@ -156,6 +194,8 @@ typedef std::pair<int, int>  TrCost;
 #ifndef HEVC_TOOLS
 #define HEVC_TOOLS                                        0
 #endif
+
+#define JVET_N0246_MODIFIED_QUANTSCALES                   1
 
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE                0

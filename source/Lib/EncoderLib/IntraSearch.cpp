@@ -292,7 +292,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
   const int width   = partitioner.currArea().lwidth();
   const int height  = partitioner.currArea().lheight();
+#if INCLUDE_ISP_CFG_FLAG
+  int nOptionsForISP = sps.getUseISP() ? NUM_INTRA_SUBPARTITIONS_MODES : 1;
+#else
   int nOptionsForISP = NUM_INTRA_SUBPARTITIONS_MODES;
+#endif
   double bestCurrentCost = bestCostSoFar;
 
   int ispOptions[NUM_INTRA_SUBPARTITIONS_MODES] = { 0 };
@@ -439,7 +443,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           for( int modeIdx = 0; modeIdx < numModesAvailable; modeIdx++ )
           {
             uint32_t       uiMode = modeIdx;
+#if JVET_N0363_INTRA_COST_MOD
+            Distortion minSadHad = 0;
+#else
             Distortion uiSad  = 0;
+#endif
 
             // Skip checking extended Angular modes in the first round of SATD
             if( uiMode > DC_IDX && ( uiMode & 1 ) )
@@ -463,7 +471,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_N0363_INTRA_COST_MOD
             // Use the min between SAD and HAD as the cost criterion
             // SAD is scaled by 2 to align with the scaling of HAD
-            uiSad += std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
+            minSadHad += std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
 #else
             // use Hadamard transform here
             uiSad += distParam.distFunc(distParam);
@@ -476,16 +484,28 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
             uint64_t fracModeBits = xFracModeBitsIntra(pu, uiMode, CHANNEL_TYPE_LUMA);
 
+#if JVET_N0363_INTRA_COST_MOD
+            double cost = ( double ) minSadHad + (double)fracModeBits * sqrtLambdaForFirstPass;
+
+            DTRACE(g_trace_ctx, D_INTRA_COST, "IntraHAD: %u, %llu, %f (%d)\n", minSadHad, fracModeBits, cost, uiMode);
+#else
             double cost = ( double ) uiSad + ( double ) fracModeBits * sqrtLambdaForFirstPass;
 
             DTRACE( g_trace_ctx, D_INTRA_COST, "IntraHAD: %u, %llu, %f (%d)\n", uiSad, fracModeBits, cost, uiMode );
+#endif
 
             updateCandList( uiMode, cost,  uiRdModeList, CandCostList
               , extendRefList, 0
               , numModesForFullRD + extraModes );
+#if JVET_N0363_INTRA_COST_MOD
+            updateCandList(uiMode, (double) minSadHad, uiHadModeList, CandHadList
+              , *nullList, -1
+              , 3 + extraModes);
+#else
             updateCandList(uiMode, (double) uiSad, uiHadModeList, CandHadList
               , *nullList, -1
               , 3 + extraModes);
+#endif
           }
         } // NSSTFlag
 
@@ -524,7 +544,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_N0363_INTRA_COST_MOD
                 // Use the min between SAD and SATD as the cost criterion
                 // SAD is scaled by 2 to align with the scaling of HAD
-                Distortion sad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
+                Distortion minSadHad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
 #else
                 // use Hadamard transform here
                 Distortion sad = distParam.distFunc(distParam);
@@ -537,14 +557,25 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
                 uint64_t fracModeBits = xFracModeBitsIntra(pu, mode, CHANNEL_TYPE_LUMA);
 
+#if JVET_N0363_INTRA_COST_MOD
+                double cost = (double) minSadHad + (double) fracModeBits * sqrtLambdaForFirstPass;
+#else
                 double cost = (double) sad + (double) fracModeBits * sqrtLambdaForFirstPass;
+#endif
 
                 updateCandList(mode, cost, uiRdModeList, CandCostList
                   , extendRefList, 0
                   , numModesForFullRD);
+#if JVET_N0363_INTRA_COST_MOD
+
+                updateCandList(mode, (double)minSadHad, uiHadModeList, CandHadList
+                  , *nullList, -1
+                  , 3);
+#else
                 updateCandList(mode, (double)sad, uiHadModeList, CandHadList
                   , *nullList, -1
                   , 3);
+#endif
 
                 bSatdChecked[mode] = true;
               }
@@ -593,7 +624,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_N0363_INTRA_COST_MOD
               // Use the min between SAD and SATD as the cost criterion
               // SAD is scaled by 2 to align with the scaling of HAD
-              Distortion sad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
+              Distortion minSadHad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
 #else
               // use Hadamard transform here
               Distortion sad = distParam.distFunc(distParam);
@@ -606,7 +637,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
               uint64_t fracModeBits = xFracModeBitsIntra(pu, mode, CHANNEL_TYPE_LUMA);
 
+#if JVET_N0363_INTRA_COST_MOD
+              double cost = (double)minSadHad + (double)fracModeBits * sqrtLambdaForFirstPass;
+#else
               double cost = (double)sad + (double)fracModeBits * sqrtLambdaForFirstPass;
+#endif
               updateCandList(mode, cost, uiRdModeList, CandCostList, extendRefList, multiRefIdx, numModesForFullRD);
             }
           }
@@ -1585,6 +1620,9 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
 
   CodingStructure &cs                       = *tu.cs;
+#if JVET_N0671_RDCOST_FIX
+  m_pcRdCost->setChromaFormat(cs.sps->getChromaFormatIdc());
+#endif
 
   const CompArea      &area                 = tu.blocks[compID];
   const SPS           &sps                  = *cs.sps;
@@ -1604,7 +1642,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
   const bool           bUseCrossCPrediction = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isChroma( compID ) && PU::isChromaIntraModeCrossCheckMode( pu ) && checkCrossCPrediction;
   const bool           ccUseRecoResi        = m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate();
+#if INCLUDE_ISP_CFG_FLAG
+  const bool           ispSplitIsAllowed    = sps.getUseISP() && CU::canUseISPSplit( *tu.cu, compID );
+#else
   const bool           ispSplitIsAllowed    = CU::canUseISPSplit( *tu.cu, compID );
+#endif
 
 
   //===== init availability pattern =====
@@ -1749,9 +1791,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     tu.mtsIdx = trModes->at(0).first;
   }
   m_pcTrQuant->transformNxN( tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr, &diagRatio, &horVerRatio );
-  if (!tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed &&
-    tu.mtsIdx == 0
-    )
+#if INCLUDE_ISP_CFG_FLAG
+    if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == 0 && ispSplitIsAllowed )
+#else
+  if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == 0 )
+#endif
   {
     m_intraModeDiagRatio        .push_back(diagRatio);
     m_intraModeHorVerRatio      .push_back(horVerRatio);
@@ -1850,7 +1894,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
 }
 
-void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &partitioner, const double bestCostSoFar, const int subTuIdx, const PartSplit ispType, const bool ispIsCurrentWinnder )
+void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &partitioner, const double bestCostSoFar, const int subTuIdx, const PartSplit ispType, const bool ispIsCurrentWinner )
 {
         int   subTuCounter = subTuIdx;
   const UnitArea &currArea = partitioner.currArea();
@@ -1941,7 +1985,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
     bool    cbfDCT2  = true;
 
     double bestDCT2cost = MAX_DOUBLE;
-    double threshold = m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinnder && nNumTransformCands > 1 ? 1 + 1.4 / sqrt( cu.lwidth() * cu.lheight() ) : 1;
+    double threshold = m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinner && nNumTransformCands > 1 ? 1 + 1.4 / sqrt( cu.lwidth() * cu.lheight() ) : 1;
     for( int modeId = firstCheckId; modeId < nNumTransformCands; modeId++ )
     {
       if( !cbfDCT2 || ( m_pcEncCfg->getUseTransformSkipFast() && bestModeId[COMPONENT_Y] == 1 ) )
@@ -1953,7 +1997,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         continue;
       }
       //we compare the DCT-II cost against the best ISP cost so far (except for TS)
-      if ( m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinnder && trModes[modeId].first != 0 && ( trModes[modeId].first != 1 || !tsAllowed ) && bestDCT2cost > bestCostSoFar * threshold )
+      if ( m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinner && trModes[modeId].first != 0 && ( trModes[modeId].first != 1 || !tsAllowed ) && bestDCT2cost > bestCostSoFar * threshold )
       {
         continue;
       }

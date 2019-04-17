@@ -798,6 +798,47 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   }
 }
 
+#if JVET_N0068_AFFINE_MEM_BW
+bool InterPrediction::isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType ) 
+{
+  int s4 = ( 4 << 11 );
+  int filterTap = 6;
+
+  if ( predType == 3 )
+  {
+    int refBlkWidth  = std::max( std::max( 0, 4 * a + s4 ), std::max( 4 * c, 4 * a + 4 * c + s4 ) ) - std::min( std::min( 0, 4 * a + s4 ), std::min( 4 * c, 4 * a + 4 * c + s4 ) );
+    int refBlkHeight = std::max( std::max( 0, 4 * b ), std::max( 4 * d + s4, 4 * b + 4 * d + s4 ) ) - std::min( std::min( 0, 4 * b ), std::min( 4 * d + s4, 4 * b + 4 * d + s4 ) );
+    refBlkWidth  = ( refBlkWidth >> 11 ) + filterTap + 3;
+    refBlkHeight = ( refBlkHeight >> 11 ) + filterTap + 3;
+
+    if ( refBlkWidth * refBlkHeight > ( filterTap + 9 ) * ( filterTap + 9 ) )
+    {
+      return true;
+    }
+  }
+  else
+  {
+    int refBlkWidth  = std::max( 0, 4 * a + s4 ) - std::min( 0, 4 * a + s4 );
+    int refBlkHeight = std::max( 0, 4 * b ) - std::min( 0, 4 * b );
+    refBlkWidth  = ( refBlkWidth >> 11 ) + filterTap + 3;
+    refBlkHeight = ( refBlkHeight >> 11 ) + filterTap + 3;
+    if ( refBlkWidth * refBlkHeight > ( filterTap + 9 ) * ( filterTap + 5 ) )
+    {
+      return true;
+    }
+
+    refBlkWidth  = std::max( 0, 4 * c ) - std::min( 0, 4 * c );
+    refBlkHeight = std::max( 0, 4 * d + s4 ) - std::min( 0, 4 * d + s4 );
+    refBlkWidth  = ( refBlkWidth >> 11 ) + filterTap + 3;
+    refBlkHeight = ( refBlkHeight >> 11 ) + filterTap + 3;
+    if ( refBlkWidth * refBlkHeight > ( filterTap + 5 ) * ( filterTap + 9 ) )
+    {
+      return true;
+    }
+  }
+  return false;
+}
+#endif
 void InterPrediction::xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng )
 {
   if ( (pu.cu->affineType == AFFINEMODEL_6PARAM && _mv[0] == _mv[1] && _mv[0] == _mv[2])
@@ -832,7 +873,11 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   int blockHeight = AFFINE_MIN_BLOCK_SIZE;
 
   CHECK(blockWidth  > (width >> iScaleX ), "Sub Block width  > Block width");
+#if JVET_N0671_AFFINE
+  CHECK(blockHeight > (height >> iScaleY), "Sub Block height > Block height");
+#else
   CHECK(blockHeight > (height >> iScaleX), "Sub Block height > Block height");
+#endif //JVET_N0671_AFFINE
   const int MVBUFFER_SIZE = MAX_CU_SIZE / MIN_PU_SIZE;
 
   const int cxWidth  = width  >> iScaleX;
@@ -869,7 +914,9 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   const int vFilterSize = isLuma(compID) ? NTAPS_LUMA : NTAPS_CHROMA;
 
   const int shift = iBit - 4 + MV_FRACTIONAL_BITS_INTERNAL;
-
+#if JVET_N0068_AFFINE_MEM_BW
+  const bool subblkMVSpreadOverLimit = isSubblockVectorSpreadOverLimit( iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY, pu.interDir );
+#endif
 
   // get prediction block by block
   for ( int h = 0; h < cxHeight; h += blockHeight )
@@ -878,11 +925,26 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     {
 
       int iMvScaleTmpHor, iMvScaleTmpVer;
+#if JVET_N0671_AFFINE
+      if (compID == COMPONENT_Y || pu.chromaFormat == CHROMA_444)
+#else
       if(compID == COMPONENT_Y)
+#endif //JVET_N0671_AFFINE
       {
-        iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
-        iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
-
+#if JVET_N0068_AFFINE_MEM_BW
+        if ( !subblkMVSpreadOverLimit )
+        {
+#endif
+          iMvScaleTmpHor = iMvScaleHor + iDMvHorX * (iHalfBW + w) + iDMvVerX * (iHalfBH + h);
+          iMvScaleTmpVer = iMvScaleVer + iDMvHorY * (iHalfBW + w) + iDMvVerY * (iHalfBH + h);
+#if JVET_N0068_AFFINE_MEM_BW
+        }
+        else
+        {
+          iMvScaleTmpHor = iMvScaleHor + iDMvHorX * ( cxWidth >> 1 ) + iDMvVerX * ( cxHeight >> 1 );
+          iMvScaleTmpVer = iMvScaleVer + iDMvHorY * ( cxWidth >> 1 ) + iDMvVerY * ( cxHeight >> 1 );
+        }
+#endif
         roundAffineMv(iMvScaleTmpHor, iMvScaleTmpVer, shift);
         Mv tmpMv(iMvScaleTmpHor, iMvScaleTmpVer);
         tmpMv.clipToStorageBitDepth();
@@ -908,7 +970,11 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
       else
       {
         Mv curMv = m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE) * MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE)] +
+#if JVET_N0671_AFFINE
+          m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + iScaleY)* MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + iScaleX)];
+#else
           m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + 1)* MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + 1)];
+#endif
         roundAffineMv(curMv.hor, curMv.ver, 1);
         if (sps.getWrapAroundEnabledFlag())
         {
@@ -1459,7 +1525,12 @@ void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint
 
   const int32_t ratioWH           = (width > height) ? (width / height) : 1;
   const int32_t ratioHW           = (width > height) ? 1 : (height / width);
+
+#if JVET_N0671_INTRA_TPM_ALIGNWITH420
+  const bool    longWeight        = (compIdx == COMPONENT_Y);
+#else
   const bool    longWeight        = (compIdx == COMPONENT_Y) || ( predDst.chromaFormat == CHROMA_444 );
+#endif
   const int32_t weightedLength    = longWeight ? 7 : 3;
         int32_t weightedStartPos  = ( splitDir == 0 ) ? ( 0 - (weightedLength >> 1) * ratioWH ) : ( width - ((weightedLength + 1) >> 1) * ratioWH );
         int32_t weightedEndPos    = weightedStartPos + weightedLength * ratioWH - 1;
@@ -1942,8 +2013,19 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
         xFinalPaddedMCForDMVR(subPu, srcPred0, srcPred1, m_cYuvRefBuffSubCuDMVRL0, m_cYuvRefBuffSubCuDMVRL1, bioApplied, mergeMv);
 
         subPredBuf.bufs[COMPONENT_Y].buf  = pcYuvDst.bufs[COMPONENT_Y].buf + xStart + yStart * dstStride[COMPONENT_Y];
+#if !JVET_N0671_DMVR 
         subPredBuf.bufs[COMPONENT_Cb].buf = pcYuvDst.bufs[COMPONENT_Cb].buf + (xStart >> 1) + ((yStart >> 1) * dstStride[COMPONENT_Cb]);
         subPredBuf.bufs[COMPONENT_Cr].buf = pcYuvDst.bufs[COMPONENT_Cr].buf + (xStart >> 1) + ((yStart >> 1) * dstStride[COMPONENT_Cr]);
+#else
+        int scaleX = getComponentScaleX(COMPONENT_Cb, pu.chromaFormat);
+        int scaleY =  getComponentScaleY(COMPONENT_Cb, pu.chromaFormat);
+        subPredBuf.bufs[COMPONENT_Cb].buf = pcYuvDst.bufs[COMPONENT_Cb].buf + (xStart >> scaleX) + ((yStart >> scaleY) * dstStride[COMPONENT_Cb]);
+
+        scaleX =  getComponentScaleX(COMPONENT_Cr, pu.chromaFormat);
+        scaleY =  getComponentScaleY(COMPONENT_Cr, pu.chromaFormat);
+        subPredBuf.bufs[COMPONENT_Cr].buf = pcYuvDst.bufs[COMPONENT_Cr].buf + (xStart >> scaleX) + ((yStart >> scaleY) * dstStride[COMPONENT_Cr]);
+#endif // !JVET_N0671_DMVR 
+
         xWeightedAverage(subPu, srcPred0, srcPred1, subPredBuf, subPu.cu->slice->getSPS()->getBitDepths(), subPu.cu->slice->clpRngs(), bioApplied);
         num++;
       }

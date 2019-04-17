@@ -201,6 +201,9 @@ public:
   static const CtxSet   Split12Flag;
   static const CtxSet   SkipFlag;
   static const CtxSet   MergeFlag;
+#if JVET_N0324_REGULAR_MRG_FLAG
+  static const CtxSet   RegularMergeFlag;
+#endif
   static const CtxSet   MergeIdx;
   static const CtxSet   PartSize;
   static const CtxSet   PredMode;
@@ -228,6 +231,13 @@ public:
   static const CtxSet   SigFlag         [6];    // [ ChannelType + State ]
   static const CtxSet   ParFlag         [2];    // [ ChannelType ]
   static const CtxSet   GtxFlag         [4];    // [ ChannelType + x ]
+#if JVET_N0280_RESIDUAL_CODING_TS
+  static const CtxSet   TsSigCoeffGroup;
+  static const CtxSet   TsSigFlag;
+  static const CtxSet   TsParFlag;
+  static const CtxSet   TsGtxFlag;
+  static const CtxSet   TsResidualSign;
+#endif
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;
   static const CtxSet   SaoTypeIdx;

@@ -310,7 +310,7 @@ bool IbcHashMap::ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand,
       if (lumaArea.width > MIN_PU_SIZE || lumaArea.height > MIN_PU_SIZE)
       {
 #if JVET_N0329_IBC_SEARCH_IMP 
-        if (!cs.isDecomp(bottomRight, cs.chType) || bottomRight.x >= m_picWidth || bottomRight.y >= m_picHeight || topLeft.x < 0 || topLeft.y < 0)
+        if (!cs.isDecomp(bottomRight, CHANNEL_TYPE_LUMA) || bottomRight.x >= m_picWidth || bottomRight.y >= m_picHeight || topLeft.x < 0 || topLeft.y < 0)
 #else
         if (!cs.isDecomp(bottomRight, cs.chType) || bottomRight.x >= m_picWidth || bottomRight.y >= m_picHeight)
 #endif
@@ -334,7 +334,7 @@ bool IbcHashMap::ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand,
       {
 #if JVET_N0329_IBC_SEARCH_IMP 
         CHECK(topLeft != *refBlockPos, "4x4 target block should not have offset!");
-        if (abs(topLeft.x - lumaArea.x) > searchRange4SmallBlk || abs(topLeft.y - lumaArea.y) > searchRange4SmallBlk || !cs.isDecomp(bottomRight, cs.chType))
+        if (abs(topLeft.x - lumaArea.x) > searchRange4SmallBlk || abs(topLeft.y - lumaArea.y) > searchRange4SmallBlk || !cs.isDecomp(bottomRight, CHANNEL_TYPE_LUMA))
 #else
         if (abs(refBlockPos->x - lumaArea.x) > searchRange4SmallBlk || abs(refBlockPos->y - lumaArea.y) > searchRange4SmallBlk || !cs.isDecomp(bottomRight, cs.chType))
 #endif

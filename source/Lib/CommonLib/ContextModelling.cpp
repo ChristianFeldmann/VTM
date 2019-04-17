@@ -102,6 +102,12 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
   , m_sigFlagCtxSet             { Ctx::SigFlag[m_chType], Ctx::SigFlag[m_chType+2], Ctx::SigFlag[m_chType+4] }
   , m_parFlagCtxSet             ( Ctx::ParFlag[m_chType] )
   , m_gtxFlagCtxSet             { Ctx::GtxFlag[m_chType], Ctx::GtxFlag[m_chType+2] }
+#if JVET_N0280_RESIDUAL_CODING_TS
+  , m_sigGroupCtxIdTS           (-1)
+  , m_tsSigFlagCtxSet           ( Ctx::TsSigFlag )
+  , m_tsParFlagCtxSet           ( Ctx::TsParFlag )
+  , m_tsGtxFlagCtxSet           ( Ctx::TsGtxFlag )
+#endif
   , m_sigCoeffGroupFlag         ()
 {
   // LOGTODO
@@ -151,6 +157,11 @@ void CoeffCodingContext::initSubblock( int SubsetId, bool sigGroupFlag )
   unsigned  sigRight  = unsigned( ( CGPosX + 1 ) < m_widthInGroups  ? m_sigCoeffGroupFlag[ m_subSetPos + 1               ] : false );
   unsigned  sigLower  = unsigned( ( CGPosY + 1 ) < m_heightInGroups ? m_sigCoeffGroupFlag[ m_subSetPos + m_widthInGroups ] : false );
   m_sigGroupCtxId     = Ctx::SigCoeffGroup[m_chType]( sigRight | sigLower );
+#if JVET_N0280_RESIDUAL_CODING_TS
+  unsigned  sigLeft   = unsigned( int( CGPosX - 1 ) > 0 ? m_sigCoeffGroupFlag[m_subSetPos - 1              ] : false );
+  unsigned  sigAbove  = unsigned( int( CGPosY - 1 ) > 0 ? m_sigCoeffGroupFlag[m_subSetPos - m_widthInGroups] : false );
+  m_sigGroupCtxIdTS   = Ctx::TsSigCoeffGroup( sigLeft  + sigAbove );
+#endif
 }
 
 
@@ -371,7 +382,9 @@ unsigned DeriveCtx::CtxIBCFlag(const CodingUnit& cu)
 void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 {
   CHECK( candIdx >= numValidMergeCand, "Merge candidate does not exist" );
-
+#if JVET_N0324_REGULAR_MRG_FLAG
+  pu.regularMergeFlag        = !(pu.mhIntraFlag || pu.cu->triangle);
+#endif
   pu.mergeFlag               = true;
   pu.mmvdMergeFlag = false;
   pu.interDir                = interDirNeighbours[candIdx];
@@ -551,6 +564,9 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mmvdMergeFlag = true;
   pu.mmvdMergeIdx = candIdx;
   pu.mergeFlag = true;
+#if JVET_N0324_REGULAR_MRG_FLAG
+  pu.regularMergeFlag = false;
+#endif
   pu.mergeIdx = candIdx;
   pu.mergeType = MRG_TYPE_DEFAULT_N;
   pu.mvd[REF_PIC_LIST_0] = Mv();

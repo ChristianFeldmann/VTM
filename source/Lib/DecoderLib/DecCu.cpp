@@ -818,6 +818,19 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         printf( "DECODER: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), pu.lwidth(), pu.lheight() );
       }
     }
+    if (CU::isIBC(cu))
+    {
+      const int cuPelX = pu.Y().x;
+      const int cuPelY = pu.Y().y;
+      int roiWidth = pu.lwidth();
+      int roiHeight = pu.lheight();
+      const int picWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
+      const int picHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
+      const unsigned int  lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
+      int xPred = pu.bv.getHor();
+      int yPred = pu.bv.getVer();
+      CHECK(!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, xPred, yPred, lcuWidth), "invalid block vector for IBC detected.");
+    }
   }
 }
 //! \}

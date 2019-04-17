@@ -827,8 +827,8 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       const int picWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
       const int picHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
       const unsigned int  lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
-      int xPred = pu.bv.getHor();
-      int yPred = pu.bv.getVer();
+      int xPred = pu.mv[0].getHor()>>4;
+      int yPred = pu.mv[0].getVer()>>4;
       CHECK(!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, xPred, yPred, lcuWidth), "invalid block vector for IBC detected.");
     }
   }

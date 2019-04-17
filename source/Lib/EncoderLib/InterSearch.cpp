@@ -1687,7 +1687,7 @@ void InterSearch::xxIBCHashSearch(PredictionUnit& pu, Mv* mvPred, int numMvPred,
     for (std::vector<Position>::iterator pos = candPos.begin(); pos != candPos.end(); pos++)
     {
       Position bottomRight = pos->offset(pu.Y().width - 1, pu.Y().height - 1);
-      if (pu.cs->isDecomp(*pos, pu.cs->chType) && pu.cs->isDecomp(bottomRight, pu.cs->chType))
+      if (pu.cs->isDecomp(*pos, CHANNEL_TYPE_LUMA) && pu.cs->isDecomp(bottomRight, CHANNEL_TYPE_LUMA))
       {
         Position tmp = *pos - pu.Y().pos();
         Mv candMv;

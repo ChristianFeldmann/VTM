@@ -1392,8 +1392,6 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
 
 IbcLumaCoverage CodingStructure::getIbcLumaCoverage(const CompArea& chromaArea) const
 {
-  CHECK(chType != CHANNEL_TYPE_CHROMA, "Error");
-
   const unsigned int unitAreaSubBlock = MIN_PU_SIZE * MIN_PU_SIZE;
   CompArea lumaArea = CompArea(COMPONENT_Y, chromaArea.chromaFormat, chromaArea.lumaPos(), recalcSize(chromaArea.chromaFormat, CHANNEL_TYPE_CHROMA, CHANNEL_TYPE_LUMA, chromaArea.size()));
   lumaArea = clipArea(lumaArea, picture->block(COMPONENT_Y));

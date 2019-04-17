@@ -2327,7 +2327,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
   Position posLT = pu.Y().topLeft();
 
   // above-left
-  const PredictionUnit *aboveLeftPU = pu.cs->getPURestricted(posLT.offset(-1, -1), pu, pu.cs->chType);
+  const PredictionUnit *aboveLeftPU = pu.cs->getPURestricted(posLT.offset(-1, -1), pu, CHANNEL_TYPE_LUMA);
   if (aboveLeftPU && CU::isIBC(*aboveLeftPU->cu))
   {
     if (isAddNeighborMv(aboveLeftPU->bv, mvPred, nbPred))
@@ -2339,7 +2339,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
   // above neighbors
   for (uint32_t dx = 0; dx < totalAboveUnits && nbPred < IBC_NUM_CANDIDATES; dx++)
   {
-    const PredictionUnit* tmpPU = pu.cs->getPURestricted(posLT.offset((dx << log2UnitWidth), -1), pu, pu.cs->chType);
+    const PredictionUnit* tmpPU = pu.cs->getPURestricted(posLT.offset((dx << log2UnitWidth), -1), pu, CHANNEL_TYPE_LUMA);
     if (tmpPU && CU::isIBC(*tmpPU->cu))
     {
       if (isAddNeighborMv(tmpPU->bv, mvPred, nbPred))
@@ -2352,7 +2352,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
   // left neighbors
   for (uint32_t dy = 0; dy < totalLeftUnits && nbPred < IBC_NUM_CANDIDATES; dy++)
   {
-    const PredictionUnit* tmpPU = pu.cs->getPURestricted(posLT.offset(-1, (dy << log2UnitHeight)), pu, pu.cs->chType);
+    const PredictionUnit* tmpPU = pu.cs->getPURestricted(posLT.offset(-1, (dy << log2UnitHeight)), pu, CHANNEL_TYPE_LUMA);
     if (tmpPU && CU::isIBC(*tmpPU->cu))
     {
       if (isAddNeighborMv(tmpPU->bv, mvPred, nbPred))
@@ -2408,7 +2408,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
 
   //left
   const PredictionUnit *neibLeftPU = NULL;
-  neibLeftPU = pu.cs->getPURestricted(posLB.offset(-1, 0), pu, pu.cs->chType);
+  neibLeftPU = pu.cs->getPURestricted(posLB.offset(-1, 0), pu, CHANNEL_TYPE_LUMA);
   left = (neibLeftPU) ? CU::isIBC(*neibLeftPU->cu) : 0;
 
   if (left)
@@ -2420,7 +2420,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
 
   //above
   const PredictionUnit *neibAbovePU = NULL;
-  neibAbovePU = pu.cs->getPURestricted(posRT.offset(0, -1), pu, pu.cs->chType);
+  neibAbovePU = pu.cs->getPURestricted(posRT.offset(0, -1), pu, CHANNEL_TYPE_LUMA);
   above = (neibAbovePU) ? CU::isIBC(*neibAbovePU->cu) : 0;
 
   if (above)
@@ -2432,7 +2432,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
 
   // Below Left predictor search
   const PredictionUnit *neibBelowLeftPU = NULL;
-  neibBelowLeftPU = pu.cs->getPURestricted(posLB.offset(-1, 1), pu, pu.cs->chType);
+  neibBelowLeftPU = pu.cs->getPURestricted(posLB.offset(-1, 1), pu, CHANNEL_TYPE_LUMA);
   unsigned int belowLeft = (neibBelowLeftPU) ? CU::isIBC(*neibBelowLeftPU->cu) : 0;
 
   if (belowLeft)
@@ -2445,7 +2445,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
 
   // Above Right predictor search
   const PredictionUnit *neibAboveRightPU = NULL;
-  neibAboveRightPU = pu.cs->getPURestricted(posRT.offset(1, -1), pu, pu.cs->chType);
+  neibAboveRightPU = pu.cs->getPURestricted(posRT.offset(1, -1), pu, CHANNEL_TYPE_LUMA);
   unsigned int aboveRight = (neibAboveRightPU) ? CU::isIBC(*neibAboveRightPU->cu) : 0;
 
   if (aboveRight)
@@ -2458,7 +2458,7 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred)
 
   // Above Left predictor search
   const PredictionUnit *neibAboveLeftPU = NULL;
-  neibAboveLeftPU = pu.cs->getPURestricted(posLT.offset(-1, -1), pu, pu.cs->chType);
+  neibAboveLeftPU = pu.cs->getPURestricted(posLT.offset(-1, -1), pu, CHANNEL_TYPE_LUMA);
   unsigned int aboveLeft = (neibAboveLeftPU) ? CU::isIBC(*neibAboveLeftPU->cu) : 0;
 
   if (aboveLeft)
@@ -2486,7 +2486,7 @@ bool PU::getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv)
   }
 
   const PredictionUnit *neibRefPU = NULL;
-  neibRefPU = pu.cs->getPURestricted(pu.lumaPos().offset(offsetX, offsetY), pu, pu.cs->chType);
+  neibRefPU = pu.cs->getPURestricted(pu.lumaPos().offset(offsetX, offsetY), pu, CHANNEL_TYPE_LUMA);
 
   bool isIBC = (neibRefPU) ? CU::isIBC(*neibRefPU->cu) : 0;
   if (isIBC)

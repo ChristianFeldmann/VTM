@@ -50,7 +50,6 @@
 #include <assert.h>
 #include <cassert>
 
-
 #define JVET_N0217_MATRIX_INTRAPRED                       1 // matrix-based intra prediction (MIP)
 
 #define JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM               1 // JVET-N0400, JVET-N0447, JVET-N0500, JVET-N0851, align triangle merge candidate number and regular merge candidate number

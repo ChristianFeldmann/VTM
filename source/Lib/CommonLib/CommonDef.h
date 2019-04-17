@@ -327,6 +327,11 @@ static const int GBI_SIZE_CONSTRAINT =                            256; ///< disa
 static const int MAX_NUM_HMVP_CANDS =                              (MRG_MAX_NUM_CANDS-1); ///< maximum number of HMVP candidates to be stored and used in merge list
 static const int MAX_NUM_HMVP_AVMPCANDS =                          4; ///< maximum number of HMVP candidates to be used in AMVP list
 
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+static const int ALF_VB_POS_ABOVE_CTUROW_LUMA = 4;
+static const int ALF_VB_POS_ABOVE_CTUROW_CHMA = 2;
+#endif
+
 #if W0038_DB_OPT
 static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;
 #endif

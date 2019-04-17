@@ -84,7 +84,6 @@ public:
   Slice           *slice;
 
   UnitScale        unitScale[MAX_NUM_COMPONENT];
-  ChannelType chType;
 
   int         baseQP;
   int         prevQP[MAX_NUM_CHANNEL_TYPE];

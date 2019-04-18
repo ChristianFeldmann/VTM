@@ -256,7 +256,9 @@ public:
   static const CtxSet   GBiIdx;
   static const CtxSet   ctbAlfFlag;
   static const CtxSet   MHIntraFlag;
+#if !JVET_N0302_SIMPLFIED_CIIP
   static const CtxSet   MHIntraPredMode;
+#endif
   static const CtxSet   TriangleFlag;
   static const CtxSet   TriangleIdx;
   static const CtxSet   SmvdFlag;

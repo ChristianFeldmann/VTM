@@ -346,6 +346,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     xSetMaxFilterLengthPQForCodingSubBlocks( edgeDir, cu, currPU, mvSubBlocks, subBlockSize, areaPu );
 #endif
   }
+#if !JVET_N0302_SIMPLFIED_CIIP
   if (cu.firstPU->mhIntraFlag)
   {
     const uint32_t dirMode = PU::getFinalIntraMode(*(cu.firstPU), cu.chType);
@@ -384,6 +385,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     xSetMaxFilterLengthPQForCodingSubBlocks( edgeDir, cu, currPU, mvSubBlocks, subBlockSize, areaPu );
 #endif
   }
+#endif
 
   const unsigned uiPelsInPart = pcv.minCUWidth;
 
@@ -1025,6 +1027,9 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
 #endif
         {
           // restrict filter length if sub-blocks are used (e.g affine or ATMVP)
+#if JVET_N0302_SIMPLFIED_CIIP
+          if (cuP.affine)
+#else
           bool ciipSubBlock = false;
           if (cuP.firstPU->mhIntraFlag)
           {
@@ -1032,6 +1037,7 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
             ciipSubBlock = edgeDir == EDGE_HOR ? dirMode == VER_IDX : dirMode == HOR_IDX;
           }
           if (cuP.affine || ciipSubBlock)
+#endif
           {
             maxFilterLengthP = std::min(maxFilterLengthP, 5);
           }

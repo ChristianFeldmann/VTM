@@ -4536,6 +4536,63 @@ void PU::restrictBiPredMergeCandsOne(PredictionUnit &pu)
 
 void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangleMrgCtx )
 {
+#if JVET_N0340_TRI_MERGE_CAND
+  MergeCtx tmpMergeCtx;
+
+  const Slice &slice = *pu.cs->slice;
+  const uint32_t maxNumMergeCand = slice.getMaxNumMergeCand();
+
+  triangleMrgCtx.numValidMergeCand = 0;
+
+  for (int32_t i = 0; i < TRIANGLE_MAX_NUM_UNI_CANDS; i++)
+  {
+    triangleMrgCtx.GBiIdx[i] = GBI_DEFAULT;
+    triangleMrgCtx.interDirNeighbours[i] = 0;
+    triangleMrgCtx.mrgTypeNeighbours[i] = MRG_TYPE_DEFAULT_N;
+    triangleMrgCtx.mvFieldNeighbours[(i << 1)].refIdx = NOT_VALID;
+    triangleMrgCtx.mvFieldNeighbours[(i << 1) + 1].refIdx = NOT_VALID;
+    triangleMrgCtx.mvFieldNeighbours[(i << 1)].mv = Mv();
+    triangleMrgCtx.mvFieldNeighbours[(i << 1) + 1].mv = Mv();
+  }
+
+  PU::getInterMergeCandidates(pu, tmpMergeCtx, 0);
+
+  for (int32_t i = 0; i < maxNumMergeCand; i++)
+  {
+    int parity = i & 1;
+    if (tmpMergeCtx.interDirNeighbours[i] & (0x01 + parity))
+    {
+      triangleMrgCtx.interDirNeighbours[triangleMrgCtx.numValidMergeCand] = 1 + parity;
+      triangleMrgCtx.mrgTypeNeighbours[triangleMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
+      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + !parity].mv = Mv(0, 0);
+      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + parity].mv = tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].mv;
+      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + !parity].refIdx = -1;
+      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + parity].refIdx = tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].refIdx;
+      triangleMrgCtx.numValidMergeCand++;
+      if (triangleMrgCtx.numValidMergeCand == TRIANGLE_MAX_NUM_UNI_CANDS)
+      {
+        return;
+      }
+      continue;
+    }
+
+    if (tmpMergeCtx.interDirNeighbours[i] & (0x02 - parity))
+    {
+      triangleMrgCtx.interDirNeighbours[triangleMrgCtx.numValidMergeCand] = 2 - parity;
+      triangleMrgCtx.mrgTypeNeighbours[triangleMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
+      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + !parity].mv = tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].mv;
+      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + parity].mv = Mv(0, 0);
+      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + !parity].refIdx = tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].refIdx;
+      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + parity].refIdx = -1;
+      triangleMrgCtx.numValidMergeCand++;
+      if (triangleMrgCtx.numValidMergeCand == TRIANGLE_MAX_NUM_UNI_CANDS)
+      {
+        return;
+      }
+    }
+  }
+#else
+
   const CodingStructure &cs  = *pu.cs;
   const Slice &slice         = *pu.cs->slice;
   const int32_t maxNumMergeCand = TRIANGLE_MAX_NUM_UNI_CANDS;
@@ -4880,6 +4937,7 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
       cnt = (cnt + 1) % numRefIdx;
     }
   }
+#endif 
 }
 
 bool PU::isUniqueTriangleCandidates( const PredictionUnit &pu, MergeCtx& triangleMrgCtx )

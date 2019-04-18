@@ -678,6 +678,13 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
   RDPCMMode rdpcmMode = RDPCM_OFF;
   rdpcmNxN(tu, compID, cQP, uiAbsSum, rdpcmMode);
 
+#if JVET_N0413_RDPCM
+  if( tu.cu->bdpcmMode && isLuma(compID) )
+  {
+    tu.mtsIdx = 1;
+  }
+#endif
+
   if (rdpcmMode == RDPCM_OFF)
   {
     uiAbsSum = 0;

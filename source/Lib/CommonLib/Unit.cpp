@@ -267,6 +267,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   affineType        = other.affineType;
   triangle          = other.triangle;
   transQuantBypass  = other.transQuantBypass;
+#if JVET_N0413_RDPCM
+  bdpcmMode         = other.bdpcmMode;
+#endif
   ipcm              = other.ipcm;
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
@@ -300,6 +303,9 @@ void CodingUnit::initData()
   affineType        = 0;
   triangle          = false;
   transQuantBypass  = false;
+#if JVET_N0413_RDPCM
+  bdpcmMode         = 0;
+#endif
   ipcm              = false;
   qp                = 0;
   chromaQpAdj       = 0;

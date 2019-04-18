@@ -886,6 +886,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if JVET_N0449_MMVD_SIMP
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
 #endif
+#if JVET_N0413_RDPCM
+  ( "RDPCM",                                         m_RdpcmMode,                                       false, "RDPCM")
+#endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
   ( "IBCLocalSearchRangeY",                           m_IBCLocalSearchRangeY,                            128u, "Search range of IBC local search in y direction")
@@ -1983,6 +1986,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
 #if JVET_N0449_MMVD_SIMP
     xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
+#endif
+#if JVET_N0413_RDPCM
+    xConfirmPara(m_RdpcmMode, "RDPCM only allowed with NEXT profile");
 #endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
@@ -3183,6 +3189,9 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "DMVR:%d ", m_DMVR);
 #if JVET_N0449_MMVD_SIMP
     msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
+#endif
+#if JVET_N0413_RDPCM
+    msg(VERBOSE, "RDPCM:%d ", m_RdpcmMode );
 #endif
   }
     msg(VERBOSE, "IBC:%d ", m_IBCMode);

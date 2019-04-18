@@ -52,7 +52,11 @@ struct CoeffCodingContext
 {
 public:
 #if HEVC_USE_SIGN_HIDING
+#if JVET_N0413_RDPCM
+  CoeffCodingContext( const TransformUnit& tu, ComponentID component, bool signHide, bool bdpcm = false );
+#else
   CoeffCodingContext( const TransformUnit& tu, ComponentID component, bool signHide);
+#endif
 #else
   CoeffCodingContext( const TransformUnit& tu, ComponentID component );
 #endif
@@ -110,7 +114,9 @@ public:
 #else
   unsigned        sigGroupCtxId   ()                        const { return m_sigGroupCtxId; }
 #endif
-
+#if JVET_N0413_RDPCM
+  bool            bdpcm           ()                        const { return m_bdpcm; }
+#endif
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
     const uint32_t posY      = m_scan[scanPos].y;
@@ -306,6 +312,9 @@ private:
   int                       m_remainingContextBins;
 #endif
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
+#if JVET_N0413_RDPCM
+  const bool                m_bdpcm;
+#endif
 };
 
 

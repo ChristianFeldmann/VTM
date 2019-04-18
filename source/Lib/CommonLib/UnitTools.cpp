@@ -5462,6 +5462,16 @@ uint8_t CU::deriveGbiIdx( uint8_t gbiLO, uint8_t gbiL1 )
   }
 }
 
+#if JVET_N0413_RDPCM
+bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
+{
+  bool bdpcmAllowed = compID == COMPONENT_Y;
+       bdpcmAllowed &= CU::isIntra( cu );
+       bdpcmAllowed &= ( cu.lwidth() <= 32 && cu.lheight() <= 32 );
+
+  return bdpcmAllowed;
+}
+#endif
 // TU tools
 
 bool TU::isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID)
@@ -5495,7 +5505,9 @@ bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
   tsAllowed &= tu.cs->pps->getUseTransformSkip();
   tsAllowed &= !tu.cu->transQuantBypass;
   tsAllowed &= ( !tu.cu->ispMode || !isLuma(compID) );
-
+#if JVET_N0413_RDPCM
+  tsAllowed &= !( tu.cu->bdpcmMode && tu.lwidth() <= BDPCM_MAX_CU_SIZE && tu.lheight() <= BDPCM_MAX_CU_SIZE );
+#endif
   SizeType transformSkipMaxSize = 1 << maxSize;
   tsAllowed &= tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize;
   tsAllowed &= !tu.cu->sbtInfo;
@@ -5512,6 +5524,9 @@ bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
   mtsAllowed &= ( tu.lwidth() <= maxSize && tu.lheight() <= maxSize );
   mtsAllowed &= !tu.cu->ispMode;
   mtsAllowed &= !tu.cu->sbtInfo;
+#if JVET_N0413_RDPCM
+  mtsAllowed &= !( tu.cu->bdpcmMode && tu.lwidth() <= BDPCM_MAX_CU_SIZE && tu.lheight() <= BDPCM_MAX_CU_SIZE );
+#endif
   return mtsAllowed;
 }
 

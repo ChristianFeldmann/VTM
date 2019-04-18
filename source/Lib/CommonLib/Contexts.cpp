@@ -409,6 +409,16 @@ const CtxSet ContextSetCfg::Mvd = ContextSetCfg::addCtxSet
   { 9, 5, },
 });
 
+#if JVET_N0413_RDPCM
+const CtxSet ContextSetCfg::BDPCMMode = ContextSetCfg::addCtxSet
+({
+  {  CNU, CNU, },
+  {  CNU, CNU, },
+  {  CNU, CNU, },
+  {  DWS, DWS, },
+});
+#endif
+
 const CtxSet ContextSetCfg::QtRootCbf = ContextSetCfg::addCtxSet
 ({
   { 109, },
@@ -419,6 +429,15 @@ const CtxSet ContextSetCfg::QtRootCbf = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::QtCbf[] =
 {
+#if JVET_N0413_RDPCM
+  ContextSetCfg::addCtxSet
+  ({
+    {  141, 127, 139, 140, CNU },
+    {  142, 127, 139, 140, CNU },
+    {  CNU, 111, 124, 111, CNU },
+    {    1,   5,   9,   8, DWS },
+  }),
+#else
   ContextSetCfg::addCtxSet
   ({
     { 141, 127, 139, 140, },
@@ -426,6 +445,7 @@ const CtxSet ContextSetCfg::QtCbf[] =
     { CNU, 111, 124, 111, },
     { 1, 5, 9, 8, },
   }),
+#endif
   ContextSetCfg::addCtxSet
   ({
     { 163, 154, CNU, CNU, CNU, },
@@ -870,10 +890,17 @@ const CtxSet ContextSetCfg::TsResidualSign =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_N0413_RDPCM
+    {  CNU, CNU,  },
+    {  CNU, CNU,  },
+    {  CNU, CNU,  },
+    {  DWS, DWS,  },
+#else
     {  CNU,  },
     {  CNU,  },
     {  CNU,  },
     {  DWS,  },
+#endif
    }),
 };
 #endif

@@ -89,6 +89,9 @@ public:
   void        cu_transquant_bypass_flag ( const CodingUnit&             cu );
   void        cu_skip_flag              ( const CodingUnit&             cu );
   void        pred_mode                 ( const CodingUnit&             cu );
+#if JVET_N0413_RDPCM
+  void        bdpcm_mode                ( const CodingUnit&             cu,       const ComponentID compID );
+#endif
   void        pcm_data                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        pcm_flag                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        cu_pred_data              ( const CodingUnit&             cu );

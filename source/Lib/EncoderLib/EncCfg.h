@@ -249,6 +249,9 @@ protected:
 #if JVET_N0449_MMVD_SIMP
   int       m_MmvdDisNum;
 #endif
+#if JVET_N0413_RDPCM
+  bool      m_RdpcmMode;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -787,6 +790,10 @@ public:
 #if JVET_N0449_MMVD_SIMP
   void      setMmvdDisNum                   ( int b )        { m_MmvdDisNum = b; }
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
+#endif
+#if JVET_N0413_RDPCM
+  void      setRDPCM                     ( bool b )       { m_RdpcmMode = b; }
+  bool      getRDPCM                     ()         const { return m_RdpcmMode; }
 #endif
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }

@@ -67,6 +67,9 @@ public:
 #endif
   // quantization
   void quant                ( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx );
+#if JVET_N0413_RDPCM
+  void forwardRDPCM         ( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx &ctx );
+#endif
 
 private:
 #if HEVC_USE_SCALING_LISTS
@@ -78,7 +81,9 @@ private:
 #else
   double  xGetErrScaleCoeff              ( const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth);
 #endif
-
+#if JVET_N0413_RDPCM
+  void    xDequantSample                 ( TCoeff& pRes, TCoeff& coeff, const TrQuantParams& trQuantParams );
+#endif
   // RDOQ functions
   void xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx &ctx);
 
@@ -168,6 +173,9 @@ private:
   int    m_rateIncDown        [MAX_TB_SIZEY * MAX_TB_SIZEY];
   int    m_sigRateDelta       [MAX_TB_SIZEY * MAX_TB_SIZEY];
   TCoeff m_deltaU             [MAX_TB_SIZEY * MAX_TB_SIZEY];
+#if JVET_N0413_RDPCM
+  TCoeff m_fullCoeff          [MAX_TB_SIZEY * MAX_TB_SIZEY];
+#endif
 #endif
 };// END CLASS DEFINITION QuantRDOQ
 

@@ -276,6 +276,9 @@ protected:
 #if JVET_N0449_MMVD_SIMP
   int       m_MmvdDisNum;
 #endif
+#if JVET_N0413_RDPCM
+  bool      m_RdpcmMode;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;

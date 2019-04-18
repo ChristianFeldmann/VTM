@@ -219,6 +219,9 @@ static const int HOR_IDX =                    (1 * (NUM_DIR - 1) + 2); ///< inde
 static const int DIA_IDX =                    (2 * (NUM_DIR - 1) + 2); ///< index for intra DIAGONAL   mode
 static const int VER_IDX =                    (3 * (NUM_DIR - 1) + 2); ///< index for intra VERTICAL   mode
 static const int VDIA_IDX =                   (4 * (NUM_DIR - 1) + 2); ///< index for intra VDIAGONAL  mode
+#if JVET_N0413_RDPCM
+static const int BDPCM_IDX =                  (5 * (NUM_DIR - 1) + 2); ///< index for intra VDIAGONAL  mode
+#endif
 static const int NOMODE_IDX =                               MAX_UCHAR; ///< indicating uninitialized elements
 
 static const int NUM_CHROMA_MODE = (5 + NUM_LMC_MODE); ///< total number of chroma modes
@@ -346,6 +349,9 @@ static const int DMVR_SUBCU_WIDTH_LOG2 = 4;
 static const int DMVR_SUBCU_HEIGHT_LOG2 = 4;
 static const int MAX_NUM_SUBCU_DMVR = ((MAX_CU_SIZE * MAX_CU_SIZE) >> (DMVR_SUBCU_WIDTH_LOG2 + DMVR_SUBCU_HEIGHT_LOG2));
 static const int DMVR_NUM_ITERATION = 2;
+#if JVET_N0413_RDPCM
+static const int BDPCM_MAX_CU_SIZE = 32;      ///<  maximum CU size for RDPCM mode
+#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.

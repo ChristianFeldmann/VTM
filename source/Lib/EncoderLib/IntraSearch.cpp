@@ -350,6 +350,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     m_intraModeTestedNormalIntra.clear();
   }
 
+#if JVET_N0413_RDPCM
+  const bool testBDPCM = m_pcEncCfg->getRDPCM() && CU::bdpcmAllowed(cu, ComponentID(partitioner.chType));
+#endif
   static_vector<uint32_t,   FAST_UDI_MAX_RDMODE_NUM> uiHadModeList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandCostList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandHadList;
@@ -836,6 +839,10 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     //===== check modes (using r-d costs) =====
     uint32_t       uiBestPUMode  = 0;
     int            bestExtendRef = 0;
+#if JVET_N0413_RDPCM
+    int            bestBDPCMMode = 0;
+    double         bestCostNonBDPCM = MAX_DOUBLE;
+#endif
 
     CodingStructure *csTemp = m_pTempCS[gp_sizeIdxInfo->idxFrom( cu.lwidth() )][gp_sizeIdxInfo->idxFrom( cu.lheight() )];
     CodingStructure *csBest = m_pBestCS[gp_sizeIdxInfo->idxFrom( cu.lwidth() )][gp_sizeIdxInfo->idxFrom( cu.lheight() )];
@@ -852,16 +859,39 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     uint8_t   bestIspOption               = NOT_INTRA_SUBPARTITIONS;
     TUIntraSubPartitioner subTuPartitioner( partitioner );
     bool      ispHorAllZeroCbfs = false, ispVerAllZeroCbfs = false;
-
+#if JVET_N0413_RDPCM
+    for( int uiMode = -2 * testBDPCM; uiMode < numModesForFullRD; uiMode++ )
+#else
     for (uint32_t uiMode = 0; uiMode < numModesForFullRD; uiMode++)
+#endif
     {
+#if JVET_N0413_RDPCM
+      int multiRefIdx = 0;
+      uint32_t uiOrgMode;
+
+      if (testBDPCM && uiMode < 0)
+    {
+        cu.bdpcmMode = -uiMode;
+        unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
+        PU::getIntraMPMs(pu, mpm_pred);
+        pu.intraDir[0] = mpm_pred[0];
+        uiOrgMode = mpm_pred[0];
+        cu.ispMode = NOT_INTRA_SUBPARTITIONS;
+      }
+      else
+      {
+        cu.bdpcmMode = 0;
+        uiOrgMode = uiRdModeList[uiMode];
+#else
       // set luma prediction mode
       uint32_t uiOrgMode = uiRdModeList[uiMode];
-
+#endif
       cu.ispMode = extendRefList[uiMode] > MRL_NUM_REF_LINES ? extendRefList[uiMode] - MRL_NUM_REF_LINES : NOT_INTRA_SUBPARTITIONS;
         pu.intraDir[0] = uiOrgMode;
 
+#if !JVET_N0413_RDPCM
         int multiRefIdx = 0;
+#endif
         pu.multiRefIdx = multiRefIdx;
         if( cu.ispMode )
         {
@@ -890,7 +920,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           CHECK( pu.multiRefIdx && (pu.intraDir[0] == PLANAR_IDX), "ERL" );
 #endif
         }
-
+#if JVET_N0413_RDPCM
+      }
+#endif
 
       // set context models
       m_CABACEstimator->getCtx() = ctxStart;
@@ -933,16 +965,27 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         uiBestPUMode  = uiOrgMode;
         bestExtendRef = multiRefIdx;
         bestIspOption = cu.ispMode;
+#if JVET_N0413_RDPCM
+        bestBDPCMMode = cu.bdpcmMode;
+#endif
         if( csBest->cost < bestCurrentCost )
         {
           bestCurrentCost = csBest->cost;
         }
+#if !JVET_N0413_RDPCM
         if( !cu.ispMode )
         {
           bestNormalIntraModeIndex = uiMode;
         }
+#endif
       }
-
+#if JVET_N0413_RDPCM
+      if( !cu.ispMode && !cu.bdpcmMode && csBest->cost < bestCostNonBDPCM )
+      {
+        bestCostNonBDPCM = csBest->cost;
+        bestNormalIntraModeIndex = uiMode;
+      }
+#endif
       csTemp->releaseIntermediateData();
     } // Mode loop
     cu.ispMode = bestIspOption;
@@ -952,6 +995,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     //=== update PU data ====
     pu.intraDir[0] = uiBestPUMode;
     pu.multiRefIdx = bestExtendRef;
+#if JVET_N0413_RDPCM
+    cu.bdpcmMode   = bestBDPCMMode;
+#endif
   }
 
   //===== reset context models =====
@@ -1334,6 +1380,9 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
         m_CABACEstimator->cu_skip_flag( cu );
         m_CABACEstimator->pred_mode   ( cu );
       }
+#if JVET_N0413_RDPCM
+      m_CABACEstimator->bdpcm_mode  ( cu, ComponentID(partitioner.chType) );
+#endif
       if( CU::isIntra(cu) )
       {
         m_CABACEstimator->pcm_data( cu, partitioner );

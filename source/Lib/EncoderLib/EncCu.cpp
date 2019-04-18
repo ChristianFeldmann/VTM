@@ -1426,7 +1426,9 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
     m_CABACEstimator->extend_ref_line( cu );
     m_CABACEstimator->isp_mode       ( cu );
     m_CABACEstimator->cu_pred_data   ( cu );
-
+#if JVET_N0413_RDPCM
+    m_CABACEstimator->bdpcm_mode     ( cu, ComponentID(partitioner.chType) );
+#endif
     // Encode Coefficients
     CUCtx cuCtx;
     cuCtx.isDQPCoded = true;
@@ -1476,6 +1478,9 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
   cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
   cu.qp               = encTestMode.qp;
   cu.ipcm             = true;
+#if JVET_N0413_RDPCM
+  cu.bdpcmMode        = 0;
+#endif
 
   tempCS->addPU( CS::getArea( *tempCS, tempCS->area, partitioner.chType ), partitioner.chType );
 

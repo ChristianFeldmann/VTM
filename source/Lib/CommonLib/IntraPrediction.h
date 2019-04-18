@@ -121,6 +121,9 @@ protected:
   static bool isIntegerSlope      ( const int absAng ) { return (0 == (absAng & 0x1F)) && absAng <=32; }  //  integer-slope modes 2, DIA_IDX and VDIA_IDX.  "absAng <=32" restricts wide-angle integer modes 
 #endif
 
+#if JVET_N0413_RDPCM
+  void xPredIntraBDPCM            ( const CPelBuf &pSrc, PelBuf &pDst, const uint32_t dirMode, const ClpRng& clpRng );
+#endif
   Pel  xGetPredValDc              ( const CPelBuf &pSrc, const Size &dstSize );
 
   void xFillReferenceSamples      ( const CPelBuf &recoBuf,      Pel* refBufUnfiltered, const CompArea &area, const CodingUnit &cu );

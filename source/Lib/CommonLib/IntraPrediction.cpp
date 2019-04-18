@@ -869,7 +869,7 @@ void IntraPrediction::xPredIntraBDPCM(const CPelBuf &pSrc, PelBuf &pDst, const u
 
   CHECK( !( dirMode == 1 || dirMode == 2 ), "Incorrect BDPCM mode parameter." );
 
-  Pel* pPred = &pDst.buf[0];
+  Pel* pred = &pDst.buf[0];
   if( dirMode == 1 )
   {
     Pel  val;
@@ -878,9 +878,9 @@ void IntraPrediction::xPredIntraBDPCM(const CPelBuf &pSrc, PelBuf &pDst, const u
       val = pSrc.buf[(y + 1) * strideS];
       for( int x = 0; x < wdt; x++ )
       {
-        pPred[x] = val;
+        pred[x] = val;
       }
-      pPred += strideP;
+      pred += strideP;
     }
   }
   else
@@ -889,9 +889,9 @@ void IntraPrediction::xPredIntraBDPCM(const CPelBuf &pSrc, PelBuf &pDst, const u
     {
       for( int x = 0; x < wdt; x++ )
       {
-        pPred[x] = pSrc.buf[x + 1];
+        pred[x] = pSrc.buf[x + 1];
       }
-      pPred += strideP;
+      pred += strideP;
     }
   }
 }

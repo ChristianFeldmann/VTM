@@ -147,38 +147,38 @@ void invResDPCM( const TransformUnit &tu, const ComponentID &compID, CoeffBuf &d
   const CompArea &rect = tu.blocks[compID];
   const int      wdt = rect.width;
   const int      hgt = rect.height;
-  const CCoeffBuf pcCoeff = tu.getCoeffs(compID);
+  const CCoeffBuf coeffs = tu.getCoeffs(compID);
 
-  const TCoeff* pcCoef = &pcCoeff.buf[0];
-  TCoeff* pDst = &dstBuf.buf[0];
+  const TCoeff* coef = &coeffs.buf[0];
+  TCoeff* dst = &dstBuf.buf[0];
 
   if( tu.cu->bdpcmMode == 1 )
   {
     for( int y = 0; y < hgt; y++ )
     {
-      pDst[0] = pcCoef[0];
+      dst[0] = coef[0];
       for( int x = 1; x < wdt; x++ )
       {
-        pDst[x] = pDst[x - 1] + pcCoef[x];
+        dst[x] = dst[x - 1] + coef[x];
       }
-      pcCoef += pcCoeff.stride;
-      pDst += dstBuf.stride;
+      coef += coeffs.stride;
+      dst += dstBuf.stride;
     }
   }
   else
   {
     for( int x = 0; x < wdt; x++ )
     {
-      pDst[x] = pcCoef[x];
+      dst[x] = coef[x];
     }
     for( int y = 0; y < hgt - 1; y++ )
     {
       for( int x = 0; x < wdt; x++ )
       {
-        pDst[dstBuf.stride + x] = pDst[x] + pcCoef[pcCoeff.stride + x];
+        dst[dstBuf.stride + x] = dst[x] + coef[coeffs.stride + x];
       }
-      pcCoef += pcCoeff.stride;
-      pDst += dstBuf.stride;
+      coef += coeffs.stride;
+      dst += dstBuf.stride;
     }
   }
 }
@@ -188,9 +188,9 @@ void fwdResDPCM( TransformUnit &tu, const ComponentID &compID )
   const CompArea &rect = tu.blocks[compID];
   const int      wdt = rect.width;
   const int      hgt = rect.height;
-  CoeffBuf       piQCoef = tu.getCoeffs(compID);
+  CoeffBuf       coeffs = tu.getCoeffs(compID);
 
-  TCoeff* pCoef = &piQCoef.buf[0];
+  TCoeff* coef = &coeffs.buf[0];
 
   if( tu.cu->bdpcmMode == 1 )
   {
@@ -198,21 +198,21 @@ void fwdResDPCM( TransformUnit &tu, const ComponentID &compID )
     {
       for( int x = wdt - 1; x > 0; x-- )
       {
-        pCoef[x] -= pCoef[x - 1];
+        coef[x] -= coef[x - 1];
       }
-      pCoef += piQCoef.stride;
+      coef += coeffs.stride;
     }
   }
   else
   {
-    pCoef += piQCoef.stride * (hgt - 1);
+    coef += coeffs.stride * (hgt - 1);
     for( int y = 0; y < hgt - 1; y++ )
     {
       for ( int x = 0; x < wdt; x++ )
       {
-        pCoef[x] -= pCoef[x - piQCoef.stride];
+        coef[x] -= coef[x - coeffs.stride];
       }
-      pCoef -= piQCoef.stride;
+      coef -= coeffs.stride;
     }
   }
 }
@@ -380,17 +380,17 @@ void Quant::dequant(const TransformUnit &tu,
   const int             channelBitDepth    = sps->getBitDepth(toChannelType(compID));
 
 #if JVET_N0413_RDPCM
-  const TCoeff          *pInput;
+  const TCoeff          *coef;
   if( tu.cu->bdpcmMode && isLuma(compID) )
   {
     invResDPCM( tu, compID, dstCoeff );
-    pInput = piCoef;
+    coef = piCoef;
   }
   else
   {
-    pInput = tu.getCoeffs(compID).buf;
+    coef = tu.getCoeffs(compID).buf;
   }
-  const TCoeff          *const piQCoef = pInput;
+  const TCoeff          *const piQCoef = coef;
 #endif
 #if HEVC_USE_SCALING_LISTS
   CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");

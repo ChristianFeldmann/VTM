@@ -790,7 +790,7 @@ const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
   { CNU, },
   { 1, },
 });
-
+#if !JVET_N0302_SIMPLFIED_CIIP
 const CtxSet ContextSetCfg::MHIntraPredMode = ContextSetCfg::addCtxSet
 ({
   { 156, CNU, CNU, CNU, },
@@ -798,7 +798,7 @@ const CtxSet ContextSetCfg::MHIntraPredMode = ContextSetCfg::addCtxSet
   { CNU, CNU, CNU, CNU, },
   { 9, DWS, DWS, DWS, },
 });
-
+#endif
 const CtxSet ContextSetCfg::TriangleFlag = ContextSetCfg::addCtxSet
 ({
 #if JVET_N600_AMVR_TPM_CTX_REDUCTION

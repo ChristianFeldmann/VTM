@@ -902,6 +902,48 @@ bool IntraPrediction::useDPCMForFirstPassIntraEstimation(const PredictionUnit &p
   return CU::isRDPCMEnabled(*pu.cu) && pu.cu->transQuantBypass && (uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
 }
 
+#if JVET_N0302_SIMPLFIED_CIIP
+void IntraPrediction::geneWeightedPred(const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf)
+{
+  const int            width = pred.width;
+  const int            height = pred.height;
+  const int            srcStride = width;
+  const int            dstStride = pred.stride;
+
+  Pel*                 dstBuf = pred.buf;
+  int wIntra, wMerge;
+
+  const Position posBL = pu.Y().bottomLeft();
+  const Position posTR = pu.Y().topRight();
+  const PredictionUnit *neigh0 = pu.cs->getPURestricted(posBL.offset(-1, 0), pu, CHANNEL_TYPE_LUMA);
+  const PredictionUnit *neigh1 = pu.cs->getPURestricted(posTR.offset(0, -1), pu, CHANNEL_TYPE_LUMA);
+  bool isNeigh0Intra = neigh0 && (CU::isIntra(*neigh0->cu));
+  bool isNeigh1Intra = neigh1 && (CU::isIntra(*neigh1->cu));
+
+  if (isNeigh0Intra && isNeigh1Intra)
+  {
+    wIntra = 3; wMerge = 1;
+  }
+  else
+  {
+    if (!isNeigh0Intra && !isNeigh1Intra)
+    {
+      wIntra = 1; wMerge = 3;
+    }
+    else
+    {
+      wIntra = 2; wMerge = 2;
+    }
+  }
+  for (int y = 0; y < height; y++)
+  {
+    for (int x = 0; x < width; x++)
+    {
+      dstBuf[y*dstStride + x] = (wMerge * dstBuf[y*dstStride + x] + wIntra * srcBuf[y*srcStride + x] + 2) >> 2;
+    }
+  }
+}
+#else
 void IntraPrediction::geneWeightedPred(const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf)
 {
   const int            width = pred.width;
@@ -984,6 +1026,7 @@ void IntraPrediction::geneWeightedPred(const ComponentID compId, PelBuf &pred, c
     }
   }
 }
+#endif
 void IntraPrediction::switchBuffer(const PredictionUnit &pu, ComponentID compID, PelBuf srcBuff, Pel *dst)
 {
   Pel  *src = srcBuff.bufAt(0, 0);

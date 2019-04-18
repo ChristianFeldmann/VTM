@@ -1796,8 +1796,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda( encTestMode.lossless );
 
       CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
+#if !JVET_N0302_SIMPLFIED_CIIP
       const double sqrtLambdaForFirstPassIntra = m_pcRdCost->getMotionLambda(cu.transQuantBypass) / double(1 << SCALE_BITS);
-
+#endif
       partitioner.setCUData( cu );
       cu.slice            = tempCS->slice;
       cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
@@ -1893,15 +1894,18 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
       if (isIntrainterEnabled)
       {
+#if !JVET_N0302_SIMPLFIED_CIIP
         int numTestIntraMode = 4;
+#endif
         // prepare for Intra bits calculation
         const TempCtx ctxStart(m_CtxCache, m_CABACEstimator->getCtx());
+#if !JVET_N0302_SIMPLFIED_CIIP
         const TempCtx ctxStartIntraMode(m_CtxCache, SubCtx(Ctx::MHIntraPredMode, m_CABACEstimator->getCtx()));
 
         // for Intrainter fast, recored the best intra mode during the first round for mrege 0
         int bestMHIntraMode = -1;
         double bestMHIntraCost = MAX_DOUBLE;
-
+#endif
         pu.mhIntraFlag = true;
 
         // save the to-be-tested merge candidates
@@ -1923,6 +1927,50 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           }
 
           // first round
+#if JVET_N0302_SIMPLFIED_CIIP
+          pu.intraDir[0] = PLANAR_IDX;
+          uint32_t intraCnt = 0;
+          // generate intrainter Y prediction
+          if (mergeCnt == 0)
+          {
+            m_pcIntraSearch->initIntraPatternChType(*pu.cu, pu.Y());
+            m_pcIntraSearch->predIntraAng(COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), pu);
+            m_pcIntraSearch->switchBuffer(pu, COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, intraCnt));
+          }
+          pu.cs->getPredBuf(pu).copyFrom(acMergeBuffer[mergeCand]);
+          if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+          {
+            pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
+          }
+          m_pcIntraSearch->geneWeightedPred(COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, intraCnt));
+
+          // calculate cost
+          if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+          {
+            pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getInvLUT());
+          }
+          distParam.cur = pu.cs->getPredBuf(pu).Y();
+          Distortion sadValue = distParam.distFunc(distParam);
+          if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+          {
+            pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
+          }
+#if JVET_N0324_REGULAR_MRG_FLAG
+          double cost = (double)sadValue + (double)(bitsCand + 9) * sqrtLambdaForFirstPass;
+#else
+          double cost = (double)sadValue + (double)(bitsCand + 1) * sqrtLambdaForFirstPass;
+#endif
+          insertPos = -1;
+          updateDoubleCandList(mergeCand + MRG_MAX_NUM_CANDS + MMVD_ADD_NUM, cost, RdModeList, candCostList, RdModeList2, pu.intraDir[0], uiNumMrgSATDCand, &insertPos);
+          if (insertPos != -1)
+          {
+            for (int i = int(RdModeList.size()) - 1; i > insertPos; i--)
+            {
+              swap(acMergeTempBuffer[i - 1], acMergeTempBuffer[i]);
+            }
+            swap(singleMergeTempBuffer, acMergeTempBuffer[insertPos]);
+          }
+#else
           for (uint32_t intraCnt = 0; intraCnt < numTestIntraMode; intraCnt++)
           {
             pu.intraDir[0] = (intraCnt < 2) ? intraCnt : ((intraCnt == 2) ? HOR_IDX : VER_IDX);
@@ -1990,6 +2038,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
               bestMHIntraCost = cost;
             }
           }
+#endif
         }
         pu.mhIntraFlag = false;
         m_CABACEstimator->getCtx() = ctxStart;
@@ -2089,8 +2138,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           {
             pu.intraDir[0] = RdModeList2[mergeCnt];
             pu.intraDir[1] = DM_CHROMA_IDX;
+#if JVET_N0302_SIMPLFIED_CIIP
+            uint32_t bufIdx = 0;
+#else
             uint32_t bufIdx = (pu.intraDir[0] > 1) ? (pu.intraDir[0] == HOR_IDX ? 2 : 3) : pu.intraDir[0];
-
+#endif
             m_pcIntraSearch->initIntraPatternChType(*pu.cu, pu.Cb());
             m_pcIntraSearch->predIntraAng(COMPONENT_Cb, pu.cs->getPredBuf(pu).Cb(), pu);
             m_pcIntraSearch->switchBuffer(pu, COMPONENT_Cb, pu.cs->getPredBuf(pu).Cb(), m_pcIntraSearch->getPredictorPtr2(COMPONENT_Cb, bufIdx));
@@ -2228,7 +2280,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
         if (pu.mhIntraFlag)
         {
+#if JVET_N0302_SIMPLFIED_CIIP
+          uint32_t bufIdx = 0;
+#else 
           uint32_t bufIdx = (pu.intraDir[0] > 1) ? (pu.intraDir[0] == HOR_IDX ? 2 : 3) : pu.intraDir[0];
+#endif
           PelBuf tmpBuf = tempCS->getPredBuf(pu).Y();
           tmpBuf.copyFrom(acMergeBuffer[uiMergeCand].Y());
           if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())

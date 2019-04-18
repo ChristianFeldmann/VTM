@@ -837,6 +837,7 @@ bool PU::isChromaIntraModeCrossCheckMode( const PredictionUnit &pu )
   return pu.intraDir[CHANNEL_TYPE_CHROMA] == DM_CHROMA_IDX;
 }
 
+#if !JVET_N0302_SIMPLFIED_CIIP
 int PU::getMHIntraMPMs(const PredictionUnit &pu, unsigned* mpm, const ChannelType &channelType /*= CHANNEL_TYPE_LUMA*/, const bool isChromaMDMS /*= false*/, const unsigned startIdx /*= 0*/)
 {
   const int numMPMs = 3; // Multi-hypothesis intra uses only 3 MPM
@@ -964,6 +965,7 @@ int PU::getMHIntraMPMs(const PredictionUnit &pu, unsigned* mpm, const ChannelTyp
     return numCand;
   }
 }
+#endif
 int PU::getNarrowShape(const int width, const int height)
 {
   int longSide = (width > height) ? width : height;

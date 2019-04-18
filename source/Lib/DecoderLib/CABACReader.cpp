@@ -1548,7 +1548,11 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
         MHIntra_flag(pu);
         if (pu.mhIntraFlag)
         {
+#if JVET_N0302_SIMPLFIED_CIIP
+          pu.intraDir[0] = PLANAR_IDX;
+#else
           MHIntra_luma_pred_modes(*pu.cu);
+#endif
           pu.intraDir[1] = DM_CHROMA_IDX;
         }
 #if JVET_N0324_REGULAR_MRG_FLAG
@@ -2077,6 +2081,7 @@ void CABACReader::MHIntra_flag(PredictionUnit& pu)
   DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() MHIntra=%d pos=(%d,%d) size=%dx%d\n", pu.mhIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
 }
 
+#if !JVET_N0302_SIMPLFIED_CIIP
 void CABACReader::MHIntra_luma_pred_modes(CodingUnit &cu)
 {
   if (!cu.Y().valid())
@@ -2170,6 +2175,7 @@ void CABACReader::MHIntra_luma_pred_modes(CodingUnit &cu)
     pu = pu->next;
   }
 }
+#endif
 
 void CABACReader::triangle_mode( CodingUnit& cu )
 {

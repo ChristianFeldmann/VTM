@@ -1477,6 +1477,7 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
 #endif
       subblock_merge_flag( *pu.cu );
       MHIntra_flag( pu );
+#if !JVET_N0302_SIMPLFIED_CIIP
       if ( pu.mhIntraFlag )
       {
         MHIntra_luma_pred_modes( *pu.cu );
@@ -1491,6 +1492,19 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       }
 #else
       triangle_mode( *pu.cu );
+#endif
+#else
+#if JVET_N0324_REGULAR_MRG_FLAG
+      if (!pu.mhIntraFlag)
+      {
+        if (!pu.cu->affine && !pu.mmvdMergeFlag && !pu.cu->mmvdSkip)
+        {
+          CHECK(!pu.cu->triangle, "triangle_flag must be true");
+        }
+      }
+#else
+      triangle_mode(*pu.cu);
+#endif
 #endif
       if (pu.mmvdMergeFlag)
       {
@@ -2003,6 +2017,7 @@ void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
   DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() MHIntra=%d pos=(%d,%d) size=%dx%d\n", pu.mhIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
 }
 
+#if !JVET_N0302_SIMPLFIED_CIIP
 void CABACWriter::MHIntra_luma_pred_modes(const CodingUnit& cu)
 {
   if (!cu.Y().valid())
@@ -2062,6 +2077,7 @@ void CABACWriter::MHIntra_luma_pred_modes(const CodingUnit& cu)
     pu = pu->next;
   }
 }
+#endif
 
 void CABACWriter::triangle_mode( const CodingUnit& cu )
 {

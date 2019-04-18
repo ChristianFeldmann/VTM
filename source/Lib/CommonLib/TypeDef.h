@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP             1 // JVET-N0866: unified transform derivation for ISP and implicit MTS (combining JVET-N0172, JVET-N0375, JVET-N0419 and JVET-N0420)
+
 #define JVET_N0340_TRI_MERGE_CAND                         1
 
 #define JVET_N0324_REGULAR_MRG_FLAG                       1

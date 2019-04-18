@@ -77,9 +77,11 @@ public:
                     const bool bEnc                 = false,
                     const bool useTransformSkipFast = false
   );
-
+#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
+  void getTrTypes(const TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer);
+#else
   void getTrTypes( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer );
-
+#endif
 
 protected:
 

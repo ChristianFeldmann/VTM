@@ -5658,6 +5658,7 @@ bool TU::getPrevTuCbfAtDepth( const TransformUnit &currentTu, const ComponentID 
   return ( prevTU != nullptr ) ? TU::getCbfAtDepth( *prevTU, compID, trDepth ) : false;
 }
 
+#if !JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
 void TU::getTransformTypeISP( const TransformUnit &tu, const ComponentID compID, int &typeH, int &typeV )
 {
   typeH = DCT2, typeV = DCT2;
@@ -5690,6 +5691,7 @@ void TU::getTransformTypeISP( const TransformUnit &tu, const ComponentID compID,
   typeV = tuArea.height <= 2 || tuArea.height >= 32 ? DCT2 : typeV;
 }
 
+#endif
 
 // other tools
 

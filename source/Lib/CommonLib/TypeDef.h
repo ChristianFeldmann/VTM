@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0340_TRI_MERGE_CAND                         1
+
 #define JVET_N0324_REGULAR_MRG_FLAG                       1
 
 #define JVET_N0251_ITEM4_IBC_LOCAL_SEARCH_RANGE           1

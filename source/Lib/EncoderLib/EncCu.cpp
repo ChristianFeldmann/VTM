@@ -2375,6 +2375,10 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 #if JVET_N0324_REGULAR_MRG_FLAG
     pu.regularMergeFlag = false;
 #endif
+#if JVET_N0340_TRI_MERGE_CAND && !JVET_N0266_SMALL_BLOCKS
+    pu.shareParentPos = tempCS->sharedBndPos;
+    pu.shareParentSize = tempCS->sharedBndSize;
+#endif
 
     PU::getTriangleMergeCandidates( pu, triangleMrgCtx );
     for( uint8_t mergeCand = 0; mergeCand < TRIANGLE_MAX_NUM_UNI_CANDS; mergeCand++ )
@@ -2420,6 +2424,10 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
     PredictionUnit &pu  = tempCS->addPU( cu, partitioner.chType );
 
+#if JVET_N0340_TRI_MERGE_CAND && !JVET_N0266_SMALL_BLOCKS
+    pu.shareParentPos = tempCS->sharedBndPos;
+    pu.shareParentSize = tempCS->sharedBndSize;
+#endif
     if( abs(g_aucLog2[cu.lwidth()] - g_aucLog2[cu.lheight()]) >= 2 )
     {
       numTriangleCandidate = 30;

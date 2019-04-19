@@ -1164,6 +1164,9 @@ void Slice::applyReferencePictureSet( PicList& rcListPic, const ReferencePicture
 
     if( ! pcPic->referenced)
     {
+#if JVET_N0247_HASH_IMPROVE
+      pcPic->getHashMap()->clearAll();
+#endif
       continue;
     }
 

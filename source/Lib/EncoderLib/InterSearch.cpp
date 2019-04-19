@@ -1799,7 +1799,301 @@ void InterSearch::selectMatchesInter(const MapIterator& itBegin, int count, std:
     }
   }
 }
+#if JVET_N0247_HASH_IMPROVE
+void InterSearch::selectRectangleMatchesInter(const MapIterator& itBegin, int count, std::list<BlockHash>& listBlockHash, const BlockHash& currBlockHash, int width, int height, int idxNonSimple, unsigned int* &hashValues, int baseNum, int picWidth, int picHeight, bool isHorizontal, uint16_t* curHashPic)
+{
+  const int maxReturnNumber = 5;
+  int baseSize = min(width, height);
+  unsigned int crcMask = 1 << 16;
+  crcMask -= 1;
 
+  listBlockHash.clear();
+  std::list<int> listCost;
+  listCost.clear();
+
+  MapIterator it = itBegin;
+
+  for (int i = 0; i < count; i++, it++)
+  {
+    if ((*it).hashValue2 != currBlockHash.hashValue2)
+    {
+      continue;
+    }
+    int xRef = (*it).x;
+    int yRef = (*it).y;
+    if (isHorizontal)
+    {
+      xRef -= idxNonSimple * baseSize;
+    }
+    else
+    {
+      yRef -= idxNonSimple * baseSize;
+    }
+    if (xRef < 0 || yRef < 0 || xRef + width >= picWidth || yRef + height >= picHeight)
+    {
+      continue;
+    }
+    //check Other baseSize hash values
+    uint16_t* refHashValue = curHashPic + yRef * picWidth + xRef;
+    bool isSame = true;
+
+    for (int k = 0; k < baseNum; k++)
+    {
+      if ((*refHashValue) != (uint16_t)(hashValues[k] & crcMask))
+      {
+        isSame = false;
+        break;
+      }
+      refHashValue += (isHorizontal ? baseSize : (baseSize*picWidth));
+    }
+    if (!isSame)
+    {
+      continue;
+    }
+
+    int currCost = RdCost::xGetExpGolombNumberOfBits(xRef - currBlockHash.x) +
+      RdCost::xGetExpGolombNumberOfBits(yRef - currBlockHash.y);
+
+    BlockHash refBlockHash;
+    refBlockHash.hashValue2 = (*it).hashValue2;
+    refBlockHash.x = xRef;
+    refBlockHash.y = yRef;
+
+    if (listBlockHash.size() < maxReturnNumber)
+    {
+      addToSortList(listBlockHash, listCost, currCost, refBlockHash);
+    }
+    else if (!listCost.empty() && currCost < listCost.back())
+    {
+      listCost.pop_back();
+      listBlockHash.pop_back();
+      addToSortList(listBlockHash, listCost, currCost, refBlockHash);
+    }
+  }
+}
+
+bool InterSearch::xRectHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPicList, int& bestRefIndex, Mv& bestMv, Mv& bestMvd, int& bestMVPIndex, bool& isPerfectMatch)
+{
+  int width = pu.cu->lumaSize().width;
+  int height = pu.cu->lumaSize().height;
+
+  int baseSize = min(width, height);
+  bool isHorizontal = true;;
+  int baseNum = 0;
+  if (height < width)
+  {
+    isHorizontal = true;
+    baseNum = 1 << (g_aucLog2[width] - g_aucLog2[height]);
+  }
+  else
+  {
+    isHorizontal = false;
+    baseNum = 1 << (g_aucLog2[height] - g_aucLog2[width]);
+  }
+
+  int xPos = pu.cu->lumaPos().x;
+  int yPos = pu.cu->lumaPos().y;
+  const int currStride = pu.cs->picture->getOrigBuf().get(COMPONENT_Y).stride;
+  const Pel* curPel = pu.cs->picture->getOrigBuf().get(COMPONENT_Y).buf + yPos * currStride + xPos;
+  int picWidth = pu.cu->slice->getSPS()->getPicWidthInLumaSamples();
+  int picHeight = pu.cu->slice->getSPS()->getPicHeightInLumaSamples();
+
+  int xBase = xPos;
+  int yBase = yPos;
+  const Pel* basePel = curPel;
+  int idxNonSimple = -1;
+  unsigned int* hashValue1s = new unsigned int[baseNum];
+  unsigned int* hashValue2s = new unsigned int[baseNum];
+
+  for (int k = 0; k < baseNum; k++)
+  {
+    if (isHorizontal)
+    {
+      xBase = xPos + k * baseSize;
+      basePel = curPel + k * baseSize;
+    }
+    else
+    {
+      yBase = yPos + k * baseSize;
+      basePel = curPel + k * baseSize * currStride;
+    }
+
+    if (idxNonSimple == -1 && !TComHash::isHorizontalPerfectLuma(basePel, currStride, baseSize, baseSize) && !TComHash::isVerticalPerfectLuma(basePel, currStride, baseSize, baseSize))
+    {
+      idxNonSimple = k;
+    }
+    TComHash::getBlockHashValue((pu.cs->picture->getOrigBuf()), baseSize, baseSize, xBase, yBase, pu.cu->slice->getSPS()->getBitDepths(), hashValue1s[k], hashValue2s[k]);
+  }
+  if (idxNonSimple == -1)
+  {
+    idxNonSimple = 0;
+  }
+
+  Distortion bestCost = UINT64_MAX;
+
+  BlockHash currBlockHash;
+  currBlockHash.x = xPos;//still use the first base block location
+  currBlockHash.y = yPos;
+
+  currBlockHash.hashValue2 = hashValue2s[idxNonSimple];
+
+  m_pcRdCost->setDistParam(m_cDistParam, pu.cs->getOrgBuf(pu).Y(), 0, 0, m_lumaClpRng.bd, COMPONENT_Y, 0, 1, false);
+
+  int imvBest = 0;
+  int numPredDir = pu.cu->slice->isInterP() ? 1 : 2;
+  for (int refList = 0; refList < numPredDir; refList++)
+  {
+    RefPicList eRefPicList = (refList == 0) ? REF_PIC_LIST_0 : REF_PIC_LIST_1;
+    int refPicNumber = pu.cu->slice->getNumRefIdx(eRefPicList);
+
+    for (int refIdx = 0; refIdx < refPicNumber; refIdx++)
+    {
+      int bitsOnRefIdx = 1;
+      if (refPicNumber > 1)
+      {
+        bitsOnRefIdx += refIdx + 1;
+        if (refIdx == refPicNumber - 1)
+        {
+          bitsOnRefIdx--;
+        }
+      }
+      m_numHashMVStoreds[eRefPicList][refIdx] = 0;
+
+      if (refList == 0 || pu.cu->slice->getList1IdxToList0Idx(refIdx) < 0)
+      {
+        int count = static_cast<int>(pu.cu->slice->getRefPic(eRefPicList, refIdx)->getHashMap()->count(hashValue1s[idxNonSimple]));
+        if (count == 0)
+        {
+          continue;
+        }
+
+        list<BlockHash> listBlockHash;
+        selectRectangleMatchesInter(pu.cu->slice->getRefPic(eRefPicList, refIdx)->getHashMap()->getFirstIterator(hashValue1s[idxNonSimple]), count, listBlockHash, currBlockHash, width, height, idxNonSimple, hashValue2s, baseNum, picWidth, picHeight, isHorizontal, pu.cu->slice->getRefPic(eRefPicList, refIdx)->getHashMap()->getHashPic(baseSize));
+
+        m_numHashMVStoreds[eRefPicList][refIdx] = int(listBlockHash.size());
+        if (listBlockHash.empty())
+        {
+          continue;
+        }
+        AMVPInfo currAMVPInfoPel;
+        AMVPInfo currAMVPInfo4Pel;
+        AMVPInfo currAMVPInfoQPel;
+        pu.cu->imv = 2;
+        PU::fillMvpCand(pu, eRefPicList, refIdx, currAMVPInfo4Pel);
+        pu.cu->imv = 1;
+        PU::fillMvpCand(pu, eRefPicList, refIdx, currAMVPInfoPel);
+        pu.cu->imv = 0;
+        PU::fillMvpCand(pu, eRefPicList, refIdx, currAMVPInfoQPel);
+
+        const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf().get(COMPONENT_Y).buf;
+        const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf().get(COMPONENT_Y).stride;
+        m_cDistParam.cur.stride = refStride;
+
+        m_pcRdCost->selectMotionLambda(pu.cu->transQuantBypass);
+        m_pcRdCost->setCostScale(0);
+
+        list<BlockHash>::iterator it;
+        int countMV = 0;
+        for (it = listBlockHash.begin(); it != listBlockHash.end(); ++it)
+        {
+          int curMVPIdx = 0;
+          unsigned int curMVPbits = MAX_UINT;
+          Mv cMv((*it).x - currBlockHash.x, (*it).y - currBlockHash.y);
+          m_hashMVStoreds[eRefPicList][refIdx][countMV++] = cMv;
+          cMv.changePrecision(MV_PRECISION_INT, MV_PRECISION_QUARTER);
+
+          for (int mvpIdxTemp = 0; mvpIdxTemp < 2; mvpIdxTemp++)
+          {
+            Mv cMvPredPel = currAMVPInfoQPel.mvCand[mvpIdxTemp];
+            m_pcRdCost->setPredictor(cMvPredPel);
+
+            unsigned int tempMVPbits = m_pcRdCost->getBitsOfVectorWithPredictor(cMv.getHor(), cMv.getVer(), 0);
+
+            if (tempMVPbits < curMVPbits)
+            {
+              curMVPbits = tempMVPbits;
+              curMVPIdx = mvpIdxTemp;
+              pu.cu->imv = 0;
+            }
+
+            if (pu.cu->slice->getSPS()->getAMVREnabledFlag())
+            {
+              unsigned int bitsMVP1Pel = MAX_UINT;
+              Mv mvPred1Pel = currAMVPInfoPel.mvCand[mvpIdxTemp];
+              m_pcRdCost->setPredictor(mvPred1Pel);
+              bitsMVP1Pel = m_pcRdCost->getBitsOfVectorWithPredictor(cMv.getHor(), cMv.getVer(), 2);
+              if (bitsMVP1Pel < curMVPbits)
+              {
+                curMVPbits = bitsMVP1Pel;
+                curMVPIdx = mvpIdxTemp;
+                pu.cu->imv = 1;
+              }
+
+              if ((cMv.getHor() % 16 == 0) && (cMv.getVer() % 16 == 0))
+              {
+                unsigned int bitsMVP4Pel = MAX_UINT;
+                Mv mvPred4Pel = currAMVPInfo4Pel.mvCand[mvpIdxTemp];
+                m_pcRdCost->setPredictor(mvPred4Pel);
+                bitsMVP4Pel = m_pcRdCost->getBitsOfVectorWithPredictor(cMv.getHor(), cMv.getVer(), 4);
+                if (bitsMVP4Pel < curMVPbits)
+                {
+                  curMVPbits = bitsMVP4Pel;
+                  curMVPIdx = mvpIdxTemp;
+                  pu.cu->imv = 2;
+                }
+              }
+            }
+          }
+          curMVPbits += bitsOnRefIdx;
+
+          m_cDistParam.cur.buf = refBufStart + (*it).y*refStride + (*it).x;
+          Distortion currSad = m_cDistParam.distFunc(m_cDistParam);
+          Distortion currCost = currSad + m_pcRdCost->getCost(curMVPbits);
+
+          if (!isPerfectMatch)
+          {
+            if (pu.cu->slice->getRefPic(eRefPicList, refIdx)->slices[0]->getSliceQp() <= pu.cu->slice->getSliceQp())
+            {
+              isPerfectMatch = true;
+            }
+          }
+
+          if (currCost < bestCost)
+          {
+            bestCost = currCost;
+            bestRefPicList = eRefPicList;
+            bestRefIndex = refIdx;
+            bestMv = cMv;
+            bestMVPIndex = curMVPIdx;
+            imvBest = pu.cu->imv;
+            if (pu.cu->imv == 2)
+            {
+              bestMvd = cMv - currAMVPInfo4Pel.mvCand[curMVPIdx];
+            }
+            else if (pu.cu->imv == 1)
+            {
+              bestMvd = cMv - currAMVPInfoPel.mvCand[curMVPIdx];
+            }
+            else
+            {
+              bestMvd = cMv - currAMVPInfoQPel.mvCand[curMVPIdx];
+            }
+          }
+        }
+      }
+    }
+  }
+  delete[] hashValue1s;
+  delete[] hashValue2s;
+  pu.cu->imv = imvBest;
+  if (bestMvd == Mv(0, 0))
+  {
+    pu.cu->imv = 0;
+    return false;
+  }
+  return (bestCost < MAX_INT);
+}
+#else
 int InterSearch::xHashInterPredME(const PredictionUnit& pu, RefPicList currRefPicList, int currRefPicIndex, Mv bestMv[5])
 {
   int width = pu.cu->lumaSize().width;
@@ -1843,11 +2137,18 @@ int InterSearch::xHashInterPredME(const PredictionUnit& pu, RefPicList currRefPi
 
   return totalSize;
 }
+#endif
 
 bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPicList, int& bestRefIndex, Mv& bestMv, Mv& bestMvd, int& bestMVPIndex, bool& isPerfectMatch)
 {
   int width = pu.cu->lumaSize().width;
   int height = pu.cu->lumaSize().height;
+#if JVET_N0247_HASH_IMPROVE
+  if (width != height)
+  {
+    return xRectHashInterEstimation(pu, bestRefPicList, bestRefIndex, bestMv, bestMvd, bestMVPIndex, isPerfectMatch);
+  }
+#endif
   int xPos = pu.cu->lumaPos().x;
   int yPos = pu.cu->lumaPos().y;
 
@@ -1887,6 +2188,9 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
           bitsOnRefIdx--;
         }
       }
+#if JVET_N0247_HASH_IMPROVE
+      m_numHashMVStoreds[eRefPicList][refIdx] = 0;
+#endif
 
       if (refList == 0 || pu.cu->slice->getList1IdxToList0Idx(refIdx) < 0)
       {
@@ -1898,7 +2202,9 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
 
         list<BlockHash> listBlockHash;
         selectMatchesInter(pu.cu->slice->getRefPic(eRefPicList, refIdx)->getHashMap()->getFirstIterator(hashValue1), count, listBlockHash, currBlockHash);
-
+#if JVET_N0247_HASH_IMPROVE
+        m_numHashMVStoreds[eRefPicList][refIdx] = (int)listBlockHash.size();
+#endif
         if (listBlockHash.empty())
         {
           continue;
@@ -1923,11 +2229,17 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
         m_pcRdCost->setCostScale(0);
 
         list<BlockHash>::iterator it;
+#if JVET_N0247_HASH_IMPROVE
+        int countMV = 0;
+#endif
         for (it = listBlockHash.begin(); it != listBlockHash.end(); ++it)
         {
           int curMVPIdx = 0;
           unsigned int curMVPbits = MAX_UINT;
           Mv cMv((*it).x - currBlockHash.x, (*it).y - currBlockHash.y);
+#if JVET_N0247_HASH_IMPROVE
+          m_hashMVStoreds[eRefPicList][refIdx][countMV++] = cMv;
+#endif
           cMv.changePrecision(MV_PRECISION_INT, MV_PRECISION_QUARTER);
 
           for (int mvpIdxTemp = 0; mvpIdxTemp < 2; mvpIdxTemp++)
@@ -3500,6 +3812,18 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
       , cStruct
     );
   }
+#if JVET_N0247_HASH_IMPROVE
+  if (m_pcEncCfg->getUseHashME() && (m_currRefPicList == 0 || pu.cu->slice->getList1IdxToList0Idx(m_currRefPicIndex) < 0))
+  {
+    int minSize = min(pu.cu->lumaSize().width, pu.cu->lumaSize().height);
+    if (minSize < 128 && minSize >= 4)
+    {
+      int numberOfOtherMvps = m_numHashMVStoreds[m_currRefPicList][m_currRefPicIndex];
+      for (int i = 0; i < numberOfOtherMvps; i++)
+      {
+        xTZSearchHelp(cStruct, m_hashMVStoreds[m_currRefPicList][m_currRefPicIndex][i].getHor(), m_hashMVStoreds[m_currRefPicList][m_currRefPicIndex][i].getVer(), 0, 0);
+      }
+#else
   if (m_pcEncCfg->getUseHashME())
   {
     int width = pu.cu->lumaSize().width;
@@ -3513,6 +3837,7 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
       {
         xTZSearchHelp(cStruct, otherMvps[i].getHor(), otherMvps[i].getVer(), 0, 0);
       }
+#endif
       if (numberOfOtherMvps > 0)
       {
         // write out best match
@@ -3779,7 +4104,18 @@ void InterSearch::xTZSearchSelective( const PredictionUnit& pu,
       , cStruct
     );
   }
-
+#if JVET_N0247_HASH_IMPROVE
+  if (m_pcEncCfg->getUseHashME() && (m_currRefPicList == 0 || pu.cu->slice->getList1IdxToList0Idx(m_currRefPicIndex) < 0))
+  {
+    int minSize = min(pu.cu->lumaSize().width, pu.cu->lumaSize().height);
+    if (minSize < 128 && minSize >= 4)
+    {
+      int numberOfOtherMvps = m_numHashMVStoreds[m_currRefPicList][m_currRefPicIndex];
+      for (int i = 0; i < numberOfOtherMvps; i++)
+      {
+        xTZSearchHelp(cStruct, m_hashMVStoreds[m_currRefPicList][m_currRefPicIndex][i].getHor(), m_hashMVStoreds[m_currRefPicList][m_currRefPicIndex][i].getVer(), 0, 0);
+      }
+#else
   if (m_pcEncCfg->getUseHashME())
   {
     int width = pu.cu->lumaSize().width;
@@ -3793,7 +4129,7 @@ void InterSearch::xTZSearchSelective( const PredictionUnit& pu,
       {
         xTZSearchHelp(cStruct, otherMvps[i].getHor(), otherMvps[i].getVer(), 0, 0);
       }
-
+#endif
       if (numberOfOtherMvps > 0)
       {
         // write out best match

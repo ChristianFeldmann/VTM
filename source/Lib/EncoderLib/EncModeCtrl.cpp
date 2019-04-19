@@ -1396,7 +1396,12 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       }
       if (m_pcEncCfg->getUseHashME())
       {
+#if JVET_N0247_HASH_IMPROVE
+        int minSize = min(cs.area.lwidth(), cs.area.lheight());
+        if (minSize < 128 && minSize >= 4)
+#else
         if ((cs.area.lwidth() == cs.area.lheight() && cs.area.lwidth() <= 64 && cs.area.lwidth() >= 4) || (cs.area.lwidth() == 4 && cs.area.lheight() == 8) || (cs.area.lwidth() == 8 && cs.area.lheight() == 4))
+#endif
         {
           m_ComprCUCtxList.back().testModes.push_back({ ETM_HASH_INTER, ETO_STANDARD, qp, lossless });
         }

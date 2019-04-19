@@ -91,7 +91,11 @@ struct TComHash
 public:
   TComHash();
   ~TComHash();
+#if JVET_N0247_HASH_IMPROVE
+  void create(int picWidth, int picHeight);
+#else
   void create();
+#endif
   void clearAll();
   void addToTable(uint32_t hashValue, const BlockHash& blockHash);
   int count(uint32_t hashValue);
@@ -102,11 +106,15 @@ public:
 
   void generateBlock2x2HashValue(const PelUnitBuf &curPicBuf, int picWidth, int picHeight, const BitDepths bitDepths, uint32_t* picBlockHash[2], bool* picBlockSameInfo[3]);
   void generateBlockHashValue(int picWidth, int picHeight, int width, int height, uint32_t* srcPicBlockHash[2], uint32_t* dstPicBlockHash[2], bool* srcPicBlockSameInfo[3], bool* dstPicBlockSameInfo[3]);
+#if !JVET_N0247_HASH_IMPROVE
   void generateRectangleHashValue(int picWidth, int picHeight, int width, int height, uint32_t* srcPicBlockHash[2], uint32_t* dstPicBlockHash[2], bool* srcPicBlockSameInfo[3], bool* dstPicBlockSameInfo[3]);
+#endif
   void addToHashMapByRowWithPrecalData(uint32_t* srcHash[2], bool* srcIsSame, int picWidth, int picHeight, int width, int height);
   bool isInitial() { return tableHasContent; }
   void setInitial() { tableHasContent = true; }
-
+#if JVET_N0247_HASH_IMPROVE
+  uint16_t* getHashPic(int baseSize) const { return hashPic[g_aucLog2[baseSize] - 2]; }
+#endif
 
 
 public:
@@ -117,10 +125,17 @@ public:
   static bool isBlock2x2ColSameValue(unsigned char* p, bool includeAllComponent = true);
   static bool getBlockHashValue(const PelUnitBuf &curPicBuf, int width, int height, int xStart, int yStart, const BitDepths bitDepths, uint32_t& hashValue1, uint32_t& hashValue2);
   static void initBlockSizeToIndex();
+#if JVET_N0247_HASH_IMPROVE
+  static bool isHorizontalPerfectLuma(const Pel* srcPel, int stride, int width, int height);
+  static bool isVerticalPerfectLuma(const Pel* srcPel, int stride, int width, int height);
+#endif
 
 private:
   std::vector<BlockHash>** m_lookupTable;
   bool tableHasContent;
+#if JVET_N0247_HASH_IMPROVE
+  uint16_t* hashPic[5];//4x4 ~ 64x64
+#endif
 
 private:
   static const int m_CRCBits = 16;

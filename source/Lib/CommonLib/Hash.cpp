@@ -109,6 +109,12 @@ TComHash::TComHash()
 {
   m_lookupTable = NULL;
   tableHasContent = false;
+#if JVET_N0247_HASH_IMPROVE
+  for (int i = 0; i < 5; i++)
+  {
+    hashPic[i] = NULL;
+  }
+#endif
 }
 
 TComHash::~TComHash()
@@ -120,7 +126,25 @@ TComHash::~TComHash()
     m_lookupTable = NULL;
   }
 }
-
+#if JVET_N0247_HASH_IMPROVE
+void TComHash::create(int picWidth, int picHeight)
+{
+  if (m_lookupTable)
+  {
+    clearAll();
+  }
+  if (!hashPic[0])
+  {
+    for (int k = 0; k < 5; k++)
+    {
+      hashPic[k] = new uint16_t[picWidth*picHeight];
+    }
+  }
+  if (m_lookupTable)
+  {
+    return;
+  }
+#else
 void TComHash::create()
 {
   if (m_lookupTable != NULL)
@@ -128,6 +152,7 @@ void TComHash::create()
     clearAll();
     return;
   }
+#endif
   int maxAddr = 1 << (m_CRCBits + m_blockSizeBits);
   m_lookupTable = new std::vector<BlockHash>*[maxAddr];
   memset(m_lookupTable, 0, sizeof(std::vector<BlockHash>*) * maxAddr);
@@ -136,6 +161,16 @@ void TComHash::create()
 
 void TComHash::clearAll()
 {
+#if JVET_N0247_HASH_IMPROVE
+  if (hashPic[0])
+  {
+    for (int k = 0; k < 5; k++)
+    {
+      delete[] hashPic[k];
+      hashPic[k] = NULL;
+    }
+  }
+#endif
   tableHasContent = false;
   if (m_lookupTable == NULL)
   {
@@ -251,6 +286,7 @@ void TComHash::generateBlock2x2HashValue(const PelUnitBuf &curPicBuf, int picWid
 
   delete[] p;
 }
+#if !JVET_N0247_HASH_IMPROVE
 void TComHash::generateRectangleHashValue(int picWidth, int picHeight, int width, int height, uint32_t* srcPicBlockHash[2], uint32_t* dstPicBlockHash[2], bool* srcPicBlockSameInfo[3], bool* dstPicBlockSameInfo[3])
 {
   //at present, only support 1:2(2:1) retangle hash value
@@ -328,6 +364,7 @@ void TComHash::generateRectangleHashValue(int picWidth, int picHeight, int width
 
   delete[] p;
 }
+#endif
 
 void TComHash::generateBlockHashValue(int picWidth, int picHeight, int width, int height, uint32_t* srcPicBlockHash[2], uint32_t* dstPicBlockHash[2], bool* srcPicBlockSameInfo[3], bool* dstPicBlockSameInfo[3])
 {
@@ -372,15 +409,21 @@ void TComHash::generateBlockHashValue(int picWidth, int picHeight, int width, in
 
   if (width >= 4)
   {
+#if !JVET_N0247_HASH_IMPROVE
     int widthMinus1 = width - 1;
     int heightMinus1 = height - 1;
+#endif
     pos = 0;
 
     for (int yPos = 0; yPos < yEnd; yPos++)
     {
       for (int xPos = 0; xPos < xEnd; xPos++)
       {
+#if JVET_N0247_HASH_IMPROVE
+        dstPicBlockSameInfo[2][pos] = (!dstPicBlockSameInfo[0][pos] && !dstPicBlockSameInfo[1][pos]);
+#else
         dstPicBlockSameInfo[2][pos] = (!dstPicBlockSameInfo[0][pos] && !dstPicBlockSameInfo[1][pos]) || (((xPos & widthMinus1) == 0) && ((yPos & heightMinus1) == 0));
+#endif
         pos++;
       }
       pos += width - 1;
@@ -404,12 +447,18 @@ void TComHash::addToHashMapByRowWithPrecalData(uint32_t* picHash[2], bool* picIs
   addValue <<= m_CRCBits;
   int crcMask = 1 << m_CRCBits;
   crcMask -= 1;
+#if JVET_N0247_HASH_IMPROVE
+  int blockIdx = g_aucLog2[width] - 2;
+#endif
 
   for (int xPos = 0; xPos < xEnd; xPos++)
   {
     for (int yPos = 0; yPos < yEnd; yPos++)
     {
       int pos = yPos * picWidth + xPos;
+#if JVET_N0247_HASH_IMPROVE
+      hashPic[blockIdx][pos] = (uint16_t)(srcHash[1][pos] & crcMask);
+#endif
       //valid data
       if (srcIsAdded[pos])
       {
@@ -557,7 +606,38 @@ bool TComHash::isBlock2x2ColSameValue(unsigned char* p, bool includeAllComponent
 
   return true;
 }
+#if JVET_N0247_HASH_IMPROVE
+bool TComHash::isHorizontalPerfectLuma(const Pel* srcPel, int stride, int width, int height)
+{
+  for (int i = 0; i < height; i++)
+  {
+    for (int j = 1; j < width; j++)
+    {
+      if (srcPel[j] != srcPel[0])
+      {
+        return false;
+      }
+    }
+    srcPel += stride;
+  }
+  return true;
+}
 
+bool TComHash::isVerticalPerfectLuma(const Pel* srcPel, int stride, int width, int height)
+{
+  for (int i = 0; i < width; i++)
+  {
+    for (int j = 1; j < height; j++)
+    {
+      if (srcPel[j*stride + i] != srcPel[i])
+      {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+#endif
 bool TComHash::getBlockHashValue(const PelUnitBuf &curPicBuf, int width, int height, int xStart, int yStart, const BitDepths bitDepths, uint32_t& hashValue1, uint32_t& hashValue2)
 {
   int addValue = m_blockSizeToIndex[width][height];
@@ -712,8 +792,10 @@ void TComHash::initBlockSizeToIndex()
   m_blockSizeToIndex[32][32] = 2;
   m_blockSizeToIndex[64][64] = 3;
   m_blockSizeToIndex[4][4] = 4;
+#if !JVET_N0247_HASH_IMPROVE
   m_blockSizeToIndex[4][8] = 5;
   m_blockSizeToIndex[8][4] = 6;
+#endif
 }
 
 uint32_t TComHash::getCRCValue1(unsigned char* p, int length)

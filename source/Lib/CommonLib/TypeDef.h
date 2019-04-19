@@ -133,6 +133,8 @@
 
 #define JVET_N0325_BDOF                                   1  // unified right-shifts for BDOF derivation
 
+#define JVET_N0247_HASH_IMPROVE                           1  // Improve hash motion estimation
+
 #define JVET_N0449_MMVD_SIMP                              1 // Configurable number of mmvd distance entries used
 
 #define JVET_N0363_INTRA_COST_MOD                         1 // Modified cost criterion for intra encoder search

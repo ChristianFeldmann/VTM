@@ -1188,17 +1188,21 @@ void Picture::addPictureToHashMapForInter()
       bIsBlockSame[i][j] = new bool[picWidth*picHeight];
     }
   }
-
+#if JVET_N0247_HASH_IMPROVE
+  m_hashMap.create(picWidth, picHeight);
+#else
   m_hashMap.create();
+#endif
   m_hashMap.generateBlock2x2HashValue(getOrigBuf(), picWidth, picHeight, slices[0]->getSPS()->getBitDepths(), blockHashValues[0], bIsBlockSame[0]);//2x2
   m_hashMap.generateBlockHashValue(picWidth, picHeight, 4, 4, blockHashValues[0], blockHashValues[1], bIsBlockSame[0], bIsBlockSame[1]);//4x4
   m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[1], bIsBlockSame[1][2], picWidth, picHeight, 4, 4);
-
+#if !JVET_N0247_HASH_IMPROVE
   m_hashMap.generateRectangleHashValue(picWidth, picHeight, 8, 4, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//8x4
   m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 8, 4);
 
   m_hashMap.generateRectangleHashValue(picWidth, picHeight, 4, 8, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//4x8
   m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 4, 8);
+#endif
 
   m_hashMap.generateBlockHashValue(picWidth, picHeight, 8, 8, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//8x8
   m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 8, 8);

@@ -1662,8 +1662,12 @@ void EncCu::xCheckRDCostHashInter( CodingStructure *&tempCS, CodingStructure *&b
     }
   }
   tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
-
+#if JVET_N0247_HASH_IMPROVE
+  int minSize = min(cu.lwidth(), cu.lheight());
+  if (minSize < 64)
+#else
   if (cu.lwidth() != 64)
+#endif
   {
     isPerfectMatch = false;
   }

@@ -1797,10 +1797,14 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     {
       RdModeList.clear();
       mrgTempBufSet       = true;
+#if JVET_N0327_MERGE_BIT_CALC_FIX
+      const TempCtx ctxStart(m_CtxCache, m_CABACEstimator->getCtx());
+#else
       const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda( encTestMode.lossless );
+#endif
 
       CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
-#if !JVET_N0302_SIMPLFIED_CIIP
+#if !JVET_N0302_SIMPLFIED_CIIP || JVET_N0327_MERGE_BIT_CALC_FIX
       const double sqrtLambdaForFirstPassIntra = m_pcRdCost->getMotionLambda(cu.transQuantBypass) / double(1 << SCALE_BITS);
 #endif
       partitioner.setCUData( cu );
@@ -1862,6 +1866,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
 
         Distortion uiSad = distParam.distFunc(distParam);
+#if JVET_N0327_MERGE_BIT_CALC_FIX
+        m_CABACEstimator->getCtx() = ctxStart;
+        uint64_t fracBits = m_pcInterSearch->xCalcPuMeBits(pu);
+        double cost = (double)uiSad + (double)fracBits * sqrtLambdaForFirstPassIntra;
+#else
         uint32_t uiBitsCand = uiMergeCand + 1;
         if( uiMergeCand == tempCS->slice->getMaxNumMergeCand() - 1 )
         {
@@ -1876,6 +1885,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #endif
 #endif
         double cost     = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
+#endif
         insertPos = -1;
         updateDoubleCandList(uiMergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
         if (insertPos != -1)
@@ -1902,7 +1912,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         int numTestIntraMode = 4;
 #endif
         // prepare for Intra bits calculation
+#if !JVET_N0327_MERGE_BIT_CALC_FIX
         const TempCtx ctxStart(m_CtxCache, m_CABACEstimator->getCtx());
+#endif
 #if !JVET_N0302_SIMPLFIED_CIIP
         const TempCtx ctxStartIntraMode(m_CtxCache, SubCtx(Ctx::MHIntraPredMode, m_CABACEstimator->getCtx()));
 
@@ -1924,11 +1936,15 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           acMergeBuffer[mergeCand] = m_acRealMergeBuffer[mergeCand].getBuf(localUnitArea);
 
           // estimate merge bits
+#if JVET_N0327_MERGE_BIT_CALC_FIX
+          mergeCtx.setMergeInfo(pu, mergeCand);
+#else
           uint32_t bitsCand = mergeCand + 1;
           if (mergeCand == pu.cs->slice->getMaxNumMergeCand() - 1)
           {
             bitsCand--;
           }
+#endif
 
           // first round
 #if JVET_N0302_SIMPLFIED_CIIP
@@ -1959,10 +1975,16 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           {
             pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
           }
+#if JVET_N0327_MERGE_BIT_CALC_FIX
+          m_CABACEstimator->getCtx() = ctxStart;
+          uint64_t fracBits = m_pcInterSearch->xCalcPuMeBits(pu);
+          double cost = (double)sadValue + (double)fracBits * sqrtLambdaForFirstPassIntra;
+#else
 #if JVET_N0324_REGULAR_MRG_FLAG
           double cost = (double)sadValue + (double)(bitsCand + 9) * sqrtLambdaForFirstPass;
 #else
           double cost = (double)sadValue + (double)(bitsCand + 1) * sqrtLambdaForFirstPass;
+#endif
 #endif
           insertPos = -1;
           updateDoubleCandList(mergeCand + MRG_MAX_NUM_CANDS + MMVD_ADD_NUM, cost, RdModeList, candCostList, RdModeList2, pu.intraDir[0], uiNumMrgSATDCand, &insertPos);
@@ -2018,12 +2040,18 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             {
               pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
             }
+#if JVET_N0327_MERGE_BIT_CALC_FIX
+            m_CABACEstimator->getCtx() = ctxStart;
+            uint64_t fracBits = m_pcInterSearch->xCalcPuMeBits(pu);
+            double cost = (double)sadValue + (double)fracBits * sqrtLambdaForFirstPassIntra;
+#else
             m_CABACEstimator->getCtx() = SubCtx(Ctx::MHIntraPredMode, ctxStartIntraMode);
             uint64_t fracModeBits = m_pcIntraSearch->xFracModeBitsIntra(pu, pu.intraDir[0], CHANNEL_TYPE_LUMA);
 #if JVET_N0324_REGULAR_MRG_FLAG
             double cost = (double)sadValue + (double)(bitsCand + 9) * sqrtLambdaForFirstPass + (double)fracModeBits * sqrtLambdaForFirstPassIntra;
 #else
             double cost = (double)sadValue + (double)(bitsCand + 1) * sqrtLambdaForFirstPass + (double)fracModeBits * sqrtLambdaForFirstPassIntra;
+#endif
 #endif
             insertPos = -1;
             updateDoubleCandList(mergeCand + MRG_MAX_NUM_CANDS + MMVD_ADD_NUM, cost, RdModeList, candCostList, RdModeList2, pu.intraDir[0], uiNumMrgSATDCand, &insertPos);
@@ -2045,7 +2073,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #endif
         }
         pu.mhIntraFlag = false;
+#if !JVET_N0327_MERGE_BIT_CALC_FIX
         m_CABACEstimator->getCtx() = ctxStart;
+#endif
       }
 #if !JVET_MMVD_OFF_MACRO
 #if JVET_N0127_MMVD_SPS_FLAG 
@@ -2061,6 +2091,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         for (uint32_t mergeCand = mergeCtx.numValidMergeCand; mergeCand < mergeCtx.numValidMergeCand + tempNum; mergeCand++)
         {
           const int mmvdMergeCand = mergeCand - mergeCtx.numValidMergeCand;
+#if JVET_N0327_MERGE_BIT_CALC_FIX
+          int baseIdx = mmvdMergeCand / MMVD_MAX_REFINE_NUM;
+          int refineStep = (mmvdMergeCand - (baseIdx * MMVD_MAX_REFINE_NUM)) / 4;
+#else
           int bitsBaseIdx = 0;
           int bitsRefineStep = 0;
           int bitsDirection = 2;
@@ -2069,10 +2103,12 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           int refineStep;
           baseIdx = mmvdMergeCand / MMVD_MAX_REFINE_NUM;
           refineStep = (mmvdMergeCand - (baseIdx * MMVD_MAX_REFINE_NUM)) / 4;
+#endif
 #if JVET_N0449_MMVD_SIMP
           if (refineStep >= m_pcEncCfg->getMmvdDisNum())
             continue;
 #endif
+#if !JVET_N0327_MERGE_BIT_CALC_FIX
           bitsBaseIdx = baseIdx + 1;
           if (baseIdx == MMVD_BASE_MV_NUM - 1)
           {
@@ -2091,6 +2127,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #else
           bitsCand++; // for mmvd_flag
 #endif
+#endif
           mergeCtx.setMmvdMergeCandiInfo(pu, mmvdMergeCand);
 
           PU::spanMotionInfo(pu, mergeCtx);
@@ -2104,8 +2141,13 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           pu.mvRefine = false;
           Distortion uiSad = distParam.distFunc(distParam);
 
-
+#if JVET_N0327_MERGE_BIT_CALC_FIX
+          m_CABACEstimator->getCtx() = ctxStart;
+          uint64_t fracBits = m_pcInterSearch->xCalcPuMeBits(pu);
+          double cost = (double)uiSad + (double)fracBits * sqrtLambdaForFirstPassIntra;
+#else
           double cost = (double)uiSad + (double)bitsCand * sqrtLambdaForFirstPass;
+#endif
           insertPos = -1;
           updateDoubleCandList(mergeCand, cost, RdModeList, candCostList, RdModeList2, (uint32_t)NUM_LUMA_MODE, uiNumMrgSATDCand, &insertPos);
           if (insertPos != -1)
@@ -2160,6 +2202,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       }
 
       tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
+#if JVET_N0327_MERGE_BIT_CALC_FIX
+      m_CABACEstimator->getCtx() = ctxStart;
+#endif
     }
     else
     {

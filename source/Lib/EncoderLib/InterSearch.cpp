@@ -7842,3 +7842,70 @@ void InterSearch::symmvdCheckBestMvp(
     }
   }
 }
+
+#if JVET_N0327_MERGE_BIT_CALC_FIX
+uint64_t InterSearch::xCalcPuMeBits(PredictionUnit& pu)
+{
+  assert(pu.mergeFlag);
+  assert(!CU::isIBC(*pu.cu));
+  m_CABACEstimator->resetBits();
+  m_CABACEstimator->merge_flag(pu); 
+  if (pu.mergeFlag)
+  {
+    if (CU::isIBC(*pu.cu))
+    {
+      m_CABACEstimator->merge_idx(pu);
+      return m_CABACEstimator->getEstFracBits();;
+    }
+#if JVET_N0324_REGULAR_MRG_FLAG
+    if (pu.regularMergeFlag)
+    {
+      m_CABACEstimator->merge_idx(pu);
+    }
+    else
+    {
+#endif
+      m_CABACEstimator->subblock_merge_flag(*pu.cu);
+      m_CABACEstimator->MHIntra_flag(pu);
+#if !JVET_N0302_SIMPLFIED_CIIP
+      if (pu.mhIntraFlag)
+      {
+        MHIntra_luma_pred_modes(*pu.cu);
+      }
+#if JVET_N0324_REGULAR_MRG_FLAG
+      else
+      {
+        if (!pu.cu->affine && !pu.mmvdMergeFlag && !pu.cu->mmvdSkip)
+        {
+          CHECK(!pu.cu->triangle, "triangle_flag must be true");
+        }
+      }
+#else
+      triangle_mode(*pu.cu);
+#endif
+#else
+#if JVET_N0324_REGULAR_MRG_FLAG
+      if (!pu.mhIntraFlag)
+      {
+        if (!pu.cu->affine && !pu.mmvdMergeFlag && !pu.cu->mmvdSkip)
+        {
+          CHECK(!pu.cu->triangle, "triangle_flag must be true");
+        }
+      }
+#else
+      triangle_mode(*pu.cu);
+#endif
+#endif
+      if (pu.mmvdMergeFlag)
+      {
+        m_CABACEstimator->mmvd_merge_idx(pu);
+      }
+      else
+        m_CABACEstimator->merge_idx(pu);
+#if JVET_N0324_REGULAR_MRG_FLAG
+    }
+#endif
+  }
+  return m_CABACEstimator->getEstFracBits();
+}
+#endif

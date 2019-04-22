@@ -7855,7 +7855,7 @@ uint64_t InterSearch::xCalcPuMeBits(PredictionUnit& pu)
     if (CU::isIBC(*pu.cu))
     {
       m_CABACEstimator->merge_idx(pu);
-      return m_CABACEstimator->getEstFracBits();;
+      return m_CABACEstimator->getEstFracBits();
     }
 #if JVET_N0324_REGULAR_MRG_FLAG
     if (pu.regularMergeFlag)

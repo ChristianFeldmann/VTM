@@ -1801,6 +1801,9 @@ private:
   uint32_t                       m_colRefIdx;
   uint32_t                       m_maxNumMergeCand;
   uint32_t                   m_maxNumAffineMergeCand;
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  uint32_t                   m_maxNumTriangleCand;
+#endif
   bool                       m_disFracMMVD;
   double                     m_lambdas[MAX_NUM_COMPONENT];
 
@@ -2056,6 +2059,10 @@ public:
   uint32_t                    getMaxNumMergeCand() const                             { return m_maxNumMergeCand;                                     }
   void                        setMaxNumAffineMergeCand( uint32_t val )               { m_maxNumAffineMergeCand = val;  }
   uint32_t                    getMaxNumAffineMergeCand() const                       { return m_maxNumAffineMergeCand; }
+  #if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  void                        setMaxNumTriangleCand(uint32_t val)                    { m_maxNumTriangleCand = val;}
+  uint32_t                    getMaxNumTriangleCand() const                          { return m_maxNumTriangleCand;}
+#endif
   void                        setDisFracMMVD( bool val )                             { m_disFracMMVD = val;                                          }
   bool                        getDisFracMMVD() const                                 { return m_disFracMMVD;                                         }
   void                        setNoOutputPriorPicsFlag( bool val )                   { m_noOutputPriorPicsFlag = val;                                }

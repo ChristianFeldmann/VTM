@@ -65,7 +65,11 @@ extern std::recursive_mutex g_cache_mutex;
 // ====================================================================================================================
 // Constructor / destructor / create / destroy
 // ====================================================================================================================
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+EncCu::EncCu() : m_triangleModeTest
+#else
 const TriangleMotionInfo  EncCu::m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS] =
+#endif
 {
   TriangleMotionInfo( 0, 1, 0 ), TriangleMotionInfo( 1, 0, 1 ), TriangleMotionInfo( 1, 0, 2 ), TriangleMotionInfo( 0, 0, 1 ), TriangleMotionInfo( 0, 2, 0 ),
   TriangleMotionInfo( 1, 0, 3 ), TriangleMotionInfo( 1, 0, 4 ), TriangleMotionInfo( 1, 1, 0 ), TriangleMotionInfo( 0, 3, 0 ), TriangleMotionInfo( 0, 4, 0 ),
@@ -75,7 +79,12 @@ const TriangleMotionInfo  EncCu::m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS] =
   TriangleMotionInfo( 1, 3, 4 ), TriangleMotionInfo( 1, 4, 0 ), TriangleMotionInfo( 1, 3, 1 ), TriangleMotionInfo( 1, 2, 3 ), TriangleMotionInfo( 1, 4, 1 ),
   TriangleMotionInfo( 0, 4, 1 ), TriangleMotionInfo( 0, 2, 3 ), TriangleMotionInfo( 1, 4, 2 ), TriangleMotionInfo( 0, 3, 2 ), TriangleMotionInfo( 1, 4, 3 ),
   TriangleMotionInfo( 0, 3, 1 ), TriangleMotionInfo( 0, 2, 4 ), TriangleMotionInfo( 1, 2, 4 ), TriangleMotionInfo( 0, 4, 2 ), TriangleMotionInfo( 0, 3, 4 ),
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+}
+{}
+#else
 };
+#endif
 
 void EncCu::create( EncCfg* encCfg )
 {
@@ -130,6 +139,40 @@ void EncCu::create( EncCfg* encCfg )
   {
     m_acRealMergeBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
   }
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  const unsigned maxNumTriangleCand = encCfg->getMaxNumTriangleCand();
+  for (unsigned i = 0; i < maxNumTriangleCand; i++)
+  {
+    for (unsigned j = 0; j < maxNumTriangleCand; j++)
+    {
+      if (i == j)
+        continue;
+      uint8_t idxBits0 = i + (i == maxNumTriangleCand - 1 ? 0 : 1);
+      uint8_t candIdx1Enc = j - (j > i ? 1 : 0);
+      uint8_t idxBits1 = candIdx1Enc + (candIdx1Enc == maxNumTriangleCand - 2 ? 0 : 1);
+      m_triangleIdxBins[1][i][j] = m_triangleIdxBins[0][i][j] = 1 + idxBits0 + idxBits1;
+    }
+  }
+  if (maxNumTriangleCand != 5)
+  {
+    // update the table
+    int index = 0;
+    for (unsigned i = 0; i < maxNumTriangleCand; i++)
+    {
+      for (unsigned j = 0; j < maxNumTriangleCand; j++)
+      {
+        if (i == j)
+          continue;
+        for (unsigned dir = 0; dir < 2; dir++, index++)
+        {
+          m_triangleModeTest[index].m_splitDir = dir;
+          m_triangleModeTest[index].m_candIdx0 = i;
+          m_triangleModeTest[index].m_candIdx1 = j;
+        }
+      }
+    }
+  }
+#else
   for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_UNI_CANDS; ui++ )
   {
     for( unsigned uj = 0; uj < TRIANGLE_MAX_NUM_UNI_CANDS; uj++ )
@@ -142,6 +185,7 @@ void EncCu::create( EncCfg* encCfg )
       m_triangleIdxBins[1][ui][uj] = m_triangleIdxBins[0][ui][uj] = 1 + idxBits0 + idxBits1;
     }
   }
+#endif
   for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
   {
     m_acTriangleWeightedBuffer[ui].create( chromaFormat, Area( 0, 0, uiMaxWidth, uiMaxHeight ) );
@@ -2383,6 +2427,11 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   const Slice &slice = *tempCS->slice;
   const SPS &sps = *tempCS->sps;
 
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  if (slice.getMaxNumTriangleCand() < 2)
+    return;
+#endif
+
   CHECK( slice.getSliceType() != B_SLICE, "Triangle mode is only applied to B-slices" );
 
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
@@ -2405,6 +2454,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   PelUnitBuf                                      triangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS];
   static_vector<uint8_t, TRIANGLE_MAX_NUM_CANDS> triangleRdModeList;
   static_vector<double,  TRIANGLE_MAX_NUM_CANDS> tianglecandCostList;
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  uint8_t                                         numTriangleCandComb = slice.getMaxNumTriangleCand() * (slice.getMaxNumTriangleCand() - 1) * 2;
+#endif
 
   if( auto blkCache = dynamic_cast< CacheBlkInfoCtrl* >( m_modeCtrl ) )
   {
@@ -2446,7 +2498,12 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 #endif
 
     PU::getTriangleMergeCandidates( pu, triangleMrgCtx );
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+    const uint8_t maxNumTriangleCand = pu.cs->slice->getMaxNumTriangleCand();
+    for (uint8_t mergeCand = 0; mergeCand < maxNumTriangleCand; mergeCand++)
+#else
     for( uint8_t mergeCand = 0; mergeCand < TRIANGLE_MAX_NUM_UNI_CANDS; mergeCand++ )
+#endif
     {
       triangleBuffer[mergeCand] = m_acMergeBuffer[mergeCand].getBuf(localUnitArea);
       triangleMrgCtx.setMergeInfo( pu, mergeCand );
@@ -2464,6 +2521,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
   bool tempBufSet = bestIsSkip ? false : true;
   triangleNumMrgSATDCand = bestIsSkip ? TRIANGLE_MAX_NUM_CANDS : TRIANGLE_MAX_NUM_SATD_CANDS;
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  triangleNumMrgSATDCand = min(triangleNumMrgSATDCand, numTriangleCandComb);
+#endif
   if( bestIsSkip )
   {
     for( uint8_t i = 0; i < TRIANGLE_MAX_NUM_CANDS; i++ )
@@ -2501,6 +2561,10 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     {
       numTriangleCandidate = TRIANGLE_MAX_NUM_CANDS;
     }
+
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+    numTriangleCandidate = min(numTriangleCandidate, numTriangleCandComb);
+#endif
 
     for( uint8_t mergeCand = 0; mergeCand < numTriangleCandidate; mergeCand++ )
     {
@@ -2564,6 +2628,11 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
     tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
   }
+
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  triangleNumMrgSATDCand = min(triangleNumMrgSATDCand, (uint8_t)triangleRdModeList.size());
+#endif
+
   m_bestModeUpdated = tempCS->useDbCost = bestCS->useDbCost = false;
   {
     uint8_t iteration;

@@ -1915,6 +1915,18 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         READ_FLAG( uiCode, "tile_group_fracmmvd_disabled_flag" );
         pcSlice->setDisFracMMVD( uiCode ? true : false );
       }
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+      if (sps->getUseTriangle() && pcSlice->getMaxNumMergeCand() >= 2)
+      {
+        READ_UVLC(uiCode, "max_num_merge_cand_minus_max_num_triangle_cand");
+        CHECK(pcSlice->getMaxNumMergeCand() < uiCode, "Incorrrect max number of triangle candidates!");
+        pcSlice->setMaxNumTriangleCand((uint32_t)(pcSlice->getMaxNumMergeCand() - uiCode));
+      }
+      else
+      {
+        pcSlice->setMaxNumTriangleCand(0);
+      }
+#endif
     }
 
     READ_SVLC( iCode, "slice_qp_delta" );

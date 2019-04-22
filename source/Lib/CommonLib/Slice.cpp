@@ -90,6 +90,9 @@ Slice::Slice()
 , m_colRefIdx                     ( 0 )
 , m_maxNumMergeCand               ( 0 )
 , m_maxNumAffineMergeCand         ( 0 )
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+, m_maxNumTriangleCand            ( 0 )
+#endif
 , m_disFracMMVD                   ( false )
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
@@ -862,6 +865,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_enableTMVPFlag                = pSrc->m_enableTMVPFlag;
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
   m_maxNumAffineMergeCand         = pSrc->m_maxNumAffineMergeCand;
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  m_maxNumTriangleCand            = pSrc->m_maxNumTriangleCand;
+#endif
   m_disFracMMVD                   = pSrc->m_disFracMMVD;
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
   m_splitConsOverrideFlag         = pSrc->m_splitConsOverrideFlag;

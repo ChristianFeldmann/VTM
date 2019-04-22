@@ -1796,6 +1796,13 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
       candIdx1 -= candIdx1 < candIdx0 ? 0 : 1;
       auto encodeOneIdx = [this](uint8_t mrgIdx, int numCandminus1)
       {
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+        if (numCandminus1 == 0)
+        {
+          CHECK(mrgIdx, "Incorrect index!");
+          return;
+        }
+#endif
         if(mrgIdx == 0)
         {
           this->m_BinEncoder.encodeBin( 0, Ctx::MergeIdx() );
@@ -1815,8 +1822,17 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
         }
       };
       m_BinEncoder.encodeBinEP(splitDir);
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+      const int maxNumTriangleCand = pu.cs->slice->getMaxNumTriangleCand();
+      CHECK(maxNumTriangleCand < 2, "Incorrect max number of triangle candidates");
+      CHECK(candIdx0 >= maxNumTriangleCand, "Incorrect candIdx0");
+      CHECK(candIdx1 >= maxNumTriangleCand, "Incorrect candIdx1");
+      encodeOneIdx(candIdx0, maxNumTriangleCand - 1);
+      encodeOneIdx(candIdx1, maxNumTriangleCand - 2);
+#else
       encodeOneIdx(candIdx0, TRIANGLE_MAX_NUM_UNI_CANDS - 1);
       encodeOneIdx(candIdx1, TRIANGLE_MAX_NUM_UNI_CANDS - 2);
+#endif
       return;
     }
   int numCandminus1 = int( pu.cs->slice->getMaxNumMergeCand() ) - 1;
@@ -2095,6 +2111,13 @@ void CABACWriter::triangle_mode( const CodingUnit& cu )
   {
     return;
   }
+
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  if (cu.cs->slice->getMaxNumTriangleCand() < 2)
+  {
+    return;
+  }
+#endif
 
 #if JVET_N600_AMVR_TPM_CTX_REDUCTION
   m_BinEncoder.encodeBin( cu.triangle, Ctx::TriangleFlag(0) );

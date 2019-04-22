@@ -368,6 +368,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPCMLog2MaxSize                                    ( m_pcmLog2MaxSize);
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
   m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  m_cEncLib.setMaxNumTriangleCand                                ( m_maxNumTriangleCand );
+#endif
 
   //====== Weighted Prediction ========
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );

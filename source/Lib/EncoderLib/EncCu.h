@@ -74,6 +74,9 @@ struct TriangleMotionInfo
   uint8_t   m_candIdx1;
 
   TriangleMotionInfo ( uint8_t splitDir, uint8_t candIdx0, uint8_t candIdx1 ): m_splitDir(splitDir), m_candIdx0(candIdx0), m_candIdx1(candIdx1) { }
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  TriangleMotionInfo() { m_splitDir = m_candIdx0 = m_candIdx1 = 0; }
+#endif
 };
 class EncCu
   : DecCu
@@ -133,7 +136,11 @@ private:
 #endif
   int                   m_bestGbiIdx[2];
   double                m_bestGbiCost[2];
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  TriangleMotionInfo    m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
+#else
   static const TriangleMotionInfo  m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
+#endif
   uint8_t                          m_triangleIdxBins[2][TRIANGLE_MAX_NUM_UNI_CANDS][TRIANGLE_MAX_NUM_UNI_CANDS];
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
   void    updateLambda      ( Slice* slice, const int dQP, const bool updateRdCostLambda );
@@ -163,6 +170,9 @@ public:
   IbcHashMap& getIbcHashMap()              { return m_ibcHashMap;        }
   EncCfg*     getEncCfg()            const { return m_pcEncCfg;          }
 
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  EncCu();
+#endif
   ~EncCu();
 
 protected:

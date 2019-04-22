@@ -1861,8 +1861,15 @@ void CABACReader::merge_idx( PredictionUnit& pu )
       }
       return decIdx;
     };
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+    const int maxNumTriangleCand = pu.cs->slice->getMaxNumTriangleCand();
+    CHECK(maxNumTriangleCand < 2, "Incorrect max number of triangle candidates");
+    candIdx0 = decodeOneIdx(maxNumTriangleCand - 1);
+    candIdx1 = decodeOneIdx(maxNumTriangleCand - 2);
+#else
     candIdx0 = decodeOneIdx(TRIANGLE_MAX_NUM_UNI_CANDS - 1);
     candIdx1 = decodeOneIdx(TRIANGLE_MAX_NUM_UNI_CANDS - 2);
+#endif
     candIdx1 += candIdx1 >= candIdx0 ? 1 : 0;
     DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_split_dir=%d\n", splitDir );
     DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx0=%d\n", candIdx0 );
@@ -2195,6 +2202,13 @@ void CABACReader::triangle_mode( CodingUnit& cu )
   {
     return;
   }
+
+#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
+  if (cu.cs->slice->getMaxNumTriangleCand() < 2)
+  {
+    return;
+  }
+#endif
 
 #if JVET_N600_AMVR_TPM_CTX_REDUCTION
   cu.triangle = m_BinDecoder.decodeBin( Ctx::TriangleFlag(0) );

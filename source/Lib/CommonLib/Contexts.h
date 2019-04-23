@@ -213,6 +213,10 @@ public:
   static const CtxSet   IntraLumaPlanarFlag;
 #endif
   static const CtxSet   IntraChromaPredMode;
+#if JVET_N0217_MATRIX_INTRAPRED
+  static const CtxSet   MipFlag;
+  static const CtxSet   MipMode;
+#endif
   static const CtxSet   DeltaQP;
   static const CtxSet   InterDir;
   static const CtxSet   RefPic;

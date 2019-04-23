@@ -107,6 +107,11 @@ public:
   void        rqt_root_cbf              ( const CodingUnit&             cu );
   void        sbt_mode                  ( const CodingUnit&             cu );
   void        end_of_ctu                ( const CodingUnit&             cu,       CUCtx&            cuCtx );
+#if JVET_N0217_MATRIX_INTRAPRED
+  void        mip_flag                  ( const CodingUnit&             cu );
+  void        mip_pred_modes            ( const CodingUnit&             cu );
+  void        mip_pred_mode             ( const PredictionUnit&         pu );
+#endif
 
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( const PredictionUnit&         pu );
@@ -166,6 +171,9 @@ private:
   void        unary_max_symbol          ( unsigned symbol, unsigned ctxId0, unsigned ctxIdN, unsigned maxSymbol );
   void        unary_max_eqprob          ( unsigned symbol,                                   unsigned maxSymbol );
   void        exp_golomb_eqprob         ( unsigned symbol, unsigned count );
+#if JVET_N0217_MATRIX_INTRAPRED
+  void        code_unary_fixed          ( unsigned symbol, unsigned ctxId, unsigned unary_max, unsigned fixed );
+#endif
 
   // statistic
   unsigned    get_num_written_bits()    { return m_BinEncoder.getNumWrittenBits(); }

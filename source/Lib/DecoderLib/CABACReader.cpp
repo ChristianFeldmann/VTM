@@ -701,9 +701,11 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
     }
   }
 
+#if !JVET_N0217_MATRIX_INTRAPRED
   extend_ref_line( cu );
 
   isp_mode( cu );
+#endif
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
   cu_pred_data( cu );
@@ -1240,6 +1242,18 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
     return;
   }
 #endif
+
+#if JVET_N0217_MATRIX_INTRAPRED
+  mip_flag(cu);
+  if (cu.mipFlag)
+  {
+    mip_pred_modes(cu);
+    return;
+  }
+  extend_ref_line( cu );
+  isp_mode( cu );
+#endif
+
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__INTRA_DIR_ANG, cu.lumaSize(), CHANNEL_TYPE_LUMA );
 
   // prev_intra_luma_pred_flag
@@ -3393,3 +3407,97 @@ unsigned CABACReader::exp_golomb_eqprob( unsigned count )
   return symbol;
 }
 
+#if JVET_N0217_MATRIX_INTRAPRED
+unsigned CABACReader::code_unary_fixed( unsigned ctxId, unsigned unary_max, unsigned fixed )
+{
+  unsigned idx;
+  bool unary = m_BinDecoder.decodeBin( ctxId );
+  if( unary )
+  {
+    idx = unary_max_eqprob( unary_max );
+  }
+  else
+  {
+    idx = unary_max + 1 + m_BinDecoder.decodeBinsEP( fixed );
+  }
+  return idx;
+}
+
+void CABACReader::mip_flag( CodingUnit& cu )
+{
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__OTHER );
+
+  if( !cu.Y().valid() )
+  {
+    return;
+  }
+  if( !cu.cs->sps->getUseMIP() )
+  {
+    cu.mipFlag = false;
+    return;
+  }
+  if( cu.lwidth() > MIP_MAX_WIDTH || cu.lheight() > MIP_MAX_HEIGHT )
+  {
+    cu.mipFlag = false;
+    return;
+  }
+  if( !mipModesAvailable( cu.Y() ) )
+  {
+    cu.mipFlag = false;
+    return;
+  }
+
+  unsigned ctxId = DeriveCtx::CtxMipFlag( cu );
+  cu.mipFlag = m_BinDecoder.decodeBin( Ctx::MipFlag( ctxId ) );
+  DTRACE( g_trace_ctx, D_SYNTAX, "mip_flag() pos=(%d,%d) mode=%d\n", cu.lumaPos().x, cu.lumaPos().y, cu.mipFlag ? 1 : 0 );
+}
+
+void CABACReader::mip_pred_modes( CodingUnit &cu )
+{
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__OTHER );
+
+  if( !cu.Y().valid() )
+  {
+    return;
+  }
+  for( auto &pu : CU::traversePUs( cu ) )
+  {
+    mip_pred_mode( pu );
+  }
+}
+
+void CABACReader::mip_pred_mode( PredictionUnit &pu )
+{
+  CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported" );
+
+  const int numModes   = getNumModesMip( pu.Y() ); CHECKD( numModes > MAX_NUM_MIP_MODE, "Error: too many MIP modes" );
+
+  int      unaryMax    = NUM_MPM_MIP - 1;
+  int      fixedLength = getNumEpBinsMip( pu.Y() );
+  unsigned modeIdx     = code_unary_fixed( Ctx::MipMode( 0 ), unaryMax, fixedLength );
+  CHECK( modeIdx >= numModes, "modeIdx out of range" );
+
+  // derive true MIP mode from modeIdx
+  unsigned mpm[NUM_MPM_MIP];
+  PU::getMipMPMs(pu, mpm);
+
+  if (modeIdx < NUM_MPM_MIP)
+  {
+    pu.intraDir[CHANNEL_TYPE_LUMA] = mpm[modeIdx];
+  }
+  else
+  {
+    modeIdx -= NUM_MPM_MIP;
+    std::sort(mpm, mpm + NUM_MPM_MIP);
+
+    for( unsigned i = 0; i < NUM_MPM_MIP; i++ )
+    {
+      modeIdx += (modeIdx >= mpm[i]);
+    }
+    pu.intraDir[CHANNEL_TYPE_LUMA] = modeIdx;
+  }
+  CHECKD(pu.intraDir[CHANNEL_TYPE_LUMA] < 0 || pu.intraDir[CHANNEL_TYPE_LUMA] >= numModes, "Invalid MIP mode");
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "mip_pred_mode() pos=(%d,%d) mode=%d\n", pu.lumaPos().x, pu.lumaPos().y, pu.intraDir[CHANNEL_TYPE_LUMA] );
+}
+#endif

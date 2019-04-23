@@ -389,6 +389,9 @@ unsigned CtxTriangleFlag( const CodingUnit& cu );
 #endif
 unsigned CtxPredModeFlag( const CodingUnit& cu );
 unsigned CtxIBCFlag(const CodingUnit& cu);
+#if JVET_N0217_MATRIX_INTRAPRED
+unsigned CtxMipFlag   ( const CodingUnit& cu );
+#endif
 }
 
 #endif // __CONTEXTMODELLING__

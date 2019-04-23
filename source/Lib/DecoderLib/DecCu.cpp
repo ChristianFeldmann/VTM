@@ -198,7 +198,19 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   }
   else
   {
+#if JVET_N0217_MATRIX_INTRAPRED
+    if( PU::isMIP( pu, chType ) )
+    {
+      m_pcIntraPred->initIntraMip( pu );
+      m_pcIntraPred->predIntraMip( compID, piPred, pu );
+    }
+    else
+    {
+#endif
     m_pcIntraPred->predIntraAng( compID, piPred, pu );
+#if JVET_N0217_MATRIX_INTRAPRED
+    }
+#endif
   }
   const Slice           &slice = *cs.slice;
   bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));

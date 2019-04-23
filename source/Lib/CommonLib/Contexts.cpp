@@ -304,9 +304,15 @@ const CtxSet ContextSetCfg::PredMode = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MultiRefLineIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_N0217_MATRIX_INTRAPRED
+  { 105, 212, CNU, },
+  { 133, 212, CNU, },
+  { 134, 169, CNU, },
+#else
   { 90, 212, CNU, },
   { 118, 212, CNU, },
   { 119, 169, CNU, },
+#endif
   { 8, 8, DWS, },
 });
 
@@ -336,6 +342,24 @@ const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
   {  154, 139, 154,},
   {    5,   8,   9,},
 });
+
+#if JVET_N0217_MATRIX_INTRAPRED
+const CtxSet ContextSetCfg::MipFlag = ContextSetCfg::addCtxSet
+({
+  { 182, 183, 184, 153},
+  { 182, 183, 184, 153},
+  { 151, 197, 169, 153},
+  { 9,   9,   9,  0},
+});
+
+const CtxSet ContextSetCfg::MipMode = ContextSetCfg::addCtxSet
+({
+  { 196, },
+  { 196, },
+  { 168, },
+  { 8, }
+});
+#endif
 
 const CtxSet ContextSetCfg::DeltaQP = ContextSetCfg::addCtxSet
 ({
@@ -695,10 +719,17 @@ const CtxSet ContextSetCfg::MTSIndex = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet
 ({
+#if JVET_N0217_MATRIX_INTRAPRED
+  { 151, 154, },
+  { 165, 169, },
+  { 166, 169, },
+  {   9,   4, },
+#else
   { 152, 154, },
   { 166, 154, },
   { 152, 154, },
   { 8, 5, },
+#endif
 });
 
 const CtxSet ContextSetCfg::SbtFlag = ContextSetCfg::addCtxSet

@@ -1864,6 +1864,9 @@ SPS::SPS()
 , m_LadfQpOffset              { 0 }
 , m_LadfIntervalLowerBound    { 0 }
 #endif
+#if JVET_N0217_MATRIX_INTRAPRED
+, m_MIP                       ( false )
+#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {

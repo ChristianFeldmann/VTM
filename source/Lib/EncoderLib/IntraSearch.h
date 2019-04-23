@@ -76,10 +76,28 @@ private:
 
   CodingStructure **m_pSaveCS;
 
+#if JVET_N0217_MATRIX_INTRAPRED
+  struct ModeInfo
+  {
+    bool     mipFlg; // CU::mipFlag
+    int      mRefId; // PU::multiRefIdx
+    uint8_t  ispMod; // CU::ispMode
+    uint32_t modeId; // PU::intraDir[CHANNEL_TYPE_LUMA]
+
+    ModeInfo() : mipFlg(false), mRefId(0), ispMod(NOT_INTRA_SUBPARTITIONS), modeId(0) {}
+    ModeInfo(const bool mipf, const int mrid, const uint8_t ispm, const uint32_t mode) : mipFlg(mipf), mRefId(mrid), ispMod(ispm), modeId(mode) {}
+    bool operator==(const ModeInfo cmp) const { return (mipFlg == cmp.mipFlg && mRefId == cmp.mRefId && ispMod == cmp.ispMod && modeId == cmp.modeId); }
+  };
+
+  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrl;
+  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlHor;
+  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlVer;
+#else
   //cost variables for the EMT algorithm and new modes list
   static_vector<uint32_t, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrl;
   static_vector<uint32_t, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlHor;
   static_vector<uint32_t, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlVer;
+#endif
 
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> m_intraModeDiagRatio;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> m_intraModeHorVerRatio;
@@ -160,6 +178,13 @@ protected:
 
   void encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, PelBuf &pDst, const uint32_t &uiDirMode );
   static bool useDPCMForFirstPassIntraEstimation( const PredictionUnit &pu, const uint32_t &uiDirMode );
+
+#if JVET_N0217_MATRIX_INTRAPRED
+  template<typename T, size_t N>
+  void reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double thresholdHadCostConv);
+
+  double m_bestCostNonMip;
+#endif
 };// END CLASS DEFINITION EncSearch
 
 //! \}

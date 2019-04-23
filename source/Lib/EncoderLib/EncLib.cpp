@@ -996,6 +996,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setUseISP                             ( m_ISP );
 #endif
   sps.setUseReshaper                        ( m_lumaReshapeEnable );
+#if JVET_N0217_MATRIX_INTRAPRED
+  sps.setUseMIP                ( m_MIP );
+#endif
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;
   while(minCUSize > 1)

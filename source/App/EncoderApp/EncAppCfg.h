@@ -312,6 +312,10 @@ protected:
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
 #endif
+#if JVET_N0217_MATRIX_INTRAPRED
+  bool      m_MIP;
+  bool      m_useFastMIP;
+#endif
 
 
   int       m_numSplitThreads;

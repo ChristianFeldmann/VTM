@@ -1129,7 +1129,9 @@ private:
   int               m_LadfQpOffset[MAX_LADF_INTERVALS];
   int               m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
-
+#if JVET_N0217_MATRIX_INTRAPRED
+  bool              m_MIP;
+#endif
 
 public:
 
@@ -1412,6 +1414,10 @@ public:
   bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
   void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
+#if JVET_N0217_MATRIX_INTRAPRED
+  void      setUseMIP             ( bool b )                                        { m_MIP = b; }
+  bool      getUseMIP             ()                                      const     { return m_MIP; }
+#endif
 };
 
 

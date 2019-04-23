@@ -611,9 +611,11 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
     }
   }
 #endif
+#if !JVET_N0217_MATRIX_INTRAPRED
   extend_ref_line(cu);
 
   isp_mode( cu );
+#endif
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
   cu_pred_data( cu );
@@ -1054,6 +1056,18 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
   }
 #endif
 
+#if JVET_N0217_MATRIX_INTRAPRED
+  mip_flag(cu);
+  if (cu.mipFlag)
+  {
+    mip_pred_modes(cu);
+    return;
+  }
+  extend_ref_line( cu );
+
+  isp_mode( cu );
+#endif
+
   const int numMPMs   = NUM_MOST_PROBABLE_MODES;
   const int numBlocks = CU::getNumPUs( cu );
   unsigned  mpm_preds   [4][numMPMs];
@@ -1160,6 +1174,18 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
 #if JVET_N0413_RDPCM
   if( pu.cu->bdpcmMode ) return;
 #endif
+#if JVET_N0217_MATRIX_INTRAPRED
+  mip_flag(*pu.cu);
+  if (pu.cu->mipFlag)
+  {
+    mip_pred_mode(pu);
+    return;
+  }
+  extend_ref_line( pu );
+
+  isp_mode( *pu.cu );
+#endif
+
   // prev_intra_luma_pred_flag
   const int numMPMs  = NUM_MOST_PROBABLE_MODES;
   unsigned  mpm_pred[numMPMs];
@@ -3327,4 +3353,103 @@ void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr,
   }
 }
 
+#if JVET_N0217_MATRIX_INTRAPRED
+void CABACWriter::code_unary_fixed( unsigned symbol, unsigned ctxId, unsigned unary_max, unsigned fixed )
+{
+  bool unary = (symbol <= unary_max);
+  m_BinEncoder.encodeBin( unary, ctxId );
+  if( unary )
+  {
+    unary_max_eqprob( symbol, unary_max );
+  }
+  else
+  {
+    m_BinEncoder.encodeBinsEP( symbol - unary_max - 1, fixed );
+  }
+}
+
+void CABACWriter::mip_flag( const CodingUnit& cu )
+{
+  if( !cu.Y().valid() )
+  {
+    return;
+  }
+  if( !cu.cs->sps->getUseMIP() )
+  {
+    return;
+  }
+  if( cu.lwidth() > MIP_MAX_WIDTH || cu.lheight() > MIP_MAX_HEIGHT )
+  {
+    return;
+  }
+  if( !mipModesAvailable( cu.Y() ) )
+  {
+    return;
+  }
+
+  unsigned ctxId = DeriveCtx::CtxMipFlag( cu );
+  m_BinEncoder.encodeBin( cu.mipFlag, Ctx::MipFlag( ctxId ) );
+  DTRACE( g_trace_ctx, D_SYNTAX, "mip_flag() pos=(%d,%d) mode=%d\n", cu.lumaPos().x, cu.lumaPos().y, cu.mipFlag ? 1 : 0 );
+}
+
+void CABACWriter::mip_pred_modes( const CodingUnit& cu )
+{
+  if( !cu.Y().valid() )
+  {
+    return;
+  }
+  for( const auto &pu : CU::traversePUs( cu ) )
+  {
+    mip_pred_mode( pu );
+  }
+}
+
+void CABACWriter::mip_pred_mode( const PredictionUnit& pu )
+{
+  const int numModes = getNumModesMip( pu.Y() ); CHECKD( numModes > MAX_NUM_MIP_MODE, "Error: too many MIP modes" );
+
+  // derive modeIdx from true MIP mode
+  unsigned mpm[NUM_MPM_MIP];
+  PU::getMipMPMs(pu, mpm);
+
+  unsigned mipMode = pu.intraDir[CHANNEL_TYPE_LUMA];
+  unsigned mpmIdx   = NUM_MPM_MIP;
+  for( auto k = 0; k < NUM_MPM_MIP; k++ )
+  {
+    if( mipMode == mpm[k] )
+    {
+      mpmIdx = k;
+      break;
+    }
+  }
+
+  unsigned modeIdx;
+  if (mpmIdx < NUM_MPM_MIP)
+  {
+    modeIdx = mpmIdx;
+  }
+  else
+  {
+    std::sort( mpm, mpm + NUM_MPM_MIP);
+
+    modeIdx = mipMode;
+    for( auto k = (NUM_MPM_MIP - 1); k >= 0; k-- )
+    {
+      if( modeIdx > mpm[k] )
+      {
+        modeIdx--;
+      }
+    }
+    CHECK( modeIdx >= (1<<getNumEpBinsMip( pu.Y() )), "Incorrect mode" );
+    modeIdx += NUM_MPM_MIP;
+  }
+
+  CHECK( modeIdx >= numModes, "modeIdx out of range" );
+  int unaryMax = NUM_MPM_MIP - 1;
+  int fixedLength = getNumEpBinsMip( pu.Y() );
+  code_unary_fixed( modeIdx, Ctx::MipMode( 0 ), unaryMax, fixedLength );
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "mip_pred_mode() pos=(%d,%d) mode=%d\n", pu.lumaPos().x, pu.lumaPos().y, pu.intraDir[CHANNEL_TYPE_LUMA] );
+}
+#endif
 //! \}

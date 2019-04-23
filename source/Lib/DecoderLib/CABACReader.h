@@ -92,6 +92,11 @@ public:
   void        rqt_root_cbf              ( CodingUnit&                   cu );
   void        sbt_mode                  ( CodingUnit&                   cu );
   bool        end_of_ctu                ( CodingUnit&                   cu,     CUCtx&          cuCtx );
+#if JVET_N0217_MATRIX_INTRAPRED
+  void        mip_flag                  ( CodingUnit&                   cu );
+  void        mip_pred_modes            ( CodingUnit&                   cu );
+  void        mip_pred_mode             ( PredictionUnit&               pu );
+#endif
 
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( PredictionUnit&               pu,     MergeCtx&       mrgCtx );
@@ -149,6 +154,9 @@ private:
   unsigned    unary_max_eqprob          (                                   unsigned maxSymbol );
   unsigned    exp_golomb_eqprob         ( unsigned count );
   unsigned    get_num_bits_read         () { return m_BinDecoder.getNumBitsRead(); }
+#if JVET_N0217_MATRIX_INTRAPRED
+  unsigned    code_unary_fixed          ( unsigned ctxId, unsigned unary_max, unsigned fixed );
+#endif
 
   void        xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol);
 public:

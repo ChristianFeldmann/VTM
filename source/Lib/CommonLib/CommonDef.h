@@ -173,6 +173,11 @@ static const int MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1 =         1;
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;
 static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
+#if JVET_N0217_MATRIX_INTRAPRED
+static const int MIP_MAX_WIDTH =                                   64;
+static const int MIP_MAX_HEIGHT =                                  64;
+#endif
+
 #if JVET_N0178_IMPLICIT_BDOF_SPLIT
 static const int MAX_BDOF_APPLICATION_REGION =                     16;
 #endif
@@ -236,9 +241,17 @@ static const uint32_t  NUM_TRAFO_MODES_MTS =                            6; ///< 
 static const uint32_t  MTS_INTRA_MAX_CU_SIZE =                         32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const int NUM_MOST_PROBABLE_MODES = 6;
+#if JVET_N0217_MATRIX_INTRAPRED
+static const int NUM_MPM_MIP =                                      3; ///< number of most probable modes for MIP
+#endif
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
+#if JVET_N0217_MATRIX_INTRAPRED
+static const int MAX_NUM_MIP_MODE =                                35; ///< maximum number of MIP modes
+static const int FAST_UDI_MAX_RDMODE_NUM = (NUM_LUMA_MODE + MAX_NUM_MIP_MODE); ///< maximum number of RD comparison in fast-UDI estimation loop
+#else
 static const int FAST_UDI_MAX_RDMODE_NUM =              NUM_LUMA_MODE; ///< maximum number of RD comparison in fast-UDI estimation loop
+#endif
 
 static const int MDCS_ANGLE_LIMIT =                                 9; ///< 0 = Horizontal/vertical only, 1 = Horizontal/vertical +/- 1, 2 = Horizontal/vertical +/- 2 etc...
 

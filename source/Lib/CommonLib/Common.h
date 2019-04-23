@@ -259,6 +259,16 @@ public:
   }
 };
 
+#if JVET_N0217_MATRIX_INTRAPRED  
+struct AvailableInfo
+{
+  int  maxPosTop;
+  int  maxPosLeft;
+
+  AvailableInfo() : maxPosTop(0), maxPosLeft(0) {}
+  AvailableInfo(const int top, const int left) : maxPosTop(top), maxPosLeft(left) {}
+};
+#endif
 
 
 #endif

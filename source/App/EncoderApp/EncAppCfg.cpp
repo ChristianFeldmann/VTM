@@ -1743,6 +1743,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     CHECK( m_LadfNumIntervals != cfg_LadfQpOffset.values.size(), "size of LadfQpOffset must be equal to LadfNumIntervals");
     CHECK( m_LadfNumIntervals - 1 != cfg_LadfIntervalLowerBound.values.size(), "size of LadfIntervalLowerBound must be equal to LadfNumIntervals - 1");
     m_LadfQpOffset = cfg_LadfQpOffset.values;
+    m_LadfIntervalLowerBound[0] = 0;
     for (int k = 1; k < m_LadfNumIntervals; k++)
     {
       m_LadfIntervalLowerBound[k] = cfg_LadfIntervalLowerBound.values[k - 1];

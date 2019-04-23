@@ -154,22 +154,22 @@ namespace Mip
     const short* bias;
     getMatrixBias( matrix, bias, modeIdx );
 
-    int shift_matrix = 0;
-    int shift_bias = 0;
-    getShifts( shift_matrix, shift_bias, modeIdx, bitDepth );
+    int shiftMatrix = 0;
+    int shiftBias = 0;
+    getShifts(shiftMatrix, shiftBias, modeIdx, bitDepth );
 
-    bool leave_hor_out = ( m_blockSize.width == 4 && m_blockSize.height >= 16 );
-    bool leave_ver_out = ( m_blockSize.height == 4 && m_blockSize.width >= 16 );
+    bool leaveHorOut = ( m_blockSize.width == 4 && m_blockSize.height >= 16 );
+    bool leaveVerOut = ( m_blockSize.height == 4 && m_blockSize.width >= 16 );
     if (transpose)
     {
-      std::swap(leave_hor_out, leave_ver_out);
+      std::swap(leaveHorOut, leaveVerOut);
     }
     static_vector<int, MIP_MAX_REDUCED_OUTPUT_SAMPLES> bufReducedPred( m_reducedPredictionSize.area() );
     int* const       reducedPred     = needUpsampling ? bufReducedPred.data() : result;
     const int* const reducedBoundary = transpose ? m_reducedBoundaryTransposed.data() : m_reducedBoundary.data();
     xComputeMatrixTimesRedBndryPlusBias( reducedPred, reducedBoundary, matrix, bias,
-                                         leave_hor_out, leave_ver_out, 
-                                         shift_matrix, shift_bias,
+                                         leaveHorOut, leaveVerOut,
+                                         shiftMatrix, shiftBias,
                                          transpose, needUpsampling );
     // Reduced prediction is transposed if ( transpose && needUpsampling ).
 
@@ -419,18 +419,18 @@ namespace Mip
 
     if( m_blockSize.width == 4 && m_blockSize.height == 4 )
     {
-      matrix = &mip_weights_4x4[idx][0][0];
-      bias   = &mip_bias_4x4   [idx][0];
+      matrix = &mipMatrix4x4[idx][0][0];
+      bias   = &mipBias4x4  [idx][0];
     }
     else if( m_blockSize.width <= 8 && m_blockSize.height <= 8 )
     {
-      matrix = &mip_weights_8x8[idx][0][0];
-      bias   = &mip_bias_8x8   [idx][0];
+      matrix = &mipMatrix8x8[idx][0][0];
+      bias   = &mipBias8x8  [idx][0];
     }
     else
     {
-      matrix = &mip_weights_16x16[idx][0][0];
-      bias   = &mip_bias_16x16   [idx][0];
+      matrix = &mipMatrix16x16[idx][0][0];
+      bias   = &mipBias16x16  [idx][0];
     }
   }
 
@@ -440,42 +440,42 @@ namespace Mip
 
     if( m_blockSize.width == 4 && m_blockSize.height == 4 )
     {
-      shiftMatrix = mip_right_shifts_result_4x4[idx];
-      shiftBias   = mip_left_shifts_bias_4x4   [idx] + (bitDepth - 10);
+      shiftMatrix = mipShiftMatrix4x4[idx];
+      shiftBias   = mipShiftBias4x4  [idx] + (bitDepth - 10);
     }
     else if( m_blockSize.width <= 8 && m_blockSize.height <= 8 )
     {
-      shiftMatrix = mip_right_shifts_result_8x8[idx];
-      shiftBias   = mip_left_shifts_bias_8x8   [idx] + (bitDepth - 10);
+      shiftMatrix = mipShiftMatrix8x8[idx];
+      shiftBias   = mipShiftBias8x8  [idx] + (bitDepth - 10);
     }
     else
     {
-      shiftMatrix = mip_right_shifts_result_16x16[idx];
-      shiftBias   = mip_left_shifts_bias_16x16   [idx] + (bitDepth - 10);
+      shiftMatrix = mipShiftMatrix16x16[idx];
+      shiftBias   = mipShiftBias16x16  [idx] + (bitDepth - 10);
     }
   }
 
   void PredictorMIP::xComputeMatrixTimesRedBndryPlusBias( int*const result, const int* const input,
                                                           const short*matrix, const short*bias,
-                                                          const bool leave_hor_out, const bool leave_ver_out, 
-                                                          const int right_shift_result, const int left_shift_bias, 
+                                                          const bool leaveHorOut, const bool leaveVerOut, 
+                                                          const int shiftMatrix, const int shiftBias, 
                                                           const bool transpose, const bool needUpsampling )
   {
-    const int input_size = m_reducedBoundarySize.width + m_reducedBoundarySize.height;
+    const int inputSize = m_reducedBoundarySize.width + m_reducedBoundarySize.height;
 
     // Use local buffer for transposed result if no upsampling will be done.
     static_vector<int, MIP_MAX_REDUCED_OUTPUT_SAMPLES> resBufTransposed( m_reducedPredictionSize.area() );
-    int*const res_ptr = (transpose && !needUpsampling) ? resBufTransposed.data() : result;
+    int*const resPtr = (transpose && !needUpsampling) ? resBufTransposed.data() : result;
 
-    const int offset = 1 << (right_shift_result - 1);
-    CHECK(input_size != 4 * (input_size >> 2), "Error, input_size not divisible by four");
+    const int offset = 1 << (shiftMatrix - 1);
+    CHECK(inputSize != 4 * (inputSize >> 2), "Error, input size not divisible by four");
 
     const short *weight = matrix;
 
     const int intermediateWidth  = transpose ? m_reducedPredictionSize.height : m_reducedPredictionSize.width;
     const int intermediateHeight = transpose ? m_reducedPredictionSize.width : m_reducedPredictionSize.height;
-    const int xStep = leave_hor_out ? 2 : 1;
-    const int yStep = leave_ver_out ? intermediateWidth : 0;
+    const int xStep = leaveHorOut ? 2 : 1;
+    const int yStep = leaveVerOut ? intermediateWidth : 0;
     
     int posRes  = 0;
     int posBias = 0;
@@ -487,19 +487,19 @@ namespace Mip
         int tmp1 = 0;
         int tmp2 = 0;
         int tmp3 = 0;
-        for (int i = 0; i < input_size - 1; i += 4)
+        for (int i = 0; i < inputSize - 1; i += 4)
         {
           tmp0 += input[i]     * weight[i];
           tmp1 += input[i + 1] * weight[i + 1];
           tmp2 += input[i + 2] * weight[i + 2];
           tmp3 += input[i + 3] * weight[i + 3];
         }
-        res_ptr[posRes++] = ((tmp0 + tmp1 + tmp2 + tmp3) + (bias[posBias] << left_shift_bias) + offset) >> right_shift_result;
+        resPtr[posRes++] = ((tmp0 + tmp1 + tmp2 + tmp3) + (bias[posBias] << shiftBias) + offset) >> shiftMatrix;
 
-        weight  += xStep * input_size;
+        weight  += xStep * inputSize;
         posBias += xStep;
       }
-      weight  += yStep * input_size;
+      weight  += yStep * inputSize;
       posBias += yStep;
     }
 
@@ -511,7 +511,7 @@ namespace Mip
         for( int x = 0; x < m_reducedPredictionSize.width; x++ )
         {
           CHECKD( x * m_reducedPredictionSize.height + y >= m_reducedPredictionSize.area(), "error" );
-          result[ y * m_reducedPredictionSize.width + x ] = res_ptr[ x * m_reducedPredictionSize.height + y ];
+          result[ y * m_reducedPredictionSize.width + x ] = resPtr[ x * m_reducedPredictionSize.height + y ];
         }
       }
     }

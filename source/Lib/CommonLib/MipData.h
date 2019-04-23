@@ -37,7 +37,7 @@
 
 #include "CommonDef.h"
 
-ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_weights_4x4[18][16][4] )=
+ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mipMatrix4x4[18][16][4] )=
 {
   {
     {  132,  -13,  142,  -13 },
@@ -364,7 +364,7 @@ ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_weights_4x4[18][16][4] )=
     {    1,    1,   -9,  263 }
   }
 };
-ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_bias_4x4[18][16] )=
+ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mipBias4x4[18][16] )=
 {
   {   3,  10,  -3,  -4,   8,  -2,  -6,   1,  -3,  -5,  -2,  -3,  -1,   2,  -3,   1 },
   {   4,   5,   3,   4,   4,  11,  19,  25,   3,  24,  51,  70,  28,  44,  55,  63 },
@@ -385,15 +385,15 @@ ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_bias_4x4[18][16] )=
   {   6,   9,   8,  11,   0,   3,   6,  10,   2,   4,   5,   4,   4,   6,   7,   7 },
   {   1,   1,   1,   1,  -1,  -1,  -1,  -1,   0,   0,   0,   0,   0,   0,   0,   0 }
 };
-const int mip_left_shifts_bias_4x4[18] =
+const int mipShiftBias4x4[18] =
 {
   9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9
 };
-const int mip_right_shifts_result_4x4[18] =
+const int mipShiftMatrix4x4[18] =
 {
   8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8
 };
-ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_weights_8x8[10][16][8] )=
+ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mipMatrix8x8[10][16][8] )=
 {
   {
     {   42,  -26,    8,   -1,  270,  -41,    7,   -3 },
@@ -576,7 +576,7 @@ ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_weights_8x8[10][16][8] )=
     {  -22,    2,  -47,  251,  -40,   -2,  -21,   64 }
   }
 };
-ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_bias_8x8[10][16] )=
+ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mipBias8x8[10][16] )=
 {
   {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0 },
   {   0,   1,   0,  -1,   0,   1,   0,  -1,   1,   1,  -1,  -2,   2,   1,  -1,  -2 },
@@ -589,15 +589,15 @@ ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_bias_8x8[10][16] )=
   {  -7, -10, -11, -11, -10, -14, -17, -18, -11, -15, -19, -21, -10, -17, -21, -22 },
   {  -1,  -1,  -3,  -1,   0,  -1,  -5,   2,  -1,  -1,  -5,   6,   0,  -2,  -4,  10 }
 };
-const int mip_left_shifts_bias_8x8[10] =
+const int mipShiftBias8x8[10] =
 {
   9, 9, 9, 9, 9, 9, 9, 9, 9, 9
 };
-const int mip_right_shifts_result_8x8[10] =
+const int mipShiftMatrix8x8[10] =
 {
   8, 8, 8, 9, 8, 8, 8, 8, 9, 8
 };
-ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_weights_16x16[6][64][8] )=
+ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mipMatrix16x16[6][64][8] )=
 {
   {
     {  -44,   32,   26,    9,  248,  -21,    9,   -3 },
@@ -996,7 +996,7 @@ ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_weights_16x16[6][64][8] )=
     {  -83,   -2,   -7,  105,  -15,   11,   34,  211 }
   }
 };
-ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_bias_16x16[6][64] )=
+ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mipBias16x16[6][64] )=
 {
   {  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  3,  1,  1,  2,  2,  2,  2,  3,  3,  1,  1,  2,  2,  2,  3,  3,  3,  1,  2,  2,  2,  3,  3,  3,  3,  1,  2,  2,  2,  2,  3,  3,  3,  1,  2,  2,  3,  3,  3,  4,  4,  2,  3,  3,  3,  4,  4,  5,  5 },
   {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
@@ -1005,11 +1005,11 @@ ALIGN_DATA( MEMORY_ALIGN_DEF_SIZE, const short mip_bias_16x16[6][64] )=
   {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  0,  1,  1,  1,  1,  1,  1,  1,  1,  1 },
   {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1,  0,  0,  0,  0,  0, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0 }
 };
-const int mip_left_shifts_bias_16x16[6] =
+const int mipShiftBias16x16[6] =
 {
   9, 9, 9, 9, 9, 9
 };
-const int mip_right_shifts_result_16x16[6] =
+const int mipShiftMatrix16x16[6] =
 {
   8, 8, 8, 8, 8, 8
 };

@@ -803,7 +803,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             }
 
             const double thresholdHadCost = 1.0 + 1.4 / sqrt((double)(pu.lwidth()*pu.lheight()));
-            reduceHadCandList(uiRdModeList, CandCostList, numModesForFullRD, thresholdHadCost, fastMip ? 0.0 : thresholdHadCost);
+            reduceHadCandList(uiRdModeList, CandCostList, numModesForFullRD, thresholdHadCost, 0.0);
           }
 #else
         CandCostList.resize(numModesForFullRD);

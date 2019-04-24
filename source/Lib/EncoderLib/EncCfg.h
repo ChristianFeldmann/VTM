@@ -281,6 +281,9 @@ protected:
 #if JCTVC_Y0038_PARAMS
   bool      m_rewriteParamSets;
 #endif
+#if JVET_N0047_Merge_IDR_Non_IDR
+  bool      m_idrRefParamList;
+#endif
   int       m_iGOPSize;
 #if JVET_M0128
   RPLEntry  m_RPLList0[MAX_GOP];
@@ -888,6 +891,10 @@ public:
   void      setDecodingRefreshType          ( int   i )      { m_uiDecodingRefreshType = (uint32_t)i; }
 #if JCTVC_Y0038_PARAMS
   void      setReWriteParamSets             ( bool  b )      { m_rewriteParamSets = b; }
+#endif
+#if JVET_N0047_Merge_IDR_Non_IDR
+  void      setIDRRefParamListPresent       ( bool  b )      { m_idrRefParamList  = b; }
+  bool      getIDRRefParamListPresent       ()        const  { return m_idrRefParamList; }
 #endif
   void      setGOPSize                      ( int   i )      { m_iGOPSize = i; }
   void      setGopList(const GOPEntry GOPList[MAX_GOP]) { for (int i = 0; i < MAX_GOP; i++) m_GOPList[i] = GOPList[i]; }

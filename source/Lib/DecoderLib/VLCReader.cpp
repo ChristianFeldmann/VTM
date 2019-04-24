@@ -1563,7 +1563,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_UVLC( uiCode,    "log2_max_pic_order_cnt_lsb_minus4" );   pcSPS->setBitsForPOC( 4 + uiCode );
   CHECK(uiCode > 12, "Invalid code");
-
+#if JVET_N0047_Merge_IDR_Non_IDR
+  READ_FLAG( uiCode, "sps_idr_rpl_present_flag" ); pcSPS->setIDRRefParamListPresent( (bool) uiCode);                 
+#endif
   // KJS: Marakech decision: sub-layers added back
   uint32_t subLayerOrderingInfoPresentFlag;
   READ_FLAG(subLayerOrderingInfoPresentFlag, "sps_sub_layer_ordering_info_present_flag");
@@ -2222,7 +2224,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     //   read colour_plane_id
     //   (separate_colour_plane_flag == 1) is not supported in this version of the standard.
 
+#if JVET_N0047_Merge_IDR_Non_IDR
+    if( pcSlice->getIdrPicFlag() && !(sps->getIDRRefParamListPresent()))
+#else
     if( pcSlice->getIdrPicFlag() )
+#endif
     {
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
       pcSlice->setPOC(uiCode);
@@ -2521,6 +2527,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setEnableTMVPFlag(false);
       }
     }
+
+
     if(sps->getSAOEnabledFlag())
     {
       READ_FLAG(uiCode, "slice_sao_luma_flag");  pcSlice->setSaoEnabledFlag(CHANNEL_TYPE_LUMA, (bool)uiCode);

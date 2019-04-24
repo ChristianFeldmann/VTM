@@ -1023,7 +1023,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   //Alias with same name as in HM
   ("ReWriteParamSetsFlag",                            m_rewriteParamSets,                           false, "Alias for ReWriteParamSets")
 #endif
-
+#if JVET_N0047_Merge_IDR_Non_IDR
+  ("IDRRefParamList",                                 m_idrRefParamList,                            false, "Enable indication of reference picture list syntax elements in slice headers of IDR pictures")
+#endif
   // motion search options
   ("DisableIntraInInter",                             m_bDisableIntraPUsInInterSlices,                  false, "Flag to disable intra PUs in inter slices")
   ("FastSearch",                                      tmpMotionEstimationSearchMethod,  int(MESEARCH_DIAMOND), "0:Full search 1:Diamond 2:Selective 3:Enhanced Diamond")

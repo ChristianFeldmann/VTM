@@ -192,6 +192,9 @@ protected:
 #else
   int       m_extraRPSs;                                      ///< extra RPSs added to handle CRA
 #endif
+#if JVET_N0047_Merge_IDR_Non_IDR
+  bool      m_idrRefParamList;                                ///< indicates if reference picture list syntax elements are present in slice headers of IDR pictures 
+#endif
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
 #if JVET_N0857_TILES_BRICKS
   BrickSplit    m_brickSplits[MAX_TILES];

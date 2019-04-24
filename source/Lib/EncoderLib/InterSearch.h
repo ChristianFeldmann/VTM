@@ -529,6 +529,9 @@ public:
     , const bool luma = true, const bool chroma = true
   );
   uint64_t xGetSymbolFracBitsInter  (CodingStructure &cs, Partitioner &partitioner);
+#if JVET_N0327_MERGE_BIT_CALC_FIX
+  uint64_t xCalcPuMeBits            (PredictionUnit& pu);
+#endif
 
 };// END CLASS DEFINITION EncSearch
 

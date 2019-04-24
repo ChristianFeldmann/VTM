@@ -1180,7 +1180,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
 #if JVET_N0217_MATRIX_INTRAPRED
 #if JVET_N0413_RDPCM
-    for (int uiMode = -2 * testBDPCM; uiMode < uiRdModeList.size(); uiMode++)
+    for (int uiMode = -2 * int(testBDPCM); uiMode < (int)uiRdModeList.size(); uiMode++)
     {
       // set CU/PU to luma prediction mode
       ModeInfo uiOrgMode;

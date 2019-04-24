@@ -1066,7 +1066,14 @@ elements.
 \par
 See section~\ref{sec:gop-structure} for further details.
 \\
+
+\Option{ReWriteParamSets} &
+%\ShortOption{-ip} &
+\Default{$0$} &
+Enable writing of parameter sets (SPS, PPS, etc.) before every (intra) random access point to enable true random access.
+\\
 \end{OptionTableNoShorthand}
+
 
 %%
 %% Motion estimation parameters
@@ -1151,10 +1158,22 @@ $}
 Specifies the maximum number of merge candidates to use.
 \\
 
+\Option{MaxNumTriangleCand} &
+%\ShortOption{\None} &
+\Default{5} &
+Specifies the maximum number of triangle merge candidates to use.
+\\
+
 \Option{DisableIntraInInter} &
 %\ShortOption{\None} &
 \Default{0} &
 Flag to disable intra PUs in inter slices.
+\\
+
+\Option{MMVD} &
+%\ShortOption{\None} &
+\Default{1} &
+Enables or disables the merge mode with motion vector difference (MMVD).
 \\
 
 \Option{MmvdDisNum} &
@@ -1776,10 +1795,30 @@ Specifies the locations of the horizontal virtual boundaries in units of luma sa
 
 \begin{OptionTableNoShorthand}{Coding tools parameters}{tab:coding-tools}
 
+\Option{MIP} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables or disables the use of matrix-based intra prediction (MIP).
+\\
+
 \Option{AMP} &
 %\ShortOption{\None} &
 \Default{true} &
 Enables or disables the use of asymmetric motion partitions.
+\\
+
+\Option{ISP} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the Intra Sub-Partitions coding mode.
+\\
+
+\Option{ISPFast} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables reduced testing of non-DCT-II transforms if ISP is likely to become the best mode for a given CU.
+\par
+This option has no effect if either ISP or MTS are disabled.
 \\
 
 \Option{SAO} &
@@ -2030,6 +2069,7 @@ Enables or disables the use of low frequency non-separable transform (LFNST).
 \Default{false} &
 Enables or disables the fast encoding of low frequency non-separable transform (LFNST).
 \\
+
 \end{OptionTableNoShorthand}
 
 %%

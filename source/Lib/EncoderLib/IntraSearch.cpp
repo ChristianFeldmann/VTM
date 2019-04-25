@@ -1180,13 +1180,13 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
 #if JVET_N0217_MATRIX_INTRAPRED
 #if JVET_N0413_RDPCM
-    for (int uiMode = -2 * int(testBDPCM); uiMode < (int)uiRdModeList.size(); uiMode++)
+    for (int mode = -2 * int(testBDPCM); mode < (int)uiRdModeList.size(); mode++)
     {
       // set CU/PU to luma prediction mode
       ModeInfo uiOrgMode;
-      if (testBDPCM && uiMode < 0)
+      if (testBDPCM && mode < 0)
       {
-        cu.bdpcmMode = -uiMode;
+        cu.bdpcmMode = -mode;
 
         unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
         PU::getIntraMPMs(pu, mpm_pred);
@@ -1199,7 +1199,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       else
       {
         cu.bdpcmMode = 0;
-        uiOrgMode = uiRdModeList[uiMode];
+        uiOrgMode = uiRdModeList[mode];
 #else
     for (uint32_t uiMode = 0; uiMode < uiRdModeList.size(); uiMode++)
     {
@@ -1360,7 +1360,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       if( !cu.ispMode && !cu.bdpcmMode && csBest->cost < bestCostNonBDPCM )
       {
         bestCostNonBDPCM = csBest->cost;
-        bestNormalIntraModeIndex = uiMode;
+        bestNormalIntraModeIndex = mode;
       }
 #endif
       csTemp->releaseIntermediateData();

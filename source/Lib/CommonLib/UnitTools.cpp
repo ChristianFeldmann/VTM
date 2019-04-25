@@ -841,7 +841,7 @@ int PU::getMipMPMs(const PredictionUnit &pu, unsigned *mpm)
   int aboveIntraMode = -1;
   const PredictionUnit *puAbove = pu.cs->getPURestricted( pos.offset( 0, -1 ), pu, CHANNEL_TYPE_LUMA );
 
-  if( puAbove && CU::isIntra( *puAbove->cu ) )
+  if( puAbove && CU::isIntra( *puAbove->cu ) && CU::isSameCtu(*pu.cu, *puAbove->cu) )
   {
     if( PU::isMIP( *puAbove ) )
     {

@@ -309,8 +309,5 @@ private:
 
 static inline uint32_t getNumberValidTBlocks(const PreCalcValues& pcv) { return (pcv.chrFormat==CHROMA_400) ? 1 : ( pcv.multiBlock422 ? MAX_NUM_TBLOCKS : MAX_NUM_COMPONENT ); }
 
-inline unsigned toWSizeIdx( const CodingStructure* cs ) { return gp_sizeIdxInfo->idxFrom( cs->area.lwidth() ); }
-inline unsigned toHSizeIdx( const CodingStructure* cs ) { return gp_sizeIdxInfo->idxFrom( cs->area.lheight() ); }
-
 #endif
 

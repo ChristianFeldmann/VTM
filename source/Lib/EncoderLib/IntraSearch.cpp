@@ -1180,13 +1180,13 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
 #if JVET_N0217_MATRIX_INTRAPRED
 #if JVET_N0413_RDPCM
-    for (int uiMode = -2 * int(testBDPCM); uiMode < (int)uiRdModeList.size(); uiMode++)
+    for (int mode = -2 * int(testBDPCM); mode < (int)uiRdModeList.size(); mode++)
     {
       // set CU/PU to luma prediction mode
       ModeInfo uiOrgMode;
-      if (testBDPCM && uiMode < 0)
+      if ( mode < 0 )
       {
-        cu.bdpcmMode = -uiMode;
+        cu.bdpcmMode = -mode;
 
         unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
         PU::getIntraMPMs(pu, mpm_pred);
@@ -1199,7 +1199,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       else
       {
         cu.bdpcmMode = 0;
-        uiOrgMode = uiRdModeList[uiMode];
+        uiOrgMode = uiRdModeList[mode];
 #else
     for (uint32_t uiMode = 0; uiMode < uiRdModeList.size(); uiMode++)
     {
@@ -1221,7 +1221,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       CHECK(cu.ispMode && pu.multiRefIdx, "Error: combination of ISP and MRL not supported");
 #else
 #if JVET_N0413_RDPCM
-    for( int uiMode = -2 * testBDPCM; uiMode < numModesForFullRD; uiMode++ )
+    for( int mode = -2 * int(testBDPCM); mode < numModesForFullRD; mode++ )
 #else
     for (uint32_t uiMode = 0; uiMode < numModesForFullRD; uiMode++)
 #endif
@@ -1230,9 +1230,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       int multiRefIdx = 0;
       uint32_t uiOrgMode;
 
-      if (testBDPCM && uiMode < 0)
+      if ( mode < 0 )
     {
-        cu.bdpcmMode = -uiMode;
+        cu.bdpcmMode = -mode;
         unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
         PU::getIntraMPMs(pu, mpm_pred);
         pu.intraDir[0] = mpm_pred[0];
@@ -1242,12 +1242,12 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       else
       {
         cu.bdpcmMode = 0;
-        uiOrgMode = uiRdModeList[uiMode];
+        uiOrgMode = uiRdModeList[mode];
 #else
       // set luma prediction mode
       uint32_t uiOrgMode = uiRdModeList[uiMode];
 #endif
-      cu.ispMode = extendRefList[uiMode] > MRL_NUM_REF_LINES ? extendRefList[uiMode] - MRL_NUM_REF_LINES : NOT_INTRA_SUBPARTITIONS;
+      cu.ispMode = extendRefList[mode] > MRL_NUM_REF_LINES ? extendRefList[mode] - MRL_NUM_REF_LINES : NOT_INTRA_SUBPARTITIONS;
         pu.intraDir[0] = uiOrgMode;
 
 #if !JVET_N0413_RDPCM
@@ -1275,7 +1275,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if !JVET_N0217_MATRIX_INTRAPRED
         else
         {
-          multiRefIdx = extendRefList[uiMode];
+          multiRefIdx = extendRefList[mode];
           pu.multiRefIdx = multiRefIdx;
 #if !JVET_N0185_UNIFIED_MPM
           CHECK( pu.multiRefIdx && ( pu.intraDir[0] == DC_IDX || pu.intraDir[0] == PLANAR_IDX ), "ERL" );
@@ -1360,7 +1360,7 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       if( !cu.ispMode && !cu.bdpcmMode && csBest->cost < bestCostNonBDPCM )
       {
         bestCostNonBDPCM = csBest->cost;
-        bestNormalIntraModeIndex = uiMode;
+        bestNormalIntraModeIndex = mode;
       }
 #endif
       csTemp->releaseIntermediateData();

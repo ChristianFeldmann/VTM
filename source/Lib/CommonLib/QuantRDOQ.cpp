@@ -1622,7 +1622,7 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
       const BinFracBits fracBitsPar = fracBits.getFracBitsArray(cctx.parityCtxIdAbsTS());
 
       goRiceParam = cctx.templateAbsSumTS(scanPos, dstCoeff);
-      const BinFracBits fracBitsSign = fracBits.getFracBitsArray(Ctx::TsResidualSign(toChannelType(compID)));
+      const BinFracBits fracBitsSign = fracBits.getFracBitsArray(Ctx::TsResidualSign(1));
       const uint8_t     sign = srcCoeff[blkPos] - predCoeff < 0 ? 1 : 0;
 
       DTRACE_COND((maxAbsLevel != 0), g_trace_ctx, D_RDOQ_MORE, " uiCtxSig=%d", ctxIdSig);
@@ -1721,7 +1721,7 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
   {
     int blkPos = cctx.blockPos(scanPos);
     TCoeff level = dstCoeff[blkPos];
-    absSum += level;
+    absSum += abs(level);
   }
 }
 

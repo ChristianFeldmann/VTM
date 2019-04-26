@@ -162,8 +162,13 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 #else
     const uint32_t          curTileIdx = cs.picture->tileMap->getTileIdxMap( pos );
 #endif
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+    bool                leftAvail = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0 ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
+    bool                aboveAvail = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
+#else
     bool                leftAvail = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0 ), curSliceIdx, curTileIdx, CH_L ) ? true : false;
     bool                aboveAvail = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), curSliceIdx, curTileIdx, CH_L ) ? true : false;
+#endif
 
     int leftCTUAddr = leftAvail ? ctuRsAddr - 1 : -1;
     int aboveCTUAddr = aboveAvail ? ctuRsAddr - frame_width_in_ctus : -1;
@@ -310,13 +315,21 @@ void CABACReader::sao( CodingStructure& cs, unsigned ctuRsAddr )
 #else
   const unsigned  curTileIdx  = cs.picture->tileMap->getTileIdxMap( pos );
 #endif
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  if( cs.getCURestricted( pos.offset(-(int)cs.pcv->maxCUWidth, 0), pos, curSliceIdx, curTileIdx, CH_L ) )
+#else
   if( cs.getCURestricted( pos.offset(-(int)cs.pcv->maxCUWidth, 0), curSliceIdx, curTileIdx, CH_L ) )
+#endif
   {
     // sao_merge_left_flag
     sao_merge_type  += int( m_BinDecoder.decodeBin( Ctx::SaoMergeFlag() ) );
   }
 
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  if( sao_merge_type < 0 && cs.getCURestricted( pos.offset(0, -(int)cs.pcv->maxCUHeight), pos, curSliceIdx, curTileIdx, CH_L ) )
+#else
   if( sao_merge_type < 0 && cs.getCURestricted( pos.offset(0, -(int)cs.pcv->maxCUHeight), curSliceIdx, curTileIdx, CH_L ) )
+#endif
   {
     // sao_merge_above_flag
     sao_merge_type  += int( m_BinDecoder.decodeBin( Ctx::SaoMergeFlag() ) ) << 1;

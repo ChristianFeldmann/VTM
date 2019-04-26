@@ -186,10 +186,18 @@ void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, u
 #endif
 
   // get left depth
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
+#else
   const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), curSliceIdx, curTileIdx, partitioner.chType );
+#endif
 
   // get above depth
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  const CodingUnit* cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
+#else
   const CodingUnit* cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), curSliceIdx, curTileIdx, partitioner.chType );
+#endif
 
   bool canSplit[6];
 

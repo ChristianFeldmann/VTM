@@ -147,6 +147,9 @@ static const int NOT_VALID =                                       -1;
 static const int MAX_TILES =                                      128; ///< max. number of tiles for which a brick configuration can be read
 static const int MAX_NUM_BRICKS_PER_TILE =                          8; ///< max. number brick per tile, for which a configuration can be read
 #endif
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+static const int NUM_WPP_DELAY_IN_CTU =                             1;
+#endif
 
 static const int AMVP_MAX_NUM_CANDS =                               2; ///< AMVP: advanced motion vector prediction - max number of final candidates
 static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP: advanced motion vector prediction - max number of candidates

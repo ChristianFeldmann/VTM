@@ -1348,7 +1348,14 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   const CodingUnit* cu = getCU( pos, _chType );
   // exists       same slice and tile                  cu precedes curCu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  int ctuSizeBit = g_aucLog2[curCu.cs->sps->getMaxCUWidth()];
+  int xNbY  = cu ? cu->blocks[_chType].x << getChannelTypeScaleX( _chType, curCu.chromaFormat ) : 0;
+  int xCurr = curCu.blocks[_chType].x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
+  if( cu && CU::isSameSliceAndTile( *cu, curCu ) && ( cu->cs != curCu.cs || cu->idx <= curCu.idx ) && (xNbY >> ctuSizeBit) < (xCurr >> ctuSizeBit) + NUM_WPP_DELAY_IN_CTU )
+#else
   if( cu && CU::isSameSliceAndTile( *cu, curCu ) && ( cu->cs != curCu.cs || cu->idx <= curCu.idx ) )
+#endif
   {
     return cu;
   }
@@ -1358,10 +1365,21 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   }
 }
 
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const Position curPos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType ) const
+#else
 const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType ) const
+#endif
 {
   const CodingUnit* cu = getCU( pos, _chType );
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  int ctuSizeBit = cu ? g_aucLog2[cu->cs->sps->getMaxCUWidth()] : 0;
+  int xNbY  = cu ? pos.x << getChannelTypeScaleX( _chType, cu->chromaFormat ) : 0;
+  int xCurr = cu ? curPos.x << getChannelTypeScaleX( _chType, cu->chromaFormat ) : 0;
+  return ( cu && cu->slice->getIndependentSliceIdx() == curSliceIdx && cu->tileIdx == curTileIdx && (xNbY >> ctuSizeBit) < (xCurr >> ctuSizeBit) + NUM_WPP_DELAY_IN_CTU ) ? cu : nullptr;
+#else
   return ( cu && cu->slice->getIndependentSliceIdx() == curSliceIdx && cu->tileIdx == curTileIdx ) ? cu : nullptr;
+#endif
 }
 
 const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, const PredictionUnit& curPu, const ChannelType _chType ) const
@@ -1369,7 +1387,14 @@ const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, con
   const PredictionUnit* pu = getPU( pos, _chType );
   // exists       same slice and tile                  pu precedes curPu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  int ctuSizeBit = g_aucLog2[curPu.cs->sps->getMaxCUWidth()];
+  int xNbY  = pos.x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
+  int xCurr = curPu.blocks[_chType].x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
+  if( pu && CU::isSameSliceAndTile( *pu->cu, *curPu.cu ) && ( pu->cs != curPu.cs || pu->idx <= curPu.idx ) && (xNbY >> ctuSizeBit) < (xCurr >> ctuSizeBit) + NUM_WPP_DELAY_IN_CTU )
+#else
   if( pu && CU::isSameSliceAndTile( *pu->cu, *curPu.cu ) && ( pu->cs != curPu.cs || pu->idx <= curPu.idx ) )
+#endif
   {
     return pu;
   }
@@ -1384,7 +1409,14 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   const TransformUnit* tu = getTU( pos, _chType );
   // exists       same slice and tile                  tu precedes curTu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  int ctuSizeBit = g_aucLog2[curTu.cs->sps->getMaxCUWidth()];
+  int xNbY  = pos.x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
+  int xCurr = curTu.blocks[_chType].x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
+  if( tu && CU::isSameSliceAndTile( *tu->cu, *curTu.cu ) && ( tu->cs != curTu.cs || tu->idx <= curTu.idx ) && (xNbY >> ctuSizeBit) < (xCurr >> ctuSizeBit) + NUM_WPP_DELAY_IN_CTU )
+#else
   if( tu && CU::isSameSliceAndTile( *tu->cu, *curTu.cu ) && ( tu->cs != curTu.cs || tu->idx <= curTu.idx ) )
+#endif
   {
     return tu;
   }

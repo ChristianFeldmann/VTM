@@ -246,8 +246,13 @@ void CABACWriter::sao( const Slice& slice, unsigned ctuRsAddr )
 #else
   const unsigned      curTileIdx              = cs.picture->tileMap->getTileIdxMap( pos );
 #endif
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  bool                leftMergeAvail          = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0  ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
+  bool                aboveMergeAvail         = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
+#else
   bool                leftMergeAvail          = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0  ), curSliceIdx, curTileIdx, CH_L ) ? true : false;
   bool                aboveMergeAvail         = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), curSliceIdx, curTileIdx, CH_L ) ? true : false;
+#endif
   sao_block_pars( sao_ctu_pars, sps.getBitDepths(), sliceEnabled, leftMergeAvail, aboveMergeAvail, false );
 }
 
@@ -3473,8 +3478,13 @@ void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr,
 #else
     const uint32_t          curTileIdx = cs.picture->tileMap->getTileIdxMap( pos );
 #endif
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+    bool                leftAvail = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0 ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
+    bool                aboveAvail = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
+#else
     bool                leftAvail = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0 ), curSliceIdx, curTileIdx, CH_L ) ? true : false;
     bool                aboveAvail = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), curSliceIdx, curTileIdx, CH_L ) ? true : false;
+#endif
 
     int leftCTUAddr = leftAvail ? ctuRsAddr - 1 : -1;
     int aboveCTUAddr = aboveAvail ? ctuRsAddr - frame_width_in_ctus : -1;

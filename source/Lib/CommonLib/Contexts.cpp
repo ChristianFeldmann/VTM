@@ -693,6 +693,16 @@ const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
   { DWS, }
 });
 
+#if JVET_N0193_LFNST
+const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
+( {
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
+  { DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, },
+} );
+#endif
+
 const CtxSet ContextSetCfg::RdpcmFlag = ContextSetCfg::addCtxSet
 ({
   {  139, 139,},

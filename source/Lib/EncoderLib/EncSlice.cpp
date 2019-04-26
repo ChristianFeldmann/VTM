@@ -119,7 +119,11 @@ EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
     int chromaQPOffset       = slice->getPPS()->getQpOffset( compID ) + slice->getSliceChromaQpDelta( compID );
     int qpc                  = ( iQP + chromaQPOffset < 0 ) ? iQP : getScaledChromaQP( iQP + chromaQPOffset, m_pcCfg->getChromaFormatIdc() );
     double tmpWeight         = pow( 2.0, ( iQP - qpc ) / 3.0 );  // takes into account of the chroma qp mapping and chroma qp Offset
+#if JVET_N0193_LFNST
+    if( m_pcCfg->getDepQuantEnabledFlag() && !( m_pcCfg->getLFNST() ) )
+#else
     if( m_pcCfg->getDepQuantEnabledFlag() )
+#endif
     {
       tmpWeight *= ( m_pcCfg->getGOPSize() >= 8 ? pow( 2.0, 0.1/3.0 ) : pow( 2.0, 0.2/3.0 ) );  // increase chroma weight for dependent quantization (in order to reduce bit rate shift from chroma to luma)
     }

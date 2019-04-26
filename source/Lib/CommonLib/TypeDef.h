@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0193_LFNST                                  1 //Low Frequency Non-Separable Transform (LFNST), previously, Reduced Secondary Transform (RST) 
 
 #define JVET_N0217_MATRIX_INTRAPRED                       1 // matrix-based intra prediction (MIP)
 

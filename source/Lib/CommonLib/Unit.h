@@ -313,6 +313,10 @@ struct CodingUnit : public UnitArea
   bool           rootCbf;
   uint8_t        sbtInfo;
   uint32_t           tileIdx;
+#if JVET_N0193_LFNST
+  uint8_t         mtsFlag;
+  uint32_t        lfnstIdx;
+#endif
   uint8_t         GBiIdx;
   int             refIdxBi[2];
 #if JVET_N0217_MATRIX_INTRAPRED

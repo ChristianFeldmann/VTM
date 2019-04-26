@@ -248,6 +248,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxBTDepth                                        ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   m_cEncLib.setDualITree                                         ( m_dualTree );
+#if JVET_N0193_LFNST
+  m_cEncLib.setLFNST                                             ( m_LFNST );
+  m_cEncLib.setUseFastLFNST                                      ( m_useFastLFNST );
+#endif
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode );
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );

@@ -1854,6 +1854,9 @@ SPS::SPS()
 , m_cclmCollocatedChromaFlag  ( false )
 , m_IntraMTS                  ( false )
 , m_InterMTS                  ( false )
+#if JVET_N0193_LFNST
+, m_LFNST                     ( false )
+#endif
 , m_Affine                    ( false )
 , m_AffineType                ( false )
 , m_MHIntra                   ( false )

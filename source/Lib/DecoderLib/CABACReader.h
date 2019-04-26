@@ -134,6 +134,9 @@ public:
   // residual coding (clause 7.3.8.11)
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID );
   void        mts_coding                ( TransformUnit&                tu,     ComponentID     compID );
+#if JVET_N0193_LFNST
+  void        residual_lfnst_mode       ( CodingUnit&                   cu );
+#endif
   void        isp_mode                  ( CodingUnit&                   cu );
   void        explicit_rdpcm_mode       ( TransformUnit&                tu,     ComponentID     compID );
   int         last_sig_coeff            ( CoeffCodingContext&           cctx,   TransformUnit& tu, ComponentID   compID );

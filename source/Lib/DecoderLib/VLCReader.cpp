@@ -1119,6 +1119,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode,    "mts_intra_enabled_flag" );               pcSPS->setUseIntraMTS            ( uiCode != 0 );
     READ_FLAG( uiCode,    "mts_inter_enabled_flag" );               pcSPS->setUseInterMTS            ( uiCode != 0 );
   }
+#if JVET_N0193_LFNST
+  READ_FLAG( uiCode, "lfnst_enabled_flag" );                        pcSPS->setUseLFNST               ( uiCode != 0 );
+#endif
 #if JVET_N0235_SMVD_SPS
   READ_FLAG(uiCode, "smvd_flag");                                   pcSPS->setUseSMVD                ( uiCode != 0 );
 #endif

@@ -759,15 +759,36 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   DTRACE( g_trace_ctx, D_RDOQ, "%d: %3d, %3d, %dx%d, comp=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_RDOQ ), rect.x, rect.y, rect.width, rect.height, compID );
 #endif
 
+#if JVET_N0193_LFNST
+  const uint32_t lfnstIdx = tu.cu->lfnstIdx;
+#endif
 
 
   for (int subSetId = iCGNum - 1; subSetId >= 0; subSetId--)
   {
     cctx.initSubblock( subSetId );
 
+#if JVET_N0193_LFNST
+    uint32_t maxNonZeroPosInCG = iCGSizeM1;
+    if( lfnstIdx > 0 && ( ( uiWidth == 4 && uiHeight == 4 ) || ( uiWidth == 8 && uiHeight == 8 && cctx.cgPosX() == 0 && cctx.cgPosY() == 0 ) ) )
+    {
+      maxNonZeroPosInCG = 7;
+    }
+#endif
+
     memset( &rdStats, 0, sizeof (coeffGroupRDStats));
 
+#if JVET_N0193_LFNST
+    for( int iScanPosinCG = iCGSizeM1; iScanPosinCG > maxNonZeroPosInCG; iScanPosinCG-- )
+    {
+      iScanPos = cctx.minSubPos() + iScanPosinCG;
+      uint32_t    blkPos = cctx.blockPos( iScanPos );
+      piDstCoeff[ blkPos ] = 0;
+    }
+    for( int iScanPosinCG = maxNonZeroPosInCG; iScanPosinCG >= 0; iScanPosinCG-- )
+#else
     for (int iScanPosinCG = iCGSizeM1; iScanPosinCG >= 0; iScanPosinCG--)
+#endif
     {
       iScanPos = cctx.minSubPos() + iScanPosinCG;
       //===== quantization =====
@@ -970,7 +991,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
                 pdCostCoeffGroupSig[ cctx.subSetId() ] = xGetRateSigCoeffGroup(fracBitsSigGroup,0);
               }
               // reset coeffs to 0 in this block
+#if JVET_N0193_LFNST
+              for( int iScanPosinCG = maxNonZeroPosInCG; iScanPosinCG >= 0; iScanPosinCG-- )
+#else
               for (int iScanPosinCG = iCGSizeM1; iScanPosinCG >= 0; iScanPosinCG--)
+#endif
               {
                 iScanPos      = cctx.minSubPos() + iScanPosinCG;
                 uint32_t uiBlkPos = cctx.blockPos( iScanPos );
@@ -1088,7 +1113,16 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
     d64BaseCost -= pdCostCoeffGroupSig [ iCGScanPos ];
     if (cctx.isSigGroup( iCGScanPos ) )
     {
+#if JVET_N0193_LFNST
+      uint32_t maxNonZeroPosInCG = iCGSizeM1;
+      if( lfnstIdx > 0 && ( ( uiWidth == 4 && uiHeight == 4 ) || ( uiWidth == 8 && uiHeight == 8 && cctx.cgPosX() == 0 && cctx.cgPosY() == 0 ) ) )
+      {
+        maxNonZeroPosInCG = 7;
+      }
+      for( int iScanPosinCG = maxNonZeroPosInCG; iScanPosinCG >= 0; iScanPosinCG-- )
+#else
       for (int iScanPosinCG = iCGSizeM1; iScanPosinCG >= 0; iScanPosinCG--)
+#endif
       {
         iScanPos = iCGScanPos * (iCGSizeM1 + 1) + iScanPosinCG;
 

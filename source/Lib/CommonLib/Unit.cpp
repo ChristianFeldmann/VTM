@@ -275,6 +275,10 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
   sbtInfo           = other.sbtInfo;
+#if JVET_N0193_LFNST
+  mtsFlag           = other.mtsFlag;
+  lfnstIdx          = other.lfnstIdx;
+#endif
   tileIdx           = other.tileIdx;
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
@@ -315,6 +319,10 @@ void CodingUnit::initData()
   chromaQpAdj       = 0;
   rootCbf           = true;
   sbtInfo           = 0;
+#if JVET_N0193_LFNST
+  mtsFlag           = 0;
+  lfnstIdx          = 0;
+#endif
   tileIdx           = 0;
   imv               = 0;
   imvNumCand        = 0;

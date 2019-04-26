@@ -944,6 +944,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
   sps.setUseDualITree                        ( m_dualITree );
+#if JVET_N0193_LFNST
+  sps.setUseLFNST                            ( m_LFNST );
+#endif
   sps.setSBTMVPEnabledFlag                  ( m_SubPuMvpMode );
   sps.setAMVREnabledFlag                ( m_ImvMode != IMV_OFF );
   sps.setBDOFEnabledFlag                    ( m_BIO );

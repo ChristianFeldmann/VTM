@@ -1115,6 +1115,9 @@ private:
   bool              m_MTS;
   bool              m_IntraMTS;                   // 18
   bool              m_InterMTS;                   // 19
+#if JVET_N0193_LFNST
+  bool              m_LFNST;
+#endif
 #if JVET_N0235_SMVD_SPS
   bool              m_SMVD;
 #endif
@@ -1393,6 +1396,10 @@ public:
   bool      getUseIntraMTS        ()                                      const     { return m_IntraMTS; }
   void      setUseInterMTS        ( bool b )                                        { m_InterMTS = b; }
   bool      getUseInterMTS        ()                                      const     { return m_InterMTS; }
+#if JVET_N0193_LFNST
+  void      setUseLFNST           ( bool b )                                        { m_LFNST = b; }
+  bool      getUseLFNST           ()                                      const     { return m_LFNST; }
+#endif
 #if JVET_N0235_SMVD_SPS
   void      setUseSMVD(bool b)                                                      { m_SMVD = b; }
   bool      getUseSMVD()                                                  const     { return m_SMVD; }

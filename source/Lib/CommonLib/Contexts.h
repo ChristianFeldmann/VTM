@@ -250,6 +250,9 @@ public:
   static const CtxSet   SaoTypeIdx;
   static const CtxSet   MTSIndex;
   static const CtxSet   TransquantBypassFlag;
+#if JVET_N0193_LFNST
+  static const CtxSet   LFNSTIdx;
+#endif
   static const CtxSet   RdpcmFlag;
   static const CtxSet   RdpcmDir;
   static const CtxSet   SbtFlag;

@@ -217,6 +217,10 @@ static const int NUM_LUMA_MODE =                                   67; ///< Plan
 static const int NUM_LMC_MODE =                                    1 + 2; ///< LMC + MDLM_T + MDLM_L
 static const int NUM_INTRA_MODE = (NUM_LUMA_MODE + NUM_LMC_MODE);
 
+#if JVET_N0193_LFNST
+static const int NUM_EXT_LUMA_MODE =                               28;
+#endif
+
 static const int NUM_DIR =           (((NUM_LUMA_MODE - 3) >> 2) + 1);
 static const int PLANAR_IDX =                                       0; ///< index for intra PLANAR mode
 static const int DC_IDX =                                           1; ///< index for intra DC     mode
@@ -251,6 +255,15 @@ static const int MAX_NUM_MIP_MODE =                                35; ///< maxi
 static const int FAST_UDI_MAX_RDMODE_NUM = (NUM_LUMA_MODE + MAX_NUM_MIP_MODE); ///< maximum number of RD comparison in fast-UDI estimation loop
 #else
 static const int FAST_UDI_MAX_RDMODE_NUM =              NUM_LUMA_MODE; ///< maximum number of RD comparison in fast-UDI estimation loop
+#endif
+
+#if JVET_N0193_LFNST
+static const int MAX_LFNST_COEF_NUM =                              16;
+
+static const int LFNST_SIG_NZ_LUMA =                                1;
+static const int LFNST_SIG_NZ_CHROMA =                              1;
+
+static const int NUM_LFNST_NUM_PER_SET =                            3;
 #endif
 
 static const int MDCS_ANGLE_LIMIT =                                 9; ///< 0 = Horizontal/vertical only, 1 = Horizontal/vertical +/- 1, 2 = Horizontal/vertical +/- 2 etc...

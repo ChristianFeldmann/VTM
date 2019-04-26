@@ -172,8 +172,6 @@
 
 #define JCTVC_Y0038_PARAMS                                1
 
-#define JVET_MMVD_OFF_MACRO                               0
-
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
 #define MRG_SHARELIST_SHARSIZE                            32

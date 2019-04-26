@@ -1922,13 +1922,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         {
           uiBitsCand--;
         }
-#if !JVET_MMVD_OFF_MACRO
 #if JVET_N0127_MMVD_SPS_FLAG 
         if ( pu.cs->sps->getUseMMVD() )
           uiBitsCand++; // for mmvd_flag
 #else
         uiBitsCand++; // for mmvd_flag
-#endif
 #endif
         double cost     = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
 #endif
@@ -2123,7 +2121,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         m_CABACEstimator->getCtx() = ctxStart;
 #endif
       }
-#if !JVET_MMVD_OFF_MACRO
 #if JVET_N0127_MMVD_SPS_FLAG 
       if ( pu.cs->sps->getUseMMVD() )
       {
@@ -2207,7 +2204,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
 #if JVET_N0127_MMVD_SPS_FLAG 
       }
-#endif
 #endif
       // Try to limit number of candidates using SATD-costs
       for( uint32_t i = 1; i < uiNumMrgSATDCand; i++ )

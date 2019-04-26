@@ -851,9 +851,6 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
 #endif  
     }
 #else
-#if JVET_MMVD_OFF_MACRO
-    cu.mmvdSkip = false;
-#else
 #if JVET_N0127_MMVD_SPS_FLAG 
     if (cu.cs->slice->getSPS()->getUseMMVD())
     {
@@ -868,7 +865,6 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
       cu.mmvdSkip = false;
     }
 #endif  
-#endif
 #endif
     cu.skip     = true;
     cu.rootCbf  = false;
@@ -1786,9 +1782,6 @@ void CABACReader::merge_flag( PredictionUnit& pu )
     }
   }
 #else
-#if JVET_MMVD_OFF_MACRO
-  pu.mmvdMergeFlag = false;
-#else
 #if JVET_N0127_MMVD_SPS_FLAG 
   if (pu.mergeFlag && pu.cs->sps->getUseMMVD())
 #else
@@ -1804,7 +1797,6 @@ void CABACReader::merge_flag( PredictionUnit& pu )
     pu.mmvdMergeFlag = false;
   }
 #endif 
-#endif
 #endif
 }
 

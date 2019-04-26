@@ -1368,6 +1368,14 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
 void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
+#if JVET_N0193_LFNST
+  double          bestInterCost             = m_modeCtrl->getBestInterCost();
+  double          costSize2Nx2NmtsFirstPass = m_modeCtrl->getMtsSize2Nx2NFirstPassCost();
+  bool            skipSecondMtsPass         = m_modeCtrl->getSkipSecondMTSPass();
+  const SPS&      sps                       = *tempCS->sps;
+  const int       maxSizeMTS                = MTS_INTRA_MAX_CU_SIZE;
+  uint8_t         considerMtsSecondPass     = ( sps.getUseIntraMTS() && isLuma( partitioner.chType ) && partitioner.currArea().lwidth() <= maxSizeMTS && partitioner.currArea().lheight() <= maxSizeMTS ) ? 1 : 0;
+#endif
   const PPS &pps      = *tempCS->pps;
 
   bool   useIntraSubPartitions   = false;
@@ -1376,136 +1384,319 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
   Distortion interHad = m_modeCtrl->getInterHad();
 
 
+#if JVET_N0193_LFNST
+  double dct2Cost                =   MAX_DOUBLE;
+  double trGrpBestCost     [ 4 ] = { MAX_DOUBLE, MAX_DOUBLE, MAX_DOUBLE, MAX_DOUBLE };
+  double globalBestCost          =   MAX_DOUBLE;
+  bool   bestSelFlag       [ 4 ] = { false, false, false, false };
+  bool   trGrpCheck        [ 4 ] = { true, true, true, true };
+  int    startMTSIdx       [ 4 ] = { 0, 1, 2, 3 };
+  int    endMTSIdx         [ 4 ] = { 0, 1, 2, 3 };
+  double trGrpStopThreshold[ 3 ] = { 1.001, 1.001, 1.001 };
+  int    bestMtsFlag             =   0;
+  int    bestLfnstIdx            =   0;
+
+  const int  maxLfnstIdx         = CS::isDualITree( *tempCS ) && partitioner.chType == CHANNEL_TYPE_CHROMA && ( partitioner.currArea().lwidth() < 8 || partitioner.currArea().lheight() < 8 ) ? 0 : 2;
+  bool       skipOtherLfnst      = false;
+  int        startLfnstIdx       = 0;
+  int        endLfnstIdx         = sps.getUseLFNST() ? maxLfnstIdx : 0;
+
+  int grpNumMax = sps.getUseLFNST() ? 4 : 1;
+  for( int trGrpIdx = 0; trGrpIdx < grpNumMax; trGrpIdx++ )
   {
+    const uint8_t startMtsFlag = trGrpIdx > 0;
+    const uint8_t endMtsFlag   = sps.getUseLFNST() ? considerMtsSecondPass : 0;
 
-    tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
-
-    CodingUnit &cu      = tempCS->addCU( CS::getArea( *tempCS, tempCS->area, partitioner.chType ), partitioner.chType );
-
-    partitioner.setCUData( cu );
-    cu.slice            = tempCS->slice;
-    cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
-    cu.skip             = false;
-    cu.mmvdSkip = false;
-    cu.predMode         = MODE_INTRA;
-    cu.transQuantBypass = encTestMode.lossless;
-    cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
-    cu.qp               = encTestMode.qp;
-  //cu.ipcm             = false;
-    cu.ispMode          = NOT_INTRA_SUBPARTITIONS;
-
-    CU::addPUs( cu );
-
-    tempCS->interHad    = interHad;
-
-    m_bestModeUpdated = tempCS->useDbCost = bestCS->useDbCost = false;
-
-    if( isLuma( partitioner.chType ) )
+    if( ( trGrpIdx == 0 || ( !skipSecondMtsPass && considerMtsSecondPass ) ) && trGrpCheck[ trGrpIdx ] )
     {
-      //the Intra SubPartitions mode uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary lines
-      const double bestCostSoFar = CS::isDualITree( *tempCS ) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
-      m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner, bestCostSoFar );
-
-      useIntraSubPartitions = cu.ispMode != NOT_INTRA_SUBPARTITIONS;
-      if( !CS::isDualITree( *tempCS ) )
+      for( int lfnstIdx = startLfnstIdx; lfnstIdx <= endLfnstIdx; lfnstIdx++ )
       {
-        tempCS->lumaCost = m_pcRdCost->calcRdCost( tempCS->fracBits, tempCS->dist );
-        if( useIntraSubPartitions )
+        for( uint8_t mtsFlag = startMtsFlag; mtsFlag <= endMtsFlag; mtsFlag++ )
+#endif
         {
-          //the difference between the best cost so far and the current luma cost is stored to avoid testing the Cr component if the cost of luma + Cb is larger than the best cost
-          maxCostAllowedForChroma = bestCS->cost < MAX_DOUBLE ? bestCS->cost - tempCS->lumaCost : MAX_DOUBLE;
-        }
-      }
+#if JVET_N0193_LFNST
+          //3) if interHad is 0, only try further modes if some intra mode was already better than inter
+          if( sps.getUseLFNST() && m_pcEncCfg->getUsePbIntraFast() && !tempCS->slice->isIntra() && bestCU && CU::isInter( *bestCS->getCU( partitioner.chType ) ) && interHad == 0 )
+          {
+            continue;
+          }
+#endif
 
-      if (m_pcEncCfg->getUsePbIntraFast() && tempCS->dist == std::numeric_limits<Distortion>::max()
-          && tempCS->interHad == 0)
-      {
-        interHad = 0;
-        // JEM assumes only perfect reconstructions can from now on beat the inter mode
-        m_modeCtrl->enforceInterHad( 0 );
-        return;
-      }
+          tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
 
-      if( !CS::isDualITree( *tempCS ) )
-      {
-        cu.cs->picture->getRecoBuf( cu.Y() ).copyFrom( cu.cs->getRecoBuf( COMPONENT_Y ) );
-        cu.cs->picture->getPredBuf(cu.Y()).copyFrom(cu.cs->getPredBuf(COMPONENT_Y));
-      }
-    }
+          CodingUnit &cu      = tempCS->addCU( CS::getArea( *tempCS, tempCS->area, partitioner.chType ), partitioner.chType );
 
-    if( tempCS->area.chromaFormat != CHROMA_400 && ( partitioner.chType == CHANNEL_TYPE_CHROMA || !CS::isDualITree( *tempCS ) ) )
-    {
-      TUIntraSubPartitioner subTuPartitioner( partitioner );
-      m_pcIntraSearch->estIntraPredChromaQT( cu, ( !useIntraSubPartitions || ( CS::isDualITree( *cu.cs ) && !isLuma( CHANNEL_TYPE_CHROMA ) ) ) ? partitioner : subTuPartitioner, maxCostAllowedForChroma );
-      if( useIntraSubPartitions && !cu.ispMode )
-      {
-        //At this point the temp cost is larger than the best cost. Therefore, we can already skip the remaining calculations
-        return;
-      }
-    }
+          partitioner.setCUData( cu );
+          cu.slice            = tempCS->slice;
+          cu.tileIdx          = tempCS->picture->tileMap->getTileIdxMap( tempCS->area.lumaPos() );
+          cu.skip             = false;
+          cu.mmvdSkip = false;
+          cu.predMode         = MODE_INTRA;
+          cu.transQuantBypass = encTestMode.lossless;
+          cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
+          cu.qp               = encTestMode.qp;
+          //cu.ipcm             = false;
+#if JVET_N0193_LFNST
+          cu.lfnstIdx         = lfnstIdx;
+          cu.mtsFlag          = mtsFlag;
+#endif
+          cu.ispMode          = NOT_INTRA_SUBPARTITIONS;
 
-    cu.rootCbf = false;
+          CU::addPUs( cu );
 
-    for( uint32_t t = 0; t < getNumberValidTBlocks( *cu.cs->pcv ); t++ )
-    {
-      cu.rootCbf |= cu.firstTU->cbf[t] != 0;
-    }
+          tempCS->interHad    = interHad;
 
-    // Get total bits for current mode: encode CU
-    m_CABACEstimator->resetBits();
+          m_bestModeUpdated = tempCS->useDbCost = bestCS->useDbCost = false;
 
-    if( pps.getTransquantBypassEnabledFlag() )
-    {
-      m_CABACEstimator->cu_transquant_bypass_flag( cu );
-    }
+#if JVET_N0193_LFNST
+          bool validCandRet = false;
+#endif
+          if( isLuma( partitioner.chType ) )
+          {
+            //the Intra SubPartitions mode uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary lines
+            const double bestCostSoFar = CS::isDualITree( *tempCS ) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
+#if JVET_N0193_LFNST
+            validCandRet = m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner, bestCostSoFar, mtsFlag, startMTSIdx[ trGrpIdx ], endMTSIdx[ trGrpIdx ], ( trGrpIdx > 1 ) );
+            if( sps.getUseLFNST() && ( !validCandRet || ( cu.ispMode && cu.firstTU->cbf[ COMPONENT_Y ] == 0 ) ) )
+            {
+              continue;
+            }
+#else
+            m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner, bestCostSoFar );
+#endif
 
-    if ((!cu.cs->slice->isIntra() || cu.cs->slice->getSPS()->getIBCFlag())
-      && cu.Y().valid()
-      )
-    {
-      m_CABACEstimator->cu_skip_flag ( cu );
-    }
-    m_CABACEstimator->pred_mode      ( cu );
-    m_CABACEstimator->pcm_data       ( cu, partitioner );
+            useIntraSubPartitions = cu.ispMode != NOT_INTRA_SUBPARTITIONS;
+            if( !CS::isDualITree( *tempCS ) )
+            {
+              tempCS->lumaCost = m_pcRdCost->calcRdCost( tempCS->fracBits, tempCS->dist );
+              if( useIntraSubPartitions )
+              {
+                //the difference between the best cost so far and the current luma cost is stored to avoid testing the Cr component if the cost of luma + Cb is larger than the best cost
+                maxCostAllowedForChroma = bestCS->cost < MAX_DOUBLE ? bestCS->cost - tempCS->lumaCost : MAX_DOUBLE;
+              }
+            }
+
+            if (m_pcEncCfg->getUsePbIntraFast() && tempCS->dist == std::numeric_limits<Distortion>::max()
+                && tempCS->interHad == 0)
+            {
+              interHad = 0;
+              // JEM assumes only perfect reconstructions can from now on beat the inter mode
+              m_modeCtrl->enforceInterHad( 0 );
+#if JVET_N0193_LFNST
+              continue;
+#else
+              return;
+#endif
+            }
+
+            if( !CS::isDualITree( *tempCS ) )
+            {
+              cu.cs->picture->getRecoBuf( cu.Y() ).copyFrom( cu.cs->getRecoBuf( COMPONENT_Y ) );
+              cu.cs->picture->getPredBuf(cu.Y()).copyFrom(cu.cs->getPredBuf(COMPONENT_Y));
+            }
+          }
+
+          if( tempCS->area.chromaFormat != CHROMA_400 && ( partitioner.chType == CHANNEL_TYPE_CHROMA || !CS::isDualITree( *tempCS ) ) )
+          {
+            TUIntraSubPartitioner subTuPartitioner( partitioner );
+            m_pcIntraSearch->estIntraPredChromaQT( cu, ( !useIntraSubPartitions || ( CS::isDualITree( *cu.cs ) && !isLuma( CHANNEL_TYPE_CHROMA ) ) ) ? partitioner : subTuPartitioner, maxCostAllowedForChroma );
+            if( useIntraSubPartitions && !cu.ispMode )
+            {
+              //At this point the temp cost is larger than the best cost. Therefore, we can already skip the remaining calculations
+#if JVET_N0193_LFNST
+              continue;
+#else
+              return;
+#endif
+            }
+          }
+
+          cu.rootCbf = false;
+
+          for( uint32_t t = 0; t < getNumberValidTBlocks( *cu.cs->pcv ); t++ )
+          {
+            cu.rootCbf |= cu.firstTU->cbf[t] != 0;
+          }
+
+          // Get total bits for current mode: encode CU
+          m_CABACEstimator->resetBits();
+
+          if( pps.getTransquantBypassEnabledFlag() )
+          {
+            m_CABACEstimator->cu_transquant_bypass_flag( cu );
+          }
+
+          if ((!cu.cs->slice->isIntra() || cu.cs->slice->getSPS()->getIBCFlag())
+            && cu.Y().valid()
+            )
+          {
+            m_CABACEstimator->cu_skip_flag ( cu );
+          }
+          m_CABACEstimator->pred_mode      ( cu );
+          m_CABACEstimator->pcm_data       ( cu, partitioner );
 #if !JVET_N0217_MATRIX_INTRAPRED
-    m_CABACEstimator->extend_ref_line( cu );
-    m_CABACEstimator->isp_mode       ( cu );
+          m_CABACEstimator->extend_ref_line( cu );
+          m_CABACEstimator->isp_mode       ( cu );
 #endif
-    m_CABACEstimator->cu_pred_data   ( cu );
+          m_CABACEstimator->cu_pred_data   ( cu );
 #if JVET_N0413_RDPCM
-    m_CABACEstimator->bdpcm_mode     ( cu, ComponentID(partitioner.chType) );
+          m_CABACEstimator->bdpcm_mode     ( cu, ComponentID(partitioner.chType) );
 #endif
-    // Encode Coefficients
-    CUCtx cuCtx;
-    cuCtx.isDQPCoded = true;
-    cuCtx.isChromaQpAdjCoded = true;
-    m_CABACEstimator->cu_residual( cu, partitioner, cuCtx );
 
-    tempCS->fracBits = m_CABACEstimator->getEstFracBits();
-    tempCS->cost     = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
+          // Encode Coefficients
+          CUCtx cuCtx;
+          cuCtx.isDQPCoded = true;
+          cuCtx.isChromaQpAdjCoded = true;
+          m_CABACEstimator->cu_residual( cu, partitioner, cuCtx );
 
-    const double tmpCostWithoutSplitFlags = tempCS->cost;
-    xEncodeDontSplit( *tempCS, partitioner );
+          tempCS->fracBits = m_CABACEstimator->getEstFracBits();
+          tempCS->cost     = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
 
-    xCheckDQP( *tempCS, partitioner );
+#if JVET_N0193_LFNST
+          double bestIspCost = cu.ispMode ? CS::isDualITree( *tempCS ) ? tempCS->cost : tempCS->lumaCost : MAX_DOUBLE;
+#endif
 
-    if( tempCS->cost < bestCS->cost )
-    {
-      m_modeCtrl->setBestCostWithoutSplitFlags( tmpCostWithoutSplitFlags );
-    }
+          const double tmpCostWithoutSplitFlags = tempCS->cost;
+          xEncodeDontSplit( *tempCS, partitioner );
 
-    xCalDebCost( *tempCS, partitioner );
-    tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
+          xCheckDQP( *tempCS, partitioner );
+
+#if JVET_N0193_LFNST
+          // Check if low frequency non-separable transform (LFNST) is too expensive
+          const int nonZeroCoeffThr = CS::isDualITree( *tempCS ) ? ( isLuma( partitioner.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
+          if( lfnstIdx && cuCtx.numNonZeroCoeffNonTs <= nonZeroCoeffThr )
+          {
+            bool isMDIS = false;
+            {
+              CHECK( CU::getNumPUs( cu ) > 1, "PLanarPDPC: encoder MDIS condition not defined for multi PU" );
+              const PredictionUnit* pu = cu.firstPU;
+              isMDIS = IntraPrediction::useFilteredIntraRefSamples( COMPONENT_Y, *pu, true, *pu );
+#if HM_MDIS_AS_IN_JEM
+              if( pu->intraDir[ 0 ] == PLANAR_IDX ) { isMDIS |= IntraPrediction::getPlanarMDISCondition( *pu ); }
+#endif
+            }
+
+            if( cuCtx.numNonZeroCoeffNonTs > 0 || isMDIS )
+            {
+              tempCS->cost = MAX_DOUBLE;
+            }
+          }
+
+          if( mtsFlag == 0 && lfnstIdx == 0 )
+          {
+            dct2Cost = tempCS->cost;
+          }
+#endif
+
+          if( tempCS->cost < bestCS->cost )
+          {
+            m_modeCtrl->setBestCostWithoutSplitFlags( tmpCostWithoutSplitFlags );
+          }
+
+#if JVET_N0193_LFNST
+          if( !mtsFlag ) static_cast< double& >( costSize2Nx2NmtsFirstPass ) = tempCS->cost;
+
+          if( sps.getUseLFNST() && !tempCS->cus.empty() )
+          {
+            skipOtherLfnst = m_modeCtrl->checkSkipOtherLfnst( encTestMode, tempCS, partitioner );
+          }
+#endif
+
+          xCalDebCost( *tempCS, partitioner );
+          tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
 
 
 #if WCG_EXT
-    DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda( true ) );
+          DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda( true ) );
 #else
-    DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda() );
+          DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda() );
 #endif
-    xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
+#if JVET_N0193_LFNST
+          if( !sps.getUseLFNST() )
+          {
+            xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
+          }
+          else
+          {
+            if( xCheckBestMode( tempCS, bestCS, partitioner, encTestMode ) )
+            {
+              trGrpBestCost[ trGrpIdx ] = globalBestCost = bestCS->cost;
+              bestSelFlag  [ trGrpIdx ] = true;
+              bestMtsFlag               = mtsFlag;
+              bestLfnstIdx              = lfnstIdx;
+              if( bestCS->cus.size() == 1 )
+              {
+                CodingUnit &cu = *bestCS->cus.front();
+                if( cu.firstTU->mtsIdx == 1 )
+                {
+                  if( ( g_aucLog2[ cu.firstTU->blocks[ COMPONENT_Y ].width ] + g_aucLog2[ cu.firstTU->blocks[ COMPONENT_Y ].height ] ) >= 6 )
+                  {
+                    endLfnstIdx = 0;
+                  }
+                }
+              }
+            }
 
-  } //for emtCuFlag
+            //we decide to skip the second emt pass or not according to the ISP results
+            if( considerMtsSecondPass && cu.ispMode && !mtsFlag && tempCS->slice->isIntra() )
+            {
+              double bestCostDct2NoIsp = m_modeCtrl->getMtsFirstPassNoIspCost();
+              CHECKD( bestCostDct2NoIsp <= bestIspCost, "wrong cost!" );
+              double nSamples  = ( double ) ( cu.lwidth() << g_aucLog2[ cu.lheight() ] );
+              double threshold = 1 + 1.4 / sqrt( nSamples );
+
+              double lfnstThreshold = 1.01 * threshold;
+              if( bestCostDct2NoIsp > bestIspCost*lfnstThreshold )
+              {
+                endLfnstIdx = lfnstIdx;
+              }
+
+              if( bestCostDct2NoIsp > bestIspCost*threshold )
+              {
+                skipSecondMtsPass = true;
+                m_modeCtrl->setSkipSecondMTSPass( true );
+                break;
+              }
+            }
+            //now we check whether the second pass of SIZE_2Nx2N and the whole Intra SIZE_NxN should be skipped or not
+            if( !mtsFlag && !tempCS->slice->isIntra() && bestCU && bestCU->predMode != MODE_INTRA )
+            {
+              const double thEmtInterFastSkipIntra = 1.4; // Skip checking Intra if "2Nx2N using DCT2" is worse than best Inter mode
+              if( costSize2Nx2NmtsFirstPass > thEmtInterFastSkipIntra * bestInterCost )
+              {
+                skipSecondMtsPass = true;
+                m_modeCtrl->setSkipSecondMTSPass( true );
+                break;
+              }
+            }
+          }
+#else
+          xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
+#endif
+
+        } //for emtCuFlag
+#if JVET_N0193_LFNST
+        if( skipOtherLfnst )
+        {
+          startLfnstIdx = lfnstIdx;
+          endLfnstIdx   = lfnstIdx;
+          break;
+        }
+      } //for lfnstIdx
+    } //if (!skipSecondMtsPass && considerMtsSecondPass && trGrpCheck[iGrpIdx])
+
+    if( sps.getUseLFNST() && trGrpIdx < 3 )
+    {
+      trGrpCheck[ trGrpIdx + 1 ] = false;
+
+      if( bestSelFlag[ trGrpIdx ] && considerMtsSecondPass )
+      {
+        double dCostRatio = dct2Cost / trGrpBestCost[ trGrpIdx ];
+        trGrpCheck[ trGrpIdx + 1 ] = ( bestMtsFlag != 0 || bestLfnstIdx != 0 ) && dCostRatio < trGrpStopThreshold[ trGrpIdx ];
+      }
+    }
+  } //trGrpIdx
+#endif
 }
 
 void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )

@@ -1893,6 +1893,27 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
   }
 }
 
+#if JVET_N0193_LFNST
+bool EncModeCtrlMTnoRQT::checkSkipOtherLfnst( const EncTestMode& encTestmode, CodingStructure*& tempCS, Partitioner& partitioner )
+{
+  xExtractFeatures( encTestmode, *tempCS );
+
+  ComprCUCtx& cuECtx  = m_ComprCUCtxList.back();
+  bool skipOtherLfnst = false;
+
+  if( encTestmode.type == ETM_INTRA )
+  {
+    if( !cuECtx.bestCS || ( tempCS->cost >= cuECtx.bestCS->cost && cuECtx.bestCS->cus.size() == 1 && CU::isIntra( *cuECtx.bestCS->cus[ 0 ] ) )
+      || ( tempCS->cost <  cuECtx.bestCS->cost && CU::isIntra( *tempCS->cus[ 0 ] ) ) )
+    {
+      skipOtherLfnst = !tempCS->cus[ 0 ]->rootCbf;
+    }
+  }
+
+  return skipOtherLfnst;
+}
+#endif
+
 bool EncModeCtrlMTnoRQT::useModeResult( const EncTestMode& encTestmode, CodingStructure*& tempCS, Partitioner& partitioner )
 {
   xExtractFeatures( encTestmode, *tempCS );
@@ -1916,6 +1937,21 @@ bool EncModeCtrlMTnoRQT::useModeResult( const EncTestMode& encTestmode, CodingSt
   {
     cuECtx.set( BEST_TRIV_SPLIT_COST, tempCS->cost );
   }
+#if JVET_N0193_LFNST
+  else if( encTestmode.type == ETM_INTRA )
+  {
+    const CodingUnit cu = *tempCS->getCU( partitioner.chType );
+
+    if( !cu.mtsFlag )
+    {
+      cuECtx.bestMtsSize2Nx2N1stPass   = tempCS->cost;
+    }
+    if( !cu.ispMode )
+    {
+      cuECtx.bestCostMtsFirstPassNoIsp = tempCS->cost;
+    }
+  }
+#endif
 
   if( m_pcEncCfg->getIMV4PelFast() && m_pcEncCfg->getIMV() && encTestmode.type == ETM_INTER_ME )
   {

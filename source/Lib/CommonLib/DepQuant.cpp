@@ -1003,75 +1003,119 @@ namespace DQIntern
       m_goRiceZero    = 0;
     }
 
+#if JVET_N0193_LFNST
+    void checkRdCosts( const ScanPosType spt, const PQData& pqDataA, const PQData& pqDataB, Decision& decisionA, Decision& decisionB, bool zeroOut ) const
+#else
     void checkRdCosts( const ScanPosType spt, const PQData& pqDataA, const PQData& pqDataB, Decision& decisionA, Decision& decisionB) const
+#endif
     {
       const int32_t*  goRiceTab = g_goRiceBits[m_goRicePar];
       int64_t         rdCostA   = m_rdCost + pqDataA.deltaDist;
       int64_t         rdCostB   = m_rdCost + pqDataB.deltaDist;
       int64_t         rdCostZ   = m_rdCost;
-      if( m_remRegBins >= 4 )
+#if JVET_N0193_LFNST
+      if( zeroOut )
       {
-        if( pqDataA.absLevel < 4 )
-          rdCostA += m_coeffFracBits.bits[pqDataA.absLevel];
-        else
+        rdCostZ = m_rdCost;
+        if( m_remRegBins >= 4 )
         {
-          const unsigned value = (pqDataA.absLevel - 4) >> 1;
-          rdCostA += m_coeffFracBits.bits[pqDataA.absLevel - (value << 1)] + goRiceTab[value<RICEMAX ? value : RICEMAX-1];
-        }
-        if( pqDataB.absLevel < 4 )
-          rdCostB += m_coeffFracBits.bits[pqDataB.absLevel];
-        else
-        {
-          const unsigned value = (pqDataB.absLevel - 4) >> 1;
-          rdCostB += m_coeffFracBits.bits[pqDataB.absLevel - (value << 1)] + goRiceTab[value<RICEMAX ? value : RICEMAX-1];
-        }
-        if( spt == SCAN_ISCSBB )
-        {
-          rdCostA += m_sigFracBits.intBits[1];
-          rdCostB += m_sigFracBits.intBits[1];
-          rdCostZ += m_sigFracBits.intBits[0];
-        }
-        else if( spt == SCAN_SOCSBB )
-        {
-          rdCostA += m_sbbFracBits.intBits[1] + m_sigFracBits.intBits[1];
-          rdCostB += m_sbbFracBits.intBits[1] + m_sigFracBits.intBits[1];
-          rdCostZ += m_sbbFracBits.intBits[1] + m_sigFracBits.intBits[0];
-        }
-        else if( m_numSigSbb )
-        {
-          rdCostA += m_sigFracBits.intBits[1];
-          rdCostB += m_sigFracBits.intBits[1];
-          rdCostZ += m_sigFracBits.intBits[0];
+          if( spt == SCAN_ISCSBB )
+          {
+            rdCostZ += m_sigFracBits.intBits[ 0 ];
+          }
+          else if( spt == SCAN_SOCSBB )
+          {
+            rdCostZ += m_sbbFracBits.intBits[ 1 ] + m_sigFracBits.intBits[ 0 ];
+          }
+          else if( m_numSigSbb )
+          {
+            rdCostZ += m_sigFracBits.intBits[ 0 ];
+          }
+          else
+          {
+            rdCostZ = decisionA.rdCost;
+          }
         }
         else
         {
-          rdCostZ = decisionA.rdCost;
+          rdCostZ += goRiceTab[ m_goRiceZero ];
+        }
+        if( rdCostZ < decisionA.rdCost )
+        {
+          decisionA.rdCost = rdCostZ;
+          decisionA.absLevel = 0;
+          decisionA.prevId = m_stateId;
         }
       }
       else
       {
-        rdCostA += (1 << SCALE_BITS) + goRiceTab[pqDataA.absLevel <= m_goRiceZero ? pqDataA.absLevel - 1 : (pqDataA.absLevel<RICEMAX ? pqDataA.absLevel : RICEMAX-1)];
-        rdCostB += (1 << SCALE_BITS) + goRiceTab[pqDataB.absLevel <= m_goRiceZero ? pqDataB.absLevel - 1 : (pqDataB.absLevel<RICEMAX ? pqDataB.absLevel : RICEMAX-1)];
-        rdCostZ += goRiceTab[m_goRiceZero];
+#endif
+        if( m_remRegBins >= 4 )
+        {
+          if( pqDataA.absLevel < 4 )
+            rdCostA += m_coeffFracBits.bits[ pqDataA.absLevel ];
+          else
+          {
+            const unsigned value = ( pqDataA.absLevel - 4 ) >> 1;
+            rdCostA += m_coeffFracBits.bits[ pqDataA.absLevel - ( value << 1 ) ] + goRiceTab[ value < RICEMAX ? value : RICEMAX - 1 ];
+          }
+          if( pqDataB.absLevel < 4 )
+            rdCostB += m_coeffFracBits.bits[ pqDataB.absLevel ];
+          else
+          {
+            const unsigned value = ( pqDataB.absLevel - 4 ) >> 1;
+            rdCostB += m_coeffFracBits.bits[ pqDataB.absLevel - ( value << 1 ) ] + goRiceTab[ value < RICEMAX ? value : RICEMAX - 1 ];
+          }
+          if( spt == SCAN_ISCSBB )
+          {
+            rdCostA += m_sigFracBits.intBits[ 1 ];
+            rdCostB += m_sigFracBits.intBits[ 1 ];
+            rdCostZ += m_sigFracBits.intBits[ 0 ];
+          }
+          else if( spt == SCAN_SOCSBB )
+          {
+            rdCostA += m_sbbFracBits.intBits[ 1 ] + m_sigFracBits.intBits[ 1 ];
+            rdCostB += m_sbbFracBits.intBits[ 1 ] + m_sigFracBits.intBits[ 1 ];
+            rdCostZ += m_sbbFracBits.intBits[ 1 ] + m_sigFracBits.intBits[ 0 ];
+          }
+          else if( m_numSigSbb )
+          {
+            rdCostA += m_sigFracBits.intBits[ 1 ];
+            rdCostB += m_sigFracBits.intBits[ 1 ];
+            rdCostZ += m_sigFracBits.intBits[ 0 ];
+          }
+          else
+          {
+            rdCostZ = decisionA.rdCost;
+          }
+        }
+        else
+        {
+          rdCostA += ( 1 << SCALE_BITS ) + goRiceTab[ pqDataA.absLevel <= m_goRiceZero ? pqDataA.absLevel - 1 : ( pqDataA.absLevel < RICEMAX ? pqDataA.absLevel : RICEMAX - 1 ) ];
+          rdCostB += ( 1 << SCALE_BITS ) + goRiceTab[ pqDataB.absLevel <= m_goRiceZero ? pqDataB.absLevel - 1 : ( pqDataB.absLevel < RICEMAX ? pqDataB.absLevel : RICEMAX - 1 ) ];
+          rdCostZ += goRiceTab[ m_goRiceZero ];
+        }
+        if( rdCostA < decisionA.rdCost )
+        {
+          decisionA.rdCost = rdCostA;
+          decisionA.absLevel = pqDataA.absLevel;
+          decisionA.prevId = m_stateId;
+        }
+        if( rdCostZ < decisionA.rdCost )
+        {
+          decisionA.rdCost = rdCostZ;
+          decisionA.absLevel = 0;
+          decisionA.prevId = m_stateId;
+        }
+        if( rdCostB < decisionB.rdCost )
+        {
+          decisionB.rdCost = rdCostB;
+          decisionB.absLevel = pqDataB.absLevel;
+          decisionB.prevId = m_stateId;
+        }
+#if JVET_N0193_LFNST
       }
-      if( rdCostA < decisionA.rdCost )
-      {
-        decisionA.rdCost   = rdCostA;
-        decisionA.absLevel = pqDataA.absLevel;
-        decisionA.prevId   = m_stateId;
-      }
-      if( rdCostZ < decisionA.rdCost )
-      {
-        decisionA.rdCost   = rdCostZ;
-        decisionA.absLevel = 0;
-        decisionA.prevId   = m_stateId;
-      }
-      if( rdCostB < decisionB.rdCost )
-      {
-        decisionB.rdCost   = rdCostB;
-        decisionB.absLevel = pqDataB.absLevel;
-        decisionB.prevId   = m_stateId;
-      }
+#endif
     }
 
     inline void checkRdCostStart(int32_t lastOffset, const PQData &pqData, Decision &decision) const
@@ -1479,6 +1523,7 @@ namespace DQIntern
   {
     ::memcpy( decisions, startDec, 8*sizeof(Decision) );
 
+#if !JVET_N0193_LFNST
     if( zeroOut )
     {
       if( spt==SCAN_EOCSBB )
@@ -1490,22 +1535,51 @@ namespace DQIntern
       }
       return;
     }
+#endif
 
     PQData  pqData[4];
     m_quant.preQuantCoeff( absCoeff, pqData );
+#if JVET_N0193_LFNST
+    m_prevStates[0].checkRdCosts( spt, pqData[0], pqData[2], decisions[0], decisions[2], zeroOut );
+    m_prevStates[1].checkRdCosts( spt, pqData[0], pqData[2], decisions[2], decisions[0], zeroOut );
+    m_prevStates[2].checkRdCosts( spt, pqData[3], pqData[1], decisions[1], decisions[3], zeroOut );
+    m_prevStates[3].checkRdCosts( spt, pqData[3], pqData[1], decisions[3], decisions[1], zeroOut );
+#else
     m_prevStates[0].checkRdCosts( spt, pqData[0], pqData[2], decisions[0], decisions[2]);
     m_prevStates[1].checkRdCosts( spt, pqData[0], pqData[2], decisions[2], decisions[0]);
     m_prevStates[2].checkRdCosts( spt, pqData[3], pqData[1], decisions[1], decisions[3]);
     m_prevStates[3].checkRdCosts( spt, pqData[3], pqData[1], decisions[3], decisions[1]);
+#endif
     if( spt==SCAN_EOCSBB )
     {
-      m_skipStates[0].checkRdCostSkipSbb( decisions[0] );
-      m_skipStates[1].checkRdCostSkipSbb( decisions[1] );
-      m_skipStates[2].checkRdCostSkipSbb( decisions[2] );
-      m_skipStates[3].checkRdCostSkipSbb( decisions[3] );
+#if JVET_N0193_LFNST
+      if( zeroOut )
+      {
+        m_skipStates[0].checkRdCostSkipSbbZeroOut( decisions[0] );
+        m_skipStates[1].checkRdCostSkipSbbZeroOut( decisions[1] );
+        m_skipStates[2].checkRdCostSkipSbbZeroOut( decisions[2] );
+        m_skipStates[3].checkRdCostSkipSbbZeroOut( decisions[3] );
+      }
+      else
+      {
+#endif
+        m_skipStates[0].checkRdCostSkipSbb( decisions[0] );
+        m_skipStates[1].checkRdCostSkipSbb( decisions[1] );
+        m_skipStates[2].checkRdCostSkipSbb( decisions[2] );
+        m_skipStates[3].checkRdCostSkipSbb( decisions[3] );
+#if JVET_N0193_LFNST
+      }
+#endif
     }
+#if JVET_N0193_LFNST
+    if( !zeroOut )
+    {
+#endif
     m_startState.checkRdCostStart( lastOffset, pqData[0], decisions[0] );
     m_startState.checkRdCostStart( lastOffset, pqData[2], decisions[2] );
+#if JVET_N0193_LFNST
+    }
+#endif
   }
 
   void DepQuant::xDecideAndUpdate( const TCoeff absCoeff, const ScanInfo& scanInfo, bool zeroOut )
@@ -1527,7 +1601,11 @@ namespace DQIntern
         m_currStates[3].updateStateEOS( scanInfo, m_prevStates, m_skipStates, decisions[3] );
         ::memcpy( decisions+4, decisions, 4*sizeof(Decision) );
       }
+#if !JVET_N0193_LFNST
       else if( !zeroOut )
+#else
+      else
+#endif
       {
         switch( scanInfo.nextNbInfoSbb.num )
         {
@@ -1590,8 +1668,21 @@ namespace DQIntern
     ::memset( tu.getCoeffs( compID ).buf, 0x00, numCoeff*sizeof(TCoeff) );
     absSum          = 0;
 
+#if JVET_N0193_LFNST
+    const CompArea& area     = tu.blocks[ compID ];
+    const uint32_t  width    = area.width;
+    const uint32_t  height   = area.height;
+    const uint32_t  lfnstIdx = tu.cu->lfnstIdx;
+#endif
+
     //===== find first test position =====
     int   firstTestPos = numCoeff - 1;
+#if JVET_N0193_LFNST
+    if( lfnstIdx > 0 && tu.mtsIdx != 1 && ( ( width == 4 && height == 4 ) || ( width == 8 && height == 8 ) ) )
+    {
+      firstTestPos = 7;
+    }
+#endif
     const TCoeff thres = m_quant.getLastThreshold();
     for( ; firstTestPos >= 0; firstTestPos-- )
     {
@@ -1627,7 +1718,13 @@ namespace DQIntern
     for( int scanIdx = firstTestPos; scanIdx >= 0; scanIdx-- )
     {
       const ScanInfo& scanInfo = tuPars.m_scanInfo[ scanIdx ];
+#if JVET_N0193_LFNST
+      bool lfnstZeroOut = lfnstIdx > 0 && tu.mtsIdx != 1 && width >= 4 && height >= 4 &&
+        ( ( ( ( width >= 8 && height >= 8 ) && scanIdx >= 16 ) || ( ( ( width == 4 && height == 4 ) || ( width == 8 && height == 8 ) ) && scanIdx >= 8 ) ) && scanIdx < 48 );
+      xDecideAndUpdate( abs( tCoeff[ scanInfo.rasterPos ] ), scanInfo, ( zeroOut && ( scanInfo.posX >= effWidth || scanInfo.posY >= effHeight ) ) || lfnstZeroOut );
+#else
       xDecideAndUpdate( abs( tCoeff[ scanInfo.rasterPos ] ), scanInfo, zeroOut && ( scanInfo.posX >= effWidth || scanInfo.posY >= effHeight ) );
+#endif
     }
 
     //===== find best path =====

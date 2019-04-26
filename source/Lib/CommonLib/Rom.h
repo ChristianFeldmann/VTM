@@ -76,6 +76,9 @@ extern       uint32_t   g_log2SbbSize   [2][MAX_CU_DEPTH+1][MAX_CU_DEPTH+1][2];
 extern ScanElement
   *g_scanOrder[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
 #endif
+#if JVET_N0193_LFNST
+extern       ScanElement   g_coefTopLeftDiagScan8x8[ MAX_CU_SIZE / 2 + 1 ][ 64 ];
+#endif
 
 #if JVET_N0246_MODIFIED_QUANTSCALES
 extern const int g_quantScales   [2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIST_REM_NUM];          // Q(QP%6)
@@ -145,6 +148,12 @@ extern const TMatrixCoeff g_trCoreDST7P8  [TRANSFORM_NUMBER_OF_DIRECTIONS][  8][
 extern const TMatrixCoeff g_trCoreDST7P16 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 16][ 16];
 extern const TMatrixCoeff g_trCoreDST7P32 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 32][ 32];
 
+#if JVET_N0193_LFNST
+extern const     int8_t   g_lfnst8x8[ 4 ][ 2 ][ 16 ][ 48 ];
+extern const     int8_t   g_lfnst4x4[ 4 ][ 2 ][ 16 ][ 16 ];
+
+extern const     uint8_t  g_lfnstLut[ NUM_INTRA_MODE + NUM_EXT_LUMA_MODE - 1 ];
+#endif
 
 // ====================================================================================================================
 // Misc.

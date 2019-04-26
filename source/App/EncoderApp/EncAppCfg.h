@@ -238,6 +238,10 @@ protected:
   unsigned  m_uiMaxBTDepthI;
   unsigned  m_uiMaxBTDepthIChroma;
   bool      m_dualTree;
+#if JVET_N0193_LFNST
+  bool      m_LFNST;
+  bool      m_useFastLFNST;
+#endif
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;

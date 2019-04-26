@@ -252,16 +252,37 @@ bool CU::hasNonTsCodedBlock( const CodingUnit& cu )
   return hasAnyNonTSCoded;
 }
 
+#if JVET_N0193_LFNST
+uint32_t CU::getNumNonZeroCoeffNonTs( const CodingUnit& cu, const bool lumaFlag, const bool chromaFlag )
+#else
 uint32_t CU::getNumNonZeroCoeffNonTs( const CodingUnit& cu )
+#endif
 {
   uint32_t count = 0;
   for( auto &currTU : traverseTUs( cu ) )
   {
+#if JVET_N0193_LFNST
+    count += TU::getNumNonZeroCoeffsNonTS( currTU, lumaFlag, chromaFlag );
+#else
     count += TU::getNumNonZeroCoeffsNonTS( currTU );
+#endif
   }
 
   return count;
 }
+
+#if JVET_N0193_LFNST
+uint32_t CU::getNumNonZeroCoeffNonTsCorner8x8( const CodingUnit& cu, const bool lumaFlag, const bool chromaFlag )
+{
+  uint32_t count = 0;
+  for( auto &currTU : traverseTUs( cu ) )
+  {
+    count += TU::getNumNonZeroCoeffsNonTSCorner8x8( currTU, lumaFlag, chromaFlag );
+  }
+
+  return count;
+}
+#endif
 
 bool CU::divideTuInRows( const CodingUnit &cu )
 {
@@ -1213,6 +1234,36 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
   }
   return uiIntraMode;
 }
+
+#if JVET_N0193_LFNST
+int PU::getWideAngIntraMode( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID )
+{
+  if( dirMode < 2 )
+  {
+    return ( int ) dirMode;
+  }
+
+  CodingStructure& cs           = *tu.cs;
+  const CompArea&  area         = tu.blocks[ compID ];
+  PelBuf           pred         = cs.getPredBuf( area );
+  int              width        = int( pred.width );
+  int              height       = int( pred.height );
+  int              modeShift[ ] = { 0, 6, 10, 12, 14, 15 };
+  int              deltaSize    = abs( g_aucLog2[ width ] - g_aucLog2[ height ] );
+  int              predMode     = dirMode;
+
+  if( width > height && dirMode < 2 + modeShift[ deltaSize ] )
+  {
+    predMode += ( VDIA_IDX - 1 );
+  }
+  else if( height > width && predMode > VDIA_IDX - modeShift[ deltaSize ] )
+  {
+    predMode -= ( VDIA_IDX + 1 );
+  }
+
+  return predMode;
+}
+#endif
 
 bool PU::xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const MergeCtx mergeCandList, bool hasPruned[MRG_MAX_NUM_CANDS])
 {
@@ -5824,7 +5875,11 @@ uint32_t TU::getNumNonZeroCoeffsNonTS( const TransformUnit& tu, const bool bLuma
   uint32_t count = 0;
   for( uint32_t i = 0; i < ::getNumberValidTBlocks( *tu.cs->pcv ); i++ )
   {
+#if JVET_N0193_LFNST
+    if( tu.blocks[ i ].valid() && tu.mtsIdx != 1 && TU::getCbf( tu, ComponentID( i ) ) )
+#else
     if( tu.blocks[i].valid() && ( isLuma(ComponentID(i)) ? tu.mtsIdx !=1 : true ) && TU::getCbf( tu, ComponentID( i ) ) )
+#endif
     {
       if( isLuma  ( tu.blocks[i].compID ) && !bLuma   ) continue;
       if( isChroma( tu.blocks[i].compID ) && !bChroma ) continue;
@@ -5839,6 +5894,50 @@ uint32_t TU::getNumNonZeroCoeffsNonTS( const TransformUnit& tu, const bool bLuma
   }
   return count;
 }
+
+#if JVET_N0193_LFNST
+uint32_t TU::getNumNonZeroCoeffsNonTSCorner8x8( const TransformUnit& tu, const bool lumaFlag, const bool chromaFlag )
+{
+  const uint32_t lumaWidth       = tu.blocks[ 0 ].width,  chromaWidth  = tu.blocks[ 1 ].width;
+  const uint32_t lumaHeight      = tu.blocks[ 0 ].height, chromaHeight = tu.blocks[ 1 ].height;
+  bool           luma4x4TUFlag   = lumaWidth     == 4 && lumaHeight   == 4;
+  bool           chroma4x4TUFlag = chromaWidth   == 4 && chromaHeight == 4;
+  bool           luma8x8TUFlag   = lumaWidth     == 8 && lumaHeight   == 8;
+  bool           chroma8x8TUFlag = chromaWidth   == 8 && chromaHeight == 8;
+  bool           lumaCountFlag   = ( lumaWidth   >= 8 && lumaHeight   >= 8 ) || luma4x4TUFlag;
+  bool           chromaCountFlag = ( chromaWidth >= 8 && chromaHeight >= 8 ) || chroma4x4TUFlag;
+
+  uint32_t count = 0;
+  for( uint32_t i = 0; i < ::getNumberValidTBlocks( *tu.cs->pcv ); i++ )
+  {
+    if( tu.blocks[ i ].valid() && tu.mtsIdx != 1 && TU::getCbf( tu, ComponentID( i ) ) )
+    {
+      if(   isLuma( tu.blocks[ i ].compID ) && (   !lumaFlag ||   !lumaCountFlag ) ) continue;
+      if( isChroma( tu.blocks[ i ].compID ) && ( !chromaFlag || !chromaCountFlag ) ) continue;
+
+      const ScanElement * scan  = g_coefTopLeftDiagScan8x8[ gp_sizeIdxInfo->idxFrom( tu.blocks[ i ].width ) ];
+      const TCoeff*       coeff = tu.getCoeffs( ComponentID( i ) ).buf;
+
+      int startPos = MAX_LFNST_COEF_NUM, endPos = 47;
+      if( ( isLuma( tu.blocks[ i ].compID ) && luma4x4TUFlag ) || ( isChroma( tu.blocks[ i ].compID ) && chroma4x4TUFlag ) )
+      {
+        startPos = 8; endPos = 15;
+      }
+      else if( ( isLuma( tu.blocks[ i ].compID ) && luma8x8TUFlag ) || ( isChroma( tu.blocks[ i ].compID ) && chroma8x8TUFlag ) )
+      {
+        startPos = 8; endPos = 47;
+      }
+      const ScanElement *scanPtr = scan + startPos;
+      for( uint32_t j = startPos; j <= endPos; j++ )
+      {
+        count += coeff[ scanPtr->idx ] != 0;
+        scanPtr++;
+      }
+    }
+  }
+  return count;
+}
+#endif
 
 bool TU::needsSqrt2Scale( const TransformUnit &tu, const ComponentID &compID )
 {

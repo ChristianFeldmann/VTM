@@ -78,7 +78,12 @@ namespace CU
   PartSplit getSplitAtDepth           (const CodingUnit& cu, const unsigned depth);
 
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
+#if JVET_N0193_LFNST
+  uint32_t getNumNonZeroCoeffNonTs         ( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
+  uint32_t getNumNonZeroCoeffNonTsCorner8x8( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
+#else
   uint32_t getNumNonZeroCoeffNonTs        (const CodingUnit& cu);
+#endif
 
   bool  isGBiIdxCoded                 (const CodingUnit& cu);
   uint8_t getValidGbiIdx              (const CodingUnit& cu);
@@ -134,6 +139,9 @@ namespace PU
 #endif
   void getIntraChromaCandModes        (const PredictionUnit &pu, unsigned modeList[NUM_CHROMA_MODE]);
   uint32_t getFinalIntraMode              (const PredictionUnit &pu, const ChannelType &chType);
+#if JVET_N0193_LFNST
+  int getWideAngIntraMode             ( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID );
+#endif
   void getInterMergeCandidates        (const PredictionUnit &pu, MergeCtx& mrgCtx,
     int mmvdList,
     const int& mrgCandIdx = -1 );
@@ -212,6 +220,9 @@ namespace PU
 namespace TU
 {
   uint32_t getNumNonZeroCoeffsNonTS       (const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true);
+#if JVET_N0193_LFNST
+  uint32_t getNumNonZeroCoeffsNonTSCorner8x8( const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true );
+#endif
   bool isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID);
   bool getCbf                         (const TransformUnit &tu, const ComponentID &compID);
   bool getCbfAtDepth                  (const TransformUnit &tu, const ComponentID &compID, const unsigned &depth);

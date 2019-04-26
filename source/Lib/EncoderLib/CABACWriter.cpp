@@ -1360,6 +1360,10 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
   {
     transform_tree( *cu.cs, partitioner, cuCtx, chromaCbfs );
   }
+
+#if JVET_N0193_LFNST
+  residual_lfnst_mode( cu, cuCtx );
+#endif
 }
 
 void CABACWriter::rqt_root_cbf( const CodingUnit& cu )
@@ -2773,6 +2777,67 @@ void CABACWriter::explicit_rdpcm_mode( const TransformUnit& tu, ComponentID comp
   }
 }
 
+#if JVET_N0193_LFNST
+void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
+{
+#if JVET_N0217_MATRIX_INTRAPRED
+  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || cu.mipFlag == true ||
+#else
+  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS ||
+#endif
+    ( CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 ) )
+  {
+    return;
+  }
+
+  if( cu.cs->sps->getUseLFNST() && CU::isIntra( cu ) && !CU::isLosslessCoded( cu ) )
+  {
+    const bool lumaFlag                   = CS::isDualITree( *cu.cs ) ? (   isLuma( cu.chType ) ? true : false ) : true;
+    const bool chromaFlag                 = CS::isDualITree( *cu.cs ) ? ( isChroma( cu.chType ) ? true : false ) : true;
+          bool nonZeroCoeffNonTs;
+          bool nonZeroCoeffNonTsCorner8x8 = CU::getNumNonZeroCoeffNonTsCorner8x8( cu, lumaFlag, chromaFlag ) > 0;
+    const int  nonZeroCoeffThr            = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
+    cuCtx.numNonZeroCoeffNonTs            = CU::getNumNonZeroCoeffNonTs( cu, lumaFlag, chromaFlag );
+    nonZeroCoeffNonTs                     = cuCtx.numNonZeroCoeffNonTs > nonZeroCoeffThr;
+
+    if( !nonZeroCoeffNonTs || nonZeroCoeffNonTsCorner8x8 )
+    {
+      return;
+    }
+  }
+  else
+  {
+    return;
+  }
+
+  uint32_t ctxOff = 0;
+
+  int intraMode = cu.firstPU->intraDir[ cu.chType ];
+  if( intraMode == DM_CHROMA_IDX && !isLuma( cu.chType ) )
+  {
+    intraMode = PLANAR_IDX;
+  }
+  if( cu.chromaFormat == CHROMA_422 && !isLuma( cu.chType ) )
+  {
+    intraMode = g_chroma422IntraAngleMappingTable[ intraMode ];
+  }
+  ctxOff = PU::isLMCMode( intraMode ) || intraMode <= DC_IDX;
+
+  unsigned cctx = 0;
+  if( cu.firstTU->mtsIdx < 2 && CS::isDualITree( *cu.cs ) ) cctx++;
+
+  const uint32_t idxLFNST = cu.lfnstIdx;
+  assert( idxLFNST < 3 );
+  m_BinEncoder.encodeBin( idxLFNST ? 1 : 0, Ctx::LFNSTIdx( ctxOff + 4 * cctx ) );
+
+  if( idxLFNST )
+  {
+    m_BinEncoder.encodeBin( ( idxLFNST - 1 ) ? 1 : 0, Ctx::LFNSTIdx( 2 + ctxOff + 4 * cctx ) );
+  }
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "residual_lfnst_mode() etype=%d pos=(%d,%d) mode=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), ( int ) cu.lfnstIdx );
+}
+#endif
 
 void CABACWriter::last_sig_coeff( CoeffCodingContext& cctx, const TransformUnit& tu, ComponentID compID )
 {

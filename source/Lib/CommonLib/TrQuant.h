@@ -83,7 +83,20 @@ public:
   void getTrTypes( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer );
 #endif
 
+#if JVET_N0193_LFNST
+  void fwdLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize );
+  void invLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize );
+
+  uint32_t getLFNSTIntraMode( int wideAngPredMode );
+  bool     getTransposeFlag ( uint32_t intraMode  );
+#endif
+
 protected:
+
+#if JVET_N0193_LFNST
+  void xFwdLfnst( const TransformUnit &tu, const ComponentID compID, const bool loadTr = false );
+  void xInvLfnst( const TransformUnit &tu, const ComponentID compID );
+#endif
 
 public:
 
@@ -124,6 +137,10 @@ protected:
 private:
   Quant    *m_quant;          //!< Quantizer
   TCoeff** m_mtsCoeffs;
+#if JVET_N0193_LFNST
+  TCoeff   m_tempInMatrix [ 48 ];
+  TCoeff   m_tempOutMatrix[ 48 ];
+#endif
 
 
   // forward Transform

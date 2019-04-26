@@ -170,6 +170,293 @@ void TrQuant::init( const Quant* otherQuant,
   }
 }
 
+#if JVET_N0193_LFNST
+void TrQuant::fwdLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize )
+{
+  const int8_t* trMat  = ( size > 4 ) ? g_lfnst8x8[ mode ][ index ][ 0 ] : g_lfnst4x4[ mode ][ index ][ 0 ];
+  const int     trSize = ( size > 4 ) ? 48 : 16;
+  int           coef;
+  int*          out    = dst;
+
+  assert( index < 3 );
+
+  for( int j = 0; j < zeroOutSize; j++ )
+  {
+    int*          srcPtr   = src;
+    const int8_t* trMatTmp = trMat;
+    coef = 0;
+    for( int i = 0; i < trSize; i++ )
+    {
+      coef += *srcPtr++ * *trMatTmp++;
+    }
+    *out++ = ( coef + 64 ) >> 7;
+    trMat += trSize;
+  }
+
+  ::memset( out, 0, ( trSize - zeroOutSize ) * sizeof( int ) );
+}
+
+void TrQuant::invLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize )
+{
+  int             maxLog2TrDynamicRange =  15;
+  const TCoeff    outputMinimum         = -( 1 << maxLog2TrDynamicRange );
+  const TCoeff    outputMaximum         =  ( 1 << maxLog2TrDynamicRange ) - 1;
+  const int8_t*   trMat                 =  ( size > 4 ) ? g_lfnst8x8[ mode ][ index ][ 0 ] : g_lfnst4x4[ mode ][ index ][ 0 ];
+  const int       trSize                =  ( size > 4 ) ? 48 : 16;
+  int             resi;
+  int*            out                   =  dst;
+
+  assert( index < 3 );
+
+  for( int j = 0; j < trSize; j++ )
+  {
+    resi = 0;
+    const int8_t* trMatTmp = trMat;
+    int*          srcPtr   = src;
+    for( int i = 0; i < zeroOutSize; i++ )
+    {
+      resi += *srcPtr++ * *trMatTmp;
+      trMatTmp += trSize;
+    }
+    *out++ = Clip3( outputMinimum, outputMaximum, ( int ) ( resi + 64 ) >> 7 );
+    trMat++;
+  }
+}
+
+uint32_t TrQuant::getLFNSTIntraMode( int wideAngPredMode )
+{
+  uint32_t intraMode;
+
+  if( wideAngPredMode < 0 )
+  {
+    intraMode = ( uint32_t ) ( wideAngPredMode + ( NUM_EXT_LUMA_MODE >> 1 ) + NUM_LUMA_MODE );
+  }
+  else if( wideAngPredMode >= NUM_LUMA_MODE )
+  {
+    intraMode = ( uint32_t ) ( wideAngPredMode + ( NUM_EXT_LUMA_MODE >> 1 ) );
+  }
+  else
+  {
+    intraMode = ( uint32_t ) wideAngPredMode;
+  }
+
+  return intraMode;
+}
+
+bool TrQuant::getTransposeFlag( uint32_t intraMode )
+{
+  return ( ( intraMode >= NUM_LUMA_MODE ) && ( intraMode >= ( NUM_LUMA_MODE + ( NUM_EXT_LUMA_MODE >> 1 ) ) ) ) ||
+         ( ( intraMode <  NUM_LUMA_MODE ) && ( intraMode >  DIA_IDX ) );
+}
+
+void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
+{
+  const CompArea& area     = tu.blocks[ compID ];
+  const uint32_t  width    = area.width;
+  const uint32_t  height   = area.height;
+  const uint32_t  lfnstIdx = tu.cu->lfnstIdx;
+
+  if( lfnstIdx && tu.mtsIdx != 1 && width >= 4 && height >= 4 )
+  {
+    const bool whge3 = width >= 8 && height >= 8;
+#if JVET_N0103_CGSIZE_HARMONIZATION
+    const ScanElement * scan = whge3 ? g_coefTopLeftDiagScan8x8[ gp_sizeIdxInfo->idxFrom( width ) ] : g_scanOrder[ SCAN_GROUPED_4x4 ][ SCAN_DIAG ][ gp_sizeIdxInfo->idxFrom( width ) ][ gp_sizeIdxInfo->idxFrom( height ) ];
+#else
+    const ScanElement * scan = whge3 ? g_coefTopLeftDiagScan8x8[ gp_sizeIdxInfo->idxFrom( width ) ] : g_scanOrder[ toChannelType( compID ) ][ SCAN_GROUPED_4x4 ][ SCAN_DIAG ][ gp_sizeIdxInfo->idxFrom( width ) ][ gp_sizeIdxInfo->idxFrom( height ) ];
+#endif
+    uint32_t intraMode = PU::getFinalIntraMode( *tu.cs->getPU( area.pos(), toChannelType( compID ) ), toChannelType( compID ) );
+
+    if( PU::isLMCMode( tu.cs->getPU( area.pos(), toChannelType( compID ) )->intraDir[ toChannelType( compID ) ] ) )
+    {
+      intraMode = PLANAR_IDX;
+    }
+    CHECK( intraMode >= NUM_INTRA_MODE - 1, "Invalid intra mode" );
+
+    if( lfnstIdx < 3 )
+    {
+      intraMode = getLFNSTIntraMode( PU::getWideAngIntraMode( tu, intraMode, compID ) );
+#if RExt__DECODER_DEBUG_TOOL_STATISTICS
+      CodingStatistics::IncrementStatisticTool( CodingStatisticsClassType { STATS__TOOL_LFNST, width, height, compID } );
+#endif
+      bool          transposeFlag   = getTransposeFlag( intraMode );
+      const int     sbSize          = whge3 ? 8 : 4;
+      const int     subGrpXMax      = ( height == 4 && width  > 8 ) ? 2 : 1;
+      const int     subGrpYMax      = ( width  == 4 && height > 8 ) ? 2 : 1;
+      bool          tu4x4Flag       = ( width == 4 && height == 4 );
+      bool          tu8x8Flag       = ( width == 8 && height == 8 );
+      TCoeff*       lfnstTemp;
+      TCoeff*       coeffTemp;
+
+      for( int subGroupX = 0; subGroupX < subGrpXMax; subGroupX++ )
+      {
+        for( int subGroupY = 0; subGroupY < subGrpYMax; subGroupY++ )
+        {
+          const int offsetX = sbSize * subGroupX;
+          const int offsetY = sbSize * subGroupY * width;
+          int y;
+          lfnstTemp = m_tempInMatrix; // inverse spectral rearrangement
+          coeffTemp = m_plTempCoeff + offsetX + offsetY;
+
+          TCoeff * dst = lfnstTemp;
+          const ScanElement * scanPtr = scan;
+          for( y = 0; y < 16; y++ )
+          {
+            *dst++ = coeffTemp[ scanPtr->idx ];
+            scanPtr++;
+          }
+
+          invLfnstNxN( m_tempInMatrix, m_tempOutMatrix, g_lfnstLut[ intraMode ], lfnstIdx - 1, sbSize, ( tu4x4Flag || tu8x8Flag ) ? 8 : 16 );
+
+          lfnstTemp = m_tempOutMatrix; // inverse spectral rearrangement
+
+          if( transposeFlag )
+          {
+            if( sbSize == 4 )
+            {
+              for( y = 0; y < 4; y++ )
+              {
+                coeffTemp[ 0 ] = lfnstTemp[ 0 ];  coeffTemp[ 1 ] = lfnstTemp[  4 ];
+                coeffTemp[ 2 ] = lfnstTemp[ 8 ];  coeffTemp[ 3 ] = lfnstTemp[ 12 ];
+                lfnstTemp++;
+                coeffTemp += width;
+              }
+            }
+            else // ( sbSize == 8 )
+            {
+              for( y = 0; y < 8; y++ )
+              {
+                coeffTemp[ 0 ] = lfnstTemp[  0 ];  coeffTemp[ 1 ] = lfnstTemp[  8 ];
+                coeffTemp[ 2 ] = lfnstTemp[ 16 ];  coeffTemp[ 3 ] = lfnstTemp[ 24 ];
+                if( y < 4 ) 
+                {
+                  coeffTemp[ 4 ] = lfnstTemp[ 32 ];  coeffTemp[ 5 ] = lfnstTemp[ 36 ];
+                  coeffTemp[ 6 ] = lfnstTemp[ 40 ];  coeffTemp[ 7 ] = lfnstTemp[ 44 ];
+                }
+                lfnstTemp++;
+                coeffTemp += width;
+              }
+            }
+          }
+          else
+          {
+            for( y = 0; y < sbSize; y++ )
+            {
+              uint32_t uiStride = ( y < 4 ) ? sbSize : 4;
+              ::memcpy( coeffTemp, lfnstTemp, uiStride * sizeof( TCoeff ) );
+              lfnstTemp += uiStride;
+              coeffTemp += width;
+            }
+          }
+        }
+      } // subGroupX
+    }
+  }
+}
+
+void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, const bool loadTr )
+{
+  const CompArea& area     = tu.blocks[ compID ];
+  const uint32_t  width    = area.width;
+  const uint32_t  height   = area.height;
+  const uint32_t  lfnstIdx = tu.cu->lfnstIdx;
+
+  if( lfnstIdx && tu.mtsIdx != 1 && width >= 4 && height >= 4 )
+  {
+    const bool whge3 = width >= 8 && height >= 8;
+#if JVET_N0103_CGSIZE_HARMONIZATION
+    const ScanElement * scan = whge3 ? g_coefTopLeftDiagScan8x8[ gp_sizeIdxInfo->idxFrom( width ) ] : g_scanOrder[ SCAN_GROUPED_4x4 ][ SCAN_DIAG ][ gp_sizeIdxInfo->idxFrom( width ) ][ gp_sizeIdxInfo->idxFrom( height ) ];
+#else
+    const ScanElement * scan = whge3 ? g_coefTopLeftDiagScan8x8[ gp_sizeIdxInfo->idxFrom( width ) ] : g_scanOrder[ toChannelType( compID ) ][ SCAN_GROUPED_4x4 ][ SCAN_DIAG ][ gp_sizeIdxInfo->idxFrom( width ) ][ gp_sizeIdxInfo->idxFrom( height ) ];
+#endif
+    uint32_t intraMode = PU::getFinalIntraMode( *tu.cs->getPU( area.pos(), toChannelType( compID ) ), toChannelType( compID ) );
+
+    if( PU::isLMCMode( tu.cs->getPU( area.pos(), toChannelType( compID ) )->intraDir[ toChannelType( compID ) ] ) )
+    {
+      intraMode = PLANAR_IDX;
+    }
+    CHECK( intraMode >= NUM_INTRA_MODE - 1, "Invalid intra mode" );
+
+    if( lfnstIdx < 3 )
+    {
+      intraMode = getLFNSTIntraMode( PU::getWideAngIntraMode( tu, intraMode, compID ) );
+
+      bool            transposeFlag   = getTransposeFlag( intraMode );
+      const int       sbSize          = whge3 ? 8 : 4;
+      const int       subGrpXMax      = ( height == 4 && width  > 8 ) ? 2 : 1;
+      const int       subGrpYMax      = ( width  == 4 && height > 8 ) ? 2 : 1;
+      bool            tu4x4Flag       = ( width == 4 && height == 4 );
+      bool            tu8x8Flag       = ( width == 8 && height == 8 );
+      TCoeff*         lfnstTemp;
+      TCoeff*         coeffTemp;
+      TCoeff*         tempCoeff       = loadTr ? m_mtsCoeffs[ tu.mtsIdx ] : m_plTempCoeff;
+
+      for( int subGroupX = 0; subGroupX < subGrpXMax; subGroupX++ )
+      {
+        for( int subGroupY = 0; subGroupY < subGrpYMax; subGroupY++ )
+        {
+          const int offsetX = sbSize * subGroupX;
+          const int offsetY = sbSize * subGroupY * width;
+          int y;
+          lfnstTemp = m_tempInMatrix; // forward low frequency non-separable transform
+          coeffTemp = tempCoeff + offsetX + offsetY;
+
+          if( transposeFlag )
+          {
+            if( sbSize == 4 )
+            {
+              for( y = 0; y < 4; y++ )
+              {
+                lfnstTemp[ 0 ] = coeffTemp[ 0 ];  lfnstTemp[  4 ] = coeffTemp[ 1 ];
+                lfnstTemp[ 8 ] = coeffTemp[ 2 ];  lfnstTemp[ 12 ] = coeffTemp[ 3 ];
+                lfnstTemp++;
+                coeffTemp += width;
+              }
+            }
+            else // ( sbSize == 8 )
+            {
+              for( y = 0; y < 8; y++ )
+              {
+                lfnstTemp[  0 ] = coeffTemp[ 0 ];  lfnstTemp[  8 ] = coeffTemp[ 1 ];
+                lfnstTemp[ 16 ] = coeffTemp[ 2 ];  lfnstTemp[ 24 ] = coeffTemp[ 3 ];
+                if( y < 4 ) 
+                {
+                  lfnstTemp[ 32 ] = coeffTemp[ 4 ];  lfnstTemp[ 36 ] = coeffTemp[ 5 ];
+                  lfnstTemp[ 40 ] = coeffTemp[ 6 ];  lfnstTemp[ 44 ] = coeffTemp[ 7 ];
+                }
+                lfnstTemp++;
+                coeffTemp += width;
+              }
+            }
+          }
+          else
+          {
+            for( y = 0; y < sbSize; y++ )
+            {
+              uint32_t uiStride = ( y < 4 ) ? sbSize : 4;
+              ::memcpy( lfnstTemp, coeffTemp, uiStride * sizeof( TCoeff ) );
+              lfnstTemp += uiStride;
+              coeffTemp += width;
+            }
+          }
+
+          fwdLfnstNxN( m_tempInMatrix, m_tempOutMatrix, g_lfnstLut[ intraMode ], lfnstIdx - 1, sbSize, ( tu4x4Flag || tu8x8Flag ) ? 8 : 16 );
+
+          lfnstTemp = m_tempOutMatrix; // forward spectral rearrangement
+          coeffTemp = tempCoeff + offsetX + offsetY;
+
+          const ScanElement * scanPtr = scan;
+          int lfnstCoeffNum = ( sbSize == 4 ) ? sbSize * sbSize : 48;
+          for( y = 0; y < lfnstCoeffNum; y++ )
+          {
+            coeffTemp[ scanPtr->idx ] = *lfnstTemp++;
+            scanPtr++;
+          }
+        }
+      } // subGroupX
+    }
+  }
+}
+#endif
 
 
 void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, PelBuf &pResi, const QpParam &cQP )
@@ -203,6 +490,13 @@ void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, Pel
     xDeQuant( tu, tempCoeff, compID, cQP );
 
     DTRACE_COEFF_BUF( D_TCOEFF, tempCoeff, tu, tu.cu->predMode, compID );
+
+#if JVET_N0193_LFNST
+    if( tu.cs->sps->getUseLFNST() )
+    {
+      xInvLfnst( tu, compID );
+    }
+#endif
 
     if( isLuma(compID) && tu.mtsIdx == 1 )
     {
@@ -661,6 +955,9 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
 void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, const bool loadTr, double* diagRatio, double* horVerRatio )
 {
         CodingStructure &cs = *tu.cs;
+#if JVET_N0193_LFNST
+  const SPS &sps            = *cs.sps;
+#endif
   const CompArea &rect      = tu.blocks[compID];
   const uint32_t uiWidth        = rect.width;
   const uint32_t uiHeight       = rect.height;
@@ -746,6 +1043,14 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
         //it gets the distribution of the coefficients energy, which will be useful to discard ISP tests
         xGetCoeffEnergy( tu, compID, tempCoeff, diagRatio, horVerRatio );
       }
+
+#if JVET_N0193_LFNST
+      if( sps.getUseLFNST() )
+      {
+        xFwdLfnst( tu, compID, loadTr );
+      }
+#endif
+
       DTRACE_COEFF_BUF( D_TCOEFF, tempCoeff, tu, tu.cu->predMode, compID );
 
       xQuant( tu, compID, tempCoeff, uiAbsSum, cQP, ctx );

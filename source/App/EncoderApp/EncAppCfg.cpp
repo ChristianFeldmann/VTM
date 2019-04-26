@@ -834,6 +834,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxBTDepthISliceL",                               m_uiMaxBTDepthI,                                     3u, "MaxBTDepthISliceL")
   ("MaxBTDepthISliceC",                               m_uiMaxBTDepthIChroma,                               3u, "MaxBTDepthISliceC")
   ("DualITree",                                       m_dualTree,                                       false, "Use separate QTBT trees for intra slice luma and chroma channel types")
+#if JVET_N0193_LFNST
+  ( "LFNST",                                          m_LFNST,                                          false, "Enable LFNST (0:off, 1:on)  [default: off]" )
+  ( "FastLFNST",                                      m_useFastLFNST,                                   false, "Fast methods for LFNST" )
+#endif
   ("SubPuMvp",                                       m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:ATMVP, 2:STMVP, 3:ATMVP+STMVP)  [default: off]")
 #if JVET_N0127_MMVD_SPS_FLAG 
   ("MMVD",                                           m_MMVD,                                            true, "Enable Merge mode with Motion Vector Difference (0:off, 1:on)  [default: 1]")
@@ -3159,6 +3163,9 @@ void EncAppCfg::xPrintParameter()
   if( m_profile == Profile::NEXT )
   {
     msg( VERBOSE, "\nNEXT TOOL CFG: " );
+#if JVET_N0193_LFNST
+    msg( VERBOSE, "LFNST:%d ", m_LFNST );
+#endif
 #if JVET_N0127_MMVD_SPS_FLAG 
     msg( VERBOSE, "MMVD:%d ", m_MMVD);
 #endif
@@ -3238,6 +3245,9 @@ void EncAppCfg::xPrintParameter()
   if( m_ISP ) msg( VERBOSE, "ISPFast:%d ", m_useFastISP );
 #else
   msg( VERBOSE, "ISPFast:%d ", m_useFastISP );
+#endif
+#if JVET_N0193_LFNST
+  if( m_LFNST ) msg( VERBOSE, "FastLFNST:%d ", m_useFastLFNST );
 #endif
   msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
   msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );

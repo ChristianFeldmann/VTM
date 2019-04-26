@@ -218,6 +218,10 @@ protected:
   int       m_InterMTSMaxCand;
   int       m_ImplicitMTS;
   bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
+#if JVET_N0193_LFNST
+  bool      m_LFNST;
+  bool      m_useFastLFNST;
+#endif
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
@@ -724,6 +728,13 @@ public:
   bool      getUseSplitConsOverride         ()         const { return m_useSplitConsOverride; }
   void      setDualITree                    ( bool b )       { m_dualITree = b; }
   bool      getDualITree                    ()         const { return m_dualITree; }
+
+#if JVET_N0193_LFNST
+  void      setLFNST                        ( bool b )       { m_LFNST = b; }
+  bool      getLFNST()                                 const { return m_LFNST; }
+  void      setUseFastLFNST                 ( bool b )       { m_useFastLFNST = b; }
+  bool      getUseFastLFNST()                          const { return m_useFastLFNST; }
+#endif  
 
   void      setUseLMChroma                  ( int n )        { m_LMChroma = n; }
   int       getUseLMChroma()                           const { return m_LMChroma; }

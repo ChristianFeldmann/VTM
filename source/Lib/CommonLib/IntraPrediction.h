@@ -165,7 +165,6 @@ public:
   /// set parameters from CU data for accessing intra data
   void initIntraPatternChType     (const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers 
 
-
 #if JVET_N0217_MATRIX_INTRAPRED
   // Matrix-based intra prediction
   void initIntraMip               (const PredictionUnit &pu);
@@ -173,6 +172,9 @@ public:
 #endif
 
   static bool useFilteredIntraRefSamples( const ComponentID &compID, const PredictionUnit &pu, bool modeSpecific, const UnitArea &tuArea );
+#if HM_MDIS_AS_IN_JEM && JVET_N0193_LFNST
+  static bool getPlanarMDISCondition( const UnitArea &tuArea ) { return abs( PLANAR_IDX - HOR_IDX ) > m_aucIntraFilter[ CHANNEL_TYPE_LUMA ][ ( ( g_aucLog2[ tuArea.Y().width ] + g_aucLog2[ tuArea.Y().height ] ) >> 1 ) ]; }
+#endif
   static bool useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode);
 
   void geneWeightedPred           (const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf);

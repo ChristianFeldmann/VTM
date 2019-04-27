@@ -2902,6 +2902,7 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu )
     return;
   }
 
+#if !JVET_N0105_LFNST_CTX_MODELLING
   uint32_t ctxOff = 0;
 
   int intraMode = cu.firstPU->intraDir[ cu.chType ];
@@ -2914,14 +2915,23 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu )
     intraMode = g_chroma422IntraAngleMappingTable[ intraMode ];
   }
   ctxOff = PU::isLMCMode( intraMode ) || intraMode <= DC_IDX;
+#endif
 
   unsigned cctx = 0;
   if( cu.firstTU->mtsIdx < 2 && CS::isDualITree( *cu.cs ) ) cctx++;
 
+#if JVET_N0105_LFNST_CTX_MODELLING
+  uint32_t idxLFNST = m_BinDecoder.decodeBin( Ctx::LFNSTIdx( cctx ) );
+#else
   uint32_t idxLFNST = m_BinDecoder.decodeBin( Ctx::LFNSTIdx( ctxOff + 4 * cctx ) );
+#endif
   if( idxLFNST )
   {
+#if JVET_N0105_LFNST_CTX_MODELLING
+    idxLFNST += m_BinDecoder.decodeBinEP();
+#else
     idxLFNST += m_BinDecoder.decodeBin( Ctx::LFNSTIdx( 2 + ctxOff + 4 * cctx ) );
+#endif
   }
   cu.lfnstIdx = idxLFNST;
 

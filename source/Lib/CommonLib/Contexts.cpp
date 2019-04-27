@@ -696,10 +696,17 @@ const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
 #if JVET_N0193_LFNST
 const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
 ( {
+#if JVET_N0105_LFNST_CTX_MODELLING
+  { CNU, CNU, },
+  { CNU, CNU, },
+  { CNU, CNU, },
+  { DWS, DWS, },
+#else
   { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
   { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
   { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
   { DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, },
+#endif
 } );
 #endif
 

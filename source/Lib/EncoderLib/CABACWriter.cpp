@@ -2810,6 +2810,7 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
     return;
   }
 
+#if !JVET_N0105_LFNST_CTX_MODELLING
   uint32_t ctxOff = 0;
 
   int intraMode = cu.firstPU->intraDir[ cu.chType ];
@@ -2822,17 +2823,26 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
     intraMode = g_chroma422IntraAngleMappingTable[ intraMode ];
   }
   ctxOff = PU::isLMCMode( intraMode ) || intraMode <= DC_IDX;
+#endif
 
   unsigned cctx = 0;
   if( cu.firstTU->mtsIdx < 2 && CS::isDualITree( *cu.cs ) ) cctx++;
 
   const uint32_t idxLFNST = cu.lfnstIdx;
   assert( idxLFNST < 3 );
+#if JVET_N0105_LFNST_CTX_MODELLING
+  m_BinEncoder.encodeBin( idxLFNST ? 1 : 0, Ctx::LFNSTIdx( cctx ) );
+#else
   m_BinEncoder.encodeBin( idxLFNST ? 1 : 0, Ctx::LFNSTIdx( ctxOff + 4 * cctx ) );
+#endif
 
   if( idxLFNST )
   {
+#if JVET_N0105_LFNST_CTX_MODELLING
+    m_BinEncoder.encodeBinEP( ( idxLFNST - 1 ) ? 1 : 0 );
+#else
     m_BinEncoder.encodeBin( ( idxLFNST - 1 ) ? 1 : 0, Ctx::LFNSTIdx( 2 + ctxOff + 4 * cctx ) );
+#endif
   }
 
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_lfnst_mode() etype=%d pos=(%d,%d) mode=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), ( int ) cu.lfnstIdx );

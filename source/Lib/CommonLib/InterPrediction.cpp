@@ -841,6 +841,7 @@ bool InterPrediction::isSubblockVectorSpreadOverLimit( int a, int b, int c, int 
 #endif
 void InterPrediction::xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng )
 {
+#if !JVET_N0196_SIX_TAP_FILTERS
   if ( (pu.cu->affineType == AFFINEMODEL_6PARAM && _mv[0] == _mv[1] && _mv[0] == _mv[2])
     || (pu.cu->affineType == AFFINEMODEL_4PARAM && _mv[0] == _mv[1])
     )
@@ -855,6 +856,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
                   );
     return;
   }
+#endif
 
   JVET_J0090_SET_REF_PICTURE( refPic, compID );
   const ChromaFormat chFmt = pu.chromaFormat;

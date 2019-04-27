@@ -905,12 +905,12 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
 #if JVET_N0242_NON_LINEAR_ALF
               m_filter7x7Blk(m_classifier, recBuf, recExtBuf, blk, compID, coeff, clipp, m_clpRngs.comp[compIdx], cs
                 , m_alfVBLumaCTUHeight
-                , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+                , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight+4 : m_alfVBLumaPos)
               );
 #else
               m_filter7x7Blk(m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx], cs
                 , m_alfVBLumaCTUHeight
-                , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+                , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight+4 : m_alfVBLumaPos)
               );
 #endif
 
@@ -2319,12 +2319,12 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
 #if JVET_N0242_NON_LINEAR_ALF
           getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compArea, chType
             , ((compIdx == 0) ? m_alfVBLumaCTUHeight : m_alfVBChmaCTUHeight)
-            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))        
+            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight+4 : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))        
           );
 #else
           getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compArea
             , ((compIdx == 0) ? m_alfVBLumaCTUHeight : m_alfVBChmaCTUHeight)
-            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))
+            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight+4 : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))
           );
 #endif
 #else

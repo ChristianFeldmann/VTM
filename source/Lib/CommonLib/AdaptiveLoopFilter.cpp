@@ -121,12 +121,12 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
 #if JVET_N0242_NON_LINEAR_ALF
         m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clippFinal, m_clpRngs.comp[COMPONENT_Y], cs
           , m_alfVBLumaCTUHeight
-          , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+          , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight+4 : m_alfVBLumaPos)
         );
 #else
         m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y], cs
           , m_alfVBLumaCTUHeight
-          , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+          , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight+4 : m_alfVBLumaPos)
         );
 #endif
 #else
@@ -370,7 +370,7 @@ void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION   
       m_deriveClassificationBlk(classifier, m_laplacian, srcLuma, Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4
         , m_alfVBLumaCTUHeight
-        , ((i + nHeight >= m_picHeight) ? m_picHeight : m_alfVBLumaPos)
+        , ((i + nHeight >= m_picHeight) ? m_picHeight+4 : m_alfVBLumaPos)
       );
 #else
       m_deriveClassificationBlk(classifier, m_laplacian, srcLuma, Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4);

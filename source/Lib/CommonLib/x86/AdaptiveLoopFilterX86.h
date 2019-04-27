@@ -669,10 +669,17 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
           {
             Position pos(j+startWidth+blkX, i+startHeight+blkY);
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
-            *flags++ = cu->ipcm ? 1 : 0;
+            if(cu != NULL) 
+            {
+              *flags++ = cu->ipcm ? 1 : 0;
+            }
+            else 
+            {
+              *flags++ = 0;
+            }
 
             // save original samples from 2x2 PCM blocks
-            if( cu->ipcm )
+            if( cu != NULL && cu->ipcm )
             {
               *pcmRec++ = pRec1[(blkY+0)*dstStride + (blkX+0)];
               *pcmRec++ = pRec1[(blkY+0)*dstStride + (blkX+1)];
@@ -1397,10 +1404,17 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
           {
             Position pos(j+startWidth+blkX, i+startHeight+blkY);
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
-            *flags++ = cu->ipcm ? 1 : 0;
+            if( cu != NULL) 
+            {
+              *flags++ = cu->ipcm ? 1 : 0;
+            }
+            else
+            {
+              *flags++ = 0;
+            }
 
             // save original samples from 2x2 PCM blocks
-            if( cu->ipcm )
+            if( cu != NULL && cu->ipcm )
             {
               *pcmRec++ = pRec1[(blkY+0)*dstStride + (blkX+0)];
               *pcmRec++ = pRec1[(blkY+0)*dstStride + (blkX+1)];

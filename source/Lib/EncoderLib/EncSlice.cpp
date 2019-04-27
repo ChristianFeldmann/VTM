@@ -1556,8 +1556,6 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
 
 void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pEncLib )
 {
-  //PROF_ACCUM_AND_START_NEW_SET( getProfilerCTU( pcPic, 0, 0 ), P_PIC_LEVEL );
-  //PROF_START( getProfilerCTU( cs.slice->isIntra(), pcPic->scheduler.getWppThreadId() ), P_PIC_LEVEL, toWSizeIdx( cs.pcv->maxCUWidth ), toHSizeIdx( cs.pcv->maxCUHeight ) );
   CodingStructure&  cs            = *pcPic->cs;
   Slice* pcSlice                  = cs.slice;
   const PreCalcValues& pcv        = *cs.pcv;

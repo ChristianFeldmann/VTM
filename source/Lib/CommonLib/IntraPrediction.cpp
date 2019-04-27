@@ -588,6 +588,12 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
       m_ipaParam.interpolationFlag = (m_ipaParam.isModeVer ? puSize.width : puSize.height) > 8 ? true : false ;
     }
   }
+#if JVET_N0413_RDPCM
+  else if (isLuma( chType ) && pu.cu->bdpcmMode) // BDPCM
+  {
+    m_ipaParam.refFilterFlag = false;
+  }
+#endif
   else if (dirMode == PLANAR_IDX) // Planar intra prediction 
   {
     m_ipaParam.refFilterFlag = puSize.width * puSize.height > 32 ? true : false;

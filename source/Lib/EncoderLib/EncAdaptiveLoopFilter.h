@@ -364,7 +364,9 @@ private:
   AlfSliceParam          m_alfSliceParamTempNL;
   int                    m_clipDefaultEnc[MAX_NUM_ALF_LUMA_COEFF];
   int                    m_filterTmp[MAX_NUM_ALF_LUMA_COEFF];
+#if JVET_N0242_NON_LINEAR_ALF
   int                    m_clipTmp[MAX_NUM_ALF_LUMA_COEFF];
+#endif
 #endif
 
 public:

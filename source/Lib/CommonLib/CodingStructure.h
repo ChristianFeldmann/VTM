@@ -94,7 +94,11 @@ public:
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;
+#if JVET_N0415_CTB_ALF
+  APS*       apss[MAX_NUM_APS];
+#else
   APS *      aps;
+#endif
 #if HEVC_VPS
   const VPS *vps;
 #endif
@@ -257,6 +261,9 @@ public:
   const CPelBuf       getRecoBuf(const CompArea &blk) const;
          PelUnitBuf   getRecoBuf(const UnitArea &unit);
   const CPelUnitBuf   getRecoBuf(const UnitArea &unit) const;
+#if JVET_N0415_CTB_ALF
+         PelUnitBuf&  getRecoBufRef() { return m_reco; }
+#endif
 
          PelBuf       getOrgResiBuf(const CompArea &blk);
   const CPelBuf       getOrgResiBuf(const CompArea &blk) const;

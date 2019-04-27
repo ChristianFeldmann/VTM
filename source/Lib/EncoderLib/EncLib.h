@@ -138,6 +138,10 @@ private:
   CacheModel                m_cacheModel;
 #endif
 
+#if JVET_N0415_CTB_ALF
+  APS*                      m_apss[MAX_NUM_APS];
+#endif
+
 public:
   Ctx                       m_entropyCodingSyncContextState;      ///< leave in addition to vector for compatibility
 #if ENABLE_WPP_PARALLELISM
@@ -235,6 +239,10 @@ public:
   EncReshape*            getReshaper( int jId = 0 )             { return  &m_cReshaper[jId]; }
 #else
   EncReshape*            getReshaper()                          { return  &m_cReshaper; }
+#endif
+
+#if JVET_N0415_CTB_ALF
+  ParameterSetMap<APS>*  getApsMap() { return &m_apsMap; }
 #endif
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function

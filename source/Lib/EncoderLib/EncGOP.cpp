@@ -2174,9 +2174,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if( pcSlice->getSPS()->getALFEnabledFlag() )
     {
       pcPic->resizeAlfCtuEnableFlag( numberOfCtusInFrame );
+#if JVET_N0415_CTB_ALF
+      pcPic->resizeAlfCtbFilterIndex(numberOfCtusInFrame);
+#else
       // reset the APS ALF parameters
       AlfSliceParam newALFParam;
       pcSlice->getAPS()->setAlfAPSParam(newALFParam);
+#endif
     }
 
     bool decPic = false;
@@ -2422,10 +2426,40 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       }
 
       if( pcSlice->getSPS()->getALFEnabledFlag() )
-      {
-        AlfSliceParam alfSliceParam;
-        m_pcALF->initCABACEstimator( m_pcEncLib->getCABACEncoder(), m_pcEncLib->getCtxCache(), pcSlice );
+      { 
+#if JVET_N0415_CTB_ALF
+        for (int s = 0; s < uiNumSliceSegments; s++)
+        {
+          pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Y, false);
+        }
+        m_pcALF->initCABACEstimator(m_pcEncLib->getCABACEncoder(), m_pcEncLib->getCtxCache(), pcSlice, m_pcEncLib->getApsMap());
+        m_pcALF->ALFProcess(cs, pcSlice->getLambdas()
+#if ENABLE_QPA
+          , (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP() ? m_pcEncLib->getRdCost(PARL_PARAM0(0))->getChromaWeight() : 0.0)
+#endif
+        );
 
+        //assign ALF slice header
+        for (int s = 0; s < uiNumSliceSegments; s++)
+        {
+          pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Y, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y));
+          pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cb, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb));
+          pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cr, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr));
+          if (pcPic->slices[s]->getTileGroupAlfEnabledFlag(COMPONENT_Y))
+          {
+            pcPic->slices[s]->setTileGroupNumAps(cs.slice->getTileGroupNumAps());
+            pcPic->slices[s]->setAPSs(cs.slice->getTileGroupApsIdLuma());
+          }
+          else
+          {
+            pcPic->slices[s]->setTileGroupNumAps(0);
+          }
+          pcPic->slices[s]->setAPSs(cs.slice->getAPSs());
+          pcPic->slices[s]->setTileGroupApsIdChroma(cs.slice->getTileGroupApsIdChroma());          
+        }
+#else
+        AlfSliceParam alfSliceParam;
+        m_pcALF->initCABACEstimator(m_pcEncLib->getCABACEncoder(), m_pcEncLib->getCtxCache(), pcSlice);
         m_pcALF->ALFProcess( cs, pcSlice->getLambdas(),
 #if ENABLE_QPA
                              (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP() ? m_pcEncLib->getRdCost (PARL_PARAM0 (0))->getChromaWeight() : 0.0),
@@ -2433,6 +2467,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
                              alfSliceParam );
         //assign ALF slice header
         pcPic->cs->aps->setAlfAPSParam(alfSliceParam);
+#endif
       }
       if (m_pcCfg->getUseCompositeRef() && getPrepareLTRef())
       {
@@ -2504,6 +2539,22 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         xWriteAccessUnitDelimiter(accessUnit, pcSlice);
       }
+#if JVET_N0415_CTB_ALF
+      if (pcSlice->getSPS()->getALFEnabledFlag() && pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
+      {
+        for (int apsId = 0; apsId < MAX_NUM_APS; apsId++)
+        {
+          ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
+          APS* aps = apsMap->getPS(apsId);
+          if (aps && apsMap->getChangedFlag(apsId))
+          {
+            actualTotalBits += xWriteAPS(accessUnit, aps);
+            apsMap->clearChangedFlag(apsId);
+            CHECK(aps != pcSlice->getAPSs()[apsId], "Wrong APS pointer in compressGOP");
+          }
+        }
+      }
+#else
       if (pcSlice->getSPS()->getALFEnabledFlag() && pcSlice->getAPS()->getAlfAPSParam().enabledFlag[COMPONENT_Y])
       {
         pcSlice->setTileGroupAlfEnabledFlag(true);
@@ -2514,6 +2565,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         pcSlice->setTileGroupAlfEnabledFlag(false);
       }
+#endif
 
       // reset presence of BP SEI indication
       m_bufferingPeriodSEIPresentInAU = false;

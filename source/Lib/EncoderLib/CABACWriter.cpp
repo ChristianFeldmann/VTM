@@ -2605,9 +2605,9 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 
 #if JVET_N0280_RESIDUAL_CODING_TS
 #if JVET_N0413_RDPCM
-  if( isLuma( compID ) && ( tu.mtsIdx == 1 || tu.cu->bdpcmMode ) )
+  if( isLuma( compID ) && ( tu.mtsIdx == MTS_SKIP || tu.cu->bdpcmMode ) )
 #else
-  if( isLuma( compID ) && tu.mtsIdx==1 )
+  if( isLuma( compID ) && tu.mtsIdx==MTS_SKIP )
 #endif
   {
     residual_codingTS( tu, compID );
@@ -2618,7 +2618,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 #if HEVC_USE_SIGN_HIDING
   // determine sign hiding
   bool signHiding  = ( cu.cs->slice->getSignDataHidingEnabledFlag() && !cu.transQuantBypass && tu.rdpcm[compID] == RDPCM_OFF );
-  if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx==1 )
+  if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx==MTS_SKIP )
   {
     const ChannelType chType    = toChannelType( compID );
     const unsigned    intraMode = PU::getFinalIntraMode( *cu.cs->getPU( tu.blocks[compID].pos(), chType ), chType );
@@ -2662,7 +2662,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
   for( int subSetId = ( cctx.scanPosLast() >> cctx.log2CGSize() ); subSetId >= 0; subSetId--)
   {
     cctx.initSubblock       ( subSetId, sigGroupFlags[subSetId] );
-    if( ( tu.mtsIdx > 1 || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+    if( ( tu.mtsIdx > MTS_SKIP || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
     {
       if( ( tu.blocks[ compID ].height == 32 && cctx.cgPosY() >= ( 16 >> cctx.log2CGHeight() ) )
        || ( tu.blocks[ compID ].width  == 32 && cctx.cgPosX() >= ( 16 >> cctx.log2CGWidth()  ) ) )
@@ -2690,16 +2690,16 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 
   if( tsAllowed )
   {
-    symbol = 1 - ( tu.mtsIdx == 1 ? 1 : 0 );
+    symbol = (tu.mtsIdx == MTS_SKIP) ? 0 : 1;
     ctxIdx = 6;
     m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
   }
 
-  if( tu.mtsIdx != 1 )
+  if( tu.mtsIdx != MTS_SKIP )
   {
     if( mtsAllowed )
     {
-      symbol = tu.mtsIdx != 0 ? 1 : 0;
+      symbol = tu.mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
       ctxIdx = std::min( (int)cu.qtDepth, 5 );
       m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
 
@@ -2708,7 +2708,7 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
         ctxIdx = 7;
         for( int i = 0; i < 3; i++, ctxIdx++ )
         {
-          symbol = tu.mtsIdx > i + 2 ? 1 : 0;
+          symbol = tu.mtsIdx > i + MTS_DST7_DST7 ? 1 : 0;
           m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
 
           if( !symbol )
@@ -2764,7 +2764,7 @@ void CABACWriter::isp_mode( const CodingUnit& cu )
 void CABACWriter::explicit_rdpcm_mode( const TransformUnit& tu, ComponentID compID )
 {
   const CodingUnit& cu = *tu.cu;
-  if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx==1 || cu.transQuantBypass ) )
+  if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx==MTS_SKIP || cu.transQuantBypass ) )
   {
     ChannelType chType = toChannelType( compID );
     switch( tu.rdpcm[compID] )
@@ -2832,7 +2832,7 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 #endif
 
   unsigned cctx = 0;
-  if( cu.firstTU->mtsIdx < 2 && CS::isDualITree( *cu.cs ) ) cctx++;
+  if( cu.firstTU->mtsIdx < MTS_DST7_DST7 && CS::isDualITree( *cu.cs ) ) cctx++;
 
   const uint32_t idxLFNST = cu.lfnstIdx;
   assert( idxLFNST < 3 );
@@ -2879,7 +2879,7 @@ void CABACWriter::last_sig_coeff( CoeffCodingContext& cctx, const TransformUnit&
   unsigned maxLastPosX = cctx.maxLastPosX();
   unsigned maxLastPosY = cctx.maxLastPosY();
 
-  if( ( tu.mtsIdx > 1 || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+  if( ( tu.mtsIdx > MTS_SKIP || ( tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
   {
     maxLastPosX = ( tu.blocks[compID].width  == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosX;
     maxLastPosY = ( tu.blocks[compID].height == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosY;

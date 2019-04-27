@@ -638,7 +638,7 @@ void TransformUnit::initData()
     compAlpha[i]     = 0;
   }
   depth              = 0;
-  mtsIdx             = 0;
+  mtsIdx             = MTS_DCT2_DCT2;
   noResidual         = false;
 #if JVET_N0054_JOINT_CHROMA
   jointCbCr          = 0;

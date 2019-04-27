@@ -256,7 +256,7 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
   const uint32_t  height   = area.height;
   const uint32_t  lfnstIdx = tu.cu->lfnstIdx;
 
-  if( lfnstIdx && tu.mtsIdx != 1 && width >= 4 && height >= 4 )
+  if( lfnstIdx && tu.mtsIdx != MTS_SKIP && width >= 4 && height >= 4 )
   {
     const bool whge3 = width >= 8 && height >= 8;
 #if JVET_N0103_CGSIZE_HARMONIZATION
@@ -360,7 +360,7 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
   const uint32_t  height   = area.height;
   const uint32_t  lfnstIdx = tu.cu->lfnstIdx;
 
-  if( lfnstIdx && tu.mtsIdx != 1 && width >= 4 && height >= 4 )
+  if( lfnstIdx && tu.mtsIdx != MTS_SKIP && width >= 4 && height >= 4 )
   {
     const bool whge3 = width >= 8 && height >= 8;
 #if JVET_N0103_CGSIZE_HARMONIZATION
@@ -498,7 +498,7 @@ void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, Pel
     }
 #endif
 
-    if( isLuma(compID) && tu.mtsIdx == 1 )
+    if( isLuma(compID) && tu.mtsIdx == MTS_SKIP )
     {
       xITransformSkip( tempCoeff, pResi, tu, compID );
     }
@@ -517,7 +517,7 @@ void TrQuant::invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &
 {
   const CompArea &area    = tu.blocks[compID];
 
-  if (CU::isRDPCMEnabled(*tu.cu) && (tu.mtsIdx==1 || tu.cu->transQuantBypass))
+  if (CU::isRDPCMEnabled(*tu.cu) && (tu.mtsIdx==MTS_SKIP || tu.cu->transQuantBypass))
   {
     const uint32_t uiWidth  = area.width;
     const uint32_t uiHeight = area.height;
@@ -659,10 +659,10 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
 #if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
   if (isExplicitMTS)
   {
-    if (tu.mtsIdx > 1)
+    if (tu.mtsIdx > MTS_SKIP)
     {
-      int indHor = (tu.mtsIdx - 2) & 1;
-      int indVer = (tu.mtsIdx - 2) >> 1;
+      int indHor = (tu.mtsIdx - MTS_DST7_DST7) & 1;
+      int indVer = (tu.mtsIdx - MTS_DST7_DST7) >> 1;
 
       trTypeHor = indHor ? DCT8 : DST7;
       trTypeVer = indVer ? DCT8 : DST7;
@@ -673,10 +673,10 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
   {
     if( compID == COMPONENT_Y )
     {
-      if ( tu.mtsIdx > 1 )
+      if ( tu.mtsIdx > MTS_SKIP )
       {
-        int indHor = ( tu.mtsIdx - 2 ) &  1;
-        int indVer = ( tu.mtsIdx - 2 ) >> 1;
+        int indHor = ( tu.mtsIdx - MTS_DST7_DST7 ) &  1;
+        int indVer = ( tu.mtsIdx - MTS_DST7_DST7 ) >> 1;
 
         trTypeHor = indHor ? DCT8 : DST7;
         trTypeVer = indVer ? DCT8 : DST7;
@@ -911,7 +911,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
       continue;
     }
 
-    if( isLuma(compID) && tu.mtsIdx == 1 )
+    if( isLuma(compID) && tu.mtsIdx == MTS_SKIP )
     {
       xTransformSkip( tu, compID, resiBuf, tempCoeff.buf );
     }
@@ -927,7 +927,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
     }
 
     double scaleSAD=1.0;
-    if (isLuma(compID) && tu.mtsIdx==1 && ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1 )
+    if (isLuma(compID) && tu.mtsIdx==MTS_SKIP && ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1 )
     {
       scaleSAD=1.0/1.414213562; // compensate for not scaling transform skip coefficients by 1/sqrt(2)
     }
@@ -978,7 +978,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
 #if JVET_N0413_RDPCM
   if( tu.cu->bdpcmMode && isLuma(compID) )
   {
-    tu.mtsIdx = 1;
+    tu.mtsIdx = MTS_SKIP;
   }
 #endif
 
@@ -1025,7 +1025,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
 
       if( !loadTr )
       {
-        if( isLuma(compID) && tu.mtsIdx == 1 )
+        if( isLuma(compID) && tu.mtsIdx == MTS_SKIP )
       {
         xTransformSkip( tu, compID, resiBuf, tempCoeff.buf );
       }
@@ -1037,7 +1037,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
 
       //we do this only with the DCT-II coefficients
       if( isLuma(compID) &&
-        !loadTr && tu.mtsIdx == 0
+        !loadTr && tu.mtsIdx == MTS_DCT2_DCT2
         )
       {
         //it gets the distribution of the coefficients energy, which will be useful to discard ISP tests
@@ -1160,7 +1160,7 @@ void TrQuant::applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, co
 
 void TrQuant::rdpcmNxN(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, RDPCMMode &rdpcmMode)
 {
-  if (!CU::isRDPCMEnabled(*tu.cu) || (tu.mtsIdx!=1 && !tu.cu->transQuantBypass))
+  if (!CU::isRDPCMEnabled(*tu.cu) || (tu.mtsIdx!=MTS_SKIP && !tu.cu->transQuantBypass))
   {
     rdpcmMode = RDPCM_OFF;
   }

@@ -92,7 +92,7 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
   , m_lastOffsetY               (0)
   , m_lastShiftX                (0)
   , m_lastShiftY                (0)
-  , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() &&  (tu.cu->transQuantBypass || tu.mtsIdx==1))
+  , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() &&  (tu.cu->transQuantBypass || tu.mtsIdx==MTS_SKIP))
   , m_scanPosLast               (-1)
   , m_subSetId                  (-1)
   , m_subSetPos                 (-1)

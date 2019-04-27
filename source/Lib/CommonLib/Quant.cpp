@@ -373,7 +373,7 @@ void Quant::dequant(const TransformUnit &tu,
   const TCoeff          transformMinimum   = -(1 << maxLog2TrDynamicRange);
   const TCoeff          transformMaximum   =  (1 << maxLog2TrDynamicRange) - 1;
 #if HEVC_USE_SCALING_LISTS
-  const bool            isTransformSkip = tu.mtsIdx==1 && isLuma(compID);
+  const bool            isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
   const bool            enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
   const int             scalingListType    = getScalingListType(tu.cu->predMode, compID);
 #endif
@@ -398,7 +398,7 @@ void Quant::dequant(const TransformUnit &tu,
   CHECK(uiWidth > m_uiMaxTrSize, "Unsupported transformation size");
 
   // Represents scaling through forward transform
-  const bool bClipTransformShiftTo0 = tu.mtsIdx!=1 && sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
+  const bool bClipTransformShiftTo0 = tu.mtsIdx!=MTS_SKIP && sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
   const int  originalTransformShift = getTransformShift(channelBitDepth, area.size(), maxLog2TrDynamicRange);
 #if JVET_N0246_MODIFIED_QUANTSCALES
   const bool needSqrtAdjustment     = TU::needsBlockSizeTrafoScale( tu, compID );
@@ -847,7 +847,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
   const CCoeffBuf &piCoef   = pSrc;
         CoeffBuf   piQCoef  = tu.getCoeffs(compID);
 
-  const bool useTransformSkip      = tu.mtsIdx==1;
+  const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP;
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
   {
@@ -975,7 +975,7 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   const CCoeffBuf piCoef    = pSrc;
 
-  const bool useTransformSkip      = tu.mtsIdx==1;
+  const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP;
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
 #if HEVC_USE_SCALING_LISTS

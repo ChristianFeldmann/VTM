@@ -2504,9 +2504,9 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
   m_pcTrQuant->transformNxN( tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr, &diagRatio, &horVerRatio );
 #if INCLUDE_ISP_CFG_FLAG
-    if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == 0 && ispSplitIsAllowed )
+    if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == MTS_DCT2_DCT2 && ispSplitIsAllowed )
 #else
-  if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == 0 )
+  if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == MTS_DCT2_DCT2 )
 #endif
   {
     m_intraModeDiagRatio        .push_back(diagRatio);
@@ -2882,22 +2882,21 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 
             if( transformIndex == 1 )
             {
-              tu.mtsIdx = ( uiIntraMode < 34 ) ? 2 : 1; //(DST7,DCT8) : (DCT8,DST7)
+              tu.mtsIdx = ( uiIntraMode < 34 ) ? MTS_DST7_DCT8 : MTS_DCT8_DST7;
             }
             else if( transformIndex == 2 ) 
             {
-              tu.mtsIdx = ( uiIntraMode < 34 ) ? 1 : 2; //(DCT8,DST7) : (DST7,DCT8)
+              tu.mtsIdx = ( uiIntraMode < 34 ) ? MTS_DCT8_DST7 : MTS_DST7_DCT8;
             }
             else 
             {
-              tu.mtsIdx = transformIndex;
+              tu.mtsIdx = MTS_DST7_DST7 + transformIndex;
             }
           }
           else 
           {
-            tu.mtsIdx = transformIndex;
+            tu.mtsIdx = MTS_DST7_DST7 + transformIndex;
           }
-          tu.mtsIdx += 2;
         }
         else
         {
@@ -2993,7 +2992,7 @@ void IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         bestDCT2cost = singleCostTmp;
       }
 #if JVET_N0217_MATRIX_INTRAPRED
-      if (!cu.ispMode && !cu.mipFlag && tu.mtsIdx == 0 )
+      if (!cu.ispMode && !cu.mipFlag && tu.mtsIdx == MTS_DCT2_DCT2 )
       {
         m_bestCostNonMip = std::min(m_bestCostNonMip, singleCostTmp);
       }

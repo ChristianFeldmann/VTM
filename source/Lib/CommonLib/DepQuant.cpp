@@ -756,7 +756,7 @@ namespace DQIntern
     const int         channelBitDepth       = sps.getBitDepth( chType );
     const int         maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange( chType );
     const int         nomTransformShift     = getTransformShift( channelBitDepth, area.size(), maxLog2TrDynamicRange );
-    const bool        clipTransformShift    = ( tu.mtsIdx==1 && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag() );
+    const bool        clipTransformShift    = ( tu.mtsIdx==MTS_SKIP && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag() );
 #if JVET_N0246_MODIFIED_QUANTSCALES
     const bool    needsSqrt2ScaleAdjustment = TU::needsSqrt2Scale(tu, compID);
     const int         transformShift        = ( clipTransformShift ? std::max<int>( 0, nomTransformShift ) : nomTransformShift ) + (needsSqrt2ScaleAdjustment?-1:0);
@@ -859,7 +859,7 @@ namespace DQIntern
     const TCoeff      minTCoeff             = -( 1 << maxLog2TrDynamicRange );
     const TCoeff      maxTCoeff             =  ( 1 << maxLog2TrDynamicRange ) - 1;
     const int         nomTransformShift     = getTransformShift( channelBitDepth, area.size(), maxLog2TrDynamicRange );
-    const bool        clipTransformShift    = ( tu.mtsIdx==1 && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag() );
+    const bool        clipTransformShift    = ( tu.mtsIdx==MTS_SKIP && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag() );
 #if JVET_N0246_MODIFIED_QUANTSCALES
     const bool    needsSqrt2ScaleAdjustment = TU::needsSqrt2Scale(tu, compID);
     const int         transformShift        = ( clipTransformShift ? std::max<int>( 0, nomTransformShift ) : nomTransformShift ) + (needsSqrt2ScaleAdjustment?-1:0);
@@ -1678,7 +1678,7 @@ namespace DQIntern
     //===== find first test position =====
     int   firstTestPos = numCoeff - 1;
 #if JVET_N0193_LFNST
-    if( lfnstIdx > 0 && tu.mtsIdx != 1 && ( ( width == 4 && height == 4 ) || ( width == 8 && height == 8 ) ) )
+    if( lfnstIdx > 0 && tu.mtsIdx != MTS_SKIP && ( ( width == 4 && height == 4 ) || ( width == 8 && height == 8 ) ) )
     {
       firstTestPos = 7;
     }
@@ -1707,7 +1707,7 @@ namespace DQIntern
 
     int effWidth = tuPars.m_width, effHeight = tuPars.m_height;
     bool zeroOut = false;
-    if( ( tu.mtsIdx > 1 || ( tu.cu->sbtInfo != 0 && tuPars.m_height <= 32 && tuPars.m_width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+    if( ( tu.mtsIdx > MTS_SKIP || ( tu.cu->sbtInfo != 0 && tuPars.m_height <= 32 && tuPars.m_width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
     {
       effHeight = ( tuPars.m_height == 32 ) ? 16 : tuPars.m_height;
       effWidth = ( tuPars.m_width == 32 ) ? 16 : tuPars.m_width;
@@ -1719,7 +1719,7 @@ namespace DQIntern
     {
       const ScanInfo& scanInfo = tuPars.m_scanInfo[ scanIdx ];
 #if JVET_N0193_LFNST
-      bool lfnstZeroOut = lfnstIdx > 0 && tu.mtsIdx != 1 && width >= 4 && height >= 4 &&
+      bool lfnstZeroOut = lfnstIdx > 0 && tu.mtsIdx != MTS_SKIP && width >= 4 && height >= 4 &&
         ( ( ( ( width >= 8 && height >= 8 ) && scanIdx >= 16 ) || ( ( ( width == 4 && height == 4 ) || ( width == 8 && height == 8 ) ) && scanIdx >= 8 ) ) && scanIdx < 48 );
       xDecideAndUpdate( abs( tCoeff[ scanInfo.rasterPos ] ), scanInfo, ( zeroOut && ( scanInfo.posX >= effWidth || scanInfo.posY >= effHeight ) ) || lfnstZeroOut );
 #else
@@ -1776,7 +1776,7 @@ DepQuant::~DepQuant()
 void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx )
 {
 #if JVET_N0280_RESIDUAL_CODING_TS
-  if( tu.cs->slice->getDepQuantEnabledFlag() && tu.mtsIdx != 1 )
+  if( tu.cs->slice->getDepQuantEnabledFlag() && tu.mtsIdx != MTS_SKIP )
 #else
   if( tu.cs->slice->getDepQuantEnabledFlag() )
 #endif
@@ -1792,7 +1792,7 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
 void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const ComponentID &compID, const QpParam &cQP )
 {
 #if JVET_N0280_RESIDUAL_CODING_TS
-  if( tu.cs->slice->getDepQuantEnabledFlag() && tu.mtsIdx != 1 )
+  if( tu.cs->slice->getDepQuantEnabledFlag() && tu.mtsIdx != MTS_SKIP )
 #else
   if( tu.cs->slice->getDepQuantEnabledFlag() )
 #endif

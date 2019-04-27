@@ -1627,7 +1627,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
               if( bestCS->cus.size() == 1 )
               {
                 CodingUnit &cu = *bestCS->cus.front();
-                if( cu.firstTU->mtsIdx == 1 )
+                if( cu.firstTU->mtsIdx == MTS_SKIP )
                 {
                   if( ( g_aucLog2[ cu.firstTU->blocks[ COMPONENT_Y ].width ] + g_aucLog2[ cu.firstTU->blocks[ COMPONENT_Y ].height ] ) >= 6 )
                   {
@@ -4370,7 +4370,7 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
     sbtOffCost = tempCS->cost;
     sbtOffDist = tempCS->dist;
     sbtOffRootCbf = cu->rootCbf;
-    currBestSbt = CU::getSbtInfo( cu->firstTU->mtsIdx > 1 ? SBT_OFF_MTS : SBT_OFF_DCT, 0 );
+    currBestSbt = CU::getSbtInfo( cu->firstTU->mtsIdx > MTS_SKIP ? SBT_OFF_MTS : SBT_OFF_DCT, 0 );
     currBestTrs = cu->firstTU->mtsIdx;
     if( cu->lwidth() <= MAX_TB_SIZEY && cu->lheight() <= MAX_TB_SIZEY )
     {

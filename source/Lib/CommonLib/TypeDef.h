@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0415_CTB_ALF                                1 // JVET-N0415: CTB-based ALF switch
+
 #define JVET_N0105_LFNST_CTX_MODELLING                    1 // LFNST index signalled without intra mode dependency and with on ctx-coded bin
 
 #define JVET_N0193_LFNST                                  1 //Low Frequency Non-Separable Transform (LFNST), previously, Reduced Secondary Transform (RST) 
@@ -1676,6 +1678,13 @@ struct AlfSliceParam
   bool                         alfLumaCoeffDeltaFlag;                                   // alf_luma_coeff_delta_flag
   bool                         alfLumaCoeffDeltaPredictionFlag;                         // alf_luma_coeff_delta_prediction_flag
   std::vector<AlfFilterShape>* filterShapes;
+#if JVET_N0415_CTB_ALF
+  int                          tLayer;
+  bool                         newFilterFlag[MAX_NUM_CHANNEL_TYPE];
+  int                          fixedFilterPattern;
+  int                          fixedFilterIdx[MAX_NUM_ALF_CLASSES];
+  int                          fixedFilterSetIndex;
+#endif
 
   AlfSliceParam()
   {
@@ -1701,6 +1710,13 @@ struct AlfSliceParam
     numLumaFilters = 1;
     alfLumaCoeffDeltaFlag = false;
     alfLumaCoeffDeltaPredictionFlag = false;
+#if JVET_N0415_CTB_ALF
+    tLayer = 0;
+    memset(newFilterFlag, 0, sizeof(newFilterFlag));
+    fixedFilterPattern = 0;
+    std::memset(fixedFilterIdx, 0, sizeof(fixedFilterIdx));
+    fixedFilterSetIndex = 0;;
+#endif
   }
 
   const AlfSliceParam& operator = ( const AlfSliceParam& src )
@@ -1723,6 +1739,13 @@ struct AlfSliceParam
     alfLumaCoeffDeltaFlag = src.alfLumaCoeffDeltaFlag;
     alfLumaCoeffDeltaPredictionFlag = src.alfLumaCoeffDeltaPredictionFlag;
     filterShapes = src.filterShapes;
+#if JVET_N0415_CTB_ALF
+    tLayer = src.tLayer;
+    std::memcpy(newFilterFlag, src.newFilterFlag, sizeof(newFilterFlag));
+    fixedFilterPattern = src.fixedFilterPattern;
+    std::memcpy(fixedFilterIdx, src.fixedFilterIdx, sizeof(fixedFilterIdx));
+    fixedFilterSetIndex = src.fixedFilterSetIndex;
+#endif
     return *this;
   }
 };

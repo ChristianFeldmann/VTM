@@ -84,9 +84,17 @@ public:
 
   AdaptiveLoopFilter();
   virtual ~AdaptiveLoopFilter() {}
-
+#if JVET_N0415_CTB_ALF
+  void reconstructCoeffAPSs(CodingStructure& cs, bool luma, bool chroma, bool isRdo);
+  void ALFProcess(CodingStructure& cs);
+#else
   void ALFProcess( CodingStructure& cs, AlfSliceParam& alfSliceParam );
-  void reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, const bool bRedo = false );
+#endif
+  void reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, 
+#if JVET_N0415_CTB_ALF
+    const bool isRdo = false,
+#endif
+    const bool isRedo = false );
   void create( const int picWidth, const int picHeight, const ChromaFormat format, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE] );
   void destroy();
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
@@ -146,6 +154,18 @@ public:
 #endif
 
 protected:
+#if JVET_N0415_CTB_ALF
+  static const int             m_classToFilterMapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES];
+  static const int             m_fixedFilterSetCoeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF];
+  short                        m_fixedFilterSetCoeffDec[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+  short                        m_coeffApsLuma[6][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
+#if JVET_N0242_NON_LINEAR_ALF
+  short                        m_clippApsLuma[6][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
+  short                        m_clipDefault[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+#endif
+  bool                         m_created = false;
+  short                        m_chromaCoeffFinal[MAX_NUM_ALF_LUMA_COEFF];
+#endif
 #if JVET_N0242_NON_LINEAR_ALF
   Pel                          m_alfClippingValues[MAX_NUM_CHANNEL_TYPE][MaxAlfNumClippingValues];
 #endif
@@ -157,7 +177,7 @@ protected:
   short                        m_chromaClippFinal[MAX_NUM_ALF_LUMA_COEFF];
 #endif
   int**                        m_laplacian[NUM_DIRECTIONS];
-  uint8_t*                       m_ctuEnableFlag[MAX_NUM_COMPONENT];
+  uint8_t*                     m_ctuEnableFlag[MAX_NUM_COMPONENT];
   PelStorage                   m_tempBuf;
   int                          m_inputBitDepth[MAX_NUM_CHANNEL_TYPE];
   int                          m_picWidth;

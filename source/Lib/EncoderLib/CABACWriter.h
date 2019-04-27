@@ -169,6 +169,9 @@ public:
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ChannelType channel, AlfSliceParam* alfParam);
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ComponentID compID, AlfSliceParam* alfParam);
   void        codeAlfCtuEnableFlag      ( CodingStructure& cs, uint32_t ctuRsAddr, const int compIdx, AlfSliceParam* alfParam = NULL );
+#if JVET_N0415_CTB_ALF
+  void        codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr, bool* alfEnableLuma = NULL);
+#endif
 
 private:
   void        unary_max_symbol          ( unsigned symbol, unsigned ctxId0, unsigned ctxIdN, unsigned maxSymbol );

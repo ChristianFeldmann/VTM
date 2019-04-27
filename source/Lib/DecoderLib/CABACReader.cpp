@@ -142,12 +142,15 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 
 
   sao( cs, ctuRsAddr );
-
+#if JVET_N0415_CTB_ALF
+  if (cs.sps->getALFEnabledFlag() && (cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y)))
+  {
+#else
   if (cs.sps->getALFEnabledFlag() && (cs.slice->getTileGroupAlfEnabledFlag()))
   {
     CHECK(cs.aps == nullptr, "APS not initialized");
     const AlfSliceParam& alfSliceParam = cs.aps->getAlfAPSParam();
-
+#endif
     const PreCalcValues& pcv = *cs.pcv;
     int                 frame_width_in_ctus = pcv.widthInCtus;
     int                 ry = ctuRsAddr / frame_width_in_ctus;
@@ -163,7 +166,11 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 
     for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
     {
+#if JVET_N0415_CTB_ALF
+      if (cs.slice->getTileGroupAlfEnabledFlag((ComponentID)compIdx))
+#else
       if( alfSliceParam.enabledFlag[compIdx] )
+#endif
       {
         uint8_t* ctbAlfFlag = cs.slice->getPic()->getAlfCtuEnableFlag( compIdx );
         int ctx = 0;
@@ -172,6 +179,13 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 
         RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__ALF);
         ctbAlfFlag[ctuRsAddr] = m_BinDecoder.decodeBin( Ctx::ctbAlfFlag( compIdx * 3 + ctx ) );
+
+#if JVET_N0415_CTB_ALF
+        if (isLuma((ComponentID)compIdx) && ctbAlfFlag[ctuRsAddr])
+        {
+          readAlfCtuFilterIndex(cs, ctuRsAddr);
+        }
+#endif
       }
     }
   }
@@ -208,6 +222,48 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
   return isLast;
 }
 
+#if JVET_N0415_CTB_ALF
+void CABACReader::readAlfCtuFilterIndex(CodingStructure& cs, unsigned ctuRsAddr)
+{
+  short* alfCtbFilterSetIndex = cs.slice->getPic()->getAlfCtbFilterIndex();
+  unsigned numAps = cs.slice->getTileGroupNumAps();
+  unsigned numAvailableFiltSets = numAps + NUM_FIXED_FILTER_SETS;
+  uint32_t filtIndex = 0;
+  if (numAvailableFiltSets > NUM_FIXED_FILTER_SETS)
+  {
+    int useLatestFilt = m_BinDecoder.decodeBin(Ctx::AlfUseLatestFilt());
+    if (useLatestFilt)
+    {
+      filtIndex = NUM_FIXED_FILTER_SETS;
+    }
+    else
+    {
+      if (numAps == 1)
+      {
+        xReadTruncBinCode(filtIndex, NUM_FIXED_FILTER_SETS);
+      }
+      else
+      {
+        unsigned usePrevFilt = m_BinDecoder.decodeBin(Ctx::AlfUseTemporalFilt());
+        if (usePrevFilt)
+        {
+          xReadTruncBinCode(filtIndex, numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
+          filtIndex += (unsigned)(NUM_FIXED_FILTER_SETS + 1);
+        }
+        else
+        {
+          xReadTruncBinCode(filtIndex, NUM_FIXED_FILTER_SETS);
+        }
+      }
+    }
+  }
+  else
+  {
+    xReadTruncBinCode(filtIndex, NUM_FIXED_FILTER_SETS);
+  }
+  alfCtbFilterSetIndex[ctuRsAddr] = filtIndex;
+}
+#endif
 //================================================================================
 //  clause 7.3.8.3
 //--------------------------------------------------------------------------------

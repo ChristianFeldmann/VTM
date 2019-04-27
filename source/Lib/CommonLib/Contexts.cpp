@@ -831,6 +831,29 @@ const CtxSet ContextSetCfg::ctbAlfFlag =
   } )
 };
 
+#if JVET_N0415_CTB_ALF
+const CtxSet ContextSetCfg::AlfUseLatestFilt =
+{
+  ContextSetCfg::addCtxSet
+  ({
+    { 154, }, // B
+    { 154, }, // P
+    { 185, }, // I
+    { DWS, },
+})
+};
+const CtxSet ContextSetCfg::AlfUseTemporalFilt =
+{
+  ContextSetCfg::addCtxSet
+  ({
+    { 154, },
+    { 154, },
+    { 154, },
+    { DWS, },
+})
+};
+#endif
+
 const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
 ({
   { 225, },
@@ -959,7 +982,9 @@ const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_Ini
 // combined sets
 const CtxSet ContextSetCfg::Sao = { ContextSetCfg::SaoMergeFlag, ContextSetCfg::SaoTypeIdx };
 
-
+#if JVET_N0415_CTB_ALF  
+const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::AlfUseLatestFilt, ContextSetCfg::AlfUseTemporalFilt };
+#endif
 
 template <class BinProbModel>
 CtxStore<BinProbModel>::CtxStore()

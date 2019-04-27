@@ -375,6 +375,7 @@ void HLSWriter::codeAPS( APS* pcAPS)
   AlfSliceParam param = pcAPS->getAlfAPSParam();
   WRITE_CODE(pcAPS->getAPSId(), 5, "adaptation_parameter_set_id");
 
+#if !JVET_N0415_CTB_ALF
   const int alfChromaIdc = param.enabledFlag[COMPONENT_Cb] * 2 + param.enabledFlag[COMPONENT_Cr];
   truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
 
@@ -384,6 +385,16 @@ void HLSWriter::codeAPS( APS* pcAPS)
   {
     WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_CHROMA], "alf_chroma_clip" );
   }
+#endif
+#else
+  WRITE_FLAG(param.newFilterFlag[CHANNEL_TYPE_LUMA], "alf_luma_new_filter");
+  WRITE_FLAG(param.newFilterFlag[CHANNEL_TYPE_CHROMA], "alf_chroma_new_filter");
+
+  if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
+  {
+#if JVET_N0242_NON_LINEAR_ALF
+    WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_LUMA], "alf_luma_clip");
+#endif
 #endif
 
   xWriteTruncBinCode(param.numLumaFilters - 1, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
@@ -395,10 +406,39 @@ void HLSWriter::codeAPS( APS* pcAPS)
     }
   }
 
+#if JVET_N0415_CTB_ALF
+  WRITE_FLAG(param.fixedFilterSetIndex > 0 ? 1 : 0, "fixed_filter_set_flag");
+  if (param.fixedFilterSetIndex > 0)
+  {
+    xWriteTruncBinCode(param.fixedFilterSetIndex - 1, NUM_FIXED_FILTER_SETS);
+    WRITE_FLAG(param.fixedFilterPattern, "fixed_filter_flag_pattern");
+    for (int classIdx = 0; classIdx < MAX_NUM_ALF_CLASSES; classIdx++)
+    {
+      if (param.fixedFilterPattern > 0)
+      {
+        WRITE_FLAG(param.fixedFilterIdx[classIdx], "fixed_filter_flag");
+      }
+      else
+      {
+        CHECK(param.fixedFilterIdx[classIdx] != 1, "Disabled fixed filter");
+      }
+    }
+  }
+#endif
+
   alfFilter(param, false);
 
+#if JVET_N0415_CTB_ALF
+  }
+  if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
+  {
+#if JVET_N0242_NON_LINEAR_ALF
+    WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_CHROMA], "alf_chroma_clip");
+#endif
+#else
   if (alfChromaIdc)
   {
+#endif
     alfFilter(param, true);
   }
   xWriteRbspTrailingBits();
@@ -1207,12 +1247,50 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     if( pcSlice->getSPS()->getALFEnabledFlag() )
     {
+#if JVET_N0415_CTB_ALF
+      const int alfEnabled = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y);
+      WRITE_FLAG(alfEnabled, "tile_group_alf_enabled_flag");
+
+      if (alfEnabled)
+      {
+
+        if (pcSlice->isIntra())
+        {
+          WRITE_FLAG(pcSlice->getTileGroupNumAps(), "tile_group_num_APS");
+        }
+        else
+        {
+          xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
+        }
+
+        const std::vector<int>&   apsId = pcSlice->getTileGroupApsIdLuma();
+        for (int i = 0; i < pcSlice->getTileGroupNumAps(); i++)
+        {
+          WRITE_CODE(apsId[i], 5, "tile_group_aps_id");
+        }
+
+        const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) * 2 + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr);
+        truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
+        if (alfChromaIdc)
+        {
+          if (pcSlice->isIntra()&& pcSlice->getTileGroupNumAps() == 1)
+          {
+            CHECK(pcSlice->getTileGroupApsIdChroma() != apsId[0], "wrong tile group chroma aps id");
+          }
+          else
+          {
+            WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
+          }
+        }
+      }
+#else
       const int alfEnabled = pcSlice->getAPS()->getAlfAPSParam().enabledFlag[COMPONENT_Y] ? 1 : 0;
       WRITE_FLAG( alfEnabled, "tile_group_alf_enabled_flag");
       if (alfEnabled)
       {
         WRITE_CODE(pcSlice->getAPSId(), 5, "tile_group_aps_id");
       }
+#endif
     }
 
     //check if numrefidxes match the defaults. If not, override

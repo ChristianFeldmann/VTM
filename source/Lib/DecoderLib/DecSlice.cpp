@@ -85,7 +85,11 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   cs.slice            = slice;
   cs.sps              = sps;
   cs.pps              = slice->getPPS();
+#if JVET_N0415_CTB_ALF
+  memcpy(cs.apss, slice->getAPSs(), sizeof(cs.apss));
+#else
   cs.aps              = slice->getAPS();
+#endif
 #if HEVC_VPS
   cs.vps              = slice->getVPS();
 #endif
@@ -97,6 +101,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   if (slice->getSliceCurStartCtuTsAddr() == 0)
   {
     cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
+#if JVET_N0415_CTB_ALF
+    cs.picture->resizeAlfCtbFilterIndex(cs.pcv->sizeInCtus);
+#endif
   }
 
   const unsigned numSubstreams = slice->getNumberOfSubstreamSizes() + 1;

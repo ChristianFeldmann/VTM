@@ -170,6 +170,12 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
   {
     codeAlfCtuEnableFlag( cs, ctuRsAddr, compIdx );
+#if JVET_N0415_CTB_ALF
+    if (isLuma(ComponentID(compIdx)))
+    {
+      codeAlfCtuFilterIndex(cs, ctuRsAddr);
+    }
+#endif
   }
 
   if ( CS::isDualITree(cs) && cs.pcv->chrFormat != CHROMA_400 && cs.pcv->maxCUWidth > 64 )
@@ -3394,7 +3400,19 @@ void CABACWriter::codeAlfCtuEnableFlags( CodingStructure& cs, ComponentID compID
 
 void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr, const int compIdx, AlfSliceParam* alfParam)
 {
+#if JVET_N0415_CTB_ALF
+  static AlfSliceParam alfSliceParam;
+  if (alfParam)
+  {
+    alfSliceParam = *alfParam;
+  }
+  else
+  {
+    alfSliceParam.enabledFlag[compIdx] = cs.slice->getTileGroupAlfEnabledFlag((ComponentID)compIdx);
+  }
+#else
   const AlfSliceParam& alfSliceParam = alfParam ? (*alfParam) : cs.aps->getAlfAPSParam();
+#endif
 
   if( cs.sps->getALFEnabledFlag() && alfSliceParam.enabledFlag[compIdx] )
   {
@@ -3521,4 +3539,71 @@ void CABACWriter::mip_pred_mode( const PredictionUnit& pu )
   DTRACE( g_trace_ctx, D_SYNTAX, "mip_pred_mode() pos=(%d,%d) mode=%d\n", pu.lumaPos().x, pu.lumaPos().y, pu.intraDir[CHANNEL_TYPE_LUMA] );
 }
 #endif
+
+#if JVET_N0415_CTB_ALF
+void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr, bool *alfEnableLuma)
+{
+  if (!cs.sps->getALFEnabledFlag())
+    return;
+  bool alfEnableFlagLuma;
+  if (alfEnableLuma)
+  {
+    alfEnableFlagLuma = *alfEnableLuma;
+  }
+  else
+  {
+    alfEnableFlagLuma = cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y);
+  }
+  if (!alfEnableFlagLuma)
+  {
+    return;
+  }
+
+  uint8_t* ctbAlfFlag = cs.slice->getPic()->getAlfCtuEnableFlag(COMPONENT_Y);
+  if (!ctbAlfFlag[ctuRsAddr])
+  {
+    return;
+  }
+
+  short* alfCtbFilterIndex = cs.slice->getPic()->getAlfCtbFilterIndex();
+  const unsigned filterSetIdx = alfCtbFilterIndex[ctuRsAddr];
+  unsigned numAps = cs.slice->getTileGroupNumAps();
+  unsigned numAvailableFiltSets = numAps + NUM_FIXED_FILTER_SETS;
+  if (numAvailableFiltSets > NUM_FIXED_FILTER_SETS)
+  {
+    int useLatestFilt = (filterSetIdx == NUM_FIXED_FILTER_SETS) ? 1 : 0;
+    m_BinEncoder.encodeBin(useLatestFilt, Ctx::AlfUseLatestFilt());
+    if (!useLatestFilt)
+    {
+
+      if (numAps == 1)
+      {
+        CHECK(filterSetIdx >= NUM_FIXED_FILTER_SETS, "fixed set numavail < num_fixed");
+        xWriteTruncBinCode(filterSetIdx, NUM_FIXED_FILTER_SETS);
+      }
+      else
+      {
+        int useTemporalFilt = (filterSetIdx > NUM_FIXED_FILTER_SETS) ? 1 : 0;
+        m_BinEncoder.encodeBin(useTemporalFilt, Ctx::AlfUseTemporalFilt());
+        if (useTemporalFilt)
+        {
+          CHECK((filterSetIdx - (NUM_FIXED_FILTER_SETS + 1)) >= (numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1)), "temporal non-latest set");
+          xWriteTruncBinCode(filterSetIdx - (NUM_FIXED_FILTER_SETS + 1), numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
+        }
+        else
+        {
+          CHECK(filterSetIdx >= NUM_FIXED_FILTER_SETS, "fixed set larger than temporal");
+          xWriteTruncBinCode(filterSetIdx, NUM_FIXED_FILTER_SETS);
+        }
+      }
+    }
+  }
+  else
+  {
+    CHECK(filterSetIdx >= NUM_FIXED_FILTER_SETS, "fixed set numavail < num_fixed");
+    xWriteTruncBinCode(filterSetIdx, NUM_FIXED_FILTER_SETS);
+  }
+}
+#endif
+
 //! \}

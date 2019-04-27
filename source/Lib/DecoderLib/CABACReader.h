@@ -68,6 +68,10 @@ public:
   // sao (clause 7.3.8.3)
   void        sao                       ( CodingStructure&              cs,     unsigned        ctuRsAddr );
 
+#if JVET_N0415_CTB_ALF
+  void        readAlfCtuFilterIndex(CodingStructure&              cs, unsigned        ctuRsAddr);
+#endif
+
   // coding (quad)tree (clause 7.3.8.4)
   bool        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
   PartSplit   split_cu_mode             ( CodingStructure&              cs,     Partitioner&    pm );

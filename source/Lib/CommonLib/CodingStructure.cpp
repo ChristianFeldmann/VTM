@@ -776,7 +776,11 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.vps       = vps;
 #endif
   subStruct.pps       = pps;
+#if JVET_N0415_CTB_ALF
+  memcpy(subStruct.apss, apss, sizeof(apss));
+#else
   subStruct.aps       = aps;
+#endif
   subStruct.slice     = slice;
   subStruct.baseQP    = baseQP;
   subStruct.prevQP[_chType]

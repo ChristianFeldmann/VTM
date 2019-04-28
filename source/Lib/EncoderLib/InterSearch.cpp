@@ -6699,7 +6699,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
   {
     TransformUnit &tu = csFull->addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
     tu.depth          = currDepth;
-    tu.mtsIdx         = 0;
+    tu.mtsIdx         = MTS_DCT2_DCT2;
     tu.checkTuNoResidual( partitioner.currPartIdx() );
 
     const Slice           &slice = *cs.slice;
@@ -6817,7 +6817,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
           if( isLuma( compID ) )
           {
-            if( bestTU.mtsIdx == 1 && m_pcEncCfg->getUseTransformSkipFast() )
+            if( bestTU.mtsIdx == MTS_SKIP && m_pcEncCfg->getUseTransformSkipFast() )
             {
               continue;
             }

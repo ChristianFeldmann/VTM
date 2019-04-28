@@ -265,6 +265,11 @@ public:
   static const CtxSet   ImvFlag;
   static const CtxSet   GBiIdx;
   static const CtxSet   ctbAlfFlag;
+#if JVET_N0415_CTB_ALF
+  static const CtxSet   AlfUseLatestFilt;
+  static const CtxSet   AlfUseTemporalFilt;
+  static const CtxSet   Alf;
+#endif
   static const CtxSet   MHIntraFlag;
 #if !JVET_N0302_SIMPLFIED_CIIP
   static const CtxSet   MHIntraPredMode;

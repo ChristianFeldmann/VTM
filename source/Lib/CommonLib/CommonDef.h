@@ -178,6 +178,13 @@ static const int MIP_MAX_WIDTH =                                   64;
 static const int MIP_MAX_HEIGHT =                                  64;
 #endif
 
+#if JVET_N0415_CTB_ALF
+static const int ALF_FIXED_FILTER_NUM        =                     64;
+static const int ALF_CTB_MAX_NUM_APS         =                      6;
+static const int NUM_FIXED_FILTER_SETS       =                     16;
+static const int NUM_TOTAL_FILTER_SETS       =                     NUM_FIXED_FILTER_SETS + ALF_CTB_MAX_NUM_APS;
+#endif
+
 #if JVET_N0178_IMPLICIT_BDOF_SPLIT
 static const int MAX_BDOF_APPLICATION_REGION =                     16;
 #endif

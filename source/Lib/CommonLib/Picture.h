@@ -225,7 +225,11 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
+#if JVET_N0415_CTB_ALF
+  void finalInit(const SPS& sps, const PPS& pps, APS** apss);
+#else
   void finalInit(const SPS& sps, const PPS& pps, APS& aps);
+#endif
 
   int  getPOC()                               const { return poc; }
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
@@ -324,6 +328,18 @@ public:
       std::fill( m_alfCtuEnableFlag[compIdx].begin(), m_alfCtuEnableFlag[compIdx].end(), 0 );
     }
   }
+#if JVET_N0415_CTB_ALF
+  std::vector<short> m_alfCtbFilterIndex;
+  short* getAlfCtbFilterIndex() { return m_alfCtbFilterIndex.data(); }
+  void resizeAlfCtbFilterIndex(int numEntries)
+  {
+    m_alfCtbFilterIndex.resize(numEntries);
+    for (int i = 0; i < numEntries; i++)
+    {
+      m_alfCtbFilterIndex[i] = 0;
+    }
+  }
+#endif
 };
 
 int calcAndPrintHashStatus(const CPelUnitBuf& pic, const class SEIDecodedPictureHash* pictureHashSEI, const BitDepths &bitDepths, const MsgLevel msgl);

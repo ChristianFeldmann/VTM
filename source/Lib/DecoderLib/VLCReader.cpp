@@ -622,13 +622,21 @@ void HLSyntaxReader::parseAPS(APS* aps)
   aps->setAPSId(code);
 
   AlfSliceParam param = aps->getAlfAPSParam();
+#if JVET_N0415_CTB_ALF
+  param.enabledFlag[COMPONENT_Y] = param.enabledFlag[COMPONENT_Cb] = param.enabledFlag[COMPONENT_Cr] = true;
+  READ_FLAG(code, "alf_luma_new_filter");
+  param.newFilterFlag[CHANNEL_TYPE_LUMA] = code;
+  READ_FLAG(code, "alf_chroma_new_filter");
+  param.newFilterFlag[CHANNEL_TYPE_CHROMA] = code;
+#else
   param.enabledFlag[COMPONENT_Y] = true;
 
   int alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
   param.enabledFlag[COMPONENT_Cb] = alfChromaIdc >> 1;
   param.enabledFlag[COMPONENT_Cr] = alfChromaIdc & 1;
+#endif
 
-#if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0242_NON_LINEAR_ALF && !JVET_N0415_CTB_ALF
   READ_FLAG( code, "alf_luma_clip" );
   param.nonLinearFlag[CHANNEL_TYPE_LUMA] = code ? true : false;
 
@@ -639,6 +647,14 @@ void HLSyntaxReader::parseAPS(APS* aps)
   }
 #endif
 
+#if JVET_N0415_CTB_ALF
+  if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
+  {
+#if JVET_N0242_NON_LINEAR_ALF
+    READ_FLAG(code, "alf_luma_clip");
+    param.nonLinearFlag[CHANNEL_TYPE_LUMA] = code ? true : false;
+#endif
+#endif
   xReadTruncBinCode(code, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
   param.numLumaFilters = code + 1;
   if (param.numLumaFilters > 1)
@@ -654,10 +670,39 @@ void HLSyntaxReader::parseAPS(APS* aps)
     memset(param.filterCoeffDeltaIdx, 0, sizeof(param.filterCoeffDeltaIdx));
   }
 
+#if JVET_N0415_CTB_ALF
+  READ_FLAG(code, "fixed_filter_set_flag");
+  param.fixedFilterSetIndex = code;
+  if (param.fixedFilterSetIndex > 0)
+  {
+    xReadTruncBinCode(code, NUM_FIXED_FILTER_SETS);
+    param.fixedFilterSetIndex = code + 1;
+    READ_FLAG(code, "fixed_filter_flag_pattern");
+    param.fixedFilterPattern = code;
+    for (int classIdx = 0; classIdx < MAX_NUM_ALF_CLASSES; classIdx++)
+    {
+      code = 1;
+      if (param.fixedFilterPattern > 0)
+      {
+        READ_FLAG(code, "fixed_filter_flag");
+      }
+      param.fixedFilterIdx[classIdx] = code;
+    }
+  }
+#endif
   alfFilter(param, false);
-
+#if JVET_N0415_CTB_ALF
+  }
+  if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
+  {
+#if JVET_N0242_NON_LINEAR_ALF
+    READ_FLAG(code, "alf_luma_clip");
+    param.nonLinearFlag[CHANNEL_TYPE_CHROMA] = code ? true : false;
+#endif
+#else
   if (alfChromaIdc)
   {
+#endif
     alfFilter(param, true);
   }
   aps->setAlfAPSParam(param);
@@ -1664,6 +1709,49 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     if( sps->getALFEnabledFlag() )
     {
       READ_FLAG(uiCode, "tile_group_alf_enabled_flag");
+#if JVET_N0415_CTB_ALF
+      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Y, uiCode);
+      int alfChromaIdc = 0;
+      if (uiCode)
+      {
+        if (pcSlice->isIntra())
+        {
+          READ_FLAG(uiCode, "tile_group_num_APS");
+        }
+        else
+        {
+          xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
+        }        
+        int numAps = uiCode;
+        pcSlice->setTileGroupNumAps(numAps);
+        std::vector<int> apsId(numAps, -1);
+        for (int i = 0; i < numAps; i++)
+        {
+          READ_CODE(5, uiCode, "tile_group_aps_id");
+          apsId[i] = uiCode;
+        }
+        pcSlice->setAPSs(apsId);
+        alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
+        if (alfChromaIdc)
+        {
+          if (pcSlice->isIntra() && pcSlice->getTileGroupNumAps() == 1)
+          {
+            uiCode = apsId[0];
+          }
+          else
+          {
+            READ_CODE(5, uiCode, "tile_group_aps_id_chroma");
+          }
+          pcSlice->setTileGroupApsIdChroma(uiCode);
+        }
+      }
+      else
+      {
+        pcSlice->setTileGroupNumAps(0);
+      }
+      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cb, alfChromaIdc >> 1);
+      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc & 1);
+#else
       if (uiCode)
       {
         READ_CODE(5, uiCode, "tile_group_aps_id");
@@ -1677,6 +1765,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setAPSId(-1);
         pcSlice->setAPS(nullptr);
       }
+#endif
     }
 
     if (pcSlice->getIdrPicFlag())

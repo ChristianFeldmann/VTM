@@ -871,7 +871,11 @@ const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit)     const { return g
        PelUnitBuf Picture::getRecoBuf()                               { return M_BUFS(scheduler.getSplitPicId(), PIC_RECONSTRUCTION); }
 const CPelUnitBuf Picture::getRecoBuf()                         const { return M_BUFS(scheduler.getSplitPicId(), PIC_RECONSTRUCTION); }
 
+#if JVET_N0415_CTB_ALF
+void Picture::finalInit(const SPS& sps, const PPS& pps, APS** apss)
+#else
 void Picture::finalInit(const SPS& sps, const PPS& pps, APS& aps)
+#endif
 {
   for( auto &sei : SEIs )
   {
@@ -905,7 +909,11 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS& aps)
   cs->picture = this;
   cs->slice   = nullptr;  // the slices for this picture have not been set at this point. update cs->slice after swapSliceObject()
   cs->pps     = &pps;
+#if JVET_N0415_CTB_ALF
+  memcpy(cs->apss, apss, sizeof(cs->apss));
+#else
   cs->aps = &aps;
+#endif
 #if HEVC_VPS
   cs->vps     = nullptr;
 #endif
@@ -925,8 +933,11 @@ void Picture::allocateNewSlice()
 {
   slices.push_back(new Slice);
   Slice& slice = *slices.back();
-
+#if JVET_N0415_CTB_ALF
+  memcpy(slice.getAPSs(), cs->apss, sizeof(cs->apss));
+#else
   slice.setAPS(cs->aps);
+#endif
   slice.setPPS( cs->pps);
   slice.setSPS( cs->sps);
   if(slices.size()>=2)
@@ -940,13 +951,21 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
 {
   p->setSPS(cs->sps);
   p->setPPS(cs->pps);
+#if JVET_N0415_CTB_ALF
+  p->setAPSs(cs->apss);
+#else
   p->setAPS(cs->aps);
+#endif
 
   Slice * pTmp = slices[i];
   slices[i] = p;
   pTmp->setSPS(0);
   pTmp->setPPS(0);
+#if JVET_N0415_CTB_ALF
+  memset(pTmp->getAPSs(), 0, sizeof(*pTmp->getAPSs())*MAX_NUM_APS);
+#else
   pTmp->setAPS(0);
+#endif
   return pTmp;
 }
 

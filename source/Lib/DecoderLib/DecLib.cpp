@@ -208,9 +208,19 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
                   for( int i = 0; i < pic->slices.size(); i++ )
                   {
+#if JVET_N0415_CTB_ALF
+                    pcEncPic->slices[i]->setTileGroupNumAps(pic->slices[i]->getTileGroupNumAps());
+                    pcEncPic->slices[i]->setAPSs(pic->slices[i]->getTileGroupApsIdLuma());
+                    pcEncPic->slices[i]->setAPSs(pic->slices[i]->getAPSs());
+                    pcEncPic->slices[i]->setTileGroupApsIdChroma(pic->slices[i]->getTileGroupApsIdChroma());
+                    pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Y,  pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Y));
+                    pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Cb, pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Cb));
+                    pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Cr, pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Cr));
+#else
                     pcEncPic->slices[i]->setAPSId(pic->slices[i]->getAPSId());
                     pcEncPic->slices[i]->setAPS( pic->slices[i]->getAPS());
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag( pic->slices[i]->getTileGroupAlfEnabledFlag());
+#endif
                   }
                 }
 
@@ -559,14 +569,21 @@ void DecLib::executeLoopFilters()
 
   if( cs.sps->getALFEnabledFlag() )
   {
+#if JVET_N0415_CTB_ALF
+    if (cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
+#else
     if (cs.slice->getTileGroupAlfEnabledFlag())
+#endif
     {
       // ALF decodes the differentially coded coefficients and stores them in the parameters structure.
       // Code could be restructured to do directly after parsing. So far we just pass a fresh non-const
       // copy in case the APS gets used more than once.
-
+#if JVET_N0415_CTB_ALF
+      m_cALF.ALFProcess(cs);
+#else
       AlfSliceParam alfParamCopy = cs.aps->getAlfAPSParam();
       m_cALF.ALFProcess(cs, alfParamCopy);
+#endif
     }
 
   }
@@ -725,11 +742,16 @@ void DecLib::xActivateParameterSets()
 {
   if (m_bFirstSliceInPicture)
   {
+#if JVET_N0415_CTB_ALF
+    APS** apss = m_parameterSetManager.getAPSs();
+    memset(apss, 0, sizeof(*apss) * MAX_NUM_APS);
+#else
     APS *aps = m_parameterSetManager.getAPS(m_apcSlicePilot->getAPSId()); // this is a temporary APS object. Do not store this value
     if (m_apcSlicePilot->getAPSId() != -1)
     {
       CHECK(aps == 0, "No APS present");
     }
+#endif
     const PPS *pps = m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId()); // this is a temporary PPS object. Do not store this value
     CHECK(pps == 0, "No PPS present");
 
@@ -747,7 +769,38 @@ void DecLib::xActivateParameterSets()
     {
       THROW("Parameter set activation failed!");
     }
+#if JVET_N0415_CTB_ALF
+    m_parameterSetManager.getApsMap()->clear();
+    //luma APSs
+    for (int i = 0; i < m_apcSlicePilot->getTileGroupApsIdLuma().size(); i++)
+    {
+      int apsId = m_apcSlicePilot->getTileGroupApsIdLuma()[i];
+      APS* aps = m_parameterSetManager.getAPS(apsId);
 
+      if (aps)
+      {
+        m_parameterSetManager.clearAPSChangedFlag(apsId);
+        apss[apsId] = aps;
+        if (false == m_parameterSetManager.activateAPS(apsId))
+        {
+          THROW("APS activation failed!");
+        }
+      }
+    }    
+
+    //chroma APS
+    int apsId = m_apcSlicePilot->getTileGroupApsIdChroma();
+    APS* aps = m_parameterSetManager.getAPS(apsId);
+    if (aps)
+    {
+      m_parameterSetManager.clearAPSChangedFlag(apsId);
+      apss[apsId] = aps;
+      if (false == m_parameterSetManager.activateAPS(apsId))
+      {
+        THROW("APS activation failed!");
+      }
+    }
+#else
     if (aps)
     {
       m_parameterSetManager.clearAPSChangedFlag(aps->getAPSId());
@@ -756,6 +809,7 @@ void DecLib::xActivateParameterSets()
         THROW("APS activation failed!");
       }
     }
+#endif
 
     xParsePrefixSEImessages();
 
@@ -770,9 +824,11 @@ void DecLib::xActivateParameterSets()
     m_pcPic = xGetNewPicBuffer (*sps, *pps, m_apcSlicePilot->getTLayer());
 
     m_apcSlicePilot->applyReferencePictureSet(m_cListPic, m_apcSlicePilot->getRPS());
-
+#if JVET_N0415_CTB_ALF
+    m_pcPic->finalInit(*sps, *pps, apss);
+#else
     m_pcPic->finalInit(*sps, *pps, *aps);
-
+#endif
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
     m_pcPic->cs->createCoeffs();
 
@@ -785,7 +841,9 @@ void DecLib::xActivateParameterSets()
     Slice *pSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
 
     // Update the PPS and SPS pointers with the ones of the picture.
+#if !JVET_N0415_CTB_ALF
     aps= pSlice->getAPS();
+#endif
     pps=pSlice->getPPS();
     sps=pSlice->getSPS();
 
@@ -793,7 +851,11 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->slice = pSlice;
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
+#if JVET_N0415_CTB_ALF
+    memcpy(m_pcPic->cs->apss, apss, sizeof(m_pcPic->cs->apss));
+#else
     m_pcPic->cs->aps   = aps;
+#endif
 #if HEVC_VPS
     m_pcPic->cs->vps   = pSlice->getVPS();
 #endif
@@ -865,12 +927,20 @@ void DecLib::xActivateParameterSets()
 
     const SPS *sps = pSlice->getSPS();
     const PPS *pps = pSlice->getPPS();
+#if JVET_N0415_CTB_ALF
+    APS** apss = pSlice->getAPSs();
+#else
     APS *aps = pSlice->getAPS();
+#endif
     // fix Parameter Sets, now that we have the real slice
     m_pcPic->cs->slice = pSlice;
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
+#if JVET_N0415_CTB_ALF
+    memcpy(m_pcPic->cs->apss, apss, sizeof(m_pcPic->cs->apss));
+#else
     m_pcPic->cs->aps   = aps;
+#endif
 #if HEVC_VPS
     m_pcPic->cs->vps   = pSlice->getVPS();
 #endif
@@ -885,10 +955,21 @@ void DecLib::xActivateParameterSets()
     {
       EXIT("Error - a new PPS has been decoded while processing a picture");
     }
+#if JVET_N0415_CTB_ALF
+    for (int i = 0; i < MAX_NUM_APS; i++)
+    {
+      APS* aps = m_parameterSetManager.getAPS(i);
+      if (aps && m_parameterSetManager.getAPSChangedFlag(i))
+      {
+        EXIT("Error - a new APS has been decoded while processing a picture");
+      }
+    }
+#else
     if (aps && m_parameterSetManager.getAPSChangedFlag(aps->getAPSId()))
     {
       EXIT("Error - a new APS has been decoded while processing a picture");
     }
+#endif
 
     xParsePrefixSEImessages();
 
@@ -1064,11 +1145,13 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
     m_apcSlicePilot->setPOC( m_apcSlicePilot->getPOC() & (iMaxPOClsb - 1) );
     xUpdatePreviousTid0POC(m_apcSlicePilot);
+#if !JVET_N0415_CTB_ALF
     if (m_apcSlicePilot->getAPSId() != -1)
     {
       APS *aps = m_parameterSetManager.getAPS(m_apcSlicePilot->getAPSId());
       CHECK(aps == 0, "No APS present");
     }
+#endif
   }
 
   // Skip pictures due to random access
@@ -1407,6 +1490,9 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   APS* aps = new APS();
   m_HLSReader.setBitstream(&nalu.getBitstream());
   m_HLSReader.parseAPS(aps);
+#if JVET_N0415_CTB_ALF
+  aps->setTemporalId(nalu.m_temporalId);
+#endif
   m_parameterSetManager.storeAPS(aps, nalu.getBitstream().getFifo());
 }
 bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)

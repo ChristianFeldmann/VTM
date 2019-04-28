@@ -72,15 +72,184 @@ AdaptiveLoopFilter::AdaptiveLoopFilter()
 #endif
 }
 
-void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSliceParam )
+#if JVET_N0415_CTB_ALF
+#if JVET_N0242_NON_LINEAR_ALF
+const int AdaptiveLoopFilter::m_fixedFilterSetCoeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF] =
 {
+  { 0,   0,   2,  -3,   1,  -4,   1,   7,  -1,   1,  -1,   5, 0 },
+  { 0,   0,   0,   0,   0,  -1,   0,   1,   0,   0,  -1,   2, 0 },
+  { 0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,   0, 0 },
+  { 0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  -1,   1, 0 },
+  { 2,   2,  -7,  -3,   0,  -5,  13,  22,  12,  -3,  -3,  17,  0 },
+  { -1,   0,   6,  -8,   1,  -5,   1,  23,   0,   2,  -5,  10,  0 },
+  { 0,   0,  -1,  -1,   0,  -1,   2,   1,   0,   0,  -1,   4, 0 },
+  { 0,   0,   3, -11,   1,   0,  -1,  35,   5,   2,  -9,   9,  0 },
+  { 0,   0,   8,  -8,  -2,  -7,   4,   4,   2,   1,  -1,  25,  0 },
+  { 0,   0,   1,  -1,   0,  -3,   1,   3,  -1,   1,  -1,   3, 0 },
+  { 0,   0,   3,  -3,   0,  -6,   5,  -1,   2,   1,  -4,  21,  0 },
+  { -7,   1,   5,   4,  -3,   5,  11,  13,  12,  -8,  11,  12,  0 },
+  { -5,  -3,   6,  -2,  -3,   8,  14,  15,   2,  -7,  11,  16,  0 },
+  { 2,  -1,  -6,  -5,  -2,  -2,  20,  14,  -4,   0,  -3,  25,  0 },
+  { 3,   1,  -8,  -4,   0,  -8,  22,   5,  -3,   2, -10,  29,  0 },
+  { 2,   1,  -7,  -1,   2, -11,  23,  -5,   0,   2, -10,  29,  0 },
+  { -6,  -3,   8,   9,  -4,   8,   9,   7,  14,  -2,   8,   9,  0 },
+  { 2,   1,  -4,  -7,   0,  -8,  17,  22,   1,  -1,  -4,  23,  0 },
+  { 3,   0,  -5,  -7,   0,  -7,  15,  18,  -5,   0,  -5,  27,  0 },
+  { 2,   0,   0,  -7,   1, -10,  13,  13,  -4,   2,  -7,  24,  0 },
+  { 3,   3, -13,   4,  -2,  -5,   9,  21,  25,  -2,  -3,  12,  0 },
+  { -5,  -2,   7,  -3,  -7,   9,   8,   9,  16,  -2,  15,  12,  0 },
+  { 0,  -1,   0,  -7,  -5,   4,  11,  11,   8,  -6,  12,  21,  0 },
+  { 3,  -2,  -3,  -8,  -4,  -1,  16,  15,  -2,  -3,   3,  26,  0 },
+  { 2,   1,  -5,  -4,  -1,  -8,  16,   4,  -2,   1,  -7,  33,  0 },
+  { 2,   1,  -4,  -2,   1, -10,  17,  -2,   0,   2, -11,  33,  0 },
+  { 1,  -2,   7, -15, -16,  10,   8,   8,  20,  11,  14,  11,  0 },
+  { 2,   2,   3, -13, -13,   4,   8,  12,   2,  -3,  16,  24,  0 },
+  { 1,   4,   0,  -7,  -8,  -4,   9,   9,  -2,  -2,   8,  29,  0 },
+  { 1,   1,   2,  -4,  -1,  -6,   6,   3,  -1,  -1,  -3,  30,  0 },
+  { -7,   3,   2,  10,  -2,   3,   7,  11,  19,  -7,   8,  10, 0 },
+  { 0,  -2,  -5,  -3,  -2,   4,  20,  15,  -1,  -3,  -1,  22,  0 },
+  { 3,  -1,  -8,  -4,  -1,  -4,  22,   8,  -4,   2,  -8,  28,  0 },
+  { 0,   3, -14,   3,   0,   1,  19,  17,   8,  -3,  -7,  20,  0 },
+  { 0,   2,  -1,  -8,   3,  -6,   5,  21,   1,   1,  -9,  13,  0 },
+  { -4,  -2,   8,  20,  -2,   2,   3,   5,  21,   4,   6,   1, 0 },
+  { 2,  -2,  -3,  -9,  -4,   2,  14,  16,   3,  -6,   8,  24,  0 },
+  { 2,   1,   5, -16,  -7,   2,   3,  11,  15,  -3,  11,  22,  0 },
+  { 1,   2,   3, -11,  -2,  -5,   4,   8,   9,  -3,  -2,  26,  0 },
+  { 0,  -1,  10,  -9,  -1,  -8,   2,   3,   4,   0,   0,  29,  0 },
+  { 1,   2,   0,  -5,   1,  -9,   9,   3,   0,   1,  -7,  20,  0 },
+  { -2,   8,  -6,  -4,   3,  -9,  -8,  45,  14,   2, -13,   7, 0 },
+  { 1,  -1,  16, -19,  -8,  -4,  -3,   2,  19,   0,   4,  30,  0 },
+  { 1,   1,  -3,   0,   2, -11,  15,  -5,   1,   2,  -9,  24,  0 },
+  { 0,   1,  -2,   0,   1,  -4,   4,   0,   0,   1,  -4,   7,  0 },
+  { 0,   1,   2,  -5,   1,  -6,   4,  10,  -2,   1,  -4,  10,  0 },
+  { 3,   0,  -3,  -6,  -2,  -6,  14,   8,  -1,  -1,  -3,  31,  0 },
+  { 0,   1,   0,  -2,   1,  -6,   5,   1,   0,   1,  -5,  13,  0 },
+  { 3,   1,   9, -19, -21,   9,   7,   6,  13,   5,  15,  21,  0 },
+  { 2,   4,   3, -12, -13,   1,   7,   8,   3,   0,  12,  26,  0 },
+  { 3,   1,  -8,  -2,   0,  -6,  18,   2,  -2,   3, -10,  23,  0 },
+  { 1,   1,  -4,  -1,   1,  -5,   8,   1,  -1,   2,  -5,  10,  0 },
+  { 0,   1,  -1,   0,   0,  -2,   2,   0,   0,   1,  -2,   3,  0 },
+  { 1,   1,  -2,  -7,   1,  -7,  14,  18,   0,   0,  -7,  21,  0 },
+  { 0,   1,   0,  -2,   0,  -7,   8,   1,  -2,   0,  -3,  24,  0 },
+  { 0,   1,   1,  -2,   2, -10,  10,   0,  -2,   1,  -7,  23,  0 },
+  { 0,   2,   2, -11,   2,  -4,  -3,  39,   7,   1, -10,   9,  0 },
+  { 1,   0,  13, -16,  -5,  -6,  -1,   8,   6,   0,   6,  29,  0 },
+  { 1,   3,   1,  -6,  -4,  -7,   9,   6,  -3,  -2,   3,  33,  0 },
+  { 4,   0, -17,  -1,  -1,   5,  26,   8,  -2,   3, -15,  30,  0 },
+  { 0,   1,  -2,   0,   2,  -8,  12,  -6,   1,   1,  -6,  16,  0 },
+  { 0,   0,   0,  -1,   1,  -4,   4,   0,   0,   0,  -3,  11,  0 },
+  { 0,   1,   2,  -8,   2,  -6,   5,  15,   0,   2,  -7,   9,  0 },
+  { 1,  -1,  12, -15,  -7,  -2,   3,   6,   6,  -1,   7,  30,  0 },
+};
+#else
+const int AdaptiveLoopFilter::m_fixedFilterSetCoeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF] =
+{
+  { 0,   0,   2,  -3,   1,  -4,   1,   7,  -1,   1,  -1,   5, 112 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   0,   0,   0,   0,  -1,   0,   1,   0,   0,  -1,   2, 126 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,   0, 126 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  -1,   1, 128 - (1 << (m_NUM_BITS - 1)) },
+  { 2,   2,  -7,  -3,   0,  -5,  13,  22,  12,  -3,  -3,  17,  34 - (1 << (m_NUM_BITS - 1)) },
+  { -1,   0,   6,  -8,   1,  -5,   1,  23,   0,   2,  -5,  10,  80 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   0,  -1,  -1,   0,  -1,   2,   1,   0,   0,  -1,   4, 122 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   0,   3, -11,   1,   0,  -1,  35,   5,   2,  -9,   9,  60 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   0,   8,  -8,  -2,  -7,   4,   4,   2,   1,  -1,  25,  76 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   0,   1,  -1,   0,  -3,   1,   3,  -1,   1,  -1,   3, 122 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   0,   3,  -3,   0,  -6,   5,  -1,   2,   1,  -4,  21,  92 - (1 << (m_NUM_BITS - 1)) },
+  { -7,   1,   5,   4,  -3,   5,  11,  13,  12,  -8,  11,  12,  16 - (1 << (m_NUM_BITS - 1)) },
+  { -5,  -3,   6,  -2,  -3,   8,  14,  15,   2,  -7,  11,  16,  24 - (1 << (m_NUM_BITS - 1)) },
+  { 2,  -1,  -6,  -5,  -2,  -2,  20,  14,  -4,   0,  -3,  25,  52 - (1 << (m_NUM_BITS - 1)) },
+  { 3,   1,  -8,  -4,   0,  -8,  22,   5,  -3,   2, -10,  29,  70 - (1 << (m_NUM_BITS - 1)) },
+  { 2,   1,  -7,  -1,   2, -11,  23,  -5,   0,   2, -10,  29,  78 - (1 << (m_NUM_BITS - 1)) },
+  { -6,  -3,   8,   9,  -4,   8,   9,   7,  14,  -2,   8,   9,  14 - (1 << (m_NUM_BITS - 1)) },
+  { 2,   1,  -4,  -7,   0,  -8,  17,  22,   1,  -1,  -4,  23,  44 - (1 << (m_NUM_BITS - 1)) },
+  { 3,   0,  -5,  -7,   0,  -7,  15,  18,  -5,   0,  -5,  27,  60 - (1 << (m_NUM_BITS - 1)) },
+  { 2,   0,   0,  -7,   1, -10,  13,  13,  -4,   2,  -7,  24,  74 - (1 << (m_NUM_BITS - 1)) },
+  { 3,   3, -13,   4,  -2,  -5,   9,  21,  25,  -2,  -3,  12,  24 - (1 << (m_NUM_BITS - 1)) },
+  { -5,  -2,   7,  -3,  -7,   9,   8,   9,  16,  -2,  15,  12,  14 - (1 << (m_NUM_BITS - 1)) },
+  { 0,  -1,   0,  -7,  -5,   4,  11,  11,   8,  -6,  12,  21,  32 - (1 << (m_NUM_BITS - 1)) },
+  { 3,  -2,  -3,  -8,  -4,  -1,  16,  15,  -2,  -3,   3,  26,  48 - (1 << (m_NUM_BITS - 1)) },
+  { 2,   1,  -5,  -4,  -1,  -8,  16,   4,  -2,   1,  -7,  33,  68 - (1 << (m_NUM_BITS - 1)) },
+  { 2,   1,  -4,  -2,   1, -10,  17,  -2,   0,   2, -11,  33,  74 - (1 << (m_NUM_BITS - 1)) },
+  { 1,  -2,   7, -15, -16,  10,   8,   8,  20,  11,  14,  11,  14 - (1 << (m_NUM_BITS - 1)) },
+  { 2,   2,   3, -13, -13,   4,   8,  12,   2,  -3,  16,  24,  40 - (1 << (m_NUM_BITS - 1)) },
+  { 1,   4,   0,  -7,  -8,  -4,   9,   9,  -2,  -2,   8,  29,  54 - (1 << (m_NUM_BITS - 1)) },
+  { 1,   1,   2,  -4,  -1,  -6,   6,   3,  -1,  -1,  -3,  30,  74 - (1 << (m_NUM_BITS - 1)) },
+  { -7,   3,   2,  10,  -2,   3,   7,  11,  19,  -7,   8,  10,  14 - (1 << (m_NUM_BITS - 1)) },
+  { 0,  -2,  -5,  -3,  -2,   4,  20,  15,  -1,  -3,  -1,  22,  40 - (1 << (m_NUM_BITS - 1)) },
+  { 3,  -1,  -8,  -4,  -1,  -4,  22,   8,  -4,   2,  -8,  28,  62 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   3, -14,   3,   0,   1,  19,  17,   8,  -3,  -7,  20,  34 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   2,  -1,  -8,   3,  -6,   5,  21,   1,   1,  -9,  13,  84 - (1 << (m_NUM_BITS - 1)) },
+  { -4,  -2,   8,  20,  -2,   2,   3,   5,  21,   4,   6,   1,   4 - (1 << (m_NUM_BITS - 1)) },
+  { 2,  -2,  -3,  -9,  -4,   2,  14,  16,   3,  -6,   8,  24,  38 - (1 << (m_NUM_BITS - 1)) },
+  { 2,   1,   5, -16,  -7,   2,   3,  11,  15,  -3,  11,  22,  36 - (1 << (m_NUM_BITS - 1)) },
+  { 1,   2,   3, -11,  -2,  -5,   4,   8,   9,  -3,  -2,  26,  68 - (1 << (m_NUM_BITS - 1)) },
+  { 0,  -1,  10,  -9,  -1,  -8,   2,   3,   4,   0,   0,  29,  70 - (1 << (m_NUM_BITS - 1)) },
+  { 1,   2,   0,  -5,   1,  -9,   9,   3,   0,   1,  -7,  20,  96 - (1 << (m_NUM_BITS - 1)) },
+  { -2,   8,  -6,  -4,   3,  -9,  -8,  45,  14,   2, -13,   7,  54 - (1 << (m_NUM_BITS - 1)) },
+  { 1,  -1,  16, -19,  -8,  -4,  -3,   2,  19,   0,   4,  30,  54 - (1 << (m_NUM_BITS - 1)) },
+  { 1,   1,  -3,   0,   2, -11,  15,  -5,   1,   2,  -9,  24,  92 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   1,  -2,   0,   1,  -4,   4,   0,   0,   1,  -4,   7, 120 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   1,   2,  -5,   1,  -6,   4,  10,  -2,   1,  -4,  10, 104 - (1 << (m_NUM_BITS - 1)) },
+  { 3,   0,  -3,  -6,  -2,  -6,  14,   8,  -1,  -1,  -3,  31,  60 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   1,   0,  -2,   1,  -6,   5,   1,   0,   1,  -5,  13, 110 - (1 << (m_NUM_BITS - 1)) },
+  { 3,   1,   9, -19, -21,   9,   7,   6,  13,   5,  15,  21,  30 - (1 << (m_NUM_BITS - 1)) },
+  { 2,   4,   3, -12, -13,   1,   7,   8,   3,   0,  12,  26,  46 - (1 << (m_NUM_BITS - 1)) },
+  { 3,   1,  -8,  -2,   0,  -6,  18,   2,  -2,   3, -10,  23,  84 - (1 << (m_NUM_BITS - 1)) },
+  { 1,   1,  -4,  -1,   1,  -5,   8,   1,  -1,   2,  -5,  10, 112 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   1,  -1,   0,   0,  -2,   2,   0,   0,   1,  -2,   3, 124 - (1 << (m_NUM_BITS - 1)) },
+  { 1,   1,  -2,  -7,   1,  -7,  14,  18,   0,   0,  -7,  21,  62 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   1,   0,  -2,   0,  -7,   8,   1,  -2,   0,  -3,  24,  88 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   1,   1,  -2,   2, -10,  10,   0,  -2,   1,  -7,  23,  94 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   2,   2, -11,   2,  -4,  -3,  39,   7,   1, -10,   9,  60 - (1 << (m_NUM_BITS - 1)) },
+  { 1,   0,  13, -16,  -5,  -6,  -1,   8,   6,   0,   6,  29,  58 - (1 << (m_NUM_BITS - 1)) },
+  { 1,   3,   1,  -6,  -4,  -7,   9,   6,  -3,  -2,   3,  33,  60 - (1 << (m_NUM_BITS - 1)) },
+  { 4,   0, -17,  -1,  -1,   5,  26,   8,  -2,   3, -15,  30,  48 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   1,  -2,   0,   2,  -8,  12,  -6,   1,   1,  -6,  16, 106 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   0,   0,  -1,   1,  -4,   4,   0,   0,   0,  -3,  11, 112 - (1 << (m_NUM_BITS - 1)) },
+  { 0,   1,   2,  -8,   2,  -6,   5,  15,   0,   2,  -7,   9,  98 - (1 << (m_NUM_BITS - 1)) },
+  { 1,  -1,  12, -15,  -7,  -2,   3,   6,   6,  -1,   7,  30,  50 - (1 << (m_NUM_BITS - 1)) },
+};
+#endif
+const int AdaptiveLoopFilter::m_classToFilterMapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES] =
+{
+  { 8,   2,   2,   2,   3,   4,  53,   9,   9,  52,   4,   4,   5,   9,   2,   8,  10,   9,   1,   3,  39,  39,  10,   9,  52 },
+  { 11,  12,  13,  14,  15,  30,  11,  17,  18,  19,  16,  20,  20,   4,  53,  21,  22,  23,  14,  25,  26,  26,  27,  28,  10 },
+  { 16,  12,  31,  32,  14,  16,  30,  33,  53,  34,  35,  16,  20,   4,   7,  16,  21,  36,  18,  19,  21,  26,  37,  38,  39 },
+  { 35,  11,  13,  14,  43,  35,  16,   4,  34,  62,  35,  35,  30,  56,   7,  35,  21,  38,  24,  40,  16,  21,  48,  57,  39 },
+  { 11,  31,  32,  43,  44,  16,   4,  17,  34,  45,  30,  20,  20,   7,   5,  21,  22,  46,  40,  47,  26,  48,  63,  58,  10 },
+  { 12,  13,  50,  51,  52,  11,  17,  53,  45,   9,  30,   4,  53,  19,   0,  22,  23,  25,  43,  44,  37,  27,  28,  10,  55 },
+  { 30,  33,  62,  51,  44,  20,  41,  56,  34,  45,  20,  41,  41,  56,   5,  30,  56,  38,  40,  47,  11,  37,  42,  57,   8 },
+  { 35,  11,  23,  32,  14,  35,  20,   4,  17,  18,  21,  20,  20,  20,   4,  16,  21,  36,  46,  25,  41,  26,  48,  49,  58 },
+  { 12,  31,  59,  59,   3,  33,  33,  59,  59,  52,   4,  33,  17,  59,  55,  22,  36,  59,  59,  60,  22,  36,  59,  25,  55 },
+  { 31,  25,  15,  60,  60,  22,  17,  19,  55,  55,  20,  20,  53,  19,  55,  22,  46,  25,  43,  60,  37,  28,  10,  55,  52 },
+  { 12,  31,  32,  50,  51,  11,  33,  53,  19,  45,  16,   4,   4,  53,   5,  22,  36,  18,  25,  43,  26,  27,  27,  28,  10 },
+  { 5,   2,  44,  52,   3,   4,  53,  45,   9,   3,   4,  56,   5,   0,   2,   5,  10,  47,  52,   3,  63,  39,  10,   9,  52 },
+  { 12,  34,  44,  44,   3,  56,  56,  62,  45,   9,  56,  56,   7,   5,   0,  22,  38,  40,  47,  52,  48,  57,  39,  10,   9 },
+  { 35,  11,  23,  14,  51,  35,  20,  41,  56,  62,  16,  20,  41,  56,   7,  16,  21,  38,  24,  40,  26,  26,  42,  57,  39 },
+  { 33,  34,  51,  51,  52,  41,  41,  34,  62,   0,  41,  41,  56,   7,   5,  56,  38,  38,  40,  44,  37,  42,  57,  39,  10 },
+  { 16,  31,  32,  15,  60,  30,   4,  17,  19,  25,  22,  20,   4,  53,  19,  21,  22,  46,  25,  55,  26,  48,  63,  58,  55 },
+};
+#endif
+
+#if JVET_N0415_CTB_ALF
+void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
+#else
+void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSliceParam )
+#endif
+{
+#if JVET_N0415_CTB_ALF
+  if (!cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y) && !cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) && !cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr))
+#else
   if( !alfSliceParam.enabledFlag[COMPONENT_Y] && !alfSliceParam.enabledFlag[COMPONENT_Cb] && !alfSliceParam.enabledFlag[COMPONENT_Cr] )
+#endif
   {
     return;
   }
 
+#if !JVET_N0415_CTB_ALF
   // set available filter shapes
   alfSliceParam.filterShapes = m_filterShapes;
+#endif
 
   // set clipping range
   m_clpRngs = cs.slice->getClpRngs();
@@ -90,11 +259,16 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
   {
     m_ctuEnableFlag[compIdx] = cs.picture->getAlfCtuEnableFlag( compIdx );
   }
+#if JVET_N0415_CTB_ALF
+  reconstructCoeffAPSs(cs, true, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) || cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr), false);
+  short* alfCtuFilterIndex = cs.slice->getPic()->getAlfCtbFilterIndex();
+#else
   reconstructCoeff( alfSliceParam, CHANNEL_TYPE_LUMA );
 #if JVET_N0242_NON_LINEAR_ALF
   if( alfSliceParam.enabledFlag[COMPONENT_Cb] || alfSliceParam.enabledFlag[COMPONENT_Cr] )
 #endif
   reconstructCoeff( alfSliceParam, CHANNEL_TYPE_CHROMA );
+#endif
 
   PelUnitBuf recYuv = cs.getRecoBuf();
   m_tempBuf.copyFrom( recYuv );
@@ -117,6 +291,46 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
         deriveClassification( m_classifier, tmpYuv.get( COMPONENT_Y ), blk );
         Area blkPCM(xPos, yPos, width, height);
         resetPCMBlkClassInfo(cs, m_classifier, tmpYuv.get(COMPONENT_Y), blkPCM);
+#if JVET_N0415_CTB_ALF
+        short filterSetIndex = alfCtuFilterIndex[ctuIdx];
+        short *coeff;
+#if JVET_N0242_NON_LINEAR_ALF
+        short *clip;
+#endif
+        if (filterSetIndex >= NUM_FIXED_FILTER_SETS)
+        {
+          coeff = m_coeffApsLuma[filterSetIndex - NUM_FIXED_FILTER_SETS];
+#if JVET_N0242_NON_LINEAR_ALF
+          clip = m_clippApsLuma[filterSetIndex - NUM_FIXED_FILTER_SETS];
+#endif
+        }
+        else
+        {
+          coeff = m_fixedFilterSetCoeffDec[filterSetIndex];
+#if JVET_N0242_NON_LINEAR_ALF
+          clip = m_clipDefault;
+#endif
+        }
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+#if JVET_N0242_NON_LINEAR_ALF
+        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
+          , m_alfVBLumaCTUHeight
+          , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+        );
+#else
+        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, coeff, m_clpRngs.comp[COMPONENT_Y], cs
+          , m_alfVBLumaCTUHeight
+          , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+        );
+#endif
+#else
+#if JVET_N0242_NON_LINEAR_ALF
+        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs);
+#else
+        m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, coeff, m_clpRngs.comp[COMPONENT_Y], cs);
+#endif
+#endif
+#else
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0242_NON_LINEAR_ALF
         m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clippFinal, m_clpRngs.comp[COMPONENT_Y], cs
@@ -136,6 +350,7 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
         m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, COMPONENT_Y, m_coeffFinal, m_clpRngs.comp[COMPONENT_Y], cs);
 #endif
 #endif
+#endif
       }
 
       for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
@@ -149,7 +364,18 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
           Area blk( xPos >> chromaScaleX, yPos >> chromaScaleY, width >> chromaScaleX, height >> chromaScaleY );
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0415_CTB_ALF
+          m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, compID, m_chromaCoeffFinal, m_chromaClippFinal, m_clpRngs.comp[compIdx], cs, m_alfVBChmaCTUHeight
+            , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
+#else
           m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, compID, alfSliceParam.chromaCoeff, m_chromaClippFinal, m_clpRngs.comp[compIdx], cs
+            , m_alfVBChmaCTUHeight
+            , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos)
+          );
+#endif
+#else
+#if JVET_N0415_CTB_ALF
+          m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, compID, m_chromaCoeffFinal, m_clpRngs.comp[compIdx], cs
             , m_alfVBChmaCTUHeight
             , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos)
           );
@@ -159,12 +385,21 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
             , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos)
           );
 #endif
+#endif
 #else
 
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0415_CTB_ALF
+          m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, compID, m_chromaCoeffFinal, m_chromaClippFinal, m_clpRngs.comp[compIdx], cs);
+#else
           m_filter5x5Blk( m_classifier, recYuv, tmpYuv, blk, compID, alfSliceParam.chromaCoeff, m_chromaClippFinal, m_clpRngs.comp[compIdx], cs );
+#endif
+#else
+#if JVET_N0415_CTB_ALF
+          m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, compID, m_chromaCoeffFinal, m_clpRngs.comp[compIdx], cs);
 #else
           m_filter5x5Blk( m_classifier, recYuv, tmpYuv, blk, compID, alfSliceParam.chromaCoeff, m_clpRngs.comp[compIdx], cs );
+#endif
 #endif
 #endif
         }
@@ -174,9 +409,51 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
   }
 }
 
-void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, const bool bRedo )
+#if JVET_N0415_CTB_ALF
+void AdaptiveLoopFilter::reconstructCoeffAPSs(CodingStructure& cs, bool luma, bool chroma, bool isRdo)
 {
+  //luma
+  APS** aps = cs.slice->getAPSs();
+  AlfSliceParam alfSliceParamTmp;
+  APS* curAPS;
+  if (luma)
+  {
+    for (int i = 0; i < cs.slice->getTileGroupNumAps(); i++)
+    {
+      int apsIdx = cs.slice->getTileGroupApsIdLuma()[i];
+      curAPS = aps[apsIdx];
+      CHECK(curAPS == NULL, "invalid APS");
+      alfSliceParamTmp = curAPS->getAlfAPSParam();
+      reconstructCoeff(alfSliceParamTmp, CHANNEL_TYPE_LUMA, isRdo, true);
+      memcpy(m_coeffApsLuma[i], m_coeffFinal, sizeof(m_coeffFinal));
+#if JVET_N0242_NON_LINEAR_ALF
+      memcpy(m_clippApsLuma[i], m_clippFinal, sizeof(m_clippFinal));
+#endif
+    }
+  }
+
+  //chroma
+  if (chroma)
+  {
+    int apsIdxChroma = cs.slice->getTileGroupApsIdChroma();
+    curAPS = aps[apsIdxChroma];
+    alfSliceParamTmp = curAPS->getAlfAPSParam();
+    reconstructCoeff(alfSliceParamTmp, CHANNEL_TYPE_CHROMA, isRdo, true);
+  }
+}
+#endif
+
+void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, 
+#if JVET_N0415_CTB_ALF
+  const bool isRdo,
+#endif
+  const bool isRedo)
+{
+#if JVET_N0415_CTB_ALF
+  int factor = isRdo ? 0 : (1 << (m_NUM_BITS - 1));
+#else
   int factor = ( 1 << ( m_NUM_BITS - 1 ) );
+#endif
   AlfFilterType filterType = isLuma( channel ) ? ALF_FILTER_7 : ALF_FILTER_5;
   int numClasses = isLuma( channel ) ? MAX_NUM_ALF_CLASSES : 1;
   int numCoeff = filterType == ALF_FILTER_5 ? 7 : 13;
@@ -217,25 +494,85 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
 #if JVET_N0242_NON_LINEAR_ALF
     for( int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx )
     {
+#if JVET_N0415_CTB_ALF
+      m_chromaCoeffFinal[coeffIdx] = alfSliceParam.chromaCoeff[coeffIdx];
+      int clipIdx = alfSliceParam.nonLinearFlag[channel] ? clipp[coeffIdx] : 0;
+      m_chromaClippFinal[coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
+#else
       m_chromaClippFinal[coeffIdx] = alfSliceParam.nonLinearFlag[channel] ? m_alfClippingValues[channel][clipp[coeffIdx]] : m_alfClippingValues[channel][0];
+#endif
+    }
+#elif JVET_N0415_CTB_ALF
+    int sum = 0;
+    for (int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx)
+    {
+      m_chromaCoeffFinal[coeffIdx] = alfSliceParam.chromaCoeff[coeffIdx];
+      sum += (m_chromaCoeffFinal[coeffIdx] << 1);
     }
 #endif
+#if JVET_N0415_CTB_ALF && JVET_N0242_NON_LINEAR_ALF
+    m_chromaCoeffFinal[numCoeffMinus1] = factor;
+    m_chromaClippFinal[numCoeffMinus1] = isRdo ? 0 : m_alfClippingValues[channel][0];
+#elif JVET_N0415_CTB_ALF
+    m_chromaCoeffFinal[numCoeffMinus1] = factor - sum;
+#endif
+
     return;
   }
 
   for( int classIdx = 0; classIdx < numClasses; classIdx++ )
   {
     int filterIdx = alfSliceParam.filterCoeffDeltaIdx[classIdx];
+#if JVET_N0415_CTB_ALF
+#if !JVET_N0242_NON_LINEAR_ALF
+    int sum = 0;
+#endif
+    int fixedFilterIdx = alfSliceParam.fixedFilterSetIndex;
+    if (fixedFilterIdx > 0 && alfSliceParam.fixedFilterIdx[classIdx] > 0)
+    {
+      fixedFilterIdx = m_classToFilterMapping[fixedFilterIdx - 1][classIdx];
+    }
+    else
+    {
+      fixedFilterIdx = -1;
+    }
+    for (int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx)
+    {
+      m_coeffFinal[classIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = coeff[filterIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx];
+      //fixed filter
+      if (fixedFilterIdx >= 0)
+      {
+        m_coeffFinal[classIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] += m_fixedFilterSetCoeff[fixedFilterIdx][coeffIdx];
+      }
+#if !JVET_N0242_NON_LINEAR_ALF
+      sum += (m_coeffFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + coeffIdx] << 1);
+#endif
+    }
+#if JVET_N0242_NON_LINEAR_ALF
+    m_coeffFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = factor;
+#else
+    m_coeffFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = factor - sum;
+#endif
+#if JVET_N0242_NON_LINEAR_ALF
+    m_clippFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = isRdo ? 0 : m_alfClippingValues[channel][0];
+#endif
+#else
     memcpy( m_coeffFinal + classIdx * MAX_NUM_ALF_LUMA_COEFF, coeff + filterIdx * MAX_NUM_ALF_LUMA_COEFF, sizeof( short ) * numCoeff );
+#endif
 #if JVET_N0242_NON_LINEAR_ALF
     for( int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx )
     {
+#if JVET_N0415_CTB_ALF
+      int clipIdx = alfSliceParam.nonLinearFlag[channel] ? (clipp + filterIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] : 0;
+      (m_clippFinal + classIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
+#else
       (m_clippFinal + classIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] = alfSliceParam.nonLinearFlag[channel] ? m_alfClippingValues[channel][(clipp + filterIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx]] : m_alfClippingValues[channel][0];
+#endif
     }
 #endif
   }
 
-  if( bRedo && alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
+  if(isRedo && alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
   {
     for( int i = numFilters - 1; i > 0; i-- )
     {
@@ -295,6 +632,13 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
   }
 #endif
 
+#if JVET_N0415_CTB_ALF
+  if (m_created)
+  {
+    return;
+  }
+#endif
+
   m_tempBuf.destroy();
   m_tempBuf.create( format, Area( 0, 0, picWidth, picHeight ), maxCUWidth, MAX_ALF_FILTER_LENGTH >> 1, 0, false );
 
@@ -321,10 +665,48 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
       m_classifier[i] = new AlfClassifier[picWidth];
     }
   }
+
+#if JVET_N0415_CTB_ALF
+  for (int filterSetIndex = 0; filterSetIndex < NUM_FIXED_FILTER_SETS; filterSetIndex++)
+  {
+    for (int classIdx = 0; classIdx < MAX_NUM_ALF_CLASSES; classIdx++)
+    {
+      int fixedFilterIdx = m_classToFilterMapping[filterSetIndex][classIdx];
+#if !JVET_N0242_NON_LINEAR_ALF
+      int sum = 0;
+#endif
+      for (int i = 0; i < MAX_NUM_ALF_LUMA_COEFF - 1; i++)
+      {
+#if !JVET_N0242_NON_LINEAR_ALF
+       sum += (m_fixedFilterSetCoeff[fixedFilterIdx][i]<<1);
+#endif
+       m_fixedFilterSetCoeffDec[filterSetIndex][classIdx * MAX_NUM_ALF_LUMA_COEFF + i] = m_fixedFilterSetCoeff[fixedFilterIdx][i];
+      }
+#if JVET_N0242_NON_LINEAR_ALF
+      m_fixedFilterSetCoeffDec[filterSetIndex][classIdx * MAX_NUM_ALF_LUMA_COEFF + MAX_NUM_ALF_LUMA_COEFF - 1] = (1 << (m_NUM_BITS - 1));
+#else
+      m_fixedFilterSetCoeffDec[filterSetIndex][classIdx * MAX_NUM_ALF_LUMA_COEFF + MAX_NUM_ALF_LUMA_COEFF - 1] = (1 << (m_NUM_BITS - 1)) - sum;
+#endif
+    }
+  }
+#if JVET_N0242_NON_LINEAR_ALF
+  for (int i = 0; i < MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES; i++)
+  {
+    m_clipDefault[i] = m_alfClippingValues[CHANNEL_TYPE_LUMA][0];
+  }
+#endif
+  m_created = true;
+#endif
 }
 
 void AdaptiveLoopFilter::destroy()
 {
+#if JVET_N0415_CTB_ALF
+  if (!m_created)
+  {
+    return;
+  }
+#endif
   for( int i = 0; i < NUM_DIRECTIONS; i++ )
   {
     if( m_laplacian[i] )
@@ -353,6 +735,10 @@ void AdaptiveLoopFilter::destroy()
   }
 
   m_tempBuf.destroy();
+
+#if JVET_N0415_CTB_ALF
+  m_created = false;
+#endif
 }
 
 void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk )

@@ -139,8 +139,10 @@ Slice::Slice()
 , m_uiMaxBTSizeIChroma            ( 0 )
 , m_uiMaxTTSizeIChroma            ( 0 )
 , m_uiMaxBTSize                   ( 0 )
+#if !JVET_N0415_CTB_ALF
 , m_apsId                        ( -1 )
 , m_aps                          (NULL)
+#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -186,6 +188,9 @@ Slice::Slice()
   m_sliceReshapeInfo.reshaperModelMinBinIdx = 0;
   m_sliceReshapeInfo.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1;
   memset(m_sliceReshapeInfo.reshaperModelBinCWDelta, 0, PIC_CODE_CW_BINS * sizeof(int));
+#if JVET_N0415_CTB_ALF
+  memset(m_apss, 0, sizeof(m_apss));
+#endif
 }
 
 Slice::~Slice()
@@ -2519,6 +2524,9 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
         else
         {
 #endif
+#if JVET_N0415_CTB_ALF
+          m_spsMap.clear();
+#endif
           m_spsMap.setActive(spsId);
 #if HEVC_VPS
           VPS *vps =m_vpsMap.getPS(vpsId);
@@ -2536,6 +2544,9 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
         }
 #else
         m_activeSPSId = spsId;
+#if JVET_N0415_CTB_ALF
+        m_ppsMap.clear();
+#endif
         m_ppsMap.setActive(ppsId);
         return true;
 #endif

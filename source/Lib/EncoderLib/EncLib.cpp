@@ -75,6 +75,10 @@ EncLib::EncLib()
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
 #endif
+
+#if JVET_N0415_CTB_ALF
+  memset(m_apss, 0, sizeof(m_apss));
+#endif
 }
 
 EncLib::~EncLib()
@@ -228,7 +232,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
   SPS &sps0=*(m_spsMap.allocatePS(0)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
   PPS &pps0=*(m_ppsMap.allocatePS(0));
+#if !JVET_N0415_CTB_ALF
   APS &aps0=*(m_apsMap.allocatePS(0));
+#endif
 
   // initialize SPS
   xInitSPS(sps0);
@@ -267,7 +273,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   // initialize PPS
   xInitPPS(pps0, sps0);
   // initialize APS
+#if !JVET_N0415_CTB_ALF
   xInitAPS(aps0);
+#endif
   xInitRPS(sps0, isFieldCoding);
 
 #if ER_CHROMA_QP_WCG_PPS
@@ -403,7 +411,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     Picture *picBg = new Picture;
     picBg->create(sps0.getChromaFormatIdc(), Size(sps0.getPicWidthInLumaSamples(), sps0.getPicHeightInLumaSamples()), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false);
     picBg->getRecoBuf().fill(0);
+#if JVET_N0415_CTB_ALF
+    picBg->finalInit(sps0, pps0, m_apss);
+#else
     picBg->finalInit(sps0, pps0, aps0);
+#endif
     picBg->allocateNewSlice();
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
     m_cGOPEncoder.setPicBg(picBg);
@@ -554,8 +566,12 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     const SPS *sps = m_spsMap.getPS(pps->getSPSId());
 
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
+#if JVET_N0415_CTB_ALF
+    picCurr->finalInit(*sps, *pps, m_apss);
+#else
     APS *aps = m_apsMap.getPS(0);
     picCurr->finalInit(*sps, *pps, *aps);
+#endif
     picCurr->poc = m_iPOCLast - 1;
     m_iPOCLast -= 2;
     if (getUseAdaptiveQP())
@@ -603,9 +619,12 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
       pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap(*cPicYuvTrueOrg );
-
+#if JVET_N0415_CTB_ALF
+      pcPicCurr->finalInit(*pSPS, *pPPS, m_apss);
+#else
       APS *pAPS = m_apsMap.getPS(0);
       pcPicCurr->finalInit(*pSPS, *pPPS, *pAPS);
+#endif
     }
 
     pcPicCurr->poc = m_iPOCLast;
@@ -699,9 +718,12 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         int ppsID=-1; // Use default PPS ID
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
-
+#if JVET_N0415_CTB_ALF
+        pcField->finalInit(*pSPS, *pPPS, m_apss);
+#else
         APS *pAPS = m_apsMap.getPS(0);
         pcField->finalInit(*pSPS, *pPPS, *pAPS);
+#endif
       }
 
       pcField->poc = m_iPOCLast;

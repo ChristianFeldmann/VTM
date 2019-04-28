@@ -696,10 +696,17 @@ const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
 #if JVET_N0193_LFNST
 const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
 ( {
+#if JVET_N0105_LFNST_CTX_MODELLING
+  { CNU, CNU, },
+  { CNU, CNU, },
+  { CNU, CNU, },
+  { DWS, DWS, },
+#else
   { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
   { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
   { CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
   { DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, },
+#endif
 } );
 #endif
 
@@ -823,6 +830,29 @@ const CtxSet ContextSetCfg::ctbAlfFlag =
     { 0, 0, 4, 0, 0, 1, 0, 0, 1, },
   } )
 };
+
+#if JVET_N0415_CTB_ALF
+const CtxSet ContextSetCfg::AlfUseLatestFilt =
+{
+  ContextSetCfg::addCtxSet
+  ({
+    { 154, }, // B
+    { 154, }, // P
+    { 185, }, // I
+    { DWS, },
+})
+};
+const CtxSet ContextSetCfg::AlfUseTemporalFilt =
+{
+  ContextSetCfg::addCtxSet
+  ({
+    { 154, },
+    { 154, },
+    { 154, },
+    { DWS, },
+})
+};
+#endif
 
 const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
 ({
@@ -952,7 +982,9 @@ const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_Ini
 // combined sets
 const CtxSet ContextSetCfg::Sao = { ContextSetCfg::SaoMergeFlag, ContextSetCfg::SaoTypeIdx };
 
-
+#if JVET_N0415_CTB_ALF  
+const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::AlfUseLatestFilt, ContextSetCfg::AlfUseTemporalFilt };
+#endif
 
 template <class BinProbModel>
 CtxStore<BinProbModel>::CtxStore()

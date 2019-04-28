@@ -330,7 +330,12 @@ private:
 
   //for RDO
   AlfSliceParam          m_alfSliceParamTemp;
+#if JVET_N0415_CTB_ALF
+  ParameterSetMap<APS>*  m_apsMap;
+  AlfCovariance          m_alfCovarianceMerged[ALF_NUM_OF_FILTER_TYPES][MAX_NUM_ALF_CLASSES + 2];
+#else
   AlfCovariance          m_alfCovarianceMerged[ALF_NUM_OF_FILTER_TYPES][MAX_NUM_ALF_CLASSES + 1];
+#endif
 #if JVET_N0242_NON_LINEAR_ALF
   int                    m_alfClipMerged[ALF_NUM_OF_FILTER_TYPES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF];
 #endif
@@ -350,17 +355,51 @@ private:
   int                    m_kMinTab[MAX_NUM_ALF_LUMA_COEFF];
   int                    m_bitsCoeffScan[m_MAX_SCAN_VAL][m_MAX_EXP_GOLOMB];
   short                  m_filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES];
+#if JVET_N0415_CTB_ALF
+  unsigned               m_bitsNewFilter[MAX_NUM_CHANNEL_TYPE];
+  int                    m_apsIdStart;
+  double                 *m_ctbDistortionFixedFilter;
+  double                 *m_ctbDistortionUnfilter[MAX_NUM_COMPONENT];
+  std::vector<short>     m_alfCtbFilterSetIndexTmp;
+  AlfSliceParam          m_alfSliceParamTempNL;
+  int                    m_clipDefaultEnc[MAX_NUM_ALF_LUMA_COEFF];
+  int                    m_filterTmp[MAX_NUM_ALF_LUMA_COEFF];
+#if JVET_N0242_NON_LINEAR_ALF
+  int                    m_clipTmp[MAX_NUM_ALF_LUMA_COEFF];
+#endif
+#endif
 
 public:
   EncAdaptiveLoopFilter();
   virtual ~EncAdaptiveLoopFilter() {}
-
+#if JVET_N0415_CTB_ALF
+  void  initDistortion();
+  std::vector<int> getAvaiApsIdsLuma(CodingStructure& cs, int &newApsId);
+  void  alfEncoderCtb(CodingStructure& cs, AlfSliceParam& alfSliceParamNewFilters
+#if ENABLE_QPA
+    , const double lambdaChromaWeight
+#endif
+  );
+  void   alfReconstructor(CodingStructure& cs, const PelUnitBuf& recExtBuf);
+#endif
+#if JVET_N0415_CTB_ALF
+  void ALFProcess(CodingStructure& cs, const double *lambdas
+#if ENABLE_QPA
+    , const double lambdaChromaWeight
+#endif
+  );
+#else
   void ALFProcess( CodingStructure& cs, const double *lambdas,
 #if ENABLE_QPA
                    const double lambdaChromaWeight,
 #endif
                    AlfSliceParam& alfSliceParam );
-  void initCABACEstimator( CABACEncoder* cabacEncoder, CtxCache* ctxCache, Slice* pcSlice );
+#endif
+  void initCABACEstimator( CABACEncoder* cabacEncoder, CtxCache* ctxCache, Slice* pcSlice 
+#if JVET_N0415_CTB_ALF
+    , ParameterSetMap<APS>* apsMap
+#endif
+  );
 #if JVET_N0242_NON_LINEAR_ALF
   void create( const EncCfg* encCfg, const int picWidth, const int picHeight, const ChromaFormat chromaFormatIDC, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE], const int internalBitDepth[MAX_NUM_CHANNEL_TYPE] );
 #else
@@ -416,13 +455,25 @@ private:
 
 #if !JVET_N0242_NON_LINEAR_ALF
   double calculateError( AlfCovariance& cov );
-  double calcErrorForCoeffs( double **E, double *y, int *coeff, const int numCoeff, const int bitDepth );
+  double calcErrorForCoeffs( double **E, double *y, 
+#if JVET_N0415_CTB_ALF
+    const
+#endif
+    int *coeff, const int numCoeff, const int bitDepth );
 #endif
   double getFilterCoeffAndCost( CodingStructure& cs, double distUnfilter, ChannelType channel, bool bReCollectStat, int iShapeIdx, int& uiCoeffBits );
 #if JVET_N0242_NON_LINEAR_ALF
-  double deriveFilterCoeffs( AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], AlfFilterShape& alfShape, short* filterIndices, int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2] );
+  double deriveFilterCoeffs( AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], AlfFilterShape& alfShape, short* filterIndices, int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2] 
+#if JVET_N0415_CTB_ALF
+    , AlfSliceParam& alfSliceParam
+#endif
+  );
 #else
-  double deriveFilterCoeffs( AlfCovariance* cov, AlfCovariance* covMerged, AlfFilterShape& alfShape, short* filterIndices, int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2] );
+  double deriveFilterCoeffs( AlfCovariance* cov, AlfCovariance* covMerged, AlfFilterShape& alfShape, short* filterIndices, int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2] 
+#if JVET_N0415_CTB_ALF
+    , AlfSliceParam& alfSliceParam
+#endif
+  );
 #endif
   int    deriveFilterCoefficientsPredictionMode( AlfFilterShape& alfShape, int **filterSet, int** filterCoeffDiff, const int numFilters, int& predMode );
 #if JVET_N0242_NON_LINEAR_ALF

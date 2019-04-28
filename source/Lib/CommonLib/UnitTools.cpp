@@ -245,7 +245,7 @@ bool CU::hasNonTsCodedBlock( const CodingUnit& cu )
   {
     for( uint32_t i = 0; i < ::getNumberValidTBlocks( *cu.cs->pcv ); i++ )
     {
-      hasAnyNonTSCoded |= ( currTU.blocks[i].valid() && ( isLuma(ComponentID(i)) ? currTU.mtsIdx != 1 : true ) && TU::getCbf( currTU, ComponentID( i ) ) );
+      hasAnyNonTSCoded |= ( currTU.blocks[i].valid() && ( isLuma(ComponentID(i)) ? currTU.mtsIdx != MTS_SKIP : true ) && TU::getCbf( currTU, ComponentID( i ) ) );
     }
   }
 
@@ -5793,7 +5793,7 @@ bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
 
 uint32_t TU::getGolombRiceStatisticsIndex(const TransformUnit &tu, const ComponentID &compID)
 {
-  const bool transformSkip    = tu.mtsIdx==1;
+  const bool transformSkip    = tu.mtsIdx==MTS_SKIP;
   const bool transquantBypass = tu.cu->transQuantBypass;
 
   //--------
@@ -5876,9 +5876,9 @@ uint32_t TU::getNumNonZeroCoeffsNonTS( const TransformUnit& tu, const bool bLuma
   for( uint32_t i = 0; i < ::getNumberValidTBlocks( *tu.cs->pcv ); i++ )
   {
 #if JVET_N0193_LFNST
-    if( tu.blocks[ i ].valid() && tu.mtsIdx != 1 && TU::getCbf( tu, ComponentID( i ) ) )
+    if( tu.blocks[ i ].valid() && tu.mtsIdx != MTS_SKIP && TU::getCbf( tu, ComponentID( i ) ) )
 #else
-    if( tu.blocks[i].valid() && ( isLuma(ComponentID(i)) ? tu.mtsIdx !=1 : true ) && TU::getCbf( tu, ComponentID( i ) ) )
+    if( tu.blocks[i].valid() && ( isLuma(ComponentID(i)) ? tu.mtsIdx !=MTS_SKIP : true ) && TU::getCbf( tu, ComponentID( i ) ) )
 #endif
     {
       if( isLuma  ( tu.blocks[i].compID ) && !bLuma   ) continue;
@@ -5910,7 +5910,7 @@ uint32_t TU::getNumNonZeroCoeffsNonTSCorner8x8( const TransformUnit& tu, const b
   uint32_t count = 0;
   for( uint32_t i = 0; i < ::getNumberValidTBlocks( *tu.cs->pcv ); i++ )
   {
-    if( tu.blocks[ i ].valid() && tu.mtsIdx != 1 && TU::getCbf( tu, ComponentID( i ) ) )
+    if( tu.blocks[ i ].valid() && tu.mtsIdx != MTS_SKIP && TU::getCbf( tu, ComponentID( i ) ) )
     {
       if(   isLuma( tu.blocks[ i ].compID ) && (   !lumaFlag ||   !lumaCountFlag ) ) continue;
       if( isChroma( tu.blocks[ i ].compID ) && ( !chromaFlag || !chromaCountFlag ) ) continue;
@@ -5942,7 +5942,7 @@ uint32_t TU::getNumNonZeroCoeffsNonTSCorner8x8( const TransformUnit& tu, const b
 bool TU::needsSqrt2Scale( const TransformUnit &tu, const ComponentID &compID )
 {
   const Size &size=tu.blocks[compID];
-  const bool isTransformSkip = tu.mtsIdx==1 && isLuma(compID);
+  const bool isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
   return (!isTransformSkip) && (((g_aucLog2[size.width] + g_aucLog2[size.height]) & 1) == 1);
 }
 

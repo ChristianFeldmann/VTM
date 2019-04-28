@@ -452,6 +452,16 @@ enum TransType
   DCT2_EMT = 4
 };
 
+enum MTSIdx
+{
+  MTS_DCT2_DCT2 = 0,
+  MTS_SKIP = 1,
+  MTS_DST7_DST7 = 2,
+  MTS_DCT8_DST7 = 3,
+  MTS_DST7_DCT8 = 4,
+  MTS_DCT8_DCT8 = 5
+};
+
 enum ISPType
 {
   NOT_INTRA_SUBPARTITIONS       = 0,

@@ -1326,14 +1326,14 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeListTemp;
     for( int i = 0; i < uiRdModeList.size(); i++)
     {
-      if( ! uiRdModeList[i].mipFlg )
+      if( !uiRdModeList[i].mipFlg && uiRdModeList[i].ispMod==NOT_INTRA_SUBPARTITIONS )
       {
         uiRdModeListTemp.push_back( uiRdModeList[i] );
       }
     }
     for( int i = 0; i < uiRdModeList.size(); i++)
     {
-      if( uiRdModeList[i].mipFlg )
+      if( uiRdModeList[i].mipFlg || uiRdModeList[i].ispMod!=NOT_INTRA_SUBPARTITIONS )
       {
         uiRdModeListTemp.push_back( uiRdModeList[i] );
       }

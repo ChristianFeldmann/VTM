@@ -461,7 +461,11 @@ private:
 #endif
     int *coeff, const int numCoeff, const int bitDepth );
 #endif
-  double getFilterCoeffAndCost( CodingStructure& cs, double distUnfilter, ChannelType channel, bool bReCollectStat, int iShapeIdx, int& uiCoeffBits );
+  double getFilterCoeffAndCost( CodingStructure& cs, double distUnfilter, ChannelType channel, bool bReCollectStat, int iShapeIdx, int& uiCoeffBits 
+#if JVET_N0415_CTB_ALF
+    , bool onlyFilterCost = false
+#endif
+  );
 #if JVET_N0242_NON_LINEAR_ALF
   double deriveFilterCoeffs( AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], AlfFilterShape& alfShape, short* filterIndices, int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2] 
 #if JVET_N0415_CTB_ALF

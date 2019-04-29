@@ -1057,7 +1057,11 @@ void EncAdaptiveLoopFilter::copyAlfSliceParam( AlfSliceParam& alfSliceParamDst, 
 #endif
   }
 }
-double EncAdaptiveLoopFilter::getFilterCoeffAndCost( CodingStructure& cs, double distUnfilter, ChannelType channel, bool bReCollectStat, int iShapeIdx, int& uiCoeffBits )
+double EncAdaptiveLoopFilter::getFilterCoeffAndCost( CodingStructure& cs, double distUnfilter, ChannelType channel, bool bReCollectStat, int iShapeIdx, int& uiCoeffBits 
+#if JVET_N0415_CTB_ALF
+  , bool onlyFilterCost
+#endif
+)
 {
   //collect stat based on CTU decision
   if( bReCollectStat )
@@ -1110,7 +1114,12 @@ double EncAdaptiveLoopFilter::getFilterCoeffAndCost( CodingStructure& cs, double
     uiCoeffBits += getCoeffRate( m_alfSliceParamTemp, true );
     uiSliceFlag = lengthTruncatedUnary(alfChromaIdc, 3);
   }
-
+#if JVET_N0415_CTB_ALF
+  if (onlyFilterCost)
+  {
+    return dist + m_lambda[channel] * uiCoeffBits;
+  }
+#endif
   double rate = uiCoeffBits + uiSliceFlag;
   m_CABACEstimator->resetBits();
   m_CABACEstimator->codeAlfCtuEnableFlags( cs, channel, &m_alfSliceParamTemp);
@@ -3404,7 +3413,7 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfSliceParam& a
             m_alfSliceParamTemp.nonLinearFlag[CHANNEL_TYPE_LUMA] = 1;
             if (m_encCfg->getUseNonLinearAlfLuma())
             {
-              errNL[1] = getFilterCoeffAndCost(cs, 0, CHANNEL_TYPE_LUMA, true, 0, bitNL[1]);
+              errNL[1] = getFilterCoeffAndCost(cs, 0, CHANNEL_TYPE_LUMA, true, 0, bitNL[1], true);
               m_alfSliceParamTempNL = m_alfSliceParamTemp;
             }
             else
@@ -3415,17 +3424,17 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfSliceParam& a
 #if JVET_N0242_NON_LINEAR_ALF           
             m_alfSliceParamTemp.nonLinearFlag[CHANNEL_TYPE_LUMA] = 0;
 #endif
-            errNL[0] = getFilterCoeffAndCost(cs, 0, CHANNEL_TYPE_LUMA, true, 0, bitNL[0]);
+            errNL[0] = getFilterCoeffAndCost(cs, 0, CHANNEL_TYPE_LUMA, true, 0, bitNL[0], true);
 
             int bitsNewFilterTempLuma = bitNL[0];
             double err = errNL[0];
-            if (errNL[1] + m_lambda[CHANNEL_TYPE_LUMA] * bitNL[1] < errNL[0] + m_lambda[CHANNEL_TYPE_LUMA] * bitNL[0])
+            if (errNL[1]  < errNL[0])
             {
               err = errNL[1];
               bitsNewFilterTempLuma = bitNL[1];
               m_alfSliceParamTemp = m_alfSliceParamTempNL;
             }
-            if (dDistOrgNewFilter + m_lambda[CHANNEL_TYPE_LUMA] * m_bitsNewFilter[CHANNEL_TYPE_LUMA] < err + m_lambda[CHANNEL_TYPE_LUMA] * bitsNewFilterTempLuma) //re-derived filter is not good, skip
+            if (dDistOrgNewFilter + m_lambda[CHANNEL_TYPE_LUMA] * m_bitsNewFilter[CHANNEL_TYPE_LUMA] < err) //re-derived filter is not good, skip
             {
               continue;
             }

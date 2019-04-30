@@ -892,7 +892,6 @@ const CtxSet ContextSetCfg::TriangleIdx = ContextSetCfg::addCtxSet
   { CNU, },
   { DWS, },
 });
-// clang-format on
 
 const CtxSet ContextSetCfg::IBCFlag = ContextSetCfg::addCtxSet
 ({
@@ -975,6 +974,7 @@ const CtxSet ContextSetCfg::TsResidualSign =
    }),
 };
 #endif
+// clang-format on
 
 const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_InitTables[0].size();
 

@@ -129,7 +129,7 @@ uint32_t SEIRemovalApp::decode()
       // just kick out all suffix SEIS
       bWrite &= (( !m_discardSuffixSEIs || nalu.m_nalUnitType != NAL_UNIT_SUFFIX_SEI ) && ( !m_discardPrefixSEIs || nalu.m_nalUnitType != NAL_UNIT_PREFIX_SEI ));
       bWrite &= unitCnt >= m_numNALUnitsToSkip;
-      bWrite &= m_numNALUnitsToWrite > 0 && unitCnt <= m_numNALUnitsToWrite;
+      bWrite &= m_numNALUnitsToWrite < 0 || unitCnt <= m_numNALUnitsToWrite;
 
       if( bWrite )
       {

@@ -443,11 +443,11 @@ void AdaptiveLoopFilter::reconstructCoeffAPSs(CodingStructure& cs, bool luma, bo
 }
 #endif
 
-void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, 
 #if JVET_N0415_CTB_ALF
-  const bool isRdo,
+void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, const bool isRdo, const bool isRedo )
+#else
+void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, const bool isRedo )
 #endif
-  const bool isRedo)
 {
 #if JVET_N0415_CTB_ALF
   int factor = isRdo ? 0 : (1 << (m_NUM_BITS - 1));

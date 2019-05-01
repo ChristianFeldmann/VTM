@@ -227,11 +227,10 @@ void Reshape::updateChromaScaleLUT()
 #if JVET_N0220_LMCS_SIMPLIFICATION
   for (int i = 0; i < PIC_CODE_CW_BINS; i++)
   {
-    uint16_t binCW = m_lumaBD > 10 ? (m_binCW[i] >> (m_lumaBD - 10)) : m_lumaBD < 10 ? (m_binCW[i] << (10 -m_lumaBD)): m_binCW[i];
-    if (binCW == 0)
+    if (m_binCW[i] == 0)
       m_chromaAdjHelpLUT[i] = 1 << CSCALE_FP_PREC;
     else
-      m_chromaAdjHelpLUT[i] = m_initCW * (1 << CSCALE_FP_PREC) / binCW;
+      m_chromaAdjHelpLUT[i] = m_initCW * (1 << CSCALE_FP_PREC) / m_binCW[i];
   }
 #else
   const int16_t  CW_bin_SC_LUT[2 * PIC_ANALYZE_CW_BINS] = { 16384, 16384, 16384, 16384, 16384, 16384, 16384, 8192, 8192, 8192, 8192, 5461, 5461, 5461, 5461, 4096, 4096, 4096, 4096, 3277, 3277, 3277, 3277, 2731, 2731, 2731, 2731, 2341, 2341, 2341, 2048, 2048, 2048, 1820, 1820, 1820, 1638, 1638, 1638, 1638, 1489, 1489, 1489, 1489, 1365, 1365, 1365, 1365, 1260, 1260, 1260, 1260, 1170, 1170, 1170, 1170, 1092, 1092, 1092, 1092, 1024, 1024, 1024, 1024 }; //p=11

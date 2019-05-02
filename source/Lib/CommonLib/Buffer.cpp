@@ -42,11 +42,6 @@
 #include "Buffer.h"
 #include "InterpolationFilter.h"
 
-#if ENABLE_SIMD_OPT_BUFFER
-#ifdef TARGET_SIMD_X86
-
-#include "CommonDefX86.h"
-
 template< typename T >
 void addAvgCore( const T* src1, int src1Stride, const T* src2, int src2Stride, T* dest, int dstStride, int width, int height, int rshift, int offset, const ClpRng& clpRng )
 {
@@ -297,9 +292,6 @@ PelBufferOps::PelBufferOps()
 }
 
 PelBufferOps g_pelBufOP = PelBufferOps();
-
-#endif
-#endif
 
 void copyBufferCore(Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height)
 {

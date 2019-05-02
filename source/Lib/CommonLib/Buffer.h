@@ -51,16 +51,15 @@
 // AreaBuf struct
 // ---------------------------------------------------------------------------
 
-#if ENABLE_SIMD_OPT_BUFFER
-#ifdef TARGET_SIMD_X86
-
 struct PelBufferOps
 {
   PelBufferOps();
 
+#if ENABLE_SIMD_OPT_BUFFER && defined(TARGET_SIMD_X86)
   void initPelBufOpsX86();
   template<X86_VEXT vext>
   void _initPelBufOpsX86();
+#endif
 
   void ( *addAvg4 )       ( const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, int width, int height,            int shift, int offset, const ClpRng& clpRng );
   void ( *addAvg8 )       ( const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, int width, int height,            int shift, int offset, const ClpRng& clpRng );
@@ -83,10 +82,6 @@ struct PelBufferOps
 };
 
 extern PelBufferOps g_pelBufOP;
-
-#endif
-#endif
-
 
 void paddingCore(Pel *ptr, int stride, int width, int height, int padSize);
 void copyBufferCore(Pel *src, int srcStride, Pel *Dst, int dstStride, int width, int height);

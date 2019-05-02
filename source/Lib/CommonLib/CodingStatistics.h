@@ -112,13 +112,16 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__TRIANGLE_FLAG,
   STATS__CABAC_BITS__TRIANGLE_INDEX,
   STATS__CABAC_BITS__MULTI_REF_LINE,
-#if JVET_N0193_LFNST
-  STATS__TOOL_LFNST,
-#endif
   STATS__CABAC_BITS__SYMMVD_FLAG,
+#if JVET_N0413_RDPCM
+  STATS__CABAC_BITS__BDPCM_MODE,
+#endif
   STATS__TOOL_TOTAL_FRAME,// This is a special case and is not included in the report.
   STATS__TOOL_AFF,
   STATS__TOOL_EMT,
+#if JVET_N0193_LFNST
+  STATS__TOOL_LFNST,
+#endif
   STATS__TOOL_TOTAL,
   STATS__NUM_STATS
 };
@@ -203,6 +206,9 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__TRIANGLE_INDEX",
     "CABAC_BITS__MULTI_REF_LINE",
     "CABAC_BITS__SYMMVD_FLAG",
+#if JVET_N0413_RDPCM
+    "CABAC_BITS__BDPCM_MODE",
+#endif
     "TOOL_FRAME",
     "TOOL_AFFINE",
     "TOOL_EMT",

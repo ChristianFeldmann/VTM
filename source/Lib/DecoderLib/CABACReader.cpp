@@ -1095,6 +1095,8 @@ void CABACReader::bdpcm_mode( CodingUnit& cu, const ComponentID compID )
 
   if( !CU::bdpcmAllowed( cu, compID ) ) return;
 
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__BDPCM_MODE, cu.block(compID).lumaSize(), compID );
+
   cu.bdpcmMode = m_BinDecoder.decodeBin( Ctx::BDPCMMode( 0 ) );
 
   if( cu.bdpcmMode )

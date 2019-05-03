@@ -687,8 +687,15 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 #if JVET_N0324_REGULAR_MRG_FLAG
     if (CU::isInter(cu))
     {
-      m_BinEncoder.encodeBin(cu.firstPU->regularMergeFlag, Ctx::RegularMergeFlag(0));
-      DTRACE(g_trace_ctx, D_SYNTAX, "regularMergeFlag() ctx=%d regularMergeFlag=%d\n", 0, cu.firstPU->regularMergeFlag?1:0);      
+      if (!cu.cs->slice->getSPS()->getUseMMVD() && (cu.firstPU->lwidth() * cu.firstPU->lheight() == 32))
+      {
+        CHECK(!cu.firstPU->regularMergeFlag, "regular_merge_flag must be true!");
+      }
+      else
+      {
+        m_BinEncoder.encodeBin(cu.firstPU->regularMergeFlag, Ctx::RegularMergeFlag(0));
+        DTRACE(g_trace_ctx, D_SYNTAX, "regularMergeFlag() ctx=%d regularMergeFlag=%d\n", 0, cu.firstPU->regularMergeFlag?1:0);      
+      }
 #if JVET_N0127_MMVD_SPS_FLAG 
       if (cu.cs->slice->getSPS()->getUseMMVD())
       {
@@ -726,8 +733,15 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 #if JVET_N0324_REGULAR_MRG_FLAG
   if (cu.skip && !cu.cs->slice->getSPS()->getIBCFlag())
   {
-    m_BinEncoder.encodeBin(cu.firstPU->regularMergeFlag, Ctx::RegularMergeFlag(0));
-    DTRACE(g_trace_ctx, D_SYNTAX, "regularMergeFlag() ctx=%d regularMergeFlag=%d\n", 0, cu.firstPU->regularMergeFlag?1:0);
+    if (!cu.cs->slice->getSPS()->getUseMMVD() && (cu.firstPU->lwidth() * cu.firstPU->lheight() == 32))
+    {
+      CHECK(!cu.firstPU->regularMergeFlag, "regular_merge_flag must be true!");
+    }
+    else
+    {
+      m_BinEncoder.encodeBin(cu.firstPU->regularMergeFlag, Ctx::RegularMergeFlag(0));
+      DTRACE(g_trace_ctx, D_SYNTAX, "regularMergeFlag() ctx=%d regularMergeFlag=%d\n", 0, cu.firstPU->regularMergeFlag?1:0);
+    }
 #if JVET_N0127_MMVD_SPS_FLAG 
     if (cu.cs->slice->getSPS()->getUseMMVD())
     {
@@ -1667,8 +1681,15 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
 #if JVET_N0324_REGULAR_MRG_FLAG
   if (pu.mergeFlag)
   {
-    m_BinEncoder.encodeBin(pu.regularMergeFlag, Ctx::RegularMergeFlag(1));
-    DTRACE(g_trace_ctx, D_SYNTAX, "regularMergeFlag() ctx=%d regularMergeFlag=%d\n", 1, pu.regularMergeFlag?1:0);
+    if (!pu.cs->sps->getUseMMVD() && (pu.lwidth() * pu.lheight() == 32))
+    {
+      CHECK(!pu.regularMergeFlag, "regular_merge_flag must be true!");
+    }
+    else
+    {
+      m_BinEncoder.encodeBin(pu.regularMergeFlag, Ctx::RegularMergeFlag(1));
+      DTRACE(g_trace_ctx, D_SYNTAX, "regularMergeFlag() ctx=%d regularMergeFlag=%d\n", 1, pu.regularMergeFlag?1:0);
+    }
 #if JVET_N0127_MMVD_SPS_FLAG 
     if (pu.cs->sps->getUseMMVD())
     {

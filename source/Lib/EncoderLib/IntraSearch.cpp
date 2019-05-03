@@ -1340,6 +1340,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
 #if JVET_N0217_MATRIX_INTRAPRED
     m_bestCostNonMip = MAX_DOUBLE;
+#if JVET_N0193_LFNST
+    static_vector<int, FAST_UDI_MAX_RDMODE_NUM> rdModeIdxList;
+#endif
     if (testMip)
     {
     static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeListTemp;
@@ -1348,6 +1351,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       if( !uiRdModeList[i].mipFlg && uiRdModeList[i].ispMod==NOT_INTRA_SUBPARTITIONS )
       {
         uiRdModeListTemp.push_back( uiRdModeList[i] );
+#if JVET_N0193_LFNST
+        rdModeIdxList.push_back( i );
+#endif
       }
     }
     for( int i = 0; i < uiRdModeList.size(); i++)
@@ -1355,6 +1361,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       if( uiRdModeList[i].mipFlg || uiRdModeList[i].ispMod!=NOT_INTRA_SUBPARTITIONS )
       {
         uiRdModeListTemp.push_back( uiRdModeList[i] );
+#if JVET_N0193_LFNST
+        rdModeIdxList.push_back( i );
+#endif
       }
     }
     for( int i = 0; i < uiRdModeList.size(); i++)
@@ -1559,11 +1568,19 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_N0413_RDPCM
       if( sps.getUseLFNST() && mtsUsageFlag == 1 && !cu.ispMode && mode >= 0 )
       {
+#if JVET_N0217_MATRIX_INTRAPRED
+        m_modeCostStore[ lfnstIdx ][ testMip ? rdModeIdxList[ mode ] : mode ] = tmpValidReturn ? csTemp->cost : ( MAX_DOUBLE / 2.0 ); //(MAX_DOUBLE / 2.0) ??
+#else
         m_modeCostStore[ lfnstIdx ][ mode ] = tmpValidReturn ? csTemp->cost : ( MAX_DOUBLE / 2.0 ); //(MAX_DOUBLE / 2.0) ??
+#endif
 #else
       if( sps.getUseLFNST() && mtsUsageFlag == 1 && !cu.ispMode )
       {
+#if JVET_N0217_MATRIX_INTRAPRED
+        m_modeCostStore[ lfnstIdx ][ testMip ? rdModeIdxList[ uiMode ] : uiMode ] = tmpValidReturn ? csTemp->cost : ( MAX_DOUBLE / 2.0 ); //(MAX_DOUBLE / 2.0) ??
+#else
         m_modeCostStore[ lfnstIdx ][ uiMode ] = tmpValidReturn ? csTemp->cost : ( MAX_DOUBLE / 2.0 ); //(MAX_DOUBLE / 2.0) ??
+#endif
 #endif
       }
 #endif

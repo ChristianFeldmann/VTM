@@ -1103,35 +1103,52 @@ void EncReshape::constructReshaperSDR()
     int cwReduce1 = (cwScaleBins1 - histLenth - 1) * cnt1;
     int cwReduce2 = (histLenth + 1 - cwScaleBins2) * cnt0;
 
+    int divCW = 0, modCW = 0;
     if (resCW <= cwReduce1)
     {
-      int idx = 0;
-      while (resCW > 0)
+      assert(cnt1 > 0);
+      divCW = resCW / cnt1;
+      modCW = resCW - divCW * cnt1;
+      if (divCW > 0)
       {
-        if (m_binCW[idx] > (histLenth + 1))
+        for (i = 0; i < histBins; i++)
         {
-          m_binCW[idx]--;
-          resCW--;
+          if (m_binCW[i] == cwScaleBins1)
+            m_binCW[i] -= divCW;
         }
-        idx++;
-        if (idx == histBins)
-          idx = 0;
+      }
+      for (i = 0; i < histBins; i++)
+      {
+        if (modCW == 0)  break;
+        if (m_binCW[i] >(histLenth + 1))
+        {
+          m_binCW[i]--;
+          modCW--;
+        }
       }
     }
     else if (resCW > cwReduce1 && resCW <= (cwReduce1 + cwReduce2))
     {
+      assert(cnt0 > 0);
       resCW -= cwReduce1;
-      int idx = 0;
-      while (resCW > 0)
+      divCW = resCW / cnt0;
+      modCW = resCW - divCW * cnt0;
+      if (divCW > 0)
       {
-        if (m_binCW[idx] > cwScaleBins2 && m_binCW[idx] < cwScaleBins1)
+        for (i = 0; i < histBins; i++)
         {
-          m_binCW[idx]--;
-          resCW--;
+          if (m_binCW[i] == (histLenth + 1))
+            m_binCW[i] -= divCW;
         }
-        idx++;
-        if (idx == histBins)
-          idx = 0;
+      }
+      for (i = 0; i < histBins; i++)
+      {
+        if (modCW == 0)  break;
+        if (m_binCW[i] > cwScaleBins2 && m_binCW[i] < cwScaleBins1)
+        {
+          m_binCW[i]--;
+          modCW--;
+        }
       }
       for (i = 0; i < histBins; i++)
       {
@@ -1139,27 +1156,47 @@ void EncReshape::constructReshaperSDR()
           m_binCW[i] = histLenth + 1;
       }
     }
-    else if (resCW > (cwReduce1 + cwReduce2))
+    else
     {
-      resCW -= (cwReduce1 + cwReduce2);
-      int idx = 0;
-      while (resCW > 0)
-      {
-        if (m_binCW[idx] > 0 && m_binCW[idx] < (histLenth + 1))
-        {
-          m_binCW[idx]--;
-          resCW--;
-        }
-        idx++;
-        if (idx == histBins)
-          idx = 0;
-      }
       for (i = 0; i < histBins; i++)
       {
         if (m_binCW[i] == histLenth + 1)
           m_binCW[i] = cwScaleBins2;
         if (m_binCW[i] == cwScaleBins1)
           m_binCW[i] = histLenth + 1;
+      }
+      resCW -= (cwReduce1 + cwReduce2);
+      cnt2 += cnt0;
+      cnt0 += cnt1;
+      cnt1 = 0;
+
+      divCW = resCW / cnt0;
+      modCW = resCW - divCW * cnt0;
+      if (divCW > 0)
+      {
+        for (i = 0; i < histBins; i++)
+        {
+          if (m_binCW[i] == (histLenth + 1))
+            m_binCW[i] -= divCW;
+        }
+      }
+      for (i = 0; i < histBins; i++)
+      {
+        if (modCW == 0)  break;
+        if (m_binCW[i] > cwScaleBins2)
+        {
+          m_binCW[i]--;
+          modCW--;
+        }
+      }
+      for (i = 0; i < histBins; i++)
+      {
+        if (modCW == 0)  break;
+        if (m_binCW[i] > 0)
+        {
+          m_binCW[i]--;
+          modCW--;
+        }
       }
     }
   }

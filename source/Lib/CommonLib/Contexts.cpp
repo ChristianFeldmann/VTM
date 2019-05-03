@@ -304,15 +304,9 @@ const CtxSet ContextSetCfg::PredMode = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MultiRefLineIdx = ContextSetCfg::addCtxSet
 ({
-#if JVET_N0217_MATRIX_INTRAPRED
-  { 105, 212, CNU, },
-  { 133, 212, CNU, },
-  { 134, 169, CNU, },
-#else
   { 90, 212, CNU, },
   { 118, 212, CNU, },
   { 119, 169, CNU, },
-#endif
   { 8, 8, DWS, },
 });
 
@@ -736,17 +730,10 @@ const CtxSet ContextSetCfg::MTSIndex = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet
 ({
-#if JVET_N0217_MATRIX_INTRAPRED
-  { 151, 154, },
-  { 165, 169, },
-  { 166, 169, },
-  {   9,   4, },
-#else
   { 152, 154, },
   { 166, 154, },
   { 152, 154, },
   { 8, 5, },
-#endif
 });
 
 const CtxSet ContextSetCfg::SbtFlag = ContextSetCfg::addCtxSet

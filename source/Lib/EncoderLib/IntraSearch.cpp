@@ -1324,13 +1324,17 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_N0217_MATRIX_INTRAPRED
     m_bestCostNonMip = MAX_DOUBLE;
     static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeListTemp;
+#if JVET_N0193_LFNST
     static_vector<int, FAST_UDI_MAX_RDMODE_NUM> rdModeIdxList;
+#endif
     for( int i = 0; i < uiRdModeList.size(); i++)
     {
       if( !uiRdModeList[i].mipFlg && uiRdModeList[i].ispMod==NOT_INTRA_SUBPARTITIONS )
       {
         uiRdModeListTemp.push_back( uiRdModeList[i] );
+#if JVET_N0193_LFNST
         rdModeIdxList.push_back( i );
+#endif
       }
     }
     for( int i = 0; i < uiRdModeList.size(); i++)
@@ -1338,7 +1342,9 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       if( uiRdModeList[i].mipFlg || uiRdModeList[i].ispMod!=NOT_INTRA_SUBPARTITIONS )
       {
         uiRdModeListTemp.push_back( uiRdModeList[i] );
+#if JVET_N0193_LFNST
         rdModeIdxList.push_back( i );
+#endif
       }
     }
     for( int i = 0; i < uiRdModeList.size(); i++)

@@ -1566,17 +1566,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           const int nonZeroCoeffThr = CS::isDualITree( *tempCS ) ? ( isLuma( partitioner.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
           if( lfnstIdx && cuCtx.numNonZeroCoeffNonTs <= nonZeroCoeffThr )
           {
-            bool isMDIS = false;
-            {
-              CHECK( CU::getNumPUs( cu ) > 1, "PLanarPDPC: encoder MDIS condition not defined for multi PU" );
-              const PredictionUnit* pu = cu.firstPU;
-              isMDIS = IntraPrediction::useFilteredIntraRefSamples( COMPONENT_Y, *pu, true, *pu );
-#if HM_MDIS_AS_IN_JEM
-              if( pu->intraDir[ 0 ] == PLANAR_IDX ) { isMDIS |= IntraPrediction::getPlanarMDISCondition( *pu ); }
-#endif
-            }
-
-            if( cuCtx.numNonZeroCoeffNonTs > 0 || isMDIS )
+            if (cuCtx.numNonZeroCoeffNonTs > 0)
             {
               tempCS->cost = MAX_DOUBLE;
             }

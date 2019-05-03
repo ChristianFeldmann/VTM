@@ -1429,49 +1429,6 @@ void IntraPrediction::xFilterReferenceSamples( const Pel* refBufUnfiltered, Pel*
   *piDestPtr=*piSrcPtr;
 }
 
-bool IntraPrediction::useFilteredIntraRefSamples( const ComponentID &compID, const PredictionUnit &pu, bool modeSpecific, const UnitArea &tuArea )
-{
-  const SPS         &sps    = *pu.cs->sps;
-  const ChannelType  chType = toChannelType( compID );
-
-  // high level conditions
-  if( sps.getSpsRangeExtension().getIntraSmoothingDisabledFlag() )                                       { return false; }
-#if JVET_N0671_INTRA_TPM_ALIGNWITH420
-  if( !isLuma( chType ) )                                                                                { return false; }
-#else
-  if( !isLuma( chType ) && pu.chromaFormat != CHROMA_444 )                                               { return false; }
-#endif
-#if JVET_N0413_RDPCM
-  if(  isLuma( chType ) && pu.cu->bdpcmMode )                                                            { return false; }
-#endif
-
-  if( pu.cu->ispMode && isLuma(compID) )                                                                 { return false; }
-
-#if JVET_N0217_MATRIX_INTRAPRED
-  if( PU::isMIP( pu, chType ) )                                                                          { return false; }
-#endif
-
-  if( !modeSpecific )                                                                                    { return true; }
-
-  if (pu.multiRefIdx)                                                                                    { return false; }
-
-  // pred. mode related conditions
-  const int dirMode = PU::getFinalIntraMode( pu, chType );
-  int predMode = getWideAngle(tuArea.blocks[compID].width, tuArea.blocks[compID].height, dirMode);
-  if (predMode != dirMode )                                                                              { return true; }
-  if (dirMode == DC_IDX)                                                                                 { return false; }
-  if (dirMode == PLANAR_IDX)
-  {
-    return tuArea.blocks[compID].width * tuArea.blocks[compID].height > 32 ? true : false;
-  }
-
-  int diff = std::min<int>( abs( dirMode - HOR_IDX ), abs( dirMode - VER_IDX ) );
-  int log2Size = ((g_aucLog2[tuArea.blocks[compID].width] + g_aucLog2[tuArea.blocks[compID].height]) >> 1);
-  CHECK( log2Size >= MAX_INTRA_FILTER_DEPTHS, "Size not supported" );
-  return (diff > m_aucIntraFilter[chType][log2Size]);
-}
-
-
 bool isAboveLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLT)
 {
   const CodingStructure& cs = *cu.cs;

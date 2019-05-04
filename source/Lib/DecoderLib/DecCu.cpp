@@ -758,32 +758,28 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 
               //    Mv mv[3];
               CHECK( pu.refIdx[eRefList] < 0, "Unexpected negative refIdx." );
-              const int imvShift = ( !cu.cs->pcv->isEncoder && pu.cu->imv == 2 ) ? MV_FRACTIONAL_BITS_DIFF : 0;
-              pu.mvdAffi[eRefList][0] <<= imvShift;
-              pu.mvdAffi[eRefList][1] <<= imvShift;
+              if (!cu.cs->pcv->isEncoder)
+              {
+                pu.mvdAffi[eRefList][0].changeAffinePrecAmvr2Internal(pu.cu->imv);
+                pu.mvdAffi[eRefList][1].changeAffinePrecAmvr2Internal(pu.cu->imv);
+                if (cu.affineType == AFFINEMODEL_6PARAM)
+                {
+                  pu.mvdAffi[eRefList][2].changeAffinePrecAmvr2Internal(pu.cu->imv);
+                }
+              }
 
               Mv mvLT = affineAMVPInfo.mvCandLT[mvp_idx] + pu.mvdAffi[eRefList][0];
               Mv mvRT = affineAMVPInfo.mvCandRT[mvp_idx] + pu.mvdAffi[eRefList][1];
               mvRT += pu.mvdAffi[eRefList][0];
-              if ( pu.cu->imv != 1 )
-              {
-                mvLT.changePrecision( MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL );
-                mvRT.changePrecision( MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL );
-              }
 
               Mv mvLB;
               if ( cu.affineType == AFFINEMODEL_6PARAM )
               {
-                pu.mvdAffi[eRefList][2] <<= imvShift;
                 mvLB = affineAMVPInfo.mvCandLB[mvp_idx] + pu.mvdAffi[eRefList][2];
                 mvLB += pu.mvdAffi[eRefList][0];
-                if ( pu.cu->imv != 1 )
-                {
-                  mvLB.changePrecision( MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL );
-                }
               }
 #if JVET_N0334_MVCLIPPING
-              PU::setAllAffineMv(pu, mvLT, mvRT, mvLB, eRefList, false, true);
+              PU::setAllAffineMv(pu, mvLT, mvRT, mvLB, eRefList, true);
 #else
               PU::setAllAffineMv( pu, mvLT, mvRT, mvLB, eRefList );
 #endif
@@ -799,9 +795,10 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
 #if REUSE_CU_RESULTS
           if (!cu.cs->pcv->isEncoder)
 #endif
-            mvd <<= 2;
+          {
+            mvd.changeIbcPrecAmvr2Internal(pu.cu->imv);
+          }
           pu.mv[REF_PIC_LIST_0] = amvpInfo.mvCand[pu.mvpIdx[REF_PIC_LIST_0]] + mvd;
-          pu.mv[REF_PIC_LIST_0].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
 #if JVET_N0334_MVCLIPPING
           pu.mv[REF_PIC_LIST_0].mvCliptoStorageBitDepth();
 #endif
@@ -816,8 +813,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
               AMVPInfo amvpInfo;
               PU::fillMvpCand(pu, eRefList, pu.refIdx[eRefList], amvpInfo);
               pu.mvpNum [eRefList] = amvpInfo.numCand;
+              if (!cu.cs->pcv->isEncoder)
+              {
+                pu.mvd[eRefList].changeTransPrecAmvr2Internal(pu.cu->imv);
+              }
               pu.mv[eRefList] = amvpInfo.mvCand[pu.mvpIdx[eRefList]] + pu.mvd[eRefList];
-              pu.mv[eRefList].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
 #if JVET_N0334_MVCLIPPING
               pu.mv[eRefList].mvCliptoStorageBitDepth();
 #endif
@@ -843,8 +843,8 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       const int picWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
       const int picHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
       const unsigned int  lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
-      int xPred = pu.mv[0].getHor()>>4;
-      int yPred = pu.mv[0].getVer()>>4;
+      int xPred = pu.mv[0].getHor() >> MV_FRACTIONAL_BITS_INTERNAL;
+      int yPred = pu.mv[0].getVer() >> MV_FRACTIONAL_BITS_INTERNAL;
       CHECK(!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, xPred, yPred, lcuWidth), "invalid block vector for IBC detected.");
     }
   }

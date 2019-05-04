@@ -53,7 +53,8 @@ enum MvPrecision
   MV_PRECISION_INT      = 2,      // 1-pel, shift 2 bits from 4-pel
   MV_PRECISION_HALF     = 3,      // 1/2-pel
   MV_PRECISION_QUARTER  = 4,      // 1/4-pel (the precision of regular MV difference signaling), shift 4 bits from 4-pel
-  MV_PRECISION_INTERNAL = 6,      // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
+  MV_PRECISION_SIXTEENTH = 6,     // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
+  MV_PRECISION_INTERNAL = 2 + MV_FRACTIONAL_BITS_INTERNAL,      
 };
 
 /// basic motion vector class
@@ -61,9 +62,12 @@ class Mv
 {
 private:
   static const MvPrecision m_amvrPrecision[3];
+  static const MvPrecision m_amvrPrecAffine[3];
+  static const MvPrecision m_amvrPrecIbc[3];
+
 #if JVET_N0334_MVCLIPPING
-  static const int mvClipPeriod = (1 << 18);
-  static const int halMvClipPeriod = (1 << 17);
+  static const int mvClipPeriod = (1 << MV_BITS);
+  static const int halMvClipPeriod = (1 << (MV_BITS - 1));
 #endif
 
 public:
@@ -158,7 +162,7 @@ public:
       const int offset = (1 << (i - 1));
       hor = (hor + offset - (hor >= 0)) >> i;
       ver = (ver + offset - (ver >= 0)) >> i;
-  }
+    }
 #else
     hor >>= i;
     ver >>= i;
@@ -189,11 +193,11 @@ public:
   const Mv scaleMv( int iScale ) const
   {
 #if JVET_N0335_N0085_MV_ROUNDING
-    const int mvx = Clip3(-131072, 131071, (iScale * getHor() + 128 - (iScale * getHor() >= 0)) >> 8);
-    const int mvy = Clip3(-131072, 131071, (iScale * getVer() + 128 - (iScale * getVer() >= 0)) >> 8);
+    const int mvx = Clip3(MV_MIN, MV_MAX, (iScale * getHor() + 128 - (iScale * getHor() >= 0)) >> 8);
+    const int mvy = Clip3(MV_MIN, MV_MAX, (iScale * getVer() + 128 - (iScale * getVer() >= 0)) >> 8);
 #else
-    const int mvx = Clip3( -131072, 131071, (iScale * getHor() + 127 + (iScale * getHor() < 0)) >> 8 );
-    const int mvy = Clip3( -131072, 131071, (iScale * getVer() + 127 + (iScale * getVer() < 0)) >> 8 );
+    const int mvx = Clip3(MV_MIN, MV_MAX, (iScale * getHor() + 127 + (iScale * getHor() < 0)) >> 8);
+    const int mvy = Clip3(MV_MIN, MV_MAX, (iScale * getVer() + 127 + (iScale * getVer() < 0)) >> 8);
 #endif
     return Mv( mvx, mvy );
   }
@@ -219,21 +223,60 @@ public:
     }
   }
 
-  void changePrecisionAmvr(const int amvr, const MvPrecision& dst)
-  {
-    changePrecision(m_amvrPrecision[amvr], dst);
-  }
-
   void roundToPrecision(const MvPrecision& src, const MvPrecision& dst)
   {
     changePrecision(src, dst);
     changePrecision(dst, src);
   }
 
-  void roundToAmvrSignalPrecision(const MvPrecision& src, const int amvr)
+  // translational MV
+  void changeTransPrecInternal2Amvr(const int amvr)
   {
-    roundToPrecision(src, m_amvrPrecision[amvr]);
+    changePrecision(MV_PRECISION_INTERNAL, m_amvrPrecision[amvr]);
   }
+
+  void changeTransPrecAmvr2Internal(const int amvr)
+  {
+    changePrecision(m_amvrPrecision[amvr], MV_PRECISION_INTERNAL);
+  }
+
+  void roundTransPrecInternal2Amvr(const int amvr)
+  {
+    roundToPrecision(MV_PRECISION_INTERNAL, m_amvrPrecision[amvr]);
+  }
+
+  // affine MV
+  void changeAffinePrecInternal2Amvr(const int amvr)
+  {
+    changePrecision(MV_PRECISION_INTERNAL, m_amvrPrecAffine[amvr]);
+  }
+
+  void changeAffinePrecAmvr2Internal(const int amvr)
+  {
+    changePrecision(m_amvrPrecAffine[amvr], MV_PRECISION_INTERNAL);
+  }
+
+  void roundAffinePrecInternal2Amvr(const int amvr)
+  {
+    roundToPrecision(MV_PRECISION_INTERNAL, m_amvrPrecAffine[amvr]);
+  }
+
+  // IBC block vector
+  void changeIbcPrecInternal2Amvr(const int amvr)
+  {
+    changePrecision(MV_PRECISION_INTERNAL, m_amvrPrecIbc[amvr]);
+  }
+
+  void changeIbcPrecAmvr2Internal(const int amvr)
+  {
+    changePrecision(m_amvrPrecIbc[amvr], MV_PRECISION_INTERNAL);
+  }
+
+  void roundIbcPrecInternal2Amvr(const int amvr)
+  {
+    roundToPrecision(MV_PRECISION_INTERNAL, m_amvrPrecIbc[amvr]);
+  }
+
 
   Mv getSymmvdMv(const Mv& curMvPred, const Mv& tarMvPred)
   {

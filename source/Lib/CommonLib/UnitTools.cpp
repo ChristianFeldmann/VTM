@@ -2813,7 +2813,7 @@ void PU::fillIBCMvpCand(PredictionUnit &pu, AMVPInfo &amvpInfo)
 
   for( int i = 0; i < pInfo->numCand; i++ )
   {
-    pInfo->mvCand[i].roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
+    pInfo->mvCand[i].roundTransPrecInternal2Amvr(pu.cu->imv);
   }
 
   if (pInfo->numCand == 2)
@@ -2855,9 +2855,8 @@ void PU::fillIBCMvpCand(PredictionUnit &pu, AMVPInfo &amvpInfo)
 
   for (Mv &mv : pInfo->mvCand)
   {
-    mv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
 #if JVET_N0843_BVP_SIMPLIFICATION
-    mv.roundToAmvrSignalPrecision(MV_PRECISION_QUARTER, pu.cu->imv);
+    mv.roundIbcPrecInternal2Amvr(pu.cu->imv);
 #endif
   }
 }
@@ -2954,7 +2953,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 
   for( int i = 0; i < pInfo->numCand; i++ )
   {
-    pInfo->mvCand[i].roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
+    pInfo->mvCand[i].roundTransPrecInternal2Amvr(pu.cu->imv);
   }
 
   if( pInfo->numCand == 2 )
@@ -3018,7 +3017,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     if ((C0Avail && getColocatedMVP(pu, eRefPicList, posC0, cColMv, refIdx_Col)) || (C1Avail && getColocatedMVP(pu, eRefPicList, posC1, cColMv, refIdx_Col)))
 #endif
     {
-      cColMv.roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
+      cColMv.roundTransPrecInternal2Amvr(pu.cu->imv);
       pInfo->mvCand[pInfo->numCand++] = cColMv;
     }
   }
@@ -3043,7 +3042,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 
   for (Mv &mv : pInfo->mvCand)
   {
-    mv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
+    mv.roundTransPrecInternal2Amvr(pu.cu->imv);
   }
 }
 
@@ -3100,28 +3099,13 @@ bool PU::addAffineMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &r
     }
 
     xInheritedAffineMv( pu, neibPU, eRefPicListIndex, outputAffineMv );
-    if ( pu.cu->imv == 0 )
-    {
-      outputAffineMv[0].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-      outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-    }
-    else if ( pu.cu->imv == 2 )
-    {
-      outputAffineMv[0].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
-      outputAffineMv[1].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
-    }
+    outputAffineMv[0].roundAffinePrecInternal2Amvr(pu.cu->imv);
+    outputAffineMv[1].roundAffinePrecInternal2Amvr(pu.cu->imv);
     affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = outputAffineMv[0];
     affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = outputAffineMv[1];
     if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
     {
-      if ( pu.cu->imv == 0 )
-      {
-        outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-      }
-      else if ( pu.cu->imv == 2 )
-      {
-        outputAffineMv[2].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
-      }
+      outputAffineMv[2].roundAffinePrecInternal2Amvr(pu.cu->imv);
       affiAMVPInfo.mvCandLB[affiAMVPInfo.numCand] = outputAffineMv[2];
     }
     affiAMVPInfo.numCand++;
@@ -3244,12 +3228,9 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   {
     for (int i = 0; i < affiAMVPInfo.numCand; i++)
     {
-      if ( pu.cu->imv != 1 )
-      {
-        affiAMVPInfo.mvCandLT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-        affiAMVPInfo.mvCandRT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-        affiAMVPInfo.mvCandLB[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-      }
+      affiAMVPInfo.mvCandLT[i].roundAffinePrecInternal2Amvr(pu.cu->imv);
+      affiAMVPInfo.mvCandRT[i].roundAffinePrecInternal2Amvr(pu.cu->imv);
+      affiAMVPInfo.mvCandLB[i].roundAffinePrecInternal2Amvr(pu.cu->imv);
     }
     return;
   }
@@ -3301,18 +3282,9 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
   outputAffineMv[1] = amvpInfo1.mvCand[0];
   outputAffineMv[2] = amvpInfo2.mvCand[0];
 
-  if ( pu.cu->imv == 0 )
-  {
-    outputAffineMv[0].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-    outputAffineMv[1].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-    outputAffineMv[2].roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-  }
-  else if ( pu.cu->imv == 2 )
-  {
-    outputAffineMv[0].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
-    outputAffineMv[1].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
-    outputAffineMv[2].roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
-  }
+  outputAffineMv[0].roundAffinePrecInternal2Amvr(pu.cu->imv);
+  outputAffineMv[1].roundAffinePrecInternal2Amvr(pu.cu->imv);
+  outputAffineMv[2].roundAffinePrecInternal2Amvr(pu.cu->imv);
 
   if ( cornerMVPattern == 7 || (cornerMVPattern == 3 && pu.cu->affineType == AFFINEMODEL_4PARAM) )
   {
@@ -3385,14 +3357,7 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       if ( (C0Avail && getColocatedMVP( pu, eRefPicList, posC0, cColMv, refIdxCol )) || (C1Avail && getColocatedMVP( pu, eRefPicList, posC1, cColMv, refIdxCol ) ) )
 #endif
       {
-        if ( pu.cu->imv == 0 )
-        {
-          cColMv.roundToPrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-        }
-        else if ( pu.cu->imv == 2 )
-        {
-          cColMv.roundToPrecision( MV_PRECISION_INTERNAL, MV_PRECISION_INT );
-        }
+        cColMv.roundAffinePrecInternal2Amvr(pu.cu->imv);
         affiAMVPInfo.mvCandLT[affiAMVPInfo.numCand] = cColMv;
         affiAMVPInfo.mvCandRT[affiAMVPInfo.numCand] = cColMv;
         affiAMVPInfo.mvCandLB[affiAMVPInfo.numCand] = cColMv;
@@ -3415,15 +3380,10 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 
   for (int i = 0; i < affiAMVPInfo.numCand; i++)
   {
-    if ( pu.cu->imv != 1 )
-    {
-      affiAMVPInfo.mvCandLT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-      affiAMVPInfo.mvCandRT[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-      affiAMVPInfo.mvCandLB[i].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
-    }
+    affiAMVPInfo.mvCandLT[i].roundAffinePrecInternal2Amvr(pu.cu->imv);
+    affiAMVPInfo.mvCandRT[i].roundAffinePrecInternal2Amvr(pu.cu->imv);
+    affiAMVPInfo.mvCandLB[i].roundAffinePrecInternal2Amvr(pu.cu->imv);
   }
-
-
 }
 
 bool PU::addIBCMVPCand(const PredictionUnit &pu, const Position &pos, const MvpDir &eDir, AMVPInfo &info)
@@ -3628,7 +3588,7 @@ void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList,
       if (neibRefIdx >= 0 && (CU::isIBC(*pu.cu) || (currRefPOC == slice.getRefPOC(eRefPicListIndex, neibRefIdx))))
       {
         Mv pmv = neibMi.mv[eRefPicListIndex];
-        pmv.roundToAmvrSignalPrecision(MV_PRECISION_INTERNAL, pu.cu->imv);
+        pmv.roundTransPrecInternal2Amvr(pu.cu->imv);
 
         info.mvCand[info.numCand++] = pmv;
         if (info.numCand >= AMVP_MAX_NUM_CANDS)
@@ -4252,19 +4212,13 @@ void PU::setAllAffineMvField( PredictionUnit &pu, MvField *mvField, RefPicList e
 }
 
 #if JVET_N0334_MVCLIPPING
-void PU::setAllAffineMv(PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList, bool setHighPrec, bool clipCPMVs)
+void PU::setAllAffineMv(PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList, bool clipCPMVs)
 #else
-void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList, bool setHighPrec)
+void PU::setAllAffineMv( PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList)
 #endif
 {
   int width  = pu.Y().width;
   int shift = MAX_CU_DEPTH;
-  if (setHighPrec)
-  {
-    affLT.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
-    affRT.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
-    affLB.changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
-  }
 #if JVET_N0334_MVCLIPPING
   if (clipCPMVs)
   {
@@ -4683,7 +4637,7 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
   {
     if( pu.interDir != 2 /* PRED_L1 */ )
     {
-      pu.mvd[0].changePrecisionAmvr( pu.cu->imv, MV_PRECISION_QUARTER);
+      pu.mvd[0].changeTransPrecAmvr2Internal(pu.cu->imv);
       unsigned mvp_idx = pu.mvpIdx[0];
       AMVPInfo amvpInfo;
       if (CU::isIBC(*pu.cu))
@@ -4695,7 +4649,6 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
       pu.mvpNum[0] = amvpInfo.numCand;
       pu.mvpIdx[0] = mvp_idx;
       pu.mv    [0] = amvpInfo.mvCand[mvp_idx] + pu.mvd[0];
-      pu.mv[0].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
 #if JVET_N0334_MVCLIPPING
       pu.mv[0].mvCliptoStorageBitDepth();
 #endif
@@ -4705,7 +4658,7 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
     {
       if( !( pu.cu->cs->slice->getMvdL1ZeroFlag() && pu.interDir == 3 ) && pu.cu->imv )/* PRED_BI */
       {
-        pu.mvd[1].changePrecisionAmvr(pu.cu->imv, MV_PRECISION_QUARTER);
+        pu.mvd[1].changeTransPrecAmvr2Internal(pu.cu->imv);
       }
       unsigned mvp_idx = pu.mvpIdx[1];
       AMVPInfo amvpInfo;
@@ -4713,7 +4666,6 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
       pu.mvpNum[1] = amvpInfo.numCand;
       pu.mvpIdx[1] = mvp_idx;
       pu.mv    [1] = amvpInfo.mvCand[mvp_idx] + pu.mvd[1];
-      pu.mv[1].changePrecision(MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL);
 #if JVET_N0334_MVCLIPPING
       pu.mv[1].mvCliptoStorageBitDepth();
 #endif
@@ -5363,7 +5315,7 @@ void CU::resetMVDandMV2Int( CodingUnit& cu, InterPrediction *interPred )
         pu.mvpNum[0] = amvpInfo.numCand;
 
         mvPred       = amvpInfo.mvCand[pu.mvpIdx[0]];
-        mv.roundToAmvrSignalPrecision(MV_PRECISION_QUARTER, cu.imv);
+        mv.roundTransPrecInternal2Amvr(cu.imv);
         pu.mv[0]     = mv;
         Mv mvDiff    = mv - mvPred;
         pu.mvd[0]    = mvDiff;
@@ -5377,7 +5329,7 @@ void CU::resetMVDandMV2Int( CodingUnit& cu, InterPrediction *interPred )
         pu.mvpNum[1] = amvpInfo.numCand;
 
         mvPred       = amvpInfo.mvCand[pu.mvpIdx[1]];
-        mv.roundToAmvrSignalPrecision(MV_PRECISION_QUARTER, cu.imv);
+        mv.roundTransPrecInternal2Amvr(cu.imv);
         Mv mvDiff    = mv - mvPred;
 
         if( pu.cu->cs->slice->getMvdL1ZeroFlag() && pu.interDir == 3 /* PRED_BI */ )

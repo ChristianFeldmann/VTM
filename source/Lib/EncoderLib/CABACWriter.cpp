@@ -1565,12 +1565,13 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   else if (CU::isIBC(*pu.cu))
   {
     ref_idx(pu, REF_PIC_LIST_0);
-    mvd_coding(pu.mvd[REF_PIC_LIST_0], pu.cu->imv);
+    Mv mvd = pu.mvd[REF_PIC_LIST_0];
+    mvd.changeIbcPrecInternal2Amvr(pu.cu->imv);
+    mvd_coding(mvd, 0); // already changed to signaling precision
     mvp_flag(pu, REF_PIC_LIST_0);
   }
   else
   {
-    int8_t affineMvdShift = pu.cu->imv ? ( pu.cu->imv == 1 ? -1 : 1 ) : 0;
     inter_pred_idc( pu );
     affine_flag   ( *pu.cu );
     smvd_mode( pu );
@@ -1579,16 +1580,24 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       ref_idx     ( pu, REF_PIC_LIST_0 );
       if ( pu.cu->affine )
       {
-        mvd_coding( pu.mvdAffi[REF_PIC_LIST_0][0], affineMvdShift );
-        mvd_coding( pu.mvdAffi[REF_PIC_LIST_0][1], affineMvdShift );
+        Mv mvd = pu.mvdAffi[REF_PIC_LIST_0][0];
+        mvd.changeAffinePrecInternal2Amvr(pu.cu->imv);
+        mvd_coding(mvd, 0); // already changed to signaling precision
+        mvd = pu.mvdAffi[REF_PIC_LIST_0][1];
+        mvd.changeAffinePrecInternal2Amvr(pu.cu->imv);
+        mvd_coding(mvd, 0); // already changed to signaling precision
         if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
         {
-          mvd_coding( pu.mvdAffi[REF_PIC_LIST_0][2], affineMvdShift );
+          mvd = pu.mvdAffi[REF_PIC_LIST_0][2];
+          mvd.changeAffinePrecInternal2Amvr(pu.cu->imv);
+          mvd_coding(mvd, 0); // already changed to signaling precision
         }
       }
       else
       {
-        mvd_coding( pu.mvd[REF_PIC_LIST_0], pu.cu->imv );
+        Mv mvd = pu.mvd[REF_PIC_LIST_0];
+        mvd.changeTransPrecInternal2Amvr(pu.cu->imv);
+        mvd_coding(mvd, 0); // already changed to signaling precision
       }
       mvp_flag    ( pu, REF_PIC_LIST_0 );
     }
@@ -1601,16 +1610,24 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       {
         if ( pu.cu->affine )
         {
-          mvd_coding( pu.mvdAffi[REF_PIC_LIST_1][0], affineMvdShift );
-          mvd_coding( pu.mvdAffi[REF_PIC_LIST_1][1], affineMvdShift );
+          Mv mvd = pu.mvdAffi[REF_PIC_LIST_1][0];
+          mvd.changeAffinePrecInternal2Amvr(pu.cu->imv);
+          mvd_coding(mvd, 0); // already changed to signaling precision
+          mvd = pu.mvdAffi[REF_PIC_LIST_1][1];
+          mvd.changeAffinePrecInternal2Amvr(pu.cu->imv);
+          mvd_coding(mvd, 0); // already changed to signaling precision
           if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
           {
-            mvd_coding( pu.mvdAffi[REF_PIC_LIST_1][2], affineMvdShift );
+            mvd = pu.mvdAffi[REF_PIC_LIST_1][2];
+            mvd.changeAffinePrecInternal2Amvr(pu.cu->imv);
+            mvd_coding(mvd, 0); // already changed to signaling precision
           }
         }
         else
         {
-          mvd_coding( pu.mvd[REF_PIC_LIST_1], pu.cu->imv );
+          Mv mvd = pu.mvd[REF_PIC_LIST_1];
+          mvd.changeTransPrecInternal2Amvr(pu.cu->imv);
+          mvd_coding(mvd, 0); // already changed to signaling precision
         }
       }
       }
@@ -2433,7 +2450,7 @@ void CABACWriter::mvd_coding( const Mv &rMvd, int8_t imv )
     verMvd >>= 2;
     if( imv == 2 )//IMV_4PEL
     {
-      CHECK( (horMvd % 4) != 0 && (verMvd % 4) != 0, "IMV: MVD is not a multiple of 8" );
+      CHECK( (horMvd % 4) != 0 && (verMvd % 4) != 0, "IMV: MVD is not a multiple of 16" );
       horMvd >>= 2;
       verMvd >>= 2;
     }

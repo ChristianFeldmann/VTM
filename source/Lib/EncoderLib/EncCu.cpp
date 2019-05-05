@@ -2447,11 +2447,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   }
   m_bestModeUpdated = tempCS->useDbCost = bestCS->useDbCost = false;
   uint32_t iteration;
-  uint32_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+  uint32_t iterationBegin = 0;
   if (encTestMode.lossless)
   {
     iteration = 1;
-    iterationBegin = 0;
   }
   else
   {
@@ -2864,11 +2863,10 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   m_bestModeUpdated = tempCS->useDbCost = bestCS->useDbCost = false;
   {
     uint8_t iteration;
-    uint8_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+    uint8_t iterationBegin = 0;
     if (encTestMode.lossless)
     {
       iteration = 1;
-      iterationBegin = 0;
     }
     else
     {
@@ -3131,11 +3129,10 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
   }
 
   uint32_t iteration;
-  uint32_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+  uint32_t iterationBegin = 0;
   if (encTestMode.lossless)
   {
     iteration = 1;
-    iterationBegin = 0;
   }
   else
   {

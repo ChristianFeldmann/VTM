@@ -287,14 +287,6 @@ const CtxSet ContextSetCfg::MmvdStepMvpIdx = ContextSetCfg::addCtxSet
   {   1, },
 });
 
-const CtxSet ContextSetCfg::PartSize = ContextSetCfg::addCtxSet
-({
-  { CNU, CNU, CNU, CNU, },
-  { CNU, CNU, CNU, CNU, },
-  { CNU, CNU, CNU, CNU, },
-  { DWS, DWS, DWS, DWS, },
-});
-
 const CtxSet ContextSetCfg::PredMode = ContextSetCfg::addCtxSet
 ({
   { 192, 168, },

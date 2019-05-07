@@ -246,11 +246,13 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_initialCpbRemovalDelay      [0][1]     = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_initialCpbRemovalDelayOffset[0][1]     = uiInitialCpbRemovalDelay;
 
+#if !JVET_N0063_VUI
   double dTmp = (double)slice->getSPS()->getVuiParameters()->getTimingInfo()->getNumUnitsInTick() / (double)slice->getSPS()->getVuiParameters()->getTimingInfo()->getTimeScale();
 
   uint32_t uiTmp = (uint32_t)( dTmp * 90000.0 );
   uiInitialCpbRemovalDelay -= uiTmp;
   uiInitialCpbRemovalDelay -= uiTmp / ( slice->getSPS()->getVuiParameters()->getHrdParameters()->getTickDivisorMinus2() + 2 );
+#endif
   bufferingPeriodSEI->m_initialAltCpbRemovalDelay      [0][0]  = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_initialAltCpbRemovalDelayOffset[0][0]  = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_initialAltCpbRemovalDelay      [0][1]  = uiInitialCpbRemovalDelay;

@@ -909,6 +909,60 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
 #if ENABLE_TRACING
   DTRACE( g_trace_ctx, D_HEADER, "----------- vui_parameters -----------\n");
 #endif
+
+#if JVET_N0063_VUI
+
+  uint32_t  symbol;
+
+  READ_FLAG( symbol, "aspect_ratio_info_present_flag");           pcVUI->setAspectRatioInfoPresentFlag(symbol);
+  if (pcVUI->getAspectRatioInfoPresentFlag())
+  {
+    READ_CODE(8, symbol, "aspect_ratio_idc");                         pcVUI->setAspectRatioIdc(symbol);
+    if (pcVUI->getAspectRatioIdc() == 255)
+    {
+      READ_CODE(16, symbol, "sar_width");                             pcVUI->setSarWidth(symbol);
+      READ_CODE(16, symbol, "sar_height");                            pcVUI->setSarHeight(symbol);
+    }
+  }
+
+  READ_FLAG(   symbol, "colour_description_present_flag");          pcVUI->setColourDescriptionPresentFlag(symbol);
+  if (pcVUI->getColourDescriptionPresentFlag())
+  {
+    READ_CODE(8, symbol, "colour_primaries");                       pcVUI->setColourPrimaries(symbol);
+    READ_CODE(8, symbol, "transfer_characteristics");               pcVUI->setTransferCharacteristics(symbol);
+    READ_CODE(8, symbol, "matrix_coeffs");                          pcVUI->setMatrixCoefficients(symbol);
+  }
+
+  READ_FLAG(     symbol, "field_seq_flag");                           pcVUI->setFieldSeqFlag(symbol);
+
+  READ_FLAG(     symbol, "chroma_loc_info_present_flag");             pcVUI->setChromaLocInfoPresentFlag(symbol);
+  if (pcVUI->getChromaLocInfoPresentFlag())
+  {
+    if(pcVUI->getFieldSeqFlag())
+    {
+      READ_UVLC(   symbol, "chroma_sample_loc_type_top_field" );        pcVUI->setChromaSampleLocTypeTopField(symbol);
+      READ_UVLC(   symbol, "chroma_sample_loc_type_bottom_field" );     pcVUI->setChromaSampleLocTypeBottomField(symbol);
+    }
+    else
+    {
+      READ_UVLC(   symbol, "chroma_sample_loc_type" );        pcVUI->setChromaSampleLocType(symbol);
+    }
+  }
+
+  READ_FLAG(     symbol, "overscan_info_present_flag");               pcVUI->setOverscanInfoPresentFlag(symbol);
+  if (pcVUI->getOverscanInfoPresentFlag())
+  {
+    READ_FLAG(   symbol, "overscan_appropriate_flag");                pcVUI->setOverscanAppropriateFlag(symbol);
+  }
+
+  READ_FLAG(     symbol, "video_signal_type_present_flag");           pcVUI->setVideoSignalTypePresentFlag(symbol);
+  if (pcVUI->getVideoSignalTypePresentFlag())
+  {
+    READ_FLAG(   symbol, "video_full_range_flag");                    pcVUI->setVideoFullRangeFlag(symbol);
+  }
+
+#else
+
   uint32_t  uiCode;
 
   READ_FLAG(     uiCode, "aspect_ratio_info_present_flag");           pcVUI->setAspectRatioInfoPresentFlag(uiCode);
@@ -997,6 +1051,8 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
     READ_UVLC(   uiCode, "log2_max_mv_length_horizontal" );           pcVUI->setLog2MaxMvLengthHorizontal(uiCode);
     READ_UVLC(   uiCode, "log2_max_mv_length_vertical" );             pcVUI->setLog2MaxMvLengthVertical(uiCode);
   }
+
+#endif
 }
 
 void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1)
@@ -1465,7 +1521,22 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 #endif
 
-  // KJS: no VUI defined yet
+#if JVET_N0063_VUI
+  TimingInfo *timingInfo = pcSPS->getTimingInfo();
+  READ_FLAG(       uiCode, "timing_info_present_flag");         timingInfo->setTimingInfoPresentFlag      (uiCode ? true : false);
+  if(timingInfo->getTimingInfoPresentFlag())
+  {
+    READ_CODE( 32, uiCode, "num_units_in_tick");                timingInfo->setNumUnitsInTick             (uiCode);
+    READ_CODE( 32, uiCode, "time_scale");                       timingInfo->setTimeScale                  (uiCode);
+
+    READ_FLAG(     uiCode, "hrd_parameters_present_flag");        pcSPS->setHrdParametersPresentFlag(uiCode);
+    if( pcSPS->getHrdParametersPresentFlag() )
+    {
+      parseHrdParameters( pcSPS->getHrdParameters(), 1, pcSPS->getMaxTLayers() - 1 );
+    }
+  }
+#endif
+
   READ_FLAG( uiCode, "vui_parameters_present_flag" );             pcSPS->setVuiParametersPresentFlag(uiCode);
 
   if (pcSPS->getVuiParametersPresentFlag())

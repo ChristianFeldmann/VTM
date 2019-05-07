@@ -554,6 +554,25 @@ protected:
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
 #endif
 
+#if JVET_N0063_VUI
+  bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
+  bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
+  int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
+  int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
+  int       m_sarHeight;                                      ///< vertical size of the sample aspect ratio
+  bool      m_colourDescriptionPresentFlag;                   ///< Signals whether colour_primaries, transfer_characteristics and matrix_coefficients are present
+  int       m_colourPrimaries;                                ///< Indicates chromaticity coordinates of the source primaries
+  int       m_transferCharacteristics;                        ///< Indicates the opto-electronic transfer characteristics of the source
+  int       m_matrixCoefficients;                             ///< Describes the matrix coefficients used in deriving luma and chroma from RGB primaries
+  bool      m_chromaLocInfoPresentFlag;                       ///< Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present
+  int       m_chromaSampleLocTypeTopField;                    ///< Specifies the location of chroma samples for top field
+  int       m_chromaSampleLocTypeBottomField;                 ///< Specifies the location of chroma samples for bottom field
+  int       m_chromaSampleLocType;                            ///< Specifies the location of chroma samples for progressive content
+  bool      m_overscanInfoPresentFlag;                        ///< Signals whether overscan_appropriate_flag is present
+  bool      m_overscanAppropriateFlag;                        ///< Indicates whether conformant decoded pictures are suitable for display using overscan
+  bool      m_videoSignalTypePresentFlag;                     ///< Signals whether video_format, video_full_range_flag, and colour_description_present_flag are present
+  bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
+#else
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
@@ -588,6 +607,7 @@ protected:
   int       m_maxBitsPerMinCuDenom;                           ///< Indicates an upper bound for the number of bits of coding_unit() data
   int       m_log2MaxMvLengthHorizontal;                      ///< Indicate the maximum absolute value of a decoded horizontal MV component in quarter-pel luma units
   int       m_log2MaxMvLengthVertical;                        ///< Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units
+#endif
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
   std::string m_colourRemapSEIFileRoot;

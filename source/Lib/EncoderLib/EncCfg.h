@@ -579,6 +579,28 @@ protected:
 #endif
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
   int       m_activeParameterSetsSEIEnabled;                  ///< enable active parameter set SEI message
+#if JVET_N0063_VUI
+  bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
+  bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
+  bool      m_chromaResamplingFilterHintEnabled;              ///< Signals whether chroma sampling filter hint data is present
+  int       m_chromaResamplingHorFilterIdc;                   ///< Specifies the Index of filter to use
+  int       m_chromaResamplingVerFilterIdc;                   ///< Specifies the Index of filter to use
+  int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
+  int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
+  int       m_sarHeight;                                      ///< vertical size of the sample aspect ratio
+  bool      m_colourDescriptionPresentFlag;                   ///< Signals whether colour_primaries, transfer_characteristics and matrix_coefficients are present
+  int       m_colourPrimaries;                                ///< Indicates chromaticity coordinates of the source primaries
+  int       m_transferCharacteristics;                        ///< Indicates the opto-electronic transfer characteristics of the source
+  int       m_matrixCoefficients;                             ///< Describes the matrix coefficients used in deriving luma and chroma from RGB primaries
+  bool      m_chromaLocInfoPresentFlag;                       ///< Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present
+  int       m_chromaSampleLocTypeTopField;                    ///< Specifies the location of chroma samples for top field
+  int       m_chromaSampleLocTypeBottomField;                 ///< Specifies the location of chroma samples for bottom field
+  int       m_chromaSampleLocType;                            ///< Specifies the location of chroma samples for progressive content
+  bool      m_overscanInfoPresentFlag;                        ///< Signals whether overscan_appropriate_flag is present
+  bool      m_overscanAppropriateFlag;                        ///< Indicates whether conformant decoded pictures are suitable for display using overscan
+  bool      m_videoSignalTypePresentFlag;                     ///< Signals whether video_format, video_full_range_flag, and colour_description_present_flag are present
+  bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
+#else
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   bool      m_chromaResamplingFilterHintEnabled;              ///< Signals whether chroma sampling filter hint data is present
@@ -612,6 +634,7 @@ protected:
   int       m_maxBitsPerMinCuDenom;                           ///< Indicates an upper bound for the number of bits of coding_unit() data
   int       m_log2MaxMvLengthHorizontal;                      ///< Indicate the maximum absolute value of a decoded horizontal MV component in quarter-pel luma units
   int       m_log2MaxMvLengthVertical;                        ///< Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units
+#endif
 
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
   bool      m_useStrongIntraSmoothing;                        ///< enable the use of strong intra smoothing (bi_linear interpolation) for 32x32 blocks when reference samples are flat.
@@ -1467,6 +1490,47 @@ public:
 
   void         setActiveParameterSetsSEIEnabled ( int b )            { m_activeParameterSetsSEIEnabled = b; }
   int          getActiveParameterSetsSEIEnabled ()                   { return m_activeParameterSetsSEIEnabled; }
+
+#if JVET_N0063_VUI
+#if JVET_N0349_DPS
+  bool         getDecodingParameterSetEnabled()                      { return m_decodingParameterSetEnabled; }
+  void         setDecodingParameterSetEnabled(bool i)                { m_decodingParameterSetEnabled = i; }
+#endif
+  bool         getVuiParametersPresentFlag()                         { return m_vuiParametersPresentFlag; }
+  void         setVuiParametersPresentFlag(bool i)                   { m_vuiParametersPresentFlag = i; }
+  bool         getAspectRatioInfoPresentFlag()                       { return m_aspectRatioInfoPresentFlag; }
+  void         setAspectRatioInfoPresentFlag(bool i)                 { m_aspectRatioInfoPresentFlag = i; }
+  int          getAspectRatioIdc()                                   { return m_aspectRatioIdc; }
+  void         setAspectRatioIdc(int i)                              { m_aspectRatioIdc = i; }
+  int          getSarWidth()                                         { return m_sarWidth; }
+  void         setSarWidth(int i)                                    { m_sarWidth = i; }
+  int          getSarHeight()                                        { return m_sarHeight; }
+  void         setSarHeight(int i)                                   { m_sarHeight = i; }
+  bool         getColourDescriptionPresentFlag()                     { return m_colourDescriptionPresentFlag; }
+  void         setColourDescriptionPresentFlag(bool i)               { m_colourDescriptionPresentFlag = i; }
+  int          getColourPrimaries()                                  { return m_colourPrimaries; }
+  void         setColourPrimaries(int i)                             { m_colourPrimaries = i; }
+  int          getTransferCharacteristics()                          { return m_transferCharacteristics; }
+  void         setTransferCharacteristics(int i)                     { m_transferCharacteristics = i; }
+  int          getMatrixCoefficients()                               { return m_matrixCoefficients; }
+  void         setMatrixCoefficients(int i)                          { m_matrixCoefficients = i; }
+  bool         getChromaLocInfoPresentFlag()                         { return m_chromaLocInfoPresentFlag; }
+  void         setChromaLocInfoPresentFlag(bool i)                   { m_chromaLocInfoPresentFlag = i; }
+  int          getChromaSampleLocTypeTopField()                      { return m_chromaSampleLocTypeTopField; }
+  void         setChromaSampleLocTypeTopField(int i)                 { m_chromaSampleLocTypeTopField = i; }
+  int          getChromaSampleLocTypeBottomField()                   { return m_chromaSampleLocTypeBottomField; }
+  void         setChromaSampleLocTypeBottomField(int i)              { m_chromaSampleLocTypeBottomField = i; }
+  int          getChromaSampleLocType()                              { return m_chromaSampleLocType; }
+  void         setChromaSampleLocType(int i)                         { m_chromaSampleLocType = i; }
+  bool         getOverscanInfoPresentFlag()                          { return m_overscanInfoPresentFlag; }
+  void         setOverscanInfoPresentFlag(bool i)                    { m_overscanInfoPresentFlag = i; }
+  bool         getOverscanAppropriateFlag()                          { return m_overscanAppropriateFlag; }
+  void         setOverscanAppropriateFlag(bool i)                    { m_overscanAppropriateFlag = i; }
+  bool         getVideoSignalTypePresentFlag()                       { return m_videoSignalTypePresentFlag; }
+  void         setVideoSignalTypePresentFlag(bool i)                 { m_videoSignalTypePresentFlag = i; }
+  bool         getVideoFullRangeFlag()                               { return m_videoFullRangeFlag; }
+  void         setVideoFullRangeFlag(bool i)                         { m_videoFullRangeFlag = i; }
+#else
   bool         getVuiParametersPresentFlag()                         { return m_vuiParametersPresentFlag; }
   void         setVuiParametersPresentFlag(bool i)                   { m_vuiParametersPresentFlag = i; }
 #if JVET_N0349_DPS
@@ -1531,6 +1595,7 @@ public:
   void         setLog2MaxMvLengthHorizontal(int i)                   { m_log2MaxMvLengthHorizontal = i; }
   int          getLog2MaxMvLengthVertical()                          { return m_log2MaxMvLengthVertical; }
   void         setLog2MaxMvLengthVertical(int i)                     { m_log2MaxMvLengthVertical = i; }
+#endif
 
   bool         getProgressiveSourceFlag() const                      { return m_progressiveSourceFlag; }
   void         setProgressiveSourceFlag(bool b)                      { m_progressiveSourceFlag = b; }

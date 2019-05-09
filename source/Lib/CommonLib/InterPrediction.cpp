@@ -799,7 +799,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 }
 
 #if JVET_N0068_AFFINE_MEM_BW
-bool InterPrediction::isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType ) 
+bool InterPrediction::isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType )
 {
   int s4 = ( 4 << 11 );
   int filterTap = 6;
@@ -1101,7 +1101,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   const int   bitDepth = clipBitDepths.recon[toChannelType(COMPONENT_Y)];
   const int   shiftNum = IF_INTERNAL_PREC + 1 - bitDepth;
   const int   offset = (1 << (shiftNum - 1)) + 2 * IF_INTERNAL_OFFS;
-#if JVET_N0325_BDOF 
+#if JVET_N0325_BDOF
   const int   limit = (1<<(std::max<int>(5, bitDepth - 7)));
 #else
   const int   limit = (bitDepth>12)? 2 : ((int)1 << (4 + IF_INTERNAL_PREC - bitDepth - 5));
@@ -1373,15 +1373,15 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
         }
       }
 
-      if (bioApplied && pu.cu->smvdMode) 
+      if (bioApplied && pu.cu->smvdMode)
 	  {
         bioApplied = false;
       }
-      if (pu.cu->cs->sps->getUseGBi() && bioApplied && pu.cu->GBiIdx != GBI_DEFAULT) 
+      if (pu.cu->cs->sps->getUseGBi() && bioApplied && pu.cu->GBiIdx != GBI_DEFAULT)
 	  {
         bioApplied = false;
       }
-      if (pu.mmvdEncOptMode == 2 && pu.mmvdMergeFlag) 
+      if (pu.mmvdEncOptMode == 2 && pu.mmvdMergeFlag)
 	  {
         bioApplied = false;
       }
@@ -2015,7 +2015,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
         xFinalPaddedMCForDMVR(subPu, srcPred0, srcPred1, m_cYuvRefBuffSubCuDMVRL0, m_cYuvRefBuffSubCuDMVRL1, bioApplied, mergeMv);
 
         subPredBuf.bufs[COMPONENT_Y].buf  = pcYuvDst.bufs[COMPONENT_Y].buf + xStart + yStart * dstStride[COMPONENT_Y];
-#if !JVET_N0671_DMVR 
+#if !JVET_N0671_DMVR
         subPredBuf.bufs[COMPONENT_Cb].buf = pcYuvDst.bufs[COMPONENT_Cb].buf + (xStart >> 1) + ((yStart >> 1) * dstStride[COMPONENT_Cb]);
         subPredBuf.bufs[COMPONENT_Cr].buf = pcYuvDst.bufs[COMPONENT_Cr].buf + (xStart >> 1) + ((yStart >> 1) * dstStride[COMPONENT_Cr]);
 #else
@@ -2026,7 +2026,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
         scaleX =  getComponentScaleX(COMPONENT_Cr, pu.chromaFormat);
         scaleY =  getComponentScaleY(COMPONENT_Cr, pu.chromaFormat);
         subPredBuf.bufs[COMPONENT_Cr].buf = pcYuvDst.bufs[COMPONENT_Cr].buf + (xStart >> scaleX) + ((yStart >> scaleY) * dstStride[COMPONENT_Cr]);
-#endif // !JVET_N0671_DMVR 
+#endif // !JVET_N0671_DMVR
 
         xWeightedAverage(subPu, srcPred0, srcPred1, subPredBuf, subPu.cu->slice->getSPS()->getBitDepths(), subPu.cu->slice->clpRngs(), bioApplied);
         num++;

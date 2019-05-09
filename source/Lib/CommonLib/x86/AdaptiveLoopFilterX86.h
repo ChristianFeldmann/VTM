@@ -48,7 +48,7 @@
 #endif
 
 template<X86_VEXT vext>
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION  
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift, int vbCTUHeight, int vbPos)
 #else
 static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift)
@@ -688,7 +688,7 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
       for( int ii = 0; ii < clsSizeY; ii++ )
       {
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-        pImg0 = pImgYPad0 + j + ii * srcStride; 
+        pImg0 = pImgYPad0 + j + ii * srcStride;
         pImg1 = pImgYPad1 + j + ii * srcStride;
         pImg2 = pImgYPad2 + j + ii * srcStride;
         pImg3 = pImgYPad3 + j + ii * srcStride;
@@ -698,7 +698,7 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
         if ((startHeight + i + ii) % vbCTUHeight < vbPos && ((startHeight + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
         {
           pImg1 = ((startHeight + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;          
+          pImg3 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
 
           pImg2 = ((startHeight + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
           pImg4 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
@@ -709,7 +709,7 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
           pImg4 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
 
           pImg1 = ((startHeight + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
-          pImg3 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;         
+          pImg3 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
         }
 #endif
         __m128i clipp, clipm;
@@ -1237,7 +1237,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 #endif
     {
 #if JVET_N0242_NON_LINEAR_ALF
-      for (int k = 0; k < 2; ++k)    
+      for (int k = 0; k < 2; ++k)
       {
         if( !bChroma )
         {
@@ -1370,7 +1370,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         c2 = _mm_shuffle_epi8( c2, xmm10 );
       }
  #endif
-#if !JVET_N0180_ALF_LINE_BUFFER_REDUCTION 
+#if !JVET_N0180_ALF_LINE_BUFFER_REDUCTION
       pImg0 = pImgYPad0 + j;
       pImg1 = pImgYPad1 + j;
       pImg2 = pImgYPad2 + j;
@@ -1416,7 +1416,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
       for( int ii = 0; ii < clsSizeY; ii++ )
       {
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-        pImg0 = pImgYPad0 + j + ii * srcStride; 
+        pImg0 = pImgYPad0 + j + ii * srcStride;
         pImg1 = pImgYPad1 + j + ii * srcStride;
         pImg2 = pImgYPad2 + j + ii * srcStride;
         pImg3 = pImgYPad3 + j + ii * srcStride;

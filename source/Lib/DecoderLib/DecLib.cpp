@@ -786,7 +786,7 @@ void DecLib::xActivateParameterSets()
           THROW("APS activation failed!");
         }
       }
-    }    
+    }
 
     //chroma APS
     int apsId = m_apcSlicePilot->getTileGroupApsIdChroma();
@@ -1296,7 +1296,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #if JVET_N0235_SMVD_SPS
     if (pcSlice->getSPS()->getUseSMVD() && pcSlice->getCheckLDC() == false
 #if !JVET_N0470_SMVD_FIX
-      && pcSlice->getMvdL1ZeroFlag() == false 
+      && pcSlice->getMvdL1ZeroFlag() == false
 #endif
       )
 #else

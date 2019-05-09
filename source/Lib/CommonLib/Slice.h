@@ -255,7 +255,7 @@ public:
     , m_noDepQuantConstraintFlag (false)
     , m_noSignDataHidingConstraintFlag(false)
   {}
-  
+
   bool          getProgressiveSourceFlag() const { return m_progressiveSourceFlag; }
   void          setProgressiveSourceFlag(bool b) { m_progressiveSourceFlag = b; }
 
@@ -1012,7 +1012,7 @@ private:
 
   bool              m_affineAmvrEnabledFlag;
   bool              m_DMVR;
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   bool              m_MMVD;
 #endif
   bool              m_SBT;
@@ -1313,7 +1313,7 @@ public:
   void                    setFpelMmvdEnabledFlag( bool b )                                                { m_fpelMmvdEnabledFlag = b;    }
   bool                    getUseDMVR()const                                                               { return m_DMVR; }
   void                    setUseDMVR(bool b)                                                              { m_DMVR = b;    }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   bool                    getUseMMVD()const                                                               { return m_MMVD; }
   void                    setUseMMVD(bool b)                                                              { m_MMVD = b;    }
 #endif
@@ -1894,7 +1894,7 @@ private:
   APS*                       m_aps;
   bool                       m_tileGroupAlfEnabledFlag;
 #endif
-#if JVET_N0329_IBC_SEARCH_IMP 
+#if JVET_N0329_IBC_SEARCH_IMP
   bool                       m_disableSATDForRd;
 #endif
   SliceReshapeInfo           m_sliceReshapeInfo;
@@ -2211,7 +2211,7 @@ public:
   bool                        getTileGroupAlfEnabledFlag() const { return m_tileGroupAlfEnabledFlag; }
   void                        setTileGroupAlfEnabledFlag(bool b) { m_tileGroupAlfEnabledFlag = b; }
 #endif
-#if JVET_N0329_IBC_SEARCH_IMP 
+#if JVET_N0329_IBC_SEARCH_IMP
   void                        setDisableSATDForRD(bool b) { m_disableSATDForRd = b; }
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
 #endif

@@ -774,7 +774,7 @@ double EncAdaptiveLoopFilter::deriveCtbAlfEnableFlags( CodingStructure& cs, cons
 #if ENABLE_QPA
   CHECK ((chromaWeight > 0.0) && (cs.slice->getSliceCurStartCtuTsAddr() != 0), "incompatible start CTU address, must be 0");
 #endif
-  
+
 #if JVET_N0415_CTB_ALF
   reconstructCoeff(m_alfSliceParamTemp, channel, true, isLuma(channel));
   for (int classIdx = 0; classIdx < (isLuma(channel) ? MAX_NUM_ALF_CLASSES : 1); classIdx++)
@@ -1955,7 +1955,7 @@ double EncAdaptiveLoopFilter::deriveFilterCoeffs( AlfCovariance* cov, AlfCovaria
   double errorMin = 0;
   double errorMinPerClass[MAX_NUM_ALF_CLASSES] = { 0 };
   double errorCurSetPerClass[MAX_NUM_ALF_CLASSES] = { 0 };
-  int    fixedFilterFlagPerClass[MAX_NUM_ALF_CLASSES] = { 0 };  
+  int    fixedFilterFlagPerClass[MAX_NUM_ALF_CLASSES] = { 0 };
 
 #if JVET_N0242_NON_LINEAR_ALF
   if (!alfSliceParam.nonLinearFlag[CHANNEL_TYPE_LUMA])
@@ -2007,7 +2007,7 @@ double EncAdaptiveLoopFilter::deriveFilterCoeffs( AlfCovariance* cov, AlfCovaria
         }
       }
     }
-  }  
+  }
 #endif
 
   for( int filtIdx = 0; filtIdx < numFilters; filtIdx++ )
@@ -2023,7 +2023,7 @@ double EncAdaptiveLoopFilter::deriveFilterCoeffs( AlfCovariance* cov, AlfCovaria
 #if JVET_N0415_CTB_ALF
         //adjust stat
         tmpCovFf = cov[classIdx];
-        if (alfSliceParam.fixedFilterSetIndex > 0 && alfSliceParam.fixedFilterIdx[classIdx] > 0 
+        if (alfSliceParam.fixedFilterSetIndex > 0 && alfSliceParam.fixedFilterIdx[classIdx] > 0
 #if JVET_N0242_NON_LINEAR_ALF
           && alfSliceParam.nonLinearFlag[CHANNEL_TYPE_LUMA] == false
 #endif
@@ -2289,7 +2289,7 @@ const int numCoeff = shape.numCoeff;
 }
 
 #if !JVET_N0242_NON_LINEAR_ALF
-double EncAdaptiveLoopFilter::calcErrorForCoeffs( double **E, double *y, 
+double EncAdaptiveLoopFilter::calcErrorForCoeffs( double **E, double *y,
 #if JVET_N0415_CTB_ALF
   const
 #endif
@@ -2589,7 +2589,7 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
 #if JVET_N0242_NON_LINEAR_ALF
           getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compArea, chType
             , ((compIdx == 0) ? m_alfVBLumaCTUHeight : m_alfVBChmaCTUHeight)
-            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))        
+            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))
           );
 #else
           getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compArea
@@ -2619,7 +2619,7 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
   }
 }
 
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION  
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0242_NON_LINEAR_ALF
 void EncAdaptiveLoopFilter::getBlkStats(AlfCovariance* alfCovariance, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, Pel* rec, const int recStride, const CompArea& area, const ChannelType channel, int vbCTUHeight, int vbPos)
 #else
@@ -2802,12 +2802,12 @@ void EncAdaptiveLoopFilter::calcCovariance(int *ELocal, const Pel *rec, const in
   int clipBotRow = 4;
   if (vbDistance >= -3 && vbDistance < 0)
   {
-    clipBotRow = -vbDistance - 1;  
+    clipBotRow = -vbDistance - 1;
     clipTopRow = -clipBotRow; // symmetric
   }
   else if (vbDistance >= 0 && vbDistance < 3)
   {
-    clipTopRow = -vbDistance;  
+    clipTopRow = -vbDistance;
     clipBotRow = -clipTopRow; // symmetric
   }
 #endif
@@ -2917,7 +2917,7 @@ void EncAdaptiveLoopFilter::calcCovariance(int *ELocal, const Pel *rec, const in
 #else
     for (int i = -halfFilterLength; i < 0; i++)
     {
-      ELocal[filterPattern[k++]] += rec[std::max(i, clipTopRow) * stride] + rec[-std::max(i, -clipBotRow) * stride]; 
+      ELocal[filterPattern[k++]] += rec[std::max(i, clipTopRow) * stride] + rec[-std::max(i, -clipBotRow) * stride];
     }
 #endif
 #else
@@ -2991,7 +2991,7 @@ void EncAdaptiveLoopFilter::calcCovariance(int *ELocal, const Pel *rec, const in
       for (int i = halfFilterLength + j; i >= -halfFilterLength - j; i--, k++)
       {
         for (int b = 0; b < numBins; b++)
-        {          
+        {
           ELocal[filterPattern[k]][b] += clipALF(clip[b], curr, rec0[std::max(i, clipTopRow) * stride], rec1[-std::max(i, -clipBotRow) * stride]);
         }
       }
@@ -3421,7 +3421,7 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfSliceParam& a
             {
               errNL[1] = MAX_DOUBLE;
             }
-#if JVET_N0242_NON_LINEAR_ALF           
+#if JVET_N0242_NON_LINEAR_ALF
             m_alfSliceParamTemp.nonLinearFlag[CHANNEL_TYPE_LUMA] = 0;
 #endif
             errNL[0] = getFilterCoeffAndCost(cs, 0, CHANNEL_TYPE_LUMA, true, 0, bitNL[0], true);
@@ -3828,7 +3828,7 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
 #else
         m_filter7x7Blk(m_classifier, recBuf, recExtBuf, blk, COMPONENT_Y, coeff, m_clpRngs.comp[COMPONENT_Y], cs);
 #endif
-#endif       
+#endif
       }
 
       for (int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++)

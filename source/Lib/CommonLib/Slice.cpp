@@ -793,7 +793,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
 #if JVET_N0054_JOINT_CHROMA
   m_iSliceChromaQpDelta[JOINT_CbCr] = pSrc->m_iSliceChromaQpDelta[JOINT_CbCr];
 #endif
-  
+
   for (i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     for (j = 0; j < MAX_NUM_REF; j++)
@@ -1139,7 +1139,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
     {
       if(this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_CRA)
       {
-        if(pcSlice->getPOC() < this->getAssociatedIRAPPOC() && 
+        if(pcSlice->getPOC() < this->getAssociatedIRAPPOC() &&
           (
 #if !JVET_M0101_HLS
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP   ||
@@ -1800,7 +1800,7 @@ SPS::SPS()
 #endif
 , m_affineAmvrEnabledFlag     ( false )
 , m_DMVR                      ( false )
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
 , m_MMVD                      ( false )
 #endif
 , m_SBT                       ( false )

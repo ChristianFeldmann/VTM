@@ -694,9 +694,9 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
       else
       {
         m_BinEncoder.encodeBin(cu.firstPU->regularMergeFlag, Ctx::RegularMergeFlag(0));
-        DTRACE(g_trace_ctx, D_SYNTAX, "regularMergeFlag() ctx=%d regularMergeFlag=%d\n", 0, cu.firstPU->regularMergeFlag?1:0);      
+        DTRACE(g_trace_ctx, D_SYNTAX, "regularMergeFlag() ctx=%d regularMergeFlag=%d\n", 0, cu.firstPU->regularMergeFlag?1:0);
       }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
       if (cu.cs->slice->getSPS()->getUseMMVD())
       {
 #endif
@@ -714,12 +714,12 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
           m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
           DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
         }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
       }
 #endif
     }
 #else
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
     if (CU::isInter(cu) && cu.cs->slice->getSPS()->getUseMMVD())
 #else
     if (CU::isInter(cu))
@@ -742,7 +742,7 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
       m_BinEncoder.encodeBin(cu.firstPU->regularMergeFlag, Ctx::RegularMergeFlag(0));
       DTRACE(g_trace_ctx, D_SYNTAX, "regularMergeFlag() ctx=%d regularMergeFlag=%d\n", 0, cu.firstPU->regularMergeFlag?1:0);
     }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
     if (cu.cs->slice->getSPS()->getUseMMVD())
     {
 #endif
@@ -760,12 +760,12 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
         m_BinEncoder.encodeBin(cu.mmvdSkip, Ctx::MmvdFlag(0));
         DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, cu.mmvdSkip ? 1 : 0);
       }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
     }
 #endif
   }
 #else
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   if (cu.skip && !cu.cs->slice->getSPS()->getIBCFlag() && cu.cs->slice->getSPS()->getUseMMVD())
 #else
   if (cu.skip && !cu.cs->slice->getSPS()->getIBCFlag())
@@ -1707,7 +1707,7 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
       m_BinEncoder.encodeBin(pu.regularMergeFlag, Ctx::RegularMergeFlag(1));
       DTRACE(g_trace_ctx, D_SYNTAX, "regularMergeFlag() ctx=%d regularMergeFlag=%d\n", 1, pu.regularMergeFlag?1:0);
     }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
     if (pu.cs->sps->getUseMMVD())
     {
 #endif
@@ -1725,12 +1725,12 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
         m_BinEncoder.encodeBin(pu.mmvdMergeFlag, Ctx::MmvdFlag(0));
         DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
       }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
     }
 #endif
   }
 #else
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   if (pu.mergeFlag && pu.cs->sps->getUseMMVD())
 #else
   if (pu.mergeFlag)
@@ -2630,7 +2630,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
   if ( compID == COMPONENT_Cr && TU::getCbf( tu, COMPONENT_Cb ) )
   {
     joint_cb_cr( tu );
-    
+
     // No Cr residual in bitstream in joint Cb-Cr residual mode
     if ( tu.jointCbCr )
       return;

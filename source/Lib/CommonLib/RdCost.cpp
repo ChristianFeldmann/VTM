@@ -3034,7 +3034,7 @@ Distortion RdCost::xGetSSE_WTD( const DistParam &rcDtParam )
 #else
   const size_t  cShift          = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
 #endif
-  
+
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
   for( ; iRows != 0; iRows-- )

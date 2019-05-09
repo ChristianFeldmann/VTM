@@ -54,7 +54,7 @@
 
 #define JVET_N0105_LFNST_CTX_MODELLING                    1 // LFNST index signalled without intra mode dependency and with on ctx-coded bin
 
-#define JVET_N0193_LFNST                                  1 //Low Frequency Non-Separable Transform (LFNST), previously, Reduced Secondary Transform (RST) 
+#define JVET_N0193_LFNST                                  1 //Low Frequency Non-Separable Transform (LFNST), previously, Reduced Secondary Transform (RST)
 
 #define JVET_N0217_MATRIX_INTRAPRED                       1 // matrix-based intra prediction (MIP)
 
@@ -936,16 +936,16 @@ enum NalUnitType
   //KJS: keep RADL/RASL since there is no real decision on these types yet
   NAL_UNIT_CODED_SLICE_RADL,      // 2   should be NAL_UNIT_RESERVED_VCL_2,
   NAL_UNIT_CODED_SLICE_RASL,      // 3   should be NAL_UNIT_RESERVED_VCL_3,
-  
+
   NAL_UNIT_RESERVED_VCL_4,
   NAL_UNIT_RESERVED_VCL_5,
   NAL_UNIT_RESERVED_VCL_6,
   NAL_UNIT_RESERVED_VCL_7,
-  
+
   NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 8
   NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 9
   NAL_UNIT_CODED_SLICE_CRA,         // 10
-  
+
   NAL_UNIT_RESERVED_IRAP_VCL11,
   NAL_UNIT_RESERVED_IRAP_VCL12,
   NAL_UNIT_RESERVED_IRAP_VCL13,
@@ -968,7 +968,7 @@ enum NalUnitType
   NAL_UNIT_EOB,                     // 22
   NAL_UNIT_PREFIX_SEI,              // 23
   NAL_UNIT_SUFFIX_SEI,              // 24
-  NAL_UNIT_FILLER_DATA,             // 25  keep: may be added with HRD 
+  NAL_UNIT_FILLER_DATA,             // 25  keep: may be added with HRD
 
   NAL_UNIT_RESERVED_NVCL26,
   NAL_UNIT_RESERVED_NVCL27,

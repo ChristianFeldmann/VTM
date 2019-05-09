@@ -77,7 +77,7 @@ private:
 
   static const uint8_t m_aucIntraFilter[MAX_NUM_CHANNEL_TYPE][MAX_INTRA_FILTER_DEPTHS];
 
-  struct IntraPredParam //parameters of Intra Prediction 
+  struct IntraPredParam //parameters of Intra Prediction
   {
     bool refFilterFlag;
     bool applyPDPC;
@@ -89,15 +89,15 @@ private:
     int  invAngle;
     bool interpolationFlag;
 
-    IntraPredParam() : 
-      refFilterFlag     ( false                           ), 
-      applyPDPC         ( false                           ), 
-      isModeVer         ( false                           ), 
-      multiRefIndex     ( -1                              ), 
-      whRatio           ( 0                               ), 
-      hwRatio           ( 0                               ), 
+    IntraPredParam() :
+      refFilterFlag     ( false                           ),
+      applyPDPC         ( false                           ),
+      isModeVer         ( false                           ),
+      multiRefIndex     ( -1                              ),
+      whRatio           ( 0                               ),
+      hwRatio           ( 0                               ),
       intraPredAngle    ( std::numeric_limits<int>::max() ),
-      invAngle          ( std::numeric_limits<int>::max() ), 
+      invAngle          ( std::numeric_limits<int>::max() ),
       interpolationFlag ( false                           ) {}
   };
 
@@ -125,7 +125,7 @@ protected:
 #if JVET_N0435_WAIP_HARMONIZATION
   static bool isIntegerSlope(const int absAng) { return (0 == (absAng & 0x1F)); }
 #else
-  static bool isIntegerSlope      ( const int absAng ) { return (0 == (absAng & 0x1F)) && absAng <=32; }  //  integer-slope modes 2, DIA_IDX and VDIA_IDX.  "absAng <=32" restricts wide-angle integer modes 
+  static bool isIntegerSlope      ( const int absAng ) { return (0 == (absAng & 0x1F)) && absAng <=32; }  //  integer-slope modes 2, DIA_IDX and VDIA_IDX.  "absAng <=32" restricts wide-angle integer modes
 #endif
 
 #if JVET_N0413_RDPCM
@@ -163,7 +163,7 @@ public:
   void predIntraChromaLM(const ComponentID compID, PelBuf &piPred, const PredictionUnit &pu, const CompArea& chromaArea, int intraDir);
   void xGetLumaRecPixels(const PredictionUnit &pu, CompArea chromaArea);
   /// set parameters from CU data for accessing intra data
-  void initIntraPatternChType     (const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers 
+  void initIntraPatternChType     (const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers
 
 #if JVET_N0217_MATRIX_INTRAPRED
   // Matrix-based intra prediction

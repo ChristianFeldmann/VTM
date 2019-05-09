@@ -54,7 +54,7 @@ enum MvPrecision
   MV_PRECISION_HALF     = 3,      // 1/2-pel
   MV_PRECISION_QUARTER  = 4,      // 1/4-pel (the precision of regular MV difference signaling), shift 4 bits from 4-pel
   MV_PRECISION_SIXTEENTH = 6,     // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
-  MV_PRECISION_INTERNAL = 2 + MV_FRACTIONAL_BITS_INTERNAL,      
+  MV_PRECISION_INTERNAL = 2 + MV_FRACTIONAL_BITS_INTERNAL,
 };
 
 /// basic motion vector class

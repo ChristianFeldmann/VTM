@@ -1937,7 +1937,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #if JVET_N0235_SMVD_SPS
     if ( pcSlice->getSPS()->getUseSMVD() && pcSlice->getCheckLDC() == false
 #if !JVET_N0470_SMVD_FIX
-      && pcSlice->getMvdL1ZeroFlag() == false 
+      && pcSlice->getMvdL1ZeroFlag() == false
 #endif
       )
 #else
@@ -2426,7 +2426,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       }
 
       if( pcSlice->getSPS()->getALFEnabledFlag() )
-      { 
+      {
 #if JVET_N0415_CTB_ALF
         for (int s = 0; s < uiNumSliceSegments; s++)
         {
@@ -2455,7 +2455,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             pcPic->slices[s]->setTileGroupNumAps(0);
           }
           pcPic->slices[s]->setAPSs(cs.slice->getAPSs());
-          pcPic->slices[s]->setTileGroupApsIdChroma(cs.slice->getTileGroupApsIdChroma());          
+          pcPic->slices[s]->setTileGroupApsIdChroma(cs.slice->getTileGroupApsIdChroma());
         }
 #else
         AlfSliceParam alfSliceParam;

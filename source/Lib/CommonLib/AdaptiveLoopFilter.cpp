@@ -753,7 +753,7 @@ void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const
     for( int j = blk.pos().x; j < width; j += m_CLASSIFICATION_BLK_SIZE )
     {
       int nWidth = std::min( j + m_CLASSIFICATION_BLK_SIZE, width ) - j;
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION   
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
       m_deriveClassificationBlk(classifier, m_laplacian, srcLuma, Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4
         , m_alfVBLumaCTUHeight
         , ((i + nHeight >= m_picHeight) ? m_picHeight : m_alfVBLumaPos)
@@ -761,7 +761,7 @@ void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const
 #else
       m_deriveClassificationBlk(classifier, m_laplacian, srcLuma, Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4);
 #endif
-     
+
     }
   }
 }
@@ -815,7 +815,7 @@ void AdaptiveLoopFilter::resetPCMBlkClassInfo(CodingStructure & cs,  AlfClassifi
   }
 }
 
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION  
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift,  int vbCTUHeight, int vbPos)
 #else
 void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift)
@@ -846,7 +846,7 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
     const Pel *src1 = &src[yoffset];
     const Pel *src2 = &src[yoffset + stride];
     const Pel *src3 = &src[yoffset + stride * 2];
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION    
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
     if (((posY - 2 + i) > 0) && ((posY - 2 + i) % vbCTUHeight) == (vbPos - 2))
     {
       src3 = &src[yoffset + stride];
@@ -855,7 +855,7 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
     {
       src0 = &src[yoffset];
     }
-#endif 
+#endif
     int* pYver = laplacian[VER][i];
     int* pYhor = laplacian[HOR][i];
     int* pYdig0 = laplacian[DIAG0][i];

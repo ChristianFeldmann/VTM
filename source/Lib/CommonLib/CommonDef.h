@@ -143,6 +143,11 @@ static const int MAX_NUM_REF =                                     16; ///< max.
 static const int MAX_QP =                                          63;
 static const int NOT_VALID =                                       -1;
 
+#if JVET_N0857_TILES_BRICKS
+static const int MAX_TILES =                                      128; ///< max. number of tiles for which a brick configuration can be read
+static const int MAX_NUM_BRICKS_PER_TILE =                          8; ///< max. number brick per tile, for which a configuration can be read
+#endif
+
 static const int AMVP_MAX_NUM_CANDS =                               2; ///< AMVP: advanced motion vector prediction - max number of final candidates
 static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP: advanced motion vector prediction - max number of candidates
 static const int AMVP_DECIMATION_FACTOR =                           2;

@@ -1608,9 +1608,9 @@ Specifies the maximum depth for CU chroma QP adjustment; if negative, CU chroma 
 
 
 %%
-%% Slice coding parameters
+%% Slice/Tile/Brick coding parameters
 %%
-\begin{OptionTableNoShorthand}{Slice coding parameters}{tab:slice-coding}
+\begin{OptionTableNoShorthand}{Slice, tile and brick coding parameters}{tab:slice-coding}
 %\Option{SliceGranularity} &
 %\ShortOption{\None} &
 %\Default{0} &
@@ -1635,38 +1635,19 @@ SliceArgument.
 \par
 \begin{tabular}{cp{0.45\textwidth}}
  0 & Single slice \\
- 1 & Maximum number of CTUs per slice \\
- 2 & Maximum number of bytes per slice \\
+ 1 & (deprecated) Maximum number of CTUs per slice \\
+ 2 & (deprecated) Maximum number of bytes per slice \\
  3 & Maximum number of tiles per slice \\
+ 4 & One slice per brick
 \end{tabular}
 \\
 
 \Option{SliceArgument} &
 %\ShortOption{\None} &
 \Default{\NotSet} &
+(deprecated)
 Specifies the maximum number of CTUs, bytes or tiles in a slice depending on the
 SliceMode setting.
-\\
-
-\Option{SliceSegmentMode} &
-%\ShortOption{\None} &
-\Default{0} &
-Enables (dependent) slice segment coding in conjunction with 
-SliceSegmentArgument.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
- 0 & Single slice \\
- 1 & Maximum number of CTUs per slice segment\\
- 2 & Maximum number of bytes per slice segment\\
- 3 & Maximum number of tiles per slice segment\\
-\end{tabular}
-\\
-
-\Option{SliceSegmentArgument} &
-%\ShortOption{\None} &
-\Default{\NotSet} &
-Defines the maximum number of CTUs, bytes or tiles a slice segment
-depending on the SliceSegmentMode setting.
 \\
 
 \Option{WaveFrontSynchro} &
@@ -1706,6 +1687,35 @@ Specifies a space or comma separated list of widths and heights,
 respectively, of each tile column or tile row.  The first value in the
 list corresponds to the leftmost tile column or topmost tile row.
 \\
+
+\Option{BrickSplit1}%
+\Option{BrickSplit2} %
+\Option{BrickSplitN} &
+%\ShortOption{\None} &
+\Default{\NotSet} &
+Specifies the splitting of tiles into bricks, N can be in the range of 1 to 128 and has no further meaning except to distinguish different splitting parameters.
+
+The following options are supported:
+
+BrickSplitN tileIdx uniform (numsplits) heights
+
+\begin{tabular}{cp{0.45\textwidth}}
+ tileIdx & the index of the tile to be split in raster scan order starting with zero \\
+ uniform & specifies whether uniform splitting shall be used (1 for uniform, 0 non-uniform) \\
+ numsplits & specifies the number of splits, if uniform is not used \\
+ heights & specifies the height of the uniform splits or a list of heights for non-uniform splits \\
+\end{tabular}
+ 
+\\
+\Option{TileRowHeightArray} &
+%\ShortOption{\None} &
+\Default{\NotSet} &
+Specifies a space or comma separated list of widths and heights,
+respectively, of each tile column or tile row.  The first value in the
+list corresponds to the leftmost tile column or topmost tile row.
+\\
+
+
 \end{OptionTableNoShorthand}
 
 

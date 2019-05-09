@@ -503,6 +503,18 @@ void EncApp::xInitLibCfg()
     m_cEncLib.setColumnWidth                                     ( m_tileColumnWidth );
     m_cEncLib.setRowHeight                                       ( m_tileRowHeight );
   }
+#if JVET_N0857_TILES_BRICKS
+  m_cEncLib.setRectSliceFlag                                     ( m_rectSliceFlag );
+  m_cEncLib.setNumSlicesInPicMinus1                              ( m_numSlicesInPicMinus1 );
+  m_cEncLib.setTopLeftTileIdx                                    ( m_topLeftTileIdx );
+  m_cEncLib.setBottomRightTileIdx                                ( m_bottomRightTileIdx );
+  m_cEncLib.setLoopFilterAcrossSlicesEnabledFlag                 ( m_loopFilterAcrossSlicesEnabledFlag );
+  m_cEncLib.setSignalledSliceIdFlag                              ( m_signalledSliceIdFlag ),
+  m_cEncLib.setSignalledSliceIdLengthMinus1                      ( m_signalledSliceIdLengthMinus1 );
+  m_cEncLib.setSliceId                                           ( m_sliceId );
+  m_cEncLib.setBrickSplitMap                                     (m_brickSplitMap);
+#endif
+
   m_cEncLib.xCheckGSParameters();
   int uiTilesCount = (m_numTileRowsMinus1+1) * (m_numTileColumnsMinus1+1);
   if(uiTilesCount == 1)

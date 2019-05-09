@@ -765,7 +765,7 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
   }
 
   // check cross tile flags
-  const bool isLoopFilterAcrossTilePPS = cs.pps->getLoopFilterAcrossTilesEnabledFlag();
+  const bool isLoopFilterAcrossTilePPS = cs.pps->getLoopFilterAcrossBricksEnabledFlag();
   if (!isLoopFilterAcrossTilePPS)
   {
     isLeftAvail       = (!isLeftAvail)       ? false : CU::isSameTile(*cuCurr, *cuLeft);

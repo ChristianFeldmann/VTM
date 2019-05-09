@@ -1946,12 +1946,25 @@ PPS::PPS()
 #if HEVC_DEPENDENT_SLICES
 , m_dependentSliceSegmentsEnabledFlag(false)
 #endif
+#if !JVET_N0857_TILES_BRICKS
 , m_tilesEnabledFlag                 (false)
+#endif
 , m_entropyCodingSyncEnabledFlag     (false)
-, m_loopFilterAcrossTilesEnabledFlag (true)
-, m_uniformSpacingFlag               (false)
+, m_loopFilterAcrossBricksEnabledFlag (true)
+, m_uniformTileSpacingFlag           (false)
 , m_numTileColumnsMinus1             (0)
 , m_numTileRowsMinus1                (0)
+#if JVET_N0857_TILES_BRICKS
+, m_singleTileInPicFlag              (true)
+, m_tileColsWidthMinus1              (0)
+, m_tileRowsHeightMinus1             (0)
+, m_brickSplittingPresentFlag        (false)
+, m_singleBrickPerSliceFlag          (true)
+, m_rectSliceFlag                    (true)
+, m_numSlicesInPicMinus1             (0)
+, m_signalledSliceIdFlag             (false)
+,m_signalledSliceIdLengthMinus1      (0)
+#endif
 , m_cabacInitPresentFlag             (false)
 , m_sliceHeaderExtensionPresentFlag  (false)
 , m_loopFilterAcrossSlicesEnabledFlag(false)

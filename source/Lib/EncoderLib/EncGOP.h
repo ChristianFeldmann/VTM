@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,7 @@
 #include "CommonLib/NAL.h"
 #include "EncSampleAdaptiveOffset.h"
 #include "EncAdaptiveLoopFilter.h"
+#include "EncReshape.h"
 #include "EncSlice.h"
 #include "VLCWriter.h"
 #include "CABACWriter.h"
@@ -139,6 +140,7 @@ private:
   //--Adaptive Loop filter
   EncSampleAdaptiveOffset*  m_pcSAO;
   EncAdaptiveLoopFilter*    m_pcALF;
+  EncReshape*               m_pcReshaper;
   RateCtrl*                 m_pcRateCtrl;
   // indicate sequence first
   bool                    m_bSeqFirst;
@@ -275,6 +277,7 @@ protected:
 #endif
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps);
+  int xWriteAPS(AccessUnit &accessUnit, APS *aps);
   int xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);
 
   void applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices );

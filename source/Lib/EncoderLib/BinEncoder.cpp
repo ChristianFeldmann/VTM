@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -207,7 +207,8 @@ void BinEncoderBase::encodeBinsEP( unsigned bins, unsigned numBins )
 
 void BinEncoderBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange )
 {
-  const unsigned threshold = g_auiGoRiceRange[ goRicePar ] << goRicePar;
+  const unsigned threshold = COEF_REMAIN_BIN_REDUCTION << goRicePar;
+  useLimitedPrefixLength = true;
   if( bins < threshold )
   {
     const unsigned bitMask  = ( 1 << goRicePar ) - 1;
@@ -251,7 +252,7 @@ void BinEncoderBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool use
       bins -= delta;
       delta = 1 << (++length);
     }
-    unsigned numBin = g_auiGoRiceRange[ goRicePar ] + length + 1 - goRicePar;
+    unsigned numBin = COEF_REMAIN_BIN_REDUCTION + length + 1 - goRicePar;
     encodeBinsEP( ( 1 << numBin ) - 2, numBin );
     encodeBinsEP( bins,                length );
   }
@@ -438,7 +439,8 @@ BitEstimatorBase::BitEstimatorBase( const BinProbModel* dummy )
 
 void BitEstimatorBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange )
 {
-  const unsigned threshold = g_auiGoRiceRange[ goRicePar ] << goRicePar;
+  const unsigned threshold = COEF_REMAIN_BIN_REDUCTION << goRicePar;
+  useLimitedPrefixLength = true;
   if( bins < threshold )
   {
     m_EstFracBits += BinProbModelBase::estFracBitsEP( ( bins >> goRicePar ) + 1 + goRicePar );
@@ -474,7 +476,7 @@ void BitEstimatorBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool u
       bins -= delta;
       delta = 1 << (++length);
     }
-    m_EstFracBits += BinProbModelBase::estFracBitsEP( g_auiGoRiceRange[ goRicePar ] + 1 + ( length << 1 ) - goRicePar );
+    m_EstFracBits += BinProbModelBase::estFracBitsEP(COEF_REMAIN_BIN_REDUCTION + 1 + (length << 1) - goRicePar);
   }
 }
 

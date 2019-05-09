@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -103,8 +103,13 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
 
   if (isChroma(compID))
   {
+#if JVET_N0054_JOINT_CHROMA
+    chromaQpOffset += tu.cs->pps->getQpOffset            ( tu.jointCbCr ? JOINT_CbCr : compID );
+    chromaQpOffset += tu.cs->slice->getSliceChromaQpDelta( tu.jointCbCr ? JOINT_CbCr : compID );
+#else
     chromaQpOffset += tu.cs->pps->getQpOffset( compID );
     chromaQpOffset += tu.cs->slice->getSliceChromaQpDelta( compID );
+#endif
     chromaQpOffset += tu.cs->pps->getPpsRangeExtension().getChromaQpOffsetListEntry( tu.cu->chromaQpAdj ).u.offset[int( compID ) - 1];
   }
 
@@ -136,6 +141,82 @@ Quant::~Quant()
 #endif
 }
 
+#if JVET_N0413_RDPCM
+void invResDPCM( const TransformUnit &tu, const ComponentID &compID, CoeffBuf &dstBuf )
+{
+  const CompArea &rect = tu.blocks[compID];
+  const int      wdt = rect.width;
+  const int      hgt = rect.height;
+  const CCoeffBuf coeffs = tu.getCoeffs(compID);
+
+  const TCoeff* coef = &coeffs.buf[0];
+  TCoeff* dst = &dstBuf.buf[0];
+
+  if( tu.cu->bdpcmMode == 1 )
+  {
+    for( int y = 0; y < hgt; y++ )
+    {
+      dst[0] = coef[0];
+      for( int x = 1; x < wdt; x++ )
+      {
+        dst[x] = dst[x - 1] + coef[x];
+      }
+      coef += coeffs.stride;
+      dst += dstBuf.stride;
+    }
+  }
+  else
+  {
+    for( int x = 0; x < wdt; x++ )
+    {
+      dst[x] = coef[x];
+    }
+    for( int y = 0; y < hgt - 1; y++ )
+    {
+      for( int x = 0; x < wdt; x++ )
+      {
+        dst[dstBuf.stride + x] = dst[x] + coef[coeffs.stride + x];
+      }
+      coef += coeffs.stride;
+      dst += dstBuf.stride;
+    }
+  }
+}
+
+void fwdResDPCM( TransformUnit &tu, const ComponentID &compID )
+{
+  const CompArea &rect = tu.blocks[compID];
+  const int      wdt = rect.width;
+  const int      hgt = rect.height;
+  CoeffBuf       coeffs = tu.getCoeffs(compID);
+
+  TCoeff* coef = &coeffs.buf[0];
+
+  if( tu.cu->bdpcmMode == 1 )
+  {
+    for( int y = 0; y < hgt; y++ )
+    {
+      for( int x = wdt - 1; x > 0; x-- )
+      {
+        coef[x] -= coef[x - 1];
+      }
+      coef += coeffs.stride;
+    }
+  }
+  else
+  {
+    coef += coeffs.stride * (hgt - 1);
+    for( int y = 0; y < hgt - 1; y++ )
+    {
+      for ( int x = 0; x < wdt; x++ )
+      {
+        coef[x] -= coef[x - coeffs.stride];
+      }
+      coef -= coeffs.stride;
+    }
+  }
+}
+#endif
 
 #if HEVC_USE_SIGN_HIDING
 // To minimize the distortion only. No rate is considered.
@@ -283,34 +364,62 @@ void Quant::dequant(const TransformUnit &tu,
   const CompArea       &area               = tu.blocks[compID];
   const uint32_t            uiWidth            = area.width;
   const uint32_t            uiHeight           = area.height;
+#if !JVET_N0413_RDPCM
   const TCoeff   *const piQCoef            = tu.getCoeffs(compID).buf;
+#endif
         TCoeff   *const piCoef             = dstCoeff.buf;
   const uint32_t            numSamplesInBlock  = uiWidth * uiHeight;
   const int             maxLog2TrDynamicRange = sps->getMaxLog2TrDynamicRange(toChannelType(compID));
   const TCoeff          transformMinimum   = -(1 << maxLog2TrDynamicRange);
   const TCoeff          transformMaximum   =  (1 << maxLog2TrDynamicRange) - 1;
 #if HEVC_USE_SCALING_LISTS
-  const bool            enableScalingLists = getUseScalingList(uiWidth, uiHeight, (tu.transformSkip[compID] != 0));
+  const bool            isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+  const bool            enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
   const int             scalingListType    = getScalingListType(tu.cu->predMode, compID);
 #endif
   const int             channelBitDepth    = sps->getBitDepth(toChannelType(compID));
 
+#if JVET_N0413_RDPCM
+  const TCoeff          *coef;
+  if( tu.cu->bdpcmMode && isLuma(compID) )
+  {
+    invResDPCM( tu, compID, dstCoeff );
+    coef = piCoef;
+  }
+  else
+  {
+    coef = tu.getCoeffs(compID).buf;
+  }
+  const TCoeff          *const piQCoef = coef;
+#endif
 #if HEVC_USE_SCALING_LISTS
   CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
 #endif
   CHECK(uiWidth > m_uiMaxTrSize, "Unsupported transformation size");
 
   // Represents scaling through forward transform
-  const bool bClipTransformShiftTo0 = (tu.transformSkip[compID] != 0) && sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
+  const bool bClipTransformShiftTo0 = tu.mtsIdx!=MTS_SKIP && sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
   const int  originalTransformShift = getTransformShift(channelBitDepth, area.size(), maxLog2TrDynamicRange);
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  const bool needSqrtAdjustment     = TU::needsBlockSizeTrafoScale( tu, compID );
+  const int  iTransformShift        = (bClipTransformShiftTo0 ? std::max<int>(0, originalTransformShift) : originalTransformShift) + (needSqrtAdjustment?-1:0);
+#else
   const int  iTransformShift        = bClipTransformShiftTo0 ? std::max<int>(0, originalTransformShift) : originalTransformShift;
+#endif
 
   const int QP_per = cQP.per;
   const int QP_rem = cQP.rem;
 
+#if JVET_N0246_MODIFIED_QUANTSCALES
+#if HEVC_USE_SCALING_LISTS
+  const int  rightShift = (IQUANT_SHIFT - (iTransformShift + QP_per)) + (enableScalingLists ? LOG2_SCALING_LIST_NEUTRAL_VALUE : 0);
+#else
+  const int  rightShift = (IQUANT_SHIFT - (iTransformShift + QP_per));
+#endif
+#else
 #if HM_QTBT_AS_IN_JEM_QUANT
-  const bool needsScalingCorrection = TU::needsBlockSizeTrafoScale( tu.block( compID ) );
-  const int  NEScale    = TU::needsSqrt2Scale( tu.blocks[compID] ) ? 181 : 1;
+  const bool needsScalingCorrection = TU::needsBlockSizeTrafoScale( tu, compID );
+  const int  NEScale    = TU::needsSqrt2Scale( tu, compID ) ? 181 : 1;
 #if HEVC_USE_SCALING_LISTS
   const int  rightShift = (needsScalingCorrection ?   8 : 0 ) + (IQUANT_SHIFT - (iTransformShift + QP_per)) + (enableScalingLists ? LOG2_SCALING_LIST_NEUTRAL_VALUE : 0);
 #else
@@ -323,6 +432,7 @@ void Quant::dequant(const TransformUnit &tu,
   const int  rightShift = (IQUANT_SHIFT - (iTransformShift + QP_per));
 #endif
 #endif
+#endif // JVET_N0246_MODIFIED_QUANTSCALES
 
 #if HEVC_USE_SCALING_LISTS
   if(enableScalingLists)
@@ -347,7 +457,7 @@ void Quant::dequant(const TransformUnit &tu,
       for( int n = 0; n < numSamplesInBlock; n++ )
       {
         const TCoeff           clipQCoef = TCoeff(Clip3<Intermediate_Int>(inputMinimum, inputMaximum, piQCoef[n]));
-#if HM_QTBT_AS_IN_JEM_QUANT
+#if HM_QTBT_AS_IN_JEM_QUANT && !JVET_N0246_MODIFIED_QUANTSCALES
         const Intermediate_Int iCoeffQ   = ((Intermediate_Int(clipQCoef) * piDequantCoef[n] * NEScale) + iAdd ) >> rightShift;
 #else
         const Intermediate_Int iCoeffQ   = ((Intermediate_Int(clipQCoef) * piDequantCoef[n]) + iAdd ) >> rightShift;
@@ -363,7 +473,7 @@ void Quant::dequant(const TransformUnit &tu,
       for( int n = 0; n < numSamplesInBlock; n++ )
       {
         const TCoeff           clipQCoef = TCoeff(Clip3<Intermediate_Int>(inputMinimum, inputMaximum, piQCoef[n]));
-#if HM_QTBT_AS_IN_JEM_QUANT
+#if HM_QTBT_AS_IN_JEM_QUANT && !JVET_N0246_MODIFIED_QUANTSCALES
         const Intermediate_Int iCoeffQ   = (Intermediate_Int(clipQCoef) * piDequantCoef[n] * NEScale) << leftShift;
 #else
         const Intermediate_Int iCoeffQ   = (Intermediate_Int(clipQCoef) * piDequantCoef[n]) << leftShift;
@@ -376,10 +486,14 @@ void Quant::dequant(const TransformUnit &tu,
   else
   {
 #endif
+#if JVET_N0246_MODIFIED_QUANTSCALES
+    const int scale     = g_invQuantScales[needSqrtAdjustment?1:0][QP_rem];
+#else
 #if HM_QTBT_AS_IN_JEM_QUANT
     const int scale     = g_invQuantScales[QP_rem] * NEScale;
 #else
     const int scale     = g_invQuantScales[QP_rem];
+#endif
 #endif
     const int scaleBits = ( IQUANT_SHIFT + 1 );
 
@@ -509,7 +623,12 @@ void Quant::xSetScalingListEnc(ScalingList *scalingList, uint32_t listId, uint32
   int *coeff  = scalingList->getScalingListAddress(sizeId,listId);
   quantcoeff  = getQuantCoeff(listId, qp, sizeId, sizeId);
 
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  const bool blockIsNotPowerOf4 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
+  int quantScales = g_quantScales[blockIsNotPowerOf4?1:0][qp];
+#else
   int quantScales = g_quantScales[qp];
+#endif
 
   processScalingListEnc(coeff,
                         quantcoeff,
@@ -536,7 +655,12 @@ void Quant::xSetScalingListDec(const ScalingList &scalingList, uint32_t listId, 
 
   dequantcoeff = getDequantCoeff(listId, qp, sizeId, sizeId);
 
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  const bool blockIsNotPowerOf4 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
+  int invQuantScale = g_invQuantScales[blockIsNotPowerOf4?1:0][qp];
+#else
   int invQuantScale = g_invQuantScales[qp];
+#endif
 
   processScalingListDec(coeff,
                         dequantcoeff,
@@ -580,8 +704,14 @@ void Quant::xSetFlatScalingList(uint32_t list, uint32_t sizeX, uint32_t sizeY, i
   int *quantcoeff;
   int *dequantcoeff;
 
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  const bool blockIsNotPowerOf4 = ((g_aucLog2[g_scalingListSizeX[sizeX]] + g_aucLog2[g_scalingListSizeX[sizeY]]) & 1) == 1;
+  int quantScales    = g_quantScales   [blockIsNotPowerOf4?1:0][qp];
+  int invQuantScales = g_invQuantScales[blockIsNotPowerOf4?1:0][qp] << 4;
+#else
   int quantScales    = g_quantScales   [qp];
   int invQuantScales = g_invQuantScales[qp] << 4;
+#endif
 
   quantcoeff   = getQuantCoeff(list, qp, sizeX, sizeY);
   dequantcoeff = getDequantCoeff(list, qp, sizeX, sizeY);
@@ -717,7 +847,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
   const CCoeffBuf &piCoef   = pSrc;
         CoeffBuf   piQCoef  = tu.getCoeffs(compID);
 
-  const bool useTransformSkip      = tu.transformSkip[compID];
+  const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP;
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
   {
@@ -731,7 +861,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
     const TCoeff entropyCodingMaximum =  (1 << maxLog2TrDynamicRange) - 1;
 
 #if HEVC_USE_SIGN_HIDING
-    TCoeff deltaU[MAX_TU_SIZE * MAX_TU_SIZE];
+    TCoeff deltaU[MAX_TB_SIZEY * MAX_TB_SIZEY];
 #endif
 #if HEVC_USE_SCALING_LISTS
     int scalingListType = getScalingListType(tu.cu->predMode, compID);
@@ -742,6 +872,15 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 
     const bool enableScalingLists             = getUseScalingList(uiWidth, uiHeight, useTransformSkip);
 #endif
+#if JVET_N0246_MODIFIED_QUANTSCALES
+
+    // for blocks that where width*height != 4^N, the effective scaling applied during transformation cannot be
+    // compensated by a bit-shift (the quantised result will be sqrt(2) * larger than required).
+    // The quantScale table and shift is used to compensate for this.
+    const bool needSqrtAdjustment= TU::needsBlockSizeTrafoScale( tu, compID );
+    const int defaultQuantisationCoefficient    = g_quantScales[needSqrtAdjustment?1:0][cQP.rem];
+    int iTransformShift = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange) + ( needSqrtAdjustment?-1:0);
+#else
     const int  defaultQuantisationCoefficient = g_quantScales[cQP.rem];
 
     /* for 422 chroma blocks, the effective scaling applied during transformation is not a power of 2, hence it cannot be
@@ -751,19 +890,22 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
      */
     // Represents scaling through forward transform
     int iTransformShift = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
+#endif
 
     if (useTransformSkip && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag())
     {
       iTransformShift = std::max<int>(0, iTransformShift);
     }
 
+#if !JVET_N0246_MODIFIED_QUANTSCALES
     int iWHScale = 1;
 #if HM_QTBT_AS_IN_JEM_QUANT
-    if( TU::needsBlockSizeTrafoScale( rect ) )
+    if( TU::needsBlockSizeTrafoScale( tu, compID ) )
     {
       iTransformShift += ADJ_QUANT_SHIFT;
       iWHScale = 181;
     }
+#endif
 #endif
 
     const int iQBits = QUANT_SHIFT + cQP.per + iTransformShift;
@@ -785,9 +927,16 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
       const int64_t  tmpLevel = (int64_t)abs(iLevel) * defaultQuantisationCoefficient;
 #endif
 
+#if JVET_N0246_MODIFIED_QUANTSCALES
+      const TCoeff quantisedMagnitude = TCoeff((tmpLevel + iAdd ) >> iQBits);
+#if HEVC_USE_SIGN_HIDING
+      deltaU[uiBlockPos] = (TCoeff)((tmpLevel - ((int64_t)quantisedMagnitude<<iQBits) )>> qBits8);
+#endif
+#else
       const TCoeff quantisedMagnitude = TCoeff((tmpLevel * iWHScale + iAdd ) >> iQBits);
 #if HEVC_USE_SIGN_HIDING
       deltaU[uiBlockPos] = (TCoeff)((tmpLevel * iWHScale - ((int64_t)quantisedMagnitude<<iQBits) )>> qBits8);
+#endif
 #endif
 
       uiAbsSum += quantisedMagnitude;
@@ -795,6 +944,12 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 
       piQCoef.buf[uiBlockPos] = Clip3<TCoeff>( entropyCodingMinimum, entropyCodingMaximum, quantisedCoefficient );
     } // for n
+#if JVET_N0413_RDPCM
+    if( tu.cu->bdpcmMode && isLuma(compID) )
+    {
+      fwdResDPCM( tu, compID );
+    }
+#endif
 #if HEVC_USE_SIGN_HIDING
     if( cctx.signHiding() && uiWidth>=4 && uiHeight>=4 )
     {
@@ -820,7 +975,7 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   const CCoeffBuf piCoef    = pSrc;
 
-  const bool useTransformSkip      = tu.transformSkip[compID];
+  const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP;
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
 #if HEVC_USE_SCALING_LISTS
@@ -833,6 +988,17 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   const bool enableScalingLists             = getUseScalingList(uiWidth, uiHeight, (useTransformSkip != 0));
 #endif
+#if JVET_N0246_MODIFIED_QUANTSCALES
+
+  /* for 422 chroma blocks, the effective scaling applied during transformation is not a power of 2, hence it cannot be
+    * implemented as a bit-shift (the quantised result will be sqrt(2) * larger than required). Alternatively, adjust the
+    * uiLog2TrSize applied in iTransformShift, such that the result is 1/sqrt(2) the required result (i.e. smaller)
+    * Then a QP+3 (sqrt(2)) or QP-3 (1/sqrt(2)) method could be used to get the required result
+    */
+  const bool needSqrtAdjustment= TU::needsBlockSizeTrafoScale( tu, compID );
+  const int defaultQuantisationCoefficient    = g_quantScales[needSqrtAdjustment?1:0][cQP.rem];
+  int iTransformShift = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange) + (needSqrtAdjustment?-1:0);
+#else
   const int  defaultQuantisationCoefficient = g_quantScales[cQP.rem];
 
   /* for 422 chroma blocks, the effective scaling applied during transformation is not a power of 2, hence it cannot be
@@ -843,22 +1009,28 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   // Represents scaling through forward transform
   int iTransformShift = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
+#endif
 
   if (useTransformSkip && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag())
   {
     iTransformShift = std::max<int>(0, iTransformShift);
   }
 
+#if !JVET_N0246_MODIFIED_QUANTSCALES
   int iWHScale = 1;
 #if HM_QTBT_AS_IN_JEM_QUANT
-  if( TU::needsBlockSizeTrafoScale( rect ) )
+  if( TU::needsBlockSizeTrafoScale( tu, compID ) )
   {
     iTransformShift += ADJ_QUANT_SHIFT;
     iWHScale = 181;
   }
 #endif
+#endif
 
   const int iQBits = QUANT_SHIFT + cQP.per + iTransformShift;
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  assert(iQBits>=0);
+#endif
   // QBits will be OK for any internal bit depth as the reduction in transform shift is balanced by an increase in Qp_per due to QpBDOffset
 
   // iAdd is different from the iAdd used in normal quantization
@@ -872,7 +1044,11 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 #else
     const int64_t  tmpLevel = (int64_t)abs(iLevel) * defaultQuantisationCoefficient;
 #endif
+#if JVET_N0246_MODIFIED_QUANTSCALES
+    const TCoeff quantisedMagnitude = TCoeff((tmpLevel + iAdd ) >> iQBits);
+#else
     const TCoeff quantisedMagnitude = TCoeff((tmpLevel * iWHScale + iAdd ) >> iQBits);
+#endif
 
     if (quantisedMagnitude != 0)
     {
@@ -898,7 +1074,11 @@ void Quant::transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &co
   const int            scalingListType                = getScalingListType(tu.cu->predMode, compID);
   const bool           enableScalingLists             = getUseScalingList(uiWidth, uiHeight, true);
 #endif
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  const int            defaultQuantisationCoefficient = g_quantScales[0][cQP.rem];
+#else
   const int            defaultQuantisationCoefficient = g_quantScales[cQP.rem];
+#endif
 
 #if HEVC_USE_SCALING_LISTS
   CHECK( scalingListType >= SCALING_LIST_NUM, "Invalid scaling list" );
@@ -916,9 +1096,7 @@ void Quant::transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &co
 
   const int iQBits = QUANT_SHIFT + cQP.per + iTransformShift;
   // QBits will be OK for any internal bit depth as the reduction in transform shift is balanced by an increase in Qp_per due to QpBDOffset
-
-  const int iAdd = int64_t(bUseHalfRoundingPoint ? 256 : (tu.cs->slice->getSliceType() == I_SLICE ? 171 : 85)) << int64_t(iQBits - 9);
-
+  const int iAdd = int64_t(bUseHalfRoundingPoint ? 256 : (tu.cs->slice->isIRAP() ? 171 : 85)) << int64_t(iQBits - 9);
   TCoeff transformedCoefficient;
 
   // transform-skip
@@ -1015,7 +1193,11 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
   else
   {
 #endif
+#if JVET_N0246_MODIFIED_QUANTSCALES
+    const int scale = g_invQuantScales[0][QP_rem];
+#else
     const int scale = g_invQuantScales[QP_rem];
+#endif
     const int scaleBits = (IQUANT_SHIFT + 1);
 
     const uint32_t             targetInputBitDepth = std::min<uint32_t>((maxLog2TrDynamicRange + 1), (((sizeof(Intermediate_Int) * 8) + rightShift) - scaleBits));

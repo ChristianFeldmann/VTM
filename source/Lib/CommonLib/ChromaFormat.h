@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -105,12 +105,6 @@ static inline uint64_t getTotalFracBits(const uint32_t width, const uint32_t hei
 //======================================================================================================================
 //Intra prediction  ====================================================================================================
 //======================================================================================================================
-
-static inline bool filterIntraReferenceSamples (const ChannelType chType, const ChromaFormat chFmt, const bool intraReferenceSmoothingDisabled)
-{
-  return (!intraReferenceSmoothingDisabled) && (isLuma(chType) || (chFmt == CHROMA_444));
-}
-
 
 //------------------------------------------------
 

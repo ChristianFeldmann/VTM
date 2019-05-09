@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -96,11 +96,9 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
   case SEI::CHROMA_RESAMPLING_FILTER_HINT:
     xWriteSEIChromaResamplingFilterHint(*static_cast<const SEIChromaResamplingFilterHint*>(&sei));
     break;
-#if HEVC_TILES_WPP
   case SEI::TEMP_MOTION_CONSTRAINED_TILE_SETS:
     xWriteSEITempMotionConstrainedTileSets(*static_cast<const SEITempMotionConstrainedTileSets*>(&sei));
     break;
-#endif
   case SEI::TIME_CODE:
     xWriteSEITimeCode(*static_cast<const SEITimeCode*>(&sei));
     break;
@@ -546,7 +544,6 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
   writeSEImessages(bs, sei.m_nestedSEIs, sps, true);
 }
 
-#if HEVC_TILES_WPP
 void SEIWriter::xWriteSEITempMotionConstrainedTileSets(const SEITempMotionConstrainedTileSets& sei)
 {
   //uint32_t code;
@@ -603,7 +600,6 @@ void SEIWriter::xWriteSEITempMotionConstrainedTileSets(const SEITempMotionConstr
     }
   }
 }
-#endif
 
 void SEIWriter::xWriteSEITimeCode(const SEITimeCode& sei)
 {

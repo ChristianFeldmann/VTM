@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,6 +72,9 @@ struct Size
   bool operator!=(const Size &other)      const { return (width != other.width) || (height != other.height); }
   bool operator==(const Size &other)      const { return (width == other.width) && (height == other.height); }
   uint32_t area()                             const { return (uint32_t) width * (uint32_t) height; }
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  void resizeTo(const Size newSize)             { width = newSize.width; height = newSize.height; }
+#endif
 };
 
 struct Area : public Position, public Size
@@ -114,6 +117,26 @@ struct UnitScale
   Size     scale( const Size     &size ) const { return { size.width >> posx, size.height >> posy }; }
   Area     scale( const Area    &_area ) const { return Area( scale( _area.pos() ), scale( _area.size() ) ); }
 };
+namespace std
+{
+  template <>
+  struct hash<Position> : public unary_function<Position, uint64_t>
+  {
+    uint64_t operator()(const Position& value) const
+    {
+      return (((uint64_t)value.x << 32) + value.y);
+    }
+  };
+
+  template <>
+  struct hash<Size> : public unary_function<Size, uint64_t>
+  {
+    uint64_t operator()(const Size& value) const
+    {
+      return (((uint64_t)value.width << 32) + value.height);
+    }
+  };
+}
 inline size_t rsAddr(const Position &pos, const uint32_t stride, const UnitScale &unitScale )
 {
   return (size_t)(stride >> unitScale.posx) * (size_t)(pos.y >> unitScale.posy) + (size_t)(pos.x >> unitScale.posx);
@@ -236,6 +259,16 @@ public:
   }
 };
 
+#if JVET_N0217_MATRIX_INTRAPRED  
+struct AvailableInfo
+{
+  int  maxPosTop;
+  int  maxPosLeft;
+
+  AvailableInfo() : maxPosTop(0), maxPosLeft(0) {}
+  AvailableInfo(const int top, const int left) : maxPosTop(top), maxPosLeft(left) {}
+};
+#endif
 
 
 #endif

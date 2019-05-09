@@ -1,4 +1,4 @@
-\documentclass[a4paper,11pt]{jctvcdoc}
+\documentclass[a4paper,11pt]{jvetdoc}
 
 \usepackage{geometry}[2010/02/12]
 
@@ -21,6 +21,18 @@
 \usepackage{array}
 \usepackage{algorithm2e}
 \usepackage{amsmath}
+
+\urlstyle{same}
+
+% code highlighting
+\usepackage{minted,xcolor}
+\definecolor{bggray}{gray}{0.95}
+\setminted{
+bgcolor=bggray,
+xleftmargin=3ex,
+breaklines=true,
+fontsize=\footnotesize}
+
 
 \usepackage[strings]{underscore}
 \usepackage{csquotes}
@@ -72,7 +84,7 @@
 }
 
 \newenvironment{OptionTableNoShorthand}[2]{%
-	\footnotesize
+	\scriptsize
 	\def\arraystretch{1.8}
 	\clearOptions
 	\begin{longtable}{l<{\makecell[tl]{\optOption}}%
@@ -105,7 +117,7 @@
 }
 
 \newenvironment{SEIListTable}[1]{%
-	\footnotesize
+	\scriptsize
 	\def\arraystretch{1.8}
 	\clearOptions
 	\begin{longtable}{c<{\makecell[tl]{\optOption}}%
@@ -138,7 +150,7 @@
 }
 
 \newenvironment{MacroTable}[1]{%
-	\footnotesize
+	\scriptsize
 	\def\arraystretch{1.3}
 	\clearOptions
 	\begin{longtable}{lcp{0.5\textwidth}}
@@ -166,7 +178,7 @@
 	\end{longtable}
 }
 
-\title{HM Software Manual}
+\title{VTM Software Manual}
 \author{%
 	Frank Bossen
 	\email{frank@bossentech.com}
@@ -174,36 +186,37 @@
 	David Flynn
 	\email{dflynn@blackberry.com}
 	\and
-  Karl Sharman
+	Xiang Li
+	\email{xlxiangli@tencent.com}
+	\and
+	Karl Sharman
 	\email{karl.sharman@eu.sony.com}
 	\and
 	Karsten S\"uhring
 	\email{karsten.suehring@hhi.fraunhofer.de}
 }
 
-\jctvcmeeting{}
-\jctvcdocnum{Software Manual}
-\jctvcdocstatus{Software AHG working document}
-\jctvcdocpurpose{Information}
-\jctvcdocsource{AHG chairs}
+\jvetmeeting{}
+\jvetdocnum{Software Manual}
+\jvetdocstatus{Software AHG working document}
+\jvetdocpurpose{Information}
+\jvetdocsource{AHG chairs}
 
 \begin{document}
 \maketitle
 \begin{abstract}
-This document is a user manual describing usage of reference software
-for the HEVC project. It applies to version 16.13
-of the software.
+This document is a user manual describing usage of the VTM reference software
+for the VVC project. It applies to version 4.0 of the software.
 \end{abstract}
 
 \tableofcontents
 \listoftables
 
 
-
 \section{General Information}
 Reference software is being made available to provide a reference
-implementation of the HEVC standard being developed by the Joint
-Collaborative Team on Video Coding (JCT-VC) regrouping experts from
+implementation of the HEVC standard being developed by the Joint 
+Video Experts Team (JVET) regrouping experts from
 ITU-T SG 16 and ISO/IEC SC29 WG11. One of the main goals of the
 reference software is to provide a basis upon which to conduct
 experiments in order to determine which coding tools provide desired
@@ -211,61 +224,165 @@ coding performance. It is not meant to be a particularly efficient
 implementation of anything, and one may notice its apparent
 unsuitability for a particular use. It should not be construed to be a
 reflection of how complex a production-quality implementation of a
-future HEVC standard would be.
+future VVC standard would be.
 
 This document aims to provide guidance on the usage of the reference
 software. It is widely suspected to be incomplete and suggestions for
 improvements are welcome. Such suggestions and general inquiries may be
-sent to the general JCT-VC email reflector on
-\url{jct-vc@lists.rwth-aachen.de} (registration required).
+sent to the general JVET email reflector on
+\url{https://lists.rwth-aachen.de/postorius/lists/jvet.lists.rwth-aachen.de/} 
+(registration required).
 
 \subsection*{Bug reporting}
-Bugs should be reported on the issue tracker set up at
-\url{http://hevc.kw.bbc.co.uk/trac/}
+Bugs should be reported on the issue tracker set up at:
+
+\url{https://jvet.hhi.fraunhofer.de/trac/vvc/}
 
 \section{Installation and compilation}
-The software may be retrieved from one of the following SVN servers
-(mirrored):
-\begin{itemize}
-\item \url{https://hevc.hhi.fraunhofer.de/svn/svn_HEVCSoftware/}
-\item \url{svn://hevc.kw.bbc.co.uk/svn/jctvc-hm/}
-\end{itemize}
+The software may be retrieved from the GitLab server located at:
 
-Table~\ref{tab:project-files} enumerates various project files that are
-provided for development environments.
+\url{https://vcgit.hhi.fraunhofer.de/jvet/VVCSoftware_VTM}
+
+Table~\ref{tab:project-files} lists the compiler environments and versions 
+for which building the software is tested.
+
+Note that the software makes use of C++11 language features, which may not
+be available in older compilers.
 
 \begin{table}[ht]
-\footnotesize
-\caption{Available project files}
+\caption{Supported compilers}
 \label{tab:project-files}
 \centering
 \begin{tabular}{ll}
 \hline
- \thead{Environment} &
- \thead{Location of project file} \\
-% Environment          & Location of project file \\
+ \thead{Compiler environment} &
+ \thead{Versions} \\
 \hline
-MS Visual Studio 2008 (VC9)   & build/HM_vc9.sln \\
-MS Visual Studio 2010 (VC10)  & build/HM_vc2010.sln \\
-MS Visual Studio 2012 (VC11)  & build/HM_vc2012.sln \\
-MS Visual Studio 2013 (VC12)  & build/HM_vc2013.sln \\
-Xcode                         & HM.xcodeproj \\
-Eclipse                       & .project .cproject \\
-make/gcc (e.g. Linux)         & build/linux/makefile \\
+MS Visual Studio  & 2015 and 2017 \\
+GCC               & 5.4 and 7.3 \\
+Xcode/clang       & latest \\
 \hline
 \end{tabular}
 \end{table}
 
-For encoding large picture sizes (like UHDTV) it is strongly advised to build 64-bit
-binaries and to use a 64-bit OS. This will allow the software to use more than 2GB of RAM.
+By default the software is built as 64-bit binaries to be used on a 64-bit OS. 
+This allows the software to use more than 2GB of RAM.
+
+The software uses CMake to create platform-specific build files. 
+
+\subsection {Build instructions for plain CMake (suggested)}
+
+\textbf{Note:} A working CMake installation is required for building the software.
+
+CMake generates configuration files for the compiler environment/development
+environment on each platform. The following is a list of examples for Windows
+(MS Visual Studio), macOS (Xcode) and Linux (make).
+
+Open a command prompt on your system and change into the root directory
+of this project.
+
+Create a build directory in the root directory:
+\begin{minted}{bash}
+mkdir build 
+\end{minted}
+Use one of the following CMake commands, based on your platform. Feel free to change the 
+commands to satisfy your needs.
+
+\textbf{Windows Visual Studio 2015 64 Bit:}
+\begin{minted}{bash}
+cd build
+cmake .. -G "Visual Studio 14 2015 Win64"
+\end{minted}
+Then open the generated solution file in MS Visual Studio.
+
+\textbf{macOS Xcode:}
+\begin{minted}{bash}
+cd build
+cmake .. -G "Xcode"
+\end{minted}
+Then open the generated work space in Xcode.
+
+\textbf{Linux}
+
+For generating Linux Release Makefile:
+\begin{minted}{bash}
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+\end{minted}
+For generating Linux Debug Makefile:
+\begin{minted}{bash}
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+\end{minted}
+Then type
+\begin{minted}{bash}
+make -j
+\end{minted}
+to build the software.
+
+For more details, refer to the CMake documentation: \url{https://cmake.org/cmake/help/latest/}
+
+\subsection {Build instructions for make}
+
+\textbf{Note:}
+The build instructions in this section require the make tool and Python
+to be installed, which are part of usual Linux and macOS environments. 
+See section \ref{windowsinstall} for installation instruction for Python 
+and GnuWin32 on Windows.
+
+Open a command prompt on your system and change into the root directory
+of this project.
+
+To use the default system compiler simply call:
+\begin{minted}{bash}
+make all
+\end{minted}
+For MSYS2 and MinGW:
+Open an MSYS MinGW 64-Bit terminal and change into the root directory
+of this project.
+
+Call:
+\begin{minted}{bash}
+make all toolset=gcc
+\end{minted}
+
+\subsection{Tool Installation on Windows}
+\label{windowsinstall}
+
+Download CMake: \url{http://www.cmake.org/} and install it.
+
+Python and GnuWin32 are not mandatory, but they simplify the build process for the user.
+
+\begin{table}[ht]
+\footnotesize
+\centering
+\begin{tabular}{ll}
+\hline
+Python     &    \url{https://www.python.org/downloads/release/python-371/} \\
+GnuWin32   &    \url{https://sourceforge.net/projects/getgnuwin32/files/getgnuwin32/0.6.30/GetGnuWin32-0.6.3.exe/download} \\
+\hline
+\end{tabular}
+\end{table}
+
+To use MinGW, install MSYS2:
+\url{http://repo.msys2.org/distrib/msys2-x86_64-latest.exe}
+
+Installation instructions:
+\url{https://www.msys2.org/}
+
+Install the needed toolchains:
+\begin{minted}{bash}
+pacman -S --needed base-devel mingw-w64-i686-toolchain mingw-w64-x86_64-toolchain git subversion mingw-w64-i686-cmake mingw-w64-x86_64-cmake
+\end{minted}
 
 %%%%
 %%%%
 %%%%
 \section{Using the encoder}
-\begin{verbatim}
+
+\begin{minted}{bash}
 TAppEncoder 	[--help] [-c config.cfg] [--parameter=value]
-\end{verbatim}
+\end{minted}
 
 \begin{table}[ht]
 \footnotesize
@@ -417,7 +534,7 @@ its list of reference pictures is \verb|-1 1|.
 \caption{A GOP structure}
 \label{fig:gop-example}
 \centering
-\includegraphics[width=0.7\textwidth]{gop-structure-example}
+\includegraphics[width=0.7\textwidth]{figures/gop-structure-example}
 \end{figure}
 
 Inter RPS prediction may be used for Frame2, Frame3 and Frame4, hence
@@ -1020,7 +1137,14 @@ elements.
 \par
 See section~\ref{sec:gop-structure} for further details.
 \\
+
+\Option{ReWriteParamSets} &
+%\ShortOption{-ip} &
+\Default{$0$} &
+Enable writing of parameter sets (SPS, PPS, etc.) before every (intra) random access point to enable true random access.
+\\
 \end{OptionTableNoShorthand}
+
 
 %%
 %% Motion estimation parameters
@@ -1105,12 +1229,29 @@ $}
 Specifies the maximum number of merge candidates to use.
 \\
 
+\Option{MaxNumTriangleCand} &
+%\ShortOption{\None} &
+\Default{5} &
+Specifies the maximum number of triangle merge candidates to use.
+\\
+
 \Option{DisableIntraInInter} &
 %\ShortOption{\None} &
 \Default{0} &
 Flag to disable intra PUs in inter slices.
 \\
 
+\Option{MMVD} &
+%\ShortOption{\None} &
+\Default{1} &
+Enables or disables the merge mode with motion vector difference (MMVD).
+\\
+
+\Option{MmvdDisNum} &
+%\ShortOption{\None} &
+\Default{6} &
+Specifies the number of MMVD distance entries used from the distance table at encoder.
+\\
 \end{OptionTableNoShorthand}
 
 
@@ -1273,6 +1414,20 @@ Global offset to apply to the luma QP to derive the QP of Cb and Cr
 respectively.  These options correspond to the values of cb_qp_offset
 and cr_qp_offset, that are transmitted in the PPS.  Valid values are in
 the range $[-12, 12]$.
+\\
+
+\Option{CbCrQpOffset (-cbcrqpofs)} &
+\Default{-1} &
+Global offset to apply to the luma QP to derive the QP for joint Cb-Cr
+residual coding mode.  This option corresponds to the value of cb_cr_qp_offset
+transmitted in the PPS.  Valid values are in the range $[-12, 12]$.
+\\
+
+\Option{CbCrQpOffsetDualTree} &
+\Default{0} &
+Tile group QP offset for joint Cb-Cr residual coding mode when separate luma and
+chroma trees are used.  This option corresponds to the value of tile_group_cb_cr_qp_offset
+transmitted in the tile group header. Valid values are in the range $[-12, 12]$.
 \\
 
 \Option{LumaLevelToDeltaQPMode} &
@@ -1622,10 +1777,30 @@ Enables or disables the use of a deblocking across tile boundaries.
 
 \begin{OptionTableNoShorthand}{Coding tools parameters}{tab:coding-tools}
 
+\Option{MIP} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables or disables the use of matrix-based intra prediction (MIP).
+\\
+
 \Option{AMP} &
 %\ShortOption{\None} &
 \Default{true} &
 Enables or disables the use of asymmetric motion partitions.
+\\
+
+\Option{ISP} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the Intra Sub-Partitions coding mode.
+\\
+
+\Option{ISPFast} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables reduced testing of non-DCT-II transforms if ISP is likely to become the best mode for a given CU.
+\par
+This option has no effect if either ISP or MTS are disabled.
 \\
 
 \Option{SAO} &
@@ -1840,6 +2015,43 @@ luma TUs are also skipped.
 \par
 This option has no effect if TransformSkip is disabled.
 \\
+
+\Option{UseNonLinearAlfLuma} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables optimization of non-linear filters for ALF on Luma channel.
+\\
+
+\Option{UseNonLinearAlfChroma} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables optimization of non-linear filters for ALF on Chroma channels.
+\\
+
+\Option{SMVD} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables symmetric MVD mode.
+\\
+
+\Option{RDPCM} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables RDPCM coding mode.
+\\
+
+\Option{LFNST} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of low frequency non-separable transform (LFNST).
+\\
+
+\Option{FastLFNST} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the fast encoding of low frequency non-separable transform (LFNST).
+\\
+
 \end{OptionTableNoShorthand}
 
 %%
@@ -1913,6 +2125,63 @@ Rate control: ratio of initial CPB fullness per CPB size. (InitalCpbFullness/Cpb
 RCInitialCpbFullness should be smaller than or equal to 1.
 \\
 \end{OptionTableNoShorthand}
+
+
+
+%%
+%% Encoder debug parameters
+%%
+\begin{OptionTableNoShorthand}{Encoder debug parameters}{tab:encoder-debugging}
+
+\Option{DebugBitstream/DecodeBitstream1} &
+%\ShortOption{\None} &
+\Default{} &
+Specifies the first bit stream to be read until a pre-defined switch point is encountered.
+\\
+
+\Option{DecodeBitstream2} &
+%\ShortOption{\None} &
+\Default{} &
+Specifies the second bit stream, to be read after the first random access point after a QP switch point (specified using SwitchPOC and SwitchQP).
+\\
+
+\Option{DebugPOC} &
+%\ShortOption{\None} &
+\Default{-1} &
+Specifies a POC, at which a bit stream specified using DebugBitstream or DecodeBitstream1 is no longer read, but rather normal encoding is started.
+\\
+
+\Option{DebugCTU} &
+%\ShortOption{\None} &
+\Default{-1} &
+When the POC is encountered at which normal encoding is to be resumed, if set, this option specifies that CTUs up to the specified CTU(in raster scan addressing order are to be read from the specified bit stream, after which normal encoding is started the specified CTU.
+\\
+
+\Option{SwitchPOC} &
+%\ShortOption{\None} &
+\Default{-1} &
+Specifies a POC, at which the specified bit stream is no longer read, but rather normal encoding is started.
+\\
+
+\Option{SwitchDQP} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies a QP offset to be applied when normal encoding is started as specified by SwitchPOC.
+\\
+
+\Option{FastForwardToPOC} &
+%\ShortOption{\None} &
+\Default{0} &
+When encoding a bit streams, all frames that are not references including transitive references to the specified POC are skipped.
+\\
+\Option{StopAfterFFtoPOC} &
+%\ShortOption{\None} &
+\Default{false} &
+If enabled, causes the encoder to not encode any frame after the frame specified by FastForwardToPOC option, in encoding order.
+\\
+\end{OptionTableNoShorthand}
+
+
 
 %%
 %% VUI parameters
@@ -2879,9 +3148,9 @@ Numerous constants that guard individual adoptions are defined within
 \clearpage
 \section{Using the decoder}
 \subsection{General}
-\begin{verbatim}
+\begin{minted}{bash}
 TAppDecoder -b str.bin -o dec.yuv [options]
-\end{verbatim}
+\end{minted}
 
 \begin{OptionTableNoShorthand}{Decoder options}{tab:decoder-options}
 \Option{(--help)} &
@@ -3032,7 +3301,7 @@ way, which in turn can be loaded into a suitable YUV player for overlay of the
 reconstructed YUV sequence, or can be used for statistical analysis at a
 selectable scope (e.g. block/picture/sequence level). An example implementation
 for such visualization is available with the open-source YUView player
-(https://github.com/IENT/YUView). 
+(\url{https://github.com/IENT/YUView}). 
 
 
 \subsection{Usage}
@@ -3070,7 +3339,7 @@ Specifies which traces should be saved, and for which POCs.
 \end{OptionTableNoShorthand}
 
 Concrete examples of calls for  generating a block statistics file are:
-\begin{verbatim}
+\begin{minted}{bash}
 bin/DecoderAppStatic -b str/BasketballDrive_1920x1080_QP37.vvc \
     --TraceFile="stats/BasketballDrive_1920x1080_QP37_coded.vtmbmsstats" \
     --TraceRule="D_BLOCK_STATISTICS_CODED:poc>=0"
@@ -3078,7 +3347,7 @@ bin/DecoderAppStatic -b str/BasketballDrive_1920x1080_QP37.vvc \
 bin/DecoderAppStatic -b str/BasketballDrive_1920x1080_QP37.vvc \
     --TraceFile="stats/BasketballDrive_1920x1080_QP37_all.vtmbmsstats" \
     --TraceRule="D_BLOCK_STATISTICS_ALL:poc>=0"   
-\end{verbatim}
+\end{minted}
 
 
 \subsection{Block statistics file formats}
@@ -3187,16 +3456,16 @@ In order to add further block statistics, do the following:
 \begin{description}
 \item[source/Lib/CommonLib/dtrace_blockstatistics.h]
   Add your statistic to the BlockStatistic enum:	
-\begin{verbatim}
+\begin{minted}{c++}
 enum class BlockStatistic {
   // general
   PredMode,
   PartSize,
   Depth,
-\end{verbatim}
+\end{minted}
   
 Further, add your statistic to the map blockstatistic2description:
-\begin{verbatim}
+\begin{minted}{c++}
 static const std::map<BlockStatistic, 
   std::tuple<std::string, BlockStatisticType, std::string>> 
   blockstatistic2description =
@@ -3211,7 +3480,7 @@ static const std::map<BlockStatistic,
     std::tuple<std::string, BlockStatisticType, std::string>
     {"MVL0", BlockStatisticType::Vector, "Scale: 4"}},
   YOURS
-\end{verbatim}
+\end{minted}
 
 
 \item[source/Lib/CommonLib/dtrace_blockstatistics.cpp] All code for
@@ -3219,28 +3488,28 @@ static const std::map<BlockStatistic,
   getAndStoreBlockStatistics. This function is called once for each
   CTU, after it has been en/decoded. The following macros have been
   defined to facilitate writing of block statistics:
-\begin{verbatim}
+\begin{minted}{c++}
 DTRACE_BLOCK_SCALAR(ctx,channel,cs_cu_pu,stat_type,val)   
 DTRACE_BLOCK_SCALAR_CHROMA(ctx,channel,cs_cu_pu,stat_type,val)
 DTRACE_BLOCK_VECTOR(ctx,channel,cu_pu,stat_type,v_x,v_y)    
 DTRACE_BLOCK_AFFINETF(ctx,channel,pu,stat_type,v_x0,v_y0,v_x1,v_y1,v_x2,v_y2) 
-\end{verbatim}
+\end{minted}
 
 An example:
-\begin{verbatim}
+\begin{minted}{c++}
 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, 
   cu, GetBlockStatisticName(BlockStatistic::PredMode), cu.predMode);
-\end{verbatim}
+\end{minted}
 
 
 \item[Block statistics for debugging] The statistics can also be used
   to write out other data, not just syntax elements. Add your
   statistics to dtrace_blockstatistics.h. Where it should be used the
   following headers have to be included:
-\begin{verbatim}
+\begin{minted}{c++}
 #include "dtrace_next.h"
 #include "dtrace_blockstatistics.h"
-\end{verbatim}
+\end{minted}
 \end{description}
 
 \end{document}

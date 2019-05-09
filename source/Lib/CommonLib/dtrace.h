@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -137,6 +137,10 @@ public:
     // TU
     void dtrace_block_scalar(int k, const TransformUnit &tu, std::string stat_type, signed value, bool isChroma = false );
     void dtrace_block_vector(int k, const TransformUnit &tu, std::string stat_type, signed val_x, signed val_y);
+    // non-rectangular
+    void dtrace_block_line(int k, const CodingUnit &cu, std::string stat_type, signed x0, signed y0, signed x1, signed y1);
+    void dtrace_polygon_scalar(int k, int poc, const std::vector<Position> &polygon, std::string stat_type, signed value);
+    void dtrace_polygon_vector(int k, int poc, const std::vector<Position> &polygon, std::string stat_type, signed val_x, signed val_y);
 #endif
     bool update       ( state_type stateval );
     int  init( vstring channel_names );

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,90 +36,10 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cassert>
+#include "CommonDef.h"
 
 #define PRINT_NALUS 0
 
-enum NalUnitType
-{
-  TRAIL_N = 0, // 0
-  TRAIL_R,     // 1
-
-  TSA_N,       // 2
-  TSA_R,       // 3
-
-  STSA_N,      // 4
-  STSA_R,      // 5
-
-  RADL_N,      // 6
-  RADL_R,      // 7
-
-  RASL_N,      // 8
-  RASL_R,      // 9
-
-  RESERVED_VCL_N10,
-  RESERVED_VCL_R11,
-  RESERVED_VCL_N12,
-  RESERVED_VCL_R13,
-  RESERVED_VCL_N14,
-  RESERVED_VCL_R15,
-
-  BLA_W_LP,    // 16
-  BLA_W_RADL,  // 17
-  BLA_N_LP,    // 18
-  IDR_W_RADL,  // 19
-  IDR_N_LP,    // 20
-  CRA,         // 21
-  RESERVED_IRAP_VCL22,
-  RESERVED_IRAP_VCL23,
-
-  RESERVED_VCL24,
-  RESERVED_VCL25,
-  RESERVED_VCL26,
-  RESERVED_VCL27,
-  RESERVED_VCL28,
-  RESERVED_VCL29,
-  RESERVED_VCL30,
-  RESERVED_VCL31,
-
-#if HEVC_VPS
-  VPS,                     // 32
-#else
-  RESERVED_32,
-#endif
-  SPS,                     // 33
-  PPS,                     // 34
-  ACCESS_UNIT_DELIMITER,   // 35
-  EOS,                     // 36
-  EOB,                     // 37
-  FILLER_DATA,             // 38
-  PREFIX_SEI,              // 39
-  SUFFIX_SEI,              // 40
-
-  RESERVED_NVCL41,
-  RESERVED_NVCL42,
-  RESERVED_NVCL43,
-  RESERVED_NVCL44,
-  RESERVED_NVCL45,
-  RESERVED_NVCL46,
-  RESERVED_NVCL47,
-  UNSPECIFIED_48,
-  UNSPECIFIED_49,
-  UNSPECIFIED_50,
-  UNSPECIFIED_51,
-  UNSPECIFIED_52,
-  UNSPECIFIED_53,
-  UNSPECIFIED_54,
-  UNSPECIFIED_55,
-  UNSPECIFIED_56,
-  UNSPECIFIED_57,
-  UNSPECIFIED_58,
-  UNSPECIFIED_59,
-  UNSPECIFIED_60,
-  UNSPECIFIED_61,
-  UNSPECIFIED_62,
-  UNSPECIFIED_63,
-  INVALID,
-};
 
 /**
  Find the beginning and end of a NAL (Network Abstraction Layer) unit in a byte buffer containing H264 bitstream data.
@@ -182,6 +102,7 @@ const bool verbose = false;
 
 const char * NALU_TYPE[] =
 {
+#if !JVET_M0101_HLS
     "TRAIL_N",
     "TRAIL_R",
     "TSA_N",
@@ -221,12 +142,60 @@ const char * NALU_TYPE[] =
 #endif
     "SPS_NUT",
     "PPS_NUT",
+#if JVET_M0132
+    "APS_NUT",
+#endif
     "AUD_NUT",
     "EOS_NUT",
     "EOB_NUT",
     "FD_NUT",
     "PREFIX_SEI_NUT",
     "SUFFIX_SEI_NUT",
+#else
+    "NAL_UNIT_CODED_SLICE_TRAIL",
+    "NAL_UNIT_CODED_SLICE_STSA",
+    "NAL_UNIT_CODED_SLICE_RADL",
+    "NAL_UNIT_CODED_SLICE_RASL",
+    "NAL_UNIT_RESERVED_VCL_4",
+    "NAL_UNIT_RESERVED_VCL_5",
+    "NAL_UNIT_RESERVED_VCL_6",
+    "NAL_UNIT_RESERVED_VCL_7",
+
+    "NAL_UNIT_CODED_SLICE_IDR_W_RADL",
+    "NAL_UNIT_CODED_SLICE_IDR_N_LP",
+    "NAL_UNIT_CODED_SLICE_CRA",
+
+    "NAL_UNIT_RESERVED_IRAP_VCL11",
+    "NAL_UNIT_RESERVED_IRAP_VCL12",
+    "NAL_UNIT_RESERVED_IRAP_VCL13",
+
+    "NAL_UNIT_RESERVED_VCL14",
+
+#if HEVC_VPS
+    "NAL_UNIT_VPS",
+#else
+    "NAL_UNIT_RESERVED_VCL15",
+#endif
+
+    "NAL_UNIT_RESERVED_NVCL16",
+
+    "NAL_UNIT_SPS",
+    "NAL_UNIT_PPS",
+    "NAL_UNIT_APS",
+    "NAL_UNIT_ACCESS_UNIT_DELIMITER",
+    "NAL_UNIT_EOS",
+    "NAL_UNIT_EOB",
+    "NAL_UNIT_PREFIX_SEI",
+    "NAL_UNIT_SUFFIX_SEI",
+    "NAL_UNIT_FILLER_DATA",
+
+    "NAL_UNIT_RESERVED_NVCL26",
+    "NAL_UNIT_RESERVED_NVCL27",
+    "NAL_UNIT_UNSPECIFIED_28",
+    "NAL_UNIT_UNSPECIFIED_29",
+    "NAL_UNIT_UNSPECIFIED_30",
+    "NAL_UNIT_UNSPECIFIED_31"
+#endif
 };
 
 int calc_poc(int iPOClsb, int prevTid0POC, int getBitsForPOC, int nalu_type)
@@ -248,13 +217,15 @@ int calc_poc(int iPOClsb, int prevTid0POC, int getBitsForPOC, int nalu_type)
   {
     iPOCmsb = iPrevPOCmsb;
   }
-  if ( nalu_type == BLA_W_LP
-    || nalu_type == BLA_W_RADL
-    || nalu_type == BLA_N_LP )
+#if !JVET_M0101_HLS
+  if ( nalu_type == NAL_UNIT_CODED_SLICE_BLA_W_LP
+    || nalu_type == NAL_UNIT_CODED_SLICE_BLA_W_RADL
+    || nalu_type == NAL_UNIT_CODED_SLICE_BLA_N_LP )
   {
     // For BLA picture types, POCmsb is set to 0.
     iPOCmsb = 0;
   }
+#endif
 
   return iPOCmsb + iPOClsb;
 }
@@ -293,19 +264,27 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     int poc = -1;
     int poc_lsb = -1;
     int new_poc = -1;
-
-    if(nalu_type == IDR_W_RADL || nalu_type == IDR_N_LP)
+    
+    if(nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)
     {
       poc = 0;
       new_poc = *poc_base + poc;
     }
 
-    if(nalu_type < 32 && nalu_type != IDR_W_RADL && nalu_type != IDR_N_LP)
+#if !JVET_M0101_HLS
+    if(nalu_type < 32 && nalu_type != NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type != NAL_UNIT_CODED_SLICE_IDR_N_LP)
+#else
+      if(nalu_type < 15 && nalu_type != NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type != NAL_UNIT_CODED_SLICE_IDR_N_LP)
+#endif
     {
       int offset = 16;
 
       offset += 1; //first_slice_segment_in_pic_flag
-      if (nalu_type >= BLA_W_LP && nalu_type <= RESERVED_IRAP_VCL23)
+#if !JVET_M0101_HLS
+      if (nalu_type >= NAL_UNIT_CODED_SLICE_BLA_W_LP && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL23)
+#else
+      if (nalu_type >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL13)
+#endif
       {
         offset += 1; //no_output_of_prior_pics_flag
       }
@@ -314,14 +293,14 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       int byte_offset2 = offset / 8;
       int hi_bits2 = offset % 8;
       uint16_t data2 = (nalu[byte_offset2] << 8) | nalu[byte_offset2 + 1];
-      int low_bits2 = 16 - hi_bits2 - 1;      
+      int low_bits2 = 16 - hi_bits2 - 1;
       if(((data2 >> low_bits2) % 2))
-        offset += 1; // PPSId=0 
+        offset += 1; // PPSId=0
       else
-        offset += 3; // PPSId=1 
+        offset += 3; // PPSId=1
       offset += 1; // slice_type TODO: ue(v)
       // separate_colour_plane_flag is not supported in JEM1.0
-      if (nalu_type == CRA)
+      if (nalu_type == NAL_UNIT_CODED_SLICE_CRA)
       {
         offset += 2;
       }
@@ -346,18 +325,18 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       ++cnt;
     }
 
-    if(idx > 1 && (nalu_type == IDR_W_RADL || nalu_type == IDR_N_LP))
+    if(idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP))
     {
       skip_next_sei = true;
       idr_found = true;
     }
 
 #if HEVC_VPS
-    if((idx > 1 && (nalu_type == IDR_W_RADL || nalu_type == IDR_N_LP )) || ((idx>1 && !idr_found) && ( nalu_type == VPS || nalu_type == SPS || nalu_type == PPS))
+    if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP )) || ((idx>1 && !idr_found) && ( nalu_type == NAL_UNIT_VPS || nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS))
 #else
-    if((idx > 1 && (nalu_type == IDR_W_RADL || nalu_type == IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == SPS || nalu_type == PPS))
+    if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_APS))
 #endif
-      || (nalu_type == SUFFIX_SEI && skip_next_sei))
+      || (nalu_type == NAL_UNIT_SUFFIX_SEI && skip_next_sei))
     {
     }
     else
@@ -366,7 +345,7 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       out.insert(out.end(), nalu.begin(), nalu.end());
     }
 
-    if(nalu_type == SUFFIX_SEI && skip_next_sei)
+    if(nalu_type == NAL_UNIT_SUFFIX_SEI && skip_next_sei)
     {
       skip_next_sei = false;
     }
@@ -412,6 +391,7 @@ int main(int argc, char * argv[])
 {
   if(argc < 3)
   {
+    printf("parcat version VTM %s\n", VTM_VERSION);
     printf("usage: %s <bitstream1> [<bitstream2> ...] <outfile>\n", argv[0]);
     return -1;
   }

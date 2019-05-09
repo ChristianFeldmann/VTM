@@ -134,7 +134,7 @@ class NdkFinder(object):
         
         print("Launching: " + ' '.join(mk_toolchain_args))
         # and launch the script to create the new toolchain
-        subprocess.check_call(mk_toolchain_args)
+        util.subproc_check_call_flushed(mk_toolchain_args)
 
         if hash_bang_missing:
             if os.path.exists(mk_toolchain_script):

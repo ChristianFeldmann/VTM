@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,6 +58,13 @@
 // ====================================================================================================================
 // Class definition
 // ====================================================================================================================
+#if JVET_N0413_RDPCM
+struct TrQuantParams
+{
+  int     rightShift;
+  int     qScale;
+};
+#endif
 
 /// QP struct
 struct QpParam
@@ -118,8 +125,13 @@ public:
   bool getUseScalingList         ( const uint32_t width, const uint32_t height, const bool isTransformSkip){ return m_scalingListEnabledFlag && (!isTransformSkip || ((width == 4) && (height == 4))); };
 
   void setScalingListDec         ( const ScalingList &scalingList);
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  void processScalingListEnc     ( int *coeff, int *quantcoeff, int qpMod6, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
+  void processScalingListDec     ( const int *coeff, int *dequantcoeff, int qpMod6, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
+#else
   void processScalingListEnc     ( int *coeff, int *quantcoeff, int quantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
   void processScalingListDec     ( const int *coeff, int *dequantcoeff, int invQuantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
+#endif
 
   virtual void setFlatScalingList( const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths);
   virtual void setScalingList    ( ScalingList *scalingList, const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths);

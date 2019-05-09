@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -82,9 +82,7 @@ public:
     TIME_CODE                            = 136,
     MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
     SEGM_RECT_FRAME_PACKING              = 138,
-#if HEVC_TILES_WPP
     TEMP_MOTION_CONSTRAINED_TILE_SETS    = 139,
-#endif
     CHROMA_RESAMPLING_FILTER_HINT        = 140,
     KNEE_FUNCTION_INFO                   = 141,
     COLOUR_REMAPPING_INFO                = 142,
@@ -543,7 +541,6 @@ public:
   SEITimeSet timeSetArray[MAX_TIMECODE_SEI_SETS];
 };
 
-#if HEVC_TILES_WPP
 //definition according to P1005_v1;
 class SEITempMotionConstrainedTileSets: public SEI
 {
@@ -556,7 +553,6 @@ class SEITempMotionConstrainedTileSets: public SEI
     public:
       int     m_mcts_id;
       bool    m_display_tile_set_flag;
-      int     m_num_tile_rects_in_set; //_minus1;
       bool    m_exact_sample_value_match_flag;
       bool    m_mcts_tier_level_idc_present_flag;
       bool    m_mcts_tier_flag;
@@ -601,7 +597,6 @@ public:
   const TileSetData &tileSetData (const int index) const { return m_tile_set_data[index]; }
 
 };
-#endif
 
 #if ENABLE_TRACING
 void xTraceSEIHeader();

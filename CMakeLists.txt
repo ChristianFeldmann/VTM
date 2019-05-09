@@ -96,7 +96,7 @@ endif()
 bb_enable_warnings( msvc warnings-as-errors "/wd4996" )
 
 # enable sse4.1 build for all source files for gcc and clang
-if( UNIX )
+if( UNIX OR MINGW )
   add_compile_options( "-msse4.1" )
 endif()
 
@@ -104,7 +104,6 @@ endif()
 if( MSVC )
   add_compile_options( "/MP" )
   add_compile_options( "/EHsc" )
-  add_compile_options( "/MT" )
 endif()
 
 # set address sanitizer compiler arguments

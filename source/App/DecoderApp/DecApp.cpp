@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -233,11 +233,16 @@ uint32_t DecApp::decode()
         m_cDecLib.setNoOutputPriorPicsFlag (false);
       }
       if ( bNewPicture &&
+#if !JVET_M0101_HLS
            (   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP ) )
+#else
+          (   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
+            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP) )
+#endif
       {
         xFlushOutput( pcListPic );
       }
@@ -247,7 +252,11 @@ uint32_t DecApp::decode()
         m_cDecLib.setFirstSliceInPicture (false);
       }
       // write reconstruction to file -- for additional bumping as defined in C.5.2.3
+#if !JVET_M0101_HLS
       if(!bNewPicture && nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL_N && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL31)
+#else
+      if (!bNewPicture && nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL15)
+#endif
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }

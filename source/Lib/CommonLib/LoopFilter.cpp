@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,8 +65,8 @@
 
 const uint8_t LoopFilter::sm_tcTable[MAX_QP + 1 + DEFAULT_INTRA_TC_OFFSET] =
 {
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,5,5,6,6,7,8,9,10,11,13,14,16,18,20,22,24
-  , 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,5,5,6,6,7,8,9,10,11,13,14,16,18,20,22,25
+  , 28, 31, 35, 39, 44, 50, 56, 63, 70, 79, 88, 99
 };
 
 const uint8_t LoopFilter::sm_betaTable[MAX_QP + 1] =
@@ -84,7 +84,6 @@ inline static uint32_t getRasterIdx(const Position& pos, const PreCalcValues& pc
 // utility functions
 // ====================================================================================================================
 
-#if HEVC_TILES_WPP
 static bool isAvailableLeft( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction )
 {
   return ( ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) ) && ( !bEnforceTileRestriction || CU::isSameTile( cu, cu2 ) ) );
@@ -94,12 +93,6 @@ static bool isAvailableAbove( const CodingUnit& cu, const CodingUnit& cu2, const
 {
   return ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) ) && ( !bEnforceTileRestriction || CU::isSameTile( cu, cu2 ) );
 }
-#else
-static bool isAvailable( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction )
-{
-  return ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) );
-}
-#endif
 
 
 // ====================================================================================================================
@@ -126,6 +119,14 @@ void LoopFilter::create( const unsigned uiMaxCUDepth )
     m_aapucBS       [edgeDir].resize( numPartitions );
     m_aapbEdgeFilter[edgeDir].resize( numPartitions );
   }
+  m_enc = false;
+}
+
+void LoopFilter::initEncPicYuvBuffer(ChromaFormat chromaFormat, int lumaWidth, int lumaHeight)
+{
+  const UnitArea picArea(chromaFormat, Area(0, 0, lumaWidth, lumaHeight));
+  m_encPicYuvBuffer.destroy();
+  m_encPicYuvBuffer.create(picArea);
 }
 
 void LoopFilter::destroy()
@@ -135,6 +136,7 @@ void LoopFilter::destroy()
     m_aapucBS       [edgeDir].clear();
     m_aapbEdgeFilter[edgeDir].clear();
   }
+  m_encPicYuvBuffer.destroy();
 }
 
 /**
@@ -146,6 +148,10 @@ void LoopFilter::loopFilterPic( CodingStructure& cs
                                 )
 {
   const PreCalcValues& pcv = *cs.pcv;
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+  m_shiftHor = ::getComponentScaleX( COMPONENT_Cb, cs.pcv->chrFormat );
+  m_shiftVer = ::getComponentScaleY( COMPONENT_Cb, cs.pcv->chrFormat );
+#endif
 
   DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", cs.slice->getPOC() ) ) );
 #if ENABLE_TRACING
@@ -166,6 +172,13 @@ void LoopFilter::loopFilterPic( CodingStructure& cs
     {
       memset( m_aapucBS       [EDGE_VER].data(), 0,     m_aapucBS       [EDGE_VER].byte_size() );
       memset( m_aapbEdgeFilter[EDGE_VER].data(), false, m_aapbEdgeFilter[EDGE_VER].byte_size() );
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+      memset( m_maxFilterLengthP, 0, sizeof(m_maxFilterLengthP) );
+      memset( m_maxFilterLengthQ, 0, sizeof(m_maxFilterLengthQ) );
+      memset( m_transformEdge, false, sizeof(m_transformEdge) );
+      m_ctuXLumaSamples = x << pcv.maxCUWidthLog2;
+      m_ctuYLumaSamples = y << pcv.maxCUHeightLog2;
+#endif
 
       const UnitArea ctuArea( pcv.chrFormat, Area( x << pcv.maxCUWidthLog2, y << pcv.maxCUHeightLog2, pcv.maxCUWidth, pcv.maxCUWidth ) );
 
@@ -179,6 +192,11 @@ void LoopFilter::loopFilterPic( CodingStructure& cs
       {
         memset( m_aapucBS       [EDGE_VER].data(), 0,     m_aapucBS       [EDGE_VER].byte_size() );
         memset( m_aapbEdgeFilter[EDGE_VER].data(), false, m_aapbEdgeFilter[EDGE_VER].byte_size() );
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+        memset( m_maxFilterLengthP, 0, sizeof(m_maxFilterLengthP) );
+        memset( m_maxFilterLengthQ, 0, sizeof(m_maxFilterLengthQ) );
+        memset( m_transformEdge, false, sizeof(m_transformEdge) );
+#endif
 
         for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, CH_C ), CH_C ) )
         {
@@ -195,6 +213,13 @@ void LoopFilter::loopFilterPic( CodingStructure& cs
     {
       memset( m_aapucBS       [EDGE_HOR].data(), 0,     m_aapucBS       [EDGE_HOR].byte_size() );
       memset( m_aapbEdgeFilter[EDGE_HOR].data(), false, m_aapbEdgeFilter[EDGE_HOR].byte_size() );
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+      memset( m_maxFilterLengthP, 0, sizeof(m_maxFilterLengthP) );
+      memset( m_maxFilterLengthQ, 0, sizeof(m_maxFilterLengthQ) );
+      memset( m_transformEdge, false, sizeof(m_transformEdge) );
+      m_ctuXLumaSamples = x << pcv.maxCUWidthLog2;
+      m_ctuYLumaSamples = y << pcv.maxCUHeightLog2;
+#endif
 
       const UnitArea ctuArea( pcv.chrFormat, Area( x << pcv.maxCUWidthLog2, y << pcv.maxCUHeightLog2, pcv.maxCUWidth, pcv.maxCUWidth ) );
 
@@ -208,6 +233,11 @@ void LoopFilter::loopFilterPic( CodingStructure& cs
       {
         memset( m_aapucBS       [EDGE_HOR].data(), 0,     m_aapucBS       [EDGE_HOR].byte_size() );
         memset( m_aapbEdgeFilter[EDGE_HOR].data(), false, m_aapbEdgeFilter[EDGE_HOR].byte_size() );
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+        memset( m_maxFilterLengthP, 0, sizeof(m_maxFilterLengthP) );
+        memset( m_maxFilterLengthQ, 0, sizeof(m_maxFilterLengthQ) );
+        memset( m_transformEdge, false, sizeof(m_transformEdge) );
+#endif
 
         for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, CH_C ), CH_C ) )
         {
@@ -242,18 +272,37 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
   const Area area          = cu.Y().valid() ? cu.Y() : Area( recalcPosition( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].pos() ), recalcSize( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].size() ) );
 
   xSetLoopfilterParam( cu );
-
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+  static_vector<int, 2*MAX_CU_SIZE> edgeIdx;
+  edgeIdx.clear();
+#else
+  bool implicitTU = false;
+#endif
   for( auto &currTU : CU::traverseTUs( cu ) )
   {
     const Area& areaTu    = cu.Y().valid() ? currTU.block( COMPONENT_Y ) : area;
+#if !JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+    const bool xOff = currTU.blocks[cu.chType].x != cu.blocks[cu.chType].x;
+    const bool yOff = currTU.blocks[cu.chType].y != cu.blocks[cu.chType].y;
+    if ((yOff != 0) && (edgeDir == EDGE_HOR))
+    {
+      implicitTU = true;
+    }
+    if ((xOff != 0) && (edgeDir == EDGE_VER))
+    {
+      implicitTU = true;
+    }
+#endif
     xSetEdgefilterMultiple( cu, EDGE_VER, areaTu, m_stLFCUParam.internalEdge );
     xSetEdgefilterMultiple( cu, EDGE_HOR, areaTu, m_stLFCUParam.internalEdge );
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+    xSetMaxFilterLengthPQFromTransformSizes( edgeDir, cu, currTU );
+    edgeIdx.push_back( ( edgeDir == EDGE_HOR ) ? ( currTU.blocks[cu.chType].y - cu.blocks[cu.chType].y ) / 4 : ( currTU.blocks[cu.chType].x - cu.blocks[cu.chType].x ) / 4 );
+#endif
   }
 
-#if L0074_SUBBLOCK_DEBLOCKING
   bool mvSubBlocks = false;
   int subBlockSize = 8;
-#endif
   for( auto &currPU : CU::traversePUs( cu ) )
   {
     const Area& areaPu = cu.Y().valid() ? currPU.block( COMPONENT_Y ) : area;
@@ -262,8 +311,10 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 
     xSetEdgefilterMultiple( cu, EDGE_VER, areaPu, (xOff ? m_stLFCUParam.internalEdge : m_stLFCUParam.leftEdge), xOff );
     xSetEdgefilterMultiple( cu, EDGE_HOR, areaPu, (yOff ? m_stLFCUParam.internalEdge : m_stLFCUParam.topEdge),  yOff );
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+    edgeIdx.push_back( ( edgeDir == EDGE_HOR ) ? ( currPU.blocks[cu.chType].y - cu.blocks[cu.chType].y ) / 4 : ( currPU.blocks[cu.chType].x - cu.blocks[cu.chType].x ) / 4 );
+#endif
 
-#if L0074_SUBBLOCK_DEBLOCKING
     if ((currPU.mergeFlag && (currPU.mergeType == MRG_TYPE_SUBPU_ATMVP)) || cu.affine)
     {
       mvSubBlocks = true;
@@ -273,6 +324,9 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
         {
           const Area mvBlockH(cu.Y().x, cu.Y().y + off, cu.Y().width, pcv.minCUHeight);
           xSetEdgefilterMultiple(cu, EDGE_HOR, mvBlockH, m_stLFCUParam.internalEdge, 1);
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+          edgeIdx.push_back( ( currPU.blocks[cu.chType].y + off - cu.blocks[cu.chType].y ) / 4 );
+#endif
         }
       }
       else
@@ -281,29 +335,58 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
         {
           const Area mvBlockV(cu.Y().x + off, cu.Y().y, pcv.minCUWidth, cu.Y().height);
           xSetEdgefilterMultiple(cu, EDGE_VER, mvBlockV, m_stLFCUParam.internalEdge, 1);
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+          edgeIdx.push_back( ( currPU.blocks[cu.chType].x + off - cu.blocks[cu.chType].x ) / 4 );
+#endif
         }
       }
     }
-#endif
-  }
 
-#if !L0074_SUBBLOCK_DEBLOCKING
-  if ( cu.affine )
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+    xSetMaxFilterLengthPQForCodingSubBlocks( edgeDir, cu, currPU, mvSubBlocks, subBlockSize, areaPu );
+#endif
+  }
+#if !JVET_N0302_SIMPLFIED_CIIP
+  if (cu.firstPU->mhIntraFlag)
   {
-    const int widthInBaseUnits = cu.Y().width >> pcv.minCUWidthLog2;
-    for( uint32_t edgeIdx = 1 ; edgeIdx < widthInBaseUnits ; edgeIdx++ )
+    const uint32_t dirMode = PU::getFinalIntraMode(*(cu.firstPU), cu.chType);
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+    edgeIdx.push_back( 0 );
+#endif
+    if (edgeDir == EDGE_VER && dirMode == HOR_IDX)
     {
-      const Area affiBlockV( cu.Y().x + edgeIdx * pcv.minCUWidth, cu.Y().y, pcv.minCUWidth, cu.Y().height );
-      xSetEdgefilterMultiple( cu, EDGE_VER, affiBlockV, m_stLFCUParam.internalEdge, 1 );
+      mvSubBlocks = true;
+      subBlockSize = std::max(8u, (area.width >> 2));
+      for (uint32_t off = subBlockSize; off < area.width; off += subBlockSize)
+      {
+        const Area mvBlockV(cu.Y().x + off, cu.Y().y, pcv.minCUWidth, cu.Y().height);
+        xSetEdgefilterMultiple(cu, EDGE_VER, mvBlockV, m_stLFCUParam.internalEdge, 1);
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+        edgeIdx.push_back( off / 4 );
+#endif
+      }
     }
-    const int heightInBaseUnits = cu.Y().height >> pcv.minCUHeightLog2;
-    for( uint32_t edgeIdx = 1 ; edgeIdx < heightInBaseUnits ; edgeIdx++ )
+    else if (edgeDir == EDGE_HOR && dirMode == VER_IDX)
     {
-      const Area affiBlockH( cu.Y().x, cu.Y().y + edgeIdx * pcv.minCUHeight, cu.Y().width, pcv.minCUHeight );
-      xSetEdgefilterMultiple( cu, EDGE_HOR, affiBlockH, m_stLFCUParam.internalEdge, 1 );
+      mvSubBlocks = true;
+      subBlockSize = std::max(8u, (area.height >> 2));
+      for (uint32_t off = subBlockSize; off < area.height; off += subBlockSize)
+      {
+        const Area mvBlockH(cu.Y().x, cu.Y().y + off, cu.Y().width, pcv.minCUHeight);
+        xSetEdgefilterMultiple(cu, EDGE_HOR, mvBlockH, m_stLFCUParam.internalEdge, 1);
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+        edgeIdx.push_back( off / 4 );
+#endif
+      }
     }
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+    const PredictionUnit& currPU = *cu.firstPU;
+    const Area& areaPu = cu.Y().valid() ? currPU.block( COMPONENT_Y ) : area;
+    xSetMaxFilterLengthPQForCodingSubBlocks( edgeDir, cu, currPU, mvSubBlocks, subBlockSize, areaPu );
+#endif
   }
 #endif
+
   const unsigned uiPelsInPart = pcv.minCUWidth;
 
   for( int y = 0; y < area.height; y += uiPelsInPart )
@@ -311,10 +394,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     for( int x = 0; x < area.width; x += uiPelsInPart )
     {
       unsigned uiBSCheck = 1;
-      if( !cu.cs->pcv->noRQT && uiPelsInPart == 4 )
-      {
-        uiBSCheck = ( ( edgeDir == EDGE_VER ) && ( x % 8 == 0 ) ) || ( ( edgeDir == EDGE_HOR ) && ( y % 8 == 0 ) );
-      }
       const Position localPos  { area.x + x, area.y + y };
       const unsigned rasterIdx = getRasterIdx( localPos, pcv );
 
@@ -324,9 +403,6 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       }
     }
   }
-
-  const unsigned shiftFactor  = edgeDir == EDGE_VER ? ::getComponentScaleX( COMPONENT_Cb, pcv.chrFormat ) : ::getComponentScaleY( COMPONENT_Cb, pcv.chrFormat );
-  const bool bAlwaysDoChroma  = pcv.chrFormat == CHROMA_444 || pcv.noRQT;
 
   if (edgeDir == EDGE_HOR)
   {
@@ -339,51 +415,284 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       return;
   }
 
+
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+  std::sort( edgeIdx.begin(), edgeIdx.end() );
+  int prevEdgeIdx = -1;
+  for ( const int& edge : edgeIdx )
+  {
+    if ( edge == prevEdgeIdx ) // skip duplicate edgeIdx marked by both transform and coding subblock processes
+    {
+      continue;
+    }
+    prevEdgeIdx = edge;
+
+    if ( cu.blocks[COMPONENT_Y].valid() )
+    {
+      xEdgeFilterLuma( cu, edgeDir, edge );
+    }
+    if ( cu.blocks[COMPONENT_Cb].valid() && pcv.chrFormat != CHROMA_400 )
+    {
+      if ( !cu.ispMode || edge == 0 )
+      {
+        xEdgeFilterChroma( cu, edgeDir, edge );
+      }
+    }
+  }
+#else
   unsigned int orthogonalLength = 1;
   unsigned int orthogonalIncrement = 1;
-
+#if FIX_DB_MAX_TRANSFORM_SIZE
+#if MAX_TB_SIZE_SIGNALLING
+  const int maxTsize = cu.slice->getSPS()->getMaxTbSize();
+#else
+  const int maxTsize = MAX_TB_SIZEY;
+#endif
+#endif
+#if FIX_DB_MAX_TRANSFORM_SIZE
+  int maxFilterLengthQ = 7;
+  int maxFilterLengthP = 7;
+  if (implicitTU && maxTsize < 32)
+  {
+    maxFilterLengthQ = 3;
+    maxFilterLengthP = 3;
+  }
+#else
+  int maxFilterLength = 7;
+#endif
   if (cu.blocks[COMPONENT_Y].valid())
   {
-#if L0074_SUBBLOCK_DEBLOCKING
     if (mvSubBlocks)
     {
+#if FIX_DB_MAX_TRANSFORM_SIZE
+      maxFilterLengthQ = std::min(maxFilterLengthQ, 5);
+#else
+      maxFilterLength = 5;
+#endif
       orthogonalIncrement = subBlockSize / 4;
       orthogonalLength = (edgeDir == EDGE_HOR) ? cu.blocks[COMPONENT_Y].height / 4 : cu.blocks[COMPONENT_Y].width / 4;
     }
-#endif
-#if L0074_SUBBLOCK_DEBLOCKING
-    if ((cu.blocks[COMPONENT_Y].height > 64) && (edgeDir == EDGE_HOR) && !mvSubBlocks)
+#if FIX_DB_MAX_TRANSFORM_SIZE
+    if ((cu.blocks[COMPONENT_Y].height > maxTsize) && (edgeDir == EDGE_HOR) && !mvSubBlocks)
+    {
+      orthogonalIncrement = maxTsize / 4;
+      orthogonalLength = cu.blocks[COMPONENT_Y].height / 4;
+    }
+    if ((cu.blocks[COMPONENT_Y].width > maxTsize) && (edgeDir == EDGE_VER) && !mvSubBlocks)
+    {
+      orthogonalIncrement = maxTsize / 4;
+      orthogonalLength = cu.blocks[COMPONENT_Y].width / 4;
+
+    }
 #else
-    if ((cu.blocks[COMPONENT_Y].height > 64) && (edgeDir == EDGE_HOR))
-#endif
+    if ((cu.blocks[COMPONENT_Y].height > 64) && (edgeDir == EDGE_HOR) && !mvSubBlocks)
     {
       orthogonalIncrement = 64 / 4;
       orthogonalLength = cu.blocks[COMPONENT_Y].height / 4;
     }
-#if L0074_SUBBLOCK_DEBLOCKING
     if ((cu.blocks[COMPONENT_Y].width > 64) && (edgeDir == EDGE_VER) && !mvSubBlocks)
-#else
-    if ((cu.blocks[COMPONENT_Y].width > 64) && (edgeDir == EDGE_VER))
-#endif
     {
       orthogonalIncrement = 64 / 4;
       orthogonalLength = cu.blocks[COMPONENT_Y].width / 4;
 
     }
+#endif
   }
+
   for (int edge = 0; edge < orthogonalLength; edge += orthogonalIncrement)
   {
     if (cu.blocks[COMPONENT_Y].valid())
     {
-      xEdgeFilterLuma(cu, edgeDir, edge);
+      if (edge == 0)
+      {
+#if FIX_DB_MAX_TRANSFORM_SIZE
+        xEdgeFilterLuma(cu, edgeDir, edge, maxFilterLengthP, maxFilterLengthQ);
+#else
+        xEdgeFilterLuma(cu, edgeDir, edge, 7, maxFilterLength);
+#endif
+      }
+      else
+      {
+#if FIX_DB_MAX_TRANSFORM_SIZE
+        if (implicitTU && ((edge % (maxTsize / 4)) == 0))
+#else
+        if ( implicitTU && (edge == (64 / 4)) )
+#endif
+        {
+#if FIX_DB_MAX_TRANSFORM_SIZE
+          xEdgeFilterLuma(cu, edgeDir, edge, maxFilterLengthQ, maxFilterLengthQ);
+#else
+          xEdgeFilterLuma(cu, edgeDir, edge, maxFilterLength, maxFilterLength);
+#endif
+        }
+#if FIX_DB_MAX_TRANSFORM_SIZE
+        else if ((edge == 2 || edge == (orthogonalLength - 2)) || (implicitTU && (((edge - 2) % ((maxTsize) / 4) == 0) || ((edge + 2) % ((maxTsize) / 4) == 0))))
+#else
+        else if ( (edge == 2 || edge == (orthogonalLength - 2)) || (implicitTU && (edge == (56 / 4) || edge == (72 / 4))) )
+#endif
+        {
+          xEdgeFilterLuma(cu, edgeDir, edge, 2, 2);
+        }
+        else
+        {
+          xEdgeFilterLuma(cu, edgeDir, edge, 3, 3);
+        }
+      }
     }
-    if (cu.blocks[COMPONENT_Cb].valid() && pcv.chrFormat != CHROMA_400 && (bAlwaysDoChroma || (uiPelsInPart > DEBLOCK_SMALLEST_BLOCK) || (edge % ((DEBLOCK_SMALLEST_BLOCK << shiftFactor) / uiPelsInPart)) == 0))
+    if (cu.blocks[COMPONENT_Cb].valid() && pcv.chrFormat != CHROMA_400)
     {
       xEdgeFilterChroma(cu, edgeDir, edge);
     }
   }
+#endif
 }
 
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+void LoopFilter::xSetMaxFilterLengthPQFromTransformSizes( const DeblockEdgeDir edgeDir, const CodingUnit& cu, const TransformUnit& currTU )
+{
+  const TransformUnit& tuQ = currTU;
+
+  if ( edgeDir == EDGE_HOR )
+  {
+    for ( int cIdx = 0; cIdx < MAX_NUM_COMPONENT; cIdx++ ) // per component
+    {
+      const ComponentID comp = ComponentID(cIdx);
+      const ChannelType ch   = toChannelType(comp);
+      const int shiftHor     = ( ( ch == CH_L ) ? 0 : m_shiftHor );
+      const int shiftVer     = ( ( ch == CH_L ) ? 0 : m_shiftVer );
+      const int ctuXOff      = currTU.block(comp).x - ( m_ctuXLumaSamples >> shiftHor ); // x offset from left edge of CTU in respective channel sample units
+      const int ctuYOff      = currTU.block(comp).y - ( m_ctuYLumaSamples >> shiftVer ); // y offset from top edge of CTU in respective channel sample units
+      const int minCUWidth   = cu.cs->pcv->minCUWidth >> shiftHor;
+      if ( currTU.block(comp).valid() && ( ( currTU.block(comp).y == cu.block(comp).y ) ? m_stLFCUParam.topEdge : m_stLFCUParam.internalEdge ) ) // Edge deblocking needs to be recomputed since ISP contains whole CU chroma transforms in last TU of the CU
+      {
+        for ( int x = 0; x < currTU.blocks[cIdx].width; x += minCUWidth )
+        {
+          const Position  posQ     = Position( currTU.blocks[ch].x + x, currTU.blocks[ch].y );
+          const Position  posP     = posQ.offset( 0, -1 );
+          const int sizeQSide      = tuQ.block(comp).height;
+          const TransformUnit& tuP = *cu.cs->getTU( posP, ch );
+          const int sizePSide      = tuP.block(comp).height;
+          m_transformEdge[cIdx][ctuXOff+x][ctuYOff] = true;
+
+          if ( comp == COMPONENT_Y )
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff] = ( sizeQSide >= 32 ) ? 7 : 3;
+            m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff] = ( sizePSide >= 32 ) ? 7 : 3;
+          }
+          else
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff] = ( sizeQSide >= 8 && sizePSide >= 8 ) ? 3 : 1;
+            m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff] = ( sizeQSide >= 8 && sizePSide >= 8 ) ? 3 : 1;
+          }
+        }
+      }
+    }
+  }
+  if ( edgeDir == EDGE_VER )
+  {
+    for ( int cIdx = 0; cIdx < MAX_NUM_COMPONENT; cIdx++ ) // per component
+    {
+      const ComponentID comp = ComponentID(cIdx);
+      const ChannelType ch   = toChannelType(comp);
+      const int shiftHor     = ( ( ch == CH_L ) ? 0 : m_shiftHor );
+      const int shiftVer     = ( ( ch == CH_L ) ? 0 : m_shiftVer );
+      const int ctuXOff      = currTU.block(comp).x - ( m_ctuXLumaSamples >> shiftHor ); // x offset from left edge of CTU in respective channel sample units
+      const int ctuYOff      = currTU.block(comp).y - ( m_ctuYLumaSamples >> shiftVer ); // y offset from top edge of CTU in respective channel sample units
+      const int minCUHeight  = cu.cs->pcv->minCUHeight >> shiftVer;
+      if ( currTU.block(comp).valid() && ( ( currTU.block(comp).x == cu.block(comp).x ) ? m_stLFCUParam.leftEdge : m_stLFCUParam.internalEdge ) ) // Edge deblocking needs to be recomputed since ISP contains whole CU chroma transforms in last TU of the CU
+      {
+        for ( int y = 0; y < currTU.blocks[cIdx].height; y += minCUHeight )
+        {
+          const Position  posQ     = Position( currTU.blocks[ch].x, currTU.blocks[ch].y + y );
+          const Position  posP     = posQ.offset( -1, 0 );
+          const int sizeQSide      = tuQ.block(comp).width;
+          const TransformUnit& tuP = *cu.cs->getTU( posP, ch );
+          const int sizePSide      = tuP.block(comp).width;
+          m_transformEdge[cIdx][ctuXOff][ctuYOff+y] = true;
+
+          if ( comp == COMPONENT_Y )
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff][ctuYOff+y] = ( sizeQSide >= 32 ) ? 7 : 3;
+            m_maxFilterLengthP[cIdx][ctuXOff][ctuYOff+y] = ( sizePSide >= 32 ) ? 7 : 3;
+          }
+          else
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff][ctuYOff+y] = ( sizeQSide >= 8 && sizePSide >= 8 ) ? 3 : 1;
+            m_maxFilterLengthP[cIdx][ctuXOff][ctuYOff+y] = ( sizeQSide >= 8 && sizePSide >= 8 ) ? 3 : 1;
+          }
+        }
+      }
+    }
+  }
+}
+
+void LoopFilter::xSetMaxFilterLengthPQForCodingSubBlocks( const DeblockEdgeDir edgeDir, const CodingUnit& cu, const PredictionUnit& currPU, const bool& mvSubBlocks, const int& subBlockSize, const Area& areaPu )
+{
+  if ( mvSubBlocks && currPU.Y().valid() )
+  {
+    const int cIdx         = 0;
+    const ComponentID comp = ComponentID(cIdx);
+    const int ctuYOff      = currPU.block(comp).y - m_ctuYLumaSamples; // y offset from top edge of CTU in luma samples
+    const int ctuXOff      = currPU.block(comp).x - m_ctuXLumaSamples; // x offset from left edge of CTU in luma samples
+    const int minCUWidth   = cu.cs->pcv->minCUWidth;
+    const int minCUHeight  = cu.cs->pcv->minCUHeight;
+    if ( edgeDir == EDGE_HOR )
+    {
+      for ( int y = 0; y < areaPu.height; y += subBlockSize )
+      {
+        for ( int x = 0; x < areaPu.width; x += minCUWidth )
+        {
+          if ( m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y] )
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = std::min<int>(m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y], 5);
+            if ( y > 0 )
+            {
+              m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = std::min<int>(m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y], 5);
+            }
+          }
+          else if (y > 0 && ( m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y-8] || (( y + 8 ) >= areaPu.height) || m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y+8] )) // adjacent to transform edge on 8x8 grid
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = 2;
+            m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = 2;
+          }
+          else
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = 3;
+            m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = 3;
+          }
+        }
+      }
+    }
+    else // edgeDir == EDGE_VER
+    {
+      for ( int x = 0; x < areaPu.width; x += subBlockSize )
+      {
+        for ( int y = 0; y < areaPu.height; y += minCUHeight )
+        {
+          if ( m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y] )
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = std::min<int>(m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y], 5);
+            if ( x > 0 )
+            {
+              m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = std::min<int>(m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y], 5);
+            }
+          }
+          else if ( x > 0 && ( m_transformEdge[cIdx][ctuXOff+x-8][ctuYOff+y] || ( (x + 8) >= areaPu.width ) || m_transformEdge[cIdx][ctuXOff+x+8][ctuYOff+y] ) ) // adjacent to transform edge on 8x8 grid
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = 2;
+            m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = 2;
+          }
+          else
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = 3;
+            m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = 3;
+          }
+        }
+      }
+    }
+  }
+}
+#endif
 
 void LoopFilter::xSetEdgefilterMultiple( const CodingUnit&    cu,
                                          const DeblockEdgeDir edgeDir,
@@ -410,9 +719,7 @@ void LoopFilter::xSetEdgefilterMultiple( const CodingUnit&    cu,
 void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
 {
   const Slice& slice = *cu.slice;
-#if HEVC_TILES_WPP
   const PPS&   pps   = *cu.cs->pps;
-#endif
 
   if( slice.getDeblockingFilterDisable() )
   {
@@ -423,57 +730,93 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
   const Position& pos = cu.blocks[cu.chType].pos();
 
   m_stLFCUParam.internalEdge = true;
-#if HEVC_TILES_WPP
   m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
   m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
-#else
-  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailable ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag());
-  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailable ( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag());
+#if !JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+  m_stLFCUParam.internalEdge &= !cu.ispMode;
 #endif
 }
 
 unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos ) const
 {
+  // The boundary strength that is output by the function xGetBoundaryStrengthSingle is a multi component boundary strength that contains boundary strength for luma (bits 0 to 1), cb (bits 2 to 3) and cr (bits 4 to 5).
+
   const Slice& sliceQ = *cu.slice;
 
-  const Position& cuPosLuma = cu.lumaPos();
-  const Position& posQ  = localPos;
+  int shiftHor = cu.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cu.firstPU->chromaFormat);
+  int shiftVer = cu.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cu.firstPU->chromaFormat);
+  const Position& posQ = Position{ localPos.x >> shiftHor,  localPos.y >> shiftVer };
   const Position  posP  = ( edgeDir == EDGE_VER ) ? posQ.offset( -1, 0 ) : posQ.offset( 0, -1 );
 
-  const bool sameCU     = posP.x >= cuPosLuma.x && posP.y >= cuPosLuma.y;
-
   const CodingUnit& cuQ = cu;
-  const CodingUnit& cuP = sameCU ? cu : *cu.cs->getCU( posP, cu.chType );
+  const CodingUnit& cuP = *cu.cs->getCU( posP, cu.chType );
+
+#if JVET_N0413_RDPCM
+  if( ( MODE_INTRA == cuP.predMode && cuP.bdpcmMode ) && ( MODE_INTRA == cuQ.predMode && cuQ.bdpcmMode ) )
+  {
+    return 0;
+  }
+#endif
 
   //-- Set BS for Intra MB : BS = 4 or 3
   if( ( MODE_INTRA == cuP.predMode ) || ( MODE_INTRA == cuQ.predMode ) )
   {
-    return 2;
+    return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
   }
 
-  const TransformUnit& tuQ = posQ == cuQ.lumaPos() ? *cuQ.firstTU : *cuQ.cs->getTU(posQ, cuQ.chType);
-  const TransformUnit& tuP = posP == cuP.lumaPos() ? *cuP.firstTU : *cuP.cs->getTU(posP, cuP.chType);
+  const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
+  const TransformUnit& tuP = *cuP.cs->getTU(posP, cuP.chType);
   const PreCalcValues& pcv = *cu.cs->pcv;
-  const unsigned rasterIdx = getRasterIdx( posQ, pcv );
+  const unsigned rasterIdx = getRasterIdx( Position{ localPos.x,  localPos.y }, pcv );
+  if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
+  {
+     return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
+  }
 
+  unsigned tmpBs = 0;
   //-- Set BS for not Intra MB : BS = 2 or 1 or 0
+  // Y
   if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Y) || TU::getCbf(tuP, COMPONENT_Y)))
+  {
+    tmpBs += BsSet(1, COMPONENT_Y);
+  }
+  // U
+  if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cb) || TU::getCbf(tuP, COMPONENT_Cb)))
+  {
+    tmpBs += BsSet(1, COMPONENT_Cb);
+  }
+  // V
+  if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cr) || TU::getCbf(tuP, COMPONENT_Cr)))
+  {
+    tmpBs += BsSet(1, COMPONENT_Cr);
+  }
+  if (BsGet(tmpBs, COMPONENT_Y) == 1)
+  {
+    return tmpBs;
+  }
+  if ((cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
   {
     return 1;
   }
 
+  if ( !cu.Y().valid() )
+  {
+    return tmpBs;
+  }
+
   // and now the pred
-  const MotionInfo&     miQ = cuQ.cs->getMotionInfo( posQ );
-  const MotionInfo&     miP = cuP.cs->getMotionInfo( posP );
+  const Position& lumaPosQ  = Position{ localPos.x,  localPos.y };
+  const Position  lumaPosP  = ( edgeDir == EDGE_VER ) ? lumaPosQ.offset( -1, 0 ) : lumaPosQ.offset( 0, -1 );
+  const MotionInfo&     miQ = cuQ.cs->getMotionInfo( lumaPosQ );
+  const MotionInfo&     miP = cuP.cs->getMotionInfo( lumaPosP );
   const Slice&       sliceP = *cuP.slice;
 
   if (sliceQ.isInterB() || sliceP.isInterB())
   {
-    const Picture *piRefP0 = ( 0 > miP.refIdx[0] ) ? NULL : sliceP.getRefPic( REF_PIC_LIST_0, miP.refIdx[0] );
-    const Picture *piRefP1 = ( 0 > miP.refIdx[1] ) ? NULL : sliceP.getRefPic( REF_PIC_LIST_1, miP.refIdx[1] );
-    const Picture *piRefQ0 = ( 0 > miQ.refIdx[0] ) ? NULL : sliceQ.getRefPic( REF_PIC_LIST_0, miQ.refIdx[0] );
-    const Picture *piRefQ1 = ( 0 > miQ.refIdx[1] ) ? NULL : sliceQ.getRefPic( REF_PIC_LIST_1, miQ.refIdx[1] );
-
+    const Picture *piRefP0 = (CU::isIBC(cuP) ? sliceP.getPic() : ((0 > miP.refIdx[0]) ? NULL : sliceP.getRefPic(REF_PIC_LIST_0, miP.refIdx[0])));
+    const Picture *piRefP1 = (CU::isIBC(cuP) ? NULL            : ((0 > miP.refIdx[1]) ? NULL : sliceP.getRefPic(REF_PIC_LIST_1, miP.refIdx[1])));
+    const Picture *piRefQ0 = (CU::isIBC(cuQ) ? sliceQ.getPic() : ((0 > miQ.refIdx[0]) ? NULL : sliceQ.getRefPic(REF_PIC_LIST_0, miQ.refIdx[0])));
+    const Picture *piRefQ1 = (CU::isIBC(cuQ) ? NULL            : ((0 > miQ.refIdx[1]) ? NULL : sliceQ.getRefPic(REF_PIC_LIST_1, miQ.refIdx[1])));
     Mv mvP0, mvP1, mvQ0, mvQ1;
 
     if( 0 <= miP.refIdx[0] ) { mvP0 = miP.mv[0]; }
@@ -481,19 +824,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     if( 0 <= miQ.refIdx[0] ) { mvQ0 = miQ.mv[0]; }
     if( 0 <= miQ.refIdx[1] ) { mvQ1 = miQ.mv[1]; }
 
-    int nThreshold = 4;
-#if !REMOVE_MV_ADAPT_PREC
-    if (cu.cs->sps->getSpsNext().getUseHighPrecMv())
-    {
-      mvP0.setHighPrec();
-      mvP1.setHighPrec();
-      mvQ0.setHighPrec();
-      mvQ1.setHighPrec();
-#endif
-      nThreshold = 4 << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-#if !REMOVE_MV_ADAPT_PREC
-  }
-#endif
+    int nThreshold = 1 << MV_FRACTIONAL_BITS_INTERNAL;
     unsigned uiBs = 0;
 
     //th can be optimized
@@ -528,43 +859,32 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     {
       uiBs = 1;
     }
-    return uiBs;
+    return uiBs + tmpBs;
   }
 
 
   // pcSlice->isInterP()
-  CHECK(0 > miP.refIdx[0], "Invalid reference picture list index");
-  CHECK(0 > miQ.refIdx[0], "Invalid reference picture list index");
-  const Picture *piRefP0 = sliceP.getRefPic(REF_PIC_LIST_0, miP.refIdx[0]);
-  const Picture *piRefQ0 = sliceQ.getRefPic(REF_PIC_LIST_0, miQ.refIdx[0]);
-
+  CHECK(CU::isInter(cuP) && 0 > miP.refIdx[0], "Invalid reference picture list index");
+  CHECK(CU::isInter(cuP) && 0 > miQ.refIdx[0], "Invalid reference picture list index");
+  const Picture *piRefP0 = (CU::isIBC(cuP) ? sliceP.getPic() : sliceP.getRefPic(REF_PIC_LIST_0, miP.refIdx[0]));
+  const Picture *piRefQ0 = (CU::isIBC(cuQ) ? sliceQ.getPic() : sliceQ.getRefPic(REF_PIC_LIST_0, miQ.refIdx[0]));
   if (piRefP0 != piRefQ0)
   {
-    return 1;
+    return tmpBs + 1;
   }
 
   Mv mvP0 = miP.mv[0];
   Mv mvQ0 = miQ.mv[0];
 
-  int nThreshold = 4;
-#if !REMOVE_MV_ADAPT_PREC
-  if (cu.cs->sps->getSpsNext().getUseHighPrecMv())
-  {
-    mvP0.setHighPrec();
-    mvQ0.setHighPrec();
-#endif
-    nThreshold = 4 << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-#if !REMOVE_MV_ADAPT_PREC
-  }
-#endif
-  return ( ( abs( mvQ0.getHor() - mvP0.getHor() ) >= nThreshold ) || ( abs( mvQ0.getVer() - mvP0.getVer() ) >= nThreshold ) ) ? 1 : 0;
+  int nThreshold = 1 << MV_FRACTIONAL_BITS_INTERNAL;
+  return ( ( abs( mvQ0.getHor() - mvP0.getHor() ) >= nThreshold ) || ( abs( mvQ0.getVer() - mvP0.getVer() ) >= nThreshold ) ) ? (tmpBs + 1) : tmpBs;
 }
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
 void LoopFilter::deriveLADFShift( const Pel* src, const int stride, int& shift, const DeblockEdgeDir edgeDir, const SPS sps )
 {
   uint32_t lumaLevel = 0;
-  shift = sps.getSpsNext().getLadfQpOffset(0);
+  shift = sps.getLadfQpOffset(0);
 
   if (edgeDir == EDGE_VER)
   {
@@ -575,12 +895,12 @@ void LoopFilter::deriveLADFShift( const Pel* src, const int stride, int& shift, 
     lumaLevel = (src[0] + src[3] + src[-stride] + src[-stride + 3]) >> 2;
   }
 
-  for ( int k = 1; k < sps.getSpsNext().getLadfNumIntervals(); k++ )
+  for ( int k = 1; k < sps.getLadfNumIntervals(); k++ )
   {
-    const int th = sps.getSpsNext().getLadfIntervalLowerBound( k );
+    const int th = sps.getLadfIntervalLowerBound( k );
     if ( lumaLevel > th )
     {
-      shift = sps.getSpsNext().getLadfQpOffset( k );
+      shift = sps.getLadfQpOffset( k );
     }
     else
     {
@@ -590,12 +910,16 @@ void LoopFilter::deriveLADFShift( const Pel* src, const int stride, int& shift, 
 }
 #endif
 
-void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge)
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge )
+#else
+void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge, const int initialMaxFilterLengthP, const int initialMaxFilterLengthQ)
+#endif
 {
   const CompArea&  lumaArea = cu.block(COMPONENT_Y);
   const PreCalcValues& pcv = *cu.cs->pcv;
 
-  PelBuf        picYuvRec = cu.cs->getRecoBuf( lumaArea );
+  PelBuf        picYuvRec = m_enc ? m_encPicYuvBuffer.getBuf( lumaArea ) : cu.cs->getRecoBuf( lumaArea );
   Pel           *piSrc    = picYuvRec.buf;
   const int     iStride   = picYuvRec.stride;
   Pel           *piTmpSrc = piSrc;
@@ -607,12 +931,12 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
   const ClpRng& clpRng( cu.cs->slice->clpRng(COMPONENT_Y) );
 
   int          iQP          = 0;
-  unsigned     uiNumParts   = ( pcv.rectCUs ? ( ( edgeDir == EDGE_VER ) ? lumaArea.height / pcv.minCUHeight : lumaArea.width / pcv.minCUWidth ) : pcv.partsInCtuWidth >> cu.qtDepth );
+  unsigned     uiNumParts   = ( ( ( edgeDir == EDGE_VER ) ? lumaArea.height / pcv.minCUHeight : lumaArea.width / pcv.minCUWidth ) );
   int          pelsInPart   = pcv.minCUWidth;
   unsigned     uiBsAbsIdx   = 0, uiBs = 0;
   int          iOffset, iSrcStep;
 
-  bool  bPCMFilter      = (sps.getUsePCM() && sps.getPCMFilterDisableFlag()) ? true : false;
+  bool  bPCMFilter      = (sps.getPCMEnabledFlag() && sps.getPCMFilterDisableFlag()) ? true : false;
   bool  bPartPNoFilter  = false;
   bool  bPartQNoFilter  = false;
   int   betaOffsetDiv2  = slice.getDeblockingFilterBetaOffsetDiv2();
@@ -648,8 +972,20 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
     pos.x += xoffset;
     pos.y += yoffset;
 
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+    // Deblock luma boundaries on 8x8 grid only
+    if ( edgeDir == EDGE_HOR && ( pos.y % 8 ) != 0 )
+    {
+      continue;
+    }
+    if ( edgeDir == EDGE_VER && ( pos.x % 8 ) != 0 )
+    {
+      continue;
+    }
+#endif
+
     uiBsAbsIdx = getRasterIdx( pos, pcv );
-    uiBs       = m_aapucBS[edgeDir][uiBsAbsIdx];
+    uiBs = BsGet(m_aapucBS[edgeDir][uiBsAbsIdx], COMPONENT_Y);
 
     if( uiBs )
     {
@@ -658,31 +994,76 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
-#if HEVC_TILES_WPP
         CHECK( !isAvailableLeft( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() ), "Neighbour not available" );
-#else
-        CHECK( !isAvailable( cu, cuP, !slice.getLFCrossSliceBoundaryFlag() ), "Neighbour not available" );
-#endif
       }
       else  // (iDir == EDGE_HOR)
       {
-#if HEVC_TILES_WPP
         CHECK( !isAvailableAbove( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() ), "Neighbour not available" );
-#else
-        CHECK( !isAvailable( cu, cuP, !slice.getLFCrossSliceBoundaryFlag() ), "Neighbour not available" );
-#endif
       }
 
       iQP = (cuP.qp + cuQ.qp + 1) >> 1;
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
-      if ( sps.getSpsNext().getLadfEnabled() )
+      if ( sps.getLadfEnabled() )
       {
         int iShift = 0;
         deriveLADFShift( piTmpSrc + iSrcStep * (iIdx*pelsInPart), iStride, iShift, edgeDir, sps );
         iQP += iShift;
       }
 #endif
+
+      bool sidePisLarge   = false;
+      bool sideQisLarge   = false;
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+      int maxFilterLengthP = m_maxFilterLengthP[COMPONENT_Y][pos.x-m_ctuXLumaSamples][pos.y-m_ctuYLumaSamples];
+      int maxFilterLengthQ = m_maxFilterLengthQ[COMPONENT_Y][pos.x-m_ctuXLumaSamples][pos.y-m_ctuYLumaSamples];
+#else
+      int maxFilterLengthP = initialMaxFilterLengthP;
+      int maxFilterLengthQ = initialMaxFilterLengthQ;
+#endif
+      if (maxFilterLengthP > 3)
+      {
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+        sidePisLarge = true;
+        if ( maxFilterLengthP > 5 )
+#else
+        sidePisLarge = (edgeDir == EDGE_VER && cuP.block(COMPONENT_Y).width >= 32)
+          || (edgeDir == EDGE_HOR && cuP.block(COMPONENT_Y).height >= 32);
+
+        if (sidePisLarge && maxFilterLengthP > 5)
+#endif
+        {
+          // restrict filter length if sub-blocks are used (e.g affine or ATMVP)
+#if JVET_N0302_SIMPLFIED_CIIP
+          if (cuP.affine)
+#else
+          bool ciipSubBlock = false;
+          if (cuP.firstPU->mhIntraFlag)
+          {
+            const uint32_t dirMode = PU::getFinalIntraMode(*(cuP.firstPU), cuP.chType);
+            ciipSubBlock = edgeDir == EDGE_HOR ? dirMode == VER_IDX : dirMode == HOR_IDX;
+          }
+          if (cuP.affine || ciipSubBlock)
+#endif
+          {
+            maxFilterLengthP = std::min(maxFilterLengthP, 5);
+          }
+        }
+      }
+      if (maxFilterLengthQ > 3)
+      {
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+        sideQisLarge = true;
+#else
+        sideQisLarge = (edgeDir == EDGE_VER && cuQ.block(COMPONENT_Y).width >= 32)
+          || (edgeDir == EDGE_HOR && cuQ.block(COMPONENT_Y).height >= 32);
+#endif
+      }
+
+      if (edgeDir == EDGE_HOR && pos.y % slice.getSPS()->getCTUSize() == 0)
+      {
+        sidePisLarge = false;
+      }
       const int iIndexTC  = Clip3(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, int(iQP + DEFAULT_INTRA_TC_OFFSET*(uiBs - 1) + (tcOffsetDiv2 << 1)));
       const int iIndexB   = Clip3(0, MAX_QP, iQP + (betaOffsetDiv2 << 1));
 
@@ -699,6 +1080,70 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
         const int dq0 = xCalcDQ(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 0), iOffset);
         const int dp3 = xCalcDP(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 3), iOffset);
         const int dq3 = xCalcDQ(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 3), iOffset);
+        int dp0L = dp0;
+        int dq0L = dq0;
+        int dp3L = dp3;
+        int dq3L = dq3;
+
+        if (sidePisLarge)
+        {
+          dp0L = (dp0L + xCalcDP(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 0) - 3 * iOffset, iOffset) + 1) >> 1;
+          dp3L = (dp3L + xCalcDP(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 3) - 3 * iOffset, iOffset) + 1) >> 1;
+        }
+        if (sideQisLarge)
+        {
+          dq0L = (dq0L + xCalcDQ(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 0) + 3 * iOffset, iOffset) + 1) >> 1;
+          dq3L = (dq3L + xCalcDQ(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + 3) + 3 * iOffset, iOffset) + 1) >> 1;
+        }
+        bool useLongtapFilter = false;
+        if (sidePisLarge || sideQisLarge)
+        {
+          int d0L = dp0L + dq0L;
+          int d3L = dp3L + dq3L;
+
+          int dpL = dp0L + dp3L;
+          int dqL = dq0L + dq3L;
+
+          int dL = d0L + d3L;
+
+          bPartPNoFilter = bPartQNoFilter = false;
+          if (bPCMFilter)
+          {
+            // Check if each of PUs is I_PCM with LF disabling
+            bPartPNoFilter = cuP.ipcm;
+            bPartQNoFilter = cuQ.ipcm;
+          }
+          if (ppsTransquantBypassEnabledFlag)
+          {
+            // check if each of PUs is lossless coded
+            bPartPNoFilter = bPartPNoFilter || cuP.transQuantBypass;
+            bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
+          }
+
+          if (dL < iBeta)
+          {
+            const bool filterP = (dpL < iSideThreshold);
+            const bool filterQ = (dqL < iSideThreshold);
+
+            Pel* src0 = piTmpSrc + iSrcStep * (iIdx*pelsInPart + iBlkIdx * 4 + 0);
+            Pel* src3 = piTmpSrc + iSrcStep * (iIdx*pelsInPart + iBlkIdx * 4 + 3);
+
+            // adjust decision so that it is not read beyond p5 is maxFilterLengthP is 5 and q5 if maxFilterLengthQ is 5
+            const bool swL = xUseStrongFiltering(src0, iOffset, 2 * d0L, iBeta, iTc, sidePisLarge, sideQisLarge, maxFilterLengthP, maxFilterLengthQ)
+              && xUseStrongFiltering(src3, iOffset, 2 * d3L, iBeta, iTc, sidePisLarge, sideQisLarge, maxFilterLengthP, maxFilterLengthQ);
+            if (swL)
+            {
+              useLongtapFilter = true;
+              for (int i = 0; i < DEBLOCK_SMALLEST_BLOCK / 2; i++)
+              {
+                xPelFilterLuma(piTmpSrc + iSrcStep*(iIdx*pelsInPart + iBlkIdx * 4 + i), iOffset, iTc, swL, bPartPNoFilter, bPartQNoFilter, iThrCut, filterP, filterQ, clpRng, sidePisLarge, sideQisLarge, maxFilterLengthP, maxFilterLengthQ);
+              }
+            }
+
+          }
+        }
+        if (!useLongtapFilter)
+        {
         const int d0 = dp0 + dq0;
         const int d3 = dp3 + dq3;
 
@@ -724,14 +1169,17 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
         {
           const bool bFilterP = (dp < iSideThreshold);
           const bool bFilterQ = (dq < iSideThreshold);
-
-          const bool sw = xUseStrongFiltering( piTmpSrc + iSrcStep * ( iIdx*pelsInPart + iBlkIdx * 4 + 0 ), iOffset, 2 * d0, iBeta, iTc )
-                       && xUseStrongFiltering( piTmpSrc + iSrcStep * ( iIdx*pelsInPart + iBlkIdx * 4 + 3 ), iOffset, 2 * d3, iBeta, iTc );
-
+          bool sw = false;
+          if (maxFilterLengthP > 2 && maxFilterLengthQ > 2)
+          {
+            sw = xUseStrongFiltering(piTmpSrc + iSrcStep * (iIdx*pelsInPart + iBlkIdx * 4 + 0), iOffset, 2 * d0, iBeta, iTc)
+              && xUseStrongFiltering(piTmpSrc + iSrcStep * (iIdx*pelsInPart + iBlkIdx * 4 + 3), iOffset, 2 * d3, iBeta, iTc);
+          }
           for( int i = 0; i < DEBLOCK_SMALLEST_BLOCK / 2; i++ )
           {
             xPelFilterLuma( piTmpSrc + iSrcStep*( iIdx*pelsInPart + iBlkIdx * 4 + i ), iOffset, iTc, sw, bPartPNoFilter, bPartQNoFilter, iThrCut, bFilterP, bFilterQ, clpRng );
           }
+        }
         }
       }
     }
@@ -746,9 +1194,8 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
   const PreCalcValues& pcv = *cu.cs->pcv;
   unsigned  rasterIdx      = getRasterIdx( lumaPos, pcv );
-
-  PelBuf     picYuvRecCb   = cu.cs->getRecoBuf( cu.block(COMPONENT_Cb) );
-  PelBuf     picYuvRecCr   = cu.cs->getRecoBuf( cu.block(COMPONENT_Cr) );
+  PelBuf     picYuvRecCb = m_enc ? m_encPicYuvBuffer.getBuf(cu.block(COMPONENT_Cb)) : cu.cs->getRecoBuf(cu.block(COMPONENT_Cb));
+  PelBuf     picYuvRecCr = m_enc ? m_encPicYuvBuffer.getBuf(cu.block(COMPONENT_Cr)) : cu.cs->getRecoBuf(cu.block(COMPONENT_Cr));
   Pel       *piSrcCb       = picYuvRecCb.buf;
   Pel       *piSrcCr       = picYuvRecCr.buf;
   const int  iStride       = picYuvRecCb.stride;
@@ -762,10 +1209,11 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
   int       iOffset, iSrcStep;
   unsigned  uiLoopLength;
 
-  bool      bPCMFilter      = (sps.getUsePCM() && sps.getPCMFilterDisableFlag()) ? true : false;
+  bool      bPCMFilter      = (sps.getPCMEnabledFlag() && sps.getPCMFilterDisableFlag()) ? true : false;
   bool      bPartPNoFilter  = false;
   bool      bPartQNoFilter  = false;
   const int tcOffsetDiv2    = slice.getDeblockingFilterTcOffsetDiv2();
+  const int betaOffsetDiv2  = slice.getDeblockingFilterBetaOffsetDiv2();
 
   // Vertical Position
   unsigned uiEdgeNumInCtuVert = rasterIdx % pcv.partsInCtuWidth + iEdge;
@@ -781,10 +1229,10 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
     return;
   }
 
-  unsigned uiNumParts = ( pcv.rectCUs ? ( ( edgeDir == EDGE_VER ) ? lumaSize.height / pcv.minCUHeight : lumaSize.width / pcv.minCUWidth ) : pcv.partsInCtuWidth >> cu.qtDepth );
+  unsigned uiNumParts =  ( edgeDir == EDGE_VER ) ? lumaSize.height / pcv.minCUHeight : lumaSize.width / pcv.minCUWidth ;
   int   uiNumPelsLuma = pcv.minCUWidth;
   unsigned uiBsAbsIdx;
-  unsigned ucBs;
+  unsigned bS[2];
 
   Pel* piTmpSrcCb = piSrcCb;
   Pel* piTmpSrcCr = piSrcCr;
@@ -822,28 +1270,24 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
     pos.y += yoffset;
 
     uiBsAbsIdx = getRasterIdx( pos, pcv );
-    ucBs       = m_aapucBS[edgeDir][uiBsAbsIdx];
+    unsigned tmpBs = m_aapucBS[edgeDir][uiBsAbsIdx];
 
-    if (ucBs > 1)
+    tmpBs = m_aapucBS[edgeDir][uiBsAbsIdx];
+    bS[0] = BsGet(tmpBs, COMPONENT_Cb);
+    bS[1] = BsGet(tmpBs, COMPONENT_Cr);
+
+    if (bS[0] > 0 || bS[1] > 0)
     {
       const CodingUnit& cuQ =  cu;
       const CodingUnit& cuP = *cu.cs->getCU( recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, cu.chType, pos.offset( xoffset - uiNumPelsLuma, yoffset - uiNumPelsLuma ) ), cu.chType );
 
       if (edgeDir == EDGE_VER)
       {
-#if HEVC_TILES_WPP
         CHECK(!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
-#else
-        CHECK(!isAvailable(cu, cuP, !slice.getLFCrossSliceBoundaryFlag()), "Neighbour not available");
-#endif
       }
       else  // (iDir == EDGE_HOR)
       {
-#if HEVC_TILES_WPP
         CHECK(!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
-#else
-        CHECK(!isAvailable(cu, cuP, !slice.getLFCrossSliceBoundaryFlag()), "Neighbour not available");
-#endif
       }
 
       bPartPNoFilter = bPartQNoFilter = false;
@@ -860,8 +1304,32 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
       }
 
+#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
+      const int maxFilterLengthP = m_maxFilterLengthP[COMPONENT_Cb][(pos.x-m_ctuXLumaSamples)>>m_shiftHor][(pos.y-m_ctuYLumaSamples)>>m_shiftVer];
+      const int maxFilterLengthQ = m_maxFilterLengthQ[COMPONENT_Cb][(pos.x-m_ctuXLumaSamples)>>m_shiftHor][(pos.y-m_ctuYLumaSamples)>>m_shiftVer];
+      bool largeBoundary         = false;
+      if ( maxFilterLengthP >= 3 && maxFilterLengthQ >= 3 )
+      {
+        largeBoundary = true;
+      }
+#else
+      const unsigned cuPWidth  = cuP.block(COMPONENT_Cb).width;
+      const unsigned cuPHeight = cuP.block(COMPONENT_Cb).height;
+      const unsigned cuQWidth  = cuQ.block(COMPONENT_Cb).width;
+      const unsigned cuQHeight = cuQ.block(COMPONENT_Cb).height;
+
+      bool largeBoundary = ((edgeDir == EDGE_VER && cuPWidth >= 8 && cuQWidth >= 8) || (edgeDir == EDGE_HOR && cuPHeight >= 8 && cuQHeight >= 8));
+#endif
+
+      if (edgeDir == EDGE_HOR && pos.y % cuP.slice->getSPS()->getCTUSize() == 0)
+      {
+        largeBoundary = false;
+      }
+
       for( int chromaIdx = 0; chromaIdx < 2; chromaIdx++ )
       {
+        if ((bS[chromaIdx] == 2) || (largeBoundary && (bS[chromaIdx] == 1)))
+        {
         const ClpRng& clpRng( cu.cs->slice->clpRng( ComponentID( chromaIdx + 1 )) );
         const int chromaQPOffset = pps.getQpOffset( ComponentID( chromaIdx + 1 ) );
         Pel* piTmpSrcChroma = (chromaIdx == 0) ? piTmpSrcCb : piTmpSrcCr;
@@ -883,12 +1351,43 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
           iQP = getScaledChromaQP(iQP, sps.getChromaFormatIdc());
         }
 
-        const int iIndexTC = Clip3<int>( 0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET*( ucBs - 1 ) + ( tcOffsetDiv2 << 1 ) );
+        const int iIndexTC = Clip3<int>(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET * (bS[chromaIdx] - 1) + (tcOffsetDiv2 << 1));
         const int iTc      = sm_tcTable[iIndexTC] * iBitdepthScale;
 
-        for( unsigned uiStep = 0; uiStep < uiLoopLength; uiStep++ )
+        bool useLongFilter = false;
+        if (largeBoundary)
         {
-          xPelFilterChroma( piTmpSrcChroma + iSrcStep*( uiStep + iIdx*uiLoopLength ), iOffset, iTc, bPartPNoFilter, bPartQNoFilter, clpRng );
+        const int indexB = Clip3<int>(0, MAX_QP, iQP + (betaOffsetDiv2 << 1));
+        const int beta = sm_betaTable[indexB] * iBitdepthScale;
+
+        const int dp0 = xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset);
+        const int dq0 = xCalcDQ(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset);
+        const int dp1 = xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset);
+        const int dq1 = xCalcDQ(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset);
+
+        const int d0 = dp0 + dq0;
+        const int d1 = dp1 + dq1;
+        const int d = d0 + d1;
+
+          if (d < beta)
+          {
+            useLongFilter = true;
+            const bool sw = xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset, 2 * d0, beta, iTc)
+                && xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset, 2 * d1, beta, iTc);
+
+            for (unsigned step = 0; step < uiLoopLength; step++)
+            {
+              xPelFilterChroma(piTmpSrcChroma + iSrcStep*(step + iIdx*uiLoopLength), iOffset, iTc, sw, bPartPNoFilter, bPartQNoFilter, clpRng, largeBoundary);
+            }
+          }
+        }
+        if ( !useLongFilter )
+        {
+          for (unsigned step = 0; step < uiLoopLength; step++)
+          {
+            xPelFilterChroma(piTmpSrcChroma + iSrcStep*(step + iIdx*uiLoopLength), iOffset, iTc, false, bPartPNoFilter, bPartQNoFilter, clpRng, largeBoundary);
+          }
+        }
         }
       }
     }
@@ -911,7 +1410,102 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
  \param bFilterSecondQ  decision weak filter/no filter for partQ
  \param bitDepthLuma    luma bit depth
 */
-inline void LoopFilter::xPelFilterLuma( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const int iThrCut, const bool bFilterSecondP, const bool bFilterSecondQ, const ClpRng& clpRng ) const
+inline void LoopFilter::xBilinearFilter(Pel* srcP, Pel* srcQ, int offset, int refMiddle, int refP, int refQ, int numberPSide, int numberQSide, const int* dbCoeffsP, const int* dbCoeffsQ, int tc) const
+{
+    int src;
+    const char tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
+    const char tc3[3] = { 6, 4, 2 };
+    const char *tcP  = (numberPSide == 3) ? tc3 : tc7;
+    const char *tcQ  = (numberQSide == 3) ? tc3 : tc7;
+    for (int pos = 0; pos < numberPSide; pos++)
+    {
+      src = srcP[-offset*pos];
+      int cvalue = (tc * tcP[pos]) >>1;
+      srcP[-offset * pos] = Clip3(src - cvalue, src + cvalue, ((refMiddle*dbCoeffsP[pos] + refP * (64 - dbCoeffsP[pos]) + 32) >> 6));
+    }
+    for (int pos = 0; pos < numberQSide; pos++)
+    {
+      src = srcQ[offset*pos];
+      int cvalue = (tc * tcQ[pos]) >> 1;
+      srcQ[offset*pos] = Clip3(src - cvalue, src + cvalue, ((refMiddle*dbCoeffsQ[pos] + refQ * (64 - dbCoeffsQ[pos]) + 32) >> 6));
+    }
+}
+
+inline void LoopFilter::xFilteringPandQ(Pel* src, int offset, int numberPSide, int numberQSide, int tc) const
+{
+  CHECK(numberPSide <= 3 && numberQSide <= 3, "Short filtering in long filtering function");
+  Pel* srcP = src-offset;
+  Pel* srcQ = src;
+
+  int refP = 0;
+  int refQ = 0;
+  int refMiddle = 0;
+
+  const int dbCoeffs7[7] = { 59, 50, 41,32,23,14,5 };
+  const int dbCoeffs3[3] = { 53, 32, 11 };
+  const int dbCoeffs5[5] = { 58, 45, 32,19,6};
+  const int* dbCoeffsP   = numberPSide == 7 ? dbCoeffs7 : (numberPSide==5) ? dbCoeffs5 : dbCoeffs3;
+  const int* dbCoeffsQ   = numberQSide == 7 ? dbCoeffs7 : (numberQSide==5) ? dbCoeffs5 : dbCoeffs3;
+
+  switch (numberPSide)
+  {
+    case 7: refP = (srcP[-6*offset]   + srcP[-7 * offset] + 1) >> 1; break;
+    case 3: refP = (srcP[-2 * offset] + srcP[-3 * offset] + 1) >> 1; break;
+    case 5: refP = (srcP[-4 * offset] + srcP[-5 * offset] + 1) >> 1; break;
+  }
+
+  switch (numberQSide)
+  {
+    case 7: refQ = (srcQ[6 * offset] + srcQ[7 * offset] + 1) >> 1; break;
+    case 3: refQ = (srcQ[2 * offset] + srcQ[3 * offset] + 1) >> 1; break;
+    case 5: refQ = (srcQ[4 * offset] + srcQ[5 * offset] + 1) >> 1; break;
+  }
+
+  if (numberPSide == numberQSide)
+  {
+    if (numberPSide == 5)
+    {
+      refMiddle = (2 * (srcP[0] + srcQ[0] + srcP[-offset] + srcQ[offset] + srcP[-2 * offset] + srcQ[2 * offset]) + srcP[-3 * offset] + srcQ[3 * offset] + srcP[-4 * offset] + srcQ[4 * offset] + 8) >> 4;
+    }
+    else
+    {
+      refMiddle = (2 * (srcP[0] + srcQ[0]) + srcP[-offset] + srcQ[offset] + srcP[-2 * offset] + srcQ[2 * offset] + srcP[-3 * offset] + srcQ[3 * offset] + srcP[-4 * offset] + srcQ[4 * offset] + srcP[-5 * offset] + srcQ[5 * offset] + +srcP[-6 * offset] + srcQ[6 * offset] + 8) >> 4;
+    }
+  }
+  else
+  {
+    Pel* srcPt = srcP;
+    Pel* srcQt = srcQ;
+    int offsetP = -offset;
+    int offsetQ = offset;
+
+    int newNumberQSide = numberQSide;
+    int newNumberPSide = numberPSide;
+    if (numberQSide > numberPSide)
+    {
+      std::swap(srcPt, srcQt);
+      std::swap(offsetP, offsetQ);
+      newNumberQSide = numberPSide;
+      newNumberPSide = numberQSide;
+    }
+
+    if (newNumberPSide == 7 && newNumberQSide == 5)
+    {
+      refMiddle = (2 * (srcP[0] + srcQ[0] + srcP[-offset] + srcQ[offset]) + srcP[-2 * offset] + srcQ[2 * offset] + srcP[-3 * offset] + srcQ[3 * offset] + srcP[-4 * offset] + srcQ[4 * offset] + srcP[-5 * offset] + srcQ[5 * offset] + 8) >> 4;
+    }
+    else if (newNumberPSide == 7 && newNumberQSide == 3)
+    {
+      refMiddle = (2 * (srcPt[0] + srcQt[0]) + srcQt[0] + 2 * (srcQt[offsetQ] + srcQt[2 * offsetQ]) + srcPt[offsetP] + srcQt[offsetQ] + srcPt[2 * offsetP] + srcPt[3 * offsetP] + srcPt[4 * offsetP] + srcPt[5 * offsetP] + srcPt[6 * offsetP] + 8) >> 4;
+    }
+    else //if (newNumberPSide == 5 && newNumberQSide == 3)
+    {
+      refMiddle = (srcP[0] + srcQ[0] + srcP[-offset] + srcQ[offset] + srcP[-2 * offset] + srcQ[2 * offset] + srcP[-3 * offset] + srcQ[3 * offset] + 4) >> 3;
+    }
+  }
+  xBilinearFilter(srcP,srcQ,offset,refMiddle,refP,refQ,numberPSide,numberQSide,dbCoeffsP,dbCoeffsQ,tc);
+}
+
+inline void LoopFilter::xPelFilterLuma(Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const int iThrCut, const bool bFilterSecondP, const bool bFilterSecondQ, const ClpRng& clpRng, bool sidePisLarge, bool sideQisLarge, int maxFilterLengthP, int maxFilterLengthQ) const
 {
   int delta;
 
@@ -924,14 +1518,28 @@ inline void LoopFilter::xPelFilterLuma( Pel* piSrc, const int iOffset, const int
   const Pel m7  = piSrc[ iOffset * 3];
   const Pel m0  = piSrc[-iOffset * 4];
 
+  const Pel mP1 = piSrc[-iOffset * 5];
+  const Pel mP2 = piSrc[-iOffset * 6];
+  const Pel mP3 = piSrc[-iOffset * 7];
+  const Pel m8  = piSrc[ iOffset * 4];
+  const Pel m9  = piSrc[ iOffset * 5];
+  const Pel m10 = piSrc[ iOffset * 6];
+  const char tc3[3] = { 3, 2, 1};
   if (sw)
   {
-    piSrc[-iOffset]     = Clip3( m3 - 2 * tc, m3 + 2 * tc, ( (     m1 + 2 * m2 + 2 * m3 + 2 * m4 +     m5 + 4 ) >> 3 ) );
-    piSrc[ 0]           = Clip3( m4 - 2 * tc, m4 + 2 * tc, ( (     m2 + 2 * m3 + 2 * m4 + 2 * m5 +     m6 + 4 ) >> 3 ) );
-    piSrc[-iOffset * 2] = Clip3( m2 - 2 * tc, m2 + 2 * tc, ( (     m1 +     m2 +     m3 +     m4 +          2 ) >> 2 ) );
-    piSrc[ iOffset]     = Clip3( m5 - 2 * tc, m5 + 2 * tc, ( (     m3 +     m4 +     m5 +     m6 +          2 ) >> 2 ) );
-    piSrc[-iOffset * 3] = Clip3( m1 - 2 * tc, m1 + 2 * tc, ( ( 2 * m0 + 3 * m1 +     m2 +     m3 +     m4 + 4 ) >> 3 ) );
-    piSrc[ iOffset * 2] = Clip3( m6 - 2 * tc, m6 + 2 * tc, ( (     m3 +     m4 +     m5 + 3 * m6 + 2 * m7 + 4 ) >> 3 ) );
+    if (sidePisLarge || sideQisLarge)
+    {
+      xFilteringPandQ(piSrc, iOffset, sidePisLarge ? maxFilterLengthP : 3, sideQisLarge ? maxFilterLengthQ : 3, tc);
+    }
+    else
+    {
+      piSrc[-iOffset]     = Clip3(m3 - tc3[0] * tc, m3 + tc3[0] * tc, ((m1 + 2 * m2 + 2 * m3 + 2 * m4 + m5 + 4) >> 3));
+      piSrc[0]            = Clip3(m4 - tc3[0] * tc, m4 + tc3[0] * tc, ((m2 + 2 * m3 + 2 * m4 + 2 * m5 + m6 + 4) >> 3));
+      piSrc[-iOffset * 2] = Clip3(m2 - tc3[1] * tc, m2 + tc3[1] * tc, ((m1 + m2 + m3 + m4 + 2) >> 2));
+      piSrc[iOffset]      = Clip3(m5 - tc3[1] * tc, m5 + tc3[1] * tc, ((m3 + m4 + m5 + m6 + 2) >> 2));
+      piSrc[-iOffset * 3] = Clip3(m1 - tc3[2] * tc, m1 + tc3[2] * tc, ((2 * m0 + 3 * m1 + m2 + m3 + m4 + 4) >> 3));
+      piSrc[iOffset * 2]  = Clip3(m6 - tc3[2] * tc, m6 + tc3[2] * tc, ((m3 + m4 + m5 + 3 * m6 + 2 * m7 + 4) >> 3));
+    }
   }
   else
   {
@@ -963,6 +1571,13 @@ inline void LoopFilter::xPelFilterLuma( Pel* piSrc, const int iOffset, const int
     piSrc[-iOffset    ] = m3;
     piSrc[-iOffset * 2] = m2;
     piSrc[-iOffset * 3] = m1;
+    if (sidePisLarge)
+    {
+      piSrc[-iOffset * 4] = m0;
+      piSrc[-iOffset * 5] = mP1;
+      piSrc[-iOffset * 6] = mP2;
+      piSrc[-iOffset * 7] = mP3;
+    }
   }
 
   if(bPartQNoFilter)
@@ -970,6 +1585,13 @@ inline void LoopFilter::xPelFilterLuma( Pel* piSrc, const int iOffset, const int
     piSrc[ 0          ] = m4;
     piSrc[ iOffset    ] = m5;
     piSrc[ iOffset * 2] = m6;
+    if (sideQisLarge)
+    {
+      piSrc[iOffset * 3] = m7;
+      piSrc[iOffset * 4] = m8;
+      piSrc[iOffset * 5] = m9;
+      piSrc[iOffset * 6] = m10;
+    }
   }
 }
 
@@ -983,25 +1605,52 @@ inline void LoopFilter::xPelFilterLuma( Pel* piSrc, const int iOffset, const int
  \param bPartQNoFilter  indicator to disable filtering on partQ
  \param bitDepthChroma  chroma bit depth
  */
-inline void LoopFilter::xPelFilterChroma( Pel* piSrc, const int iOffset, const int tc, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng ) const
+inline void LoopFilter::xPelFilterChroma( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng, const bool largeBoundary ) const
 {
   int delta;
 
-  const Pel m4  = piSrc[ 0          ];
-  const Pel m3  = piSrc[-iOffset    ];
-  const Pel m5  = piSrc[ iOffset    ];
-  const Pel m2  = piSrc[-iOffset * 2];
+  const Pel m0 = piSrc[-iOffset * 4];
+  const Pel m1 = piSrc[-iOffset * 3];
+  const Pel m2 = piSrc[-iOffset * 2];
+  const Pel m3 = piSrc[-iOffset];
+  const Pel m4 = piSrc[0];
+  const Pel m5 = piSrc[iOffset];
+  const Pel m6 = piSrc[iOffset * 2];
+  const Pel m7 = piSrc[iOffset * 3];
 
-  delta           = Clip3( -tc, tc, ( ( ( ( m4 - m3 ) << 2 ) + m2 - m5 + 4 ) >> 3 ) );
-  piSrc[-iOffset] = ClipPel( m3 + delta, clpRng );
-  piSrc[ 0      ] = ClipPel( m4 - delta, clpRng );
+  if (sw)
+  {
+      piSrc[-iOffset * 3] = Clip3(m1 - tc, m1 + tc, ((3 * m0 + 2 * m1 + m2 + m3 + m4 + 4) >> 3));       // p2
+      piSrc[-iOffset * 2] = Clip3(m2 - tc, m2 + tc, ((2 * m0 + m1 + 2 * m2 + m3 + m4 + m5 + 4) >> 3));  // p1
+      piSrc[-iOffset * 1] = Clip3(m3 - tc, m3 + tc, ((m0 + m1 + m2 + 2 * m3 + m4 + m5 + m6 + 4) >> 3)); // p0
+      piSrc[0]            = Clip3(m4 - tc, m4 + tc, ((m1 + m2 + m3 + 2 * m4 + m5 + m6 + m7 + 4) >> 3)); // q0
+      piSrc[iOffset * 1]  = Clip3(m5 - tc, m5 + tc, ((m2 + m3 + m4 + 2 * m5 + m6 + 2 * m7 + 4) >> 3));  // q1
+      piSrc[iOffset * 2]  = Clip3(m6 - tc, m6 + tc, ((m3 + m4 + m5 + 2 * m6 + 3 * m7 + 4) >> 3));       // q2
+  }
+  else
+  {
+      delta = Clip3(-tc, tc, ((((m4 - m3) << 2) + m2 - m5 + 4) >> 3));
+      piSrc[-iOffset] = ClipPel(m3 + delta, clpRng);
+      piSrc[0] = ClipPel(m4 - delta, clpRng);
+  }
+
 
   if( bPartPNoFilter )
   {
+    if (largeBoundary)
+    {
+      piSrc[-iOffset * 3] = m1; // p2
+      piSrc[-iOffset * 2] = m2; // p1
+    }
     piSrc[-iOffset] = m3;
   }
   if( bPartQNoFilter )
   {
+    if (largeBoundary)
+    {
+      piSrc[iOffset * 1] = m5; // q1
+      piSrc[iOffset * 2] = m6; // q2
+    }
     piSrc[ 0      ] = m4;
   }
 }
@@ -1015,15 +1664,48 @@ inline void LoopFilter::xPelFilterChroma( Pel* piSrc, const int iOffset, const i
  \param tc              tc value
  \param piSrc           pointer to picture data
  */
-inline bool LoopFilter::xUseStrongFiltering( Pel* piSrc, const int iOffset, const int d, const int beta, const int tc ) const
+inline bool LoopFilter::xUseStrongFiltering( Pel* piSrc, const int iOffset, const int d, const int beta, const int tc, bool sidePisLarge, bool sideQisLarge, int maxFilterLengthP, int maxFilterLengthQ ) const
 {
   const Pel m4 = piSrc[ 0          ];
   const Pel m3 = piSrc[-iOffset    ];
   const Pel m7 = piSrc[ iOffset * 3];
   const Pel m0 = piSrc[-iOffset * 4];
+  int       sp3      = abs(m0 - m3);
+  int       sq3      = abs(m7 - m4);
+  const int d_strong = sp3 + sq3;
 
-  const int d_strong = abs( m0 - m3 ) + abs( m7 - m4 );
+  if (sidePisLarge || sideQisLarge)
+  {
+    Pel mP4;
+    Pel m11;
+    if (maxFilterLengthP == 5)
+    {
+      mP4 = piSrc[-iOffset * 6];
+    }
+    else
+    {
+      mP4 = piSrc[-iOffset * 8];
+    }
+    if (maxFilterLengthQ == 5)
+    {
+      m11 = piSrc[iOffset * 5];
+    }
+    else
+    {
+      m11 = piSrc[iOffset * 7];
+    }
 
+    if (sidePisLarge)
+    {
+      sp3 = (sp3 + abs(m0 - mP4) + 1) >> 1;
+    }
+    if (sideQisLarge)
+    {
+      sq3 = (sq3 + abs(m11 - m7) + 1) >> 1;
+    }
+    return ((sp3 + sq3) < (beta*3 >> 5)) && (d < (beta >> 2)) && (abs(m3 - m4) < ((tc * 5 + 1) >> 1));
+  }
+  else
   return ( ( d_strong < ( beta >> 3 ) ) && ( d < ( beta >> 2 ) ) && ( abs( m3 - m4 ) < ( ( tc * 5 + 1 ) >> 1 ) ) );
 }
 
@@ -1036,5 +1718,8 @@ inline int LoopFilter::xCalcDQ( Pel* piSrc, const int iOffset ) const
 {
   return abs( piSrc[0] - 2 * piSrc[iOffset] + piSrc[iOffset * 2] );
 }
+
+inline unsigned LoopFilter::BsSet(unsigned val, const ComponentID compIdx) const { return (val << (compIdx << 1)); }
+inline unsigned LoopFilter::BsGet(unsigned val, const ComponentID compIdx) const { return ((val >> (compIdx << 1)) & 3); }
 
 //! \}

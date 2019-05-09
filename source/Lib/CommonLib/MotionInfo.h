@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -101,18 +101,21 @@ struct MvField
 struct MotionInfo
 {
   bool     isInter;
+  bool     isIBCmot;
   char     interDir;
   uint16_t   sliceIdx;
-
   Mv      mv     [ NUM_REF_PIC_LIST_01 ];
   int16_t   refIdx [ NUM_REF_PIC_LIST_01 ];
-  MotionInfo()        : isInter(  false ), interDir( 0 ), sliceIdx( 0 ), refIdx{ NOT_VALID, NOT_VALID } { }
+  uint8_t         GBiIdx;
+  Mv      bv;
+  MotionInfo() : isInter(false), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID }, GBiIdx(0) { }
   // ensure that MotionInfo(0) produces '\x000....' bit pattern - needed to work with AreaBuf - don't use this constructor for anything else
-  MotionInfo( int i ) : isInter( i != 0 ), interDir( 0 ), sliceIdx( 0 ), refIdx{         0,         0 } { CHECKD( i != 0, "The argument for this constructor has to be '0'" ); }
+  MotionInfo(int i) : isInter(i != 0), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ 0,         0 }, GBiIdx(0) { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
 
   bool operator==( const MotionInfo& mi ) const
   {
     if( isInter != mi.isInter  ) return false;
+    if (isIBCmot != mi.isIBCmot) return false;
     if( isInter )
     {
       if( sliceIdx != mi.sliceIdx ) return false;
@@ -140,7 +143,6 @@ struct MotionInfo
   }
 };
 
-#if JVET_L0646_GBI
 class GBiMotionParam
 {
   bool       m_readOnly[2][33];       // 2 RefLists, 33 RefFrams
@@ -150,6 +152,7 @@ class GBiMotionParam
   bool       m_readOnlyAffine[2][2][33];
   Mv         m_mvAffine[2][2][33][3];
   Distortion m_distAffine[2][2][33];
+  int        m_mvpIdx[2][2][33];
 
 public:
 
@@ -171,6 +174,7 @@ public:
     memset(m_dist, -1, 2 * 33 * sizeof(Distortion));
     memset(m_readOnlyAffine, false, 2 * 2 * 33 * sizeof(bool));
     memset(m_distAffine, -1, 2 * 2 * 33 * sizeof(Distortion));
+    memset( m_mvpIdx, 0, 2 * 2 * 33 * sizeof( int ) );
   }
 
   void setReadMode(bool b, uint32_t uiRefList, uint32_t uiRefIdx) { m_readOnly[uiRefList][uiRefIdx] = b; }
@@ -195,24 +199,38 @@ public:
 
   Mv& getAffineMv(uint32_t uiRefList, uint32_t uiRefIdx, uint32_t uiAffineMvIdx, int bP4) { return m_mvAffine[bP4][uiRefList][uiRefIdx][uiAffineMvIdx]; }
 
-  void copyAffineMvFrom(Mv(&racAffineMvs)[3], Distortion uiDist, uint32_t uiRefList, uint32_t uiRefIdx, int bP4)
+  void copyAffineMvFrom(Mv(&racAffineMvs)[3], Distortion uiDist, uint32_t uiRefList, uint32_t uiRefIdx, int bP4
+                        , const int mvpIdx
+  )
   {
     memcpy(m_mvAffine[bP4][uiRefList][uiRefIdx], racAffineMvs, 3 * sizeof(Mv));
     m_distAffine[bP4][uiRefList][uiRefIdx] = uiDist;
+    m_mvpIdx[bP4][uiRefList][uiRefIdx]     = mvpIdx;
   }
 
-  void copyAffineMvTo(Mv acAffineMvs[3], Distortion& ruiDist, uint32_t uiRefList, uint32_t uiRefIdx, int bP4)
+  void copyAffineMvTo(Mv acAffineMvs[3], Distortion& ruiDist, uint32_t uiRefList, uint32_t uiRefIdx, int bP4
+                      , int& mvpIdx
+  )
   {
     memcpy(acAffineMvs, m_mvAffine[bP4][uiRefList][uiRefIdx], 3 * sizeof(Mv));
     ruiDist = m_distAffine[bP4][uiRefList][uiRefIdx];
+    mvpIdx  = m_mvpIdx[bP4][uiRefList][uiRefIdx];
   }
 };
-#endif
-#if  JVET_L0266_HMVP
 struct LutMotionCand
 {
-  MotionInfo*   motionCand;
-  int  currCnt;
+  static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lut;
+  static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutIbc;
+#if !JVET_N0266_SMALL_BLOCKS
+  static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShare;
+#endif
+  static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShareIbc;
+};
+#if JVET_N0329_IBC_SEARCH_IMP
+struct PatentBvCand
+{
+  Mv m_bvCands[IBC_NUM_CANDIDATES];
+  int currCnt;
 };
 #endif
 #endif // __MOTIONINFO__

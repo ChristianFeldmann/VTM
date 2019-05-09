@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -112,11 +112,9 @@ inline uint32_t QuantRDOQ::xGetCodedLevel( double&            rd64CodedCost,
                                        const BinFracBits& fracBitsPar,
                                        const BinFracBits& fracBitsGt1,
                                        const BinFracBits& fracBitsGt2,
-#if JVET_L0274
                                        const int          remGt2Bins,
                                        const int          remRegBins,
                                        unsigned           goRiceZero,
-#endif
                                        uint16_t             ui16AbsGoRice,
                                        int                iQBits,
                                        double             errorScale,
@@ -151,11 +149,8 @@ inline uint32_t QuantRDOQ::xGetCodedLevel( double&            rd64CodedCost,
   for( int uiAbsLevel  = uiMaxAbsLevel; uiAbsLevel >= uiMinAbsLevel ; uiAbsLevel-- )
   {
     double dErr         = double( lLevelDouble  - ( Intermediate_Int(uiAbsLevel) << iQBits ) );
-#if JVET_L0274
-    double dCurrCost    = dErr * dErr * errorScale + xGetICost( xGetICRate( uiAbsLevel, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, ui16AbsGoRice, useLimitedPrefixLength, maxLog2TrDynamicRange ) );
-#else
-    double dCurrCost    = dErr * dErr * errorScale + xGetICost( xGetICRate( uiAbsLevel, fracBitsPar, fracBitsGt1, fracBitsGt2, ui16AbsGoRice, useLimitedPrefixLength, maxLog2TrDynamicRange ) );
-#endif
+
+    double dCurrCost    = dErr * dErr * errorScale + xGetICost( xGetICRate( uiAbsLevel, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, ui16AbsGoRice, true, maxLog2TrDynamicRange ) );
     dCurrCost          += dCurrCostSig;
 
     if( dCurrCost < rd64CodedCost )
@@ -184,22 +179,19 @@ inline int QuantRDOQ::xGetICRate( const uint32_t         uiAbsLevel,
                                   const BinFracBits& fracBitsPar,
                                   const BinFracBits& fracBitsGt1,
                                   const BinFracBits& fracBitsGt2,
-#if JVET_L0274
                                   const int          remGt2Bins,
                                   const int          remRegBins,
                                   unsigned           goRiceZero,
-#endif
                                   const uint16_t       ui16AbsGoRice,
                                   const bool         useLimitedPrefixLength,
                                   const int          maxLog2TrDynamicRange  ) const
 {
-#if JVET_L0274
-  if( remRegBins < 3 )
+  if( remRegBins < 4 )
   {
     int       iRate   = int( xGetIEPRate() ); // cost of sign bit
     uint32_t  symbol  = ( uiAbsLevel == 0 ? goRiceZero : uiAbsLevel <= goRiceZero ? uiAbsLevel-1 : uiAbsLevel );
     uint32_t  length;
-    const int threshold = g_auiGoRiceRange[ui16AbsGoRice];
+    const int threshold = COEF_REMAIN_BIN_REDUCTION;
     if( symbol < ( threshold << ui16AbsGoRice ) )
     {
       length = symbol >> ui16AbsGoRice;
@@ -235,19 +227,12 @@ inline int QuantRDOQ::xGetICRate( const uint32_t         uiAbsLevel,
   }
 
   int iRate = int( xGetIEPRate() ); // cost of sign bit
-  const uint32_t cthres = ( remGt2Bins ? 4 : 2 );
+  const uint32_t cthres = 4;
   if( uiAbsLevel >= cthres )
   {
     uint32_t symbol = ( uiAbsLevel - cthres ) >> 1;
-#else
-  int iRate = int( xGetIEPRate() ); // cost of sign bit
-
-  if( uiAbsLevel >= 5 )
-  {
-    uint32_t symbol = ( uiAbsLevel - 5 ) >> 1;
-#endif
     uint32_t length;
-    const int threshold = g_auiGoRiceRange[ui16AbsGoRice];
+    const int threshold = COEF_REMAIN_BIN_REDUCTION;
     if( symbol < ( threshold << ui16AbsGoRice ) )
     {
       length = symbol >> ui16AbsGoRice;
@@ -280,60 +265,26 @@ inline int QuantRDOQ::xGetICRate( const uint32_t         uiAbsLevel,
       iRate += ( threshold + length + 1 - ui16AbsGoRice + length ) << SCALE_BITS;
     }
 
-#if JVET_L0274
     iRate += fracBitsGt1.intBits[1];
     iRate += fracBitsPar.intBits[( uiAbsLevel - 2 ) & 1];
-    if( remGt2Bins )
-    {
-      iRate += fracBitsGt2.intBits[1];
-    }
-#else
-    iRate += fracBitsPar.intBits[( uiAbsLevel - 1 ) & 1];
-    iRate += fracBitsGt1.intBits[1];
     iRate += fracBitsGt2.intBits[1];
-#endif
   }
   else if( uiAbsLevel == 1 )
   {
-#if JVET_L0274
     iRate += fracBitsGt1.intBits[0];
-#else
-    iRate += fracBitsPar.intBits[0];
-    iRate += fracBitsGt1.intBits[0];
-#endif
   }
   else if( uiAbsLevel == 2 )
   {
-#if JVET_L0274
     iRate += fracBitsGt1.intBits[1];
     iRate += fracBitsPar.intBits[0];
     iRate += fracBitsGt2.intBits[0];
-#else
-    iRate += fracBitsPar.intBits[1];
-    iRate += fracBitsGt1.intBits[0];
-#endif
   }
   else if( uiAbsLevel == 3 )
   {
-#if JVET_L0274
     iRate += fracBitsGt1.intBits[1];
     iRate += fracBitsPar.intBits[1];
     iRate += fracBitsGt2.intBits[0];
-#else
-    iRate += fracBitsPar.intBits[0];
-    iRate += fracBitsGt1.intBits[1];
-    iRate += fracBitsGt2.intBits[0];
-#endif
   }
-#if JVET_L0274
-#else
-  else if( uiAbsLevel == 4 )
-  {
-    iRate += fracBitsPar.intBits[1];
-    iRate += fracBitsGt1.intBits[1];
-    iRate += fracBitsGt2.intBits[0];
-  }
-#endif
   else
   {
     iRate = 0;
@@ -430,15 +381,26 @@ void QuantRDOQ::setScalingList(ScalingList *scalingList, const int maxLog2TrDyna
 #endif
 #else
 
-double QuantRDOQ::xGetErrScaleCoeff( SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth )
+#if JVET_N0246_MODIFIED_QUANTSCALES
+double QuantRDOQ::xGetErrScaleCoeff( const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth )
+{
+  const int iTransformShift = getTransformShift(channelBitDepth, Size(width, height), maxLog2TrDynamicRange);
+  double    dErrScale       = (double)( 1 << SCALE_BITS );                                // Compensate for scaling of bitcount in Lagrange cost function
+  double    dTransShift     = (double)iTransformShift + ( needsSqrt2 ? -0.5 : 0.0 );
+  dErrScale                 = dErrScale*pow( 2.0, ( -2.0*dTransShift ) );                     // Compensate for scaling through forward transform
+  const int  QStep          = g_quantScales[needsSqrt2?1:0][qp];
+  double    finalErrScale = dErrScale / QStep / QStep / (1 << (DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth) << 1));
+  return    finalErrScale;
+}
+#else
+double QuantRDOQ::xGetErrScaleCoeff( const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth )
 {
   const int iTransformShift = getTransformShift(channelBitDepth, Size(width, height), maxLog2TrDynamicRange);
 #if HM_QTBT_AS_IN_JEM_QUANT
   double    dErrScale       = (double)( 1 << SCALE_BITS );                                // Compensate for scaling of bitcount in Lagrange cost function
-  bool      needsSrqt2      = TU::needsBlockSizeTrafoScale( Size(width, height) );// ( ( (sizeX+sizeY) & 1 ) !=0 );
-  double    dTransShift     = (double)iTransformShift + ( needsSrqt2 ? -0.5 : 0.0 );
+  double    dTransShift     = (double)iTransformShift + ( needsSqrt2 ? -0.5 : 0.0 );
   dErrScale                 = dErrScale*pow( 2.0, ( -2.0*dTransShift ) );                     // Compensate for scaling through forward transform
-  int       QStep           = ( needsSrqt2 ? ( ( g_quantScales[qp] * 181 ) >> 7 ) : g_quantScales[qp] );
+  int       QStep           = ( needsSqrt2 ? ( ( g_quantScales[qp] * 181 ) >> 7 ) : g_quantScales[qp] );
   double    finalErrScale = dErrScale / QStep / QStep / (1 << (DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth) << 1));
 #else
   int errShift = SCALE_BITS - ((iTransformShift + DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth)) << 1);
@@ -447,6 +409,7 @@ double QuantRDOQ::xGetErrScaleCoeff( SizeType width, SizeType height, int qp, co
 #endif
   return    finalErrScale;
 }
+#endif
 #endif
 
 
@@ -476,8 +439,12 @@ void QuantRDOQ::xSetErrScaleCoeff( uint32_t list, uint32_t sizeX, uint32_t sizeY
 #if HM_QTBT_AS_IN_JEM_QUANT
   double dErrScale = (double)( 1 << SCALE_BITS );                                // Compensate for scaling of bitcount in Lagrange cost function
 
-  bool   needsSrqt2 = TU::needsBlockSizeTrafoScale( Size( g_scalingListSizeX[sizeX], g_scalingListSizeX[sizeY] ) );// ( ( (sizeX+sizeY) & 1 ) !=0 );
-  double dTransShift = (double)iTransformShift + ( needsSrqt2 ? -0.5 : 0.0 );
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  const bool needsSqrt2 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
+#else // !JVET_N0246_MODIFIED_QUANTSCALES
+  bool   needsSqrt2 = TU::needsBlockSizeTrafoScale( Size( g_scalingListSizeX[sizeX], g_scalingListSizeX[sizeY] ) );// ( ( (sizeX+sizeY) & 1 ) !=0 );
+#endif // JVET_N0246_MODIFIED_QUANTSCALES
+  double dTransShift = (double)iTransformShift + ( needsSqrt2 ? -0.5 : 0.0 );
   dErrScale = dErrScale*pow( 2.0, ( -2.0*dTransShift ) );                     // Compensate for scaling through forward transform
 
   for( i = 0; i < uiMaxNumCoeff; i++ )
@@ -486,7 +453,11 @@ void QuantRDOQ::xSetErrScaleCoeff( uint32_t list, uint32_t sizeX, uint32_t sizeY
                     / (1 << (DISTORTION_PRECISION_ADJUSTMENT(bitDepths.recon[channelType]) << 1));
   }
 
-  int QStep = ( needsSrqt2 ? ( ( g_quantScales[qp] * 181 ) >> 7 ) : g_quantScales[qp] );
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  int QStep = g_quantScales[needsSqrt2][qp];
+#else
+  int QStep = ( needsSqrt2 ? ( ( g_quantScales[qp] * 181 ) >> 7 ) : g_quantScales[qp] );
+#endif
 
   xGetErrScaleCoeffNoScalingList(list, sizeX, sizeY, qp) =
     dErrScale / QStep / QStep / (1 << (DISTORTION_PRECISION_ADJUSTMENT(bitDepths.recon[channelType]) << 1));
@@ -589,10 +560,11 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
   const CCoeffBuf &piCoef   = pSrc;
         CoeffBuf   piQCoef  = tu.getCoeffs(compID);
 
-  const bool useTransformSkip      = tu.transformSkip[compID];
+  const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP;
 
   bool useRDOQ = useTransformSkip ? m_useRDOQTS : m_useRDOQ;
 
+  if( !tu.cu->ispMode || !isLuma(compID) )
   {
     useRDOQ &= uiWidth > 2;
     useRDOQ &= uiHeight > 2;
@@ -604,7 +576,29 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
     if (!m_useSelectiveRDOQ || xNeedRDOQ(tu, compID, piCoef, cQP))
     {
 #endif
+#if JVET_N0280_RESIDUAL_CODING_TS
+      if( isLuma( compID ) && useTransformSkip )
+      {
+#if JVET_N0413_RDPCM
+        if( tu.cu->bdpcmMode && isLuma(compID) )
+        {
+          forwardRDPCM( tu, compID, pSrc, uiAbsSum, cQP, ctx );
+        }
+        else
+        {
+          xRateDistOptQuantTS( tu, compID, pSrc, uiAbsSum, cQP, ctx );
+        }
+#else
+        xRateDistOptQuantTS( tu, compID, pSrc, uiAbsSum, cQP, ctx );
+#endif
+      }
+      else
+      {
+        xRateDistOptQuant( tu, compID, pSrc, uiAbsSum, cQP, ctx );
+      }
+#else
       xRateDistOptQuant( tu, compID, pSrc, uiAbsSum, cQP, ctx );
+#endif
 #if T0196_SELECTIVE_RDOQ
     }
     else
@@ -636,6 +630,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   const bool extendedPrecision     = sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(chType);
 
+  const bool useIntraSubPartitions = tu.cu->ispMode && isLuma(compID);
   /* for 422 chroma blocks, the effective scaling applied during transformation is not a power of 2, hence it cannot be
   * implemented as a bit-shift (the quantised result will be sqrt(2) * larger than required). Alternatively, adjust the
   * uiLog2TrSize applied in iTransformShift, such that the result is 1/sqrt(2) the required result (i.e. smaller)
@@ -645,7 +640,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   // Represents scaling through forward transform
   int iTransformShift = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
 
-  if (tu.transformSkip[compID] && extendedPrecision)
+  if (tu.mtsIdx==MTS_SKIP && extendedPrecision)
   {
     iTransformShift = std::max<int>(0, iTransformShift);
   }
@@ -678,6 +673,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   TCoeff *deltaU       = m_deltaU;
 #endif
 
+  memset(piDstCoeff, 0, sizeof(*piDstCoeff) * uiMaxNumCoeff);
   memset( m_pdCostCoeff,  0, sizeof( double ) *  uiMaxNumCoeff );
   memset( m_pdCostSig,    0, sizeof( double ) *  uiMaxNumCoeff );
 #if HEVC_USE_SIGN_HIDING
@@ -688,6 +684,22 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 #endif
 
 
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  const bool needSqrtAdjustment= TU::needsBlockSizeTrafoScale( tu, compID );
+#if HEVC_USE_SCALING_LISTS
+  const double *const pdErrScale = xGetErrScaleCoeff(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem);
+  const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1));
+  const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+  const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
+  const int    defaultQuantisationCoefficient = g_quantScales[ needSqrtAdjustment ?1:0][cQP.rem];
+  const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem);
+  const int iQBits = QUANT_SHIFT + cQP.per + iTransformShift + (needSqrtAdjustment?-1:0);                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+#else
+  const int quantisationCoefficient    = g_quantScales[needSqrtAdjustment?1:0][cQP.rem];
+  const double errorScale = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), uiWidth, uiHeight, cQP.rem, maxLog2TrDynamicRange, channelBitDepth );
+  const int iQBits = QUANT_SHIFT + cQP.per + iTransformShift + (needSqrtAdjustment?-1:0);                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+#endif // HEVC_USE_SCALING_LISTS
+#else // JVET_N0246_MODIFIED_QUANTSCALES
   const int iQBits = QUANT_SHIFT + cQP.per + iTransformShift;                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
 
 #if HEVC_USE_SCALING_LISTS
@@ -696,7 +708,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
   const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, tu.transformSkip[compID]);
 #if HM_QTBT_AS_IN_JEM_QUANT
-  const int    defaultQuantisationCoefficient = ( TU::needsSqrt2Scale( rect ) ? ( g_quantScales[cQP.rem] * 181 ) >> 7 : g_quantScales[cQP.rem] );
+  const int    defaultQuantisationCoefficient = ( TU::needsSqrt2Scale( rect, tu.transformSkip[compID] ) ? ( g_quantScales[cQP.rem] * 181 ) >> 7 : g_quantScales[cQP.rem] );
   const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem);
 #else
   const double blkErrScale                    = ( TU::needsQP3Offset( tu, compID ) ? 2.0 : 1.0 );
@@ -705,14 +717,15 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 #endif
 #else //HEVC_USE_SCALING_LISTS
 #if HM_QTBT_AS_IN_JEM_QUANT
-  const int    quantisationCoefficient = ( TU::needsSqrt2Scale( rect ) ? ( g_quantScales[cQP.rem] * 181 ) >> 7 : g_quantScales[cQP.rem] );
-  const double errorScale              = xGetErrScaleCoeff( uiWidth, uiHeight, cQP.rem, maxLog2TrDynamicRange, channelBitDepth );
+  const int    quantisationCoefficient = ( TU::needsSqrt2Scale( tu, compID ) ? ( g_quantScales[cQP.rem] * 181 ) >> 7 : g_quantScales[cQP.rem] );
+  const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), uiWidth, uiHeight, cQP.rem, maxLog2TrDynamicRange, channelBitDepth );
 #else
   const double blkErrScale             = ( TU::needsQP3Offset( tu, compID ) ? 2.0 : 1.0 );
   const int    quantisationCoefficient = g_quantScales[cQP.rem];
   const double errorScale              = blkErrScale * xGetErrScaleCoeff( uiWidth, uiHeight, cQP.rem, maxLog2TrDynamicRange, channelBitDepth );
 #endif
 #endif//HEVC_USE_SCALING_LISTS
+#endif // JVET_N0246_MODIFIED_QUANTSCALES
 
 
 #if HEVC_USE_SIGN_HIDING
@@ -731,17 +744,14 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   double  d64BaseCost         = 0;
   int     iLastScanPos        = -1;
 
-#if JVET_L0274
   bool      is2x2subblock = ( iCGSizeM1 == 3 );
   int       remGt2Bins    = ( is2x2subblock ? MAX_NUM_GT2_BINS_2x2SUBBLOCK : MAX_NUM_GT2_BINS_4x4SUBBLOCK );
-  int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK ) - remGt2Bins;
+  int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK );
   uint32_t  goRiceParam   = 0;
-#endif
 
   double *pdCostCoeffGroupSig = m_pdCostCoeffGroupSig;
   memset( pdCostCoeffGroupSig, 0, ( uiMaxNumCoeff >> cctx.log2CGSize() ) * sizeof( double ) );
-
-  const int iCGNum  = uiWidth * uiHeight >> cctx.log2CGSize();
+  const int iCGNum = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiWidth) * std::min<int>(JVET_C0024_ZERO_OUT_TH, uiHeight) >> cctx.log2CGSize();
   int iScanPos;
   coeffGroupRDStats rdStats;
 
@@ -749,15 +759,36 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   DTRACE( g_trace_ctx, D_RDOQ, "%d: %3d, %3d, %dx%d, comp=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_RDOQ ), rect.x, rect.y, rect.width, rect.height, compID );
 #endif
 
+#if JVET_N0193_LFNST
+  const uint32_t lfnstIdx = tu.cu->lfnstIdx;
+#endif
 
 
   for (int subSetId = iCGNum - 1; subSetId >= 0; subSetId--)
   {
     cctx.initSubblock( subSetId );
 
+#if JVET_N0193_LFNST
+    uint32_t maxNonZeroPosInCG = iCGSizeM1;
+    if( lfnstIdx > 0 && ( ( uiWidth == 4 && uiHeight == 4 ) || ( uiWidth == 8 && uiHeight == 8 && cctx.cgPosX() == 0 && cctx.cgPosY() == 0 ) ) )
+    {
+      maxNonZeroPosInCG = 7;
+    }
+#endif
+
     memset( &rdStats, 0, sizeof (coeffGroupRDStats));
 
+#if JVET_N0193_LFNST
+    for( int iScanPosinCG = iCGSizeM1; iScanPosinCG > maxNonZeroPosInCG; iScanPosinCG-- )
+    {
+      iScanPos = cctx.minSubPos() + iScanPosinCG;
+      uint32_t    blkPos = cctx.blockPos( iScanPos );
+      piDstCoeff[ blkPos ] = 0;
+    }
+    for( int iScanPosinCG = maxNonZeroPosInCG; iScanPosinCG >= 0; iScanPosinCG-- )
+#else
     for (int iScanPosinCG = iCGSizeM1; iScanPosinCG >= 0; iScanPosinCG--)
+#endif
     {
       iScanPos = cctx.minSubPos() + iScanPosinCG;
       //===== quantization =====
@@ -810,17 +841,17 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
         uint32_t    uiParCtx      = cctx.parityCtxIdAbs   ( ctxOffset );
         uint32_t    uiGt1Ctx      = cctx.greater1CtxIdAbs ( ctxOffset );
         uint32_t    uiGt2Ctx      = cctx.greater2CtxIdAbs ( ctxOffset );
-#if JVET_L0274
         uint32_t    goRiceZero    = 0;
-        if( remRegBins < 3 )
+        if( remRegBins < 4 )
         {
+#if JVET_N0188_UNIFY_RICEPARA
+          unsigned  sumAbs = cctx.templateAbsSum( iScanPos, piDstCoeff, 0 );
+#else
           unsigned  sumAbs        = cctx.templateAbsSum( iScanPos, piDstCoeff );
+#endif
           goRiceParam             = g_auiGoRiceParsCoeff   [ sumAbs ];
           goRiceZero              = g_auiGoRicePosCoeff0[0][ sumAbs ];
         }
-#else
-        uint32_t    uiGoRiceParam = cctx.GoRiceParAbs     ( iScanPos, piDstCoeff );
-#endif
 
         const BinFracBits fracBitsPar = fracBits.getFracBitsArray( uiParCtx );
         const BinFracBits fracBitsGt1 = fracBits.getFracBitsArray( uiGt1Ctx );
@@ -828,31 +859,18 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
         if( iScanPos == iLastScanPos )
         {
-#if JVET_L0274
           uiLevel = xGetCodedLevel( pdCostCoeff[ iScanPos ], pdCostCoeff0[ iScanPos ], pdCostSig[ iScanPos ],
                                     lLevelDouble, uiMaxAbsLevel, nullptr, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, goRiceParam, iQBits, errorScale, 1, extendedPrecision, maxLog2TrDynamicRange );
-#else
-          uiLevel = xGetCodedLevel( pdCostCoeff[ iScanPos ], pdCostCoeff0[ iScanPos ], pdCostSig[ iScanPos ],
-                                    lLevelDouble, uiMaxAbsLevel, nullptr, fracBitsPar, fracBitsGt1, fracBitsGt2, uiGoRiceParam, iQBits, errorScale, 1, extendedPrecision, maxLog2TrDynamicRange );
-#endif
         }
         else
         {
           DTRACE_COND( ( uiMaxAbsLevel != 0 ), g_trace_ctx, D_RDOQ_MORE, " uiCtxSig=%d", ctxIdSig );
 
           const BinFracBits fracBitsSig = fracBits.getFracBitsArray( ctxIdSig );
-#if JVET_L0274
           uiLevel = xGetCodedLevel( pdCostCoeff[ iScanPos ], pdCostCoeff0[ iScanPos ], pdCostSig[ iScanPos ],
                                     lLevelDouble, uiMaxAbsLevel, &fracBitsSig, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, goRiceParam, iQBits, errorScale, 0, extendedPrecision, maxLog2TrDynamicRange );
 #if HEVC_USE_SIGN_HIDING
-          sigRateDelta[ uiBlkPos ] = ( remRegBins < 3 ? 0 : fracBitsSig.intBits[1] - fracBitsSig.intBits[0] );
-#endif
-#else
-          uiLevel = xGetCodedLevel( pdCostCoeff[ iScanPos ], pdCostCoeff0[ iScanPos ], pdCostSig[ iScanPos ],
-                                    lLevelDouble, uiMaxAbsLevel, &fracBitsSig, fracBitsPar, fracBitsGt1, fracBitsGt2, uiGoRiceParam, iQBits, errorScale, 0, extendedPrecision, maxLog2TrDynamicRange );
-#if HEVC_USE_SIGN_HIDING
-          sigRateDelta[ uiBlkPos ] = fracBitsSig.intBits[1] - fracBitsSig.intBits[0];
-#endif
+          sigRateDelta[ uiBlkPos ] = ( remRegBins < 4 ? 0 : fracBitsSig.intBits[1] - fracBitsSig.intBits[0] );
 #endif
         }
 
@@ -865,20 +883,13 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
         if( uiLevel > 0 )
         {
-#if JVET_L0274
           int rateNow              = xGetICRate( uiLevel,   fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, goRiceParam, extendedPrecision, maxLog2TrDynamicRange );
           rateIncUp   [ uiBlkPos ] = xGetICRate( uiLevel+1, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, goRiceParam, extendedPrecision, maxLog2TrDynamicRange ) - rateNow;
           rateIncDown [ uiBlkPos ] = xGetICRate( uiLevel-1, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, goRiceParam, extendedPrecision, maxLog2TrDynamicRange ) - rateNow;
-#else
-          int rateNow              = xGetICRate( uiLevel,   fracBitsPar, fracBitsGt1, fracBitsGt2, uiGoRiceParam, extendedPrecision, maxLog2TrDynamicRange );
-          rateIncUp   [ uiBlkPos ] = xGetICRate( uiLevel+1, fracBitsPar, fracBitsGt1, fracBitsGt2, uiGoRiceParam, extendedPrecision, maxLog2TrDynamicRange ) - rateNow;
-          rateIncDown [ uiBlkPos ] = xGetICRate( uiLevel-1, fracBitsPar, fracBitsGt1, fracBitsGt2, uiGoRiceParam, extendedPrecision, maxLog2TrDynamicRange ) - rateNow;
-#endif
         }
         else // uiLevel == 0
         {
-#if JVET_L0274
-          if( remRegBins < 3 )
+          if( remRegBins < 4 )
           {
             int rateNow            = xGetICRate( uiLevel,   fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, goRiceParam, extendedPrecision, maxLog2TrDynamicRange );
             rateIncUp [ uiBlkPos ] = xGetICRate( uiLevel+1, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, goRiceParam, extendedPrecision, maxLog2TrDynamicRange ) - rateNow;
@@ -887,35 +898,31 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
           {
             rateIncUp [ uiBlkPos ] = fracBitsGt1.intBits[ 0 ];
           }
-#else
-          rateIncUp   [ uiBlkPos ] = fracBitsPar.intBits[ 0 ] + fracBitsGt1.intBits[ 0 ];
-#endif
         }
 #endif
         piDstCoeff[ uiBlkPos ] = uiLevel;
         d64BaseCost           += pdCostCoeff [ iScanPos ];
 
-#if JVET_L0274
         if( ( (iScanPos & iCGSizeM1) == 0 ) && ( iScanPos > 0 ) )
         {
           remGt2Bins    = ( is2x2subblock ? MAX_NUM_GT2_BINS_2x2SUBBLOCK : MAX_NUM_GT2_BINS_4x4SUBBLOCK );
           remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK ) - remGt2Bins;
           goRiceParam   = 0;
         }
-        else if( remRegBins >= 3 )
+        else if( remRegBins >= 4 )
         {
-          const uint32_t baseLevel = ( remGt2Bins ? 4 : 2 );
+#if JVET_N0188_UNIFY_RICEPARA
+          int  sumAll = cctx.templateAbsSum(iScanPos, piDstCoeff, 4);
+          goRiceParam = g_auiGoRiceParsCoeff[sumAll];
+#else
+          const uint32_t baseLevel = 4;
           if( goRiceParam < 3 && ((uiLevel-baseLevel)>>1) > (3<<goRiceParam)-1 )
           {
             goRiceParam++;
           }
-          if( uiLevel >= 2 && remGt2Bins )
-          {
-            remGt2Bins--;
-          }
-          remRegBins -= std::min<int>( uiLevel, 2 ) + (iScanPos != iLastScanPos);
-        }
 #endif
+          remRegBins -= (uiLevel < 2 ? uiLevel : 3) + (iScanPos != iLastScanPos);
+        }
       }
       else
       {
@@ -984,7 +991,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
                 pdCostCoeffGroupSig[ cctx.subSetId() ] = xGetRateSigCoeffGroup(fracBitsSigGroup,0);
               }
               // reset coeffs to 0 in this block
+#if JVET_N0193_LFNST
+              for( int iScanPosinCG = maxNonZeroPosInCG; iScanPosinCG >= 0; iScanPosinCG-- )
+#else
               for (int iScanPosinCG = iCGSizeM1; iScanPosinCG >= 0; iScanPosinCG--)
+#endif
               {
                 iScanPos      = cctx.minSubPos() + iScanPosinCG;
                 uint32_t uiBlkPos = cctx.blockPos( iScanPos );
@@ -1018,11 +1029,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   int     iBestLastIdxP1      = 0;
 
 
-#if ENABLE_BMS
   if( !CU::isIntra( *tu.cu ) && isLuma( compID ) && tu.depth == 0 )
-#else
-  if( !CU::isIntra( *tu.cu ) && isLuma( compID ) )
-#endif
   {
     const BinFracBits fracBitsQtRootCbf = fracBits.getFracBitsArray( Ctx::QtRootCbf() );
     d64BestCost  = d64BlockUncodedCost + xGetICost( fracBitsQtRootCbf.intBits[ 0 ] );
@@ -1030,14 +1037,42 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   }
   else
   {
-#if ENABLE_BMS
-    BinFracBits fracBitsQtCbf = fracBits.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( rect.compID, tu.depth, tu.cbf[COMPONENT_Cb] ) ) );
-#else
-    BinFracBits fracBitsQtCbf = fracBits.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( rect.compID, tu.cbf[COMPONENT_Cb] ) ) );
-#endif
+    bool previousCbf       = tu.cbf[COMPONENT_Cb];
+    bool lastCbfIsInferred = false;
+    if( useIntraSubPartitions )
+    {
+      bool rootCbfSoFar       = false;
+      bool isLastSubPartition = CU::isISPLast(*tu.cu, tu.Y(), compID);
+      uint32_t nTus = tu.cu->ispMode == HOR_INTRA_SUBPARTITIONS ? tu.cu->lheight() >> g_aucLog2[tu.lheight()] : tu.cu->lwidth() >> g_aucLog2[tu.lwidth()];
+      if( isLastSubPartition )
+      {
+        TransformUnit* tuPointer = tu.cu->firstTU;
+        for( int tuIdx = 0; tuIdx < nTus - 1; tuIdx++ )
+        {
+          rootCbfSoFar |= TU::getCbfAtDepth(*tuPointer, COMPONENT_Y, tu.depth);
+          tuPointer     = tuPointer->next;
+        }
+        if( !rootCbfSoFar )
+        {
+          lastCbfIsInferred = true;
+        }
+      }
+      if( !lastCbfIsInferred )
+      {
+        previousCbf = TU::getPrevTuCbfAtDepth(tu, compID, tu.depth);
+      }
+    }
+    BinFracBits fracBitsQtCbf = fracBits.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( rect.compID, tu.depth, previousCbf, useIntraSubPartitions ) ) );
 
-    d64BestCost  = d64BlockUncodedCost + xGetICost( fracBitsQtCbf.intBits[0] );
-    d64BaseCost += xGetICost( fracBitsQtCbf.intBits[1] );
+    if( !lastCbfIsInferred )
+    {
+      d64BestCost  = d64BlockUncodedCost + xGetICost(fracBitsQtCbf.intBits[0]);
+      d64BaseCost += xGetICost(fracBitsQtCbf.intBits[1]);
+    }
+    else
+    {
+      d64BestCost  = d64BlockUncodedCost;
+    }
   }
 
   int lastBitsX[LAST_SIGNIFICANT_GROUPS] = { 0 };
@@ -1047,8 +1082,8 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
     int dim1  = ( cctx.scanType() == SCAN_VER ? uiHeight : uiWidth  );
     int dim2  = ( cctx.scanType() == SCAN_VER ? uiWidth  : uiHeight );
 #else
-    int dim1  = uiWidth;
-    int dim2  = uiHeight;
+    int dim1 = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiWidth);
+    int dim2 = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiHeight);
 #endif
     int bitsX = 0;
     int bitsY = 0;
@@ -1078,7 +1113,16 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
     d64BaseCost -= pdCostCoeffGroupSig [ iCGScanPos ];
     if (cctx.isSigGroup( iCGScanPos ) )
     {
+#if JVET_N0193_LFNST
+      uint32_t maxNonZeroPosInCG = iCGSizeM1;
+      if( lfnstIdx > 0 && ( ( uiWidth == 4 && uiHeight == 4 ) || ( uiWidth == 8 && uiHeight == 8 && cctx.cgPosX() == 0 && cctx.cgPosY() == 0 ) ) )
+      {
+        maxNonZeroPosInCG = 7;
+      }
+      for( int iScanPosinCG = maxNonZeroPosInCG; iScanPosinCG >= 0; iScanPosinCG-- )
+#else
       for (int iScanPosinCG = iCGSizeM1; iScanPosinCG >= 0; iScanPosinCG--)
+#endif
       {
         iScanPos = iCGScanPos * (iCGSizeM1 + 1) + iScanPosinCG;
 
@@ -1147,7 +1191,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 #if HEVC_USE_SIGN_HIDING
   if( cctx.signHiding() && uiAbsSum>=2)
   {
+#if JVET_N0246_MODIFIED_QUANTSCALES
+    const double inverseQuantScale = double(g_invQuantScales[0][cQP.rem]);
+#else
     const double inverseQuantScale = double(g_invQuantScales[cQP.rem]);
+#endif
     int64_t rdFactor = (int64_t)(inverseQuantScale * inverseQuantScale * (1 << (2 * cQP.per)) / m_dLambda / 16
                                / (1 << (2 * DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth)))
 #if HM_QTBT_AS_IN_JEM_QUANT
@@ -1159,8 +1207,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
     int lastCG = -1;
     int absSum = 0 ;
     int n ;
-
-    for( int subSet = (uiWidth*uiHeight-1) >> cctx.log2CGSize(); subSet >= 0; subSet-- )
+    for (int subSet = iCGNum - 1; subSet >= 0; subSet--)
     {
       int  subPos         = subSet << cctx.log2CGSize();
       int  firstNZPosInCG = iCGSizeM1 + 1, lastNZPosInCG = -1;
@@ -1282,5 +1329,591 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   }
 #endif
 }
+
+#if JVET_N0280_RESIDUAL_CODING_TS
+void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &coeffs, TCoeff &absSum, const QpParam &qp, const Ctx &ctx )
+{
+  const FracBitsAccess& fracBits = ctx.getFracBitsAcess();
+
+  const SPS &sps            = *tu.cs->sps;
+  const CompArea &rect      = tu.blocks[compID];
+  const uint32_t width      = rect.width;
+  const uint32_t height     = rect.height;
+  const ChannelType chType  = toChannelType(compID);
+  const int channelBitDepth = sps.getBitDepth( chType );
+
+  const bool extendedPrecision     = sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
+  const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(chType);
+
+  int transformShift = getTransformShift( channelBitDepth, rect.size(), maxLog2TrDynamicRange );
+
+  if( extendedPrecision )
+  {
+    transformShift = std::max<int>( 0, transformShift );
+  }
+
+        double   blockUncodedCost                   = 0;
+#if HEVC_USE_SCALING_LISTS
+  const uint32_t log2BlockHeight                    = g_aucLog2[height];
+#endif
+  const uint32_t maxNumCoeff                        = rect.area();
+
+  CHECK( compID >= MAX_NUM_TBLOCKS, "Invalid component ID" );
+
+#if HEVC_USE_SCALING_LISTS
+  int scalingListType = getScalingListType( tu.cu->predMode, compID );
+  CHECK( scalingListType >= SCALING_LIST_NUM, "Invalid scaling list" );
+#endif
+
+  const TCoeff *srcCoeff = coeffs.buf;
+        TCoeff *dstCoeff = tu.getCoeffs( compID ).buf;
+
+  double *costCoeff  = m_pdCostCoeff;
+  double *costSig    = m_pdCostSig;
+  double *costCoeff0 = m_pdCostCoeff0;
+
+  memset( m_pdCostCoeff,  0, sizeof( double ) *  maxNumCoeff );
+  memset( m_pdCostSig,    0, sizeof( double ) *  maxNumCoeff );
+
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  const bool   needsSqrt2Scale = TU::needsSqrt2Scale( tu, compID );  // should always be false - transform-skipped blocks don't require sqrt(2) compensation.
+  const int    qBits = QUANT_SHIFT + qp.per + transformShift + (needsSqrt2Scale?-1:0);  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+  const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale?1:0][qp.rem];
+  const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth );
+#else
+
+  const int qBits = QUANT_SHIFT + qp.per + transformShift;                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+
+#if HM_QTBT_AS_IN_JEM_QUANT
+  const int    quantisationCoefficient = ( TU::needsSqrt2Scale( tu, compID ) ? ( g_quantScales[qp.rem] * 181 ) >> 7 : g_quantScales[qp.rem] );
+  const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth );
+#else
+  const double blkErrScale             = ( TU::needsQP3Offset( tu, compID ) ? 2.0 : 1.0 );
+  const int    quantisationCoefficient = g_quantScales[qp.rem];
+  const double errorScale              = blkErrScale * xGetErrScaleCoeff( width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth );
+#endif
+#endif
+
+  const TCoeff entropyCodingMaximum = ( 1 << maxLog2TrDynamicRange ) - 1;
+
+#if HEVC_USE_SIGN_HIDING
+  CoeffCodingContext cctx( tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag() );
+#else
+  CoeffCodingContext cctx( tu, compID );
+#endif
+  const int sbSizeM1    = ( 1 << cctx.log2CGSize() ) - 1;
+  double    baseCost    = 0;
+  uint32_t  goRiceParam = 0;
+
+  double *costSigSubBlock = m_pdCostCoeffGroupSig;
+  memset( costSigSubBlock, 0, ( maxNumCoeff >> cctx.log2CGSize() ) * sizeof( double ) );
+
+  const int sbNum = width * height >> cctx.log2CGSize();
+  int scanPos;
+  coeffGroupRDStats rdStats;
+
+  bool anySigCG = false;
+
+  for( int sbId = 0; sbId < sbNum; sbId++ )
+  {
+    cctx.initSubblock( sbId );
+
+    memset( &rdStats, 0, sizeof (coeffGroupRDStats));
+
+    for( int scanPosInSB = 0; scanPosInSB <= sbSizeM1; scanPosInSB++ )
+    {
+      scanPos = cctx.minSubPos() + scanPosInSB;
+      //===== quantization =====
+      uint32_t blkPos = cctx.blockPos( scanPos );
+
+      // set coeff
+      const int64_t          tmpLevel    = int64_t( abs( srcCoeff[blkPos] ) ) * quantisationCoefficient;
+      const Intermediate_Int levelDouble = (Intermediate_Int)std::min<int64_t>( tmpLevel, std::numeric_limits<Intermediate_Int>::max() - ( Intermediate_Int( 1 ) << ( qBits - 1 ) ) );
+            uint32_t         maxAbsLevel = std::min<uint32_t>( uint32_t( entropyCodingMaximum ), uint32_t( ( levelDouble + ( Intermediate_Int( 1 ) << ( qBits - 1 ) ) ) >> qBits ) );
+
+      const double err       = double( levelDouble );
+      costCoeff0[ scanPos ]  = err * err * errorScale;
+      blockUncodedCost      += costCoeff0[ scanPos ];
+      dstCoeff[ blkPos ]     = maxAbsLevel;
+
+      //===== coefficient level estimation =====
+            unsigned    ctxIdSig = cctx.sigCtxIdAbsTS( scanPos, dstCoeff );
+            uint32_t    cLevel;
+      const BinFracBits fracBitsPar = fracBits.getFracBitsArray( cctx.parityCtxIdAbsTS() );
+
+      goRiceParam = cctx.templateAbsSumTS( scanPos, dstCoeff );
+      const BinFracBits fracBitsSign = fracBits.getFracBitsArray( Ctx::TsResidualSign( toChannelType(compID) ) );
+      const uint8_t     sign         = srcCoeff[ blkPos ] < 0 ? 1 : 0;
+
+      DTRACE_COND( ( maxAbsLevel != 0 ), g_trace_ctx, D_RDOQ_MORE, " uiCtxSig=%d", ctxIdSig );
+
+      const BinFracBits fracBitsSig = fracBits.getFracBitsArray( ctxIdSig );
+      cLevel = xGetCodedLevelTS( costCoeff[ scanPos ], costCoeff0[ scanPos ], costSig[ scanPos ],
+                                 levelDouble, maxAbsLevel, &fracBitsSig, fracBitsPar, cctx, fracBits, fracBitsSign, sign, goRiceParam, qBits, errorScale, 0, extendedPrecision, maxLog2TrDynamicRange );
+      dstCoeff[ blkPos ]  = cLevel;
+      baseCost           += costCoeff[ scanPos ];
+      rdStats.d64SigCost += costSig[ scanPos ];
+
+      if( scanPosInSB == 0 )
+      {
+        rdStats.d64SigCost_0 = costSig[ scanPos ];
+      }
+      if( dstCoeff[ blkPos ] )
+      {
+        cctx.setSigGroup();
+        rdStats.d64CodedLevelandDist += costCoeff [ scanPos ] - costSig[ scanPos ];
+        rdStats.d64UncodedDist       += costCoeff0[ scanPos ];
+        if( scanPosInSB != 0 )
+        {
+          rdStats.iNNZbeforePos0++;
+        }
+      }
+    } //end for (iScanPosinCG)
+
+    if( !cctx.isSigGroup() )
+    {
+      const BinFracBits fracBitsSigGroup = fracBits.getFracBitsArray( cctx.sigGroupCtxId( true ) );
+      baseCost += xGetRateSigCoeffGroup( fracBitsSigGroup, 0 ) - rdStats.d64SigCost;
+      costSigSubBlock[cctx.subSetId()] = xGetRateSigCoeffGroup( fracBitsSigGroup, 0 );
+    }
+    else if( sbId != sbSizeM1 || anySigCG )
+    {
+      if( rdStats.iNNZbeforePos0 == 0 )
+      {
+        baseCost -= rdStats.d64SigCost_0;
+        rdStats.d64SigCost -= rdStats.d64SigCost_0;
+      }
+      // rd-cost if SigCoeffGroupFlag = 0, initialization
+      double costZeroSB = baseCost;
+
+      const BinFracBits fracBitsSigGroup = fracBits.getFracBitsArray( cctx.sigGroupCtxId( true ) );
+
+      baseCost   += xGetRateSigCoeffGroup( fracBitsSigGroup, 1 );
+      costZeroSB += xGetRateSigCoeffGroup( fracBitsSigGroup, 0 );
+      costSigSubBlock[ cctx.subSetId() ] = xGetRateSigCoeffGroup( fracBitsSigGroup, 1 );
+
+      costZeroSB += rdStats.d64UncodedDist;         // distortion for resetting non-zero levels to zero levels
+      costZeroSB -= rdStats.d64CodedLevelandDist;   // distortion and level cost for keeping all non-zero levels
+      costZeroSB -= rdStats.d64SigCost;             // sig cost for all coeffs, including zero levels and non-zerl levels
+
+      if( costZeroSB < baseCost )
+      {
+        cctx.resetSigGroup();
+        baseCost = costZeroSB;
+        costSigSubBlock[ cctx.subSetId() ] = xGetRateSigCoeffGroup( fracBitsSigGroup, 0 );
+
+        for( int scanPosInSB = 0; scanPosInSB < sbSizeM1; scanPosInSB++ )
+        {
+          scanPos = cctx.minSubPos() + scanPosInSB;
+          uint32_t blkPos = cctx.blockPos( scanPos );
+
+          if( dstCoeff[ blkPos ] )
+          {
+            dstCoeff[ blkPos ] = 0;
+            costCoeff[ scanPos ] = costCoeff0[ scanPos ];
+            costSig[ scanPos] = 0;
+          }
+        }
+      }
+      else
+      {
+        anySigCG = true;
+      }
+    }
+  }
+
+  //===== estimate last position =====
+  for( int scanPos = 0; scanPos < maxNumCoeff; scanPos++ )
+  {
+    int blkPos = cctx.blockPos( scanPos );
+    TCoeff level = dstCoeff[ blkPos ];
+    absSum += level;
+    dstCoeff[ blkPos ] = ( level != 0 && srcCoeff[ blkPos ] < 0 ) ? -level : level;
+  }
+}
+
+#if JVET_N0413_RDPCM
+void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &coeffs, TCoeff &absSum, const QpParam &qp, const Ctx &ctx )
+{
+  const FracBitsAccess& fracBits = ctx.getFracBitsAcess();
+
+  const SPS &sps = *tu.cs->sps;
+  const CompArea &rect = tu.blocks[compID];
+  const uint32_t width = rect.width;
+  const uint32_t height = rect.height;
+  const ChannelType chType = toChannelType(compID);
+  const int channelBitDepth = sps.getBitDepth(chType);
+
+  const bool extendedPrecision = sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
+  const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(chType);
+  const int  dirMode = tu.cu->bdpcmMode;
+
+  int transformShift = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
+
+  if (extendedPrecision)
+  {
+    transformShift = std::max<int>(0, transformShift);
+  }
+
+  double   blockUncodedCost = 0;
+#if HEVC_USE_SCALING_LISTS
+  const uint32_t log2BlockHeight = g_aucLog2[height];
+#endif
+  const uint32_t maxNumCoeff = rect.area();
+
+  CHECK(compID >= MAX_NUM_TBLOCKS, "Invalid component ID");
+
+#if HEVC_USE_SCALING_LISTS
+  int scalingListType = getScalingListType(tu.cu->predMode, compID);
+  CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
+#endif
+
+  const TCoeff *srcCoeff = coeffs.buf;
+  TCoeff *dstCoeff = tu.getCoeffs(compID).buf;
+
+  double *costCoeff = m_pdCostCoeff;
+  double *costSig = m_pdCostSig;
+  double *costCoeff0 = m_pdCostCoeff0;
+
+  memset(m_pdCostCoeff, 0, sizeof(double) *  maxNumCoeff);
+  memset(m_pdCostSig, 0, sizeof(double) *  maxNumCoeff);
+  memset(m_fullCoeff, 0, sizeof(TCoeff) * maxNumCoeff);
+
+#if JVET_N0246_MODIFIED_QUANTSCALES
+  const bool   needsSqrt2Scale = TU::needsSqrt2Scale(tu, compID);  // should always be false - transform-skipped blocks don't require sqrt(2) compensation.
+  const int    qBits = QUANT_SHIFT + qp.per + transformShift + (needsSqrt2Scale ? -1 : 0);  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+  const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale ? 1 : 0][qp.rem];
+  const double errorScale = xGetErrScaleCoeff(TU::needsSqrt2Scale(tu, compID), width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth);
+
+  TrQuantParams trQuantParams;
+  trQuantParams.rightShift = (IQUANT_SHIFT - (transformShift + qp.per));
+  trQuantParams.qScale = g_invQuantScales[needsSqrt2Scale ? 1 : 0][qp.rem];
+#else
+
+  const int qBits = QUANT_SHIFT + qp.per + transformShift;                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+
+#if HM_QTBT_AS_IN_JEM_QUANT
+  const int    quantisationCoefficient = (TU::needsSqrt2Scale(tu, compID) ? (g_quantScales[qp.rem] * 181) >> 7 : g_quantScales[qp.rem]);
+  const double errorScale = xGetErrScaleCoeff(TU::needsSqrt2Scale(tu, compID), width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth);
+#else
+  const double blkErrScale = (TU::needsQP3Offset(tu, compID) ? 2.0 : 1.0);
+  const int    quantisationCoefficient = g_quantScales[qp.rem];
+  const double errorScale = blkErrScale * xGetErrScaleCoeff(width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth);
+#endif
+#endif
+
+  const TCoeff entropyCodingMaximum = (1 << maxLog2TrDynamicRange) - 1;
+
+#if HEVC_USE_SIGN_HIDING
+  CoeffCodingContext cctx(tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag());
+#else
+  CoeffCodingContext cctx(tu, compID);
+#endif
+  const int sbSizeM1 = (1 << cctx.log2CGSize()) - 1;
+  double    baseCost = 0;
+  uint32_t  goRiceParam = 0;
+
+  double *costSigSubBlock = m_pdCostCoeffGroupSig;
+  memset(costSigSubBlock, 0, (maxNumCoeff >> cctx.log2CGSize()) * sizeof(double));
+
+  const int sbNum = width * height >> cctx.log2CGSize();
+  int scanPos;
+  coeffGroupRDStats rdStats;
+
+  bool anySigCG = false;
+
+  for (int sbId = 0; sbId < sbNum; sbId++)
+  {
+    cctx.initSubblock(sbId);
+
+    memset(&rdStats, 0, sizeof(coeffGroupRDStats));
+
+    for (int scanPosInSB = 0; scanPosInSB <= sbSizeM1; scanPosInSB++)
+    {
+      scanPos = cctx.minSubPos() + scanPosInSB;
+      //===== quantization =====
+      uint32_t blkPos = cctx.blockPos(scanPos);
+
+      const int posX = cctx.posX(scanPos);
+      const int posY = cctx.posY(scanPos);
+      const int posS = (1 == dirMode) ? posX : posY;
+      const int posNb = (1 == dirMode) ? (posX - 1) + posY * coeffs.stride : posX + (posY - 1) * coeffs.stride;
+      TCoeff predCoeff = (0 != posS) ? m_fullCoeff[posNb] : 0;
+
+      // set coeff
+      const int64_t          tmpLevel = int64_t(abs(srcCoeff[blkPos] - predCoeff)) * quantisationCoefficient;
+      const Intermediate_Int levelDouble = (Intermediate_Int)std::min<int64_t>(tmpLevel, std::numeric_limits<Intermediate_Int>::max() - (Intermediate_Int(1) << (qBits - 1)));
+      uint32_t         maxAbsLevel = std::min<uint32_t>(uint32_t(entropyCodingMaximum), uint32_t((levelDouble + (Intermediate_Int(1) << (qBits - 1))) >> qBits));
+
+      const double err = double(levelDouble);
+      costCoeff0[scanPos] = err * err * errorScale;
+      blockUncodedCost += costCoeff0[scanPos];
+      dstCoeff[blkPos] = maxAbsLevel;
+
+      //===== coefficient level estimation =====
+      unsigned    ctxIdSig = cctx.sigCtxIdAbsTS(scanPos, dstCoeff);
+      uint32_t    cLevel;
+      const BinFracBits fracBitsPar = fracBits.getFracBitsArray(cctx.parityCtxIdAbsTS());
+
+      goRiceParam = cctx.templateAbsSumTS(scanPos, dstCoeff);
+      const BinFracBits fracBitsSign = fracBits.getFracBitsArray(Ctx::TsResidualSign(1));
+      const uint8_t     sign = srcCoeff[blkPos] - predCoeff < 0 ? 1 : 0;
+
+      DTRACE_COND((maxAbsLevel != 0), g_trace_ctx, D_RDOQ_MORE, " uiCtxSig=%d", ctxIdSig);
+
+      const BinFracBits fracBitsSig = fracBits.getFracBitsArray(ctxIdSig);
+      cLevel = xGetCodedLevelTS(costCoeff[scanPos], costCoeff0[scanPos], costSig[scanPos],
+        levelDouble, maxAbsLevel, &fracBitsSig, fracBitsPar, cctx, fracBits, fracBitsSign, sign, goRiceParam, qBits, errorScale, 0, extendedPrecision, maxLog2TrDynamicRange);
+      dstCoeff[blkPos] = cLevel;
+
+      if (sign)
+      {
+        dstCoeff[blkPos] = -dstCoeff[blkPos];
+      }
+      xDequantSample( m_fullCoeff[blkPos], dstCoeff[blkPos], trQuantParams );
+      m_fullCoeff[blkPos] += predCoeff;
+
+      baseCost += costCoeff[scanPos];
+      rdStats.d64SigCost += costSig[scanPos];
+
+      if (scanPosInSB == 0)
+      {
+        rdStats.d64SigCost_0 = costSig[scanPos];
+      }
+      if (dstCoeff[blkPos])
+      {
+        cctx.setSigGroup();
+        rdStats.d64CodedLevelandDist += costCoeff[scanPos] - costSig[scanPos];
+        rdStats.d64UncodedDist += costCoeff0[scanPos];
+        if (scanPosInSB != 0)
+        {
+          rdStats.iNNZbeforePos0++;
+        }
+      }
+    } //end for (iScanPosinCG)
+
+    if (!cctx.isSigGroup())
+    {
+      const BinFracBits fracBitsSigGroup = fracBits.getFracBitsArray(cctx.sigGroupCtxId(true));
+      baseCost += xGetRateSigCoeffGroup(fracBitsSigGroup, 0) - rdStats.d64SigCost;
+      costSigSubBlock[cctx.subSetId()] = xGetRateSigCoeffGroup(fracBitsSigGroup, 0);
+    }
+    else if (sbId != sbSizeM1 || anySigCG)
+    {
+      if (rdStats.iNNZbeforePos0 == 0)
+      {
+        baseCost -= rdStats.d64SigCost_0;
+        rdStats.d64SigCost -= rdStats.d64SigCost_0;
+      }
+      // rd-cost if SigCoeffGroupFlag = 0, initialization
+      double costZeroSB = baseCost;
+
+      const BinFracBits fracBitsSigGroup = fracBits.getFracBitsArray(cctx.sigGroupCtxId(true));
+
+      baseCost += xGetRateSigCoeffGroup(fracBitsSigGroup, 1);
+      costZeroSB += xGetRateSigCoeffGroup(fracBitsSigGroup, 0);
+      costSigSubBlock[cctx.subSetId()] = xGetRateSigCoeffGroup(fracBitsSigGroup, 1);
+
+      costZeroSB += rdStats.d64UncodedDist;         // distortion for resetting non-zero levels to zero levels
+      costZeroSB -= rdStats.d64CodedLevelandDist;   // distortion and level cost for keeping all non-zero levels
+      costZeroSB -= rdStats.d64SigCost;             // sig cost for all coeffs, including zero levels and non-zerl levels
+
+      if (costZeroSB < baseCost)
+      {
+        cctx.resetSigGroup();
+        baseCost = costZeroSB;
+        costSigSubBlock[cctx.subSetId()] = xGetRateSigCoeffGroup(fracBitsSigGroup, 0);
+
+        for (int scanPosInSB = 0; scanPosInSB < sbSizeM1; scanPosInSB++)
+        {
+          scanPos = cctx.minSubPos() + scanPosInSB;
+          uint32_t blkPos = cctx.blockPos(scanPos);
+
+          const int posX = cctx.posX(scanPos);
+          const int posY = cctx.posY(scanPos);
+          const int posS = (1 == dirMode) ? posX : posY;
+          const int posNb = (1 == dirMode) ? (posX - 1) + posY * coeffs.stride : posX + (posY - 1) * coeffs.stride;
+          m_fullCoeff[scanPos] = (0 != posS) ? m_fullCoeff[posNb] : 0;
+
+          if (dstCoeff[blkPos])
+          {
+            dstCoeff[blkPos] = 0;
+            costCoeff[scanPos] = costCoeff0[scanPos];
+            costSig[scanPos] = 0;
+          }
+        }
+      }
+      else
+      {
+        anySigCG = true;
+      }
+    }
+  }
+
+  //===== estimate last position =====
+  for (int scanPos = 0; scanPos < maxNumCoeff; scanPos++)
+  {
+    int blkPos = cctx.blockPos(scanPos);
+    TCoeff level = dstCoeff[blkPos];
+    absSum += abs(level);
+  }
+}
+
+void QuantRDOQ::xDequantSample(TCoeff& pRes, TCoeff& coeff, const TrQuantParams& trQuantParams)
+{
+  // xDequant
+  if (trQuantParams.rightShift > 0)
+  {
+    const Intermediate_Int qAdd = Intermediate_Int(1) << (trQuantParams.rightShift - 1);
+    pRes = TCoeff((Intermediate_Int(coeff) * trQuantParams.qScale + qAdd) >> trQuantParams.rightShift);
+  }
+  else
+  {
+    pRes = TCoeff((Intermediate_Int(coeff) * trQuantParams.qScale) << -trQuantParams.rightShift);
+  }
+}
+#endif
+inline uint32_t QuantRDOQ::xGetCodedLevelTS(       double&             codedCost,
+                                                   double&             codedCost0,
+                                                   double&             codedCostSig,
+                                                   Intermediate_Int    levelDouble,
+                                                   uint32_t            maxAbsLevel,
+                                             const BinFracBits*        fracBitsSig,
+                                             const BinFracBits&        fracBitsPar,
+                                             const CoeffCodingContext& cctx,
+                                             const FracBitsAccess&     fracBitsAccess,
+                                             const BinFracBits&        fracBitsSign,
+                                             const uint8_t             sign,
+                                                   uint16_t            ricePar,
+                                                   int                 qBits,
+                                                   double              errorScale,
+                                                   bool                isLast,
+                                                   bool                useLimitedPrefixLength,
+                                                   const int           maxLog2TrDynamicRange
+                                           ) const
+{
+  double   currCostSig  = 0;
+  uint32_t bestAbsLevel = 0;
+
+  if( !isLast && maxAbsLevel < 3 )
+  {
+    codedCostSig = xGetRateSigCoef( *fracBitsSig, 0 );
+    codedCost    = codedCost0 + codedCostSig;
+    if( maxAbsLevel == 0 )
+    {
+      return bestAbsLevel;
+    }
+  }
+  else
+  {
+    codedCost = MAX_DOUBLE;
+  }
+
+  if( !isLast )
+  {
+    currCostSig = xGetRateSigCoef( *fracBitsSig, 1 );
+  }
+
+  uint32_t minAbsLevel = ( maxAbsLevel > 1 ? maxAbsLevel - 1 : 1 );
+  for( int absLevel = maxAbsLevel; absLevel >= minAbsLevel ; absLevel-- )
+  {
+    double err       = double( levelDouble  - ( Intermediate_Int( absLevel ) << qBits ) );
+    double currCost  = err * err * errorScale + xGetICost( xGetICRateTS( absLevel, fracBitsPar, cctx, fracBitsAccess, fracBitsSign, sign, ricePar, useLimitedPrefixLength, maxLog2TrDynamicRange ) );
+           currCost += currCostSig;
+
+    if( currCost < codedCost )
+    {
+      bestAbsLevel = absLevel;
+      codedCost    = currCost;
+      codedCostSig = currCostSig;
+    }
+  }
+
+  return bestAbsLevel;
+}
+
+inline int QuantRDOQ::xGetICRateTS( const uint32_t            absLevel,
+                                    const BinFracBits&        fracBitsPar,
+                                    const CoeffCodingContext& cctx,
+                                    const FracBitsAccess&     fracBitsAccess,
+                                    const BinFracBits&        fracBitsSign,
+                                    const uint8_t             sign,
+                                    const uint16_t            ricePar,
+                                    const bool                useLimitedPrefixLength,
+                                    const int                 maxLog2TrDynamicRange  ) const
+{
+  int rate = fracBitsSign.intBits[sign];
+
+  const uint16_t     ctxGt1      = cctx.greaterXCtxIdAbsTS( 0 );
+  const BinFracBits &fracBitsGt1 = fracBitsAccess.getFracBitsArray( ctxGt1 );
+
+  if( absLevel > 1 )
+  {
+    rate += fracBitsGt1.intBits[1];
+    rate += fracBitsPar.intBits[( absLevel - 2 ) & 1];
+
+          int cutoffVal = 2;
+    const int numGtBins = 4;
+    for( int i = 0; i < numGtBins; i++ )
+    {
+      if( absLevel >= cutoffVal )
+      {
+        const uint16_t ctxGtX = cctx.greaterXCtxIdAbsTS( cutoffVal>>1 );
+        const BinFracBits &fracBitsGtX = fracBitsAccess.getFracBitsArray( ctxGtX );
+        unsigned gtX = ( absLevel >= ( cutoffVal + 2 ) );
+        rate += fracBitsGtX.intBits[gtX];
+      }
+      cutoffVal += 2;
+    }
+
+    if( absLevel >= cutoffVal )
+    {
+      uint32_t symbol = ( absLevel - cutoffVal ) >> 1;
+      uint32_t length;
+      const int threshold = COEF_REMAIN_BIN_REDUCTION;
+      if( symbol < ( threshold << ricePar ) )
+      {
+        length = symbol >> ricePar;
+        rate  += ( length + 1 + ricePar ) << SCALE_BITS;
+      }
+      else if( useLimitedPrefixLength )
+      {
+        const uint32_t maximumPrefixLength = ( 32 - ( COEF_REMAIN_BIN_REDUCTION + maxLog2TrDynamicRange ) );
+
+        uint32_t prefixLength = 0;
+        uint32_t suffix = ( symbol >> ricePar ) - COEF_REMAIN_BIN_REDUCTION;
+
+        while( ( prefixLength < maximumPrefixLength ) && ( suffix > ( ( 2 << prefixLength ) - 2 ) ) )
+        {
+          prefixLength++;
+        }
+
+        const uint32_t suffixLength = ( prefixLength == maximumPrefixLength ) ? ( maxLog2TrDynamicRange - ricePar ) : ( prefixLength + 1/*separator*/ );
+
+        rate += ( COEF_REMAIN_BIN_REDUCTION + prefixLength + suffixLength + ricePar ) << SCALE_BITS;
+      }
+      else
+      {
+        length = ricePar;
+        symbol = symbol - ( threshold << ricePar );
+        while( symbol >= ( 1 << length ) )
+        {
+          symbol -= ( 1 << ( length++ ) );
+        }
+        rate += ( threshold + length + 1 - ricePar + length ) << SCALE_BITS;
+      }
+    }
+  }
+  else if( absLevel == 1 )
+  {
+    rate += fracBitsGt1.intBits[0];
+  }
+  else
+  {
+    rate = 0;
+  }
+  return rate;
+}
+#endif
 
 //! \}

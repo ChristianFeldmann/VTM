@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,6 +60,7 @@
 EncLib::EncLib()
   : m_spsMap( MAX_NUM_SPS )
   , m_ppsMap( MAX_NUM_PPS )
+  , m_apsMap( MAX_NUM_APS )
   , m_AUWriterIf( nullptr )
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   , m_cacheModel()
@@ -74,6 +75,10 @@ EncLib::EncLib()
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
 #endif
+
+#if JVET_N0415_CTB_ALF
+  memset(m_apss, 0, sizeof(m_apss));
+#endif
 }
 
 EncLib::~EncLib()
@@ -84,9 +89,7 @@ void EncLib::create ()
 {
   // initialize global variables
   initROM();
-
-
-
+  TComHash::initBlockSizeToIndex();
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );
@@ -130,12 +133,33 @@ void EncLib::create ()
   }
 
   m_cLoopFilter.create( m_maxTotalCUDepth );
-
+  if ( !m_bLoopFilterDisable )
+  {
+    m_cLoopFilter.initEncPicYuvBuffer( m_chromaFormatIDC, getSourceWidth(), getSourceHeight() );
+  }
   if( m_alf )
   {
+#if JVET_N0242_NON_LINEAR_ALF
+    m_cEncALF.create( this, getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );
+#else
     m_cEncALF.create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );
+#endif
   }
 
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+  m_cReshaper = new EncReshape[m_numCuEncStacks];
+#endif
+  if (m_lumaReshapeEnable)
+  {
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+    for (int jId = 0; jId < m_numCuEncStacks; jId++)
+    {
+      m_cReshaper[jId].createEnc(getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_bitDepth[COMPONENT_Y]);
+    }
+#else
+    m_cReshaper.createEnc( getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_bitDepth[COMPONENT_Y]);
+#endif
+  }
   if ( m_RCEnableRateControl )
   {
     m_cRateCtrl.init(m_framesToBeEncoded, m_RCTargetBitrate, (int)((double)m_iFrameRate / m_temporalSubsampleRatio + 0.5), m_iGOPSize, m_iSourceWidth, m_iSourceHeight,
@@ -165,6 +189,14 @@ void EncLib::destroy ()
   m_cEncSAO.            destroy();
   m_cLoopFilter.        destroy();
   m_cRateCtrl.          destroy();
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+  for (int jId = 0; jId < m_numCuEncStacks; jId++)
+  {
+    m_cReshaper[jId].   destroy();
+  }
+#else
+  m_cReshaper.          destroy();
+#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
@@ -200,6 +232,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
   SPS &sps0=*(m_spsMap.allocatePS(0)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
   PPS &pps0=*(m_ppsMap.allocatePS(0));
+#if !JVET_N0415_CTB_ALF
+  APS &aps0=*(m_apsMap.allocatePS(0));
+#endif
 
   // initialize SPS
   xInitSPS(sps0);
@@ -215,7 +250,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   omp_set_nested( true );
 #endif
 
-  if (sps0.getSpsNext().getUseCompositeRef()) 
+  if (getUseCompositeRef())
   {
     sps0.setLongTermRefsPresent(true);
   }
@@ -230,15 +265,17 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
     m_cRdCost[jId].setCostMode ( m_costMode );
-    m_cRdCost[jId].setUseQtbt  ( m_QTBT );
   }
 #else
   m_cRdCost.setCostMode ( m_costMode );
-  m_cRdCost.setUseQtbt  ( m_QTBT );
 #endif
 
   // initialize PPS
   xInitPPS(pps0, sps0);
+  // initialize APS
+#if !JVET_N0415_CTB_ALF
+  xInitAPS(aps0);
+#endif
   xInitRPS(sps0, isFieldCoding);
 
 #if ER_CHROMA_QP_WCG_PPS
@@ -248,7 +285,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     xInitPPS(pps1, sps0);
   }
 #endif
-  if (sps0.getSpsNext().getUseCompositeRef())
+  if (getUseCompositeRef())
   {
     PPS &pps2 = *(m_ppsMap.allocatePS(2));
     xInitPPS(pps2, sps0);
@@ -272,7 +309,12 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
     // initialize transform & quantization class
     m_cTrQuant[jId].init( jId == 0 ? nullptr : m_cTrQuant[0].getQuant(),
-                          1 << m_uiQuadtreeTULog2MaxSize,
+#if MAX_TB_SIZE_SIGNALLING
+                          1 << m_log2MaxTbSize,
+
+#else
+                          MAX_TB_SIZEY,
+#endif
                           m_useRDOQ,
                           m_useRDOQTS,
 #if T0196_SELECTIVE_RDOQ
@@ -280,7 +322,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
                           true,
                           m_useTransformSkipFast
-                          , m_QTBT
     );
 
     // initialize encoder search class
@@ -289,13 +330,18 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                               &m_cTrQuant[jId],
                               &m_cRdCost[jId],
                               cabacEstimator,
-                              getCtxCache( jId ), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth );
+                              getCtxCache( jId ), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
+                            , &m_cReshaper[jId]
+    );
     m_cInterSearch[jId].init( this,
                               &m_cTrQuant[jId],
                               m_iSearchRange,
                               m_bipredSearchRange,
                               m_motionEstimationSearchMethod,
-                              m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost[jId], cabacEstimator, getCtxCache( jId ) );
+                              getUseCompositeRef(),
+                              m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost[jId], cabacEstimator, getCtxCache( jId )
+                           , &m_cReshaper[jId]
+    );
 
     // link temporary buffets from intra search with inter search to avoid unnecessary memory overhead
     m_cInterSearch[jId].setTempBuffers( m_cIntraSearch[jId].getSplitCSBuf(), m_cIntraSearch[jId].getFullCSBuf(), m_cIntraSearch[jId].getSaveCSBuf() );
@@ -305,7 +351,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
   // initialize transform & quantization class
   m_cTrQuant.init( nullptr,
-                   1 << m_uiQuadtreeTULog2MaxSize,
+#if MAX_TB_SIZE_SIGNALLING
+                   1 << m_log2MaxTbSize,
+#else
+                   MAX_TB_SIZEY,
+#endif
                    m_useRDOQ,
                    m_useRDOQTS,
 #if T0196_SELECTIVE_RDOQ
@@ -313,7 +363,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
                    true,
                    m_useTransformSkipFast
-                   , m_QTBT
   );
 
   // initialize encoder search class
@@ -322,13 +371,18 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        &m_cTrQuant,
                        &m_cRdCost,
                        cabacEstimator,
-                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth );
+                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
+                     , &m_cReshaper
+  );
   m_cInterSearch.init( this,
                        &m_cTrQuant,
                        m_iSearchRange,
                        m_bipredSearchRange,
                        m_motionEstimationSearchMethod,
-                       m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache() );
+                       getUseCompositeRef(),
+    m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache()
+                     , &m_cReshaper
+  );
 
   // link temporary buffets from intra search with inter search to avoid unneccessary memory overhead
   m_cInterSearch.setTempBuffers( m_cIntraSearch.getSplitCSBuf(), m_cIntraSearch.getFullCSBuf(), m_cIntraSearch.getSaveCSBuf() );
@@ -352,12 +406,16 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if ENABLE_WPP_PARALLELISM
   m_entropyCodingSyncContextStateVec.resize( pps0.pcv->heightInCtus );
 #endif
-  if (sps0.getSpsNext().getUseCompositeRef()) 
+  if (getUseCompositeRef())
   {
     Picture *picBg = new Picture;
     picBg->create(sps0.getChromaFormatIdc(), Size(sps0.getPicWidthInLumaSamples(), sps0.getPicHeightInLumaSamples()), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false);
     picBg->getRecoBuf().fill(0);
-    picBg->finalInit(sps0, pps0);
+#if JVET_N0415_CTB_ALF
+    picBg->finalInit(sps0, pps0, m_apss);
+#else
+    picBg->finalInit(sps0, pps0, aps0);
+#endif
     picBg->allocateNewSlice();
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
     m_cGOPEncoder.setPicBg(picBg);
@@ -508,7 +566,12 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     const SPS *sps = m_spsMap.getPS(pps->getSPSId());
 
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
-    picCurr->finalInit(*sps, *pps);
+#if JVET_N0415_CTB_ALF
+    picCurr->finalInit(*sps, *pps, m_apss);
+#else
+    APS *aps = m_apsMap.getPS(0);
+    picCurr->finalInit(*sps, *pps, *aps);
+#endif
     picCurr->poc = m_iPOCLast - 1;
     m_iPOCLast -= 2;
     if (getUseAdaptiveQP())
@@ -555,8 +618,13 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
-
-      pcPicCurr->finalInit( *pSPS, *pPPS );
+      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap(*cPicYuvTrueOrg );
+#if JVET_N0415_CTB_ALF
+      pcPicCurr->finalInit(*pSPS, *pPPS, m_apss);
+#else
+      APS *pAPS = m_apsMap.getPS(0);
+      pcPicCurr->finalInit(*pSPS, *pPPS, *pAPS);
+#endif
     }
 
     pcPicCurr->poc = m_iPOCLast;
@@ -650,8 +718,12 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         int ppsID=-1; // Use default PPS ID
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
-
-        pcField->finalInit( *pSPS, *pPPS );
+#if JVET_N0415_CTB_ALF
+        pcField->finalInit(*pSPS, *pPPS, m_apss);
+#else
+        APS *pAPS = m_apsMap.getPS(0);
+        pcField->finalInit(*pSPS, *pPPS, *pAPS);
+#endif
       }
 
       pcField->poc = m_iPOCLast;
@@ -746,7 +818,7 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
     rpcPic->create( sps.getChromaFormatIdc(), Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples()), sps.getMaxCUWidth(), sps.getMaxCUWidth()+16, false );
     if ( getUseAdaptiveQP() )
     {
-      const uint32_t iMaxDQPLayer = pps.getMaxCuDQPDepth()+1;
+      const uint32_t iMaxDQPLayer = pps.getCuQpDeltaSubdiv()/2+1;
       rpcPic->aqlayer.resize( iMaxDQPLayer );
       for (uint32_t d = 0; d < iMaxDQPLayer; d++)
       {
@@ -760,6 +832,7 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   rpcPic->setBorderExtension( false );
   rpcPic->reconstructed = false;
   rpcPic->referenced = true;
+  rpcPic->getHashMap()->clearAll();
 
   m_iPOCLast += (m_compositeRefEnabled ? 2 : 1);
   m_iNumPicRcvd++;
@@ -788,6 +861,32 @@ void EncLib::xInitVPS(VPS &vps, const SPS &sps)
 
 void EncLib::xInitSPS(SPS &sps)
 {
+#if !JVET_M0101_HLS
+  sps.setIntraOnlyConstraintFlag(m_bIntraOnlyConstraintFlag);
+  sps.setMaxBitDepthConstraintIdc(m_maxBitDepthConstraintIdc);
+  sps.setMaxChromaFormatConstraintIdc(m_maxChromaFormatConstraintIdc);
+  sps.setFrameConstraintFlag(m_frameOnlyConstraintFlag);
+  sps.setNoQtbttDualTreeIntraConstraintFlag(m_bNoQtbttDualTreeIntraConstraintFlag);
+  sps.setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
+  sps.setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
+  sps.setNoPcmConstraintFlag(m_bNoPcmConstraintFlag);
+  sps.setNoRefWraparoundConstraintFlag(m_bNoRefWraparoundConstraintFlag);
+  sps.setNoTemporalMvpConstraintFlag(m_bNoTemporalMvpConstraintFlag);
+  sps.setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
+  sps.setNoAmvrConstraintFlag(m_bNoAmvrConstraintFlag);
+  sps.setNoBdofConstraintFlag(m_bNoBdofConstraintFlag);
+  sps.setNoCclmConstraintFlag(m_bNoCclmConstraintFlag);
+  sps.setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
+  sps.setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
+  sps.setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
+  sps.setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
+  sps.setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
+  sps.setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
+  sps.setNoCurrPicRefConstraintFlag(m_bNoCurrPicRefConstraintFlag);
+  sps.setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
+  sps.setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
+  sps.setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
+
   ProfileTierLevel& profileTierLevel = *sps.getPTL()->getGeneralPTL();
   profileTierLevel.setLevelIdc                    (m_level);
   profileTierLevel.setTierFlag                    (m_levelTier);
@@ -813,7 +912,42 @@ void EncLib::xInitSPS(SPS &sps)
     /* A Profile::MAIN10 decoder can always decode Profile::MAIN */
     profileTierLevel.setProfileCompatibilityFlag( Profile::MAIN10, 1 );
   }
+#else
+  ProfileTierLevel* profileTierLevel = sps.getProfileTierLevel();
+  ConstraintInfo* cinfo = profileTierLevel->getConstraintInfo();
+  cinfo->setProgressiveSourceFlag       (m_progressiveSourceFlag);
+  cinfo->setInterlacedSourceFlag        (m_interlacedSourceFlag);
+  cinfo->setNonPackedConstraintFlag     (m_nonPackedConstraintFlag);
+  cinfo->setFrameOnlyConstraintFlag     (m_frameOnlyConstraintFlag);
+  cinfo->setIntraOnlyConstraintFlag         (m_intraConstraintFlag);
+  cinfo->setMaxBitDepthConstraintIdc    (m_maxBitDepthConstraintIdc);
+  cinfo->setMaxChromaFormatConstraintIdc((ChromaFormat)m_maxChromaFormatConstraintIdc);
+  cinfo->setNoQtbttDualTreeIntraConstraintFlag(m_bNoQtbttDualTreeIntraConstraintFlag);
+  cinfo->setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
+  cinfo->setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
+  cinfo->setNoPcmConstraintFlag(m_bNoPcmConstraintFlag);
+  cinfo->setNoRefWraparoundConstraintFlag(m_bNoRefWraparoundConstraintFlag);
+  cinfo->setNoTemporalMvpConstraintFlag(m_bNoTemporalMvpConstraintFlag);
+  cinfo->setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
+  cinfo->setNoAmvrConstraintFlag(m_bNoAmvrConstraintFlag);
+  cinfo->setNoBdofConstraintFlag(m_bNoBdofConstraintFlag);
+  cinfo->setNoCclmConstraintFlag(m_bNoCclmConstraintFlag);
+  cinfo->setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
+  cinfo->setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
+  cinfo->setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
+  cinfo->setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
+  cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
+  cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
+  cinfo->setNoCurrPicRefConstraintFlag(m_bNoCurrPicRefConstraintFlag);
+  cinfo->setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
+  cinfo->setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
+  cinfo->setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
 
+  profileTierLevel->setLevelIdc                    (m_level);
+  profileTierLevel->setTierFlag                    (m_levelTier);
+  profileTierLevel->setProfileIdc                  (m_profile);
+
+#endif
   /* XXX: should Main be marked as compatible with still picture? */
   /* XXX: may be a good idea to refactor the above into a function
    * that chooses the actual compatibility based upon options */
@@ -827,57 +961,70 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setChromaFormatIdc        ( m_chromaFormatIDC   );
   sps.setLog2DiffMaxMinCodingBlockSize(m_log2DiffMaxMinCodingBlockSize);
 
-  sps.getSpsNext().setNextToolsEnabled      ( m_profile == Profile::NEXT );
-  sps.getSpsNext().setUseQTBT               ( m_QTBT );
-  sps.getSpsNext().setCTUSize               ( m_CTUSize );
-#if JVET_L0217_L0678_PARTITION_HIGHLEVEL_CONSTRAINT
-  sps.getSpsNext().setSplitConsOverrideEnabledFlag( m_useSplitConsOverride );
+  sps.setCTUSize                             ( m_CTUSize );
+  sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
+  sps.setMinQTSizes                          ( m_uiMinQT );
+  sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
+  sps.setUseDualITree                        ( m_dualITree );
+#if JVET_N0193_LFNST
+  sps.setUseLFNST                            ( m_LFNST );
 #endif
-  sps.getSpsNext().setMinQTSizes            ( m_uiMinQT );
-  sps.getSpsNext().setUseLargeCTU           ( m_LargeCTU );
-  sps.getSpsNext().setMaxBTDepth            ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
-  sps.getSpsNext().setUseDualITree          ( m_dualITree );
-  sps.getSpsNext().setSubPuMvpMode(m_SubPuMvpMode);
-  sps.getSpsNext().setSubPuMvpLog2Size(m_SubPuMvpLog2Size);
-  sps.getSpsNext().setImvMode               ( ImvMode(m_ImvMode) );
-  sps.getSpsNext().setUseIMV                ( m_ImvMode != IMV_OFF );
-#if !REMOVE_MV_ADAPT_PREC
-  sps.getSpsNext().setUseHighPrecMv         ( m_highPrecMv );
+  sps.setSBTMVPEnabledFlag                  ( m_SubPuMvpMode );
+  sps.setAMVREnabledFlag                ( m_ImvMode != IMV_OFF );
+  sps.setBDOFEnabledFlag                    ( m_BIO );
+  sps.setUseAffine             ( m_Affine );
+  sps.setUseAffineType         ( m_AffineType );
+  sps.setUseLMChroma           ( m_LMChroma ? true : false );
+  sps.setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
+  sps.setUseMTS                ( m_IntraMTS || m_InterMTS || m_ImplicitMTS );
+  sps.setUseIntraMTS           ( m_IntraMTS );
+  sps.setUseInterMTS           ( m_InterMTS );
+  sps.setUseSBT                             ( m_SBT );
+  if( sps.getUseSBT() )
+  {
+    sps.setMaxSbtSize                       ( m_iSourceWidth >= 1920 ? 64 : 32 );
+  }
+#if JVET_N0235_SMVD_SPS
+  sps.setUseSMVD                ( m_SMVD );
 #endif
-#if JVET_L0256_BIO
-  sps.getSpsNext().setUseBIO                ( m_BIO );
-#endif
-  sps.getSpsNext().setUseAffine             ( m_Affine );
-  sps.getSpsNext().setUseAffineType         ( m_AffineType );
-  sps.getSpsNext().setDisableMotCompress    ( m_DisableMotionCompression );
-  sps.getSpsNext().setMTTMode               ( m_MTTMode );
-  sps.getSpsNext().setUseLMChroma           ( m_LMChroma ? true : false );
-#if ENABLE_WPP_PARALLELISM
-  sps.getSpsNext().setUseNextDQP            ( m_AltDQPCoding );
-#endif
-  sps.getSpsNext().setUseIntraEMT           ( m_IntraEMT );
-  sps.getSpsNext().setUseInterEMT           ( m_InterEMT );
-  sps.getSpsNext().setUseCompositeRef       ( m_compositeRefEnabled );
-#if JVET_L0646_GBI
-  sps.getSpsNext().setUseGBi                ( m_GBi );
-#endif
+  sps.setUseGBi                ( m_GBi );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
-  sps.getSpsNext().setLadfEnabled           ( m_LadfEnabled );
+  sps.setLadfEnabled           ( m_LadfEnabled );
   if ( m_LadfEnabled )
   {
-    sps.getSpsNext().setLadfNumIntervals    ( m_LadfNumIntervals );
+    sps.setLadfNumIntervals    ( m_LadfNumIntervals );
     for ( int k = 0; k < m_LadfNumIntervals; k++ )
     {
-      sps.getSpsNext().setLadfQpOffset( m_LadfQpOffset[k], k );
-      sps.getSpsNext().setLadfIntervalLowerBound( m_LadfIntervalLowerBound[k], k );
+      sps.setLadfQpOffset( m_LadfQpOffset[k], k );
+      sps.setLadfIntervalLowerBound( m_LadfIntervalLowerBound[k], k );
     }
     CHECK( m_LadfIntervalLowerBound[0] != 0, "abnormal value set to LadfIntervalLowerBound[0]" );
   }
 #endif
 
-  // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
+  sps.setUseMHIntra            ( m_MHIntra );
+  sps.setUseTriangle           ( m_Triangle );
+#if JVET_N0127_MMVD_SPS_FLAG 
+  sps.setUseMMVD               ( m_MMVD );
+  sps.setFpelMmvdEnabledFlag   (( m_MMVD ) ? m_allowDisFracMMVD : false);
+#else
+  sps.setFpelMmvdEnabledFlag             ( m_allowDisFracMMVD );
+#endif
+  sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
+  sps.setUseDMVR                            ( m_DMVR );
 
-  int minCUSize = ( /*sps.getSpsNext().getUseQTBT() ? 1 << MIN_CU_LOG2 :*/ sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize() );
+  sps.setIBCFlag                            ( m_IBCMode);
+  sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
+  sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
+  // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
+#if INCLUDE_ISP_CFG_FLAG
+  sps.setUseISP                             ( m_ISP );
+#endif
+  sps.setUseReshaper                        ( m_lumaReshapeEnable );
+#if JVET_N0217_MATRIX_INTRAPRED
+  sps.setUseMIP                ( m_MIP );
+#endif
+  int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;
   while(minCUSize > 1)
   {
@@ -888,19 +1035,14 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setLog2MinCodingBlockSize(log2MinCUSize);
 
   sps.setPCMLog2MinSize (m_uiPCMLog2MinSize);
-  sps.setUsePCM        ( m_usePCM           );
+  sps.setPCMEnabledFlag        ( m_usePCM           );
   sps.setPCMLog2MaxSize( m_pcmLog2MaxSize  );
-
-  sps.setQuadtreeTULog2MaxSize( m_uiQuadtreeTULog2MaxSize );
-  sps.setQuadtreeTULog2MinSize( m_uiQuadtreeTULog2MinSize );
-  sps.setQuadtreeTUMaxDepthInter( m_uiQuadtreeTUMaxDepthInter    );
-  sps.setQuadtreeTUMaxDepthIntra( m_uiQuadtreeTUMaxDepthIntra    );
 
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 
-  sps.setMaxTrSize   ( 1 << m_uiQuadtreeTULog2MaxSize );
-
-  sps.setUseAMP ( m_useAMP );
+#if MAX_TB_SIZE_SIGNALLING
+  sps.setLog2MaxTbSize   ( m_log2MaxTbSize );
+#endif
 
   for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
   {
@@ -909,7 +1051,7 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setPCMBitDepth (ChannelType(channelType), m_PCMBitDepth[channelType]         );
   }
 
-  sps.setUseSAO( m_bUseSAO );
+  sps.setSAOEnabledFlag( m_bUseSAO );
 
   sps.setMaxTLayers( m_maxTempLayer );
   sps.setTemporalIdNestingFlag( ( m_maxTempLayer == 1 ) ? true : false );
@@ -927,7 +1069,7 @@ void EncLib::xInitSPS(SPS &sps)
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
   sps.setUseStrongIntraSmoothing( m_useStrongIntraSmoothing );
 #endif
-  sps.setUseALF( m_alf );
+  sps.setALFEnabledFlag( m_alf );
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
   if (sps.getVuiParametersPresentFlag())
@@ -957,9 +1099,7 @@ void EncLib::xInitSPS(SPS &sps)
     pcVUI->getTimingInfo()->setPocProportionalToTimingFlag(getPocProportionalToTimingFlag());
     pcVUI->getTimingInfo()->setNumTicksPocDiffOneMinus1   (getNumTicksPocDiffOneMinus1()   );
     pcVUI->setBitstreamRestrictionFlag(getBitstreamRestrictionFlag());
-#if HEVC_TILES_WPP
     pcVUI->setTilesFixedStructureFlag(getTilesFixedStructureFlag());
-#endif
     pcVUI->setMotionVectorsOverPicBoundariesFlag(getMotionVectorsOverPicBoundariesFlag());
     pcVUI->setMinSpatialSegmentationIdc(getMinSpatialSegmentationIdc());
     pcVUI->setMaxBytesPerPicDenom(getMaxBytesPerPicDenom());
@@ -1185,7 +1325,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setSPSId(sps.getSPSId());
 
   pps.setConstrainedIntraPred( m_bUseConstrainedIntraPred );
-  bool bUseDQP = (getMaxCuDQPDepth() > 0)? true : false;
+  bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
 
   if((getMaxDeltaQP() != 0 )|| getUseAdaptiveQP())
   {
@@ -1201,7 +1341,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 #if ENABLE_QPA
   if (getUsePerceptQPA() && !bUseDQP)
   {
-    CHECK( m_iMaxCuDQPDepth != 0, "max. delta-QP depth must be zero!" );
+    CHECK( m_cuQpDeltaSubdiv != 0, "max. delta-QP subdiv must be zero!" );
     bUseDQP = (getBaseQP() < 38) && (getSourceWidth() > 512 || getSourceHeight() > 320);
   }
 #endif
@@ -1215,29 +1355,29 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   if ( m_RCEnableRateControl )
   {
     pps.setUseDQP(true);
-    pps.setMaxCuDQPDepth( 0 );
+    pps.setCuQpDeltaSubdiv( 0 );
   }
   else if(bUseDQP)
   {
     pps.setUseDQP(true);
-    pps.setMaxCuDQPDepth( m_iMaxCuDQPDepth );
+    pps.setCuQpDeltaSubdiv( m_cuQpDeltaSubdiv );
   }
   else
   {
     pps.setUseDQP(false);
-    pps.setMaxCuDQPDepth( 0 );
+    pps.setCuQpDeltaSubdiv( 0 );
   }
 
-  if ( m_diffCuChromaQpOffsetDepth >= 0 )
+  if ( m_cuChromaQpOffsetSubdiv >= 0 )
   {
-    pps.getPpsRangeExtension().setDiffCuChromaQpOffsetDepth(m_diffCuChromaQpOffsetDepth);
+    pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(m_cuChromaQpOffsetSubdiv);
     pps.getPpsRangeExtension().clearChromaQpOffsetList();
     pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6);
     /* todo, insert table entries from command line (NB, 0 should not be touched) */
   }
   else
   {
-    pps.getPpsRangeExtension().setDiffCuChromaQpOffsetDepth(0);
+    pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(0);
     pps.getPpsRangeExtension().clearChromaQpOffsetList();
   }
   pps.getPpsRangeExtension().setCrossComponentPredictionEnabledFlag(m_crossComponentPredictionEnabledFlag);
@@ -1254,11 +1394,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     {
       baseQp = getBaseQP()-26;
     }
-#if JVET_L0553_FIX_INITQP
     const int maxDQP = 37;
-#else
-    const int maxDQP = 25;
-#endif
     const int minDQP = -26 + sps.getQpBDOffset(CHANNEL_TYPE_LUMA);
 
     pps.setPicInitQPMinus26( std::min( maxDQP, std::max( minDQP, baseQp ) ));
@@ -1275,12 +1411,18 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     const int crQP =(int)(dcrQP + ( dcrQP < 0 ? -0.5 : 0.5) );
     pps.setQpOffset(COMPONENT_Cb, Clip3( -12, 12, min(0, cbQP) + m_chromaCbQpOffset ));
     pps.setQpOffset(COMPONENT_Cr, Clip3( -12, 12, min(0, crQP) + m_chromaCrQpOffset));
+#if JVET_N0054_JOINT_CHROMA
+    pps.setQpOffset(JOINT_CbCr,   Clip3( -12, 12, ( min(0, cbQP) + min(0, crQP) ) / 2 + m_chromaCbCrQpOffset));
+#endif
   }
   else
   {
 #endif
   pps.setQpOffset(COMPONENT_Cb, m_chromaCbQpOffset );
   pps.setQpOffset(COMPONENT_Cr, m_chromaCrQpOffset );
+#if JVET_N0054_JOINT_CHROMA
+  pps.setQpOffset(JOINT_CbCr, m_chromaCbCrQpOffset );
+#endif
 #if ER_CHROMA_QP_WCG_PPS
   }
 #endif
@@ -1308,15 +1450,19 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
  #endif
   pps.setSliceChromaQpFlag(bChromaDeltaQPEnabled);
 #endif
-  if (!pps.getSliceChromaQpFlag() && sps.getSpsNext().getUseDualITree() && (getChromaFormatIdc() != CHROMA_400))
+  if (
+    !pps.getSliceChromaQpFlag() && sps.getUseDualITree()
+    && (getChromaFormatIdc() != CHROMA_400))
   {
+#if JVET_N0054_JOINT_CHROMA
+    pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0 || m_chromaCbCrQpOffsetDualTree != 0);
+#else
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0);
+#endif
   }
 
-#if HEVC_TILES_WPP
   pps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
   pps.setTilesEnabledFlag( (m_iNumColumnsMinus1 > 0 || m_iNumRowsMinus1 > 0) );
-#endif
   pps.setUseWP( m_useWeightedPred );
   pps.setWPBiPred( m_useWeightedBiPred );
   pps.setOutputFlagPresentFlag( false );
@@ -1391,13 +1537,15 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   }
 #endif
 
-#if HEVC_TILES_WPP
   xInitPPSforTiles(pps);
-#endif
 
   pps.pcv = new PreCalcValues( sps, pps, true );
 }
 
+void EncLib::xInitAPS(APS &aps)
+{
+  //Do nothing now
+}
 //Function for initializing m_RPSList, a list of ReferencePictureSet, based on the GOPEntry objects read from the config file.
 void EncLib::xInitRPS(SPS &sps, bool isFieldCoding)
 {
@@ -1688,7 +1836,6 @@ int EncLib::getReferencePictureSetIdxForSOP(int POCCurr, int GOPid )
   return rpsIdx;
 }
 
-#if HEVC_TILES_WPP
 void  EncLib::xInitPPSforTiles(PPS &pps)
 {
   pps.setTileUniformSpacingFlag( m_tileUniformSpacingFlag );
@@ -1703,11 +1850,9 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
 
   // # substreams is "per tile" when tiles are independent.
 }
-#endif
 
 void  EncCfg::xCheckGSParameters()
 {
-#if HEVC_TILES_WPP
   int   iWidthInCU = ( m_iSourceWidth%m_maxCUWidth ) ? m_iSourceWidth/m_maxCUWidth + 1 : m_iSourceWidth/m_maxCUWidth;
   int   iHeightInCU = ( m_iSourceHeight%m_maxCUHeight ) ? m_iSourceHeight/m_maxCUHeight + 1 : m_iSourceHeight/m_maxCUHeight;
   uint32_t  uiCummulativeColumnWidth = 0;
@@ -1760,7 +1905,20 @@ void  EncCfg::xCheckGSParameters()
       EXIT( "The height of the row is too large." );
     }
   }
+}
+
+#if JCTVC_Y0038_PARAMS
+void EncLib::setParamSetChanged(int spsId, int ppsId)
+{
+  m_ppsMap.setChangedFlag(ppsId);
+  m_spsMap.setChangedFlag(spsId);
+}
 #endif
+bool EncLib::APSNeedsWriting(int apsId)
+{
+  bool isChanged = m_apsMap.getChangedFlag(apsId);
+  m_apsMap.clearChangedFlag(apsId);
+  return isChanged;
 }
 
 bool EncLib::PPSNeedsWriting(int ppsId)

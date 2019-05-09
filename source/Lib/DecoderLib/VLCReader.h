@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -109,6 +109,9 @@ public:
 
 protected:
   void xReadRbspTrailingBits();
+#if JVET_M0101_HLS
+  bool isByteAligned() { return (m_pcBitstream->getNumBitsUntilByteAligned() == 0 ); }
+#endif
 };
 
 
@@ -147,12 +150,17 @@ public:
 #if HEVC_VPS
   void  parseVPS            ( VPS* pcVPS );
 #endif
-  void  parseSPSNext        ( SPSNext& spsNext, const bool usePCM );
   void  parseSPS            ( SPS* pcSPS );
   void  parsePPS            ( PPS* pcPPS );
+  void  parseAPS            ( APS* pcAPS);
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
+#if !JVET_M0101_HLS
   void  parsePTL            ( PTL *rpcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1 );
   void  parseProfileTier    ( ProfileTierLevel *ptl, const bool bIsSubLayer );
+#else
+  void  parseConstraintInfo   (ConstraintInfo *cinfo);
+  void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
+#endif
   void  parseHrdParameters  ( HRD *hrd, bool cprms_present_flag, uint32_t tempLevelHigh );
   void  parseSliceHeader    ( Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseTerminatingBit ( uint32_t& ruiBit );
@@ -163,14 +171,17 @@ public:
   void  parseScalingList    ( ScalingList* scalingList );
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t sizeId, uint32_t listId);
 #endif
-
-  void alf( AlfSliceParam& alfSliceParam );
+  void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
   void alfFilter( AlfSliceParam& alfSliceParam, const bool isChroma );
 
 private:
   int truncatedUnaryEqProb( const int maxSymbol );
   void xReadTruncBinCode( uint32_t& ruiSymbol, const int uiMaxSymbol );
+#if JVET_N0242_NON_LINEAR_ALF
+  int  alfGolombDecode( const int k, const bool signed_val=true );
+#else
   int  alfGolombDecode( const int k );
+#endif
 
 protected:
   bool  xMoreRbspData();

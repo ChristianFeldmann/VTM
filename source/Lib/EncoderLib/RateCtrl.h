@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -93,6 +93,7 @@ struct TRCParameter
   double m_alpha;
   double m_beta;
   int    m_validPix;
+  double m_skipRatio;
 };
 
 class EncRCSeq
@@ -239,8 +240,7 @@ public:
   double getLCUEstLambdaAndQP(double bpp, int clipPicQP, int *estQP);
   double getLCUEstLambda( double bpp );
   int    getLCUEstQP( double lambda, int clipPicQP );
-
-  void updateAfterCTU( int LCUIdx, int bits, int QP, double lambda, bool updateLCUParameter = true );
+  void updateAfterCTU(int LCUIdx, int bits, int QP, double lambda, double skipRatio, bool updateLCUParameter = true);
   void updateAfterPicture( int actualHeaderBits, int actualTotalBits, double averageQP, double averageLambda, bool isIRAP);
 
   void addToPictureLsit( list<EncRCPic*>& listPreviousPictures );

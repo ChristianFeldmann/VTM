@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -161,9 +161,7 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::TIME_CODE:                            return "Time code";
     case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:      return "Mastering display colour volume";
     case SEI::SEGM_RECT_FRAME_PACKING:              return "Segmented rectangular frame packing arrangement";
-#if HEVC_TILES_WPP
     case SEI::TEMP_MOTION_CONSTRAINED_TILE_SETS:    return "Temporal motion constrained tile sets";
-#endif
     case SEI::CHROMA_RESAMPLING_FILTER_HINT:        return "Chroma sampling filter hint";
     case SEI::COLOUR_REMAPPING_INFO:                return "Colour remapping info";
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI

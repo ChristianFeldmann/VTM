@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,13 @@
 
 #include <vector>
 
+static constexpr int     PROB_BITS   = 15;   // Nominal number of bits to represent probabilities
+static constexpr int     PROB_BITS_0 = 10;   // Number of bits to represent 1st estimate
+static constexpr int     PROB_BITS_1 = 14;   // Number of bits to represent 2nd estimate
+static constexpr int     MASK_0      = ~(~0u << PROB_BITS_0) << (PROB_BITS - PROB_BITS_0);
+static constexpr int     MASK_1      = ~(~0u << PROB_BITS_1) << (PROB_BITS - PROB_BITS_1);
+static constexpr uint8_t DWS         = 8;   // 0x47 Default window sizes
+
 struct BinFracBits
 {
   uint32_t intBits[2];
@@ -59,11 +66,8 @@ enum BPMType
 class ProbModelTables
 {
 protected:
-  static const uint8_t      m_NextState       [128][2];       // Std
-  static const uint32_t     m_EstFracBits     [128];          // Std
-  static const BinFracBits  m_BinFracBits_128 [128];          // Std
-  static const uint32_t     m_EstFracProb     [128];          // Std
-  static const uint8_t      m_LPSTable_64_4   [ 64][4];       // Std
+  static const BinFracBits m_binFracBits[256];
+  static const uint16_t    m_inistateToCount[128];
   static const uint8_t      m_RenormTable_32  [ 32];          // Std         MP   MPI
 };
 
@@ -84,34 +88,71 @@ public:
 class BinProbModel_Std : public BinProbModelBase
 {
 public:
-  BinProbModel_Std  () : m_State( 0 ) {}
+  BinProbModel_Std()
+  {
+    uint16_t half = 1 << (PROB_BITS - 1);
+    m_state[0]    = half;
+    m_state[1]    = half;
+    m_rate        = DWS;
+  }
   ~BinProbModel_Std ()                {}
 public:
   void            init              ( int qp, int initId );
-  void            update            ( unsigned bin )                    { m_State = m_NextState       [m_State][bin]; }
-  static uint8_t  getDefaultWinSize ()                                  { return uint8_t(0); }
-  void            setLog2WindowSize ( uint8_t log2WindowSize )          {}
-  void            estFracBitsUpdate ( unsigned bin, uint64_t& b )       {      b += m_EstFracBits     [m_State ^bin];
-                                                                          m_State = m_NextState       [m_State][bin]; }
-  uint32_t        estFracBits       ( unsigned bin )              const { return    m_EstFracBits     [m_State ^bin]; }
-  static uint32_t estFracBitsTrm    ( unsigned bin )                    { return  ( bin ? 0x3bfbb : 0x0010c ); }
-  BinFracBits     getFracBitsArray  ()                            const { return    m_BinFracBits_128 [m_State]; }
+  void update(unsigned bin)
+  {
+    int rate0 = m_rate >> 4;
+    int rate1 = m_rate & 15;
+
+    m_state[0] -= (m_state[0] >> rate0) & MASK_0;
+    m_state[1] -= (m_state[1] >> rate1) & MASK_1;
+    if (bin)
+    {
+      m_state[0] += (0x7fffu >> rate0) & MASK_0;
+      m_state[1] += (0x7fffu >> rate1) & MASK_1;
+    }
+  }
+  void setLog2WindowSize(uint8_t log2WindowSize)
+  {
+    int rate0 = 2 + ((log2WindowSize >> 2) & 3);
+    int rate1 = 3 + rate0 + (log2WindowSize & 3);
+    m_rate    = 16 * rate0 + rate1;
+    CHECK(rate1 > 9, "Second window size is too large!");
+  }
+  void estFracBitsUpdate(unsigned bin, uint64_t &b)
+  {
+    b += estFracBits(bin);
+    update(bin);
+  }
+  uint32_t        estFracBits(unsigned bin) const { return getFracBitsArray().intBits[bin]; }
+  static uint32_t estFracBitsTrm(unsigned bin) { return (bin ? 0x3bfbb : 0x0010c); }
+  BinFracBits     getFracBitsArray() const { return m_binFracBits[state()]; }
 public:
-  uint8_t         state             ()                            const { return  ( m_State >> 1 ); }
-  uint8_t         mps               ()                            const { return  ( m_State  & 1 ); }
-  uint8_t         getLPS            ( unsigned range )            const { return    m_LPSTable_64_4   [m_State>>1][(range>>6)&3]; }
+  uint8_t state() const { return (m_state[0] + m_state[1]) >> 8; }
+  uint8_t mps() const { return state() >> 7; }
+  uint8_t getLPS(unsigned range) const
+  {
+    uint16_t q = state();
+    if (q & 0x80)
+      q = q ^ 0xff;
+    return ((q >> 2) * (range >> 5) >> 1) + 4;
+  }
   static uint8_t  getRenormBitsLPS  ( unsigned LPS )                    { return    m_RenormTable_32  [LPS>>3]; }
   static uint8_t  getRenormBitsRange( unsigned range )                  { return    1; }
-  uint16_t        getState          ()                            const { return    uint16_t(m_State); }
-  void            setState          ( uint16_t pState )                 { m_State = uint8_t ( pState); }
-public:
-  uint64_t        estFracExcessBits ( const BinProbModel_Std& r ) const
+  uint16_t getState() const { return m_state[0] + m_state[1]; }
+  void     setState(uint16_t pState)
   {
-    return ( ((uint64_t)m_EstFracProb[m_State^0]) * m_EstFracBits[r.m_State^0]
-        +    ((uint64_t)m_EstFracProb[m_State^1]) * m_EstFracBits[r.m_State^1] + ( 1 << ( SCALE_BITS - 1 ) ) ) >> SCALE_BITS;
+    m_state[0] = (pState >> 1) & MASK_0;
+    m_state[1] = (pState >> 1) & MASK_1;
+  }
+public:
+  uint64_t estFracExcessBits(const BinProbModel_Std &r) const
+  {
+    int n = 2 * state() + 1;
+    return ((512 - n) * r.estFracBits(0) + n * r.estFracBits(1) + 256) >> 9;
   }
 private:
-  uint8_t   m_State;
+  uint16_t m_state[2];
+  uint8_t  m_rate;
 };
 
 
@@ -155,29 +196,39 @@ class ContextSetCfg
 public:
   // context sets: specify offset and size
   static const CtxSet   SplitFlag;
-  static const CtxSet   BTSplitFlag;
+  static const CtxSet   SplitQtFlag;
+  static const CtxSet   SplitHvFlag;
+  static const CtxSet   Split12Flag;
   static const CtxSet   SkipFlag;
   static const CtxSet   MergeFlag;
+#if JVET_N0324_REGULAR_MRG_FLAG
+  static const CtxSet   RegularMergeFlag;
+#endif
   static const CtxSet   MergeIdx;
-  static const CtxSet   PartSize;
   static const CtxSet   PredMode;
-  static const CtxSet   IPredMode       [2];    // [ ChannelType ]
-  static const CtxSet   PdpcFlag;
+  static const CtxSet   MultiRefLineIdx;
+  static const CtxSet   IntraLumaMpmFlag;
+#if JVET_N0185_UNIFIED_MPM
+  static const CtxSet   IntraLumaPlanarFlag;
+#endif
+  static const CtxSet   IntraChromaPredMode;
+#if JVET_N0217_MATRIX_INTRAPRED
+  static const CtxSet   MipFlag;
+  static const CtxSet   MipMode;
+#endif
   static const CtxSet   DeltaQP;
   static const CtxSet   InterDir;
   static const CtxSet   RefPic;
-#if JVET_L0054_MMVD
   static const CtxSet   MmvdFlag;
   static const CtxSet   MmvdMergeIdx;
   static const CtxSet   MmvdStepMvpIdx;
-#endif
   static const CtxSet   AffineFlag;
   static const CtxSet   AffineType;
-#if JVET_L0632_AFFINE_MERGE
   static const CtxSet   AffMergeIdx;
-#endif
   static const CtxSet   Mvd;
-  static const CtxSet   TransSubdivFlag;
+#if JVET_N0413_RDPCM
+  static const CtxSet   BDPCMMode;
+#endif
   static const CtxSet   QtRootCbf;
   static const CtxSet   QtCbf           [3];    // [ channel ]
   static const CtxSet   SigCoeffGroup   [4];    // [ ChannelType ]
@@ -186,23 +237,50 @@ public:
   static const CtxSet   SigFlag         [6];    // [ ChannelType + State ]
   static const CtxSet   ParFlag         [2];    // [ ChannelType ]
   static const CtxSet   GtxFlag         [4];    // [ ChannelType + x ]
+#if JVET_N0280_RESIDUAL_CODING_TS
+  static const CtxSet   TsSigCoeffGroup;
+  static const CtxSet   TsSigFlag;
+  static const CtxSet   TsParFlag;
+  static const CtxSet   TsGtxFlag;
+  static const CtxSet   TsResidualSign;
+#endif
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;
   static const CtxSet   SaoTypeIdx;
-  static const CtxSet   TransformSkipFlag;
+  static const CtxSet   MTSIndex;
   static const CtxSet   TransquantBypassFlag;
+#if JVET_N0193_LFNST
+  static const CtxSet   LFNSTIdx;
+#endif
   static const CtxSet   RdpcmFlag;
   static const CtxSet   RdpcmDir;
-  static const CtxSet   EMTTuIndex;
-  static const CtxSet   EMTCuFlag;
+  static const CtxSet   SbtFlag;
+  static const CtxSet   SbtQuadFlag;
+  static const CtxSet   SbtHorFlag;
+  static const CtxSet   SbtPosFlag;
   static const CtxSet   CrossCompPred;
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;
   static const CtxSet   ImvFlag;
-#if JVET_L0646_GBI
   static const CtxSet   GBiIdx;
-#endif
   static const CtxSet   ctbAlfFlag;
+#if JVET_N0415_CTB_ALF
+  static const CtxSet   AlfUseLatestFilt;
+  static const CtxSet   AlfUseTemporalFilt;
+  static const CtxSet   Alf;
+#endif
+  static const CtxSet   MHIntraFlag;
+#if !JVET_N0302_SIMPLFIED_CIIP
+  static const CtxSet   MHIntraPredMode;
+#endif
+  static const CtxSet   TriangleFlag;
+  static const CtxSet   TriangleIdx;
+  static const CtxSet   SmvdFlag;
+  static const CtxSet   IBCFlag;
+  static const CtxSet   ISPMode;
+#if JVET_N0054_JOINT_CHROMA
+  static const CtxSet   JointCbCrFlag;
+#endif
   static const unsigned NumberOfContexts;
 
   // combined sets for less complex copying
@@ -401,108 +479,6 @@ public:
 private:
   Ctx&      m_ctx;
   CtxCache* m_cache;
-};
-
-
-
-class CtxStateBuf
-{
-public:
-  CtxStateBuf () : m_valid(false)                 {}
-  ~CtxStateBuf()                                  {}
-  inline void reset() { m_valid = false; }
-  inline bool getIfValid(Ctx &ctx) const
-  {
-    if (m_valid)
-    {
-      ctx.loadPStates(m_states);
-      return true;
-    }
-    return false;
-  }
-  inline void store(const Ctx &ctx)
-  {
-    ctx.savePStates(m_states);
-    m_valid = true;
-  }
-
-private:
-  std::vector<uint16_t> m_states;
-  bool                  m_valid;
-};
-
-class CtxStateArray
-{
-public:
-  CtxStateArray () {}
-  ~CtxStateArray() {}
-  inline void resetAll()
-  {
-    for (std::size_t k = 0; k < m_data.size(); k++)
-    {
-      m_data[k].reset();
-    }
-  }
-  inline void resize(std::size_t reqSize)
-  {
-    if (m_data.size() < reqSize)
-    {
-      m_data.resize(reqSize);
-    }
-  }
-  inline bool getIfValid(Ctx &ctx, unsigned id) const
-  {
-    if (id < m_data.size())
-    {
-      return m_data[id].getIfValid(ctx);
-    }
-    return false;
-  }
-  inline void store(const Ctx &ctx, unsigned id)
-  {
-    if (id >= m_data.size())
-    {
-      resize(id + 1);
-    }
-    m_data[id].store(ctx);
-  }
-
-private:
-  std::vector<CtxStateBuf> m_data;
-};
-
-
-
-
-class CtxWSizeSet
-{
-public:
-  CtxWSizeSet() : m_valid(false), m_changes(false), m_coded(false), m_log2WinSizes() {}
-  bool                          isValid()                   const { return m_valid; }
-  const std::vector<uint8_t>&   getWinSizeBuffer()          const { return m_log2WinSizes; }
-  std::vector<uint8_t>&         getWinSizeBuffer()                { return m_log2WinSizes; }
-  int                           getMode()                   const { return ( !m_valid || !m_changes ? 0 : ( m_coded ? 2 : 1 ) ); }
-  void                          setInvalid()                      { m_valid = m_changes = m_coded = false; }
-  void                          setCoded()                        { m_coded = true; }
-  void                          setValidOnly()                    { m_valid = true; }
-  void                          setValid( uint8_t defSize )
-  {
-    m_valid   = true;
-    m_changes = false;
-    for( std::size_t n = 0; n < m_log2WinSizes.size(); n++ )
-    {
-      if( m_log2WinSizes[n] && m_log2WinSizes[n] != defSize )
-      {
-        m_changes = true;
-        return;
-      }
-    }
-  }
-private:
-  bool                  m_valid;
-  bool                  m_changes;
-  bool                  m_coded;
-  std::vector<uint8_t>  m_log2WinSizes;
 };
 
 

@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -46,7 +46,8 @@
 #include "Unit.h"
 #include "Slice.h"
 #include "CodingStructure.h"
-
+#include "Hash.h"
+#include "MCTS.h"
 #include <deque>
 
 #if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
@@ -114,7 +115,6 @@ class AQpLayer;
 
 typedef std::list<SEI*> SEIMessages;
 
-#if HEVC_TILES_WPP
 class Tile
 {
 private:
@@ -167,7 +167,6 @@ struct TileMap
   void initCtuTsRsAddrMap();
   uint32_t calculateNextCtuRSAddr( const uint32_t currCtuRsAddr ) const;
 };
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 #define M_BUFS(JID,PID) m_bufs[JID][PID]
@@ -192,6 +191,12 @@ struct Picture : public UnitArea
   const CPelUnitBuf getOrigBuf(const UnitArea &unit) const;
          PelUnitBuf getOrigBuf();
   const CPelUnitBuf getOrigBuf() const;
+         PelBuf     getOrigBuf(const ComponentID compID);
+  const CPelBuf     getOrigBuf(const ComponentID compID) const;
+         PelUnitBuf getTrueOrigBuf();
+  const CPelUnitBuf getTrueOrigBuf() const;
+        PelBuf      getTrueOrigBuf(const CompArea &blk);
+  const CPelBuf     getTrueOrigBuf(const CompArea &blk) const;
 
          PelBuf     getPredBuf(const CompArea &blk);
   const CPelBuf     getPredBuf(const CompArea &blk) const;
@@ -220,7 +225,11 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
-  void finalInit( const SPS& sps, const PPS& pps );
+#if JVET_N0415_CTB_ALF
+  void finalInit(const SPS& sps, const PPS& pps, APS** apss);
+#else
+  void finalInit(const SPS& sps, const PPS& pps, APS& aps);
+#endif
 
   int  getPOC()                               const { return poc; }
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
@@ -259,6 +268,11 @@ public:
   PelStorage m_bufs[NUM_PIC_TYPES];
 #endif
 
+  TComHash           m_hashMap;
+  TComHash*          getHashMap() { return &m_hashMap; }
+  const TComHash*    getHashMap() const { return &m_hashMap; }
+  void               addPictureToHashMapForInter();
+
   CodingStructure*   cs;
   std::deque<Slice*> slices;
   SEIMessages        SEIs;
@@ -267,9 +281,8 @@ public:
   Slice        *swapSliceObject(Slice * p, uint32_t i);
   void         clearSliceBuffer();
 
-#if HEVC_TILES_WPP
   TileMap*     tileMap;
-#endif
+  MCTSInfo     mctsInfo;
   std::vector<AQpLayer*> aqlayer;
 
 #if !KEEP_PRED_AND_RESI_SIGNALS
@@ -297,6 +310,9 @@ public:
 #if ENABLE_QPA
   std::vector<double>     m_uEnerHpCtu;                         ///< CTU-wise L2 or squared L1 norm of high-passed luma input
   std::vector<Pel>        m_iOffsetCtu;                         ///< CTU-wise DC offset (later QP index offset) of luma input
+ #if ENABLE_QPA_SUB_CTU
+  std::vector<int8_t>     m_subCtuQP;                           ///< sub-CTU-wise adapted QPs for delta-QP depth of 1 or more
+ #endif
 #endif
 
   std::vector<SAOBlkParam> m_sao[2];
@@ -312,6 +328,18 @@ public:
       std::fill( m_alfCtuEnableFlag[compIdx].begin(), m_alfCtuEnableFlag[compIdx].end(), 0 );
     }
   }
+#if JVET_N0415_CTB_ALF
+  std::vector<short> m_alfCtbFilterIndex;
+  short* getAlfCtbFilterIndex() { return m_alfCtbFilterIndex.data(); }
+  void resizeAlfCtbFilterIndex(int numEntries)
+  {
+    m_alfCtbFilterIndex.resize(numEntries);
+    for (int i = 0; i < numEntries; i++)
+    {
+      m_alfCtbFilterIndex[i] = 0;
+    }
+  }
+#endif
 };
 
 int calcAndPrintHashStatus(const CPelUnitBuf& pic, const class SEIDecodedPictureHash* pictureHashSEI, const BitDepths &bitDepths, const MsgLevel msgl);

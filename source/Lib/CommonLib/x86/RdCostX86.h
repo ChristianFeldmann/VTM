@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -297,7 +297,6 @@ Distortion RdCost::xGetSAD_SIMD( const DistParam &rcDtParam )
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
 }
 
-#if ENABLE_SIMD_OPT_BIO
 template< X86_VEXT vext >
 Distortion RdCost::xGetSAD_IBD_SIMD(const DistParam &rcDtParam)
 {
@@ -335,7 +334,6 @@ Distortion RdCost::xGetSAD_IBD_SIMD(const DistParam &rcDtParam)
   uiSum <<= subShift;
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
 }
-#endif
 
 template< int iWidth, X86_VEXT vext >
 Distortion RdCost::xGetSAD_NxN_SIMD( const DistParam &rcDtParam )
@@ -2307,7 +2305,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
   int  x, y;
   Distortion uiSum = 0;
 
-  if( rcDtParam.isQtbt && iCols > iRows && ( iCols & 15 ) == 0 && ( iRows & 7 ) == 0 )
+  if( iCols > iRows && ( iCols & 15 ) == 0 && ( iRows & 7 ) == 0 )
   {
     for( y = 0; y < iRows; y += 8 )
     {
@@ -2322,7 +2320,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
       piCur += iStrideCur * 8;
     }
   }
-  else if( rcDtParam.isQtbt && iCols < iRows && ( iRows & 15 ) == 0 && ( iCols & 7 ) == 0 )
+  else if( iCols < iRows && ( iRows & 15 ) == 0 && ( iCols & 7 ) == 0 )
   {
     for( y = 0; y < iRows; y += 16 )
     {
@@ -2337,7 +2335,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
       piCur += iStrideCur * 16;
     }
   }
-  else if( rcDtParam.isQtbt && iCols > iRows && ( iCols & 7 ) == 0 && ( iRows & 3 ) == 0 )
+  else if( iCols > iRows && ( iCols & 7 ) == 0 && ( iRows & 3 ) == 0 )
   {
     for( y = 0; y < iRows; y += 4 )
     {
@@ -2349,7 +2347,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
       piCur += iStrideCur * 4;
     }
   }
-  else if( rcDtParam.isQtbt && iCols < iRows && ( iRows & 7 ) == 0 && ( iCols & 3 ) == 0 )
+  else if( iCols < iRows && ( iRows & 7 ) == 0 && ( iCols & 3 ) == 0 )
   {
     for( y = 0; y < iRows; y += 8 )
     {
@@ -2361,7 +2359,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
       piCur += iStrideCur * 8;
     }
   }
-  else if( vext >= AVX2 && ( ( ( iRows | iCols ) & 15 ) == 0 ) && ( iRows == iCols || !rcDtParam.isQtbt ) )
+  else if( vext >= AVX2 && ( ( ( iRows | iCols ) & 15 ) == 0 ) && ( iRows == iCols ) )
   {
     int  iOffsetOrg = iStrideOrg << 4;
     int  iOffsetCur = iStrideCur << 4;
@@ -2375,7 +2373,7 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
       piCur += iOffsetCur;
     }
   }
-  else if( ( ( ( iRows | iCols ) & 7 ) == 0 ) && ( iRows == iCols || !rcDtParam.isQtbt ) )
+  else if( ( ( ( iRows | iCols ) & 7 ) == 0 ) && ( iRows == iCols ) )
   {
     int  iOffsetOrg = iStrideOrg << 3;
     int  iOffsetCur = iStrideCur << 3;
@@ -2462,9 +2460,7 @@ void RdCost::_initRdCostX86()
   m_afpDistortFunc[DF_HAD64]   = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
   m_afpDistortFunc[DF_HAD16N]  = RdCost::xGetHADs_SIMD<Pel, Pel, vext>;
 
-#if ENABLE_SIMD_OPT_BIO
   m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD_IBD_SIMD<vext>;
-#endif
 }
 
 template void RdCost::_initRdCostX86<SIMDX86>();

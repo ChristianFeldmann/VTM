@@ -15,6 +15,8 @@ target_link_libraries( ${EXE_NAME} Threads::Threads ${ADDITIONAL_LIBS} )
 # include the output directory, where the svnrevision.h file is generated
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+include_directories(${CMAKE_SOURCE_DIR}/source/Lib/CommonLib)
+
 if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
   add_custom_command( TARGET ${EXE_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
                                                           $<$<CONFIG:Debug>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/parcat>

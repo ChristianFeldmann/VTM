@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -129,7 +129,7 @@ uint32_t SEIRemovalApp::decode()
       // just kick out all suffix SEIS
       bWrite &= (( !m_discardSuffixSEIs || nalu.m_nalUnitType != NAL_UNIT_SUFFIX_SEI ) && ( !m_discardPrefixSEIs || nalu.m_nalUnitType != NAL_UNIT_PREFIX_SEI ));
       bWrite &= unitCnt >= m_numNALUnitsToSkip;
-      bWrite &= m_numNALUnitsToWrite > 0 && unitCnt <= m_numNALUnitsToWrite;
+      bWrite &= m_numNALUnitsToWrite < 0 || unitCnt <= m_numNALUnitsToWrite;
 
       if( bWrite )
       {

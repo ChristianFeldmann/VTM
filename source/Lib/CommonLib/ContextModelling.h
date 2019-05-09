@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,7 +52,11 @@ struct CoeffCodingContext
 {
 public:
 #if HEVC_USE_SIGN_HIDING
+#if JVET_N0413_RDPCM
+  CoeffCodingContext( const TransformUnit& tu, ComponentID component, bool signHide, bool bdpcm = false );
+#else
   CoeffCodingContext( const TransformUnit& tu, ComponentID component, bool signHide);
+#endif
 #else
   CoeffCodingContext( const TransformUnit& tu, ComponentID component );
 #endif
@@ -61,6 +65,12 @@ public:
 public:
   void  resetSigGroup   ()                      { m_sigCoeffGroupFlag.reset( m_subSetPos ); }
   void  setSigGroup     ()                      { m_sigCoeffGroupFlag.set( m_subSetPos ); }
+#if JVET_N0280_RESIDUAL_CODING_TS
+  bool  noneSigGroup    ()                      { return m_sigCoeffGroupFlag.none(); }
+  int   lastSubSet      ()                      { return ( maxNumCoeff() - 1 ) >> log2CGSize(); }
+  bool  isLastSubSet    ()                      { return lastSubSet() == m_subSetId; }
+  bool  only1stSigGroup ()                      { return m_sigCoeffGroupFlag.count()-m_sigCoeffGroupFlag[lastSubSet()]==0; }
+#endif
   void  setScanPosLast  ( int       posLast )   { m_scanPosLast = posLast; }
 public:
   ComponentID     compID          ()                        const { return m_compID; }
@@ -70,10 +80,9 @@ public:
   int             cgPosX          ()                        const { return m_subSetPosX; }
   unsigned        width           ()                        const { return m_width; }
   unsigned        height          ()                        const { return m_height; }
+  unsigned        log2CGWidth     ()                        const { return m_log2CGWidth; }
+  unsigned        log2CGHeight    ()                        const { return m_log2CGHeight; }
   unsigned        log2CGSize      ()                        const { return m_log2CGSize; }
-  unsigned        log2BlockWidth  ()                        const { return m_log2BlockWidth; }
-  unsigned        log2BlockHeight ()                        const { return m_log2BlockHeight; }
-  unsigned        log2BlockSize   ()                        const { return m_log2BlockSize; }
   bool            extPrec         ()                        const { return m_extendedPrecision; }
   int             maxLog2TrDRange ()                        const { return m_maxLog2TrDynamicRange; }
   unsigned        maxNumCoeff     ()                        const { return m_maxNumCoeff; }
@@ -82,7 +91,7 @@ public:
   int             maxSubPos       ()                        const { return m_maxSubPos; }
   bool            isLast          ()                        const { return ( ( m_scanPosLast >> m_log2CGSize ) == m_subSetId ); }
   bool            isNotFirst      ()                        const { return ( m_subSetId != 0 ); }
-  bool            isSigGroup      ( int       scanPosCG )   const { return m_sigCoeffGroupFlag[ m_scanCG[ scanPosCG ] ]; }
+  bool            isSigGroup(int scanPosCG) const { return m_sigCoeffGroupFlag[m_scanCG[scanPosCG].idx]; }
   bool            isSigGroup      ()                        const { return m_sigCoeffGroupFlag[ m_subSetPos ]; }
 #if HEVC_USE_SIGN_HIDING
   bool            signHiding      ()                        const { return m_signHiding; }
@@ -90,28 +99,33 @@ public:
                                     int       posLast   )   const { return ( m_signHiding && ( posLast - posFirst >= SBH_THRESHOLD ) ); }
 #endif
   CoeffScanType   scanType        ()                        const { return m_scanType; }
-  unsigned        blockPos        ( int       scanPos   )   const { return m_scan[ scanPos ]; }
-  unsigned        posX            ( int       scanPos   )   const { return m_scanPosX[ scanPos ]; }
-  unsigned        posY            ( int       scanPos   )   const { return m_scanPosY[ scanPos ]; }
+  unsigned        blockPos(int scanPos) const { return m_scan[scanPos].idx; }
+  unsigned        posX(int scanPos) const { return m_scan[scanPos].x; }
+  unsigned        posY(int scanPos) const { return m_scan[scanPos].y; }
   unsigned        maxLastPosX     ()                        const { return m_maxLastPosX; }
   unsigned        maxLastPosY     ()                        const { return m_maxLastPosY; }
   unsigned        lastXCtxId      ( unsigned  posLastX  )   const { return m_CtxSetLastX( m_lastOffsetX + ( posLastX >> m_lastShiftX ) ); }
   unsigned        lastYCtxId      ( unsigned  posLastY  )   const { return m_CtxSetLastY( m_lastOffsetY + ( posLastY >> m_lastShiftY ) ); }
+#if JVET_N0280_RESIDUAL_CODING_TS
+  bool            isContextCoded  ()                              { return --m_remainingContextBins >= 0; }
+  int             numCtxBins      ()                        const { return   m_remainingContextBins;      }
+  void            setNumCtxBins   ( int n )                       {          m_remainingContextBins  = n; }
+  unsigned        sigGroupCtxId   ( bool ts = false     )   const { return ts ? m_sigGroupCtxIdTS : m_sigGroupCtxId; }
+#else
   unsigned        sigGroupCtxId   ()                        const { return m_sigGroupCtxId; }
-
+#endif
+#if JVET_N0413_RDPCM
+  bool            bdpcm           ()                        const { return m_bdpcm; }
+#endif
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
-    const uint32_t    posY      = m_scanPosY[ scanPos ];
-    const uint32_t    posX      = m_scanPosX[ scanPos ];
+    const uint32_t posY      = m_scan[scanPos].y;
+    const uint32_t posX      = m_scan[scanPos].x;
     const TCoeff* pData     = coeff + posX + posY * m_width;
     const int     diag      = posX + posY;
     int           numPos    = 0;
     int           sumAbs    = 0;
-#if JVET_L0274
-#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(2+(a&1),a);numPos+=!!a;}
-#else
-#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(4-(a&1),a);numPos+=!!a;}
-#endif
+#define UPDATE(x) {int a=abs(x);sumAbs+=std::min(4+(a&1),a);numPos+=!!a;}
     if( posX < m_width-1 )
     {
       UPDATE( pData[1] );
@@ -157,12 +171,14 @@ public:
   unsigned parityCtxIdAbs   ( uint8_t offset )  const { return m_parFlagCtxSet   ( offset ); }
   unsigned greater1CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[1]( offset ); }
   unsigned greater2CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[0]( offset ); }
-
-#if JVET_L0274
+#if JVET_N0188_UNIFY_RICEPARA
+  unsigned templateAbsSum( int scanPos, const TCoeff* coeff, int baseLevel )
+#else
   unsigned templateAbsSum( int scanPos, const TCoeff* coeff )
+#endif
   {
-    const uint32_t  posY  = m_scanPosY[scanPos];
-    const uint32_t  posX  = m_scanPosX[scanPos];
+    const uint32_t  posY  = m_scan[scanPos].y;
+    const uint32_t  posX  = m_scan[scanPos].x;
     const TCoeff*   pData = coeff + posX + posY * m_width;
     int             sum   = 0;
     if (posX < m_width - 1)
@@ -185,44 +201,63 @@ public:
         sum += abs(pData[m_width << 1]);
       }
     }
-    return std::min(sum, 31);
-  }
+#if JVET_N0188_UNIFY_RICEPARA
+    return std::max(std::min(sum - 5 * baseLevel, 31), 0);
 #else
-  unsigned GoRiceParAbs( int scanPos, const TCoeff* coeff ) const
+    return std::min(sum, 31);
+#endif
+  }
+
+#if JVET_N0280_RESIDUAL_CODING_TS
+  unsigned sigCtxIdAbsTS( int scanPos, const TCoeff* coeff )
   {
-#define UPDATE(x) sum+=abs(x)-!!x
-    const uint32_t    posY      = m_scanPosY[ scanPos ];
-    const uint32_t    posX      = m_scanPosX[ scanPos ];
-    const TCoeff* pData     = coeff + posX + posY * m_width;
-    int           sum       = 0;
-    if( posX < m_width-1 )
+    const uint32_t  posY   = m_scan[scanPos].y;
+    const uint32_t  posX   = m_scan[scanPos].x;
+    const TCoeff*   posC   = coeff + posX + posY * m_width;
+    int             numPos = 0;
+#define UPDATE(x) {int a=abs(x);numPos+=!!a;}
+    if( posX > 0 )
     {
-      UPDATE( pData[1] );
-      if( posX < m_width-2 )
-      {
-        UPDATE( pData[2] );
-      }
-      if( posY < m_height-1 )
-      {
-        UPDATE( pData[m_width+1] );
-      }
+      UPDATE( posC[-1] );
     }
-    if( posY < m_height-1 )
+    if( posY > 0 )
     {
-      UPDATE( pData[m_width] );
-      if( posY < m_height-2 )
-      {
-        UPDATE( pData[m_width<<1] );
-      }
+      UPDATE( posC[-(int)m_width] );
     }
 #undef UPDATE
-    int     r = g_auiGoRicePars[ std::min( sum, 31 ) ];
-    return  r;
+
+    return m_tsSigFlagCtxSet( numPos );
+  }
+
+  unsigned parityCtxIdAbsTS   ()                  const { return m_tsParFlagCtxSet(      0 ); }
+  unsigned greaterXCtxIdAbsTS ( uint8_t offset )  const { return m_tsGtxFlagCtxSet( offset ); }
+
+  unsigned templateAbsSumTS( int scanPos, const TCoeff* coeff )
+  {
+    const uint32_t  posY  = m_scan[scanPos].y;
+    const uint32_t  posX  = m_scan[scanPos].x;
+    const TCoeff*   posC  = coeff + posX + posY * m_width;
+    int             sum   = 0;
+    if (posX > 0)
+    {
+      sum += abs(posC[-1]);
+    }
+    if (posY > 0)
+    {
+      sum += abs(posC[-(int)m_width]);
+    }
+
+    const uint32_t auiGoRicePars[32] =
+    {
+      0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0,
+      0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 2, 2, 2, 2, 2, 2, 2
+    };
+
+    return auiGoRicePars[ std::min(sum, 31) ];
   }
 #endif
-
-  unsigned        emtNumSigCoeff()                          const { return m_emtNumSigCoeff; }
-  void            setEmtNumSigCoeff( unsigned val )               { m_emtNumSigCoeff = val; }
 
 private:
   // constant
@@ -237,7 +272,6 @@ private:
   const unsigned            m_heightInGroups;
   const unsigned            m_log2BlockWidth;
   const unsigned            m_log2BlockHeight;
-  const unsigned            m_log2BlockSize;
   const unsigned            m_maxNumCoeff;
 #if HEVC_USE_SIGN_HIDING
   const bool                m_signHiding;
@@ -245,10 +279,8 @@ private:
   const bool                m_extendedPrecision;
   const int                 m_maxLog2TrDynamicRange;
   CoeffScanType             m_scanType;
-  const unsigned*           m_scan;
-  const unsigned*           m_scanPosX;
-  const unsigned*           m_scanPosY;
-  const unsigned*           m_scanCG;
+  const ScanElement *       m_scan;
+  const ScanElement *       m_scanCG;
   const CtxSet              m_CtxSetLastX;
   const CtxSet              m_CtxSetLastY;
   const unsigned            m_maxLastPosX;
@@ -272,8 +304,17 @@ private:
   CtxSet                    m_sigFlagCtxSet[3];
   CtxSet                    m_parFlagCtxSet;
   CtxSet                    m_gtxFlagCtxSet[2];
+#if JVET_N0280_RESIDUAL_CODING_TS
+  unsigned                  m_sigGroupCtxIdTS;
+  CtxSet                    m_tsSigFlagCtxSet;
+  CtxSet                    m_tsParFlagCtxSet;
+  CtxSet                    m_tsGtxFlagCtxSet;
+  int                       m_remainingContextBins;
+#endif
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
-  unsigned                  m_emtNumSigCoeff;
+#if JVET_N0413_RDPCM
+  const bool                m_bdpcm;
+#endif
 };
 
 
@@ -281,13 +322,16 @@ class CUCtx
 {
 public:
   CUCtx()              : isDQPCoded(false), isChromaQpAdjCoded(false),
+                         qgStart(false),
                          numNonZeroCoeffNonTs(0) {}
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
+                         qgStart(false),
                          numNonZeroCoeffNonTs(0), qp(_qp) {}
   ~CUCtx() {}
 public:
   bool      isDQPCoded;
   bool      isChromaQpAdjCoded;
+  bool      qgStart;
   uint32_t      numNonZeroCoeffNonTs;
   int8_t     qp;                   // used as a previous(last) QP and for QP prediction
 };
@@ -299,9 +343,7 @@ public:
   ~MergeCtx() {}
 public:
   MvField       mvFieldNeighbours [ MRG_MAX_NUM_CANDS << 1 ]; // double length for mv of both lists
-#if JVET_L0646_GBI
   uint8_t       GBiIdx            [ MRG_MAX_NUM_CANDS      ];
-#endif
   unsigned char interDirNeighbours[ MRG_MAX_NUM_CANDS      ];
   MergeType     mrgTypeNeighbours [ MRG_MAX_NUM_CANDS      ];
   int           numValidMergeCand;
@@ -309,14 +351,11 @@ public:
 
   MotionBuf     subPuMvpMiBuf;
   MotionBuf     subPuMvpExtMiBuf;
-#if JVET_L0054_MMVD
   MvField mmvdBaseMv[MMVD_BASE_MV_NUM][2];
   void setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx);
-#endif
   void setMergeInfo( PredictionUnit& pu, int candIdx );
 };
 
-#if JVET_L0632_AFFINE_MERGE
 class AffineMergeCtx
 {
 public:
@@ -326,33 +365,33 @@ public:
   MvField       mvFieldNeighbours[AFFINE_MRG_MAX_NUM_CANDS << 1][3]; // double length for mv of both lists
   unsigned char interDirNeighbours[AFFINE_MRG_MAX_NUM_CANDS];
   EAffineModel  affineType[AFFINE_MRG_MAX_NUM_CANDS];
-#if JVET_L0646_GBI
   uint8_t       GBiIdx[AFFINE_MRG_MAX_NUM_CANDS];
-#endif
   int           numValidMergeCand;
   int           maxNumMergeCand;
 
-#if JVET_L0369_SUBBLOCK_MERGE
   MergeCtx     *mrgCtx;
   MergeType     mergeType[AFFINE_MRG_MAX_NUM_CANDS];
-#endif
 };
-#endif
 
 
 namespace DeriveCtx
 {
-unsigned CtxCUsplit   ( const CodingStructure& cs, Partitioner& partitioner );
-unsigned CtxBTsplit   ( const CodingStructure& cs, Partitioner& partitioner );
-#if ENABLE_BMS
-unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf );
-#else
-unsigned CtxQtCbf     ( const ComponentID compID, const bool prevCbCbf );
-#endif
+void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* canSplit = nullptr );
+unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
+#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
 unsigned CtxIMVFlag   ( const CodingUnit& cu );
+#endif
 unsigned CtxAffineFlag( const CodingUnit& cu );
+#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
+unsigned CtxTriangleFlag( const CodingUnit& cu );
+#endif
+unsigned CtxPredModeFlag( const CodingUnit& cu );
+unsigned CtxIBCFlag(const CodingUnit& cu);
+#if JVET_N0217_MATRIX_INTRAPRED
+unsigned CtxMipFlag   ( const CodingUnit& cu );
+#endif
 }
 
 #endif // __CONTEXTMODELLING__

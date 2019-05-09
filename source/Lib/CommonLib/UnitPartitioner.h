@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -42,12 +42,8 @@
 
 #include "CommonDef.h"
 
-#if ENABLE_BMS
 static_assert( MAX_CU_TILING_PARTITIONS >= 4, "Minimum required number of partitions for the Partitioning type is 4!" );
-typedef static_vector<UnitArea, MAX_CU_TILING_PARTITIONS> Partitioning;
-#else
-typedef static_vector<UnitArea, 4> Partitioning;
-#endif
+typedef std::vector <UnitArea> Partitioning;
 
 //////////////////////////////////////////////////////////////////////////
 // PartManager class - manages the partitioning tree
@@ -66,9 +62,18 @@ enum PartSplit
   CU_VERT_SPLIT,
   CU_TRIH_SPLIT,
   CU_TRIV_SPLIT,
-#if ENABLE_BMS
   TU_MAX_TR_SPLIT,
-#endif
+  TU_NO_ISP,
+  TU_1D_HORZ_SPLIT,
+  TU_1D_VERT_SPLIT,
+  SBT_VER_HALF_POS0_SPLIT,
+  SBT_VER_HALF_POS1_SPLIT,
+  SBT_HOR_HALF_POS0_SPLIT,
+  SBT_HOR_HALF_POS1_SPLIT,
+  SBT_VER_QUAD_POS0_SPLIT,
+  SBT_VER_QUAD_POS1_SPLIT,
+  SBT_HOR_QUAD_POS0_SPLIT,
+  SBT_HOR_QUAD_POS1_SPLIT,
   NUM_PART_SPLIT,
   CU_MT_SPLIT             = 1000, ///< dummy element to indicate the MT (multi-type-tree) split
   CU_BT_SPLIT             = 1001, ///< dummy element to indicate the BT split
@@ -87,6 +92,8 @@ struct PartLevel
   PartSplit    implicitSplit;
   PartSplit    firstSubPartSplit;
   bool         canQtSplit;
+  bool         qgEnable;
+  bool         qgChromaEnable;
 
   PartLevel();
   PartLevel( const PartSplit _split, const Partitioning&  _parts );
@@ -107,11 +114,12 @@ protected:
 public:
   unsigned currDepth;
   unsigned currQtDepth;
-#if ENABLE_BMS
   unsigned currTrDepth;
-#endif
   unsigned currBtDepth;
   unsigned currMtDepth;
+  unsigned currSubdiv;
+  Position currQgPos;
+  Position currQgChromaPos;
 
   unsigned currImplicitBtDepth;
   ChannelType chType;
@@ -122,6 +130,8 @@ public:
   const UnitArea&  currArea               () const { return currPartLevel().parts[currPartIdx()]; }
   const unsigned   currPartIdx            () const { return currPartLevel().idx; }
   const PartitioningStack& getPartStack   () const { return m_partStack; }
+  const bool currQgEnable                 () const { return currPartLevel().qgEnable; }
+  const bool currQgChromaEnable           () const { return currPartLevel().qgChromaEnable; }
 
   SplitSeries getSplitSeries              () const;
 
@@ -136,6 +146,7 @@ public:
   virtual void copyState                  ( const Partitioner& other );
 
 public:
+  virtual void canSplit                   ( const CodingStructure &cs, bool& canNo, bool& canQt, bool& canBh, bool& canBv, bool& canTh, bool& canTv ) = 0;
   virtual bool canSplit                   ( const PartSplit split,                          const CodingStructure &cs ) = 0;
   virtual bool isSplitImplicit            ( const PartSplit split,                          const CodingStructure &cs ) = 0;
   virtual PartSplit getImplicitSplit      (                                                 const CodingStructure &cs ) = 0;
@@ -156,11 +167,41 @@ public:
   bool nextPart                   ( const CodingStructure &cs, bool autoPop = false );
   bool hasNextPart                ();
 
+  void canSplit                   ( const CodingStructure &cs, bool& canNo, bool& canQt, bool& canBh, bool& canBv, bool& canTh, bool& canTv );
   bool canSplit                   ( const PartSplit split,                          const CodingStructure &cs );
   bool isSplitImplicit            ( const PartSplit split,                          const CodingStructure &cs );
   PartSplit getImplicitSplit      (                                                 const CodingStructure &cs );
 };
 
+class TUIntraSubPartitioner : public Partitioner
+{
+public:
+  TUIntraSubPartitioner(Partitioner& _initialState)
+  {
+    //we copy the input partitioner data
+    m_partStack.push_back(PartLevel(TU_NO_ISP, { _initialState.currArea() }));
+
+    currDepth    = _initialState.currDepth;
+    currQtDepth  = _initialState.currQtDepth;
+    currTrDepth  = _initialState.currTrDepth;
+    currBtDepth  = _initialState.currBtDepth;
+    currMtDepth  = _initialState.currMtDepth;
+    chType       = _initialState.chType;
+#if _DEBUG
+    m_currArea   = _initialState.currArea();
+#endif
+  }
+
+  void initCtu               (const UnitArea& ctuArea, const ChannelType chType, const Slice& slice) {}; // not needed
+  void splitCurrArea         (const PartSplit split, const CodingStructure &cs);
+  void exitCurrSplit         ();
+  bool nextPart              (const CodingStructure &cs, bool autoPop = false);
+  bool hasNextPart           ();
+  void canSplit              (const CodingStructure &cs, bool& canNo, bool& canQt, bool& canBh, bool& canBv, bool& canTh, bool& canTv) {};
+  bool canSplit              (const PartSplit split, const CodingStructure &cs);
+  bool isSplitImplicit       (const PartSplit split, const CodingStructure &cs) { return false; }; //not needed
+  PartSplit getImplicitSplit (const CodingStructure &cs) { return CU_DONT_SPLIT; }; //not needed
+};
 
 
 
@@ -177,9 +218,9 @@ namespace PartitionerFactory
 namespace PartitionerImpl
 {
   Partitioning getCUSubPartitions( const UnitArea   &cuArea, const CodingStructure &cs, const PartSplit splitType = CU_QUAD_SPLIT );
-#if ENABLE_BMS
   Partitioning getMaxTuTiling    ( const UnitArea& curArea, const CodingStructure &cs );
-#endif
+  void    getTUIntraSubPartitions( Partitioning &sub, const UnitArea &tuArea, const CodingStructure &cs, const PartSplit splitType );
+  Partitioning getSbtTuTiling    ( const UnitArea& curArea, const CodingStructure &cs, const PartSplit splitType );
 };
 
 #endif

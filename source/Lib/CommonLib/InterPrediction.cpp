@@ -216,42 +216,6 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
   }
 }
 
-bool checkIdenticalMotion( const PredictionUnit &pu, bool checkAffine )
-{
-  const Slice &slice = *pu.cs->slice;
-
-  if( slice.isInterB() && !pu.cs->pps->getWPBiPred() )
-  {
-    if( pu.refIdx[0] >= 0 && pu.refIdx[1] >= 0 )
-    {
-      int RefPOCL0 = slice.getRefPic( REF_PIC_LIST_0, pu.refIdx[0] )->getPOC();
-      int RefPOCL1 = slice.getRefPic( REF_PIC_LIST_1, pu.refIdx[1] )->getPOC();
-
-      if( RefPOCL0 == RefPOCL1 )
-      {
-        if( !pu.cu->affine )
-        {
-          if( pu.mv[0] == pu.mv[1] )
-          {
-            return true;
-          }
-        }
-        else
-        {
-          CHECK( !checkAffine, "In this case, checkAffine should be on." );
-          if ( (pu.cu->affineType == AFFINEMODEL_4PARAM && (pu.mvAffi[0][0] == pu.mvAffi[1][0]) && (pu.mvAffi[0][1] == pu.mvAffi[1][1]))
-            || (pu.cu->affineType == AFFINEMODEL_6PARAM && (pu.mvAffi[0][0] == pu.mvAffi[1][0]) && (pu.mvAffi[0][1] == pu.mvAffi[1][1]) && (pu.mvAffi[0][2] == pu.mvAffi[1][2])) )
-          {
-            return true;
-          }
-        }
-      }
-    }
-  }
-
-  return false;
-}
-
 // ====================================================================================================================
 // Public member functions
 // ====================================================================================================================

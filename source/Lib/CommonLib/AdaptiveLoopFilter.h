@@ -98,7 +98,7 @@ public:
   static void deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift, int vbCTUHeight, int vbPos);
 #else
   static void deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift);
-#endif 
+#endif
   void deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk );
   void resetPCMBlkClassInfo(CodingStructure & cs, AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk);
   template<AlfFilterType filtType>

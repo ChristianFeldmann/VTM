@@ -130,7 +130,7 @@ namespace PU
 {
   int  getLMSymbolList(const PredictionUnit &pu, int *pModeList);
   int  getIntraMPMs(const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA);
-#if JVET_N0217_MATRIX_INTRAPRED  
+#if JVET_N0217_MATRIX_INTRAPRED
   bool          isMIP                 (const PredictionUnit &pu, const ChannelType &chType = CHANNEL_TYPE_LUMA);
   int           getMipMPMs            (const PredictionUnit &pu, unsigned *mpm);
   int           getMipSizeId          (const PredictionUnit &pu);
@@ -172,7 +172,7 @@ namespace PU
   bool isBipredRestriction            (const PredictionUnit &pu);
   void spanMotionInfo                 (      PredictionUnit &pu, const MergeCtx &mrgCtx = MergeCtx() );
   void applyImv                       (      PredictionUnit &pu, MergeCtx &mrgCtx, InterPrediction *interPred = NULL );
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
   void getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], int8_t neighGbi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgCtx);
 #else
   void getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgCtx );
@@ -260,7 +260,7 @@ template<typename T, size_t N>
 uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList
 #if !JVET_N0217_MATRIX_INTRAPRED
   , static_vector<int, N>& extendRefList, int extendRef
-#endif  
+#endif
   , size_t uiFastCandNum = N, int* iserttPos = nullptr)
 {
   CHECK( std::min( uiFastCandNum, candModeList.size() ) != std::min( uiFastCandNum, candCostList.size() ), "Sizes do not match!" );

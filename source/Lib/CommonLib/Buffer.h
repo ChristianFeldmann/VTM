@@ -365,18 +365,18 @@ void AreaBuf<T>::copyAndNegate( const AreaBuf<const T> &other )
 {
   CHECK( width  != other.width,  "Incompatible size" );
   CHECK( height != other.height, "Incompatible size" );
-  
+
         T* dest =       buf;
   const T* subs = other.buf;
-  
+
 #define SUBS_INC        \
   dest +=       stride; \
   subs += other.stride; \
 
 #define SUBS_OP( ADDR ) dest[ADDR] = -subs[ADDR]
-  
+
   SIZE_AWARE_PER_EL_OP( SUBS_OP, SUBS_INC );
-  
+
 #undef SUBS_OP
 #undef SUBS_INC
 }
@@ -386,18 +386,18 @@ void AreaBuf<T>::subtractAndHalve( const AreaBuf<const T> &other )
 {
   CHECK( width  != other.width,  "Incompatible size" );
   CHECK( height != other.height, "Incompatible size" );
-  
+
         T* dest =       buf;
   const T* subs = other.buf;
-  
+
 #define SUBS_INC        \
   dest +=       stride; \
   subs += other.stride; \
 
 #define SUBS_OP( ADDR ) dest[ADDR] = ( dest[ADDR] - subs[ADDR] ) / 2
-  
+
   SIZE_AWARE_PER_EL_OP( SUBS_OP, SUBS_INC );
-  
+
 #undef SUBS_OP
 #undef SUBS_INC
 }

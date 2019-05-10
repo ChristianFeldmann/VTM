@@ -819,7 +819,7 @@ int PU::getMipSizeId(const PredictionUnit &pu)
 {
   if ((pu.lwidth() == 4) && (pu.lheight() == 4))
   {
-    return 0; // MIP with 16x4 matrix 
+    return 0; // MIP with 16x4 matrix
   }
   else if (pu.lwidth() <= 8 && pu.lheight() <= 8)
   {
@@ -3615,7 +3615,7 @@ bool PU::isBipredRestriction(const PredictionUnit &pu)
 #endif
   return false;
 }
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
 void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], int8_t neighGbi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgType)
 #else
 void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgType )
@@ -4006,7 +4006,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
     {
       MotionInfo mi[4];
       bool isAvailable[4] = { false };
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
       int8_t neighGbi[4] = { GBI_DEFAULT };
 #endif
       // control point: LT B2->B3->A2
@@ -4021,7 +4021,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         {
           isAvailable[0] = true;
           mi[0] = puNeigh->getMotionInfo( pos );
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
           neighGbi[0] = puNeigh->cu->GBiIdx;
 #endif
           break;
@@ -4041,7 +4041,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         {
           isAvailable[1] = true;
           mi[1] = puNeigh->getMotionInfo( pos );
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
           neighGbi[1] = puNeigh->cu->GBiIdx;
 #endif
           break;
@@ -4061,7 +4061,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         {
           isAvailable[2] = true;
           mi[2] = puNeigh->getMotionInfo( pos );
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
           neighGbi[2] = puNeigh->cu->GBiIdx;
 #endif
           break;
@@ -5150,7 +5150,7 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
       cnt = (cnt + 1) % numRefIdx;
     }
   }
-#endif 
+#endif
 }
 
 bool PU::isUniqueTriangleCandidates( const PredictionUnit &pu, MergeCtx& triangleMrgCtx )

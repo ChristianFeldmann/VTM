@@ -274,7 +274,7 @@ protected:
   bool      m_AffineAmvr;
   bool      m_AffineAmvrEncOpt;
   bool      m_DMVR;
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   bool      m_MMVD;
 #endif
 #if JVET_N0449_MMVD_SIMP

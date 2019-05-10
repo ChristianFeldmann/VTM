@@ -436,7 +436,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   CHECK( pcPPS->getQpOffset(JOINT_CbCr) < -12, "Invalid CbCr QP offset" );
   CHECK( pcPPS->getQpOffset(JOINT_CbCr) >  12, "Invalid CbCr QP offset" );
 #endif
-  
+
   CHECK(MAX_NUM_COMPONENT>3, "Invalid maximal number of components");
 
   READ_FLAG( uiCode, "pps_slice_chroma_qp_offsets_present_flag" );
@@ -1148,7 +1148,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );             pcSPS->setAffineAmvrEnabledFlag ( uiCode != 0 );
 
   READ_FLAG(uiCode, "sps_dmvr_enable_flag");                        pcSPS->setUseDMVR(uiCode != 0);
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   READ_FLAG(uiCode, "sps_mmvd_enable_flag");                        pcSPS->setUseMMVD(uiCode != 0);
 #endif
   // KJS: sps_cclm_enabled_flag
@@ -1181,7 +1181,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   // KJS: sps_ciip_enabled_flag
   READ_FLAG( uiCode,     "mhintra_flag" );                           pcSPS->setUseMHIntra             ( uiCode != 0 );
 
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   if ( pcSPS->getUseMMVD() )
   {
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
@@ -1721,7 +1721,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         else
         {
           xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
-        }        
+        }
         int numAps = uiCode;
         pcSlice->setTileGroupNumAps(numAps);
         std::vector<int> apsId(numAps, -1);
@@ -2222,7 +2222,7 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
 
   READ_CODE(4, symbol,  "max_bitdepth_constraint_idc"              ); cinfo->setMaxBitDepthConstraintIdc(symbol);
   READ_CODE(2, symbol,  "max_chroma_format_constraint_idc"         ); cinfo->setMaxChromaFormatConstraintIdc((ChromaFormat)symbol);
-  
+
   READ_FLAG(symbol,  "no_qtbtt_dual_tree_intra_constraint_flag" ); cinfo->setNoQtbttDualTreeIntraConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol,  "no_sao_constraint_flag");                    cinfo->setNoSaoConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol,  "no_alf_constraint_flag");                    cinfo->setNoAlfConstraintFlag(symbol > 0 ? true : false);

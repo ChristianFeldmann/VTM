@@ -2103,7 +2103,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         {
           uiBitsCand--;
         }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
         if ( pu.cs->sps->getUseMMVD() )
           uiBitsCand++; // for mmvd_flag
 #else
@@ -2302,10 +2302,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         m_CABACEstimator->getCtx() = ctxStart;
 #endif
       }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
       if ( pu.cs->sps->getUseMMVD() )
       {
-#endif 
+#endif
         cu.mmvdSkip = true;
 #if JVET_N0448_N0380
         const int tempNum = (mergeCtx.numValidMergeCand > 1) ? MMVD_ADD_NUM : MMVD_ADD_NUM >> 1;
@@ -2383,7 +2383,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             swap(singleMergeTempBuffer, acMergeTempBuffer[insertPos]);
           }
         }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
       }
 #endif
       // Try to limit number of candidates using SATD-costs
@@ -2418,7 +2418,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
             m_pcIntraSearch->initIntraPatternChType(*pu.cu, pu.Cr());
             m_pcIntraSearch->predIntraAng(COMPONENT_Cr, pu.cs->getPredBuf(pu).Cr(), pu);
-            m_pcIntraSearch->switchBuffer(pu, COMPONENT_Cr, pu.cs->getPredBuf(pu).Cr(), m_pcIntraSearch->getPredictorPtr2(COMPONENT_Cr, bufIdx));     
+            m_pcIntraSearch->switchBuffer(pu, COMPONENT_Cr, pu.cs->getPredBuf(pu).Cr(), m_pcIntraSearch->getPredictorPtr2(COMPONENT_Cr, bufIdx));
           }
         }
         pu.mhIntraFlag = false;
@@ -2553,7 +2553,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         {
 #if JVET_N0302_SIMPLFIED_CIIP
           uint32_t bufIdx = 0;
-#else 
+#else
           uint32_t bufIdx = (pu.intraDir[0] > 1) ? (pu.intraDir[0] == HOR_IDX ? 2 : 3) : pu.intraDir[0];
 #endif
           PelBuf tmpBuf = tempCS->getPredBuf(pu).Y();
@@ -2687,7 +2687,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   }
 
   DistParam distParam;
-#if JVET_N0329_IBC_SEARCH_IMP 
+#if JVET_N0329_IBC_SEARCH_IMP
   const bool useHadamard = !encTestMode.lossless && !tempCS->slice->getDisableSATDForRD();
 #else
   const bool useHadamard = !encTestMode.lossless;
@@ -3392,7 +3392,7 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
         updateCandList(mergeCand, cost, RdModeList, candCostList
 #if !JVET_N0217_MATRIX_INTRAPRED
           , *nullList, -1
-#endif 
+#endif
          , numMrgSATDCand);
       }
 
@@ -4130,7 +4130,7 @@ Distortion EncCu::getDistortionDb( CodingStructure &cs, CPelBuf org, CPelBuf rec
 #if WCG_EXT
 #if JVET_N0671_RDCOST_FIX
   m_pcRdCost->setChromaFormat(cs.sps->getChromaFormatIdc());
-#endif 
+#endif
   CPelBuf orgLuma = cs.picture->getOrigBuf( cs.area.blocks[COMPONENT_Y] );
   if ( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
     m_pcEncCfg->getReshaper() && ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() ) ) )

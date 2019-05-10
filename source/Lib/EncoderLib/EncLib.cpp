@@ -1004,7 +1004,7 @@ void EncLib::xInitSPS(SPS &sps)
 
   sps.setUseMHIntra            ( m_MHIntra );
   sps.setUseTriangle           ( m_Triangle );
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   sps.setUseMMVD               ( m_MMVD );
   sps.setFpelMmvdEnabledFlag   (( m_MMVD ) ? m_allowDisFracMMVD : false);
 #else

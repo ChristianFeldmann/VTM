@@ -751,7 +751,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setMaxBTSizeIChroma( rpcSlice->getSPS()->getMaxBTSizeIChroma() );
     rpcSlice->setMaxTTSizeIChroma( rpcSlice->getSPS()->getMaxTTSizeIChroma() );
   }
-#if JVET_N0329_IBC_SEARCH_IMP 
+#if JVET_N0329_IBC_SEARCH_IMP
   rpcSlice->setDisableSATDForRD(false);
 #endif
 }

@@ -571,10 +571,10 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
     m_ipaParam.applyPDPC            &= m_ipaParam.intraPredAngle == 0 || m_ipaParam.intraPredAngle >= 12; // intra prediction modes: HOR, VER, x, where x>=VDIA-8 or x<=2+8
   }
 
-  // high level conditions and DC intra prediction 
-  if(   sps.getSpsRangeExtension().getIntraSmoothingDisabledFlag() 
+  // high level conditions and DC intra prediction
+  if(   sps.getSpsRangeExtension().getIntraSmoothingDisabledFlag()
 #if JVET_N0671_INTRA_TPM_ALIGNWITH420
-    || !isLuma( chType ) 
+    || !isLuma( chType )
 #else
     || ( !isLuma( chType ) && pu.chromaFormat != CHROMA_444 )
 #endif
@@ -582,7 +582,7 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
     || m_ipaParam.multiRefIndex
     || DC_IDX == dirMode
     )
-  {   
+  {
     if (useISP)
     {
       m_ipaParam.interpolationFlag = (m_ipaParam.isModeVer ? puSize.width : puSize.height) > 8 ? true : false ;
@@ -594,13 +594,13 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
     m_ipaParam.refFilterFlag = false;
   }
 #endif
-  else if (dirMode == PLANAR_IDX) // Planar intra prediction 
+  else if (dirMode == PLANAR_IDX) // Planar intra prediction
   {
     m_ipaParam.refFilterFlag = puSize.width * puSize.height > 32 ? true : false;
   }
   else if (!useISP)// HOR, VER and angular modes (MDIS)
   {
-    bool filterFlag = false; 
+    bool filterFlag = false;
 
     if (predMode != dirMode ) // wide-anlge mode
     {
@@ -617,7 +617,7 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
     // Selelection of either ([1 2 1] / 4 ) refrence filter OR Gaussian 4-tap interpolation filter
     if (filterFlag)
     {
-      const bool isRefFilter       =  isIntegerSlope(absAng); 
+      const bool isRefFilter       =  isIntegerSlope(absAng);
 #if JVET_N0435_WAIP_HARMONIZATION
       m_ipaParam.refFilterFlag = isRefFilter && puSize.width * puSize.height > 32;
 #else
@@ -649,7 +649,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   const bool bIsModeVer     = m_ipaParam.isModeVer;
   const int  whRatio        = m_ipaParam.whRatio;
   const int  hwRatio        = m_ipaParam.hwRatio;
-  const int  multiRefIdx    = m_ipaParam.multiRefIndex;            
+  const int  multiRefIdx    = m_ipaParam.multiRefIndex;
   const int  intraPredAngle = m_ipaParam.intraPredAngle;
   const int  invAngle       = m_ipaParam.invAngle;
 
@@ -798,7 +798,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
       CHECK(scale < 0 || scale > 31, "PDPC: scale < 0 || scale > 31");
       if (m_ipaParam.applyPDPC)
       {
-        if (m_ipaParam.intraPredAngle == 32) // intra prediction modes: 2 and VDIA 
+        if (m_ipaParam.intraPredAngle == 32) // intra prediction modes: 2 and VDIA
         {
           int wT = 16 >> std::min(31, ((y << 1) >> scale));
 
@@ -1586,7 +1586,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   }
   //assert 420 chroma subsampling
   CompArea lumaArea = CompArea( COMPONENT_Y, pu.chromaFormat, chromaArea.lumaPos(), recalcSize( pu.chromaFormat, CHANNEL_TYPE_CHROMA, CHANNEL_TYPE_LUMA, chromaArea.size() ) );//needed for correct pos/size (4x4 Tus)
-  
+
 #if JVET_N0671_CCLM
   CHECK(lumaArea.width == chromaArea.width && CHROMA_444 != pu.chromaFormat, "");
   CHECK(lumaArea.height == chromaArea.height && CHROMA_444 != pu.chromaFormat && CHROMA_422 != pu.chromaFormat, "");
@@ -1723,7 +1723,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
       {
         piSrc = pRecSrc0 - iRecStride;
 
-#if JVET_N0671_CCLM 
+#if JVET_N0671_CCLM
         if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
 #else //!JVET_N0671_CCLM
         if (i == 0 && !bLeftAvaillable)
@@ -1747,7 +1747,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
       else if( pu.cs->sps->getCclmCollocatedChromaFlag() )
       {
         piSrc = pRecSrc0 - iRecStride2;
-        
+
 #if JVET_N0671_CCLM
         if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
 #else //!JVET_N0671_CCLM
@@ -1778,7 +1778,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
       else
       {
         piSrc = pRecSrc0 - iRecStride2;
-        
+
 #if JVET_N0671_CCLM
         if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
 #else //!JVET_N0671_CCLM
@@ -1822,7 +1822,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     {
       addedLeftBelow = avaiLeftBelowUnits*chromaUnitHeight;
     }
-    
+
     for (int j = 0; j < uiCHeight + addedLeftBelow; j++)
     {
       if( pu.cs->sps->getCclmCollocatedChromaFlag() )
@@ -1926,7 +1926,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
       else
       {
 
-#if JVET_N0671_CCLM 
+#if JVET_N0671_CCLM
         if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth - 1 + logSubWidthC))
 #else //JVET_N0671_CCLM
         if ( i == 0 && !bLeftAvaillable )
@@ -2130,7 +2130,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
     }
   }
   cnt = cntL + cntT;
- 
+
   if (cnt == 2)
   {
     selectLumaPix[3] = selectLumaPix[0]; selectChromaPix[3] = selectChromaPix[0];

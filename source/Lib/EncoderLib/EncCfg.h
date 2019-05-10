@@ -247,7 +247,7 @@ protected:
   bool      m_HashME;
   bool      m_AffineAmvrEncOpt;
   bool      m_DMVR;
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   bool      m_MMVD;
 #endif
 #if JVET_N0449_MMVD_SIMP
@@ -734,7 +734,7 @@ public:
   bool      getLFNST()                                 const { return m_LFNST; }
   void      setUseFastLFNST                 ( bool b )       { m_useFastLFNST = b; }
   bool      getUseFastLFNST()                          const { return m_useFastLFNST; }
-#endif  
+#endif
 
   void      setUseLMChroma                  ( int n )        { m_LMChroma = n; }
   int       getUseLMChroma()                           const { return m_LMChroma; }
@@ -801,7 +801,7 @@ public:
   bool      getUseAffineAmvrEncOpt          ()         const { return m_AffineAmvrEncOpt; }
   void      setDMVR                      ( bool b )       { m_DMVR = b; }
   bool      getDMVR                      ()         const { return m_DMVR; }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   void      setMMVD                         (bool b)         { m_MMVD = b;    }
   bool      getMMVD                         ()         const { return m_MMVD; }
 #endif

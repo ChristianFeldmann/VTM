@@ -884,9 +884,9 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
       cu.affine = false;
       cu.triangle = false;
     }
-    else 
+    else
     {
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
       if (cu.cs->slice->getSPS()->getUseMMVD())
       {
 #endif
@@ -905,29 +905,29 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
           cu.mmvdSkip = mmvdSkip;
           DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, mmvdSkip ? 1 : 0);
         }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
       }
       else
       {
         cu.mmvdSkip = false;
       }
-#endif  
+#endif
     }
 #else
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
     if (cu.cs->slice->getSPS()->getUseMMVD())
     {
 #endif
       unsigned mmvdSkip = m_BinDecoder.decodeBin(Ctx::MmvdFlag(0));
       cu.mmvdSkip = mmvdSkip;
       DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, mmvdSkip ? 1 : 0);
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
     }
     else
     {
       cu.mmvdSkip = false;
     }
-#endif  
+#endif
 #endif
     cu.skip     = true;
     cu.rootCbf  = false;
@@ -1344,7 +1344,7 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
     {
       uint32_t ipred_idx = 0;
       {
-#if JVET_N0185_UNIFIED_MPM 
+#if JVET_N0185_UNIFIED_MPM
         unsigned ctx = (pu->cu->ispMode == NOT_INTRA_SUBPARTITIONS ? 1 : 0);
         if (pu->multiRefIdx == 0)
           ipred_idx = m_BinDecoder.decodeBin(Ctx::IntraLumaPlanarFlag(ctx));
@@ -1636,7 +1636,7 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
         }
 #if JVET_N0324_REGULAR_MRG_FLAG
         else
-        {      
+        {
           pu.cu->triangle = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && !pu.cu->affine && !pu.mmvdMergeFlag && !pu.cu->mmvdSkip;
         }
 #else
@@ -1828,9 +1828,9 @@ void CABACReader::merge_flag( PredictionUnit& pu )
       pu.cu->affine = false;
       pu.cu->triangle = false;
     }
-    else 
+    else
     {
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
       if (pu.cs->sps->getUseMMVD())
       {
 #endif
@@ -1848,17 +1848,17 @@ void CABACReader::merge_flag( PredictionUnit& pu )
           pu.mmvdMergeFlag = (m_BinDecoder.decodeBin(Ctx::MmvdFlag(0)));
           DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
         }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
       }
       else
       {
         pu.mmvdMergeFlag = false;
       }
-#endif 
+#endif
     }
   }
 #else
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   if (pu.mergeFlag && pu.cs->sps->getUseMMVD())
 #else
   if (pu.mergeFlag)
@@ -1867,12 +1867,12 @@ void CABACReader::merge_flag( PredictionUnit& pu )
     pu.mmvdMergeFlag = (m_BinDecoder.decodeBin(Ctx::MmvdFlag(0)));
     DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
   }
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   else
   {
     pu.mmvdMergeFlag = false;
   }
-#endif 
+#endif
 #endif
 }
 
@@ -2745,7 +2745,7 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
   if ( compID == COMPONENT_Cr && TU::getCbf( tu, COMPONENT_Cb ) )
   {
     joint_cb_cr( tu );
-    
+
     // No Cr residual in bitstream in joint Cb-Cr residual mode
     if ( tu.jointCbCr )
       return;

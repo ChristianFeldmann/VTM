@@ -94,25 +94,50 @@ public:
 #endif
   void create( const int picWidth, const int picHeight, const ChromaFormat format, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE] );
   void destroy();
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+  static void deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift, int vbCTUHeight, int vbPos);
+#else
+  static void deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift);
+#endif
+  void deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blkDst, const Area& blk );
+#else
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
   static void deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift, int vbCTUHeight, int vbPos);
 #else
   static void deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift);
 #endif
   void deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk );
+#endif
   void resetPCMBlkClassInfo(CodingStructure & cs, AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk);
   template<AlfFilterType filtType>
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  static void filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
+#else
   static void filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
+#endif
+#else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  static void filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
 #else
   static void filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
 #endif
+#endif
 #else
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  static void filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs);
+#else
   static void filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs);
+#endif
+#else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  static void filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs);
 #else
   static void filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs);
+#endif
 #endif
 #endif
   inline static int getMaxGolombIdx( AlfFilterType filterType )
@@ -121,26 +146,54 @@ public:
   }
 
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  void(*m_deriveClassificationBlk)(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift, int vbCTUHeight, int vbPos);
+#else
   void(*m_deriveClassificationBlk)(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift, int vbCTUHeight, int vbPos);
+#endif
+#else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  void(*m_deriveClassificationBlk)(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift);
 #else
   void(*m_deriveClassificationBlk)(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift);
+#endif
 #endif
 
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  void(*m_filter5x5Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
+  void(*m_filter7x7Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
+#else
   void(*m_filter5x5Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
   void(*m_filter7x7Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
+#endif
+#else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  void(*m_filter5x5Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
+  void(*m_filter7x7Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
 #else
   void(*m_filter5x5Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
   void(*m_filter7x7Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
 #endif
+#endif
 #else
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  void(*m_filter5x5Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs);
+  void(*m_filter7x7Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs);
+#else
   void(*m_filter5x5Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs);
   void(*m_filter7x7Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs);
+#endif
+#else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  void(*m_filter5x5Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs);
+  void(*m_filter7x7Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs);
 #else
   void(*m_filter5x5Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs);
   void(*m_filter7x7Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs);
+#endif
 #endif
 #endif
 
@@ -151,6 +204,9 @@ public:
 #endif
 
 protected:
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  bool isCrossedByVirtualBoundaries( const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorSplit, int& numVerSplit, int horSplit[], int verSplit[], const PPS* pps );
+#endif
 #if JVET_N0415_CTB_ALF
   static const int             m_classToFilterMapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES];
   static const int             m_fixedFilterSetCoeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF];
@@ -176,6 +232,9 @@ protected:
   int**                        m_laplacian[NUM_DIRECTIONS];
   uint8_t*                     m_ctuEnableFlag[MAX_NUM_COMPONENT];
   PelStorage                   m_tempBuf;
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  PelStorage                   m_tempBuf2;
+#endif
   int                          m_inputBitDepth[MAX_NUM_CHANNEL_TYPE];
   int                          m_picWidth;
   int                          m_picHeight;

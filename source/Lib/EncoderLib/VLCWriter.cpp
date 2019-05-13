@@ -280,6 +280,36 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       WRITE_SVLC( pcPPS->getDeblockingFilterTcOffsetDiv2(),               "pps_tc_offset_div2" );
     }
   }
+
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  WRITE_FLAG( pcPPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() ? 1 : 0,     "pps_loop_filter_across_virtual_boundaries_disabled_flag" );
+  if( pcPPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
+  {
+    WRITE_CODE( pcPPS->getNumVerVirtualBoundaries(), 2,                              "pps_num_ver_virtual_boundaries");
+    int numBits = 1;
+    uint32_t picWidthDivBy8 = pcPPS->pcv->lumaWidth >> 3;
+    while( picWidthDivBy8 >>= 1 )
+    {
+      numBits++;
+    }
+    for( unsigned i = 0; i < pcPPS->getNumVerVirtualBoundaries(); i++ )
+    {
+      WRITE_CODE( pcPPS->getVirtualBoundariesPosX( i ) >> 3, numBits,                "pps_virtual_boundaries_pos_x" );
+    }
+    WRITE_CODE( pcPPS->getNumHorVirtualBoundaries(), 2,                              "pps_num_hor_virtual_boundaries");
+    numBits = 1;
+    uint32_t picHeightDivBy8 = pcPPS->pcv->lumaHeight >> 3;
+    while( picHeightDivBy8 >>= 1 )
+    {
+      numBits++;
+    }
+    for( unsigned i = 0; i < pcPPS->getNumHorVirtualBoundaries(); i++ )
+    {
+      WRITE_CODE( pcPPS->getVirtualBoundariesPosY( i ) >> 3, numBits,                "pps_virtual_boundaries_pos_y" );
+    }
+  }
+#endif
+
 #if HEVC_USE_SCALING_LISTS
   WRITE_FLAG( pcPPS->getScalingListPresentFlag() ? 1 : 0,                          "pps_scaling_list_data_present_flag" );
   if( pcPPS->getScalingListPresentFlag() )

@@ -77,6 +77,8 @@
 
 #define JVET_N0168_AMVR_ME_MODIFICATION                   1 // Correct the cost and bits calculation in encoder side
 
+#define JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND  1 // loop filter disabled across virtual boundaries
+
 #define JVET_N0068_AFFINE_MEM_BW                          1 // memory bandwidth reduction for affine mode
 
 #define JVET_N0308_MAX_CU_SIZE_FOR_ISP                    1
@@ -1584,6 +1586,9 @@ struct XUCache
 #define MAX_NUM_ALF_CHROMA_COEFF        7
 #define MAX_ALF_FILTER_LENGTH           7
 #define MAX_NUM_ALF_COEFF               (MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1)
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+#define MAX_ALF_PADDING_SIZE            4
+#endif
 
 enum AlfFilterType
 {

@@ -295,6 +295,13 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  bool      m_loopFilterAcrossVirtualBoundariesDisabledFlag;
+  unsigned  m_numVerVirtualBoundaries;
+  unsigned  m_numHorVirtualBoundaries;
+  std::vector<unsigned> m_virtualBoundariesPosX;
+  std::vector<unsigned> m_virtualBoundariesPosY;
+#endif
   bool      m_lumaReshapeEnable;
   uint32_t  m_reshapeSignalType;
   uint32_t  m_intraCMD;

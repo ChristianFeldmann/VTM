@@ -104,6 +104,11 @@ private:
   inline unsigned BsSet(unsigned val, const ComponentID compIdx) const;
   inline unsigned BsGet(unsigned val, const ComponentID compIdx) const;
 
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  inline bool isCrossedByVirtualBoundaries ( const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps );
+  inline void xDeriveEdgefilterParam       ( const int xPos, const int yPos, const int numVerVirBndry, const int numHorVirBndry, const int verVirBndryPos[], const int horVirBndryPos[], bool &verEdgeFilter, bool &horEdgeFilter );
+#endif
+
   inline int xCalcDP              ( Pel* piSrc, const int iOffset ) const;
   inline int xCalcDQ              ( Pel* piSrc, const int iOffset ) const;
   static const uint8_t sm_tcTable[MAX_QP + 3];

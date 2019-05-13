@@ -1957,9 +1957,18 @@ PPS::PPS()
 , m_loopFilterAcrossSlicesEnabledFlag(false)
 , m_listsModificationPresentFlag     (0)
 , m_numExtraSliceHeaderBits          (0)
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+, m_loopFilterAcrossVirtualBoundariesDisabledFlag(false)
+, m_numVerVirtualBoundaries          (0)
+, m_numHorVirtualBoundaries          (0)
+#endif
 , m_ppsRangeExtension                ()
 , pcv                                (NULL)
 {
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  ::memset(m_virtualBoundariesPosX, 0, sizeof(m_virtualBoundariesPosX));
+  ::memset(m_virtualBoundariesPosY, 0, sizeof(m_virtualBoundariesPosY));
+#endif
 }
 
 PPS::~PPS()

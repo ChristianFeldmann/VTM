@@ -1573,6 +1573,14 @@ private:
   uint32_t             m_log2ParallelMergeLevelMinus2;
   int              m_numExtraSliceHeaderBits;
 
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  bool             m_loopFilterAcrossVirtualBoundariesDisabledFlag;
+  unsigned         m_numVerVirtualBoundaries;
+  unsigned         m_numHorVirtualBoundaries;
+  unsigned         m_virtualBoundariesPosX[3];
+  unsigned         m_virtualBoundariesPosY[3];
+#endif
+
   PPSRExt          m_ppsRangeExtension;
 
 public:
@@ -1697,6 +1705,19 @@ public:
   bool                   getLoopFilterAcrossSlicesEnabledFlag() const                     { return m_loopFilterAcrossSlicesEnabledFlag;   }
   bool                   getSliceHeaderExtensionPresentFlag() const                       { return m_sliceHeaderExtensionPresentFlag;     }
   void                   setSliceHeaderExtensionPresentFlag(bool val)                     { m_sliceHeaderExtensionPresentFlag = val;      }
+
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  void                   setLoopFilterAcrossVirtualBoundariesDisabledFlag(bool b)         { m_loopFilterAcrossVirtualBoundariesDisabledFlag = b; }
+  bool                   getLoopFilterAcrossVirtualBoundariesDisabledFlag() const         { return m_loopFilterAcrossVirtualBoundariesDisabledFlag; }
+  void                   setNumVerVirtualBoundaries(unsigned u)                           { m_numVerVirtualBoundaries = u;                }
+  unsigned               getNumVerVirtualBoundaries() const                               { return m_numVerVirtualBoundaries;             }
+  void                   setNumHorVirtualBoundaries(unsigned u)                           { m_numHorVirtualBoundaries = u;                }
+  unsigned               getNumHorVirtualBoundaries() const                               { return m_numHorVirtualBoundaries;             }
+  void                   setVirtualBoundariesPosX(unsigned u, unsigned idx)               { m_virtualBoundariesPosX[idx] = u;             }
+  unsigned               getVirtualBoundariesPosX(unsigned idx) const                     { return m_virtualBoundariesPosX[idx];          }
+  void                   setVirtualBoundariesPosY(unsigned u, unsigned idx)               { m_virtualBoundariesPosY[idx] = u;             }
+  unsigned               getVirtualBoundariesPosY(unsigned idx) const                     { return m_virtualBoundariesPosY[idx];          }
+#endif
 
   const PPSRExt&         getPpsRangeExtension() const                                     { return m_ppsRangeExtension;                   }
   PPSRExt&               getPpsRangeExtension()                                           { return m_ppsRangeExtension;                   }

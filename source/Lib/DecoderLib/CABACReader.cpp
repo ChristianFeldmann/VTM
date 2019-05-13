@@ -2745,6 +2745,7 @@ void CABACReader::mmvd_merge_idx(PredictionUnit& pu)
   int var0 = 0;
   if (numCandminus1_base > 0)
   {
+    static_assert(MMVD_BASE_MV_NUM == 2, "");
     var0 = m_BinDecoder.decodeBin(Ctx::MmvdMergeIdx());
   }
   DTRACE(g_trace_ctx, D_SYNTAX, "base_mvp_idx() base_mvp_idx=%d\n", var0);

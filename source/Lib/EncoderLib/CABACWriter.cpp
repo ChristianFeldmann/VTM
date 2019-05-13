@@ -2567,22 +2567,9 @@ void CABACWriter::mmvd_merge_idx(const PredictionUnit& pu)
   int numCandminus1_base = (numCand > 1) ? MMVD_BASE_MV_NUM - 1 : 0;
   if (numCandminus1_base > 0)
   {
-    if (var0 == 0)
-    {
-      m_BinEncoder.encodeBin(0, Ctx::MmvdMergeIdx());
-    }
-    else
-    {
-      m_BinEncoder.encodeBin(1, Ctx::MmvdMergeIdx());
-      for (unsigned idx = 1; idx < numCandminus1_base; idx++)
-      {
-        m_BinEncoder.encodeBinEP(var0 == idx ? 0 : 1);
-        if (var0 == idx)
-        {
-          break;
-        }
-      }
-    }
+    static_assert(MMVD_BASE_MV_NUM == 2, "");
+    assert(var0 < 2);
+    m_BinEncoder.encodeBin(var0, Ctx::MmvdMergeIdx());
   }
   DTRACE(g_trace_ctx, D_SYNTAX, "base_mvp_idx() base_mvp_idx=%d\n", var0);
 

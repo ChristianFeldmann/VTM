@@ -940,12 +940,17 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
   if(this->getAssociatedIRAPPOC() > this->getPOC())
   {
     // Do not check IRAP pictures since they may get a POC lower than their associated IRAP
+#if JVET_N0067_NAL_Unit_Header
+    if (nalUnitType < NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
+        nalUnitType > NAL_UNIT_CODED_SLICE_CRA)
+#else
 #if !JVET_M0101_HLS
     if(nalUnitType < NAL_UNIT_CODED_SLICE_BLA_W_LP ||
        nalUnitType > NAL_UNIT_RESERVED_IRAP_VCL23)
 #else
     if (nalUnitType < NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
         nalUnitType > NAL_UNIT_RESERVED_IRAP_VCL13)
+#endif
 #endif
     {
 #if !JVET_M0101_HLS

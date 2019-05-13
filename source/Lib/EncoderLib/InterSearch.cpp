@@ -1655,9 +1655,6 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
     if (cu.cs->sps->getAMVREnabledFlag())
       assert(pu.cu->imv>0 || pu.mvd[REF_PIC_LIST_0] == Mv());
 
-    if (!cu.cs->sps->getAMVREnabledFlag())
-      pu.mvd[REF_PIC_LIST_0] >>= (2);
-
     pu.refIdx[REF_PIC_LIST_0] = MAX_NUM_REF;
 
 #if !JVET_N0329_IBC_SEARCH_IMP

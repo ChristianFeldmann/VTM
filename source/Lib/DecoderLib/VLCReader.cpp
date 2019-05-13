@@ -369,7 +369,11 @@ void HLSyntaxReader::parseShortTermRefPicSet( SPS* sps, ReferencePictureSet* rps
   rps->printDeltaPOC();
 }
 
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetManager )
+#else
 void HLSyntaxReader::parsePPS( PPS* pcPPS )
+#endif
 {
 #if ENABLE_TRACING
   xTracePPSHeader ();
@@ -500,6 +504,36 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
       READ_SVLC ( iCode, "pps_tc_offset_div2" );                       pcPPS->setDeblockingFilterTcOffsetDiv2( iCode );
     }
   }
+
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  READ_FLAG( uiCode, "pps_loop_filter_across_virtual_boundaries_disabled_flag" ); pcPPS->setLoopFilterAcrossVirtualBoundariesDisabledFlag( uiCode != 0 );
+  if( pcPPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
+  {
+    READ_CODE( 2, uiCode, "pps_num_ver_virtual_boundaries");        pcPPS->setNumVerVirtualBoundaries( uiCode );
+    int numBits = 1;
+    uint32_t picWidthDivBy8 = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicWidthInLumaSamples() >> 3; // pcPPS->getPicWidthInLumaSamples() >> 3;
+    while( picWidthDivBy8 >>= 1 )
+    {
+      numBits++;
+    }
+    for( unsigned i = 0; i < pcPPS->getNumVerVirtualBoundaries(); i++ )
+    {
+      READ_CODE( numBits, uiCode, "pps_virtual_boundaries_pos_x" ); pcPPS->setVirtualBoundariesPosX( uiCode << 3, i );
+    }
+    READ_CODE( 2, uiCode, "pps_num_hor_virtual_boundaries");        pcPPS->setNumHorVirtualBoundaries( uiCode );
+    numBits = 1;
+    uint32_t picHeightDivBy8 = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicHeightInLumaSamples() >> 3; // pcPPS->getPicHeightInLumaSamples() >> 3;
+    while( picHeightDivBy8 >>= 1 )
+    {
+      numBits++;
+    }
+    for( unsigned i = 0; i < pcPPS->getNumHorVirtualBoundaries(); i++ )
+    {
+      READ_CODE( numBits, uiCode, "pps_virtual_boundaries_pos_y" ); pcPPS->setVirtualBoundariesPosY( uiCode << 3, i );
+    }
+  }
+#endif
+
 #if HEVC_USE_SCALING_LISTS
   READ_FLAG( uiCode, "pps_scaling_list_data_present_flag" );           pcPPS->setScalingListPresentFlag( uiCode ? true : false );
   if(pcPPS->getScalingListPresentFlag ())

@@ -84,7 +84,11 @@ protected:
     ) const;
 
   void offsetBlock(const int channelBitDepth, const ClpRng& clpRng, int typeIdx, int* offset, const Pel* srcBlk, Pel* resBlk, int srcStride, int resStride,  int width, int height
-                  , bool isLeftAvail, bool isRightAvail, bool isAboveAvail, bool isBelowAvail, bool isAboveLeftAvail, bool isAboveRightAvail, bool isBelowLeftAvail, bool isBelowRightAvail);
+                  , bool isLeftAvail, bool isRightAvail, bool isAboveAvail, bool isBelowAvail, bool isAboveLeftAvail, bool isAboveRightAvail, bool isBelowLeftAvail, bool isBelowRightAvail
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+                  , bool isCTUCrossVirtualBoundaries, int horVirBndryPos[], int verVirBndryPos[], int numHorVirBndry, int numVerVirBndry
+#endif
+    );
   void invertQuantOffsets(ComponentID compIdx, int typeIdc, int typeAuxInfo, int* dstOffsets, int* srcOffsets);
   void reconstructBlkSAOParam(SAOBlkParam& recParam, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES]);
   int  getMergeList(CodingStructure& cs, int ctuRsAddr, SAOBlkParam* blkParams, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES]);
@@ -93,6 +97,30 @@ protected:
   void xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea);
   void xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID);
   void xReconstructBlkSAOParams(CodingStructure& cs, SAOBlkParam* saoBlkParams);
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  bool isCrossedVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps);
+  inline bool isProcessDisabled(int xPos, int yPos, int numVerVirBndry, int numHorVirBndry, int verVirBndryPos[], int horVirBndryPos[])
+  {
+    bool bDisabledFlag = false;
+    for (int i = 0; i < numVerVirBndry; i++)
+    {
+      if ((xPos == verVirBndryPos[i]) || (xPos == verVirBndryPos[i] - 1))
+      {
+        bDisabledFlag = true;
+        break;
+      }
+    }
+    for (int i = 0; i < numHorVirBndry; i++)
+    {
+      if ((yPos == horVirBndryPos[i]) || (yPos == horVirBndryPos[i] - 1))
+      {
+        bDisabledFlag = true;
+        break;
+      }
+    }
+    return bDisabledFlag;
+  }
+#endif
   Reshape* m_pcReshape;
 protected:
   uint32_t m_offsetStepLog2[MAX_NUM_COMPONENT]; //offset step

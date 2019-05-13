@@ -263,7 +263,7 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SP
 {
   int i, nalOrVcl;
   const VUI *vui = sps->getVuiParameters();
-  const HRD *hrd = vui->getHrdParameters();
+  const HRDParameters *hrd = vui->getHrdParameters();
 
   WRITE_UVLC( sei.m_bpSeqParameterSetId, "bp_seq_parameter_set_id" );
   if( !hrd->getSubPicCpbParamsPresentFlag() )
@@ -299,7 +299,7 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *s
 {
   int i;
   const VUI *vui = sps->getVuiParameters();
-  const HRD *hrd = vui->getHrdParameters();
+  const HRDParameters *hrd = vui->getHrdParameters();
 
   if( vui->getFrameFieldInfoPresentFlag() )
   {

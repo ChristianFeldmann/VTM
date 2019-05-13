@@ -48,6 +48,7 @@
 #include "EncCfg.h"
 #include "EncGOP.h"
 #include "EncSlice.h"
+#include "EncHRD.h"
 #include "VLCWriter.h"
 #include "CABACWriter.h"
 #include "InterSearch.h"
@@ -56,7 +57,6 @@
 #include "EncReshape.h"
 #include "EncAdaptiveLoopFilter.h"
 #include "RateCtrl.h"
-
 
 //! \ingroup EncoderLib
 //! \{
@@ -142,6 +142,8 @@ private:
   APS*                      m_apss[MAX_NUM_APS];
 #endif
 
+  EncHRD                    m_encHRD;
+
 public:
   Ctx                       m_entropyCodingSyncContextState;      ///< leave in addition to vector for compatibility
 #if ENABLE_WPP_PARALLELISM
@@ -160,7 +162,7 @@ protected:
   void  xInitScalingLists (SPS &sps, PPS &pps);   ///< initialize scaling lists
 #endif
   void  xInitPPSforLT(PPS& pps);
-  void  xInitHrdParameters(SPS &sps);                 ///< initialize HRD parameters
+  void  xInitHrdParameters(SPS &sps);                 ///< initialize HRDParameters parameters
 
   void  xInitPPSforTiles  (PPS &pps);
   void  xInitRPS          (SPS &sps, bool isFieldCoding);           ///< initialize PPS from encoder options

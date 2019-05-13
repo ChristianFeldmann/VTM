@@ -416,7 +416,7 @@ void EncGOP::xWriteTrailingSEIMessages (SEIMessages& seiMessages, AccessUnit &ac
 
 void EncGOP::xWriteDuSEIMessages (SEIMessages& duInfoSeiMessages, AccessUnit &accessUnit, int temporalId, const SPS *sps, std::deque<DUData> &duData)
 {
-  const HRD *hrd = sps->getVuiParameters()->getHrdParameters();
+  const HRDParameters *hrd = sps->getVuiParameters()->getHrdParameters();
 
   if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getSubPicCpbParamsPresentFlag() )
   {
@@ -635,7 +635,7 @@ void EncGOP::xCreateScalableNestingSEI (SEIMessages& seiMessages, SEIMessages& n
 void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, SEIMessages& duInfoSeiMessages, Slice *slice, bool isField, std::deque<DUData> &duData)
 {
   const VUI *vui = slice->getSPS()->getVuiParameters();
-  const HRD *hrd = vui->getHrdParameters();
+  const HRDParameters *hrd = vui->getHrdParameters();
 
   // update decoding unit parameters
   if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) &&
@@ -814,7 +814,7 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
     return;
   }
   const VUI *vui = sps->getVuiParameters();
-  const HRD *hrd = vui->getHrdParameters();
+  const HRDParameters *hrd = vui->getHrdParameters();
   if( hrd->getSubPicCpbParamsPresentFlag() )
   {
     int i;

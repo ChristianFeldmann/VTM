@@ -805,7 +805,7 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
   }
 }
 
-void HLSyntaxReader::parseHrdParameters(HRD *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1)
+void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1)
 {
   uint32_t  uiCode;
   if( commonInfPresentFlag )

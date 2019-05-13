@@ -498,7 +498,7 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
   uint32_t code;
 
   const VUI *pVUI = sps->getVuiParameters();
-  const HRD *pHRD = pVUI->getHrdParameters();
+  const HRDParameters *pHRD = pVUI->getHrdParameters();
 
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
 
@@ -548,7 +548,7 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
   uint32_t code;
 
   const VUI *vui = sps->getVuiParameters();
-  const HRD *hrd = vui->getHrdParameters();
+  const HRDParameters *hrd = vui->getHrdParameters();
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
 
   if( vui->getFrameFieldInfoPresentFlag() )

@@ -1822,7 +1822,7 @@ int  RateCtrl::updateCpbState(int actualBits)
   return cpbState;
 }
 
-void RateCtrl::initHrdParam(const HRD* pcHrd, int iFrameRate, double fInitialCpbFullness)
+void RateCtrl::initHrdParam(const HRDParameters* pcHrd, int iFrameRate, double fInitialCpbFullness)
 {
   m_CpbSaturationEnabled = true;
   m_cpbSize = (pcHrd->getCpbSizeValueMinus1(0, 0, 0) + 1) << (4 + pcHrd->getCpbSizeScale());

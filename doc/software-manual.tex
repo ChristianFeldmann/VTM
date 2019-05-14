@@ -983,6 +983,12 @@ Valid values are: main, high.
 NB: There is currently only limited validation that the encoder configuration complies with the profile, level and tier constraints.
 \\
 
+\Option{EnableDecodingParameterSet} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables writing of a decoding parameter set. If disabled, no parameter set will be written and the specical reserved ID zero will be used in the SPS indicating no constraint.
+\\
+
 \Option{MaxBitDepthConstraint} &
 %\ShortOption{\None} &
 \Default{0} &

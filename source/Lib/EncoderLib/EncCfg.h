@@ -529,6 +529,10 @@ protected:
 #if HEVC_VPS
   VPS       m_cVPS;
 #endif
+#if JVET_N0349_DPS
+  DPS       m_dps;
+  bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
+#endif
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
   int       m_activeParameterSetsSEIEnabled;                  ///< enable active parameter set SEI message
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
@@ -1365,6 +1369,10 @@ public:
   void         setVPS(VPS *p)                                        { m_cVPS = *p; }
   VPS *        getVPS()                                              { return &m_cVPS; }
 #endif
+#if JVET_N0349_DPS
+  void         setDPS(DPS *p)                                        { m_dps = *p; }
+  DPS*         getDPS()                                              { return &m_dps; }
+#endif
   void         setUseRecalculateQPAccordingToLambda (bool b)         { m_recalculateQPAccordingToLambda = b;    }
   bool         getUseRecalculateQPAccordingToLambda ()               { return m_recalculateQPAccordingToLambda; }
 
@@ -1383,6 +1391,10 @@ public:
   int          getActiveParameterSetsSEIEnabled ()                   { return m_activeParameterSetsSEIEnabled; }
   bool         getVuiParametersPresentFlag()                         { return m_vuiParametersPresentFlag; }
   void         setVuiParametersPresentFlag(bool i)                   { m_vuiParametersPresentFlag = i; }
+#if JVET_N0349_DPS
+  bool         getDecodingParameterSetEnabled()                      { return m_decodingParameterSetEnabled; }
+  void         setDecodingParameterSetEnabled(bool i)                { m_decodingParameterSetEnabled = i; }
+#endif
   bool         getAspectRatioInfoPresentFlag()                       { return m_aspectRatioInfoPresentFlag; }
   void         setAspectRatioInfoPresentFlag(bool i)                 { m_aspectRatioInfoPresentFlag = i; }
   int          getAspectRatioIdc()                                   { return m_aspectRatioIdc; }

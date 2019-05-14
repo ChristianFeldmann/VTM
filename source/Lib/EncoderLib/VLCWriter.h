@@ -129,6 +129,9 @@ public:
 #if HEVC_VPS
   void  codeVPS                 ( const VPS* pcVPS );
 #endif
+#if JVET_N0349_DPS
+  void  codeDPS                 ( const DPS* dps );
+#endif
   void  codeSliceHeader         ( Slice* pcSlice );
 #if !JVET_M0101_HLS
   void  codePTL                 ( const PTL* pcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1);

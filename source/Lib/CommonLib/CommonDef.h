@@ -201,6 +201,7 @@ static const int C1FLAG_NUMBER =                                    8; ///< maxi
 static const int C2FLAG_NUMBER =                                    1; ///< maximum number of largerThan2 flag coded in one chunk: 16 in HM5
 
 static const int MAX_NUM_VPS =                                     16;
+static const int MAX_NUM_DPS =                                     16;
 static const int MAX_NUM_SPS =                                     16;
 static const int MAX_NUM_PPS =                                     64;
 static const int MAX_NUM_APS =                                     32;  //Currently APS ID has 5 bits

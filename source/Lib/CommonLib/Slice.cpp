@@ -80,6 +80,9 @@ Slice::Slice()
 #if HEVC_VPS
 , m_pcVPS                         ( NULL )
 #endif
+#if JVET_N0349_DPS
+, m_dps                           ( nullptr )
+#endif
 , m_pcSPS                         ( NULL )
 , m_pcPPS                         ( NULL )
 , m_pcPic                         ( NULL )
@@ -1777,6 +1780,9 @@ SPSRExt::SPSRExt()
 
 SPS::SPS()
 : m_SPSId                     (  0)
+#if JVET_N0349_DPS
+, m_decodingParameterSetId    (  0 )
+#endif
 #if !JVET_M0101_HLS
 , m_bIntraOnlyConstraintFlag  (false)
 , m_maxBitDepthConstraintIdc  (  0)
@@ -2459,8 +2465,14 @@ ParameterSetManager::ParameterSetManager()
 #endif
 , m_ppsMap(MAX_NUM_PPS)
 , m_apsMap(MAX_NUM_APS)
+#if JVET_N0349_DPS
+, m_dpsMap(MAX_NUM_DPS)
+#endif
 #if HEVC_VPS
 , m_activeVPSId(-1)
+#endif
+#if JVET_N0349_DPS
+, m_activeDPSId(-1)
 #endif
 , m_activeSPSId(-1)
 {
@@ -2519,6 +2531,35 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
       SPS *sps = m_spsMap.getPS(spsId);
       if (sps)
       {
+#if JVET_N0349_DPS
+        int dpsId = sps->getDecodingParameterSetId();
+        if ((m_activeDPSId!=-1) && (dpsId != m_activeDPSId ))
+        {
+          msg( WARNING, "Warning: tried to activate DPS with different ID than the currently active DPS. This should not happen within the same bitstream!");
+        }
+        else
+        {
+          if (dpsId != 0)
+          {
+            DPS *dps =m_dpsMap.getPS(dpsId);
+            if (dps)
+            {
+              m_activeDPSId = dpsId;
+              m_dpsMap.setActive(dpsId);
+            }
+            else
+            {
+              msg( WARNING, "Warning: tried to activate PPS that refers to a non-existing DPS.");
+            }
+          }
+          else
+          {
+            // set zero as active DPS ID (special reserved value, no actual DPS)
+            m_activeDPSId = dpsId;
+            m_dpsMap.setActive(dpsId);
+          }
+        }
+#endif
 
 #if HEVC_VPS
         int vpsId = sps->getVPSId();
@@ -2571,6 +2612,9 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
   m_activeSPSId=-1;
 #if HEVC_VPS
   m_activeVPSId=-1;
+#endif
+#if JVET_N0349_DPS
+  m_activeDPSId=-1;
 #endif
   return false;
 }
@@ -2718,6 +2762,13 @@ uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chTy
 void xTraceVPSHeader()
 {
   DTRACE( g_trace_ctx, D_HEADER, "=========== Video Parameter Set     ===========\n" );
+}
+#endif
+
+#if JVET_N0349_DPS
+void xTraceDPSHeader()
+{
+  DTRACE( g_trace_ctx, D_HEADER, "=========== Decoding Parameter Set     ===========\n" );
 }
 #endif
 

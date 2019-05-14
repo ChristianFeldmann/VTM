@@ -539,6 +539,9 @@ void EncApp::xInitLibCfg()
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
   m_cEncLib.setUseStrongIntraSmoothing                           ( m_useStrongIntraSmoothing );
 #endif
+#if JVET_N0349_DPS
+  m_cEncLib.setDecodingParameterSetEnabled                       ( m_decodingParameterSetEnabled );
+#endif
   m_cEncLib.setActiveParameterSetsSEIEnabled                     ( m_activeParameterSetsSEIEnabled );
   m_cEncLib.setVuiParametersPresentFlag                          ( m_vuiParametersPresentFlag );
   m_cEncLib.setAspectRatioInfoPresentFlag                        ( m_aspectRatioInfoPresentFlag);
@@ -883,6 +886,9 @@ void EncApp::rateStatsAccum(const AccessUnit& au, const std::vector<uint32_t>& a
     case NAL_UNIT_CODED_SLICE_CRA:
     case NAL_UNIT_CODED_SLICE_RADL:
     case NAL_UNIT_CODED_SLICE_RASL:
+#endif
+#if JVET_N0349_DPS
+    case NAL_UNIT_DPS:
 #endif
 #if HEVC_VPS
     case NAL_UNIT_VPS:

@@ -637,6 +637,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if ENABLE_TRACING
   xTraceSPSHeader ();
 #endif
+#if JVET_N0349_DPS
+  WRITE_CODE( pcSPS->getDecodingParameterSetId (), 4,       "sps_decoding_parameter_set_id" );
+#endif
 #if HEVC_VPS
   WRITE_CODE( pcSPS->getVPSId (),          4,       "sps_video_parameter_set_id" );
 #endif
@@ -974,6 +977,24 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   xWriteRbspTrailingBits();
 }
+
+#if JVET_N0349_DPS
+void HLSWriter::codeDPS( const DPS* dps )
+{
+#if ENABLE_TRACING
+  xTraceDPSHeader();
+#endif
+  WRITE_CODE( dps->getDecodingParameterSetId(),     4,        "dps_decoding_parameter_set_id" );
+  WRITE_CODE( dps->getMaxSubLayersMinus1(),         3,        "dps_max_sub_layers_minus1" );
+  WRITE_FLAG( 0,                                              "dps_reserved_zero_bit" );
+
+  ProfileTierLevel ptl = dps->getProfileTierLevel();
+  codeProfileTierLevel( &ptl, dps->getMaxSubLayersMinus1() );
+
+  WRITE_FLAG( 0,                                              "dps_extension_flag" );
+  xWriteRbspTrailingBits();
+}
+#endif
 
 #if HEVC_VPS
 void HLSWriter::codeVPS( const VPS* pcVPS )

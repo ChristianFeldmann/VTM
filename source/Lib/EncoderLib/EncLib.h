@@ -153,6 +153,9 @@ protected:
 #if HEVC_VPS
   void  xInitVPS          (VPS &vps, const SPS &sps); ///< initialize VPS from encoder options
 #endif
+#if JVET_N0349_DPS
+  void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
+#endif
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
   void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options

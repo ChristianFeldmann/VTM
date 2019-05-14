@@ -150,6 +150,9 @@ public:
 #if HEVC_VPS
   void  parseVPS            ( VPS* pcVPS );
 #endif
+#if JVET_N0349_DPS
+  void  parseDPS            ( DPS* dps );
+#endif
   void  parseSPS            ( SPS* pcSPS );
   void  parsePPS            ( PPS* pcPPS );
   void  parseAPS            ( APS* pcAPS);

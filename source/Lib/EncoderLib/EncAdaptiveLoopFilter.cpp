@@ -720,9 +720,9 @@ void EncAdaptiveLoopFilter::ALFProcess( CodingStructure& cs, const double *lambd
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   const PreCalcValues& pcv = *cs.pcv;
   bool clipTop = false, clipBottom = false, clipLeft = false, clipRight = false;
-  int numHorSplit = 0, numVerSplit = 0;
-  int horSplit[] = { 0, 0, 0 };
-  int verSplit[] = { 0, 0, 0 };
+  int numHorVirBndry = 0, numVerVirBndry = 0;
+  int horVirBndryPos[] = { 0, 0, 0 };
+  int verVirBndryPos[] = { 0, 0, 0 };
   for( int yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight )
   {
     for( int xPos = 0; xPos < pcv.lumaWidth; xPos += pcv.maxCUWidth )
@@ -730,23 +730,23 @@ void EncAdaptiveLoopFilter::ALFProcess( CodingStructure& cs, const double *lambd
       const int width = ( xPos + pcv.maxCUWidth > pcv.lumaWidth ) ? ( pcv.lumaWidth - xPos ) : pcv.maxCUWidth;
       const int height = ( yPos + pcv.maxCUHeight > pcv.lumaHeight ) ? ( pcv.lumaHeight - yPos ) : pcv.maxCUHeight;
 
-      if( isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorSplit, numVerSplit, horSplit, verSplit, cs.slice->getPPS() ) )
+      if( isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
       {
         int yStart = yPos;
-        for( int i = 0; i <= numHorSplit; i++ )
+        for( int i = 0; i <= numHorVirBndry; i++ )
         {
-          const int yEnd = i == numHorSplit ? yPos + height : horSplit[i];
+          const int yEnd = i == numHorVirBndry ? yPos + height : horVirBndryPos[i];
           const int h = yEnd - yStart;
           const bool clipT = ( i == 0 && clipTop ) || ( i > 0 ) || ( yStart == 0 );
-          const bool clipB = ( i == numHorSplit && clipBottom ) || ( i < numHorSplit ) || ( yEnd == pcv.lumaHeight );
+          const bool clipB = ( i == numHorVirBndry && clipBottom ) || ( i < numHorVirBndry ) || ( yEnd == pcv.lumaHeight );
 
           int xStart = xPos;
-          for( int j = 0; j <= numVerSplit; j++ )
+          for( int j = 0; j <= numVerVirBndry; j++ )
           {
-            const int xEnd = j == numVerSplit ? xPos + width : verSplit[j];
+            const int xEnd = j == numVerVirBndry ? xPos + width : verVirBndryPos[j];
             const int w = xEnd - xStart;
             const bool clipL = ( j == 0 && clipLeft ) || ( j > 0 ) || ( xStart == 0 );
-            const bool clipR = ( j == numVerSplit && clipRight ) || ( j < numVerSplit ) || ( xEnd == pcv.lumaWidth );
+            const bool clipR = ( j == numVerVirBndry && clipRight ) || ( j < numVerVirBndry ) || ( xEnd == pcv.lumaWidth );
 
             const int wBuf = w + (clipL ? 0 : MAX_ALF_PADDING_SIZE) + (clipR ? 0 : MAX_ALF_PADDING_SIZE);
             const int hBuf = h + (clipT ? 0 : MAX_ALF_PADDING_SIZE) + (clipB ? 0 : MAX_ALF_PADDING_SIZE);
@@ -1033,9 +1033,9 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
 
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       bool clipTop = false, clipBottom = false, clipLeft = false, clipRight = false;
-      int numHorSplit = 0, numVerSplit = 0;
-      int horSplit[] = { 0, 0, 0 };
-      int verSplit[] = { 0, 0, 0 };
+      int numHorVirBndry = 0, numVerVirBndry = 0;
+      int horVirBndryPos[] = { 0, 0, 0 };
+      int verVirBndryPos[] = { 0, 0, 0 };
 #endif
       for( int yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight )
       {
@@ -1048,23 +1048,23 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
           if( m_ctuEnableFlag[compID][ctuIdx] )
           {
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-            if( isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorSplit, numVerSplit, horSplit, verSplit, cs.slice->getPPS() ) )
+            if( isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
             {
               int yStart = yPos;
-              for( int i = 0; i <= numHorSplit; i++ )
+              for( int i = 0; i <= numHorVirBndry; i++ )
               {
-                const int yEnd = i == numHorSplit ? yPos + height : horSplit[i];
+                const int yEnd = i == numHorVirBndry ? yPos + height : horVirBndryPos[i];
                 const int h = yEnd - yStart;
                 const bool clipT = ( i == 0 && clipTop ) || ( i > 0 ) || ( yStart == 0 );
-                const bool clipB = ( i == numHorSplit && clipBottom ) || ( i < numHorSplit ) || ( yEnd == pcv.lumaHeight );
+                const bool clipB = ( i == numHorVirBndry && clipBottom ) || ( i < numHorVirBndry ) || ( yEnd == pcv.lumaHeight );
 
                 int xStart = xPos;
-                for( int j = 0; j <= numVerSplit; j++ )
+                for( int j = 0; j <= numVerVirBndry; j++ )
                 {
-                  const int xEnd = j == numVerSplit ? xPos + width : verSplit[j];
+                  const int xEnd = j == numVerVirBndry ? xPos + width : verVirBndryPos[j];
                   const int w = xEnd - xStart;
                   const bool clipL = ( j == 0 && clipLeft ) || ( j > 0 ) || ( xStart == 0 );
-                  const bool clipR = ( j == numVerSplit && clipRight ) || ( j < numVerSplit ) || ( xEnd == pcv.lumaWidth );
+                  const bool clipR = ( j == numVerVirBndry && clipRight ) || ( j < numVerVirBndry ) || ( xEnd == pcv.lumaWidth );
 
                   const int wBuf = w + (clipL ? 0 : MAX_ALF_PADDING_SIZE) + (clipR ? 0 : MAX_ALF_PADDING_SIZE);
                   const int hBuf = h + (clipT ? 0 : MAX_ALF_PADDING_SIZE) + (clipB ? 0 : MAX_ALF_PADDING_SIZE);
@@ -2770,9 +2770,9 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   const PreCalcValues& pcv = *cs.pcv;
   bool clipTop = false, clipBottom = false, clipLeft = false, clipRight = false;
-  int numHorSplit = 0, numVerSplit = 0;
-  int horSplit[] = { 0, 0, 0 };
-  int verSplit[] = { 0, 0, 0 };
+  int numHorVirBndry = 0, numVerVirBndry = 0;
+  int horVirBndryPos[] = { 0, 0, 0 };
+  int verVirBndryPos[] = { 0, 0, 0 };
 #endif
   for( int yPos = 0; yPos < m_picHeight; yPos += m_maxCUHeight )
   {
@@ -2781,23 +2781,23 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
       const int width = ( xPos + m_maxCUWidth > m_picWidth ) ? ( m_picWidth - xPos ) : m_maxCUWidth;
       const int height = ( yPos + m_maxCUHeight > m_picHeight ) ? ( m_picHeight - yPos ) : m_maxCUHeight;
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-      if( isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorSplit, numVerSplit, horSplit, verSplit, cs.slice->getPPS() ) )
+      if( isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
       {
         int yStart = yPos;
-        for( int i = 0; i <= numHorSplit; i++ )
+        for( int i = 0; i <= numHorVirBndry; i++ )
         {
-          const int yEnd = i == numHorSplit ? yPos + height : horSplit[i];
+          const int yEnd = i == numHorVirBndry ? yPos + height : horVirBndryPos[i];
           const int h = yEnd - yStart;
           const bool clipT = ( i == 0 && clipTop ) || ( i > 0 ) || ( yStart == 0 );
-          const bool clipB = ( i == numHorSplit && clipBottom ) || ( i < numHorSplit ) || ( yEnd == pcv.lumaHeight );
+          const bool clipB = ( i == numHorVirBndry && clipBottom ) || ( i < numHorVirBndry ) || ( yEnd == pcv.lumaHeight );
 
           int xStart = xPos;
-          for( int j = 0; j <= numVerSplit; j++ )
+          for( int j = 0; j <= numVerVirBndry; j++ )
           {
-            const int xEnd = j == numVerSplit ? xPos + width : verSplit[j];
+            const int xEnd = j == numVerVirBndry ? xPos + width : verVirBndryPos[j];
             const int w = xEnd - xStart;
             const bool clipL = ( j == 0 && clipLeft ) || ( j > 0 ) || ( xStart == 0 );
-            const bool clipR = ( j == numVerSplit && clipRight ) || ( j < numVerSplit ) || ( xEnd == pcv.lumaWidth );
+            const bool clipR = ( j == numVerVirBndry && clipRight ) || ( j < numVerVirBndry ) || ( xEnd == pcv.lumaWidth );
 
             const int wBuf = w + (clipL ? 0 : MAX_ALF_PADDING_SIZE) + (clipR ? 0 : MAX_ALF_PADDING_SIZE);
             const int hBuf = h + (clipT ? 0 : MAX_ALF_PADDING_SIZE) + (clipB ? 0 : MAX_ALF_PADDING_SIZE);
@@ -4139,9 +4139,9 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
   int ctuIdx = 0;
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   bool clipTop = false, clipBottom = false, clipLeft = false, clipRight = false;
-  int numHorSplit = 0, numVerSplit = 0;
-  int horSplit[] = { 0, 0, 0 };
-  int verSplit[] = { 0, 0, 0 };
+  int numHorVirBndry = 0, numVerVirBndry = 0;
+  int horVirBndryPos[] = { 0, 0, 0 };
+  int verVirBndryPos[] = { 0, 0, 0 };
 #endif
   for (int yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight)
   {
@@ -4156,23 +4156,23 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
       {
         ctuEnableFlag |= m_ctuEnableFlag[compIdx][ctuIdx] > 0;
       }
-      if (ctuEnableFlag && isCrossedByVirtualBoundaries(xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorSplit, numVerSplit, horSplit, verSplit, cs.slice->getPPS()))
+      if (ctuEnableFlag && isCrossedByVirtualBoundaries(xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS()))
       {
         int yStart = yPos;
-        for (int i = 0; i <= numHorSplit; i++)
+        for (int i = 0; i <= numHorVirBndry; i++)
         {
-          const int yEnd = i == numHorSplit ? yPos + height : horSplit[i];
+          const int yEnd = i == numHorVirBndry ? yPos + height : horVirBndryPos[i];
           const int h = yEnd - yStart;
           const bool clipT = (i == 0 && clipTop) || (i > 0) || (yStart == 0);
-          const bool clipB = (i == numHorSplit && clipBottom) || (i < numHorSplit) || (yEnd == pcv.lumaHeight);
+          const bool clipB = (i == numHorVirBndry && clipBottom) || (i < numHorVirBndry ) || (yEnd == pcv.lumaHeight);
 
           int xStart = xPos;
-          for (int j = 0; j <= numVerSplit; j++)
+          for (int j = 0; j <= numVerVirBndry; j++)
           {
-            const int xEnd = j == numVerSplit ? xPos + width : verSplit[j];
+            const int xEnd = j == numVerVirBndry ? xPos + width : verVirBndryPos[j];
             const int w = xEnd - xStart;
             const bool clipL = (j == 0 && clipLeft) || (j > 0) || (xStart == 0);
-            const bool clipR = (j == numVerSplit && clipRight) || (j < numVerSplit) || (xEnd == pcv.lumaWidth);
+            const bool clipR = (j == numVerVirBndry && clipRight) || (j < numVerVirBndry ) || (xEnd == pcv.lumaWidth);
 
             const int wBuf = w + (clipL ? 0 : MAX_ALF_PADDING_SIZE) + (clipR ? 0 : MAX_ALF_PADDING_SIZE);
             const int hBuf = h + (clipT ? 0 : MAX_ALF_PADDING_SIZE) + (clipB ? 0 : MAX_ALF_PADDING_SIZE);

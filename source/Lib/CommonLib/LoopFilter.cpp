@@ -277,7 +277,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
   int  horVirBndryPos[] = { 0, 0, 0 };
   int  verVirBndryPos[] = { 0, 0, 0 };
 
-  bool cuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries( area.x, area.y, area.width, area.height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cu.cs->slice->getPPS() );
+  bool isCuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries( area.x, area.y, area.width, area.height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cu.cs->slice->getPPS() );
 #endif
 
   xSetLoopfilterParam( cu );
@@ -305,7 +305,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND 
     verEdgeFilter = m_stLFCUParam.internalEdge;
     horEdgeFilter = m_stLFCUParam.internalEdge;
-    if( cuCrossedByVirtualBoundaries )
+    if( isCuCrossedByVirtualBoundaries )
     {
       xDeriveEdgefilterParam( areaTu.x, areaTu.y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos, verEdgeFilter, horEdgeFilter );
     }
@@ -332,7 +332,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND 
     verEdgeFilter = (xOff ? m_stLFCUParam.internalEdge : m_stLFCUParam.leftEdge);
     horEdgeFilter = (yOff ? m_stLFCUParam.internalEdge : m_stLFCUParam.topEdge);
-    if( cuCrossedByVirtualBoundaries )
+    if( isCuCrossedByVirtualBoundaries )
     {
       xDeriveEdgefilterParam( areaPu.x, areaPu.y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos, verEdgeFilter, horEdgeFilter );
     }
@@ -357,7 +357,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
           const Area mvBlockH(cu.Y().x, cu.Y().y + off, cu.Y().width, pcv.minCUHeight);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND 
           horEdgeFilter = m_stLFCUParam.internalEdge;
-          if( cuCrossedByVirtualBoundaries )
+          if( isCuCrossedByVirtualBoundaries )
           {
             xDeriveEdgefilterParam( mvBlockH.x, mvBlockH.y, 0, numHorVirBndry, verVirBndryPos, horVirBndryPos, verEdgeFilter, horEdgeFilter );
           }
@@ -378,7 +378,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
           const Area mvBlockV(cu.Y().x + off, cu.Y().y, pcv.minCUWidth, cu.Y().height);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND 
           verEdgeFilter = m_stLFCUParam.internalEdge;
-          if( cuCrossedByVirtualBoundaries )
+          if( isCuCrossedByVirtualBoundaries )
           {
             xDeriveEdgefilterParam( mvBlockV.x, mvBlockV.y, numVerVirBndry, 0, verVirBndryPos, horVirBndryPos, verEdgeFilter, horEdgeFilter );
           }
@@ -414,7 +414,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
         const Area mvBlockV(cu.Y().x + off, cu.Y().y, pcv.minCUWidth, cu.Y().height);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND 
         verEdgeFilter = m_stLFCUParam.internalEdge;
-        if( cuCrossedByVirtualBoundaries )
+        if( isCuCrossedByVirtualBoundaries )
         {
           xDeriveEdgefilterParam( mvBlockV.x, mvBlockV.y, numVerVirBndry, 0, verVirBndryPos, horVirBndryPos, verEdgeFilter, horEdgeFilter );
         }
@@ -437,7 +437,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
         const Area mvBlockH(cu.Y().x, cu.Y().y + off, cu.Y().width, pcv.minCUHeight);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND 
         horEdgeFilter = m_stLFCUParam.internalEdge;
-        if( cuCrossedByVirtualBoundaries )
+        if( isCuCrossedByVirtualBoundaries )
         {
           xDeriveEdgefilterParam( mvBlockH.x, mvBlockH.y, 0, numHorVirBndry, verVirBndryPos, horVirBndryPos, verEdgeFilter, horEdgeFilter );
         }

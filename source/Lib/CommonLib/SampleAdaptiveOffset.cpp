@@ -293,7 +293,7 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
                                           , const Pel* srcBlk, Pel* resBlk, int srcStride, int resStride,  int width, int height
                                           , bool isLeftAvail,  bool isRightAvail, bool isAboveAvail, bool isBelowAvail, bool isAboveLeftAvail, bool isAboveRightAvail, bool isBelowLeftAvail, bool isBelowRightAvail
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-                                          , bool isCTUCrossVirtualBoundaries, int horVirBndryPos[], int verVirBndryPos[], int numHorVirBndry, int numVerVirBndry
+                                          , bool isCtuCrossedByVirtualBoundaries, int horVirBndryPos[], int verVirBndryPos[], int numHorVirBndry, int numVerVirBndry
 #endif
   )
 {
@@ -318,7 +318,7 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
         {
           signRight = (int8_t)sgn(srcLine[x] - srcLine[x+1]);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-          if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, 0, verVirBndryPos, horVirBndryPos))
+          if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, 0, verVirBndryPos, horVirBndryPos))
           {
             signLeft = -signRight;
             continue;
@@ -363,7 +363,7 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
         {
           signDown  = (int8_t)sgn(srcLine[x] - srcLineBelow[x]);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-          if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, y, 0, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+          if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, 0, numHorVirBndry, verVirBndryPos, horVirBndryPos))
           {
             signUpLine[x] = -signDown;
             continue;
@@ -405,7 +405,7 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
       for(x= firstLineStartX; x< firstLineEndX; x++)
       {
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-        if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+        if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
         {
           continue;
         }
@@ -427,7 +427,7 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
         {
           signDown =  (int8_t)sgn(srcLine[x] - srcLineBelow[x+ 1]);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-          if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+          if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
           {
             signDownLine[x + 1] = -signDown;
             continue;
@@ -455,7 +455,7 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
       for(x= lastLineStartX; x< lastLineEndX; x++)
       {
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-        if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, height - 1, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+        if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, height - 1, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
         {
           continue;
         }
@@ -489,7 +489,7 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
       for(x= firstLineStartX; x< firstLineEndX; x++)
       {
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-        if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+        if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
         {
           continue;
         }
@@ -509,7 +509,7 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
         {
           signDown =  (int8_t)sgn(srcLine[x] - srcLineBelow[x-1]);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-          if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+          if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
           {
             signUpLine[x - 1] = -signDown;
             continue;
@@ -531,7 +531,7 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
       for(x= lastLineStartX; x< lastLineEndX; x++)
       {
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-        if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, height - 1, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+        if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, height - 1, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
         {
           continue;
         }
@@ -595,7 +595,7 @@ void SampleAdaptiveOffset::offsetCTU( const UnitArea& area, const CPelUnitBuf& s
   int numHorVirBndry = 0, numVerVirBndry = 0;
   int horVirBndryPos[] = { -1,-1,-1 };
   int verVirBndryPos[] = { -1,-1,-1 };
-  bool isCTUCrossVirtualBoundaries = isCrossedVirtualBoundaries(area.Y().x, area.Y().y, area.Y().width, area.Y().height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
+  bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(area.Y().x, area.Y().y, area.Y().width, area.Y().height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
 #endif
   for(int compIdx = 0; compIdx < numberOfComponents; compIdx++)
   {
@@ -629,7 +629,7 @@ void SampleAdaptiveOffset::offsetCTU( const UnitArea& area, const CPelUnitBuf& s
                   , isAboveLeftAvail, isAboveRightAvail
                   , isBelowLeftAvail, isBelowRightAvail
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-                  , isCTUCrossVirtualBoundaries, horVirBndryPos, verVirBndryPos, numHorVirBndry, numVerVirBndry
+                  , isCtuCrossedByVirtualBoundaries, horVirBndryPos, verVirBndryPos, numHorVirBndry, numVerVirBndry
 #endif
                   );
     }
@@ -855,7 +855,7 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
 }
 
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-bool SampleAdaptiveOffset::isCrossedVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
+bool SampleAdaptiveOffset::isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
 {
   numHorVirBndry = 0; numVerVirBndry = 0;
   if (pps->getLoopFilterAcrossVirtualBoundariesDisabledFlag())

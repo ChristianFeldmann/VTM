@@ -48,7 +48,7 @@
 #endif
 
 template<X86_VEXT vext>
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION  
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
 static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift, int vbCTUHeight, int vbPos)
 #else

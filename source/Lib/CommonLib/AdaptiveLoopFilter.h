@@ -205,7 +205,7 @@ public:
 
 protected:
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-  bool isCrossedByVirtualBoundaries( const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorSplit, int& numVerSplit, int horSplit[], int verSplit[], const PPS* pps );
+  bool isCrossedByVirtualBoundaries( const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps );
 #endif
 #if JVET_N0415_CTB_ALF
   static const int             m_classToFilterMapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES];

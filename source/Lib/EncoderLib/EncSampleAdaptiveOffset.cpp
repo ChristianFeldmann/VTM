@@ -315,7 +315,7 @@ void EncSampleAdaptiveOffset::getStatistics(std::vector<SAOStatData**>& blkStats
       int numHorVirBndry = 0, numVerVirBndry = 0;
       int horVirBndryPos[] = { -1,-1,-1 };
       int verVirBndryPos[] = { -1,-1,-1 };
-      bool isCTUCrossVirtualBoundaries = isCrossedVirtualBoundaries(xPos, yPos, width, height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
+      bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(xPos, yPos, width, height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
 #endif
 
       for(int compIdx = 0; compIdx < numberOfComponents; compIdx++)
@@ -345,7 +345,7 @@ void EncSampleAdaptiveOffset::getStatistics(std::vector<SAOStatData**>& blkStats
                   , isLeftAvail,  isRightAvail, isAboveAvail, isBelowAvail, isAboveLeftAvail, isAboveRightAvail
                   , isCalculatePreDeblockSamples
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-                  , isCTUCrossVirtualBoundaries, horVirBndryPos, verVirBndryPos, numHorVirBndry, numVerVirBndry
+                  , isCtuCrossedByVirtualBoundaries, horVirBndryPos, verVirBndryPos, numHorVirBndry, numVerVirBndry
 #endif
                   );
       }
@@ -1157,7 +1157,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
                         , bool isLeftAvail,  bool isRightAvail, bool isAboveAvail, bool isBelowAvail, bool isAboveLeftAvail, bool isAboveRightAvail
                         , bool isCalculatePreDeblockSamples
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-                        , bool isCTUCrossVirtualBoundaries, int horVirBndryPos[], int verVirBndryPos[], int numHorVirBndry, int numVerVirBndry
+                        , bool isCtuCrossedByVirtualBoundaries, int horVirBndryPos[], int verVirBndryPos[], int numHorVirBndry, int numVerVirBndry
 #endif
                         )
 {
@@ -1197,7 +1197,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
           {
             signRight =  (int8_t)sgn(srcLine[x] - srcLine[x+1]);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-            if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, 0, verVirBndryPos, horVirBndryPos))
+            if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, 0, verVirBndryPos, horVirBndryPos))
             {
               signLeft = -signRight;
               continue;
@@ -1226,7 +1226,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
               {
                 signRight =  (int8_t)sgn(srcLine[x] - srcLine[x+1]);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-                if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, endY + y, numVerVirBndry, 0, verVirBndryPos, horVirBndryPos))
+                if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, endY + y, numVerVirBndry, 0, verVirBndryPos, horVirBndryPos))
                 {
                   signLeft = -signRight;
                   continue;
@@ -1280,7 +1280,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
           {
             signDown  = (int8_t)sgn(srcLine[x] - srcLineBelow[x]);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-            if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, y, 0, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+            if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, 0, numHorVirBndry, verVirBndryPos, horVirBndryPos))
             {
               signUpLine[x] = -signDown;
               continue;
@@ -1310,7 +1310,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
               for (x=startX; x<endX; x++)
               {
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-                if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, y + endY, 0, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+                if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y + endY, 0, numHorVirBndry, verVirBndryPos, horVirBndryPos))
                 {
                   continue;
                 }
@@ -1359,7 +1359,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
         for(x=firstLineStartX; x<firstLineEndX; x++)
         {
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-          if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+          if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
           {
             continue;
           }
@@ -1381,7 +1381,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
           {
             signDown = (int8_t)sgn(srcLine[x] - srcLineBelow[x+1]);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-            if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+            if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
             {
               signDownLine[x + 1] = -signDown;
               continue;
@@ -1417,7 +1417,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
               for (x=startX; x< endX; x++)
               {
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-                if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, y + endY, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+                if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y + endY, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
                 {
                   continue;
                 }
@@ -1466,7 +1466,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
         for(x=firstLineStartX; x<firstLineEndX; x++)
         {
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-          if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+          if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
           {
             continue;
           }
@@ -1488,7 +1488,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
           {
             signDown = (int8_t)sgn(srcLine[x] - srcLineBelow[x-1]);
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-            if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+            if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
             {
               signUpLine[x - 1] = -signDown;
               continue;
@@ -1520,7 +1520,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
               for (x=startX; x<endX; x++)
               {
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-                if (isCTUCrossVirtualBoundaries && isProcessDisabled(x, y + endY, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
+                if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y + endY, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
                 {
                   continue;
                 }

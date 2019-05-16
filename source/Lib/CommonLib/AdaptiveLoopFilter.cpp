@@ -73,10 +73,10 @@ AdaptiveLoopFilter::AdaptiveLoopFilter()
 }
 
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorSplit, int& numVerSplit, int horSplit[], int verSplit[], const PPS* pps)
+bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
 {
   clipTop = false; clipBottom = false; clipLeft = false; clipRight = false;
-  numHorSplit = 0; numVerSplit = 0;
+  numHorVirBndry = 0; numVerVirBndry = 0;
   if( pps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     for( int i = 0; i < pps->getNumHorVirtualBoundaries(); i++ )
@@ -91,7 +91,7 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int
       }
       else if( yPos < pps->getVirtualBoundariesPosY(i) && pps->getVirtualBoundariesPosY(i) < yPos + height )
       {
-        horSplit[numHorSplit++] = pps->getVirtualBoundariesPosY(i);
+        horVirBndryPos[numHorVirBndry++] = pps->getVirtualBoundariesPosY(i);
       }
     }
     for( int i = 0; i < pps->getNumVerVirtualBoundaries(); i++ )
@@ -106,11 +106,11 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int
       }
       else if( xPos < pps->getVirtualBoundariesPosX(i) && pps->getVirtualBoundariesPosX(i) < xPos + width )
       {
-        verSplit[numVerSplit++] = pps->getVirtualBoundariesPosX(i);
+        verVirBndryPos[numVerVirBndry++] = pps->getVirtualBoundariesPosX(i);
       }
     }
   }
-  return numHorSplit > 0 || numVerSplit > 0 || clipTop || clipBottom || clipLeft || clipRight;
+  return numHorVirBndry > 0 || numVerVirBndry > 0 || clipTop || clipBottom || clipLeft || clipRight;
 }
 #endif
 
@@ -322,9 +322,9 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
   int ctuIdx = 0;
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   bool clipTop = false, clipBottom = false, clipLeft = false, clipRight = false;
-  int numHorSplit = 0, numVerSplit = 0;
-  int horSplit[] = { 0, 0, 0 };
-  int verSplit[] = { 0, 0, 0 };
+  int numHorVirBndry = 0, numVerVirBndry = 0;
+  int horVirBndryPos[] = { 0, 0, 0 };
+  int verVirBndryPos[] = { 0, 0, 0 };
 #endif
   for( int yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight )
   {
@@ -338,23 +338,23 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
       {
         ctuEnableFlag |= m_ctuEnableFlag[compIdx][ctuIdx] > 0;
       }
-      if( ctuEnableFlag && isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorSplit, numVerSplit, horSplit, verSplit, cs.slice->getPPS() ) )
+      if( ctuEnableFlag && isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
       {
         int yStart = yPos;
-        for( int i = 0; i <= numHorSplit; i++ )
+        for( int i = 0; i <= numHorVirBndry; i++ )
         {
-          const int yEnd = i == numHorSplit ? yPos + height : horSplit[i];
+          const int yEnd = i == numHorVirBndry ? yPos + height : horVirBndryPos[i];
           const int h = yEnd - yStart;
           const bool clipT = ( i == 0 && clipTop ) || ( i > 0 ) || ( yStart == 0 );
-          const bool clipB = ( i == numHorSplit && clipBottom ) || ( i < numHorSplit ) || ( yEnd == pcv.lumaHeight );
+          const bool clipB = ( i == numHorVirBndry && clipBottom ) || ( i < numHorVirBndry ) || ( yEnd == pcv.lumaHeight );
 
           int xStart = xPos;
-          for( int j = 0; j <= numVerSplit; j++ )
+          for( int j = 0; j <= numVerVirBndry; j++ )
           {
-            const int xEnd = j == numVerSplit ? xPos + width : verSplit[j];
+            const int xEnd = j == numVerVirBndry ? xPos + width : verVirBndryPos[j];
             const int w = xEnd - xStart;
             const bool clipL = ( j == 0 && clipLeft ) || ( j > 0 ) || ( xStart == 0 );
-            const bool clipR = ( j == numVerSplit && clipRight ) || ( j < numVerSplit ) || ( xEnd == pcv.lumaWidth );
+            const bool clipR = ( j == numVerVirBndry && clipRight ) || ( j < numVerVirBndry ) || ( xEnd == pcv.lumaWidth );
 
             const int wBuf = w + (clipL ? 0 : MAX_ALF_PADDING_SIZE) + (clipR ? 0 : MAX_ALF_PADDING_SIZE);
             const int hBuf = h + (clipT ? 0 : MAX_ALF_PADDING_SIZE) + (clipB ? 0 : MAX_ALF_PADDING_SIZE);
@@ -1069,7 +1069,7 @@ void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const
     for( int j = blk.pos().x; j < width; j += m_CLASSIFICATION_BLK_SIZE )
     {
       int nWidth = std::min( j + m_CLASSIFICATION_BLK_SIZE, width ) - j;
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION   
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       m_deriveClassificationBlk(classifier, m_laplacian, srcLuma, Area( j - blk.pos().x + blkDst.pos().x, i - blk.pos().y + blkDst.pos().y, nWidth, nHeight ), Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4
         , m_alfVBLumaCTUHeight
@@ -1141,7 +1141,7 @@ void AdaptiveLoopFilter::resetPCMBlkClassInfo(CodingStructure & cs,  AlfClassifi
   }
 }
 
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION  
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
 void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift,  int vbCTUHeight, int vbPos)
 #else
@@ -1180,7 +1180,7 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
     const Pel *src1 = &src[yoffset];
     const Pel *src2 = &src[yoffset + stride];
     const Pel *src3 = &src[yoffset + stride * 2];
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION    
+#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
     if (((blkDst.pos().y - 2 + i) > 0) && ((blkDst.pos().y - 2 + i) % vbCTUHeight) == (vbPos - 2))
 #else

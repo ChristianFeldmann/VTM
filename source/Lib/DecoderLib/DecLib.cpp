@@ -1467,6 +1467,16 @@ void DecLib::xDecodeVPS( InputNALUnit& nalu )
 }
 #endif
 
+#if JVET_N0349_DPS
+void DecLib::xDecodeDPS( InputNALUnit& nalu )
+{
+  DPS* dps = new DPS();
+  m_HLSReader.setBitstream( &nalu.getBitstream() );
+  m_HLSReader.parseDPS( dps );
+  m_parameterSetManager.storeDPS( dps, nalu.getBitstream().getFifo() );
+}
+#endif
+
 void DecLib::xDecodeSPS( InputNALUnit& nalu )
 {
   SPS* sps = new SPS();
@@ -1510,6 +1520,12 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
 #if HEVC_VPS
     case NAL_UNIT_VPS:
       xDecodeVPS( nalu );
+      return false;
+#endif
+
+#if JVET_N0349_DPS
+    case NAL_UNIT_DPS:
+      xDecodeDPS( nalu );
       return false;
 #endif
 

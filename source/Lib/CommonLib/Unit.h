@@ -270,6 +270,9 @@ class SPS;
 #if HEVC_VPS
 class VPS;
 #endif
+#if JVET_N0349_DPS
+class DPS;
+#endif
 class PPS;
 class Slice;
 

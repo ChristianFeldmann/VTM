@@ -275,6 +275,9 @@ protected:
 #if HEVC_VPS
   int xWriteVPS (AccessUnit &accessUnit, const VPS *vps);
 #endif
+#if JVET_N0349_DPS
+  int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
+#endif
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps);
   int xWriteAPS(AccessUnit &accessUnit, APS *aps);

@@ -531,6 +531,10 @@ protected:
 #endif
   int       m_activeParameterSetsSEIEnabled;
 
+#if JVET_N0349_DPS
+  bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
+#endif
+
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc

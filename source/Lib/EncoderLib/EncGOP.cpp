@@ -210,6 +210,25 @@ int EncGOP::xWriteVPS (AccessUnit &accessUnit, const VPS *vps)
 }
 #endif
 
+#if JVET_N0349_DPS
+int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
+{
+  if (dps->getDecodingParameterSetId() !=0)
+  {
+    OutputNALUnit nalu(NAL_UNIT_DPS);
+    m_HLSWriter->setBitstream( &nalu.m_Bitstream );
+    m_HLSWriter->codeDPS( dps );
+    accessUnit.push_back(new NALUnitEBSP(nalu));
+    return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
+  }
+  else
+  {
+    return 0;
+  }
+}
+#endif
+
+
 int EncGOP::xWriteSPS (AccessUnit &accessUnit, const SPS *sps)
 {
   OutputNALUnit nalu(NAL_UNIT_SPS);
@@ -248,6 +267,13 @@ int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const boo
     actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
   }
 #endif
+#if JVET_N0349_DPS
+  if (bSeqFirst)
+  {
+    actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
+  }
+#endif
+
   if (m_pcEncLib->SPSNeedsWriting(slice->getSPS()->getSPSId())) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
   {
     CHECK(!(bSeqFirst), "Unspecified error"); // Implementations that use more than 1 SPS need to be aware of activation issues.
@@ -325,6 +351,9 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
     ( (*itNalu)->m_nalUnitType==NAL_UNIT_ACCESS_UNIT_DELIMITER
 #if HEVC_VPS
     || (*itNalu)->m_nalUnitType==NAL_UNIT_VPS
+#endif
+#if JVET_N0349_DPS
+    || (*itNalu)->m_nalUnitType==NAL_UNIT_DPS
 #endif
     || (*itNalu)->m_nalUnitType==NAL_UNIT_SPS
     || (*itNalu)->m_nalUnitType==NAL_UNIT_PPS
@@ -3370,9 +3399,17 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     {
       numRBSPBytes += numRBSPBytes_nal;
 #if HEVC_VPS
+#if JVET_N0349_DPS
+      if( it == accessUnit.begin() || ( *it )->m_nalUnitType == NAL_UNIT_VPS || ( *it )->m_nalUnitType == NAL_UNIT_DPS || ( *it )->m_nalUnitType == NAL_UNIT_SPS || ( *it )->m_nalUnitType == NAL_UNIT_PPS )
+#else
       if( it == accessUnit.begin() || ( *it )->m_nalUnitType == NAL_UNIT_VPS || ( *it )->m_nalUnitType == NAL_UNIT_SPS || ( *it )->m_nalUnitType == NAL_UNIT_PPS )
+#endif
+#else
+#if JVET_N0349_DPS
+      if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_DPS || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
 #else
       if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
+#endif
 #endif
       {
         numRBSPBytes += 4;

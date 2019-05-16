@@ -242,6 +242,12 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   xInitVPS(m_cVPS, sps0);
 #endif
 
+#if JVET_N0349_DPS
+  int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
+  xInitDPS(m_dps, sps0, dpsId);
+  sps0.setDecodingParameterSetId(m_dps.getDecodingParameterSetId());
+    
+#endif
 #if ENABLE_SPLIT_PARALLELISM
   if( omp_get_dynamic() )
   {
@@ -858,6 +864,18 @@ void EncLib::xInitVPS(VPS &vps, const SPS &sps)
   }
 }
 #endif
+
+#if JVET_N0349_DPS
+void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
+{
+  // The SPS must have already been set up.
+  // set the DPS profile information.
+  dps.setDecodingParameterSetId(dpsId);
+  dps.setMaxSubLayersMinus1(sps.getMaxTLayers()-1);
+  dps.setProfileTierLevel(*sps.getProfileTierLevel());
+}
+#endif
+
 
 void EncLib::xInitSPS(SPS &sps)
 {

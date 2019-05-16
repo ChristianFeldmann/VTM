@@ -47,7 +47,6 @@
 #endif
 #include "CommonLib/AdaptiveLoopFilter.h"
 
-
 #if ENABLE_TRACING
 
 void  VLCReader::xReadCodeTr(uint32_t length, uint32_t& rValue, const char *pSymbolName)
@@ -926,6 +925,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if ENABLE_TRACING
   xTraceSPSHeader ();
 #endif
+#if JVET_N0349_DPS
+  READ_CODE( 4,  uiCode, "sps_decoding_parameter_set_id");       pcSPS->setDecodingParameterSetId( uiCode );
+#endif
 #if HEVC_VPS
   READ_CODE( 4,  uiCode, "sps_video_parameter_set_id");          pcSPS->setVPSId        ( uiCode );
 #endif
@@ -1337,6 +1339,37 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
   xReadRbspTrailingBits();
 }
+
+#if JVET_N0349_DPS
+void HLSyntaxReader::parseDPS(DPS* dps)
+{
+#if ENABLE_TRACING
+  xTraceDPSHeader ();
+#endif
+  uint32_t  symbol;
+
+  READ_CODE( 4,  symbol,  "dps_decoding_parameter_set_id" ); 
+  CHECK(symbol == 0, "dps_decoding_parameter_set_id equal to zero is reserved and should not be use in a bitstream"); 
+  dps->setDecodingParameterSetId( symbol );
+
+  READ_CODE( 3,  symbol,  "dps_max_sub_layers_minus1" );          dps->setMaxSubLayersMinus1( symbol );
+  READ_FLAG( symbol,      "dps_reserved_zero_bit" );              CHECK(symbol != 0, "dps_reserved_zero_bit must be equal to zero");
+
+  ProfileTierLevel ptl;
+  parseProfileTierLevel(&ptl, dps->getMaxSubLayersMinus1());
+  dps->setProfileTierLevel(ptl);
+  
+  READ_FLAG( symbol,      "dps_extension_flag" );
+  if (symbol)
+  {
+    while ( xMoreRbspData() )
+    {
+      READ_FLAG( symbol, "dps_extension_data_flag");
+    }
+  }
+  xReadRbspTrailingBits();
+}
+#endif
 
 #if HEVC_VPS
 void HLSyntaxReader::parseVPS(VPS* pcVPS)

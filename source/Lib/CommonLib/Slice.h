@@ -633,6 +633,35 @@ struct ChromaQpAdj
   } u;
 };
 
+#if JVET_N0349_DPS
+
+class DPS
+{
+private:
+  int m_decodingParameterSetId;
+  int m_maxSubLayersMinus1;
+  ProfileTierLevel m_profileTierLevel;
+
+public:
+  DPS()
+    : m_decodingParameterSetId(-1)
+    , m_maxSubLayersMinus1 (0)
+  {};
+
+  virtual ~DPS() {};
+
+  int  getDecodingParameterSetId() const { return m_decodingParameterSetId; }
+  void setDecodingParameterSetId(int val) { m_decodingParameterSetId = val; }
+  int  getMaxSubLayersMinus1() const { return m_maxSubLayersMinus1; }
+  void setMaxSubLayersMinus1(int val) { m_maxSubLayersMinus1 = val; }
+
+  void setProfileTierLevel(const ProfileTierLevel &val)          { m_profileTierLevel = val; }
+  const ProfileTierLevel& getProfileTierLevel() const            { return m_profileTierLevel; }
+};
+
+#endif
+
+
 #if HEVC_VPS
 class VPS
 {
@@ -983,6 +1012,9 @@ class SPS
 {
 private:
   int               m_SPSId;
+#if JVET_N0349_DPS
+  int               m_decodingParameterSetId;
+#endif
 #if !JVET_M0101_HLS
   bool              m_bIntraOnlyConstraintFlag;
   uint32_t          m_maxBitDepthConstraintIdc;
@@ -1197,6 +1229,10 @@ public:
 #endif
   int                     getSPSId() const                                                                { return m_SPSId;                                                      }
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
+#if JVET_N0349_DPS
+  void                    setDecodingParameterSetId(int val)                                              { m_decodingParameterSetId = val; }
+  int                     getDecodingParameterSetId() const                                               { return m_decodingParameterSetId; }
+#endif
   ChromaFormat            getChromaFormatIdc () const                                                     { return m_chromaFormatIdc;                                            }
   void                    setChromaFormatIdc (ChromaFormat i)                                             { m_chromaFormatIdc = i;                                               }
 
@@ -1806,6 +1842,9 @@ private:
 #if HEVC_VPS
   const VPS*                 m_pcVPS;
 #endif
+#if JVET_N0349_DPS
+  const DPS*                 m_dps;
+#endif
   const SPS*                 m_pcSPS;
   const PPS*                 m_pcPPS;
   Picture*                   m_pcPic;
@@ -1907,6 +1946,11 @@ public:
   void                        setVPS( VPS* pcVPS )                                   { m_pcVPS = pcVPS;                                              }
   const VPS*                  getVPS() const                                         { return m_pcVPS;                                               }
 #endif
+#if JVET_N0349_DPS
+  void                        setDPS( DPS* dps )                                     { m_dps = dps;                                              }
+  const DPS*                  getDPS() const                                         { return m_dps;                                               }
+#endif
+
   void                        setSPS( const SPS* pcSPS )                             { m_pcSPS = pcSPS;                                              }
   const SPS*                  getSPS() const                                         { return m_pcSPS;                                               }
 
@@ -2406,6 +2450,14 @@ public:
   VPS*           getFirstVPS()                                               { return m_vpsMap.getFirstPS(); };
 #endif
 
+#if JVET_N0349_DPS
+  void           storeDPS(DPS *dps, const std::vector<uint8_t> &naluData)    { m_dpsMap.storePS( dps->getDecodingParameterSetId(), dps, &naluData); };
+  //! get pointer to existing video parameter set
+  DPS*           getDPS(int dpsId)                                           { return m_dpsMap.getPS(dpsId); };
+  bool           getDPSChangedFlag(int dpsId) const                          { return m_dpsMap.getChangedFlag(dpsId); }
+  void           clearDPSChangedFlag(int dpsId)                              { m_dpsMap.clearChangedFlag(dpsId); }
+  DPS*           getFirstDPS()                                               { return m_dpsMap.getFirstPS(); };
+#endif
   //! store sequence parameter set and take ownership of it
   void           storeSPS(SPS *sps, const std::vector<uint8_t> &naluData) { m_spsMap.storePS( sps->getSPSId(), sps, &naluData); };
   //! get pointer to existing sequence parameter set
@@ -2447,6 +2499,9 @@ public:
   const VPS*     getActiveVPS()const                                         { return m_vpsMap.getPS(m_activeVPSId); };
 #endif
   const SPS*     getActiveSPS()const                                         { return m_spsMap.getPS(m_activeSPSId); };
+#if JVET_N0349_DPS
+  const DPS*     getActiveDPS()const                                         { return m_dpsMap.getPS(m_activeDPSId); };
+#endif
 
 protected:
 #if HEVC_VPS
@@ -2455,6 +2510,9 @@ protected:
   ParameterSetMap<SPS> m_spsMap;
   ParameterSetMap<PPS> m_ppsMap;
   ParameterSetMap<APS> m_apsMap;
+#if JVET_N0349_DPS
+  ParameterSetMap<DPS> m_dpsMap;
+#endif
 
 #if JVET_N0415_CTB_ALF
   APS* m_apss[MAX_NUM_APS];
@@ -2462,6 +2520,9 @@ protected:
 
 #if HEVC_VPS
   int m_activeVPSId; // -1 for nothing active
+#endif
+#if JVET_N0349_DPS
+  int m_activeDPSId; // -1 for nothing active
 #endif
   int m_activeSPSId; // -1 for nothing active
 };
@@ -2550,6 +2611,9 @@ public:
 #if ENABLE_TRACING
 #if HEVC_VPS
 void xTraceVPSHeader();
+#endif
+#if JVET_N0349_DPS
+void xTraceDPSHeader();
 #endif
 void xTraceSPSHeader();
 void xTracePPSHeader();

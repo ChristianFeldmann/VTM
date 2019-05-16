@@ -79,6 +79,8 @@
 
 #define JVET_N0067_NAL_Unit_Header                        1 // NAL Unit Header 
 
+#define JVET_N0349_DPS                                    1 // Decoding Parameter Set
+
 #define JVET_N0068_AFFINE_MEM_BW                          1 // memory bandwidth reduction for affine mode
 
 #define JVET_N0308_MAX_CU_SIZE_FOR_ISP                    1

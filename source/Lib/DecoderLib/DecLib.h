@@ -171,6 +171,9 @@ protected:
 #if HEVC_VPS
   void      xDecodeVPS( InputNALUnit& nalu );
 #endif
+#if JVET_N0349_DPS
+  void      xDecodeDPS( InputNALUnit& nalu );
+#endif
   void      xDecodeSPS( InputNALUnit& nalu );
   void      xDecodePPS( InputNALUnit& nalu );
   void      xDecodeAPS(InputNALUnit& nalu);

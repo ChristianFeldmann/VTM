@@ -1391,7 +1391,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
   SEIMessages duInfoSeiMessages;
   SEIMessages trailingSeiMessages;
   std::deque<DUData> duData;
-  SEIDecodingUnitInfo decodingUnitInfoSEI;
 
   EfficientFieldIRAPMapping effFieldIRAPMap;
   if (m_pcCfg->getEfficientFieldIRAPEnabled())

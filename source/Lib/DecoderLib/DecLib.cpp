@@ -201,6 +201,9 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
                 if( pic->cs->sps->getALFEnabledFlag() )
                 {
+#if JVET_N0415_CTB_ALF
+                  std::copy(pic->getAlfCtbFilterIndexVec().begin(), pic->getAlfCtbFilterIndexVec().end(), pcEncPic->getAlfCtbFilterIndexVec().begin());
+#endif
                   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
                   {
                     std::copy( pic->getAlfCtuEnableFlag()[compIdx].begin(), pic->getAlfCtuEnableFlag()[compIdx].end(), pcEncPic->getAlfCtuEnableFlag()[compIdx].begin() );

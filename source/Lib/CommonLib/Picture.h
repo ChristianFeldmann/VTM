@@ -331,6 +331,7 @@ public:
 #if JVET_N0415_CTB_ALF
   std::vector<short> m_alfCtbFilterIndex;
   short* getAlfCtbFilterIndex() { return m_alfCtbFilterIndex.data(); }
+  std::vector<short>& getAlfCtbFilterIndexVec() { return m_alfCtbFilterIndex; }
   void resizeAlfCtbFilterIndex(int numEntries)
   {
     m_alfCtbFilterIndex.resize(numEntries);

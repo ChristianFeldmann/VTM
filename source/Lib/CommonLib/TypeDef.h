@@ -79,6 +79,8 @@
 
 #define JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND  1 // loop filter disabled across virtual boundaries
 
+#define JVET_N0067_NAL_Unit_Header                        1 // NAL Unit Header 
+
 #define JVET_N0068_AFFINE_MEM_BW                          1 // memory bandwidth reduction for affine mode
 
 #define JVET_N0308_MAX_CU_SIZE_FOR_ISP                    1
@@ -86,6 +88,9 @@
 #define JVET_N0280_RESIDUAL_CODING_TS                     1
 
 #define JVET_N0103_CGSIZE_HARMONIZATION                   1 // Chroma CG sizes aligned to luma CG sizes
+
+
+
 
 #define JVET_N0146_DMVR_BDOF_CONDITION                    1 // JVET-N146/N0162/N0442/N0153/N0262/N0440/N0086 applicable condition of DMVR and BDOF
 
@@ -931,6 +936,41 @@ enum PPSExtensionFlagIndex
 //       effort can be done without use of macros to alter the names used to indicate the different NAL unit types.
 enum NalUnitType
 {
+ #if JVET_N0067_NAL_Unit_Header
+  NAL_UNIT_PPS = 0,                     // 0 
+  NAL_UNIT_ACCESS_UNIT_DELIMITER,       // 1
+  NAL_UNIT_PREFIX_SEI,                  // 2
+  NAL_UNIT_SUFFIX_SEI,                  // 3
+  NAL_UNIT_APS,                         // 4
+  NAL_UNIT_RESERVED_NVCL_5,             // 5
+  NAL_UNIT_RESERVED_NVCL_6,             // 6
+  NAL_UNIT_RESERVED_NVCL_7,             // 7
+  NAL_UNIT_CODED_SLICE_TRAIL,           // 8
+  NAL_UNIT_CODED_SLICE_STSA,            // 9
+  NAL_UNIT_CODED_SLICE_RADL,            // 10
+  NAL_UNIT_CODED_SLICE_RASL,            // 11
+  NAL_UNIT_RESERVED_VCL_12,             // 12
+  NAL_UNIT_RESERVED_VCL_13,             // 13
+  NAL_UNIT_RESERVED_VCL_14,             // 14
+  NAL_UNIT_RESERVED_VCL_15,             // 15
+  NAL_UNIT_DPS,                         // 16
+  NAL_UNIT_SPS,                         // 17
+  NAL_UNIT_EOS,                         // 18
+  NAL_UNIT_EOB,                         // 19
+  NAL_UNIT_VPS,                         // 20
+  NAL_UNIT_RESERVED_NVCL_21,            // 21
+  NAL_UNIT_RESERVED_NVCL_22,            // 22
+  NAL_UNIT_RESERVED_NVCL_23,            // 23
+  NAL_UNIT_CODED_SLICE_IDR_W_RADL,      // 24
+  NAL_UNIT_CODED_SLICE_IDR_N_LP,        // 25
+  NAL_UNIT_CODED_SLICE_CRA,             // 26
+  NAL_UNIT_CODED_SLICE_GRA,             // 27
+  NAL_UNIT_UNSPECIFIED_28,              // 29              
+  NAL_UNIT_UNSPECIFIED_29,              // 30
+  NAL_UNIT_UNSPECIFIED_30,              // 31
+  NAL_UNIT_UNSPECIFIED_31,              // 32
+  NAL_UNIT_INVALID
+#else
 #if JVET_M0101_HLS
   NAL_UNIT_CODED_SLICE_TRAIL = 0, // 0
   NAL_UNIT_CODED_SLICE_STSA,      // 1
@@ -1059,6 +1099,7 @@ enum NalUnitType
   NAL_UNIT_UNSPECIFIED_62,
   NAL_UNIT_UNSPECIFIED_63,
   NAL_UNIT_INVALID,
+#endif
 #endif
 };
 

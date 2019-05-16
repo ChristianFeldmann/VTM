@@ -867,6 +867,20 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   }
 
   m_cabacInitFlag                 = pSrc->m_cabacInitFlag;
+#if JVET_N0415_CTB_ALF
+  memcpy(m_apss, pSrc->m_apss, sizeof(m_apss)); // this might be quite unsafe
+  memcpy( m_tileGroupAlfEnabledFlag, pSrc->m_tileGroupAlfEnabledFlag, sizeof(m_tileGroupAlfEnabledFlag));
+  m_tileGroupNumAps               = pSrc->m_tileGroupNumAps;
+  m_tileGroupLumaApsId            = pSrc->m_tileGroupLumaApsId;
+  m_tileGroupChromaApsId          = pSrc->m_tileGroupChromaApsId;
+#else
+  m_apsId;
+  m_aps;
+  m_tileGroupAlfEnabledFlag;
+#endif
+#if JVET_N0329_IBC_SEARCH_IMP 
+  m_disableSATDForRd              = pSrc->m_disableSATDForRd;
+#endif
 
   m_bLMvdL1Zero                   = pSrc->m_bLMvdL1Zero;
   m_LFCrossSliceBoundaryFlag      = pSrc->m_LFCrossSliceBoundaryFlag;

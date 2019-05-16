@@ -2575,7 +2575,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         {
           ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
           APS* aps = apsMap->getPS(apsId);
-          if (aps && apsMap->getChangedFlag(apsId))
+          bool writeAPS = aps && apsMap->getChangedFlag(apsId);
+          if( !aps && pcSlice->getAPSs() && pcSlice->getAPSs()[apsId] )
+          {
+            writeAPS = true;
+            aps = pcSlice->getAPSs()[apsId]; // use asp from slice header
+            *apsMap->allocatePS( apsId ) = *aps; //allocate and cpy
+          }
+          if (writeAPS )
           {
             actualTotalBits += xWriteAPS(accessUnit, aps);
             apsMap->clearChangedFlag(apsId);

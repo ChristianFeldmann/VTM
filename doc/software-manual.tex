@@ -1711,9 +1711,9 @@ list corresponds to the leftmost tile column or topmost tile row.
 
 
 %%
-%% Deblocking filter parameters
+%% In-loop filtering parameters
 %%
-\begin{OptionTableNoShorthand}{Deblocking filter parameters}{tab:deblocking-filter}
+\begin{OptionTableNoShorthand}{In-loop filtering parameters}{tab:inloop-filter}
 \Option{LoopFilterDisable} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -1765,6 +1765,36 @@ LoopFilterOffsetInPPS and LoopFilterDisable must be 0. Currently excepted values
 %\ShortOption{\None}&
 \Default{true}&
 Enables or disables the use of a deblocking across tile boundaries.
+\\
+
+\Option{LoopFilterAcrossVirtualBoundariesDisabledFlag}&
+%\ShortOption{\None}&
+\Default{false}&
+Disables in-loop filtering operations across the virtual boundaries.
+\\
+
+\Option{NumVerVirtualBoundaries}&
+%\ShortOption{\None}&
+\Default{0}&
+Specifies the number of vertical virtual boundaries.The value of NumVerVirtualBoundaries shall be in the range of 0 to 3, inclusive.
+\\
+
+\Option{NumHorVirtualBoundaries}&
+%\ShortOption{\None}&
+\Default{0}&
+Specifies the number of horizontal virtual boundaries. The value of NumHorVirtualBoundaries shall be in the range of 0 to 3, inclusive.
+\\
+
+\Option{VirtualBoundariesPosX}&
+%\ShortOption{\None}&
+\Default{\NotSet}&
+Specifies the locations of the vertical virtual boundaries in units of luma samples
+\\
+
+\Option{VirtualBoundariesPosY}&
+%\ShortOption{\None}&
+\Default{\NotSet}&
+Specifies the locations of the horizontal virtual boundaries in units of luma samples
 \\
 
 \end{OptionTableNoShorthand}

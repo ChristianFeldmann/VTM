@@ -58,7 +58,11 @@ OutputBitstream bsNALUHeader;
   bsNALUHeader.write(nalu.m_temporalId+1, 3);           // nuh_temporal_id_plus1
   uint32_t nalUnitTypeLsb = (nalu.m_nalUnitType) - (zeroTidRequiredFlag << 4);
   bsNALUHeader.write(nalUnitTypeLsb, 4);                // nal_unit_type_lsb
+#if EMULATION_PREVENTION_FIX
+  bsNALUHeader.write(nalu.m_nuhLayerId + 1, 7);             // nuh_layer_id
+#else
   bsNALUHeader.write(nalu.m_nuhLayerId, 7);             // nuh_layer_id
+#endif
   bsNALUHeader.write(0, 1);                             // nuh_reserved_zero_bit
 
 #else

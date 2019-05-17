@@ -391,24 +391,18 @@ static const int BDPCM_MAX_CU_SIZE = 32;      ///<  maximum CU size for RDPCM mo
 //for I slice luma CTB configuration para.
 static const int    MAX_BT_DEPTH  =                                 4;      ///<  <=7
 static const int    MAX_BT_SIZE   =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
-static const int    MIN_BT_SIZE   =                                 4;      ///<  can be set down to 1<<MIN_CU_LOG2
 
 static const int    MAX_TT_SIZE   =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
 static const int    MAX_TT_SIZE_C =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
-static const int    MIN_TT_SIZE   =                                 4;      ///<  can be set down to 1<<MIN_CU_LOG2
-static const int    MIN_TT_SIZE_C =                                 4;      ///<  can be set down to 1<<MIN_CU_LOG2
                                                                             //for P/B slice CTU config. para.
 static const int    MAX_BT_DEPTH_INTER =                            4;      ///< <=7
 static const int    MAX_BT_SIZE_INTER  =                          128;      ///< for initialization, [1<<MIN_BT_SIZE_INTER, 1<<CTU_LOG2]
-static const int    MIN_BT_SIZE_INTER  =                            4;      ///<
 
                                                                             //for I slice chroma CTB configuration para. (in luma samples)
 static const int    MAX_BT_DEPTH_C      =                           0;      ///< <=7
 static const int    MAX_BT_SIZE_C       =                          64;      ///< [1<<MIN_QT_SIZE_C, 1<<CTU_LOG2], in luma samples
-static const int    MIN_BT_SIZE_C       =                           4;      ///< can be set down to 4, in luma samples
 
 static const int    MAX_TT_SIZE_INTER  =                           64;      ///< for initialization, [1<<MIN_CU_LOG2, 64]
-static const int    MIN_TT_SIZE_INTER  =                            4;      ///<
 #if JVET_N0137_DUALTREE_CHROMA_SIZE
 static const int    MIN_DUALTREE_CHROMA_WIDTH  =                    4;
 static const int    MIN_DUALTREE_CHROMA_SIZE   =                   16;

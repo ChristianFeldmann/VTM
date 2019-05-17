@@ -154,7 +154,11 @@ public:
   void  parseDPS            ( DPS* dps );
 #endif
   void  parseSPS            ( SPS* pcSPS );
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  void  parsePPS            ( PPS* pcPPS, ParameterSetManager *parameterSetManager );
+#else
   void  parsePPS            ( PPS* pcPPS );
+#endif
   void  parseAPS            ( APS* pcAPS);
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
 #if !JVET_M0101_HLS

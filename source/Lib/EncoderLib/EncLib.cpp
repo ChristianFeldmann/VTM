@@ -1557,6 +1557,20 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 
   xInitPPSforTiles(pps);
 
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  pps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
+  pps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
+  pps.setNumHorVirtualBoundaries            ( m_numHorVirtualBoundaries );
+  for( unsigned int i = 0; i < m_numVerVirtualBoundaries; i++ )
+  {
+    pps.setVirtualBoundariesPosX            ( m_virtualBoundariesPosX[i], i );
+  }
+  for( unsigned int i = 0; i < m_numHorVirtualBoundaries; i++ )
+  {
+    pps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
+  }
+#endif
+
   pps.pcv = new PreCalcValues( sps, pps, true );
 }
 

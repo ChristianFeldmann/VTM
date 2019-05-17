@@ -77,6 +77,8 @@
 
 #define JVET_N0168_AMVR_ME_MODIFICATION                   1 // Correct the cost and bits calculation in encoder side
 
+#define JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND  1 // loop filter disabled across virtual boundaries
+
 #define JVET_N0067_NAL_Unit_Header                        1 // NAL Unit Header 
 
 #define JVET_N0349_DPS                                    1 // Decoding Parameter Set
@@ -1627,6 +1629,9 @@ struct XUCache
 #define MAX_NUM_ALF_CHROMA_COEFF        7
 #define MAX_ALF_FILTER_LENGTH           7
 #define MAX_NUM_ALF_COEFF               (MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1)
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+#define MAX_ALF_PADDING_SIZE            4
+#endif
 
 enum AlfFilterType
 {

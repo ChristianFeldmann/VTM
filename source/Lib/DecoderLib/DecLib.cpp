@@ -1494,7 +1494,11 @@ void DecLib::xDecodePPS( InputNALUnit& nalu )
 {
   PPS* pps = new PPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  m_HLSReader.parsePPS( pps, &m_parameterSetManager );
+#else
   m_HLSReader.parsePPS( pps );
+#endif
   m_parameterSetManager.storePPS( pps, nalu.getBitstream().getFifo() );
 }
 

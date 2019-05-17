@@ -49,9 +49,17 @@
 
 template<X86_VEXT vext>
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift, int vbCTUHeight, int vbPos)
+#else
 static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift, int vbCTUHeight, int vbPos)
+#endif
+#else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift)
 #else
 static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift)
+#endif
 #endif
 {
   const int img_stride = srcLuma.stride;
@@ -82,11 +90,19 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
 
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
     // pixel padding for gradient calculation
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+    if (((blkDst.pos().y - 2 + i) > 0) && ((blkDst.pos().y - 2 + i) % vbCTUHeight) == (vbPos - 2))
+#else
     if (((posY - 2 + i) > 0) && ((posY - 2 + i) % vbCTUHeight) == (vbPos - 2))
+#endif
     {
       p_imgY_pad_up2 = &srcExt[yoffset + img_stride];
     }
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+    else if (((blkDst.pos().y - 2 + i) > 0) && ((blkDst.pos().y - 2 + i) % vbCTUHeight) == vbPos)
+#else
     else if (((posY - 2 + i) > 0) && ((posY - 2 + i) % vbCTUHeight) == vbPos)
+#endif
     {
       p_imgY_pad_down = &srcExt[yoffset];
     }
@@ -203,14 +219,22 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
     {
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
       __m128i  xmm0, xmm1, xmm2, xmm3;
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+      if ((((i << 1) + blkDst.pos().y) % vbCTUHeight) == (vbPos - 4))
+#else
       if ((((i << 1) + posY) % vbCTUHeight) == (vbPos - 4))
+#endif
       {
         xmm0 = _mm_loadu_si128((__m128i*)(&(_temp[i + 0][j])));
         xmm1 = _mm_loadu_si128((__m128i*)(&(_temp[i + 1][j])));
         xmm2 = _mm_loadu_si128((__m128i*)(&(_temp[i + 2][j])));
         xmm3 = mm_0;
       }
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+      else if ((((i << 1) + blkDst.pos().y) % vbCTUHeight) == vbPos)
+#else
       else if ((((i << 1) + posY) % vbCTUHeight) == vbPos)
+#endif
       {
         xmm0 = mm_0;
         xmm1 = _mm_loadu_si128((__m128i*)(&(_temp[i + 1][j])));
@@ -247,7 +271,11 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
       __m128i xmm10 = _mm_shuffle_epi32( xmm12, 0xB1 );
       xmm12 = _mm_add_epi32( xmm10, xmm12 );
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+      if (((((i << 1) + blkDst.pos().y) % vbCTUHeight) == (vbPos - 4)) || ((((i << 1) + blkDst.pos().y) % vbCTUHeight) == vbPos))
+#else
       if (((((i << 1) + posY) % vbCTUHeight) == (vbPos - 4)) || ((((i << 1) + posY) % vbCTUHeight) == vbPos))
+#endif
       {
         xmm12 = _mm_srai_epi32(_mm_add_epi32(_mm_slli_epi32(xmm12, 5), _mm_slli_epi32(xmm12, 6)), shift);
       }
@@ -350,8 +378,13 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
       int classIdx0 = c0;
       int classIdx1 = c1;
 
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+      const int yOffset = (i << 1) + blkDst.pos().y;
+      const int xOffset = j + blkDst.pos().x;
+#else
       const int yOffset = ( i << 1 ) + posY;
       const int xOffset = j + posX;
+#endif
 
       AlfClassifier *cl0 = classifier[yOffset] + xOffset;
       AlfClassifier *cl1 = classifier[yOffset + 1] + xOffset;
@@ -372,15 +405,31 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
 template<X86_VEXT vext>
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
+#else
 static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
+#endif
+#else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
 #else
 static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
 #endif
+#endif
 #else
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs)
+#else
 static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs)
+#endif
+#else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs)
 #else
 static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs)
+#endif
 #endif
 #endif
 {
@@ -423,7 +472,11 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
 
 #if JVET_N0242_NON_LINEAR_ALF
   const Pel* src = srcLuma.buf;
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  Pel* dst = dstLuma.buf + blkDst.y * dstStride;
+#else
   Pel* dst = dstLuma.buf + startHeight * dstStride;
+#endif
 
   const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4;
   const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4;
@@ -434,7 +487,11 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
   int transposeIdx[2] = {0, 0};
 #else
   Pel* imgYRecPost = dst;
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  imgYRecPost += blkDst.y * dstStride;
+#else
   imgYRecPost += startHeight * dstStride;
+#endif
 
   int transposeIdx = 0;
 
@@ -497,10 +554,18 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
 #endif
 
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  Pel* pRec0 = dst + blkDst.x;
+#else
   Pel* pRec0 = dst + startWidth;
+#endif
   Pel* pRec1;
 #else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  pRec = imgYRecPost + blkDst.x;
+#else
   pRec = imgYRecPost + startWidth;
+#endif
 #endif
 
 #if JVET_N0242_NON_LINEAR_ALF
@@ -510,12 +575,20 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
 #endif
   {
 #if !JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+    pRec = imgYRecPost + blkDst.x + i * dstStride;
+#else
     pRec = imgYRecPost + startWidth + i * dstStride;
+#endif
 
 #endif
     if( !bChroma )
     {
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+      pClass = classifier[blkDst.y + i] + blkDst.x;
+#else
       pClass = classifier[startHeight + i] + startWidth;
+#endif
     }
 
 #if JVET_N0242_NON_LINEAR_ALF
@@ -600,7 +673,11 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
         {
           for( blkX=0; blkX<4; blkX+=2 )
           {
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+            Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
+#else
             Position pos(j+startWidth+blkX, i+startHeight+blkY);
+#endif
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
             *flags++ = cu->ipcm ? 1 : 0;
 
@@ -667,7 +744,11 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
         {
           for( blkX=0; blkX<8; blkX+=2 )
           {
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+            Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
+#else
             Position pos(j+startWidth+blkX, i+startHeight+blkY);
+#endif
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
             *flags++ = cu->ipcm ? 1 : 0;
 
@@ -695,6 +776,24 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
         pImg4 = pImgYPad4 + j + ii * srcStride;
 #endif
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+        if ((blkDst.y + i + ii) % vbCTUHeight < vbPos && ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
+        {
+          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
+          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
+
+          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
+          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
+        }
+        else if ((blkDst.y + i + ii) % vbCTUHeight >= vbPos && ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
+        {
+          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
+          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
+
+          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
+          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
+        }
+#else
         if ((startHeight + i + ii) % vbCTUHeight < vbPos && ((startHeight + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
         {
           pImg1 = ((startHeight + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
@@ -711,6 +810,7 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
           pImg1 = ((startHeight + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
           pImg3 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
         }
+#endif
 #endif
         __m128i clipp, clipm;
         __m128i coeffa, coeffb;
@@ -894,6 +994,26 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
         pImg4 = pImgYPad4 + j + k * srcStride;
 #endif
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+        if ((blkDst.y + i + k) % vbCTUHeight < vbPos && ((blkDst.y + i + k) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
+        {
+          pImg1 = ((blkDst.y + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
+          pImg3 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
+          pImg5 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
+
+          pImg2 = ((blkDst.y + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
+          pImg4 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
+        }
+        else if ((blkDst.y + i + k) % vbCTUHeight >= vbPos && ((blkDst.y + i + k) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
+        {
+          pImg2 = ((blkDst.y + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
+          pImg4 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
+
+          pImg1 = ((blkDst.y + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
+          pImg3 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
+          pImg5 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
+        }
+#else
         if ((startHeight + i + k) % vbCTUHeight < vbPos && ((startHeight + i + k) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
         {
           pImg1 = ((startHeight + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
@@ -912,6 +1032,7 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
           pImg3 = ((startHeight + i + k) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
           pImg5 = ((startHeight + i + k) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
         }
+#endif
 #endif
         __m128i xmm4 = _mm_lddqu_si128( ( __m128i* ) ( pImg4 ) );
         __m128i xmm2 = _mm_lddqu_si128( ( __m128i* ) ( pImg2 - 1 ) );
@@ -1079,15 +1200,31 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
 template<X86_VEXT vext>
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs,  int vbCTUHeight, int vbPos)
+#else
 static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs,  int vbCTUHeight, int vbPos)
+#endif
+#else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs,  int vbCTUHeight, int vbPos)
 #else
 static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs,  int vbCTUHeight, int vbPos)
 #endif
+#endif
 #else
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs )
+#else
 static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs )
+#endif
+#else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs )
 #else
 static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs )
+#endif
 #endif
 #endif
 {
@@ -1139,7 +1276,11 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 
 #if JVET_N0242_NON_LINEAR_ALF
   const Pel* src = srcLuma.buf;
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  Pel* dst = dstLuma.buf + blkDst.y * dstStride;
+#else
   Pel* dst = dstLuma.buf + startHeight * dstStride;
+#endif
 
   const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4, *pImgYPad5, *pImgYPad6;
   const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
@@ -1150,7 +1291,11 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   int transposeIdx[2] = {0, 0};
 #else
   Pel* imgYRecPost = dst;
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  imgYRecPost += blkDst.y * dstStride;
+#else
   imgYRecPost += startHeight * dstStride;
+#endif
 
   int transposeIdx = 0;
 
@@ -1209,10 +1354,18 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   pImgYPad6 = pImgYPad4 - srcStride;
 
 #if JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  Pel* pRec0 = dst + blkDst.x;
+#else
   Pel* pRec0 = dst + startWidth;
+#endif
   Pel* pRec1;
 #else
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  pRec = imgYRecPost + blkDst.x;
+#else
   pRec = imgYRecPost + startWidth;
+#endif
 #endif
 
 #if JVET_N0242_NON_LINEAR_ALF
@@ -1222,12 +1375,20 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 #endif
   {
 #if !JVET_N0242_NON_LINEAR_ALF
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+    pRec = imgYRecPost + blkDst.x + i * dstStride;
+#else
     pRec = imgYRecPost + startWidth + i * dstStride;
+#endif
 
 #endif
     if( !bChroma )
     {
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+      pClass = classifier[blkDst.y + i] + blkDst.x;
+#else
       pClass = classifier[startHeight + i] + startWidth;
+#endif
     }
 
 #if JVET_N0242_NON_LINEAR_ALF
@@ -1312,7 +1473,11 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         {
           for( blkX=0; blkX<4; blkX+=2 )
           {
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+            Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
+#else
             Position pos(j+startWidth+blkX, i+startHeight+blkY);
+#endif
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
             *flags++ = cu->ipcm ? 1 : 0;
 
@@ -1395,7 +1560,11 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         {
           for( blkX=0; blkX<8; blkX+=2 )
           {
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+            Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
+#else
             Position pos(j+startWidth+blkX, i+startHeight+blkY);
+#endif
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
             *flags++ = cu->ipcm ? 1 : 0;
 
@@ -1423,6 +1592,28 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         pImg4 = pImgYPad4 + j + ii * srcStride;
         pImg5 = pImgYPad5 + j + ii * srcStride;
         pImg6 = pImgYPad6 + j + ii * srcStride;
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+        if ((blkDst.y + i + ii) % vbCTUHeight < vbPos && ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
+        {
+          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
+          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
+          pImg5 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
+
+          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
+          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
+          pImg6 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg4 : pImg6;
+        }
+        else if ((blkDst.y + i + ii) % vbCTUHeight >= vbPos && ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
+        {
+          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
+          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
+          pImg6 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg4 : pImg6;
+
+          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
+          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
+          pImg5 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
+        }
+#else
         if ((startHeight + i + ii) % vbCTUHeight < vbPos && ((startHeight + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
         {
           pImg1 = ((startHeight + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
@@ -1443,6 +1634,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
           pImg3 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
           pImg5 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
         }
+#endif
 #endif
         __m128i clipp, clipm;
         __m128i coeffa, coeffb;
@@ -1770,6 +1962,28 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         pImg4 = pImgYPad4 + j + k * srcStride;
         pImg5 = pImgYPad5 + j + k * srcStride;
         pImg6 = pImgYPad6 + j + k * srcStride;
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+        if ((blkDst.y + i + k) % vbCTUHeight < vbPos && ((blkDst.y + i + k) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
+        {
+          pImg1 = ((blkDst.y + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
+          pImg3 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
+          pImg5 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
+
+          pImg2 = ((blkDst.y + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
+          pImg4 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
+          pImg6 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 3) ? pImg4 : pImg6;
+        }
+        else if ((blkDst.y + i + k) % vbCTUHeight >= vbPos && ((blkDst.y + i + k) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
+        {
+          pImg2 = ((blkDst.y + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
+          pImg4 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
+          pImg6 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 2) ? pImg4 : pImg6;
+
+          pImg1 = ((blkDst.y + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
+          pImg3 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
+          pImg5 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
+        }
+#else
         if ((startHeight + i + k) % vbCTUHeight < vbPos && ((startHeight + i + k) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
         {
           pImg1 = ((startHeight + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
@@ -1790,6 +2004,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
           pImg3 = ((startHeight + i + k) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
           pImg5 = ((startHeight + i + k) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
         }
+#endif
 #endif
         __m128i xmm6 = _mm_lddqu_si128( ( __m128i* ) pImg6 );
         __m128i xmm4 = _mm_lddqu_si128( ( __m128i* ) ( pImg4 - 1 ) );

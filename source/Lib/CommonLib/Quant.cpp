@@ -149,6 +149,10 @@ void invResDPCM( const TransformUnit &tu, const ComponentID &compID, CoeffBuf &d
   const int      hgt = rect.height;
   const CCoeffBuf coeffs = tu.getCoeffs(compID);
 
+  const int      maxLog2TrDynamicRange = tu.cs->sps->getMaxLog2TrDynamicRange(toChannelType(compID));
+  const TCoeff   inputMinimum   = -(1 << maxLog2TrDynamicRange);
+  const TCoeff   inputMaximum   =  (1 << maxLog2TrDynamicRange) - 1;
+
   const TCoeff* coef = &coeffs.buf[0];
   TCoeff* dst = &dstBuf.buf[0];
 
@@ -159,7 +163,7 @@ void invResDPCM( const TransformUnit &tu, const ComponentID &compID, CoeffBuf &d
       dst[0] = coef[0];
       for( int x = 1; x < wdt; x++ )
       {
-        dst[x] = dst[x - 1] + coef[x];
+        dst[x] = Clip3(inputMinimum, inputMaximum, dst[x - 1] + coef[x]);
       }
       coef += coeffs.stride;
       dst += dstBuf.stride;
@@ -175,7 +179,7 @@ void invResDPCM( const TransformUnit &tu, const ComponentID &compID, CoeffBuf &d
     {
       for( int x = 0; x < wdt; x++ )
       {
-        dst[dstBuf.stride + x] = dst[x] + coef[coeffs.stride + x];
+        dst[dstBuf.stride + x] = Clip3(inputMinimum, inputMaximum, dst[x] + coef[coeffs.stride + x]);
       }
       coef += coeffs.stride;
       dst += dstBuf.stride;

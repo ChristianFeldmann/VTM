@@ -10,12 +10,12 @@ file( GLOB INC_FILES "*.h" )
 # add executable
 add_executable( ${EXE_NAME} ${SRC_FILES} ${INC_FILES} )
 
-target_link_libraries( ${EXE_NAME} Threads::Threads ${ADDITIONAL_LIBS} )
+target_link_libraries( ${EXE_NAME} CommonLib DecoderLib Utilities Threads::Threads ${ADDITIONAL_LIBS} )
 
 # include the output directory, where the svnrevision.h file is generated
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-include_directories(${CMAKE_SOURCE_DIR}/source/Lib/CommonLib)
+include_directories(${CMAKE_SOURCE_DIR}/source/Lib)
 
 if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
   add_custom_command( TARGET ${EXE_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy

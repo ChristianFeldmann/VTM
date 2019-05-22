@@ -36,10 +36,88 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cassert>
-#include "CommonDef.h"
+#include "CommonLib/CommonDef.h"
+#include "DecoderLib/NALread.h"
+#include "VLCReader.h"
+#if ENABLE_TRACING
+#include "CommonLib/dtrace_next.h"
+#endif
 
-#define PRINT_NALUS 0
+#define PRINT_NALUS 1
 
+class ParcatHLSyntaxReader : public VLCReader
+{
+  public:
+#if HEVC_DEPENDENT_SLICES
+    bool  parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager, bool isRapPic, bool &dependent_slice_segment_flag );
+#else
+    bool  parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager, bool isRapPic );
+#endif
+};
+
+#if HEVC_DEPENDENT_SLICES
+bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager, bool isRapPic, bool &dependent_slice_segment_flag )
+#else
+bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager, bool isRapPic )
+#endif
+{
+  uint32_t  uiCode;
+
+  PPS* pps = NULL;
+  SPS* sps = NULL;
+
+  uint32_t firstSliceSegmentInPic;
+  READ_FLAG( firstSliceSegmentInPic, "first_slice_segment_in_pic_flag" );
+  if( isRapPic )
+  {
+    READ_FLAG( uiCode, "no_output_of_prior_pics_flag" );  //ignored -- updated already
+  }
+  READ_UVLC (    uiCode, "slice_pic_parameter_set_id" );
+  pps = parameterSetManager->getPPS(uiCode);
+  //!KS: need to add error handling code here, if PPS is not available
+  CHECK(pps==0, "Invalid PPS");
+  sps = parameterSetManager->getSPS(pps->getSPSId());
+  //!KS: need to add error handling code here, if SPS is not available
+  CHECK(sps==0, "Invalid SPS");
+
+#if HEVC_DEPENDENT_SLICES
+  dependent_slice_segment_flag = false;
+  if( pps->getDependentSliceSegmentsEnabledFlag() && ( !firstSliceSegmentInPic ))
+  {
+    READ_FLAG( uiCode, "dependent_slice_segment_flag" );
+    dependent_slice_segment_flag = uiCode ? true : false;
+  }
+#endif
+  int numCTUs = ((sps->getPicWidthInLumaSamples()+sps->getMaxCUWidth()-1)/sps->getMaxCUWidth())*((sps->getPicHeightInLumaSamples()+sps->getMaxCUHeight()-1)/sps->getMaxCUHeight());
+  uint32_t sliceSegmentAddress = 0;
+  int bitsSliceSegmentAddress = 0;
+  while(numCTUs>(1<<bitsSliceSegmentAddress))
+  {
+    bitsSliceSegmentAddress++;
+  }
+
+  if(!firstSliceSegmentInPic)
+  {
+    READ_CODE( bitsSliceSegmentAddress, sliceSegmentAddress, "slice_segment_address" );
+  }
+  //set uiCode to equal slice start address (or dependent slice start address)
+#if HEVC_DEPENDENT_SLICES
+  return false;
+#endif
+  for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
+  {
+    READ_FLAG(uiCode, "slice_reserved_flag[]"); // ignored
+  }
+
+  READ_UVLC (    uiCode, "slice_type" );
+  if( pps->getOutputFlagPresentFlag() )
+  {
+    READ_FLAG( uiCode, "pic_output_flag" );
+  }
+
+
+  return firstSliceSegmentInPic;
+}
 
 /**
  Find the beginning and end of a NAL (Network Abstraction Layer) unit in a byte buffer containing H264 bitstream data.
@@ -307,6 +385,34 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     int poc_lsb = -1;
     int new_poc = -1;
 
+    HLSyntaxReader HLSReader;
+    static ParameterSetManager parameterSetManager;
+    ParcatHLSyntaxReader parcatHLSReader;
+    InputNALUnit inp_nalu;
+    std::vector<uint8_t> & nalu_bs = inp_nalu.getBitstream().getFifo();
+    nalu_bs = nalu;
+    read(inp_nalu);
+
+    if( inp_nalu.m_nalUnitType == NAL_UNIT_SPS )
+    {
+      SPS* sps = new SPS();
+      HLSReader.setBitstream( &inp_nalu.getBitstream() );
+      HLSReader.parseSPS( sps );
+      parameterSetManager.storeSPS( sps, inp_nalu.getBitstream().getFifo() );
+    }
+
+    if( inp_nalu.m_nalUnitType == NAL_UNIT_PPS )
+    {
+      PPS* pps = new PPS();
+      HLSReader.setBitstream( &inp_nalu.getBitstream() );
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+      HLSReader.parsePPS( pps, &parameterSetManager );
+#else
+      HLSReader.parsePPS( pps );
+#endif
+      parameterSetManager.storePPS( pps, inp_nalu.getBitstream().getFifo() );
+    }
+
     if(nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)
     {
       poc = 0;
@@ -322,37 +428,34 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
 #endif
 #endif
     {
-      int offset = 16;
-
-      offset += 1; //first_slice_segment_in_pic_flag
-#if JVET_N0067_NAL_Unit_Header
-      if (nalu_type >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type <= NAL_UNIT_CODED_SLICE_CRA)
-#else
+      parcatHLSReader.setBitstream( &inp_nalu.getBitstream() );
+      bool isRapPic =
+        inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
+        || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
 #if !JVET_M0101_HLS
-      if (nalu_type >= NAL_UNIT_CODED_SLICE_BLA_W_LP && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL23)
-#else
-      if (nalu_type >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL13)
+        || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
+        || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
+        || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP
 #endif
-#endif
-      {
-        offset += 1; //no_output_of_prior_pics_flag
-      }
+        || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA;
 
-      // determine offset for slice_pic_parameter_set_id TODO: ue(v)
-      int byte_offset2 = offset / 8;
-      int hi_bits2 = offset % 8;
-      uint16_t data2 = (nalu[byte_offset2] << 8) | nalu[byte_offset2 + 1];
-      int low_bits2 = 16 - hi_bits2 - 1;
-      if(((data2 >> low_bits2) % 2))
-        offset += 1; // PPSId=0
-      else
-        offset += 3; // PPSId=1
-      offset += 1; // slice_type TODO: ue(v)
-      // separate_colour_plane_flag is not supported in JEM1.0
-      if (nalu_type == NAL_UNIT_CODED_SLICE_CRA)
+#if HEVC_DEPENDENT_SLICES
+      bool dependent_slice_segment_flag = false;
+      // beginning of slice header parsing, taken from VLCReader
+      bool first_slice_segment_in_pic_flag = parcatHLSReader.parseSliceHeaderUpToPoc( &parameterSetManager, isRapPic, dependent_slice_segment_flag);
+#else
+      // beginning of slice header parsing, taken from VLCReader
+      bool first_slice_segment_in_pic_flag = parcatHLSReader.parseSliceHeaderUpToPoc( &parameterSetManager, isRapPic);
+#endif
+      int num_bits_up_to_poc_lsb = parcatHLSReader.getBitstream()->getNumBitsRead();
+      int offset = num_bits_up_to_poc_lsb;
+
+#if HEVC_DEPENDENT_SLICES
+      if( dependent_slice_segment_flag )
       {
-        offset += 2;
+        continue;
       }
+#endif
       int byte_offset = offset / 8;
       int hi_bits = offset % 8;
       uint16_t data = (nalu[byte_offset] << 8) | nalu[byte_offset + 1];
@@ -371,7 +474,13 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       nalu[byte_offset] = data >> 8;
       nalu[byte_offset + 1] = data & 0xff;
 
-      ++cnt;
+      if( first_slice_segment_in_pic_flag )
+      {
+#if ENABLE_TRACING
+        std::cout << "Changed poc " << poc << " to " << new_poc << std::endl;
+#endif
+        ++cnt;
+      }
     }
 
     if(idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP))
@@ -446,6 +555,12 @@ std::vector<uint8_t> process_segment(const char * path, int idx, int * poc_base,
 
 int main(int argc, char * argv[])
 {
+#if ENABLE_TRACING
+  std::string tracingFile;
+  std::string tracingRule;
+
+  g_trace_ctx = tracing_init(tracingFile, tracingRule);
+#endif
   if(argc < 3)
   {
     printf("parcat version VTM %s\n", VTM_VERSION);
@@ -470,4 +585,7 @@ int main(int argc, char * argv[])
   }
 
   fclose(fdo);
+#if ENABLE_TRACING
+  tracing_uninit(g_trace_ctx);
+#endif
 }

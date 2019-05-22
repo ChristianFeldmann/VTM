@@ -115,6 +115,35 @@ class AQpLayer;
 
 typedef std::list<SEI*> SEIMessages;
 
+#if JVET_N0857_TILES_BRICKS
+
+class Brick
+{
+private:
+  uint32_t      m_widthInCtus;
+  uint32_t      m_heightInCtus;
+  uint32_t      m_colBd;
+  uint32_t      m_rowBd;
+  uint32_t      m_firstCtuRsAddr;
+
+public:
+  Brick();
+  virtual ~Brick();
+
+  void      setWidthInCtus         ( uint32_t i )            { m_widthInCtus = i; }
+  uint32_t  getWidthInCtus         () const                  { return m_widthInCtus; }
+  void      setHeightInCtus        ( uint32_t i )            { m_heightInCtus = i; }
+  uint32_t  getHeightInCtus        () const                  { return m_heightInCtus; }
+  void      setColBd  ( uint32_t i )                         { m_colBd = i; }
+  uint32_t  getColBd  () const                               { return m_colBd; }
+  void      setRowBd ( uint32_t i )                          { m_rowBd = i; }
+  uint32_t  getRowBd () const                                { return m_rowBd; }
+
+  void      setFirstCtuRsAddr      ( uint32_t i )            { m_firstCtuRsAddr = i; }
+  uint32_t  getFirstCtuRsAddr      () const                  { return m_firstCtuRsAddr; }
+};
+
+#else
 class Tile
 {
 private:
@@ -139,8 +168,9 @@ public:
   void      setFirstCtuRsAddr      ( uint32_t i )            { m_firstCtuRsAddr = i; }
   uint32_t      getFirstCtuRsAddr      () const              { return m_firstCtuRsAddr; }
 };
+#endif
 
-
+#if !JVET_N0857_TILES_BRICKS
 struct TileMap
 {
   TileMap();
@@ -167,6 +197,41 @@ struct TileMap
   void initCtuTsRsAddrMap();
   uint32_t calculateNextCtuRSAddr( const uint32_t currCtuRsAddr ) const;
 };
+
+#else
+struct BrickMap
+{
+  BrickMap();
+
+  void create( const SPS& sps, const PPS& pps );
+  void destroy();
+
+  uint32_t getBrickIdxRsMap( uint32_t ctuRsAddr )       const { return *(brickIdxRsMap + ctuRsAddr); }
+  uint32_t getBrickIdxRsMap( const Position& pos )      const { return getBrickIdxRsMap( ( pos.x / pcv->maxCUWidth ) + ( pos.y / pcv->maxCUHeight ) * pcv->widthInCtus ); };
+
+  uint32_t getBrickIdxBsMap( uint32_t ctuRsAddr )       const { return *(brickIdxBsMap + ctuRsAddr); }
+  uint32_t getBrickIdxBsMap( const Position& pos )      const { return getBrickIdxBsMap( ( pos.x / pcv->maxCUWidth ) + ( pos.y / pcv->maxCUHeight ) * pcv->widthInCtus ); };
+
+  uint32_t getCtuBsToRsAddrMap( uint32_t ctuTsAddr ) const { return *(ctuBsToRsAddrMap + (ctuTsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuTsAddr)); }
+  uint32_t getCtuRsToBsAddrMap( uint32_t ctuRsAddr ) const { return *(ctuRsToBsAddrMap + (ctuRsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuRsAddr)); }
+
+  uint32_t getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool addressInRaster, Slice *slice) const;
+
+  const PreCalcValues* pcv;
+  std::vector<Brick> bricks;
+
+  uint32_t  numTiles;
+  uint32_t  numTileColumns;
+  uint32_t  numTileRows;
+  uint32_t* brickIdxRsMap;
+  uint32_t* brickIdxBsMap;
+  uint32_t* ctuBsToRsAddrMap;
+  uint32_t* ctuRsToBsAddrMap;
+
+  void initBrickMap( const SPS& sps, const PPS& pps );
+  void initCtuBsRsAddrMap();
+};
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 #define M_BUFS(JID,PID) m_bufs[JID][PID]
@@ -281,7 +346,11 @@ public:
   Slice        *swapSliceObject(Slice * p, uint32_t i);
   void         clearSliceBuffer();
 
+#if !JVET_N0857_TILES_BRICKS
   TileMap*     tileMap;
+#else
+  BrickMap*     brickMap;
+#endif
   MCTSInfo     mctsInfo;
   std::vector<AQpLayer*> aqlayer;
 

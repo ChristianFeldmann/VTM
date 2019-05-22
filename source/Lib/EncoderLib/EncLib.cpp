@@ -1480,7 +1480,13 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   }
 
   pps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
+
+#if JVET_N0857_TILES_BRICKS
+  pps.setSingleTileInPicFlag((m_iNumColumnsMinus1 == 0 && m_iNumRowsMinus1 == 0));
+#else
   pps.setTilesEnabledFlag( (m_iNumColumnsMinus1 > 0 || m_iNumRowsMinus1 > 0) );
+#endif
+
   pps.setUseWP( m_useWeightedPred );
   pps.setWPBiPred( m_useWeightedBiPred );
   pps.setOutputFlagPresentFlag( false );
@@ -1870,7 +1876,22 @@ int EncLib::getReferencePictureSetIdxForSOP(int POCCurr, int GOPid )
 
 void  EncLib::xInitPPSforTiles(PPS &pps)
 {
-  pps.setTileUniformSpacingFlag( m_tileUniformSpacingFlag );
+#if JVET_N0857_TILES_BRICKS
+  if ( (m_iNumColumnsMinus1==0) && (m_iNumRowsMinus1==0) )
+  {
+    // one, no bricks
+    pps.setSingleTileInPicFlag(true);
+    pps.setSingleBrickPerSliceFlag(true);
+    pps.setRectSliceFlag(true);
+  }
+  else
+  {
+    pps.setSingleTileInPicFlag(false);
+    pps.setSingleBrickPerSliceFlag( m_sliceMode==SINGLE_BRICK_PER_SLICE );
+    pps.setRectSliceFlag( m_sliceMode==SINGLE_BRICK_PER_SLICE );
+  }
+#endif
+  pps.setUniformTileSpacingFlag( m_tileUniformSpacingFlag );
   pps.setNumTileColumnsMinus1( m_iNumColumnsMinus1 );
   pps.setNumTileRowsMinus1( m_iNumRowsMinus1 );
   if( !m_tileUniformSpacingFlag )
@@ -1878,9 +1899,114 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     pps.setTileColumnWidth( m_tileColumnWidth );
     pps.setTileRowHeight( m_tileRowHeight );
   }
-  pps.setLoopFilterAcrossTilesEnabledFlag( m_loopFilterAcrossTilesEnabledFlag );
+  pps.setLoopFilterAcrossBricksEnabledFlag( m_loopFilterAcrossBricksEnabledFlag );
 
-  // # substreams is "per tile" when tiles are independent.
+#if JVET_N0857_TILES_BRICKS
+  //pps.setRectSliceFlag( m_rectSliceFlag );
+  pps.setNumSlicesInPicMinus1( m_numSlicesInPicMinus1 );
+  pps.setTopLeftTileIdx( m_topLeftTileIdx );
+  pps.setBottomRightTileIdx( m_bottomRightTileIdx );
+  pps.setLoopFilterAcrossBricksEnabledFlag( m_loopFilterAcrossBricksEnabledFlag );
+  pps.setLoopFilterAcrossSlicesEnabledFlag( m_loopFilterAcrossSlicesEnabledFlag );
+  pps.setSignalledSliceIdFlag( m_signalledSliceIdFlag );
+  pps.setSignalledSliceIdLengthMinus1( m_signalledSliceIdLengthMinus1 );
+  pps.setSignalledSliceIdFlag( m_signalledSliceIdFlag );
+  pps.setSignalledSliceIdLengthMinus1( m_signalledSliceIdLengthMinus1 );
+  pps.setSliceId( m_sliceId );
+
+  int numTiles= (m_iNumColumnsMinus1 + 1) * (m_iNumRowsMinus1 + 1);
+  
+  if (m_brickSplitMap.empty())
+  {
+    pps.setBrickSplittingPresentFlag(false);
+  }
+  else
+  {
+    pps.setBrickSplittingPresentFlag(true);
+
+    std::vector<bool> brickSplitFlag (numTiles, false);
+    std::vector<bool> uniformBrickSpacingFlag (numTiles, false);
+    std::vector<int>  brickHeightMinus1 (numTiles, 0);
+    std::vector<int>  numBrickRowsMinus1 (numTiles, 0);
+    std::vector<std::vector<int>>  brickRowHeightMinus1 (numTiles);
+
+    for (auto &brickSplit: m_brickSplitMap)
+    {
+      int tileIdx = brickSplit.first;
+      CHECK ( tileIdx >= numTiles, "Brick split specified for undefined tile");
+
+      brickSplitFlag[tileIdx]           = true;
+      uniformBrickSpacingFlag [tileIdx] = brickSplit.second.m_uniformSplit;
+      if (uniformBrickSpacingFlag [tileIdx])
+      {
+        brickHeightMinus1[tileIdx]=brickSplit.second.m_uniformHeight - 1;
+      }
+      else
+      {
+        numBrickRowsMinus1[tileIdx]=brickSplit.second.m_numSplits;
+        brickRowHeightMinus1[tileIdx].resize(brickSplit.second.m_numSplits);
+        for (int i=0; i<brickSplit.second.m_numSplits; i++)
+        {
+          brickRowHeightMinus1[tileIdx][i]=brickSplit.second.m_brickHeight[i] - 1;
+        }
+      }
+    }
+    pps.setBrickSplitFlag(brickSplitFlag);
+    pps.setUniformBrickSpacingFlag(uniformBrickSpacingFlag);
+    pps.setBrickHeightMinus1(brickHeightMinus1);
+    pps.setNumBrickRowsMinus1(numBrickRowsMinus1);
+    pps.setBrickRowHeightMinus1(brickRowHeightMinus1);
+
+    // check brick dimensions
+    std::vector<uint32_t> tileRowHeight (m_iNumRowsMinus1+1);
+    int picHeightInCtus = (getSourceHeight() + m_maxCUHeight - 1) / m_maxCUHeight;
+
+    // calculate all tile row heights
+    if( pps.getUniformTileSpacingFlag() )
+    {
+      //set width and height for each (uniform) tile
+      for(int row=0; row < m_iNumRowsMinus1 + 1; row++)
+      {
+        tileRowHeight[row] = (row+1)*picHeightInCtus/(m_iNumRowsMinus1+1)   - (row*picHeightInCtus)/(m_iNumRowsMinus1 + 1);
+      }
+    }
+    else
+    {
+      tileRowHeight[ m_iNumRowsMinus1 ] = picHeightInCtus;
+      for( int j = 0; j < m_iNumRowsMinus1; j++ ) 
+      {
+        tileRowHeight[ j ] = pps.getTileRowHeight( j );
+        tileRowHeight[ m_iNumRowsMinus1 ]  =  tileRowHeight[ m_iNumRowsMinus1 ] - pps.getTileRowHeight( j );
+      }
+    }
+
+    // check brick splits for each tile
+    for (int tileIdx=0; tileIdx < numTiles; tileIdx++)
+    {
+      if (pps.getBrickSplitFlag(tileIdx))
+      {
+        const int tileY = tileIdx / (m_iNumColumnsMinus1+1);
+
+        int tileHeight = tileRowHeight [tileY];
+
+        if (pps.getUniformBrickSpacingFlag(tileIdx))
+        {
+          CHECK((pps.getBrickHeightMinus1(tileIdx) + 1) >= tileHeight, "Brick height larger than or equal to tile height");
+        }
+        else
+        {
+          int cumulativeHeight=0;
+          for (int i = 0; i < pps.getNumBrickRowsMinus1(tileIdx); i++)
+          {
+            cumulativeHeight += pps.getBrickRowHeightMinus1(tileIdx, i) + 1;
+          }
+          CHECK(cumulativeHeight >= tileHeight, "Cumulative brick height larger than or equal to tile height");
+        }
+      }
+    }
+  }
+
+#endif
 }
 
 void  EncCfg::xCheckGSParameters()

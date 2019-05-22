@@ -1582,15 +1582,37 @@ private:
 #if HEVC_DEPENDENT_SLICES
   bool             m_dependentSliceSegmentsEnabledFlag; //!< Indicates the presence of dependent slices
 #endif
+#if !JVET_N0857_TILES_BRICKS
   bool             m_tilesEnabledFlag;                  //!< Indicates the presence of tiles
+#endif
   bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
 
-  bool             m_loopFilterAcrossTilesEnabledFlag;
-  bool             m_uniformSpacingFlag;
+  bool             m_loopFilterAcrossBricksEnabledFlag;
+  bool             m_uniformTileSpacingFlag;
   int              m_numTileColumnsMinus1;
   int              m_numTileRowsMinus1;
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
+
+#if JVET_N0857_TILES_BRICKS
+  bool             m_singleTileInPicFlag;
+  int              m_tileColsWidthMinus1;
+  int              m_tileRowsHeightMinus1;
+  bool             m_brickSplittingPresentFlag;
+  std::vector<bool> m_brickSplitFlag;
+  std::vector<bool> m_uniformBrickSpacingFlag;
+  std::vector<int> m_brickHeightMinus1;
+  std::vector<int> m_numBrickRowsMinus1;
+  std::vector<std::vector<int>> m_brickRowHeightMinus1;
+  bool             m_singleBrickPerSliceFlag;
+  bool             m_rectSliceFlag;
+  int              m_numSlicesInPicMinus1;
+  std::vector<int> m_topLeftTileIdx;
+  std::vector<int> m_bottomRightTileIdx;
+  bool             m_signalledSliceIdFlag;
+  int              m_signalledSliceIdLengthMinus1;
+  std::vector<int> m_sliceId;
+#endif
 
   bool             m_cabacInitPresentFlag;
 
@@ -1691,27 +1713,66 @@ public:
   bool                   getUseTransformSkip() const                                      { return m_useTransformSkip;                    }
   void                   setUseTransformSkip( bool b )                                    { m_useTransformSkip  = b;                      }
 
-  void                   setLoopFilterAcrossTilesEnabledFlag(bool b)                      { m_loopFilterAcrossTilesEnabledFlag = b;       }
-  bool                   getLoopFilterAcrossTilesEnabledFlag() const                      { return m_loopFilterAcrossTilesEnabledFlag;    }
+  void                   setLoopFilterAcrossBricksEnabledFlag(bool b)                     { m_loopFilterAcrossBricksEnabledFlag = b;      }
+  bool                   getLoopFilterAcrossBricksEnabledFlag() const                     { return m_loopFilterAcrossBricksEnabledFlag;   }
 #if HEVC_DEPENDENT_SLICES
   bool                   getDependentSliceSegmentsEnabledFlag() const                     { return m_dependentSliceSegmentsEnabledFlag;   }
   void                   setDependentSliceSegmentsEnabledFlag(bool val)                   { m_dependentSliceSegmentsEnabledFlag = val;    }
 #endif
+#if !JVET_N0857_TILES_BRICKS
+  void                   setTilesEnabledFlag(bool val)                                    { m_tilesEnabledFlag = val;                     }
+  bool                   getTilesEnabledFlag() const                                      { return m_tilesEnabledFlag;                    }
+#endif
   bool                   getEntropyCodingSyncEnabledFlag() const                          { return m_entropyCodingSyncEnabledFlag;        }
   void                   setEntropyCodingSyncEnabledFlag(bool val)                        { m_entropyCodingSyncEnabledFlag = val;         }
 
-  void                   setTilesEnabledFlag(bool val)                                    { m_tilesEnabledFlag = val;                     }
-  bool                   getTilesEnabledFlag() const                                      { return m_tilesEnabledFlag;                    }
-  void                   setTileUniformSpacingFlag(bool b)                                { m_uniformSpacingFlag = b;                     }
-  bool                   getTileUniformSpacingFlag() const                                { return m_uniformSpacingFlag;                  }
+  void                   setUniformTileSpacingFlag(bool b)                                { m_uniformTileSpacingFlag = b;                 }
+  bool                   getUniformTileSpacingFlag() const                                { return m_uniformTileSpacingFlag;              }
   void                   setNumTileColumnsMinus1(int i)                                   { m_numTileColumnsMinus1 = i;                   }
   int                    getNumTileColumnsMinus1() const                                  { return m_numTileColumnsMinus1;                }
   void                   setTileColumnWidth(const std::vector<int>& columnWidth )         { m_tileColumnWidth = columnWidth;              }
-  uint32_t                   getTileColumnWidth(uint32_t columnIdx) const                         { return  m_tileColumnWidth[columnIdx];         }
+  uint32_t               getTileColumnWidth(uint32_t columnIdx) const                     { return  m_tileColumnWidth[columnIdx];         }
   void                   setNumTileRowsMinus1(int i)                                      { m_numTileRowsMinus1 = i;                      }
   int                    getNumTileRowsMinus1() const                                     { return m_numTileRowsMinus1;                   }
   void                   setTileRowHeight(const std::vector<int>& rowHeight)              { m_tileRowHeight = rowHeight;                  }
-  uint32_t                   getTileRowHeight(uint32_t rowIdx) const                              { return m_tileRowHeight[rowIdx];               }
+  uint32_t               getTileRowHeight(uint32_t rowIdx) const                          { return m_tileRowHeight[rowIdx];               }
+
+#if JVET_N0857_TILES_BRICKS               
+  bool                   getSingleTileInPicFlag() const                                   { return m_singleTileInPicFlag;                 }
+  void                   setSingleTileInPicFlag(bool val)                                 { m_singleTileInPicFlag = val;                  }
+  int                    getTileColsWidthMinus1() const                                   { return m_tileColsWidthMinus1;                 }
+  void                   setTileColsWidthMinus1(int w)                                    { m_tileColsWidthMinus1 = w;                    }
+  int                    getTileRowsHeightMinus1() const                                  { return m_tileRowsHeightMinus1;                }
+  void                   setTileRowsHeightMinus1(int h)                                   { m_tileRowsHeightMinus1 = h;                   }
+  bool                   getBrickSplittingPresentFlag() const                             { return m_brickSplittingPresentFlag;           }
+  void                   setBrickSplittingPresentFlag(bool b)                             { m_brickSplittingPresentFlag = b;              }
+  bool                   getBrickSplitFlag(int i) const                                   { return m_brickSplitFlag[i];                   }
+  void                   setBrickSplitFlag(std::vector<bool>& val)                        { m_brickSplitFlag = val;                       }
+  bool                   getUniformBrickSpacingFlag(int i) const                          { return m_uniformBrickSpacingFlag[i];          }
+  void                   setUniformBrickSpacingFlag(std::vector<bool>& val)               { m_uniformBrickSpacingFlag = val;              }
+  int                    getBrickHeightMinus1(int i) const                                { return m_brickHeightMinus1[i];                }
+  void                   setBrickHeightMinus1(std::vector<int>& val)                      { m_brickHeightMinus1 = val;                    }
+  int                    getNumBrickRowsMinus1(int i) const                               { return m_numBrickRowsMinus1[i];               }
+  void                   setNumBrickRowsMinus1(std::vector<int>& val)                     { m_numBrickRowsMinus1 = val;                   }
+  int                    getBrickRowHeightMinus1(int i, int j) const                      { return m_brickRowHeightMinus1[i][j];          }
+  void                   setBrickRowHeightMinus1(std::vector<std::vector<int>>& val)      { m_brickRowHeightMinus1 = val;                 }
+  bool                   getSingleBrickPerSliceFlag() const                               { return m_singleBrickPerSliceFlag;             }
+  void                   setSingleBrickPerSliceFlag(bool val)                             { m_singleBrickPerSliceFlag = val;              }
+  bool                   getRectSliceFlag() const                                         { return m_rectSliceFlag;                       }
+  void                   setRectSliceFlag(bool val)                                       { m_rectSliceFlag = val;                        }
+  int                    getNumSlicesInPicMinus1() const                                  { return m_numSlicesInPicMinus1;                }
+  void                   setNumSlicesInPicMinus1(int val)                                 { m_numSlicesInPicMinus1 = val;                 }
+  int                    getTopLeftTileIdx(uint32_t columnIdx) const                      { return  m_topLeftTileIdx[columnIdx];          }
+  void                   setTopLeftTileIdx(const std::vector<int>& val)                   { m_topLeftTileIdx = val;                       }
+  int                    getBottomeRightTileIdx(uint32_t columnIdx) const                 { return  m_bottomRightTileIdx[columnIdx];      }
+  void                   setBottomRightTileIdx(const std::vector<int>& val)               { m_bottomRightTileIdx = val;                   }
+  bool                   getSignalledSliceIdFlag() const                                  { return m_signalledSliceIdFlag;                }
+  void                   setSignalledSliceIdFlag(bool val)                                { m_signalledSliceIdFlag = val;                 }
+  int                    getSignalledSliceIdLengthMinus1() const                          { return m_signalledSliceIdLengthMinus1;        }
+  void                   setSignalledSliceIdLengthMinus1(int val)                         { m_signalledSliceIdLengthMinus1 = val;         }
+  int                    getSliceId(uint32_t columnIdx) const                             { return  m_sliceId[columnIdx];                 }
+  void                   setSliceId(const std::vector<int>& val)                          { m_sliceId = val;                              }
+#endif
 
   void                   setCabacInitPresentFlag( bool flag )                             { m_cabacInitPresentFlag = flag;                }
   bool                   getCabacInitPresentFlag() const                                  { return m_cabacInitPresentFlag;                }

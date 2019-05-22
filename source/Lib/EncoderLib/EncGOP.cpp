@@ -2173,7 +2173,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     const uint32_t numberOfCtusInFrame = pcPic->cs->pcv->sizeInCtus;
     const int numSubstreamsColumns = (pcSlice->getPPS()->getNumTileColumnsMinus1() + 1);
     const int numSubstreamRows     = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag() ? pcPic->cs->pcv->heightInCtus : (pcSlice->getPPS()->getNumTileRowsMinus1() + 1);
+#if JVET_N0857_TILES_BRICKS
+    const int numSubstreams        = std::max<int> (numSubstreamRows * numSubstreamsColumns, (int) pcPic->brickMap->bricks.size());
+#else
     const int numSubstreams        = numSubstreamRows * numSubstreamsColumns;
+#endif
     std::vector<OutputBitstream> substreamsOut(numSubstreams);
 
 #if ENABLE_QPA
@@ -2679,11 +2683,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
           // Append substreams...
           OutputBitstream *pcOut = pcBitstreamRedirect;
+#if JVET_N0857_TILES_BRICKS
+          const int numZeroSubstreamsAtStartOfSlice  = pcPic->brickMap->getSubstreamForCtuAddr(pcSlice->getSliceCurStartCtuTsAddr(), false, pcSlice);
+#else
 #if HEVC_DEPENDENT_SLICES
 
           const int numZeroSubstreamsAtStartOfSlice = pcPic->tileMap->getSubstreamForCtuAddr(pcSlice->getSliceSegmentCurStartCtuTsAddr(), false, pcSlice);
 #else
           const int numZeroSubstreamsAtStartOfSlice  = pcPic->tileMap->getSubstreamForCtuAddr(pcSlice->getSliceCurStartCtuTsAddr(), false, pcSlice);
+#endif
 #endif
           const int numSubstreamsToCode  = pcSlice->getNumberOfSubstreamSizes()+1;
           for ( uint32_t ui = 0 ; ui < numSubstreamsToCode; ui++ )

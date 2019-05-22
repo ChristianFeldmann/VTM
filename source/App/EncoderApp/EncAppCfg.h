@@ -165,6 +165,10 @@ protected:
 #endif
   int       m_extraRPSs;                                      ///< extra RPSs added to handle CRA
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
+#if JVET_N0857_TILES_BRICKS
+  BrickSplit    m_brickSplits[MAX_TILES];
+  BrickSplitMap m_brickSplitMap;
+#endif
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
   bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
@@ -409,6 +413,7 @@ protected:
 #endif
 
   bool      m_bLFCrossSliceBoundaryFlag;  ///< 1: filter across slice boundaries 0: do not filter across slice boundaries
+
   bool      m_bLFCrossTileBoundaryFlag;   ///< 1: filter across tile boundaries  0: do not filter across tile boundaries
   bool      m_tileUniformSpacingFlag;
   int       m_numTileColumnsMinus1;
@@ -416,6 +421,17 @@ protected:
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
   bool      m_entropyCodingSyncEnabledFlag;
+
+#if JVET_N0857_TILES_BRICKS
+  bool      m_rectSliceFlag;
+  int       m_numSlicesInPicMinus1;
+  std::vector<int> m_topLeftTileIdx;
+  std::vector<int> m_bottomRightTileIdx;
+  bool      m_loopFilterAcrossSlicesEnabledFlag;
+  bool      m_signalledSliceIdFlag;
+  int       m_signalledSliceIdLengthMinus1;
+  std::vector<int> m_sliceId;
+#endif
 
   bool      m_bUseConstrainedIntraPred;                       ///< flag for using constrained intra prediction
   bool      m_bFastUDIUseMPMEnabled;

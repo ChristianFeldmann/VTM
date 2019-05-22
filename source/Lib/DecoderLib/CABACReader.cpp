@@ -157,7 +157,11 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
     int                 rx = ctuRsAddr - ry * frame_width_in_ctus;
     const Position      pos( rx * cs.pcv->maxCUWidth, ry * cs.pcv->maxCUHeight );
     const uint32_t          curSliceIdx = cs.slice->getIndependentSliceIdx();
+#if JVET_N0857_TILES_BRICKS
+    const uint32_t          curTileIdx = cs.picture->brickMap->getBrickIdxRsMap( pos );
+#else
     const uint32_t          curTileIdx = cs.picture->tileMap->getTileIdxMap( pos );
+#endif
     bool                leftAvail = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0 ), curSliceIdx, curTileIdx, CH_L ) ? true : false;
     bool                aboveAvail = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), curSliceIdx, curTileIdx, CH_L ) ? true : false;
 
@@ -301,7 +305,11 @@ void CABACReader::sao( CodingStructure& cs, unsigned ctuRsAddr )
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__SAO );
 
+#if JVET_N0857_TILES_BRICKS
+  const unsigned  curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( pos );
+#else
   const unsigned  curTileIdx  = cs.picture->tileMap->getTileIdxMap( pos );
+#endif
   if( cs.getCURestricted( pos.offset(-(int)cs.pcv->maxCUWidth, 0), curSliceIdx, curTileIdx, CH_L ) )
   {
     // sao_merge_left_flag
@@ -583,7 +591,11 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
 
   partitioner.setCUData( cu );
   cu.slice   = cs.slice;
+#if JVET_N0857_TILES_BRICKS
+  cu.tileIdx = cs.picture->brickMap->getBrickIdxRsMap( currArea.lumaPos() );
+#else
   cu.tileIdx = cs.picture->tileMap->getTileIdxMap( currArea.lumaPos() );
+#endif
 
   // Predict QP on start of quantization group
   if( cuCtx.qgStart )

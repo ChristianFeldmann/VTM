@@ -179,7 +179,11 @@ void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, u
 {
   const Position pos         = partitioner.currArea().blocks[partitioner.chType];
   const unsigned curSliceIdx = cs.slice->getIndependentSliceIdx();
+#if JVET_N0857_TILES_BRICKS
+  const unsigned curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( partitioner.currArea().lumaPos() );
+#else
   const unsigned curTileIdx  = cs.picture->tileMap->getTileIdxMap( partitioner.currArea().lumaPos() );
+#endif
 
   // get left depth
   const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), curSliceIdx, curTileIdx, partitioner.chType );

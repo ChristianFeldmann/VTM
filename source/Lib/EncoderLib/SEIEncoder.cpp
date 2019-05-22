@@ -356,7 +356,11 @@ void SEIEncoder::initSEITempMotionConstrainedTileSets (SEITempMotionConstrainedT
   CHECK(!(sei!=NULL), "Unspecified error");
   CHECK(!(pps!=NULL), "Unspecified error");
 
+#if !JVET_N0857_TILES_BRICKS
   if(pps->getTilesEnabledFlag())
+#else
+  if(!pps->getSingleTileInPicFlag())
+#endif
   {
     if (m_pcCfg->getMCTSEncConstraint())
     {

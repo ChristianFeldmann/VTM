@@ -848,8 +848,8 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
   const Position& pos = cu.blocks[cu.chType].pos();
 
   m_stLFCUParam.internalEdge = true;
-  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
-  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
+  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
+  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
 #if !JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
   m_stLFCUParam.internalEdge &= !cu.ispMode;
 #endif
@@ -1112,11 +1112,11 @@ void LoopFilter::xEdgeFilterLuma(const CodingUnit& cu, const DeblockEdgeDir edge
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
-        CHECK( !isAvailableLeft( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() ), "Neighbour not available" );
+        CHECK( !isAvailableLeft( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() ), "Neighbour not available" );
       }
       else  // (iDir == EDGE_HOR)
       {
-        CHECK( !isAvailableAbove( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() ), "Neighbour not available" );
+        CHECK( !isAvailableAbove( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() ), "Neighbour not available" );
       }
 
       iQP = (cuP.qp + cuQ.qp + 1) >> 1;
@@ -1401,11 +1401,11 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
       if (edgeDir == EDGE_VER)
       {
-        CHECK(!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
+        CHECK(!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
       }
       else  // (iDir == EDGE_HOR)
       {
-        CHECK(!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
+        CHECK(!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
       }
 
       bPartPNoFilter = bPartQNoFilter = false;

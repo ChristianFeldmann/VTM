@@ -105,6 +105,31 @@ struct GOPEntry
 };
 
 std::istringstream &operator>>(std::istringstream &in, GOPEntry &entry);     //input
+
+#if JVET_N0857_TILES_BRICKS
+struct BrickSplit
+{
+  int     m_tileIdx;
+  bool    m_uniformSplit;
+  int     m_uniformHeight;
+  int     m_numSplits;
+  int     m_brickHeight[MAX_NUM_BRICKS_PER_TILE];
+  BrickSplit()
+    : m_tileIdx(-1)
+    , m_uniformSplit(true)
+    , m_uniformHeight(0)
+    , m_numSplits(0)
+  {
+    ::memset( m_brickHeight, 0, sizeof(m_brickHeight) );
+  }
+};
+
+typedef std::map<int, BrickSplit> BrickSplitMap;
+
+std::istringstream &operator>>(std::istringstream &in, BrickSplit &entry);     //input
+#endif
+
+
 //! \ingroup EncoderLib
 //! \{
 
@@ -418,7 +443,7 @@ protected:
   bool      m_bPCMInputBitDepthFlag;
   bool      m_bPCMFilterDisableFlag;
   bool      m_intraSmoothingDisabledFlag;
-  bool      m_loopFilterAcrossTilesEnabledFlag;
+  bool      m_loopFilterAcrossBricksEnabledFlag;
   bool      m_tileUniformSpacingFlag;
   int       m_iNumColumnsMinus1;
   int       m_iNumRowsMinus1;
@@ -426,6 +451,18 @@ protected:
   std::vector<int> m_tileRowHeight;
 
   bool      m_entropyCodingSyncEnabledFlag;
+ 
+#if JVET_N0857_TILES_BRICKS
+  bool      m_rectSliceFlag;
+  int       m_numSlicesInPicMinus1;
+  std::vector<int> m_topLeftTileIdx;
+  std::vector<int> m_bottomRightTileIdx;
+  bool      m_loopFilterAcrossSlicesEnabledFlag;
+  bool      m_signalledSliceIdFlag;
+  int       m_signalledSliceIdLengthMinus1;
+  std::vector<int> m_sliceId;
+  BrickSplitMap m_brickSplitMap;
+#endif
 
   HashType  m_decodedPictureHashSEIType;
   bool      m_bufferingPeriodSEIEnabled;
@@ -1166,8 +1203,8 @@ public:
   void  setSaoGreedyMergeEnc           (bool val)                    { m_saoGreedyMergeEnc = val; }
   bool  getSaoGreedyMergeEnc           ()                            { return m_saoGreedyMergeEnc; }
 #endif
-  void  setLFCrossTileBoundaryFlag               ( bool   val  )     { m_loopFilterAcrossTilesEnabledFlag = val; }
-  bool  getLFCrossTileBoundaryFlag               ()                  { return m_loopFilterAcrossTilesEnabledFlag;   }
+  void  setLFCrossTileBoundaryFlag               ( bool   val  )     { m_loopFilterAcrossBricksEnabledFlag = val; }
+  bool  getLFCrossTileBoundaryFlag               ()                  { return m_loopFilterAcrossBricksEnabledFlag;   }
   void  setTileUniformSpacingFlag      ( bool b )                    { m_tileUniformSpacingFlag = b; }
   bool  getTileUniformSpacingFlag      ()                            { return m_tileUniformSpacingFlag; }
   void  setNumColumnsMinus1            ( int i )                     { m_iNumColumnsMinus1 = i; }
@@ -1178,6 +1215,28 @@ public:
   int   getNumRowsMinus1               ()                            { return m_iNumRowsMinus1; }
   void  setRowHeight ( const std::vector<int>& rowHeight)            { m_tileRowHeight = rowHeight; }
   uint32_t  getRowHeight                   ( uint32_t rowIdx )               { return m_tileRowHeight[rowIdx]; }
+
+#if JVET_N0857_TILES_BRICKS
+  bool  getRectSliceFlag() const                                     { return m_rectSliceFlag; }
+  void  setRectSliceFlag(bool val)                                   { m_rectSliceFlag = val; }
+  int   getNumSlicesInPicMinus1() const                              { return m_numSlicesInPicMinus1; }
+  void  setNumSlicesInPicMinus1(int val)                             { m_numSlicesInPicMinus1 = val; }
+  int   getTopLeftTileIdx(uint32_t columnIdx) const                  { return  m_topLeftTileIdx[columnIdx]; }
+  void  setTopLeftTileIdx(const std::vector<int>& val)               { m_topLeftTileIdx = val; }
+  int   getBottomeRightTileIdx(uint32_t columnIdx) const             { return  m_bottomRightTileIdx[columnIdx]; }
+  void  setBottomRightTileIdx(const std::vector<int>& val)           { m_bottomRightTileIdx = val; }
+  bool  getLoopFilterAcrossSlicesEnabledFlag() const                 { return m_loopFilterAcrossSlicesEnabledFlag; }
+  void  setLoopFilterAcrossSlicesEnabledFlag(bool val)               { m_loopFilterAcrossSlicesEnabledFlag = val; }
+  bool  getSignalledSliceIdFlag() const                              { return m_signalledSliceIdFlag; }
+  void  setSignalledSliceIdFlag(bool val)                            { m_signalledSliceIdFlag = val; }
+  int   getSignalledSliceIdLengthMinus1() const                      { return m_signalledSliceIdLengthMinus1; }
+  void  setSignalledSliceIdLengthMinus1(int val)                     { m_signalledSliceIdLengthMinus1 = val; }
+  int   getSliceId(uint32_t columnIdx) const                         { return  m_sliceId[columnIdx]; }
+  void  setSliceId(const std::vector<int>& val)                      { m_sliceId = val; }
+  BrickSplitMap getBrickSplitMap() const                             { return  m_brickSplitMap; }
+  void  setBrickSplitMap(const BrickSplitMap& val)                   { m_brickSplitMap = val; }
+#endif
+
   void  xCheckGSParameters();
   void  setEntropyCodingSyncEnabledFlag(bool b)                      { m_entropyCodingSyncEnabledFlag = b; }
   bool  getEntropyCodingSyncEnabledFlag() const                      { return m_entropyCodingSyncEnabledFlag; }

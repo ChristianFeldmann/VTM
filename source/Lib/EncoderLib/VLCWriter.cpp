@@ -667,7 +667,7 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
   }
 }
 
-void HLSWriter::codeHrdParameters( const HRD *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 )
+void HLSWriter::codeHrdParameters( const HRDParameters *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 )
 {
   if( commonInfPresentFlag )
   {

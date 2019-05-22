@@ -259,7 +259,7 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_rapCpbParamsPresentFlag = 0;
   //for the concatenation, it can be set to one during splicing.
   bufferingPeriodSEI->m_concatenationFlag = 0;
-  //since the temporal layer HRD is not ready, we assumed it is fixed
+  //since the temporal layer HRDParameters is not ready, we assumed it is fixed
   bufferingPeriodSEI->m_auCpbRemovalDelayDelta = 1;
   bufferingPeriodSEI->m_cpbDelayOffset = 0;
   bufferingPeriodSEI->m_dpbDelayOffset = 0;

@@ -46,6 +46,7 @@
 #include "Rom.h"
 #include "ChromaFormat.h"
 #include "Common.h"
+#include "HRD.h"
 
 //! \ingroup CommonLib
 //! \{
@@ -441,20 +442,6 @@ public:
 };
 #endif
 
-struct HrdSubLayerInfo
-{
-  bool fixedPicRateFlag;
-  bool fixedPicRateWithinCvsFlag;
-  uint32_t picDurationInTcMinus1;
-  bool lowDelayHrdFlag;
-  uint32_t cpbCntMinus1;
-  uint32_t bitRateValueMinus1[MAX_CPB_CNT][2];
-  uint32_t cpbSizeValue      [MAX_CPB_CNT][2];
-  uint32_t ducpbSizeValue    [MAX_CPB_CNT][2];
-  bool cbrFlag           [MAX_CPB_CNT][2];
-  uint32_t duBitRateValue    [MAX_CPB_CNT][2];
-};
-
 class SliceReshapeInfo
 {
 public:
@@ -483,142 +470,6 @@ struct ReshapeCW
   int rspTid;
   int rspSliceQP;
   int rspFpsToIp;
-};
-
-class HRD
-{
-private:
-  bool m_nalHrdParametersPresentFlag;
-  bool m_vclHrdParametersPresentFlag;
-  bool m_subPicCpbParamsPresentFlag;
-  uint32_t m_tickDivisorMinus2;
-  uint32_t m_duCpbRemovalDelayLengthMinus1;
-  bool m_subPicCpbParamsInPicTimingSEIFlag;
-  uint32_t m_dpbOutputDelayDuLengthMinus1;
-  uint32_t m_bitRateScale;
-  uint32_t m_cpbSizeScale;
-  uint32_t m_ducpbSizeScale;
-  uint32_t m_initialCpbRemovalDelayLengthMinus1;
-  uint32_t m_cpbRemovalDelayLengthMinus1;
-  uint32_t m_dpbOutputDelayLengthMinus1;
-  HrdSubLayerInfo m_HRD[MAX_TLAYER];
-
-public:
-  HRD()
-  :m_nalHrdParametersPresentFlag       (0)
-  ,m_vclHrdParametersPresentFlag       (0)
-  ,m_subPicCpbParamsPresentFlag        (false)
-  ,m_tickDivisorMinus2                 (0)
-  ,m_duCpbRemovalDelayLengthMinus1     (0)
-  ,m_subPicCpbParamsInPicTimingSEIFlag (false)
-  ,m_dpbOutputDelayDuLengthMinus1      (0)
-  ,m_bitRateScale                      (0)
-  ,m_cpbSizeScale                      (0)
-  ,m_initialCpbRemovalDelayLengthMinus1(23)
-  ,m_cpbRemovalDelayLengthMinus1       (23)
-  ,m_dpbOutputDelayLengthMinus1        (23)
-  {}
-
-  virtual ~HRD() {}
-
-  void    setNalHrdParametersPresentFlag( bool flag )                                { m_nalHrdParametersPresentFlag = flag;                      }
-  bool    getNalHrdParametersPresentFlag( ) const                                    { return m_nalHrdParametersPresentFlag;                      }
-
-  void    setVclHrdParametersPresentFlag( bool flag )                                { m_vclHrdParametersPresentFlag = flag;                      }
-  bool    getVclHrdParametersPresentFlag( ) const                                    { return m_vclHrdParametersPresentFlag;                      }
-
-  void    setSubPicCpbParamsPresentFlag( bool flag )                                 { m_subPicCpbParamsPresentFlag = flag;                       }
-  bool    getSubPicCpbParamsPresentFlag( ) const                                     { return m_subPicCpbParamsPresentFlag;                       }
-
-  void    setTickDivisorMinus2( uint32_t value )                                         { m_tickDivisorMinus2 = value;                               }
-  uint32_t    getTickDivisorMinus2( ) const                                              { return m_tickDivisorMinus2;                                }
-
-  void    setDuCpbRemovalDelayLengthMinus1( uint32_t value )                             { m_duCpbRemovalDelayLengthMinus1 = value;                   }
-  uint32_t    getDuCpbRemovalDelayLengthMinus1( ) const                                  { return m_duCpbRemovalDelayLengthMinus1;                    }
-
-  void    setSubPicCpbParamsInPicTimingSEIFlag( bool flag)                           { m_subPicCpbParamsInPicTimingSEIFlag = flag;                }
-  bool    getSubPicCpbParamsInPicTimingSEIFlag( ) const                              { return m_subPicCpbParamsInPicTimingSEIFlag;                }
-
-  void    setDpbOutputDelayDuLengthMinus1(uint32_t value )                               { m_dpbOutputDelayDuLengthMinus1 = value;                    }
-  uint32_t    getDpbOutputDelayDuLengthMinus1( ) const                                   { return m_dpbOutputDelayDuLengthMinus1;                     }
-
-  void    setBitRateScale( uint32_t value )                                              { m_bitRateScale = value;                                    }
-  uint32_t    getBitRateScale( ) const                                                   { return m_bitRateScale;                                     }
-
-  void    setCpbSizeScale( uint32_t value )                                              { m_cpbSizeScale = value;                                    }
-  uint32_t    getCpbSizeScale( ) const                                                   { return m_cpbSizeScale;                                     }
-  void    setDuCpbSizeScale( uint32_t value )                                            { m_ducpbSizeScale = value;                                  }
-  uint32_t    getDuCpbSizeScale( ) const                                                 { return m_ducpbSizeScale;                                   }
-
-  void    setInitialCpbRemovalDelayLengthMinus1( uint32_t value )                        { m_initialCpbRemovalDelayLengthMinus1 = value;              }
-  uint32_t    getInitialCpbRemovalDelayLengthMinus1( ) const                             { return m_initialCpbRemovalDelayLengthMinus1;               }
-
-  void    setCpbRemovalDelayLengthMinus1( uint32_t value )                               { m_cpbRemovalDelayLengthMinus1 = value;                     }
-  uint32_t    getCpbRemovalDelayLengthMinus1( ) const                                    { return m_cpbRemovalDelayLengthMinus1;                      }
-
-  void    setDpbOutputDelayLengthMinus1( uint32_t value )                                { m_dpbOutputDelayLengthMinus1 = value;                      }
-  uint32_t    getDpbOutputDelayLengthMinus1( ) const                                     { return m_dpbOutputDelayLengthMinus1;                       }
-
-  void    setFixedPicRateFlag( int layer, bool flag )                                { m_HRD[layer].fixedPicRateFlag = flag;                      }
-  bool    getFixedPicRateFlag( int layer ) const                                     { return m_HRD[layer].fixedPicRateFlag;                      }
-
-  void    setFixedPicRateWithinCvsFlag( int layer, bool flag )                       { m_HRD[layer].fixedPicRateWithinCvsFlag = flag;             }
-  bool    getFixedPicRateWithinCvsFlag( int layer ) const                            { return m_HRD[layer].fixedPicRateWithinCvsFlag;             }
-
-  void    setPicDurationInTcMinus1( int layer, uint32_t value )                          { m_HRD[layer].picDurationInTcMinus1 = value;                }
-  uint32_t    getPicDurationInTcMinus1( int layer ) const                                { return m_HRD[layer].picDurationInTcMinus1;                 }
-
-  void    setLowDelayHrdFlag( int layer, bool flag )                                 { m_HRD[layer].lowDelayHrdFlag = flag;                       }
-  bool    getLowDelayHrdFlag( int layer ) const                                      { return m_HRD[layer].lowDelayHrdFlag;                       }
-
-  void    setCpbCntMinus1( int layer, uint32_t value )                                   { m_HRD[layer].cpbCntMinus1 = value;                         }
-  uint32_t    getCpbCntMinus1( int layer ) const                                         { return m_HRD[layer].cpbCntMinus1;                          }
-
-  void    setBitRateValueMinus1( int layer, int cpbcnt, int nalOrVcl, uint32_t value )   { m_HRD[layer].bitRateValueMinus1[cpbcnt][nalOrVcl] = value; }
-  uint32_t    getBitRateValueMinus1( int layer, int cpbcnt, int nalOrVcl ) const         { return m_HRD[layer].bitRateValueMinus1[cpbcnt][nalOrVcl];  }
-
-  void    setCpbSizeValueMinus1( int layer, int cpbcnt, int nalOrVcl, uint32_t value )   { m_HRD[layer].cpbSizeValue[cpbcnt][nalOrVcl] = value;       }
-  uint32_t    getCpbSizeValueMinus1( int layer, int cpbcnt, int nalOrVcl ) const         { return m_HRD[layer].cpbSizeValue[cpbcnt][nalOrVcl];        }
-  void    setDuCpbSizeValueMinus1( int layer, int cpbcnt, int nalOrVcl, uint32_t value ) { m_HRD[layer].ducpbSizeValue[cpbcnt][nalOrVcl] = value;     }
-  uint32_t    getDuCpbSizeValueMinus1( int layer, int cpbcnt, int nalOrVcl ) const       { return m_HRD[layer].ducpbSizeValue[cpbcnt][nalOrVcl];      }
-  void    setDuBitRateValueMinus1( int layer, int cpbcnt, int nalOrVcl, uint32_t value ) { m_HRD[layer].duBitRateValue[cpbcnt][nalOrVcl] = value;     }
-  uint32_t    getDuBitRateValueMinus1(int layer, int cpbcnt, int nalOrVcl ) const        { return m_HRD[layer].duBitRateValue[cpbcnt][nalOrVcl];      }
-  void    setCbrFlag( int layer, int cpbcnt, int nalOrVcl, bool value )              { m_HRD[layer].cbrFlag[cpbcnt][nalOrVcl] = value;            }
-  bool    getCbrFlag( int layer, int cpbcnt, int nalOrVcl ) const                    { return m_HRD[layer].cbrFlag[cpbcnt][nalOrVcl];             }
-
-  bool    getCpbDpbDelaysPresentFlag( ) const                      { return getNalHrdParametersPresentFlag() || getVclHrdParametersPresentFlag(); }
-};
-
-class TimingInfo
-{
-  bool m_timingInfoPresentFlag;
-  uint32_t m_numUnitsInTick;
-  uint32_t m_timeScale;
-  bool m_pocProportionalToTimingFlag;
-  int  m_numTicksPocDiffOneMinus1;
-public:
-  TimingInfo()
-  : m_timingInfoPresentFlag      (false)
-  , m_numUnitsInTick             (1001)
-  , m_timeScale                  (60000)
-  , m_pocProportionalToTimingFlag(false)
-  , m_numTicksPocDiffOneMinus1   (0)
-  {}
-
-  void setTimingInfoPresentFlag( bool flag )   { m_timingInfoPresentFlag = flag;       }
-  bool getTimingInfoPresentFlag( ) const       { return m_timingInfoPresentFlag;       }
-
-  void setNumUnitsInTick( uint32_t value )         { m_numUnitsInTick = value;             }
-  uint32_t getNumUnitsInTick( ) const              { return m_numUnitsInTick;              }
-
-  void setTimeScale( uint32_t value )              { m_timeScale = value;                  }
-  uint32_t getTimeScale( ) const                   { return m_timeScale;                   }
-
-  void setPocProportionalToTimingFlag(bool x)  { m_pocProportionalToTimingFlag = x;    }
-  bool getPocProportionalToTimingFlag( ) const { return m_pocProportionalToTimingFlag; }
-
-  void setNumTicksPocDiffOneMinus1(int x)      { m_numTicksPocDiffOneMinus1 = x;       }
-  int  getNumTicksPocDiffOneMinus1( ) const    { return m_numTicksPocDiffOneMinus1;    }
 };
 
 struct ChromaQpAdj
@@ -677,7 +528,7 @@ private:
 
   uint32_t                  m_numHrdParameters;
   uint32_t                  m_maxNuhReservedZeroLayerId;
-  std::vector<HRD>      m_hrdParameters;
+  std::vector<HRDParameters> m_hrdParameters;
   std::vector<uint32_t>     m_hrdOpSetIdx;
   std::vector<bool>     m_cprmsPresentFlag;
   uint32_t                  m_numOpSets;
@@ -698,8 +549,8 @@ public:
     m_cprmsPresentFlag.resize(getNumHrdParameters());
   }
 
-  HRD*              getHrdParameters( uint32_t i )                           { return &m_hrdParameters[ i ];                                    }
-  const HRD*        getHrdParameters( uint32_t i ) const                     { return &m_hrdParameters[ i ];                                    }
+  HRDParameters*        getHrdParameters( uint32_t i )                           { return &m_hrdParameters[ i ];                                    }
+  const HRDParameters*  getHrdParameters( uint32_t i ) const                     { return &m_hrdParameters[ i ];                                    }
   uint32_t              getHrdOpSetIdx( uint32_t i ) const                       { return m_hrdOpSetIdx[ i ];                                       }
   void              setHrdOpSetIdx( uint32_t val, uint32_t i )                   { m_hrdOpSetIdx[ i ] = val;                                        }
   bool              getCprmsPresentFlag( uint32_t i ) const                  { return m_cprmsPresentFlag[ i ];                                  }
@@ -815,8 +666,8 @@ private:
   int        m_maxBitsPerMinCuDenom;
   int        m_log2MaxMvLengthHorizontal;
   int        m_log2MaxMvLengthVertical;
-  HRD    m_hrdParameters;
-  TimingInfo m_timingInfo;
+  HRDParameters m_hrdParameters;
+  TimingInfo    m_timingInfo;
 
 public:
   VUI()
@@ -944,8 +795,8 @@ public:
   int               getLog2MaxMvLengthVertical() const                     { return m_log2MaxMvLengthVertical;              }
   void              setLog2MaxMvLengthVertical(int i)                      { m_log2MaxMvLengthVertical = i;                 }
 
-  HRD*              getHrdParameters()                                     { return &m_hrdParameters;                       }
-  const HRD*        getHrdParameters()  const                              { return &m_hrdParameters;                       }
+  HRDParameters*       getHrdParameters()                                  { return &m_hrdParameters;                       }
+  const HRDParameters* getHrdParameters()  const                           { return &m_hrdParameters;                       }
 
   TimingInfo*       getTimingInfo()                                        { return &m_timingInfo;                          }
   const TimingInfo* getTimingInfo() const                                  { return &m_timingInfo;                          }

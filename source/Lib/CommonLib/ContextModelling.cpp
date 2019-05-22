@@ -382,10 +382,11 @@ unsigned DeriveCtx::CtxIBCFlag(const CodingUnit& cu)
 {
   const CodingStructure *cs = cu.cs;
   unsigned ctxId = 0;
-  const CodingUnit *cuLeft = cs->getCURestricted(cu.lumaPos().offset(-1, 0), cu, CH_L);
+  const Position pos = cu.chType == CHANNEL_TYPE_CHROMA ? cu.chromaPos() : cu.lumaPos();
+  const CodingUnit *cuLeft = cs->getCURestricted(pos.offset(-1, 0), cu, cu.chType);
   ctxId += (cuLeft && CU::isIBC(*cuLeft)) ? 1 : 0;
 
-  const CodingUnit *cuAbove = cs->getCURestricted(cu.lumaPos().offset(0, -1), cu, CH_L);
+  const CodingUnit *cuAbove = cs->getCURestricted(pos.offset(0, -1), cu, cu.chType);
   ctxId += (cuAbove && CU::isIBC(*cuAbove)) ? 1 : 0;
   return ctxId;
 }

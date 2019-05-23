@@ -287,7 +287,6 @@ typedef std::pair<int, int>  TrCost;
 #define HEVC_USE_SIGN_HIDING                              1
 #define HEVC_USE_SCALING_LISTS                            1
 #define HEVC_VPS                                          1
-#define HEVC_DEPENDENT_SLICES                             1
 #else
 #define HEVC_USE_SIGN_HIDING                              1
 #endif

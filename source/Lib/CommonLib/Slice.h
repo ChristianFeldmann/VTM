@@ -1430,9 +1430,6 @@ private:
   bool             m_OutputFlagPresentFlag;             //!< Indicates the presence of output_flag in slice header
   bool             m_TransquantBypassEnabledFlag;       //!< Indicates presence of cu_transquant_bypass_flag in CUs.
   bool             m_useTransformSkip;
-#if HEVC_DEPENDENT_SLICES
-  bool             m_dependentSliceSegmentsEnabledFlag; //!< Indicates the presence of dependent slices
-#endif
 #if !JVET_N0857_TILES_BRICKS
   bool             m_tilesEnabledFlag;                  //!< Indicates the presence of tiles
 #endif
@@ -1566,10 +1563,6 @@ public:
 
   void                   setLoopFilterAcrossBricksEnabledFlag(bool b)                     { m_loopFilterAcrossBricksEnabledFlag = b;      }
   bool                   getLoopFilterAcrossBricksEnabledFlag() const                     { return m_loopFilterAcrossBricksEnabledFlag;   }
-#if HEVC_DEPENDENT_SLICES
-  bool                   getDependentSliceSegmentsEnabledFlag() const                     { return m_dependentSliceSegmentsEnabledFlag;   }
-  void                   setDependentSliceSegmentsEnabledFlag(bool val)                   { m_dependentSliceSegmentsEnabledFlag = val;    }
-#endif
 #if !JVET_N0857_TILES_BRICKS
   void                   setTilesEnabledFlag(bool val)                                    { m_tilesEnabledFlag = val;                     }
   bool                   getTilesEnabledFlag() const                                      { return m_tilesEnabledFlag;                    }
@@ -1737,9 +1730,6 @@ private:
   SliceType                  m_eSliceType;
   int                        m_iSliceQp;
   int                        m_iSliceQpBase;
-#if HEVC_DEPENDENT_SLICES
-  bool                       m_dependentSliceSegmentFlag;
-#endif
   bool                       m_ChromaQpAdjEnabled;
   bool                       m_deblockingFilterDisable;
   bool                       m_deblockingFilterOverrideFlag;      //< offsets for deblocking filter inherit from PPS
@@ -1805,21 +1795,8 @@ private:
   uint32_t                       m_sliceCurStartCtuTsAddr;
   uint32_t                       m_sliceCurEndCtuTsAddr;
   uint32_t                       m_independentSliceIdx;
-#if HEVC_DEPENDENT_SLICES
-  uint32_t                       m_sliceSegmentIdx;
-  SliceConstraint            m_sliceSegmentMode;
-  uint32_t                       m_sliceSegmentArgument;
-  uint32_t                       m_sliceSegmentCurStartCtuTsAddr;
-  uint32_t                       m_sliceSegmentCurEndCtuTsAddr;
-#endif
   bool                       m_nextSlice;
-#if HEVC_DEPENDENT_SLICES
-  bool                       m_nextSliceSegment;
-#endif
   uint32_t                       m_sliceBits;
-#if HEVC_DEPENDENT_SLICES
-  uint32_t                       m_sliceSegmentBits;
-#endif
   bool                       m_bFinalized;
 
   bool                       m_bTestWeightPred;
@@ -1922,10 +1899,6 @@ public:
   int                         getPOC() const                                         { return m_iPOC;                                                }
   int                         getSliceQp() const                                     { return m_iSliceQp;                                            }
   bool                        getUseWeightedPrediction() const                       { return( (m_eSliceType==P_SLICE && testWeightPred()) || (m_eSliceType==B_SLICE && testWeightBiPred()) ); }
-#if HEVC_DEPENDENT_SLICES
-  bool                        getDependentSliceSegmentFlag() const                   { return m_dependentSliceSegmentFlag;                           }
-  void                        setDependentSliceSegmentFlag(bool val)                 { m_dependentSliceSegmentFlag = val;                            }
-#endif
   int                         getSliceQpDelta() const                                { return m_iSliceQpDelta;                                       }
   int                         getSliceChromaQpDelta(ComponentID compID) const        { return isLuma(compID) ? 0 : m_iSliceChromaQpDelta[compID];    }
   bool                        getUseChromaQpAdj() const                              { return m_ChromaQpAdjEnabled;                                  }
@@ -2096,27 +2069,9 @@ public:
   uint32_t                        getSliceCurEndCtuTsAddr() const                        { return m_sliceCurEndCtuTsAddr;                                } // CTU Tile-scan address (as opposed to raster-scan)
   void                        setIndependentSliceIdx( uint32_t i)                        { m_independentSliceIdx = i;                                    }
   uint32_t                        getIndependentSliceIdx() const                         { return  m_independentSliceIdx;                                }
-#if HEVC_DEPENDENT_SLICES
-  void                        setSliceSegmentIdx( uint32_t i)                            { m_sliceSegmentIdx = i;                                        }
-  uint32_t                        getSliceSegmentIdx() const                             { return  m_sliceSegmentIdx;                                    }
-#endif
   void                        copySliceInfo(Slice *pcSliceSrc, bool cpyAlmostAll = true);
-#if HEVC_DEPENDENT_SLICES
-  void                        setSliceSegmentMode( SliceConstraint mode )            { m_sliceSegmentMode = mode;                                    }
-  SliceConstraint             getSliceSegmentMode() const                            { return m_sliceSegmentMode;                                    }
-  void                        setSliceSegmentArgument( uint32_t uiArgument )             { m_sliceSegmentArgument = uiArgument;                          }
-  uint32_t                        getSliceSegmentArgument() const                        { return m_sliceSegmentArgument;                                }
-  void                        setSliceSegmentCurStartCtuTsAddr( uint32_t ctuTsAddr )     { m_sliceSegmentCurStartCtuTsAddr = ctuTsAddr;                  } // CTU Tile-scan address (as opposed to raster-scan)
-  uint32_t                        getSliceSegmentCurStartCtuTsAddr() const               { return m_sliceSegmentCurStartCtuTsAddr;                       } // CTU Tile-scan address (as opposed to raster-scan)
-  void                        setSliceSegmentCurEndCtuTsAddr( uint32_t ctuTsAddr )       { m_sliceSegmentCurEndCtuTsAddr = ctuTsAddr;                    } // CTU Tile-scan address (as opposed to raster-scan)
-  uint32_t                        getSliceSegmentCurEndCtuTsAddr() const                 { return m_sliceSegmentCurEndCtuTsAddr;                         } // CTU Tile-scan address (as opposed to raster-scan)
-#endif
   void                        setSliceBits( uint32_t uiVal )                             { m_sliceBits = uiVal;                                          }
   uint32_t                        getSliceBits() const                                   { return m_sliceBits;                                           }
-#if HEVC_DEPENDENT_SLICES
-  void                        setSliceSegmentBits( uint32_t uiVal )                      { m_sliceSegmentBits = uiVal;                                   }
-  uint32_t                        getSliceSegmentBits() const                            { return m_sliceSegmentBits;                                    }
-#endif
   void                        setFinalized( bool uiVal )                             { m_bFinalized = uiVal;                                         }
   bool                        getFinalized() const                                   { return m_bFinalized;                                          }
   bool                        testWeightPred( ) const                                { return m_bTestWeightPred;                                     }

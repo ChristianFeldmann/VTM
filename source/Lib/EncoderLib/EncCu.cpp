@@ -1333,22 +1333,10 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     const bool isEndOfSlice        =    slice.getSliceMode() == FIXED_NUMBER_OF_BYTES
                                       && ((slice.getSliceBits() + CS::getEstBits(*bestCS)) > slice.getSliceArgument() << 3)
                                       && CtuAddr != tileMap.getCtuTsToRsAddrMap(slice.getSliceCurStartCtuTsAddr())
-#if HEVC_DEPENDENT_SLICES
-                                      && CtuAddr != tileMap.getCtuTsToRsAddrMap(slice.getSliceSegmentCurStartCtuTsAddr());
-#else
                                       ;
 #endif
-#endif
 
-#if HEVC_DEPENDENT_SLICES
-    const bool isEndOfSliceSegment =    slice.getSliceSegmentMode() == FIXED_NUMBER_OF_BYTES
-                                      && ((slice.getSliceSegmentBits() + CS::getEstBits(*bestCS)) > slice.getSliceSegmentArgument() << 3)
-                                      && CtuAddr != tileMap.getCtuTsToRsAddrMap(slice.getSliceSegmentCurStartCtuTsAddr());
-                                          // Do not need to check slice condition for slice-segment since a slice-segment is a subset of a slice.
-    if (isEndOfSlice || isEndOfSliceSegment)
-#else
     if(isEndOfSlice)
-#endif
     {
       bestCS->cost = MAX_DOUBLE;
       bestCS->costDbOffset = 0;

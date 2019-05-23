@@ -1391,12 +1391,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setUseTransformSkip( m_useTransformSkip );
   pps.getPpsRangeExtension().setLog2MaxTransformSkipBlockSize( m_log2MaxTransformSkipBlockSize  );
 
-#if HEVC_DEPENDENT_SLICES
-  if (m_sliceSegmentMode != NO_SLICES)
-  {
-    pps.setDependentSliceSegmentsEnabledFlag( true );
-  }
-#endif
 
   xInitPPSforTiles(pps);
 

@@ -407,10 +407,6 @@ protected:
   bool      m_useEarlySkipDetection;                          ///< flag for using Early SKIP Detection
   SliceConstraint m_sliceMode;
   int             m_sliceArgument;                            ///< argument according to selected slice mode
-#if HEVC_DEPENDENT_SLICES
-  SliceConstraint m_sliceSegmentMode;
-  int             m_sliceSegmentArgument;                     ///< argument according to selected slice segment mode
-#endif
 
   bool      m_bLFCrossSliceBoundaryFlag;  ///< 1: filter across slice boundaries 0: do not filter across slice boundaries
 

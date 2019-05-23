@@ -1506,9 +1506,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     int pocBits = pcSlice->getSPS()->getBitsForPOC();
     int pocMask = (1 << pocBits) - 1;
     pcSlice->setLastIDR(m_iLastIDR & ~pocMask);
-#if HEVC_DEPENDENT_SLICES
-    pcSlice->setSliceSegmentIdx(0);
-#endif
     pcSlice->setIndependentSliceIdx(0);
     //set default slice level flag to the same as SPS level flag
     pcSlice->setLFCrossSliceBoundaryFlag(  pcSlice->getPPS()->getLoopFilterAcrossSlicesEnabledFlag()  );
@@ -1958,9 +1955,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setMvdL1ZeroFlag(false);
     }
-#if HEVC_DEPENDENT_SLICES
-    pcPic->slices[pcSlice->getSliceSegmentIdx()]->setMvdL1ZeroFlag(pcSlice->getMvdL1ZeroFlag());
-#endif
 
 #if JVET_N0235_SMVD_SPS
     if ( pcSlice->getSPS()->getUseSMVD() && pcSlice->getCheckLDC() == false
@@ -2330,48 +2324,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
 
       pcSlice->setSliceCurStartCtuTsAddr( 0 );
-#if HEVC_DEPENDENT_SLICES
-      pcSlice->setSliceSegmentCurStartCtuTsAddr( 0 );
-#endif
 
       for(uint32_t nextCtuTsAddr = 0; nextCtuTsAddr < numberOfCtusInFrame; )
       {
         m_pcSliceEncoder->precompressSlice( pcPic );
         m_pcSliceEncoder->compressSlice   ( pcPic, false, false );
 
-#if HEVC_DEPENDENT_SLICES
-        const uint32_t curSliceSegmentEnd = pcSlice->getSliceSegmentCurEndCtuTsAddr();
-        if (curSliceSegmentEnd < numberOfCtusInFrame)
-        {
-          const bool bNextSegmentIsDependentSlice = curSliceSegmentEnd < pcSlice->getSliceCurEndCtuTsAddr();
-          const uint32_t sliceBits                    = pcSlice->getSliceBits();
-          uint32_t independentSliceIdx                = pcSlice->getIndependentSliceIdx();
-          pcPic->allocateNewSlice();
-          // prepare for next slice
-          m_pcSliceEncoder->setSliceSegmentIdx      ( uiNumSliceSegments   );
-          pcSlice = pcPic->slices                   [ uiNumSliceSegments   ];
-          CHECK(!(pcSlice->getPPS()!=0), "Unspecified error");
-          pcSlice->copySliceInfo                    ( pcPic->slices[uiNumSliceSegments-1]  );
-          pcSlice->setSliceSegmentIdx               ( uiNumSliceSegments   );
-          if (bNextSegmentIsDependentSlice)
-          {
-            pcSlice->setSliceBits(sliceBits);
-          }
-          else
-          {
-            pcSlice->setSliceCurStartCtuTsAddr      ( curSliceSegmentEnd );
-            pcSlice->setSliceBits(0);
-            independentSliceIdx ++;
-          }
-          pcSlice->setIndependentSliceIdx( independentSliceIdx );
-          pcSlice->setDependentSliceSegmentFlag( bNextSegmentIsDependentSlice );
-          pcSlice->setSliceSegmentCurStartCtuTsAddr ( curSliceSegmentEnd );
-          // TODO: optimise cabac_init during compress slice to improve multi-slice operation
-          // pcSlice->setEncCABACTableIdx(m_pcSliceEncoder->getEncCABACTableIdx());
-          uiNumSliceSegments ++;
-        }
-        nextCtuTsAddr = curSliceSegmentEnd;
-#else
         const uint32_t curSliceEnd = pcSlice->getSliceCurEndCtuTsAddr();
         if(curSliceEnd < numberOfCtusInFrame)
         {
@@ -2389,7 +2347,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           uiNumSliceSegments++;
         }
         nextCtuTsAddr = curSliceEnd;
-#endif
       }
 
       duData.clear();
@@ -2615,11 +2572,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       std::size_t binCountsInNalUnits   = 0; // For implementation of cabac_zero_word stuffing (section 7.4.3.10)
       std::size_t numBytesInVclNalUnits = 0; // For implementation of cabac_zero_word stuffing (section 7.4.3.10)
 
-#if HEVC_DEPENDENT_SLICES
-      for( uint32_t sliceSegmentStartCtuTsAddr = 0, sliceSegmentIdxCount=0; sliceSegmentStartCtuTsAddr < numberOfCtusInFrame; sliceSegmentIdxCount++, sliceSegmentStartCtuTsAddr=pcSlice->getSliceSegmentCurEndCtuTsAddr() )
-#else
       for(uint32_t sliceSegmentStartCtuTsAddr = 0, sliceSegmentIdxCount = 0; sliceSegmentStartCtuTsAddr < numberOfCtusInFrame; sliceSegmentIdxCount++, sliceSegmentStartCtuTsAddr = pcSlice->getSliceCurEndCtuTsAddr())
-#endif
       {
         pcSlice = pcPic->slices[sliceSegmentIdxCount];
         if(sliceSegmentIdxCount > 0 && pcSlice->getSliceType()!= I_SLICE)
@@ -2686,12 +2639,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #if JVET_N0857_TILES_BRICKS
           const int numZeroSubstreamsAtStartOfSlice  = pcPic->brickMap->getSubstreamForCtuAddr(pcSlice->getSliceCurStartCtuTsAddr(), false, pcSlice);
 #else
-#if HEVC_DEPENDENT_SLICES
-
-          const int numZeroSubstreamsAtStartOfSlice = pcPic->tileMap->getSubstreamForCtuAddr(pcSlice->getSliceSegmentCurStartCtuTsAddr(), false, pcSlice);
-#else
           const int numZeroSubstreamsAtStartOfSlice  = pcPic->tileMap->getSubstreamForCtuAddr(pcSlice->getSliceCurStartCtuTsAddr(), false, pcSlice);
-#endif
 #endif
           const int numSubstreamsToCode  = pcSlice->getNumberOfSubstreamSizes()+1;
           for ( uint32_t ui = 0 ; ui < numSubstreamsToCode; ui++ )

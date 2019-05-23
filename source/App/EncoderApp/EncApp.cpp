@@ -405,11 +405,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSliceMode                                         ( m_sliceMode );
   m_cEncLib.setSliceArgument                                     ( m_sliceArgument );
 
-#if HEVC_DEPENDENT_SLICES
-  //====== Dependent Slice ========
-  m_cEncLib.setSliceSegmentMode                                  ( m_sliceSegmentMode );
-  m_cEncLib.setSliceSegmentArgument                              ( m_sliceSegmentArgument );
-#endif
 
   if(m_sliceMode == NO_SLICES )
   {

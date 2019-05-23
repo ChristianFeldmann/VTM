@@ -48,18 +48,10 @@
 class ParcatHLSyntaxReader : public VLCReader
 {
   public:
-#if HEVC_DEPENDENT_SLICES
-    bool  parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager, bool isRapPic, bool &dependent_slice_segment_flag );
-#else
     bool  parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager, bool isRapPic );
-#endif
 };
 
-#if HEVC_DEPENDENT_SLICES
-bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager, bool isRapPic, bool &dependent_slice_segment_flag )
-#else
 bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager, bool isRapPic )
-#endif
 {
   uint32_t  uiCode;
 
@@ -80,14 +72,6 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   //!KS: need to add error handling code here, if SPS is not available
   CHECK(sps==0, "Invalid SPS");
 
-#if HEVC_DEPENDENT_SLICES
-  dependent_slice_segment_flag = false;
-  if( pps->getDependentSliceSegmentsEnabledFlag() && ( !firstSliceSegmentInPic ))
-  {
-    READ_FLAG( uiCode, "dependent_slice_segment_flag" );
-    dependent_slice_segment_flag = uiCode ? true : false;
-  }
-#endif
   int numCTUs = ((sps->getPicWidthInLumaSamples()+sps->getMaxCUWidth()-1)/sps->getMaxCUWidth())*((sps->getPicHeightInLumaSamples()+sps->getMaxCUHeight()-1)/sps->getMaxCUHeight());
   uint32_t sliceSegmentAddress = 0;
   int bitsSliceSegmentAddress = 0;
@@ -101,9 +85,6 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
     READ_CODE( bitsSliceSegmentAddress, sliceSegmentAddress, "slice_segment_address" );
   }
   //set uiCode to equal slice start address (or dependent slice start address)
-#if HEVC_DEPENDENT_SLICES
-  return false;
-#endif
   for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
   {
     READ_FLAG(uiCode, "slice_reserved_flag[]"); // ignored
@@ -439,23 +420,11 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
 #endif
         || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA;
 
-#if HEVC_DEPENDENT_SLICES
-      bool dependent_slice_segment_flag = false;
-      // beginning of slice header parsing, taken from VLCReader
-      bool first_slice_segment_in_pic_flag = parcatHLSReader.parseSliceHeaderUpToPoc( &parameterSetManager, isRapPic, dependent_slice_segment_flag);
-#else
       // beginning of slice header parsing, taken from VLCReader
       bool first_slice_segment_in_pic_flag = parcatHLSReader.parseSliceHeaderUpToPoc( &parameterSetManager, isRapPic);
-#endif
       int num_bits_up_to_poc_lsb = parcatHLSReader.getBitstream()->getNumBitsRead();
       int offset = num_bits_up_to_poc_lsb;
 
-#if HEVC_DEPENDENT_SLICES
-      if( dependent_slice_segment_flag )
-      {
-        continue;
-      }
-#endif
       int byte_offset = offset / 8;
       int hi_bits = offset % 8;
       uint16_t data = (nalu[byte_offset] << 8) | nalu[byte_offset + 1];

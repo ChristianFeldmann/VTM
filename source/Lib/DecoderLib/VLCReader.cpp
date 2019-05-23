@@ -389,9 +389,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   CHECK(uiCode > 15, "SPS id exceeds boundary (15)");
   pcPPS->setSPSId (uiCode);
 
-#if HEVC_DEPENDENT_SLICES
-  READ_FLAG( uiCode, "dependent_slice_segments_enabled_flag"    );    pcPPS->setDependentSliceSegmentsEnabledFlag   ( uiCode == 1 );
-#endif
 
   READ_FLAG( uiCode, "output_flag_present_flag" );                    pcPPS->setOutputFlagPresentFlag( uiCode==1 );
 
@@ -1696,16 +1693,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   const uint32_t numValidComp=getNumberValidComponents(chFmt);
   const bool bChroma=(chFmt!=CHROMA_400);
 
-#if HEVC_DEPENDENT_SLICES
-  if( pps->getDependentSliceSegmentsEnabledFlag() && ( !firstSliceSegmentInPic ))
-  {
-    READ_FLAG( uiCode, "dependent_slice_segment_flag" );       pcSlice->setDependentSliceSegmentFlag(uiCode ? true : false);
-  }
-  else
-  {
-    pcSlice->setDependentSliceSegmentFlag(false);
-  }
-#endif
   int numCTUs = ((sps->getPicWidthInLumaSamples()+sps->getMaxCUWidth()-1)/sps->getMaxCUWidth())*((sps->getPicHeightInLumaSamples()+sps->getMaxCUHeight()-1)/sps->getMaxCUHeight());
   uint32_t sliceSegmentAddress = 0;
   int bitsSliceSegmentAddress = 0;
@@ -1719,21 +1706,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     READ_CODE( bitsSliceSegmentAddress, sliceSegmentAddress, "slice_segment_address" );
   }
   //set uiCode to equal slice start address (or dependent slice start address)
-#if HEVC_DEPENDENT_SLICES
-  pcSlice->setSliceSegmentCurStartCtuTsAddr( sliceSegmentAddress );// this is actually a Raster-Scan (RS) address, but we do not have the RS->TS conversion table defined yet.
-  pcSlice->setSliceSegmentCurEndCtuTsAddr(numCTUs);                // Set end as the last CTU of the picture.
-
-  if (!pcSlice->getDependentSliceSegmentFlag())
-  {
-#endif
     pcSlice->setSliceCurStartCtuTsAddr(sliceSegmentAddress); // this is actually a Raster-Scan (RS) address, but we do not have the RS->TS conversion table defined yet.
     pcSlice->setSliceCurEndCtuTsAddr(numCTUs);
-#if HEVC_DEPENDENT_SLICES
-  }
-
-  if(!pcSlice->getDependentSliceSegmentFlag())
-  {
-#endif
     for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
     {
       READ_FLAG(uiCode, "slice_reserved_flag[]"); // ignored
@@ -2357,9 +2331,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       parseReshaper(pcSlice->getReshapeInfo(), sps, pcSlice->isIntra());
     }
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
 
   if( firstSliceSegmentInPic )
   {

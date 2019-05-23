@@ -1711,13 +1711,13 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       pCABACWriter->initCtxModels( *pcSlice );
 #if JVET_N0857_TILES_BRICKS
 #if JVET_N0150_ONE_CTU_DELAY_WPP
-      if( cs.getCURestricted( pos.offset(pcv.maxCUWidth*(NUM_WPP_DELAY_IN_CTU-1), -1), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
+      if( cs.getCURestricted( pos.offset(0, -1), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
 #else
       if( cs.getCURestricted( pos.offset(pcv.maxCUWidth, -1), pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
 #endif
 #else
 #if JVET_N0150_ONE_CTU_DELAY_WPP
-      if( cs.getCURestricted( pos.offset(pcv.maxCUWidth*(NUM_WPP_DELAY_IN_CTU-1), -1), pos, pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
+      if( cs.getCURestricted( pos.offset(0, -1), pos, pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
 #else
       if( cs.getCURestricted( pos.offset(pcv.maxCUWidth, -1), pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
 #endif
@@ -1882,7 +1882,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 
     // Store probabilities of second CTU in line into buffer - used only if wavefront-parallel-processing is enabled.
 #if JVET_N0150_ONE_CTU_DELAY_WPP
-    if( ctuXPosInCtus == tileXPosInCtus + (NUM_WPP_DELAY_IN_CTU-1) && pEncLib->getEntropyCodingSyncEnabledFlag() )
+    if( ctuXPosInCtus == tileXPosInCtus && pEncLib->getEntropyCodingSyncEnabledFlag() )
 #else
     if( ctuXPosInCtus == tileXPosInCtus + 1 && pEncLib->getEntropyCodingSyncEnabledFlag() )
 #endif
@@ -2065,13 +2065,13 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       }
 #if JVET_N0857_TILES_BRICKS
 #if JVET_N0150_ONE_CTU_DELAY_WPP
-      if( cs.getCURestricted( pos.offset( pcv.maxCUWidth*(NUM_WPP_DELAY_IN_CTU-1), -1 ), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
+      if( cs.getCURestricted( pos.offset( 0, -1 ), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
 #else
       if( cs.getCURestricted( pos.offset( pcv.maxCUWidth, -1 ), pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
 #endif
 #else
 #if JVET_N0150_ONE_CTU_DELAY_WPP
-      if( cs.getCURestricted( pos.offset( pcv.maxCUWidth*(NUM_WPP_DELAY_IN_CTU-1), -1 ), pos, pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
+      if( cs.getCURestricted( pos.offset( 0, -1 ), pos, pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
 #else
       if( cs.getCURestricted( pos.offset( pcv.maxCUWidth, -1 ), pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
 #endif
@@ -2092,7 +2092,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 
     // store probabilities of second CTU in line into buffer
 #if JVET_N0150_ONE_CTU_DELAY_WPP
-    if( ctuXPosInCtus == tileXPosInCtus + (NUM_WPP_DELAY_IN_CTU-1) && wavefrontsEnabled )
+    if( ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled )
 #else
     if( ctuXPosInCtus == tileXPosInCtus + 1 && wavefrontsEnabled )
 #endif

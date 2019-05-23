@@ -225,13 +225,13 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       }
 #if JVET_N0857_TILES_BRICKS
 #if JVET_N0150_ONE_CTU_DELAY_WPP
-      if( cs.getCURestricted( pos.offset(maxCUSize*(NUM_WPP_DELAY_IN_CTU-1), -1), pos, slice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
+      if( cs.getCURestricted( pos.offset(0, -1), pos, slice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
 #else
       if( cs.getCURestricted( pos.offset(maxCUSize, -1), slice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
 #endif
 #else
 #if JVET_N0150_ONE_CTU_DELAY_WPP
-      if( cs.getCURestricted( pos.offset(maxCUSize*(NUM_WPP_DELAY_IN_CTU-1), -1), pos, slice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
+      if( cs.getCURestricted( pos.offset(0, -1), pos, slice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
 #else
       if( cs.getCURestricted( pos.offset(maxCUSize, -1), slice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
 #endif
@@ -274,7 +274,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     m_pcCuDecoder->decompressCtu( cs, ctuArea );
 
 #if JVET_N0150_ONE_CTU_DELAY_WPP
-    if( ctuXPosInCtus == tileXPosInCtus+(NUM_WPP_DELAY_IN_CTU-1) && wavefrontsEnabled )
+    if( ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled )
 #else
     if( ctuXPosInCtus == tileXPosInCtus+1 && wavefrontsEnabled )
 #endif

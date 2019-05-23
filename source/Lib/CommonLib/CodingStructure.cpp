@@ -1349,10 +1349,12 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   // exists       same slice and tile                  cu precedes curCu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
 #if JVET_N0150_ONE_CTU_DELAY_WPP
+  const bool wavefrontsEnabled = curCu.slice->getPPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = g_aucLog2[curCu.cs->sps->getMaxCUWidth()];
   int xNbY  = cu ? cu->blocks[_chType].x << getChannelTypeScaleX( _chType, curCu.chromaFormat ) : 0;
   int xCurr = curCu.blocks[_chType].x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
-  if( cu && CU::isSameSliceAndTile( *cu, curCu ) && ( cu->cs != curCu.cs || cu->idx <= curCu.idx ) && (xNbY >> ctuSizeBit) < (xCurr >> ctuSizeBit) + 1 )
+  bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
+  if( cu && CU::isSameSliceAndTile( *cu, curCu ) && ( cu->cs != curCu.cs || cu->idx <= curCu.idx ) && addCheck)
 #else
   if( cu && CU::isSameSliceAndTile( *cu, curCu ) && ( cu->cs != curCu.cs || cu->idx <= curCu.idx ) )
 #endif
@@ -1373,10 +1375,13 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const u
 {
   const CodingUnit* cu = getCU( pos, _chType );
 #if JVET_N0150_ONE_CTU_DELAY_WPP
+  const CodingUnit* curCu = getCU( curPos, _chType );
+  const bool wavefrontsEnabled = curCu && curCu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = cu ? g_aucLog2[cu->cs->sps->getMaxCUWidth()] : 0;
   int xNbY  = cu ? pos.x << getChannelTypeScaleX( _chType, cu->chromaFormat ) : 0;
   int xCurr = cu ? curPos.x << getChannelTypeScaleX( _chType, cu->chromaFormat ) : 0;
-  return ( cu && cu->slice->getIndependentSliceIdx() == curSliceIdx && cu->tileIdx == curTileIdx && (xNbY >> ctuSizeBit) < (xCurr >> ctuSizeBit) + 1 ) ? cu : nullptr;
+  bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
+  return ( cu && cu->slice->getIndependentSliceIdx() == curSliceIdx && cu->tileIdx == curTileIdx && addCheck ) ? cu : nullptr;
 #else
   return ( cu && cu->slice->getIndependentSliceIdx() == curSliceIdx && cu->tileIdx == curTileIdx ) ? cu : nullptr;
 #endif
@@ -1388,10 +1393,12 @@ const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, con
   // exists       same slice and tile                  pu precedes curPu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
 #if JVET_N0150_ONE_CTU_DELAY_WPP
+  const bool wavefrontsEnabled = curPu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = g_aucLog2[curPu.cs->sps->getMaxCUWidth()];
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
   int xCurr = curPu.blocks[_chType].x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
-  if( pu && CU::isSameSliceAndTile( *pu->cu, *curPu.cu ) && ( pu->cs != curPu.cs || pu->idx <= curPu.idx ) && (xNbY >> ctuSizeBit) < (xCurr >> ctuSizeBit) + 1 )
+  bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
+  if( pu && CU::isSameSliceAndTile( *pu->cu, *curPu.cu ) && ( pu->cs != curPu.cs || pu->idx <= curPu.idx ) && addCheck )
 #else
   if( pu && CU::isSameSliceAndTile( *pu->cu, *curPu.cu ) && ( pu->cs != curPu.cs || pu->idx <= curPu.idx ) )
 #endif
@@ -1410,10 +1417,12 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   // exists       same slice and tile                  tu precedes curTu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
 #if JVET_N0150_ONE_CTU_DELAY_WPP
+  const bool wavefrontsEnabled = curTu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = g_aucLog2[curTu.cs->sps->getMaxCUWidth()];
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
   int xCurr = curTu.blocks[_chType].x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
-  if( tu && CU::isSameSliceAndTile( *tu->cu, *curTu.cu ) && ( tu->cs != curTu.cs || tu->idx <= curTu.idx ) && (xNbY >> ctuSizeBit) < (xCurr >> ctuSizeBit) + 1 )
+  bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
+  if( tu && CU::isSameSliceAndTile( *tu->cu, *curTu.cu ) && ( tu->cs != curTu.cs || tu->idx <= curTu.idx ) && addCheck )
 #else
   if( tu && CU::isSameSliceAndTile( *tu->cu, *curTu.cu ) && ( tu->cs != curTu.cs || tu->idx <= curTu.idx ) )
 #endif

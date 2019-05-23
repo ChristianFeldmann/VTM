@@ -50,6 +50,12 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0847_SCALING_LISTS                          1  //1: default mode, 2: user defined mode
+
+#if JVET_N0847_SCALING_LISTS
+#define HEVC_USE_SCALING_LISTS                            1 
+#endif
+
 #define JVET_N0415_CTB_ALF                                1 // JVET-N0415: CTB-based ALF switch
 
 #define JVET_N0105_LFNST_CTX_MODELLING                    1 // LFNST index signalled without intra mode dependency and with on ctx-coded bin
@@ -773,7 +779,12 @@ enum ScalingListMode
 
 enum ScalingListSize
 {
+#if JVET_N0847_SCALING_LISTS
+  SCALING_LIST_1x1 = 0,
+  SCALING_LIST_2x2,
+#else
   SCALING_LIST_2x2 = 0,
+#endif
   SCALING_LIST_4x4,
   SCALING_LIST_8x8,
   SCALING_LIST_16x16,
@@ -781,8 +792,14 @@ enum ScalingListSize
   SCALING_LIST_64x64,
   SCALING_LIST_128x128,
   SCALING_LIST_SIZE_NUM,
+#if JVET_N0847_SCALING_LISTS
+  //for user define matrix
+  SCALING_LIST_FIRST_CODED = SCALING_LIST_2x2,
+  SCALING_LIST_LAST_CODED = SCALING_LIST_64x64
+#else
   SCALING_LIST_FIRST_CODED = SCALING_LIST_4x4, // smallest scaling coded as High Level Parameter
   SCALING_LIST_LAST_CODED  = SCALING_LIST_32x32
+#endif
 };
 #endif
 

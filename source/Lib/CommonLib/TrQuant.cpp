@@ -157,12 +157,16 @@ void TrQuant::init( const Quant* otherQuant,
   delete m_quant;
   m_quant = nullptr;
 
+#if !JVET_N0847_SCALING_LISTS
   if( bUseRDOQ || !bEnc )
+#endif
   {
     m_quant = new DepQuant( otherQuant, bEnc );
   }
+#if !JVET_N0847_SCALING_LISTS
   else
     m_quant = new Quant( otherQuant );
+#endif
 
   if( m_quant )
   {

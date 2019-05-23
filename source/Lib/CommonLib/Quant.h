@@ -133,6 +133,10 @@ public:
   void processScalingListDec     ( const int *coeff, int *dequantcoeff, int invQuantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
 #endif
 
+#if JVET_N0847_SCALING_LISTS
+  void  processRecScalingListEnc ( int *coeff, int *quantcoeff, int quantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
+  void  processRecScalingListDec ( const int *coeff, int *dequantcoeff, int invQuantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
+#endif
   virtual void setFlatScalingList( const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths);
   virtual void setScalingList    ( ScalingList *scalingList, const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths);
 #endif
@@ -166,6 +170,10 @@ private:
   void xSetFlatScalingList( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp );
   void xSetScalingListEnc ( ScalingList *scalingList, uint32_t list, uint32_t size, int qp );
   void xSetScalingListDec ( const ScalingList &scalingList, uint32_t list, uint32_t size, int qp );
+#if JVET_N0847_SCALING_LISTS
+  void xSetRecScalingListEnc( ScalingList *scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp );
+  void xSetRecScalingListDec( const ScalingList &scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp );
+#endif
 #endif
 #if HEVC_USE_SIGN_HIDING
 private:

@@ -327,7 +327,11 @@ static const int QUANT_SHIFT =                                     14; ///< Q(4)
 static const int IQUANT_SHIFT =                                     6;
 static const int SCALE_BITS =                                      15; ///< Precision for fractional bit estimates
 
+#if JVET_N0847_SCALING_LISTS
+static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * (NUMBER_OF_PREDICTION_MODES - 1); ///< list number for quantization matrix
+#else
 static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * NUMBER_OF_PREDICTION_MODES; ///< list number for quantization matrix
+#endif
 
 static const int SCALING_LIST_START_VALUE =                         8; ///< start value for dpcm mode
 static const int MAX_MATRIX_COEF_NUM =                             64; ///< max coefficient number for quantization matrix

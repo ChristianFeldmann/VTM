@@ -1118,7 +1118,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LFCrossTileBoundaryFlag",                         m_bLFCrossTileBoundaryFlag,                        true, "1: cross-tile-boundary loop filtering. 0:non-cross-tile-boundary loop filtering")
   ("WaveFrontSynchro",                                m_entropyCodingSyncEnabledFlag,                   false, "0: entropy coding sync disabled; 1 entropy coding sync enabled")
 #if HEVC_USE_SCALING_LISTS
+#if (JVET_N0847_SCALING_LISTS == 1)
+  ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_DEFAULT,   "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
+#elif (JVET_N0847_SCALING_LISTS == 2)
+  ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_FILE_READ, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
+#else
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
+#endif
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
 #endif
   ("DepQuant",                                        m_depQuantEnabledFlag,                                          true )

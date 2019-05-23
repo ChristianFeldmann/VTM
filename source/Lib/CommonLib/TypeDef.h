@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define HASHME_FIX                                        1 //Fix for HashME. Currently for some pictures, applying HashME may lead to several dB's drop
+
 #define JVET_N0415_CTB_ALF                                1 // JVET-N0415: CTB-based ALF switch
 
 #define JVET_N0105_LFNST_CTX_MODELLING                    1 // LFNST index signalled without intra mode dependency and with on ctx-coded bin

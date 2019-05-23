@@ -2214,7 +2214,7 @@ bool ScalingList::checkDefaultScalingList()
       }
 #endif
       if( !::memcmp(getScalingListAddress(sizeId,listId), getScalingListDefaultAddress(sizeId, listId),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId])) // check value of matrix
-     && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == 16))) // check DC value
+         && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == 16))) // check DC value
       {
 #if JVET_N0847_SCALING_LISTS
         isAllDefault = false;
@@ -2246,7 +2246,7 @@ void ScalingList::processRefMatrix( uint32_t sizeId, uint32_t listId , uint32_t 
 void ScalingList::checkPredMode(uint32_t sizeId, uint32_t listId)
 {
 #if JVET_N0847_SCALING_LISTS
-	for (int predListIdx = (int)listId; predListIdx >= 0; predListIdx--)
+  for (int predListIdx = (int)listId; predListIdx >= 0; predListIdx--)
 #else
   int predListStep = (sizeId == SCALING_LIST_32x32? (SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) : 1); // if 32x32, skip over chroma entries.
 
@@ -2259,7 +2259,7 @@ void ScalingList::checkPredMode(uint32_t sizeId, uint32_t listId)
 #endif
     if( !::memcmp(getScalingListAddress(sizeId,listId),((listId == predListIdx) ?
       getScalingListDefaultAddress(sizeId, predListIdx): getScalingListAddress(sizeId, predListIdx)),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId])) // check value of matrix
-     && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == getScalingListDC(sizeId,predListIdx)))) // check DC value
+      && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == getScalingListDC(sizeId,predListIdx)))) // check DC value
     {
       setRefMatrixId(sizeId, listId, predListIdx);
       setScalingListPredModeFlag(sizeId, listId, false);
@@ -2290,7 +2290,7 @@ static void outputScalingListHelp(std::ostream &os)
 #if JVET_N0847_SCALING_LISTS
   for (uint32_t sizeIdc = SCALING_LIST_2x2; sizeIdc <= SCALING_LIST_64x64; sizeIdc++)
   {
-	  for (uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
+    for (uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
 #else
   for(uint32_t sizeIdc = 0; sizeIdc < SCALING_LIST_SIZE_NUM; sizeIdc++)
   {
@@ -2298,8 +2298,7 @@ static void outputScalingListHelp(std::ostream &os)
 #endif
     {
 #if JVET_N0847_SCALING_LISTS 
-      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))
-         || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0))))
+      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0))))
 #else
       if ((sizeIdc!=SCALING_LIST_32x32) || (listIdc%(SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) == 0))
 #endif
@@ -2326,8 +2325,7 @@ void ScalingList::outputScalingLists(std::ostream &os) const
     for(uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
     {
 #if JVET_N0847_SCALING_LISTS
-      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))
-         || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0))))
+      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0))))
 #else
       if ((sizeIdc!=SCALING_LIST_32x32) || (listIdc%(SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) == 0))
 #endif
@@ -2385,8 +2383,7 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
       int * const src = getScalingListAddress(sizeIdc, listIdc);
 
 #if JVET_N0847_SCALING_LISTS
-      if (((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))
-       || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
+      if (((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
       {
         continue;
       }

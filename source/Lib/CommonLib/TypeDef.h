@@ -50,7 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_N0847_SCALING_LISTS                          1  //1: default mode, 2: user defined mode
+#define JVET_N0847_SCALING_LISTS                          0  //1: default mode, 2: user defined mode
 
 #if JVET_N0847_SCALING_LISTS
 #define HEVC_USE_SCALING_LISTS                            1 

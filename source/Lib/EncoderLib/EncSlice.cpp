@@ -733,10 +733,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 
   rpcSlice->setSliceMode            ( m_pcCfg->getSliceMode()            );
   rpcSlice->setSliceArgument        ( m_pcCfg->getSliceArgument()        );
-#if HEVC_DEPENDENT_SLICES
-  rpcSlice->setSliceSegmentMode     ( m_pcCfg->getSliceSegmentMode()     );
-  rpcSlice->setSliceSegmentArgument ( m_pcCfg->getSliceSegmentArgument() );
-#endif
   rpcSlice->setMaxNumMergeCand      ( m_pcCfg->getMaxNumMergeCand()      );
   rpcSlice->setMaxNumAffineMergeCand( m_pcCfg->getMaxNumAffineMergeCand() );
 #if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
@@ -1249,14 +1245,6 @@ void EncSlice::precompressSlice( Picture* pcPic )
 
   Slice* pcSlice        = pcPic->slices[getSliceSegmentIdx()];
 
-#if HEVC_DEPENDENT_SLICES
-  if (pcSlice->getDependentSliceSegmentFlag())
-  {
-    // if this is a dependent slice segment, then it was optimised
-    // when analysing the entire slice.
-    return;
-  }
-#endif
 
   if (pcSlice->getSliceMode()==FIXED_NUMBER_OF_BYTES)
   {
@@ -1329,9 +1317,6 @@ void EncSlice::calCostSliceI(Picture* pcPic) // TODO: this only analyses the fir
   const int      shift             = sps.getBitDepth(CHANNEL_TYPE_LUMA)-8;
   const int      offset            = (shift>0)?(1<<(shift-1)):0;
 
-#if HEVC_DEPENDENT_SLICES
-  pcSlice->setSliceSegmentBits(0);
-#endif
 
   uint32_t startCtuTsAddr, boundingCtuTsAddr;
   xDetermineStartAndBoundingCtuTsAddr ( startCtuTsAddr, boundingCtuTsAddr, pcPic );
@@ -1370,16 +1355,10 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   uint32_t  startCtuTsAddr;
   uint32_t  boundingCtuTsAddr;
 
-#if HEVC_DEPENDENT_SLICES
-  pcSlice->setSliceSegmentBits(0);
-#endif
   xDetermineStartAndBoundingCtuTsAddr ( startCtuTsAddr, boundingCtuTsAddr, pcPic );
   if (bCompressEntireSlice)
   {
     boundingCtuTsAddr = pcSlice->getSliceCurEndCtuTsAddr();
-#if HEVC_DEPENDENT_SLICES
-    pcSlice->setSliceSegmentCurEndCtuTsAddr(boundingCtuTsAddr);
-#endif
   }
 
   // initialize cost values - these are used by precompressSlice (they should be parameters).
@@ -1417,11 +1396,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
     //------------------------------------------------------------------------------
     //  Weighted Prediction implemented at Slice level. SliceMode=2 is not supported yet.
     //------------------------------------------------------------------------------
-#if HEVC_DEPENDENT_SLICES
-    if ( pcSlice->getSliceMode()==FIXED_NUMBER_OF_BYTES || pcSlice->getSliceSegmentMode()==FIXED_NUMBER_OF_BYTES )
-#else
     if(pcSlice->getSliceMode() == FIXED_NUMBER_OF_BYTES)
-#endif
     {
       EXIT("Weighted Prediction is not yet supported with slice mode determined by max number of bins.");
     }
@@ -1434,34 +1409,8 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   }
 
 
-#if HEVC_DEPENDENT_SLICES
-  // Adjust initial state if this is the start of a dependent slice.
-  {
-    const TileMap&  tileMap                 = *pcPic->tileMap;
-    const uint32_t      ctuRsAddr               = tileMap.getCtuTsToRsAddrMap( startCtuTsAddr);
-    const uint32_t      currentTileIdx          = tileMap.getTileIdxMap(ctuRsAddr);
-    const Tile&     currentTile             = tileMap.tiles[currentTileIdx];
-    const uint32_t      firstCtuRsAddrOfTile    = currentTile.getFirstCtuRsAddr();
-    if( pcSlice->getDependentSliceSegmentFlag() && ctuRsAddr != firstCtuRsAddrOfTile )
-    {
-      // This will only occur if dependent slice-segments (m_entropyCodingSyncContextState=true) are being used.
-      if( currentTile.getTileWidthInCtus() >= 2 || !m_pcCfg->getEntropyCodingSyncEnabledFlag() )
-      {
-        m_CABACEstimator->getCtx() = m_lastSliceSegmentEndContextState;
-        m_CABACEstimator->start();
-      }
-    }
-  }
-#endif
 
-#if HEVC_DEPENDENT_SLICES
-  if( !pcSlice->getDependentSliceSegmentFlag() )
-  {
-#endif
     pcPic->m_prevQP[0] = pcPic->m_prevQP[1] = pcSlice->getSliceQp();
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
 
   CHECK( pcPic->m_prevQP[0] == std::numeric_limits<int>::max(), "Invalid previous QP" );
 
@@ -1489,14 +1438,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
         cw->initCtxModels (*pcSlice);
       }
 #endif
-#if HEVC_DEPENDENT_SLICES
-      if (!pcSlice->getDependentSliceSegmentFlag())
-      {
-#endif
         pcPic->m_prevQP[0] = pcPic->m_prevQP[1] = pcSlice->getSliceQp();
-#if HEVC_DEPENDENT_SLICES
-      }
-#endif
       if (startCtuTsAddr == 0)
       {
         cs.currQP[0] = cs.currQP[1] = pcSlice->getSliceQp(); // cf code above
@@ -1537,13 +1479,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   m_pcInterSearch->resetAffineMVList();
   encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
 
-#if HEVC_DEPENDENT_SLICES
-  // store context state at the end of this slice-segment, in case the next slice is a dependent slice and continues using the CABAC contexts.
-  if( pcSlice->getPPS()->getDependentSliceSegmentsEnabledFlag() )
-  {
-    m_lastSliceSegmentEndContextState = m_CABACEstimator->getCtx();//ctx end of dep.slice
-  }
-#endif
 
 }
 
@@ -1635,14 +1570,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   prevQP[0] = prevQP[1] = pcSlice->getSliceQp();
   currQP[0] = currQP[1] = pcSlice->getSliceQp();
 
-#if HEVC_DEPENDENT_SLICES
-  if( !pcSlice->getDependentSliceSegmentFlag() )
-  {
-#endif
     prevQP[0] = prevQP[1] = pcSlice->getSliceQp();
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
   if ( pcSlice->getSPS()->getFpelMmvdEnabledFlag() ||
       (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
   {
@@ -1851,19 +1779,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     // Set slice end parameter
     if(pcSlice->getSliceMode()==FIXED_NUMBER_OF_BYTES && pcSlice->getSliceBits()+numberOfWrittenBits > (pcSlice->getSliceArgument()<<3))
     {
-#if HEVC_DEPENDENT_SLICES
-      pcSlice->setSliceSegmentCurEndCtuTsAddr(validEndOfSliceCtuTsAddr);
-#endif
       pcSlice->setSliceCurEndCtuTsAddr(validEndOfSliceCtuTsAddr);
       boundingCtuTsAddr=validEndOfSliceCtuTsAddr;
     }
-#if HEVC_DEPENDENT_SLICES
-    else if((!bCompressEntireSlice) && pcSlice->getSliceSegmentMode()==FIXED_NUMBER_OF_BYTES && pcSlice->getSliceSegmentBits()+numberOfWrittenBits > (pcSlice->getSliceSegmentArgument()<<3))
-    {
-      pcSlice->setSliceSegmentCurEndCtuTsAddr(validEndOfSliceCtuTsAddr);
-      boundingCtuTsAddr=validEndOfSliceCtuTsAddr;
-    }
-#endif
     if (boundingCtuTsAddr <= ctuTsAddr)
     {
       break;
@@ -1875,9 +1793,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     pcSlice->setSliceBits( ( uint32_t ) ( pcSlice->getSliceBits() + numberOfWrittenBits ) );
 #if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
 #pragma omp critical
-#endif
-#if HEVC_DEPENDENT_SLICES
-    pcSlice->setSliceSegmentBits( pcSlice->getSliceSegmentBits() + numberOfWrittenBits );
 #endif
 
     // Store probabilities of second CTU in line into buffer - used only if wavefront-parallel-processing is enabled.
@@ -1976,14 +1891,8 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 #else
   const TileMap& tileMap             = *pcPic->tileMap;
 #endif
-#if HEVC_DEPENDENT_SLICES
-  const uint32_t startCtuTsAddr          = pcSlice->getSliceSegmentCurStartCtuTsAddr();
-  const uint32_t boundingCtuTsAddr       = pcSlice->getSliceSegmentCurEndCtuTsAddr();
-  const bool depSliceSegmentsEnabled = pcSlice->getPPS()->getDependentSliceSegmentsEnabledFlag();
-#else
   const uint32_t startCtuTsAddr          = pcSlice->getSliceCurStartCtuTsAddr();
   const uint32_t boundingCtuTsAddr       = pcSlice->getSliceCurEndCtuTsAddr();
-#endif
   const bool wavefrontsEnabled       = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag();
 
 
@@ -1995,31 +1904,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 
   DTRACE( g_trace_ctx, D_HEADER, "=========== POC: %d ===========\n", pcSlice->getPOC() );
 
-#if HEVC_DEPENDENT_SLICES
-  if (depSliceSegmentsEnabled)
-  {
-    // modify initial contexts with previous slice segment if this is a dependent slice.
-    const uint32_t ctuRsAddr            = tileMap.getCtuTsToRsAddrMap( startCtuTsAddr );
-    const uint32_t currentTileIdx       = tileMap.getTileIdxMap(ctuRsAddr);
-    const Tile& currentTile         = tileMap.tiles[currentTileIdx];
-    const uint32_t firstCtuRsAddrOfTile = currentTile.getFirstCtuRsAddr();
-
-    if( pcSlice->getDependentSliceSegmentFlag() && ctuRsAddr != firstCtuRsAddrOfTile )
-    {
-      if( currentTile.getTileWidthInCtus() >= 2 || !wavefrontsEnabled )
-      {
-        m_CABACWriter->getCtx() = m_lastSliceSegmentEndContextState;
-      }
-    }
-  }
-
-  if( !pcSlice->getDependentSliceSegmentFlag() )
-  {
-#endif
     pcPic->m_prevQP[0] = pcPic->m_prevQP[1] = pcSlice->getSliceQp();
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
 
   const PreCalcValues& pcv = *cs.pcv;
   const uint32_t widthInCtus   = pcv.widthInCtus;
@@ -2127,18 +2012,8 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
     }
   } // CTU-loop
 
-#if HEVC_DEPENDENT_SLICES
-  if( depSliceSegmentsEnabled )
-  {
-    m_lastSliceSegmentEndContextState = m_CABACWriter->getCtx();//ctx end of dep.slice
-  }
-#endif
 
-#if HEVC_DEPENDENT_SLICES
-  if (pcSlice->getPPS()->getCabacInitPresentFlag() && !pcSlice->getPPS()->getDependentSliceSegmentsEnabledFlag())
-#else
   if(pcSlice->getPPS()->getCabacInitPresentFlag())
-#endif
   {
     m_encCABACTableIdx = m_CABACWriter->getCtxInitId( *pcSlice );
   }
@@ -2289,27 +2164,8 @@ void EncSlice::xDetermineStartAndBoundingCtuTsAddr  ( uint32_t& startCtuTsAddr, 
   pcSlice->setSliceCurEndCtuTsAddr(   boundingCtuTsAddrSlice );
   pcSlice->setSliceCurStartCtuTsAddr( startCtuTsAddrSlice    );
 
-#if HEVC_DEPENDENT_SLICES
-  // Dependent slice
-  uint32_t startCtuTsAddrSliceSegment          = pcSlice->getSliceSegmentCurStartCtuTsAddr();
-  bool haveReachedTileBoundarySliceSegment = false;
-  uint32_t boundingCtuTsAddrSliceSegment;
-  calculateBoundingCtuTsAddrForSlice(startCtuTsAddrSliceSegment, boundingCtuTsAddrSliceSegment, haveReachedTileBoundarySliceSegment, pcPic,
-                                     m_pcCfg->getSliceSegmentMode(), m_pcCfg->getSliceSegmentArgument());
-  if (boundingCtuTsAddrSliceSegment>boundingCtuTsAddrSlice)
-  {
-    boundingCtuTsAddrSliceSegment = boundingCtuTsAddrSlice;
-  }
-  pcSlice->setSliceSegmentCurEndCtuTsAddr( boundingCtuTsAddrSliceSegment );
-  pcSlice->setSliceSegmentCurStartCtuTsAddr(startCtuTsAddrSliceSegment);
-
-  // Make a joint decision based on reconstruction and dependent slice bounds
-  startCtuTsAddr    = std::max(startCtuTsAddrSlice, startCtuTsAddrSliceSegment);
-  boundingCtuTsAddr = boundingCtuTsAddrSliceSegment;
-#else
   startCtuTsAddr = startCtuTsAddrSlice;
   boundingCtuTsAddr = boundingCtuTsAddrSlice;
-#endif
 }
 
 double EncSlice::xGetQPValueAccordingToLambda ( double lambda )

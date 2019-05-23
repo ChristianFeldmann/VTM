@@ -1026,9 +1026,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   {
     m_apcSlicePilot->copySliceInfo( m_pcPic->slices[m_uiSliceSegmentIdx-1] );
   }
-#if HEVC_DEPENDENT_SLICES
-  m_apcSlicePilot->setSliceSegmentIdx(m_uiSliceSegmentIdx);
-#endif
 
   m_apcSlicePilot->setNalUnitType(nalu.m_nalUnitType);
 #if !JVET_M0101_HLS
@@ -1049,14 +1046,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   if (!m_bFirstSliceInPicture)
   {
     uiIndependentSliceIdx = m_pcPic->slices[m_uiSliceSegmentIdx-1]->getIndependentSliceIdx();
-#if HEVC_DEPENDENT_SLICES
-    if (!m_apcSlicePilot->getDependentSliceSegmentFlag())
-    {
-#endif
       uiIndependentSliceIdx++;
-#if HEVC_DEPENDENT_SLICES
-    }
-#endif
   }
   m_apcSlicePilot->setIndependentSliceIdx(uiIndependentSliceIdx);
 
@@ -1071,13 +1061,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   DTRACE_UPDATE( g_trace_ctx, std::make_pair( "poc", m_apcSlicePilot->getPOC() ) );
 
-#if HEVC_DEPENDENT_SLICES
-  // set POC for dependent slices in skipped pictures
-  if(m_apcSlicePilot->getDependentSliceSegmentFlag() && m_prevSliceSkipped)
-  {
-    m_apcSlicePilot->setPOC(m_skippedPOC);
-  }
-#endif
 
   xUpdatePreviousTid0POC(m_apcSlicePilot);
 
@@ -1179,21 +1162,13 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_prevSliceSkipped = false;
 
   //we should only get a different poc for a new picture (with CTU address==0)
-#if HEVC_DEPENDENT_SLICES
-  if (!m_apcSlicePilot->getDependentSliceSegmentFlag() && m_apcSlicePilot->getPOC()!=m_prevPOC && !m_bFirstSliceInSequence && (m_apcSlicePilot->getSliceCurStartCtuTsAddr() != 0))
-#else
   if(m_apcSlicePilot->getPOC() != m_prevPOC && !m_bFirstSliceInSequence && (m_apcSlicePilot->getSliceCurStartCtuTsAddr() != 0))
-#endif
   {
     msg( WARNING, "Warning, the first slice of a picture might have been lost!\n");
   }
 
   // leave when a new picture is found
-#if HEVC_DEPENDENT_SLICES
-  if (!m_apcSlicePilot->getDependentSliceSegmentFlag() && (m_apcSlicePilot->getSliceCurStartCtuTsAddr() == 0 && !m_bFirstSliceInPicture) )
-#else
   if(m_apcSlicePilot->getSliceCurStartCtuTsAddr() == 0 && !m_bFirstSliceInPicture)
-#endif
   {
     if (m_prevPOC >= m_pocRandomAccess)
     {
@@ -1217,14 +1192,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     }
   }
 
-#if HEVC_DEPENDENT_SLICES
-  if (!m_apcSlicePilot->getDependentSliceSegmentFlag())
-  {
-#endif
     m_prevPOC = m_apcSlicePilot->getPOC();
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
 
   if (m_bFirstSliceInPicture)
   {
@@ -1252,12 +1220,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #else
   const TileMap& tileMap = *(m_pcPic->tileMap);
 #endif
-#if HEVC_DEPENDENT_SLICES
-  pcSlice->setSliceSegmentCurStartCtuTsAddr( tileMap.getCtuRsToTsAddrMap(pcSlice->getSliceSegmentCurStartCtuTsAddr()) );
-  pcSlice->setSliceSegmentCurEndCtuTsAddr( tileMap.getCtuRsToTsAddrMap(pcSlice->getSliceSegmentCurEndCtuTsAddr()) );
-  if(!pcSlice->getDependentSliceSegmentFlag())
-  {
-#endif
 #if JVET_N0857_TILES_BRICKS
     pcSlice->setSliceCurStartCtuTsAddr( tileMap.getCtuRsToBsAddrMap(pcSlice->getSliceCurStartCtuTsAddr()) );
     pcSlice->setSliceCurEndCtuTsAddr( tileMap.getCtuRsToBsAddrMap(pcSlice->getSliceCurEndCtuTsAddr()) );
@@ -1265,15 +1227,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     pcSlice->setSliceCurStartCtuTsAddr( tileMap.getCtuRsToTsAddrMap(pcSlice->getSliceCurStartCtuTsAddr()) );
     pcSlice->setSliceCurEndCtuTsAddr( tileMap.getCtuRsToTsAddrMap(pcSlice->getSliceCurEndCtuTsAddr()) );
 #endif
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
 
 
-#if HEVC_DEPENDENT_SLICES
-  if (!pcSlice->getDependentSliceSegmentFlag())
-  {
-#endif
     pcSlice->checkCRA(pcSlice->getRPS(), m_pocCRA, m_associatedIRAPType, m_cListPic );
     // Set reference list
     pcSlice->setRefPicList( m_cListPic, true, true );
@@ -1392,9 +1347,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     //---------------
     pcSlice->setRefPOCList();
 
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
 
 #if HEVC_USE_SCALING_LISTS
   Quant *quant = m_cTrQuant.getQuant();

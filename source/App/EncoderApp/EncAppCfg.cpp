@@ -695,9 +695,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   int tmpFastInterSearchMode;
   int tmpMotionEstimationSearchMethod;
   int tmpSliceMode;
-#if HEVC_DEPENDENT_SLICES
-  int tmpSliceSegmentMode;
-#endif
   int tmpDecodedPictureHashSEIMappedType;
   string inputColourSpaceConvert;
   string inputPathPrefix;
@@ -1112,13 +1109,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t1: max number of CTUs per slice"
                                                                                                                "\t2: max number of bytes per slice"
                                                                                                                "\t3: max number of tiles per slice")
-#if HEVC_DEPENDENT_SLICES
-  ("SliceSegmentMode",                                tmpSliceSegmentMode,                     int(NO_SLICES), "0: Disable all slice segment limits, 1: Enforce max # of CTUs, 2: Enforce max # of bytes, 3:specify tiles per dependent slice")
-  ("SliceSegmentArgument",                            m_sliceSegmentArgument,                               0, "Depending on SliceSegmentMode being:"
-                                                                                                               "\t1: max number of CTUs per slice segment"
-                                                                                                               "\t2: max number of bytes per slice segment"
-                                                                                                               "\t3: max number of tiles per slice segment")
-#endif
   ("LFCrossSliceBoundaryFlag",                        m_bLFCrossSliceBoundaryFlag,                       true)
 
   ("ConstrainedIntraPred",                            m_bUseConstrainedIntraPred,                       false, "Constrained Intra Prediction")
@@ -1725,13 +1715,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
 
 
-#if HEVC_DEPENDENT_SLICES
-  if (tmpSliceSegmentMode<0 || tmpSliceSegmentMode>=int(NUMBER_OF_SLICE_CONSTRAINT_MODES))
-  {
-    EXIT( "Error: bad slice segment mode");
-  }
-  m_sliceSegmentMode = SliceConstraint(tmpSliceSegmentMode);
-#endif
 
 #if JVET_N0857_TILES_BRICKS
   m_topLeftTileIdx.clear();
@@ -2521,12 +2504,6 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_sliceArgument < 1 ,         "SliceArgument should be larger than or equal to 1" );
   }
 
-#if HEVC_DEPENDENT_SLICES
-  if (m_sliceSegmentMode!=NO_SLICES)
-  {
-    xConfirmPara( m_sliceSegmentArgument < 1 ,         "SliceSegmentArgument should be larger than or equal to 1" );
-  }
-#endif
 
   bool tileFlag = (m_numTileColumnsMinus1 > 0 || m_numTileRowsMinus1 > 0 );
   if (m_profile!=Profile::HIGHTHROUGHPUTREXT)
@@ -3301,13 +3278,6 @@ void EncAppCfg::xPrintParameter()
   {
     msg( VERBOSE, "A=%d ", m_sliceArgument);
   }
-#if HEVC_DEPENDENT_SLICES
-  msg( VERBOSE, "SliceSegment: M=%d ",m_sliceSegmentMode);
-  if (m_sliceSegmentMode!=NO_SLICES)
-  {
-    msg( VERBOSE, "A=%d ", m_sliceSegmentArgument);
-  }
-#endif
   msg( VERBOSE, "Tiles:%dx%d ", m_numTileColumnsMinus1 + 1, m_numTileRowsMinus1 + 1 );
   msg( VERBOSE, "MCTS:%d ", m_MCTSEncConstraint );
   msg( VERBOSE, "CIP:%d ", m_bUseConstrainedIntraPred);

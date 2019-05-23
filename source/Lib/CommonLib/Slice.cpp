@@ -60,9 +60,6 @@ Slice::Slice()
 , m_eNalUnitType                  ( NAL_UNIT_CODED_SLICE_IDR_W_RADL )
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
-#if HEVC_DEPENDENT_SLICES
-, m_dependentSliceSegmentFlag     ( false )
-#endif
 , m_ChromaQpAdjEnabled            ( false )
 , m_deblockingFilterDisable       ( false )
 , m_deblockingFilterOverrideFlag  ( false )
@@ -104,21 +101,8 @@ Slice::Slice()
 , m_sliceCurStartCtuTsAddr        ( 0 )
 , m_sliceCurEndCtuTsAddr          ( 0 )
 , m_independentSliceIdx           ( 0 )
-#if HEVC_DEPENDENT_SLICES
-, m_sliceSegmentIdx               ( 0 )
-, m_sliceSegmentMode              ( NO_SLICES )
-, m_sliceSegmentArgument          ( 0 )
-, m_sliceSegmentCurStartCtuTsAddr ( 0 )
-, m_sliceSegmentCurEndCtuTsAddr   ( 0 )
-#endif
 , m_nextSlice                     ( false )
-#if HEVC_DEPENDENT_SLICES
-, m_nextSliceSegment              ( false )
-#endif
 , m_sliceBits                     ( 0 )
-#if HEVC_DEPENDENT_SLICES
-, m_sliceSegmentBits              ( 0 )
-#endif
 , m_bFinalized                    ( false )
 , m_bTestWeightPred               ( false )
 , m_bTestWeightBiPred             ( false )
@@ -839,17 +823,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_sliceCurStartCtuTsAddr        = pSrc->m_sliceCurStartCtuTsAddr;
   m_sliceCurEndCtuTsAddr          = pSrc->m_sliceCurEndCtuTsAddr;
   m_independentSliceIdx           = pSrc->m_independentSliceIdx;
-#if HEVC_DEPENDENT_SLICES
-  m_sliceSegmentIdx               = pSrc->m_sliceSegmentIdx;
-  m_sliceSegmentMode              = pSrc->m_sliceSegmentMode;
-  m_sliceSegmentArgument          = pSrc->m_sliceSegmentArgument;
-  m_sliceSegmentCurStartCtuTsAddr = pSrc->m_sliceSegmentCurStartCtuTsAddr;
-  m_sliceSegmentCurEndCtuTsAddr   = pSrc->m_sliceSegmentCurEndCtuTsAddr;
-#endif
   m_nextSlice                     = pSrc->m_nextSlice;
-#if HEVC_DEPENDENT_SLICES
-  m_nextSliceSegment              = pSrc->m_nextSliceSegment;
-#endif
   m_clpRngs                       = pSrc->m_clpRngs;
   m_pendingRasInit                = pSrc->m_pendingRasInit;
 
@@ -1968,9 +1942,6 @@ PPS::PPS()
 , m_numRefIdxL1DefaultActive         (1)
 , m_TransquantBypassEnabledFlag      (false)
 , m_useTransformSkip                 (false)
-#if HEVC_DEPENDENT_SLICES
-, m_dependentSliceSegmentsEnabledFlag(false)
-#endif
 #if !JVET_N0857_TILES_BRICKS
 , m_tilesEnabledFlag                 (false)
 #endif

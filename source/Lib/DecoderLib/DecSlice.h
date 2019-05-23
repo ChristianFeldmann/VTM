@@ -62,9 +62,6 @@ private:
   CABACDecoder*   m_CABACDecoder;
   DecCu*          m_pcCuDecoder;
 
-#if HEVC_DEPENDENT_SLICES
-  Ctx             m_lastSliceSegmentEndContextState;    ///< context storage for state at the end of the previous slice-segment (used for dependent slices only).
-#endif
   Ctx             m_entropyCodingSyncContextState;      ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
 
 public:

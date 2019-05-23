@@ -1478,11 +1478,7 @@ void CABACWriter::end_of_ctu( const CodingUnit& cu, CUCtx& cuCtx )
 
     // The 1-terminating bit is added to all streams, so don't add it here when it's 1.
     // i.e. when the slice segment CurEnd CTU address is the current CTU address+1.
-#if HEVC_DEPENDENT_SLICES
-    if( slice->getSliceSegmentCurEndCtuTsAddr() != currentCTUTsAddr + 1 )
-#else
     if(slice->getSliceCurEndCtuTsAddr() != currentCTUTsAddr + 1)
-#endif
     {
       m_BinEncoder.encodeBinTrm( 0 );
     }

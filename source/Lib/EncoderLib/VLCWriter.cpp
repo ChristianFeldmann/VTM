@@ -218,9 +218,6 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
   WRITE_UVLC( pcPPS->getPPSId(),                             "pps_pic_parameter_set_id" );
   WRITE_UVLC( pcPPS->getSPSId(),                             "pps_seq_parameter_set_id" );
-#if HEVC_DEPENDENT_SLICES
-  WRITE_FLAG( pcPPS->getDependentSliceSegmentsEnabledFlag()    ? 1 : 0, "dependent_slice_segments_enabled_flag" );
-#endif
   WRITE_FLAG( pcPPS->getOutputFlagPresentFlag() ? 1 : 0,     "output_flag_present_flag" );
   WRITE_CODE( pcPPS->getNumExtraSliceHeaderBits(), 3,        "num_extra_slice_header_bits");
   WRITE_FLAG( pcPPS->getCabacInitPresentFlag() ? 1 : 0,   "cabac_init_present_flag" );
@@ -1228,11 +1225,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   {
     bitsSliceSegmentAddress++;
   }
-#if HEVC_DEPENDENT_SLICES
-  const int ctuTsAddress = pcSlice->getSliceSegmentCurStartCtuTsAddr();
-#else
   const int ctuTsAddress = pcSlice->getSliceCurStartCtuTsAddr();
-#endif
 
   //write slice address
 #if JVET_N0857_TILES_BRICKS
@@ -1247,20 +1240,10 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     WRITE_FLAG( pcSlice->getNoOutputPriorPicsFlag() ? 1 : 0, "no_output_of_prior_pics_flag" );
   }
   WRITE_UVLC( pcSlice->getPPS()->getPPSId(), "slice_pic_parameter_set_id" );
-#if HEVC_DEPENDENT_SLICES
-  if ( pcSlice->getPPS()->getDependentSliceSegmentsEnabledFlag() && (sliceSegmentRsAddress!=0) )
-  {
-    WRITE_FLAG( pcSlice->getDependentSliceSegmentFlag() ? 1 : 0, "dependent_slice_segment_flag" );
-  }
-#endif
   if(sliceSegmentRsAddress>0)
   {
     WRITE_CODE( sliceSegmentRsAddress, bitsSliceSegmentAddress, "slice_segment_address" );
   }
-#if HEVC_DEPENDENT_SLICES
-  if( !pcSlice->getDependentSliceSegmentFlag() )
-  {
-#endif
     for( int i = 0; i < pcSlice->getPPS()->getNumExtraSliceHeaderBits(); i++ )
     {
       WRITE_FLAG( 0, "slice_reserved_flag[]" );
@@ -1697,9 +1680,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     {
       codeReshaper(pcSlice->getReshapeInfo(), pcSlice->getSPS(), pcSlice->isIntra());
     }
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
 
   if(pcSlice->getPPS()->getSliceHeaderExtensionPresentFlag())
   {

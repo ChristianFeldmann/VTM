@@ -120,68 +120,30 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     ppcSubstreams[idx] = bitstream->extractSubstream( idx+1 < numSubstreams ? ( slice->getSubstreamSize(idx) << 3 ) : bitstream->getNumBitsLeft() );
   }
 
-#if HEVC_DEPENDENT_SLICES
-  const int       startCtuTsAddr          = slice->getSliceSegmentCurStartCtuTsAddr();
-#else
   const int       startCtuTsAddr          = slice->getSliceCurStartCtuTsAddr();
-#endif
-#if HEVC_DEPENDENT_SLICES
-  const int       startCtuRsAddr          = startCtuTsAddr;
-#else
 #if JVET_N0857_TILES_BRICKS
   const int       startCtuRsAddr          = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr);
 #else
   const int       startCtuRsAddr          = tileMap.getCtuTsToRsAddrMap(startCtuTsAddr);
 #endif
 
-#endif
   const unsigned  numCtusInFrame          = cs.pcv->sizeInCtus;
   const unsigned  widthInCtus             = cs.pcv->widthInCtus;
-#if HEVC_DEPENDENT_SLICES
-  const bool      depSliceSegmentsEnabled = cs.pps->getDependentSliceSegmentsEnabledFlag();
-#endif
   const bool      wavefrontsEnabled       = cs.pps->getEntropyCodingSyncEnabledFlag();
 
   cabacReader.initBitstream( ppcSubstreams[0] );
   cabacReader.initCtxModels( *slice );
 
   // Quantization parameter
-#if HEVC_DEPENDENT_SLICES
-  if(!slice->getDependentSliceSegmentFlag())
-  {
-#endif
     pic->m_prevQP[0] = pic->m_prevQP[1] = slice->getSliceQp();
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
   CHECK( pic->m_prevQP[0] == std::numeric_limits<int>::max(), "Invalid previous QP" );
 
   DTRACE( g_trace_ctx, D_HEADER, "=========== POC: %d ===========\n", slice->getPOC() );
 
   // The first CTU of the slice is the first coded substream, but the global substream number, as calculated by getSubstreamForCtuAddr may be higher.
   // This calculates the common offset for all substreams in this slice.
-#if HEVC_DEPENDENT_SLICES
-  const unsigned subStreamOffset = tileMap.getSubstreamForCtuAddr( startCtuRsAddr, true, slice );
-#else
   const unsigned  subStreamOffset         = tileMap.getSubstreamForCtuAddr(startCtuRsAddr, true, slice);
-#endif
 
-#if HEVC_DEPENDENT_SLICES
-  if( depSliceSegmentsEnabled )
-  {
-    // modify initial contexts with previous slice segment if this is a dependent slice.
-    const unsigned  startTileIdx          = tileMap.getTileIdxMap(startCtuRsAddr);
-    const Tile&     currentTile           = tileMap.tiles[startTileIdx];
-    const unsigned  firstCtuRsAddrOfTile  = currentTile.getFirstCtuRsAddr();
-    if( slice->getDependentSliceSegmentFlag() && startCtuRsAddr != firstCtuRsAddrOfTile )
-    {
-      if( currentTile.getTileWidthInCtus() >= 2 || !wavefrontsEnabled )
-      {
-        cabacReader.getCtx() = m_lastSliceSegmentEndContextState;
-      }
-    }
-  }
-#endif
   // for every CTU in the slice segment...
   bool isLastCtuOfSliceSegment = false;
   for( unsigned ctuTsAddr = startCtuTsAddr; !isLastCtuOfSliceSegment && ctuTsAddr < numCtusInFrame; ctuTsAddr++ )
@@ -288,15 +250,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 #if DECODER_CHECK_SUBSTREAM_AND_SLICE_TRAILING_BYTES
       cabacReader.remaining_bytes( false );
 #endif
-#if HEVC_DEPENDENT_SLICES
-      if( !slice->getDependentSliceSegmentFlag() )
-      {
-#endif
         slice->setSliceCurEndCtuTsAddr( ctuTsAddr+1 );
-#if HEVC_DEPENDENT_SLICES
-      }
-      slice->setSliceSegmentCurEndCtuTsAddr( ctuTsAddr+1 );
-#endif
     }
 #if JVET_N0857_TILES_BRICKS
     else if( ( ctuXPosInCtus + 1 == tileXPosInCtus + currentTile.getWidthInCtus () ) &&
@@ -317,12 +271,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   }
   CHECK( !isLastCtuOfSliceSegment, "Last CTU of slice segment not signalled as such" );
 
-#if HEVC_DEPENDENT_SLICES
-  if( depSliceSegmentsEnabled )
-  {
-    m_lastSliceSegmentEndContextState = cabacReader.getCtx();  //ctx end of dep.slice
-  }
-#endif
   // deallocate all created substreams, including internal buffers.
   for( auto substr: ppcSubstreams )
   {

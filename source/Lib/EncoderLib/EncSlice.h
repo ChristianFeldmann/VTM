@@ -90,9 +90,6 @@ private:
   std::vector<int>        m_viRdPicQp;                          ///< array of picture QP candidates (int-type)
   RateCtrl*               m_pcRateCtrl;                         ///< Rate control manager
   uint32_t                    m_uiSliceSegmentIdx;
-#if HEVC_DEPENDENT_SLICES
-  Ctx                     m_lastSliceSegmentEndContextState;    ///< context storage for state at the end of the previous slice-segment (used for dependent slices only).
-#endif
   Ctx                     m_entropyCodingSyncContextState;      ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
   SliceType               m_encCABACTableIdx;
 #if SHARP_LUMA_DELTA_QP

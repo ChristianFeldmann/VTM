@@ -186,6 +186,8 @@
 
 #define JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES  1 // JVET-N0473, JVET-N0098: Deblocking of ISP/SBT TU boundaries
 
+#define JVET_N0150_ONE_CTU_DELAY_WPP                      1 // one CTU delay WPP
+
 #define JCTVC_Y0038_PARAMS                                1
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1

@@ -1710,9 +1710,17 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       // reset and then update contexts to the state at the end of the top-right CTU (if within current slice and tile).
       pCABACWriter->initCtxModels( *pcSlice );
 #if JVET_N0857_TILES_BRICKS
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+      if( cs.getCURestricted( pos.offset(0, -1), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
+#else
       if( cs.getCURestricted( pos.offset(pcv.maxCUWidth, -1), pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
+#endif
+#else
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+      if( cs.getCURestricted( pos.offset(0, -1), pos, pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
 #else
       if( cs.getCURestricted( pos.offset(pcv.maxCUWidth, -1), pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
+#endif
 #endif
       {
         // Top-right is available, we use it.
@@ -1873,7 +1881,11 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #endif
 
     // Store probabilities of second CTU in line into buffer - used only if wavefront-parallel-processing is enabled.
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+    if( ctuXPosInCtus == tileXPosInCtus && pEncLib->getEntropyCodingSyncEnabledFlag() )
+#else
     if( ctuXPosInCtus == tileXPosInCtus + 1 && pEncLib->getEntropyCodingSyncEnabledFlag() )
+#endif
     {
       pEncLib->m_entropyCodingSyncContextState = pCABACWriter->getCtx();
     }
@@ -2052,9 +2064,17 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
         m_CABACWriter->initCtxModels( *pcSlice );
       }
 #if JVET_N0857_TILES_BRICKS
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+      if( cs.getCURestricted( pos.offset( 0, -1 ), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
+#else
       if( cs.getCURestricted( pos.offset( pcv.maxCUWidth, -1 ), pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
+#endif
+#else
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+      if( cs.getCURestricted( pos.offset( 0, -1 ), pos, pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
 #else
       if( cs.getCURestricted( pos.offset( pcv.maxCUWidth, -1 ), pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
+#endif
 #endif
       {
         // Top-right is available, so use it.
@@ -2071,7 +2091,11 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
     m_CABACWriter->coding_tree_unit( cs, ctuArea, pcPic->m_prevQP, ctuRsAddr );
 
     // store probabilities of second CTU in line into buffer
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+    if( ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled )
+#else
     if( ctuXPosInCtus == tileXPosInCtus + 1 && wavefrontsEnabled )
+#endif
     {
       m_entropyCodingSyncContextState = m_CABACWriter->getCtx();
     }

@@ -1415,7 +1415,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           WRITE_CODE(apsId[i], 5, "tile_group_aps_id");
         }
 
-        const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) * 2 + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr);
+        const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) * 2 ;
         truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
         if (alfChromaIdc)
         {

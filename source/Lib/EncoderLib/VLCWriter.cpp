@@ -309,13 +309,23 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       int numSlicesInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
       int numTilesInPic = (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
       int codeLength = (int)ceil(log2(numTilesInPic));
+#if JVET_N0124_PROPOSAL2
+      int codeLength2 = codeLength;
+#endif
       for (int i = 0; i < numSlicesInPic; ++i)
       {
         if (i > 0)
         {
           WRITE_CODE( pcPPS->getTopLeftTileIdx(i), codeLength, "top_left_brick_idx ");
+#if JVET_N0124_PROPOSAL2
+          codeLength2 = (int) ceil(log2(numTilesInPic - pcPPS->getTopLeftTileIdx(i)));
+#endif
         }
-        WRITE_CODE( pcPPS->getBottomeRightTileIdx(i)-pcPPS->getTopLeftTileIdx(i), codeLength, "bottom_right_brick_idx_delta" );
+#if JVET_N0124_PROPOSAL2
+        WRITE_CODE(pcPPS->getBottomeRightTileIdx(i) - pcPPS->getTopLeftTileIdx(i), codeLength2, "bottom_right_brick_idx_delta");
+#else
+        WRITE_CODE(pcPPS->getBottomeRightTileIdx(i) - pcPPS->getTopLeftTileIdx(i), codeLength, "bottom_right_brick_idx_delta");
+#endif
 
       }
     }

@@ -89,6 +89,11 @@
 
 #define JVET_N0857_TILES_BRICKS                           1 // VTM-5 basic Slices/Tiles/Bricks design, rectangular slices not supported yet
 
+#if JVET_N0857_TILES_BRICKS
+#define JVET_N0124_PROPOSAL2                              1   // JVET-N0124 Proposal 2
+#endif
+
+
 #define JVET_N0280_RESIDUAL_CODING_TS                     1
 
 #define JVET_N0103_CGSIZE_HARMONIZATION                   1 // Chroma CG sizes aligned to luma CG sizes

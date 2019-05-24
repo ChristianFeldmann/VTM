@@ -403,13 +403,18 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
     return;
   }
 
+  if( area.width > maxBtSize || area.height > maxBtSize )
+  {
+    canBh = canBv = false;
+  }
+
   // specific check for BT splits
-  if( area.height <= minBtSize || area.height > maxBtSize )                            canBh = false;
+  if( area.height <= minBtSize )                            canBh = false;
   if( area.width > MAX_TB_SIZEY && area.height <= MAX_TB_SIZEY ) canBh = false;
 #if JVET_N0137_DUALTREE_CHROMA_SIZE
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBh = false;
 #endif
-  if( area.width <= minBtSize || area.width > maxBtSize )                              canBv = false;
+  if( area.width <= minBtSize )                              canBv = false;
   if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) canBv = false;
 #if JVET_N0137_DUALTREE_CHROMA_SIZE
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBv = false;

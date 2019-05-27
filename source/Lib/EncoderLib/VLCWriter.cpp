@@ -2084,7 +2084,7 @@ void HLSWriter::alfGolombEncode( int coeff, int k )
   if( coeff != 0 )
 #endif
   {
-    int sign = ( coeff > 0 ) ? 1 : 0;
+    int sign = ( coeff < 0 ) ? 1 : 0;
     xWriteFlag( sign );
   }
 }

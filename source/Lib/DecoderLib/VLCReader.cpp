@@ -2920,7 +2920,7 @@ int HLSyntaxReader::alfGolombDecode( const int k )
 #else
     xReadFlag( uiSymbol );
 #endif
-    nr = ( uiSymbol ) ? nr : -nr;
+    nr = ( uiSymbol ) ? -nr : nr;
   }
   return nr;
 }

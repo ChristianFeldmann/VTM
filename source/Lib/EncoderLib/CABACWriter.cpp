@@ -169,11 +169,11 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 
   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
   {
-    codeAlfCtuEnableFlag( cs, ctuRsAddr, compIdx );
+    codeAlfCtuEnableFlag( cs, ctuRsAddr, compIdx, NULL );
 #if JVET_N0415_CTB_ALF
     if (isLuma(ComponentID(compIdx)))
     {
-      codeAlfCtuFilterIndex(cs, ctuRsAddr);
+      codeAlfCtuFilterIndex(cs, ctuRsAddr, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y));
     }
 #endif
   }
@@ -3448,20 +3448,12 @@ void CABACWriter::codeAlfCtuEnableFlags( CodingStructure& cs, ComponentID compID
 void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr, const int compIdx, AlfSliceParam* alfParam)
 {
 #if JVET_N0415_CTB_ALF
-  static AlfSliceParam alfSliceParam;
-  if (alfParam)
-  {
-    alfSliceParam = *alfParam;
-  }
-  else
-  {
-    alfSliceParam.enabledFlag[compIdx] = cs.slice->getTileGroupAlfEnabledFlag((ComponentID)compIdx);
-  }
+  const bool alfComponentEnabled = (alfParam != NULL) ? alfParam->enabledFlag[compIdx] : cs.slice->getTileGroupAlfEnabledFlag((ComponentID)compIdx);
 #else
-  const AlfSliceParam& alfSliceParam = alfParam ? (*alfParam) : cs.aps->getAlfAPSParam();
+  const bool alfComponentEnabled = (alfParam != NULL) ? alfParam->enabledFlag[compIdx] : cs.aps->getAlfAPSParam().enabledFlag[compIdx] ;
 #endif
 
-  if( cs.sps->getALFEnabledFlag() && alfSliceParam.enabledFlag[compIdx] )
+  if( cs.sps->getALFEnabledFlag() && alfComponentEnabled )
   {
     const PreCalcValues& pcv = *cs.pcv;
     int                 frame_width_in_ctus = pcv.widthInCtus;
@@ -3485,14 +3477,11 @@ void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr,
     int leftCTUAddr = leftAvail ? ctuRsAddr - 1 : -1;
     int aboveCTUAddr = aboveAvail ? ctuRsAddr - frame_width_in_ctus : -1;
 
-    if( alfSliceParam.enabledFlag[compIdx] )
-    {
-      uint8_t* ctbAlfFlag = cs.slice->getPic()->getAlfCtuEnableFlag( compIdx );
-      int ctx = 0;
-      ctx += leftCTUAddr > -1 ? ( ctbAlfFlag[leftCTUAddr] ? 1 : 0 ) : 0;
-      ctx += aboveCTUAddr > -1 ? ( ctbAlfFlag[aboveCTUAddr] ? 1 : 0 ) : 0;
-      m_BinEncoder.encodeBin( ctbAlfFlag[ctuRsAddr], Ctx::ctbAlfFlag( compIdx * 3 + ctx ) );
-    }
+    uint8_t* ctbAlfFlag = cs.slice->getPic()->getAlfCtuEnableFlag( compIdx );
+    int ctx = 0;
+    ctx += leftCTUAddr > -1 ? ( ctbAlfFlag[leftCTUAddr] ? 1 : 0 ) : 0;
+    ctx += aboveCTUAddr > -1 ? ( ctbAlfFlag[aboveCTUAddr] ? 1 : 0 ) : 0;
+    m_BinEncoder.encodeBin( ctbAlfFlag[ctuRsAddr], Ctx::ctbAlfFlag( compIdx * 3 + ctx ) );
   }
 }
 
@@ -3597,20 +3586,9 @@ void CABACWriter::mip_pred_mode( const PredictionUnit& pu )
 #endif
 
 #if JVET_N0415_CTB_ALF
-void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr, bool *alfEnableLuma)
+void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr, bool alfEnableLuma)
 {
-  if (!cs.sps->getALFEnabledFlag())
-    return;
-  bool alfEnableFlagLuma;
-  if (alfEnableLuma)
-  {
-    alfEnableFlagLuma = *alfEnableLuma;
-  }
-  else
-  {
-    alfEnableFlagLuma = cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y);
-  }
-  if (!alfEnableFlagLuma)
+  if ( (!cs.sps->getALFEnabledFlag()) || (!alfEnableLuma))
   {
     return;
   }

@@ -1702,17 +1702,13 @@ int EncAdaptiveLoopFilter::lengthTruncatedUnary( int symbol, int maxSymbol )
   }
 
   bool codeLast = ( maxSymbol > symbol );
-  int bins = 0;
   int numBins = 0;
   while( symbol-- )
   {
-    bins <<= 1;
-    bins++;
     numBins++;
   }
   if( codeLast )
   {
-    bins <<= 1;
     numBins++;
   }
 

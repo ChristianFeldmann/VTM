@@ -855,9 +855,13 @@ namespace DQIntern
 #endif // JVET_N0246_MODIFIED_QUANTSCALES
     const unsigned    qIdxBD    = std::min<unsigned>( maxLog2TrDynamicRange + 1, 8*sizeof(Intermediate_Int) + invShift - IQUANT_SHIFT - 1 );
     m_maxQIdx                   = ( 1 << (qIdxBD-1) ) - 4;
+#if JVET_N0847_SCALING_LISTS 
+    m_thresLast                 = TCoeff((int64_t(3) << m_QShift));
+    m_thresSSbb                 = TCoeff((int64_t(3) << m_QShift));
+#else
     m_thresLast                 = TCoeff( ( int64_t(3) << m_QShift ) / ( 4 * m_QScale ) );
     m_thresSSbb                 = TCoeff( ( int64_t(3) << m_QShift ) / ( 4 * m_QScale ) );
-
+#endif
     // distortion calculation parameters
 #if JVET_N0246_MODIFIED_QUANTSCALES
     const int64_t qScale        = m_QScale;

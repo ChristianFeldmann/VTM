@@ -848,9 +848,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_tileGroupLumaApsId            = pSrc->m_tileGroupLumaApsId;
   m_tileGroupChromaApsId          = pSrc->m_tileGroupChromaApsId;
 #else
-  m_apsId;
-  m_aps;
-  m_tileGroupAlfEnabledFlag;
+  m_apsId                         = pSrc->m_apsId;
+  m_aps                           = pSrc->m_aps;
+  m_tileGroupAlfEnabledFlag       = pSrc->m_tileGroupAlfEnabledFlag;
 #endif
 #if JVET_N0329_IBC_SEARCH_IMP 
   m_disableSATDForRd              = pSrc->m_disableSATDForRd;

@@ -1954,8 +1954,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       {
         pcSlice->setTileGroupNumAps(0);
       }
-      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cb, alfChromaIdc >> 1);
-      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc & 1);
+      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cb, alfChromaIdc & 1);
+      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc >> 1);
 #else
       if (uiCode)
       {

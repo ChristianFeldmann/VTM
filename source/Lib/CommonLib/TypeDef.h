@@ -49,6 +49,8 @@
 #include <cstring>
 #include <assert.h>
 #include <cassert>
+ 
+#define JVET_N0063_VUI                                    1 // JVET-N0063: Video Usability Information
 
 #define JVET_N0415_CTB_ALF                                1 // JVET-N0415: CTB-based ALF switch
 

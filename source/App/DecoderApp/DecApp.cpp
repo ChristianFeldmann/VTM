@@ -400,7 +400,9 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
         if ( !m_reconFileName.empty() )
         {
           const Window &conf = pcPicTop->cs->sps->getConformanceWindow();
+#if !JVET_N0063_VUI
           const Window  defDisp = (m_respectDefDispWindow && pcPicTop->cs->sps->getVuiParametersPresentFlag()) ? pcPicTop->cs->sps->getVuiParameters()->getDefaultDisplayWindow() : Window();
+#endif
           const bool isTff = pcPicTop->topField;
 
           bool display = true;
@@ -419,10 +421,17 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
             m_cVideoIOYuvReconFile.write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
                                           m_outputColourSpaceConvert,
                                           false, // TODO: m_packedYUVMode,
+#if JVET_N0063_VUI
+                                          conf.getWindowLeftOffset(),
+                                          conf.getWindowRightOffset(),
+                                          conf.getWindowTopOffset(),
+                                          conf.getWindowBottomOffset(),
+#else
                                           conf.getWindowLeftOffset()   + defDisp.getWindowLeftOffset(),
                                           conf.getWindowRightOffset()  + defDisp.getWindowRightOffset(),
                                           conf.getWindowTopOffset()    + defDisp.getWindowTopOffset(),
                                           conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset(),
+#endif
                                           NUM_CHROMA_FORMAT, isTff );
           }
         }
@@ -466,15 +475,24 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
         if (!m_reconFileName.empty())
         {
           const Window &conf    = pcPic->cs->sps->getConformanceWindow();
+#if !JVET_N0063_VUI
           const Window  defDisp = (m_respectDefDispWindow && pcPic->cs->sps->getVuiParametersPresentFlag()) ? pcPic->cs->sps->getVuiParameters()->getDefaultDisplayWindow() : Window();
+#endif
 
           m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf(),
                                         m_outputColourSpaceConvert,
                                         m_packedYUVMode,
+#if JVET_N0063_VUI
+                                        conf.getWindowLeftOffset(),
+                                        conf.getWindowRightOffset(),
+                                        conf.getWindowTopOffset(),
+                                        conf.getWindowBottomOffset(),
+#else
                                         conf.getWindowLeftOffset()   + defDisp.getWindowLeftOffset(),
                                         conf.getWindowRightOffset()  + defDisp.getWindowRightOffset(),
                                         conf.getWindowTopOffset()    + defDisp.getWindowTopOffset(),
                                         conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset(),
+#endif
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
         }
 
@@ -529,16 +547,25 @@ void DecApp::xFlushOutput( PicList* pcListPic )
         if ( !m_reconFileName.empty() )
         {
           const Window &conf    = pcPicTop->cs->sps->getConformanceWindow();
+#if !JVET_N0063_VUI
           const Window  defDisp = (m_respectDefDispWindow && pcPicTop->cs->sps->getVuiParametersPresentFlag()) ? pcPicTop->cs->sps->getVuiParameters()->getDefaultDisplayWindow() : Window();
+#endif
           const bool    isTff   = pcPicTop->topField;
 
           m_cVideoIOYuvReconFile.write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
                                         m_outputColourSpaceConvert,
                                         false, // TODO: m_packedYUVMode,
+#if JVET_N0063_VUI
+                                        conf.getWindowLeftOffset(),
+                                        conf.getWindowRightOffset(),
+                                        conf.getWindowTopOffset(),
+                                        conf.getWindowBottomOffset(),
+#else
                                         conf.getWindowLeftOffset()   + defDisp.getWindowLeftOffset(),
                                         conf.getWindowRightOffset()  + defDisp.getWindowRightOffset(),
                                         conf.getWindowTopOffset()    + defDisp.getWindowTopOffset(),
                                         conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset(),
+#endif
                                         NUM_CHROMA_FORMAT, isTff );
         }
 
@@ -585,15 +612,24 @@ void DecApp::xFlushOutput( PicList* pcListPic )
         if (!m_reconFileName.empty())
         {
           const Window &conf    = pcPic->cs->sps->getConformanceWindow();
+#if !JVET_N0063_VUI
           const Window  defDisp = (m_respectDefDispWindow && pcPic->cs->sps->getVuiParametersPresentFlag()) ? pcPic->cs->sps->getVuiParameters()->getDefaultDisplayWindow() : Window();
+#endif
 
           m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf(),
                                         m_outputColourSpaceConvert,
                                         m_packedYUVMode,
+#if JVET_N0063_VUI
+                                        conf.getWindowLeftOffset(),
+                                        conf.getWindowRightOffset(),
+                                        conf.getWindowTopOffset(),
+                                        conf.getWindowBottomOffset(),
+#else
                                         conf.getWindowLeftOffset()   + defDisp.getWindowLeftOffset(),
                                         conf.getWindowRightOffset()  + defDisp.getWindowRightOffset(),
                                         conf.getWindowTopOffset()    + defDisp.getWindowTopOffset(),
                                         conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset(),
+#endif
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
         }
 

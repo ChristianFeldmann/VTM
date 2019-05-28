@@ -564,6 +564,25 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setDecodingParameterSetEnabled                       ( m_decodingParameterSetEnabled );
 #endif
   m_cEncLib.setActiveParameterSetsSEIEnabled                     ( m_activeParameterSetsSEIEnabled );
+#if JVET_N0063_VUI
+  m_cEncLib.setVuiParametersPresentFlag                          ( m_vuiParametersPresentFlag );
+  m_cEncLib.setAspectRatioInfoPresentFlag                        ( m_aspectRatioInfoPresentFlag);
+  m_cEncLib.setAspectRatioIdc                                    ( m_aspectRatioIdc );
+  m_cEncLib.setSarWidth                                          ( m_sarWidth );
+  m_cEncLib.setSarHeight                                         ( m_sarHeight );
+  m_cEncLib.setColourDescriptionPresentFlag                      ( m_colourDescriptionPresentFlag );
+  m_cEncLib.setColourPrimaries                                   ( m_colourPrimaries );
+  m_cEncLib.setTransferCharacteristics                           ( m_transferCharacteristics );
+  m_cEncLib.setMatrixCoefficients                                ( m_matrixCoefficients );
+  m_cEncLib.setChromaLocInfoPresentFlag                          ( m_chromaLocInfoPresentFlag );
+  m_cEncLib.setChromaSampleLocTypeTopField                       ( m_chromaSampleLocTypeTopField );
+  m_cEncLib.setChromaSampleLocTypeBottomField                    ( m_chromaSampleLocTypeBottomField );
+  m_cEncLib.setChromaSampleLocType                               ( m_chromaSampleLocType );
+  m_cEncLib.setOverscanInfoPresentFlag                           ( m_overscanInfoPresentFlag );
+  m_cEncLib.setOverscanAppropriateFlag                           ( m_overscanAppropriateFlag );
+  m_cEncLib.setVideoSignalTypePresentFlag                        ( m_videoSignalTypePresentFlag );
+  m_cEncLib.setVideoFullRangeFlag                                ( m_videoFullRangeFlag );
+#else
   m_cEncLib.setVuiParametersPresentFlag                          ( m_vuiParametersPresentFlag );
   m_cEncLib.setAspectRatioInfoPresentFlag                        ( m_aspectRatioInfoPresentFlag);
   m_cEncLib.setAspectRatioIdc                                    ( m_aspectRatioIdc );
@@ -594,6 +613,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMaxBitsPerMinCuDenom                              ( m_maxBitsPerMinCuDenom );
   m_cEncLib.setLog2MaxMvLengthHorizontal                         ( m_log2MaxMvLengthHorizontal );
   m_cEncLib.setLog2MaxMvLengthVertical                           ( m_log2MaxMvLengthVertical );
+#endif
   m_cEncLib.setEfficientFieldIRAPEnabled                         ( m_bEfficientFieldIRAPEnabled );
   m_cEncLib.setHarmonizeGopFirstFieldCoupleEnabled               ( m_bHarmonizeGopFirstFieldCoupleEnabled );
   m_cEncLib.setSummaryOutFilename                                ( m_summaryOutFilename );

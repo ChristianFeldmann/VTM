@@ -636,6 +636,25 @@ public:
 class VUI
 {
 private:
+#if JVET_N0063_VUI
+  bool       m_aspectRatioInfoPresentFlag;
+  int        m_aspectRatioIdc;
+  int        m_sarWidth;
+  int        m_sarHeight;
+  bool       m_colourDescriptionPresentFlag;
+  int        m_colourPrimaries;
+  int        m_transferCharacteristics;
+  int        m_matrixCoefficients;
+  bool       m_fieldSeqFlag;
+  bool       m_chromaLocInfoPresentFlag;
+  int        m_chromaSampleLocTypeTopField;
+  int        m_chromaSampleLocTypeBottomField;
+  int        m_chromaSampleLocType;
+  bool       m_overscanInfoPresentFlag;
+  bool       m_overscanAppropriateFlag;
+  bool       m_videoSignalTypePresentFlag;
+  bool       m_videoFullRangeFlag;
+#else
   bool       m_aspectRatioInfoPresentFlag;
   int        m_aspectRatioIdc;
   int        m_sarWidth;
@@ -668,8 +687,30 @@ private:
   int        m_log2MaxMvLengthVertical;
   HRDParameters m_hrdParameters;
   TimingInfo    m_timingInfo;
+#endif
 
 public:
+#if JVET_N0063_VUI
+  VUI()
+    : m_aspectRatioInfoPresentFlag        (false) //TODO: This initialiser list contains magic numbers
+    , m_aspectRatioIdc                    (0)
+    , m_sarWidth                          (0)
+    , m_sarHeight                         (0)
+    , m_colourDescriptionPresentFlag      (false)
+    , m_colourPrimaries                   (2)
+    , m_transferCharacteristics           (2)
+    , m_matrixCoefficients                (2)
+    , m_fieldSeqFlag                      (false)
+    , m_chromaLocInfoPresentFlag          (false)
+    , m_chromaSampleLocTypeTopField       (0)
+    , m_chromaSampleLocTypeBottomField    (0)
+    , m_chromaSampleLocType               (0)
+    , m_overscanInfoPresentFlag           (false)
+    , m_overscanAppropriateFlag           (false)
+    , m_videoSignalTypePresentFlag        (false)
+    , m_videoFullRangeFlag                (false)
+  {}
+#else
   VUI()
     : m_aspectRatioInfoPresentFlag        (false) //TODO: This initialiser list contains magic numbers
     , m_aspectRatioIdc                    (0)
@@ -701,9 +742,63 @@ public:
     , m_log2MaxMvLengthHorizontal         (15)
     , m_log2MaxMvLengthVertical           (15)
   {}
+#endif
 
   virtual           ~VUI() {}
 
+#if JVET_N0063_VUI
+  bool              getAspectRatioInfoPresentFlag() const                  { return m_aspectRatioInfoPresentFlag;           }
+  void              setAspectRatioInfoPresentFlag(bool i)                  { m_aspectRatioInfoPresentFlag = i;              }
+
+  int               getAspectRatioIdc() const                              { return m_aspectRatioIdc;                       }
+  void              setAspectRatioIdc(int i)                               { m_aspectRatioIdc = i;                          }
+
+  int               getSarWidth() const                                    { return m_sarWidth;                             }
+  void              setSarWidth(int i)                                     { m_sarWidth = i;                                }
+
+  int               getSarHeight() const                                   { return m_sarHeight;                            }
+  void              setSarHeight(int i)                                    { m_sarHeight = i;                               }
+
+  bool              getColourDescriptionPresentFlag() const                { return m_colourDescriptionPresentFlag;         }
+  void              setColourDescriptionPresentFlag(bool i)                { m_colourDescriptionPresentFlag = i;            }
+
+  int               getColourPrimaries() const                             { return m_colourPrimaries;                      }
+  void              setColourPrimaries(int i)                              { m_colourPrimaries = i;                         }
+
+  int               getTransferCharacteristics() const                     { return m_transferCharacteristics;              }
+  void              setTransferCharacteristics(int i)                      { m_transferCharacteristics = i;                 }
+
+  int               getMatrixCoefficients() const                          { return m_matrixCoefficients;                   }
+  void              setMatrixCoefficients(int i)                           { m_matrixCoefficients = i;                      }
+
+  bool              getFieldSeqFlag() const                                { return m_fieldSeqFlag;                         }
+  void              setFieldSeqFlag(bool i)                                { m_fieldSeqFlag = i;                            }
+
+  bool              getChromaLocInfoPresentFlag() const                    { return m_chromaLocInfoPresentFlag;             }
+  void              setChromaLocInfoPresentFlag(bool i)                    { m_chromaLocInfoPresentFlag = i;                }
+
+  int               getChromaSampleLocTypeTopField() const                 { return m_chromaSampleLocTypeTopField;          }
+  void              setChromaSampleLocTypeTopField(int i)                  { m_chromaSampleLocTypeTopField = i;             }
+
+  int               getChromaSampleLocTypeBottomField() const              { return m_chromaSampleLocTypeBottomField;       }
+  void              setChromaSampleLocTypeBottomField(int i)               { m_chromaSampleLocTypeBottomField = i;          }
+
+  int               getChromaSampleLocType() const                         { return m_chromaSampleLocType;          }
+  void              setChromaSampleLocType(int i)                          { m_chromaSampleLocType = i;             }
+
+  bool              getOverscanInfoPresentFlag() const                     { return m_overscanInfoPresentFlag;              }
+  void              setOverscanInfoPresentFlag(bool i)                     { m_overscanInfoPresentFlag = i;                 }
+
+  bool              getOverscanAppropriateFlag() const                     { return m_overscanAppropriateFlag;              }
+  void              setOverscanAppropriateFlag(bool i)                     { m_overscanAppropriateFlag = i;                 }
+
+  bool              getVideoSignalTypePresentFlag() const                  { return m_videoSignalTypePresentFlag;           }
+  void              setVideoSignalTypePresentFlag(bool i)                  { m_videoSignalTypePresentFlag = i;              }
+
+  bool              getVideoFullRangeFlag() const                          { return m_videoFullRangeFlag;                   }
+  void              setVideoFullRangeFlag(bool i)                          { m_videoFullRangeFlag = i;                      }
+
+#else
   bool              getAspectRatioInfoPresentFlag() const                  { return m_aspectRatioInfoPresentFlag;           }
   void              setAspectRatioInfoPresentFlag(bool i)                  { m_aspectRatioInfoPresentFlag = i;              }
 
@@ -800,6 +895,7 @@ public:
 
   TimingInfo*       getTimingInfo()                                        { return &m_timingInfo;                          }
   const TimingInfo* getTimingInfo() const                                  { return &m_timingInfo;                          }
+#endif
 };
 
 /// SPS RExt class
@@ -970,6 +1066,12 @@ private:
 
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
   bool              m_useStrongIntraSmoothing;
+#endif
+
+#if JVET_N0063_VUI
+  TimingInfo        m_timingInfo;
+  bool              m_hrdParametersPresentFlag;
+  HRDParameters     m_hrdParameters;
 #endif
 
   bool              m_vuiParametersPresentFlag;
@@ -1234,6 +1336,14 @@ public:
 #endif
   void                    setAffineAmvrEnabledFlag( bool val )                                            { m_affineAmvrEnabledFlag = val;                                       }
   bool                    getAffineAmvrEnabledFlag() const                                                { return m_affineAmvrEnabledFlag;                                      }
+#if JVET_N0063_VUI
+  TimingInfo*             getTimingInfo()                                                                 { return &m_timingInfo; }
+  const TimingInfo*       getTimingInfo() const                                                           { return &m_timingInfo; }
+  bool                    getHrdParametersPresentFlag() const                                             { return m_hrdParametersPresentFlag; }
+  void                    setHrdParametersPresentFlag(bool b)                                             { m_hrdParametersPresentFlag = b; }
+  HRDParameters*          getHrdParameters()                                                              { return &m_hrdParameters; }
+  const HRDParameters*    getHrdParameters() const                                                        { return &m_hrdParameters; }
+#endif
   bool                    getVuiParametersPresentFlag() const                                             { return m_vuiParametersPresentFlag;                                   }
   void                    setVuiParametersPresentFlag(bool b)                                             { m_vuiParametersPresentFlag = b;                                      }
   VUI*                    getVuiParameters()                                                              { return &m_vuiParameters;                                             }

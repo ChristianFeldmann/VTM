@@ -583,6 +583,53 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
 #if ENABLE_TRACING
   DTRACE( g_trace_ctx, D_HEADER, "----------- vui_parameters -----------\n");
 #endif
+
+#if JVET_N0063_VUI
+
+  WRITE_FLAG(pcVUI->getAspectRatioInfoPresentFlag(),            "aspect_ratio_info_present_flag");
+  if (pcVUI->getAspectRatioInfoPresentFlag())
+  {
+    WRITE_CODE(pcVUI->getAspectRatioIdc(), 8,                   "aspect_ratio_idc" );
+    if (pcVUI->getAspectRatioIdc() == 255)
+    {
+      WRITE_CODE(pcVUI->getSarWidth(), 16,                      "sar_width");
+      WRITE_CODE(pcVUI->getSarHeight(), 16,                     "sar_height");
+    }
+  }
+  WRITE_FLAG(pcVUI->getColourDescriptionPresentFlag(),        "colour_description_present_flag");
+  if (pcVUI->getColourDescriptionPresentFlag())
+  {
+    WRITE_CODE(pcVUI->getColourPrimaries(), 8,                "colour_primaries");
+    WRITE_CODE(pcVUI->getTransferCharacteristics(), 8,        "transfer_characteristics");
+    WRITE_CODE(pcVUI->getMatrixCoefficients(), 8,             "matrix_coeffs");
+  }
+  WRITE_FLAG(pcVUI->getFieldSeqFlag(),                          "field_seq_flag");
+  WRITE_FLAG(pcVUI->getChromaLocInfoPresentFlag(),              "chroma_loc_info_present_flag");
+  if (pcVUI->getChromaLocInfoPresentFlag())
+  {
+    if(pcVUI->getFieldSeqFlag())
+    {
+      WRITE_UVLC(pcVUI->getChromaSampleLocTypeTopField(),         "chroma_sample_loc_type_top_field");
+      WRITE_UVLC(pcVUI->getChromaSampleLocTypeBottomField(),      "chroma_sample_loc_type_bottom_field");
+    }
+    else
+    {
+      WRITE_UVLC(pcVUI->getChromaSampleLocType(),         "chroma_sample_loc_type");
+    }
+  }
+  WRITE_FLAG(pcVUI->getOverscanInfoPresentFlag(),               "overscan_info_present_flag");
+  if (pcVUI->getOverscanInfoPresentFlag())
+  {
+    WRITE_FLAG(pcVUI->getOverscanAppropriateFlag(),             "overscan_appropriate_flag");
+  }
+  WRITE_FLAG(pcVUI->getVideoSignalTypePresentFlag(),            "video_signal_type_present_flag");
+  if (pcVUI->getVideoSignalTypePresentFlag())
+  {
+    WRITE_FLAG(pcVUI->getVideoFullRangeFlag(),                  "video_full_range_flag");
+  }
+
+#else
+
   WRITE_FLAG(pcVUI->getAspectRatioInfoPresentFlag(),            "aspect_ratio_info_present_flag");
   if (pcVUI->getAspectRatioInfoPresentFlag())
   {
@@ -662,6 +709,7 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
     WRITE_UVLC(pcVUI->getLog2MaxMvLengthHorizontal(),           "log2_max_mv_length_horizontal");
     WRITE_UVLC(pcVUI->getLog2MaxMvLengthVertical(),             "log2_max_mv_length_vertical");
   }
+#endif
 }
 
 void HLSWriter::codeHrdParameters( const HRDParameters *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 )
@@ -1043,7 +1091,21 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 #endif
 
-  // KJS: no VUI defined yet
+#if JVET_N0063_VUI
+  const TimingInfo *timingInfo = pcSPS->getTimingInfo();
+  WRITE_FLAG(timingInfo->getTimingInfoPresentFlag(),          "timing_info_present_flag");
+  if(timingInfo->getTimingInfoPresentFlag())
+  {
+    WRITE_CODE(timingInfo->getNumUnitsInTick(), 32,           "num_units_in_tick");
+    WRITE_CODE(timingInfo->getTimeScale(),      32,           "time_scale");
+    WRITE_FLAG(pcSPS->getHrdParametersPresentFlag(),              "hrd_parameters_present_flag");
+    if( pcSPS->getHrdParametersPresentFlag() )
+    {
+      codeHrdParameters(pcSPS->getHrdParameters(), 1, pcSPS->getMaxTLayers() - 1 );
+    }
+  }
+#endif
+
   WRITE_FLAG( pcSPS->getVuiParametersPresentFlag(),            "vui_parameters_present_flag" );
   if (pcSPS->getVuiParametersPresentFlag())
   {

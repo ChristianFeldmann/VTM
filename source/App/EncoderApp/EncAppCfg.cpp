@@ -1197,6 +1197,25 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("SEIActiveParameterSets",                          m_activeParameterSetsSEIEnabled,                      0, "Enable generation of active parameter sets SEI messages");
   opts.addOptions()
+#if JVET_N0063_VUI
+  ("VuiParametersPresent,-vui",                       m_vuiParametersPresentFlag,                       false, "Enable generation of vui_parameters()")
+  ("AspectRatioInfoPresent",                          m_aspectRatioInfoPresentFlag,                     false, "Signals whether aspect_ratio_idc is present")
+  ("AspectRatioIdc",                                  m_aspectRatioIdc,                                     0, "aspect_ratio_idc")
+  ("SarWidth",                                        m_sarWidth,                                           0, "horizontal size of the sample aspect ratio")
+  ("SarHeight",                                       m_sarHeight,                                          0, "vertical size of the sample aspect ratio")
+  ("ColourDescriptionPresent",                        m_colourDescriptionPresentFlag,                   false, "Signals whether colour_primaries, transfer_characteristics and matrix_coefficients are present")
+  ("ColourPrimaries",                                 m_colourPrimaries,                                    2, "Indicates chromaticity coordinates of the source primaries")
+  ("TransferCharacteristics",                         m_transferCharacteristics,                            2, "Indicates the opto-electronic transfer characteristics of the source")
+  ("MatrixCoefficients",                              m_matrixCoefficients,                                 2, "Describes the matrix coefficients used in deriving luma and chroma from RGB primaries")
+  ("ChromaLocInfoPresent",                            m_chromaLocInfoPresentFlag,                       false, "Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present")
+  ("ChromaSampleLocTypeTopField",                     m_chromaSampleLocTypeTopField,                        0, "Specifies the location of chroma samples for top field")
+  ("ChromaSampleLocTypeBottomField",                  m_chromaSampleLocTypeBottomField,                     0, "Specifies the location of chroma samples for bottom field")
+  ("ChromaSampleLocType",                             m_chromaSampleLocType,                                0, "Specifies the location of chroma samples for progressive content")
+  ("OverscanInfoPresent",                             m_overscanInfoPresentFlag,                        false, "Indicates whether conformant decoded pictures are suitable for display using overscan\n")
+  ("OverscanAppropriate",                             m_overscanAppropriateFlag,                        false, "Indicates whether conformant decoded pictures are suitable for display using overscan\n")
+  ("VideoSignalTypePresent",                          m_videoSignalTypePresentFlag,                     false, "Signals whether video_format, video_full_range_flag, and colour_description_present_flag are present")
+  ("VideoFullRange",                                  m_videoFullRangeFlag,                             false, "Indicates the black level and range of luma and chroma signals");
+#else
   ("VuiParametersPresent,-vui",                       m_vuiParametersPresentFlag,                       false, "Enable generation of vui_parameters()")
   ("AspectRatioInfoPresent",                          m_aspectRatioInfoPresentFlag,                     false, "Signals whether aspect_ratio_idc is present")
   ("AspectRatioIdc",                                  m_aspectRatioIdc,                                     0, "aspect_ratio_idc")
@@ -1230,6 +1249,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxBitsPerMinCuDenom",                            m_maxBitsPerMinCuDenom,                               1, "Indicates an upper bound for the number of bits of coding_unit() data")
   ("Log2MaxMvLengthHorizontal",                       m_log2MaxMvLengthHorizontal,                         15, "Indicate the maximum absolute value of a decoded horizontal MV component in quarter-pel luma units")
   ("Log2MaxMvLengthVertical",                         m_log2MaxMvLengthVertical,                           15, "Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units");
+#endif
   opts.addOptions()
   ("SEIColourRemappingInfoFileRoot,-cri",             m_colourRemapSEIFileRoot,                    string(""), "Colour Remapping Information SEI parameters root file name (wo num ext)")
   ("SEIRecoveryPoint",                                m_recoveryPointSEIEnabled,                        false, "Control generation of recovery point SEI messages")
@@ -2522,6 +2542,7 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_confWinTop    % SPS::getWinUnitY(m_chromaFormatIDC) != 0, "Top conformance window offset must be an integer multiple of the specified chroma subsampling");
   xConfirmPara( m_confWinBottom % SPS::getWinUnitY(m_chromaFormatIDC) != 0, "Bottom conformance window offset must be an integer multiple of the specified chroma subsampling");
 
+#if !JVET_N0063_VUI
   xConfirmPara( m_defaultDisplayWindowFlag && !m_vuiParametersPresentFlag, "VUI needs to be enabled for default display window");
 
   if (m_defaultDisplayWindowFlag)
@@ -2531,6 +2552,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_defDispWinTopOffset    % SPS::getWinUnitY(m_chromaFormatIDC) != 0, "Top default display window offset must be an integer multiple of the specified chroma subsampling");
     xConfirmPara( m_defDispWinBottomOffset % SPS::getWinUnitY(m_chromaFormatIDC) != 0, "Bottom default display window offset must be an integer multiple of the specified chroma subsampling");
   }
+#endif
 
   // max CU width and height should be power of 2
   uint32_t ui = m_uiMaxCUWidth;
@@ -2880,6 +2902,7 @@ bool EncAppCfg::xCheckParameter()
     m_maxDecPicBuffering[MAX_TLAYER-1] = m_numReorderPics[MAX_TLAYER-1] + 1;
   }
 
+#if !JVET_N0063_VUI
   if(m_vuiParametersPresentFlag && m_bitstreamRestrictionFlag)
   {
     int PicSizeInSamplesY =  m_iSourceWidth * m_iSourceHeight;
@@ -2953,6 +2976,7 @@ bool EncAppCfg::xCheckParameter()
       m_minSpatialSegmentationIdc = 0;
     }
   }
+#endif
 
 #if JVET_N0857_TILES_BRICKS
   for (int i=0; i<MAX_TILES; i++)
@@ -3045,6 +3069,7 @@ bool EncAppCfg::xCheckParameter()
   {
     xConfirmPara( m_RCCpbSaturationEnabled != 0, "Target bits saturation cannot be processed without Rate control" );
   }
+#if !JVET_N0063_VUI
   if (m_vuiParametersPresentFlag)
   {
     xConfirmPara(m_RCTargetBitrate == 0, "A target bit rate is required to be set for VUI/HRD parameters.");
@@ -3054,6 +3079,7 @@ bool EncAppCfg::xCheckParameter()
       m_RCCpbSize = m_RCTargetBitrate;
     }
   }
+#endif
 #endif
 
   xConfirmPara(!m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce, "CUTransquantBypassFlagForce cannot be 1 when TransquantBypassEnableFlag is 0");

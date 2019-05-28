@@ -264,7 +264,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if U0132_TARGET_BITS_SATURATION
   if (m_RCCpbSaturationEnabled)
   {
+#if JVET_N0063_VUI
+    m_cRateCtrl.initHrdParam(sps0.getHrdParameters(), m_iFrameRate, m_RCInitialCpbFullness);
+#else
     m_cRateCtrl.initHrdParam(sps0.getVuiParameters()->getHrdParameters(), m_iFrameRate, m_RCInitialCpbFullness);
+#endif
   }
 #endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
@@ -1090,6 +1094,29 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setALFEnabledFlag( m_alf );
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
+#if JVET_N0063_VUI
+  if (sps.getVuiParametersPresentFlag())
+  {
+    VUI* pcVUI = sps.getVuiParameters();
+    pcVUI->setAspectRatioInfoPresentFlag(getAspectRatioInfoPresentFlag());
+    pcVUI->setAspectRatioIdc(getAspectRatioIdc());
+    pcVUI->setSarWidth(getSarWidth());
+    pcVUI->setSarHeight(getSarHeight());
+    pcVUI->setColourDescriptionPresentFlag(getColourDescriptionPresentFlag());
+    pcVUI->setColourPrimaries(getColourPrimaries());
+    pcVUI->setTransferCharacteristics(getTransferCharacteristics());
+    pcVUI->setMatrixCoefficients(getMatrixCoefficients());
+    pcVUI->setFieldSeqFlag(false);
+    pcVUI->setChromaLocInfoPresentFlag(getChromaLocInfoPresentFlag());
+    pcVUI->setChromaSampleLocTypeTopField(getChromaSampleLocTypeTopField());
+    pcVUI->setChromaSampleLocTypeBottomField(getChromaSampleLocTypeBottomField());
+    pcVUI->setChromaSampleLocType(getChromaSampleLocType());
+    pcVUI->setOverscanInfoPresentFlag(getOverscanInfoPresentFlag());
+    pcVUI->setOverscanAppropriateFlag(getOverscanAppropriateFlag());
+    pcVUI->setVideoSignalTypePresentFlag(getVideoSignalTypePresentFlag());
+    pcVUI->setVideoFullRangeFlag(getVideoFullRangeFlag());
+  }
+#else
   if (sps.getVuiParametersPresentFlag())
   {
     VUI* pcVUI = sps.getVuiParameters();
@@ -1125,6 +1152,7 @@ void EncLib::xInitSPS(SPS &sps)
     pcVUI->setLog2MaxMvLengthHorizontal(getLog2MaxMvLengthHorizontal());
     pcVUI->setLog2MaxMvLengthVertical(getLog2MaxMvLengthVertical());
   }
+#endif
 
   sps.setNumLongTermRefPicSPS(NUM_LONG_TERM_REF_PIC_SPS);
   CHECK(!(NUM_LONG_TERM_REF_PIC_SPS <= MAX_NUM_LONG_TERM_REF_PICS), "Unspecified error");
@@ -1144,7 +1172,11 @@ void EncLib::xInitSPS(SPS &sps)
   }
   if( getBufferingPeriodSEIEnabled() || getPictureTimingSEIEnabled() || getDecodingUnitInfoSEIEnabled() )
   {
+#if JVET_N0063_VUI
+    sps.setHrdParametersPresentFlag( true );
+#else
     sps.getVuiParameters()->setHrdParametersPresentFlag( true );
+#endif
   }
 
   // Set up SPS range extension settings
@@ -1165,6 +1197,13 @@ void EncLib::xInitHrdParameters(SPS &sps)
 {
   m_encHRD.initHRDParameters((EncCfg*) this);
   
+#if JVET_N0063_VUI
+  HRDParameters *hrdParams = sps.getHrdParameters();
+  *hrdParams = m_encHRD.getHRDParameters();
+
+  TimingInfo *timingInfo = sps.getTimingInfo();
+  *timingInfo = m_encHRD.getTimingInfo();
+#else
   VUI *vui = sps.getVuiParameters();
   
   HRDParameters *hrdParams = vui->getHrdParameters();
@@ -1172,6 +1211,7 @@ void EncLib::xInitHrdParameters(SPS &sps)
 
   TimingInfo *timingInfo = vui->getTimingInfo();
   *timingInfo = m_encHRD.getTimingInfo();
+#endif
 }
 
 void EncLib::xInitPPS(PPS &pps, const SPS &sps)

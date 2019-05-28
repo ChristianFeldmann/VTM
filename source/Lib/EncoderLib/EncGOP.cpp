@@ -445,7 +445,11 @@ void EncGOP::xWriteTrailingSEIMessages (SEIMessages& seiMessages, AccessUnit &ac
 
 void EncGOP::xWriteDuSEIMessages (SEIMessages& duInfoSeiMessages, AccessUnit &accessUnit, int temporalId, const SPS *sps, std::deque<DUData> &duData)
 {
+#if JVET_N0063_VUI
+  const HRDParameters *hrd = sps->getHrdParameters();
+#else
   const HRDParameters *hrd = sps->getVuiParameters()->getHrdParameters();
+#endif
 
   if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getSubPicCpbParamsPresentFlag() )
   {
@@ -576,10 +580,17 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
 
 void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice)
 {
+#if JVET_N0063_VUI
+  if( ( m_pcCfg->getBufferingPeriodSEIEnabled() ) && ( slice->getSliceType() == I_SLICE ) &&
+    ( slice->getSPS()->getVuiParametersPresentFlag() ) &&
+    ( ( slice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag() )
+    || ( slice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) )
+#else
   if( ( m_pcCfg->getBufferingPeriodSEIEnabled() ) && ( slice->getSliceType() == I_SLICE ) &&
     ( slice->getSPS()->getVuiParametersPresentFlag() ) &&
     ( ( slice->getSPS()->getVuiParameters()->getHrdParameters()->getNalHrdParametersPresentFlag() )
     || ( slice->getSPS()->getVuiParameters()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) )
+#endif
   {
     SEIBufferingPeriod *bufferingPeriodSEI = new SEIBufferingPeriod();
     m_seiEncoder.initSEIBufferingPeriod(bufferingPeriodSEI, slice);
@@ -663,8 +674,12 @@ void EncGOP::xCreateScalableNestingSEI (SEIMessages& seiMessages, SEIMessages& n
 
 void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, SEIMessages& duInfoSeiMessages, Slice *slice, bool isField, std::deque<DUData> &duData)
 {
+#if JVET_N0063_VUI
+  const HRDParameters *hrd = slice->getSPS()->getHrdParameters();
+#else
   const VUI *vui = slice->getSPS()->getVuiParameters();
   const HRDParameters *hrd = vui->getHrdParameters();
+#endif
 
   // update decoding unit parameters
   if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) &&
@@ -701,6 +716,7 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
       m_lastBPSEI = m_totalCoded;
     }
 
+#if !JVET_N0063_VUI
     if( hrd->getSubPicCpbParamsPresentFlag() )
     {
       int i;
@@ -764,6 +780,7 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
         }
       }
     }
+#endif
 
     if( m_pcCfg->getPictureTimingSEIEnabled() )
     {
@@ -842,8 +859,12 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
   {
     return;
   }
+#if JVET_N0063_VUI
+  const HRDParameters *hrd = sps->getHrdParameters();
+#else
   const VUI *vui = sps->getVuiParameters();
   const HRDParameters *hrd = vui->getHrdParameters();
+#endif
   if( hrd->getSubPicCpbParamsPresentFlag() )
   {
     int i;
@@ -870,7 +891,11 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
 
       for( i = ( numDU - 2 ); i >= 0; i -- )
       {
+#if JVET_N0063_VUI
+        ui64Tmp = ( ( ( duData[numDU - 1].accumBitsDU  - duData[i].accumBitsDU ) * ( sps->getTimingInfo()->getTimeScale() / sps->getTimingInfo()->getNumUnitsInTick() ) * ( hrd->getTickDivisorMinus2() + 2 ) ) / ( m_pcCfg->getTargetBitrate() ) );
+#else
         ui64Tmp = ( ( ( duData[numDU - 1].accumBitsDU  - duData[i].accumBitsDU ) * ( vui->getTimingInfo()->getTimeScale() / vui->getTimingInfo()->getNumUnitsInTick() ) * ( hrd->getTickDivisorMinus2() + 2 ) ) / ( m_pcCfg->getTargetBitrate() ) );
+#endif
         if( (uint32_t)ui64Tmp > maxDiff )
         {
           tmp ++;
@@ -882,7 +907,11 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
       for( i = ( numDU - 2 ); i >= 0; i -- )
       {
         flag = 0;
+#if JVET_N0063_VUI
+        ui64Tmp = ( ( ( duData[numDU - 1].accumBitsDU  - duData[i].accumBitsDU ) * ( sps->getTimingInfo()->getTimeScale() / sps->getTimingInfo()->getNumUnitsInTick() ) * ( hrd->getTickDivisorMinus2() + 2 ) ) / ( m_pcCfg->getTargetBitrate() ) );
+#else
         ui64Tmp = ( ( ( duData[numDU - 1].accumBitsDU  - duData[i].accumBitsDU ) * ( vui->getTimingInfo()->getTimeScale() / vui->getTimingInfo()->getNumUnitsInTick() ) * ( hrd->getTickDivisorMinus2() + 2 ) ) / ( m_pcCfg->getTargetBitrate() ) );
+#endif
 
         if( (uint32_t)ui64Tmp > maxDiff )
         {
@@ -2663,11 +2692,19 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           accessUnit.push_back(new NALUnitEBSP(nalu));
         }
 
+#if JVET_N0063_VUI
+        if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) &&
+            ( pcSlice->getSPS()->getVuiParametersPresentFlag() ) &&
+            ( ( pcSlice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag() )
+           || ( pcSlice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) &&
+            ( pcSlice->getSPS()->getHrdParameters()->getSubPicCpbParamsPresentFlag() ) )
+#else
         if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) &&
             ( pcSlice->getSPS()->getVuiParametersPresentFlag() ) &&
             ( ( pcSlice->getSPS()->getVuiParameters()->getHrdParameters()->getNalHrdParametersPresentFlag() )
            || ( pcSlice->getSPS()->getVuiParameters()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) &&
             ( pcSlice->getSPS()->getVuiParameters()->getHrdParameters()->getSubPicCpbParamsPresentFlag() ) )
+#endif
         {
             uint32_t numNalus = 0;
           uint32_t numRBSPBytes = 0;

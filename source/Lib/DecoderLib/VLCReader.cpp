@@ -556,6 +556,9 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
       const uint32_t numSlicesInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
       const uint32_t numTilesInPic = (tileColumnsMinus1 + 1) * (tileRowsMinus1 + 1);
       int codeLength = (int)ceil(log2(numTilesInPic));
+#if JVET_N0124_PROPOSAL2
+      int codeLength2 = codeLength;
+#endif
       if (numSlicesInPic > 0)
       {
         std::vector<int> topLeft(numSlicesInPic);
@@ -567,8 +570,15 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
           {
             READ_CODE( codeLength, uiCode, "top_left_brick_idx" );
             topLeft[i] = uiCode;
+#if JVET_N0124_PROPOSAL2
+            codeLength2 = (int)ceil(log2(numTilesInPic - topLeft[i]));
+#endif
           }
-          READ_CODE( codeLength, uiCode, "bottom_right_brick_idx_delta" );
+#if JVET_N0124_PROPOSAL2
+          READ_CODE( codeLength2, uiCode, "bottom_right_brick_idx_delta");
+#else
+          READ_CODE(codeLength, uiCode, "bottom_right_brick_idx_delta");
+#endif
           bottomRight[i] = topLeft[i] + uiCode;
         }
         pcPPS->setTopLeftTileIdx(topLeft);

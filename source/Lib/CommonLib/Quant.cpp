@@ -649,8 +649,7 @@ void Quant::setScalingListDec(const ScalingList &scalingList)
   {
     for (uint32_t sizeh = 0; sizeh <= SCALING_LIST_LAST_CODED; sizeh++) //7
     {
-      if (sizew == sizeh || (sizew == SCALING_LIST_1x1 && sizeh<SCALING_LIST_4x4) || (sizeh == SCALING_LIST_1x1 && sizew<SCALING_LIST_4x4))
-			  continue;
+      if (sizew == sizeh || (sizew == SCALING_LIST_1x1 && sizeh<SCALING_LIST_4x4) || (sizeh == SCALING_LIST_1x1 && sizew<SCALING_LIST_4x4)) continue;
       for (uint32_t list = 0; list < SCALING_LIST_NUM; list++) //9
       {
         for (int qp = minimumQp; qp < maximumQp; qp++)

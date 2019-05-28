@@ -2628,8 +2628,7 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
     for(listId = 0; listId <  SCALING_LIST_NUM; listId++)
     {
 #if JVET_N0847_SCALING_LISTS
-      if (!(((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)) ||
-            ((sizeId > SCALING_LIST_32x32) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))))//2x2 luma
+      if (!(((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)) || ((sizeId > SCALING_LIST_32x32) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))))//2x2 luma
 #else
       if ((sizeId==SCALING_LIST_32x32) && (listId%(SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) != 0))
       {
@@ -2663,13 +2662,13 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
 #else
             code*=(SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES); // Adjust the decoded code for this size, to cope with the missing 32x32 chroma entries.
 #endif
-		  }
+	  }
 
           scalingList->setRefMatrixId (sizeId,listId,(uint32_t)((int)(listId)-(code)));
           if( sizeId > SCALING_LIST_8x8 )
           {
             scalingList->setScalingListDC(sizeId,listId,((listId == scalingList->getRefMatrixId (sizeId,listId))? 16 :scalingList->getScalingListDC(sizeId, scalingList->getRefMatrixId (sizeId,listId))));
-		  }
+	  }
           scalingList->processRefMatrix( sizeId, listId, scalingList->getRefMatrixId (sizeId,listId));
 
         }

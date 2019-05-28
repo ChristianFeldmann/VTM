@@ -704,15 +704,13 @@ namespace DQIntern
     Quantizer() {}
 #if JVET_N0847_SCALING_LISTS
     void  dequantBlock         ( const TransformUnit& tu, const ComponentID compID, const QpParam& cQP, CoeffBuf& recCoeff, bool enableScalingLists, int* piDequantCoef ) const;
-    void  initQuantBlock2Pos   ( const TransformUnit& tu, const ComponentID compID, const QpParam& cQP, const double lambda, int gValue );
-    inline void   preQuantCoeff( const TCoeff absCoeff, PQData *pqData, int QuanCoeff ) const;
+    void  initQuantBlock       ( const TransformUnit& tu, const ComponentID compID, const QpParam& cQP, const double lambda, int gValue );
+    inline void   preQuantCoeff( const TCoeff absCoeff, PQData *pqData, int quanCoeff ) const;
 #else
     void  dequantBlock         ( const TransformUnit& tu, const ComponentID compID, const QpParam& cQP, CoeffBuf& recCoeff) const;
-#endif   
     void  initQuantBlock( const TransformUnit& tu, const ComponentID compID, const QpParam& cQP, const double lambda  );
-#if !JVET_N0847_SCALING_LISTS    
-    inline void   preQuantCoeff(const TCoeff absCoeff, PQData *pqData) const;
-#endif
+   inline void   preQuantCoeff(const TCoeff absCoeff, PQData *pqData) const;
+#endif   
     inline TCoeff getLastThreshold() const { return m_thresLast; }
     inline TCoeff getSSbbThreshold() const { return m_thresSSbb; }
 
@@ -749,73 +747,10 @@ namespace DQIntern
     return y;
   }
 #if JVET_N0847_SCALING_LISTS
-  void Quantizer::initQuantBlock2Pos(const TransformUnit& tu, const ComponentID compID, const QpParam& cQP, const double lambda, int gValue)
-  {
-#if HEVC_USE_SCALING_LISTS && !JVET_N0847_SCALING_LISTS
-    CHECK(tu.cs->sps->getScalingListFlag(), "Scaling lists not supported");
-#endif
-    CHECKD(lambda <= 0.0, "Lambda must be greater than 0");
-
-    const int         qpDQ = cQP.Qp + 1;
-    const int         qpPer = qpDQ / 6;
-    const int         qpRem = qpDQ - 6 * qpPer;
-    const SPS&        sps = *tu.cs->sps;
-    const CompArea&   area = tu.blocks[compID];
-    const ChannelType chType = toChannelType(compID);
-    const int         channelBitDepth = sps.getBitDepth(chType);
-    const int         maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(chType);
-    const int         nomTransformShift = getTransformShift(channelBitDepth, area.size(), maxLog2TrDynamicRange);
-    const bool        clipTransformShift = (tu.mtsIdx == MTS_SKIP && sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag());
-#if JVET_N0246_MODIFIED_QUANTSCALES
-    const bool        needsSqrt2ScaleAdjustment = TU::needsSqrt2Scale(tu, compID);
-    const int         transformShift = (clipTransformShift ? std::max<int>(0, nomTransformShift) : nomTransformShift) + (needsSqrt2ScaleAdjustment ? -1 : 0);
+  void Quantizer::initQuantBlock(const TransformUnit& tu, const ComponentID compID, const QpParam& cQP, const double lambda, int gValue = -1)
 #else
-    const int         transformShift = (clipTransformShift ? std::max<int>(0, nomTransformShift) : nomTransformShift);
-#endif
-	  // quant parameters
-    m_QShift = QUANT_SHIFT - 1 + qpPer + transformShift;
-    m_QAdd = -((3 << m_QShift) >> 1);
-#if JVET_N0246_MODIFIED_QUANTSCALES
-    Intermediate_Int  invShift = IQUANT_SHIFT + 1 - qpPer - transformShift;
-    m_QScale = g_quantScales[needsSqrt2ScaleAdjustment ? 1 : 0][qpRem];
-#else // JVET_N0246_MODIFIED_QUANTSCALES
-#if HM_QTBT_AS_IN_JEM_QUANT
-    Intermediate_Int  invShift = IQUANT_SHIFT + 1 - qpPer - transformShift + (TU::needsBlockSizeTrafoScale(tu, compID) ? ADJ_DEQUANT_SHIFT : 0);
-    m_QScale = (TU::needsSqrt2Scale(tu, compID) ? (g_quantScales[qpRem] * 181) >> 7 : g_quantScales[qpRem]);
-#else
-    Intermediate_Int  invShift = IQUANT_SHIFT + 1 - qpPer - transformShift;
-    m_QScale = g_quantScales[qpRem];
-#endif
-#endif // JVET_N0246_MODIFIED_QUANTSCALES
-    const unsigned    qIdxBD = std::min<unsigned>(maxLog2TrDynamicRange + 1, 8 * sizeof(Intermediate_Int) + invShift - IQUANT_SHIFT - 1);
-    m_maxQIdx = (1 << (qIdxBD - 1)) - 4;
-#if JVET_N0847_SCALING_LISTS 
-    m_thresLast = TCoeff((int64_t(3) << m_QShift));
-    m_thresSSbb = TCoeff((int64_t(3) << m_QShift));										
-#else
-    m_thresLast = TCoeff((int64_t(3) << m_QShift) / (4 * m_QScale));
-    m_thresSSbb = TCoeff((int64_t(3) << m_QShift) / (4 * m_QScale));
-#endif
-
-    // distortion calculation parameters
-    const int64_t qScale = gValue;  
-#if HM_QTBT_AS_IN_JEM_QUANT
-    const int nomDShift = SCALE_BITS - 2 * (nomTransformShift + DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth)) + m_QShift;
-#else
-    const int nomDShift = SCALE_BITS - 2 * (nomTransformShift + DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth))
-                          + m_QShift + (TU::needsQP3Offset(tu, compID) ? 1 : 0);
-#endif
-    const double  qScale2 = double(qScale * qScale);
-    const double  nomDistFactor = (nomDShift < 0 ? 1.0 / (double(int64_t(1) << (-nomDShift))*qScale2*lambda) : double(int64_t(1) << nomDShift) / (qScale2*lambda));
-    const int64_t pow2dfShift = (int64_t)(nomDistFactor * qScale2) + 1;
-    const int     dfShift = ceil_log2(pow2dfShift);
-    m_DistShift = 62 + m_QShift - 2 * maxLog2TrDynamicRange - dfShift;
-    m_DistAdd = (int64_t(1) << m_DistShift) >> 1;
-    m_DistStepAdd = (int64_t)(nomDistFactor * double(int64_t(1) << (m_DistShift + m_QShift)) + .5);
-    m_DistOrgFact = (int64_t)(nomDistFactor * double(int64_t(1) << (m_DistShift + 1)) + .5);
-  }
-#endif
   void Quantizer::initQuantBlock( const TransformUnit& tu, const ComponentID compID, const QpParam& cQP, const double lambda )
+#endif
   {
 #if HEVC_USE_SCALING_LISTS && !JVET_N0847_SCALING_LISTS
     CHECK ( tu.cs->sps->getScalingListFlag(), "Scaling lists not supported" );
@@ -864,7 +799,11 @@ namespace DQIntern
 #endif
     // distortion calculation parameters
 #if JVET_N0246_MODIFIED_QUANTSCALES
+#if JVET_N0847_SCALING_LISTS
+    const int64_t qScale        = (gValue==-1) ? m_QScale : gValue;
+#else
     const int64_t qScale        = m_QScale;
+#endif
     const int nomDShift =
       SCALE_BITS - 2 * (nomTransformShift + DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth)) + m_QShift + (needsSqrt2ScaleAdjustment ? 1 : 0);
 #else // JVET_N0246_MODIFIED_QUANTSCALES
@@ -998,13 +937,13 @@ namespace DQIntern
   }
 
 #if JVET_N0847_SCALING_LISTS
-  inline void Quantizer::preQuantCoeff(const TCoeff absCoeff, PQData *pqData, int QuanCoeff) const
+  inline void Quantizer::preQuantCoeff(const TCoeff absCoeff, PQData *pqData, int quanCoeff) const
 #else
   inline void Quantizer::preQuantCoeff(const TCoeff absCoeff, PQData *pqData) const
 #endif
   {
 #if JVET_N0847_SCALING_LISTS
-    int64_t scaledOrg = int64_t( absCoeff ) * QuanCoeff;
+    int64_t scaledOrg = int64_t( absCoeff ) * quanCoeff;
 #else
     int64_t scaledOrg = int64_t( absCoeff ) * m_QScale;
 #endif
@@ -1585,8 +1524,8 @@ namespace DQIntern
     DepQuant();
 
 #if JVET_N0847_SCALING_LISTS
-    void    quant   ( TransformUnit& tu, const CCoeffBuf& srcCoeff, const ComponentID compID, const QpParam& cQP, const double lambda, const Ctx& ctx, TCoeff& absSum, bool enableScalingLists, int* piQuantCoeff );
-    void    dequant ( const TransformUnit& tu, CoeffBuf& recCoeff, const ComponentID compID, const QpParam& cQP, bool enableScalingLists, int* piQuantCoeff );
+    void    quant   ( TransformUnit& tu, const CCoeffBuf& srcCoeff, const ComponentID compID, const QpParam& cQP, const double lambda, const Ctx& ctx, TCoeff& absSum, bool enableScalingLists, int* quantCoeff );
+    void    dequant ( const TransformUnit& tu, CoeffBuf& recCoeff, const ComponentID compID, const QpParam& cQP, bool enableScalingLists, int* quantCoeff );
 #else
     void    quant   ( TransformUnit& tu, const CCoeffBuf& srcCoeff, const ComponentID compID, const QpParam& cQP, const double lambda, const Ctx& ctx, TCoeff& absSum );
     void    dequant ( const TransformUnit& tu,  CoeffBuf& recCoeff, const ComponentID compID, const QpParam& cQP )  const;
@@ -1646,7 +1585,7 @@ namespace DQIntern
 
 
 #if JVET_N0847_SCALING_LISTS
-  void DepQuant::xDecide( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions, bool zeroOut, int QuanCoeff)
+  void DepQuant::xDecide( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions, bool zeroOut, int quanCoeff)
 #else
   void DepQuant::xDecide( const ScanPosType spt, const TCoeff absCoeff, const int lastOffset, Decision* decisions, bool zeroOut)
 #endif
@@ -1669,7 +1608,7 @@ namespace DQIntern
 
     PQData  pqData[4];
 #if JVET_N0847_SCALING_LISTS
-    m_quant.preQuantCoeff( absCoeff, pqData, QuanCoeff );
+    m_quant.preQuantCoeff( absCoeff, pqData, quanCoeff );
 #else
     m_quant.preQuantCoeff( absCoeff, pqData );
 #endif
@@ -1798,7 +1737,7 @@ namespace DQIntern
 
 
 #if JVET_N0847_SCALING_LISTS
-  void DepQuant::quant( TransformUnit& tu, const CCoeffBuf& srcCoeff, const ComponentID compID, const QpParam& cQP, const double lambda, const Ctx& ctx, TCoeff& absSum, bool enableScalingLists, int* piQuantCoeff )
+  void DepQuant::quant( TransformUnit& tu, const CCoeffBuf& srcCoeff, const ComponentID compID, const QpParam& cQP, const double lambda, const Ctx& ctx, TCoeff& absSum, bool enableScalingLists, int* quantCoeff )
 #else
   void DepQuant::quant( TransformUnit& tu, const CCoeffBuf& srcCoeff, const ComponentID compID, const QpParam& cQP, const double lambda, const Ctx& ctx, TCoeff& absSum )
 #endif
@@ -1839,7 +1778,7 @@ namespace DQIntern
     zeroOutforThres = zeroOut || (32 < tuPars.m_height || 32 < tuPars.m_width);
 #endif
     //===== find first test position =====
-    int   firstTestPos = numCoeff - 1;
+    int firstTestPos = numCoeff - 1;
 #if JVET_N0193_LFNST
     if( lfnstIdx > 0 && tu.mtsIdx != MTS_SKIP && ( ( width == 4 && height == 4 ) || ( width == 8 && height == 8 ) ) )
     {
@@ -1856,7 +1795,7 @@ namespace DQIntern
       if (zeroOutforThres && (tuPars.m_scanId2BlkPos[firstTestPos].x >= ((tuPars.m_width == 32 && zeroOut) ? 16 : 32)
 			                     || tuPars.m_scanId2BlkPos[firstTestPos].y >= ((tuPars.m_height == 32 && zeroOut) ? 16 : 32))) 
         continue;
-      TCoeff thresTmp = (enableScalingLists) ? TCoeff(thres / (4 * piQuantCoeff[tuPars.m_scanId2BlkPos[firstTestPos].idx]))
+      TCoeff thresTmp = (enableScalingLists) ? TCoeff(thres / (4 * quantCoeff[tuPars.m_scanId2BlkPos[firstTestPos].idx]))
 			                                       : TCoeff(thres / (4 * defaultQuantisationCoefficient));
 
       if (abs(tCoeff[tuPars.m_scanId2BlkPos[firstTestPos].idx]) > thresTmp)
@@ -1902,8 +1841,8 @@ namespace DQIntern
 #if JVET_N0847_SCALING_LISTS
       if (enableScalingLists)
       {
-        m_quant.initQuantBlock2Pos(tu, compID, cQP, lambda, piQuantCoeff[scanInfo.rasterPos]);
-        xDecideAndUpdate( abs( tCoeff[scanInfo.rasterPos]), scanInfo, (zeroOut && (scanInfo.posX >= effWidth || scanInfo.posY >= effHeight)) || lfnstZeroOut, piQuantCoeff[scanInfo.rasterPos] );
+        m_quant.initQuantBlock(tu, compID, cQP, lambda, quantCoeff[scanInfo.rasterPos]);
+        xDecideAndUpdate( abs( tCoeff[scanInfo.rasterPos]), scanInfo, (zeroOut && (scanInfo.posX >= effWidth || scanInfo.posY >= effHeight)) || lfnstZeroOut, quantCoeff[scanInfo.rasterPos] );
 	    }
       else
         xDecideAndUpdate( abs( tCoeff[scanInfo.rasterPos]), scanInfo, (zeroOut && (scanInfo.posX >= effWidth || scanInfo.posY >= effHeight)) || lfnstZeroOut, defaultQuantisationCoefficient );
@@ -1975,14 +1914,14 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
     const int         qpPer           = qpDQ / 6;
     const int         qpRem           = qpDQ - 6 * qpPer;
     const CompArea    &rect           = tu.blocks[compID];
-    const int         uiWidth         = rect.width;
-    const int         uiHeight        = rect.height;
+    const int         width           = rect.width;
+    const int         height          = rect.height;
     uint32_t          scalingListType = getScalingListType(tu.cu->predMode, compID);
     CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
-    const uint32_t    uiLog2TrWidth   = g_aucLog2[uiWidth];
-    const uint32_t    uiLog2TrHeight  = g_aucLog2[uiHeight];
-    const bool        enableScalingLists = getUseScalingList(uiWidth, uiHeight, tu.mtsIdx == MTS_SKIP);//4x4 must test scalingLists
-    static_cast<DQIntern::DepQuant*>(p)->quant( tu, pSrc, compID, cQP, Quant::m_dLambda, ctx, uiAbsSum, enableScalingLists, Quant::getQuantCoeff(scalingListType, qpRem, uiLog2TrWidth, uiLog2TrHeight) );
+    const uint32_t    log2TrWidth     = g_aucLog2[width];
+    const uint32_t    log2TrHeight    = g_aucLog2[height];
+    const bool        enableScalingLists = getUseScalingList(width, height, tu.mtsIdx == MTS_SKIP);//4x4 must test scalingLists
+    static_cast<DQIntern::DepQuant*>(p)->quant( tu, pSrc, compID, cQP, Quant::m_dLambda, ctx, uiAbsSum, enableScalingLists, Quant::getQuantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
 #else
     static_cast<DQIntern::DepQuant*>(p)->quant( tu, pSrc, compID, cQP, Quant::m_dLambda, ctx, uiAbsSum );
 #endif
@@ -2006,15 +1945,15 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
     const int         qpPer           = qpDQ / 6;
     const int         qpRem           = qpDQ - 6 * qpPer;
     const CompArea    &rect           = tu.blocks[compID];
-    const int         uiWidth         = rect.width;
-    const int         uiHeight        = rect.height;
+    const int         width           = rect.width;
+    const int         height          = rect.height;
     uint32_t          scalingListType = getScalingListType(tu.cu->predMode, compID);
     CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
-    const uint32_t    uiLog2TrWidth  = g_aucLog2[uiWidth];
-    const uint32_t    uiLog2TrHeight = g_aucLog2[uiHeight];
+    const uint32_t    log2TrWidth  = g_aucLog2[width];
+    const uint32_t    log2TrHeight = g_aucLog2[height];
 
-    const bool enableScalingLists = getUseScalingList(uiWidth, uiHeight, (tu.mtsIdx == MTS_SKIP));//4x4 must test scalingLists
-    static_cast<DQIntern::DepQuant*>(p)->dequant( tu, dstCoeff, compID, cQP, enableScalingLists, Quant::getDequantCoeff(scalingListType, qpRem, uiLog2TrWidth, uiLog2TrHeight) );
+    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP));//4x4 must test scalingLists
+    static_cast<DQIntern::DepQuant*>(p)->dequant( tu, dstCoeff, compID, cQP, enableScalingLists, Quant::getDequantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
 #else
     static_cast<DQIntern::DepQuant*>(p)->dequant( tu, dstCoeff, compID, cQP );
 #endif

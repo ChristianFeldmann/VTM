@@ -152,10 +152,10 @@ void CABACWriter::end_of_slice()
 //================================================================================
 //  clause 7.3.8.2
 //--------------------------------------------------------------------------------
-//    bool  coding_tree_unit( cs, area, qp, ctuRsAddr, skipSao )
+//    bool  coding_tree_unit( cs, area, qp, ctuRsAddr, skipSao, skipAlf )
 //================================================================================
 
-void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, int (&qps)[2], unsigned ctuRsAddr, bool skipSao /* = false */ )
+void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, int (&qps)[2], unsigned ctuRsAddr, bool skipSao /* = false */, bool skipAlf /* = false */ )
 {
   CUCtx cuCtx( qps[CH_L] );
   Partitioner *partitioner = PartitionerFactory::get( *cs.slice );
@@ -167,15 +167,18 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
     sao( *cs.slice, ctuRsAddr );
   }
 
-  for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
+  if (!skipAlf)
   {
-    codeAlfCtuEnableFlag( cs, ctuRsAddr, compIdx, NULL );
-#if JVET_N0415_CTB_ALF
-    if (isLuma(ComponentID(compIdx)))
+    for (int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++)
     {
-      codeAlfCtuFilterIndex(cs, ctuRsAddr, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y));
-    }
+      codeAlfCtuEnableFlag(cs, ctuRsAddr, compIdx, NULL);
+#if JVET_N0415_CTB_ALF
+      if (isLuma(ComponentID(compIdx)))
+      {
+        codeAlfCtuFilterIndex(cs, ctuRsAddr, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y));
+      }
 #endif
+    }
   }
 
   if ( CS::isDualITree(cs) && cs.pcv->chrFormat != CHROMA_400 && cs.pcv->maxCUWidth > 64 )

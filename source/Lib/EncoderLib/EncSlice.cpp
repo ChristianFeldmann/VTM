@@ -1770,7 +1770,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #endif
 
     pCABACWriter->resetBits();
-    pCABACWriter->coding_tree_unit( cs, ctuArea, prevQP, ctuRsAddr, true );
+    pCABACWriter->coding_tree_unit( cs, ctuArea, prevQP, ctuRsAddr, true, true );
     const int numberOfWrittenBits = int( pCABACWriter->getEstFracBits() >> SCALE_BITS );
 
     // Calculate if this CTU puts us over slice bit size.

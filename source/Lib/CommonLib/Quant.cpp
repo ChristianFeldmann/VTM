@@ -717,7 +717,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 {
   const SPS &sps            = *tu.cs->sps;
   const CompArea &rect      = tu.blocks[compID];
-#if HEVC_USE_SCALING_LISTS || HEVC_USE_SIGN_HIDING
+#if HEVC_USE_SCALING_LISTS
   const uint32_t uiWidth        = rect.width;
   const uint32_t uiHeight       = rect.height;
 #endif
@@ -813,7 +813,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
       piQCoef.buf[uiBlockPos] = Clip3<TCoeff>( entropyCodingMinimum, entropyCodingMaximum, quantisedCoefficient );
     } // for n
 #if HEVC_USE_SIGN_HIDING
-    if( cctx.signHiding() && uiWidth>=4 && uiHeight>=4 )
+    if( cctx.signHiding() )
     {
       if(uiAbsSum >= 2) //this prevents TUs with only one coefficient of value 1 from being tested
       {

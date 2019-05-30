@@ -594,6 +594,9 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   }
   else
   {
+#if JVET_N0124_PROPOSAL1
+    pcPPS->setSingleBrickPerSliceFlag(true);
+#endif
     pcPPS->setRectSliceFlag(true);
   }
 

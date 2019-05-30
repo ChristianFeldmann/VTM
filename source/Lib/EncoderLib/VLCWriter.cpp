@@ -338,6 +338,10 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   }
   else
   {
+#if JVET_N0124_PROPOSAL1
+	// make sure single brick per slice is set by encoder such that the behaviour is same as for setting it to true
+	CHECK(pcPPS->getSingleBrickPerSliceFlag() != true, "SingleBrickPerSliceFlag must be set to 1 when not present");
+#endif
     // make sure rect_slice_flag is set
     CHECK (pcPPS->getRectSliceFlag()!=true, "RectSliceFlag must be equalt to 1 for single_tile_in_pic_flag equal to 1");
   }

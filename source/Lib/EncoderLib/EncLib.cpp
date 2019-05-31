@@ -503,15 +503,33 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
     THROW("error : ScalingList == " << getUseScalingListId() << " not supported\n");
   }
 
+#if JVET_N0847_SCALING_LISTS
+  if (getUseScalingListId() == SCALING_LIST_FILE_READ && sps.getScalingListPresentFlag())
+#else
   if (getUseScalingListId() != SCALING_LIST_OFF)
+#endif
   {
     // Prepare delta's:
+#if JVET_N0847_SCALING_LISTS
+    for (uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
+#else
     for(uint32_t sizeId = 0; sizeId < SCALING_LIST_SIZE_NUM; sizeId++)
+#endif
     {
+#if JVET_N0847_SCALING_LISTS
+      for (uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
+      {
+        if (((sizeId == SCALING_LIST_64x64) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))
+         || ((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
+        {
+          continue;
+        }
+#else
       const int predListStep = (sizeId == SCALING_LIST_32x32? (SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) : 1); // if 32x32, skip over chroma entries.
 
       for(uint32_t listId = 0; listId < SCALING_LIST_NUM; listId+=predListStep)
       {
+#endif
         sps.getScalingList().checkPredMode( sizeId, listId );
       }
     }

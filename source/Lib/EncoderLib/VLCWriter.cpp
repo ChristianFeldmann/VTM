@@ -2054,19 +2054,37 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
   //for each size
   for(uint32_t sizeId = SCALING_LIST_FIRST_CODED; sizeId <= SCALING_LIST_LAST_CODED; sizeId++)
   {
+#if JVET_N0847_SCALING_LISTS 
+    const int predListStep = (sizeId > SCALING_LIST_32x32 ? (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) : 1); // if 64x64, skip over chroma entries.
+#else
     const int predListStep = (sizeId == SCALING_LIST_32x32? (SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) : 1); // if 32x32, skip over chroma entries.
+#endif
 
     for(uint32_t listId = 0; listId < SCALING_LIST_NUM; listId+=predListStep)
     {
+#if JVET_N0847_SCALING_LISTS
+      if ((sizeId == SCALING_LIST_2x2) && ((listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
+      {
+        continue;
+      }
+#endif
       bool scalingListPredModeFlag = scalingList.getScalingListPredModeFlag(sizeId, listId);
       WRITE_FLAG( scalingListPredModeFlag, "scaling_list_pred_mode_flag" );
       if(!scalingListPredModeFlag)// Copy Mode
       {
+#if JVET_N0847_SCALING_LISTS
+        if (sizeId > SCALING_LIST_32x32) //64x64 luma
+#else
         if (sizeId == SCALING_LIST_32x32)
+#endif
         {
           // adjust the code, to cope with the missing chroma entries
+#if JVET_N0847_SCALING_LISTS
+          WRITE_UVLC( ((int)listId - (int)scalingList.getRefMatrixId(sizeId, listId)) / (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)), "scaling_list_pred_matrix_id_delta");
+#else
           WRITE_UVLC( ((int)listId - (int)scalingList.getRefMatrixId (sizeId,listId)) / (SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES), "scaling_list_pred_matrix_id_delta");
-        }
+#endif
+		}
         else
         {
           WRITE_UVLC( (int)listId - (int)scalingList.getRefMatrixId (sizeId,listId), "scaling_list_pred_matrix_id_delta");
@@ -2088,7 +2106,11 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
 void HLSWriter::xCodeScalingList(const ScalingList* scalingList, uint32_t sizeId, uint32_t listId)
 {
   int coefNum = std::min( MAX_MATRIX_COEF_NUM, ( int ) g_scalingListSize[sizeId] );
+#if JVET_N0847_SCALING_LISTS
+  ScanElement* scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_FIRST_CODED ? 2 : 3))][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_FIRST_CODED ? 2 : 3))];
+#else
   uint32_t* scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom( 1 << ( sizeId == SCALING_LIST_FIRST_CODED ? 2 : 3 ) )][gp_sizeIdxInfo->idxFrom( 1 << ( sizeId == SCALING_LIST_FIRST_CODED ? 2 : 3 ) )];
+#endif
   int nextCoef = SCALING_LIST_START_VALUE;
   int data;
   const int *src = scalingList->getScalingListAddress(sizeId, listId);
@@ -2099,8 +2121,15 @@ void HLSWriter::xCodeScalingList(const ScalingList* scalingList, uint32_t sizeId
   }
   for(int i=0;i<coefNum;i++)
   {
+#if JVET_N0847_SCALING_LISTS
+    if (sizeId == SCALING_LIST_64x64 && scan[i].x >= 4 && scan[i].y >= 4)
+      continue;
+    data = src[scan[i].idx] - nextCoef;
+    nextCoef = src[scan[i].idx];
+#else
     data = src[scan[i]] - nextCoef;
     nextCoef = src[scan[i]];
+#endif
     if(data > 127)
     {
       data = data - 256;

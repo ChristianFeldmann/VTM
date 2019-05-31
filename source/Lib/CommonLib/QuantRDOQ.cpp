@@ -377,6 +377,18 @@ void QuantRDOQ::setScalingList(ScalingList *scalingList, const int maxLog2TrDyna
 
 
 
+#if JVET_N0847_SCALING_LISTS
+double QuantRDOQ::xGetErrScaleCoeff(const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth)
+{
+  const int iTransformShift = getTransformShift(channelBitDepth, Size(width, height), maxLog2TrDynamicRange);
+  double    dErrScale = (double)(1 << SCALE_BITS);                                // Compensate for scaling of bitcount in Lagrange cost function
+  double    dTransShift = (double)iTransformShift + (needsSqrt2 ? -0.5 : 0.0);
+  dErrScale = dErrScale * pow(2.0, (-2.0*dTransShift));                     // Compensate for scaling through forward transform
+  const int  QStep = g_quantScales[needsSqrt2 ? 1 : 0][qp];
+  double    finalErrScale = dErrScale / QStep / QStep / (1 << (DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth) << 1));
+  return    finalErrScale;
+}
+#endif
 #if HM_QTBT_AS_IN_JEM_QUANT
 #endif
 #else
@@ -434,7 +446,11 @@ void QuantRDOQ::xSetErrScaleCoeff( uint32_t list, uint32_t sizeX, uint32_t sizeY
   int *piQuantcoeff;
   double *pdErrScale;
   piQuantcoeff = getQuantCoeff( list, qp, sizeX, sizeY );
+#if JVET_N0847_SCALING_LISTS
+  pdErrScale   = xGetErrScaleCoeffSL( list, sizeX, sizeY, qp);
+#else
   pdErrScale   = xGetErrScaleCoeff( list, sizeX, sizeY, qp );
+#endif
 
 #if HM_QTBT_AS_IN_JEM_QUANT
   double dErrScale = (double)( 1 << SCALE_BITS );                                // Compensate for scaling of bitcount in Lagrange cost function
@@ -687,7 +703,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 #if JVET_N0246_MODIFIED_QUANTSCALES
   const bool needSqrtAdjustment= TU::needsBlockSizeTrafoScale( tu, compID );
 #if HEVC_USE_SCALING_LISTS
+#if JVET_N0847_SCALING_LISTS
+  const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, (uiLog2BlockWidth - 1), (uiLog2BlockHeight - 1), cQP.rem);
+#else
   const double *const pdErrScale = xGetErrScaleCoeff(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem);
+#endif
   const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1));
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
   const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
@@ -1353,7 +1373,7 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
   }
 
         double   blockUncodedCost                   = 0;
-#if HEVC_USE_SCALING_LISTS
+#if HEVC_USE_SCALING_LISTS && !JVET_N0847_SCALING_LISTS
   const uint32_t log2BlockHeight                    = g_aucLog2[height];
 #endif
   const uint32_t maxNumCoeff                        = rect.area();
@@ -1556,7 +1576,7 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
   }
 
   double   blockUncodedCost = 0;
-#if HEVC_USE_SCALING_LISTS
+#if HEVC_USE_SCALING_LISTS && !JVET_N0847_SCALING_LISTS
   const uint32_t log2BlockHeight = g_aucLog2[height];
 #endif
   const uint32_t maxNumCoeff = rect.area();

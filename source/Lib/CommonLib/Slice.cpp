@@ -1777,6 +1777,9 @@ SPS::SPS()
 , m_maxChromaFormatConstraintIdc(CHROMA_420)
 , m_bFrameConstraintFlag      (false)
 , m_bNoQtbttDualTreeIntraConstraintFlag(false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noPartitionConstraintsOverrideConstraintFlag(false)
+#endif
 , m_bNoSaoConstraintFlag      (false)
 , m_bNoAlfConstraintFlag      (false)
 , m_bNoPcmConstraintFlag      (false)
@@ -1785,14 +1788,31 @@ SPS::SPS()
 , m_bNoSbtmvpConstraintFlag   (false)
 , m_bNoAmvrConstraintFlag     (false)
 , m_bNoBdofConstraintFlag     (false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noDmvrConstraintFlag      (false)
+#endif
 , m_bNoCclmConstraintFlag     (false)
 , m_bNoMtsConstraintFlag      (false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noSbtConstraintFlag       (false)
+#endif
 , m_bNoAffineMotionConstraintFlag(false)
 , m_bNoGbiConstraintFlag      (false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noIbcConstraintFlag       (false)
+#endif
 , m_bNoMhIntraConstraintFlag  (false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noFPelMmvdConstraintFlag  (false)
+#endif
 , m_bNoTriangleConstraintFlag (false)
 , m_bNoLadfConstraintFlag     (false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noTransformSkipConstraintFlag(false)
+#endif
+#if !JVET_N0276_CONSTRAINT_FLAGS
 , m_bNoCurrPicRefConstraintFlag(false)
+#endif
 , m_bNoQpDeltaConstraintFlag  (false)
 , m_bNoDepQuantConstraintFlag (false)
 , m_bNoSignDataHidingConstraintFlag(false)
@@ -2732,6 +2752,9 @@ ProfileTierLevel::ProfileTierLevel()
   : m_profileSpace    (0)
   , m_tierFlag        (Level::MAIN)
   , m_profileIdc      (Profile::NONE)
+#if JVET_N0276_CONSTRAINT_FLAGS
+  , m_subProfileIdc   (0)
+#endif
   , m_levelIdc        (Level::NONE)
   , m_progressiveSourceFlag  (false)
   , m_interlacedSourceFlag   (false)
@@ -2750,6 +2773,9 @@ PTL::PTL()
 ProfileTierLevel::ProfileTierLevel()
   : m_tierFlag        (Level::MAIN)
   , m_profileIdc      (Profile::NONE)
+#if JVET_N0276_CONSTRAINT_FLAGS
+  , m_subProfileIdc   (0)
+#endif
   , m_levelIdc        (Level::NONE)
 {
   ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));

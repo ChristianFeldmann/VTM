@@ -278,8 +278,13 @@ protected:
 #if JVET_N0349_DPS
   int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
 #endif
+#if JVET_N0276_CONSTRAINT_FLAGS
+  int xWriteSPS (AccessUnit &accessUnit, const SPS *sps, const ConstraintInfo* cinfo );
+  int xWritePPS (AccessUnit &accessUnit, const PPS *pps, const ConstraintInfo* cinfo );
+#else
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps);
+#endif
   int xWriteAPS(AccessUnit &accessUnit, APS *aps);
   int xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);
 

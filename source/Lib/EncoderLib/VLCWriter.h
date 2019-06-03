@@ -123,9 +123,14 @@ public:
   void  setBitstream            ( OutputBitstream* p )  { m_pcBitIf = p;  }
   uint32_t  getNumberOfWrittenBits  ()                      { return m_pcBitIf->getNumberOfWrittenBits();  }
   void  codeVUI                 ( const VUI *pcVUI, const SPS* pcSPS );
+#if JVET_N0276_CONSTRAINT_FLAGS
+  void  codeSPS(const SPS* pcSPS, const ConstraintInfo* cinfo );
+  void  codePPS(const PPS* pcPPS, const ConstraintInfo* cinfo );
+#else
   void  codeSPS                 ( const SPS* pcSPS );
   void  codePPS                 ( const PPS* pcPPS );
-  void  codeAPS                 ( APS* pcAPS);
+#endif
+  void  codeAPS                 ( APS* pcAPS );
 #if HEVC_VPS
   void  codeVPS                 ( const VPS* pcVPS );
 #endif

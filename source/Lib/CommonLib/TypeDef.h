@@ -728,13 +728,6 @@ enum MvpDir
   MD_ABOVE_LEFT         ///< MVP of above left block
 };
 
-enum StoredResidualType
-{
-  RESIDUAL_RECONSTRUCTED          = 0,
-  RESIDUAL_ENCODER_SIDE           = 1,
-  NUMBER_OF_STORED_RESIDUAL_TYPES = 2
-};
-
 enum TransformDirection
 {
   TRANSFORM_FORWARD              = 0,
@@ -768,15 +761,6 @@ enum CoeffScanGroupType
   SCAN_UNGROUPED   = 0,
   SCAN_GROUPED_4x4 = 1,
   SCAN_NUMBER_OF_GROUP_TYPES = 2
-};
-
-enum SignificanceMapContextType
-{
-  CONTEXT_TYPE_4x4    = 0,
-  CONTEXT_TYPE_8x8    = 1,
-  CONTEXT_TYPE_NxN    = 2,
-  CONTEXT_TYPE_SINGLE = 3,
-  CONTEXT_NUMBER_OF_TYPES = 4
 };
 
 #if HEVC_USE_SCALING_LISTS
@@ -1147,13 +1131,6 @@ enum LumaLevelToDQPMode
   LUMALVL_TO_DQP_NUM_MODES  = 2
 };
 #endif
-
-enum SaveLoadTag
-{
-  SAVE_LOAD_INIT = 0,
-  SAVE_ENC_INFO  = 1,
-  LOAD_ENC_INFO  = 2
-};
 
 enum MergeType
 {

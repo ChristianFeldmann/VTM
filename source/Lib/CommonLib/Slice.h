@@ -239,7 +239,9 @@ class ConstraintInfo
 #if JVET_N0276_CONSTRAINT_FLAGS
   bool              m_noTransformSkipConstraintFlag;
 #endif
+#if !JVET_N0276_CONSTRAINT_FLAGS
   bool              m_noCurrPicRefConstraintFlag;
+#endif
   bool              m_noQpDeltaConstraintFlag;
   bool              m_noDepQuantConstraintFlag;
   bool              m_noSignDataHidingConstraintFlag;
@@ -287,7 +289,9 @@ public:
 #if JVET_N0276_CONSTRAINT_FLAGS
 	, m_noTransformSkipConstraintFlag(false)
 #endif
+#if !JVET_N0276_CONSTRAINT_FLAGS
     , m_noCurrPicRefConstraintFlag(false)
+#endif
     , m_noQpDeltaConstraintFlag  (false)
     , m_noDepQuantConstraintFlag (false)
     , m_noSignDataHidingConstraintFlag(false)

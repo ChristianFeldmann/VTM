@@ -1912,6 +1912,14 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #endif
     if (((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight))
     {
+#if TICKET297_TMVP_CLEANUP  
+      int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+      if (posYInCtu + 4 < pcv.maxCUHeight)
+      {
+        posC0 = posRB.offset(4, 4);
+        C0Avail = true;
+      }
+#else
       {
         Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
 
@@ -1937,6 +1945,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
           // same as for last column but not last row
         }
       }
+#endif
     }
 
     Mv        cColMv;
@@ -2987,6 +2996,14 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 
     if( ( ( posRB.x + pcv.minCUWidth ) < pcv.lumaWidth ) && ( ( posRB.y + pcv.minCUHeight ) < pcv.lumaHeight ) )
     {
+#if TICKET297_TMVP_CLEANUP  
+      int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+      if (posYInCtu + 4 < pcv.maxCUHeight)
+      {
+        posC0 = posRB.offset(4, 4);
+        C0Avail = true;
+      }
+#else
       Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
 
       if ((posInCtu.x + 4 < pcv.maxCUWidth) &&           // is not at the last column of CTU
@@ -3010,6 +3027,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
         // same as for last column but not last row
         posC0 = posRB.offset(4, 4);
       }
+#endif
     }
 #if JVET_N0266_SMALL_BLOCKS
     if ( ( C0Avail && getColocatedMVP( pu, eRefPicList, posC0, cColMv, refIdx_Col ) ) || getColocatedMVP( pu, eRefPicList, posC1, cColMv, refIdx_Col ) )
@@ -3327,6 +3345,14 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       Mv cColMv;
       if ( ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight) )
       {
+#if TICKET297_TMVP_CLEANUP  
+        int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+        if (posYInCtu + 4 < pcv.maxCUHeight)
+        {
+          posC0 = posRB.offset(4, 4);
+          C0Avail = true;
+        }
+#else
         Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
 
         if ( (posInCtu.x + 4 < pcv.maxCUWidth) &&           // is not at the last column of CTU
@@ -3350,6 +3376,7 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
           // same as for last column but not last row
           posC0 = posRB.offset( 4, 4 );
         }
+#endif
       }
 #if JVET_N0266_SMALL_BLOCKS
       if ( ( C0Avail && getColocatedMVP( pu, eRefPicList, posC0, cColMv, refIdxCol ) ) || getColocatedMVP( pu, eRefPicList, posC1, cColMv, refIdxCol ) )
@@ -4081,6 +4108,14 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
         if ( ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight) )
         {
+#if TICKET297_TMVP_CLEANUP
+          int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+          if (posYInCtu + 4 < pcv.maxCUHeight)
+          {
+            posC0 = posRB.offset(4, 4);
+            C0Avail = true;
+          }
+#else
           Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
 
           if ( (posInCtu.x + 4 < pcv.maxCUWidth) &&  // is not at the last column of CTU
@@ -4104,6 +4139,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
             posC0 = posRB.offset( 4, 4 );
             // same as for last column but not last row
           }
+#endif
         }
 
         Mv        cColMv;

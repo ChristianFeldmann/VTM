@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
  
+#define TICKET297_TMVP_CLEANUP                            1 // Ticket #297: Cleanup on obtaining TMVP C0 availability
+
 #define JVET_N0063_VUI                                    1 // JVET-N0063: Video Usability Information
 
 #define JVET_N0847_SCALING_LISTS                          1  //1: default mode, 2: user defined mode

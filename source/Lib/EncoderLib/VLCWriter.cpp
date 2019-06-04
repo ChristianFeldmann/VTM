@@ -234,7 +234,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   if (!cinfo->getNoTransformSkipConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcPPS->getUseTransformSkip() ? 1 : 0, "transform_skip_enabled_flag");
+    WRITE_FLAG(pcPPS->getUseTransformSkip() ? 1 : 0, "transform_skip_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -243,7 +243,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   if (!cinfo->getNoQpDeltaConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcPPS->getUseDQP() ? 1 : 0, "cu_qp_delta_enabled_flag");
+    WRITE_FLAG(pcPPS->getUseDQP() ? 1 : 0, "cu_qp_delta_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -974,7 +974,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoQtbttDualTreeIntraConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getUseDualITree(), "qtbtt_dual_tree_intra_flag");
+    WRITE_FLAG(pcSPS->getUseDualITree(), "qtbtt_dual_tree_intra_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -984,7 +984,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoPartitionConstraintsOverrideConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getSplitConsOverrideEnabledFlag(), "partition_constraints_override_enabled_flag");
+    WRITE_FLAG(pcSPS->getSplitConsOverrideEnabledFlag(), "partition_constraints_override_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1021,7 +1021,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoSaoConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getSAOEnabledFlag(), "sps_sao_enabled_flag");
+    WRITE_FLAG(pcSPS->getSAOEnabledFlag(), "sps_sao_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1030,7 +1030,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoAlfConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getALFEnabledFlag(), "sps_alf_enabled_flag");
+    WRITE_FLAG(pcSPS->getALFEnabledFlag(), "sps_alf_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1039,7 +1039,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoPcmConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getPCMEnabledFlag() ? 1 : 0, "sps_pcm_enabled_flag");
+    WRITE_FLAG(pcSPS->getPCMEnabledFlag() ? 1 : 0, "sps_pcm_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1057,7 +1057,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoRefWraparoundConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getWrapAroundEnabledFlag() ? 1 : 0, "sps_ref_wraparound_enabled_flag");
+    WRITE_FLAG(pcSPS->getWrapAroundEnabledFlag() ? 1 : 0, "sps_ref_wraparound_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1071,7 +1071,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoTemporalMvpConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getSPSTemporalMVPEnabledFlag() ? 1 : 0, "sps_temporal_mvp_enabled_flag");
+    WRITE_FLAG(pcSPS->getSPSTemporalMVPEnabledFlag() ? 1 : 0, "sps_temporal_mvp_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1089,7 +1089,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoAmvrConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getAMVREnabledFlag() ? 1 : 0, "sps_amvr_enabled_flag");
+    WRITE_FLAG(pcSPS->getAMVREnabledFlag() ? 1 : 0, "sps_amvr_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1098,7 +1098,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoBdofConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getBDOFEnabledFlag() ? 1 : 0, "sps_bdof_enabled_flag");
+    WRITE_FLAG(pcSPS->getBDOFEnabledFlag() ? 1 : 0, "sps_bdof_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1107,7 +1107,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoAmvrConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0, "sps_affine_amvr_enabled_flag");
+    WRITE_FLAG(pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0, "sps_affine_amvr_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1116,7 +1116,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoDmvrConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getUseDMVR() ? 1 : 0, "sps_dmvr_enable_flag");
+    WRITE_FLAG(pcSPS->getUseDMVR() ? 1 : 0, "sps_dmvr_enable_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1129,7 +1129,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoCclmConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getUseLMChroma() ? 1 : 0, "lm_chroma_enabled_flag");
+    WRITE_FLAG(pcSPS->getUseLMChroma() ? 1 : 0, "lm_chroma_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1143,7 +1143,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoMtsConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getUseMTS() ? 1 : 0, "mts_enabled_flag");
+    WRITE_FLAG(pcSPS->getUseMTS() ? 1 : 0, "mts_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1163,7 +1163,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoAffineMotionConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getUseAffine() ? 1 : 0, "affine_flag");
+    WRITE_FLAG(pcSPS->getUseAffine() ? 1 : 0, "affine_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1176,7 +1176,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoGbiConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getUseGBi() ? 1 : 0, "gbi_flag");
+    WRITE_FLAG(pcSPS->getUseGBi() ? 1 : 0, "gbi_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1185,7 +1185,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoIbcConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0, "ibc_flag");
+    WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0, "ibc_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1195,7 +1195,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoMhIntraConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getUseMHIntra() ? 1 : 0, "mhintra_flag");
+    WRITE_FLAG(pcSPS->getUseMHIntra() ? 1 : 0, "mhintra_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1217,7 +1217,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoTriangleConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getUseTriangle() ? 1 : 0, "triangle_flag");
+    WRITE_FLAG(pcSPS->getUseTriangle() ? 1 : 0, "triangle_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1230,7 +1230,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoSbtConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getUseSBT() ? 1 : 0, "sbt_enable_flag");
+    WRITE_FLAG(pcSPS->getUseSBT() ? 1 : 0, "sbt_enable_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1250,7 +1250,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (!cinfo->getNoLadfConstraintFlag())
   {
 #endif
-	  WRITE_FLAG(pcSPS->getLadfEnabled() ? 1 : 0, "sps_ladf_enabled_flag");
+    WRITE_FLAG(pcSPS->getLadfEnabled() ? 1 : 0, "sps_ladf_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
   }
 #endif
@@ -1834,7 +1834,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 	if(!cinfo->getNoDepQuantConstraintFlag())
 	{
 #endif
-		WRITE_FLAG(pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag");
+    WRITE_FLAG(pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
 	}
 #endif

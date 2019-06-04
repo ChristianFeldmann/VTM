@@ -377,9 +377,9 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     if( inp_nalu.m_nalUnitType == NAL_UNIT_SPS )
     {
       SPS* sps = new SPS();
-      HLSReader.setBitstream( &inp_nalu.getBitstream() );
+      HLSReader.setBitstream(&inp_nalu.getBitstream());
 #if JVET_N0276_CONSTRAINT_FLAGS
-	  HLSReader.parseSPS( sps, &parameterSetManager );
+      HLSReader.parseSPS(sps, &parameterSetManager);
 #else
       HLSReader.parseSPS( sps );
 #endif

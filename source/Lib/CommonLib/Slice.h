@@ -257,42 +257,42 @@ public:
     , m_maxChromaFormatConstraintIdc(CHROMA_420)
     , m_noQtbttDualTreeIntraConstraintFlag(false)
 #if JVET_N0276_CONSTRAINT_FLAGS
-	, m_noPartitionConstraintsOverrideConstraintFlag(false)
+    , m_noPartitionConstraintsOverrideConstraintFlag(false)
 #endif
     , m_noSaoConstraintFlag      (false)
     , m_noAlfConstraintFlag      (false)
     , m_noPcmConstraintFlag      (false)
     , m_noRefWraparoundConstraintFlag(false)
     , m_noTemporalMvpConstraintFlag(false)
-    , m_noSbtmvpConstraintFlag   (false)
-    , m_noAmvrConstraintFlag     (false)
-    , m_noBdofConstraintFlag     (false)
+    , m_noSbtmvpConstraintFlag(false)
+    , m_noAmvrConstraintFlag(false)
+    , m_noBdofConstraintFlag(false)
 #if JVET_N0276_CONSTRAINT_FLAGS
-	, m_noDmvrConstraintFlag     (false)
+    , m_noDmvrConstraintFlag(false)
 #endif
-    , m_noCclmConstraintFlag     (false)
-    , m_noMtsConstraintFlag      (false)
+    , m_noCclmConstraintFlag(false)
+    , m_noMtsConstraintFlag(false)
 #if JVET_N0276_CONSTRAINT_FLAGS
-	, m_noSbtConstraintFlag      (false)
+    , m_noSbtConstraintFlag(false)
 #endif
     , m_noAffineMotionConstraintFlag(false)
-    , m_noGbiConstraintFlag      (false)
+    , m_noGbiConstraintFlag(false)
 #if JVET_N0276_CONSTRAINT_FLAGS
-	, m_noIbcConstraintFlag      (false)
+    , m_noIbcConstraintFlag(false)
 #endif
-    , m_noMhIntraConstraintFlag  (false)
+    , m_noMhIntraConstraintFlag(false)
 #if JVET_N0276_CONSTRAINT_FLAGS
-	, m_noFPelMmvdConstraintFlag (false)
+    , m_noFPelMmvdConstraintFlag(false)
 #endif
-    , m_noTriangleConstraintFlag (false)
-    , m_noLadfConstraintFlag     (false)
+    , m_noTriangleConstraintFlag(false)
+    , m_noLadfConstraintFlag(false)
 #if JVET_N0276_CONSTRAINT_FLAGS
-	, m_noTransformSkipConstraintFlag(false)
+    , m_noTransformSkipConstraintFlag(false)
 #endif
 #if !JVET_N0276_CONSTRAINT_FLAGS
     , m_noCurrPicRefConstraintFlag(false)
 #endif
-    , m_noQpDeltaConstraintFlag  (false)
+    , m_noQpDeltaConstraintFlag(false)
     , m_noDepQuantConstraintFlag (false)
     , m_noSignDataHidingConstraintFlag(false)
   {}

@@ -124,8 +124,8 @@ public:
   uint32_t  getNumberOfWrittenBits  ()                      { return m_pcBitIf->getNumberOfWrittenBits();  }
   void  codeVUI                 ( const VUI *pcVUI, const SPS* pcSPS );
 #if JVET_N0276_CONSTRAINT_FLAGS
-  void  codeSPS(const SPS* pcSPS, const ConstraintInfo* cinfo );
-  void  codePPS(const PPS* pcPPS, const ConstraintInfo* cinfo );
+  void  codeSPS                 (const SPS* pcSPS, const ConstraintInfo* cinfo );
+  void  codePPS                 (const PPS* pcPPS, const ConstraintInfo* cinfo );
 #else
   void  codeSPS                 ( const SPS* pcSPS );
   void  codePPS                 ( const PPS* pcPPS );

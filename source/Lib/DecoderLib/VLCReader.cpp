@@ -1745,6 +1745,33 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 
   xReadRbspTrailingBits();
 }
+#elif JVET_N0278_HLS
+void HLSyntaxReader::parseVPS(VPS* pcVPS)
+{
+#if ENABLE_TRACING
+  xTraceVPSHeader();
+#endif
+  uint32_t  uiCode;
+
+  READ_CODE(4, uiCode, "vps_video_parameter_set_id");         pcVPS->setVPSId(uiCode);
+  READ_CODE(8, uiCode, "vps_max_layers_minus1");              pcVPS->setMaxLayers(uiCode + 1);    CHECK(uiCode + 1 > MAX_VPS_LAYERS, "Invalid code");
+  for (uint32_t i = 0; i <= pcVPS->getMaxLayers() - 1; i++)
+  {
+  	READ_CODE(7, uiCode, "vps_included_layer_id");          pcVPS->setVPSIncludedLayerId(uiCode, i);
+	READ_FLAG(uiCode, "vps_reserved_zero_1bit");
+  }
+
+  READ_FLAG(uiCode, "vps_extension_flag");
+  if (uiCode)
+  {
+  	while (xMoreRbspData())
+  	{
+	  READ_FLAG(uiCode, "vps_extension_data_flag");
+	}
+  }
+
+  xReadRbspTrailingBits();
+}
 #endif
 
 void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC)

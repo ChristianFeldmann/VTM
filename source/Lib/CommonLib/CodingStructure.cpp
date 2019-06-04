@@ -774,6 +774,8 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.sps       = sps;
 #if HEVC_VPS
   subStruct.vps       = vps;
+#elif JVET_N0278_HLS
+  subStruct.vps       = vps; 
 #endif
   subStruct.pps       = pps;
 #if JVET_N0415_CTB_ALF

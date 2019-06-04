@@ -199,7 +199,7 @@ void EncGOP::init ( EncLib* pcEncLib )
   m_pcReshaper = pcEncLib->getReshaper();
 }
 
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
 int EncGOP::xWriteVPS (AccessUnit &accessUnit, const VPS *vps)
 {
   OutputNALUnit nalu(NAL_UNIT_VPS);
@@ -261,7 +261,7 @@ int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const boo
 {
   int actualTotalBits = 0;
 
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   if (bSeqFirst)
   {
     actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
@@ -349,7 +349,7 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
 
   while ( (itNalu!=accessUnit.end())&&
     ( (*itNalu)->m_nalUnitType==NAL_UNIT_ACCESS_UNIT_DELIMITER
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
     || (*itNalu)->m_nalUnitType==NAL_UNIT_VPS
 #endif
 #if JVET_N0349_DPS
@@ -3405,9 +3405,17 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 #endif
 #else
 #if JVET_N0349_DPS
+#if JVET_N0278_HLS
+	    if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS || (*it)->m_nalUnitType == NAL_UNIT_DPS || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
+#else
       if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_DPS || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
+#endif
+#else
+#if JVET_N0278_HLS
+	    if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
 #else
       if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
+#endif
 #endif
 #endif
       {

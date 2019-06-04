@@ -593,6 +593,33 @@ public:
   TimingInfo*       getTimingInfo()                                      { return &m_timingInfo;                                            }
   const TimingInfo* getTimingInfo() const                                { return &m_timingInfo;                                            }
 };
+#elif JVET_N0278_HLS
+class VPS
+{
+private:
+  int                   m_VPSId;
+  uint32_t              m_uiMaxLayers;
+
+  uint32_t              m_vpsIncludedLayerId[MAX_VPS_LAYERS];
+  bool                  m_vpsExtensionFlag;
+
+public:
+                    VPS();
+
+  virtual           ~VPS();
+
+  int               getVPSId() const                                     { return m_VPSId;                                                  }
+  void              setVPSId(int i)                                      { m_VPSId = i;                                                     }
+
+  uint32_t          getMaxLayers() const                                 { return m_uiMaxLayers;                                            }
+  void              setMaxLayers(uint32_t l)                             { m_uiMaxLayers = l;                                               }
+
+  bool              getVPSExtensionFlag() const                          { return m_vpsExtensionFlag;                                 }
+  void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }
+
+  void              setVPSIncludedLayerId(uint32_t v, uint32_t Layer)        { m_vpsIncludedLayerId[Layer] = v;                                    }
+  uint32_t          getVPSIncludedLayerId(uint32_t Layer) const              { return m_vpsIncludedLayerId[Layer];                                 }
+};
 #endif
 
 class Window

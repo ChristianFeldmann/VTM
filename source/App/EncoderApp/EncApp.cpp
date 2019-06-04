@@ -85,6 +85,16 @@ void EncApp::xInitLibCfg()
     vps.setMaxDecPicBuffering                                     ( m_maxDecPicBuffering[i], i );
   }
   m_cEncLib.setVPS(&vps);
+#elif JVET_N0278_HLS
+  VPS vps;
+
+  vps.setMaxLayers                                               ( 1 );
+  for(int i = 0; i < MAX_TLAYER; i++)
+  {
+    vps.setVPSIncludedLayerId                                    ( 0, i );
+  }
+  vps.setVPSExtensionFlag                                        ( false );
+  m_cEncLib.setVPS(&vps);
 #endif
   m_cEncLib.setProfile                                           ( m_profile);
   m_cEncLib.setLevel                                             ( m_levelTier, m_level);
@@ -931,7 +941,7 @@ void EncApp::rateStatsAccum(const AccessUnit& au, const std::vector<uint32_t>& a
 #if JVET_N0349_DPS
     case NAL_UNIT_DPS:
 #endif
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
     case NAL_UNIT_VPS:
 #endif
     case NAL_UNIT_SPS:

@@ -216,6 +216,9 @@ void readNalUnitHeader(InputNALUnit& nalu)
            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+#if JVET_N0278_HLS
+           || nalu.m_nalUnitType == NAL_UNIT_VPS
+#endif
            || nalu.m_nalUnitType == NAL_UNIT_SPS
            || nalu.m_nalUnitType == NAL_UNIT_EOS
            || nalu.m_nalUnitType == NAL_UNIT_EOB
@@ -224,6 +227,9 @@ void readNalUnitHeader(InputNALUnit& nalu)
       CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
          || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
          || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+#if JVET_N0278_HLS
+		     || nalu.m_nalUnitType == NAL_UNIT_VPS
+#endif
          || nalu.m_nalUnitType == NAL_UNIT_SPS
          || nalu.m_nalUnitType == NAL_UNIT_EOS
          || nalu.m_nalUnitType == NAL_UNIT_EOB

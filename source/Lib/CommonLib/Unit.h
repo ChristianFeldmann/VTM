@@ -267,7 +267,7 @@ struct UnitAreaRelative : public UnitArea
 };
 
 class SPS;
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
 class VPS;
 #endif
 #if JVET_N0349_DPS

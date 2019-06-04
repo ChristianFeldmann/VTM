@@ -126,7 +126,7 @@ public:
   void  codeSPS                 ( const SPS* pcSPS );
   void  codePPS                 ( const PPS* pcPPS );
   void  codeAPS                 ( APS* pcAPS);
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   void  codeVPS                 ( const VPS* pcVPS );
 #endif
 #if JVET_N0349_DPS

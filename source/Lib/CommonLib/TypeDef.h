@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
  
+#define JVET_N0278_HLS                                    1 // JVET-N0278: HLS for MPEG requirements on immersive media delivery and access
+
 #define JVET_N0063_VUI                                    1 // JVET-N0063: Video Usability Information
 
 #define JVET_N0847_SCALING_LISTS                          1  //1: default mode, 2: user defined mode
@@ -1096,7 +1098,7 @@ enum NalUnitType
   NAL_UNIT_RESERVED_VCL30,
   NAL_UNIT_RESERVED_VCL31,
 
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   NAL_UNIT_VPS,                     // 32
 #else
   NAL_UNIT_RESERVED_32,

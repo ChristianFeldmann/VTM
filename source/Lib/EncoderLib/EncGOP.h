@@ -272,7 +272,7 @@ protected:
   void xWriteTrailingSEIMessages (SEIMessages& seiMessages, AccessUnit &accessUnit, int temporalId, const SPS *sps);
   void xWriteDuSEIMessages       (SEIMessages& duInfoSeiMessages, AccessUnit &accessUnit, int temporalId, const SPS *sps, std::deque<DUData> &duData);
 
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   int xWriteVPS (AccessUnit &accessUnit, const VPS *vps);
 #endif
 #if JVET_N0349_DPS

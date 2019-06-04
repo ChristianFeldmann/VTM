@@ -1920,7 +1920,7 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
     CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
     const uint32_t    log2TrWidth     = g_aucLog2[width];
     const uint32_t    log2TrHeight    = g_aucLog2[height];
-    const bool        enableScalingLists = getUseScalingList(width, height, tu.mtsIdx == MTS_SKIP);//4x4 must test scalingLists
+    const bool        enableScalingLists = getUseScalingList(width, height, tu.mtsIdx == MTS_SKIP);
     static_cast<DQIntern::DepQuant*>(p)->quant( tu, pSrc, compID, cQP, Quant::m_dLambda, ctx, uiAbsSum, enableScalingLists, Quant::getQuantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
 #else
     static_cast<DQIntern::DepQuant*>(p)->quant( tu, pSrc, compID, cQP, Quant::m_dLambda, ctx, uiAbsSum );
@@ -1952,7 +1952,7 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
     const uint32_t    log2TrWidth  = g_aucLog2[width];
     const uint32_t    log2TrHeight = g_aucLog2[height];
 
-    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP));//4x4 must test scalingLists
+    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP));
     static_cast<DQIntern::DepQuant*>(p)->dequant( tu, dstCoeff, compID, cQP, enableScalingLists, Quant::getDequantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
 #else
     static_cast<DQIntern::DepQuant*>(p)->dequant( tu, dstCoeff, compID, cQP );

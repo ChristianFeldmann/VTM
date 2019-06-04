@@ -1912,30 +1912,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #endif
     if (((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight))
     {
+      int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+      if (posYInCtu + 4 < pcv.maxCUHeight)
       {
-        Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
-
-        if( ( posInCtu.x + 4 < pcv.maxCUWidth ) &&           // is not at the last column of CTU
-            ( posInCtu.y + 4 < pcv.maxCUHeight ) )           // is not at the last row    of CTU
-        {
-          posC0 = posRB.offset( 4, 4 );
-          C0Avail = true;
-        }
-        else if( posInCtu.x + 4 < pcv.maxCUWidth )           // is not at the last column of CTU But is last row of CTU
-        {
-          posC0 = posRB.offset( 4, 4 );
-          // in the reference the CTU address is not set - thus probably resulting in no using this C0 possibility
-        }
-        else if( posInCtu.y + 4 < pcv.maxCUHeight )          // is not at the last row of CTU But is last column of CTU
-        {
-          posC0 = posRB.offset( 4, 4 );
-          C0Avail = true;
-        }
-        else //is the right bottom corner of CTU
-        {
-          posC0 = posRB.offset( 4, 4 );
-          // same as for last column but not last row
-        }
+        posC0 = posRB.offset(4, 4);
+        C0Avail = true;
       }
     }
 
@@ -2987,28 +2968,11 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 
     if( ( ( posRB.x + pcv.minCUWidth ) < pcv.lumaWidth ) && ( ( posRB.y + pcv.minCUHeight ) < pcv.lumaHeight ) )
     {
-      Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
-
-      if ((posInCtu.x + 4 < pcv.maxCUWidth) &&           // is not at the last column of CTU
-          (posInCtu.y + 4 < pcv.maxCUHeight))             // is not at the last row    of CTU
+      int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+      if (posYInCtu + 4 < pcv.maxCUHeight)
       {
         posC0 = posRB.offset(4, 4);
         C0Avail = true;
-      }
-      else if (posInCtu.x + 4 < pcv.maxCUWidth)           // is not at the last column of CTU But is last row of CTU
-      {
-        // in the reference the CTU address is not set - thus probably resulting in no using this C0 possibility
-        posC0 = posRB.offset(4, 4);
-      }
-      else if (posInCtu.y + 4 < pcv.maxCUHeight)          // is not at the last row of CTU But is last column of CTU
-      {
-        posC0 = posRB.offset(4, 4);
-        C0Avail = true;
-      }
-      else //is the right bottom corner of CTU
-      {
-        // same as for last column but not last row
-        posC0 = posRB.offset(4, 4);
       }
     }
 #if JVET_N0266_SMALL_BLOCKS
@@ -3326,29 +3290,12 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 #endif
       Mv cColMv;
       if ( ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight) )
-      {
-        Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
-
-        if ( (posInCtu.x + 4 < pcv.maxCUWidth) &&           // is not at the last column of CTU
-          (posInCtu.y + 4 < pcv.maxCUHeight) )             // is not at the last row    of CTU
+      {  
+        int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+        if (posYInCtu + 4 < pcv.maxCUHeight)
         {
-          posC0 = posRB.offset( 4, 4 );
+          posC0 = posRB.offset(4, 4);
           C0Avail = true;
-        }
-        else if ( posInCtu.x + 4 < pcv.maxCUWidth )           // is not at the last column of CTU But is last row of CTU
-        {
-          // in the reference the CTU address is not set - thus probably resulting in no using this C0 possibility
-          posC0 = posRB.offset( 4, 4 );
-        }
-        else if ( posInCtu.y + 4 < pcv.maxCUHeight )          // is not at the last row of CTU But is last column of CTU
-        {
-          posC0 = posRB.offset( 4, 4 );
-          C0Avail = true;
-        }
-        else //is the right bottom corner of CTU
-        {
-          // same as for last column but not last row
-          posC0 = posRB.offset( 4, 4 );
         }
       }
 #if JVET_N0266_SMALL_BLOCKS
@@ -4081,28 +4028,11 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
         if ( ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight) )
         {
-          Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
-
-          if ( (posInCtu.x + 4 < pcv.maxCUWidth) &&  // is not at the last column of CTU
-            (posInCtu.y + 4 < pcv.maxCUHeight) )     // is not at the last row    of CTU
+          int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+          if (posYInCtu + 4 < pcv.maxCUHeight)
           {
-            posC0 = posRB.offset( 4, 4 );
+            posC0 = posRB.offset(4, 4);
             C0Avail = true;
-          }
-          else if ( posInCtu.x + 4 < pcv.maxCUWidth ) // is not at the last column of CTU But is last row of CTU
-          {
-            posC0 = posRB.offset( 4, 4 );
-            // in the reference the CTU address is not set - thus probably resulting in no using this C0 possibility
-          }
-          else if ( posInCtu.y + 4 < pcv.maxCUHeight ) // is not at the last row of CTU But is last column of CTU
-          {
-            posC0 = posRB.offset( 4, 4 );
-            C0Avail = true;
-          }
-          else //is the right bottom corner of CTU
-          {
-            posC0 = posRB.offset( 4, 4 );
-            // same as for last column but not last row
           }
         }
 

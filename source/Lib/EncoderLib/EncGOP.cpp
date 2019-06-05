@@ -293,15 +293,15 @@ int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const boo
   {
     CHECK(!(bSeqFirst), "Unspecified error"); // Implementations that use more than 1 SPS need to be aware of activation issues.
 #if JVET_N0276_CONSTRAINT_FLAGS
-	  actualTotalBits += xWriteSPS(accessUnit, slice->getSPS(), m_pcEncLib->getDPS()->getProfileTierLevel().getConstraintInfo());
+    actualTotalBits += xWriteSPS(accessUnit, slice->getSPS(), m_pcEncLib->getDPS()->getProfileTierLevel().getConstraintInfo());
 #else
-	  actualTotalBits += xWriteSPS(accessUnit, slice->getSPS());
+    actualTotalBits += xWriteSPS(accessUnit, slice->getSPS());
 #endif
   }
   if (m_pcEncLib->PPSNeedsWriting(slice->getPPS()->getPPSId())) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
   {
 #if JVET_N0276_CONSTRAINT_FLAGS
-	  actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), m_pcEncLib->getDPS()->getProfileTierLevel().getConstraintInfo());
+    actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), m_pcEncLib->getDPS()->getProfileTierLevel().getConstraintInfo());
 #else
     actualTotalBits += xWritePPS(accessUnit, slice->getPPS());
 #endif

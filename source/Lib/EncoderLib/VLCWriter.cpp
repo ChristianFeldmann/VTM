@@ -1506,7 +1506,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   int bitsSliceSegmentAddress = 0;
   while (maxSliceSegmentAddress>(1 << bitsSliceSegmentAddress))
   {
-	  bitsSliceSegmentAddress++;
+    bitsSliceSegmentAddress++;
   }
   const int ctuTsAddress = pcSlice->getSliceCurStartCtuTsAddr();
 
@@ -1520,23 +1520,23 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   WRITE_FLAG(sliceSegmentRsAddress == 0, "first_slice_segment_in_pic_flag");
   if (pcSlice->getRapPicFlag())
   {
-	  WRITE_FLAG(pcSlice->getNoOutputPriorPicsFlag() ? 1 : 0, "no_output_of_prior_pics_flag");
+    WRITE_FLAG(pcSlice->getNoOutputPriorPicsFlag() ? 1 : 0, "no_output_of_prior_pics_flag");
   }
   WRITE_UVLC(pcSlice->getPPS()->getPPSId(), "slice_pic_parameter_set_id");
   if (sliceSegmentRsAddress>0)
   {
-	  WRITE_CODE(sliceSegmentRsAddress, bitsSliceSegmentAddress, "slice_segment_address");
+    WRITE_CODE(sliceSegmentRsAddress, bitsSliceSegmentAddress, "slice_segment_address");
   }
   for (int i = 0; i < pcSlice->getPPS()->getNumExtraSliceHeaderBits(); i++)
   {
-	  WRITE_FLAG(0, "slice_reserved_flag[]");
+    WRITE_FLAG(0, "slice_reserved_flag[]");
   }
 
   WRITE_UVLC(pcSlice->getSliceType(), "slice_type");
 
   if (pcSlice->getPPS()->getOutputFlagPresentFlag())
   {
-	  WRITE_FLAG(pcSlice->getPicOutputFlag() ? 1 : 0, "pic_output_flag");
+    WRITE_FLAG(pcSlice->getPicOutputFlag() ? 1 : 0, "pic_output_flag");
   }
 
   int pocBits = pcSlice->getSPS()->getBitsForPOC();
@@ -1544,181 +1544,181 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   WRITE_CODE(pcSlice->getPOC() & pocMask, pocBits, "slice_pic_order_cnt_lsb");
   if (!pcSlice->getIdrPicFlag())
   {
-	  const ReferencePictureSet* rps = pcSlice->getRPS();
+    const ReferencePictureSet* rps = pcSlice->getRPS();
 
-	  // check for bitstream restriction stating that:
-	  // If the current picture is a BLA or CRA picture, the value of NumPocTotalCurr shall be equal to 0.
-	  // Ideally this process should not be repeated for each slice in a picture
-	  if (pcSlice->isIRAP())
-	  {
-		  for (int picIdx = 0; picIdx < rps->getNumberOfPictures(); picIdx++)
-		  {
-			  CHECK(rps->getUsed(picIdx), "Picture should not be used");
-		  }
-	  }
+    // check for bitstream restriction stating that:
+    // If the current picture is a BLA or CRA picture, the value of NumPocTotalCurr shall be equal to 0.
+    // Ideally this process should not be repeated for each slice in a picture
+    if (pcSlice->isIRAP())
+    {
+      for (int picIdx = 0; picIdx < rps->getNumberOfPictures(); picIdx++)
+      {
+        CHECK(rps->getUsed(picIdx), "Picture should not be used");
+      }
+    }
 
-	  if (pcSlice->getRPSidx() < 0)
-	  {
-		  WRITE_FLAG(0, "short_term_ref_pic_set_sps_flag");
-		  xCodeShortTermRefPicSet(rps, true, pcSlice->getSPS()->getRPSList()->getNumberOfReferencePictureSets());
-	  }
-	  else
-	  {
-		  WRITE_FLAG(1, "short_term_ref_pic_set_sps_flag");
-		  int numBits = 0;
-		  while ((1 << numBits) < pcSlice->getSPS()->getRPSList()->getNumberOfReferencePictureSets())
-		  {
-			  numBits++;
-		  }
-		  if (numBits > 0)
-		  {
-			  WRITE_CODE(pcSlice->getRPSidx(), numBits, "short_term_ref_pic_set_idx");
-		  }
-	  }
-	  if (pcSlice->getSPS()->getLongTermRefsPresent())
-	  {
-		  int numLtrpInSH = rps->getNumberOfLongtermPictures();
-		  int ltrpInSPS[MAX_NUM_REF_PICS];
-		  int numLtrpInSPS = 0;
-		  uint32_t ltrpIndex;
-		  int counter = 0;
-		  // WARNING: The following code only works only if a matching long-term RPS is
-		  //          found in the SPS for ALL long-term pictures
-		  //          The problem is that the SPS coded long-term pictures are moved to the
-		  //          beginning of the list which causes a mismatch when no reference picture
-		  //          list reordering is used
-		  //          NB: Long-term coding is currently not supported in general by the HM encoder
-		  for (int k = rps->getNumberOfPictures() - 1; k > rps->getNumberOfPictures() - rps->getNumberOfLongtermPictures() - 1; k--)
-		  {
-			  if (xFindMatchingLTRP(pcSlice, &ltrpIndex, rps->getPOC(k), rps->getUsed(k)))
-			  {
-				  ltrpInSPS[numLtrpInSPS] = ltrpIndex;
-				  numLtrpInSPS++;
-			  }
-			  else
-			  {
-				  counter++;
-			  }
-		  }
-		  numLtrpInSH -= numLtrpInSPS;
-		  // check that either all long-term pictures are coded in SPS or in slice header (no mixing)
-		  CHECK(numLtrpInSH != 0 && numLtrpInSPS != 0, "Long term picture not coded");
+    if (pcSlice->getRPSidx() < 0)
+    {
+      WRITE_FLAG(0, "short_term_ref_pic_set_sps_flag");
+      xCodeShortTermRefPicSet(rps, true, pcSlice->getSPS()->getRPSList()->getNumberOfReferencePictureSets());
+    }
+    else
+    {
+      WRITE_FLAG(1, "short_term_ref_pic_set_sps_flag");
+      int numBits = 0;
+      while ((1 << numBits) < pcSlice->getSPS()->getRPSList()->getNumberOfReferencePictureSets())
+      {
+        numBits++;
+      }
+      if (numBits > 0)
+      {
+        WRITE_CODE(pcSlice->getRPSidx(), numBits, "short_term_ref_pic_set_idx");
+      }
+    }
+    if (pcSlice->getSPS()->getLongTermRefsPresent())
+    {
+      int numLtrpInSH = rps->getNumberOfLongtermPictures();
+      int ltrpInSPS[MAX_NUM_REF_PICS];
+      int numLtrpInSPS = 0;
+      uint32_t ltrpIndex;
+      int counter = 0;
+      // WARNING: The following code only works only if a matching long-term RPS is
+      //          found in the SPS for ALL long-term pictures
+      //          The problem is that the SPS coded long-term pictures are moved to the
+      //          beginning of the list which causes a mismatch when no reference picture
+      //          list reordering is used
+      //          NB: Long-term coding is currently not supported in general by the HM encoder
+      for (int k = rps->getNumberOfPictures() - 1; k > rps->getNumberOfPictures() - rps->getNumberOfLongtermPictures() - 1; k--)
+      {
+        if (xFindMatchingLTRP(pcSlice, &ltrpIndex, rps->getPOC(k), rps->getUsed(k)))
+        {
+          ltrpInSPS[numLtrpInSPS] = ltrpIndex;
+          numLtrpInSPS++;
+        }
+        else
+        {
+          counter++;
+        }
+      }
+      numLtrpInSH -= numLtrpInSPS;
+      // check that either all long-term pictures are coded in SPS or in slice header (no mixing)
+      CHECK(numLtrpInSH != 0 && numLtrpInSPS != 0, "Long term picture not coded");
 
-		  int bitsForLtrpInSPS = 0;
-		  while (pcSlice->getSPS()->getNumLongTermRefPicSPS() > (1 << bitsForLtrpInSPS))
-		  {
-			  bitsForLtrpInSPS++;
-		  }
-		  if (pcSlice->getSPS()->getNumLongTermRefPicSPS() > 0)
-		  {
-			  WRITE_UVLC(numLtrpInSPS, "num_long_term_sps");
-		  }
-		  WRITE_UVLC(numLtrpInSH, "num_long_term_pics");
-		  // Note that the LSBs of the LT ref. pic. POCs must be sorted before.
-		  // Not sorted here because LT ref indices will be used in setRefPicList()
-		  int prevDeltaMSB = 0, prevLSB = 0;
-		  int offset = rps->getNumberOfNegativePictures() + rps->getNumberOfPositivePictures();
-		  counter = 0;
-		  // Warning: If some pictures are moved to ltrpInSPS, i is referring to a wrong index
-		  //          (mapping would be required)
-		  for (int i = rps->getNumberOfPictures() - 1; i > offset - 1; i--, counter++)
-		  {
-			  if (counter < numLtrpInSPS)
-			  {
-				  if (bitsForLtrpInSPS > 0)
-				  {
-					  WRITE_CODE(ltrpInSPS[counter], bitsForLtrpInSPS, "lt_idx_sps[i]");
-				  }
-			  }
-			  else
-			  {
-				  WRITE_CODE(rps->getPocLSBLT(i), pcSlice->getSPS()->getBitsForPOC(), "poc_lsb_lt");
-				  WRITE_FLAG(rps->getUsed(i), "used_by_curr_pic_lt_flag");
-			  }
-			  WRITE_FLAG(rps->getDeltaPocMSBPresentFlag(i), "delta_poc_msb_present_flag");
+      int bitsForLtrpInSPS = 0;
+      while (pcSlice->getSPS()->getNumLongTermRefPicSPS() > (1 << bitsForLtrpInSPS))
+      {
+        bitsForLtrpInSPS++;
+      }
+      if (pcSlice->getSPS()->getNumLongTermRefPicSPS() > 0)
+      {
+        WRITE_UVLC(numLtrpInSPS, "num_long_term_sps");
+      }
+      WRITE_UVLC(numLtrpInSH, "num_long_term_pics");
+      // Note that the LSBs of the LT ref. pic. POCs must be sorted before.
+      // Not sorted here because LT ref indices will be used in setRefPicList()
+      int prevDeltaMSB = 0, prevLSB = 0;
+      int offset = rps->getNumberOfNegativePictures() + rps->getNumberOfPositivePictures();
+      counter = 0;
+      // Warning: If some pictures are moved to ltrpInSPS, i is referring to a wrong index
+      //          (mapping would be required)
+      for (int i = rps->getNumberOfPictures() - 1; i > offset - 1; i--, counter++)
+      {
+        if (counter < numLtrpInSPS)
+        {
+          if (bitsForLtrpInSPS > 0)
+          {
+            WRITE_CODE(ltrpInSPS[counter], bitsForLtrpInSPS, "lt_idx_sps[i]");
+          }
+        }
+        else
+        {
+          WRITE_CODE(rps->getPocLSBLT(i), pcSlice->getSPS()->getBitsForPOC(), "poc_lsb_lt");
+          WRITE_FLAG(rps->getUsed(i), "used_by_curr_pic_lt_flag");
+        }
+        WRITE_FLAG(rps->getDeltaPocMSBPresentFlag(i), "delta_poc_msb_present_flag");
 
-			  if (rps->getDeltaPocMSBPresentFlag(i))
-			  {
-				  bool deltaFlag = false;
-				  //  First LTRP from SPS                 ||  First LTRP from SH                              || curr LSB            != prev LSB
-				  if ((i == rps->getNumberOfPictures() - 1) || (i == rps->getNumberOfPictures() - 1 - numLtrpInSPS) || (rps->getPocLSBLT(i) != prevLSB))
-				  {
-					  deltaFlag = true;
-				  }
-				  if (deltaFlag)
-				  {
-					  WRITE_UVLC(rps->getDeltaPocMSBCycleLT(i), "delta_poc_msb_cycle_lt[i]");
-				  }
-				  else
-				  {
-					  int differenceInDeltaMSB = rps->getDeltaPocMSBCycleLT(i) - prevDeltaMSB;
-					  CHECK(differenceInDeltaMSB < 0, "Negative diff. delta MSB");
-					  WRITE_UVLC(differenceInDeltaMSB, "delta_poc_msb_cycle_lt[i]");
-				  }
-				  prevLSB = rps->getPocLSBLT(i);
-				  prevDeltaMSB = rps->getDeltaPocMSBCycleLT(i);
-			  }
-		  }
-	  }
-	  if (pcSlice->getSPS()->getSPSTemporalMVPEnabledFlag())
-	  {
-		  WRITE_FLAG(pcSlice->getEnableTMVPFlag() ? 1 : 0, "slice_temporal_mvp_enabled_flag");
-	  }
+        if (rps->getDeltaPocMSBPresentFlag(i))
+        {
+          bool deltaFlag = false;
+          //  First LTRP from SPS                 ||  First LTRP from SH                              || curr LSB            != prev LSB
+          if ((i == rps->getNumberOfPictures() - 1) || (i == rps->getNumberOfPictures() - 1 - numLtrpInSPS) || (rps->getPocLSBLT(i) != prevLSB))
+          {
+            deltaFlag = true;
+          }
+          if (deltaFlag)
+          {
+            WRITE_UVLC(rps->getDeltaPocMSBCycleLT(i), "delta_poc_msb_cycle_lt[i]");
+          }
+          else
+          {
+            int differenceInDeltaMSB = rps->getDeltaPocMSBCycleLT(i) - prevDeltaMSB;
+            CHECK(differenceInDeltaMSB < 0, "Negative diff. delta MSB");
+            WRITE_UVLC(differenceInDeltaMSB, "delta_poc_msb_cycle_lt[i]");
+          }
+          prevLSB = rps->getPocLSBLT(i);
+          prevDeltaMSB = rps->getDeltaPocMSBCycleLT(i);
+        }
+      }
+    }
+    if (pcSlice->getSPS()->getSPSTemporalMVPEnabledFlag())
+    {
+      WRITE_FLAG(pcSlice->getEnableTMVPFlag() ? 1 : 0, "slice_temporal_mvp_enabled_flag");
+    }
   }
   if (pcSlice->getSPS()->getSAOEnabledFlag())
   {
-	  WRITE_FLAG(pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_LUMA), "slice_sao_luma_flag");
-	  if (chromaEnabled)
-	  {
-		  WRITE_FLAG(pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_CHROMA), "slice_sao_chroma_flag");
-	  }
+    WRITE_FLAG(pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_LUMA), "slice_sao_luma_flag");
+    if (chromaEnabled)
+    {
+      WRITE_FLAG(pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_CHROMA), "slice_sao_chroma_flag");
+    }
   }
 
   if (pcSlice->getSPS()->getALFEnabledFlag())
   {
 #if JVET_N0415_CTB_ALF
-	  const int alfEnabled = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y);
-	  WRITE_FLAG(alfEnabled, "tile_group_alf_enabled_flag");
+    const int alfEnabled = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y);
+    WRITE_FLAG(alfEnabled, "tile_group_alf_enabled_flag");
 
-	  if (alfEnabled)
-	  {
+    if (alfEnabled)
+    {
 
-		  if (pcSlice->isIntra())
-		  {
-			  WRITE_FLAG(pcSlice->getTileGroupNumAps(), "tile_group_num_APS");
-		  }
-		  else
-		  {
-			  xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
-		  }
+      if (pcSlice->isIntra())
+      {
+        WRITE_FLAG(pcSlice->getTileGroupNumAps(), "tile_group_num_APS");
+      }
+      else
+      {
+        xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
+      }
 
-		  const std::vector<int>&   apsId = pcSlice->getTileGroupApsIdLuma();
-		  for (int i = 0; i < pcSlice->getTileGroupNumAps(); i++)
-		  {
-			  WRITE_CODE(apsId[i], 5, "tile_group_aps_id");
-		  }
+      const std::vector<int>&   apsId = pcSlice->getTileGroupApsIdLuma();
+      for (int i = 0; i < pcSlice->getTileGroupNumAps(); i++)
+      {
+        WRITE_CODE(apsId[i], 5, "tile_group_aps_id");
+      }
 
-		  const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) * 2;
-		  truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
-		  if (alfChromaIdc)
-		  {
-			  if (pcSlice->isIntra() && pcSlice->getTileGroupNumAps() == 1)
-			  {
-				  CHECK(pcSlice->getTileGroupApsIdChroma() != apsId[0], "wrong tile group chroma aps id");
-			  }
-			  else
-			  {
-				  WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
-			  }
-		  }
-	  }
+      const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) * 2;
+      truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
+      if (alfChromaIdc)
+      {
+        if (pcSlice->isIntra() && pcSlice->getTileGroupNumAps() == 1)
+        {
+          CHECK(pcSlice->getTileGroupApsIdChroma() != apsId[0], "wrong tile group chroma aps id");
+        }
+        else
+        {
+          WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
+        }
+      }
+    }
 #else
-	  const int alfEnabled = pcSlice->getAPS()->getAlfAPSParam().enabledFlag[COMPONENT_Y] ? 1 : 0;
-	  WRITE_FLAG(alfEnabled, "tile_group_alf_enabled_flag");
-	  if (alfEnabled)
-	  {
-		  WRITE_CODE(pcSlice->getAPSId(), 5, "tile_group_aps_id");
-	  }
+    const int alfEnabled = pcSlice->getAPS()->getAlfAPSParam().enabledFlag[COMPONENT_Y] ? 1 : 0;
+    WRITE_FLAG(alfEnabled, "tile_group_alf_enabled_flag");
+    if (alfEnabled)
+    {
+      WRITE_CODE(pcSlice->getAPSId(), 5, "tile_group_aps_id");
+    }
 #endif
   }
 
@@ -1726,122 +1726,122 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
   if (!pcSlice->isIntra())
   {
-	  bool overrideFlag = (pcSlice->getNumRefIdx(REF_PIC_LIST_0) != pcSlice->getPPS()->getNumRefIdxL0DefaultActive() || (pcSlice->isInterB() && pcSlice->getNumRefIdx(REF_PIC_LIST_1) != pcSlice->getPPS()->getNumRefIdxL1DefaultActive()));
-	  WRITE_FLAG(overrideFlag ? 1 : 0, "num_ref_idx_active_override_flag");
-	  if (overrideFlag)
-	  {
-		  WRITE_UVLC(pcSlice->getNumRefIdx(REF_PIC_LIST_0) - 1, "num_ref_idx_l0_active_minus1");
-		  if (pcSlice->isInterB())
-		  {
-			  WRITE_UVLC(pcSlice->getNumRefIdx(REF_PIC_LIST_1) - 1, "num_ref_idx_l1_active_minus1");
-		  }
-		  else
-		  {
-			  pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
-		  }
-	  }
+    bool overrideFlag = (pcSlice->getNumRefIdx(REF_PIC_LIST_0) != pcSlice->getPPS()->getNumRefIdxL0DefaultActive() || (pcSlice->isInterB() && pcSlice->getNumRefIdx(REF_PIC_LIST_1) != pcSlice->getPPS()->getNumRefIdxL1DefaultActive()));
+    WRITE_FLAG(overrideFlag ? 1 : 0, "num_ref_idx_active_override_flag");
+    if (overrideFlag)
+    {
+      WRITE_UVLC(pcSlice->getNumRefIdx(REF_PIC_LIST_0) - 1, "num_ref_idx_l0_active_minus1");
+      if (pcSlice->isInterB())
+      {
+        WRITE_UVLC(pcSlice->getNumRefIdx(REF_PIC_LIST_1) - 1, "num_ref_idx_l1_active_minus1");
+      }
+      else
+      {
+        pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
+      }
+    }
   }
   else
   {
-	  pcSlice->setNumRefIdx(REF_PIC_LIST_0, 0);
-	  pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
+    pcSlice->setNumRefIdx(REF_PIC_LIST_0, 0);
+    pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
   }
 
   if (pcSlice->getPPS()->getListsModificationPresentFlag() && pcSlice->getNumRpsCurrTempList() > 1)
   {
-	  RefPicListModification* refPicListModification = pcSlice->getRefPicListModification();
-	  if (!pcSlice->isIntra())
-	  {
-		  WRITE_FLAG(pcSlice->getRefPicListModification()->getRefPicListModificationFlagL0() ? 1 : 0, "ref_pic_list_modification_flag_l0");
-		  if (pcSlice->getRefPicListModification()->getRefPicListModificationFlagL0())
-		  {
-			  int numRpsCurrTempList0 = pcSlice->getNumRpsCurrTempList();
-			  if (numRpsCurrTempList0 > 1)
-			  {
-				  int length = 1;
-				  numRpsCurrTempList0--;
-				  while (numRpsCurrTempList0 >>= 1)
-				  {
-					  length++;
-				  }
-				  for (int i = 0; i < pcSlice->getNumRefIdx(REF_PIC_LIST_0); i++)
-				  {
-					  WRITE_CODE(refPicListModification->getRefPicSetIdxL0(i), length, "list_entry_l0");
-				  }
-			  }
-		  }
-	  }
-	  if (pcSlice->isInterB())
-	  {
-		  WRITE_FLAG(pcSlice->getRefPicListModification()->getRefPicListModificationFlagL1() ? 1 : 0, "ref_pic_list_modification_flag_l1");
-		  if (pcSlice->getRefPicListModification()->getRefPicListModificationFlagL1())
-		  {
-			  int numRpsCurrTempList1 = pcSlice->getNumRpsCurrTempList();
-			  if (numRpsCurrTempList1 > 1)
-			  {
-				  int length = 1;
-				  numRpsCurrTempList1--;
-				  while (numRpsCurrTempList1 >>= 1)
-				  {
-					  length++;
-				  }
-				  for (int i = 0; i < pcSlice->getNumRefIdx(REF_PIC_LIST_1); i++)
-				  {
-					  WRITE_CODE(refPicListModification->getRefPicSetIdxL1(i), length, "list_entry_l1");
-				  }
-			  }
-		  }
-	  }
+    RefPicListModification* refPicListModification = pcSlice->getRefPicListModification();
+    if (!pcSlice->isIntra())
+    {
+      WRITE_FLAG(pcSlice->getRefPicListModification()->getRefPicListModificationFlagL0() ? 1 : 0, "ref_pic_list_modification_flag_l0");
+      if (pcSlice->getRefPicListModification()->getRefPicListModificationFlagL0())
+      {
+        int numRpsCurrTempList0 = pcSlice->getNumRpsCurrTempList();
+        if (numRpsCurrTempList0 > 1)
+        {
+          int length = 1;
+          numRpsCurrTempList0--;
+          while (numRpsCurrTempList0 >>= 1)
+          {
+            length++;
+          }
+          for (int i = 0; i < pcSlice->getNumRefIdx(REF_PIC_LIST_0); i++)
+          {
+            WRITE_CODE(refPicListModification->getRefPicSetIdxL0(i), length, "list_entry_l0");
+          }
+        }
+      }
+    }
+    if (pcSlice->isInterB())
+    {
+      WRITE_FLAG(pcSlice->getRefPicListModification()->getRefPicListModificationFlagL1() ? 1 : 0, "ref_pic_list_modification_flag_l1");
+      if (pcSlice->getRefPicListModification()->getRefPicListModificationFlagL1())
+      {
+        int numRpsCurrTempList1 = pcSlice->getNumRpsCurrTempList();
+        if (numRpsCurrTempList1 > 1)
+        {
+          int length = 1;
+          numRpsCurrTempList1--;
+          while (numRpsCurrTempList1 >>= 1)
+          {
+            length++;
+          }
+          for (int i = 0; i < pcSlice->getNumRefIdx(REF_PIC_LIST_1); i++)
+          {
+            WRITE_CODE(refPicListModification->getRefPicSetIdxL1(i), length, "list_entry_l1");
+          }
+        }
+      }
+    }
   }
 
   if (pcSlice->isInterB())
   {
-	  WRITE_FLAG(pcSlice->getMvdL1ZeroFlag() ? 1 : 0, "mvd_l1_zero_flag");
+    WRITE_FLAG(pcSlice->getMvdL1ZeroFlag() ? 1 : 0, "mvd_l1_zero_flag");
   }
 
   if (!pcSlice->isIntra())
   {
-	  if (!pcSlice->isIntra() && pcSlice->getPPS()->getCabacInitPresentFlag())
-	  {
-		  SliceType sliceType = pcSlice->getSliceType();
-		  SliceType  encCABACTableIdx = pcSlice->getEncCABACTableIdx();
-		  bool encCabacInitFlag = (sliceType != encCABACTableIdx && encCABACTableIdx != I_SLICE) ? true : false;
-		  pcSlice->setCabacInitFlag(encCabacInitFlag);
-		  WRITE_FLAG(encCabacInitFlag ? 1 : 0, "cabac_init_flag");
-	  }
+    if (!pcSlice->isIntra() && pcSlice->getPPS()->getCabacInitPresentFlag())
+    {
+      SliceType sliceType = pcSlice->getSliceType();
+      SliceType  encCABACTableIdx = pcSlice->getEncCABACTableIdx();
+      bool encCabacInitFlag = (sliceType != encCABACTableIdx && encCABACTableIdx != I_SLICE) ? true : false;
+      pcSlice->setCabacInitFlag(encCabacInitFlag);
+      WRITE_FLAG(encCabacInitFlag ? 1 : 0, "cabac_init_flag");
+    }
   }
 
   if (pcSlice->getEnableTMVPFlag())
   {
-	  if (pcSlice->getSliceType() == B_SLICE)
-	  {
-		  WRITE_FLAG(pcSlice->getColFromL0Flag(), "collocated_from_l0_flag");
-	  }
+    if (pcSlice->getSliceType() == B_SLICE)
+    {
+      WRITE_FLAG(pcSlice->getColFromL0Flag(), "collocated_from_l0_flag");
+    }
 
-	  if (pcSlice->getSliceType() != I_SLICE &&
-		  ((pcSlice->getColFromL0Flag() == 1 && pcSlice->getNumRefIdx(REF_PIC_LIST_0) > 1) ||
-		  (pcSlice->getColFromL0Flag() == 0 && pcSlice->getNumRefIdx(REF_PIC_LIST_1) > 1)))
-	  {
-		  WRITE_UVLC(pcSlice->getColRefIdx(), "collocated_ref_idx");
-	  }
+    if (pcSlice->getSliceType() != I_SLICE &&
+      ((pcSlice->getColFromL0Flag() == 1 && pcSlice->getNumRefIdx(REF_PIC_LIST_0) > 1) ||
+      (pcSlice->getColFromL0Flag() == 0 && pcSlice->getNumRefIdx(REF_PIC_LIST_1) > 1)))
+    {
+      WRITE_UVLC(pcSlice->getColRefIdx(), "collocated_ref_idx");
+    }
   }
   if ((pcSlice->getPPS()->getUseWP() && pcSlice->getSliceType() == P_SLICE) || (pcSlice->getPPS()->getWPBiPred() && pcSlice->getSliceType() == B_SLICE))
   {
-	  xCodePredWeightTable(pcSlice);
+    xCodePredWeightTable(pcSlice);
   }
 
 #if JVET_N0276_CONSTRAINT_FLAGS
-	if(!cinfo->getNoDepQuantConstraintFlag())
-	{
+  if(!cinfo->getNoDepQuantConstraintFlag())
+  {
 #endif
     WRITE_FLAG(pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag");
 #if JVET_N0276_CONSTRAINT_FLAGS
-	}
+  }
 #endif
 
 #if HEVC_USE_SIGN_HIDING
 #if JVET_N0276_CONSTRAINT_FLAGS
-	if( !pcSlice->getDepQuantEnabledFlag() && !cinfo->getNoSignDataHidingConstraintFlag() )
+    if( !pcSlice->getDepQuantEnabledFlag() && !cinfo->getNoSignDataHidingConstraintFlag() )
 #else
     if( !pcSlice->getDepQuantEnabledFlag() )
 #endif

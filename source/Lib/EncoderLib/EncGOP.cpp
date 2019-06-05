@@ -1532,9 +1532,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->fieldPic = isField;
 #endif
 
-    int pocBits = pcSlice->getSPS()->getBitsForPOC();
-    int pocMask = (1 << pocBits) - 1;
-    pcSlice->setLastIDR(m_iLastIDR & ~pocMask);
+    pcSlice->setLastIDR(m_iLastIDR);
     pcSlice->setIndependentSliceIdx(0);
     //set default slice level flag to the same as SPS level flag
     pcSlice->setLFCrossSliceBoundaryFlag(  pcSlice->getPPS()->getLoopFilterAcrossSlicesEnabledFlag()  );
@@ -3476,7 +3474,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
   if( g_verbosity >= NOTICE )
   {
     msg( NOTICE, "POC %4d TId: %1d ( %c-SLICE, QP %d ) %10d bits",
-         pcSlice->getPOC() - pcSlice->getLastIDR(),
+         pcSlice->getPOC(),
          pcSlice->getTLayer(),
          c,
          pcSlice->getSliceQp(),
@@ -3523,7 +3521,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       msg( NOTICE, " [L%d ", iRefList );
       for( int iRefIndex = 0; iRefIndex < pcSlice->getNumRefIdx( RefPicList( iRefList ) ); iRefIndex++ )
       {
-        msg( NOTICE, "%d ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) - pcSlice->getLastIDR() );
+        msg( NOTICE, "%d ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) );
       }
       msg( NOTICE, "]" );
     }

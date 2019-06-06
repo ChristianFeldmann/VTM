@@ -315,6 +315,8 @@ void EncSampleAdaptiveOffset::getStatistics(std::vector<SAOStatData**>& blkStats
       int numHorVirBndry = 0, numVerVirBndry = 0;
       int horVirBndryPos[] = { -1,-1,-1 };
       int verVirBndryPos[] = { -1,-1,-1 };
+      int horVirBndryPosComp[] = { -1,-1,-1 };
+      int verVirBndryPosComp[] = { -1,-1,-1 };
       bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(xPos, yPos, width, height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
 #endif
 
@@ -332,11 +334,11 @@ void EncSampleAdaptiveOffset::getStatistics(std::vector<SAOStatData**>& blkStats
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
         for (int i = 0; i < numHorVirBndry; i++)
         {
-          horVirBndryPos[i] = (horVirBndryPos[i] >> ::getComponentScaleY(compID, area.chromaFormat)) - compArea.y;
+          horVirBndryPosComp[i] = (horVirBndryPos[i] >> ::getComponentScaleY(compID, area.chromaFormat)) - compArea.y;
         }
         for (int i = 0; i < numVerVirBndry; i++)
         {
-          verVirBndryPos[i] = (verVirBndryPos[i] >> ::getComponentScaleX(compID, area.chromaFormat)) - compArea.x;
+          verVirBndryPosComp[i] = (verVirBndryPos[i] >> ::getComponentScaleX(compID, area.chromaFormat)) - compArea.x;
         }
 #endif
 
@@ -345,7 +347,7 @@ void EncSampleAdaptiveOffset::getStatistics(std::vector<SAOStatData**>& blkStats
                   , isLeftAvail,  isRightAvail, isAboveAvail, isBelowAvail, isAboveLeftAvail, isAboveRightAvail
                   , isCalculatePreDeblockSamples
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-                  , isCtuCrossedByVirtualBoundaries, horVirBndryPos, verVirBndryPos, numHorVirBndry, numVerVirBndry
+                  , isCtuCrossedByVirtualBoundaries, horVirBndryPosComp, verVirBndryPosComp, numHorVirBndry, numVerVirBndry
 #endif
                   );
       }

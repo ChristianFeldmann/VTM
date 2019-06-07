@@ -1445,7 +1445,11 @@ void DecLib::xDecodeSPS( InputNALUnit& nalu )
 {
   SPS* sps = new SPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
+#if JVET_N0276_CONSTRAINT_FLAGS
+  m_HLSReader.parseSPS( sps, &m_parameterSetManager );
+#else
   m_HLSReader.parseSPS( sps );
+#endif
   m_parameterSetManager.storeSPS( sps, nalu.getBitstream().getFifo() );
 
   DTRACE( g_trace_ctx, D_QP_PER_CTU, "CTU Size: %dx%d", sps->getMaxCUWidth(), sps->getMaxCUHeight() );
@@ -1455,7 +1459,7 @@ void DecLib::xDecodePPS( InputNALUnit& nalu )
 {
   PPS* pps = new PPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND || JVET_N0276_CONSTRAINT_FLAGS
   m_HLSReader.parsePPS( pps, &m_parameterSetManager );
 #else
   m_HLSReader.parsePPS( pps );

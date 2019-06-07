@@ -113,6 +113,9 @@ EncAppCfg::EncAppCfg()
 , m_maxChromaFormatConstraintIdc(CHROMA_420)
 , m_bFrameConstraintFlag(false)
 , m_bNoQtbttDualTreeIntraConstraintFlag(false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noPartitionConstraintsOverrideConstraintFlag(false)
+#endif
 , m_bNoSaoConstraintFlag(false)
 , m_bNoAlfConstraintFlag(false)
 , m_bNoPcmConstraintFlag(false)
@@ -121,14 +124,31 @@ EncAppCfg::EncAppCfg()
 , m_bNoSbtmvpConstraintFlag(false)
 , m_bNoAmvrConstraintFlag(false)
 , m_bNoBdofConstraintFlag(false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noDmvrConstraintFlag(false)
+#endif
 , m_bNoCclmConstraintFlag(false)
 , m_bNoMtsConstraintFlag(false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noSbtConstraintFlag(false)
+#endif
 , m_bNoAffineMotionConstraintFlag(false)
 , m_bNoGbiConstraintFlag(false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noIbcConstraintFlag(false)
+#endif
 , m_bNoMhIntraConstraintFlag(false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noFPelMmvdConstraintFlag(false)
+#endif
 , m_bNoTriangleConstraintFlag(false)
 , m_bNoLadfConstraintFlag(false)
+#if JVET_N0276_CONSTRAINT_FLAGS
+, m_noTransformSkipConstraintFlag(false)
+#endif
+#if !JVET_N0276_CONSTRAINT_FLAGS
 , m_bNoCurrPicRefConstraintFlag(false)
+#endif
 , m_bNoQpDeltaConstraintFlag(false)
 , m_bNoDepQuantConstraintFlag(false)
 , m_bNoSignDataHidingConstraintFlag(false)
@@ -841,6 +861,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("Profile",                                         extendedProfile,                                   NONE, "Profile name to use for encoding. Use main (for main), main10 (for main10), main-still-picture, main-RExt (for Range Extensions profile), any of the RExt specific profile names, or none")
   ("Level",                                           m_level,                                    Level::NONE, "Level limit to be used, eg 5.1, or none")
   ("Tier",                                            m_levelTier,                                Level::MAIN, "Tier to use for interpretation of --Level (main or high only)")
+#if JVET_N0276_CONSTRAINT_FLAGS
+  ("SubProfile",                                      m_subProfile,                                        0u, "Sub-profile idc")
+#endif
   ("EnableDecodingParameterSet",                      m_decodingParameterSetEnabled,                    false, "Enables writing of Decoding Parameter Set")
   ("MaxBitDepthConstraint",                           m_bitDepthConstraint,                                0u, "Bit depth to use for profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("MaxChromaFormatConstraint",                       tmpConstraintChromaFormat,                            0, "Chroma-format to use for the profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")

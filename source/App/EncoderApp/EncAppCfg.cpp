@@ -2190,7 +2190,11 @@ bool EncAppCfg::xCheckParameter()
 
   if( m_wrapAround )
   {
+#if JVET_N0070_WRAPAROUND
+    xConfirmPara( m_wrapAroundOffset <= m_uiCTUSize + (m_uiMaxCUWidth >> m_uiLog2DiffMaxMinCodingBlockSize), "Wrap-around offset must be greater than CtbSizeY + MinCbSize" );
+#else
     xConfirmPara( m_wrapAroundOffset == 0, "Wrap-around offset must be greater than 0" );
+#endif
     xConfirmPara( m_wrapAroundOffset > m_iSourceWidth, "Wrap-around offset must not be greater than the source picture width" );
     int minCUSize =  m_uiCTUSize >> m_uiLog2DiffMaxMinCodingBlockSize;
     xConfirmPara( m_wrapAroundOffset % minCUSize != 0, "Wrap-around offset must be an integer multiple of the specified minimum CU size" );

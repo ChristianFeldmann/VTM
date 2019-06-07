@@ -1032,6 +1032,9 @@ void Picture::create(const ChromaFormat &_chromaFormat, const Size &size, const 
   margin            =  _margin;
   const Area a      = Area( Position(), size );
   M_BUFS( 0, PIC_RECONSTRUCTION ).create( _chromaFormat, a, _maxCUSize, _margin, MEMORY_ALIGN_DEF_SIZE );
+#if JVET_N0070_WRAPAROUND
+  M_BUFS( 0, PIC_RECON_WRAP ).create( _chromaFormat, a, _maxCUSize, _margin, MEMORY_ALIGN_DEF_SIZE );
+#endif
 
   if( !_decoder )
   {
@@ -1165,6 +1168,16 @@ const CPelBuf     Picture::getResiBuf(const CompArea &blk)  const { return getBu
        PelUnitBuf Picture::getResiBuf(const UnitArea &unit)       { return getBuf(unit, PIC_RESIDUAL); }
 const CPelUnitBuf Picture::getResiBuf(const UnitArea &unit) const { return getBuf(unit, PIC_RESIDUAL); }
 
+#if JVET_N0070_WRAPAROUND
+       PelBuf     Picture::getRecoBuf(const ComponentID compID, bool wrap)       { return getBuf(compID,                    wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+const CPelBuf     Picture::getRecoBuf(const ComponentID compID, bool wrap) const { return getBuf(compID,                    wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+       PelBuf     Picture::getRecoBuf(const CompArea &blk, bool wrap)            { return getBuf(blk,                       wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+const CPelBuf     Picture::getRecoBuf(const CompArea &blk, bool wrap)      const { return getBuf(blk,                       wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+       PelUnitBuf Picture::getRecoBuf(const UnitArea &unit, bool wrap)           { return getBuf(unit,                      wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit, bool wrap)     const { return getBuf(unit,                      wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+       PelUnitBuf Picture::getRecoBuf(bool wrap)                                 { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+const CPelUnitBuf Picture::getRecoBuf(bool wrap)                           const { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+#else
        PelBuf     Picture::getRecoBuf(const ComponentID compID)       { return getBuf(compID,                    PIC_RECONSTRUCTION); }
 const CPelBuf     Picture::getRecoBuf(const ComponentID compID) const { return getBuf(compID,                    PIC_RECONSTRUCTION); }
        PelBuf     Picture::getRecoBuf(const CompArea &blk)            { return getBuf(blk,                       PIC_RECONSTRUCTION); }
@@ -1173,6 +1186,7 @@ const CPelBuf     Picture::getRecoBuf(const CompArea &blk)      const { return g
 const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit)     const { return getBuf(unit,                      PIC_RECONSTRUCTION); }
        PelUnitBuf Picture::getRecoBuf()                               { return M_BUFS(scheduler.getSplitPicId(), PIC_RECONSTRUCTION); }
 const CPelUnitBuf Picture::getRecoBuf()                         const { return M_BUFS(scheduler.getSplitPicId(), PIC_RECONSTRUCTION); }
+#endif
 
 #if JVET_N0415_CTB_ALF
 void Picture::finalInit(const SPS& sps, const PPS& pps, APS** apss)
@@ -1346,6 +1360,7 @@ void Picture::extendPicBorder()
 
     Pel*  pi = piTxt;
     // do left and right margins
+ #if !JVET_N0070_WRAPAROUND  
     if (cs->sps->getWrapAroundEnabledFlag())
     {
       int xoffset = cs->sps->getWrapAroundOffset() >> getComponentScaleX( compID, cs->area.chromaFormat );
@@ -1361,6 +1376,7 @@ void Picture::extendPicBorder()
     }
     else
     {
+#endif
       for (int y = 0; y < p.height; y++)
       {
         for (int x = 0; x < xmargin; x++ )
@@ -1370,7 +1386,9 @@ void Picture::extendPicBorder()
         }
         pi += p.stride;
       }
+ #if !JVET_N0070_WRAPAROUND  
     }
+#endif
 
     // pi is now the (0,height) (bottom left of image within bigger picture
     pi -= (p.stride + xmargin);
@@ -1387,6 +1405,45 @@ void Picture::extendPicBorder()
     {
       ::memcpy( pi - (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin<<1)) );
     }
+    
+#if JVET_N0070_WRAPAROUND  
+    // reference picture with horizontal wrapped boundary
+    if (cs->sps->getWrapAroundEnabledFlag())
+    {
+      p = M_BUFS( 0, PIC_RECON_WRAP ).get( compID );
+      p.copyFrom(M_BUFS( 0, PIC_RECONSTRUCTION ).get( compID ));
+      piTxt = p.bufAt(0,0);
+      pi = piTxt;
+      int xoffset = cs->sps->getWrapAroundOffset() >> getComponentScaleX( compID, cs->area.chromaFormat );
+      for (int y = 0; y < p.height; y++)
+      {
+        for (int x = 0; x < xmargin; x++ )
+        {
+          if( x < xoffset ) 
+          {
+            pi[ -x - 1 ] = pi[ -x - 1 + xoffset ];
+            pi[  p.width + x ] = pi[ p.width + x - xoffset ];
+          }
+          else 
+          {
+            pi[ -x - 1 ] = pi[ 0 ];
+            pi[  p.width + x ] = pi[ p.width - 1 ];
+          }
+        }
+        pi += p.stride;
+      }
+      pi -= (p.stride + xmargin);
+      for (int y = 0; y < ymargin; y++ )
+      {
+        ::memcpy( pi + (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin << 1)));
+      }
+      pi -= ((p.height-1) * p.stride);
+      for (int y = 0; y < ymargin; y++ )
+      {
+        ::memcpy( pi - (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin<<1)) );
+      }
+    }
+#endif
   }
 
   m_bIsBorderExtended = true;

@@ -153,12 +153,8 @@ public:
 #if JVET_N0349_DPS
   void  parseDPS            ( DPS* dps );
 #endif
-#if JVET_N0276_CONSTRAINT_FLAGS
-  void  parseSPS            ( SPS* pcSPS, ParameterSetManager *parameterSetManager );
-#else
   void  parseSPS            ( SPS* pcSPS );
-#endif
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND || JVET_N0276_CONSTRAINT_FLAGS
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   void  parsePPS            ( PPS* pcPPS, ParameterSetManager *parameterSetManager );
 #else
   void  parsePPS            ( PPS* pcPPS );

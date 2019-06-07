@@ -377,12 +377,8 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     if( inp_nalu.m_nalUnitType == NAL_UNIT_SPS )
     {
       SPS* sps = new SPS();
-      HLSReader.setBitstream(&inp_nalu.getBitstream());
-#if JVET_N0276_CONSTRAINT_FLAGS
-      HLSReader.parseSPS(sps, &parameterSetManager);
-#else
+      HLSReader.setBitstream( &inp_nalu.getBitstream() );
       HLSReader.parseSPS( sps );
-#endif
       parameterSetManager.storeSPS( sps, inp_nalu.getBitstream().getFifo() );
     }
 
@@ -390,7 +386,7 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     {
       PPS* pps = new PPS();
       HLSReader.setBitstream( &inp_nalu.getBitstream() );
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND || JVET_N0276_CONSTRAINT_FLAGS
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       HLSReader.parsePPS( pps, &parameterSetManager );
 #else
       HLSReader.parsePPS( pps );

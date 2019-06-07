@@ -368,7 +368,7 @@ void HLSyntaxReader::parseShortTermRefPicSet( SPS* sps, ReferencePictureSet* rps
   rps->printDeltaPOC();
 }
 
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND || JVET_N0276_CONSTRAINT_FLAGS
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
 void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetManager )
 #else
 void HLSyntaxReader::parsePPS( PPS* pcPPS )
@@ -381,14 +381,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 
   int   iCode;
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-#if JVET_M0101_HLS
-  ConstraintInfo* cinfo;
-#else
-  SPS* cinfo;
-#endif
-#endif
-
   READ_UVLC( uiCode, "pps_pic_parameter_set_id");
   CHECK(uiCode > 63, "PPS id exceeds boundary (63)");
   pcPPS->setPPSId (uiCode);
@@ -397,13 +389,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   CHECK(uiCode > 15, "SPS id exceeds boundary (15)");
   pcPPS->setSPSId (uiCode);
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-#if JVET_M0101_HLS
-  cinfo = parameterSetManager->getSPS(pcPPS->getSPSId())->getProfileTierLevel()->getConstraintInfo();
-#else
-  SPS* cinfo = parameterSetManager->getSPS(pcPPS->getSPSId());
-#endif
-#endif
 
   READ_FLAG( uiCode, "output_flag_present_flag" );                    pcPPS->setOutputFlagPresentFlag( uiCode==1 );
 
@@ -422,33 +407,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 
   READ_SVLC(iCode, "init_qp_minus26" );                            pcPPS->setPicInitQPMinus26(iCode);
   READ_FLAG( uiCode, "constrained_intra_pred_flag" );              pcPPS->setConstrainedIntraPred( uiCode ? true : false );
+  READ_FLAG( uiCode, "transform_skip_enabled_flag" );
+  pcPPS->setUseTransformSkip ( uiCode ? true : false );
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoTransformSkipConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "transform_skip_enabled_flag");       	   pcPPS->setUseTransformSkip(uiCode ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcPPS->setUseTransformSkip(false);
-  }
-#endif
-
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoQpDeltaConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "cu_qp_delta_enabled_flag");              pcPPS->setUseDQP(uiCode ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcPPS->setUseDQP(false);
-  }
-#endif
-
+  READ_FLAG( uiCode, "cu_qp_delta_enabled_flag" );            pcPPS->setUseDQP( uiCode ? true : false );
   if( pcPPS->getUseDQP() )
   {
     READ_UVLC( uiCode, "cu_qp_delta_subdiv" );
@@ -1220,22 +1182,9 @@ void HLSyntaxReader::parseReshaper(SliceReshapeInfo& info, const SPS* pcSPS, con
     }
   }
 }
-
-#if JVET_N0276_CONSTRAINT_FLAGS
-void HLSyntaxReader::parseSPS(SPS* pcSPS, ParameterSetManager *parameterSetManager)
-#else
 void HLSyntaxReader::parseSPS(SPS* pcSPS)
-#endif
 {
   uint32_t  uiCode;
-
-#if JVET_N0276_CONSTRAINT_FLAGS
-#if JVET_M0101_HLS
-  ConstraintInfo* cinfo;
-#else
-  SPS* cinfo = pcSPS;
-#endif
-#endif
 
 #if ENABLE_TRACING
   xTraceSPSHeader ();
@@ -1255,9 +1204,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_CODE(2, uiCode, "max_chroma_format_constraint_idc");      pcSPS->setMaxChromaFormatConstraintIdc(uiCode);
   READ_FLAG(uiCode, "frame_only_constraint_flag");               pcSPS->setFrameConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_qtbtt_dual_tree_intra_constraint_flag"); pcSPS->setNoQtbttDualTreeIntraConstraintFlag(uiCode > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(uiCode, "no_partition_constraints_override_constraint_flag"); pcSPS->setNoPartitionConstraintsOverrideConstraintFlag(uiCode > 0 ? true : false);
-#endif
   READ_FLAG(uiCode, "no_sao_constraint_flag");                   pcSPS->setNoSaoConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_alf_constraint_flag");                   pcSPS->setNoAlfConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_pcm_constraint_flag");                   pcSPS->setNoPcmConstraintFlag(uiCode > 0 ? true : false);
@@ -1266,31 +1212,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "no_sbtmvp_constraint_flag");                pcSPS->setNoSbtmvpConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_amvr_constraint_flag");                  pcSPS->setNoAmvrConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_bdof_constraint_flag");                  pcSPS->setNoBdofConstraintFlag(uiCode > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(uiCode, "no_dmvr_constraint_flag");                  pcSPS->setNoDmvrConstraintFlag(uiCode > 0 ? true : false);
-#endif
   READ_FLAG(uiCode, "no_cclm_constraint_flag");                  pcSPS->setNoCclmConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_mts_constraint_flag");                   pcSPS->setNoMtsConstraintFlag(uiCode > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(uiCode, "no_sbt_constraint_flag");                   pcSPS->setNoSbtConstraintFlag(uiCode > 0 ? true : false);
-#endif
   READ_FLAG(uiCode, "no_affine_motion_constraint_flag");         pcSPS->setNoAffineMotionConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_gbi_constraint_flag");                   pcSPS->setNoGbiConstraintFlag(uiCode > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(uiCode, "no_ibc_constraint_flag");                   pcSPS->setNoIbcConstraintFlag(uiCode > 0 ? true : false);
-#endif
   READ_FLAG(uiCode, "no_mh_intra_constraint_flag");              pcSPS->setNoMhIntraConstraintFlag(uiCode > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(uiCode, "no_fpel_mmvd_constraint_flag");             pcSPS->setNoFPelMmvdConstraintFlag(uiCode > 0 ? true : false);
-#endif
   READ_FLAG(uiCode, "no_triangle_constraint_flag");              pcSPS->setNoTriangleConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_ladf_constraint_flag");                  pcSPS->setNoLadfConstraintFlag(uiCode > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(uiCode, "no_transform_skip_constraint_flag");        pcSPS->setNoTransformSkipConstraintFlag(uiCode > 0 ? true : false);
-#endif
-#if !JVET_N0276_CONSTRAINT_FLAGS
   READ_FLAG(uiCode, "no_curr_pic_ref_constraint_flag");          pcSPS->setNoCurrPicRefConstraintFlag(uiCode > 0 ? true : false);
-#endif
   READ_FLAG(uiCode, "no_qp_delta_constraint_flag");              pcSPS->setNoQpDeltaConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_dep_quant_constraint_flag");             pcSPS->setNoDepQuantConstraintFlag(uiCode > 0 ? true : false);
   READ_FLAG(uiCode, "no_sign_data_hiding_constraint_flag");      pcSPS->setNoSignDataHidingConstraintFlag(uiCode > 0 ? true : false);
@@ -1314,11 +1243,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   parseProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
 
   READ_UVLC(uiCode, "sps_seq_parameter_set_id");           pcSPS->setSPSId(uiCode);
-
-#if JVET_N0276_CONSTRAINT_FLAGS
-  cinfo = pcSPS->getProfileTierLevel()->getConstraintInfo();
-#endif
-
 #endif
 
   READ_UVLC(     uiCode, "chroma_format_idc" );                  pcSPS->setChromaFormatIdc( ChromaFormat(uiCode) );
@@ -1396,20 +1320,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   unsigned  maxBTSize[3] = { 0, 0, 0 };
   unsigned  maxTTSize[3] = { 0, 0, 0 };
-
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoQtbttDualTreeIntraConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "qtbtt_dual_tree_intra_flag");             pcSPS->setUseDualITree(uiCode);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setUseDualITree(false);
-  }
-#endif
-
+  READ_FLAG(uiCode, "qtbtt_dual_tree_intra_flag");             pcSPS->setUseDualITree(uiCode);
   READ_UVLC(uiCode, "log2_ctu_size_minus2");                   pcSPS->setCTUSize(1 << (uiCode + 2));
   pcSPS->setMaxCodingDepth(uiCode);
   pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode);
@@ -1419,20 +1330,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC(uiCode, "log2_min_luma_coding_block_size_minus2");
   int log2MinCUSize = uiCode + 2;
   pcSPS->setLog2MinCodingBlockSize(log2MinCUSize);
-
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoPartitionConstraintsOverrideConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "partition_constraints_override_enabled_flag");         pcSPS->setSplitConsOverrideEnabledFlag(uiCode);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setSplitConsOverrideEnabledFlag(false);
-  }
-#endif
-
+  READ_FLAG(uiCode, "partition_constraints_override_enabled_flag"); pcSPS->setSplitConsOverrideEnabledFlag(uiCode);
   READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_tile_group_luma");      minQT[0] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
   READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_tile_group");      minQT[1] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
   READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_tile_group");     maxBTD[1] = uiCode;
@@ -1478,45 +1376,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   // KJS: Not in syntax
   READ_UVLC( uiCode, "log2_max_luma_transform_block_size_minus2" ); pcSPS->setLog2MaxTbSize( uiCode + 2 );
 #endif
+  READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
+  READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoSaoConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "sps_sao_enabled_flag");                      pcSPS->setSAOEnabledFlag(uiCode ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setSAOEnabledFlag(false);
-  }
-#endif
-
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoAlfConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "sps_alf_enabled_flag");                      pcSPS->setALFEnabledFlag(uiCode ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setALFEnabledFlag(false);
-  }
-#endif
-
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoPcmConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "sps_pcm_enabled_flag");                          pcSPS->setPCMEnabledFlag(uiCode ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setPCMEnabledFlag(false);
-  }
-#endif
+  READ_FLAG( uiCode, "sps_pcm_enabled_flag" );                          pcSPS->setPCMEnabledFlag( uiCode ? true : false );
   if( pcSPS->getPCMEnabledFlag() )
   {
     READ_CODE( 4, uiCode, "pcm_sample_bit_depth_luma_minus1" );          pcSPS->setPCMBitDepth    ( CHANNEL_TYPE_LUMA, 1 + uiCode );
@@ -1526,42 +1389,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode, "pcm_loop_filter_disable_flag" );                 pcSPS->setPCMFilterDisableFlag ( uiCode ? true : false );
   }
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoRefWraparoundConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag(uiCode ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setWrapAroundEnabledFlag(false);
-  }
-#endif
+  READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );
 
   if (pcSPS->getWrapAroundEnabledFlag())
   {
     READ_UVLC(uiCode, "sps_ref_wraparound_offset_minus1");               pcSPS->setWrapAroundOffset( (uiCode+1)*(1 <<  pcSPS->getLog2MinCodingBlockSize()));
   }
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoTemporalMvpConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "sps_temporal_mvp_enabled_flag");                  pcSPS->setSPSTemporalMVPEnabledFlag(uiCode);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setSPSTemporalMVPEnabledFlag(false);
-  }
-#endif
+  READ_FLAG( uiCode, "sps_temporal_mvp_enabled_flag" );                  pcSPS->setSPSTemporalMVPEnabledFlag(uiCode);
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if ( pcSPS->getSPSTemporalMVPEnabledFlag() && !cinfo->getNoSbtmvpConstraintFlag() )
-#else
   if ( pcSPS->getSPSTemporalMVPEnabledFlag() )
-#endif
   {
     READ_FLAG( uiCode,    "sps_sbtmvp_enabled_flag" );                   pcSPS->setSBTMVPEnabledFlag      ( uiCode != 0 );
   }
@@ -1570,93 +1407,24 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setSBTMVPEnabledFlag(false);
   }
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoAmvrConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "sps_amvr_enabled_flag");                     pcSPS->setAMVREnabledFlag(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setAMVREnabledFlag(false);
-  }
-#endif
+  READ_FLAG( uiCode,  "sps_amvr_enabled_flag" );                     pcSPS->setAMVREnabledFlag ( uiCode != 0 );
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoBdofConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "sps_bdof_enabled_flag");                      pcSPS->setBDOFEnabledFlag(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setBDOFEnabledFlag(false);
-  }
-#endif
+  READ_FLAG( uiCode, "sps_bdof_enabled_flag" );                      pcSPS->setBDOFEnabledFlag ( uiCode != 0 );
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoAmvrConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "sps_affine_amvr_enabled_flag");             pcSPS->setAffineAmvrEnabledFlag(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setAffineAmvrEnabledFlag(false);
-  }
-#endif
+  READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );             pcSPS->setAffineAmvrEnabledFlag ( uiCode != 0 );
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoDmvrConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "sps_dmvr_enable_flag");                     pcSPS->setUseDMVR(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setUseDMVR(false);
-  }
-#endif
-
+  READ_FLAG(uiCode, "sps_dmvr_enable_flag");                        pcSPS->setUseDMVR(uiCode != 0);
 #if JVET_N0127_MMVD_SPS_FLAG
   READ_FLAG(uiCode, "sps_mmvd_enable_flag");                        pcSPS->setUseMMVD(uiCode != 0);
 #endif
   // KJS: sps_cclm_enabled_flag
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoCclmConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "lm_chroma_enabled_flag");                 pcSPS->setUseLMChroma(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setUseLMChroma(false);
-  }
-#endif
-
+  READ_FLAG( uiCode,    "lm_chroma_enabled_flag" );                 pcSPS->setUseLMChroma            ( uiCode != 0 );
   if ( pcSPS->getUseLMChroma() && pcSPS->getChromaFormatIdc() == CHROMA_420 )
   {
     READ_FLAG( uiCode,  "sps_cclm_collocated_chroma_flag" );        pcSPS->setCclmCollocatedChromaFlag( uiCode != 0 );
   }
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoMtsConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "mts_enabled_flag");                       pcSPS->setUseMTS(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setUseMTS(false);
-  }
-#endif
-
+  READ_FLAG( uiCode,    "mts_enabled_flag" );                       pcSPS->setUseMTS                 ( uiCode != 0 );
   if ( pcSPS->getUseMTS() )
   {
     READ_FLAG( uiCode,    "mts_intra_enabled_flag" );               pcSPS->setUseIntraMTS            ( uiCode != 0 );
@@ -1669,67 +1437,18 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "smvd_flag");                                   pcSPS->setUseSMVD                ( uiCode != 0 );
 #endif
   // KJS: sps_affine_enabled_flag
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoAffineMotionConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "affine_flag");                            pcSPS->setUseAffine(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setUseAffine(false);
-  }
-#endif
+  READ_FLAG( uiCode,    "affine_flag" );                            pcSPS->setUseAffine              ( uiCode != 0 );
   if ( pcSPS->getUseAffine() )
   {
     READ_FLAG( uiCode,  "affine_type_flag" );                       pcSPS->setUseAffineType          ( uiCode != 0 );
   }
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoGbiConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "gbi_flag");                               pcSPS->setUseGBi(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setUseGBi(false);
-  }
-#endif
-
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoIbcConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "ibc_flag");                                    pcSPS->setIBCFlag(uiCode);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setIBCFlag(false);
-  }
-#endif
+  READ_FLAG( uiCode,    "gbi_flag" );                               pcSPS->setUseGBi                 ( uiCode != 0 );
+  READ_FLAG(uiCode, "ibc_flag");                                    pcSPS->setIBCFlag(uiCode);
   // KJS: sps_ciip_enabled_flag
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoMhIntraConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "mhintra_flag");                           pcSPS->setUseMHIntra(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setUseMHIntra(false);
-  }
-#endif
+  READ_FLAG( uiCode,     "mhintra_flag" );                           pcSPS->setUseMHIntra             ( uiCode != 0 );
 
 #if JVET_N0127_MMVD_SPS_FLAG
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if ( pcSPS->getUseMMVD() && !cinfo->getNoFPelMmvdConstraintFlag() )
-#else
   if ( pcSPS->getUseMMVD() )
-#endif
   {
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
@@ -1737,35 +1456,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );               pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
 #endif
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoTriangleConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "triangle_flag");                          pcSPS->setUseTriangle(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setUseTriangle(false);
-  }
-#endif
+  READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
 
 #if JVET_N0217_MATRIX_INTRAPRED
   READ_FLAG( uiCode,    "sps_mip_flag");                            pcSPS->setUseMIP                 ( uiCode != 0 );
 #endif
   // KJS: not in draft yet
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoSbtConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setUseSBT(false);
-  }
-#endif
+  READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
   if( pcSPS->getUseSBT() )
   {
     READ_FLAG(uiCode, "max_sbt_size_64_flag");                      pcSPS->setMaxSbtSize(uiCode != 0 ? 64 : 32);
@@ -1777,18 +1474,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
-#if JVET_N0276_CONSTRAINT_FLAGS
-  if (!cinfo->getNoLadfConstraintFlag())
-  {
-#endif
-	  READ_FLAG(uiCode, "sps_ladf_enabled_flag");                     pcSPS->setLadfEnabled(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  }
-  else
-  {
-	  pcSPS->setLadfEnabled(false);
-  }
-#endif
+  READ_FLAG( uiCode, "sps_ladf_enabled_flag" );                     pcSPS->setLadfEnabled( uiCode != 0 );
   if ( pcSPS->getLadfEnabled() )
   {
     int signedSymbol = 0;
@@ -2072,14 +1758,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   PPS* pps = NULL;
   SPS* sps = NULL;
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-#if JVET_M0101_HLS
-  ConstraintInfo* cinfo;
-#else
-  SPS* cinfo;
-#endif
-#endif
-
   uint32_t firstSliceSegmentInPic;
   READ_FLAG( firstSliceSegmentInPic, "first_slice_segment_in_pic_flag" );
   if( pcSlice->getRapPicFlag())
@@ -2094,14 +1772,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   sps = parameterSetManager->getSPS(pps->getSPSId());
   //!KS: need to add error handling code here, if SPS is not available
   CHECK(sps==0, "Invalid SPS");
-
-#if JVET_N0276_CONSTRAINT_FLAGS
-#if JVET_M0101_HLS
-  cinfo = sps->getProfileTierLevel()->getConstraintInfo();
-#else
-  SPS* cinfo = sps;
-#endif
-#endif
 
   const ChromaFormat chFmt = sps->getChromaFormatIdc();
   const uint32_t numValidComp=getNumberValidComponents(chFmt);
@@ -2549,27 +2219,10 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       parsePredWeightTable(pcSlice, sps);
       pcSlice->initWpScaling(sps);
     }
-
-#if JVET_N0276_CONSTRAINT_FLAGS
-	if (!cinfo->getNoDepQuantConstraintFlag())
-	{
-#endif
-		READ_FLAG(uiCode, "dep_quant_enabled_flag");
-		pcSlice->setDepQuantEnabledFlag(uiCode != 0);
-#if JVET_N0276_CONSTRAINT_FLAGS
-	}
-	else
-	{
-		pcSlice->setDepQuantEnabledFlag(0);
-	}
-#endif
-
+    READ_FLAG( uiCode, "dep_quant_enabled_flag" );
+    pcSlice->setDepQuantEnabledFlag( uiCode != 0 );
 #if HEVC_USE_SIGN_HIDING
-#if JVET_N0276_CONSTRAINT_FLAGS
-	if( !pcSlice->getDepQuantEnabledFlag() && !cinfo->getNoSignDataHidingConstraintFlag() )
-#else
     if( !pcSlice->getDepQuantEnabledFlag() )
-#endif
     {
       READ_FLAG( uiCode, "sign_data_hiding_enabled_flag" );
       pcSlice->setSignDataHidingEnabledFlag( uiCode != 0 );
@@ -2865,9 +2518,6 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_CODE(2, symbol,  "max_chroma_format_constraint_idc"         ); cinfo->setMaxChromaFormatConstraintIdc((ChromaFormat)symbol);
 
   READ_FLAG(symbol,  "no_qtbtt_dual_tree_intra_constraint_flag" ); cinfo->setNoQtbttDualTreeIntraConstraintFlag(symbol > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(symbol, "no_partition_constraints_override_constraint_flag"); cinfo->setNoPartitionConstraintsOverrideConstraintFlag(symbol > 0 ? true : false);
-#endif
   READ_FLAG(symbol,  "no_sao_constraint_flag");                    cinfo->setNoSaoConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol,  "no_alf_constraint_flag");                    cinfo->setNoAlfConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol,  "no_pcm_constraint_flag");                    cinfo->setNoPcmConstraintFlag(symbol > 0 ? true : false);
@@ -2876,31 +2526,14 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol,  "no_sbtmvp_constraint_flag");                 cinfo->setNoSbtmvpConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol,  "no_amvr_constraint_flag");                   cinfo->setNoAmvrConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol,  "no_bdof_constraint_flag");                   cinfo->setNoBdofConstraintFlag(symbol > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(symbol, "no_dmvr_constraint_flag");                    cinfo->setNoDmvrConstraintFlag(symbol > 0 ? true : false);
-#endif
   READ_FLAG(symbol, "no_cclm_constraint_flag");                    cinfo->setNoCclmConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_mts_constraint_flag");                     cinfo->setNoMtsConstraintFlag(symbol > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(symbol, "no_sbt_constraint_flag");                     cinfo->setNoSbtConstraintFlag(symbol > 0 ? true : false);
-#endif
   READ_FLAG(symbol, "no_affine_motion_constraint_flag");           cinfo->setNoAffineMotionConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_gbi_constraint_flag");                     cinfo->setNoGbiConstraintFlag(symbol > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(symbol, "no_ibc_constraint_flag");                     cinfo->setNoIbcConstraintFlag(symbol > 0 ? true : false);
-#endif
   READ_FLAG(symbol, "no_mh_intra_constraint_flag");                cinfo->setNoMhIntraConstraintFlag(symbol > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(symbol, "no_fpel_mmvd_constraint_flag");               cinfo->setNoFPelMmvdConstraintFlag(symbol > 0 ? true : false);
-#endif
   READ_FLAG(symbol, "no_triangle_constraint_flag");                cinfo->setNoTriangleConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_ladf_constraint_flag");                    cinfo->setNoLadfConstraintFlag(symbol > 0 ? true : false);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_FLAG(symbol, "no_transform_skip_constraint_flag");          cinfo->setNoTransformSkipConstraintFlag(symbol > 0 ? true : false);
-#endif
-#if !JVET_N0276_CONSTRAINT_FLAGS
   READ_FLAG(symbol, "no_curr_pic_ref_constraint_flag");            cinfo->setNoCurrPicRefConstraintFlag(symbol > 0 ? true : false);
-#endif
   READ_FLAG(symbol, "no_qp_delta_constraint_flag");                cinfo->setNoQpDeltaConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_dep_quant_constraint_flag");               cinfo->setNoDepQuantConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_sign_data_hiding_constraint_flag");        cinfo->setNoSignDataHidingConstraintFlag(symbol > 0 ? true : false);
@@ -2912,9 +2545,7 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
   uint32_t symbol;
   READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
   READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  READ_CODE(24 , symbol,   "general_sub_profile_idc"         ); ptl->setSubProfileIdc  (symbol);
-#endif
+
   parseConstraintInfo( ptl->getConstraintInfo() );
 
   READ_CODE(8 , symbol,   "general_level_idc"                ); ptl->setLevelIdc    (Level::Name(symbol));

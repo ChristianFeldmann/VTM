@@ -88,9 +88,6 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setProfile                                           ( m_profile);
   m_cEncLib.setLevel                                             ( m_levelTier, m_level);
-#if JVET_N0276_CONSTRAINT_FLAGS
-  m_cEncLib.setSubProfile                                        ( m_subProfile);
-#endif
   m_cEncLib.setProgressiveSourceFlag                             ( m_progressiveSourceFlag);
   m_cEncLib.setInterlacedSourceFlag                              ( m_interlacedSourceFlag);
   m_cEncLib.setNonPackedConstraintFlag                           ( m_nonPackedConstraintFlag);
@@ -121,9 +118,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMaxChromaFormatConstraintIdc                      ( m_chromaFormatConstraint );
   m_cEncLib.setFrameConstraintFlag                               ( m_bFrameConstraintFlag );
   m_cEncLib.setNoQtbttDualTreeIntraConstraintFlag                ( !m_dualTree );
-#if JVET_N0276_CONSTRAINT_FLAGS
-  m_cEncLib.setNoPartitionConstraintsOverrideConstraintFlag      ( !m_SplitConsOverrideEnabledFlag);
-#endif
   m_cEncLib.setNoSaoConstraintFlag                               ( !m_bUseSAO );
   m_cEncLib.setNoAlfConstraintFlag                               ( !m_alf );
   m_cEncLib.setNoPcmConstraintFlag                               ( !m_usePCM );
@@ -132,31 +126,14 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoSbtmvpConstraintFlag                            ( m_SubPuMvpMode ? false : true );
   m_cEncLib.setNoAmvrConstraintFlag                              ( m_bNoAmvrConstraintFlag );
   m_cEncLib.setNoBdofConstraintFlag                              ( !m_BIO );
-#if JVET_N0276_CONSTRAINT_FLAGS
-  m_cEncLib.setNoDmvrConstraintFlag                              ( !m_DMVR );
-#endif
   m_cEncLib.setNoCclmConstraintFlag                              ( m_LMChroma ? false : true );
   m_cEncLib.setNoMtsConstraintFlag                               ( (m_MTS || m_MTSImplicit) ? false : true );
-#if JVET_N0276_CONSTRAINT_FLAGS
-  m_cEncLib.setNoSbtConstraintFlag                               ( !m_SBT );
-#endif
   m_cEncLib.setNoAffineMotionConstraintFlag                      ( !m_Affine );
   m_cEncLib.setNoGbiConstraintFlag                               ( !m_GBi );
-#if JVET_N0276_CONSTRAINT_FLAGS
-  m_cEncLib.setNoIbcConstraintFlag                               (m_IBCMode ? false : true );
-#endif
   m_cEncLib.setNoMhIntraConstraintFlag                           ( !m_MHIntra );
-#if JVET_N0276_CONSTRAINT_FLAGS
-  m_cEncLib.setNoFPelMmvdConstraintFlag                          ( !(m_MMVD && m_allowDisFracMMVD) );
-#endif
   m_cEncLib.setNoTriangleConstraintFlag                          ( !m_Triangle );
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
-#if JVET_N0276_CONSTRAINT_FLAGS
-  m_cEncLib.setNoTransformSkipConstraintFlag                     ( !m_useTransformSkip );
-#endif
-#if !JVET_N0276_CONSTRAINT_FLAGS
   m_cEncLib.setNoCurrPicRefConstraintFlag                        ( !m_IBCMode );
-#endif
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
   m_cEncLib.setNoSignDataHidingConstraintFlag                    ( !m_signDataHidingEnabledFlag );

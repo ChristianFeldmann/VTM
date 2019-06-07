@@ -50,8 +50,6 @@
 #include <assert.h>
 #include <cassert>
  
-#define JVET_N0276_CONSTRAINT_FLAGS                       1 // JVET-N0276: On interoperability point signalling
-
 #define JVET_N0063_VUI                                    1 // JVET-N0063: Video Usability Information
 
 #define JVET_N0847_SCALING_LISTS                          1  //1: default mode, 2: user defined mode

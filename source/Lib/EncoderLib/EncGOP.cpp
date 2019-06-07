@@ -228,37 +228,22 @@ int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
 }
 #endif
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-int EncGOP::xWriteSPS(AccessUnit &accessUnit, const SPS *sps, const ConstraintInfo* cinfo)
-#else
+
 int EncGOP::xWriteSPS (AccessUnit &accessUnit, const SPS *sps)
-#endif
 {
   OutputNALUnit nalu(NAL_UNIT_SPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
-#if JVET_N0276_CONSTRAINT_FLAGS
-  m_HLSWriter->codeSPS(sps, cinfo);
-#else
   m_HLSWriter->codeSPS( sps );
-#endif
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 
 }
 
-#if JVET_N0276_CONSTRAINT_FLAGS
-int EncGOP::xWritePPS(AccessUnit &accessUnit, const PPS *pps, const ConstraintInfo* cinfo)
-#else
 int EncGOP::xWritePPS (AccessUnit &accessUnit, const PPS *pps)
-#endif
 {
   OutputNALUnit nalu(NAL_UNIT_PPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
-#if JVET_N0276_CONSTRAINT_FLAGS
-  m_HLSWriter->codePPS(pps, cinfo);
-#else
   m_HLSWriter->codePPS( pps );
-#endif
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
@@ -292,19 +277,11 @@ int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const boo
   if (m_pcEncLib->SPSNeedsWriting(slice->getSPS()->getSPSId())) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
   {
     CHECK(!(bSeqFirst), "Unspecified error"); // Implementations that use more than 1 SPS need to be aware of activation issues.
-#if JVET_N0276_CONSTRAINT_FLAGS
-    actualTotalBits += xWriteSPS(accessUnit, slice->getSPS(), m_pcEncLib->getDPS()->getProfileTierLevel().getConstraintInfo());
-#else
     actualTotalBits += xWriteSPS(accessUnit, slice->getSPS());
-#endif
   }
   if (m_pcEncLib->PPSNeedsWriting(slice->getPPS()->getPPSId())) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
   {
-#if JVET_N0276_CONSTRAINT_FLAGS
-    actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), m_pcEncLib->getDPS()->getProfileTierLevel().getConstraintInfo());
-#else
     actualTotalBits += xWritePPS(accessUnit, slice->getPPS());
-#endif
   }
 
   return actualTotalBits;

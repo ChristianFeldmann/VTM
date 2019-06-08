@@ -2852,7 +2852,7 @@ uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chTy
 }
 
 #if ENABLE_TRACING
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
 void xTraceVPSHeader()
 {
   DTRACE( g_trace_ctx, D_HEADER, "=========== Video Parameter Set     ===========\n" );

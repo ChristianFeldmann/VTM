@@ -73,11 +73,11 @@ bool StreamMergeAppCfg::parseCfg(int argc, char* argv[])
   po::Options opts;
   opts.addOptions()
 
-    ("help", do_help, false, "this help text")
-    ("BitstreamFileIn0,-a", m_bitstreamFileNameIn[0], string(""), "bitstream input file name")
-    ("BitstreamFileIn1,-b", m_bitstreamFileNameIn[1], string(""), "bitstream input file name")
-    ("BitstreamFileOut,o", m_bitstreamFileNameOut, string(""), "bitstream output file name")
-    ;
+  ("help", do_help, false, "this help text")
+  ("BitstreamFileIn0,-a", m_bitstreamFileNameIn[0], string(""), "bitstream input file name")
+  ("BitstreamFileIn1,-b", m_bitstreamFileNameIn[1], string(""), "bitstream input file name")
+  ("BitstreamFileOut,o", m_bitstreamFileNameOut, string(""), "bitstream output file name")
+  ;
 
   po::setDefaults(opts);
   po::ErrorReporter err;

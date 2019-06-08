@@ -1291,8 +1291,8 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   WRITE_CODE(pcVPS->getMaxLayers() - 1, 8, "vps_max_layers_minus1");
   for (uint32_t i = 0; i <= pcVPS->getMaxLayers() - 1; i++)
   {
-  	WRITE_CODE(pcVPS->getVPSIncludedLayerId(i), 7, "vps_included_layer_id");
-	  WRITE_FLAG(0, "vps_reserved_zero_1bit");
+    WRITE_CODE(pcVPS->getVPSIncludedLayerId(i), 7, "vps_included_layer_id");
+    WRITE_FLAG(0, "vps_reserved_zero_1bit");
   }
 
   WRITE_FLAG(0, "vps_extension_flag");

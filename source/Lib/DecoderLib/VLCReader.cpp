@@ -1757,17 +1757,17 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   READ_CODE(8, uiCode, "vps_max_layers_minus1");              pcVPS->setMaxLayers(uiCode + 1);    CHECK(uiCode + 1 > MAX_VPS_LAYERS, "Invalid code");
   for (uint32_t i = 0; i <= pcVPS->getMaxLayers() - 1; i++)
   {
-  	READ_CODE(7, uiCode, "vps_included_layer_id");          pcVPS->setVPSIncludedLayerId(uiCode, i);
-	READ_FLAG(uiCode, "vps_reserved_zero_1bit");
+    READ_CODE(7, uiCode, "vps_included_layer_id");          pcVPS->setVPSIncludedLayerId(uiCode, i);
+    READ_FLAG(uiCode, "vps_reserved_zero_1bit");
   }
 
   READ_FLAG(uiCode, "vps_extension_flag");
   if (uiCode)
   {
-  	while (xMoreRbspData())
-  	{
-	  READ_FLAG(uiCode, "vps_extension_data_flag");
-	}
+    while (xMoreRbspData())
+    {
+      READ_FLAG(uiCode, "vps_extension_data_flag");
+    }
   }
 
   xReadRbspTrailingBits();

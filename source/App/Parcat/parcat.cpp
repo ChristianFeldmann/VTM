@@ -231,7 +231,7 @@ const char * NALU_TYPE[] =
 #if HEVC_VPS
     "VPS_NUT",
 #elif JVET_N0278_HLS
-	  "VPS_NUT",
+    "VPS_NUT",
 #else
     "unk",
 #endif

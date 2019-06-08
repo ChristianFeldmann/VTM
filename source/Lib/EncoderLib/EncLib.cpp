@@ -895,7 +895,7 @@ void EncLib::xInitVPS(VPS &vps)
   vps.setMaxLayers(1);
   for (uint32_t i = 0; i < vps.getMaxLayers(); i++)
   {
-	  vps.setVPSIncludedLayerId(0, i);
+    vps.setVPSIncludedLayerId(0, i);
   }
 }
 #endif

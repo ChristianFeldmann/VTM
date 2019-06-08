@@ -2634,7 +2634,7 @@ public:
 };
 
 #if ENABLE_TRACING
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
 void xTraceVPSHeader();
 #endif
 #if JVET_N0349_DPS

@@ -75,119 +75,119 @@ public:
 class SingleLayerStream
 {
 public:
-	/**
-	* Create a bytestream reader that will extract bytes from
-	* istream.
-	*
-	* NB, it isn't safe to access istream while in use by a
-	* InputByteStream.
-	*
-	* Side-effects: the exception mask of istream is set to eofbit
-	*/
-	SingleLayerStream()
-		: m_NumFutureBytes(0)
-		, m_FutureBytes(0)
-	{
-	}
+  /**
+  * Create a bytestream reader that will extract bytes from
+  * istream.
+  *
+  * NB, it isn't safe to access istream while in use by a
+  * InputByteStream.
+  *
+  * Side-effects: the exception mask of istream is set to eofbit
+  */
+  SingleLayerStream()
+    : m_numFutureBytes(0)
+    , m_futureBytes(0)
+  {
+  }
 
-	/**
-	* Reset the internal state.  Must be called if input stream is
-	* modified externally to this class
-	*/
-	void reset()
-	{
-		m_NumFutureBytes = 0;
-		m_FutureBytes = 0;
-	}
+  /**
+  * Reset the internal state.  Must be called if input stream is
+  * modified externally to this class
+  */
+  void reset()
+  {
+    m_numFutureBytes = 0;
+    m_futureBytes = 0;
+  }
 
-	void init(std::istream& istream)
-	{
-		istream.exceptions(std::istream::eofbit | std::istream::badbit);
-	}
+  void init(std::istream& istream)
+  {
+    istream.exceptions(std::istream::eofbit | std::istream::badbit);
+  }
 
-	/**
-	* returns true if an EOF will be encountered within the next
-	* n bytes.
-	*/
-	bool eofBeforeNBytes(uint32_t n, std::istream& m_Input)
-	{
-		CHECK(n > 4, "Unsupported look-ahead value");
-		if (m_NumFutureBytes >= n)
-		{
-			return false;
-		}
+  /**
+  * returns true if an EOF will be encountered within the next
+  * n bytes.
+  */
+  bool eofBeforeNBytes(uint32_t n, std::istream& m_Input)
+  {
+    CHECK(n > 4, "Unsupported look-ahead value");
+    if (m_numFutureBytes >= n)
+    {
+      return false;
+    }
 
-		n -= m_NumFutureBytes;
-		try
-		{
-			for (uint32_t i = 0; i < n; i++)
-			{
-				m_FutureBytes = (m_FutureBytes << 8) | m_Input.get();
-				m_NumFutureBytes++;
-			}
-		}
-		catch (...)
-		{
-			return true;
-		}
-		return false;
-	}
+    n -= m_numFutureBytes;
+    try
+    {
+      for (uint32_t i = 0; i < n; i++)
+      {
+        m_futureBytes = (m_futureBytes << 8) | m_Input.get();
+          m_numFutureBytes++;
+      }
+    }
+    catch (...)
+    {
+      return true;
+    }
+    return false;
+  }
 
-	/**
-	* return the next n bytes in the stream without advancing
-	* the stream pointer.
-	*
-	* Returns: an unsigned integer representing an n byte bigendian
-	* word.
-	*
-	* If an attempt is made to read past EOF, an n-byte word is
-	* returned, but the portion that required input bytes beyond EOF
-	* is undefined.
-	*
-	*/
-	uint32_t peekBytes(uint32_t n, std::istream& m_Input)
-	{
-		eofBeforeNBytes(n, m_Input);
-		return m_FutureBytes >> 8 * (m_NumFutureBytes - n);
-	}
+  /**
+  * return the next n bytes in the stream without advancing
+  * the stream pointer.
+  *
+  * Returns: an unsigned integer representing an n byte bigendian
+  * word.
+  *
+  * If an attempt is made to read past EOF, an n-byte word is
+  * returned, but the portion that required input bytes beyond EOF
+  * is undefined.
+  *
+  */
+  uint32_t peekBytes(uint32_t n, std::istream& m_Input)
+  {
+    eofBeforeNBytes(n, m_Input);
+    return m_futureBytes >> 8 * (m_numFutureBytes - n);
+  }
 
-	/**
-	* consume and return one byte from the input.
-	*
-	* If bytestream is already at EOF prior to a call to readByte(),
-	* an exception std::ios_base::failure is thrown.
-	*/
-	uint8_t readByte(std::istream& m_Input)
-	{
-		if (!m_NumFutureBytes)
-		{
-			uint8_t byte = m_Input.get();
-			return byte;
-		}
-		m_NumFutureBytes--;
-		uint8_t wanted_byte = m_FutureBytes >> 8 * m_NumFutureBytes;
-		m_FutureBytes &= ~(0xff << 8 * m_NumFutureBytes);
-		return wanted_byte;
-	}
+  /**
+  * consume and return one byte from the input.
+  *
+  * If bytestream is already at EOF prior to a call to readByte(),
+  * an exception std::ios_base::failure is thrown.
+  */
+  uint8_t readByte(std::istream& m_Input)
+  {
+    if (!m_numFutureBytes)
+    {
+      uint8_t byte = m_Input.get();
+      return byte;
+    }
+    m_numFutureBytes--;
+    uint8_t wanted_byte = m_futureBytes >> 8 * m_numFutureBytes;
+    m_futureBytes &= ~(0xff << 8 * m_numFutureBytes);
+    return wanted_byte;
+  }
 
-	/**
-	* consume and return n bytes from the input.  n bytes from
-	* bytestream are interpreted as bigendian when assembling
-	* the return value.
-	*/
-	uint32_t readBytes(uint32_t n, std::istream& m_Input)
-	{
-		uint32_t val = 0;
-		for (uint32_t i = 0; i < n; i++)
-		{
-			val = (val << 8) | readByte(m_Input);
-		}
-		return val;
-	}
+  /**
+  * consume and return n bytes from the input.  n bytes from
+  * bytestream are interpreted as bigendian when assembling
+  * the return value.
+  */
+  uint32_t readBytes(uint32_t n, std::istream& m_Input)
+  {
+    uint32_t val = 0;
+    for (uint32_t i = 0; i < n; i++)
+    {
+      val = (val << 8) | readByte(m_Input);
+    }
+    return val;
+  }
 
 private:
-	uint32_t m_NumFutureBytes; /* number of valid bytes in m_FutureBytes */
-	uint32_t m_FutureBytes; /* bytes that have been peeked */
+  uint32_t m_numFutureBytes; /* number of valid bytes in m_futureBytes */
+  uint32_t m_futureBytes; /* bytes that have been peeked */
 };
 
 bool byteStreamNALUnit(SingleLayerStream& bs, std::istream& istream, vector<uint8_t>& nalUnit, AnnexBStats& stats);

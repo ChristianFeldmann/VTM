@@ -1314,6 +1314,17 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   {
 
 #if JVET_N0178_IMPLICIT_BDOF_SPLIT
+#if JVET_N0266_SMALL_BLOCKS
+    CHECK( !pu.cu->affine && pu.refIdx[0] >= 0 && pu.refIdx[1] >= 0 && ( pu.lwidth() + pu.lheight() == 12 ), "invalid 4x8/8x4 bi-predicted blocks" );
+#endif
+#if JVET_N0146_DMVR_BDOF_CONDITION
+    WPScalingParam *wp0;
+    WPScalingParam *wp1;
+    int refIdx0 = pu.refIdx[REF_PIC_LIST_0];
+    int refIdx1 = pu.refIdx[REF_PIC_LIST_1];
+    pu.cs->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
+    pu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
+#endif
     bool bioApplied = false;
     const Slice &slice = *pu.cs->slice;
     if (pu.cs->sps->getBDOFEnabledFlag())
@@ -1325,12 +1336,20 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
       }
       else
       {
+#if JVET_N0146_DMVR_BDOF_CONDITION
+        const bool biocheck0 = !((wp0[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Y].bPresentFlag) && slice.getSliceType() == B_SLICE);
+#else
         const bool biocheck0 = !(pps.getWPBiPred() && slice.getSliceType() == B_SLICE);
+#endif
         const bool biocheck1 = !(pps.getUseWP() && slice.getSliceType() == P_SLICE);
         if (biocheck0
           && biocheck1
           && PU::isBiPredFromDifferentDir(pu)
+#if JVET_N0266_SMALL_BLOCKS
+          && pu.Y().height != 4
+#else
           && !(pu.Y().height == 4 || (pu.Y().width == 4 && pu.Y().height == 8))
+#endif
           )
         {
           bioApplied = true;
@@ -1338,15 +1357,15 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
       }
 
       if (bioApplied && pu.cu->smvdMode)
-	  {
+      {
         bioApplied = false;
       }
       if (pu.cu->cs->sps->getUseGBi() && bioApplied && pu.cu->GBiIdx != GBI_DEFAULT)
-	  {
+      {
         bioApplied = false;
       }
       if (pu.mmvdEncOptMode == 2 && pu.mmvdMergeFlag)
-	  {
+      {
         bioApplied = false;
       }
     }

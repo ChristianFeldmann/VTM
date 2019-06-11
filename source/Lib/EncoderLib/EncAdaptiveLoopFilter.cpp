@@ -2286,6 +2286,9 @@ double EncAdaptiveLoopFilter::deriveCoeffQuant( int *filterCoeffQuant, double **
 #endif
 {
   const int factor = 1 << ( bitDepth - 1 );
+  const int max_value = factor - 1;
+  const int min_value = -factor;
+
 #if JVET_N0242_NON_LINEAR_ALF
 const int numCoeff = shape.numCoeff;
 #else
@@ -2300,9 +2303,6 @@ const int numCoeff = shape.numCoeff;
 #endif
   roundFiltCoeff( filterCoeffQuant, filterCoeff, numCoeff, factor );
 #if JVET_N0242_NON_LINEAR_ALF
-
-  const int max_value = factor - 1;
-  const int min_value = -factor;
 
   for ( int i = 0; i < numCoeff - 1; i++ )
   {
@@ -2395,9 +2395,6 @@ const int numCoeff = shape.numCoeff;
   {
     memset( filterCoeffQuant, 0, sizeof( int ) * numCoeff );
   }
-
-  int max_value = factor - 1;
-  int min_value = -factor;
 
   for ( int i = 0; i < numCoeff - 1; i++ )
   {

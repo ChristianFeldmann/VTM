@@ -683,23 +683,15 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   if( pcPPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     READ_CODE( 2, uiCode, "pps_num_ver_virtual_boundaries");        pcPPS->setNumVerVirtualBoundaries( uiCode );
-    int numBits = 1;
-    uint32_t picWidthDivBy8 = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicWidthInLumaSamples() >> 3; // pcPPS->getPicWidthInLumaSamples() >> 3;
-    while( picWidthDivBy8 >>= 1 )
-    {
-      numBits++;
-    }
+    uint32_t picWidth = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicWidthInLumaSamples(); // pcPPS->getPicWidthInLumaSamples();
+    int numBits = (int)ceil(log2(picWidth) - 3);
     for( unsigned i = 0; i < pcPPS->getNumVerVirtualBoundaries(); i++ )
     {
       READ_CODE( numBits, uiCode, "pps_virtual_boundaries_pos_x" ); pcPPS->setVirtualBoundariesPosX( uiCode << 3, i );
     }
     READ_CODE( 2, uiCode, "pps_num_hor_virtual_boundaries");        pcPPS->setNumHorVirtualBoundaries( uiCode );
-    numBits = 1;
-    uint32_t picHeightDivBy8 = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicHeightInLumaSamples() >> 3; // pcPPS->getPicHeightInLumaSamples() >> 3;
-    while( picHeightDivBy8 >>= 1 )
-    {
-      numBits++;
-    }
+    uint32_t picHeight = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicHeightInLumaSamples(); // pcPPS->getPicHeightInLumaSamples();
+    numBits = (int)ceil(log2(picHeight) - 3);
     for( unsigned i = 0; i < pcPPS->getNumHorVirtualBoundaries(); i++ )
     {
       READ_CODE( numBits, uiCode, "pps_virtual_boundaries_pos_y" ); pcPPS->setVirtualBoundariesPosY( uiCode << 3, i );

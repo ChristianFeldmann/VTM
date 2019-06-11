@@ -2808,7 +2808,6 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
             {
               const ComponentID compID = ComponentID( compIdx );
               const CompArea& compArea = area.block( compID );
-              const CompArea& compAreaDst = areaDst.block( compID );
 
               int  recStride = recBuf.get( compID ).stride;
               Pel* rec = recBuf.get( compID ).bufAt( compArea );
@@ -2822,6 +2821,7 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
               {
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 #if JVET_N0242_NON_LINEAR_ALF
+              const CompArea& compAreaDst = areaDst.block( compID );
                 getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compAreaDst, compArea, chType
                   , ((compIdx == 0) ? m_alfVBLumaCTUHeight : m_alfVBChmaCTUHeight)
                   , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))

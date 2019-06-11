@@ -122,6 +122,9 @@ protected:
   uint32_t  m_maxChromaFormatConstraintIdc;
   bool      m_bFrameConstraintFlag;
   bool      m_bNoQtbttDualTreeIntraConstraintFlag;
+#if JVET_N0276_CONSTRAINT_FLAGS
+  bool      m_noPartitionConstraintsOverrideConstraintFlag;
+#endif
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
   bool      m_bNoPcmConstraintFlag;
@@ -130,14 +133,31 @@ protected:
   bool      m_bNoSbtmvpConstraintFlag;
   bool      m_bNoAmvrConstraintFlag;
   bool      m_bNoBdofConstraintFlag;
+#if JVET_N0276_CONSTRAINT_FLAGS
+  bool      m_noDmvrConstraintFlag;
+#endif
   bool      m_bNoCclmConstraintFlag;
   bool      m_bNoMtsConstraintFlag;
+#if JVET_N0276_CONSTRAINT_FLAGS
+  bool      m_noSbtConstraintFlag;
+#endif
   bool      m_bNoAffineMotionConstraintFlag;
   bool      m_bNoGbiConstraintFlag;
+#if JVET_N0276_CONSTRAINT_FLAGS
+  bool      m_noIbcConstraintFlag;
+#endif
   bool      m_bNoMhIntraConstraintFlag;
+#if JVET_N0276_CONSTRAINT_FLAGS
+  bool      m_noFPelMmvdConstraintFlag;
+#endif
   bool      m_bNoTriangleConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
+#if JVET_N0276_CONSTRAINT_FLAGS
+  bool      m_noTransformSkipConstraintFlag;
+#endif
+#if !JVET_N0276_CONSTRAINT_FLAGS
   bool      m_bNoCurrPicRefConstraintFlag;
+#endif
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;

@@ -907,6 +907,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setMaxChromaFormatConstraintIdc(m_maxChromaFormatConstraintIdc);
   sps.setFrameConstraintFlag(m_frameOnlyConstraintFlag);
   sps.setNoQtbttDualTreeIntraConstraintFlag(m_bNoQtbttDualTreeIntraConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoPartitionConstraintsOverrideConstraintFlag(m_noPartitionConstraintsOverrideConstraintFlag);
+#endif
   sps.setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
   sps.setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
   sps.setNoPcmConstraintFlag(m_bNoPcmConstraintFlag);
@@ -915,14 +918,31 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
   sps.setNoAmvrConstraintFlag(m_bNoAmvrConstraintFlag);
   sps.setNoBdofConstraintFlag(m_bNoBdofConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoDmvrConstraintFlag(m_noDmvrConstraintFlag);
+#endif
   sps.setNoCclmConstraintFlag(m_bNoCclmConstraintFlag);
   sps.setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoSbtConstraintFlag(m_noSbtConstraintFlag);
+#endif
   sps.setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
   sps.setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoIbcConstraintFlag(m_noIbcConstraintFlag);
+#endif
   sps.setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoFPelMmvdConstraintFlag(m_noFPelMmvdConstraintFlag);
+#endif
   sps.setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
   sps.setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoTransformSkipConstraintFlag(m_noTransformSkipConstraintFlag);
+#endif
+#if !JVET_N0276_CONSTRAINT_FLAGS
   sps.setNoCurrPicRefConstraintFlag(m_bNoCurrPicRefConstraintFlag);
+#endif
   sps.setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
   sps.setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
   sps.setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
@@ -963,6 +983,9 @@ void EncLib::xInitSPS(SPS &sps)
   cinfo->setMaxBitDepthConstraintIdc    (m_maxBitDepthConstraintIdc);
   cinfo->setMaxChromaFormatConstraintIdc((ChromaFormat)m_maxChromaFormatConstraintIdc);
   cinfo->setNoQtbttDualTreeIntraConstraintFlag(m_bNoQtbttDualTreeIntraConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoPartitionConstraintsOverrideConstraintFlag(m_noPartitionConstraintsOverrideConstraintFlag);
+#endif
   cinfo->setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
   cinfo->setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
   cinfo->setNoPcmConstraintFlag(m_bNoPcmConstraintFlag);
@@ -971,14 +994,31 @@ void EncLib::xInitSPS(SPS &sps)
   cinfo->setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
   cinfo->setNoAmvrConstraintFlag(m_bNoAmvrConstraintFlag);
   cinfo->setNoBdofConstraintFlag(m_bNoBdofConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoDmvrConstraintFlag(m_noDmvrConstraintFlag);
+#endif
   cinfo->setNoCclmConstraintFlag(m_bNoCclmConstraintFlag);
   cinfo->setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoSbtConstraintFlag(m_noSbtConstraintFlag);
+#endif
   cinfo->setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
   cinfo->setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoIbcConstraintFlag(m_noIbcConstraintFlag);
+#endif
   cinfo->setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoFPelMmvdConstraintFlag(m_noFPelMmvdConstraintFlag);
+#endif
   cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoTransformSkipConstraintFlag(m_noTransformSkipConstraintFlag);
+#endif
+#if !JVET_N0276_CONSTRAINT_FLAGS
   cinfo->setNoCurrPicRefConstraintFlag(m_bNoCurrPicRefConstraintFlag);
+#endif
   cinfo->setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
   cinfo->setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
   cinfo->setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);

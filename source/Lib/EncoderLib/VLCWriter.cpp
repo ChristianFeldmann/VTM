@@ -1813,6 +1813,9 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
 {
   WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
   WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
+#if JVET_N0276_CONSTRAINT_FLAGS
+  WRITE_CODE( ptl->getSubProfileIdc(), 24,      "general_sub_profile_idc"                );
+#endif
 
   codeConstraintInfo(ptl->getConstraintInfo());
 
@@ -1884,6 +1887,7 @@ void HLSWriter::codeProfileTier( const ProfileTierLevel* ptl, const bool /*bIsSu
 {
   WRITE_CODE( ptl->getProfileSpace(), 2 ,      PTL_TRACE_TEXT("profile_space"                   ));
   WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, PTL_TRACE_TEXT("tier_flag"                       ));
+
   WRITE_CODE( int(ptl->getProfileIdc()), 5 ,   PTL_TRACE_TEXT("profile_idc"                     ));
   for(int j = 0; j < 32; j++)
   {

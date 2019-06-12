@@ -166,6 +166,9 @@ protected:
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
   Level::Name   m_level;
+#if JVET_N0276_CONSTRAINT_FLAGS
+  uint32_t      m_subProfile;
+#endif
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
   bool          m_intraConstraintFlag;

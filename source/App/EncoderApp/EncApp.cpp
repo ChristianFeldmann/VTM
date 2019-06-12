@@ -88,6 +88,9 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setProfile                                           ( m_profile);
   m_cEncLib.setLevel                                             ( m_levelTier, m_level);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  m_cEncLib.setSubProfile                                        ( m_subProfile );
+#endif
   m_cEncLib.setProgressiveSourceFlag                             ( m_progressiveSourceFlag);
   m_cEncLib.setInterlacedSourceFlag                              ( m_interlacedSourceFlag);
   m_cEncLib.setNonPackedConstraintFlag                           ( m_nonPackedConstraintFlag);

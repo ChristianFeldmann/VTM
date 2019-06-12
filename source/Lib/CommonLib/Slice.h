@@ -403,6 +403,9 @@ class ProfileTierLevel
 #if !JVET_M0101_HLS
   bool              m_profileCompatibilityFlag[32];
 #endif
+#if JVET_N0276_CONSTRAINT_FLAGS
+  uint32_t          m_subProfileIdc;
+#endif
   Level::Name       m_levelIdc;
 
 #if !JVET_M0101_HLS
@@ -433,6 +436,11 @@ public:
 
   Profile::Name getProfileIdc() const                       { return m_profileIdc;                  }
   void          setProfileIdc(Profile::Name x)              { m_profileIdc = x;                     }
+
+#if JVET_N0276_CONSTRAINT_FLAGS
+  uint32_t      getSubProfileIdc() const                    { return m_subProfileIdc;               }
+  void          setSubProfileIdc(uint32_t x)                { m_subProfileIdc = x;                  }
+#endif
 
 #if !JVET_M0101_HLS
   bool          getProfileCompatibilityFlag(int i) const    { return m_profileCompatibilityFlag[i]; }

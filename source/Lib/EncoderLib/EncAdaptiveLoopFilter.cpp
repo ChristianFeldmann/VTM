@@ -1190,7 +1190,7 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
 #else
               m_filter7x7Blk(m_classifier, recBuf, recExtBuf, blk, compID, coeff, clipp, m_clpRngs.comp[compIdx], cs
                 , m_alfVBLumaCTUHeight
-                , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+                , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight+4 : m_alfVBLumaPos)
               );
 #endif
 #else
@@ -1202,7 +1202,7 @@ void EncAdaptiveLoopFilter::alfEncoder( CodingStructure& cs, AlfSliceParam& alfS
 #else
               m_filter7x7Blk(m_classifier, recBuf, recExtBuf, blk, compID, coeff, m_clpRngs.comp[compIdx], cs
                 , m_alfVBLumaCTUHeight
-                , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+                , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight+4 : m_alfVBLumaPos)
               );
 #endif
 #endif
@@ -2892,7 +2892,7 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
 #else
           getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compArea, chType
             , ((compIdx == 0) ? m_alfVBLumaCTUHeight : m_alfVBChmaCTUHeight)
-            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))        
+            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight+4 : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))        
           );
 #endif
 #else
@@ -2904,7 +2904,7 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
 #else
           getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compArea
             , ((compIdx == 0) ? m_alfVBLumaCTUHeight : m_alfVBChmaCTUHeight)
-            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))
+            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight+4 : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))
           );
 #endif
 #endif

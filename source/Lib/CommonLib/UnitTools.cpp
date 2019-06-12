@@ -3954,7 +3954,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       MotionInfo mi[4];
       bool isAvailable[4] = { false };
 #if JVET_N0481_BCW_CONSTRUCTED_AFFINE
-      int8_t neighGbi[4] = { GBI_DEFAULT };
+      int8_t neighGbi[4] = { GBI_DEFAULT, GBI_DEFAULT, GBI_DEFAULT, GBI_DEFAULT };
 #endif
       // control point: LT B2->B3->A2
       const Position posLT[3] = { pu.Y().topLeft().offset( -1, -1 ), pu.Y().topLeft().offset( 0, -1 ), pu.Y().topLeft().offset( -1, 0 ) };

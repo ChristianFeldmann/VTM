@@ -2752,6 +2752,9 @@ ProfileTierLevel::ProfileTierLevel()
   : m_profileSpace    (0)
   , m_tierFlag        (Level::MAIN)
   , m_profileIdc      (Profile::NONE)
+#if JVET_N0276_CONSTRAINT_FLAGS
+  , m_subProfileIdc   (0)
+#endif
   , m_levelIdc        (Level::NONE)
   , m_progressiveSourceFlag  (false)
   , m_interlacedSourceFlag   (false)
@@ -2770,6 +2773,9 @@ PTL::PTL()
 ProfileTierLevel::ProfileTierLevel()
   : m_tierFlag        (Level::MAIN)
   , m_profileIdc      (Profile::NONE)
+#if JVET_N0276_CONSTRAINT_FLAGS
+  , m_subProfileIdc   (0)
+#endif
   , m_levelIdc        (Level::NONE)
 {
   ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));

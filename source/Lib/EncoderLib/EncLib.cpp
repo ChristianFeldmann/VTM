@@ -951,6 +951,9 @@ void EncLib::xInitSPS(SPS &sps)
   profileTierLevel.setLevelIdc                    (m_level);
   profileTierLevel.setTierFlag                    (m_levelTier);
   profileTierLevel.setProfileIdc                  (m_profile);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  profileTierLevel.setSubProfileIdc               (m_subProfile);
+#endif
   profileTierLevel.setProfileCompatibilityFlag    (m_profile, 1);
   profileTierLevel.setProgressiveSourceFlag       (m_progressiveSourceFlag);
   profileTierLevel.setInterlacedSourceFlag        (m_interlacedSourceFlag);
@@ -1026,6 +1029,9 @@ void EncLib::xInitSPS(SPS &sps)
   profileTierLevel->setLevelIdc                    (m_level);
   profileTierLevel->setTierFlag                    (m_levelTier);
   profileTierLevel->setProfileIdc                  (m_profile);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  profileTierLevel->setSubProfileIdc               (m_subProfile);
+#endif
 
 #endif
   /* XXX: should Main be marked as compatible with still picture? */

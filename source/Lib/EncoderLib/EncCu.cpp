@@ -2600,7 +2600,8 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         }
         else
         {
-          if (RdModeList[uiMrgHADIdx].isMMVD) {
+          if (RdModeList[uiMrgHADIdx].isMMVD)
+          {
             pu.mmvdEncOptMode = 0;
             m_pcInterSearch->motionCompensation(pu);
           }

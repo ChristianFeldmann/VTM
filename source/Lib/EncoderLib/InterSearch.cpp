@@ -2629,19 +2629,19 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           pu.refIdx[REF_PIC_LIST_1] = iRefIdxBi[1];
           pu.mvpIdx[REF_PIC_LIST_1] = bestBiPMvpL1;
 
-            if( m_pcEncCfg->getMCTSEncConstraint() )
+          if( m_pcEncCfg->getMCTSEncConstraint() )
+          {
+            Mv restrictedMv = pu.mv[REF_PIC_LIST_1];
+            Area curTileAreaRestricted;
+            curTileAreaRestricted = pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu );
+            MCTSHelper::clipMvToArea( restrictedMv, pu.cu->Y(), curTileAreaRestricted, *pu.cs->sps );
+            // If sub-pel filter samples are not inside of allowed area
+            if( restrictedMv != pu.mv[REF_PIC_LIST_1] )
             {
-              Mv restrictedMv = pu.mv[REF_PIC_LIST_1];
-              Area curTileAreaRestricted;
-              curTileAreaRestricted = pu.cs->picture->mctsInfo.getTileAreaSubPelRestricted( pu );
-              MCTSHelper::clipMvToArea( restrictedMv, pu.cu->Y(), curTileAreaRestricted, *pu.cs->sps );
-              // If sub-pel filter samples are not inside of allowed area
-              if( restrictedMv != pu.mv[REF_PIC_LIST_1] )
-              {
-                uiCostBi = std::numeric_limits<Distortion>::max();
-                doBiPred = false;
-              }
+              uiCostBi = std::numeric_limits<Distortion>::max();
+              doBiPred = false;
             }
+          }
           PelUnitBuf predBufTmp = m_tmpPredStorage[REF_PIC_LIST_1].getBuf( UnitAreaRelative(cu, pu) );
           motionCompensation( pu, predBufTmp, REF_PIC_LIST_1 );
 
@@ -3350,11 +3350,8 @@ Distortion InterSearch::xGetTemplateCost( const PredictionUnit& pu,
   Distortion uiCost = std::numeric_limits<Distortion>::max();
 
   const Picture* picRef = pu.cu->slice->getRefPic( eRefPicList, iRefIdx );
-  clipMv( cMvCand, pu.cu->lumaPos(),
-          pu.cu->lumaSize(),
-          *pu.cs->sps );
-
-
+  clipMv( cMvCand, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps );
+  
   // prediction pattern
   const bool bi = pu.cu->slice->testWeightPred() && pu.cu->slice->getSliceType()==P_SLICE;
 
@@ -3573,9 +3570,7 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
 {
   const int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
   Mv cFPMvPred = cMvPred;
-  clipMv( cFPMvPred, pu.cu->lumaPos(),
-          pu.cu->lumaSize(),
-          *pu.cs->sps );
+  clipMv( cFPMvPred, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps );
 
   Mv mvTL(cFPMvPred.getHor() - (iSrchRng << iMvShift), cFPMvPred.getVer() - (iSrchRng << iMvShift));
   Mv mvBR(cFPMvPred.getHor() + (iSrchRng << iMvShift), cFPMvPred.getVer() + (iSrchRng << iMvShift));
@@ -3741,9 +3736,9 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
     MCTSHelper::clipMvToArea( rcMv, pu.Y(), pu.cs->picture->mctsInfo.getTileArea(), *pu.cs->sps );
   }
   else
-  clipMv( rcMv, pu.cu->lumaPos(),
-          pu.cu->lumaSize(),
-          *pu.cs->sps );
+  {
+    clipMv( rcMv, pu.cu->lumaPos(), pu.cu->lumaSize(),*pu.cs->sps );
+  }
   rcMv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
   rcMv.divideByPowerOf2(2);
 
@@ -3782,9 +3777,9 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
       MCTSHelper::clipMvToArea( integerMv2Nx2NPred, pu.Y(), pu.cs->picture->mctsInfo.getTileArea(), *pu.cs->sps );
     }
     else
-    clipMv( integerMv2Nx2NPred, pu.cu->lumaPos(),
-            pu.cu->lumaSize(),
-            *pu.cs->sps );
+    {
+      clipMv( integerMv2Nx2NPred, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps );
+    }
     integerMv2Nx2NPred.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
     integerMv2Nx2NPred.divideByPowerOf2(2);
 
@@ -4047,9 +4042,7 @@ void InterSearch::xTZSearchSelective( const PredictionUnit& pu,
   int   iStartX                 = 0;
   int   iStartY                 = 0;
   int   iDist                   = 0;
-  clipMv( rcMv, pu.cu->lumaPos(),
-          pu.cu->lumaSize(),
-          *pu.cs->sps );
+  clipMv( rcMv, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps );
   rcMv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
   rcMv.divideByPowerOf2(2);
 
@@ -4077,9 +4070,7 @@ void InterSearch::xTZSearchSelective( const PredictionUnit& pu,
   {
     Mv integerMv2Nx2NPred = *pIntegerMv2Nx2NPred;
     integerMv2Nx2NPred.changePrecision(MV_PRECISION_INT, MV_PRECISION_INTERNAL);
-    clipMv( integerMv2Nx2NPred, pu.cu->lumaPos(),
-            pu.cu->lumaSize(),
-            *pu.cs->sps );
+    clipMv( integerMv2Nx2NPred, pu.cu->lumaPos(), pu.cu->lumaSize(),*pu.cs->sps );
     integerMv2Nx2NPred.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
     integerMv2Nx2NPred.divideByPowerOf2(2);
 
@@ -4760,9 +4751,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
           roundAffineMv(vx, vy, shift);
           mvTmp[0] = Mv(vx, vy);
           mvTmp[0].clipToStorageBitDepth();
-          clipMv(mvTmp[0], pu.cu->lumaPos(),
-                 pu.cu->lumaSize(),
-                 *pu.cs->sps);
+          clipMv(mvTmp[0], pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps);
           mvTmp[0].roundAffinePrecInternal2Amvr(pu.cu->imv);
           vx = mvScaleHor + dMvHorX * (pu.Y().x + pu.Y().width - mvInfo->x) + dMvVerX * (pu.Y().y - mvInfo->y);
           vy = mvScaleVer + dMvHorY * (pu.Y().x + pu.Y().width - mvInfo->x) + dMvVerY * (pu.Y().y - mvInfo->y);
@@ -5496,17 +5485,13 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
     }
   }
   else
-  clipMv( acMvTemp[0], pu.cu->lumaPos(),
-          pu.cu->lumaSize(),
-          *pu.cs->sps );
-  clipMv( acMvTemp[1], pu.cu->lumaPos(),
-          pu.cu->lumaSize(),
-          *pu.cs->sps );
-  if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
-    clipMv( acMvTemp[2], pu.cu->lumaPos(),
-            pu.cu->lumaSize(),
-            *pu.cs->sps );
+    clipMv( acMvTemp[0], pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps );
+    clipMv( acMvTemp[1], pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps );
+    if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
+    {
+      clipMv( acMvTemp[2], pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps );
+    }
   }
   acMvTemp[0].roundAffinePrecInternal2Amvr(pu.cu->imv);
   acMvTemp[1].roundAffinePrecInternal2Amvr(pu.cu->imv);
@@ -5678,9 +5663,7 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
       }
       else
       {
-      clipMv(acMvTemp[i], pu.cu->lumaPos(),
-             pu.cu->lumaSize(),
-             *pu.cs->sps);
+        clipMv(acMvTemp[i], pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps);
       }
     }
 

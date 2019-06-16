@@ -56,9 +56,7 @@ void roundAffineMv( int& mvx, int& mvy, int nShift )
 #endif
 }
 
-void clipMv( Mv& rcMv, const Position& pos,
-             const struct Size& size,
-             const SPS& sps )
+void clipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS& sps )
 {
   int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
   int iOffset = 8;

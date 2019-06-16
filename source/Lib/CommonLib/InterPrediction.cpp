@@ -433,9 +433,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
     mv[0] = pu.mv[eRefPicList];
   }
   if ( !pu.cu->affine )
-  clipMv(mv[0], pu.cu->lumaPos(),
-         pu.cu->lumaSize(),
-         sps);
+  clipMv(mv[0], pu.cu->lumaPos(), pu.cu->lumaSize(), sps);
 
   for( uint32_t comp = COMPONENT_Y; comp < pcYuvPred.bufs.size() && comp <= m_maxCompIDToPred; comp++ )
   {
@@ -811,9 +809,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     )
   {
     Mv mvTemp = _mv[0];
-    clipMv( mvTemp, pu.cu->lumaPos(),
-            pu.cu->lumaSize(),
-            *pu.cs->sps );
+    clipMv( mvTemp, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps );
     xPredInterBlk( compID, pu, refPic, mvTemp, dstPic, bi, clpRng
                   , false
                   , false

@@ -553,6 +553,8 @@ void DecLib::executeLoopFilters()
     return; // nothing to deblock
   }
 
+  m_pcPic->cs->slice->startProcessingTimer();
+
   CodingStructure& cs = *m_pcPic->cs;
 
   if (cs.sps->getUseReshaper() && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
@@ -590,6 +592,8 @@ void DecLib::executeLoopFilters()
     }
 
   }
+
+  m_pcPic->cs->slice->stopProcessingTimer();
 }
 
 void DecLib::finishPictureLight(int& poc, PicList*& rpcListPic )

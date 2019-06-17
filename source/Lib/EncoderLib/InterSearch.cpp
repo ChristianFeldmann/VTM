@@ -7769,7 +7769,7 @@ uint64_t InterSearch::xCalcPuMeBits(PredictionUnit& pu)
 #if !JVET_N0302_SIMPLFIED_CIIP
       if (pu.mhIntraFlag)
       {
-        MHIntra_luma_pred_modes(*pu.cu);
+        m_CABACEstimator->MHIntra_luma_pred_modes(*pu.cu);
       }
 #if JVET_N0324_REGULAR_MRG_FLAG
       else

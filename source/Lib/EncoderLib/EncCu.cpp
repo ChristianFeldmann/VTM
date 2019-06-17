@@ -1968,13 +1968,21 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   struct ModeInfo
   {
     uint32_t mergeCand;
+#if !JVET_N0302_SIMPLFIED_CIIP
     uint32_t intraDir;
+#endif
     bool     isRegularMerge;
     bool     isMMVD;
     bool     isCIIP;
+#if JVET_N0302_SIMPLFIED_CIIP
+    ModeInfo() : mergeCand(0), isRegularMerge(false), isMMVD(false), isCIIP(false) {}
+    ModeInfo(const uint32_t mergeCand, const bool isRegularMerge, const bool isMMVD, const bool isCIIP) :
+      mergeCand(mergeCand), isRegularMerge(isRegularMerge), isMMVD(isMMVD), isCIIP(isCIIP) {}
+#else
     ModeInfo() : mergeCand(0), intraDir(0), isRegularMerge(false), isMMVD(false), isCIIP(false) {}
     ModeInfo(const uint32_t mergeCand, const uint32_t intraDir, const bool isRegularMerge, const bool isMMVD, const bool isCIIP) :
       mergeCand(mergeCand), intraDir(intraDir), isRegularMerge(isRegularMerge), isMMVD(isMMVD), isCIIP(isCIIP) {}
+#endif
   };
 
   static_vector<ModeInfo, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM>  RdModeList;
@@ -1984,11 +1992,19 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   {
     if (i < MRG_MAX_NUM_CANDS)
     {
+#if JVET_N0302_SIMPLFIED_CIIP
+      RdModeList.push_back(ModeInfo(i, true, false, false));
+#else
       RdModeList.push_back(ModeInfo(i, NUM_LUMA_MODE, true, false, false));
+#endif
     }
     else
     {
+#if JVET_N0302_SIMPLFIED_CIIP
+      RdModeList.push_back(ModeInfo(i - MRG_MAX_NUM_CANDS, false, true, false));
+#else
       RdModeList.push_back(ModeInfo(i - MRG_MAX_NUM_CANDS, NUM_LUMA_MODE, false, true, false));
+#endif
     }
   }
 
@@ -2141,7 +2157,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         double cost     = (double)uiSad + (double)uiBitsCand * sqrtLambdaForFirstPass;
 #endif
         insertPos = -1;
+#if JVET_N0302_SIMPLFIED_CIIP
+        updateCandList(ModeInfo(uiMergeCand, true, false, false), cost, RdModeList, candCostList, uiNumMrgSATDCand, &insertPos);
+#else
         updateCandList(ModeInfo(uiMergeCand, NUM_LUMA_MODE, true, false, false), cost, RdModeList, candCostList, uiNumMrgSATDCand, &insertPos);
+#endif
         if (insertPos != -1)
         {
           if (insertPos == RdModeList.size() - 1)
@@ -2241,7 +2261,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #endif
 #endif
           insertPos = -1;
-          updateCandList(ModeInfo(mergeCand, pu.intraDir[0], false, false, true), cost, RdModeList, candCostList, uiNumMrgSATDCand, &insertPos);
+          updateCandList(ModeInfo(mergeCand, false, false, true), cost, RdModeList, candCostList, uiNumMrgSATDCand, &insertPos);
           if (insertPos != -1)
           {
             for (int i = int(RdModeList.size()) - 1; i > insertPos; i--)
@@ -2401,7 +2421,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           double cost = (double)uiSad + (double)bitsCand * sqrtLambdaForFirstPass;
 #endif
           insertPos = -1;
+#if JVET_N0302_SIMPLFIED_CIIP
+          updateCandList(ModeInfo(mmvdMergeCand, false, true, false), cost, RdModeList, candCostList, uiNumMrgSATDCand, &insertPos);
+#else
           updateCandList(ModeInfo(mmvdMergeCand, NUM_LUMA_MODE, false, true, false), cost, RdModeList, candCostList, uiNumMrgSATDCand, &insertPos);
+#endif
           if (insertPos != -1)
           {
             for (int i = int(RdModeList.size()) - 1; i > insertPos; i--)
@@ -2433,7 +2457,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         {
           if (RdModeList[mergeCnt].isCIIP)
           {
+#if JVET_N0302_SIMPLFIED_CIIP
+            pu.intraDir[0] = PLANAR_IDX;
+#else
             pu.intraDir[0] = RdModeList[mergeCnt].intraDir;
+#endif
             pu.intraDir[1] = DM_CHROMA_IDX;
 #if JVET_N0302_SIMPLFIED_CIIP
             uint32_t bufIdx = 0;
@@ -2533,7 +2561,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #if JVET_N0324_REGULAR_MRG_FLAG
         pu.regularMergeFlag = false;
 #endif
+#if JVET_N0302_SIMPLFIED_CIIP
+        pu.intraDir[0] = PLANAR_IDX;
+#else
         pu.intraDir[0] = RdModeList[uiMrgHADIdx].intraDir;
+#endif
         CHECK(pu.intraDir[0]<0 || pu.intraDir[0]>(NUM_LUMA_MODE - 1), "out of intra mode");
         pu.intraDir[1] = DM_CHROMA_IDX;
       }

@@ -1662,6 +1662,49 @@ Specifies the maximum number of CTUs, bytes or tiles in a slice depending on the
 SliceMode setting.
 \\
 
+\Option{RectSliceFlag} &
+%\ShortOption{\None} &
+\Default{1} &
+Controls the slice shape method in conjunction with SliceMode,
+SliceArgument, and Tile/Brick configurations.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+ 0 & Raster scan slice. Bricks within slice are in raster scan order  \\
+ 1 & Rectangular slice. Bricks within slice form rectangular shape \\
+ NOTE: When SliceMode is equal to 3, RectSliceFlag is equal to 1, 
+ and there is more than one tiles/bricks in the pic, 
+ NumRecSliceInPicMinus1 must be greater than 0
+\end{tabular}
+\\
+
+\Option{NumRecSlicesInPicMinus1} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the number of rectangular slices in the picture.
+\\
+
+\Option{RectSlicesBoundaryArray} &
+%\ShortOption{\None} &
+\Default{\NotSet} &
+Specifies a space or comma separated list of top-left brick index and 
+bottom-right brick index of rectangular slices.
+The top-left brick index and bottom-right brick index corresponds to the top left 
+rectangular slice in the picture. The rest of indices corresponds to the each rectangular slices
+in the picture in the rectangular slice raster scan in the picture, respectively.
+
+For example, when the picture is partitioned into 16 tiles (4 tile columns and 4 tile rows), 
+each tile is not further partitioned into bricks, SliceMode is equal to 3, SliceArgument is equal to 4, 
+and NumRecSlicesInPicMinus1 is equal to 3, the values of RectSlicesBoundaryArray shall be as followss: 
+0 5 2 7 8 13 10 15.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+ First  slice has top-left brick index 0  and bottom-right brick index 5 \\
+ Second slice has top-left brick index 2  and bottom-right brick index 7 \\
+ Third  slice has top-left brick index 8  and bottom-right brick index 13 \\
+ Fourth slice has top-left brick index 10 and bottom-right brick index 15
+\end{tabular}
+\\
+
 \Option{WaveFrontSynchro} &
 %\ShortOption{\None} &
 \Default{false} &

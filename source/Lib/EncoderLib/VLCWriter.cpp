@@ -316,17 +316,35 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       {
         if (i > 0)
         {
+#if JVET_N0857_RECT_SLICES
+          WRITE_CODE(pcPPS->getTopLeftBrickIdx(i), codeLength, "top_left_brick_idx ");
+#if JVET_N0124_PROPOSAL2
+#if JVET_N0857_RECT_SLICES
+          codeLength2 = (int)ceil(log2((numTilesInPic - pcPPS->getTopLeftBrickIdx(i) < 2) ? 2 : numTilesInPic - pcPPS->getTopLeftBrickIdx(i)));
+#else
+          codeLength2 = (int)ceil(log2(numTilesInPic - pcPPS->getTopLeftBrickIdx(i)));
+#endif
+#endif
+#else
           WRITE_CODE( pcPPS->getTopLeftTileIdx(i), codeLength, "top_left_brick_idx ");
 #if JVET_N0124_PROPOSAL2
-          codeLength2 = (int) ceil(log2(numTilesInPic - pcPPS->getTopLeftTileIdx(i)));
+          codeLength2 = (int)ceil(log2(numTilesInPic - pcPPS->getTopLeftTileIdx(i)));
+#endif
 #endif
         }
+#if JVET_N0857_RECT_SLICES
+#if JVET_N0124_PROPOSAL2
+        WRITE_CODE(pcPPS->getBottomRightBrickIdx(i) - pcPPS->getTopLeftBrickIdx(i), codeLength2, "bottom_right_brick_idx_delta");
+#else
+        WRITE_CODE(pcPPS->getBottomRightBrickIdx(i) - pcPPS->getTopLeftBrickIdx(i), codeLength, "bottom_right_brick_idx_delta");
+#endif
+#else
 #if JVET_N0124_PROPOSAL2
         WRITE_CODE(pcPPS->getBottomeRightTileIdx(i) - pcPPS->getTopLeftTileIdx(i), codeLength2, "bottom_right_brick_idx_delta");
 #else
         WRITE_CODE(pcPPS->getBottomeRightTileIdx(i) - pcPPS->getTopLeftTileIdx(i), codeLength, "bottom_right_brick_idx_delta");
 #endif
-
+#endif
       }
     }
 
@@ -1284,6 +1302,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   const uint32_t         numberValidComponents = getNumberValidComponents(format);
   const bool         chromaEnabled         = isChromaEnabled(format);
 
+#if !JVET_N0857_RECT_SLICES
   //calculate number of bits required for slice address
   int maxSliceSegmentAddress = cs.pcv->sizeInCtus;
   int bitsSliceSegmentAddress = 0;
@@ -1301,15 +1320,58 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
 
   WRITE_FLAG( sliceSegmentRsAddress==0, "first_slice_segment_in_pic_flag" );
+#endif
   if ( pcSlice->getRapPicFlag() )
   {
     WRITE_FLAG( pcSlice->getNoOutputPriorPicsFlag() ? 1 : 0, "no_output_of_prior_pics_flag" );
   }
   WRITE_UVLC( pcSlice->getPPS()->getPPSId(), "slice_pic_parameter_set_id" );
+#if !JVET_N0857_RECT_SLICES
   if(sliceSegmentRsAddress>0)
   {
     WRITE_CODE( sliceSegmentRsAddress, bitsSliceSegmentAddress, "slice_segment_address" );
   }
+#endif
+#if JVET_N0857_RECT_SLICES
+  int bitsSliceAddress = 1;
+  if (!pcSlice->getPPS()->getRectSliceFlag())
+  {
+    while (pcSlice->getPPS()->getNumBricksInPic() > (1 << bitsSliceAddress))
+    {
+      bitsSliceAddress++;
+    }
+  }
+  else
+  {
+    if (pcSlice->getPPS()->getSignalledSliceIdFlag())
+    {
+      bitsSliceAddress = pcSlice->getPPS()->getSignalledSliceIdLengthMinus1() + 1;
+    }
+    else
+    {
+      while ((pcSlice->getPPS()->getNumSlicesInPicMinus1() + 1) > (1 << bitsSliceAddress))
+      {
+        bitsSliceAddress++;
+      }
+    }
+  }
+  if (pcSlice->getPPS()->getRectSliceFlag() || pcSlice->getPPS()->getNumBricksInPic() > 1)
+  {
+    if (pcSlice->getPPS()->getRectSliceFlag())
+    {
+      WRITE_CODE(pcSlice->getPPS()->getSliceId(pcSlice->setSliceIndex()), bitsSliceAddress, "slice_address");
+    }
+    else
+    {
+      WRITE_CODE(pcSlice->getSliceCurStartBrickIdx(), bitsSliceAddress, "slice_address");
+    }
+  }
+  if (!pcSlice->getPPS()->getRectSliceFlag() && !pcSlice->getPPS()->getSingleBrickPerSliceFlag())
+  {
+    WRITE_UVLC(pcSlice->getSliceNumBricks() - 1, "num_bricks_in_slice_minus1");
+  }
+#endif
+  
     for( int i = 0; i < pcSlice->getPPS()->getNumExtraSliceHeaderBits(); i++ )
     {
       WRITE_FLAG( 0, "slice_reserved_flag[]" );

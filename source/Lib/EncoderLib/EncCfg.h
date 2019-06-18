@@ -478,8 +478,13 @@ protected:
 #if JVET_N0857_TILES_BRICKS
   bool      m_rectSliceFlag;
   int       m_numSlicesInPicMinus1;
+#if JVET_N0857_RECT_SLICES
+  std::vector<int> m_topLeftBrickIdx;
+  std::vector<int> m_bottomRightBrickIdx;
+#else
   std::vector<int> m_topLeftTileIdx;
   std::vector<int> m_bottomRightTileIdx;
+#endif
   bool      m_loopFilterAcrossSlicesEnabledFlag;
   bool      m_signalledSliceIdFlag;
   int       m_signalledSliceIdLengthMinus1;
@@ -1296,10 +1301,17 @@ public:
   void  setRectSliceFlag(bool val)                                   { m_rectSliceFlag = val; }
   int   getNumSlicesInPicMinus1() const                              { return m_numSlicesInPicMinus1; }
   void  setNumSlicesInPicMinus1(int val)                             { m_numSlicesInPicMinus1 = val; }
+#if JVET_N0857_RECT_SLICES
+  int   getTopLeftBrickIdx(uint32_t columnIdx) const                 { return  m_topLeftBrickIdx[columnIdx]; }
+  void  setTopLeftBrickIdx(const std::vector<int>& val)              { m_topLeftBrickIdx = val; }
+  int   getBottomeRightBrickIdx(uint32_t columnIdx) const            { return  m_bottomRightBrickIdx[columnIdx]; }
+  void  setBottomRightBrickIdx(const std::vector<int>& val)          { m_bottomRightBrickIdx = val; }
+#else
   int   getTopLeftTileIdx(uint32_t columnIdx) const                  { return  m_topLeftTileIdx[columnIdx]; }
   void  setTopLeftTileIdx(const std::vector<int>& val)               { m_topLeftTileIdx = val; }
   int   getBottomeRightTileIdx(uint32_t columnIdx) const             { return  m_bottomRightTileIdx[columnIdx]; }
   void  setBottomRightTileIdx(const std::vector<int>& val)           { m_bottomRightTileIdx = val; }
+#endif
   bool  getLoopFilterAcrossSlicesEnabledFlag() const                 { return m_loopFilterAcrossSlicesEnabledFlag; }
   void  setLoopFilterAcrossSlicesEnabledFlag(bool val)               { m_loopFilterAcrossSlicesEnabledFlag = val; }
   bool  getSignalledSliceIdFlag() const                              { return m_signalledSliceIdFlag; }

@@ -1591,12 +1591,24 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   }
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
   // for every CTU in the slice segment (may terminate sooner if there is a byte limit on the slice-segment)
+#if JVET_N0857_RECT_SLICES
+  uint32_t startSliceRsRow = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) / widthInCtus;
+  uint32_t startSliceRsCol = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) % widthInCtus;
+  uint32_t endSliceRsRow = tileMap.getCtuBsToRsAddrMap(boundingCtuTsAddr - 1) / widthInCtus;
+  uint32_t endSliceRsCol = tileMap.getCtuBsToRsAddrMap(boundingCtuTsAddr - 1) % widthInCtus;
+#endif
   for( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
   {
 #if JVET_N0857_TILES_BRICKS
     const int32_t ctuRsAddr = tileMap.getCtuBsToRsAddrMap( ctuTsAddr );
 #else
     const int32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap( ctuTsAddr );
+#endif
+#if JVET_N0857_RECT_SLICES
+    if (pcSlice->getPPS()->getRectSliceFlag() &&
+      ((ctuRsAddr / widthInCtus) < startSliceRsRow || (ctuRsAddr / widthInCtus) > endSliceRsRow ||
+      (ctuRsAddr % widthInCtus) < startSliceRsCol || (ctuRsAddr % widthInCtus) > endSliceRsCol))
+      continue;
 #endif
 
     // update CABAC state
@@ -1908,6 +1920,13 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 
   const PreCalcValues& pcv = *cs.pcv;
   const uint32_t widthInCtus   = pcv.widthInCtus;
+#if JVET_N0857_RECT_SLICES
+  uint32_t startSliceRsRow = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) / widthInCtus;
+  uint32_t startSliceRsCol = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) % widthInCtus;
+  uint32_t endSliceRsRow = tileMap.getCtuBsToRsAddrMap(boundingCtuTsAddr - 1) / widthInCtus;
+  uint32_t endSliceRsCol = tileMap.getCtuBsToRsAddrMap(boundingCtuTsAddr - 1) % widthInCtus;
+  uint32_t uiSubStrm = 0;
+#endif
 
   // for every CTU in the slice segment...
 
@@ -1920,12 +1939,22 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
     const uint32_t ctuRsAddr            = tileMap.getCtuTsToRsAddrMap(ctuTsAddr);
     const Tile& currentTile         = tileMap.tiles[tileMap.getTileIdxMap(ctuRsAddr)];
 #endif
+#if JVET_N0857_RECT_SLICES
+    if (pcSlice->getPPS()->getRectSliceFlag() &&
+      ((ctuRsAddr / widthInCtus) < startSliceRsRow || (ctuRsAddr / widthInCtus) > endSliceRsRow ||
+      (ctuRsAddr % widthInCtus) < startSliceRsCol || (ctuRsAddr % widthInCtus) > endSliceRsCol))
+      continue;
+#endif
     const uint32_t firstCtuRsAddrOfTile = currentTile.getFirstCtuRsAddr();
     const uint32_t tileXPosInCtus       = firstCtuRsAddrOfTile % widthInCtus;
+#if !JVET_N0857_RECT_SLICES
     const uint32_t tileYPosInCtus       = firstCtuRsAddrOfTile / widthInCtus;
+#endif
     const uint32_t ctuXPosInCtus        = ctuRsAddr % widthInCtus;
     const uint32_t ctuYPosInCtus        = ctuRsAddr / widthInCtus;
+#if !JVET_N0857_RECT_SLICES
     const uint32_t uiSubStrm            = tileMap.getSubstreamForCtuAddr(ctuRsAddr, true, pcSlice);
+#endif
 
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
@@ -1987,10 +2016,17 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 
     // terminate the sub-stream, if required (end of slice-segment, end of tile, end of wavefront-CTU-row):
 #if JVET_N0857_TILES_BRICKS
+#if JVET_N0857_RECT_SLICES
+    bool isLastCTUinBrick = tileMap.getBrickIdxBsMap(ctuTsAddr) != tileMap.getBrickIdxBsMap(ctuTsAddr + 1);
+    bool isLastCTUinWPP = wavefrontsEnabled && ((ctuRsAddr + 1 % widthInCtus) == tileXPosInCtus);
+    bool isMoreCTUsinSlice = ctuRsAddr != tileMap.getCtuBsToRsAddrMap(boundingCtuTsAddr - 1);
+    if (isLastCTUinBrick || isLastCTUinWPP || !isMoreCTUsinSlice)         // this the the last CTU of either tile/brick/WPP/slice
+#else
     if( ctuTsAddr + 1 == boundingCtuTsAddr ||
         (  ctuXPosInCtus + 1 == tileXPosInCtus + currentTile.getWidthInCtus () &&
         ( ctuYPosInCtus + 1 == tileYPosInCtus + currentTile.getHeightInCtus() || wavefrontsEnabled ) )
       )
+#endif
 #else
     if( ctuTsAddr + 1 == boundingCtuTsAddr ||
          (  ctuXPosInCtus + 1 == tileXPosInCtus + currentTile.getTileWidthInCtus () &&
@@ -1999,16 +2035,25 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
        )
 #endif
     {
-      m_CABACWriter->end_of_slice();
+      m_CABACWriter->end_of_slice();  //This is actually end_of_brick_one_bit or end_of_subset_one_bit
 
       // Byte-alignment in slice_data() when new tile
       pcSubstreams[uiSubStrm].writeByteAlignment();
 
+#if JVET_N0857_RECT_SLICES
+      if (isMoreCTUsinSlice) //Byte alignment only when it is not the last substream in the slice
+      {
+        // write sub-stream size
+        pcSlice->addSubstreamSize((pcSubstreams[uiSubStrm].getNumberOfWrittenBits() >> 3) + pcSubstreams[uiSubStrm].countStartCodeEmulations());
+      }
+      uiSubStrm++;
+#else
       // write sub-stream size
       if( ctuTsAddr + 1 != boundingCtuTsAddr )
       {
         pcSlice->addSubstreamSize( (pcSubstreams[uiSubStrm].getNumberOfWrittenBits() >> 3) + pcSubstreams[uiSubStrm].countStartCodeEmulations() );
       }
+#endif
     }
   } // CTU-loop
 
@@ -2052,6 +2097,38 @@ void EncSlice::calculateBoundingCtuTsAddrForSlice(uint32_t &startCtuTSAddrSlice,
       break;
     case FIXED_NUMBER_OF_TILES:
       {
+#if JVET_N0857_RECT_SLICES
+      const uint32_t startBrickIdx = tileMap.getBrickIdxBsMap(startCtuTSAddrSlice);
+      uint32_t endBrickIdx = -1;
+      if (pps.getRectSliceFlag())  //rectangular slice
+      {
+        uint32_t sliceIdx = 0;
+        while (endBrickIdx == -1 && sliceIdx <= pps.getNumSlicesInPicMinus1())
+        {
+          if (pps.getTopLeftBrickIdx(sliceIdx) == startBrickIdx)
+            endBrickIdx = pps.getBottomRightBrickIdx(sliceIdx);
+          sliceIdx++;
+        }
+        if (endBrickIdx == -1)
+          EXIT("Incorrect rectangular slice definition");
+    }
+      else   //raster-scan slice
+      {
+        endBrickIdx = startBrickIdx + sliceArgument - 1;
+      }
+
+      uint32_t currentTileIdx = startBrickIdx;
+      int tmpAddr = -1;
+      for (int i = startCtuTSAddrSlice; i < numberOfCtusInFrame; i++)
+      {
+        currentTileIdx = tileMap.getBrickIdxBsMap(i);
+        if (currentTileIdx == endBrickIdx)
+          tmpAddr = i;
+      }
+      boundingCtuTSAddrSlice = (tmpAddr != -1) ? tmpAddr : numberOfCtusInFrame - 1;
+      boundingCtuTSAddrSlice++;
+      break;
+#else
 #if JVET_N0857_TILES_BRICKS
       const uint32_t tileIdx        = tileMap.getBrickIdxRsMap( tileMap.getCtuBsToRsAddrMap(startCtuTSAddrSlice) );
       const uint32_t tileTotalCount = (uint32_t) tileMap.bricks.size();
@@ -2077,6 +2154,7 @@ void EncSlice::calculateBoundingCtuTsAddrForSlice(uint32_t &startCtuTSAddrSlice,
         }
 
         boundingCtuTSAddrSlice  = ((startCtuTSAddrSlice + ctuAddrIncrement) < numberOfCtusInFrame) ? (startCtuTSAddrSlice + ctuAddrIncrement) : numberOfCtusInFrame;
+#endif
       }
       break;
 #if JVET_N0857_TILES_BRICKS
@@ -2163,6 +2241,15 @@ void EncSlice::xDetermineStartAndBoundingCtuTsAddr  ( uint32_t& startCtuTsAddr, 
                                      m_pcCfg->getSliceMode(), m_pcCfg->getSliceArgument());
   pcSlice->setSliceCurEndCtuTsAddr(   boundingCtuTsAddrSlice );
   pcSlice->setSliceCurStartCtuTsAddr( startCtuTsAddrSlice    );
+
+#if JVET_N0857_RECT_SLICES
+  const BrickMap& tileMap = *(pcPic->brickMap);
+  pcSlice->setSliceCurStartBrickIdx(tileMap.getBrickIdxBsMap(startCtuTsAddrSlice));
+  if (pcSlice->getPPS()->getRectSliceFlag())
+    pcSlice->setSliceCurEndBrickIdx(tileMap.getBrickIdxBsMap(boundingCtuTsAddrSlice - 1));
+  else
+    pcSlice->setSliceNumBricks(tileMap.getBrickIdxBsMap(boundingCtuTsAddrSlice - 1) - tileMap.getBrickIdxBsMap(startCtuTsAddrSlice) + 1);
+#endif
 
   startCtuTsAddr = startCtuTsAddrSlice;
   boundingCtuTsAddr = boundingCtuTsAddrSlice;

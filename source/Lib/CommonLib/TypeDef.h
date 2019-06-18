@@ -98,6 +98,7 @@
 #define JVET_N0308_MAX_CU_SIZE_FOR_ISP                    1
 
 #define JVET_N0857_TILES_BRICKS                           1 // VTM-5 basic Slices/Tiles/Bricks design, rectangular slices not supported yet
+#define JVET_N0857_RECT_SLICES                            1 // Support for rectangular slices and raster-scan slices (i.e., multiple tiles/brick in a slice)
 
 #if JVET_N0857_TILES_BRICKS
 #define JVET_N0124_PROPOSAL1                              1   // JVET-N0124 Proposal 1

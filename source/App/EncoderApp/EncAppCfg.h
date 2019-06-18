@@ -444,8 +444,13 @@ protected:
 #if JVET_N0857_TILES_BRICKS
   bool      m_rectSliceFlag;
   int       m_numSlicesInPicMinus1;
+#if JVET_N0857_RECT_SLICES
+  std::vector<int> m_topLeftBrickIdx;
+  std::vector<int> m_bottomRightBrickIdx;
+#else
   std::vector<int> m_topLeftTileIdx;
   std::vector<int> m_bottomRightTileIdx;
+#endif
   bool      m_loopFilterAcrossSlicesEnabledFlag;
   bool      m_signalledSliceIdFlag;
   int       m_signalledSliceIdLengthMinus1;

@@ -833,6 +833,9 @@ void DecLib::xActivateParameterSets()
     m_apcSlicePilot->applyReferencePictureSet(m_cListPic, m_apcSlicePilot->getRPS());
 #if JVET_N0415_CTB_ALF
     m_pcPic->finalInit(*sps, *pps, apss);
+#if JVET_N0857_RECT_SLICES
+    m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
+#endif
 #else
     m_pcPic->finalInit(*sps, *pps, *aps);
 #endif
@@ -1224,6 +1227,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #else
   const TileMap& tileMap = *(m_pcPic->tileMap);
 #endif
+#if !JVET_N0857_RECT_SLICES
 #if JVET_N0857_TILES_BRICKS
     pcSlice->setSliceCurStartCtuTsAddr( tileMap.getCtuRsToBsAddrMap(pcSlice->getSliceCurStartCtuTsAddr()) );
     pcSlice->setSliceCurEndCtuTsAddr( tileMap.getCtuRsToBsAddrMap(pcSlice->getSliceCurEndCtuTsAddr()) );
@@ -1231,7 +1235,32 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     pcSlice->setSliceCurStartCtuTsAddr( tileMap.getCtuRsToTsAddrMap(pcSlice->getSliceCurStartCtuTsAddr()) );
     pcSlice->setSliceCurEndCtuTsAddr( tileMap.getCtuRsToTsAddrMap(pcSlice->getSliceCurEndCtuTsAddr()) );
 #endif
+#else
+  const uint32_t numberOfCtusInFrame = m_pcPic->cs->pcv->sizeInCtus;
 
+  uint32_t startCtuIdx = 0;
+  while (pcSlice->getSliceCurStartBrickIdx() != tileMap.getBrickIdxBsMap(startCtuIdx) && startCtuIdx < numberOfCtusInFrame)
+  {
+    startCtuIdx++;
+  }
+  uint32_t endCtuIdx = startCtuIdx;
+  while (pcSlice->getSliceCurEndBrickIdx() != tileMap.getBrickIdxBsMap(endCtuIdx) && endCtuIdx < numberOfCtusInFrame)
+  {
+    endCtuIdx++;
+  }
+  if (endCtuIdx == numberOfCtusInFrame)
+    EXIT("Cannot find the last CTU index of the current slice");
+
+  while (pcSlice->getSliceCurEndBrickIdx() == tileMap.getBrickIdxBsMap(endCtuIdx) && endCtuIdx < numberOfCtusInFrame)
+  {
+    endCtuIdx++;
+  }
+  if (pcSlice->getSliceCurEndBrickIdx() != tileMap.getBrickIdxBsMap(endCtuIdx - 1))
+    EXIT("Cannot find the last CTU index of the current slice");
+
+  pcSlice->setSliceCurStartCtuTsAddr(startCtuIdx);
+  pcSlice->setSliceCurEndCtuTsAddr(endCtuIdx);
+#endif
 
     pcSlice->checkCRA(pcSlice->getRPS(), m_pocCRA, m_associatedIRAPType, m_cListPic );
     // Set reference list

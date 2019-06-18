@@ -58,7 +58,7 @@ uint64_t CS::getEstBits(const CodingStructure &cs)
 
 bool CS::isDualITree( const CodingStructure &cs )
 {
-  return cs.slice->isIRAP() && !cs.pcv->ISingleTree;
+  return cs.slice->isIntra() && !cs.pcv->ISingleTree;
 }
 
 UnitArea CS::getArea( const CodingStructure &cs, const UnitArea &area, const ChannelType chType )

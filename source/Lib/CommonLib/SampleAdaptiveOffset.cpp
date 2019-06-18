@@ -595,6 +595,8 @@ void SampleAdaptiveOffset::offsetCTU( const UnitArea& area, const CPelUnitBuf& s
   int numHorVirBndry = 0, numVerVirBndry = 0;
   int horVirBndryPos[] = { -1,-1,-1 };
   int verVirBndryPos[] = { -1,-1,-1 };
+  int horVirBndryPosComp[] = { -1,-1,-1 };
+  int verVirBndryPosComp[] = { -1,-1,-1 };
   bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(area.Y().x, area.Y().y, area.Y().width, area.Y().height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
 #endif
   for(int compIdx = 0; compIdx < numberOfComponents; compIdx++)
@@ -612,11 +614,11 @@ void SampleAdaptiveOffset::offsetCTU( const UnitArea& area, const CPelUnitBuf& s
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       for (int i = 0; i < numHorVirBndry; i++)
       {
-        horVirBndryPos[i] = (horVirBndryPos[i] >> ::getComponentScaleY(compID, area.chromaFormat)) - compArea.y;
+        horVirBndryPosComp[i] = (horVirBndryPos[i] >> ::getComponentScaleY(compID, area.chromaFormat)) - compArea.y;
       }
       for (int i = 0; i < numVerVirBndry; i++)
       {
-        verVirBndryPos[i] = (verVirBndryPos[i] >> ::getComponentScaleX(compID, area.chromaFormat)) - compArea.x;
+        verVirBndryPosComp[i] = (verVirBndryPos[i] >> ::getComponentScaleX(compID, area.chromaFormat)) - compArea.x;
       }
 #endif
 
@@ -629,7 +631,7 @@ void SampleAdaptiveOffset::offsetCTU( const UnitArea& area, const CPelUnitBuf& s
                   , isAboveLeftAvail, isAboveRightAvail
                   , isBelowLeftAvail, isBelowRightAvail
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-                  , isCtuCrossedByVirtualBoundaries, horVirBndryPos, verVirBndryPos, numHorVirBndry, numVerVirBndry
+                  , isCtuCrossedByVirtualBoundaries, horVirBndryPosComp, verVirBndryPosComp, numHorVirBndry, numVerVirBndry
 #endif
                   );
     }

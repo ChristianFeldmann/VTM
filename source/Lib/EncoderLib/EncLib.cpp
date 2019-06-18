@@ -423,6 +423,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     picBg->getRecoBuf().fill(0);
 #if JVET_N0415_CTB_ALF
     picBg->finalInit(sps0, pps0, m_apss);
+#if JVET_N0857_RECT_SLICES
+    pps0.setNumBricksInPic((int)picBg->brickMap->bricks.size());
+#endif
 #else
     picBg->finalInit(sps0, pps0, aps0);
 #endif
@@ -652,6 +655,10 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 #else
       APS *pAPS = m_apsMap.getPS(0);
       pcPicCurr->finalInit(*pSPS, *pPPS, *pAPS);
+#endif
+#if JVET_N0857_RECT_SLICES
+      PPS *ptrPPS = (ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
+      ptrPPS->setNumBricksInPic((int)pcPicCurr->brickMap->bricks.size());
 #endif
     }
 
@@ -1824,6 +1831,10 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     pps.setSingleTileInPicFlag(false);
     pps.setSingleBrickPerSliceFlag( m_sliceMode==SINGLE_BRICK_PER_SLICE );
     pps.setRectSliceFlag( m_sliceMode==SINGLE_BRICK_PER_SLICE );
+#if JVET_N0857_RECT_SLICES
+    if (m_rectSliceFlag)
+      pps.setRectSliceFlag(m_rectSliceFlag);
+#endif
   }
 #endif
   pps.setUniformTileSpacingFlag( m_tileUniformSpacingFlag );
@@ -1839,8 +1850,13 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
 #if JVET_N0857_TILES_BRICKS
   //pps.setRectSliceFlag( m_rectSliceFlag );
   pps.setNumSlicesInPicMinus1( m_numSlicesInPicMinus1 );
+#if JVET_N0857_RECT_SLICES
+  pps.setTopLeftBrickIdx(m_topLeftBrickIdx);
+  pps.setBottomRightBrickIdx(m_bottomRightBrickIdx);
+#else
   pps.setTopLeftTileIdx( m_topLeftTileIdx );
   pps.setBottomRightTileIdx( m_bottomRightTileIdx );
+#endif
   pps.setLoopFilterAcrossBricksEnabledFlag( m_loopFilterAcrossBricksEnabledFlag );
   pps.setLoopFilterAcrossSlicesEnabledFlag( m_loopFilterAcrossSlicesEnabledFlag );
   pps.setSignalledSliceIdFlag( m_signalledSliceIdFlag );
@@ -1850,7 +1866,10 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
   pps.setSliceId( m_sliceId );
 
   int numTiles= (m_iNumColumnsMinus1 + 1) * (m_iNumRowsMinus1 + 1);
-  
+#if JVET_N0857_RECT_SLICES
+  pps.setNumTilesInPic(numTiles);
+#endif
+
   if (m_brickSplitMap.empty())
   {
     pps.setBrickSplittingPresentFlag(false);

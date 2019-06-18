@@ -1978,6 +1978,10 @@ PPS::PPS()
 , m_singleBrickPerSliceFlag          (true)
 , m_rectSliceFlag                    (true)
 , m_numSlicesInPicMinus1             (0)
+#if JVET_N0857_RECT_SLICES
+, m_numTilesInPic                    (1)
+, m_numBricksInPic                   (1)
+#endif
 , m_signalledSliceIdFlag             (false)
 ,m_signalledSliceIdLengthMinus1      (0)
 #endif

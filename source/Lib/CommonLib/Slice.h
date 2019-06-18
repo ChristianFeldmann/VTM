@@ -1685,8 +1685,16 @@ private:
   bool             m_singleBrickPerSliceFlag;
   bool             m_rectSliceFlag;
   int              m_numSlicesInPicMinus1;
+#if JVET_N0857_RECT_SLICES
+  std::vector<int> m_topLeftBrickIdx;
+  std::vector<int> m_bottomRightBrickIdx;
+
+  int              m_numTilesInPic;
+  int              m_numBricksInPic;
+#else
   std::vector<int> m_topLeftTileIdx;
   std::vector<int> m_bottomRightTileIdx;
+#endif
   bool             m_signalledSliceIdFlag;
   int              m_signalledSliceIdLengthMinus1;
   std::vector<int> m_sliceId;
@@ -1836,10 +1844,21 @@ public:
   void                   setRectSliceFlag(bool val)                                       { m_rectSliceFlag = val;                        }
   int                    getNumSlicesInPicMinus1() const                                  { return m_numSlicesInPicMinus1;                }
   void                   setNumSlicesInPicMinus1(int val)                                 { m_numSlicesInPicMinus1 = val;                 }
+#if JVET_N0857_RECT_SLICES
+  int                    getTopLeftBrickIdx(uint32_t columnIdx) const                     { return  m_topLeftBrickIdx[columnIdx];         }
+  void                   setTopLeftBrickIdx(const std::vector<int>& val)                  { m_topLeftBrickIdx = val;                      }
+  int                    getBottomRightBrickIdx(uint32_t columnIdx) const                 { return  m_bottomRightBrickIdx[columnIdx];     }
+  void                   setBottomRightBrickIdx(const std::vector<int>& val)              { m_bottomRightBrickIdx = val;                  }
+  int                    getNumTilesInPic() const                                         { return m_numTilesInPic;                       }
+  void                   setNumTilesInPic(int val)                                        { m_numTilesInPic = val;                        }
+  int                    getNumBricksInPic() const                                        { return m_numBricksInPic;                      }
+  void                   setNumBricksInPic(int val)                                       { m_numBricksInPic = val;                       }
+#else
   int                    getTopLeftTileIdx(uint32_t columnIdx) const                      { return  m_topLeftTileIdx[columnIdx];          }
   void                   setTopLeftTileIdx(const std::vector<int>& val)                   { m_topLeftTileIdx = val;                       }
   int                    getBottomeRightTileIdx(uint32_t columnIdx) const                 { return  m_bottomRightTileIdx[columnIdx];      }
   void                   setBottomRightTileIdx(const std::vector<int>& val)               { m_bottomRightTileIdx = val;                   }
+#endif
   bool                   getSignalledSliceIdFlag() const                                  { return m_signalledSliceIdFlag;                }
   void                   setSignalledSliceIdFlag(bool val)                                { m_signalledSliceIdFlag = val;                 }
   int                    getSignalledSliceIdLengthMinus1() const                          { return m_signalledSliceIdLengthMinus1;        }
@@ -2028,6 +2047,13 @@ private:
   bool                       m_nextSlice;
   uint32_t                       m_sliceBits;
   bool                       m_bFinalized;
+
+#if JVET_N0857_RECT_SLICES
+  uint32_t                   m_sliceCurStartBrickIdx;
+  uint32_t                   m_sliceCurEndBrickIdx;
+  uint32_t                   m_sliceNumBricks;
+  uint32_t                   m_sliceIdx;
+#endif
 
   bool                       m_bTestWeightPred;
   bool                       m_bTestWeightBiPred;
@@ -2304,6 +2330,16 @@ public:
   uint32_t                        getSliceBits() const                                   { return m_sliceBits;                                           }
   void                        setFinalized( bool uiVal )                             { m_bFinalized = uiVal;                                         }
   bool                        getFinalized() const                                   { return m_bFinalized;                                          }
+#if JVET_N0857_RECT_SLICES
+  void                        setSliceCurStartBrickIdx(uint32_t brickIdx)            { m_sliceCurStartBrickIdx = brickIdx;                           }
+  uint32_t                    getSliceCurStartBrickIdx() const                       { return m_sliceCurStartBrickIdx;                               }
+  void                        setSliceCurEndBrickIdx(uint32_t brickIdx)              { m_sliceCurEndBrickIdx = brickIdx;                             }
+  uint32_t                    getSliceCurEndBrickIdx() const                         { return m_sliceCurEndBrickIdx;                                 }
+  void                        setSliceNumBricks(uint32_t numBricks)                  { m_sliceNumBricks = numBricks;                                 }
+  uint32_t                    getSliceNumBricks() const                              { return m_sliceNumBricks;                                      }
+  void                        setSliceIndex(uint32_t idx)                            { m_sliceIdx = idx;                                             }
+  uint32_t                    setSliceIndex() const                                  { return m_sliceIdx;                                            }
+#endif
   bool                        testWeightPred( ) const                                { return m_bTestWeightPred;                                     }
   void                        setTestWeightPred( bool bValue )                       { m_bTestWeightPred = bValue;                                   }
   bool                        testWeightBiPred( ) const                              { return m_bTestWeightBiPred;                                   }

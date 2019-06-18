@@ -2352,12 +2352,19 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       pcSlice->setSliceCurStartCtuTsAddr( 0 );
 
+#if JVET_N0857_RECT_SLICES
+      uint32_t sliceIdx = 0;
+      const BrickMap& tileMap = *(pcPic->brickMap);
+#endif
       for(uint32_t nextCtuTsAddr = 0; nextCtuTsAddr < numberOfCtusInFrame; )
       {
         m_pcSliceEncoder->precompressSlice( pcPic );
         m_pcSliceEncoder->compressSlice   ( pcPic, false, false );
 
         const uint32_t curSliceEnd = pcSlice->getSliceCurEndCtuTsAddr();
+#if JVET_N0857_RECT_SLICES
+        pcSlice->setSliceIndex(sliceIdx);
+#endif
         if(curSliceEnd < numberOfCtusInFrame)
         {
           uint32_t independentSliceIdx = pcSlice->getIndependentSliceIdx();
@@ -2367,7 +2374,27 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           pcSlice = pcPic->slices[uiNumSliceSegments];
           CHECK(!(pcSlice->getPPS() != 0), "Unspecified error");
           pcSlice->copySliceInfo(pcPic->slices[uiNumSliceSegments - 1]);
+#if JVET_N0857_RECT_SLICES
+          sliceIdx++;
+          if (pcSlice->getPPS()->getRectSliceFlag())
+          {
+            uint32_t startTileIdx = pcSlice->getPPS()->getTopLeftBrickIdx(sliceIdx);
+            uint32_t nextCtu = 0;
+            uint32_t tmpSliceIdx = 0;
+            while (tmpSliceIdx != startTileIdx)
+            {
+              nextCtu++;
+              tmpSliceIdx = tileMap.getBrickIdxBsMap(nextCtu);
+            }
+            pcSlice->setSliceCurStartCtuTsAddr(nextCtu);
+          }
+          else
+          {
+            pcSlice->setSliceCurStartCtuTsAddr(curSliceEnd);
+          }
+#else
           pcSlice->setSliceCurStartCtuTsAddr(curSliceEnd);
+#endif
           pcSlice->setSliceBits(0);
           independentSliceIdx++;
           pcSlice->setIndependentSliceIdx(independentSliceIdx);
@@ -2663,15 +2690,21 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
           // Append substreams...
           OutputBitstream *pcOut = pcBitstreamRedirect;
+#if !JVET_N0857_RECT_SLICES   //This seems not needed for tile/brick. Please check if this affects WPP
 #if JVET_N0857_TILES_BRICKS
           const int numZeroSubstreamsAtStartOfSlice  = pcPic->brickMap->getSubstreamForCtuAddr(pcSlice->getSliceCurStartCtuTsAddr(), false, pcSlice);
 #else
           const int numZeroSubstreamsAtStartOfSlice  = pcPic->tileMap->getSubstreamForCtuAddr(pcSlice->getSliceCurStartCtuTsAddr(), false, pcSlice);
 #endif
+#endif
           const int numSubstreamsToCode  = pcSlice->getNumberOfSubstreamSizes()+1;
           for ( uint32_t ui = 0 ; ui < numSubstreamsToCode; ui++ )
           {
+#if JVET_N0857_RECT_SLICES
+            pcOut->addSubstream(&(substreamsOut[ui]));
+#else
             pcOut->addSubstream(&(substreamsOut[ui+numZeroSubstreamsAtStartOfSlice]));
+#endif
           }
         }
 

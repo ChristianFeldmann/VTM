@@ -497,6 +497,9 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     READ_FLAG( uiCode, "brick_splitting_present_flag" );                 pcPPS->setBrickSplittingPresentFlag(uiCode == 1);
 
     int numTilesInPic = pcPPS->getUniformTileSpacingFlag() ? 0 : (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+#if JVET_N0857_RECT_SLICES
+    pcPPS->setNumTilesInPic(numTilesInPic);
+#endif
 
     if (pcPPS->getBrickSplittingPresentFlag())
     {
@@ -571,7 +574,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
             READ_CODE( codeLength, uiCode, "top_left_brick_idx" );
             topLeft[i] = uiCode;
 #if JVET_N0124_PROPOSAL2
+#if JVET_N0857_RECT_SLICES
+            codeLength2 = (int)ceil(log2((numTilesInPic - topLeft[i] < 2) ? 2 : numTilesInPic - topLeft[i]));  //Bugfix
+#else
             codeLength2 = (int)ceil(log2(numTilesInPic - topLeft[i]));
+#endif
 #endif
           }
 #if JVET_N0124_PROPOSAL2
@@ -581,10 +588,29 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 #endif
           bottomRight[i] = topLeft[i] + uiCode;
         }
+#if JVET_N0857_RECT_SLICES
+        pcPPS->setTopLeftBrickIdx(topLeft);
+        pcPPS->setBottomRightBrickIdx(bottomRight);
+#else
         pcPPS->setTopLeftTileIdx(topLeft);
         pcPPS->setBottomRightTileIdx(bottomRight);
+#endif
       }
     }
+#if JVET_N0857_RECT_SLICES
+    if (pcPPS->getRectSliceFlag() && pcPPS->getSingleBrickPerSliceFlag())
+    {
+      std::vector<int> topLeft(numTilesInPic);  //TODO: this should be numBricksInPic. Fix it when the bricks codes have been updated
+      std::vector<int> bottomRight(numTilesInPic);
+      for (uint32_t i = 0; i < numTilesInPic; i++)
+      {
+        topLeft[i] = i;
+        bottomRight[i] = i;
+      }
+      pcPPS->setTopLeftBrickIdx(topLeft);
+      pcPPS->setBottomRightBrickIdx(bottomRight);
+    }
+#endif
 
     READ_FLAG( uiCode, "loop_filter_across_bricks_enabled_flag ");        pcPPS->setLoopFilterAcrossBricksEnabledFlag(uiCode ? true : false);
     if (pcPPS->getLoopFilterAcrossBricksEnabledFlag())
@@ -598,6 +624,14 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     pcPPS->setSingleBrickPerSliceFlag(true);
 #endif
     pcPPS->setRectSliceFlag(true);
+#if JVET_N0857_RECT_SLICES
+    std::vector<int> topLeft(1);
+    topLeft[0] = 0;
+    std::vector<int> bottomRight(1);
+    bottomRight[0] = 0;
+    pcPPS->setTopLeftBrickIdx(topLeft);
+    pcPPS->setBottomRightBrickIdx(bottomRight);
+#endif
   }
 
   if (pcPPS->getRectSliceFlag())
@@ -606,6 +640,20 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     if (pcPPS->getSignalledSliceIdFlag())
     {
       READ_UVLC( uiCode, "signalled_slice_id_length_minus1" );             pcPPS->setSignalledSliceIdLengthMinus1(uiCode);
+#if JVET_N0857_RECT_SLICES
+      const uint32_t numSlices = pcPPS->getNumSlicesInPicMinus1() + 1;
+      int codeLength = pcPPS->getSignalledSliceIdLengthMinus1() + 1;
+      if (numSlices > 0)
+      {
+        std::vector<int> sliceID(numSlices);
+        for (uint32_t i = 0; i < numSlices; i++)
+        {
+          READ_CODE(codeLength, uiCode, "slice_id");
+          sliceID[i] = uiCode;
+        }
+        pcPPS->setSliceId(sliceID);
+      }
+#else
       const uint32_t numTileGroups = pcPPS->getNumSlicesInPicMinus1() + 1;
       int codeLength = pcPPS->getSignalledSliceIdLengthMinus1() + 1;
       if (numTileGroups > 0)
@@ -618,7 +666,19 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
         }
         pcPPS->setSliceId(tileGroupID);
       }
+#endif
     }
+#if JVET_N0857_RECT_SLICES
+    else
+    {
+      std::vector<int> sliceID(pcPPS->getNumSlicesInPicMinus1() + 1);
+      for (uint32_t i = 0; i <= pcPPS->getNumSlicesInPicMinus1(); i++)
+      {
+        sliceID[i] = i;
+      }
+      pcPPS->setSliceId(sliceID);
+    }
+#endif
   }
 #endif
 
@@ -1750,8 +1810,10 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   PPS* pps = NULL;
   SPS* sps = NULL;
 
+#if !JVET_N0857_RECT_SLICES
   uint32_t firstSliceSegmentInPic;
   READ_FLAG( firstSliceSegmentInPic, "first_slice_segment_in_pic_flag" );
+#endif
   if( pcSlice->getRapPicFlag())
   {
     READ_FLAG( uiCode, "no_output_of_prior_pics_flag" );  //ignored -- updated already
@@ -1769,6 +1831,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   const uint32_t numValidComp=getNumberValidComponents(chFmt);
   const bool bChroma=(chFmt!=CHROMA_400);
 
+#if !JVET_N0857_RECT_SLICES
   int numCTUs = ((sps->getPicWidthInLumaSamples()+sps->getMaxCUWidth()-1)/sps->getMaxCUWidth())*((sps->getPicHeightInLumaSamples()+sps->getMaxCUHeight()-1)/sps->getMaxCUHeight());
   uint32_t sliceSegmentAddress = 0;
   int bitsSliceSegmentAddress = 0;
@@ -1784,6 +1847,58 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   //set uiCode to equal slice start address (or dependent slice start address)
     pcSlice->setSliceCurStartCtuTsAddr(sliceSegmentAddress); // this is actually a Raster-Scan (RS) address, but we do not have the RS->TS conversion table defined yet.
     pcSlice->setSliceCurEndCtuTsAddr(numCTUs);
+#endif
+#if JVET_N0857_RECT_SLICES
+    int bitsSliceAddress = 1;
+    if (!pps->getRectSliceFlag())
+    {
+      while (pps->getNumTilesInPic() > (1 << bitsSliceAddress))  //TODO: use the correct one
+      {
+        bitsSliceAddress++;
+      }
+    }
+    else
+    {
+      if (pps->getSignalledSliceIdFlag())
+      {
+        bitsSliceAddress = pps->getSignalledSliceIdLengthMinus1() + 1;
+      }
+      else
+      {
+        while ((pps->getNumSlicesInPicMinus1() + 1) > (1 << bitsSliceAddress))
+        {
+          bitsSliceAddress++;
+        }
+      }
+    }
+    if (pps->getRectSliceFlag() || pps->getNumTilesInPic() > 1)   //TODO: change it to getNumBricksInPic when Tile/Brick is updated.
+    {
+      if (pps->getRectSliceFlag())
+      {
+        READ_CODE(bitsSliceAddress, uiCode, "slice_address");
+        int sliceIdx = 0;
+        while (pps->getSliceId(sliceIdx) != uiCode && sliceIdx <= pps->getNumSlicesInPicMinus1())
+        {
+          sliceIdx++;
+        }
+        pcSlice->setSliceCurStartBrickIdx(pps->getTopLeftBrickIdx(sliceIdx));
+        pcSlice->setSliceCurEndBrickIdx(pps->getBottomRightBrickIdx(sliceIdx));
+      }
+      else
+      {
+        READ_CODE(bitsSliceAddress, uiCode, "slice_address");
+        pcSlice->setSliceCurStartBrickIdx(uiCode);
+      }
+    }
+    if (!pps->getRectSliceFlag() && !pps->getSingleBrickPerSliceFlag())
+    {
+      READ_UVLC(uiCode, "num_bricks_in_slice_minus1");
+      pcSlice->setSliceNumBricks(uiCode + 1);
+      pcSlice->setSliceCurEndBrickIdx(pcSlice->getSliceCurStartBrickIdx() + uiCode);
+    }
+    pcSlice->setSliceCurStartCtuTsAddr(pcSlice->getSliceCurStartBrickIdx());
+#endif
+
     for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
     {
       READ_FLAG(uiCode, "slice_reserved_flag[]"); // ignored
@@ -2408,7 +2523,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       parseReshaper(pcSlice->getReshapeInfo(), sps, pcSlice->isIntra());
     }
 
-  if( firstSliceSegmentInPic )
+#if JVET_N0857_RECT_SLICES
+    if( pcSlice->getSliceCurStartBrickIdx() == 0 )
+#else
+    if( firstSliceSegmentInPic )
+#endif
   {
     pcSlice->setDefaultClpRng( *sps );
 

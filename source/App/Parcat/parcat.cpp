@@ -59,7 +59,9 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   SPS* sps = NULL;
 
   uint32_t firstSliceSegmentInPic;
+#if !JVET_N0857_RECT_SLICES
   READ_FLAG( firstSliceSegmentInPic, "first_slice_segment_in_pic_flag" );
+#endif
   if( isRapPic )
   {
     READ_FLAG( uiCode, "no_output_of_prior_pics_flag" );  //ignored -- updated already
@@ -72,6 +74,7 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   //!KS: need to add error handling code here, if SPS is not available
   CHECK(sps==0, "Invalid SPS");
 
+#if !JVET_N0857_RECT_SLICES
   int numCTUs = ((sps->getPicWidthInLumaSamples()+sps->getMaxCUWidth()-1)/sps->getMaxCUWidth())*((sps->getPicHeightInLumaSamples()+sps->getMaxCUHeight()-1)/sps->getMaxCUHeight());
   uint32_t sliceSegmentAddress = 0;
   int bitsSliceSegmentAddress = 0;
@@ -84,6 +87,48 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   {
     READ_CODE( bitsSliceSegmentAddress, sliceSegmentAddress, "slice_segment_address" );
   }
+#endif
+#if JVET_N0857_RECT_SLICES
+  int bitsSliceAddress = 1;
+  if (!pps->getRectSliceFlag())
+  {
+    while (pps->getNumTilesInPic() > (1 << bitsSliceAddress))
+    {
+      bitsSliceAddress++;
+    }
+  }
+  else
+  {
+    if (pps->getSignalledSliceIdFlag())
+    {
+      bitsSliceAddress = pps->getSignalledSliceIdLengthMinus1() + 1;
+    }
+    else
+    {
+      while ((pps->getNumSlicesInPicMinus1() + 1) > (1 << bitsSliceAddress))
+      {
+        bitsSliceAddress++;
+      }
+    }
+  }
+  uiCode = 0;
+  if (pps->getRectSliceFlag() || pps->getNumTilesInPic() > 1)   //TODO: change it to getNumBricksInPic when Tile/Brick is updated.
+  {
+    if (pps->getRectSliceFlag())
+    {
+      READ_CODE(bitsSliceAddress, uiCode, "slice_address");
+    }
+    else
+    {
+      READ_CODE(bitsSliceAddress, uiCode, "slice_address");
+    }
+  }
+  firstSliceSegmentInPic = (uiCode == 0) ? 1 : 0;       //May not work when sliceID is not the same as sliceIdx
+  if (!pps->getRectSliceFlag() && !pps->getSingleBrickPerSliceFlag())
+  {
+    READ_UVLC(uiCode, "num_bricks_in_slice_minus1");
+  }
+#endif
   //set uiCode to equal slice start address (or dependent slice start address)
   for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
   {

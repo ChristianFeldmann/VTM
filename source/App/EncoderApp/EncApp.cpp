@@ -538,8 +538,13 @@ void EncApp::xInitLibCfg()
 #if JVET_N0857_TILES_BRICKS
   m_cEncLib.setRectSliceFlag                                     ( m_rectSliceFlag );
   m_cEncLib.setNumSlicesInPicMinus1                              ( m_numSlicesInPicMinus1 );
+#if JVET_N0857_RECT_SLICES
+  m_cEncLib.setTopLeftBrickIdx                                   ( m_topLeftBrickIdx );
+  m_cEncLib.setBottomRightBrickIdx                               ( m_bottomRightBrickIdx);
+#else
   m_cEncLib.setTopLeftTileIdx                                    ( m_topLeftTileIdx );
   m_cEncLib.setBottomRightTileIdx                                ( m_bottomRightTileIdx );
+#endif
   m_cEncLib.setLoopFilterAcrossSlicesEnabledFlag                 ( m_loopFilterAcrossSlicesEnabledFlag );
   m_cEncLib.setSignalledSliceIdFlag                              ( m_signalledSliceIdFlag ),
   m_cEncLib.setSignalledSliceIdLengthMinus1                      ( m_signalledSliceIdLengthMinus1 );

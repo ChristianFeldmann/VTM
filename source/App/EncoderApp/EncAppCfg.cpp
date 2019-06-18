@@ -729,8 +729,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<int>  cfg_targetPivotValue                (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, 1<<16);
 
 #if JVET_N0857_TILES_BRICKS
+#if JVET_N0857_RECT_SLICES
+  SMultiValueInput<uint32_t> cfg_SliceIdx                    (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+  SMultiValueInput<uint32_t> cfg_SignalledSliceId            (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+#else
   SMultiValueInput<uint32_t> cfg_TileGroupIdx                (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
   SMultiValueInput<uint32_t> cfg_SignalledTileGroupId        (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+#endif
 #endif
 
   SMultiValueInput<double> cfg_adIntraLambdaModifier         (0, std::numeric_limits<double>::max(), 0, MAX_TLAYER); ///< Lambda modifier for Intra pictures, one for each temporal layer. If size>temporalLayer, then use [temporalLayer], else if size>0, use [size()-1], else use m_adLambdaModifier.
@@ -1164,13 +1169,23 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("WaveFrontSynchro",                                m_entropyCodingSyncEnabledFlag,                   false, "0: entropy coding sync disabled; 1 entropy coding sync enabled")
 
 #if JVET_N0857_TILES_BRICKS
+#if JVET_N0857_RECT_SLICES
+  ("RectSliceFlag",                                   m_rectSliceFlag,                                  true, "Rectangular slice flag")
+  ("NumRectSlicesInPicMinus1",                        m_numSlicesInPicMinus1,                              0, "Number slices in pic minus 1")
+#else
   ("RectTileGroupFlag",                               m_rectSliceFlag,                                  true, "Rectangular tile group flag")
   ("SlicesInPicMinus1",                               m_numSlicesInPicMinus1,                               0, "Number tile groups in pic minus 1")
+#endif
   ("LoopFilterAcrossTileGroupsEnabledFlag",           m_loopFilterAcrossSlicesEnabledFlag,              false, "Loop Filter Across Tile Groups Flag")
   ("SignalledIdFlag",                                 m_signalledSliceIdFlag,                           false, "Signalled Slice ID Flag")
   ("SignalledSliceIdLengthMinus1",                    m_signalledSliceIdLengthMinus1,                       0, "Signalled Tile Group Length minus 1")
+#if JVET_N0857_RECT_SLICES
+  ("RectSlicesBoundaryArray",                         cfg_SliceIdx,                              cfg_SliceIdx, "Rectangular slices boundaries in Pic")
+  ("SignalledSliceId",                                cfg_SignalledSliceId,                       cfg_SliceIdx, "Signalled rectangular slice ID")
+#else
   ("TileGroupsInPic",                                 cfg_TileGroupIdx,                      cfg_TileGroupIdx, "Tile Groups In Pic")
   ("SignalledTileGroupId",                            cfg_SignalledTileGroupId,              cfg_TileGroupIdx, "Signalled Tile Group ID")
+#endif
 #endif
 
 #if HEVC_USE_SCALING_LISTS
@@ -1760,8 +1775,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
 
 #if JVET_N0857_TILES_BRICKS
+#if JVET_N0857_RECT_SLICES
+  m_topLeftBrickIdx.clear();
+  m_bottomRightBrickIdx.clear();
+#else
   m_topLeftTileIdx.clear();
   m_bottomRightTileIdx.clear();
+#endif
   m_sliceId.clear();
 
   bool singleTileInPicFlag = (m_numTileRowsMinus1 == 0 && m_numTileColumnsMinus1 == 0);
@@ -1771,6 +1791,18 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     //if (!m_singleBrickPerSliceFlag && m_rectSliceFlag)
     if (m_sliceMode != 0 && m_sliceMode != 4 && m_rectSliceFlag)
     {
+#if JVET_N0857_RECT_SLICES
+      int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
+
+      if (cfg_SliceIdx.values.size() > numSlicesInPic * 2)
+      {
+        EXIT("Error: The number of slice indices (RectSlicesBoundaryInPic) is greater than the NumSlicesInPicMinus1.");
+      }
+      else if (cfg_SliceIdx.values.size() < numSlicesInPic * 2)
+      {
+        EXIT("Error: The number of slice indices (RectSlicesBoundaryInPic) is less than the NumSlicesInPicMinus1.");
+      }
+#else
       int numTileGroupsInPic = m_numSlicesInPicMinus1 + 1;
 
       if (cfg_TileGroupIdx.values.size() > numTileGroupsInPic * 2)
@@ -1781,19 +1813,132 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       {
         EXIT("Error: The number of Tile group indexs are less than the numTileGroupsInPicMinus1.");
       }
+#endif
       else
       {
+#if JVET_N0857_RECT_SLICES
+        m_topLeftBrickIdx.resize(numSlicesInPic);
+        m_bottomRightBrickIdx.resize(numSlicesInPic);
+        for (uint32_t i = 0; i < numSlicesInPic; ++i)
+        {
+          m_topLeftBrickIdx[i] = cfg_SliceIdx.values[i * 2];
+          m_bottomRightBrickIdx[i] = cfg_SliceIdx.values[i * 2 + 1];
+#else
         m_topLeftTileIdx.resize(numTileGroupsInPic);
         m_bottomRightTileIdx.resize(numTileGroupsInPic);
         for (uint32_t i = 0; i < numTileGroupsInPic; ++i)
         {
           m_topLeftTileIdx[i] = cfg_TileGroupIdx.values[i * 2];
           m_bottomRightTileIdx[i] = cfg_TileGroupIdx.values[i * 2 + 1];
+#endif
         }
+#if JVET_N0857_RECT_SLICES
+        //Validating the correctness of rectangular slice structure
+        int **brickToSlice = (int **)malloc(sizeof(int *) * (m_numTileRowsMinus1 + 1));
+        for (int i = 0; i <= m_numTileRowsMinus1; i++)
+        {
+          brickToSlice[i] = (int *)malloc(sizeof(int) * (m_numTileColumnsMinus1 + 1));
+          memset(brickToSlice[i], -1, sizeof(int) * ((m_numTileColumnsMinus1 + 1)));
+        }
+
+        //Check overlap case
+        for (int sliceIdx = 0; sliceIdx < numSlicesInPic; sliceIdx++)
+        {
+          int sliceStartRow = m_topLeftBrickIdx[sliceIdx] / (m_numTileColumnsMinus1 + 1);
+          int sliceEndRow   = m_bottomRightBrickIdx[sliceIdx] / (m_numTileColumnsMinus1 + 1);
+          int sliceStartCol = m_topLeftBrickIdx[sliceIdx] % (m_numTileColumnsMinus1 + 1);
+          int sliceEndCol   = m_bottomRightBrickIdx[sliceIdx] % (m_numTileColumnsMinus1 + 1);
+          for (int i = 0; i <= m_numTileRowsMinus1; i++)
+          {
+            for (int j = 0; j <= m_numTileColumnsMinus1; j++)
+            {
+              if (i >= sliceStartRow && i <= sliceEndRow && j >= sliceStartCol && j <= sliceEndCol)
+              {
+                if (brickToSlice[i][j] != -1)
+                {
+                  msg(ERROR, "Error: Values given in RectSlicesBoundaryInPic have conflict! Rectangular slice shall not have overlapped tile(s)\n");
+                  EXIT(1);
+                }
+                else
+                {
+                  brickToSlice[i][j] = sliceIdx;
+                }
+              }
+            }
+          }
+          //Check violation to number of tiles per slice
+          if (m_sliceMode == 3 && m_rectSliceFlag)
+          {
+            if ((sliceEndRow - sliceStartRow + 1) * (sliceEndCol - sliceStartCol + 1) > m_sliceArgument)
+            {
+              EXIT("Error: One or more slices contain more tiles than the defined number of tiles per slice");
+            }
+            if ((sliceEndRow - sliceStartRow + 1) * (sliceEndCol - sliceStartCol + 1) < m_sliceArgument)
+            {
+              //Allow less number of tiles only when the rectangular slice is at the right most or bottom most of the picture
+              if (sliceEndRow != m_numTileRowsMinus1 || sliceEndCol != m_numTileColumnsMinus1)
+              {
+                EXIT("Error: One or more slices that is not at the picture boundary contain less tiles than the defined number of tiles per slice");
+              }
+            }
+          }
+        }
+        //Check gap case
+        for (int i = 0; i <= m_numTileRowsMinus1; i++)
+        {
+          for (int j = 0; j <= m_numTileColumnsMinus1; j++)
+          {
+            if (brickToSlice[i][j] == -1)
+            {
+              EXIT("Error: Values given in RectSlicesBoundaryInPic have conflict! Rectangular slice shall not have gap");
+            }
+          }
+        }
+
+        for (int i = 0; i <= m_numTileRowsMinus1; i++)
+        {
+          free(brickToSlice[i]);
+          brickToSlice[i] = 0;
+        }
+        free(brickToSlice);
+        brickToSlice = 0;
+#endif
       }
     }      // (!m_singleBrickPerSliceFlag && m_rectSliceFlag)
   }        // !singleTileInPicFlag
 
+#if JVET_N0857_RECT_SLICES
+  if (m_rectSliceFlag && m_signalledSliceIdFlag)
+  {
+    int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
+
+    if (cfg_SignalledSliceId.values.size() > numSlicesInPic)
+    {
+      EXIT("Error: The number of Slice Ids are greater than the m_signalledTileGroupIdLengthMinus1.");
+    }
+    else if (cfg_SignalledSliceId.values.size() < numSlicesInPic)
+    {
+      EXIT("Error: The number of Slice Ids are less than the m_signalledTileGroupIdLengthMinus1.");
+    }
+    else
+    {
+      m_sliceId.resize(numSlicesInPic);
+      for (uint32_t i = 0; i < cfg_SignalledSliceId.values.size(); ++i)
+      {
+        m_sliceId[i] = cfg_SignalledSliceId.values[i];
+      }
+    }
+  }
+  else if (m_rectSliceFlag)
+  {
+    int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
+    m_sliceId.resize(numSlicesInPic);
+    for (uint32_t i = 0; i < numSlicesInPic; ++i)
+    {
+      m_sliceId[i] = i;
+    }
+  }
+#else
   if (m_rectSliceFlag && m_signalledSliceIdFlag)
   {
     int numTileGroupsInPic = m_numSlicesInPicMinus1 + 1;
@@ -1815,6 +1960,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       }
     }
   }
+#endif
 #endif
 
   if (tmpDecodedPictureHashSEIMappedType<0 || tmpDecodedPictureHashSEIMappedType>=int(NUMBER_OF_HASHTYPES))

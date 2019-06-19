@@ -1418,10 +1418,13 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
   {
     cctx.initSubblock( sbId );
 
+    int noCoeffCoded = 0;
+    baseCost = 0.0;
     memset( &rdStats, 0, sizeof (coeffGroupRDStats));
 
     for( int scanPosInSB = 0; scanPosInSB <= sbSizeM1; scanPosInSB++ )
     {
+      int lastPosCoded = sbSizeM1;
       scanPos = cctx.minSubPos() + scanPosInSB;
       //===== quantization =====
       uint32_t blkPos = cctx.blockPos( scanPos );
@@ -1448,25 +1451,26 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
       DTRACE_COND( ( maxAbsLevel != 0 ), g_trace_ctx, D_RDOQ_MORE, " uiCtxSig=%d", ctxIdSig );
 
       const BinFracBits fracBitsSig = fracBits.getFracBitsArray( ctxIdSig );
+      bool lastCoeff = false; //
+      if (scanPosInSB == lastPosCoded && noCoeffCoded == 0)
+      {
+        lastCoeff = true;
+      }
       cLevel = xGetCodedLevelTS( costCoeff[ scanPos ], costCoeff0[ scanPos ], costSig[ scanPos ],
-                                 levelDouble, maxAbsLevel, &fracBitsSig, fracBitsPar, cctx, fracBits, fracBitsSign, sign, goRiceParam, qBits, errorScale, 0, extendedPrecision, maxLog2TrDynamicRange );
+                                 levelDouble, maxAbsLevel, &fracBitsSig, fracBitsPar, cctx, fracBits, fracBitsSign, sign, goRiceParam, qBits, errorScale, lastCoeff, extendedPrecision, maxLog2TrDynamicRange );
+      if (cLevel > 0)
+      {
+        noCoeffCoded++;
+      }
       dstCoeff[ blkPos ]  = cLevel;
       baseCost           += costCoeff[ scanPos ];
       rdStats.d64SigCost += costSig[ scanPos ];
 
-      if( scanPosInSB == 0 )
-      {
-        rdStats.d64SigCost_0 = costSig[ scanPos ];
-      }
       if( dstCoeff[ blkPos ] )
       {
         cctx.setSigGroup();
         rdStats.d64CodedLevelandDist += costCoeff [ scanPos ] - costSig[ scanPos ];
         rdStats.d64UncodedDist       += costCoeff0[ scanPos ];
-        if( scanPosInSB != 0 )
-        {
-          rdStats.iNNZbeforePos0++;
-        }
       }
     } //end for (iScanPosinCG)
 
@@ -1476,13 +1480,8 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
       baseCost += xGetRateSigCoeffGroup( fracBitsSigGroup, 0 ) - rdStats.d64SigCost;
       costSigSubBlock[cctx.subSetId()] = xGetRateSigCoeffGroup( fracBitsSigGroup, 0 );
     }
-    else if( sbId != sbSizeM1 || anySigCG )
+    else if( sbId != sbNum - 1 || anySigCG )
     {
-      if( rdStats.iNNZbeforePos0 == 0 )
-      {
-        baseCost -= rdStats.d64SigCost_0;
-        rdStats.d64SigCost -= rdStats.d64SigCost_0;
-      }
       // rd-cost if SigCoeffGroupFlag = 0, initialization
       double costZeroSB = baseCost;
 
@@ -1502,7 +1501,7 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
         baseCost = costZeroSB;
         costSigSubBlock[ cctx.subSetId() ] = xGetRateSigCoeffGroup( fracBitsSigGroup, 0 );
 
-        for( int scanPosInSB = 0; scanPosInSB < sbSizeM1; scanPosInSB++ )
+        for( int scanPosInSB = 0; scanPosInSB <= sbSizeM1; scanPosInSB++ )
         {
           scanPos = cctx.minSubPos() + scanPosInSB;
           uint32_t blkPos = cctx.blockPos( scanPos );
@@ -1626,10 +1625,13 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
   {
     cctx.initSubblock(sbId);
 
+    int noCoeffCoded = 0;
+    baseCost = 0.0;
     memset(&rdStats, 0, sizeof(coeffGroupRDStats));
 
     for (int scanPosInSB = 0; scanPosInSB <= sbSizeM1; scanPosInSB++)
     {
+      int lastPosCoded = sbSizeM1;
       scanPos = cctx.minSubPos() + scanPosInSB;
       //===== quantization =====
       uint32_t blkPos = cctx.blockPos(scanPos);
@@ -1662,8 +1664,17 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
       DTRACE_COND((maxAbsLevel != 0), g_trace_ctx, D_RDOQ_MORE, " uiCtxSig=%d", ctxIdSig);
 
       const BinFracBits fracBitsSig = fracBits.getFracBitsArray(ctxIdSig);
+      bool lastCoeff = false; //
+      if (scanPosInSB == lastPosCoded && noCoeffCoded == 0)
+      {
+        lastCoeff = true;
+      }
       cLevel = xGetCodedLevelTS(costCoeff[scanPos], costCoeff0[scanPos], costSig[scanPos],
-        levelDouble, maxAbsLevel, &fracBitsSig, fracBitsPar, cctx, fracBits, fracBitsSign, sign, goRiceParam, qBits, errorScale, 0, extendedPrecision, maxLog2TrDynamicRange);
+        levelDouble, maxAbsLevel, &fracBitsSig, fracBitsPar, cctx, fracBits, fracBitsSign, sign, goRiceParam, qBits, errorScale, lastCoeff, extendedPrecision, maxLog2TrDynamicRange);
+      if (cLevel > 0)
+      {
+        noCoeffCoded++;
+      }
       dstCoeff[blkPos] = cLevel;
 
       if (sign)
@@ -1676,19 +1687,11 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
       baseCost += costCoeff[scanPos];
       rdStats.d64SigCost += costSig[scanPos];
 
-      if (scanPosInSB == 0)
-      {
-        rdStats.d64SigCost_0 = costSig[scanPos];
-      }
       if (dstCoeff[blkPos])
       {
         cctx.setSigGroup();
         rdStats.d64CodedLevelandDist += costCoeff[scanPos] - costSig[scanPos];
         rdStats.d64UncodedDist += costCoeff0[scanPos];
-        if (scanPosInSB != 0)
-        {
-          rdStats.iNNZbeforePos0++;
-        }
       }
     } //end for (iScanPosinCG)
 
@@ -1698,13 +1701,8 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
       baseCost += xGetRateSigCoeffGroup(fracBitsSigGroup, 0) - rdStats.d64SigCost;
       costSigSubBlock[cctx.subSetId()] = xGetRateSigCoeffGroup(fracBitsSigGroup, 0);
     }
-    else if (sbId != sbSizeM1 || anySigCG)
+    else if (sbId != sbNum - 1 || anySigCG)
     {
-      if (rdStats.iNNZbeforePos0 == 0)
-      {
-        baseCost -= rdStats.d64SigCost_0;
-        rdStats.d64SigCost -= rdStats.d64SigCost_0;
-      }
       // rd-cost if SigCoeffGroupFlag = 0, initialization
       double costZeroSB = baseCost;
 
@@ -1724,7 +1722,7 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
         baseCost = costZeroSB;
         costSigSubBlock[cctx.subSetId()] = xGetRateSigCoeffGroup(fracBitsSigGroup, 0);
 
-        for (int scanPosInSB = 0; scanPosInSB < sbSizeM1; scanPosInSB++)
+        for (int scanPosInSB = 0; scanPosInSB <= sbSizeM1; scanPosInSB++)
         {
           scanPos = cctx.minSubPos() + scanPosInSB;
           uint32_t blkPos = cctx.blockPos(scanPos);

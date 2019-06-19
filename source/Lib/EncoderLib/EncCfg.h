@@ -598,7 +598,7 @@ protected:
 
   CostMode  m_costMode;                                       ///< The cost function to use, primarily when considering lossless coding.
 
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   VPS       m_cVPS;
 #endif
 #if JVET_N0349_DPS
@@ -1530,7 +1530,7 @@ public:
   CostMode     getCostMode( ) const                                  { return m_costMode; }
   void         setCostMode(CostMode m )                              { m_costMode = m; }
 
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   void         setVPS(VPS *p)                                        { m_cVPS = *p; }
   VPS *        getVPS()                                              { return &m_cVPS; }
 #endif

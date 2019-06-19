@@ -67,9 +67,17 @@ static std::vector<uint32_t> writeAnnexB(std::ostream& out, const AccessUnit& au
 #endif
 #else
 #if JVET_N0349_DPS
+#if JVET_N0278_HLS
+    if (it == au.begin() || nalu.m_nalUnitType == NAL_UNIT_DPS || nalu.m_nalUnitType == NAL_UNIT_SPS || nalu.m_nalUnitType == NAL_UNIT_VPS || nalu.m_nalUnitType == NAL_UNIT_PPS)
+#else
     if (it == au.begin() || nalu.m_nalUnitType == NAL_UNIT_DPS || nalu.m_nalUnitType == NAL_UNIT_SPS || nalu.m_nalUnitType == NAL_UNIT_PPS)
+#endif
+#else
+#if JVET_N0278_HLS
+    if (it == au.begin() || nalu.m_nalUnitType == NAL_UNIT_SPS || nalu.m_nalUnitType == NAL_UNIT_VPS || nalu.m_nalUnitType == NAL_UNIT_PPS)
 #else
     if (it == au.begin() || nalu.m_nalUnitType == NAL_UNIT_SPS || nalu.m_nalUnitType == NAL_UNIT_PPS)
+#endif
 #endif
 #endif
     {

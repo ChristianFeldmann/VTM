@@ -147,7 +147,7 @@ protected:
 
 public:
   void  setBitstream        ( InputBitstream* p )   { m_pcBitstream = p; }
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   void  parseVPS            ( VPS* pcVPS );
 #endif
 #if JVET_N0349_DPS

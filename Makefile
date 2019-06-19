@@ -17,7 +17,7 @@ BUILD_SCRIPT := $(CURDIR)/cmake/CMakeBuild/bin/cmake.py
 #
 
 TARGETS := CommonLib DecoderAnalyserApp DecoderAnalyserLib DecoderApp DecoderLib 
-TARGETS += EncoderApp EncoderLib Utilities SEIRemovalApp
+TARGETS += EncoderApp EncoderLib Utilities SEIRemovalApp StreamMergeApp
 
 ifeq ($(OS),Windows_NT)
   ifneq ($(MSYSTEM),)

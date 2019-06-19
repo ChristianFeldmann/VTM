@@ -1454,13 +1454,15 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   return false;
 }
 
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
 void DecLib::xDecodeVPS( InputNALUnit& nalu )
 {
   VPS* vps = new VPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
   m_HLSReader.parseVPS( vps );
+#if !JVET_N0278_HLS
   m_parameterSetManager.storeVPS( vps, nalu.getBitstream().getFifo() );
+#endif
 }
 #endif
 
@@ -1510,7 +1512,11 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
 {
   bool ret;
   // ignore all NAL units of layers > 0
+#if JVET_N0278_HLS
+  if (getTargetDecLayer() >= 0 && nalu.m_nuhLayerId != getTargetDecLayer()) //TBC: ignore bitstreams whose nuh_layer_id is not the target layer id
+#else
   if (nalu.m_nuhLayerId > 0)
+#endif
   {
     msg( WARNING, "Warning: found NAL unit with nuh_layer_id equal to %d. Ignoring.\n", nalu.m_nuhLayerId);
     return false;
@@ -1518,7 +1524,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
 
   switch (nalu.m_nalUnitType)
   {
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
     case NAL_UNIT_VPS:
       xDecodeVPS( nalu );
       return false;
@@ -1650,7 +1656,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_RESERVED_VCL29:
     case NAL_UNIT_RESERVED_VCL30:
     case NAL_UNIT_RESERVED_VCL31:
-#if !HEVC_VPS
+#if !HEVC_VPS && !JVET_N0278_HLS
     case NAL_UNIT_RESERVED_32:
 #endif
 #else

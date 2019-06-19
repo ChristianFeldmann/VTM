@@ -1744,6 +1744,24 @@ VPS::VPS()
 VPS::~VPS()
 {
 }
+#elif JVET_N0278_HLS
+// ------------------------------------------------------------------------------------------------
+// Video parameter set (VPS)
+// ------------------------------------------------------------------------------------------------
+VPS::VPS()
+  : m_VPSId(0)
+  , m_uiMaxLayers(1)
+  , m_vpsExtensionFlag()
+{
+  for (int i = 0; i < MAX_VPS_LAYERS; i++)
+  {
+    m_vpsIncludedLayerId[i] = 0;
+  }
+}
+
+VPS::~VPS()
+{
+}
 #endif
 
 // ------------------------------------------------------------------------------------------------
@@ -2864,7 +2882,7 @@ uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chTy
 }
 
 #if ENABLE_TRACING
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
 void xTraceVPSHeader()
 {
   DTRACE( g_trace_ctx, D_HEADER, "=========== Video Parameter Set     ===========\n" );

@@ -173,6 +173,9 @@ static const int MAX_NESTING_NUM_LAYER =                           64;
 static const int MAX_VPS_NUM_HRD_PARAMETERS =                       1;
 static const int MAX_VPS_OP_SETS_PLUS1 =                         1024;
 static const int MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1 =         1;
+#elif JVET_N0278_HLS
+static const int MAX_VPS_NUM_HRD_PARAMETERS =                       1;
+static const int MAX_VPS_LAYERS =                                 256;
 #endif
 
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;

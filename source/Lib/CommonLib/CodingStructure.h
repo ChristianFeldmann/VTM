@@ -101,6 +101,8 @@ public:
 #endif
 #if HEVC_VPS
   const VPS *vps;
+#elif JVET_N0278_HLS
+  const VPS *vps;
 #endif
   const PreCalcValues* pcv;
 

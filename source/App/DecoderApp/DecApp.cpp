@@ -153,7 +153,11 @@ uint32_t DecApp::decode()
     {
       read(nalu);
 
+#if JVET_N0278_HLS
+      if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu) || !isNaluTheTargetLayer(&nalu))
+#else
       if( (m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu)  )
+#endif
       {
         bNewPicture = false;
       }
@@ -308,6 +312,11 @@ void DecApp::xCreateDecLib()
 #endif
   );
   m_cDecLib.setDecodedPictureHashSEIEnabled(m_decodedPictureHashSEIEnabled);
+
+#if JVET_N0278_HLS
+  m_cDecLib.setTargetDecLayer(m_iTargetLayer);
+#endif
+
   if (!m_outputDecodedSEIMessagesFilename.empty())
   {
     std::ostream &os=m_seiMessageFileStream.is_open() ? m_seiMessageFileStream : std::cout;
@@ -678,5 +687,17 @@ bool DecApp::isNaluWithinTargetDecLayerIdSet( InputNALUnit* nalu )
   }
   return false;
 }
+
+#if JVET_N0278_HLS
+/** \param nalu Input nalu to check whether its LayerId is the specified target layer
+*/
+bool DecApp::isNaluTheTargetLayer(InputNALUnit* nalu)
+{
+  if (nalu->m_nuhLayerId == m_iTargetLayer || m_iTargetLayer < 0)
+    return true;
+
+  return false;
+}
+#endif
 
 //! \}

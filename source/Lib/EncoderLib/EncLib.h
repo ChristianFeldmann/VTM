@@ -154,6 +154,8 @@ protected:
   void  xGetNewPicBuffer  ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Picture*& rpcPic, int ppsId ); ///< get picture buffer which will be processed. If ppsId<0, then the ppsMap will be queried for the first match.
 #if HEVC_VPS
   void  xInitVPS          (VPS &vps, const SPS &sps); ///< initialize VPS from encoder options
+#elif JVET_N0278_HLS
+  void  xInitVPS          (VPS &vps); ///< initialize VPS from encoder options
 #endif
 #if JVET_N0349_DPS
   void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options

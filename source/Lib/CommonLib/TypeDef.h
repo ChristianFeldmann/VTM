@@ -52,6 +52,8 @@
  
 #define JVET_N0276_CONSTRAINT_FLAGS                       1 // JVET-N0276: On interoperability point signalling
 
+#define JVET_N0278_HLS                                    1 // JVET-N0278: HLS for MPEG requirements on immersive media delivery and access
+
 #define JVET_N0063_VUI                                    1 // JVET-N0063: Video Usability Information
 
 #define JVET_N0847_SCALING_LISTS                          1  //1: default mode, 2: user defined mode
@@ -281,7 +283,7 @@ typedef std::pair<int, int>  TrCost;
 #define K0238_SAO_GREEDY_MERGE_ENCODING                   1
 
 #ifndef ENABLE_TRACING
-#define ENABLE_TRACING                                    0 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
+#define ENABLE_TRACING                                    1 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
 #endif
 
 #if ENABLE_TRACING
@@ -1083,7 +1085,7 @@ enum NalUnitType
   NAL_UNIT_RESERVED_VCL30,
   NAL_UNIT_RESERVED_VCL31,
 
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   NAL_UNIT_VPS,                     // 32
 #else
   NAL_UNIT_RESERVED_32,

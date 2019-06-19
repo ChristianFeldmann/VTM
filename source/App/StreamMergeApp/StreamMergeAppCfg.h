@@ -31,22 +31,19 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** \file     TAppDecLib.h
-    \brief    Decoder application class (header)
+/** \file     StreamMergeAppCfg.h
+    \brief    Stream merge app configuration class (header)
 */
 
-#ifndef __DECAPP__
-#define __DECAPP__
+#ifndef __STREAMMERGEAPPCFG__
+#define __STREAMMERGEAPPCFG__
 
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "Utilities/VideoIOYuv.h"
-#include "Utilities/ColourRemapping.h"
-#include "CommonLib/Picture.h"
-#include "DecoderLib/DecLib.h"
-#include "DecAppCfg.h"
+#include "CommonLib/CommonDef.h"
+#include <vector>
 
 //! \ingroup DecoderApp
 //! \{
@@ -55,38 +52,23 @@
 // Class definition
 // ====================================================================================================================
 
-/// decoder application class
-class DecApp : public DecAppCfg
+/// Decoder configuration class
+class StreamMergeAppCfg
 {
-private:
-  // class interface
-  DecLib          m_cDecLib;                     ///< decoder class
-  VideoIOYuv      m_cVideoIOYuvReconFile;        ///< reconstruction YUV class
-
-  // for output control
-  int             m_iPOCLastDisplay;              ///< last POC in display order
-  std::ofstream   m_seiMessageFileStream;         ///< Used for outputing SEI messages.
-  ColourRemapping m_cColourRemapping;             ///< colour remapping handler
-
+protected:
+  std::string   m_bitstreamFileNameIn[MAX_VPS_LAYERS];                ///< output bitstream file name
+  std::string   m_bitstreamFileNameOut;               ///< input bitstream file name
+  int           m_numInputStreams;                    ///< number of input bitstreams
 
 public:
-  DecApp();
-  virtual ~DecApp         ()  {}
+  StreamMergeAppCfg();
+  virtual ~StreamMergeAppCfg();
 
-  uint32_t  decode            (); ///< main decoding function
-
-private:
-  void  xCreateDecLib     (); ///< create internal classes
-  void  xDestroyDecLib    (); ///< destroy internal classes
-  void  xWriteOutput      ( PicList* pcListPic , uint32_t tId); ///< write YUV to file
-  void  xFlushOutput      ( PicList* pcListPic ); ///< flush all remaining decoded pictures to file
-  bool  isNaluWithinTargetDecLayerIdSet ( InputNALUnit* nalu ); ///< check whether given Nalu is within targetDecLayerIdSet
-#if JVET_N0278_HLS
-  bool  isNaluTheTargetLayer(InputNALUnit* nalu); ///< check whether given Nalu is within targetDecLayerIdSet
-#endif
+  bool  parseCfg        ( int argc, char* argv[] );   ///< initialize option class from configuration
 };
 
 //! \}
 
-#endif // __DECAPP__
+#endif  // __STREAMMERGEAPPCFG__
+
 

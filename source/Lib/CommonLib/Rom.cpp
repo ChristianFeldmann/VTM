@@ -92,7 +92,7 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
   case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";
   case NAL_UNIT_CODED_SLICE_RASL:       return "RASL";
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   case NAL_UNIT_VPS:                    return "VPS";
 #endif
   case NAL_UNIT_SPS:                    return "SPS";
@@ -122,7 +122,7 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_CODED_SLICE_RADL_N:     return "RADL_N";
   case NAL_UNIT_CODED_SLICE_RASL_R:     return "RASL_R";
   case NAL_UNIT_CODED_SLICE_RASL_N:     return "RASL_N";
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   case NAL_UNIT_VPS:                    return "VPS";
 #endif
   case NAL_UNIT_SPS:                    return "SPS";

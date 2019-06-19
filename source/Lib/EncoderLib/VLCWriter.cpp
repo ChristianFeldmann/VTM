@@ -1289,6 +1289,25 @@ void HLSWriter::codeVPS( const VPS* pcVPS )
   //future extensions here..
   xWriteRbspTrailingBits();
 }
+#elif JVET_N0278_HLS
+void HLSWriter::codeVPS(const VPS* pcVPS)
+{
+#if ENABLE_TRACING
+  xTraceVPSHeader();
+#endif
+  WRITE_CODE(pcVPS->getVPSId(), 4, "vps_video_parameter_set_id");
+  WRITE_CODE(pcVPS->getMaxLayers() - 1, 8, "vps_max_layers_minus1");
+  for (uint32_t i = 0; i <= pcVPS->getMaxLayers() - 1; i++)
+  {
+    WRITE_CODE(pcVPS->getVPSIncludedLayerId(i), 7, "vps_included_layer_id");
+    WRITE_FLAG(0, "vps_reserved_zero_1bit");
+  }
+
+  WRITE_FLAG(0, "vps_extension_flag");
+
+  //future extensions here..
+  xWriteRbspTrailingBits();
+}
 #endif
 
 void HLSWriter::codeSliceHeader         ( Slice* pcSlice )

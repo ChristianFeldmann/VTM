@@ -240,6 +240,8 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   xInitSPS(sps0);
 #if HEVC_VPS
   xInitVPS(m_cVPS, sps0);
+#elif JVET_N0278_HLS
+  xInitVPS(m_cVPS);
 #endif
 
 #if JVET_N0349_DPS
@@ -890,6 +892,17 @@ void EncLib::xInitVPS(VPS &vps, const SPS &sps)
     vps.setHrdOpSetIdx( 0, i );
     vps.setCprmsPresentFlag( false, i );
     // Set up HrdParameters here.
+  }
+}
+#elif JVET_N0278_HLS
+void EncLib::xInitVPS(VPS &vps)
+{
+  // The SPS must have already been set up.
+  // set the VPS profile information.
+  vps.setMaxLayers(1);
+  for (uint32_t i = 0; i < vps.getMaxLayers(); i++)
+  {
+    vps.setVPSIncludedLayerId(0, i);
   }
 }
 #endif

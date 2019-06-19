@@ -3299,6 +3299,13 @@ Defines the chroma bit-depth of the reconstructed YUV file (the value 0 indicate
 that the native bit-depth is used)
 \\
 
+\Option{TargetLayer (-p)} &
+%\ShortOption{-p} &
+\Default{-1 \\ (Native)} &
+Specifies the target bitstream Layer to be decoded. (the value -1 indicates
+that decoding the whole bitstream )
+\\
+
 \Option{SEIDecodedPictureHash} &
 %\ShortOption{\None} &
 \Default{1} &
@@ -3606,5 +3613,29 @@ DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL,
 #include "dtrace_blockstatistics.h"
 \end{minted}
 \end{description}
+
+
+
+
+
+\section{Using the stream merge tool}
+\label{sec:stream-merge-tool}
+
+The StreamMergeApp tool takes multiple single-layer (singe nuh_layer_id) bistreams 
+as inputs and merge them into a multi-layer bistream by interleaving the NALUs 
+from the input single layer bistreams. During the merge, the tool assigns a new unique
+nuh_layer_id for each input bitstream. Then the decoder could specify which layer 
+bitstream to be decoded through the command line option "-p nuh_layer_id". 
+
+\subsection{Usage}
+\label{sec:usage}
+
+\begin{minted}{bash}
+StreamMergeApp 	<bitstream1> <bitstream2> [<bitstream3> ...] <outfile>
+\end{minted}
+
+The command line options bistreamX specify the file names of the input single-layer 
+bistreams. At least two input bitstreams need to be specified. The merged multi-layer 
+bistream will be stored into the outfile.
 
 \end{document}

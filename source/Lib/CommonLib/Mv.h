@@ -314,6 +314,12 @@ void clipMv ( Mv& rcMv, const struct Position& pos,
               const struct Size& size,
               const class SPS& sps );
 
+#if JVET_N0070_WRAPAROUND
+bool wrapClipMv( Mv& rcMv, const Position& pos, 
+                 const struct Size& size, 
+                 const SPS *sps );
+#endif
+
 void roundAffineMv( int& mvx, int& mvy, int nShift );
 
 //! \}

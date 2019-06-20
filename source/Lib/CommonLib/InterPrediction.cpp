@@ -646,8 +646,19 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   int shiftHor = MV_FRACTIONAL_BITS_INTERNAL + ::getComponentScaleX(compID, chFmt);
   int shiftVer = MV_FRACTIONAL_BITS_INTERNAL + ::getComponentScaleY(compID, chFmt);
 
+#if JVET_N0070_WRAPAROUND
+  bool  wrapRef = false;
+  Mv    mv(_mv);
+  if( !isIBC && pu.cs->sps->getWrapAroundEnabledFlag() ) 
+  {
+    wrapRef = wrapClipMv( mv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps);   
+  }
+  int xFrac = mv.hor & ((1 << shiftHor) - 1);
+  int yFrac = mv.ver & ((1 << shiftVer) - 1);
+#else
   int xFrac = _mv.hor & ((1 << shiftHor) - 1);
   int yFrac = _mv.ver & ((1 << shiftVer) - 1);
+#endif
   if (isIBC)
   {
     xFrac = yFrac = 0;
@@ -660,13 +671,25 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 
   CPelBuf refBuf;
   {
+#if JVET_N0070_WRAPAROUND
+    Position offset = pu.blocks[compID].pos().offset( mv.getHor() >> shiftHor, mv.getVer() >> shiftVer );
+#else
     Position offset = pu.blocks[compID].pos().offset( _mv.getHor() >> shiftHor, _mv.getVer() >> shiftVer );
+#endif
     if (dmvrWidth)
     {
+#if JVET_N0070_WRAPAROUND
+      refBuf = refPic->getRecoBuf(CompArea(compID, chFmt, offset, Size(dmvrWidth, dmvrHeight)), wrapRef);
+#else
       refBuf = refPic->getRecoBuf(CompArea(compID, chFmt, offset, Size(dmvrWidth, dmvrHeight)));
+#endif
     }
     else
+#if JVET_N0070_WRAPAROUND
+    refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, pu.blocks[compID].size() ), wrapRef);
+#else
     refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, pu.blocks[compID].size() ) );
+#endif
   }
 
   if (NULL != srcPadBuf)
@@ -876,6 +899,9 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   const int vFilterSize = isLuma(compID) ? NTAPS_LUMA : NTAPS_CHROMA;
 
   const int shift = iBit - 4 + MV_FRACTIONAL_BITS_INTERNAL;
+#if JVET_N0070_WRAPAROUND
+  bool      wrapRef = false;
+#endif
 #if JVET_N0068_AFFINE_MEM_BW
   const bool subblkMVSpreadOverLimit = isSubblockVectorSpreadOverLimit( iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY, pu.interDir );
 #endif
@@ -918,12 +944,19 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         {
           m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
           Mv tmpMv(iMvScaleTmpHor, iMvScaleTmpVer);
+#if JVET_N0070_WRAPAROUND
+          wrapRef = wrapClipMv( tmpMv, Position(pu.Y().x + w, pu.Y().y + h), Size(blockWidth, blockHeight), &sps);
+#else
           clipMv(tmpMv, Position(pu.Y().x + w, pu.Y().y + h), Size(blockWidth, blockHeight), sps);
+#endif
           iMvScaleTmpHor = tmpMv.getHor();
           iMvScaleTmpVer = tmpMv.getVer();
         }
         else
         {
+#if JVET_N0070_WRAPAROUND
+          wrapRef = false;
+#endif
           m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
           iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
           iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
@@ -940,10 +973,17 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         roundAffineMv(curMv.hor, curMv.ver, 1);
         if (sps.getWrapAroundEnabledFlag())
         {
+#if JVET_N0070_WRAPAROUND
+          wrapRef = wrapClipMv( curMv, Position(pu.Y().x + (w << iScaleX), pu.Y().y + (h << iScaleY)), Size(blockWidth << iScaleX, blockHeight << iScaleY), &sps);
+#else
           clipMv(curMv, Position(pu.Y().x + (w << iScaleX), pu.Y().y + (h << iScaleY)), Size(blockWidth << iScaleX, blockHeight << iScaleY), sps);
+#endif
         }
         else
         {
+#if JVET_N0070_WRAPAROUND
+          wrapRef = false;
+#endif
           curMv.hor = std::min<int>(iHorMax, std::max<int>(iHorMin, curMv.hor));
           curMv.ver = std::min<int>(iVerMax, std::max<int>(iVerMin, curMv.ver));
         }
@@ -974,7 +1014,11 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         yFrac = iMvScaleTmpVer & 31;
       }
 
+#if JVET_N0070_WRAPAROUND
+      const CPelBuf refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, pu.blocks[compID].offset(xInt + w, yInt + h), pu.blocks[compID] ), wrapRef );
+#else
       const CPelBuf refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, pu.blocks[compID].offset(xInt + w, yInt + h), pu.blocks[compID] ) );
+#endif
       PelBuf &dstBuf = dstPic.bufs[compID];
 
       if ( yFrac == 0 )
@@ -1587,12 +1631,27 @@ void InterPrediction::xPrefetchPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPic
     height += (filtersize - 1);
     cMv += Mv(-(((filtersize >> 1) - 1) << mvshiftTemp),
       -(((filtersize >> 1) - 1) << mvshiftTemp));
+#if JVET_N0070_WRAPAROUND
+    bool wrapRef = false;
+    if( pu.cs->sps->getWrapAroundEnabledFlag() ) 
+    {
+      wrapRef = wrapClipMv( cMv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps);   
+    }
+    else {
+      clipMv(cMv, pu.lumaPos(), pu.lumaSize(),*pu.cs->sps);
+    }
+#else
     clipMv(cMv, pu.lumaPos(), pu.lumaSize(),*pu.cs->sps);
+#endif
     /* Pre-fetch similar to HEVC*/
     {
       CPelBuf refBuf;
       Position Rec_offset = pu.blocks[compID].pos().offset(cMv.getHor() >> mvshiftTemp, cMv.getVer() >> mvshiftTemp);
+#if JVET_N0070_WRAPAROUND
+      refBuf = refPic->getRecoBuf(CompArea((ComponentID)compID, pu.chromaFormat, Rec_offset, pu.blocks[compID].size()), wrapRef);
+#else
       refBuf = refPic->getRecoBuf(CompArea((ComponentID)compID, pu.chromaFormat, Rec_offset, pu.blocks[compID].size()));
+#endif
       PelBuf &dstBuf = pcPad.bufs[compID];
       g_pelBufOP.copyBuffer((Pel *)refBuf.buf, refBuf.stride, ((Pel *)dstBuf.buf) + offset, dstBuf.stride, width, height);
     }

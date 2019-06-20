@@ -1994,8 +1994,13 @@ bool InterSearch::xRectHashInterEstimation(PredictionUnit& pu, RefPicList& bestR
           currAMVPInfo4Pel.mvCand[mvpIdxTemp].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
         }
 
+#if     JVET_N0070_WRAPAROUND
+        const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).buf;
+        const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).stride;
+#else
         const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf().get(COMPONENT_Y).buf;
         const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf().get(COMPONENT_Y).stride;
+#endif
         m_cDistParam.cur.stride = refStride;
 
         m_pcRdCost->selectMotionLambda(pu.cu->transQuantBypass);
@@ -2235,8 +2240,13 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
           currAMVPInfo4Pel.mvCand[mvpIdxTemp].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
         }
 
+#if JVET_N0070_WRAPAROUND
+        const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).buf;
+        const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).stride;
+#else
         const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf().get(COMPONENT_Y).buf;
         const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf().get(COMPONENT_Y).stride;
+#endif
 
         m_cDistParam.cur.stride = refStride;
 
@@ -3448,7 +3458,11 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
 
   m_lumaClpRng = pu.cs->slice->clpRng( COMPONENT_Y );
 
+#if JVET_N0070_WRAPAROUND
+  CPelBuf buf = pu.cu->slice->getRefPic(eRefPicList, iRefIdxPred)->getRecoBuf(pu.blocks[COMPONENT_Y], pu.cs->sps->getWrapAroundEnabledFlag());
+#else
   CPelBuf buf = pu.cu->slice->getRefPic(eRefPicList, iRefIdxPred)->getRecoBuf(pu.blocks[COMPONENT_Y]);
+#endif
 
   IntTZSearchStruct cStruct;
   cStruct.pcPatternKey  = pcPatternKey;

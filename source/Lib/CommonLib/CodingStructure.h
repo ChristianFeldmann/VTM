@@ -57,6 +57,7 @@ enum PictureType
   PIC_PREDICTION,
   PIC_RESIDUAL,
   PIC_ORG_RESI,
+  PIC_RECON_WRAP,
   NUM_PIC_TYPES
 };
 enum IbcLumaCoverage

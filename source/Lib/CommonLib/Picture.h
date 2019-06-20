@@ -273,6 +273,16 @@ struct Picture : public UnitArea
          PelUnitBuf getResiBuf(const UnitArea &unit);
   const CPelUnitBuf getResiBuf(const UnitArea &unit) const;
 
+#if JVET_N0070_WRAPAROUND
+         PelBuf     getRecoBuf(const ComponentID compID, bool wrap=false);
+  const CPelBuf     getRecoBuf(const ComponentID compID, bool wrap=false) const;
+         PelBuf     getRecoBuf(const CompArea &blk, bool wrap=false);
+  const CPelBuf     getRecoBuf(const CompArea &blk, bool wrap=false) const;
+         PelUnitBuf getRecoBuf(const UnitArea &unit, bool wrap=false);
+  const CPelUnitBuf getRecoBuf(const UnitArea &unit, bool wrap=false) const;
+         PelUnitBuf getRecoBuf(bool wrap=false);
+  const CPelUnitBuf getRecoBuf(bool wrap=false) const;
+#else
          PelBuf     getRecoBuf(const ComponentID compID);
   const CPelBuf     getRecoBuf(const ComponentID compID) const;
          PelBuf     getRecoBuf(const CompArea &blk);
@@ -281,6 +291,7 @@ struct Picture : public UnitArea
   const CPelUnitBuf getRecoBuf(const UnitArea &unit) const;
          PelUnitBuf getRecoBuf();
   const CPelUnitBuf getRecoBuf() const;
+#endif
 
          PelBuf     getBuf(const ComponentID compID, const PictureType &type);
   const CPelBuf     getBuf(const ComponentID compID, const PictureType &type) const;

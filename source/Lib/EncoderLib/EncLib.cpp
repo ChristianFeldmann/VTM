@@ -60,10 +60,17 @@
 EncLib::EncLib()
   : m_spsMap( MAX_NUM_SPS )
   , m_ppsMap( MAX_NUM_PPS )
+#if JVET_N0805_APS_LMCS
+  , m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
+#else
   , m_apsMap( MAX_NUM_APS )
+#endif
   , m_AUWriterIf( nullptr )
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   , m_cacheModel()
+#endif
+#if JVET_N0805_APS_LMCS
+  , m_lmcsAPS(nullptr)
 #endif
 {
   m_iPOCLast          = -1;
@@ -424,12 +431,16 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     picBg->create(sps0.getChromaFormatIdc(), Size(sps0.getPicWidthInLumaSamples(), sps0.getPicHeightInLumaSamples()), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false);
     picBg->getRecoBuf().fill(0);
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+    picBg->finalInit(sps0, pps0, m_apss, *m_lmcsAPS);
+#else
     picBg->finalInit(sps0, pps0, m_apss);
-#if JVET_N0857_RECT_SLICES
-    pps0.setNumBricksInPic((int)picBg->brickMap->bricks.size());
 #endif
 #else
     picBg->finalInit(sps0, pps0, aps0);
+#endif
+#if JVET_N0857_RECT_SLICES
+    pps0.setNumBricksInPic((int)picBg->brickMap->bricks.size());
 #endif
     picBg->allocateNewSlice();
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
@@ -600,7 +611,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+    picCurr->finalInit(*sps, *pps, m_apss, *m_lmcsAPS);
+#else
     picCurr->finalInit(*sps, *pps, m_apss);
+#endif
 #else
     APS *aps = m_apsMap.getPS(0);
     picCurr->finalInit(*sps, *pps, *aps);
@@ -653,7 +668,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
       pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap(*cPicYuvTrueOrg );
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+      pcPicCurr->finalInit(*pSPS, *pPPS, m_apss, *m_lmcsAPS);
+#else
       pcPicCurr->finalInit(*pSPS, *pPPS, m_apss);
+#endif
 #else
       APS *pAPS = m_apsMap.getPS(0);
       pcPicCurr->finalInit(*pSPS, *pPPS, *pAPS);
@@ -756,7 +775,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+        pcField->finalInit(*pSPS, *pPPS, m_apss, *m_lmcsAPS);
+#else
         pcField->finalInit(*pSPS, *pPPS, m_apss);
+#endif
 #else
         APS *pAPS = m_apsMap.getPS(0);
         pcField->finalInit(*pSPS, *pPPS, *pAPS);

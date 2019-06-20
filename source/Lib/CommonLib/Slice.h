@@ -1944,7 +1944,13 @@ class APS
 {
 private:
   int                    m_APSId;                    // adaptation_parameter_set_id
+#if JVET_N0805_APS_LMCS
+  int                    m_APSType;                  // aps_params_type
+#endif
   AlfSliceParam          m_alfAPSParam;
+#if JVET_N0805_APS_LMCS
+  SliceReshapeInfo       m_reshapeAPSInfo;
+#endif
 
 public:
   APS();
@@ -1953,6 +1959,11 @@ public:
   int                    getAPSId() const                                                 { return m_APSId;                               }
   void                   setAPSId(int i)                                                  { m_APSId = i;                                  }
 
+#if JVET_N0805_APS_LMCS
+  int                    getAPSType() const                                               { return m_APSType;                             }
+  void                   setAPSType(int type)                                             { m_APSType = type;                             }
+#endif
+
   void                   setAlfAPSParam(AlfSliceParam& alfAPSParam)                       { m_alfAPSParam = alfAPSParam;                  }
 #if JVET_N0415_CTB_ALF
   void                   setTemporalId(int i) { m_alfAPSParam.tLayer = i; }
@@ -1960,6 +1971,11 @@ public:
   AlfSliceParam&         getAlfAPSParam()  { return m_alfAPSParam; }
 #else
   const AlfSliceParam&   getAlfAPSParam() const { return m_alfAPSParam; }
+#endif
+
+#if JVET_N0805_APS_LMCS
+  void                   setReshaperAPSInfo(SliceReshapeInfo& reshapeAPSInfo)             { m_reshapeAPSInfo = reshapeAPSInfo;            }
+  SliceReshapeInfo&      getReshaperAPSInfo()                                             { return m_reshapeAPSInfo;                      }
 #endif
 };
 struct WPScalingParam
@@ -2116,7 +2132,11 @@ private:
   uint32_t                   m_uiMaxBTSize;
 
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+  APS*                       m_alfApss[MAX_NUM_APS];
+#else
   APS*                       m_apss[MAX_NUM_APS];
+#endif
   bool                       m_tileGroupAlfEnabledFlag[MAX_NUM_COMPONENT];
   int                        m_tileGroupNumAps;
   std::vector<int>           m_tileGroupLumaApsId;
@@ -2129,7 +2149,14 @@ private:
 #if JVET_N0329_IBC_SEARCH_IMP
   bool                       m_disableSATDForRd;
 #endif
+#if JVET_N0805_APS_LMCS
+  int                        m_lmcsApsId;
+  APS*                       m_lmcsAps;
+  bool                       m_tileGroupLmcsEnabledFlag;
+  bool                       m_tileGroupLmcsChromaResidualScaleFlag;
+#else
   SliceReshapeInfo           m_sliceReshapeInfo;
+#endif
 public:
                               Slice();
   virtual                     ~Slice();
@@ -2153,13 +2180,30 @@ public:
   void                        setPPSId( int PPSId )                                  { m_iPPSId = PPSId;                                             }
   int                         getPPSId() const                                       { return m_iPPSId;                                              }
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+  void                        setAlfAPSs(APS** apss)                                 { memcpy(m_alfApss, apss, sizeof(m_alfApss));                   }
+  APS**                       getAlfAPSs()                                           { return m_alfApss;                                             }
+#else
   void                        setAPSs(APS** apss) { memcpy(m_apss, apss, sizeof(m_apss)); }
   APS**                       getAPSs() { return m_apss; }
+#endif
 #else
   void                        setAPS(APS* aps)                                     { m_aps = aps; m_apsId = (aps) ? aps->getAPSId() : -1; }
   APS*                        getAPS()                                               { return m_aps;                                               }
   void                        setAPSId(int apsId)                                    { m_apsId = apsId;                                             }
   int                         getAPSId() const                                       { return m_apsId;                                              }
+#endif
+#if JVET_N0805_APS_LMCS
+  void                        setLmcsAPS(APS* lmcsAps)                               { m_lmcsAps = lmcsAps; m_lmcsApsId = (lmcsAps) ? lmcsAps->getAPSId() : -1; }
+  APS*                        getLmcsAPS()                                           { return m_lmcsAps;                                            }
+  void                        setLmcsAPSId(int lmcsApsId)                            { m_lmcsApsId = lmcsApsId;                                     }
+  int                         getLmcsAPSId() const                                   { return m_lmcsApsId;                                          }
+  void                        setLmcsEnabledFlag(bool b)                             { m_tileGroupLmcsEnabledFlag = b;                              }
+  bool                        getLmcsEnabledFlag()                                   { return m_tileGroupLmcsEnabledFlag; }
+  const bool                  getLmcsEnabledFlag()                             const { return m_tileGroupLmcsEnabledFlag; }
+  void                        setLmcsChromaResidualScaleFlag(bool b)                 { m_tileGroupLmcsChromaResidualScaleFlag = b;                  }
+  bool                        getLmcsChromaResidualScaleFlag()                       { return m_tileGroupLmcsChromaResidualScaleFlag;               }
+  const bool                  getLmcsChromaResidualScaleFlag()                 const { return m_tileGroupLmcsChromaResidualScaleFlag;               }
 #endif
   void                        setPicOutputFlag( bool b   )                           { m_PicOutputFlag = b;                                          }
   bool                        getPicOutputFlag() const                               { return m_PicOutputFlag;                                       }
@@ -2429,7 +2473,11 @@ public:
   int                         getTileGroupApsIdChroma() const { return m_tileGroupChromaApsId; }
   void                        setTileGroupApsIdChroma(int i) { m_tileGroupChromaApsId = i; }
   std::vector<int32_t>        getTileGroupApsIdLuma() const { return m_tileGroupLumaApsId; }
+#if JVET_N0805_APS_LMCS
+  void                        setAlfAPSs(std::vector<int> ApsIDs)
+#else
   void                        setAPSs(std::vector<int> ApsIDs)
+#endif
   {
     m_tileGroupLumaApsId.resize(m_tileGroupNumAps);
     for (int i = 0; i < m_tileGroupNumAps; i++)
@@ -2445,8 +2493,10 @@ public:
   void                        setDisableSATDForRD(bool b) { m_disableSATDForRd = b; }
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
 #endif
+#if !JVET_N0805_APS_LMCS
   const SliceReshapeInfo&     getReshapeInfo() const { return m_sliceReshapeInfo; }
         SliceReshapeInfo&     getReshapeInfo()       { return m_sliceReshapeInfo; }
+#endif
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
   Picture*              xGetLongTermRefPic(PicList& rcListPic, int poc, bool pocHasMsb);
@@ -2670,12 +2720,21 @@ public:
   APS**          getAPSs() { return &m_apss[0]; }
   ParameterSetMap<APS>* getApsMap() { return &m_apsMap; }
 #endif
+#if JVET_N0805_APS_LMCS
+  void           storeAPS(APS *aps, const std::vector<uint8_t> &naluData)    { m_apsMap.storePS((aps->getAPSId() << NUM_APS_TYPE_LEN) + aps->getAPSType(), aps, &naluData); };
+  APS*           getAPS(int apsId, int apsType)                              { return m_apsMap.getPS((apsId << NUM_APS_TYPE_LEN) + apsType); };
+  bool           getAPSChangedFlag(int apsId, int apsType) const             { return m_apsMap.getChangedFlag((apsId << NUM_APS_TYPE_LEN) + apsType); }
+  void           clearAPSChangedFlag(int apsId, int apsType)                 { m_apsMap.clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + apsType); }
+  APS*           getFirstAPS()                                               { return m_apsMap.getFirstPS(); };
+  bool           activateAPS(int apsId, int apsType);
+#else
   void           storeAPS(APS *aps, const std::vector<uint8_t> &naluData)    { m_apsMap.storePS(aps->getAPSId(), aps, &naluData); };
   APS*           getAPS(int apsId)                                           { return m_apsMap.getPS(apsId);                      };
   bool           getAPSChangedFlag(int apsId) const                          { return m_apsMap.getChangedFlag(apsId);             }
   void           clearAPSChangedFlag(int apsId)                              { m_apsMap.clearChangedFlag(apsId);                  }
   APS*           getFirstAPS()                                               { return m_apsMap.getFirstPS();                      };
   bool           activateAPS(int apsId);
+#endif
 #if HEVC_VPS
   const VPS*     getActiveVPS()const                                         { return m_vpsMap.getPS(m_activeVPSId); };
 #endif

@@ -159,7 +159,11 @@ public:
 #else
   void  parsePPS            ( PPS* pcPPS );
 #endif
-  void  parseAPS            ( APS* pcAPS);
+  void  parseAPS            ( APS* pcAPS );
+#if JVET_N0805_APS_LMCS
+  void  parseAlfAps         ( APS* pcAPS );
+  void  parseLmcsAps        ( APS* pcAPS );
+#endif
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
 #if !JVET_M0101_HLS
   void  parsePTL            ( PTL *rpcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1 );

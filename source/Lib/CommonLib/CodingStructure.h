@@ -95,9 +95,16 @@ public:
   const SPS *sps;
   const PPS *pps;
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+  APS*       alfApss[MAX_NUM_APS];
+#else
   APS*       apss[MAX_NUM_APS];
+#endif
 #else
   APS *      aps;
+#endif
+#if JVET_N0805_APS_LMCS
+  APS *      lmcsAps;
 #endif
 #if HEVC_VPS
   const VPS *vps;

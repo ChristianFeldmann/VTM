@@ -779,10 +779,19 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
 #endif
   subStruct.pps       = pps;
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+  memcpy(subStruct.alfApss, alfApss, sizeof(alfApss));
+#else
   memcpy(subStruct.apss, apss, sizeof(apss));
+#endif
 #else
   subStruct.aps       = aps;
 #endif
+
+#if JVET_N0805_APS_LMCS
+  subStruct.lmcsAps = lmcsAps;
+#endif
+
   subStruct.slice     = slice;
   subStruct.baseQP    = baseQP;
   subStruct.prevQP[_chType]

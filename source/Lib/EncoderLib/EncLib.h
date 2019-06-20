@@ -142,6 +142,10 @@ private:
   APS*                      m_apss[MAX_NUM_APS];
 #endif
 
+#if JVET_N0805_APS_LMCS
+  APS*                      m_lmcsAPS;
+#endif
+
   EncHRD                    m_encHRD;
 
 public:

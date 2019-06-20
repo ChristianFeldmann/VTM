@@ -54,6 +54,8 @@
 
 #define JVET_N0278_HLS                                    1 // JVET-N0278: HLS for MPEG requirements on immersive media delivery and access
 
+#define JVET_N0805_APS_LMCS                               1 // JVET-N0805: Reference to APS from slice header for LMCS
+
 #define JVET_N0063_VUI                                    1 // JVET-N0063: Video Usability Information
 
 #define JVET_N0847_SCALING_LISTS                          1  //1: default mode, 2: user defined mode
@@ -465,6 +467,14 @@ typedef       uint64_t        Distortion;        ///< distortion measurement
 // ====================================================================================================================
 // Enumeration
 // ====================================================================================================================
+#if JVET_N0805_APS_LMCS
+enum ApsTypeValues
+{
+  ALF_APS = 0,
+  LMCS_APS = 1,
+};
+#endif
+
 enum QuantFlags
 {
   Q_INIT           = 0x0,

@@ -718,7 +718,11 @@ void AdaptiveLoopFilter::ALFProcess( CodingStructure& cs, AlfSliceParam& alfSlic
 void AdaptiveLoopFilter::reconstructCoeffAPSs(CodingStructure& cs, bool luma, bool chroma, bool isRdo)
 {
   //luma
+#if  JVET_N0805_APS_LMCS
+  APS** aps = cs.slice->getAlfAPSs();
+#else
   APS** aps = cs.slice->getAPSs();
+#endif
   AlfSliceParam alfSliceParamTmp;
   APS* curAPS;
   if (luma)

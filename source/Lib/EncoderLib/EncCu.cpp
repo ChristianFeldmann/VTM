@@ -1842,8 +1842,11 @@ void EncCu::xFillPCMBuffer( CodingUnit &cu )
 
       const CPelBuf source      = tu.cs->getOrgBuf( compArea );
              PelBuf destination = tu.getPcmbuf( compID );
-
+#if JVET_N0805_APS_LMCS
+      if (tu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#else
       if (tu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#endif
       {
         CompArea    tmpArea(COMPONENT_Y, compArea.chromaFormat, Position(0, 0), compArea.size());
         PelBuf tempOrgBuf = m_tmpStorageLCU->getBuf(tmpArea);
@@ -2232,20 +2235,32 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             m_pcIntraSearch->switchBuffer(pu, COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, intraCnt));
           }
           pu.cs->getPredBuf(pu).copyFrom(acMergeBuffer[mergeCand]);
+#if JVET_N0805_APS_LMCS
+          if (pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
           if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+#endif
           {
             pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
           }
           m_pcIntraSearch->geneWeightedPred(COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, intraCnt));
 
           // calculate cost
+#if JVET_N0805_APS_LMCS
+          if (pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
           if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+#endif
           {
             pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getInvLUT());
           }
           distParam.cur = pu.cs->getPredBuf(pu).Y();
           Distortion sadValue = distParam.distFunc(distParam);
+#if JVET_N0805_APS_LMCS
+          if (pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
           if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+#endif
           {
             pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
           }
@@ -2618,7 +2633,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 #endif
           PelBuf tmpBuf = tempCS->getPredBuf(pu).Y();
           tmpBuf.copyFrom(acMergeBuffer[uiMergeCand].Y());
+#if JVET_N0805_APS_LMCS
+          if (pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
           if (pu.cs->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+#endif
           {
             tmpBuf.rspSignal(m_pcReshape->getFwdLUT());
           }
@@ -3434,7 +3453,11 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
       Picture* refPic = pu.cu->slice->getPic();
       const CPelBuf refBuf = refPic->getRecoBuf(pu.blocks[COMPONENT_Y]);
       const Pel*        piRefSrch = refBuf.buf;
-      if (tempCS->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+#if JVET_N0805_APS_LMCS
+      if (tempCS->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() )
+#else
+      if (tempCS->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() )
+#endif
       {
         const CompArea &area = cu.blocks[COMPONENT_Y];
         CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
@@ -4149,7 +4172,11 @@ void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool cal
       //Copy current CU's reco to Deblock Pic Buffer
       const CompArea&  curCompArea = currCsArea.block( compId );
       picDbBuf.getBuf( curCompArea ).copyFrom( cs.getRecoBuf( curCompArea ) );
+#if JVET_N0805_APS_LMCS
+      if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+#else
       if ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma( compId ) )
+#endif
       {
         picDbBuf.getBuf( curCompArea ).rspSignal( m_pcReshape->getInvLUT() );
       }
@@ -4159,7 +4186,11 @@ void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool cal
       {
         const CompArea&  compArea = areaLeft.block(compId);
         picDbBuf.getBuf( compArea ).copyFrom( cs.picture->getRecoBuf( compArea ) );
+#if JVET_N0805_APS_LMCS
+        if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+#else
         if ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma( compId ) )
+#endif
         {
           picDbBuf.getBuf( compArea ).rspSignal( m_pcReshape->getInvLUT() );
         }
@@ -4169,7 +4200,11 @@ void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool cal
       {
         const CompArea&  compArea = areaTop.block( compId );
         picDbBuf.getBuf( compArea ).copyFrom( cs.picture->getRecoBuf( compArea ) );
+#if JVET_N0805_APS_LMCS
+        if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+#else
         if ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma( compId ) )
+#endif
         {
           picDbBuf.getBuf( compArea ).rspSignal( m_pcReshape->getInvLUT() );
         }
@@ -4241,7 +4276,11 @@ Distortion EncCu::getDistortionDb( CodingStructure &cs, CPelBuf org, CPelBuf rec
 #endif
   CPelBuf orgLuma = cs.picture->getOrigBuf( cs.area.blocks[COMPONENT_Y] );
   if ( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
+#if JVET_N0805_APS_LMCS
+    m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+#else
     m_pcEncCfg->getReshaper() && ( cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() ) ) )
+#endif
   {
     if ( compID == COMPONENT_Y && !afterDb && !m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled())
     {
@@ -4256,7 +4295,11 @@ Distortion EncCu::getDistortionDb( CodingStructure &cs, CPelBuf org, CPelBuf rec
       dist += m_pcRdCost->getDistPart( org, reco, cs.sps->getBitDepth( toChannelType( compID ) ), compID, DF_SSE_WTD, &orgLuma );
     }
   }
+#if JVET_N0805_APS_LMCS
+  else if (m_pcEncCfg->getReshaper() && cs.slice->getLmcsEnabledFlag() && cs.slice->isIntra()) //intra slice
+#else
   else if ( m_pcEncCfg->getReshaper() && cs.slice->getReshapeInfo().getUseSliceReshaper() && cs.slice->isIntra() ) //intra slice
+#endif
   {
     if ( compID == COMPONENT_Y && afterDb )
     {
@@ -4722,7 +4765,11 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
 
 #if WCG_EXT
       if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
+#if JVET_N0805_APS_LMCS
+        m_pcEncCfg->getReshaper() && (tempCS->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+#else
         m_pcEncCfg->getReshaper() && (tempCS->slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())))
+#endif
       {
         const CPelBuf orgLuma = tempCS->getOrgBuf(tempCS->area.blocks[COMPONENT_Y]);
         if (compID == COMPONENT_Y && !(m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()))

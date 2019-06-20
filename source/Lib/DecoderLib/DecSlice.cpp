@@ -90,10 +90,19 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   cs.sps              = sps;
   cs.pps              = slice->getPPS();
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+  memcpy(cs.alfApss, slice->getAlfAPSs(), sizeof(cs.alfApss));
+#else
   memcpy(cs.apss, slice->getAPSs(), sizeof(cs.apss));
+#endif
 #else
   cs.aps              = slice->getAPS();
 #endif
+
+#if JVET_N0805_APS_LMCS
+  cs.lmcsAps = slice->getLmcsAPS();
+#endif
+
 #if HEVC_VPS
   cs.vps              = slice->getVPS();
 #endif

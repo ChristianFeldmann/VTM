@@ -130,6 +130,12 @@ Slice::Slice()
 , m_apsId                        ( -1 )
 , m_aps                          (NULL)
 #endif
+#if  JVET_N0805_APS_LMCS
+, m_lmcsApsId                    ( -1 )
+, m_lmcsAps                      (nullptr)
+, m_tileGroupLmcsEnabledFlag     (false)
+, m_tileGroupLmcsChromaResidualScaleFlag (false)
+#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -169,14 +175,20 @@ Slice::Slice()
     m_saoEnabledFlag[ch] = false;
   }
 
+#if !JVET_N0805_APS_LMCS
   m_sliceReshapeInfo.setUseSliceReshaper(false);
   m_sliceReshapeInfo.setSliceReshapeModelPresentFlag(false);
   m_sliceReshapeInfo.setSliceReshapeChromaAdj(0);
   m_sliceReshapeInfo.reshaperModelMinBinIdx = 0;
   m_sliceReshapeInfo.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1;
   memset(m_sliceReshapeInfo.reshaperModelBinCWDelta, 0, PIC_CODE_CW_BINS * sizeof(int));
+#endif
 #if JVET_N0415_CTB_ALF
+#if  JVET_N0805_APS_LMCS
+  memset(m_alfApss, 0, sizeof(m_alfApss));
+#else
   memset(m_apss, 0, sizeof(m_apss));
+#endif
 #endif
 }
 
@@ -842,7 +854,11 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
 
   m_cabacInitFlag                 = pSrc->m_cabacInitFlag;
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS 
+  memcpy(m_alfApss, pSrc->m_alfApss, sizeof(m_alfApss)); // this might be quite unsafe
+#else
   memcpy(m_apss, pSrc->m_apss, sizeof(m_apss)); // this might be quite unsafe
+#endif
   memcpy( m_tileGroupAlfEnabledFlag, pSrc->m_tileGroupAlfEnabledFlag, sizeof(m_tileGroupAlfEnabledFlag));
   m_tileGroupNumAps               = pSrc->m_tileGroupNumAps;
   m_tileGroupLumaApsId            = pSrc->m_tileGroupLumaApsId;
@@ -879,7 +895,14 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_depQuantEnabledFlag           = pSrc->m_depQuantEnabledFlag;
   m_signDataHidingEnabledFlag     = pSrc->m_signDataHidingEnabledFlag;
 
+#if JVET_N0805_APS_LMCS 
+  m_tileGroupLmcsEnabledFlag = pSrc->m_tileGroupLmcsEnabledFlag;
+  m_tileGroupLmcsChromaResidualScaleFlag = pSrc->m_tileGroupLmcsChromaResidualScaleFlag;
+  m_lmcsAps = pSrc->m_lmcsAps;
+  m_lmcsApsId = pSrc->m_lmcsApsId;
+#else
   m_sliceReshapeInfo              = pSrc->m_sliceReshapeInfo;
+#endif
 }
 
 
@@ -2582,7 +2605,11 @@ ParameterSetManager::ParameterSetManager()
 : m_spsMap(MAX_NUM_SPS)
 #endif
 , m_ppsMap(MAX_NUM_PPS)
+#if JVET_N0805_APS_LMCS
+, m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
+#else
 , m_apsMap(MAX_NUM_APS)
+#endif
 #if JVET_N0349_DPS
 , m_dpsMap(MAX_NUM_DPS)
 #endif
@@ -2737,6 +2764,22 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
   return false;
 }
 
+#if JVET_N0805_APS_LMCS
+bool ParameterSetManager::activateAPS(int apsId, int apsType)
+{
+  APS *aps = m_apsMap.getPS((apsId << NUM_APS_TYPE_LEN) + apsType);
+  if (aps)
+  {
+    m_apsMap.setActive((apsId << NUM_APS_TYPE_LEN) + apsType);
+    return true;
+  }
+  else
+  {
+    msg(WARNING, "Warning: tried to activate non-existing APS.");
+  }
+  return false;
+}
+#else
 bool ParameterSetManager::activateAPS(int apsId)
 {
   APS *aps = m_apsMap.getPS(apsId);
@@ -2751,6 +2794,7 @@ bool ParameterSetManager::activateAPS(int apsId)
   }
   return false;
 }
+#endif
 
 template <>
 void ParameterSetMap<APS>::setID(APS* parameterSet, const int psId)

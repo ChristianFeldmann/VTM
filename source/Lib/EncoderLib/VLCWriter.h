@@ -125,7 +125,11 @@ public:
   void  codeVUI                 ( const VUI *pcVUI, const SPS* pcSPS );
   void  codeSPS                 ( const SPS* pcSPS );
   void  codePPS                 ( const PPS* pcPPS );
-  void  codeAPS                 ( APS* pcAPS);
+  void  codeAPS                 ( APS* pcAPS );
+#if JVET_N0805_APS_LMCS
+  void  codeAlfAps              ( APS* pcAPS );
+  void  codeLmcsAps             ( APS* pcAPS );
+#endif
 #if HEVC_VPS || JVET_N0278_HLS
   void  codeVPS                 ( const VPS* pcVPS );
 #endif

@@ -493,8 +493,11 @@ void IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
         const bool bUseHadamard = cu.transQuantBypass == 0;
 #endif
-
+#if JVET_N0805_APS_LMCS
+        if (cu.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
         if (cu.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag())
+#endif
         {
           CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
           PelBuf tmpOrg = m_tmpStorageLCU.getBuf(tmpArea);
@@ -2024,7 +2027,11 @@ void IntraSearch::xEncPCM(CodingStructure &cs, Partitioner& partitioner, const C
   CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
   PelBuf tempOrgBuf = m_tmpStorageLCU.getBuf(tmpArea);
   tempOrgBuf.copyFrom(orgBuf);
+#if JVET_N0805_APS_LMCS
+  if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#else
   if (cs.slice->getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#endif
   {
     tempOrgBuf.rspSignal(m_pcReshape->getFwdLUT());
   }
@@ -2443,8 +2450,16 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   //DTRACE_PEL_BUF( D_PRED, piPred, tu, tu.cu->predMode, COMPONENT_Y );
 
   const Slice           &slice = *cs.slice;
+#if JVET_N0805_APS_LMCS
+  bool flag = slice.getLmcsEnabledFlag() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
+#else
   bool flag = slice.getReshapeInfo().getUseSliceReshaper() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
+#endif
+#if JVET_N0805_APS_LMCS
+  if (flag && slice.getLmcsChromaResidualScaleFlag() && isChroma(compID))
+#else
   if (flag && slice.getReshapeInfo().getSliceReshapeChromaAdj() && isChroma(compID))
+#endif
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
     const CompArea &areaY = CompArea(COMPONENT_Y, tu.chromaFormat, area );
@@ -2456,7 +2471,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
   //===== get residual signal =====
   piResi.copyFrom( piOrg  );
+#if JVET_N0805_APS_LMCS
+  if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#else
   if (slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && compID==COMPONENT_Y)
+#endif
   {
     CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
     PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
@@ -2493,7 +2512,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #endif
 
   flag =flag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
+#if JVET_N0805_APS_LMCS
+  if (flag && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag() )
+#else
   if (flag && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() )
+#endif
   {
     int cResScaleInv = tu.getChromaAdj();
     double cResScale = round((double)(1 << CSCALE_FP_PREC) / (double)cResScaleInv);
@@ -2521,7 +2544,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     piResi.subtractAndHalve( crResi );
 
     // Scale the joint signal
+#if JVET_N0805_APS_LMCS
+    if ( flag && slice.getLmcsChromaResidualScaleFlag() )
+#else
     if ( flag && slice.getReshapeInfo().getSliceReshapeChromaAdj() )
+#endif
       piResi.scaleSignal(tu.getChromaAdj(), 1, tu.cu->cs->slice->clpRng(compID));
 
     // Lambda is loosened for the joint mode with respect to single modes as the same residual is used for both chroma blocks
@@ -2565,7 +2592,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
 
   //===== reconstruction =====
+#if JVET_N0805_APS_LMCS
+  if ( flag && uiAbsSum > 0 && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag() )
+#else
   if (flag && uiAbsSum > 0 && isChroma(compID) && slice.getReshapeInfo().getSliceReshapeChromaAdj() )
+#endif
   {
     piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
   }
@@ -2574,7 +2605,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     CrossComponentPrediction::crossComponentPrediction(tu, compID, cs.getResiBuf(tu.Y()), piResi, piResi, true);
   }
 
+#if JVET_N0805_APS_LMCS
+  if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#else
   if (slice.getReshapeInfo().getUseSliceReshaper() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#endif
   {
     CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0,0), area.size());
     PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
@@ -2604,7 +2639,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #if WCG_EXT
     if ( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() ||
         (m_pcEncCfg->getReshaper()
+#if JVET_N0805_APS_LMCS
+          && slice.getLmcsEnabledFlag()
+#else
          && slice.getReshapeInfo().getUseSliceReshaper()
+#endif
          && (m_pcReshape->getCTUFlag() || (isChroma(compID) && m_pcEncCfg->getReshapeIntraCMD()))))
     {
       const CPelBuf orgLuma = cs.getOrgBuf( cs.area.blocks[COMPONENT_Y] );
@@ -2621,7 +2660,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   //===== update distortion =====
 #if WCG_EXT
   if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcEncCfg->getReshaper()
+#if JVET_N0805_APS_LMCS
+    && slice.getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || (isChroma(compID) && m_pcEncCfg->getReshapeIntraCMD()))))
+#else
     && slice.getReshapeInfo().getUseSliceReshaper() && (m_pcReshape->getCTUFlag() || (isChroma(compID) && m_pcEncCfg->getReshapeIntraCMD()))))
+#endif
   {
     const CPelBuf orgLuma = cs.getOrgBuf( cs.area.blocks[COMPONENT_Y] );
     if (compID == COMPONENT_Y  && !(m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()))

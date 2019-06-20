@@ -213,8 +213,13 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   {
 #if JVET_N0415_CTB_ALF
                     pcEncPic->slices[i]->setTileGroupNumAps(pic->slices[i]->getTileGroupNumAps());
+#if JVET_N0805_APS_LMCS
+                    pcEncPic->slices[i]->setAlfAPSs(pic->slices[i]->getTileGroupApsIdLuma());
+                    pcEncPic->slices[i]->setAlfAPSs(pic->slices[i]->getAlfAPSs());
+#else
                     pcEncPic->slices[i]->setAPSs(pic->slices[i]->getTileGroupApsIdLuma());
                     pcEncPic->slices[i]->setAPSs(pic->slices[i]->getAPSs());
+#endif
                     pcEncPic->slices[i]->setTileGroupApsIdChroma(pic->slices[i]->getTileGroupApsIdChroma());
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Y,  pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Y));
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Cb, pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Cb));
@@ -782,13 +787,25 @@ void DecLib::xActivateParameterSets()
     for (int i = 0; i < m_apcSlicePilot->getTileGroupApsIdLuma().size(); i++)
     {
       int apsId = m_apcSlicePilot->getTileGroupApsIdLuma()[i];
+#if JVET_N0805_APS_LMCS
+      APS* aps = m_parameterSetManager.getAPS(apsId, ALF_APS);
+#else
       APS* aps = m_parameterSetManager.getAPS(apsId);
+#endif
 
       if (aps)
       {
+#if JVET_N0805_APS_LMCS
+        m_parameterSetManager.clearAPSChangedFlag(apsId, ALF_APS);
+#else
         m_parameterSetManager.clearAPSChangedFlag(apsId);
+#endif
         apss[apsId] = aps;
+#if JVET_N0805_APS_LMCS
+        if (false == m_parameterSetManager.activateAPS(apsId, ALF_APS))
+#else
         if (false == m_parameterSetManager.activateAPS(apsId))
+#endif
         {
           THROW("APS activation failed!");
         }
@@ -797,12 +814,24 @@ void DecLib::xActivateParameterSets()
 
     //chroma APS
     int apsId = m_apcSlicePilot->getTileGroupApsIdChroma();
+#if JVET_N0805_APS_LMCS
+    APS* aps = m_parameterSetManager.getAPS(apsId, ALF_APS);
+#else
     APS* aps = m_parameterSetManager.getAPS(apsId);
+#endif
     if (aps)
     {
+#if JVET_N0805_APS_LMCS
+      m_parameterSetManager.clearAPSChangedFlag(apsId, ALF_APS);
+#else
       m_parameterSetManager.clearAPSChangedFlag(apsId);
+#endif
       apss[apsId] = aps;
+#if JVET_N0805_APS_LMCS
+      if (false == m_parameterSetManager.activateAPS(apsId, ALF_APS))
+#else
       if (false == m_parameterSetManager.activateAPS(apsId))
+#endif
       {
         THROW("APS activation failed!");
       }
@@ -814,6 +843,24 @@ void DecLib::xActivateParameterSets()
       if (false == m_parameterSetManager.activateAPS(m_apcSlicePilot->getAPSId()))
       {
         THROW("APS activation failed!");
+      }
+    }
+#endif
+
+#if JVET_N0805_APS_LMCS
+    APS* lmcsAPS = NULL;
+    if (m_apcSlicePilot->getLmcsAPSId() != -1)
+    {
+      lmcsAPS = m_parameterSetManager.getAPS(m_apcSlicePilot->getLmcsAPSId(), LMCS_APS);
+      CHECK(lmcsAPS == 0, "No LMCS APS present");
+    }
+
+    if (lmcsAPS)
+    {
+      m_parameterSetManager.clearAPSChangedFlag(m_apcSlicePilot->getLmcsAPSId(), LMCS_APS);
+      if (false == m_parameterSetManager.activateAPS(m_apcSlicePilot->getLmcsAPSId(), LMCS_APS))
+      {
+        THROW("LMCS APS activation failed!");
       }
     }
 #endif
@@ -832,12 +879,16 @@ void DecLib::xActivateParameterSets()
 
     m_apcSlicePilot->applyReferencePictureSet(m_cListPic, m_apcSlicePilot->getRPS());
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+    m_pcPic->finalInit(*sps, *pps, apss, *lmcsAPS);
+#else
     m_pcPic->finalInit(*sps, *pps, apss);
-#if JVET_N0857_RECT_SLICES
-    m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
 #endif
 #else
     m_pcPic->finalInit(*sps, *pps, *aps);
+#endif
+#if JVET_N0857_RECT_SLICES
+    m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
 #endif
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
     m_pcPic->cs->createCoeffs();
@@ -862,10 +913,18 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+    memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
+#else
     memcpy(m_pcPic->cs->apss, apss, sizeof(m_pcPic->cs->apss));
+#endif
 #else
     m_pcPic->cs->aps   = aps;
 #endif
+#if JVET_N0805_APS_LMCS
+    m_pcPic->cs->lmcsAps = lmcsAPS;
+#endif
+
 #if HEVC_VPS
     m_pcPic->cs->vps   = pSlice->getVPS();
 #endif
@@ -938,19 +997,35 @@ void DecLib::xActivateParameterSets()
     const SPS *sps = pSlice->getSPS();
     const PPS *pps = pSlice->getPPS();
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+    APS** apss = pSlice->getAlfAPSs();
+#else
     APS** apss = pSlice->getAPSs();
+#endif
 #else
     APS *aps = pSlice->getAPS();
 #endif
+#if JVET_N0805_APS_LMCS
+    APS *lmcsAPS = pSlice->getLmcsAPS();
+#endif
+
     // fix Parameter Sets, now that we have the real slice
     m_pcPic->cs->slice = pSlice;
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+    memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
+#else
     memcpy(m_pcPic->cs->apss, apss, sizeof(m_pcPic->cs->apss));
+#endif
 #else
     m_pcPic->cs->aps   = aps;
 #endif
+#if JVET_N0805_APS_LMCS
+    m_pcPic->cs->lmcsAps = lmcsAPS;
+#endif
+
 #if HEVC_VPS
     m_pcPic->cs->vps   = pSlice->getVPS();
 #endif
@@ -968,8 +1043,13 @@ void DecLib::xActivateParameterSets()
 #if JVET_N0415_CTB_ALF
     for (int i = 0; i < MAX_NUM_APS; i++)
     {
+#if JVET_N0805_APS_LMCS
+      APS* aps = m_parameterSetManager.getAPS(i, ALF_APS);
+      if (aps && m_parameterSetManager.getAPSChangedFlag(i, ALF_APS))
+#else
       APS* aps = m_parameterSetManager.getAPS(i);
       if (aps && m_parameterSetManager.getAPSChangedFlag(i))
+#endif
       {
         EXIT("Error - a new APS has been decoded while processing a picture");
       }
@@ -978,6 +1058,13 @@ void DecLib::xActivateParameterSets()
     if (aps && m_parameterSetManager.getAPSChangedFlag(aps->getAPSId()))
     {
       EXIT("Error - a new APS has been decoded while processing a picture");
+    }
+#endif
+
+#if JVET_N0805_APS_LMCS
+    if (lmcsAPS && m_parameterSetManager.getAPSChangedFlag(lmcsAPS->getAPSId(), LMCS_APS) )
+    {
+      EXIT("Error - a new LMCS APS has been decoded while processing a picture");
     }
 #endif
 
@@ -1411,8 +1498,36 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   if (pcSlice->getSPS()->getUseReshaper())
   {
+#if JVET_N0805_APS_LMCS
+    if (pcSlice->getLmcsEnabledFlag())
+    {
+      APS* lmcsAPS = pcSlice->getLmcsAPS();
+      SliceReshapeInfo& sInfo = lmcsAPS->getReshaperAPSInfo();
+      SliceReshapeInfo& tInfo = m_cReshaper.getSliceReshaperInfo();
+      tInfo.reshaperModelMaxBinIdx = sInfo.reshaperModelMaxBinIdx;
+      tInfo.reshaperModelMinBinIdx = sInfo.reshaperModelMinBinIdx;
+      memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
+      tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
+      tInfo.setUseSliceReshaper(pcSlice->getLmcsEnabledFlag());
+      tInfo.setSliceReshapeChromaAdj(pcSlice->getLmcsChromaResidualScaleFlag());
+      tInfo.setSliceReshapeModelPresentFlag(true);
+    }
+    else
+    {
+      SliceReshapeInfo& tInfo = m_cReshaper.getSliceReshaperInfo();
+      tInfo.setUseSliceReshaper(false);
+      tInfo.setSliceReshapeChromaAdj(false);
+      tInfo.setSliceReshapeModelPresentFlag(false);
+    }
+#endif
+#if !JVET_N0805_APS_LMCS
     m_cReshaper.copySliceReshaperInfo(m_cReshaper.getSliceReshaperInfo(), pcSlice->getReshapeInfo());
+#endif
+#if JVET_N0805_APS_LMCS
+    if (pcSlice->getLmcsEnabledFlag())
+#else
     if (pcSlice->getReshapeInfo().getSliceReshapeModelPresentFlag())
+#endif
     {
       m_cReshaper.constructReshaper();
     }

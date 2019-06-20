@@ -291,7 +291,11 @@ struct Picture : public UnitArea
 
   void extendPicBorder();
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS  
+  void finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps);
+#else
   void finalInit(const SPS& sps, const PPS& pps, APS** apss);
+#endif
 #else
   void finalInit(const SPS& sps, const PPS& pps, APS& aps);
 #endif

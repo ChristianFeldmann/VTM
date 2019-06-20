@@ -2338,7 +2338,46 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
 
+#if !JVET_N0805_APS_LMCS
       m_pcReshaper->copySliceReshaperInfo(pcSlice->getReshapeInfo(), m_pcReshaper->getSliceReshaperInfo());
+#else
+      //set all necessary information in LMCS APS and slice
+      pcSlice->setLmcsEnabledFlag(m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper());
+      pcSlice->setLmcsChromaResidualScaleFlag(m_pcReshaper->getSliceReshaperInfo().getSliceReshapeChromaAdj() == 1);
+      if (m_pcReshaper->getSliceReshaperInfo().getSliceReshapeModelPresentFlag())
+      {
+        int apsId = 0;
+        pcSlice->setLmcsAPSId(apsId);
+        APS* lmcsAPS = pcSlice->getLmcsAPS();
+        if (lmcsAPS == nullptr)
+        {
+          ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
+          lmcsAPS = apsMap->getPS((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
+          if (lmcsAPS == NULL)
+          {
+            lmcsAPS = apsMap->allocatePS((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
+            lmcsAPS->setAPSId(apsId);
+            lmcsAPS->setAPSType(LMCS_APS);
+          }
+          pcSlice->setLmcsAPS(lmcsAPS);
+        }
+        //m_pcReshaper->copySliceReshaperInfo(lmcsAPS->getReshaperAPSInfo(), m_pcReshaper->getSliceReshaperInfo());
+        SliceReshapeInfo& tInfo = lmcsAPS->getReshaperAPSInfo();
+        SliceReshapeInfo& sInfo = m_pcReshaper->getSliceReshaperInfo();
+        tInfo.reshaperModelMaxBinIdx = sInfo.reshaperModelMaxBinIdx;
+        tInfo.reshaperModelMinBinIdx = sInfo.reshaperModelMinBinIdx;
+        memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
+        tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
+        m_pcEncLib->getApsMap()->setChangedFlag((lmcsAPS->getAPSId() << NUM_APS_TYPE_LEN) + LMCS_APS);
+      }
+
+
+      if (pcSlice->getLmcsEnabledFlag())
+      {
+        int apsId = 0;
+        pcSlice->setLmcsAPSId(apsId);
+      }
+#endif
     }
     else
     {
@@ -2410,6 +2449,21 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       if (pcSlice->getSPS()->getUseReshaper() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
       {
+#if JVET_N0805_APS_LMCS
+        pcSlice->setLmcsEnabledFlag(true);
+        int apsId = 0;
+        pcSlice->setLmcsAPSId(apsId);
+        for (int s = 0; s < uiNumSliceSegments; s++)
+        {
+          pcPic->slices[s]->setLmcsEnabledFlag(pcSlice->getLmcsEnabledFlag());
+          pcPic->slices[s]->setLmcsChromaResidualScaleFlag((pcSlice->getLmcsChromaResidualScaleFlag()));
+          if (pcSlice->getLmcsEnabledFlag())
+          {
+            //pcPic->slices[s]->setLmcsAPS(pcSlice->getLmcsAPS());
+            pcPic->slices[s]->setLmcsAPSId(pcSlice->getLmcsAPSId());
+          }
+        }
+#endif
           CHECK((m_pcReshaper->getRecReshaped() == false), "Rec picture is not reshaped!");
           pcPic->getRecoBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getInvLUT());
           m_pcReshaper->setRecReshaped(false);
@@ -2491,14 +2545,23 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           if (pcPic->slices[s]->getTileGroupAlfEnabledFlag(COMPONENT_Y))
           {
             pcPic->slices[s]->setTileGroupNumAps(cs.slice->getTileGroupNumAps());
+#if JVET_N0805_APS_LMCS
+            pcPic->slices[s]->setAlfAPSs(cs.slice->getTileGroupApsIdLuma());
+#else
             pcPic->slices[s]->setAPSs(cs.slice->getTileGroupApsIdLuma());
+#endif
           }
           else
           {
             pcPic->slices[s]->setTileGroupNumAps(0);
           }
+#if JVET_N0805_APS_LMCS
+          pcPic->slices[s]->setAlfAPSs(cs.slice->getAlfAPSs());
+          pcPic->slices[s]->setTileGroupApsIdChroma(cs.slice->getTileGroupApsIdChroma());
+#else
           pcPic->slices[s]->setAPSs(cs.slice->getAPSs());
           pcPic->slices[s]->setTileGroupApsIdChroma(cs.slice->getTileGroupApsIdChroma());
+#endif
         }
 #else
         AlfSliceParam alfSliceParam;
@@ -2582,12 +2645,42 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         xWriteAccessUnitDelimiter(accessUnit, pcSlice);
       }
+
+#if JVET_N0805_APS_LMCS
+      //send LMCS APS when LMCSModel is updated. It can be updated even current slice does not enable reshaper.
+      //For example, in RA, update is on intra slice, but intra slice may not use reshaper
+      if (pcSlice->getSPS()->getUseReshaper())
+      {
+        //only 1 LMCS data for 1 picture
+        int apsId = pcSlice->getLmcsAPSId();
+        ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
+        APS* aps = apsMap->getPS((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
+        bool writeAPS = aps && apsMap->getChangedFlag((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
+        if (writeAPS)
+        {
+          actualTotalBits += xWriteAPS(accessUnit, aps);
+          apsMap->clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
+          CHECK(aps != pcSlice->getLmcsAPS(), "Wrong LMCS APS pointer in compressGOP");
+        }
+      }
+#endif
+
 #if JVET_N0415_CTB_ALF
       if (pcSlice->getSPS()->getALFEnabledFlag() && pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
       {
-        for (int apsId = 0; apsId < MAX_NUM_APS; apsId++)
+        for (int apsId = 0; apsId < MAX_NUM_APS; apsId++)   //HD: shouldn't this be looping over slice_alf_aps_id_luma[ i ]? By looping over MAX_NUM_APS, it is possible unused ALF APS is written. Please check!
         {
           ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
+#if JVET_N0805_APS_LMCS
+          APS* aps = apsMap->getPS((apsId << NUM_APS_TYPE_LEN) + ALF_APS);
+          bool writeAPS = aps && apsMap->getChangedFlag((apsId << NUM_APS_TYPE_LEN) + ALF_APS);
+          if (!aps && pcSlice->getAlfAPSs() && pcSlice->getAlfAPSs()[apsId])
+          {
+            writeAPS = true;
+            aps = pcSlice->getAlfAPSs()[apsId]; // use asp from slice header
+            *apsMap->allocatePS(apsId) = *aps; //allocate and cpy
+        }
+#else
           APS* aps = apsMap->getPS(apsId);
           bool writeAPS = aps && apsMap->getChangedFlag(apsId);
           if( !aps && pcSlice->getAPSs() && pcSlice->getAPSs()[apsId] )
@@ -2596,11 +2689,18 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             aps = pcSlice->getAPSs()[apsId]; // use asp from slice header
             *apsMap->allocatePS( apsId ) = *aps; //allocate and cpy
           }
+#endif
+          
           if (writeAPS )
           {
             actualTotalBits += xWriteAPS(accessUnit, aps);
+#if JVET_N0805_APS_LMCS
+            apsMap->clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + ALF_APS);
+            CHECK(aps != pcSlice->getAlfAPSs()[apsId], "Wrong APS pointer in compressGOP");
+#else
             apsMap->clearChangedFlag(apsId);
             CHECK(aps != pcSlice->getAPSs()[apsId], "Wrong APS pointer in compressGOP");
+#endif
           }
         }
       }

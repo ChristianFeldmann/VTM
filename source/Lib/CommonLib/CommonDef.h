@@ -213,6 +213,10 @@ static const int MAX_NUM_DPS =                                     16;
 static const int MAX_NUM_SPS =                                     16;
 static const int MAX_NUM_PPS =                                     64;
 static const int MAX_NUM_APS =                                     32;  //Currently APS ID has 5 bits
+#if JVET_N0805_APS_LMCS
+static const int NUM_APS_TYPE_LEN =                                 3;  //Currently APS Type has 3 bits
+static const int MAX_NUM_APS_TYPE =                                 8;  //Currently APS Type has 3 bits so the max type is 8
+#endif
 
 static const int MLS_GRP_NUM =                                   1024; ///< Max number of coefficient groups, max(16, 256)
 

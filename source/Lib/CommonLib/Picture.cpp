@@ -1175,7 +1175,11 @@ const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit)     const { return g
 const CPelUnitBuf Picture::getRecoBuf()                         const { return M_BUFS(scheduler.getSplitPicId(), PIC_RECONSTRUCTION); }
 
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS   
+void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps)
+#else
 void Picture::finalInit(const SPS& sps, const PPS& pps, APS** apss)
+#endif
 #else
 void Picture::finalInit(const SPS& sps, const PPS& pps, APS& aps)
 #endif
@@ -1222,10 +1226,18 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS& aps)
   cs->slice   = nullptr;  // the slices for this picture have not been set at this point. update cs->slice after swapSliceObject()
   cs->pps     = &pps;
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS  
+  memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));   
+#else
   memcpy(cs->apss, apss, sizeof(cs->apss));
+#endif
 #else
   cs->aps = &aps;
 #endif
+#if JVET_N0805_APS_LMCS  
+  cs->lmcsAps = &lmcsAps;
+#endif
+
 #if HEVC_VPS
   cs->vps     = nullptr;
 #endif
@@ -1251,10 +1263,19 @@ void Picture::allocateNewSlice()
   slices.push_back(new Slice);
   Slice& slice = *slices.back();
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+  memcpy(slice.getAlfAPSs(), cs->alfApss, sizeof(cs->alfApss));
+#else
   memcpy(slice.getAPSs(), cs->apss, sizeof(cs->apss));
+#endif
 #else
   slice.setAPS(cs->aps);
 #endif
+
+#if JVET_N0805_APS_LMCS
+  slice.setLmcsAPS(cs->lmcsAps);
+#endif
+
   slice.setPPS( cs->pps);
   slice.setSPS( cs->sps);
   if(slices.size()>=2)
@@ -1269,9 +1290,17 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
   p->setSPS(cs->sps);
   p->setPPS(cs->pps);
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+  p->setAlfAPSs(cs->alfApss);
+#else
   p->setAPSs(cs->apss);
+#endif
 #else
   p->setAPS(cs->aps);
+#endif
+
+#if JVET_N0805_APS_LMCS
+  p->setLmcsAPS(cs->lmcsAps);
 #endif
 
   Slice * pTmp = slices[i];
@@ -1279,9 +1308,17 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
   pTmp->setSPS(0);
   pTmp->setPPS(0);
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+  memset(pTmp->getAlfAPSs(), 0, sizeof(*pTmp->getAlfAPSs())*MAX_NUM_APS);
+#else
   memset(pTmp->getAPSs(), 0, sizeof(*pTmp->getAPSs())*MAX_NUM_APS);
+#endif
 #else
   pTmp->setAPS(0);
+#endif
+
+#if JVET_N0805_APS_LMCS
+  pTmp->setLmcsAPS(0);
 #endif
   return pTmp;
 }

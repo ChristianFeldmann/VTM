@@ -869,7 +869,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   xReadRbspTrailingBits();
 }
 
-void HLSyntaxReader::parseAPS(APS* aps)
+void HLSyntaxReader::parseAPS( APS* aps )
 {
 #if ENABLE_TRACING
   xTraceAPSHeader();
@@ -880,6 +880,27 @@ void HLSyntaxReader::parseAPS(APS* aps)
   READ_CODE(5, code, "adaptation_parameter_set_id");
   aps->setAPSId(code);
 
+ #if JVET_N0805_APS_LMCS
+  READ_CODE(3, code, "aps_params_type");
+  aps->setAPSType(code);
+  if (code == ALF_APS)
+  {
+    parseAlfAps(aps);
+  }
+  else if (code == LMCS_APS)
+  {
+    parseLmcsAps(aps);
+  }
+  READ_FLAG(code, "aps_extension_flag");
+  if (code)
+  {
+    while (xMoreRbspData())
+    {
+      READ_FLAG(code, "aps_extension_data_flag");
+    }
+  }
+  xReadRbspTrailingBits();
+#else
   AlfSliceParam param = aps->getAlfAPSParam();
 #if JVET_N0415_CTB_ALF
   param.enabledFlag[COMPONENT_Y] = param.enabledFlag[COMPONENT_Cb] = param.enabledFlag[COMPONENT_Cr] = true;
@@ -967,7 +988,126 @@ void HLSyntaxReader::parseAPS(APS* aps)
   aps->setAlfAPSParam(param);
 
   xReadRbspTrailingBits();
+#endif
 }
+
+#if JVET_N0805_APS_LMCS
+void HLSyntaxReader::parseAlfAps( APS* aps )
+{
+  uint32_t  code;
+
+  AlfSliceParam param = aps->getAlfAPSParam();
+#if JVET_N0415_CTB_ALF
+  param.enabledFlag[COMPONENT_Y] = param.enabledFlag[COMPONENT_Cb] = param.enabledFlag[COMPONENT_Cr] = true;
+  READ_FLAG(code, "alf_luma_new_filter");
+  param.newFilterFlag[CHANNEL_TYPE_LUMA] = code;
+  READ_FLAG(code, "alf_chroma_new_filter");
+  param.newFilterFlag[CHANNEL_TYPE_CHROMA] = code;
+#else
+  param.enabledFlag[COMPONENT_Y] = true;
+
+  int alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
+  param.enabledFlag[COMPONENT_Cb] = alfChromaIdc >> 1;
+  param.enabledFlag[COMPONENT_Cr] = alfChromaIdc & 1;
+#endif
+
+#if JVET_N0242_NON_LINEAR_ALF && !JVET_N0415_CTB_ALF
+  READ_FLAG(code, "alf_luma_clip");
+  param.nonLinearFlag[CHANNEL_TYPE_LUMA] = code ? true : false;
+
+  if (alfChromaIdc)
+  {
+    READ_FLAG(code, "alf_chroma_clip");
+    param.nonLinearFlag[CHANNEL_TYPE_CHROMA] = code ? true : false;
+  }
+#endif
+
+#if JVET_N0415_CTB_ALF
+  if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
+  {
+#if JVET_N0242_NON_LINEAR_ALF
+    READ_FLAG(code, "alf_luma_clip");
+    param.nonLinearFlag[CHANNEL_TYPE_LUMA] = code ? true : false;
+#endif
+#endif
+    xReadTruncBinCode(code, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
+    param.numLumaFilters = code + 1;
+    if (param.numLumaFilters > 1)
+    {
+      for (int i = 0; i < MAX_NUM_ALF_CLASSES; i++)
+      {
+        xReadTruncBinCode(code, param.numLumaFilters);
+        param.filterCoeffDeltaIdx[i] = code;
+      }
+    }
+    else
+    {
+      memset(param.filterCoeffDeltaIdx, 0, sizeof(param.filterCoeffDeltaIdx));
+    }
+
+#if JVET_N0415_CTB_ALF
+    READ_FLAG(code, "fixed_filter_set_flag");
+    param.fixedFilterSetIndex = code;
+    if (param.fixedFilterSetIndex > 0)
+    {
+      xReadTruncBinCode(code, NUM_FIXED_FILTER_SETS);
+      param.fixedFilterSetIndex = code + 1;
+      READ_FLAG(code, "fixed_filter_flag_pattern");
+      param.fixedFilterPattern = code;
+      for (int classIdx = 0; classIdx < MAX_NUM_ALF_CLASSES; classIdx++)
+      {
+        code = 1;
+        if (param.fixedFilterPattern > 0)
+        {
+          READ_FLAG(code, "fixed_filter_flag");
+        }
+        param.fixedFilterIdx[classIdx] = code;
+      }
+    }
+#endif
+    alfFilter(param, false);
+#if JVET_N0415_CTB_ALF
+  }
+  if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
+  {
+#if JVET_N0242_NON_LINEAR_ALF
+    READ_FLAG(code, "alf_luma_clip");
+    param.nonLinearFlag[CHANNEL_TYPE_CHROMA] = code ? true : false;
+#endif
+#else
+    if (alfChromaIdc)
+    {
+#endif
+      alfFilter(param, true);
+  }
+  aps->setAlfAPSParam(param);
+}
+
+void HLSyntaxReader::parseLmcsAps( APS* aps )
+{
+  uint32_t  code;
+
+  SliceReshapeInfo& info = aps->getReshaperAPSInfo();
+  memset(info.reshaperModelBinCWDelta, 0, PIC_CODE_CW_BINS * sizeof(int));
+  READ_UVLC(code, "lmcs_min_bin_idx");                             info.reshaperModelMinBinIdx = code;
+  READ_UVLC(code, "lmcs_delta_max_bin_idx");                       info.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1 - code;
+  READ_UVLC(code, "lmcs_delta_cw_prec_minus1");                    info.maxNbitsNeededDeltaCW = code + 1;
+  assert(info.maxNbitsNeededDeltaCW > 0);
+  for (uint32_t i = info.reshaperModelMinBinIdx; i <= info.reshaperModelMaxBinIdx; i++)
+  {
+    READ_CODE(info.maxNbitsNeededDeltaCW, code, "lmcs_delta_abs_cw[ i ]");
+    int absCW = code;
+    if (absCW > 0)
+    {
+      READ_CODE(1, code, "lmcs_delta_sign_cw_flag[ i ]");
+    }
+    int signCW = code;
+    info.reshaperModelBinCWDelta[i] = (1 - 2 * signCW) * absCW;
+  }
+  aps->setReshaperAPSInfo(info);
+}
+#endif
+
 
 void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
 {
@@ -1198,6 +1338,7 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, bool commonInfPresen
   }
 }
 
+#if !JVET_N0805_APS_LMCS
 void HLSyntaxReader::parseReshaper(SliceReshapeInfo& info, const SPS* pcSPS, const bool isIntra)
 {
   unsigned  symbol = 0;
@@ -1234,6 +1375,8 @@ void HLSyntaxReader::parseReshaper(SliceReshapeInfo& info, const SPS* pcSPS, con
     }
   }
 }
+#endif
+
 void HLSyntaxReader::parseSPS(SPS* pcSPS)
 {
   uint32_t  uiCode;
@@ -2153,7 +2296,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
           READ_CODE(5, uiCode, "tile_group_aps_id");
           apsId[i] = uiCode;
         }
+		
+		
+#if JVET_N0805_APS_LMCS
+        pcSlice->setAlfAPSs(apsId);
+#else
         pcSlice->setAPSs(apsId);
+#endif
         alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
         if (alfChromaIdc)
         {
@@ -2547,7 +2696,28 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
     if (sps->getUseReshaper())
     {
+#if JVET_N0805_APS_LMCS
+      READ_FLAG(uiCode, "slice_lmcs_enabled_flag");          
+      pcSlice->setLmcsEnabledFlag(uiCode == 1);
+
+      if (pcSlice->getLmcsEnabledFlag())
+      {
+        READ_CODE(5, uiCode, "slice_lmcs_aps_id");
+        
+        pcSlice->setLmcsAPSId(uiCode);
+        if (!(sps->getUseDualITree() && pcSlice->isIntra()))
+        {
+          READ_FLAG(uiCode, "slice_chroma_residual_scale_flag");                
+          pcSlice->setLmcsChromaResidualScaleFlag(uiCode == 1);
+        }
+        else
+        {
+          pcSlice->setLmcsChromaResidualScaleFlag(false);
+        }
+      }
+#else
       parseReshaper(pcSlice->getReshapeInfo(), sps, pcSlice->isIntra());
+#endif
     }
 
 #if JVET_N0857_RECT_SLICES

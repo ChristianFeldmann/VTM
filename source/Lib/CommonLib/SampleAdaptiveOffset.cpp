@@ -753,7 +753,11 @@ void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const Component
              PelBuf dstBuf  = cu.cs->getRecoBuf( currTU.block(compID) );
 
       dstBuf.copyFrom( pcmBuf );
+#if JVET_N0805_APS_LMCS
+      if (cu.slice->getLmcsEnabledFlag() && isLuma(compID))
+#else
       if (cu.slice->getReshapeInfo().getUseSliceReshaper() && isLuma(compID))
+#endif
       {
         dstBuf.rspSignal(m_pcReshape->getInvLUT());
       }
@@ -775,7 +779,11 @@ void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const Component
       dstBuf.at(x,y) = (pcmBuf.at(x,y) << uiPcmLeftShiftBit);
     }
   }
+#if JVET_N0805_APS_LMCS
+  if (cu.slice->getLmcsEnabledFlag()&& isLuma(compID))
+#else
   if (cu.slice->getReshapeInfo().getUseSliceReshaper() && isLuma(compID))
+#endif
   {
     dstBuf.rspSignal(m_pcReshape->getInvLUT());
   }

@@ -523,14 +523,32 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   xWriteRbspTrailingBits();
 }
 
-void HLSWriter::codeAPS( APS* pcAPS)
+void HLSWriter::codeAPS( APS* pcAPS )
 {
 #if ENABLE_TRACING
   xTraceAPSHeader();
 #endif
 
-  AlfSliceParam param = pcAPS->getAlfAPSParam();
+#if JVET_N0805_APS_LMCS
   WRITE_CODE(pcAPS->getAPSId(), 5, "adaptation_parameter_set_id");
+  WRITE_CODE(pcAPS->getAPSType(), 3, "aps_params_type");
+  
+
+  if (pcAPS->getAPSType() == ALF_APS)
+  {
+    codeAlfAps(pcAPS);
+  }
+  else if (pcAPS->getAPSType() == LMCS_APS)
+  {
+    codeLmcsAps (pcAPS);
+  }
+  WRITE_FLAG(0, "aps_extension_flag");   //Implementation when this flag is equal to 1 should be added when it is needed. Currently in the spec we don't have case when this flag is equal to 1
+  xWriteRbspTrailingBits();
+#else
+  AlfSliceParam param = pcAPS->getAlfAPSParam();
+#if !JVET_N0805_APS_LMCS
+  WRITE_CODE(pcAPS->getAPSId(), 5, "adaptation_parameter_set_id");
+#endif
 
 #if !JVET_N0415_CTB_ALF
   const int alfChromaIdc = param.enabledFlag[COMPONENT_Cb] * 2 + param.enabledFlag[COMPONENT_Cr];
@@ -599,7 +617,107 @@ void HLSWriter::codeAPS( APS* pcAPS)
     alfFilter(param, true);
   }
   xWriteRbspTrailingBits();
+#endif
 }
+
+#if JVET_N0805_APS_LMCS
+void HLSWriter::codeAlfAps( APS* pcAPS )
+{
+  AlfSliceParam param = pcAPS->getAlfAPSParam();
+#if !JVET_N0805_APS_LMCS
+  WRITE_CODE(pcAPS->getAPSId(), 5, "adaptation_parameter_set_id");
+#endif
+
+#if !JVET_N0415_CTB_ALF
+  const int alfChromaIdc = param.enabledFlag[COMPONENT_Cb] * 2 + param.enabledFlag[COMPONENT_Cr];
+  truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
+
+#if JVET_N0242_NON_LINEAR_ALF
+  WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_LUMA], "alf_luma_clip");
+  if (alfChromaIdc)
+  {
+    WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_CHROMA], "alf_chroma_clip");
+  }
+#endif
+#else
+  WRITE_FLAG(param.newFilterFlag[CHANNEL_TYPE_LUMA], "alf_luma_new_filter");
+  WRITE_FLAG(param.newFilterFlag[CHANNEL_TYPE_CHROMA], "alf_chroma_new_filter");
+
+  if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
+  {
+#if JVET_N0242_NON_LINEAR_ALF
+    WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_LUMA], "alf_luma_clip");
+#endif
+#endif
+
+    xWriteTruncBinCode(param.numLumaFilters - 1, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
+    if (param.numLumaFilters > 1)
+    {
+      for (int i = 0; i < MAX_NUM_ALF_CLASSES; i++)
+      {
+        xWriteTruncBinCode((uint32_t)param.filterCoeffDeltaIdx[i], param.numLumaFilters);  //filter_coeff_delta[i]
+      }
+    }
+
+#if JVET_N0415_CTB_ALF
+    WRITE_FLAG(param.fixedFilterSetIndex > 0 ? 1 : 0, "fixed_filter_set_flag");
+    if (param.fixedFilterSetIndex > 0)
+    {
+      xWriteTruncBinCode(param.fixedFilterSetIndex - 1, NUM_FIXED_FILTER_SETS);
+      WRITE_FLAG(param.fixedFilterPattern, "fixed_filter_flag_pattern");
+      for (int classIdx = 0; classIdx < MAX_NUM_ALF_CLASSES; classIdx++)
+      {
+        if (param.fixedFilterPattern > 0)
+        {
+          WRITE_FLAG(param.fixedFilterIdx[classIdx], "fixed_filter_flag");
+        }
+        else
+        {
+          CHECK(param.fixedFilterIdx[classIdx] != 1, "Disabled fixed filter");
+        }
+      }
+    }
+#endif
+
+    alfFilter(param, false);
+
+#if JVET_N0415_CTB_ALF
+  }
+  if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
+  {
+#if JVET_N0242_NON_LINEAR_ALF
+    WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_CHROMA], "alf_chroma_clip");
+#endif
+#else
+    if (alfChromaIdc)
+    {
+#endif
+      alfFilter(param, true);
+  }
+}
+
+void HLSWriter::codeLmcsAps( APS* pcAPS )
+{
+  SliceReshapeInfo param = pcAPS->getReshaperAPSInfo();
+  WRITE_UVLC(param.reshaperModelMinBinIdx, "lmcs_min_bin_idx");
+  WRITE_UVLC(PIC_CODE_CW_BINS - 1 - param.reshaperModelMaxBinIdx, "lmcs_delta_max_bin_idx");
+  assert(param.maxNbitsNeededDeltaCW > 0);
+  WRITE_UVLC(param.maxNbitsNeededDeltaCW - 1, "lmcs_delta_cw_prec_minus1");
+
+  for (int i = param.reshaperModelMinBinIdx; i <= param.reshaperModelMaxBinIdx; i++)
+  {
+    int deltaCW = param.reshaperModelBinCWDelta[i];
+    int signCW = (deltaCW < 0) ? 1 : 0;
+    int absCW = (deltaCW < 0) ? (-deltaCW) : deltaCW;
+    WRITE_CODE(absCW, param.maxNbitsNeededDeltaCW, "lmcs_delta_abs_cw[ i ]");
+    if (absCW > 0)
+    {
+      WRITE_FLAG(signCW, "lmcs_delta_sign_cw_flag[ i ]");
+    }
+  }
+}
+#endif
+
 void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
 {
 #if ENABLE_TRACING
@@ -805,6 +923,7 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, bool commonInfPrese
   }
 }
 
+#if !JVET_N0805_APS_LMCS
 void HLSWriter::codeReshaper(const SliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra)
 {
   WRITE_FLAG(pSliceReshaperInfo.getSliceReshapeModelPresentFlag() ? 1 : 0, "tile_group_reshaper_model_present_flag");
@@ -836,6 +955,7 @@ void HLSWriter::codeReshaper(const SliceReshapeInfo& pSliceReshaperInfo, const S
   if (!(pcSPS->getUseDualITree() && isIntra))
     WRITE_FLAG(pSliceReshaperInfo.getSliceReshapeChromaAdj(), "tile_group_reshaper_chroma_residual_scale_flag");
 };
+#endif
 
 void HLSWriter::codeSPS( const SPS* pcSPS )
 {
@@ -1825,7 +1945,17 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     if (pcSlice->getSPS()->getUseReshaper())
     {
+#if JVET_N0805_APS_LMCS
+      WRITE_FLAG( pcSlice->getLmcsEnabledFlag()? 1 : 0, "slice_lmcs_enabled_flag");
+      if (pcSlice->getLmcsEnabledFlag())
+      {
+        WRITE_CODE(pcSlice->getLmcsAPSId(), 5, "slice_lmcs_aps_id");
+        if (!(pcSlice->getSPS()->getUseDualITree() && pcSlice->isIntra()))
+          WRITE_FLAG(pcSlice->getLmcsChromaResidualScaleFlag(), "slice_chroma_residual_scale_flag");
+      }
+#else
       codeReshaper(pcSlice->getReshapeInfo(), pcSlice->getSPS(), pcSlice->isIntra());
+#endif
     }
 
   if(pcSlice->getPPS()->getSliceHeaderExtensionPresentFlag())

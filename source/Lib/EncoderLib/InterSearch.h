@@ -80,7 +80,7 @@ struct AffineMVInfo
 
 typedef struct
 {
-  Mv acMvAffine4Para[2][2];
+  Mv acMvAffine4Para[2][3];
   Mv acMvAffine6Para[2][3];
   int16_t affine4ParaRefIdx[2];
   int16_t affine6ParaRefIdx[2];

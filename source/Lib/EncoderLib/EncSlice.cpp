@@ -203,7 +203,7 @@ static double getAveragePictureEnergy (const CPelBuf picOrig, const uint32_t uBi
 }
 #endif
 
-static int getGlaringColorQPOffset (Picture* const pcPic, const int ctuAddr, const uint32_t startAddr, const uint32_t boundingAddr,
+static int getGlaringColorQPOffset (Picture* const pcPic, Slice* const pcSlice, const int ctuAddr, const uint32_t startAddr, const uint32_t boundingAddr,
                                     const int bitDepth,   uint32_t &avgLumaValue)
 {
   const PreCalcValues& pcv  = *pcPic->cs->pcv;
@@ -212,7 +212,7 @@ static int getGlaringColorQPOffset (Picture* const pcPic, const int ctuAddr, con
   const uint32_t chrHeight  = pcv.maxCUHeight >> getChannelTypeScaleY (CH_C, chrFmt);
   const int      midLevel   = 1 << (bitDepth - 1);
   int chrValue = MAX_INT;
-  avgLumaValue = (startAddr < boundingAddr) ? 0 : (uint32_t)pcPic->getOrigBuf().Y().computeAvg();
+  avgLumaValue = (startAddr < boundingAddr) ? 0 : uint32_t ((pcSlice->getSPS()->getUseReshaper() ? pcPic->getTrueOrigBuf() : pcPic->getOrigBuf()).Y().computeAvg());
 
   if (ctuAddr >= 0) // luma
   {
@@ -241,9 +241,9 @@ static int getGlaringColorQPOffset (Picture* const pcPic, const int ctuAddr, con
     {
       const CompArea chrArea = clipArea (CompArea (compID, chrFmt, Area ((ctuAddr % pcv.widthInCtus) * chrWidth, (ctuAddr / pcv.widthInCtus) * chrHeight, chrWidth, chrHeight)), pcPic->block (compID));
 
-      avgCompValue = pcPic->getOrigBuf (chrArea).computeAvg();
+      avgCompValue = (pcSlice->getSPS()->getUseReshaper() ? pcPic->getTrueOrigBuf (chrArea) : pcPic->getOrigBuf (chrArea)).computeAvg();
     }
-    else avgCompValue = pcPic->getOrigBuf (pcPic->block (compID)).computeAvg();
+    else avgCompValue = (pcSlice->getSPS()->getUseReshaper() ? pcPic->getTrueOrigBuf (pcPic->block (compID)) : pcPic->getOrigBuf (pcPic->block (compID))).computeAvg();
 
     if (chrValue > avgCompValue) chrValue = avgCompValue; // minimum of the DC offsets
   }
@@ -267,7 +267,7 @@ static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, 
   for (uint32_t comp = 0; comp < getNumberValidComponents (pcPic->chromaFormat); comp++)
   {
     const ComponentID compID = (ComponentID)comp;
-    const CPelBuf    picOrig = pcPic->getOrigBuf (pcPic->block (compID));
+    const CPelBuf    picOrig = (pcSlice->getSPS()->getUseReshaper() ? pcPic->getTrueOrigBuf (pcPic->block (compID)) : pcPic->getOrigBuf (pcPic->block (compID)));
 
     filterAndCalculateAverageEnergies (picOrig.buf,    picOrig.stride, hpEner[comp],
                                        picOrig.height, picOrig.width,  bitDepth - (isChroma (compID) ? 1 : 0));
@@ -277,13 +277,14 @@ static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, 
 
       if (savedLumaQP < 0)
       {
+        PelBuf  picOrigLuma  = (pcSlice->getSPS()->getUseReshaper() ? pcPic->getTrueOrigBuf().Y() : pcPic->getOrigBuf().Y());
 #if GLOBAL_AVERAGING
-        int     averageAdaptedLumaQP = Clip3 (0, MAX_QP, sliceQP + apprI3Log2 (hpEner[0] / getAveragePictureEnergy (pcPic->getOrigBuf().Y(), bitDepth)));
+        int     averageAdaptedLumaQP = Clip3 (0, MAX_QP, sliceQP + apprI3Log2 (hpEner[0] / getAveragePictureEnergy (picOrigLuma, bitDepth)));
 #else
         int     averageAdaptedLumaQP = Clip3 (0, MAX_QP, sliceQP); // mean slice QP
 #endif
 
-        averageAdaptedLumaQP += getGlaringColorQPOffset (pcPic, -1 /*ctuRsAddr*/, 0 /*startAddr*/, 0 /*boundingAddr*/, bitDepth, meanLuma);
+        averageAdaptedLumaQP += getGlaringColorQPOffset (pcPic, pcSlice, -1 /*ctuRsAddr*/, 0 /*startAddr*/, 0 /*boundingAddr*/, bitDepth, meanLuma);
 
         if (averageAdaptedLumaQP > MAX_QP
 #if SHARP_LUMA_DELTA_QP
@@ -295,7 +296,7 @@ static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, 
         // change mean picture QP index based on picture's average luma value (Sharp)
         if (pcEncCfg->getLumaLevelToDeltaQPMapping().mode == LUMALVL_TO_DQP_NUM_MODES)
         {
-          if (meanLuma == MAX_UINT) meanLuma = pcPic->getOrigBuf().Y().computeAvg();
+          if (meanLuma == MAX_UINT) meanLuma = picOrigLuma.computeAvg();
 
           averageAdaptedLumaQP = Clip3 (0, MAX_QP, averageAdaptedLumaQP + lumaDQPOffset (meanLuma, bitDepth));
         }
@@ -891,20 +892,21 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
       const Position pos ((ctuRsAddr % pcv.widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / pcv.widthInCtus) * pcv.maxCUHeight);
       const CompArea ctuArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight)), pcPic->Y());
       const CompArea fltArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x > 0 ? pos.x - 1 : 0, pos.y > 0 ? pos.y - 1 : 0, pcv.maxCUWidth + (pos.x > 0 ? 2 : 1), pcv.maxCUHeight + (pos.y > 0 ? 2 : 1))), pcPic->Y());
-      const CPelBuf  picOrig    = pcPic->getOrigBuf (fltArea);
+      const CPelBuf  picOrig    = (pcSlice->getSPS()->getUseReshaper() ? pcPic->getTrueOrigBuf (fltArea) : pcPic->getOrigBuf (fltArea));
       double hpEner = 0.0;
 
       filterAndCalculateAverageEnergies (picOrig.buf,    picOrig.stride, hpEner,
                                          picOrig.height, picOrig.width,  bitDepth);
       hpEnerAvg += hpEner;
       pcPic->m_uEnerHpCtu[ctuRsAddr] = hpEner;
-      pcPic->m_iOffsetCtu[ctuRsAddr] = pcPic->getOrigBuf (ctuArea).computeAvg();
+      pcPic->m_iOffsetCtu[ctuRsAddr] = (pcSlice->getSPS()->getUseReshaper() ? pcPic->getTrueOrigBuf (ctuArea) : pcPic->getOrigBuf (ctuArea)).computeAvg();
     }
 
     hpEnerAvg /= double (boundingAddr - startAddr);
   }
+  PelBuf     picOrigLuma = (pcSlice->getSPS()->getUseReshaper() ? pcPic->getTrueOrigBuf().Y() : pcPic->getOrigBuf().Y());
 #if GLOBAL_AVERAGING
-  const double hpEnerPic = 1.0 / getAveragePictureEnergy (pcPic->getOrigBuf().Y(), bitDepth);  // inverse, speed
+  const double hpEnerPic = 1.0 / getAveragePictureEnergy (picOrigLuma, bitDepth); // inv. to speed up code below
 #else
   const double hpEnerPic = 1.0 / hpEnerAvg; // speedup: multiply instead of divide in loop below; 1.0 for tuning
 #endif
@@ -915,7 +917,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
 
     if (isChromaEnabled (pcPic->chromaFormat) && (iQPIndex < MAX_QP) && (previouslyAdaptedLumaQP < 0))
     {
-      iQPFixed += getGlaringColorQPOffset (pcPic, -1 /*ctuRsAddr*/, startAddr, boundingAddr, bitDepth, meanLuma);
+      iQPFixed += getGlaringColorQPOffset (pcPic, pcSlice, -1 /*ctuRsAddr*/, startAddr, boundingAddr, bitDepth, meanLuma);
 
       if (iQPFixed > MAX_QP
 #if SHARP_LUMA_DELTA_QP
@@ -993,7 +995,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
 
         if (isChromaEnabled (pcPic->chromaFormat))
         {
-          iQPAdapt += getGlaringColorQPOffset (pcPic, (int)ctuRsAddr, startAddr, boundingAddr, bitDepth, meanLuma);
+          iQPAdapt += getGlaringColorQPOffset (pcPic, pcSlice, (int)ctuRsAddr, startAddr, boundingAddr, bitDepth, meanLuma);
 
           if (iQPAdapt > MAX_QP
 #if SHARP_LUMA_DELTA_QP
@@ -1020,10 +1022,11 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
         const uint32_t uRefScale  = g_invQuantScales[iQPAdapt % 6] << ((iQPAdapt / 6) + bitDepth - 4);
 #endif
         const CompArea subArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area ((ctuRsAddr % pcv.widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / pcv.widthInCtus) * pcv.maxCUHeight, pcv.maxCUWidth, pcv.maxCUHeight)), pcPic->Y());
-        const Pel*     pSrc       = pcPic->getOrigBuf (subArea).buf;
-        const SizeType iSrcStride = pcPic->getOrigBuf (subArea).stride;
-        const SizeType iSrcHeight = pcPic->getOrigBuf (subArea).height;
-        const SizeType iSrcWidth  = pcPic->getOrigBuf (subArea).width;
+        const CPelBuf  picOrigSub = (pcSlice->getSPS()->getUseReshaper() ? pcPic->getTrueOrigBuf (subArea) : pcPic->getOrigBuf (subArea));
+        const Pel*     pSrc       = picOrigSub.buf;
+        const SizeType iSrcStride = picOrigSub.stride;
+        const SizeType iSrcHeight = picOrigSub.height;
+        const SizeType iSrcWidth  = picOrigSub.width;
         uint32_t uAbsDCless = 0;
 
         // compute sum of absolute DC-less (high-pass) luma values
@@ -1058,9 +1061,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
       pcPic->m_iOffsetCtu[ctuRsAddr] = (Pel)iQPAdapt; // adapted QPs
 
 #if ENABLE_QPA_SUB_CTU
-      if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getCuQpDeltaSubdiv() == 0)  // reduce local DQP rate peaks
-#elif ENABLE_QPA_SUB_CTU
-      if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getMaxCuDQPDepth() == 0)  // reduce local DQP rate peaks
+      if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getCuQpDeltaSubdiv() == 0) // reduce local QP rate peaks
 #else
       if (pcv.widthInCtus > 1) // try to reduce local bitrate peaks via minimum smoothing of the adapted QPs
 #endif
@@ -1140,7 +1141,7 @@ static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea,
         const PosType  x       = ctuArea.lx() + w * mts;
         const PosType  y       = ctuArea.ly() + h * mts;
         const CompArea fltArea = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (x > 0 ? x - 1 : 0, y > 0 ? y - 1 : 0, mts + (x > 0 ? 2 : 1), mts + (y > 0 ? 2 : 1))), pcPic->Y());
-        const CPelBuf  picOrig = pcPic->getOrigBuf (fltArea);
+        const CPelBuf  picOrig = (cs.slice->getSPS()->getUseReshaper() ? pcPic->getTrueOrigBuf (fltArea) : pcPic->getOrigBuf (fltArea));
 
         if (x >= pcPic->lwidth() || y >= pcPic->lheight())
         {
@@ -1156,7 +1157,7 @@ static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea,
         {
           const CompArea subArea = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (x, y, mts, mts)), pcPic->Y());
 
-          subMLV[addr] = pcPic->getOrigBuf (subArea).computeAvg();
+          subMLV[addr] = (cs.slice->getSPS()->getUseReshaper() ? pcPic->getTrueOrigBuf (subArea) : pcPic->getOrigBuf (subArea)).computeAvg();
         }
 #endif
       }

@@ -259,34 +259,34 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
   return dcVal;
 }
 
-  int IntraPrediction::getWideAngle( int width, int height, int predMode )
+int IntraPrediction::getWideAngle( int width, int height, int predMode )
+{
+  if ( predMode > DC_IDX && predMode <= VDIA_IDX )
   {
-    if ( predMode > DC_IDX && predMode <= VDIA_IDX )
+    int modeShift[] = { 0, 6, 10, 12, 14, 15 };
+    int deltaSize = abs(g_aucLog2[width] - g_aucLog2[height]);
+    if (width > height && predMode < 2 + modeShift[deltaSize])
     {
-      int modeShift[] = { 0, 6, 10, 12, 14, 15 };
-      int deltaSize = abs(g_aucLog2[width] - g_aucLog2[height]);
-      if (width > height && predMode < 2 + modeShift[deltaSize])
-      {
-        predMode += (VDIA_IDX - 1);
-      }
-      else if (height > width && predMode > VDIA_IDX - modeShift[deltaSize])
-      {
-        predMode -= (VDIA_IDX - 1);
-      }
+      predMode += (VDIA_IDX - 1);
     }
-    return predMode;
+    else if (height > width && predMode > VDIA_IDX - modeShift[deltaSize])
+    {
+      predMode -= (VDIA_IDX - 1);
+    }
   }
+  return predMode;
+}
 
-  void IntraPrediction::setReferenceArrayLengths( const CompArea &area )
-  {
-    // set Top and Left reference samples length
-    const int  width    = area.width;
-    const int  height   = area.height;
+void IntraPrediction::setReferenceArrayLengths( const CompArea &area )
+{
+  // set Top and Left reference samples length
+  const int  width    = area.width;
+  const int  height   = area.height;
 
-    m_leftRefLength     = (height << 1);
-    m_topRefLength      = (width << 1);
+  m_leftRefLength     = (height << 1);
+  m_topRefLength      = (width << 1);
 
-  }
+}
 
 void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu)
 {
@@ -389,6 +389,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
     }
   }
 }
+
 void IntraPrediction::predIntraChromaLM(const ComponentID compID, PelBuf &piPred, const PredictionUnit &pu, const CompArea& chromaArea, int intraDir)
 {
   int  iLumaStride = 0;
@@ -400,8 +401,8 @@ void IntraPrediction::predIntraChromaLM(const ComponentID compID, PelBuf &piPred
   }
   else
   {
-  iLumaStride = MAX_CU_SIZE + 1;
-  Temp = PelBuf(m_piTemp + iLumaStride + 1, iLumaStride, Size(chromaArea));
+    iLumaStride = MAX_CU_SIZE + 1;
+    Temp = PelBuf(m_piTemp + iLumaStride + 1, iLumaStride, Size(chromaArea));
   }
   int a, b, iShift;
   xGetLMParameters(pu, compID, chromaArea, a, b, iShift);
@@ -469,9 +470,6 @@ void IntraPrediction::xPredIntraPlanar( const CPelBuf &pSrc, PelBuf &pDst )
     }
   }
 }
-
-
-
 
 void IntraPrediction::xPredIntraDc( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const bool enableBoundaryFilter )
 {
@@ -1327,7 +1325,7 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
       lastAvailUnit = currUnit;
       currUnit++;
     }
-}
+  }
   // padding of extended samples above right with the last sample
   int lastSample = multiRefIdx + predSize;
   for (int j = 1; j <= whRatio * multiRefIdx; j++) { ptrDst[lastSample + j] = ptrDst[lastSample]; }
@@ -1554,6 +1552,7 @@ int isBelowLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const 
 
   return iNumIntra;
 }
+
 // LumaRecPixels
 void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chromaArea)
 {
@@ -1567,8 +1566,8 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   }
   else
   {
-  iDstStride = MAX_CU_SIZE + 1;
-  pDst0 = m_piTemp + iDstStride + 1; //MMLM_SAMPLE_NEIGHBOR_LINES;
+    iDstStride = MAX_CU_SIZE + 1;
+    pDst0 = m_piTemp + iDstStride + 1; //MMLM_SAMPLE_NEIGHBOR_LINES;
   }
   //assert 420 chroma subsampling
   CompArea lumaArea = CompArea( COMPONENT_Y, pu.chromaFormat, chromaArea.lumaPos(), recalcSize( pu.chromaFormat, CHANNEL_TYPE_CHROMA, CHANNEL_TYPE_LUMA, chromaArea.size() ) );//needed for correct pos/size (4x4 Tus)
@@ -2020,8 +2019,8 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   }
   else
   {
-  srcStride = MAX_CU_SIZE + 1;
-  temp        = PelBuf(m_piTemp + srcStride + 1, srcStride, Size(chromaArea));
+    srcStride = MAX_CU_SIZE + 1;
+    temp        = PelBuf(m_piTemp + srcStride + 1, srcStride, Size(chromaArea));
   }
   srcColor0 = temp.bufAt(0, 0);
   curChroma0 = getPredictorPtr(compID);
@@ -2057,7 +2056,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   {
     aboveAvailable = 0;
 #if JVET_N0271_SIMPLFIED_CCLM
-     avaiLeftBelowUnits = avaiLeftBelowUnits > (cWidth/unitHeight) ? cWidth/unitHeight : avaiLeftBelowUnits;
+    avaiLeftBelowUnits = avaiLeftBelowUnits > (cWidth/unitHeight) ? cWidth/unitHeight : avaiLeftBelowUnits;
 #endif
     actualLeftTemplateSampNum = unitHeight*(avaiLeftUnits + avaiLeftBelowUnits);
 #if !JVET_N0271_SIMPLFIED_CCLM
@@ -2202,7 +2201,8 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
       int add = 1 << y >> 1;
       a = (diffC * v + add) >> y;
       iShift = 3 + x - y;
-      if ( iShift < 1 ) {
+      if ( iShift < 1 )
+      {
         iShift = 1;
         a = ( (a == 0)? 0: (a < 0)? -15 : 15 );   // a=Sign(a)*15
       }

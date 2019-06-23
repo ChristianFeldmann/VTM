@@ -138,10 +138,6 @@ protected:
     , int multiRefIdx
   );
 
-#if HEVC_USE_DC_PREDFILTERING
-  // dc filtering
-  void xDCPredFiltering           ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType &channelType );
-#endif
   static int getWideAngle         ( int width, int height, int predMode );
   void setReferenceArrayLengths   ( const CompArea &area );
 

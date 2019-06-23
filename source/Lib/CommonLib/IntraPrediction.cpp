@@ -475,45 +475,7 @@ void IntraPrediction::xPredIntraDc( const CPelBuf &pSrc, PelBuf &pDst, const Cha
 {
   const Pel dcval = xGetPredValDc( pSrc, pDst );
   pDst.fill( dcval );
-
-#if HEVC_USE_DC_PREDFILTERING
-  if( enableBoundaryFilter )
-  {
-    xDCPredFiltering( pSrc, pDst, channelType );
-  }
-#endif
 }
-
-#if HEVC_USE_DC_PREDFILTERING
-/** Function for filtering intra DC predictor. This function performs filtering left and top edges of the prediction samples for DC mode (intra coding).
- */
-void IntraPrediction::xDCPredFiltering(const CPelBuf &pSrc, PelBuf &pDst, const ChannelType &channelType)
-{
-  uint32_t iWidth = pDst.width;
-  uint32_t iHeight = pDst.height;
-  int x, y;
-
-  if (isLuma(channelType) && (iWidth <= MAXIMUM_INTRA_FILTERED_WIDTH) && (iHeight <= MAXIMUM_INTRA_FILTERED_HEIGHT))
-  {
-    //top-left
-    pDst.at(0, 0) = (Pel)((pSrc.at(1, 0) + pSrc.at(0, 1) + 2 * pDst.at(0, 0) + 2) >> 2);
-
-    //top row (vertical filter)
-    for ( x = 1; x < iWidth; x++ )
-    {
-      pDst.at(x, 0) = (Pel)((pSrc.at(x + 1, 0)  +  3 * pDst.at(x, 0) + 2) >> 2);
-    }
-
-    //left column (horizontal filter)
-    for ( y = 1; y < iHeight; y++ )
-    {
-      pDst.at(0, y) = (Pel)((pSrc.at(0, y + 1) + 3 * pDst.at(0, y) + 2) >> 2);
-    }
-  }
-
-  return;
-}
-#endif
 
 // Function for initialization of intra prediction parameters
 void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompArea area, const SPS& sps)

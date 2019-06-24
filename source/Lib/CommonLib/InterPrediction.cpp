@@ -1654,6 +1654,16 @@ void InterPrediction::xPrefetchPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPic
 #endif
       PelBuf &dstBuf = pcPad.bufs[compID];
       g_pelBufOP.copyBuffer((Pel *)refBuf.buf, refBuf.stride, ((Pel *)dstBuf.buf) + offset, dstBuf.stride, width, height);
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+      JVET_J0090_SET_REF_PICTURE( refPic, (ComponentID)compID );
+      for ( int row = 0 ; row < height ; row++ )
+      {
+        for ( int col = 0 ; col < width ; col++ )
+        {
+          JVET_J0090_CACHE_ACCESS( ((Pel *)refBuf.buf) + row * refBuf.stride + col, __FILE__, __LINE__ );
+        }
+      }
+#endif
     }
     /*padding on all side of size DMVR_PAD_LENGTH*/
     {
@@ -1940,6 +1950,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
 
   xPrefetchPad(pu, m_cYuvRefBuffDMVRL1, REF_PIC_LIST_1);
 
+  JVET_J0090_SET_CACHE_ENABLE( false );
   xinitMC(pu, clpRngs);
 
   // point mc buffer to cetre point to avoid multiplication to reach each iteration to the begining
@@ -2071,6 +2082,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
       }
     }
   }
+  JVET_J0090_SET_CACHE_ENABLE( true );
 }
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
 void InterPrediction::cacheAssign( CacheModel *cache )

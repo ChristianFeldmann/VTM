@@ -741,7 +741,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
     JVET_J0090_SET_CACHE_ENABLE( false );
     m_if.filterVer(compID, (Pel*)tmpBuf.buf + ((vFilterSize >> 1) - 1) * tmpBuf.stride, tmpBuf.stride, dstBuf.buf, dstBuf.stride, backupWidth, backupHeight, yFrac, false, rndRes, chFmt, clpRng, bilinearMC, bilinearMC);
   }
-  JVET_J0090_SET_CACHE_ENABLE( true );
+  JVET_J0090_SET_CACHE_ENABLE( srcPadStride == 0 ); // Enabled only in non-DMVR process, In DMVR process, srcPadStride is always non-zero
   if (bioApplied && compID == COMPONENT_Y)
   {
     const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));

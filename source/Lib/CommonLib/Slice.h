@@ -69,6 +69,7 @@ typedef std::list<Picture*> PicList;
 // Class definition
 // ====================================================================================================================
 
+#if !JVET_M0128
 /// Reference Picture Set class
 class ReferencePictureSet
 {
@@ -153,6 +154,69 @@ public:
 
   int                            getNumberOfReferencePictureSets() const                  { return int(m_referencePictureSets.size());              }
 };
+#endif
+
+#if JVET_M0128
+class ReferencePictureList
+{
+private:
+  int   m_numberOfShorttermPictures;
+  int   m_numberOfLongtermPictures;
+  int   m_isLongtermRefPic[MAX_NUM_REF_PICS];
+  int   m_refPicIdentifier[MAX_NUM_REF_PICS];  //This can be delta POC for STRP or POC LSB for LTRP
+  int   m_POC[MAX_NUM_REF_PICS];
+  int   m_numberOfActivePictures;
+  bool  m_deltaPocMSBPresentFlag[MAX_NUM_REF_PICS];
+  int   m_deltaPOCMSBCycleLT[MAX_NUM_REF_PICS];
+
+public:
+  ReferencePictureList();
+  virtual ~ReferencePictureList();
+
+  void    setRefPicIdentifier(int idx, int identifier, bool isLongterm);
+  int     getRefPicIdentifier(int idx) const;
+  bool    isRefPicLongterm(int idx) const;
+
+  void    setNumberOfShorttermPictures(int numberOfStrp);
+  int     getNumberOfShorttermPictures() const;
+
+  void    setNumberOfLongtermPictures(int numberOfLtrp);
+  int     getNumberOfLongtermPictures() const;
+
+  void    setPOC(int idx, int POC);
+  int     getPOC(int idx) const;
+
+  void    setNumberOfActivePictures(int numberOfLtrp);
+  int     getNumberOfActivePictures() const;
+
+  int     getDeltaPocMSBCycleLT(int i) const { return m_deltaPOCMSBCycleLT[i]; }
+  void    setDeltaPocMSBCycleLT(int i, int x) { m_deltaPOCMSBCycleLT[i] = x; }
+  bool    getDeltaPocMSBPresentFlag(int i) const { return m_deltaPocMSBPresentFlag[i]; }
+  void    setDeltaPocMSBPresentFlag(int i, bool x) { m_deltaPocMSBPresentFlag[i] = x; }
+
+  void    printRefPicInfo() const;
+};
+
+/// Reference Picture List set class
+class RPLList
+{
+private:
+  std::vector<ReferencePictureList> m_referencePictureLists;
+
+public:
+  RPLList() { }
+  virtual                        ~RPLList() { }
+
+  void                           create(int numberOfEntries) { m_referencePictureLists.resize(numberOfEntries); }
+  void                           destroy() { }
+
+
+  ReferencePictureList*          getReferencePictureList(int referencePictureListIdx) { return &m_referencePictureLists[referencePictureListIdx]; }
+  const ReferencePictureList*    getReferencePictureList(int referencePictureListIdx) const { return &m_referencePictureLists[referencePictureListIdx]; }
+
+  int                            getNumberOfReferencePictureLists() const { return int(m_referencePictureLists.size()); }
+};
+#endif
 
 #if HEVC_USE_SCALING_LISTS
 /// SCALING_LIST class
@@ -1146,7 +1210,17 @@ private:
 
   Window            m_conformanceWindow;
 
+#if JVET_M0128
+  RPLList           m_RPLList0;
+  RPLList           m_RPLList1;
+  uint32_t          m_numRPL0;
+  uint32_t          m_numRPL1;
+  bool              m_rpl1CopyFromRpl0Flag;
+  bool              m_rpl1IdxPresentFlag;
+  bool              m_allRplEntriesHasSameSignFlag;
+#else
   RPSList           m_RPSList;
+#endif
   bool              m_bLongTermRefsPresent;
   bool              m_SPSTemporalMVPEnabledFlag;
   int               m_numReorderPics[MAX_TLAYER];
@@ -1411,9 +1485,25 @@ public:
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
   void                    setNumReorderPics(int i, uint32_t tlayer)                                           { m_numReorderPics[tlayer] = i;                                        }
   int                     getNumReorderPics(uint32_t tlayer) const                                            { return m_numReorderPics[tlayer];                                     }
+#if JVET_M0128
+  void                    createRPLList0(int numRPL);
+  void                    createRPLList1(int numRPL);
+  const RPLList*          getRPLList0() const                                                                 { return &m_RPLList0;                                                  }
+  RPLList*                getRPLList0()                                                                       { return &m_RPLList0;                                                  }
+  const RPLList*          getRPLList1() const                                                                 { return &m_RPLList1;                                                  }
+  RPLList*                getRPLList1()                                                                       { return &m_RPLList1;                                                  }
+  uint32_t                getNumRPL0() const                                                                  { return m_numRPL0;                                                    }
+  uint32_t                getNumRPL1() const                                                                  { return m_numRPL1;                                                    }
+  void                    setRPL1CopyFromRPL0Flag(bool isCopy)                                                { m_rpl1CopyFromRpl0Flag = isCopy;                                     }
+  bool                    getRPL1CopyFromRPL0Flag() const                                                     { return m_rpl1CopyFromRpl0Flag;                                       }
+  bool                    getRPL1IdxPresentFlag() const                                                       { return m_rpl1IdxPresentFlag;                                         }
+  void                    setAllActiveRplEntriesHasSameSignFlag(bool isAllSame)                               { m_allRplEntriesHasSameSignFlag = isAllSame;                          }
+  bool                    getAllActiveRplEntriesHasSameSignFlag() const                                       { return m_allRplEntriesHasSameSignFlag;                               }
+#else
   void                    createRPSList( int numRPS );
   const RPSList*          getRPSList() const                                                              { return &m_RPSList;                                                   }
   RPSList*                getRPSList()                                                                    { return &m_RPSList;                                                   }
+#endif
   bool                    getLongTermRefsPresent() const                                                  { return m_bLongTermRefsPresent;                                       }
   void                    setLongTermRefsPresent(bool b)                                                  { m_bLongTermRefsPresent=b;                                            }
   bool                    getSPSTemporalMVPEnabledFlag() const                                            { return m_SPSTemporalMVPEnabledFlag;                                  }
@@ -1573,7 +1663,7 @@ public:
 
 
 /// Reference Picture Lists class
-
+#if !JVET_M0128
 class RefPicListModification
 {
 private:
@@ -1595,7 +1685,7 @@ public:
   uint32_t    getRefPicSetIdxL1(uint32_t idx) const              { CHECK(idx>=REF_PIC_LIST_NUM_IDX, "Invalid ref-pic-list index"); return m_RefPicSetIdxL1[idx];         }
   void    setRefPicSetIdxL1(uint32_t idx, uint32_t refPicSetIdx) { CHECK(idx>=REF_PIC_LIST_NUM_IDX, "Invalid ref-pic-list index"); m_RefPicSetIdxL1[idx] = refPicSetIdx; }
 };
-
+#endif
 
 
 /// PPS RExt class
@@ -1681,6 +1771,10 @@ private:
 
   uint32_t             m_numRefIdxL0DefaultActive;
   uint32_t             m_numRefIdxL1DefaultActive;
+
+#if JVET_M0128
+  bool             m_rpl1IdxPresentFlag;
+#endif
 
   bool             m_bUseWeightPred;                    //!< Use of Weighting Prediction (P_SLICE)
   bool             m_useWeightedBiPred;                 //!< Use of Weighting Bi-Prediction (B_SLICE)
@@ -1812,6 +1906,11 @@ public:
   uint32_t                   getNumRefIdxL0DefaultActive() const                              { return m_numRefIdxL0DefaultActive;            }
   void                   setNumRefIdxL1DefaultActive(uint32_t ui)                             { m_numRefIdxL1DefaultActive=ui;                }
   uint32_t                   getNumRefIdxL1DefaultActive() const                              { return m_numRefIdxL1DefaultActive;            }
+
+#if JVET_M0128
+  void                   setRpl1IdxPresentFlag(bool isPresent)                            { m_rpl1IdxPresentFlag = isPresent;             }
+  uint32_t               getRpl1IdxPresentFlag() const                                    { return m_rpl1IdxPresentFlag;                  }
+#endif
 
   bool                   getUseWP() const                                                 { return m_bUseWeightPred;                      }
   bool                   getWPBiPred() const                                              { return m_useWeightedBiPred;                   }
@@ -2014,10 +2113,19 @@ private:
   int                        m_iLastIDR;
   int                        m_iAssociatedIRAP;
   NalUnitType                m_iAssociatedIRAPType;
+#if JVET_M0128
+  const ReferencePictureList* m_pRPL0;                //< pointer to RPL for L0, either in the SPS or the local RPS in the same slice header
+  const ReferencePictureList* m_pRPL1;                //< pointer to RPL for L1, either in the SPS or the local RPS in the same slice header
+  ReferencePictureList        m_localRPL0;            //< RPL for L0 when present in slice header
+  ReferencePictureList        m_localRPL1;            //< RPL for L1 when present in slice header
+  int                         m_rpl0Idx;              //< index of used RPL in the SPS or -1 for local RPL in the slice header
+  int                         m_rpl1Idx;              //< index of used RPL in the SPS or -1 for local RPL in the slice header
+#else
   const ReferencePictureSet* m_pRPS;             //< pointer to RPS, either in the SPS or the local RPS in the same slice header
   ReferencePictureSet        m_localRPS;             //< RPS when present in slice header
   int                        m_rpsIdx;               //< index of used RPS in the SPS or -1 for local RPS in the slice header
   RefPicListModification     m_RefPicListModification;
+#endif
   NalUnitType                m_eNalUnitType;         ///< Nal unit type for the slice
   SliceType                  m_eSliceType;
   int                        m_iSliceQp;
@@ -2209,6 +2317,18 @@ public:
   bool                        getPicOutputFlag() const                               { return m_PicOutputFlag;                                       }
   void                        setSaoEnabledFlag(ChannelType chType, bool s)          {m_saoEnabledFlag[chType] =s;                                   }
   bool                        getSaoEnabledFlag(ChannelType chType) const            { return m_saoEnabledFlag[chType];                              }
+#if JVET_M0128
+  void                        setRPL0(const ReferencePictureList *pcRPL)             { m_pRPL0 = pcRPL;                                             }
+  void                        setRPL1(const ReferencePictureList *pcRPL)             { m_pRPL1 = pcRPL;                                             }
+  const ReferencePictureList* getRPL0()                                              { return m_pRPL0;                                              }
+  const ReferencePictureList* getRPL1()                                              { return m_pRPL1;                                              }
+  ReferencePictureList*       getLocalRPL0()                                         { return &m_localRPL0;                                         }
+  ReferencePictureList*       getLocalRPL1()                                         { return &m_localRPL1;                                         }
+  void                        setRPL0idx(int rplIdx)                                 { m_rpl0Idx = rplIdx;                                          }
+  void                        setRPL1idx(int rplIdx)                                 { m_rpl1Idx = rplIdx;                                          }
+  int                         getRPL0idx() const                                     { return m_rpl0Idx;                                            }
+  int                         getRPL1idx() const                                     { return m_rpl1Idx;                                            }
+#else
   void                        setRPS( const ReferencePictureSet *pcRPS )             { m_pRPS = pcRPS;                                               }
   const ReferencePictureSet*  getRPS()                                               { return m_pRPS;                                                }
   ReferencePictureSet*        getLocalRPS()                                          { return &m_localRPS;                                           }
@@ -2216,6 +2336,7 @@ public:
   void                        setRPSidx( int rpsIdx )                                { m_rpsIdx = rpsIdx;                                            }
   int                         getRPSidx() const                                      { return m_rpsIdx;                                              }
   RefPicListModification*     getRefPicListModification()                            { return &m_RefPicListModification;                             }
+#endif
   void                        setLastIDR(int iIDRPOC)                                { m_iLastIDR = iIDRPOC;                                         }
   int                         getLastIDR() const                                     { return m_iLastIDR;                                            }
   void                        setAssociatedIRAPPOC(int iAssociatedIRAPPOC)           { m_iAssociatedIRAP = iAssociatedIRAPPOC;                       }
@@ -2249,7 +2370,9 @@ public:
   void                        setIsUsedAsLongTerm(int i, int j, bool value)          { m_bIsUsedAsLongTerm[i][j] = value;                            }
   bool                        getCheckLDC() const                                    { return m_bCheckLDC;                                           }
   bool                        getMvdL1ZeroFlag() const                               { return m_bLMvdL1Zero;                                         }
+#if !JVET_M0128
   int                         getNumRpsCurrTempList() const;
+#endif
   int                         getList1IdxToList0Idx( int list1Idx ) const            { return m_list1IdxToList0Idx[list1Idx];                        }
 #if !JVET_M0101_HLS
   bool                        isReferenceNalu() const                                { return ((getNalUnitType() <= NAL_UNIT_RESERVED_VCL_R15) && (getNalUnitType()%2 != 0)) || ((getNalUnitType() >= NAL_UNIT_CODED_SLICE_BLA_W_LP) && (getNalUnitType() <= NAL_UNIT_RESERVED_IRAP_VCL23) ); }
@@ -2271,7 +2394,11 @@ public:
   bool                        isIDRorBLA() const { return (getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (getNalUnitType() <= NAL_UNIT_CODED_SLICE_IDR_N_LP); }
 #endif
 #endif
+#if !JVET_M0128
   void                        checkCRA(const ReferencePictureSet *pReferencePictureSet, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic);
+#else
+  void                        checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic);
+#endif
   void                        decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& rcListPic, const bool bEfficientFieldIRAPEnabled);
   void                        setSliceType( SliceType e )                            { m_eSliceType        = e;                                      }
   void                        setSliceQp( int i )                                    { m_iSliceQp          = i;                                      }
@@ -2287,7 +2414,11 @@ public:
   void                        setPic( Picture* p )                                   { m_pcPic             = p;                                      }
   void                        setDepth( int iDepth )                                 { m_iDepth            = iDepth;                                 }
 
+#if JVET_M0128
+  void                        constructRefPicList(PicList& rcListPic);
+#else
   void                        setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr = false, bool bCopyL0toL1ErrorCase = false );
+#endif
   void                        setRefPOCList();
 
   void                        setColFromL0Flag( bool colFromL0 )                     { m_colFromL0Flag = colFromL0;                                  }
@@ -2360,13 +2491,22 @@ public:
   void                        setTLayer( uint32_t uiTLayer )                             { m_uiTLayer = uiTLayer;                                        }
 
   void                        checkLeadingPictureRestrictions( PicList& rcListPic )                                         const;
+#if JVET_M0128
+  void                        applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1 )  const;
+#else
   void                        applyReferencePictureSet( PicList& rcListPic, const ReferencePictureSet *RPSList)             const;
+#endif
   bool                        isTemporalLayerSwitchingPoint( PicList& rcListPic )                                           const;
   bool                        isStepwiseTemporalLayerSwitchingPointCandidate( PicList& rcListPic )                          const;
+#if JVET_M0128
+  int                         checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList *pRPL, int rplIdx, bool printErrors)                const;
+  void                        createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1);
+#else
   int                         checkThatAllRefPicsAreAvailable( PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet, bool printErrors, int pocRandomAccess = 0, bool bUseRecoveryPoint = false) const;
   void                        createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet, bool isRAP, int pocRandomAccess, bool bUseRecoveryPoint, const bool bEfficientFieldIRAPEnabled
                               , bool isEncodeLtRef, bool isCompositeRefEnable
   );
+#endif
   void                        setMaxNumMergeCand(uint32_t val )                          { m_maxNumMergeCand = val;                                      }
   uint32_t                    getMaxNumMergeCand() const                             { return m_maxNumMergeCand;                                     }
   void                        setMaxNumAffineMergeCand( uint32_t val )               { m_maxNumAffineMergeCand = val;  }

@@ -178,8 +178,14 @@ void EncApp::xInitLibCfg()
 #if JCTVC_Y0038_PARAMS
   m_cEncLib.setReWriteParamSets                                  ( m_rewriteParamSets );
 #endif
+#if JVET_M0128
+  m_cEncLib.setRPLList0                                          ( m_RPLList0);
+  m_cEncLib.setRPLList1                                          ( m_RPLList1);
+#endif
   m_cEncLib.setGopList                                           ( m_GOPList );
+#if !JVET_M0128
   m_cEncLib.setExtraRPSs                                         ( m_extraRPSs );
+#endif
   for(int i = 0; i < MAX_TLAYER; i++)
   {
     m_cEncLib.setNumReorderPics                                  ( m_numReorderPics[i], i );

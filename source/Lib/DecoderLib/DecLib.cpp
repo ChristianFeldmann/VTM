@@ -877,7 +877,11 @@ void DecLib::xActivateParameterSets()
     //  Get a new picture buffer. This will also set up m_pcPic, and therefore give us a SPS and PPS pointer that we can use.
     m_pcPic = xGetNewPicBuffer (*sps, *pps, m_apcSlicePilot->getTLayer());
 
+#if JVET_M0128
+    m_apcSlicePilot->applyReferencePictureListBasedMarking(m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1());
+#else
     m_apcSlicePilot->applyReferencePictureSet(m_cListPic, m_apcSlicePilot->getRPS());
+#endif
 #if JVET_N0415_CTB_ALF
 #if JVET_N0805_APS_LMCS
     m_pcPic->finalInit(*sps, *pps, apss, *lmcsAPS);
@@ -1280,10 +1284,17 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   //detect lost reference picture and insert copy of earlier frame.
   {
     int lostPoc;
+#if JVET_M0128
+    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL0(), 0, true)) > 0)
+      xCreateLostPicture(lostPoc - 1);
+    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL1(), 1, true)) > 0)
+      xCreateLostPicture(lostPoc - 1);
+#else
     while((lostPoc=m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPS(), true, m_pocRandomAccess)) > 0)
     {
       xCreateLostPicture(lostPoc-1);
     }
+#endif
   }
 
     m_prevPOC = m_apcSlicePilot->getPOC();
@@ -1349,9 +1360,14 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   pcSlice->setSliceCurEndCtuTsAddr(endCtuIdx);
 #endif
 
+#if JVET_M0128
+  pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_associatedIRAPType, m_cListPic);
+  pcSlice->constructRefPicList(m_cListPic);
+#else
     pcSlice->checkCRA(pcSlice->getRPS(), m_pocCRA, m_associatedIRAPType, m_cListPic );
     // Set reference list
     pcSlice->setRefPicList( m_cListPic, true, true );
+#endif
 
     if (!pcSlice->isIntra())
     {

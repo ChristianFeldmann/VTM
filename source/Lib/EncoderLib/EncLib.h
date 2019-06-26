@@ -174,7 +174,11 @@ protected:
   void  xInitHrdParameters(SPS &sps);                 ///< initialize HRDParameters parameters
 
   void  xInitPPSforTiles  (PPS &pps);
+#if JVET_M0128
+  void  xInitRPL(SPS &sps, bool isFieldCoding);           ///< initialize SPS from encoder options
+#else
   void  xInitRPS          (SPS &sps, bool isFieldCoding);           ///< initialize PPS from encoder options
+#endif
 
 public:
   EncLib();
@@ -227,10 +231,15 @@ public:
   RateCtrl*               getRateCtrl           ()              { return  &m_cRateCtrl;            }
 
 
+#if JVET_M0128
+  void                    getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid, uint32_t *activeL0, uint32_t *activeL1);
+  void                    selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, int ltPoc);
+#else
   void selectReferencePictureSet(Slice* slice, int POCCurr, int GOPid
     , int ltPoc
   );
   int getReferencePictureSetIdxForSOP(int POCCurr, int GOPid );
+#endif
 
 #if JCTVC_Y0038_PARAMS
   void                   setParamSetChanged(int spsId, int ppsId);

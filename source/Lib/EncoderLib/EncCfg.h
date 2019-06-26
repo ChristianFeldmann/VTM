@@ -64,8 +64,18 @@ struct GOPEntry
   int m_betaOffsetDiv2;
   int m_temporalId;
   bool m_refPic;
+#if !JVET_M0128
   int m_numRefPicsActive;
+#endif
   int8_t m_sliceType;
+#if JVET_M0128
+  int m_numRefPicsActive0;
+  int m_numRefPics0;
+  int m_deltaRefPics0[MAX_NUM_REF_PICS];
+  int m_numRefPicsActive1;
+  int m_numRefPics1;
+  int m_deltaRefPics1[MAX_NUM_REF_PICS];
+#else
   int m_numRefPics;
   int m_referencePics[MAX_NUM_REF_PICS];
   int m_usedByCurrPic[MAX_NUM_REF_PICS];
@@ -73,6 +83,7 @@ struct GOPEntry
   int m_deltaRPS;
   int m_numRefIdc;
   int m_refIdc[MAX_NUM_REF_PICS+1];
+#endif
   bool m_isEncoded;
   GOPEntry()
   : m_POC(-1)
@@ -90,19 +101,58 @@ struct GOPEntry
   , m_betaOffsetDiv2(0)
   , m_temporalId(0)
   , m_refPic(false)
+#if !JVET_M0128
   , m_numRefPicsActive(0)
+#endif
   , m_sliceType('P')
+#if JVET_M0128
+    , m_numRefPicsActive0(0)
+    , m_numRefPics0(0)
+    , m_numRefPicsActive1(0)
+    , m_numRefPics1(0)
+#else
   , m_numRefPics(0)
   , m_interRPSPrediction(false)
   , m_deltaRPS(0)
   , m_numRefIdc(0)
+#endif
   , m_isEncoded(false)
   {
+#if JVET_M0128
+    ::memset(m_deltaRefPics0, 0, sizeof(m_deltaRefPics0));
+    ::memset(m_deltaRefPics1, 0, sizeof(m_deltaRefPics1));
+#else
     ::memset( m_referencePics, 0, sizeof(m_referencePics) );
     ::memset( m_usedByCurrPic, 0, sizeof(m_usedByCurrPic) );
     ::memset( m_refIdc,        0, sizeof(m_refIdc) );
+#endif
   }
 };
+
+#if JVET_M0128
+struct RPLEntry
+{
+  int m_POC;
+  int m_temporalId;
+  bool m_refPic;
+  int m_numRefPicsActive;
+  int8_t m_sliceType;
+  int m_numRefPics;
+  int m_deltaRefPics[MAX_NUM_REF_PICS];
+  bool m_isEncoded;
+  RPLEntry()
+    : m_POC(-1)
+    , m_temporalId(0)
+    , m_refPic(false)
+    , m_numRefPicsActive(0)
+    , m_sliceType('P')
+    , m_numRefPics(0)
+    , m_isEncoded(false)
+  {
+    ::memset(m_deltaRefPics, 0, sizeof(m_deltaRefPics));
+  }
+};
+#endif
 
 std::istringstream &operator>>(std::istringstream &in, GOPEntry &entry);     //input
 
@@ -222,14 +272,26 @@ protected:
   bool              m_lowerBitRateConstraintFlag;
 
   //====== Coding Structure ========
+#if JVET_M0128
+  int       m_uiIntraPeriod;                        // needs to be signed to allow '-1' for no intra period
+#else
   uint32_t      m_uiIntraPeriod;                    // TODO: make this an int - it can be -1!
+#endif
   uint32_t      m_uiDecodingRefreshType;            ///< the type of decoding refresh employed for the random access.
 #if JCTVC_Y0038_PARAMS
   bool      m_rewriteParamSets;
 #endif
   int       m_iGOPSize;
+#if JVET_M0128
+  RPLEntry  m_RPLList0[MAX_GOP];
+  RPLEntry  m_RPLList1[MAX_GOP];
+  int		    m_numRPLList0;
+  int		    m_numRPLList1;
+#endif
   GOPEntry  m_GOPList[MAX_GOP];
+#if !JVET_M0128
   int       m_extraRPSs;
+#endif
   int       m_maxDecPicBuffering[MAX_TLAYER];
   int       m_numReorderPics[MAX_TLAYER];
 
@@ -818,16 +880,47 @@ public:
   void      setCabacZeroWordPaddingEnabled(bool value)       { m_cabacZeroWordPaddingEnabled = value; }
 
   //====== Coding Structure ========
+#if JVET_M0128
+  void      setIntraPeriod                  (int   i)        { m_uiIntraPeriod = i;                   }
+#else
   void      setIntraPeriod                  ( int   i )      { m_uiIntraPeriod = (uint32_t)i; }
+#endif
   void      setDecodingRefreshType          ( int   i )      { m_uiDecodingRefreshType = (uint32_t)i; }
 #if JCTVC_Y0038_PARAMS
   void      setReWriteParamSets             ( bool  b )      { m_rewriteParamSets = b; }
 #endif
   void      setGOPSize                      ( int   i )      { m_iGOPSize = i; }
-  void      setGopList                      ( const GOPEntry GOPList[MAX_GOP] ) {  for ( int i = 0; i < MAX_GOP; i++ ) m_GOPList[i] = GOPList[i]; }
+  void      setGopList(const GOPEntry GOPList[MAX_GOP]) { for (int i = 0; i < MAX_GOP; i++) m_GOPList[i] = GOPList[i]; }
+#if !JVET_M0128
   void      setExtraRPSs                    ( int   i )      { m_extraRPSs = i; }
+#endif
   const GOPEntry &getGOPEntry               ( int   i ) const { return m_GOPList[i]; }
+#if !JVET_M0128
   void      setEncodedFlag                  ( int  i, bool value )  { m_GOPList[i].m_isEncoded = value; }
+#endif
+#if JVET_M0128
+  void      setRPLList0(const RPLEntry RPLList[MAX_GOP])
+  {
+    m_numRPLList0 = 0;
+    for (int i = 0; i < MAX_GOP; i++)
+    {
+      m_RPLList0[i] = RPLList[i];
+      if (m_RPLList0[i].m_POC != -1) m_numRPLList0++;
+    }
+  }
+  void      setRPLList1(const RPLEntry RPLList[MAX_GOP])
+  {
+    m_numRPLList1 = 0;
+    for (int i = 0; i < MAX_GOP; i++)
+    {
+      m_RPLList1[i] = RPLList[i];
+      if (m_RPLList1[i].m_POC != -1) m_numRPLList1++;
+    }
+  }
+  const RPLEntry &getRPLEntry(int L01, int idx) const { return (L01 == 0) ? m_RPLList0[idx] : m_RPLList1[idx]; }
+  int       getRPLCandidateSize(int L01) const { return  (L01 == 0) ? m_numRPLList0 : m_numRPLList1; }
+  void      setEncodedFlag(uint32_t  i, bool value) { m_RPLList0[i].m_isEncoded = value; m_RPLList1[i].m_isEncoded = value; }
+#endif
   void      setMaxDecPicBuffering           ( uint32_t u, uint32_t tlayer ) { m_maxDecPicBuffering[tlayer] = u;    }
   void      setNumReorderPics               ( int  i, uint32_t tlayer ) { m_numReorderPics[tlayer] = i;    }
 

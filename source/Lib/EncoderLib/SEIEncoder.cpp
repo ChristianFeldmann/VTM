@@ -206,6 +206,7 @@ void SEIEncoder::initSEIToneMappingInfo(SEIToneMappingInfo *seiToneMappingInfo)
 
 void SEIEncoder::initSEISOPDescription(SEISOPDescription *sopDescriptionSEI, Slice *slice, int picInGOP, int lastIdr, int currGOPSize)
 {
+#if !JVET_M0128   //TODO: check if this SEI will be in VVC
   CHECK(!(m_isInitialized), "Unspecified error");
   CHECK(!(sopDescriptionSEI != NULL), "Unspecified error");
   CHECK(!(slice != NULL), "Unspecified error");
@@ -232,6 +233,7 @@ void SEIEncoder::initSEISOPDescription(SEISOPDescription *sopDescriptionSEI, Sli
   }
 
   sopDescriptionSEI->m_numPicsInSopMinus1 = i - 1;
+#endif
 }
 
 void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, Slice *slice)

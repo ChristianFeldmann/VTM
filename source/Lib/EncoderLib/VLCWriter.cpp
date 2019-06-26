@@ -157,6 +157,42 @@ void AUDWriter::codeAUD(OutputBitstream& bs, const int pictureType)
   xWriteRbspTrailingBits();
 }
 
+#if JVET_M0128
+void HLSWriter::xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount)
+{
+  WRITE_UVLC(rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures(), "num_ref_entries[ listIdx ][ rplsIdx ]");
+  uint32_t numRefPic = rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures();
+  int prevDelta = MAX_INT;
+  int deltaValue = 0;
+  bool firstSTRP = true;
+  for (int ii = 0; ii < numRefPic; ii++)
+  {
+    if (rpl->getNumberOfLongtermPictures() > 0)
+      WRITE_FLAG(!rpl->isRefPicLongterm(ii), "st_ref_pic_flag[ listIdx ][ rplsIdx ][ i ]");
+    if (!rpl->isRefPicLongterm(ii))
+    {
+      if (firstSTRP)
+      {
+        firstSTRP = false;
+        deltaValue = prevDelta = rpl->getRefPicIdentifier(ii);
+      }
+      else
+      {
+        deltaValue = rpl->getRefPicIdentifier(ii) - prevDelta;
+        prevDelta = rpl->getRefPicIdentifier(ii);
+      }
+      unsigned int absDeltaValue = (deltaValue < 0) ? 0 - deltaValue : deltaValue;
+      WRITE_UVLC(absDeltaValue, "abs_delta_poc_st[ listIdx ][ rplsIdx ][ i ]");
+      if (absDeltaValue > 0)
+        WRITE_FLAG((deltaValue < 0) ? 0 : 1, "strp_entry_sign_flag[ listIdx ][ rplsIdx ][ i ]");  //0  means negative delta POC : 1 means positive
+    }
+    else
+    {
+      WRITE_CODE(rpl->getRefPicIdentifier(ii), ltLsbBitsCount, "poc_lsb_lt[listIdx][rplsIdx][i]");
+    }
+  }
+}
+#else
 void HLSWriter::xCodeShortTermRefPicSet( const ReferencePictureSet* rps, bool calledFromSliceHeader, int idx)
 {
   //int lastBits = getNumberOfWrittenBits();
@@ -209,6 +245,7 @@ void HLSWriter::xCodeShortTermRefPicSet( const ReferencePictureSet* rps, bool ca
   //DTRACE( g_trace_ctx, D_RPSINFO, "irps=%d (%2d bits) ", rps->getInterRPSPrediction(), getNumberOfWrittenBits() - lastBits );
   rps->printDeltaPOC();
 }
+#endif
 
 void HLSWriter::codePPS( const PPS* pcPPS )
 {
@@ -223,6 +260,9 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   WRITE_FLAG( pcPPS->getCabacInitPresentFlag() ? 1 : 0,   "cabac_init_present_flag" );
   WRITE_UVLC( pcPPS->getNumRefIdxL0DefaultActive()-1,     "num_ref_idx_l0_default_active_minus1");
   WRITE_UVLC( pcPPS->getNumRefIdxL1DefaultActive()-1,     "num_ref_idx_l1_default_active_minus1");
+#if JVET_M0128
+  WRITE_FLAG(pcPPS->getRpl1IdxPresentFlag() ? 1 : 0, "rpl1IdxPresentFlag");
+#endif
 
   WRITE_SVLC( pcPPS->getPicInitQPMinus26(),                  "init_qp_minus26");
   WRITE_FLAG( pcPPS->getConstrainedIntraPred() ? 1 : 0,      "constrained_intra_pred_flag" );
@@ -444,7 +484,9 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     codeScalingList( pcPPS->getScalingList() );
   }
 #endif
+#if !JVET_M0128
   WRITE_FLAG( pcPPS->getListsModificationPresentFlag(), "lists_modification_present_flag");
+#endif
   WRITE_UVLC( pcPPS->getLog2ParallelMergeLevelMinus2(), "log2_parallel_merge_level_minus2");
   WRITE_FLAG( pcPPS->getSliceHeaderExtensionPresentFlag() ? 1 : 0, "slice_segment_header_extension_present_flag");
 
@@ -1055,6 +1097,35 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     }
   }
   CHECK( pcSPS->getMaxCUWidth() != pcSPS->getMaxCUHeight(),                          "Rectangular CTUs not supported" );
+#if JVET_M0128
+  WRITE_FLAG(pcSPS->getLongTermRefsPresent() ? 1 : 0, "long_term_ref_pics_flag");
+  WRITE_FLAG(pcSPS->getRPL1CopyFromRPL0Flag() ? 1 : 0, "rpl1_copy_from_rpl0_flag");
+
+  const RPLList* rplList0 = pcSPS->getRPLList0();
+  const RPLList* rplList1 = pcSPS->getRPLList1();
+  uint32_t numberOfRPL = pcSPS->getNumRPL0() - 1;
+
+  //Write candidate for List0
+  numberOfRPL = pcSPS->getNumRPL0() - 1;
+  WRITE_UVLC(numberOfRPL, "num_ref_pic_lists_in_sps[0]");
+  for (int ii = 0; ii < numberOfRPL; ii++)
+  {
+    const ReferencePictureList* rpl = rplList0->getReferencePictureList(ii);
+    xCodeRefPicList(rpl, pcSPS->getLongTermRefsPresent(), pcSPS->getBitsForPOC());
+  }
+
+  //Write candidate for List1
+  if (!pcSPS->getRPL1CopyFromRPL0Flag())
+  {
+    numberOfRPL = pcSPS->getNumRPL1() - 1;
+    WRITE_UVLC(numberOfRPL, "num_ref_pic_lists_in_sps[1]");
+    for (int ii = 0; ii < numberOfRPL; ii++)
+    {
+      const ReferencePictureList* rpl = rplList1->getReferencePictureList(ii);
+      xCodeRefPicList(rpl, pcSPS->getLongTermRefsPresent(), pcSPS->getBitsForPOC());
+    }
+  }
+#endif
   WRITE_FLAG(pcSPS->getUseDualITree(), "qtbtt_dual_tree_intra_flag");
   WRITE_UVLC(g_aucLog2[pcSPS->getCTUSize()] - MIN_CU_LOG2, "log2_ctu_size_minus2");
   WRITE_UVLC(pcSPS->getLog2MinCodingBlockSize() - 2, "log2_min_luma_coding_block_size_minus2");
@@ -1203,6 +1274,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #endif
 
   // KJS: reference picture sets to be replaced
+#if !JVET_M0128
   const RPSList* rpsList = pcSPS->getRPSList();
 
   WRITE_UVLC(rpsList->getNumberOfReferencePictureSets(), "num_short_term_ref_pic_sets" );
@@ -1221,6 +1293,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_FLAG( pcSPS->getUsedByCurrPicLtSPSFlag(k), "used_by_curr_pic_lt_sps_flag[i]");
     }
   }
+#endif
 
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
   WRITE_FLAG( pcSPS->getUseStrongIntraSmoothing(),             "strong_intra_smoothing_enable_flag" );
@@ -1535,6 +1608,92 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     WRITE_CODE(pcSlice->getPOC() & pocMask, pocBits, "slice_pic_order_cnt_lsb");
     if( !pcSlice->getIdrPicFlag() )
     {
+#if JVET_M0128
+      //Write L0 related syntax elements
+      if (pcSlice->getSPS()->getNumRPL0() > 0)
+      {
+        WRITE_FLAG(pcSlice->getRPL0idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[0]");
+      }
+      if (pcSlice->getRPL0idx() != -1)
+      {
+        if (pcSlice->getSPS()->getNumRPL0() > 1)
+        {
+          int numBits = 0;
+          while ((1 << numBits) < pcSlice->getSPS()->getNumRPL0())
+          {
+            numBits++;
+          }
+          WRITE_CODE(pcSlice->getRPL0idx(), numBits, "ref_pic_list_idx[0]");
+        }
+      }
+      else
+      {  //write local RPL0
+        xCodeRefPicList(pcSlice->getRPL0(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC());
+      }
+      //Deal POC Msb cycle signalling for LTRP
+      if (pcSlice->getRPL0()->getNumberOfLongtermPictures())
+      {
+        for (int i = 0; i < pcSlice->getRPL0()->getNumberOfLongtermPictures() + pcSlice->getRPL0()->getNumberOfShorttermPictures(); i++)
+        {
+          if (pcSlice->getRPL0()->isRefPicLongterm(i))
+          {
+            WRITE_FLAG(pcSlice->getLocalRPL0()->getDeltaPocMSBPresentFlag(i) ? 1 : 0, "delta_poc_msb_present_flag[i][j]");
+            if (pcSlice->getLocalRPL0()->getDeltaPocMSBPresentFlag(i))
+            {
+              WRITE_UVLC(pcSlice->getLocalRPL0()->getDeltaPocMSBCycleLT(i), "delta_poc_msb_cycle_lt[i][j]");
+            }
+          }
+        }
+      }
+
+      //Write L1 related syntax elements
+      if (!pcSlice->getPPS()->getRpl1IdxPresentFlag())
+      {
+        CHECK(pcSlice->getRPL1idx() != pcSlice->getRPL0idx(), "RPL1Idx is not signalled but it is not the same as RPL0Idx");
+        if (pcSlice->getRPL1idx() == -1)
+        {  //write local RPL1
+          xCodeRefPicList(pcSlice->getRPL1(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC());
+        }
+      }
+      else
+      {
+        if (pcSlice->getSPS()->getNumRPL1() > 0)
+        {
+          WRITE_FLAG(pcSlice->getRPL1idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[1]");
+        }
+        if (pcSlice->getRPL1idx() != -1)
+        {
+          if (pcSlice->getSPS()->getNumRPL1() > 1)
+          {
+            int numBits = 0;
+            while ((1 << numBits) < pcSlice->getSPS()->getNumRPL1())
+            {
+              numBits++;
+            }
+            WRITE_CODE(pcSlice->getRPL1idx(), numBits, "ref_pic_list_idx[1]");
+          }
+        }
+        else
+        {  //write local RPL1
+          xCodeRefPicList(pcSlice->getRPL1(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC());
+        }
+      }
+      //Deal POC Msb cycle signalling for LTRP
+      if (pcSlice->getRPL1()->getNumberOfLongtermPictures())
+      {
+        for (int i = 0; i < pcSlice->getRPL1()->getNumberOfLongtermPictures() + pcSlice->getRPL1()->getNumberOfShorttermPictures(); i++)
+        {
+          if (pcSlice->getRPL1()->isRefPicLongterm(i))
+          {
+            WRITE_FLAG(pcSlice->getLocalRPL1()->getDeltaPocMSBPresentFlag(i) ? 1 : 0, "delta_poc_msb_present_flag[i][j]");
+            if (pcSlice->getLocalRPL1()->getDeltaPocMSBPresentFlag(i))
+            {
+              WRITE_UVLC(pcSlice->getLocalRPL1()->getDeltaPocMSBCycleLT(i), "delta_poc_msb_cycle_lt[i][j]");
+            }
+          }
+        }
+      }
+#else
       const ReferencePictureSet* rps = pcSlice->getRPS();
 
       // check for bitstream restriction stating that:
@@ -1651,6 +1810,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           }
         }
       }
+#endif
       if( pcSlice->getSPS()->getSPSTemporalMVPEnabledFlag() )
       {
         WRITE_FLAG( pcSlice->getEnableTMVPFlag() ? 1 : 0, "slice_temporal_mvp_enabled_flag" );
@@ -1738,6 +1898,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       pcSlice->setNumRefIdx( REF_PIC_LIST_1, 0 );
     }
 
+#if !JVET_M0128
     if( pcSlice->getPPS()->getListsModificationPresentFlag() && pcSlice->getNumRpsCurrTempList() > 1 )
     {
       RefPicListModification* refPicListModification = pcSlice->getRefPicListModification();
@@ -1784,6 +1945,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
       }
     }
+#endif
 
     if( pcSlice->isInterB() )
     {

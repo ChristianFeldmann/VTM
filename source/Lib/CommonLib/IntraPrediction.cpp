@@ -676,15 +676,6 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
         pDstBuf[y*dstStride + x] = refMain[x + 1];
       }
     }
-#if HEVC_USE_HOR_VER_PREDFILTERING
-    if (edgeFilter && multiRefIdx == 0)
-    {
-      for( int y = 0; y < height; y++ )
-      {
-        pDstBuf[y*dstStride] = ClipPel( pDstBuf[y*dstStride] + ( ( refSide[y + 1] - refSide[0] ) >> 1 ), clpRng );
-      }
-    }
-#endif
   }
   else
   {
@@ -785,15 +776,6 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
         }
       }
     }
-#if HEVC_USE_HOR_VER_PREDFILTERING
-    if( edgeFilter && absAng <= 1 )
-    {
-      for( int y = 0; y < height; y++ )
-      {
-        pDstBuf[y*dstStride] = ClipPel( pDstBuf[y*dstStride] + ((refSide[y + 1] - refSide[0]) >> 2), clpRng );
-      }
-    }
-#endif
   }
 
   // Flip the block if this is the horizontal mode

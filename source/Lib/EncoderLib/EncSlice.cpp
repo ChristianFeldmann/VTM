@@ -686,8 +686,13 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 #endif
 #endif
   rpcSlice->setUseChromaQpAdj( rpcSlice->getPPS()->getPpsRangeExtension().getChromaQpOffsetListEnabledFlag() );
+#if JVET_M0128
+  rpcSlice->setNumRefIdx(REF_PIC_LIST_0, m_pcCfg->getRPLEntry(0, iGOPid).m_numRefPicsActive);
+  rpcSlice->setNumRefIdx(REF_PIC_LIST_1, m_pcCfg->getRPLEntry(1, iGOPid).m_numRefPicsActive);
+#else
   rpcSlice->setNumRefIdx(REF_PIC_LIST_0,m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive);
   rpcSlice->setNumRefIdx(REF_PIC_LIST_1,m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive);
+#endif
 
   if ( m_pcCfg->getDeblockingFilterMetric() )
   {

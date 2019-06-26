@@ -295,7 +295,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if !JVET_N0415_CTB_ALF
   xInitAPS(aps0);
 #endif
+#if JVET_M0128
+  xInitRPL(sps0, isFieldCoding);
+#else
   xInitRPS(sps0, isFieldCoding);
+#endif
 
 #if ER_CHROMA_QP_WCG_PPS
   if (m_wcgChromaQpControl.isEnabled())
@@ -1298,6 +1302,11 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsRangeExtension().setHighPrecisionOffsetsEnabledFlag(m_highPrecisionOffsetsEnabledFlag);
   sps.getSpsRangeExtension().setPersistentRiceAdaptationEnabledFlag(m_persistentRiceAdaptationEnabledFlag);
   sps.getSpsRangeExtension().setCabacBypassAlignmentEnabledFlag(m_cabacBypassAlignmentEnabledFlag);
+
+#if JVET_M0128
+  if (m_uiIntraPeriod < 0)
+    sps.setRPL1CopyFromRPL0Flag(true);
+#endif
 }
 
 void EncLib::xInitHrdParameters(SPS &sps)
@@ -1517,8 +1526,13 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   }
   for( int i = 0; i < getGOPSize(); i++)
   {
+#if JVET_M0128
+    CHECK(!(getRPLEntry(0, i).m_numRefPicsActive >= 0 && getRPLEntry(0, i).m_numRefPicsActive <= MAX_NUM_REF), "Unspecified error");
+    histogram[getRPLEntry(0, i).m_numRefPicsActive]++;
+#else
     CHECK(!(getGOPEntry(i).m_numRefPicsActive >= 0 && getGOPEntry(i).m_numRefPicsActive <= MAX_NUM_REF), "Unspecified error");
     histogram[getGOPEntry(i).m_numRefPicsActive]++;
+#endif
   }
 
   int maxHist=-1;
@@ -1556,12 +1570,192 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 #endif
 
   pps.pcv = new PreCalcValues( sps, pps, true );
+#if JVET_M0128
+  pps.setRpl1IdxPresentFlag(sps.getRPL1IdxPresentFlag());
+#endif
 }
 
 void EncLib::xInitAPS(APS &aps)
 {
   //Do nothing now
 }
+
+#if JVET_M0128
+void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
+{
+  ReferencePictureList*      rpl;
+
+  int numRPLCandidates = getRPLCandidateSize(0);
+  sps.createRPLList0(numRPLCandidates + 1);
+  sps.createRPLList1(numRPLCandidates + 1);
+  RPLList* rplList = 0;
+
+  for (int i = 0; i < 2; i++)
+  {
+    rplList = (i == 0) ? sps.getRPLList0() : sps.getRPLList1();
+    for (int j = 0; j < numRPLCandidates; j++)
+    {
+      const RPLEntry &ge = getRPLEntry(i, j);
+      rpl = rplList->getReferencePictureList(j);
+      rpl->setNumberOfShorttermPictures(ge.m_numRefPics);
+      rpl->setNumberOfLongtermPictures(0);   //Hardcoded as 0 for now. need to update this when implementing LTRP
+      rpl->setNumberOfActivePictures(ge.m_numRefPicsActive);
+
+      for (int k = 0; k < ge.m_numRefPics; k++)
+      {
+        rpl->setRefPicIdentifier(k, ge.m_deltaRefPics[k], 0);
+      }
+    }
+  }
+
+  //Check if all delta POC of STRP in each RPL has the same sign 
+  //Check RPLL0 first
+  const RPLList* rplList0 = sps.getRPLList0();
+  const RPLList* rplList1 = sps.getRPLList1();
+  uint32_t numberOfRPL = sps.getNumRPL0() - 1;
+
+  bool isAllEntriesinRPLHasSameSignFlag = true;
+  bool isFirstEntry = true;
+  bool lastSign = true;        //true = positive ; false = negative
+  for (uint32_t ii = 0; isAllEntriesinRPLHasSameSignFlag && ii < numberOfRPL; ii++)
+  {
+    const ReferencePictureList* rpl = rplList0->getReferencePictureList(ii);
+    for (uint32_t jj = 0; isAllEntriesinRPLHasSameSignFlag && jj < rpl->getNumberOfActivePictures(); jj++)
+    {
+      if (!rpl->isRefPicLongterm(jj) && isFirstEntry)
+      {
+        lastSign = (rpl->getRefPicIdentifier(jj) >= 0) ? true : false;
+        isFirstEntry = false;
+      }
+      else if (!rpl->isRefPicLongterm(jj) && (((rpl->getRefPicIdentifier(jj) - rpl->getRefPicIdentifier(jj - 1)) >= 0 && lastSign == false) || ((rpl->getRefPicIdentifier(jj) - rpl->getRefPicIdentifier(jj - 1)) < 0 && lastSign == true)))
+      {
+        isAllEntriesinRPLHasSameSignFlag = false;
+      }
+    }
+  }
+  //Check RPLL1. Skip it if it is already found out that this flag is not true for RPL0 or if RPL1 is the same as RPL0
+  numberOfRPL = sps.getNumRPL1() - 1;
+  isFirstEntry = true;
+  lastSign = true;
+  for (uint32_t ii = 0; isAllEntriesinRPLHasSameSignFlag && !sps.getRPL1CopyFromRPL0Flag() && ii < numberOfRPL; ii++)
+  {
+    isFirstEntry = true;
+    const ReferencePictureList* rpl = rplList1->getReferencePictureList(ii);
+    for (uint32_t jj = 0; isAllEntriesinRPLHasSameSignFlag && jj < rpl->getNumberOfActivePictures(); jj++)
+    {
+      if (!rpl->isRefPicLongterm(jj) && isFirstEntry)
+      {
+        lastSign = (rpl->getRefPicIdentifier(jj) >= 0) ? true : false;
+        isFirstEntry = false;
+      }
+      else if (!rpl->isRefPicLongterm(jj) && (((rpl->getRefPicIdentifier(jj) - rpl->getRefPicIdentifier(jj - 1)) >= 0 && lastSign == false) || ((rpl->getRefPicIdentifier(jj) - rpl->getRefPicIdentifier(jj - 1)) < 0 && lastSign == true)))
+      {
+        isAllEntriesinRPLHasSameSignFlag = false;
+      }
+    }
+  }
+  sps.setAllActiveRplEntriesHasSameSignFlag(isAllEntriesinRPLHasSameSignFlag);
+}
+
+void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid, uint32_t *activeL0, uint32_t *activeL1)
+{
+  if (m_uiIntraPeriod < 0)  //Only for RA
+  {
+    *activeL0 = *activeL1 = 0;
+    return;
+  }
+  uint32_t rpl0Idx = GOPid;
+  uint32_t rpl1Idx = GOPid;
+
+  int fullListNum = m_iGOPSize;
+  int partialListNum = getRPLCandidateSize(0) - m_iGOPSize;
+  int extraNum = fullListNum;
+  if (m_uiIntraPeriod < 0)
+  {
+    if (POCCurr < 10)
+    {
+      rpl0Idx = POCCurr + m_iGOPSize - 1;
+      rpl1Idx = POCCurr + m_iGOPSize - 1;
+    }
+    else
+    {
+      rpl0Idx = (POCCurr%m_iGOPSize == 0) ? m_iGOPSize - 1 : POCCurr%m_iGOPSize - 1;
+      rpl1Idx = (POCCurr%m_iGOPSize == 0) ? m_iGOPSize - 1 : POCCurr%m_iGOPSize - 1;
+    }
+    extraNum = fullListNum + partialListNum;
+  }
+  for (; extraNum<fullListNum + partialListNum; extraNum++)
+  {
+    if (m_uiIntraPeriod > 0 && getDecodingRefreshType() > 0)
+    {
+      int POCIndex = POCCurr%m_uiIntraPeriod;
+      if (POCIndex == 0)
+        POCIndex = m_uiIntraPeriod;
+      if (POCIndex == m_RPLList0[extraNum].m_POC)
+      {
+        rpl0Idx = extraNum;
+        rpl1Idx = extraNum;
+        extraNum++;
+      }
+    }
+  }
+
+  const ReferencePictureList *rpl0 = sps->getRPLList0()->getReferencePictureList(rpl0Idx);
+  *activeL0 = rpl0->getNumberOfActivePictures();
+  const ReferencePictureList *rpl1 = sps->getRPLList1()->getReferencePictureList(rpl1Idx);
+  *activeL1 = rpl1->getNumberOfActivePictures();
+}
+
+void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, int ltPoc)
+{
+  bool isEncodeLtRef = (POCCurr == ltPoc);
+  if (m_compositeRefEnabled && isEncodeLtRef)
+  {
+    POCCurr++;
+  }
+
+  slice->setRPL0idx(GOPid);
+  slice->setRPL1idx(GOPid);
+
+  int fullListNum = m_iGOPSize;
+  int partialListNum = getRPLCandidateSize(0) - m_iGOPSize;
+  int extraNum = fullListNum;
+  if (m_uiIntraPeriod < 0)
+  {
+    if (POCCurr < 10)
+    {
+      slice->setRPL0idx(POCCurr + m_iGOPSize - 1);
+      slice->setRPL1idx(POCCurr + m_iGOPSize - 1);
+    }
+    else
+    {
+      slice->setRPL0idx((POCCurr%m_iGOPSize == 0) ? m_iGOPSize - 1 : POCCurr%m_iGOPSize - 1);
+      slice->setRPL1idx((POCCurr%m_iGOPSize == 0) ? m_iGOPSize - 1 : POCCurr%m_iGOPSize - 1);
+    }
+    extraNum = fullListNum + partialListNum;
+  }
+  for (; extraNum < fullListNum + partialListNum; extraNum++)
+  {
+    if (m_uiIntraPeriod > 0 && getDecodingRefreshType() > 0)
+    {
+      int POCIndex = POCCurr%m_uiIntraPeriod;
+      if (POCIndex == 0)
+        POCIndex = m_uiIntraPeriod;
+      if (POCIndex == m_RPLList0[extraNum].m_POC)
+      {
+        slice->setRPL0idx(extraNum);
+        slice->setRPL1idx(extraNum);
+        extraNum++;
+      }
+    }
+  }
+
+  const ReferencePictureList *rpl0 = (slice->getSPS()->getRPLList0()->getReferencePictureList(slice->getRPL0idx()));
+  const ReferencePictureList *rpl1 = (slice->getSPS()->getRPLList1()->getReferencePictureList(slice->getRPL1idx()));
+  slice->setRPL0(rpl0);
+  slice->setRPL1(rpl1);
+}
+#else
 //Function for initializing m_RPSList, a list of ReferencePictureSet, based on the GOPEntry objects read from the config file.
 void EncLib::xInitRPS(SPS &sps, bool isFieldCoding)
 {
@@ -1851,6 +2045,7 @@ int EncLib::getReferencePictureSetIdxForSOP(int POCCurr, int GOPid )
 
   return rpsIdx;
 }
+#endif
 
 void  EncLib::xInitPPSforTiles(PPS &pps)
 {

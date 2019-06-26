@@ -113,7 +113,11 @@ public:
   virtual ~HLSWriter() {}
 
 private:
+#if JVET_M0128
+  void xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount);
+#else
   void xCodeShortTermRefPicSet  ( const ReferencePictureSet* pcRPS, bool calledFromSliceHeader, int idx );
+#endif
   bool xFindMatchingLTRP        ( Slice* pcSlice, uint32_t *ltrpsIndex, int ltrpPOC, bool usedFlag );
   void xCodePredWeightTable     ( Slice* pcSlice );
 #if HEVC_USE_SCALING_LISTS

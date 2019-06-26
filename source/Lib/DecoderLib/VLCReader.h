@@ -143,7 +143,12 @@ public:
   virtual ~HLSyntaxReader();
 
 protected:
+#if JVET_M0128
+  void  copyRefPicList(SPS* pcSPS, ReferencePictureList* source_rpl, ReferencePictureList* dest_rpl);
+  void  parseRefPicList(SPS* pcSPS, ReferencePictureList* rpl);
+#else
   void  parseShortTermRefPicSet            (SPS* pcSPS, ReferencePictureSet* pcRPS, int idx);
+#endif
 
 public:
   void  setBitstream        ( InputBitstream* p )   { m_pcBitstream = p; }

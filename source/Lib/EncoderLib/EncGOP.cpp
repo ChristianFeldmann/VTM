@@ -1606,6 +1606,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       setLastLTRefPoc(-1);
     }
 
+#if JVET_M0128
+    if (m_pcCfg->getUseCompositeRef() && m_picBg->getSpliceFull() && getUseLTRef())
+    {
+      m_pcEncLib->selectReferencePictureList(pcSlice, pocCurr, iGOPid, m_bgPOC);
+    }
+    else
+    {
+      m_pcEncLib->selectReferencePictureList(pcSlice, pocCurr, iGOPid, -1);
+    }
+#else
     if (m_pcCfg->getUseCompositeRef() && m_picBg->getSpliceFull() && getUseLTRef())
     {
       m_pcEncLib->selectReferencePictureSet(pcSlice, pocCurr, iGOPid, m_bgPOC);
@@ -1614,6 +1624,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       m_pcEncLib->selectReferencePictureSet(pcSlice, pocCurr, iGOPid, -1);
     }
+#endif
     if (!m_pcCfg->getEfficientFieldIRAPEnabled())
     {
 #if !JVET_M0101_HLS
@@ -1636,6 +1647,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setAssociatedIRAPPOC(m_associatedIRAPPOC);
     }
 
+#if JVET_M0128
+    if (pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL0(), 0, false) != 0 || pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL1(), 1, false) != 0)
+    {
+      pcSlice->createExplicitReferencePictureSetFromReference(rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1());
+    }
+
+    pcSlice->applyReferencePictureListBasedMarking(rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1());
+#else
     if ((pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPS(), false, m_iLastRecoveryPicPOC, m_pcCfg->getDecodingRefreshType() == 3) != 0) || (pcSlice->isIRAP())
 #if !JVET_M0101_HLS
       || (m_pcCfg->getEfficientFieldIRAPEnabled() && isField && pcSlice->getAssociatedIRAPType() >= NAL_UNIT_CODED_SLICE_BLA_W_LP && pcSlice->getAssociatedIRAPType() <= NAL_UNIT_CODED_SLICE_CRA && pcSlice->getAssociatedIRAPPOC() == pcSlice->getPOC()+1)
@@ -1650,6 +1669,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
 
     pcSlice->applyReferencePictureSet(rcListPic, pcSlice->getRPS());
+#endif
 
     if(pcSlice->getTLayer() > 0
 #if !JVET_M0101_HLS
@@ -1683,6 +1703,51 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         bool isSTSA=true;
         for(int ii=iGOPid+1;(ii<m_pcCfg->getGOPSize() && isSTSA==true);ii++)
         {
+#if JVET_M0128
+          int lTid = m_pcCfg->getRPLEntry(0, ii).m_temporalId;
+
+          if (lTid == pcSlice->getTLayer())
+          {
+            const ReferencePictureList* rpl0 = pcSlice->getSPS()->getRPLList0()->getReferencePictureList(ii);
+            for (int jj = 0; jj < pcSlice->getRPL0()->getNumberOfActivePictures(); jj++)
+            {
+              int tPoc = m_pcCfg->getRPLEntry(0, ii).m_POC + rpl0->getRefPicIdentifier(jj);
+              int kk = 0;
+              for (kk = 0; kk<m_pcCfg->getGOPSize(); kk++)
+              {
+                if (m_pcCfg->getRPLEntry(0, kk).m_POC == tPoc)
+                {
+                  break;
+                }
+              }
+              int tTid = m_pcCfg->getRPLEntry(0, kk).m_temporalId;
+              if (tTid >= pcSlice->getTLayer())
+              {
+                isSTSA = false;
+                break;
+              }
+            }
+            const ReferencePictureList* rpl1 = pcSlice->getSPS()->getRPLList1()->getReferencePictureList(ii);
+            for (int jj = 0; jj < pcSlice->getRPL1()->getNumberOfActivePictures(); jj++)
+            {
+              int tPoc = m_pcCfg->getRPLEntry(1, ii).m_POC + rpl1->getRefPicIdentifier(jj);
+              int kk = 0;
+              for (kk = 0; kk<m_pcCfg->getGOPSize(); kk++)
+              {
+                if (m_pcCfg->getRPLEntry(1, kk).m_POC == tPoc)
+                {
+                  break;
+                }
+              }
+              int tTid = m_pcCfg->getRPLEntry(1, kk).m_temporalId;
+              if (tTid >= pcSlice->getTLayer())
+              {
+                isSTSA = false;
+                break;
+              }
+            }
+          }
+#else
           int lTid= m_pcCfg->getGOPEntry(ii).m_temporalId;
           if(lTid==pcSlice->getTLayer())
           {
@@ -1709,6 +1774,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
               }
             }
           }
+#endif
         }
         if(isSTSA==true)
         {
@@ -1727,12 +1793,26 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
     }
+#if !JVET_M0128
     if (pcSlice->getRPSidx() == -1)
       arrangeLongtermPicturesInRPS(pcSlice, rcListPic);
     RefPicListModification* refPicListModification = pcSlice->getRefPicListModification();
     refPicListModification->setRefPicListModificationFlagL0(0);
     refPicListModification->setRefPicListModificationFlagL1(0);
+#endif
 
+#if JVET_M0128
+    if (m_pcCfg->getUseCompositeRef() && getUseLTRef() && (pocCurr > getLastLTRefPoc()))
+    {
+      pcSlice->setNumRefIdx(REF_PIC_LIST_0, (pcSlice->isIntra()) ? 0 : min(m_pcCfg->getRPLEntry(0, iGOPid).m_numRefPicsActive + 1, pcSlice->getRPL0()->getNumberOfActivePictures()));
+      pcSlice->setNumRefIdx(REF_PIC_LIST_1, (!pcSlice->isInterB()) ? 0 : min(m_pcCfg->getRPLEntry(1, iGOPid).m_numRefPicsActive + 1, pcSlice->getRPL1()->getNumberOfActivePictures()));
+    }
+    else
+    {
+      pcSlice->setNumRefIdx(REF_PIC_LIST_0, (pcSlice->isIntra()) ? 0 : pcSlice->getRPL0()->getNumberOfActivePictures());
+      pcSlice->setNumRefIdx(REF_PIC_LIST_1, (!pcSlice->isInterB()) ? 0 : pcSlice->getRPL1()->getNumberOfActivePictures());
+    }
+#else
     if (m_pcCfg->getUseCompositeRef() && getUseLTRef() && (pocCurr > getLastLTRefPoc()))
     {
       pcSlice->setNumRefIdx(REF_PIC_LIST_0, min(m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive + 1, pcSlice->getRPS()->getNumberOfPictures()));
@@ -1743,11 +1823,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setNumRefIdx(REF_PIC_LIST_0, std::min(m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive, pcSlice->getRPS()->getNumberOfPictures()));
       pcSlice->setNumRefIdx(REF_PIC_LIST_1, std::min(m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive, pcSlice->getRPS()->getNumberOfPictures()));
     }
+#endif
     if (m_pcCfg->getUseCompositeRef() && getPrepareLTRef()) {
       arrangeCompositeReference(pcSlice, rcListPic, pocCurr);
     }
     //  Set reference list
+#if JVET_M0128
+    pcSlice->constructRefPicList(rcListPic);
+#else
     pcSlice->setRefPicList ( rcListPic );
+#endif
 
     if (m_pcCfg->getUseHashME())
     {
@@ -2735,8 +2820,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
         m_pcSliceEncoder->setSliceSegmentIdx(sliceSegmentIdxCount);
 
+#if JVET_M0128
+        pcSlice->setRPL0(pcPic->slices[0]->getRPL0());
+        pcSlice->setRPL1(pcPic->slices[0]->getRPL1());
+        pcSlice->setRPL0idx(pcPic->slices[0]->getRPL0idx());
+        pcSlice->setRPL1idx(pcPic->slices[0]->getRPL1idx());
+#else
         pcSlice->setRPS   (pcPic->slices[0]->getRPS());
         pcSlice->setRPSidx(pcPic->slices[0]->getRPSidx());
+#endif
 
         for ( uint32_t ui = 0 ; ui < numSubstreams; ui++ )
         {
@@ -3907,6 +3999,7 @@ void EncGOP::xAttachSliceDataToNalUnit (OutputNALUnit& rNalu, OutputBitstream* c
   codedSliceData->clear();
 }
 
+#if !JVET_M0128
 // Function will arrange the long-term pictures in the decreasing order of poc_lsb_lt,
 // and among the pictures with the same lsb, it arranges them in increasing delta_poc_msb_cycle_lt value
 void EncGOP::arrangeLongtermPicturesInRPS(Slice *pcSlice, PicList& rcListPic)
@@ -4013,6 +4106,7 @@ void EncGOP::arrangeLongtermPicturesInRPS(Slice *pcSlice, PicList& rcListPic)
     }
   }
 }
+#endif
 
 void EncGOP::arrangeCompositeReference(Slice* pcSlice, PicList& rcListPic, int pocCurr)
 {

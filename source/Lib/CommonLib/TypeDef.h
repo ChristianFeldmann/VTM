@@ -218,6 +218,8 @@
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
+#define JVET_M0128                                        1 // Implementation of RPL as in JVET-M0128
+
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 #define FIX_PCM                                           1 // Fix PCM bugs in VTM3
 

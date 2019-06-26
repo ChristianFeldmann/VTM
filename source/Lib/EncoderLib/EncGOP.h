@@ -208,7 +208,9 @@ public:
 #endif
   EncSlice*  getSliceEncoder()   { return m_pcSliceEncoder; }
   NalUnitType getNalUnitType( int pocCurr, int lastIdr, bool isField );
+#if !JVET_M0128
   void arrangeLongtermPicturesInRPS(Slice *, PicList& );
+#endif
   void arrangeCompositeReference(Slice* pcSlice, PicList& rcListPic, int pocCurr);
   void updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int pocCurr);
 

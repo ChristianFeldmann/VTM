@@ -53,10 +53,15 @@ Slice::Slice()
 , m_iLastIDR                      ( 0 )
 , m_iAssociatedIRAP               ( 0 )
 , m_iAssociatedIRAPType           ( NAL_UNIT_INVALID )
+#if JVET_M0128
+, m_rpl0Idx                       ( -1 )
+, m_rpl1Idx                       ( -1 )
+#else
 , m_pRPS                          ( 0 )
 , m_localRPS                      ( )
 , m_rpsIdx                        ( 0 )
 , m_RefPicListModification        ( )
+#endif
 , m_eNalUnitType                  ( NAL_UNIT_CODED_SLICE_IDR_W_RADL )
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
@@ -387,6 +392,66 @@ void Slice::setList1IdxToList0Idx()
   }
 }
 
+#if JVET_M0128
+void Slice::constructRefPicList(PicList& rcListPic)
+{
+  ::memset(m_bIsUsedAsLongTerm, 0, sizeof(m_bIsUsedAsLongTerm));
+  if (m_eSliceType == I_SLICE)
+  {
+    ::memset(m_apcRefPicList, 0, sizeof(m_apcRefPicList));
+    ::memset(m_aiNumRefIdx, 0, sizeof(m_aiNumRefIdx));
+    return;
+  }
+
+  Picture*  pcRefPic = NULL;
+  uint32_t numOfActiveRef = 0;
+  //construct L0
+  numOfActiveRef = getNumRefIdx(REF_PIC_LIST_0);
+  for (int ii = 0; ii < numOfActiveRef; ii++)
+  {
+    if (!m_pRPL0->isRefPicLongterm(ii))
+    {
+      pcRefPic = xGetRefPic(rcListPic, getPOC() - m_pRPL0->getRefPicIdentifier(ii));
+      pcRefPic->longTerm = false;
+    }
+    else
+    {
+      int pocBits = getSPS()->getBitsForPOC();
+      int pocMask = (1 << pocBits) - 1;
+      int ltrpPoc = m_pRPL0->getRefPicIdentifier(ii) & pocMask;
+      ltrpPoc += m_localRPL0.getDeltaPocMSBPresentFlag(ii) ? (pocMask + 1) * m_localRPL0.getDeltaPocMSBCycleLT(ii) : 0;
+      pcRefPic = xGetLongTermRefPic(rcListPic, ltrpPoc, m_localRPL0.getDeltaPocMSBPresentFlag(ii));
+      pcRefPic->longTerm = true;
+    }
+    pcRefPic->extendPicBorder();
+    m_apcRefPicList[REF_PIC_LIST_0][ii] = pcRefPic;
+    m_bIsUsedAsLongTerm[REF_PIC_LIST_0][ii] = pcRefPic->longTerm;
+  }
+
+  //construct L1
+  numOfActiveRef = getNumRefIdx(REF_PIC_LIST_1);
+  for (int ii = 0; ii < numOfActiveRef; ii++)
+  {
+    if (!m_pRPL1->isRefPicLongterm(ii))
+    {
+      pcRefPic = xGetRefPic(rcListPic, getPOC() - m_pRPL1->getRefPicIdentifier(ii));
+      pcRefPic->longTerm = false;
+    }
+    else
+    {
+      int pocBits = getSPS()->getBitsForPOC();
+      int pocMask = (1 << pocBits) - 1;
+      int ltrpPoc = m_pRPL1->getRefPicIdentifier(ii) & pocMask;
+      ltrpPoc += m_localRPL1.getDeltaPocMSBPresentFlag(ii) ? (pocMask + 1) * m_localRPL1.getDeltaPocMSBCycleLT(ii) : 0;
+      pcRefPic = xGetLongTermRefPic(rcListPic, ltrpPoc, m_localRPL1.getDeltaPocMSBPresentFlag(ii));
+      pcRefPic->longTerm = true;
+    }
+    pcRefPic->extendPicBorder();
+    m_apcRefPicList[REF_PIC_LIST_1][ii] = pcRefPic;
+    m_bIsUsedAsLongTerm[REF_PIC_LIST_1][ii] = pcRefPic->longTerm;
+  }
+}
+#else
 void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool bCopyL0toL1ErrorCase )
 {
   if ( m_eSliceType == I_SLICE)
@@ -563,6 +628,7 @@ int Slice::getNumRpsCurrTempList() const
   }
     return numRpsCurrTempList;
 }
+#endif
 
 void Slice::initEqualRef()
 {
@@ -602,6 +668,57 @@ void Slice::checkColRefIdx(uint32_t curSliceSegmentIdx, const Picture* pic)
   }
 }
 
+#if JVET_M0128
+void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic)
+{
+  if (pocCRA < MAX_UINT && getPOC() > pocCRA)
+  {
+    uint32_t numRefPic = pRPL0->getNumberOfShorttermPictures() + pRPL0->getNumberOfLongtermPictures();
+    for (int i = 0; i < numRefPic; i++)
+    {
+      if (!pRPL0->isRefPicLongterm(i))
+      {
+        CHECK(getPOC() - pRPL0->getRefPicIdentifier(i) < pocCRA, "Invalid state");
+      }
+      else
+      {
+        CHECK(xGetLongTermRefPic(rcListPic, pRPL0->getRefPicIdentifier(i), pRPL0->getDeltaPocMSBPresentFlag(i))->getPOC() < pocCRA, "Invalid state");
+      }
+    }
+    numRefPic = pRPL1->getNumberOfShorttermPictures() + pRPL1->getNumberOfLongtermPictures();
+    for (int i = 0; i < numRefPic; i++)
+    {
+      if (!pRPL1->isRefPicLongterm(i))
+      {
+        CHECK(getPOC() - pRPL1->getRefPicIdentifier(i) < pocCRA, "Invalid state");
+      }
+      else
+      {
+        CHECK(xGetLongTermRefPic(rcListPic, pRPL1->getRefPicIdentifier(i), pRPL1->getDeltaPocMSBPresentFlag(i))->getPOC() < pocCRA, "Invalid state");
+      }
+    }
+  }
+  if (getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP) // IDR picture found
+  {
+    pocCRA = getPOC();
+    associatedIRAPType = getNalUnitType();
+  }
+  else if (getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA) // CRA picture found
+  {
+    pocCRA = getPOC();
+    associatedIRAPType = getNalUnitType();
+  }
+#if !JVET_M0101_HLS
+  else if (getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
+    || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
+    || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP) // BLA picture found
+  {
+    pocCRA = getPOC();
+    associatedIRAPType = getNalUnitType();
+  }
+#endif
+}
+#else
 void Slice::checkCRA(const ReferencePictureSet *pReferencePictureSet, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic)
 {
   for(int i = 0; i < pReferencePictureSet->getNumberOfNegativePictures()+pReferencePictureSet->getNumberOfPositivePictures(); i++)
@@ -645,6 +762,7 @@ void Slice::checkCRA(const ReferencePictureSet *pReferencePictureSet, int& pocCR
   }
 #endif
 }
+#endif
 
 /** Function for marking the reference pictures when an IDR/CRA/CRANT/BLA/BLANT is encountered.
  * \param pocCRA POC of the CRA/CRANT/BLA/BLANT picture
@@ -806,7 +924,12 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   if( cpyAlmostAll ) m_iDepth = pSrc->m_iDepth;
 
   // access channel
+#if JVET_M0128
+  if (cpyAlmostAll) m_pRPL0 = pSrc->m_pRPL0;
+  if (cpyAlmostAll) m_pRPL1 = pSrc->m_pRPL1;
+#else
   if( cpyAlmostAll ) m_pRPS   = pSrc->m_pRPS;
+#endif
   m_iLastIDR             = pSrc->m_iLastIDR;
 
   if( cpyAlmostAll ) m_pcPic  = pSrc->m_pcPic;
@@ -1178,6 +1301,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
 
 
+#if !JVET_M0128
 /** Function for applying picture marking based on the Reference Picture Set in pReferencePictureSet.
 */
 void Slice::applyReferencePictureSet( PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet) const
@@ -1629,6 +1753,330 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
   this->setRPS(pLocalRPS);
   this->setRPSidx(-1);
 }
+#endif
+
+#if JVET_M0128
+//Function for applying picture marking based on the Reference Picture List
+void Slice::applyReferencePictureListBasedMarking(PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1) const
+{
+  int i, isReference;
+  checkLeadingPictureRestrictions(rcListPic);
+
+  bool isNeedToCheck = (this->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP || this->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL) ? false : true;
+
+  // loop through all pictures in the reference picture buffer
+  PicList::iterator iterPic = rcListPic.begin();
+  while (iterPic != rcListPic.end())
+  {
+    Picture* pcPic = *(iterPic++);
+
+    if (!pcPic->referenced)
+      continue;
+
+    isReference = 0;
+    // loop through all pictures in the Reference Picture Set
+    // to see if the picture should be kept as reference picture
+    for (i = 0; isNeedToCheck && !isReference && i<pRPL0->getNumberOfShorttermPictures() + pRPL0->getNumberOfLongtermPictures(); i++)
+    {
+      if (!(pRPL0->isRefPicLongterm(i)))
+      {
+        if (pcPic->poc == this->getPOC() - pRPL0->getRefPicIdentifier(i))
+        {
+          isReference = 1;
+          pcPic->longTerm = false;
+        }
+      }
+      else
+      {
+        int pocCycle = 1 << (pcPic->cs->sps->getBitsForPOC());
+        int curPoc = pcPic->poc & (pocCycle - 1);
+        if (pcPic->longTerm && curPoc == pRPL0->getRefPicIdentifier(i))
+        {
+          isReference = 1;
+          pcPic->longTerm = true;
+        }
+      }
+    }
+    for (i = 0; isNeedToCheck && !isReference && i<pRPL1->getNumberOfShorttermPictures() + pRPL1->getNumberOfLongtermPictures(); i++)
+    {
+      if (!(pRPL1->isRefPicLongterm(i)))
+      {
+        if (pcPic->poc == this->getPOC() - pRPL1->getRefPicIdentifier(i))
+        {
+          isReference = 1;
+          pcPic->longTerm = false;
+        }
+      }
+      else
+      {
+        int pocCycle = 1 << (pcPic->cs->sps->getBitsForPOC());
+        int curPoc = pcPic->poc & (pocCycle - 1);
+        if (pcPic->longTerm && curPoc == pRPL1->getRefPicIdentifier(i))
+        {
+          isReference = 1;
+          pcPic->longTerm = true;
+        }
+      }
+    }
+    // mark the picture as "unused for reference" if it is not in
+    // the Reference Picture List
+    if (pcPic->poc != this->getPOC() && isReference == 0)
+    {
+      pcPic->referenced = false;
+      pcPic->longTerm = false;
+    }
+
+    // sanity checks
+    if (pcPic->referenced)
+    {
+      //check that pictures of higher temporal layers are not used
+      CHECK(pcPic->usedByCurr && !(pcPic->layer <= this->getTLayer()), "Invalid state");
+    }
+  }
+}
+
+int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList *pRPL, int rplIdx, bool printErrors) const
+{
+  Picture* rpcPic;
+  int isAvailable = 0;
+  int notPresentPoc = 0;
+
+  if (this->isIDRorBLA()) return 0; //Assume that all pic in the DPB will be flushed anyway so no need to check.
+
+  int numberOfPictures = pRPL->getNumberOfLongtermPictures() + pRPL->getNumberOfShorttermPictures();
+  //Check long term ref pics
+  for (int ii = 0; pRPL->getNumberOfLongtermPictures() > 0 && ii < numberOfPictures; ii++)
+  {
+    if (!pRPL->isRefPicLongterm(ii))
+      continue;
+
+    notPresentPoc = pRPL->getRefPicIdentifier(ii);
+    isAvailable = 0;
+    PicList::iterator iterPic = rcListPic.begin();
+    while (iterPic != rcListPic.end())
+    {
+      rpcPic = *(iterPic++);
+      int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
+      int curPoc = rpcPic->getPOC() & (pocCycle - 1);
+      int refPoc = pRPL->getRefPicIdentifier(ii) & (pocCycle - 1);
+      if (rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
+      {
+        isAvailable = 1;
+        break;
+      }
+    }
+    // if there was no such long-term check the short terms
+    if (!isAvailable)
+    {
+      iterPic = rcListPic.begin();
+      while (iterPic != rcListPic.end())
+      {
+        rpcPic = *(iterPic++);
+        int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
+        int curPoc = rpcPic->getPOC() & (pocCycle - 1);
+        int refPoc = pRPL->getRefPicIdentifier(ii) & (pocCycle - 1);
+        if (!rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
+        {
+          isAvailable = 1;
+          rpcPic->longTerm = true;
+          break;
+        }
+      }
+    }
+    if (!isAvailable)
+    {
+      if (printErrors)
+      {
+        msg(ERROR, "\nCurrent picture: %d Long-term reference picture with POC = %3d seems to have been removed or not correctly decoded.", this->getPOC(), notPresentPoc);
+      }
+      return notPresentPoc;
+    }
+  }
+  //report that a picture is lost if it is in the Reference Picture List but not in the DPB
+
+  isAvailable = 0;
+  //Check short term ref pics
+  for (int ii = 0; ii < numberOfPictures; ii++)
+  {
+    if (pRPL->isRefPicLongterm(ii))
+      continue;
+
+    notPresentPoc = this->getPOC() - pRPL->getRefPicIdentifier(ii);
+    isAvailable = 0;
+    PicList::iterator iterPic = rcListPic.begin();
+    while (iterPic != rcListPic.end())
+    {
+      rpcPic = *(iterPic++);
+      if (!rpcPic->longTerm && rpcPic->getPOC() == this->getPOC() - pRPL->getRefPicIdentifier(ii) && rpcPic->referenced)
+      {
+        isAvailable = 1;
+        break;
+      }
+    }
+    //report that a picture is lost if it is in the Reference Picture List but not in the DPB
+    if (isAvailable == 0 && pRPL->getNumberOfShorttermPictures() > 0)
+    {
+      if (printErrors)
+      {
+        msg(ERROR, "\nCurrent picture: %d Short-term reference picture with POC = %3d seems to have been removed or not correctly decoded.", this->getPOC(), notPresentPoc);
+      }
+      return notPresentPoc;
+    }
+  }
+  return 0;
+}
+
+void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1)
+{
+  Picture* rpcPic;
+  int pocCycle = 0;
+
+
+  ReferencePictureList* pLocalRPL0 = this->getLocalRPL0();
+  (*pLocalRPL0) = ReferencePictureList();
+
+  uint32_t numOfSTRPL0 = 0;
+  uint32_t numOfLTRPL0 = 0;
+  uint32_t numOfRefPic = pRPL0->getNumberOfShorttermPictures() + pRPL0->getNumberOfLongtermPictures();
+  uint32_t refPicIdxL0 = 0;
+  for (int ii = 0; ii < numOfRefPic; ii++)
+  {
+    // loop through all pictures in the reference picture buffer
+    PicList::iterator iterPic = rcListPic.begin();
+    bool isAvailable = false;
+
+    pocCycle = 1 << (this->getSPS()->getBitsForPOC());
+    while (iterPic != rcListPic.end())
+    {
+      rpcPic = *(iterPic++);
+      if (!pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL0->getRefPicIdentifier(ii))
+      {
+        isAvailable = true;
+        break;
+      }
+      else if (pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && (rpcPic->getPOC() & (pocCycle - 1)) == pRPL0->getRefPicIdentifier(ii))
+      {
+        isAvailable = true;
+        break;
+      }
+    }
+    if (isAvailable)
+    {
+      pLocalRPL0->setRefPicIdentifier(refPicIdxL0, pRPL0->getRefPicIdentifier(ii), pRPL0->isRefPicLongterm(ii));
+      refPicIdxL0++;
+      numOfSTRPL0 = numOfSTRPL0 + ((pRPL0->isRefPicLongterm(ii)) ? 0 : 1);
+      numOfLTRPL0 = numOfLTRPL0 + ((pRPL0->isRefPicLongterm(ii)) ? 1 : 0);
+      isAvailable = false;
+    }
+  }
+
+  ReferencePictureList* pLocalRPL1 = this->getLocalRPL1();
+  (*pLocalRPL1) = ReferencePictureList();
+
+  uint32_t numOfSTRPL1 = 0;
+  uint32_t numOfLTRPL1 = 0;
+  numOfRefPic = pRPL1->getNumberOfShorttermPictures() + pRPL1->getNumberOfLongtermPictures();
+  uint32_t refPicIdxL1 = 0;
+  for (int ii = 0; ii < numOfRefPic; ii++)
+  {
+    // loop through all pictures in the reference picture buffer
+    PicList::iterator iterPic = rcListPic.begin();
+    bool isAvailable = false;
+    pocCycle = 1 << (this->getSPS()->getBitsForPOC());
+    while (iterPic != rcListPic.end())
+    {
+      rpcPic = *(iterPic++);
+      if (!pRPL1->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL1->getRefPicIdentifier(ii))
+      {
+        isAvailable = true;
+        break;
+      }
+      else if (pRPL1->isRefPicLongterm(ii) && rpcPic->referenced && (rpcPic->getPOC() & (pocCycle - 1)) == pRPL1->getRefPicIdentifier(ii))
+      {
+        isAvailable = true;
+        break;
+      }
+    }
+    if (isAvailable)
+    {
+      pLocalRPL1->setRefPicIdentifier(refPicIdxL1, pRPL1->getRefPicIdentifier(ii), pRPL1->isRefPicLongterm(ii));
+      refPicIdxL1++;
+      numOfSTRPL1 = numOfSTRPL1 + ((pRPL1->isRefPicLongterm(ii)) ? 0 : 1);
+      numOfLTRPL1 = numOfLTRPL1 + ((pRPL1->isRefPicLongterm(ii)) ? 1 : 0);
+      isAvailable = false;
+    }
+  }
+
+  //Copy from L1 if we have less than active ref pic
+  int numOfNeedToFill = pRPL0->getNumberOfActivePictures() - (numOfLTRPL0 + numOfSTRPL0);
+  bool isDisallowMixedRefPic = (this->getSPS()->getAllActiveRplEntriesHasSameSignFlag()) ? true : false;
+  int originalL0StrpNum = numOfSTRPL0;
+  int originalL0LtrpNum = numOfLTRPL0;
+  for (int ii = 0; numOfNeedToFill > 0 && ii < (pLocalRPL1->getNumberOfLongtermPictures() + pLocalRPL1->getNumberOfShorttermPictures()); ii++)
+  {
+    if (ii <= (numOfLTRPL1 + numOfSTRPL1 - 1))
+    {
+      //Make sure this copy is not already in L0
+      bool canIncludeThis = true;
+      for (int jj = 0; jj < refPicIdxL0; jj++)
+      {
+        if ((pLocalRPL1->getRefPicIdentifier(ii) == pLocalRPL0->getRefPicIdentifier(jj)) && (pLocalRPL1->isRefPicLongterm(ii) == pLocalRPL0->isRefPicLongterm(jj)))
+          canIncludeThis = false;
+        bool sameSign = (pLocalRPL1->getRefPicIdentifier(ii) > 0) == (pLocalRPL0->getRefPicIdentifier(0) > 0);
+        if (isDisallowMixedRefPic && canIncludeThis && !pLocalRPL1->isRefPicLongterm(ii) && !sameSign)
+          canIncludeThis = false;
+      }
+      if (canIncludeThis)
+      {
+        pLocalRPL0->setRefPicIdentifier(refPicIdxL0, pLocalRPL1->getRefPicIdentifier(ii), pLocalRPL1->isRefPicLongterm(ii));
+        refPicIdxL0++;
+        numOfSTRPL0 = numOfSTRPL0 + ((pRPL1->isRefPicLongterm(ii)) ? 0 : 1);
+        numOfLTRPL0 = numOfLTRPL0 + ((pRPL1->isRefPicLongterm(ii)) ? 1 : 0);
+
+        numOfNeedToFill--;
+      }
+    }
+  }
+  pLocalRPL0->setNumberOfLongtermPictures(numOfLTRPL0);
+  pLocalRPL0->setNumberOfShorttermPictures(numOfSTRPL0);
+  pLocalRPL0->setNumberOfActivePictures((numOfLTRPL0 + numOfSTRPL0 < pRPL0->getNumberOfActivePictures()) ? numOfLTRPL0 + numOfSTRPL0 : pRPL0->getNumberOfActivePictures());
+  this->setRPL0idx(-1);
+  this->setRPL0(pLocalRPL0);
+
+  //Copy from L0 if we have less than active ref pic
+  numOfNeedToFill = pLocalRPL0->getNumberOfActivePictures() - (numOfLTRPL1 + numOfSTRPL1);
+  for (int ii = 0; numOfNeedToFill > 0 && ii < (pLocalRPL0->getNumberOfLongtermPictures() + pLocalRPL0->getNumberOfShorttermPictures()); ii++)
+  {
+    if (ii <= (originalL0StrpNum + originalL0LtrpNum - 1))
+    {
+      //Make sure this copy is not already in L0
+      bool canIncludeThis = true;
+      for (int jj = 0; jj < refPicIdxL1; jj++)
+      {
+        if ((pLocalRPL0->getRefPicIdentifier(ii) == pLocalRPL1->getRefPicIdentifier(jj)) && (pLocalRPL0->isRefPicLongterm(ii) == pLocalRPL1->isRefPicLongterm(jj)))
+          canIncludeThis = false;
+        bool sameSign = (pLocalRPL0->getRefPicIdentifier(ii) > 0) == (pLocalRPL1->getRefPicIdentifier(0) > 0);
+        if (isDisallowMixedRefPic && canIncludeThis && !pLocalRPL0->isRefPicLongterm(ii) && !sameSign)
+          canIncludeThis = false;
+      }
+      if (canIncludeThis)
+      {
+        pLocalRPL1->setRefPicIdentifier(refPicIdxL1, pLocalRPL0->getRefPicIdentifier(ii), pLocalRPL0->isRefPicLongterm(ii));
+        refPicIdxL1++;
+        numOfSTRPL1 = numOfSTRPL1 + ((pRPL0->isRefPicLongterm(ii)) ? 0 : 1);
+        numOfLTRPL1 = numOfLTRPL1 + ((pRPL0->isRefPicLongterm(ii)) ? 1 : 0);
+
+        numOfNeedToFill--;
+      }
+    }
+  }
+  pLocalRPL1->setNumberOfLongtermPictures(numOfLTRPL1);
+  pLocalRPL1->setNumberOfShorttermPictures(numOfSTRPL1);
+  pLocalRPL1->setNumberOfActivePictures((isDisallowMixedRefPic) ? (numOfLTRPL1 + numOfSTRPL1) : (((numOfLTRPL1 + numOfSTRPL1) < pRPL1->getNumberOfActivePictures()) ? (numOfLTRPL1 + numOfSTRPL1) : pRPL1->getNumberOfActivePictures()));
+  this->setRPL1idx(-1);
+  this->setRPL1(pLocalRPL1);
+}
+#endif
 
 //! get AC and DC values for weighted pred
 void  Slice::getWpAcDcParam(const WPACDCParam *&wp) const
@@ -1733,7 +2181,11 @@ unsigned Slice::getMinPictureDistance() const
     {
       for (int refIdx = 0; refIdx < getNumRefIdx(REF_PIC_LIST_1); refIdx++)
       {
+#if JVET_M0128          //[HD] Please check if this is correct. Seems like a software bug to me.
+        minPicDist = std::min(minPicDist, std::abs(currPOC - getRefPic(REF_PIC_LIST_1, refIdx)->getPOC()));
+#else
         minPicDist = std::min( minPicDist, std::abs(currPOC - getRefPic(REF_PIC_LIST_0, refIdx)->getPOC()));
+#endif
       }
     }
   }
@@ -1886,6 +2338,13 @@ SPS::SPS()
 , m_uiMaxCUWidth              ( 32)
 , m_uiMaxCUHeight             ( 32)
 , m_uiMaxCodingDepth          (  3)
+#if JVET_M0128
+, m_numRPL0                   ( 0 )
+, m_numRPL1                   ( 0 )
+, m_rpl1CopyFromRpl0Flag      ( false )
+, m_rpl1IdxPresentFlag        ( false )
+, m_allRplEntriesHasSameSignFlag ( true )
+#endif
 , m_bLongTermRefsPresent      (false)
 // Tool list
 , m_pcmEnabledFlag            (false)
@@ -1956,15 +2415,34 @@ SPS::SPS()
 
 SPS::~SPS()
 {
+#if !JVET_M0128
   m_RPSList.destroy();
+#endif
 }
 
+#if JVET_M0128
+void  SPS::createRPLList0(int numRPL)
+{
+  m_RPLList0.destroy();
+  m_RPLList0.create(numRPL);
+  m_numRPL0 = numRPL;
+  m_rpl1IdxPresentFlag = (m_numRPL0 != m_numRPL1) ? true : false;
+}
+void  SPS::createRPLList1(int numRPL)
+{
+  m_RPLList1.destroy();
+  m_RPLList1.create(numRPL);
+  m_numRPL1 = numRPL;
+
+  m_rpl1IdxPresentFlag = (m_numRPL0 != m_numRPL1) ? true : false;
+}
+#else
 void  SPS::createRPSList( int numRPS )
 {
   m_RPSList.destroy();
   m_RPSList.create(numRPS);
 }
-
+#endif
 
 
 const int SPS::m_winUnitX[]={1,2,2,1};
@@ -2001,6 +2479,9 @@ PPS::PPS()
 #endif
 , m_numRefIdxL0DefaultActive         (1)
 , m_numRefIdxL1DefaultActive         (1)
+#if JVET_M0128
+, m_rpl1IdxPresentFlag               (false)
+#endif
 , m_TransquantBypassEnabledFlag      (false)
 , m_useTransformSkip                 (false)
 #if !JVET_N0857_TILES_BRICKS
@@ -2058,6 +2539,8 @@ APS::APS()
 APS::~APS()
 {
 }
+
+#if !JVET_M0128
 ReferencePictureSet::ReferencePictureSet()
 : m_numberOfPictures (0)
 , m_numberOfNegativePictures (0)
@@ -2214,6 +2697,97 @@ RefPicListModification::RefPicListModification()
 RefPicListModification::~RefPicListModification()
 {
 }
+#endif
+
+#if JVET_M0128
+ReferencePictureList::ReferencePictureList()
+  : m_numberOfShorttermPictures(0)
+  , m_numberOfLongtermPictures(0)
+  , m_numberOfActivePictures(MAX_INT)
+{
+  ::memset(m_isLongtermRefPic, 0, sizeof(m_isLongtermRefPic));
+  ::memset(m_refPicIdentifier, 0, sizeof(m_refPicIdentifier));
+  ::memset(m_POC, 0, sizeof(m_POC));
+}
+
+ReferencePictureList::~ReferencePictureList()
+{
+}
+
+void ReferencePictureList::setRefPicIdentifier(int idx, int identifier, bool isLongterm)
+{
+  m_refPicIdentifier[idx] = identifier;
+  m_isLongtermRefPic[idx] = isLongterm;
+
+  m_deltaPocMSBPresentFlag[idx] = false;
+  m_deltaPOCMSBCycleLT[idx] = 0;
+}
+
+int ReferencePictureList::getRefPicIdentifier(int idx) const
+{
+  return m_refPicIdentifier[idx];
+}
+
+
+bool ReferencePictureList::isRefPicLongterm(int idx) const
+{
+  return m_isLongtermRefPic[idx];
+}
+
+void ReferencePictureList::setNumberOfShorttermPictures(int numberOfStrp)
+{
+  m_numberOfShorttermPictures = numberOfStrp;
+}
+
+int ReferencePictureList::getNumberOfShorttermPictures() const
+{
+  return m_numberOfShorttermPictures;
+}
+
+void ReferencePictureList::setNumberOfLongtermPictures(int numberOfLtrp)
+{
+  m_numberOfLongtermPictures = numberOfLtrp;
+}
+
+int ReferencePictureList::getNumberOfLongtermPictures() const
+{
+  return m_numberOfLongtermPictures;
+}
+
+void ReferencePictureList::setPOC(int idx, int POC)
+{
+  m_POC[idx] = POC;
+}
+
+int ReferencePictureList::getPOC(int idx) const
+{
+  return m_POC[idx];
+}
+
+void ReferencePictureList::setNumberOfActivePictures(int numberActive)
+{
+  m_numberOfActivePictures = numberActive;
+}
+
+int ReferencePictureList::getNumberOfActivePictures() const
+{
+  return m_numberOfActivePictures;
+}
+
+void ReferencePictureList::printRefPicInfo() const
+{
+  //DTRACE(g_trace_ctx, D_RPSINFO, "RefPics = { ");
+  printf("RefPics = { ");
+  int numRefPic = getNumberOfShorttermPictures() + getNumberOfLongtermPictures();
+  for (int ii = 0; ii < numRefPic; ii++)
+  {
+    //DTRACE(g_trace_ctx, D_RPSINFO, "%d%s ", m_refPicIdentifier[ii], (m_isLongtermRefPic[ii] == 1) ? "[LT]" : "[ST]");
+    printf("%d%s ", m_refPicIdentifier[ii], (m_isLongtermRefPic[ii] == 1) ? "[LT]" : "[ST]");
+  }
+  //DTRACE(g_trace_ctx, D_RPSINFO, "}\n");
+  printf("}\n");
+}
+#endif
 
 #if HEVC_USE_SCALING_LISTS
 ScalingList::ScalingList()

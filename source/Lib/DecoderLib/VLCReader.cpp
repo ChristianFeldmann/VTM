@@ -269,6 +269,77 @@ HLSyntaxReader::~HLSyntaxReader()
 // Public member functions
 // ====================================================================================================================
 
+#if JVET_M0128
+void HLSyntaxReader::copyRefPicList(SPS* sps, ReferencePictureList* source_rpl, ReferencePictureList* dest_rp)
+{
+  dest_rp->setNumberOfShorttermPictures(source_rpl->getNumberOfShorttermPictures());
+
+  if (sps->getLongTermRefsPresent())
+    dest_rp->setNumberOfLongtermPictures(dest_rp->getNumberOfLongtermPictures());
+  else
+    dest_rp->setNumberOfLongtermPictures(0);
+
+  uint32_t numRefPic = dest_rp->getNumberOfShorttermPictures() + dest_rp->getNumberOfLongtermPictures();
+  for (int ii = 0; ii < numRefPic; ii++)
+    dest_rp->setRefPicIdentifier(ii, source_rpl->getRefPicIdentifier(ii), source_rpl->isRefPicLongterm(ii));
+}
+
+void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
+{
+  uint32_t code;
+  READ_UVLC(code, "num_ref_entries[ listIdx ][ rplsIdx ]");
+  uint32_t numRefPic = code;
+  uint32_t numStrp = 0;
+  uint32_t numLtrp = 0;
+
+  bool isLongTerm;
+  int prevDelta = MAX_INT;
+  int deltaValue = 0;
+  bool firstSTRP = true;
+  for (int ii = 0; ii < numRefPic; ii++)
+  {
+    isLongTerm = false;
+    if (sps->getLongTermRefsPresent())
+    {
+      READ_FLAG(code, "st_ref_pic_flag[ listIdx ][ rplsIdx ][ i ]");
+      isLongTerm = (code == 1) ? false : true;
+    }
+    else
+      isLongTerm = false;
+
+    if (!isLongTerm)
+    {
+      READ_UVLC(code, "abs_delta_poc_st[ listIdx ][ rplsIdx ][ i ]");
+      int readValue = code;
+      if (readValue > 0)
+        READ_FLAG(code, "strp_entry_sign_flag[ listIdx ][ rplsIdx ][ i ]");
+      else
+        code = 1;
+      readValue = (code) ? readValue : 0 - readValue; //true means positive delta POC -- false otherwise
+      if (firstSTRP)
+      {
+        firstSTRP = false;
+        prevDelta = deltaValue = readValue;
+      }
+      else
+      {
+        deltaValue = prevDelta + readValue;
+        prevDelta = deltaValue;
+      }
+      rpl->setRefPicIdentifier(ii, deltaValue, isLongTerm);
+      numStrp++;
+    }
+    else
+    {
+      READ_CODE(sps->getBitsForPOC(), code, "poc_lsb_lt[listIdx][rplsIdx][i]");
+      rpl->setRefPicIdentifier(ii, code, isLongTerm);
+      numLtrp++;
+    }
+  }
+  rpl->setNumberOfShorttermPictures(numStrp);
+  rpl->setNumberOfLongtermPictures(numLtrp);
+}
+#else
 void HLSyntaxReader::parseShortTermRefPicSet( SPS* sps, ReferencePictureSet* rps, int idx )
 {
   uint32_t code;
@@ -367,6 +438,7 @@ void HLSyntaxReader::parseShortTermRefPicSet( SPS* sps, ReferencePictureSet* rps
 
   rps->printDeltaPOC();
 }
+#endif
 
 #if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
 void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetManager )
@@ -404,6 +476,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   READ_UVLC(uiCode, "num_ref_idx_l1_default_active_minus1");
   CHECK(uiCode > 14, "Invalid code read");
   pcPPS->setNumRefIdxL1DefaultActive(uiCode+1);
+
+#if JVET_M0128
+  READ_FLAG(uiCode, "rpl1_idx_present_flag");
+  pcPPS->setRpl1IdxPresentFlag(uiCode);
+#endif
 
   READ_SVLC(iCode, "init_qp_minus26" );                            pcPPS->setPicInitQPMinus26(iCode);
   READ_FLAG( uiCode, "constrained_intra_pred_flag" );              pcPPS->setConstrainedIntraPred( uiCode ? true : false );
@@ -767,8 +844,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   }
 #endif
 
+#if !JVET_M0128
   READ_FLAG( uiCode, "lists_modification_present_flag");
   pcPPS->setListsModificationPresentFlag(uiCode);
+#endif
 
   READ_UVLC( uiCode, "log2_parallel_merge_level_minus2");
   pcPPS->setLog2ParallelMergeLevelMinus2 (uiCode);
@@ -1510,6 +1589,47 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     }
   }
 
+#if JVET_M0128
+  READ_FLAG(uiCode, "long_term_ref_pics_flag");          pcSPS->setLongTermRefsPresent(uiCode);
+  READ_FLAG(uiCode, "rpl1_copy_from_rpl0_flag");
+  pcSPS->setRPL1CopyFromRPL0Flag(uiCode);
+
+  //Read candidate for List0
+  READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[0]");
+  uint32_t numberOfRPL = uiCode;
+  pcSPS->createRPLList0(numberOfRPL + 1);
+  RPLList* rplList = pcSPS->getRPLList0();
+  ReferencePictureList* rpl;
+  for (uint32_t ii = 0; ii < numberOfRPL; ii++)
+  {
+    rpl = rplList->getReferencePictureList(ii);
+    parseRefPicList(pcSPS, rpl);
+  }
+
+  //Read candidate for List1
+  if (!pcSPS->getRPL1CopyFromRPL0Flag())
+  {
+    READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[1]");
+    numberOfRPL = uiCode;
+    pcSPS->createRPLList1(numberOfRPL + 1);
+    rplList = pcSPS->getRPLList1();
+    for (uint32_t ii = 0; ii < numberOfRPL; ii++)
+    {
+      rpl = rplList->getReferencePictureList(ii);
+      parseRefPicList(pcSPS, rpl);
+    }
+  }
+  else
+  {
+    numberOfRPL = pcSPS->getNumRPL0();
+    pcSPS->createRPLList1(numberOfRPL);
+    RPLList* rplListSource = pcSPS->getRPLList0();
+    RPLList* rplListDest = pcSPS->getRPLList1();
+    for (uint32_t ii = 0; ii < numberOfRPL; ii++)
+      copyRefPicList(pcSPS, rplListSource->getReferencePictureList(ii), rplListDest->getReferencePictureList(ii));
+  }
+#endif
+
   unsigned  minQT[3] = { 0, 0, 0 };
   unsigned  maxBTD[3] = { 0, 0, 0 };
 
@@ -1697,6 +1817,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
 
   // KJS: reference picture sets to be replaced
+#if !JVET_M0128
   READ_UVLC( uiCode, "num_short_term_ref_pic_sets" );
   CHECK(uiCode > 64, "Invalid code");
   pcSPS->createRPSList(uiCode);
@@ -1722,6 +1843,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setUsedByCurrPicLtSPSFlag(k, uiCode?1:0);
     }
   }
+#endif
 
   // KJS: not found in draft -> does not exist
 #if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
@@ -2104,9 +2226,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
       pcSlice->setPOC(uiCode);
+#if !JVET_M0128
       ReferencePictureSet* rps = pcSlice->getLocalRPS();
       (*rps)=ReferencePictureSet();
       pcSlice->setRPS(rps);
+#endif
     }
     else
     {
@@ -2140,6 +2264,127 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #endif
       pcSlice->setPOC              (iPOCmsb+iPOClsb);
 
+#if JVET_M0128
+      //Read L0 related syntax elements
+      if (sps->getNumRPL0() > 0)
+      {
+        READ_FLAG(uiCode, "ref_pic_list_sps_flag[0]");
+      }
+      else
+      {
+        uiCode = 0;
+      }
+
+      if (!uiCode) //explicitly carried in this SH
+      {
+        ReferencePictureList* rpl0 = pcSlice->getLocalRPL0();
+        (*rpl0) = ReferencePictureList();
+        parseRefPicList(sps, rpl0);
+        pcSlice->setRPL0idx(-1);
+        pcSlice->setRPL0(rpl0);
+      }
+      else    //Refer to list in SPS
+      {
+        if (sps->getNumRPL0() > 1)
+        {
+          int numBits = (int)ceil(log2(sps->getNumRPL0()));
+          READ_CODE(numBits, uiCode, "ref_pic_list_idx[0]");
+          pcSlice->setRPL0idx(uiCode);
+          pcSlice->setRPL0(sps->getRPLList0()->getReferencePictureList(uiCode));
+        }
+      }
+      //Deal POC Msb cycle signalling for LTRP
+      for (int i = 0; i < pcSlice->getRPL0()->getNumberOfLongtermPictures() + pcSlice->getRPL0()->getNumberOfShorttermPictures(); i++)
+      {
+        pcSlice->getLocalRPL0()->setDeltaPocMSBPresentFlag(i, false);
+        pcSlice->getLocalRPL0()->setDeltaPocMSBCycleLT(i, 0);
+      }
+      if (pcSlice->getRPL0()->getNumberOfLongtermPictures())
+      {
+        for (int i = 0; i < pcSlice->getRPL0()->getNumberOfLongtermPictures() + pcSlice->getRPL0()->getNumberOfShorttermPictures(); i++)
+        {
+          if (pcSlice->getRPL0()->isRefPicLongterm(i))
+          {
+            READ_FLAG(uiCode, "delta_poc_msb_present_flag[i][j]");
+            pcSlice->getLocalRPL0()->setDeltaPocMSBPresentFlag(i, uiCode ? true : false);
+            if (uiCode)
+            {
+              READ_FLAG(uiCode, "delta_poc_msb_cycle_lt[i][j]");
+              pcSlice->getLocalRPL0()->setDeltaPocMSBCycleLT(i, uiCode);
+            }
+          }
+        }
+      }
+
+      //Read L1 related syntax elements
+      if (!pps->getRpl1IdxPresentFlag())
+      {
+        pcSlice->setRPL1idx(pcSlice->getRPL0idx());
+        if (pcSlice->getRPL1idx() != -1)
+          pcSlice->setRPL1(sps->getRPLList1()->getReferencePictureList(pcSlice->getRPL0idx()));
+      }
+      else
+      {
+        if (sps->getNumRPL0() > 0)
+        {
+          READ_FLAG(uiCode, "ref_pic_list_sps_flag[1]");
+        }
+        else
+        {
+          uiCode = 0;
+        }
+        if (uiCode == 1)
+        {
+          if (sps->getNumRPL1() > 1)
+          {
+            int numBits = (int)ceil(log2(sps->getNumRPL1()));
+            READ_CODE(numBits, uiCode, "ref_pic_list_idx[1]");
+            pcSlice->setRPL1idx(uiCode);
+            pcSlice->setRPL1(sps->getRPLList1()->getReferencePictureList(uiCode));
+          }
+          else
+          {
+            pcSlice->setRPL1idx(0);
+            pcSlice->setRPL1(sps->getRPLList1()->getReferencePictureList(0));
+          }
+        }
+        else
+        {
+          pcSlice->setRPL1idx(-1);
+        }
+      }
+      if (pcSlice->getRPL1idx() == -1) //explicitly carried in this SH
+      {
+        ReferencePictureList* rpl1 = pcSlice->getLocalRPL1();
+        (*rpl1) = ReferencePictureList();
+        parseRefPicList(sps, rpl1);
+        pcSlice->setRPL1idx(-1);
+        pcSlice->setRPL1(rpl1);
+      }
+
+      //Deal POC Msb cycle signalling for LTRP
+      for (int i = 0; i < pcSlice->getRPL1()->getNumberOfLongtermPictures() + pcSlice->getRPL1()->getNumberOfShorttermPictures(); i++)
+      {
+        pcSlice->getLocalRPL1()->setDeltaPocMSBPresentFlag(i, false);
+        pcSlice->getLocalRPL1()->setDeltaPocMSBCycleLT(i, 0);
+      }
+      if (pcSlice->getRPL1()->getNumberOfLongtermPictures())
+      {
+        for (int i = 0; i < pcSlice->getRPL1()->getNumberOfLongtermPictures() + pcSlice->getRPL1()->getNumberOfShorttermPictures(); i++)
+        {
+          if (pcSlice->getRPL1()->isRefPicLongterm(i))
+          {
+            READ_FLAG(uiCode, "delta_poc_msb_present_flag[i][j]");
+            pcSlice->getLocalRPL1()->setDeltaPocMSBPresentFlag(i, uiCode ? true : false);
+            if (uiCode)
+            {
+              READ_FLAG(uiCode, "delta_poc_msb_cycle_lt[i][j]");
+              pcSlice->getLocalRPL1()->setDeltaPocMSBCycleLT(i, uiCode);
+            }
+          }
+        }
+      }
+#else
       ReferencePictureSet* rps;
       rps = pcSlice->getLocalRPS();
       (*rps)=ReferencePictureSet();
@@ -2264,6 +2509,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setRPS(rps);
       }
 #endif
+#endif
+
       if (sps->getSPSTemporalMVPEnabledFlag())
       {
         READ_FLAG( uiCode, "slice_temporal_mvp_enabled_flag" );
@@ -2386,6 +2633,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
     // }
+#if !JVET_M0128
     RefPicListModification* refPicListModification = pcSlice->getRefPicListModification();
     if(!pcSlice->isIntra())
     {
@@ -2472,6 +2720,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       refPicListModification->setRefPicListModificationFlagL1(0);
     }
+#endif
+
     if (pcSlice->isInterB())
     {
       READ_FLAG( uiCode, "mvd_l1_zero_flag" );       pcSlice->setMvdL1ZeroFlag( (uiCode ? true : false) );

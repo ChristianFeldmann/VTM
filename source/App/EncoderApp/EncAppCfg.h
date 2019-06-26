@@ -186,7 +186,12 @@ protected:
 #if JCTVC_Y0038_PARAMS
   bool      m_rewriteParamSets;                              ///< Flag to enable rewriting of parameter sets at random access points
 #endif
+#if JVET_M0128
+  RPLEntry  m_RPLList0[MAX_GOP];                               ///< the RPL entries from the config file
+  RPLEntry  m_RPLList1[MAX_GOP];                               ///< the RPL entries from the config file
+#else
   int       m_extraRPSs;                                      ///< extra RPSs added to handle CRA
+#endif
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
 #if JVET_N0857_TILES_BRICKS
   BrickSplit    m_brickSplits[MAX_TILES];

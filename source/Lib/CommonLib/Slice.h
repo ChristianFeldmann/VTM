@@ -1203,6 +1203,9 @@ private:
   unsigned    m_maxBTDepth[3];
   unsigned    m_maxBTSize[3];
   unsigned    m_maxTTSize[3];
+#if JVET_N0047_Merge_IDR_Non_IDR
+  bool        m_idrRefParamList;
+#endif
   unsigned    m_dualITree;
   uint32_t              m_uiMaxCUWidth;
   uint32_t              m_uiMaxCUHeight;
@@ -1465,7 +1468,10 @@ public:
   unsigned                getMaxTTSize()                                                            const { return m_maxTTSize[1]; }
   unsigned                getMaxTTSizeI()                                                           const { return m_maxTTSize[0]; }
   unsigned                getMaxTTSizeIChroma()                                                     const { return m_maxTTSize[2]; }
-
+#if JVET_N0047_Merge_IDR_Non_IDR
+  void                    setIDRRefParamListPresent(bool b)                             { m_idrRefParamList = b; }
+  bool                    getIDRRefParamListPresent()                             const { return m_idrRefParamList; }
+#endif
   void                    setUseDualITree(bool b) { m_dualITree = b; }
   bool                    getUseDualITree()                                      const { return m_dualITree; }
 

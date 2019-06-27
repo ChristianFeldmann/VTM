@@ -1098,6 +1098,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
+#if JVET_N0047_Merge_IDR_Non_IDR
+  sps.setIDRRefParamListPresent              ( m_idrRefParamList );
+#endif
   sps.setUseDualITree                        ( m_dualITree );
 #if JVET_N0193_LFNST
   sps.setUseLFNST                            ( m_LFNST );

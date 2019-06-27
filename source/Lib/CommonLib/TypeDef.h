@@ -49,7 +49,9 @@
 #include <cstring>
 #include <assert.h>
 #include <cassert>
- 
+
+#define JVET_N0047_Merge_IDR_Non_IDR                      1 // merging IDR and non-IDR pictures
+
 #define JVET_N0276_CONSTRAINT_FLAGS                       1 // JVET-N0276: On interoperability point signalling
 
 #define JVET_N0278_HLS                                    1 // JVET-N0278: HLS for MPEG requirements on immersive media delivery and access

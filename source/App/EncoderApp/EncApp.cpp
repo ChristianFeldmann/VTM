@@ -182,10 +182,14 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setRPLList0                                          ( m_RPLList0);
   m_cEncLib.setRPLList1                                          ( m_RPLList1);
 #endif
-  m_cEncLib.setGopList                                           ( m_GOPList );
 #if !JVET_M0128
   m_cEncLib.setExtraRPSs                                         ( m_extraRPSs );
 #endif
+#if JVET_N0047_Merge_IDR_Non_IDR
+  m_cEncLib.setIDRRefParamListPresent                            ( m_idrRefParamList );
+#endif
+  m_cEncLib.setGopList                                           ( m_GOPList );
+
   for(int i = 0; i < MAX_TLAYER; i++)
   {
     m_cEncLib.setNumReorderPics                                  ( m_numReorderPics[i], i );

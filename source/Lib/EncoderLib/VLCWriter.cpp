@@ -1082,7 +1082,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_UVLC( chromaEnabled ? (pcSPS->getBitDepth(CHANNEL_TYPE_CHROMA) - 8):0,  "bit_depth_chroma_minus8" );
 
   WRITE_UVLC( pcSPS->getBitsForPOC()-4,                 "log2_max_pic_order_cnt_lsb_minus4" );
-
+#if JVET_N0047_Merge_IDR_Non_IDR
+  WRITE_FLAG( pcSPS->getIDRRefParamListPresent(),                 "sps_idr_rpl_present_flag" );
+#endif
   // KJS: Marakech decision: sub-layers added back
   const bool subLayerOrderingInfoPresentFlag = 1;
   WRITE_FLAG(subLayerOrderingInfoPresentFlag,       "sps_sub_layer_ordering_info_present_flag");
@@ -1606,7 +1608,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     int pocBits = pcSlice->getSPS()->getBitsForPOC();
     int pocMask = (1 << pocBits) - 1;
     WRITE_CODE(pcSlice->getPOC() & pocMask, pocBits, "slice_pic_order_cnt_lsb");
-    if( !pcSlice->getIdrPicFlag() )
+#if JVET_N0047_Merge_IDR_Non_IDR
+    if( !pcSlice->getIdrPicFlag() || pcSlice->getSPS()->getIDRRefParamListPresent())
+#else
+     if( !pcSlice->getIdrPicFlag() )
+#endif
     {
 #if JVET_M0128
       //Write L0 related syntax elements

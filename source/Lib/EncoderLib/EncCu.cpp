@@ -1566,17 +1566,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           const int nonZeroCoeffThr = CS::isDualITree( *tempCS ) ? ( isLuma( partitioner.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
           if( lfnstIdx && cuCtx.numNonZeroCoeffNonTs <= nonZeroCoeffThr )
           {
-            bool isMDIS = false;
-            {
-              CHECK( CU::getNumPUs( cu ) > 1, "PLanarPDPC: encoder MDIS condition not defined for multi PU" );
-              const PredictionUnit* pu = cu.firstPU;
-              isMDIS = IntraPrediction::useFilteredIntraRefSamples( COMPONENT_Y, *pu, true, *pu );
-#if HM_MDIS_AS_IN_JEM
-              if( pu->intraDir[ 0 ] == PLANAR_IDX ) { isMDIS |= IntraPrediction::getPlanarMDISCondition( *pu ); }
-#endif
-            }
-
-            if( cuCtx.numNonZeroCoeffNonTs > 0 || isMDIS )
+            if (cuCtx.numNonZeroCoeffNonTs > 0)
             {
               tempCS->cost = MAX_DOUBLE;
             }
@@ -2457,11 +2447,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   }
   m_bestModeUpdated = tempCS->useDbCost = bestCS->useDbCost = false;
   uint32_t iteration;
-  uint32_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+  uint32_t iterationBegin = 0;
   if (encTestMode.lossless)
   {
     iteration = 1;
-    iterationBegin = 0;
   }
   else
   {
@@ -2874,11 +2863,10 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   m_bestModeUpdated = tempCS->useDbCost = bestCS->useDbCost = false;
   {
     uint8_t iteration;
-    uint8_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+    uint8_t iterationBegin = 0;
     if (encTestMode.lossless)
     {
       iteration = 1;
-      iterationBegin = 0;
     }
     else
     {
@@ -3141,11 +3129,10 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
   }
 
   uint32_t iteration;
-  uint32_t iterationBegin = m_modeCtrl->getIsHashPerfectMatch() ? 1 : 0;
+  uint32_t iterationBegin = 0;
   if (encTestMode.lossless)
   {
     iteration = 1;
-    iterationBegin = 0;
   }
   else
   {

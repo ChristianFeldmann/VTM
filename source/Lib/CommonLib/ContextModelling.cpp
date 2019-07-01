@@ -165,8 +165,8 @@ void CoeffCodingContext::initSubblock( int SubsetId, bool sigGroupFlag )
   unsigned  sigLower  = unsigned( ( CGPosY + 1 ) < m_heightInGroups ? m_sigCoeffGroupFlag[ m_subSetPos + m_widthInGroups ] : false );
   m_sigGroupCtxId     = Ctx::SigCoeffGroup[m_chType]( sigRight | sigLower );
 #if JVET_N0280_RESIDUAL_CODING_TS
-  unsigned  sigLeft   = unsigned( int( CGPosX - 1 ) > 0 ? m_sigCoeffGroupFlag[m_subSetPos - 1              ] : false );
-  unsigned  sigAbove  = unsigned( int( CGPosY - 1 ) > 0 ? m_sigCoeffGroupFlag[m_subSetPos - m_widthInGroups] : false );
+  unsigned  sigLeft   = unsigned( CGPosX > 0 ? m_sigCoeffGroupFlag[m_subSetPos - 1              ] : false );
+  unsigned  sigAbove  = unsigned( CGPosY > 0 ? m_sigCoeffGroupFlag[m_subSetPos - m_widthInGroups] : false );
   m_sigGroupCtxIdTS   = Ctx::TsSigCoeffGroup( sigLeft  + sigAbove );
 #endif
 }

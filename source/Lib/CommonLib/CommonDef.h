@@ -477,6 +477,11 @@ static constexpr int MV_MANTISSA_BITCOUNT    = 6;
 static constexpr int MV_MANTISSA_UPPER_LIMIT = ((1 << (MV_MANTISSA_BITCOUNT - 1)) - 1);
 static constexpr int MV_MANTISSA_LIMIT       = (1 << (MV_MANTISSA_BITCOUNT - 1));
 static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1);
+
+static constexpr int MV_BITS =                                   18;
+static constexpr int MV_MAX =              (1 << (MV_BITS - 1)) - 1;
+static constexpr int MV_MIN =                 -(1 << (MV_BITS - 1));
+
 static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;
 #if JVET_N0220_LMCS_SIMPLIFICATION

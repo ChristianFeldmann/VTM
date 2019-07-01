@@ -560,7 +560,7 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
   if (dirMode > DC_IDX && dirMode < NUM_LUMA_MODE) // intraPredAngle for directional modes
   {
     static const int angTable[32]    = { 0,    1,    2,    3,    4,    6,     8,   10,   12,   14,   16,   18,   20,   23,   26,   29,   32,   35,   39,  45,  51,  57,  64,  73,  86, 102, 128, 171, 256, 341, 512, 1024 };
-    static const int invAngTable[32] = { 0, 8192, 4096, 2731, 2048, 1365,  1024,  819,  683,  585,  512,  455,  410,  356,  315,  282,  256,  234,  210, 182, 160, 144, 128, 112,  95,  80,  64,  48,  32,  24,  16,    8 }; // (256 * 32) / Angle
+    static const int invAngTable[32] = { 0, 8192, 4096, 2731, 2048, 1365,  1024,  819,  683,  585,  512,  455,  410,  356,  315,  282,  256,  234,  210, 182, 161, 144, 128, 112,  95,  80,  64,  48,  32,  24,  16,    8 }; // (256 * 32) / Angle
 
     const int     absAngMode         = abs(intraPredAngleMode);
     const int     signAng            = intraPredAngleMode < 0 ? -1 : 1;
@@ -588,6 +588,12 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
       m_ipaParam.interpolationFlag = (m_ipaParam.isModeVer ? puSize.width : puSize.height) > 8 ? true : false ;
     }
   }
+#if JVET_N0413_RDPCM
+  else if (isLuma( chType ) && pu.cu->bdpcmMode) // BDPCM
+  {
+    m_ipaParam.refFilterFlag = false;
+  }
+#endif
   else if (dirMode == PLANAR_IDX) // Planar intra prediction 
   {
     m_ipaParam.refFilterFlag = puSize.width * puSize.height > 32 ? true : false;
@@ -1422,49 +1428,6 @@ void IntraPrediction::xFilterReferenceSamples( const Pel* refBufUnfiltered, Pel*
   // top right (not filtered)
   *piDestPtr=*piSrcPtr;
 }
-
-bool IntraPrediction::useFilteredIntraRefSamples( const ComponentID &compID, const PredictionUnit &pu, bool modeSpecific, const UnitArea &tuArea )
-{
-  const SPS         &sps    = *pu.cs->sps;
-  const ChannelType  chType = toChannelType( compID );
-
-  // high level conditions
-  if( sps.getSpsRangeExtension().getIntraSmoothingDisabledFlag() )                                       { return false; }
-#if JVET_N0671_INTRA_TPM_ALIGNWITH420
-  if( !isLuma( chType ) )                                                                                { return false; }
-#else
-  if( !isLuma( chType ) && pu.chromaFormat != CHROMA_444 )                                               { return false; }
-#endif
-#if JVET_N0413_RDPCM
-  if(  isLuma( chType ) && pu.cu->bdpcmMode )                                                            { return false; }
-#endif
-
-  if( pu.cu->ispMode && isLuma(compID) )                                                                 { return false; }
-
-#if JVET_N0217_MATRIX_INTRAPRED
-  if( PU::isMIP( pu, chType ) )                                                                          { return false; }
-#endif
-
-  if( !modeSpecific )                                                                                    { return true; }
-
-  if (pu.multiRefIdx)                                                                                    { return false; }
-
-  // pred. mode related conditions
-  const int dirMode = PU::getFinalIntraMode( pu, chType );
-  int predMode = getWideAngle(tuArea.blocks[compID].width, tuArea.blocks[compID].height, dirMode);
-  if (predMode != dirMode )                                                                              { return true; }
-  if (dirMode == DC_IDX)                                                                                 { return false; }
-  if (dirMode == PLANAR_IDX)
-  {
-    return tuArea.blocks[compID].width * tuArea.blocks[compID].height > 32 ? true : false;
-  }
-
-  int diff = std::min<int>( abs( dirMode - HOR_IDX ), abs( dirMode - VER_IDX ) );
-  int log2Size = ((g_aucLog2[tuArea.blocks[compID].width] + g_aucLog2[tuArea.blocks[compID].height]) >> 1);
-  CHECK( log2Size >= MAX_INTRA_FILTER_DEPTHS, "Size not supported" );
-  return (diff > m_aucIntraFilter[chType][log2Size]);
-}
-
 
 bool isAboveLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLT)
 {

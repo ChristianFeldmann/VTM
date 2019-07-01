@@ -180,7 +180,6 @@ namespace PU
   void getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx, const int mrgCandIdx = -1 );
   void setAllAffineMvField            (      PredictionUnit &pu, MvField *mvField, RefPicList eRefList );
   void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList
-    , bool setHighPrec = false
 #if JVET_N0334_MVCLIPPING
     , bool clipCPMVs = false
 #endif

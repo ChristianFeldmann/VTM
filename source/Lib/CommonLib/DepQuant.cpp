@@ -1776,7 +1776,7 @@ DepQuant::~DepQuant()
 void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx )
 {
 #if JVET_N0280_RESIDUAL_CODING_TS
-  if( tu.cs->slice->getDepQuantEnabledFlag() && tu.mtsIdx != MTS_SKIP )
+  if( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID)) )
 #else
   if( tu.cs->slice->getDepQuantEnabledFlag() )
 #endif
@@ -1792,7 +1792,7 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
 void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const ComponentID &compID, const QpParam &cQP )
 {
 #if JVET_N0280_RESIDUAL_CODING_TS
-  if( tu.cs->slice->getDepQuantEnabledFlag() && tu.mtsIdx != MTS_SKIP )
+  if( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID)) )
 #else
   if( tu.cs->slice->getDepQuantEnabledFlag() )
 #endif

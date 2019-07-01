@@ -866,9 +866,16 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
     (skip && !cu.cs->slice->getSPS()->getIBCFlag()))
   {
 #if JVET_N0324_REGULAR_MRG_FLAG
-    unsigned regularMergeFlag = (m_BinDecoder.decodeBin(Ctx::RegularMergeFlag(0)));
-    DTRACE(g_trace_ctx, D_SYNTAX, "regular_merge_flag() ctx=%d regularMergeFlag=%d\n", 0, regularMergeFlag?1:0);
-    cu.firstPU->regularMergeFlag = regularMergeFlag;
+    if (!cu.cs->slice->getSPS()->getUseMMVD() && (cu.firstPU->lwidth() * cu.firstPU->lheight() == 32))
+    {
+      cu.firstPU->regularMergeFlag = true;
+    }
+    else
+    {
+      unsigned regularMergeFlag = (m_BinDecoder.decodeBin(Ctx::RegularMergeFlag(0)));
+      DTRACE(g_trace_ctx, D_SYNTAX, "regular_merge_flag() ctx=%d regularMergeFlag=%d\n", 0, regularMergeFlag?1:0);
+      cu.firstPU->regularMergeFlag = regularMergeFlag;
+    }
     if (cu.firstPU->regularMergeFlag)
     {
       cu.mmvdSkip = false;
@@ -1094,6 +1101,8 @@ void CABACReader::bdpcm_mode( CodingUnit& cu, const ComponentID compID )
   cu.bdpcmMode = 0;
 
   if( !CU::bdpcmAllowed( cu, compID ) ) return;
+
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__BDPCM_MODE, cu.block(compID).lumaSize(), compID );
 
   cu.bdpcmMode = m_BinDecoder.decodeBin( Ctx::BDPCMMode( 0 ) );
 
@@ -1803,8 +1812,15 @@ void CABACReader::merge_flag( PredictionUnit& pu )
 #if JVET_N0324_REGULAR_MRG_FLAG
   if (pu.mergeFlag)
   {
-    pu.regularMergeFlag = (m_BinDecoder.decodeBin(Ctx::RegularMergeFlag(1)));
-    DTRACE(g_trace_ctx, D_SYNTAX, "regular_merge_flag() ctx=%d pu.regularMergeFlag=%d\n", 1, pu.regularMergeFlag?1:0);
+    if (!pu.cs->sps->getUseMMVD() && (pu.lwidth() * pu.lheight() == 32))
+    {
+      pu.regularMergeFlag = true;
+    }
+    else
+    {
+      pu.regularMergeFlag = (m_BinDecoder.decodeBin(Ctx::RegularMergeFlag(1)));
+      DTRACE(g_trace_ctx, D_SYNTAX, "regular_merge_flag() ctx=%d pu.regularMergeFlag=%d\n", 1, pu.regularMergeFlag?1:0);
+    }
     if (pu.regularMergeFlag)
     {
       pu.mmvdMergeFlag = false;

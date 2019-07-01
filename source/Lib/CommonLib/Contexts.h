@@ -205,7 +205,6 @@ public:
   static const CtxSet   RegularMergeFlag;
 #endif
   static const CtxSet   MergeIdx;
-  static const CtxSet   PartSize;
   static const CtxSet   PredMode;
   static const CtxSet   MultiRefLineIdx;
   static const CtxSet   IntraLumaMpmFlag;

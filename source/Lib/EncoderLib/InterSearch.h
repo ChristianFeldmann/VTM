@@ -355,7 +355,7 @@ protected:
                                     RefPicList            eRefPicList,
                                     int                   iRefIdx
                                   );
-  uint32_t xCalcAffineMVBits      ( PredictionUnit& pu, Mv mvCand[3], Mv mvPred[3], bool mvHighPrec = false );
+  uint32_t xCalcAffineMVBits      ( PredictionUnit& pu, Mv mvCand[3], Mv mvPred[3] );
 
   void xCopyAMVPInfo              ( AMVPInfo*   pSrc, AMVPInfo* pDst );
   uint32_t xGetMvpIdxBits             ( int iIdx, int iNum );

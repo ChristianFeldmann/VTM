@@ -171,10 +171,6 @@ public:
   void predIntraMip               (const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu);
 #endif
 
-  static bool useFilteredIntraRefSamples( const ComponentID &compID, const PredictionUnit &pu, bool modeSpecific, const UnitArea &tuArea );
-#if HM_MDIS_AS_IN_JEM && JVET_N0193_LFNST
-  static bool getPlanarMDISCondition( const UnitArea &tuArea ) { return abs( PLANAR_IDX - HOR_IDX ) > m_aucIntraFilter[ CHANNEL_TYPE_LUMA ][ ( ( g_aucLog2[ tuArea.Y().width ] + g_aucLog2[ tuArea.Y().height ] ) >> 1 ) ]; }
-#endif
   static bool useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode);
 
   void geneWeightedPred           (const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf);

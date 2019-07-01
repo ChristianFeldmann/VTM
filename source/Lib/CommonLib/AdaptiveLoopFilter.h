@@ -86,15 +86,12 @@ public:
   virtual ~AdaptiveLoopFilter() {}
 #if JVET_N0415_CTB_ALF
   void reconstructCoeffAPSs(CodingStructure& cs, bool luma, bool chroma, bool isRdo);
+  void reconstructCoeff(AlfSliceParam& alfSliceParam, ChannelType channel, const bool isRdo, const bool isRedo = false);
   void ALFProcess(CodingStructure& cs);
 #else
+  void reconstructCoeff(AlfSliceParam& alfSliceParam, ChannelType channel, const bool isRedo = false);
   void ALFProcess( CodingStructure& cs, AlfSliceParam& alfSliceParam );
 #endif
-  void reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, 
-#if JVET_N0415_CTB_ALF
-    const bool isRdo = false,
-#endif
-    const bool isRedo = false );
   void create( const int picWidth, const int picHeight, const ChromaFormat format, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE] );
   void destroy();
 #if JVET_N0180_ALF_LINE_BUFFER_REDUCTION

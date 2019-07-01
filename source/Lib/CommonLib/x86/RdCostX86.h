@@ -354,7 +354,7 @@ Distortion RdCost::xGetSAD_NxN_SIMD( const DistParam &rcDtParam )
 
   if( iWidth == 4 )
   {
-    if( iRows == 4 )
+    if( iRows == 4 && iSubShift == 0 )
     {
       __m128i vzero = _mm_setzero_si128();
       __m128i vsum = vzero;

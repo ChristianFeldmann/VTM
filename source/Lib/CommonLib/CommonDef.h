@@ -143,6 +143,11 @@ static const int MAX_NUM_REF =                                     16; ///< max.
 static const int MAX_QP =                                          63;
 static const int NOT_VALID =                                       -1;
 
+#if JVET_N0857_TILES_BRICKS
+static const int MAX_TILES =                                      128; ///< max. number of tiles for which a brick configuration can be read
+static const int MAX_NUM_BRICKS_PER_TILE =                          8; ///< max. number brick per tile, for which a configuration can be read
+#endif
+
 static const int AMVP_MAX_NUM_CANDS =                               2; ///< AMVP: advanced motion vector prediction - max number of final candidates
 static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP: advanced motion vector prediction - max number of candidates
 static const int AMVP_DECIMATION_FACTOR =                           2;
@@ -168,6 +173,9 @@ static const int MAX_NESTING_NUM_LAYER =                           64;
 static const int MAX_VPS_NUM_HRD_PARAMETERS =                       1;
 static const int MAX_VPS_OP_SETS_PLUS1 =                         1024;
 static const int MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1 =         1;
+#elif JVET_N0278_HLS
+static const int MAX_VPS_NUM_HRD_PARAMETERS =                       1;
+static const int MAX_VPS_LAYERS =                                 256;
 #endif
 
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;
@@ -201,9 +209,14 @@ static const int C1FLAG_NUMBER =                                    8; ///< maxi
 static const int C2FLAG_NUMBER =                                    1; ///< maximum number of largerThan2 flag coded in one chunk: 16 in HM5
 
 static const int MAX_NUM_VPS =                                     16;
+static const int MAX_NUM_DPS =                                     16;
 static const int MAX_NUM_SPS =                                     16;
 static const int MAX_NUM_PPS =                                     64;
 static const int MAX_NUM_APS =                                     32;  //Currently APS ID has 5 bits
+#if JVET_N0805_APS_LMCS
+static const int NUM_APS_TYPE_LEN =                                 3;  //Currently APS Type has 3 bits
+static const int MAX_NUM_APS_TYPE =                                 8;  //Currently APS Type has 3 bits so the max type is 8
+#endif
 
 static const int MLS_GRP_NUM =                                   1024; ///< Max number of coefficient groups, max(16, 256)
 
@@ -326,7 +339,11 @@ static const int QUANT_SHIFT =                                     14; ///< Q(4)
 static const int IQUANT_SHIFT =                                     6;
 static const int SCALE_BITS =                                      15; ///< Precision for fractional bit estimates
 
+#if JVET_N0847_SCALING_LISTS
+static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * (NUMBER_OF_PREDICTION_MODES - 1); ///< list number for quantization matrix
+#else
 static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * NUMBER_OF_PREDICTION_MODES; ///< list number for quantization matrix
+#endif
 
 static const int SCALING_LIST_START_VALUE =                         8; ///< start value for dpcm mode
 static const int MAX_MATRIX_COEF_NUM =                             64; ///< max coefficient number for quantization matrix
@@ -390,24 +407,18 @@ static const int BDPCM_MAX_CU_SIZE = 32;      ///<  maximum CU size for RDPCM mo
 //for I slice luma CTB configuration para.
 static const int    MAX_BT_DEPTH  =                                 4;      ///<  <=7
 static const int    MAX_BT_SIZE   =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
-static const int    MIN_BT_SIZE   =                                 4;      ///<  can be set down to 1<<MIN_CU_LOG2
 
 static const int    MAX_TT_SIZE   =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
 static const int    MAX_TT_SIZE_C =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
-static const int    MIN_TT_SIZE   =                                 4;      ///<  can be set down to 1<<MIN_CU_LOG2
-static const int    MIN_TT_SIZE_C =                                 4;      ///<  can be set down to 1<<MIN_CU_LOG2
                                                                             //for P/B slice CTU config. para.
 static const int    MAX_BT_DEPTH_INTER =                            4;      ///< <=7
 static const int    MAX_BT_SIZE_INTER  =                          128;      ///< for initialization, [1<<MIN_BT_SIZE_INTER, 1<<CTU_LOG2]
-static const int    MIN_BT_SIZE_INTER  =                            4;      ///<
 
                                                                             //for I slice chroma CTB configuration para. (in luma samples)
 static const int    MAX_BT_DEPTH_C      =                           0;      ///< <=7
 static const int    MAX_BT_SIZE_C       =                          64;      ///< [1<<MIN_QT_SIZE_C, 1<<CTU_LOG2], in luma samples
-static const int    MIN_BT_SIZE_C       =                           4;      ///< can be set down to 4, in luma samples
 
 static const int    MAX_TT_SIZE_INTER  =                           64;      ///< for initialization, [1<<MIN_CU_LOG2, 64]
-static const int    MIN_TT_SIZE_INTER  =                            4;      ///<
 #if JVET_N0137_DUALTREE_CHROMA_SIZE
 static const int    MIN_DUALTREE_CHROMA_WIDTH  =                    4;
 static const int    MIN_DUALTREE_CHROMA_SIZE   =                   16;

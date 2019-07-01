@@ -208,7 +208,9 @@ public:
 #endif
   EncSlice*  getSliceEncoder()   { return m_pcSliceEncoder; }
   NalUnitType getNalUnitType( int pocCurr, int lastIdr, bool isField );
+#if !JVET_M0128
   void arrangeLongtermPicturesInRPS(Slice *, PicList& );
+#endif
   void arrangeCompositeReference(Slice* pcSlice, PicList& rcListPic, int pocCurr);
   void updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int pocCurr);
 
@@ -272,8 +274,11 @@ protected:
   void xWriteTrailingSEIMessages (SEIMessages& seiMessages, AccessUnit &accessUnit, int temporalId, const SPS *sps);
   void xWriteDuSEIMessages       (SEIMessages& duInfoSeiMessages, AccessUnit &accessUnit, int temporalId, const SPS *sps, std::deque<DUData> &duData);
 
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   int xWriteVPS (AccessUnit &accessUnit, const VPS *vps);
+#endif
+#if JVET_N0349_DPS
+  int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
 #endif
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps);

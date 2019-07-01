@@ -149,6 +149,10 @@ void invResDPCM( const TransformUnit &tu, const ComponentID &compID, CoeffBuf &d
   const int      hgt = rect.height;
   const CCoeffBuf coeffs = tu.getCoeffs(compID);
 
+  const int      maxLog2TrDynamicRange = tu.cs->sps->getMaxLog2TrDynamicRange(toChannelType(compID));
+  const TCoeff   inputMinimum   = -(1 << maxLog2TrDynamicRange);
+  const TCoeff   inputMaximum   =  (1 << maxLog2TrDynamicRange) - 1;
+
   const TCoeff* coef = &coeffs.buf[0];
   TCoeff* dst = &dstBuf.buf[0];
 
@@ -159,7 +163,7 @@ void invResDPCM( const TransformUnit &tu, const ComponentID &compID, CoeffBuf &d
       dst[0] = coef[0];
       for( int x = 1; x < wdt; x++ )
       {
-        dst[x] = dst[x - 1] + coef[x];
+        dst[x] = Clip3(inputMinimum, inputMaximum, dst[x - 1] + coef[x]);
       }
       coef += coeffs.stride;
       dst += dstBuf.stride;
@@ -175,7 +179,7 @@ void invResDPCM( const TransformUnit &tu, const ComponentID &compID, CoeffBuf &d
     {
       for( int x = 0; x < wdt; x++ )
       {
-        dst[dstBuf.stride + x] = dst[x] + coef[coeffs.stride + x];
+        dst[dstBuf.stride + x] = Clip3(inputMinimum, inputMaximum, dst[x] + coef[coeffs.stride + x]);
       }
       coef += coeffs.stride;
       dst += dstBuf.stride;
@@ -573,10 +577,18 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
   const int minimumQp = 0;
   const int maximumQp = SCALING_LIST_REM_NUM;
 
+#if JVET_N0847_SCALING_LISTS
+  for(uint32_t size = SCALING_LIST_FIRST_CODED; size <= SCALING_LIST_LAST_CODED; size++) //2x2->64x64
+#else
   for(uint32_t size = 0; size < SCALING_LIST_SIZE_NUM; size++)
+#endif
   {
     for(uint32_t list = 0; list < SCALING_LIST_NUM; list++)
     {
+#if JVET_N0847_SCALING_LISTS  
+      if (size == SCALING_LIST_2x2 && list % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0) //skip 2x2 luma
+        continue;
+#endif
       for(int qp = minimumQp; qp < maximumQp; qp++)
       {
         xSetScalingListEnc(scalingList,list,size,qp);
@@ -584,6 +596,24 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
       }
     }
   }
+#if JVET_N0847_SCALING_LISTS
+  //based on square result and apply downsample technology
+  for (uint32_t sizew = 0; sizew <= SCALING_LIST_LAST_CODED; sizew++) //7
+  {
+    for (uint32_t sizeh = 0; sizeh <= SCALING_LIST_LAST_CODED; sizeh++) //7
+    {
+      if (sizew == sizeh || (sizew == SCALING_LIST_1x1 && sizeh<SCALING_LIST_4x4) || (sizeh == SCALING_LIST_1x1 && sizew<SCALING_LIST_4x4)) continue;
+      for (uint32_t list = 0; list < SCALING_LIST_NUM; list++) //9
+		  {
+			  for (int qp = minimumQp; qp < maximumQp; qp++)
+        {
+          xSetRecScalingListEnc(scalingList, list, sizew, sizeh, qp);
+          xSetRecScalingListDec(*scalingList, list, sizew, sizeh, qp);
+        }
+      }
+    }
+  }
+#endif
 }
 /** set quantized matrix coefficient for decode
  * \param scalingList quantized matrix address
@@ -594,16 +624,42 @@ void Quant::setScalingListDec(const ScalingList &scalingList)
   const int minimumQp = 0;
   const int maximumQp = SCALING_LIST_REM_NUM;
 
+#if JVET_N0847_SCALING_LISTS
+  for (uint32_t size = SCALING_LIST_FIRST_CODED; size <= SCALING_LIST_LAST_CODED; size++)
+#else
   for(uint32_t size = 0; size < SCALING_LIST_SIZE_NUM; size++)
+#endif
   {
     for(uint32_t list = 0; list < SCALING_LIST_NUM; list++)
     {
+#if JVET_N0847_SCALING_LISTS 
+      if (size == SCALING_LIST_2x2 && list % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0) //skip 2x2 luma
+        continue;
+#endif
       for(int qp = minimumQp; qp < maximumQp; qp++)
       {
         xSetScalingListDec(scalingList,list,size,qp);
       }
     }
   }
+#if JVET_N0847_SCALING_LISTS
+  //based on square result and apply downsample technology
+  //based on square result and apply downsample technology
+  for (uint32_t sizew = 0; sizew <= SCALING_LIST_LAST_CODED; sizew++) //7
+  {
+    for (uint32_t sizeh = 0; sizeh <= SCALING_LIST_LAST_CODED; sizeh++) //7
+    {
+      if (sizew == sizeh || (sizew == SCALING_LIST_1x1 && sizeh<SCALING_LIST_4x4) || (sizeh == SCALING_LIST_1x1 && sizew<SCALING_LIST_4x4)) continue;
+      for (uint32_t list = 0; list < SCALING_LIST_NUM; list++) //9
+      {
+        for (int qp = minimumQp; qp < maximumQp; qp++)
+        {
+          xSetRecScalingListDec(scalingList, list, sizew, sizeh, qp);
+        }
+      }
+    }
+  }
+#endif
 }
 
 
@@ -670,6 +726,62 @@ void Quant::xSetScalingListDec(const ScalingList &scalingList, uint32_t listId, 
                         scalingList.getScalingListDC(sizeId,listId));
 }
 
+#if JVET_N0847_SCALING_LISTS
+/** set quantized matrix coefficient for encode
+* \param scalingList quantized matrix address
+* \param listId List index
+* \param sizeId size index
+* \param qp Quantization parameter
+* \param format chroma format
+*/
+void Quant::xSetRecScalingListEnc(ScalingList *scalingList, uint32_t listId, uint32_t sizeIdw, uint32_t sizeIdh, int qp)
+{
+  if (sizeIdw == sizeIdh) return;
+
+  uint32_t width = g_scalingListSizeX[sizeIdw];
+  uint32_t height = g_scalingListSizeX[sizeIdh];
+  uint32_t largeSideId = (sizeIdw > sizeIdh) ? sizeIdw : sizeIdh;  //16
+  int *quantcoeff;
+  int *coeff = scalingList->getScalingListAddress(largeSideId, listId);//4x4, 8x8 
+  quantcoeff = getQuantCoeff(listId, qp, sizeIdw, sizeIdh);//final quantCoeff (downsample)
+  const bool blockIsNotPowerOf4 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
+  int quantScales = g_quantScales[blockIsNotPowerOf4?1:0][qp];
+
+  processScalingListEnc(coeff,
+    quantcoeff,
+    (quantScales << LOG2_SCALING_LIST_NEUTRAL_VALUE),
+    height, width,
+    ((largeSideId>3) ? 2 : 1),
+    ((largeSideId >= 3) ? 8 : 4),
+    scalingList->getScalingListDC(largeSideId, listId));
+}
+/** set quantized matrix coefficient for decode
+* \param scalingList quantaized matrix address
+* \param listId List index
+* \param sizeId size index
+* \param qp Quantization parameter
+* \param format chroma format
+*/
+void Quant::xSetRecScalingListDec(const ScalingList &scalingList, uint32_t listId, uint32_t sizeIdw, uint32_t sizeIdh, int qp)
+{
+  if (sizeIdw == sizeIdh) return;
+  uint32_t width = g_scalingListSizeX[sizeIdw];
+  uint32_t height = g_scalingListSizeX[sizeIdh];
+  uint32_t largeSideId = (sizeIdw > sizeIdh) ? sizeIdw : sizeIdh;  //16
+
+  const int *coeff = scalingList.getScalingListAddress(largeSideId, listId);
+  int *dequantcoeff;
+  dequantcoeff = getDequantCoeff(listId, qp, sizeIdw, sizeIdh);
+  const bool blockIsNotPowerOf4 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
+  int invQuantScale = g_invQuantScales[blockIsNotPowerOf4 ? 1 : 0][qp];
+  processScalingListDec(coeff,
+                        dequantcoeff,
+                        invQuantScale,
+                        height, width, (largeSideId>3) ? 2 : 1,
+                        (largeSideId >= 3 ? 8 : 4),
+                        scalingList.getScalingListDC(largeSideId, listId));
+}
+#endif
 /** set flat matrix value to quantized coefficient
  */
 void Quant::setFlatScalingList(const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths)
@@ -735,6 +847,39 @@ void Quant::xSetFlatScalingList(uint32_t list, uint32_t sizeX, uint32_t sizeY, i
  */
 void Quant::processScalingListEnc( int *coeff, int *quantcoeff, int quantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc)
 {
+#if JVET_N0847_SCALING_LISTS
+  if (height != width)
+  {
+    for (uint32_t j = 0; j<height; j++)
+    {
+      for (uint32_t i = 0; i<width; i++)
+      {
+        if (j >= JVET_C0024_ZERO_OUT_TH || i >= JVET_C0024_ZERO_OUT_TH)
+        {
+          quantcoeff[j*width + i] = 0;
+          continue;
+        }
+        int ratioWH = (height>width) ? height / width : width / height;
+        int ratioH = (height / sizuNum) ? (height / sizuNum) : (sizuNum / height); // 32/8 = 4
+        int ratioW = (width / sizuNum) ? (width / sizuNum) : (sizuNum / width); //16/8 = 2 //sizeNum = 8/4
+        if (height > width)
+        {
+          quantcoeff[j*width + i] = quantScales / coeff[sizuNum * (j / ratioH) + ((i * ratioWH) / ratioH)];
+        }
+        else //ratioH < ratioW
+        {
+          quantcoeff[j*width + i] = quantScales / coeff[sizuNum * ((j * ratioWH) / ratioW) + (i / ratioW)];
+        }
+        int largeOne = (width > height) ? width : height;
+        if (largeOne>8)
+        {
+          quantcoeff[0] = quantScales / dc;
+        }
+      }
+    }
+    return;
+  }
+#endif
   for(uint32_t j=0;j<height;j++)
   {
     for(uint32_t i=0;i<width;i++)
@@ -761,6 +906,38 @@ void Quant::processScalingListEnc( int *coeff, int *quantcoeff, int quantScales,
  */
 void Quant::processScalingListDec( const int *coeff, int *dequantcoeff, int invQuantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc)
 {
+#if JVET_N0847_SCALING_LISTS
+  if (height != width)
+  {
+    for (uint32_t j = 0; j<height; j++)
+    {
+      for (uint32_t i = 0; i<width; i++)
+      {
+        if (i >= JVET_C0024_ZERO_OUT_TH || j >= JVET_C0024_ZERO_OUT_TH)
+        {
+          dequantcoeff[j*width + i] = 0;
+          continue;
+        }
+        int ratioWH = (height>width) ? height / width : width / height;
+        int ratioH = (height / sizuNum) ? (height / sizuNum) : (sizuNum / height);
+        int ratioW = (width / sizuNum) ? (width / sizuNum) : (sizuNum / width);
+        //sizeNum = 8/4
+        if (height > width)
+        {
+          dequantcoeff[j*width + i] = invQuantScales * coeff[sizuNum * (j / ratioH) + ((i * ratioWH) / ratioH)];
+        }
+        else //ratioH < ratioW
+        {
+          dequantcoeff[j*width + i] = invQuantScales * coeff[sizuNum * ((j * ratioWH) / ratioW) + (i / ratioW)];
+        }
+        int largeOne = (width > height) ? width : height;
+        if (largeOne > 8)
+          dequantcoeff[0] = invQuantScales * dc;
+      }
+    }
+    return;
+  }
+#endif
   for(uint32_t j=0;j<height;j++)
   {
     for(uint32_t i=0;i<width;i++)
@@ -838,7 +1015,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 {
   const SPS &sps            = *tu.cs->sps;
   const CompArea &rect      = tu.blocks[compID];
-#if HEVC_USE_SCALING_LISTS || HEVC_USE_SIGN_HIDING
+#if HEVC_USE_SCALING_LISTS
   const uint32_t uiWidth        = rect.width;
   const uint32_t uiHeight       = rect.height;
 #endif
@@ -951,7 +1128,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
     }
 #endif
 #if HEVC_USE_SIGN_HIDING
-    if( cctx.signHiding() && uiWidth>=4 && uiHeight>=4 )
+    if( cctx.signHiding() )
     {
       if(uiAbsSum >= 2) //this prevents TUs with only one coefficient of value 1 from being tested
       {

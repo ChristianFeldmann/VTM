@@ -130,7 +130,7 @@ namespace PU
 {
   int  getLMSymbolList(const PredictionUnit &pu, int *pModeList);
   int  getIntraMPMs(const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA);
-#if JVET_N0217_MATRIX_INTRAPRED  
+#if JVET_N0217_MATRIX_INTRAPRED
   bool          isMIP                 (const PredictionUnit &pu, const ChannelType &chType = CHANNEL_TYPE_LUMA);
   int           getMipMPMs            (const PredictionUnit &pu, unsigned *mpm);
   int           getMipSizeId          (const PredictionUnit &pu);
@@ -172,7 +172,7 @@ namespace PU
   bool isBipredRestriction            (const PredictionUnit &pu);
   void spanMotionInfo                 (      PredictionUnit &pu, const MergeCtx &mrgCtx = MergeCtx() );
   void applyImv                       (      PredictionUnit &pu, MergeCtx &mrgCtx, InterPrediction *interPred = NULL );
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
   void getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], int8_t neighGbi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgCtx);
 #else
   void getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgCtx );
@@ -260,7 +260,7 @@ template<typename T, size_t N>
 uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList
 #if !JVET_N0217_MATRIX_INTRAPRED
   , static_vector<int, N>& extendRefList, int extendRef
-#endif  
+#endif
   , size_t uiFastCandNum = N, int* iserttPos = nullptr)
 {
   CHECK( std::min( uiFastCandNum, candModeList.size() ) != std::min( uiFastCandNum, candCostList.size() ), "Sizes do not match!" );
@@ -324,57 +324,5 @@ uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeLi
   }
   return 0;
 }
-
-template<typename T, size_t N>
-uint32_t updateDoubleCandList(T mode, double cost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, static_vector<T, N>& candModeList2, T mode2, size_t fastCandNum = N, int* iserttPos = nullptr)
-{
-  CHECK(std::min(fastCandNum, candModeList.size()) != std::min(fastCandNum, candCostList.size()), "Sizes do not match!");
-  CHECK(fastCandNum > candModeList.capacity(), "The vector is to small to hold all the candidates!");
-
-  size_t i;
-  size_t shift = 0;
-  size_t currSize = std::min(fastCandNum, candCostList.size());
-
-  while (shift < fastCandNum && shift < currSize && cost < candCostList[currSize - 1 - shift])
-  {
-    shift++;
-  }
-
-  if (candModeList.size() >= fastCandNum && shift != 0)
-  {
-    for (i = 1; i < shift; i++)
-    {
-      candModeList[currSize - i] = candModeList[currSize - 1 - i];
-      candModeList2[currSize - i] = candModeList2[currSize - 1 - i];
-      candCostList[currSize - i] = candCostList[currSize - 1 - i];
-    }
-    candModeList[currSize - shift] = mode;
-    candModeList2[currSize - shift] = mode2;
-    candCostList[currSize - shift] = cost;
-    if (iserttPos != nullptr)
-    {
-      *iserttPos = int(currSize - shift);
-    }
-    return 1;
-  }
-  else if (currSize < fastCandNum)
-  {
-    candModeList.insert(candModeList.end() - shift, mode);
-    candModeList2.insert(candModeList2.end() - shift, mode2);
-    candCostList.insert(candCostList.end() - shift, cost);
-    if (iserttPos != nullptr)
-    {
-      *iserttPos = int(candModeList.size() - shift - 1);
-    }
-    return 1;
-  }
-
-  if (iserttPos != nullptr)
-  {
-    *iserttPos = -1;
-  }
-  return 0;
-}
-
 
 #endif

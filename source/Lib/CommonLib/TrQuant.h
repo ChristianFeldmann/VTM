@@ -47,6 +47,9 @@
 #include "UnitPartitioner.h"
 #include "Quant.h"
 
+#if JVET_N0847_SCALING_LISTS
+#include "DepQuant.h"
+#endif
 //! \ingroup CommonLib
 //! \{
 
@@ -119,7 +122,11 @@ public:
   void   setLambda   ( const double dLambda )                      { m_quant->setLambda( dLambda ); }
   double getLambda   () const                                      { return m_quant->getLambda(); }
 
+#if JVET_N0847_SCALING_LISTS  //maybe no need
+  DepQuant* getQuant() { return m_quant; }
+#else
   Quant* getQuant() { return m_quant;  }
+#endif
 
 
 #if ENABLE_SPLIT_PARALLELISM
@@ -135,7 +142,11 @@ protected:
   bool     m_scalingListEnabledFlag;
 
 private:
+#if JVET_N0847_SCALING_LISTS
+	DepQuant *m_quant;          //!< Quantizer
+#else
   Quant    *m_quant;          //!< Quantizer
+#endif
   TCoeff** m_mtsCoeffs;
 #if JVET_N0193_LFNST
   TCoeff   m_tempInMatrix [ 48 ];

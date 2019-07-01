@@ -179,13 +179,25 @@ void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, u
 {
   const Position pos         = partitioner.currArea().blocks[partitioner.chType];
   const unsigned curSliceIdx = cs.slice->getIndependentSliceIdx();
+#if JVET_N0857_TILES_BRICKS
+  const unsigned curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( partitioner.currArea().lumaPos() );
+#else
   const unsigned curTileIdx  = cs.picture->tileMap->getTileIdxMap( partitioner.currArea().lumaPos() );
+#endif
 
   // get left depth
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
+#else
   const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), curSliceIdx, curTileIdx, partitioner.chType );
+#endif
 
   // get above depth
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  const CodingUnit* cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
+#else
   const CodingUnit* cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), curSliceIdx, curTileIdx, partitioner.chType );
+#endif
 
   bool canSplit[6];
 
@@ -378,10 +390,11 @@ unsigned DeriveCtx::CtxIBCFlag(const CodingUnit& cu)
 {
   const CodingStructure *cs = cu.cs;
   unsigned ctxId = 0;
-  const CodingUnit *cuLeft = cs->getCURestricted(cu.lumaPos().offset(-1, 0), cu, CH_L);
+  const Position pos = cu.chType == CHANNEL_TYPE_CHROMA ? cu.chromaPos() : cu.lumaPos();
+  const CodingUnit *cuLeft = cs->getCURestricted(pos.offset(-1, 0), cu, cu.chType);
   ctxId += (cuLeft && CU::isIBC(*cuLeft)) ? 1 : 0;
 
-  const CodingUnit *cuAbove = cs->getCURestricted(cu.lumaPos().offset(0, -1), cu, CH_L);
+  const CodingUnit *cuAbove = cs->getCURestricted(pos.offset(0, -1), cu, cu.chType);
   ctxId += (cuAbove && CU::isIBC(*cuAbove)) ? 1 : 0;
   return ctxId;
 }

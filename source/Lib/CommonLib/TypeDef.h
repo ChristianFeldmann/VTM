@@ -50,11 +50,29 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0047_Merge_IDR_Non_IDR                      1 // merging IDR and non-IDR pictures
+
+#define JVET_N0276_CONSTRAINT_FLAGS                       1 // JVET-N0276: On interoperability point signalling
+
+#define JVET_N0278_HLS                                    1 // JVET-N0278: HLS for MPEG requirements on immersive media delivery and access
+
+#define JVET_N0805_APS_LMCS                               1 // JVET-N0805: Reference to APS from slice header for LMCS
+
+#define JVET_N0070_WRAPAROUND                             1 // reference wraparound simplifications
+
+#define JVET_N0063_VUI                                    1 // JVET-N0063: Video Usability Information
+
+#define JVET_N0847_SCALING_LISTS                          1  //1: default mode, 2: user defined mode
+
+#if JVET_N0847_SCALING_LISTS
+#define HEVC_USE_SCALING_LISTS                            1 
+#endif
+
 #define JVET_N0415_CTB_ALF                                1 // JVET-N0415: CTB-based ALF switch
 
 #define JVET_N0105_LFNST_CTX_MODELLING                    1 // LFNST index signalled without intra mode dependency and with on ctx-coded bin
 
-#define JVET_N0193_LFNST                                  1 //Low Frequency Non-Separable Transform (LFNST), previously, Reduced Secondary Transform (RST) 
+#define JVET_N0193_LFNST                                  1 //Low Frequency Non-Separable Transform (LFNST), previously, Reduced Secondary Transform (RST)
 
 #define JVET_N0217_MATRIX_INTRAPRED                       1 // matrix-based intra prediction (MIP)
 
@@ -77,13 +95,30 @@
 
 #define JVET_N0168_AMVR_ME_MODIFICATION                   1 // Correct the cost and bits calculation in encoder side
 
+#define JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND  1 // loop filter disabled across virtual boundaries
+
+#define JVET_N0067_NAL_Unit_Header                        1 // NAL Unit Header 
+
+#define JVET_N0349_DPS                                    1 // Decoding Parameter Set
+
 #define JVET_N0068_AFFINE_MEM_BW                          1 // memory bandwidth reduction for affine mode
 
 #define JVET_N0308_MAX_CU_SIZE_FOR_ISP                    1
 
+#define JVET_N0857_TILES_BRICKS                           1 // VTM-5 basic Slices/Tiles/Bricks design, rectangular slices not supported yet
+#define JVET_N0857_RECT_SLICES                            1 // Support for rectangular slices and raster-scan slices (i.e., multiple tiles/brick in a slice)
+
+#if JVET_N0857_TILES_BRICKS
+#define JVET_N0124_PROPOSAL1                              1   // JVET-N0124 Proposal 1
+#define JVET_N0124_PROPOSAL2                              1   // JVET-N0124 Proposal 2
+#endif
+
 #define JVET_N0280_RESIDUAL_CODING_TS                     1
 
 #define JVET_N0103_CGSIZE_HARMONIZATION                   1 // Chroma CG sizes aligned to luma CG sizes
+
+
+
 
 #define JVET_N0146_DMVR_BDOF_CONDITION                    1 // JVET-N146/N0162/N0442/N0153/N0262/N0440/N0086 applicable condition of DMVR and BDOF
 
@@ -175,6 +210,8 @@
 
 #define JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES  1 // JVET-N0473, JVET-N0098: Deblocking of ISP/SBT TU boundaries
 
+#define JVET_N0150_ONE_CTU_DELAY_WPP                      1 // one CTU delay WPP
+
 #define JCTVC_Y0038_PARAMS                                1
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
@@ -183,10 +220,14 @@
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
+#define JVET_M0128                                        1 // Implementation of RPL as in JVET-M0128
+
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 #define FIX_PCM                                           1 // Fix PCM bugs in VTM3
 
 #define MAX_TB_SIZE_SIGNALLING                            0
+
+#define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text
 
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
@@ -266,13 +307,10 @@ typedef std::pair<int, int>  TrCost;
 #if HEVC_TOOLS
 #define HEVC_USE_INTRA_SMOOTHING_T32                      1
 #define HEVC_USE_INTRA_SMOOTHING_T64                      1
-#define HEVC_USE_DC_PREDFILTERING                         1
-#define HEVC_USE_HOR_VER_PREDFILTERING                    1
 #define HEVC_USE_MDCS                                     1
 #define HEVC_USE_SIGN_HIDING                              1
 #define HEVC_USE_SCALING_LISTS                            1
 #define HEVC_VPS                                          1
-#define HEVC_DEPENDENT_SLICES                             1
 #else
 #define HEVC_USE_SIGN_HIDING                              1
 #endif
@@ -433,6 +471,14 @@ typedef       uint64_t        Distortion;        ///< distortion measurement
 // ====================================================================================================================
 // Enumeration
 // ====================================================================================================================
+#if JVET_N0805_APS_LMCS
+enum ApsTypeValues
+{
+  ALF_APS = 0,
+  LMCS_APS = 1,
+};
+#endif
+
 enum QuantFlags
 {
   Q_INIT           = 0x0,
@@ -701,13 +747,6 @@ enum MvpDir
   MD_ABOVE_LEFT         ///< MVP of above left block
 };
 
-enum StoredResidualType
-{
-  RESIDUAL_RECONSTRUCTED          = 0,
-  RESIDUAL_ENCODER_SIDE           = 1,
-  NUMBER_OF_STORED_RESIDUAL_TYPES = 2
-};
-
 enum TransformDirection
 {
   TRANSFORM_FORWARD              = 0,
@@ -743,15 +782,6 @@ enum CoeffScanGroupType
   SCAN_NUMBER_OF_GROUP_TYPES = 2
 };
 
-enum SignificanceMapContextType
-{
-  CONTEXT_TYPE_4x4    = 0,
-  CONTEXT_TYPE_8x8    = 1,
-  CONTEXT_TYPE_NxN    = 2,
-  CONTEXT_TYPE_SINGLE = 3,
-  CONTEXT_NUMBER_OF_TYPES = 4
-};
-
 #if HEVC_USE_SCALING_LISTS
 enum ScalingListMode
 {
@@ -762,7 +792,12 @@ enum ScalingListMode
 
 enum ScalingListSize
 {
+#if JVET_N0847_SCALING_LISTS
+  SCALING_LIST_1x1 = 0,
+  SCALING_LIST_2x2,
+#else
   SCALING_LIST_2x2 = 0,
+#endif
   SCALING_LIST_4x4,
   SCALING_LIST_8x8,
   SCALING_LIST_16x16,
@@ -770,8 +805,14 @@ enum ScalingListSize
   SCALING_LIST_64x64,
   SCALING_LIST_128x128,
   SCALING_LIST_SIZE_NUM,
+#if JVET_N0847_SCALING_LISTS
+  //for user define matrix
+  SCALING_LIST_FIRST_CODED = SCALING_LIST_2x2,
+  SCALING_LIST_LAST_CODED = SCALING_LIST_64x64
+#else
   SCALING_LIST_FIRST_CODED = SCALING_LIST_4x4, // smallest scaling coded as High Level Parameter
   SCALING_LIST_LAST_CODED  = SCALING_LIST_32x32
+#endif
 };
 #endif
 
@@ -782,7 +823,12 @@ enum SliceConstraint
   FIXED_NUMBER_OF_CTU    = 1,          ///< Limit maximum number of largest coding tree units in a slice / slice segments
   FIXED_NUMBER_OF_BYTES  = 2,          ///< Limit maximum number of bytes in a slice / slice segment
   FIXED_NUMBER_OF_TILES  = 3,          ///< slices / slice segments span an integer number of tiles
+#if !JVET_N0857_TILES_BRICKS
   NUMBER_OF_SLICE_CONSTRAINT_MODES = 4
+#else
+  SINGLE_BRICK_PER_SLICE = 4,          ///< each brick is coded as separate NAL unit (slice)
+  NUMBER_OF_SLICE_CONSTRAINT_MODES = 5
+#endif
 };
 
 // For use with decoded picture hash SEI messages, generated by encoder.
@@ -929,6 +975,41 @@ enum PPSExtensionFlagIndex
 //       effort can be done without use of macros to alter the names used to indicate the different NAL unit types.
 enum NalUnitType
 {
+ #if JVET_N0067_NAL_Unit_Header
+  NAL_UNIT_PPS = 0,                     // 0 
+  NAL_UNIT_ACCESS_UNIT_DELIMITER,       // 1
+  NAL_UNIT_PREFIX_SEI,                  // 2
+  NAL_UNIT_SUFFIX_SEI,                  // 3
+  NAL_UNIT_APS,                         // 4
+  NAL_UNIT_RESERVED_NVCL_5,             // 5
+  NAL_UNIT_RESERVED_NVCL_6,             // 6
+  NAL_UNIT_RESERVED_NVCL_7,             // 7
+  NAL_UNIT_CODED_SLICE_TRAIL,           // 8
+  NAL_UNIT_CODED_SLICE_STSA,            // 9
+  NAL_UNIT_CODED_SLICE_RADL,            // 10
+  NAL_UNIT_CODED_SLICE_RASL,            // 11
+  NAL_UNIT_RESERVED_VCL_12,             // 12
+  NAL_UNIT_RESERVED_VCL_13,             // 13
+  NAL_UNIT_RESERVED_VCL_14,             // 14
+  NAL_UNIT_RESERVED_VCL_15,             // 15
+  NAL_UNIT_DPS,                         // 16
+  NAL_UNIT_SPS,                         // 17
+  NAL_UNIT_EOS,                         // 18
+  NAL_UNIT_EOB,                         // 19
+  NAL_UNIT_VPS,                         // 20
+  NAL_UNIT_RESERVED_NVCL_21,            // 21
+  NAL_UNIT_RESERVED_NVCL_22,            // 22
+  NAL_UNIT_RESERVED_NVCL_23,            // 23
+  NAL_UNIT_CODED_SLICE_IDR_W_RADL,      // 24
+  NAL_UNIT_CODED_SLICE_IDR_N_LP,        // 25
+  NAL_UNIT_CODED_SLICE_CRA,             // 26
+  NAL_UNIT_CODED_SLICE_GRA,             // 27
+  NAL_UNIT_UNSPECIFIED_28,              // 29              
+  NAL_UNIT_UNSPECIFIED_29,              // 30
+  NAL_UNIT_UNSPECIFIED_30,              // 31
+  NAL_UNIT_UNSPECIFIED_31,              // 32
+  NAL_UNIT_INVALID
+#else
 #if JVET_M0101_HLS
   NAL_UNIT_CODED_SLICE_TRAIL = 0, // 0
   NAL_UNIT_CODED_SLICE_STSA,      // 1
@@ -936,16 +1017,16 @@ enum NalUnitType
   //KJS: keep RADL/RASL since there is no real decision on these types yet
   NAL_UNIT_CODED_SLICE_RADL,      // 2   should be NAL_UNIT_RESERVED_VCL_2,
   NAL_UNIT_CODED_SLICE_RASL,      // 3   should be NAL_UNIT_RESERVED_VCL_3,
-  
+
   NAL_UNIT_RESERVED_VCL_4,
   NAL_UNIT_RESERVED_VCL_5,
   NAL_UNIT_RESERVED_VCL_6,
   NAL_UNIT_RESERVED_VCL_7,
-  
+
   NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 8
   NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 9
   NAL_UNIT_CODED_SLICE_CRA,         // 10
-  
+
   NAL_UNIT_RESERVED_IRAP_VCL11,
   NAL_UNIT_RESERVED_IRAP_VCL12,
   NAL_UNIT_RESERVED_IRAP_VCL13,
@@ -968,7 +1049,7 @@ enum NalUnitType
   NAL_UNIT_EOB,                     // 22
   NAL_UNIT_PREFIX_SEI,              // 23
   NAL_UNIT_SUFFIX_SEI,              // 24
-  NAL_UNIT_FILLER_DATA,             // 25  keep: may be added with HRD 
+  NAL_UNIT_FILLER_DATA,             // 25  keep: may be added with HRD
 
   NAL_UNIT_RESERVED_NVCL26,
   NAL_UNIT_RESERVED_NVCL27,
@@ -1018,7 +1099,7 @@ enum NalUnitType
   NAL_UNIT_RESERVED_VCL30,
   NAL_UNIT_RESERVED_VCL31,
 
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   NAL_UNIT_VPS,                     // 32
 #else
   NAL_UNIT_RESERVED_32,
@@ -1058,6 +1139,7 @@ enum NalUnitType
   NAL_UNIT_UNSPECIFIED_63,
   NAL_UNIT_INVALID,
 #endif
+#endif
 };
 
 #if SHARP_LUMA_DELTA_QP
@@ -1068,13 +1150,6 @@ enum LumaLevelToDQPMode
   LUMALVL_TO_DQP_NUM_MODES  = 2
 };
 #endif
-
-enum SaveLoadTag
-{
-  SAVE_LOAD_INIT = 0,
-  SAVE_ENC_INFO  = 1,
-  LOAD_ENC_INFO  = 2
-};
 
 enum MergeType
 {
@@ -1584,6 +1659,9 @@ struct XUCache
 #define MAX_NUM_ALF_CHROMA_COEFF        7
 #define MAX_ALF_FILTER_LENGTH           7
 #define MAX_NUM_ALF_COEFF               (MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1)
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+#define MAX_ALF_PADDING_SIZE            4
+#endif
 
 enum AlfFilterType
 {

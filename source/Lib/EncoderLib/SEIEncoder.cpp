@@ -206,6 +206,7 @@ void SEIEncoder::initSEIToneMappingInfo(SEIToneMappingInfo *seiToneMappingInfo)
 
 void SEIEncoder::initSEISOPDescription(SEISOPDescription *sopDescriptionSEI, Slice *slice, int picInGOP, int lastIdr, int currGOPSize)
 {
+#if !JVET_M0128   //TODO: check if this SEI will be in VVC
   CHECK(!(m_isInitialized), "Unspecified error");
   CHECK(!(sopDescriptionSEI != NULL), "Unspecified error");
   CHECK(!(slice != NULL), "Unspecified error");
@@ -232,6 +233,7 @@ void SEIEncoder::initSEISOPDescription(SEISOPDescription *sopDescriptionSEI, Sli
   }
 
   sopDescriptionSEI->m_numPicsInSopMinus1 = i - 1;
+#endif
 }
 
 void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, Slice *slice)
@@ -246,11 +248,13 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_initialCpbRemovalDelay      [0][1]     = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_initialCpbRemovalDelayOffset[0][1]     = uiInitialCpbRemovalDelay;
 
+#if !JVET_N0063_VUI
   double dTmp = (double)slice->getSPS()->getVuiParameters()->getTimingInfo()->getNumUnitsInTick() / (double)slice->getSPS()->getVuiParameters()->getTimingInfo()->getTimeScale();
 
   uint32_t uiTmp = (uint32_t)( dTmp * 90000.0 );
   uiInitialCpbRemovalDelay -= uiTmp;
   uiInitialCpbRemovalDelay -= uiTmp / ( slice->getSPS()->getVuiParameters()->getHrdParameters()->getTickDivisorMinus2() + 2 );
+#endif
   bufferingPeriodSEI->m_initialAltCpbRemovalDelay      [0][0]  = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_initialAltCpbRemovalDelayOffset[0][0]  = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_initialAltCpbRemovalDelay      [0][1]  = uiInitialCpbRemovalDelay;
@@ -259,7 +263,7 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_rapCpbParamsPresentFlag = 0;
   //for the concatenation, it can be set to one during splicing.
   bufferingPeriodSEI->m_concatenationFlag = 0;
-  //since the temporal layer HRD is not ready, we assumed it is fixed
+  //since the temporal layer HRDParameters is not ready, we assumed it is fixed
   bufferingPeriodSEI->m_auCpbRemovalDelayDelta = 1;
   bufferingPeriodSEI->m_cpbDelayOffset = 0;
   bufferingPeriodSEI->m_dpbDelayOffset = 0;
@@ -356,7 +360,11 @@ void SEIEncoder::initSEITempMotionConstrainedTileSets (SEITempMotionConstrainedT
   CHECK(!(sei!=NULL), "Unspecified error");
   CHECK(!(pps!=NULL), "Unspecified error");
 
+#if !JVET_N0857_TILES_BRICKS
   if(pps->getTilesEnabledFlag())
+#else
+  if(!pps->getSingleTileInPicFlag())
+#endif
   {
     if (m_pcCfg->getMCTSEncConstraint())
     {

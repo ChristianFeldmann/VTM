@@ -54,7 +54,7 @@ enum MvPrecision
   MV_PRECISION_HALF     = 3,      // 1/2-pel
   MV_PRECISION_QUARTER  = 4,      // 1/4-pel (the precision of regular MV difference signaling), shift 4 bits from 4-pel
   MV_PRECISION_SIXTEENTH = 6,     // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
-  MV_PRECISION_INTERNAL = 2 + MV_FRACTIONAL_BITS_INTERNAL,      
+  MV_PRECISION_INTERNAL = 2 + MV_FRACTIONAL_BITS_INTERNAL,
 };
 
 /// basic motion vector class
@@ -313,6 +313,12 @@ namespace std
 void clipMv ( Mv& rcMv, const struct Position& pos,
               const struct Size& size,
               const class SPS& sps );
+
+#if JVET_N0070_WRAPAROUND
+bool wrapClipMv( Mv& rcMv, const Position& pos, 
+                 const struct Size& size, 
+                 const SPS *sps );
+#endif
 
 void roundAffineMv( int& mvx, int& mvy, int nShift );
 

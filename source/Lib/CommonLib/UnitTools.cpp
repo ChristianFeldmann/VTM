@@ -58,7 +58,7 @@ uint64_t CS::getEstBits(const CodingStructure &cs)
 
 bool CS::isDualITree( const CodingStructure &cs )
 {
-  return cs.slice->isIRAP() && !cs.pcv->ISingleTree;
+  return cs.slice->isIntra() && !cs.pcv->ISingleTree;
 }
 
 UnitArea CS::getArea( const CodingStructure &cs, const UnitArea &area, const ChannelType chType )
@@ -819,7 +819,7 @@ int PU::getMipSizeId(const PredictionUnit &pu)
 {
   if ((pu.lwidth() == 4) && (pu.lheight() == 4))
   {
-    return 0; // MIP with 16x4 matrix 
+    return 0; // MIP with 16x4 matrix
   }
   else if (pu.lwidth() <= 8 && pu.lheight() <= 8)
   {
@@ -1912,30 +1912,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #endif
     if (((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight))
     {
+      int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+      if (posYInCtu + 4 < pcv.maxCUHeight)
       {
-        Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
-
-        if( ( posInCtu.x + 4 < pcv.maxCUWidth ) &&           // is not at the last column of CTU
-            ( posInCtu.y + 4 < pcv.maxCUHeight ) )           // is not at the last row    of CTU
-        {
-          posC0 = posRB.offset( 4, 4 );
-          C0Avail = true;
-        }
-        else if( posInCtu.x + 4 < pcv.maxCUWidth )           // is not at the last column of CTU But is last row of CTU
-        {
-          posC0 = posRB.offset( 4, 4 );
-          // in the reference the CTU address is not set - thus probably resulting in no using this C0 possibility
-        }
-        else if( posInCtu.y + 4 < pcv.maxCUHeight )          // is not at the last row of CTU But is last column of CTU
-        {
-          posC0 = posRB.offset( 4, 4 );
-          C0Avail = true;
-        }
-        else //is the right bottom corner of CTU
-        {
-          posC0 = posRB.offset( 4, 4 );
-          // same as for last column but not last row
-        }
+        posC0 = posRB.offset(4, 4);
+        C0Avail = true;
       }
     }
 
@@ -2987,28 +2968,11 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 
     if( ( ( posRB.x + pcv.minCUWidth ) < pcv.lumaWidth ) && ( ( posRB.y + pcv.minCUHeight ) < pcv.lumaHeight ) )
     {
-      Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
-
-      if ((posInCtu.x + 4 < pcv.maxCUWidth) &&           // is not at the last column of CTU
-          (posInCtu.y + 4 < pcv.maxCUHeight))             // is not at the last row    of CTU
+      int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+      if (posYInCtu + 4 < pcv.maxCUHeight)
       {
         posC0 = posRB.offset(4, 4);
         C0Avail = true;
-      }
-      else if (posInCtu.x + 4 < pcv.maxCUWidth)           // is not at the last column of CTU But is last row of CTU
-      {
-        // in the reference the CTU address is not set - thus probably resulting in no using this C0 possibility
-        posC0 = posRB.offset(4, 4);
-      }
-      else if (posInCtu.y + 4 < pcv.maxCUHeight)          // is not at the last row of CTU But is last column of CTU
-      {
-        posC0 = posRB.offset(4, 4);
-        C0Avail = true;
-      }
-      else //is the right bottom corner of CTU
-      {
-        // same as for last column but not last row
-        posC0 = posRB.offset(4, 4);
       }
     }
 #if JVET_N0266_SMALL_BLOCKS
@@ -3326,29 +3290,12 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
 #endif
       Mv cColMv;
       if ( ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight) )
-      {
-        Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
-
-        if ( (posInCtu.x + 4 < pcv.maxCUWidth) &&           // is not at the last column of CTU
-          (posInCtu.y + 4 < pcv.maxCUHeight) )             // is not at the last row    of CTU
+      {  
+        int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+        if (posYInCtu + 4 < pcv.maxCUHeight)
         {
-          posC0 = posRB.offset( 4, 4 );
+          posC0 = posRB.offset(4, 4);
           C0Avail = true;
-        }
-        else if ( posInCtu.x + 4 < pcv.maxCUWidth )           // is not at the last column of CTU But is last row of CTU
-        {
-          // in the reference the CTU address is not set - thus probably resulting in no using this C0 possibility
-          posC0 = posRB.offset( 4, 4 );
-        }
-        else if ( posInCtu.y + 4 < pcv.maxCUHeight )          // is not at the last row of CTU But is last column of CTU
-        {
-          posC0 = posRB.offset( 4, 4 );
-          C0Avail = true;
-        }
-        else //is the right bottom corner of CTU
-        {
-          // same as for last column but not last row
-          posC0 = posRB.offset( 4, 4 );
         }
       }
 #if JVET_N0266_SMALL_BLOCKS
@@ -3615,7 +3562,7 @@ bool PU::isBipredRestriction(const PredictionUnit &pu)
 #endif
   return false;
 }
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
 void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], int8_t neighGbi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgType)
 #else
 void PU::getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgType )
@@ -4006,8 +3953,8 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
     {
       MotionInfo mi[4];
       bool isAvailable[4] = { false };
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
-      int8_t neighGbi[4] = { GBI_DEFAULT };
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
+      int8_t neighGbi[4] = { GBI_DEFAULT, GBI_DEFAULT, GBI_DEFAULT, GBI_DEFAULT };
 #endif
       // control point: LT B2->B3->A2
       const Position posLT[3] = { pu.Y().topLeft().offset( -1, -1 ), pu.Y().topLeft().offset( 0, -1 ), pu.Y().topLeft().offset( -1, 0 ) };
@@ -4021,7 +3968,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         {
           isAvailable[0] = true;
           mi[0] = puNeigh->getMotionInfo( pos );
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
           neighGbi[0] = puNeigh->cu->GBiIdx;
 #endif
           break;
@@ -4041,7 +3988,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         {
           isAvailable[1] = true;
           mi[1] = puNeigh->getMotionInfo( pos );
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
           neighGbi[1] = puNeigh->cu->GBiIdx;
 #endif
           break;
@@ -4061,7 +4008,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         {
           isAvailable[2] = true;
           mi[2] = puNeigh->getMotionInfo( pos );
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE 
+#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
           neighGbi[2] = puNeigh->cu->GBiIdx;
 #endif
           break;
@@ -4081,28 +4028,11 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
         if ( ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight) )
         {
-          Position posInCtu( posRB.x & pcv.maxCUWidthMask, posRB.y & pcv.maxCUHeightMask );
-
-          if ( (posInCtu.x + 4 < pcv.maxCUWidth) &&  // is not at the last column of CTU
-            (posInCtu.y + 4 < pcv.maxCUHeight) )     // is not at the last row    of CTU
+          int posYInCtu = posRB.y & pcv.maxCUHeightMask;
+          if (posYInCtu + 4 < pcv.maxCUHeight)
           {
-            posC0 = posRB.offset( 4, 4 );
+            posC0 = posRB.offset(4, 4);
             C0Avail = true;
-          }
-          else if ( posInCtu.x + 4 < pcv.maxCUWidth ) // is not at the last column of CTU But is last row of CTU
-          {
-            posC0 = posRB.offset( 4, 4 );
-            // in the reference the CTU address is not set - thus probably resulting in no using this C0 possibility
-          }
-          else if ( posInCtu.y + 4 < pcv.maxCUHeight ) // is not at the last row of CTU But is last column of CTU
-          {
-            posC0 = posRB.offset( 4, 4 );
-            C0Avail = true;
-          }
-          else //is the right bottom corner of CTU
-          {
-            posC0 = posRB.offset( 4, 4 );
-            // same as for last column but not last row
           }
         }
 
@@ -5150,7 +5080,7 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
       cnt = (cnt + 1) % numRefIdx;
     }
   }
-#endif 
+#endif
 }
 
 bool PU::isUniqueTriangleCandidates( const PredictionUnit &pu, MergeCtx& triangleMrgCtx )
@@ -5430,11 +5360,35 @@ int CU::getMaxNeighboriMVCandNum( const CodingStructure& cs, const Position& pos
   int        maxImvNumCand  = 0;
 
   // Get BCBP of left PU
+#if JVET_N0857_TILES_BRICKS
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  const CodingUnit *cuLeft  = cs.getCURestricted( pos.offset( -1, 0 ), pos, cs.slice->getIndependentSliceIdx(), cs.picture->brickMap->getBrickIdxRsMap( pos ), CH_L );
+#else
+  const CodingUnit *cuLeft  = cs.getCURestricted( pos.offset( -1, 0 ), cs.slice->getIndependentSliceIdx(), cs.picture->brickMap->getBrickIdxRsMap( pos ), CH_L );
+#endif
+#else
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  const CodingUnit *cuLeft  = cs.getCURestricted( pos.offset( -1, 0 ), pos, cs.slice->getIndependentSliceIdx(), cs.picture->tileMap->getTileIdxMap( pos ), CH_L );
+#else
   const CodingUnit *cuLeft  = cs.getCURestricted( pos.offset( -1, 0 ), cs.slice->getIndependentSliceIdx(), cs.picture->tileMap->getTileIdxMap( pos ), CH_L );
+#endif
+#endif
   maxImvNumCand = ( cuLeft ) ? cuLeft->imvNumCand : numDefault;
 
   // Get BCBP of above PU
+#if JVET_N0857_TILES_BRICKS
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  const CodingUnit *cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), pos, cs.slice->getIndependentSliceIdx(), cs.picture->brickMap->getBrickIdxRsMap( pos ), CH_L );
+#else
+  const CodingUnit *cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), cs.slice->getIndependentSliceIdx(), cs.picture->brickMap->getBrickIdxRsMap( pos ), CH_L );
+#endif
+#else
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  const CodingUnit *cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), pos, cs.slice->getIndependentSliceIdx(), cs.picture->tileMap->getTileIdxMap( pos ), CH_L );
+#else
   const CodingUnit *cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), cs.slice->getIndependentSliceIdx(), cs.picture->tileMap->getTileIdxMap( pos ), CH_L );
+#endif
+#endif
   maxImvNumCand = std::max( maxImvNumCand, ( cuAbove ) ? cuAbove->imvNumCand : numDefault );
 
   return maxImvNumCand;

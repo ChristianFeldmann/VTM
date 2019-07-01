@@ -56,9 +56,7 @@ void roundAffineMv( int& mvx, int& mvy, int nShift )
 #endif
 }
 
-void clipMv( Mv& rcMv, const Position& pos,
-             const struct Size& size,
-             const SPS& sps )
+void clipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS& sps )
 {
   int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
   int iOffset = 8;
@@ -70,6 +68,7 @@ void clipMv( Mv& rcMv, const Position& pos,
 
   if( sps.getWrapAroundEnabledFlag() )
   {
+#if !JVET_N0070_WRAPAROUND
     int iHorMax = ( sps.getPicWidthInLumaSamples() + sps.getMaxCUWidth() - size.width + iOffset - ( int ) pos.x - 1 ) << iMvShift;
     int iHorMin = ( -( int ) sps.getMaxCUWidth()                                      - iOffset - ( int ) pos.x + 1 ) << iMvShift;
     int mvX = rcMv.getHor();
@@ -81,11 +80,43 @@ void clipMv( Mv& rcMv, const Position& pos,
     }
     rcMv.setHor( mvX );
     rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );
+#endif
     return;
   }
 
   rcMv.setHor( std::min( iHorMax, std::max( iHorMin, rcMv.getHor() ) ) );
   rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );
 }
+
+#if JVET_N0070_WRAPAROUND
+bool wrapClipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS *sps )
+{
+  bool wrapRef = true;
+  int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
+  int iOffset = 8;
+  int iHorMax = ( sps->getPicWidthInLumaSamples() + sps->getMaxCUWidth() - size.width + iOffset - ( int ) pos.x - 1 ) << iMvShift;
+  int iHorMin = ( -( int ) sps->getMaxCUWidth()                                      - iOffset - ( int ) pos.x + 1 ) << iMvShift;
+  int iVerMax = ( sps->getPicHeightInLumaSamples() + iOffset - ( int ) pos.y - 1 ) << iMvShift;
+  int iVerMin = ( -( int ) sps->getMaxCUHeight()   - iOffset - ( int ) pos.y + 1 ) << iMvShift;
+  int mvX = rcMv.getHor();
+  
+  if(mvX > iHorMax) 
+  {
+    mvX -= ( sps->getWrapAroundOffset() << iMvShift );
+    mvX = std::min( iHorMax, std::max( iHorMin, mvX ) );
+    wrapRef = false;
+  }
+  if(mvX < iHorMin) 
+  {        
+    mvX += ( sps->getWrapAroundOffset() << iMvShift );
+    mvX = std::min( iHorMax, std::max( iHorMin, mvX ) );
+    wrapRef = false;
+  }
+  
+  rcMv.setHor( mvX );
+  rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );
+  return wrapRef;
+}
+#endif
 
 //! \}

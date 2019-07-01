@@ -60,10 +60,17 @@
 EncLib::EncLib()
   : m_spsMap( MAX_NUM_SPS )
   , m_ppsMap( MAX_NUM_PPS )
+#if JVET_N0805_APS_LMCS
+  , m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
+#else
   , m_apsMap( MAX_NUM_APS )
+#endif
   , m_AUWriterIf( nullptr )
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   , m_cacheModel()
+#endif
+#if JVET_N0805_APS_LMCS
+  , m_lmcsAPS(nullptr)
 #endif
 {
   m_iPOCLast          = -1;
@@ -240,8 +247,16 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   xInitSPS(sps0);
 #if HEVC_VPS
   xInitVPS(m_cVPS, sps0);
+#elif JVET_N0278_HLS
+  xInitVPS(m_cVPS);
 #endif
 
+#if JVET_N0349_DPS
+  int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
+  xInitDPS(m_dps, sps0, dpsId);
+  sps0.setDecodingParameterSetId(m_dps.getDecodingParameterSetId());
+    
+#endif
 #if ENABLE_SPLIT_PARALLELISM
   if( omp_get_dynamic() )
   {
@@ -258,7 +273,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if U0132_TARGET_BITS_SATURATION
   if (m_RCCpbSaturationEnabled)
   {
+#if JVET_N0063_VUI
+    m_cRateCtrl.initHrdParam(sps0.getHrdParameters(), m_iFrameRate, m_RCInitialCpbFullness);
+#else
     m_cRateCtrl.initHrdParam(sps0.getVuiParameters()->getHrdParameters(), m_iFrameRate, m_RCInitialCpbFullness);
+#endif
   }
 #endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
@@ -276,7 +295,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if !JVET_N0415_CTB_ALF
   xInitAPS(aps0);
 #endif
+#if JVET_M0128
+  xInitRPL(sps0, isFieldCoding);
+#else
   xInitRPS(sps0, isFieldCoding);
+#endif
 
 #if ER_CHROMA_QP_WCG_PPS
   if (m_wcgChromaQpControl.isEnabled())
@@ -412,9 +435,16 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     picBg->create(sps0.getChromaFormatIdc(), Size(sps0.getPicWidthInLumaSamples(), sps0.getPicHeightInLumaSamples()), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false);
     picBg->getRecoBuf().fill(0);
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+    picBg->finalInit(sps0, pps0, m_apss, *m_lmcsAPS);
+#else
     picBg->finalInit(sps0, pps0, m_apss);
+#endif
 #else
     picBg->finalInit(sps0, pps0, aps0);
+#endif
+#if JVET_N0857_RECT_SLICES
+    pps0.setNumBricksInPic((int)picBg->brickMap->bricks.size());
 #endif
     picBg->allocateNewSlice();
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
@@ -493,15 +523,33 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
     THROW("error : ScalingList == " << getUseScalingListId() << " not supported\n");
   }
 
+#if JVET_N0847_SCALING_LISTS
+  if (getUseScalingListId() == SCALING_LIST_FILE_READ && sps.getScalingListPresentFlag())
+#else
   if (getUseScalingListId() != SCALING_LIST_OFF)
+#endif
   {
     // Prepare delta's:
+#if JVET_N0847_SCALING_LISTS
+    for (uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
+#else
     for(uint32_t sizeId = 0; sizeId < SCALING_LIST_SIZE_NUM; sizeId++)
+#endif
     {
+#if JVET_N0847_SCALING_LISTS
+      for (uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
+      {
+        if (((sizeId == SCALING_LIST_64x64) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))
+         || ((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
+        {
+          continue;
+        }
+#else
       const int predListStep = (sizeId == SCALING_LIST_32x32? (SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) : 1); // if 32x32, skip over chroma entries.
 
       for(uint32_t listId = 0; listId < SCALING_LIST_NUM; listId+=predListStep)
       {
+#endif
         sps.getScalingList().checkPredMode( sizeId, listId );
       }
     }
@@ -567,7 +615,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+    picCurr->finalInit(*sps, *pps, m_apss, *m_lmcsAPS);
+#else
     picCurr->finalInit(*sps, *pps, m_apss);
+#endif
 #else
     APS *aps = m_apsMap.getPS(0);
     picCurr->finalInit(*sps, *pps, *aps);
@@ -620,10 +672,18 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
       pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap(*cPicYuvTrueOrg );
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+      pcPicCurr->finalInit(*pSPS, *pPPS, m_apss, *m_lmcsAPS);
+#else
       pcPicCurr->finalInit(*pSPS, *pPPS, m_apss);
+#endif
 #else
       APS *pAPS = m_apsMap.getPS(0);
       pcPicCurr->finalInit(*pSPS, *pPPS, *pAPS);
+#endif
+#if JVET_N0857_RECT_SLICES
+      PPS *ptrPPS = (ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
+      ptrPPS->setNumBricksInPic((int)pcPicCurr->brickMap->bricks.size());
 #endif
     }
 
@@ -719,7 +779,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+        pcField->finalInit(*pSPS, *pPPS, m_apss, *m_lmcsAPS);
+#else
         pcField->finalInit(*pSPS, *pPPS, m_apss);
+#endif
 #else
         APS *pAPS = m_apsMap.getPS(0);
         pcField->finalInit(*pSPS, *pPPS, *pAPS);
@@ -857,7 +921,30 @@ void EncLib::xInitVPS(VPS &vps, const SPS &sps)
     // Set up HrdParameters here.
   }
 }
+#elif JVET_N0278_HLS
+void EncLib::xInitVPS(VPS &vps)
+{
+  // The SPS must have already been set up.
+  // set the VPS profile information.
+  vps.setMaxLayers(1);
+  for (uint32_t i = 0; i < vps.getMaxLayers(); i++)
+  {
+    vps.setVPSIncludedLayerId(0, i);
+  }
+}
 #endif
+
+#if JVET_N0349_DPS
+void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
+{
+  // The SPS must have already been set up.
+  // set the DPS profile information.
+  dps.setDecodingParameterSetId(dpsId);
+  dps.setMaxSubLayersMinus1(sps.getMaxTLayers()-1);
+  dps.setProfileTierLevel(*sps.getProfileTierLevel());
+}
+#endif
+
 
 void EncLib::xInitSPS(SPS &sps)
 {
@@ -867,6 +954,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setMaxChromaFormatConstraintIdc(m_maxChromaFormatConstraintIdc);
   sps.setFrameConstraintFlag(m_frameOnlyConstraintFlag);
   sps.setNoQtbttDualTreeIntraConstraintFlag(m_bNoQtbttDualTreeIntraConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoPartitionConstraintsOverrideConstraintFlag(m_noPartitionConstraintsOverrideConstraintFlag);
+#endif
   sps.setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
   sps.setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
   sps.setNoPcmConstraintFlag(m_bNoPcmConstraintFlag);
@@ -875,14 +965,31 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
   sps.setNoAmvrConstraintFlag(m_bNoAmvrConstraintFlag);
   sps.setNoBdofConstraintFlag(m_bNoBdofConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoDmvrConstraintFlag(m_noDmvrConstraintFlag);
+#endif
   sps.setNoCclmConstraintFlag(m_bNoCclmConstraintFlag);
   sps.setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoSbtConstraintFlag(m_noSbtConstraintFlag);
+#endif
   sps.setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
   sps.setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoIbcConstraintFlag(m_noIbcConstraintFlag);
+#endif
   sps.setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoFPelMmvdConstraintFlag(m_noFPelMmvdConstraintFlag);
+#endif
   sps.setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
   sps.setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  sps.setNoTransformSkipConstraintFlag(m_noTransformSkipConstraintFlag);
+#endif
+#if !JVET_N0276_CONSTRAINT_FLAGS
   sps.setNoCurrPicRefConstraintFlag(m_bNoCurrPicRefConstraintFlag);
+#endif
   sps.setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
   sps.setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
   sps.setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
@@ -891,6 +998,9 @@ void EncLib::xInitSPS(SPS &sps)
   profileTierLevel.setLevelIdc                    (m_level);
   profileTierLevel.setTierFlag                    (m_levelTier);
   profileTierLevel.setProfileIdc                  (m_profile);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  profileTierLevel.setSubProfileIdc               (m_subProfile);
+#endif
   profileTierLevel.setProfileCompatibilityFlag    (m_profile, 1);
   profileTierLevel.setProgressiveSourceFlag       (m_progressiveSourceFlag);
   profileTierLevel.setInterlacedSourceFlag        (m_interlacedSourceFlag);
@@ -923,6 +1033,9 @@ void EncLib::xInitSPS(SPS &sps)
   cinfo->setMaxBitDepthConstraintIdc    (m_maxBitDepthConstraintIdc);
   cinfo->setMaxChromaFormatConstraintIdc((ChromaFormat)m_maxChromaFormatConstraintIdc);
   cinfo->setNoQtbttDualTreeIntraConstraintFlag(m_bNoQtbttDualTreeIntraConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoPartitionConstraintsOverrideConstraintFlag(m_noPartitionConstraintsOverrideConstraintFlag);
+#endif
   cinfo->setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
   cinfo->setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
   cinfo->setNoPcmConstraintFlag(m_bNoPcmConstraintFlag);
@@ -931,14 +1044,31 @@ void EncLib::xInitSPS(SPS &sps)
   cinfo->setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
   cinfo->setNoAmvrConstraintFlag(m_bNoAmvrConstraintFlag);
   cinfo->setNoBdofConstraintFlag(m_bNoBdofConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoDmvrConstraintFlag(m_noDmvrConstraintFlag);
+#endif
   cinfo->setNoCclmConstraintFlag(m_bNoCclmConstraintFlag);
   cinfo->setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoSbtConstraintFlag(m_noSbtConstraintFlag);
+#endif
   cinfo->setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
   cinfo->setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoIbcConstraintFlag(m_noIbcConstraintFlag);
+#endif
   cinfo->setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoFPelMmvdConstraintFlag(m_noFPelMmvdConstraintFlag);
+#endif
   cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  cinfo->setNoTransformSkipConstraintFlag(m_noTransformSkipConstraintFlag);
+#endif
+#if !JVET_N0276_CONSTRAINT_FLAGS
   cinfo->setNoCurrPicRefConstraintFlag(m_bNoCurrPicRefConstraintFlag);
+#endif
   cinfo->setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
   cinfo->setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
   cinfo->setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
@@ -946,6 +1076,9 @@ void EncLib::xInitSPS(SPS &sps)
   profileTierLevel->setLevelIdc                    (m_level);
   profileTierLevel->setTierFlag                    (m_levelTier);
   profileTierLevel->setProfileIdc                  (m_profile);
+#if JVET_N0276_CONSTRAINT_FLAGS
+  profileTierLevel->setSubProfileIdc               (m_subProfile);
+#endif
 
 #endif
   /* XXX: should Main be marked as compatible with still picture? */
@@ -965,6 +1098,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
+#if JVET_N0047_Merge_IDR_Non_IDR
+  sps.setIDRRefParamListPresent              ( m_idrRefParamList );
+#endif
   sps.setUseDualITree                        ( m_dualITree );
 #if JVET_N0193_LFNST
   sps.setUseLFNST                            ( m_LFNST );
@@ -1004,7 +1140,7 @@ void EncLib::xInitSPS(SPS &sps)
 
   sps.setUseMHIntra            ( m_MHIntra );
   sps.setUseTriangle           ( m_Triangle );
-#if JVET_N0127_MMVD_SPS_FLAG 
+#if JVET_N0127_MMVD_SPS_FLAG
   sps.setUseMMVD               ( m_MMVD );
   sps.setFpelMmvdEnabledFlag   (( m_MMVD ) ? m_allowDisFracMMVD : false);
 #else
@@ -1072,6 +1208,29 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setALFEnabledFlag( m_alf );
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
+#if JVET_N0063_VUI
+  if (sps.getVuiParametersPresentFlag())
+  {
+    VUI* pcVUI = sps.getVuiParameters();
+    pcVUI->setAspectRatioInfoPresentFlag(getAspectRatioInfoPresentFlag());
+    pcVUI->setAspectRatioIdc(getAspectRatioIdc());
+    pcVUI->setSarWidth(getSarWidth());
+    pcVUI->setSarHeight(getSarHeight());
+    pcVUI->setColourDescriptionPresentFlag(getColourDescriptionPresentFlag());
+    pcVUI->setColourPrimaries(getColourPrimaries());
+    pcVUI->setTransferCharacteristics(getTransferCharacteristics());
+    pcVUI->setMatrixCoefficients(getMatrixCoefficients());
+    pcVUI->setFieldSeqFlag(false);
+    pcVUI->setChromaLocInfoPresentFlag(getChromaLocInfoPresentFlag());
+    pcVUI->setChromaSampleLocTypeTopField(getChromaSampleLocTypeTopField());
+    pcVUI->setChromaSampleLocTypeBottomField(getChromaSampleLocTypeBottomField());
+    pcVUI->setChromaSampleLocType(getChromaSampleLocType());
+    pcVUI->setOverscanInfoPresentFlag(getOverscanInfoPresentFlag());
+    pcVUI->setOverscanAppropriateFlag(getOverscanAppropriateFlag());
+    pcVUI->setVideoSignalTypePresentFlag(getVideoSignalTypePresentFlag());
+    pcVUI->setVideoFullRangeFlag(getVideoFullRangeFlag());
+  }
+#else
   if (sps.getVuiParametersPresentFlag())
   {
     VUI* pcVUI = sps.getVuiParameters();
@@ -1107,6 +1266,7 @@ void EncLib::xInitSPS(SPS &sps)
     pcVUI->setLog2MaxMvLengthHorizontal(getLog2MaxMvLengthHorizontal());
     pcVUI->setLog2MaxMvLengthVertical(getLog2MaxMvLengthVertical());
   }
+#endif
 
   sps.setNumLongTermRefPicSPS(NUM_LONG_TERM_REF_PIC_SPS);
   CHECK(!(NUM_LONG_TERM_REF_PIC_SPS <= MAX_NUM_LONG_TERM_REF_PICS), "Unspecified error");
@@ -1126,7 +1286,11 @@ void EncLib::xInitSPS(SPS &sps)
   }
   if( getBufferingPeriodSEIEnabled() || getPictureTimingSEIEnabled() || getDecodingUnitInfoSEIEnabled() )
   {
+#if JVET_N0063_VUI
+    sps.setHrdParametersPresentFlag( true );
+#else
     sps.getVuiParameters()->setHrdParametersPresentFlag( true );
+#endif
   }
 
   // Set up SPS range extension settings
@@ -1141,182 +1305,32 @@ void EncLib::xInitSPS(SPS &sps)
   sps.getSpsRangeExtension().setHighPrecisionOffsetsEnabledFlag(m_highPrecisionOffsetsEnabledFlag);
   sps.getSpsRangeExtension().setPersistentRiceAdaptationEnabledFlag(m_persistentRiceAdaptationEnabledFlag);
   sps.getSpsRangeExtension().setCabacBypassAlignmentEnabledFlag(m_cabacBypassAlignmentEnabledFlag);
-}
 
-#if U0132_TARGET_BITS_SATURATION
-// calculate scale value of bitrate and initial delay
-int calcScale(int x)
-{
-  if (x==0)
-  {
-    return 0;
-  }
-  uint32_t iMask = 0xffffffff;
-  int ScaleValue = 32;
-
-  while ((x&iMask) != 0)
-  {
-    ScaleValue--;
-    iMask = (iMask >> 1);
-  }
-
-  return ScaleValue;
-}
+#if JVET_M0128
+  if (m_uiIntraPeriod < 0)
+    sps.setRPL1CopyFromRPL0Flag(true);
 #endif
+}
+
 void EncLib::xInitHrdParameters(SPS &sps)
 {
-  bool useSubCpbParams = (getSliceMode() > 0) || (getSliceSegmentMode() > 0);
-  int  bitRate         = getTargetBitrate();
-  bool isRandomAccess  = getIntraPeriod() > 0;
-# if U0132_TARGET_BITS_SATURATION
-  int cpbSize          = getCpbSize();
-  CHECK(!(cpbSize!=0), "Unspecified error");  // CPB size may not be equal to zero. ToDo: have a better default and check for level constraints
-  if( !getVuiParametersPresentFlag() && !getCpbSaturationEnabled() )
-#else
-  if( !getVuiParametersPresentFlag() )
-#endif
-  {
-    return;
-  }
+  m_encHRD.initHRDParameters((EncCfg*) this);
+  
+#if JVET_N0063_VUI
+  HRDParameters *hrdParams = sps.getHrdParameters();
+  *hrdParams = m_encHRD.getHRDParameters();
 
+  TimingInfo *timingInfo = sps.getTimingInfo();
+  *timingInfo = m_encHRD.getTimingInfo();
+#else
   VUI *vui = sps.getVuiParameters();
-  HRD *hrd = vui->getHrdParameters();
+  
+  HRDParameters *hrdParams = vui->getHrdParameters();
+  *hrdParams = m_encHRD.getHRDParameters();
 
   TimingInfo *timingInfo = vui->getTimingInfo();
-  timingInfo->setTimingInfoPresentFlag( true );
-  switch( getFrameRate() )
-  {
-  case 24:
-    timingInfo->setNumUnitsInTick( 1125000 );    timingInfo->setTimeScale    ( 27000000 );
-    break;
-  case 25:
-    timingInfo->setNumUnitsInTick( 1080000 );    timingInfo->setTimeScale    ( 27000000 );
-    break;
-  case 30:
-    timingInfo->setNumUnitsInTick( 900900 );     timingInfo->setTimeScale    ( 27000000 );
-    break;
-  case 50:
-    timingInfo->setNumUnitsInTick( 540000 );     timingInfo->setTimeScale    ( 27000000 );
-    break;
-  case 60:
-    timingInfo->setNumUnitsInTick( 450450 );     timingInfo->setTimeScale    ( 27000000 );
-    break;
-  default:
-    timingInfo->setNumUnitsInTick( 1001 );       timingInfo->setTimeScale    ( 60000 );
-    break;
-  }
-
-  if (getTemporalSubsampleRatio()>1)
-  {
-    uint32_t temporalSubsampleRatio = getTemporalSubsampleRatio();
-    if ( double(timingInfo->getNumUnitsInTick()) * temporalSubsampleRatio > std::numeric_limits<uint32_t>::max() )
-    {
-      timingInfo->setTimeScale( timingInfo->getTimeScale() / temporalSubsampleRatio );
-    }
-    else
-    {
-      timingInfo->setNumUnitsInTick( timingInfo->getNumUnitsInTick() * temporalSubsampleRatio );
-    }
-  }
-
-  bool rateCnt = ( bitRate > 0 );
-  hrd->setNalHrdParametersPresentFlag( rateCnt );
-  hrd->setVclHrdParametersPresentFlag( rateCnt );
-  hrd->setSubPicCpbParamsPresentFlag( useSubCpbParams );
-
-  if( hrd->getSubPicCpbParamsPresentFlag() )
-  {
-    hrd->setTickDivisorMinus2( 100 - 2 );                          //
-    hrd->setDuCpbRemovalDelayLengthMinus1( 7 );                    // 8-bit precision ( plus 1 for last DU in AU )
-    hrd->setSubPicCpbParamsInPicTimingSEIFlag( true );
-    hrd->setDpbOutputDelayDuLengthMinus1( 5 + 7 );                 // With sub-clock tick factor of 100, at least 7 bits to have the same value as AU dpb delay
-  }
-  else
-  {
-    hrd->setSubPicCpbParamsInPicTimingSEIFlag( false );
-  }
-
-#if U0132_TARGET_BITS_SATURATION
-  if (calcScale(bitRate) <= 6)
-  {
-    hrd->setBitRateScale(0);
-  }
-  else
-  {
-    hrd->setBitRateScale(calcScale(bitRate) - 6);
-  }
-
-  if (calcScale(cpbSize) <= 4)
-  {
-    hrd->setCpbSizeScale(0);
-  }
-  else
-  {
-    hrd->setCpbSizeScale(calcScale(cpbSize) - 4);
-  }
-#else
-  hrd->setBitRateScale( 4 );                                       // in units of 2^( 6 + 4 ) = 1,024 bps
-  hrd->setCpbSizeScale( 6 );                                       // in units of 2^( 4 + 6 ) = 1,024 bit
+  *timingInfo = m_encHRD.getTimingInfo();
 #endif
-
-  hrd->setDuCpbSizeScale( 6 );                                     // in units of 2^( 4 + 6 ) = 1,024 bit
-
-  hrd->setInitialCpbRemovalDelayLengthMinus1(15);                  // assuming 0.5 sec, log2( 90,000 * 0.5 ) = 16-bit
-  if( isRandomAccess )
-  {
-    hrd->setCpbRemovalDelayLengthMinus1(5);                        // 32 = 2^5 (plus 1)
-    hrd->setDpbOutputDelayLengthMinus1 (5);                        // 32 + 3 = 2^6
-  }
-  else
-  {
-    hrd->setCpbRemovalDelayLengthMinus1(9);                        // max. 2^10
-    hrd->setDpbOutputDelayLengthMinus1 (9);                        // max. 2^10
-  }
-
-  // Note: parameters for all temporal layers are initialized with the same values
-  int i, j;
-  uint32_t bitrateValue, cpbSizeValue;
-  uint32_t duCpbSizeValue;
-  uint32_t duBitRateValue = 0;
-
-  for( i = 0; i < MAX_TLAYER; i ++ )
-  {
-    hrd->setFixedPicRateFlag( i, 1 );
-    hrd->setPicDurationInTcMinus1( i, 0 );
-    hrd->setLowDelayHrdFlag( i, 0 );
-    hrd->setCpbCntMinus1( i, 0 );
-
-    //! \todo check for possible PTL violations
-    // BitRate[ i ] = ( bit_rate_value_minus1[ i ] + 1 ) * 2^( 6 + bit_rate_scale )
-    bitrateValue = bitRate / (1 << (6 + hrd->getBitRateScale()) );      // bitRate is in bits, so it needs to be scaled down
-    // CpbSize[ i ] = ( cpb_size_value_minus1[ i ] + 1 ) * 2^( 4 + cpb_size_scale )
-#if U0132_TARGET_BITS_SATURATION
-    cpbSizeValue = cpbSize / (1 << (4 + hrd->getCpbSizeScale()) );      // using bitRate results in 1 second CPB size
-#else
-    cpbSizeValue = bitRate / (1 << (4 + hrd->getCpbSizeScale()) );      // using bitRate results in 1 second CPB size
-#endif
-
-
-    // DU CPB size could be smaller (i.e. bitrateValue / number of DUs), but we don't know
-    // in how many DUs the slice segment settings will result
-    duCpbSizeValue = bitrateValue;
-    duBitRateValue = cpbSizeValue;
-
-    for( j = 0; j < ( hrd->getCpbCntMinus1( i ) + 1 ); j ++ )
-    {
-      hrd->setBitRateValueMinus1( i, j, 0, ( bitrateValue - 1 ) );
-      hrd->setCpbSizeValueMinus1( i, j, 0, ( cpbSizeValue - 1 ) );
-      hrd->setDuCpbSizeValueMinus1( i, j, 0, ( duCpbSizeValue - 1 ) );
-      hrd->setDuBitRateValueMinus1( i, j, 0, ( duBitRateValue - 1 ) );
-      hrd->setCbrFlag( i, j, 0, false );
-
-      hrd->setBitRateValueMinus1( i, j, 1, ( bitrateValue - 1) );
-      hrd->setCpbSizeValueMinus1( i, j, 1, ( cpbSizeValue - 1 ) );
-      hrd->setDuCpbSizeValueMinus1( i, j, 1, ( duCpbSizeValue - 1 ) );
-      hrd->setDuBitRateValueMinus1( i, j, 1, ( duBitRateValue - 1 ) );
-      hrd->setCbrFlag( i, j, 1, false );
-    }
-  }
 }
 
 void EncLib::xInitPPS(PPS &pps, const SPS &sps)
@@ -1462,7 +1476,13 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   }
 
   pps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
+
+#if JVET_N0857_TILES_BRICKS
+  pps.setSingleTileInPicFlag((m_iNumColumnsMinus1 == 0 && m_iNumRowsMinus1 == 0));
+#else
   pps.setTilesEnabledFlag( (m_iNumColumnsMinus1 > 0 || m_iNumRowsMinus1 > 0) );
+#endif
+
   pps.setUseWP( m_useWeightedPred );
   pps.setWPBiPred( m_useWeightedBiPred );
   pps.setOutputFlagPresentFlag( false );
@@ -1509,8 +1529,13 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   }
   for( int i = 0; i < getGOPSize(); i++)
   {
+#if JVET_M0128
+    CHECK(!(getRPLEntry(0, i).m_numRefPicsActive >= 0 && getRPLEntry(0, i).m_numRefPicsActive <= MAX_NUM_REF), "Unspecified error");
+    histogram[getRPLEntry(0, i).m_numRefPicsActive]++;
+#else
     CHECK(!(getGOPEntry(i).m_numRefPicsActive >= 0 && getGOPEntry(i).m_numRefPicsActive <= MAX_NUM_REF), "Unspecified error");
     histogram[getGOPEntry(i).m_numRefPicsActive]++;
+#endif
   }
 
   int maxHist=-1;
@@ -1530,22 +1555,210 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setUseTransformSkip( m_useTransformSkip );
   pps.getPpsRangeExtension().setLog2MaxTransformSkipBlockSize( m_log2MaxTransformSkipBlockSize  );
 
-#if HEVC_DEPENDENT_SLICES
-  if (m_sliceSegmentMode != NO_SLICES)
-  {
-    pps.setDependentSliceSegmentsEnabledFlag( true );
-  }
-#endif
 
   xInitPPSforTiles(pps);
 
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  pps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
+  pps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
+  pps.setNumHorVirtualBoundaries            ( m_numHorVirtualBoundaries );
+  for( unsigned int i = 0; i < m_numVerVirtualBoundaries; i++ )
+  {
+    pps.setVirtualBoundariesPosX            ( m_virtualBoundariesPosX[i], i );
+  }
+  for( unsigned int i = 0; i < m_numHorVirtualBoundaries; i++ )
+  {
+    pps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
+  }
+#endif
+
   pps.pcv = new PreCalcValues( sps, pps, true );
+#if JVET_M0128
+  pps.setRpl1IdxPresentFlag(sps.getRPL1IdxPresentFlag());
+#endif
 }
 
 void EncLib::xInitAPS(APS &aps)
 {
   //Do nothing now
 }
+
+#if JVET_M0128
+void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
+{
+  ReferencePictureList*      rpl;
+
+  int numRPLCandidates = getRPLCandidateSize(0);
+  sps.createRPLList0(numRPLCandidates + 1);
+  sps.createRPLList1(numRPLCandidates + 1);
+  RPLList* rplList = 0;
+
+  for (int i = 0; i < 2; i++)
+  {
+    rplList = (i == 0) ? sps.getRPLList0() : sps.getRPLList1();
+    for (int j = 0; j < numRPLCandidates; j++)
+    {
+      const RPLEntry &ge = getRPLEntry(i, j);
+      rpl = rplList->getReferencePictureList(j);
+      rpl->setNumberOfShorttermPictures(ge.m_numRefPics);
+      rpl->setNumberOfLongtermPictures(0);   //Hardcoded as 0 for now. need to update this when implementing LTRP
+      rpl->setNumberOfActivePictures(ge.m_numRefPicsActive);
+
+      for (int k = 0; k < ge.m_numRefPics; k++)
+      {
+        rpl->setRefPicIdentifier(k, ge.m_deltaRefPics[k], 0);
+      }
+    }
+  }
+
+  //Check if all delta POC of STRP in each RPL has the same sign 
+  //Check RPLL0 first
+  const RPLList* rplList0 = sps.getRPLList0();
+  const RPLList* rplList1 = sps.getRPLList1();
+  uint32_t numberOfRPL = sps.getNumRPL0() - 1;
+
+  bool isAllEntriesinRPLHasSameSignFlag = true;
+  bool isFirstEntry = true;
+  bool lastSign = true;        //true = positive ; false = negative
+  for (uint32_t ii = 0; isAllEntriesinRPLHasSameSignFlag && ii < numberOfRPL; ii++)
+  {
+    const ReferencePictureList* rpl = rplList0->getReferencePictureList(ii);
+    for (uint32_t jj = 0; isAllEntriesinRPLHasSameSignFlag && jj < rpl->getNumberOfActivePictures(); jj++)
+    {
+      if (!rpl->isRefPicLongterm(jj) && isFirstEntry)
+      {
+        lastSign = (rpl->getRefPicIdentifier(jj) >= 0) ? true : false;
+        isFirstEntry = false;
+      }
+      else if (!rpl->isRefPicLongterm(jj) && (((rpl->getRefPicIdentifier(jj) - rpl->getRefPicIdentifier(jj - 1)) >= 0 && lastSign == false) || ((rpl->getRefPicIdentifier(jj) - rpl->getRefPicIdentifier(jj - 1)) < 0 && lastSign == true)))
+      {
+        isAllEntriesinRPLHasSameSignFlag = false;
+      }
+    }
+  }
+  //Check RPLL1. Skip it if it is already found out that this flag is not true for RPL0 or if RPL1 is the same as RPL0
+  numberOfRPL = sps.getNumRPL1() - 1;
+  isFirstEntry = true;
+  lastSign = true;
+  for (uint32_t ii = 0; isAllEntriesinRPLHasSameSignFlag && !sps.getRPL1CopyFromRPL0Flag() && ii < numberOfRPL; ii++)
+  {
+    isFirstEntry = true;
+    const ReferencePictureList* rpl = rplList1->getReferencePictureList(ii);
+    for (uint32_t jj = 0; isAllEntriesinRPLHasSameSignFlag && jj < rpl->getNumberOfActivePictures(); jj++)
+    {
+      if (!rpl->isRefPicLongterm(jj) && isFirstEntry)
+      {
+        lastSign = (rpl->getRefPicIdentifier(jj) >= 0) ? true : false;
+        isFirstEntry = false;
+      }
+      else if (!rpl->isRefPicLongterm(jj) && (((rpl->getRefPicIdentifier(jj) - rpl->getRefPicIdentifier(jj - 1)) >= 0 && lastSign == false) || ((rpl->getRefPicIdentifier(jj) - rpl->getRefPicIdentifier(jj - 1)) < 0 && lastSign == true)))
+      {
+        isAllEntriesinRPLHasSameSignFlag = false;
+      }
+    }
+  }
+  sps.setAllActiveRplEntriesHasSameSignFlag(isAllEntriesinRPLHasSameSignFlag);
+}
+
+void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid, uint32_t *activeL0, uint32_t *activeL1)
+{
+  if (m_uiIntraPeriod < 0)  //Only for RA
+  {
+    *activeL0 = *activeL1 = 0;
+    return;
+  }
+  uint32_t rpl0Idx = GOPid;
+  uint32_t rpl1Idx = GOPid;
+
+  int fullListNum = m_iGOPSize;
+  int partialListNum = getRPLCandidateSize(0) - m_iGOPSize;
+  int extraNum = fullListNum;
+  if (m_uiIntraPeriod < 0)
+  {
+    if (POCCurr < 10)
+    {
+      rpl0Idx = POCCurr + m_iGOPSize - 1;
+      rpl1Idx = POCCurr + m_iGOPSize - 1;
+    }
+    else
+    {
+      rpl0Idx = (POCCurr%m_iGOPSize == 0) ? m_iGOPSize - 1 : POCCurr%m_iGOPSize - 1;
+      rpl1Idx = (POCCurr%m_iGOPSize == 0) ? m_iGOPSize - 1 : POCCurr%m_iGOPSize - 1;
+    }
+    extraNum = fullListNum + partialListNum;
+  }
+  for (; extraNum<fullListNum + partialListNum; extraNum++)
+  {
+    if (m_uiIntraPeriod > 0 && getDecodingRefreshType() > 0)
+    {
+      int POCIndex = POCCurr%m_uiIntraPeriod;
+      if (POCIndex == 0)
+        POCIndex = m_uiIntraPeriod;
+      if (POCIndex == m_RPLList0[extraNum].m_POC)
+      {
+        rpl0Idx = extraNum;
+        rpl1Idx = extraNum;
+        extraNum++;
+      }
+    }
+  }
+
+  const ReferencePictureList *rpl0 = sps->getRPLList0()->getReferencePictureList(rpl0Idx);
+  *activeL0 = rpl0->getNumberOfActivePictures();
+  const ReferencePictureList *rpl1 = sps->getRPLList1()->getReferencePictureList(rpl1Idx);
+  *activeL1 = rpl1->getNumberOfActivePictures();
+}
+
+void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, int ltPoc)
+{
+  bool isEncodeLtRef = (POCCurr == ltPoc);
+  if (m_compositeRefEnabled && isEncodeLtRef)
+  {
+    POCCurr++;
+  }
+
+  slice->setRPL0idx(GOPid);
+  slice->setRPL1idx(GOPid);
+
+  int fullListNum = m_iGOPSize;
+  int partialListNum = getRPLCandidateSize(0) - m_iGOPSize;
+  int extraNum = fullListNum;
+  if (m_uiIntraPeriod < 0)
+  {
+    if (POCCurr < 10)
+    {
+      slice->setRPL0idx(POCCurr + m_iGOPSize - 1);
+      slice->setRPL1idx(POCCurr + m_iGOPSize - 1);
+    }
+    else
+    {
+      slice->setRPL0idx((POCCurr%m_iGOPSize == 0) ? m_iGOPSize - 1 : POCCurr%m_iGOPSize - 1);
+      slice->setRPL1idx((POCCurr%m_iGOPSize == 0) ? m_iGOPSize - 1 : POCCurr%m_iGOPSize - 1);
+    }
+    extraNum = fullListNum + partialListNum;
+  }
+  for (; extraNum < fullListNum + partialListNum; extraNum++)
+  {
+    if (m_uiIntraPeriod > 0 && getDecodingRefreshType() > 0)
+    {
+      int POCIndex = POCCurr%m_uiIntraPeriod;
+      if (POCIndex == 0)
+        POCIndex = m_uiIntraPeriod;
+      if (POCIndex == m_RPLList0[extraNum].m_POC)
+      {
+        slice->setRPL0idx(extraNum);
+        slice->setRPL1idx(extraNum);
+        extraNum++;
+      }
+    }
+  }
+
+  const ReferencePictureList *rpl0 = (slice->getSPS()->getRPLList0()->getReferencePictureList(slice->getRPL0idx()));
+  const ReferencePictureList *rpl1 = (slice->getSPS()->getRPLList1()->getReferencePictureList(slice->getRPL1idx()));
+  slice->setRPL0(rpl0);
+  slice->setRPL1(rpl1);
+}
+#else
 //Function for initializing m_RPSList, a list of ReferencePictureSet, based on the GOPEntry objects read from the config file.
 void EncLib::xInitRPS(SPS &sps, bool isFieldCoding)
 {
@@ -1835,10 +2048,30 @@ int EncLib::getReferencePictureSetIdxForSOP(int POCCurr, int GOPid )
 
   return rpsIdx;
 }
+#endif
 
 void  EncLib::xInitPPSforTiles(PPS &pps)
 {
-  pps.setTileUniformSpacingFlag( m_tileUniformSpacingFlag );
+#if JVET_N0857_TILES_BRICKS
+  if ( (m_iNumColumnsMinus1==0) && (m_iNumRowsMinus1==0) )
+  {
+    // one, no bricks
+    pps.setSingleTileInPicFlag(true);
+    pps.setSingleBrickPerSliceFlag(true);
+    pps.setRectSliceFlag(true);
+  }
+  else
+  {
+    pps.setSingleTileInPicFlag(false);
+    pps.setSingleBrickPerSliceFlag( m_sliceMode==SINGLE_BRICK_PER_SLICE );
+    pps.setRectSliceFlag( m_sliceMode==SINGLE_BRICK_PER_SLICE );
+#if JVET_N0857_RECT_SLICES
+    if (m_rectSliceFlag)
+      pps.setRectSliceFlag(m_rectSliceFlag);
+#endif
+  }
+#endif
+  pps.setUniformTileSpacingFlag( m_tileUniformSpacingFlag );
   pps.setNumTileColumnsMinus1( m_iNumColumnsMinus1 );
   pps.setNumTileRowsMinus1( m_iNumRowsMinus1 );
   if( !m_tileUniformSpacingFlag )
@@ -1846,9 +2079,122 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     pps.setTileColumnWidth( m_tileColumnWidth );
     pps.setTileRowHeight( m_tileRowHeight );
   }
-  pps.setLoopFilterAcrossTilesEnabledFlag( m_loopFilterAcrossTilesEnabledFlag );
+  pps.setLoopFilterAcrossBricksEnabledFlag( m_loopFilterAcrossBricksEnabledFlag );
 
-  // # substreams is "per tile" when tiles are independent.
+#if JVET_N0857_TILES_BRICKS
+  //pps.setRectSliceFlag( m_rectSliceFlag );
+  pps.setNumSlicesInPicMinus1( m_numSlicesInPicMinus1 );
+#if JVET_N0857_RECT_SLICES
+  pps.setTopLeftBrickIdx(m_topLeftBrickIdx);
+  pps.setBottomRightBrickIdx(m_bottomRightBrickIdx);
+#else
+  pps.setTopLeftTileIdx( m_topLeftTileIdx );
+  pps.setBottomRightTileIdx( m_bottomRightTileIdx );
+#endif
+  pps.setLoopFilterAcrossBricksEnabledFlag( m_loopFilterAcrossBricksEnabledFlag );
+  pps.setLoopFilterAcrossSlicesEnabledFlag( m_loopFilterAcrossSlicesEnabledFlag );
+  pps.setSignalledSliceIdFlag( m_signalledSliceIdFlag );
+  pps.setSignalledSliceIdLengthMinus1( m_signalledSliceIdLengthMinus1 );
+  pps.setSignalledSliceIdFlag( m_signalledSliceIdFlag );
+  pps.setSignalledSliceIdLengthMinus1( m_signalledSliceIdLengthMinus1 );
+  pps.setSliceId( m_sliceId );
+
+  int numTiles= (m_iNumColumnsMinus1 + 1) * (m_iNumRowsMinus1 + 1);
+#if JVET_N0857_RECT_SLICES
+  pps.setNumTilesInPic(numTiles);
+#endif
+
+  if (m_brickSplitMap.empty())
+  {
+    pps.setBrickSplittingPresentFlag(false);
+  }
+  else
+  {
+    pps.setBrickSplittingPresentFlag(true);
+
+    std::vector<bool> brickSplitFlag (numTiles, false);
+    std::vector<bool> uniformBrickSpacingFlag (numTiles, false);
+    std::vector<int>  brickHeightMinus1 (numTiles, 0);
+    std::vector<int>  numBrickRowsMinus1 (numTiles, 0);
+    std::vector<std::vector<int>>  brickRowHeightMinus1 (numTiles);
+
+    for (auto &brickSplit: m_brickSplitMap)
+    {
+      int tileIdx = brickSplit.first;
+      CHECK ( tileIdx >= numTiles, "Brick split specified for undefined tile");
+
+      brickSplitFlag[tileIdx]           = true;
+      uniformBrickSpacingFlag [tileIdx] = brickSplit.second.m_uniformSplit;
+      if (uniformBrickSpacingFlag [tileIdx])
+      {
+        brickHeightMinus1[tileIdx]=brickSplit.second.m_uniformHeight - 1;
+      }
+      else
+      {
+        numBrickRowsMinus1[tileIdx]=brickSplit.second.m_numSplits;
+        brickRowHeightMinus1[tileIdx].resize(brickSplit.second.m_numSplits);
+        for (int i=0; i<brickSplit.second.m_numSplits; i++)
+        {
+          brickRowHeightMinus1[tileIdx][i]=brickSplit.second.m_brickHeight[i] - 1;
+        }
+      }
+    }
+    pps.setBrickSplitFlag(brickSplitFlag);
+    pps.setUniformBrickSpacingFlag(uniformBrickSpacingFlag);
+    pps.setBrickHeightMinus1(brickHeightMinus1);
+    pps.setNumBrickRowsMinus1(numBrickRowsMinus1);
+    pps.setBrickRowHeightMinus1(brickRowHeightMinus1);
+
+    // check brick dimensions
+    std::vector<uint32_t> tileRowHeight (m_iNumRowsMinus1+1);
+    int picHeightInCtus = (getSourceHeight() + m_maxCUHeight - 1) / m_maxCUHeight;
+
+    // calculate all tile row heights
+    if( pps.getUniformTileSpacingFlag() )
+    {
+      //set width and height for each (uniform) tile
+      for(int row=0; row < m_iNumRowsMinus1 + 1; row++)
+      {
+        tileRowHeight[row] = (row+1)*picHeightInCtus/(m_iNumRowsMinus1+1)   - (row*picHeightInCtus)/(m_iNumRowsMinus1 + 1);
+      }
+    }
+    else
+    {
+      tileRowHeight[ m_iNumRowsMinus1 ] = picHeightInCtus;
+      for( int j = 0; j < m_iNumRowsMinus1; j++ ) 
+      {
+        tileRowHeight[ j ] = pps.getTileRowHeight( j );
+        tileRowHeight[ m_iNumRowsMinus1 ]  =  tileRowHeight[ m_iNumRowsMinus1 ] - pps.getTileRowHeight( j );
+      }
+    }
+
+    // check brick splits for each tile
+    for (int tileIdx=0; tileIdx < numTiles; tileIdx++)
+    {
+      if (pps.getBrickSplitFlag(tileIdx))
+      {
+        const int tileY = tileIdx / (m_iNumColumnsMinus1+1);
+
+        int tileHeight = tileRowHeight [tileY];
+
+        if (pps.getUniformBrickSpacingFlag(tileIdx))
+        {
+          CHECK((pps.getBrickHeightMinus1(tileIdx) + 1) >= tileHeight, "Brick height larger than or equal to tile height");
+        }
+        else
+        {
+          int cumulativeHeight=0;
+          for (int i = 0; i < pps.getNumBrickRowsMinus1(tileIdx); i++)
+          {
+            cumulativeHeight += pps.getBrickRowHeightMinus1(tileIdx, i) + 1;
+          }
+          CHECK(cumulativeHeight >= tileHeight, "Cumulative brick height larger than or equal to tile height");
+        }
+      }
+    }
+  }
+
+#endif
 }
 
 void  EncCfg::xCheckGSParameters()

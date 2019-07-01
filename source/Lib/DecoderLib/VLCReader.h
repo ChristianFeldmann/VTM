@@ -143,16 +143,32 @@ public:
   virtual ~HLSyntaxReader();
 
 protected:
+#if JVET_M0128
+  void  copyRefPicList(SPS* pcSPS, ReferencePictureList* source_rpl, ReferencePictureList* dest_rpl);
+  void  parseRefPicList(SPS* pcSPS, ReferencePictureList* rpl);
+#else
   void  parseShortTermRefPicSet            (SPS* pcSPS, ReferencePictureSet* pcRPS, int idx);
+#endif
 
 public:
   void  setBitstream        ( InputBitstream* p )   { m_pcBitstream = p; }
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   void  parseVPS            ( VPS* pcVPS );
 #endif
+#if JVET_N0349_DPS
+  void  parseDPS            ( DPS* dps );
+#endif
   void  parseSPS            ( SPS* pcSPS );
+#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
+  void  parsePPS            ( PPS* pcPPS, ParameterSetManager *parameterSetManager );
+#else
   void  parsePPS            ( PPS* pcPPS );
-  void  parseAPS            ( APS* pcAPS);
+#endif
+  void  parseAPS            ( APS* pcAPS );
+#if JVET_N0805_APS_LMCS
+  void  parseAlfAps         ( APS* pcAPS );
+  void  parseLmcsAps        ( APS* pcAPS );
+#endif
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
 #if !JVET_M0101_HLS
   void  parsePTL            ( PTL *rpcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1 );
@@ -161,7 +177,7 @@ public:
   void  parseConstraintInfo   (ConstraintInfo *cinfo);
   void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
 #endif
-  void  parseHrdParameters  ( HRD *hrd, bool cprms_present_flag, uint32_t tempLevelHigh );
+  void  parseHrdParameters  ( HRDParameters *hrd, bool cprms_present_flag, uint32_t tempLevelHigh );
   void  parseSliceHeader    ( Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );

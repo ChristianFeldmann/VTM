@@ -82,6 +82,10 @@ private:
 
   SEIMessages             m_SEIs; ///< List of SEI messages that have been received before the first slice and between slices, excluding prefix SEIs...
 
+#if JVET_N0278_HLS
+  int                     m_iTargetLayer;                       ///< target stream layer to be decoded
+#endif
+
   // functional classes
   IntraPrediction         m_cIntraPred;
   InterPrediction         m_cInterPred;
@@ -148,6 +152,11 @@ public:
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
 
+#if JVET_N0278_HLS
+  void  setTargetDecLayer (int val) { m_iTargetLayer = val; }
+  int   getTargetDecLayer()         { return m_iTargetLayer; }
+#endif
+  
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
@@ -168,8 +177,11 @@ protected:
 
   void      xActivateParameterSets();
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   void      xDecodeVPS( InputNALUnit& nalu );
+#endif
+#if JVET_N0349_DPS
+  void      xDecodeDPS( InputNALUnit& nalu );
 #endif
   void      xDecodeSPS( InputNALUnit& nalu );
   void      xDecodePPS( InputNALUnit& nalu );

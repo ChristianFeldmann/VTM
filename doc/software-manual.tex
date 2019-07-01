@@ -467,68 +467,47 @@ predict from a frame with a higher temporal id. If a frame with higher
 temporal IDs is listed among a frame's reference pictures, it is
 not used, but is kept for possible use in future frames.
 
-\item[]\textbf{num_ref_pics_active}: Size of reference picture lists L0
-and L1, indicating how many reference pictures in each direction that
-are used during coding.
+\item[]\textbf{num_ref_pics_active_L0}: Number of reference pictures in lists L0
+that are used during coding.
 
-\item[]\textbf{num_ref_pics}: The number of reference pictures kept for
-this frame.  This includes pictures that are used for reference for the
+\item[]\textbf{num_ref_pics_L0}: Size of reference picture list L0.
+This includes pictures that are used for reference for the
 current picture as well as pictures that will be used for reference in
 the future.
 
-\item[]\textbf{reference_pictures}: A space-separated list of
+\item[]\textbf{reference_pictures_L0}: A space-separated list of
 num_ref_pics integers, specifying the POC of the reference pictures
 kept, relative the POC of the current frame. The picture list shall be
-ordered, first with negative numbers from largest to smallest, followed
-by positive numbers from smallest to largest (e.g. \verb|-1 -3 -5 1 3|).
-Note that any pictures not supplied in this list will be discarded and
+ordered as their intendend order in the L0.
+Note that any pictures not supplied in this list and in the list of L1 will be discarded and
 therefore not available as reference pictures later.
 
-\item[]\textbf{predict}: Defines the value of the syntax element
-inter_ref_pic_set_prediction_flag. A value of 0 indicates that the
-reference picture set is encoded without inter RPS prediction and the
-subsequent parameters deltaRIdx$-1$, deltaRPS, num_ref_idcs and
-Reference_idcs are ignored and do not need to be present. A value of 1
-indicates that the reference picture set is encoded with inter
-prediction RPS using the subsequent parameters deltaRIdx$-1$, deltaRPS,
-num_ref_idcs and Reference_idcs in the line. A value of 2 indicates that
-the reference picture set is encoded with inter RPS but only the
-deltaRIdx$-1$ parameters is needed. The deltaRPS, num_ref_idcs and
-Reference_idcs values are automatically derived by the encoder based on
-the POC and refPic values of the current line and the RPS pointed to by
-the deltaRIdx$-1$ parameters.
+\item[]\textbf{num_ref_pics_active_L1}: Number of reference pictures in lists L1
+that are used during coding.
 
-\item[]\textbf{deltaRIdx$-1$}: The difference between the index of the
-curent RPS and the predictor RPS minus 1.
+\item[]\textbf{num_ref_pics_L1}: Size of reference picture list L1.
+This includes pictures that are used for reference for the
+current picture as well as pictures that will be used for reference in
+the future.
 
-\item[]\textbf{deltaRPS}: The difference between the POC of the
-predictor RPS and POC the current RPS.
-
-\item[]\textbf{num_ref_idcs}: The number of ref_idcs to encode for the
-current RPS.  The value is equal to the value of  num_ref_pics of the
-predictor RPS plus 1.
-
-\item[]\textbf{reference_idcs}: A space-separated list of num_ref_idcs
-integers, specifying the ref idcs of the inter RPS prediction. The value
-of ref_idcs may be 0, 1 or 2 indicating that the reference picture is a
-reference picture used by the current picture, a reference picture used
-for future picture or not a reference picture anymore, respectively. The
-first num_ref_pics of ref_idcs correspond to the Reference pictures in
-the predictor RPS. The last ref_idcs corresponds to the predictor
-picture.
-\end{itemize}
+\item[]\textbf{reference_pictures_L1}: A space-separated list of
+num_ref_pics integers, specifying the POC of the reference pictures
+kept, relative the POC of the current frame. The picture list shall be
+ordered as their intendend order in the L1.
+Note that any pictures not supplied in this list and in the list of L0 will be discarded and
+therefore not available as reference pictures later.
 
 For example, consider the coding structure of Figure~\ref{fig:gop-example}.
 This coding structure is of size 4. The pictures are listed in decoding
 order. Frame1 shall therefore describe picture with $\textrm{POC}=4$. It
-references picture 0, and therefore has $-4$ as a reference picture.
+references picture 0, and therefore has 4 as a reference picture.
 Similarly, Frame2 has a POC of 2, and since it references pictures 0 and
-4, its reference pictures are listed as \verb|-2 2|. Frame3 is a special
+4, its reference pictures are listed as \verb|2 -2|. Frame3 is a special
 case: even though it only references pictures with POC 0 and 2, it also
 needs to include the picture with POC 4, which must be kept in order to
-be used as a reference picture in the future. The reference picture list
-for Frame3 therefore becomes \verb|-1 1 3|. Frame4 has a POC of 3 and
-its list of reference pictures is \verb|-1 1|.
+be used as a reference picture in the future. Note that picture with POC 4 can be
+included in the L0 or L1. The reference picture list for Frame3 therefore becomes \verb|1 -1 -3|. 
+Frame4 has a POC of 3 and its list of reference pictures is \verb|1 -1|.
 
 \begin{figure}[h]
 \caption{A GOP structure}
@@ -536,27 +515,6 @@ its list of reference pictures is \verb|-1 1|.
 \centering
 \includegraphics[width=0.7\textwidth]{figures/gop-structure-example}
 \end{figure}
-
-Inter RPS prediction may be used for Frame2, Frame3 and Frame4, hence
-the predict parameter is set to 1 for these frames. Frame2 uses Frame1
-as the predictor hence the deltaRIdx$-1$ is 0.  Similarly for Frame3 and
-Frame4 which use Frame2 and Frame3 as predictors, respectively. The
-deltaRPS is equal to the POC of the predictor minus the POC of the
-current picture, therefore the deltaRPS for Frame2 is $4 -2 = 2$, for
-Frame3 is $2 - 1 = 1$ and for Frame4 is $1 - 3 = -2$.
-
-In Frame2, reference pictures with POC 0 and 2 are used, so the
-reference idcs for Frame2 are \verb|1 1| indicating that the reference
-picture, $-4$, in Frame1 is still a reference picture in Frame2 and
-Frame1 is also a reference picture in Frame2. The reference idcs for
-Frame3 are \verb|1 1 1|. The first and second “1”s indicating that
-the reference pictures "$-2$ $2$" in Frame2 are still reference pictures in
-Frame3 and the last “1” indicating that Frame2 is also a reference
-picture in Frame3. In Frame 4, the reference idcs are \verb|0 1 1 0|.
-The first “0” indicates that the reference pictures “-1” in Frame 3 is
-no longer a reference picture in Frame4. The next two “1”s indicate that
-the reference pictures “$1$ $3$” are now reference pictures of Frame4.
-The final “0” indicates that Frame3 is not a reference picture.
 
 In order to specify this to the encoder, the parameters in
 Table~\ref{tab:gop-example} could be used.
@@ -574,25 +532,23 @@ Table~\ref{tab:gop-example} could be used.
  \thead{Frame3} &
  \thead{Frame4} \\
 \hline
-Type                &   P  &    B   &      B   &       B \\
-POC                 &   4  &    2   &      1   &       3 \\
-QPOffset            &   1  &    2   &      3   &       3 \\
-QPOffsetModelOff    & 0.0  &  0.0   &    0.0   &     0.0 \\
-QPOffsetModelScale  & 0.0  &  0.0   &    0.0   &     0.0 \\
-SliceCbQPOffset     &   0  &    0   &      0   &       0 \\
-SliceCrQPOffset     &   0  &    0   &      0   &       0 \\
-QPfactor            & 0.5  &  0.5   &    0.5   &     0.5 \\
-tcOffsetDiv2        &   0  &    1   &      2   &       2 \\  
-betaOffsetDiv2      &   0  &    0   &      0   &       0 \\
-temporal_id         &   0  &    1   &      2   &       2 \\
-num_ref_pics_active &   1  &    1   &      1   &       1 \\
-num_ref_pics        &   1  &    2   &      3   &       2 \\
-reference_pictures  & $-$4 & $-$2 2 & $-$1 1 3 &  $-$1 1 \\
-predict             &   0  &    1   &      1   &       1 \\
-deltaRIdx$-$1       &      &    0   &      0   &       0 \\
-deltaRPS            &      &    2   &      1   &    $-$2 \\
-num_ref_idcs        &      &    2   &      3   &       4 \\
-reference_idcs      &      &  1 1   &  1 1 1   & 0 1 1 0 \\
+Type                   &   P  &    B   &         B   &       B \\
+POC                    &   4  &    2   &         1   &       3 \\
+QPOffset               &   1  &    2   &         3   &       3 \\
+QPOffsetModelOff       & 0.0  &  0.0   &       0.0   &     0.0 \\
+QPOffsetModelScale     & 0.0  &  0.0   &       0.0   &     0.0 \\
+SliceCbQPOffset        &   0  &    0   &         0   &       0 \\
+SliceCrQPOffset        &   0  &    0   &         0   &       0 \\
+QPfactor               & 0.5  &  0.5   &       0.5   &     0.5 \\
+tcOffsetDiv2           &   0  &    1   &         2   &       2 \\  
+betaOffsetDiv2         &   0  &    0   &         0   &       0 \\
+temporal_id            &   0  &    1   &         2   &       2 \\
+num_ref_pics_active_L0 &   1  &    1   &         1   &       1 \\
+num_ref_pics_L0        &   1  &    1   &         1   &       1 \\
+reference_pictures_L0  &   4  &    2   &         1   &       1 \\
+num_ref_pics_active_L1 &   0  &    1   &         1   &       1 \\
+num_ref_pics_L1        &   0  &    1   &         2   &       1 \\
+reference_pictures_L1  &      & $-$2   & $-$1 $-$3   &    $-$1 \\
 \hline
 \end{tabular}
 \end{table}
@@ -605,51 +561,12 @@ line should contain information for one frame, so this
 configuration would be specified as:
 
 \begin{verbatim}
-Frame1: P 4 1 0 0 0.5 0 0 0 1 1 -4 0
-Frame2: B 2 2 0 0 0.5 1 0 1 1 2 -2 2 1 0 2 2 1 1
-Frame3: B 1 3 0 0 0.5 2 0 2 1 3 -1 1 3 1 0 1 3 1 1 1
-Frame4: B 3 3 0 0 0.5 2 0 2 1 2 -1 1 1 0 -2 4 0 1 1 0
+Frame1: P 4 1 0 0 0.5 0 0 0 1 1  4 1 1  4
+Frame2: B 2 2 0 0 0.5 1 0 1 1 1  2 1 1 -2
+Frame3: B 1 3 0 0 0.5 2 0 2 1 1  1 1 2 -1 -3
+Frame4: B 3 3 0 0 0.5 2 0 2 1 1  1 1 1 -1
 \end{verbatim}
 
-The values of deltaRIdx$-1$, deltaRPS, num_ref_idcs and reference
-idcs of Frame$K$ can be derived from the POC value of Frame$_K$ and
-the POC, num_ref_pics and reference_pictures values of Frame$_M$, where
-$K$ is the index of the RPS to be inter coded and the $M$ is the
-index of the reference RPS, as follows.
-
-\setlength{\algomargin}{2em}
-\begin{algorithm}[ht]
-\SetKwData{deltaRIdx}{deltaRIdx}
-\SetKwData{deltaRPS}{deltaRPS}
-\SetKwData{numrefidcs}{num_ref_idcs}
-\SetKwData{numrefpics}{num_ref_pics}
-\SetKwData{referencepictures}{reference_pictures}
-\SetKwData{referenceidcs}{reference_idcs}
-\SetKwData{POC}{POC}
-
-$\deltaRIdx_K - 1  \leftarrow  K - M - 1$ \;
-$\deltaRPS_K       \leftarrow  \POC_M - \POC_K$ \;
-$\numrefidcs_K     \leftarrow  \numrefpics_M + 1$ \;
-
-\For{$j \leftarrow 0$ \KwTo $\numrefpics_M$}{
-	\For{$i \leftarrow 0$ \KwTo $\numrefidcs_K$}{
-		\eIf{$\referencepictures_{M,j} + \deltaRPS_K == \referencepictures_{K,i}$}{
-			\lIf{$\referencepictures_{K,i}$ is used by the current frame}{
-				$\referenceidcs_{K,j} = 1$} \;
-			\lElse{$\referenceidcs_{K,j} = 2$} \;
-		}{
-			$\referenceidcs_K[j] = 0$ \;
-		}
-	}
-}
-
-\tcc{$\referencepictures_{M,\numrefpics_M}$ does not exist and is assumed to be 0}
-\end{algorithm}
-
-Note: The above (automatic) generation of the inter RPS parameter
-values has been integrated into the encoder, and is activated by
-the value of predict $= 2$ followed by the value of deltaRIdx$-1$,
-only, as described above.
 
 
 
@@ -981,6 +898,18 @@ Specifies the level tier to which the encoded bitsream complies.
 Valid values are: main, high.
 
 NB: There is currently only limited validation that the encoder configuration complies with the profile, level and tier constraints.
+\\
+
+\Option{SubProfile} &
+%\ShortOption{\None} &
+\Default{0} &
+Indicates interoperability metadata registered as specified by X Recommendation ITU-T T.35.
+\\
+
+\Option{EnableDecodingParameterSet} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables writing of a decoding parameter set. If disabled, no parameter set will be written and the specical reserved ID zero will be used in the SPS indicating no constraint.
 \\
 
 \Option{MaxBitDepthConstraint} &
@@ -1608,9 +1537,9 @@ Specifies the maximum depth for CU chroma QP adjustment; if negative, CU chroma 
 
 
 %%
-%% Slice coding parameters
+%% Slice/Tile/Brick coding parameters
 %%
-\begin{OptionTableNoShorthand}{Slice coding parameters}{tab:slice-coding}
+\begin{OptionTableNoShorthand}{Slice, tile and brick coding parameters}{tab:slice-coding}
 %\Option{SliceGranularity} &
 %\ShortOption{\None} &
 %\Default{0} &
@@ -1635,38 +1564,68 @@ SliceArgument.
 \par
 \begin{tabular}{cp{0.45\textwidth}}
  0 & Single slice \\
- 1 & Maximum number of CTUs per slice \\
- 2 & Maximum number of bytes per slice \\
+ 1 & (deprecated) Maximum number of CTUs per slice \\
+ 2 & (deprecated) Maximum number of bytes per slice \\
  3 & Maximum number of tiles per slice \\
+ 4 & One slice per brick
 \end{tabular}
 \\
 
 \Option{SliceArgument} &
 %\ShortOption{\None} &
 \Default{\NotSet} &
+(deprecated)
 Specifies the maximum number of CTUs, bytes or tiles in a slice depending on the
 SliceMode setting.
 \\
 
-\Option{SliceSegmentMode} &
+\Option{RectSliceFlag} &
 %\ShortOption{\None} &
-\Default{0} &
-Enables (dependent) slice segment coding in conjunction with 
-SliceSegmentArgument.
+\Default{1} &
+Controls the slice shape method in conjunction with SliceMode,
+SliceArgument, and Tile/Brick configurations.
 \par
 \begin{tabular}{cp{0.45\textwidth}}
- 0 & Single slice \\
- 1 & Maximum number of CTUs per slice segment\\
- 2 & Maximum number of bytes per slice segment\\
- 3 & Maximum number of tiles per slice segment\\
+ 0 & Raster scan slice. Bricks within slice are in raster scan order  \\
+ 1 & Rectangular slice. Bricks within slice form rectangular shape \\
+ NOTE: When SliceMode is equal to 3, RectSliceFlag is equal to 1, 
+ and there is more than one tiles/bricks in the pic, 
+ NumRecSliceInPicMinus1 must be greater than 0
 \end{tabular}
 \\
 
-\Option{SliceSegmentArgument} &
+\Option{NumRecSlicesInPicMinus1} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the number of rectangular slices in the picture.
+\\
+
+\Option{RectSlicesBoundaryArray} &
 %\ShortOption{\None} &
 \Default{\NotSet} &
-Defines the maximum number of CTUs, bytes or tiles a slice segment
-depending on the SliceSegmentMode setting.
+Specifies a space or comma separated list of top-left brick index and 
+bottom-right brick index of rectangular slices.
+The top-left brick index and bottom-right brick index corresponds to the top left 
+rectangular slice in the picture. The rest of indices corresponds to the each rectangular slices
+in the picture in the rectangular slice raster scan in the picture, respectively.
+
+For example, when the picture is partitioned into 16 tiles (4 tile columns and 4 tile rows), 
+each tile is not further partitioned into bricks, SliceMode is equal to 3, SliceArgument is equal to 4, 
+and NumRecSlicesInPicMinus1 is equal to 3, the values of RectSlicesBoundaryArray shall be as followss: 
+0 5 2 7 8 13 10 15.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+ First  slice has top-left brick index 0  and bottom-right brick index 5 \\
+ Second slice has top-left brick index 2  and bottom-right brick index 7 \\
+ Third  slice has top-left brick index 8  and bottom-right brick index 13 \\
+ Fourth slice has top-left brick index 10 and bottom-right brick index 15
+\end{tabular}
+\\
+
+\Option{IDRRefParamList} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables the signalling of reference picture list syntax elements in slice headers of IDR pictures
 \\
 
 \Option{WaveFrontSynchro} &
@@ -1706,14 +1665,43 @@ Specifies a space or comma separated list of widths and heights,
 respectively, of each tile column or tile row.  The first value in the
 list corresponds to the leftmost tile column or topmost tile row.
 \\
+
+\Option{BrickSplit1}%
+\Option{BrickSplit2} %
+\Option{BrickSplitN} &
+%\ShortOption{\None} &
+\Default{\NotSet} &
+Specifies the splitting of tiles into bricks, N can be in the range of 1 to 128 and has no further meaning except to distinguish different splitting parameters.
+
+The following options are supported:
+
+BrickSplitN tileIdx uniform (numsplits) heights
+
+\begin{tabular}{cp{0.45\textwidth}}
+ tileIdx & the index of the tile to be split in raster scan order starting with zero \\
+ uniform & specifies whether uniform splitting shall be used (1 for uniform, 0 non-uniform) \\
+ numsplits & specifies the number of splits, if uniform is not used \\
+ heights & specifies the height of the uniform splits or a list of heights for non-uniform splits \\
+\end{tabular}
+ 
+\\
+\Option{TileRowHeightArray} &
+%\ShortOption{\None} &
+\Default{\NotSet} &
+Specifies a space or comma separated list of widths and heights,
+respectively, of each tile column or tile row.  The first value in the
+list corresponds to the leftmost tile column or topmost tile row.
+\\
+
+
 \end{OptionTableNoShorthand}
 
 
 
 %%
-%% Deblocking filter parameters
+%% In-loop filtering parameters
 %%
-\begin{OptionTableNoShorthand}{Deblocking filter parameters}{tab:deblocking-filter}
+\begin{OptionTableNoShorthand}{In-loop filtering parameters}{tab:inloop-filter}
 \Option{LoopFilterDisable} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -1765,6 +1753,36 @@ LoopFilterOffsetInPPS and LoopFilterDisable must be 0. Currently excepted values
 %\ShortOption{\None}&
 \Default{true}&
 Enables or disables the use of a deblocking across tile boundaries.
+\\
+
+\Option{LoopFilterAcrossVirtualBoundariesDisabledFlag}&
+%\ShortOption{\None}&
+\Default{false}&
+Disables in-loop filtering operations across the virtual boundaries.
+\\
+
+\Option{NumVerVirtualBoundaries}&
+%\ShortOption{\None}&
+\Default{0}&
+Specifies the number of vertical virtual boundaries.The value of NumVerVirtualBoundaries shall be in the range of 0 to 3, inclusive.
+\\
+
+\Option{NumHorVirtualBoundaries}&
+%\ShortOption{\None}&
+\Default{0}&
+Specifies the number of horizontal virtual boundaries. The value of NumHorVirtualBoundaries shall be in the range of 0 to 3, inclusive.
+\\
+
+\Option{VirtualBoundariesPosX}&
+%\ShortOption{\None}&
+\Default{\NotSet}&
+Specifies the locations of the vertical virtual boundaries in units of luma samples
+\\
+
+\Option{VirtualBoundariesPosY}&
+%\ShortOption{\None}&
+\Default{\NotSet}&
+Specifies the locations of the horizontal virtual boundaries in units of luma samples
 \\
 
 \end{OptionTableNoShorthand}
@@ -3204,6 +3222,13 @@ Defines the chroma bit-depth of the reconstructed YUV file (the value 0 indicate
 that the native bit-depth is used)
 \\
 
+\Option{TargetLayer (-p)} &
+%\ShortOption{-p} &
+\Default{-1 \\ (Native)} &
+Specifies the target bitstream Layer to be decoded. (the value -1 indicates
+that decoding the whole bitstream )
+\\
+
 \Option{SEIDecodedPictureHash} &
 %\ShortOption{\None} &
 \Default{1} &
@@ -3511,5 +3536,29 @@ DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL,
 #include "dtrace_blockstatistics.h"
 \end{minted}
 \end{description}
+
+
+
+
+
+\section{Using the stream merge tool}
+\label{sec:stream-merge-tool}
+
+The StreamMergeApp tool takes multiple single-layer (singe nuh_layer_id) bistreams 
+as inputs and merge them into a multi-layer bistream by interleaving the NALUs 
+from the input single layer bistreams. During the merge, the tool assigns a new unique
+nuh_layer_id for each input bitstream. Then the decoder could specify which layer 
+bitstream to be decoded through the command line option "-p nuh_layer_id". 
+
+\subsection{Usage}
+\label{sec:usage}
+
+\begin{minted}{bash}
+StreamMergeApp 	<bitstream1> <bitstream2> [<bitstream3> ...] <outfile>
+\end{minted}
+
+The command line options bistreamX specify the file names of the input single-layer 
+bistreams. At least two input bitstreams need to be specified. The merged multi-layer 
+bistream will be stored into the outfile.
 
 \end{document}

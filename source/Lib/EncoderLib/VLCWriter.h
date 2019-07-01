@@ -113,7 +113,11 @@ public:
   virtual ~HLSWriter() {}
 
 private:
+#if JVET_M0128
+  void xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount);
+#else
   void xCodeShortTermRefPicSet  ( const ReferencePictureSet* pcRPS, bool calledFromSliceHeader, int idx );
+#endif
   bool xFindMatchingLTRP        ( Slice* pcSlice, uint32_t *ltrpsIndex, int ltrpPOC, bool usedFlag );
   void xCodePredWeightTable     ( Slice* pcSlice );
 #if HEVC_USE_SCALING_LISTS
@@ -125,9 +129,16 @@ public:
   void  codeVUI                 ( const VUI *pcVUI, const SPS* pcSPS );
   void  codeSPS                 ( const SPS* pcSPS );
   void  codePPS                 ( const PPS* pcPPS );
-  void  codeAPS                 ( APS* pcAPS);
-#if HEVC_VPS
+  void  codeAPS                 ( APS* pcAPS );
+#if JVET_N0805_APS_LMCS
+  void  codeAlfAps              ( APS* pcAPS );
+  void  codeLmcsAps             ( APS* pcAPS );
+#endif
+#if HEVC_VPS || JVET_N0278_HLS
   void  codeVPS                 ( const VPS* pcVPS );
+#endif
+#if JVET_N0349_DPS
+  void  codeDPS                 ( const DPS* dps );
 #endif
   void  codeSliceHeader         ( Slice* pcSlice );
 #if !JVET_M0101_HLS
@@ -137,7 +148,7 @@ public:
   void  codeConstraintInfo      ( const ConstraintInfo* cinfo );
   void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );
 #endif
-  void  codeHrdParameters       ( const HRD *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 );
+  void  codeHrdParameters       ( const HRDParameters *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 );
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );
 #if HEVC_USE_SCALING_LISTS
   void  codeScalingList         ( const ScalingList &scalingList );

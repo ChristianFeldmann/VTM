@@ -89,7 +89,7 @@ namespace Mip
 
     void xComputeMatrixTimesRedBndryPlusBias( int*const result, const int* const input,
                                               const short*matrix, const short*bias,
-                                              const bool leaveHorOut, const bool leaveVerOut, 
+                                              const bool leaveHorOut, const bool leaveVerOut,
                                               const int shiftMatrix, const int shiftBias,
                                               const bool transpose, const bool needUpsampling );
   };

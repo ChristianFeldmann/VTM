@@ -144,12 +144,23 @@ void AdaptiveDepthPartitioner::setMaxMinDepth( unsigned& minDepth, unsigned& max
   unsigned          stdMaxDepth = ( g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize( cs.slice->getSliceType(), chType )]);
   const Position    pos         = currArea().blocks[chType].pos();
   const unsigned    curSliceIdx = cs.slice->getIndependentSliceIdx();
+#if JVET_N0857_TILES_BRICKS
+  const unsigned    curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( currArea().lumaPos() );
+#else
   const unsigned    curTileIdx  = cs.picture->tileMap->getTileIdxMap( currArea().lumaPos() );
+#endif
 
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  const CodingUnit* cuLeft        = cs.getCURestricted( pos.offset( -1,                               0 ), pos, curSliceIdx, curTileIdx, chType );
+  const CodingUnit* cuBelowLeft   = cs.getCURestricted( pos.offset( -1, currArea().blocks[chType].height), pos, curSliceIdx, curTileIdx, chType );
+  const CodingUnit* cuAbove       = cs.getCURestricted( pos.offset(  0,                              -1 ), pos, curSliceIdx, curTileIdx, chType );
+  const CodingUnit* cuAboveRight  = cs.getCURestricted( pos.offset( currArea().blocks[chType].width, -1 ), pos, curSliceIdx, curTileIdx, chType );
+#else
   const CodingUnit* cuLeft        = cs.getCURestricted( pos.offset( -1,                               0 ), curSliceIdx, curTileIdx, chType );
   const CodingUnit* cuBelowLeft   = cs.getCURestricted( pos.offset( -1, currArea().blocks[chType].height), curSliceIdx, curTileIdx, chType );
   const CodingUnit* cuAbove       = cs.getCURestricted( pos.offset(  0,                              -1 ), curSliceIdx, curTileIdx, chType );
   const CodingUnit* cuAboveRight  = cs.getCURestricted( pos.offset( currArea().blocks[chType].width, -1 ), curSliceIdx, curTileIdx, chType );
+#endif
 
   minDepth = stdMaxDepth;
   maxDepth = stdMinDepth;
@@ -392,13 +403,18 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
     return;
   }
 
+  if( area.width > maxBtSize || area.height > maxBtSize )
+  {
+    canBh = canBv = false;
+  }
+
   // specific check for BT splits
-  if( area.height <= minBtSize || area.height > maxBtSize )                            canBh = false;
+  if( area.height <= minBtSize )                            canBh = false;
   if( area.width > MAX_TB_SIZEY && area.height <= MAX_TB_SIZEY ) canBh = false;
 #if JVET_N0137_DUALTREE_CHROMA_SIZE
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBh = false;
 #endif
-  if( area.width <= minBtSize || area.width > maxBtSize )                              canBv = false;
+  if( area.width <= minBtSize )                              canBv = false;
   if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) canBv = false;
 #if JVET_N0137_DUALTREE_CHROMA_SIZE
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBv = false;

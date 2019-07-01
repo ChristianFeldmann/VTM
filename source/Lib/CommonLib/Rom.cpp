@@ -63,6 +63,27 @@ const char* nalUnitTypeToString(NalUnitType type)
 {
   switch (type)
   {
+#if JVET_N0067_NAL_Unit_Header
+  case NAL_UNIT_PPS:                    return "PPS";
+  case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
+  case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
+  case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
+  case NAL_UNIT_APS:                    return "APS";
+  case NAL_UNIT_CODED_SLICE_TRAIL:      return "TRAIL";
+  case NAL_UNIT_CODED_SLICE_STSA:       return "STSA";
+  case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";
+  case NAL_UNIT_CODED_SLICE_RASL:       return "RASL";
+  case NAL_UNIT_DPS:                    return "DPS";
+  case NAL_UNIT_SPS:                    return "SPS";
+  case NAL_UNIT_EOS:                    return "EOS";
+  case NAL_UNIT_EOB:                    return "EOB";
+  case NAL_UNIT_VPS:                    return "VPS";
+  case NAL_UNIT_CODED_SLICE_IDR_W_RADL: return "IDR_W_RADL";
+  case NAL_UNIT_CODED_SLICE_IDR_N_LP:   return "IDR_N_LP";
+  case NAL_UNIT_CODED_SLICE_CRA:        return "CRA"; 
+  case NAL_UNIT_CODED_SLICE_GRA:        return "GRA";
+  default:                              return "UNK";
+#else
 #if JVET_M0101_HLS
   case NAL_UNIT_CODED_SLICE_TRAIL:      return "TRAIL";
   case NAL_UNIT_CODED_SLICE_STSA:       return "STSA";
@@ -71,7 +92,7 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
   case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";
   case NAL_UNIT_CODED_SLICE_RASL:       return "RASL";
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   case NAL_UNIT_VPS:                    return "VPS";
 #endif
   case NAL_UNIT_SPS:                    return "SPS";
@@ -101,7 +122,7 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_CODED_SLICE_RADL_N:     return "RADL_N";
   case NAL_UNIT_CODED_SLICE_RASL_R:     return "RASL_R";
   case NAL_UNIT_CODED_SLICE_RASL_N:     return "RASL_N";
-#if HEVC_VPS
+#if HEVC_VPS || JVET_N0278_HLS
   case NAL_UNIT_VPS:                    return "VPS";
 #endif
   case NAL_UNIT_SPS:                    return "SPS";
@@ -114,6 +135,7 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
   case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
   default:                              return "UNK";
+#endif
 #endif
   }
 }
@@ -713,6 +735,16 @@ const uint32_t g_auiGoRicePosCoeff0[3][32] =
 #if HEVC_USE_SCALING_LISTS
 const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
 {
+#if JVET_N0847_SCALING_LISTS
+  {
+    "INTRA1X1_LUMA",
+    "INTRA1X1_CHROMAU",
+    "INTRA1X1_CHROMAV",
+    "INTER1X1_LUMA",
+    "INTER1X1_CHROMAU",
+    "INTER1X1_CHROMAV"
+	},
+#endif
   {
     "INTRA2X2_LUMA",
     "INTRA2X2_CHROMAU",
@@ -745,18 +777,43 @@ const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
     "INTER16X16_CHROMAU",
     "INTER16X16_CHROMAV"
   },
+#if JVET_N0847_SCALING_LISTS
   {
-   "INTRA32X32_LUMA",
-   "INTRA32X32_CHROMAU_FROM16x16_CHROMAU",
-   "INTRA32X32_CHROMAV_FROM16x16_CHROMAV",
-   "INTER32X32_LUMA",
-   "INTER32X32_CHROMAU_FROM16x16_CHROMAU",
-   "INTER32X32_CHROMAV_FROM16x16_CHROMAV"
+    "INTRA32X32_LUMA",
+    "INTRA32X32_CHROMAU",
+    "INTRA32X32_CHROMAV",
+    "INTER32X32_LUMA",
+    "INTER32X32_CHROMAU",
+    "INTER32X32_CHROMAV"
   },
+  {
+    "INTRA64X64_LUMA",
+    "INTRA64X64_CHROMAU_FROM16x16_CHROMAU",
+    "INTRA64X64_CHROMAV_FROM16x16_CHROMAV",
+    "INTER64X64_LUMA",
+    "INTER64X64_CHROMAU_FROM16x16_CHROMAU",
+    "INTER64X64_CHROMAV_FROM16x16_CHROMAV"
+  },
+  {
+  },
+#else
+  {
+    "INTRA32X32_LUMA",
+    "INTRA32X32_CHROMAU_FROM16x16_CHROMAU",
+    "INTRA32X32_CHROMAV_FROM16x16_CHROMAV",
+    "INTER32X32_LUMA",
+    "INTER32X32_CHROMAU_FROM16x16_CHROMAU",
+    "INTER32X32_CHROMAV_FROM16x16_CHROMAV"
+  },
+#endif
 };
 
 const char *MatrixType_DC[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
 {
+#if JVET_N0847_SCALING_LISTS
+  {  //1x1
+  },
+#endif
   {
   },
   {
@@ -771,6 +828,26 @@ const char *MatrixType_DC[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
     "INTER16X16_CHROMAU_DC",
     "INTER16X16_CHROMAV_DC"
   },
+#if JVET_N0847_SCALING_LISTS
+  {
+    "INTRA32X32_LUMA_DC",
+    "INTRA32X32_CHROMAU_DC",
+    "INTRA32X32_CHROMAV_DC",
+    "INTER32X32_LUMA_DC",
+    "INTER32X32_CHROMAU_DC",
+    "INTER32X32_CHROMAV_DC"
+  },
+  {
+    "INTRA64X64_LUMA_DC",
+    "INTRA64X64_CHROMAU_DC_FROM16x16_CHROMAU",
+    "INTRA64X64_CHROMAV_DC_FROM16x16_CHROMAV",
+    "INTER64X64_LUMA_DC",
+    "INTER64X64_CHROMAU_DC_FROM16x16_CHROMAU",
+    "INTER64X64_CHROMAV_DC_FROM16x16_CHROMAV"
+  },
+  {
+  },
+#else
   {
     "INTRA32X32_LUMA_DC",
     "INTRA32X32_CHROMAU_DC_FROM16x16_CHROMAU",
@@ -779,6 +856,7 @@ const char *MatrixType_DC[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
     "INTER32X32_CHROMAU_DC_FROM16x16_CHROMAU",
     "INTER32X32_CHROMAV_DC_FROM16x16_CHROMAV"
   },
+#endif
 };
 
 const int g_quantTSDefault4x4[4 * 4] =
@@ -791,6 +869,16 @@ const int g_quantTSDefault4x4[4 * 4] =
 
 const int g_quantIntraDefault8x8[8 * 8] =
 {
+#if JVET_N0847_SCALING_LISTS
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16
+#else
   16,16,16,16,17,18,21,24,
   16,16,16,16,17,19,22,25,
   16,16,17,18,20,22,25,29,
@@ -799,10 +887,21 @@ const int g_quantIntraDefault8x8[8 * 8] =
   18,19,22,27,35,44,54,65,
   21,22,25,31,41,54,70,88,
   24,25,29,36,47,65,88,115
+#endif
 };
 
 const int g_quantInterDefault8x8[8 * 8] =
 {
+#if JVET_N0847_SCALING_LISTS
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16
+#else
   16,16,16,16,17,18,20,24,
   16,16,16,17,18,20,24,25,
   16,16,17,18,20,24,25,28,
@@ -811,10 +910,16 @@ const int g_quantInterDefault8x8[8 * 8] =
   18,20,24,25,28,33,41,54,
   20,24,25,28,33,41,54,71,
   24,25,28,33,41,54,71,91
+#endif
 };
 
+#if JVET_N0847_SCALING_LISTS
+const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM] = { 1, 4, 16, 64, 256, 1024, 4096, 16384 };
+const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16,   32,   64,   128 };
+#else
 const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM] = { 4, 16, 64, 256, 1024, 4096, 16384 };
 const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 2,  4,  8,  16,   32,   64,   128 };
+#endif
 #endif
 
 

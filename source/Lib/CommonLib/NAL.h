@@ -74,6 +74,16 @@ struct NALUnit
   /** returns true if the NALunit is a slice NALunit */
   bool isSlice()
   {
+#if JVET_N0067_NAL_Unit_Header
+    return m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_GRA
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL;
+#else
 #if JVET_M0101_HLS
     return m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
@@ -100,6 +110,7 @@ struct NALUnit
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R;
 #endif
+#endif
   }
   bool isSei()
   {
@@ -109,7 +120,19 @@ struct NALUnit
 
   bool isVcl()
   {
+#if JVET_N0067_NAL_Unit_Header
+    return m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_GRA;
+
+#else
     return ( (uint32_t)m_nalUnitType < 32 );
+#endif
   }
 };
 

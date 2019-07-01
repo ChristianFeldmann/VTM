@@ -157,12 +157,16 @@ void TrQuant::init( const Quant* otherQuant,
   delete m_quant;
   m_quant = nullptr;
 
+#if !JVET_N0847_SCALING_LISTS
   if( bUseRDOQ || !bEnc )
+#endif
   {
     m_quant = new DepQuant( otherQuant, bEnc );
   }
+#if !JVET_N0847_SCALING_LISTS
   else
     m_quant = new Quant( otherQuant );
+#endif
 
   if( m_quant )
   {
@@ -327,7 +331,7 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
               {
                 coeffTemp[ 0 ] = lfnstTemp[  0 ];  coeffTemp[ 1 ] = lfnstTemp[  8 ];
                 coeffTemp[ 2 ] = lfnstTemp[ 16 ];  coeffTemp[ 3 ] = lfnstTemp[ 24 ];
-                if( y < 4 ) 
+                if( y < 4 )
                 {
                   coeffTemp[ 4 ] = lfnstTemp[ 32 ];  coeffTemp[ 5 ] = lfnstTemp[ 36 ];
                   coeffTemp[ 6 ] = lfnstTemp[ 40 ];  coeffTemp[ 7 ] = lfnstTemp[ 44 ];
@@ -418,7 +422,7 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
               {
                 lfnstTemp[  0 ] = coeffTemp[ 0 ];  lfnstTemp[  8 ] = coeffTemp[ 1 ];
                 lfnstTemp[ 16 ] = coeffTemp[ 2 ];  lfnstTemp[ 24 ] = coeffTemp[ 3 ];
-                if( y < 4 ) 
+                if( y < 4 )
                 {
                   lfnstTemp[ 32 ] = coeffTemp[ 4 ];  lfnstTemp[ 36 ] = coeffTemp[ 5 ];
                   lfnstTemp[ 40 ] = coeffTemp[ 6 ];  lfnstTemp[ 44 ] = coeffTemp[ 7 ];

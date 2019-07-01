@@ -43,7 +43,7 @@
 #include "MipData.h"
 
 
-namespace Mip 
+namespace Mip
 {
   PredictorMIP::PredictorMIP():
     m_reducedBoundary          (MIP_MAX_INPUT_SIZE),
@@ -457,8 +457,8 @@ namespace Mip
 
   void PredictorMIP::xComputeMatrixTimesRedBndryPlusBias( int*const result, const int* const input,
                                                           const short*matrix, const short*bias,
-                                                          const bool leaveHorOut, const bool leaveVerOut, 
-                                                          const int shiftMatrix, const int shiftBias, 
+                                                          const bool leaveHorOut, const bool leaveVerOut,
+                                                          const int shiftMatrix, const int shiftBias,
                                                           const bool transpose, const bool needUpsampling )
   {
     const int inputSize = m_reducedBoundarySize.width + m_reducedBoundarySize.height;
@@ -476,7 +476,7 @@ namespace Mip
     const int intermediateHeight = transpose ? m_reducedPredictionSize.width : m_reducedPredictionSize.height;
     const int xStep = leaveHorOut ? 2 : 1;
     const int yStep = leaveVerOut ? intermediateWidth : 0;
-    
+
     int posRes  = 0;
     int posBias = 0;
     for (int y = 0; y < intermediateHeight; y++)

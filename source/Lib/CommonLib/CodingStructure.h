@@ -57,6 +57,7 @@ enum PictureType
   PIC_PREDICTION,
   PIC_RESIDUAL,
   PIC_ORG_RESI,
+  PIC_RECON_WRAP,
   NUM_PIC_TYPES
 };
 enum IbcLumaCoverage
@@ -95,11 +96,20 @@ public:
   const SPS *sps;
   const PPS *pps;
 #if JVET_N0415_CTB_ALF
+#if JVET_N0805_APS_LMCS
+  APS*       alfApss[MAX_NUM_APS];
+#else
   APS*       apss[MAX_NUM_APS];
+#endif
 #else
   APS *      aps;
 #endif
+#if JVET_N0805_APS_LMCS
+  APS *      lmcsAps;
+#endif
 #if HEVC_VPS
+  const VPS *vps;
+#elif JVET_N0278_HLS
   const VPS *vps;
 #endif
   const PreCalcValues* pcv;
@@ -141,7 +151,11 @@ public:
   PredictionUnit *getPU(const ChannelType &_chType ) { return getPU(area.blocks[_chType].pos(), _chType); }
   TransformUnit  *getTU(const ChannelType &_chType ) { return getTU(area.blocks[_chType].pos(), _chType); }
 
+#if JVET_N0150_ONE_CTU_DELAY_WPP
+  const CodingUnit     *getCURestricted(const Position &pos, const Position curPos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType) const;
+#else
   const CodingUnit     *getCURestricted(const Position &pos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType) const;
+#endif
   const CodingUnit     *getCURestricted(const Position &pos, const CodingUnit& curCu,                               const ChannelType _chType) const;
   const PredictionUnit *getPURestricted(const Position &pos, const PredictionUnit& curPu,                           const ChannelType _chType) const;
   const TransformUnit  *getTURestricted(const Position &pos, const TransformUnit& curTu,                            const ChannelType _chType) const;

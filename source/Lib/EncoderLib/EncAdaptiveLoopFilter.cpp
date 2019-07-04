@@ -54,19 +54,17 @@ void AlfCovariance::getClipMax(const AlfFilterShape& alfShape, int *clip_max) co
     clip_max[k] = 0;
 
     bool inc = true;
-    while (clip_max[k]+1 < numBins && y[clip_max[k]+1][k] == y[clip_max[k]][k])
+    while( inc && clip_max[k]+1 < numBins && y[clip_max[k]+1][k] == y[clip_max[k]][k] )
     {
-      for (int l = 0; l < numCoeff; ++l)
-        if (E[clip_max[k]][0][k][l] != E[clip_max[k]+1][0][k][l])
+      for( int l = 0; inc && l < numCoeff; ++l )
+        if( E[clip_max[k]][0][k][l] != E[clip_max[k]+1][0][k][l] )
         {
           inc = false;
-          break;
         }
-      if (!inc)
+      if( inc )
       {
-        break;
+        ++clip_max[k];
       }
-      ++clip_max[k];
     }
   }
   clip_max[numCoeff-1] = 0;
@@ -77,19 +75,17 @@ void AlfCovariance::reduceClipCost(const AlfFilterShape& alfShape, int *clip) co
   for( int k = 0; k < numCoeff-1; ++k )
   {
     bool dec = true;
-    while (clip[k] > 0 && y[clip[k]-1][k] == y[clip[k]][k])
+    while( dec && clip[k] > 0 && y[clip[k]-1][k] == y[clip[k]][k] )
     {
-      for (int l=0; l<numCoeff; ++l)
-        if (E[clip[k]][clip[l]][k][l] != E[clip[k]-1][clip[l]][k][l])
+      for( int l = 0; dec && l < numCoeff; ++l )
+        if( E[clip[k]][clip[l]][k][l] != E[clip[k]-1][clip[l]][k][l] )
         {
           dec = false;
-          break;
         }
-      if (!dec)
+      if( dec )
       {
-        break;
+        --clip[k];
       }
-      --clip[k];
     }
   }
 }

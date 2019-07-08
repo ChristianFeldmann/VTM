@@ -111,6 +111,7 @@
 #if JVET_N0857_TILES_BRICKS
 #define JVET_N0124_PROPOSAL1                              1   // JVET-N0124 Proposal 1
 #define JVET_N0124_PROPOSAL2                              1   // JVET-N0124 Proposal 2
+#define JVET_N0288_PROPOSAL1                              1   // JVET-N0288 Proposal 1
 #endif
 
 #define JVET_N0280_RESIDUAL_CODING_TS                     1

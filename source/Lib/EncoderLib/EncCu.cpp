@@ -1991,9 +1991,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   static_vector<ModeInfo, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM>  RdModeList;
   bool                                        mrgTempBufSet = false;
 
-  for (unsigned i = 0; i < MRG_MAX_NUM_CANDS + MMVD_ADD_NUM; i++)
+  for (int i = 0; i < MRG_MAX_NUM_CANDS + MMVD_ADD_NUM; i++)
   {
-    if (i < MRG_MAX_NUM_CANDS)
+    if (i < mergeCtx.numValidMergeCand)
     {
 #if JVET_N0302_SIMPLFIED_CIIP
       RdModeList.push_back(ModeInfo(i, true, false, false));
@@ -2004,9 +2004,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     else
     {
 #if JVET_N0302_SIMPLFIED_CIIP
-      RdModeList.push_back(ModeInfo(i - MRG_MAX_NUM_CANDS, false, true, false));
+      RdModeList.push_back(ModeInfo(std::min(MMVD_ADD_NUM, i - mergeCtx.numValidMergeCand), false, true, false));
 #else
-      RdModeList.push_back(ModeInfo(i - MRG_MAX_NUM_CANDS, NUM_LUMA_MODE, false, true, false));
+      RdModeList.push_back(ModeInfo(std::min(MMVD_ADD_NUM, i - mergeCtx.numValidMergeCand), NUM_LUMA_MODE, false, true, false));
 #endif
     }
   }

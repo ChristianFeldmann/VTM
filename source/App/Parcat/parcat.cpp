@@ -601,6 +601,8 @@ int main(int argc, char * argv[])
   int poc_base = 0;
   int last_idr_poc = 0;
 
+  initROM();
+
   for(int i = 1; i < argc - 1; ++i)
   {
     std::vector<uint8_t> v = process_segment(argv[i], i, &poc_base, &last_idr_poc);

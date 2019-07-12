@@ -96,6 +96,8 @@ public:
   void    setNumberOfLongtermPictures(int numberOfLtrp);
   int     getNumberOfLongtermPictures() const;
 
+  int     getNumRefEntries() const { return m_numberOfShorttermPictures + m_numberOfLongtermPictures; }
+
   void    setPOC(int idx, int POC);
   int     getPOC(int idx) const;
 

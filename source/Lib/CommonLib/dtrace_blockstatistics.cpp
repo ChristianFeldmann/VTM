@@ -491,7 +491,9 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::Luma_IntraMode),  pu.intraDir[COMPONENT_Y]);
               }
+#if !JVET_N0324_REGULAR_MRG_FLAG
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::TriangleFlag), pu.cu->triangle);
+#endif
             }
             DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineFlag), pu.cu->affine);
             DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::AffineType), pu.cu->affineType);
@@ -902,11 +904,13 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                   }
                 }
               }
+#if !JVET_N0324_REGULAR_MRG_FLAG
               if (cu.cs->slice->getSPS()->getUseTriangle() && cu.cs->slice->isInterB() && cu.lwidth() * cu.lheight() >= TRIANGLE_MIN_SIZE && !cu.affine)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::TriangleFlag), cu.triangle);
 
               }
+#endif
             }
             else
             {

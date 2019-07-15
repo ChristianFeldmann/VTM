@@ -1299,10 +1299,6 @@ void CABACReader::extend_ref_line(CodingUnit& cu)
       if (MRL_NUM_REF_LINES > 2 && multiRefIdx != MULTI_REF_LINE_IDX[0])
       {
         multiRefIdx = m_BinDecoder.decodeBin(Ctx::MultiRefLineIdx(1)) == 1 ? MULTI_REF_LINE_IDX[2] : MULTI_REF_LINE_IDX[1];
-        if (MRL_NUM_REF_LINES > 3 && multiRefIdx != MULTI_REF_LINE_IDX[1])
-        {
-          multiRefIdx = m_BinDecoder.decodeBin(Ctx::MultiRefLineIdx(2)) == 1 ? MULTI_REF_LINE_IDX[3] : MULTI_REF_LINE_IDX[2];
-        }
       }
 
     }
@@ -2291,6 +2287,7 @@ void CABACReader::MHIntra_luma_pred_modes(CodingUnit &cu)
 }
 #endif
 
+#if !JVET_N0324_REGULAR_MRG_FLAG
 void CABACReader::triangle_mode( CodingUnit& cu )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__TRIANGLE_FLAG );
@@ -2327,6 +2324,7 @@ void CABACReader::triangle_mode( CodingUnit& cu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "triangle_mode() triangle_mode=%d pos=(%d,%d) size: %dx%d\n", cu.triangle, cu.Y().x, cu.Y().y, cu.lumaSize().width, cu.lumaSize().height );
 }
+#endif
 
 //================================================================================
 //  clause 7.3.8.7

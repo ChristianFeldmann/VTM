@@ -128,7 +128,9 @@ public:
 
   void        MHIntra_flag              ( const PredictionUnit&         pu );
   void        MHIntra_luma_pred_modes   ( const CodingUnit&             cu );
+#if !JVET_N0324_REGULAR_MRG_FLAG
   void        triangle_mode             ( const CodingUnit&             cu );
+#endif
   void        smvd_mode              ( const PredictionUnit&         pu );
 
   // pcm samples (clause 7.3.8.7)

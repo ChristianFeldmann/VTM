@@ -267,12 +267,8 @@ struct UnitAreaRelative : public UnitArea
 };
 
 class SPS;
-#if HEVC_VPS || JVET_N0278_HLS
 class VPS;
-#endif
-#if JVET_N0349_DPS
 class DPS;
-#endif
 class PPS;
 class Slice;
 
@@ -308,23 +304,17 @@ struct CodingUnit : public UnitArea
   int            affineType;
   bool           triangle;
   bool           transQuantBypass;
-#if JVET_N0413_RDPCM
   int            bdpcmMode;
-#endif
   bool           ipcm;
   uint8_t          imv;
   bool           rootCbf;
   uint8_t        sbtInfo;
   uint32_t           tileIdx;
-#if JVET_N0193_LFNST
   uint8_t         mtsFlag;
   uint32_t        lfnstIdx;
-#endif
   uint8_t         GBiIdx;
   int             refIdxBi[2];
-#if JVET_N0217_MATRIX_INTRAPRED
   bool           mipFlag;
-#endif
 
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
@@ -375,9 +365,7 @@ struct IntraPredictionData
 struct InterPredictionData
 {
   bool      mergeFlag;
-#if JVET_N0324_REGULAR_MRG_FLAG
   bool      regularMergeFlag;
-#endif
   uint8_t     mergeIdx;
   uint8_t     triangleSplitDir;
   uint8_t     triangleMergeIdx0;
@@ -455,9 +443,7 @@ struct TransformUnit : public UnitArea
   uint8_t        depth;
   uint8_t        mtsIdx;
   bool           noResidual;
-#if JVET_N0054_JOINT_CHROMA
   uint8_t        jointCbCr;
-#endif
   uint8_t        cbf        [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];
   int8_t        compAlpha   [ MAX_NUM_TBLOCKS ];

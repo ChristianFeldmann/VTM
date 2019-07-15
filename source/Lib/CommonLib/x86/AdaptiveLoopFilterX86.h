@@ -48,19 +48,7 @@
 #endif
 
 template<X86_VEXT vext>
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
 static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift, int vbCTUHeight, int vbPos)
-#else
-static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift, int vbCTUHeight, int vbPos)
-#endif
-#else
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift)
-#else
-static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift)
-#endif
-#endif
 {
   const int img_stride = srcLuma.stride;
   const Pel* srcExt = srcLuma.buf;
@@ -88,25 +76,15 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
     const Pel *p_imgY_pad_up = &srcExt[yoffset + img_stride];
     const Pel *p_imgY_pad_up2 = &srcExt[yoffset + img_stride * 2];
 
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
     // pixel padding for gradient calculation
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
     if (((blkDst.pos().y - 2 + i) > 0) && ((blkDst.pos().y - 2 + i) % vbCTUHeight) == (vbPos - 2))
-#else
-    if (((posY - 2 + i) > 0) && ((posY - 2 + i) % vbCTUHeight) == (vbPos - 2))
-#endif
     {
       p_imgY_pad_up2 = &srcExt[yoffset + img_stride];
     }
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
     else if (((blkDst.pos().y - 2 + i) > 0) && ((blkDst.pos().y - 2 + i) % vbCTUHeight) == vbPos)
-#else
-    else if (((posY - 2 + i) > 0) && ((posY - 2 + i) % vbCTUHeight) == vbPos)
-#endif
     {
       p_imgY_pad_down = &srcExt[yoffset];
     }
-#endif
 
     __m128i mmStore = _mm_setzero_si128();
 
@@ -217,24 +195,15 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
   {
     for( int j = 0; j < blk.width; j += 8 )
     {
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
       __m128i  xmm0, xmm1, xmm2, xmm3;
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       if ((((i << 1) + blkDst.pos().y) % vbCTUHeight) == (vbPos - 4))
-#else
-      if ((((i << 1) + posY) % vbCTUHeight) == (vbPos - 4))
-#endif
       {
         xmm0 = _mm_loadu_si128((__m128i*)(&(_temp[i + 0][j])));
         xmm1 = _mm_loadu_si128((__m128i*)(&(_temp[i + 1][j])));
         xmm2 = _mm_loadu_si128((__m128i*)(&(_temp[i + 2][j])));
         xmm3 = mm_0;
       }
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       else if ((((i << 1) + blkDst.pos().y) % vbCTUHeight) == vbPos)
-#else
-      else if ((((i << 1) + posY) % vbCTUHeight) == vbPos)
-#endif
       {
         xmm0 = mm_0;
         xmm1 = _mm_loadu_si128((__m128i*)(&(_temp[i + 1][j])));
@@ -249,12 +218,6 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
         xmm3 = _mm_loadu_si128((__m128i*)(&(_temp[i + 3][j])));
       }
 
-#else
-      __m128i xmm0 = _mm_loadu_si128((__m128i*)(&(_temp[i + 0][j])));
-      __m128i xmm1 = _mm_loadu_si128((__m128i*)(&(_temp[i + 1][j])));
-      __m128i xmm2 = _mm_loadu_si128((__m128i*)(&(_temp[i + 2][j])));
-      __m128i xmm3 = _mm_loadu_si128((__m128i*)(&(_temp[i + 3][j])));
-#endif
 
       __m128i xmm4 = _mm_add_epi16( xmm0, xmm1 );
       __m128i xmm6 = _mm_add_epi16( xmm2, xmm3 );
@@ -270,12 +233,7 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
       __m128i xmm12 = _mm_blend_epi16( xmm4, _mm_shuffle_epi32( xmm0, 0x40 ), 0xF0 );
       __m128i xmm10 = _mm_shuffle_epi32( xmm12, 0xB1 );
       xmm12 = _mm_add_epi32( xmm10, xmm12 );
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       if (((((i << 1) + blkDst.pos().y) % vbCTUHeight) == (vbPos - 4)) || ((((i << 1) + blkDst.pos().y) % vbCTUHeight) == vbPos))
-#else
-      if (((((i << 1) + posY) % vbCTUHeight) == (vbPos - 4)) || ((((i << 1) + posY) % vbCTUHeight) == vbPos))
-#endif
       {
         xmm12 = _mm_srai_epi32(_mm_add_epi32(_mm_slli_epi32(xmm12, 5), _mm_slli_epi32(xmm12, 6)), shift);
       }
@@ -283,9 +241,6 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
       {
         xmm12 = _mm_srai_epi32(xmm12, shift - 6);
       }
-#else
-      xmm12 = _mm_srai_epi32(xmm12, shift - 6);
-#endif
       xmm12 = _mm_min_epi32( xmm12, xmm13 );
 
       xmm12 = _mm_and_si128( xmm12, mm_15 );
@@ -378,13 +333,8 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
       int classIdx0 = c0;
       int classIdx1 = c1;
 
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       const int yOffset = (i << 1) + blkDst.pos().y;
       const int xOffset = j + blkDst.pos().x;
-#else
-      const int yOffset = ( i << 1 ) + posY;
-      const int xOffset = j + posX;
-#endif
 
       AlfClassifier *cl0 = classifier[yOffset] + xOffset;
       AlfClassifier *cl1 = classifier[yOffset + 1] + xOffset;
@@ -403,42 +353,8 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
 }
 
 template<X86_VEXT vext>
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-#if JVET_N0242_NON_LINEAR_ALF
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
 static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
-#else
-static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
-#endif
-#else
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
-#else
-static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
-#endif
-#endif
-#else
-#if JVET_N0242_NON_LINEAR_ALF
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs)
-#else
-static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs)
-#endif
-#else
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs)
-#else
-static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs)
-#endif
-#endif
-#endif
 {
-#if !JVET_N0242_NON_LINEAR_ALF
-  static const unsigned char mask05[16] = { 8, 9, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-  static const unsigned char mask03[16] = { 4, 5, 2, 3, 0, 1, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
-  static const unsigned char mask_c[16] = { 0, 1, 8, 9, 4, 5, 14, 15, 2, 3, 10, 11, 12, 13, 6, 7 };
-
-#endif
   const bool bChroma = isChroma( compId );
 
   const SPS*     sps = cs.slice->getSPS();
@@ -452,16 +368,6 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
   const int srcStride = srcLuma.stride;
   const int dstStride = dstLuma.stride;
 
-#if !JVET_N0242_NON_LINEAR_ALF
-  const Pel* srcExt = srcLuma.buf;
-  Pel* dst = dstLuma.buf;
-
-  const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4, *pImgYPad5;
-
-  short *coef = filterSet;
-  const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5;
-
-#endif
   const int numBitsMinus1 = AdaptiveLoopFilter::m_NUM_BITS - 1;
   const int offset = ( 1 << ( AdaptiveLoopFilter::m_NUM_BITS - 2 ) );
 
@@ -470,13 +376,8 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
   const int startWidth = blk.x;
   const int endWidth = blk.x + blk.width;
 
-#if JVET_N0242_NON_LINEAR_ALF
   const Pel* src = srcLuma.buf;
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   Pel* dst = dstLuma.buf + blkDst.y * dstStride;
-#else
-  Pel* dst = dstLuma.buf + startHeight * dstStride;
-#endif
 
   const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4;
   const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4;
@@ -485,119 +386,48 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
   short *clip[2] = { fClipSet, fClipSet };
 
   int transposeIdx[2] = {0, 0};
-#else
-  Pel* imgYRecPost = dst;
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-  imgYRecPost += blkDst.y * dstStride;
-#else
-  imgYRecPost += startHeight * dstStride;
-#endif
-
-  int transposeIdx = 0;
-
-#endif
   const int clsSizeY = 4;
   const int clsSizeX = 4;
 
-#if JVET_N0242_NON_LINEAR_ALF
   bool pcmFlags2x2[8] = {0,0,0,0,0,0,0,0};
   Pel  pcmRec2x2[32];
-#else
-  bool pcmFlags2x2[4] = {0,0,0,0};
-  Pel  pcmRec2x2[16];
-#endif
 
   CHECK( startHeight % clsSizeY, "Wrong startHeight in filtering" );
   CHECK( startWidth % clsSizeX, "Wrong startWidth in filtering" );
   CHECK( ( endHeight - startHeight ) % clsSizeY, "Wrong endHeight in filtering" );
   CHECK( ( endWidth - startWidth ) % clsSizeX, "Wrong endWidth in filtering" );
 
-#if !JVET_N0242_NON_LINEAR_ALF
-  const Pel* imgYRec = srcExt;
-
-  Pel *pRec;
-#endif
   AlfClassifier *pClass = nullptr;
 
-#if JVET_N0242_NON_LINEAR_ALF
   int dstStride2 = dstStride * clsSizeY;
-#endif
   int srcStride2 = srcStride * clsSizeY;
 
   const __m128i mmOffset = _mm_set1_epi32( offset );
-#if JVET_N0242_NON_LINEAR_ALF
   const __m128i mmMin = _mm_set1_epi16( clpRng.min );
   const __m128i mmMax = _mm_set1_epi16( clpRng.max );
-#else
-  const __m128i mmMin = _mm_set1_epi32( clpRng.min );
-  const __m128i mmMax = _mm_set1_epi32( clpRng.max );
-#endif
 
-#if JVET_N0242_NON_LINEAR_ALF
   const unsigned char *filterCoeffIdx[2];
   Pel filterCoeff[MAX_NUM_ALF_LUMA_COEFF][2];
   Pel filterClipp[MAX_NUM_ALF_LUMA_COEFF][2];
 
   pImgYPad0 = src + startHeight * srcStride + startWidth;
-#else
-  const __m128i xmm10 = _mm_loadu_si128( ( __m128i* )mask03 );
-  const __m128i mm_mask05 = _mm_loadu_si128( ( __m128i* )mask05 );
-
-  pImgYPad0 = imgYRec + startHeight * srcStride + startWidth;
-#endif
   pImgYPad1 = pImgYPad0 + srcStride;
   pImgYPad2 = pImgYPad0 - srcStride;
   pImgYPad3 = pImgYPad1 + srcStride;
   pImgYPad4 = pImgYPad2 - srcStride;
-#if !JVET_N0242_NON_LINEAR_ALF
-  pImgYPad5 = pImgYPad3 + srcStride;
-#endif
 
-#if JVET_N0242_NON_LINEAR_ALF
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   Pel* pRec0 = dst + blkDst.x;
-#else
-  Pel* pRec0 = dst + startWidth;
-#endif
   Pel* pRec1;
-#else
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-  pRec = imgYRecPost + blkDst.x;
-#else
-  pRec = imgYRecPost + startWidth;
-#endif
-#endif
 
-#if JVET_N0242_NON_LINEAR_ALF
   for( int i = 0; i < endHeight - startHeight; i += clsSizeY )
-#else
-  for( int i = 0; i < endHeight - startHeight; i += 4 )
-#endif
   {
-#if !JVET_N0242_NON_LINEAR_ALF
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-    pRec = imgYRecPost + blkDst.x + i * dstStride;
-#else
-    pRec = imgYRecPost + startWidth + i * dstStride;
-#endif
-
-#endif
     if( !bChroma )
     {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       pClass = classifier[blkDst.y + i] + blkDst.x;
-#else
-      pClass = classifier[startHeight + i] + startWidth;
-#endif
     }
 
-#if JVET_N0242_NON_LINEAR_ALF
     for( int j = 0; j < endWidth - startWidth; j += 8 )
-#else
-    for( int j = 0; j < endWidth - startWidth; j += 4 )
-#endif
     {
-#if JVET_N0242_NON_LINEAR_ALF
       for( int k = 0; k < 2; ++k )
       {
         if( !bChroma )
@@ -649,87 +479,8 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
           filterClipp[i][k] = clip[k][filterCoeffIdx[k][i]];
         }
       }
-#else
-      if( !bChroma )
-      {
-        AlfClassifier& cl = pClass[j];
-        transposeIdx = cl.transposeIdx;
-        if( isPCMFilterDisabled && cl.classIdx == AdaptiveLoopFilter::m_ALF_UNUSED_CLASSIDX && transposeIdx == AdaptiveLoopFilter::m_ALF_UNUSED_TRANSPOSIDX )
-        {
-          pRec += 4;
-          continue;
-        }
-        coef = filterSet + cl.classIdx * MAX_NUM_ALF_LUMA_COEFF;
-      }
-      else if ( isPCMFilterDisabled )
-      {
-        int  blkX, blkY;
-        bool *flags  = pcmFlags2x2;
-        Pel  *pcmRec = pcmRec2x2;
-
-        // check which chroma 2x2 blocks use PCM
-        // chroma PCM may not be aligned with 4x4 ALF processing grid
-        for( blkY=0; blkY<4; blkY+=2 )
-        {
-          for( blkX=0; blkX<4; blkX+=2 )
-          {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-            Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
-#else
-            Position pos(j+startWidth+blkX, i+startHeight+blkY);
-#endif
-            CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
-            *flags++ = cu->ipcm ? 1 : 0;
-
-            // save original samples from 2x2 PCM blocks
-            if( cu->ipcm )
-            {
-              *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+0)];
-              *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+1)];
-              *pcmRec++ = pRec[(blkY+1)*dstStride + (blkX+0)];
-              *pcmRec++ = pRec[(blkY+1)*dstStride + (blkX+1)];
-            }
-          }
-        }
-
-        // skip entire 4x4 if all chroma 2x2 blocks use PCM
-        if( pcmFlags2x2[0] && pcmFlags2x2[1] && pcmFlags2x2[2] && pcmFlags2x2[3] )
-        {
-          pRec += 4;
-          continue;
-        }
-      }
-
-      __m128i c0, t0 = _mm_setzero_si128();
-
-      c0 = _mm_loadu_si128( ( __m128i* )( coef + 0 ) );
-      c0 = _mm_alignr_epi8( c0, c0, 2 );
-      c0 = _mm_blend_epi16( c0, t0, 0x40 );
-
-      if( transposeIdx & 1 )
-      {
-        c0 = _mm_shuffle_epi8( c0, _mm_loadu_si128( ( __m128i* )mask_c ) );
-      }
-
-      if( transposeIdx == 0 || transposeIdx == 1 )
-      {
-        c0 = _mm_shuffle_epi8( c0, xmm10 );
-      }
-
-#endif
-#if !JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-      pImg0 = pImgYPad0 + j;
-      pImg1 = pImgYPad1 + j;
-      pImg2 = pImgYPad2 + j;
-      pImg3 = pImgYPad3 + j;
-      pImg4 = pImgYPad4 + j;
-#endif
-#if !JVET_N0180_ALF_LINE_BUFFER_REDUCTION && !JVET_N0242_NON_LINEAR_ALF
-      pImg5 = pImgYPad5 + j;
-#endif
 
 
-#if JVET_N0242_NON_LINEAR_ALF
       pRec1 = pRec0 + j;
 
       if ( bChroma && isPCMFilterDisabled )
@@ -744,11 +495,7 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
         {
           for( blkX=0; blkX<8; blkX+=2 )
           {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
             Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
-#else
-            Position pos(j+startWidth+blkX, i+startHeight+blkY);
-#endif
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
             if(cu != NULL) 
             {
@@ -775,15 +522,11 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
 
       for( int ii = 0; ii < clsSizeY; ii++ )
       {
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
         pImg0 = pImgYPad0 + j + ii * srcStride;
         pImg1 = pImgYPad1 + j + ii * srcStride;
         pImg2 = pImgYPad2 + j + ii * srcStride;
         pImg3 = pImgYPad3 + j + ii * srcStride;
         pImg4 = pImgYPad4 + j + ii * srcStride;
-#endif
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
         if ((blkDst.y + i + ii) % vbCTUHeight < vbPos && ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
         {
           pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
@@ -800,25 +543,6 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
           pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
           pImg3 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
         }
-#else
-        if ((startHeight + i + ii) % vbCTUHeight < vbPos && ((startHeight + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
-        {
-          pImg1 = ((startHeight + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
-
-          pImg2 = ((startHeight + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
-          pImg4 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
-        }
-        else if ((startHeight + i + ii) % vbCTUHeight >= vbPos && ((startHeight + i + ii) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
-        {
-          pImg2 = ((startHeight + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
-          pImg4 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
-
-          pImg1 = ((startHeight + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
-          pImg3 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
-        }
-#endif
-#endif
         __m128i clipp, clipm;
         __m128i coeffa, coeffb;
         __m128i xmmCur = _mm_lddqu_si128( ( __m128i* ) ( pImg0 + 0 ) );
@@ -990,149 +714,7 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
           xmmS0 = _mm_blend_epi16( xmmS0, xmmCur, 0xFC );
           _mm_storeu_si128( ( __m128i* )( pRec1 ), xmmS0 );
         }
-#else
-      for( int k = 0; k < 4; k++ )
-      {
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-        pImg0 = pImgYPad0 + j + k * srcStride; //j: width, 4x4 block
-        pImg1 = pImgYPad1 + j + k * srcStride;
-        pImg2 = pImgYPad2 + j + k * srcStride;
-        pImg3 = pImgYPad3 + j + k * srcStride;
-        pImg4 = pImgYPad4 + j + k * srcStride;
-#endif
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-        if ((blkDst.y + i + k) % vbCTUHeight < vbPos && ((blkDst.y + i + k) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
-        {
-          pImg1 = ((blkDst.y + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
-          pImg5 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
 
-          pImg2 = ((blkDst.y + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
-        }
-        else if ((blkDst.y + i + k) % vbCTUHeight >= vbPos && ((blkDst.y + i + k) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
-        {
-          pImg2 = ((blkDst.y + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
-
-          pImg1 = ((blkDst.y + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
-          pImg5 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
-        }
-#else
-        if ((startHeight + i + k) % vbCTUHeight < vbPos && ((startHeight + i + k) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
-        {
-          pImg1 = ((startHeight + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = ((startHeight + i + k) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
-          pImg5 = ((startHeight + i + k) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
-
-          pImg2 = ((startHeight + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
-          pImg4 = ((startHeight + i + k) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
-        }
-        else if ((startHeight + i + k) % vbCTUHeight >= vbPos && ((startHeight + i + k) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
-        {
-          pImg2 = ((startHeight + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
-          pImg4 = ((startHeight + i + k) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
-
-          pImg1 = ((startHeight + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
-          pImg3 = ((startHeight + i + k) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
-          pImg5 = ((startHeight + i + k) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
-        }
-#endif
-#endif
-        __m128i xmm4 = _mm_lddqu_si128( ( __m128i* ) ( pImg4 ) );
-        __m128i xmm2 = _mm_lddqu_si128( ( __m128i* ) ( pImg2 - 1 ) );
-        __m128i xmm0 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 - 2 ) );
-        __m128i xmm1 = _mm_lddqu_si128( ( __m128i* ) ( pImg1 - 1 - 1 ) );
-        __m128i xmm3 = _mm_lddqu_si128( ( __m128i* ) ( pImg3 - 0 - 2 ) );
-
-        __m128i xmm7 = _mm_setzero_si128();
-
-        __m128i xmm6 = _mm_shuffle_epi8( xmm0, mm_mask05 );
-        __m128i xmm8 = _mm_shuffle_epi8( _mm_srli_si128( xmm0, 2 ), mm_mask05 );
-        __m128i xmm9 = _mm_shuffle_epi8( _mm_srli_si128( xmm0, 4 ), mm_mask05 );
-        __m128i xmm11 = _mm_shuffle_epi8( _mm_srli_si128( xmm0, 6 ), mm_mask05 );
-
-        xmm6 = _mm_blend_epi16( xmm7, xmm6, 0x03 );
-        xmm8 = _mm_blend_epi16( xmm7, xmm8, 0x03 );
-        xmm9 = _mm_blend_epi16( xmm7, xmm9, 0x03 );
-        xmm11 = _mm_blend_epi16( xmm7, xmm11, 0x03 );
-
-        xmm6 = _mm_add_epi16( xmm6, xmm0 );
-        xmm8 = _mm_add_epi16( xmm8, _mm_srli_si128( xmm0, 2 ) );
-        xmm9 = _mm_add_epi16( xmm9, _mm_srli_si128( xmm0, 4 ) );
-        xmm11 = _mm_add_epi16( xmm11, _mm_srli_si128( xmm0, 6 ) );
-
-        xmm6 = _mm_slli_si128( xmm6, 6 );
-        xmm8 = _mm_slli_si128( xmm8, 6 );
-        xmm9 = _mm_slli_si128( xmm9, 6 );
-        xmm11 = _mm_slli_si128( xmm11, 6 );
-
-        xmm4 = _mm_add_epi16( xmm4, _mm_srli_si128( xmm3, 4 ) );
-        xmm6 = _mm_blend_epi16( xmm6, _mm_slli_si128( xmm4, 14 ), 0x80 );
-        xmm8 = _mm_blend_epi16( xmm8, _mm_slli_si128( xmm4, 12 ), 0x80 );
-        xmm9 = _mm_blend_epi16( xmm9, _mm_slli_si128( xmm4, 10 ), 0x80 );
-        xmm11 = _mm_blend_epi16( xmm11, _mm_slli_si128( xmm4, 8 ), 0x80 );
-
-        __m128i xmm12 = _mm_shuffle_epi8( xmm2, xmm10 );
-        __m128i xmm13 = _mm_shuffle_epi8( _mm_srli_si128( xmm2, 2 ), xmm10 );
-        __m128i xmm14 = _mm_shuffle_epi8( _mm_srli_si128( xmm2, 4 ), xmm10 );
-        __m128i xmm15 = _mm_shuffle_epi8( _mm_srli_si128( xmm2, 6 ), xmm10 );
-
-        xmm12 = _mm_add_epi16( xmm12, _mm_srli_si128( xmm1, 2 ) );
-        xmm13 = _mm_add_epi16( xmm13, _mm_srli_si128( xmm1, 4 ) );
-        xmm14 = _mm_add_epi16( xmm14, _mm_srli_si128( xmm1, 6 ) );
-        xmm15 = _mm_add_epi16( xmm15, _mm_srli_si128( xmm1, 8 ) );
-
-        xmm6 = _mm_blend_epi16( xmm6, xmm12, 0x07 );
-        xmm8 = _mm_blend_epi16( xmm8, xmm13, 0x07 );
-        xmm9 = _mm_blend_epi16( xmm9, xmm14, 0x07 );
-        xmm11 = _mm_blend_epi16( xmm11, xmm15, 0x07 );
-
-        xmm6 = _mm_madd_epi16( xmm6, c0 );
-        xmm8 = _mm_madd_epi16( xmm8, c0 );
-        xmm9 = _mm_madd_epi16( xmm9, c0 );
-        xmm11 = _mm_madd_epi16( xmm11, c0 );
-
-        xmm12 = _mm_shuffle_epi32( xmm6, 0x1B );
-        xmm13 = _mm_shuffle_epi32( xmm8, 0x1B );
-        xmm14 = _mm_shuffle_epi32( xmm9, 0x1B );
-        xmm15 = _mm_shuffle_epi32( xmm11, 0x1B );
-
-        xmm6 = _mm_add_epi32( xmm6, xmm12 );
-        xmm8 = _mm_add_epi32( xmm8, xmm13 );
-        xmm9 = _mm_add_epi32( xmm9, xmm14 );
-        xmm11 = _mm_add_epi32( xmm11, xmm15 );
-
-        xmm6 = _mm_blend_epi16( xmm6, xmm8, 0xF0 );
-        xmm9 = _mm_blend_epi16( xmm9, xmm11, 0xF0 );
-
-        xmm12 = _mm_hadd_epi32( xmm6, xmm9 );
-
-        xmm12 = _mm_add_epi32( xmm12, mmOffset );
-        xmm12 = _mm_srai_epi32( xmm12, numBitsMinus1 );
-
-        xmm12 = _mm_min_epi32( mmMax, _mm_max_epi32( xmm12, mmMin ) );
-
-        xmm12 = _mm_packus_epi32( xmm12, xmm12 );
-
-        _mm_storel_epi64( ( __m128i* )( pRec ), xmm12 );
-
-        pRec += dstStride;
-#endif
-#if !JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-        pImg0 += srcStride;
-        pImg1 += srcStride;
-        pImg2 += srcStride;
-        pImg3 += srcStride;
-        pImg4 += srcStride;
-#endif
-#if !JVET_N0242_NON_LINEAR_ALF && !JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-        pImg5 += srcStride;
-#endif
-
-#if JVET_N0242_NON_LINEAR_ALF
         pRec1 += dstStride;
       }
       pRec1 -= dstStride2;
@@ -1157,101 +739,23 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
         }
       }
 
-#else
-      } //<-- end of k-loop
-
-      pRec -= ( 4 * dstStride );
-
-      // restore 2x2 PCM chroma blocks
-      if( bChroma && isPCMFilterDisabled )
-      {
-        int  blkX, blkY;
-        bool *flags  = pcmFlags2x2;
-        Pel  *pcmRec = pcmRec2x2;
-        for( blkY=0; blkY<4; blkY+=2 )
-        {
-          for( blkX=0; blkX<4; blkX+=2 )
-          {
-            if( *flags++ )
-            {
-              pRec[(blkY+0)*dstStride + (blkX+0)] = *pcmRec++;
-              pRec[(blkY+0)*dstStride + (blkX+1)] = *pcmRec++;
-              pRec[(blkY+1)*dstStride + (blkX+0)] = *pcmRec++;
-              pRec[(blkY+1)*dstStride + (blkX+1)] = *pcmRec++;
-            }
-          }
-        }
-      }
-
-      pRec += 4;
-#endif
     }
 
-#if JVET_N0242_NON_LINEAR_ALF
     pRec0 += dstStride2;
-#else
-    pRec += 4 * dstStride;
-#endif
 
     pImgYPad0 += srcStride2;
     pImgYPad1 += srcStride2;
     pImgYPad2 += srcStride2;
     pImgYPad3 += srcStride2;
     pImgYPad4 += srcStride2;
-#if !JVET_N0242_NON_LINEAR_ALF
-    pImgYPad5 += srcStride2;
-#endif
   }
 }
 
 template<X86_VEXT vext>
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-#if JVET_N0242_NON_LINEAR_ALF
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
 static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs,  int vbCTUHeight, int vbPos)
-#else
-static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs,  int vbCTUHeight, int vbPos)
-#endif
-#else
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs,  int vbCTUHeight, int vbPos)
-#else
-static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs,  int vbCTUHeight, int vbPos)
-#endif
-#endif
-#else
-#if JVET_N0242_NON_LINEAR_ALF
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs )
-#else
-static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs )
-#endif
-#else
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs )
-#else
-static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng, CodingStructure& cs )
-#endif
-#endif
-#endif
 {
-#if !JVET_N0242_NON_LINEAR_ALF
-  static const unsigned char mask0[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 6, 7, 4, 5, 2, 3 };
-  static const unsigned char mask00[16] = { 2, 3, 0, 1, 0, 0, 0, 0, 8, 9, 0, 0, 0, 0, 0, 1 };
-  static const unsigned char mask02[16] = { 0, 0, 0, 0, 2, 3, 10, 11, 0, 0, 10, 11, 2, 3, 0, 0 };
-  static const unsigned char mask20[16] = { 0, 0, 4, 5, 0, 0, 0, 0, 0, 0, 6, 7, 0, 0, 0, 0 };
-  static const unsigned char mask22[16] = { 14, 15, 0, 0, 6, 7, 4, 5, 12, 13, 0, 0, 8, 9, 0, 1 };
-  static const unsigned char mask35[16] = { 4, 5, 2, 3, 0, 1, 14, 15, 12, 13, 10, 11, 8, 9, 6, 7 };
-
-#endif
   const bool bChroma = isChroma( compId );
 
-#if !JVET_N0242_NON_LINEAR_ALF
-  if( bChroma )
-  {
-    CHECK( 0, "Chroma doesn't support 7x7" );
-  }
-#endif
   const SPS*     sps = cs.slice->getSPS();
   bool isDualTree = CS::isDualITree(cs);
   bool isPCMFilterDisabled = sps->getPCMFilterDisableFlag();
@@ -1262,17 +766,6 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   const int srcStride = srcLuma.stride;
   const int dstStride = dstLuma.stride;
 
-#if !JVET_N0242_NON_LINEAR_ALF
-  const Pel* srcExt = srcLuma.buf;
-  Pel* dst = dstLuma.buf;
-
-  const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4, *pImgYPad5, *pImgYPad6;
-
-  short *coef = filterSet;
-  const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4;
-  const Pel *pImg5, *pImg6;
-
-#endif
   const int numBitsMinus1 = AdaptiveLoopFilter::m_NUM_BITS - 1;
   const int offset = ( 1 << ( AdaptiveLoopFilter::m_NUM_BITS - 2 ) );
 
@@ -1281,13 +774,8 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   const int startWidth = blk.x;
   const int endWidth = blk.x + blk.width;
 
-#if JVET_N0242_NON_LINEAR_ALF
   const Pel* src = srcLuma.buf;
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   Pel* dst = dstLuma.buf + blkDst.y * dstStride;
-#else
-  Pel* dst = dstLuma.buf + startHeight * dstStride;
-#endif
 
   const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4, *pImgYPad5, *pImgYPad6;
   const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
@@ -1296,63 +784,31 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   short *clip[2] = { fClipSet, fClipSet };
 
   int transposeIdx[2] = {0, 0};
-#else
-  Pel* imgYRecPost = dst;
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-  imgYRecPost += blkDst.y * dstStride;
-#else
-  imgYRecPost += startHeight * dstStride;
-#endif
-
-  int transposeIdx = 0;
-
-#endif
   const int clsSizeY = 4;
   const int clsSizeX = 4;
 
-#if JVET_N0242_NON_LINEAR_ALF
   bool pcmFlags2x2[8] = {0,0,0,0,0,0,0,0};
   Pel  pcmRec2x2[32];
-#else
-  bool pcmFlags2x2[4] = {0,0,0,0};
-  Pel  pcmRec2x2[16];
-#endif
 
   CHECK( startHeight % clsSizeY, "Wrong startHeight in filtering" );
   CHECK( startWidth % clsSizeX, "Wrong startWidth in filtering" );
   CHECK( ( endHeight - startHeight ) % clsSizeY, "Wrong endHeight in filtering" );
   CHECK( ( endWidth - startWidth ) % clsSizeX, "Wrong endWidth in filtering" );
 
-#if !JVET_N0242_NON_LINEAR_ALF
-  const Pel* imgYRec = srcExt;
-
-  Pel *pRec;
-#endif
   AlfClassifier *pClass = nullptr;
 
   int dstStride2 = dstStride * clsSizeY;
   int srcStride2 = srcStride * clsSizeY;
 
   const __m128i mmOffset = _mm_set1_epi32( offset );
-#if JVET_N0242_NON_LINEAR_ALF
   const __m128i mmMin = _mm_set1_epi16( clpRng.min );
   const __m128i mmMax = _mm_set1_epi16( clpRng.max );
-#else
-  const __m128i mmMin = _mm_set1_epi32( clpRng.min );
-  const __m128i mmMax = _mm_set1_epi32( clpRng.max );
-#endif
 
-#if JVET_N0242_NON_LINEAR_ALF
   const unsigned char *filterCoeffIdx[2];
   Pel filterCoeff[MAX_NUM_ALF_LUMA_COEFF][2];
   Pel filterClipp[MAX_NUM_ALF_LUMA_COEFF][2];
 
   pImgYPad0 = src + startHeight * srcStride + startWidth;
-#else
-  const __m128i xmm10 = _mm_loadu_si128( ( __m128i* )mask35 );
-
-  pImgYPad0 = imgYRec + startHeight * srcStride + startWidth;
-#endif
   pImgYPad1 = pImgYPad0 + srcStride;
   pImgYPad2 = pImgYPad0 - srcStride;
   pImgYPad3 = pImgYPad1 + srcStride;
@@ -1360,51 +816,18 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
   pImgYPad5 = pImgYPad3 + srcStride;
   pImgYPad6 = pImgYPad4 - srcStride;
 
-#if JVET_N0242_NON_LINEAR_ALF
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   Pel* pRec0 = dst + blkDst.x;
-#else
-  Pel* pRec0 = dst + startWidth;
-#endif
   Pel* pRec1;
-#else
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-  pRec = imgYRecPost + blkDst.x;
-#else
-  pRec = imgYRecPost + startWidth;
-#endif
-#endif
 
-#if JVET_N0242_NON_LINEAR_ALF
   for( int i = 0; i < endHeight - startHeight; i += clsSizeY )
-#else
-  for( int i = 0; i < endHeight - startHeight; i += 4 )
-#endif
   {
-#if !JVET_N0242_NON_LINEAR_ALF
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-    pRec = imgYRecPost + blkDst.x + i * dstStride;
-#else
-    pRec = imgYRecPost + startWidth + i * dstStride;
-#endif
-
-#endif
     if( !bChroma )
     {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       pClass = classifier[blkDst.y + i] + blkDst.x;
-#else
-      pClass = classifier[startHeight + i] + startWidth;
-#endif
     }
 
-#if JVET_N0242_NON_LINEAR_ALF
     for( int j = 0; j < endWidth - startWidth; j += 8 )
-#else
-    for( int j = 0; j < endWidth - startWidth; j += 4 )
-#endif
     {
-#if JVET_N0242_NON_LINEAR_ALF
       for (int k = 0; k < 2; ++k)
       {
         if( !bChroma )
@@ -1456,103 +879,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
           filterClipp[i][k] = clip[k][filterCoeffIdx[k][i]];
         }
       }
-#else
-      if( !bChroma )
-      {
-        AlfClassifier& cl = pClass[j];
-        transposeIdx = cl.transposeIdx;
-        if ( isPCMFilterDisabled && cl.classIdx == AdaptiveLoopFilter::m_ALF_UNUSED_CLASSIDX && transposeIdx == AdaptiveLoopFilter::m_ALF_UNUSED_TRANSPOSIDX )
-        {
-          pRec += 4;
-          continue;
-        }
-        coef = filterSet + cl.classIdx * MAX_NUM_ALF_LUMA_COEFF;
-      }
-      else if ( isPCMFilterDisabled )
-      {
-        int  blkX, blkY;
-        bool *flags  = pcmFlags2x2;
-        Pel  *pcmRec = pcmRec2x2;
 
-        // check which chroma 2x2 blocks use PCM
-        // chroma PCM may not be aligned with 4x4 ALF processing grid
-        for( blkY=0; blkY<4; blkY+=2 )
-        {
-          for( blkX=0; blkX<4; blkX+=2 )
-          {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-            Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
-#else
-            Position pos(j+startWidth+blkX, i+startHeight+blkY);
-#endif
-            CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
-            *flags++ = cu->ipcm ? 1 : 0;
-
-            // save original samples from 2x2 PCM blocks
-            if( cu->ipcm )
-            {
-              *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+0)];
-              *pcmRec++ = pRec[(blkY+0)*dstStride + (blkX+1)];
-              *pcmRec++ = pRec[(blkY+1)*dstStride + (blkX+0)];
-              *pcmRec++ = pRec[(blkY+1)*dstStride + (blkX+1)];
-            }
-          }
-        }
-
-        // skip entire 4x4 if all chroma 2x2 blocks use PCM
-        if( pcmFlags2x2[0] && pcmFlags2x2[1] && pcmFlags2x2[2] && pcmFlags2x2[3] )
-        {
-          pRec += 4;
-          continue;
-        }
-      }
-
-      __m128i c0, c2, t1, t2;
-
-      t1 = _mm_loadu_si128( ( __m128i* )( coef + 0 ) );
-      t2 = _mm_loadu_si128( ( __m128i* )( coef + 1 ) );
-      c2 = _mm_loadu_si128( ( __m128i* )( coef + 4 - 3 ) );
-      c0 = _mm_loadu_si128( ( __m128i* )( coef + 9 - 1 ) );
-
-      c0 = _mm_blend_epi16( c0, t1, 0x01 );
-      c2 = _mm_blend_epi16( c2, t2, 0x07 );
-
-      if( transposeIdx & 1 )
-      {
-        t1 = _mm_loadu_si128( ( __m128i* )mask00 );
-        t2 = _mm_loadu_si128( ( __m128i* )mask02 );
-        __m128i t3 = _mm_loadu_si128( ( __m128i* )mask20 );
-        __m128i t4 = _mm_loadu_si128( ( __m128i* )mask22 );
-
-        t1 = _mm_shuffle_epi8( c0, t1 );
-        t2 = _mm_shuffle_epi8( c2, t2 );
-        t3 = _mm_shuffle_epi8( c0, t3 );
-        t4 = _mm_shuffle_epi8( c2, t4 );
-
-        c0 = _mm_blend_epi16( t1, t2, 0x6C );
-        c2 = _mm_blend_epi16( t4, t3, 0x22 );
-      }
-      else
-      {
-        c0 = _mm_shuffle_epi8( c0, _mm_loadu_si128( ( __m128i* )mask0 ) );
-      }
-
-      if( transposeIdx == 0 || transposeIdx == 3 )
-      {
-        c2 = _mm_shuffle_epi8( c2, xmm10 );
-      }
- #endif
-#if !JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-      pImg0 = pImgYPad0 + j;
-      pImg1 = pImgYPad1 + j;
-      pImg2 = pImgYPad2 + j;
-      pImg3 = pImgYPad3 + j;
-      pImg4 = pImgYPad4 + j;
-      pImg5 = pImgYPad5 + j;
-      pImg6 = pImgYPad6 + j;
-#endif
-
-#if JVET_N0242_NON_LINEAR_ALF
       pRec1 = pRec0 + j;
 
       if ( bChroma && isPCMFilterDisabled )
@@ -1567,11 +894,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         {
           for( blkX=0; blkX<8; blkX+=2 )
           {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
             Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
-#else
-            Position pos(j+startWidth+blkX, i+startHeight+blkY);
-#endif
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
             if( cu != NULL) 
             {
@@ -1598,7 +921,6 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
 
       for( int ii = 0; ii < clsSizeY; ii++ )
       {
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
         pImg0 = pImgYPad0 + j + ii * srcStride;
         pImg1 = pImgYPad1 + j + ii * srcStride;
         pImg2 = pImgYPad2 + j + ii * srcStride;
@@ -1606,7 +928,6 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         pImg4 = pImgYPad4 + j + ii * srcStride;
         pImg5 = pImgYPad5 + j + ii * srcStride;
         pImg6 = pImgYPad6 + j + ii * srcStride;
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
         if ((blkDst.y + i + ii) % vbCTUHeight < vbPos && ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
         {
           pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
@@ -1627,29 +948,6 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
           pImg3 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
           pImg5 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
         }
-#else
-        if ((startHeight + i + ii) % vbCTUHeight < vbPos && ((startHeight + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
-        {
-          pImg1 = ((startHeight + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
-          pImg5 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
-
-          pImg2 = ((startHeight + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
-          pImg4 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
-          pImg6 = ((startHeight + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg4 : pImg6;
-        }
-        else if ((startHeight + i + ii) % vbCTUHeight >= vbPos && ((startHeight + i + ii) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
-        {
-          pImg2 = ((startHeight + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
-          pImg4 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
-          pImg6 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg4 : pImg6;
-
-          pImg1 = ((startHeight + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
-          pImg3 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
-          pImg5 = ((startHeight + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
-        }
-#endif
-#endif
         __m128i clipp, clipm;
         __m128i coeffa, coeffb;
         __m128i xmmCur = _mm_lddqu_si128( ( __m128i* ) ( pImg0 + 0 ) );
@@ -1965,150 +1263,7 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
           xmmS0 = _mm_blend_epi16( xmmS0, xmmCur, 0xFC );
           _mm_storeu_si128( ( __m128i* )( pRec1 ), xmmS0 );
         }
-#else
-      for( int k = 0; k < 4; k++ )
-      {
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-        pImg0 = pImgYPad0 + j + k * srcStride; //j: width, 4x4 block
-        pImg1 = pImgYPad1 + j + k * srcStride;
-        pImg2 = pImgYPad2 + j + k * srcStride;
-        pImg3 = pImgYPad3 + j + k * srcStride;
-        pImg4 = pImgYPad4 + j + k * srcStride;
-        pImg5 = pImgYPad5 + j + k * srcStride;
-        pImg6 = pImgYPad6 + j + k * srcStride;
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-        if ((blkDst.y + i + k) % vbCTUHeight < vbPos && ((blkDst.y + i + k) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
-        {
-          pImg1 = ((blkDst.y + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
-          pImg5 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
 
-          pImg2 = ((blkDst.y + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
-          pImg6 = ((blkDst.y + i + k) % vbCTUHeight >= vbPos - 3) ? pImg4 : pImg6;
-        }
-        else if ((blkDst.y + i + k) % vbCTUHeight >= vbPos && ((blkDst.y + i + k) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
-        {
-          pImg2 = ((blkDst.y + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
-          pImg6 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 2) ? pImg4 : pImg6;
-
-          pImg1 = ((blkDst.y + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
-          pImg5 = ((blkDst.y + i + k) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
-        }
-#else
-        if ((startHeight + i + k) % vbCTUHeight < vbPos && ((startHeight + i + k) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
-        {
-          pImg1 = ((startHeight + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = ((startHeight + i + k) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
-          pImg5 = ((startHeight + i + k) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
-
-          pImg2 = ((startHeight + i + k) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
-          pImg4 = ((startHeight + i + k) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
-          pImg6 = ((startHeight + i + k) % vbCTUHeight >= vbPos - 3) ? pImg4 : pImg6;
-        }
-        else if ((startHeight + i + k) % vbCTUHeight >= vbPos && ((startHeight + i + k) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
-        {
-          pImg2 = ((startHeight + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
-          pImg4 = ((startHeight + i + k) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
-          pImg6 = ((startHeight + i + k) % vbCTUHeight <= vbPos + 2) ? pImg4 : pImg6;
-
-          pImg1 = ((startHeight + i + k) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
-          pImg3 = ((startHeight + i + k) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
-          pImg5 = ((startHeight + i + k) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
-        }
-#endif
-#endif
-        __m128i xmm6 = _mm_lddqu_si128( ( __m128i* ) pImg6 );
-        __m128i xmm4 = _mm_lddqu_si128( ( __m128i* ) ( pImg4 - 1 ) );
-        __m128i xmm2 = _mm_lddqu_si128( ( __m128i* ) ( pImg2 - 2 ) );
-        __m128i xmm0 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 - 3 ) );
-        __m128i xmm11 = _mm_lddqu_si128( ( __m128i* ) ( pImg0 + 5 ) );
-        __m128i xmm1 = _mm_lddqu_si128( ( __m128i* ) ( pImg1 - 2 - 1 ) );
-        __m128i xmm8 = _mm_lddqu_si128( ( __m128i* ) ( pImg1 + 5 ) );
-        __m128i xmm3 = _mm_lddqu_si128( ( __m128i* ) ( pImg3 - 2 ) );
-        __m128i xmm5 = _mm_lddqu_si128( ( __m128i* ) ( pImg5 - 1 ) );
-
-        xmm6 = _mm_add_epi16( xmm6, _mm_srli_si128( xmm5, 2 ) );
-
-        __m128i xmm12 = _mm_blend_epi16( _mm_slli_si128( xmm0, 2 ), xmm6, 0x01 );
-        __m128i xmm13 = _mm_blend_epi16( xmm0, _mm_srli_si128( xmm6, 2 ), 0x01 );
-
-        __m128i xmm14 = _mm_blend_epi16( _mm_slli_si128( xmm2, 6 ), xmm4, 0x07 );
-        __m128i xmm16 = _mm_blend_epi16( _mm_slli_si128( xmm1, 4 ), _mm_srli_si128( xmm3, 2 ), 0x07 );
-        xmm14 = _mm_shuffle_epi8( xmm14, xmm10 );
-        xmm14 = _mm_add_epi16( xmm14, xmm16 );
-        __m128i xmm15 = _mm_blend_epi16( _mm_slli_si128( xmm2, 4 ), _mm_srli_si128( xmm4, 2 ), 0x07 );
-        __m128i xmm17 = _mm_blend_epi16( _mm_slli_si128( xmm1, 2 ), _mm_srli_si128( xmm3, 4 ), 0x07 );
-        xmm15 = _mm_shuffle_epi8( xmm15, xmm10 );
-        xmm15 = _mm_add_epi16( xmm15, xmm17 );
-
-        xmm12 = _mm_madd_epi16( xmm12, c0 );
-        xmm13 = _mm_madd_epi16( xmm13, c0 );
-        xmm14 = _mm_madd_epi16( xmm14, c2 );
-        xmm15 = _mm_madd_epi16( xmm15, c2 );
-
-        xmm12 = _mm_add_epi32( xmm12, xmm14 );
-        xmm13 = _mm_add_epi32( xmm13, xmm15 );
-        xmm14 = _mm_shuffle_epi32( xmm12, 0x1B );
-        xmm15 = _mm_shuffle_epi32( xmm13, 0x1B );
-        xmm12 = _mm_add_epi32( xmm12, xmm14 );
-        xmm13 = _mm_add_epi32( xmm13, xmm15 );
-
-        __m128i xmm7 = _mm_blend_epi16( xmm12, xmm13, 0xF0 );
-
-        xmm12 = _mm_blend_epi16( _mm_alignr_epi8( xmm11, xmm0, 2 ), _mm_srli_si128( xmm6, 4 ), 0x01 );
-        xmm13 = _mm_blend_epi16( _mm_alignr_epi8( xmm11, xmm0, 4 ), _mm_srli_si128( xmm6, 6 ), 0x01 );
-
-        xmm14 = _mm_blend_epi16( _mm_slli_si128( xmm2, 2 ), _mm_srli_si128( xmm4, 4 ), 0x07 );
-        xmm16 = _mm_blend_epi16( xmm1, _mm_srli_si128( xmm3, 6 ), 0x07 );
-        xmm14 = _mm_shuffle_epi8( xmm14, xmm10 );
-        xmm14 = _mm_add_epi16( xmm14, xmm16 );
-        xmm15 = _mm_blend_epi16( xmm2, _mm_srli_si128( xmm4, 6 ), 0x07 );
-        xmm8 = _mm_alignr_epi8( xmm8, xmm1, 2 );
-        xmm17 = _mm_blend_epi16( xmm8, _mm_srli_si128( xmm3, 8 ), 0x07 );
-        xmm15 = _mm_shuffle_epi8( xmm15, xmm10 );
-        xmm15 = _mm_add_epi16( xmm15, xmm17 );
-
-        xmm12 = _mm_madd_epi16( xmm12, c0 );
-        xmm13 = _mm_madd_epi16( xmm13, c0 );
-        xmm14 = _mm_madd_epi16( xmm14, c2 );
-        xmm15 = _mm_madd_epi16( xmm15, c2 );
-
-        xmm12 = _mm_add_epi32( xmm12, xmm14 );
-        xmm13 = _mm_add_epi32( xmm13, xmm15 );
-        xmm14 = _mm_shuffle_epi32( xmm12, 0x1B );
-        xmm15 = _mm_shuffle_epi32( xmm13, 0x1B );
-        xmm12 = _mm_add_epi32( xmm12, xmm14 );
-        xmm13 = _mm_add_epi32( xmm13, xmm15 );
-
-        __m128i xmm9 = _mm_blend_epi16( xmm12, xmm13, 0xF0 );
-
-        xmm12 = _mm_hadd_epi32( xmm7, xmm9 );
-
-        xmm12 = _mm_add_epi32( xmm12, mmOffset );
-        xmm12 = _mm_srai_epi32( xmm12, numBitsMinus1 );
-
-        xmm12 = _mm_min_epi32( mmMax, _mm_max_epi32( xmm12, mmMin ) );
-
-        xmm12 = _mm_packus_epi32( xmm12, xmm12 );
-
-        _mm_storel_epi64( ( __m128i* )( pRec ), xmm12 );
-
-        pRec += dstStride;
-#endif
-
-#if !JVET_N0180_ALF_LINE_BUFFER_REDUCTION
-        pImg0 += srcStride;
-        pImg1 += srcStride;
-        pImg2 += srcStride;
-        pImg3 += srcStride;
-        pImg4 += srcStride;
-        pImg5 += srcStride;
-        pImg6 += srcStride;
-#endif
-#if JVET_N0242_NON_LINEAR_ALF
 
         pRec1 += dstStride;
       }
@@ -2134,41 +1289,9 @@ static void simdFilter7x7Blk( AlfClassifier** classifier, const PelUnitBuf &recD
         }
       }
 
-#else
-      }
-
-      pRec -= ( 4 * dstStride );
-
-      // restore 2x2 PCM chroma blocks
-      if( bChroma && isPCMFilterDisabled )
-      {
-        int  blkX, blkY;
-        bool *flags  = pcmFlags2x2;
-        Pel  *pcmRec = pcmRec2x2;
-        for( blkY=0; blkY<4; blkY+=2 )
-        {
-          for( blkX=0; blkX<4; blkX+=2 )
-          {
-            if( *flags++ )
-            {
-              pRec[(blkY+0)*dstStride + (blkX+0)] = *pcmRec++;
-              pRec[(blkY+0)*dstStride + (blkX+1)] = *pcmRec++;
-              pRec[(blkY+1)*dstStride + (blkX+0)] = *pcmRec++;
-              pRec[(blkY+1)*dstStride + (blkX+1)] = *pcmRec++;
-            }
-          }
-        }
-      }
-
-      pRec += 4;
-#endif
     }
 
-#if JVET_N0242_NON_LINEAR_ALF
     pRec0 += dstStride2;
-#else
-    pRec += dstStride2;
-#endif
 
     pImgYPad0 += srcStride2;
     pImgYPad1 += srcStride2;

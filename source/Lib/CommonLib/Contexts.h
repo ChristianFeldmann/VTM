@@ -201,21 +201,15 @@ public:
   static const CtxSet   Split12Flag;
   static const CtxSet   SkipFlag;
   static const CtxSet   MergeFlag;
-#if JVET_N0324_REGULAR_MRG_FLAG
   static const CtxSet   RegularMergeFlag;
-#endif
   static const CtxSet   MergeIdx;
   static const CtxSet   PredMode;
   static const CtxSet   MultiRefLineIdx;
   static const CtxSet   IntraLumaMpmFlag;
-#if JVET_N0185_UNIFIED_MPM
   static const CtxSet   IntraLumaPlanarFlag;
-#endif
   static const CtxSet   IntraChromaPredMode;
-#if JVET_N0217_MATRIX_INTRAPRED
   static const CtxSet   MipFlag;
   static const CtxSet   MipMode;
-#endif
   static const CtxSet   DeltaQP;
   static const CtxSet   InterDir;
   static const CtxSet   RefPic;
@@ -226,9 +220,7 @@ public:
   static const CtxSet   AffineType;
   static const CtxSet   AffMergeIdx;
   static const CtxSet   Mvd;
-#if JVET_N0413_RDPCM
   static const CtxSet   BDPCMMode;
-#endif
   static const CtxSet   QtRootCbf;
   static const CtxSet   QtCbf           [3];    // [ channel ]
   static const CtxSet   SigCoeffGroup   [2];    // [ ChannelType ]
@@ -237,21 +229,17 @@ public:
   static const CtxSet   SigFlag         [6];    // [ ChannelType + State ]
   static const CtxSet   ParFlag         [2];    // [ ChannelType ]
   static const CtxSet   GtxFlag         [4];    // [ ChannelType + x ]
-#if JVET_N0280_RESIDUAL_CODING_TS
   static const CtxSet   TsSigCoeffGroup;
   static const CtxSet   TsSigFlag;
   static const CtxSet   TsParFlag;
   static const CtxSet   TsGtxFlag;
   static const CtxSet   TsResidualSign;
-#endif
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;
   static const CtxSet   SaoTypeIdx;
   static const CtxSet   MTSIndex;
   static const CtxSet   TransquantBypassFlag;
-#if JVET_N0193_LFNST
   static const CtxSet   LFNSTIdx;
-#endif
   static const CtxSet   RdpcmFlag;
   static const CtxSet   RdpcmDir;
   static const CtxSet   SbtFlag;
@@ -264,24 +252,14 @@ public:
   static const CtxSet   ImvFlag;
   static const CtxSet   GBiIdx;
   static const CtxSet   ctbAlfFlag;
-#if JVET_N0415_CTB_ALF
   static const CtxSet   AlfUseLatestFilt;
   static const CtxSet   AlfUseTemporalFilt;
   static const CtxSet   Alf;
-#endif
   static const CtxSet   MHIntraFlag;
-#if !JVET_N0302_SIMPLFIED_CIIP
-  static const CtxSet   MHIntraPredMode;
-#endif
-#if !JVET_N0324_REGULAR_MRG_FLAG
-  static const CtxSet   TriangleFlag;
-#endif
   static const CtxSet   SmvdFlag;
   static const CtxSet   IBCFlag;
   static const CtxSet   ISPMode;
-#if JVET_N0054_JOINT_CHROMA
   static const CtxSet   JointCbCrFlag;
-#endif
   static const unsigned NumberOfContexts;
 
   // combined sets for less complex copying

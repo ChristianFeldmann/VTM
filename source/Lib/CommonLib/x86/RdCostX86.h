@@ -2109,12 +2109,6 @@ Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
     THROW( "Unsupported size" );
   }
 
-#if 0
-  Distortion hadSimd   = uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
-  Distortion hadScalar = RdCost::xGetHADs( rcDtParam );
-
-  CHECK( hadSimd != hadScalar, "SIMD implementation of HAD norm is equal to the scalar implementation!" );
-#endif
 
   return uiSum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
 }

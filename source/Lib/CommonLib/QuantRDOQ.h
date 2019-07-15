@@ -61,34 +61,20 @@ public:
   ~QuantRDOQ();
 
 public:
-#if HEVC_USE_SCALING_LISTS
   void setFlatScalingList   ( const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths );
   void setScalingList       ( ScalingList *scalingList, const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths);
-#endif
   // quantization
   void quant                ( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx );
-#if JVET_N0413_RDPCM
   void forwardRDPCM         ( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx &ctx );
-#endif
 
 private:
-#if HEVC_USE_SCALING_LISTS
-#if JVET_N0847_SCALING_LISTS
   double* xGetErrScaleCoeffSL            ( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp ) { return m_errScale[sizeX][sizeY][list][qp]; };  //!< get Error Scale Coefficent
   double  xGetErrScaleCoeff              ( const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth);
-#else
-  double* xGetErrScaleCoeff              ( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp ) { return m_errScale             [sizeX][sizeY][list][qp]; };  //!< get Error Scale Coefficent
-#endif
   double& xGetErrScaleCoeffNoScalingList ( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp ) { return m_errScaleNoScalingList[sizeX][sizeY][list][qp]; };  //!< get Error Scale Coefficent
   void    xInitScalingList               ( const QuantRDOQ* other );
   void    xDestroyScalingList            ();
   void    xSetErrScaleCoeff              ( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp, const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths );
-#else
-  double  xGetErrScaleCoeff              ( const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth);
-#endif
-#if JVET_N0413_RDPCM
   void    xDequantSample                 ( TCoeff& pRes, TCoeff& coeff, const TrQuantParams& trQuantParams );
-#endif
   // RDOQ functions
   void xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx &ctx);
 
@@ -130,7 +116,6 @@ private:
   inline double xGetICost            ( double dRate                                                      ) const;
   inline double xGetIEPRate          (                                                                   ) const;
 
-#if JVET_N0280_RESIDUAL_CODING_TS
   void xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &coeffs, TCoeff &absSum, const QpParam &qp, const Ctx &ctx );
 
   inline uint32_t xGetCodedLevelTS(       double&             codedCost,
@@ -160,28 +145,21 @@ private:
                               const uint16_t            ricePar,
                               const bool                useLimitedPrefixLength,
                               const int                 maxLog2TrDynamicRange  ) const;
-#endif
 private:
-#if HEVC_USE_SCALING_LISTS
   bool    m_isErrScaleListOwner;
 
   double *m_errScale             [SCALING_LIST_SIZE_NUM][SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM][SCALING_LIST_REM_NUM]; ///< array of quantization matrix coefficient 4x4
   double  m_errScaleNoScalingList[SCALING_LIST_SIZE_NUM][SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM][SCALING_LIST_REM_NUM]; ///< array of quantization matrix coefficient 4x4
-#endif
   // temporary buffers for RDOQ
   double m_pdCostCoeff        [MAX_TB_SIZEY * MAX_TB_SIZEY];
   double m_pdCostSig          [MAX_TB_SIZEY * MAX_TB_SIZEY];
   double m_pdCostCoeff0       [MAX_TB_SIZEY * MAX_TB_SIZEY];
   double m_pdCostCoeffGroupSig[(MAX_TB_SIZEY * MAX_TB_SIZEY) >> MLS_CG_SIZE]; // even if CG size is 2 (if one of the sides is 2) instead of 4, there should be enough space
-#if HEVC_USE_SIGN_HIDING
   int    m_rateIncUp          [MAX_TB_SIZEY * MAX_TB_SIZEY];
   int    m_rateIncDown        [MAX_TB_SIZEY * MAX_TB_SIZEY];
   int    m_sigRateDelta       [MAX_TB_SIZEY * MAX_TB_SIZEY];
   TCoeff m_deltaU             [MAX_TB_SIZEY * MAX_TB_SIZEY];
-#if JVET_N0413_RDPCM
   TCoeff m_fullCoeff          [MAX_TB_SIZEY * MAX_TB_SIZEY];
-#endif
-#endif
 };// END CLASS DEFINITION QuantRDOQ
 
 //! \}

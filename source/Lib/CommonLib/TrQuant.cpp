@@ -157,16 +157,9 @@ void TrQuant::init( const Quant* otherQuant,
   delete m_quant;
   m_quant = nullptr;
 
-#if !JVET_N0847_SCALING_LISTS
-  if( bUseRDOQ || !bEnc )
-#endif
   {
     m_quant = new DepQuant( otherQuant, bEnc );
   }
-#if !JVET_N0847_SCALING_LISTS
-  else
-    m_quant = new Quant( otherQuant );
-#endif
 
   if( m_quant )
   {
@@ -174,7 +167,6 @@ void TrQuant::init( const Quant* otherQuant,
   }
 }
 
-#if JVET_N0193_LFNST
 void TrQuant::fwdLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize )
 {
   const int8_t* trMat  = ( size > 4 ) ? g_lfnst8x8[ mode ][ index ][ 0 ] : g_lfnst4x4[ mode ][ index ][ 0 ];
@@ -263,11 +255,7 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
   if( lfnstIdx && tu.mtsIdx != MTS_SKIP && width >= 4 && height >= 4 )
   {
     const bool whge3 = width >= 8 && height >= 8;
-#if JVET_N0103_CGSIZE_HARMONIZATION
     const ScanElement * scan = whge3 ? g_coefTopLeftDiagScan8x8[ gp_sizeIdxInfo->idxFrom( width ) ] : g_scanOrder[ SCAN_GROUPED_4x4 ][ SCAN_DIAG ][ gp_sizeIdxInfo->idxFrom( width ) ][ gp_sizeIdxInfo->idxFrom( height ) ];
-#else
-    const ScanElement * scan = whge3 ? g_coefTopLeftDiagScan8x8[ gp_sizeIdxInfo->idxFrom( width ) ] : g_scanOrder[ toChannelType( compID ) ][ SCAN_GROUPED_4x4 ][ SCAN_DIAG ][ gp_sizeIdxInfo->idxFrom( width ) ][ gp_sizeIdxInfo->idxFrom( height ) ];
-#endif
     uint32_t intraMode = PU::getFinalIntraMode( *tu.cs->getPU( area.pos(), toChannelType( compID ) ), toChannelType( compID ) );
 
     if( PU::isLMCMode( tu.cs->getPU( area.pos(), toChannelType( compID ) )->intraDir[ toChannelType( compID ) ] ) )
@@ -367,11 +355,7 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
   if( lfnstIdx && tu.mtsIdx != MTS_SKIP && width >= 4 && height >= 4 )
   {
     const bool whge3 = width >= 8 && height >= 8;
-#if JVET_N0103_CGSIZE_HARMONIZATION
     const ScanElement * scan = whge3 ? g_coefTopLeftDiagScan8x8[ gp_sizeIdxInfo->idxFrom( width ) ] : g_scanOrder[ SCAN_GROUPED_4x4 ][ SCAN_DIAG ][ gp_sizeIdxInfo->idxFrom( width ) ][ gp_sizeIdxInfo->idxFrom( height ) ];
-#else
-    const ScanElement * scan = whge3 ? g_coefTopLeftDiagScan8x8[ gp_sizeIdxInfo->idxFrom( width ) ] : g_scanOrder[ toChannelType( compID ) ][ SCAN_GROUPED_4x4 ][ SCAN_DIAG ][ gp_sizeIdxInfo->idxFrom( width ) ][ gp_sizeIdxInfo->idxFrom( height ) ];
-#endif
     uint32_t intraMode = PU::getFinalIntraMode( *tu.cs->getPU( area.pos(), toChannelType( compID ) ), toChannelType( compID ) );
 
     if( PU::isLMCMode( tu.cs->getPU( area.pos(), toChannelType( compID ) )->intraDir[ toChannelType( compID ) ] ) )
@@ -460,7 +444,6 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
     }
   }
 }
-#endif
 
 
 void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, PelBuf &pResi, const QpParam &cQP )
@@ -495,12 +478,10 @@ void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, Pel
 
     DTRACE_COEFF_BUF( D_TCOEFF, tempCoeff, tu, tu.cu->predMode, compID );
 
-#if JVET_N0193_LFNST
     if( tu.cs->sps->getUseLFNST() )
     {
       xInvLfnst( tu, compID );
     }
-#endif
 
     if( isLuma(compID) && tu.mtsIdx == MTS_SKIP )
     {
@@ -579,26 +560,16 @@ void TrQuant::invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &
 // Logical transform
 // ------------------------------------------------------------------------------------------------
 
-#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
 void TrQuant::getTrTypes(const TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer)
-#else
-void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer )
-#endif
 {
-#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
   const bool isExplicitMTS = (CU::isIntra(*tu.cu) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS() && CU::isInter(*tu.cu)) && isLuma(compID);
   const bool isImplicitMTS = CU::isIntra(*tu.cu) && tu.cs->sps->getUseImplicitMTS() && isLuma(compID);
   const bool isISP = CU::isIntra(*tu.cu) && tu.cu->ispMode && isLuma(compID);
   const bool isSBT = CU::isInter(*tu.cu) && tu.cu->sbtInfo && isLuma(compID);
-#else
-  bool mtsActivated = CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS() && CU::isInter( *tu.cu );
-  bool mtsImplicit  = CU::isIntra( *tu.cu ) && tu.cs->sps->getUseImplicitMTS() && compID == COMPONENT_Y;
-#endif
 
   trTypeHor = DCT2;
   trTypeVer = DCT2;
 
-#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
   if (isImplicitMTS || isISP)
   {
     int  width = tu.blocks[compID].width;
@@ -612,21 +583,9 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
       trTypeVer = DST7;
     return;
   }
-#endif
 
-#if !JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
-  if (tu.cu->ispMode && isLuma(compID))
-  {
-    TU::getTransformTypeISP(tu, compID, trTypeHor, trTypeVer);
-    return;
-  }
-#endif
 
-#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
   if (isSBT)
-#else
-  if( tu.cu->sbtInfo && compID == COMPONENT_Y )
-#endif
   {
     uint8_t sbtIdx = tu.cu->getSbtIdx();
     uint8_t sbtPos = tu.cu->getSbtPos();
@@ -660,7 +619,6 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
     return;
   }
 
-#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
   if (isExplicitMTS)
   {
     if (tu.mtsIdx > MTS_SKIP)
@@ -672,36 +630,6 @@ void TrQuant::getTrTypes ( TransformUnit tu, const ComponentID compID, int &trTy
       trTypeVer = indVer ? DCT8 : DST7;
     }
   }
-#else
-  if ( mtsActivated )
-  {
-    if( compID == COMPONENT_Y )
-    {
-      if ( tu.mtsIdx > MTS_SKIP )
-      {
-        int indHor = ( tu.mtsIdx - MTS_DST7_DST7 ) &  1;
-        int indVer = ( tu.mtsIdx - MTS_DST7_DST7 ) >> 1;
-
-        trTypeHor = indHor ? DCT8 : DST7;
-        trTypeVer = indVer ? DCT8 : DST7;
-      }
-    }
-  }
-  else if ( mtsImplicit )
-  {
-    int  width       = tu.blocks[compID].width;
-    int  height      = tu.blocks[compID].height;
-    bool widthDstOk  = width  >= 4 && width  <= 16;
-    bool heightDstOk = height >= 4 && height <= 16;
-
-    if ( width < height && widthDstOk )
-      trTypeHor = DST7;
-    else if ( height < width && heightDstOk )
-      trTypeVer = DST7;
-    else if ( width == height && widthDstOk )
-      trTypeHor = trTypeVer = DST7;
-  }
-#endif
 }
 
 
@@ -959,9 +887,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
 void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, const bool loadTr, double* diagRatio, double* horVerRatio )
 {
         CodingStructure &cs = *tu.cs;
-#if JVET_N0193_LFNST
   const SPS &sps            = *cs.sps;
-#endif
   const CompArea &rect      = tu.blocks[compID];
   const uint32_t uiWidth        = rect.width;
   const uint32_t uiHeight       = rect.height;
@@ -979,12 +905,10 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
   RDPCMMode rdpcmMode = RDPCM_OFF;
   rdpcmNxN(tu, compID, cQP, uiAbsSum, rdpcmMode);
 
-#if JVET_N0413_RDPCM
   if( tu.cu->bdpcmMode && isLuma(compID) )
   {
     tu.mtsIdx = MTS_SKIP;
   }
-#endif
 
   if (rdpcmMode == RDPCM_OFF)
   {
@@ -1048,12 +972,10 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
         xGetCoeffEnergy( tu, compID, tempCoeff, diagRatio, horVerRatio );
       }
 
-#if JVET_N0193_LFNST
       if( sps.getUseLFNST() )
       {
         xFwdLfnst( tu, compID, loadTr );
       }
-#endif
 
       DTRACE_COEFF_BUF( D_TCOEFF, tempCoeff, tu, tu.cu->predMode, compID );
 

@@ -474,7 +474,6 @@ void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t pay
   sei_read_uvlc( pDecodedMessageOutputStream, val, "decoding_unit_idx");
   sei.m_decodingUnitIdx = val;
 
-#if JVET_N0063_VUI
   if(sps->getHrdParameters()->getSubPicCpbParamsInPicTimingSEIFlag())
   {
     sei_read_code( pDecodedMessageOutputStream, ( sps->getHrdParameters()->getDuCpbRemovalDelayLengthMinus1() + 1 ), val, "du_spt_cpb_removal_delay_increment");
@@ -490,24 +489,6 @@ void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t pay
     sei_read_code( pDecodedMessageOutputStream, sps->getHrdParameters()->getDpbOutputDelayDuLengthMinus1() + 1, val, "pic_spt_dpb_output_du_delay");
     sei.m_picSptDpbOutputDuDelay = val;
   }
-#else
-  const VUI *vui = sps->getVuiParameters();
-  if(vui->getHrdParameters()->getSubPicCpbParamsInPicTimingSEIFlag())
-  {
-    sei_read_code( pDecodedMessageOutputStream, ( vui->getHrdParameters()->getDuCpbRemovalDelayLengthMinus1() + 1 ), val, "du_spt_cpb_removal_delay_increment");
-    sei.m_duSptCpbRemovalDelay = val;
-  }
-  else
-  {
-    sei.m_duSptCpbRemovalDelay = 0;
-  }
-  sei_read_flag( pDecodedMessageOutputStream, val, "dpb_output_du_delay_present_flag"); sei.m_dpbOutputDuDelayPresentFlag = (val != 0);
-  if(sei.m_dpbOutputDuDelayPresentFlag)
-  {
-    sei_read_code( pDecodedMessageOutputStream, vui->getHrdParameters()->getDpbOutputDelayDuLengthMinus1() + 1, val, "pic_spt_dpb_output_du_delay");
-    sei.m_picSptDpbOutputDuDelay = val;
-  }
-#endif
 }
 
 void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream)
@@ -515,12 +496,7 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
   int i, nalOrVcl;
   uint32_t code;
 
-#if JVET_N0063_VUI
   const HRDParameters *pHRD = sps->getHrdParameters();
-#else
-  const VUI *pVUI = sps->getVuiParameters();
-  const HRDParameters *pHRD = pVUI->getHrdParameters();
-#endif
 
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
 
@@ -569,17 +545,9 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
   int i;
   uint32_t code;
 
-#if JVET_N0063_VUI
   const HRDParameters *hrd = sps->getHrdParameters();
-#else
-  const VUI *vui = sps->getVuiParameters();
-  const HRDParameters *hrd = vui->getHrdParameters();
-#endif
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
 
-#if !JVET_N0063_VUI
-  if( vui->getFrameFieldInfoPresentFlag() )
-#endif
   {
     sei_read_code( pDecodedMessageOutputStream, 4, code, "pic_struct" );             sei.m_picStruct            = code;
     sei_read_code( pDecodedMessageOutputStream, 2, code, "source_scan_type" );       sei.m_sourceScanType       = code;

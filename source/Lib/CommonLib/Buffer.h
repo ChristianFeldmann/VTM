@@ -111,10 +111,8 @@ struct AreaBuf : public Size
   void copyClip             ( const AreaBuf<const T> &src, const ClpRng& clpRng);
 
   void subtract             ( const AreaBuf<const T> &other );
-#if JVET_N0054_JOINT_CHROMA
   void copyAndNegate        ( const AreaBuf<const T> &other );
   void subtractAndHalve     ( const AreaBuf<const T> &other );
-#endif
   void extendSingleBorderPel();
   void extendBorderPel      (  unsigned margin );
   void addWeightedAvg       ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng, const int8_t gbiIdx);
@@ -359,7 +357,6 @@ void AreaBuf<T>::subtract( const AreaBuf<const T> &other )
 #undef SUBS_INC
 }
 
-#if JVET_N0054_JOINT_CHROMA
 template<typename T>
 void AreaBuf<T>::copyAndNegate( const AreaBuf<const T> &other )
 {
@@ -401,7 +398,6 @@ void AreaBuf<T>::subtractAndHalve( const AreaBuf<const T> &other )
 #undef SUBS_OP
 #undef SUBS_INC
 }
-#endif
 
 template<typename T>
 void AreaBuf<T>::copyClip( const AreaBuf<const T> &src, const ClpRng& clpRng )

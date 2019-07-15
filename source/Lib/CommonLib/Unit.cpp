@@ -267,18 +267,14 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   affineType        = other.affineType;
   triangle          = other.triangle;
   transQuantBypass  = other.transQuantBypass;
-#if JVET_N0413_RDPCM
   bdpcmMode         = other.bdpcmMode;
-#endif
   ipcm              = other.ipcm;
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
   sbtInfo           = other.sbtInfo;
-#if JVET_N0193_LFNST
   mtsFlag           = other.mtsFlag;
   lfnstIdx          = other.lfnstIdx;
-#endif
   tileIdx           = other.tileIdx;
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
@@ -290,9 +286,7 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   shareParentSize   = other.shareParentSize;
   smvdMode        = other.smvdMode;
   ispMode           = other.ispMode;
-#if JVET_N0217_MATRIX_INTRAPRED
   mipFlag           = other.mipFlag;
-#endif
 
   return *this;
 }
@@ -311,18 +305,14 @@ void CodingUnit::initData()
   affineType        = 0;
   triangle          = false;
   transQuantBypass  = false;
-#if JVET_N0413_RDPCM
   bdpcmMode         = 0;
-#endif
   ipcm              = false;
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
   sbtInfo           = 0;
-#if JVET_N0193_LFNST
   mtsFlag           = 0;
   lfnstIdx          = 0;
-#endif
   tileIdx           = 0;
   imv               = 0;
   imvNumCand        = 0;
@@ -334,9 +324,7 @@ void CodingUnit::initData()
   shareParentSize.height = -1;
   smvdMode        = 0;
   ispMode           = 0;
-#if JVET_N0217_MATRIX_INTRAPRED
   mipFlag           = false;
-#endif
 }
 
 const uint8_t CodingUnit::checkAllowedSbt() const
@@ -355,12 +343,10 @@ const uint8_t CodingUnit::checkAllowedSbt() const
   {
     return 0;
   }
-#if JVET_N0483_DISABLE_SBT_FOR_TPM
   if( triangle )
   {
     return 0;
   }
-#endif
 
   uint8_t sbtAllowed = 0;
   int cuWidth  = lwidth();
@@ -424,9 +410,7 @@ void PredictionUnit::initData()
 
   // inter data
   mergeFlag   = false;
-#if JVET_N0324_REGULAR_MRG_FLAG
   regularMergeFlag = false;
-#endif
   mergeIdx    = MAX_UCHAR;
   triangleSplitDir  = MAX_UCHAR;
   triangleMergeIdx0 = MAX_UCHAR;
@@ -479,9 +463,7 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
 PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
 {
   mergeFlag   = predData.mergeFlag;
-#if JVET_N0324_REGULAR_MRG_FLAG
   regularMergeFlag = predData.regularMergeFlag;
-#endif
   mergeIdx    = predData.mergeIdx;
   triangleSplitDir  = predData.triangleSplitDir  ;
   triangleMergeIdx0 = predData.triangleMergeIdx0 ;
@@ -528,9 +510,7 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   multiRefIdx = other.multiRefIdx;
 
   mergeFlag   = other.mergeFlag;
-#if JVET_N0324_REGULAR_MRG_FLAG
   regularMergeFlag = other.regularMergeFlag;
-#endif
   mergeIdx    = other.mergeIdx;
   triangleSplitDir  = other.triangleSplitDir  ;
   triangleMergeIdx0 = other.triangleMergeIdx0 ;
@@ -640,9 +620,7 @@ void TransformUnit::initData()
   depth              = 0;
   mtsIdx             = MTS_DCT2_DCT2;
   noResidual         = false;
-#if JVET_N0054_JOINT_CHROMA
   jointCbCr          = 0;
-#endif
   m_chromaResScaleInv = 0;
 }
 
@@ -678,9 +656,7 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
   depth              = other.depth;
   mtsIdx             = other.mtsIdx;
   noResidual         = other.noResidual;
-#if JVET_N0054_JOINT_CHROMA
   jointCbCr          = other.jointCbCr;
-#endif
   return *this;
 }
 
@@ -702,9 +678,7 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
   depth            = other.depth;
   mtsIdx           = isLuma( i ) ? other.mtsIdx : mtsIdx;
   noResidual       = other.noResidual;
-#if JVET_N0054_JOINT_CHROMA
   jointCbCr        = isChroma( i ) ? other.jointCbCr : jointCbCr;
-#endif
 }
 
        CoeffBuf TransformUnit::getCoeffs(const ComponentID id)       { return  CoeffBuf(m_coeffs[id], blocks[id]); }

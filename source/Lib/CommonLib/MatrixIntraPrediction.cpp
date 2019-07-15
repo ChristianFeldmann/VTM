@@ -38,7 +38,6 @@
 #include "MatrixIntraPrediction.h"
 #include "dtrace_next.h"
 
-#if JVET_N0217_MATRIX_INTRAPRED
 #include "UnitTools.h"
 #include "MipData.h"
 
@@ -544,4 +543,3 @@ void MatrixIntraPrediction::predBlock( const Size &puSize, const int intraMode, 
   }
 }
 
-#endif

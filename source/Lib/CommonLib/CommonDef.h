@@ -143,10 +143,8 @@ static const int MAX_NUM_REF =                                     16; ///< max.
 static const int MAX_QP =                                          63;
 static const int NOT_VALID =                                       -1;
 
-#if JVET_N0857_TILES_BRICKS
 static const int MAX_TILES =                                      128; ///< max. number of tiles for which a brick configuration can be read
 static const int MAX_NUM_BRICKS_PER_TILE =                          8; ///< max. number brick per tile, for which a configuration can be read
-#endif
 
 static const int AMVP_MAX_NUM_CANDS =                               2; ///< AMVP: advanced motion vector prediction - max number of final candidates
 static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP: advanced motion vector prediction - max number of candidates
@@ -173,7 +171,7 @@ static const int MAX_NESTING_NUM_LAYER =                           64;
 static const int MAX_VPS_NUM_HRD_PARAMETERS =                       1;
 static const int MAX_VPS_OP_SETS_PLUS1 =                         1024;
 static const int MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1 =         1;
-#elif JVET_N0278_HLS
+#else
 static const int MAX_VPS_NUM_HRD_PARAMETERS =                       1;
 static const int MAX_VPS_LAYERS =                                 256;
 #endif
@@ -181,21 +179,15 @@ static const int MAX_VPS_LAYERS =                                 256;
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;
 static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
-#if JVET_N0217_MATRIX_INTRAPRED
 static const int MIP_MAX_WIDTH =                                   64;
 static const int MIP_MAX_HEIGHT =                                  64;
-#endif
 
-#if JVET_N0415_CTB_ALF
 static const int ALF_FIXED_FILTER_NUM        =                     64;
 static const int ALF_CTB_MAX_NUM_APS         =                      6;
 static const int NUM_FIXED_FILTER_SETS       =                     16;
 static const int NUM_TOTAL_FILTER_SETS       =                     NUM_FIXED_FILTER_SETS + ALF_CTB_MAX_NUM_APS;
-#endif
 
-#if JVET_N0178_IMPLICIT_BDOF_SPLIT
 static const int MAX_BDOF_APPLICATION_REGION =                     16;
-#endif
 
 static const int MAX_CPB_CNT =                                     32; ///< Upper bound of (cpb_cnt_minus1 + 1)
 static const int MAX_NUM_LAYER_IDS =                               64;
@@ -213,19 +205,13 @@ static const int MAX_NUM_DPS =                                     16;
 static const int MAX_NUM_SPS =                                     16;
 static const int MAX_NUM_PPS =                                     64;
 static const int MAX_NUM_APS =                                     32;  //Currently APS ID has 5 bits
-#if JVET_N0805_APS_LMCS
 static const int NUM_APS_TYPE_LEN =                                 3;  //Currently APS Type has 3 bits
 static const int MAX_NUM_APS_TYPE =                                 8;  //Currently APS Type has 3 bits so the max type is 8
-#endif
 
 static const int MLS_GRP_NUM =                                   1024; ///< Max number of coefficient groups, max(16, 256)
 
 static const int MLS_CG_SIZE =                                      4; ///< Coefficient group size of 4x4; = MLS_CG_LOG2_WIDTH + MLS_CG_LOG2_HEIGHT
 
-#if !JVET_N0246_MODIFIED_QUANTSCALES
-static const int ADJ_QUANT_SHIFT =                                  7;
-static const int ADJ_DEQUANT_SHIFT =            ( ADJ_QUANT_SHIFT + 1 );
-#endif
 
 static const int RVM_VCEGAM10_M =                                   4;
 
@@ -237,9 +223,7 @@ static const int NUM_LUMA_MODE =                                   67; ///< Plan
 static const int NUM_LMC_MODE =                                    1 + 2; ///< LMC + MDLM_T + MDLM_L
 static const int NUM_INTRA_MODE = (NUM_LUMA_MODE + NUM_LMC_MODE);
 
-#if JVET_N0193_LFNST
 static const int NUM_EXT_LUMA_MODE =                               28;
-#endif
 
 static const int NUM_DIR =           (((NUM_LUMA_MODE - 3) >> 2) + 1);
 static const int PLANAR_IDX =                                       0; ///< index for intra PLANAR mode
@@ -248,9 +232,7 @@ static const int HOR_IDX =                    (1 * (NUM_DIR - 1) + 2); ///< inde
 static const int DIA_IDX =                    (2 * (NUM_DIR - 1) + 2); ///< index for intra DIAGONAL   mode
 static const int VER_IDX =                    (3 * (NUM_DIR - 1) + 2); ///< index for intra VERTICAL   mode
 static const int VDIA_IDX =                   (4 * (NUM_DIR - 1) + 2); ///< index for intra VDIAGONAL  mode
-#if JVET_N0413_RDPCM
 static const int BDPCM_IDX =                  (5 * (NUM_DIR - 1) + 2); ///< index for intra VDIAGONAL  mode
-#endif
 static const int NOMODE_IDX =                               MAX_UCHAR; ///< indicating uninitialized elements
 
 static const int NUM_CHROMA_MODE = (5 + NUM_LMC_MODE); ///< total number of chroma modes
@@ -265,26 +247,18 @@ static const uint32_t  NUM_TRAFO_MODES_MTS =                            6; ///< 
 static const uint32_t  MTS_INTRA_MAX_CU_SIZE =                         32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const int NUM_MOST_PROBABLE_MODES = 6;
-#if JVET_N0217_MATRIX_INTRAPRED
 static const int NUM_MPM_MIP =                                      3; ///< number of most probable modes for MIP
-#endif
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
-#if JVET_N0217_MATRIX_INTRAPRED
 static const int MAX_NUM_MIP_MODE =                                35; ///< maximum number of MIP modes
 static const int FAST_UDI_MAX_RDMODE_NUM = (NUM_LUMA_MODE + MAX_NUM_MIP_MODE); ///< maximum number of RD comparison in fast-UDI estimation loop
-#else
-static const int FAST_UDI_MAX_RDMODE_NUM =              NUM_LUMA_MODE; ///< maximum number of RD comparison in fast-UDI estimation loop
-#endif
 
-#if JVET_N0193_LFNST
 static const int MAX_LFNST_COEF_NUM =                              16;
 
 static const int LFNST_SIG_NZ_LUMA =                                1;
 static const int LFNST_SIG_NZ_CHROMA =                              1;
 
 static const int NUM_LFNST_NUM_PER_SET =                            3;
-#endif
 
 static const int MDCS_ANGLE_LIMIT =                                 9; ///< 0 = Horizontal/vertical only, 1 = Horizontal/vertical +/- 1, 2 = Horizontal/vertical +/- 2 etc...
 
@@ -339,11 +313,7 @@ static const int QUANT_SHIFT =                                     14; ///< Q(4)
 static const int IQUANT_SHIFT =                                     6;
 static const int SCALE_BITS =                                      15; ///< Precision for fractional bit estimates
 
-#if JVET_N0847_SCALING_LISTS
 static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * (NUMBER_OF_PREDICTION_MODES - 1); ///< list number for quantization matrix
-#else
-static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * NUMBER_OF_PREDICTION_MODES; ///< list number for quantization matrix
-#endif
 
 static const int SCALING_LIST_START_VALUE =                         8; ///< start value for dpcm mode
 static const int MAX_MATRIX_COEF_NUM =                             64; ///< max coefficient number for quantization matrix
@@ -380,10 +350,8 @@ static const int GBI_SIZE_CONSTRAINT =                            256; ///< disa
 static const int MAX_NUM_HMVP_CANDS =                              (MRG_MAX_NUM_CANDS-1); ///< maximum number of HMVP candidates to be stored and used in merge list
 static const int MAX_NUM_HMVP_AVMPCANDS =                          4; ///< maximum number of HMVP candidates to be used in AMVP list
 
-#if JVET_N0180_ALF_LINE_BUFFER_REDUCTION
 static const int ALF_VB_POS_ABOVE_CTUROW_LUMA = 4;
 static const int ALF_VB_POS_ABOVE_CTUROW_CHMA = 2;
-#endif
 
 #if W0038_DB_OPT
 static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;
@@ -399,9 +367,7 @@ static const int DMVR_SUBCU_WIDTH_LOG2 = 4;
 static const int DMVR_SUBCU_HEIGHT_LOG2 = 4;
 static const int MAX_NUM_SUBCU_DMVR = ((MAX_CU_SIZE * MAX_CU_SIZE) >> (DMVR_SUBCU_WIDTH_LOG2 + DMVR_SUBCU_HEIGHT_LOG2));
 static const int DMVR_NUM_ITERATION = 2;
-#if JVET_N0413_RDPCM
 static const int BDPCM_MAX_CU_SIZE = 32;      ///<  maximum CU size for RDPCM mode
-#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.
@@ -419,10 +385,8 @@ static const int    MAX_BT_DEPTH_C      =                           0;      ///<
 static const int    MAX_BT_SIZE_C       =                          64;      ///< [1<<MIN_QT_SIZE_C, 1<<CTU_LOG2], in luma samples
 
 static const int    MAX_TT_SIZE_INTER  =                           64;      ///< for initialization, [1<<MIN_CU_LOG2, 64]
-#if JVET_N0137_DUALTREE_CHROMA_SIZE
 static const int    MIN_DUALTREE_CHROMA_WIDTH  =                    4;
 static const int    MIN_DUALTREE_CHROMA_SIZE   =                   16;
-#endif
 static const SplitSeries SPLIT_BITS         =                       5;
 static const SplitSeries SPLIT_DMULT        =                       5;
 static const SplitSeries SPLIT_MASK         =                      31;      ///< = (1 << SPLIT_BITS) - 1
@@ -459,17 +423,9 @@ static const int MAX_LADF_INTERVALS       =                         5; /// max n
 static const int NTAPS_BILINEAR           =                         2; ///< Number of taps for bilinear filter
 
 static const int ATMVP_SUB_BLOCK_SIZE =                             3; ///< sub-block size for ATMVP
-#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
 static const int TRIANGLE_MAX_NUM_UNI_CANDS =                       6;
-#else
-static const int TRIANGLE_MAX_NUM_UNI_CANDS =                       5;
-#endif
 static const int TRIANGLE_MAX_NUM_CANDS_MEM =                       7;
-#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
 static const int TRIANGLE_MAX_NUM_CANDS = TRIANGLE_MAX_NUM_UNI_CANDS * (TRIANGLE_MAX_NUM_UNI_CANDS - 1) * 2;
-#else
-static const int TRIANGLE_MAX_NUM_CANDS =                          40;
-#endif
 static const int TRIANGLE_MAX_NUM_SATD_CANDS =                      3;
 static const int TRIANGLE_MIN_SIZE =                            8 * 8;
 
@@ -495,11 +451,7 @@ static constexpr int MV_MIN =                 -(1 << (MV_BITS - 1));
 
 static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;
-#if JVET_N0220_LMCS_SIMPLIFICATION
 static const int FP_PREC =                                       11;
-#else
-static const int FP_PREC =                                       14;
-#endif
 static const int CSCALE_FP_PREC =                                11;
 // ====================================================================================================================
 // Macro functions

@@ -91,11 +91,7 @@ void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStr
   Pel* srcTmp = pSrc + srcStride + 1;
   Pel* gradXTmp = gradX + gradStride + 1;
   Pel* gradYTmp = gradY + gradStride + 1;
-#if JVET_N0325_BDOF
   int  shift1 = std::max<int>(6, (bitDepth - 6));
-#else
-  int  shift1 = std::max<int>(2, (IF_INTERNAL_PREC - bitDepth));
-#endif
 
   for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
   {
@@ -132,13 +128,8 @@ void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStr
 
 void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
 {
-#if JVET_N0325_BDOF
   int shift4 = std::max<int>(4, (bitDepth - 8));
   int shift5 = std::max<int>(1, (bitDepth - 11));
-#else
-  int shift4 = std::min<int>(8, (bitDepth - 4));
-  int shift5 = std::min<int>(5, (bitDepth - 7));
-#endif
   for (int y = 0; y < heightG; y++)
   {
     for (int x = 0; x < widthG; x++)
@@ -408,9 +399,7 @@ void AreaBuf<Pel>::scaleSignal(const int scale, const bool dir, const ClpRng& cl
     {
       for (unsigned x = 0; x < width; x++)
       {
-#if JVET_N0220_LMCS_SIMPLIFICATION
         src[x] = (Pel)Clip3((Pel)(-maxAbsclipBD - 1), (Pel)maxAbsclipBD, src[x]);
-#endif
         sign = src[x] >= 0 ? 1 : -1;
         absval = sign * src[x];
         int val = sign * ((absval * scale + (1 << (CSCALE_FP_PREC - 1))) >> CSCALE_FP_PREC);

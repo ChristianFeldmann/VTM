@@ -53,15 +53,8 @@ Slice::Slice()
 , m_iLastIDR                      ( 0 )
 , m_iAssociatedIRAP               ( 0 )
 , m_iAssociatedIRAPType           ( NAL_UNIT_INVALID )
-#if JVET_M0128
 , m_rpl0Idx                       ( -1 )
 , m_rpl1Idx                       ( -1 )
-#else
-, m_pRPS                          ( 0 )
-, m_localRPS                      ( )
-, m_rpsIdx                        ( 0 )
-, m_RefPicListModification        ( )
-#endif
 , m_eNalUnitType                  ( NAL_UNIT_CODED_SLICE_IDR_W_RADL )
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
@@ -72,9 +65,7 @@ Slice::Slice()
 , m_deblockingFilterTcOffsetDiv2  ( 0 )
 , m_pendingRasInit                ( false )
 , m_depQuantEnabledFlag           ( false )
-#if HEVC_USE_SIGN_HIDING
 , m_signDataHidingEnabledFlag     ( false )
-#endif
 , m_bCheckLDC                     ( false )
 , m_biDirPred                    ( false )
 , m_iSliceQpDelta                 ( 0 )
@@ -82,9 +73,7 @@ Slice::Slice()
 #if HEVC_VPS
 , m_pcVPS                         ( NULL )
 #endif
-#if JVET_N0349_DPS
 , m_dps                           ( nullptr )
-#endif
 , m_pcSPS                         ( NULL )
 , m_pcPPS                         ( NULL )
 , m_pcPic                         ( NULL )
@@ -95,9 +84,7 @@ Slice::Slice()
 , m_colRefIdx                     ( 0 )
 , m_maxNumMergeCand               ( 0 )
 , m_maxNumAffineMergeCand         ( 0 )
-#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
 , m_maxNumTriangleCand            ( 0 )
-#endif
 , m_disFracMMVD                   ( false )
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
@@ -114,9 +101,6 @@ Slice::Slice()
 , m_substreamSizes                ( )
 , m_cabacInitFlag                 ( false )
 , m_bLMvdL1Zero                   ( false )
-#if !JVET_M0101_HLS
-, m_temporalLayerNonReferenceFlag ( false )
-#endif
 , m_LFCrossSliceBoundaryFlag      ( false )
 , m_enableTMVPFlag                ( true )
 , m_encCABACTableIdx              (I_SLICE)
@@ -131,16 +115,10 @@ Slice::Slice()
 , m_uiMaxBTSizeIChroma            ( 0 )
 , m_uiMaxTTSizeIChroma            ( 0 )
 , m_uiMaxBTSize                   ( 0 )
-#if !JVET_N0415_CTB_ALF
-, m_apsId                        ( -1 )
-, m_aps                          (NULL)
-#endif
-#if  JVET_N0805_APS_LMCS
 , m_lmcsApsId                    ( -1 )
 , m_lmcsAps                      (nullptr)
 , m_tileGroupLmcsEnabledFlag     (false)
 , m_tileGroupLmcsChromaResidualScaleFlag (false)
-#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -152,9 +130,7 @@ Slice::Slice()
     m_lambdas            [component] = 0.0;
     m_iSliceChromaQpDelta[component] = 0;
   }
-#if JVET_N0054_JOINT_CHROMA
   m_iSliceChromaQpDelta[JOINT_CbCr] = 0;
-#endif
 
   initEqualRef();
 
@@ -180,21 +156,7 @@ Slice::Slice()
     m_saoEnabledFlag[ch] = false;
   }
 
-#if !JVET_N0805_APS_LMCS
-  m_sliceReshapeInfo.setUseSliceReshaper(false);
-  m_sliceReshapeInfo.setSliceReshapeModelPresentFlag(false);
-  m_sliceReshapeInfo.setSliceReshapeChromaAdj(0);
-  m_sliceReshapeInfo.reshaperModelMinBinIdx = 0;
-  m_sliceReshapeInfo.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1;
-  memset(m_sliceReshapeInfo.reshaperModelBinCWDelta, 0, PIC_CODE_CW_BINS * sizeof(int));
-#endif
-#if JVET_N0415_CTB_ALF
-#if  JVET_N0805_APS_LMCS
   memset(m_alfApss, 0, sizeof(m_alfApss));
-#else
-  memset(m_apss, 0, sizeof(m_apss));
-#endif
-#endif
 }
 
 Slice::~Slice()
@@ -223,9 +185,7 @@ void Slice::initSlice()
   {
     m_iSliceChromaQpDelta[component] = 0;
   }
-#if JVET_N0054_JOINT_CHROMA
   m_iSliceChromaQpDelta[JOINT_CbCr] = 0;
-#endif
 
   m_maxNumMergeCand = MRG_MAX_NUM_CANDS;
   m_maxNumAffineMergeCand = AFFINE_MRG_MAX_NUM_CANDS;
@@ -255,11 +215,6 @@ bool Slice::getRapPicFlag() const
 {
   return getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL
       || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP
-#if !JVET_M0101_HLS
-      || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP
-      || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-      || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
-#endif
     || getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA;
 }
 
@@ -392,7 +347,6 @@ void Slice::setList1IdxToList0Idx()
   }
 }
 
-#if JVET_M0128
 void Slice::constructRefPicList(PicList& rcListPic)
 {
   ::memset(m_bIsUsedAsLongTerm, 0, sizeof(m_bIsUsedAsLongTerm));
@@ -451,184 +405,6 @@ void Slice::constructRefPicList(PicList& rcListPic)
     m_bIsUsedAsLongTerm[REF_PIC_LIST_1][ii] = pcRefPic->longTerm;
   }
 }
-#else
-void Slice::setRefPicList( PicList& rcListPic, bool checkNumPocTotalCurr, bool bCopyL0toL1ErrorCase )
-{
-  if ( m_eSliceType == I_SLICE)
-  {
-    ::memset( m_apcRefPicList, 0, sizeof (m_apcRefPicList));
-    ::memset( m_aiNumRefIdx,   0, sizeof ( m_aiNumRefIdx ));
-
-    if (!checkNumPocTotalCurr)
-    {
-      return;
-    }
-  }
-
-  Picture*  pcRefPic= NULL;
-  static const uint32_t MAX_NUM_NEGATIVE_PICTURES=16;
-  Picture*  RefPicSetStCurr0[MAX_NUM_NEGATIVE_PICTURES];
-  Picture*  RefPicSetStCurr1[MAX_NUM_NEGATIVE_PICTURES];
-  Picture*  RefPicSetLtCurr[MAX_NUM_NEGATIVE_PICTURES];
-  uint32_t NumPicStCurr0 = 0;
-  uint32_t NumPicStCurr1 = 0;
-  uint32_t NumPicLtCurr = 0;
-  int i;
-
-  for(i=0; i < m_pRPS->getNumberOfNegativePictures(); i++)
-  {
-    if(m_pRPS->getUsed(i))
-    {
-      pcRefPic = xGetRefPic(rcListPic, getPOC()+m_pRPS->getDeltaPOC(i));
-      pcRefPic->longTerm = false;
-      pcRefPic->extendPicBorder();
-      RefPicSetStCurr0[NumPicStCurr0] = pcRefPic;
-      NumPicStCurr0++;
-    }
-  }
-
-  for(; i < m_pRPS->getNumberOfNegativePictures()+m_pRPS->getNumberOfPositivePictures(); i++)
-  {
-    if(m_pRPS->getUsed(i))
-    {
-      pcRefPic = xGetRefPic(rcListPic, getPOC()+m_pRPS->getDeltaPOC(i));
-      pcRefPic->longTerm = false;
-      pcRefPic->extendPicBorder();
-      RefPicSetStCurr1[NumPicStCurr1] = pcRefPic;
-      NumPicStCurr1++;
-    }
-  }
-
-  for(i = m_pRPS->getNumberOfNegativePictures()+m_pRPS->getNumberOfPositivePictures()+m_pRPS->getNumberOfLongtermPictures()-1; i > m_pRPS->getNumberOfNegativePictures()+m_pRPS->getNumberOfPositivePictures()-1 ; i--)
-  {
-    if(m_pRPS->getUsed(i))
-    {
-      pcRefPic = xGetLongTermRefPic(rcListPic, m_pRPS->getPOC(i), m_pRPS->getCheckLTMSBPresent(i));
-      pcRefPic->longTerm = true;
-      pcRefPic->extendPicBorder();
-      RefPicSetLtCurr[NumPicLtCurr] = pcRefPic;
-      NumPicLtCurr++;
-    }
-    if(pcRefPic==NULL)
-    {
-      pcRefPic = xGetLongTermRefPic(rcListPic, m_pRPS->getPOC(i), m_pRPS->getCheckLTMSBPresent(i));
-    }
-  }
-  // ref_pic_list_init
-  Picture*  rpsCurrList0[MAX_NUM_REF+1];
-  Picture*  rpsCurrList1[MAX_NUM_REF+1];
-  int numPicTotalCurr = NumPicStCurr0 + NumPicStCurr1 + NumPicLtCurr;
-
-  if (checkNumPocTotalCurr)
-  {
-    // The variable NumPocTotalCurr is derived as specified in subclause 7.4.7.2. It is a requirement of bitstream conformance that the following applies to the value of NumPocTotalCurr:
-    // - If the current picture is a BLA or CRA picture, the value of NumPocTotalCurr shall be equal to 0.
-    // - Otherwise, when the current picture contains a P or B slice, the value of NumPocTotalCurr shall not be equal to 0.
-    if (getRapPicFlag())
-    {
-        CHECK(numPicTotalCurr != 0, "Invalid state");
-    }
-
-    if (m_eSliceType == I_SLICE)
-    {
-      return;
-    }
-
-    CHECK(numPicTotalCurr == 0, "Invalid state");
-    // general tier and level limit:
-    CHECK(numPicTotalCurr > 8, "Invalid state");
-  }
-
-  int cIdx = 0;
-  for ( i=0; i<NumPicStCurr0; i++, cIdx++)
-  {
-    rpsCurrList0[cIdx] = RefPicSetStCurr0[i];
-  }
-  for ( i=0; i<NumPicStCurr1; i++, cIdx++)
-  {
-    rpsCurrList0[cIdx] = RefPicSetStCurr1[i];
-  }
-  for ( i=0; i<NumPicLtCurr;  i++, cIdx++)
-  {
-    rpsCurrList0[cIdx] = RefPicSetLtCurr[i];
-  }
-  CHECK(cIdx != numPicTotalCurr, "Invalid state");
-
-  if (m_eSliceType==B_SLICE)
-  {
-    cIdx = 0;
-    for ( i=0; i<NumPicStCurr1; i++, cIdx++)
-    {
-      rpsCurrList1[cIdx] = RefPicSetStCurr1[i];
-    }
-    for ( i=0; i<NumPicStCurr0; i++, cIdx++)
-    {
-      rpsCurrList1[cIdx] = RefPicSetStCurr0[i];
-    }
-    for ( i=0; i<NumPicLtCurr;  i++, cIdx++)
-    {
-      rpsCurrList1[cIdx] = RefPicSetLtCurr[i];
-    }
-    CHECK(cIdx != numPicTotalCurr, "Invalid state");
-  }
-
-  ::memset(m_bIsUsedAsLongTerm, 0, sizeof(m_bIsUsedAsLongTerm));
-
-  for (int rIdx = 0; rIdx < m_aiNumRefIdx[REF_PIC_LIST_0]; rIdx ++)
-  {
-    cIdx = m_RefPicListModification.getRefPicListModificationFlagL0() ? m_RefPicListModification.getRefPicSetIdxL0(rIdx) : rIdx % numPicTotalCurr;
-    CHECK(cIdx < 0 || cIdx >= numPicTotalCurr, "Invalid state");
-    m_apcRefPicList[REF_PIC_LIST_0][rIdx] = rpsCurrList0[ cIdx ];
-    m_bIsUsedAsLongTerm[REF_PIC_LIST_0][rIdx] = ( cIdx >= NumPicStCurr0 + NumPicStCurr1 );
-  }
-  if ( m_eSliceType != B_SLICE )
-  {
-    m_aiNumRefIdx[REF_PIC_LIST_1] = 0;
-    ::memset( m_apcRefPicList[REF_PIC_LIST_1], 0, sizeof(m_apcRefPicList[REF_PIC_LIST_1]));
-  }
-  else
-  {
-    for (int rIdx = 0; rIdx < m_aiNumRefIdx[REF_PIC_LIST_1]; rIdx ++)
-    {
-      cIdx = m_RefPicListModification.getRefPicListModificationFlagL1() ? m_RefPicListModification.getRefPicSetIdxL1(rIdx) : rIdx % numPicTotalCurr;
-      CHECK(cIdx < 0 || cIdx >= numPicTotalCurr, "Invalid state");
-      m_apcRefPicList[REF_PIC_LIST_1][rIdx] = rpsCurrList1[ cIdx ];
-      m_bIsUsedAsLongTerm[REF_PIC_LIST_1][rIdx] = ( cIdx >= NumPicStCurr0 + NumPicStCurr1 );
-    }
-  }
-    // For generalized B
-  // note: maybe not existed case (always L0 is copied to L1 if L1 is empty)
-  if( bCopyL0toL1ErrorCase && isInterB() && getNumRefIdx(REF_PIC_LIST_1) == 0)
-  {
-    int iNumRefIdx = getNumRefIdx(REF_PIC_LIST_0);
-    setNumRefIdx( REF_PIC_LIST_1, iNumRefIdx );
-
-    for (int iRefIdx = 0; iRefIdx < iNumRefIdx; iRefIdx++)
-    {
-      m_apcRefPicList[REF_PIC_LIST_1][iRefIdx] = m_apcRefPicList[REF_PIC_LIST_0] [iRefIdx];
-    }
-  }
-}
-
-
-int Slice::getNumRpsCurrTempList() const
-{
-  int numRpsCurrTempList = 0;
-
-  if (m_eSliceType == I_SLICE)
-  {
-    return 0;
-  }
-  for(uint32_t i=0; i < m_pRPS->getNumberOfNegativePictures()+ m_pRPS->getNumberOfPositivePictures() + m_pRPS->getNumberOfLongtermPictures(); i++)
-  {
-    if(m_pRPS->getUsed(i))
-    {
-      numRpsCurrTempList++;
-    }
-  }
-    return numRpsCurrTempList;
-}
-#endif
 
 void Slice::initEqualRef()
 {
@@ -668,7 +444,6 @@ void Slice::checkColRefIdx(uint32_t curSliceSegmentIdx, const Picture* pic)
   }
 }
 
-#if JVET_M0128
 void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic)
 {
   if (pocCRA < MAX_UINT && getPOC() > pocCRA)
@@ -708,61 +483,7 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
     pocCRA = getPOC();
     associatedIRAPType = getNalUnitType();
   }
-#if !JVET_M0101_HLS
-  else if (getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
-    || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-    || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP) // BLA picture found
-  {
-    pocCRA = getPOC();
-    associatedIRAPType = getNalUnitType();
-  }
-#endif
 }
-#else
-void Slice::checkCRA(const ReferencePictureSet *pReferencePictureSet, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic)
-{
-  for(int i = 0; i < pReferencePictureSet->getNumberOfNegativePictures()+pReferencePictureSet->getNumberOfPositivePictures(); i++)
-  {
-    if(pocCRA < MAX_UINT && getPOC() > pocCRA)
-    {
-      CHECK(getPOC()+pReferencePictureSet->getDeltaPOC(i) < pocCRA, "Invalid state");
-    }
-  }
-  for(int i = pReferencePictureSet->getNumberOfNegativePictures()+pReferencePictureSet->getNumberOfPositivePictures(); i < pReferencePictureSet->getNumberOfPictures(); i++)
-  {
-    if(pocCRA < MAX_UINT && getPOC() > pocCRA)
-    {
-      if (!pReferencePictureSet->getCheckLTMSBPresent(i))
-      {
-        CHECK(xGetLongTermRefPic(rcListPic, pReferencePictureSet->getPOC(i), false)->getPOC() < pocCRA, "Invalid state");
-      }
-      else
-      {
-        CHECK(pReferencePictureSet->getPOC(i) < pocCRA, "Invalid state");
-      }
-    }
-  }
-  if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP ) // IDR picture found
-  {
-    pocCRA = getPOC();
-    associatedIRAPType = getNalUnitType();
-  }
-  else if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA ) // CRA picture found
-  {
-    pocCRA = getPOC();
-    associatedIRAPType = getNalUnitType();
-  }
-#if !JVET_M0101_HLS
-  else if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
-         || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-         || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP ) // BLA picture found
-  {
-    pocCRA = getPOC();
-    associatedIRAPType = getNalUnitType();
-  }
-#endif
-}
-#endif
 
 /** Function for marking the reference pictures when an IDR/CRA/CRANT/BLA/BLANT is encountered.
  * \param pocCRA POC of the CRA/CRANT/BLA/BLANT picture
@@ -787,16 +508,8 @@ void Slice::decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& 
   Picture* rpcPic;
   int      pocCurr = getPOC();
 
-#if !JVET_M0101_HLS
-  if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
-    || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-    || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP
-    || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL
-    || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP )  // IDR or BLA picture
-#else
   if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL
     || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP)  // IDR picture
-#endif
   {
     // mark all pictures as not used for reference
     PicList::iterator        iterPic       = rcListPic.begin();
@@ -810,14 +523,6 @@ void Slice::decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& 
       }
       iterPic++;
     }
-#if !JVET_M0101_HLS
-    if ( getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP
-      || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-      || getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP )
-    {
-      pocCRA = pocCurr;
-    }
-#endif
     if (bEfficientFieldIRAPEnabled)
     {
       bRefreshPending = true;
@@ -907,9 +612,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   {
     m_iSliceChromaQpDelta[component] = pSrc->m_iSliceChromaQpDelta[component];
   }
-#if JVET_N0054_JOINT_CHROMA
   m_iSliceChromaQpDelta[JOINT_CbCr] = pSrc->m_iSliceChromaQpDelta[JOINT_CbCr];
-#endif
 
   for (i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
@@ -924,12 +627,8 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   if( cpyAlmostAll ) m_iDepth = pSrc->m_iDepth;
 
   // access channel
-#if JVET_M0128
   if (cpyAlmostAll) m_pRPL0 = pSrc->m_pRPL0;
   if (cpyAlmostAll) m_pRPL1 = pSrc->m_pRPL1;
-#else
-  if( cpyAlmostAll ) m_pRPS   = pSrc->m_pRPS;
-#endif
   m_iLastIDR             = pSrc->m_iLastIDR;
 
   if( cpyAlmostAll ) m_pcPic  = pSrc->m_pcPic;
@@ -976,33 +675,19 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   }
 
   m_cabacInitFlag                 = pSrc->m_cabacInitFlag;
-#if JVET_N0415_CTB_ALF
-#if JVET_N0805_APS_LMCS 
   memcpy(m_alfApss, pSrc->m_alfApss, sizeof(m_alfApss)); // this might be quite unsafe
-#else
-  memcpy(m_apss, pSrc->m_apss, sizeof(m_apss)); // this might be quite unsafe
-#endif
   memcpy( m_tileGroupAlfEnabledFlag, pSrc->m_tileGroupAlfEnabledFlag, sizeof(m_tileGroupAlfEnabledFlag));
   m_tileGroupNumAps               = pSrc->m_tileGroupNumAps;
   m_tileGroupLumaApsId            = pSrc->m_tileGroupLumaApsId;
   m_tileGroupChromaApsId          = pSrc->m_tileGroupChromaApsId;
-#else
-  m_apsId                         = pSrc->m_apsId;
-  m_aps                           = pSrc->m_aps;
-  m_tileGroupAlfEnabledFlag       = pSrc->m_tileGroupAlfEnabledFlag;
-#endif
-#if JVET_N0329_IBC_SEARCH_IMP 
   m_disableSATDForRd              = pSrc->m_disableSATDForRd;
-#endif
 
   m_bLMvdL1Zero                   = pSrc->m_bLMvdL1Zero;
   m_LFCrossSliceBoundaryFlag      = pSrc->m_LFCrossSliceBoundaryFlag;
   m_enableTMVPFlag                = pSrc->m_enableTMVPFlag;
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
   m_maxNumAffineMergeCand         = pSrc->m_maxNumAffineMergeCand;
-#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
   m_maxNumTriangleCand            = pSrc->m_maxNumTriangleCand;
-#endif
   m_disFracMMVD                   = pSrc->m_disFracMMVD;
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
   m_splitConsOverrideFlag         = pSrc->m_splitConsOverrideFlag;
@@ -1018,14 +703,10 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_depQuantEnabledFlag           = pSrc->m_depQuantEnabledFlag;
   m_signDataHidingEnabledFlag     = pSrc->m_signDataHidingEnabledFlag;
 
-#if JVET_N0805_APS_LMCS 
   m_tileGroupLmcsEnabledFlag = pSrc->m_tileGroupLmcsEnabledFlag;
   m_tileGroupLmcsChromaResidualScaleFlag = pSrc->m_tileGroupLmcsChromaResidualScaleFlag;
   m_lmcsAps = pSrc->m_lmcsAps;
   m_lmcsApsId = pSrc->m_lmcsApsId;
-#else
-  m_sliceReshapeInfo              = pSrc->m_sliceReshapeInfo;
-#endif
 }
 
 
@@ -1077,64 +758,25 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
   if(this->getAssociatedIRAPPOC() > this->getPOC())
   {
     // Do not check IRAP pictures since they may get a POC lower than their associated IRAP
-#if JVET_N0067_NAL_Unit_Header
     if (nalUnitType < NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
         nalUnitType > NAL_UNIT_CODED_SLICE_CRA)
-#else
-#if !JVET_M0101_HLS
-    if(nalUnitType < NAL_UNIT_CODED_SLICE_BLA_W_LP ||
-       nalUnitType > NAL_UNIT_RESERVED_IRAP_VCL23)
-#else
-    if (nalUnitType < NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
-        nalUnitType > NAL_UNIT_RESERVED_IRAP_VCL13)
-#endif
-#endif
     {
-#if !JVET_M0101_HLS
-      CHECK( nalUnitType != NAL_UNIT_CODED_SLICE_RASL_N &&
-             nalUnitType != NAL_UNIT_CODED_SLICE_RASL_R &&
-             nalUnitType != NAL_UNIT_CODED_SLICE_RADL_N &&
-             nalUnitType != NAL_UNIT_CODED_SLICE_RADL_R, "Invalid NAL unit type");
-#else
       CHECK(nalUnitType != NAL_UNIT_CODED_SLICE_RASL &&
             nalUnitType != NAL_UNIT_CODED_SLICE_RADL, "Invalid NAL unit type");
-#endif
     }
   }
 
   // When a picture is a trailing picture, it shall not be a RADL or RASL picture.
   if(this->getAssociatedIRAPPOC() < this->getPOC())
   {
-#if !JVET_M0101_HLS
-    CHECK( nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
-           nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R ||
-           nalUnitType == NAL_UNIT_CODED_SLICE_RADL_N ||
-           nalUnitType == NAL_UNIT_CODED_SLICE_RADL_R, "Invalid NAL unit type" );
-#else
     CHECK(nalUnitType == NAL_UNIT_CODED_SLICE_RASL ||
           nalUnitType == NAL_UNIT_CODED_SLICE_RADL, "Invalid NAL unit type");
-#endif
   }
 
-#if !JVET_M0101_HLS
-  // No RASL pictures shall be present in the bitstream that are associated
-  // with a BLA picture having nal_unit_type equal to BLA_W_RADL or BLA_N_LP.
-  if(nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
-     nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R)
-  {
-    CHECK (this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL ||
-           this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_N_LP, "Invalid NAL unit type");
-  }
-#endif
 
   // No RASL pictures shall be present in the bitstream that are associated with
   // an IDR picture.
-#if !JVET_M0101_HLS
-  if(nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
-     nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R)
-#else
   if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL)
-#endif
   {
     CHECK( this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_IDR_N_LP   ||
            this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL, "Invalid NAL unit type");
@@ -1143,19 +785,9 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
   // No RADL pictures shall be present in the bitstream that are associated with
   // a BLA picture having nal_unit_type equal to BLA_N_LP or that are associated
   // with an IDR picture having nal_unit_type equal to IDR_N_LP.
-#if !JVET_M0101_HLS
-  if(nalUnitType == NAL_UNIT_CODED_SLICE_RADL_N ||
-     nalUnitType == NAL_UNIT_CODED_SLICE_RADL_R)
-#else
   if (nalUnitType == NAL_UNIT_CODED_SLICE_RADL)
-#endif
   {
-#if !JVET_M0101_HLS
-    CHECK (this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_N_LP   ||
-           this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_IDR_N_LP, "Invalid NAL unit type");
-#else
     CHECK (this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_IDR_N_LP, "Invalid NAL unit type");
-#endif
   }
 
   // loop through all pictures in the reference picture buffer
@@ -1178,18 +810,9 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
     // (Note that any picture following in output order would be present in the DPB)
     if(pcSlice->getPicOutputFlag() == 1 && !this->getNoOutputPriorPicsFlag())
     {
-#if !JVET_M0101_HLS
-      if(nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP    ||
-         nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP    ||
-         nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL  ||
-         nalUnitType == NAL_UNIT_CODED_SLICE_CRA         ||
-         nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP    ||
-         nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL)
-#else
       if (nalUnitType == NAL_UNIT_CODED_SLICE_CRA ||
           nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP ||
           nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL)
-#endif
       {
         CHECK(pcPic->poc >= this->getPOC(), "Invalid POC");
       }
@@ -1200,12 +823,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
     // picture in output order.
     if(pcSlice->getPicOutputFlag() == 1)
     {
-#if !JVET_M0101_HLS
-      if((nalUnitType == NAL_UNIT_CODED_SLICE_RADL_N ||
-          nalUnitType == NAL_UNIT_CODED_SLICE_RADL_R))
-#else
       if (nalUnitType == NAL_UNIT_CODED_SLICE_RADL)
-#endif
       {
         // rpcPic precedes the IRAP in decoding order
         if(this->getAssociatedIRAPPOC() > pcSlice->getAssociatedIRAPPOC())
@@ -1221,15 +839,8 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
     // When a picture is a leading picture, it shall precede, in decoding order,
     // all trailing pictures that are associated with the same IRAP picture.
-#if !JVET_M0101_HLS
-    if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
-         nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R ||
-         nalUnitType == NAL_UNIT_CODED_SLICE_RADL_N ||
-         nalUnitType == NAL_UNIT_CODED_SLICE_RADL_R)
-#else
     if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL ||
         nalUnitType == NAL_UNIT_CODED_SLICE_RADL )
-#endif
       {
         if(pcSlice->getAssociatedIRAPPOC() == this->getAssociatedIRAPPOC())
         {
@@ -1241,29 +852,12 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
     // Any RASL picture associated with a CRA or BLA picture shall precede any
     // RADL picture associated with the CRA or BLA picture in output order
-#if !JVET_M0101_HLS
-    if(nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
-       nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R)
-#else
     if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL)
-#endif
     {
-#if !JVET_M0101_HLS
-      if((this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_N_LP   ||
-          this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_W_LP   ||
-          this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL ||
-          this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_CRA) &&
-#else
       if ((this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_CRA) &&
-#endif
           this->getAssociatedIRAPPOC() == pcSlice->getAssociatedIRAPPOC())
       {
-#if !JVET_M0101_HLS
-        if(pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL_N ||
-           pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL_R)
-#else
         if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL)
-#endif
         {
           CHECK( pcPic->poc <= this->getPOC(), "Invalid POC");
         }
@@ -1272,22 +866,12 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
     // Any RASL picture associated with a CRA picture shall follow, in output
     // order, any IRAP picture that precedes the CRA picture in decoding order.
-#if !JVET_M0101_HLS
-    if(nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N ||
-       nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R)
-#else
     if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL)
-#endif
     {
       if(this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_CRA)
       {
         if(pcSlice->getPOC() < this->getAssociatedIRAPPOC() &&
           (
-#if !JVET_M0101_HLS
-            pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_N_LP   ||
-            pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_LP   ||
-            pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_BLA_W_RADL ||
-#endif
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP   ||
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA))
@@ -1301,461 +885,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
 
 
-#if !JVET_M0128
-/** Function for applying picture marking based on the Reference Picture Set in pReferencePictureSet.
-*/
-void Slice::applyReferencePictureSet( PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet) const
-{
-  int i, isReference;
 
-  checkLeadingPictureRestrictions(rcListPic);
-
-  // loop through all pictures in the reference picture buffer
-  PicList::iterator iterPic = rcListPic.begin();
-  while ( iterPic != rcListPic.end())
-  {
-    Picture* pcPic = *(iterPic++);
-
-    if( ! pcPic->referenced)
-    {
-#if JVET_N0247_HASH_IMPROVE
-      pcPic->getHashMap()->clearAll();
-#endif
-      continue;
-    }
-
-    isReference = 0;
-    // loop through all pictures in the Reference Picture Set
-    // to see if the picture should be kept as reference picture
-    for(i=0;i<pReferencePictureSet->getNumberOfPositivePictures()+pReferencePictureSet->getNumberOfNegativePictures();i++)
-    {
-      if( ! pcPic->longTerm && pcPic->poc == this->getPOC() + pReferencePictureSet->getDeltaPOC(i))
-      {
-        isReference = 1;
-        pcPic->usedByCurr = pReferencePictureSet->getUsed(i);
-        pcPic->longTerm = false;
-      }
-    }
-    for(;i<pReferencePictureSet->getNumberOfPictures();i++)
-    {
-      if(pReferencePictureSet->getCheckLTMSBPresent(i)==true)
-      {
-        if( pcPic->longTerm && pcPic->poc == pReferencePictureSet->getPOC(i))
-        {
-          isReference = 1;
-          pcPic->usedByCurr = pReferencePictureSet->getUsed(i);
-        }
-      }
-      else
-      {
-        int pocCycle = 1 << pcPic->cs->sps->getBitsForPOC();
-        int curPoc = pcPic->poc & (pocCycle-1);
-        int refPoc = pReferencePictureSet->getPOC(i) & (pocCycle-1);
-        if( pcPic->longTerm && curPoc == refPoc)
-        {
-          isReference = 1;
-          pcPic->usedByCurr = pReferencePictureSet->getUsed(i);
-        }
-      }
-    }
-    // mark the picture as "unused for reference" if it is not in
-    // the Reference Picture Set
-    if( pcPic->poc != this->getPOC() && isReference == 0)
-    {
-      pcPic->referenced = false;
-      pcPic->usedByCurr = false;
-      pcPic->longTerm   = false;
-      pcPic->getHashMap()->clearAll();
-    }
-
-    // sanity checks
-    if( pcPic->referenced)
-    {
-      //check that pictures of higher temporal layers are not used
-      CHECK( pcPic->usedByCurr && !(pcPic->layer<=this->getTLayer()), "Invalid state");
-      //check that pictures of higher or equal temporal layer are not in the RPS if the current picture is a TSA picture
-#if !JVET_M0101_HLS
-      if( this->getNalUnitType() == NAL_UNIT_CODED_SLICE_TSA_R || this->getNalUnitType() == NAL_UNIT_CODED_SLICE_TSA_N)
-      {
-        CHECK( !(pcPic->layer<this->getTLayer()), "Invalid state");
-      }
-#endif
-#if !JVET_M0101_HLS
-      //check that pictures marked as temporal layer non-reference pictures are not used for reference
-      if( pcPic->poc != this->getPOC() && (pcPic->layer == this->getTLayer()))
-      {
-        CHECK( pcPic->usedByCurr && pcPic->slices[0]->getTemporalLayerNonReferenceFlag(), "Invalid state");
-      }
-#endif
-    }
-  }
-}
-
-/** Function for applying picture marking based on the Reference Picture Set in pReferencePictureSet.
-*/
-int Slice::checkThatAllRefPicsAreAvailable( PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet, bool printErrors, int pocRandomAccess, bool bUseRecoveryPoint) const
-{
-  int atLeastOneUnabledByRecoveryPoint = 0;
-  int atLeastOneFlushedByPreviousIDR = 0;
-  Picture* rpcPic;
-  int i, isAvailable;
-  int atLeastOneLost = 0;
-  int atLeastOneRemoved = 0;
-  int iPocLost = 0;
-
-  // loop through all long-term pictures in the Reference Picture Set
-  // to see if the picture should be kept as reference picture
-  for(i=pReferencePictureSet->getNumberOfNegativePictures()+pReferencePictureSet->getNumberOfPositivePictures();i<pReferencePictureSet->getNumberOfPictures();i++)
-  {
-    isAvailable = 0;
-    // loop through all pictures in the reference picture buffer
-    PicList::iterator iterPic = rcListPic.begin();
-    while ( iterPic != rcListPic.end())
-    {
-      rpcPic = *(iterPic++);
-      if(pReferencePictureSet->getCheckLTMSBPresent(i)==true)
-      {
-        if(rpcPic->longTerm && (rpcPic->getPOC()) == pReferencePictureSet->getPOC(i) && rpcPic->referenced)
-        {
-          if(bUseRecoveryPoint && this->getPOC() > pocRandomAccess && this->getPOC() + pReferencePictureSet->getDeltaPOC(i) < pocRandomAccess)
-          {
-            isAvailable = 0;
-          }
-          else
-          {
-            isAvailable = 1;
-          }
-        }
-      }
-      else
-      {
-        int pocCycle = 1<<rpcPic->cs->sps->getBitsForPOC();
-        int curPoc = rpcPic->getPOC() & (pocCycle-1);
-        int refPoc = pReferencePictureSet->getPOC(i) & (pocCycle-1);
-        if(rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
-        {
-          if(bUseRecoveryPoint && this->getPOC() > pocRandomAccess && this->getPOC() + pReferencePictureSet->getDeltaPOC(i) < pocRandomAccess)
-          {
-            isAvailable = 0;
-          }
-          else
-          {
-            isAvailable = 1;
-          }
-        }
-      }
-    }
-    // if there was no such long-term check the short terms
-    if(!isAvailable)
-    {
-      iterPic = rcListPic.begin();
-      while ( iterPic != rcListPic.end())
-      {
-        rpcPic = *(iterPic++);
-
-        int pocCycle = 1 << rpcPic->cs->sps->getBitsForPOC();
-        int curPoc = rpcPic->getPOC();
-        int refPoc = pReferencePictureSet->getPOC(i);
-        if (!pReferencePictureSet->getCheckLTMSBPresent(i))
-        {
-          curPoc = curPoc & (pocCycle - 1);
-          refPoc = refPoc & (pocCycle - 1);
-        }
-
-        if (rpcPic->referenced && curPoc == refPoc)
-        {
-          if(bUseRecoveryPoint && this->getPOC() > pocRandomAccess && this->getPOC() + pReferencePictureSet->getDeltaPOC(i) < pocRandomAccess)
-          {
-            isAvailable = 0;
-          }
-          else
-          {
-            isAvailable = 1;
-            rpcPic->longTerm = true;
-            break;
-          }
-        }
-      }
-    }
-    // report that a picture is lost if it is in the Reference Picture Set
-    // but not available as reference picture
-    if(isAvailable == 0)
-    {
-      if (this->getPOC() + pReferencePictureSet->getDeltaPOC(i) >= pocRandomAccess)
-      {
-        if(!pReferencePictureSet->getUsed(i) )
-        {
-          if(printErrors)
-          {
-            msg( ERROR, "\nLong-term reference picture with POC = %3d seems to have been removed or not correctly decoded.", this->getPOC() + pReferencePictureSet->getDeltaPOC(i));
-          }
-          atLeastOneRemoved = 1;
-        }
-        else
-        {
-          if(printErrors)
-          {
-            msg( ERROR, "\nLong-term reference picture with POC = %3d is lost or not correctly decoded!", this->getPOC() + pReferencePictureSet->getDeltaPOC(i));
-          }
-          atLeastOneLost = 1;
-          iPocLost=this->getPOC() + pReferencePictureSet->getDeltaPOC(i);
-        }
-      }
-      else if(bUseRecoveryPoint && this->getPOC() > pocRandomAccess)
-      {
-        atLeastOneUnabledByRecoveryPoint = 1;
-      }
-      else if(bUseRecoveryPoint && (this->getAssociatedIRAPType()==NAL_UNIT_CODED_SLICE_IDR_N_LP || this->getAssociatedIRAPType()==NAL_UNIT_CODED_SLICE_IDR_W_RADL))
-      {
-        atLeastOneFlushedByPreviousIDR = 1;
-      }
-    }
-  }
-  // loop through all short-term pictures in the Reference Picture Set
-  // to see if the picture should be kept as reference picture
-  for(i=0;i<pReferencePictureSet->getNumberOfNegativePictures()+pReferencePictureSet->getNumberOfPositivePictures();i++)
-  {
-    isAvailable = 0;
-    // loop through all pictures in the reference picture buffer
-    PicList::iterator iterPic = rcListPic.begin();
-    while ( iterPic != rcListPic.end())
-    {
-      rpcPic = *(iterPic++);
-
-      if( ! rpcPic->longTerm && rpcPic->getPOC() == this->getPOC() + pReferencePictureSet->getDeltaPOC(i) && rpcPic->referenced)
-      {
-        if(bUseRecoveryPoint && this->getPOC() > pocRandomAccess && this->getPOC() + pReferencePictureSet->getDeltaPOC(i) < pocRandomAccess)
-        {
-          isAvailable = 0;
-        }
-        else
-        {
-          isAvailable = 1;
-        }
-      }
-    }
-    // report that a picture is lost if it is in the Reference Picture Set
-    // but not available as reference picture
-    if(isAvailable == 0)
-    {
-      if (this->getPOC() + pReferencePictureSet->getDeltaPOC(i) >= pocRandomAccess)
-      {
-        if(!pReferencePictureSet->getUsed(i) )
-        {
-          if(printErrors)
-          {
-            msg( ERROR, "\nShort-term reference picture with POC = %3d seems to have been removed or not correctly decoded.", this->getPOC() + pReferencePictureSet->getDeltaPOC(i));
-          }
-          atLeastOneRemoved = 1;
-        }
-        else
-        {
-          if(printErrors)
-          {
-            msg( ERROR, "\nShort-term reference picture with POC = %3d is lost or not correctly decoded!", this->getPOC() + pReferencePictureSet->getDeltaPOC(i));
-          }
-          atLeastOneLost = 1;
-          iPocLost=this->getPOC() + pReferencePictureSet->getDeltaPOC(i);
-        }
-      }
-      else if(bUseRecoveryPoint && this->getPOC() > pocRandomAccess)
-      {
-        atLeastOneUnabledByRecoveryPoint = 1;
-      }
-      else if(bUseRecoveryPoint && (this->getAssociatedIRAPType()==NAL_UNIT_CODED_SLICE_IDR_N_LP || this->getAssociatedIRAPType()==NAL_UNIT_CODED_SLICE_IDR_W_RADL))
-      {
-        atLeastOneFlushedByPreviousIDR = 1;
-      }
-    }
-  }
-
-  if(atLeastOneUnabledByRecoveryPoint || atLeastOneFlushedByPreviousIDR)
-  {
-    return -1;
-  }
-  if(atLeastOneLost)
-  {
-    return iPocLost+1;
-  }
-  if(atLeastOneRemoved)
-  {
-    return -2;
-  }
-  else
-  {
-    return 0;
-  }
-}
-
-/** Function for constructing an explicit Reference Picture Set out of the available pictures in a referenced Reference Picture Set
-*/
-void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureSet *pReferencePictureSet, bool isRAP, int pocRandomAccess, bool bUseRecoveryPoint, const bool bEfficientFieldIRAPEnabled
-                                                         , bool isEncodeLtRef, bool isCompositeRefEnable
-)
-{
-  Picture* rpcPic;
-  int i, j;
-  int k = 0;
-  int nrOfNegativePictures = 0;
-  int nrOfPositivePictures = 0;
-  ReferencePictureSet* pLocalRPS = this->getLocalRPS();
-  (*pLocalRPS)=ReferencePictureSet();
-
-  bool irapIsInRPS = false; // Used when bEfficientFieldIRAPEnabled==true
-
-  // loop through all pictures in the Reference Picture Set
-  for(i=0;i<pReferencePictureSet->getNumberOfPictures();i++)
-  {
-    j = 0;
-    // loop through all pictures in the reference picture buffer
-    PicList::iterator iterPic = rcListPic.begin();
-    while ( iterPic != rcListPic.end())
-    {
-      j++;
-      rpcPic = *(iterPic++);
-
-      if(rpcPic->getPOC() == this->getPOC() + pReferencePictureSet->getDeltaPOC(i) && rpcPic->referenced)
-      {
-        // This picture exists as a reference picture
-        // and should be added to the explicit Reference Picture Set
-        pLocalRPS->setDeltaPOC(k, pReferencePictureSet->getDeltaPOC(i));
-        pLocalRPS->setUsed(k, pReferencePictureSet->getUsed(i) && (!isRAP));
-        if (bEfficientFieldIRAPEnabled)
-        {
-          pLocalRPS->setUsed(k, pLocalRPS->getUsed(k) && !(bUseRecoveryPoint && this->getPOC() > pocRandomAccess && this->getPOC() + pReferencePictureSet->getDeltaPOC(i) < pocRandomAccess) );
-        }
-
-        if(pLocalRPS->getDeltaPOC(k) < 0)
-        {
-          nrOfNegativePictures++;
-        }
-        else
-        {
-          if (bEfficientFieldIRAPEnabled && rpcPic->getPOC() == this->getAssociatedIRAPPOC() && this->getAssociatedIRAPPOC() == this->getPOC() + (isCompositeRefEnable ? 2 : 1))
-          {
-            irapIsInRPS = true;
-          }
-          nrOfPositivePictures++;
-        }
-        k++;
-      }
-    }
-  }
-
-  bool useNewRPS = false;
-  // if current picture is complimentary field associated to IRAP, add the IRAP to its RPS.
-  if(bEfficientFieldIRAPEnabled && m_pcPic->fieldPic && !irapIsInRPS)
-  {
-    PicList::iterator iterPic = rcListPic.begin();
-    while ( iterPic != rcListPic.end())
-    {
-      rpcPic = *(iterPic++);
-      if (rpcPic->getPOC() == this->getAssociatedIRAPPOC() && this->getAssociatedIRAPPOC() == this->getPOC() + (isCompositeRefEnable ? 2 : 1))
-      {
-        pLocalRPS->setDeltaPOC(k, 1);
-        pLocalRPS->setUsed(k, true);
-        nrOfPositivePictures++;
-        k ++;
-        useNewRPS = true;
-      }
-    }
-  }
-  if (isCompositeRefEnable && isEncodeLtRef)
-  {
-    useNewRPS = true;
-    nrOfNegativePictures = 0;
-    nrOfPositivePictures = 0;
-    for (i = 0; i<pReferencePictureSet->getNumberOfPictures(); i++)
-    {
-      j = 0;
-      k = 0;
-
-      // loop through all pictures in the reference picture buffer
-      PicList::iterator iterPic = rcListPic.begin();
-      while (iterPic != rcListPic.end())
-      {
-        j++;
-        rpcPic = *(iterPic++);
-
-        if (rpcPic->getPOC() == this->getPOC() + 1 + pReferencePictureSet->getDeltaPOC(i) && rpcPic->referenced)
-        {
-          // This picture exists as a reference picture
-          // and should be added to the explicit Reference Picture Set
-          pLocalRPS->setDeltaPOC(k, pReferencePictureSet->getDeltaPOC(i) + 1);
-          pLocalRPS->setUsed(k, pReferencePictureSet->getUsed(i) && (!isRAP));
-          if (bEfficientFieldIRAPEnabled)
-          {
-            pLocalRPS->setUsed(k, pLocalRPS->getUsed(k) && !(bUseRecoveryPoint && this->getPOC() > pocRandomAccess && this->getPOC() + pReferencePictureSet->getDeltaPOC(i) + 1 < pocRandomAccess));
-          }
-
-          if (pLocalRPS->getDeltaPOC(k) < 0)
-          {
-            nrOfNegativePictures++;
-          }
-          else
-          {
-            if (bEfficientFieldIRAPEnabled && rpcPic->getPOC() == this->getAssociatedIRAPPOC() && this->getAssociatedIRAPPOC() == this->getPOC() + 2)
-            {
-              irapIsInRPS = true;
-            }
-            nrOfPositivePictures++;
-          }
-          k++;
-        }
-      }
-    }
-  }
-  pLocalRPS->setNumberOfNegativePictures(nrOfNegativePictures);
-  pLocalRPS->setNumberOfPositivePictures(nrOfPositivePictures);
-  pLocalRPS->setNumberOfPictures(nrOfNegativePictures+nrOfPositivePictures);
-  // This is a simplistic inter rps example. A smarter encoder will look for a better reference RPS to do the
-  // inter RPS prediction with.  Here we just use the reference used by pReferencePictureSet.
-  // If pReferencePictureSet is not inter_RPS_predicted, then inter_RPS_prediction is for the current RPS also disabled.
-  if (!pReferencePictureSet->getInterRPSPrediction() || useNewRPS )
-  {
-    pLocalRPS->setInterRPSPrediction(false);
-    pLocalRPS->setNumRefIdc(0);
-  }
-  else
-  {
-    int rIdx =  this->getRPSidx() - pReferencePictureSet->getDeltaRIdxMinus1() - 1;
-    int deltaRPS = pReferencePictureSet->getDeltaRPS();
-    const ReferencePictureSet* pcRefRPS = this->getSPS()->getRPSList()->getReferencePictureSet(rIdx);
-    int iRefPics = pcRefRPS->getNumberOfPictures();
-    int iNewIdc=0;
-    for(i=0; i<= iRefPics; i++)
-    {
-      int deltaPOC = ((i != iRefPics)? pcRefRPS->getDeltaPOC(i) : 0);  // check if the reference abs POC is >= 0
-      int iRefIdc = 0;
-      for (j=0; j < pLocalRPS->getNumberOfPictures(); j++) // loop through the  pictures in the new RPS
-      {
-        if ( (deltaPOC + deltaRPS) == pLocalRPS->getDeltaPOC(j))
-        {
-          if (pLocalRPS->getUsed(j))
-          {
-            iRefIdc = 1;
-          }
-          else
-          {
-            iRefIdc = 2;
-          }
-        }
-      }
-      pLocalRPS->setRefIdc(i, iRefIdc);
-      iNewIdc++;
-    }
-    pLocalRPS->setInterRPSPrediction(true);
-    pLocalRPS->setNumRefIdc(iNewIdc);
-    pLocalRPS->setDeltaRPS(deltaRPS);
-    pLocalRPS->setDeltaRIdxMinus1(pReferencePictureSet->getDeltaRIdxMinus1() + this->getSPS()->getRPSList()->getNumberOfReferencePictureSets() - this->getRPSidx());
-  }
-
-  this->setRPS(pLocalRPS);
-  this->setRPSidx(-1);
-}
-#endif
-
-#if JVET_M0128
 //Function for applying picture marking based on the Reference Picture List
 void Slice::applyReferencePictureListBasedMarking(PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1) const
 {
@@ -2076,7 +1206,6 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
   this->setRPL1idx(-1);
   this->setRPL1(pLocalRPL1);
 }
-#endif
 
 //! get AC and DC values for weighted pred
 void  Slice::getWpAcDcParam(const WPACDCParam *&wp) const
@@ -2181,11 +1310,7 @@ unsigned Slice::getMinPictureDistance() const
     {
       for (int refIdx = 0; refIdx < getNumRefIdx(REF_PIC_LIST_1); refIdx++)
       {
-#if JVET_M0128          //[HD] Please check if this is correct. Seems like a software bug to me.
         minPicDist = std::min(minPicDist, std::abs(currPOC - getRefPic(REF_PIC_LIST_1, refIdx)->getPOC()));
-#else
-        minPicDist = std::min( minPicDist, std::abs(currPOC - getRefPic(REF_PIC_LIST_0, refIdx)->getPOC()));
-#endif
       }
     }
   }
@@ -2219,7 +1344,7 @@ VPS::VPS()
 VPS::~VPS()
 {
 }
-#elif JVET_N0278_HLS
+#else
 // ------------------------------------------------------------------------------------------------
 // Video parameter set (VPS)
 // ------------------------------------------------------------------------------------------------
@@ -2261,60 +1386,10 @@ SPSRExt::SPSRExt()
 
 SPS::SPS()
 : m_SPSId                     (  0)
-#if JVET_N0349_DPS
 , m_decodingParameterSetId    (  0 )
-#endif
-#if !JVET_M0101_HLS
-, m_bIntraOnlyConstraintFlag  (false)
-, m_maxBitDepthConstraintIdc  (  0)
-, m_maxChromaFormatConstraintIdc(CHROMA_420)
-, m_bFrameConstraintFlag      (false)
-, m_bNoQtbttDualTreeIntraConstraintFlag(false)
-#if JVET_N0276_CONSTRAINT_FLAGS
-, m_noPartitionConstraintsOverrideConstraintFlag(false)
-#endif
-, m_bNoSaoConstraintFlag      (false)
-, m_bNoAlfConstraintFlag      (false)
-, m_bNoPcmConstraintFlag      (false)
-, m_bNoRefWraparoundConstraintFlag(false)
-, m_bNoTemporalMvpConstraintFlag(false)
-, m_bNoSbtmvpConstraintFlag   (false)
-, m_bNoAmvrConstraintFlag     (false)
-, m_bNoBdofConstraintFlag     (false)
-#if JVET_N0276_CONSTRAINT_FLAGS
-, m_noDmvrConstraintFlag      (false)
-#endif
-, m_bNoCclmConstraintFlag     (false)
-, m_bNoMtsConstraintFlag      (false)
-#if JVET_N0276_CONSTRAINT_FLAGS
-, m_noSbtConstraintFlag       (false)
-#endif
-, m_bNoAffineMotionConstraintFlag(false)
-, m_bNoGbiConstraintFlag      (false)
-#if JVET_N0276_CONSTRAINT_FLAGS
-, m_noIbcConstraintFlag       (false)
-#endif
-, m_bNoMhIntraConstraintFlag  (false)
-#if JVET_N0276_CONSTRAINT_FLAGS
-, m_noFPelMmvdConstraintFlag  (false)
-#endif
-, m_bNoTriangleConstraintFlag (false)
-, m_bNoLadfConstraintFlag     (false)
-#if JVET_N0276_CONSTRAINT_FLAGS
-, m_noTransformSkipConstraintFlag(false)
-#endif
-#if !JVET_N0276_CONSTRAINT_FLAGS
-, m_bNoCurrPicRefConstraintFlag(false)
-#endif
-, m_bNoQpDeltaConstraintFlag  (false)
-, m_bNoDepQuantConstraintFlag (false)
-, m_bNoSignDataHidingConstraintFlag(false)
-#endif
 , m_affineAmvrEnabledFlag     ( false )
 , m_DMVR                      ( false )
-#if JVET_N0127_MMVD_SPS_FLAG
 , m_MMVD                      ( false )
-#endif
 , m_SBT                       ( false )
 , m_MaxSbtSize                ( 32 )
 #if INCLUDE_ISP_CFG_FLAG
@@ -2338,13 +1413,11 @@ SPS::SPS()
 , m_uiMaxCUWidth              ( 32)
 , m_uiMaxCUHeight             ( 32)
 , m_uiMaxCodingDepth          (  3)
-#if JVET_M0128
 , m_numRPL0                   ( 0 )
 , m_numRPL1                   ( 0 )
 , m_rpl1CopyFromRpl0Flag      ( false )
 , m_rpl1IdxPresentFlag        ( false )
 , m_allRplEntriesHasSameSignFlag ( true )
-#endif
 , m_bLongTermRefsPresent      (false)
 // Tool list
 , m_pcmEnabledFlag            (false)
@@ -2361,12 +1434,7 @@ SPS::SPS()
 #endif
 , m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
-#if HEVC_USE_SCALING_LISTS
 , m_scalingListEnabledFlag    (false)
-#endif
-#if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
-, m_useStrongIntraSmoothing   (false)
-#endif
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_wrapAroundEnabledFlag     (false)
@@ -2378,9 +1446,7 @@ SPS::SPS()
 , m_cclmCollocatedChromaFlag  ( false )
 , m_IntraMTS                  ( false )
 , m_InterMTS                  ( false )
-#if JVET_N0193_LFNST
 , m_LFNST                     ( false )
-#endif
 , m_Affine                    ( false )
 , m_AffineType                ( false )
 , m_MHIntra                   ( false )
@@ -2391,9 +1457,7 @@ SPS::SPS()
 , m_LadfQpOffset              { 0 }
 , m_LadfIntervalLowerBound    { 0 }
 #endif
-#if JVET_N0217_MATRIX_INTRAPRED
 , m_MIP                       ( false )
-#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
@@ -2415,12 +1479,8 @@ SPS::SPS()
 
 SPS::~SPS()
 {
-#if !JVET_M0128
-  m_RPSList.destroy();
-#endif
 }
 
-#if JVET_M0128
 void  SPS::createRPLList0(int numRPL)
 {
   m_RPLList0.destroy();
@@ -2436,13 +1496,6 @@ void  SPS::createRPLList1(int numRPL)
 
   m_rpl1IdxPresentFlag = (m_numRPL0 != m_numRPL1) ? true : false;
 }
-#else
-void  SPS::createRPSList( int numRPS )
-{
-  m_RPSList.destroy();
-  m_RPSList.create(numRPS);
-}
-#endif
 
 
 const int SPS::m_winUnitX[]={1,2,2,1};
@@ -2474,25 +1527,17 @@ PPS::PPS()
 , m_cuQpDeltaSubdiv                  (0)
 , m_chromaCbQpOffset                 (0)
 , m_chromaCrQpOffset                 (0)
-#if JVET_N0054_JOINT_CHROMA
 , m_chromaCbCrQpOffset               (0)
-#endif
 , m_numRefIdxL0DefaultActive         (1)
 , m_numRefIdxL1DefaultActive         (1)
-#if JVET_M0128
 , m_rpl1IdxPresentFlag               (false)
-#endif
 , m_TransquantBypassEnabledFlag      (false)
 , m_useTransformSkip                 (false)
-#if !JVET_N0857_TILES_BRICKS
-, m_tilesEnabledFlag                 (false)
-#endif
 , m_entropyCodingSyncEnabledFlag     (false)
 , m_loopFilterAcrossBricksEnabledFlag (true)
 , m_uniformTileSpacingFlag           (false)
 , m_numTileColumnsMinus1             (0)
 , m_numTileRowsMinus1                (0)
-#if JVET_N0857_TILES_BRICKS
 , m_singleTileInPicFlag              (true)
 , m_tileColsWidthMinus1              (0)
 , m_tileRowsHeightMinus1             (0)
@@ -2500,30 +1545,23 @@ PPS::PPS()
 , m_singleBrickPerSliceFlag          (true)
 , m_rectSliceFlag                    (true)
 , m_numSlicesInPicMinus1             (0)
-#if JVET_N0857_RECT_SLICES
 , m_numTilesInPic                    (1)
 , m_numBricksInPic                   (1)
-#endif
 , m_signalledSliceIdFlag             (false)
 ,m_signalledSliceIdLengthMinus1      (0)
-#endif
 , m_cabacInitPresentFlag             (false)
 , m_sliceHeaderExtensionPresentFlag  (false)
 , m_loopFilterAcrossSlicesEnabledFlag(false)
 , m_listsModificationPresentFlag     (0)
 , m_numExtraSliceHeaderBits          (0)
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag(false)
 , m_numVerVirtualBoundaries          (0)
 , m_numHorVirtualBoundaries          (0)
-#endif
 , m_ppsRangeExtension                ()
 , pcv                                (NULL)
 {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   ::memset(m_virtualBoundariesPosX, 0, sizeof(m_virtualBoundariesPosX));
   ::memset(m_virtualBoundariesPosY, 0, sizeof(m_virtualBoundariesPosY));
-#endif
 }
 
 PPS::~PPS()
@@ -2540,166 +1578,7 @@ APS::~APS()
 {
 }
 
-#if !JVET_M0128
-ReferencePictureSet::ReferencePictureSet()
-: m_numberOfPictures (0)
-, m_numberOfNegativePictures (0)
-, m_numberOfPositivePictures (0)
-, m_numberOfLongtermPictures (0)
-, m_interRPSPrediction (0)
-, m_deltaRIdxMinus1 (0)
-, m_deltaRPS (0)
-, m_numRefIdc (0)
-{
-  ::memset( m_deltaPOC, 0, sizeof(m_deltaPOC) );
-  ::memset( m_POC, 0, sizeof(m_POC) );
-  ::memset( m_used, 0, sizeof(m_used) );
-  ::memset( m_refIdc, 0, sizeof(m_refIdc) );
-  ::memset( m_bCheckLTMSB, 0, sizeof(m_bCheckLTMSB) );
-  ::memset( m_pocLSBLT, 0, sizeof(m_pocLSBLT) );
-  ::memset( m_deltaPOCMSBCycleLT, 0, sizeof(m_deltaPOCMSBCycleLT) );
-  ::memset( m_deltaPocMSBPresentFlag, 0, sizeof(m_deltaPocMSBPresentFlag) );
-}
 
-ReferencePictureSet::~ReferencePictureSet()
-{
-}
-
-void ReferencePictureSet::setUsed(int bufferNum, bool used)
-{
-  m_used[bufferNum] = used;
-}
-
-void ReferencePictureSet::setDeltaPOC(int bufferNum, int deltaPOC)
-{
-  m_deltaPOC[bufferNum] = deltaPOC;
-}
-
-void ReferencePictureSet::setNumberOfPictures(int numberOfPictures)
-{
-  m_numberOfPictures = numberOfPictures;
-}
-
-int ReferencePictureSet::getUsed(int bufferNum) const
-{
-  return m_used[bufferNum];
-}
-
-int ReferencePictureSet::getDeltaPOC(int bufferNum) const
-{
-  return m_deltaPOC[bufferNum];
-}
-
-int ReferencePictureSet::getNumberOfPictures() const
-{
-  return m_numberOfPictures;
-}
-
-int ReferencePictureSet::getPOC(int bufferNum) const
-{
-  return m_POC[bufferNum];
-}
-
-void ReferencePictureSet::setPOC(int bufferNum, int POC)
-{
-  m_POC[bufferNum] = POC;
-}
-
-bool ReferencePictureSet::getCheckLTMSBPresent(int bufferNum) const
-{
-  return m_bCheckLTMSB[bufferNum];
-}
-
-void ReferencePictureSet::setCheckLTMSBPresent(int bufferNum, bool b)
-{
-  m_bCheckLTMSB[bufferNum] = b;
-}
-
-//! set the reference idc value at uiBufferNum entry to the value of iRefIdc
-void ReferencePictureSet::setRefIdc(int bufferNum, int refIdc)
-{
-  m_refIdc[bufferNum] = refIdc;
-}
-
-//! get the reference idc value at uiBufferNum
-int  ReferencePictureSet::getRefIdc(int bufferNum) const
-{
-  return m_refIdc[bufferNum];
-}
-
-/** Sorts the deltaPOC and Used by current values in the RPS based on the deltaPOC values.
- *  deltaPOC values are sorted with -ve values before the +ve values.  -ve values are in decreasing order.
- *  +ve values are in increasing order.
- * \returns void
- */
-void ReferencePictureSet::sortDeltaPOC()
-{
-  // sort in increasing order (smallest first)
-  for(int j=1; j < getNumberOfPictures(); j++)
-  {
-    int deltaPOC = getDeltaPOC(j);
-    bool used = getUsed(j);
-    for (int k=j-1; k >= 0; k--)
-    {
-      int temp = getDeltaPOC(k);
-      if (deltaPOC < temp)
-      {
-        setDeltaPOC(k+1, temp);
-        setUsed(k+1, getUsed(k));
-        setDeltaPOC(k, deltaPOC);
-        setUsed(k, used);
-      }
-    }
-  }
-  // flip the negative values to largest first
-  int numNegPics = getNumberOfNegativePictures();
-  for(int j=0, k=numNegPics-1; j < numNegPics>>1; j++, k--)
-  {
-    int deltaPOC = getDeltaPOC(j);
-    bool used = getUsed(j);
-    setDeltaPOC(j, getDeltaPOC(k));
-    setUsed(j, getUsed(k));
-    setDeltaPOC(k, deltaPOC);
-    setUsed(k, used);
-  }
-}
-
-/** Prints the deltaPOC and RefIdc (if available) values in the RPS.
- *  A "*" is added to the deltaPOC value if it is Used bu current.
- * \returns void
- */
-void ReferencePictureSet::printDeltaPOC() const
-{
-  DTRACE( g_trace_ctx, D_RPSINFO, "DeltaPOC = { " );
-  for(int j=0; j < getNumberOfPictures(); j++)
-  {
-    DTRACE( g_trace_ctx, D_RPSINFO, "%d%s ", getDeltaPOC( j ), ( getUsed( j ) == 1 ) ? "*" : "" );
-  }
-  if (getInterRPSPrediction())
-  {
-    DTRACE( g_trace_ctx, D_RPSINFO, "}, RefIdc = { " );
-    for(int j=0; j < getNumRefIdc(); j++)
-    {
-      DTRACE( g_trace_ctx, D_RPSINFO, "%d ", getRefIdc( j ) );
-    }
-  }
-  DTRACE( g_trace_ctx, D_RPSINFO, "}\n" );
-}
-
-RefPicListModification::RefPicListModification()
-: m_refPicListModificationFlagL0 (false)
-, m_refPicListModificationFlagL1 (false)
-{
-  ::memset( m_RefPicSetIdxL0, 0, sizeof(m_RefPicSetIdxL0) );
-  ::memset( m_RefPicSetIdxL1, 0, sizeof(m_RefPicSetIdxL1) );
-}
-
-RefPicListModification::~RefPicListModification()
-{
-}
-#endif
-
-#if JVET_M0128
 ReferencePictureList::ReferencePictureList()
   : m_numberOfShorttermPictures(0)
   , m_numberOfLongtermPictures(0)
@@ -2787,9 +1666,7 @@ void ReferencePictureList::printRefPicInfo() const
   //DTRACE(g_trace_ctx, D_RPSINFO, "}\n");
   printf("}\n");
 }
-#endif
 
-#if HEVC_USE_SCALING_LISTS
 ScalingList::ScalingList()
 {
   for(uint32_t sizeId = 0; sizeId < SCALING_LIST_SIZE_NUM; sizeId++)
@@ -2818,42 +1695,26 @@ void ScalingList::setDefaultScalingList()
 */
 bool ScalingList::checkDefaultScalingList()
 {
-#if JVET_N0847_SCALING_LISTS
   bool isAllDefault = true;
   for ( uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
-#else
-  uint32_t defaultCounter=0;
-
-  for( uint32_t sizeId = 0; sizeId < SCALING_LIST_SIZE_NUM; sizeId++ )
-#endif
   {
     for(uint32_t listId=0;listId<SCALING_LIST_NUM;listId++)
     {
-#if JVET_N0847_SCALING_LISTS
       if (((sizeId == SCALING_LIST_64x64) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))
        || ((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
       {
         continue;
       }
-#endif
       if( !::memcmp(getScalingListAddress(sizeId,listId), getScalingListDefaultAddress(sizeId, listId),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId])) // check value of matrix
          && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == 16))) // check DC value
       {
-#if JVET_N0847_SCALING_LISTS
         isAllDefault = false;
         break;
-#else
-        defaultCounter++;
-#endif
       }
     }
   }
 
-#if JVET_N0847_SCALING_LISTS
   return !isAllDefault;
-#else
-  return (defaultCounter == (SCALING_LIST_NUM * SCALING_LIST_SIZE_NUM )) ? false : true;
-#endif
 }
 
 /** get scaling matrix from RefMatrixID
@@ -2868,18 +1729,10 @@ void ScalingList::processRefMatrix( uint32_t sizeId, uint32_t listId , uint32_t 
 
 void ScalingList::checkPredMode(uint32_t sizeId, uint32_t listId)
 {
-#if JVET_N0847_SCALING_LISTS
   for (int predListIdx = (int)listId; predListIdx >= 0; predListIdx--)
-#else
-  int predListStep = (sizeId == SCALING_LIST_32x32? (SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) : 1); // if 32x32, skip over chroma entries.
-
-  for(int predListIdx = (int)listId ; predListIdx >= 0; predListIdx-=predListStep)
-#endif
   {
-#if JVET_N0847_SCALING_LISTS
     if ((sizeId == SCALING_LIST_64x64 && (listId % 3) != 0) || (sizeId == SCALING_LIST_2x2 && (listId % 3) == 0))
       continue;
-#endif
     if( !::memcmp(getScalingListAddress(sizeId,listId),((listId == predListIdx) ?
       getScalingListDefaultAddress(sizeId, predListIdx): getScalingListAddress(sizeId, predListIdx)),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId])) // check value of matrix
       && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == getScalingListDC(sizeId,predListIdx)))) // check DC value
@@ -2910,21 +1763,11 @@ static void outputScalingListHelp(std::ostream &os)
          "  <value>\n";
 
   os << "The permitted matrix names are:\n";
-#if JVET_N0847_SCALING_LISTS
   for (uint32_t sizeIdc = SCALING_LIST_2x2; sizeIdc <= SCALING_LIST_64x64; sizeIdc++)
   {
     for (uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
-#else
-  for(uint32_t sizeIdc = 0; sizeIdc < SCALING_LIST_SIZE_NUM; sizeIdc++)
-  {
-    for(uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
-#endif
     {
-#if JVET_N0847_SCALING_LISTS 
       if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0))))
-#else
-      if ((sizeIdc!=SCALING_LIST_32x32) || (listIdc%(SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) == 0))
-#endif
       {
         os << "  " << MatrixType[sizeIdc][listIdc] << '\n';
       }
@@ -2934,24 +1777,12 @@ static void outputScalingListHelp(std::ostream &os)
 
 void ScalingList::outputScalingLists(std::ostream &os) const
 {
-#if JVET_N0847_SCALING_LISTS
   for (uint32_t sizeIdc = SCALING_LIST_2x2; sizeIdc <= SCALING_LIST_64x64; sizeIdc++)
-#else
-  for(uint32_t sizeIdc = 0; sizeIdc < SCALING_LIST_SIZE_NUM; sizeIdc++)
-#endif
   {
-#if JVET_N0847_SCALING_LISTS
     const uint32_t size = (sizeIdc == 1) ? 2 : ((sizeIdc == 2) ? 4 : 8);
-#else
-    const uint32_t size = std::min(8,4<<(sizeIdc));
-#endif
     for(uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
     {
-#if JVET_N0847_SCALING_LISTS
       if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0))))
-#else
-      if ((sizeIdc!=SCALING_LIST_32x32) || (listIdc%(SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) == 0))
-#endif
       {
         const int *src = getScalingListAddress(sizeIdc, listIdc);
         os << (MatrixType[sizeIdc][listIdc]) << " =\n  ";
@@ -2993,11 +1824,7 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
     return true;
   }
 
-#if JVET_N0847_SCALING_LISTS
   for (uint32_t sizeIdc = SCALING_LIST_2x2; sizeIdc <= SCALING_LIST_64x64; sizeIdc++)//2x2-128x128
-#else
-  for(uint32_t sizeIdc = SCALING_LIST_FIRST_CODED; sizeIdc < SCALING_LIST_SIZE_NUM; sizeIdc++)
-#endif
   {
     const uint32_t size = std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeIdc]);
 
@@ -3005,22 +1832,10 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
     {
       int * const src = getScalingListAddress(sizeIdc, listIdc);
 
-#if JVET_N0847_SCALING_LISTS
       if (((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
       {
         continue;
       }
-#else
-      if ((sizeIdc==SCALING_LIST_32x32) && (listIdc%(SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) != 0)) // derive chroma32x32 from chroma16x16
-      {
-        const int *srcNextSmallerSize = getScalingListAddress(sizeIdc-1, listIdc);
-        for(uint32_t i=0; i<size; i++)
-        {
-          src[i] = srcNextSmallerSize[i];
-        }
-        setScalingListDC(sizeIdc,listIdc,(sizeIdc > SCALING_LIST_8x8) ? getScalingListDC(sizeIdc-1, listIdc) : src[0]);
-      }
-#endif
       else
       {
         {
@@ -3117,9 +1932,7 @@ const int* ScalingList::getScalingListDefaultAddress(uint32_t sizeId, uint32_t l
   const int *src = 0;
   switch(sizeId)
   {
-#if JVET_N0847_SCALING_LISTS
     case SCALING_LIST_1x1:
-#endif
     case SCALING_LIST_2x2:
     case SCALING_LIST_4x4:
       src = g_quantTSDefault4x4;
@@ -3129,11 +1942,7 @@ const int* ScalingList::getScalingListDefaultAddress(uint32_t sizeId, uint32_t l
     case SCALING_LIST_32x32:
     case SCALING_LIST_64x64:
     case SCALING_LIST_128x128:
-#if JVET_N0847_SCALING_LISTS
       src = (listId < (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1))) ? g_quantIntraDefault8x8 : g_quantInterDefault8x8;
-#else
-      src = (listId < (SCALING_LIST_NUM/NUMBER_OF_PREDICTION_MODES) ) ? g_quantIntraDefault8x8 : g_quantInterDefault8x8;
-#endif
       break;
     default:
       THROW( "Invalid scaling list" );
@@ -3169,7 +1978,6 @@ void ScalingList::checkDcOfMatrix()
     }
   }
 }
-#endif
 
 ParameterSetManager::ParameterSetManager()
 #if HEVC_VPS
@@ -3179,20 +1987,12 @@ ParameterSetManager::ParameterSetManager()
 : m_spsMap(MAX_NUM_SPS)
 #endif
 , m_ppsMap(MAX_NUM_PPS)
-#if JVET_N0805_APS_LMCS
 , m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
-#else
-, m_apsMap(MAX_NUM_APS)
-#endif
-#if JVET_N0349_DPS
 , m_dpsMap(MAX_NUM_DPS)
-#endif
 #if HEVC_VPS
 , m_activeVPSId(-1)
 #endif
-#if JVET_N0349_DPS
 , m_activeDPSId(-1)
-#endif
 , m_activeSPSId(-1)
 {
 }
@@ -3250,7 +2050,6 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
       SPS *sps = m_spsMap.getPS(spsId);
       if (sps)
       {
-#if JVET_N0349_DPS
         int dpsId = sps->getDecodingParameterSetId();
         if ((m_activeDPSId!=-1) && (dpsId != m_activeDPSId ))
         {
@@ -3278,7 +2077,6 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
             m_dpsMap.setActive(dpsId);
           }
         }
-#endif
 
 #if HEVC_VPS
         int vpsId = sps->getVPSId();
@@ -3289,9 +2087,7 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
         else
         {
 #endif
-#if JVET_N0415_CTB_ALF
           m_spsMap.clear();
-#endif
           m_spsMap.setActive(spsId);
 #if HEVC_VPS
           VPS *vps =m_vpsMap.getPS(vpsId);
@@ -3309,9 +2105,7 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
         }
 #else
         m_activeSPSId = spsId;
-#if JVET_N0415_CTB_ALF
         m_ppsMap.clear();
-#endif
         m_ppsMap.setActive(ppsId);
         return true;
 #endif
@@ -3332,13 +2126,10 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
 #if HEVC_VPS
   m_activeVPSId=-1;
 #endif
-#if JVET_N0349_DPS
   m_activeDPSId=-1;
-#endif
   return false;
 }
 
-#if JVET_N0805_APS_LMCS
 bool ParameterSetManager::activateAPS(int apsId, int apsType)
 {
   APS *aps = m_apsMap.getPS((apsId << NUM_APS_TYPE_LEN) + apsType);
@@ -3353,22 +2144,6 @@ bool ParameterSetManager::activateAPS(int apsId, int apsType)
   }
   return false;
 }
-#else
-bool ParameterSetManager::activateAPS(int apsId)
-{
-  APS *aps = m_apsMap.getPS(apsId);
-  if (aps)
-  {
-    m_apsMap.setActive(apsId);
-    return true;
-  }
-  else
-  {
-    msg(WARNING, "Warning: tried to activate non-existing APS.");
-  }
-  return false;
-}
-#endif
 
 template <>
 void ParameterSetMap<APS>::setID(APS* parameterSet, const int psId)
@@ -3387,41 +2162,15 @@ void ParameterSetMap<SPS>::setID(SPS* parameterSet, const int psId)
   parameterSet->setSPSId(psId);
 }
 
-#if !JVET_M0101_HLS
-ProfileTierLevel::ProfileTierLevel()
-  : m_profileSpace    (0)
-  , m_tierFlag        (Level::MAIN)
-  , m_profileIdc      (Profile::NONE)
-#if JVET_N0276_CONSTRAINT_FLAGS
-  , m_subProfileIdc   (0)
-#endif
-  , m_levelIdc        (Level::NONE)
-  , m_progressiveSourceFlag  (false)
-  , m_interlacedSourceFlag   (false)
-  , m_nonPackedConstraintFlag(false)
-  , m_frameOnlyConstraintFlag(false)
-{
-  ::memset(m_profileCompatibilityFlag, 0, sizeof(m_profileCompatibilityFlag));
-}
-
-PTL::PTL()
-{
-  ::memset(m_subLayerProfilePresentFlag, 0, sizeof(m_subLayerProfilePresentFlag));
-  ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));
-}
-#else
 ProfileTierLevel::ProfileTierLevel()
   : m_tierFlag        (Level::MAIN)
   , m_profileIdc      (Profile::NONE)
-#if JVET_N0276_CONSTRAINT_FLAGS
   , m_subProfileIdc   (0)
-#endif
   , m_levelIdc        (Level::NONE)
 {
   ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));
   ::memset(m_subLayerLevelIdc, Level::NONE, sizeof(m_subLayerLevelIdc          ));
 }
-#endif
 
 void calculateParameterSetChangedFlag(bool &bChanged, const std::vector<uint8_t> *pOldData, const std::vector<uint8_t> *pNewData)
 {
@@ -3500,19 +2249,15 @@ uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chTy
 }
 
 #if ENABLE_TRACING
-#if HEVC_VPS || JVET_N0278_HLS
 void xTraceVPSHeader()
 {
   DTRACE( g_trace_ctx, D_HEADER, "=========== Video Parameter Set     ===========\n" );
 }
-#endif
 
-#if JVET_N0349_DPS
 void xTraceDPSHeader()
 {
   DTRACE( g_trace_ctx, D_HEADER, "=========== Decoding Parameter Set     ===========\n" );
 }
-#endif
 
 void xTraceSPSHeader()
 {

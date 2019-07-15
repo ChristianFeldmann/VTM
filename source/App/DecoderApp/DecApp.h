@@ -81,9 +81,7 @@ private:
   void  xWriteOutput      ( PicList* pcListPic , uint32_t tId); ///< write YUV to file
   void  xFlushOutput      ( PicList* pcListPic ); ///< flush all remaining decoded pictures to file
   bool  isNaluWithinTargetDecLayerIdSet ( InputNALUnit* nalu ); ///< check whether given Nalu is within targetDecLayerIdSet
-#if JVET_N0278_HLS
   bool  isNaluTheTargetLayer(InputNALUnit* nalu); ///< check whether given Nalu is within targetDecLayerIdSet
-#endif
 };
 
 //! \}

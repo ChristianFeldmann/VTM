@@ -297,7 +297,7 @@ unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, 
   }
   if( isChroma( compID ) )
   {
-    return trDepth;
+    return ( trDepth == 0 ? 0 : 1 );
   }
   else
   {

@@ -231,7 +231,7 @@ public:
 #endif
   static const CtxSet   QtRootCbf;
   static const CtxSet   QtCbf           [3];    // [ channel ]
-  static const CtxSet   SigCoeffGroup   [4];    // [ ChannelType ]
+  static const CtxSet   SigCoeffGroup   [2];    // [ ChannelType ]
   static const CtxSet   LastX           [2];    // [ ChannelType ]
   static const CtxSet   LastY           [2];    // [ ChannelType ]
   static const CtxSet   SigFlag         [6];    // [ ChannelType + State ]
@@ -273,8 +273,9 @@ public:
 #if !JVET_N0302_SIMPLFIED_CIIP
   static const CtxSet   MHIntraPredMode;
 #endif
+#if !JVET_N0324_REGULAR_MRG_FLAG
   static const CtxSet   TriangleFlag;
-  static const CtxSet   TriangleIdx;
+#endif
   static const CtxSet   SmvdFlag;
   static const CtxSet   IBCFlag;
   static const CtxSet   ISPMode;

@@ -126,7 +126,9 @@ enum class BlockStatistic {
   MMVDMergeIdx,
   MHIntraFlag,
   SMVDFlag,
+#if !JVET_N0324_REGULAR_MRG_FLAG
   TriangleFlag,
+#endif
   TrianglePartitioning,
   TriangleMVL0, //<< currently only uni-prediction enabled
   TriangleMVL1, //<< currently only uni-prediction enabled
@@ -231,7 +233,9 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::MMVDMergeIdx,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeIdx",                BlockStatisticType::Integer,                "[0, 1]"}},
   { BlockStatistic::MHIntraFlag,            std::tuple<std::string, BlockStatisticType, std::string>{"MHIntraFlag",                 BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::SMVDFlag,               std::tuple<std::string, BlockStatisticType, std::string>{"SMVDFlag",                    BlockStatisticType::Flag,                   ""}},
+#if !JVET_N0324_REGULAR_MRG_FLAG
   { BlockStatistic::TriangleFlag,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleFlag",                BlockStatisticType::Flag,                   ""}},
+#endif
   { BlockStatistic::TrianglePartitioning,   std::tuple<std::string, BlockStatisticType, std::string>{"TrianglePartitioning",        BlockStatisticType::Line,                   ""}},
   { BlockStatistic::TriangleMVL0,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL0",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
   { BlockStatistic::TriangleMVL1,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL1",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},

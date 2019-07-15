@@ -297,10 +297,10 @@ const CtxSet ContextSetCfg::PredMode = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MultiRefLineIdx = ContextSetCfg::addCtxSet
 ({
-  {  90, 212, CNU, },
-  { 118, 212, CNU, },
-  { 134, 169, CNU, },
-  {   8,   8, DWS, },
+  {  90, 212, },
+  { 118, 212, },
+  { 134, 169, },
+  {   8,   8, },
 });
 
 const CtxSet ContextSetCfg::IntraLumaMpmFlag = ContextSetCfg::addCtxSet
@@ -349,10 +349,10 @@ const CtxSet ContextSetCfg::MipMode = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::DeltaQP = ContextSetCfg::addCtxSet
 ({
-  { CNU, CNU, CNU, },
-  { CNU, CNU, CNU, },
-  { CNU, CNU, CNU, },
-  { DWS, DWS, DWS, },
+  { CNU, CNU, },
+  { CNU, CNU, },
+  { CNU, CNU, },
+  { DWS, DWS, },
 });
 
 const CtxSet ContextSetCfg::InterDir = ContextSetCfg::addCtxSet
@@ -458,10 +458,10 @@ const CtxSet ContextSetCfg::QtCbf[] =
 #endif
   ContextSetCfg::addCtxSet
   ({
-    { 163, 135, CNU, CNU, CNU, },
-    { 150, 121, CNU, CNU, CNU, },
-    { 124, CNU, CNU, CNU, CNU, },
-    {   5,   0, DWS, DWS, DWS, },
+    { 163, 135, },
+    { 150, 121, },
+    { 124, CNU, },
+    {   5,   0, },
   }),
   ContextSetCfg::addCtxSet
   ({
@@ -488,20 +488,6 @@ const CtxSet ContextSetCfg::SigCoeffGroup[] =
     {  90, 126, },
     {   5,   8, },
   }),
-  ContextSetCfg::addCtxSet
-  ({
-    { CNU, CNU, },
-    { CNU, CNU, },
-    { CNU, CNU, },
-    { DWS, DWS, },
-  }),
-  ContextSetCfg::addCtxSet
-  ({
-    { CNU, CNU, },
-    { CNU, CNU, },
-    { CNU, CNU, },
-    { DWS, DWS, },
-  })
 };
 
 const CtxSet ContextSetCfg::SigFlag[] =
@@ -604,17 +590,17 @@ const CtxSet ContextSetCfg::LastX[] =
 {
   ContextSetCfg::addCtxSet
   ({
-    { 111, 111,  95, 111, 111, 124, 111, 126, 111, 124, 126, 126, 111, 111, 154, 154, 111, 110, 110, 124, CNU, CNU, CNU, CNU, CNU, },
-    { 125, 110, 109, 125, 125, 123, 111, 111,  95, 123, 140, 111, 110,  95, 169, 125, 140, 139, 139, 138, CNU, CNU, CNU, CNU, CNU, },
-    { 125, 110, 109, 140, 111, 109, 111, 111, 140, 123, 111, 126, 111, 140,  79, 155, 142, 141, 140, 198, CNU, CNU, CNU, CNU, CNU, },
-    {   8,   5,   4,   5,   4,   4,   5,   4,   1,   0,   5,   1,   0,   0,   0,   1,   1,   0,   0,   0, DWS, DWS, DWS, DWS, DWS, },
+    { 111, 111,  95, 111, 111, 124, 111, 126, 111, 124, 126, 126, 111, 111, 154, 154, 111, 110, 110, 124, },
+    { 125, 110, 109, 125, 125, 123, 111, 111,  95, 123, 140, 111, 110,  95, 169, 125, 140, 139, 139, 138, },
+    { 125, 110, 109, 140, 111, 109, 111, 111, 140, 123, 111, 126, 111, 140,  79, 155, 142, 141, 140, 198, },
+    {   8,   5,   4,   5,   4,   4,   5,   4,   1,   0,   5,   1,   0,   0,   0,   1,   1,   0,   0,   0, },
   }),
   ContextSetCfg::addCtxSet
   ({
-    { 137,  95,  63, CNU, },
-    { 138, 123,  92, CNU, },
-    { 109, 108,  77, CNU, },
-    {   2,   1,   1, DWS, },
+    { 137,  95,  63, },
+    { 138, 123,  92, },
+    { 109, 108,  77, },
+    {   2,   1,   1, },
   })
 };
 
@@ -622,17 +608,17 @@ const CtxSet ContextSetCfg::LastY[] =
 {
   ContextSetCfg::addCtxSet
   ({
-    { 125, 110, 139, 125, 111, 124, 111, 111,  95, 110, 140, 126, 110, 124, 155, 139, 111, 110, 124, 181, CNU, CNU, CNU, CNU, CNU, },
-    {  95,  95, 109, 110, 110, 123, 125, 111, 124, 123, 140, 111, 110, 124, 154, 125, 126, 110, 124, 153, CNU, CNU, CNU, CNU, CNU, },
-    { 110,  95,  94, 125, 125, 108, 111, 111,  95, 108, 111, 141, 111,  95,  78, 140, 186, 156, 125, 138, CNU, CNU, CNU, CNU, CNU, },
-    {   8,   5,   8,   5,   5,   4,   5,   5,   4,   0,   5,   5,   1,   0,   0,   1,   4,   1,   0,   0, DWS, DWS, DWS, DWS, DWS, },
+    { 125, 110, 139, 125, 111, 124, 111, 111,  95, 110, 140, 126, 110, 124, 155, 139, 111, 110, 124, 181, },
+    {  95,  95, 109, 110, 110, 123, 125, 111, 124, 123, 140, 111, 110, 124, 154, 125, 126, 110, 124, 153, },
+    { 110,  95,  94, 125, 125, 108, 111, 111,  95, 108, 111, 141, 111,  95,  78, 140, 186, 156, 125, 138, },
+    {   8,   5,   8,   5,   5,   4,   5,   5,   4,   0,   5,   5,   1,   0,   0,   1,   4,   1,   0,   0, },
   }),
   ContextSetCfg::addCtxSet
   ({
-    { 108, 124, 138, CNU, },
-    { 108, 123,  92, CNU, },
-    { 109,  94,  92, CNU, },
-    {   3,   2,   2, DWS, },
+    { 108, 124, 138, },
+    { 108, 123,  92, },
+    { 109,  94,  92, },
+    {   3,   2,   2, },
   })
 };
 
@@ -840,6 +826,7 @@ const CtxSet ContextSetCfg::MHIntraPredMode = ContextSetCfg::addCtxSet
 });
 #endif
 
+#if !JVET_N0324_REGULAR_MRG_FLAG
 const CtxSet ContextSetCfg::TriangleFlag = ContextSetCfg::addCtxSet
 ({
 #if JVET_N600_AMVR_TPM_CTX_REDUCTION
@@ -854,14 +841,7 @@ const CtxSet ContextSetCfg::TriangleFlag = ContextSetCfg::addCtxSet
   { 8, 12, 9, },
 #endif
 });
-
-const CtxSet ContextSetCfg::TriangleIdx = ContextSetCfg::addCtxSet
-({
-  { CNU, },
-  { CNU, },
-  { CNU, },
-  { DWS, },
-});
+#endif
 
 const CtxSet ContextSetCfg::IBCFlag = ContextSetCfg::addCtxSet
 ({
@@ -908,10 +888,10 @@ const CtxSet ContextSetCfg::TsParFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::TsGtxFlag = ContextSetCfg::addCtxSet
 ({
-  { 124,  63,  79,  79,  95, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
-  { 138,  47,  63,  63,  63, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
-  { 124,  63,  63,  63,  63, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, CNU, },
-  {   4,   1,   1,   1,   1, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, DWS, },
+  { 124,  63,  79,  79,  95, },
+  { 138,  47,  63,  63,  63, },
+  { 124,  63,  63,  63,  63, },
+  {   4,   1,   1,   1,   1, },
 });
 
 const CtxSet ContextSetCfg::TsResidualSign =

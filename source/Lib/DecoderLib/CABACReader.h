@@ -117,7 +117,9 @@ public:
   void        mvp_flag                  ( PredictionUnit&               pu,     RefPicList      eRefList );
   void        MHIntra_flag              ( PredictionUnit&               pu );
   void        MHIntra_luma_pred_modes   ( CodingUnit&                   cu );
+#if !JVET_N0324_REGULAR_MRG_FLAG
   void        triangle_mode             ( CodingUnit&                   cu );
+#endif
   void        smvd_mode              ( PredictionUnit&               pu );
 
   // pcm samples (clause 7.3.8.7)

@@ -1015,10 +1015,6 @@ void CABACWriter::extend_ref_line(const PredictionUnit& pu)
     if (MRL_NUM_REF_LINES > 2 && multiRefIdx != MULTI_REF_LINE_IDX[0])
     {
       m_BinEncoder.encodeBin(multiRefIdx != MULTI_REF_LINE_IDX[1], Ctx::MultiRefLineIdx(1));
-      if (MRL_NUM_REF_LINES > 3 && multiRefIdx != MULTI_REF_LINE_IDX[1])
-      {
-        m_BinEncoder.encodeBin(multiRefIdx != MULTI_REF_LINE_IDX[2], Ctx::MultiRefLineIdx(2));
-      }
     }
   }
 }
@@ -1055,10 +1051,6 @@ void CABACWriter::extend_ref_line(const CodingUnit& cu)
       if (MRL_NUM_REF_LINES > 2 && multiRefIdx != MULTI_REF_LINE_IDX[0])
       {
         m_BinEncoder.encodeBin(multiRefIdx != MULTI_REF_LINE_IDX[1], Ctx::MultiRefLineIdx(1));
-        if (MRL_NUM_REF_LINES > 3 && multiRefIdx != MULTI_REF_LINE_IDX[1])
-        {
-          m_BinEncoder.encodeBin(multiRefIdx != MULTI_REF_LINE_IDX[2], Ctx::MultiRefLineIdx(2));
-        }
       }
 
     }
@@ -2175,6 +2167,7 @@ void CABACWriter::MHIntra_luma_pred_modes(const CodingUnit& cu)
 }
 #endif
 
+#if !JVET_N0324_REGULAR_MRG_FLAG
 void CABACWriter::triangle_mode( const CodingUnit& cu )
 {
   if( !cu.cs->slice->getSPS()->getUseTriangle() || !cu.cs->slice->isInterB() || cu.lwidth() * cu.lheight() < TRIANGLE_MIN_SIZE || cu.affine )
@@ -2209,6 +2202,7 @@ void CABACWriter::triangle_mode( const CodingUnit& cu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "triangle_mode() triangle_mode=%d pos=(%d,%d) size: %dx%d\n", cu.triangle, cu.Y().x, cu.Y().y, cu.lumaSize().width, cu.lumaSize().height );
 }
+#endif
 
 //================================================================================
 //  clause 7.3.8.7

@@ -260,7 +260,15 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
 
     if( PU::isLMCMode( tu.cs->getPU( area.pos(), toChannelType( compID ) )->intraDir[ toChannelType( compID ) ] ) )
     {
+#if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
+      Position topLeftPos = tu.cs->getPU(area.pos(), toChannelType(compID))->blocks[toChannelType(compID)].lumaPos();
+      Position refPos = topLeftPos.offset( tu.cs->getPU(area.pos(), toChannelType(compID))->blocks[toChannelType(compID)].lumaSize().width >> 1,
+                                           tu.cs->getPU(area.pos(), toChannelType(compID))->blocks[toChannelType(compID)].lumaSize().height >> 1 );
+      const PredictionUnit &lumaPU = CS::isDualITree( *tu.cs ) ? *tu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : *tu.cs->getPU( topLeftPos, CHANNEL_TYPE_LUMA );
+      intraMode = lumaPU.intraDir[0];
+#else
       intraMode = PLANAR_IDX;
+#endif
     }
     CHECK( intraMode >= NUM_INTRA_MODE - 1, "Invalid intra mode" );
 
@@ -360,7 +368,15 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
 
     if( PU::isLMCMode( tu.cs->getPU( area.pos(), toChannelType( compID ) )->intraDir[ toChannelType( compID ) ] ) )
     {
+#if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
+      Position topLeftPos = tu.cs->getPU(area.pos(), toChannelType(compID))->blocks[toChannelType(compID)].lumaPos();
+      Position refPos = topLeftPos.offset( tu.cs->getPU(area.pos(), toChannelType(compID))->blocks[toChannelType(compID)].lumaSize().width >> 1,
+                                           tu.cs->getPU(area.pos(), toChannelType(compID))->blocks[toChannelType(compID)].lumaSize().height >> 1 );
+      const PredictionUnit &lumaPU = CS::isDualITree( *tu.cs ) ? *tu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : *tu.cs->getPU( topLeftPos, CHANNEL_TYPE_LUMA );
+      intraMode = lumaPU.intraDir[0];
+#else
       intraMode = PLANAR_IDX;
+#endif
     }
     CHECK( intraMode >= NUM_INTRA_MODE - 1, "Invalid intra mode" );
 

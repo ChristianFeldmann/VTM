@@ -377,19 +377,19 @@ private:
   static Distortion xCalcHADs8x4      ( const Pel *piOrg, const Pel *piCur, int iStrideOrg, int iStrideCur );
 
 #ifdef TARGET_SIMD_X86
-  template< typename Torg, typename Tcur, X86_VEXT vext >
+  template<X86_VEXT vext>
   static Distortion xGetSSE_SIMD    ( const DistParam& pcDtParam );
-  template< typename Torg, typename Tcur, int iWidth, X86_VEXT vext >
+  template<int iWidth, X86_VEXT vext>
   static Distortion xGetSSE_NxN_SIMD( const DistParam& pcDtParam );
 
-  template< X86_VEXT vext >
+  template<X86_VEXT vext>
   static Distortion xGetSAD_SIMD    ( const DistParam& pcDtParam );
-  template< int iWidth, X86_VEXT vext >
+  template<int iWidth, X86_VEXT vext>
   static Distortion xGetSAD_NxN_SIMD( const DistParam& pcDtParam );
-  template< X86_VEXT vext >
-  static Distortion xGetSAD_IBD_SIMD(const DistParam& pcDtParam);
+  template<X86_VEXT vext>
+  static Distortion xGetSAD_IBD_SIMD( const DistParam& pcDtParam );
 
-  template< typename Torg, typename Tcur, X86_VEXT vext >
+  template<X86_VEXT vext>
   static Distortion xGetHADs_SIMD   ( const DistParam& pcDtParam );
 #endif
 

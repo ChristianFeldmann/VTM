@@ -138,13 +138,9 @@ private:
   CacheModel                m_cacheModel;
 #endif
 
-#if JVET_N0415_CTB_ALF
   APS*                      m_apss[MAX_NUM_APS];
-#endif
 
-#if JVET_N0805_APS_LMCS
   APS*                      m_lmcsAPS;
-#endif
 
   EncHRD                    m_encHRD;
 
@@ -158,27 +154,19 @@ protected:
   void  xGetNewPicBuffer  ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Picture*& rpcPic, int ppsId ); ///< get picture buffer which will be processed. If ppsId<0, then the ppsMap will be queried for the first match.
 #if HEVC_VPS
   void  xInitVPS          (VPS &vps, const SPS &sps); ///< initialize VPS from encoder options
-#elif JVET_N0278_HLS
+#else
   void  xInitVPS          (VPS &vps); ///< initialize VPS from encoder options
 #endif
-#if JVET_N0349_DPS
   void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
-#endif
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
   void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options
-#if HEVC_USE_SCALING_LISTS
   void  xInitScalingLists (SPS &sps, PPS &pps);   ///< initialize scaling lists
-#endif
   void  xInitPPSforLT(PPS& pps);
   void  xInitHrdParameters(SPS &sps);                 ///< initialize HRDParameters parameters
 
   void  xInitPPSforTiles  (PPS &pps);
-#if JVET_M0128
   void  xInitRPL(SPS &sps, bool isFieldCoding);           ///< initialize SPS from encoder options
-#else
-  void  xInitRPS          (SPS &sps, bool isFieldCoding);           ///< initialize PPS from encoder options
-#endif
 
 public:
   EncLib();
@@ -231,19 +219,10 @@ public:
   RateCtrl*               getRateCtrl           ()              { return  &m_cRateCtrl;            }
 
 
-#if JVET_M0128
   void                    getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid, uint32_t *activeL0, uint32_t *activeL1);
   void                    selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, int ltPoc);
-#else
-  void selectReferencePictureSet(Slice* slice, int POCCurr, int GOPid
-    , int ltPoc
-  );
-  int getReferencePictureSetIdxForSOP(int POCCurr, int GOPid );
-#endif
 
-#if JCTVC_Y0038_PARAMS
   void                   setParamSetChanged(int spsId, int ppsId);
-#endif
   bool                   APSNeedsWriting(int apsId);
   bool                   PPSNeedsWriting(int ppsId);
   bool                   SPSNeedsWriting(int spsId);
@@ -261,9 +240,7 @@ public:
   EncReshape*            getReshaper()                          { return  &m_cReshaper; }
 #endif
 
-#if JVET_N0415_CTB_ALF
   ParameterSetMap<APS>*  getApsMap() { return &m_apsMap; }
-#endif
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function
   // -------------------------------------------------------------------------------------------------------------------

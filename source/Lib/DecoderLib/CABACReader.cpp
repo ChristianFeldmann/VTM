@@ -142,44 +142,24 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 
 
   sao( cs, ctuRsAddr );
-#if JVET_N0415_CTB_ALF
   if (cs.sps->getALFEnabledFlag() && (cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y)))
   {
-#else
-  if (cs.sps->getALFEnabledFlag() && (cs.slice->getTileGroupAlfEnabledFlag()))
-  {
-    CHECK(cs.aps == nullptr, "APS not initialized");
-    const AlfSliceParam& alfSliceParam = cs.aps->getAlfAPSParam();
-#endif
     const PreCalcValues& pcv = *cs.pcv;
     int                 frame_width_in_ctus = pcv.widthInCtus;
     int                 ry = ctuRsAddr / frame_width_in_ctus;
     int                 rx = ctuRsAddr - ry * frame_width_in_ctus;
     const Position      pos( rx * cs.pcv->maxCUWidth, ry * cs.pcv->maxCUHeight );
     const uint32_t          curSliceIdx = cs.slice->getIndependentSliceIdx();
-#if JVET_N0857_TILES_BRICKS
     const uint32_t          curTileIdx = cs.picture->brickMap->getBrickIdxRsMap( pos );
-#else
-    const uint32_t          curTileIdx = cs.picture->tileMap->getTileIdxMap( pos );
-#endif
-#if JVET_N0150_ONE_CTU_DELAY_WPP
     bool                leftAvail = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0 ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
     bool                aboveAvail = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
-#else
-    bool                leftAvail = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0 ), curSliceIdx, curTileIdx, CH_L ) ? true : false;
-    bool                aboveAvail = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), curSliceIdx, curTileIdx, CH_L ) ? true : false;
-#endif
 
     int leftCTUAddr = leftAvail ? ctuRsAddr - 1 : -1;
     int aboveCTUAddr = aboveAvail ? ctuRsAddr - frame_width_in_ctus : -1;
 
     for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
     {
-#if JVET_N0415_CTB_ALF
       if (cs.slice->getTileGroupAlfEnabledFlag((ComponentID)compIdx))
-#else
-      if( alfSliceParam.enabledFlag[compIdx] )
-#endif
       {
         uint8_t* ctbAlfFlag = cs.slice->getPic()->getAlfCtuEnableFlag( compIdx );
         int ctx = 0;
@@ -189,12 +169,10 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
         RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__ALF);
         ctbAlfFlag[ctuRsAddr] = m_BinDecoder.decodeBin( Ctx::ctbAlfFlag( compIdx * 3 + ctx ) );
 
-#if JVET_N0415_CTB_ALF
         if (isLuma((ComponentID)compIdx) && ctbAlfFlag[ctuRsAddr])
         {
           readAlfCtuFilterIndex(cs, ctuRsAddr);
         }
-#endif
       }
     }
   }
@@ -231,7 +209,6 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
   return isLast;
 }
 
-#if JVET_N0415_CTB_ALF
 void CABACReader::readAlfCtuFilterIndex(CodingStructure& cs, unsigned ctuRsAddr)
 {
   short* alfCtbFilterSetIndex = cs.slice->getPic()->getAlfCtbFilterIndex();
@@ -272,7 +249,6 @@ void CABACReader::readAlfCtuFilterIndex(CodingStructure& cs, unsigned ctuRsAddr)
   }
   alfCtbFilterSetIndex[ctuRsAddr] = filtIndex;
 }
-#endif
 //================================================================================
 //  clause 7.3.8.3
 //--------------------------------------------------------------------------------
@@ -310,26 +286,14 @@ void CABACReader::sao( CodingStructure& cs, unsigned ctuRsAddr )
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__SAO );
 
-#if JVET_N0857_TILES_BRICKS
   const unsigned  curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( pos );
-#else
-  const unsigned  curTileIdx  = cs.picture->tileMap->getTileIdxMap( pos );
-#endif
-#if JVET_N0150_ONE_CTU_DELAY_WPP
   if( cs.getCURestricted( pos.offset(-(int)cs.pcv->maxCUWidth, 0), pos, curSliceIdx, curTileIdx, CH_L ) )
-#else
-  if( cs.getCURestricted( pos.offset(-(int)cs.pcv->maxCUWidth, 0), curSliceIdx, curTileIdx, CH_L ) )
-#endif
   {
     // sao_merge_left_flag
     sao_merge_type  += int( m_BinDecoder.decodeBin( Ctx::SaoMergeFlag() ) );
   }
 
-#if JVET_N0150_ONE_CTU_DELAY_WPP
   if( sao_merge_type < 0 && cs.getCURestricted( pos.offset(0, -(int)cs.pcv->maxCUHeight), pos, curSliceIdx, curTileIdx, CH_L ) )
-#else
-  if( sao_merge_type < 0 && cs.getCURestricted( pos.offset(0, -(int)cs.pcv->maxCUHeight), curSliceIdx, curTileIdx, CH_L ) )
-#endif
   {
     // sao_merge_above_flag
     sao_merge_type  += int( m_BinDecoder.decodeBin( Ctx::SaoMergeFlag() ) ) << 1;
@@ -604,11 +568,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
 
   partitioner.setCUData( cu );
   cu.slice   = cs.slice;
-#if JVET_N0857_TILES_BRICKS
   cu.tileIdx = cs.picture->brickMap->getBrickIdxRsMap( currArea.lumaPos() );
-#else
-  cu.tileIdx = cs.picture->tileMap->getTileIdxMap( currArea.lumaPos() );
-#endif
 
   // Predict QP on start of quantization group
   if( cuCtx.qgStart )
@@ -737,9 +697,7 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   {
     cu_transquant_bypass_flag( cu );
   }
-#if JVET_N0324_REGULAR_MRG_FLAG
   PredictionUnit&    pu = cs.addPU(cu, partitioner.chType);
-#endif
   // skip flag
   if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag()) && cu.Y().valid())
   {
@@ -750,9 +708,6 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   if( cu.skip )
   {
     cs.addTU         ( cu, partitioner.chType );
-#if !JVET_N0324_REGULAR_MRG_FLAG
-    PredictionUnit&    pu = cs.addPU( cu, partitioner.chType );
-#endif
     pu.shareParentPos = cu.shareParentPos;
     pu.shareParentSize = cu.shareParentSize;
     MergeCtx           mrgCtx;
@@ -762,14 +717,9 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
 
   // prediction mode and partitioning data
   pred_mode ( cu );
-#if JVET_N0413_RDPCM
   bdpcm_mode( cu, ComponentID( partitioner.chType ) );
-#endif
 
   // --> create PUs
-#if !JVET_N0324_REGULAR_MRG_FLAG
-  CU::addPUs( cu );
-#endif
   // pcm samples
   if( CU::isIntra(cu) )
   {
@@ -782,11 +732,6 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
     }
   }
 
-#if !JVET_N0217_MATRIX_INTRAPRED
-  extend_ref_line( cu );
-
-  isp_mode( cu );
-#endif
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
   cu_pred_data( cu );
@@ -817,10 +762,8 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
     cu.rootCbf = false;
     cu.predMode = MODE_INTRA;
     cu.mmvdSkip = false;
-#if JVET_N0318_N0467_IBC_SIZE
     if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
     {
-#endif
     unsigned ctxId = DeriveCtx::CtxSkipFlag(cu);
     unsigned skip = m_BinDecoder.decodeBin(Ctx::SkipFlag(ctxId));
     DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, skip ? 1 : 0 );
@@ -831,17 +774,13 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
       cu.predMode = MODE_IBC;
       cu.mmvdSkip = false;
     }
-#if JVET_N0318_N0467_IBC_SIZE
     }
-#endif
     return;
   }
-#if JVET_N0266_SMALL_BLOCKS
   if ( !cu.cs->slice->getSPS()->getIBCFlag() && cu.lwidth() == 4 && cu.lheight() == 4 )
   {
     return;
   }
-#endif
   unsigned ctxId  = DeriveCtx::CtxSkipFlag(cu);
   unsigned skip   = m_BinDecoder.decodeBin( Ctx::SkipFlag(ctxId) );
 
@@ -849,11 +788,8 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
 
   if (skip && cu.cs->slice->getSPS()->getIBCFlag())
   {
-#if JVET_N0318_N0467_IBC_SIZE
     if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
     {
-#endif
-#if JVET_N0266_SMALL_BLOCKS
       if ( cu.lwidth() == 4 && cu.lheight() == 4 )
       {
         cu.skip     = true;
@@ -862,7 +798,6 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
         cu.mmvdSkip = false;
         return;
       }
-#endif
     unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
     if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
     {
@@ -870,27 +805,22 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
       cu.rootCbf = false;
       cu.predMode = MODE_IBC;
       cu.mmvdSkip = false;
-#if JVET_N0324_REGULAR_MRG_FLAG
       cu.firstPU->regularMergeFlag = false;
-#endif
     }
     else
     {
       cu.predMode = MODE_INTER;
     }
     DTRACE(g_trace_ctx, D_SYNTAX, "ibc() ctx=%d cu.predMode=%d\n", ctxidx, cu.predMode);
-#if JVET_N0318_N0467_IBC_SIZE
     }
     else
     {
       cu.predMode = MODE_INTER;
     }
-#endif
   }
   if ((skip && CU::isInter(cu) && cu.cs->slice->getSPS()->getIBCFlag()) ||
     (skip && !cu.cs->slice->getSPS()->getIBCFlag()))
   {
-#if JVET_N0324_REGULAR_MRG_FLAG
     if (!cu.cs->slice->getSPS()->getUseMMVD() && (cu.firstPU->lwidth() * cu.firstPU->lheight() == 32))
     {
       cu.firstPU->regularMergeFlag = true;
@@ -911,15 +841,9 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
     }
     else
     {
-#if JVET_N0127_MMVD_SPS_FLAG
       if (cu.cs->slice->getSPS()->getUseMMVD())
       {
-#endif
-#if JVET_N0266_SMALL_BLOCKS
         bool isCUWithOnlyRegularAndMMVD=((cu.firstPU->lwidth() == 8 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 8));
-#else
-        bool isCUWithOnlyRegularAndMMVD=((cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 8 && cu.firstPU->lheight() == 4) || (cu.firstPU->lwidth() == 4 && cu.firstPU->lheight() == 8));
-#endif
         if (isCUWithOnlyRegularAndMMVD)
         {
           cu.mmvdSkip = !(cu.firstPU->regularMergeFlag);
@@ -930,30 +854,12 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
           cu.mmvdSkip = mmvdSkip;
           DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, mmvdSkip ? 1 : 0);
         }
-#if JVET_N0127_MMVD_SPS_FLAG
       }
       else
       {
         cu.mmvdSkip = false;
       }
-#endif
     }
-#else
-#if JVET_N0127_MMVD_SPS_FLAG
-    if (cu.cs->slice->getSPS()->getUseMMVD())
-    {
-#endif
-      unsigned mmvdSkip = m_BinDecoder.decodeBin(Ctx::MmvdFlag(0));
-      cu.mmvdSkip = mmvdSkip;
-      DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_cu_skip_flag() ctx=%d mmvd_skip=%d\n", 0, mmvdSkip ? 1 : 0);
-#if JVET_N0127_MMVD_SPS_FLAG
-    }
-    else
-    {
-      cu.mmvdSkip = false;
-    }
-#endif
-#endif
     cu.skip     = true;
     cu.rootCbf  = false;
     cu.predMode = MODE_INTER;
@@ -983,29 +889,16 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
   const SPS *sps = cu.cs->sps;
 
   unsigned value = 0;
-#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
-  unsigned ctxId = DeriveCtx::CtxIMVFlag( cu );
-#endif
   if (CU::isIBC(cu))
     value = 1;
   else
-#if JVET_N600_AMVR_TPM_CTX_REDUCTION
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 0 ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 0 );
-#else
-    value = m_BinDecoder.decodeBin( Ctx::ImvFlag( ctxId ) );
-  DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, ctxId );
-#endif
 
   if( sps->getAMVREnabledFlag() && value )
   {
-#if JVET_N600_AMVR_TPM_CTX_REDUCTION
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 1 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 1 );
-#else
-    value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 3 ) );
-    DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 3 );
-#endif
     value++;
   }
 
@@ -1030,23 +923,13 @@ void CABACReader::affine_amvr_mode( CodingUnit& cu, MergeCtx& mrgCtx )
   }
 
   unsigned value = 0;
-#if JVET_N600_AMVR_TPM_CTX_REDUCTION
   value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 2 ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 2 );
-#else
-  value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 4 ) );
-  DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 4 );
-#endif
 
   if( value )
   {
-#if JVET_N600_AMVR_TPM_CTX_REDUCTION
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 3 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 3 );
-#else
-    value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 5 ) );
-    DTRACE( g_trace_ctx, D_SYNTAX, "affine_amvr_mode() value=%d ctx=%d\n", value, 5 );
-#endif
     value++;
   }
 
@@ -1060,25 +943,17 @@ void CABACReader::pred_mode( CodingUnit& cu )
 
   if (cu.cs->slice->getSPS()->getIBCFlag())
   {
-#if JVET_N0266_SMALL_BLOCKS
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) )
-#else
-    if (cu.cs->slice->isIntra())
-#endif
     {
       cu.predMode = MODE_INTRA;
-#if JVET_N0318_N0467_IBC_SIZE
       if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
       {
-#endif
       unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
       if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
       {
         cu.predMode = MODE_IBC;
       }
-#if JVET_N0318_N0467_IBC_SIZE
       }
-#endif
     }
     else
     {
@@ -1089,28 +964,20 @@ void CABACReader::pred_mode( CodingUnit& cu )
       else
       {
         cu.predMode = MODE_INTER;
-#if JVET_N0318_N0467_IBC_SIZE
         if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
         {
-#endif
         unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
         if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
         {
           cu.predMode = MODE_IBC;
         }
-#if JVET_N0318_N0467_IBC_SIZE
         }
-#endif
       }
     }
   }
   else
   {
-#if JVET_N0266_SMALL_BLOCKS
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) || m_BinDecoder.decodeBin( Ctx::PredMode( DeriveCtx::CtxPredModeFlag( cu ) ) ) )
-#else
-    if (cu.cs->slice->isIntra() || m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))))
-#endif
     {
       cu.predMode = MODE_INTRA;
     }
@@ -1120,7 +987,6 @@ void CABACReader::pred_mode( CodingUnit& cu )
     }
   }
 }
-#if JVET_N0413_RDPCM
 void CABACReader::bdpcm_mode( CodingUnit& cu, const ComponentID compID )
 {
   cu.bdpcmMode = 0;
@@ -1138,7 +1004,6 @@ void CABACReader::bdpcm_mode( CodingUnit& cu, const ComponentID compID )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "bdpcm_mode() x=%d, y=%d, w=%d, h=%d, bdpcm=%d\n", cu.lumaPos().x, cu.lumaPos().y, cu.lwidth(), cu.lheight(), cu.bdpcmMode );
 }
-#endif
 void CABACReader::pcm_flag( CodingUnit& cu, Partitioner &partitioner )
 {
   const SPS& sps = *cu.cs->sps;
@@ -1202,26 +1067,16 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
     uint32_t prefixNumBits = numGBi - 2;
     uint32_t step = 1;
 
-#if !JVET_N0286_SIMPLIFIED_GBI_IDX
-    unsigned ctxIdGBi = 4;
-#endif
     idx = 1;
 
     for(int ui = 0; ui < prefixNumBits; ++ui)
     {
-#if JVET_N0286_SIMPLIFIED_GBI_IDX
       symbol = m_BinDecoder.decodeBinEP();
-#else
-      symbol = m_BinDecoder.decodeBin(Ctx::GBiIdx(ctxIdGBi));
-#endif
 
       if (symbol == 1)
       {
         break;
       }
-#if !JVET_N0286_SIMPLIFIED_GBI_IDX
-      ctxIdGBi += step;
-#endif
       idx += step;
     }
   }
@@ -1269,11 +1124,7 @@ void CABACReader::extend_ref_line(CodingUnit& cu)
 #if !ENABLE_JVET_L0283_MRL
   return;
 #endif
-#if JVET_N0413_RDPCM
   if ( !cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.ipcm || cu.bdpcmMode )
-#else
-  if (!cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.ipcm)
-#endif
   {
     cu.firstPU->multiRefIdx = 0;
     return;
@@ -1314,7 +1165,6 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
     return;
   }
 
-#if JVET_N0413_RDPCM
   if( cu.bdpcmMode )
   {
     PredictionUnit *pu = cu.firstPU;
@@ -1323,9 +1173,7 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
     cu.firstPU->intraDir[0] = mpm_pred[0];
     return;
   }
-#endif
 
-#if JVET_N0217_MATRIX_INTRAPRED
   mip_flag(cu);
   if (cu.mipFlag)
   {
@@ -1334,7 +1182,6 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
   }
   extend_ref_line( cu );
   isp_mode( cu );
-#endif
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__INTRA_DIR_ANG, cu.lumaSize(), CHANNEL_TYPE_LUMA );
 
@@ -1365,15 +1212,11 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
     {
       uint32_t ipred_idx = 0;
       {
-#if JVET_N0185_UNIFIED_MPM
         unsigned ctx = (pu->cu->ispMode == NOT_INTRA_SUBPARTITIONS ? 1 : 0);
         if (pu->multiRefIdx == 0)
           ipred_idx = m_BinDecoder.decodeBin(Ctx::IntraLumaPlanarFlag(ctx));
         else
           ipred_idx = 1;
-#else
-        ipred_idx = m_BinDecoder.decodeBinEP();
-#endif
         if( ipred_idx )
         {
           ipred_idx += m_BinDecoder.decodeBinEP();
@@ -1517,9 +1360,7 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
     transform_tree( *cu.cs, partitioner, cuCtx, chromaCbfs );
   }
 
-#if JVET_N0193_LFNST
   residual_lfnst_mode( cu );
-#endif
 }
 
 void CABACReader::rqt_root_cbf( CodingUnit& cu )
@@ -1636,42 +1477,30 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     }
     else
     {
-#if JVET_N0324_REGULAR_MRG_FLAG
       if (pu.regularMergeFlag)
       {
         merge_idx(pu);
       }
       else
       {
-#endif
         subblock_merge_flag( *pu.cu );
         MHIntra_flag(pu);
         if (pu.mhIntraFlag)
         {
-#if JVET_N0302_SIMPLFIED_CIIP
           pu.intraDir[0] = PLANAR_IDX;
-#else
-          MHIntra_luma_pred_modes(*pu.cu);
-#endif
           pu.intraDir[1] = DM_CHROMA_IDX;
         }
-#if JVET_N0324_REGULAR_MRG_FLAG
         else
         {
           pu.cu->triangle = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && !pu.cu->affine && !pu.mmvdMergeFlag && !pu.cu->mmvdSkip;
         }
-#else
-        triangle_mode( *pu.cu );
-#endif
         if (pu.mmvdMergeFlag)
         {
           mmvd_merge_idx(pu);
         }
         else
           merge_data   ( pu );
-#if JVET_N0324_REGULAR_MRG_FLAG
       }
-#endif
     }
   }
   else if (CU::isIBC(*pu.cu))
@@ -1825,12 +1654,9 @@ void CABACReader::merge_flag( PredictionUnit& pu )
   if (pu.mergeFlag && CU::isIBC(*pu.cu))
   {
     pu.mmvdMergeFlag = false;
-#if JVET_N0324_REGULAR_MRG_FLAG
     pu.regularMergeFlag = false;
-#endif
     return;
   }
-#if JVET_N0324_REGULAR_MRG_FLAG
   if (pu.mergeFlag)
   {
     if (!pu.cs->sps->getUseMMVD() && (pu.lwidth() * pu.lheight() == 32))
@@ -1851,15 +1677,9 @@ void CABACReader::merge_flag( PredictionUnit& pu )
     }
     else
     {
-#if JVET_N0127_MMVD_SPS_FLAG
       if (pu.cs->sps->getUseMMVD())
       {
-#endif
-#if JVET_N0266_SMALL_BLOCKS
         bool isCUWithOnlyRegularAndMMVD=((pu.lwidth() == 8 && pu.lheight() == 4) || (pu.lwidth() == 4 && pu.lheight() == 8));
-#else
-        bool isCUWithOnlyRegularAndMMVD=((pu.lwidth() == 4 && pu.lheight() == 4) || (pu.lwidth() == 8 && pu.lheight() == 4) || (pu.lwidth() == 4 && pu.lheight() == 8));
-#endif
         if (isCUWithOnlyRegularAndMMVD)
         {
           pu.mmvdMergeFlag = !(pu.regularMergeFlag);
@@ -1869,32 +1689,13 @@ void CABACReader::merge_flag( PredictionUnit& pu )
           pu.mmvdMergeFlag = (m_BinDecoder.decodeBin(Ctx::MmvdFlag(0)));
           DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
         }
-#if JVET_N0127_MMVD_SPS_FLAG
       }
       else
       {
         pu.mmvdMergeFlag = false;
       }
-#endif
     }
   }
-#else
-#if JVET_N0127_MMVD_SPS_FLAG
-  if (pu.mergeFlag && pu.cs->sps->getUseMMVD())
-#else
-  if (pu.mergeFlag)
-#endif
-  {
-    pu.mmvdMergeFlag = (m_BinDecoder.decodeBin(Ctx::MmvdFlag(0)));
-    DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
-  }
-#if JVET_N0127_MMVD_SPS_FLAG
-  else
-  {
-    pu.mmvdMergeFlag = false;
-  }
-#endif
-#endif
 }
 
 
@@ -1964,15 +1765,10 @@ void CABACReader::merge_idx( PredictionUnit& pu )
       }
       return decIdx;
     };
-#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
     const int maxNumTriangleCand = pu.cs->slice->getMaxNumTriangleCand();
     CHECK(maxNumTriangleCand < 2, "Incorrect max number of triangle candidates");
     candIdx0 = decodeOneIdx(maxNumTriangleCand - 1);
     candIdx1 = decodeOneIdx(maxNumTriangleCand - 2);
-#else
-    candIdx0 = decodeOneIdx(TRIANGLE_MAX_NUM_UNI_CANDS - 1);
-    candIdx1 = decodeOneIdx(TRIANGLE_MAX_NUM_UNI_CANDS - 2);
-#endif
     candIdx1 += candIdx1 >= candIdx0 ? 1 : 0;
     DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_split_dir=%d\n", splitDir );
     DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx0=%d\n", candIdx0 );
@@ -2013,12 +1809,8 @@ void CABACReader::mmvd_merge_idx(PredictionUnit& pu)
 
   mvpIdx = (var + dir0)*(MMVD_MAX_REFINE_NUM*MMVD_BASE_MV_NUM);
 
-#if JVET_N0448_N0380
   int numCand = int(pu.cs->slice->getMaxNumMergeCand());
   int numCandminus1_base = (numCand > 1) ? MMVD_BASE_MV_NUM - 1 : 0;
-#else
-  int numCandminus1_base = MMVD_BASE_MV_NUM - 1;
-#endif
   var0 = 0;
   if (numCandminus1_base > 0)
   {
@@ -2191,140 +1983,7 @@ void CABACReader::MHIntra_flag(PredictionUnit& pu)
   DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() MHIntra=%d pos=(%d,%d) size=%dx%d\n", pu.mhIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
 }
 
-#if !JVET_N0302_SIMPLFIED_CIIP
-void CABACReader::MHIntra_luma_pred_modes(CodingUnit &cu)
-{
-  if (!cu.Y().valid())
-  {
-    return;
-  }
 
-  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__INTRA_DIR_ANG, cu.lumaSize(), CHANNEL_TYPE_LUMA);
-
-  const int numMPMs = 3;  // Multi-hypothesis intra uses only 3 MPM
-
-  // prev_intra_luma_pred_flag
-  int numBlocks = CU::getNumPUs(cu);
-  int mpmFlag[4];
-  PredictionUnit *pu = cu.firstPU;
-  for (int k = 0; k < numBlocks; k++)
-  {
-    if (PU::getNarrowShape(pu->lwidth(), pu->lheight()) == 0)
-    {
-      mpmFlag[k] = m_BinDecoder.decodeBin(Ctx::MHIntraPredMode());
-    }
-    else
-    {
-      mpmFlag[k] = 1;
-    }
-  }
-
-  unsigned mpm_pred[numMPMs];
-  for (int k = 0; k < numBlocks; k++)
-  {
-    PU::getMHIntraMPMs(*pu, mpm_pred);
-
-    if (mpmFlag[k])
-    {
-      unsigned pred_idx = 0;
-
-      pred_idx = m_BinDecoder.decodeBinEP();
-      if (pred_idx)
-      {
-        pred_idx += m_BinDecoder.decodeBinEP();
-      }
-      pu->intraDir[0] = mpm_pred[pred_idx];
-    }
-    else
-    {
-      unsigned pred_mode = 0;
-
-      bool isMPMCand[4];
-      for (unsigned i = 0; i < 4; i++)
-      {
-        isMPMCand[i] = false;
-      }
-      for (unsigned i = 0; i < 3; i++)
-      {
-        if (mpm_pred[i] == PLANAR_IDX)
-        {
-          isMPMCand[0] = true;
-        }
-        else if (mpm_pred[i] == DC_IDX)
-        {
-          isMPMCand[1] = true;
-        }
-        else if (mpm_pred[i] == HOR_IDX)
-        {
-          isMPMCand[2] = true;
-        }
-        else if (mpm_pred[i] == VER_IDX)
-        {
-          isMPMCand[3] = true;
-        }
-      }
-      if (!isMPMCand[0])
-      {
-        pred_mode = PLANAR_IDX;
-      }
-      if (!isMPMCand[1])
-      {
-        pred_mode = DC_IDX;
-      }
-      if (!isMPMCand[2])
-      {
-        pred_mode = HOR_IDX;
-      }
-      if (!isMPMCand[3])
-      {
-        pred_mode = VER_IDX;
-      }
-      pu->intraDir[0] = pred_mode;
-    }
-    DTRACE(g_trace_ctx, D_SYNTAX, "intra_luma_pred_modes() idx=%d pos=(%d,%d) mode=%d\n", k, pu->lumaPos().x, pu->lumaPos().y, pu->intraDir[0]);
-    pu = pu->next;
-  }
-}
-#endif
-
-#if !JVET_N0324_REGULAR_MRG_FLAG
-void CABACReader::triangle_mode( CodingUnit& cu )
-{
-  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__TRIANGLE_FLAG );
-
-  if( !cu.cs->slice->getSPS()->getUseTriangle() || !cu.cs->slice->isInterB() || cu.lwidth() * cu.lheight() < TRIANGLE_MIN_SIZE || cu.affine )
-  {
-    return;
-  }
-
-  if ( cu.firstPU->mmvdMergeFlag || cu.mmvdSkip )
-  {
-    return;
-  }
-
-  if ( cu.firstPU->mhIntraFlag )
-  {
-    return;
-  }
-
-#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
-  if (cu.cs->slice->getMaxNumTriangleCand() < 2)
-  {
-    return;
-  }
-#endif
-
-#if JVET_N600_AMVR_TPM_CTX_REDUCTION
-  cu.triangle = m_BinDecoder.decodeBin( Ctx::TriangleFlag(0) );
-#else
-  unsigned flag_idx = DeriveCtx::CtxTriangleFlag( cu );
-  cu.triangle = m_BinDecoder.decodeBin( Ctx::TriangleFlag(flag_idx) );
-#endif
-
-
-  DTRACE( g_trace_ctx, D_SYNTAX, "triangle_mode() triangle_mode=%d pos=(%d,%d) size: %dx%d\n", cu.triangle, cu.Y().x, cu.Y().y, cu.lumaSize().width, cu.lumaSize().height );
-}
-#endif
 
 //================================================================================
 //  clause 7.3.8.7
@@ -2383,9 +2042,7 @@ void CABACReader::transform_tree( CodingStructure &cs, Partitioner &partitioner,
 
   split = partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
 
-#if JVET_N0492_NO_HIERARCH_CBF
   bool max_tu_split = split;
-#endif
 
   if( cu.sbtInfo && partitioner.canSplit( PartSplit( cu.getSbtTuSplit() ), cs ) )
   {
@@ -2402,20 +2059,12 @@ void CABACReader::transform_tree( CodingStructure &cs, Partitioner &partitioner,
   if( area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && ( !CS::isDualITree( cs ) || partitioner.chType == CHANNEL_TYPE_CHROMA ) && ( !cu.ispMode || chromaCbfISP ) )
   {
     const int cbfDepth = chromaCbfISP ? trDepth - 1 : trDepth;
-#if JVET_N0492_NO_HIERARCH_CBF
     if (!max_tu_split)
-#endif
     {
-#if !JVET_N0492_NO_HIERARCH_CBF
-      if (chromaCbfs.Cb)
-#endif
       {
         if (!(cu.sbtInfo && trDepth == 1))
           chromaCbfs.Cb &= cbf_comp(cs, area.blocks[COMPONENT_Cb], cbfDepth);
       }
-#if !JVET_N0492_NO_HIERARCH_CBF
-      if (chromaCbfs.Cr)
-#endif
       {
         if (!(cu.sbtInfo && trDepth == 1))
           chromaCbfs.Cr &= cbf_comp(cs, area.blocks[COMPONENT_Cr], cbfDepth, chromaCbfs.Cb);
@@ -2568,7 +2217,6 @@ bool CABACReader::cbf_comp( CodingStructure& cs, const CompArea& area, unsigned 
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__QT_CBF, area.size(), area.compID);
 
-#if JVET_N0413_RDPCM
   unsigned  cbf = 0;
   if( area.compID == COMPONENT_Y && cs.getCU( area.pos(), ChannelType( area.compID ) )->bdpcmMode )
   {
@@ -2578,9 +2226,6 @@ bool CABACReader::cbf_comp( CodingStructure& cs, const CompArea& area, unsigned 
   {
     cbf = m_BinDecoder.decodeBin( ctxSet( ctxId ) );
   }
-#else
-  const unsigned  cbf = m_BinDecoder.decodeBin( ctxSet( ctxId ) );
-#endif
 
   DTRACE( g_trace_ctx, D_SYNTAX, "cbf_comp() etype=%d pos=(%d,%d) ctx=%d cbf=%d\n", area.compID, area.x, area.y, ctxId, cbf );
   return cbf;
@@ -2750,20 +2395,17 @@ void CABACReader::cu_chroma_qp_offset( CodingUnit& cu )
 //    void        residual_coding_subblock( coeffCtx )
 //================================================================================
 
-#if JVET_N0054_JOINT_CHROMA
 void CABACReader::joint_cb_cr( TransformUnit& tu )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__JOINT_CB_CR, tu.blocks[COMPONENT_Cr].lumaSize(), CHANNEL_TYPE_CHROMA );
   tu.jointCbCr = m_BinDecoder.decodeBin( Ctx::JointCbCrFlag( 0 ) );
 }
-#endif
 
 void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
 {
   const CodingUnit& cu = *tu.cu;
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_coding() etype=%d pos=(%d,%d) size=%dx%d predMode=%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height, cu.predMode );
 
-#if JVET_N0054_JOINT_CHROMA
   // Joint Cb-Cr residual mode is signalled if both Cb and Cr cbfs are true
   if ( compID == COMPONENT_Cr && TU::getCbf( tu, COMPONENT_Cb ) )
   {
@@ -2773,25 +2415,17 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
     if ( tu.jointCbCr )
       return;
   }
-#endif
 
   // parse transform skip and explicit rdpcm mode
   mts_coding         ( tu, compID );
   explicit_rdpcm_mode( tu, compID );
 
-#if JVET_N0280_RESIDUAL_CODING_TS
-#if JVET_N0413_RDPCM
   if( isLuma( compID ) && ( tu.mtsIdx == MTS_SKIP || tu.cu->bdpcmMode ) )
-#else
-  if( isLuma( compID ) && tu.mtsIdx == MTS_SKIP )
-#endif
   {
     residual_codingTS( tu, compID );
     return;
   }
-#endif
 
-#if HEVC_USE_SIGN_HIDING
   // determine sign hiding
   bool signHiding  = ( cu.cs->slice->getSignDataHidingEnabledFlag() && !cu.transQuantBypass && tu.rdpcm[compID] == RDPCM_OFF );
   if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx==MTS_SKIP )
@@ -2803,14 +2437,9 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
       signHiding = false;
     }
   }
-#endif
 
   // init coeff coding context
-#if HEVC_USE_SIGN_HIDING
   CoeffCodingContext  cctx    ( tu, compID, signHiding );
-#else
-  CoeffCodingContext  cctx    ( tu, compID );
-#endif
   TCoeff*             coeff   = tu.getCoeffs( compID ).buf;
 
   // parse last coeff position
@@ -2842,9 +2471,7 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
   const bool  tsAllowed = TU::isTSAllowed ( tu, compID );
   const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
 
-#if JVET_N0413_RDPCM
   if( tu.cu->bdpcmMode ) tu.mtsIdx = MTS_SKIP;
-#endif
   if( !mtsAllowed && !tsAllowed ) return;
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[compID], compID );
@@ -2889,17 +2516,9 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 void CABACReader::isp_mode( CodingUnit& cu )
 {
 #if INCLUDE_ISP_CFG_FLAG
-#if JVET_N0413_RDPCM
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() || cu.bdpcmMode )
 #else
-  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() )
-#endif
-#else
-#if JVET_N0413_RDPCM
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || cu.bdpcmMode )
-#else
-  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm )
-#endif
 #endif
   {
     cu.ispMode = NOT_INTRA_SUBPARTITIONS;
@@ -2961,14 +2580,9 @@ void CABACReader::explicit_rdpcm_mode( TransformUnit& tu, ComponentID compID )
   }
 }
 
-#if JVET_N0193_LFNST
 void CABACReader::residual_lfnst_mode( CodingUnit& cu )
 {
-#if JVET_N0217_MATRIX_INTRAPRED
   if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || cu.mipFlag == true ||
-#else
-  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS ||
-#endif
     ( CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 ) )
   {
     return;
@@ -2997,42 +2611,19 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu )
     return;
   }
 
-#if !JVET_N0105_LFNST_CTX_MODELLING
-  uint32_t ctxOff = 0;
-
-  int intraMode = cu.firstPU->intraDir[ cu.chType ];
-  if( intraMode == DM_CHROMA_IDX && !isLuma( cu.chType ) )
-  {
-    intraMode = PLANAR_IDX;
-  }
-  if( cu.chromaFormat == CHROMA_422 && !isLuma( cu.chType ) )
-  {
-    intraMode = g_chroma422IntraAngleMappingTable[ intraMode ];
-  }
-  ctxOff = PU::isLMCMode( intraMode ) || intraMode <= DC_IDX;
-#endif
 
   unsigned cctx = 0;
   if( cu.firstTU->mtsIdx < MTS_DST7_DST7 && CS::isDualITree( *cu.cs ) ) cctx++;
 
-#if JVET_N0105_LFNST_CTX_MODELLING
   uint32_t idxLFNST = m_BinDecoder.decodeBin( Ctx::LFNSTIdx( cctx ) );
-#else
-  uint32_t idxLFNST = m_BinDecoder.decodeBin( Ctx::LFNSTIdx( ctxOff + 4 * cctx ) );
-#endif
   if( idxLFNST )
   {
-#if JVET_N0105_LFNST_CTX_MODELLING
     idxLFNST += m_BinDecoder.decodeBinEP();
-#else
-    idxLFNST += m_BinDecoder.decodeBin( Ctx::LFNSTIdx( 2 + ctxOff + 4 * cctx ) );
-#endif
   }
   cu.lfnstIdx = idxLFNST;
 
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_lfnst_mode() etype=%d pos=(%d,%d) mode=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), ( int ) cu.lfnstIdx );
 }
-#endif
 
 int CABACReader::last_sig_coeff( CoeffCodingContext& cctx, TransformUnit& tu, ComponentID compID )
 {
@@ -3084,13 +2675,6 @@ int CABACReader::last_sig_coeff( CoeffCodingContext& cctx, TransformUnit& tu, Co
   }
 
   int blkPos;
-#if HEVC_USE_MDCS
-  if( cctx.scanType() == SCAN_VER )
-  {
-    blkPos = PosLastY + ( PosLastX * cctx.width() );
-  }
-  else
-#endif
   {
     blkPos = PosLastX + ( PosLastY * cctx.width() );
   }
@@ -3146,10 +2730,8 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
 
   //===== decode absolute values =====
   const int inferSigPos   = nextSigPos != cctx.scanPosLast() ? ( cctx.isNotFirst() ? minSubPos : -1 ) : nextSigPos;
-#if HEVC_USE_SIGN_HIDING
   int       firstNZPos    = nextSigPos;
   int       lastNZPos     = -1;
-#endif
   int       numNonZero    =  0;
   bool      is2x2subblock = ( cctx.log2CGSize() == 2 );
   int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK );
@@ -3178,10 +2760,8 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       uint8_t&  ctxOff = ctxOffset[ nextSigPos - minSubPos ];
       ctxOff           = cctx.ctxOffsetAbs();
       sigBlkPos[ numNonZero++ ] = blkPos;
-#if HEVC_USE_SIGN_HIDING
       firstNZPos = nextSigPos;
       lastNZPos  = std::max<int>( lastNZPos, nextSigPos );
-#endif
 
       RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_gt1 );
       unsigned gt1Flag = m_BinDecoder.decodeBin( cctx.greater1CtxIdAbs(ctxOff) );
@@ -3214,10 +2794,8 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
   unsigned ricePar = 0;
   for( int scanPos = firstSigPos; scanPos > firstPosMode2; scanPos-- )
   {
-#if JVET_N0188_UNIFY_RICEPARA
     int       sumAll = cctx.templateAbsSum(scanPos, coeff, 4);
     ricePar = g_auiGoRiceParsCoeff[sumAll];
-#endif
     TCoeff& tcoeff = coeff[ cctx.blockPos( scanPos ) ];
     if( tcoeff >= 4 )
     {
@@ -3225,23 +2803,13 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
       int       rem     = m_BinDecoder.decodeRemAbsEP( ricePar, cctx.extPrec(), cctx.maxLog2TrDRange() );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, ricePar );
       tcoeff += (rem<<1);
-#if !JVET_N0188_UNIFY_RICEPARA
-      if( ricePar < 3 && rem > (3<<ricePar)-1 )
-      {
-        ricePar++;
-      }
-#endif
     }
   }
 
   //===== coeff bypass ====
   for( int scanPos = firstPosMode2; scanPos >= minSubPos; scanPos-- )
   {
-#if JVET_N0188_UNIFY_RICEPARA
     int       sumAll = cctx.templateAbsSum(scanPos, coeff, 0);
-#else
-    int       sumAll    = cctx.templateAbsSum(scanPos, coeff);
-#endif
     int       rice      = g_auiGoRiceParsCoeff                        [sumAll];
     int       pos0      = g_auiGoRicePosCoeff0[std::max(0, state - 1)][sumAll];
     int       rem       = m_BinDecoder.decodeRemAbsEP( rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
@@ -3253,36 +2821,25 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     {
       int        blkPos         = cctx.blockPos( scanPos );
       sigBlkPos[ numNonZero++ ] = blkPos;
-#if HEVC_USE_SIGN_HIDING
       lastNZPos  = std::max<int>( lastNZPos, scanPos );
-#endif
       coeff[blkPos] = tcoeff;
     }
   }
 
   //===== decode sign's =====
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__SIGN_BIT, Size( cctx.width(), cctx.height() ), cctx.compID() );
-#if HEVC_USE_SIGN_HIDING
   const unsigned  numSigns    = ( cctx.hideSign( firstNZPos, lastNZPos ) ? numNonZero - 1 : numNonZero );
   unsigned        signPattern = m_BinDecoder.decodeBinsEP( numSigns ) << ( 32 - numSigns );
-#else
-  unsigned        signPattern = m_BinDecoder.decodeBinsEP( numNonZero ) << ( 32 - numNonZero );
-#endif
 
   //===== set final coefficents =====
   int sumAbs = 0;
-#if HEVC_USE_SIGN_HIDING
   for( unsigned k = 0; k < numSigns; k++ )
-#else
-  for( unsigned k = 0; k < numNonZero; k++ )
-#endif
   {
     int AbsCoeff          = coeff[ sigBlkPos[ k ] ];
     sumAbs               += AbsCoeff;
     coeff[ sigBlkPos[k] ] = ( signPattern & ( 1u << 31 ) ? -AbsCoeff : AbsCoeff );
     signPattern         <<= 1;
   }
-#if HEVC_USE_SIGN_HIDING
   if( numNonZero > numSigns )
   {
     int k                 = numSigns;
@@ -3290,20 +2847,14 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     sumAbs               += AbsCoeff;
     coeff[ sigBlkPos[k] ] = ( sumAbs & 1 ? -AbsCoeff : AbsCoeff );
   }
-#endif
 }
 
-#if JVET_N0280_RESIDUAL_CODING_TS
 void CABACReader::residual_codingTS( TransformUnit& tu, ComponentID compID )
 {
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_codingTS() etype=%d pos=(%d,%d) size=%dx%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height );
 
   // init coeff coding context
-#if JVET_N0413_RDPCM
   CoeffCodingContext  cctx    ( tu, compID, false, tu.cu->bdpcmMode );
-#else
-  CoeffCodingContext  cctx    ( tu, compID, false );
-#endif
   TCoeff*             coeff   = tu.getCoeffs( compID ).buf;
 
   cctx.setNumCtxBins( 2 * tu.lwidth()*tu.lheight() );
@@ -3390,11 +2941,7 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
       int sign;
       if( cctx.isContextCoded() )
       {
-#if JVET_N0413_RDPCM
         sign = m_BinDecoder.decodeBin( Ctx::TsResidualSign(  cctx.bdpcm() ? 1 : 0 ) );
-#else
-        sign = m_BinDecoder.decodeBin( Ctx::TsResidualSign( toChannelType( cctx.compID() ) ) );
-#endif
       }
       else
       {
@@ -3489,7 +3036,6 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
     signPattern         >>= 1;
   }
 }
-#endif
 
 
 //================================================================================
@@ -3575,7 +3121,6 @@ unsigned CABACReader::exp_golomb_eqprob( unsigned count )
   return symbol;
 }
 
-#if JVET_N0217_MATRIX_INTRAPRED
 unsigned CABACReader::code_unary_fixed( unsigned ctxId, unsigned unary_max, unsigned fixed )
 {
   unsigned idx;
@@ -3668,4 +3213,3 @@ void CABACReader::mip_pred_mode( PredictionUnit &pu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "mip_pred_mode() pos=(%d,%d) mode=%d\n", pu.lumaPos().x, pu.lumaPos().y, pu.intraDir[CHANNEL_TYPE_LUMA] );
 }
-#endif

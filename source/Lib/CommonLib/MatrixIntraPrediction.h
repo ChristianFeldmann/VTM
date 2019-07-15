@@ -41,7 +41,6 @@
 
 #include "Unit.h"
 
-#if JVET_N0217_MATRIX_INTRAPRED
 static const int MIP_MAX_INPUT_SIZE             =  8;
 static const int MIP_MAX_REDUCED_OUTPUT_SAMPLES = 64;
 
@@ -106,6 +105,5 @@ public:
   void predBlock( const Size &puSize, const int modeIdx, PelBuf &dst, const int bitDepth );
 };
 
-#endif // JVET_N0217_MATRIX_INTRAPRED
 
 #endif //__MATRIXINTRAPPREDICTION__

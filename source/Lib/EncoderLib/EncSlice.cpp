@@ -119,11 +119,7 @@ EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
     int chromaQPOffset       = slice->getPPS()->getQpOffset( compID ) + slice->getSliceChromaQpDelta( compID );
     int qpc                  = ( iQP + chromaQPOffset < 0 ) ? iQP : getScaledChromaQP( iQP + chromaQPOffset, m_pcCfg->getChromaFormatIdc() );
     double tmpWeight         = pow( 2.0, ( iQP - qpc ) / 3.0 );  // takes into account of the chroma qp mapping and chroma qp Offset
-#if JVET_N0193_LFNST
     if( m_pcCfg->getDepQuantEnabledFlag() && !( m_pcCfg->getLFNST() ) )
-#else
-    if( m_pcCfg->getDepQuantEnabledFlag() )
-#endif
     {
       tmpWeight *= ( m_pcCfg->getGOPSize() >= 8 ? pow( 2.0, 0.1/3.0 ) : pow( 2.0, 0.2/3.0 ) );  // increase chroma weight for dependent quantization (in order to reduce bit rate shift from chroma to luma)
     }
@@ -222,11 +218,7 @@ static int getGlaringColorQPOffset (Picture* const pcPic, const int ctuAddr, con
   {
     for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
     {
-#if JVET_N0857_TILES_BRICKS
       const uint32_t ctuRsAddr = pcPic->brickMap->getCtuBsToRsAddrMap (ctuTsAddr);
-#else
-      const uint32_t ctuRsAddr = pcPic->tileMap->getCtuTsToRsAddrMap (ctuTsAddr);
-#endif
       avgLumaValue += pcPic->m_iOffsetCtu[ctuRsAddr];
     }
     avgLumaValue = (avgLumaValue + ((boundingAddr - startAddr) >> 1)) / (boundingAddr - startAddr);
@@ -353,9 +345,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   }
   rpcSlice->setPOC( pocCurr );
   rpcSlice->setDepQuantEnabledFlag( m_pcCfg->getDepQuantEnabledFlag() );
-#if HEVC_USE_SIGN_HIDING
   rpcSlice->setSignDataHidingEnabledFlag( m_pcCfg->getSignDataHidingEnabledFlag() );
-#endif
 
 #if SHARP_LUMA_DELTA_QP
   pcPic->fieldPic = isField;
@@ -429,16 +419,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   // Non-referenced frame marking
   // ------------------------------------------------------------------------------------------------------------------
 
-#if !JVET_M0101_HLS
-  if(pocLast == 0)
-  {
-    rpcSlice->setTemporalLayerNonReferenceFlag(false);
-  }
-  else
-  {
-    rpcSlice->setTemporalLayerNonReferenceFlag(!m_pcCfg->getGOPEntry(iGOPid).m_refPic);
-  }
-#endif
   pcPic->referenced = true;
 
   // ------------------------------------------------------------------------------------------------------------------
@@ -620,9 +600,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   {
     rpcSlice->setSliceChromaQpDelta( COMPONENT_Cb, 0 );
     rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
-#if JVET_N0054_JOINT_CHROMA
     rpcSlice->setSliceChromaQpDelta( JOINT_CbCr, 0 );
-#endif
   }
 #endif
 
@@ -681,18 +659,11 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 #if !W0038_CQP_ADJ
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cb, 0 );
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
-#if JVET_N0054_JOINT_CHROMA
   rpcSlice->setSliceChromaQpDelta( JOINT_CbCr,   0 );
 #endif
-#endif
   rpcSlice->setUseChromaQpAdj( rpcSlice->getPPS()->getPpsRangeExtension().getChromaQpOffsetListEnabledFlag() );
-#if JVET_M0128
   rpcSlice->setNumRefIdx(REF_PIC_LIST_0, m_pcCfg->getRPLEntry(0, iGOPid).m_numRefPicsActive);
   rpcSlice->setNumRefIdx(REF_PIC_LIST_1, m_pcCfg->getRPLEntry(1, iGOPid).m_numRefPicsActive);
-#else
-  rpcSlice->setNumRefIdx(REF_PIC_LIST_0,m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive);
-  rpcSlice->setNumRefIdx(REF_PIC_LIST_1,m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive);
-#endif
 
   if ( m_pcCfg->getDeblockingFilterMetric() )
   {
@@ -740,9 +711,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setSliceArgument        ( m_pcCfg->getSliceArgument()        );
   rpcSlice->setMaxNumMergeCand      ( m_pcCfg->getMaxNumMergeCand()      );
   rpcSlice->setMaxNumAffineMergeCand( m_pcCfg->getMaxNumAffineMergeCand() );
-#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
   rpcSlice->setMaxNumTriangleCand   ( m_pcCfg->getMaxNumTriangleCand() );
-#endif
   rpcSlice->setSplitConsOverrideFlag(false);
   rpcSlice->setMinQTSize( rpcSlice->getSPS()->getMinQTSize(eSliceType));
   rpcSlice->setMaxBTDepth( rpcSlice->isIntra() ? rpcSlice->getSPS()->getMaxBTDepthI() : rpcSlice->getSPS()->getMaxBTDepth() );
@@ -755,9 +724,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setMaxBTSizeIChroma( rpcSlice->getSPS()->getMaxBTSizeIChroma() );
     rpcSlice->setMaxTTSizeIChroma( rpcSlice->getSPS()->getMaxTTSizeIChroma() );
   }
-#if JVET_N0329_IBC_SEARCH_IMP
   rpcSlice->setDisableSATDForRD(false);
-#endif
 }
 
 
@@ -873,11 +840,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
 {
   const int  bitDepth    = pcSlice->getSPS()->getBitDepth (CHANNEL_TYPE_LUMA);
   const int  iQPIndex    = pcSlice->getSliceQp(); // initial QP index for current slice, used in following loops
-#if JVET_N0857_TILES_BRICKS
   const BrickMap& tileMap = *pcPic->brickMap;
-#else
-  const TileMap& tileMap = *pcPic->tileMap;
-#endif
   bool   sliceQPModified = false;
   uint32_t   meanLuma    = MAX_UINT;
   double     hpEnerAvg   = 0.0;
@@ -888,11 +851,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
   {
     for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
     {
-#if JVET_N0857_TILES_BRICKS
       const uint32_t ctuRsAddr  = tileMap.getCtuBsToRsAddrMap (ctuTsAddr);
-#else
-      const uint32_t ctuRsAddr  = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
-#endif
       const Position pos ((ctuRsAddr % pcv.widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / pcv.widthInCtus) * pcv.maxCUHeight);
       const CompArea ctuArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight)), pcPic->Y());
       const CompArea fltArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x > 0 ? pos.x - 1 : 0, pos.y > 0 ? pos.y - 1 : 0, pcv.maxCUWidth + (pos.x > 0 ? 2 : 1), pcv.maxCUHeight + (pos.y > 0 ? 2 : 1))), pcPic->Y());
@@ -939,11 +898,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
 
         for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
         {
-#if JVET_N0857_TILES_BRICKS
           const uint32_t ctuRsAddr = tileMap.getCtuBsToRsAddrMap (ctuTsAddr);
-#else
-          const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
-#endif
 
           meanLuma += pcPic->m_iOffsetCtu[ctuRsAddr];  // CTU mean
         }
@@ -971,11 +926,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
 
     for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
     {
-#if JVET_N0857_TILES_BRICKS
       const uint32_t ctuRsAddr = tileMap.getCtuBsToRsAddrMap (ctuTsAddr);
-#else
-      const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
-#endif
 
       pcPic->m_iOffsetCtu[ctuRsAddr] = (Pel)iQPFixed; // fixed QPs
     }
@@ -984,11 +935,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
   {
     for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
     {
-#if JVET_N0857_TILES_BRICKS
       const uint32_t ctuRsAddr = tileMap.getCtuBsToRsAddrMap (ctuTsAddr);
-#else
-      const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
-#endif
 
       int iQPAdapt = Clip3 (0, MAX_QP, iQPIndex + apprI3Log2 (pcPic->m_uEnerHpCtu[ctuRsAddr] * hpEnerPic));
 
@@ -1019,11 +966,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
         }
 
 #endif
-#if JVET_N0246_MODIFIED_QUANTSCALES
         const uint32_t uRefScale  = g_invQuantScales[0][iQPAdapt % 6] << ((iQPAdapt / 6) + bitDepth - 4);
-#else
-        const uint32_t uRefScale  = g_invQuantScales[iQPAdapt % 6] << ((iQPAdapt / 6) + bitDepth - 4);
-#endif
         const CompArea subArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area ((ctuRsAddr % pcv.widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / pcv.widthInCtus) * pcv.maxCUHeight, pcv.maxCUWidth, pcv.maxCUHeight)), pcPic->Y());
         const Pel*     pSrc       = pcPic->getOrigBuf (subArea).buf;
         const SizeType iSrcStride = pcPic->getOrigBuf (subArea).stride;
@@ -1312,11 +1255,7 @@ void EncSlice::calCostSliceI(Picture* pcPic) // TODO: this only analyses the fir
 {
   double         iSumHadSlice      = 0;
   Slice * const  pcSlice           = pcPic->slices[getSliceSegmentIdx()];
-#if JVET_N0857_TILES_BRICKS
   const BrickMap &tileMap          = *pcPic->brickMap;
-#else
-  const TileMap &tileMap           = *pcPic->tileMap;
-#endif
   const PreCalcValues& pcv         = *pcPic->cs->pcv;
   const SPS     &sps               = *(pcSlice->getSPS());
   const int      shift             = sps.getBitDepth(CHANNEL_TYPE_LUMA)-8;
@@ -1325,15 +1264,9 @@ void EncSlice::calCostSliceI(Picture* pcPic) // TODO: this only analyses the fir
 
   uint32_t startCtuTsAddr, boundingCtuTsAddr;
   xDetermineStartAndBoundingCtuTsAddr ( startCtuTsAddr, boundingCtuTsAddr, pcPic );
-#if JVET_N0857_TILES_BRICKS
   for( uint32_t ctuTsAddr = startCtuTsAddr, ctuRsAddr = tileMap.getCtuBsToRsAddrMap( startCtuTsAddr);
        ctuTsAddr < boundingCtuTsAddr;
        ctuRsAddr = tileMap.getCtuBsToRsAddrMap(++ctuTsAddr) )
-#else
-  for( uint32_t ctuTsAddr = startCtuTsAddr, ctuRsAddr = tileMap.getCtuTsToRsAddrMap( startCtuTsAddr);
-       ctuTsAddr < boundingCtuTsAddr;
-       ctuRsAddr = tileMap.getCtuTsToRsAddrMap(++ctuTsAddr) )
-#endif
   {
     Position pos( (ctuRsAddr % pcv.widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / pcv.widthInCtus) * pcv.maxCUHeight);
 
@@ -1493,11 +1426,7 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
   Slice* pcSlice                  = cs.slice;
   const PreCalcValues& pcv        = *cs.pcv;
   const uint32_t    widthInCtus   = pcv.widthInCtus;
-#if JVET_N0857_TILES_BRICKS
   const BrickMap&  tileMap         = *pcPic->brickMap;
-#else
-  const TileMap&  tileMap         = *pcPic->tileMap;
-#endif
   const uint32_t hashThreshold    = 20;
   uint32_t totalCtu               = 0;
   uint32_t hashRatio              = 0;
@@ -1509,11 +1438,7 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
 
   for ( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
   {
-#if JVET_N0857_TILES_BRICKS
     const uint32_t ctuRsAddr = tileMap.getCtuBsToRsAddrMap( ctuTsAddr );
-#else
-    const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap( ctuTsAddr );
-#endif
     const uint32_t ctuXPosInCtus        = ctuRsAddr % widthInCtus;
     const uint32_t ctuYPosInCtus        = ctuRsAddr / widthInCtus;
 
@@ -1540,11 +1465,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   Slice* pcSlice                  = cs.slice;
   const PreCalcValues& pcv        = *cs.pcv;
   const uint32_t        widthInCtus   = pcv.widthInCtus;
-#if JVET_N0857_TILES_BRICKS
   const BrickMap&  tileMap        = *pcPic->brickMap;
-#else
-  const TileMap&  tileMap         = *pcPic->tileMap;
-#endif
 #if ENABLE_QPA
   const int iQPIndex              = pcSlice->getSliceQpBase();
 #endif
@@ -1579,49 +1500,29 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   if ( pcSlice->getSPS()->getFpelMmvdEnabledFlag() ||
       (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
   {
-#if JVET_N0329_IBC_SEARCH_IMP
     m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap(cs.picture->getTrueOrigBuf());
     if (m_pcCfg->getIntraPeriod() != -1)
     {
       int hashBlkHitPerc = m_pcCuEncoder->getIbcHashMap().calHashBlkMatchPerc(cs.area.Y());
       cs.slice->setDisableSATDForRD(hashBlkHitPerc > 59);
     }
-#else
-    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
-      cs.picture->getOrigBuf(COMPONENT_Y).rspSignal(m_pcLib->getReshaper()->getFwdLUT());
-    m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
-    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
-      cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
-#endif
   }
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
   // for every CTU in the slice segment (may terminate sooner if there is a byte limit on the slice-segment)
-#if JVET_N0857_RECT_SLICES
   uint32_t startSliceRsRow = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) / widthInCtus;
   uint32_t startSliceRsCol = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) % widthInCtus;
   uint32_t endSliceRsRow = tileMap.getCtuBsToRsAddrMap(boundingCtuTsAddr - 1) / widthInCtus;
   uint32_t endSliceRsCol = tileMap.getCtuBsToRsAddrMap(boundingCtuTsAddr - 1) % widthInCtus;
-#endif
   for( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
   {
-#if JVET_N0857_TILES_BRICKS
     const int32_t ctuRsAddr = tileMap.getCtuBsToRsAddrMap( ctuTsAddr );
-#else
-    const int32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap( ctuTsAddr );
-#endif
-#if JVET_N0857_RECT_SLICES
     if (pcSlice->getPPS()->getRectSliceFlag() &&
       ((ctuRsAddr / widthInCtus) < startSliceRsRow || (ctuRsAddr / widthInCtus) > endSliceRsRow ||
       (ctuRsAddr % widthInCtus) < startSliceRsCol || (ctuRsAddr % widthInCtus) > endSliceRsCol))
       continue;
-#endif
 
     // update CABAC state
-#if JVET_N0857_TILES_BRICKS
     const uint32_t firstCtuRsAddrOfTile = tileMap.bricks[tileMap.getBrickIdxRsMap(ctuRsAddr)].getFirstCtuRsAddr();
-#else
-    const uint32_t firstCtuRsAddrOfTile = tileMap.tiles[tileMap.getTileIdxMap(ctuRsAddr)].getFirstCtuRsAddr();
-#endif
     const uint32_t tileXPosInCtus       = firstCtuRsAddrOfTile % widthInCtus;
     const uint32_t ctuXPosInCtus        = ctuRsAddr % widthInCtus;
     const uint32_t ctuYPosInCtus        = ctuRsAddr / widthInCtus;
@@ -1635,9 +1536,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     {
       cs.motionLut.lut.resize(0);
       cs.motionLut.lutIbc.resize(0);
-#if !JVET_N0266_SMALL_BLOCKS
-      cs.motionLut.lutShare.resize(0);
-#endif
       cs.motionLut.lutShareIbc.resize(0);
     }
 
@@ -1654,19 +1552,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     {
       // reset and then update contexts to the state at the end of the top-right CTU (if within current slice and tile).
       pCABACWriter->initCtxModels( *pcSlice );
-#if JVET_N0857_TILES_BRICKS
-#if JVET_N0150_ONE_CTU_DELAY_WPP
       if( cs.getCURestricted( pos.offset(0, -1), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
-#else
-      if( cs.getCURestricted( pos.offset(pcv.maxCUWidth, -1), pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
-#endif
-#else
-#if JVET_N0150_ONE_CTU_DELAY_WPP
-      if( cs.getCURestricted( pos.offset(0, -1), pos, pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
-#else
-      if( cs.getCURestricted( pos.offset(pcv.maxCUWidth, -1), pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
-#endif
-#endif
       {
         // Top-right is available, we use it.
         pCABACWriter->getCtx() = pEncLib->m_entropyCodingSyncContextState;
@@ -1813,11 +1699,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #endif
 
     // Store probabilities of second CTU in line into buffer - used only if wavefront-parallel-processing is enabled.
-#if JVET_N0150_ONE_CTU_DELAY_WPP
     if( ctuXPosInCtus == tileXPosInCtus && pEncLib->getEntropyCodingSyncEnabledFlag() )
-#else
-    if( ctuXPosInCtus == tileXPosInCtus + 1 && pEncLib->getEntropyCodingSyncEnabledFlag() )
-#endif
     {
       pEncLib->m_entropyCodingSyncContextState = pCABACWriter->getCtx();
     }
@@ -1903,11 +1785,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 {
 
   Slice *const pcSlice               = pcPic->slices[getSliceSegmentIdx()];
-#if JVET_N0857_TILES_BRICKS
   const BrickMap& tileMap            = *pcPic->brickMap;
-#else
-  const TileMap& tileMap             = *pcPic->tileMap;
-#endif
   const uint32_t startCtuTsAddr          = pcSlice->getSliceCurStartCtuTsAddr();
   const uint32_t boundingCtuTsAddr       = pcSlice->getSliceCurEndCtuTsAddr();
   const bool wavefrontsEnabled       = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag();
@@ -1925,41 +1803,26 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 
   const PreCalcValues& pcv = *cs.pcv;
   const uint32_t widthInCtus   = pcv.widthInCtus;
-#if JVET_N0857_RECT_SLICES
   uint32_t startSliceRsRow = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) / widthInCtus;
   uint32_t startSliceRsCol = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) % widthInCtus;
   uint32_t endSliceRsRow = tileMap.getCtuBsToRsAddrMap(boundingCtuTsAddr - 1) / widthInCtus;
   uint32_t endSliceRsCol = tileMap.getCtuBsToRsAddrMap(boundingCtuTsAddr - 1) % widthInCtus;
   uint32_t uiSubStrm = 0;
-#endif
 
   // for every CTU in the slice segment...
 
   for( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
   {
-#if JVET_N0857_TILES_BRICKS
     const uint32_t ctuRsAddr            = tileMap.getCtuBsToRsAddrMap(ctuTsAddr);
     const Brick& currentTile            = tileMap.bricks[tileMap.getBrickIdxRsMap(ctuRsAddr)];
-#else
-    const uint32_t ctuRsAddr            = tileMap.getCtuTsToRsAddrMap(ctuTsAddr);
-    const Tile& currentTile         = tileMap.tiles[tileMap.getTileIdxMap(ctuRsAddr)];
-#endif
-#if JVET_N0857_RECT_SLICES
     if (pcSlice->getPPS()->getRectSliceFlag() &&
       ((ctuRsAddr / widthInCtus) < startSliceRsRow || (ctuRsAddr / widthInCtus) > endSliceRsRow ||
       (ctuRsAddr % widthInCtus) < startSliceRsCol || (ctuRsAddr % widthInCtus) > endSliceRsCol))
       continue;
-#endif
     const uint32_t firstCtuRsAddrOfTile = currentTile.getFirstCtuRsAddr();
     const uint32_t tileXPosInCtus       = firstCtuRsAddrOfTile % widthInCtus;
-#if !JVET_N0857_RECT_SLICES
-    const uint32_t tileYPosInCtus       = firstCtuRsAddrOfTile / widthInCtus;
-#endif
     const uint32_t ctuXPosInCtus        = ctuRsAddr % widthInCtus;
     const uint32_t ctuYPosInCtus        = ctuRsAddr / widthInCtus;
-#if !JVET_N0857_RECT_SLICES
-    const uint32_t uiSubStrm            = tileMap.getSubstreamForCtuAddr(ctuRsAddr, true, pcSlice);
-#endif
 
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
@@ -1982,19 +1845,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       {
         m_CABACWriter->initCtxModels( *pcSlice );
       }
-#if JVET_N0857_TILES_BRICKS
-#if JVET_N0150_ONE_CTU_DELAY_WPP
       if( cs.getCURestricted( pos.offset( 0, -1 ), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
-#else
-      if( cs.getCURestricted( pos.offset( pcv.maxCUWidth, -1 ), pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
-#endif
-#else
-#if JVET_N0150_ONE_CTU_DELAY_WPP
-      if( cs.getCURestricted( pos.offset( 0, -1 ), pos, pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
-#else
-      if( cs.getCURestricted( pos.offset( pcv.maxCUWidth, -1 ), pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
-#endif
-#endif
       {
         // Top-right is available, so use it.
         m_CABACWriter->getCtx() = m_entropyCodingSyncContextState;
@@ -2010,55 +1861,28 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
     m_CABACWriter->coding_tree_unit( cs, ctuArea, pcPic->m_prevQP, ctuRsAddr );
 
     // store probabilities of second CTU in line into buffer
-#if JVET_N0150_ONE_CTU_DELAY_WPP
     if( ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled )
-#else
-    if( ctuXPosInCtus == tileXPosInCtus + 1 && wavefrontsEnabled )
-#endif
     {
       m_entropyCodingSyncContextState = m_CABACWriter->getCtx();
     }
 
     // terminate the sub-stream, if required (end of slice-segment, end of tile, end of wavefront-CTU-row):
-#if JVET_N0857_TILES_BRICKS
-#if JVET_N0857_RECT_SLICES
     bool isLastCTUinBrick = tileMap.getBrickIdxBsMap(ctuTsAddr) != tileMap.getBrickIdxBsMap(ctuTsAddr + 1);
     bool isLastCTUinWPP = wavefrontsEnabled && ((ctuRsAddr + 1 % widthInCtus) == tileXPosInCtus);
     bool isMoreCTUsinSlice = ctuRsAddr != tileMap.getCtuBsToRsAddrMap(boundingCtuTsAddr - 1);
     if (isLastCTUinBrick || isLastCTUinWPP || !isMoreCTUsinSlice)         // this the the last CTU of either tile/brick/WPP/slice
-#else
-    if( ctuTsAddr + 1 == boundingCtuTsAddr ||
-        (  ctuXPosInCtus + 1 == tileXPosInCtus + currentTile.getWidthInCtus () &&
-        ( ctuYPosInCtus + 1 == tileYPosInCtus + currentTile.getHeightInCtus() || wavefrontsEnabled ) )
-      )
-#endif
-#else
-    if( ctuTsAddr + 1 == boundingCtuTsAddr ||
-         (  ctuXPosInCtus + 1 == tileXPosInCtus + currentTile.getTileWidthInCtus () &&
-          ( ctuYPosInCtus + 1 == tileYPosInCtus + currentTile.getTileHeightInCtus() || wavefrontsEnabled )
-         )
-       )
-#endif
     {
       m_CABACWriter->end_of_slice();  //This is actually end_of_brick_one_bit or end_of_subset_one_bit
 
       // Byte-alignment in slice_data() when new tile
       pcSubstreams[uiSubStrm].writeByteAlignment();
 
-#if JVET_N0857_RECT_SLICES
       if (isMoreCTUsinSlice) //Byte alignment only when it is not the last substream in the slice
       {
         // write sub-stream size
         pcSlice->addSubstreamSize((pcSubstreams[uiSubStrm].getNumberOfWrittenBits() >> 3) + pcSubstreams[uiSubStrm].countStartCodeEmulations());
       }
       uiSubStrm++;
-#else
-      // write sub-stream size
-      if( ctuTsAddr + 1 != boundingCtuTsAddr )
-      {
-        pcSlice->addSubstreamSize( (pcSubstreams[uiSubStrm].getNumberOfWrittenBits() >> 3) + pcSubstreams[uiSubStrm].countStartCodeEmulations() );
-      }
-#endif
     }
   } // CTU-loop
 
@@ -2079,11 +1903,7 @@ void EncSlice::calculateBoundingCtuTsAddrForSlice(uint32_t &startCtuTSAddrSlice,
                                                    Picture* pcPic, const int sliceMode, const int sliceArgument)
 {
   Slice* pcSlice = pcPic->slices[getSliceSegmentIdx()];
-#if JVET_N0857_TILES_BRICKS
   const BrickMap& tileMap = *( pcPic->brickMap );
-#else
-  const TileMap& tileMap = *( pcPic->tileMap );
-#endif
   const PPS &pps         = *( pcSlice->getPPS() );
   const uint32_t numberOfCtusInFrame = pcPic->cs->pcv->sizeInCtus;
   boundingCtuTSAddrSlice=0;
@@ -2102,7 +1922,6 @@ void EncSlice::calculateBoundingCtuTsAddrForSlice(uint32_t &startCtuTSAddrSlice,
       break;
     case FIXED_NUMBER_OF_TILES:
       {
-#if JVET_N0857_RECT_SLICES
       const uint32_t startBrickIdx = tileMap.getBrickIdxBsMap(startCtuTSAddrSlice);
       uint32_t endBrickIdx = -1;
       if (pps.getRectSliceFlag())  //rectangular slice
@@ -2133,36 +1952,8 @@ void EncSlice::calculateBoundingCtuTsAddrForSlice(uint32_t &startCtuTSAddrSlice,
       boundingCtuTSAddrSlice = (tmpAddr != -1) ? tmpAddr : numberOfCtusInFrame - 1;
       boundingCtuTSAddrSlice++;
       break;
-#else
-#if JVET_N0857_TILES_BRICKS
-      const uint32_t tileIdx        = tileMap.getBrickIdxRsMap( tileMap.getCtuBsToRsAddrMap(startCtuTSAddrSlice) );
-      const uint32_t tileTotalCount = (uint32_t) tileMap.bricks.size();
-#else
-        const uint32_t tileIdx        = tileMap.getTileIdxMap( tileMap.getCtuTsToRsAddrMap(startCtuTSAddrSlice) );
-        const uint32_t tileTotalCount = (pps.getNumTileColumnsMinus1()+1) * (pps.getNumTileRowsMinus1()+1);
-#endif
-        uint32_t ctuAddrIncrement   = 0;
-
-        for(uint32_t tileIdxIncrement = 0; tileIdxIncrement < sliceArgument; tileIdxIncrement++)
-        {
-          if((tileIdx + tileIdxIncrement) < tileTotalCount)
-          {
-#if JVET_N0857_TILES_BRICKS
-            uint32_t tileWidthInCtus    = tileMap.bricks[tileIdx + tileIdxIncrement].getWidthInCtus();
-            uint32_t tileHeightInCtus   = tileMap.bricks[tileIdx + tileIdxIncrement].getHeightInCtus();
-#else
-            uint32_t tileWidthInCtus    = tileMap.tiles[tileIdx + tileIdxIncrement].getTileWidthInCtus();
-            uint32_t tileHeightInCtus   = tileMap.tiles[tileIdx + tileIdxIncrement].getTileHeightInCtus();
-#endif
-            ctuAddrIncrement       += (tileWidthInCtus * tileHeightInCtus);
-          }
-        }
-
-        boundingCtuTSAddrSlice  = ((startCtuTSAddrSlice + ctuAddrIncrement) < numberOfCtusInFrame) ? (startCtuTSAddrSlice + ctuAddrIncrement) : numberOfCtusInFrame;
-#endif
       }
       break;
-#if JVET_N0857_TILES_BRICKS
     case SINGLE_BRICK_PER_SLICE:
       {
         const uint32_t brickIdx           = tileMap.getBrickIdxRsMap( tileMap.getCtuBsToRsAddrMap(startCtuTSAddrSlice) );
@@ -2172,7 +1963,6 @@ void EncSlice::calculateBoundingCtuTsAddrForSlice(uint32_t &startCtuTSAddrSlice,
         boundingCtuTSAddrSlice  = ((startCtuTSAddrSlice + ctuAddrIncrement) < numberOfCtusInFrame) ? (startCtuTSAddrSlice + ctuAddrIncrement) : numberOfCtusInFrame;
       }
       break;
-#endif
     default:
       boundingCtuTSAddrSlice    = numberOfCtusInFrame;
       break;
@@ -2184,21 +1974,12 @@ void EncSlice::calculateBoundingCtuTsAddrForSlice(uint32_t &startCtuTSAddrSlice,
   if ((sliceMode == FIXED_NUMBER_OF_CTU || sliceMode == FIXED_NUMBER_OF_BYTES) &&
       (pps.getNumTileRowsMinus1() > 0 || pps.getNumTileColumnsMinus1() > 0))
   {
-#if JVET_N0857_TILES_BRICKS
     const uint32_t  ctuRsAddr                  = tileMap.getCtuBsToRsAddrMap(startCtuTSAddrSlice);
     const uint32_t  startTileIdx               = tileMap.getBrickIdxRsMap(ctuRsAddr);
     const Brick&    startingTile               = tileMap.bricks[startTileIdx];
     const uint32_t  tileStartTsAddr            = tileMap.getCtuRsToBsAddrMap(startingTile.getFirstCtuRsAddr());
     const uint32_t  tileStartWidth             = startingTile.getWidthInCtus();
     const uint32_t  tileStartHeight            = startingTile.getHeightInCtus();
-#else
-    const uint32_t ctuRsAddr                   = tileMap.getCtuTsToRsAddrMap(startCtuTSAddrSlice);
-    const uint32_t startTileIdx                = tileMap.getTileIdxMap(ctuRsAddr);
-    const Tile& startingTile               = tileMap.tiles[startTileIdx];
-    const uint32_t  tileStartTsAddr            = tileMap.getCtuRsToTsAddrMap(startingTile.getFirstCtuRsAddr());
-    const uint32_t  tileStartWidth             = startingTile.getTileWidthInCtus();
-    const uint32_t  tileStartHeight            = startingTile.getTileHeightInCtus();
-#endif
     const uint32_t tileLastTsAddr_excl        = tileStartTsAddr + tileStartWidth*tileStartHeight;
     const uint32_t tileBoundingCtuTsAddrSlice = tileLastTsAddr_excl;
     const uint32_t ctuColumnOfStartingTile     = ((startCtuTSAddrSlice-tileStartTsAddr)%tileStartWidth);
@@ -2247,14 +2028,12 @@ void EncSlice::xDetermineStartAndBoundingCtuTsAddr  ( uint32_t& startCtuTsAddr, 
   pcSlice->setSliceCurEndCtuTsAddr(   boundingCtuTsAddrSlice );
   pcSlice->setSliceCurStartCtuTsAddr( startCtuTsAddrSlice    );
 
-#if JVET_N0857_RECT_SLICES
   const BrickMap& tileMap = *(pcPic->brickMap);
   pcSlice->setSliceCurStartBrickIdx(tileMap.getBrickIdxBsMap(startCtuTsAddrSlice));
   if (pcSlice->getPPS()->getRectSliceFlag())
     pcSlice->setSliceCurEndBrickIdx(tileMap.getBrickIdxBsMap(boundingCtuTsAddrSlice - 1));
   else
     pcSlice->setSliceNumBricks(tileMap.getBrickIdxBsMap(boundingCtuTsAddrSlice - 1) - tileMap.getBrickIdxBsMap(startCtuTsAddrSlice) + 1);
-#endif
 
   startCtuTsAddr = startCtuTsAddrSlice;
   boundingCtuTsAddr = boundingCtuTsAddrSlice;

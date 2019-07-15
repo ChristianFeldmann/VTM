@@ -118,9 +118,7 @@ private:
   int             m_affMVListMaxSize;
   Distortion      m_hevcCost;
   EncAffineMotion m_affineMotion;
-#if JVET_N0329_IBC_SEARCH_IMP
   PatentBvCand    m_defaultCachedBvs;
-#endif
 protected:
   // interface to option
   EncCfg*         m_pcEncCfg;
@@ -143,10 +141,8 @@ protected:
   RefPicList      m_currRefPicList;
   int             m_currRefPicIndex;
   bool            m_skipFracME;
-#if JVET_N0247_HASH_IMPROVE
   int             m_numHashMVStoreds[NUM_REF_PIC_LIST_01][MAX_NUM_REF];
   Mv              m_hashMVStoreds[NUM_REF_PIC_LIST_01][MAX_NUM_REF][5];
-#endif
 
   // Misc.
   Pel            *m_pTempPel;
@@ -158,13 +154,8 @@ protected:
 
   bool            m_isInitialized;
 
-#if JVET_N0329_IBC_SEARCH_IMP
   Mv              m_acBVs[2 * IBC_NUM_CANDIDATES];
   unsigned int    m_numBVs;
-#else
-  unsigned int    m_numBVs, m_numBV16s;
-  Mv              m_acBVs[IBC_NUM_CANDIDATES];
-#endif
   bool            m_useCompositeRef;
   Distortion      m_estMinDistSbt[NUMBER_SBT_MODE + 1]; // estimated minimum SSE value of the PU if using a SBT mode
   uint8_t         m_sbtRdoOrder[NUMBER_SBT_MODE];       // order of SBT mode in RDO
@@ -294,7 +285,6 @@ public:
   bool  predIBCSearch           ( CodingUnit& cu, Partitioner& partitioner, const int localSearchRangeX, const int localSearchRangeY, IbcHashMap& ibcHashMap);
   void  xIntraPatternSearch         ( PredictionUnit& pu, IntTZSearchStruct&  cStruct, Mv& rcMv, Distortion&  ruiCost, Mv* cMvSrchRngLT, Mv* cMvSrchRngRB, Mv* pcMvPred);
   void  xSetIntraSearchRange        ( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, const int localSearchRangeX, const int localSearchRangeY, Mv& rcMvSrchRngLT, Mv& rcMvSrchRngRB);
-#if JVET_N0329_IBC_SEARCH_IMP
   void  resetIbcSearch()
   {
     for (int i = 0; i < IBC_NUM_CANDIDATES; i++)
@@ -303,21 +293,14 @@ public:
     }
     m_defaultCachedBvs.currCnt = 0;
   }
-#else
-  void  resetIbcSearch() { m_numBVs = m_numBV16s = 0; }
-#endif
   void  xIBCEstimation   ( PredictionUnit& pu, PelUnitBuf& origBuf, Mv     *pcMvPred, Mv     &rcMv, Distortion &ruiCost, const int localSearchRangeX, const int localSearchRangeY);
   void  xIBCSearchMVCandUpdate  ( Distortion  uiSad, int x, int y, Distortion* uiSadBestCand, Mv* cMVCand);
   int   xIBCSearchMVChromaRefine( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, int cuPelX, int cuPelY, Distortion* uiSadBestCand, Mv*     cMVCand);
   void addToSortList(std::list<BlockHash>& listBlockHash, std::list<int>& listCost, int cost, const BlockHash& blockHash);
   bool predInterHashSearch(CodingUnit& cu, Partitioner& partitioner, bool& isPerfectMatch);
   bool xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPicList, int& bestRefIndex, Mv& bestMv, Mv& bestMvd, int& bestMVPIndex, bool& isPerfectMatch);
-#if JVET_N0247_HASH_IMPROVE
   bool xRectHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPicList, int& bestRefIndex, Mv& bestMv, Mv& bestMvd, int& bestMVPIndex, bool& isPerfectMatch);
   void selectRectangleMatchesInter(const MapIterator& itBegin, int count, std::list<BlockHash>& listBlockHash, const BlockHash& currBlockHash, int width, int height, int idxNonSimple, unsigned int* &hashValues, int baseNum, int picWidth, int picHeight, bool isHorizontal, uint16_t* curHashPic);
-#else
-  int  xHashInterPredME(const PredictionUnit& pu, RefPicList currRefPicList, int currRefPicIndex, Mv bestMv[5]);
-#endif
   void selectMatchesInter(const MapIterator& itBegin, int count, std::list<BlockHash>& vecBlockHash, const BlockHash& currBlockHash);
 protected:
 
@@ -529,9 +512,7 @@ public:
     , const bool luma = true, const bool chroma = true
   );
   uint64_t xGetSymbolFracBitsInter  (CodingStructure &cs, Partitioner &partitioner);
-#if JVET_N0327_MERGE_BIT_CALC_FIX
   uint64_t xCalcPuMeBits            (PredictionUnit& pu);
-#endif
 
 };// END CLASS DEFINITION EncSearch
 

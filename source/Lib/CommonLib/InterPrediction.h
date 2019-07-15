@@ -144,9 +144,7 @@ protected:
   static bool xCheckIdenticalMotion( const PredictionUnit& pu );
 
   void xSubPuMC(PredictionUnit& pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X);
-#if JVET_N0178_IMPLICIT_BDOF_SPLIT
   void xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X);
-#endif
   void destroy();
 
 
@@ -190,9 +188,7 @@ public:
 #if ENABLE_SPLIT_PARALLELISM
   int     getShareState() const { return m_shareState; }
 #endif
-#if JVET_N0068_AFFINE_MEM_BW
   static bool isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType );
-#endif
 };
 
 //! \}

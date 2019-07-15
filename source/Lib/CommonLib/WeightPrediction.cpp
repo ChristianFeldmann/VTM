@@ -215,7 +215,6 @@ void WeightPrediction::addWeightBi(const CPelUnitBuf          &pcYuvSrc0,
   } // compID loop
 }
 
-#if JVET_N0146_DMVR_BDOF_CONDITION
 void WeightPrediction::addWeightBiComponent(const CPelUnitBuf          &pcYuvSrc0,
                                             const CPelUnitBuf          &pcYuvSrc1,
                                             const ClpRngs              &clpRngs,
@@ -271,7 +270,6 @@ void WeightPrediction::addWeightBiComponent(const CPelUnitBuf          &pcYuvSrc
     dst += dstStride;
   } // y loop
 }
-#endif
 
 void  WeightPrediction::addWeightUni(const CPelUnitBuf          &pcYuvSrc0,
                                      const ClpRngs              &clpRngs,
@@ -409,9 +407,7 @@ void  WeightPrediction::xWeightedPredictionBi(const PredictionUnit       &pu,
 
   CHECK( !pu.cs->pps->getWPBiPred(), "Weighted Bi-prediction disabled" );
 
-#if JVET_N0146_DMVR_BDOF_CONDITION
   if (iRefIdx0 < 0 && iRefIdx1 < 0) return;
-#endif
 
   getWpScaling(pu.cu->slice, iRefIdx0, iRefIdx1, pwp0, pwp1, maxNumComp);
 

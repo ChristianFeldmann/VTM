@@ -58,13 +58,11 @@ private:
   static_vector<char, MAX_NUM_PARTS_IN_CTU> m_aapucBS       [NUM_EDGE_DIR];         ///< Bs for [Ver/Hor][Y/U/V][Blk_Idx]
   static_vector<bool, MAX_NUM_PARTS_IN_CTU> m_aapbEdgeFilter[NUM_EDGE_DIR];
   LFCUParam m_stLFCUParam;                   ///< status structure
-#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
   int     m_ctuXLumaSamples, m_ctuYLumaSamples;                            // location of left-edge and top-edge of CTU
   int     m_shiftHor, m_shiftVer;                                          // shift values to convert location from luma sample units to chroma sample units
   uint8_t m_maxFilterLengthP[MAX_NUM_COMPONENT][MAX_CU_SIZE][MAX_CU_SIZE]; // maxFilterLengthP for [component][luma/chroma sample distance from left edge of CTU][luma/chroma sample distance from top edge of CTU]
   uint8_t m_maxFilterLengthQ[MAX_NUM_COMPONENT][MAX_CU_SIZE][MAX_CU_SIZE]; // maxFilterLengthQ for [component][luma/chroma sample distance from left edge of CTU][luma/chroma sample distance from top edge of CTU]
   bool    m_transformEdge[MAX_NUM_COMPONENT][MAX_CU_SIZE][MAX_CU_SIZE];    // transform edge flag for [component][luma/chroma sample distance from left edge of CTU][luma/chroma sample distance from top edge of CTU]
-#endif
   PelStorage                   m_encPicYuvBuffer;
   bool                         m_enc;
 private:
@@ -81,20 +79,14 @@ private:
                                     const Area&           area,
                                     const bool            bValue,
                                     const bool            EdgeIdx = false );
-#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
   void xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge );
-#else
-  void xEdgeFilterLuma            ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge, const int initialMaxFilterLengthP, const int initialMaxFilterLengthQ );
-#endif
   void xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir edgeDir, const int iEdge);
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   void deriveLADFShift( const Pel* src, const int stride, int& shift, const DeblockEdgeDir edgeDir, const SPS sps );
 #endif
-#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
   void xSetMaxFilterLengthPQFromTransformSizes( const DeblockEdgeDir edgeDir, const CodingUnit& cu, const TransformUnit& currTU );
   void xSetMaxFilterLengthPQForCodingSubBlocks( const DeblockEdgeDir edgeDir, const CodingUnit& cu, const PredictionUnit& currPU, const bool& mvSubBlocks, const int& subBlockSize, const Area& areaPu );
-#endif
 
   inline void xBilinearFilter     ( Pel* srcP, Pel* srcQ, int offset, int refMiddle, int refP, int refQ, int numberPSide, int numberQSide, const int* dbCoeffsP, const int* dbCoeffsQ, int tc ) const;
   inline void xFilteringPandQ     ( Pel* src, int offset, int numberPSide, int numberQSide, int tc ) const;
@@ -104,10 +96,8 @@ private:
   inline unsigned BsSet(unsigned val, const ComponentID compIdx) const;
   inline unsigned BsGet(unsigned val, const ComponentID compIdx) const;
 
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   inline bool isCrossedByVirtualBoundaries ( const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps );
   inline void xDeriveEdgefilterParam       ( const int xPos, const int yPos, const int numVerVirBndry, const int numHorVirBndry, const int verVirBndryPos[], const int horVirBndryPos[], bool &verEdgeFilter, bool &horEdgeFilter );
-#endif
 
   inline int xCalcDP              ( Pel* piSrc, const int iOffset ) const;
   inline int xCalcDQ              ( Pel* piSrc, const int iOffset ) const;

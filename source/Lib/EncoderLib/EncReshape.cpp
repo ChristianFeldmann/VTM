@@ -111,20 +111,8 @@ void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const
   if (m_lumaBD >= 10)
   {
     m_sliceReshapeInfo.sliceReshaperEnableFlag = true;
-#if !JVET_N0805_APS_LMCS
-    if (reshapeCW.rspIntraPeriod == 1)
-    {
-      if (pcPic->getPOC() == 0)          { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;  }
-      else                               { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = false; }
-    }
-    else
-    {
-#endif
       if (sliceType == I_SLICE )                                              { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;  }
       else                                                                    { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = false; }
-#if !JVET_N0805_APS_LMCS
-    }
-#endif
     if (sliceType == I_SLICE  && isDualT)                                     { m_sliceReshapeInfo.enableChromaAdj = 0;                   }
     else                                                                      { m_sliceReshapeInfo.enableChromaAdj = 1;                   }
   }

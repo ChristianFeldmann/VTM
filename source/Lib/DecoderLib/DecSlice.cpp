@@ -77,11 +77,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 
   const SPS*     sps          = slice->getSPS();
   Picture*       pic          = slice->getPic();
-#if JVET_N0857_TILES_BRICKS
   const BrickMap& tileMap     = *pic->brickMap;
-#else
-  const TileMap& tileMap      = *pic->tileMap;
-#endif
   CABACReader&   cabacReader  = *m_CABACDecoder->getCABACReader( 0 );
 
   // setup coding structure
@@ -89,19 +85,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   cs.slice            = slice;
   cs.sps              = sps;
   cs.pps              = slice->getPPS();
-#if JVET_N0415_CTB_ALF
-#if JVET_N0805_APS_LMCS
   memcpy(cs.alfApss, slice->getAlfAPSs(), sizeof(cs.alfApss));
-#else
-  memcpy(cs.apss, slice->getAPSs(), sizeof(cs.apss));
-#endif
-#else
-  cs.aps              = slice->getAPS();
-#endif
 
-#if JVET_N0805_APS_LMCS
   cs.lmcsAps = slice->getLmcsAPS();
-#endif
 
 #if HEVC_VPS
   cs.vps              = slice->getVPS();
@@ -114,9 +100,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   if (slice->getSliceCurStartCtuTsAddr() == 0)
   {
     cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
-#if JVET_N0415_CTB_ALF
     cs.picture->resizeAlfCtbFilterIndex(cs.pcv->sizeInCtus);
-#endif
   }
 
   const unsigned numSubstreams = slice->getNumberOfSubstreamSizes() + 1;
@@ -130,9 +114,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   }
 
   const int       startCtuTsAddr          = slice->getSliceCurStartCtuTsAddr();
-#if !JVET_N0857_TILES_BRICKS
-  const int       startCtuRsAddr          = tileMap.getCtuTsToRsAddrMap(startCtuTsAddr);
-#endif
 
   const unsigned  numCtusInFrame          = cs.pcv->sizeInCtus;
   const unsigned  widthInCtus             = cs.pcv->widthInCtus;
@@ -147,44 +128,27 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 
   DTRACE( g_trace_ctx, D_HEADER, "=========== POC: %d ===========\n", slice->getPOC() );
 
-#if !JVET_N0857_RECT_SLICES
-  // The first CTU of the slice is the first coded substream, but the global substream number, as calculated by getSubstreamForCtuAddr may be higher.
-  // This calculates the common offset for all substreams in this slice.
-  const unsigned  subStreamOffset         = tileMap.getSubstreamForCtuAddr(startCtuRsAddr, true, slice);
-#endif
 
   // for every CTU in the slice segment...
   bool isLastCtuOfSliceSegment = false;
-#if JVET_N0857_RECT_SLICES
   uint32_t startSliceRsRow = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) / widthInCtus;
   uint32_t startSliceRsCol = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) % widthInCtus;
   uint32_t endSliceRsRow = tileMap.getCtuBsToRsAddrMap(slice->getSliceCurEndCtuTsAddr() - 1) / widthInCtus;
   uint32_t endSliceRsCol = tileMap.getCtuBsToRsAddrMap(slice->getSliceCurEndCtuTsAddr() - 1) % widthInCtus;
   unsigned subStrmId = 0;
-#endif
   for( unsigned ctuTsAddr = startCtuTsAddr; !isLastCtuOfSliceSegment && ctuTsAddr < numCtusInFrame; ctuTsAddr++ )
   {
-#if JVET_N0857_TILES_BRICKS
     const unsigned  ctuRsAddr             = tileMap.getCtuBsToRsAddrMap(ctuTsAddr);
     const Brick&  currentTile             = tileMap.bricks[ tileMap.getBrickIdxRsMap(ctuRsAddr) ];
-#else
-    const unsigned  ctuRsAddr             = tileMap.getCtuTsToRsAddrMap(ctuTsAddr);
-    const Tile&     currentTile           = tileMap.tiles[ tileMap.getTileIdxMap(ctuRsAddr) ];
-#endif
-#if JVET_N0857_RECT_SLICES
     if (slice->getPPS()->getRectSliceFlag() &&
       ((ctuRsAddr / widthInCtus) < startSliceRsRow || (ctuRsAddr / widthInCtus) > endSliceRsRow ||
       (ctuRsAddr % widthInCtus) < startSliceRsCol || (ctuRsAddr % widthInCtus) > endSliceRsCol))
       continue;
-#endif
     const unsigned  firstCtuRsAddrOfTile  = currentTile.getFirstCtuRsAddr();
     const unsigned  tileXPosInCtus        = firstCtuRsAddrOfTile % widthInCtus;
     const unsigned  tileYPosInCtus        = firstCtuRsAddrOfTile / widthInCtus;
     const unsigned  ctuXPosInCtus         = ctuRsAddr % widthInCtus;
     const unsigned  ctuYPosInCtus         = ctuRsAddr / widthInCtus;
-#if !JVET_N0857_RECT_SLICES
-    const unsigned  subStrmId             = tileMap.getSubstreamForCtuAddr( ctuRsAddr, true, slice ) - subStreamOffset;
-#endif
     const unsigned  maxCUSize             = sps->getMaxCUWidth();
     Position pos( ctuXPosInCtus*maxCUSize, ctuYPosInCtus*maxCUSize) ;
     UnitArea ctuArea(cs.area.chromaFormat, Area( pos.x, pos.y, maxCUSize, maxCUSize ) );
@@ -209,19 +173,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       {
         cabacReader.initCtxModels( *slice );
       }
-#if JVET_N0857_TILES_BRICKS
-#if JVET_N0150_ONE_CTU_DELAY_WPP
       if( cs.getCURestricted( pos.offset(0, -1), pos, slice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
-#else
-      if( cs.getCURestricted( pos.offset(maxCUSize, -1), slice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
-#endif
-#else
-#if JVET_N0150_ONE_CTU_DELAY_WPP
-      if( cs.getCURestricted( pos.offset(0, -1), pos, slice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
-#else
-      if( cs.getCURestricted( pos.offset(maxCUSize, -1), slice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
-#endif
-#endif
       {
         // Top-right is available, so use it.
         cabacReader.getCtx() = m_entropyCodingSyncContextState;
@@ -239,9 +191,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     {
       cs.motionLut.lut.resize(0);
       cs.motionLut.lutIbc.resize(0);
-#if !JVET_N0266_SMALL_BLOCKS
-      cs.motionLut.lutShare.resize(0);
-#endif
       cs.motionLut.lutShareIbc.resize(0);
     }
 
@@ -259,11 +208,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 
     m_pcCuDecoder->decompressCtu( cs, ctuArea );
 
-#if JVET_N0150_ONE_CTU_DELAY_WPP
     if( ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled )
-#else
-    if( ctuXPosInCtus == tileXPosInCtus+1 && wavefrontsEnabled )
-#endif
     {
       m_entropyCodingSyncContextState = cabacReader.getCtx();
     }
@@ -276,13 +221,8 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 #endif
         slice->setSliceCurEndCtuTsAddr( ctuTsAddr+1 );
     }
-#if JVET_N0857_TILES_BRICKS
     else if( ( ctuXPosInCtus + 1 == tileXPosInCtus + currentTile.getWidthInCtus () ) &&
              ( ctuYPosInCtus + 1 == tileYPosInCtus + currentTile.getHeightInCtus() || wavefrontsEnabled ) )
-#else
-    else if( ( ctuXPosInCtus + 1 == tileXPosInCtus + currentTile.getTileWidthInCtus () ) &&
-             ( ctuYPosInCtus + 1 == tileYPosInCtus + currentTile.getTileHeightInCtus() || wavefrontsEnabled ) )
-#endif
     {
       // The sub-stream/stream should be terminated after this CTU.
       // (end of slice-segment, end of tile, end of wavefront-CTU-row)
@@ -291,9 +231,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 #if DECODER_CHECK_SUBSTREAM_AND_SLICE_TRAILING_BYTES
       cabacReader.remaining_bytes( true );
 #endif
-#if JVET_N0857_RECT_SLICES
       subStrmId++;
-#endif
     }
   }
   CHECK( !isLastCtuOfSliceSegment, "Last CTU of slice segment not signalled as such" );

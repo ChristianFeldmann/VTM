@@ -76,9 +76,7 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__CHROMA_QP_ADJUSTMENT,
   STATS__CABAC_BITS__QT_CBF,
   STATS__CABAC_BITS__CROSS_COMPONENT_PREDICTION,
-#if JVET_N0054_JOINT_CHROMA
   STATS__CABAC_BITS__JOINT_CB_CR,
-#endif
   STATS__CABAC_BITS__MTS_FLAGS,
   STATS__CABAC_BITS__LAST_SIG_X_Y,
   STATS__CABAC_BITS__SIG_COEFF_GROUP_FLAG,
@@ -91,9 +89,7 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__SAO,
   STATS__CABAC_BITS__ALF,
   STATS__CABAC_TRM_BITS,
-#if JVET_N0193_LFNST
   STATS__CABAC_BITS__LFNST,
-#endif
   STATS__CABAC_FIXED_BITS,
   STATS__CABAC_PCM_ALIGN_BITS,
   STATS__CABAC_PCM_CODE_BITS,
@@ -113,15 +109,11 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__TRIANGLE_INDEX,
   STATS__CABAC_BITS__MULTI_REF_LINE,
   STATS__CABAC_BITS__SYMMVD_FLAG,
-#if JVET_N0413_RDPCM
   STATS__CABAC_BITS__BDPCM_MODE,
-#endif
   STATS__TOOL_TOTAL_FRAME,// This is a special case and is not included in the report.
   STATS__TOOL_AFF,
   STATS__TOOL_EMT,
-#if JVET_N0193_LFNST
   STATS__TOOL_LFNST,
-#endif
   STATS__TOOL_TOTAL,
   STATS__NUM_STATS
 };
@@ -169,9 +161,7 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__CHROMA_QP_ADJUSTMENT",
     "CABAC_BITS__QT_CBF",
     "CABAC_BITS__CROSS_COMPONENT_PREDICTION",
-#if JVET_N0054_JOINT_CHROMA
     "CABAC_BITS__JOINT_CB_CR",
-#endif
     "CABAC_BITS__MTS_FLAGS",
     "CABAC_BITS__LAST_SIG_X_Y",
     "CABAC_BITS__SIG_COEFF_GROUP_FLAG",
@@ -182,9 +172,7 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__SIGN_BIT",
     "CABAC_BITS__ESCAPE_BITS",
     "CABAC_BITS__SAO",
-#if JVET_N0193_LFNST
     "CABAC_BITS__LFNST",
-#endif
     "CABAC_BITS__ALF",
     "CABAC_TRM_BITS",
     "CABAC_FIXED_BITS",
@@ -206,15 +194,11 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__TRIANGLE_INDEX",
     "CABAC_BITS__MULTI_REF_LINE",
     "CABAC_BITS__SYMMVD_FLAG",
-#if JVET_N0413_RDPCM
     "CABAC_BITS__BDPCM_MODE",
-#endif
     "TOOL_FRAME",
     "TOOL_AFFINE",
     "TOOL_EMT",
-#if JVET_N0193_LFNST
     "TOOL_LFNST",
-#endif
     "TOOL_TOTAL"
   };
   CHECK( STATS__NUM_STATS != sizeof( statNames ) / sizeof( char* ) || name >= STATS__NUM_STATS, "stats out of range" );

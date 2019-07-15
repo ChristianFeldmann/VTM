@@ -122,7 +122,6 @@ static inline int getScaledChromaQP(int unscaledChromaQP, const ChromaFormat chF
 }
 
 
-#if HEVC_USE_SCALING_LISTS
 //======================================================================================================================
 //Scaling lists  =======================================================================================================
 //======================================================================================================================
@@ -131,6 +130,5 @@ static inline int getScalingListType(const PredMode predMode, const ComponentID 
 {
   return ((predMode != MODE_INTER) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
 }
-#endif
 
 #endif

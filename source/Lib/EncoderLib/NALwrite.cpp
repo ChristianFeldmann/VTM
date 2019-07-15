@@ -49,7 +49,6 @@ static const uint8_t emulation_prevention_three_byte = 3;
 void writeNalUnitHeader(ostream& out, OutputNALUnit& nalu)       // nal_unit_header()
 {
 OutputBitstream bsNALUHeader;
-#if JVET_N0067_NAL_Unit_Header
   bool zeroTidRequiredFlag = 0;
   if((nalu.m_nalUnitType >= 16) && (nalu.m_nalUnitType <= 31)) {
     zeroTidRequiredFlag = 1;
@@ -65,12 +64,6 @@ OutputBitstream bsNALUHeader;
 #endif
   bsNALUHeader.write(0, 1);                             // nuh_reserved_zero_bit
 
-#else
-  bsNALUHeader.write(0,1);                    // forbidden_zero_bit
-  bsNALUHeader.write(nalu.m_nalUnitType, 6);  // nal_unit_type
-  bsNALUHeader.write(nalu.m_nuhLayerId, 6);   // nuh_layer_id
-  bsNALUHeader.write(nalu.m_temporalId+1, 3); // nuh_temporal_id_plus1
-#endif
   out.write(reinterpret_cast<const char*>(bsNALUHeader.getByteStream()), bsNALUHeader.getByteStreamLength());
 }
 /**

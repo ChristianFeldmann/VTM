@@ -82,9 +82,7 @@ public:
   bool    ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand, const CodingStructure& cs, const int maxCand, const int searchRange4SmallBlk);
   int     getHashHitRatio(const Area& lumaArea);
 
-#if JVET_N0329_IBC_SEARCH_IMP
   int     calHashBlkMatchPerc(const Area& lumaArea);
-#endif
 
 #ifdef TARGET_SIMD_X86
   void    initIbcHashMapX86();

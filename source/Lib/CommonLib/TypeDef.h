@@ -50,7 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
-
+#define JVET_O0590_REDUCE_DMVR_ORIG_MV_COST               1 // Reduce the DMVR cost of the original MV
 
 
 

@@ -51,6 +51,7 @@
 #include <cassert>
 
 
+#define JVET_O0429_CRS_LAMBDA_FIX                         1 // JVET-O0429: fix encoder lambda rounding used in CRS
 
 
 

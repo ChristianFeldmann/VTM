@@ -52,7 +52,7 @@
 
 
 
-
+#define JVET_O0164_REMOVE_AMVP_SPATIAL_SCALING            1 // JVET-O0164/JVET-O0587: remove spatial AMVP candidate scaling
 
 
 

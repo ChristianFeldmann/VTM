@@ -66,6 +66,11 @@ protected:
   std::vector<Pel>        m_reshapePivot;
   int                     m_lumaBD;
   int                     m_reshapeLUTSize;
+#if JVET_O1109_UNFIY_CRS
+  int                     m_chromaScale;
+  int                     m_vpduX;
+  int                     m_vpduY;
+#endif
 public:
   Reshape();
 #if ENABLE_SPLIT_PARALLELISM
@@ -96,6 +101,13 @@ public:
   void updateChromaScaleLUT();
   bool getReshapeFlag() { return m_reshape; }
   void setReshapeFlag(bool b) { m_reshape = b; }
+#if JVET_O1109_UNFIY_CRS
+  int  calculateChromaAdjVpduNei(TransformUnit &tu, const CompArea &areaY);
+  void setVPDULoc(int x, int y) { m_vpduX = x, m_vpduY = y; }
+  bool isVPDUprocessed(int x, int y) { return ((x == m_vpduX) && (y == m_vpduY)); }
+  void setChromaScale (int chromaScale) { m_chromaScale = chromaScale; }
+  int  getChromaScale() { return m_chromaScale; }
+#endif
 };// END CLASS DEFINITION Reshape
 
 //! \}

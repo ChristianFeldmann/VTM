@@ -1363,6 +1363,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         m_cReshaper.setRecReshaped(false);
       }
     }
+#if JVET_O1109_UNFIY_CRS
+    m_cReshaper.setVPDULoc(-1, -1);
+#endif
   }
   else
   {

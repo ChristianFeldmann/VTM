@@ -1842,10 +1842,14 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
     const CompArea &areaY = CompArea(COMPONENT_Y, tu.chromaFormat, area );
+#if JVET_O1109_UNFIY_CRS
+    int adj = m_pcReshape->calculateChromaAdjVpduNei(tu, areaY);
+#else
     PelBuf piPredY;
     piPredY = cs.picture->getPredBuf(areaY);
     const Pel avgLuma = piPredY.computeAvg();
     int adj = m_pcReshape->calculateChromaAdj(avgLuma);
+#endif
     tu.setChromaAdj(adj);
   }
   //===== get residual signal =====

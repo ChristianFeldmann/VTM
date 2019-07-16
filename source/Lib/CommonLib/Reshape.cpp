@@ -38,6 +38,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#if  JVET_O1109_UNFIY_CRS
+#include <UnitTools.h>
+#endif
  //! \ingroup CommonLib
  //! \{
 
@@ -50,6 +53,9 @@ Reshape::Reshape()
   m_CTUFlag = false;
   m_recReshaped = false;
   m_reshape = true;
+#if  JVET_O1109_UNFIY_CRS
+  m_chromaScale = (1 << CSCALE_FP_PREC);
+#endif
 }
 
 Reshape::~Reshape()
@@ -128,7 +134,94 @@ int  Reshape::calculateChromaAdj(Pel avgLuma)
   return(iAdj);
 }
 
+#if JVET_O1109_UNFIY_CRS
+/** compute chroma residuce scale for TU
+* \param average luma pred of TU
+* \return chroma residue scale
+*/
+int  Reshape::calculateChromaAdjVpduNei(TransformUnit &tu, const CompArea &areaY)
+{
+  CodingStructure &cs = *tu.cs;
+  int xPos = areaY.lumaPos().x;
+  int yPos = areaY.lumaPos().y;
+  int ctuSize = cs.sps->getCTUSize();
+  if (ctuSize == 128)
+  {
+    xPos = xPos / 64 * 64;
+    yPos = yPos / 64 * 64;
+  }
+  else
+  {
+    xPos = xPos / ctuSize * ctuSize;
+    yPos = yPos / ctuSize * ctuSize;
+  }
 
+  if (isVPDUprocessed(xPos, yPos) && !cs.pcv->isEncoder)
+  {
+    return getChromaScale();
+  }
+  else
+  {
+    setVPDULoc(xPos, yPos);
+    Position topLeft(xPos, yPos);
+    CodingUnit *topLeftLuma;
+    if (CS::isDualITree(cs) && cs.slice->getSliceType() == I_SLICE)
+      topLeftLuma = tu.cs->picture->cs->getCU(topLeft, CHANNEL_TYPE_LUMA);
+    else
+      topLeftLuma = cs.getCU(topLeft, CHANNEL_TYPE_LUMA);
+
+    xPos = topLeftLuma->lumaPos().x;
+    yPos = topLeftLuma->lumaPos().y;
+
+    CompArea lumaArea = CompArea(COMPONENT_Y, tu.chromaFormat, topLeftLuma->lumaPos(), topLeftLuma->lumaSize(), true);
+    PelBuf piRecoY = cs.picture->getRecoBuf(lumaArea);
+    int strideY = piRecoY.stride;
+    int chromaScale = (1 << CSCALE_FP_PREC);
+    int lumaValue = -1;
+
+    Pel* recSrc0 = piRecoY.bufAt(0, 0);
+    const uint32_t picH = tu.cs->picture->lheight();
+    const uint32_t picW = tu.cs->picture->lwidth();
+    const Pel   valueDC = 1 << (tu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA) - 1);
+    int32_t recLuma = 0;
+    int pelnum = 0;
+    if (xPos > 0)
+    {
+      for (int i = 0; i < NEIG_NUM; i++)
+      {
+        int k = (yPos + i) >= picH ? (picH - yPos - 1) : i;
+        recLuma += recSrc0[-1 + k * strideY];
+        pelnum++;
+      }
+    }
+    if (yPos > 0)
+    {
+      for (int i = 0; i < NEIG_NUM; i++)
+      {
+        int k = (xPos + i) >= picW ? (picW - xPos - 1) : i;
+        recLuma += recSrc0[-strideY + k];
+        pelnum++;
+      }
+    }
+    if (pelnum == NEIG_NUM)
+    {
+      lumaValue = ClipPel((recLuma + (1 << (NEIG_NUM_LOG - 1))) >> NEIG_NUM_LOG, tu.cs->slice->clpRng(COMPONENT_Y));
+    }
+    else if (pelnum == (NEIG_NUM << 1))
+    {
+      lumaValue = ClipPel((recLuma + (1 << NEIG_NUM_LOG)) >> (NEIG_NUM_LOG + 1), tu.cs->slice->clpRng(COMPONENT_Y));
+    }
+    else
+    {
+      CHECK(pelnum != 0, "");
+      lumaValue = ClipPel(valueDC, tu.cs->slice->clpRng(COMPONENT_Y));
+    }
+    chromaScale = calculateChromaAdj(lumaValue);
+    setChromaScale(chromaScale);
+    return(chromaScale);
+  }
+}
+#endif
 /** find inx of PWL for inverse mapping
 * \param average luma pred of TU
 * \return idx of PWL for inverse mapping

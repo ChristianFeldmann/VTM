@@ -1500,7 +1500,9 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       if (pcSlice->getLmcsEnabledFlag())
       {
         WRITE_CODE(pcSlice->getLmcsAPSId(), 5, "slice_lmcs_aps_id");
+#if !JVET_O1109_UNFIY_CRS
         if (!(pcSlice->getSPS()->getUseDualITree() && pcSlice->isIntra()))
+#endif
           WRITE_FLAG(pcSlice->getLmcsChromaResidualScaleFlag(), "slice_chroma_residual_scale_flag");
       }
     }

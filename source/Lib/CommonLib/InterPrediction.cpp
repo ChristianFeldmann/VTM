@@ -1842,6 +1842,9 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
           if (i == 0)
           {
             minCost = xDMVRCost(clpRngs.comp[COMPONENT_Y].bd, addrL0, m_biLinearBufStride, addrL1, m_biLinearBufStride, dx, dy);
+#if JVET_O0590_REDUCE_DMVR_ORIG_MV_COST
+            minCost -= (minCost >>2);            
+#endif
             if (minCost < ((4 * dx * (dy >> 1/*for alternate line*/))))
             {
               notZeroCost = false;

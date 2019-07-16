@@ -2098,6 +2098,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
   Position posRT = pu.Y().topRight();
   Position posLB = pu.Y().bottomLeft();
 
+#if !JVET_O0164_REMOVE_AMVP_SPATIAL_SCALING
   bool isScaledFlagLX = false; /// variable name from specification; true when the PUs below left or left are available (availableA0 || availableA1).
 
   {
@@ -2113,6 +2114,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 
   // Left predictor search
   if( isScaledFlagLX )
+#endif
   {
     bool bAdded = addMVPCandUnscaled( pu, eRefPicList, refIdx, posLB, MD_BELOW_LEFT, *pInfo );
 
@@ -2120,6 +2122,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     {
       bAdded = addMVPCandUnscaled( pu, eRefPicList, refIdx, posLB, MD_LEFT, *pInfo );
 
+#if !JVET_O0164_REMOVE_AMVP_SPATIAL_SCALING
       if( !bAdded )
       {
         bAdded = addMVPCandWithScaling( pu, eRefPicList, refIdx, posLB, MD_BELOW_LEFT, *pInfo );
@@ -2129,6 +2132,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
           addMVPCandWithScaling( pu, eRefPicList, refIdx, posLB, MD_LEFT, *pInfo );
         }
       }
+#endif
     }
   }
 
@@ -2147,6 +2151,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     }
   }
 
+#if !JVET_O0164_REMOVE_AMVP_SPATIAL_SCALING
   if( !isScaledFlagLX )
   {
     bool bAdded = addMVPCandWithScaling( pu, eRefPicList, refIdx, posRT, MD_ABOVE_RIGHT, *pInfo );
@@ -2161,6 +2166,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
       }
     }
   }
+#endif
 
   for( int i = 0; i < pInfo->numCand; i++ )
   {
@@ -2638,6 +2644,7 @@ bool PU::addMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &eRefPic
   return false;
 }
 
+#if !JVET_O0164_REMOVE_AMVP_SPATIAL_SCALING
 /**
 * \param pInfo
 * \param eRefPicList
@@ -2721,6 +2728,7 @@ bool PU::addMVPCandWithScaling( const PredictionUnit &pu, const RefPicList &eRef
 
   return false;
 }
+#endif
 
 void PU::addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList, const RefPicList eRefPicList2nd, const int currRefPOC, AMVPInfo &info, uint8_t imv)
 {

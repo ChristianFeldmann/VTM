@@ -1890,7 +1890,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   if (flag && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag() )
   {
     int cResScaleInv = tu.getChromaAdj();
+#if JVET_O0429_CRS_LAMBDA_FIX
+    double cResScale = (double)(1 << CSCALE_FP_PREC) / (double)cResScaleInv;
+#else
     double cResScale = round((double)(1 << CSCALE_FP_PREC) / (double)cResScaleInv);
+#endif
     m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cResScale*cResScale));
     if ( !jointCbCr ) // Joint CbCr signal is to be scaled in the case of joint chroma
     piResi.scaleSignal(cResScaleInv, 1, tu.cu->cs->slice->clpRng(compID));

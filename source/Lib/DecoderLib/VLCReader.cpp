@@ -807,7 +807,7 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
     {
       memset(param.filterCoeffDeltaIdx, 0, sizeof(param.filterCoeffDeltaIdx));
     }
-
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     READ_FLAG(code, "fixed_filter_set_flag");
     param.fixedFilterSetIndex = code;
     if (param.fixedFilterSetIndex > 0)
@@ -826,6 +826,7 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
         param.fixedFilterIdx[classIdx] = code;
       }
     }
+#endif
     alfFilter(param, false);
   }
   if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
@@ -2657,7 +2658,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
     if( !alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       std::memset( alfSliceParam.alfLumaCoeffFlag, true, sizeof( alfSliceParam.alfLumaCoeffFlag ) );
-
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
       if( alfSliceParam.numLumaFilters > 1 )
       {
         READ_FLAG( code, "alf_luma_coeff_delta_prediction_flag" );
@@ -2667,11 +2668,14 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
       {
         alfSliceParam.alfLumaCoeffDeltaPredictionFlag = 0;
       }
+#endif
     }
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     else
     {
       alfSliceParam.alfLumaCoeffDeltaPredictionFlag = 0;
     }
+#endif
   }
 
   // derive maxGolombIdx
@@ -2743,7 +2747,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
     else
     {
       memcpy( recCoeff, coeff, sizeof(short) * numFilters * MAX_NUM_ALF_LUMA_COEFF );
-
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
       if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
       {
         for( int i = 1; i < numFilters; i++ )
@@ -2754,6 +2758,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
           }
         }
       }
+#endif
     }
 
     // Filter coefficients

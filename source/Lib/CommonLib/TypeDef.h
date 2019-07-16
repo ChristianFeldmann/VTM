@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0064_SIMP_ALF_CLIP_CODING                   1 // JVET-O0047/O0058/O0064/O0067/O0290/O0301/O0430: use FLC for alf clipping indices, always signal alf clipping indices
+
 #define JVET_O1109_UNFIY_CRS                              1 // JVET-O1109: Unified CRS derivation
 
 #define JVET_O0590_REDUCE_DMVR_ORIG_MV_COST               1 // Reduce the DMVR cost of the original MV

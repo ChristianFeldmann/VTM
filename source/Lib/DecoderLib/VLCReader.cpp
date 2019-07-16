@@ -1854,16 +1854,32 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       pcSlice->setEnableTMVPFlag(false);
     }
-    if (!pcSlice->isIntra())
+    if ((!pcSlice->isIntra() && pcSlice->getRPL0()->getNumRefEntries() > 1) ||
+      (pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1) )
     {
-
       READ_FLAG( uiCode, "num_ref_idx_active_override_flag");
       if (uiCode)
       {
-        READ_UVLC (uiCode, "num_ref_idx_l0_active_minus1" );  pcSlice->setNumRefIdx( REF_PIC_LIST_0, uiCode + 1 );
+        if(pcSlice->getRPL0()->getNumRefEntries() > 1)
+        {
+          READ_UVLC (uiCode, "num_ref_idx_l0_active_minus1" );
+        }
+        else
+        {
+          uiCode = 0;
+        }
+        pcSlice->setNumRefIdx( REF_PIC_LIST_0, uiCode + 1 );
         if (pcSlice->isInterB())
         {
-          READ_UVLC (uiCode, "num_ref_idx_l1_active_minus1" );  pcSlice->setNumRefIdx( REF_PIC_LIST_1, uiCode + 1 );
+          if(pcSlice->getRPL1()->getNumRefEntries() > 1)
+          {
+            READ_UVLC (uiCode, "num_ref_idx_l1_active_minus1" );
+          }
+          else
+          {
+            uiCode = 0;
+          }
+          pcSlice->setNumRefIdx( REF_PIC_LIST_1, uiCode + 1 );
         }
         else
         {
@@ -1872,15 +1888,41 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
       else
       {
-        pcSlice->setNumRefIdx(REF_PIC_LIST_0, pps->getNumRefIdxL0DefaultActive());
-        if (pcSlice->isInterB())
+        if(pcSlice->getRPL0()->getNumRefEntries() >= pps->getNumRefIdxL0DefaultActive())
         {
-          pcSlice->setNumRefIdx(REF_PIC_LIST_1, pps->getNumRefIdxL1DefaultActive());
+          pcSlice->setNumRefIdx(REF_PIC_LIST_0, pps->getNumRefIdxL0DefaultActive());
         }
         else
         {
-          pcSlice->setNumRefIdx(REF_PIC_LIST_1,0);
+          pcSlice->setNumRefIdx(REF_PIC_LIST_0, pcSlice->getRPL0()->getNumRefEntries());
         }
+
+        if (pcSlice->isInterB())
+        {
+          if(pcSlice->getRPL1()->getNumRefEntries() >= pps->getNumRefIdxL1DefaultActive())
+          {
+            pcSlice->setNumRefIdx(REF_PIC_LIST_1, pps->getNumRefIdxL1DefaultActive());
+          }
+          else
+          {
+            pcSlice->setNumRefIdx(REF_PIC_LIST_1, pcSlice->getRPL1()->getNumRefEntries());
+          }
+        }
+        else
+        {
+          pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
+        }
+      }
+    }
+    else
+    {
+      if(!pcSlice->isIntra())
+      {
+        pcSlice->setNumRefIdx(REF_PIC_LIST_0, pcSlice->getRPL0()->getNumRefEntries());
+      }
+      if(pcSlice->isInterB())
+      {
+        pcSlice->setNumRefIdx(REF_PIC_LIST_1, pcSlice->getRPL1()->getNumRefEntries());
       }
     }
     // }

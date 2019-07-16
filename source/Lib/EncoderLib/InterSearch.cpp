@@ -6399,7 +6399,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #endif
           if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag())
           {
+#if JVET_O0429_CRS_LAMBDA_FIX
+            double cRescale = (double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj());
+#else
             double cRescale = round((double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj()));
+#endif
             m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cRescale*cRescale));
           }
           TCoeff     currAbsSum = 0;
@@ -6635,7 +6639,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
         if ( reshape )
         {
+#if JVET_O0429_CRS_LAMBDA_FIX
+          double cRescale = (double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj());
+#else
           double cRescale = round((double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj()));
+#endif
           m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cRescale*cRescale));
 
           cbResi.scaleSignal(tu.getChromaAdj(), 1, tu.cu->cs->slice->clpRng(COMPONENT_Cb));

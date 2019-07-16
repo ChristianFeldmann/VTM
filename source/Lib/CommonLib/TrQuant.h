@@ -47,9 +47,7 @@
 #include "UnitPartitioner.h"
 #include "Quant.h"
 
-#if JVET_N0847_SCALING_LISTS
 #include "DepQuant.h"
-#endif
 //! \ingroup CommonLib
 //! \{
 
@@ -80,26 +78,18 @@ public:
                     const bool bEnc                 = false,
                     const bool useTransformSkipFast = false
   );
-#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
   void getTrTypes(const TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer);
-#else
-  void getTrTypes( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer );
-#endif
 
-#if JVET_N0193_LFNST
   void fwdLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize );
   void invLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize );
 
   uint32_t getLFNSTIntraMode( int wideAngPredMode );
   bool     getTransposeFlag ( uint32_t intraMode  );
-#endif
 
 protected:
 
-#if JVET_N0193_LFNST
   void xFwdLfnst( const TransformUnit &tu, const ComponentID compID, const bool loadTr = false );
   void xInvLfnst( const TransformUnit &tu, const ComponentID compID );
-#endif
 
 public:
 
@@ -122,11 +112,7 @@ public:
   void   setLambda   ( const double dLambda )                      { m_quant->setLambda( dLambda ); }
   double getLambda   () const                                      { return m_quant->getLambda(); }
 
-#if JVET_N0847_SCALING_LISTS  //maybe no need
   DepQuant* getQuant() { return m_quant; }
-#else
-  Quant* getQuant() { return m_quant;  }
-#endif
 
 
 #if ENABLE_SPLIT_PARALLELISM
@@ -142,16 +128,10 @@ protected:
   bool     m_scalingListEnabledFlag;
 
 private:
-#if JVET_N0847_SCALING_LISTS
 	DepQuant *m_quant;          //!< Quantizer
-#else
-  Quant    *m_quant;          //!< Quantizer
-#endif
   TCoeff** m_mtsCoeffs;
-#if JVET_N0193_LFNST
   TCoeff   m_tempInMatrix [ 48 ];
   TCoeff   m_tempOutMatrix[ 48 ];
-#endif
 
 
   // forward Transform

@@ -65,16 +65,10 @@ enum class BlockStatistic {
   SplitSeries,
   TransQuantBypassFlag,
   MTSIdx,
-#if JVET_N0413_RDPCM
   BDPCM,
-#endif
   TileIdx,
-#if JVET_N0193_LFNST
   LFNSTIdx,
-#endif
-#if JVET_N0054_JOINT_CHROMA
   JointCbCr,
-#endif
   CompAlphaCb,
   CompAlphaCr,
   RDPCM_Y,
@@ -86,9 +80,7 @@ enum class BlockStatistic {
   Luma_IntraMode,
   Chroma_IntraMode,
   MultiRefIdx,
-#if JVET_N0217_MATRIX_INTRAPRED
   MIPFlag,
-#endif
   ISPMode,
 
   // inter
@@ -102,9 +94,7 @@ enum class BlockStatistic {
   IMVMode,
   InterDir,
   MergeFlag,
-#if JVET_N0324_REGULAR_MRG_FLAG
   RegularMergeFlag,
-#endif
   MergeIdx,
   MergeType,
   MVPIdxL0,
@@ -126,7 +116,6 @@ enum class BlockStatistic {
   MMVDMergeIdx,
   MHIntraFlag,
   SMVDFlag,
-  TriangleFlag,
   TrianglePartitioning,
   TriangleMVL0, //<< currently only uni-prediction enabled
   TriangleMVL1, //<< currently only uni-prediction enabled
@@ -165,9 +154,7 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   //                                                                                                                                                                           Value range, vector scale
   { BlockStatistic::PredMode,               std::tuple<std::string, BlockStatisticType, std::string>{"PredMode",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_PREDICTION_MODES) + "]"}},
   { BlockStatistic::MergeFlag,              std::tuple<std::string, BlockStatisticType, std::string>{"MergeFlag",                   BlockStatisticType::Flag,                   ""}},
-#if JVET_N0324_REGULAR_MRG_FLAG
   { BlockStatistic::RegularMergeFlag,       std::tuple<std::string, BlockStatisticType, std::string>{"RegularMergeFlag",            BlockStatisticType::Flag,                   ""}},
-#endif
   { BlockStatistic::MVL0,                   std::tuple<std::string, BlockStatisticType, std::string>{"MVL0",                        BlockStatisticType::Vector,                 "Scale: 4"}},
   { BlockStatistic::MVL1,                   std::tuple<std::string, BlockStatisticType, std::string>{"MVL1",                        BlockStatisticType::Vector,                 "Scale: 4"}},
   { BlockStatistic::IPCM,                   std::tuple<std::string, BlockStatisticType, std::string>{"IPCM",                        BlockStatisticType::Flag,                   ""}},
@@ -175,25 +162,17 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::Chroma_IntraMode,       std::tuple<std::string, BlockStatisticType, std::string>{"Chroma_IntraMode",            BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_MODE) + "]"}},
   { BlockStatistic::SkipFlag,               std::tuple<std::string, BlockStatisticType, std::string>{"SkipFlag",                    BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::MTSIdx,                 std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Y",         BlockStatisticType::Integer,                ""}},
-#if JVET_N0413_RDPCM
   { BlockStatistic::BDPCM,                  std::tuple<std::string, BlockStatisticType, std::string>{"BDPCM",                       BlockStatisticType::Flag,                   ""}},    // called bdpcmMode, but used like a flag in the software? related to intra, but signalled always?
-#endif
   { BlockStatistic::TileIdx,                std::tuple<std::string, BlockStatisticType, std::string>{"TileIdx",                     BlockStatisticType::Integer,                ""}},
-#if JVET_N0193_LFNST
   { BlockStatistic::LFNSTIdx,               std::tuple<std::string, BlockStatisticType, std::string>{"LFNSTIdx",                    BlockStatisticType::Integer,                "[0, 3]"}},
-#endif
-#if JVET_N0054_JOINT_CHROMA
   { BlockStatistic::JointCbCr,              std::tuple<std::string, BlockStatisticType, std::string>{"JointCbCr",                   BlockStatisticType::Flag,                   ""}},
-#endif
   { BlockStatistic::CompAlphaCb,            std::tuple<std::string, BlockStatisticType, std::string>{"CompAlphaCb",                 BlockStatisticType::Integer,                ""}},
   { BlockStatistic::CompAlphaCr,            std::tuple<std::string, BlockStatisticType, std::string>{"CompAlphaCr",                 BlockStatisticType::Integer,                ""}},
   { BlockStatistic::RDPCM_Y,                std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Y",                     BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},
   { BlockStatistic::RDPCM_Cb,               std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Cb",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},
   { BlockStatistic::RDPCM_Cr,               std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Cr",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},
 
-#if JVET_N0217_MATRIX_INTRAPRED
   { BlockStatistic::MIPFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"MIPFlag",                     BlockStatisticType::Flag,                   ""}},
-#endif
   { BlockStatistic::ISPMode,                std::tuple<std::string, BlockStatisticType, std::string>{"ISPMode",                     BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_SUBPARTITIONS_MODES) + "]"}},
   { BlockStatistic::Depth,                  std::tuple<std::string, BlockStatisticType, std::string>{"Depth",                       BlockStatisticType::Integer,                "[0, 7]"}},
   { BlockStatistic::QT_Depth,               std::tuple<std::string, BlockStatisticType, std::string>{"QT_Depth",                    BlockStatisticType::Integer,                "[0, 7]"}},
@@ -231,7 +210,6 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::MMVDMergeIdx,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeIdx",                BlockStatisticType::Integer,                "[0, 1]"}},
   { BlockStatistic::MHIntraFlag,            std::tuple<std::string, BlockStatisticType, std::string>{"MHIntraFlag",                 BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::SMVDFlag,               std::tuple<std::string, BlockStatisticType, std::string>{"SMVDFlag",                    BlockStatisticType::Flag,                   ""}},
-  { BlockStatistic::TriangleFlag,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleFlag",                BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::TrianglePartitioning,   std::tuple<std::string, BlockStatisticType, std::string>{"TrianglePartitioning",        BlockStatisticType::Line,                   ""}},
   { BlockStatistic::TriangleMVL0,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL0",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
   { BlockStatistic::TriangleMVL1,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL1",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},

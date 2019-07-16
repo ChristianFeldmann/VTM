@@ -51,26 +51,16 @@
 struct CoeffCodingContext
 {
 public:
-#if HEVC_USE_SIGN_HIDING
-#if JVET_N0413_RDPCM
   CoeffCodingContext( const TransformUnit& tu, ComponentID component, bool signHide, bool bdpcm = false );
-#else
-  CoeffCodingContext( const TransformUnit& tu, ComponentID component, bool signHide);
-#endif
-#else
-  CoeffCodingContext( const TransformUnit& tu, ComponentID component );
-#endif
 public:
   void  initSubblock     ( int SubsetId, bool sigGroupFlag = false );
 public:
   void  resetSigGroup   ()                      { m_sigCoeffGroupFlag.reset( m_subSetPos ); }
   void  setSigGroup     ()                      { m_sigCoeffGroupFlag.set( m_subSetPos ); }
-#if JVET_N0280_RESIDUAL_CODING_TS
   bool  noneSigGroup    ()                      { return m_sigCoeffGroupFlag.none(); }
   int   lastSubSet      ()                      { return ( maxNumCoeff() - 1 ) >> log2CGSize(); }
   bool  isLastSubSet    ()                      { return lastSubSet() == m_subSetId; }
   bool  only1stSigGroup ()                      { return m_sigCoeffGroupFlag.count()-m_sigCoeffGroupFlag[lastSubSet()]==0; }
-#endif
   void  setScanPosLast  ( int       posLast )   { m_scanPosLast = posLast; }
 public:
   ComponentID     compID          ()                        const { return m_compID; }
@@ -93,11 +83,9 @@ public:
   bool            isNotFirst      ()                        const { return ( m_subSetId != 0 ); }
   bool            isSigGroup(int scanPosCG) const { return m_sigCoeffGroupFlag[m_scanCG[scanPosCG].idx]; }
   bool            isSigGroup      ()                        const { return m_sigCoeffGroupFlag[ m_subSetPos ]; }
-#if HEVC_USE_SIGN_HIDING
   bool            signHiding      ()                        const { return m_signHiding; }
   bool            hideSign        ( int       posFirst,
                                     int       posLast   )   const { return ( m_signHiding && ( posLast - posFirst >= SBH_THRESHOLD ) ); }
-#endif
   CoeffScanType   scanType        ()                        const { return m_scanType; }
   unsigned        blockPos(int scanPos) const { return m_scan[scanPos].idx; }
   unsigned        posX(int scanPos) const { return m_scan[scanPos].x; }
@@ -106,17 +94,11 @@ public:
   unsigned        maxLastPosY     ()                        const { return m_maxLastPosY; }
   unsigned        lastXCtxId      ( unsigned  posLastX  )   const { return m_CtxSetLastX( m_lastOffsetX + ( posLastX >> m_lastShiftX ) ); }
   unsigned        lastYCtxId      ( unsigned  posLastY  )   const { return m_CtxSetLastY( m_lastOffsetY + ( posLastY >> m_lastShiftY ) ); }
-#if JVET_N0280_RESIDUAL_CODING_TS
   bool            isContextCoded  ()                              { return --m_remainingContextBins >= 0; }
   int             numCtxBins      ()                        const { return   m_remainingContextBins;      }
   void            setNumCtxBins   ( int n )                       {          m_remainingContextBins  = n; }
   unsigned        sigGroupCtxId   ( bool ts = false     )   const { return ts ? m_sigGroupCtxIdTS : m_sigGroupCtxId; }
-#else
-  unsigned        sigGroupCtxId   ()                        const { return m_sigGroupCtxId; }
-#endif
-#if JVET_N0413_RDPCM
   bool            bdpcm           ()                        const { return m_bdpcm; }
-#endif
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
     const uint32_t posY      = m_scan[scanPos].y;
@@ -171,11 +153,7 @@ public:
   unsigned parityCtxIdAbs   ( uint8_t offset )  const { return m_parFlagCtxSet   ( offset ); }
   unsigned greater1CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[1]( offset ); }
   unsigned greater2CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[0]( offset ); }
-#if JVET_N0188_UNIFY_RICEPARA
   unsigned templateAbsSum( int scanPos, const TCoeff* coeff, int baseLevel )
-#else
-  unsigned templateAbsSum( int scanPos, const TCoeff* coeff )
-#endif
   {
     const uint32_t  posY  = m_scan[scanPos].y;
     const uint32_t  posX  = m_scan[scanPos].x;
@@ -201,14 +179,9 @@ public:
         sum += abs(pData[m_width << 1]);
       }
     }
-#if JVET_N0188_UNIFY_RICEPARA
     return std::max(std::min(sum - 5 * baseLevel, 31), 0);
-#else
-    return std::min(sum, 31);
-#endif
   }
 
-#if JVET_N0280_RESIDUAL_CODING_TS
   unsigned sigCtxIdAbsTS( int scanPos, const TCoeff* coeff )
   {
     const uint32_t  posY   = m_scan[scanPos].y;
@@ -257,7 +230,6 @@ public:
 
     return auiGoRicePars[ std::min(sum, 31) ];
   }
-#endif
 
 private:
   // constant
@@ -273,9 +245,7 @@ private:
   const unsigned            m_log2BlockWidth;
   const unsigned            m_log2BlockHeight;
   const unsigned            m_maxNumCoeff;
-#if HEVC_USE_SIGN_HIDING
   const bool                m_signHiding;
-#endif
   const bool                m_extendedPrecision;
   const int                 m_maxLog2TrDynamicRange;
   CoeffScanType             m_scanType;
@@ -304,17 +274,13 @@ private:
   CtxSet                    m_sigFlagCtxSet[3];
   CtxSet                    m_parFlagCtxSet;
   CtxSet                    m_gtxFlagCtxSet[2];
-#if JVET_N0280_RESIDUAL_CODING_TS
   unsigned                  m_sigGroupCtxIdTS;
   CtxSet                    m_tsSigFlagCtxSet;
   CtxSet                    m_tsParFlagCtxSet;
   CtxSet                    m_tsGtxFlagCtxSet;
   int                       m_remainingContextBins;
-#endif
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
-#if JVET_N0413_RDPCM
   const bool                m_bdpcm;
-#endif
 };
 
 
@@ -380,18 +346,10 @@ void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, uns
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
-#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
-unsigned CtxIMVFlag   ( const CodingUnit& cu );
-#endif
 unsigned CtxAffineFlag( const CodingUnit& cu );
-#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
-unsigned CtxTriangleFlag( const CodingUnit& cu );
-#endif
 unsigned CtxPredModeFlag( const CodingUnit& cu );
 unsigned CtxIBCFlag(const CodingUnit& cu);
-#if JVET_N0217_MATRIX_INTRAPRED
 unsigned CtxMipFlag   ( const CodingUnit& cu );
-#endif
 }
 
 #endif // __CONTEXTMODELLING__

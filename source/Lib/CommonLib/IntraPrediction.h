@@ -44,9 +44,7 @@
 #include "Buffer.h"
 #include "Picture.h"
 
-#if JVET_N0217_MATRIX_INTRAPRED
 #include "MatrixIntraPrediction.h"
-#endif
 
 //! \ingroup CommonLib
 //! \{
@@ -105,9 +103,7 @@ private:
 
   Pel* m_piTemp;
   Pel* m_pMdlmTemp; // for MDLM mode
-#if JVET_N0217_MATRIX_INTRAPRED
   MatrixIntraPrediction m_matrixIntraPred;
-#endif
 
 protected:
 
@@ -122,15 +118,9 @@ protected:
 
   void initPredIntraParams        ( const PredictionUnit & pu,  const CompArea compArea, const SPS& sps );
 
-#if JVET_N0435_WAIP_HARMONIZATION
   static bool isIntegerSlope(const int absAng) { return (0 == (absAng & 0x1F)); }
-#else
-  static bool isIntegerSlope      ( const int absAng ) { return (0 == (absAng & 0x1F)) && absAng <=32; }  //  integer-slope modes 2, DIA_IDX and VDIA_IDX.  "absAng <=32" restricts wide-angle integer modes
-#endif
 
-#if JVET_N0413_RDPCM
   void xPredIntraBDPCM            ( const CPelBuf &pSrc, PelBuf &pDst, const uint32_t dirMode, const ClpRng& clpRng );
-#endif
   Pel  xGetPredValDc              ( const CPelBuf &pSrc, const Size &dstSize );
 
   void xFillReferenceSamples      ( const CPelBuf &recoBuf,      Pel* refBufUnfiltered, const CompArea &area, const CodingUnit &cu );
@@ -160,11 +150,9 @@ public:
   /// set parameters from CU data for accessing intra data
   void initIntraPatternChType     (const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers
 
-#if JVET_N0217_MATRIX_INTRAPRED
   // Matrix-based intra prediction
   void initIntraMip               (const PredictionUnit &pu);
   void predIntraMip               (const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu);
-#endif
 
   static bool useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode);
 

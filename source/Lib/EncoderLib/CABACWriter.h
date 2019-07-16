@@ -89,9 +89,7 @@ public:
   void        cu_transquant_bypass_flag ( const CodingUnit&             cu );
   void        cu_skip_flag              ( const CodingUnit&             cu );
   void        pred_mode                 ( const CodingUnit&             cu );
-#if JVET_N0413_RDPCM
   void        bdpcm_mode                ( const CodingUnit&             cu,       const ComponentID compID );
-#endif
   void        pcm_data                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        pcm_flag                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        cu_pred_data              ( const CodingUnit&             cu );
@@ -107,11 +105,9 @@ public:
   void        rqt_root_cbf              ( const CodingUnit&             cu );
   void        sbt_mode                  ( const CodingUnit&             cu );
   void        end_of_ctu                ( const CodingUnit&             cu,       CUCtx&            cuCtx );
-#if JVET_N0217_MATRIX_INTRAPRED
   void        mip_flag                  ( const CodingUnit&             cu );
   void        mip_pred_modes            ( const CodingUnit&             cu );
   void        mip_pred_mode             ( const PredictionUnit&         pu );
-#endif
 
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( const PredictionUnit&         pu );
@@ -128,7 +124,6 @@ public:
 
   void        MHIntra_flag              ( const PredictionUnit&         pu );
   void        MHIntra_luma_pred_modes   ( const CodingUnit&             cu );
-  void        triangle_mode             ( const CodingUnit&             cu );
   void        smvd_mode              ( const PredictionUnit&         pu );
 
   // pcm samples (clause 7.3.8.7)
@@ -148,20 +143,14 @@ public:
   // residual coding (clause 7.3.8.11)
   void        residual_coding           ( const TransformUnit&          tu,       ComponentID       compID );
   void        mts_coding                ( const TransformUnit&          tu,       ComponentID       compID );
-#if JVET_N0193_LFNST
   void        residual_lfnst_mode       ( const CodingUnit&             cu,       CUCtx&            cuCtx );
-#endif
   void        isp_mode                  ( const CodingUnit&             cu );
   void        explicit_rdpcm_mode       ( const TransformUnit&          tu,       ComponentID       compID );
   void        last_sig_coeff            ( CoeffCodingContext&           cctx,     const TransformUnit& tu, ComponentID       compID );
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,     const TCoeff*     coeff, const int stateTransTable, int& state );
-#if JVET_N0280_RESIDUAL_CODING_TS
   void        residual_codingTS         ( const TransformUnit&          tu,       ComponentID       compID );
   void        residual_coding_subblockTS( CoeffCodingContext&           cctx,     const TCoeff*     coeff  );
-#endif
-#if JVET_N0054_JOINT_CHROMA
   void        joint_cb_cr               ( const TransformUnit&          tu );
-#endif
 
   // cross component prediction (clause 7.3.8.12)
   void        cross_comp_pred           ( const TransformUnit&          tu,       ComponentID       compID );
@@ -169,17 +158,13 @@ public:
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ChannelType channel, AlfSliceParam* alfParam);
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ComponentID compID, AlfSliceParam* alfParam);
   void        codeAlfCtuEnableFlag      ( CodingStructure& cs, uint32_t ctuRsAddr, const int compIdx, AlfSliceParam* alfParam );
-#if JVET_N0415_CTB_ALF
   void        codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr, bool alfEnableLuma);
-#endif
 
 private:
   void        unary_max_symbol          ( unsigned symbol, unsigned ctxId0, unsigned ctxIdN, unsigned maxSymbol );
   void        unary_max_eqprob          ( unsigned symbol,                                   unsigned maxSymbol );
   void        exp_golomb_eqprob         ( unsigned symbol, unsigned count );
-#if JVET_N0217_MATRIX_INTRAPRED
   void        code_unary_fixed          ( unsigned symbol, unsigned ctxId, unsigned unary_max, unsigned fixed );
-#endif
 
   // statistic
   unsigned    get_num_written_bits()    { return m_BinEncoder.getNumWrittenBits(); }

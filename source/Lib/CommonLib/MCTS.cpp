@@ -90,31 +90,17 @@ void MCTSHelper::clipMvToArea( Mv& rcMv, const Area& block, const Area& clipArea
 
 Area MCTSHelper::getTileArea( const CodingStructure* cs, const int ctuAddr )
 {
-#if JVET_N0857_TILES_BRICKS
   const BrickMap* tileMap = cs->picture->brickMap;
   const int       tileIdx = tileMap->getBrickIdxRsMap( ctuAddr );
-#else
-  const TileMap* tileMap = cs->picture->tileMap;
-  const int      tileIdx = tileMap->getTileIdxMap( ctuAddr );
-#endif
-#if JVET_N0857_TILES_BRICKS
   const Brick&  currentTile = tileMap->bricks[tileIdx];
-#else
-  const Tile&    currentTile = tileMap->tiles[tileIdx];
-#endif
 
   const int      frameWidthInCtus = cs->pcv->widthInCtus;
   const int  firstCtuRsAddrOfTile = currentTile.getFirstCtuRsAddr();
 
   const int tileXPosInCtus = firstCtuRsAddrOfTile % frameWidthInCtus;
   const int tileYPosInCtus = firstCtuRsAddrOfTile / frameWidthInCtus;
-#if JVET_N0857_TILES_BRICKS
   const int tileWidthtInCtus = currentTile.getWidthInCtus();
   const int tileHeightInCtus = currentTile.getHeightInCtus();
-#else
-  const int tileWidthtInCtus = currentTile.getTileWidthInCtus();
-  const int tileHeightInCtus = currentTile.getTileHeightInCtus();
-#endif
 
   const int  maxCUWidth  = cs->pcv->maxCUWidth;
   const int  maxCUHeight = cs->pcv->maxCUHeight;

@@ -122,9 +122,7 @@ protected:
   uint32_t  m_maxChromaFormatConstraintIdc;
   bool      m_bFrameConstraintFlag;
   bool      m_bNoQtbttDualTreeIntraConstraintFlag;
-#if JVET_N0276_CONSTRAINT_FLAGS
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
-#endif
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
   bool      m_bNoPcmConstraintFlag;
@@ -133,31 +131,18 @@ protected:
   bool      m_bNoSbtmvpConstraintFlag;
   bool      m_bNoAmvrConstraintFlag;
   bool      m_bNoBdofConstraintFlag;
-#if JVET_N0276_CONSTRAINT_FLAGS
   bool      m_noDmvrConstraintFlag;
-#endif
   bool      m_bNoCclmConstraintFlag;
   bool      m_bNoMtsConstraintFlag;
-#if JVET_N0276_CONSTRAINT_FLAGS
   bool      m_noSbtConstraintFlag;
-#endif
   bool      m_bNoAffineMotionConstraintFlag;
   bool      m_bNoGbiConstraintFlag;
-#if JVET_N0276_CONSTRAINT_FLAGS
   bool      m_noIbcConstraintFlag;
-#endif
   bool      m_bNoMhIntraConstraintFlag;
-#if JVET_N0276_CONSTRAINT_FLAGS
   bool      m_noFPelMmvdConstraintFlag;
-#endif
   bool      m_bNoTriangleConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
-#if JVET_N0276_CONSTRAINT_FLAGS
   bool      m_noTransformSkipConstraintFlag;
-#endif
-#if !JVET_N0276_CONSTRAINT_FLAGS
-  bool      m_bNoCurrPicRefConstraintFlag;
-#endif
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
@@ -166,9 +151,7 @@ protected:
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
   Level::Name   m_level;
-#if JVET_N0276_CONSTRAINT_FLAGS
   uint32_t      m_subProfile;
-#endif
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
   bool          m_intraConstraintFlag;
@@ -183,23 +166,13 @@ protected:
   int       m_iIntraPeriod;                                   ///< period of I-slice (random access period)
   int       m_iDecodingRefreshType;                           ///< random access type
   int       m_iGOPSize;                                       ///< GOP size of hierarchical structure
-#if JCTVC_Y0038_PARAMS
   bool      m_rewriteParamSets;                              ///< Flag to enable rewriting of parameter sets at random access points
-#endif
-#if JVET_M0128
   RPLEntry  m_RPLList0[MAX_GOP];                               ///< the RPL entries from the config file
   RPLEntry  m_RPLList1[MAX_GOP];                               ///< the RPL entries from the config file
-#else
-  int       m_extraRPSs;                                      ///< extra RPSs added to handle CRA
-#endif
-#if JVET_N0047_Merge_IDR_Non_IDR
   bool      m_idrRefParamList;                                ///< indicates if reference picture list syntax elements are present in slice headers of IDR pictures 
-#endif
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
-#if JVET_N0857_TILES_BRICKS
   BrickSplit    m_brickSplits[MAX_TILES];
   BrickSplitMap m_brickSplitMap;
-#endif
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
   bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
@@ -241,10 +214,8 @@ protected:
   int       m_crQpOffset;                                     ///< Chroma Cr QP Offset (0:default)
   int       m_cbQpOffsetDualTree;                             ///< Chroma Cb QP Offset for dual tree (overwrite m_cbQpOffset for dual tree)
   int       m_crQpOffsetDualTree;                             ///< Chroma Cr QP Offset for dual tree (overwrite m_crQpOffset for dual tree)
-#if JVET_N0054_JOINT_CHROMA
   int       m_cbCrQpOffset;                                   ///< QP Offset for joint Cb-Cr mode
   int       m_cbCrQpOffsetDualTree;                           ///< QP Offset for joint Cb-Cr mode (overwrite m_cbCrQpOffset for dual tree)
-#endif
 #if ER_CHROMA_QP_WCG_PPS
   WCGChromaQPControl m_wcgChromaQpControl;                    ///< Wide-colour-gamut chroma QP control.
 #endif
@@ -273,10 +244,8 @@ protected:
   unsigned  m_uiMaxBTDepthI;
   unsigned  m_uiMaxBTDepthIChroma;
   bool      m_dualTree;
-#if JVET_N0193_LFNST
   bool      m_LFNST;
   bool      m_useFastLFNST;
-#endif
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
@@ -289,9 +258,7 @@ protected:
   int       m_MTSImplicit;
   bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
 
-#if JVET_N0235_SMVD_SPS
   bool      m_SMVD;
-#endif
   bool      m_compositeRefEnabled;
   bool      m_GBi;
   bool      m_GBiFast;
@@ -309,15 +276,9 @@ protected:
   bool      m_AffineAmvr;
   bool      m_AffineAmvrEncOpt;
   bool      m_DMVR;
-#if JVET_N0127_MMVD_SPS_FLAG
   bool      m_MMVD;
-#endif
-#if JVET_N0449_MMVD_SIMP
   int       m_MmvdDisNum;
-#endif
-#if JVET_N0413_RDPCM
   bool      m_RdpcmMode;
-#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -330,13 +291,11 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   bool      m_loopFilterAcrossVirtualBoundariesDisabledFlag;
   unsigned  m_numVerVirtualBoundaries;
   unsigned  m_numHorVirtualBoundaries;
   std::vector<unsigned> m_virtualBoundariesPosX;
   std::vector<unsigned> m_virtualBoundariesPosY;
-#endif
   bool      m_lumaReshapeEnable;
   uint32_t  m_reshapeSignalType;
   uint32_t  m_intraCMD;
@@ -354,14 +313,10 @@ protected:
   bool      m_useFastMrg;
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
-#if JVET_N0242_NON_LINEAR_ALF
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
-#endif
-#if JVET_N0217_MATRIX_INTRAPRED
   bool      m_MIP;
   bool      m_useFastMIP;
-#endif
 
 
   int       m_numSplitThreads;
@@ -449,21 +404,14 @@ protected:
   std::vector<int> m_tileRowHeight;
   bool      m_entropyCodingSyncEnabledFlag;
 
-#if JVET_N0857_TILES_BRICKS
   bool      m_rectSliceFlag;
   int       m_numSlicesInPicMinus1;
-#if JVET_N0857_RECT_SLICES
   std::vector<int> m_topLeftBrickIdx;
   std::vector<int> m_bottomRightBrickIdx;
-#else
-  std::vector<int> m_topLeftTileIdx;
-  std::vector<int> m_bottomRightTileIdx;
-#endif
   bool      m_loopFilterAcrossSlicesEnabledFlag;
   bool      m_signalledSliceIdFlag;
   int       m_signalledSliceIdLengthMinus1;
   std::vector<int> m_sliceId;
-#endif
 
   bool      m_bUseConstrainedIntraPred;                       ///< flag for using constrained intra prediction
   bool      m_bFastUDIUseMPMEnabled;
@@ -551,15 +499,11 @@ protected:
   uint32_t      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
-#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
   uint32_t      m_maxNumTriangleCand;
-#endif
 
   int       m_TMVPModeId;
   bool      m_depQuantEnabledFlag;
-#if HEVC_USE_SIGN_HIDING
   bool      m_signDataHidingEnabledFlag;
-#endif
   bool      m_RCEnableRateControl;                ///< enable rate control or not
   int       m_RCTargetBitrate;                    ///< target bitrate when rate control is enabled
   int       m_RCKeepHierarchicalBit;              ///< 0: equal bit allocation; 1: fixed ratio bit allocation; 2: adaptive ratio bit allocation
@@ -572,25 +516,17 @@ protected:
   uint32_t      m_RCCpbSize;                          ///< CPB size
   double    m_RCInitialCpbFullness;               ///< initial CPB fullness
 #endif
-#if HEVC_USE_SCALING_LISTS
   ScalingListMode m_useScalingListId;                         ///< using quantization matrix
   std::string m_scalingListFileName;                          ///< quantization matrix file name
-#endif
   bool      m_TransquantBypassEnabledFlag;                    ///< transquant_bypass_enabled_flag setting in PPS.
   bool      m_CUTransquantBypassFlagForce;                    ///< if transquant_bypass_enabled_flag, then, if true, all CU transquant bypass flags will be set to true.
   CostMode  m_costMode;                                       ///< Cost mode to use
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
-#if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
-  bool      m_useStrongIntraSmoothing;                        ///< enable strong intra smoothing for 32x32 blocks where the reference samples are flat
-#endif
   int       m_activeParameterSetsSEIEnabled;
 
-#if JVET_N0349_DPS
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
-#endif
 
-#if JVET_N0063_VUI
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
@@ -608,42 +544,6 @@ protected:
   bool      m_overscanAppropriateFlag;                        ///< Indicates whether conformant decoded pictures are suitable for display using overscan
   bool      m_videoSignalTypePresentFlag;                     ///< Signals whether video_format, video_full_range_flag, and colour_description_present_flag are present
   bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
-#else
-  bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
-  bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
-  int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
-  int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
-  int       m_sarHeight;                                      ///< vertical size of the sample aspect ratio
-  bool      m_overscanInfoPresentFlag;                        ///< Signals whether overscan_appropriate_flag is present
-  bool      m_overscanAppropriateFlag;                        ///< Indicates whether conformant decoded pictures are suitable for display using overscan
-  bool      m_videoSignalTypePresentFlag;                     ///< Signals whether video_format, video_full_range_flag, and colour_description_present_flag are present
-  int       m_videoFormat;                                    ///< Indicates representation of pictures
-  bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
-  bool      m_colourDescriptionPresentFlag;                   ///< Signals whether colour_primaries, transfer_characteristics and matrix_coefficients are present
-  int       m_colourPrimaries;                                ///< Indicates chromaticity coordinates of the source primaries
-  int       m_transferCharacteristics;                        ///< Indicates the opto-electronic transfer characteristics of the source
-  int       m_matrixCoefficients;                             ///< Describes the matrix coefficients used in deriving luma and chroma from RGB primaries
-  bool      m_chromaLocInfoPresentFlag;                       ///< Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present
-  int       m_chromaSampleLocTypeTopField;                    ///< Specifies the location of chroma samples for top field
-  int       m_chromaSampleLocTypeBottomField;                 ///< Specifies the location of chroma samples for bottom field
-  bool      m_neutralChromaIndicationFlag;                    ///< Indicates that the value of all decoded chroma samples is equal to 1<<(BitDepthCr-1)
-  bool      m_defaultDisplayWindowFlag;                       ///< Indicates the presence of the default window parameters
-  int       m_defDispWinLeftOffset;                           ///< Specifies the left offset from the conformance window of the default window
-  int       m_defDispWinRightOffset;                          ///< Specifies the right offset from the conformance window of the default window
-  int       m_defDispWinTopOffset;                            ///< Specifies the top offset from the conformance window of the default window
-  int       m_defDispWinBottomOffset;                         ///< Specifies the bottom offset from the conformance window of the default window
-  bool      m_frameFieldInfoPresentFlag;                      ///< Indicates that pic_struct values are present in picture timing SEI messages
-  bool      m_pocProportionalToTimingFlag;                    ///< Indicates that the POC value is proportional to the output time w.r.t. first picture in CVS
-  int       m_numTicksPocDiffOneMinus1;                       ///< Number of ticks minus 1 that for a POC difference of one
-  bool      m_bitstreamRestrictionFlag;                       ///< Signals whether bitstream restriction parameters are present
-  bool      m_tilesFixedStructureFlag;                        ///< Indicates that each active picture parameter set has the same values of the syntax elements related to tiles
-  bool      m_motionVectorsOverPicBoundariesFlag;             ///< Indicates that no samples outside the picture boundaries are used for inter prediction
-  int       m_minSpatialSegmentationIdc;                      ///< Indicates the maximum size of the spatial segments in the pictures in the coded video sequence
-  int       m_maxBytesPerPicDenom;                            ///< Indicates a number of bytes not exceeded by the sum of the sizes of the VCL NAL units associated with any coded picture
-  int       m_maxBitsPerMinCuDenom;                           ///< Indicates an upper bound for the number of bits of coding_unit() data
-  int       m_log2MaxMvLengthHorizontal;                      ///< Indicate the maximum absolute value of a decoded horizontal MV component in quarter-pel luma units
-  int       m_log2MaxMvLengthVertical;                        ///< Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units
-#endif
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
   std::string m_colourRemapSEIFileRoot;

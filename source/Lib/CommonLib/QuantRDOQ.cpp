@@ -82,16 +82,12 @@ QuantRDOQ::QuantRDOQ( const Quant* other ) : Quant( other )
 
   const QuantRDOQ *rdoq = dynamic_cast<const QuantRDOQ*>( other );
   CHECK( other && !rdoq, "The RDOQ cast must be successfull!" );
-#if HEVC_USE_SCALING_LISTS
   xInitScalingList( rdoq );
-#endif
 }
 
 QuantRDOQ::~QuantRDOQ()
 {
-#if HEVC_USE_SCALING_LISTS
   xDestroyScalingList();
-#endif
 }
 
 
@@ -347,7 +343,6 @@ inline double QuantRDOQ::xGetIEPRate      (                                     
 
 
 
-#if HEVC_USE_SCALING_LISTS
 /** set quantized matrix coefficient for encode
  * \param scalingList            quantized matrix address
  * \param format                 chroma format
@@ -377,7 +372,6 @@ void QuantRDOQ::setScalingList(ScalingList *scalingList, const int maxLog2TrDyna
 
 
 
-#if JVET_N0847_SCALING_LISTS
 double QuantRDOQ::xGetErrScaleCoeff(const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth)
 {
   const int iTransformShift = getTransformShift(channelBitDepth, Size(width, height), maxLog2TrDynamicRange);
@@ -388,45 +382,9 @@ double QuantRDOQ::xGetErrScaleCoeff(const bool needsSqrt2, SizeType width, SizeT
   double    finalErrScale = dErrScale / QStep / QStep / (1 << (DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth) << 1));
   return    finalErrScale;
 }
-#endif
-#if HM_QTBT_AS_IN_JEM_QUANT
-#endif
-#else
-
-#if JVET_N0246_MODIFIED_QUANTSCALES
-double QuantRDOQ::xGetErrScaleCoeff( const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth )
-{
-  const int iTransformShift = getTransformShift(channelBitDepth, Size(width, height), maxLog2TrDynamicRange);
-  double    dErrScale       = (double)( 1 << SCALE_BITS );                                // Compensate for scaling of bitcount in Lagrange cost function
-  double    dTransShift     = (double)iTransformShift + ( needsSqrt2 ? -0.5 : 0.0 );
-  dErrScale                 = dErrScale*pow( 2.0, ( -2.0*dTransShift ) );                     // Compensate for scaling through forward transform
-  const int  QStep          = g_quantScales[needsSqrt2?1:0][qp];
-  double    finalErrScale = dErrScale / QStep / QStep / (1 << (DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth) << 1));
-  return    finalErrScale;
-}
-#else
-double QuantRDOQ::xGetErrScaleCoeff( const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth )
-{
-  const int iTransformShift = getTransformShift(channelBitDepth, Size(width, height), maxLog2TrDynamicRange);
-#if HM_QTBT_AS_IN_JEM_QUANT
-  double    dErrScale       = (double)( 1 << SCALE_BITS );                                // Compensate for scaling of bitcount in Lagrange cost function
-  double    dTransShift     = (double)iTransformShift + ( needsSqrt2 ? -0.5 : 0.0 );
-  dErrScale                 = dErrScale*pow( 2.0, ( -2.0*dTransShift ) );                     // Compensate for scaling through forward transform
-  int       QStep           = ( needsSqrt2 ? ( ( g_quantScales[qp] * 181 ) >> 7 ) : g_quantScales[qp] );
-  double    finalErrScale = dErrScale / QStep / QStep / (1 << (DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth) << 1));
-#else
-  int errShift = SCALE_BITS - ((iTransformShift + DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth)) << 1);
-  double    dErrScale       = exp2( double( errShift ) );
-  double    finalErrScale   = dErrScale / double( g_quantScales[qp] * g_quantScales[qp] );
-#endif
-  return    finalErrScale;
-}
-#endif
-#endif
 
 
 
-#if HEVC_USE_SCALING_LISTS
 /** set error scale coefficients
  * \param list                   list ID
  * \param size
@@ -446,20 +404,11 @@ void QuantRDOQ::xSetErrScaleCoeff( uint32_t list, uint32_t sizeX, uint32_t sizeY
   int *piQuantcoeff;
   double *pdErrScale;
   piQuantcoeff = getQuantCoeff( list, qp, sizeX, sizeY );
-#if JVET_N0847_SCALING_LISTS
   pdErrScale   = xGetErrScaleCoeffSL( list, sizeX, sizeY, qp);
-#else
-  pdErrScale   = xGetErrScaleCoeff( list, sizeX, sizeY, qp );
-#endif
 
-#if HM_QTBT_AS_IN_JEM_QUANT
   double dErrScale = (double)( 1 << SCALE_BITS );                                // Compensate for scaling of bitcount in Lagrange cost function
 
-#if JVET_N0246_MODIFIED_QUANTSCALES
   const bool needsSqrt2 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
-#else // !JVET_N0246_MODIFIED_QUANTSCALES
-  bool   needsSqrt2 = TU::needsBlockSizeTrafoScale( Size( g_scalingListSizeX[sizeX], g_scalingListSizeX[sizeY] ) );// ( ( (sizeX+sizeY) & 1 ) !=0 );
-#endif // JVET_N0246_MODIFIED_QUANTSCALES
   double dTransShift = (double)iTransformShift + ( needsSqrt2 ? -0.5 : 0.0 );
   dErrScale = dErrScale*pow( 2.0, ( -2.0*dTransShift ) );                     // Compensate for scaling through forward transform
 
@@ -469,23 +418,10 @@ void QuantRDOQ::xSetErrScaleCoeff( uint32_t list, uint32_t sizeX, uint32_t sizeY
                     / (1 << (DISTORTION_PRECISION_ADJUSTMENT(bitDepths.recon[channelType]) << 1));
   }
 
-#if JVET_N0246_MODIFIED_QUANTSCALES
   int QStep = g_quantScales[needsSqrt2][qp];
-#else
-  int QStep = ( needsSqrt2 ? ( ( g_quantScales[qp] * 181 ) >> 7 ) : g_quantScales[qp] );
-#endif
 
   xGetErrScaleCoeffNoScalingList(list, sizeX, sizeY, qp) =
     dErrScale / QStep / QStep / (1 << (DISTORTION_PRECISION_ADJUSTMENT(bitDepths.recon[channelType]) << 1));
-#else
-  int errShift = SCALE_BITS - ((iTransformShift + DISTORTION_PRECISION_ADJUSTMENT(bitDepths.recon[channelType])) << 1);
-  double dErrScale = exp2( double( errShift ) );
-  for( i = 0; i < uiMaxNumCoeff; i++ )
-  {
-    pdErrScale[i] = dErrScale / double( piQuantcoeff[i] * piQuantcoeff[i] );
-  }
-  xGetErrScaleCoeffNoScalingList( list, sizeX, sizeY, qp ) = dErrScale / double( g_quantScales[qp] * g_quantScales[qp] );
-#endif
 }
 
 /** set flat matrix value to quantized coefficient
@@ -564,7 +500,6 @@ void QuantRDOQ::xDestroyScalingList()
   }
 //   Quant::destroyScalingList();
 }
-#endif
 
 
 void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx)
@@ -592,10 +527,8 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
     if (!m_useSelectiveRDOQ || xNeedRDOQ(tu, compID, piCoef, cQP))
     {
 #endif
-#if JVET_N0280_RESIDUAL_CODING_TS
       if( isLuma( compID ) && useTransformSkip )
       {
-#if JVET_N0413_RDPCM
         if( tu.cu->bdpcmMode && isLuma(compID) )
         {
           forwardRDPCM( tu, compID, pSrc, uiAbsSum, cQP, ctx );
@@ -604,17 +537,11 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
         {
           xRateDistOptQuantTS( tu, compID, pSrc, uiAbsSum, cQP, ctx );
         }
-#else
-        xRateDistOptQuantTS( tu, compID, pSrc, uiAbsSum, cQP, ctx );
-#endif
       }
       else
       {
         xRateDistOptQuant( tu, compID, pSrc, uiAbsSum, cQP, ctx );
       }
-#else
-      xRateDistOptQuant( tu, compID, pSrc, uiAbsSum, cQP, ctx );
-#endif
 #if T0196_SELECTIVE_RDOQ
     }
     else
@@ -663,18 +590,14 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
   double     d64BlockUncodedCost               = 0;
   const uint32_t uiLog2BlockWidth                  = g_aucLog2[uiWidth];
-#if HEVC_USE_SCALING_LISTS
   const uint32_t uiLog2BlockHeight                 = g_aucLog2[uiHeight];
-#endif
   const uint32_t uiMaxNumCoeff                     = rect.area();
 
   CHECK(compID >= MAX_NUM_TBLOCKS, "Invalid component ID");
 
-#if HEVC_USE_SCALING_LISTS
   int scalingListType = getScalingListType(tu.cu->predMode, compID);
 
   CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
-#endif
 
   const TCoeff *plSrcCoeff = pSrc.buf;
         TCoeff *piDstCoeff = tu.getCoeffs(compID).buf;
@@ -682,82 +605,34 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   double *pdCostCoeff  = m_pdCostCoeff;
   double *pdCostSig    = m_pdCostSig;
   double *pdCostCoeff0 = m_pdCostCoeff0;
-#if HEVC_USE_SIGN_HIDING
   int    *rateIncUp    = m_rateIncUp;
   int    *rateIncDown  = m_rateIncDown;
   int    *sigRateDelta = m_sigRateDelta;
   TCoeff *deltaU       = m_deltaU;
-#endif
 
   memset(piDstCoeff, 0, sizeof(*piDstCoeff) * uiMaxNumCoeff);
   memset( m_pdCostCoeff,  0, sizeof( double ) *  uiMaxNumCoeff );
   memset( m_pdCostSig,    0, sizeof( double ) *  uiMaxNumCoeff );
-#if HEVC_USE_SIGN_HIDING
   memset( m_rateIncUp,    0, sizeof( int    ) *  uiMaxNumCoeff );
   memset( m_rateIncDown,  0, sizeof( int    ) *  uiMaxNumCoeff );
   memset( m_sigRateDelta, 0, sizeof( int    ) *  uiMaxNumCoeff );
   memset( m_deltaU,       0, sizeof( TCoeff ) *  uiMaxNumCoeff );
-#endif
 
 
-#if JVET_N0246_MODIFIED_QUANTSCALES
   const bool needSqrtAdjustment= TU::needsBlockSizeTrafoScale( tu, compID );
-#if HEVC_USE_SCALING_LISTS
-#if JVET_N0847_SCALING_LISTS
   const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, (uiLog2BlockWidth - 1), (uiLog2BlockHeight - 1), cQP.rem);
-#else
-  const double *const pdErrScale = xGetErrScaleCoeff(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem);
-#endif
   const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1));
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
   const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
   const int    defaultQuantisationCoefficient = g_quantScales[ needSqrtAdjustment ?1:0][cQP.rem];
   const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem);
   const int iQBits = QUANT_SHIFT + cQP.per + iTransformShift + (needSqrtAdjustment?-1:0);                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
-#else
-  const int quantisationCoefficient    = g_quantScales[needSqrtAdjustment?1:0][cQP.rem];
-  const double errorScale = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), uiWidth, uiHeight, cQP.rem, maxLog2TrDynamicRange, channelBitDepth );
-  const int iQBits = QUANT_SHIFT + cQP.per + iTransformShift + (needSqrtAdjustment?-1:0);                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
-#endif // HEVC_USE_SCALING_LISTS
-#else // JVET_N0246_MODIFIED_QUANTSCALES
-  const int iQBits = QUANT_SHIFT + cQP.per + iTransformShift;                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
-
-#if HEVC_USE_SCALING_LISTS
-  const double *const pdErrScale = xGetErrScaleCoeff(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem);
-  const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1));
-
-  const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, tu.transformSkip[compID]);
-#if HM_QTBT_AS_IN_JEM_QUANT
-  const int    defaultQuantisationCoefficient = ( TU::needsSqrt2Scale( rect, tu.transformSkip[compID] ) ? ( g_quantScales[cQP.rem] * 181 ) >> 7 : g_quantScales[cQP.rem] );
-  const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem);
-#else
-  const double blkErrScale                    = ( TU::needsQP3Offset( tu, compID ) ? 2.0 : 1.0 );
-  const int    defaultQuantisationCoefficient = g_quantScales[cQP.rem];
-  const double defaultErrorScale              = blkErrScale * xGetErrScaleCoeffNoScalingList( scalingListType, ( uiLog2BlockWidth - 1 ), ( uiLog2BlockHeight - 1 ), cQP.rem );
-#endif
-#else //HEVC_USE_SCALING_LISTS
-#if HM_QTBT_AS_IN_JEM_QUANT
-  const int    quantisationCoefficient = ( TU::needsSqrt2Scale( tu, compID ) ? ( g_quantScales[cQP.rem] * 181 ) >> 7 : g_quantScales[cQP.rem] );
-  const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), uiWidth, uiHeight, cQP.rem, maxLog2TrDynamicRange, channelBitDepth );
-#else
-  const double blkErrScale             = ( TU::needsQP3Offset( tu, compID ) ? 2.0 : 1.0 );
-  const int    quantisationCoefficient = g_quantScales[cQP.rem];
-  const double errorScale              = blkErrScale * xGetErrScaleCoeff( uiWidth, uiHeight, cQP.rem, maxLog2TrDynamicRange, channelBitDepth );
-#endif
-#endif//HEVC_USE_SCALING_LISTS
-#endif // JVET_N0246_MODIFIED_QUANTSCALES
 
 
-#if HEVC_USE_SIGN_HIDING
   const TCoeff entropyCodingMinimum = -(1 << maxLog2TrDynamicRange);
-#endif
   const TCoeff entropyCodingMaximum =  (1 << maxLog2TrDynamicRange) - 1;
 
-#if HEVC_USE_SIGN_HIDING
   CoeffCodingContext cctx(tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag());
-#else
-  CoeffCodingContext cctx(tu, compID);
-#endif
   const int    iCGSizeM1      = (1 << cctx.log2CGSize()) - 1;
 
   int     iCGLastScanPos      = -1;
@@ -779,26 +654,21 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   DTRACE( g_trace_ctx, D_RDOQ, "%d: %3d, %3d, %dx%d, comp=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_RDOQ ), rect.x, rect.y, rect.width, rect.height, compID );
 #endif
 
-#if JVET_N0193_LFNST
   const uint32_t lfnstIdx = tu.cu->lfnstIdx;
-#endif
 
 
   for (int subSetId = iCGNum - 1; subSetId >= 0; subSetId--)
   {
     cctx.initSubblock( subSetId );
 
-#if JVET_N0193_LFNST
     uint32_t maxNonZeroPosInCG = iCGSizeM1;
     if( lfnstIdx > 0 && ( ( uiWidth == 4 && uiHeight == 4 ) || ( uiWidth == 8 && uiHeight == 8 && cctx.cgPosX() == 0 && cctx.cgPosY() == 0 ) ) )
     {
       maxNonZeroPosInCG = 7;
     }
-#endif
 
     memset( &rdStats, 0, sizeof (coeffGroupRDStats));
 
-#if JVET_N0193_LFNST
     for( int iScanPosinCG = iCGSizeM1; iScanPosinCG > maxNonZeroPosInCG; iScanPosinCG-- )
     {
       iScanPos = cctx.minSubPos() + iScanPosinCG;
@@ -806,23 +676,14 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
       piDstCoeff[ blkPos ] = 0;
     }
     for( int iScanPosinCG = maxNonZeroPosInCG; iScanPosinCG >= 0; iScanPosinCG-- )
-#else
-    for (int iScanPosinCG = iCGSizeM1; iScanPosinCG >= 0; iScanPosinCG--)
-#endif
     {
       iScanPos = cctx.minSubPos() + iScanPosinCG;
       //===== quantization =====
       uint32_t    uiBlkPos          = cctx.blockPos(iScanPos);
 
       // set coeff
-#if HEVC_USE_SCALING_LISTS
       const int    quantisationCoefficient = (enableScalingLists) ? piQCoef   [uiBlkPos]               : defaultQuantisationCoefficient;
-#if HM_QTBT_AS_IN_JEM_QUANT
       const double errorScale              = (enableScalingLists) ? pdErrScale[uiBlkPos]               : defaultErrorScale;
-#else
-      const double errorScale              = (enableScalingLists) ? pdErrScale[uiBlkPos] * blkErrScale : defaultErrorScale;
-#endif
-#endif
       const int64_t  tmpLevel                = int64_t(abs(plSrcCoeff[ uiBlkPos ])) * quantisationCoefficient;
 
       const Intermediate_Int lLevelDouble  = (Intermediate_Int)std::min<int64_t>(tmpLevel, std::numeric_limits<Intermediate_Int>::max() - (Intermediate_Int(1) << (iQBits - 1)));
@@ -864,11 +725,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
         uint32_t    goRiceZero    = 0;
         if( remRegBins < 4 )
         {
-#if JVET_N0188_UNIFY_RICEPARA
           unsigned  sumAbs = cctx.templateAbsSum( iScanPos, piDstCoeff, 0 );
-#else
-          unsigned  sumAbs        = cctx.templateAbsSum( iScanPos, piDstCoeff );
-#endif
           goRiceParam             = g_auiGoRiceParsCoeff   [ sumAbs ];
           goRiceZero              = g_auiGoRicePosCoeff0[0][ sumAbs ];
         }
@@ -889,16 +746,13 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
           const BinFracBits fracBitsSig = fracBits.getFracBitsArray( ctxIdSig );
           uiLevel = xGetCodedLevel( pdCostCoeff[ iScanPos ], pdCostCoeff0[ iScanPos ], pdCostSig[ iScanPos ],
                                     lLevelDouble, uiMaxAbsLevel, &fracBitsSig, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, goRiceParam, iQBits, errorScale, 0, extendedPrecision, maxLog2TrDynamicRange );
-#if HEVC_USE_SIGN_HIDING
           sigRateDelta[ uiBlkPos ] = ( remRegBins < 4 ? 0 : fracBitsSig.intBits[1] - fracBitsSig.intBits[0] );
-#endif
         }
 
         DTRACE( g_trace_ctx, D_RDOQ, " Lev=%d \n", uiLevel );
         DTRACE_COND( ( uiMaxAbsLevel != 0 ), g_trace_ctx, D_RDOQ, " CostC0=%d\n", (int64_t)( pdCostCoeff0[iScanPos] ) );
         DTRACE_COND( ( uiMaxAbsLevel != 0 ), g_trace_ctx, D_RDOQ, " CostC =%d\n", (int64_t)( pdCostCoeff[iScanPos] ) );
 
-#if HEVC_USE_SIGN_HIDING
         deltaU[ uiBlkPos ]        = TCoeff((lLevelDouble - (Intermediate_Int(uiLevel) << iQBits)) >> (iQBits-8));
 
         if( uiLevel > 0 )
@@ -919,7 +773,6 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
             rateIncUp [ uiBlkPos ] = fracBitsGt1.intBits[ 0 ];
           }
         }
-#endif
         piDstCoeff[ uiBlkPos ] = uiLevel;
         d64BaseCost           += pdCostCoeff [ iScanPos ];
 
@@ -931,16 +784,8 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
         }
         else if( remRegBins >= 4 )
         {
-#if JVET_N0188_UNIFY_RICEPARA
           int  sumAll = cctx.templateAbsSum(iScanPos, piDstCoeff, 4);
           goRiceParam = g_auiGoRiceParsCoeff[sumAll];
-#else
-          const uint32_t baseLevel = 4;
-          if( goRiceParam < 3 && ((uiLevel-baseLevel)>>1) > (3<<goRiceParam)-1 )
-          {
-            goRiceParam++;
-          }
-#endif
           remRegBins -= (uiLevel < 2 ? uiLevel : 3) + (iScanPos != iLastScanPos);
         }
       }
@@ -1011,11 +856,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
                 pdCostCoeffGroupSig[ cctx.subSetId() ] = xGetRateSigCoeffGroup(fracBitsSigGroup,0);
               }
               // reset coeffs to 0 in this block
-#if JVET_N0193_LFNST
               for( int iScanPosinCG = maxNonZeroPosInCG; iScanPosinCG >= 0; iScanPosinCG-- )
-#else
-              for (int iScanPosinCG = iCGSizeM1; iScanPosinCG >= 0; iScanPosinCG--)
-#endif
               {
                 iScanPos      = cctx.minSubPos() + iScanPosinCG;
                 uint32_t uiBlkPos = cctx.blockPos( iScanPos );
@@ -1098,13 +939,8 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   int lastBitsX[LAST_SIGNIFICANT_GROUPS] = { 0 };
   int lastBitsY[LAST_SIGNIFICANT_GROUPS] = { 0 };
   {
-#if HEVC_USE_MDCS
-    int dim1  = ( cctx.scanType() == SCAN_VER ? uiHeight : uiWidth  );
-    int dim2  = ( cctx.scanType() == SCAN_VER ? uiWidth  : uiHeight );
-#else
     int dim1 = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiWidth);
     int dim2 = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiHeight);
-#endif
     int bitsX = 0;
     int bitsY = 0;
     int ctxId;
@@ -1133,16 +969,12 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
     d64BaseCost -= pdCostCoeffGroupSig [ iCGScanPos ];
     if (cctx.isSigGroup( iCGScanPos ) )
     {
-#if JVET_N0193_LFNST
       uint32_t maxNonZeroPosInCG = iCGSizeM1;
       if( lfnstIdx > 0 && ( ( uiWidth == 4 && uiHeight == 4 ) || ( uiWidth == 8 && uiHeight == 8 && cctx.cgPosX() == 0 && cctx.cgPosY() == 0 ) ) )
       {
         maxNonZeroPosInCG = 7;
       }
       for( int iScanPosinCG = maxNonZeroPosInCG; iScanPosinCG >= 0; iScanPosinCG-- )
-#else
-      for (int iScanPosinCG = iCGSizeM1; iScanPosinCG >= 0; iScanPosinCG--)
-#endif
       {
         iScanPos = iCGScanPos * (iCGSizeM1 + 1) + iScanPosinCG;
 
@@ -1156,11 +988,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
         {
           uint32_t   uiPosY = uiBlkPos >> uiLog2BlockWidth;
           uint32_t   uiPosX = uiBlkPos - ( uiPosY << uiLog2BlockWidth );
-#if HEVC_USE_MDCS
-          double d64CostLast  = ( cctx.scanType() == SCAN_VER ? xGetRateLast( lastBitsX, lastBitsY, uiPosY, uiPosX ) : xGetRateLast( lastBitsX, lastBitsY, uiPosX, uiPosY ) );
-#else
           double d64CostLast  = xGetRateLast( lastBitsX, lastBitsY, uiPosX, uiPosY );
-#endif
 
           double totalCost = d64BaseCost + d64CostLast - pdCostSig[ iScanPos ];
 
@@ -1208,20 +1036,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
     piDstCoeff[ cctx.blockPos( scanPos ) ] = 0;
   }
 
-#if HEVC_USE_SIGN_HIDING
   if( cctx.signHiding() && uiAbsSum>=2)
   {
-#if JVET_N0246_MODIFIED_QUANTSCALES
     const double inverseQuantScale = double(g_invQuantScales[0][cQP.rem]);
-#else
-    const double inverseQuantScale = double(g_invQuantScales[cQP.rem]);
-#endif
     int64_t rdFactor = (int64_t)(inverseQuantScale * inverseQuantScale * (1 << (2 * cQP.per)) / m_dLambda / 16
                                / (1 << (2 * DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth)))
-#if HM_QTBT_AS_IN_JEM_QUANT
-#else
-                              * blkErrScale
-#endif
                              + 0.5);
 
     int lastCG = -1;
@@ -1347,10 +1166,8 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
       }
     }
   }
-#endif
 }
 
-#if JVET_N0280_RESIDUAL_CODING_TS
 void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &coeffs, TCoeff &absSum, const QpParam &qp, const Ctx &ctx )
 {
   const FracBitsAccess& fracBits = ctx.getFracBitsAcess();
@@ -1373,17 +1190,12 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
   }
 
         double   blockUncodedCost                   = 0;
-#if HEVC_USE_SCALING_LISTS && !JVET_N0847_SCALING_LISTS
-  const uint32_t log2BlockHeight                    = g_aucLog2[height];
-#endif
   const uint32_t maxNumCoeff                        = rect.area();
 
   CHECK( compID >= MAX_NUM_TBLOCKS, "Invalid component ID" );
 
-#if HEVC_USE_SCALING_LISTS
   int scalingListType = getScalingListType( tu.cu->predMode, compID );
   CHECK( scalingListType >= SCALING_LIST_NUM, "Invalid scaling list" );
-#endif
 
   const TCoeff *srcCoeff = coeffs.buf;
         TCoeff *dstCoeff = tu.getCoeffs( compID ).buf;
@@ -1395,32 +1207,14 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
   memset( m_pdCostCoeff,  0, sizeof( double ) *  maxNumCoeff );
   memset( m_pdCostSig,    0, sizeof( double ) *  maxNumCoeff );
 
-#if JVET_N0246_MODIFIED_QUANTSCALES
   const bool   needsSqrt2Scale = TU::needsSqrt2Scale( tu, compID );  // should always be false - transform-skipped blocks don't require sqrt(2) compensation.
   const int    qBits = QUANT_SHIFT + qp.per + transformShift + (needsSqrt2Scale?-1:0);  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
   const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale?1:0][qp.rem];
   const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth );
-#else
-
-  const int qBits = QUANT_SHIFT + qp.per + transformShift;                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
-
-#if HM_QTBT_AS_IN_JEM_QUANT
-  const int    quantisationCoefficient = ( TU::needsSqrt2Scale( tu, compID ) ? ( g_quantScales[qp.rem] * 181 ) >> 7 : g_quantScales[qp.rem] );
-  const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth );
-#else
-  const double blkErrScale             = ( TU::needsQP3Offset( tu, compID ) ? 2.0 : 1.0 );
-  const int    quantisationCoefficient = g_quantScales[qp.rem];
-  const double errorScale              = blkErrScale * xGetErrScaleCoeff( width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth );
-#endif
-#endif
 
   const TCoeff entropyCodingMaximum = ( 1 << maxLog2TrDynamicRange ) - 1;
 
-#if HEVC_USE_SIGN_HIDING
   CoeffCodingContext cctx( tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag() );
-#else
-  CoeffCodingContext cctx( tu, compID );
-#endif
   const int sbSizeM1    = ( 1 << cctx.log2CGSize() ) - 1;
   double    baseCost    = 0;
   uint32_t  goRiceParam = 0;
@@ -1551,7 +1345,6 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
   }
 }
 
-#if JVET_N0413_RDPCM
 void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &coeffs, TCoeff &absSum, const QpParam &qp, const Ctx &ctx )
 {
   const FracBitsAccess& fracBits = ctx.getFracBitsAcess();
@@ -1575,17 +1368,12 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
   }
 
   double   blockUncodedCost = 0;
-#if HEVC_USE_SCALING_LISTS && !JVET_N0847_SCALING_LISTS
-  const uint32_t log2BlockHeight = g_aucLog2[height];
-#endif
   const uint32_t maxNumCoeff = rect.area();
 
   CHECK(compID >= MAX_NUM_TBLOCKS, "Invalid component ID");
 
-#if HEVC_USE_SCALING_LISTS
   int scalingListType = getScalingListType(tu.cu->predMode, compID);
   CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
-#endif
 
   const TCoeff *srcCoeff = coeffs.buf;
   TCoeff *dstCoeff = tu.getCoeffs(compID).buf;
@@ -1598,7 +1386,6 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
   memset(m_pdCostSig, 0, sizeof(double) *  maxNumCoeff);
   memset(m_fullCoeff, 0, sizeof(TCoeff) * maxNumCoeff);
 
-#if JVET_N0246_MODIFIED_QUANTSCALES
   const bool   needsSqrt2Scale = TU::needsSqrt2Scale(tu, compID);  // should always be false - transform-skipped blocks don't require sqrt(2) compensation.
   const int    qBits = QUANT_SHIFT + qp.per + transformShift + (needsSqrt2Scale ? -1 : 0);  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
   const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale ? 1 : 0][qp.rem];
@@ -1607,27 +1394,10 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
   TrQuantParams trQuantParams;
   trQuantParams.rightShift = (IQUANT_SHIFT - (transformShift + qp.per));
   trQuantParams.qScale = g_invQuantScales[needsSqrt2Scale ? 1 : 0][qp.rem];
-#else
-
-  const int qBits = QUANT_SHIFT + qp.per + transformShift;                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
-
-#if HM_QTBT_AS_IN_JEM_QUANT
-  const int    quantisationCoefficient = (TU::needsSqrt2Scale(tu, compID) ? (g_quantScales[qp.rem] * 181) >> 7 : g_quantScales[qp.rem]);
-  const double errorScale = xGetErrScaleCoeff(TU::needsSqrt2Scale(tu, compID), width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth);
-#else
-  const double blkErrScale = (TU::needsQP3Offset(tu, compID) ? 2.0 : 1.0);
-  const int    quantisationCoefficient = g_quantScales[qp.rem];
-  const double errorScale = blkErrScale * xGetErrScaleCoeff(width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth);
-#endif
-#endif
 
   const TCoeff entropyCodingMaximum = (1 << maxLog2TrDynamicRange) - 1;
 
-#if HEVC_USE_SIGN_HIDING
   CoeffCodingContext cctx(tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag());
-#else
-  CoeffCodingContext cctx(tu, compID);
-#endif
   const int sbSizeM1 = (1 << cctx.log2CGSize()) - 1;
   double    baseCost = 0;
   uint32_t  goRiceParam = 0;
@@ -1790,7 +1560,6 @@ void QuantRDOQ::xDequantSample(TCoeff& pRes, TCoeff& coeff, const TrQuantParams&
     pRes = TCoeff((Intermediate_Int(coeff) * trQuantParams.qScale) << -trQuantParams.rightShift);
   }
 }
-#endif
 inline uint32_t QuantRDOQ::xGetCodedLevelTS(       double&             codedCost,
                                                    double&             codedCost0,
                                                    double&             codedCostSig,
@@ -1932,6 +1701,5 @@ inline int QuantRDOQ::xGetICRateTS( const uint32_t            absLevel,
   }
   return rate;
 }
-#endif
 
 //! \}

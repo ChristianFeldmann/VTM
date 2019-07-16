@@ -78,20 +78,14 @@ namespace CU
   PartSplit getSplitAtDepth           (const CodingUnit& cu, const unsigned depth);
 
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
-#if JVET_N0193_LFNST
   uint32_t getNumNonZeroCoeffNonTs         ( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
   uint32_t getNumNonZeroCoeffNonTsCorner8x8( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
-#else
-  uint32_t getNumNonZeroCoeffNonTs        (const CodingUnit& cu);
-#endif
 
   bool  isGBiIdxCoded                 (const CodingUnit& cu);
   uint8_t getValidGbiIdx              (const CodingUnit& cu);
   void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);
   uint8_t deriveGbiIdx                (uint8_t gbiLO, uint8_t gbiL1);
-#if JVET_N0413_RDPCM
   bool bdpcmAllowed                   (const CodingUnit& cu, const ComponentID compID);
-#endif
 
 
   bool      divideTuInRows            ( const CodingUnit &cu );
@@ -130,18 +124,14 @@ namespace PU
 {
   int  getLMSymbolList(const PredictionUnit &pu, int *pModeList);
   int  getIntraMPMs(const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA);
-#if JVET_N0217_MATRIX_INTRAPRED
   bool          isMIP                 (const PredictionUnit &pu, const ChannelType &chType = CHANNEL_TYPE_LUMA);
   int           getMipMPMs            (const PredictionUnit &pu, unsigned *mpm);
   int           getMipSizeId          (const PredictionUnit &pu);
   uint32_t      getIntraDirLuma       (const PredictionUnit &pu);
   AvailableInfo getAvailableInfoLuma  (const PredictionUnit &pu);
-#endif
   void getIntraChromaCandModes        (const PredictionUnit &pu, unsigned modeList[NUM_CHROMA_MODE]);
   uint32_t getFinalIntraMode              (const PredictionUnit &pu, const ChannelType &chType);
-#if JVET_N0193_LFNST
   int getWideAngIntraMode             ( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID );
-#endif
   void getInterMergeCandidates        (const PredictionUnit &pu, MergeCtx& mrgCtx,
     int mmvdList,
     const int& mrgCandIdx = -1 );
@@ -172,17 +162,11 @@ namespace PU
   bool isBipredRestriction            (const PredictionUnit &pu);
   void spanMotionInfo                 (      PredictionUnit &pu, const MergeCtx &mrgCtx = MergeCtx() );
   void applyImv                       (      PredictionUnit &pu, MergeCtx &mrgCtx, InterPrediction *interPred = NULL );
-#if JVET_N0481_BCW_CONSTRUCTED_AFFINE
   void getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], int8_t neighGbi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgCtx);
-#else
-  void getAffineControlPointCand( const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgCtx );
-#endif
   void getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx, const int mrgCandIdx = -1 );
   void setAllAffineMvField            (      PredictionUnit &pu, MvField *mvField, RefPicList eRefList );
   void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList
-#if JVET_N0334_MVCLIPPING
     , bool clipCPMVs = false
-#endif
   );
   bool getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx &mrgCtx, bool& LICFlag, const int count
     , int mmvdList
@@ -196,20 +180,13 @@ namespace PU
   bool isLMCMode                      (                          unsigned mode);
   bool isLMCModeEnabled               (const PredictionUnit &pu, unsigned mode);
   bool isChromaIntraModeCrossCheckMode(const PredictionUnit &pu);
-#if !JVET_N0302_SIMPLFIED_CIIP
-  int  getMHIntraMPMs                 (const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA, const bool isChromaMDMS = false, const unsigned startIdx = 0);
-#endif
   int  getNarrowShape                 (const int width, const int height);
   void getTriangleMergeCandidates     (const PredictionUnit &pu, MergeCtx &triangleMrgCtx);
   bool isUniqueTriangleCandidates     (const PredictionUnit &pu, MergeCtx &triangleMrgCtx);
   void spanTriangleMotionInfo         (      PredictionUnit &pu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1);
   int32_t mappingRefPic               (const PredictionUnit &pu, int32_t refPicPoc, bool targetRefPicList);
-#if JVET_N0329_IBC_SEARCH_IMP
   bool isAddNeighborMv  (const Mv& currMv, Mv* neighborMvs, int numNeighborMv);
   void getIbcMVPsEncOnly(PredictionUnit &pu, Mv* mvPred, int& nbPred);
-#else
-  void getIbcMVPsEncOnly(PredictionUnit &pu, Mv* MvPred, int& nbPred);
-#endif
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
   bool checkDMVRCondition(const PredictionUnit& pu);
@@ -219,9 +196,7 @@ namespace PU
 namespace TU
 {
   uint32_t getNumNonZeroCoeffsNonTS       (const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true);
-#if JVET_N0193_LFNST
   uint32_t getNumNonZeroCoeffsNonTSCorner8x8( const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true );
-#endif
   bool isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID);
   bool getCbf                         (const TransformUnit &tu, const ComponentID &compID);
   bool getCbfAtDepth                  (const TransformUnit &tu, const ComponentID &compID, const unsigned &depth);
@@ -229,38 +204,23 @@ namespace TU
   bool isTSAllowed                    (const TransformUnit &tu, const ComponentID  compID);
   bool isMTSAllowed                   (const TransformUnit &tu, const ComponentID  compID);
   uint32_t getGolombRiceStatisticsIndex   (const TransformUnit &tu, const ComponentID &compID);
-#if HEVC_USE_MDCS
-  uint32_t getCoefScanIdx                 (const TransformUnit &tu, const ComponentID &compID);
-#endif
   bool hasCrossCompPredInfo           (const TransformUnit &tu, const ComponentID &compID);
 
 
   bool needsSqrt2Scale                ( const TransformUnit &tu, const ComponentID &compID );
-#if HM_QTBT_AS_IN_JEM_QUANT
   bool needsBlockSizeTrafoScale       ( const TransformUnit &tu, const ComponentID &compID );
-#else
-  bool needsQP3Offset                 (const TransformUnit &tu, const ComponentID &compID);
-#endif
   TransformUnit* getPrevTU          ( const TransformUnit &tu, const ComponentID compID );
   bool           getPrevTuCbfAtDepth( const TransformUnit &tu, const ComponentID compID, const int trDepth );
-#if !JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
-  void           getTransformTypeISP( const TransformUnit &tu, const ComponentID compID, int &typeH, int &typeV );
-#endif
 
 }
 
 uint32_t getCtuAddr        (const Position& pos, const PreCalcValues &pcv);
-#if JVET_N0217_MATRIX_INTRAPRED
 int  getNumModesMip   (const Size& block);
 int  getNumEpBinsMip  (const Size& block);
 bool mipModesAvailable(const Size& block);
-#endif
 
 template<typename T, size_t N>
 uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList
-#if !JVET_N0217_MATRIX_INTRAPRED
-  , static_vector<int, N>& extendRefList, int extendRef
-#endif
   , size_t uiFastCandNum = N, int* iserttPos = nullptr)
 {
   CHECK( std::min( uiFastCandNum, candModeList.size() ) != std::min( uiFastCandNum, candCostList.size() ), "Sizes do not match!" );
@@ -281,21 +241,9 @@ uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeLi
     {
       candModeList[currSize - i] = candModeList[currSize - 1 - i];
       candCostList[currSize - i] = candCostList[currSize - 1 - i];
-#if !JVET_N0217_MATRIX_INTRAPRED
-      if (extendRef != -1)
-      {
-        extendRefList[currSize - i] = extendRefList[currSize - 1 - i];
-      }
-#endif
     }
     candModeList[currSize - shift] = uiMode;
     candCostList[currSize - shift] = uiCost;
-#if !JVET_N0217_MATRIX_INTRAPRED
-    if (extendRef != -1)
-    {
-      extendRefList[currSize - shift] = extendRef;
-    }
-#endif
     if (iserttPos != nullptr)
     {
       *iserttPos = int(currSize - shift);
@@ -306,12 +254,6 @@ uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeLi
   {
     candModeList.insert( candModeList.end() - shift, uiMode );
     candCostList.insert( candCostList.end() - shift, uiCost );
-#if !JVET_N0217_MATRIX_INTRAPRED
-    if (extendRef != -1)
-    {
-      extendRefList.insert(extendRefList.end() - shift, extendRef);
-    }
-#endif
     if (iserttPos != nullptr)
     {
       *iserttPos = int(candModeList.size() - shift - 1);

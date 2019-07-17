@@ -210,6 +210,9 @@ InterpolationFilter::InterpolationFilter()
   m_filterCopy[1][0]   = filterCopy<true, false>;
   m_filterCopy[1][1]   = filterCopy<true, true>;
 
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+  m_weightedTriangleBlk = xWeightedTriangleBlk;
+#endif
 }
 
 
@@ -656,6 +659,88 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
     filterVer<NTAPS_CHROMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilter[frac << (1 - csy)], biMCForDMVR);
   }
 }
+
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
+{
+  Pel*    dst        = predDst .get(compIdx).buf;
+  Pel*    src0       = predSrc0.get(compIdx).buf;
+  Pel*    src1       = predSrc1.get(compIdx).buf;
+  int32_t strideDst  = predDst .get(compIdx).stride  - width;
+  int32_t strideSrc0 = predSrc0.get(compIdx).stride  - width;
+  int32_t strideSrc1 = predSrc1.get(compIdx).stride  - width;
+
+  const char    log2WeightBase    = 3;
+  const ClpRng  clipRng           = pu.cu->slice->clpRngs().comp[compIdx];
+  const int32_t clipbd            = clipRng.bd;
+  const int32_t shiftDefault      = std::max<int>(2, (IF_INTERNAL_PREC - clipbd));
+  const int32_t offsetDefault     = (1<<(shiftDefault-1)) + IF_INTERNAL_OFFS;
+  const int32_t shiftWeighted     = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + log2WeightBase;
+  const int32_t offsetWeighted    = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
+
+  const int32_t ratioWH           = (width > height) ? (width / height) : 1;
+  const int32_t ratioHW           = (width > height) ? 1 : (height / width);
+
+  const bool    longWeight        = (compIdx == COMPONENT_Y);
+  const int32_t weightedLength    = longWeight ? 7 : 3;
+        int32_t weightedStartPos  = ( splitDir == 0 ) ? ( 0 - (weightedLength >> 1) * ratioWH ) : ( width - ((weightedLength + 1) >> 1) * ratioWH );
+        int32_t weightedEndPos    = weightedStartPos + weightedLength * ratioWH - 1;
+        int32_t weightedPosoffset = ( splitDir == 0 ) ? ratioWH : -ratioWH;
+
+        Pel     tmpPelWeighted;
+        int32_t weightIdx;
+        int32_t x, y, tmpX, tmpY, tmpWeightedStart, tmpWeightedEnd;
+
+  for( y = 0; y < height; y+= ratioHW )
+  {
+    for( tmpY = ratioHW; tmpY > 0; tmpY-- )
+    {
+      for( x = 0; x < weightedStartPos; x++ )
+      {
+        *dst++ = ClipPel( rightShift( (splitDir == 0 ? *src1 : *src0) + offsetDefault, shiftDefault), clipRng );
+        src0++;
+        src1++;
+      }
+
+      tmpWeightedStart = std::max((int32_t)0, weightedStartPos);
+      tmpWeightedEnd   = std::min(weightedEndPos, (int32_t)(width - 1));
+      weightIdx        = 1;
+      if( weightedStartPos < 0 )
+      {
+        weightIdx     += abs(weightedStartPos) / ratioWH;
+      }
+      for( x = tmpWeightedStart; x <= tmpWeightedEnd; x+= ratioWH )
+      {
+        for( tmpX = ratioWH; tmpX > 0; tmpX-- )
+        {
+          tmpPelWeighted = Clip3( 1, 7, longWeight ? weightIdx : (weightIdx * 2));
+          tmpPelWeighted = splitDir ? ( 8 - tmpPelWeighted ) : tmpPelWeighted;
+          *dst++         = ClipPel( rightShift( (tmpPelWeighted*(*src0++) + ((8 - tmpPelWeighted) * (*src1++)) + offsetWeighted), shiftWeighted ), clipRng );
+        }
+        weightIdx ++;
+      }
+
+      for( x = weightedEndPos + 1; x < width; x++ )
+      {
+        *dst++ = ClipPel( rightShift( (splitDir == 0 ? *src0 : *src1) + offsetDefault, shiftDefault ), clipRng );
+        src0++;
+        src1++;
+      }
+
+      dst  += strideDst;
+      src0 += strideSrc0;
+      src1 += strideSrc1;
+    }
+    weightedStartPos += weightedPosoffset;
+    weightedEndPos   += weightedPosoffset;
+  }
+}
+
+void InterpolationFilter::weightedTriangleBlk(const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1)
+{
+  m_weightedTriangleBlk(pu, width, height, compIdx, splitDir, predDst, predSrc0, predSrc1);
+}
+#endif
 
 /**
  * \brief turn on SIMD fuc

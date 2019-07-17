@@ -6269,6 +6269,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && slice.getLmcsChromaResidualScaleFlag())
     {
       const CompArea      &areaY = tu.blocks[COMPONENT_Y];
+#if JVET_O1109_UNFIY_CRS
+      int adj = m_pcReshape->calculateChromaAdjVpduNei(tu, areaY);
+#else
       PelBuf              piPredY = cs.getPredBuf(areaY);
       CompArea      tmpArea(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());
       PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
@@ -6277,6 +6280,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         tmpPred.rspSignal(m_pcReshape->getFwdLUT());
       const Pel           avgLuma = tmpPred.computeAvg();
       int                    adj  = m_pcReshape->calculateChromaAdj(avgLuma);
+#endif
       tu.setChromaAdj(adj);
     }
 

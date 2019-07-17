@@ -453,6 +453,10 @@ static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;
 static const int FP_PREC =                                       11;
 static const int CSCALE_FP_PREC =                                11;
+#if JVET_O1109_UNFIY_CRS
+static const int  NEIG_NUM_LOG  =                                 6;
+static const int  NEIG_NUM =                      1 << NEIG_NUM_LOG;
+#endif
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================

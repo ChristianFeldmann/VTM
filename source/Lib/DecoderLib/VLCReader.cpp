@@ -2165,15 +2165,19 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         READ_CODE(5, uiCode, "slice_lmcs_aps_id");
         
         pcSlice->setLmcsAPSId(uiCode);
+#if !JVET_O1109_UNFIY_CRS
         if (!(sps->getUseDualITree() && pcSlice->isIntra()))
         {
+#endif
           READ_FLAG(uiCode, "slice_chroma_residual_scale_flag");                
           pcSlice->setLmcsChromaResidualScaleFlag(uiCode == 1);
+#if !JVET_O1109_UNFIY_CRS
         }
         else
         {
           pcSlice->setLmcsChromaResidualScaleFlag(false);
         }
+#endif
       }
     }
 

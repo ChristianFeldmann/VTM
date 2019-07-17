@@ -113,8 +113,11 @@ void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const
     m_sliceReshapeInfo.sliceReshaperEnableFlag = true;
       if (sliceType == I_SLICE )                                              { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;  }
       else                                                                    { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = false; }
+#if  !JVET_O1109_UNFIY_CRS
     if (sliceType == I_SLICE  && isDualT)                                     { m_sliceReshapeInfo.enableChromaAdj = 0;                   }
-    else                                                                      { m_sliceReshapeInfo.enableChromaAdj = 1;                   }
+    else
+#endif
+    { m_sliceReshapeInfo.enableChromaAdj = 1;                   }
   }
   else
   {
@@ -452,10 +455,12 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
 
     }
     m_chromaAdj = m_sliceReshapeInfo.enableChromaAdj;
+#if !JVET_O1109_UNFIY_CRS
     if (sliceType == I_SLICE && isDualT)
     {
         m_sliceReshapeInfo.enableChromaAdj = 0;
     }
+#endif
   }
   else // Inter slices
   {

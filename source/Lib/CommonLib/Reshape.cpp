@@ -73,6 +73,14 @@ void  Reshape::createDec(int bitDepth)
     m_invLUT.resize(m_reshapeLUTSize, 0);
   if (m_binCW.empty())
     m_binCW.resize(PIC_CODE_CW_BINS, 0);
+#if JVET_O0428_LMCS_CLEANUP
+  if (m_inputPivot.empty())
+    m_inputPivot.resize(PIC_CODE_CW_BINS + 1, 0);
+  if (m_fwdScaleCoef.empty())
+    m_fwdScaleCoef.resize(PIC_CODE_CW_BINS, 1 << FP_PREC);
+  if (m_invScaleCoef.empty())
+    m_invScaleCoef.resize(PIC_CODE_CW_BINS, 1 << FP_PREC);
+#endif
   if (m_reshapePivot.empty())
     m_reshapePivot.resize(PIC_CODE_CW_BINS + 1, 0);
   if (m_chromaAdjHelpLUT.empty())
@@ -83,6 +91,7 @@ void  Reshape::destroy()
 {
 }
 
+#if !JVET_O0428_LMCS_CLEANUP
 /**
 -Perform inverse of a one dimension LUT
 \param   InputLUT  describing the input LUT
@@ -121,6 +130,7 @@ void Reshape::reverseLUT(std::vector<Pel>& inputLUT, std::vector<Pel>& outputLUT
     outputLUT[i] = Clip3((Pel)0, (Pel)((1<<m_lumaBD)-1), outputLUT[i]);
   }
 }
+#endif
 
 
 /** compute chroma residuce scale for TU
@@ -229,6 +239,13 @@ int  Reshape::calculateChromaAdjVpduNei(TransformUnit &tu, const CompArea &areaY
 int Reshape::getPWLIdxInv(int lumaVal)
 {
   int idxS = 0;
+#if JVET_O0428_LMCS_CLEANUP
+  for (idxS = m_sliceReshapeInfo.reshaperModelMinBinIdx; (idxS <= m_sliceReshapeInfo.reshaperModelMaxBinIdx); idxS++)
+  {
+    if (lumaVal < m_reshapePivot[idxS + 1])     break;
+  }
+  return idxS;
+#else
   if (lumaVal < m_reshapePivot[m_sliceReshapeInfo.reshaperModelMinBinIdx + 1])
     return m_sliceReshapeInfo.reshaperModelMinBinIdx;
   else if (lumaVal >= m_reshapePivot[m_sliceReshapeInfo.reshaperModelMaxBinIdx])
@@ -241,6 +258,7 @@ int Reshape::getPWLIdxInv(int lumaVal)
     }
     return idxS;
   }
+#endif
 }
 
 /**
@@ -281,6 +299,34 @@ void Reshape::constructReshaper()
   for (int i = m_sliceReshapeInfo.reshaperModelMinBinIdx; i <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; i++)
     m_binCW[i] = (uint16_t)(m_sliceReshapeInfo.reshaperModelBinCWDelta[i] + (int)m_initCW);
 
+#if JVET_O0428_LMCS_CLEANUP
+  for (int i = 0; i < pwlFwdLUTsize; i++)
+  {
+    m_reshapePivot[i + 1] = m_reshapePivot[i] + m_binCW[i];
+    m_inputPivot[i + 1] = m_inputPivot[i] + m_initCW;
+    m_fwdScaleCoef[i] = ((int32_t)m_binCW[i] * (1 << FP_PREC) + (1 << (floorLog2(pwlFwdBinLen) - 1))) >> floorLog2(pwlFwdBinLen);
+    if (m_binCW[i] == 0)
+    {
+      m_invScaleCoef[i] = 0;
+      m_chromaAdjHelpLUT[i] = 1 << CSCALE_FP_PREC;
+    }
+    else
+    {
+      m_invScaleCoef[i] = (int32_t)(m_initCW * (1 << FP_PREC) / m_binCW[i]);
+      m_chromaAdjHelpLUT[i] = m_invScaleCoef[i];
+    }
+  }
+  for (int lumaSample = 0; lumaSample < m_reshapeLUTSize; lumaSample++)
+  {
+    int idxY = lumaSample / m_initCW;
+    int tempVal = m_reshapePivot[idxY] + ((m_fwdScaleCoef[idxY] * (lumaSample - m_inputPivot[idxY]) + (1 << (FP_PREC - 1))) >> FP_PREC);
+    m_fwdLUT[lumaSample] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)(tempVal));
+
+    int idxYInv = getPWLIdxInv(lumaSample);
+    int invSample = m_inputPivot[idxYInv] + ((m_invScaleCoef[idxYInv] * (lumaSample - m_reshapePivot[idxYInv]) + (1 << (FP_PREC - 1))) >> FP_PREC);
+    m_invLUT[lumaSample] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)(invSample));
+  }
+#else
   for (int i = 0; i < pwlFwdLUTsize; i++)
   {
     m_reshapePivot[i + 1] = m_reshapePivot[i] + m_binCW[i];
@@ -300,8 +346,10 @@ void Reshape::constructReshaper()
   }
   reverseLUT(m_fwdLUT, m_invLUT, m_reshapeLUTSize);
   updateChromaScaleLUT();
+#endif
 }
 
+#if !JVET_O0428_LMCS_CLEANUP
 /** generate chroma residue scaling LUT
 * \param void
 * \return void
@@ -316,6 +364,7 @@ void Reshape::updateChromaScaleLUT()
       m_chromaAdjHelpLUT[i] = m_initCW * (1 << CSCALE_FP_PREC) / m_binCW[i];
   }
 }
+#endif
 
 
 //

@@ -64,6 +64,11 @@ protected:
   uint16_t                m_initCW;
   bool                    m_reshape;
   std::vector<Pel>        m_reshapePivot;
+#if JVET_O0428_LMCS_CLEANUP
+  std::vector<Pel>        m_inputPivot;
+  std::vector<int32_t>    m_fwdScaleCoef;
+  std::vector<int32_t>    m_invScaleCoef;
+#endif
   int                     m_lumaBD;
   int                     m_reshapeLUTSize;
 #if JVET_O1109_UNFIY_CRS
@@ -82,7 +87,9 @@ public:
   void createDec(int bitDepth);
   void destroy();
 
+#if !JVET_O0428_LMCS_CLEANUP
   void reverseLUT(std::vector<Pel>& inputLUT, std::vector<Pel>& outputLUT, uint16_t lutSize);
+#endif
   std::vector<Pel>&  getFwdLUT() { return m_fwdLUT; }
   std::vector<Pel>&  getInvLUT() { return m_invLUT; }
   std::vector<int>&  getChromaAdjHelpLUT() { return m_chromaAdjHelpLUT; }
@@ -98,7 +105,9 @@ public:
   void copySliceReshaperInfo(SliceReshapeInfo& tInfo, SliceReshapeInfo& sInfo);
 
   void constructReshaper();
+#if !JVET_O0428_LMCS_CLEANUP
   void updateChromaScaleLUT();
+#endif
   bool getReshapeFlag() { return m_reshape; }
   void setReshapeFlag(bool b) { m_reshape = b; }
 #if JVET_O1109_UNFIY_CRS

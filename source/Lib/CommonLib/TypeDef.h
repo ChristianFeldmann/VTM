@@ -63,6 +63,7 @@
 
 
 
+#define JVET_O0267_IBC_SCALING_LIST                              1
 
 
 

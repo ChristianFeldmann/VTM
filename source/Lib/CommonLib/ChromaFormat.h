@@ -128,7 +128,11 @@ static inline int getScaledChromaQP(int unscaledChromaQP, const ChromaFormat chF
 
 static inline int getScalingListType(const PredMode predMode, const ComponentID compID)
 {
+#if JVET_O0267_IBC_SCALING_LIST
+  return ((predMode == MODE_INTRA) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
+#else
   return ((predMode != MODE_INTER) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
+#endif
 }
 
 #endif

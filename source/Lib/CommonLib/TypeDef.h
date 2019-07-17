@@ -62,6 +62,7 @@
 
 
 
+#define JVET_O0055_INT_DMVR_DIS_BDOF                                       1 // integer-distance DMVR cost to disable BDOF and disable BDOF early termination
 
 
 

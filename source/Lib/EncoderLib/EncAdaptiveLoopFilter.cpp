@@ -1107,7 +1107,11 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
   static double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2];
 
   double cost, cost0, dist, distForce0, costMin = MAX_DOUBLE;
+#if JVET_O0669_REMOVE_ALF_COEFF_PRED
+  int coeffBits, coeffBitsForce0;
+#else
   int predMode = 0, bestPredMode = 0, coeffBits, coeffBitsForce0;
+#endif
 
   mergeClasses( alfShape, covFrame, covMerged, clipMerged, MAX_NUM_ALF_CLASSES, m_filterIndices );
 
@@ -1116,7 +1120,11 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
     dist = deriveFilterCoeffs(covFrame, covMerged, clipMerged, alfShape, m_filterIndices[numFilters - 1], numFilters, errorForce0CoeffTab, alfSliceParam);
     // filter coeffs are stored in m_filterCoeffSet
     distForce0 = getDistForce0( alfShape, numFilters, errorForce0CoeffTab, codedVarBins );
+#if JVET_O0669_REMOVE_ALF_COEFF_PRED
+    coeffBits = deriveFilterCoefficientsPredictionMode( alfShape, m_filterCoeffSet, m_diffFilterCoeff, numFilters );
+#else
     coeffBits = deriveFilterCoefficientsPredictionMode( alfShape, m_filterCoeffSet, m_diffFilterCoeff, numFilters, predMode );
+#endif
     coeffBitsForce0 = getCostFilterCoeffForce0( alfShape, m_filterCoeffSet, numFilters, codedVarBins );
 
     cost = dist + m_lambda[COMPONENT_Y] * coeffBits;
@@ -1126,7 +1134,7 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
     {
       cost = cost0;
     }
-
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     if (alfSliceParam.fixedFilterSetIndex > 0)
     {
       int len = 0;
@@ -1138,18 +1146,25 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
       }
       cost += m_lambda[COMPONENT_Y] * len;
     }
+#endif
 
     if( cost <= costMin )
     {
       costMin = cost;
       numFiltersBest = numFilters;
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
       bestPredMode = predMode;
+#endif
     }
     numFilters--;
   }
 
   dist = deriveFilterCoeffs( covFrame, covMerged, clipMerged, alfShape, m_filterIndices[numFiltersBest - 1], numFiltersBest, errorForce0CoeffTab, alfSliceParam );
+#if JVET_O0669_REMOVE_ALF_COEFF_PRED
+  coeffBits = deriveFilterCoefficientsPredictionMode( alfShape, m_filterCoeffSet, m_diffFilterCoeff, numFiltersBest );
+#else
   coeffBits = deriveFilterCoefficientsPredictionMode( alfShape, m_filterCoeffSet, m_diffFilterCoeff, numFiltersBest, predMode );
+#endif
   distForce0 = getDistForce0( alfShape, numFiltersBest, errorForce0CoeffTab, codedVarBins );
   coeffBitsForce0 = getCostFilterCoeffForce0( alfShape, m_filterCoeffSet, numFiltersBest, codedVarBins );
 
@@ -1163,7 +1178,9 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
     distReturn = dist;
     alfSliceParam.alfLumaCoeffDeltaFlag = 0;
     uiCoeffBits = coeffBits;
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     alfSliceParam.alfLumaCoeffDeltaPredictionFlag = bestPredMode;
+#endif
   }
   else
   {
@@ -1171,7 +1188,9 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
     alfSliceParam.alfLumaCoeffDeltaFlag = 1;
     uiCoeffBits = coeffBitsForce0;
     memcpy( alfSliceParam.alfLumaCoeffFlag, codedVarBins, sizeof( codedVarBins ) );
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     alfSliceParam.alfLumaCoeffDeltaPredictionFlag = 0;
+#endif
 
     for( int varInd = 0; varInd < numFiltersBest; varInd++ )
     {
@@ -1187,6 +1206,9 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
   {
     for( int i = 0; i < alfShape.numCoeff; i++ )
     {
+#if JVET_O0669_REMOVE_ALF_COEFF_PRED
+      alfSliceParam.lumaCoeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = m_filterCoeffSet[ind][i];
+#else
       if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
       {
         alfSliceParam.lumaCoeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = m_diffFilterCoeff[ind][i];
@@ -1195,6 +1217,7 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfSliceParam& alfSliceParam,
       {
         alfSliceParam.lumaCoeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = m_filterCoeffSet[ind][i];
       }
+#endif
       alfSliceParam.lumaClipp[ind * MAX_NUM_ALF_LUMA_COEFF + i] = m_filterClippSet[ind][i];
     }
   }
@@ -1217,6 +1240,7 @@ int EncAdaptiveLoopFilter::getNonFilterCoeffRate( AlfSliceParam& alfSliceParam )
       len += getTBlength( (int)alfSliceParam.filterCoeffDeltaIdx[i], alfSliceParam.numLumaFilters );  //filter_coeff_delta[i]
     }
   }
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
   len++; //fixed filter set flag
   if (alfSliceParam.fixedFilterSetIndex > 0)
   {
@@ -1225,6 +1249,7 @@ int EncAdaptiveLoopFilter::getNonFilterCoeffRate( AlfSliceParam& alfSliceParam )
     if (alfSliceParam.fixedFilterPattern > 0)
       len += MAX_NUM_ALF_CLASSES;  //"fixed_filter_flag" for each class
   }
+#endif
   return len;
 }
 
@@ -1371,6 +1396,11 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
   return len;
 }
 
+#if JVET_O0669_REMOVE_ALF_COEFF_PRED
+int EncAdaptiveLoopFilter::deriveFilterCoefficientsPredictionMode( AlfFilterShape& alfShape, int **filterSet, int** filterCoeffDiff, const int numFilters )
+{
+  return (m_alfSliceParamTemp.nonLinearFlag[CHANNEL_TYPE_LUMA] ? getCostFilterClipp(alfShape, filterSet, numFilters) : 0) + getCostFilterCoeff(alfShape, filterSet, numFilters);
+#else
 int EncAdaptiveLoopFilter::deriveFilterCoefficientsPredictionMode( AlfFilterShape& alfShape, int **filterSet, int** filterCoeffDiff, const int numFilters, int& predMode )
 {
   int ratePredMode0 = getCostFilterCoeff( alfShape, filterSet, numFilters );
@@ -1399,6 +1429,7 @@ int EncAdaptiveLoopFilter::deriveFilterCoefficientsPredictionMode( AlfFilterShap
   return ( numFilters > 1 ? 1 : 0 )        // coeff_delta_pred_mode_flag
        + rateClipp
        + ( predMode ? ratePredMode1 : ratePredMode0 ); // min_golomb_order, golomb_order_increase_flag, alf_coeff_luma_delta
+#endif
 }
 
 int EncAdaptiveLoopFilter::getCostFilterCoeff( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters )
@@ -1646,6 +1677,7 @@ double EncAdaptiveLoopFilter::deriveFilterCoeffs( AlfCovariance* cov, AlfCovaria
   double error = 0.0;
   AlfCovariance& tmpCov = covMerged[MAX_NUM_ALF_CLASSES];
 
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
   alfSliceParam.fixedFilterSetIndex = 0;
   AlfCovariance& tmpCovFf = covMerged[MAX_NUM_ALF_CLASSES + 1];
   double factor = 1 << (m_NUM_BITS - 1);
@@ -1699,6 +1731,7 @@ double EncAdaptiveLoopFilter::deriveFilterCoeffs( AlfCovariance* cov, AlfCovaria
       }
     }
   }
+#endif
 
   for( int filtIdx = 0; filtIdx < numFilters; filtIdx++ )
   {
@@ -1708,6 +1741,9 @@ double EncAdaptiveLoopFilter::deriveFilterCoeffs( AlfCovariance* cov, AlfCovaria
     {
       if( filterIndices[classIdx] == filtIdx )
       {
+#if JVET_O0669_REMOVE_ALF_COEFF_PRED
+        tmpCov += cov[classIdx];
+#else
         //adjust stat
         tmpCovFf = cov[classIdx];
         if (alfSliceParam.fixedFilterSetIndex > 0 && alfSliceParam.fixedFilterIdx[classIdx] > 0
@@ -1728,6 +1764,7 @@ double EncAdaptiveLoopFilter::deriveFilterCoeffs( AlfCovariance* cov, AlfCovaria
           }
         }
         tmpCov += tmpCovFf;
+#endif
         if( !found_clip )
         {
           found_clip = true; // clip should be at the adress of shortest one

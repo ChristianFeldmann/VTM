@@ -486,7 +486,7 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
         xWriteTruncBinCode((uint32_t)param.filterCoeffDeltaIdx[i], param.numLumaFilters);  //filter_coeff_delta[i]
       }
     }
-
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     WRITE_FLAG(param.fixedFilterSetIndex > 0 ? 1 : 0, "fixed_filter_set_flag");
     if (param.fixedFilterSetIndex > 0)
     {
@@ -504,7 +504,7 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
         }
       }
     }
-
+#endif
     alfFilter(param, false);
 
   }
@@ -1833,6 +1833,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
   if( !isChroma )
   {
     WRITE_FLAG( alfSliceParam.alfLumaCoeffDeltaFlag, "alf_luma_coeff_delta_flag" );
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     if( !alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       if( alfSliceParam.numLumaFilters > 1 )
@@ -1840,6 +1841,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
         WRITE_FLAG( alfSliceParam.alfLumaCoeffDeltaPredictionFlag, "alf_luma_coeff_delta_prediction_flag" );
       }
     }
+#endif
   }
 
   static int bitsCoeffScan[EncAdaptiveLoopFilter::m_MAX_SCAN_VAL][EncAdaptiveLoopFilter::m_MAX_EXP_GOLOMB];
@@ -1919,7 +1921,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
     else
     {
       memcpy( recCoeff, coeff, sizeof(short) * numFilters * MAX_NUM_ALF_LUMA_COEFF );
-
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
       if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
       {
         for( int i = 1; i < numFilters; i++ )
@@ -1930,6 +1932,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
           }
         }
       }
+#endif
     }
     // vlc for all
     for( int ind = 0; ind < numFilters; ++ind )

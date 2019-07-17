@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0669_REMOVE_ALF_COEFF_PRED                  1 // JVET-O0425/O0427/O0669: remove prediction in ALF coefficients coding
+
 #define JVET_O0655_422_CHROMA_DM_MAPPING_FIX              1 // JVET-O0655: modify chroma DM derivation table for 4:2:2 chroma format
 
 #define JVET_O1109_UNFIY_CRS                              1 // JVET-O1109: Unified CRS derivation
@@ -1494,13 +1496,17 @@ struct AlfSliceParam
   bool                         alfLumaCoeffFlag[MAX_NUM_ALF_CLASSES];                   // alf_luma_coeff_flag[i]
   int                          numLumaFilters;                                          // number_of_filters_minus1 + 1
   bool                         alfLumaCoeffDeltaFlag;                                   // alf_luma_coeff_delta_flag
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
   bool                         alfLumaCoeffDeltaPredictionFlag;                         // alf_luma_coeff_delta_prediction_flag
+#endif
   std::vector<AlfFilterShape>* filterShapes;
   int                          tLayer;
   bool                         newFilterFlag[MAX_NUM_CHANNEL_TYPE];
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
   int                          fixedFilterPattern;
   int                          fixedFilterIdx[MAX_NUM_ALF_CLASSES];
   int                          fixedFilterSetIndex;
+#endif
 
   AlfSliceParam()
   {
@@ -1519,12 +1525,16 @@ struct AlfSliceParam
     std::memset( alfLumaCoeffFlag, true, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = 1;
     alfLumaCoeffDeltaFlag = false;
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     alfLumaCoeffDeltaPredictionFlag = false;
+#endif
     tLayer = 0;
     memset(newFilterFlag, 0, sizeof(newFilterFlag));
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     fixedFilterPattern = 0;
     std::memset(fixedFilterIdx, 0, sizeof(fixedFilterIdx));
-    fixedFilterSetIndex = 0;;
+    fixedFilterSetIndex = 0;
+#endif
   }
 
   const AlfSliceParam& operator = ( const AlfSliceParam& src )
@@ -1539,13 +1549,17 @@ struct AlfSliceParam
     std::memcpy( alfLumaCoeffFlag, src.alfLumaCoeffFlag, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = src.numLumaFilters;
     alfLumaCoeffDeltaFlag = src.alfLumaCoeffDeltaFlag;
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     alfLumaCoeffDeltaPredictionFlag = src.alfLumaCoeffDeltaPredictionFlag;
+#endif
     filterShapes = src.filterShapes;
     tLayer = src.tLayer;
     std::memcpy(newFilterFlag, src.newFilterFlag, sizeof(newFilterFlag));
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     fixedFilterPattern = src.fixedFilterPattern;
     std::memcpy(fixedFilterIdx, src.fixedFilterIdx, sizeof(fixedFilterIdx));
     fixedFilterSetIndex = src.fixedFilterSetIndex;
+#endif
     return *this;
   }
 };

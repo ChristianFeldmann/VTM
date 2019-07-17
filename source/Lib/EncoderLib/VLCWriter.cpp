@@ -1911,6 +1911,15 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
   // Clipping values coding
   if( alfSliceParam.nonLinearFlag[isChroma] )
   {
+#if JVET_O0064_SIMP_ALF_CLIP_CODING
+    for (int ind = 0; ind < numFilters; ++ind)
+    {
+      for (int i = 0; i < alfShape.numCoeff - 1; i++)
+      {
+        WRITE_CODE(clipp[ind* MAX_NUM_ALF_LUMA_COEFF + i], 2, "alf_clipping_index");
+      }
+    }
+#else
     memset( bitsCoeffScan, 0, sizeof( bitsCoeffScan ) );
 
     short recCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
@@ -1981,6 +1990,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
         alfGolombEncode( clipp[ind* MAX_NUM_ALF_LUMA_COEFF + i], kMinTab[alfShape.golombIdx[i]], false );  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
       }
     }
+#endif
   }
 }
 

@@ -2758,7 +2758,11 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfSliceParam& a
             curCost += costOff;
           }
         } //for(ctbIdx)
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+        int tmpBits = bitsNewFilter + 5 * (numFilterSet - NUM_FIXED_FILTER_SETS) + getTBlength(numFilterSet - NUM_FIXED_FILTER_SETS, ALF_CTB_MAX_NUM_APS + 1);
+#else
         int tmpBits = bitsNewFilter + 5 * (numFilterSet - NUM_FIXED_FILTER_SETS) + (cs.slice->isIntra() ? 1 : getTBlength(numFilterSet - NUM_FIXED_FILTER_SETS, ALF_CTB_MAX_NUM_APS + 1));
+#endif
         curCost += tmpBits * m_lambda[COMPONENT_Y];
         if (curCost < costMin)
         {
@@ -2863,7 +2867,11 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfSliceParam& a
       continue;
     }
     APS* curAPS = m_apsMap->getPS((curApsId << NUM_APS_TYPE_LEN) + ALF_APS);
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+    double curCost = m_lambda[CHANNEL_TYPE_CHROMA] * 5;
+#else
     double curCost = (cs.slice->isIntra() && cs.slice->getTileGroupNumAps() == 1) ? 0 : (m_lambda[CHANNEL_TYPE_CHROMA] * 5);
+#endif
     if (curApsId == newApsIdChroma)
     {
       m_alfSliceParamTemp = alfSliceParamNewFilters;

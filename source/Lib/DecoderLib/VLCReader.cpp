@@ -1810,6 +1810,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       int alfChromaIdc = 0;
       if (uiCode)
       {
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+        xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
+#else
         if (pcSlice->isIntra())
         {
           READ_FLAG(uiCode, "tile_group_num_APS");
@@ -1818,6 +1821,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
         }
+#endif
         int numAps = uiCode;
         pcSlice->setTileGroupNumAps(numAps);
         std::vector<int> apsId(numAps, -1);
@@ -1832,6 +1836,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
         if (alfChromaIdc)
         {
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+          READ_CODE(5, uiCode, "tile_group_aps_id_chroma");
+#else
           if (pcSlice->isIntra() && pcSlice->getTileGroupNumAps() == 1)
           {
             uiCode = apsId[0];
@@ -1840,6 +1847,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
           {
             READ_CODE(5, uiCode, "tile_group_aps_id_chroma");
           }
+#endif
           pcSlice->setTileGroupApsIdChroma(uiCode);
         }
       }

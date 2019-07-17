@@ -1199,7 +1199,11 @@ void CABACWriter::intra_chroma_pred_mode( const PredictionUnit& pu )
   }
 
   // LM chroma mode
+#if JVET_O1124_ALLOW_CCLM_COND
+  if( pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed() )
+#else
   if( pu.cs->sps->getUseLMChroma() )
+#endif
   {
     intra_chroma_lmc_mode( pu );
     if ( PU::isLMCMode( intraDir ) )

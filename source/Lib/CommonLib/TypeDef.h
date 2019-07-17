@@ -131,7 +131,7 @@
 
 
 
-
+#define JVET_O1124_ALLOW_CCLM_COND                        1 // JVET-O1124/JVET-O0196: CCLM restriction to reduce luma-chroma latency for chroma separate tree
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 

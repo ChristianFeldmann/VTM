@@ -1298,7 +1298,11 @@ void CABACReader::intra_chroma_pred_mode( PredictionUnit& pu )
   }
 
   // LM chroma mode
+#if JVET_O1124_ALLOW_CCLM_COND
+  if( pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed() )
+#else
   if( pu.cs->sps->getUseLMChroma() )
+#endif
   {
     if( intra_chroma_lmc_mode( pu ) )
     {

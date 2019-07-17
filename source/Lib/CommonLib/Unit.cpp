@@ -327,6 +327,71 @@ void CodingUnit::initData()
   mipFlag           = false;
 }
 
+#if JVET_O1124_ALLOW_CCLM_COND
+const bool CodingUnit::checkCCLMAllowed() const
+{
+  bool allowCCLM = false;
+
+  if( chType != CHANNEL_TYPE_CHROMA ) //single tree
+  {
+    allowCCLM = true;
+  }
+  else if( slice->getSPS()->getCTUSize() <= 32 ) //dual tree, CTUsize < 64
+  {
+    allowCCLM = true;
+  }
+  else //dual tree, CTU size 64 or 128
+  {
+    int idxFor64x64Node = slice->getSPS()->getCTUSize() == 128 ? 1 : 0;
+    const PartSplit cuSplitTypeDepth1 = PartSplit( (splitSeries >> (idxFor64x64Node * SPLIT_DMULT)) & SPLIT_MASK );
+    const PartSplit cuSplitTypeDepth2 = PartSplit( (splitSeries >> ((idxFor64x64Node + 1) * SPLIT_DMULT)) & SPLIT_MASK );
+
+    //allow CCLM if 64x64 chroma tree node uses QT split or HBT+VBT split combination
+    if( cuSplitTypeDepth1 == CU_QUAD_SPLIT || (cuSplitTypeDepth1 == CU_HORZ_SPLIT && cuSplitTypeDepth2 == CU_VERT_SPLIT) )
+    {
+      assert( blocks[COMPONENT_Cb].width <= 16 && blocks[COMPONENT_Cb].height <= 16 );
+      allowCCLM = true;
+    }
+    //allow CCLM if 64x64 chroma tree node uses NS (No Split) and becomes a chroma CU containing 32x32 chroma blocks
+    else if( cuSplitTypeDepth1 == 0 )
+    {
+      assert( blocks[COMPONENT_Cb].width == 32 && blocks[COMPONENT_Cb].height == 32 );
+      allowCCLM = true;
+    }
+    //allow CCLM if 64x32 chroma tree node uses NS and becomes a chroma CU containing 32x16 chroma blocks
+    else if( cuSplitTypeDepth1 == CU_HORZ_SPLIT && cuSplitTypeDepth2 == 0 )
+    {
+      assert( blocks[COMPONENT_Cb].width == 32 && blocks[COMPONENT_Cb].height == 16 );
+      allowCCLM = true;
+    }
+
+    //further check luma conditions
+    if( allowCCLM )
+    {
+      //disallow CCLM if luma 64x64 block uses BT or TT or NS with ISP
+      const Position lumaRefPos( chromaPos().x << getComponentScaleX( COMPONENT_Cb, chromaFormat ), chromaPos().y << getComponentScaleY( COMPONENT_Cb, chromaFormat ) );
+      const CodingUnit* colLumaCu = cs->picture->cs->getCU( lumaRefPos, CHANNEL_TYPE_LUMA );
+
+      if( colLumaCu->lwidth() < 64 || colLumaCu->lheight() < 64 ) //further split at 64x64 luma node
+      {
+        const PartSplit cuSplitTypeDepth1Luma = PartSplit( (colLumaCu->splitSeries >> (idxFor64x64Node * SPLIT_DMULT)) & SPLIT_MASK );
+        assert( cuSplitTypeDepth1Luma >= CU_QUAD_SPLIT && cuSplitTypeDepth1Luma <= CU_TRIV_SPLIT );
+        if( cuSplitTypeDepth1Luma != CU_QUAD_SPLIT )
+        {
+          allowCCLM = false;
+        }
+      }
+      else if( colLumaCu->lwidth() == 64 && colLumaCu->lheight() == 64 && colLumaCu->ispMode ) //not split at 64x64 luma node and use ISP mode
+      {
+        allowCCLM = false;
+      }
+    }
+  }
+
+  return allowCCLM;
+}
+#endif
+
 const uint8_t CodingUnit::checkAllowedSbt() const
 {
   if( !slice->getSPS()->getUseSBT() )

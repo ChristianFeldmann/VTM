@@ -3183,10 +3183,18 @@ void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr,
       {
         int useTemporalFilt = (filterSetIdx > NUM_FIXED_FILTER_SETS) ? 1 : 0;
         m_BinEncoder.encodeBin(useTemporalFilt, Ctx::AlfUseTemporalFilt());
+
         if (useTemporalFilt)
         {
           CHECK((filterSetIdx - (NUM_FIXED_FILTER_SETS + 1)) >= (numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1)), "temporal non-latest set");
-          xWriteTruncBinCode(filterSetIdx - (NUM_FIXED_FILTER_SETS + 1), numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
+#if JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL
+          if (numAps > 2)
+          {
+#endif
+            xWriteTruncBinCode(filterSetIdx - (NUM_FIXED_FILTER_SETS + 1), numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
+#if JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL
+          }
+#endif
         }
         else
         {

@@ -137,6 +137,7 @@
 
 
 
+#define JVET_O0280_SIMD_TRIANGLE_WEIGHTING                1 // JVET-O0280: SIMD implementation for weighted sample prediction process of triangle prediction mode
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 

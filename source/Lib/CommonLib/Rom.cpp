@@ -401,6 +401,35 @@ void initROM()
       }
     }
   }
+
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+  for (int idxH = 0; idxH < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxH)
+  {
+    for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
+    {
+      const int nCbH = 1 << (idxH + 1);
+      const int nCbW = 1 << (idxW + 1);
+      const int nCbR = (nCbW > nCbH) ? nCbW / nCbH : nCbH / nCbW;
+
+      // let SIMD can read at least 64-bit when at last row
+      g_triangleWeights[0][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+      g_triangleWeights[0][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+      g_triangleWeights[1][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+      g_triangleWeights[1][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+
+      for (int y = 0; y < nCbH; y++)
+      {
+        for (int x = 0; x < nCbW; x++)
+        {
+          g_triangleWeights[0][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
+          g_triangleWeights[0][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
+          g_triangleWeights[1][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, x / nCbR - y + 2) * 2 : Clip3(0, 4, x - y / nCbR + 2) * 2;
+          g_triangleWeights[1][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, nCbH - 1 - x / nCbR - y + 2) * 2 : Clip3(0, 4, nCbW - 1 - x - y / nCbR + 2) * 2;
+        }
+      }
+    }
+  }
+#endif
 }
 
 void destroyROM()
@@ -425,6 +454,23 @@ void destroyROM()
 
   delete gp_sizeIdxInfo;
   gp_sizeIdxInfo = nullptr;
+
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+  for (int idxH = 0; idxH < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxH)
+  {
+    for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
+    {
+      delete[] g_triangleWeights[0][0][idxH][idxW];
+      delete[] g_triangleWeights[0][1][idxH][idxW];
+      delete[] g_triangleWeights[1][0][idxH][idxW];
+      delete[] g_triangleWeights[1][1][idxH][idxW];
+      g_triangleWeights[0][0][idxH][idxW] = nullptr;
+      g_triangleWeights[0][1][idxH][idxW] = nullptr;
+      g_triangleWeights[1][0][idxH][idxW] = nullptr;
+      g_triangleWeights[1][1][idxH][idxW] = nullptr;
+    }
+  }
+#endif
 }
 
 // ====================================================================================================================
@@ -700,5 +746,8 @@ const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16, 
 
 
 uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+#endif
 
 //! \}

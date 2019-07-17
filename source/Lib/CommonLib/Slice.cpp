@@ -1731,7 +1731,7 @@ void ScalingList::checkPredMode(uint32_t sizeId, uint32_t listId)
 {
   for (int predListIdx = (int)listId; predListIdx >= 0; predListIdx--)
   {
-    if ((sizeId == SCALING_LIST_64x64 && (listId % 3) != 0) || (sizeId == SCALING_LIST_2x2 && (listId % 3) == 0))
+    if ((sizeId == SCALING_LIST_64x64 && ((listId % 3) != 0 || (predListIdx % 3) != 0)) || (sizeId == SCALING_LIST_2x2 && ((listId % 3) == 0 || (predListIdx % 3) == 0)))
       continue;
     if( !::memcmp(getScalingListAddress(sizeId,listId),((listId == predListIdx) ?
       getScalingListDefaultAddress(sizeId, predListIdx): getScalingListAddress(sizeId, predListIdx)),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId])) // check value of matrix

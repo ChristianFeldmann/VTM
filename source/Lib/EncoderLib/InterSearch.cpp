@@ -1431,6 +1431,14 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
     cMv.setZero();
     Distortion cost = 0;
 
+#if JVET_O0162_IBC_MVP_FLAG
+    if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+    {
+      iBvpNum = 1;
+      cMvPred[1] = cMvPred[0];
+    }
+#endif
+
     if (m_pcEncCfg->getIBCHashSearch())
     {
       xxIBCHashSearch(pu, cMvPred, iBvpNum, cMv, bvpIdxBest, ibcHashMap);

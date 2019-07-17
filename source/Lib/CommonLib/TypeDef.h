@@ -60,7 +60,7 @@
 
 #define JVET_O0164_REMOVE_AMVP_SPATIAL_SCALING            1 // JVET-O0164/JVET-O0587: remove spatial AMVP candidate scaling
 
-
+#define JVET_O0162_IBC_MVP_FLAG                           1 // JVET-O0162/O0331/O0480/O0574: IBC mvp flag conditioned on MaxNumMergeCand>1
 
 #define JVET_O0055_INT_DMVR_DIS_BDOF                                       1 // integer-distance DMVR cost to disable BDOF and disable BDOF early termination
 

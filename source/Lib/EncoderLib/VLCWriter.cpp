@@ -1261,7 +1261,9 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
       if (alfEnabled)
       {
-
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+        xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
+#else
         if (pcSlice->isIntra())
         {
           WRITE_FLAG(pcSlice->getTileGroupNumAps(), "tile_group_num_APS");
@@ -1270,7 +1272,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         {
           xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
         }
-
+#endif
         const std::vector<int>&   apsId = pcSlice->getTileGroupApsIdLuma();
         for (int i = 0; i < pcSlice->getTileGroupNumAps(); i++)
         {
@@ -1281,6 +1283,9 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
         if (alfChromaIdc)
         {
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+          WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
+#else
           if (pcSlice->isIntra()&& pcSlice->getTileGroupNumAps() == 1)
           {
             CHECK(pcSlice->getTileGroupApsIdChroma() != apsId[0], "wrong tile group chroma aps id");
@@ -1289,6 +1294,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           {
             WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
           }
+#endif
         }
       }
     }

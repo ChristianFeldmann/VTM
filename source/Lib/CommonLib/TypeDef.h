@@ -68,76 +68,9 @@
 
 #define JVET_O0162_IBC_MVP_FLAG                           1 // JVET-O0162/O0331/O0480/O0574: IBC mvp flag conditioned on MaxNumMergeCand>1
 
-#define JVET_O0055_INT_DMVR_DIS_BDOF                                       1 // integer-distance DMVR cost to disable BDOF and disable BDOF early termination
+#define JVET_O0055_INT_DMVR_DIS_BDOF                      1 // integer-distance DMVR cost to disable BDOF and disable BDOF early termination
 
-
-
-#define JVET_O0267_IBC_SCALING_LIST                              1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#define JVET_O0267_IBC_SCALING_LIST                       1
 
 #define JVET_O0280_SIMD_TRIANGLE_WEIGHTING                1 // JVET-O0280: SIMD implementation for weighted sample prediction process of triangle prediction mode
 
@@ -146,7 +79,6 @@
 #define MRG_SHARELIST_SHARSIZE                            32
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
-
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 #define FIX_PCM                                           1 // Fix PCM bugs in VTM3
@@ -172,7 +104,6 @@ typedef std::pair<int, int>  TrCost;
 #ifndef HEVC_TOOLS
 #define HEVC_TOOLS                                        0
 #endif
-
 
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE                0
@@ -228,13 +159,7 @@ typedef std::pair<int, int>  TrCost;
 #else
 #endif
 
-
-
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
-
-
-
-
 
 // ====================================================================================================================
 // Debugging

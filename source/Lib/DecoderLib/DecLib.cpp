@@ -835,9 +835,6 @@ void DecLib::xActivateParameterSets()
     memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
     m_pcPic->cs->lmcsAps = lmcsAPS;
 
-#if HEVC_VPS
-    m_pcPic->cs->vps   = pSlice->getVPS();
-#endif
     m_pcPic->cs->pcv   = pps->pcv;
 
     // Initialise the various objects for the new set of settings
@@ -916,9 +913,6 @@ void DecLib::xActivateParameterSets()
     memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
     m_pcPic->cs->lmcsAps = lmcsAPS;
 
-#if HEVC_VPS
-    m_pcPic->cs->vps   = pSlice->getVPS();
-#endif
     m_pcPic->cs->pcv   = pps->pcv;
 
     // check that the current active PPS has not changed...

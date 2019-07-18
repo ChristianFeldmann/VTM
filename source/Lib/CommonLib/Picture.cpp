@@ -920,9 +920,6 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcs
   memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));   
   cs->lmcsAps = &lmcsAps;
 
-#if HEVC_VPS
-  cs->vps     = nullptr;
-#endif
   cs->pcv     = pps.pcv;
 
   brickMap = new BrickMap;

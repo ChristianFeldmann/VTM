@@ -167,14 +167,8 @@ static const int MAX_NUM_PICS_IN_SOP =                           1024;
 static const int MAX_NESTING_NUM_OPS =                           1024;
 static const int MAX_NESTING_NUM_LAYER =                           64;
 
-#if HEVC_VPS
-static const int MAX_VPS_NUM_HRD_PARAMETERS =                       1;
-static const int MAX_VPS_OP_SETS_PLUS1 =                         1024;
-static const int MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1 =         1;
-#else
 static const int MAX_VPS_NUM_HRD_PARAMETERS =                       1;
 static const int MAX_VPS_LAYERS =                                 256;
-#endif
 
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;
 static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;

@@ -482,11 +482,7 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
   if(m_pcCfg->getActiveParameterSetsSEIEnabled())
   {
     SEIActiveParameterSets *sei = new SEIActiveParameterSets;
-#if HEVC_VPS
-    m_seiEncoder.initSEIActiveParameterSets (sei, m_pcCfg->getVPS(), sps);
-#else
     m_seiEncoder.initSEIActiveParameterSets(sei, sps);
-#endif
     seiMessages.push_back(sei);
   }
 
@@ -3240,11 +3236,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     if( ( *it )->m_nalUnitType != NAL_UNIT_PREFIX_SEI && ( *it )->m_nalUnitType != NAL_UNIT_SUFFIX_SEI )
     {
       numRBSPBytes += numRBSPBytes_nal;
-#if HEVC_VPS
-      if( it == accessUnit.begin() || ( *it )->m_nalUnitType == NAL_UNIT_VPS || ( *it )->m_nalUnitType == NAL_UNIT_DPS || ( *it )->m_nalUnitType == NAL_UNIT_SPS || ( *it )->m_nalUnitType == NAL_UNIT_PPS )
-#else
       if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS || (*it)->m_nalUnitType == NAL_UNIT_DPS || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
-#endif
       {
         numRBSPBytes += 4;
       }

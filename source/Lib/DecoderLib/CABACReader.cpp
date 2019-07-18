@@ -233,7 +233,14 @@ void CABACReader::readAlfCtuFilterIndex(CodingStructure& cs, unsigned ctuRsAddr)
         unsigned usePrevFilt = m_BinDecoder.decodeBin(Ctx::AlfUseTemporalFilt());
         if (usePrevFilt)
         {
-          xReadTruncBinCode(filtIndex, numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
+#if JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL
+          if (numAps > 2)
+          {
+#endif
+            xReadTruncBinCode(filtIndex, numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
+#if JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL
+          }
+#endif
           filtIndex += (unsigned)(NUM_FIXED_FILTER_SETS + 1);
         }
         else

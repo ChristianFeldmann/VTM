@@ -323,7 +323,11 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
     const int scale = ((g_aucLog2[iWidth] - 2 + g_aucLog2[iHeight] - 2 + 2) >> 2);
     CHECK(scale < 0 || scale > 31, "PDPC: scale < 0 || scale > 31");
 
+#if JVET_O0364_PDPC_DC
+    if (uiDirMode == PLANAR_IDX || uiDirMode == DC_IDX)
+#else
     if (uiDirMode == PLANAR_IDX)
+#endif
     {
       for (int y = 0; y < iHeight; y++)
       {
@@ -337,6 +341,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
         }
       }
     }
+#if !JVET_O0364_PDPC_DC
     else if (uiDirMode == DC_IDX)
     {
       const Pel topLeft = srcBuf.at(0, 0);
@@ -353,6 +358,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
         }
       }
     }
+#endif
     else if (uiDirMode == HOR_IDX)
     {
       const Pel topLeft = srcBuf.at(0, 0);

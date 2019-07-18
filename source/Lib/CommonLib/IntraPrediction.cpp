@@ -228,7 +228,11 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
 
 // Function for calculating DC value of the reference samples used in Intra prediction
 //NOTE: Bit-Limit - 25-bit source
+#if JVET_O0426_MRL_REF_SAMPLES_DC_MODE
+Pel IntraPrediction::xGetPredValDc(const CPelBuf &pSrc, const Size &dstSize, const int multiRefIdx)
+#else
 Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
+#endif
 {
   CHECK( dstSize.width == 0 || dstSize.height == 0, "Empty area provided" );
 
@@ -244,14 +248,22 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
   {
     for( idx = 0; idx < width; idx++ )
     {
+#if JVET_O0426_MRL_REF_SAMPLES_DC_MODE
+      sum += pSrc.at(multiRefIdx + 1 + idx, 0);
+#else
       sum += pSrc.at( 1 + idx, 0 );
+#endif
     }
   }
   if ( width <= height )
   {
     for( idx = 0; idx < height; idx++ )
     {
+#if JVET_O0426_MRL_REF_SAMPLES_DC_MODE
+      sum += pSrc.at(0, multiRefIdx + 1 + idx);
+#else
       sum += pSrc.at( 0, 1 + idx );
+#endif
     }
   }
 
@@ -312,7 +324,11 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   switch (uiDirMode)
   {
     case(PLANAR_IDX): xPredIntraPlanar(srcBuf, piPred); break;
+#if JVET_O0426_MRL_REF_SAMPLES_DC_MODE
+    case(DC_IDX):     xPredIntraDc(srcBuf, piPred, channelType, multiRefIdx, false); break;
+#else
     case(DC_IDX):     xPredIntraDc(srcBuf, piPred, channelType, false); break;
+#endif
     case(BDPCM_IDX):  xPredIntraBDPCM(srcBuf, piPred, pu.cu->bdpcmMode, clpRng); break;
     default:          xPredIntraAng(srcBuf, piPred, channelType, clpRng); break;
   }
@@ -464,10 +480,17 @@ void IntraPrediction::xPredIntraPlanar( const CPelBuf &pSrc, PelBuf &pDst )
     }
   }
 }
-
+#if JVET_O0426_MRL_REF_SAMPLES_DC_MODE
+void IntraPrediction::xPredIntraDc(const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const int multiRefIdx, const bool enableBoundaryFilter)
+#else
 void IntraPrediction::xPredIntraDc( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const bool enableBoundaryFilter )
+#endif
 {
+#if JVET_O0426_MRL_REF_SAMPLES_DC_MODE
+  const Pel dcval = xGetPredValDc(pSrc, pDst, multiRefIdx);
+#else
   const Pel dcval = xGetPredValDc( pSrc, pDst );
+#endif
   pDst.fill( dcval );
 }
 

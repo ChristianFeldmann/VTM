@@ -1355,6 +1355,10 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
       return;
     }
   }
+#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+  cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA]   = false;
+  cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+#endif
 
   ChromaCbfs chromaCbfs;
   if( cu.ispMode && isLuma( partitioner.chType ) )
@@ -1366,8 +1370,11 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
   {
     transform_tree( *cu.cs, partitioner, cuCtx, chromaCbfs );
   }
-
+#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+  residual_lfnst_mode( cu, cuCtx );
+#else
   residual_lfnst_mode( cu );
+#endif
 }
 
 void CABACReader::rqt_root_cbf( CodingUnit& cu )
@@ -2336,7 +2343,11 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
     }
     if( cbfLuma )
     {
+#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+      residual_coding( tu, COMPONENT_Y, cuCtx );
+#else
       residual_coding( tu, COMPONENT_Y );
+#endif
     }
     if( !lumaOnly )
     {
@@ -2348,7 +2359,11 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
         }
         if( tu.cbf[ compID ] )
         {
+#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+          residual_coding( tu, compID, cuCtx );
+#else
           residual_coding( tu, compID );
+#endif
         }
       }
     }
@@ -2415,7 +2430,11 @@ void CABACReader::joint_cb_cr( TransformUnit& tu )
   tu.jointCbCr = m_BinDecoder.decodeBin( Ctx::JointCbCrFlag( 0 ) );
 }
 
+#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx& cuCtx )
+#else
 void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
+#endif
 {
   const CodingUnit& cu = *tu.cu;
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_coding() etype=%d pos=(%d,%d) size=%dx%d predMode=%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height, cu.predMode );
@@ -2458,7 +2477,13 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
 
   // parse last coeff position
   cctx.setScanPosLast( last_sig_coeff( cctx, tu, compID ) );
-
+#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+  if( tu.mtsIdx != MTS_SKIP && tu.blocks[ compID ].height >= 4 && tu.blocks[ compID ].width >= 4 )
+  {
+    const int maxLfnstPos = ((tu.blocks[compID].height == 4 && tu.blocks[compID].width == 4) || (tu.blocks[compID].height == 8 && tu.blocks[compID].width == 8)) ? 7 : 15;
+    cuCtx.violatesLfnstConstrained[ toChannelType(compID) ] |= cctx.scanPosLast() > maxLfnstPos;
+  }
+#endif
   // parse subblocks
   const int stateTransTab = ( tu.cs->slice->getDepQuantEnabledFlag() ? 32040 : 0 );
   int       state         = 0;
@@ -2594,7 +2619,11 @@ void CABACReader::explicit_rdpcm_mode( TransformUnit& tu, ComponentID compID )
   }
 }
 
+#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+void CABACReader::residual_lfnst_mode( CodingUnit& cu,  CUCtx& cuCtx  )
+#else
 void CABACReader::residual_lfnst_mode( CodingUnit& cu )
+#endif
 {
   if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || cu.mipFlag == true ||
     ( CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 ) )
@@ -2609,7 +2638,11 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu )
     const bool lumaFlag              = CS::isDualITree( *cu.cs ) ? (   isLuma( cu.chType ) ? true : false ) : true;
     const bool chromaFlag            = CS::isDualITree( *cu.cs ) ? ( isChroma( cu.chType ) ? true : false ) : true;
     bool nonZeroCoeffNonTs;
-    bool nonZeroCoeffNonTsCorner8x8  = CU::getNumNonZeroCoeffNonTsCorner8x8( cu, lumaFlag, chromaFlag ) > 0;
+#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+    bool nonZeroCoeffNonTsCorner8x8 = ( lumaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA] ) || (chromaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] );
+#else
+    bool nonZeroCoeffNonTsCorner8x8 = CU::getNumNonZeroCoeffNonTsCorner8x8( cu, lumaFlag, chromaFlag ) > 0;
+#endif
     const int  nonZeroCoeffThr       = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
     nonZeroCoeffNonTs = CU::getNumNonZeroCoeffNonTs( cu, lumaFlag, chromaFlag ) > nonZeroCoeffThr;
 

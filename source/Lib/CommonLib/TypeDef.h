@@ -71,7 +71,6 @@
 #define JVET_O0429_CRS_LAMBDA_FIX                         1 // JVET-O0429: fix encoder lambda rounding used in CRS
 
 #define JVET_O0428_LMCS_CLEANUP                           1 // JVET-O0428: LMCS cleanups
-
 #define JVET_O0164_REMOVE_AMVP_SPATIAL_SCALING            1 // JVET-O0164/JVET-O0587: remove spatial AMVP candidate scaling
 
 #define JVET_O0162_IBC_MVP_FLAG                           1 // JVET-O0162/O0331/O0480/O0574: IBC mvp flag conditioned on MaxNumMergeCand>1
@@ -84,6 +83,8 @@
 
 #define JVET_O0364_PDPC_DC                                1 // JVET-O0364 Part 4: align PDPC process for DC with the one for Planar
 #define JVET_O0364_PDPC_ANGULAR                           1 // JVET-O0364 Part 5: simplify PDPC process for angular modes
+
+#define JVET_O0049_LFNST_ZERO_PRIM_COEFFS                 1 // JVET-O0049: CE6-2.1a, LFNST involves zeroing of primary only coefficient positions
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 

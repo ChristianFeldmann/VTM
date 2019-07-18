@@ -76,6 +76,8 @@
 
 #define JVET_O0280_SIMD_TRIANGLE_WEIGHTING                1 // JVET-O0280: SIMD implementation for weighted sample prediction process of triangle prediction mode
 
+#define JVET_O0364_PDPC_DC                                1 // JVET-O0364 Part 4: align PDPC process for DC with the one for Planar
+
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
 #define MRG_SHARELIST_SHARSIZE                            32

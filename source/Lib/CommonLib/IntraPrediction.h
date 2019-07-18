@@ -113,11 +113,7 @@ protected:
   int m_leftRefLength;
   // prediction
   void xPredIntraPlanar           ( const CPelBuf &pSrc, PelBuf &pDst );
-#if JVET_O0426_MRL_REF_SAMPLES_DC_MODE
-  void xPredIntraDc(const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const int multiRefIdx, const bool enableBoundaryFilter = true);
-#else
   void xPredIntraDc(const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const bool enableBoundaryFilter = true);
-#endif
   void xPredIntraAng              ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const ClpRng& clpRng);
 
   void initPredIntraParams        ( const PredictionUnit & pu,  const CompArea compArea, const SPS& sps );
@@ -125,11 +121,7 @@ protected:
   static bool isIntegerSlope(const int absAng) { return (0 == (absAng & 0x1F)); }
 
   void xPredIntraBDPCM            ( const CPelBuf &pSrc, PelBuf &pDst, const uint32_t dirMode, const ClpRng& clpRng );
-#if JVET_O0426_MRL_REF_SAMPLES_DC_MODE
-  Pel  xGetPredValDc(const CPelBuf &pSrc, const Size &dstSize, const int multiRefIdx);
-#else
   Pel  xGetPredValDc(const CPelBuf &pSrc, const Size &dstSize);
-#endif
 
   void xFillReferenceSamples      ( const CPelBuf &recoBuf,      Pel* refBufUnfiltered, const CompArea &area, const CodingUnit &cu );
   void xFilterReferenceSamples    ( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps

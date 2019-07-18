@@ -103,9 +103,6 @@ typedef std::pair<int, int>  TrCost;
 #endif
 // clang-format on
 
-#ifndef HEVC_TOOLS
-#define HEVC_TOOLS                                        0
-#endif
 
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE                0
@@ -156,10 +153,6 @@ typedef std::pair<int, int>  TrCost;
 #define WCG_EXT                                           1
 #define WCG_WPSNR                                         WCG_EXT
 
-#if HEVC_TOOLS
-#define HEVC_VPS                                          1
-#else
-#endif
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
 

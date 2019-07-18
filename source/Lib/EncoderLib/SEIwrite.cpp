@@ -229,9 +229,6 @@ void SEIWriter::xWriteSEIDecodedPictureHash(const SEIDecodedPictureHash& sei)
 
 void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
 {
-#if HEVC_VPS
-  WRITE_CODE(sei.activeVPSId,     4,         "active_video_parameter_set_id");
-#endif
   WRITE_FLAG(sei.m_selfContainedCvsFlag,     "self_contained_cvs_flag");
   WRITE_FLAG(sei.m_noParameterSetUpdateFlag, "no_parameter_set_update_flag");
   WRITE_UVLC(sei.numSpsIdsMinus1,            "num_sps_ids_minus1");

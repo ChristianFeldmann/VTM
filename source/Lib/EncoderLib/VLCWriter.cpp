@@ -665,9 +665,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   xTraceSPSHeader ();
 #endif
   WRITE_CODE( pcSPS->getDecodingParameterSetId (), 4,       "sps_decoding_parameter_set_id" );
-#if HEVC_VPS
-  WRITE_CODE( pcSPS->getVPSId (),          4,       "sps_video_parameter_set_id" );
-#endif
   CHECK(pcSPS->getMaxTLayers() == 0, "Maximum number of temporal sub-layers is '0'");
 
   WRITE_CODE(pcSPS->getMaxTLayers() - 1, 3, "sps_max_sub_layers_minus1");
@@ -990,81 +987,6 @@ void HLSWriter::codeDPS( const DPS* dps )
   xWriteRbspTrailingBits();
 }
 
-#if HEVC_VPS
-void HLSWriter::codeVPS( const VPS* pcVPS )
-{
-#if ENABLE_TRACING
-  xTraceVPSHeader();
-#endif
-  WRITE_CODE( pcVPS->getVPSId(),                    4,        "vps_video_parameter_set_id" );
-  WRITE_FLAG(                                       1,        "vps_base_layer_internal_flag" );
-  WRITE_FLAG(                                       1,        "vps_base_layer_available_flag" );
-  WRITE_CODE( 0,                                    6,        "vps_max_layers_minus1" );
-  WRITE_CODE( pcVPS->getMaxTLayers() - 1,           3,        "vps_max_sub_layers_minus1" );
-  WRITE_FLAG( pcVPS->getTemporalNestingFlag(),                "vps_temporal_id_nesting_flag" );
-  CHECK(pcVPS->getMaxTLayers()<=1&&!pcVPS->getTemporalNestingFlag(), "Invalud parameters");
-  WRITE_CODE( 0xffff,                              16,        "vps_reserved_0xffff_16bits" );
-  codePTL( pcVPS->getPTL(), true, pcVPS->getMaxTLayers() - 1 );
-  const bool subLayerOrderingInfoPresentFlag = 1;
-  WRITE_FLAG(subLayerOrderingInfoPresentFlag,              "vps_sub_layer_ordering_info_present_flag");
-  for(uint32_t i=0; i <= pcVPS->getMaxTLayers()-1; i++)
-  {
-    WRITE_UVLC( pcVPS->getMaxDecPicBuffering(i) - 1,       "vps_max_dec_pic_buffering_minus1[i]" );
-    WRITE_UVLC( pcVPS->getNumReorderPics(i),               "vps_max_num_reorder_pics[i]" );
-    WRITE_UVLC( pcVPS->getMaxLatencyIncrease(i),           "vps_max_latency_increase_plus1[i]" );
-    if (!subLayerOrderingInfoPresentFlag)
-    {
-      break;
-    }
-  }
-
-  CHECK( pcVPS->getNumHrdParameters() > MAX_VPS_NUM_HRD_PARAMETERS, "Too many HRD parameters" );
-  CHECK( pcVPS->getMaxNuhReservedZeroLayerId() >= MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1, "Invalid parameters read" );
-  WRITE_CODE( pcVPS->getMaxNuhReservedZeroLayerId(), 6,     "vps_max_layer_id" );
-  WRITE_UVLC( pcVPS->getMaxOpSets() - 1,                    "vps_num_layer_sets_minus1" );
-  for( uint32_t opsIdx = 1; opsIdx <= ( pcVPS->getMaxOpSets() - 1 ); opsIdx ++ )
-  {
-    // Operation point set
-    for( uint32_t i = 0; i <= pcVPS->getMaxNuhReservedZeroLayerId(); i ++ )
-    {
-      // Only applicable for version 1
-      // pcVPS->setLayerIdIncludedFlag( true, opsIdx, i );
-      WRITE_FLAG( pcVPS->getLayerIdIncludedFlag( opsIdx, i ) ? 1 : 0, "layer_id_included_flag[opsIdx][i]" );
-    }
-  }
-  const TimingInfo *timingInfo = pcVPS->getTimingInfo();
-  WRITE_FLAG(timingInfo->getTimingInfoPresentFlag(),          "vps_timing_info_present_flag");
-  if(timingInfo->getTimingInfoPresentFlag())
-  {
-    WRITE_CODE(timingInfo->getNumUnitsInTick(), 32,           "vps_num_units_in_tick");
-    WRITE_CODE(timingInfo->getTimeScale(),      32,           "vps_time_scale");
-    WRITE_FLAG(timingInfo->getPocProportionalToTimingFlag(),  "vps_poc_proportional_to_timing_flag");
-    if(timingInfo->getPocProportionalToTimingFlag())
-    {
-      WRITE_UVLC(timingInfo->getNumTicksPocDiffOneMinus1(),   "vps_num_ticks_poc_diff_one_minus1");
-    }
-    WRITE_UVLC( pcVPS->getNumHrdParameters(),                 "vps_num_hrd_parameters" );
-
-    if( pcVPS->getNumHrdParameters() > 0 )
-    {
-      for( uint32_t i = 0; i < pcVPS->getNumHrdParameters(); i ++ )
-      {
-        // Only applicable for version 1
-        WRITE_UVLC( pcVPS->getHrdOpSetIdx( i ),                "hrd_layer_set_idx" );
-        if( i > 0 )
-        {
-          WRITE_FLAG( pcVPS->getCprmsPresentFlag( i ) ? 1 : 0, "cprms_present_flag[i]" );
-        }
-        codeHrdParameters(pcVPS->getHrdParameters(i), pcVPS->getCprmsPresentFlag( i ), pcVPS->getMaxTLayers() - 1);
-      }
-    }
-  }
-  WRITE_FLAG( 0,                     "vps_extension_flag" );
-
-  //future extensions here..
-  xWriteRbspTrailingBits();
-}
-#else
 void HLSWriter::codeVPS(const VPS* pcVPS)
 {
 #if ENABLE_TRACING
@@ -1083,7 +1005,6 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   //future extensions here..
   xWriteRbspTrailingBits();
 }
-#endif
 
 void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 {

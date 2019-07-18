@@ -1008,9 +1008,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   xTraceSPSHeader ();
 #endif
   READ_CODE( 4,  uiCode, "sps_decoding_parameter_set_id");       pcSPS->setDecodingParameterSetId( uiCode );
-#if HEVC_VPS
-  READ_CODE( 4,  uiCode, "sps_video_parameter_set_id");          pcSPS->setVPSId        ( uiCode );
-#endif
   READ_CODE(3, uiCode, "sps_max_sub_layers_minus1");          pcSPS->setMaxTLayers   (uiCode + 1);
   CHECK(uiCode > 6, "Invalid maximum number of T-layer signalled");
   READ_CODE(5, uiCode, "sps_reserved_zero_5bits");
@@ -1413,102 +1410,6 @@ void HLSyntaxReader::parseDPS(DPS* dps)
   xReadRbspTrailingBits();
 }
 
-#if HEVC_VPS
-void HLSyntaxReader::parseVPS(VPS* pcVPS)
-{
-#if ENABLE_TRACING
-  xTraceVPSHeader ();
-#endif
-  uint32_t  uiCode;
-
-  READ_CODE( 4,  uiCode,  "vps_video_parameter_set_id" );         pcVPS->setVPSId( uiCode );
-  READ_FLAG( uiCode,      "vps_base_layer_internal_flag" );       CHECK(uiCode != 1, "Invalid code");
-  READ_FLAG( uiCode,      "vps_base_layer_available_flag" );      CHECK(uiCode != 1, "Invalid code");
-  READ_CODE( 6,  uiCode,  "vps_max_layers_minus1" );
-  READ_CODE( 3,  uiCode,  "vps_max_sub_layers_minus1" );          pcVPS->setMaxTLayers( uiCode + 1 );    CHECK(uiCode+1 > MAX_TLAYER, "Invalid code");
-  READ_FLAG(     uiCode,  "vps_temporal_id_nesting_flag" );       pcVPS->setTemporalNestingFlag( uiCode ? true:false );
-  CHECK (pcVPS->getMaxTLayers()<=1&&!pcVPS->getTemporalNestingFlag(), "Invalid VPS state");
-  READ_CODE( 16, uiCode,  "vps_reserved_0xffff_16bits" );         CHECK(uiCode != 0xffff, "Invalid value for reserved bits");
-  parsePTL ( pcVPS->getPTL(), true, pcVPS->getMaxTLayers()-1);
-  uint32_t subLayerOrderingInfoPresentFlag;
-  READ_FLAG(subLayerOrderingInfoPresentFlag, "vps_sub_layer_ordering_info_present_flag");
-  for(uint32_t i = 0; i <= pcVPS->getMaxTLayers()-1; i++)
-  {
-    READ_UVLC( uiCode,  "vps_max_dec_pic_buffering_minus1[i]" );    pcVPS->setMaxDecPicBuffering( uiCode + 1, i );
-    READ_UVLC( uiCode,  "vps_max_num_reorder_pics[i]" );            pcVPS->setNumReorderPics( uiCode, i );
-    READ_UVLC( uiCode,  "vps_max_latency_increase_plus1[i]" );      pcVPS->setMaxLatencyIncrease( uiCode, i );
-
-    if (!subLayerOrderingInfoPresentFlag)
-    {
-      for (i++; i <= pcVPS->getMaxTLayers()-1; i++)
-      {
-        pcVPS->setMaxDecPicBuffering(pcVPS->getMaxDecPicBuffering(0), i);
-        pcVPS->setNumReorderPics(pcVPS->getNumReorderPics(0), i);
-        pcVPS->setMaxLatencyIncrease(pcVPS->getMaxLatencyIncrease(0), i);
-      }
-      break;
-    }
-  }
-
-  CHECK( pcVPS->getNumHrdParameters() >= MAX_VPS_OP_SETS_PLUS1, "Too many HDR parameters" );
-  CHECK( pcVPS->getMaxNuhReservedZeroLayerId() >= MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1, "Reserved zero layer id too big" );
-  READ_CODE( 6, uiCode, "vps_max_layer_id" );                        pcVPS->setMaxNuhReservedZeroLayerId( uiCode );
-  READ_UVLC(    uiCode, "vps_num_layer_sets_minus1" );               pcVPS->setMaxOpSets( uiCode + 1 );
-  for( uint32_t opsIdx = 1; opsIdx <= ( pcVPS->getMaxOpSets() - 1 ); opsIdx ++ )
-  {
-    // Operation point set
-    for( uint32_t i = 0; i <= pcVPS->getMaxNuhReservedZeroLayerId(); i ++ )
-    {
-      READ_FLAG( uiCode, "layer_id_included_flag[opsIdx][i]" );   pcVPS->setLayerIdIncludedFlag( uiCode == 1 ? true : false, opsIdx, i );
-    }
-  }
-
-  TimingInfo *timingInfo = pcVPS->getTimingInfo();
-  READ_FLAG(       uiCode, "vps_timing_info_present_flag");         timingInfo->setTimingInfoPresentFlag      (uiCode ? true : false);
-  if(timingInfo->getTimingInfoPresentFlag())
-  {
-    READ_CODE( 32, uiCode, "vps_num_units_in_tick");                timingInfo->setNumUnitsInTick             (uiCode);
-    READ_CODE( 32, uiCode, "vps_time_scale");                       timingInfo->setTimeScale                  (uiCode);
-    READ_FLAG(     uiCode, "vps_poc_proportional_to_timing_flag");  timingInfo->setPocProportionalToTimingFlag(uiCode ? true : false);
-    if(timingInfo->getPocProportionalToTimingFlag())
-    {
-      READ_UVLC(   uiCode, "vps_num_ticks_poc_diff_one_minus1");    timingInfo->setNumTicksPocDiffOneMinus1   (uiCode);
-    }
-
-    READ_UVLC( uiCode, "vps_num_hrd_parameters" );                  pcVPS->setNumHrdParameters( uiCode );
-
-    if( pcVPS->getNumHrdParameters() > 0 )
-    {
-      pcVPS->createHrdParamBuffer();
-    }
-    for( uint32_t i = 0; i < pcVPS->getNumHrdParameters(); i ++ )
-    {
-      READ_UVLC( uiCode, "hrd_layer_set_idx[i]" );                  pcVPS->setHrdOpSetIdx( uiCode, i );
-      if( i > 0 )
-      {
-        READ_FLAG( uiCode, "cprms_present_flag[i]" );               pcVPS->setCprmsPresentFlag( uiCode == 1 ? true : false, i );
-      }
-      else
-      {
-        pcVPS->setCprmsPresentFlag( true, i );
-      }
-
-      parseHrdParameters(pcVPS->getHrdParameters(i), pcVPS->getCprmsPresentFlag( i ), pcVPS->getMaxTLayers() - 1);
-    }
-  }
-
-  READ_FLAG( uiCode,  "vps_extension_flag" );
-  if (uiCode)
-  {
-    while ( xMoreRbspData() )
-    {
-      READ_FLAG( uiCode, "vps_extension_data_flag");
-    }
-  }
-
-  xReadRbspTrailingBits();
-}
-#else
 void HLSyntaxReader::parseVPS(VPS* pcVPS)
 {
 #if ENABLE_TRACING
@@ -1535,7 +1436,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 
   xReadRbspTrailingBits();
 }
-#endif
 
 void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC)
 {

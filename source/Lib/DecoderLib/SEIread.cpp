@@ -453,9 +453,6 @@ void SEIReader::xParseSEIActiveParameterSets(SEIActiveParameterSets& sei, uint32
   uint32_t val;
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
 
-#if HEVC_VPS
-  sei_read_code( pDecodedMessageOutputStream, 4, val, "active_video_parameter_set_id");   sei.activeVPSId = val;
-#endif
   sei_read_flag( pDecodedMessageOutputStream,    val, "self_contained_cvs_flag");         sei.m_selfContainedCvsFlag     = (val != 0);
   sei_read_flag( pDecodedMessageOutputStream,    val, "no_parameter_set_update_flag");    sei.m_noParameterSetUpdateFlag = (val != 0);
   sei_read_uvlc( pDecodedMessageOutputStream,    val, "num_sps_ids_minus1");              sei.numSpsIdsMinus1 = val;

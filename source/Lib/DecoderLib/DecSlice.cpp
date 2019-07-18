@@ -89,9 +89,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 
   cs.lmcsAps = slice->getLmcsAPS();
 
-#if HEVC_VPS
-  cs.vps              = slice->getVPS();
-#endif
   cs.pcv              = slice->getPPS()->pcv;
   cs.chromaQpAdj      = 0;
 

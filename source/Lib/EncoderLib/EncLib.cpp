@@ -230,11 +230,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
   // initialize SPS
   xInitSPS(sps0);
-#if HEVC_VPS
-  xInitVPS(m_cVPS, sps0);
-#else
   xInitVPS(m_cVPS);
-#endif
 
   int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
   xInitDPS(m_dps, sps0, dpsId);
@@ -817,25 +813,6 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
 }
 
 
-#if HEVC_VPS
-void EncLib::xInitVPS(VPS &vps, const SPS &sps)
-{
-  // The SPS must have already been set up.
-  // set the VPS profile information.
-  *vps.getPTL() = *sps.getPTL();
-  vps.setMaxOpSets(1);
-  vps.getTimingInfo()->setTimingInfoPresentFlag       ( false );
-  vps.setNumHrdParameters( 0 );
-
-  vps.createHrdParamBuffer();
-  for( uint32_t i = 0; i < vps.getNumHrdParameters(); i ++ )
-  {
-    vps.setHrdOpSetIdx( 0, i );
-    vps.setCprmsPresentFlag( false, i );
-    // Set up HrdParameters here.
-  }
-}
-#else
 void EncLib::xInitVPS(VPS &vps)
 {
   // The SPS must have already been set up.
@@ -846,7 +823,6 @@ void EncLib::xInitVPS(VPS &vps)
     vps.setVPSIncludedLayerId(0, i);
   }
 }
-#endif
 
 void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
 {

@@ -1537,6 +1537,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
       pcSlice->setPOC(uiCode);
+      ReferencePictureList* rpl0 = pcSlice->getLocalRPL0();
+      (*rpl0) = ReferencePictureList();
+      pcSlice->setRPL0(rpl0);
+      ReferencePictureList* rpl1 = pcSlice->getLocalRPL1();
+      (*rpl1) = ReferencePictureList();
+      pcSlice->setRPL1(rpl1);
     }
     else
     {
@@ -1588,6 +1594,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
           pcSlice->setRPL0idx(uiCode);
           pcSlice->setRPL0(sps->getRPLList0()->getReferencePictureList(uiCode));
         }
+        else
+        {
+          pcSlice->setRPL0idx(0);
+          pcSlice->setRPL0(sps->getRPLList0()->getReferencePictureList(0));
+        }
       }
       //Deal POC Msb cycle signalling for LTRP
       for (int i = 0; i < pcSlice->getRPL0()->getNumberOfLongtermPictures() + pcSlice->getRPL0()->getNumberOfShorttermPictures(); i++)
@@ -1621,7 +1632,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
       else
       {
-        if (sps->getNumRPL0() > 0)
+        if (sps->getNumRPL1() > 0)
         {
           READ_FLAG(uiCode, "ref_pic_list_sps_flag[1]");
         }

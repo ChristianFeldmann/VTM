@@ -97,6 +97,9 @@ Slice::Slice()
 , m_bTestWeightBiPred             ( false )
 , m_substreamSizes                ( )
 , m_cabacInitFlag                 ( false )
+#if JVET_O0105_ICT_HHI
+, m_jointCbCrSignFlag             ( false )
+#endif
 , m_bLMvdL1Zero                   ( false )
 , m_LFCrossSliceBoundaryFlag      ( false )
 , m_enableTMVPFlag                ( true )
@@ -192,6 +195,9 @@ void Slice::initSlice()
   m_disFracMMVD          = false;
   m_substreamSizes.clear();
   m_cabacInitFlag        = false;
+#if JVET_O0105_ICT_HHI
+  m_jointCbCrSignFlag    = false;
+#endif
   m_enableTMVPFlag       = true;
 }
 
@@ -672,6 +678,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   }
 
   m_cabacInitFlag                 = pSrc->m_cabacInitFlag;
+#if JVET_O0105_ICT_HHI
+  m_jointCbCrSignFlag             = pSrc->m_jointCbCrSignFlag;
+#endif
   memcpy(m_alfApss, pSrc->m_alfApss, sizeof(m_alfApss)); // this might be quite unsafe
   memcpy( m_tileGroupAlfEnabledFlag, pSrc->m_tileGroupAlfEnabledFlag, sizeof(m_tileGroupAlfEnabledFlag));
   m_tileGroupNumAps               = pSrc->m_tileGroupNumAps;

@@ -138,7 +138,11 @@ public:
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff, const int stateTransTable, int& state );
   void        residual_codingTS         ( TransformUnit&                tu,     ComponentID     compID );
   void        residual_coding_subblockTS( CoeffCodingContext&           cctx,   TCoeff*         coeff  );
+#if JVET_O0105_ICT_HHI
+  void        joint_cb_cr               ( TransformUnit&                tu,     const int cbfMask );
+#else
   void        joint_cb_cr               ( TransformUnit&                tu );
+#endif
 
   // cross component prediction (clause 7.3.8.12)
   void        cross_comp_pred           ( TransformUnit&                tu,     ComponentID     compID );

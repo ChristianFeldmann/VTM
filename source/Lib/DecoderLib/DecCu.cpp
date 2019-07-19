@@ -226,10 +226,30 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   const QpParam cQP( tu, compID );
 
+#if JVET_O0105_ICT_HHI
+  if( tu.jointCbCr && isChroma(compID) )
+  {
+    if( compID == COMPONENT_Cb )
+    {
+      PelBuf resiCr = cs.getResiBuf( tu.blocks[ COMPONENT_Cr ] );
+      if( tu.jointCbCr >> 1 )
+      {
+        m_pcTrQuant->invTransformNxN( tu, COMPONENT_Cb, piResi, cQP );
+      }
+      else
+      {
+        m_pcTrQuant->invTransformNxN( tu, COMPONENT_Cr, resiCr, cQP );
+      }
+      m_pcTrQuant->invTransformICT( tu, piResi, resiCr );
+    }
+  }
+  else
+#else
   // Joint chroma residual mode: Cr uses negative of the signalled Cb residual
   if ( tu.jointCbCr && compID == COMPONENT_Cr )
     piResi.copyAndNegate( cs.getResiBuf( tu.blocks[COMPONENT_Cb] ) );
   else
+#endif
   if( TU::getCbf( tu, compID ) )
   {
     m_pcTrQuant->invTransformNxN( tu, compID, piResi, cQP );
@@ -241,9 +261,14 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   //===== reconstruction =====
   flag = flag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
+#if JVET_O0105_ICT_HHI
+  if (flag && (TU::getCbf(tu, compID) || tu.jointCbCr) && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag())
+  {
+#else
   if (flag && TU::getCbf(tu, compID) && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag())
   {
     if ( !(tu.jointCbCr && compID == COMPONENT_Cr) ) // // Joint chroma residual mode: chroma scaling took place already when doing Cb
+#endif
     piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
   }
   if( isChroma(compID) && tu.compAlpha[compID] != 0 )
@@ -546,10 +571,30 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
 
   const QpParam cQP(currTU, compID);
 
+#if JVET_O0105_ICT_HHI
+  if( currTU.jointCbCr && isChroma(compID) )
+  {
+    if( compID == COMPONENT_Cb )
+    {
+      PelBuf resiCr = cs.getResiBuf( currTU.blocks[ COMPONENT_Cr ] );
+      if( currTU.jointCbCr >> 1 )
+      {
+        m_pcTrQuant->invTransformNxN( currTU, COMPONENT_Cb, resiBuf, cQP );
+      }
+      else
+      {
+        m_pcTrQuant->invTransformNxN( currTU, COMPONENT_Cr, resiCr, cQP );
+      }
+      m_pcTrQuant->invTransformICT( currTU, resiBuf, resiCr );
+    }
+  }
+  else
+#else
   // Joint chroma residual mode: Cr uses negative of the signalled Cb residual
   if ( currTU.jointCbCr && compID == COMPONENT_Cr )
     resiBuf.copyAndNegate( cs.getResiBuf( currTU.blocks[COMPONENT_Cb] ) );
   else
+#endif
   if( TU::getCbf( currTU, compID ) )
   {
     m_pcTrQuant->invTransformNxN( currTU, compID, resiBuf, cQP );
@@ -561,9 +606,15 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
 
   //===== reconstruction =====
   const Slice           &slice = *cs.slice;
+#if JVET_O0105_ICT_HHI
+  if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && isChroma(compID) && (TU::getCbf(currTU, compID) || currTU.jointCbCr)
+   && slice.getLmcsChromaResidualScaleFlag() && currTU.blocks[compID].width * currTU.blocks[compID].height > 4)
+  {
+#else
   if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && isChroma(compID) && TU::getCbf(currTU, compID) && slice.getLmcsChromaResidualScaleFlag() && currTU.blocks[compID].width*currTU.blocks[compID].height > 4)
   {
     if ( !(currTU.jointCbCr && compID == COMPONENT_Cr) ) // Joint chroma residual mode: chroma scaling took place already when doing Cb
+#endif
     resiBuf.scaleSignal(currTU.getChromaAdj(), 0, currTU.cu->cs->slice->clpRng(compID));
   }
   if( isChroma( compID ) && currTU.compAlpha[compID] != 0 )

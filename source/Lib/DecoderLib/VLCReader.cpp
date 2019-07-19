@@ -1967,6 +1967,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setMaxNumTriangleCand(0);
       }
     }
+#if JVET_O0105_ICT_HHI
+    if (bChroma)
+    {
+      READ_FLAG( uiCode, "joint_cb_cr_sign_flag" ); pcSlice->setJointCbCrSignFlag( uiCode != 0 );
+    }
+#endif
 
     READ_SVLC( iCode, "slice_qp_delta" );
     pcSlice->setSliceQp (26 + pps->getPicInitQPMinus26() + iCode);

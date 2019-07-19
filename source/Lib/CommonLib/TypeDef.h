@@ -50,6 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0105_ICT_HHI                                1 // JVET-O0105: inter-chroma transform (ICT) as extension of joint chroma coding (JCC)
+#define JVET_O0543_ICT_HHI_ICU_ONLY                       1 // JVET-O0543: ICT only in Intra CUs (was Intra slices, modified during adoption)
+
 #define JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL      1 // JVET-O0247: not signal APS index when number APS is 2
 
 #define JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL           1 // JVET-O0288: remove slice type dependency in ALF

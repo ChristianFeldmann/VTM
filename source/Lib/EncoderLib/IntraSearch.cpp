@@ -1645,6 +1645,13 @@ void IntraSearch::xEncCoeffQT( CodingStructure &cs, Partitioner &partitioner, co
 
   if( currArea.blocks[compID].valid() )
   {
+#if JVET_O0105_ICT_HHI
+    if( compID == COMPONENT_Cr )
+    {
+      const int cbfMask = ( TU::getCbf( currTU, COMPONENT_Cb ) ? 2 : 0 ) + ( TU::getCbf( currTU, COMPONENT_Cr ) ? 1 : 0 );
+      m_CABACEstimator->joint_cb_cr( currTU, cbfMask );
+    }
+#endif
     if( TU::hasCrossCompPredInfo( currTU, compID ) )
     {
       m_CABACEstimator->cross_comp_pred( currTU, compID );
@@ -1695,7 +1702,12 @@ uint64_t IntraSearch::xGetIntraFracBitsQTSingleChromaComponent( CodingStructure 
   TransformUnit &currTU = *cs.getTU( currArea.blocks[partitioner.chType], partitioner.chType );
 
   //cbf coding
+#if JVET_O0105_ICT_HHI
+  const bool prevCbf = ( compID == COMPONENT_Cr ? TU::getCbfAtDepth( currTU, COMPONENT_Cb, partitioner.currTrDepth ) : false );
+  m_CABACEstimator->cbf_comp( cs, TU::getCbfAtDepth( currTU, compID, partitioner.currTrDepth ), currArea.blocks[compID], partitioner.currTrDepth - 1, prevCbf );
+#else
   m_CABACEstimator->cbf_comp( cs, TU::getCbfAtDepth( currTU, compID, partitioner.currTrDepth ), currArea.blocks[compID], partitioner.currTrDepth - 1 );
+#endif
   //coeffs coding and cross comp coding
   if( TU::hasCrossCompPredInfo( currTU, compID ) )
   {
@@ -1724,6 +1736,17 @@ uint64_t IntraSearch::xGetIntraFracBitsQTChroma(TransformUnit& currTU, const Com
 
   if ( currTU.jointCbCr )
   {
+#if JVET_O0105_ICT_HHI
+    const int cbfMask = ( TU::getCbf( currTU, COMPONENT_Cb ) ? 2 : 0 ) + ( TU::getCbf( currTU, COMPONENT_Cr ) ? 1 : 0 );
+    m_CABACEstimator->cbf_comp( cs, cbfMask>>1, currTU.blocks[ COMPONENT_Cb ], currTU.depth, false );
+    m_CABACEstimator->cbf_comp( cs, cbfMask &1, currTU.blocks[ COMPONENT_Cr ], currTU.depth, cbfMask>>1 );
+    if( cbfMask )
+      m_CABACEstimator->joint_cb_cr( currTU, cbfMask );
+    if( cbfMask >> 1 )
+      m_CABACEstimator->residual_coding( currTU, COMPONENT_Cb );
+    if( cbfMask & 1 )
+      m_CABACEstimator->residual_coding( currTU, COMPONENT_Cr );
+#else
     if ( TU::getCbf( currTU, COMPONENT_Cb ) )
     {
       m_CABACEstimator->cbf_comp( cs, true, currTU.blocks[ COMPONENT_Cb ], currTU.depth, false );
@@ -1735,16 +1758,31 @@ uint64_t IntraSearch::xGetIntraFracBitsQTChroma(TransformUnit& currTU, const Com
       m_CABACEstimator->cbf_comp( cs, false, currTU.blocks[ COMPONENT_Cb ], currTU.depth, false );
       m_CABACEstimator->cbf_comp( cs, false, currTU.blocks[ COMPONENT_Cr ], currTU.depth, false );
     }
+#endif
   }
   else
   {
     if ( compID == COMPONENT_Cb )
       m_CABACEstimator->cbf_comp( cs, TU::getCbf( currTU, compID ), currTU.blocks[ compID ], currTU.depth, false );
     else
+#if JVET_O0105_ICT_HHI
+    {
+      const bool cbCbf    = TU::getCbf( currTU, COMPONENT_Cb );
+      const bool crCbf    = TU::getCbf( currTU, compID );
+      const int  cbfMask  = ( cbCbf ? 2 : 0 ) + ( crCbf ? 1 : 0 );
+      m_CABACEstimator->cbf_comp( cs, crCbf, currTU.blocks[ compID ], currTU.depth, cbCbf );
+      m_CABACEstimator->joint_cb_cr( currTU, cbfMask );
+    }
+#else
       m_CABACEstimator->cbf_comp( cs, TU::getCbf( currTU, compID ), currTU.blocks[ compID ], currTU.depth, TU::getCbf( currTU, COMPONENT_Cb ) );
+#endif
   }
 
+#if JVET_O0105_ICT_HHI
+  if( !currTU.jointCbCr && TU::getCbf( currTU, compID ) )
+#else
   if( TU::getCbf( currTU, compID ) )
+#endif
   {
     m_CABACEstimator->residual_coding( currTU, compID );
   }
@@ -1789,6 +1827,9 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
 
   //===== init availability pattern =====
+#if JVET_O0105_ICT_HHI
+  CHECK( tu.jointCbCr && compID == COMPONENT_Cr, "wrong combination of compID and jointCbCr" );
+#endif
   bool jointCbCr = tu.jointCbCr && compID == COMPONENT_Cb;
 
   if ( compID == COMPONENT_Y )
@@ -1838,6 +1879,10 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
   const Slice           &slice = *cs.slice;
   bool flag = slice.getLmcsEnabledFlag() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
+#if JVET_O0105_ICT_HHI
+  if (isLuma(compID))
+  {
+#endif
   if (flag && slice.getLmcsChromaResidualScaleFlag() && isChroma(compID))
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
@@ -1878,6 +1923,9 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     }
     CrossComponentPrediction::crossComponentPrediction(tu, compID, cs.getResiBuf(tu.Y()), piResi, piResi, false);
   }
+#if JVET_O0105_ICT_HHI
+  }
+#endif
 
   //===== transform and quantization =====
   //--- init rate estimation arrays for RDOQ ---
@@ -1900,8 +1948,10 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     double cResScale = round((double)(1 << CSCALE_FP_PREC) / (double)cResScaleInv);
 #endif
     m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cResScale*cResScale));
+#if !JVET_O0105_ICT_HHI
     if ( !jointCbCr ) // Joint CbCr signal is to be scaled in the case of joint chroma
     piResi.scaleSignal(cResScaleInv, 1, tu.cu->cs->slice->clpRng(compID));
+#endif
   }
 
   const CompArea &crArea = tu.blocks     [ COMPONENT_Cr ];
@@ -1912,6 +1962,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
   if ( jointCbCr )
   {
+#if !JVET_O0105_ICT_HHI
     // Get Cr prediction and residual
     crResi.copyFrom( crOrg  );
     crResi.subtract( crPred );
@@ -1922,13 +1973,30 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     // Scale the joint signal
     if ( flag && slice.getLmcsChromaResidualScaleFlag() )
       piResi.scaleSignal(tu.getChromaAdj(), 1, tu.cu->cs->slice->clpRng(compID));
-
+#endif
     // Lambda is loosened for the joint mode with respect to single modes as the same residual is used for both chroma blocks
+#if JVET_O0105_ICT_HHI
+    const int    absIct = abs( TU::getICTMode(tu) );
+    const double lfact  = ( absIct == 1 || absIct == 3 ? 0.8 : 0.5 );
+    m_pcTrQuant->setLambda( lfact * m_pcTrQuant->getLambda() );
+#else
     m_pcTrQuant->setLambda( 0.60 * m_pcTrQuant->getLambda() );
+#endif
   }
+#if JVET_O0105_ICT_HHI
+  if( isChroma(compID) && tu.cu->cs->slice->getSliceQp() > 18 )
+  {
+    m_pcTrQuant->setLambda( 1.3 * m_pcTrQuant->getLambda() );
+  }
+#else
   else if ( isChroma(compID) && tu.cu->cs->slice->getSliceQp() > 18 )
     m_pcTrQuant->setLambda( 1.10 * m_pcTrQuant->getLambda() );
+#endif
 
+#if JVET_O0105_ICT_HHI
+  if( isLuma(compID) )
+  {
+#endif
   double diagRatio = 0, horVerRatio = 0;
 
   if( trModes )
@@ -1961,15 +2029,70 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   {
     piResi.fill(0);
   }
+#if JVET_O0105_ICT_HHI
+  }
+  else // chroma
+  {
+    int         codedCbfMask  = 0;
+    ComponentID codeCompId    = ( tu.jointCbCr ? ( tu.jointCbCr>>1 ? COMPONENT_Cb : COMPONENT_Cr ) : compID );
+    if( tu.jointCbCr )
+    {
+      ComponentID otherCompId = ( codeCompId==COMPONENT_Cr ? COMPONENT_Cb : COMPONENT_Cr );
+      tu.getCoeffs( otherCompId ).fill(0); // do we need that?
+      TU::setCbfAtDepth (tu, otherCompId, tu.depth, false );
+    }
+    PelBuf& codeResi = ( codeCompId == COMPONENT_Cr ? crResi : piResi );
+    uiAbsSum = 0;
+    m_pcTrQuant->transformNxN( tu, codeCompId, cQP, uiAbsSum, m_CABACEstimator->getCtx() );
+    DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), codeCompId, uiAbsSum );
+    if( uiAbsSum > 0 )
+    {
+      m_pcTrQuant->invTransformNxN(tu, codeCompId, codeResi, cQP);
+      codedCbfMask += ( codeCompId == COMPONENT_Cb ? 2 : 1 );
+    }
+    else
+    {
+      codeResi.fill(0);
+    }
+
+    if( tu.jointCbCr )
+    {
+      if( tu.jointCbCr == 3 && codedCbfMask == 2 )
+      {
+        codedCbfMask = 3;
+        TU::setCbfAtDepth (tu, COMPONENT_Cr, tu.depth, true );
+      }
+      if( tu.jointCbCr != codedCbfMask )
+      {
+        ruiDist = std::numeric_limits<Distortion>::max();
+        return;
+      }
+      m_pcTrQuant->invTransformICT( tu, piResi, crResi );
+      uiAbsSum = codedCbfMask;
+    }
+  }
+#endif
 
   //===== reconstruction =====
   if ( flag && uiAbsSum > 0 && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag() )
   {
     piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
+#if JVET_O0105_ICT_HHI
+    if( jointCbCr )
+    {
+      crResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(COMPONENT_Cr));
+    }
+#endif
   }
   if (bUseCrossCPrediction)
   {
     CrossComponentPrediction::crossComponentPrediction(tu, compID, cs.getResiBuf(tu.Y()), piResi, piResi, true);
+#if JVET_O0105_ICT_HHI
+    if( jointCbCr )
+    {
+      CrossComponentPrediction::crossComponentPrediction(tu, COMPONENT_Cr, cs.getResiBuf(tu.Y()), crResi, crResi, true);
+    }
+#endif
   }
 
   if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
@@ -1980,8 +2103,19 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     piReco.reconstruct(tmpPred, piResi, cs.slice->clpRng(compID));
   }
   else
+#if JVET_O0105_ICT_HHI
+  {
+    piReco.reconstruct(piPred, piResi, cs.slice->clpRng( compID ));
+    if( jointCbCr )
+    {
+      crReco.reconstruct(crPred, crResi, cs.slice->clpRng( COMPONENT_Cr ));
+    }
+  }
+#else
   piReco.reconstruct(piPred, piResi, cs.slice->clpRng( compID ));
+#endif
 
+#if !JVET_O0105_ICT_HHI
   if ( jointCbCr )
   {
     // Cr uses negative of the signalled Cb residual
@@ -2013,6 +2147,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
       ruiDist += m_pcRdCost->getDistPart( crOrg, crReco, bitDepth, COMPONENT_Cr, DF_SSE );
     }
   }
+#endif
 
   //===== update distortion =====
 #if WCG_EXT
@@ -2029,12 +2164,28 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
       ruiDist += m_pcRdCost->getDistPart(piOrg, tmpRecLuma, sps.getBitDepth(toChannelType(compID)), compID, DF_SSE_WTD, &orgLuma);
     }
     else
+#if JVET_O0105_ICT_HHI
+    {
       ruiDist += m_pcRdCost->getDistPart(piOrg, piReco, bitDepth, compID, DF_SSE_WTD, &orgLuma);
+      if( jointCbCr )
+      {
+        ruiDist += m_pcRdCost->getDistPart(crOrg, crReco, bitDepth, COMPONENT_Cr, DF_SSE_WTD, &orgLuma);
+      }
+    }
+#else
+      ruiDist += m_pcRdCost->getDistPart(piOrg, piReco, bitDepth, compID, DF_SSE_WTD, &orgLuma);
+#endif
   }
   else
 #endif
   {
     ruiDist += m_pcRdCost->getDistPart( piOrg, piReco, bitDepth, compID, DF_SSE );
+#if JVET_O0105_ICT_HHI
+    if( jointCbCr )
+    {
+      ruiDist += m_pcRdCost->getDistPart( crOrg, crReco, bitDepth, COMPONENT_Cr, DF_SSE );
+    }
+#endif
   }
 }
 
@@ -2537,7 +2688,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
   TransformUnit &currTU               = *cs.getTU( currArea.chromaPos(), CHANNEL_TYPE_CHROMA );
   const PredictionUnit &pu            = *cs.getPU( currArea.chromaPos(), CHANNEL_TYPE_CHROMA );
 
+#if JVET_O0105_ICT_HHI
+  bool lumaUsesISP                    = false;
+#else
   bool lumaUsesISP                    = !CS::isDualITree( cs ) && currTU.cu->ispMode;
+#endif
   uint32_t     currDepth                  = partitioner.currTrDepth;
   const PPS &pps                      = *cs.pps;
   ChromaCbfs cbfs                     ( false );
@@ -2610,6 +2765,65 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       predIntraAng( COMPONENT_Cr, piPredCr, pu);
     }
 
+#if JVET_O0105_ICT_HHI
+    // determination of chroma residuals including reshaping and cross-component prediction
+    //----- get chroma residuals -----
+    PelBuf resiCb  = cs.getResiBuf(cbArea);
+    PelBuf resiCr  = cs.getResiBuf(crArea);
+    resiCb.copyFrom( cs.getOrgBuf (cbArea) );
+    resiCr.copyFrom( cs.getOrgBuf (crArea) );
+    resiCb.subtract( piPredCb );
+    resiCr.subtract( piPredCr );
+
+    //----- get reshape parameter ----
+    bool doReshaping = ( cs.slice->getLmcsEnabledFlag() && cs.slice->getLmcsChromaResidualScaleFlag()
+                         && (cs.slice->isIntra() || m_pcReshape->getCTUFlag()) && (cbArea.width * cbArea.height > 4) );
+    if( doReshaping )
+    {
+      const Area area = currTU.Y().valid() ? currTU.Y() : Area(recalcPosition(currTU.chromaFormat, currTU.chType, CHANNEL_TYPE_LUMA, currTU.blocks[currTU.chType].pos()), recalcSize(currTU.chromaFormat, currTU.chType, CHANNEL_TYPE_LUMA, currTU.blocks[currTU.chType].size()));
+      const CompArea &areaY = CompArea(COMPONENT_Y, currTU.chromaFormat, area );
+      PelBuf piPredY;
+      piPredY = cs.picture->getPredBuf(areaY);
+      const Pel avgLuma = piPredY.computeAvg();
+      int adj = m_pcReshape->calculateChromaAdj(avgLuma);
+      currTU.setChromaAdj(adj);
+    }
+
+    //----- get cross component prediction parameters -----
+    bool checkCrossComponentPrediction = PU::isChromaIntraModeCrossCheckMode( pu ) && pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && TU::getCbf( currTU, COMPONENT_Y );
+    int  compAlpha[MAX_NUM_COMPONENT] = { 0, 0, 0 };
+    if( checkCrossComponentPrediction )
+    {
+      compAlpha[COMPONENT_Cb] = xCalcCrossComponentPredictionAlpha( currTU, COMPONENT_Cb, m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate() );
+      compAlpha[COMPONENT_Cr] = xCalcCrossComponentPredictionAlpha( currTU, COMPONENT_Cr, m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate() );
+      if( compAlpha[COMPONENT_Cb] == 0 && compAlpha[COMPONENT_Cr] == 0 )
+      {
+        checkCrossComponentPrediction = false;
+      }
+    }
+
+    //===== store original residual signals (std and crossCompPred) =====
+    CompStorage  orgResiCb[5], orgResiCr[5]; // 0:std, 1-3:jointCbCr (placeholder at this stage), 4:crossComp
+    for( int k = 0; k < (checkCrossComponentPrediction?5:1); k+=4 )
+    {
+      orgResiCb[k].create( cbArea );
+      orgResiCr[k].create( crArea );
+      if( k >= 4 ) {
+        CrossComponentPrediction::crossComponentPrediction( currTU, COMPONENT_Cb, cs.getResiBuf(currTU.Y()), resiCb, orgResiCb[k], false);
+        CrossComponentPrediction::crossComponentPrediction( currTU, COMPONENT_Cr, cs.getResiBuf(currTU.Y()), resiCr, orgResiCr[k], false);
+      } else {
+        orgResiCb[k].copyFrom( resiCb );
+        orgResiCr[k].copyFrom( resiCr );
+      }
+      if( doReshaping )
+      {
+        int cResScaleInv = currTU.getChromaAdj();
+        orgResiCb[k].scaleSignal( cResScaleInv, 1, currTU.cu->cs->slice->clpRng(COMPONENT_Cb) );
+        orgResiCr[k].scaleSignal( cResScaleInv, 1, currTU.cu->cs->slice->clpRng(COMPONENT_Cr) );
+      }
+    }
+#endif
+
     for( uint32_t c = COMPONENT_Cb; c < numTBlocks; c++)
     {
       const ComponentID compID  = ComponentID(c);
@@ -2620,8 +2834,9 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       Distortion singleDistCTmp = 0;
       double     singleCostTmp  = 0;
 
+#if !JVET_O0105_ICT_HHI
       const bool checkCrossComponentPrediction = PU::isChromaIntraModeCrossCheckMode( pu ) && pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && TU::getCbf( currTU, COMPONENT_Y );
-
+#endif
       const int  crossCPredictionModesToTest = checkCrossComponentPrediction ? 2 : 1;
       const int  totalModesToTest            = crossCPredictionModesToTest;
       const bool isOneMode                   = false;
@@ -2639,7 +2854,14 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       {
         for (int crossCPredictionModeId = 0; crossCPredictionModeId < crossCPredictionModesToTest; crossCPredictionModeId++)
         {
+#if JVET_O0105_ICT_HHI
+          resiCb.copyFrom( orgResiCb[4*crossCPredictionModeId] );
+          resiCr.copyFrom( orgResiCr[4*crossCPredictionModeId] );
+
+          currTU.compAlpha    [compID] = ( crossCPredictionModeId ? compAlpha[compID] : 0 );
+#else
           currTU.compAlpha    [compID] = 0;
+#endif
 
           currModeId++;
 
@@ -2736,32 +2958,96 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       double     bestCostCbCr   = bestCostCb + bestCostCr;
       Distortion bestDistCbCr   = bestDistCb + bestDistCr;
       int        bestJointCbCr  = 0;
+#if JVET_O0105_ICT_HHI
+      bool       lastIsBest     = false;
+      std::vector<int>  jointCbfMasksToTest;
+      if( TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr) )
+      {
+        jointCbfMasksToTest = m_pcTrQuant->selectICTCandidates( currTU, orgResiCb, orgResiCr );
+      }
+
+      for( int cbfMask : jointCbfMasksToTest )
+#else
       bool       checkJointCbCr = TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr);
 
       if ( checkJointCbCr )
+#endif
       {
         Distortion distTmp = 0;
 
+#if JVET_O0105_ICT_HHI
+        currTU.jointCbCr               = (uint8_t)cbfMask;
+#else
         currTU.jointCbCr               = 1;
+#endif
         currTU.compAlpha[COMPONENT_Cb] = 0;
+        currTU.compAlpha[COMPONENT_Cr] = 0;
 
         m_CABACEstimator->getCtx() = ctxStartTU;
 
+#if JVET_O0105_ICT_HHI
+        resiCb.copyFrom( orgResiCb[cbfMask] );
+        resiCr.copyFrom( orgResiCr[cbfMask] );
+        xIntraCodingTUBlock( currTU, COMPONENT_Cb, false, distTmp, 0 );
+
+        double costTmp = std::numeric_limits<double>::max();
+        if( distTmp < std::numeric_limits<Distortion>::max() )
+        {
+          uint64_t bits  = xGetIntraFracBitsQTChroma( currTU, COMPONENT_Cb );
+          costTmp = m_pcRdCost->calcRdCost( bits, distTmp );
+        }
+#else
         xIntraCodingTUBlock( currTU, COMPONENT_Cb, false, distTmp, 0 );
 
         uint64_t bits  = xGetIntraFracBitsQTChroma( currTU, COMPONENT_Cb );
         double costTmp = m_pcRdCost->calcRdCost( bits, distTmp );
+#endif
 
         if( costTmp < bestCostCbCr )
         {
           bestCostCbCr  = costTmp;
           bestDistCbCr  = distTmp;
+#if JVET_O0105_ICT_HHI
+          bestJointCbCr = currTU.jointCbCr;
+
+          // store data
+          if( cbfMask != jointCbfMasksToTest.back() )
+          {
+#if KEEP_PRED_AND_RESI_SIGNALS
+            saveCS.getOrgResiBuf(cbArea).copyFrom(cs.getOrgResiBuf(cbArea));
+            saveCS.getOrgResiBuf(crArea).copyFrom(cs.getOrgResiBuf(crArea));
+#endif
+            saveCS.getPredBuf   (cbArea).copyFrom(cs.getPredBuf   (cbArea));
+            saveCS.getPredBuf   (crArea).copyFrom(cs.getPredBuf   (crArea));
+            if( keepResi )
+            {
+              saveCS.getResiBuf (cbArea).copyFrom(cs.getResiBuf   (cbArea));
+              saveCS.getResiBuf (crArea).copyFrom(cs.getResiBuf   (crArea));
+            }
+            saveCS.getRecoBuf   (cbArea).copyFrom(cs.getRecoBuf   (cbArea));
+            saveCS.getRecoBuf   (crArea).copyFrom(cs.getRecoBuf   (crArea));
+
+            tmpTU.copyComponentFrom(currTU, COMPONENT_Cb);
+            tmpTU.copyComponentFrom(currTU, COMPONENT_Cr);
+
+            ctxBest = m_CABACEstimator->getCtx();
+          }
+          else
+          {
+            lastIsBest = true;
+          }
+#else
           bestJointCbCr = 1;
+#endif
         }
       }
 
       // Retrieve the best CU data (unless it was the very last one tested)
+#if JVET_O0105_ICT_HHI
+      if ( !( maxModesTested == 1 && jointCbfMasksToTest.empty() ) && !lastIsBest )
+#else
       if ( !(maxModesTested == 1 && !checkJointCbCr) && bestJointCbCr == 0 )
+#endif
       {
 #if KEEP_PRED_AND_RESI_SIGNALS
         cs.getPredBuf   (cbArea).copyFrom(saveCS.getPredBuf   (cbArea));
@@ -2795,7 +3081,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       cbfs.cbf(COMPONENT_Cb) = TU::getCbf(currTU, COMPONENT_Cb);
       cbfs.cbf(COMPONENT_Cr) = TU::getCbf(currTU, COMPONENT_Cr);
 
+#if JVET_O0105_ICT_HHI
+      currTU.jointCbCr = ( cbfs.cbf(COMPONENT_Cb) + cbfs.cbf(COMPONENT_Cr) ? bestJointCbCr : 0 );
+#else
       currTU.jointCbCr = cbfs.cbf(COMPONENT_Cb) ? bestJointCbCr : 0;
+#endif
       cs.dist         += bestDistCbCr;
     }
   }

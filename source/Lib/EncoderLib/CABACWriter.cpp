@@ -2197,6 +2197,14 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
     }
     cbfChroma = ( cbf[ COMPONENT_Cb ] || cbf[ COMPONENT_Cr ] );
   }
+
+#if JVET_O0105_ICT_HHI
+  if( !lumaOnly )
+  {
+    joint_cb_cr( tu, ( cbf[COMPONENT_Cb] ? 2 : 0 ) + ( cbf[COMPONENT_Cr] ? 1 : 0 ) );
+  }
+#endif
+
   if( cbfLuma || cbfChroma )
   {
     if( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded )
@@ -2290,16 +2298,35 @@ void CABACWriter::cu_chroma_qp_offset( const CodingUnit& cu )
 //    void        residual_coding_subblock( coeffCtx )
 //================================================================================
 
+#if JVET_O0105_ICT_HHI
+void CABACWriter::joint_cb_cr( const TransformUnit& tu, const int cbfMask )
+{
+  CHECK( tu.jointCbCr && tu.jointCbCr != cbfMask, "wrong value of jointCbCr (" << (int)tu.jointCbCr << " vs " << (int)cbfMask << ")" );
+#if JVET_O0543_ICT_HHI_ICU_ONLY
+  if( ( CU::isIntra( *tu.cu ) && cbfMask ) || ( cbfMask == 3 ) )
+#else
+  if( cbfMask )
+#endif
+  {
+    m_BinEncoder.encodeBin( tu.jointCbCr ? 1 : 0, Ctx::JointCbCrFlag( cbfMask - 1 ) );
+  }
+}
+#else
 void CABACWriter::joint_cb_cr( const TransformUnit& tu )
 {
   m_BinEncoder.encodeBin( tu.jointCbCr ? 1 : 0, Ctx::JointCbCrFlag( 0 ) );
 }
+#endif
 
 void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 {
   const CodingUnit& cu = *tu.cu;
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_coding() etype=%d pos=(%d,%d) size=%dx%d predMode=%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height, cu.predMode );
 
+#if JVET_O0105_ICT_HHI
+  if( compID == COMPONENT_Cr && tu.jointCbCr == 3 )
+    return;
+#else
   // Joint Cb-Cr residual mode is signalled if both Cb and Cr cbfs are true
   if ( compID == COMPONENT_Cr && TU::getCbf( tu, COMPONENT_Cb ) )
   {
@@ -2309,6 +2336,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
     if ( tu.jointCbCr )
       return;
   }
+#endif
 
   // code transform skip and explicit rdpcm mode
   mts_coding         ( tu, compID );

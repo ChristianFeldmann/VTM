@@ -4489,6 +4489,18 @@ bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
   return mtsAllowed;
 }
 
+#if JVET_O0105_ICT_HHI
+int TU::getICTMode( const TransformUnit& tu, int jointCbCr )
+{
+  if( jointCbCr < 0 )
+  {
+    jointCbCr = tu.jointCbCr;
+  }
+  static const int g_ictModes[2][4] = { { 0, 3, 1, 2 }, { 0, -3, -1, -2 } };
+  return g_ictModes[ tu.cs->slice->getJointCbCrSignFlag() ][ jointCbCr ];
+}
+#endif
+
 uint32_t TU::getGolombRiceStatisticsIndex(const TransformUnit &tu, const ComponentID &compID)
 {
   const bool transformSkip    = tu.mtsIdx==MTS_SKIP;

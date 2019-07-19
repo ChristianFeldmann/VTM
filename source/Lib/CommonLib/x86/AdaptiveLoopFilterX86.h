@@ -276,7 +276,7 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
 
       xmm6 = _mm_mullo_epi32( xmm8, xmm6 );
       xmm9 = _mm_shuffle_epi32( xmm6, 0xB1 );
-      xmm5 = _mm_xor_si128(_mm_cmpeq_epi32(_mm_max_epu32(xmm9, xmm6), xmm9), _mm_set1_epi32(-1));
+      xmm5 = _mm_cmpgt_epi32(_mm_add_epi32(xmm6, _mm_set1_epi32(0x80000000)), _mm_add_epi32(xmm9, _mm_set1_epi32(0x80000000)));
       xmm5 = _mm_shuffle_epi32( xmm5, 0xF0 ); //second mask is for all upper part
 
       xmm8 = _mm_shuffle_epi32( xmm4, 0x0E );

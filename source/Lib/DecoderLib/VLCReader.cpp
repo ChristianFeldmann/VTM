@@ -1221,8 +1221,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
 
 #if MAX_TB_SIZE_SIGNALLING
+#if JVET_O0545_MAX_TB_SIGNALLING
+  READ_UVLC( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( uiCode + 5 );
+#else
   // KJS: Not in syntax
   READ_UVLC( uiCode, "log2_max_luma_transform_block_size_minus2" ); pcSPS->setLog2MaxTbSize( uiCode + 2 );
+#endif
 #endif
 #if JVET_O0244_DELTA_POC
   READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
@@ -1329,7 +1333,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
   if( pcSPS->getUseSBT() )
   {
+#if JVET_O0545_MAX_TB_SIGNALLING
+    READ_FLAG(uiCode, "max_sbt_size_64_flag");                      pcSPS->setMaxSbtSize(std::min((int)(1 << pcSPS->getLog2MaxTbSize()), uiCode != 0 ? 64 : 32));
+#else
     READ_FLAG(uiCode, "max_sbt_size_64_flag");                      pcSPS->setMaxSbtSize(uiCode != 0 ? 64 : 32);
+#endif
   }
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);

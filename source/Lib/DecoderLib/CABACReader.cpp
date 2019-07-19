@@ -3720,7 +3720,11 @@ void CABACReader::mip_flag( CodingUnit& cu )
     cu.mipFlag = false;
     return;
   }
+#if JVET_O0545_MAX_TB_SIGNALLING
+  if( cu.lwidth() > cu.cs->sps->getMaxTbSize() || cu.lheight() > cu.cs->sps->getMaxTbSize())
+#else
   if( cu.lwidth() > MIP_MAX_WIDTH || cu.lheight() > MIP_MAX_HEIGHT )
+#endif
   {
     cu.mipFlag = false;
     return;
@@ -3752,7 +3756,11 @@ void CABACReader::mip_pred_modes( CodingUnit &cu )
 
 void CABACReader::mip_pred_mode( PredictionUnit &pu )
 {
+#if JVET_O0545_MAX_TB_SIGNALLING
+  CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported" );
+#else
   CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported" );
+#endif
 
   const int numModes   = getNumModesMip( pu.Y() ); CHECKD( numModes > MAX_NUM_MIP_MODE, "Error: too many MIP modes" );
 

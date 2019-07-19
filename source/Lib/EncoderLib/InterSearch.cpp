@@ -6258,7 +6258,11 @@ void InterSearch::setWpScalingDistParam( int iRefIdx, RefPicList eRefPicListCur,
 void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &partitioner, const ComponentID &compID)
 {
   const UnitArea& currArea    = partitioner.currArea();
+#if JVET_O0545_MAX_TB_SIGNALLING
+  const TransformUnit &currTU = *cs.getTU(isLuma(partitioner.chType) ? currArea.lumaPos() : currArea.chromaPos(), partitioner.chType);
+#else
   const TransformUnit &currTU = *cs.getTU(currArea.lumaPos(), partitioner.chType);
+#endif
   const CodingUnit &cu        = *currTU.cu;
   const unsigned currDepth    = partitioner.currTrDepth;
 
@@ -6281,7 +6285,11 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
 
     CHECK(CU::isIntra(cu), "Inter search provided with intra CU");
 
-    if( cu.chromaFormat != CHROMA_400 )
+    if( cu.chromaFormat != CHROMA_400 
+#if JVET_O0545_MAX_TB_SIGNALLING
+      && (!CS::isDualITree(cs) || isChroma(partitioner.chType))
+#endif
+      )
     {
 #if !JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
       const bool firstCbfOfCU = ( currDepth == 0 );
@@ -6314,7 +6322,11 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
       }
     }
 
-    if( !bSubdiv && !( cu.sbtInfo && currTU.noResidual ) )
+    if( !bSubdiv && !( cu.sbtInfo && currTU.noResidual ) 
+#if JVET_O0545_MAX_TB_SIGNALLING
+      && !isChroma(partitioner.chType)
+#endif
+      )
     {
       m_CABACEstimator->cbf_comp( cs, TU::getCbfAtDepth( currTU, COMPONENT_Y, currDepth ), currArea.Y(), currDepth );
     }
@@ -6655,7 +6667,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
   if (bCheckFull)
   {
+#if JVET_O0545_MAX_TB_SIGNALLING
+    TransformUnit &tu = csFull->addTU(CS::getArea(cs, currArea, partitioner.chType), partitioner.chType);
+#else
     TransformUnit &tu = csFull->addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
+#endif
     tu.depth          = currDepth;
     tu.mtsIdx         = MTS_DCT2_DCT2;
     tu.checkTuNoResidual( partitioner.currPartIdx() );
@@ -6695,7 +6711,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     saveCS.picture = cs.picture;
     saveCS.area.repositionTo(currArea);
     saveCS.clearTUs();
+#if JVET_O0545_MAX_TB_SIGNALLING
+    TransformUnit & bestTU = saveCS.addTU(CS::getArea(cs, currArea, partitioner.chType), partitioner.chType);
+#else
     TransformUnit & bestTU = saveCS.addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
+#endif
 
     for( uint32_t c = 0; c < numTBlocks; c++ )
     {

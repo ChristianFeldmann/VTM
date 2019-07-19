@@ -184,7 +184,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       resetGbiCodingOrder(true, cs);
     }
 
-    if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == 0)
+    if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == tileXPosInCtus)
     {
       cs.motionLut.lut.resize(0);
       cs.motionLut.lutIbc.resize(0);

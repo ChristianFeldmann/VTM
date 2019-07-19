@@ -177,6 +177,8 @@ void LoopFilter::loopFilterPic( CodingStructure& cs
       m_ctuYLumaSamples = y << pcv.maxCUHeightLog2;
 
       const UnitArea ctuArea( pcv.chrFormat, Area( x << pcv.maxCUWidthLog2, y << pcv.maxCUHeightLog2, pcv.maxCUWidth, pcv.maxCUWidth ) );
+      CodingUnit* firstCU = cs.getCU( ctuArea.lumaPos(), CH_L);
+      cs.slice = firstCU->slice;
 
       // CU-based deblocking
       for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, CH_L ), CH_L ) )
@@ -214,6 +216,8 @@ void LoopFilter::loopFilterPic( CodingStructure& cs
       m_ctuYLumaSamples = y << pcv.maxCUHeightLog2;
 
       const UnitArea ctuArea( pcv.chrFormat, Area( x << pcv.maxCUWidthLog2, y << pcv.maxCUHeightLog2, pcv.maxCUWidth, pcv.maxCUWidth ) );
+      CodingUnit* firstCU = cs.getCU( ctuArea.lumaPos(), CH_L);
+      cs.slice = firstCU->slice;
 
       // CU-based deblocking
       for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, CH_L ), CH_L ) )
@@ -1132,7 +1136,8 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
     if (bS[0] > 0 || bS[1] > 0)
     {
       const CodingUnit& cuQ =  cu;
-      const CodingUnit& cuP = *cu.cs->getCU( recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, cu.chType, pos.offset( xoffset - uiNumPelsLuma, yoffset - uiNumPelsLuma ) ), cu.chType );
+      CodingUnit& cuP1 = *cu.cs->getCU( recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, cu.chType, pos.offset( xoffset - uiNumPelsLuma, yoffset - uiNumPelsLuma ) ), cu.chType );
+      CodingUnit& cuP  = *cu.cs->getCU( recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, ((!cuP1.cs->pcv->ISingleTree && cuP1.slice->isIntra()) ? CHANNEL_TYPE_CHROMA : cu.chType), pos.offset( xoffset - uiNumPelsLuma, yoffset - uiNumPelsLuma ) ), ((!cuP1.cs->pcv->ISingleTree && cuP1.slice->isIntra()) ? CHANNEL_TYPE_CHROMA : cu.chType));
 
       if (edgeDir == EDGE_VER)
       {

@@ -765,10 +765,14 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
     modeList[6] = MDLM_T_IDX;
     modeList[7] = DM_CHROMA_IDX;
 
+#if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
+    const uint32_t lumaMode = getCoLocatedIntraLumaMode(pu);
+#else
     Position topLeftPos = pu.blocks[pu.chType].lumaPos();
     Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
     const PredictionUnit *lumaPU = CS::isDualITree( *pu.cs ) ? pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : &pu;
     const uint32_t lumaMode = PU::getIntraDirLuma( *lumaPU );
+#endif
     for( int i = 0; i < 4; i++ )
     {
       if( lumaMode == modeList[i] )
@@ -835,11 +839,15 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
 
   if( uiIntraMode == DM_CHROMA_IDX && !isLuma( chType ) )
   {
+#if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
+    uiIntraMode = getCoLocatedIntraLumaMode(pu);
+#else
     Position topLeftPos = pu.blocks[pu.chType].lumaPos();
     Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
     const PredictionUnit &lumaPU = CS::isDualITree( *pu.cs ) ? *pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : *pu.cs->getPU( topLeftPos, CHANNEL_TYPE_LUMA );
 
     uiIntraMode = PU::getIntraDirLuma( lumaPU );
+#endif
   }
   if( pu.chromaFormat == CHROMA_422 && !isLuma( chType ) && uiIntraMode < NUM_LUMA_MODE ) // map directional, planar and dc
   {
@@ -847,6 +855,17 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
   }
   return uiIntraMode;
 }
+
+#if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
+uint32_t PU::getCoLocatedIntraLumaMode( const PredictionUnit &pu )
+{
+  Position topLeftPos = pu.blocks[pu.chType].lumaPos();
+  Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
+  const PredictionUnit &lumaPU = CS::isDualITree( *pu.cs ) ? *pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : *pu.cs->getPU( topLeftPos, CHANNEL_TYPE_LUMA );
+
+  return PU::getIntraDirLuma( lumaPU );
+}
+#endif
 
 int PU::getWideAngIntraMode( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID )
 {

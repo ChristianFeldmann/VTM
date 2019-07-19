@@ -787,7 +787,11 @@ bool PU::isLMCMode(unsigned mode)
 }
 bool PU::isLMCModeEnabled(const PredictionUnit &pu, unsigned mode)
 {
+#if JVET_O1124_ALLOW_CCLM_COND
+  if ( pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed() )
+#else
   if ( pu.cs->sps->getUseLMChroma() )
+#endif
   {
     return true;
   }

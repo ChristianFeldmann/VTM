@@ -2382,7 +2382,9 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 
 void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 {
+#if !JVET_O0294_TRANSFORM_CLEANUP
   const CodingUnit  &cu = *tu.cu;
+#endif
   const bool  tsAllowed = TU::isTSAllowed ( tu, compID );
   const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
 
@@ -2393,7 +2395,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 
   if( tsAllowed )
   {
+#if JVET_O0294_TRANSFORM_CLEANUP
+    symbol = (tu.mtsIdx == MTS_SKIP) ? 1 : 0;
+#else
     symbol = (tu.mtsIdx == MTS_SKIP) ? 0 : 1;
+#endif
     ctxIdx = 6;
     m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
   }
@@ -2403,7 +2409,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
     if( mtsAllowed )
     {
       symbol = tu.mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
+#if JVET_O0294_TRANSFORM_CLEANUP
+      ctxIdx = 0;
+#else
       ctxIdx = std::min( (int)cu.qtDepth, 5 );
+#endif
       m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
 
       if( symbol )
@@ -2422,8 +2432,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
       }
     }
   }
-
+#if JVET_O0294_TRANSFORM_CLEANUP
+  DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tu.mtsIdx);
+#else
   DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), tu.mtsIdx );
+#endif
 }
 
 void CABACWriter::isp_mode( const CodingUnit& cu )

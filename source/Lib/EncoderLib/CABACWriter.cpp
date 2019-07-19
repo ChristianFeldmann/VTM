@@ -2428,8 +2428,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
       }
     }
   }
-
+#if JVET_O0294_TRANSFORM_CLEANUP
+  DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tu.mtsIdx);
+#else
   DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), tu.mtsIdx );
+#endif
 }
 
 void CABACWriter::isp_mode( const CodingUnit& cu )

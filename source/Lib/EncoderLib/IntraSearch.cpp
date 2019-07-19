@@ -3082,7 +3082,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       cbfs.cbf(COMPONENT_Cr) = TU::getCbf(currTU, COMPONENT_Cr);
 
 #if JVET_O0105_ICT_HHI
-      currTU.jointCbCr = ( cbfs.cbf(COMPONENT_Cb) + cbfs.cbf(COMPONENT_Cr) ? bestJointCbCr : 0 );
+      currTU.jointCbCr = ( (cbfs.cbf(COMPONENT_Cb) + cbfs.cbf(COMPONENT_Cr)) ? bestJointCbCr : 0 );
 #else
       currTU.jointCbCr = cbfs.cbf(COMPONENT_Cb) ? bestJointCbCr : 0;
 #endif

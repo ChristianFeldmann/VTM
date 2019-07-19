@@ -1889,6 +1889,21 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       parsePredWeightTable(pcSlice, sps);
       pcSlice->initWpScaling(sps);
     }
+    else
+    {
+      WPScalingParam *wp;
+      for ( int iNumRef=0 ; iNumRef<((pcSlice->getSliceType() == B_SLICE )?2:1); iNumRef++ )
+      {
+        RefPicList  eRefPicList = ( iNumRef ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
+        for ( int iRefIdx=0 ; iRefIdx<pcSlice->getNumRefIdx(eRefPicList) ; iRefIdx++ )
+        {  
+          pcSlice->getWpScaling(eRefPicList, iRefIdx, wp);
+          wp[0].bPresentFlag = false;
+          wp[1].bPresentFlag = false;
+          wp[2].bPresentFlag = false;
+        }
+      }
+    }
     READ_FLAG( uiCode, "dep_quant_enabled_flag" );
     pcSlice->setDepQuantEnabledFlag( uiCode != 0 );
     if( !pcSlice->getDepQuantEnabledFlag() )

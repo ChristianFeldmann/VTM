@@ -578,11 +578,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
     }
     else
     {
-#if JVET_O0055_INT_DMVR_DIS_BDOF
-      xWeightedAverage( pu, srcPred0, srcPred1, pcYuvPred, slice.getSPS()->getBitDepths(), slice.clpRngs(), (bioApplied ? 1 : 0));
-#else
       xWeightedAverage( pu, srcPred0, srcPred1, pcYuvPred, slice.getSPS()->getBitDepths(), slice.clpRngs(), bioApplied );
-#endif
     }
   }
 }
@@ -1121,11 +1117,7 @@ void InterPrediction::xCalcBlkGradient(int sx, int sy, int    *arraysGx2, int   
   g_pelBufOP.calcBlkGradient(sx, sy, arraysGx2, arraysGxGy, arraysGxdI, arraysGy2, arraysGydI, sGx2, sGy2, sGxGy, sGxdI, sGydI, width, height, unitSize);
 }
 
-#if JVET_O0055_INT_DMVR_DIS_BDOF
-void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const int& bioApplied )
-#else
 void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied )
-#endif
 {
   const int iRefIdx0 = pu.refIdx[0];
   const int iRefIdx1 = pu.refIdx[1];
@@ -1138,11 +1130,7 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
       pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->GBiIdx);
       return;
     }
-#if JVET_O0055_INT_DMVR_DIS_BDOF
-    if (bioApplied > 0)
-#else
     if (bioApplied)
-#endif
     {
       const int  src0Stride = pu.lwidth() + 2 * BIO_EXTEND_SIZE + 2;
       const int  src1Stride = pu.lwidth() + 2 * BIO_EXTEND_SIZE + 2;
@@ -1849,7 +1837,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
 
 #if JVET_O0055_INT_DMVR_DIS_BDOF
   int            bioEnabledThres = 8 * (dy >> 1) * dx;
-  int            bioAppliedType[64];
+  bool           bioAppliedType[MAX_NUM_SUBCU_DMVR];
 #endif
   {
     int num = 0;
@@ -1909,7 +1897,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
         }
 
 #if JVET_O0055_INT_DMVR_DIS_BDOF 
-        bioAppliedType[num] = (minCost < bioEnabledThres) ? 0 : (bioApplied ? 2 : 0);
+        bioAppliedType[num] = (minCost < bioEnabledThres) ? false : bioApplied;
 #endif
         totalDeltaMV[0] = (totalDeltaMV[0] << mvShift);
         totalDeltaMV[1] = (totalDeltaMV[1] << mvShift);
@@ -1956,7 +1944,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
         m_cYuvRefBuffSubCuDMVRL0 = m_cYuvRefBuffDMVRL0.subBuf(UnitAreaRelative(pu, subPu));
         m_cYuvRefBuffSubCuDMVRL1 = m_cYuvRefBuffDMVRL1.subBuf(UnitAreaRelative(pu, subPu));
 #if JVET_O0055_INT_DMVR_DIS_BDOF 
-        xFinalPaddedMCForDMVR(subPu, srcPred0, srcPred1, m_cYuvRefBuffSubCuDMVRL0, m_cYuvRefBuffSubCuDMVRL1, (bioAppliedType[num] > 0 ? true : false), mergeMv);
+        xFinalPaddedMCForDMVR(subPu, srcPred0, srcPred1, m_cYuvRefBuffSubCuDMVRL0, m_cYuvRefBuffSubCuDMVRL1, bioAppliedType[num], mergeMv);
 #else
         xFinalPaddedMCForDMVR(subPu, srcPred0, srcPred1, m_cYuvRefBuffSubCuDMVRL0, m_cYuvRefBuffSubCuDMVRL1, bioApplied, mergeMv);
 #endif

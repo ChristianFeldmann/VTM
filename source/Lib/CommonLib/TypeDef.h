@@ -50,88 +50,52 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL      1 // JVET-O0247: not signal APS index when number APS is 2
 
+#define JVET_O0637_CHROMA_GRADIENT_LINE_SELECTION         1 // Choose line0 and line3 for gradient computation when chroma is same size as luma
 
+#define JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL           1 // JVET-O0288: remove slice type dependency in ALF
 
+#define JVET_O0064_SIMP_ALF_CLIP_CODING                   1 // JVET-O0047/O0058/O0064/O0067/O0290/O0301/O0430: use FLC for alf clipping indices, always signal alf clipping indices
 
+#define JVET_O0529_IMPLICIT_MTS_HARMONIZE                 1 // JVET-O0529/O0540: Harmonization of LFNST, MIP and implicit MTS
 
+#define JVET_O0669_REMOVE_ALF_COEFF_PRED                  1 // JVET-O0425/O0427/O0669: remove prediction in ALF coefficients coding
 
+#define JVET_O0541_IMPLICIT_MTS_CONDITION                 1 // JVET_O0541: Decouple the intra implicit transform selection from an inter MTS related SPS flag
 
+#define JVET_O0655_422_CHROMA_DM_MAPPING_FIX              1 // JVET-O0655: modify chroma DM derivation table for 4:2:2 chroma format
 
+#define JVET_O1109_UNFIY_CRS                              1 // JVET-O1109: Unified CRS derivation
 
+#define JVET_O0590_REDUCE_DMVR_ORIG_MV_COST               1 // Reduce the DMVR cost of the original MV
 
+#define JVET_O0429_CRS_LAMBDA_FIX                         1 // JVET-O0429: fix encoder lambda rounding used in CRS
 
+#define JVET_O0428_LMCS_CLEANUP                           1 // JVET-O0428: LMCS cleanups
 
+#define JVET_O0164_REMOVE_AMVP_SPATIAL_SCALING            1 // JVET-O0164/JVET-O0587: remove spatial AMVP candidate scaling
 
+#define JVET_O0162_IBC_MVP_FLAG                           1 // JVET-O0162/O0331/O0480/O0574: IBC mvp flag conditioned on MaxNumMergeCand>1
 
+#define JVET_O0055_INT_DMVR_DIS_BDOF                      1 // integer-distance DMVR cost to disable BDOF and disable BDOF early termination
 
+#define JVET_O0267_IBC_SCALING_LIST                       1
 
+#define JVET_O0280_SIMD_TRIANGLE_WEIGHTING                1 // JVET-O0280: SIMD implementation for weighted sample prediction process of triangle prediction mode
 
+#define JVET_O0364_PDPC_DC                                1 // JVET-O0364 Part 4: align PDPC process for DC with the one for Planar
+#define JVET_O0364_PDPC_ANGULAR                           1 // JVET-O0364 Part 5: simplify PDPC process for angular modes
 
+#define JVET_O0294_TRANSFORM_CLEANUP                      1 // JVET-O0294: Context modelling for MTS index
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#define JVET_O1124_ALLOW_CCLM_COND                        1 // JVET-O1124/JVET-O0196: CCLM restriction to reduce luma-chroma latency for chroma separate tree
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
 #define MRG_SHARELIST_SHARSIZE                            32
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
-
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 #define FIX_PCM                                           1 // Fix PCM bugs in VTM3
@@ -153,10 +117,6 @@ typedef std::pair<int, int>  TrCost;
 #define MAX_NUM_TUS                                       4
 #endif
 // clang-format on
-
-#ifndef HEVC_TOOLS
-#define HEVC_TOOLS                                        0
-#endif
 
 
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
@@ -208,18 +168,8 @@ typedef std::pair<int, int>  TrCost;
 #define WCG_EXT                                           1
 #define WCG_WPSNR                                         WCG_EXT
 
-#if HEVC_TOOLS
-#define HEVC_VPS                                          1
-#else
-#endif
-
-
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
-
-
-
-
 
 // ====================================================================================================================
 // Debugging
@@ -1486,13 +1436,17 @@ struct AlfSliceParam
   bool                         alfLumaCoeffFlag[MAX_NUM_ALF_CLASSES];                   // alf_luma_coeff_flag[i]
   int                          numLumaFilters;                                          // number_of_filters_minus1 + 1
   bool                         alfLumaCoeffDeltaFlag;                                   // alf_luma_coeff_delta_flag
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
   bool                         alfLumaCoeffDeltaPredictionFlag;                         // alf_luma_coeff_delta_prediction_flag
+#endif
   std::vector<AlfFilterShape>* filterShapes;
   int                          tLayer;
   bool                         newFilterFlag[MAX_NUM_CHANNEL_TYPE];
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
   int                          fixedFilterPattern;
   int                          fixedFilterIdx[MAX_NUM_ALF_CLASSES];
   int                          fixedFilterSetIndex;
+#endif
 
   AlfSliceParam()
   {
@@ -1511,12 +1465,16 @@ struct AlfSliceParam
     std::memset( alfLumaCoeffFlag, true, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = 1;
     alfLumaCoeffDeltaFlag = false;
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     alfLumaCoeffDeltaPredictionFlag = false;
+#endif
     tLayer = 0;
     memset(newFilterFlag, 0, sizeof(newFilterFlag));
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     fixedFilterPattern = 0;
     std::memset(fixedFilterIdx, 0, sizeof(fixedFilterIdx));
-    fixedFilterSetIndex = 0;;
+    fixedFilterSetIndex = 0;
+#endif
   }
 
   const AlfSliceParam& operator = ( const AlfSliceParam& src )
@@ -1531,13 +1489,17 @@ struct AlfSliceParam
     std::memcpy( alfLumaCoeffFlag, src.alfLumaCoeffFlag, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = src.numLumaFilters;
     alfLumaCoeffDeltaFlag = src.alfLumaCoeffDeltaFlag;
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     alfLumaCoeffDeltaPredictionFlag = src.alfLumaCoeffDeltaPredictionFlag;
+#endif
     filterShapes = src.filterShapes;
     tLayer = src.tLayer;
     std::memcpy(newFilterFlag, src.newFilterFlag, sizeof(newFilterFlag));
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     fixedFilterPattern = src.fixedFilterPattern;
     std::memcpy(fixedFilterIdx, src.fixedFilterIdx, sizeof(fixedFilterIdx));
     fixedFilterSetIndex = src.fixedFilterSetIndex;
+#endif
     return *this;
   }
 };

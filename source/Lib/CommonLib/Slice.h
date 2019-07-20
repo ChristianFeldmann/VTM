@@ -96,6 +96,8 @@ public:
   void    setNumberOfLongtermPictures(int numberOfLtrp);
   int     getNumberOfLongtermPictures() const;
 
+  int     getNumRefEntries() const { return m_numberOfShorttermPictures + m_numberOfLongtermPictures; }
+
   void    setPOC(int idx, int POC);
   int     getPOC(int idx) const;
 
@@ -429,87 +431,6 @@ public:
 
 
 
-#if HEVC_VPS
-class VPS
-{
-private:
-  int                   m_VPSId;
-  uint32_t                  m_uiMaxTLayers;
-  uint32_t                  m_uiMaxLayers;
-  bool                  m_bTemporalIdNestingFlag;
-
-  uint32_t                  m_numReorderPics[MAX_TLAYER];
-  uint32_t                  m_uiMaxDecPicBuffering[MAX_TLAYER];
-  uint32_t                  m_uiMaxLatencyIncrease[MAX_TLAYER]; // Really max latency increase plus 1 (value 0 expresses no limit)
-
-  uint32_t                  m_numHrdParameters;
-  uint32_t                  m_maxNuhReservedZeroLayerId;
-  std::vector<HRDParameters> m_hrdParameters;
-  std::vector<uint32_t>     m_hrdOpSetIdx;
-  std::vector<bool>     m_cprmsPresentFlag;
-  uint32_t                  m_numOpSets;
-  bool                  m_layerIdIncludedFlag[MAX_VPS_OP_SETS_PLUS1][MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1];
-
-  PTL                   m_pcPTL;
-  TimingInfo            m_timingInfo;
-
-public:
-                    VPS();
-
-  virtual           ~VPS();
-
-  void              createHrdParamBuffer()
-  {
-    m_hrdParameters   .resize(getNumHrdParameters());
-    m_hrdOpSetIdx     .resize(getNumHrdParameters());
-    m_cprmsPresentFlag.resize(getNumHrdParameters());
-  }
-
-  HRDParameters*        getHrdParameters( uint32_t i )                           { return &m_hrdParameters[ i ];                                    }
-  const HRDParameters*  getHrdParameters( uint32_t i ) const                     { return &m_hrdParameters[ i ];                                    }
-  uint32_t              getHrdOpSetIdx( uint32_t i ) const                       { return m_hrdOpSetIdx[ i ];                                       }
-  void              setHrdOpSetIdx( uint32_t val, uint32_t i )                   { m_hrdOpSetIdx[ i ] = val;                                        }
-  bool              getCprmsPresentFlag( uint32_t i ) const                  { return m_cprmsPresentFlag[ i ];                                  }
-  void              setCprmsPresentFlag( bool val, uint32_t i )              { m_cprmsPresentFlag[ i ] = val;                                   }
-
-  int               getVPSId() const                                     { return m_VPSId;                                                  }
-  void              setVPSId(int i)                                      { m_VPSId = i;                                                     }
-
-  uint32_t              getMaxTLayers() const                                { return m_uiMaxTLayers;                                           }
-  void              setMaxTLayers(uint32_t t)                                { m_uiMaxTLayers = t;                                              }
-
-  uint32_t              getMaxLayers() const                                 { return m_uiMaxLayers;                                            }
-  void              setMaxLayers(uint32_t l)                                 { m_uiMaxLayers = l;                                               }
-
-  bool              getTemporalNestingFlag() const                       { return m_bTemporalIdNestingFlag;                                 }
-  void              setTemporalNestingFlag(bool t)                       { m_bTemporalIdNestingFlag = t;                                    }
-
-  void              setNumReorderPics(uint32_t v, uint32_t tLayer)               { m_numReorderPics[tLayer] = v;                                    }
-  uint32_t              getNumReorderPics(uint32_t tLayer) const                 { return m_numReorderPics[tLayer];                                 }
-
-  void              setMaxDecPicBuffering(uint32_t v, uint32_t tLayer)           { CHECK(tLayer >= MAX_TLAYER, "Invalid T-layer"); m_uiMaxDecPicBuffering[tLayer] = v; }
-  uint32_t              getMaxDecPicBuffering(uint32_t tLayer) const             { return m_uiMaxDecPicBuffering[tLayer];                           }
-
-  void              setMaxLatencyIncrease(uint32_t v, uint32_t tLayer)           { m_uiMaxLatencyIncrease[tLayer] = v;                              }
-  uint32_t              getMaxLatencyIncrease(uint32_t tLayer) const             { return m_uiMaxLatencyIncrease[tLayer];                           }
-
-  uint32_t              getNumHrdParameters() const                          { return m_numHrdParameters;                                       }
-  void              setNumHrdParameters(uint32_t v)                          { m_numHrdParameters = v;                                          }
-
-  uint32_t              getMaxNuhReservedZeroLayerId() const                 { return m_maxNuhReservedZeroLayerId;                              }
-  void              setMaxNuhReservedZeroLayerId(uint32_t v)                 { m_maxNuhReservedZeroLayerId = v;                                 }
-
-  uint32_t              getMaxOpSets() const                                 { return m_numOpSets;                                              }
-  void              setMaxOpSets(uint32_t v)                                 { m_numOpSets = v;                                                 }
-  bool              getLayerIdIncludedFlag(uint32_t opsIdx, uint32_t id) const   { return m_layerIdIncludedFlag[opsIdx][id];                        }
-  void              setLayerIdIncludedFlag(bool v, uint32_t opsIdx, uint32_t id) { m_layerIdIncludedFlag[opsIdx][id] = v;                           }
-
-  PTL*              getPTL()                                             { return &m_pcPTL;                                                 }
-  const PTL*        getPTL() const                                       { return &m_pcPTL;                                                 }
-  TimingInfo*       getTimingInfo()                                      { return &m_timingInfo;                                            }
-  const TimingInfo* getTimingInfo() const                                { return &m_timingInfo;                                            }
-};
-#else
 class VPS
 {
 private:
@@ -536,7 +457,6 @@ public:
   void              setVPSIncludedLayerId(uint32_t v, uint32_t Layer)        { m_vpsIncludedLayerId[Layer] = v;                                    }
   uint32_t          getVPSIncludedLayerId(uint32_t Layer) const              { return m_vpsIncludedLayerId[Layer];                                 }
 };
-#endif
 
 class Window
 {
@@ -744,9 +664,6 @@ private:
 #if INCLUDE_ISP_CFG_FLAG
   bool              m_ISP;
 #endif
-#if HEVC_VPS
-  int               m_VPSId;
-#endif
   ChromaFormat      m_chromaFormatIdc;
 
   uint32_t              m_uiMaxTLayers;           // maximum number of temporal layers
@@ -861,10 +778,6 @@ public:
   SPS();
   virtual                 ~SPS();
 
-#if HEVC_VPS
-  int                     getVPSId() const                                                                { return m_VPSId;                                                      }
-  void                    setVPSId(int i)                                                                 { m_VPSId = i;                                                         }
-#endif
   int                     getSPSId() const                                                                { return m_SPSId;                                                      }
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
   void                    setDecodingParameterSetId(int val)                                              { m_decodingParameterSetId = val; }
@@ -1066,7 +979,11 @@ public:
   bool      getCclmCollocatedChromaFlag()                                 const     { return m_cclmCollocatedChromaFlag; }
   void      setUseMTS             ( bool b )                                        { m_MTS = b; }
   bool      getUseMTS             ()                                      const     { return m_MTS; }
+#if JVET_O0541_IMPLICIT_MTS_CONDITION
+  bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraMTS; }
+#else
   bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraMTS && !m_InterMTS; }
+#endif
   void      setUseIntraMTS        ( bool b )                                        { m_IntraMTS = b; }
   bool      getUseIntraMTS        ()                                      const     { return m_IntraMTS; }
   void      setUseInterMTS        ( bool b )                                        { m_InterMTS = b; }
@@ -1506,9 +1423,6 @@ private:
 
 
   // access channel
-#if HEVC_VPS
-  const VPS*                 m_pcVPS;
-#endif
   const DPS*                 m_dps;
   const SPS*                 m_pcSPS;
   const PPS*                 m_pcPPS;
@@ -1589,10 +1503,6 @@ public:
   virtual                     ~Slice();
   void                        initSlice();
   int                         getRefIdx4MVPair( RefPicList eCurRefPicList, int nCurRefIdx );
-#if HEVC_VPS
-  void                        setVPS( VPS* pcVPS )                                   { m_pcVPS = pcVPS;                                              }
-  const VPS*                  getVPS() const                                         { return m_pcVPS;                                               }
-#endif
   void                        setDPS( DPS* dps )                                     { m_dps = dps;                                              }
   const DPS*                  getDPS() const                                         { return m_dps;                                               }
 
@@ -2025,15 +1935,6 @@ public:
                  ParameterSetManager();
   virtual        ~ParameterSetManager();
 
-#if HEVC_VPS
-  //! store sequence parameter set and take ownership of it
-  void           storeVPS(VPS *vps, const std::vector<uint8_t> &naluData)      { m_vpsMap.storePS( vps->getVPSId(), vps, &naluData); };
-  //! get pointer to existing video parameter set
-  VPS*           getVPS(int vpsId)                                           { return m_vpsMap.getPS(vpsId); };
-  bool           getVPSChangedFlag(int vpsId) const                          { return m_vpsMap.getChangedFlag(vpsId); }
-  void           clearVPSChangedFlag(int vpsId)                              { m_vpsMap.clearChangedFlag(vpsId); }
-  VPS*           getFirstVPS()                                               { return m_vpsMap.getFirstPS(); };
-#endif
 
   void           storeDPS(DPS *dps, const std::vector<uint8_t> &naluData)    { m_dpsMap.storePS( dps->getDecodingParameterSetId(), dps, &naluData); };
   //! get pointer to existing video parameter set
@@ -2061,11 +1962,7 @@ public:
   //! \returns true, if activation is successful
   // bool           activateSPSWithSEI(int SPSId);
 
-#if HEVC_VPS
-  //! activate a PPS and depending on isIDR parameter also SPS and VPS
-#else
   //! activate a PPS and depending on isIDR parameter also SPS
-#endif
   //! \returns true, if activation is successful
   bool           activatePPS(int ppsId, bool isIRAP);
   APS**          getAPSs() { return &m_apss[0]; }
@@ -2076,16 +1973,10 @@ public:
   void           clearAPSChangedFlag(int apsId, int apsType)                 { m_apsMap.clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + apsType); }
   APS*           getFirstAPS()                                               { return m_apsMap.getFirstPS(); };
   bool           activateAPS(int apsId, int apsType);
-#if HEVC_VPS
-  const VPS*     getActiveVPS()const                                         { return m_vpsMap.getPS(m_activeVPSId); };
-#endif
   const SPS*     getActiveSPS()const                                         { return m_spsMap.getPS(m_activeSPSId); };
   const DPS*     getActiveDPS()const                                         { return m_dpsMap.getPS(m_activeDPSId); };
 
 protected:
-#if HEVC_VPS
-  ParameterSetMap<VPS> m_vpsMap;
-#endif
   ParameterSetMap<SPS> m_spsMap;
   ParameterSetMap<PPS> m_ppsMap;
   ParameterSetMap<APS> m_apsMap;
@@ -2093,9 +1984,6 @@ protected:
 
   APS* m_apss[MAX_NUM_APS];
 
-#if HEVC_VPS
-  int m_activeVPSId; // -1 for nothing active
-#endif
   int m_activeDPSId; // -1 for nothing active
   int m_activeSPSId; // -1 for nothing active
 };

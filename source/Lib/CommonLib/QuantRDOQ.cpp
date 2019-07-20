@@ -511,7 +511,7 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
   const CCoeffBuf &piCoef   = pSrc;
         CoeffBuf   piQCoef  = tu.getCoeffs(compID);
 
-  const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP;
+  const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP && isLuma(compID);
 
   bool useRDOQ = useTransformSkip ? m_useRDOQTS : m_useRDOQ;
 
@@ -620,8 +620,8 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
 
   const bool needSqrtAdjustment= TU::needsBlockSizeTrafoScale( tu, compID );
-  const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, (uiLog2BlockWidth - 1), (uiLog2BlockHeight - 1), cQP.rem);
-  const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1));
+  const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem);
+  const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem, uiLog2BlockWidth, uiLog2BlockHeight);
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
   const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
   const int    defaultQuantisationCoefficient = g_quantScales[ needSqrtAdjustment ?1:0][cQP.rem];

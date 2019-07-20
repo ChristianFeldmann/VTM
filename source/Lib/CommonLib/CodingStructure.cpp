@@ -768,11 +768,7 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.picture   = picture;
 
   subStruct.sps       = sps;
-#if HEVC_VPS
-  subStruct.vps       = vps;
-#else
   subStruct.vps       = vps; 
-#endif
   subStruct.pps       = pps;
   memcpy(subStruct.alfApss, alfApss, sizeof(alfApss));
 

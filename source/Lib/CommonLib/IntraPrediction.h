@@ -86,6 +86,9 @@ private:
     int  intraPredAngle;
     int  invAngle;
     bool interpolationFlag;
+#if JVET_O0364_PDPC_ANGULAR
+    int  angularScale;
+#endif
 
     IntraPredParam() :
       refFilterFlag     ( false                           ),

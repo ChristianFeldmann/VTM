@@ -401,6 +401,35 @@ void initROM()
       }
     }
   }
+
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+  for (int idxH = 0; idxH < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxH)
+  {
+    for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
+    {
+      const int nCbH = 1 << (idxH + 1);
+      const int nCbW = 1 << (idxW + 1);
+      const int nCbR = (nCbW > nCbH) ? nCbW / nCbH : nCbH / nCbW;
+
+      // let SIMD can read at least 64-bit when at last row
+      g_triangleWeights[0][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+      g_triangleWeights[0][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+      g_triangleWeights[1][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+      g_triangleWeights[1][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+
+      for (int y = 0; y < nCbH; y++)
+      {
+        for (int x = 0; x < nCbW; x++)
+        {
+          g_triangleWeights[0][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
+          g_triangleWeights[0][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
+          g_triangleWeights[1][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, x / nCbR - y + 2) * 2 : Clip3(0, 4, x - y / nCbR + 2) * 2;
+          g_triangleWeights[1][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, nCbH - 1 - x / nCbR - y + 2) * 2 : Clip3(0, 4, nCbW - 1 - x - y / nCbR + 2) * 2;
+        }
+      }
+    }
+  }
+#endif
 }
 
 void destroyROM()
@@ -425,6 +454,23 @@ void destroyROM()
 
   delete gp_sizeIdxInfo;
   gp_sizeIdxInfo = nullptr;
+
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+  for (int idxH = 0; idxH < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxH)
+  {
+    for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
+    {
+      delete[] g_triangleWeights[0][0][idxH][idxW];
+      delete[] g_triangleWeights[0][1][idxH][idxW];
+      delete[] g_triangleWeights[1][0][idxH][idxW];
+      delete[] g_triangleWeights[1][1][idxH][idxW];
+      g_triangleWeights[0][0][idxH][idxW] = nullptr;
+      g_triangleWeights[0][1][idxH][idxW] = nullptr;
+      g_triangleWeights[1][0][idxH][idxW] = nullptr;
+      g_triangleWeights[1][1][idxH][idxW] = nullptr;
+    }
+  }
+#endif
 }
 
 // ====================================================================================================================
@@ -494,9 +540,15 @@ const uint8_t g_aucIntraModeNumFast_NotUseMPM[MAX_CU_DEPTH] =
 };
 
 const uint8_t g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE] =
+#if JVET_O0655_422_CHROMA_DM_MAPPING_FIX
+//                                                                     H                                                               D                                                               V
+//0, 1,  2,  3,  4,  5,  6,  7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, DM
+{ 0, 1, 61, 62, 63, 64, 65, 66, 2, 3,  4,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 44, 44, 45, 46, 46, 46, 47, 48, 48, 48, 49, 50, 51, 52, 52, 52, 53, 54, 54, 54, 55, 56, 56, 56, 57, 58, 59, 60, DM_CHROMA_IDX };
+#else
 //                                                               H                                                               D                                                               V
 //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, DM
 { 0, 1, 2, 2, 2, 2, 2, 2, 2, 3,  4,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 44, 44, 45, 46, 46, 46, 47, 48, 48, 48, 49, 50, 51, 52, 52, 52, 53, 54, 54, 54, 55, 56, 56, 56, 57, 58, 59, 60, DM_CHROMA_IDX };
+#endif
 
 extern const uint8_t  g_intraMode65to33AngMapping[NUM_INTRA_MODE] =
 //                                                               H                                                               D                                                               V
@@ -694,5 +746,8 @@ const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16, 
 
 
 uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+#endif
 
 //! \}

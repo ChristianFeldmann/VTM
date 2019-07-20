@@ -70,9 +70,6 @@ Slice::Slice()
 , m_biDirPred                    ( false )
 , m_iSliceQpDelta                 ( 0 )
 , m_iDepth                        ( 0 )
-#if HEVC_VPS
-, m_pcVPS                         ( NULL )
-#endif
 , m_dps                           ( nullptr )
 , m_pcSPS                         ( NULL )
 , m_pcPPS                         ( NULL )
@@ -1317,34 +1314,6 @@ unsigned Slice::getMinPictureDistance() const
   return (unsigned) minPicDist;
 }
 
-#if HEVC_VPS
-// ------------------------------------------------------------------------------------------------
-// Video parameter set (VPS)
-// ------------------------------------------------------------------------------------------------
-VPS::VPS()
-: m_VPSId                     (  0)
-, m_uiMaxTLayers              (  1)
-, m_uiMaxLayers               (  1)
-, m_bTemporalIdNestingFlag    (false)
-, m_numHrdParameters          (  0)
-, m_maxNuhReservedZeroLayerId (  0)
-, m_hrdParameters             ()
-, m_hrdOpSetIdx               ()
-, m_cprmsPresentFlag          ()
-{
-
-  for( int i = 0; i < MAX_TLAYER; i++)
-  {
-    m_numReorderPics[i] = 0;
-    m_uiMaxDecPicBuffering[i] = 1;
-    m_uiMaxLatencyIncrease[i] = 0;
-  }
-}
-
-VPS::~VPS()
-{
-}
-#else
 // ------------------------------------------------------------------------------------------------
 // Video parameter set (VPS)
 // ------------------------------------------------------------------------------------------------
@@ -1362,7 +1331,6 @@ VPS::VPS()
 VPS::~VPS()
 {
 }
-#endif
 
 // ------------------------------------------------------------------------------------------------
 // Sequence parameter set (SPS)
@@ -1394,9 +1362,6 @@ SPS::SPS()
 , m_MaxSbtSize                ( 32 )
 #if INCLUDE_ISP_CFG_FLAG
 , m_ISP                       ( false )
-#endif
-#if HEVC_VPS
-, m_VPSId                     (  0)
 #endif
 , m_chromaFormatIdc           (CHROMA_420)
 , m_uiMaxTLayers              (  1)
@@ -1731,7 +1696,7 @@ void ScalingList::checkPredMode(uint32_t sizeId, uint32_t listId)
 {
   for (int predListIdx = (int)listId; predListIdx >= 0; predListIdx--)
   {
-    if ((sizeId == SCALING_LIST_64x64 && (listId % 3) != 0) || (sizeId == SCALING_LIST_2x2 && (listId % 3) == 0))
+    if ((sizeId == SCALING_LIST_64x64 && ((listId % 3) != 0 || (predListIdx % 3) != 0)) || (sizeId == SCALING_LIST_2x2 && ((listId % 3) == 0 || (predListIdx % 3) == 0)))
       continue;
     if( !::memcmp(getScalingListAddress(sizeId,listId),((listId == predListIdx) ?
       getScalingListDefaultAddress(sizeId, predListIdx): getScalingListAddress(sizeId, predListIdx)),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId])) // check value of matrix
@@ -1980,18 +1945,10 @@ void ScalingList::checkDcOfMatrix()
 }
 
 ParameterSetManager::ParameterSetManager()
-#if HEVC_VPS
-: m_vpsMap(MAX_NUM_VPS)
-, m_spsMap(MAX_NUM_SPS)
-#else
 : m_spsMap(MAX_NUM_SPS)
-#endif
 , m_ppsMap(MAX_NUM_PPS)
 , m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
 , m_dpsMap(MAX_NUM_DPS)
-#if HEVC_VPS
-, m_activeVPSId(-1)
-#endif
 , m_activeDPSId(-1)
 , m_activeSPSId(-1)
 {
@@ -2029,11 +1986,7 @@ ParameterSetManager::~ParameterSetManager()
 //  return false;
 //}
 
-#if HEVC_VPS
-//! activate a PPS and depending on isIDR parameter also SPS and VPS
-#else
 //! activate a PPS and depending on isIDR parameter also SPS
-#endif
 //! \returns true, if activation is successful
 bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
 {
@@ -2078,37 +2031,12 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
           }
         }
 
-#if HEVC_VPS
-        int vpsId = sps->getVPSId();
-        if (!isIRAP && (vpsId != m_activeVPSId ))
-        {
-          msg( WARNING, "Warning: tried to activate PPS referring to a inactive VPS at non-IDR.");
-        }
-        else
-        {
-#endif
           m_spsMap.clear();
           m_spsMap.setActive(spsId);
-#if HEVC_VPS
-          VPS *vps =m_vpsMap.getPS(vpsId);
-          if (vps)
-          {
-            m_activeVPSId = vpsId;
-            m_activeSPSId = spsId;
-            m_ppsMap.setActive(ppsId);
-            return true;
-          }
-          else
-          {
-            msg( WARNING, "Warning: tried to activate PPS that refers to a non-existing VPS.");
-          }
-        }
-#else
         m_activeSPSId = spsId;
         m_ppsMap.clear();
         m_ppsMap.setActive(ppsId);
         return true;
-#endif
       }
       else
       {
@@ -2123,9 +2051,6 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
 
   // Failed to activate if reach here.
   m_activeSPSId=-1;
-#if HEVC_VPS
-  m_activeVPSId=-1;
-#endif
   m_activeDPSId=-1;
   return false;
 }

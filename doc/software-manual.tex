@@ -206,7 +206,7 @@ fontsize=\footnotesize}
 \maketitle
 \begin{abstract}
 This document is a user manual describing usage of the VTM reference software
-for the VVC project. It applies to version 4.0 of the software.
+for the VVC project. It applies to version 5.2 of the software.
 \end{abstract}
 
 \tableofcontents
@@ -508,6 +508,7 @@ needs to include the picture with POC 4, which must be kept in order to
 be used as a reference picture in the future. Note that picture with POC 4 can be
 included in the L0 or L1. The reference picture list for Frame3 therefore becomes \verb|1 -1 -3|. 
 Frame4 has a POC of 3 and its list of reference pictures is \verb|1 -1|.
+\end{itemize}
 
 \begin{figure}[h]
 \caption{A GOP structure}
@@ -3551,7 +3552,7 @@ nuh_layer_id for each input bitstream. Then the decoder could specify which laye
 bitstream to be decoded through the command line option "-p nuh_layer_id". 
 
 \subsection{Usage}
-\label{sec:usage}
+\label{sec:stream-merge-usage}
 
 \begin{minted}{bash}
 StreamMergeApp 	<bitstream1> <bitstream2> [<bitstream3> ...] <outfile>

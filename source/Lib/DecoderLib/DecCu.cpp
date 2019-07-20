@@ -211,10 +211,14 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
     const CompArea &areaY = CompArea(COMPONENT_Y, tu.chromaFormat, area);
+#if JVET_O1109_UNFIY_CRS
+    int adj = m_pcReshape->calculateChromaAdjVpduNei(tu, areaY);
+#else
     PelBuf piPredY;
     piPredY = cs.picture->getPredBuf(areaY);
     const Pel avgLuma = piPredY.computeAvg();
     int adj = m_pcReshape->calculateChromaAdj(avgLuma);
+#endif
     tu.setChromaAdj(adj);
   }
   //===== inverse transform =====
@@ -588,6 +592,9 @@ void DecCu::xDecodeInterTexture(CodingUnit &cu)
       if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && slice.getLmcsChromaResidualScaleFlag() && (compID == COMPONENT_Y) && (currTU.cbf[COMPONENT_Cb] || currTU.cbf[COMPONENT_Cr]))
       {
         const CompArea &areaY = currTU.blocks[COMPONENT_Y];
+#if JVET_O1109_UNFIY_CRS
+        int adj = m_pcReshape->calculateChromaAdjVpduNei(currTU, areaY);
+#else
         PelBuf predY = cs.getPredBuf(areaY);
         CompArea tmpArea(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());
         PelBuf tmpPred = m_tmpStorageLCU->getBuf(tmpArea);
@@ -596,6 +603,7 @@ void DecCu::xDecodeInterTexture(CodingUnit &cu)
           tmpPred.rspSignal(m_pcReshape->getFwdLUT());
         const Pel avgLuma = tmpPred.computeAvg();
         int adj = m_pcReshape->calculateChromaAdj(avgLuma);
+#endif
         currTU.setChromaAdj(adj);
     }
       xDecodeInterTU( currTU, compID );
@@ -765,6 +773,12 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           {
             mvd.changeIbcPrecAmvr2Internal(pu.cu->imv);
           }
+#if JVET_O0162_IBC_MVP_FLAG
+          if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+          {
+            CHECK( pu.mvpIdx[REF_PIC_LIST_0], "mvpIdx for IBC mode should be 0" );
+          }
+#endif
           pu.mv[REF_PIC_LIST_0] = amvpInfo.mvCand[pu.mvpIdx[REF_PIC_LIST_0]] + mvd;
           pu.mv[REF_PIC_LIST_0].mvCliptoStorageBitDepth();
         }

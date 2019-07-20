@@ -323,7 +323,11 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
     const int scale = ((g_aucLog2[iWidth] - 2 + g_aucLog2[iHeight] - 2 + 2) >> 2);
     CHECK(scale < 0 || scale > 31, "PDPC: scale < 0 || scale > 31");
 
+#if JVET_O0364_PDPC_DC
+    if (uiDirMode == PLANAR_IDX || uiDirMode == DC_IDX)
+#else
     if (uiDirMode == PLANAR_IDX)
+#endif
     {
       for (int y = 0; y < iHeight; y++)
       {
@@ -337,6 +341,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
         }
       }
     }
+#if !JVET_O0364_PDPC_DC
     else if (uiDirMode == DC_IDX)
     {
       const Pel topLeft = srcBuf.at(0, 0);
@@ -353,6 +358,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
         }
       }
     }
+#endif
     else if (uiDirMode == HOR_IDX)
     {
       const Pel topLeft = srcBuf.at(0, 0);
@@ -508,7 +514,22 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
 
     m_ipaParam.invAngle              = invAngTable[absAngMode];
     m_ipaParam.intraPredAngle        = signAng * absAng;
+#if JVET_O0364_PDPC_ANGULAR
+    if (intraPredAngleMode < 0)
+    {
+      m_ipaParam.applyPDPC = false;
+    }
+    else if (intraPredAngleMode > 0)
+    {
+      const int sideSize = m_ipaParam.isModeVer ? puSize.height : puSize.width;
+      const int maxScale = 2;
+
+      m_ipaParam.angularScale = std::min(maxScale, g_aucLog2[sideSize] - (floorLog2(3 * m_ipaParam.invAngle - 2) - 7));
+      m_ipaParam.applyPDPC &= m_ipaParam.angularScale >= 0;
+    }
+#else
     m_ipaParam.applyPDPC            &= m_ipaParam.intraPredAngle == 0 || m_ipaParam.intraPredAngle >= 12; // intra prediction modes: HOR, VER, x, where x>=VDIA-8 or x<=2+8
+#endif
   }
 
   // high level conditions and DC intra prediction
@@ -715,6 +736,22 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
           pDsty[x] = refMain[x + deltaInt + 1];
         }
       }
+#if JVET_O0364_PDPC_ANGULAR
+      if (m_ipaParam.applyPDPC)
+      {
+        const int scale       = m_ipaParam.angularScale;
+        int       invAngleSum = 128;
+
+        for (int x = 0; x < std::min(3 << scale, width); x++)
+        {
+          invAngleSum += invAngle;
+
+          int wL   = 32 >> (2 * x >> scale);
+          Pel left = refSide[y + (invAngleSum >> 8) + 1];
+          pDsty[x] = pDsty[x] + ((wL * (left - pDsty[x]) + 32) >> 6);
+        }
+      }
+#else
       const int scale = ((g_aucLog2[width] - 2 + g_aucLog2[height] - 2 + 2) >> 2);
       CHECK(scale < 0 || scale > 31, "PDPC: scale < 0 || scale > 31");
       if (m_ipaParam.applyPDPC)
@@ -759,6 +796,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
           }
         }
       }
+#endif
     }
   }
 

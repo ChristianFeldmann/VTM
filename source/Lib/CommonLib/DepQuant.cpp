@@ -753,12 +753,10 @@ namespace DQIntern
         if (shift < 0)
         {
           invQScale <<= -shift;
-          shift = 0;
-          //add = (1 << shift) >> 1;
         }
         Intermediate_Int  qIdx      = ( level << 1 ) + ( level > 0 ? -(state>>1) : (state>>1) );
-        Intermediate_Int  nomTCoeff = ( qIdx * invQScale + add ) >> shift;
-        tCoeff[ rasterPos ]         = (TCoeff)Clip3<Intermediate_Int>( minTCoeff, maxTCoeff, nomTCoeff );
+        int64_t  nomTCoeff          = ((int64_t)qIdx * (int64_t)invQScale + add) >> ((shift < 0) ? 0 : shift);
+        tCoeff[rasterPos]           = (TCoeff)Clip3<int64_t>(minTCoeff, maxTCoeff, nomTCoeff);
       }
       state = ( 32040 >> ((state<<2)+((level&1)<<1)) ) & 3;   // the 16-bit value "32040" represent the state transition table
     }
@@ -1615,7 +1613,7 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
     CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
     const uint32_t    log2TrWidth     = g_aucLog2[width];
     const uint32_t    log2TrHeight    = g_aucLog2[height];
-    const bool        enableScalingLists = getUseScalingList(width, height, tu.mtsIdx == MTS_SKIP);
+    const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP && isLuma(compID)));
     static_cast<DQIntern::DepQuant*>(p)->quant( tu, pSrc, compID, cQP, Quant::m_dLambda, ctx, uiAbsSum, enableScalingLists, Quant::getQuantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
   }
   else
@@ -1639,7 +1637,7 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
     const uint32_t    log2TrWidth  = g_aucLog2[width];
     const uint32_t    log2TrHeight = g_aucLog2[height];
 
-    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP));
+    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP && isLuma(compID)));
     static_cast<DQIntern::DepQuant*>(p)->dequant( tu, dstCoeff, compID, cQP, enableScalingLists, Quant::getDequantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
   }
   else

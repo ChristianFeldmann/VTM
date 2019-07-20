@@ -97,11 +97,7 @@ public:
   const PPS *pps;
   APS*       alfApss[MAX_NUM_APS];
   APS *      lmcsAps;
-#if HEVC_VPS
   const VPS *vps;
-#else
-  const VPS *vps;
-#endif
   const PreCalcValues* pcv;
 
   CodingStructure(CUCache&, PUCache&, TUCache&);

@@ -1011,6 +1011,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   {
     for (int xu = 0; xu < xUnit; xu++)
     {
+#if !JVET_O0055_INT_DMVR_DIS_BDOF 
       if (m_bioPredSubBlkDist[yu*xUnit + xu] < m_bioSubBlkDistThres)
       {
         srcY0Temp = srcY0 + (stridePredMC + 1) + ((yu*src0Stride + xu) << 2);
@@ -1020,6 +1021,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
         dstPelBuf.addAvg(CPelBuf(srcY0Temp, src0Stride, Size(4, 4)), CPelBuf(srcY1Temp, src1Stride, Size(4, 4)), clpRng);
         continue;
       }
+#endif
 
       int     sGxdI = 0, sGydI = 0, sGxGy = 0, sGx2 = 0, sGy2 = 0;
       int     tmpx = 0, tmpy = 0;
@@ -1072,7 +1074,7 @@ bool InterPrediction::xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel*
   const int     yUnit = (height >> 2);
 
   m_bioDistThres = (shift <= 5) ? (((32 << (clipbd - 8))*width*height) >> (5 - shift)) : (((32 << (clipbd - 8))*width*height) << (shift - 5));
-  m_bioSubBlkDistThres = (shift <= 5) ? (((64 << (clipbd - 8)) << 4) >> (5 - shift)) : (((64 << (clipbd - 8)) << 4) << (shift - 5));
+  m_bioSubBlkDistThres = (shift <= 5) ? (((64 << (clipbd - 8)) << 4) >> (5 - shift)) : (((64 << (clipbd - 8)) << 4) << (shift - 5)); 
 
   m_bioDistThres >>= distortionShift;
   m_bioSubBlkDistThres >>= distortionShift;
@@ -1135,7 +1137,11 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
       const Pel* pSrcY0 = m_filteredBlockTmp[2][COMPONENT_Y] + 2 * src0Stride + 2;
       const Pel* pSrcY1 = m_filteredBlockTmp[3][COMPONENT_Y] + 2 * src1Stride + 2;
 
+#if JVET_O0055_INT_DMVR_DIS_BDOF 
+      bool bioEnabled = true;
+#else
       bool bioEnabled = xCalcBiPredSubBlkDist(pu, pSrcY0, src0Stride, pSrcY1, src1Stride, clipBitDepths);
+#endif
       if (bioEnabled)
       {
         applyBiOptFlow(pu, pcYuvSrc0, pcYuvSrc1, iRefIdx0, iRefIdx1, pcYuvDst, clipBitDepths);
@@ -1379,21 +1385,37 @@ void InterPrediction::weightedTriangleBlk( PredictionUnit &pu, const bool splitD
 {
   if( channel == CHANNEL_TYPE_LUMA )
   {
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+    m_if.weightedTriangleBlk( pu, pu.lumaSize().width, pu.lumaSize().height, COMPONENT_Y, splitDir, predDst, predSrc0, predSrc1 );
+#else
     xWeightedTriangleBlk( pu, pu.lumaSize().width, pu.lumaSize().height, COMPONENT_Y, splitDir, predDst, predSrc0, predSrc1 );
+#endif
   }
   else if( channel == CHANNEL_TYPE_CHROMA )
   {
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+    m_if.weightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, predDst, predSrc0, predSrc1 );
+    m_if.weightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, predDst, predSrc0, predSrc1 );
+#else
     xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, predDst, predSrc0, predSrc1 );
     xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, predDst, predSrc0, predSrc1 );
+#endif
   }
   else
   {
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+    m_if.weightedTriangleBlk( pu, pu.lumaSize().width,   pu.lumaSize().height,   COMPONENT_Y,  splitDir, predDst, predSrc0, predSrc1 );
+    m_if.weightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, predDst, predSrc0, predSrc1 );
+    m_if.weightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, predDst, predSrc0, predSrc1 );
+#else
     xWeightedTriangleBlk( pu, pu.lumaSize().width,   pu.lumaSize().height,   COMPONENT_Y,  splitDir, predDst, predSrc0, predSrc1 );
     xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, predDst, predSrc0, predSrc1 );
     xWeightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, predDst, predSrc0, predSrc1 );
+#endif
   }
 }
 
+#if !JVET_O0280_SIMD_TRIANGLE_WEIGHTING
 void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
 {
   Pel*    dst        = predDst .get(compIdx).buf;
@@ -1468,6 +1490,7 @@ void InterPrediction::xWeightedTriangleBlk( const PredictionUnit &pu, const uint
     weightedEndPos   += weightedPosoffset;
   }
 }
+#endif
 
 void InterPrediction::xPrefetchPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId)
 {
@@ -1812,6 +1835,10 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
 
   int bd = pu.cs->slice->getClpRngs().comp[COMPONENT_Y].bd;
 
+#if JVET_O0055_INT_DMVR_DIS_BDOF
+  int            bioEnabledThres = 8 * (dy >> 1) * dx;
+  bool           bioAppliedType[MAX_NUM_SUBCU_DMVR];
+#endif
   {
     int num = 0;
 
@@ -1842,6 +1869,9 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
           if (i == 0)
           {
             minCost = xDMVRCost(clpRngs.comp[COMPONENT_Y].bd, addrL0, m_biLinearBufStride, addrL1, m_biLinearBufStride, dx, dy);
+#if JVET_O0590_REDUCE_DMVR_ORIG_MV_COST
+            minCost -= (minCost >>2);            
+#endif
             if (minCost < ((4 * dx * (dy >> 1/*for alternate line*/))))
             {
               notZeroCost = false;
@@ -1866,6 +1896,9 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
           pSADsArray += ((deltaMV[1] * (((2 * DMVR_NUM_ITERATION) + 1))) + deltaMV[0]);
         }
 
+#if JVET_O0055_INT_DMVR_DIS_BDOF 
+        bioAppliedType[num] = (minCost < bioEnabledThres) ? false : bioApplied;
+#endif
         totalDeltaMV[0] = (totalDeltaMV[0] << mvShift);
         totalDeltaMV[1] = (totalDeltaMV[1] << mvShift);
         xDMVRSubPixelErrorSurface(notZeroCost, totalDeltaMV, deltaMV, pSADsArray);
@@ -1910,7 +1943,11 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
         subPu.mv[1].clipToStorageBitDepth();
         m_cYuvRefBuffSubCuDMVRL0 = m_cYuvRefBuffDMVRL0.subBuf(UnitAreaRelative(pu, subPu));
         m_cYuvRefBuffSubCuDMVRL1 = m_cYuvRefBuffDMVRL1.subBuf(UnitAreaRelative(pu, subPu));
+#if JVET_O0055_INT_DMVR_DIS_BDOF 
+        xFinalPaddedMCForDMVR(subPu, srcPred0, srcPred1, m_cYuvRefBuffSubCuDMVRL0, m_cYuvRefBuffSubCuDMVRL1, bioAppliedType[num], mergeMv);
+#else
         xFinalPaddedMCForDMVR(subPu, srcPred0, srcPred1, m_cYuvRefBuffSubCuDMVRL0, m_cYuvRefBuffSubCuDMVRL1, bioApplied, mergeMv);
+#endif
 
         subPredBuf.bufs[COMPONENT_Y].buf  = pcYuvDst.bufs[COMPONENT_Y].buf + xStart + yStart * dstStride[COMPONENT_Y];
         int scaleX = getComponentScaleX(COMPONENT_Cb, pu.chromaFormat);
@@ -1921,7 +1958,11 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
         scaleY =  getComponentScaleY(COMPONENT_Cr, pu.chromaFormat);
         subPredBuf.bufs[COMPONENT_Cr].buf = pcYuvDst.bufs[COMPONENT_Cr].buf + (xStart >> scaleX) + ((yStart >> scaleY) * dstStride[COMPONENT_Cr]);
 
+#if JVET_O0055_INT_DMVR_DIS_BDOF 
+        xWeightedAverage(subPu, srcPred0, srcPred1, subPredBuf, subPu.cu->slice->getSPS()->getBitDepths(), subPu.cu->slice->clpRngs(), bioAppliedType[num]);
+#else
         xWeightedAverage(subPu, srcPred0, srcPred1, subPredBuf, subPu.cu->slice->getSPS()->getBitDepths(), subPu.cu->slice->clpRngs(), bioApplied);
+#endif
         num++;
       }
     }

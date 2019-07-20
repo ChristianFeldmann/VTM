@@ -78,6 +78,14 @@ void  EncReshape::createEnc(int picWidth, int picHeight, uint32_t maxCUWidth, ui
     m_binImportance.resize(PIC_ANALYZE_CW_BINS);
   if (m_reshapePivot.empty())
     m_reshapePivot.resize(PIC_CODE_CW_BINS + 1, 0);
+#if JVET_O0428_LMCS_CLEANUP
+  if (m_inputPivot.empty())
+    m_inputPivot.resize(PIC_CODE_CW_BINS + 1, 0);
+  if (m_fwdScaleCoef.empty())
+    m_fwdScaleCoef.resize(PIC_CODE_CW_BINS, 1 << FP_PREC);
+  if (m_invScaleCoef.empty())
+    m_invScaleCoef.resize(PIC_CODE_CW_BINS, 1 << FP_PREC);
+#endif
   if (m_chromaAdjHelpLUT.empty())
     m_chromaAdjHelpLUT.resize(PIC_CODE_CW_BINS, 1<<CSCALE_FP_PREC);
 
@@ -113,8 +121,11 @@ void EncReshape::preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const
     m_sliceReshapeInfo.sliceReshaperEnableFlag = true;
       if (sliceType == I_SLICE )                                              { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = true;  }
       else                                                                    { m_sliceReshapeInfo.sliceReshaperModelPresentFlag = false; }
+#if  !JVET_O1109_UNFIY_CRS
     if (sliceType == I_SLICE  && isDualT)                                     { m_sliceReshapeInfo.enableChromaAdj = 0;                   }
-    else                                                                      { m_sliceReshapeInfo.enableChromaAdj = 1;                   }
+    else
+#endif
+    { m_sliceReshapeInfo.enableChromaAdj = 1;                   }
   }
   else
   {
@@ -452,10 +463,12 @@ void EncReshape::preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const
 
     }
     m_chromaAdj = m_sliceReshapeInfo.enableChromaAdj;
+#if !JVET_O1109_UNFIY_CRS
     if (sliceType == I_SLICE && isDualT)
     {
         m_sliceReshapeInfo.enableChromaAdj = 0;
     }
+#endif
   }
   else // Inter slices
   {
@@ -1034,6 +1047,12 @@ void EncReshape::initLUTfromdQPModel()
   {
     m_binCW[i] = m_reshapePivot[i + 1] - m_reshapePivot[i];
   }
+#if JVET_O0428_LMCS_CLEANUP
+  for (int i = 0; i <= PIC_CODE_CW_BINS; i++)
+  {
+    m_inputPivot[i] = m_initCW * i;
+  }
+#endif
 
   int maxAbsDeltaCW = 0, absDeltaCW = 0, deltaCW = 0;
   for (int i = m_sliceReshapeInfo.reshaperModelMinBinIdx; i <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; i++)
@@ -1045,6 +1064,32 @@ void EncReshape::initLUTfromdQPModel()
   }
   m_sliceReshapeInfo.maxNbitsNeededDeltaCW = std::max(1, 1 + floorLog2(maxAbsDeltaCW));
 
+#if JVET_O0428_LMCS_CLEANUP
+  for (int i = 0; i < pwlFwdLUTsize; i++)
+  {
+    m_fwdScaleCoef[i] = ((int32_t)m_binCW[i] * (1 << FP_PREC) + (1 << (floorLog2(pwlFwdBinLen) - 1))) >> floorLog2(pwlFwdBinLen);
+    if (m_binCW[i] == 0)
+    {
+      m_invScaleCoef[i] = 0;
+      m_chromaAdjHelpLUT[i] = 1 << CSCALE_FP_PREC;
+    }
+    else
+    {
+      m_invScaleCoef[i] = (int32_t)(m_initCW * (1 << FP_PREC) / m_binCW[i]);
+      m_chromaAdjHelpLUT[i] = m_invScaleCoef[i];
+    }
+  }
+  for (int lumaSample = 0; lumaSample < m_reshapeLUTSize; lumaSample++)
+  {
+    int idxY = lumaSample / m_initCW;
+    int tempVal = m_reshapePivot[idxY] + ((m_fwdScaleCoef[idxY] * (lumaSample - m_inputPivot[idxY]) + (1 << (FP_PREC - 1))) >> FP_PREC);
+    m_fwdLUT[lumaSample] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)(tempVal));
+
+    int idxYInv = getPWLIdxInv(lumaSample);
+    int invSample = m_inputPivot[idxYInv] + ((m_invScaleCoef[idxYInv] * (lumaSample - m_reshapePivot[idxYInv]) + (1 << (FP_PREC - 1))) >> FP_PREC);
+    m_invLUT[lumaSample] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)(invSample));
+  }
+#else
   for (int i = 0; i < pwlFwdLUTsize; i++)
   {
     int16_t Y1 = m_reshapePivot[i];
@@ -1060,6 +1105,7 @@ void EncReshape::initLUTfromdQPModel()
   }
   reverseLUT(m_fwdLUT, m_invLUT, m_reshapeLUTSize);
   updateChromaScaleLUT();
+#endif
 }
 
 void EncReshape::constructReshaperSDR()
@@ -1070,8 +1116,12 @@ void EncReshape::constructReshaperSDR()
   int histBins = PIC_ANALYZE_CW_BINS;
   int histLenth = totCW/histBins;
   int log2HistLenth = floorLog2(histLenth);
+#if !JVET_O0428_LMCS_CLEANUP
   int16_t *tempFwdLUT = new int16_t[m_reshapeLUTSize + 1]();
   int i, j;
+#else
+  int i;
+#endif
   int cwScaleBins1, cwScaleBins2;
   int maxAllowedCW = totCW-1;
 
@@ -1200,6 +1250,12 @@ void EncReshape::constructReshaperSDR()
       m_binCW[i] = bdShift > 0 ? m_binCW[i] * (1 << bdShift) : m_binCW[i] / (1 << (-bdShift));
     }
   }
+#if JVET_O0428_LMCS_CLEANUP
+  for (int i = 0; i <= PIC_CODE_CW_BINS; i++)
+  {
+    m_inputPivot[i] = m_initCW * i;
+  }
+#endif
 
   for (int i = 0; i < PIC_CODE_CW_BINS; i++)
   {
@@ -1240,6 +1296,39 @@ void EncReshape::constructReshaperSDR()
   int sumBins = 0;
   for (i = 0; i < PIC_CODE_CW_BINS; i++)   { sumBins += m_binCW[i];  }
   CHECK(sumBins >= m_reshapeLUTSize, "SDR CW assignment is wrong!!");
+#if JVET_O0428_LMCS_CLEANUP
+  for (int i = 0; i < PIC_CODE_CW_BINS; i++)
+  {
+    m_reshapePivot[i + 1] = m_reshapePivot[i] + m_binCW[i];
+    m_fwdScaleCoef[i] = ((int32_t)m_binCW[i] * (1 << FP_PREC) + (1 << (log2HistLenth - 1))) >> log2HistLenth;
+    if (m_binCW[i] == 0)
+    {
+      m_invScaleCoef[i] = 0;
+      m_chromaAdjHelpLUT[i] = 1 << CSCALE_FP_PREC;
+    }
+    else
+    {
+      m_invScaleCoef[i] = (int32_t)(m_initCW * (1 << FP_PREC) / m_binCW[i]);
+      m_chromaAdjHelpLUT[i] = m_invScaleCoef[i];
+    }
+  }
+  for (int lumaSample = 0; lumaSample < m_reshapeLUTSize; lumaSample++)
+  {
+    int idxY = lumaSample / m_initCW;
+    int tempVal = m_reshapePivot[idxY] + ((m_fwdScaleCoef[idxY] * (lumaSample - m_inputPivot[idxY]) + (1 << (FP_PREC - 1))) >> FP_PREC);
+    m_fwdLUT[lumaSample] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)(tempVal));
+
+    int idxYInv = getPWLIdxInv(lumaSample);
+    int invSample = m_inputPivot[idxYInv] + ((m_invScaleCoef[idxYInv] * (lumaSample - m_reshapePivot[idxYInv]) + (1 << (FP_PREC - 1))) >> FP_PREC);
+    m_invLUT[lumaSample] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)(invSample));
+  }
+  for (i = 0; i < PIC_CODE_CW_BINS; i++)
+  {
+    int start = i*histLenth;
+    int end = (i + 1)*histLenth - 1;
+    m_cwLumaWeight[i] = m_fwdLUT[end] - m_fwdLUT[start];
+  }
+#else
   memset(tempFwdLUT, 0, (m_reshapeLUTSize + 1) * sizeof(int16_t));
   tempFwdLUT[0] = 0;
 
@@ -1269,6 +1358,7 @@ void EncReshape::constructReshaperSDR()
 
   reverseLUT(m_fwdLUT, m_invLUT, m_reshapeLUTSize);
   updateChromaScaleLUT();
+#endif
 }
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
@@ -1303,6 +1393,11 @@ void EncReshape::copyState(const EncReshape &other)
   m_initCW           = other.m_initCW;
   m_reshape          = other.m_reshape;
   m_reshapePivot     = other.m_reshapePivot;
+#if JVET_O0428_LMCS_CLEANUP
+  m_inputPivot       = other.m_inputPivot;
+  m_fwdScaleCoef     = other.m_fwdScaleCoef;
+  m_invScaleCoef     = other.m_invScaleCoef;
+#endif
   m_lumaBD           = other.m_lumaBD;
   m_reshapeLUTSize   = other.m_reshapeLUTSize;
 }

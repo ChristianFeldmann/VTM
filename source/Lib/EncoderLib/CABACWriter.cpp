@@ -1199,7 +1199,11 @@ void CABACWriter::intra_chroma_pred_mode( const PredictionUnit& pu )
   }
 
   // LM chroma mode
+#if JVET_O1124_ALLOW_CCLM_COND
+  if( pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed() )
+#else
   if( pu.cs->sps->getUseLMChroma() )
+#endif
   {
     intra_chroma_lmc_mode( pu );
     if ( PU::isLMCMode( intraDir ) )
@@ -1415,6 +1419,13 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
     Mv mvd = pu.mvd[REF_PIC_LIST_0];
     mvd.changeIbcPrecInternal2Amvr(pu.cu->imv);
     mvd_coding(mvd, 0); // already changed to signaling precision
+#if JVET_O0162_IBC_MVP_FLAG
+    if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+    {
+      CHECK( pu.mvpIdx[REF_PIC_LIST_0], "mvpIdx for IBC mode should be 0" );
+    }
+    else
+#endif
     mvp_flag(pu, REF_PIC_LIST_0);
   }
   else
@@ -2371,7 +2382,9 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 
 void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 {
+#if !JVET_O0294_TRANSFORM_CLEANUP
   const CodingUnit  &cu = *tu.cu;
+#endif
   const bool  tsAllowed = TU::isTSAllowed ( tu, compID );
   const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
 
@@ -2382,7 +2395,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 
   if( tsAllowed )
   {
+#if JVET_O0294_TRANSFORM_CLEANUP
+    symbol = (tu.mtsIdx == MTS_SKIP) ? 1 : 0;
+#else
     symbol = (tu.mtsIdx == MTS_SKIP) ? 0 : 1;
+#endif
     ctxIdx = 6;
     m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
   }
@@ -2392,7 +2409,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
     if( mtsAllowed )
     {
       symbol = tu.mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
+#if JVET_O0294_TRANSFORM_CLEANUP
+      ctxIdx = 0;
+#else
       ctxIdx = std::min( (int)cu.qtDepth, 5 );
+#endif
       m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
 
       if( symbol )
@@ -2411,8 +2432,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
       }
     }
   }
-
+#if JVET_O0294_TRANSFORM_CLEANUP
+  DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tu.mtsIdx);
+#else
   DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), tu.mtsIdx );
+#endif
 }
 
 void CABACWriter::isp_mode( const CodingUnit& cu )
@@ -3176,10 +3200,18 @@ void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr,
       {
         int useTemporalFilt = (filterSetIdx > NUM_FIXED_FILTER_SETS) ? 1 : 0;
         m_BinEncoder.encodeBin(useTemporalFilt, Ctx::AlfUseTemporalFilt());
+
         if (useTemporalFilt)
         {
           CHECK((filterSetIdx - (NUM_FIXED_FILTER_SETS + 1)) >= (numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1)), "temporal non-latest set");
-          xWriteTruncBinCode(filterSetIdx - (NUM_FIXED_FILTER_SETS + 1), numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
+#if JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL
+          if (numAps > 2)
+          {
+#endif
+            xWriteTruncBinCode(filterSetIdx - (NUM_FIXED_FILTER_SETS + 1), numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
+#if JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL
+          }
+#endif
         }
         else
         {

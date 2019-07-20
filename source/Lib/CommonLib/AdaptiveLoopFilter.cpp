@@ -399,6 +399,7 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
   short* coeff = isLuma( channel ) ? alfSliceParam.lumaCoeff : alfSliceParam.chromaCoeff;
   short* clipp = isLuma( channel ) ? alfSliceParam.lumaClipp : alfSliceParam.chromaClipp;
 
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
   if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag && isLuma( channel ) )
   {
     for( int i = 1; i < numFilters; i++ )
@@ -409,6 +410,7 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
       }
     }
   }
+#endif
 
   for( int filterIdx = 0; filterIdx < numFilters; filterIdx++ )
   {
@@ -432,6 +434,7 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
   for( int classIdx = 0; classIdx < numClasses; classIdx++ )
   {
     int filterIdx = alfSliceParam.filterCoeffDeltaIdx[classIdx];
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     int fixedFilterIdx = alfSliceParam.fixedFilterSetIndex;
     if (fixedFilterIdx > 0 && alfSliceParam.fixedFilterIdx[classIdx] > 0)
     {
@@ -441,14 +444,17 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
     {
       fixedFilterIdx = -1;
     }
+#endif
     for (int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx)
     {
       m_coeffFinal[classIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = coeff[filterIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx];
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
       //fixed filter
       if (fixedFilterIdx >= 0)
       {
         m_coeffFinal[classIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] += m_fixedFilterSetCoeff[fixedFilterIdx][coeffIdx];
       }
+#endif
     }
     m_coeffFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = factor;
     m_clippFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = isRdo ? 0 : m_alfClippingValues[channel][0];
@@ -459,6 +465,7 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
     }
   }
 
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
   if(isRedo && alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
   {
     for( int i = numFilters - 1; i > 0; i-- )
@@ -469,6 +476,7 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
       }
     }
   }
+#endif
 }
 
 void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const ChromaFormat format, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE] )
@@ -835,7 +843,7 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
         d0 = sumD0;
         dirTempD = 2;
       }
-      if( d1*hv0 > hv1*d0 )
+      if( (uint32_t)d1 * (uint32_t)hv0 > (uint32_t)hv1 * (uint32_t)d0 )
       {
         hvd1 = d1;
         hvd0 = d0;

@@ -70,22 +70,6 @@ EncApp::~EncApp()
 
 void EncApp::xInitLibCfg()
 {
-#if HEVC_VPS
-  VPS vps;
-
-  vps.setMaxTLayers                                               ( m_maxTempLayer );
-  if (m_maxTempLayer == 1)
-  {
-    vps.setTemporalNestingFlag(true);
-  }
-  vps.setMaxLayers                                                ( 1 );
-  for(int i = 0; i < MAX_TLAYER; i++)
-  {
-    vps.setNumReorderPics                                         ( m_numReorderPics[i], i );
-    vps.setMaxDecPicBuffering                                     ( m_maxDecPicBuffering[i], i );
-  }
-  m_cEncLib.setVPS(&vps);
-#else
   VPS vps;
 
   vps.setMaxLayers                                               ( 1 );
@@ -95,7 +79,6 @@ void EncApp::xInitLibCfg()
   }
   vps.setVPSExtensionFlag                                        ( false );
   m_cEncLib.setVPS(&vps);
-#endif
   m_cEncLib.setProfile                                           ( m_profile);
   m_cEncLib.setLevel                                             ( m_levelTier, m_level);
   m_cEncLib.setSubProfile                                        ( m_subProfile );

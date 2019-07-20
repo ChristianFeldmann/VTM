@@ -139,20 +139,12 @@ public:
   PayloadType payloadType() const { return ACTIVE_PARAMETER_SETS; }
 
   SEIActiveParameterSets()
-#if HEVC_VPS
-    : activeVPSId            (0)
-    , m_selfContainedCvsFlag (false)
-#else
     : m_selfContainedCvsFlag(false)
-#endif
     , m_noParameterSetUpdateFlag (false)
     , numSpsIdsMinus1        (0)
   {}
   virtual ~SEIActiveParameterSets() {}
 
-#if HEVC_VPS
-  int activeVPSId;
-#endif
   bool m_selfContainedCvsFlag;
   bool m_noParameterSetUpdateFlag;
   int numSpsIdsMinus1;

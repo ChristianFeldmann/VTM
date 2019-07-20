@@ -486,7 +486,7 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
         xWriteTruncBinCode((uint32_t)param.filterCoeffDeltaIdx[i], param.numLumaFilters);  //filter_coeff_delta[i]
       }
     }
-
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     WRITE_FLAG(param.fixedFilterSetIndex > 0 ? 1 : 0, "fixed_filter_set_flag");
     if (param.fixedFilterSetIndex > 0)
     {
@@ -504,7 +504,7 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
         }
       }
     }
-
+#endif
     alfFilter(param, false);
 
   }
@@ -665,9 +665,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   xTraceSPSHeader ();
 #endif
   WRITE_CODE( pcSPS->getDecodingParameterSetId (), 4,       "sps_decoding_parameter_set_id" );
-#if HEVC_VPS
-  WRITE_CODE( pcSPS->getVPSId (),          4,       "sps_video_parameter_set_id" );
-#endif
   CHECK(pcSPS->getMaxTLayers() == 0, "Maximum number of temporal sub-layers is '0'");
 
   WRITE_CODE(pcSPS->getMaxTLayers() - 1, 3, "sps_max_sub_layers_minus1");
@@ -990,81 +987,6 @@ void HLSWriter::codeDPS( const DPS* dps )
   xWriteRbspTrailingBits();
 }
 
-#if HEVC_VPS
-void HLSWriter::codeVPS( const VPS* pcVPS )
-{
-#if ENABLE_TRACING
-  xTraceVPSHeader();
-#endif
-  WRITE_CODE( pcVPS->getVPSId(),                    4,        "vps_video_parameter_set_id" );
-  WRITE_FLAG(                                       1,        "vps_base_layer_internal_flag" );
-  WRITE_FLAG(                                       1,        "vps_base_layer_available_flag" );
-  WRITE_CODE( 0,                                    6,        "vps_max_layers_minus1" );
-  WRITE_CODE( pcVPS->getMaxTLayers() - 1,           3,        "vps_max_sub_layers_minus1" );
-  WRITE_FLAG( pcVPS->getTemporalNestingFlag(),                "vps_temporal_id_nesting_flag" );
-  CHECK(pcVPS->getMaxTLayers()<=1&&!pcVPS->getTemporalNestingFlag(), "Invalud parameters");
-  WRITE_CODE( 0xffff,                              16,        "vps_reserved_0xffff_16bits" );
-  codePTL( pcVPS->getPTL(), true, pcVPS->getMaxTLayers() - 1 );
-  const bool subLayerOrderingInfoPresentFlag = 1;
-  WRITE_FLAG(subLayerOrderingInfoPresentFlag,              "vps_sub_layer_ordering_info_present_flag");
-  for(uint32_t i=0; i <= pcVPS->getMaxTLayers()-1; i++)
-  {
-    WRITE_UVLC( pcVPS->getMaxDecPicBuffering(i) - 1,       "vps_max_dec_pic_buffering_minus1[i]" );
-    WRITE_UVLC( pcVPS->getNumReorderPics(i),               "vps_max_num_reorder_pics[i]" );
-    WRITE_UVLC( pcVPS->getMaxLatencyIncrease(i),           "vps_max_latency_increase_plus1[i]" );
-    if (!subLayerOrderingInfoPresentFlag)
-    {
-      break;
-    }
-  }
-
-  CHECK( pcVPS->getNumHrdParameters() > MAX_VPS_NUM_HRD_PARAMETERS, "Too many HRD parameters" );
-  CHECK( pcVPS->getMaxNuhReservedZeroLayerId() >= MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1, "Invalid parameters read" );
-  WRITE_CODE( pcVPS->getMaxNuhReservedZeroLayerId(), 6,     "vps_max_layer_id" );
-  WRITE_UVLC( pcVPS->getMaxOpSets() - 1,                    "vps_num_layer_sets_minus1" );
-  for( uint32_t opsIdx = 1; opsIdx <= ( pcVPS->getMaxOpSets() - 1 ); opsIdx ++ )
-  {
-    // Operation point set
-    for( uint32_t i = 0; i <= pcVPS->getMaxNuhReservedZeroLayerId(); i ++ )
-    {
-      // Only applicable for version 1
-      // pcVPS->setLayerIdIncludedFlag( true, opsIdx, i );
-      WRITE_FLAG( pcVPS->getLayerIdIncludedFlag( opsIdx, i ) ? 1 : 0, "layer_id_included_flag[opsIdx][i]" );
-    }
-  }
-  const TimingInfo *timingInfo = pcVPS->getTimingInfo();
-  WRITE_FLAG(timingInfo->getTimingInfoPresentFlag(),          "vps_timing_info_present_flag");
-  if(timingInfo->getTimingInfoPresentFlag())
-  {
-    WRITE_CODE(timingInfo->getNumUnitsInTick(), 32,           "vps_num_units_in_tick");
-    WRITE_CODE(timingInfo->getTimeScale(),      32,           "vps_time_scale");
-    WRITE_FLAG(timingInfo->getPocProportionalToTimingFlag(),  "vps_poc_proportional_to_timing_flag");
-    if(timingInfo->getPocProportionalToTimingFlag())
-    {
-      WRITE_UVLC(timingInfo->getNumTicksPocDiffOneMinus1(),   "vps_num_ticks_poc_diff_one_minus1");
-    }
-    WRITE_UVLC( pcVPS->getNumHrdParameters(),                 "vps_num_hrd_parameters" );
-
-    if( pcVPS->getNumHrdParameters() > 0 )
-    {
-      for( uint32_t i = 0; i < pcVPS->getNumHrdParameters(); i ++ )
-      {
-        // Only applicable for version 1
-        WRITE_UVLC( pcVPS->getHrdOpSetIdx( i ),                "hrd_layer_set_idx" );
-        if( i > 0 )
-        {
-          WRITE_FLAG( pcVPS->getCprmsPresentFlag( i ) ? 1 : 0, "cprms_present_flag[i]" );
-        }
-        codeHrdParameters(pcVPS->getHrdParameters(i), pcVPS->getCprmsPresentFlag( i ), pcVPS->getMaxTLayers() - 1);
-      }
-    }
-  }
-  WRITE_FLAG( 0,                     "vps_extension_flag" );
-
-  //future extensions here..
-  xWriteRbspTrailingBits();
-}
-#else
 void HLSWriter::codeVPS(const VPS* pcVPS)
 {
 #if ENABLE_TRACING
@@ -1083,7 +1005,6 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   //future extensions here..
   xWriteRbspTrailingBits();
 }
-#endif
 
 void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 {
@@ -1261,7 +1182,9 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
       if (alfEnabled)
       {
-
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+        xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
+#else
         if (pcSlice->isIntra())
         {
           WRITE_FLAG(pcSlice->getTileGroupNumAps(), "tile_group_num_APS");
@@ -1270,7 +1193,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         {
           xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
         }
-
+#endif
         const std::vector<int>&   apsId = pcSlice->getTileGroupApsIdLuma();
         for (int i = 0; i < pcSlice->getTileGroupNumAps(); i++)
         {
@@ -1281,6 +1204,9 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
         if (alfChromaIdc)
         {
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+          WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
+#else
           if (pcSlice->isIntra()&& pcSlice->getTileGroupNumAps() == 1)
           {
             CHECK(pcSlice->getTileGroupApsIdChroma() != apsId[0], "wrong tile group chroma aps id");
@@ -1289,33 +1215,50 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           {
             WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
           }
+#endif
         }
       }
     }
 
     //check if numrefidxes match the defaults. If not, override
 
-    if( !pcSlice->isIntra() )
+    if ((!pcSlice->isIntra() && pcSlice->getRPL0()->getNumRefEntries() > 1) ||
+        (pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1) )
     {
-      bool overrideFlag = ( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) != pcSlice->getPPS()->getNumRefIdxL0DefaultActive() || ( pcSlice->isInterB() && pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) != pcSlice->getPPS()->getNumRefIdxL1DefaultActive() ) );
+      int defaultL0 = std::min<int>(pcSlice->getRPL0()->getNumRefEntries(), pcSlice->getPPS()->getNumRefIdxL0DefaultActive());
+      int defaultL1 = pcSlice->isInterB() ? std::min<int>(pcSlice->getRPL1()->getNumRefEntries(), pcSlice->getPPS()->getNumRefIdxL1DefaultActive()) : 0;
+      bool overrideFlag = ( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) != defaultL0 || ( pcSlice->isInterB() && pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) != defaultL1 ) );
       WRITE_FLAG( overrideFlag ? 1 : 0, "num_ref_idx_active_override_flag" );
       if( overrideFlag )
       {
-        WRITE_UVLC( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) - 1, "num_ref_idx_l0_active_minus1" );
-        if( pcSlice->isInterB() )
+        if(pcSlice->getRPL0()->getNumRefEntries() > 1)
+        {
+          WRITE_UVLC( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) - 1, "num_ref_idx_l0_active_minus1" );
+        }
+        else
+        {
+          pcSlice->setNumRefIdx( REF_PIC_LIST_0, 1);
+        }
+
+        if( pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1)
         {
           WRITE_UVLC( pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) - 1, "num_ref_idx_l1_active_minus1" );
         }
         else
         {
-          pcSlice->setNumRefIdx( REF_PIC_LIST_1, 0 );
+          pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0);
         }
+      }
+      else
+      {
+        pcSlice->setNumRefIdx( REF_PIC_LIST_0, defaultL0 );
+        pcSlice->setNumRefIdx( REF_PIC_LIST_1, defaultL1 );
       }
     }
     else
     {
-      pcSlice->setNumRefIdx( REF_PIC_LIST_0, 0 );
-      pcSlice->setNumRefIdx( REF_PIC_LIST_1, 0 );
+      pcSlice->setNumRefIdx( REF_PIC_LIST_0, pcSlice->isIntra() ? 0 : 1 );
+      pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0 );
     }
 
 
@@ -1484,7 +1427,9 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       if (pcSlice->getLmcsEnabledFlag())
       {
         WRITE_CODE(pcSlice->getLmcsAPSId(), 5, "slice_lmcs_aps_id");
+#if !JVET_O1109_UNFIY_CRS
         if (!(pcSlice->getSPS()->getUseDualITree() && pcSlice->isIntra()))
+#endif
           WRITE_FLAG(pcSlice->getLmcsChromaResidualScaleFlag(), "slice_chroma_residual_scale_flag");
       }
     }
@@ -1815,6 +1760,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
   if( !isChroma )
   {
     WRITE_FLAG( alfSliceParam.alfLumaCoeffDeltaFlag, "alf_luma_coeff_delta_flag" );
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     if( !alfSliceParam.alfLumaCoeffDeltaFlag )
     {
       if( alfSliceParam.numLumaFilters > 1 )
@@ -1822,6 +1768,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
         WRITE_FLAG( alfSliceParam.alfLumaCoeffDeltaPredictionFlag, "alf_luma_coeff_delta_prediction_flag" );
       }
     }
+#endif
   }
 
   static int bitsCoeffScan[EncAdaptiveLoopFilter::m_MAX_SCAN_VAL][EncAdaptiveLoopFilter::m_MAX_EXP_GOLOMB];
@@ -1891,6 +1838,15 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
   // Clipping values coding
   if( alfSliceParam.nonLinearFlag[isChroma] )
   {
+#if JVET_O0064_SIMP_ALF_CLIP_CODING
+    for (int ind = 0; ind < numFilters; ++ind)
+    {
+      for (int i = 0; i < alfShape.numCoeff - 1; i++)
+      {
+        WRITE_CODE(clipp[ind* MAX_NUM_ALF_LUMA_COEFF + i], 2, "alf_clipping_index");
+      }
+    }
+#else
     memset( bitsCoeffScan, 0, sizeof( bitsCoeffScan ) );
 
     short recCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
@@ -1901,7 +1857,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
     else
     {
       memcpy( recCoeff, coeff, sizeof(short) * numFilters * MAX_NUM_ALF_LUMA_COEFF );
-
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
       if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
       {
         for( int i = 1; i < numFilters; i++ )
@@ -1912,6 +1868,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
           }
         }
       }
+#endif
     }
     // vlc for all
     for( int ind = 0; ind < numFilters; ++ind )
@@ -1960,6 +1917,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
         alfGolombEncode( clipp[ind* MAX_NUM_ALF_LUMA_COEFF + i], kMinTab[alfShape.golombIdx[i]], false );  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
       }
     }
+#endif
   }
 }
 

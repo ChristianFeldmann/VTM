@@ -44,22 +44,12 @@ std::string hashToString(const PictureHash &digest, int numChar);
 //! \ingroup EncoderLib
 //! \{
 
-#if HEVC_VPS
-void SEIEncoder::initSEIActiveParameterSets (SEIActiveParameterSets *seiActiveParameterSets, const VPS *vps, const SPS *sps)
-#else
 void SEIEncoder::initSEIActiveParameterSets (SEIActiveParameterSets *seiActiveParameterSets, const SPS *sps)
-#endif
 {
   CHECK(!(m_isInitialized), "Unspecified error");
   CHECK(!(seiActiveParameterSets!=NULL), "Unspecified error");
-#if HEVC_VPS
-  CHECK(!(vps!=NULL), "Unspecified error");
-#endif
   CHECK(!(sps!=NULL), "Unspecified error");
 
-#if HEVC_VPS
-  seiActiveParameterSets->activeVPSId = vps->getVPSId();
-#endif
   seiActiveParameterSets->m_selfContainedCvsFlag = false;
   seiActiveParameterSets->m_noParameterSetUpdateFlag = false;
   seiActiveParameterSets->numSpsIdsMinus1 = 0;

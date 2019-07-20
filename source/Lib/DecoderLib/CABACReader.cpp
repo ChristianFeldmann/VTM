@@ -233,7 +233,14 @@ void CABACReader::readAlfCtuFilterIndex(CodingStructure& cs, unsigned ctuRsAddr)
         unsigned usePrevFilt = m_BinDecoder.decodeBin(Ctx::AlfUseTemporalFilt());
         if (usePrevFilt)
         {
-          xReadTruncBinCode(filtIndex, numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
+#if JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL
+          if (numAps > 2)
+          {
+#endif
+            xReadTruncBinCode(filtIndex, numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
+#if JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL
+          }
+#endif
           filtIndex += (unsigned)(NUM_FIXED_FILTER_SETS + 1);
         }
         else
@@ -1298,7 +1305,11 @@ void CABACReader::intra_chroma_pred_mode( PredictionUnit& pu )
   }
 
   // LM chroma mode
+#if JVET_O1124_ALLOW_CCLM_COND
+  if( pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed() )
+#else
   if( pu.cs->sps->getUseLMChroma() )
+#endif
   {
     if( intra_chroma_lmc_mode( pu ) )
     {
@@ -1492,7 +1503,7 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
         }
         else
         {
-          pu.cu->triangle = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && !pu.cu->affine && !pu.mmvdMergeFlag && !pu.cu->mmvdSkip;
+          pu.cu->triangle = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && !pu.cu->affine && !pu.mmvdMergeFlag && !pu.cu->mmvdSkip && pu.cs->slice->getMaxNumTriangleCand() >= 2;
         }
         if (pu.mmvdMergeFlag)
         {
@@ -1509,6 +1520,13 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     pu.cu->affine = false;
     pu.refIdx[REF_PIC_LIST_0] = MAX_NUM_REF;
     mvd_coding(pu.mvd[REF_PIC_LIST_0]);
+#if JVET_O0162_IBC_MVP_FLAG
+    if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+    {
+      pu.mvpIdx[REF_PIC_LIST_0] = 0;
+    }
+    else
+#endif
     mvp_flag(pu, REF_PIC_LIST_0);
   }
   else
@@ -2467,7 +2485,9 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
 
 void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 {
+#if !JVET_O0294_TRANSFORM_CLEANUP
   const CodingUnit  &cu = *tu.cu;
+#endif
   const bool  tsAllowed = TU::isTSAllowed ( tu, compID );
   const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
 
@@ -2483,14 +2503,22 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
   {
     ctxIdx = 6;
     symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+#if JVET_O0294_TRANSFORM_CLEANUP
+    tu.mtsIdx = symbol ? MTS_SKIP : MTS_DCT2_DCT2;
+#else
     tu.mtsIdx = symbol ? MTS_DCT2_DCT2 : MTS_SKIP;
+#endif
   }
 
   if( tu.mtsIdx != MTS_SKIP )
   {
     if( mtsAllowed )
     {
+#if JVET_O0294_TRANSFORM_CLEANUP
+      ctxIdx = 0;
+#else
       ctxIdx = std::min( (int)cu.qtDepth, 5 );
+#endif
       symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
 
       if( symbol )
@@ -2510,7 +2538,11 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
       }
     }
   }
+#if JVET_O0294_TRANSFORM_CLEANUP
+  DTRACE(g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tu.mtsIdx);
+#else
   DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), tu.mtsIdx );
+#endif
 }
 
 void CABACReader::isp_mode( CodingUnit& cu )

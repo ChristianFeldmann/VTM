@@ -1431,6 +1431,14 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
     cMv.setZero();
     Distortion cost = 0;
 
+#if JVET_O0162_IBC_MVP_FLAG
+    if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+    {
+      iBvpNum = 1;
+      cMvPred[1] = cMvPred[0];
+    }
+#endif
+
     if (m_pcEncCfg->getIBCHashSearch())
     {
       xxIBCHashSearch(pu, cMvPred, iBvpNum, cMv, bvpIdxBest, ibcHashMap);
@@ -6269,6 +6277,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && slice.getLmcsChromaResidualScaleFlag())
     {
       const CompArea      &areaY = tu.blocks[COMPONENT_Y];
+#if JVET_O1109_UNFIY_CRS
+      int adj = m_pcReshape->calculateChromaAdjVpduNei(tu, areaY);
+#else
       PelBuf              piPredY = cs.getPredBuf(areaY);
       CompArea      tmpArea(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());
       PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
@@ -6277,6 +6288,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         tmpPred.rspSignal(m_pcReshape->getFwdLUT());
       const Pel           avgLuma = tmpPred.computeAvg();
       int                    adj  = m_pcReshape->calculateChromaAdj(avgLuma);
+#endif
       tu.setChromaAdj(adj);
     }
 
@@ -6399,7 +6411,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #endif
           if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag())
           {
+#if JVET_O0429_CRS_LAMBDA_FIX
+            double cRescale = (double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj());
+#else
             double cRescale = round((double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj()));
+#endif
             m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cRescale*cRescale));
           }
           TCoeff     currAbsSum = 0;
@@ -6635,7 +6651,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
         if ( reshape )
         {
+#if JVET_O0429_CRS_LAMBDA_FIX
+          double cRescale = (double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj());
+#else
           double cRescale = round((double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj()));
+#endif
           m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cRescale*cRescale));
 
           cbResi.scaleSignal(tu.getChromaAdj(), 1, tu.cu->cs->slice->clpRng(COMPONENT_Cb));

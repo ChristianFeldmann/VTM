@@ -1978,7 +1978,7 @@ void PU::getInterMMVDMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx,
     }
   }
 }
-bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList, const Position &_pos, Mv& rcMv, const int &refIdx )
+bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList, const Position &_pos, Mv& rcMv, const int &refIdx, bool sbFlag)
 {
   // don't perform MV compression when generally disabled or subPuMvp is used
   const unsigned scale = 4 * std::max<int>(1, 4 * AMVP_DECIMATION_FACTOR / 4);
@@ -2014,14 +2014,26 @@ bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList
   }
   int iColRefIdx = mi.refIdx[eColRefPicList];
 
-  if (iColRefIdx < 0)
+  if (sbFlag && !slice.getCheckLDC())
   {
-    eColRefPicList = RefPicList(1 - eColRefPicList);
+    eColRefPicList = eRefPicList;
     iColRefIdx = mi.refIdx[eColRefPicList];
-
     if (iColRefIdx < 0)
     {
       return false;
+    }
+  }
+  else
+  {
+    if (iColRefIdx < 0)
+    {
+      eColRefPicList = RefPicList(1 - eColRefPicList);
+      iColRefIdx = mi.refIdx[eColRefPicList];
+
+      if (iColRefIdx < 0)
+      {
+        return false;
+      }
     }
   }
 
@@ -3612,84 +3624,6 @@ void PU::setAllAffineMv(PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPic
   pu.mvAffi[eRefList][2] = affLB;
 }
 
-static bool deriveScaledMotionTemporal( const Slice&      slice,
-                                        const Position&   colPos,
-                                        const Picture*    pColPic,
-                                        const RefPicList  eCurrRefPicList,
-                                        Mv&         cColMv,
-                                        const RefPicList  eFetchRefPicList)
-{
-  const MotionInfo &mi = pColPic->cs->getMotionInfo(colPos);
-  const Slice *pColSlice = nullptr;
-
-  for (const auto &pSlice : pColPic->slices)
-  {
-    if (pSlice->getIndependentSliceIdx() == mi.sliceIdx)
-    {
-      pColSlice = pSlice;
-      break;
-    }
-  }
-
-  CHECK(pColSlice == nullptr, "Couldn't find the colocated slice");
-
-  int iColPOC, iColRefPOC, iCurrPOC, iCurrRefPOC, iScale;
-  bool bAllowMirrorMV = true;
-  RefPicList eColRefPicList = slice.getCheckLDC() ? eCurrRefPicList : RefPicList(1 - eFetchRefPicList);
-  if (pColPic == slice.getRefPic(RefPicList(slice.isInterB() ? 1 - slice.getColFromL0Flag() : 0), slice.getColRefIdx()))
-  {
-    eColRefPicList = eCurrRefPicList;   //67 -> disable, 64 -> enable
-    bAllowMirrorMV = false;
-  }
-
-  // Although it might make sense to keep the unavailable motion field per direction still be unavailable, I made the MV prediction the same way as in TMVP
-  // So there is an interaction between MV0 and MV1 of the corresponding blocks identified by TV.
-
-  // Grab motion and do necessary scaling.{{
-  iCurrPOC = slice.getPOC();
-
-  int iColRefIdx = mi.refIdx[eColRefPicList];
-
-  if (iColRefIdx < 0 && (slice.getCheckLDC() || bAllowMirrorMV))
-  {
-    eColRefPicList = RefPicList(1 - eColRefPicList);
-    iColRefIdx = mi.refIdx[eColRefPicList];
-
-    if (iColRefIdx < 0)
-    {
-      return false;
-    }
-  }
-
-  if (iColRefIdx >= 0 && slice.getNumRefIdx(eCurrRefPicList) > 0)
-  {
-    iColPOC = pColSlice->getPOC();
-    iColRefPOC = pColSlice->getRefPOC(eColRefPicList, iColRefIdx);
-    if (iColPOC == iColRefPOC)
-      return false;
-    ///////////////////////////////////////////////////////////////
-    // Set the target reference index to 0, may be changed later //
-    ///////////////////////////////////////////////////////////////
-    iCurrRefPOC = slice.getRefPic(eCurrRefPicList, 0)->getPOC();
-    // Scale the vector.
-    cColMv = mi.mv[eColRefPicList];
-    cColMv.setHor(roundMvComp(cColMv.getHor()));
-    cColMv.setVer(roundMvComp(cColMv.getVer()));
-    //pcMvFieldSP[2*iPartition + eCurrRefPicList].getMv();
-    // Assume always short-term for now
-    iScale = xGetDistScaleFactor(iCurrPOC, iCurrRefPOC, iColPOC, iColRefPOC);
-
-    if (iScale != 4096)
-    {
-
-      cColMv = cColMv.scaleMv(iScale);
-    }
-
-    return true;
-  }
-  return false;
-}
-
 void clipColPos(int& posX, int& posY, const PredictionUnit& pu)
 {
   Position puPos = pu.lumaPos();
@@ -3715,7 +3649,6 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
 
   const Picture *pColPic = slice.getRefPic(RefPicList(slice.isInterB() ? 1 - slice.getColFromL0Flag() : 0), slice.getColRefIdx());
   Mv cTMv;
-  RefPicList fetchRefPicList = RefPicList(slice.isInterB() ? 1 - slice.getColFromL0Flag() : 0);
 
 #if JVET_O0163_REMOVE_SWITCHING_TMV
   if ( count )
@@ -3723,12 +3656,10 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
     if ( (mrgCtx.interDirNeighbours[0] & (1 << REF_PIC_LIST_0)) && slice.getRefPic( REF_PIC_LIST_0, mrgCtx.mvFieldNeighbours[REF_PIC_LIST_0].refIdx ) == pColPic )
     {
       cTMv = mrgCtx.mvFieldNeighbours[REF_PIC_LIST_0].mv;
-      fetchRefPicList = REF_PIC_LIST_0;
     }
     else if ( slice.isInterB() && (mrgCtx.interDirNeighbours[0] & (1 << REF_PIC_LIST_1)) && slice.getRefPic( REF_PIC_LIST_1, mrgCtx.mvFieldNeighbours[REF_PIC_LIST_1].refIdx ) == pColPic )
     {
       cTMv = mrgCtx.mvFieldNeighbours[REF_PIC_LIST_1].mv;
-      fetchRefPicList = REF_PIC_LIST_1;
     }
   }
 #else
@@ -3743,7 +3674,6 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
       {
         cTMv = mrgCtx.mvFieldNeighbours[0 * 2 + currRefPicList].mv;
         terminate = true;
-        fetchRefPicList = currRefPicList;
         break;
       }
     }
@@ -3767,6 +3697,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   int puWidth = numPartLine == 1 ? puSize.width : 1 << ATMVP_SUB_BLOCK_SIZE;
 
   Mv cColMv;
+  int refIdx = 0;
   // use coldir.
   bool     bBSlice = slice.isInterB();
 
@@ -3795,7 +3726,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
     {
       RefPicList  currRefPicList = RefPicList(currRefListId);
 
-      if (deriveScaledMotionTemporal(slice, centerPos, pColPic, currRefPicList, cColMv, fetchRefPicList))
+      if (getColocatedMVP(pu, currRefPicList, centerPos, cColMv, refIdx, true))
       {
         // set as default, for further motion vector field spanning
         mrgCtx.mvFieldNeighbours[(count << 1) + currRefListId].setMvField(cColMv, 0);
@@ -3848,7 +3779,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
         for (unsigned currRefListId = 0; currRefListId < (bBSlice ? 2 : 1); currRefListId++)
         {
           RefPicList currRefPicList = RefPicList(currRefListId);
-          if (deriveScaledMotionTemporal(slice, colPos, pColPic, currRefPicList, cColMv, fetchRefPicList))
+          if (getColocatedMVP(pu, currRefPicList, colPos, cColMv, refIdx, true))
           {
             mi.refIdx[currRefListId] = 0;
             mi.mv[currRefListId] = cColMv;
@@ -3878,7 +3809,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
     }
   }
   return true;
-  }
+}
 
 void PU::spanMotionInfo( PredictionUnit &pu, const MergeCtx &mrgCtx )
 {

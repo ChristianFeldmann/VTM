@@ -750,7 +750,7 @@ namespace DQIntern
       {
         if (enableScalingLists)
           invQScale = piDequantCoef[rasterPos];//scalingfactor*levelScale
-        if (shift < 0)
+        if (shift < 0 && (enableScalingLists || scanIdx == lastScanIdx))
         {
           invQScale <<= -shift;
         }

@@ -943,7 +943,11 @@ bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, bool isCa
   {
     hasPruned[subPuMvpPos] = true;
   }
+#if JVET_O0078_SINGLE_HMVPLUT
+  auto &lut = ibcFlag ? cs.motionLut.lutIbc : cs.motionLut.lut;
+#else
   auto &lut = ibcFlag ? ( isShared ? cs.motionLut.lutShareIbc : cs.motionLut.lutIbc ) : cs.motionLut.lut;
+#endif
   int num_avai_candInLUT = (int) lut.size();
 
   for (int mrgIdx = 1; mrgIdx <= num_avai_candInLUT; mrgIdx++)

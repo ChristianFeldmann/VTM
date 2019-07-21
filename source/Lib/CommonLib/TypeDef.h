@@ -91,6 +91,8 @@
 
 #define JVET_O1124_ALLOW_CCLM_COND                        1 // JVET-O1124/JVET-O0196: CCLM restriction to reduce luma-chroma latency for chroma separate tree
 
+#define JVET_O0078_SINGLE_HMVPLUT                         1 // JVET-O0078£ºSingle HMVP table for all CUs inside the shared merge list region for IBC
+
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
 #define MRG_SHARELIST_SHARSIZE                            32

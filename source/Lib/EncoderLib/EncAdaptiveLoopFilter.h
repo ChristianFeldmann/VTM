@@ -219,8 +219,10 @@ private:
 class EncAdaptiveLoopFilter : public AdaptiveLoopFilter
 {
 public:
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   static constexpr int   m_MAX_SCAN_VAL = 11;
   static constexpr int   m_MAX_EXP_GOLOMB = 16;
+#endif
   int m_alfWSSD;
   inline void           setAlfWSSD(int alfWSSD) { m_alfWSSD = alfWSSD; }
   static std::vector<double>  m_lumaLevelToWeightPLUT;
@@ -245,8 +247,10 @@ private:
   int**                  m_filterCoeffSet;
   int**                  m_filterClippSet;
   int**                  m_diffFilterCoeff;
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   int                    m_kMinTab[MAX_NUM_ALF_LUMA_COEFF];
   int                    m_bitsCoeffScan[m_MAX_SCAN_VAL][m_MAX_EXP_GOLOMB];
+#endif
   short                  m_filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES];
   unsigned               m_bitsNewFilter[MAX_NUM_CHANNEL_TYPE];
   int                    m_apsIdStart;
@@ -278,7 +282,9 @@ public:
   void create( const EncCfg* encCfg, const int picWidth, const int picHeight, const ChromaFormat chromaFormatIDC, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE], const int internalBitDepth[MAX_NUM_CHANNEL_TYPE] );
   void destroy();
   static int lengthGolomb( int coeffVal, int k, bool signed_coeff=true );
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   static int getGolombKMin( AlfFilterShape& alfShape, const int numFilters, int kMinTab[MAX_NUM_ALF_LUMA_COEFF], int bitsCoeffScan[m_MAX_SCAN_VAL][m_MAX_EXP_GOLOMB] );
+#endif
 
 private:
   void   alfEncoder( CodingStructure& cs, AlfSliceParam& alfSliceParam, const PelUnitBuf& orgUnitBuf, const PelUnitBuf& recExtBuf, const PelUnitBuf& recBuf, const ChannelType channel
@@ -322,7 +328,11 @@ private:
   int    getCostFilterCoeffForce0( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters, bool* codedVarBins );
   int    getCostFilterCoeff( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters );
   int    getCostFilterClipp( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters );
+#if JVET_O0216_ALF_COEFF_EG3
+  int    lengthFilterCoeffs( AlfFilterShape& alfShape, const int numFilters, int **FilterCoeff );
+#else
   int    lengthFilterCoeffs( AlfFilterShape& alfShape, const int numFilters, int **FilterCoeff, int* kMinTab );
+#endif
 #if !JVET_O0064_SIMP_ALF_CLIP_CODING
   int    lengthFilterClipps( AlfFilterShape& alfShape, const int numFilters, int **FilterCoeff, int* kMinTab );
 #endif

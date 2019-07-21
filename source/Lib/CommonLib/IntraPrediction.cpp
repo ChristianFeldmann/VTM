@@ -585,6 +585,7 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
     {
       const bool isRefFilter       =  isIntegerSlope(absAng);
 #if JVET_O0277_INTRA_SMALL_BLOCK_DCTIF
+      CHECK( puSize.width * puSize.height <= 32, "DCT-IF interpolation filter is always used for 4x4, 4x8, and 8x4 luma CB" );
       m_ipaParam.refFilterFlag     =  isRefFilter;
 #else
       m_ipaParam.refFilterFlag = isRefFilter && puSize.width * puSize.height > 32;

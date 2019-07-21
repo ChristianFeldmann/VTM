@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0216_ALF_COEFF_EG3                          1 // JVET-O0216/O0302/O0648: using EG3 for ALF coefficients coding
+
 #define JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL      1 // JVET-O0247: not signal APS index when number APS is 2
 
 #define JVET_O0637_CHROMA_GRADIENT_LINE_SELECTION         1 // Choose line0 and line3 for gradient computation when chroma is same size as luma
@@ -1373,12 +1375,13 @@ struct AlfFilterShape
               2, 2, 2,
            2, 2, 1, 1
       };
-
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
       golombIdx = {
                  0,
               0, 1, 0,
            0, 1, 2, 2
       };
+#endif
 
       filterType = ALF_FILTER_5;
     }
@@ -1400,13 +1403,14 @@ struct AlfFilterShape
             2,  2,  2,  2,  2,
         2,  2,  2,  1,  1
       };
-
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
       golombIdx = {
                     0,
                  0, 1, 0,
               0, 1, 2, 1, 0,
            0, 1, 2, 3, 3
       };
+#endif
 
       filterType = ALF_FILTER_7;
     }
@@ -1423,7 +1427,9 @@ struct AlfFilterShape
   int filterSize;
   std::vector<int> pattern;
   std::vector<int> weights;
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   std::vector<int> golombIdx;
+#endif
 };
 
 struct AlfSliceParam

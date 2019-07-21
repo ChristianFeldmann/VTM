@@ -985,12 +985,13 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
 {
   int iBits = 0;
   assert( isChroma );
-
+  AlfFilterShape alfShape(5);
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   memset( m_bitsCoeffScan, 0, sizeof( m_bitsCoeffScan ) );
-  AlfFilterShape alfShape( 5 );
   const int maxGolombIdx = AdaptiveLoopFilter::getMaxGolombIdx( alfShape.filterType );
   const int numFilters = 1;
-
+#endif
+#if !JVET_O0216_ALF_COEFF_EG3
   // vlc for all
   for( int i = 0; i < alfShape.numCoeff - 1; i++ )
   {
@@ -1015,11 +1016,15 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
     iBits += golombOrderIncreaseFlag;                           //golomb_order_increase_flag
     kMin = m_kMinTab[idx];
   }
-
+#endif
   // Filter coefficients
   for( int i = 0; i < alfShape.numCoeff - 1; i++ )
   {
+#if JVET_O0216_ALF_COEFF_EG3
+    iBits += lengthGolomb( alfSliceParam.chromaCoeff[i], 3 );  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
+#else
     iBits += lengthGolomb( alfSliceParam.chromaCoeff[i], m_kMinTab[alfShape.golombIdx[i]] );  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
+#endif
   }
 
   if( m_alfSliceParamTemp.nonLinearFlag[isChroma] )
@@ -1047,12 +1052,19 @@ int EncAdaptiveLoopFilter::getCoeffRate( AlfSliceParam& alfSliceParam, bool isCh
         m_bitsCoeffScan[alfShape.golombIdx[i]][k] += lengthGolomb( coeffVal, k, false );
       }
     }
-
+#if JVET_O0216_ALF_COEFF_EG3
+    int kMin = getGolombKMin(alfShape, numFilters, m_kMinTab, m_bitsCoeffScan);
+#else
     kMin = getGolombKMin( alfShape, numFilters, m_kMinTab, m_bitsCoeffScan );
+#endif
 
     // Golomb parameters
     iBits += lengthUvlc( kMin - 1 );  // "min_golomb_order"
+#if JVET_O0216_ALF_COEFF_EG3
+    int golombOrderIncreaseFlag = 0;
+#else
     golombOrderIncreaseFlag = 0;
+#endif
 
     for( int idx = 0; idx < maxGolombIdx; idx++ )
     {
@@ -1322,9 +1334,13 @@ int EncAdaptiveLoopFilter::getTBlength( int uiSymbol, const int uiMaxSymbol )
 
 int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters, bool* codedVarBins )
 {
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   const int maxGolombIdx = getMaxGolombIdx( alfShape.filterType );
   memset( m_bitsCoeffScan, 0, sizeof( m_bitsCoeffScan ) );
-
+#endif
+#if JVET_O0216_ALF_COEFF_EG3 
+  int len = numFilters; //filter_coefficient_flag[i]
+#else
   for( int ind = 0; ind < numFilters; ++ind )
   {
     if( !codedVarBins[ind] )
@@ -1347,7 +1363,7 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
   int len = kMin           //min_golomb_order
           + maxGolombIdx   //golomb_order_increase_flag
           + numFilters;    //filter_coefficient_flag[i]
-
+#endif
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
@@ -1355,7 +1371,11 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
     {
       for( int i = 0; i < alfShape.numCoeff - 1; i++ )
       {
+#if JVET_O0216_ALF_COEFF_EG3 
+        len += lengthGolomb( abs( pDiffQFilterCoeffIntPP[ind][i] ), 3 ); // alf_coeff_luma_delta[i][j]
+#else
         len += lengthGolomb( abs( pDiffQFilterCoeffIntPP[ind][i] ), m_kMinTab[alfShape.golombIdx[i]] ); // alf_coeff_luma_delta[i][j]
+#endif
       }
     }
   }
@@ -1394,8 +1414,11 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
         }
       }
     }
-
+#if JVET_O0216_ALF_COEFF_EG3 
+    int kMin = getGolombKMin(alfShape, numFilters, m_kMinTab, m_bitsCoeffScan);
+#else
     kMin = getGolombKMin( alfShape, numFilters, m_kMinTab, m_bitsCoeffScan );
+#endif
 
     // Coding parameters
     len += kMin           //min_golomb_order
@@ -1459,8 +1482,10 @@ int EncAdaptiveLoopFilter::deriveFilterCoefficientsPredictionMode( AlfFilterShap
 
 int EncAdaptiveLoopFilter::getCostFilterCoeff( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters )
 {
+#if JVET_O0216_ALF_COEFF_EG3
+  return lengthFilterCoeffs( alfShape, numFilters, pDiffQFilterCoeffIntPP );  // alf_coeff_luma_delta[i][j];
+#else
   const int maxGolombIdx = getMaxGolombIdx( alfShape.filterType );
-
   memset( m_bitsCoeffScan, 0, sizeof( m_bitsCoeffScan ) );
 
   for( int ind = 0; ind < numFilters; ++ind )
@@ -1485,6 +1510,7 @@ int EncAdaptiveLoopFilter::getCostFilterCoeff( AlfFilterShape& alfShape, int **p
   len += lengthFilterCoeffs( alfShape, numFilters, pDiffQFilterCoeffIntPP, m_kMinTab );  // alf_coeff_luma_delta[i][j]
 
   return len;
+#endif
 }
 
 int EncAdaptiveLoopFilter::getCostFilterClipp( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters )
@@ -1523,7 +1549,11 @@ int EncAdaptiveLoopFilter::getCostFilterClipp( AlfFilterShape& alfShape, int **p
 #endif
 }
 
+#if JVET_O0216_ALF_COEFF_EG3
+int EncAdaptiveLoopFilter::lengthFilterCoeffs( AlfFilterShape& alfShape, const int numFilters, int **FilterCoeff )
+#else
 int EncAdaptiveLoopFilter::lengthFilterCoeffs( AlfFilterShape& alfShape, const int numFilters, int **FilterCoeff, int* kMinTab )
+#endif
 {
   int bitCnt = 0;
 
@@ -1531,7 +1561,11 @@ int EncAdaptiveLoopFilter::lengthFilterCoeffs( AlfFilterShape& alfShape, const i
   {
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
+#if JVET_O0216_ALF_COEFF_EG3
+      bitCnt += lengthGolomb( abs( FilterCoeff[ind][i] ), 3 );
+#else
       bitCnt += lengthGolomb( abs( FilterCoeff[ind][i] ), kMinTab[alfShape.golombIdx[i]] );
+#endif
     }
   }
   return bitCnt;
@@ -1558,8 +1592,10 @@ int EncAdaptiveLoopFilter::lengthFilterClipps( AlfFilterShape& alfShape, const i
 double EncAdaptiveLoopFilter::getDistForce0( AlfFilterShape& alfShape, const int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2], bool* codedVarBins )
 {
   static int bitsVarBin[MAX_NUM_ALF_CLASSES];
-
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   memset( m_bitsCoeffScan, 0, sizeof( m_bitsCoeffScan ) );
+#endif
+#if !JVET_O0216_ALF_COEFF_EG3
   for( int ind = 0; ind < numFilters; ++ind )
   {
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
@@ -1573,13 +1609,18 @@ double EncAdaptiveLoopFilter::getDistForce0( AlfFilterShape& alfShape, const int
   }
 
   getGolombKMin( alfShape, numFilters, m_kMinTab, m_bitsCoeffScan );
+#endif
 
   for( int ind = 0; ind < numFilters; ++ind )
   {
     bitsVarBin[ind] = 0;
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
+#if JVET_O0216_ALF_COEFF_EG3
+      bitsVarBin[ind] += lengthGolomb( abs( m_filterCoeffSet[ind][i] ), 3 );
+#else
       bitsVarBin[ind] += lengthGolomb( abs( m_filterCoeffSet[ind][i] ), m_kMinTab[alfShape.golombIdx[i]] );
+#endif
     }
   }
 
@@ -1633,7 +1674,7 @@ double EncAdaptiveLoopFilter::getDistForce0( AlfFilterShape& alfShape, const int
 
   return distForce0;
 }
-
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
 int EncAdaptiveLoopFilter::getGolombKMin( AlfFilterShape& alfShape, const int numFilters, int kMinTab[MAX_NUM_ALF_LUMA_COEFF], int bitsCoeffScan[m_MAX_SCAN_VAL][m_MAX_EXP_GOLOMB] )
 {
   int kStart;
@@ -1683,7 +1724,7 @@ int EncAdaptiveLoopFilter::getGolombKMin( AlfFilterShape& alfShape, const int nu
 
   return minKStart;
 }
-
+#endif
 double EncAdaptiveLoopFilter::getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, const int numFilters )
 {
   double distForce0 = 0;

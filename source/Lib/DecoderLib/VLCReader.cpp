@@ -2599,15 +2599,20 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
 
   // derive maxGolombIdx
   AlfFilterShape alfShape( isChroma ? 5 : 7 );
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   const int maxGolombIdx = AdaptiveLoopFilter::getMaxGolombIdx( alfShape.filterType );
+#endif
+#if !JVET_O0216_ALF_COEFF_EG3
   READ_UVLC( code, isChroma ? "alf_chroma_min_eg_order_minus1" : "alf_luma_min_eg_order_minus1" );
-
+#endif
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   int kMin = code + 1;
   static int kMinTab[MAX_NUM_ALF_COEFF];
+#endif
   const int numFilters = isChroma ? 1 : alfSliceParam.numLumaFilters;
   short* coeff = isChroma ? alfSliceParam.chromaCoeff : alfSliceParam.lumaCoeff;
   short* clipp = isChroma ? alfSliceParam.chromaClipp : alfSliceParam.lumaClipp;
-
+#if !JVET_O0216_ALF_COEFF_EG3
   for( int idx = 0; idx < maxGolombIdx; idx++ )
   {
     READ_FLAG( code, isChroma ? "alf_chroma_eg_order_increase_flag"  : "alf_luma_eg_order_increase_flag" );
@@ -2615,7 +2620,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
     kMinTab[idx] = kMin + code;
     kMin = kMinTab[idx];
   }
-
+#endif
   if( !isChroma )
   {
     if( alfSliceParam.alfLumaCoeffDeltaFlag )
@@ -2639,7 +2644,11 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
+#if JVET_O0216_ALF_COEFF_EG3
+      coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( 3 );
+#else
       coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( kMinTab[alfShape.golombIdx[i]] );
+#endif
     }
   }
 

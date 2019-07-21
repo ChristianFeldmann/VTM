@@ -1536,7 +1536,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     {
       cs.motionLut.lut.resize(0);
       cs.motionLut.lutIbc.resize(0);
+#if !JVET_O0078_SINGLE_HMVPLUT
       cs.motionLut.lutShareIbc.resize(0);
+#endif
     }
 
 #if ENABLE_WPP_PARALLELISM

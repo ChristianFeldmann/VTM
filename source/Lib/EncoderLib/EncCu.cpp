@@ -786,7 +786,12 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     const CodingUnit&     cu = *bestCS->cus.front();
     const PredictionUnit& pu = *cu.firstPU;
 
+#if JVET_O0078_SINGLE_HMVPLUT
+    bool isShare = ((CU::isIBC(cu) && m_shareState == 2) ? true : false);
+    if (!cu.affine && !cu.triangle && !isShare)
+#else
     if (!cu.affine && !cu.triangle)
+#endif
     {
       MotionInfo mi = pu.getMotionInfo();
       mi.GBiIdx = (mi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
@@ -1158,7 +1163,9 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   }
   if ( m_shareState == GEN_ON_SHARED_BOUND && slice.getSPS()->getIBCFlag() )
   {
+#if !JVET_O0078_SINGLE_HMVPLUT
     tempCS->motionLut.lutShareIbc = tempCS->motionLut.lutIbc;
+#endif
     m_shareBndPosX = uiLPelX;
     m_shareBndPosY = uiTPelY;
     m_shareBndSizeW = tempCS->area.lwidth();

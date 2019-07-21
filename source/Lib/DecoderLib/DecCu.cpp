@@ -122,7 +122,9 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         if ((currCU.shareParentPos.x >= 0) && (!(currCU.shareParentPos.x == prevTmpPos.x && currCU.shareParentPos.y == prevTmpPos.y)))
         {
           m_shareStateDec = GEN_ON_SHARED_BOUND;
+#if !JVET_O0078_SINGLE_HMVPLUT
           cs.motionLut.lutShareIbc = cs.motionLut.lutIbc;
+#endif
         }
 
         if (currCU.shareParentPos.x < 0)
@@ -455,7 +457,12 @@ void DecCu::xReconInter(CodingUnit &cu)
   if (cu.Y().valid())
   {
     const PredictionUnit &pu = *cu.firstPU;
+#if JVET_O0078_SINGLE_HMVPLUT
+    bool isShare = ((CU::isIBC(cu) && (cu.shareParentSize.width != cu.Y().lumaSize().width || cu.shareParentSize.height != cu.Y().lumaSize().height)) ? true : false);
+    if (!cu.affine && !cu.triangle && !isShare)
+#else
     if (!cu.affine && !cu.triangle)
+#endif
     {
       MotionInfo mi = pu.getMotionInfo();
       mi.GBiIdx = (mi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;

@@ -839,10 +839,29 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_UVLC( pcSPS->getLog2MaxTbSize() - 2,                                 "log2_max_luma_transform_block_size_minus2" );
 #endif
 #endif
+
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  if (pcSPS->getChromaFormatIdc() != CHROMA_400)
+  {
+    WRITE_FLAG(pcSPS->getSameCQPTableForAllChromaFlag(), "same_qp_table_for_chroma");
+    for (int i = 0; i < pcSPS->getSameCQPTableForAllChromaFlag() ? 1 : 3; i++)
+    {
+      WRITE_UVLC(pcSPS->getNumPtsInCQPTableMinus[i], "num_points_in_qp_table_minus1");
+
+      for (int j = 0; j <= pcSPS->getNumPtsInCQPTableMinus[i]; j++)
+      {
+        WRITE_UVLC(pcSPS->getDeltaInValMinus1[i][j], "delta_qp_in_val_minus1");
+        WRITE_UVLC(pcSPS->getDeltaOutVal[i][j], "delta_qp_out_val");
+      }
+    }
+  }
+#endif
+
 #if JVET_O0244_DELTA_POC
   WRITE_FLAG( pcSPS->getUseWP() ? 1 : 0, "sps_weighted_pred_flag" );   // Use of Weighting Prediction (P_SLICE)
   WRITE_FLAG( pcSPS->getUseWPBiPred() ? 1 : 0, "sps_weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
 #endif
+
   WRITE_FLAG( pcSPS->getSAOEnabledFlag(),                                            "sps_sao_enabled_flag");
   WRITE_FLAG( pcSPS->getALFEnabledFlag(),                                            "sps_alf_enabled_flag" );
 

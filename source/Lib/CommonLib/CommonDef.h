@@ -300,6 +300,9 @@ static const int NUM_LONG_TERM_REF_PIC_SPS =                        0;
 
 
 static const int MAX_QP_OFFSET_LIST_SIZE =                          6; ///< Maximum size of QP offset list is 6 entries
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+static const int MAX_NUM_CQP_MAPPING_TABLES =                       3; ///< Maximum number of chroma QP mapping tables (Cb, Cr and joint Cb-Cr)
+#endif
 
 // Cost mode support
 static const int LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP =      0; ///< QP to use for lossless coding.

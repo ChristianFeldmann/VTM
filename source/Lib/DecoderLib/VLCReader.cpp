@@ -1239,10 +1239,31 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC( uiCode, "log2_max_luma_transform_block_size_minus2" ); pcSPS->setLog2MaxTbSize( uiCode + 2 );
 #endif
 #endif
+
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  if (pcSPS->getChromaFormatIdc() != CHROMA_400)
+  {
+    READ_FLAG(uiCode, "same_qp_table_for_chroma");        pcSPS->setSameCQPTableForAllChromaFlag(uiCode);
+    for (int i = 0; i < pcSPS->getSameCQPTableForAllChromaFlag() ? 1 : 3; i++)
+    {
+      int numPtsInTableMinus1 = 0;
+      READ_UVLC(uiCode, "num_points_in_qp_table_minus1"); pcSPS->setNumPtsInCQPTableMinus1(i, uiCode);
+
+      for (int j = 0; j <= pcSPS->getNumPtsInCQPTableMinus1(i); j++)
+      {
+        READ_UVLC(uiCode, "delta_qp_in_val_minus1");  pcSPS->setDeltaInValMinus1(i, j, uiCode);
+        READ_UVLC(uiCode, "delta_qp_out_val");        pcSPS->setDeltaOutVal(i, j, uiCode);
+      }
+    }
+    pcSPS->derivedChromaQPMappingTables();
+  }
+#endif
+
 #if JVET_O0244_DELTA_POC
   READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
 #endif
+  
   READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );
 

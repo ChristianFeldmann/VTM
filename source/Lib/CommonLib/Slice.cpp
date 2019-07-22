@@ -1456,6 +1456,9 @@ SPS::SPS()
 , m_LadfIntervalLowerBound    { 0 }
 #endif
 , m_MIP                       ( false )
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+, m_sameCQPTableForAllChromaFlag ( false )
+#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {

@@ -2372,6 +2372,11 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
   const int stateTab  = ( tu.cs->slice->getDepQuantEnabledFlag() ? 32040 : 0 );
   int       state     = 0;
 
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  int ctxBinSampleRatio = (compID == COMPONENT_Y) ? MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_LUMA : MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_CHROMA;
+  cctx.regBinLimit = (tu.getTbAreaAfterCoefZeroOut(compID) * ctxBinSampleRatio) >> 4;
+#endif
+
   for( int subSetId = ( cctx.scanPosLast() >> cctx.log2CGSize() ); subSetId >= 0; subSetId--)
   {
     cctx.initSubblock       ( subSetId, sigGroupFlags[subSetId] );
@@ -2634,8 +2639,12 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
   int       remAbsLevel   = -1;
   int       numNonZero    =  0;
   unsigned  signPattern   =  0;
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  int       remRegBins    = cctx.regBinLimit;
+#else
   bool      is2x2subblock = ( cctx.log2CGSize() == 2 );
   int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK );
+#endif
   int       firstPosMode2 = minSubPos - 1;
 
   for( ; nextSigPos >= minSubPos && remRegBins >= 4; nextSigPos-- )
@@ -2689,7 +2698,9 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
     state = ( stateTransTable >> ((state<<2)+((Coeff&1)<<1)) ) & 3;
   }
   firstPosMode2 = nextSigPos;
-
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  cctx.regBinLimit = remRegBins;
+#endif
 
 
   //===== 2nd PASS: Go-rice codes =====

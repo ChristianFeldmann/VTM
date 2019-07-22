@@ -199,6 +199,14 @@ typedef std::pair<int, int>  TrCost;
 #define RExt__DECODER_DEBUG_BIT_STATISTICS                0 ///< 0 (default) = decoder reports as normal, 1 = decoder produces bit usage statistics (will impact decoder run time by up to ~10%)
 #endif
 
+#ifndef RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+#define RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS         (1 && RExt__DECODER_DEBUG_BIT_STATISTICS )   ///< 0 (default) = decoder reports as normal, 1 = decoder produces max frame bit usage statistics
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+#define TR_ONLY_COEFF_STATS                               1
+#define EPBINCOUNT_FIX                                    1
+#endif
+#endif
+
 #ifndef RExt__DECODER_DEBUG_TOOL_STATISTICS
 #define RExt__DECODER_DEBUG_TOOL_STATISTICS               0 ///< 0 (default) = decoder reports as normal, 1 = decoder produces tool usage statistics
 #endif

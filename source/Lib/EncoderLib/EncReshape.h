@@ -93,6 +93,9 @@ public:
   ReshapeCW * getReshapeCW() { return &m_reshapeCW; }
   Pel * getWeightTable() { return m_cwLumaWeight; }
   double getCWeight() { return m_chromaWeight; }
+#if JVET_O0272_LMCS_SIMP_INVERSE_MAPPING
+  void adjustLmcsPivot();
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   void copyState(const EncReshape& other);

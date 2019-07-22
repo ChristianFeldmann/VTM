@@ -261,7 +261,7 @@ uint32_t CU::getNumNonZeroCoeffNonTs( const CodingUnit& cu, const bool lumaFlag,
   return count;
 }
 
-#if !JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
 uint32_t CU::getNumNonZeroCoeffNonTsCorner8x8( const CodingUnit& cu, const bool lumaFlag, const bool chromaFlag )
 {
   uint32_t count = 0;
@@ -4535,7 +4535,7 @@ uint32_t TU::getNumNonZeroCoeffsNonTS( const TransformUnit& tu, const bool bLuma
   }
   return count;
 }
-#if !JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
 uint32_t TU::getNumNonZeroCoeffsNonTSCorner8x8( const TransformUnit& tu, const bool lumaFlag, const bool chromaFlag )
 {
   const uint32_t lumaWidth       = tu.blocks[ 0 ].width,  chromaWidth  = tu.blocks[ 1 ].width;

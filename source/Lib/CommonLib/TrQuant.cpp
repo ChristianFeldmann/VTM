@@ -272,7 +272,7 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
 #endif
       bool          transposeFlag   = getTransposeFlag( intraMode );
       const int     sbSize          = whge3 ? 8 : 4;
-#if !JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       const int     subGrpXMax      = ( height == 4 && width  > 8 ) ? 2 : 1;
       const int     subGrpYMax      = ( width  == 4 && height > 8 ) ? 2 : 1;
 #endif
@@ -280,7 +280,7 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
       bool          tu8x8Flag       = ( width == 8 && height == 8 );
       TCoeff*       lfnstTemp;
       TCoeff*       coeffTemp;
-#if !JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       for( int subGroupX = 0; subGroupX < subGrpXMax; subGroupX++ )
       {
         for( int subGroupY = 0; subGroupY < subGrpYMax; subGroupY++ )
@@ -345,7 +345,7 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
               coeffTemp += width;
             }
           }
-#if !JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
         }
       } // subGroupX
 #endif
@@ -378,7 +378,7 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
 
       bool            transposeFlag   = getTransposeFlag( intraMode );
       const int       sbSize          = whge3 ? 8 : 4;
-#if !JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       const int       subGrpXMax      = ( height == 4 && width  > 8 ) ? 2 : 1;
       const int       subGrpYMax      = ( width  == 4 && height > 8 ) ? 2 : 1;
 #endif
@@ -388,7 +388,7 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
       TCoeff*         coeffTemp;
       TCoeff*         tempCoeff       = loadTr ? m_mtsCoeffs[ tu.mtsIdx ] : m_plTempCoeff;
 
-#if !JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       for( int subGroupX = 0; subGroupX < subGrpXMax; subGroupX++ )
       {
         for( int subGroupY = 0; subGroupY < subGrpYMax; subGroupY++ )
@@ -446,7 +446,7 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
           fwdLfnstNxN( m_tempInMatrix, m_tempOutMatrix, g_lfnstLut[ intraMode ], lfnstIdx - 1, sbSize, ( tu4x4Flag || tu8x8Flag ) ? 8 : 16 );
 
           lfnstTemp = m_tempOutMatrix; // forward spectral rearrangement
-#if !JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
           coeffTemp = tempCoeff + offsetX + offsetY;
 #else
           coeffTemp = tempCoeff;
@@ -458,7 +458,7 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
             coeffTemp[ scanPtr->idx ] = *lfnstTemp++;
             scanPtr++;
           }
-#if !JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
         }
       } // subGroupX
 #endif
@@ -673,7 +673,7 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
 
   getTrTypes ( tu, compID, trTypeHor, trTypeVer );
 
-#if !JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   const int      skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
 #else
@@ -758,7 +758,7 @@ void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCo
   int trTypeVer = DCT2;
 
   getTrTypes ( tu, compID, trTypeHor, trTypeVer );
-#if !JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   const int      skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
 #else

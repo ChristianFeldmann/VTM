@@ -129,13 +129,13 @@ public:
   void        cu_chroma_qp_offset       ( CodingUnit&                   cu );
 
   // residual coding (clause 7.3.8.11)
-#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID, CUCtx& cuCtx );
 #else
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID );
 #endif
   void        mts_coding                ( TransformUnit&                tu,     ComponentID     compID );
-#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   void        residual_lfnst_mode       ( CodingUnit&                   cu,     CUCtx&          cuCtx  );
 #else
   void        residual_lfnst_mode       ( CodingUnit&                   cu );

@@ -1249,7 +1249,7 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
     }
   }
 
-#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA]   = false;
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
 #endif
@@ -2219,7 +2219,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
     }
     if( cbfLuma )
     {
-#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       residual_coding( tu, COMPONENT_Y, &cuCtx );
 #else
       residual_coding( tu, COMPONENT_Y );
@@ -2235,7 +2235,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
         }
         if( cbf[ compID ] )
         {
-#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
           residual_coding( tu, compID, &cuCtx );
 #else
           residual_coding( tu, compID );
@@ -2307,7 +2307,7 @@ void CABACWriter::joint_cb_cr( const TransformUnit& tu )
   m_BinEncoder.encodeBin( tu.jointCbCr ? 1 : 0, Ctx::JointCbCrFlag( 0 ) );
 }
 
-#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
 void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, CUCtx* cuCtx )
 #else
 void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID)
@@ -2367,7 +2367,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID)
   CHECK( scanPosLast < 0, "Coefficient coding called for empty TU" );
   cctx.setScanPosLast(scanPosLast);
 
-#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   if( cuCtx && tu.mtsIdx != MTS_SKIP && tu.blocks[ compID ].height >= 4 && tu.blocks[ compID ].width >= 4 )
   {
     const int maxLfnstPos = ((tu.blocks[compID].height == 4 && tu.blocks[compID].width == 4) || (tu.blocks[compID].height == 8 && tu.blocks[compID].width == 8)) ? 7 : 15;
@@ -2510,7 +2510,7 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
     const bool lumaFlag                   = CS::isDualITree( *cu.cs ) ? (   isLuma( cu.chType ) ? true : false ) : true;
     const bool chromaFlag                 = CS::isDualITree( *cu.cs ) ? ( isChroma( cu.chType ) ? true : false ) : true;
           bool nonZeroCoeffNonTs;
-#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
           bool nonZeroCoeffNonTsCorner8x8 = ( lumaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA] ) || (chromaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] );
 #else
           bool nonZeroCoeffNonTsCorner8x8 = CU::getNumNonZeroCoeffNonTsCorner8x8( cu, lumaFlag, chromaFlag ) > 0;

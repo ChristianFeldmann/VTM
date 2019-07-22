@@ -289,7 +289,7 @@ class CUCtx
 public:
   CUCtx()              : isDQPCoded(false), isChromaQpAdjCoded(false),
                          qgStart(false),
-#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
                          numNonZeroCoeffNonTs(0)
                          {
                            violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
@@ -300,7 +300,7 @@ public:
 #endif
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
                          qgStart(false),
-#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
                          numNonZeroCoeffNonTs(0), qp(_qp)
                          {
                            violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
@@ -316,7 +316,7 @@ public:
   bool      qgStart;
   uint32_t  numNonZeroCoeffNonTs;
   int8_t    qp;                   // used as a previous(last) QP and for QP prediction
-#if JVET_O0049_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   bool      violatesLfnstConstrained[MAX_NUM_CHANNEL_TYPE];
 #endif
 };

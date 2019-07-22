@@ -84,7 +84,7 @@
 #define JVET_O0364_PDPC_DC                                1 // JVET-O0364 Part 4: align PDPC process for DC with the one for Planar
 #define JVET_O0364_PDPC_ANGULAR                           1 // JVET-O0364 Part 5: simplify PDPC process for angular modes
 
-#define JVET_O0049_LFNST_ZERO_PRIM_COEFFS                 1 // JVET-O0049: CE6-2.1a, LFNST involves zeroing of primary only coefficient positions
+#define JVET_O0094_LFNST_ZERO_PRIM_COEFFS                 1 // JVET-O0049: CE6-2.1a, LFNST involves zeroing of primary only coefficient positions
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 

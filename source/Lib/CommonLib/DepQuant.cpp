@@ -679,7 +679,11 @@ namespace DQIntern
     m_QScale                    = g_quantScales[needsSqrt2ScaleAdjustment?1:0][ qpRem ];
     const unsigned    qIdxBD    = std::min<unsigned>( maxLog2TrDynamicRange + 1, 8*sizeof(Intermediate_Int) + invShift - IQUANT_SHIFT - 1 );
     m_maxQIdx                   = ( 1 << (qIdxBD-1) ) - 4;
+#if JVET_O0256_ADJUST_THD_DEPQUANT
+    m_thresLast                 = TCoeff((int64_t(4) << m_QShift));
+#else
     m_thresLast                 = TCoeff((int64_t(3) << m_QShift));
+#endif
     m_thresSSbb                 = TCoeff((int64_t(3) << m_QShift));
     // distortion calculation parameters
     const int64_t qScale        = (gValue==-1) ? m_QScale : gValue;

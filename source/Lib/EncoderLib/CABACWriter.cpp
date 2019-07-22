@@ -823,9 +823,11 @@ void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
   const uint8_t gbiCodingIdx = (uint8_t)g_GbiCodingOrder[CU::getValidGbiIdx(cu)];
 
   const int32_t numGBi = (cu.slice->getCheckLDC()) ? 5 : 3;
-
+#if JVET_O0126_BPWA_INDEX_CODING_FIX
+  m_BinEncoder.encodeBin((gbiCodingIdx == 0 ? 0 : 1), Ctx::GBiIdx(0));
+#else
   m_BinEncoder.encodeBin((gbiCodingIdx == 0 ? 1 : 0), Ctx::GBiIdx(0));
-
+#endif
   if(numGBi > 2 && gbiCodingIdx != 0)
   {
     const uint32_t prefixNumBits = numGBi - 2;
@@ -836,12 +838,20 @@ void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
     {
       if (gbiCodingIdx == idx)
       {
+#if JVET_O0126_BPWA_INDEX_CODING_FIX
+        m_BinEncoder.encodeBinEP(0);
+#else
         m_BinEncoder.encodeBinEP(1);
+#endif
         break;
       }
       else
       {
+#if JVET_O0126_BPWA_INDEX_CODING_FIX
+        m_BinEncoder.encodeBinEP(1);
+#else
         m_BinEncoder.encodeBinEP(0);
+#endif
         idx += step;
       }
     }

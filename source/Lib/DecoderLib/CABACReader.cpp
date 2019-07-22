@@ -1068,8 +1068,11 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
   uint32_t symbol = m_BinDecoder.decodeBin(Ctx::GBiIdx(0));
 
   int32_t numGBi = (cu.slice->getCheckLDC()) ? 5 : 3;
-
+#if JVET_O0126_BPWA_INDEX_CODING_FIX
+  if(symbol == 1)
+#else
   if(symbol == 0)
+#endif
   {
     uint32_t prefixNumBits = numGBi - 2;
     uint32_t step = 1;
@@ -1079,8 +1082,11 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
     for(int ui = 0; ui < prefixNumBits; ++ui)
     {
       symbol = m_BinDecoder.decodeBinEP();
-
+#if JVET_O0126_BPWA_INDEX_CODING_FIX
+      if (symbol == 0)
+#else
       if (symbol == 1)
+#endif
       {
         break;
       }

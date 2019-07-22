@@ -43,6 +43,9 @@
 #include "StreamMergeApp.h"
 #include "DecoderLib/AnnexBread.h"
 #include "DecoderLib/NALread.h"
+#if RExt__DECODER_DEBUG_BIT_STATISTICS
+#include "CommonLib/CodingStatistics.h"
+#endif
 
  //! \ingroup DecoderApp
  //! \{
@@ -171,7 +174,7 @@ _byteStreamNALUnit(
   while (bs.eofBeforeNBytes(24 / 8, istream) || bs.peekBytes(24 / 8, istream) > 2)
   {
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
-    uint8_t thebyte = bs.readByte(); bodyStats.bits += 8; bodyStats.count++;
+    uint8_t thebyte = bs.readByte(istream); bodyStats.bits += 8; bodyStats.count++;
     nalUnit.push_back(thebyte);
 #else
     nalUnit.push_back(bs.readByte(istream));

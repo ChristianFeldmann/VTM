@@ -459,6 +459,10 @@ static const int CSCALE_FP_PREC =                                11;
 static const int  NEIG_NUM_LOG  =                                 6;
 static const int  NEIG_NUM =                      1 << NEIG_NUM_LOG;
 #endif
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+static const int  EPBIN_WEIGHT_FACTOR =                           4;
+#endif
+
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================

@@ -2473,6 +2473,10 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
   const int stateTransTab = ( tu.cs->slice->getDepQuantEnabledFlag() ? 32040 : 0 );
   int       state         = 0;
 
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  int ctxBinSampleRatio = (compID == COMPONENT_Y) ? MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_LUMA : MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_CHROMA;
+  cctx.regBinLimit = (tu.getTbAreaAfterCoefZeroOut(compID) * ctxBinSampleRatio) >> 4;
+#endif
 
     for( int subSetId = ( cctx.scanPosLast() >> cctx.log2CGSize() ); subSetId >= 0; subSetId--)
     {
@@ -2771,8 +2775,12 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
   int       firstNZPos    = nextSigPos;
   int       lastNZPos     = -1;
   int       numNonZero    =  0;
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  int       remRegBins    = cctx.regBinLimit;
+#else
   bool      is2x2subblock = ( cctx.log2CGSize() == 2 );
   int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK );
+#endif
   int       firstPosMode2 = minSubPos - 1;
   int       sigBlkPos[ 1 << MLS_CG_SIZE ];
 
@@ -2826,6 +2834,9 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     state = ( stateTransTable >> ((state<<2)+((coeff[blkPos]&1)<<1)) ) & 3;
   }
   firstPosMode2 = nextSigPos;
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  cctx.regBinLimit = remRegBins;
+#endif
 
 
   //===== 2nd PASS: Go-rice codes =====

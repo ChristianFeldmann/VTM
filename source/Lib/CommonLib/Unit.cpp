@@ -764,5 +764,24 @@ void TransformUnit::checkTuNoResidual( unsigned idx )
     noResidual = true;
   }
 }
+
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
+{
+  int tbArea = blocks[compID].width * blocks[compID].height;
+  int tbZeroOutWidth = blocks[compID].width;
+  int tbZeroOutHeight = blocks[compID].height;
+  if ((mtsIdx > MTS_SKIP || (cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
+  {
+    tbZeroOutWidth = (blocks[compID].width == 32) ? 16 : tbZeroOutWidth;
+    tbZeroOutHeight = (blocks[compID].height == 32) ? 16 : tbZeroOutHeight;
+  }
+  tbZeroOutWidth = std::min<int>(JVET_C0024_ZERO_OUT_TH, tbZeroOutWidth);
+  tbZeroOutHeight = std::min<int>(JVET_C0024_ZERO_OUT_TH, tbZeroOutHeight);
+  tbArea = tbZeroOutWidth * tbZeroOutHeight;
+  return tbArea;
+}
+#endif
+
 int          TransformUnit::getChromaAdj()                     const { return m_chromaResScaleInv; }
 void         TransformUnit::setChromaAdj(int i)                      { m_chromaResScaleInv = i;    }

@@ -138,7 +138,7 @@ public:
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff, const int stateTransTable, int& state );
   void        residual_codingTS         ( TransformUnit&                tu,     ComponentID     compID );
   void        residual_coding_subblockTS( CoeffCodingContext&           cctx,   TCoeff*         coeff  );
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   void        joint_cb_cr               ( TransformUnit&                tu,     const int cbfMask );
 #else
   void        joint_cb_cr               ( TransformUnit&                tu );

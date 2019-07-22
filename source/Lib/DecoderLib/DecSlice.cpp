@@ -188,7 +188,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     {
       cs.motionLut.lut.resize(0);
       cs.motionLut.lutIbc.resize(0);
+#if !JVET_O0078_SINGLE_HMVPLUT
       cs.motionLut.lutShareIbc.resize(0);
+#endif
     }
 
     if( !cs.slice->isIntra() )

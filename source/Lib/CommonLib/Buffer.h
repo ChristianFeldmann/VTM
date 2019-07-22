@@ -111,7 +111,7 @@ struct AreaBuf : public Size
   void copyClip             ( const AreaBuf<const T> &src, const ClpRng& clpRng);
 
   void subtract             ( const AreaBuf<const T> &other );
-#if !JVET_O0105_ICT_HHI
+#if !JVET_O0105_ICT
   void copyAndNegate        ( const AreaBuf<const T> &other );
   void subtractAndHalve     ( const AreaBuf<const T> &other );
 #endif
@@ -359,7 +359,7 @@ void AreaBuf<T>::subtract( const AreaBuf<const T> &other )
 #undef SUBS_INC
 }
 
-#if !JVET_O0105_ICT_HHI
+#if !JVET_O0105_ICT
 template<typename T>
 void AreaBuf<T>::copyAndNegate( const AreaBuf<const T> &other )
 {
@@ -928,11 +928,11 @@ private:
   Pel *m_origin[MAX_NUM_COMPONENT];
 };
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
 struct CompStorage : public PelBuf
 {
   CompStorage () { m_memory = nullptr; }
-  ~CompStorage() { delete [] m_memory; }
+  ~CompStorage() { if (valid()) delete [] m_memory; }
 
   void create( const Size& size )
   {
@@ -942,7 +942,7 @@ struct CompStorage : public PelBuf
   }
   void destroy()
   {
-    delete [] m_memory;
+    if (valid()) delete [] m_memory;
     m_memory = nullptr;
   }
   bool valid() { return m_memory != nullptr; }

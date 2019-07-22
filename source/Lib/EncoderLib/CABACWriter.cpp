@@ -1199,7 +1199,11 @@ void CABACWriter::intra_chroma_pred_mode( const PredictionUnit& pu )
   }
 
   // LM chroma mode
+#if JVET_O1124_ALLOW_CCLM_COND
+  if( pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed() )
+#else
   if( pu.cs->sps->getUseLMChroma() )
+#endif
   {
     intra_chroma_lmc_mode( pu );
     if ( PU::isLMCMode( intraDir ) )
@@ -2198,7 +2202,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
     cbfChroma = ( cbf[ COMPONENT_Cb ] || cbf[ COMPONENT_Cr ] );
   }
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   if( !lumaOnly )
   {
     joint_cb_cr( tu, ( cbf[COMPONENT_Cb] ? 2 : 0 ) + ( cbf[COMPONENT_Cr] ? 1 : 0 ) );
@@ -2298,11 +2302,11 @@ void CABACWriter::cu_chroma_qp_offset( const CodingUnit& cu )
 //    void        residual_coding_subblock( coeffCtx )
 //================================================================================
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
 void CABACWriter::joint_cb_cr( const TransformUnit& tu, const int cbfMask )
 {
   CHECK( tu.jointCbCr && tu.jointCbCr != cbfMask, "wrong value of jointCbCr (" << (int)tu.jointCbCr << " vs " << (int)cbfMask << ")" );
-#if JVET_O0543_ICT_HHI_ICU_ONLY
+#if JVET_O0543_ICT_ICU_ONLY
   if( ( CU::isIntra( *tu.cu ) && cbfMask ) || ( cbfMask == 3 ) )
 #else
   if( cbfMask )
@@ -2323,7 +2327,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
   const CodingUnit& cu = *tu.cu;
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_coding() etype=%d pos=(%d,%d) size=%dx%d predMode=%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height, cu.predMode );
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   if( compID == COMPONENT_Cr && tu.jointCbCr == 3 )
     return;
 #else
@@ -2406,7 +2410,9 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID )
 
 void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 {
+#if !JVET_O0294_TRANSFORM_CLEANUP
   const CodingUnit  &cu = *tu.cu;
+#endif
   const bool  tsAllowed = TU::isTSAllowed ( tu, compID );
   const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
 
@@ -2417,7 +2423,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 
   if( tsAllowed )
   {
+#if JVET_O0294_TRANSFORM_CLEANUP
+    symbol = (tu.mtsIdx == MTS_SKIP) ? 1 : 0;
+#else
     symbol = (tu.mtsIdx == MTS_SKIP) ? 0 : 1;
+#endif
     ctxIdx = 6;
     m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
   }
@@ -2427,7 +2437,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
     if( mtsAllowed )
     {
       symbol = tu.mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
+#if JVET_O0294_TRANSFORM_CLEANUP
+      ctxIdx = 0;
+#else
       ctxIdx = std::min( (int)cu.qtDepth, 5 );
+#endif
       m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
 
       if( symbol )
@@ -2446,8 +2460,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
       }
     }
   }
-
+#if JVET_O0294_TRANSFORM_CLEANUP
+  DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tu.mtsIdx);
+#else
   DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), tu.mtsIdx );
+#endif
 }
 
 void CABACWriter::isp_mode( const CodingUnit& cu )

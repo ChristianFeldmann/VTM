@@ -213,7 +213,7 @@ namespace TU
   bool needsBlockSizeTrafoScale       ( const TransformUnit &tu, const ComponentID &compID );
   TransformUnit* getPrevTU          ( const TransformUnit &tu, const ComponentID compID );
   bool           getPrevTuCbfAtDepth( const TransformUnit &tu, const ComponentID compID, const int trDepth );
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   int            getICTMode         ( const TransformUnit &tu, int jointCbCr = -1 );
 #endif
 }

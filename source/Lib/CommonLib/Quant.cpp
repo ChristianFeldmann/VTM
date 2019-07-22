@@ -103,9 +103,8 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
 
   if (isChroma(compID))
   {
-#if JVET_O0105_ICT_HHI
-    const int  absIct = abs( TU::getICTMode(tu) );
-    const bool useJQP = ( absIct == 2 || absIct == 4 );
+#if JVET_O0105_ICT
+    const bool useJQP = ( abs(TU::getICTMode(tu)) == 2 );
 
     chromaQpOffset += tu.cs->pps->getQpOffset            ( useJQP ? JOINT_CbCr : compID );
     chromaQpOffset += tu.cs->slice->getSliceChromaQpDelta( useJQP ? JOINT_CbCr : compID );
@@ -407,7 +406,7 @@ void Quant::dequant(const TransformUnit &tu,
 
     const uint32_t uiLog2TrWidth  = g_aucLog2[uiWidth];
     const uint32_t uiLog2TrHeight = g_aucLog2[uiHeight];
-    int *piDequantCoef        = getDequantCoeff(scalingListType, QP_rem, uiLog2TrWidth - 1, uiLog2TrHeight - 1);
+    int *piDequantCoef        = getDequantCoeff(scalingListType, QP_rem, uiLog2TrWidth, uiLog2TrHeight);
 
     if(rightShift > 0)
     {
@@ -921,7 +920,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
   const CCoeffBuf &piCoef   = pSrc;
         CoeffBuf   piQCoef  = tu.getCoeffs(compID);
 
-  const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP;
+  const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP && isLuma(compID);
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
   {
@@ -935,7 +934,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
     CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
     const uint32_t uiLog2TrWidth = g_aucLog2[uiWidth];
     const uint32_t uiLog2TrHeight = g_aucLog2[uiHeight];
-    int *piQuantCoeff = getQuantCoeff(scalingListType, cQP.rem, uiLog2TrWidth-1, uiLog2TrHeight-1);
+    int *piQuantCoeff = getQuantCoeff(scalingListType, cQP.rem, uiLog2TrWidth, uiLog2TrHeight);
 
     const bool enableScalingLists             = getUseScalingList(uiWidth, uiHeight, useTransformSkip);
 
@@ -998,7 +997,7 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   const CCoeffBuf piCoef    = pSrc;
 
-  const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP;
+  const bool useTransformSkip      = tu.mtsIdx == MTS_SKIP && isLuma(compID);
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
   int scalingListType = getScalingListType(tu.cu->predMode, compID);
@@ -1006,7 +1005,7 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   const uint32_t uiLog2TrWidth  = g_aucLog2[uiWidth];
   const uint32_t uiLog2TrHeight = g_aucLog2[uiHeight];
-  int *piQuantCoeff         = getQuantCoeff(scalingListType, cQP.rem, uiLog2TrWidth-1, uiLog2TrHeight-1);
+  int *piQuantCoeff         = getQuantCoeff(scalingListType, cQP.rem, uiLog2TrWidth, uiLog2TrHeight);
 
   const bool enableScalingLists             = getUseScalingList(uiWidth, uiHeight, (useTransformSkip != 0));
 
@@ -1064,7 +1063,7 @@ void Quant::transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &co
 
   const uint32_t uiLog2TrWidth      = g_aucLog2[uiWidth];
   const uint32_t uiLog2TrHeight     = g_aucLog2[uiHeight];
-  const int *const piQuantCoeff = getQuantCoeff(scalingListType, cQP.rem, uiLog2TrWidth-1, uiLog2TrHeight-1);
+  const int *const piQuantCoeff = getQuantCoeff(scalingListType, cQP.rem, uiLog2TrWidth, uiLog2TrHeight);
 
   /* for 422 chroma blocks, the effective scaling applied during transformation is not a power of 2, hence it cannot be
   * implemented as a bit-shift (the quantised result will be sqrt(2) * larger than required). Alternatively, adjust the
@@ -1138,7 +1137,7 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
 
     const uint32_t uiLog2TrWidth  = g_aucLog2[uiWidth];
     const uint32_t uiLog2TrHeight = g_aucLog2[uiHeight];
-    int *piDequantCoef        = getDequantCoeff(scalingListType,QP_rem,uiLog2TrWidth-1, uiLog2TrHeight-1);
+    int *piDequantCoef        = getDequantCoeff(scalingListType, QP_rem, uiLog2TrWidth, uiLog2TrHeight);
 
     if (rightShift > 0)
     {

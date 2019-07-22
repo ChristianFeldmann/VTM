@@ -445,6 +445,9 @@ static constexpr int MV_MIN =                 -(1 << (MV_BITS - 1));
 
 static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;
+#if JVET_O0272_LMCS_SIMP_INVERSE_MAPPING
+static const int LMCS_SEG_SIZE =            (PIC_CODE_CW_BINS << 1);
+#endif
 static const int FP_PREC =                                       11;
 static const int CSCALE_FP_PREC =                                11;
 #if JVET_O1109_UNFIY_CRS

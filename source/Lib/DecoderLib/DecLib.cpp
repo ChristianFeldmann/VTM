@@ -991,6 +991,10 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     m_apcSlicePilot->copySliceInfo( m_pcPic->slices[m_uiSliceSegmentIdx-1] );
   }
 
+  m_apcSlicePilot->setSliceCurStartCtuTsAddr(0);
+  m_apcSlicePilot->setSliceCurEndCtuTsAddr(0);
+  m_apcSlicePilot->setSliceCurStartBrickIdx(0);
+  m_apcSlicePilot->setSliceCurEndBrickIdx(0);
   m_apcSlicePilot->setNalUnitType(nalu.m_nalUnitType);
   m_apcSlicePilot->setTLayer(nalu.m_temporalId);
 

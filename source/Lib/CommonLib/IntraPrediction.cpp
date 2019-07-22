@@ -58,9 +58,15 @@
 const uint8_t IntraPrediction::m_aucIntraFilter[MAX_NUM_CHANNEL_TYPE][MAX_INTRA_FILTER_DEPTHS] =
 {
   { // Luma
+#if JVET_O0277_INTRA_SMALL_BLOCK_DCTIF
+    24, //   1xn
+    24, //   2xn
+    24, //   4xn
+#else
     20, //   1xn
     20, //   2xn
     20, //   4xn
+#endif
     14, //   8xn
     2,  //  16xn
     0,  //  32xn
@@ -556,14 +562,19 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
   else if (!useISP)// HOR, VER and angular modes (MDIS)
   {
     bool filterFlag = false;
-
+#if !JVET_O0277_INTRA_SMALL_BLOCK_DCTIF
     if (predMode != dirMode ) // wide-anlge mode
     {
       filterFlag = true;
     }
     else
+#endif
     {
+#if JVET_O0277_INTRA_SMALL_BLOCK_DCTIF
+      const int diff = std::min<int>( abs( predMode - HOR_IDX ), abs( predMode - VER_IDX ) );
+#else
       const int diff = std::min<int>( abs( dirMode - HOR_IDX ), abs( dirMode - VER_IDX ) );
+#endif
       const int log2Size = ((g_aucLog2[puSize.width] + g_aucLog2[puSize.height]) >> 1);
       CHECK( log2Size >= MAX_INTRA_FILTER_DEPTHS, "Size not supported" );
       filterFlag = (diff > m_aucIntraFilter[chType][log2Size]);
@@ -573,7 +584,12 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
     if (filterFlag)
     {
       const bool isRefFilter       =  isIntegerSlope(absAng);
+#if JVET_O0277_INTRA_SMALL_BLOCK_DCTIF
+      CHECK( puSize.width * puSize.height <= 32, "DCT-IF interpolation filter is always used for 4x4, 4x8, and 8x4 luma CB" );
+      m_ipaParam.refFilterFlag     =  isRefFilter;
+#else
       m_ipaParam.refFilterFlag = isRefFilter && puSize.width * puSize.height > 32;
+#endif
       m_ipaParam.interpolationFlag = !isRefFilter;
     }
   }

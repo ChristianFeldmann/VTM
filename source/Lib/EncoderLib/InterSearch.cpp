@@ -5946,7 +5946,7 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
     {
       if( currArea.blocks[compID].valid() )
       {
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
         if( compID == COMPONENT_Cr )
         {
           const int cbfMask = ( TU::getCbf( currTU, COMPONENT_Cb ) ? 2 : 0) + ( TU::getCbf( currTU, COMPONENT_Cr ) ? 1 : 0 );
@@ -6425,7 +6425,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #endif
             m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cRescale*cRescale));
           }
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
           if( isChroma( compID ) && tu.cu->cs->slice->getSliceQp() > 18 )
           {
             m_pcTrQuant->setLambda( 1.05 * m_pcTrQuant->getLambda() );
@@ -6516,7 +6516,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
             const bool prevCbf = ( compID == COMPONENT_Cr ? tu.cbf[COMPONENT_Cb] : false );
             m_CABACEstimator->cbf_comp( *csFull, true, compArea, currDepth, prevCbf );
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
             if( compID == COMPONENT_Cr )
             {
               const int cbfMask = ( tu.cbf[COMPONENT_Cb] ? 2 : 0 ) + 1;
@@ -6633,7 +6633,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
       bool checkJointCbCr = !tu.noResidual && (TU::getCbf(tu, COMPONENT_Cb) || TU::getCbf(tu, COMPONENT_Cr));
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
       const int channelBitDepth = sps.getBitDepth(toChannelType(COMPONENT_Cb));
       bool      reshape         = slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && slice.getLmcsChromaResidualScaleFlag()
                                && tu.blocks[COMPONENT_Cb].width * tu.blocks[COMPONENT_Cb].height > 4;
@@ -6661,7 +6661,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       if ( checkJointCbCr )
 #endif
       {
-#if !JVET_O0105_ICT_HHI
+#if !JVET_O0105_ICT
         const int  channelBitDepth  = sps.getBitDepth(toChannelType(COMPONENT_Cb));
         double     minCostCbCr      = minCost[COMPONENT_Cb] + minCost[COMPONENT_Cr];
         bool       isLastBest       = false;
@@ -6672,7 +6672,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         Distortion currCompDistCr   = 0;
         double     currCompCost     = 0;
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
         tu.jointCbCr = (uint8_t) cbfMask;
         tu.compAlpha[COMPONENT_Cb] = tu.compAlpha[COMPONENT_Cr] = 0;
 #else
@@ -6686,7 +6686,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         m_pcTrQuant->selectLambda(COMPONENT_Cb);
 #endif
         // Lambda is loosened for the joint mode with respect to single modes as the same residual is used for both chroma blocks
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
         const int    absIct = abs( TU::getICTMode(tu) );
         const double lfact  = ( absIct == 1 || absIct == 3 ? 0.8 : 0.5 );
         m_pcTrQuant->setLambda( lfact * m_pcTrQuant->getLambda() );
@@ -6701,7 +6701,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         m_CABACEstimator->getCtx() = ctxStart;
         m_CABACEstimator->resetBits();
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
         PelBuf cbResi = csFull->getResiBuf(cbArea);
         PelBuf crResi = csFull->getResiBuf(crArea);
         cbResi.copyFrom(orgResiCb[cbfMask]);
@@ -6727,13 +6727,13 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           double cRescale = round((double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj()));
 #endif
           m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cRescale*cRescale));
-#if !JVET_O0105_ICT_HHI
+#if !JVET_O0105_ICT
 
           cbResi.scaleSignal(tu.getChromaAdj(), 1, tu.cu->cs->slice->clpRng(COMPONENT_Cb));
 #endif
         }
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
         int         codedCbfMask = 0;
         ComponentID codeCompId   = (tu.jointCbCr >> 1 ? COMPONENT_Cb : COMPONENT_Cr);
         ComponentID otherCompId  = (codeCompId == COMPONENT_Cr ? COMPONENT_Cb : COMPONENT_Cr);
@@ -6769,7 +6769,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
         if (currAbsSum > 0)
         {
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
           m_CABACEstimator->cbf_comp(cs, codedCbfMask >> 1, cbArea, currDepth, false);
           m_CABACEstimator->cbf_comp(cs, codedCbfMask & 1, crArea, currDepth, codedCbfMask >> 1);
           m_CABACEstimator->joint_cb_cr(tu, codedCbfMask);
@@ -6824,7 +6824,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           uiSingleDistComp[COMPONENT_Cb] = currCompDistCb;
           uiSingleDistComp[COMPONENT_Cr] = currCompDistCr;
           minCostCbCr                    = currCompCost;
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
           isLastBest = (cbfMask == jointCbfMasksToTest.back());
           if (!isLastBest)
           {
@@ -6878,7 +6878,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         continue;
       if (tu.blocks[compID].valid())
       {
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
         if( compID == COMPONENT_Cr )
         {
           const int cbfMask = ( TU::getCbf( tu, COMPONENT_Cb ) ? 2 : 0 ) + ( TU::getCbf( tu, COMPONENT_Cr ) ? 1 : 0 );

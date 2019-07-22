@@ -1375,7 +1375,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         pcSlice->setMaxNumTriangleCand(0);
       }
     }
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
     if (chromaEnabled)
     {
       WRITE_FLAG( pcSlice->getJointCbCrSignFlag() ? 1 : 0, "joint_cb_cr_sign_flag" );
@@ -1777,16 +1777,18 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
     }
 #endif
   }
-
+  AlfFilterShape alfShape(isChroma ? 5 : 7);
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   static int bitsCoeffScan[EncAdaptiveLoopFilter::m_MAX_SCAN_VAL][EncAdaptiveLoopFilter::m_MAX_EXP_GOLOMB];
   memset( bitsCoeffScan, 0, sizeof( bitsCoeffScan ) );
-  AlfFilterShape alfShape( isChroma ? 5 : 7 );
   const int maxGolombIdx = AdaptiveLoopFilter::getMaxGolombIdx( alfShape.filterType );
+#endif
   const short* coeff = isChroma ? alfSliceParam.chromaCoeff : alfSliceParam.lumaCoeff;
   const short* clipp = isChroma ? alfSliceParam.chromaClipp : alfSliceParam.lumaClipp;
   const int numFilters = isChroma ? 1 : alfSliceParam.numLumaFilters;
 
   // vlc for all
+#if !JVET_O0216_ALF_COEFF_EG3 
   for( int ind = 0; ind < numFilters; ++ind )
   {
     if( isChroma || !alfSliceParam.alfLumaCoeffDeltaFlag || alfSliceParam.alfLumaCoeffFlag[ind] )
@@ -1802,10 +1804,12 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
       }
     }
   }
-
+#endif
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   static int kMinTab[MAX_NUM_ALF_COEFF];
+#endif
+#if !JVET_O0216_ALF_COEFF_EG3
   int kMin = EncAdaptiveLoopFilter::getGolombKMin( alfShape, numFilters, kMinTab, bitsCoeffScan );
-
   // Golomb parameters
   WRITE_UVLC( kMin - 1,  isChroma ? "alf_chroma_min_eg_order_minus1" : "alf_luma_min_eg_order_minus1" );
 
@@ -1816,7 +1820,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
     WRITE_FLAG( golombOrderIncreaseFlag, isChroma ? "alf_chroma_eg_order_increase_flag"  : "alf_luma_eg_order_increase_flag" );
     kMin = kMinTab[idx];
   }
-
+#endif
   if( !isChroma )
   {
     if( alfSliceParam.alfLumaCoeffDeltaFlag )
@@ -1838,7 +1842,11 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
+#if JVET_O0216_ALF_COEFF_EG3
+      alfGolombEncode( coeff[ind* MAX_NUM_ALF_LUMA_COEFF + i], 3 );  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
+#else
       alfGolombEncode( coeff[ind* MAX_NUM_ALF_LUMA_COEFF + i], kMinTab[alfShape.golombIdx[i]] );  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
+#endif
     }
   }
 
@@ -1895,8 +1903,11 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
         }
       }
     }
-
+#if JVET_O0216_ALF_COEFF_EG3
+    int kMin = EncAdaptiveLoopFilter::getGolombKMin(alfShape, numFilters, kMinTab, bitsCoeffScan);
+#else
     kMin = EncAdaptiveLoopFilter::getGolombKMin( alfShape, numFilters, kMinTab, bitsCoeffScan );
+#endif
 
     // Golomb parameters
     WRITE_UVLC( kMin - 1, "clip_min_golomb_order" );

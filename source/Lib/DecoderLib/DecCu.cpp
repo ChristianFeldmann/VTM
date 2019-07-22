@@ -122,7 +122,9 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         if ((currCU.shareParentPos.x >= 0) && (!(currCU.shareParentPos.x == prevTmpPos.x && currCU.shareParentPos.y == prevTmpPos.y)))
         {
           m_shareStateDec = GEN_ON_SHARED_BOUND;
+#if !JVET_O0078_SINGLE_HMVPLUT
           cs.motionLut.lutShareIbc = cs.motionLut.lutIbc;
+#endif
         }
 
         if (currCU.shareParentPos.x < 0)
@@ -226,7 +228,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   const QpParam cQP( tu, compID );
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   if( tu.jointCbCr && isChroma(compID) )
   {
     if( compID == COMPONENT_Cb )
@@ -261,7 +263,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   //===== reconstruction =====
   flag = flag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   if (flag && (TU::getCbf(tu, compID) || tu.jointCbCr) && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag())
   {
 #else
@@ -480,7 +482,12 @@ void DecCu::xReconInter(CodingUnit &cu)
   if (cu.Y().valid())
   {
     const PredictionUnit &pu = *cu.firstPU;
+#if JVET_O0078_SINGLE_HMVPLUT
+    bool isShare = ((CU::isIBC(cu) && (cu.shareParentSize.width != cu.Y().lumaSize().width || cu.shareParentSize.height != cu.Y().lumaSize().height)) ? true : false);
+    if (!cu.affine && !cu.triangle && !isShare)
+#else
     if (!cu.affine && !cu.triangle)
+#endif
     {
       MotionInfo mi = pu.getMotionInfo();
       mi.GBiIdx = (mi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
@@ -571,7 +578,7 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
 
   const QpParam cQP(currTU, compID);
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   if( currTU.jointCbCr && isChroma(compID) )
   {
     if( compID == COMPONENT_Cb )
@@ -606,7 +613,7 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
 
   //===== reconstruction =====
   const Slice           &slice = *cs.slice;
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && isChroma(compID) && (TU::getCbf(currTU, compID) || currTU.jointCbCr)
    && slice.getLmcsChromaResidualScaleFlag() && currTU.blocks[compID].width * currTU.blocks[compID].height > 4)
   {

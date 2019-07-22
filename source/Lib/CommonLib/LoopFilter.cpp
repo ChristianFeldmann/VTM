@@ -667,7 +667,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     tmpBs += BsSet(1, COMPONENT_Y);
   }
   // U
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cb) || TU::getCbf(tuP, COMPONENT_Cb) || tuQ.jointCbCr || tuP.jointCbCr))
 #else
   if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cb) || TU::getCbf(tuP, COMPONENT_Cb)))
@@ -676,7 +676,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     tmpBs += BsSet(1, COMPONENT_Cb);
   }
   // V
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cr) || TU::getCbf(tuP, COMPONENT_Cr) || tuQ.jointCbCr || tuP.jointCbCr))
 #else
   if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cr) || TU::getCbf(tuP, COMPONENT_Cr)))
@@ -1214,18 +1214,33 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
         const int dp0 = xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset);
         const int dq0 = xCalcDQ(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset);
+#if JVET_O0637_CHROMA_GRADIENT_LINE_SELECTION
+        const int subSamplingShift = ( edgeDir == EDGE_VER ) ? m_shiftVer : m_shiftHor;
+        const int dp3 = ( subSamplingShift == 1 ) ? xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset) : xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 3), iOffset);
+        const int dq3 = ( subSamplingShift == 1 ) ? xCalcDQ(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset) : xCalcDQ(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 3), iOffset);
+#else
         const int dp1 = xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset);
         const int dq1 = xCalcDQ(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset);
+#endif
 
         const int d0 = dp0 + dq0;
+#if JVET_O0637_CHROMA_GRADIENT_LINE_SELECTION
+        const int d3 = dp3 + dq3;
+        const int d = d0 + d3;
+#else
         const int d1 = dp1 + dq1;
         const int d = d0 + d1;
+#endif
 
           if (d < beta)
           {
             useLongFilter = true;
             const bool sw = xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset, 2 * d0, beta, iTc)
+#if JVET_O0637_CHROMA_GRADIENT_LINE_SELECTION
+                && xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + ( ( subSamplingShift == 1 ) ? 1 : 3 ) ), iOffset, 2 * d3, beta, iTc);
+#else
                 && xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset, 2 * d1, beta, iTc);
+#endif
 
             for (unsigned step = 0; step < uiLoopLength; step++)
             {

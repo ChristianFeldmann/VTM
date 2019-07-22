@@ -83,8 +83,8 @@ InvTrans *fastInvTrans[NUM_TRANS_TYPE][g_numTransformMatrixSizes] =
 //! \ingroup CommonLib
 //! \{
 
-#if JVET_O0105_ICT_HHI
-int64_t sqr( int d ) { return d*d; }
+#if JVET_O0105_ICT
+int64_t square( int d ) { return d*d; }
 
 template<int signedMode> std::pair<int64_t,int64_t> fwdTransformCbCr( const PelBuf &resCb, const PelBuf &resCr, PelBuf& resC1, PelBuf& resC2 )
 {
@@ -102,37 +102,37 @@ template<int signedMode> std::pair<int64_t,int64_t> fwdTransformCbCr( const PelB
       if      ( signedMode ==  1 )
       { 
         c1[x] = Pel( ( 4*cbx + 2*crx ) / 5 );
-        d1   += sqr( cbx - c1[x] ) + sqr( crx - (c1[x]>>1) );
+        d1   += square( cbx - c1[x] ) + square( crx - (c1[x]>>1) );
       } 
       else if ( signedMode == -1 )
       {
         c1[x] = Pel( ( 4*cbx - 2*crx ) / 5 );
-        d1   += sqr( cbx - c1[x] ) + sqr( crx - (-c1[x]>>1) );
+        d1   += square( cbx - c1[x] ) + square( crx - (-c1[x]>>1) );
       } 
       else if ( signedMode ==  2 )
       {
         c1[x] = Pel( ( cbx + crx ) / 2 );
-        d1   += sqr( cbx - c1[x] ) + sqr( crx - c1[x] );
+        d1   += square( cbx - c1[x] ) + square( crx - c1[x] );
       } 
       else if ( signedMode == -2 )
       {
         c1[x] = Pel( ( cbx - crx ) / 2 );
-        d1   += sqr( cbx - c1[x] ) + sqr( crx + c1[x] );
+        d1   += square( cbx - c1[x] ) + square( crx + c1[x] );
       } 
       else if ( signedMode ==  3 )
       {
         c2[x] = Pel( ( 4*crx + 2*cbx ) / 5 );
-        d1   += sqr( cbx - (c2[x]>>1) ) + sqr( crx - c2[x] );
+        d1   += square( cbx - (c2[x]>>1) ) + square( crx - c2[x] );
       }
       else if ( signedMode == -3 )
       {
         c2[x] = Pel( ( 4*crx - 2*cbx ) / 5 );
-        d1   += sqr( cbx - (-c2[x]>>1) ) + sqr( crx - c2[x] );
+        d1   += square( cbx - (-c2[x]>>1) ) + square( crx - c2[x] );
       } 
       else
       {
-        d1   += sqr( cbx );
-        d2   += sqr( crx );
+        d1   += square( cbx );
+        d2   += square( crx );
       }
     }
   }
@@ -170,7 +170,7 @@ TrQuant::TrQuant() : m_quant( nullptr )
   {
     m_mtsCoeffs[i] = (TCoeff*) xMalloc( TCoeff, MAX_CU_SIZE * MAX_CU_SIZE );
   }
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   {
     m_invICT      = m_invICTMem + maxAbsIctMode;
     m_invICT[ 0]  = invTransformCbCr< 0>;
@@ -650,7 +650,7 @@ void TrQuant::invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &
   }
 }
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
 
 std::pair<int64_t,int64_t> TrQuant::fwdTransformICT( const TransformUnit &tu, const PelBuf &resCb, const PelBuf &resCr, PelBuf &resC1, PelBuf &resC2, int jointCbCr )
 {
@@ -670,7 +670,7 @@ std::vector<int> TrQuant::selectICTCandidates( const TransformUnit &tu, CompStor
 {
   CHECK( !resCb[0].valid() || !resCr[0].valid(), "standard components are not valid" );
 
-#if JVET_O0543_ICT_HHI_ICU_ONLY
+#if JVET_O0543_ICT_ICU_ONLY
   if( !CU::isIntra( *tu.cu ) )
   {
     int cbfMask = 3;

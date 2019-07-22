@@ -350,6 +350,9 @@ struct CodingUnit : public UnitArea
   void              setSbtPos( uint8_t pos ) { CHECK( pos >= 4, "sbt_pos wrong" ); sbtInfo = ( pos << 4 ) + ( sbtInfo & 0xcf ); }
   uint8_t           getSbtTuSplit() const;
   const uint8_t     checkAllowedSbt() const;
+#if JVET_O1124_ALLOW_CCLM_COND
+  const bool        checkCCLMAllowed() const;
+#endif
 };
 
 // ---------------------------------------------------------------------------

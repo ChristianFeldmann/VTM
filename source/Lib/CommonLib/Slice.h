@@ -1467,7 +1467,7 @@ private:
 
   bool                       m_cabacInitFlag;
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   bool                       m_jointCbCrSignFlag;
 #endif
 
@@ -1744,7 +1744,7 @@ public:
   void                        setCabacInitFlag( bool val )                           { m_cabacInitFlag = val;                                        } //!< set CABAC initial flag
   bool                        getCabacInitFlag()                               const { return m_cabacInitFlag;                                       } //!< get CABAC initial flag
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   void                        setJointCbCrSignFlag( bool b )                         { m_jointCbCrSignFlag = b; }
   bool                        getJointCbCrSignFlag()                           const { return m_jointCbCrSignFlag; }
 #endif

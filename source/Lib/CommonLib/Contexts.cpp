@@ -784,7 +784,7 @@ const CtxSet ContextSetCfg::IBCFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::JointCbCrFlag = ContextSetCfg::addCtxSet
 ({
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   { 156, 156, 156, },
   { 156, 156, 156, },
   { 184, 184, 184, },

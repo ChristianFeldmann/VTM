@@ -1305,7 +1305,11 @@ void CABACReader::intra_chroma_pred_mode( PredictionUnit& pu )
   }
 
   // LM chroma mode
+#if JVET_O1124_ALLOW_CCLM_COND
+  if( pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed() )
+#else
   if( pu.cs->sps->getUseLMChroma() )
+#endif
   {
     if( intra_chroma_lmc_mode( pu ) )
     {
@@ -2318,7 +2322,7 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
   bool        cbfLuma    = ( tu.cbf[ COMPONENT_Y ] != 0 );
   bool        cbfChroma  = ( lumaOnly ? false : ( chromaCbfs.Cb || chromaCbfs.Cr ) );
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   if( !lumaOnly )
   {
     joint_cb_cr( tu, ( tu.cbf[COMPONENT_Cb] ? 2 : 0 ) + ( tu.cbf[COMPONENT_Cr] ? 1 : 0 ) );
@@ -2416,10 +2420,10 @@ void CABACReader::cu_chroma_qp_offset( CodingUnit& cu )
 //    void        residual_coding_subblock( coeffCtx )
 //================================================================================
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
 void CABACReader::joint_cb_cr( TransformUnit& tu, const int cbfMask )
 {
-#if JVET_O0543_ICT_HHI_ICU_ONLY
+#if JVET_O0543_ICT_ICU_ONLY
   if( ( CU::isIntra( *tu.cu ) && cbfMask ) || ( cbfMask == 3 ) )
 #else
   if( cbfMask )
@@ -2442,7 +2446,7 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
   const CodingUnit& cu = *tu.cu;
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_coding() etype=%d pos=(%d,%d) size=%dx%d predMode=%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height, cu.predMode );
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   if( compID == COMPONENT_Cr && tu.jointCbCr == 3 )
     return;
 #else
@@ -2508,7 +2512,9 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
 
 void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 {
+#if !JVET_O0294_TRANSFORM_CLEANUP
   const CodingUnit  &cu = *tu.cu;
+#endif
   const bool  tsAllowed = TU::isTSAllowed ( tu, compID );
   const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
 
@@ -2524,14 +2530,22 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
   {
     ctxIdx = 6;
     symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+#if JVET_O0294_TRANSFORM_CLEANUP
+    tu.mtsIdx = symbol ? MTS_SKIP : MTS_DCT2_DCT2;
+#else
     tu.mtsIdx = symbol ? MTS_DCT2_DCT2 : MTS_SKIP;
+#endif
   }
 
   if( tu.mtsIdx != MTS_SKIP )
   {
     if( mtsAllowed )
     {
+#if JVET_O0294_TRANSFORM_CLEANUP
+      ctxIdx = 0;
+#else
       ctxIdx = std::min( (int)cu.qtDepth, 5 );
+#endif
       symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
 
       if( symbol )
@@ -2551,7 +2565,11 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
       }
     }
   }
+#if JVET_O0294_TRANSFORM_CLEANUP
+  DTRACE(g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tu.mtsIdx);
+#else
   DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), tu.mtsIdx );
+#endif
 }
 
 void CABACReader::isp_mode( CodingUnit& cu )

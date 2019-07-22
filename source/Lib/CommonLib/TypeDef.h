@@ -50,10 +50,16 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_O0105_ICT_HHI                                1 // JVET-O0105: inter-chroma transform (ICT) as extension of joint chroma coding (JCC)
-#define JVET_O0543_ICT_HHI_ICU_ONLY                       1 // JVET-O0543: ICT only in Intra CUs (was Intra slices, modified during adoption)
+#define JVET_O0105_ICT                                    1 // JVET-O0105: inter-chroma transform (ICT) as extension of joint chroma coding (JCC)
+#define JVET_O0543_ICT_ICU_ONLY                           1 // JVET-O0543: ICT only in Intra CUs (was Intra slices, modified during adoption)
+
+#define JVET_O0216_ALF_COEFF_EG3                          1 // JVET-O0216/O0302/O0648: using EG3 for ALF coefficients coding
+
+#define JVET_O0272_LMCS_SIMP_INVERSE_MAPPING              1 // JVET-O0272: LMCS simplified inverse mapping
 
 #define JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL      1 // JVET-O0247: not signal APS index when number APS is 2
+
+#define JVET_O0637_CHROMA_GRADIENT_LINE_SELECTION         1 // Choose line0 and line3 for gradient computation when chroma is same size as luma
 
 #define JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL           1 // JVET-O0288: remove slice type dependency in ALF
 
@@ -81,12 +87,20 @@
 
 #define JVET_O0055_INT_DMVR_DIS_BDOF                      1 // integer-distance DMVR cost to disable BDOF and disable BDOF early termination
 
+#define JVET_O0277_INTRA_SMALL_BLOCK_DCTIF                1 // JVET-O0277: DCT-IF interpolation filter is always used for 4x4, 4x8, and 8x4 luma CB
+
 #define JVET_O0267_IBC_SCALING_LIST                       1
 
 #define JVET_O0280_SIMD_TRIANGLE_WEIGHTING                1 // JVET-O0280: SIMD implementation for weighted sample prediction process of triangle prediction mode
 
 #define JVET_O0364_PDPC_DC                                1 // JVET-O0364 Part 4: align PDPC process for DC with the one for Planar
 #define JVET_O0364_PDPC_ANGULAR                           1 // JVET-O0364 Part 5: simplify PDPC process for angular modes
+
+#define JVET_O0294_TRANSFORM_CLEANUP                      1 // JVET-O0294: Context modelling for MTS index
+
+#define JVET_O1124_ALLOW_CCLM_COND                        1 // JVET-O1124/JVET-O0196: CCLM restriction to reduce luma-chroma latency for chroma separate tree
+
+#define JVET_O0078_SINGLE_HMVPLUT                         1 // JVET-O0078£ºSingle HMVP table for all CUs inside the shared merge list region for IBC
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
@@ -1368,12 +1382,13 @@ struct AlfFilterShape
               2, 2, 2,
            2, 2, 1, 1
       };
-
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
       golombIdx = {
                  0,
               0, 1, 0,
            0, 1, 2, 2
       };
+#endif
 
       filterType = ALF_FILTER_5;
     }
@@ -1395,13 +1410,14 @@ struct AlfFilterShape
             2,  2,  2,  2,  2,
         2,  2,  2,  1,  1
       };
-
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
       golombIdx = {
                     0,
                  0, 1, 0,
               0, 1, 2, 1, 0,
            0, 1, 2, 3, 3
       };
+#endif
 
       filterType = ALF_FILTER_7;
     }
@@ -1418,7 +1434,9 @@ struct AlfFilterShape
   int filterSize;
   std::vector<int> pattern;
   std::vector<int> weights;
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   std::vector<int> golombIdx;
+#endif
 };
 
 struct AlfSliceParam

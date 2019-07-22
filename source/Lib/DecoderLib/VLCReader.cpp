@@ -1537,6 +1537,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
       pcSlice->setPOC(uiCode);
+      ReferencePictureList* rpl0 = pcSlice->getLocalRPL0();
+      (*rpl0) = ReferencePictureList();
+      pcSlice->setRPL0(rpl0);
+      ReferencePictureList* rpl1 = pcSlice->getLocalRPL1();
+      (*rpl1) = ReferencePictureList();
+      pcSlice->setRPL1(rpl1);
     }
     else
     {
@@ -1588,6 +1594,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
           pcSlice->setRPL0idx(uiCode);
           pcSlice->setRPL0(sps->getRPLList0()->getReferencePictureList(uiCode));
         }
+        else
+        {
+          pcSlice->setRPL0idx(0);
+          pcSlice->setRPL0(sps->getRPLList0()->getReferencePictureList(0));
+        }
       }
       //Deal POC Msb cycle signalling for LTRP
       for (int i = 0; i < pcSlice->getRPL0()->getNumberOfLongtermPictures() + pcSlice->getRPL0()->getNumberOfShorttermPictures(); i++)
@@ -1621,7 +1632,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
       else
       {
-        if (sps->getNumRPL0() > 0)
+        if (sps->getNumRPL1() > 0)
         {
           READ_FLAG(uiCode, "ref_pic_list_sps_flag[1]");
         }
@@ -1878,6 +1889,21 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       parsePredWeightTable(pcSlice, sps);
       pcSlice->initWpScaling(sps);
     }
+    else
+    {
+      WPScalingParam *wp;
+      for ( int iNumRef=0 ; iNumRef<((pcSlice->getSliceType() == B_SLICE )?2:1); iNumRef++ )
+      {
+        RefPicList  eRefPicList = ( iNumRef ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
+        for ( int iRefIdx=0 ; iRefIdx<pcSlice->getNumRefIdx(eRefPicList) ; iRefIdx++ )
+        {  
+          pcSlice->getWpScaling(eRefPicList, iRefIdx, wp);
+          wp[0].bPresentFlag = false;
+          wp[1].bPresentFlag = false;
+          wp[2].bPresentFlag = false;
+        }
+      }
+    }
     READ_FLAG( uiCode, "dep_quant_enabled_flag" );
     pcSlice->setDepQuantEnabledFlag( uiCode != 0 );
     if( !pcSlice->getDepQuantEnabledFlag() )
@@ -1967,7 +1993,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setMaxNumTriangleCand(0);
       }
     }
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
     if (bChroma)
     {
       READ_FLAG( uiCode, "joint_cb_cr_sign_flag" ); pcSlice->setJointCbCrSignFlag( uiCode != 0 );
@@ -2594,15 +2620,20 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
 
   // derive maxGolombIdx
   AlfFilterShape alfShape( isChroma ? 5 : 7 );
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   const int maxGolombIdx = AdaptiveLoopFilter::getMaxGolombIdx( alfShape.filterType );
+#endif
+#if !JVET_O0216_ALF_COEFF_EG3
   READ_UVLC( code, isChroma ? "alf_chroma_min_eg_order_minus1" : "alf_luma_min_eg_order_minus1" );
-
+#endif
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   int kMin = code + 1;
   static int kMinTab[MAX_NUM_ALF_COEFF];
+#endif
   const int numFilters = isChroma ? 1 : alfSliceParam.numLumaFilters;
   short* coeff = isChroma ? alfSliceParam.chromaCoeff : alfSliceParam.lumaCoeff;
   short* clipp = isChroma ? alfSliceParam.chromaClipp : alfSliceParam.lumaClipp;
-
+#if !JVET_O0216_ALF_COEFF_EG3
   for( int idx = 0; idx < maxGolombIdx; idx++ )
   {
     READ_FLAG( code, isChroma ? "alf_chroma_eg_order_increase_flag"  : "alf_luma_eg_order_increase_flag" );
@@ -2610,7 +2641,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
     kMinTab[idx] = kMin + code;
     kMin = kMinTab[idx];
   }
-
+#endif
   if( !isChroma )
   {
     if( alfSliceParam.alfLumaCoeffDeltaFlag )
@@ -2634,7 +2665,11 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
+#if JVET_O0216_ALF_COEFF_EG3
+      coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( 3 );
+#else
       coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( kMinTab[alfShape.golombIdx[i]] );
+#endif
     }
   }
 

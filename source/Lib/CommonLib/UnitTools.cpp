@@ -787,7 +787,11 @@ bool PU::isLMCMode(unsigned mode)
 }
 bool PU::isLMCModeEnabled(const PredictionUnit &pu, unsigned mode)
 {
+#if JVET_O1124_ALLOW_CCLM_COND
+  if ( pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed() )
+#else
   if ( pu.cs->sps->getUseLMChroma() )
+#endif
   {
     return true;
   }
@@ -939,7 +943,11 @@ bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, bool isCa
   {
     hasPruned[subPuMvpPos] = true;
   }
+#if JVET_O0078_SINGLE_HMVPLUT
+  auto &lut = ibcFlag ? cs.motionLut.lutIbc : cs.motionLut.lut;
+#else
   auto &lut = ibcFlag ? ( isShared ? cs.motionLut.lutShareIbc : cs.motionLut.lutIbc ) : cs.motionLut.lut;
+#endif
   int num_avai_candInLUT = (int) lut.size();
 
   for (int mrgIdx = 1; mrgIdx <= num_avai_candInLUT; mrgIdx++)
@@ -4489,14 +4497,13 @@ bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
   return mtsAllowed;
 }
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
 int TU::getICTMode( const TransformUnit& tu, int jointCbCr )
 {
   if( jointCbCr < 0 )
   {
     jointCbCr = tu.jointCbCr;
   }
-  static const int g_ictModes[2][4] = { { 0, 3, 1, 2 }, { 0, -3, -1, -2 } };
   return g_ictModes[ tu.cs->slice->getJointCbCrSignFlag() ][ jointCbCr ];
 }
 #endif

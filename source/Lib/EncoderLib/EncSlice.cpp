@@ -1460,7 +1460,7 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
 }
 
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
 void setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const Size sizeLuma )
 {
   bool              sgnFlag = true;
@@ -1480,6 +1480,8 @@ void setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const S
     const Pel*      pCb     = orgCb.buf + y0 * cbs;
     const Pel*      pCr     = orgCr.buf + y0 * crs;
     int64_t         sumCbCr = 0;
+
+    // determine inter-chroma transform sign from correlation between high-pass filtered (i.e., zero-mean) Cb and Cr planes
     for( int y = y0; y < y1; y++, pCb += cbs, pCr += crs )
     {
       for( int x = x0; x < x1; x++ )
@@ -1490,7 +1492,7 @@ void setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const S
       }
     }
 
-    sgnFlag = ( sumCbCr <  0 );
+    sgnFlag = ( sumCbCr < 0 );
   }
 
   cs.slice->setJointCbCrSignFlag( sgnFlag );
@@ -1548,7 +1550,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   }
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
 
-#if JVET_O0105_ICT_HHI
+#if JVET_O0105_ICT
   setJointCbCrModes( cs, Position(0, 0), cs.area.lumaSize() );
 #endif
 
@@ -1580,7 +1582,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     {
       cs.motionLut.lut.resize(0);
       cs.motionLut.lutIbc.resize(0);
+#if !JVET_O0078_SINGLE_HMVPLUT
       cs.motionLut.lutShareIbc.resize(0);
+#endif
     }
 
 #if ENABLE_WPP_PARALLELISM

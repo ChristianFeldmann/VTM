@@ -585,6 +585,10 @@ int8_t                    g_aucLog2    [MAX_CU_SIZE + 1];
 int8_t                    g_aucNextLog2[MAX_CU_SIZE + 1];
 int8_t                    g_aucPrevLog2[MAX_CU_SIZE + 1];
 
+#if JVET_O0105_ICT
+const int                 g_ictModes[2][4] = { { 0, 3, 1, 2 }, { 0, -3, -1, -2 } };
+#endif
+
 UnitScale g_miScaling( MIN_CU_LOG2, MIN_CU_LOG2 );
 
 

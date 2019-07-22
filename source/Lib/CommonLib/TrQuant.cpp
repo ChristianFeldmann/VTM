@@ -83,6 +83,80 @@ InvTrans *fastInvTrans[NUM_TRANS_TYPE][g_numTransformMatrixSizes] =
 //! \ingroup CommonLib
 //! \{
 
+#if JVET_O0105_ICT
+static inline int64_t square( const int d ) { return d * (int64_t)d; }
+
+template<int signedMode> std::pair<int64_t,int64_t> fwdTransformCbCr( const PelBuf &resCb, const PelBuf &resCr, PelBuf& resC1, PelBuf& resC2 )
+{
+  const Pel*  cb  = resCb.buf;
+  const Pel*  cr  = resCr.buf;
+  Pel*        c1  = resC1.buf;
+  Pel*        c2  = resC2.buf;
+  int64_t     d1  = 0;
+  int64_t     d2  = 0;
+  for( SizeType y = 0; y < resCb.height; y++, cb += resCb.stride, cr += resCr.stride, c1 += resC1.stride, c2 += resC2.stride )
+  {
+    for( SizeType x = 0; x < resCb.width; x++ )
+    {
+      int cbx = cb[x], crx = cr[x];
+      if      ( signedMode ==  1 )
+      { 
+        c1[x] = Pel( ( 4*cbx + 2*crx ) / 5 );
+        d1   += square( cbx - c1[x] ) + square( crx - (c1[x]>>1) );
+      } 
+      else if ( signedMode == -1 )
+      {
+        c1[x] = Pel( ( 4*cbx - 2*crx ) / 5 );
+        d1   += square( cbx - c1[x] ) + square( crx - (-c1[x]>>1) );
+      } 
+      else if ( signedMode ==  2 )
+      {
+        c1[x] = Pel( ( cbx + crx ) / 2 );
+        d1   += square( cbx - c1[x] ) + square( crx - c1[x] );
+      } 
+      else if ( signedMode == -2 )
+      {
+        c1[x] = Pel( ( cbx - crx ) / 2 );
+        d1   += square( cbx - c1[x] ) + square( crx + c1[x] );
+      } 
+      else if ( signedMode ==  3 )
+      {
+        c2[x] = Pel( ( 4*crx + 2*cbx ) / 5 );
+        d1   += square( cbx - (c2[x]>>1) ) + square( crx - c2[x] );
+      }
+      else if ( signedMode == -3 )
+      {
+        c2[x] = Pel( ( 4*crx - 2*cbx ) / 5 );
+        d1   += square( cbx - (-c2[x]>>1) ) + square( crx - c2[x] );
+      } 
+      else
+      {
+        d1   += square( cbx );
+        d2   += square( crx );
+      }
+    }
+  }
+  return std::make_pair(d1,d2);
+}
+
+template<int signedMode> void invTransformCbCr( PelBuf &resCb, PelBuf &resCr )
+{
+  Pel*  cb  = resCb.buf;
+  Pel*  cr  = resCr.buf;
+  for( SizeType y = 0; y < resCb.height; y++, cb += resCb.stride, cr += resCr.stride )
+  {
+    for( SizeType x = 0; x < resCb.width; x++ )
+    {
+      if      ( signedMode ==  1 )  { cr[x] =  cb[x] >> 1;  } 
+      else if ( signedMode == -1 )  { cr[x] = -cb[x] >> 1;  }
+      else if ( signedMode ==  2 )  { cr[x] =  cb[x]; }
+      else if ( signedMode == -2 )  { cr[x] = -cb[x]; }
+      else if ( signedMode ==  3 )  { cb[x] =  cr[x] >> 1; }
+      else if ( signedMode == -3 )  { cb[x] = -cr[x] >> 1; }
+    }
+  }
+}
+#endif
 
 // ====================================================================================================================
 // TrQuant class member functions
@@ -96,6 +170,26 @@ TrQuant::TrQuant() : m_quant( nullptr )
   {
     m_mtsCoeffs[i] = (TCoeff*) xMalloc( TCoeff, MAX_CU_SIZE * MAX_CU_SIZE );
   }
+#if JVET_O0105_ICT
+  {
+    m_invICT      = m_invICTMem + maxAbsIctMode;
+    m_invICT[ 0]  = invTransformCbCr< 0>;
+    m_invICT[ 1]  = invTransformCbCr< 1>;
+    m_invICT[-1]  = invTransformCbCr<-1>;
+    m_invICT[ 2]  = invTransformCbCr< 2>;
+    m_invICT[-2]  = invTransformCbCr<-2>;
+    m_invICT[ 3]  = invTransformCbCr< 3>;
+    m_invICT[-3]  = invTransformCbCr<-3>;
+    m_fwdICT      = m_fwdICTMem + maxAbsIctMode;
+    m_fwdICT[ 0]  = fwdTransformCbCr< 0>;
+    m_fwdICT[ 1]  = fwdTransformCbCr< 1>;
+    m_fwdICT[-1]  = fwdTransformCbCr<-1>;
+    m_fwdICT[ 2]  = fwdTransformCbCr< 2>;
+    m_fwdICT[-2]  = fwdTransformCbCr<-2>;
+    m_fwdICT[ 3]  = fwdTransformCbCr< 3>;
+    m_fwdICT[-3]  = fwdTransformCbCr<-3>;
+  }
+#endif
 }
 
 TrQuant::~TrQuant()
@@ -555,6 +649,83 @@ void TrQuant::invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &
     }
   }
 }
+
+#if JVET_O0105_ICT
+
+std::pair<int64_t,int64_t> TrQuant::fwdTransformICT( const TransformUnit &tu, const PelBuf &resCb, const PelBuf &resCr, PelBuf &resC1, PelBuf &resC2, int jointCbCr )
+{
+  CHECK( Size(resCb) != Size(resCr), "resCb and resCr have different sizes" );
+  CHECK( Size(resCb) != Size(resC1), "resCb and resC1 have different sizes" );
+  CHECK( Size(resCb) != Size(resC2), "resCb and resC2 have different sizes" );
+  return (*m_fwdICT[ TU::getICTMode(tu, jointCbCr) ])( resCb, resCr, resC1, resC2 );
+}
+
+void TrQuant::invTransformICT( const TransformUnit &tu, PelBuf &resCb, PelBuf &resCr )
+{
+  CHECK( Size(resCb) != Size(resCr), "resCb and resCr have different sizes" );
+  (*m_invICT[ TU::getICTMode(tu) ])( resCb, resCr );
+}
+
+std::vector<int> TrQuant::selectICTCandidates( const TransformUnit &tu, CompStorage* resCb, CompStorage* resCr )
+{
+  CHECK( !resCb[0].valid() || !resCr[0].valid(), "standard components are not valid" );
+
+#if JVET_O0543_ICT_ICU_ONLY
+  if( !CU::isIntra( *tu.cu ) )
+  {
+    int cbfMask = 3;
+    resCb[cbfMask].create( tu.blocks[COMPONENT_Cb] );
+    resCr[cbfMask].create( tu.blocks[COMPONENT_Cr] );
+    fwdTransformICT( tu, resCb[0], resCr[0], resCb[cbfMask], resCr[cbfMask], cbfMask );
+    std::vector<int> cbfMasksToTest;
+    cbfMasksToTest.push_back( cbfMask );
+    return cbfMasksToTest;
+  }
+#endif
+
+  std::pair<int64_t,int64_t> pairDist[4];
+  for( int cbfMask = 0; cbfMask < 4; cbfMask++ )
+  {
+    if( cbfMask )
+    {
+      CHECK( resCb[cbfMask].valid() || resCr[cbfMask].valid(), "target components for cbfMask=" << cbfMask << " are already present" );
+      resCb[cbfMask].create( tu.blocks[COMPONENT_Cb] );
+      resCr[cbfMask].create( tu.blocks[COMPONENT_Cr] );
+    }
+    pairDist[cbfMask] = fwdTransformICT( tu, resCb[0], resCr[0], resCb[cbfMask], resCr[cbfMask], cbfMask );
+  }
+
+  std::vector<int> cbfMasksToTest;
+  int64_t minDist1  = std::min<int64_t>( pairDist[0].first, pairDist[0].second );
+  int64_t minDist2  = std::numeric_limits<int64_t>::max();
+  int     cbfMask1  = 0;
+  int     cbfMask2  = 0;
+  for( int cbfMask : { 1, 2, 3 } ) 
+  {
+    if( pairDist[cbfMask].first < minDist1 )
+    {
+      cbfMask2  = cbfMask1; minDist2  = minDist1;
+      cbfMask1  = cbfMask;  minDist1  = pairDist[cbfMask1].first;
+    }
+    else if( pairDist[cbfMask].first < minDist2 )
+    {
+      cbfMask2  = cbfMask;  minDist2  = pairDist[cbfMask2].first;
+    }
+  }
+  if( cbfMask1 )
+  {
+    cbfMasksToTest.push_back( cbfMask1 );
+  }
+  if( cbfMask2 && ( ( minDist2 < (9*minDist1)/8 ) || ( !cbfMask1 && minDist2 < (3*minDist1)/2 ) ) )
+  {
+    cbfMasksToTest.push_back( cbfMask2 );
+  }
+
+  return cbfMasksToTest;
+}
+
+#endif
+
 
 // ------------------------------------------------------------------------------------------------
 // Logical transform

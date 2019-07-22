@@ -146,6 +146,10 @@ extern int8_t          g_aucLog2                       [MAX_CU_SIZE + 1];
 extern int8_t          g_aucNextLog2        [MAX_CU_SIZE + 1];
 extern int8_t          g_aucPrevLog2        [MAX_CU_SIZE + 1];
 
+#if JVET_O0105_ICT
+extern const int       g_ictModes[2][4];
+#endif
+
 inline bool is34( const SizeType& size )
 {
   return ( size & ( ( int64_t ) 1 << ( g_aucLog2[size] - 1 ) ) );

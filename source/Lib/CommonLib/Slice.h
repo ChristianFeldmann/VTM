@@ -1467,6 +1467,10 @@ private:
 
   bool                       m_cabacInitFlag;
 
+#if JVET_O0105_ICT
+  bool                       m_jointCbCrSignFlag;
+#endif
+
   bool                       m_bLMvdL1Zero;
   bool                       m_LFCrossSliceBoundaryFlag;
 
@@ -1739,6 +1743,12 @@ public:
 
   void                        setCabacInitFlag( bool val )                           { m_cabacInitFlag = val;                                        } //!< set CABAC initial flag
   bool                        getCabacInitFlag()                               const { return m_cabacInitFlag;                                       } //!< get CABAC initial flag
+
+#if JVET_O0105_ICT
+  void                        setJointCbCrSignFlag( bool b )                         { m_jointCbCrSignFlag = b; }
+  bool                        getJointCbCrSignFlag()                           const { return m_jointCbCrSignFlag; }
+#endif
+
   void                        setLFCrossSliceBoundaryFlag( bool   val )              { m_LFCrossSliceBoundaryFlag = val;                             }
   bool                        getLFCrossSliceBoundaryFlag()                    const { return m_LFCrossSliceBoundaryFlag;                            }
 

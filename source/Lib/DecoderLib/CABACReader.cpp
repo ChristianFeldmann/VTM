@@ -2328,6 +2328,13 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
   bool        cbfLuma    = ( tu.cbf[ COMPONENT_Y ] != 0 );
   bool        cbfChroma  = ( lumaOnly ? false : ( chromaCbfs.Cb || chromaCbfs.Cr ) );
 
+#if JVET_O0105_ICT
+  if( !lumaOnly )
+  {
+    joint_cb_cr( tu, ( tu.cbf[COMPONENT_Cb] ? 2 : 0 ) + ( tu.cbf[COMPONENT_Cr] ? 1 : 0 ) );
+  }
+#endif
+
   if( cbfLuma || cbfChroma )
   {
     if( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded )
@@ -2419,17 +2426,36 @@ void CABACReader::cu_chroma_qp_offset( CodingUnit& cu )
 //    void        residual_coding_subblock( coeffCtx )
 //================================================================================
 
+#if JVET_O0105_ICT
+void CABACReader::joint_cb_cr( TransformUnit& tu, const int cbfMask )
+{
+#if JVET_O0543_ICT_ICU_ONLY
+  if( ( CU::isIntra( *tu.cu ) && cbfMask ) || ( cbfMask == 3 ) )
+#else
+  if( cbfMask )
+#endif
+  {
+    RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__JOINT_CB_CR, tu.blocks[COMPONENT_Cr].lumaSize(), CHANNEL_TYPE_CHROMA );
+    tu.jointCbCr = ( m_BinDecoder.decodeBin( Ctx::JointCbCrFlag( cbfMask-1 ) ) ? cbfMask : 0 );
+  }
+}
+#else
 void CABACReader::joint_cb_cr( TransformUnit& tu )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__JOINT_CB_CR, tu.blocks[COMPONENT_Cr].lumaSize(), CHANNEL_TYPE_CHROMA );
   tu.jointCbCr = m_BinDecoder.decodeBin( Ctx::JointCbCrFlag( 0 ) );
 }
+#endif
 
 void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
 {
   const CodingUnit& cu = *tu.cu;
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_coding() etype=%d pos=(%d,%d) size=%dx%d predMode=%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height, cu.predMode );
 
+#if JVET_O0105_ICT
+  if( compID == COMPONENT_Cr && tu.jointCbCr == 3 )
+    return;
+#else
   // Joint Cb-Cr residual mode is signalled if both Cb and Cr cbfs are true
   if ( compID == COMPONENT_Cr && TU::getCbf( tu, COMPONENT_Cb ) )
   {
@@ -2439,6 +2465,7 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
     if ( tu.jointCbCr )
       return;
   }
+#endif
 
   // parse transform skip and explicit rdpcm mode
   mts_coding         ( tu, compID );

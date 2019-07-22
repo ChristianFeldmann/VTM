@@ -1375,6 +1375,13 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         pcSlice->setMaxNumTriangleCand(0);
       }
     }
+#if JVET_O0105_ICT
+    if (chromaEnabled)
+    {
+      WRITE_FLAG( pcSlice->getJointCbCrSignFlag() ? 1 : 0, "joint_cb_cr_sign_flag" );
+    }
+#endif
+
     int iCode = pcSlice->getSliceQp() - ( pcSlice->getPPS()->getPicInitQPMinus26() + 26 );
     WRITE_SVLC( iCode, "slice_qp_delta" );
     if (pcSlice->getPPS()->getSliceChromaQpFlag())

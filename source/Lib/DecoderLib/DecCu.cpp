@@ -200,7 +200,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   }
   else
 #endif
-  m_pcIntraPred->initIntraPatternChType( *tu.cu, area);
+    m_pcIntraPred->initIntraPatternChType(*tu.cu, area);
 
   //===== get prediction signal =====
   if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )

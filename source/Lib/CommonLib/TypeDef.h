@@ -50,7 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN            0 // JVET-O0106: use 4xN prediction regions for 1xN and 2xN subblocks
+#define JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN            1 // JVET-O0106: use 4xN prediction regions for 1xN and 2xN subblocks
 
 #define JVET_O0315_RDPCM_INTRAMODE_ALIGN                  1 // JVET-O0200/O0205/O0296/O0342/O0463/O0542: Intra prediction mode alignment for BDPCM
 

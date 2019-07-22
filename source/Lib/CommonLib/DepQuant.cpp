@@ -882,13 +882,17 @@ namespace DQIntern
       m_goRicePar     = 0;
       m_goRiceZero    = 0;
     }
-
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+    void checkRdCosts( const ScanPosType spt, const PQData& pqDataA, const PQData& pqDataB, Decision& decisionA, Decision& decisionB ) const
+#else
     void checkRdCosts( const ScanPosType spt, const PQData& pqDataA, const PQData& pqDataB, Decision& decisionA, Decision& decisionB, bool zeroOut ) const
+#endif
     {
       const int32_t*  goRiceTab = g_goRiceBits[m_goRicePar];
       int64_t         rdCostA   = m_rdCost + pqDataA.deltaDist;
       int64_t         rdCostB   = m_rdCost + pqDataB.deltaDist;
       int64_t         rdCostZ   = m_rdCost;
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       if( zeroOut )
       {
         rdCostZ = m_rdCost;
@@ -924,6 +928,7 @@ namespace DQIntern
       }
       else
       {
+#endif
         if( m_remRegBins >= 4 )
         {
           if( pqDataA.absLevel < 4 )
@@ -988,7 +993,9 @@ namespace DQIntern
           decisionB.prevId = m_stateId;
         }
       }
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
     }
+#endif
 
     inline void checkRdCostStart(int32_t lastOffset, const PQData &pqData, Decision &decision) const
     {
@@ -1409,15 +1416,36 @@ namespace DQIntern
   {
     ::memcpy( decisions, startDec, 8*sizeof(Decision) );
 
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+    if( zeroOut )
+    {
+      if( spt==SCAN_EOCSBB )
+      {
+        m_skipStates[0].checkRdCostSkipSbbZeroOut( decisions[0] );
+        m_skipStates[1].checkRdCostSkipSbbZeroOut( decisions[1] );
+        m_skipStates[2].checkRdCostSkipSbbZeroOut( decisions[2] );
+        m_skipStates[3].checkRdCostSkipSbbZeroOut( decisions[3] );
+      }
+      return;
+    }
+#endif
 
     PQData  pqData[4];
     m_quant.preQuantCoeff( absCoeff, pqData, quanCoeff );
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+    m_prevStates[0].checkRdCosts( spt, pqData[0], pqData[2], decisions[0], decisions[2]);
+    m_prevStates[1].checkRdCosts( spt, pqData[0], pqData[2], decisions[2], decisions[0]);
+    m_prevStates[2].checkRdCosts( spt, pqData[3], pqData[1], decisions[1], decisions[3]);
+    m_prevStates[3].checkRdCosts( spt, pqData[3], pqData[1], decisions[3], decisions[1]);
+#else
     m_prevStates[0].checkRdCosts( spt, pqData[0], pqData[2], decisions[0], decisions[2], zeroOut );
     m_prevStates[1].checkRdCosts( spt, pqData[0], pqData[2], decisions[2], decisions[0], zeroOut );
     m_prevStates[2].checkRdCosts( spt, pqData[3], pqData[1], decisions[1], decisions[3], zeroOut );
     m_prevStates[3].checkRdCosts( spt, pqData[3], pqData[1], decisions[3], decisions[1], zeroOut );
+#endif
     if( spt==SCAN_EOCSBB )
     {
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       if( zeroOut )
       {
         m_skipStates[0].checkRdCostSkipSbbZeroOut( decisions[0] );
@@ -1427,17 +1455,25 @@ namespace DQIntern
       }
       else
       {
+#endif
         m_skipStates[0].checkRdCostSkipSbb( decisions[0] );
         m_skipStates[1].checkRdCostSkipSbb( decisions[1] );
         m_skipStates[2].checkRdCostSkipSbb( decisions[2] );
         m_skipStates[3].checkRdCostSkipSbb( decisions[3] );
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       }
+#endif
     }
+
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
     if( !zeroOut )
     {
+#endif
     m_startState.checkRdCostStart( lastOffset, pqData[0], decisions[0] );
     m_startState.checkRdCostStart( lastOffset, pqData[2], decisions[2] );
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
     }
+#endif
   }
 
   void DepQuant::xDecideAndUpdate( const TCoeff absCoeff, const ScanInfo& scanInfo, bool zeroOut, int quantCoeff )
@@ -1459,7 +1495,11 @@ namespace DQIntern
         m_currStates[3].updateStateEOS( scanInfo, m_prevStates, m_skipStates, decisions[3] );
         ::memcpy( decisions+4, decisions, 4*sizeof(Decision) );
       }
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+      else if( !zeroOut )
+#else
       else
+#endif
       {
         switch( scanInfo.nextNbInfoSbb.num )
         {
@@ -1544,10 +1584,17 @@ namespace DQIntern
     zeroOutforThres = zeroOut || (32 < tuPars.m_height || 32 < tuPars.m_width);
     //===== find first test position =====
     int firstTestPos = numCoeff - 1;
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+    if( lfnstIdx > 0 && tu.mtsIdx != MTS_SKIP && width >= 4 && height >= 4 )
+    {
+      firstTestPos = ( ( width == 4 && height == 4 ) || ( width == 8 && height == 8 ) )  ? 7 : 15 ;
+    }
+#else
     if( lfnstIdx > 0 && tu.mtsIdx != MTS_SKIP && ( ( width == 4 && height == 4 ) || ( width == 8 && height == 8 ) ) )
     {
       firstTestPos = 7;
     }
+#endif
     const TCoeff defaultQuantisationCoefficient = (TCoeff)m_quant.getQScale();
     const TCoeff thres = m_quant.getLastThreshold();
     for( ; firstTestPos >= 0; firstTestPos-- )
@@ -1594,15 +1641,25 @@ namespace DQIntern
     for( int scanIdx = firstTestPos; scanIdx >= 0; scanIdx-- )
     {
       const ScanInfo& scanInfo = tuPars.m_scanInfo[ scanIdx ];
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       bool lfnstZeroOut = lfnstIdx > 0 && tu.mtsIdx != MTS_SKIP && width >= 4 && height >= 4 &&
         ( ( ( ( width >= 8 && height >= 8 ) && scanIdx >= 16 ) || ( ( ( width == 4 && height == 4 ) || ( width == 8 && height == 8 ) ) && scanIdx >= 8 ) ) && scanIdx < 48 );
       if (enableScalingLists)
       {
         m_quant.initQuantBlock(tu, compID, cQP, lambda, quantCoeff[scanInfo.rasterPos]);
         xDecideAndUpdate( abs( tCoeff[scanInfo.rasterPos]), scanInfo, (zeroOut && (scanInfo.posX >= effWidth || scanInfo.posY >= effHeight)) || lfnstZeroOut, quantCoeff[scanInfo.rasterPos] );
-	    }
+      }
       else
         xDecideAndUpdate( abs( tCoeff[scanInfo.rasterPos]), scanInfo, (zeroOut && (scanInfo.posX >= effWidth || scanInfo.posY >= effHeight)) || lfnstZeroOut, defaultQuantisationCoefficient );
+#else
+      if (enableScalingLists)
+      {
+        m_quant.initQuantBlock(tu, compID, cQP, lambda, quantCoeff[scanInfo.rasterPos]);
+        xDecideAndUpdate( abs( tCoeff[scanInfo.rasterPos]), scanInfo, (zeroOut && (scanInfo.posX >= effWidth || scanInfo.posY >= effHeight)), quantCoeff[scanInfo.rasterPos] );
+      }
+      else
+        xDecideAndUpdate( abs( tCoeff[scanInfo.rasterPos]), scanInfo, (zeroOut && (scanInfo.posX >= effWidth || scanInfo.posY >= effHeight)), defaultQuantisationCoefficient );
+#endif
     }
 
     //===== find best path =====

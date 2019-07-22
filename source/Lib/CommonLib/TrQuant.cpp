@@ -366,13 +366,15 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
 #endif
       bool          transposeFlag   = getTransposeFlag( intraMode );
       const int     sbSize          = whge3 ? 8 : 4;
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       const int     subGrpXMax      = ( height == 4 && width  > 8 ) ? 2 : 1;
       const int     subGrpYMax      = ( width  == 4 && height > 8 ) ? 2 : 1;
+#endif
       bool          tu4x4Flag       = ( width == 4 && height == 4 );
       bool          tu8x8Flag       = ( width == 8 && height == 8 );
       TCoeff*       lfnstTemp;
       TCoeff*       coeffTemp;
-
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       for( int subGroupX = 0; subGroupX < subGrpXMax; subGroupX++ )
       {
         for( int subGroupY = 0; subGroupY < subGrpYMax; subGroupY++ )
@@ -382,7 +384,11 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
           int y;
           lfnstTemp = m_tempInMatrix; // inverse spectral rearrangement
           coeffTemp = m_plTempCoeff + offsetX + offsetY;
-
+#else
+          int y;
+          lfnstTemp = m_tempInMatrix; // inverse spectral rearrangement
+          coeffTemp = m_plTempCoeff;
+#endif
           TCoeff * dst = lfnstTemp;
           const ScanElement * scanPtr = scan;
           for( y = 0; y < 16; y++ )
@@ -433,8 +439,10 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
               coeffTemp += width;
             }
           }
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
         }
       } // subGroupX
+#endif
     }
   }
 }
@@ -464,14 +472,17 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
 
       bool            transposeFlag   = getTransposeFlag( intraMode );
       const int       sbSize          = whge3 ? 8 : 4;
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       const int       subGrpXMax      = ( height == 4 && width  > 8 ) ? 2 : 1;
       const int       subGrpYMax      = ( width  == 4 && height > 8 ) ? 2 : 1;
+#endif
       bool            tu4x4Flag       = ( width == 4 && height == 4 );
       bool            tu8x8Flag       = ( width == 8 && height == 8 );
       TCoeff*         lfnstTemp;
       TCoeff*         coeffTemp;
       TCoeff*         tempCoeff       = loadTr ? m_mtsCoeffs[ tu.mtsIdx ] : m_plTempCoeff;
 
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       for( int subGroupX = 0; subGroupX < subGrpXMax; subGroupX++ )
       {
         for( int subGroupY = 0; subGroupY < subGrpYMax; subGroupY++ )
@@ -481,6 +492,11 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
           int y;
           lfnstTemp = m_tempInMatrix; // forward low frequency non-separable transform
           coeffTemp = tempCoeff + offsetX + offsetY;
+#else
+          int y;
+          lfnstTemp = m_tempInMatrix; // forward low frequency non-separable transform
+          coeffTemp = tempCoeff;
+#endif
 
           if( transposeFlag )
           {
@@ -524,8 +540,11 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
           fwdLfnstNxN( m_tempInMatrix, m_tempOutMatrix, g_lfnstLut[ intraMode ], lfnstIdx - 1, sbSize, ( tu4x4Flag || tu8x8Flag ) ? 8 : 16 );
 
           lfnstTemp = m_tempOutMatrix; // forward spectral rearrangement
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
           coeffTemp = tempCoeff + offsetX + offsetY;
-
+#else
+          coeffTemp = tempCoeff;
+#endif
           const ScanElement * scanPtr = scan;
           int lfnstCoeffNum = ( sbSize == 4 ) ? sbSize * sbSize : 48;
           for( y = 0; y < lfnstCoeffNum; y++ )
@@ -533,8 +552,10 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
             coeffTemp[ scanPtr->idx ] = *lfnstTemp++;
             scanPtr++;
           }
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
         }
       } // subGroupX
+#endif
     }
   }
 }
@@ -823,8 +844,26 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
 
   getTrTypes ( tu, compID, trTypeHor, trTypeVer );
 
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   const int      skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
+#else
+  int  skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
+  int  skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
+  if( tu.cs->sps->getUseLFNST() && tu.cu->lfnstIdx )
+  {
+    if( (width == 4 && height > 4) || (width > 4 && height == 4) )
+    {
+      skipWidth  = width  - 4;
+      skipHeight = height - 4;
+    }
+    else if( (width >= 8 && height >= 8) )
+    {
+      skipWidth  = width  - 8;
+      skipHeight = height - 8;
+    }
+  }
+#endif
 
 #if RExt__DECODER_DEBUG_TOOL_STATISTICS
   if ( trTypeHor != DCT2 )
@@ -890,9 +929,26 @@ void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCo
   int trTypeVer = DCT2;
 
   getTrTypes ( tu, compID, trTypeHor, trTypeVer );
-
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   const int      skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
   const int      skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
+#else
+  int skipWidth  = ( trTypeHor != DCT2 && width  == 32 ) ? 16 : width  > JVET_C0024_ZERO_OUT_TH ? width  - JVET_C0024_ZERO_OUT_TH : 0;
+  int skipHeight = ( trTypeVer != DCT2 && height == 32 ) ? 16 : height > JVET_C0024_ZERO_OUT_TH ? height - JVET_C0024_ZERO_OUT_TH : 0;
+  if( tu.cs->sps->getUseLFNST() && tu.cu->lfnstIdx )
+  {
+    if( (width == 4 && height > 4) || (width > 4 && height == 4) )
+    {
+      skipWidth  = width  - 4;
+      skipHeight = height - 4;
+    }
+    else if( (width >= 8 && height >= 8) )
+    {
+      skipWidth  = width  - 8;
+      skipHeight = height - 8;
+    }
+  }
+#endif
 
   TCoeff *block = ( TCoeff * ) alloca( width * height * sizeof( TCoeff ) );
 

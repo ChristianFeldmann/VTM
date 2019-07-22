@@ -89,6 +89,12 @@ namespace DQIntern
     int           nextSbbBelow;
     int           posX;
     int           posY;
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+    ChannelType   chType;
+    int           sbtInfo;
+    int           tuWidth;
+    int           tuHeight;
+#endif
   };
 
   class Rom;
@@ -370,6 +376,11 @@ namespace DQIntern
 
   void TUParameters::xSetScanInfo( ScanInfo& scanInfo, int scanIdx )
   {
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+    scanInfo.chType     = m_chType;
+    scanInfo.tuWidth    = m_width;
+    scanInfo.tuHeight   = m_height;
+#endif
     scanInfo.sbbSize    = m_sbbSize;
     scanInfo.numSbb     = m_numSbb;
     scanInfo.scanIdx    = scanIdx;
@@ -679,7 +690,11 @@ namespace DQIntern
     m_QScale                    = g_quantScales[needsSqrt2ScaleAdjustment?1:0][ qpRem ];
     const unsigned    qIdxBD    = std::min<unsigned>( maxLog2TrDynamicRange + 1, 8*sizeof(Intermediate_Int) + invShift - IQUANT_SHIFT - 1 );
     m_maxQIdx                   = ( 1 << (qIdxBD-1) ) - 4;
+#if JVET_O0256_ADJUST_THD_DEPQUANT
+    m_thresLast                 = TCoeff((int64_t(4) << m_QShift));
+#else
     m_thresLast                 = TCoeff((int64_t(3) << m_QShift));
+#endif
     m_thresSSbb                 = TCoeff((int64_t(3) << m_QShift));
     // distortion calculation parameters
     const int64_t qScale        = (gValue==-1) ? m_QScale : gValue;
@@ -1018,7 +1033,11 @@ namespace DQIntern
     int64_t                   m_rdCost;
     uint16_t                  m_absLevelsAndCtxInit[24];  // 16x8bit for abs levels + 16x16bit for ctx init id
     int8_t                    m_numSigSbb;
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+    int                       m_remRegBins;
+#else
     int8_t                    m_remRegBins;
+#endif
     int8_t                    m_refSbbCtxId;
     BinFracBits               m_sbbFracBits;
     BinFracBits               m_sigFracBits;
@@ -1030,6 +1049,11 @@ namespace DQIntern
     const CoeffFracBits*const m_gtxFracBitsArray;
     const uint32_t*const      m_goRiceZeroArray;
     CommonCtx&                m_commonCtx;
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  public:
+    unsigned                  effWidth;
+    unsigned                  effHeight;
+#endif
   };
 
 
@@ -1067,6 +1091,10 @@ namespace DQIntern
       {
         m_numSigSbb     =  1;
         m_refSbbCtxId   = -1;
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+        int ctxBinSampleRatio = (scanInfo.chType == CHANNEL_TYPE_LUMA) ? MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_LUMA : MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_CHROMA;
+        m_remRegBins = (effWidth * effHeight *ctxBinSampleRatio) / 16 - (decision.absLevel < 2 ? decision.absLevel : 3);
+#else
         if ( scanInfo.sbbSize == 4 )
         {
           m_remRegBins = MAX_NUM_REG_BINS_2x2SUBBLOCK - (decision.absLevel < 2 ? decision.absLevel : 3);
@@ -1075,6 +1103,7 @@ namespace DQIntern
         {
           m_remRegBins = MAX_NUM_REG_BINS_4x4SUBBLOCK - (decision.absLevel < 2 ? decision.absLevel : 3);
         }
+#endif
         ::memset( m_absLevelsAndCtxInit, 0, 48*sizeof(uint8_t) );
       }
 
@@ -1258,6 +1287,17 @@ namespace DQIntern
 
     const int       sigNSbb   = ( ( scanInfo.nextSbbRight ? sbbFlags[ scanInfo.nextSbbRight ] : false ) || ( scanInfo.nextSbbBelow ? sbbFlags[ scanInfo.nextSbbBelow ] : false ) ? 1 : 0 );
     currState.m_numSigSbb     = 0;
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+    if (prevState)
+    {
+      currState.m_remRegBins = prevState->m_remRegBins;
+    }
+    else
+    {
+      int ctxBinSampleRatio = (scanInfo.chType == CHANNEL_TYPE_LUMA) ? MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_LUMA : MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_CHROMA;
+      currState.m_remRegBins = (currState.effWidth * currState.effHeight *ctxBinSampleRatio) / 16;
+    }
+#else
     if (scanInfo.sbbSize == 4)
     {
       currState.m_remRegBins  = MAX_NUM_REG_BINS_2x2SUBBLOCK;
@@ -1266,6 +1306,7 @@ namespace DQIntern
     {
       currState.m_remRegBins  = MAX_NUM_REG_BINS_4x4SUBBLOCK;
     }
+#endif
     currState.m_goRicePar     = 0;
     currState.m_refSbbCtxId   = currState.m_stateId;
     currState.m_sbbFracBits   = m_sbbFlagBits[ sigNSbb ];
@@ -1536,6 +1577,18 @@ namespace DQIntern
     }
     m_startState.init();
 
+
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+    int effectWidth = std::min(32, effWidth);
+    int effectHeight = std::min(32, effHeight);
+    for (int k = 0; k < 12; k++)
+    {
+      m_allStates[k].effWidth = effectWidth;
+      m_allStates[k].effHeight = effectHeight;
+    }
+    m_startState.effWidth = effectWidth;
+    m_startState.effHeight = effectHeight;
+#endif
 
     //===== populate trellis =====
     for( int scanIdx = firstTestPos; scanIdx >= 0; scanIdx-- )

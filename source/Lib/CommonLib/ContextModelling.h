@@ -231,6 +231,10 @@ public:
     return auiGoRicePars[ std::min(sum, 31) ];
   }
 
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  int                       regBinLimit;
+#endif
+
 private:
   // constant
   const ComponentID         m_compID;

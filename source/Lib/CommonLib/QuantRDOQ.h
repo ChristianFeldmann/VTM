@@ -87,7 +87,9 @@ private:
                               const BinFracBits& fracBitsPar,
                               const BinFracBits& fracBitsGt1,
                               const BinFracBits& fracBitsGt2,
+#if !JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
                               const int          remGt2Bins,
+#endif
                               const int          remRegBins,
                               unsigned           goRiceZero,
                               uint16_t             ui16AbsGoRice,
@@ -100,7 +102,9 @@ private:
                               const BinFracBits& fracBitsPar,
                               const BinFracBits& fracBitsGt1,
                               const BinFracBits& fracBitsGt2,
+#if !JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
                               const int          remGt2Bins,
+#endif
                               const int          remRegBins,
                               unsigned           goRiceZero,
                               const uint16_t       ui16AbsGoRice,

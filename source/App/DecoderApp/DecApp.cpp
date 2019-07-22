@@ -187,6 +187,9 @@ uint32_t DecApp::decode()
       {
         m_cDecLib.executeLoopFilters();
         m_cDecLib.finishPicture( poc, pcListPic );
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+        CodingStatistics::UpdateMaxStat(backupStats);
+#endif
       }
       loopFiltered = (nalu.m_nalUnitType == NAL_UNIT_EOS);
       if (nalu.m_nalUnitType == NAL_UNIT_EOS)

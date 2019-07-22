@@ -50,10 +50,14 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT      1 // JVET-O0052 Method-1: TU-level context coded bin constraint
+
 #define JVET_O0105_ICT                                    1 // JVET-O0105: inter-chroma transform (ICT) as extension of joint chroma coding (JCC)
 #define JVET_O0543_ICT_ICU_ONLY                           1 // JVET-O0543: ICT only in Intra CUs (was Intra slices, modified during adoption)
 
 #define JVET_O0216_ALF_COEFF_EG3                          1 // JVET-O0216/O0302/O0648: using EG3 for ALF coefficients coding
+
+#define JVET_O0256_ADJUST_THD_DEPQUANT                    1 // JVET-O0256: Fast encoder with adjusted threshold in dependent quantization
 
 #define JVET_O0272_LMCS_SIMP_INVERSE_MAPPING              1 // JVET-O0272: LMCS simplified inverse mapping
 
@@ -101,6 +105,8 @@
 #define JVET_O1124_ALLOW_CCLM_COND                        1 // JVET-O1124/JVET-O0196: CCLM restriction to reduce luma-chroma latency for chroma separate tree
 
 #define JVET_O0078_SINGLE_HMVPLUT                         1 // JVET-O0078£ºSingle HMVP table for all CUs inside the shared merge list region for IBC
+
+#define JVET_O0126_BPWA_INDEX_CODING_FIX                  1 // JVET-O0126 align BPWA index coding with specification
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
@@ -196,6 +202,14 @@ typedef std::pair<int, int>  TrCost;
 // This can be enabled by the makefile
 #ifndef RExt__DECODER_DEBUG_BIT_STATISTICS
 #define RExt__DECODER_DEBUG_BIT_STATISTICS                0 ///< 0 (default) = decoder reports as normal, 1 = decoder produces bit usage statistics (will impact decoder run time by up to ~10%)
+#endif
+
+#ifndef RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+#define RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS         (1 && RExt__DECODER_DEBUG_BIT_STATISTICS )   ///< 0 (default) = decoder reports as normal, 1 = decoder produces max frame bit usage statistics
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+#define TR_ONLY_COEFF_STATS                               1
+#define EPBINCOUNT_FIX                                    1
+#endif
 #endif
 
 #ifndef RExt__DECODER_DEBUG_TOOL_STATISTICS

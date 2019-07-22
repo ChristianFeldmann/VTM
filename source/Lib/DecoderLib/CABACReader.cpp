@@ -1068,8 +1068,11 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
   uint32_t symbol = m_BinDecoder.decodeBin(Ctx::GBiIdx(0));
 
   int32_t numGBi = (cu.slice->getCheckLDC()) ? 5 : 3;
-
+#if JVET_O0126_BPWA_INDEX_CODING_FIX
+  if(symbol == 1)
+#else
   if(symbol == 0)
+#endif
   {
     uint32_t prefixNumBits = numGBi - 2;
     uint32_t step = 1;
@@ -1079,8 +1082,11 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
     for(int ui = 0; ui < prefixNumBits; ++ui)
     {
       symbol = m_BinDecoder.decodeBinEP();
-
+#if JVET_O0126_BPWA_INDEX_CODING_FIX
+      if (symbol == 0)
+#else
       if (symbol == 1)
+#endif
       {
         break;
       }
@@ -2494,6 +2500,10 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
   const int stateTransTab = ( tu.cs->slice->getDepQuantEnabledFlag() ? 32040 : 0 );
   int       state         = 0;
 
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  int ctxBinSampleRatio = (compID == COMPONENT_Y) ? MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_LUMA : MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_CHROMA;
+  cctx.regBinLimit = (tu.getTbAreaAfterCoefZeroOut(compID) * ctxBinSampleRatio) >> 4;
+#endif
 
     for( int subSetId = ( cctx.scanPosLast() >> cctx.log2CGSize() ); subSetId >= 0; subSetId--)
     {
@@ -2792,8 +2802,12 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
   int       firstNZPos    = nextSigPos;
   int       lastNZPos     = -1;
   int       numNonZero    =  0;
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  int       remRegBins    = cctx.regBinLimit;
+#else
   bool      is2x2subblock = ( cctx.log2CGSize() == 2 );
   int       remRegBins    = ( is2x2subblock ? MAX_NUM_REG_BINS_2x2SUBBLOCK : MAX_NUM_REG_BINS_4x4SUBBLOCK );
+#endif
   int       firstPosMode2 = minSubPos - 1;
   int       sigBlkPos[ 1 << MLS_CG_SIZE ];
 
@@ -2847,6 +2861,9 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     state = ( stateTransTable >> ((state<<2)+((coeff[blkPos]&1)<<1)) ) & 3;
   }
   firstPosMode2 = nextSigPos;
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  cctx.regBinLimit = remRegBins;
+#endif
 
 
   //===== 2nd PASS: Go-rice codes =====
@@ -2930,11 +2947,20 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
   // NOTE: All coefficients of the subblock must be set to zero before calling this function
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   CodingStatisticsClassType ctype_group ( STATS__CABAC_BITS__SIG_COEFF_GROUP_FLAG,  cctx.width(), cctx.height(), cctx.compID() );
+#if TR_ONLY_COEFF_STATS
+  CodingStatisticsClassType ctype_map   ( STATS__CABAC_BITS__SIG_COEFF_MAP_FLAG_TS, cctx.width(), cctx.height(), cctx.compID() );
+  CodingStatisticsClassType ctype_par   ( STATS__CABAC_BITS__PAR_FLAG_TS,           cctx.width(), cctx.height(), cctx.compID() );
+  CodingStatisticsClassType ctype_gt1   ( STATS__CABAC_BITS__GT1_FLAG_TS,           cctx.width(), cctx.height(), cctx.compID() );
+  CodingStatisticsClassType ctype_gt2   ( STATS__CABAC_BITS__GT2_FLAG_TS,           cctx.width(), cctx.height(), cctx.compID() );
+  CodingStatisticsClassType ctype_escs  ( STATS__CABAC_BITS__ESCAPE_BITS_TS,        cctx.width(), cctx.height(), cctx.compID() );
+#else
   CodingStatisticsClassType ctype_map   ( STATS__CABAC_BITS__SIG_COEFF_MAP_FLAG,    cctx.width(), cctx.height(), cctx.compID() );
   CodingStatisticsClassType ctype_par   ( STATS__CABAC_BITS__PAR_FLAG,              cctx.width(), cctx.height(), cctx.compID() );
   CodingStatisticsClassType ctype_gt1   ( STATS__CABAC_BITS__GT1_FLAG,              cctx.width(), cctx.height(), cctx.compID() );
   CodingStatisticsClassType ctype_gt2   ( STATS__CABAC_BITS__GT2_FLAG,              cctx.width(), cctx.height(), cctx.compID() );
   CodingStatisticsClassType ctype_escs  ( STATS__CABAC_BITS__ESCAPE_BITS,           cctx.width(), cctx.height(), cctx.compID() );
+#endif
+
 #endif
 
   //===== init =====
@@ -2996,7 +3022,11 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
     if( sigFlag )
     {
       //===== decode sign's =====
+#if TR_ONLY_COEFF_STATS
+      RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__SIGN_BIT_TS, Size(cctx.width(), cctx.height()), cctx.compID());
+#else
       RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__SIGN_BIT, Size( cctx.width(), cctx.height() ), cctx.compID() );
+#endif
       int sign;
       if( cctx.isContextCoded() )
       {

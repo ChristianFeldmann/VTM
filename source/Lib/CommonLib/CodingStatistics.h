@@ -86,6 +86,14 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__GT2_FLAG,
   STATS__CABAC_BITS__SIGN_BIT,
   STATS__CABAC_BITS__ESCAPE_BITS,
+#if TR_ONLY_COEFF_STATS
+  STATS__CABAC_BITS__SIG_COEFF_MAP_FLAG_TS,
+  STATS__CABAC_BITS__PAR_FLAG_TS,
+  STATS__CABAC_BITS__GT1_FLAG_TS,
+  STATS__CABAC_BITS__GT2_FLAG_TS,
+  STATS__CABAC_BITS__SIGN_BIT_TS,
+  STATS__CABAC_BITS__ESCAPE_BITS_TS,
+#endif
   STATS__CABAC_BITS__SAO,
   STATS__CABAC_BITS__ALF,
   STATS__CABAC_TRM_BITS,
@@ -171,6 +179,14 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__GT2_FLAG",
     "CABAC_BITS__SIGN_BIT",
     "CABAC_BITS__ESCAPE_BITS",
+#if TR_ONLY_COEFF_STATS
+    "CABAC_BITS__SIG_COEFF_MAP_FLAG_TS",
+    "CABAC_BITS__PAR_FLAG_TS",
+    "CABAC_BITS__GT1_FLAG_TS",
+    "CABAC_BITS__GT2_FLAG_TS",
+    "CABAC_BITS__SIGN_BIT_TS",
+    "CABAC_BITS__ESCAPE_BITS_TS",
+#endif
     "CABAC_BITS__SAO",
     "CABAC_BITS__LFNST",
     "CABAC_BITS__ALF",
@@ -309,6 +325,13 @@ public:
     {
       bits += src.bits; count += src.count; sum += src.sum; classCount += src.classCount; return *this;
     }
+
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+    SStat &operator-=(const SStat &src)
+    {
+      bits -= src.bits; count -= src.count; sum -= src.sum; classCount -= src.classCount; return *this;
+    }
+#endif
   };
 
   struct StatTool
@@ -327,12 +350,45 @@ public:
     }
   };
 
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+  struct SStat_max
+  {
+    SStat   max_CABAC_state;
+    SStat   max_EP_state;
+    SStat trf_CABAC_state;
+    SStat trf_EP_state;
+    SStat acc_trf_CABAC_state;
+    SStat acc_trf_EP_state;
+    SStat   prev_CABAC_state;
+    SStat   prev_EP_state;
+    SStat prev_trf_CABAC_state;
+    SStat prev_trf_EP_state;
+
+    void    clear()
+    {
+      max_CABAC_state.clear();
+      max_EP_state.clear();
+      trf_CABAC_state.clear();
+      trf_EP_state.clear();
+      acc_trf_CABAC_state.clear();
+      acc_trf_EP_state.clear();
+      prev_CABAC_state.clear();
+      prev_EP_state.clear();
+      prev_trf_CABAC_state.clear();
+      prev_trf_EP_state.clear();
+    }
+  };
+#endif
+
   class CodingStatisticsData
   {
   private:
     SStat statistics         [STATS__NUM_STATS + 1][CODING_STATS_NUM_SUBCLASSES];
     SStat statistics_ep      [STATS__NUM_STATS + 1][CODING_STATS_NUM_SUBCLASSES];
     StatTool statistics_tool [STATS__NUM_STATS + 1][CODING_STATS_NUM_SUBCLASSES];
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+    SStat_max                    statistics_max;
+#endif
     std::map<std::string, SStat> mappings_ep;
     friend class CodingStatistics;
   };
@@ -429,6 +485,10 @@ private:
     int64_t classCounts[STATS__NUM_STATS];
     std::fill_n( classCounts, ( size_t ) STATS__NUM_STATS, 0 );
 
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+    SStat_max &max = GetStatisticMax();
+#endif
+
     int64_t cr = 0; // CABAC remainder, which is added to "STATS__CABAC_INITIALISATION"
     {
       int64_t totalCABACbits = 0, roundedCABACbits = 0;
@@ -522,6 +582,18 @@ private:
       {
         cabacSubTotal.classCount = classCounts[i];
         OutputLine( pName, '~', "~~ST~~", "~~ST~~", "~~ST~~", cabacSubTotal, epSubTotal );
+
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+        // For TRF
+        if ((i == STATS__CABAC_BITS__SIG_COEFF_MAP_FLAG) || (i == STATS__CABAC_BITS__PAR_FLAG)
+            || (i == STATS__CABAC_BITS__GT1_FLAG) || (i == STATS__CABAC_BITS__GT2_FLAG)
+            || (i == STATS__CABAC_BITS__ESCAPE_BITS))
+        {
+          max.acc_trf_CABAC_state += cabacSubTotal;
+          max.acc_trf_EP_state += epSubTotal;
+        } 
+#endif
+
       }
       if( i == STATS__NAL_UNIT_TOTAL_BODY )
       {
@@ -604,6 +676,12 @@ private:
     OutputDashedLine( "GRAND TOTAL" );
     epTotalBits += cavlcTotalBits;
     OutputLine      ( "TOTAL",                  '~', "~~GT~~", "~~GT~~", "~~GT~~", cabacTotalBits, epTotalBits );
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+    OutputDashedLine("");
+    OutputLine("CABAC MAX FRAME stat", '~', "~~ST~~", "~~ST~~", "~~ST~~", max.max_CABAC_state, max.max_EP_state);
+    OutputLine("CABAC MAX FRAME TRF stat", '~', "~~ST~~", "~~ST~~", "~~ST~~", max.trf_CABAC_state, max.trf_EP_state);
+    OutputLine("CABAC Accumulated TRF stat", '~', "~~ST~~", "~~ST~~", "~~ST~~", max.acc_trf_CABAC_state, max.acc_trf_EP_state);
+#endif
   }
 
   void OutputToolStats()
@@ -712,6 +790,10 @@ public:
 
   static StatTool &GetStatisticTool ( const CodingStatisticsClassType &stat ) { return GetSingletonInstance().data.statistics_tool[stat.type][stat.subClass]; }
 
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+  static SStat_max &GetStatisticMax() { return GetSingletonInstance().data.statistics_max; }
+#endif
+
   static int getNumOnes( int bins )
   {
     CHECK( bins < 0, "Bins should not be nagative" );
@@ -730,7 +812,11 @@ public:
     CHECK( stat.type == STATS__CABAC_BITS__INVALID, "Should never be used." );
     SStat &s = GetStatisticEP( stat );
     s.bits  += numBits;
+#if EPBINCOUNT_FIX
+    s.count += numBits;
+#else
     s.count++;
+#endif
     s.sum   += getNumOnes( value );
   }
 
@@ -738,7 +824,11 @@ public:
   {
     SStat &s = GetStatisticEP( str );
     s.bits  += numBits;
+#if EPBINCOUNT_FIX
+    s.count += numBits;
+#else
     s.count++;
+#endif
     s.sum   += getNumOnes( value );
   }
 
@@ -746,7 +836,11 @@ public:
   {
     SStat &s = GetStatisticEP( pKey );
     s.bits  += numBits;
+#if EPBINCOUNT_FIX
+    s.count += numBits;
+#else
     s.count++;
+#endif
     s.sum   += getNumOnes( value );
   }
 
@@ -776,6 +870,123 @@ public:
     s.count++;
     s.sum   += val;
   }
+
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+  static void UpdateMaxStat(CodingStatisticsData *data)
+  {
+    SStat_max &   max = GetStatisticMax();
+    const int64_t es = CODINGSTATISTICS_ENTROPYSCALE;
+
+    int64_t countTotal = 0;
+    int64_t classCounts[STATS__NUM_STATS];
+    std::fill_n(classCounts, (size_t) STATS__NUM_STATS, 0);
+
+    int64_t cr = 0;   // CABAC remainder, which is added to "STATS__CABAC_INITIALISATION"
+
+    int64_t totalCABACbits = 0, roundedCABACbits = 0;
+    for (int i = STATS__NAL_UNIT_PACKING; i < STATS__NUM_STATS; i++)
+    {
+      int64_t classCount = 0;
+
+      for (uint32_t c = 0; c < CODING_STATS_NUM_SUBCLASSES; c++)
+      {
+        totalCABACbits += data->statistics[i][c].bits;
+        roundedCABACbits += data->statistics[i][c].bits / es;
+        classCount += data->statistics[i][c].count;
+      }
+
+      for (uint32_t c = 0; c < CODING_STATS_NUM_SUBCLASSES; c++)
+      {
+        data->statistics[i][c].classCount = classCount;
+      }
+
+      classCounts[i] = classCount;
+      countTotal += classCount;
+    }
+    int64_t remainder = totalCABACbits - roundedCABACbits * es;
+    cr = (remainder + es / 2) / es;
+
+    classCounts[0] = countTotal;
+
+    SStat cabacTotalBits, epTotalBits, cabacTrfTotalBits, epTrfTotalBits;
+
+    cabacTotalBits.classCount = countTotal;
+    epTotalBits.classCount = countTotal;
+    cabacTrfTotalBits.classCount = countTotal;
+    epTrfTotalBits.classCount    = countTotal;
+
+    // Calculate the actual bin and bit count
+    for (int i = 0; i < STATS__NUM_STATS; i++)
+    {
+      for (uint32_t c = 0; c < CODING_STATS_NUM_SUBCLASSES; c++)
+      {
+        SStat &sCABACorig = data->statistics[i][c];
+        SStat &sEP = data->statistics_ep[i][c];
+
+        if (sCABACorig.bits == 0 && sEP.bits == 0)
+        {
+          continue;
+        }
+
+        SStat sCABAC;
+        {
+          int64_t thisCABACbits = sCABACorig.bits / es;
+          if (i == STATS__CABAC_INITIALISATION && sCABACorig.bits != 0)
+          {
+            thisCABACbits += cr;
+            cr = 0;
+          }
+          sCABAC.bits = thisCABACbits;
+          sCABAC.count = sCABACorig.count;
+          sCABAC.sum = sCABACorig.sum;
+          sCABAC.classCount = classCounts[i];
+        }
+
+        if( i != STATS__NAL_UNIT_TOTAL_BODY )
+        {
+          cabacTotalBits += sCABAC;
+          epTotalBits += sEP;
+
+         // For TRF
+         if ((i == STATS__CABAC_BITS__SIG_COEFF_MAP_FLAG) || (i == STATS__CABAC_BITS__PAR_FLAG)
+             || (i == STATS__CABAC_BITS__GT1_FLAG) || (i == STATS__CABAC_BITS__GT2_FLAG)
+             || (i == STATS__CABAC_BITS__ESCAPE_BITS))
+         {
+           cabacTrfTotalBits += sCABAC;
+           epTrfTotalBits += sEP;
+         }
+        }
+      }
+    }
+
+    SStat delta_CABAC = cabacTotalBits;
+    SStat delta_EP = epTotalBits;
+    SStat delta_trf_CABAC = cabacTrfTotalBits;
+    SStat delta_trf_EP = epTrfTotalBits;
+
+    delta_CABAC -= max.prev_CABAC_state;
+    delta_EP -= max.prev_EP_state;
+
+    delta_trf_CABAC -= max.prev_trf_CABAC_state;
+    delta_trf_EP -= max.prev_trf_EP_state;
+    int64_t max_frame_bins = EPBIN_WEIGHT_FACTOR * max.max_CABAC_state.count + max.max_EP_state.count;
+    int64_t cur_frame_bins = EPBIN_WEIGHT_FACTOR * delta_CABAC.count + delta_EP.count;
+
+    if (cur_frame_bins > max_frame_bins)
+    {
+      max.max_CABAC_state = delta_CABAC;
+      max.max_EP_state = delta_EP;
+      max.trf_CABAC_state = delta_trf_CABAC;
+      max.trf_EP_state = delta_trf_EP;
+    }
+
+    max.prev_CABAC_state = cabacTotalBits;
+    max.prev_EP_state = epTotalBits;
+
+    max.prev_trf_CABAC_state = cabacTrfTotalBits;
+    max.prev_trf_EP_state = epTrfTotalBits;
+  }
+#endif
 };
 
 #endif

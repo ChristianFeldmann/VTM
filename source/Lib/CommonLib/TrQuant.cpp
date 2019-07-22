@@ -84,7 +84,7 @@ InvTrans *fastInvTrans[NUM_TRANS_TYPE][g_numTransformMatrixSizes] =
 //! \{
 
 #if JVET_O0105_ICT
-int64_t square( int d ) { return d*d; }
+static inline int64_t square( const int d ) { return d * (int64_t)d; }
 
 template<int signedMode> std::pair<int64_t,int64_t> fwdTransformCbCr( const PelBuf &resCb, const PelBuf &resCr, PelBuf& resC1, PelBuf& resC2 )
 {

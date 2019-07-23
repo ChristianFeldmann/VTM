@@ -114,6 +114,8 @@
 
 #define JVET_O0126_BPWA_INDEX_CODING_FIX                  1 // JVET-O0126 align BPWA index coding with specification
 
+#define JVET_O0592_ENC_ME_IMP                             1 // JVET-O0592 encoder ME improvement
+
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
 #define MRG_SHARELIST_SHARSIZE                            32

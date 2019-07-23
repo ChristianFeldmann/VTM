@@ -78,6 +78,14 @@ struct AffineMVInfo
   int x, y, w, h;
 };
 
+#if JVET_O0592_ENC_ME_IMP
+struct BlkUniMvInfo
+{
+  Mv uniMvs[2][33];
+  int x, y, w, h;
+};
+#endif
+
 typedef struct
 {
   Mv acMvAffine4Para[2][3];
@@ -116,6 +124,12 @@ private:
   int             m_affMVListIdx;
   int             m_affMVListSize;
   int             m_affMVListMaxSize;
+#if JVET_O0592_ENC_ME_IMP
+  BlkUniMvInfo*   m_uniMvList;
+  int             m_uniMvListIdx;
+  int             m_uniMvListSize;
+  int             m_uniMvListMaxSize;
+#endif
   Distortion      m_hevcCost;
   EncAffineMotion m_affineMotion;
   PatentBvCand    m_defaultCachedBvs;
@@ -232,6 +246,80 @@ public:
       m_affMVListSize = std::min(m_affMVListSize + 1, m_affMVListMaxSize);
     }
   }
+#if JVET_O0592_ENC_ME_IMP
+  void resetUniMvList() { m_uniMvListIdx = 0; m_uniMvListSize = 0; }
+  void insertUniMvCands(CompArea blkArea, Mv cMvTemp[2][33])
+  {
+    BlkUniMvInfo* curMvInfo = m_uniMvList + m_uniMvListIdx;
+    int j = 0;
+    for (; j < m_uniMvListSize; j++)
+    {
+      BlkUniMvInfo* prevMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+      if ((blkArea.x == prevMvInfo->x) && (blkArea.y == prevMvInfo->y) && (blkArea.width == prevMvInfo->w) && (blkArea.height == prevMvInfo->h))
+      {
+        break;
+      }
+    }
+
+    if (j < m_uniMvListSize)
+    {
+      curMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+    }
+
+    ::memcpy(curMvInfo->uniMvs, cMvTemp, 2 * 33 * sizeof(Mv));
+    if (j == m_uniMvListSize)  // new element
+    {
+      curMvInfo->x = blkArea.x;
+      curMvInfo->y = blkArea.y;
+      curMvInfo->w = blkArea.width;
+      curMvInfo->h = blkArea.height;
+      m_uniMvListSize = std::min(m_uniMvListSize + 1, m_uniMvListMaxSize);
+      m_uniMvListIdx = (m_uniMvListIdx + 1) % (m_uniMvListMaxSize);
+    }
+  }
+  void savePrevUniMvInfo(CompArea blkArea, BlkUniMvInfo &tmpUniMvInfo, bool& isUniMvInfoSaved)
+  {
+    int j = 0;
+    BlkUniMvInfo* curUniMvInfo = nullptr;
+    for (; j < m_uniMvListSize; j++)
+    {
+      curUniMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+      if ((blkArea.x == curUniMvInfo->x) && (blkArea.y == curUniMvInfo->y) && (blkArea.width == curUniMvInfo->w) && (blkArea.height == curUniMvInfo->h))
+      {
+        break;
+      }
+    }
+
+    if (j < m_uniMvListSize)
+    {
+      isUniMvInfoSaved = true;
+      tmpUniMvInfo = *curUniMvInfo;
+    }
+  }
+  void addUniMvInfo(BlkUniMvInfo &tmpUniMVInfo)
+  {
+    int j = 0;
+    BlkUniMvInfo* prevUniMvInfo = nullptr;
+    for (; j < m_uniMvListSize; j++)
+    {
+      prevUniMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+      if ((tmpUniMVInfo.x == prevUniMvInfo->x) && (tmpUniMVInfo.y == prevUniMvInfo->y) && (tmpUniMVInfo.w == prevUniMvInfo->w) && (tmpUniMVInfo.h == prevUniMvInfo->h))
+      {
+        break;
+      }
+    }
+    if (j < m_uniMvListSize)
+    {
+      *prevUniMvInfo = tmpUniMVInfo;
+    }
+    else
+    {
+      m_uniMvList[m_uniMvListIdx] = tmpUniMVInfo;
+      m_uniMvListIdx = (m_uniMvListIdx + 1) % m_uniMvListMaxSize;
+      m_uniMvListSize = std::min(m_uniMvListSize + 1, m_uniMvListMaxSize);
+    }
+  }
+#endif
   void resetSavedAffineMotion();
   void storeAffineMotion( Mv acAffineMv[2][3], int16_t affineRefIdx[2], EAffineModel affineType, int gbiIdx );
 protected:
@@ -364,6 +452,10 @@ protected:
                                   );
 
   void xTZSearch                  ( const PredictionUnit& pu,
+#if JVET_O0592_ENC_ME_IMP
+                                    RefPicList            eRefPicList,
+                                    int                   iRefIdxPred,
+#endif
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,
@@ -373,6 +465,10 @@ protected:
                                   );
 
   void xTZSearchSelective         ( const PredictionUnit& pu,
+#if JVET_O0592_ENC_ME_IMP
+                                    RefPicList            eRefPicList,
+                                    int                   iRefIdxPred,
+#endif
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,
@@ -387,6 +483,10 @@ protected:
                                   );
 
   void xPatternSearchFast         ( const PredictionUnit& pu,
+#if JVET_O0592_ENC_ME_IMP
+                                    RefPicList            eRefPicList,
+                                    int                   iRefIdxPred,
+#endif
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O1161_IBC_MAX_SIZE                           1 // Limit largest IBC luma CU size to 64x64 per discussion of JVET-O1161
+
 #define JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT      1 // JVET-O0052 Method-1: TU-level context coded bin constraint
 
 #define JVET_O0105_ICT                                    1 // JVET-O0105: inter-chroma transform (ICT) as extension of joint chroma coding (JCC)
@@ -106,7 +108,7 @@
 
 #define JVET_O1124_ALLOW_CCLM_COND                        1 // JVET-O1124/JVET-O0196: CCLM restriction to reduce luma-chroma latency for chroma separate tree
 
-#define JVET_O0078_SINGLE_HMVPLUT                         1 // JVET-O0078£ºSingle HMVP table for all CUs inside the shared merge list region for IBC
+#define JVET_O0078_SINGLE_HMVPLUT                         1 // JVET-O0078ï¿½ï¿½Single HMVP table for all CUs inside the shared merge list region for IBC
 
 #define JVET_O0126_BPWA_INDEX_CODING_FIX                  1 // JVET-O0126 align BPWA index coding with specification
 

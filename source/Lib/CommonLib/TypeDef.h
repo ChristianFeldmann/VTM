@@ -116,6 +116,8 @@
 
 #define JVET_O0592_ENC_ME_IMP                             1 // JVET-O0592 encoder ME improvement
 
+#define JVET_O0108_DIS_DMVR_BDOF_CIIP                     1 // JVET_O0108 CE9-2.2: disable DMVR and BDOF for CIIP
+
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
 #define MRG_SHARELIST_SHARSIZE                            32

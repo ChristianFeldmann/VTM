@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0315_RDPCM_INTRAMODE_ALIGN                  1 // JVET-O0200/O0205/O0296/O0342/O0463/O0542: Intra prediction mode alignment for BDPCM
+
 #define JVET_O0438_SPS_AFFINE_AMVR_FLAG                   1 // JVET-O0438: affine AMVR control flag conditioned on affine control flag in SPS
 
 #define JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT      1 // JVET-O0052 Method-1: TU-level context coded bin constraint

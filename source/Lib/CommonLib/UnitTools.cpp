@@ -1607,6 +1607,9 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
   {
     return pu.mergeFlag
       && pu.mergeType == MRG_TYPE_DEFAULT_N
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      && !pu.mhIntraFlag
+#endif
       && !pu.cu->affine
       && !pu.mmvdMergeFlag
       && !pu.cu->mmvdSkip

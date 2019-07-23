@@ -687,13 +687,17 @@ void SampleAdaptiveOffset::xPCMLFDisableProcess(CodingStructure& cs)
 void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea)
 {
   const SPS& sps = *cs.sps;
-  uint32_t numComponents = CS::isDualITree(cs) ? 1 : m_numberOfComponents;
+  uint32_t numComponents;
+  bool anyDualTree = false;
   for( auto &cu : cs.traverseCUs( ctuArea, CH_L ) )
   {
     // restore PCM samples
     if( ( cu.ipcm && sps.getPCMFilterDisableFlag() ) || CU::isLosslessCoded( cu ) )
     {
 
+      cs.slice = cu.slice;
+      anyDualTree |= CS::isDualITree(cs);
+      numComponents = CS::isDualITree(cs) ? 1 : m_numberOfComponents;
       for( uint32_t comp = 0; comp < numComponents; comp++ )
       {
         xPCMSampleRestoration( cu, ComponentID( comp ) );
@@ -701,10 +705,15 @@ void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea
     }
   }
   numComponents = m_numberOfComponents;
-  if (CS::isDualITree(cs) && numComponents)
+  if (anyDualTree && numComponents)
   {
     for (auto &cu : cs.traverseCUs(ctuArea, CH_C))
     {
+      if (cu.slice->isIntra() == false) 
+      {
+        continue;
+      }
+
       // restore PCM samples
       if ((cu.ipcm && sps.getPCMFilterDisableFlag()) || CU::isLosslessCoded(cu))
       {

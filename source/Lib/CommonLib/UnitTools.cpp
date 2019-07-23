@@ -1601,8 +1601,8 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
     WPScalingParam *wp1;
     int refIdx0 = pu.refIdx[REF_PIC_LIST_0];
     int refIdx1 = pu.refIdx[REF_PIC_LIST_1];
-    pu.cs->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
-    pu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
+    pu.cu->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
+    pu.cu->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
   if (pu.cs->sps->getUseDMVR())
   {
     return pu.mergeFlag

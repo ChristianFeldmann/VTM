@@ -293,17 +293,36 @@ class CUCtx
 public:
   CUCtx()              : isDQPCoded(false), isChromaQpAdjCoded(false),
                          qgStart(false),
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+                         numNonZeroCoeffNonTs(0)
+                         {
+                           violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
+                           violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+                         }
+#else
                          numNonZeroCoeffNonTs(0) {}
+#endif
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
                          qgStart(false),
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+                         numNonZeroCoeffNonTs(0), qp(_qp)
+                         {
+                           violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
+                           violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+                         }
+#else
                          numNonZeroCoeffNonTs(0), qp(_qp) {}
+#endif
   ~CUCtx() {}
 public:
   bool      isDQPCoded;
   bool      isChromaQpAdjCoded;
   bool      qgStart;
-  uint32_t      numNonZeroCoeffNonTs;
-  int8_t     qp;                   // used as a previous(last) QP and for QP prediction
+  uint32_t  numNonZeroCoeffNonTs;
+  int8_t    qp;                   // used as a previous(last) QP and for QP prediction
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+  bool      violatesLfnstConstrained[MAX_NUM_CHANNEL_TYPE];
+#endif
 };
 
 class MergeCtx

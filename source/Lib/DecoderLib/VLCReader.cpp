@@ -1216,9 +1216,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode,  "sps_amvr_enabled_flag" );                     pcSPS->setAMVREnabledFlag ( uiCode != 0 );
 
   READ_FLAG( uiCode, "sps_bdof_enabled_flag" );                      pcSPS->setBDOFEnabledFlag ( uiCode != 0 );
-
+#if !JVET_O0438_SPS_AFFINE_AMVR_FLAG
   READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );             pcSPS->setAffineAmvrEnabledFlag ( uiCode != 0 );
-
+#endif
   READ_FLAG(uiCode, "sps_dmvr_enable_flag");                        pcSPS->setUseDMVR(uiCode != 0);
   READ_FLAG(uiCode, "sps_mmvd_enable_flag");                        pcSPS->setUseMMVD(uiCode != 0);
   // KJS: sps_cclm_enabled_flag
@@ -1241,6 +1241,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   if ( pcSPS->getUseAffine() )
   {
     READ_FLAG( uiCode,  "affine_type_flag" );                       pcSPS->setUseAffineType          ( uiCode != 0 );
+#if JVET_O0438_SPS_AFFINE_AMVR_FLAG
+    READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );           pcSPS->setAffineAmvrEnabledFlag  ( uiCode != 0 );
+#endif
   }
   READ_FLAG( uiCode,    "gbi_flag" );                               pcSPS->setUseGBi                 ( uiCode != 0 );
   READ_FLAG(uiCode, "ibc_flag");                                    pcSPS->setIBCFlag(uiCode);

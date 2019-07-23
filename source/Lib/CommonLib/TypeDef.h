@@ -50,7 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_O0065_CABAC_INIT                             1 // JVET-O0065: CABAC initialization
+#define JVET_O0065_CABAC_INIT                             0 // JVET-O0065: CABAC initialization
 
 #define JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT      1 // JVET-O0052 Method-1: TU-level context coded bin constraint
 

@@ -1458,14 +1458,14 @@ SPS::~SPS()
 void  SPS::createRPLList0(int numRPL)
 {
   m_RPLList0.destroy();
-  m_RPLList0.create(numRPL);
+  m_RPLList0.create(numRPL + 1);
   m_numRPL0 = numRPL;
   m_rpl1IdxPresentFlag = (m_numRPL0 != m_numRPL1) ? true : false;
 }
 void  SPS::createRPLList1(int numRPL)
 {
   m_RPLList1.destroy();
-  m_RPLList1.create(numRPL);
+  m_RPLList1.create(numRPL + 1);
   m_numRPL1 = numRPL;
 
   m_rpl1IdxPresentFlag = (m_numRPL0 != m_numRPL1) ? true : false;

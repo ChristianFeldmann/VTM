@@ -1291,8 +1291,8 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
   ReferencePictureList*      rpl;
 
   int numRPLCandidates = getRPLCandidateSize(0);
-  sps.createRPLList0(numRPLCandidates + 1);
-  sps.createRPLList1(numRPLCandidates + 1);
+  sps.createRPLList0(numRPLCandidates);
+  sps.createRPLList1(numRPLCandidates);
   RPLList* rplList = 0;
 
   for (int i = 0; i < 2; i++)
@@ -1317,7 +1317,7 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
   //Check RPLL0 first
   const RPLList* rplList0 = sps.getRPLList0();
   const RPLList* rplList1 = sps.getRPLList1();
-  uint32_t numberOfRPL = sps.getNumRPL0() - 1;
+  uint32_t numberOfRPL = sps.getNumRPL0();
 
   bool isAllEntriesinRPLHasSameSignFlag = true;
   bool isFirstEntry = true;
@@ -1339,7 +1339,7 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
     }
   }
   //Check RPLL1. Skip it if it is already found out that this flag is not true for RPL0 or if RPL1 is the same as RPL0
-  numberOfRPL = sps.getNumRPL1() - 1;
+  numberOfRPL = sps.getNumRPL1();
   isFirstEntry = true;
   lastSign = true;
   for (uint32_t ii = 0; isAllEntriesinRPLHasSameSignFlag && !sps.getRPL1CopyFromRPL0Flag() && ii < numberOfRPL; ii++)

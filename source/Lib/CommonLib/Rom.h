@@ -226,5 +226,11 @@ extern int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG
 
 extern bool g_mctsDecCheckEnabled;
 
+#if JVET_O0592_ENC_ME_IMP
+class  Mv;
+extern Mv   g_reusedUniMVs[32][32][8][8][2][33];
+extern bool g_isReusedUniMVsFilled[32][32][8][8];
+#endif
+
 #endif  //__TCOMROM__
 

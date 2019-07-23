@@ -266,6 +266,9 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   m_modeCtrl->init( m_pcEncCfg, m_pcRateCtrl, m_pcRdCost );
 
   m_pcInterSearch->setModeCtrl( m_modeCtrl );
+#if JVET_O0592_ENC_ME_IMP
+  m_modeCtrl->setInterSearch(m_pcInterSearch);
+#endif
   m_pcIntraSearch->setModeCtrl( m_modeCtrl );
 
   if ( ( m_pcEncCfg->getIBCHashSearch() && m_pcEncCfg->getIBCMode() ) || m_pcEncCfg->getAllowDisFracMMVD() )
@@ -1188,6 +1191,14 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   AffineMVInfo tmpMVInfo;
   bool isAffMVInfoSaved;
   m_pcInterSearch->savePrevAffMVInfo(0, tmpMVInfo, isAffMVInfoSaved);
+#if JVET_O0592_ENC_ME_IMP
+  BlkUniMvInfo tmpUniMvInfo;
+  bool         isUniMvInfoSaved = false;
+  if (!tempCS->slice->isIntra())
+  {
+    m_pcInterSearch->savePrevUniMvInfo(tempCS->area.Y(), tmpUniMvInfo, isUniMvInfoSaved);
+  }
+#endif
 
   do
   {
@@ -1319,6 +1330,12 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
   if (isAffMVInfoSaved)
     m_pcInterSearch->addAffMVInfo(tmpMVInfo);
+#if JVET_O0592_ENC_ME_IMP
+  if (!tempCS->slice->isIntra() && isUniMvInfoSaved)
+  {
+    m_pcInterSearch->addUniMvInfo(tmpUniMvInfo);
+  }
+#endif
 
   tempCS->motionLut = oldMotionLut;
 

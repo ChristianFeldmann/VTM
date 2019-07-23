@@ -3251,6 +3251,34 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
   int numGtBins = 4;
 
   //===== 2nd PASS: gt2 =====
+#if JVET_O0619_GTX_SINGLE_PASS_TS_RESIDUAL_CODING
+  for (int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++)
+  {
+    TCoeff& tcoeff = coeff[cctx.blockPos(scanPos)];
+    cutoffVal = 2;
+    for (int i = 0; i < numGtBins; i++)
+    {
+       if (tcoeff >= cutoffVal)
+       {
+          RExt__DECODER_DEBUG_BIT_STATISTICS_SET(ctype_gt2);
+          unsigned gt2Flag;
+          if (cctx.isContextCoded())
+          {
+            gt2Flag = m_BinDecoder.decodeBin(cctx.greaterXCtxIdAbsTS(cutoffVal >> 1));
+            tcoeff += (gt2Flag << 1);
+            DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt%d_flag() bin=%d ctx=%d sp=%d coeff=%d\n", i, gt2Flag, cctx.greaterXCtxIdAbsTS(cutoffVal >> 1), scanPos, tcoeff);
+          }
+          else
+          {
+            gt2Flag = m_BinDecoder.decodeBinEP();
+            tcoeff += (gt2Flag << 1);
+            DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt%d_flag() EPbin=%d sp=%d coeff=%d\n", i, gt2Flag, scanPos, tcoeff);
+          }
+       }
+       cutoffVal += 2;
+    }
+  }
+#else
   for( int i = 0; i < numGtBins; i++ )
   {
     for( int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++ )
@@ -3276,7 +3304,7 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
     }
     cutoffVal += 2;
   }
-
+#endif
   //===== 3rd PASS: Go-rice codes =====
   for( int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++ )
   {

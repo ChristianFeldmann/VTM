@@ -3088,6 +3088,31 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
   int cutoffVal = 2;
   int numGtBins = 4;
 
+#if JVET_O0619_GTX_SINGLE_PASS_TS_RESIDUAL_CODING
+  for (int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++)
+  {
+    unsigned absLevel = abs(coeff[cctx.blockPos(scanPos)]);
+    cutoffVal = 2;
+    for (int i = 0; i < numGtBins; i++)
+    {
+      if (absLevel >= cutoffVal)
+      {
+        unsigned gt2 = (absLevel >= (cutoffVal + 2));
+        if (cctx.isContextCoded())
+        {
+          m_BinEncoder.encodeBin(gt2, cctx.greaterXCtxIdAbsTS(cutoffVal >> 1));
+          DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt%d_flag() bin=%d ctx=%d sp=%d coeff=%d\n", i, gt2, cctx.greaterXCtxIdAbsTS(cutoffVal >> 1), scanPos, min<int>(absLevel, cutoffVal + 2));
+        }
+        else
+        {
+          m_BinEncoder.encodeBinEP(gt2);
+          DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt%d_flag() EPbin=%d sp=%d coeff=%d\n", i, gt2, scanPos, min<int>(absLevel, cutoffVal + 2));
+        }
+      }
+      cutoffVal += 2;
+    }
+  }
+#else
   for( int i = 0; i < numGtBins; i++ )
   {
     for( int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++ )
@@ -3110,6 +3135,7 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
     }
     cutoffVal += 2;
   }
+#endif
 
   //===== coeff bypass ====
   for( int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++ )

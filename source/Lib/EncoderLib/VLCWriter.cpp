@@ -722,10 +722,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   const RPLList* rplList0 = pcSPS->getRPLList0();
   const RPLList* rplList1 = pcSPS->getRPLList1();
-  uint32_t numberOfRPL = pcSPS->getNumRPL0() - 1;
 
   //Write candidate for List0
-  numberOfRPL = pcSPS->getNumRPL0() - 1;
+  uint32_t numberOfRPL = pcSPS->getNumRPL0();
   WRITE_UVLC(numberOfRPL, "num_ref_pic_lists_in_sps[0]");
   for (int ii = 0; ii < numberOfRPL; ii++)
   {
@@ -736,7 +735,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   //Write candidate for List1
   if (!pcSPS->getRPL1CopyFromRPL0Flag())
   {
-    numberOfRPL = pcSPS->getNumRPL1() - 1;
+    numberOfRPL = pcSPS->getNumRPL1();
     WRITE_UVLC(numberOfRPL, "num_ref_pic_lists_in_sps[1]");
     for (int ii = 0; ii < numberOfRPL; ii++)
     {

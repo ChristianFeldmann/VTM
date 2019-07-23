@@ -1087,7 +1087,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   //Read candidate for List0
   READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[0]");
   uint32_t numberOfRPL = uiCode;
-  pcSPS->createRPLList0(numberOfRPL + 1);
+  pcSPS->createRPLList0(numberOfRPL);
   RPLList* rplList = pcSPS->getRPLList0();
   ReferencePictureList* rpl;
   for (uint32_t ii = 0; ii < numberOfRPL; ii++)
@@ -1101,7 +1101,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[1]");
     numberOfRPL = uiCode;
-    pcSPS->createRPLList1(numberOfRPL + 1);
+    pcSPS->createRPLList1(numberOfRPL);
     rplList = pcSPS->getRPLList1();
     for (uint32_t ii = 0; ii < numberOfRPL; ii++)
     {

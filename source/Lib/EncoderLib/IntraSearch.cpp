@@ -2781,11 +2781,15 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
     if( doReshaping )
     {
       const Area area = currTU.Y().valid() ? currTU.Y() : Area(recalcPosition(currTU.chromaFormat, currTU.chType, CHANNEL_TYPE_LUMA, currTU.blocks[currTU.chType].pos()), recalcSize(currTU.chromaFormat, currTU.chType, CHANNEL_TYPE_LUMA, currTU.blocks[currTU.chType].size()));
-      const CompArea &areaY = CompArea(COMPONENT_Y, currTU.chromaFormat, area );
+      const CompArea &areaY = CompArea(COMPONENT_Y, currTU.chromaFormat, area);
+#if JVET_O1109_UNFIY_CRS
+      int adj = m_pcReshape->calculateChromaAdjVpduNei(currTU, areaY);
+#else
       PelBuf piPredY;
       piPredY = cs.picture->getPredBuf(areaY);
       const Pel avgLuma = piPredY.computeAvg();
       int adj = m_pcReshape->calculateChromaAdj(avgLuma);
+#endif
       currTU.setChromaAdj(adj);
     }
 

@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -109,6 +109,7 @@ public:
 
 protected:
   void xReadRbspTrailingBits();
+  bool isByteAligned() { return (m_pcBitstream->getNumBitsUntilByteAligned() == 0 ); }
 };
 
 
@@ -140,37 +141,36 @@ public:
   virtual ~HLSyntaxReader();
 
 protected:
-  void  parseShortTermRefPicSet            (SPS* pcSPS, ReferencePictureSet* pcRPS, int idx);
+  void  copyRefPicList(SPS* pcSPS, ReferencePictureList* source_rpl, ReferencePictureList* dest_rpl);
+  void  parseRefPicList(SPS* pcSPS, ReferencePictureList* rpl);
 
 public:
   void  setBitstream        ( InputBitstream* p )   { m_pcBitstream = p; }
-#if HEVC_VPS
   void  parseVPS            ( VPS* pcVPS );
-#endif
-  void  parseSPSNext        ( SPSNext& spsNext, const bool usePCM );
+  void  parseDPS            ( DPS* dps );
   void  parseSPS            ( SPS* pcSPS );
-  void  parsePPS            ( PPS* pcPPS );
+  void  parsePPS            ( PPS* pcPPS, ParameterSetManager *parameterSetManager );
+  void  parseAPS            ( APS* pcAPS );
+  void  parseAlfAps         ( APS* pcAPS );
+  void  parseLmcsAps        ( APS* pcAPS );
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
-  void  parsePTL            ( PTL *rpcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1 );
-  void  parseProfileTier    ( ProfileTierLevel *ptl, const bool bIsSubLayer );
-  void  parseHrdParameters  ( HRD *hrd, bool cprms_present_flag, uint32_t tempLevelHigh );
+  void  parseConstraintInfo   (ConstraintInfo *cinfo);
+  void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
+  void  parseHrdParameters  ( HRDParameters *hrd, bool cprms_present_flag, uint32_t tempLevelHigh );
   void  parseSliceHeader    ( Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );
 
   void  parsePredWeightTable( Slice* pcSlice, const SPS *sps );
-#if HEVC_USE_SCALING_LISTS
   void  parseScalingList    ( ScalingList* scalingList );
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t sizeId, uint32_t listId);
-#endif
-
-  void alf( AlfSliceParam& alfSliceParam );
+  void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
   void alfFilter( AlfSliceParam& alfSliceParam, const bool isChroma );
 
 private:
   int truncatedUnaryEqProb( const int maxSymbol );
   void xReadTruncBinCode( uint32_t& ruiSymbol, const int uiMaxSymbol );
-  int  alfGolombDecode( const int k );
+  int  alfGolombDecode( const int k, const bool signed_val=true );
 
 protected:
   bool  xMoreRbspData();

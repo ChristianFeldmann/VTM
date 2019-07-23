@@ -1,0 +1,371 @@
+/* The copyright in this software is being made available under the BSD
+* License, included below. This software may be subject to other third party
+* and contributor rights, including patent rights, and no such rights are
+* granted under this license.
+*
+* Copyright (c) 2010-2019, ITU/ISO/IEC
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*
+*  * Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
+*  * Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*  * Neither the name of the ITU/ISO/IEC nor the names of its contributors may
+*    be used to endorse or promote products derived from this software without
+*    specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+* BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+* THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+/** \file     Reshape.cpp
+    \brief    common reshaper class
+*/
+#include "Reshape.h"
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#if  JVET_O1109_UNFIY_CRS
+#include <UnitTools.h>
+#endif
+ //! \ingroup CommonLib
+ //! \{
+
+ // ====================================================================================================================
+ // Constructor / destructor / create / destroy
+ // ====================================================================================================================
+
+Reshape::Reshape()
+{
+  m_CTUFlag = false;
+  m_recReshaped = false;
+  m_reshape = true;
+#if  JVET_O1109_UNFIY_CRS
+  m_chromaScale = (1 << CSCALE_FP_PREC);
+#endif
+}
+
+Reshape::~Reshape()
+{
+}
+
+void  Reshape::createDec(int bitDepth)
+{
+  m_lumaBD = bitDepth;
+  m_reshapeLUTSize = 1 << m_lumaBD;
+  m_initCW = m_reshapeLUTSize / PIC_CODE_CW_BINS;
+  if (m_fwdLUT.empty())
+    m_fwdLUT.resize(m_reshapeLUTSize, 0);
+  if (m_invLUT.empty())
+    m_invLUT.resize(m_reshapeLUTSize, 0);
+  if (m_binCW.empty())
+    m_binCW.resize(PIC_CODE_CW_BINS, 0);
+#if JVET_O0428_LMCS_CLEANUP
+  if (m_inputPivot.empty())
+    m_inputPivot.resize(PIC_CODE_CW_BINS + 1, 0);
+  if (m_fwdScaleCoef.empty())
+    m_fwdScaleCoef.resize(PIC_CODE_CW_BINS, 1 << FP_PREC);
+  if (m_invScaleCoef.empty())
+    m_invScaleCoef.resize(PIC_CODE_CW_BINS, 1 << FP_PREC);
+#endif
+  if (m_reshapePivot.empty())
+    m_reshapePivot.resize(PIC_CODE_CW_BINS + 1, 0);
+  if (m_chromaAdjHelpLUT.empty())
+    m_chromaAdjHelpLUT.resize(PIC_CODE_CW_BINS, 1<<CSCALE_FP_PREC);
+}
+
+void  Reshape::destroy()
+{
+}
+
+#if !JVET_O0428_LMCS_CLEANUP
+/**
+-Perform inverse of a one dimension LUT
+\param   InputLUT  describing the input LUT
+\retval  OutputLUT describing the inversed LUT of InputLUT
+\param   lut_size  size of LUT in number of samples
+*/
+void Reshape::reverseLUT(std::vector<Pel>& inputLUT, std::vector<Pel>& outputLUT, uint16_t lutSize)
+{
+  int i, j;
+  outputLUT[m_reshapePivot[m_sliceReshapeInfo.reshaperModelMinBinIdx]] = m_sliceReshapeInfo.reshaperModelMinBinIdx*m_initCW;
+  for (i = m_sliceReshapeInfo.reshaperModelMinBinIdx; i <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; i++)
+  {
+    int16_t X1 = m_reshapePivot[i];
+    int16_t X2 = m_reshapePivot[i + 1];
+    outputLUT[X2] = (i + 1)*m_initCW;
+    int16_t Y1 = outputLUT[X1];
+    int16_t Y2 = outputLUT[X2];
+
+    if (X2 !=X1)
+    {
+      int32_t scale = (int32_t)(Y2 - Y1) * (1 << FP_PREC) / (int32_t)(X2 - X1);
+      for (j = X1 + 1; j < X2; j++)
+      {
+        outputLUT[j] = (Pel)((scale*(int32_t)(j - X1) + (1 << (FP_PREC - 1))) >> FP_PREC) + Y1;
+      }
+    }
+  }
+
+  for (i = 0; i < m_reshapePivot[m_sliceReshapeInfo.reshaperModelMinBinIdx]; i++)
+    outputLUT[i] = outputLUT[m_reshapePivot[m_sliceReshapeInfo.reshaperModelMinBinIdx]];
+  for (i = m_reshapePivot[m_sliceReshapeInfo.reshaperModelMaxBinIdx + 1]; i < m_reshapeLUTSize; i++)
+    outputLUT[i] = outputLUT[m_reshapePivot[m_sliceReshapeInfo.reshaperModelMaxBinIdx + 1]];
+
+  for (i = 0; i < lutSize; i++)
+  {
+    outputLUT[i] = Clip3((Pel)0, (Pel)((1<<m_lumaBD)-1), outputLUT[i]);
+  }
+}
+#endif
+
+
+/** compute chroma residuce scale for TU
+* \param average luma pred of TU
+* \return chroma residue scale
+*/
+int  Reshape::calculateChromaAdj(Pel avgLuma)
+{
+  int lumaIdx = Clip3<int>(0, (1<<m_lumaBD) - 1, avgLuma);
+  int iAdj = m_chromaAdjHelpLUT[getPWLIdxInv(lumaIdx)];
+  return(iAdj);
+}
+
+#if JVET_O1109_UNFIY_CRS
+/** compute chroma residuce scale for TU
+* \param average luma pred of TU
+* \return chroma residue scale
+*/
+int  Reshape::calculateChromaAdjVpduNei(TransformUnit &tu, const CompArea &areaY)
+{
+  CodingStructure &cs = *tu.cs;
+  int xPos = areaY.lumaPos().x;
+  int yPos = areaY.lumaPos().y;
+  int ctuSize = cs.sps->getCTUSize();
+  if (ctuSize == 128)
+  {
+    xPos = xPos / 64 * 64;
+    yPos = yPos / 64 * 64;
+  }
+  else
+  {
+    xPos = xPos / ctuSize * ctuSize;
+    yPos = yPos / ctuSize * ctuSize;
+  }
+
+  if (isVPDUprocessed(xPos, yPos) && !cs.pcv->isEncoder)
+  {
+    return getChromaScale();
+  }
+  else
+  {
+    setVPDULoc(xPos, yPos);
+    Position topLeft(xPos, yPos);
+    CodingUnit *topLeftLuma;
+    if (CS::isDualITree(cs) && cs.slice->getSliceType() == I_SLICE)
+      topLeftLuma = tu.cs->picture->cs->getCU(topLeft, CHANNEL_TYPE_LUMA);
+    else
+      topLeftLuma = cs.getCU(topLeft, CHANNEL_TYPE_LUMA);
+
+    xPos = topLeftLuma->lumaPos().x;
+    yPos = topLeftLuma->lumaPos().y;
+
+    CompArea lumaArea = CompArea(COMPONENT_Y, tu.chromaFormat, topLeftLuma->lumaPos(), topLeftLuma->lumaSize(), true);
+    PelBuf piRecoY = cs.picture->getRecoBuf(lumaArea);
+    int strideY = piRecoY.stride;
+    int chromaScale = (1 << CSCALE_FP_PREC);
+    int lumaValue = -1;
+
+    Pel* recSrc0 = piRecoY.bufAt(0, 0);
+    const uint32_t picH = tu.cs->picture->lheight();
+    const uint32_t picW = tu.cs->picture->lwidth();
+    const Pel   valueDC = 1 << (tu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA) - 1);
+    int32_t recLuma = 0;
+    int pelnum = 0;
+    if (xPos > 0)
+    {
+      for (int i = 0; i < NEIG_NUM; i++)
+      {
+        int k = (yPos + i) >= picH ? (picH - yPos - 1) : i;
+        recLuma += recSrc0[-1 + k * strideY];
+        pelnum++;
+      }
+    }
+    if (yPos > 0)
+    {
+      for (int i = 0; i < NEIG_NUM; i++)
+      {
+        int k = (xPos + i) >= picW ? (picW - xPos - 1) : i;
+        recLuma += recSrc0[-strideY + k];
+        pelnum++;
+      }
+    }
+    if (pelnum == NEIG_NUM)
+    {
+      lumaValue = ClipPel((recLuma + (1 << (NEIG_NUM_LOG - 1))) >> NEIG_NUM_LOG, tu.cs->slice->clpRng(COMPONENT_Y));
+    }
+    else if (pelnum == (NEIG_NUM << 1))
+    {
+      lumaValue = ClipPel((recLuma + (1 << NEIG_NUM_LOG)) >> (NEIG_NUM_LOG + 1), tu.cs->slice->clpRng(COMPONENT_Y));
+    }
+    else
+    {
+      CHECK(pelnum != 0, "");
+      lumaValue = ClipPel(valueDC, tu.cs->slice->clpRng(COMPONENT_Y));
+    }
+    chromaScale = calculateChromaAdj(lumaValue);
+    setChromaScale(chromaScale);
+    return(chromaScale);
+  }
+}
+#endif
+/** find inx of PWL for inverse mapping
+* \param average luma pred of TU
+* \return idx of PWL for inverse mapping
+*/
+int Reshape::getPWLIdxInv(int lumaVal)
+{
+  int idxS = 0;
+#if JVET_O0428_LMCS_CLEANUP
+  for (idxS = m_sliceReshapeInfo.reshaperModelMinBinIdx; (idxS <= m_sliceReshapeInfo.reshaperModelMaxBinIdx); idxS++)
+  {
+    if (lumaVal < m_reshapePivot[idxS + 1])     break;
+  }
+  return idxS;
+#else
+  if (lumaVal < m_reshapePivot[m_sliceReshapeInfo.reshaperModelMinBinIdx + 1])
+    return m_sliceReshapeInfo.reshaperModelMinBinIdx;
+  else if (lumaVal >= m_reshapePivot[m_sliceReshapeInfo.reshaperModelMaxBinIdx])
+    return m_sliceReshapeInfo.reshaperModelMaxBinIdx;
+  else
+  {
+    for (idxS = m_sliceReshapeInfo.reshaperModelMinBinIdx; (idxS < m_sliceReshapeInfo.reshaperModelMaxBinIdx); idxS++)
+    {
+      if (lumaVal < m_reshapePivot[idxS + 1])     break;
+    }
+    return idxS;
+  }
+#endif
+}
+
+/**
+-copy Slice reshaper info structure
+\param   tInfo describing the target Slice reshaper info structure
+\param   sInfo describing the source Slice reshaper info structure
+*/
+void Reshape::copySliceReshaperInfo(SliceReshapeInfo& tInfo, SliceReshapeInfo& sInfo)
+{
+  tInfo.sliceReshaperModelPresentFlag = sInfo.sliceReshaperModelPresentFlag;
+  if (sInfo.sliceReshaperModelPresentFlag)
+  {
+    tInfo.reshaperModelMaxBinIdx = sInfo.reshaperModelMaxBinIdx;
+    tInfo.reshaperModelMinBinIdx = sInfo.reshaperModelMinBinIdx;
+    memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
+    tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
+  }
+  tInfo.sliceReshaperEnableFlag = sInfo.sliceReshaperEnableFlag;
+  if (sInfo.sliceReshaperEnableFlag)
+    tInfo.enableChromaAdj = sInfo.enableChromaAdj;
+  else
+    tInfo.enableChromaAdj = 0;
+}
+
+/** Construct reshaper from syntax
+* \param void
+* \return void
+*/
+void Reshape::constructReshaper()
+{
+  int pwlFwdLUTsize = PIC_CODE_CW_BINS;
+  int pwlFwdBinLen = m_reshapeLUTSize / PIC_CODE_CW_BINS;
+
+  for (int i = 0; i < m_sliceReshapeInfo.reshaperModelMinBinIdx; i++)
+    m_binCW[i] = 0;
+  for (int i = m_sliceReshapeInfo.reshaperModelMaxBinIdx + 1; i < PIC_CODE_CW_BINS; i++)
+    m_binCW[i] = 0;
+  for (int i = m_sliceReshapeInfo.reshaperModelMinBinIdx; i <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; i++)
+    m_binCW[i] = (uint16_t)(m_sliceReshapeInfo.reshaperModelBinCWDelta[i] + (int)m_initCW);
+
+#if JVET_O0428_LMCS_CLEANUP
+  for (int i = 0; i < pwlFwdLUTsize; i++)
+  {
+    m_reshapePivot[i + 1] = m_reshapePivot[i] + m_binCW[i];
+    m_inputPivot[i + 1] = m_inputPivot[i] + m_initCW;
+    m_fwdScaleCoef[i] = ((int32_t)m_binCW[i] * (1 << FP_PREC) + (1 << (floorLog2(pwlFwdBinLen) - 1))) >> floorLog2(pwlFwdBinLen);
+    if (m_binCW[i] == 0)
+    {
+      m_invScaleCoef[i] = 0;
+      m_chromaAdjHelpLUT[i] = 1 << CSCALE_FP_PREC;
+    }
+    else
+    {
+      m_invScaleCoef[i] = (int32_t)(m_initCW * (1 << FP_PREC) / m_binCW[i]);
+      m_chromaAdjHelpLUT[i] = m_invScaleCoef[i];
+    }
+  }
+  for (int lumaSample = 0; lumaSample < m_reshapeLUTSize; lumaSample++)
+  {
+    int idxY = lumaSample / m_initCW;
+    int tempVal = m_reshapePivot[idxY] + ((m_fwdScaleCoef[idxY] * (lumaSample - m_inputPivot[idxY]) + (1 << (FP_PREC - 1))) >> FP_PREC);
+    m_fwdLUT[lumaSample] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)(tempVal));
+
+    int idxYInv = getPWLIdxInv(lumaSample);
+    int invSample = m_inputPivot[idxYInv] + ((m_invScaleCoef[idxYInv] * (lumaSample - m_reshapePivot[idxYInv]) + (1 << (FP_PREC - 1))) >> FP_PREC);
+    m_invLUT[lumaSample] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)(invSample));
+  }
+#else
+  for (int i = 0; i < pwlFwdLUTsize; i++)
+  {
+    m_reshapePivot[i + 1] = m_reshapePivot[i] + m_binCW[i];
+    int16_t Y1 = m_reshapePivot[i];
+    int16_t Y2 = m_reshapePivot[i + 1];
+
+    m_fwdLUT[i*pwlFwdBinLen] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)Y1);
+
+    int log2PwlFwdBinLen = floorLog2(pwlFwdBinLen);
+
+    int32_t scale = ((int32_t)(Y2 - Y1) * (1 << FP_PREC) + (1 << (log2PwlFwdBinLen - 1))) >> (log2PwlFwdBinLen);
+    for (int j = 1; j < pwlFwdBinLen; j++)
+    {
+      int tempVal = Y1 + (((int32_t)scale * (int32_t)j + (1 << (FP_PREC - 1))) >> FP_PREC);
+      m_fwdLUT[i*pwlFwdBinLen + j] = Clip3((Pel)0, (Pel)((1 << m_lumaBD) - 1), (Pel)tempVal);
+    }
+  }
+  reverseLUT(m_fwdLUT, m_invLUT, m_reshapeLUTSize);
+  updateChromaScaleLUT();
+#endif
+}
+
+#if !JVET_O0428_LMCS_CLEANUP
+/** generate chroma residue scaling LUT
+* \param void
+* \return void
+*/
+void Reshape::updateChromaScaleLUT()
+{
+  for (int i = 0; i < PIC_CODE_CW_BINS; i++)
+  {
+    if (m_binCW[i] == 0)
+      m_chromaAdjHelpLUT[i] = 1 << CSCALE_FP_PREC;
+    else
+      m_chromaAdjHelpLUT[i] = m_initCW * (1 << CSCALE_FP_PREC) / m_binCW[i];
+  }
+}
+#endif
+
+
+//
+//! \}

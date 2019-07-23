@@ -1,4 +1,4 @@
-\documentclass[a4paper,11pt]{jctvcdoc}
+\documentclass[a4paper,11pt]{jvetdoc}
 
 \usepackage{geometry}[2010/02/12]
 
@@ -21,6 +21,18 @@
 \usepackage{array}
 \usepackage{algorithm2e}
 \usepackage{amsmath}
+
+\urlstyle{same}
+
+% code highlighting
+\usepackage{minted,xcolor}
+\definecolor{bggray}{gray}{0.95}
+\setminted{
+bgcolor=bggray,
+xleftmargin=3ex,
+breaklines=true,
+fontsize=\footnotesize}
+
 
 \usepackage[strings]{underscore}
 \usepackage{csquotes}
@@ -72,7 +84,7 @@
 }
 
 \newenvironment{OptionTableNoShorthand}[2]{%
-	\footnotesize
+	\scriptsize
 	\def\arraystretch{1.8}
 	\clearOptions
 	\begin{longtable}{l<{\makecell[tl]{\optOption}}%
@@ -105,7 +117,7 @@
 }
 
 \newenvironment{SEIListTable}[1]{%
-	\footnotesize
+	\scriptsize
 	\def\arraystretch{1.8}
 	\clearOptions
 	\begin{longtable}{c<{\makecell[tl]{\optOption}}%
@@ -138,7 +150,7 @@
 }
 
 \newenvironment{MacroTable}[1]{%
-	\footnotesize
+	\scriptsize
 	\def\arraystretch{1.3}
 	\clearOptions
 	\begin{longtable}{lcp{0.5\textwidth}}
@@ -166,7 +178,7 @@
 	\end{longtable}
 }
 
-\title{HM Software Manual}
+\title{VTM Software Manual}
 \author{%
 	Frank Bossen
 	\email{frank@bossentech.com}
@@ -174,36 +186,37 @@
 	David Flynn
 	\email{dflynn@blackberry.com}
 	\and
-  Karl Sharman
+	Xiang Li
+	\email{xlxiangli@tencent.com}
+	\and
+	Karl Sharman
 	\email{karl.sharman@eu.sony.com}
 	\and
 	Karsten S\"uhring
 	\email{karsten.suehring@hhi.fraunhofer.de}
 }
 
-\jctvcmeeting{}
-\jctvcdocnum{Software Manual}
-\jctvcdocstatus{Software AHG working document}
-\jctvcdocpurpose{Information}
-\jctvcdocsource{AHG chairs}
+\jvetmeeting{}
+\jvetdocnum{Software Manual}
+\jvetdocstatus{Software AHG working document}
+\jvetdocpurpose{Information}
+\jvetdocsource{AHG chairs}
 
 \begin{document}
 \maketitle
 \begin{abstract}
-This document is a user manual describing usage of reference software
-for the HEVC project. It applies to version 16.13
-of the software.
+This document is a user manual describing usage of the VTM reference software
+for the VVC project. It applies to version 5.2 of the software.
 \end{abstract}
 
 \tableofcontents
 \listoftables
 
 
-
 \section{General Information}
 Reference software is being made available to provide a reference
-implementation of the HEVC standard being developed by the Joint
-Collaborative Team on Video Coding (JCT-VC) regrouping experts from
+implementation of the HEVC standard being developed by the Joint 
+Video Experts Team (JVET) regrouping experts from
 ITU-T SG 16 and ISO/IEC SC29 WG11. One of the main goals of the
 reference software is to provide a basis upon which to conduct
 experiments in order to determine which coding tools provide desired
@@ -211,61 +224,165 @@ coding performance. It is not meant to be a particularly efficient
 implementation of anything, and one may notice its apparent
 unsuitability for a particular use. It should not be construed to be a
 reflection of how complex a production-quality implementation of a
-future HEVC standard would be.
+future VVC standard would be.
 
 This document aims to provide guidance on the usage of the reference
 software. It is widely suspected to be incomplete and suggestions for
 improvements are welcome. Such suggestions and general inquiries may be
-sent to the general JCT-VC email reflector on
-\url{jct-vc@lists.rwth-aachen.de} (registration required).
+sent to the general JVET email reflector on
+\url{https://lists.rwth-aachen.de/postorius/lists/jvet.lists.rwth-aachen.de/} 
+(registration required).
 
 \subsection*{Bug reporting}
-Bugs should be reported on the issue tracker set up at
-\url{http://hevc.kw.bbc.co.uk/trac/}
+Bugs should be reported on the issue tracker set up at:
+
+\url{https://jvet.hhi.fraunhofer.de/trac/vvc/}
 
 \section{Installation and compilation}
-The software may be retrieved from one of the following SVN servers
-(mirrored):
-\begin{itemize}
-\item \url{https://hevc.hhi.fraunhofer.de/svn/svn_HEVCSoftware/}
-\item \url{svn://hevc.kw.bbc.co.uk/svn/jctvc-hm/}
-\end{itemize}
+The software may be retrieved from the GitLab server located at:
 
-Table~\ref{tab:project-files} enumerates various project files that are
-provided for development environments.
+\url{https://vcgit.hhi.fraunhofer.de/jvet/VVCSoftware_VTM}
+
+Table~\ref{tab:project-files} lists the compiler environments and versions 
+for which building the software is tested.
+
+Note that the software makes use of C++11 language features, which may not
+be available in older compilers.
 
 \begin{table}[ht]
-\footnotesize
-\caption{Available project files}
+\caption{Supported compilers}
 \label{tab:project-files}
 \centering
 \begin{tabular}{ll}
 \hline
- \thead{Environment} &
- \thead{Location of project file} \\
-% Environment          & Location of project file \\
+ \thead{Compiler environment} &
+ \thead{Versions} \\
 \hline
-MS Visual Studio 2008 (VC9)   & build/HM_vc9.sln \\
-MS Visual Studio 2010 (VC10)  & build/HM_vc2010.sln \\
-MS Visual Studio 2012 (VC11)  & build/HM_vc2012.sln \\
-MS Visual Studio 2013 (VC12)  & build/HM_vc2013.sln \\
-Xcode                         & HM.xcodeproj \\
-Eclipse                       & .project .cproject \\
-make/gcc (e.g. Linux)         & build/linux/makefile \\
+MS Visual Studio  & 2015 and 2017 \\
+GCC               & 5.4 and 7.3 \\
+Xcode/clang       & latest \\
 \hline
 \end{tabular}
 \end{table}
 
-For encoding large picture sizes (like UHDTV) it is strongly advised to build 64-bit
-binaries and to use a 64-bit OS. This will allow the software to use more than 2GB of RAM.
+By default the software is built as 64-bit binaries to be used on a 64-bit OS. 
+This allows the software to use more than 2GB of RAM.
+
+The software uses CMake to create platform-specific build files. 
+
+\subsection {Build instructions for plain CMake (suggested)}
+
+\textbf{Note:} A working CMake installation is required for building the software.
+
+CMake generates configuration files for the compiler environment/development
+environment on each platform. The following is a list of examples for Windows
+(MS Visual Studio), macOS (Xcode) and Linux (make).
+
+Open a command prompt on your system and change into the root directory
+of this project.
+
+Create a build directory in the root directory:
+\begin{minted}{bash}
+mkdir build 
+\end{minted}
+Use one of the following CMake commands, based on your platform. Feel free to change the 
+commands to satisfy your needs.
+
+\textbf{Windows Visual Studio 2015 64 Bit:}
+\begin{minted}{bash}
+cd build
+cmake .. -G "Visual Studio 14 2015 Win64"
+\end{minted}
+Then open the generated solution file in MS Visual Studio.
+
+\textbf{macOS Xcode:}
+\begin{minted}{bash}
+cd build
+cmake .. -G "Xcode"
+\end{minted}
+Then open the generated work space in Xcode.
+
+\textbf{Linux}
+
+For generating Linux Release Makefile:
+\begin{minted}{bash}
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+\end{minted}
+For generating Linux Debug Makefile:
+\begin{minted}{bash}
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+\end{minted}
+Then type
+\begin{minted}{bash}
+make -j
+\end{minted}
+to build the software.
+
+For more details, refer to the CMake documentation: \url{https://cmake.org/cmake/help/latest/}
+
+\subsection {Build instructions for make}
+
+\textbf{Note:}
+The build instructions in this section require the make tool and Python
+to be installed, which are part of usual Linux and macOS environments. 
+See section \ref{windowsinstall} for installation instruction for Python 
+and GnuWin32 on Windows.
+
+Open a command prompt on your system and change into the root directory
+of this project.
+
+To use the default system compiler simply call:
+\begin{minted}{bash}
+make all
+\end{minted}
+For MSYS2 and MinGW:
+Open an MSYS MinGW 64-Bit terminal and change into the root directory
+of this project.
+
+Call:
+\begin{minted}{bash}
+make all toolset=gcc
+\end{minted}
+
+\subsection{Tool Installation on Windows}
+\label{windowsinstall}
+
+Download CMake: \url{http://www.cmake.org/} and install it.
+
+Python and GnuWin32 are not mandatory, but they simplify the build process for the user.
+
+\begin{table}[ht]
+\footnotesize
+\centering
+\begin{tabular}{ll}
+\hline
+Python     &    \url{https://www.python.org/downloads/release/python-371/} \\
+GnuWin32   &    \url{https://sourceforge.net/projects/getgnuwin32/files/getgnuwin32/0.6.30/GetGnuWin32-0.6.3.exe/download} \\
+\hline
+\end{tabular}
+\end{table}
+
+To use MinGW, install MSYS2:
+\url{http://repo.msys2.org/distrib/msys2-x86_64-latest.exe}
+
+Installation instructions:
+\url{https://www.msys2.org/}
+
+Install the needed toolchains:
+\begin{minted}{bash}
+pacman -S --needed base-devel mingw-w64-i686-toolchain mingw-w64-x86_64-toolchain git subversion mingw-w64-i686-cmake mingw-w64-x86_64-cmake
+\end{minted}
 
 %%%%
 %%%%
 %%%%
 \section{Using the encoder}
-\begin{verbatim}
+
+\begin{minted}{bash}
 TAppEncoder 	[--help] [-c config.cfg] [--parameter=value]
-\end{verbatim}
+\end{minted}
 
 \begin{table}[ht]
 \footnotesize
@@ -350,96 +467,55 @@ predict from a frame with a higher temporal id. If a frame with higher
 temporal IDs is listed among a frame's reference pictures, it is
 not used, but is kept for possible use in future frames.
 
-\item[]\textbf{num_ref_pics_active}: Size of reference picture lists L0
-and L1, indicating how many reference pictures in each direction that
-are used during coding.
+\item[]\textbf{num_ref_pics_active_L0}: Number of reference pictures in lists L0
+that are used during coding.
 
-\item[]\textbf{num_ref_pics}: The number of reference pictures kept for
-this frame.  This includes pictures that are used for reference for the
+\item[]\textbf{num_ref_pics_L0}: Size of reference picture list L0.
+This includes pictures that are used for reference for the
 current picture as well as pictures that will be used for reference in
 the future.
 
-\item[]\textbf{reference_pictures}: A space-separated list of
+\item[]\textbf{reference_pictures_L0}: A space-separated list of
 num_ref_pics integers, specifying the POC of the reference pictures
 kept, relative the POC of the current frame. The picture list shall be
-ordered, first with negative numbers from largest to smallest, followed
-by positive numbers from smallest to largest (e.g. \verb|-1 -3 -5 1 3|).
-Note that any pictures not supplied in this list will be discarded and
+ordered as their intendend order in the L0.
+Note that any pictures not supplied in this list and in the list of L1 will be discarded and
 therefore not available as reference pictures later.
 
-\item[]\textbf{predict}: Defines the value of the syntax element
-inter_ref_pic_set_prediction_flag. A value of 0 indicates that the
-reference picture set is encoded without inter RPS prediction and the
-subsequent parameters deltaRIdx$-1$, deltaRPS, num_ref_idcs and
-Reference_idcs are ignored and do not need to be present. A value of 1
-indicates that the reference picture set is encoded with inter
-prediction RPS using the subsequent parameters deltaRIdx$-1$, deltaRPS,
-num_ref_idcs and Reference_idcs in the line. A value of 2 indicates that
-the reference picture set is encoded with inter RPS but only the
-deltaRIdx$-1$ parameters is needed. The deltaRPS, num_ref_idcs and
-Reference_idcs values are automatically derived by the encoder based on
-the POC and refPic values of the current line and the RPS pointed to by
-the deltaRIdx$-1$ parameters.
+\item[]\textbf{num_ref_pics_active_L1}: Number of reference pictures in lists L1
+that are used during coding.
 
-\item[]\textbf{deltaRIdx$-1$}: The difference between the index of the
-curent RPS and the predictor RPS minus 1.
+\item[]\textbf{num_ref_pics_L1}: Size of reference picture list L1.
+This includes pictures that are used for reference for the
+current picture as well as pictures that will be used for reference in
+the future.
 
-\item[]\textbf{deltaRPS}: The difference between the POC of the
-predictor RPS and POC the current RPS.
-
-\item[]\textbf{num_ref_idcs}: The number of ref_idcs to encode for the
-current RPS.  The value is equal to the value of  num_ref_pics of the
-predictor RPS plus 1.
-
-\item[]\textbf{reference_idcs}: A space-separated list of num_ref_idcs
-integers, specifying the ref idcs of the inter RPS prediction. The value
-of ref_idcs may be 0, 1 or 2 indicating that the reference picture is a
-reference picture used by the current picture, a reference picture used
-for future picture or not a reference picture anymore, respectively. The
-first num_ref_pics of ref_idcs correspond to the Reference pictures in
-the predictor RPS. The last ref_idcs corresponds to the predictor
-picture.
-\end{itemize}
+\item[]\textbf{reference_pictures_L1}: A space-separated list of
+num_ref_pics integers, specifying the POC of the reference pictures
+kept, relative the POC of the current frame. The picture list shall be
+ordered as their intendend order in the L1.
+Note that any pictures not supplied in this list and in the list of L0 will be discarded and
+therefore not available as reference pictures later.
 
 For example, consider the coding structure of Figure~\ref{fig:gop-example}.
 This coding structure is of size 4. The pictures are listed in decoding
 order. Frame1 shall therefore describe picture with $\textrm{POC}=4$. It
-references picture 0, and therefore has $-4$ as a reference picture.
+references picture 0, and therefore has 4 as a reference picture.
 Similarly, Frame2 has a POC of 2, and since it references pictures 0 and
-4, its reference pictures are listed as \verb|-2 2|. Frame3 is a special
+4, its reference pictures are listed as \verb|2 -2|. Frame3 is a special
 case: even though it only references pictures with POC 0 and 2, it also
 needs to include the picture with POC 4, which must be kept in order to
-be used as a reference picture in the future. The reference picture list
-for Frame3 therefore becomes \verb|-1 1 3|. Frame4 has a POC of 3 and
-its list of reference pictures is \verb|-1 1|.
+be used as a reference picture in the future. Note that picture with POC 4 can be
+included in the L0 or L1. The reference picture list for Frame3 therefore becomes \verb|1 -1 -3|. 
+Frame4 has a POC of 3 and its list of reference pictures is \verb|1 -1|.
+\end{itemize}
 
 \begin{figure}[h]
 \caption{A GOP structure}
 \label{fig:gop-example}
 \centering
-\includegraphics[width=0.7\textwidth]{gop-structure-example}
+\includegraphics[width=0.7\textwidth]{figures/gop-structure-example}
 \end{figure}
-
-Inter RPS prediction may be used for Frame2, Frame3 and Frame4, hence
-the predict parameter is set to 1 for these frames. Frame2 uses Frame1
-as the predictor hence the deltaRIdx$-1$ is 0.  Similarly for Frame3 and
-Frame4 which use Frame2 and Frame3 as predictors, respectively. The
-deltaRPS is equal to the POC of the predictor minus the POC of the
-current picture, therefore the deltaRPS for Frame2 is $4 -2 = 2$, for
-Frame3 is $2 - 1 = 1$ and for Frame4 is $1 - 3 = -2$.
-
-In Frame2, reference pictures with POC 0 and 2 are used, so the
-reference idcs for Frame2 are \verb|1 1| indicating that the reference
-picture, $-4$, in Frame1 is still a reference picture in Frame2 and
-Frame1 is also a reference picture in Frame2. The reference idcs for
-Frame3 are \verb|1 1 1|. The first and second “1”s indicating that
-the reference pictures "$-2$ $2$" in Frame2 are still reference pictures in
-Frame3 and the last “1” indicating that Frame2 is also a reference
-picture in Frame3. In Frame 4, the reference idcs are \verb|0 1 1 0|.
-The first “0” indicates that the reference pictures “-1” in Frame 3 is
-no longer a reference picture in Frame4. The next two “1”s indicate that
-the reference pictures “$1$ $3$” are now reference pictures of Frame4.
-The final “0” indicates that Frame3 is not a reference picture.
 
 In order to specify this to the encoder, the parameters in
 Table~\ref{tab:gop-example} could be used.
@@ -457,25 +533,23 @@ Table~\ref{tab:gop-example} could be used.
  \thead{Frame3} &
  \thead{Frame4} \\
 \hline
-Type                &   P  &    B   &      B   &       B \\
-POC                 &   4  &    2   &      1   &       3 \\
-QPOffset            &   1  &    2   &      3   &       3 \\
-QPOffsetModelOff    & 0.0  &  0.0   &    0.0   &     0.0 \\
-QPOffsetModelScale  & 0.0  &  0.0   &    0.0   &     0.0 \\
-SliceCbQPOffset     &   0  &    0   &      0   &       0 \\
-SliceCrQPOffset     &   0  &    0   &      0   &       0 \\
-QPfactor            & 0.5  &  0.5   &    0.5   &     0.5 \\
-tcOffsetDiv2        &   0  &    1   &      2   &       2 \\  
-betaOffsetDiv2      &   0  &    0   &      0   &       0 \\
-temporal_id         &   0  &    1   &      2   &       2 \\
-num_ref_pics_active &   1  &    1   &      1   &       1 \\
-num_ref_pics        &   1  &    2   &      3   &       2 \\
-reference_pictures  & $-$4 & $-$2 2 & $-$1 1 3 &  $-$1 1 \\
-predict             &   0  &    1   &      1   &       1 \\
-deltaRIdx$-$1       &      &    0   &      0   &       0 \\
-deltaRPS            &      &    2   &      1   &    $-$2 \\
-num_ref_idcs        &      &    2   &      3   &       4 \\
-reference_idcs      &      &  1 1   &  1 1 1   & 0 1 1 0 \\
+Type                   &   P  &    B   &         B   &       B \\
+POC                    &   4  &    2   &         1   &       3 \\
+QPOffset               &   1  &    2   &         3   &       3 \\
+QPOffsetModelOff       & 0.0  &  0.0   &       0.0   &     0.0 \\
+QPOffsetModelScale     & 0.0  &  0.0   &       0.0   &     0.0 \\
+SliceCbQPOffset        &   0  &    0   &         0   &       0 \\
+SliceCrQPOffset        &   0  &    0   &         0   &       0 \\
+QPfactor               & 0.5  &  0.5   &       0.5   &     0.5 \\
+tcOffsetDiv2           &   0  &    1   &         2   &       2 \\  
+betaOffsetDiv2         &   0  &    0   &         0   &       0 \\
+temporal_id            &   0  &    1   &         2   &       2 \\
+num_ref_pics_active_L0 &   1  &    1   &         1   &       1 \\
+num_ref_pics_L0        &   1  &    1   &         1   &       1 \\
+reference_pictures_L0  &   4  &    2   &         1   &       1 \\
+num_ref_pics_active_L1 &   0  &    1   &         1   &       1 \\
+num_ref_pics_L1        &   0  &    1   &         2   &       1 \\
+reference_pictures_L1  &      & $-$2   & $-$1 $-$3   &    $-$1 \\
 \hline
 \end{tabular}
 \end{table}
@@ -488,51 +562,12 @@ line should contain information for one frame, so this
 configuration would be specified as:
 
 \begin{verbatim}
-Frame1: P 4 1 0 0 0.5 0 0 0 1 1 -4 0
-Frame2: B 2 2 0 0 0.5 1 0 1 1 2 -2 2 1 0 2 2 1 1
-Frame3: B 1 3 0 0 0.5 2 0 2 1 3 -1 1 3 1 0 1 3 1 1 1
-Frame4: B 3 3 0 0 0.5 2 0 2 1 2 -1 1 1 0 -2 4 0 1 1 0
+Frame1: P 4 1 0 0 0.5 0 0 0 1 1  4 1 1  4
+Frame2: B 2 2 0 0 0.5 1 0 1 1 1  2 1 1 -2
+Frame3: B 1 3 0 0 0.5 2 0 2 1 1  1 1 2 -1 -3
+Frame4: B 3 3 0 0 0.5 2 0 2 1 1  1 1 1 -1
 \end{verbatim}
 
-The values of deltaRIdx$-1$, deltaRPS, num_ref_idcs and reference
-idcs of Frame$K$ can be derived from the POC value of Frame$_K$ and
-the POC, num_ref_pics and reference_pictures values of Frame$_M$, where
-$K$ is the index of the RPS to be inter coded and the $M$ is the
-index of the reference RPS, as follows.
-
-\setlength{\algomargin}{2em}
-\begin{algorithm}[ht]
-\SetKwData{deltaRIdx}{deltaRIdx}
-\SetKwData{deltaRPS}{deltaRPS}
-\SetKwData{numrefidcs}{num_ref_idcs}
-\SetKwData{numrefpics}{num_ref_pics}
-\SetKwData{referencepictures}{reference_pictures}
-\SetKwData{referenceidcs}{reference_idcs}
-\SetKwData{POC}{POC}
-
-$\deltaRIdx_K - 1  \leftarrow  K - M - 1$ \;
-$\deltaRPS_K       \leftarrow  \POC_M - \POC_K$ \;
-$\numrefidcs_K     \leftarrow  \numrefpics_M + 1$ \;
-
-\For{$j \leftarrow 0$ \KwTo $\numrefpics_M$}{
-	\For{$i \leftarrow 0$ \KwTo $\numrefidcs_K$}{
-		\eIf{$\referencepictures_{M,j} + \deltaRPS_K == \referencepictures_{K,i}$}{
-			\lIf{$\referencepictures_{K,i}$ is used by the current frame}{
-				$\referenceidcs_{K,j} = 1$} \;
-			\lElse{$\referenceidcs_{K,j} = 2$} \;
-		}{
-			$\referenceidcs_K[j] = 0$ \;
-		}
-	}
-}
-
-\tcc{$\referencepictures_{M,\numrefpics_M}$ does not exist and is assumed to be 0}
-\end{algorithm}
-
-Note: The above (automatic) generation of the inter RPS parameter
-values has been integrated into the encoder, and is activated by
-the value of predict $= 2$ followed by the value of deltaRIdx$-1$,
-only, as described above.
 
 
 
@@ -866,6 +901,18 @@ Valid values are: main, high.
 NB: There is currently only limited validation that the encoder configuration complies with the profile, level and tier constraints.
 \\
 
+\Option{SubProfile} &
+%\ShortOption{\None} &
+\Default{0} &
+Indicates interoperability metadata registered as specified by X Recommendation ITU-T T.35.
+\\
+
+\Option{EnableDecodingParameterSet} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables writing of a decoding parameter set. If disabled, no parameter set will be written and the specical reserved ID zero will be used in the SPS indicating no constraint.
+\\
+
 \Option{MaxBitDepthConstraint} &
 %\ShortOption{\None} &
 \Default{0} &
@@ -1020,7 +1067,14 @@ elements.
 \par
 See section~\ref{sec:gop-structure} for further details.
 \\
+
+\Option{ReWriteParamSets} &
+%\ShortOption{-ip} &
+\Default{$0$} &
+Enable writing of parameter sets (SPS, PPS, etc.) before every (intra) random access point to enable true random access.
+\\
 \end{OptionTableNoShorthand}
+
 
 %%
 %% Motion estimation parameters
@@ -1105,12 +1159,29 @@ $}
 Specifies the maximum number of merge candidates to use.
 \\
 
+\Option{MaxNumTriangleCand} &
+%\ShortOption{\None} &
+\Default{5} &
+Specifies the maximum number of triangle merge candidates to use.
+\\
+
 \Option{DisableIntraInInter} &
 %\ShortOption{\None} &
 \Default{0} &
 Flag to disable intra PUs in inter slices.
 \\
 
+\Option{MMVD} &
+%\ShortOption{\None} &
+\Default{1} &
+Enables or disables the merge mode with motion vector difference (MMVD).
+\\
+
+\Option{MmvdDisNum} &
+%\ShortOption{\None} &
+\Default{6} &
+Specifies the number of MMVD distance entries used from the distance table at encoder.
+\\
 \end{OptionTableNoShorthand}
 
 
@@ -1273,6 +1344,20 @@ Global offset to apply to the luma QP to derive the QP of Cb and Cr
 respectively.  These options correspond to the values of cb_qp_offset
 and cr_qp_offset, that are transmitted in the PPS.  Valid values are in
 the range $[-12, 12]$.
+\\
+
+\Option{CbCrQpOffset (-cbcrqpofs)} &
+\Default{-1} &
+Global offset to apply to the luma QP to derive the QP for joint Cb-Cr
+residual coding mode.  This option corresponds to the value of cb_cr_qp_offset
+transmitted in the PPS.  Valid values are in the range $[-12, 12]$.
+\\
+
+\Option{CbCrQpOffsetDualTree} &
+\Default{0} &
+Tile group QP offset for joint Cb-Cr residual coding mode when separate luma and
+chroma trees are used.  This option corresponds to the value of tile_group_cb_cr_qp_offset
+transmitted in the tile group header. Valid values are in the range $[-12, 12]$.
 \\
 
 \Option{LumaLevelToDeltaQPMode} &
@@ -1453,9 +1538,9 @@ Specifies the maximum depth for CU chroma QP adjustment; if negative, CU chroma 
 
 
 %%
-%% Slice coding parameters
+%% Slice/Tile/Brick coding parameters
 %%
-\begin{OptionTableNoShorthand}{Slice coding parameters}{tab:slice-coding}
+\begin{OptionTableNoShorthand}{Slice, tile and brick coding parameters}{tab:slice-coding}
 %\Option{SliceGranularity} &
 %\ShortOption{\None} &
 %\Default{0} &
@@ -1480,38 +1565,68 @@ SliceArgument.
 \par
 \begin{tabular}{cp{0.45\textwidth}}
  0 & Single slice \\
- 1 & Maximum number of CTUs per slice \\
- 2 & Maximum number of bytes per slice \\
+ 1 & (deprecated) Maximum number of CTUs per slice \\
+ 2 & (deprecated) Maximum number of bytes per slice \\
  3 & Maximum number of tiles per slice \\
+ 4 & One slice per brick
 \end{tabular}
 \\
 
 \Option{SliceArgument} &
 %\ShortOption{\None} &
 \Default{\NotSet} &
+(deprecated)
 Specifies the maximum number of CTUs, bytes or tiles in a slice depending on the
 SliceMode setting.
 \\
 
-\Option{SliceSegmentMode} &
+\Option{RectSliceFlag} &
 %\ShortOption{\None} &
-\Default{0} &
-Enables (dependent) slice segment coding in conjunction with 
-SliceSegmentArgument.
+\Default{1} &
+Controls the slice shape method in conjunction with SliceMode,
+SliceArgument, and Tile/Brick configurations.
 \par
 \begin{tabular}{cp{0.45\textwidth}}
- 0 & Single slice \\
- 1 & Maximum number of CTUs per slice segment\\
- 2 & Maximum number of bytes per slice segment\\
- 3 & Maximum number of tiles per slice segment\\
+ 0 & Raster scan slice. Bricks within slice are in raster scan order  \\
+ 1 & Rectangular slice. Bricks within slice form rectangular shape \\
+ NOTE: When SliceMode is equal to 3, RectSliceFlag is equal to 1, 
+ and there is more than one tiles/bricks in the pic, 
+ NumRecSliceInPicMinus1 must be greater than 0
 \end{tabular}
 \\
 
-\Option{SliceSegmentArgument} &
+\Option{NumRecSlicesInPicMinus1} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the number of rectangular slices in the picture.
+\\
+
+\Option{RectSlicesBoundaryArray} &
 %\ShortOption{\None} &
 \Default{\NotSet} &
-Defines the maximum number of CTUs, bytes or tiles a slice segment
-depending on the SliceSegmentMode setting.
+Specifies a space or comma separated list of top-left brick index and 
+bottom-right brick index of rectangular slices.
+The top-left brick index and bottom-right brick index corresponds to the top left 
+rectangular slice in the picture. The rest of indices corresponds to the each rectangular slices
+in the picture in the rectangular slice raster scan in the picture, respectively.
+
+For example, when the picture is partitioned into 16 tiles (4 tile columns and 4 tile rows), 
+each tile is not further partitioned into bricks, SliceMode is equal to 3, SliceArgument is equal to 4, 
+and NumRecSlicesInPicMinus1 is equal to 3, the values of RectSlicesBoundaryArray shall be as followss: 
+0 5 2 7 8 13 10 15.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+ First  slice has top-left brick index 0  and bottom-right brick index 5 \\
+ Second slice has top-left brick index 2  and bottom-right brick index 7 \\
+ Third  slice has top-left brick index 8  and bottom-right brick index 13 \\
+ Fourth slice has top-left brick index 10 and bottom-right brick index 15
+\end{tabular}
+\\
+
+\Option{IDRRefParamList} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables the signalling of reference picture list syntax elements in slice headers of IDR pictures
 \\
 
 \Option{WaveFrontSynchro} &
@@ -1551,14 +1666,43 @@ Specifies a space or comma separated list of widths and heights,
 respectively, of each tile column or tile row.  The first value in the
 list corresponds to the leftmost tile column or topmost tile row.
 \\
+
+\Option{BrickSplit1}%
+\Option{BrickSplit2} %
+\Option{BrickSplitN} &
+%\ShortOption{\None} &
+\Default{\NotSet} &
+Specifies the splitting of tiles into bricks, N can be in the range of 1 to 128 and has no further meaning except to distinguish different splitting parameters.
+
+The following options are supported:
+
+BrickSplitN tileIdx uniform (numsplits) heights
+
+\begin{tabular}{cp{0.45\textwidth}}
+ tileIdx & the index of the tile to be split in raster scan order starting with zero \\
+ uniform & specifies whether uniform splitting shall be used (1 for uniform, 0 non-uniform) \\
+ numsplits & specifies the number of splits, if uniform is not used \\
+ heights & specifies the height of the uniform splits or a list of heights for non-uniform splits \\
+\end{tabular}
+ 
+\\
+\Option{TileRowHeightArray} &
+%\ShortOption{\None} &
+\Default{\NotSet} &
+Specifies a space or comma separated list of widths and heights,
+respectively, of each tile column or tile row.  The first value in the
+list corresponds to the leftmost tile column or topmost tile row.
+\\
+
+
 \end{OptionTableNoShorthand}
 
 
 
 %%
-%% Deblocking filter parameters
+%% In-loop filtering parameters
 %%
-\begin{OptionTableNoShorthand}{Deblocking filter parameters}{tab:deblocking-filter}
+\begin{OptionTableNoShorthand}{In-loop filtering parameters}{tab:inloop-filter}
 \Option{LoopFilterDisable} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -1612,6 +1756,36 @@ LoopFilterOffsetInPPS and LoopFilterDisable must be 0. Currently excepted values
 Enables or disables the use of a deblocking across tile boundaries.
 \\
 
+\Option{LoopFilterAcrossVirtualBoundariesDisabledFlag}&
+%\ShortOption{\None}&
+\Default{false}&
+Disables in-loop filtering operations across the virtual boundaries.
+\\
+
+\Option{NumVerVirtualBoundaries}&
+%\ShortOption{\None}&
+\Default{0}&
+Specifies the number of vertical virtual boundaries.The value of NumVerVirtualBoundaries shall be in the range of 0 to 3, inclusive.
+\\
+
+\Option{NumHorVirtualBoundaries}&
+%\ShortOption{\None}&
+\Default{0}&
+Specifies the number of horizontal virtual boundaries. The value of NumHorVirtualBoundaries shall be in the range of 0 to 3, inclusive.
+\\
+
+\Option{VirtualBoundariesPosX}&
+%\ShortOption{\None}&
+\Default{\NotSet}&
+Specifies the locations of the vertical virtual boundaries in units of luma samples
+\\
+
+\Option{VirtualBoundariesPosY}&
+%\ShortOption{\None}&
+\Default{\NotSet}&
+Specifies the locations of the horizontal virtual boundaries in units of luma samples
+\\
+
 \end{OptionTableNoShorthand}
 
 
@@ -1622,10 +1796,30 @@ Enables or disables the use of a deblocking across tile boundaries.
 
 \begin{OptionTableNoShorthand}{Coding tools parameters}{tab:coding-tools}
 
+\Option{MIP} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables or disables the use of matrix-based intra prediction (MIP).
+\\
+
 \Option{AMP} &
 %\ShortOption{\None} &
 \Default{true} &
 Enables or disables the use of asymmetric motion partitions.
+\\
+
+\Option{ISP} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the Intra Sub-Partitions coding mode.
+\\
+
+\Option{ISPFast} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables reduced testing of non-DCT-II transforms if ISP is likely to become the best mode for a given CU.
+\par
+This option has no effect if either ISP or MTS are disabled.
 \\
 
 \Option{SAO} &
@@ -1840,6 +2034,43 @@ luma TUs are also skipped.
 \par
 This option has no effect if TransformSkip is disabled.
 \\
+
+\Option{UseNonLinearAlfLuma} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables optimization of non-linear filters for ALF on Luma channel.
+\\
+
+\Option{UseNonLinearAlfChroma} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables optimization of non-linear filters for ALF on Chroma channels.
+\\
+
+\Option{SMVD} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables symmetric MVD mode.
+\\
+
+\Option{RDPCM} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables RDPCM coding mode.
+\\
+
+\Option{LFNST} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of low frequency non-separable transform (LFNST).
+\\
+
+\Option{FastLFNST} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the fast encoding of low frequency non-separable transform (LFNST).
+\\
+
 \end{OptionTableNoShorthand}
 
 %%
@@ -1913,6 +2144,63 @@ Rate control: ratio of initial CPB fullness per CPB size. (InitalCpbFullness/Cpb
 RCInitialCpbFullness should be smaller than or equal to 1.
 \\
 \end{OptionTableNoShorthand}
+
+
+
+%%
+%% Encoder debug parameters
+%%
+\begin{OptionTableNoShorthand}{Encoder debug parameters}{tab:encoder-debugging}
+
+\Option{DebugBitstream/DecodeBitstream1} &
+%\ShortOption{\None} &
+\Default{} &
+Specifies the first bit stream to be read until a pre-defined switch point is encountered.
+\\
+
+\Option{DecodeBitstream2} &
+%\ShortOption{\None} &
+\Default{} &
+Specifies the second bit stream, to be read after the first random access point after a QP switch point (specified using SwitchPOC and SwitchQP).
+\\
+
+\Option{DebugPOC} &
+%\ShortOption{\None} &
+\Default{-1} &
+Specifies a POC, at which a bit stream specified using DebugBitstream or DecodeBitstream1 is no longer read, but rather normal encoding is started.
+\\
+
+\Option{DebugCTU} &
+%\ShortOption{\None} &
+\Default{-1} &
+When the POC is encountered at which normal encoding is to be resumed, if set, this option specifies that CTUs up to the specified CTU(in raster scan addressing order are to be read from the specified bit stream, after which normal encoding is started the specified CTU.
+\\
+
+\Option{SwitchPOC} &
+%\ShortOption{\None} &
+\Default{-1} &
+Specifies a POC, at which the specified bit stream is no longer read, but rather normal encoding is started.
+\\
+
+\Option{SwitchDQP} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies a QP offset to be applied when normal encoding is started as specified by SwitchPOC.
+\\
+
+\Option{FastForwardToPOC} &
+%\ShortOption{\None} &
+\Default{0} &
+When encoding a bit streams, all frames that are not references including transitive references to the specified POC are skipped.
+\\
+\Option{StopAfterFFtoPOC} &
+%\ShortOption{\None} &
+\Default{false} &
+If enabled, causes the encoder to not encode any frame after the frame specified by FastForwardToPOC option, in encoding order.
+\\
+\end{OptionTableNoShorthand}
+
+
 
 %%
 %% VUI parameters
@@ -2879,9 +3167,9 @@ Numerous constants that guard individual adoptions are defined within
 \clearpage
 \section{Using the decoder}
 \subsection{General}
-\begin{verbatim}
+\begin{minted}{bash}
 TAppDecoder -b str.bin -o dec.yuv [options]
-\end{verbatim}
+\end{minted}
 
 \begin{OptionTableNoShorthand}{Decoder options}{tab:decoder-options}
 \Option{(--help)} &
@@ -2933,6 +3221,13 @@ that the native bit-depth is used)
 \Default{0 \\ (Native)} &
 Defines the chroma bit-depth of the reconstructed YUV file (the value 0 indicates
 that the native bit-depth is used)
+\\
+
+\Option{TargetLayer (-p)} &
+%\ShortOption{-p} &
+\Default{-1 \\ (Native)} &
+Specifies the target bitstream Layer to be decoded. (the value -1 indicates
+that decoding the whole bitstream )
 \\
 
 \Option{SEIDecodedPictureHash} &
@@ -3032,7 +3327,7 @@ way, which in turn can be loaded into a suitable YUV player for overlay of the
 reconstructed YUV sequence, or can be used for statistical analysis at a
 selectable scope (e.g. block/picture/sequence level). An example implementation
 for such visualization is available with the open-source YUView player
-(https://github.com/IENT/YUView). 
+(\url{https://github.com/IENT/YUView}). 
 
 
 \subsection{Usage}
@@ -3070,7 +3365,7 @@ Specifies which traces should be saved, and for which POCs.
 \end{OptionTableNoShorthand}
 
 Concrete examples of calls for  generating a block statistics file are:
-\begin{verbatim}
+\begin{minted}{bash}
 bin/DecoderAppStatic -b str/BasketballDrive_1920x1080_QP37.vvc \
     --TraceFile="stats/BasketballDrive_1920x1080_QP37_coded.vtmbmsstats" \
     --TraceRule="D_BLOCK_STATISTICS_CODED:poc>=0"
@@ -3078,7 +3373,7 @@ bin/DecoderAppStatic -b str/BasketballDrive_1920x1080_QP37.vvc \
 bin/DecoderAppStatic -b str/BasketballDrive_1920x1080_QP37.vvc \
     --TraceFile="stats/BasketballDrive_1920x1080_QP37_all.vtmbmsstats" \
     --TraceRule="D_BLOCK_STATISTICS_ALL:poc>=0"   
-\end{verbatim}
+\end{minted}
 
 
 \subsection{Block statistics file formats}
@@ -3187,16 +3482,16 @@ In order to add further block statistics, do the following:
 \begin{description}
 \item[source/Lib/CommonLib/dtrace_blockstatistics.h]
   Add your statistic to the BlockStatistic enum:	
-\begin{verbatim}
+\begin{minted}{c++}
 enum class BlockStatistic {
   // general
   PredMode,
   PartSize,
   Depth,
-\end{verbatim}
+\end{minted}
   
 Further, add your statistic to the map blockstatistic2description:
-\begin{verbatim}
+\begin{minted}{c++}
 static const std::map<BlockStatistic, 
   std::tuple<std::string, BlockStatisticType, std::string>> 
   blockstatistic2description =
@@ -3211,7 +3506,7 @@ static const std::map<BlockStatistic,
     std::tuple<std::string, BlockStatisticType, std::string>
     {"MVL0", BlockStatisticType::Vector, "Scale: 4"}},
   YOURS
-\end{verbatim}
+\end{minted}
 
 
 \item[source/Lib/CommonLib/dtrace_blockstatistics.cpp] All code for
@@ -3219,28 +3514,52 @@ static const std::map<BlockStatistic,
   getAndStoreBlockStatistics. This function is called once for each
   CTU, after it has been en/decoded. The following macros have been
   defined to facilitate writing of block statistics:
-\begin{verbatim}
+\begin{minted}{c++}
 DTRACE_BLOCK_SCALAR(ctx,channel,cs_cu_pu,stat_type,val)   
 DTRACE_BLOCK_SCALAR_CHROMA(ctx,channel,cs_cu_pu,stat_type,val)
 DTRACE_BLOCK_VECTOR(ctx,channel,cu_pu,stat_type,v_x,v_y)    
 DTRACE_BLOCK_AFFINETF(ctx,channel,pu,stat_type,v_x0,v_y0,v_x1,v_y1,v_x2,v_y2) 
-\end{verbatim}
+\end{minted}
 
 An example:
-\begin{verbatim}
+\begin{minted}{c++}
 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, 
   cu, GetBlockStatisticName(BlockStatistic::PredMode), cu.predMode);
-\end{verbatim}
+\end{minted}
 
 
 \item[Block statistics for debugging] The statistics can also be used
   to write out other data, not just syntax elements. Add your
   statistics to dtrace_blockstatistics.h. Where it should be used the
   following headers have to be included:
-\begin{verbatim}
+\begin{minted}{c++}
 #include "dtrace_next.h"
 #include "dtrace_blockstatistics.h"
-\end{verbatim}
+\end{minted}
 \end{description}
+
+
+
+
+
+\section{Using the stream merge tool}
+\label{sec:stream-merge-tool}
+
+The StreamMergeApp tool takes multiple single-layer (singe nuh_layer_id) bistreams 
+as inputs and merge them into a multi-layer bistream by interleaving the NALUs 
+from the input single layer bistreams. During the merge, the tool assigns a new unique
+nuh_layer_id for each input bitstream. Then the decoder could specify which layer 
+bitstream to be decoded through the command line option "-p nuh_layer_id". 
+
+\subsection{Usage}
+\label{sec:stream-merge-usage}
+
+\begin{minted}{bash}
+StreamMergeApp 	<bitstream1> <bitstream2> [<bitstream3> ...] <outfile>
+\end{minted}
+
+The command line options bistreamX specify the file names of the input single-layer 
+bistreams. At least two input bitstreams need to be specified. The merged multi-layer 
+bistream will be stored into the outfile.
 
 \end{document}

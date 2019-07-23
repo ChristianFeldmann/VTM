@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -97,7 +97,7 @@ inline void dtraceModeCost(CodingStructure &cs, double lambda)
     intraModeC = 68;
   int imvVal = 0;
   imvVal = cs.cus[0]->imv;
-  DTRACE( g_trace_ctx, D_MODE_COST, "ModeCost: %6lld %3d @(%4d,%4d) [%2dx%2d] %d (qp%d,pm%d,ptSize%d,skip%d,mrg%d,fruc%d,obmc%d,ic%d,imv%d,affn%d,%d,%d) tempCS = %lld (%d,%d)\n",
+  DTRACE( g_trace_ctx, D_MODE_COST, "ModeCost: %6lld %3d @(%4d,%4d) [%2dx%2d] %d (qp%d,pm%d,skip%d,mrg%d,fruc%d,obmc%d,ic%d,imv%d,affn%d,%d,%d) tempCS = %lld (%d,%d)\n",
     DTRACE_GET_COUNTER( g_trace_ctx, D_MODE_COST ),
     cs.slice->getPOC(),
     cs.area.Y().x, cs.area.Y().y,
@@ -105,10 +105,9 @@ inline void dtraceModeCost(CodingStructure &cs, double lambda)
     cs.cus[0]->qtDepth,
     cs.cus[0]->qp,
     cs.cus[0]->predMode,
-    cs.cus[0]->partSize,
     cs.cus[0]->skip,
     cs.pus[0]->mergeFlag,
-    0, 0, 
+    0, 0,
     imvVal,
     0, 0,
           intraModeL, intraModeC,
@@ -150,7 +149,7 @@ inline void dtraceBestMode(CodingStructure *&tempCS, CodingStructure *&bestCS, d
 
   if(!bSplitCS)
   {
-    DTRACE( g_trace_ctx, D_BEST_MODE, "CheckModeCost: %6lld %3d @(%4d,%4d) [%2dx%2d] %d (%d,%d,%2d,%d,%d,%d) tempCS = %lld (%d,%d), bestCS = %lld (%d,%d): --> choose %s\n",
+    DTRACE( g_trace_ctx, D_BEST_MODE, "CheckModeCost: %6lld %3d @(%4d,%4d) [%2dx%2d] %d (%d,%d,%2d,%d,%d) tempCS = %lld (%d,%d), bestCS = %lld (%d,%d): --> choose %s\n",
             DTRACE_GET_COUNTER( g_trace_ctx, D_BEST_MODE ),
             tempCS->slice->getPOC(),
             tempCS->area.Y().x, tempCS->area.Y().y,
@@ -158,7 +157,6 @@ inline void dtraceBestMode(CodingStructure *&tempCS, CodingStructure *&bestCS, d
             tempCS->cus[0]->qtDepth,
             tempCS->cus[0]->qp,
             tempCS->cus[0]->predMode,
-            tempCS->cus[0]->partSize,
             tempCS->pus[0]->mergeFlag,
             intraModeL, intraModeC,
             tempCost, tempBits, tempDist,

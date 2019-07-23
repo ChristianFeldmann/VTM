@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,16 +44,18 @@
 
 #if K0149_BLOCK_STATISTICS
 #define DTRACE_HEADER(ctx,...) ctx->dtrace_header( __VA_ARGS__ )
-#define DTRACE_BLOCK_SCALAR(ctx,channel,cs_cu_pu,stat_type,val)      ctx->dtrace_block_scalar( channel, cs_cu_pu, stat_type, val )
-#define DTRACE_BLOCK_SCALAR_CHROMA(ctx,channel,cs_cu_pu,stat_type,val)      ctx->dtrace_block_scalar( channel, cs_cu_pu, stat_type, val, true)
-#define DTRACE_BLOCK_VECTOR(ctx,channel,cu_pu,stat_type,v_x,v_y)     ctx->dtrace_block_vector( channel, cu_pu, stat_type, v_x, v_y )
-#define DTRACE_BLOCK_VECTOR_CHROMA(ctx,channel,pu,stat_type,v_x,v_y)     ctx->dtrace_block_vector( channel, pu, stat_type, v_x, v_y, true )
-#define DTRACE_BLOCK_AFFINETF(ctx,channel,pu,stat_type,v_x0,v_y0,v_x1,v_y1,v_x2,v_y2)  ctx->dtrace_block_affinetf( channel, pu, stat_type, v_x0, v_y0, v_x1, v_y1, v_x2, v_y2 )
+#define DTRACE_BLOCK_SCALAR(ctx,channel,cs_cu_pu,stat_type,val)                         ctx->dtrace_block_scalar( channel, cs_cu_pu, stat_type, val )
+#define DTRACE_BLOCK_SCALAR_CHROMA(ctx,channel,cs_cu_pu,stat_type,val)                  ctx->dtrace_block_scalar( channel, cs_cu_pu, stat_type, val, true)
+#define DTRACE_BLOCK_VECTOR(ctx,channel,cu_pu,stat_type,v_x,v_y)                        ctx->dtrace_block_vector( channel, cu_pu, stat_type, v_x, v_y )
+#define DTRACE_BLOCK_VECTOR_CHROMA(ctx,channel,pu,stat_type,v_x,v_y)                    ctx->dtrace_block_vector( channel, pu, stat_type, v_x, v_y, true )
+#define DTRACE_BLOCK_AFFINETF(ctx,channel,pu,stat_type,v_x0,v_y0,v_x1,v_y1,v_x2,v_y2)   ctx->dtrace_block_affinetf( channel, pu, stat_type, v_x0, v_y0, v_x1, v_y1, v_x2, v_y2 )
+#define DTRACE_LINE(ctx,channel,cs_cu_pu,stat_type, x0, y0, x1, y1)                     ctx->dtrace_block_line( channel, cs_cu_pu, stat_type, x0, y0, x1, y1)
+#define DTRACE_POLYGON_SCALAR(ctx,channel, poc, polygon,stat_type,val)                  ctx->dtrace_polygon_scalar( channel, poc, polygon, stat_type, val )
+#define DTRACE_POLYGON_VECTOR(ctx,channel, poc, polygon,stat_type,v_x,v_y)              ctx->dtrace_polygon_vector( channel, poc, polygon, stat_type, v_x, v_y )
 
 enum class BlockStatistic {
   // general
   PredMode,
-  PartSize,
   Depth,
   QT_Depth,
   BT_Depth,
@@ -62,25 +64,37 @@ enum class BlockStatistic {
   QP,
   SplitSeries,
   TransQuantBypassFlag,
-  EMTFlag,
-  TransformSkipFlag_Y,
-  TransformSkipFlag_Cb,
-  TransformSkipFlag_Cr,
+  MTSIdx,
+  BDPCM,
+  TileIdx,
+  LFNSTIdx,
+  JointCbCr,
+  CompAlphaCb,
+  CompAlphaCr,
+  RDPCM_Y,
+  RDPCM_Cb,
+  RDPCM_Cr,
 
   // intra
   IPCM,
   Luma_IntraMode,
   Chroma_IntraMode,
+  MultiRefIdx,
+  MIPFlag,
+  ISPMode,
 
   // inter
   SkipFlag,
   RootCbf,
+  SbtIdx,
+  SbtPos,
   Cbf_Y,
   Cbf_Cb,
   Cbf_Cr,
   IMVMode,
   InterDir,
   MergeFlag,
+  RegularMergeFlag,
   MergeIdx,
   MergeType,
   MVPIdxL0,
@@ -89,16 +103,25 @@ enum class BlockStatistic {
   MVL1,
   MVDL0,
   MVDL1,
+  MotionBufL0,
+  MotionBufL1,
   RefIdxL0,
   RefIdxL1,
   AffineFlag,
   AffineMVL0,
   AffineMVL1,
   AffineType,
-
+  MMVDSkipFlag,
+  MMVDMergeFlag,
+  MMVDMergeIdx,
+  MHIntraFlag,
+  SMVDFlag,
+  TrianglePartitioning,
+  TriangleMVL0, //<< currently only uni-prediction enabled
+  TriangleMVL1, //<< currently only uni-prediction enabled
+  GBIIndex,
 // for dual tree
   // general
-  PartSize_Chroma,
   Depth_Chroma,
   QT_Depth_Chroma,
   BT_Depth_Chroma,
@@ -107,7 +130,6 @@ enum class BlockStatistic {
   QP_Chroma,
   SplitSeries_Chroma,
   TransQuantBypassFlag_Chroma,
-  EMTFlag_Chroma, // this is called flag, though the type is UChar ?!
 
   // intra
   IPCM_Chroma,
@@ -120,32 +142,48 @@ enum class BlockStatisticType {
   Vector,
   Integer,
   AffineTFVectors,
+  Line,
+  FlagPolygon,
+  VectorPolygon,
+  IntegerPolygon,
 };
 
 static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType, std::string>> blockstatistic2description =
 {
   // Statistics enum                                                                                Statistics name string         Statistic Type                              Type specific information:
   //                                                                                                                                                                           Value range, vector scale
-  { BlockStatistic::PredMode,               std::tuple<std::string, BlockStatisticType, std::string>{"PredMode",                    BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::PredMode,               std::tuple<std::string, BlockStatisticType, std::string>{"PredMode",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_PREDICTION_MODES) + "]"}},
   { BlockStatistic::MergeFlag,              std::tuple<std::string, BlockStatisticType, std::string>{"MergeFlag",                   BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::RegularMergeFlag,       std::tuple<std::string, BlockStatisticType, std::string>{"RegularMergeFlag",            BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::MVL0,                   std::tuple<std::string, BlockStatisticType, std::string>{"MVL0",                        BlockStatisticType::Vector,                 "Scale: 4"}},
   { BlockStatistic::MVL1,                   std::tuple<std::string, BlockStatisticType, std::string>{"MVL1",                        BlockStatisticType::Vector,                 "Scale: 4"}},
   { BlockStatistic::IPCM,                   std::tuple<std::string, BlockStatisticType, std::string>{"IPCM",                        BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::Luma_IntraMode,         std::tuple<std::string, BlockStatisticType, std::string>{"Luma_IntraMode",              BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_MODE) + "]"}},
   { BlockStatistic::Chroma_IntraMode,       std::tuple<std::string, BlockStatisticType, std::string>{"Chroma_IntraMode",            BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_MODE) + "]"}},
   { BlockStatistic::SkipFlag,               std::tuple<std::string, BlockStatisticType, std::string>{"SkipFlag",                    BlockStatisticType::Flag,                   ""}},
-  { BlockStatistic::TransformSkipFlag_Y,    std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Y",         BlockStatisticType::Flag,                   ""}},
-  { BlockStatistic::TransformSkipFlag_Cb,   std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Cb",        BlockStatisticType::Flag,                   ""}},
-  { BlockStatistic::TransformSkipFlag_Cr,   std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Cr",        BlockStatisticType::Flag,                   ""}},
-  { BlockStatistic::PartSize,               std::tuple<std::string, BlockStatisticType, std::string>{"PartSize",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_PART_SIZES) + "]"}},
-  { BlockStatistic::Depth,                  std::tuple<std::string, BlockStatisticType, std::string>{"Depth",                       BlockStatisticType::Integer,                "[0, 7]"}}, 
-  { BlockStatistic::QT_Depth,               std::tuple<std::string, BlockStatisticType, std::string>{"QT_Depth",                    BlockStatisticType::Integer,                "[0, 7]"}}, 
-  { BlockStatistic::BT_Depth,               std::tuple<std::string, BlockStatisticType, std::string>{"BT_Depth",                    BlockStatisticType::Integer,                "[0, 7]"}}, 
-  { BlockStatistic::MT_Depth,               std::tuple<std::string, BlockStatisticType, std::string>{"MT_Depth",                    BlockStatisticType::Integer,                "[0, 7]"}}, 
-  { BlockStatistic::ChromaQPAdj,            std::tuple<std::string, BlockStatisticType, std::string>{"ChromaQPAdj",                 BlockStatisticType::Integer,                "[-10, 10]"}}, 
+  { BlockStatistic::MTSIdx,                 std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Y",         BlockStatisticType::Integer,                ""}},
+  { BlockStatistic::BDPCM,                  std::tuple<std::string, BlockStatisticType, std::string>{"BDPCM",                       BlockStatisticType::Flag,                   ""}},    // called bdpcmMode, but used like a flag in the software? related to intra, but signalled always?
+  { BlockStatistic::TileIdx,                std::tuple<std::string, BlockStatisticType, std::string>{"TileIdx",                     BlockStatisticType::Integer,                ""}},
+  { BlockStatistic::LFNSTIdx,               std::tuple<std::string, BlockStatisticType, std::string>{"LFNSTIdx",                    BlockStatisticType::Integer,                "[0, 3]"}},
+  { BlockStatistic::JointCbCr,              std::tuple<std::string, BlockStatisticType, std::string>{"JointCbCr",                   BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::CompAlphaCb,            std::tuple<std::string, BlockStatisticType, std::string>{"CompAlphaCb",                 BlockStatisticType::Integer,                ""}},
+  { BlockStatistic::CompAlphaCr,            std::tuple<std::string, BlockStatisticType, std::string>{"CompAlphaCr",                 BlockStatisticType::Integer,                ""}},
+  { BlockStatistic::RDPCM_Y,                std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Y",                     BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},
+  { BlockStatistic::RDPCM_Cb,               std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Cb",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},
+  { BlockStatistic::RDPCM_Cr,               std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Cr",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},
+
+  { BlockStatistic::MIPFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"MIPFlag",                     BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::ISPMode,                std::tuple<std::string, BlockStatisticType, std::string>{"ISPMode",                     BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_SUBPARTITIONS_MODES) + "]"}},
+  { BlockStatistic::Depth,                  std::tuple<std::string, BlockStatisticType, std::string>{"Depth",                       BlockStatisticType::Integer,                "[0, 7]"}},
+  { BlockStatistic::QT_Depth,               std::tuple<std::string, BlockStatisticType, std::string>{"QT_Depth",                    BlockStatisticType::Integer,                "[0, 7]"}},
+  { BlockStatistic::BT_Depth,               std::tuple<std::string, BlockStatisticType, std::string>{"BT_Depth",                    BlockStatisticType::Integer,                "[0, 7]"}},
+  { BlockStatistic::MT_Depth,               std::tuple<std::string, BlockStatisticType, std::string>{"MT_Depth",                    BlockStatisticType::Integer,                "[0, 7]"}},
+  { BlockStatistic::ChromaQPAdj,            std::tuple<std::string, BlockStatisticType, std::string>{"ChromaQPAdj",                 BlockStatisticType::Integer,                "[-10, 10]"}},
   { BlockStatistic::QP,                     std::tuple<std::string, BlockStatisticType, std::string>{"QP",                          BlockStatisticType::Integer,                "[0, 51]"}},
   { BlockStatistic::SplitSeries,            std::tuple<std::string, BlockStatisticType, std::string>{"SplitSeries",                 BlockStatisticType::Integer,                "[0, " + std::to_string(std::numeric_limits<SplitSeries>::max()) + "]"}},
   { BlockStatistic::RootCbf,                std::tuple<std::string, BlockStatisticType, std::string>{"RootCbf",                     BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::SbtIdx,                 std::tuple<std::string, BlockStatisticType, std::string>{"SbtIdx",                      BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_SBT_IDX) + "]"}},
+  { BlockStatistic::SbtPos,                 std::tuple<std::string, BlockStatisticType, std::string>{"SbtPos",                      BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_SBT_POS) + "]"}},
   { BlockStatistic::Cbf_Y,                  std::tuple<std::string, BlockStatisticType, std::string>{"Cbf_Y",                       BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::Cbf_Cb,                 std::tuple<std::string, BlockStatisticType, std::string>{"Cbf_Cb",                      BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::Cbf_Cr,                 std::tuple<std::string, BlockStatisticType, std::string>{"Cbf_Cr",                      BlockStatisticType::Flag,                   ""}},
@@ -153,21 +191,30 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::MergeIdx,               std::tuple<std::string, BlockStatisticType, std::string>{"MergeIdx",                    BlockStatisticType::Integer,                "[0, 7]"}},
   { BlockStatistic::InterDir,               std::tuple<std::string, BlockStatisticType, std::string>{"InterDir",                    BlockStatisticType::Integer,                "[1, 3]"}},
   { BlockStatistic::MergeType,              std::tuple<std::string, BlockStatisticType, std::string>{"MergeType",                   BlockStatisticType::Integer,                "[0, 2]"}},
-  { BlockStatistic::MVPIdxL0,               std::tuple<std::string, BlockStatisticType, std::string>{"MVPIdxL0",                    BlockStatisticType::Integer,                "[0, 1]"}}, 
+  { BlockStatistic::MVPIdxL0,               std::tuple<std::string, BlockStatisticType, std::string>{"MVPIdxL0",                    BlockStatisticType::Integer,                "[0, 1]"}},
   { BlockStatistic::MVDL0,                  std::tuple<std::string, BlockStatisticType, std::string>{"MVDL0",                       BlockStatisticType::Vector,                 "Scale: 4"}},
-  { BlockStatistic::RefIdxL0,               std::tuple<std::string, BlockStatisticType, std::string>{"RefIdxL0",                    BlockStatisticType::Integer,                "[0, 4]"}}, 
-  { BlockStatistic::MVPIdxL1,               std::tuple<std::string, BlockStatisticType, std::string>{"MVPIdxL1",                    BlockStatisticType::Integer,                "[0, 1]"}}, 
+  { BlockStatistic::RefIdxL0,               std::tuple<std::string, BlockStatisticType, std::string>{"RefIdxL0",                    BlockStatisticType::Integer,                "[0, 4]"}},
+  { BlockStatistic::MVPIdxL1,               std::tuple<std::string, BlockStatisticType, std::string>{"MVPIdxL1",                    BlockStatisticType::Integer,                "[0, 1]"}},
   { BlockStatistic::MVDL1,                  std::tuple<std::string, BlockStatisticType, std::string>{"MVDL1",                       BlockStatisticType::Vector,                 "Scale: 4"}},
-  { BlockStatistic::RefIdxL1,               std::tuple<std::string, BlockStatisticType, std::string>{"RefIdxL1",                    BlockStatisticType::Integer,                "[0, 4]"}}, 
+  { BlockStatistic::RefIdxL1,               std::tuple<std::string, BlockStatisticType, std::string>{"RefIdxL1",                    BlockStatisticType::Integer,                "[0, 4]"}},
   { BlockStatistic::IMVMode,                std::tuple<std::string, BlockStatisticType, std::string>{"IMVMode",                     BlockStatisticType::Integer,                "[0, 2]"}},
   { BlockStatistic::AffineFlag,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineFlag",                  BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::AffineMVL0,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineMVL0",                  BlockStatisticType::AffineTFVectors,        "Scale: 4"}},
   { BlockStatistic::AffineMVL1,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineMVL1",                  BlockStatisticType::AffineTFVectors,        "Scale: 4"}},
   { BlockStatistic::AffineType,             std::tuple<std::string, BlockStatisticType, std::string>{"AffineType",                  BlockStatisticType::Flag,                   ""} },
-  { BlockStatistic::EMTFlag,                std::tuple<std::string, BlockStatisticType, std::string>{"EMTFlag",                     BlockStatisticType::Flag,                   ""}},
-
+  { BlockStatistic::MotionBufL0,            std::tuple<std::string, BlockStatisticType, std::string>{"MotionBufL0",                 BlockStatisticType::Vector,                 "Scale: 16"}},
+  { BlockStatistic::MotionBufL1,            std::tuple<std::string, BlockStatisticType, std::string>{"MotionBufL1",                 BlockStatisticType::Vector,                 "Scale: 16"}},
+  { BlockStatistic::MultiRefIdx,            std::tuple<std::string, BlockStatisticType, std::string>{"MultiRefIdx",                 BlockStatisticType::Integer,                "[0, 1]"}},
+  { BlockStatistic::MMVDSkipFlag,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDSkipFlag",                BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::MMVDMergeFlag,          std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeFlag",               BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::MMVDMergeIdx,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeIdx",                BlockStatisticType::Integer,                "[0, 1]"}},
+  { BlockStatistic::MHIntraFlag,            std::tuple<std::string, BlockStatisticType, std::string>{"MHIntraFlag",                 BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::SMVDFlag,               std::tuple<std::string, BlockStatisticType, std::string>{"SMVDFlag",                    BlockStatisticType::Flag,                   ""}},
+  { BlockStatistic::TrianglePartitioning,   std::tuple<std::string, BlockStatisticType, std::string>{"TrianglePartitioning",        BlockStatisticType::Line,                   ""}},
+  { BlockStatistic::TriangleMVL0,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL0",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
+  { BlockStatistic::TriangleMVL1,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL1",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
+  { BlockStatistic::GBIIndex,               std::tuple<std::string, BlockStatisticType, std::string>{"GBIIndex",                    BlockStatisticType::Integer,                "[0, 4]"}},
   // for dual tree
-  { BlockStatistic::PartSize_Chroma,               std::tuple<std::string, BlockStatisticType, std::string>{"PartSize_Chroma",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_PART_SIZES) + "]"}},
   { BlockStatistic::Depth_Chroma,                  std::tuple<std::string, BlockStatisticType, std::string>{"Depth_Chroma",                       BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
   { BlockStatistic::QT_Depth_Chroma,               std::tuple<std::string, BlockStatisticType, std::string>{"QT_Depth_Chroma",                    BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
   { BlockStatistic::BT_Depth_Chroma,               std::tuple<std::string, BlockStatisticType, std::string>{"BT_Depth_Chroma",                    BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
@@ -176,7 +223,6 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::QP_Chroma,                     std::tuple<std::string, BlockStatisticType, std::string>{"QP_Chroma",                          BlockStatisticType::Integer,                "[0, 51]"}},
   { BlockStatistic::SplitSeries_Chroma,            std::tuple<std::string, BlockStatisticType, std::string>{"SplitSeries_Chroma",                 BlockStatisticType::Integer,                "[0, " + std::to_string(std::numeric_limits<SplitSeries>::max()) + "]"}},
   { BlockStatistic::TransQuantBypassFlag_Chroma,   std::tuple<std::string, BlockStatisticType, std::string>{"TransQuantBypassFlag_Chroma",        BlockStatisticType::Flag,                   ""}},
-  { BlockStatistic::EMTFlag_Chroma,                std::tuple<std::string, BlockStatisticType, std::string>{"EMTFlag_Chroma",                     BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
   { BlockStatistic::IPCM_Chroma,                   std::tuple<std::string, BlockStatisticType, std::string>{"IPCM_Chroma",                        BlockStatisticType::Flag,                   ""}},
 
 };

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -106,12 +106,6 @@ static inline uint64_t getTotalFracBits(const uint32_t width, const uint32_t hei
 //Intra prediction  ====================================================================================================
 //======================================================================================================================
 
-static inline bool filterIntraReferenceSamples (const ChannelType chType, const ChromaFormat chFmt, const bool intraReferenceSmoothingDisabled)
-{
-  return (!intraReferenceSmoothingDisabled) && (isLuma(chType) || (chFmt == CHROMA_444));
-}
-
-
 //------------------------------------------------
 
 static inline int getTransformShift(const int channelBitDepth, const Size size, const int maxLog2TrDynamicRange)
@@ -128,15 +122,17 @@ static inline int getScaledChromaQP(int unscaledChromaQP, const ChromaFormat chF
 }
 
 
-#if HEVC_USE_SCALING_LISTS
 //======================================================================================================================
 //Scaling lists  =======================================================================================================
 //======================================================================================================================
 
 static inline int getScalingListType(const PredMode predMode, const ComponentID compID)
 {
+#if JVET_O0267_IBC_SCALING_LIST
+  return ((predMode == MODE_INTRA) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
+#else
   return ((predMode != MODE_INTER) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
-}
 #endif
+}
 
 #endif

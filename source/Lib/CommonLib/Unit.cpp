@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -189,6 +189,16 @@ bool UnitArea::contains( const UnitArea& other, const ChannelType chType ) const
   return any && ret;
 }
 
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+void UnitArea::resizeTo( const UnitArea& unitArea )
+{
+  for( uint32_t i = 0; i < blocks.size(); i++ )
+  {
+    blocks[i].resizeTo( unitArea.blocks[i] );
+  }
+}
+#endif
+
 void UnitArea::repositionTo(const UnitArea& unitArea)
 {
   for(uint32_t i = 0; i < blocks.size(); i++)
@@ -246,70 +256,208 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
 {
   slice             = other.slice;
   predMode          = other.predMode;
-  partSize          = other.partSize;
   qtDepth           = other.qtDepth;
   depth             = other.depth;
   btDepth           = other.btDepth;
   mtDepth           = other.mtDepth;
   splitSeries       = other.splitSeries;
   skip              = other.skip;
-#if JVET_L0054_MMVD
   mmvdSkip = other.mmvdSkip;
-#endif
   affine            = other.affine;
   affineType        = other.affineType;
+  triangle          = other.triangle;
   transQuantBypass  = other.transQuantBypass;
+  bdpcmMode         = other.bdpcmMode;
   ipcm              = other.ipcm;
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
-  emtFlag           = other.emtFlag;
-#if HEVC_TILES_WPP
+  sbtInfo           = other.sbtInfo;
+  mtsFlag           = other.mtsFlag;
+  lfnstIdx          = other.lfnstIdx;
   tileIdx           = other.tileIdx;
-#endif
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
-#if JVET_L0646_GBI
   GBiIdx            = other.GBiIdx;
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
-#endif
+
+  shareParentPos    = other.shareParentPos;
+  shareParentSize   = other.shareParentSize;
+  smvdMode        = other.smvdMode;
+  ispMode           = other.ispMode;
+  mipFlag           = other.mipFlag;
+
   return *this;
 }
 
 void CodingUnit::initData()
 {
   predMode          = NUMBER_OF_PREDICTION_MODES;
-  partSize          = NUMBER_OF_PART_SIZES;
   qtDepth           = 0;
   depth             = 0;
   btDepth           = 0;
   mtDepth           = 0;
   splitSeries       = 0;
   skip              = false;
-#if JVET_L0054_MMVD
   mmvdSkip = false;
-#endif
   affine            = false;
   affineType        = 0;
+  triangle          = false;
   transQuantBypass  = false;
+  bdpcmMode         = 0;
   ipcm              = false;
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
-  emtFlag           = 0;
-#if HEVC_TILES_WPP
+  sbtInfo           = 0;
+  mtsFlag           = 0;
+  lfnstIdx          = 0;
   tileIdx           = 0;
-#endif
   imv               = 0;
   imvNumCand        = 0;
-#if JVET_L0646_GBI
   GBiIdx            = GBI_DEFAULT;
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
-#endif
+  shareParentPos = Position(-1, -1);
+  shareParentSize.width = -1;
+  shareParentSize.height = -1;
+  smvdMode        = 0;
+  ispMode           = 0;
+  mipFlag           = false;
 }
 
+#if JVET_O1124_ALLOW_CCLM_COND
+const bool CodingUnit::checkCCLMAllowed() const
+{
+  bool allowCCLM = false;
+
+  if( chType != CHANNEL_TYPE_CHROMA ) //single tree
+  {
+    allowCCLM = true;
+  }
+  else if( slice->getSPS()->getCTUSize() <= 32 ) //dual tree, CTUsize < 64
+  {
+    allowCCLM = true;
+  }
+  else //dual tree, CTU size 64 or 128
+  {
+    int depthFor64x64Node = slice->getSPS()->getCTUSize() == 128 ? 1 : 0;
+    const PartSplit cuSplitTypeDepth1 = CU::getSplitAtDepth( *this, depthFor64x64Node );
+    const PartSplit cuSplitTypeDepth2 = CU::getSplitAtDepth( *this, depthFor64x64Node + 1 );
+
+    //allow CCLM if 64x64 chroma tree node uses QT split or HBT+VBT split combination
+    if( cuSplitTypeDepth1 == CU_QUAD_SPLIT || (cuSplitTypeDepth1 == CU_HORZ_SPLIT && cuSplitTypeDepth2 == CU_VERT_SPLIT) )
+    {
+      CHECK( !(blocks[COMPONENT_Cb].width <= 16 && blocks[COMPONENT_Cb].height <= 16), "chroma cu size shall be <= 16x16" );
+      allowCCLM = true;
+    }
+    //allow CCLM if 64x64 chroma tree node uses NS (No Split) and becomes a chroma CU containing 32x32 chroma blocks
+    else if( cuSplitTypeDepth1 == CU_DONT_SPLIT )
+    {
+      CHECK( !(blocks[COMPONENT_Cb].width == 32 && blocks[COMPONENT_Cb].height == 32), "chroma cu size shall be 32x32" );
+      allowCCLM = true;
+    }
+    //allow CCLM if 64x32 chroma tree node uses NS and becomes a chroma CU containing 32x16 chroma blocks
+    else if( cuSplitTypeDepth1 == CU_HORZ_SPLIT && cuSplitTypeDepth2 == CU_DONT_SPLIT )
+    {
+      CHECK( !(blocks[COMPONENT_Cb].width == 32 && blocks[COMPONENT_Cb].height == 16), "chroma cu size shall be 32x16" );
+      allowCCLM = true;
+    }
+
+    //further check luma conditions
+    if( allowCCLM )
+    {
+      //disallow CCLM if luma 64x64 block uses BT or TT or NS with ISP
+      const Position lumaRefPos( chromaPos().x << getComponentScaleX( COMPONENT_Cb, chromaFormat ), chromaPos().y << getComponentScaleY( COMPONENT_Cb, chromaFormat ) );
+      const CodingUnit* colLumaCu = cs->picture->cs->getCU( lumaRefPos, CHANNEL_TYPE_LUMA );
+
+      if( colLumaCu->lwidth() < 64 || colLumaCu->lheight() < 64 ) //further split at 64x64 luma node
+      {
+        const PartSplit cuSplitTypeDepth1Luma = CU::getSplitAtDepth( *colLumaCu, depthFor64x64Node );
+        CHECK( !(cuSplitTypeDepth1Luma >= CU_QUAD_SPLIT && cuSplitTypeDepth1Luma <= CU_TRIV_SPLIT), "split mode shall be BT, TT or QT" );
+        if( cuSplitTypeDepth1Luma != CU_QUAD_SPLIT )
+        {
+          allowCCLM = false;
+        }
+      }
+      else if( colLumaCu->lwidth() == 64 && colLumaCu->lheight() == 64 && colLumaCu->ispMode ) //not split at 64x64 luma node and use ISP mode
+      {
+        allowCCLM = false;
+      }
+    }
+  }
+
+  return allowCCLM;
+}
+#endif
+
+const uint8_t CodingUnit::checkAllowedSbt() const
+{
+  if( !slice->getSPS()->getUseSBT() )
+  {
+    return 0;
+  }
+
+  //check on prediction mode
+  if( predMode == MODE_INTRA || predMode == MODE_IBC ) //intra or IBC
+  {
+    return 0;
+  }
+  if( firstPU->mhIntraFlag )
+  {
+    return 0;
+  }
+  if( triangle )
+  {
+    return 0;
+  }
+
+  uint8_t sbtAllowed = 0;
+  int cuWidth  = lwidth();
+  int cuHeight = lheight();
+  bool allow_type[NUMBER_SBT_IDX];
+  memset( allow_type, false, NUMBER_SBT_IDX * sizeof( bool ) );
+
+  //parameter
+  int maxSbtCUSize = cs->sps->getMaxSbtSize();
+  int minSbtCUSize = 1 << ( MIN_CU_LOG2 + 1 );
+
+  //check on size
+  if( cuWidth > maxSbtCUSize || cuHeight > maxSbtCUSize )
+  {
+    return 0;
+  }
+
+  allow_type[SBT_VER_HALF] = cuWidth  >= minSbtCUSize;
+  allow_type[SBT_HOR_HALF] = cuHeight >= minSbtCUSize;
+  allow_type[SBT_VER_QUAD] = cuWidth  >= ( minSbtCUSize << 1 );
+  allow_type[SBT_HOR_QUAD] = cuHeight >= ( minSbtCUSize << 1 );
+
+  for( int i = 0; i < NUMBER_SBT_IDX; i++ )
+  {
+    sbtAllowed += (uint8_t)allow_type[i] << i;
+  }
+
+  return sbtAllowed;
+}
+
+uint8_t CodingUnit::getSbtTuSplit() const
+{
+  uint8_t sbtTuSplitType = 0;
+
+  switch( getSbtIdx() )
+  {
+  case SBT_VER_HALF: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_VER_HALF_POS0_SPLIT; break;
+  case SBT_HOR_HALF: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_HOR_HALF_POS0_SPLIT; break;
+  case SBT_VER_QUAD: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_VER_QUAD_POS0_SPLIT; break;
+  case SBT_HOR_QUAD: sbtTuSplitType = ( getSbtPos() == SBT_POS0 ? 0 : 1 ) + SBT_HOR_QUAD_POS0_SPLIT; break;
+  default: assert( 0 );  break;
+  }
+
+  assert( sbtTuSplitType <= SBT_HOR_QUAD_POS1_SPLIT && sbtTuSplitType >= SBT_VER_HALF_POS0_SPLIT );
+  return sbtTuSplitType;
+}
 
 // ---------------------------------------------------------------------------
 // prediction unit method definitions
@@ -323,16 +471,26 @@ void PredictionUnit::initData()
   // intra data - need this default initialization for PCM
   intraDir[0] = DC_IDX;
   intraDir[1] = PLANAR_IDX;
+  multiRefIdx = 0;
 
   // inter data
   mergeFlag   = false;
+  regularMergeFlag = false;
   mergeIdx    = MAX_UCHAR;
-#if JVET_L0054_MMVD
+  triangleSplitDir  = MAX_UCHAR;
+  triangleMergeIdx0 = MAX_UCHAR;
+  triangleMergeIdx1 = MAX_UCHAR;
   mmvdMergeFlag = false;
   mmvdMergeIdx = MAX_UINT;
-#endif
   interDir    = MAX_UCHAR;
   mergeType   = MRG_TYPE_DEFAULT_N;
+  bv.setZero();
+  bvd.setZero();
+  mvRefine = false;
+  for (uint32_t i = 0; i < MAX_NUM_SUBCU_DMVR; i++)
+  {
+    mvdL0SubPu[i].setZero();
+  }
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i] = MAX_UCHAR;
@@ -344,7 +502,16 @@ void PredictionUnit::initData()
     {
       mvdAffi[i][j].setZero();
     }
+    for ( uint32_t j = 0; j < 3; j++ )
+    {
+      mvAffi[i][j].setZero();
+    }
   }
+  mhIntraFlag = false;
+  shareParentPos = Position(-1, -1);
+  shareParentSize.width = -1;
+  shareParentSize.height = -1;
+  mmvdEncOptMode = 0;
 }
 
 PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
@@ -353,6 +520,7 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
   {
     intraDir[i] = predData.intraDir[i];
   }
+  multiRefIdx = predData.multiRefIdx;
 
   return *this;
 }
@@ -360,13 +528,22 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
 PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
 {
   mergeFlag   = predData.mergeFlag;
+  regularMergeFlag = predData.regularMergeFlag;
   mergeIdx    = predData.mergeIdx;
-#if JVET_L0054_MMVD
+  triangleSplitDir  = predData.triangleSplitDir  ;
+  triangleMergeIdx0 = predData.triangleMergeIdx0 ;
+  triangleMergeIdx1 = predData.triangleMergeIdx1 ;
   mmvdMergeFlag = predData.mmvdMergeFlag;
   mmvdMergeIdx = predData.mmvdMergeIdx;
-#endif
   interDir    = predData.interDir;
   mergeType   = predData.mergeType;
+  bv          = predData.bv;
+  bvd         = predData.bvd;
+  mvRefine = predData.mvRefine;
+  for (uint32_t i = 0; i < MAX_NUM_SUBCU_DMVR; i++)
+  {
+    mvdL0SubPu[i] = predData.mvdL0SubPu[i];
+  }
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i]   = predData.mvpIdx[i];
@@ -378,8 +555,14 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
     {
       mvdAffi[i][j] = predData.mvdAffi[i][j];
     }
+    for ( uint32_t j = 0; j < 3; j++ )
+    {
+      mvAffi[i][j] = predData.mvAffi[i][j];
+    }
   }
-
+  mhIntraFlag = predData.mhIntraFlag;
+  shareParentPos = predData.shareParentPos;
+  shareParentSize = predData.shareParentSize;
   return *this;
 }
 
@@ -389,15 +572,25 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   {
     intraDir[ i ] = other.intraDir[ i ];
   }
+  multiRefIdx = other.multiRefIdx;
 
   mergeFlag   = other.mergeFlag;
+  regularMergeFlag = other.regularMergeFlag;
   mergeIdx    = other.mergeIdx;
-#if JVET_L0054_MMVD
+  triangleSplitDir  = other.triangleSplitDir  ;
+  triangleMergeIdx0 = other.triangleMergeIdx0 ;
+  triangleMergeIdx1 = other.triangleMergeIdx1 ;
   mmvdMergeFlag = other.mmvdMergeFlag;
   mmvdMergeIdx = other.mmvdMergeIdx;
-#endif
   interDir    = other.interDir;
   mergeType   = other.mergeType;
+  bv          = other.bv;
+  bvd         = other.bvd;
+  mvRefine = other.mvRefine;
+  for (uint32_t i = 0; i < MAX_NUM_SUBCU_DMVR; i++)
+  {
+    mvdL0SubPu[i] = other.mvdL0SubPu[i];
+  }
   for (uint32_t i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
     mvpIdx[i]   = other.mvpIdx[i];
@@ -409,8 +602,14 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
     {
       mvdAffi[i][j] = other.mvdAffi[i][j];
     }
+    for ( uint32_t j = 0; j < 3; j++ )
+    {
+      mvAffi[i][j] = other.mvAffi[i][j];
+    }
   }
-
+  mhIntraFlag = other.mhIntraFlag;
+  shareParentPos = other.shareParentPos;
+  shareParentSize = other.shareParentSize;
   return *this;
 }
 
@@ -481,14 +680,13 @@ void TransformUnit::initData()
   {
     cbf[i]           = 0;
     rdpcm[i]         = NUMBER_OF_RDPCM_MODES;
-    transformSkip[i] = false;
     compAlpha[i]     = 0;
   }
-#if ENABLE_BMS
   depth              = 0;
-#endif
-  emtIdx             = 0;
-
+  mtsIdx             = MTS_DCT2_DCT2;
+  noResidual         = false;
+  jointCbCr          = 0;
+  m_chromaResScaleInv = 0;
 }
 
 void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf)
@@ -518,13 +716,12 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
 
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
-    transformSkip[i] = other.transformSkip[i];
     compAlpha[i]     = other.compAlpha[i];
   }
-#if ENABLE_BMS
   depth              = other.depth;
-#endif
-  emtIdx             = other.emtIdx;
+  mtsIdx             = other.mtsIdx;
+  noResidual         = other.noResidual;
+  jointCbCr          = other.jointCbCr;
   return *this;
 }
 
@@ -541,17 +738,12 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 
   cbf[i]           = other.cbf[i];
   rdpcm[i]         = other.rdpcm[i];
-  transformSkip[i] = other.transformSkip[i];
   compAlpha[i]     = other.compAlpha[i];
 
-#if ENABLE_BMS
   depth            = other.depth;
-
-#endif
-  if( isLuma( i ) )
-  {
-    emtIdx         = other.emtIdx;
-  }
+  mtsIdx           = isLuma( i ) ? other.mtsIdx : mtsIdx;
+  noResidual       = other.noResidual;
+  jointCbCr        = isChroma( i ) ? other.jointCbCr : jointCbCr;
 }
 
        CoeffBuf TransformUnit::getCoeffs(const ComponentID id)       { return  CoeffBuf(m_coeffs[id], blocks[id]); }
@@ -559,3 +751,37 @@ const CCoeffBuf TransformUnit::getCoeffs(const ComponentID id) const { return CC
 
        PelBuf   TransformUnit::getPcmbuf(const ComponentID id)       { return  PelBuf  (m_pcmbuf[id], blocks[id]); }
 const CPelBuf   TransformUnit::getPcmbuf(const ComponentID id) const { return CPelBuf  (m_pcmbuf[id], blocks[id]); }
+
+void TransformUnit::checkTuNoResidual( unsigned idx )
+{
+  if( CU::getSbtIdx( cu->sbtInfo ) == SBT_OFF_DCT )
+  {
+    return;
+  }
+
+  if( ( CU::getSbtPos( cu->sbtInfo ) == SBT_POS0 && idx == 1 ) || ( CU::getSbtPos( cu->sbtInfo ) == SBT_POS1 && idx == 0 ) )
+  {
+    noResidual = true;
+  }
+}
+
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
+{
+  int tbArea = blocks[compID].width * blocks[compID].height;
+  int tbZeroOutWidth = blocks[compID].width;
+  int tbZeroOutHeight = blocks[compID].height;
+  if ((mtsIdx > MTS_SKIP || (cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
+  {
+    tbZeroOutWidth = (blocks[compID].width == 32) ? 16 : tbZeroOutWidth;
+    tbZeroOutHeight = (blocks[compID].height == 32) ? 16 : tbZeroOutHeight;
+  }
+  tbZeroOutWidth = std::min<int>(JVET_C0024_ZERO_OUT_TH, tbZeroOutWidth);
+  tbZeroOutHeight = std::min<int>(JVET_C0024_ZERO_OUT_TH, tbZeroOutHeight);
+  tbArea = tbZeroOutWidth * tbZeroOutHeight;
+  return tbArea;
+}
+#endif
+
+int          TransformUnit::getChromaAdj()                     const { return m_chromaResScaleInv; }
+void         TransformUnit::setChromaAdj(int i)                      { m_chromaResScaleInv = i;    }

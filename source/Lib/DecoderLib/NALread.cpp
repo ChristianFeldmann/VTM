@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -110,11 +110,19 @@ static void convertPayloadToRBSP(vector<uint8_t>& nalUnitBuf, InputBitstream *bi
 static void xTraceNalUnitHeader(InputNALUnit& nalu)
 {
   DTRACE( g_trace_ctx, D_NALUNITHEADER, "*********** NAL UNIT (%s) ***********\n", nalUnitTypeToString(nalu.m_nalUnitType) );
-
-  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "forbidden_zero_bit", 1, 0 );
-  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nal_unit_type", 6, nalu.m_nalUnitType );
-  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_layer_id", 6, nalu.m_nuhLayerId );
+  bool zeroTidRequiredFlag = 0;
+  if((nalu.m_nalUnitType >= 16) && (nalu.m_nalUnitType <= 31)) {
+    zeroTidRequiredFlag = 1;
+  }
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "zero_tid_required_flag", 1, zeroTidRequiredFlag );
   DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_temporal_id_plus1", 3, nalu.m_temporalId + 1 );
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nal_unit_type_lsb", 4, (nalu.m_nalUnitType) - (zeroTidRequiredFlag << 4));
+#if EMULATION_PREVENTION_FIX
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_layer_id_plus1", 7, nalu.m_nuhLayerId+1); 
+#else
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_layer_id", 7, nalu.m_nuhLayerId );
+#endif
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_reserved_zero_bit", 1, 0 );
 }
 #endif
 
@@ -122,13 +130,25 @@ void readNalUnitHeader(InputNALUnit& nalu)
 {
   InputBitstream& bs = nalu.getBitstream();
 
-  bool forbidden_zero_bit = bs.read(1);           // forbidden_zero_bit
-  if(forbidden_zero_bit != 0) { THROW( "Forbidden zero-bit not '0'" );}
-  nalu.m_nalUnitType = (NalUnitType) bs.read(6);  // nal_unit_type
-  nalu.m_nuhLayerId = bs.read(6);                 // nuh_layer_id
-  nalu.m_temporalId = bs.read(3) - 1;             // nuh_temporal_id_plus1
+  bool zeroTidRequiredFlag = bs.read(1);              // zero_tid_required_flag
+  nalu.m_temporalId = bs.read(3) - 1;                 // nuh_temporal_id_plus1
+  //When zero_tid_required_flag is equal to 1, the value of nuh_temporal_id_plus1 shall be equal to 1.
+  CHECK((zeroTidRequiredFlag == 1) && (nalu.m_temporalId != 0), "Temporal ID is not '0' when zero tid is required.");
+  uint32_t nalUnitTypeLsb = bs.read(4);             // nal_unit_type_lsb
+  nalu.m_nalUnitType = (NalUnitType) ((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
+  nalu.m_nuhLayerId = bs.read(7);                     // nuh_layer_id 
+#if EMULATION_PREVENTION_FIX
+  CHECK (nalu.m_nuhLayerId == 0, "nuh_layer_id_plus1 must be greater than zero");
+  nalu.m_nuhLayerId--; 
+  CHECK(nalu.m_nuhLayerId > 125, "Layer ID out of range");
+#else
+  CHECK(nalu.m_nuhLayerId > 126, "Layer ID out of range");
+#endif
+  uint32_t nuh_reserved_zero_bit = bs.read(1);        // nuh_reserved_zero_bit
+  CHECK(nuh_reserved_zero_bit != 0, "Reserved zero bit is not '0'");
+
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
-  CodingStatistics::IncrementStatisticEP(STATS__NAL_UNIT_HEADER_BITS, 1+6+6+3, 0);
+  CodingStatistics::IncrementStatisticEP(STATS__NAL_UNIT_HEADER_BITS, 1+3+4+7+1, 0);
 #endif
 
 #if ENABLE_TRACING
@@ -140,38 +160,15 @@ void readNalUnitHeader(InputNALUnit& nalu)
   {
     if ( nalu.m_temporalId )
     {
-#if HEVC_VPS
-      CHECK(  nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
-           || nalu.m_nalUnitType == NAL_UNIT_VPS
-           || nalu.m_nalUnitType == NAL_UNIT_SPS
-           || nalu.m_nalUnitType == NAL_UNIT_EOS
-           || nalu.m_nalUnitType == NAL_UNIT_EOB
+      CHECK(  
+           (uint32_t)nalu.m_nalUnitType >= 16
+        && (uint32_t)nalu.m_nalUnitType <= 31
             , "Invalid NAL type" );
-#else
-      CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
-           || nalu.m_nalUnitType == NAL_UNIT_SPS
-           || nalu.m_nalUnitType == NAL_UNIT_EOS
-           || nalu.m_nalUnitType == NAL_UNIT_EOB
-           , "Invalid NAL type");
-#endif
     }
     else
     {
-      CHECK(  nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TSA_R
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TSA_N
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_R
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_N
-            , "Invalid NAL type" );
+      CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
+         , "Invalid NAL type");
     }
   }
 }

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -135,26 +135,28 @@ void AffineGradientSearch::xEqualCoeffComputer( Pel *pResidue, int residueStride
 
   for ( int j = 0; j != height; j++ )
   {
+    int cy = ((j >> 2) << 2) + 2;
     for ( int k = 0; k != width; k++ )
     {
       int iC[6];
 
       int idx = j * derivateBufStride + k;
+      int cx = ((k >> 2) << 2) + 2;
       if ( !b6Param )
       {
         iC[0] = ppDerivate[0][idx];
-        iC[1] = k * ppDerivate[0][idx] + j * ppDerivate[1][idx];
+        iC[1] = cx * ppDerivate[0][idx] + cy * ppDerivate[1][idx];
         iC[2] = ppDerivate[1][idx];
-        iC[3] = j * ppDerivate[0][idx] - k * ppDerivate[1][idx];
+        iC[3] = cy * ppDerivate[0][idx] - cx * ppDerivate[1][idx];
       }
       else
       {
         iC[0] = ppDerivate[0][idx];
-        iC[1] = k * ppDerivate[0][idx];
+        iC[1] = cx * ppDerivate[0][idx];
         iC[2] = ppDerivate[1][idx];
-        iC[3] = k * ppDerivate[1][idx];
-        iC[4] = j * ppDerivate[0][idx];
-        iC[5] = j * ppDerivate[1][idx];
+        iC[3] = cx * ppDerivate[1][idx];
+        iC[4] = cy * ppDerivate[0][idx];
+        iC[5] = cy * ppDerivate[1][idx];
       }
       for ( int col = 0; col < affineParamNum; col++ )
       {

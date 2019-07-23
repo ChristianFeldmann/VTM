@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,9 +68,7 @@ protected:
   void xWriteSEIToneMappingInfo(const SEIToneMappingInfo& sei);
   void xWriteSEISOPDescription(const SEISOPDescription& sei);
   void xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableNesting& sei, const SPS *sps);
-#if HEVC_TILES_WPP
   void xWriteSEITempMotionConstrainedTileSets(const SEITempMotionConstrainedTileSets& sei);
-#endif
   void xWriteSEITimeCode(const SEITimeCode& sei);
   void xWriteSEIChromaResamplingFilterHint(const SEIChromaResamplingFilterHint& sei);
   void xWriteSEIKneeFunctionInfo(const SEIKneeFunctionInfo &sei);

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,11 +67,7 @@ public:
   };
 
   // leading SEIs
-#if HEVC_VPS
-  void initSEIActiveParameterSets (SEIActiveParameterSets *sei, const VPS *vps, const SPS *sps);
-#else
   void initSEIActiveParameterSets (SEIActiveParameterSets *sei, const SPS *sps);
-#endif
   void initSEIFramePacking(SEIFramePacking *sei, int currPicNum);
   void initSEIDisplayOrientation(SEIDisplayOrientation *sei);
   void initSEIToneMappingInfo(SEIToneMappingInfo *sei);
@@ -80,9 +76,7 @@ public:
   void initSEIScalableNesting(SEIScalableNesting *sei, SEIMessages &nestedSEIs);
   void initSEIRecoveryPoint(SEIRecoveryPoint *sei, Slice *slice);
   void initSEISegmentedRectFramePacking(SEISegmentedRectFramePacking *sei);
-#if HEVC_TILES_WPP
   void initSEITempMotionConstrainedTileSets (SEITempMotionConstrainedTileSets *sei, const PPS *pps);
-#endif
   void initSEIKneeFunctionInfo(SEIKneeFunctionInfo *sei);
   void initSEIChromaResamplingFilterHint(SEIChromaResamplingFilterHint *sei, int iHorFilterIndex, int iVerFilterIndex);
   void initSEITimeCode(SEITimeCode *sei);

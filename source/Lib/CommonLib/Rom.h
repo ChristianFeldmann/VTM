@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,8 +41,6 @@
 #include "CommonDef.h"
 #include "Common.h"
 
-#include "BinaryDecisionTree.h"
-
 #include <stdio.h>
 #include <iostream>
 
@@ -57,22 +55,33 @@
 void         initROM();
 void         destroyROM();
 
-void         generateTrafoBlockSizeScaling( SizeIndexInfo& sizeIdxInfo );
-
 // ====================================================================================================================
 // Data structure related table & variable
 // ====================================================================================================================
 
 // flexible conversion from relative to absolute index
-extern       uint32_t*  g_scanOrder     [SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
-extern       uint32_t*  g_scanOrderPosXY[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1][2];
+struct ScanElement
+{
+  uint32_t idx;
+  uint16_t x;
+  uint16_t y;
+};
 
-extern const int g_quantScales   [SCALING_LIST_REM_NUM];          // Q(QP%6)
-extern const int g_invQuantScales[SCALING_LIST_REM_NUM];          // IQ(QP%6)
+extern       uint32_t   g_log2SbbSize[MAX_CU_DEPTH + 1][MAX_CU_DEPTH + 1][2];
+extern ScanElement
+  *g_scanOrder[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
+extern       ScanElement   g_coefTopLeftDiagScan8x8[ MAX_CU_SIZE / 2 + 1 ][ 64 ];
+
+extern const int g_quantScales   [2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIST_REM_NUM];          // Q(QP%6)
+extern const int g_invQuantScales[2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIST_REM_NUM];          // IQ(QP%6)
 
 static const int g_numTransformMatrixSizes = 6;
 static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
 
+extern const uint8_t g_intraMode65to33AngMapping[NUM_INTRA_MODE];
+extern const uint8_t g_mapMipToAngular65[3][MAX_NUM_MIP_MODE];
+extern const uint8_t g_mapAngular33ToMip[3][35];
+extern const int     g_sortedMipMpms    [3][NUM_MPM_MIP];
 
 // ====================================================================================================================
 // Luma QP to Chroma QP mapping
@@ -86,17 +95,10 @@ extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSi
 // Scanning order & context mapping table
 // ====================================================================================================================
 
-extern const uint32_t   ctxIndMap4x4[4*4];
-
-extern const uint32_t   g_uiGroupIdx[ MAX_TU_SIZE ];
+extern const uint32_t   g_uiGroupIdx[ MAX_TB_SIZEY ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
-#if JVET_L0274
 extern const uint32_t   g_auiGoRiceParsCoeff     [ 32 ];
 extern const uint32_t   g_auiGoRicePosCoeff0[ 3 ][ 32 ];
-#else
-extern const uint32_t   g_auiGoRicePars [ 32 ];
-#endif
-extern const uint32_t   g_auiGoRiceRange[ MAX_GR_ORDER_RESIDUAL ];                  //!< maximum value coded with Rice codes
 
 // ====================================================================================================================
 // Intra prediction table
@@ -113,22 +115,7 @@ extern const uint8_t  g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE];
 // Mode-Dependent DST Matrices
 // ====================================================================================================================
 
-#if HEVC_USE_4x4_DSTVII
-extern const TMatrixCoeff g_as_DST_MAT_4 [TRANSFORM_NUMBER_OF_DIRECTIONS][4][4];
-#endif
 
-extern const int g_aiTrSubsetIntra[3][2];
-extern const int g_aiTrSubsetInter[4];
-
-extern const uint8_t g_aucTrSetVert[NUM_INTRA_MODE - 1];
-extern const uint8_t g_aucTrSetHorz[NUM_INTRA_MODE - 1];
-
-extern const uint8_t g_aucTrSetVert35[35];
-extern const uint8_t g_aucTrSetHorz35[35];
-
-extern const uint32_t g_EmtSigNumThr;
-
-#if JVET_L0285_8BIT_TRANSFORM_CORE
 extern const TMatrixCoeff g_trCoreDCT2P2  [TRANSFORM_NUMBER_OF_DIRECTIONS][  2][  2];
 extern const TMatrixCoeff g_trCoreDCT2P4  [TRANSFORM_NUMBER_OF_DIRECTIONS][  4][  4];
 extern const TMatrixCoeff g_trCoreDCT2P8  [TRANSFORM_NUMBER_OF_DIRECTIONS][  8][  8];
@@ -145,48 +132,23 @@ extern const TMatrixCoeff g_trCoreDST7P4  [TRANSFORM_NUMBER_OF_DIRECTIONS][  4][
 extern const TMatrixCoeff g_trCoreDST7P8  [TRANSFORM_NUMBER_OF_DIRECTIONS][  8][  8];
 extern const TMatrixCoeff g_trCoreDST7P16 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 16][ 16];
 extern const TMatrixCoeff g_trCoreDST7P32 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 32][ 32];
-#else
-extern TMatrixCoeff g_aiTr2   [NUM_TRANS_TYPE][  2][  2];
-extern TMatrixCoeff g_aiTr4   [NUM_TRANS_TYPE][  4][  4];
-extern TMatrixCoeff g_aiTr8   [NUM_TRANS_TYPE][  8][  8];
-extern TMatrixCoeff g_aiTr16  [NUM_TRANS_TYPE][ 16][ 16];
-extern TMatrixCoeff g_aiTr32  [NUM_TRANS_TYPE][ 32][ 32];
-extern TMatrixCoeff g_aiTr64  [NUM_TRANS_TYPE][ 64][ 64];
-#endif
 
-// ====================================================================================================================
-// Decision tree templates
-// ====================================================================================================================
+extern const     int8_t   g_lfnst8x8[ 4 ][ 2 ][ 16 ][ 48 ];
+extern const     int8_t   g_lfnst4x4[ 4 ][ 2 ][ 16 ][ 16 ];
 
-enum SplitDecisionTree
-{
-  DTT_SPLIT_DO_SPLIT_DECISION = 0, // decision node
-  DTT_SPLIT_NO_SPLIT          = 1, // end-node
-  DTT_SPLIT_BT_HORZ           = 2, // end-node - id same as CU_HORZ_SPLIT
-  DTT_SPLIT_BT_VERT           = 3, // end-node - id same as CU_VERT_SPLIT
-  DTT_SPLIT_TT_HORZ           = 4, // end-node - id same as CU_TRIH_SPLIT
-  DTT_SPLIT_TT_VERT           = 5, // end-node - id same as CU_TRIV_SPLIT
-  DTT_SPLIT_HV_DECISION,           // decision node
-  DTT_SPLIT_H_IS_BT_12_DECISION,   // decision node
-  DTT_SPLIT_V_IS_BT_12_DECISION,   // decision node
-};
-
-// decision tree for multi-type tree split decision
-extern const DecisionTreeTemplate g_mtSplitDTT;
-
-// decision tree for QTBT split
-extern const DecisionTreeTemplate g_qtbtSplitDTT;
-
+extern const     uint8_t  g_lfnstLut[ NUM_INTRA_MODE + NUM_EXT_LUMA_MODE - 1 ];
 
 // ====================================================================================================================
 // Misc.
 // ====================================================================================================================
 extern SizeIndexInfo* gp_sizeIdxInfo;
-extern int            g_BlockSizeTrafoScale           [MAX_CU_SIZE + 1][MAX_CU_SIZE + 1][2];
 extern int8_t          g_aucLog2                       [MAX_CU_SIZE + 1];
 extern int8_t          g_aucNextLog2        [MAX_CU_SIZE + 1];
 extern int8_t          g_aucPrevLog2        [MAX_CU_SIZE + 1];
-extern const int8_t    i2Log2Tab[257];
+
+#if JVET_O0105_ICT
+extern const int       g_ictModes[2][4];
+#endif
 
 inline bool is34( const SizeType& size )
 {
@@ -218,7 +180,6 @@ extern CDTrace* g_trace_ctx;
 
 const char* nalUnitTypeToString(NalUnitType type);
 
-#if HEVC_USE_SCALING_LISTS
 extern const char *MatrixType   [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM];
 extern const char *MatrixType_DC[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM];
 
@@ -228,18 +189,10 @@ extern const int g_quantInterDefault8x8[8*8];
 
 extern const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM];
 extern const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
-#endif
 
 extern MsgLevel g_verbosity;
 
-#if JVET_L0191_LM_WO_LMS
-extern int g_aiLMDivTableLow[];
-extern int g_aiLMDivTableHigh[];
-#endif
 
-extern const int g_aiNonLMPosThrs[];
-
-#if JVET_L0646_GBI
 extern const int8_t g_GbiLog2WeightBase;
 extern const int8_t g_GbiWeightBase;
 extern const int8_t g_GbiWeights[GBI_NUM];
@@ -251,7 +204,6 @@ class CodingStructure;
 int8_t getGbiWeight(uint8_t gbiIdx, uint8_t uhRefFrmList);
 void resetGbiCodingOrder(bool bRunDecoding, const CodingStructure &cs);
 uint32_t deriveWeightIdxBits(uint8_t gbiIdx);
-#endif 
 
 constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -265,6 +217,14 @@ constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 
 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
 
 //! \}
+
+extern       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+// 7-tap/3-tap, direction, 2/4/8/16/32/64/128
+extern int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+#endif
+
+extern bool g_mctsDecCheckEnabled;
 
 #endif  //__TCOMROM__
 

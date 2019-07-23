@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -87,6 +87,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
   ("OutputBitDepthC,d",         m_outputBitDepth[CHANNEL_TYPE_CHROMA], 0,          "bit depth of YUV output chroma component (default: use luma output bit-depth)")
   ("OutputColourSpaceConvert",  outputColourSpaceConvert,              string(""), "Colour space conversion to apply to input 444 video. Permitted values are (empty string=UNCHANGED) " + getListOfColourSpaceConverts(false))
   ("MaxTemporalLayer,t",        m_iMaxTemporalLayer,                   -1,         "Maximum Temporal Layer to be decoded. -1 to decode all layers")
+  ("TargetLayer,p",             m_iTargetLayer,                        -1,         "Target bitstream Layer to be decoded.")
   ("SEIDecodedPictureHash,-dph",m_decodedPictureHashSEIEnabled,        1,          "Control handling of decoded picture hash SEI messages\n"
                                                                                    "\t1: check hash in SEI messages if available in the bitstream\n"
                                                                                    "\t0: ignore SEI message")
@@ -112,6 +113,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
                                                                                    "\t2: enable tool statistic\n"
                                                                                    "\t3: enable bit and tool statistic\n")
 #endif
+  ("MCTSCheck",                m_mctsCheck,                           false,       "If enabled, the decoder checks for violations of mc_exact_sample_value_match_flag in Temporal MCTS ")
   ;
 
   po::setDefaults(opts);
@@ -148,6 +150,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
   }
 #endif
 
+  g_mctsDecCheckEnabled = m_mctsCheck;
   // Chroma output bit-depth
   if( m_outputBitDepth[CHANNEL_TYPE_LUMA] != 0 && m_outputBitDepth[CHANNEL_TYPE_CHROMA] == 0 )
   {
@@ -220,6 +223,7 @@ DecAppCfg::DecAppCfg()
 , m_iSkipFrame(0)
 // m_outputBitDepth array initialised below
 , m_outputColourSpaceConvert(IPCOLOURSPACE_UNCHANGED)
+, m_iTargetLayer(0)
 , m_iMaxTemporalLayer(-1)
 , m_decodedPictureHashSEIEnabled(0)
 , m_decodedNoDisplaySEIEnabled(false)
@@ -230,6 +234,7 @@ DecAppCfg::DecAppCfg()
 , m_bClipOutputVideoToRec709Range(false)
 , m_packedYUVMode(false)
 , m_statMode(0)
+, m_mctsCheck(false)
 {
   for (uint32_t channelTypeIndex = 0; channelTypeIndex < MAX_NUM_CHANNEL_TYPE; channelTypeIndex++)
   {

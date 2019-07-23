@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,14 +48,15 @@
 #include "EncCfg.h"
 #include "EncGOP.h"
 #include "EncSlice.h"
+#include "EncHRD.h"
 #include "VLCWriter.h"
 #include "CABACWriter.h"
 #include "InterSearch.h"
 #include "IntraSearch.h"
 #include "EncSampleAdaptiveOffset.h"
+#include "EncReshape.h"
 #include "EncAdaptiveLoopFilter.h"
 #include "RateCtrl.h"
-
 
 //! \ingroup EncoderLib
 //! \{
@@ -98,6 +99,12 @@ private:
   CABACEncoder              m_CABACEncoder;
 #endif
 
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+  EncReshape               *m_cReshaper;                        ///< reshaper class
+#else
+  EncReshape                m_cReshaper;                        ///< reshaper class
+#endif
+
   // processing unit
   EncGOP                    m_cGOPEncoder;                        ///< GOP encoder
   EncSlice                  m_cSliceEncoder;                      ///< slice encoder
@@ -109,6 +116,7 @@ private:
   // SPS
   ParameterSetMap<SPS>      m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
   ParameterSetMap<PPS>      m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
+  ParameterSetMap<APS>      m_apsMap;                             ///< APS. This is the base value. This is copied to PicSym
   // RD cost computation
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   RdCost                   *m_cRdCost;                            ///< RD cost computation class
@@ -130,6 +138,12 @@ private:
   CacheModel                m_cacheModel;
 #endif
 
+  APS*                      m_apss[MAX_NUM_APS];
+
+  APS*                      m_lmcsAPS;
+
+  EncHRD                    m_encHRD;
+
 public:
   Ctx                       m_entropyCodingSyncContextState;      ///< leave in addition to vector for compatibility
 #if ENABLE_WPP_PARALLELISM
@@ -138,21 +152,17 @@ public:
 
 protected:
   void  xGetNewPicBuffer  ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Picture*& rpcPic, int ppsId ); ///< get picture buffer which will be processed. If ppsId<0, then the ppsMap will be queried for the first match.
-#if HEVC_VPS
-  void  xInitVPS          (VPS &vps, const SPS &sps); ///< initialize VPS from encoder options
-#endif
+  void  xInitVPS          (VPS &vps); ///< initialize VPS from encoder options
+  void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
-#if HEVC_USE_SCALING_LISTS
+  void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options
   void  xInitScalingLists (SPS &sps, PPS &pps);   ///< initialize scaling lists
-#endif
   void  xInitPPSforLT(PPS& pps);
-  void  xInitHrdParameters(SPS &sps);                 ///< initialize HRD parameters
+  void  xInitHrdParameters(SPS &sps);                 ///< initialize HRDParameters parameters
 
-#if HEVC_TILES_WPP
   void  xInitPPSforTiles  (PPS &pps);
-#endif
-  void  xInitRPS          (SPS &sps, bool isFieldCoding);           ///< initialize PPS from encoder options
+  void  xInitRPL(SPS &sps, bool isFieldCoding);           ///< initialize SPS from encoder options
 
 public:
   EncLib();
@@ -205,20 +215,28 @@ public:
   RateCtrl*               getRateCtrl           ()              { return  &m_cRateCtrl;            }
 
 
-  void selectReferencePictureSet(Slice* slice, int POCCurr, int GOPid
-    , int ltPoc
-  );
-  int getReferencePictureSetIdxForSOP(int POCCurr, int GOPid );
+  void                    getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid, uint32_t *activeL0, uint32_t *activeL1);
+  void                    selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, int ltPoc);
 
+  void                   setParamSetChanged(int spsId, int ppsId);
+  bool                   APSNeedsWriting(int apsId);
   bool                   PPSNeedsWriting(int ppsId);
   bool                   SPSNeedsWriting(int spsId);
   const PPS* getPPS( int Id ) { return m_ppsMap.getPS( Id); }
+  const APS*             getAPS(int Id) { return m_apsMap.getPS(Id); }
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   void                   setNumCuEncStacks( int n )             { m_numCuEncStacks = n; }
   int                    getNumCuEncStacks()              const { return m_numCuEncStacks; }
 #endif
 
+#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+  EncReshape*            getReshaper( int jId = 0 )             { return  &m_cReshaper[jId]; }
+#else
+  EncReshape*            getReshaper()                          { return  &m_cReshaper; }
+#endif
+
+  ParameterSetMap<APS>*  getApsMap() { return &m_apsMap; }
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function
   // -------------------------------------------------------------------------------------------------------------------

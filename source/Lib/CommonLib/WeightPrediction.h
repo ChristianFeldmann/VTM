@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,15 @@ public:
                                       PelUnitBuf           &rpcYuvDst,
                                 const bool                  bRoundLuma = true,
                                 const ComponentID           maxNumComp = MAX_NUM_COMPONENT );
+
+  void addWeightBiComponent(    const CPelUnitBuf          &pcYuvSrc0,
+                                const CPelUnitBuf          &pcYuvSrc1,
+                                const ClpRngs              &clpRngs,
+                                const WPScalingParam *const wp0,
+                                const WPScalingParam *const wp1,
+                                      PelUnitBuf           &rpcYuvDst,
+                                const bool                  bRoundLuma = true,
+                                const ComponentID           Comp = COMPONENT_Y);
 
   void  addWeightUni(           const CPelUnitBuf          &pcYuvSrc0,
                                 const ClpRngs              &clpRngs,

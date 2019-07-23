@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -88,6 +88,7 @@ protected:
   void  xWriteFlagTr          ( uint32_t value,               const char *pSymbolName);
 #endif
   void  xWriteRbspTrailingBits();
+  bool isByteAligned()      { return (m_pcBitIf->getNumBitsUntilByteAligned() == 0); } ;
 };
 
 
@@ -110,41 +111,36 @@ public:
   virtual ~HLSWriter() {}
 
 private:
-  void xCodeShortTermRefPicSet  ( const ReferencePictureSet* pcRPS, bool calledFromSliceHeader, int idx );
+  void xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount);
   bool xFindMatchingLTRP        ( Slice* pcSlice, uint32_t *ltrpsIndex, int ltrpPOC, bool usedFlag );
   void xCodePredWeightTable     ( Slice* pcSlice );
-#if HEVC_USE_SCALING_LISTS
   void xCodeScalingList         ( const ScalingList* scalingList, uint32_t sizeId, uint32_t listId);
-#endif
 public:
   void  setBitstream            ( OutputBitstream* p )  { m_pcBitIf = p;  }
   uint32_t  getNumberOfWrittenBits  ()                      { return m_pcBitIf->getNumberOfWrittenBits();  }
   void  codeVUI                 ( const VUI *pcVUI, const SPS* pcSPS );
-  void  codeSPSNext             ( const SPSNext& spsNext, const bool usePCM );
   void  codeSPS                 ( const SPS* pcSPS );
   void  codePPS                 ( const PPS* pcPPS );
-#if HEVC_VPS
+  void  codeAPS                 ( APS* pcAPS );
+  void  codeAlfAps              ( APS* pcAPS );
+  void  codeLmcsAps             ( APS* pcAPS );
   void  codeVPS                 ( const VPS* pcVPS );
-#endif
+  void  codeDPS                 ( const DPS* dps );
   void  codeSliceHeader         ( Slice* pcSlice );
-  void  codePTL                 ( const PTL* pcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1);
-  void  codeProfileTier         ( const ProfileTierLevel* ptl, const bool bIsSubLayer );
-  void  codeHrdParameters       ( const HRD *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 );
-#if HEVC_TILES_WPP
+  void  codeConstraintInfo      ( const ConstraintInfo* cinfo );
+  void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );
+  void  codeHrdParameters       ( const HRDParameters *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 );
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );
-#endif
-#if HEVC_USE_SCALING_LISTS
   void  codeScalingList         ( const ScalingList &scalingList );
-#endif
 
-  void alf( const AlfSliceParam& alfSliceParam );
   void alfFilter( const AlfSliceParam& alfSliceParam, const bool isChroma );
 
 private:
   void xWriteTruncBinCode( uint32_t uiSymbol, const int uiMaxSymbol );
-  void alfGolombEncode( const int coeff, const int k );
+  void alfGolombEncode( const int coeff, const int k, const bool signed_coeff=true );
   void truncatedUnaryEqProb( int symbol, int maxSymbol );
 
+  void  codeReshaper            ( const SliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra);
 };
 
 //! \}

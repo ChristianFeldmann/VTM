@@ -1,3 +1,4 @@
+
 from __future__ import print_function
 
 import platform
@@ -5,8 +6,15 @@ import re
 import os.path
 import plistlib
 import subprocess
+import functools
+
 
 import pyhhi.build.common.util as util
+import pyhhi.build.common.cmbldver as cmbldver
+
+
+def get_cmake_build_version():
+    return version_tuple_from_str(cmbldver.CMAKE_BUILD_VERSION_STR)
 
 
 def _get_python_version_numeric():
@@ -99,44 +107,22 @@ def version_compare(version1, version2):
 
 
 def version_list_sort(version_list):
-    """Return a list of version tuples in ascending order."""
-    return sorted(version_list, key=_version_tuple_key_fnc(version_compare))
 
+    # Written for Python 2.7 and 3.x: functools.cmp_to_key() requires 2.7 or higher.
 
-def _version_tuple_key_fnc(cmp_fnc):
-    """Convert a cmp= function into a key= function"""
-    class K(object):
-        def __init__(self, obj, *args):
-            self.obj = obj
-
-        def __lt__(self, other):
-            return cmp_fnc(self.obj, other.obj) < 0
-
-        def __gt__(self, other):
-            return cmp_fnc(self.obj, other.obj) > 0
-
-        def __eq__(self, other):
-            return cmp_fnc(self.obj, other.obj) == 0
-
-        def __le__(self, other):
-            return cmp_fnc(self.obj, other.obj) <= 0
-
-        def __ge__(self, other):
-            return cmp_fnc(self.obj, other.obj) >= 0
-
-        def __ne__(self, other):
-            return cmp_fnc(self.obj, other.obj) != 0
-    return K
+    # Notes: python 2.x supports a second argument cmp to specify the comparision function but
+    #        python 3.x does not.
+    return sorted(version_list, key=functools.cmp_to_key(version_compare))
 
 
 def version_str_to_rpm_version_tuple(version):
     re_match = re.match(r'([^-]+)-(\S+)', version)
     if re_match:
-        return (re_match.group(1), re_match.group(2))
+        return re_match.group(1), re_match.group(2)
     else:
         re_match = re.match(r'([\d.-]+)[-.](\d+)', version)
         if re_match:
-            return (re_match.group(1), re_match.group(2))
+            return re_match.group(1), re_match.group(2)
     raise Exception("The version string '" + version + "' is not a valid RPM version string.")
 
 
@@ -165,29 +151,36 @@ def _parse_version_h_file(version_file, verbatim=False):
     if not os.path.exists(version_file):
         raise Exception("version file '" + version_file + "' does not exist.")
 
-    # convert it into an absolute path so that we can get the directory name, which is required for the parser logic below.
-    version_file = os.path.abspath(version_file)
-    if platform.system().lower() == 'windows':
-        drive_path_comps = os.path.splitdrive(version_file)
-        path_comps = os.path.split(drive_path_comps[1])
-    else:
-        path_comps = os.path.split(version_file)
+    re_version_expr = re.compile(r'(^#if\s+![ ]*defined\(.*)|(^#\s*define\s+\S+_VERSION\s+)')
+    re_version_tag_expr = re.compile(r'^#if\s+!\s*defined\(\s*([a-zA-Z0-9_]+)\s*\)')
 
-    dir = path_comps[0].split(os.path.sep)[-1]
-    version_tag = dir.upper() + '_VERSION'
-    re_version_str = re.compile(r'^#define\s+' + version_tag + r'\s+"([^"]+)')
-    re_version_str2 = re.compile(r'^#define\s+' + version_tag + r'\s+(\d+)')
-
+    version_tag = None
     with open(version_file) as f:
         for line in f:
-            re_match = re_version_str.match(line)
+            re_match = re_version_expr.match(line)
             if not re_match:
-                re_match = re_version_str2.match(line)
-            if re_match:
-                if verbatim:
-                    return re_match.group(1)
-                else:
-                    return version_tuple_from_str(re_match.group(1))
+                continue
+            # print("version.h: found cpp line: {}".format(line))
+            if version_tag is None:
+                re_match = re_version_tag_expr.match(line)
+                if re_match:
+                    version_tag = re_match.group(1)
+                    # print("found version tag: {}".format(version_tag))
+                    re_version_str = re.compile(r'^#define\s+{}\s+"([^"]+)'.format(version_tag))
+                    re_version_str2 = re.compile(r'^#define\s+{}\s+(\d+)'.format(version_tag))
+                continue
+            else:
+                # print("checking cpp line: {}".format(line))
+                # version tag found
+                re_match = re_version_str.match(line)
+                if not re_match:
+                    re_match = re_version_str2.match(line)
+                if re_match:
+                    if verbatim:
+                        return re_match.group(1)
+                    else:
+                        return version_tuple_from_str(re_match.group(1))
+
     raise Exception("No version ID found in file '" + version_file + "'.")
 
 

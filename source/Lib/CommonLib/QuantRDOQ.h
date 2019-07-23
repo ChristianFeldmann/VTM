@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,24 +61,20 @@ public:
   ~QuantRDOQ();
 
 public:
-#if HEVC_USE_SCALING_LISTS
   void setFlatScalingList   ( const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths );
   void setScalingList       ( ScalingList *scalingList, const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths);
-#endif
   // quantization
   void quant                ( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx );
+  void forwardRDPCM         ( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx &ctx );
 
 private:
-#if HEVC_USE_SCALING_LISTS
-  double* xGetErrScaleCoeff              ( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp ) { return m_errScale             [sizeX][sizeY][list][qp]; };  //!< get Error Scale Coefficent
+  double* xGetErrScaleCoeffSL            ( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp ) { return m_errScale[sizeX][sizeY][list][qp]; };  //!< get Error Scale Coefficent
+  double  xGetErrScaleCoeff              ( const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth);
   double& xGetErrScaleCoeffNoScalingList ( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp ) { return m_errScaleNoScalingList[sizeX][sizeY][list][qp]; };  //!< get Error Scale Coefficent
   void    xInitScalingList               ( const QuantRDOQ* other );
   void    xDestroyScalingList            ();
   void    xSetErrScaleCoeff              ( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp, const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths );
-#else
-  double  xGetErrScaleCoeff              ( SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth);
-#endif
-
+  void    xDequantSample                 ( TCoeff& pRes, TCoeff& coeff, const TrQuantParams& trQuantParams );
   // RDOQ functions
   void xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx &ctx);
 
@@ -91,11 +87,11 @@ private:
                               const BinFracBits& fracBitsPar,
                               const BinFracBits& fracBitsGt1,
                               const BinFracBits& fracBitsGt2,
-#if JVET_L0274
+#if !JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
                               const int          remGt2Bins,
+#endif
                               const int          remRegBins,
                               unsigned           goRiceZero,
-#endif
                               uint16_t             ui16AbsGoRice,
                               int                iQBits,
                               double             errorScale,
@@ -106,11 +102,11 @@ private:
                               const BinFracBits& fracBitsPar,
                               const BinFracBits& fracBitsGt1,
                               const BinFracBits& fracBitsGt2,
-#if JVET_L0274
+#if !JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
                               const int          remGt2Bins,
+#endif
                               const int          remRegBins,
                               unsigned           goRiceZero,
-#endif
                               const uint16_t       ui16AbsGoRice,
                               const bool         useLimitedPrefixLength,
                               const int          maxLog2TrDynamicRange  ) const;
@@ -124,24 +120,50 @@ private:
   inline double xGetICost            ( double dRate                                                      ) const;
   inline double xGetIEPRate          (                                                                   ) const;
 
+  void xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &coeffs, TCoeff &absSum, const QpParam &qp, const Ctx &ctx );
+
+  inline uint32_t xGetCodedLevelTS(       double&             codedCost,
+                                          double&             codedCost0,
+                                          double&             codedCostSig,
+                                          Intermediate_Int    levelDouble,
+                                          uint32_t            maxAbsLevel,
+                                    const BinFracBits*        fracBitsSig,
+                                    const BinFracBits&        fracBitsPar,
+                                    const CoeffCodingContext& cctx,
+                                    const FracBitsAccess&     fracBitsAccess,
+                                    const BinFracBits&        fracBitsSign,
+                                    const uint8_t             sign,
+                                          uint16_t            ricePar,
+                                          int                 qBits,
+                                          double              errorScale,
+                                          bool                isLast,
+                                          bool                useLimitedPrefixLength,
+                                    const int                 maxLog2TrDynamicRange ) const;
+
+  inline int xGetICRateTS   ( const uint32_t            absLevel,
+                              const BinFracBits&        fracBitsPar,
+                              const CoeffCodingContext& cctx,
+                              const FracBitsAccess&     fracBitsAccess,
+                              const BinFracBits&        fracBitsSign,
+                              const uint8_t             sign,
+                              const uint16_t            ricePar,
+                              const bool                useLimitedPrefixLength,
+                              const int                 maxLog2TrDynamicRange  ) const;
 private:
-#if HEVC_USE_SCALING_LISTS
   bool    m_isErrScaleListOwner;
 
   double *m_errScale             [SCALING_LIST_SIZE_NUM][SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM][SCALING_LIST_REM_NUM]; ///< array of quantization matrix coefficient 4x4
   double  m_errScaleNoScalingList[SCALING_LIST_SIZE_NUM][SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM][SCALING_LIST_REM_NUM]; ///< array of quantization matrix coefficient 4x4
-#endif
   // temporary buffers for RDOQ
-  double m_pdCostCoeff        [MAX_TU_SIZE * MAX_TU_SIZE];
-  double m_pdCostSig          [MAX_TU_SIZE * MAX_TU_SIZE];
-  double m_pdCostCoeff0       [MAX_TU_SIZE * MAX_TU_SIZE];
-  double m_pdCostCoeffGroupSig[(MAX_TU_SIZE * MAX_TU_SIZE) >> MLS_CG_SIZE]; // even if CG size is 2 (if one of the sides is 2) instead of 4, there should be enough space
-#if HEVC_USE_SIGN_HIDING
-  int    m_rateIncUp          [MAX_TU_SIZE * MAX_TU_SIZE];
-  int    m_rateIncDown        [MAX_TU_SIZE * MAX_TU_SIZE];
-  int    m_sigRateDelta       [MAX_TU_SIZE * MAX_TU_SIZE];
-  TCoeff m_deltaU             [MAX_TU_SIZE * MAX_TU_SIZE];
-#endif
+  double m_pdCostCoeff        [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  double m_pdCostSig          [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  double m_pdCostCoeff0       [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  double m_pdCostCoeffGroupSig[(MAX_TB_SIZEY * MAX_TB_SIZEY) >> MLS_CG_SIZE]; // even if CG size is 2 (if one of the sides is 2) instead of 4, there should be enough space
+  int    m_rateIncUp          [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  int    m_rateIncDown        [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  int    m_sigRateDelta       [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  TCoeff m_deltaU             [MAX_TB_SIZEY * MAX_TB_SIZEY];
+  TCoeff m_fullCoeff          [MAX_TB_SIZEY * MAX_TB_SIZEY];
 };// END CLASS DEFINITION QuantRDOQ
 
 //! \}

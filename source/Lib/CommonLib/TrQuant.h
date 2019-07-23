@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,7 @@
 #include "UnitPartitioner.h"
 #include "Quant.h"
 
+#include "DepQuant.h"
 //! \ingroup CommonLib
 //! \{
 
@@ -75,26 +76,38 @@ public:
                     const bool useSelectiveRDOQ     = false,
 #endif
                     const bool bEnc                 = false,
-                    const bool useTransformSkipFast = false,
-                    const bool rectTUs              = false
+                    const bool useTransformSkipFast = false
   );
+  void getTrTypes(const TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer);
 
-  uint8_t getEmtTrIdx( TransformUnit tu, const ComponentID compID );
-  uint8_t getEmtMode ( TransformUnit tu, const ComponentID compID );
+  void fwdLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize );
+  void invLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize );
 
+  uint32_t getLFNSTIntraMode( int wideAngPredMode );
+  bool     getTransposeFlag ( uint32_t intraMode  );
 
 protected:
+
+  void xFwdLfnst( const TransformUnit &tu, const ComponentID compID, const bool loadTr = false );
+  void xInvLfnst( const TransformUnit &tu, const ComponentID compID );
 
 public:
 
   void invTransformNxN  (TransformUnit &tu, const ComponentID &compID, PelBuf &pResi, const QpParam &cQPs);
 
-  void transformNxN     (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx);
+  void transformNxN     ( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, std::vector<TrMode>* trModes, const int maxCand, double* diagRatio = nullptr, double* horVerRatio = nullptr );
+  void transformNxN     ( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, const bool loadTr = false, double* diagRatio = nullptr, double* horVerRatio = nullptr );
   void rdpcmNxN         (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum,       RDPCMMode &rdpcmMode);
   void applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const RDPCMMode &rdpcmMode);
 
   void transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &compID, const TCoeff &resiDiff, TCoeff &coeff,    const uint32_t &uiPos, const QpParam &cQP, const bool bUseHalfRoundingPoint);
   void invTrSkipDeQuantOneSample  (TransformUnit &tu, const ComponentID &compID, const TCoeff &pcCoeff,  Pel &reconSample, const uint32_t &uiPos, const QpParam &cQP);
+
+#if JVET_O0105_ICT
+  void                        invTransformICT     ( const TransformUnit &tu, PelBuf &resCb, PelBuf &resCr );
+  std::pair<int64_t,int64_t>  fwdTransformICT     ( const TransformUnit &tu, const PelBuf &resCb, const PelBuf &resCr, PelBuf& resC1, PelBuf& resC2, int jointCbCr = -1 );
+  std::vector<int>            selectICTCandidates ( const TransformUnit &tu, CompStorage* resCb, CompStorage* resCr );
+#endif
 
   void invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &pcResidual);
 #if RDOQ_CHROMA_LAMBDA
@@ -105,7 +118,7 @@ public:
   void   setLambda   ( const double dLambda )                      { m_quant->setLambda( dLambda ); }
   double getLambda   () const                                      { return m_quant->getLambda(); }
 
-  Quant* getQuant() { return m_quant;  }
+  DepQuant* getQuant() { return m_quant; }
 
 
 #if ENABLE_SPLIT_PARALLELISM
@@ -118,17 +131,24 @@ protected:
   bool     m_bEnc;
   bool     m_useTransformSkipFast;
 
-  bool     m_rectTUs;
-
   bool     m_scalingListEnabledFlag;
 
 private:
-  Quant    *m_quant;          //!< Quantizer
+  DepQuant *m_quant;          //!< Quantizer
+  TCoeff** m_mtsCoeffs;
+  TCoeff   m_tempInMatrix [ 48 ];
+  TCoeff   m_tempOutMatrix[ 48 ];
+#if JVET_O0105_ICT
+  static const int maxAbsIctMode = 3;
+  void                      (*m_invICTMem[1+2*maxAbsIctMode])(PelBuf&,PelBuf&);
+  std::pair<int64_t,int64_t>(*m_fwdICTMem[1+2*maxAbsIctMode])(const PelBuf&,const PelBuf&,PelBuf&,PelBuf&);
+  void                      (**m_invICT)(PelBuf&,PelBuf&);
+  std::pair<int64_t,int64_t>(**m_fwdICT)(const PelBuf&,const PelBuf&,PelBuf&,PelBuf&);
+#endif
 
 
   // forward Transform
-  void xT        ( const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, CoeffBuf &dstCoeff, const int iWidth, const int iHeight );
-
+  void xT               (const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, CoeffBuf &dstCoeff, const int width, const int height);
 
   // skipping Transform
   void xTransformSkip   (const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, TCoeff* psCoeff);
@@ -152,12 +172,12 @@ private:
                  const TransformUnit &tu,
                  const ComponentID   &component);
 
-
-#ifdef TARGET_SIMD_X86
-  template<X86_VEXT vext>
-  void _initTrQuantX86();
-  void initTrQuantX86();
-#endif
+  void xGetCoeffEnergy(
+                       TransformUnit  &tu,
+                 const ComponentID    &compID,
+                 const CoeffBuf       &coeffs,
+                       double*        diagRatio,
+                       double*        horVerRatio );
 };// END CLASS DEFINITION TrQuant
 
 //! \}

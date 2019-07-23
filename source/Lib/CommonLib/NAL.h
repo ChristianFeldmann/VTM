@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -74,22 +74,14 @@ struct NALUnit
   /** returns true if the NALunit is a slice NALunit */
   bool isSlice()
   {
-    return m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL_R
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL_N
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_TSA_R
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_TSA_N
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_R
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_N
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
+    return m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL_N
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL_R
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL_N
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL_R;
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_GRA
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL;
   }
   bool isSei()
   {
@@ -99,7 +91,15 @@ struct NALUnit
 
   bool isVcl()
   {
-    return ( (uint32_t)m_nalUnitType < 32 );
+    return m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_GRA;
+
   }
 };
 

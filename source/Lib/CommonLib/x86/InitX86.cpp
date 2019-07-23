@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,8 @@
 #include "CommonLib/AffineGradientSearch.h"
 
 #include "CommonLib/AdaptiveLoopFilter.h"
+
+#include "CommonLib/IbcHashMap.h"
 
 #ifdef TARGET_SIMD_X86
 
@@ -165,11 +167,11 @@ void AdaptiveLoopFilter::initAdaptiveLoopFilterX86()
 }
 #endif
 
-#if ENABLE_SIMD_OPT_CPR
+#if ENABLE_SIMD_OPT_IBC
 void IbcHashMap::initIbcHashMapX86()
 {
   auto vext = read_x86_extension_flags();
-  switch (vext) 
+  switch (vext)
   {
   case AVX512:
   case AVX2:

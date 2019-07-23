@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2018, ITU/ISO/IEC
+* Copyright (c) 2010-2019, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -153,6 +153,9 @@ struct CompArea : public Area
 
   const bool operator!=(const CompArea &other) const { return !(operator==(other)); }
 
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  void     resizeTo          (const Size& newSize)          { Size::resizeTo(newSize); }
+#endif
   void     repositionTo      (const Position& newPos)       { Position::repositionTo(newPos); }
   void     positionRelativeTo(const CompArea& origCompArea) { Position::relativeTo(origCompArea); }
 
@@ -214,6 +217,9 @@ struct UnitArea
     return true;
   }
 
+#if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
+  void resizeTo    (const UnitArea& unit);
+#endif
   void repositionTo(const UnitArea& unit);
 
   const bool operator!=(const UnitArea &other) const { return !(*this == other); }
@@ -261,9 +267,8 @@ struct UnitAreaRelative : public UnitArea
 };
 
 class SPS;
-#if HEVC_VPS
 class VPS;
-#endif
+class DPS;
 class PPS;
 class Slice;
 
@@ -284,7 +289,6 @@ struct CodingUnit : public UnitArea
   ChannelType    chType;
 
   PredMode       predMode;
-  PartSize       partSize;
 
   uint8_t          depth;   // number of all splits, applied with generalized splits
   uint8_t          qtDepth; // number of applied quad-splits, before switching to the multi-type-tree (mtt)
@@ -295,26 +299,29 @@ struct CodingUnit : public UnitArea
   int8_t          qp;
   SplitSeries    splitSeries;
   bool           skip;
-#if JVET_L0054_MMVD
   bool           mmvdSkip;
-#endif
   bool           affine;
   int            affineType;
+  bool           triangle;
   bool           transQuantBypass;
+  int            bdpcmMode;
   bool           ipcm;
   uint8_t          imv;
   bool           rootCbf;
-#if HEVC_TILES_WPP
+  uint8_t        sbtInfo;
   uint32_t           tileIdx;
-#endif
-  uint8_t          emtFlag;
-#if JVET_L0646_GBI
+  uint8_t         mtsFlag;
+  uint32_t        lfnstIdx;
   uint8_t         GBiIdx;
   int             refIdxBi[2];
-#endif
+  bool           mipFlag;
+
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
-
+  Position       shareParentPos;
+  Size           shareParentSize;
+  uint8_t          smvdMode;
+  uint8_t        ispMode;
 
   CodingUnit() : chType( CH_L ) { }
   CodingUnit(const UnitArea &unit);
@@ -337,6 +344,15 @@ struct CodingUnit : public UnitArea
   int64_t cacheId;
   bool    cacheUsed;
 #endif
+  const uint8_t     getSbtIdx() const { assert( ( ( sbtInfo >> 0 ) & 0xf ) < NUMBER_SBT_IDX ); return ( sbtInfo >> 0 ) & 0xf; }
+  const uint8_t     getSbtPos() const { return ( sbtInfo >> 4 ) & 0x3; }
+  void              setSbtIdx( uint8_t idx ) { CHECK( idx >= NUMBER_SBT_IDX, "sbt_idx wrong" ); sbtInfo = ( idx << 0 ) + ( sbtInfo & 0xf0 ); }
+  void              setSbtPos( uint8_t pos ) { CHECK( pos >= 4, "sbt_pos wrong" ); sbtInfo = ( pos << 4 ) + ( sbtInfo & 0xcf ); }
+  uint8_t           getSbtTuSplit() const;
+  const uint8_t     checkAllowedSbt() const;
+#if JVET_O1124_ALLOW_CCLM_COND
+  const bool        checkCCLMAllowed() const;
+#endif
 };
 
 // ---------------------------------------------------------------------------
@@ -346,16 +362,19 @@ struct CodingUnit : public UnitArea
 struct IntraPredictionData
 {
   uint32_t  intraDir[MAX_NUM_CHANNEL_TYPE];
+  int       multiRefIdx;
 };
 
 struct InterPredictionData
 {
   bool      mergeFlag;
+  bool      regularMergeFlag;
   uint8_t     mergeIdx;
-#if JVET_L0054_MMVD
+  uint8_t     triangleSplitDir;
+  uint8_t     triangleMergeIdx0;
+  uint8_t     triangleMergeIdx1;
   bool           mmvdMergeFlag;
   uint32_t       mmvdMergeIdx;
-#endif
   uint8_t     interDir;
   uint8_t     mvpIdx  [NUM_REF_PIC_LIST_01];
   uint8_t     mvpNum  [NUM_REF_PIC_LIST_01];
@@ -363,7 +382,17 @@ struct InterPredictionData
   Mv        mv      [NUM_REF_PIC_LIST_01];
   int16_t     refIdx  [NUM_REF_PIC_LIST_01];
   MergeType mergeType;
+  bool      mvRefine;
+  Mv        mvdL0SubPu[MAX_NUM_SUBCU_DMVR];
   Mv        mvdAffi [NUM_REF_PIC_LIST_01][3];
+  Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
+  bool      mhIntraFlag;
+
+  Position  shareParentPos;
+  Size      shareParentSize;
+  Mv        bv;                             // block vector for IBC
+  Mv        bvd;                            // block vector difference for IBC
+  uint8_t   mmvdEncOptMode;                  // 0: no action 1: skip chroma MC for MMVD candidate pre-selection 2: skip chroma MC and BIO for MMVD candidate pre-selection
 };
 
 struct PredictionUnit : public UnitArea, public IntraPredictionData, public InterPredictionData
@@ -385,6 +414,9 @@ struct PredictionUnit : public UnitArea, public IntraPredictionData, public Inte
   PredictionUnit& operator=(const MotionInfo& mi);
 
   unsigned        idx;
+  Position shareParentPos;
+  Size     shareParentSize;
+
   PredictionUnit *next;
 
   // for accessing motion information, which can have higher resolution than PUs (should always be used, when accessing neighboring motion information)
@@ -409,15 +441,15 @@ struct TransformUnit : public UnitArea
   CodingUnit      *cu;
   CodingStructure *cs;
   ChannelType      chType;
+  int              m_chromaResScaleInv;
 
-#if ENABLE_BMS
   uint8_t        depth;
-#endif
-  uint8_t        emtIdx;
-  uint8_t        cbf          [ MAX_NUM_TBLOCKS ];
+  uint8_t        mtsIdx;
+  bool           noResidual;
+  uint8_t        jointCbCr;
+  uint8_t        cbf        [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];
-  bool         transformSkip[ MAX_NUM_TBLOCKS ];
-  int8_t        compAlpha    [ MAX_NUM_TBLOCKS ];
+  int8_t        compAlpha   [ MAX_NUM_TBLOCKS ];
 
   TransformUnit() : chType( CH_L ) { }
   TransformUnit(const UnitArea& unit);
@@ -427,16 +459,23 @@ struct TransformUnit : public UnitArea
 
   unsigned       idx;
   TransformUnit *next;
+  TransformUnit *prev;
 
   void init(TCoeff **coeffs, Pel **pcmbuf);
 
   TransformUnit& operator=(const TransformUnit& other);
   void copyComponentFrom  (const TransformUnit& other, const ComponentID compID);
+  void checkTuNoResidual( unsigned idx );
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  int  getTbAreaAfterCoefZeroOut(ComponentID compID) const;
+#endif
 
          CoeffBuf getCoeffs(const ComponentID id);
   const CCoeffBuf getCoeffs(const ComponentID id) const;
          PelBuf   getPcmbuf(const ComponentID id);
   const CPelBuf   getPcmbuf(const ComponentID id) const;
+        int       getChromaAdj( )                 const;
+        void      setChromaAdj(int i);
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   int64_t cacheId;

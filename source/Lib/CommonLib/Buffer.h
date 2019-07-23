@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,16 +51,15 @@
 // AreaBuf struct
 // ---------------------------------------------------------------------------
 
-#if ENABLE_SIMD_OPT_BUFFER
-#ifdef TARGET_SIMD_X86
-
 struct PelBufferOps
 {
   PelBufferOps();
 
+#if ENABLE_SIMD_OPT_BUFFER && defined(TARGET_SIMD_X86)
   void initPelBufOpsX86();
   template<X86_VEXT vext>
   void _initPelBufOpsX86();
+#endif
 
   void ( *addAvg4 )       ( const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, int width, int height,            int shift, int offset, const ClpRng& clpRng );
   void ( *addAvg8 )       ( const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, int width, int height,            int shift, int offset, const ClpRng& clpRng );
@@ -68,12 +67,12 @@ struct PelBufferOps
   void ( *reco8 )         ( const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, int width, int height,                                   const ClpRng& clpRng );
   void ( *linTf4 )        ( const Pel* src0, int src0Stride,                                  Pel *dst, int dstStride, int width, int height, int scale, int shift, int offset, const ClpRng& clpRng, bool bClip );
   void ( *linTf8 )        ( const Pel* src0, int src0Stride,                                  Pel *dst, int dstStride, int width, int height, int scale, int shift, int offset, const ClpRng& clpRng, bool bClip );
-#if JVET_L0256_BIO
   void(*addBIOAvg4)    (const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng);
-  void(*bioGradFilter) (Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY);
-  void(*calcBIOPar)    (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG);
+  void(*bioGradFilter) (Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth);
+  void(*calcBIOPar)    (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth);
   void(*calcBlkGradient)(int sx, int sy, int    *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize);
-#endif
+  void(*copyBuffer)(Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height);
+  void(*padding)(Pel *dst, int stride, int width, int height, int padSize);
 #if ENABLE_SIMD_OPT_GBI
   void ( *removeWeightHighFreq8)  ( Pel* src0, int src0Stride, const Pel* src1, int src1Stride, int width, int height, int shift, int gbiWeight);
   void ( *removeWeightHighFreq4)  ( Pel* src0, int src0Stride, const Pel* src1, int src1Stride, int width, int height, int shift, int gbiWeight);
@@ -84,8 +83,8 @@ struct PelBufferOps
 
 extern PelBufferOps g_pelBufOP;
 
-#endif
-#endif
+void paddingCore(Pel *ptr, int stride, int width, int height, int padSize);
+void copyBufferCore(Pel *src, int srcStride, Pel *Dst, int dstStride, int width, int height);
 
 template<typename T>
 struct AreaBuf : public Size
@@ -112,12 +111,14 @@ struct AreaBuf : public Size
   void copyClip             ( const AreaBuf<const T> &src, const ClpRng& clpRng);
 
   void subtract             ( const AreaBuf<const T> &other );
+#if !JVET_O0105_ICT
+  void copyAndNegate        ( const AreaBuf<const T> &other );
+  void subtractAndHalve     ( const AreaBuf<const T> &other );
+#endif
   void extendSingleBorderPel();
   void extendBorderPel      (  unsigned margin );
-#if JVET_L0646_GBI
   void addWeightedAvg       ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng, const int8_t gbiIdx);
   void removeWeightHighFreq ( const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng, const int8_t iGbiWeight);
-#endif
   void addAvg               ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng );
   void removeHighFreq       ( const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng);
   void updateHistogram      ( std::vector<int32_t>& hist ) const;
@@ -130,6 +131,10 @@ struct AreaBuf : public Size
   void transposedFrom       ( const AreaBuf<const T> &other );
 
   void toLast               ( const ClpRng& clpRng );
+
+  void rspSignal            ( std::vector<Pel>& pLUT );
+  void scaleSignal          ( const int scale, const bool dir , const ClpRng& clpRng);
+  T    computeAvg           ( ) const;
 
         T& at( const int &x, const int &y )          { return buf[y * stride + x]; }
   const T& at( const int &x, const int &y ) const    { return buf[y * stride + x]; }
@@ -354,6 +359,50 @@ void AreaBuf<T>::subtract( const AreaBuf<const T> &other )
 #undef SUBS_INC
 }
 
+#if !JVET_O0105_ICT
+template<typename T>
+void AreaBuf<T>::copyAndNegate( const AreaBuf<const T> &other )
+{
+  CHECK( width  != other.width,  "Incompatible size" );
+  CHECK( height != other.height, "Incompatible size" );
+
+        T* dest =       buf;
+  const T* subs = other.buf;
+
+#define SUBS_INC        \
+  dest +=       stride; \
+  subs += other.stride; \
+
+#define SUBS_OP( ADDR ) dest[ADDR] = -subs[ADDR]
+
+  SIZE_AWARE_PER_EL_OP( SUBS_OP, SUBS_INC );
+
+#undef SUBS_OP
+#undef SUBS_INC
+}
+
+template<typename T>
+void AreaBuf<T>::subtractAndHalve( const AreaBuf<const T> &other )
+{
+  CHECK( width  != other.width,  "Incompatible size" );
+  CHECK( height != other.height, "Incompatible size" );
+
+        T* dest =       buf;
+  const T* subs = other.buf;
+
+#define SUBS_INC        \
+  dest +=       stride; \
+  subs += other.stride; \
+
+#define SUBS_OP( ADDR ) dest[ADDR] = ( dest[ADDR] - subs[ADDR] ) / 2
+
+  SIZE_AWARE_PER_EL_OP( SUBS_OP, SUBS_INC );
+
+#undef SUBS_OP
+#undef SUBS_INC
+}
+#endif
+
 template<typename T>
 void AreaBuf<T>::copyClip( const AreaBuf<const T> &src, const ClpRng& clpRng )
 {
@@ -400,7 +449,6 @@ void AreaBuf<T>::toLast( const ClpRng& clpRng )
 template<>
 void AreaBuf<Pel>::toLast( const ClpRng& clpRng );
 
-#if JVET_L0646_GBI
 template<typename T>
 void AreaBuf<T>::removeWeightHighFreq(const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng, const int8_t gbiWeight)
 {
@@ -452,7 +500,6 @@ void AreaBuf<T>::removeWeightHighFreq(const AreaBuf<T>& other, const bool bClip,
   }
 #endif
 }
-#endif
 
 template<typename T>
 void AreaBuf<T>::removeHighFreq( const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng )
@@ -463,7 +510,7 @@ void AreaBuf<T>::removeHighFreq( const AreaBuf<T>& other, const bool bClip, cons
         T*  dst       = buf;
   const int dstStride = stride;
 
-#if ENABLE_SIMD_OPT_GBI && JVET_L0646_GBI
+#if ENABLE_SIMD_OPT_GBI
   if (!bClip)
   {
     if(!(width & 7))
@@ -497,7 +544,7 @@ void AreaBuf<T>::removeHighFreq( const AreaBuf<T>& other, const bool bClip, cons
 #undef REM_HF_OP
 #undef REM_HF_OP_CLIP
 
-#if ENABLE_SIMD_OPT_GBI && JVET_L0646_GBI
+#if ENABLE_SIMD_OPT_GBI
   }
 #endif
 }
@@ -552,6 +599,7 @@ void AreaBuf<T>::extendBorderPel( unsigned margin )
     ::memcpy( p - ( y + 1 ) * s, p, sizeof( T ) * ( w + ( margin << 1 ) ) );
   }
 }
+
 template<typename T>
 T AreaBuf<T>::meanDiff( const AreaBuf<const T> &other ) const
 {
@@ -615,6 +663,22 @@ void AreaBuf<T>::transposedFrom( const AreaBuf<const T> &other )
   }
 }
 
+template<typename T>
+T AreaBuf <T> ::computeAvg() const
+{
+    const T* src = buf;
+#if ENABLE_QPA
+    int64_t  acc = 0; // for picture-wise use in getGlaringColorQPOffset() and applyQPAdaptationChroma()
+#else
+    int32_t  acc = 0;
+#endif
+#define AVG_INC      src += stride
+#define AVG_OP(ADDR) acc += src[ADDR]
+    SIZE_AWARE_PER_EL_OP(AVG_OP, AVG_INC);
+#undef AVG_INC
+#undef AVG_OP
+    return T ((acc + (area() >> 1)) / area());
+}
 
 #ifndef DONT_UNDEF_SIZE_AWARE_PER_EL_OP
 #undef SIZE_AWARE_PER_EL_OP
@@ -663,16 +727,12 @@ struct UnitBuf
   void reconstruct          ( const UnitBuf<const T> &pred, const UnitBuf<const T> &resi, const ClpRngs& clpRngs );
   void copyClip             ( const UnitBuf<const T> &src, const ClpRngs& clpRngs );
   void subtract             ( const UnitBuf<const T> &other );
-#if JVET_L0646_GBI
   void addWeightedAvg       ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const uint8_t gbiIdx = GBI_DEFAULT, const bool chromaOnly = false, const bool lumaOnly = false);
-#endif
   void addAvg               ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const bool chromaOnly = false, const bool lumaOnly = false);
   void extendSingleBorderPel();
   void extendBorderPel      ( unsigned margin );
   void removeHighFreq       ( const UnitBuf<T>& other, const bool bClip, const ClpRngs& clpRngs
-#if JVET_L0646_GBI
                             , const int8_t gbiWeight = g_GbiWeights[GBI_DEFAULT]
-#endif
                             );
 
         UnitBuf<      T> subBuf (const UnitArea& subArea);
@@ -742,7 +802,6 @@ void UnitBuf<T>::reconstruct(const UnitBuf<const T> &pred, const UnitBuf<const T
   }
 }
 
-#if JVET_L0646_GBI
 template<typename T>
 void UnitBuf<T>::addWeightedAvg(const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const uint8_t gbiIdx /* = GBI_DEFAULT */, const bool chromaOnly /* = false */, const bool lumaOnly /* = false */)
 {
@@ -756,7 +815,6 @@ void UnitBuf<T>::addWeightedAvg(const UnitBuf<const T> &other1, const UnitBuf<co
     bufs[i].addWeightedAvg(other1.bufs[i], other2.bufs[i], clpRngs.comp[i], gbiIdx);
   }
 }
-#endif
 
 template<typename T>
 void UnitBuf<T>::addAvg(const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const bool chromaOnly /* = false */, const bool lumaOnly /* = false */)
@@ -792,24 +850,15 @@ void UnitBuf<T>::extendBorderPel( unsigned margin )
 
 template<typename T>
 void UnitBuf<T>::removeHighFreq( const UnitBuf<T>& other, const bool bClip, const ClpRngs& clpRngs
-#if JVET_L0646_GBI
                                , const int8_t gbiWeight
-#endif
                                )
 {
-#if JVET_L0646_GBI 
   if(gbiWeight != g_GbiWeights[GBI_DEFAULT])
   {
     bufs[0].removeWeightHighFreq(other.bufs[0], bClip, clpRngs.comp[0], gbiWeight);
     return;
   }
   bufs[0].removeHighFreq(other.bufs[0], bClip, clpRngs.comp[0]);
-#else
-  for (unsigned i = 0; i <bufs.size(); i++)
-  {
-    bufs[i].removeHighFreq(other.bufs[i], bClip, clpRngs.comp[i]);
-  }
-#endif
 
 }
 
@@ -879,5 +928,27 @@ private:
   Pel *m_origin[MAX_NUM_COMPONENT];
 };
 
+#if JVET_O0105_ICT
+struct CompStorage : public PelBuf
+{
+  CompStorage () { m_memory = nullptr; }
+  ~CompStorage() { if (valid()) delete [] m_memory; }
+
+  void create( const Size& size )
+  {
+    CHECK( m_memory, "Trying to re-create an already initialized buffer" );
+    m_memory = new Pel [ size.area() ];
+    *static_cast<PelBuf*>(this) = PelBuf( m_memory, size );
+  }
+  void destroy()
+  {
+    if (valid()) delete [] m_memory;
+    m_memory = nullptr;
+  }
+  bool valid() { return m_memory != nullptr; }
+private:
+  Pel* m_memory;
+};
+#endif
 
 #endif

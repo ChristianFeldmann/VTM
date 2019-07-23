@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -90,12 +90,7 @@ private:
   std::vector<int>        m_viRdPicQp;                          ///< array of picture QP candidates (int-type)
   RateCtrl*               m_pcRateCtrl;                         ///< Rate control manager
   uint32_t                    m_uiSliceSegmentIdx;
-#if HEVC_DEPENDENT_SLICES
-  Ctx                     m_lastSliceSegmentEndContextState;    ///< context storage for state at the end of the previous slice-segment (used for dependent slices only).
-#endif
-#if HEVC_TILES_WPP
   Ctx                     m_entropyCodingSyncContextState;      ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
-#endif
   SliceType               m_encCABACTableIdx;
 #if SHARP_LUMA_DELTA_QP
   int                     m_gopID;
@@ -109,11 +104,7 @@ public:
 
 private:
 #endif
-#if HEVC_TILES_WPP
   void    calculateBoundingCtuTsAddrForSlice( uint32_t &startCtuTSAddrSlice, uint32_t &boundingCtuTSAddrSlice, bool &haveReachedTileBoundary, Picture* pcPic, const int sliceMode, const int sliceArgument );
-#else
-  void    calculateBoundingCtuTsAddrForSlice( uint32_t &startCtuTSAddrSlice, uint32_t &boundingCtuTSAddrSlice, Picture* pcPic, const int sliceMode, const int sliceArgument );
-#endif
 
 
 public:
@@ -146,7 +137,7 @@ public:
   static
 #endif
   void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pcEncLib );
-
+  void    checkDisFracMmvd    ( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr );
 
   // misc. functions
   void    setSearchRange      ( Slice* pcSlice  );                                  ///< set ME range adaptively
@@ -157,6 +148,7 @@ public:
   void    setSliceSegmentIdx  (uint32_t i)              { m_uiSliceSegmentIdx = i;          }
 
   SliceType getEncCABACTableIdx() const             { return m_encCABACTableIdx;        }
+  void    setEncCABACTableIdx (SliceType b)         { m_encCABACTableIdx = b; }
 private:
   double  xGetQPValueAccordingToLambda ( double lambda );
 };

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -96,11 +96,9 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
   case SEI::CHROMA_RESAMPLING_FILTER_HINT:
     xWriteSEIChromaResamplingFilterHint(*static_cast<const SEIChromaResamplingFilterHint*>(&sei));
     break;
-#if HEVC_TILES_WPP
   case SEI::TEMP_MOTION_CONSTRAINED_TILE_SETS:
     xWriteSEITempMotionConstrainedTileSets(*static_cast<const SEITempMotionConstrainedTileSets*>(&sei));
     break;
-#endif
   case SEI::TIME_CODE:
     xWriteSEITimeCode(*static_cast<const SEITimeCode*>(&sei));
     break;
@@ -231,9 +229,6 @@ void SEIWriter::xWriteSEIDecodedPictureHash(const SEIDecodedPictureHash& sei)
 
 void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
 {
-#if HEVC_VPS
-  WRITE_CODE(sei.activeVPSId,     4,         "active_video_parameter_set_id");
-#endif
   WRITE_FLAG(sei.m_selfContainedCvsFlag,     "self_contained_cvs_flag");
   WRITE_FLAG(sei.m_noParameterSetUpdateFlag, "no_parameter_set_update_flag");
   WRITE_UVLC(sei.numSpsIdsMinus1,            "num_sps_ids_minus1");
@@ -248,24 +243,22 @@ void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
 
 void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps)
 {
-  const VUI *vui = sps->getVuiParameters();
   WRITE_UVLC(sei.m_decodingUnitIdx, "decoding_unit_idx");
-  if(vui->getHrdParameters()->getSubPicCpbParamsInPicTimingSEIFlag())
+  if(sps->getHrdParameters()->getSubPicCpbParamsInPicTimingSEIFlag())
   {
-    WRITE_CODE( sei.m_duSptCpbRemovalDelay, (vui->getHrdParameters()->getDuCpbRemovalDelayLengthMinus1() + 1), "du_spt_cpb_removal_delay_increment");
+    WRITE_CODE( sei.m_duSptCpbRemovalDelay, (sps->getHrdParameters()->getDuCpbRemovalDelayLengthMinus1() + 1), "du_spt_cpb_removal_delay_increment");
   }
   WRITE_FLAG( sei.m_dpbOutputDuDelayPresentFlag, "dpb_output_du_delay_present_flag");
   if(sei.m_dpbOutputDuDelayPresentFlag)
   {
-    WRITE_CODE(sei.m_picSptDpbOutputDuDelay, vui->getHrdParameters()->getDpbOutputDelayDuLengthMinus1() + 1, "pic_spt_dpb_output_du_delay");
+    WRITE_CODE(sei.m_picSptDpbOutputDuDelay, sps->getHrdParameters()->getDpbOutputDelayDuLengthMinus1() + 1, "pic_spt_dpb_output_du_delay");
   }
 }
 
 void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SPS *sps)
 {
   int i, nalOrVcl;
-  const VUI *vui = sps->getVuiParameters();
-  const HRD *hrd = vui->getHrdParameters();
+  const HRDParameters *hrd = sps->getHrdParameters();
 
   WRITE_UVLC( sei.m_bpSeqParameterSetId, "bp_seq_parameter_set_id" );
   if( !hrd->getSubPicCpbParamsPresentFlag() )
@@ -300,10 +293,8 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SP
 void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps)
 {
   int i;
-  const VUI *vui = sps->getVuiParameters();
-  const HRD *hrd = vui->getHrdParameters();
+  const HRDParameters *hrd = sps->getHrdParameters();
 
-  if( vui->getFrameFieldInfoPresentFlag() )
   {
     WRITE_CODE( sei.m_picStruct, 4,              "pic_struct" );
     WRITE_CODE( sei.m_sourceScanType, 2,         "source_scan_type" );
@@ -546,7 +537,6 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
   writeSEImessages(bs, sei.m_nestedSEIs, sps, true);
 }
 
-#if HEVC_TILES_WPP
 void SEIWriter::xWriteSEITempMotionConstrainedTileSets(const SEITempMotionConstrainedTileSets& sei)
 {
   //uint32_t code;
@@ -603,7 +593,6 @@ void SEIWriter::xWriteSEITempMotionConstrainedTileSets(const SEITempMotionConstr
     }
   }
 }
-#endif
 
 void SEIWriter::xWriteSEITimeCode(const SEITimeCode& sei)
 {

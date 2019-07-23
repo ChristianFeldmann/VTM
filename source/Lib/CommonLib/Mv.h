@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,27 +47,37 @@
 // Class definition
 // ====================================================================================================================
 
+enum MvPrecision
+{
+  MV_PRECISION_4PEL     = 0,      // 4-pel
+  MV_PRECISION_INT      = 2,      // 1-pel, shift 2 bits from 4-pel
+  MV_PRECISION_HALF     = 3,      // 1/2-pel
+  MV_PRECISION_QUARTER  = 4,      // 1/4-pel (the precision of regular MV difference signaling), shift 4 bits from 4-pel
+  MV_PRECISION_SIXTEENTH = 6,     // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
+  MV_PRECISION_INTERNAL = 2 + MV_FRACTIONAL_BITS_INTERNAL,
+};
+
 /// basic motion vector class
 class Mv
 {
+private:
+  static const MvPrecision m_amvrPrecision[3];
+  static const MvPrecision m_amvrPrecAffine[3];
+  static const MvPrecision m_amvrPrecIbc[3];
+
+  static const int mvClipPeriod = (1 << MV_BITS);
+  static const int halMvClipPeriod = (1 << (MV_BITS - 1));
+
 public:
   int   hor;     ///< horizontal component of motion vector
   int   ver;     ///< vertical component of motion vector
-#if !REMOVE_MV_ADAPT_PREC
-  bool  highPrec;///< true if the vector is high precision
-#endif
 
   // ------------------------------------------------------------------------------------------------------------------
   // constructors
   // ------------------------------------------------------------------------------------------------------------------
 
-#if !REMOVE_MV_ADAPT_PREC
-  Mv(                                            ) : hor( 0    ), ver( 0    ), highPrec( false     ) {}
-  Mv( int iHor, int iVer, bool _highPrec = false ) : hor( iHor ), ver( iVer ), highPrec( _highPrec ) {}
-#else
   Mv(                    ) : hor( 0    ), ver( 0    ) {}
   Mv( int iHor, int iVer ) : hor( iHor ), ver( iVer ) {}
-#endif
 
   // ------------------------------------------------------------------------------------------------------------------
   // set
@@ -93,21 +103,9 @@ public:
 
   const Mv& operator += (const Mv& _rcMv)
   {
-#if !REMOVE_MV_ADAPT_PREC
-    if( highPrec == _rcMv.highPrec )
-    {
-      hor += _rcMv.hor;
-      ver += _rcMv.ver;
-    }
-    else
-#endif
     {
       Mv rcMv = _rcMv;
 
-#if !REMOVE_MV_ADAPT_PREC
-      if( highPrec && !rcMv.highPrec ) rcMv.setHighPrec();
-      if( !highPrec && rcMv.highPrec )      setHighPrec();
-#endif
       hor += rcMv.hor;
       ver += rcMv.ver;
     }
@@ -116,21 +114,9 @@ public:
 
   const Mv& operator-= (const Mv& _rcMv)
   {
-#if !REMOVE_MV_ADAPT_PREC
-    if( highPrec == _rcMv.highPrec )
-    {
-      hor -= _rcMv.hor;
-      ver -= _rcMv.ver;
-    }
-    else
-#endif
     {
       Mv rcMv = _rcMv;
 
-#if !REMOVE_MV_ADAPT_PREC
-      if( highPrec && !rcMv.highPrec ) rcMv.setHighPrec();
-      if( !highPrec && rcMv.highPrec )      setHighPrec();
-#endif
       hor -= rcMv.hor;
       ver -= rcMv.ver;
     }
@@ -141,13 +127,12 @@ public:
   //! shift right with rounding
   void divideByPowerOf2 (const int i)
   {
-#if ME_ENABLE_ROUNDING_OF_MVS
-    const int offset = (i == 0) ? 0 : 1 << (i - 1);
-    hor += offset;
-    ver += offset;
-#endif
-    hor >>= i;
-    ver >>= i;
+    if (i != 0)
+    {
+      const int offset = (1 << (i - 1));
+      hor = (hor + offset - (hor >= 0)) >> i;
+      ver = (ver + offset - (ver >= 0)) >> i;
+    }
   }
 
   const Mv& operator<<= (const int i)
@@ -159,67 +144,28 @@ public:
 
   const Mv& operator>>= ( const int i )
   {
-    hor >>= i;
-    ver >>= i;
+    if (i != 0)
+    {
+      const int offset = (1 << (i - 1));
+      hor = (hor + offset - (hor >= 0)) >> i;
+      ver = (ver + offset - (ver >= 0)) >> i;
+    }
     return  *this;
   }
 
   const Mv operator - ( const Mv& rcMv ) const
   {
-#if !REMOVE_MV_ADAPT_PREC
-    if( rcMv.highPrec == highPrec )
-    {
-      return Mv( hor - rcMv.hor, ver - rcMv.ver, highPrec );
-    }
-    else
-    {
-      Mv self = *this; self.setHighPrec();
-      Mv other = rcMv; other.setHighPrec();
-
-      return self - other;
-    }
-#else
     return Mv( hor - rcMv.hor, ver - rcMv.ver );
-#endif
   }
 
   const Mv operator + ( const Mv& rcMv ) const
   {
-#if !REMOVE_MV_ADAPT_PREC
-    if( rcMv.highPrec == highPrec )
-    {
-      return Mv( hor + rcMv.hor, ver + rcMv.ver, highPrec );
-    }
-    else
-    {
-      Mv self = *this; self.setHighPrec();
-      Mv other = rcMv; other.setHighPrec();
-
-      return self + other;
-    }
-#else
     return Mv( hor + rcMv.hor, ver + rcMv.ver );
-#endif
   }
 
   bool operator== ( const Mv& rcMv ) const
   {
-#if !REMOVE_MV_ADAPT_PREC
-    if( rcMv.highPrec == highPrec )
-    {
-      return ( hor == rcMv.hor && ver == rcMv.ver );
-    }
-    else if( rcMv.highPrec )
-    {
-      return ( ( hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE ) == rcMv.hor && ( ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE ) == rcMv.ver );
-    }
-    else
-    {
-      return ( ( rcMv.hor << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE ) == hor && ( rcMv.ver << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE ) == ver );
-    }
-#else
     return ( hor == rcMv.hor && ver == rcMv.ver );
-#endif
   }
 
   bool operator!= ( const Mv& rcMv ) const
@@ -229,52 +175,119 @@ public:
 
   const Mv scaleMv( int iScale ) const
   {
-    const int mvx = Clip3( -32768, 32767, (iScale * getHor() + 127 + (iScale * getHor() < 0)) >> 8 );
-    const int mvy = Clip3( -32768, 32767, (iScale * getVer() + 127 + (iScale * getVer() < 0)) >> 8 );
-#if !REMOVE_MV_ADAPT_PREC
-    return Mv( mvx, mvy, highPrec );
-#else
+    const int mvx = Clip3(MV_MIN, MV_MAX, (iScale * getHor() + 128 - (iScale * getHor() >= 0)) >> 8);
+    const int mvy = Clip3(MV_MIN, MV_MAX, (iScale * getVer() + 128 - (iScale * getVer() >= 0)) >> 8);
     return Mv( mvx, mvy );
-#endif
   }
 
-  void roundMV2SignalPrecision()
+  void changePrecision(const MvPrecision& src, const MvPrecision& dst)
   {
-#if REMOVE_MV_ADAPT_PREC
-    const int nShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-    const int nOffset = 1 << (nShift - 1);
-    hor = hor >= 0 ? (hor + nOffset) >> nShift : -((-hor + nOffset) >> nShift);
-    ver = ver >= 0 ? (ver + nOffset) >> nShift : -((-ver + nOffset) >> nShift);
-    hor = hor >= 0 ? (hor) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : -((-hor) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE);
-    ver = ver >= 0 ? (ver) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : -((-ver) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE);
-#else
-    const bool isHP = highPrec;
-    setLowPrec();
-    if( isHP ) setHighPrec();
-#endif
-  }
-#if !REMOVE_MV_ADAPT_PREC
-  void setLowPrec()
-  {
-    if( !highPrec ) return;
-    const int nShift  = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
-    const int nOffset = 1 << ( nShift - 1 );
-    hor = hor >= 0 ? ( hor + nOffset ) >> nShift : -( ( -hor + nOffset ) >> nShift );
-    ver = ver >= 0 ? ( ver + nOffset ) >> nShift : -( ( -ver + nOffset ) >> nShift );
-    highPrec = false;
+    const int shift = (int)dst - (int)src;
+    if (shift >= 0)
+    {
+      *this <<= shift;
+    }
+    else
+    {
+      const int rightShift = -shift;
+      const int nOffset = 1 << (rightShift - 1);
+      hor = hor >= 0 ? (hor + nOffset - 1) >> rightShift : (hor + nOffset) >> rightShift;
+      ver = ver >= 0 ? (ver + nOffset - 1) >> rightShift : (ver + nOffset) >> rightShift;
+    }
   }
 
-  void setHighPrec()
+  void roundToPrecision(const MvPrecision& src, const MvPrecision& dst)
   {
-    if( highPrec ) return;
-    hor = hor >= 0 ? ( hor ) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : -( ( -hor ) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE );
-    ver = ver >= 0 ? ( ver ) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE : -( ( -ver ) << VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE );
-    highPrec = true;
+    changePrecision(src, dst);
+    changePrecision(dst, src);
   }
-#endif
+
+  // translational MV
+  void changeTransPrecInternal2Amvr(const int amvr)
+  {
+    changePrecision(MV_PRECISION_INTERNAL, m_amvrPrecision[amvr]);
+  }
+
+  void changeTransPrecAmvr2Internal(const int amvr)
+  {
+    changePrecision(m_amvrPrecision[amvr], MV_PRECISION_INTERNAL);
+  }
+
+  void roundTransPrecInternal2Amvr(const int amvr)
+  {
+    roundToPrecision(MV_PRECISION_INTERNAL, m_amvrPrecision[amvr]);
+  }
+
+  // affine MV
+  void changeAffinePrecInternal2Amvr(const int amvr)
+  {
+    changePrecision(MV_PRECISION_INTERNAL, m_amvrPrecAffine[amvr]);
+  }
+
+  void changeAffinePrecAmvr2Internal(const int amvr)
+  {
+    changePrecision(m_amvrPrecAffine[amvr], MV_PRECISION_INTERNAL);
+  }
+
+  void roundAffinePrecInternal2Amvr(const int amvr)
+  {
+    roundToPrecision(MV_PRECISION_INTERNAL, m_amvrPrecAffine[amvr]);
+  }
+
+  // IBC block vector
+  void changeIbcPrecInternal2Amvr(const int amvr)
+  {
+    changePrecision(MV_PRECISION_INTERNAL, m_amvrPrecIbc[amvr]);
+  }
+
+  void changeIbcPrecAmvr2Internal(const int amvr)
+  {
+    changePrecision(m_amvrPrecIbc[amvr], MV_PRECISION_INTERNAL);
+  }
+
+  void roundIbcPrecInternal2Amvr(const int amvr)
+  {
+    roundToPrecision(MV_PRECISION_INTERNAL, m_amvrPrecIbc[amvr]);
+  }
+
+
+  Mv getSymmvdMv(const Mv& curMvPred, const Mv& tarMvPred)
+  {
+    return Mv(tarMvPred.hor - hor + curMvPred.hor, tarMvPred.ver - ver + curMvPred.ver);
+  }
+
+  void clipToStorageBitDepth()
+  {
+    hor = Clip3( -(1 << 17), (1 << 17) - 1, hor );
+    ver = Clip3( -(1 << 17), (1 << 17) - 1, ver );
+  }
+  void mvCliptoStorageBitDepth()  // periodic clipping
+  {
+    hor = (hor + mvClipPeriod) & (mvClipPeriod - 1);
+    hor = (hor >= halMvClipPeriod) ? (hor - mvClipPeriod) : hor;
+    ver = (ver + mvClipPeriod) & (mvClipPeriod - 1);
+    ver = (ver >= halMvClipPeriod) ? (ver - mvClipPeriod) : ver;
+  }
 };// END CLASS DEFINITION MV
-void roundMV( Mv& rcMv, unsigned imvShift );
-void clipMv ( Mv& rcMv, const struct Position& pos, const class SPS& sps );
+
+namespace std
+{
+  template <>
+  struct hash<Mv> : public unary_function<Mv, uint64_t>
+  {
+    uint64_t operator()(const Mv& value) const
+    {
+      return (((uint64_t)value.hor << 32) + value.ver);
+    }
+  };
+};
+void clipMv ( Mv& rcMv, const struct Position& pos,
+              const struct Size& size,
+              const class SPS& sps );
+
+bool wrapClipMv( Mv& rcMv, const Position& pos, 
+                 const struct Size& size, 
+                 const SPS *sps );
 
 void roundAffineMv( int& mvx, int& mvy, int nShift );
 

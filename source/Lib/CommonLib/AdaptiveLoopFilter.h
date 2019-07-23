@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@
 #include "CommonDef.h"
 
 #include "Unit.h"
+#include "UnitTools.h"
 
 struct AlfClassifier
 {
@@ -66,33 +67,42 @@ enum Direction
 class AdaptiveLoopFilter
 {
 public:
-#if JVET_L0083_ALF_FRAC_BIT
+  static inline int clipALF(const int clip, const short ref, const short val0, const short val1)
+  {
+    return Clip3<int>(-clip, +clip, val0-ref) + Clip3<int>(-clip, +clip, val1-ref);
+  }
+
+  static constexpr int AlfNumClippingValues[MAX_NUM_CHANNEL_TYPE] = { 4, 4 };
+  static constexpr int MaxAlfNumClippingValues = 4;
+
   static constexpr int   m_NUM_BITS = 8;
-#else
-  static constexpr int   m_NUM_BITS = 10;
-#endif
   static constexpr int   m_CLASSIFICATION_BLK_SIZE = 32;  //non-normative, local buffer size
+  static constexpr int m_ALF_UNUSED_CLASSIDX = 255;
+  static constexpr int m_ALF_UNUSED_TRANSPOSIDX = 255;
 
   AdaptiveLoopFilter();
   virtual ~AdaptiveLoopFilter() {}
-
-  void ALFProcess( CodingStructure& cs, AlfSliceParam& alfSliceParam );
-  void reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, const bool bRedo = false );
+  void reconstructCoeffAPSs(CodingStructure& cs, bool luma, bool chroma, bool isRdo);
+  void reconstructCoeff(AlfSliceParam& alfSliceParam, ChannelType channel, const bool isRdo, const bool isRedo = false);
+  void ALFProcess(CodingStructure& cs);
   void create( const int picWidth, const int picHeight, const ChromaFormat format, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE] );
   void destroy();
-  static void deriveClassificationBlk( AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift );
-  void deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk );
+  static void deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift, int vbCTUHeight, int vbPos);
+  void deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blkDst, const Area& blk );
+  void resetPCMBlkClassInfo(CodingStructure & cs, AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk);
   template<AlfFilterType filtType>
-  static void filterBlk( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng );
-
+  static void filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
+#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   inline static int getMaxGolombIdx( AlfFilterType filterType )
   {
     return filterType == ALF_FILTER_5 ? 2 : 3;
   }
+#endif
 
-  void( *m_deriveClassificationBlk )( AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blk, const int shift );
-  void( *m_filter5x5Blk )( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng );
-  void( *m_filter7x7Blk )( AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blk, const ComponentID compId, short* filterSet, const ClpRng& clpRng );
+  void(*m_deriveClassificationBlk)(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift, int vbCTUHeight, int vbPos);
+
+  void(*m_filter5x5Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
+  void(*m_filter7x7Blk)(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos);
 
 #ifdef TARGET_SIMD_X86
   void initAdaptiveLoopFilterX86();
@@ -101,12 +111,25 @@ public:
 #endif
 
 protected:
+  bool isCrossedByVirtualBoundaries( const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps );
+  static const int             m_classToFilterMapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES];
+  static const int             m_fixedFilterSetCoeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF];
+  short                        m_fixedFilterSetCoeffDec[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+  short                        m_coeffApsLuma[6][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
+  short                        m_clippApsLuma[6][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
+  short                        m_clipDefault[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+  bool                         m_created = false;
+  short                        m_chromaCoeffFinal[MAX_NUM_ALF_LUMA_COEFF];
+  Pel                          m_alfClippingValues[MAX_NUM_CHANNEL_TYPE][MaxAlfNumClippingValues];
   std::vector<AlfFilterShape>  m_filterShapes[MAX_NUM_CHANNEL_TYPE];
   AlfClassifier**              m_classifier;
   short                        m_coeffFinal[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+  short                        m_clippFinal[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+  short                        m_chromaClippFinal[MAX_NUM_ALF_LUMA_COEFF];
   int**                        m_laplacian[NUM_DIRECTIONS];
-  uint8_t*                       m_ctuEnableFlag[MAX_NUM_COMPONENT];
+  uint8_t*                     m_ctuEnableFlag[MAX_NUM_COMPONENT];
   PelStorage                   m_tempBuf;
+  PelStorage                   m_tempBuf2;
   int                          m_inputBitDepth[MAX_NUM_CHANNEL_TYPE];
   int                          m_picWidth;
   int                          m_picHeight;
@@ -116,6 +139,10 @@ protected:
   int                          m_numCTUsInWidth;
   int                          m_numCTUsInHeight;
   int                          m_numCTUsInPic;
+  int                          m_alfVBLumaPos;
+  int                          m_alfVBChmaPos;
+  int                          m_alfVBLumaCTUHeight;
+  int                          m_alfVBChmaCTUHeight;
   ChromaFormat                 m_chromaFormat;
   ClpRngs                      m_clpRngs;
 };

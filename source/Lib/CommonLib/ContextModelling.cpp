@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,47 +41,34 @@
 #include "Picture.h"
 
 
-#if HEVC_USE_SIGN_HIDING
-CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID component, bool signHide)
-#else
-CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID component )
-#endif
+CoeffCodingContext::CoeffCodingContext( const TransformUnit& tu, ComponentID component, bool signHide, bool bdpcm )
   : m_compID                    (component)
   , m_chType                    (toChannelType(m_compID))
   , m_width                     (tu.block(m_compID).width)
   , m_height                    (tu.block(m_compID).height)
-  , m_log2CGWidth               ((m_width & 3) || (m_height & 3) ? 1 : 2)
-  , m_log2CGHeight              ((m_width & 3) || (m_height & 3) ? 1 : 2)
+  , m_log2CGWidth               ( g_log2SbbSize[ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][0] )
+  , m_log2CGHeight              ( g_log2SbbSize[ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][1] )
   , m_log2CGSize                (m_log2CGWidth + m_log2CGHeight)
-  , m_widthInGroups             (m_width  >> m_log2CGWidth)
-  , m_heightInGroups            (m_height >> m_log2CGHeight)
+  , m_widthInGroups(std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_width) >> m_log2CGWidth)
+  , m_heightInGroups(std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_height) >> m_log2CGHeight)
   , m_log2BlockWidth            (g_aucLog2[m_width])
   , m_log2BlockHeight           (g_aucLog2[m_height])
-  , m_log2BlockSize             ((m_log2BlockWidth + m_log2BlockHeight)>>1)
   , m_maxNumCoeff               (m_width * m_height)
-#if HEVC_USE_SIGN_HIDING
   , m_signHiding                (signHide)
-#endif
   , m_extendedPrecision         (tu.cs->sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag())
   , m_maxLog2TrDynamicRange     (tu.cs->sps->getMaxLog2TrDynamicRange(m_chType))
-#if HEVC_USE_MDCS
-  , m_scanType                  (CoeffScanType(TU::getCoefScanIdx( tu, m_compID)))
-#else
   , m_scanType                  (SCAN_DIAG)
-#endif
   , m_scan                      (g_scanOrder     [SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )])
-  , m_scanPosX                  (g_scanOrderPosXY[SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )][0])
-  , m_scanPosY                  (g_scanOrderPosXY[SCAN_GROUPED_4x4][m_scanType][gp_sizeIdxInfo->idxFrom(m_width        )][gp_sizeIdxInfo->idxFrom(m_height        )][1])
-  , m_scanCG                    (g_scanOrder[SCAN_UNGROUPED  ][m_scanType][gp_sizeIdxInfo->idxFrom(m_widthInGroups)][gp_sizeIdxInfo->idxFrom(m_heightInGroups)])
+  , m_scanCG                    (g_scanOrder     [SCAN_UNGROUPED  ][m_scanType][gp_sizeIdxInfo->idxFrom(m_widthInGroups)][gp_sizeIdxInfo->idxFrom(m_heightInGroups)])
   , m_CtxSetLastX               (Ctx::LastX[m_chType])
   , m_CtxSetLastY               (Ctx::LastY[m_chType])
-  , m_maxLastPosX               (g_uiGroupIdx[m_width - 1])
-  , m_maxLastPosY               (g_uiGroupIdx[m_height - 1])
+  , m_maxLastPosX(g_uiGroupIdx[std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_width) - 1])
+  , m_maxLastPosY(g_uiGroupIdx[std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_height) - 1])
   , m_lastOffsetX               (0)
   , m_lastOffsetY               (0)
   , m_lastShiftX                (0)
   , m_lastShiftY                (0)
-  , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() &&  (tu.cu->transQuantBypass || tu.transformSkip[m_compID]))
+  , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() &&  (tu.cu->transQuantBypass || tu.mtsIdx==MTS_SKIP))
   , m_scanPosLast               (-1)
   , m_subSetId                  (-1)
   , m_subSetPos                 (-1)
@@ -95,50 +82,26 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
   , m_sigFlagCtxSet             { Ctx::SigFlag[m_chType], Ctx::SigFlag[m_chType+2], Ctx::SigFlag[m_chType+4] }
   , m_parFlagCtxSet             ( Ctx::ParFlag[m_chType] )
   , m_gtxFlagCtxSet             { Ctx::GtxFlag[m_chType], Ctx::GtxFlag[m_chType+2] }
+  , m_sigGroupCtxIdTS           (-1)
+  , m_tsSigFlagCtxSet           ( Ctx::TsSigFlag )
+  , m_tsParFlagCtxSet           ( Ctx::TsParFlag )
+  , m_tsGtxFlagCtxSet           ( Ctx::TsGtxFlag )
   , m_sigCoeffGroupFlag         ()
-  , m_emtNumSigCoeff            (0)
+  , m_bdpcm                     (bdpcm)
 {
   // LOGTODO
   unsigned log2sizeX = m_log2BlockWidth;
   unsigned log2sizeY = m_log2BlockHeight;
-#if HEVC_USE_MDCS
-  if (m_scanType == SCAN_VER)
-  {
-    std::swap(log2sizeX, log2sizeY);
-    std::swap(const_cast<unsigned&>(m_maxLastPosX), const_cast<unsigned&>(m_maxLastPosY));
-  }
-#endif
   if (m_chType == CHANNEL_TYPE_CHROMA)
   {
-    if( tu.cs->pcv->rectCUs )
-    {
-#if HEVC_USE_MDCS
-      const_cast<int&>(m_lastShiftX) = Clip3( 0, 2, int( ( m_scanType == SCAN_VER ? m_height : m_width  ) >> 3) );
-      const_cast<int&>(m_lastShiftY) = Clip3( 0, 2, int( ( m_scanType == SCAN_VER ? m_width  : m_height ) >> 3) );
-#else
-      const_cast<int&>(m_lastShiftX) = Clip3( 0, 2, int( m_width  >> 3) );
-      const_cast<int&>(m_lastShiftY) = Clip3( 0, 2, int( m_height >> 3) );
-#endif
-    }
-    else
-    {
-      const_cast<int&>(m_lastShiftX) = log2sizeX - 2;
-      const_cast<int&>(m_lastShiftY) = log2sizeY - 2;
-    }
+    const_cast<int&>(m_lastShiftX) = Clip3( 0, 2, int( m_width  >> 3) );
+    const_cast<int&>(m_lastShiftY) = Clip3( 0, 2, int( m_height >> 3) );
   }
   else
   {
-    if( tu.cs->pcv->rectCUs )
-    {
-      static const int prefix_ctx[8]  = { 0, 0, 0, 3, 6, 10, 15, 21 };
-      const_cast<int&>(m_lastOffsetX) = prefix_ctx[ log2sizeX ];
-      const_cast<int&>(m_lastOffsetY) = prefix_ctx[ log2sizeY ];;
-    }
-    else
-    {
-      const_cast<int&>(m_lastOffsetX) = 3 * (log2sizeX - 2) + ((log2sizeX - 1) >> 2);
-      const_cast<int&>(m_lastOffsetY) = 3 * (log2sizeY - 2) + ((log2sizeY - 1) >> 2);
-    }
+    static const int prefix_ctx[8]  = { 0, 0, 0, 3, 6, 10, 15, 21 };
+    const_cast<int&>(m_lastOffsetX) = prefix_ctx[ log2sizeX ];
+    const_cast<int&>(m_lastOffsetY) = prefix_ctx[ log2sizeY ];;
     const_cast<int&>(m_lastShiftX)  = (log2sizeX + 1) >> 2;
     const_cast<int&>(m_lastShiftY)  = (log2sizeY + 1) >> 2;
   }
@@ -147,7 +110,7 @@ CoeffCodingContext::CoeffCodingContext(const TransformUnit& tu, ComponentID comp
 void CoeffCodingContext::initSubblock( int SubsetId, bool sigGroupFlag )
 {
   m_subSetId                = SubsetId;
-  m_subSetPos               = m_scanCG[ m_subSetId ];
+  m_subSetPos               = m_scanCG[m_subSetId].idx;
   m_subSetPosY              = m_subSetPos / m_widthInGroups;
   m_subSetPosX              = m_subSetPos - ( m_subSetPosY * m_widthInGroups );
   m_minSubPos               = m_subSetId << m_log2CGSize;
@@ -161,100 +124,136 @@ void CoeffCodingContext::initSubblock( int SubsetId, bool sigGroupFlag )
   unsigned  sigRight  = unsigned( ( CGPosX + 1 ) < m_widthInGroups  ? m_sigCoeffGroupFlag[ m_subSetPos + 1               ] : false );
   unsigned  sigLower  = unsigned( ( CGPosY + 1 ) < m_heightInGroups ? m_sigCoeffGroupFlag[ m_subSetPos + m_widthInGroups ] : false );
   m_sigGroupCtxId     = Ctx::SigCoeffGroup[m_chType]( sigRight | sigLower );
+  unsigned  sigLeft   = unsigned( CGPosX > 0 ? m_sigCoeffGroupFlag[m_subSetPos - 1              ] : false );
+  unsigned  sigAbove  = unsigned( CGPosY > 0 ? m_sigCoeffGroupFlag[m_subSetPos - m_widthInGroups] : false );
+  m_sigGroupCtxIdTS   = Ctx::TsSigCoeffGroup( sigLeft  + sigAbove );
 }
 
 
 
 
-unsigned DeriveCtx::CtxCUsplit( const CodingStructure& cs, Partitioner& partitioner )
+
+void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* _canSplit /*= nullptr */ )
 {
-  auto adPartitioner = dynamic_cast<AdaptiveDepthPartitioner*>( &partitioner );
-
-  if( !adPartitioner )
-  {
-    return 0;
-  }
-
   const Position pos         = partitioner.currArea().blocks[partitioner.chType];
   const unsigned curSliceIdx = cs.slice->getIndependentSliceIdx();
-#if HEVC_TILES_WPP
-  const unsigned curTileIdx  = cs.picture->tileMap->getTileIdxMap( partitioner.currArea().lumaPos() );
-#endif
-  unsigned ctxId = 0;
+  const unsigned curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( partitioner.currArea().lumaPos() );
 
   // get left depth
-#if HEVC_TILES_WPP
-  const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), curSliceIdx, curTileIdx, partitioner.chType );
-#else
-  const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), curSliceIdx, partitioner.chType );
-#endif
-  ctxId = ( cuLeft && cuLeft->qtDepth > partitioner.currQtDepth ) ? 1 : 0;
+  const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
 
   // get above depth
-#if HEVC_TILES_WPP
-  const CodingUnit* cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), curSliceIdx, curTileIdx, partitioner.chType );
-#else
-  const CodingUnit* cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), curSliceIdx, partitioner.chType );
-#endif
+  const CodingUnit* cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
 
-  ctxId += ( cuAbove && cuAbove->qtDepth > partitioner.currQtDepth ) ? 1 : 0;
-#if JVET_L0361_SPLIT_CTX
-  ctxId += partitioner.currQtDepth < 2 ? 0 : 3;
-#else
-  if( cs.sps->getSpsNext().getUseLargeCTU() )
+  bool canSplit[6];
+
+  if( _canSplit == nullptr )
   {
-    unsigned minDepth = 0;
-    unsigned maxDepth = 0;
-    adPartitioner->setMaxMinDepth( minDepth, maxDepth, cs );
-    if( partitioner.currDepth < minDepth )
-    {
-      ctxId = 3;
-    }
-    else if( partitioner.currDepth >= maxDepth + 1 )
-    {
-      ctxId = 4;
-    }
+    partitioner.canSplit( cs, canSplit[0], canSplit[1], canSplit[2], canSplit[3], canSplit[4], canSplit[5] );
   }
-#endif
+  else
+  {
+    memcpy( canSplit, _canSplit, 6 * sizeof( bool ) );
+  }
 
-  return ctxId;
+  ///////////////////////
+  // CTX do split (0-8)
+  ///////////////////////
+  const unsigned widthCurr  = partitioner.currArea().blocks[partitioner.chType].width;
+  const unsigned heightCurr = partitioner.currArea().blocks[partitioner.chType].height;
+
+  ctxSpl = 0;
+
+  if( cuLeft )
+  {
+    const unsigned heightLeft = cuLeft->blocks[partitioner.chType].height;
+    ctxSpl += ( heightLeft < heightCurr ? 1 : 0 );
+  }
+  if( cuAbove )
+  {
+    const unsigned widthAbove = cuAbove->blocks[partitioner.chType].width;
+    ctxSpl += ( widthAbove < widthCurr ? 1 : 0 );
+  }
+
+  unsigned numSplit = 0;
+  if( canSplit[1] ) numSplit += 2;
+  if( canSplit[2] ) numSplit += 1;
+  if( canSplit[3] ) numSplit += 1;
+  if( canSplit[4] ) numSplit += 1;
+  if( canSplit[5] ) numSplit += 1;
+
+  if( numSplit > 0 ) numSplit--;
+
+  ctxSpl += 3 * ( numSplit >> 1 );
+
+  //////////////////////////
+  // CTX is qt split (0-5)
+  //////////////////////////
+  ctxQt =  ( cuLeft  && cuLeft->qtDepth  > partitioner.currQtDepth ) ? 1 : 0;
+  ctxQt += ( cuAbove && cuAbove->qtDepth > partitioner.currQtDepth ) ? 1 : 0;
+  ctxQt += partitioner.currQtDepth < 2 ? 0 : 3;
+
+  ////////////////////////////
+  // CTX is ver split (0-4)
+  ////////////////////////////
+  ctxHv = 0;
+
+  const unsigned numHor = ( canSplit[2] ? 1 : 0 ) + ( canSplit[4] ? 1 : 0 );
+  const unsigned numVer = ( canSplit[3] ? 1 : 0 ) + ( canSplit[5] ? 1 : 0 );
+
+  if( numVer == numHor )
+  {
+    const Area& area = partitioner.currArea().blocks[partitioner.chType];
+
+    const unsigned wAbove       = cuAbove ? cuAbove->blocks[partitioner.chType].width  : 1;
+    const unsigned hLeft        = cuLeft  ? cuLeft ->blocks[partitioner.chType].height : 1;
+
+    const unsigned depAbove     = area.width / wAbove;
+    const unsigned depLeft      = area.height / hLeft;
+
+    if( depAbove == depLeft || !cuLeft || !cuAbove ) ctxHv = 0;
+    else if( depAbove < depLeft ) ctxHv = 1;
+    else ctxHv = 2;
+  }
+  else if( numVer < numHor )
+  {
+    ctxHv = 3;
+  }
+  else
+  {
+    ctxHv = 4;
+  }
+
+  //////////////////////////
+  // CTX is h/v bt (0-3)
+  //////////////////////////
+  ctxHorBt = ( partitioner.currMtDepth <= 1 ? 1 : 0 );
+  ctxVerBt = ( partitioner.currMtDepth <= 1 ? 3 : 2 );
 }
 
-#if ENABLE_BMS
-unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf )
-#else
-unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const bool prevCbCbf )
-#endif
+unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf, const int ispIdx )
 {
+  if( ispIdx && isLuma( compID ) )
+  {
+    return 2 + (int)prevCbCbf;
+  }
   if( compID == COMPONENT_Cr )
   {
     return ( prevCbCbf ? 1 : 0 );
   }
-#if ENABLE_BMS
   if( isChroma( compID ) )
   {
-    return trDepth;
+    return ( trDepth == 0 ? 0 : 1 );
   }
   else
   {
     return ( trDepth == 0 ? 1 : 0 );
   }
-#else
-  return isChroma( compID ) ? 0 : 1;
-#endif
 }
 
 unsigned DeriveCtx::CtxInterDir( const PredictionUnit& pu )
 {
-  if( pu.cs->sps->getSpsNext().getUseLargeCTU() )
-  {
-    if( pu.cs->pcv->rectCUs )
-    {
-      return Clip3( 0, 3, 7 - ( ( g_aucLog2[pu.lumaSize().width] + g_aucLog2[pu.lumaSize().height] + 1 ) >> 1 ) );    // VG-ASYMM DONE
-    }
-    return Clip3( 0, 3, 6 - g_aucLog2[pu.cu->lumaSize().width] );
-  }
-  return pu.cu->qtDepth;
+  return ( 7 - ((g_aucLog2[pu.lumaSize().width] + g_aucLog2[pu.lumaSize().height] + 1) >> 1) );
 }
 
 unsigned DeriveCtx::CtxAffineFlag( const CodingUnit& cu )
@@ -287,87 +286,36 @@ unsigned DeriveCtx::CtxSkipFlag( const CodingUnit& cu )
 }
 
 
-unsigned DeriveCtx::CtxIMVFlag( const CodingUnit& cu )
+
+unsigned DeriveCtx::CtxPredModeFlag( const CodingUnit& cu )
 {
-  const CodingStructure *cs = cu.cs;
-  unsigned ctxId = 0;
+  const CodingUnit *cuLeft  = cu.cs->getCURestricted(cu.lumaPos().offset(-1, 0), cu, CH_L);
+  const CodingUnit *cuAbove = cu.cs->getCURestricted(cu.lumaPos().offset(0, -1), cu, CH_L);
 
-  // Get BCBP of left PU
-  const CodingUnit *cuLeft = cs->getCURestricted( cu.lumaPos().offset( -1, 0 ), cu, CH_L );
-  ctxId = ( cuLeft && cuLeft->imv ) ? 1 : 0;
-
-  // Get BCBP of above PU
-  const CodingUnit *cuAbove = cs->getCURestricted( cu.lumaPos().offset( 0, -1 ), cu, CH_L );
-  ctxId += ( cuAbove && cuAbove->imv ) ? 1 : 0;
+  unsigned ctxId = ((cuAbove && cuAbove->predMode == MODE_INTRA) || (cuLeft && cuLeft->predMode == MODE_INTRA)) ? 1 : 0;
 
   return ctxId;
 }
 
-unsigned DeriveCtx::CtxBTsplit(const CodingStructure& cs, Partitioner& partitioner)
+unsigned DeriveCtx::CtxIBCFlag(const CodingUnit& cu)
 {
-  const Position pos          = partitioner.currArea().blocks[partitioner.chType];
-  const unsigned curSliceIdx  = cs.slice->getIndependentSliceIdx();
-#if HEVC_TILES_WPP
-  const unsigned curTileIdx   = cs.picture->tileMap->getTileIdxMap( pos );
-#endif
+  const CodingStructure *cs = cu.cs;
+  unsigned ctxId = 0;
+  const Position pos = cu.chType == CHANNEL_TYPE_CHROMA ? cu.chromaPos() : cu.lumaPos();
+  const CodingUnit *cuLeft = cs->getCURestricted(pos.offset(-1, 0), cu, cu.chType);
+  ctxId += (cuLeft && CU::isIBC(*cuLeft)) ? 1 : 0;
 
-  unsigned ctx                = 0;
-
-#if HEVC_TILES_WPP
-  const CodingUnit *cuLeft    = cs.getCURestricted( pos.offset( -1,  0 ), curSliceIdx, curTileIdx, partitioner.chType );
-  const CodingUnit *cuAbove   = cs.getCURestricted( pos.offset(  0, -1 ), curSliceIdx, curTileIdx, partitioner.chType );
-#else
-  const CodingUnit *cuLeft    = cs.getCURestricted( pos.offset( -1,  0 ), curSliceIdx, partitioner.chType );
-  const CodingUnit *cuAbove   = cs.getCURestricted( pos.offset(  0, -1 ), curSliceIdx, partitioner.chType );
-#endif
-
-  {
-#if JVET_L0361_SPLIT_CTX
-    unsigned widthCurr = partitioner.currArea().lwidth();
-    unsigned heightCurr = partitioner.currArea().lheight();
-
-    if( cuLeft )
-    {
-      unsigned heightLeft = cuLeft->Y().height;
-      ctx += ( heightLeft < heightCurr ? 1 : 0 );
-    }
-    if( cuAbove )
-    {
-      unsigned widthAbove = cuAbove->Y().width;
-      ctx += ( widthAbove < widthCurr ? 1 : 0 );
-    }
-
-    if( partitioner.chType == CHANNEL_TYPE_CHROMA )
-    {
-      ctx += 9;
-    }
-    else
-    {
-      int maxBTSize = cs.pcv->getMaxBtSize( *cs.slice, partitioner.chType );
-      int th1 = ( maxBTSize == 128 ) ? 128  : ( ( maxBTSize == 64 ) ? 64  : 64  );
-      int th2 = ( maxBTSize == 128 ) ? 1024 : ( ( maxBTSize == 64 ) ? 512 : 256 );
-      unsigned int sizeCurr = widthCurr * heightCurr;
-      ctx += sizeCurr > th2 ? 0 : ( sizeCurr > th1 ? 3 : 6 );
-    }
-#else
-    const unsigned currDepth = partitioner.currQtDepth * 2 + partitioner.currBtDepth;
-
-    if( cuLeft )  ctx += ( ( 2 * cuLeft->qtDepth  + cuLeft->btDepth  ) > currDepth ? 1 : 0 );
-    if( cuAbove ) ctx += ( ( 2 * cuAbove->qtDepth + cuAbove->btDepth ) > currDepth ? 1 : 0 );
-#endif
-  }
-  return ctx;
+  const CodingUnit *cuAbove = cs->getCURestricted(pos.offset(0, -1), cu, cu.chType);
+  ctxId += (cuAbove && CU::isIBC(*cuAbove)) ? 1 : 0;
+  return ctxId;
 }
-
 
 void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 {
   CHECK( candIdx >= numValidMergeCand, "Merge candidate does not exist" );
-
+  pu.regularMergeFlag        = !(pu.mhIntraFlag || pu.cu->triangle);
   pu.mergeFlag               = true;
-#if JVET_L0054_MMVD
   pu.mmvdMergeFlag = false;
-#endif
   pu.interDir                = interDirNeighbours[candIdx];
   pu.mergeIdx                = candIdx;
   pu.mergeType               = mrgTypeNeighbours[candIdx];
@@ -381,17 +329,20 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   pu.mvpIdx [REF_PIC_LIST_1] = NOT_VALID;
   pu.mvpNum [REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum [REF_PIC_LIST_1] = NOT_VALID;
-
-#if JVET_L0646_GBI 
+  if (CU::isIBC(*pu.cu))
+  {
+    pu.bv = pu.mv[REF_PIC_LIST_0];
+    pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
+  }
   pu.cu->GBiIdx = ( interDirNeighbours[candIdx] == 3 ) ? GBiIdx[candIdx] : GBI_DEFAULT;
-#endif
 
+  PU::restrictBiPredMergeCandsOne(pu);
+  pu.mmvdEncOptMode = 0;
 }
-#if JVET_L0054_MMVD
 void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
 {
   const Slice &slice = *pu.cs->slice;
-  const int mvShift = VCEG_AZ07_MV_ADD_PRECISION_BIT_FOR_STORE;
+  const int mvShift = MV_FRACTIONAL_BITS_DIFF;
   const int refMvdCands[8] = { 1 << mvShift , 2 << mvShift , 4 << mvShift , 8 << mvShift , 16 << mvShift , 32 << mvShift,  64 << mvShift , 128 << mvShift };
   int fPosGroup = 0;
   int fPosBaseIdx = 0;
@@ -407,12 +358,11 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   tempIdx = tempIdx - fPosBaseIdx * (MMVD_MAX_REFINE_NUM);
   fPosStep = tempIdx / 4;
   fPosPosition = tempIdx - fPosStep * (4);
-
-  const int offset = refMvdCands[fPosStep];
-#if !REMOVE_MV_ADAPT_PREC
-  const int highPrecList0 = mmvdBaseMv[fPosBaseIdx][0].mv.highPrec;
-  const int highPrecList1 = mmvdBaseMv[fPosBaseIdx][1].mv.highPrec;
-#endif
+  int offset = refMvdCands[fPosStep];
+  if ( pu.cu->slice->getDisFracMMVD() )
+  {
+    offset <<= 2;
+  }
   const int refList0 = mmvdBaseMv[fPosBaseIdx][0].refIdx;
   const int refList1 = mmvdBaseMv[fPosBaseIdx][1].refIdx;
 
@@ -421,70 +371,64 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
     const int poc0 = slice.getRefPOC(REF_PIC_LIST_0, refList0);
     const int poc1 = slice.getRefPOC(REF_PIC_LIST_1, refList1);
     const int currPoc = slice.getPOC();
-    int refSign = 1;
-
-    if ((poc0 - currPoc) * (currPoc - poc1) > 0)
-    {
-      refSign = -1;
-    }
-#if REMOVE_MV_ADAPT_PREC
     if (fPosPosition == 0)
     {
       tempMv[0] = Mv(offset, 0);
-      tempMv[1] = Mv(offset * refSign, 0);
     }
     else if (fPosPosition == 1)
     {
       tempMv[0] = Mv(-offset, 0);
-      tempMv[1] = Mv(-offset * refSign, 0);
     }
     else if (fPosPosition == 2)
     {
       tempMv[0] = Mv(0, offset);
-      tempMv[1] = Mv(0, offset * refSign);
     }
     else
     {
       tempMv[0] = Mv(0, -offset);
-      tempMv[1] = Mv(0, -offset * refSign);
     }
-#else
-    if (fPosPosition == 0)
+    if ((poc0 - currPoc) == (poc1 - currPoc))
     {
-      tempMv[0] = Mv(offset, 0, highPrecList0);
-      tempMv[1] = Mv(offset * refSign, 0, highPrecList1);
+      tempMv[1] = tempMv[0];
     }
-    else if (fPosPosition == 1)
+    else if (abs(poc1 - currPoc) > abs(poc0 - currPoc))
     {
-      tempMv[0] = Mv(-offset, 0, highPrecList0);
-      tempMv[1] = Mv(-offset * refSign, 0, highPrecList1);
-    }
-    else if (fPosPosition == 2)
-    {
-      tempMv[0] = Mv(0, offset, highPrecList0);
-      tempMv[1] = Mv(0, offset * refSign, highPrecList1);
+      const int scale = PU::getDistScaleFactor(currPoc, poc0, currPoc, poc1);
+      tempMv[1] = tempMv[0];
+      const bool isL0RefLongTerm = slice.getRefPic(REF_PIC_LIST_0, refList0)->longTerm;
+      const bool isL1RefLongTerm = slice.getRefPic(REF_PIC_LIST_1, refList1)->longTerm;
+      if (isL0RefLongTerm || isL1RefLongTerm)
+      {
+        if ((poc1 - currPoc)*(poc0 - currPoc) > 0)
+        {
+          tempMv[0] = tempMv[1];
+        }
+        else
+        {
+          tempMv[0].set(-1 * tempMv[1].getHor(), -1 * tempMv[1].getVer());
+        }
+      }
+      else
+      tempMv[0] = tempMv[1].scaleMv(scale);
     }
     else
     {
-      tempMv[0] = Mv(0, -offset, highPrecList0);
-      tempMv[1] = Mv(0, -offset * refSign, highPrecList1);
-    }
-#endif
-    if (abs(poc1 - currPoc) > abs(poc0 - currPoc))
-    {
-      const int scale = PU::getDistScaleFactor(currPoc, poc0, currPoc, poc1);
-      if (scale != 4096)
-      {
-        tempMv[0] = tempMv[0].scaleMv(scale);
-      }
-    }
-    else if (abs(poc1 - currPoc) < abs(poc0 - currPoc))
-    {
       const int scale = PU::getDistScaleFactor(currPoc, poc1, currPoc, poc0);
-      if (scale != 4096)
+      const bool isL0RefLongTerm = slice.getRefPic(REF_PIC_LIST_0, refList0)->longTerm;
+      const bool isL1RefLongTerm = slice.getRefPic(REF_PIC_LIST_1, refList1)->longTerm;
+      if (isL0RefLongTerm || isL1RefLongTerm)
       {
-        tempMv[1] = tempMv[1].scaleMv(scale);
+        if ((poc1 - currPoc)*(poc0 - currPoc) > 0)
+        {
+          tempMv[1] = tempMv[0];
+        }
+        else
+        {
+          tempMv[1].set(-1 * tempMv[0].getHor(), -1 * tempMv[0].getVer());
+        }
       }
+      else
+      tempMv[1] = tempMv[0].scaleMv(scale);
     }
 
     pu.interDir = 3;
@@ -495,7 +439,6 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   }
   else if (refList0 != -1)
   {
-#if REMOVE_MV_ADAPT_PREC
     if (fPosPosition == 0)
     {
       tempMv[0] = Mv(offset, 0);
@@ -512,24 +455,6 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
     {
       tempMv[0] = Mv(0, -offset);
     }
-#else
-    if (fPosPosition == 0)
-    {
-      tempMv[0] = Mv(offset, 0, highPrecList0);
-    }
-    else if (fPosPosition == 1)
-    {
-      tempMv[0] = Mv(-offset, 0, highPrecList0);
-    }
-    else if (fPosPosition == 2)
-    {
-      tempMv[0] = Mv(0, offset, highPrecList0);
-    }
-    else
-    {
-      tempMv[0] = Mv(0, -offset, highPrecList0);
-    }
-#endif
     pu.interDir = 1;
     pu.mv[REF_PIC_LIST_0] = mmvdBaseMv[fPosBaseIdx][0].mv + tempMv[0];
     pu.refIdx[REF_PIC_LIST_0] = refList0;
@@ -538,7 +463,6 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   }
   else if (refList1 != -1)
   {
-#if REMOVE_MV_ADAPT_PREC
     if (fPosPosition == 0)
     {
       tempMv[1] = Mv(offset, 0);
@@ -555,24 +479,6 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
     {
       tempMv[1] = Mv(0, -offset);
     }
-#else
-    if (fPosPosition == 0)
-    {
-      tempMv[1] = Mv(offset, 0, highPrecList1);
-    }
-    else if (fPosPosition == 1)
-    {
-      tempMv[1] = Mv(-offset, 0, highPrecList1);
-    }
-    else if (fPosPosition == 2)
-    {
-      tempMv[1] = Mv(0, offset, highPrecList1);
-    }
-    else
-    {
-      tempMv[1] = Mv(0, -offset, highPrecList1);
-    }
-#endif
     pu.interDir = 2;
     pu.mv[REF_PIC_LIST_0] = Mv(0, 0);
     pu.refIdx[REF_PIC_LIST_0] = -1;
@@ -583,6 +489,7 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mmvdMergeFlag = true;
   pu.mmvdMergeIdx = candIdx;
   pu.mergeFlag = true;
+  pu.regularMergeFlag = false;
   pu.mergeIdx = candIdx;
   pu.mergeType = MRG_TYPE_DEFAULT_N;
   pu.mvd[REF_PIC_LIST_0] = Mv();
@@ -592,8 +499,32 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mvpNum[REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum[REF_PIC_LIST_1] = NOT_VALID;
 
-#if JVET_L0646_GBI 
   pu.cu->GBiIdx = (interDirNeighbours[fPosBaseIdx] == 3) ? GBiIdx[fPosBaseIdx] : GBI_DEFAULT;
-#endif
+
+  for (int refList = 0; refList < 2; refList++)
+  {
+    if (pu.refIdx[refList] >= 0)
+    {
+      pu.mv[refList].clipToStorageBitDepth();
+    }
+  }
+
+
+  PU::restrictBiPredMergeCandsOne(pu);
 }
-#endif
+
+unsigned DeriveCtx::CtxMipFlag( const CodingUnit& cu )
+{
+  const CodingStructure *cs = cu.cs;
+  unsigned ctxId = 0;
+
+  const CodingUnit *cuLeft = cs->getCURestricted( cu.lumaPos().offset( -1, 0 ), cu, CH_L );
+  ctxId = (cuLeft && cuLeft->mipFlag) ? 1 : 0;
+
+  const CodingUnit *cuAbove = cs->getCURestricted( cu.lumaPos().offset( 0, -1 ), cu, CH_L );
+  ctxId += (cuAbove && cuAbove->mipFlag) ? 1 : 0;
+
+  ctxId  = (cu.lwidth() > 2*cu.lheight() || cu.lheight() > 2*cu.lwidth()) ? 3 : ctxId;
+
+  return ctxId;
+}

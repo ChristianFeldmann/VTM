@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2018, ITU/ISO/IEC
+ * Copyright (c) 2010-2019, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -165,6 +165,25 @@ inline void dtraceCCRC( CDTrace *trace_ctx, DTRACE_CHANNEL channel, const Coding
       calcCheckSum( pelBuf, cs.sps->getBitDepth ( toChannelType(compId) )));
 }
 
+inline void dtraceMotField( CDTrace *trace_ctx, const PredictionUnit& pu )
+{
+  DTRACE( trace_ctx, D_MOT_FIELD, "PU %d,%d @ %d,%d\n", pu.lwidth(), pu.lheight(), pu.lx(), pu.ly() );
+  const CMotionBuf mb = pu.getMotionBuf();
+  for( uint32_t listIdx = 0; listIdx < 2; listIdx++ )
+  {
+    RefPicList eListIdx = RefPicList( listIdx );
+    for( int y = 0, i = 0; y < pu.lheight(); y += 4 )
+    {
+      for( int x = 0; x < pu.lwidth(); x += 4, i++ )
+      {
+        const MotionInfo &mi = mb.at( x >> 2, y >> 2 );
+        DTRACE( trace_ctx, D_MOT_FIELD, "%d,%d:%d  ", mi.mv[eListIdx].getHor(), mi.mv[eListIdx].getVer(), mi.refIdx[eListIdx] );
+      }
+      DTRACE( trace_ctx, D_MOT_FIELD, "\n" );
+    }
+    DTRACE( trace_ctx, D_MOT_FIELD, "\n" );
+  }
+}
 
 #define DTRACE_PEL_BUF(...)              dtracePelBuf( __VA_ARGS__ )
 #define DTRACE_COEFF_BUF(...)            dtraceCoeffBuf( __VA_ARGS__ )
@@ -175,6 +194,7 @@ inline void dtraceCCRC( CDTrace *trace_ctx, DTRACE_CHANNEL channel, const Coding
 #define DTRACE_UNIT_COMP(...)            dtraceUnitComp( __VA_ARGS__ )
 #define DTRACE_CRC(...)                  dtraceCRC( __VA_ARGS__ )
 #define DTRACE_CCRC(...)                 dtraceCCRC( __VA_ARGS__ )
+#define DTRACE_MOT_FIELD(...)            dtraceMotField( __VA_ARGS__ )
 
 #else
 
@@ -187,6 +207,7 @@ inline void dtraceCCRC( CDTrace *trace_ctx, DTRACE_CHANNEL channel, const Coding
 #define DTRACE_UNIT_COMP(...)
 #define DTRACE_CRC(...)
 #define DTRACE_CCRC(...)
+#define DTRACE_MOT_FIELD(...)
 
 #endif
 

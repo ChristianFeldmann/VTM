@@ -962,9 +962,13 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       {
         cu.bdpcmMode = -mode;
 
+#if JVET_O0315_RDPCM_INTRAMODE_ALIGN
+        uiOrgMode = ModeInfo(false, 0, NOT_INTRA_SUBPARTITIONS, cu.bdpcmMode == 2 ? VER_IDX : HOR_IDX);
+#else
         unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
         PU::getIntraMPMs(pu, mpm_pred);
         uiOrgMode = ModeInfo(false, 0, NOT_INTRA_SUBPARTITIONS, mpm_pred[0]);
+#endif
         cu.mipFlag                     = uiOrgMode.mipFlg;
         cu.ispMode                     = uiOrgMode.ispMod;
         pu.multiRefIdx                 = uiOrgMode.mRefId;

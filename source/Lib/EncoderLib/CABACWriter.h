@@ -130,13 +130,21 @@ public:
   void        pcm_samples               ( const TransformUnit&          tu );
 
   // transform tree (clause 7.3.8.8)
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+  void        transform_tree            ( const CodingStructure&        cs,       Partitioner&      pm,     CUCtx& cuCtx,                         const PartSplit ispType = TU_NO_ISP, const int subTuIdx = -1 );
+#else
   void        transform_tree            ( const CodingStructure&        cs,       Partitioner&      pm,     CUCtx& cuCtx, ChromaCbfs& chromaCbfs, const PartSplit ispType = TU_NO_ISP, const int subTuIdx = -1 );
+#endif
   void        cbf_comp                  ( const CodingStructure&        cs,       bool              cbf,    const CompArea& area, unsigned depth, const bool prevCbCbf = false, const bool useISP = false );
 
   // mvd coding (clause 7.3.8.9)
   void        mvd_coding                ( const Mv &rMvd, int8_t imv );
   // transform unit (clause 7.3.8.10)
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+  void        transform_unit            ( const TransformUnit&          tu,       CUCtx&            cuCtx,  Partitioner& pm,       const int subTuCounter = -1 );
+#else
   void        transform_unit            ( const TransformUnit&          tu,       CUCtx&            cuCtx,  ChromaCbfs& chromaCbfs );
+#endif
   void        cu_qp_delta               ( const CodingUnit&             cu,       int               predQP, const int8_t qp );
   void        cu_chroma_qp_offset       ( const CodingUnit&             cu );
 

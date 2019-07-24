@@ -1288,15 +1288,25 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
 #endif
 
+#if !JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
   ChromaCbfs chromaCbfs;
+#endif
   if( cu.ispMode && isLuma( partitioner.chType ) )
   {
     TUIntraSubPartitioner subTuPartitioner( partitioner );
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+    transform_tree( *cu.cs, subTuPartitioner, cuCtx,             CU::getISPType( cu, getFirstComponentOfChannel( partitioner.chType)  ), 0 );
+#else
     transform_tree( *cu.cs, subTuPartitioner, cuCtx, chromaCbfs, CU::getISPType( cu, getFirstComponentOfChannel( partitioner.chType ) ), 0 );
+#endif
   }
   else
   {
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+    transform_tree( *cu.cs, partitioner, cuCtx );
+#else
     transform_tree( *cu.cs, partitioner, cuCtx, chromaCbfs );
+#endif
   }
 
   residual_lfnst_mode( cu, cuCtx );
@@ -1982,9 +1992,20 @@ void CABACWriter::pcm_samples( const TransformUnit& tu )
 //    bool  split_transform_flag( split, depth )
 //    bool  cbf_comp            ( cbf, area, depth )
 //================================================================================
-
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partitioner, CUCtx& cuCtx,                         const PartSplit ispType, const int subTuIdx )
+#else
 void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partitioner, CUCtx& cuCtx, ChromaCbfs& chromaCbfs, const PartSplit ispType, const int subTuIdx )
+#endif
 {
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+  const UnitArea&       area = partitioner.currArea();
+  int             subTuCounter = subTuIdx;
+  const TransformUnit&  tu = *cs.getTU(area.blocks[partitioner.chType].pos(), partitioner.chType, subTuIdx);
+  const CodingUnit&     cu = *tu.cu;
+  const unsigned        trDepth = partitioner.currTrDepth;
+  const bool            split = (tu.depth > trDepth);
+#else
   ChromaCbfs chromaCbfsLastDepth;
   chromaCbfsLastDepth.Cb              = chromaCbfs.Cb;
   chromaCbfsLastDepth.Cr              = chromaCbfs.Cr;
@@ -1996,11 +2017,14 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
   const bool            split         = ( tu.depth > trDepth );
   const bool            chromaCbfISP  = area.blocks[COMPONENT_Cb].valid() && cu.ispMode && !split;
   bool max_tu_split = false;
+#endif
 
   // split_transform_flag
   if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
   {
+#if !JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
     max_tu_split = true;
+#endif
     CHECK( !split, "transform split implied" );
   }
   else if( cu.sbtInfo && partitioner.canSplit( PartSplit( cu.getSbtTuSplit() ), cs ) )
@@ -2010,7 +2034,7 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
   else
   CHECK( split && !cu.ispMode, "transform split not allowed with QTBT" );
 
-
+#if !JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
   // cbf_cb & cbf_cr
   if( area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && ( !CS::isDualITree( cs ) || partitioner.chType == CHANNEL_TYPE_CHROMA ) && ( !cu.ispMode || chromaCbfISP ) )
   {
@@ -2035,14 +2059,17 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
   {
     chromaCbfs = ChromaCbfs( false );
   }
+#endif
 
   if( split )
   {
+#if !JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
     if( area.chromaFormat != CHROMA_400 )
     {
       chromaCbfs.Cb        = TU::getCbfAtDepth( tu, COMPONENT_Cb,  trDepth );
       chromaCbfs.Cr        = TU::getCbfAtDepth( tu, COMPONENT_Cr,  trDepth );
     }
+#endif
 
     if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
     {
@@ -2066,8 +2093,12 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
 
     do
     {
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+      transform_tree( cs, partitioner, cuCtx,                ispType, subTuCounter );
+#else
       ChromaCbfs subChromaCbfs = chromaCbfs;
       transform_tree( cs, partitioner, cuCtx, subChromaCbfs, ispType, subTuCounter );
+#endif
       subTuCounter += subTuCounter != -1 ? 1 : 0;
     } while( partitioner.nextPart( cs ) );
 
@@ -2077,6 +2108,9 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
   {
     DTRACE( g_trace_ctx, D_SYNTAX, "transform_unit() pos=(%d,%d) size=%dx%d depth=%d trDepth=%d\n", tu.blocks[tu.chType].x, tu.blocks[tu.chType].y, tu.blocks[tu.chType].width, tu.blocks[tu.chType].height, cu.depth, partitioner.currTrDepth );
 
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+    transform_unit( tu, cuCtx, partitioner, subTuCounter);
+#else
     if( !isChroma( partitioner.chType ) )
     {
       if( !CU::isIntra( cu ) && trDepth == 0 && !chromaCbfs.sigChroma( area.chromaFormat ) )
@@ -2127,6 +2161,7 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
 
 
     transform_unit( tu, cuCtx, chromaCbfs );
+#endif
   }
 }
 
@@ -2217,10 +2252,96 @@ void CABACWriter::mvd_coding( const Mv &rMvd, int8_t imv )
 //    void  cu_qp_delta         ( cu )
 //    void  cu_chroma_qp_offset ( cu )
 //================================================================================
-
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partitioner& partitioner, const int subTuCounter)
+#else
 void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& chromaCbfs )
+#endif
 {
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+  const CodingStructure&  cs = *tu.cs;
+  const CodingUnit&       cu = *tu.cu;
+  const UnitArea&         area = partitioner.currArea();
+  const unsigned          trDepth = partitioner.currTrDepth;
+  const bool              chromaCbfISP = area.blocks[COMPONENT_Cb].valid() && cu.ispMode;
+  ChromaCbfs              chromaCbfs;
+  CHECK(tu.depth != trDepth, " transform unit should be not be futher partitioned");
+
+  // cbf_cb & cbf_cr
+  if (area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && (!CS::isDualITree(cs) || partitioner.chType == CHANNEL_TYPE_CHROMA) && (!cu.ispMode || chromaCbfISP))
+  {
+    {
+      unsigned cbfDepth = chromaCbfISP ? trDepth - 1 : trDepth;
+      {
+        chromaCbfs.Cb = TU::getCbfAtDepth(tu, COMPONENT_Cb, trDepth);
+        //if (!(cu.sbtInfo && trDepth == 1))
+        if (!(cu.sbtInfo && tu.noResidual))
+          cbf_comp(cs, chromaCbfs.Cb, area.blocks[COMPONENT_Cb], cbfDepth);
+      }
+
+      {
+        chromaCbfs.Cr = TU::getCbfAtDepth(tu, COMPONENT_Cr, trDepth);
+        //if (!(cu.sbtInfo && trDepth == 1))
+        if (!(cu.sbtInfo && tu.noResidual))
+          cbf_comp(cs, chromaCbfs.Cr, area.blocks[COMPONENT_Cr], cbfDepth, chromaCbfs.Cb);
+      }
+    }
+  }
+  else if (CS::isDualITree(cs))
+  {
+    chromaCbfs = ChromaCbfs(false);
+  }
+
+  if (!isChroma(partitioner.chType))
+  {
+    if (!CU::isIntra(cu) && trDepth == 0 && !chromaCbfs.sigChroma(area.chromaFormat))
+    {
+      CHECK(!TU::getCbfAtDepth(tu, COMPONENT_Y, trDepth), "Luma cbf must be true for inter units with no chroma coeffs");
+    }
+    else if (cu.sbtInfo && tu.noResidual)
+    {
+      CHECK(TU::getCbfAtDepth(tu, COMPONENT_Y, trDepth), "Luma cbf must be false for inter sbt no-residual tu");
+    }
+    else if (cu.sbtInfo && !chromaCbfs.sigChroma(area.chromaFormat))
+    {
+      assert(!tu.noResidual);
+      CHECK(!TU::getCbfAtDepth(tu, COMPONENT_Y, trDepth), "Luma cbf must be true for inter sbt residual tu");
+    }
+    else
+    {
+      bool previousCbf = false;
+      bool rootCbfSoFar = false;
+      bool lastCbfIsInferred = false;
+      if (cu.ispMode)
+      {
+        uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> g_aucLog2[tu.lheight()] : cu.lwidth() >> g_aucLog2[tu.lwidth()];
+        if (subTuCounter == nTus - 1)
+        {
+          TransformUnit* tuPointer = cu.firstTU;
+          for (int tuIdx = 0; tuIdx < subTuCounter; tuIdx++)
+          {
+            rootCbfSoFar |= TU::getCbfAtDepth(*tuPointer, COMPONENT_Y, trDepth);
+            tuPointer = tuPointer->next;
+          }
+          if (!rootCbfSoFar)
+          {
+            lastCbfIsInferred = true;
+          }
+        }
+        if (!lastCbfIsInferred)
+        {
+          previousCbf = TU::getPrevTuCbfAtDepth(tu, COMPONENT_Y, partitioner.currTrDepth);
+        }
+      }
+      if (!lastCbfIsInferred)
+      {
+        cbf_comp(cs, TU::getCbfAtDepth(tu, COMPONENT_Y, trDepth), tu.Y(), trDepth, previousCbf, cu.ispMode);
+      }
+    }
+  }
+#else
   CodingUnit& cu        = *tu.cu;
+#endif
   bool        lumaOnly  = ( cu.chromaFormat == CHROMA_400 || !tu.blocks[COMPONENT_Cb].valid() );
   bool        cbf[3]    = { TU::getCbf( tu, COMPONENT_Y ), chromaCbfs.Cb, chromaCbfs.Cr };
   bool        cbfLuma   = ( cbf[ COMPONENT_Y ] != 0 );

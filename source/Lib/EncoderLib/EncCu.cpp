@@ -130,6 +130,9 @@ void EncCu::create( EncCfg* encCfg )
   for (unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++)
   {
     m_acRealMergeBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+    m_acMergeTmpBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
+#endif 
   }
   const unsigned maxNumTriangleCand = encCfg->getMaxNumTriangleCand();
   for (unsigned i = 0; i < maxNumTriangleCand; i++)
@@ -218,6 +221,9 @@ void EncCu::destroy()
   for (unsigned ui = 0; ui < MRG_MAX_NUM_CANDS; ui++)
   {
     m_acRealMergeBuffer[ui].destroy();
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+    m_acMergeTmpBuffer[ui].destroy();
+#endif 
   }
   for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
   {
@@ -266,6 +272,9 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   m_modeCtrl->init( m_pcEncCfg, m_pcRateCtrl, m_pcRdCost );
 
   m_pcInterSearch->setModeCtrl( m_modeCtrl );
+#if JVET_O0592_ENC_ME_IMP
+  m_modeCtrl->setInterSearch(m_pcInterSearch);
+#endif
   m_pcIntraSearch->setModeCtrl( m_modeCtrl );
 
   if ( ( m_pcEncCfg->getIBCHashSearch() && m_pcEncCfg->getIBCMode() ) || m_pcEncCfg->getAllowDisFracMMVD() )
@@ -1188,6 +1197,14 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   AffineMVInfo tmpMVInfo;
   bool isAffMVInfoSaved;
   m_pcInterSearch->savePrevAffMVInfo(0, tmpMVInfo, isAffMVInfoSaved);
+#if JVET_O0592_ENC_ME_IMP
+  BlkUniMvInfo tmpUniMvInfo;
+  bool         isUniMvInfoSaved = false;
+  if (!tempCS->slice->isIntra())
+  {
+    m_pcInterSearch->savePrevUniMvInfo(tempCS->area.Y(), tmpUniMvInfo, isUniMvInfoSaved);
+  }
+#endif
 
   do
   {
@@ -1319,6 +1336,12 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
   if (isAffMVInfoSaved)
     m_pcInterSearch->addAffMVInfo(tmpMVInfo);
+#if JVET_O0592_ENC_ME_IMP
+  if (!tempCS->slice->isIntra() && isUniMvInfoSaved)
+  {
+    m_pcInterSearch->addUniMvInfo(tmpUniMvInfo);
+  }
+#endif
 
   tempCS->motionLut = oldMotionLut;
 
@@ -1864,6 +1887,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   bool                                        bestIsSkip = false;
   bool                                        bestIsMMVDSkip = true;
   PelUnitBuf                                  acMergeBuffer[MRG_MAX_NUM_CANDS];
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+  PelUnitBuf                                  acMergeTmpBuffer[MRG_MAX_NUM_CANDS];
+#endif
   PelUnitBuf                                  acMergeRealBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
   PelUnitBuf *                                acMergeTempBuffer[MMVD_MRG_MAX_RD_NUM];
   PelUnitBuf *                                singleMergeTempBuffer;
@@ -1985,7 +2011,12 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         PU::spanMotionInfo( pu, mergeCtx );
         pu.mvRefine = true;
         distParam.cur = singleMergeTempBuffer->Y();
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+        acMergeTmpBuffer[uiMergeCand] = m_acMergeTmpBuffer[uiMergeCand].getBuf(localUnitArea);
+        m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer, REF_PIC_LIST_X, true, true, &(acMergeTmpBuffer[uiMergeCand]));
+#else
         m_pcInterSearch->motionCompensation(pu, *singleMergeTempBuffer);
+#endif
         acMergeBuffer[uiMergeCand] = m_acRealMergeBuffer[uiMergeCand].getBuf(localUnitArea);
         acMergeBuffer[uiMergeCand].copyFrom(*singleMergeTempBuffer);
         pu.mvRefine = false;
@@ -2049,7 +2080,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         for (uint32_t mergeCnt = 0; mergeCnt < std::min(std::min(NUM_MRG_SATD_CAND, (const int)mergeCtx.numValidMergeCand), 4); mergeCnt++)
         {
           uint32_t mergeCand = MHIntraMergeCand[mergeCnt];
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+          acMergeTmpBuffer[mergeCand] = m_acMergeTmpBuffer[mergeCand].getBuf(localUnitArea);
+#else
           acMergeBuffer[mergeCand] = m_acRealMergeBuffer[mergeCand].getBuf(localUnitArea);
+#endif
 
           // estimate merge bits
           mergeCtx.setMergeInfo(pu, mergeCand);
@@ -2064,7 +2099,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             m_pcIntraSearch->predIntraAng(COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), pu);
             m_pcIntraSearch->switchBuffer(pu, COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, intraCnt));
           }
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+          pu.cs->getPredBuf(pu).copyFrom(acMergeTmpBuffer[mergeCand]);
+#else
           pu.cs->getPredBuf(pu).copyFrom(acMergeBuffer[mergeCand]);
+#endif
           if (pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
           {
             pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
@@ -2287,17 +2326,29 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         {
           uint32_t bufIdx = 0;
           PelBuf tmpBuf = tempCS->getPredBuf(pu).Y();
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+          tmpBuf.copyFrom(acMergeTmpBuffer[uiMergeCand].Y());
+#else
           tmpBuf.copyFrom(acMergeBuffer[uiMergeCand].Y());
+#endif
           if (pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
           {
             tmpBuf.rspSignal(m_pcReshape->getFwdLUT());
           }
           m_pcIntraSearch->geneWeightedPred(COMPONENT_Y, tmpBuf, pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, bufIdx));
           tmpBuf = tempCS->getPredBuf(pu).Cb();
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+          tmpBuf.copyFrom(acMergeTmpBuffer[uiMergeCand].Cb());
+#else
           tmpBuf.copyFrom(acMergeBuffer[uiMergeCand].Cb());
+#endif
           m_pcIntraSearch->geneWeightedPred(COMPONENT_Cb, tmpBuf, pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Cb, bufIdx));
           tmpBuf = tempCS->getPredBuf(pu).Cr();
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+          tmpBuf.copyFrom(acMergeTmpBuffer[uiMergeCand].Cr());
+#else
           tmpBuf.copyFrom(acMergeBuffer[uiMergeCand].Cr());
+#endif
           m_pcIntraSearch->geneWeightedPred(COMPONENT_Cr, tmpBuf, pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Cr, bufIdx));
         }
         else

@@ -985,10 +985,14 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
 
   if( cu.bdpcmMode )
   {
+#if JVET_O0315_RDPCM_INTRAMODE_ALIGN
+    cu.firstPU->intraDir[0] = cu.bdpcmMode == 2? VER_IDX : HOR_IDX;
+#else
     PredictionUnit *pu = cu.firstPU;
     unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
     PU::getIntraMPMs( *pu, mpm_pred );
     cu.firstPU->intraDir[0] = mpm_pred[0];
+#endif
     return;
   }
 

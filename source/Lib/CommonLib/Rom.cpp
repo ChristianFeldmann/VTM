@@ -430,6 +430,10 @@ void initROM()
     }
   }
 #endif
+
+#if JVET_O0592_ENC_ME_IMP
+  ::memset(g_isReusedUniMVsFilled, 0, sizeof(g_isReusedUniMVsFilled));
+#endif
 }
 
 void destroyROM()
@@ -752,6 +756,10 @@ const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16, 
 uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
 #if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
 int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+#endif
+#if JVET_O0592_ENC_ME_IMP
+Mv   g_reusedUniMVs[32][32][8][8][2][33];
+bool g_isReusedUniMVsFilled[32][32][8][8];
 #endif
 
 //! \}

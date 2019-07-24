@@ -43,6 +43,9 @@
 
 #include "CommonLib/CommonDef.h"
 #include "CommonLib/CodingStructure.h"
+#if JVET_O0592_ENC_ME_IMP
+#include "InterSearch.h"
+#endif
 
 #include <typeinfo>
 #include <vector>
@@ -258,6 +261,9 @@ protected:
 #if ENABLE_SPLIT_PARALLELISM
   int                   m_runNextInParallel;
 #endif
+#if JVET_O0592_ENC_ME_IMP
+  InterSearch*          m_pcInterSearch;
+#endif
 
 public:
 
@@ -315,6 +321,9 @@ public:
   void   setBestCostWithoutSplitFlags ( double cost )           { m_ComprCUCtxList.back().bestCostWithoutSplitFlags = cost;         }
   double getMtsFirstPassNoIspCost     ()                  const { return m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp;         }
   void   setMtsFirstPassNoIspCost     ( double cost )           { m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp = cost;         }
+#if JVET_O0592_ENC_ME_IMP
+  void setInterSearch                 (InterSearch* pcInterSearch)   { m_pcInterSearch = pcInterSearch; }
+#endif
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );

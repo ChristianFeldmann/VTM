@@ -1087,7 +1087,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   //Read candidate for List0
   READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[0]");
   uint32_t numberOfRPL = uiCode;
-  pcSPS->createRPLList0(numberOfRPL + 1);
+  pcSPS->createRPLList0(numberOfRPL);
   RPLList* rplList = pcSPS->getRPLList0();
   ReferencePictureList* rpl;
   for (uint32_t ii = 0; ii < numberOfRPL; ii++)
@@ -1101,7 +1101,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[1]");
     numberOfRPL = uiCode;
-    pcSPS->createRPLList1(numberOfRPL + 1);
+    pcSPS->createRPLList1(numberOfRPL);
     rplList = pcSPS->getRPLList1();
     for (uint32_t ii = 0; ii < numberOfRPL; ii++)
     {
@@ -1216,9 +1216,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode,  "sps_amvr_enabled_flag" );                     pcSPS->setAMVREnabledFlag ( uiCode != 0 );
 
   READ_FLAG( uiCode, "sps_bdof_enabled_flag" );                      pcSPS->setBDOFEnabledFlag ( uiCode != 0 );
-
+#if !JVET_O0438_SPS_AFFINE_AMVR_FLAG
   READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );             pcSPS->setAffineAmvrEnabledFlag ( uiCode != 0 );
-
+#endif
   READ_FLAG(uiCode, "sps_dmvr_enable_flag");                        pcSPS->setUseDMVR(uiCode != 0);
   READ_FLAG(uiCode, "sps_mmvd_enable_flag");                        pcSPS->setUseMMVD(uiCode != 0);
   // KJS: sps_cclm_enabled_flag
@@ -1241,6 +1241,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   if ( pcSPS->getUseAffine() )
   {
     READ_FLAG( uiCode,  "affine_type_flag" );                       pcSPS->setUseAffineType          ( uiCode != 0 );
+#if JVET_O0438_SPS_AFFINE_AMVR_FLAG
+    READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );           pcSPS->setAffineAmvrEnabledFlag  ( uiCode != 0 );
+#endif
   }
   READ_FLAG( uiCode,    "gbi_flag" );                               pcSPS->setUseGBi                 ( uiCode != 0 );
   READ_FLAG(uiCode, "ibc_flag");                                    pcSPS->setIBCFlag(uiCode);
@@ -1251,7 +1254,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
-
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG 
+  if (pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
+  {
+    READ_FLAG(uiCode, "sps_bdof_dmvr_slice_level_present_flag");             pcSPS->setBdofDmvrSlicePresentFlag(uiCode != 0);
+  }
+#endif
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
 
   READ_FLAG( uiCode,    "sps_mip_flag");                            pcSPS->setUseMIP                 ( uiCode != 0 );
@@ -1982,6 +1990,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         READ_FLAG( uiCode, "tile_group_fracmmvd_disabled_flag" );
         pcSlice->setDisFracMMVD( uiCode ? true : false );
       }
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+      if (sps->getBdofDmvrSlicePresentFlag())
+      {
+        READ_FLAG(uiCode, "tile_group_bdof_dmvr_disabled_flag");
+        pcSlice->setDisBdofDmvrFlag(uiCode ? true : false);
+      }
+#endif
       if (sps->getUseTriangle() && pcSlice->getMaxNumMergeCand() >= 2)
       {
         READ_UVLC(uiCode, "max_num_merge_cand_minus_max_num_triangle_cand");

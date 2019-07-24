@@ -962,9 +962,13 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       {
         cu.bdpcmMode = -mode;
 
+#if JVET_O0315_RDPCM_INTRAMODE_ALIGN
+        uiOrgMode = ModeInfo(false, 0, NOT_INTRA_SUBPARTITIONS, cu.bdpcmMode == 2 ? VER_IDX : HOR_IDX);
+#else
         unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
         PU::getIntraMPMs(pu, mpm_pred);
         uiOrgMode = ModeInfo(false, 0, NOT_INTRA_SUBPARTITIONS, mpm_pred[0]);
+#endif
         cu.mipFlag                     = uiOrgMode.mipFlg;
         cu.ispMode                     = uiOrgMode.ispMod;
         pu.multiRefIdx                 = uiOrgMode.mRefId;
@@ -2781,11 +2785,15 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
     if( doReshaping )
     {
       const Area area = currTU.Y().valid() ? currTU.Y() : Area(recalcPosition(currTU.chromaFormat, currTU.chType, CHANNEL_TYPE_LUMA, currTU.blocks[currTU.chType].pos()), recalcSize(currTU.chromaFormat, currTU.chType, CHANNEL_TYPE_LUMA, currTU.blocks[currTU.chType].size()));
-      const CompArea &areaY = CompArea(COMPONENT_Y, currTU.chromaFormat, area );
+      const CompArea &areaY = CompArea(COMPONENT_Y, currTU.chromaFormat, area);
+#if JVET_O1109_UNFIY_CRS
+      int adj = m_pcReshape->calculateChromaAdjVpduNei(currTU, areaY);
+#else
       PelBuf piPredY;
       piPredY = cs.picture->getPredBuf(areaY);
       const Pel avgLuma = piPredY.computeAvg();
       int adj = m_pcReshape->calculateChromaAdj(avgLuma);
+#endif
       currTU.setChromaAdj(adj);
     }
 

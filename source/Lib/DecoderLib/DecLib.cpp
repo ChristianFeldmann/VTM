@@ -1207,6 +1207,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     }
 
     if (pcSlice->getSPS()->getUseSMVD() && pcSlice->getCheckLDC() == false
+#if JVET_O0284_CONDITION_SMVD_MVDL1ZEROFLAG
+      && pcSlice->getMvdL1ZeroFlag() == false
+#endif
       )
     {
       int currPOC = pcSlice->getPOC();

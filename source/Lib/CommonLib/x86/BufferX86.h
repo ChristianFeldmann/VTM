@@ -278,6 +278,67 @@ void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1St
   }
 }
 
+#if JVET_O0304_SIMPLIFIED_BDOF
+template< X86_VEXT vext >
+void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel* gradX1, Pel* gradY0, Pel* gradY1, int xu, int yu, const int src0Stride, const int src1Stride, const int widthG, const int bitDepth, int* sumAbsGX, int* sumAbsGY, int* sumDIX, int* sumDIY, int* sumSignGY_GX)
+
+{
+  int shift4 = std::max<int>(4, (bitDepth - 8));
+  int shift5 = std::max<int>(1, (bitDepth - 11));
+
+  __m128i zero = _mm_setzero_si128();
+  __m128i tSumAbsGX = _mm_setzero_si128();
+  __m128i tSumDIX = _mm_setzero_si128();
+  __m128i tSumAbsGY = _mm_setzero_si128();
+  __m128i tSumDIY = _mm_setzero_si128();
+  __m128i tSumSignGyGx = _mm_setzero_si128();
+  Pel tmpStore[8];
+  for (int y = 0; y < 6; y++)
+  {
+    __m128i mmSrcY0Tmp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY0Tmp)), shift4);
+    __m128i mmSrcY1Tmp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY1Tmp)), shift4);
+    __m128i mmGradX0 = _mm_loadu_si128((__m128i*)(gradX0));
+    __m128i mmGradX1 = _mm_loadu_si128((__m128i*)(gradX1));
+    __m128i mmGradY0 = _mm_loadu_si128((__m128i*)(gradY0));
+    __m128i mmGradY1 = _mm_loadu_si128((__m128i*)(gradY1));
+    __m128i mmTemp1 = _mm_sub_epi16(mmSrcY1Tmp, mmSrcY0Tmp);
+    __m128i mmTempX = _mm_srai_epi16(_mm_add_epi16(mmGradX0, mmGradX1), shift5);
+    __m128i mmTempY = _mm_srai_epi16(_mm_add_epi16(mmGradY0, mmGradY1), shift5);
+    __m128i gX = _mm_abs_epi16(mmTempX);
+    __m128i gY = _mm_abs_epi16(mmTempY);
+    __m128i maskXlt = _mm_cmplt_epi16(mmTempX, zero);
+    __m128i maskXgt = _mm_cmpgt_epi16(mmTempX, zero);
+    __m128i maskYlt = _mm_cmplt_epi16(mmTempY, zero);
+    __m128i maskYgt = _mm_cmpgt_epi16(mmTempY, zero);
+    __m128i dIX = _mm_or_si128(_mm_and_si128(maskXgt, mmTemp1), _mm_and_si128(maskXlt, _mm_sub_epi16(zero, mmTemp1)));
+    __m128i dIY = _mm_or_si128(_mm_and_si128(maskYgt, mmTemp1), _mm_and_si128(maskYlt, _mm_sub_epi16(zero, mmTemp1)));
+    __m128i signGY_GX = _mm_or_si128(_mm_and_si128(maskYgt, mmTempX), _mm_and_si128(maskYlt, _mm_sub_epi16(zero, mmTempX)));
+
+    tSumAbsGX = _mm_add_epi16(tSumAbsGX, gX);
+    tSumDIX = _mm_add_epi16(tSumDIX, dIX);
+    tSumAbsGY = _mm_add_epi16(tSumAbsGY, gY);
+    tSumDIY = _mm_add_epi16(tSumDIY, dIY);
+    tSumSignGyGx = _mm_add_epi16(tSumSignGyGx, signGY_GX);
+    srcY0Tmp += src0Stride;
+    srcY1Tmp += src1Stride;
+    gradX0 += widthG;
+    gradX1 += widthG;
+    gradY0 += widthG;
+    gradY1 += widthG;
+  }
+  _mm_storeu_si128((__m128i *)tmpStore, tSumAbsGX);
+  *sumAbsGX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
+  _mm_storeu_si128((__m128i *)tmpStore, tSumAbsGY);
+  *sumAbsGY = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
+  _mm_storeu_si128((__m128i *)tmpStore, tSumDIX);
+  *sumDIX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
+  _mm_storeu_si128((__m128i *)tmpStore, tSumDIY);
+  *sumDIY = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
+  _mm_storeu_si128((__m128i *)tmpStore, tSumSignGyGx);
+  *sumSignGY_GX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
+}
+#endif
+
 template< X86_VEXT vext >
 void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth)
 {
@@ -918,8 +979,12 @@ void PelBufferOps::_initPelBufOpsX86()
 
   addBIOAvg4      = addBIOAvg4_SSE<vext>;
   bioGradFilter   = gradFilter_SSE<vext>;
-  calcBIOPar      = calcBIOPar_SSE<vext>;
+#if !JVET_O0304_SIMPLIFIED_BDOF
+  calcBIOPar = calcBIOPar_SSE<vext>;
   calcBlkGradient = calcBlkGradient_SSE<vext>;
+#else
+  calcBIOSums = calcBIOSums_SSE<vext>;
+#endif
 
   copyBuffer = copyBufferSimd<vext>;
   padding    = paddingSimd<vext>;

@@ -1041,7 +1041,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   const int   shiftNum = IF_INTERNAL_PREC + 1 - bitDepth;
   const int   offset = (1 << (shiftNum - 1)) + 2 * IF_INTERNAL_OFFS;
   const int   limit = (1<<(std::max<int>(5, bitDepth - 7)));
-
+#if !JVET_O0304_SIMPLIFIED_BDOF
   int*     dotProductTemp1 = m_dotProduct1;
   int*     dotProductTemp2 = m_dotProduct2;
   int*     dotProductTemp3 = m_dotProduct3;
@@ -1049,6 +1049,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   int*     dotProductTemp6 = m_dotProduct6;
 
   xCalcBIOPar(srcY0Temp, srcY1Temp, gradX0, gradX1, gradY0, gradY1, dotProductTemp1, dotProductTemp2, dotProductTemp3, dotProductTemp5, dotProductTemp6, src0Stride, src1Stride, widthG, widthG, heightG, bitDepth);
+#endif
 
   int xUnit = (width >> 2);
   int yUnit = (height >> 2);
@@ -1072,7 +1073,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
         continue;
       }
 #endif
-
+#if !JVET_O0304_SIMPLIFIED_BDOF
       int     sGxdI = 0, sGydI = 0, sGxGy = 0, sGx2 = 0, sGy2 = 0;
       int     tmpx = 0, tmpy = 0;
 
@@ -1098,7 +1099,29 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
         tmpy = rightShiftMSB(((sGydI << 3) - tmpData), sGy2);
         tmpy = Clip3(-limit, limit, tmpy);
       }
+#else
+      int tmpx = 0, tmpy = 0;
+      int sumAbsGX = 0, sumAbsGY = 0, sumDIX = 0, sumDIY = 0;
+      int sumSignGY_GX = 0;
 
+      Pel* pGradX0Tmp = m_gradX0 + (xu << 2) + (yu << 2) * widthG;
+      Pel* pGradX1Tmp = m_gradX1 + (xu << 2) + (yu << 2) * widthG;
+      Pel* pGradY0Tmp = m_gradY0 + (xu << 2) + (yu << 2) * widthG;
+      Pel* pGradY1Tmp = m_gradY1 + (xu << 2) + (yu << 2) * widthG;
+      const Pel* SrcY1Tmp = srcY1 + (xu << 2) + (yu << 2) * src1Stride;
+      const Pel* SrcY0Tmp = srcY0 + (xu << 2) + (yu << 2) * src0Stride;
+
+      g_pelBufOP.calcBIOSums(SrcY0Tmp, SrcY1Tmp, pGradX0Tmp, pGradX1Tmp, pGradY0Tmp, pGradY1Tmp, xu, yu, src0Stride, src1Stride, widthG, bitDepth, &sumAbsGX, &sumAbsGY, &sumDIX, &sumDIY, &sumSignGY_GX);
+      tmpx = (sumAbsGX == 0 ? 0 : rightShiftMSB(sumDIX << 3, sumAbsGX));
+      tmpx = Clip3(-limit, limit, tmpx);
+
+      int     mainsGxGy = sumSignGY_GX >> 12;
+      int     secsGxGy = sumSignGY_GX & ((1 << 12) - 1);
+      int     tmpData = tmpx * mainsGxGy;
+      tmpData = ((tmpData << 12) + tmpx*secsGxGy) >> 1;
+      tmpy = (sumAbsGY == 0 ? 0 : rightShiftMSB(((sumDIY << 3) - tmpData), sumAbsGY));
+      tmpy = Clip3(-limit, limit, tmpy);
+#endif
       srcY0Temp = srcY0 + (stridePredMC + 1) + ((yu*src0Stride + xu) << 2);
       srcY1Temp = srcY1 + (stridePredMC + 1) + ((yu*src0Stride + xu) << 2);
       gradX0 = m_gradX0 + offsetPos + ((yu*widthG + xu) << 2);

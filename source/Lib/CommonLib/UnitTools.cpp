@@ -1597,13 +1597,17 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 }
 bool PU::checkDMVRCondition(const PredictionUnit& pu)
 {
-    WPScalingParam *wp0;
-    WPScalingParam *wp1;
-    int refIdx0 = pu.refIdx[REF_PIC_LIST_0];
-    int refIdx1 = pu.refIdx[REF_PIC_LIST_1];
-    pu.cu->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
-    pu.cu->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
+  WPScalingParam *wp0;
+  WPScalingParam *wp1;
+  int refIdx0 = pu.refIdx[REF_PIC_LIST_0];
+  int refIdx1 = pu.refIdx[REF_PIC_LIST_1];
+  pu.cu->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
+  pu.cu->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  if (pu.cs->sps->getUseDMVR() && (!pu.cs->slice->getDisBdofDmvrFlag()))
+#else
   if (pu.cs->sps->getUseDMVR())
+#endif
   {
     return pu.mergeFlag
       && pu.mergeType == MRG_TYPE_DEFAULT_N

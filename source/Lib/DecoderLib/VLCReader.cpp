@@ -435,7 +435,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
       const int tileColumnsMinus1 = pcPPS->getNumTileColumnsMinus1();
       const int tileRowsMinus1    = pcPPS->getNumTileRowsMinus1();
-      CHECK( ((tileColumnsMinus1 + 1) * (tileColumnsMinus1 + 1)) < 2, "tile colums * rows must be > 1 when explicitly signalled.");
+      CHECK( ((tileColumnsMinus1 + 1) * (tileRowsMinus1 + 1)) < 2, "tile colums * rows must be > 1 when explicitly signalled.");
 
       if (tileColumnsMinus1 > 0)
       {
@@ -1254,7 +1254,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
-
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG 
+  if (pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
+  {
+    READ_FLAG(uiCode, "sps_bdof_dmvr_slice_level_present_flag");             pcSPS->setBdofDmvrSlicePresentFlag(uiCode != 0);
+  }
+#endif
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
 
   READ_FLAG( uiCode,    "sps_mip_flag");                            pcSPS->setUseMIP                 ( uiCode != 0 );
@@ -1515,6 +1520,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       pcSlice->setSliceNumBricks(uiCode + 1);
       pcSlice->setSliceCurEndBrickIdx(pcSlice->getSliceCurStartBrickIdx() + uiCode);
     }
+#if JVET_N0288_PROPOSAL1
+    else if (pps->getSingleBrickPerSliceFlag())
+    {
+      pcSlice->setSliceNumBricks(1);
+    }
+#endif
     pcSlice->setSliceCurStartCtuTsAddr(pcSlice->getSliceCurStartBrickIdx());
 
     for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
@@ -1985,6 +1996,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         READ_FLAG( uiCode, "tile_group_fracmmvd_disabled_flag" );
         pcSlice->setDisFracMMVD( uiCode ? true : false );
       }
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+      if (sps->getBdofDmvrSlicePresentFlag())
+      {
+        READ_FLAG(uiCode, "tile_group_bdof_dmvr_disabled_flag");
+        pcSlice->setDisBdofDmvrFlag(uiCode ? true : false);
+      }
+#endif
       if (sps->getUseTriangle() && pcSlice->getMaxNumMergeCand() >= 2)
       {
         READ_UVLC(uiCode, "max_num_merge_cand_minus_max_num_triangle_cand");

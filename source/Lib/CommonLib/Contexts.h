@@ -67,7 +67,9 @@ class ProbModelTables
 {
 protected:
   static const BinFracBits m_binFracBits[256];
+#if !JVET_O0065_CABAC_INIT
   static const uint16_t    m_inistateToCount[128];
+#endif
   static const uint8_t      m_RenormTable_32  [ 32];          // Std         MP   MPI
 };
 

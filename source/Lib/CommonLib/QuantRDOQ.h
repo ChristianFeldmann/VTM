@@ -122,6 +122,30 @@ private:
 
   void xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &coeffs, TCoeff &absSum, const QpParam &qp, const Ctx &ctx );
 
+#if JVET_O0122_TS_SIGN_LEVEL
+  inline uint32_t xGetCodedLevelTSPred(double&            rd64CodedCost,
+    double&            rd64CodedCost0,
+    double&            rd64CodedCostSig,
+    Intermediate_Int    levelDouble,
+    int                 qBits,
+    double              errorScale,
+    uint32_t coeffLevels[],
+    double coeffLevelError[],
+    const BinFracBits* fracBitsSig,
+    const BinFracBits& fracBitsPar,
+    CoeffCodingContext& cctx,
+    const FracBitsAccess& fracBitsAccess,
+    const BinFracBits& fracBitsSign,
+    const BinFracBits& fracBitsGt1,
+    const uint8_t      sign,
+    int                rightPixel,
+    int                belowPixel,
+    uint16_t           ricePar,
+    bool               isLast,
+    bool               useLimitedPrefixLength,
+    const int          maxLog2TrDynamicRange
+  ) const;
+#else
   inline uint32_t xGetCodedLevelTS(       double&             codedCost,
                                           double&             codedCost0,
                                           double&             codedCostSig,
@@ -139,12 +163,16 @@ private:
                                           bool                isLast,
                                           bool                useLimitedPrefixLength,
                                     const int                 maxLog2TrDynamicRange ) const;
+#endif
 
   inline int xGetICRateTS   ( const uint32_t            absLevel,
                               const BinFracBits&        fracBitsPar,
                               const CoeffCodingContext& cctx,
                               const FracBitsAccess&     fracBitsAccess,
                               const BinFracBits&        fracBitsSign,
+#if JVET_O0122_TS_SIGN_LEVEL
+                              const BinFracBits&        fracBitsGt1,
+#endif
                               const uint8_t             sign,
                               const uint16_t            ricePar,
                               const bool                useLimitedPrefixLength,
@@ -164,6 +192,10 @@ private:
   int    m_sigRateDelta       [MAX_TB_SIZEY * MAX_TB_SIZEY];
   TCoeff m_deltaU             [MAX_TB_SIZEY * MAX_TB_SIZEY];
   TCoeff m_fullCoeff          [MAX_TB_SIZEY * MAX_TB_SIZEY];
+#if JVET_O0122_TS_SIGN_LEVEL
+  int   m_bdpcm;
+  int   m_testedLevels;
+#endif
 };// END CLASS DEFINITION QuantRDOQ
 
 //! \}

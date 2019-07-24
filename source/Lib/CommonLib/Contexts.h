@@ -235,6 +235,9 @@ public:
   static const CtxSet   TsSigFlag;
   static const CtxSet   TsParFlag;
   static const CtxSet   TsGtxFlag;
+#if JVET_O0122_TS_SIGN_LEVEL
+  static const CtxSet   TsLrg1Flag;
+#endif
   static const CtxSet   TsResidualSign;
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;

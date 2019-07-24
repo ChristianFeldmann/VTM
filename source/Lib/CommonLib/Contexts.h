@@ -209,6 +209,9 @@ public:
   static const CtxSet   MultiRefLineIdx;
   static const CtxSet   IntraLumaMpmFlag;
   static const CtxSet   IntraLumaPlanarFlag;
+#if JVET_O1153_INTRA_CHROMAMODE_CODING
+  static const CtxSet   CclmModeFlag;
+#endif
   static const CtxSet   IntraChromaPredMode;
   static const CtxSet   MipFlag;
   static const CtxSet   MipMode;

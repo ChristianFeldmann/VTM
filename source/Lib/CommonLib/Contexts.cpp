@@ -327,7 +327,22 @@ const CtxSet ContextSetCfg::IntraLumaPlanarFlag = ContextSetCfg::addCtxSet
   { 110, 154, },
   {   4,   5, },
 });
-
+#if JVET_O1153_INTRA_CHROMAMODE_CODING
+const CtxSet ContextSetCfg::CclmModeFlag = ContextSetCfg::addCtxSet
+({
+  { 153,},
+  { 168,},
+  { 169,},
+  {   4,},
+  });
+const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
+({
+  { 149,},
+  { 166,},
+  { 138,},
+  {   5,},
+  });
+#else
 const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
 ({
   { 137, 139, 140, },
@@ -335,6 +350,7 @@ const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
   { 154, 154, 154, },
   {   5,   8,   8, },
 });
+#endif
 
 const CtxSet ContextSetCfg::MipFlag = ContextSetCfg::addCtxSet
 ({

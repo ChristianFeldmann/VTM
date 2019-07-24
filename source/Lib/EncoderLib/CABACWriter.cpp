@@ -1212,7 +1212,78 @@ void CABACWriter::intra_chroma_pred_modes( const CodingUnit& cu )
 
   intra_chroma_pred_mode( *pu );
 }
+#if JVET_O1153_INTRA_CHROMAMODE_CODING
+void CABACWriter::intra_chroma_lmc_mode(const PredictionUnit& pu)
+{
+  const unsigned intraDir = pu.intraDir[1];
+  int lmModeList[10];
+  PU::getLMSymbolList(pu, lmModeList);
+  int symbol = -1;
+  for (int k = 0; k < LM_SYMBOL_NUM; k++)
+  {
+    if (lmModeList[k] == intraDir)
+    {
+      symbol = k;
+      break;
+    }
+  }
+  CHECK(symbol < 0, "invalid symbol found");
 
+  m_BinEncoder.encodeBin(symbol == 0 ? 0 : 1, Ctx::IntraChromaPredMode(0));
+
+  if (symbol > 0)
+  {
+    CHECK(symbol > 2, "invalid symbol for MMLM");
+    unsigned int symbol_minus_1 = symbol - 1;
+    m_BinEncoder.encodeBinEP(symbol_minus_1);
+  }
+}
+
+
+void CABACWriter::intra_chroma_pred_mode(const PredictionUnit& pu)
+{
+  const unsigned intraDir = pu.intraDir[1];
+#if JVET_O1124_ALLOW_CCLM_COND
+  if (pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed())
+#else
+  if (pu.cs->sps->getUseLMChroma())
+#endif
+  {
+    m_BinEncoder.encodeBin(PU::isLMCMode(intraDir) ? 1 : 0, Ctx::CclmModeFlag(0));
+    if (PU::isLMCMode(intraDir))
+    {
+      intra_chroma_lmc_mode(pu);
+      return;
+    }
+  }
+
+  const bool     isDerivedMode = intraDir == DM_CHROMA_IDX;
+  m_BinEncoder.encodeBin(isDerivedMode ? 0 : 1, Ctx::IntraChromaPredMode(0));
+  if (isDerivedMode)
+  {
+    return;
+  }
+
+  // chroma candidate index
+  unsigned chromaCandModes[NUM_CHROMA_MODE];
+  PU::getIntraChromaCandModes(pu, chromaCandModes);
+
+  int candId = 0;
+  for (; candId < NUM_CHROMA_MODE; candId++)
+  {
+    if (intraDir == chromaCandModes[candId])
+    {
+      break;
+    }
+  }
+
+  CHECK(candId >= NUM_CHROMA_MODE, "Chroma prediction mode index out of bounds");
+  CHECK(chromaCandModes[candId] == DM_CHROMA_IDX, "The intra dir cannot be DM_CHROMA for this path");
+  {
+    m_BinEncoder.encodeBinsEP(candId, 2);
+  }
+}
+#else
 void CABACWriter::intra_chroma_lmc_mode( const PredictionUnit& pu )
 {
   const unsigned intraDir = pu.intraDir[1];
@@ -1278,7 +1349,7 @@ void CABACWriter::intra_chroma_pred_mode( const PredictionUnit& pu )
     m_BinEncoder.encodeBinsEP( candId, 2 );
   }
 }
-
+#endif
 
 void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, CUCtx& cuCtx )
 {

@@ -50,6 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
+
+#define JVET_O1153_INTRA_CHROMAMODE_CODING                1  //JVET-O1153: simplified intra chromamode coding
+
 #define JVET_O0159_10BITTCTABLE_DEBLOCKING                1 // tc table for 10-bit video
 
 #define JVET_O0061_MV_THR_DEBLOCKING                      1 // a deblocking mv threshold of half pel

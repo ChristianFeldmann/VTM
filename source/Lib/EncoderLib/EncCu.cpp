@@ -1395,6 +1395,12 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
       {
         for( uint8_t mtsFlag = startMtsFlag; mtsFlag <= endMtsFlag; mtsFlag++ )
         {
+#if JVET_O0368_LFNST_WITH_DCT2_ONLY
+          if (mtsFlag > 0 && lfnstIdx > 0)
+          {
+            continue;
+          }
+#endif
           //3) if interHad is 0, only try further modes if some intra mode was already better than inter
           if( sps.getUseLFNST() && m_pcEncCfg->getUsePbIntraFast() && !tempCS->slice->isIntra() && bestCU && CU::isInter( *bestCS->getCU( partitioner.chType ) ) && interHad == 0 )
           {

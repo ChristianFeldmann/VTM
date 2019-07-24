@@ -2841,8 +2841,12 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu )
 #endif
     const int  nonZeroCoeffThr       = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
     nonZeroCoeffNonTs = CU::getNumNonZeroCoeffNonTs( cu, lumaFlag, chromaFlag ) > nonZeroCoeffThr;
-
+#if JVET_O0368_LFNST_WITH_DCT2_ONLY
+    const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx != MTS_DCT2_DCT2);
+    if (!nonZeroCoeffNonTs || nonZeroCoeffNonTsCorner8x8 || isNonDCT2)
+#else
     if( !nonZeroCoeffNonTs || nonZeroCoeffNonTsCorner8x8 )
+#endif
     {
       cu.lfnstIdx = 0;
       return;
@@ -2856,7 +2860,11 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu )
 
 
   unsigned cctx = 0;
+#if JVET_O0368_LFNST_WITH_DCT2_ONLY
+  if ( CS::isDualITree(*cu.cs) ) cctx++;
+#else
   if( cu.firstTU->mtsIdx < MTS_DST7_DST7 && CS::isDualITree( *cu.cs ) ) cctx++;
+#endif
 
   uint32_t idxLFNST = m_BinDecoder.decodeBin( Ctx::LFNSTIdx( cctx ) );
   if( idxLFNST )

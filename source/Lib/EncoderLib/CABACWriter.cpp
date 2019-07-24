@@ -1555,7 +1555,11 @@ void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
   if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getUseAffine() || cu.cs->sps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
   {
     unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
+#if JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG
+    m_BinEncoder.encodeBin( cu.affine, Ctx::SubblockMergeFlag( ctxId ) );
+#else
     m_BinEncoder.encodeBin( cu.affine, Ctx::AffineFlag( ctxId ) );
+#endif
     DTRACE( g_trace_ctx, D_SYNTAX, "subblock_merge_flag() subblock_merge_flag=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
   }
 }

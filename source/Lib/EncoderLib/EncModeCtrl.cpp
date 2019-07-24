@@ -1183,6 +1183,9 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   bool checkIbc = true;
   if (partitioner.chType == CHANNEL_TYPE_CHROMA)
   {
+#if JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
+    checkIbc = false;
+#else
     IbcLumaCoverage ibcLumaCoverage = cs.getIbcLumaCoverage(cs.area.Cb());
     switch (ibcLumaCoverage)
     {
@@ -1200,6 +1203,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     default:
       THROW("Unknown IBC luma coverage type");
     }
+#endif
   }
   // Add coding modes here
   // NOTE: Working back to front, as a stack, which is more efficient with the container

@@ -713,6 +713,9 @@ private:
   bool              m_sbtmvpEnabledFlag;
   bool              m_bdofEnabledFlag;
   bool              m_fpelMmvdEnabledFlag;
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  bool              m_BdofDmvrSlicePresentFlag;
+#endif
   uint32_t              m_uiBitsForPOC;
   uint32_t              m_numLongTermRefPicSPS;
   uint32_t              m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
@@ -911,6 +914,10 @@ public:
   void                    setUseDMVR(bool b)                                                              { m_DMVR = b;    }
   bool                    getUseMMVD()const                                                               { return m_MMVD; }
   void                    setUseMMVD(bool b)                                                              { m_MMVD = b;    }
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  bool                    getBdofDmvrSlicePresentFlag()const                                              { return m_BdofDmvrSlicePresentFlag; }
+  void                    setBdofDmvrSlicePresentFlag(bool b)                                             { m_BdofDmvrSlicePresentFlag = b; }
+#endif
   uint32_t                getMaxTLayers() const                                                           { return m_uiMaxTLayers; }
   void                    setMaxTLayers( uint32_t uiMaxTLayers )                                          { CHECK( uiMaxTLayers > MAX_TLAYER, "Invalid number T-layers" ); m_uiMaxTLayers = uiMaxTLayers; }
 
@@ -1438,6 +1445,9 @@ private:
   uint32_t                   m_maxNumAffineMergeCand;
   uint32_t                   m_maxNumTriangleCand;
   bool                       m_disFracMMVD;
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  bool                       m_disBdofDmvrFlag;
+#endif
   double                     m_lambdas[MAX_NUM_COMPONENT];
 
   bool                       m_abEqualRef  [NUM_REF_PIC_LIST_01][MAX_NUM_REF][MAX_NUM_REF];
@@ -1685,6 +1695,10 @@ public:
   uint32_t                    getMaxNumTriangleCand() const                          { return m_maxNumTriangleCand;}
   void                        setDisFracMMVD( bool val )                             { m_disFracMMVD = val;                                          }
   bool                        getDisFracMMVD() const                                 { return m_disFracMMVD;                                         }
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  void                        setDisBdofDmvrFlag(bool val)                           { m_disBdofDmvrFlag = val;                                          }
+  bool                        getDisBdofDmvrFlag() const                             { return m_disBdofDmvrFlag;                                         }
+#endif
   void                        setNoOutputPriorPicsFlag( bool val )                   { m_noOutputPriorPicsFlag = val;                                }
   bool                        getNoOutputPriorPicsFlag() const                       { return m_noOutputPriorPicsFlag;                               }
 

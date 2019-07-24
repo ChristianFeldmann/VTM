@@ -931,6 +931,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setUseTriangle           ( m_Triangle );
   sps.setUseMMVD               ( m_MMVD );
   sps.setFpelMmvdEnabledFlag   (( m_MMVD ) ? m_allowDisFracMMVD : false);
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  sps.setBdofDmvrSlicePresentFlag(m_DMVR || m_BIO);
+#endif
   sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
   sps.setUseDMVR                            ( m_DMVR );
 

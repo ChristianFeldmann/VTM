@@ -1549,7 +1549,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
   else if (encTestmode.type == ETM_IBC || encTestmode.type == ETM_IBC_MERGE)
   {
     // IBC MODES
+#if JVET_O1161_IBC_MAX_SIZE
+    return sps.getIBCFlag() && (partitioner.currArea().lumaSize().width < 128 && partitioner.currArea().lumaSize().height < 128);
+#else
     return sps.getIBCFlag() && (partitioner.currArea().lumaSize().width < 128 || partitioner.currArea().lumaSize().height < 128);
+#endif
   }
   else if( isModeInter( encTestmode ) )
   {

@@ -769,7 +769,11 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
     cu.rootCbf = false;
     cu.predMode = MODE_INTRA;
     cu.mmvdSkip = false;
+#if JVET_O1161_IBC_MAX_SIZE
+    if (cu.lwidth() < 128 && cu.lheight() < 128) // disable IBC mode larger than 64x64
+#else
     if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+#endif
     {
     unsigned ctxId = DeriveCtx::CtxSkipFlag(cu);
     unsigned skip = m_BinDecoder.decodeBin(Ctx::SkipFlag(ctxId));
@@ -795,7 +799,11 @@ void CABACReader::cu_skip_flag( CodingUnit& cu )
 
   if (skip && cu.cs->slice->getSPS()->getIBCFlag())
   {
+#if JVET_O1161_IBC_MAX_SIZE
+    if (cu.lwidth() < 128 && cu.lheight() < 128) // disable IBC mode larger than 64x64
+#else
     if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+#endif
     {
       if ( cu.lwidth() == 4 && cu.lheight() == 4 )
       {
@@ -953,7 +961,11 @@ void CABACReader::pred_mode( CodingUnit& cu )
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) )
     {
       cu.predMode = MODE_INTRA;
+#if JVET_O1161_IBC_MAX_SIZE
+      if (cu.lwidth() < 128 && cu.lheight() < 128) // disable IBC mode larger than 64x64
+#else
       if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+#endif
       {
       unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
       if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
@@ -971,7 +983,11 @@ void CABACReader::pred_mode( CodingUnit& cu )
       else
       {
         cu.predMode = MODE_INTER;
+#if JVET_O1161_IBC_MAX_SIZE
+        if (cu.lwidth() < 128 && cu.lheight() < 128) // disable IBC mode larger than 64x64
+#else
         if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+#endif
         {
         unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
         if (m_BinDecoder.decodeBin(Ctx::IBCFlag(ctxidx)))
@@ -1180,10 +1196,14 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
 
   if( cu.bdpcmMode )
   {
+#if JVET_O0315_RDPCM_INTRAMODE_ALIGN
+    cu.firstPU->intraDir[0] = cu.bdpcmMode == 2? VER_IDX : HOR_IDX;
+#else
     PredictionUnit *pu = cu.firstPU;
     unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
     PU::getIntraMPMs(*pu, mpm_pred);
     cu.firstPU->intraDir[0] = mpm_pred[0];
+#endif
     return;
   }
 

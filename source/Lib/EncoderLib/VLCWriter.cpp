@@ -722,10 +722,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   const RPLList* rplList0 = pcSPS->getRPLList0();
   const RPLList* rplList1 = pcSPS->getRPLList1();
-  uint32_t numberOfRPL = pcSPS->getNumRPL0() - 1;
 
   //Write candidate for List0
-  numberOfRPL = pcSPS->getNumRPL0() - 1;
+  uint32_t numberOfRPL = pcSPS->getNumRPL0();
   WRITE_UVLC(numberOfRPL, "num_ref_pic_lists_in_sps[0]");
   for (int ii = 0; ii < numberOfRPL; ii++)
   {
@@ -736,7 +735,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   //Write candidate for List1
   if (!pcSPS->getRPL1CopyFromRPL0Flag())
   {
-    numberOfRPL = pcSPS->getNumRPL1() - 1;
+    numberOfRPL = pcSPS->getNumRPL1();
     WRITE_UVLC(numberOfRPL, "num_ref_pic_lists_in_sps[1]");
     for (int ii = 0; ii < numberOfRPL; ii++)
     {
@@ -809,9 +808,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getAMVREnabledFlag() ? 1 : 0,                                   "sps_amvr_enabled_flag" );
 
   WRITE_FLAG( pcSPS->getBDOFEnabledFlag() ? 1 : 0,                                   "sps_bdof_enabled_flag" );
-
+#if !JVET_O0438_SPS_AFFINE_AMVR_FLAG
   WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                             "sps_affine_amvr_enabled_flag" );
-
+#endif
   WRITE_FLAG( pcSPS->getUseDMVR() ? 1 : 0,                                            "sps_dmvr_enable_flag" );
   WRITE_FLAG(pcSPS->getUseMMVD() ? 1 : 0,                                             "sps_mmvd_enable_flag");
   // KJS: sps_cclm_enabled_flag
@@ -834,6 +833,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if ( pcSPS->getUseAffine() )
   {
     WRITE_FLAG( pcSPS->getUseAffineType() ? 1 : 0,                                             "affine_type_flag" );
+#if JVET_O0438_SPS_AFFINE_AMVR_FLAG
+    WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                                     "sps_affine_amvr_enabled_flag" );
+#endif
   }
   WRITE_FLAG( pcSPS->getUseGBi() ? 1 : 0,                                                      "gbi_flag" );
   WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0,                                                      "ibc_flag");
@@ -845,7 +847,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   {
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
-
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG  
+  if(pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
+  {
+    WRITE_FLAG(pcSPS->getBdofDmvrSlicePresentFlag() ? 1 : 0,                            "sps_bdof_dmvr_slice_level_present_flag");
+  }
+#endif
   WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "triangle_flag" );
 
   WRITE_FLAG( pcSPS->getUseMIP() ? 1: 0,                                                       "sps_mip_flag" );
@@ -1365,6 +1372,12 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       {
         WRITE_FLAG( pcSlice->getDisFracMMVD(), "tile_group_fracmmvd_disabled_flag" );
       }
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+      if (pcSlice->getSPS()->getBdofDmvrSlicePresentFlag())
+      {
+        WRITE_FLAG(pcSlice->getDisBdofDmvrFlag(), "tile_group_bdof_dmvr_disabled_flag");
+      }
+#endif
       if (pcSlice->getSPS()->getUseTriangle() && pcSlice->getMaxNumMergeCand() >= 2)
       {
         CHECK(pcSlice->getMaxNumMergeCand() < pcSlice->getMaxNumTriangleCand(), "Incorrrect max number of triangle candidates!");

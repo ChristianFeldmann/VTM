@@ -330,7 +330,11 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
 
   pu.cu->affine = isAffine;
 }
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+void InterPrediction::xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList /*= REF_PIC_LIST_X*/, PelUnitBuf* yuvDstTmp /*= NULL*/)
+#else
 void InterPrediction::xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList /*= REF_PIC_LIST_X*/)
+#endif
 {
   // compute the location of the current PU
   Position puPos = pu.lumaPos();
@@ -344,6 +348,9 @@ void InterPrediction::xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const R
   subPu.mmvdMergeFlag = pu.mmvdMergeFlag;
   subPu.mmvdEncOptMode = pu.mmvdEncOptMode;
   subPu.mergeFlag = pu.mergeFlag;
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+  subPu.mhIntraFlag = pu.mhIntraFlag;
+#endif
   subPu.mvRefine = pu.mvRefine;
   subPu.refIdx[0] = pu.refIdx[0];
   subPu.refIdx[1] = pu.refIdx[1];
@@ -368,6 +375,14 @@ void InterPrediction::xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const R
       subPu = curMi;
       PelUnitBuf subPredBuf = predBuf.subBuf(UnitAreaRelative(pu, subPu));
 
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      if (yuvDstTmp)
+      {
+        PelUnitBuf subPredBufTmp = yuvDstTmp->subBuf(UnitAreaRelative(pu, subPu));
+        motionCompensation(subPu, subPredBuf, eRefPicList, true, true, &subPredBufTmp);
+      }
+      else
+#endif
       motionCompensation(subPu, subPredBuf, eRefPicList);
     }
   }
@@ -463,7 +478,11 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   }
 }
 
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, PelUnitBuf* yuvPredTmp /*= NULL*/)
+#else
 void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
+#endif
 {
   const PPS   &pps   = *pu.cs->pps;
   const Slice &slice = *pu.cs->slice;
@@ -476,7 +495,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
   pu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
 
   bool bioApplied = false;
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->slice->getDisBdofDmvrFlag()))
+#else
   if (pu.cs->sps->getBDOFEnabledFlag())
+#endif
   {
     if (pu.cu->affine || m_subPuMC)
     {
@@ -495,6 +518,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
         bioApplied = true;
       }
     }
+
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+    if (bioApplied && pu.mhIntraFlag)
+      bioApplied = false;
+#endif
 
     if (bioApplied && pu.cu->smvdMode)
     {
@@ -532,7 +560,15 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
     if (pu.refIdx[0] >= 0 && pu.refIdx[1] >= 0)
     {
       if (dmvrApplied)
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      {
+        if (yuvPredTmp)
+          xPredInterUni(pu, eRefPicList, pcMbBuf, true, false, true, true);
+        continue;
+      }
+#else
         continue; // mc will happen in processDMVR
+#endif
       xPredInterUni ( pu, eRefPicList, pcMbBuf, true
         , bioApplied
         , true, true
@@ -565,20 +601,38 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
   if( (!dmvrApplied) && (!bioApplied) && pps.getWPBiPred() && slice.getSliceType() == B_SLICE && pu.cu->GBiIdx==GBI_DEFAULT)
   {
     xWeightedPredictionBi( pu, srcPred0, srcPred1, pcYuvPred, m_maxCompIDToPred );
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+    if (yuvPredTmp)
+      yuvPredTmp->copyFrom(pcYuvPred);
+#endif
   }
   else if( pps.getUseWP() && slice.getSliceType() == P_SLICE )
   {
     xWeightedPredictionUni( pu, srcPred0, REF_PIC_LIST_0, pcYuvPred, -1, m_maxCompIDToPred );
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+    if (yuvPredTmp)
+      yuvPredTmp->copyFrom(pcYuvPred);
+#endif
   }
   else
   {
     if (dmvrApplied)
     {
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      if (yuvPredTmp)
+      {
+        yuvPredTmp->addAvg(srcPred0, srcPred1, slice.clpRngs(), false);
+      }
+#endif
       xProcessDMVR(pu, pcYuvPred, slice.clpRngs(), bioApplied);
     }
     else
     {
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      xWeightedAverage( pu, srcPred0, srcPred1, pcYuvPred, slice.getSPS()->getBitDepths(), slice.clpRngs(), bioApplied, yuvPredTmp);
+#else
       xWeightedAverage( pu, srcPred0, srcPred1, pcYuvPred, slice.getSPS()->getBitDepths(), slice.clpRngs(), bioApplied );
+#endif
     }
   }
 }
@@ -1117,7 +1171,11 @@ void InterPrediction::xCalcBlkGradient(int sx, int sy, int    *arraysGx2, int   
   g_pelBufOP.calcBlkGradient(sx, sy, arraysGx2, arraysGxGy, arraysGxdI, arraysGy2, arraysGydI, sGx2, sGy2, sGxGy, sGxdI, sGydI, width, height, unitSize);
 }
 
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied, PelUnitBuf* yuvDstTmp /*= NULL*/)
+#else
 void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied )
+#endif
 {
   const int iRefIdx0 = pu.refIdx[0];
   const int iRefIdx1 = pu.refIdx[1];
@@ -1128,6 +1186,10 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
     {
       CHECK(bioApplied, "GBi is disallowed with BIO");
       pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->GBiIdx);
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      if (yuvDstTmp)
+        yuvDstTmp->copyFrom(pcYuvDst);
+#endif
       return;
     }
     if (bioApplied)
@@ -1145,10 +1207,18 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
       if (bioEnabled)
       {
         applyBiOptFlow(pu, pcYuvSrc0, pcYuvSrc1, iRefIdx0, iRefIdx1, pcYuvDst, clipBitDepths);
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+        if (yuvDstTmp)
+          yuvDstTmp->bufs[0].addAvg(CPelBuf(pSrcY0, src0Stride, pu.lumaSize()), CPelBuf(pSrcY1, src1Stride, pu.lumaSize()), clpRngs.comp[0]);
+#endif
       }
       else
       {
         pcYuvDst.bufs[0].addAvg(CPelBuf(pSrcY0, src0Stride, pu.lumaSize()), CPelBuf(pSrcY1, src1Stride, pu.lumaSize()), clpRngs.comp[0]);
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+        if (yuvDstTmp)
+          yuvDstTmp->bufs[0].copyFrom(pcYuvDst.bufs[0]);
+#endif
       }
     }
     if (pu.cs->pps->getWPBiPred())
@@ -1169,6 +1239,18 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
     {
       pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, bioApplied);
     }
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+    if (yuvDstTmp)
+    {
+      if (bioApplied)
+      {
+        yuvDstTmp->bufs[1].copyFrom(pcYuvDst.bufs[1]);
+        yuvDstTmp->bufs[2].copyFrom(pcYuvDst.bufs[2]);
+      }
+      else
+        yuvDstTmp->copyFrom(pcYuvDst);
+    }
+#endif
   }
   else if( iRefIdx0 >= 0 && iRefIdx1 < 0 )
   {
@@ -1178,6 +1260,10 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
     }
     else
     pcYuvDst.copyClip( pcYuvSrc0, clpRngs );
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+    if (yuvDstTmp)
+      yuvDstTmp->copyFrom(pcYuvDst);
+#endif
   }
   else if( iRefIdx0 < 0 && iRefIdx1 >= 0 )
   {
@@ -1187,13 +1273,24 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
     }
     else
     pcYuvDst.copyClip( pcYuvSrc1, clpRngs );
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+    if (yuvDstTmp)
+      yuvDstTmp->copyFrom(pcYuvDst);
+#endif
   }
 }
 
 void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBuf, const RefPicList &eRefPicList
   , const bool luma, const bool chroma
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+  , PelUnitBuf* predBufWOBIO /*= NULL*/
+#endif
 )
 {
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+  CHECK(predBufWOBIO && pu.mhIntraFlag, "the case should not happen!");
+#endif
+
   // dual tree handling for IBC as the only ref
   if ((!luma || !chroma) && eRefPicList == REF_PIC_LIST_0)
   {
@@ -1217,6 +1314,9 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
 
   if( eRefPicList != REF_PIC_LIST_X )
   {
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+    CHECK(predBufWOBIO != NULL, "the case should not happen!");
+#endif
     if( ( ( sliceType == P_SLICE && pps.getUseWP() ) || ( sliceType == B_SLICE && pps.getWPBiPred() ) ) )
     {
       xPredInterUni         ( pu,          eRefPicList, predBuf, true
@@ -1245,7 +1345,11 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     pu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
     bool bioApplied = false;
     const Slice &slice = *pu.cs->slice;
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+    if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->slice->getDisBdofDmvrFlag()))
+#else
     if (pu.cs->sps->getBDOFEnabledFlag())
+#endif
     {
 
       if (pu.cu->affine || m_subPuMC)
@@ -1266,6 +1370,13 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
         }
       }
 
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      if (bioApplied && pu.mhIntraFlag)
+      {
+        bioApplied = false;
+      }
+#endif
+
       if (bioApplied && pu.cu->smvdMode)
       {
         bioApplied = false;
@@ -1283,11 +1394,18 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     dmvrApplied = (pu.mvRefine) && PU::checkDMVRCondition(pu);
     if ((pu.lumaSize().width > MAX_BDOF_APPLICATION_REGION || pu.lumaSize().height > MAX_BDOF_APPLICATION_REGION) && pu.mergeType != MRG_TYPE_SUBPU_ATMVP && (bioApplied && !dmvrApplied))
     {
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      xSubPuBio(pu, predBuf, eRefPicList, predBufWOBIO);
+#else
       xSubPuBio(pu, predBuf, eRefPicList);
+#endif
     }
     else
     if (pu.mergeType != MRG_TYPE_DEFAULT_N && pu.mergeType != MRG_TYPE_IBC)
     {
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      CHECK(predBufWOBIO != NULL, "the case should not happen!");
+#endif 
       xSubPuMC( pu, predBuf, eRefPicList );
     }
     else if( xCheckIdenticalMotion( pu ) )
@@ -1296,10 +1414,18 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
         , false
         , true, true
       );
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      if (predBufWOBIO)
+        predBufWOBIO->copyFrom(predBuf);
+#endif
     }
     else
     {
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      xPredInterBi(pu, predBuf, predBufWOBIO);
+#else
       xPredInterBi( pu, predBuf );
+#endif
     }
   }
   return;

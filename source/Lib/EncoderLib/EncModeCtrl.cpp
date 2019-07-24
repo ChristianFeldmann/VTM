@@ -1549,7 +1549,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
   else if (encTestmode.type == ETM_IBC || encTestmode.type == ETM_IBC_MERGE)
   {
     // IBC MODES
+#if JVET_O1161_IBC_MAX_SIZE
+    return sps.getIBCFlag() && (partitioner.currArea().lumaSize().width < 128 && partitioner.currArea().lumaSize().height < 128);
+#else
     return sps.getIBCFlag() && (partitioner.currArea().lumaSize().width < 128 || partitioner.currArea().lumaSize().height < 128);
+#endif
   }
   else if( isModeInter( encTestmode ) )
   {
@@ -1794,6 +1798,18 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
   else
   {
     CHECK( encTestmode.type != ETM_POST_DONT_SPLIT, "Unknown mode" );
+
+#if JVET_O0592_ENC_ME_IMP
+    if ((cuECtx.get<double>(BEST_NO_IMV_COST) == (MAX_DOUBLE * .5) || cuECtx.get<bool>(IS_REUSING_CU)) && !slice.isIntra())
+    {
+      unsigned idx1, idx2, idx3, idx4;
+      getAreaIdx(partitioner.currArea().Y(), *slice.getPPS()->pcv, idx1, idx2, idx3, idx4);
+      if (g_isReusedUniMVsFilled[idx1][idx2][idx3][idx4])
+      {
+        m_pcInterSearch->insertUniMvCands(partitioner.currArea().Y(), g_reusedUniMVs[idx1][idx2][idx3][idx4]);
+      }
+    }
+#endif
 
     if( !bestCS || ( bestCS && isModeSplit( bestMode ) ) )
     {

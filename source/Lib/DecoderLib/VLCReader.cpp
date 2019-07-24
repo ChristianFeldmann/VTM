@@ -1254,7 +1254,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
-
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG 
+  if (pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
+  {
+    READ_FLAG(uiCode, "sps_bdof_dmvr_slice_level_present_flag");             pcSPS->setBdofDmvrSlicePresentFlag(uiCode != 0);
+  }
+#endif
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
 
   READ_FLAG( uiCode,    "sps_mip_flag");                            pcSPS->setUseMIP                 ( uiCode != 0 );
@@ -1985,6 +1990,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         READ_FLAG( uiCode, "tile_group_fracmmvd_disabled_flag" );
         pcSlice->setDisFracMMVD( uiCode ? true : false );
       }
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+      if (sps->getBdofDmvrSlicePresentFlag())
+      {
+        READ_FLAG(uiCode, "tile_group_bdof_dmvr_disabled_flag");
+        pcSlice->setDisBdofDmvrFlag(uiCode ? true : false);
+      }
+#endif
       if (sps->getUseTriangle() && pcSlice->getMaxNumMergeCand() >= 2)
       {
         READ_UVLC(uiCode, "max_num_merge_cand_minus_max_num_triangle_cand");

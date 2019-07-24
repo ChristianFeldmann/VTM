@@ -83,6 +83,9 @@ Slice::Slice()
 , m_maxNumAffineMergeCand         ( 0 )
 , m_maxNumTriangleCand            ( 0 )
 , m_disFracMMVD                   ( false )
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+, m_disBdofDmvrFlag               ( false )
+#endif
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
 , m_sliceMode                     ( NO_SLICES )
@@ -193,6 +196,9 @@ void Slice::initSlice()
   m_bFinalized=false;
 
   m_disFracMMVD          = false;
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  m_disBdofDmvrFlag      = false;
+#endif
   m_substreamSizes.clear();
   m_cabacInitFlag        = false;
 #if JVET_O0105_ICT
@@ -695,6 +701,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_maxNumAffineMergeCand         = pSrc->m_maxNumAffineMergeCand;
   m_maxNumTriangleCand            = pSrc->m_maxNumTriangleCand;
   m_disFracMMVD                   = pSrc->m_disFracMMVD;
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  m_disBdofDmvrFlag               = pSrc->m_disBdofDmvrFlag;
+#endif
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
   m_splitConsOverrideFlag         = pSrc->m_splitConsOverrideFlag;
   m_uiMinQTSize                   = pSrc->m_uiMinQTSize;
@@ -1401,6 +1410,9 @@ SPS::SPS()
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+, m_BdofDmvrSlicePresentFlag  ( false )
+#endif
 , m_uiBitsForPOC              (  8)
 , m_numLongTermRefPicSPS      (  0)
 #if MAX_TB_SIZE_SIGNALLING

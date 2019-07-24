@@ -1520,6 +1520,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       pcSlice->setSliceNumBricks(uiCode + 1);
       pcSlice->setSliceCurEndBrickIdx(pcSlice->getSliceCurStartBrickIdx() + uiCode);
     }
+#if JVET_N0288_PROPOSAL1
+    else if (pps->getSingleBrickPerSliceFlag())
+    {
+      pcSlice->setSliceNumBricks(1);
+    }
+#endif
     pcSlice->setSliceCurStartCtuTsAddr(pcSlice->getSliceCurStartBrickIdx());
 
     for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)

@@ -161,7 +161,9 @@ protected:
 
 
   MotionInfo      m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
   void xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred);
+#endif
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   CacheModel      *m_cacheModel;
 #endif

@@ -435,7 +435,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
       const int tileColumnsMinus1 = pcPPS->getNumTileColumnsMinus1();
       const int tileRowsMinus1    = pcPPS->getNumTileRowsMinus1();
-      CHECK( ((tileColumnsMinus1 + 1) * (tileColumnsMinus1 + 1)) < 2, "tile colums * rows must be > 1 when explicitly signalled.");
+      CHECK( ((tileColumnsMinus1 + 1) * (tileRowsMinus1 + 1)) < 2, "tile colums * rows must be > 1 when explicitly signalled.");
 
       if (tileColumnsMinus1 > 0)
       {

@@ -400,7 +400,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) < -12, "Invalid Cr QP offset" );
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) >  12, "Invalid Cr QP offset" );
 
-  READ_SVLC( iCode, "pps_cb_cr_qp_offset");
+  READ_SVLC( iCode, "pps_joint_cbcr_qp_offset");
   pcPPS->setQpOffset(JOINT_CbCr, iCode);
   CHECK( pcPPS->getQpOffset(JOINT_CbCr) < -12, "Invalid CbCr QP offset" );
   CHECK( pcPPS->getQpOffset(JOINT_CbCr) >  12, "Invalid CbCr QP offset" );
@@ -2017,7 +2017,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #if JVET_O0105_ICT
     if (bChroma)
     {
-      READ_FLAG( uiCode, "joint_cb_cr_sign_flag" ); pcSlice->setJointCbCrSignFlag( uiCode != 0 );
+      READ_FLAG( uiCode, "slice_joint_cbcr_sign_flag" ); pcSlice->setJointCbCrSignFlag( uiCode != 0 );
     }
 #endif
 
@@ -2049,7 +2049,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         CHECK( (pps->getQpOffset(COMPONENT_Cr) + pcSlice->getSliceChromaQpDelta(COMPONENT_Cr)) < -12, "Invalid chroma QP offset" );
         CHECK( (pps->getQpOffset(COMPONENT_Cr) + pcSlice->getSliceChromaQpDelta(COMPONENT_Cr)) >  12, "Invalid chroma QP offset" );
 
-        READ_SVLC( iCode, "slice_cb_cr_qp_offset" );
+        READ_SVLC( iCode, "slice_joint_cbcr_qp_offset" );
         pcSlice->setSliceChromaQpDelta(JOINT_CbCr, iCode );
         CHECK( pcSlice->getSliceChromaQpDelta(JOINT_CbCr) < -12, "Invalid chroma QP offset" );
         CHECK( pcSlice->getSliceChromaQpDelta(JOINT_CbCr) >  12, "Invalid chroma QP offset" );

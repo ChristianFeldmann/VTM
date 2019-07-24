@@ -730,7 +730,11 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 
 void CABACWriter::pred_mode( const CodingUnit& cu )
 {
+#if JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
+  if (cu.cs->slice->getSPS()->getIBCFlag() && cu.chType != CHANNEL_TYPE_CHROMA)
+#else
   if (cu.cs->slice->getSPS()->getIBCFlag())
+#endif
   {
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) )
     {

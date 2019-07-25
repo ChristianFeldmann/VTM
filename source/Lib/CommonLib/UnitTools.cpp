@@ -4322,6 +4322,28 @@ bool CU::isSameSbtSize( const uint8_t sbtInfo1, const uint8_t sbtInfo2 )
     return false;
 }
 
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+bool CU::isPredRegDiffFromTB(const CodingUnit &cu, const ComponentID compID)
+{
+  return (compID == COMPONENT_Y)
+    && (cu.ispMode == VER_INTRA_SUBPARTITIONS &&
+      CU::isMinWidthPredEnabledForBlkSize(cu.blocks[compID].width, cu.blocks[compID].height)
+      );
+}
+bool CU::isMinWidthPredEnabledForBlkSize(const int w, const int h)
+{
+  return ((w == 8 && h > 4) || w == 4);
+}
+bool CU::isFirstTBInPredReg(const CodingUnit& cu, const ComponentID compID, const CompArea &area)
+{
+  return (compID == COMPONENT_Y) && cu.ispMode && ((area.topLeft().x - cu.Y().topLeft().x) % PRED_REG_MIN_WIDTH == 0);
+}
+void CU::adjustPredArea(CompArea &area)
+{
+  area.width = std::max<int>(PRED_REG_MIN_WIDTH, area.width);
+}
+#endif
+
 bool CU::isGBiIdxCoded( const CodingUnit &cu )
 {
   if( cu.cs->sps->getUseGBi() == false )

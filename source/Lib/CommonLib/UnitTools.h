@@ -136,6 +136,9 @@ namespace PU
   AvailableInfo getAvailableInfoLuma  (const PredictionUnit &pu);
   void getIntraChromaCandModes        (const PredictionUnit &pu, unsigned modeList[NUM_CHROMA_MODE]);
   uint32_t getFinalIntraMode              (const PredictionUnit &pu, const ChannelType &chType);
+#if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
+  uint32_t getCoLocatedIntraLumaMode      (const PredictionUnit &pu);
+#endif
   int getWideAngIntraMode             ( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID );
   void getInterMergeCandidates        (const PredictionUnit &pu, MergeCtx& mrgCtx,
     int mmvdList,

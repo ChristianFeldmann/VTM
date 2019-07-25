@@ -354,7 +354,11 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
 
     if( PU::isLMCMode( tu.cs->getPU( area.pos(), toChannelType( compID ) )->intraDir[ toChannelType( compID ) ] ) )
     {
+#if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
+      intraMode = PU::getCoLocatedIntraLumaMode( *tu.cs->getPU( area.pos(), toChannelType( compID ) ) );
+#else
       intraMode = PLANAR_IDX;
+#endif
     }
     CHECK( intraMode >= NUM_INTRA_MODE - 1, "Invalid intra mode" );
 
@@ -462,7 +466,11 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
 
     if( PU::isLMCMode( tu.cs->getPU( area.pos(), toChannelType( compID ) )->intraDir[ toChannelType( compID ) ] ) )
     {
+#if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
+      intraMode = PU::getCoLocatedIntraLumaMode( *tu.cs->getPU( area.pos(), toChannelType( compID ) ) );
+#else
       intraMode = PLANAR_IDX;
+#endif
     }
     CHECK( intraMode >= NUM_INTRA_MODE - 1, "Invalid intra mode" );
 

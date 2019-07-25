@@ -244,7 +244,7 @@ int Reshape::getPWLIdxInv(int lumaVal)
   {
     if (lumaVal < m_reshapePivot[idxS + 1])     break;
   }
-  return idxS;
+  return std::min(idxS, PIC_CODE_CW_BINS-1);
 #else
   if (lumaVal < m_reshapePivot[m_sliceReshapeInfo.reshaperModelMinBinIdx + 1])
     return m_sliceReshapeInfo.reshaperModelMinBinIdx;

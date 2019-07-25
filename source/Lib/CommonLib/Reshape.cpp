@@ -155,6 +155,8 @@ int  Reshape::calculateChromaAdjVpduNei(TransformUnit &tu, const CompArea &areaY
   int xPos = areaY.lumaPos().x;
   int yPos = areaY.lumaPos().y;
   int ctuSize = cs.sps->getCTUSize();
+  int numNeighbor = std::min(64, ctuSize);
+  int numNeighborLog = g_aucLog2[numNeighbor];
   if (ctuSize == 128)
   {
     xPos = xPos / 64 * 64;
@@ -175,10 +177,19 @@ int  Reshape::calculateChromaAdjVpduNei(TransformUnit &tu, const CompArea &areaY
     setVPDULoc(xPos, yPos);
     Position topLeft(xPos, yPos);
     CodingUnit *topLeftLuma;
+    const CodingUnit *cuAbove, *cuLeft;
     if (CS::isDualITree(cs) && cs.slice->getSliceType() == I_SLICE)
+    {
       topLeftLuma = tu.cs->picture->cs->getCU(topLeft, CHANNEL_TYPE_LUMA);
+      cuAbove = cs.picture->cs->getCURestricted(topLeftLuma->lumaPos().offset(0, -1), *topLeftLuma, CHANNEL_TYPE_LUMA);
+      cuLeft  = cs.picture->cs->getCURestricted(topLeftLuma->lumaPos().offset(-1, 0), *topLeftLuma, CHANNEL_TYPE_LUMA);
+    }
     else
+    {
       topLeftLuma = cs.getCU(topLeft, CHANNEL_TYPE_LUMA);
+      cuAbove = cs.getCURestricted(topLeftLuma->lumaPos().offset(0, -1), *topLeftLuma, CHANNEL_TYPE_LUMA);
+      cuLeft  = cs.getCURestricted(topLeftLuma->lumaPos().offset(-1, 0), *topLeftLuma, CHANNEL_TYPE_LUMA);
+    }
 
     xPos = topLeftLuma->lumaPos().x;
     yPos = topLeftLuma->lumaPos().y;
@@ -195,31 +206,31 @@ int  Reshape::calculateChromaAdjVpduNei(TransformUnit &tu, const CompArea &areaY
     const Pel   valueDC = 1 << (tu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA) - 1);
     int32_t recLuma = 0;
     int pelnum = 0;
-    if (xPos > 0)
+    if (cuLeft != nullptr)
     {
-      for (int i = 0; i < NEIG_NUM; i++)
+      for (int i = 0; i < numNeighbor; i++)
       {
         int k = (yPos + i) >= picH ? (picH - yPos - 1) : i;
         recLuma += recSrc0[-1 + k * strideY];
         pelnum++;
       }
     }
-    if (yPos > 0)
+    if (cuAbove != nullptr)
     {
-      for (int i = 0; i < NEIG_NUM; i++)
+      for (int i = 0; i < numNeighbor; i++)
       {
         int k = (xPos + i) >= picW ? (picW - xPos - 1) : i;
         recLuma += recSrc0[-strideY + k];
         pelnum++;
       }
     }
-    if (pelnum == NEIG_NUM)
+    if (pelnum == numNeighbor)
     {
-      lumaValue = ClipPel((recLuma + (1 << (NEIG_NUM_LOG - 1))) >> NEIG_NUM_LOG, tu.cs->slice->clpRng(COMPONENT_Y));
+      lumaValue = ClipPel((recLuma + (1 << (numNeighborLog - 1))) >> numNeighborLog, tu.cs->slice->clpRng(COMPONENT_Y));
     }
-    else if (pelnum == (NEIG_NUM << 1))
+    else if (pelnum == (numNeighbor << 1))
     {
-      lumaValue = ClipPel((recLuma + (1 << NEIG_NUM_LOG)) >> (NEIG_NUM_LOG + 1), tu.cs->slice->clpRng(COMPONENT_Y));
+      lumaValue = ClipPel((recLuma + (1 << numNeighborLog)) >> (numNeighborLog + 1), tu.cs->slice->clpRng(COMPONENT_Y));
     }
     else
     {

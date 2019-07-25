@@ -2391,7 +2391,11 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
         cuCtx.isDQPCoded = true;
       }
     }
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+    if (cu.cs->slice->getUseChromaQpAdj() && cbfChroma && !cuCtx.isChromaQpAdjCoded)
+#else
     if( cu.cs->slice->getUseChromaQpAdj() && cbfChroma && !cu.transQuantBypass && !cuCtx.isChromaQpAdjCoded )
+#endif
     {
       cu_chroma_qp_offset( cu );
       cuCtx.isChromaQpAdjCoded = true;

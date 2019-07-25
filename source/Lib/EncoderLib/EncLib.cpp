@@ -1111,7 +1111,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   {
     pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(m_cuChromaQpOffsetSubdiv);
     pps.getPpsRangeExtension().clearChromaQpOffsetList();
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+    pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6, 6);
+#else
     pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6);
+#endif
     /* todo, insert table entries from command line (NB, 0 should not be touched) */
   }
   else

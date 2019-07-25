@@ -712,12 +712,23 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
             {
               int cbOffset;
               int crOffset;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+              int jointCbCrOffset;
+#endif
               READ_SVLC(cbOffset, "cb_qp_offset_list[i]");
               CHECK(cbOffset < -12 || cbOffset > 12, "Invalid chroma QP offset");
               READ_SVLC(crOffset, "cr_qp_offset_list[i]");
               CHECK(crOffset < -12 || crOffset > 12, "Invalid chroma QP offset");
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+              READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+              CHECK(jointCbCrOffset < -12 || jointCbCrOffset > 12, "Invalid chroma QP offset");
+#endif
               // table uses +1 for index (see comment inside the function)
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+              ppsRangeExtension.setChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1, cbOffset, crOffset, jointCbCrOffset);
+#else
               ppsRangeExtension.setChromaQpOffsetListEntry(cuChromaQpOffsetIdx+1, cbOffset, crOffset);
+#endif
             }
             CHECK(ppsRangeExtension.getChromaQpOffsetListLen() != tableSizeMinus1 + 1, "Invalid chroma QP offset list lenght");
           }

@@ -116,6 +116,8 @@
 
 #define JVET_O0590_REDUCE_DMVR_ORIG_MV_COST               1 // Reduce the DMVR cost of the original MV
 
+#define JVET_O0432_LMCS_ENCODER                           1 // JVET-O0432: LMCS encoder improvement
+
 #define JVET_O0429_CRS_LAMBDA_FIX                         1 // JVET-O0429: fix encoder lambda rounding used in CRS
 
 #define JVET_O0428_LMCS_CLEANUP                           1 // JVET-O0428: LMCS cleanups

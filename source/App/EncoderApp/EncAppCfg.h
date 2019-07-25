@@ -304,6 +304,11 @@ protected:
   uint32_t  m_reshapeSignalType;
   uint32_t  m_intraCMD;
   ReshapeCW m_reshapeCW;
+#if JVET_O0432_LMCS_ENCODER
+  int       m_updateCtrl;
+  int       m_adpOption;
+  uint32_t  m_initialCW;
+#endif
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel

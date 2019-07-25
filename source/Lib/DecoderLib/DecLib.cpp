@@ -1222,8 +1222,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       {
         int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
 #if JVET_O0414_SMVD_LTRP
-        const bool bIsRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_0, ref)->longTerm;
-        if ( poc < currPOC && (poc > forwardPOC || refIdx0 == -1) && !bIsRefLongTerm)
+        const bool isRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_0, ref)->longTerm;
+        if ( poc < currPOC && (poc > forwardPOC || refIdx0 == -1) && !isRefLongTerm )
 #else
         if ( poc < currPOC && (poc > forwardPOC || refIdx0 == -1) )
 #endif
@@ -1238,8 +1238,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       {
         int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
 #if JVET_O0414_SMVD_LTRP
-        const bool bIsRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_1, ref)->longTerm;
-        if ( poc > currPOC && (poc < backwardPOC || refIdx1 == -1) && !bIsRefLongTerm)
+        const bool isRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_1, ref)->longTerm;
+        if ( poc > currPOC && (poc < backwardPOC || refIdx1 == -1) && !isRefLongTerm )
 #else
         if ( poc > currPOC && (poc < backwardPOC || refIdx1 == -1) )
 #endif
@@ -1261,8 +1261,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         {
           int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
 #if JVET_O0414_SMVD_LTRP
-          const bool bIsRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_0, ref)->longTerm;
-          if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) && !bIsRefLongTerm)
+          const bool isRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_0, ref)->longTerm;
+          if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) && !isRefLongTerm )
 #else  
           if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) )
 #endif
@@ -1277,8 +1277,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         {
           int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
 #if JVET_O0414_SMVD_LTRP
-          const bool bIsRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_1, ref)->longTerm;
-          if ( poc < currPOC && (poc > forwardPOC || refIdx1 == -1) && !bIsRefLongTerm)
+          const bool isRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_1, ref)->longTerm;
+          if ( poc < currPOC && (poc > forwardPOC || refIdx1 == -1) && !isRefLongTerm )
 #else
           if ( poc < currPOC && (poc > forwardPOC || refIdx1 == -1) )
 #endif

@@ -7036,15 +7036,17 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         int         codedCbfMask = 0;
         ComponentID codeCompId   = (tu.jointCbCr >> 1 ? COMPONENT_Cb : COMPONENT_Cr);
         ComponentID otherCompId  = (codeCompId == COMPONENT_Cr ? COMPONENT_Cb : COMPONENT_Cr);
+        const QpParam qpCbCr(tu, codeCompId);
+
         tu.getCoeffs(otherCompId).fill(0);   // do we need that?
         TU::setCbfAtDepth(tu, otherCompId, tu.depth, false);
 
         PelBuf &codeResi   = (codeCompId == COMPONENT_Cr ? crResi : cbResi);
         TCoeff  compAbsSum = 0;
-        m_pcTrQuant->transformNxN(tu, codeCompId, cQP, compAbsSum, m_CABACEstimator->getCtx());
+        m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, compAbsSum, m_CABACEstimator->getCtx());
         if (compAbsSum > 0)
         {
-          m_pcTrQuant->invTransformNxN(tu, codeCompId, codeResi, cQP);
+          m_pcTrQuant->invTransformNxN(tu, codeCompId, codeResi, qpCbCr);
           codedCbfMask += (codeCompId == COMPONENT_Cb ? 2 : 1);
         }
         else

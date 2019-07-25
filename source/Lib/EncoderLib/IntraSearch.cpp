@@ -2039,7 +2039,9 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   else // chroma
   {
     int         codedCbfMask  = 0;
-    ComponentID codeCompId    = ( tu.jointCbCr ? ( tu.jointCbCr>>1 ? COMPONENT_Cb : COMPONENT_Cr ) : compID );
+    ComponentID codeCompId    = (tu.jointCbCr ? (tu.jointCbCr >> 1 ? COMPONENT_Cb : COMPONENT_Cr) : compID);
+    const QpParam qpCbCr(tu, codeCompId);
+
     if( tu.jointCbCr )
     {
       ComponentID otherCompId = ( codeCompId==COMPONENT_Cr ? COMPONENT_Cb : COMPONENT_Cr );
@@ -2048,11 +2050,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     }
     PelBuf& codeResi = ( codeCompId == COMPONENT_Cr ? crResi : piResi );
     uiAbsSum = 0;
-    m_pcTrQuant->transformNxN( tu, codeCompId, cQP, uiAbsSum, m_CABACEstimator->getCtx() );
+    m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx());
     DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), codeCompId, uiAbsSum );
     if( uiAbsSum > 0 )
     {
-      m_pcTrQuant->invTransformNxN(tu, codeCompId, codeResi, cQP);
+      m_pcTrQuant->invTransformNxN(tu, codeCompId, codeResi, qpCbCr);
       codedCbfMask += ( codeCompId == COMPONENT_Cb ? 2 : 1 );
     }
     else

@@ -240,7 +240,8 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
       }
       else
       {
-        m_pcTrQuant->invTransformNxN( tu, COMPONENT_Cr, resiCr, cQP );
+        const QpParam qpCr( tu, COMPONENT_Cr );
+        m_pcTrQuant->invTransformNxN( tu, COMPONENT_Cr, resiCr, qpCr );
       }
       m_pcTrQuant->invTransformICT( tu, piResi, resiCr );
     }
@@ -590,7 +591,8 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
       }
       else
       {
-        m_pcTrQuant->invTransformNxN( currTU, COMPONENT_Cr, resiCr, cQP );
+        const QpParam qpCr( currTU, COMPONENT_Cr );
+        m_pcTrQuant->invTransformNxN( currTU, COMPONENT_Cr, resiCr, qpCr );
       }
       m_pcTrQuant->invTransformICT( currTU, resiBuf, resiCr );
     }

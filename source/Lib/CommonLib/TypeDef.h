@@ -131,6 +131,7 @@
 
 
 #define JVET_O0596_CBF_SIG_ALIGN_TO_SPEC                  1 // JVET-O0596 align cbf signaling with specification
+#define JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX             1 // JVET-O0193/JVET-O0375: remove transform depth in cbf context modeling
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 

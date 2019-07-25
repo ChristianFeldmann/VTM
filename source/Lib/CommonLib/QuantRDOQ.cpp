@@ -959,7 +959,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
         previousCbf = TU::getPrevTuCbfAtDepth(tu, compID, tu.depth);
       }
     }
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+    BinFracBits fracBitsQtCbf = fracBits.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( rect.compID, previousCbf, useIntraSubPartitions ) ) );
+#else
     BinFracBits fracBitsQtCbf = fracBits.getFracBitsArray( Ctx::QtCbf[compID]( DeriveCtx::CtxQtCbf( rect.compID, tu.depth, previousCbf, useIntraSubPartitions ) ) );
+#endif
 
     if( !lastCbfIsInferred )
     {

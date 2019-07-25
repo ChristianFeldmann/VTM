@@ -436,17 +436,31 @@ const CtxSet ContextSetCfg::QtCbf[] =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+    { 127, 111, 124, 140 },
+    { 127,  79, 139, 126 },
+    { 126, 138, 124, 111 },
+    {   5,   1,   8,   8 },
+#else
     { 142, 127, 124, 140, 111, },
     { 143, 127, 139, 126,  79, },
     { CNU, 126, 124, 111, 138, },
     {   1,   5,   8,   8,   1, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+    { 163, },
+    { 150, },
+    { 124, },
+    {   5, },
+#else
     { 163, 135, },
     { 150, 121, },
     { 124, CNU, },
     {   5,   0, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({

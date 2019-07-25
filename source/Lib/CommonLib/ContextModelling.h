@@ -366,7 +366,11 @@ public:
 namespace DeriveCtx
 {
 void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* canSplit = nullptr );
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+unsigned CtxQtCbf     ( const ComponentID compID, const bool prevCbCbf = false, const int ispIdx = 0 );
+#else
 unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
+#endif
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxAffineFlag( const CodingUnit& cu );

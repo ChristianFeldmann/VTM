@@ -1677,7 +1677,11 @@ void CABACReader::subblock_merge_flag( CodingUnit& cu )
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__AFFINE_FLAG );
 
     unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
+#if JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG
+    cu.affine = m_BinDecoder.decodeBin( Ctx::SubblockMergeFlag( ctxId ) );
+#else
     cu.affine = m_BinDecoder.decodeBin( Ctx::AffineFlag( ctxId ) );
+#endif
     DTRACE( g_trace_ctx, D_SYNTAX, "subblock_merge_flag() subblock_merge_flag=%d ctx=%d pos=(%d,%d)\n", cu.affine ? 1 : 0, ctxId, cu.Y().x, cu.Y().y );
   }
 }

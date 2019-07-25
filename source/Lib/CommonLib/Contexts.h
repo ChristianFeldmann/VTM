@@ -218,6 +218,9 @@ public:
   static const CtxSet   MmvdFlag;
   static const CtxSet   MmvdMergeIdx;
   static const CtxSet   MmvdStepMvpIdx;
+#if JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG
+  static const CtxSet   SubblockMergeFlag;
+#endif
   static const CtxSet   AffineFlag;
   static const CtxSet   AffineType;
   static const CtxSet   AffMergeIdx;

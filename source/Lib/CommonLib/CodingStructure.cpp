@@ -327,7 +327,7 @@ const TransformUnit * CodingStructure::getTU( const Position &pos, const Channel
           }
           else
           {
-            while( pos != tus[idx - 1 + extraIdx]->blocks[effChType].pos() )
+            while ( !tus[idx - 1 + extraIdx]->blocks[getFirstComponentOfChannel( effChType )].contains(pos) )
             {
               extraIdx++;
             }

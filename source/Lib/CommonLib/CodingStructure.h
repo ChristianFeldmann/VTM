@@ -60,6 +60,7 @@ enum PictureType
   PIC_RECON_WRAP,
   NUM_PIC_TYPES
 };
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
 enum IbcLumaCoverage
 {
   IBC_LUMA_COVERAGE_FULL = 0,
@@ -67,6 +68,7 @@ enum IbcLumaCoverage
   IBC_LUMA_COVERAGE_NONE,
   NUM_IBC_LUMA_COVERAGE,
 };
+#endif
 extern XUCache g_globalUnitCache;
 
 // ---------------------------------------------------------------------------
@@ -153,7 +155,9 @@ public:
   cCUTraverser    traverseCUs(const UnitArea& _unit, const ChannelType _chType) const;
   cPUTraverser    traversePUs(const UnitArea& _unit, const ChannelType _chType) const;
   cTUTraverser    traverseTUs(const UnitArea& _unit, const ChannelType _chType) const;
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
   IbcLumaCoverage getIbcLumaCoverage(const CompArea& chromaArea) const;
+#endif
   // ---------------------------------------------------------------------------
   // encoding search utilities
   // ---------------------------------------------------------------------------

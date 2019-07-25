@@ -1395,6 +1395,12 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
       {
         for( uint8_t mtsFlag = startMtsFlag; mtsFlag <= endMtsFlag; mtsFlag++ )
         {
+#if JVET_O0368_LFNST_WITH_DCT2_ONLY
+          if (mtsFlag > 0 && lfnstIdx > 0)
+          {
+            continue;
+          }
+#endif
           //3) if interHad is 0, only try further modes if some intra mode was already better than inter
           if( sps.getUseLFNST() && m_pcEncCfg->getUsePbIntraFast() && !tempCS->slice->isIntra() && bestCU && CU::isInter( *bestCS->getCU( partitioner.chType ) ) && interHad == 0 )
           {
@@ -2978,8 +2984,11 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
 {
   assert(partitioner.chType != CHANNEL_TYPE_CHROMA); // chroma IBC is derived
-
+#if JVET_O1161_IBC_MAX_SIZE
+  if (tempCS->area.lwidth() == 128 || tempCS->area.lheight() == 128) // disable IBC mode larger than 64x64
+#else
   if (tempCS->area.lwidth() == 128 && tempCS->area.lheight() == 128) // disable 128x128 IBC mode
+#endif
   {
     return;
   }
@@ -3213,7 +3222,11 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 
 void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
 {
+#if JVET_O1161_IBC_MAX_SIZE
+  if (tempCS->area.lwidth() == 128 || tempCS->area.lheight() == 128) // disable IBC mode larger than 64x64
+#else
   if (tempCS->area.lwidth() == 128 && tempCS->area.lheight() == 128) // disable 128x128 IBC mode
+#endif
   {
     return;
   }
@@ -3251,9 +3264,10 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
 
     pu.interDir = 1; // use list 0 for IBC mode
     pu.refIdx[REF_PIC_LIST_0] = MAX_NUM_REF; // last idx in the list
-
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
     if (partitioner.chType == CHANNEL_TYPE_LUMA)
     {
+#endif
       bool bValid = m_pcInterSearch->predIBCSearch(cu, partitioner, m_ctuIbcSearchRangeX, m_ctuIbcSearchRangeY, m_ibcHashMap);
 
       if (bValid)
@@ -3298,6 +3312,7 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
         tempCS->cost = MAX_DOUBLE;
         tempCS->costDbOffset = 0;
       }
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
     }
  // chroma CU ibc comp
     else
@@ -3365,7 +3380,8 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
         tempCS->costDbOffset = 0;
       }
     }
-  }
+#endif
+}
   // check ibc mode in encoder RD
   //////////////////////////////////////////////////////////////////////////////////////////////
 

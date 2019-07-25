@@ -847,7 +847,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   {
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
-
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG  
+  if(pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
+  {
+    WRITE_FLAG(pcSPS->getBdofDmvrSlicePresentFlag() ? 1 : 0,                            "sps_bdof_dmvr_slice_level_present_flag");
+  }
+#endif
   WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "triangle_flag" );
 
   WRITE_FLAG( pcSPS->getUseMIP() ? 1: 0,                                                       "sps_mip_flag" );
@@ -1367,6 +1372,12 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       {
         WRITE_FLAG( pcSlice->getDisFracMMVD(), "tile_group_fracmmvd_disabled_flag" );
       }
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+      if (pcSlice->getSPS()->getBdofDmvrSlicePresentFlag())
+      {
+        WRITE_FLAG(pcSlice->getDisBdofDmvrFlag(), "tile_group_bdof_dmvr_disabled_flag");
+      }
+#endif
       if (pcSlice->getSPS()->getUseTriangle() && pcSlice->getMaxNumMergeCand() >= 2)
       {
         CHECK(pcSlice->getMaxNumMergeCand() < pcSlice->getMaxNumTriangleCand(), "Incorrrect max number of triangle candidates!");

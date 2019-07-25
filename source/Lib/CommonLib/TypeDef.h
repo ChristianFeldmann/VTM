@@ -52,16 +52,31 @@
 
 #define JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT  1 // JVET-O0409: exclude coded_subblock_flag from counting context-coded bins in transform skip
 
+#define JVET_O0368_LFNST_WITH_DCT2_ONLY                   1 // JVET-O0368/O0292/O0521/O0466: disable LFNST for non-DCT2 MTS candidates normatively
+
+#define JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN            1 // JVET-O0106: use 4xN prediction regions for 1xN and 2xN subblocks
+
+#define JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG            1 // JVET-O0500: Different ctx models for inter affine flag and subblock merge flag
+
+#define JVET_O0414_SMVD_LTRP                              1 // JVET-O0414: long-term reference picture restriction for SMVD
+
+#define JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE         1 // JVET-O0258 Remove chroma IBC when dualtree is used
+
+#define JVET_O1161_IBC_MAX_SIZE                           1 // Limit largest IBC luma CU size to 64x64 per discussion of JVET-O1161
+
 #define JVET_O0315_RDPCM_INTRAMODE_ALIGN                  1 // JVET-O0200/O0205/O0296/O0342/O0463/O0542: Intra prediction mode alignment for BDPCM
 
 #define JVET_O0284_CONDITION_SMVD_MVDL1ZEROFLAG           1 // JVET-O0284: condition sym_mvd_flag on mvd_l1_zero_flag
 
 #define JVET_O0438_SPS_AFFINE_AMVR_FLAG                   1 // JVET-O0438: affine AMVR control flag conditioned on affine control flag in SPS
 
+#define JVET_O0065_CABAC_INIT                             0 // JVET-O0065: CABAC initialization
+
 #define JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT      1 // JVET-O0052 Method-1: TU-level context coded bin constraint
 
 #define JVET_O0105_ICT                                    1 // JVET-O0105: inter-chroma transform (ICT) as extension of joint chroma coding (JCC)
 #define JVET_O0543_ICT_ICU_ONLY                           1 // JVET-O0543: ICT only in Intra CUs (was Intra slices, modified during adoption)
+#define JVET_N0288_PROPOSAL1                              1   // JVET-N0288 Proposal 1
 
 #define JVET_O0216_ALF_COEFF_EG3                          1 // JVET-O0216/O0302/O0648: using EG3 for ALF coefficients coding
 
@@ -70,6 +85,8 @@
 #define JVET_O0272_LMCS_SIMP_INVERSE_MAPPING              1 // JVET-O0272: LMCS simplified inverse mapping
 
 #define JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL      1 // JVET-O0247: not signal APS index when number APS is 2
+
+#define JVET_O0297_DMVR_PADDING                           1 // JVET-O0297 DMVR Padding
 
 #define JVET_O0637_CHROMA_GRADIENT_LINE_SELECTION         1 // Choose line0 and line3 for gradient computation when chroma is same size as luma
 
@@ -82,7 +99,7 @@
 #define JVET_O0669_REMOVE_ALF_COEFF_PRED                  1 // JVET-O0425/O0427/O0669: remove prediction in ALF coefficients coding
 
 #define JVET_O0541_IMPLICIT_MTS_CONDITION                 1 // JVET_O0541: Decouple the intra implicit transform selection from an inter MTS related SPS flag
-
+#define JVET_O0163_REMOVE_SWITCHING_TMV                   1 // JVET-O0163/JVET-O0588: Remove switching between L0 and L1 for temporal MV
 #define JVET_O0655_422_CHROMA_DM_MAPPING_FIX              1 // JVET-O0655: modify chroma DM derivation table for 4:2:2 chroma format
 
 #define JVET_O1109_UNFIY_CRS                              1 // JVET-O1109: Unified CRS derivation
@@ -114,13 +131,18 @@
 
 #define JVET_O1124_ALLOW_CCLM_COND                        1 // JVET-O1124/JVET-O0196: CCLM restriction to reduce luma-chroma latency for chroma separate tree
 
-#define JVET_O0078_SINGLE_HMVPLUT                         1 // JVET-O0078£ºSingle HMVP table for all CUs inside the shared merge list region for IBC
+#define JVET_O0078_SINGLE_HMVPLUT                         1 // JVET-O0078Single HMVP table for all CUs inside the shared merge list region for IBC
 
 #define JVET_O0126_BPWA_INDEX_CODING_FIX                  1 // JVET-O0126 align BPWA index coding with specification
 
 #define JVET_O0592_ENC_ME_IMP                             1 // JVET-O0592 encoder ME improvement
 
 #define JVET_O0108_DIS_DMVR_BDOF_CIIP                     1 // JVET_O0108 CE9-2.2: disable DMVR and BDOF for CIIP
+
+#define JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG           1 // JVET-O1140 slice level disable flag for BDOF and DMVR
+
+
+#define JVET_O0596_CBF_SIG_ALIGN_TO_SPEC                  1 // JVET-O0596 align cbf signaling with specification
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 

@@ -1407,6 +1407,7 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   }
 }
 
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
 IbcLumaCoverage CodingStructure::getIbcLumaCoverage(const CompArea& chromaArea) const
 {
   const unsigned int unitAreaSubBlock = MIN_PU_SIZE * MIN_PU_SIZE;
@@ -1438,3 +1439,4 @@ IbcLumaCoverage CodingStructure::getIbcLumaCoverage(const CompArea& chromaArea) 
 
   return coverage;
 }
+#endif

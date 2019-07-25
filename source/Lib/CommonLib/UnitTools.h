@@ -80,7 +80,12 @@ namespace CU
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
   uint32_t getNumNonZeroCoeffNonTs         ( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
   uint32_t getNumNonZeroCoeffNonTsCorner8x8( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
-
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+  bool  isPredRegDiffFromTB(const CodingUnit& cu, const ComponentID compID);
+  bool  isFirstTBInPredReg(const CodingUnit& cu, const ComponentID compID, const CompArea &area);
+  bool  isMinWidthPredEnabledForBlkSize(const int w, const int h);
+  void  adjustPredArea(CompArea &area);
+#endif
   bool  isGBiIdxCoded                 (const CodingUnit& cu);
   uint8_t getValidGbiIdx              (const CodingUnit& cu);
   void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);

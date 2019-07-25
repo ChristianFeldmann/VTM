@@ -2797,7 +2797,11 @@ bool PU::isBipredRestriction(const PredictionUnit &pu)
   }
   return false;
 }
+#if JVET_O0366_AFFINE_BCW
+void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int8_t gbiIdx, int modelIdx, int verNum, AffineMergeCtx& affMrgType)
+#else
 void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], int8_t neighGbi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgType)
+#endif
 {
   int cuW = pu.Y().width;
   int cuH = pu.Y().height;
@@ -2809,7 +2813,9 @@ void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], i
   Mv cMv[2][4];
   int refIdx[2] = { -1, -1 };
   int dir = 0;
+#if !JVET_O0366_AFFINE_BCW
   int8_t gbiIdx = GBI_DEFAULT;
+#endif
   EAffineModel curType = (verNum == 2) ? AFFINEMODEL_4PARAM : AFFINEMODEL_6PARAM;
 
   if ( verNum == 2 )
@@ -2832,6 +2838,7 @@ void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], i
         }
       }
     }
+#if !JVET_O0366_AFFINE_BCW
     if (dir == 3)
     {
       if (neighGbi[idx0] == neighGbi[idx1])
@@ -2839,6 +2846,7 @@ void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], i
         gbiIdx = neighGbi[idx0];
       }
     }
+#endif
 
   }
   else if ( verNum == 3 )
@@ -2861,6 +2869,7 @@ void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], i
         }
       }
     }
+#if !JVET_O0366_AFFINE_BCW
     int gbiClass[5] = { -1,0,0,0,1 };
     if (dir == 3)
     {
@@ -2883,6 +2892,7 @@ void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], i
       }
 
     }
+#endif
 
   }
 
@@ -3168,7 +3178,12 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
     {
       MotionInfo mi[4];
       bool isAvailable[4] = { false };
+
+#if JVET_O0366_AFFINE_BCW
+      int8_t neighGbi[2] = { GBI_DEFAULT, GBI_DEFAULT };
+#else
       int8_t neighGbi[4] = { GBI_DEFAULT, GBI_DEFAULT, GBI_DEFAULT, GBI_DEFAULT };
+#endif
       // control point: LT B2->B3->A2
       const Position posLT[3] = { pu.Y().topLeft().offset( -1, -1 ), pu.Y().topLeft().offset( 0, -1 ), pu.Y().topLeft().offset( -1, 0 ) };
       for ( int i = 0; i < 3; i++ )
@@ -3217,7 +3232,9 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         {
           isAvailable[2] = true;
           mi[2] = puNeigh->getMotionInfo( pos );
+#if !JVET_O0366_AFFINE_BCW
           neighGbi[2] = puNeigh->cu->GBiIdx;
+#endif
           break;
         }
       }
@@ -3284,7 +3301,11 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       for ( int idx = startIdx; idx < modelNum; idx++ )
       {
         int modelIdx = order[idx];
+#if JVET_O0366_AFFINE_BCW
+        getAffineControlPointCand(pu, mi, isAvailable, model[modelIdx], ((modelIdx == 3) ? neighGbi[1] : neighGbi[0]), modelIdx, verNum[modelIdx], affMrgCtx);
+#else
         getAffineControlPointCand(pu, mi, neighGbi, isAvailable, model[modelIdx], modelIdx, verNum[modelIdx], affMrgCtx);
+#endif
         if ( affMrgCtx.numValidMergeCand != 0 && affMrgCtx.numValidMergeCand - 1 == mrgCandIdx )
         {
           return;

@@ -317,11 +317,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
   {
     mtsUsageFlag = 0;
   }
-#if INCLUDE_ISP_CFG_FLAG
   int nOptionsForISP = ( sps.getUseISP() && cu.mtsFlag == 0 && cu.lfnstIdx == 0 ) ? NUM_INTRA_SUBPARTITIONS_MODES : 1;
-#else
-  int nOptionsForISP = ( cu.mtsFlag == 0 && cu.lfnstIdx == 0 ) ? NUM_INTRA_SUBPARTITIONS_MODES : 1;
-#endif
   double bestCurrentCost = bestCostSoFar;
 
   int ispOptions[NUM_INTRA_SUBPARTITIONS_MODES] = { 0 };
@@ -1823,11 +1819,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
   const bool           bUseCrossCPrediction = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isChroma( compID ) && PU::isChromaIntraModeCrossCheckMode( pu ) && checkCrossCPrediction;
   const bool           ccUseRecoResi        = m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate();
-#if INCLUDE_ISP_CFG_FLAG
   const bool           ispSplitIsAllowed    = sps.getUseISP() && CU::canUseISPSplit( *tu.cu, compID );
-#else
-  const bool           ispSplitIsAllowed    = CU::canUseISPSplit( *tu.cu, compID );
-#endif
 
 
   //===== init availability pattern =====
@@ -2034,11 +2026,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     tu.mtsIdx = trModes->at(0).first;
   }
   m_pcTrQuant->transformNxN( tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr, &diagRatio, &horVerRatio );
-#if INCLUDE_ISP_CFG_FLAG
     if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == MTS_DCT2_DCT2 && ispSplitIsAllowed )
-#else
-  if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == MTS_DCT2_DCT2 )
-#endif
   {
     m_intraModeDiagRatio        .push_back(diagRatio);
     m_intraModeHorVerRatio      .push_back(horVerRatio);

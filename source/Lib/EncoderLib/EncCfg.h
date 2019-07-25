@@ -426,9 +426,7 @@ protected:
   int*      m_aidQP;
   uint32_t      m_uiDeltaQpRD;
   bool      m_bFastDeltaQP;
-#if INCLUDE_ISP_CFG_FLAG
   bool      m_ISP;
-#endif
   bool      m_useFastISP;
 
   bool      m_bUseConstrainedIntraPred;
@@ -893,10 +891,8 @@ public:
   unsigned  getVirtualBoundariesPosX        ( unsigned idx ) const { return m_virtualBoundariesPosX[idx]; }
   void      setVirtualBoundariesPosY        ( unsigned u, unsigned idx ) { m_virtualBoundariesPosY[idx] = u; }
   unsigned  getVirtualBoundariesPosY        ( unsigned idx ) const { return m_virtualBoundariesPosY[idx]; }
-#if INCLUDE_ISP_CFG_FLAG
   void      setUseISP                       ( bool b )       { m_ISP = b; }
   bool      getUseISP                       ()         const { return m_ISP; }
-#endif
   void      setReshaper                     ( bool b )                   { m_lumaReshapeEnable = b; }
   bool      getReshaper                     () const                     { return m_lumaReshapeEnable; }
   void      setReshapeSignalType            ( uint32_t signalType )      { m_reshapeSignalType = signalType; }

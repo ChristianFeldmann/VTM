@@ -1378,9 +1378,7 @@ SPS::SPS()
 , m_MMVD                      ( false )
 , m_SBT                       ( false )
 , m_MaxSbtSize                ( 32 )
-#if INCLUDE_ISP_CFG_FLAG
 , m_ISP                       ( false )
-#endif
 , m_chromaFormatIdc           (CHROMA_420)
 , m_uiMaxTLayers              (  1)
 // Structure

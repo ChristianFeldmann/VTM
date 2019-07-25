@@ -120,7 +120,11 @@ public:
   uint32_t  getNumberOfWrittenBits  ()                      { return m_pcBitIf->getNumberOfWrittenBits();  }
   void  codeVUI                 ( const VUI *pcVUI, const SPS* pcSPS );
   void  codeSPS                 ( const SPS* pcSPS );
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  void  codePPS                 ( const PPS* pcPPS, const SPS* pcSPS );
+#else
   void  codePPS                 ( const PPS* pcPPS );
+#endif
   void  codeAPS                 ( APS* pcAPS );
   void  codeAlfAps              ( APS* pcAPS );
   void  codeLmcsAps             ( APS* pcAPS );

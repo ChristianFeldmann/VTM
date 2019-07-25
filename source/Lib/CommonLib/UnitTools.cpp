@@ -4524,9 +4524,17 @@ uint8_t CU::deriveGbiIdx( uint8_t gbiLO, uint8_t gbiL1 )
 
 bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
 {
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  SizeType transformSkipMaxSize = 1 << cu.cs->pps->getPpsRangeExtension().getLog2MaxTransformSkipBlockSize();
+#endif
+
   bool bdpcmAllowed = compID == COMPONENT_Y;
        bdpcmAllowed &= CU::isIntra( cu );
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+       bdpcmAllowed &= ( cu.lwidth() <= transformSkipMaxSize && cu.lheight() <= transformSkipMaxSize );
+#else
        bdpcmAllowed &= ( cu.lwidth() <= 32 && cu.lheight() <= 32 );
+#endif
 
   return bdpcmAllowed;
 }
@@ -4560,11 +4568,20 @@ bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
   bool    tsAllowed = compID == COMPONENT_Y;
   const int maxSize = tu.cs->pps->getPpsRangeExtension().getLog2MaxTransformSkipBlockSize();
 
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  tsAllowed &= tu.cs->sps->getTransformSkipEnabledFlag();
+#else
   tsAllowed &= tu.cs->pps->getUseTransformSkip();
+#endif
   tsAllowed &= !tu.cu->transQuantBypass;
   tsAllowed &= ( !tu.cu->ispMode || !isLuma(compID) );
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  SizeType transformSkipMaxSize = 1 << maxSize;
+  tsAllowed &= !(tu.cu->bdpcmMode && tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize);
+#else
   tsAllowed &= !( tu.cu->bdpcmMode && tu.lwidth() <= BDPCM_MAX_CU_SIZE && tu.lheight() <= BDPCM_MAX_CU_SIZE );
   SizeType transformSkipMaxSize = 1 << maxSize;
+#endif
   tsAllowed &= tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize;
   tsAllowed &= !tu.cu->sbtInfo;
 
@@ -4580,7 +4597,12 @@ bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
   mtsAllowed &= ( tu.lwidth() <= maxSize && tu.lheight() <= maxSize );
   mtsAllowed &= !tu.cu->ispMode;
   mtsAllowed &= !tu.cu->sbtInfo;
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  SizeType transformSkipMaxSize = 1 << tu.cs->pps->getPpsRangeExtension().getLog2MaxTransformSkipBlockSize();
+  mtsAllowed &= !( tu.cu->bdpcmMode && tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize);
+#else
   mtsAllowed &= !( tu.cu->bdpcmMode && tu.lwidth() <= BDPCM_MAX_CU_SIZE && tu.lheight() <= BDPCM_MAX_CU_SIZE );
+#endif
   return mtsAllowed;
 }
 

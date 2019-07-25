@@ -235,11 +235,19 @@ int EncGOP::xWriteSPS (AccessUnit &accessUnit, const SPS *sps)
 
 }
 
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+int EncGOP::xWritePPS (AccessUnit &accessUnit, const PPS *pps, const SPS *sps)
+#else
 int EncGOP::xWritePPS (AccessUnit &accessUnit, const PPS *pps)
+#endif
 {
   OutputNALUnit nalu(NAL_UNIT_PPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  m_HLSWriter->codePPS( pps, sps );
+#else
   m_HLSWriter->codePPS( pps );
+#endif
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
@@ -273,7 +281,11 @@ int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const boo
   }
   if (m_pcEncLib->PPSNeedsWriting(slice->getPPS()->getPPSId())) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
   {
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+    actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), slice->getSPS());
+#else
     actualTotalBits += xWritePPS(accessUnit, slice->getPPS());
+#endif
   }
 
   return actualTotalBits;

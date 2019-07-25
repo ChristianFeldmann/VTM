@@ -371,7 +371,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     m_intraModeTestedNormalIntra.clear();
   }
 
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  const bool testBDPCM = sps.getBDPCMEnabledFlag() && CU::bdpcmAllowed( cu, ComponentID( partitioner.chType ) ) && cu.mtsFlag == 0 && cu.lfnstIdx == 0;
+#else
   const bool testBDPCM = m_pcEncCfg->getRDPCM() && CU::bdpcmAllowed( cu, ComponentID( partitioner.chType ) ) && cu.mtsFlag == 0 && cu.lfnstIdx == 0;
+#endif
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiHadModeList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandCostList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandHadList;
@@ -1322,7 +1326,11 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
           continue;
         }
 
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+        if (cs.sps->getTransformSkipEnabledFlag())
+#else
         if (cs.pps->getUseTransformSkip())
+#endif
         {
           m_CABACEstimator->getCtx() = ctxStart;
         }
@@ -2231,7 +2239,11 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
   double     dSingleCost                        = MAX_DOUBLE;
   Distortion uiSingleDistLuma                   = 0;
   uint64_t   singleFracBits                     = 0;
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool       checkTransformSkip                 = sps.getTransformSkipEnabledFlag();
+#else
   bool       checkTransformSkip                 = pps.getUseTransformSkip();
+#endif
   int        bestModeId[ MAX_NUM_COMPONENT ]    = { 0, 0, 0 };
   uint8_t    nNumTransformCands                 = cu.mtsFlag ? 4 : 1;
   uint8_t    numTransformIndexCands             = nNumTransformCands;

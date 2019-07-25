@@ -134,6 +134,9 @@ EncAppCfg::EncAppCfg()
 , m_bNoTriangleConstraintFlag(false)
 , m_bNoLadfConstraintFlag(false)
 , m_noTransformSkipConstraintFlag(false)
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+, m_noBDPCMConstraintFlag(false)
+#endif
 , m_bNoQpDeltaConstraintFlag(false)
 , m_bNoDepQuantConstraintFlag(false)
 , m_bNoSignDataHidingConstraintFlag(false)
@@ -1050,6 +1053,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TransformSkip",                                   m_useTransformSkip,                               false, "Intra transform skipping")
   ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast encoder search for transform skipping, winner takes it all mode.")
   ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     5U, "Specify transform-skip maximum size. Minimum 2, Maximum 5. (not valid in V1 profiles)")
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  ("BDPCM",                                           m_useBDPCM,                                       false, "BDPCM")
+#endif
   ("ISPFast",                                         m_useFastISP,                                     false, "Fast encoder search for ISP")
   ("ImplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT],        false, "Enable implicitly signalled residual DPCM for intra (also known as sample-adaptive intra predict) (not valid in V1 profiles)")
   ("ExplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT],        false, "Enable explicitly signalled residual DPCM for inter (not valid in V1 profiles)")
@@ -3251,6 +3257,9 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "TransformSkip:%d ",     m_useTransformSkip     );
   msg( VERBOSE, "TransformSkipFast:%d ", m_useTransformSkipFast );
   msg( VERBOSE, "TransformSkipLog2MaxSize:%d ", m_log2MaxTransformSkipBlockSize);
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  msg( VERBOSE, "BDPCM:%d ", m_useBDPCM                         );
+#endif
   msg( VERBOSE, "Slice: M=%d ", int(m_sliceMode));
   if (m_sliceMode!=NO_SLICES)
   {

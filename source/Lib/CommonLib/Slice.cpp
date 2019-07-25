@@ -1404,6 +1404,10 @@ SPS::SPS()
 , m_pcmEnabledFlag            (false)
 , m_pcmLog2MaxSize            (  5)
 , m_uiPCMLog2MinSize          (  7)
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+, m_transformSkipEnabledFlag  (false)
+, m_BDPCMEnabledFlag          (false)
+#endif
 , m_bPCMFilterDisableFlag     (false)
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
@@ -1519,7 +1523,9 @@ PPS::PPS()
 , m_numRefIdxL1DefaultActive         (1)
 , m_rpl1IdxPresentFlag               (false)
 , m_TransquantBypassEnabledFlag      (false)
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
 , m_useTransformSkip                 (false)
+#endif
 , m_entropyCodingSyncEnabledFlag     (false)
 , m_loopFilterAcrossBricksEnabledFlag (true)
 , m_uniformTileSpacingFlag           (false)

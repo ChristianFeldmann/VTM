@@ -133,6 +133,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoTriangleConstraintFlag                          ( !m_Triangle );
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
   m_cEncLib.setNoTransformSkipConstraintFlag                     ( !m_useTransformSkip );
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  m_cEncLib.setNoBDPCMConstraintFlag                             ( !m_useBDPCM );
+#endif
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
   m_cEncLib.setNoSignDataHidingConstraintFlag                    ( !m_signDataHidingEnabledFlag );
@@ -341,6 +344,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setLog2SaoOffsetScale                                ( CHANNEL_TYPE_CHROMA, m_log2SaoOffsetScale[CHANNEL_TYPE_CHROMA] );
   m_cEncLib.setUseTransformSkip                                  ( m_useTransformSkip      );
   m_cEncLib.setUseTransformSkipFast                              ( m_useTransformSkipFast  );
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  m_cEncLib.setUseBDPCM                                          ( m_useBDPCM );
+#endif
   m_cEncLib.setTransformSkipRotationEnabledFlag                  ( m_transformSkipRotationEnabledFlag );
   m_cEncLib.setTransformSkipContextEnabledFlag                   ( m_transformSkipContextEnabledFlag   );
   m_cEncLib.setPersistentRiceAdaptationEnabledFlag               ( m_persistentRiceAdaptationEnabledFlag );

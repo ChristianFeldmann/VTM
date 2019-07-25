@@ -377,8 +377,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
   READ_SVLC(iCode, "init_qp_minus26" );                            pcPPS->setPicInitQPMinus26(iCode);
   READ_FLAG( uiCode, "constrained_intra_pred_flag" );              pcPPS->setConstrainedIntraPred( uiCode ? true : false );
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   READ_FLAG( uiCode, "transform_skip_enabled_flag" );
   pcPPS->setUseTransformSkip ( uiCode ? true : false );
+#endif
 
   READ_FLAG( uiCode, "cu_qp_delta_enabled_flag" );            pcPPS->setUseDQP( uiCode ? true : false );
   if( pcPPS->getUseDQP() )
@@ -686,7 +688,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
           PPSRExt &ppsRangeExtension = pcPPS->getPpsRangeExtension();
           CHECK(bSkipTrailingExtensionBits, "Invalid state");
 
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+          if (parameterSetManager->getSPS(pcPPS->getSPSId())->getTransformSkipEnabledFlag())
+#else
           if (pcPPS->getUseTransformSkip())
+#endif
           {
             READ_UVLC( uiCode, "log2_max_transform_skip_block_size_minus2");
             ppsRangeExtension.setLog2MaxTransformSkipBlockSize(uiCode+2);
@@ -1197,6 +1203,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_UVLC( uiCode, "log2_diff_max_min_pcm_luma_coding_block_size" ); pcSPS->setPCMLog2MaxSize ( uiCode+pcSPS->getPCMLog2MinSize() );
     READ_FLAG( uiCode, "pcm_loop_filter_disable_flag" );                 pcSPS->setPCMFilterDisableFlag ( uiCode ? true : false );
   }
+
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  READ_FLAG(uiCode, "sps_transform_skip_enabled_flag"); pcSPS->setTransformSkipEnabledFlag(uiCode ? true : false);
+  if (pcSPS->getTransformSkipEnabledFlag())
+  {
+    READ_FLAG(uiCode, "sps_bdpcm_enabled_flag"); pcSPS->setBDPCMEnabledFlag(uiCode ? true : false);
+  }
+#endif
 
   if( pcSPS->getCTUSize() + 2*(1 << pcSPS->getLog2MinCodingBlockSize()) <= pcSPS->getPicWidthInLumaSamples() )
   {    
@@ -2266,6 +2280,9 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol, "no_triangle_constraint_flag");                cinfo->setNoTriangleConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_ladf_constraint_flag");                    cinfo->setNoLadfConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_transform_skip_constraint_flag");          cinfo->setNoTransformSkipConstraintFlag(symbol > 0 ? true : false);
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  READ_FLAG(symbol, "no_bdpcm_constraint_flag");                   cinfo->setNoBDPCMConstraintFlag(symbol > 0 ? true : false);
+#endif
   READ_FLAG(symbol, "no_qp_delta_constraint_flag");                cinfo->setNoQpDeltaConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_dep_quant_constraint_flag");               cinfo->setNoDepQuantConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_sign_data_hiding_constraint_flag");        cinfo->setNoSignDataHidingConstraintFlag(symbol > 0 ? true : false);

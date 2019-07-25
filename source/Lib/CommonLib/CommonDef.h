@@ -213,6 +213,10 @@ static const int MAX_REF_LINE_IDX =                                 3; //highest
 static const int MRL_NUM_REF_LINES =                                3; //number of candidates in the array
 static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 3, 0 };
 
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+static const int PRED_REG_MIN_WIDTH =                               4;  // Minimum prediction region width for ISP subblocks
+#endif
+
 static const int NUM_LUMA_MODE =                                   67; ///< Planar + DC + 65 directional mode (4*16 + 1)
 static const int NUM_LMC_MODE =                                    1 + 2; ///< LMC + MDLM_T + MDLM_L
 static const int NUM_INTRA_MODE = (NUM_LUMA_MODE + NUM_LMC_MODE);

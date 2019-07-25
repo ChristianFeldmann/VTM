@@ -1841,7 +1841,21 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   PelBuf sharedPredTS( m_pSharedPredTransformSkip[compID], area );
   if( default0Save1Load2 != 2 )
   {
-    initIntraPatternChType( *tu.cu, area );
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+    bool predRegDiffFromTB = CU::isPredRegDiffFromTB(*tu.cu, compID);
+    bool firstTBInPredReg = CU::isFirstTBInPredReg(*tu.cu, compID, area);
+    CompArea areaPredReg(COMPONENT_Y, tu.chromaFormat, area);
+    if (predRegDiffFromTB)
+    {
+      if (firstTBInPredReg)
+      {
+        CU::adjustPredArea(areaPredReg);
+        initIntraPatternChType(*tu.cu, areaPredReg);
+      }
+    }
+    else
+#endif
+      initIntraPatternChType(*tu.cu, area);
 
     //===== get prediction signal =====
     if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
@@ -1859,7 +1873,18 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
       }
       else
       {
-      predIntraAng( compID, piPred, pu );
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+        if (predRegDiffFromTB)
+        {
+          if (firstTBInPredReg)
+          {
+            PelBuf piPredReg = cs.getPredBuf(areaPredReg);
+            predIntraAng(compID, piPredReg, pu);
+          }
+        }
+        else
+#endif
+          predIntraAng(compID, piPred, pu);
       }
     }
 

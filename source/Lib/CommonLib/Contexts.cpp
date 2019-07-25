@@ -376,6 +376,16 @@ const CtxSet ContextSetCfg::RefPic = ContextSetCfg::addCtxSet
   {   4,   5, },
 });
 
+#if JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG
+const CtxSet ContextSetCfg::SubblockMergeFlag = ContextSetCfg::addCtxSet
+({
+  { 183, 185, 187, },
+  { 168, 169, 171, },
+  { CNU, CNU, CNU, },
+  {   4,   4,   4, },
+  });
+#endif
+
 const CtxSet ContextSetCfg::AffineFlag = ContextSetCfg::addCtxSet
 ({
   { 183, 185, 187, },

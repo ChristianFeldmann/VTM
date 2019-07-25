@@ -52,6 +52,14 @@
 
 #define JVET_O0304_SIMPLIFIED_BDOF                        1 // JVET-O0304: Reduction of number of multiplications in BDOF
 
+#define JVET_O0368_LFNST_WITH_DCT2_ONLY                   1 // JVET-O0368/O0292/O0521/O0466: disable LFNST for non-DCT2 MTS candidates normatively
+
+#define JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN            1 // JVET-O0106: use 4xN prediction regions for 1xN and 2xN subblocks
+
+#define JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG            1 // JVET-O0500: Different ctx models for inter affine flag and subblock merge flag
+
+#define JVET_O0414_SMVD_LTRP                              1 // JVET-O0414: long-term reference picture restriction for SMVD
+
 #define JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE         1 // JVET-O0258 Remove chroma IBC when dualtree is used
 
 #define JVET_O1161_IBC_MAX_SIZE                           1 // Limit largest IBC luma CU size to 64x64 per discussion of JVET-O1161
@@ -78,6 +86,8 @@
 
 #define JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL      1 // JVET-O0247: not signal APS index when number APS is 2
 
+#define JVET_O0297_DMVR_PADDING                           1 // JVET-O0297 DMVR Padding
+
 #define JVET_O0637_CHROMA_GRADIENT_LINE_SELECTION         1 // Choose line0 and line3 for gradient computation when chroma is same size as luma
 
 #define JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL           1 // JVET-O0288: remove slice type dependency in ALF
@@ -89,7 +99,7 @@
 #define JVET_O0669_REMOVE_ALF_COEFF_PRED                  1 // JVET-O0425/O0427/O0669: remove prediction in ALF coefficients coding
 
 #define JVET_O0541_IMPLICIT_MTS_CONDITION                 1 // JVET_O0541: Decouple the intra implicit transform selection from an inter MTS related SPS flag
-
+#define JVET_O0163_REMOVE_SWITCHING_TMV                   1 // JVET-O0163/JVET-O0588: Remove switching between L0 and L1 for temporal MV
 #define JVET_O0655_422_CHROMA_DM_MAPPING_FIX              1 // JVET-O0655: modify chroma DM derivation table for 4:2:2 chroma format
 
 #define JVET_O1109_UNFIY_CRS                              1 // JVET-O1109: Unified CRS derivation

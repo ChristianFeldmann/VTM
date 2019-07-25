@@ -393,8 +393,15 @@ public:
 struct ReshapeCW
 {
   std::vector<uint32_t> binCW;
+#if JVET_O0432_LMCS_ENCODER
+  int       updateCtrl;
+  int       adpOption;
+  uint32_t  initialCW;
+#endif
   int rspPicSize;
+#if !JVET_O0432_LMCS_ENCODER
   int rspIntraPeriod;
+#endif
   int rspFps;
   int rspBaseQP;
   int rspTid;

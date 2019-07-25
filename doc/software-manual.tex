@@ -2071,6 +2071,50 @@ Enables or disables the use of low frequency non-separable transform (LFNST).
 Enables or disables the fast encoding of low frequency non-separable transform (LFNST).
 \\
 
+\Option{LMCSEnable} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables or disables the use of LMCS (luma mapping with chroma scaling).
+\\
+
+\Option{LMCSSignalType} &
+%\ShortOption{\None} &
+\Default{0} &
+LMCS signal type: 0:SDR, 1:HDR-PQ, 2:HDR-HLG.
+\\
+
+\Option{LMCSUpdateCtrl} &
+%\ShortOption{\None} &
+\Default{0} &
+LMCS model update control: 0:RA, 1:AI, 2:LDB/LDP.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+	0 & Random access: derive a new LMCS model at each IRAP.\\
+	1 & All intra: derive a new LMCS model at each intra slice.\\
+	2 & Low delay: derive a new LMCS model every second. \\
+\end{tabular}
+\\
+
+\Option{LMCSAdpOption} &
+%\ShortOption{\None} &
+\Default{0} &
+Adaptive LMCS mapping derivation options: Options 1 to 4 are for experimental testing purposes and need to set parameter LMCSInitialCW.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+	0 & Automatic adaptive algorithm (default).\\
+	1 & Derives LMCS mapping with input LMCSInitialCW and enables LMCS for all slices. Uses a static LMCS mapping for low QP ($QP<=22$). \\
+	2 & Derives LMCS mapping with input LMCSInitialCW and enables LMCS only for slices in lowest temporal layer. \\
+	3 & In addition to 1, disables LMCS for intra slices. \\
+	4 & Derives LMCS mapping with input LMCSInitialCW and enables LMCS only for inter slices. \\
+\end{tabular}
+\\
+
+\Option{LMCSInitialCW} &
+%\ShortOption{\None} &
+\Default{0} &
+LMCS initial total codeword (valid values [$0 - 1023$]) to be used in LMCS mapping derivation when LMCSAdpOption is not equal to 0.
+\\
+
 \end{OptionTableNoShorthand}
 
 %%

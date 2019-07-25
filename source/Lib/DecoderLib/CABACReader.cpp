@@ -2305,7 +2305,11 @@ void CABACReader::transform_tree( CodingStructure &cs, Partitioner &partitioner,
 
 bool CABACReader::cbf_comp( CodingStructure& cs, const CompArea& area, unsigned depth, const bool prevCbf, const bool useISP )
 {
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+  const unsigned  ctxId = DeriveCtx::CtxQtCbf( area.compID, prevCbf, useISP && isLuma( area.compID ) );
+#else
   const unsigned  ctxId = DeriveCtx::CtxQtCbf( area.compID, depth, prevCbf, useISP && isLuma( area.compID ) );
+#endif
   const CtxSet&   ctxSet  = Ctx::QtCbf[ area.compID ];
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__QT_CBF, area.size(), area.compID);
@@ -2313,7 +2317,11 @@ bool CABACReader::cbf_comp( CodingStructure& cs, const CompArea& area, unsigned 
   unsigned  cbf = 0;
   if( area.compID == COMPONENT_Y && cs.getCU( area.pos(), ChannelType( area.compID ) )->bdpcmMode )
   {
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+    cbf = m_BinDecoder.decodeBin( ctxSet( 1 ) );
+#else
     cbf = m_BinDecoder.decodeBin( ctxSet( 4 ) );
+#endif
   }
   else
   {

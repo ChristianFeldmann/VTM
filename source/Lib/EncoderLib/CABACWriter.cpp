@@ -2175,11 +2175,19 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
 
 void CABACWriter::cbf_comp( const CodingStructure& cs, bool cbf, const CompArea& area, unsigned depth, const bool prevCbCbf, const bool useISP )
 {
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+  const unsigned  ctxId   = DeriveCtx::CtxQtCbf( area.compID, prevCbCbf, useISP && isLuma(area.compID) );
+#else
   const unsigned  ctxId   = DeriveCtx::CtxQtCbf( area.compID, depth, prevCbCbf, useISP && isLuma(area.compID) );
+#endif
   const CtxSet&   ctxSet  = Ctx::QtCbf[ area.compID ];
   if( area.compID == COMPONENT_Y && cs.getCU( area.pos(), ChannelType( area.compID ) )->bdpcmMode )
   {
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+    m_BinEncoder.encodeBin( cbf, ctxSet( 1 ) );
+#else
     m_BinEncoder.encodeBin( cbf, ctxSet( 4 ) );
+#endif
   }
   else
   {

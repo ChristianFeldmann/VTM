@@ -387,6 +387,7 @@ void InterPrediction::xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const R
     }
   }
 }
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
 void InterPrediction::xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred)
 {
   // separated tree, chroma
@@ -414,7 +415,7 @@ void InterPrediction::xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred)
     }
   }
 }
-
+#endif
 
 void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi
                                    , const bool& bioApplied
@@ -1317,6 +1318,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   // dual tree handling for IBC as the only ref
   if ((!luma || !chroma) && eRefPicList == REF_PIC_LIST_0)
   {
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
     if (!luma && chroma)
     {
       xChromaMC(pu, predBuf);
@@ -1324,11 +1326,14 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     }
     else // (luma && !chroma)
     {
+#endif
       xPredInterUni(pu, eRefPicList, predBuf, false
         , false
         , luma, chroma);
       return;
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
     }
+#endif
   }
   // else, go with regular MC below
         CodingStructure &cs = *pu.cs;

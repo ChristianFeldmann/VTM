@@ -50,8 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
-
 #define JVET_O0304_SIMPLIFIED_BDOF                        1 // JVET-O0304: Reduction of number of multiplications in BDOF
+
+#define JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE         1 // JVET-O0258 Remove chroma IBC when dualtree is used
 
 #define JVET_O1161_IBC_MAX_SIZE                           1 // Limit largest IBC luma CU size to 64x64 per discussion of JVET-O1161
 
@@ -130,6 +131,8 @@
 
 #define JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG           1 // JVET-O1140 slice level disable flag for BDOF and DMVR
 
+
+#define JVET_O0596_CBF_SIG_ALIGN_TO_SPEC                  1 // JVET-O0596 align cbf signaling with specification
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 

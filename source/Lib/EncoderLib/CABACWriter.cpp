@@ -3143,7 +3143,13 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
 #if JVET_O0619_GTX_SINGLE_PASS_TS_RESIDUAL_CODING
   for (int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++)
   {
+#if JVET_O0122_TS_SIGN_LEVEL
+    unsigned absLevel;
+    cctx.neighTS(rightPixel, belowPixel, scanPos, coeff);
+    absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm()); 
+#else
     unsigned absLevel = abs(coeff[cctx.blockPos(scanPos)]);
+#endif
     cutoffVal = 2;
     for (int i = 0; i < numGtBins; i++)
     {

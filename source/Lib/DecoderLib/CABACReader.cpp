@@ -3304,6 +3304,12 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
     cutoffVal = 2;
     for (int i = 0; i < numGtBins; i++)
     {
+#if JVET_O0122_TS_SIGN_LEVEL
+      if( tcoeff < 0)
+      {
+        tcoeff = -tcoeff;
+      }
+#endif
        if (tcoeff >= cutoffVal)
        {
           RExt__DECODER_DEBUG_BIT_STATISTICS_SET(ctype_gt2);

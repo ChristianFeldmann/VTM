@@ -86,6 +86,10 @@ CoeffCodingContext::CoeffCodingContext( const TransformUnit& tu, ComponentID com
   , m_tsSigFlagCtxSet           ( Ctx::TsSigFlag )
   , m_tsParFlagCtxSet           ( Ctx::TsParFlag )
   , m_tsGtxFlagCtxSet           ( Ctx::TsGtxFlag )
+#if JVET_O0122_TS_SIGN_LEVEL
+  , m_tsLrg1FlagCtxSet          (Ctx::TsLrg1Flag)
+  , m_tsSignFlagCtxSet          (Ctx::TsResidualSign)
+#endif
   , m_sigCoeffGroupFlag         ()
   , m_bdpcm                     (bdpcm)
 {
@@ -231,7 +235,11 @@ void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, u
   ctxVerBt = ( partitioner.currMtDepth <= 1 ? 3 : 2 );
 }
 
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const bool prevCbCbf, const int ispIdx )
+#else
 unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf, const int ispIdx )
+#endif
 {
   if( ispIdx && isLuma( compID ) )
   {
@@ -241,6 +249,9 @@ unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, 
   {
     return ( prevCbCbf ? 1 : 0 );
   }
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+  return 0;
+#else
   if( isChroma( compID ) )
   {
     return ( trDepth == 0 ? 0 : 1 );
@@ -249,6 +260,7 @@ unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, 
   {
     return ( trDepth == 0 ? 1 : 0 );
   }
+#endif
 }
 
 unsigned DeriveCtx::CtxInterDir( const PredictionUnit& pu )

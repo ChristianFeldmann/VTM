@@ -867,6 +867,9 @@ void EncLib::xInitSPS(SPS &sps)
   cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
   cinfo->setNoTransformSkipConstraintFlag(m_noTransformSkipConstraintFlag);
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  cinfo->setNoBDPCMConstraintFlag(m_noBDPCMConstraintFlag);
+#endif
   cinfo->setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
   cinfo->setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
   cinfo->setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
@@ -941,9 +944,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
-#if INCLUDE_ISP_CFG_FLAG
   sps.setUseISP                             ( m_ISP );
-#endif
   sps.setUseReshaper                        ( m_lumaReshapeEnable );
   sps.setUseMIP                ( m_MIP );
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
@@ -959,6 +960,11 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setPCMLog2MinSize (m_uiPCMLog2MinSize);
   sps.setPCMEnabledFlag        ( m_usePCM           );
   sps.setPCMLog2MaxSize( m_pcmLog2MaxSize  );
+
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  sps.setTransformSkipEnabledFlag(m_useTransformSkip);
+  sps.setBDPCMEnabledFlag(m_useBDPCM);
+#endif
 
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 
@@ -1113,7 +1119,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   {
     pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(m_cuChromaQpOffsetSubdiv);
     pps.getPpsRangeExtension().clearChromaQpOffsetList();
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+    pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6, 6);
+#else
     pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6);
+#endif
     /* todo, insert table entries from command line (NB, 0 should not be touched) */
   }
   else
@@ -1262,7 +1272,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   pps.setUseTransformSkip( m_useTransformSkip );
+#endif
   pps.getPpsRangeExtension().setLog2MaxTransformSkipBlockSize( m_log2MaxTransformSkipBlockSize  );
 
 

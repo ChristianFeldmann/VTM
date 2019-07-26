@@ -3901,6 +3901,36 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
   bool              swapped        = false; // avoid unwanted data copy
   bool             reloadCU        = false;
 
+#if JVET_O0567_MVDRange_Constraint
+  const PredictionUnit& pu = *cu->firstPU;
+  const int affineShiftTab[3] = { MV_PRECISION_INTERNAL - MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL - MV_PRECISION_SIXTEENTH, MV_PRECISION_INTERNAL - MV_PRECISION_INT };
+  const int normalShiftTab[3] = { MV_PRECISION_INTERNAL - MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL - MV_PRECISION_INT, MV_PRECISION_INTERNAL - MV_PRECISION_4PEL };
+  int mvShift;
+
+  for (int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++)
+  {
+    if (pu.refIdx[refList] >= 0)
+    {
+      if (!cu->affine)
+      {
+        mvShift = normalShiftTab[cu->imv];
+        Mv signaledmvd(pu.mvd[refList].getHor() >> mvShift, pu.mvd[refList].getVer() >> mvShift);
+        if (!((signaledmvd.getHor() >= MVD_MIN) && (signaledmvd.getHor() <= MVD_MAX)) || !((signaledmvd.getVer() >= MVD_MIN) && (signaledmvd.getVer() <= MVD_MAX)))
+          return;
+      }
+      else
+      {
+        for (int ctrlP = 1 + (cu->affineType == AFFINEMODEL_6PARAM); ctrlP >= 0; ctrlP--)
+        {
+          mvShift = affineShiftTab[cu->imv];
+          Mv signaledmvd(pu.mvdAffi[refList][ctrlP].getHor() >> mvShift, pu.mvdAffi[refList][ctrlP].getVer() >> mvShift);
+          if (!((signaledmvd.getHor() >= MVD_MIN) && (signaledmvd.getHor() <= MVD_MAX)) || !((signaledmvd.getVer() >= MVD_MIN) && (signaledmvd.getVer() <= MVD_MAX)))
+            return;
+        }
+      }
+    }
+  }
+#else
   // Not allow very big |MVd| to avoid CABAC crash caused by too large MVd. Normally no impact on coding performance.
   const int maxMvd = 1 << 15;
   const PredictionUnit& pu = *cu->firstPU;
@@ -3928,6 +3958,7 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
       }
     }
   }
+#endif
   // avoid MV exceeding 18-bit dynamic range
   const int maxMv = 1 << 17;
   if (!cu->affine && !pu.mergeFlag)

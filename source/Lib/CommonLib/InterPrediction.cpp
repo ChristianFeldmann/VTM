@@ -737,7 +737,13 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   if (bioApplied && compID == COMPONENT_Y)
   {
     const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
+#if JVET_O0594_BDOF_REF_SAMPLE_PADDING
+    int xOffset = (xFrac < 8) ? 1 : 0;
+    int yOffset = (yFrac < 8) ? 1 : 0;
+    const Pel* refPel = refBuf.buf - yOffset * refBuf.stride - xOffset;
+#else
     const Pel* refPel = refBuf.buf - refBuf.stride - 1;
+#endif
     Pel* dstPel = m_filteredBlockTmp[2 + m_iRefListIdx][compID] + dstBuf.stride + 1;
     for (int w = 0; w < (width - 2 * BIO_EXTEND_SIZE); w++)
     {
@@ -745,7 +751,11 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
       dstPel[w] = val - (Pel)IF_INTERNAL_OFFS;
     }
 
+#if JVET_O0594_BDOF_REF_SAMPLE_PADDING
+    refPel = refBuf.buf + (1 - yOffset)*refBuf.stride - xOffset;
+#else
     refPel = refBuf.buf - 1;
+#endif
     dstPel = m_filteredBlockTmp[2 + m_iRefListIdx][compID] + 2 * dstBuf.stride + 1;
     for (int h = 0; h < (height - 2 * BIO_EXTEND_SIZE - 2); h++)
     {
@@ -759,7 +769,11 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
       dstPel += dstBuf.stride;
     }
 
+#if JVET_O0594_BDOF_REF_SAMPLE_PADDING
+    refPel = refBuf.buf + (height - 2 * BIO_EXTEND_SIZE - 2 + 1 - yOffset)*refBuf.stride - xOffset;
+#else
     refPel = refBuf.buf + (height - 2 * BIO_EXTEND_SIZE - 2)*refBuf.stride - 1;
+#endif
     dstPel = m_filteredBlockTmp[2 + m_iRefListIdx][compID] + (height - 2 * BIO_EXTEND_SIZE)*dstBuf.stride + 1;
     for (int w = 0; w < (width - 2 * BIO_EXTEND_SIZE); w++)
     {

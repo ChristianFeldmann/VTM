@@ -1379,7 +1379,7 @@ class APS
 private:
   int                    m_APSId;                    // adaptation_parameter_set_id
   int                    m_APSType;                  // aps_params_type
-  AlfSliceParam          m_alfAPSParam;
+  AlfParam               m_alfAPSParam;
   SliceReshapeInfo       m_reshapeAPSInfo;
 
 public:
@@ -1392,10 +1392,10 @@ public:
   int                    getAPSType() const                                               { return m_APSType;                             }
   void                   setAPSType(int type)                                             { m_APSType = type;                             }
 
-  void                   setAlfAPSParam(AlfSliceParam& alfAPSParam)                       { m_alfAPSParam = alfAPSParam;                  }
+  void                   setAlfAPSParam(AlfParam& alfAPSParam)                            { m_alfAPSParam = alfAPSParam;                  }
   void                   setTemporalId(int i) { m_alfAPSParam.tLayer = i; }
   int                    getTemporalId() { return m_alfAPSParam.tLayer; }
-  AlfSliceParam&         getAlfAPSParam()  { return m_alfAPSParam; }
+  AlfParam&              getAlfAPSParam()  { return m_alfAPSParam; }
 
   void                   setReshaperAPSInfo(SliceReshapeInfo& reshapeAPSInfo)             { m_reshapeAPSInfo = reshapeAPSInfo;            }
   SliceReshapeInfo&      getReshaperAPSInfo()                                             { return m_reshapeAPSInfo;                      }

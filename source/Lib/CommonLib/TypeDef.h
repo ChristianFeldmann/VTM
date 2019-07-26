@@ -1506,7 +1506,7 @@ struct AlfFilterShape
 #endif
 };
 
-struct AlfSliceParam
+struct AlfParam
 {
   bool                         enabledFlag[MAX_NUM_COMPONENT];                          // alf_slice_enable_flag, alf_chroma_idc
   bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE];                     // alf_nonlinear_enable_flag[Luma/Chroma]
@@ -1530,7 +1530,7 @@ struct AlfSliceParam
   int                          fixedFilterSetIndex;
 #endif
 
-  AlfSliceParam()
+  AlfParam()
   {
     reset();
   }
@@ -1559,7 +1559,7 @@ struct AlfSliceParam
 #endif
   }
 
-  const AlfSliceParam& operator = ( const AlfSliceParam& src )
+  const AlfParam& operator = ( const AlfParam& src )
   {
     std::memcpy( enabledFlag, src.enabledFlag, sizeof( enabledFlag ) );
     std::memcpy( nonLinearFlag, src.nonLinearFlag, sizeof( nonLinearFlag ) );

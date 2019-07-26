@@ -798,7 +798,7 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
 {
   uint32_t  code;
 
-  AlfSliceParam param = aps->getAlfAPSParam();
+  AlfParam param = aps->getAlfAPSParam();
   param.enabledFlag[COMPONENT_Y] = param.enabledFlag[COMPONENT_Cb] = param.enabledFlag[COMPONENT_Cr] = true;
   READ_FLAG(code, "alf_luma_new_filter");
   param.newFilterFlag[CHANNEL_TYPE_LUMA] = code;
@@ -2634,33 +2634,33 @@ int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
   return nr;
 }
 
-void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChroma )
+void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma )
 {
   uint32_t code;
   if( !isChroma )
   {
     READ_FLAG( code, "alf_luma_coeff_delta_flag" );
-    alfSliceParam.alfLumaCoeffDeltaFlag = code;
+    alfParam.alfLumaCoeffDeltaFlag = code;
 
-    if( !alfSliceParam.alfLumaCoeffDeltaFlag )
+    if( !alfParam.alfLumaCoeffDeltaFlag )
     {
-      std::memset( alfSliceParam.alfLumaCoeffFlag, true, sizeof( alfSliceParam.alfLumaCoeffFlag ) );
+      std::memset( alfParam.alfLumaCoeffFlag, true, sizeof( alfParam.alfLumaCoeffFlag ) );
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-      if( alfSliceParam.numLumaFilters > 1 )
+      if( alfParam.numLumaFilters > 1 )
       {
         READ_FLAG( code, "alf_luma_coeff_delta_prediction_flag" );
-        alfSliceParam.alfLumaCoeffDeltaPredictionFlag = code;
+        alfParam.alfLumaCoeffDeltaPredictionFlag = code;
       }
       else
       {
-        alfSliceParam.alfLumaCoeffDeltaPredictionFlag = 0;
+        alfParam.alfLumaCoeffDeltaPredictionFlag = 0;
       }
 #endif
     }
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     else
     {
-      alfSliceParam.alfLumaCoeffDeltaPredictionFlag = 0;
+      alfParam.alfLumaCoeffDeltaPredictionFlag = 0;
     }
 #endif
   }
@@ -2677,9 +2677,9 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
   int kMin = code + 1;
   static int kMinTab[MAX_NUM_ALF_COEFF];
 #endif
-  const int numFilters = isChroma ? 1 : alfSliceParam.numLumaFilters;
-  short* coeff = isChroma ? alfSliceParam.chromaCoeff : alfSliceParam.lumaCoeff;
-  short* clipp = isChroma ? alfSliceParam.chromaClipp : alfSliceParam.lumaClipp;
+  const int numFilters = isChroma ? 1 : alfParam.numLumaFilters;
+  short* coeff = isChroma ? alfParam.chromaCoeff : alfParam.lumaCoeff;
+  short* clipp = isChroma ? alfParam.chromaClipp : alfParam.lumaClipp;
 #if !JVET_O0216_ALF_COEFF_EG3
   for( int idx = 0; idx < maxGolombIdx; idx++ )
   {
@@ -2691,12 +2691,12 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
 #endif
   if( !isChroma )
   {
-    if( alfSliceParam.alfLumaCoeffDeltaFlag )
+    if( alfParam.alfLumaCoeffDeltaFlag )
     {
-      for( int ind = 0; ind < alfSliceParam.numLumaFilters; ++ind )
+      for( int ind = 0; ind < alfParam.numLumaFilters; ++ind )
       {
         READ_FLAG( code, "alf_luma_coeff_flag[i]" );
-        alfSliceParam.alfLumaCoeffFlag[ind] = code;
+        alfParam.alfLumaCoeffFlag[ind] = code;
       }
     }
   }
@@ -2704,7 +2704,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.alfLumaCoeffDeltaFlag )
+    if( !isChroma && !alfParam.alfLumaCoeffFlag[ind] && alfParam.alfLumaCoeffDeltaFlag )
     {
       memset( coeff + ind * MAX_NUM_ALF_LUMA_COEFF, 0, sizeof( *coeff ) * alfShape.numCoeff );
       continue;
@@ -2721,7 +2721,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
   }
 
   // Clipping values coding
-  if ( alfSliceParam.nonLinearFlag[isChroma] )
+  if ( alfParam.nonLinearFlag[isChroma] )
   {
 #if !JVET_O0064_SIMP_ALF_CLIP_CODING
     READ_UVLC( code, "clip_min_golomb_order" );
@@ -2745,7 +2745,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
     {
       memcpy( recCoeff, coeff, sizeof(short) * numFilters * MAX_NUM_ALF_LUMA_COEFF );
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-      if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
+      if( alfParam.alfLumaCoeffDeltaPredictionFlag )
       {
         for( int i = 1; i < numFilters; i++ )
         {
@@ -2763,7 +2763,7 @@ void HLSyntaxReader::alfFilter( AlfSliceParam& alfSliceParam, const bool isChrom
     for( int ind = 0; ind < numFilters; ++ind )
     {
 #if !JVET_O0064_SIMP_ALF_CLIP_CODING
-      if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.alfLumaCoeffDeltaFlag )
+      if( !isChroma && !alfParam.alfLumaCoeffFlag[ind] && alfParam.alfLumaCoeffDeltaFlag )
       {
         std::fill_n( clipp + ind * MAX_NUM_ALF_LUMA_COEFF, alfShape.numCoeff, 0 );
         continue;

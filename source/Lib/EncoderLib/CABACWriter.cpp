@@ -776,6 +776,9 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
 }
 void CABACWriter::bdpcm_mode( const CodingUnit& cu, const ComponentID compID )
 {
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  if( !cu.cs->sps->getBDPCMEnabledFlag() ) return;
+#endif
   if( !CU::bdpcmAllowed( cu, compID ) ) return;
 
   m_BinEncoder.encodeBin( cu.bdpcmMode > 0 ? 1 : 0, Ctx::BDPCMMode( 0 ) );
@@ -2175,11 +2178,19 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
 
 void CABACWriter::cbf_comp( const CodingStructure& cs, bool cbf, const CompArea& area, unsigned depth, const bool prevCbCbf, const bool useISP )
 {
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+  const unsigned  ctxId   = DeriveCtx::CtxQtCbf( area.compID, prevCbCbf, useISP && isLuma(area.compID) );
+#else
   const unsigned  ctxId   = DeriveCtx::CtxQtCbf( area.compID, depth, prevCbCbf, useISP && isLuma(area.compID) );
+#endif
   const CtxSet&   ctxSet  = Ctx::QtCbf[ area.compID ];
   if( area.compID == COMPONENT_Y && cs.getCU( area.pos(), ChannelType( area.compID ) )->bdpcmMode )
   {
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+    m_BinEncoder.encodeBin( cbf, ctxSet( 1 ) );
+#else
     m_BinEncoder.encodeBin( cbf, ctxSet( 4 ) );
+#endif
   }
   else
   {
@@ -2383,7 +2394,11 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
         cuCtx.isDQPCoded = true;
       }
     }
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+    if (cu.cs->slice->getUseChromaQpAdj() && cbfChroma && !cuCtx.isChromaQpAdjCoded)
+#else
     if( cu.cs->slice->getUseChromaQpAdj() && cbfChroma && !cu.transQuantBypass && !cuCtx.isChromaQpAdjCoded )
+#endif
     {
       cu_chroma_qp_offset( cu );
       cuCtx.isChromaQpAdjCoded = true;
@@ -2656,11 +2671,7 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 
 void CABACWriter::isp_mode( const CodingUnit& cu )
 {
-#if INCLUDE_ISP_CFG_FLAG
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() || cu.bdpcmMode )
-#else
-  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || cu.bdpcmMode )
-#endif
   {
     CHECK( cu.ispMode != NOT_INTRA_SUBPARTITIONS, "error: cu.intraSubPartitions != 0" );
     return;
@@ -3042,6 +3053,10 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
   int       remAbsLevel   = -1;
   int       numNonZero    =  0;
 
+#if JVET_O0122_TS_SIGN_LEVEL
+  int rightPixel, belowPixel, modAbsCoeff;
+#endif
+
   for( ; nextSigPos <= minSubPos; nextSigPos++ )
   {
     TCoeff    Coeff      = coeff[ cctx.blockPos( nextSigPos ) ];
@@ -3067,16 +3082,40 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
       int sign = Coeff < 0;
       if( cctx.isContextCoded() )
       {
+#if JVET_O0122_TS_SIGN_LEVEL
+        const unsigned signCtxId = cctx.signCtxIdAbsTS(nextSigPos, coeff, cctx.bdpcm());
+        m_BinEncoder.encodeBin(sign, signCtxId);
+#else
         m_BinEncoder.encodeBin( sign, Ctx::TsResidualSign( cctx.bdpcm() ? 1 : 0 ) );
+#endif
       }
       else
       {
         m_BinEncoder.encodeBinEP( sign );
       }
       numNonZero++;
+#if JVET_O0122_TS_SIGN_LEVEL
+      cctx.neighTS(rightPixel, belowPixel, nextSigPos, coeff);
+      modAbsCoeff = cctx.deriveModCoeff(rightPixel, belowPixel, abs(Coeff), cctx.bdpcm());
+      remAbsLevel = modAbsCoeff - 1;
+#else
       remAbsLevel = abs( Coeff ) - 1;
+#endif
 
       unsigned gt1 = !!remAbsLevel;
+#if JVET_O0122_TS_SIGN_LEVEL
+      const unsigned gt1CtxId = cctx.lrg1CtxIdAbsTS(nextSigPos, coeff, cctx.bdpcm());
+      if (cctx.isContextCoded())
+      {
+        m_BinEncoder.encodeBin(gt1, gt1CtxId);
+        DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt1_flag() bin=%d ctx=%d\n", gt1, gt1CtxId);
+      }
+      else
+      {
+        m_BinEncoder.encodeBinEP(gt1);
+        DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt1_flag() EPbin=%d\n", gt1);
+      }
+#else
       if( cctx.isContextCoded() )
       {
         m_BinEncoder.encodeBin( gt1, cctx.greaterXCtxIdAbsTS(0) );
@@ -3087,6 +3126,7 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
         m_BinEncoder.encodeBinEP( gt1 );
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_gt1_flag() EPbin=%d\n", gt1 );
       }
+#endif
 
       if( gt1 )
       {
@@ -3108,11 +3148,42 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
   int cutoffVal = 2;
   int numGtBins = 4;
 
+#if JVET_O0619_GTX_SINGLE_PASS_TS_RESIDUAL_CODING
+  for (int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++)
+  {
+    unsigned absLevel = abs(coeff[cctx.blockPos(scanPos)]);
+    cutoffVal = 2;
+    for (int i = 0; i < numGtBins; i++)
+    {
+      if (absLevel >= cutoffVal)
+      {
+        unsigned gt2 = (absLevel >= (cutoffVal + 2));
+        if (cctx.isContextCoded())
+        {
+          m_BinEncoder.encodeBin(gt2, cctx.greaterXCtxIdAbsTS(cutoffVal >> 1));
+          DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt%d_flag() bin=%d ctx=%d sp=%d coeff=%d\n", i, gt2, cctx.greaterXCtxIdAbsTS(cutoffVal >> 1), scanPos, min<int>(absLevel, cutoffVal + 2));
+        }
+        else
+        {
+          m_BinEncoder.encodeBinEP(gt2);
+          DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt%d_flag() EPbin=%d sp=%d coeff=%d\n", i, gt2, scanPos, min<int>(absLevel, cutoffVal + 2));
+        }
+      }
+      cutoffVal += 2;
+    }
+  }
+#else
   for( int i = 0; i < numGtBins; i++ )
   {
     for( int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++ )
     {
+#if JVET_O0122_TS_SIGN_LEVEL
+      unsigned absLevel;
+      cctx.neighTS(rightPixel, belowPixel, scanPos, coeff);
+      absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm()); 
+#else
       unsigned absLevel = abs( coeff[cctx.blockPos( scanPos )] );
+#endif
       if( absLevel >= cutoffVal )
       {
         unsigned gt2 = ( absLevel >= ( cutoffVal + 2 ) );
@@ -3130,12 +3201,19 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
     }
     cutoffVal += 2;
   }
+#endif
 
   //===== coeff bypass ====
   for( int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++ )
   {
+#if JVET_O0122_TS_SIGN_LEVEL
+    unsigned absLevel;
+    cctx.neighTS(rightPixel, belowPixel, scanPos, coeff);
+    absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm());
+#else
     TCoeff    Coeff     = coeff[ cctx.blockPos( scanPos ) ];
     unsigned  absLevel  = abs( Coeff );
+#endif
     if( absLevel >= cutoffVal )
     {
       int       rice = cctx.templateAbsSumTS( scanPos, coeff );

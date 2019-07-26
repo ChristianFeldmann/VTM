@@ -370,7 +370,9 @@ static const int DMVR_SUBCU_WIDTH_LOG2 = 4;
 static const int DMVR_SUBCU_HEIGHT_LOG2 = 4;
 static const int MAX_NUM_SUBCU_DMVR = ((MAX_CU_SIZE * MAX_CU_SIZE) >> (DMVR_SUBCU_WIDTH_LOG2 + DMVR_SUBCU_HEIGHT_LOG2));
 static const int DMVR_NUM_ITERATION = 2;
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
 static const int BDPCM_MAX_CU_SIZE = 32;      ///<  maximum CU size for RDPCM mode
+#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.

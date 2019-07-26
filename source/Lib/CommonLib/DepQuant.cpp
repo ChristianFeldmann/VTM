@@ -510,11 +510,19 @@ namespace DQIntern
         {
           prevLumaCbf = TU::getPrevTuCbfAtDepth(tu, compID, tu.depth);
         }
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+        bits = fracBitsAccess.getFracBitsArray(Ctx::QtCbf[compID](DeriveCtx::CtxQtCbf(compID, prevLumaCbf, true)));
+#else
         bits = fracBitsAccess.getFracBitsArray(Ctx::QtCbf[compID](DeriveCtx::CtxQtCbf(compID, tu.depth, prevLumaCbf, true)));
+#endif
       }
       else
       {
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+        bits = fracBitsAccess.getFracBitsArray(Ctx::QtCbf[compID](DeriveCtx::CtxQtCbf(compID, tu.cbf[COMPONENT_Cb])));
+#else
         bits = fracBitsAccess.getFracBitsArray(Ctx::QtCbf[compID](DeriveCtx::CtxQtCbf(compID, tu.depth, tu.cbf[COMPONENT_Cb])));
+#endif
       }
       cbfDeltaBits = lastCbfIsInferred ? 0 : int32_t(bits.intBits[1]) - int32_t(bits.intBits[0]);
     }

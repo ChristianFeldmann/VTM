@@ -1378,9 +1378,7 @@ SPS::SPS()
 , m_MMVD                      ( false )
 , m_SBT                       ( false )
 , m_MaxSbtSize                ( 32 )
-#if INCLUDE_ISP_CFG_FLAG
 , m_ISP                       ( false )
-#endif
 , m_chromaFormatIdc           (CHROMA_420)
 , m_uiMaxTLayers              (  1)
 // Structure
@@ -1406,6 +1404,10 @@ SPS::SPS()
 , m_pcmEnabledFlag            (false)
 , m_pcmLog2MaxSize            (  5)
 , m_uiPCMLog2MinSize          (  7)
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+, m_transformSkipEnabledFlag  (false)
+, m_BDPCMEnabledFlag          (false)
+#endif
 , m_bPCMFilterDisableFlag     (false)
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
@@ -1497,6 +1499,9 @@ PPSRExt::PPSRExt()
 {
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CbOffset = 0; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0. This is initialised here and never subsequently changed.
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CrOffset = 0;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+  m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.JointCbCrOffset = 0;
+#endif
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
     m_log2SaoOffsetScale[ch] = 0;
@@ -1518,7 +1523,9 @@ PPS::PPS()
 , m_numRefIdxL1DefaultActive         (1)
 , m_rpl1IdxPresentFlag               (false)
 , m_TransquantBypassEnabledFlag      (false)
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
 , m_useTransformSkip                 (false)
+#endif
 , m_entropyCodingSyncEnabledFlag     (false)
 , m_loopFilterAcrossBricksEnabledFlag (true)
 , m_uniformTileSpacingFlag           (false)

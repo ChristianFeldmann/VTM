@@ -354,7 +354,11 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
 
     if( PU::isLMCMode( tu.cs->getPU( area.pos(), toChannelType( compID ) )->intraDir[ toChannelType( compID ) ] ) )
     {
+#if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
+      intraMode = PU::getCoLocatedIntraLumaMode( *tu.cs->getPU( area.pos(), toChannelType( compID ) ) );
+#else
       intraMode = PLANAR_IDX;
+#endif
     }
     CHECK( intraMode >= NUM_INTRA_MODE - 1, "Invalid intra mode" );
 
@@ -462,7 +466,11 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
 
     if( PU::isLMCMode( tu.cs->getPU( area.pos(), toChannelType( compID ) )->intraDir[ toChannelType( compID ) ] ) )
     {
+#if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
+      intraMode = PU::getCoLocatedIntraLumaMode( *tu.cs->getPU( area.pos(), toChannelType( compID ) ) );
+#else
       intraMode = PLANAR_IDX;
+#endif
     }
     CHECK( intraMode >= NUM_INTRA_MODE - 1, "Invalid intra mode" );
 
@@ -1223,11 +1231,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
 void TrQuant::xGetCoeffEnergy( TransformUnit &tu, const ComponentID &compID, const CoeffBuf& coeffs, double* diagRatio, double* horVerRatio )
 {
   if( nullptr == diagRatio || nullptr == horVerRatio ) return;
-#if INCLUDE_ISP_CFG_FLAG
   if( tu.cu->predMode == MODE_INTRA && !tu.cu->ispMode && isLuma( compID ) && tu.cs->sps->getUseISP() && CU::canUseISPSplit( *tu.cu, compID ) != NOT_INTRA_SUBPARTITIONS )
-#else
-  if( tu.cu->predMode == MODE_INTRA && !tu.cu->ispMode && isLuma( compID ) && CU::canUseISPSplit( *tu.cu, compID ) != NOT_INTRA_SUBPARTITIONS )
-#endif
   {
     const int width   = tu.cu->blocks[compID].width;
     const int height  = tu.cu->blocks[compID].height;

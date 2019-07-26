@@ -112,7 +112,16 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
     chromaQpOffset += tu.cs->pps->getQpOffset            ( tu.jointCbCr ? JOINT_CbCr : compID );
     chromaQpOffset += tu.cs->slice->getSliceChromaQpDelta( tu.jointCbCr ? JOINT_CbCr : compID );
 #endif
+
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+#if JVET_O0105_ICT
+    chromaQpOffset += tu.cs->pps->getPpsRangeExtension().getChromaQpOffsetListEntry( tu.cu->chromaQpAdj ).u.offset[int( useJQP ? JOINT_CbCr : compID ) - 1];
+#else
+    chromaQpOffset += tu.cs->pps->getPpsRangeExtension().getChromaQpOffsetListEntry( tu.cu->chromaQpAdj ).u.offset[int( tu.jointCbCr ? JOINT_CbCr : compID ) - 1];
+#endif
+#else
     chromaQpOffset += tu.cs->pps->getPpsRangeExtension().getChromaQpOffsetListEntry( tu.cu->chromaQpAdj ).u.offset[int( compID ) - 1];
+#endif
   }
 
   int dqp = 0;

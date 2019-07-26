@@ -250,14 +250,22 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
   {
     for( idx = 0; idx < width; idx++ )
     {
+#if JVET_O0426_MRL_REF_SAMPLES_DC_MODE
+      sum += pSrc.at(m_ipaParam.multiRefIndex + 1 + idx, 0);
+#else
       sum += pSrc.at( 1 + idx, 0 );
+#endif
     }
   }
   if ( width <= height )
   {
     for( idx = 0; idx < height; idx++ )
     {
+#if JVET_O0426_MRL_REF_SAMPLES_DC_MODE
+      sum += pSrc.at(0, m_ipaParam.multiRefIndex + 1 + idx);
+#else
       sum += pSrc.at( 0, 1 + idx );
+#endif
     }
   }
 
@@ -476,7 +484,6 @@ void IntraPrediction::xPredIntraPlanar( const CPelBuf &pSrc, PelBuf &pDst )
     }
   }
 }
-
 void IntraPrediction::xPredIntraDc( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const bool enableBoundaryFilter )
 {
   const Pel dcval = xGetPredValDc( pSrc, pDst );

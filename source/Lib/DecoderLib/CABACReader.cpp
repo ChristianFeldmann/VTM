@@ -928,14 +928,34 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 0 ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 0 );
 
+#if JVET_O0057_ALTHPELIF
+    cu.imv = value;
+#endif
   if( sps->getAMVREnabledFlag() && value )
   {
+#if JVET_O0057_ALTHPELIF
+    if (!CU::isIBC(cu))
+    {
+      value = m_BinDecoder.decodeBin(Ctx::ImvFlag(4));
+      DTRACE(g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 4);
+      cu.imv = value ? 1 : IMV_HPEL;
+      cu.useAltHpelIf = cu.imv == IMV_HPEL;
+    }
+    if (value)
+    {
+#endif
     value = m_BinDecoder.decodeBin( Ctx::ImvFlag( 1 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 1 );
     value++;
+#if JVET_O0057_ALTHPELIF
+      cu.imv = value;
+    }
+#endif
   }
 
+#if !JVET_O0057_ALTHPELIF
   cu.imv = value;
+#endif
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() IMVFlag=%d\n", cu.imv );
 }
 

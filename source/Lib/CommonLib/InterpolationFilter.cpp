@@ -94,6 +94,9 @@ const TFilterCoeff InterpolationFilter::m_lumaFilter[LUMA_INTERPOLATION_FILTER_S
   {  0, 1,  -2,  4, 63,  -3,  1,  0 }
 };
 
+#if JVET_O0057_ALTHPELIF
+const TFilterCoeff InterpolationFilter::m_lumaAltHpelIFilter[NTAPS_LUMA] = {  0, 3, 9, 20, 20, 9, 3, 0 };
+#endif
 const TFilterCoeff InterpolationFilter::m_chromaFilter[CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_CHROMA] =
 {
   {  0, 64,  0,  0 },
@@ -577,7 +580,11 @@ void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int sr
  * \param  fmt        Chroma format
  * \param  bitDepth   Bit depth
  */
-void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR)
+void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR
+#if JVET_O0057_ALTHPELIF
+  , bool useAltHpelIf
+#endif
+)
 {
   if( frac == 0 )
   {
@@ -592,6 +599,14 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
     }
     else
     {
+#if JVET_O0057_ALTHPELIF
+      if (frac == 8 && useAltHpelIf)
+      {
+        filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaAltHpelIFilter, biMCForDMVR);
+      }
+      else
+#endif
+      {
       if ((width == 4 && height == 4) || (width == 4 && height == (4 + NTAPS_LUMA - 1)))
       {
         filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter4x4[frac], biMCForDMVR);
@@ -601,6 +616,7 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
       filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter[frac], biMCForDMVR);
       }
     }
+  }
   }
   else
   {
@@ -627,7 +643,11 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
  * \param  fmt        Chroma format
  * \param  bitDepth   Bit depth
  */
-void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR)
+void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR
+#if JVET_O0057_ALTHPELIF
+  , bool useAltHpelIf
+#endif
+)
 {
   if( frac == 0 )
   {
@@ -642,6 +662,14 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
     }
     else
     {
+#if JVET_O0057_ALTHPELIF
+      if (frac == 8 && useAltHpelIf)
+      {
+        filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaAltHpelIFilter, biMCForDMVR);
+      }
+      else
+#endif
+      {
       if (width == 4 && height == 4)
       {
         filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter4x4[frac], biMCForDMVR);
@@ -651,6 +679,7 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
       filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter[frac], biMCForDMVR);
       }
     }
+  }
   }
   else
   {

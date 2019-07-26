@@ -654,6 +654,9 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   int startShareThisLevel = 0;
   m_pcInterSearch->resetSavedAffineMotion();
 
+#if JVET_O0057_ALTHPELIF
+  double bestIntPelCost = MAX_DOUBLE;
+#endif
   do
   {
     EncTestMode currTestMode = m_modeCtrl->currTestMode();
@@ -697,9 +700,21 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     {
       if( ( currTestMode.opts & ETO_IMV ) != 0 )
       {
+#if JVET_O0057_ALTHPELIF
+        const bool skipAltHpelIF = ( int( ( currTestMode.opts & ETO_IMV ) >> ETO_IMV_SHIFT ) == 4 ) && ( bestIntPelCost > 1.25 * bestCS->cost );
+        if( !skipAltHpelIF )
+        {
+#endif
         tempCS->bestCS = bestCS;
-        xCheckRDCostInterIMV( tempCS, bestCS, partitioner, currTestMode );
+          xCheckRDCostInterIMV( tempCS, bestCS, partitioner, currTestMode
+#if JVET_O0057_ALTHPELIF
+                              , bestIntPelCost
+#endif
+                              );
         tempCS->bestCS = nullptr;
+#if JVET_O0057_ALTHPELIF
+        }
+#endif
       }
       else
       {
@@ -3273,6 +3288,9 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
     cu.qp = encTestMode.qp;
     cu.imv = 0;
     cu.sbtInfo = 0;
+#if JVET_O0057_ALTHPELIF
+    cu.useAltHpelIf = false;
+#endif
 
     CU::addPUs(cu);
 
@@ -3539,12 +3557,22 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 
 
 
-bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
+bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode
+#if JVET_O0057_ALTHPELIF
+, double &bestIntPelCost 
+#endif
+)
 {
   int iIMV = int( ( encTestMode.opts & ETO_IMV ) >> ETO_IMV_SHIFT );
   m_pcInterSearch->setAffineModeSelected(false);
+#if JVET_O0057_ALTHPELIF
+  // Only Half-Pel, int-Pel, 4-Pel and fast 4-Pel allowed
+  CHECK(iIMV < 1 || iIMV > 4, "Unsupported IMV Mode");
+  const bool testAltHpelFilter = iIMV == 4;
+#else
   // Only int-Pel, 4-Pel and fast 4-Pel allowed
   CHECK( iIMV != 1 && iIMV != 2 && iIMV != 3, "Unsupported IMV Mode" );
+#endif
   // Fast 4-Pel Mode
 
   m_bestModeUpdated = tempCS->useDbCost = bestCS->useDbCost = false;
@@ -3615,11 +3643,27 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
 
   CU::addPUs( cu );
 
+#if JVET_O0057_ALTHPELIF
+  if (testAltHpelFilter)
+  {
+    cu.imv = IMV_HPEL;
+    cu.useAltHpelIf = true;
+  }
+  else
+  {
+    cu.imv = iIMV == 1 ? IMV_FPEL : IMV_4PEL;
+  }
+#else
   cu.imv      = iIMV > 1 ? 2 : 1;
+#endif
 
   bool testGbi;
   uint8_t gbiIdx;
+#if JVET_O0057_ALTHPELIF
+  bool affineAmvrEanbledFlag = !testAltHpelFilter && cu.slice->getSPS()->getAffineAmvrEnabledFlag();
+#else
   bool affineAmvrEanbledFlag = cu.slice->getSPS()->getAffineAmvrEnabledFlag();
+#endif
 
   cu.GBiIdx = g_GbiSearchOrder[gbiLoopIdx];
   gbiIdx = cu.GBiIdx;
@@ -3684,6 +3728,12 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
                         , &equGBiCost
   );
 
+#if JVET_O0057_ALTHPELIF
+  if( cu.imv == IMV_FPEL && tempCS->cost < bestIntPelCost )
+  {
+    bestIntPelCost = tempCS->cost;
+  }
+#endif
   tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
 
   double skipTH = MAX_DOUBLE;

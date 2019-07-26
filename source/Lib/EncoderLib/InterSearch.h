@@ -349,6 +349,9 @@ protected:
     uint8_t       ucPointNr;
     int         subShiftMode;
     unsigned    imvShift;
+#if JVET_O0057_ALTHPELIF
+    bool        useAltHpelIf;
+#endif
     bool        inCtuSearch;
     bool        zeroMV;
   } IntTZSearchStruct;
@@ -592,7 +595,11 @@ public:
     );
 protected:
 
-  void xExtDIFUpSamplingH         ( CPelBuf* pcPattern );
+  void xExtDIFUpSamplingH         ( CPelBuf* pcPattern
+#if JVET_O0057_ALTHPELIF
+    , bool useAltHpelIf
+#endif
+);
   void xExtDIFUpSamplingQ         ( CPelBuf* pcPatternKey, Mv halfPelRef );
   uint32_t xDetermineBestMvp      ( PredictionUnit& pu, Mv acMvTemp[3], int& mvpIdx, const AffineAMVPInfo& aamvpi );
   // -------------------------------------------------------------------------------------------------------------------

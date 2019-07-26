@@ -155,6 +155,7 @@
 
 #define JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG           1 // JVET-O1140 slice level disable flag for BDOF and DMVR
 
+#define JVET_O0567_MVDRange_Constraint                    1 // JVET-O0567: constrain the signalled MVD value to the range of [-2^17, 2^17-1]
 
 #define JVET_O0596_CBF_SIG_ALIGN_TO_SPEC                  1 // JVET-O0596 align cbf signaling with specification
 #define JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX             1 // JVET-O0193/JVET-O0375: remove transform depth in cbf context modeling

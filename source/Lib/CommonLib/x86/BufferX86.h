@@ -287,38 +287,38 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
   int shift5 = std::max<int>(1, (bitDepth - 11));
 
   __m128i zero = _mm_setzero_si128();
-  __m128i tSumAbsGX = _mm_setzero_si128();
-  __m128i tSumDIX = _mm_setzero_si128();
-  __m128i tSumAbsGY = _mm_setzero_si128();
-  __m128i tSumDIY = _mm_setzero_si128();
-  __m128i tSumSignGyGx = _mm_setzero_si128();
+  __m128i SumAbsGXTmp = _mm_setzero_si128();
+  __m128i SumDIXTmp = _mm_setzero_si128();
+  __m128i SumAbsGYTmp = _mm_setzero_si128();
+  __m128i SumDIYTmp = _mm_setzero_si128();
+  __m128i SumSignGyGxTmp = _mm_setzero_si128();
   Pel tmpStore[8];
   for (int y = 0; y < 6; y++)
   {
-    __m128i mmSrcY0Tmp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY0Tmp)), shift4);
-    __m128i mmSrcY1Tmp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY1Tmp)), shift4);
-    __m128i mmGradX0 = _mm_loadu_si128((__m128i*)(gradX0));
-    __m128i mmGradX1 = _mm_loadu_si128((__m128i*)(gradX1));
-    __m128i mmGradY0 = _mm_loadu_si128((__m128i*)(gradY0));
-    __m128i mmGradY1 = _mm_loadu_si128((__m128i*)(gradY1));
-    __m128i mmTemp1 = _mm_sub_epi16(mmSrcY1Tmp, mmSrcY0Tmp);
-    __m128i mmTempX = _mm_srai_epi16(_mm_add_epi16(mmGradX0, mmGradX1), shift5);
-    __m128i mmTempY = _mm_srai_epi16(_mm_add_epi16(mmGradY0, mmGradY1), shift5);
-    __m128i gX = _mm_abs_epi16(mmTempX);
-    __m128i gY = _mm_abs_epi16(mmTempY);
-    __m128i maskXlt = _mm_cmplt_epi16(mmTempX, zero);
-    __m128i maskXgt = _mm_cmpgt_epi16(mmTempX, zero);
-    __m128i maskYlt = _mm_cmplt_epi16(mmTempY, zero);
-    __m128i maskYgt = _mm_cmpgt_epi16(mmTempY, zero);
-    __m128i dIX = _mm_or_si128(_mm_and_si128(maskXgt, mmTemp1), _mm_and_si128(maskXlt, _mm_sub_epi16(zero, mmTemp1)));
-    __m128i dIY = _mm_or_si128(_mm_and_si128(maskYgt, mmTemp1), _mm_and_si128(maskYlt, _mm_sub_epi16(zero, mmTemp1)));
-    __m128i signGY_GX = _mm_or_si128(_mm_and_si128(maskYgt, mmTempX), _mm_and_si128(maskYlt, _mm_sub_epi16(zero, mmTempX)));
+    __m128i shiftSrcY0Tmp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY0Tmp)), shift4);
+    __m128i shiftSrcY1Tmp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY1Tmp)), shift4);
+    __m128i loadGradX0 = _mm_loadu_si128((__m128i*)(gradX0));
+    __m128i loadGradX1 = _mm_loadu_si128((__m128i*)(gradX1));
+    __m128i loadGradY0 = _mm_loadu_si128((__m128i*)(gradY0));
+    __m128i loadGradY1 = _mm_loadu_si128((__m128i*)(gradY1));
+    __m128i subTemp1 = _mm_sub_epi16(shiftSrcY1Tmp, shiftSrcY0Tmp);
+    __m128i packTempX = _mm_srai_epi16(_mm_add_epi16(loadGradX0, loadGradX1), shift5);
+    __m128i packTempY = _mm_srai_epi16(_mm_add_epi16(loadGradY0, loadGradY1), shift5);
+    __m128i gX = _mm_abs_epi16(packTempX);
+    __m128i gY = _mm_abs_epi16(packTempY);
+    __m128i maskXlt = _mm_cmplt_epi16(packTempX, zero);
+    __m128i maskXgt = _mm_cmpgt_epi16(packTempX, zero);
+    __m128i maskYlt = _mm_cmplt_epi16(packTempY, zero);
+    __m128i maskYgt = _mm_cmpgt_epi16(packTempY, zero);
+    __m128i dIX = _mm_or_si128(_mm_and_si128(maskXgt, subTemp1), _mm_and_si128(maskXlt, _mm_sub_epi16(zero, subTemp1)));
+    __m128i dIY = _mm_or_si128(_mm_and_si128(maskYgt, subTemp1), _mm_and_si128(maskYlt, _mm_sub_epi16(zero, subTemp1)));
+    __m128i signGY_GX = _mm_or_si128(_mm_and_si128(maskYgt, packTempX), _mm_and_si128(maskYlt, _mm_sub_epi16(zero, packTempX)));
 
-    tSumAbsGX = _mm_add_epi16(tSumAbsGX, gX);
-    tSumDIX = _mm_add_epi16(tSumDIX, dIX);
-    tSumAbsGY = _mm_add_epi16(tSumAbsGY, gY);
-    tSumDIY = _mm_add_epi16(tSumDIY, dIY);
-    tSumSignGyGx = _mm_add_epi16(tSumSignGyGx, signGY_GX);
+    SumAbsGXTmp = _mm_add_epi16(SumAbsGXTmp, gX);
+    SumDIXTmp = _mm_add_epi16(SumDIXTmp, dIX);
+    SumAbsGYTmp = _mm_add_epi16(SumAbsGYTmp, gY);
+    SumDIYTmp = _mm_add_epi16(SumDIYTmp, dIY);
+    SumSignGyGxTmp = _mm_add_epi16(SumSignGyGxTmp, signGY_GX);
     srcY0Tmp += src0Stride;
     srcY1Tmp += src1Stride;
     gradX0 += widthG;
@@ -326,15 +326,15 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
     gradY0 += widthG;
     gradY1 += widthG;
   }
-  _mm_storeu_si128((__m128i *)tmpStore, tSumAbsGX);
+  _mm_storeu_si128((__m128i *)tmpStore, SumAbsGXTmp);
   *sumAbsGX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, tSumAbsGY);
+  _mm_storeu_si128((__m128i *)tmpStore, SumAbsGYTmp);
   *sumAbsGY = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, tSumDIX);
+  _mm_storeu_si128((__m128i *)tmpStore, SumDIXTmp);
   *sumDIX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, tSumDIY);
+  _mm_storeu_si128((__m128i *)tmpStore, SumDIYTmp);
   *sumDIY = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, tSumSignGyGx);
+  _mm_storeu_si128((__m128i *)tmpStore, SumSignGyGxTmp);
   *sumSignGY_GX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
 }
 #endif

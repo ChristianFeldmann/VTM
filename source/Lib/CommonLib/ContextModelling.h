@@ -205,6 +205,137 @@ public:
   unsigned parityCtxIdAbsTS   ()                  const { return m_tsParFlagCtxSet(      0 ); }
   unsigned greaterXCtxIdAbsTS ( uint8_t offset )  const { return m_tsGtxFlagCtxSet( offset ); }
 
+#if JVET_O0122_TS_SIGN_LEVEL
+  unsigned lrg1CtxIdAbsTS(int scanPos, const TCoeff* coeff, int bdpcm)
+  {
+    const uint32_t  posY = m_scan[scanPos].y;
+    const uint32_t  posX = m_scan[scanPos].x;
+    const TCoeff*   posC = coeff + posX + posY * m_width;
+
+    int             numPos = 0;
+#define UPDATE(x) {int a=abs(x);numPos+=!!a;}
+
+    if (bdpcm)
+    {
+      numPos = 3;
+    }
+    else
+    {
+      if (posX > 0)
+      {
+        UPDATE(posC[-1]);
+      }
+      if (posY > 0)
+      {
+        UPDATE(posC[-(int)m_width]);
+      }
+    }
+
+#undef UPDATE
+    return m_tsLrg1FlagCtxSet(numPos);
+  }
+#endif
+
+#if JVET_O0122_TS_SIGN_LEVEL
+  unsigned signCtxIdAbsTS(int scanPos, const TCoeff* coeff, int bdpcm)
+  {
+    const uint32_t  posY = m_scan[scanPos].y;
+    const uint32_t  posX = m_scan[scanPos].x;
+    const TCoeff*   pData = coeff + posX + posY * m_width;
+
+    int rightSign = 0, belowSign = 0;
+    unsigned signCtx = 0;
+
+    if (posX > 0)
+    {
+      rightSign = pData[-1];
+    }
+    if (posY > 0)
+    {
+      belowSign = pData[-(int)m_width];
+    }
+
+    if ((rightSign == 0 && belowSign == 0) || ((rightSign*belowSign) < 0))
+    {
+      signCtx = 0;
+    }
+    else if (rightSign >= 0 && belowSign >= 0)
+    {
+      signCtx = 1;
+    }
+    else
+    {
+      signCtx = 2;
+    }
+    if (bdpcm)
+    {
+      signCtx += 3;
+    }
+    return m_tsSignFlagCtxSet(signCtx);
+  }
+#endif
+
+#if JVET_O0122_TS_SIGN_LEVEL
+  void neighTS(int &rightPixel, int &belowPixel, int scanPos, const TCoeff* coeff)
+  {
+    const uint32_t  posY = m_scan[scanPos].y;
+    const uint32_t  posX = m_scan[scanPos].x;
+    const TCoeff*   data = coeff + posX + posY * m_width;
+
+    rightPixel = belowPixel = 0;
+
+    if (posX > 0)
+    {
+      rightPixel = data[-1];
+    }
+    if (posY > 0)
+    {
+      belowPixel = data[-(int)m_width];
+    }
+  }
+
+  int deriveModCoeff(int rightPixel, int belowPixel, int absCoeff, int bdpcm = 0)
+  {
+    int pred1, absBelow = abs(belowPixel), absRight = abs(rightPixel);
+
+    int absCoeffMod = absCoeff;
+
+    if (bdpcm == 0)
+    {
+      pred1 = std::max(absBelow, absRight);
+
+      if (absCoeff == pred1)
+      {
+        absCoeffMod = 1;
+      }
+      else
+      {
+        absCoeffMod = absCoeff < pred1 ? absCoeff + 1 : absCoeff;
+      }
+    }
+
+    return(absCoeffMod);
+  }
+
+  int decDeriveModCoeff(int rightPixel, int belowPixel, int absCoeff)
+  {
+    int pred1, absBelow = abs(belowPixel), absRight = abs(rightPixel);
+    pred1 = std::max(absBelow, absRight);
+
+    int absCoeffMod;
+
+    if (absCoeff == 1 && pred1 > 0)
+    {
+      absCoeffMod = pred1;
+    }
+    else
+    {
+      absCoeffMod = absCoeff - (absCoeff <= pred1);
+    }
+    return(absCoeffMod);
+  }
+#endif
+
   unsigned templateAbsSumTS( int scanPos, const TCoeff* coeff )
   {
     const uint32_t  posY  = m_scan[scanPos].y;
@@ -282,6 +413,10 @@ private:
   CtxSet                    m_tsSigFlagCtxSet;
   CtxSet                    m_tsParFlagCtxSet;
   CtxSet                    m_tsGtxFlagCtxSet;
+#if JVET_O0122_TS_SIGN_LEVEL
+  CtxSet                    m_tsLrg1FlagCtxSet;
+  CtxSet                    m_tsSignFlagCtxSet;
+#endif
   int                       m_remainingContextBins;
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
   const bool                m_bdpcm;

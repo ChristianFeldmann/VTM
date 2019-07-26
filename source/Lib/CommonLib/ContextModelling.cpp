@@ -86,6 +86,10 @@ CoeffCodingContext::CoeffCodingContext( const TransformUnit& tu, ComponentID com
   , m_tsSigFlagCtxSet           ( Ctx::TsSigFlag )
   , m_tsParFlagCtxSet           ( Ctx::TsParFlag )
   , m_tsGtxFlagCtxSet           ( Ctx::TsGtxFlag )
+#if JVET_O0122_TS_SIGN_LEVEL
+  , m_tsLrg1FlagCtxSet          (Ctx::TsLrg1Flag)
+  , m_tsSignFlagCtxSet          (Ctx::TsResidualSign)
+#endif
   , m_sigCoeffGroupFlag         ()
   , m_bdpcm                     (bdpcm)
 {

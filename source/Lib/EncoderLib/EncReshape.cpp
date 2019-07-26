@@ -1858,9 +1858,6 @@ void EncReshape::constructReshaperLMCS()
   {
     m_inputPivot[i] = m_initCW * i;
   }
-#if JVET_O0272_LMCS_SIMP_INVERSE_MAPPING
-  adjustLmcsPivot();
-#endif
 
   m_sliceReshapeInfo.reshaperModelMinBinIdx = 0;
   m_sliceReshapeInfo.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1;
@@ -1880,6 +1877,10 @@ void EncReshape::constructReshaperLMCS()
       break;
     }
   }
+
+#if JVET_O0272_LMCS_SIMP_INVERSE_MAPPING
+  adjustLmcsPivot();
+#endif
 
   int maxAbsDeltaCW = 0, absDeltaCW = 0, deltaCW = 0;
   for (int i = m_sliceReshapeInfo.reshaperModelMinBinIdx; i <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; i++)
@@ -2084,10 +2085,6 @@ void EncReshape::constructReshaperSDR()
     m_binCW[i] = m_binCW[2 * i] + m_binCW[2 * i + 1];
   }
 
-#if JVET_O0272_LMCS_SIMP_INVERSE_MAPPING
-  adjustLmcsPivot();
-#endif
-
   m_sliceReshapeInfo.reshaperModelMinBinIdx = 0;
   m_sliceReshapeInfo.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1;
   for (int i = 0; i < PIC_CODE_CW_BINS; i++)
@@ -2106,6 +2103,10 @@ void EncReshape::constructReshaperSDR()
       break;
     }
   }
+
+#if JVET_O0272_LMCS_SIMP_INVERSE_MAPPING
+  adjustLmcsPivot();
+#endif
 
   int maxAbsDeltaCW = 0, absDeltaCW = 0, deltaCW = 0;
   for (int i = m_sliceReshapeInfo.reshaperModelMinBinIdx; i <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; i++)
@@ -2196,32 +2197,63 @@ void EncReshape::adjustLmcsPivot()
   int totCW = bdShift != 0 ? (bdShift > 0 ? m_reshapeLUTSize / (1 << bdShift) : m_reshapeLUTSize * (1 << (-bdShift))) : m_reshapeLUTSize;
   int orgCW = totCW / PIC_CODE_CW_BINS;
   int log2SegSize = g_aucLog2[LMCS_SEG_SIZE];
+
   m_reshapePivot[0] = 0;
   for (int i = 0; i < PIC_CODE_CW_BINS; i++)
   {
-    m_reshapePivot[i+1] = m_reshapePivot[i] + m_binCW[i];
+    m_reshapePivot[i + 1] = m_reshapePivot[i] + m_binCW[i];
+  }
+  int segIdxMax = (m_reshapePivot[m_sliceReshapeInfo.reshaperModelMaxBinIdx + 1] >> log2SegSize);
+  for (int i = m_sliceReshapeInfo.reshaperModelMinBinIdx; i <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; i++)
+  {
+    m_reshapePivot[i + 1] = m_reshapePivot[i] + m_binCW[i];
     int segIdxCurr = (m_reshapePivot[i]     >> log2SegSize);
     int segIdxNext = (m_reshapePivot[i + 1] >> log2SegSize);
-    if ((segIdxCurr == segIdxNext) && (m_reshapePivot[i] != m_reshapePivot[i + 1]) && (m_reshapePivot[i] != (segIdxCurr << log2SegSize)))
+
+    if ((segIdxCurr == segIdxNext) && (m_reshapePivot[i] != (segIdxCurr << log2SegSize)))
     {
-      int16_t adjustVal = ((segIdxCurr + 1) << log2SegSize) - m_reshapePivot[i + 1];
-      m_reshapePivot[i + 1] += adjustVal;
-      m_binCW[i] += adjustVal;
-      for (int j = i + 1; j < PIC_CODE_CW_BINS; j++)
+      if (segIdxCurr == segIdxMax)
       {
-        if (m_binCW[j] < (adjustVal + (orgCW >> 3)))
+        m_reshapePivot[i] = m_reshapePivot[m_sliceReshapeInfo.reshaperModelMaxBinIdx + 1];
+        for (int j = i; j <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; j++)
         {
-          adjustVal -= (m_binCW[j] - (orgCW >> 3));
-          m_binCW[j] = (orgCW >> 3);
+          m_reshapePivot[j + 1] = m_reshapePivot[i];
+          m_binCW[j] = 0;
         }
-        else
-        {
-          m_binCW[j] -= adjustVal;
-          adjustVal = 0;
-        }
-        if (adjustVal == 0)
-          break;
+        m_binCW[i - 1] = m_reshapePivot[i] - m_reshapePivot[i - 1];
+        break;
       }
+      else
+      {
+        int16_t adjustVal = ((segIdxCurr + 1) << log2SegSize) - m_reshapePivot[i + 1];
+        m_reshapePivot[i + 1] += adjustVal;
+        m_binCW[i] += adjustVal;
+
+        for (int j = i + 1; j <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; j++)
+        {
+          if (m_binCW[j] < (adjustVal + (orgCW >> 3)))
+          {
+            adjustVal -= (m_binCW[j] - (orgCW >> 3));
+            m_binCW[j] = (orgCW >> 3);
+          }
+          else
+          {
+            m_binCW[j] -= adjustVal;
+            adjustVal = 0;
+          }
+          if (adjustVal == 0)
+            break;
+        }
+      }
+    }
+  }
+
+  for (int i = PIC_CODE_CW_BINS - 1; i >= 0; i--)
+  {
+    if (m_binCW[i] > 0)
+    {
+      m_sliceReshapeInfo.reshaperModelMaxBinIdx = i;
+      break;
     }
   }
 }

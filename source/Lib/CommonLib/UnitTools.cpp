@@ -1597,13 +1597,17 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 }
 bool PU::checkDMVRCondition(const PredictionUnit& pu)
 {
-    WPScalingParam *wp0;
-    WPScalingParam *wp1;
-    int refIdx0 = pu.refIdx[REF_PIC_LIST_0];
-    int refIdx1 = pu.refIdx[REF_PIC_LIST_1];
-    pu.cu->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
-    pu.cu->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
+  WPScalingParam *wp0;
+  WPScalingParam *wp1;
+  int refIdx0 = pu.refIdx[REF_PIC_LIST_0];
+  int refIdx1 = pu.refIdx[REF_PIC_LIST_1];
+  pu.cu->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
+  pu.cu->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  if (pu.cs->sps->getUseDMVR() && (!pu.cs->slice->getDisBdofDmvrFlag()))
+#else
   if (pu.cs->sps->getUseDMVR())
+#endif
   {
     return pu.mergeFlag
       && pu.mergeType == MRG_TYPE_DEFAULT_N
@@ -3518,6 +3522,21 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   Mv cTMv;
   RefPicList fetchRefPicList = RefPicList(slice.isInterB() ? 1 - slice.getColFromL0Flag() : 0);
 
+#if JVET_O0163_REMOVE_SWITCHING_TMV
+  if ( count )
+  {
+    if ( (mrgCtx.interDirNeighbours[0] & (1 << REF_PIC_LIST_0)) && slice.getRefPic( REF_PIC_LIST_0, mrgCtx.mvFieldNeighbours[REF_PIC_LIST_0].refIdx ) == pColPic )
+    {
+      cTMv = mrgCtx.mvFieldNeighbours[REF_PIC_LIST_0].mv;
+      fetchRefPicList = REF_PIC_LIST_0;
+    }
+    else if ( slice.isInterB() && (mrgCtx.interDirNeighbours[0] & (1 << REF_PIC_LIST_1)) && slice.getRefPic( REF_PIC_LIST_1, mrgCtx.mvFieldNeighbours[REF_PIC_LIST_1].refIdx ) == pColPic )
+    {
+      cTMv = mrgCtx.mvFieldNeighbours[REF_PIC_LIST_1].mv;
+      fetchRefPicList = REF_PIC_LIST_1;
+    }
+  }
+#else
   bool terminate = false;
   for (unsigned currRefListId = 0; currRefListId < (slice.getSliceType() == B_SLICE ? 2 : 1) && !terminate; currRefListId++)
   {
@@ -3534,6 +3553,7 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
       }
     }
   }
+#endif
 
   ///////////////////////////////////////////////////////////////////////
   ////////          GET Initial Temporal Vector                  ////////
@@ -4317,6 +4337,28 @@ bool CU::isSameSbtSize( const uint8_t sbtInfo1, const uint8_t sbtInfo2 )
   else
     return false;
 }
+
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+bool CU::isPredRegDiffFromTB(const CodingUnit &cu, const ComponentID compID)
+{
+  return (compID == COMPONENT_Y)
+    && (cu.ispMode == VER_INTRA_SUBPARTITIONS &&
+      CU::isMinWidthPredEnabledForBlkSize(cu.blocks[compID].width, cu.blocks[compID].height)
+      );
+}
+bool CU::isMinWidthPredEnabledForBlkSize(const int w, const int h)
+{
+  return ((w == 8 && h > 4) || w == 4);
+}
+bool CU::isFirstTBInPredReg(const CodingUnit& cu, const ComponentID compID, const CompArea &area)
+{
+  return (compID == COMPONENT_Y) && cu.ispMode && ((area.topLeft().x - cu.Y().topLeft().x) % PRED_REG_MIN_WIDTH == 0);
+}
+void CU::adjustPredArea(CompArea &area)
+{
+  area.width = std::max<int>(PRED_REG_MIN_WIDTH, area.width);
+}
+#endif
 
 bool CU::isGBiIdxCoded( const CodingUnit &cu )
 {

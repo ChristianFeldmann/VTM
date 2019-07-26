@@ -186,7 +186,21 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   const uint32_t uiChFinalMode  = PU::getFinalIntraMode( pu, chType );
 
   //===== init availability pattern =====
-  m_pcIntraPred->initIntraPatternChType( *tu.cu, area);
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+  bool predRegDiffFromTB = CU::isPredRegDiffFromTB(*tu.cu, compID);
+  bool firstTBInPredReg  = CU::isFirstTBInPredReg (*tu.cu, compID, area);
+  CompArea areaPredReg(COMPONENT_Y, tu.chromaFormat, area);
+  if (predRegDiffFromTB)
+  {
+    if (firstTBInPredReg)
+    {
+      CU::adjustPredArea(areaPredReg);
+      m_pcIntraPred->initIntraPatternChType(*tu.cu, areaPredReg);
+    }
+  }
+  else
+#endif
+    m_pcIntraPred->initIntraPatternChType(*tu.cu, area);
 
   //===== get prediction signal =====
   if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
@@ -204,7 +218,18 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
     }
     else
     {
-    m_pcIntraPred->predIntraAng( compID, piPred, pu );
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+      if (predRegDiffFromTB)
+      {
+        if (firstTBInPredReg)
+        {
+          PelBuf piPredReg = cs.getPredBuf(areaPredReg);
+          m_pcIntraPred->predIntraAng(compID, piPredReg, pu);
+        }
+      }
+      else
+#endif
+        m_pcIntraPred->predIntraAng(compID, piPred, pu);
     }
   }
   const Slice           &slice = *cs.slice;

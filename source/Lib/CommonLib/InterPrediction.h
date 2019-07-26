@@ -161,7 +161,9 @@ protected:
 
 
   MotionInfo      m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
   void xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred);
+#endif
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   CacheModel      *m_cacheModel;
 #endif
@@ -187,9 +189,17 @@ public:
 
   void    motionCompensation4Triangle( CodingUnit &cu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 );
   void    weightedTriangleBlk        ( PredictionUnit &pu, const bool splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
+#if JVET_O0297_DMVR_PADDING // For Dec speedup
+  void xPrefetch(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId, bool forLuma);
+  void xPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId);
+#else
   void xPrefetchPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId);
+#endif
   void xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvSrc0, PelUnitBuf &pcYuvSrc1, PelUnitBuf &pcPad0, PelUnitBuf &pcPad1, const bool bioApplied
     , const Mv startMV[NUM_REF_PIC_LIST_01]
+#if JVET_O0297_DMVR_PADDING // For Dec speedup
+    , bool blockMoved
+#endif
   );
   void xBIPMVRefine(int bd, Pel *pRefL0, Pel *pRefL1, uint64_t& minCost, int16_t *deltaMV, uint64_t *pSADsArray, int width, int height);
   uint64_t xDMVRCost(int bitDepth, Pel* pRef, uint32_t refStride, const Pel* pOrg, uint32_t orgStride, int width, int height);

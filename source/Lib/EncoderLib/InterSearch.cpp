@@ -6202,18 +6202,32 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
 
     if( cu.chromaFormat != CHROMA_400 )
     {
+#if !JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
       const bool firstCbfOfCU = ( currDepth == 0 );
+#endif
       {
+#if !JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
         if( firstCbfOfCU || TU::getCbfAtDepth( currTU, COMPONENT_Cb, currDepth - 1 ) )
+#endif
         {
           const bool  chroma_cbf = TU::getCbfAtDepth( currTU, COMPONENT_Cb, currDepth );
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+          if (!(cu.sbtInfo && (currDepth == 0 || (currDepth == 1 && currTU.noResidual))))
+#else
           if( !( cu.sbtInfo && currDepth == 1 ) )
+#endif
           m_CABACEstimator->cbf_comp( cs, chroma_cbf, currArea.blocks[COMPONENT_Cb], currDepth );
         }
+#if !JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
         if( firstCbfOfCU || TU::getCbfAtDepth( currTU, COMPONENT_Cr, currDepth - 1 ) )
+#endif
         {
           const bool  chroma_cbf = TU::getCbfAtDepth( currTU, COMPONENT_Cr, currDepth );
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+          if (!(cu.sbtInfo && (currDepth == 0 || (currDepth == 1 && currTU.noResidual))))
+#else
           if( !( cu.sbtInfo && currDepth == 1 ) )
+#endif
           m_CABACEstimator->cbf_comp( cs, chroma_cbf, currArea.blocks[COMPONENT_Cr], currDepth, TU::getCbfAtDepth( currTU, COMPONENT_Cb, currDepth ) );
         }
       }

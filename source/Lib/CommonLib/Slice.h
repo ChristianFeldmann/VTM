@@ -47,6 +47,7 @@
 #include "ChromaFormat.h"
 #include "Common.h"
 #include "HRD.h"
+#include "AlfParameters.h"
 
 //! \ingroup CommonLib
 //! \{

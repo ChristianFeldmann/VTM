@@ -176,6 +176,13 @@ static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 static const int MIP_MAX_WIDTH =                                   64;
 static const int MIP_MAX_HEIGHT =                                  64;
 
+static const int MAX_NUM_ALF_CLASSES         =                     25;
+static const int MAX_NUM_ALF_LUMA_COEFF      =                     13;
+static const int MAX_NUM_ALF_CHROMA_COEFF    =                      7;
+static const int MAX_ALF_FILTER_LENGTH       =                      7;
+static const int MAX_NUM_ALF_COEFF           =                     MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1;
+static const int MAX_ALF_PADDING_SIZE        =                      4;
+
 static const int ALF_FIXED_FILTER_NUM        =                     64;
 static const int ALF_CTB_MAX_NUM_APS         =                      6;
 static const int NUM_FIXED_FILTER_SETS       =                     16;

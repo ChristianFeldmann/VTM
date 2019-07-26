@@ -67,7 +67,9 @@ class ProbModelTables
 {
 protected:
   static const BinFracBits m_binFracBits[256];
+#if !JVET_O0065_CABAC_INIT
   static const uint16_t    m_inistateToCount[128];
+#endif
   static const uint8_t      m_RenormTable_32  [ 32];          // Std         MP   MPI
 };
 
@@ -216,6 +218,9 @@ public:
   static const CtxSet   MmvdFlag;
   static const CtxSet   MmvdMergeIdx;
   static const CtxSet   MmvdStepMvpIdx;
+#if JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG
+  static const CtxSet   SubblockMergeFlag;
+#endif
   static const CtxSet   AffineFlag;
   static const CtxSet   AffineType;
   static const CtxSet   AffMergeIdx;
@@ -233,6 +238,9 @@ public:
   static const CtxSet   TsSigFlag;
   static const CtxSet   TsParFlag;
   static const CtxSet   TsGtxFlag;
+#if JVET_O0122_TS_SIGN_LEVEL
+  static const CtxSet   TsLrg1Flag;
+#endif
   static const CtxSet   TsResidualSign;
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;

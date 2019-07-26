@@ -120,7 +120,7 @@ const BinFracBits ProbModelTables::m_binFracBits[256] = {
   { { 0x28beb, 0x0057e } }, { { 0x2a658, 0x004c0 } }, { { 0x2c531, 0x00403 } }, { { 0x2ea40, 0x00346 } },
   { { 0x318a9, 0x0028b } }, { { 0x356cb, 0x001d0 } }, { { 0x3b520, 0x00116 } }, { { 0x48000, 0x0005c } },
 };
-
+#if !JVET_O0065_CABAC_INIT
 const uint16_t ProbModelTables::m_inistateToCount[128] = {
   614,   647,   681,   718,   756,   797,   839,   884,   932,   982,   1034,  1089,  1148,  1209,  1274,  1342,
   1414,  1490,  1569,  1653,  1742,  1835,  1933,  2037,  2146,  2261,  2382,  2509,  2643,  2785,  2934,  3091,
@@ -131,13 +131,21 @@ const uint16_t ProbModelTables::m_inistateToCount[128] = {
   29676, 29833, 29982, 30124, 30258, 30385, 30506, 30621, 30730, 30834, 30932, 31025, 31114, 31198, 31277, 31353,
   31425, 31493, 31558, 31619, 31678, 31733, 31785, 31835, 31883, 31928, 31970, 32011, 32049, 32086, 32120, 32153
 };
-
+#endif
 void BinProbModel_Std::init( int qp, int initId )
 {
+#if JVET_O0065_CABAC_INIT
+  int slope = (initId >> 3) - 4;
+  int offset = ((initId & 7) * 18) + 1;
+  int inistate = ((slope   * (qp - 16)) >> 1) + offset;
+  int state_clip = inistate < 1 ? 1 : inistate > 127 ? 127 : inistate;
+  const int p1 = (state_clip << 8);
+#else
   int slope     = ( ( initId >>  4 )  * 5 ) - 45;
   int offset    = ( ( initId  & 15 ) << 3 ) - 16;
   int inistate  = ( ( slope   * qp ) >> 4 ) + offset;
   const int p1 = m_inistateToCount[inistate < 0 ? 0 : inistate > 127 ? 127 : inistate];
+#endif
   m_state[0]   = p1 & MASK_0;
   m_state[1]   = p1 & MASK_1;
 }
@@ -192,8 +200,11 @@ CtxSet ContextSetCfg::addCtxSet( std::initializer_list<std::initializer_list<uin
 }
 
 
-
+#if JVET_O0065_CABAC_INIT
+#define CNU 35
+#else
 #define CNU 154 // dummy initialization value for unused context models 'Context model Not Used'
+#endif
 std::vector<std::vector<uint8_t>> ContextSetCfg::sm_InitTables(NUMBER_OF_SLICE_TYPES + 1);
 
 // clang-format off
@@ -365,6 +376,16 @@ const CtxSet ContextSetCfg::RefPic = ContextSetCfg::addCtxSet
   {   4,   5, },
 });
 
+#if JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG
+const CtxSet ContextSetCfg::SubblockMergeFlag = ContextSetCfg::addCtxSet
+({
+  { 183, 185, 187, },
+  { 168, 169, 171, },
+  { CNU, CNU, CNU, },
+  {   4,   4,   4, },
+  });
+#endif
+
 const CtxSet ContextSetCfg::AffineFlag = ContextSetCfg::addCtxSet
 ({
   { 183, 185, 187, },
@@ -425,17 +446,31 @@ const CtxSet ContextSetCfg::QtCbf[] =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+    { 127, 111, 124, 140 },
+    { 127,  79, 139, 126 },
+    { 126, 138, 124, 111 },
+    {   5,   1,   8,   8 },
+#else
     { 142, 127, 124, 140, 111, },
     { 143, 127, 139, 126,  79, },
     { CNU, 126, 124, 111, 138, },
     {   1,   5,   8,   8,   1, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+    { 163, },
+    { 150, },
+    { 124, },
+    {   5, },
+#else
     { 163, 135, },
     { 150, 121, },
     { 124, CNU, },
     {   5,   0, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
@@ -829,6 +864,30 @@ const CtxSet ContextSetCfg::TsGtxFlag = ContextSetCfg::addCtxSet
   {   4,   1,   1,   1,   1, },
 });
 
+#if JVET_O0122_TS_SIGN_LEVEL
+const CtxSet ContextSetCfg::TsLrg1Flag = ContextSetCfg::addCtxSet
+({
+  { 139, 108, 124, 111 },
+  { 122, 138, 139, 110 },
+  { 123, 139, 110, 125 },
+  {   4,   2,   1,   5 }
+  });
+#endif
+
+#if JVET_O0122_TS_SIGN_LEVEL
+
+const CtxSet ContextSetCfg::TsResidualSign =
+{
+  ContextSetCfg::addCtxSet
+  ({
+  { 139,  92, 201, 139, 122, 171 },
+  { 124,  77, 171, 169, 121, 187 },
+  { 124,  61, 187, 154, 121, 187 },
+  {   1,   4,   1,   5,   5,   5 }
+    }),
+};
+
+#else
 const CtxSet ContextSetCfg::TsResidualSign =
 {
   ContextSetCfg::addCtxSet
@@ -839,6 +898,7 @@ const CtxSet ContextSetCfg::TsResidualSign =
     {   1,   2, },
    }),
 };
+#endif
 // clang-format on
 
 const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_InitTables[0].size();

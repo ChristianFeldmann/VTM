@@ -143,6 +143,9 @@ protected:
   bool      m_bNoTriangleConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool      m_noBDPCMConstraintFlag;
+#endif
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
@@ -180,15 +183,16 @@ protected:
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool      m_useBDPCM;
+#endif
   uint32_t      m_log2MaxTransformSkipBlockSize;                  ///< transform-skip maximum size (minimum of 2)
   bool      m_transformSkipRotationEnabledFlag;               ///< control flag for transform-skip/transquant-bypass residual rotation
   bool      m_transformSkipContextEnabledFlag;                ///< control flag for transform-skip/transquant-bypass single significance map context
   bool      m_rdpcmEnabledFlag[NUMBER_OF_RDPCM_SIGNALLING_MODES];///< control flags for residual DPCM
   bool      m_persistentRiceAdaptationEnabledFlag;            ///< control flag for Golomb-Rice parameter adaptation over each slice
   bool      m_cabacBypassAlignmentEnabledFlag;
-#if INCLUDE_ISP_CFG_FLAG
   bool      m_ISP;
-#endif
   bool      m_useFastISP;                                    ///< flag for enabling fast methods for ISP
 
   // coding quality
@@ -300,6 +304,11 @@ protected:
   uint32_t  m_reshapeSignalType;
   uint32_t  m_intraCMD;
   ReshapeCW m_reshapeCW;
+#if JVET_O0432_LMCS_ENCODER
+  int       m_updateCtrl;
+  int       m_adpOption;
+  uint32_t  m_initialCW;
+#endif
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel

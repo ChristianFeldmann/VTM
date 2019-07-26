@@ -213,6 +213,10 @@ static const int MAX_REF_LINE_IDX =                                 3; //highest
 static const int MRL_NUM_REF_LINES =                                3; //number of candidates in the array
 static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 3, 0 };
 
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+static const int PRED_REG_MIN_WIDTH =                               4;  // Minimum prediction region width for ISP subblocks
+#endif
+
 static const int NUM_LUMA_MODE =                                   67; ///< Planar + DC + 65 directional mode (4*16 + 1)
 static const int NUM_LMC_MODE =                                    1 + 2; ///< LMC + MDLM_T + MDLM_L
 static const int NUM_INTRA_MODE = (NUM_LUMA_MODE + NUM_LMC_MODE);
@@ -322,7 +326,6 @@ static const int MAX_GR_ORDER_RESIDUAL =                           10;
 
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
 
-
 static const int MMVD_REFINE_STEP =                                 8; ///< max number of distance step
 static const int MMVD_MAX_REFINE_NUM =                              (MMVD_REFINE_STEP * 4); ///< max number of candidate from a base candidate
 static const int MMVD_BASE_MV_NUM =                                 2; ///< max number of base candidate
@@ -366,7 +369,9 @@ static const int DMVR_SUBCU_WIDTH_LOG2 = 4;
 static const int DMVR_SUBCU_HEIGHT_LOG2 = 4;
 static const int MAX_NUM_SUBCU_DMVR = ((MAX_CU_SIZE * MAX_CU_SIZE) >> (DMVR_SUBCU_WIDTH_LOG2 + DMVR_SUBCU_HEIGHT_LOG2));
 static const int DMVR_NUM_ITERATION = 2;
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
 static const int BDPCM_MAX_CU_SIZE = 32;      ///<  maximum CU size for RDPCM mode
+#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.
@@ -447,6 +452,11 @@ static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1)
 static constexpr int MV_BITS =                                   18;
 static constexpr int MV_MAX =              (1 << (MV_BITS - 1)) - 1;
 static constexpr int MV_MIN =                 -(1 << (MV_BITS - 1));
+
+#if JVET_O0567_MVDRange_Constraint
+static const int MVD_MAX =                            (1 << 17) - 1;
+static const int MVD_MIN =                               -(1 << 17);
+#endif
 
 static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;

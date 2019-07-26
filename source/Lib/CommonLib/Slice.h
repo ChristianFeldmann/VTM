@@ -202,6 +202,9 @@ class ConstraintInfo
   bool              m_noTriangleConstraintFlag;
   bool              m_noLadfConstraintFlag;
   bool              m_noTransformSkipConstraintFlag;
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool              m_noBDPCMConstraintFlag;
+#endif
   bool              m_noQpDeltaConstraintFlag;
   bool              m_noDepQuantConstraintFlag;
   bool              m_noSignDataHidingConstraintFlag;
@@ -237,6 +240,9 @@ public:
     , m_noTriangleConstraintFlag (false)
     , m_noLadfConstraintFlag     (false)
     , m_noTransformSkipConstraintFlag(false)
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+    , m_noBDPCMConstraintFlag    (false)
+#endif
     , m_noQpDeltaConstraintFlag  (false)
     , m_noDepQuantConstraintFlag (false)
     , m_noSignDataHidingConstraintFlag(false)
@@ -313,6 +319,10 @@ public:
   void          setNoLadfConstraintFlag(bool bVal) { m_noLadfConstraintFlag = bVal; }
   bool          getNoTransformSkipConstraintFlag() const { return m_noTransformSkipConstraintFlag; }
   void          setNoTransformSkipConstraintFlag(bool bVal) { m_noTransformSkipConstraintFlag = bVal; }
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool          getNoBDPCMConstraintFlag() const { return m_noBDPCMConstraintFlag; }
+  void          setNoBDPCMConstraintFlag(bool bVal) { m_noBDPCMConstraintFlag = bVal; }
+#endif
   bool          getNoQpDeltaConstraintFlag() const { return m_noQpDeltaConstraintFlag; }
   void          setNoQpDeltaConstraintFlag(bool bVal) { m_noQpDeltaConstraintFlag = bVal; }
   bool          getNoDepQuantConstraintFlag() const { return m_noDepQuantConstraintFlag; }
@@ -383,8 +393,15 @@ public:
 struct ReshapeCW
 {
   std::vector<uint32_t> binCW;
+#if JVET_O0432_LMCS_ENCODER
+  int       updateCtrl;
+  int       adpOption;
+  uint32_t  initialCW;
+#endif
   int rspPicSize;
+#if !JVET_O0432_LMCS_ENCODER
   int rspIntraPeriod;
+#endif
   int rspFps;
   int rspBaseQP;
   int rspTid;
@@ -399,8 +416,15 @@ struct ChromaQpAdj
     struct {
       int CbOffset;
       int CrOffset;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+      int JointCbCrOffset;
+#endif
     } comp;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+    int offset[3];
+#else
     int offset[2]; /* two chroma components */
+#endif
   } u;
 };
 
@@ -661,9 +685,7 @@ private:
   bool              m_MMVD;
   bool              m_SBT;
   uint8_t           m_MaxSbtSize;
-#if INCLUDE_ISP_CFG_FLAG
   bool              m_ISP;
-#endif
   ChromaFormat      m_chromaFormatIdc;
 
   uint32_t              m_uiMaxTLayers;           // maximum number of temporal layers
@@ -704,6 +726,11 @@ private:
   uint32_t              m_pcmLog2MaxSize;
   uint32_t              m_uiPCMLog2MinSize;
 
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool              m_transformSkipEnabledFlag;
+  bool              m_BDPCMEnabledFlag;
+#endif
+
   // Parameter
   BitDepths         m_bitDepths;
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
@@ -713,6 +740,9 @@ private:
   bool              m_sbtmvpEnabledFlag;
   bool              m_bdofEnabledFlag;
   bool              m_fpelMmvdEnabledFlag;
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  bool              m_BdofDmvrSlicePresentFlag;
+#endif
   uint32_t              m_uiBitsForPOC;
   uint32_t              m_numLongTermRefPicSPS;
   uint32_t              m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
@@ -857,6 +887,12 @@ public:
   uint32_t                    getPCMLog2MaxSize() const                                                       { return  m_pcmLog2MaxSize;                                            }
   void                    setPCMLog2MinSize( uint32_t u )                                                     { m_uiPCMLog2MinSize = u;                                              }
   uint32_t                    getPCMLog2MinSize() const                                                       { return  m_uiPCMLog2MinSize;                                          }
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool                    getTransformSkipEnabledFlag() const                                                 { return m_transformSkipEnabledFlag;                                   }
+  void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
+  bool                    getBDPCMEnabledFlag() const                                                         { return m_BDPCMEnabledFlag;                                           }
+  void                    setBDPCMEnabledFlag( bool b )                                                       { m_BDPCMEnabledFlag = b;                                              }
+#endif
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
   void                    setNumReorderPics(int i, uint32_t tlayer)                                           { m_numReorderPics[tlayer] = i;                                        }
@@ -911,6 +947,10 @@ public:
   void                    setUseDMVR(bool b)                                                              { m_DMVR = b;    }
   bool                    getUseMMVD()const                                                               { return m_MMVD; }
   void                    setUseMMVD(bool b)                                                              { m_MMVD = b;    }
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  bool                    getBdofDmvrSlicePresentFlag()const                                              { return m_BdofDmvrSlicePresentFlag; }
+  void                    setBdofDmvrSlicePresentFlag(bool b)                                             { m_BdofDmvrSlicePresentFlag = b; }
+#endif
   uint32_t                getMaxTLayers() const                                                           { return m_uiMaxTLayers; }
   void                    setMaxTLayers( uint32_t uiMaxTLayers )                                          { CHECK( uiMaxTLayers > MAX_TLAYER, "Invalid number T-layers" ); m_uiMaxTLayers = uiMaxTLayers; }
 
@@ -960,10 +1000,8 @@ public:
   unsigned                getIBCFlag() const                                                              { return m_IBCFlag; }
   void                    setUseSBT( bool b )                                                             { m_SBT = b; }
   bool                    getUseSBT() const                                                               { return m_SBT; }
-#if INCLUDE_ISP_CFG_FLAG
   void                    setUseISP( bool b )                                                             { m_ISP = b; }
   bool                    getUseISP() const                                                               { return m_ISP; }
-#endif
   void                    setMaxSbtSize( uint8_t val )                                                    { m_MaxSbtSize = val; }
   uint8_t                 getMaxSbtSize() const                                                           { return m_MaxSbtSize; }
 
@@ -1063,11 +1101,18 @@ public:
     return m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1]; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
   }
 
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+  void                   setChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1, int cbOffset, int crOffset, int jointCbCrOffset )
+#else
   void                   setChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1, int cbOffset, int crOffset )
+#endif
   {
     CHECK(cuChromaQpOffsetIdxPlus1 == 0 || cuChromaQpOffsetIdxPlus1 > MAX_QP_OFFSET_LIST_SIZE, "Invalid chroma QP offset");
     m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.CbOffset = cbOffset; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
     m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.CrOffset = crOffset;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.JointCbCrOffset = jointCbCrOffset;
+#endif
     m_chromaQpOffsetListLen = std::max(m_chromaQpOffsetListLen, cuChromaQpOffsetIdxPlus1);
   }
 
@@ -1105,7 +1150,9 @@ private:
   bool             m_useWeightedBiPred;                 //!< Use of Weighting Bi-Prediction (B_SLICE)
   bool             m_OutputFlagPresentFlag;             //!< Indicates the presence of output_flag in slice header
   bool             m_TransquantBypassEnabledFlag;       //!< Indicates presence of cu_transquant_bypass_flag in CUs.
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   bool             m_useTransformSkip;
+#endif
   bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
 
   bool             m_loopFilterAcrossBricksEnabledFlag;
@@ -1225,8 +1272,10 @@ public:
   void                   setTransquantBypassEnabledFlag( bool b )                         { m_TransquantBypassEnabledFlag = b;            }
   bool                   getTransquantBypassEnabledFlag() const                           { return m_TransquantBypassEnabledFlag;         }
 
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   bool                   getUseTransformSkip() const                                      { return m_useTransformSkip;                    }
   void                   setUseTransformSkip( bool b )                                    { m_useTransformSkip  = b;                      }
+#endif
 
   void                   setLoopFilterAcrossBricksEnabledFlag(bool b)                     { m_loopFilterAcrossBricksEnabledFlag = b;      }
   bool                   getLoopFilterAcrossBricksEnabledFlag() const                     { return m_loopFilterAcrossBricksEnabledFlag;   }
@@ -1438,6 +1487,9 @@ private:
   uint32_t                   m_maxNumAffineMergeCand;
   uint32_t                   m_maxNumTriangleCand;
   bool                       m_disFracMMVD;
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  bool                       m_disBdofDmvrFlag;
+#endif
   double                     m_lambdas[MAX_NUM_COMPONENT];
 
   bool                       m_abEqualRef  [NUM_REF_PIC_LIST_01][MAX_NUM_REF][MAX_NUM_REF];
@@ -1685,6 +1737,10 @@ public:
   uint32_t                    getMaxNumTriangleCand() const                          { return m_maxNumTriangleCand;}
   void                        setDisFracMMVD( bool val )                             { m_disFracMMVD = val;                                          }
   bool                        getDisFracMMVD() const                                 { return m_disFracMMVD;                                         }
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+  void                        setDisBdofDmvrFlag(bool val)                           { m_disBdofDmvrFlag = val;                                          }
+  bool                        getDisBdofDmvrFlag() const                             { return m_disBdofDmvrFlag;                                         }
+#endif
   void                        setNoOutputPriorPicsFlag( bool val )                   { m_noOutputPriorPicsFlag = val;                                }
   bool                        getNoOutputPriorPicsFlag() const                       { return m_noOutputPriorPicsFlag;                               }
 

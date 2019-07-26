@@ -377,8 +377,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
   READ_SVLC(iCode, "init_qp_minus26" );                            pcPPS->setPicInitQPMinus26(iCode);
   READ_FLAG( uiCode, "constrained_intra_pred_flag" );              pcPPS->setConstrainedIntraPred( uiCode ? true : false );
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   READ_FLAG( uiCode, "transform_skip_enabled_flag" );
   pcPPS->setUseTransformSkip ( uiCode ? true : false );
+#endif
 
   READ_FLAG( uiCode, "cu_qp_delta_enabled_flag" );            pcPPS->setUseDQP( uiCode ? true : false );
   if( pcPPS->getUseDQP() )
@@ -435,7 +437,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
       const int tileColumnsMinus1 = pcPPS->getNumTileColumnsMinus1();
       const int tileRowsMinus1    = pcPPS->getNumTileRowsMinus1();
-      CHECK( ((tileColumnsMinus1 + 1) * (tileColumnsMinus1 + 1)) < 2, "tile colums * rows must be > 1 when explicitly signalled.");
+      CHECK( ((tileColumnsMinus1 + 1) * (tileRowsMinus1 + 1)) < 2, "tile colums * rows must be > 1 when explicitly signalled.");
 
       if (tileColumnsMinus1 > 0)
       {
@@ -686,7 +688,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
           PPSRExt &ppsRangeExtension = pcPPS->getPpsRangeExtension();
           CHECK(bSkipTrailingExtensionBits, "Invalid state");
 
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+          if (parameterSetManager->getSPS(pcPPS->getSPSId())->getTransformSkipEnabledFlag())
+#else
           if (pcPPS->getUseTransformSkip())
+#endif
           {
             READ_UVLC( uiCode, "log2_max_transform_skip_block_size_minus2");
             ppsRangeExtension.setLog2MaxTransformSkipBlockSize(uiCode+2);
@@ -712,12 +718,23 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
             {
               int cbOffset;
               int crOffset;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+              int jointCbCrOffset;
+#endif
               READ_SVLC(cbOffset, "cb_qp_offset_list[i]");
               CHECK(cbOffset < -12 || cbOffset > 12, "Invalid chroma QP offset");
               READ_SVLC(crOffset, "cr_qp_offset_list[i]");
               CHECK(crOffset < -12 || crOffset > 12, "Invalid chroma QP offset");
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+              READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+              CHECK(jointCbCrOffset < -12 || jointCbCrOffset > 12, "Invalid chroma QP offset");
+#endif
               // table uses +1 for index (see comment inside the function)
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+              ppsRangeExtension.setChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1, cbOffset, crOffset, jointCbCrOffset);
+#else
               ppsRangeExtension.setChromaQpOffsetListEntry(cuChromaQpOffsetIdx+1, cbOffset, crOffset);
+#endif
             }
             CHECK(ppsRangeExtension.getChromaQpOffsetListLen() != tableSizeMinus1 + 1, "Invalid chroma QP offset list lenght");
           }
@@ -1187,6 +1204,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode, "pcm_loop_filter_disable_flag" );                 pcSPS->setPCMFilterDisableFlag ( uiCode ? true : false );
   }
 
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  READ_FLAG(uiCode, "sps_transform_skip_enabled_flag"); pcSPS->setTransformSkipEnabledFlag(uiCode ? true : false);
+  if (pcSPS->getTransformSkipEnabledFlag())
+  {
+    READ_FLAG(uiCode, "sps_bdpcm_enabled_flag"); pcSPS->setBDPCMEnabledFlag(uiCode ? true : false);
+  }
+#endif
+
   if( pcSPS->getCTUSize() + 2*(1 << pcSPS->getLog2MinCodingBlockSize()) <= pcSPS->getPicWidthInLumaSamples() )
   {    
   READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );
@@ -1254,7 +1279,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
-
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG 
+  if (pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
+  {
+    READ_FLAG(uiCode, "sps_bdof_dmvr_slice_level_present_flag");             pcSPS->setBdofDmvrSlicePresentFlag(uiCode != 0);
+  }
+#endif
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
 
   READ_FLAG( uiCode,    "sps_mip_flag");                            pcSPS->setUseMIP                 ( uiCode != 0 );
@@ -1266,9 +1296,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);
-#if INCLUDE_ISP_CFG_FLAG
   READ_FLAG(uiCode, "isp_enable_flag");                            pcSPS->setUseISP(uiCode != 0);
-#endif
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   READ_FLAG( uiCode, "sps_ladf_enabled_flag" );                     pcSPS->setLadfEnabled( uiCode != 0 );
@@ -1515,6 +1543,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       pcSlice->setSliceNumBricks(uiCode + 1);
       pcSlice->setSliceCurEndBrickIdx(pcSlice->getSliceCurStartBrickIdx() + uiCode);
     }
+#if JVET_N0288_PROPOSAL1
+    else if (pps->getSingleBrickPerSliceFlag())
+    {
+      pcSlice->setSliceNumBricks(1);
+    }
+#endif
     pcSlice->setSliceCurStartCtuTsAddr(pcSlice->getSliceCurStartBrickIdx());
 
     for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
@@ -1985,6 +2019,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         READ_FLAG( uiCode, "tile_group_fracmmvd_disabled_flag" );
         pcSlice->setDisFracMMVD( uiCode ? true : false );
       }
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+      if (sps->getBdofDmvrSlicePresentFlag())
+      {
+        READ_FLAG(uiCode, "tile_group_bdof_dmvr_disabled_flag");
+        pcSlice->setDisBdofDmvrFlag(uiCode ? true : false);
+      }
+#endif
       if (sps->getUseTriangle() && pcSlice->getMaxNumMergeCand() >= 2)
       {
         READ_UVLC(uiCode, "max_num_merge_cand_minus_max_num_triangle_cand");
@@ -2239,6 +2280,9 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol, "no_triangle_constraint_flag");                cinfo->setNoTriangleConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_ladf_constraint_flag");                    cinfo->setNoLadfConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_transform_skip_constraint_flag");          cinfo->setNoTransformSkipConstraintFlag(symbol > 0 ? true : false);
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  READ_FLAG(symbol, "no_bdpcm_constraint_flag");                   cinfo->setNoBDPCMConstraintFlag(symbol > 0 ? true : false);
+#endif
   READ_FLAG(symbol, "no_qp_delta_constraint_flag");                cinfo->setNoQpDeltaConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_dep_quant_constraint_flag");               cinfo->setNoDepQuantConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_sign_data_hiding_constraint_flag");        cinfo->setNoSignDataHidingConstraintFlag(symbol > 0 ? true : false);

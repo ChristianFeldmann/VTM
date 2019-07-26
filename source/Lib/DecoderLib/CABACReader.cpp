@@ -1642,6 +1642,9 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
   {
     RefPicList eCurRefList = (RefPicList)(pu.cu->smvdMode - 1);
     pu.mvd[1 - eCurRefList].set( -pu.mvd[eCurRefList].hor, -pu.mvd[eCurRefList].ver );
+#if JVET_O0567_MVDRange_Constraint
+    CHECK(!((pu.mvd[1 - eCurRefList].getHor() >= MVD_MIN) && (pu.mvd[1 - eCurRefList].getHor() <= MVD_MAX)) || !((pu.mvd[1 - eCurRefList].getVer() >= MVD_MIN) && (pu.mvd[1 - eCurRefList].getVer() <= MVD_MAX)), "Illegal MVD value");
+#endif
     pu.refIdx[1 - eCurRefList] = pu.cs->slice->getSymRefIdx( 1 - eCurRefList );
   }
 
@@ -2390,6 +2393,9 @@ void CABACReader::mvd_coding( Mv &rMvd )
     }
   }
   rMvd = Mv(horAbs, verAbs);
+#if JVET_O0567_MVDRange_Constraint
+  CHECK(!((horAbs >= MVD_MIN) && (horAbs <= MVD_MAX)) || !((verAbs >= MVD_MIN) && (verAbs <= MVD_MAX)), "Illegal MVD value");
+#endif
 }
 
 

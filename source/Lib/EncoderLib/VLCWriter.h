@@ -137,7 +137,7 @@ public:
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );
   void  codeScalingList         ( const ScalingList &scalingList );
 
-  void alfFilter( const AlfSliceParam& alfSliceParam, const bool isChroma );
+  void alfFilter( const AlfParam& alfParam, const bool isChroma );
 
 private:
   void xWriteTruncBinCode( uint32_t uiSymbol, const int uiMaxSymbol );

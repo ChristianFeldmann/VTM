@@ -165,7 +165,7 @@ public:
   void  parseScalingList    ( ScalingList* scalingList );
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t sizeId, uint32_t listId);
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
-  void alfFilter( AlfSliceParam& alfSliceParam, const bool isChroma );
+  void alfFilter( AlfParam& alfParam, const bool isChroma );
 
 private:
   int truncatedUnaryEqProb( const int maxSymbol );

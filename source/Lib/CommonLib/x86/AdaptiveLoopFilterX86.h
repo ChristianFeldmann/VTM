@@ -353,7 +353,7 @@ static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplac
 }
 
 template<X86_VEXT vext>
-static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
+static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, const short* filterSet, const short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
 {
   const bool bChroma = isChroma( compId );
 
@@ -382,8 +382,8 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
   const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4;
   const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4;
 
-  short *coef[2] = { filterSet, filterSet };
-  short *clip[2] = { fClipSet, fClipSet };
+  const short *coef[2] = { filterSet, filterSet };
+  const short *clip[2] = { fClipSet, fClipSet };
 
   int transposeIdx[2] = {0, 0};
   const int clsSizeY = 4;
@@ -752,7 +752,7 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
 }
 
 template<X86_VEXT vext>
-static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs,  int vbCTUHeight, int vbPos)
+static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, const short* filterSet, const short* fClipSet, const ClpRng& clpRng, CodingStructure& cs,  int vbCTUHeight, int vbPos)
 {
   const bool bChroma = isChroma( compId );
 
@@ -780,8 +780,8 @@ static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
   const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4, *pImgYPad5, *pImgYPad6;
   const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
-  short *coef[2] = { filterSet, filterSet };
-  short *clip[2] = { fClipSet, fClipSet };
+  const short *coef[2] = { filterSet, filterSet };
+  const short *clip[2] = { fClipSet, fClipSet };
 
   int transposeIdx[2] = {0, 0};
   const int clsSizeY = 4;

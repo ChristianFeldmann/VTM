@@ -362,7 +362,7 @@ void AdaptiveLoopFilter::reconstructCoeffAPSs(CodingStructure& cs, bool luma, bo
 {
   //luma
   APS** aps = cs.slice->getAlfAPSs();
-  AlfSliceParam alfSliceParamTmp;
+  AlfParam alfParamTmp;
   APS* curAPS;
   if (luma)
   {
@@ -371,8 +371,8 @@ void AdaptiveLoopFilter::reconstructCoeffAPSs(CodingStructure& cs, bool luma, bo
       int apsIdx = cs.slice->getTileGroupApsIdLuma()[i];
       curAPS = aps[apsIdx];
       CHECK(curAPS == NULL, "invalid APS");
-      alfSliceParamTmp = curAPS->getAlfAPSParam();
-      reconstructCoeff(alfSliceParamTmp, CHANNEL_TYPE_LUMA, isRdo, true);
+      alfParamTmp = curAPS->getAlfAPSParam();
+      reconstructCoeff(alfParamTmp, CHANNEL_TYPE_LUMA, isRdo, true);
       memcpy(m_coeffApsLuma[i], m_coeffFinal, sizeof(m_coeffFinal));
       memcpy(m_clippApsLuma[i], m_clippFinal, sizeof(m_clippFinal));
     }
@@ -383,24 +383,24 @@ void AdaptiveLoopFilter::reconstructCoeffAPSs(CodingStructure& cs, bool luma, bo
   {
     int apsIdxChroma = cs.slice->getTileGroupApsIdChroma();
     curAPS = aps[apsIdxChroma];
-    alfSliceParamTmp = curAPS->getAlfAPSParam();
-    reconstructCoeff(alfSliceParamTmp, CHANNEL_TYPE_CHROMA, isRdo, true);
+    alfParamTmp = curAPS->getAlfAPSParam();
+    reconstructCoeff(alfParamTmp, CHANNEL_TYPE_CHROMA, isRdo, true);
   }
 }
 
-void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, const bool isRdo, const bool isRedo )
+void AdaptiveLoopFilter::reconstructCoeff( AlfParam& alfParam, ChannelType channel, const bool isRdo, const bool isRedo )
 {
   int factor = isRdo ? 0 : (1 << (m_NUM_BITS - 1));
   AlfFilterType filterType = isLuma( channel ) ? ALF_FILTER_7 : ALF_FILTER_5;
   int numClasses = isLuma( channel ) ? MAX_NUM_ALF_CLASSES : 1;
   int numCoeff = filterType == ALF_FILTER_5 ? 7 : 13;
   int numCoeffMinus1 = numCoeff - 1;
-  int numFilters = isLuma( channel ) ? alfSliceParam.numLumaFilters : 1;
-  short* coeff = isLuma( channel ) ? alfSliceParam.lumaCoeff : alfSliceParam.chromaCoeff;
-  short* clipp = isLuma( channel ) ? alfSliceParam.lumaClipp : alfSliceParam.chromaClipp;
+  int numFilters = isLuma( channel ) ? alfParam.numLumaFilters : 1;
+  short* coeff = isLuma( channel ) ? alfParam.lumaCoeff : alfParam.chromaCoeff;
+  short* clipp = isLuma( channel ) ? alfParam.lumaClipp : alfParam.chromaClipp;
 
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-  if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag && isLuma( channel ) )
+  if( alfParam.alfLumaCoeffDeltaPredictionFlag && isLuma( channel ) )
   {
     for( int i = 1; i < numFilters; i++ )
     {
@@ -421,8 +421,8 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
   {
     for( int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx )
     {
-      m_chromaCoeffFinal[coeffIdx] = alfSliceParam.chromaCoeff[coeffIdx];
-      int clipIdx = alfSliceParam.nonLinearFlag[channel] ? clipp[coeffIdx] : 0;
+      m_chromaCoeffFinal[coeffIdx] = alfParam.chromaCoeff[coeffIdx];
+      int clipIdx = alfParam.nonLinearFlag[channel] ? clipp[coeffIdx] : 0;
       m_chromaClippFinal[coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
     }
     m_chromaCoeffFinal[numCoeffMinus1] = factor;
@@ -433,10 +433,10 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
 
   for( int classIdx = 0; classIdx < numClasses; classIdx++ )
   {
-    int filterIdx = alfSliceParam.filterCoeffDeltaIdx[classIdx];
+    int filterIdx = alfParam.filterCoeffDeltaIdx[classIdx];
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-    int fixedFilterIdx = alfSliceParam.fixedFilterSetIndex;
-    if (fixedFilterIdx > 0 && alfSliceParam.fixedFilterIdx[classIdx] > 0)
+    int fixedFilterIdx = alfParam.fixedFilterSetIndex;
+    if (fixedFilterIdx > 0 && alfParam.fixedFilterIdx[classIdx] > 0)
     {
       fixedFilterIdx = m_classToFilterMapping[fixedFilterIdx - 1][classIdx];
     }
@@ -460,13 +460,13 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
     m_clippFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = isRdo ? 0 : m_alfClippingValues[channel][0];
     for( int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx )
     {
-      int clipIdx = alfSliceParam.nonLinearFlag[channel] ? (clipp + filterIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] : 0;
+      int clipIdx = alfParam.nonLinearFlag[channel] ? (clipp + filterIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] : 0;
       (m_clippFinal + classIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
     }
   }
 
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-  if(isRedo && alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
+  if(isRedo && alfParam.alfLumaCoeffDeltaPredictionFlag )
   {
     for( int i = numFilters - 1; i > 0; i-- )
     {
@@ -889,7 +889,7 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
 }
 
 template<AlfFilterType filtType>
-void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
+void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, const short* filterSet, const short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
 {
   const bool bChroma = isChroma( compId );
   if( bChroma )
@@ -918,8 +918,8 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf 
   const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4, *pImgYPad5, *pImgYPad6;
   const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
-  short *coef = filterSet;
-  short *clip = fClipSet;
+  const short *coef = filterSet;
+  const short *clip = fClipSet;
 
   const int shift = m_NUM_BITS - 1;
 

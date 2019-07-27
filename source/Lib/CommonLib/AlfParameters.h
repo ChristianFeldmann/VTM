@@ -133,11 +133,21 @@ struct AlfFilterShape
 struct AlfParam
 {
   bool                         enabledFlag[MAX_NUM_COMPONENT];                          // alf_slice_enable_flag, alf_chroma_idc
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE][MAX_NUM_ALF_ALTERNATIVES_CHROMA]; // alf_[luma/chroma]_clip_flag
+#else
   bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE];                     // alf_nonlinear_enable_flag[Luma/Chroma]
+#endif
   short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
   short                        lumaClipp[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_clipp_luma_[i][j]
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  int                          numAlternativesChroma;                                                  // alf_chroma_num_alts_minus_one + 1
+  short                        chromaCoeff[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF]; // alf_coeff_chroma[i]
+  short                        chromaClipp[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF]; // alf_clipp_chroma[i]
+#else
   short                        chromaCoeff[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_coeff_chroma[i]
   short                        chromaClipp[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_clipp_chroma[i]
+#endif
   short                        filterCoeffDeltaIdx[MAX_NUM_ALF_CLASSES];                // filter_coeff_delta[i]
   bool                         alfLumaCoeffFlag[MAX_NUM_ALF_CLASSES];                   // alf_luma_coeff_flag[i]
   int                          numLumaFilters;                                          // number_of_filters_minus1 + 1
@@ -165,6 +175,9 @@ struct AlfParam
     std::memset( nonLinearFlag, false, sizeof( nonLinearFlag ) );
     std::memset( lumaCoeff, 0, sizeof( lumaCoeff ) );
     std::memset( lumaClipp, 0, sizeof( lumaClipp ) );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    numAlternativesChroma = 1;
+#endif
     std::memset( chromaCoeff, 0, sizeof( chromaCoeff ) );
     std::memset( chromaClipp, 0, sizeof( chromaClipp ) );
     std::memset( filterCoeffDeltaIdx, 0, sizeof( filterCoeffDeltaIdx ) );
@@ -189,6 +202,9 @@ struct AlfParam
     std::memcpy( nonLinearFlag, src.nonLinearFlag, sizeof( nonLinearFlag ) );
     std::memcpy( lumaCoeff, src.lumaCoeff, sizeof( lumaCoeff ) );
     std::memcpy( lumaClipp, src.lumaClipp, sizeof( lumaClipp ) );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    numAlternativesChroma = src.numAlternativesChroma;
+#endif
     std::memcpy( chromaCoeff, src.chromaCoeff, sizeof( chromaCoeff ) );
     std::memcpy( chromaClipp, src.chromaClipp, sizeof( chromaClipp ) );
     std::memcpy( filterCoeffDeltaIdx, src.filterCoeffDeltaIdx, sizeof( filterCoeffDeltaIdx ) );

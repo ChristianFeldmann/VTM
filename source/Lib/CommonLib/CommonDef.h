@@ -176,6 +176,9 @@ static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 static const int MIP_MAX_WIDTH =                                   64;
 static const int MIP_MAX_HEIGHT =                                  64;
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+static const int MAX_NUM_ALF_ALTERNATIVES_CHROMA =                  8;
+#endif
 static const int MAX_NUM_ALF_CLASSES         =                     25;
 static const int MAX_NUM_ALF_LUMA_COEFF      =                     13;
 static const int MAX_NUM_ALF_CHROMA_COEFF    =                      7;

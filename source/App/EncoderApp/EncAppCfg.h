@@ -324,6 +324,9 @@ protected:
   bool      m_contentBasedFastQtbt;
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  unsigned  m_maxNumAlfAlternativesChroma;
+#endif
   bool      m_MIP;
   bool      m_useFastMIP;
 

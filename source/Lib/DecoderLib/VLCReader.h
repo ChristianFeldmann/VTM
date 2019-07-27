@@ -165,7 +165,11 @@ public:
   void  parseScalingList    ( ScalingList* scalingList );
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t sizeId, uint32_t listId);
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  void alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx );
+#else
   void alfFilter( AlfParam& alfParam, const bool isChroma );
+#endif
 
 private:
   int truncatedUnaryEqProb( const int maxSymbol );

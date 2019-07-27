@@ -137,7 +137,11 @@ public:
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );
   void  codeScalingList         ( const ScalingList &scalingList );
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  void alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx );
+#else
   void alfFilter( const AlfParam& alfParam, const bool isChroma );
+#endif
 
 private:
   void xWriteTruncBinCode( uint32_t uiSymbol, const int uiMaxSymbol );

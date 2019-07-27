@@ -115,19 +115,36 @@ protected:
   static const int             m_classToFilterMapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES];
   static const int             m_fixedFilterSetCoeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF];
   short                        m_fixedFilterSetCoeffDec[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  short                        m_coeffApsLuma[ALF_CTB_MAX_NUM_APS][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
+  short                        m_clippApsLuma[ALF_CTB_MAX_NUM_APS][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
+#else
   short                        m_coeffApsLuma[6][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
   short                        m_clippApsLuma[6][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
+#endif
   short                        m_clipDefault[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
   bool                         m_created = false;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  short                        m_chromaCoeffFinal[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
+  AlfParam*                    m_alfParamChroma;
+#else
   short                        m_chromaCoeffFinal[MAX_NUM_ALF_LUMA_COEFF];
+#endif
   Pel                          m_alfClippingValues[MAX_NUM_CHANNEL_TYPE][MaxAlfNumClippingValues];
   std::vector<AlfFilterShape>  m_filterShapes[MAX_NUM_CHANNEL_TYPE];
   AlfClassifier**              m_classifier;
   short                        m_coeffFinal[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
   short                        m_clippFinal[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  short                        m_chromaClippFinal[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
+#else
   short                        m_chromaClippFinal[MAX_NUM_ALF_LUMA_COEFF];
+#endif
   int**                        m_laplacian[NUM_DIRECTIONS];
   uint8_t*                     m_ctuEnableFlag[MAX_NUM_COMPONENT];
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  uint8_t*                     m_ctuAlternative[MAX_NUM_COMPONENT];
+#endif
   PelStorage                   m_tempBuf;
   PelStorage                   m_tempBuf2;
   int                          m_inputBitDepth[MAX_NUM_CHANNEL_TYPE];

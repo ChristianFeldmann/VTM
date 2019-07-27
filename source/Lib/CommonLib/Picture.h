@@ -343,6 +343,19 @@ public:
       m_alfCtbFilterIndex[i] = 0;
     }
   }
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  std::vector<uint8_t> m_alfCtuAlternative[MAX_NUM_COMPONENT];
+  std::vector<uint8_t>& getAlfCtuAlternative( int compIdx ) { return m_alfCtuAlternative[compIdx]; }
+  uint8_t* getAlfCtuAlternativeData( int compIdx ) { return m_alfCtuAlternative[compIdx].data(); }
+  void resizeAlfCtuAlternative( int numEntries )
+  {
+    for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
+    {
+      m_alfCtuAlternative[compIdx].resize( numEntries );
+      std::fill( m_alfCtuAlternative[compIdx].begin(), m_alfCtuAlternative[compIdx].end(), 0 );
+    }
+  }
+#endif
 };
 
 int calcAndPrintHashStatus(const CPelUnitBuf& pic, const class SEIDecodedPictureHash* pictureHashSEI, const BitDepths &bitDepths, const MsgLevel msgl);

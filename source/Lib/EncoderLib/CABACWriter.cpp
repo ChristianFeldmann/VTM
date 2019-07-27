@@ -176,6 +176,16 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
       {
         codeAlfCtuFilterIndex(cs, ctuRsAddr, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y));
       }
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+      if (isChroma(ComponentID(compIdx)))
+      {
+        uint8_t* ctbAlfFlag = cs.slice->getTileGroupAlfEnabledFlag((ComponentID)compIdx) ? cs.slice->getPic()->getAlfCtuEnableFlag( compIdx ) : nullptr;
+        if( ctbAlfFlag && ctbAlfFlag[ctuRsAddr] )
+        {
+          codeAlfCtuAlternative( cs, ctuRsAddr, compIdx );
+        }
+      }
+#endif
     }
   }
 
@@ -3544,5 +3554,58 @@ void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr,
     xWriteTruncBinCode(filterSetIdx, NUM_FIXED_FILTER_SETS);
   }
 }
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+void CABACWriter::codeAlfCtuAlternatives( CodingStructure& cs, ChannelType channel, AlfParam* alfParam)
+{
+  if( isChroma( channel ) )
+  {
+    if (alfParam->enabledFlag[COMPONENT_Cb])
+      codeAlfCtuAlternatives( cs, COMPONENT_Cb, alfParam );
+    if (alfParam->enabledFlag[COMPONENT_Cr])
+      codeAlfCtuAlternatives( cs, COMPONENT_Cr, alfParam );
+  }
+}
+void CABACWriter::codeAlfCtuAlternatives( CodingStructure& cs, ComponentID compID, AlfParam* alfParam)
+{
+  if( compID == COMPONENT_Y )
+    return;
+  uint32_t numCTUs = cs.pcv->sizeInCtus;
+  uint8_t* ctbAlfFlag = cs.slice->getPic()->getAlfCtuEnableFlag( compID );
+
+  for( int ctuIdx = 0; ctuIdx < numCTUs; ctuIdx++ )
+  {
+    if( ctbAlfFlag[ctuIdx] )
+    {
+      codeAlfCtuAlternative( cs, ctuIdx, compID, alfParam );
+    }
+  }
+}
+
+void CABACWriter::codeAlfCtuAlternative( CodingStructure& cs, uint32_t ctuRsAddr, const int compIdx, const AlfParam* alfParam)
+{
+  if( compIdx == COMPONENT_Y )
+    return;
+  int apsIdx = alfParam ? 0 : cs.slice->getTileGroupApsIdChroma();
+  const AlfParam& alfParamRef = alfParam ? (*alfParam) : cs.slice->getAlfAPSs()[apsIdx]->getAlfAPSParam();
+
+  if( alfParam || (cs.sps->getALFEnabledFlag() && cs.slice->getTileGroupAlfEnabledFlag( (ComponentID)compIdx )) )
+  {
+    uint8_t* ctbAlfFlag = cs.slice->getPic()->getAlfCtuEnableFlag( compIdx );
+
+    if( ctbAlfFlag[ctuRsAddr] )
+    {
+      const int numAlts = alfParamRef.numAlternativesChroma;
+      uint8_t* ctbAlfAlternative = cs.slice->getPic()->getAlfCtuAlternativeData( compIdx );
+      unsigned numOnes = ctbAlfAlternative[ctuRsAddr];
+      assert( ctbAlfAlternative[ctuRsAddr] < numAlts );
+      for( int i = 0; i < numOnes; ++i )
+        m_BinEncoder.encodeBin( 1, Ctx::ctbAlfAlternative( compIdx-1 ) );
+      if( numOnes < numAlts-1 )
+        m_BinEncoder.encodeBin( 0, Ctx::ctbAlfAlternative( compIdx-1 ) );
+    }
+  }
+}
+
+#endif
 
 //! \}

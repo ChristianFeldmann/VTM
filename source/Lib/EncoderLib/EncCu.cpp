@@ -702,16 +702,16 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
       {
 #if JVET_O0057_ALTHPELIF
         const bool skipAltHpelIF = ( int( ( currTestMode.opts & ETO_IMV ) >> ETO_IMV_SHIFT ) == 4 ) && ( bestIntPelCost > 1.25 * bestCS->cost );
-        if( !skipAltHpelIF )
+        if (!skipAltHpelIF)
         {
 #endif
-        tempCS->bestCS = bestCS;
-          xCheckRDCostInterIMV( tempCS, bestCS, partitioner, currTestMode
+          tempCS->bestCS = bestCS;
 #if JVET_O0057_ALTHPELIF
-                              , bestIntPelCost
+          xCheckRDCostInterIMV(tempCS, bestCS, partitioner, currTestMode, bestIntPelCost);
+#else
+          xCheckRDCostInterIMV(tempCS, bestCS, partitioner, currTestMode);
 #endif
-                              );
-        tempCS->bestCS = nullptr;
+          tempCS->bestCS = nullptr;
 #if JVET_O0057_ALTHPELIF
         }
 #endif
@@ -3556,12 +3556,11 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 
 
 
-
-bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode
 #if JVET_O0057_ALTHPELIF
-, double &bestIntPelCost 
+bool EncCu::xCheckRDCostInterIMV(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, double &bestIntPelCost)
+#else
+bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
 #endif
-)
 {
   int iIMV = int( ( encTestMode.opts & ETO_IMV ) >> ETO_IMV_SHIFT );
   m_pcInterSearch->setAffineModeSelected(false);

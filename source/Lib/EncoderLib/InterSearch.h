@@ -595,11 +595,11 @@ public:
     );
 protected:
 
-  void xExtDIFUpSamplingH         ( CPelBuf* pcPattern
 #if JVET_O0057_ALTHPELIF
-    , bool useAltHpelIf
+  void xExtDIFUpSamplingH(CPelBuf* pcPattern, bool useAltHpelIf);
+#else
+  void xExtDIFUpSamplingH         ( CPelBuf* pcPattern);
 #endif
-);
   void xExtDIFUpSamplingQ         ( CPelBuf* pcPatternKey, Mv halfPelRef );
   uint32_t xDetermineBestMvp      ( PredictionUnit& pu, Mv acMvTemp[3], int& mvpIdx, const AffineAMVPInfo& aamvpi );
   // -------------------------------------------------------------------------------------------------------------------

@@ -783,6 +783,16 @@ const CtxSet ContextSetCfg::ctbAlfFlag = ContextSetCfg::addCtxSet
   {   0,   0,   0,   0,   0,   0,   0,   0,   0, },
 });
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+const CtxSet ContextSetCfg::ctbAlfAlternative = ContextSetCfg::addCtxSet
+({ // Cb,  Cr
+  { 100, 100, }, // B / P (cabac_init_flag)
+  { 153, 153, }, // P / B (cabac_init_flag)
+  { 200, 200, }, // I
+  {   0,   0, }, // shiftIdx
+});
+
+#endif
 const CtxSet ContextSetCfg::AlfUseLatestFilt = ContextSetCfg::addCtxSet
 ({
   { 169, },
@@ -907,7 +917,11 @@ const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_Ini
 // combined sets
 const CtxSet ContextSetCfg::Sao = { ContextSetCfg::SaoMergeFlag, ContextSetCfg::SaoTypeIdx };
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::ctbAlfAlternative, ContextSetCfg::AlfUseLatestFilt, ContextSetCfg::AlfUseTemporalFilt };
+#else
 const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::AlfUseLatestFilt, ContextSetCfg::AlfUseTemporalFilt };
+#endif
 
 template <class BinProbModel>
 CtxStore<BinProbModel>::CtxStore()

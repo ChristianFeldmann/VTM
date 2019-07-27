@@ -799,6 +799,9 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
   uint32_t  code;
 
   AlfParam param = aps->getAlfAPSParam();
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  param.reset();
+#endif
   param.enabledFlag[COMPONENT_Y] = param.enabledFlag[COMPONENT_Cb] = param.enabledFlag[COMPONENT_Cr] = true;
   READ_FLAG(code, "alf_luma_new_filter");
   param.newFilterFlag[CHANNEL_TYPE_LUMA] = code;
@@ -809,7 +812,11 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
   if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
   {
     READ_FLAG(code, "alf_luma_clip");
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    param.nonLinearFlag[CHANNEL_TYPE_LUMA][0] = code ? true : false;
+#else
     param.nonLinearFlag[CHANNEL_TYPE_LUMA] = code ? true : false;
+#endif
     xReadTruncBinCode(code, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
     param.numLumaFilters = code + 1;
     if (param.numLumaFilters > 1)
@@ -844,13 +851,33 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
       }
     }
 #endif
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    alfFilter( param, false, 0 );
+#else
     alfFilter(param, false);
+#endif
   }
   if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
   {
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+#if MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1
+    READ_UVLC( code, "alf_chroma_num_alts_minus1" );
+#else
+    code = 0;
+#endif
+    param.numAlternativesChroma = code + 1;
+
+    for( int altIdx=0; altIdx < param.numAlternativesChroma; ++altIdx )
+    {
+      READ_FLAG( code, "alf_nonlinear_enable_flag_chroma" );
+      param.nonLinearFlag[CHANNEL_TYPE_CHROMA][altIdx] = code ? true : false;
+      alfFilter( param, true, altIdx );
+    }
+#else
     READ_FLAG(code, "alf_luma_clip");
     param.nonLinearFlag[CHANNEL_TYPE_CHROMA] = code ? true : false;
-      alfFilter(param, true);
+    alfFilter(param, true);
+#endif
   }
   aps->setAlfAPSParam(param);
 }
@@ -2634,7 +2661,11 @@ int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
   return nr;
 }
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx )
+#else
 void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma )
+#endif
 {
   uint32_t code;
   if( !isChroma )
@@ -2678,8 +2709,14 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma )
   static int kMinTab[MAX_NUM_ALF_COEFF];
 #endif
   const int numFilters = isChroma ? 1 : alfParam.numLumaFilters;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  short* coeff = isChroma ? alfParam.chromaCoeff[altIdx] : alfParam.lumaCoeff;
+  short* clipp = isChroma ? alfParam.chromaClipp[altIdx] : alfParam.lumaClipp;
+#else
   short* coeff = isChroma ? alfParam.chromaCoeff : alfParam.lumaCoeff;
   short* clipp = isChroma ? alfParam.chromaClipp : alfParam.lumaClipp;
+#endif
+
 #if !JVET_O0216_ALF_COEFF_EG3
   for( int idx = 0; idx < maxGolombIdx; idx++ )
   {
@@ -2721,7 +2758,11 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma )
   }
 
   // Clipping values coding
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  if ( alfParam.nonLinearFlag[isChroma][altIdx] )
+#else
   if ( alfParam.nonLinearFlag[isChroma] )
+#endif
   {
 #if !JVET_O0064_SIMP_ALF_CLIP_CODING
     READ_UVLC( code, "clip_min_golomb_order" );

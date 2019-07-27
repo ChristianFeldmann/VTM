@@ -2071,6 +2071,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if( pcSlice->getSPS()->getALFEnabledFlag() )
     {
       pcPic->resizeAlfCtuEnableFlag( numberOfCtusInFrame );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+      pcPic->resizeAlfCtuAlternative( numberOfCtusInFrame );
+#endif
       pcPic->resizeAlfCtbFilterIndex(numberOfCtusInFrame);
     }
 

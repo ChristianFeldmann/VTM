@@ -173,6 +173,24 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
         {
           readAlfCtuFilterIndex(cs, ctuRsAddr);
         }
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+        if( isChroma( (ComponentID)compIdx ) )
+        {
+          int apsIdx = cs.slice->getTileGroupApsIdChroma();
+          CHECK(cs.slice->getAlfAPSs()[apsIdx] == nullptr, "APS not initialized");
+          const AlfParam& alfParam = cs.slice->getAlfAPSs()[apsIdx]->getAlfAPSParam();
+          const int numAlts = alfParam.numAlternativesChroma;
+          uint8_t* ctbAlfAlternative = cs.slice->getPic()->getAlfCtuAlternativeData( compIdx );
+          ctbAlfAlternative[ctuRsAddr] = 0;
+          if( ctbAlfFlag[ctuRsAddr] )
+          {
+            uint8_t decoded = 0;
+            while( decoded < numAlts-1 && m_BinDecoder.decodeBin( Ctx::ctbAlfAlternative( compIdx-1 ) ) )
+              ++ decoded;
+            ctbAlfAlternative[ctuRsAddr] = decoded;
+          }
+        }
+#endif
       }
     }
   }

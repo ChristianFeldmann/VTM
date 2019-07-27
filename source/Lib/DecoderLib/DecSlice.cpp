@@ -98,6 +98,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   {
     cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
     cs.picture->resizeAlfCtbFilterIndex(cs.pcv->sizeInCtus);
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    cs.picture->resizeAlfCtuAlternative( cs.pcv->sizeInCtus );
+#endif
   }
 
   const unsigned numSubstreams = slice->getNumberOfSubstreamSizes() + 1;

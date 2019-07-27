@@ -329,6 +329,9 @@ protected:
   bool      m_contentBasedFastQtbt;
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  unsigned  m_maxNumAlfAlternativesChroma;
+#endif
   bool      m_MIP;
   bool      m_useFastMIP;
 
@@ -938,6 +941,10 @@ public:
   bool      getUseNonLinearAlfLuma          () const         { return m_useNonLinearAlfLuma; }
   void      setUseNonLinearAlfChroma        ( bool b )       { m_useNonLinearAlfChroma = b; }
   bool      getUseNonLinearAlfChroma        () const         { return m_useNonLinearAlfChroma; }
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  void      setMaxNumAlfAlternativesChroma  ( uint32_t u )   { m_maxNumAlfAlternativesChroma = u; }
+  uint32_t  getMaxNumAlfAlternativesChroma  () const         { return m_maxNumAlfAlternativesChroma; }
+#endif
   void      setUseMIP                       ( bool b )       { m_MIP = b; }
   bool      getUseMIP                       () const         { return m_MIP; }
   void      setUseFastMIP                   ( bool b )       { m_useFastMIP = b; }

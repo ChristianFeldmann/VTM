@@ -231,8 +231,15 @@ public:
 private:
   const EncCfg*          m_encCfg;
   AlfCovariance***       m_alfCovariance[MAX_NUM_COMPONENT];          // [compIdx][shapeIdx][ctbAddr][classIdx]
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  AlfCovariance**        m_alfCovarianceFrame[MAX_NUM_CHANNEL_TYPE];   // [CHANNEL][shapeIdx][lumaClassIdx/chromaAltIdx]
+  uint8_t*               m_ctuEnableFlagTmp[MAX_NUM_COMPONENT];
+  uint8_t*               m_ctuEnableFlagTmp2[MAX_NUM_COMPONENT];
+  uint8_t*               m_ctuAlternativeTmp[MAX_NUM_COMPONENT];
+#else
   AlfCovariance**        m_alfCovarianceFrame[MAX_NUM_CHANNEL_TYPE];   // [CHANNEL][shapeIdx][classIdx]
   uint8_t*                 m_ctuEnableFlagTmp[MAX_NUM_COMPONENT];
+#endif
 
   //for RDO
   AlfParam               m_alfParamTemp;
@@ -244,8 +251,13 @@ private:
   double                 m_lambda[MAX_NUM_COMPONENT];
   const double           FracBitsScale = 1.0 / double( 1 << SCALE_BITS );
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  int**                  m_filterCoeffSet; // [lumaClassIdx/chromaAltIdx][coeffIdx]
+  int**                  m_filterClippSet; // [lumaClassIdx/chromaAltIdx][coeffIdx]
+#else
   int**                  m_filterCoeffSet;
   int**                  m_filterClippSet;
+#endif
   int**                  m_diffFilterCoeff;
 #if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
   int                    m_kMinTab[MAX_NUM_ALF_LUMA_COEFF];
@@ -297,7 +309,11 @@ private:
   double mergeFiltersAndCost( AlfParam& alfParam, AlfFilterShape& alfShape, AlfCovariance* covFrame, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], int& uiCoeffBits );
 
   void   getFrameStats( ChannelType channel, int iShapeIdx );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  void   getFrameStat( AlfCovariance* frameCov, AlfCovariance** ctbCov, uint8_t* ctbEnableFlags, uint8_t* ctbAltIdx, const int numClasses, int altIdx );
+#else
   void   getFrameStat( AlfCovariance* frameCov, AlfCovariance** ctbCov, uint8_t* ctbEnableFlags, const int numClasses );
+#endif
   void   deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnitBuf& recYuv, CodingStructure& cs );
   void   getBlkStats(AlfCovariance* alfCovariace, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, Pel* rec, const int recStride, const CompArea& areaDst, const CompArea& area, const ChannelType channel, int vbCTUHeight, int vbPos);
   void   calcCovariance(int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride, const AlfFilterShape& shape, const int transposeIdx, const ChannelType channel, int vbDistance);
@@ -337,7 +353,11 @@ private:
   int    lengthFilterClipps( AlfFilterShape& alfShape, const int numFilters, int **FilterCoeff, int* kMinTab );
 #endif
   double getDistForce0( AlfFilterShape& alfShape, const int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2], bool* codedVarBins );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  int    getChromaCoeffRate( AlfParam& alfParam, int altIdx );
+#else
   int    getCoeffRate( AlfParam& alfParam, bool isChroma );
+#endif
 
   double getUnfilteredDistortion( AlfCovariance* cov, ChannelType channel );
   double getUnfilteredDistortion( AlfCovariance* cov, const int numClasses );
@@ -347,6 +367,12 @@ private:
   void setEnableFlag( AlfParam& alfSlicePara, ChannelType channel, uint8_t** ctuFlags );
   void setCtuEnableFlag( uint8_t** ctuFlags, ChannelType channel, uint8_t val );
   void copyCtuEnableFlag( uint8_t** ctuFlagsDst, uint8_t** ctuFlagsSrc, ChannelType channel );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  void initCtuAlternativeChroma( uint8_t* ctuAlts[MAX_NUM_COMPONENT] );
+  void setCtuAlternativeChroma( uint8_t* ctuAlts[MAX_NUM_COMPONENT], uint8_t val );
+  void copyCtuAlternativeChroma( uint8_t* ctuAltsDst[MAX_NUM_COMPONENT], uint8_t* ctuAltsSrc[MAX_NUM_COMPONENT] );
+  int getMaxNumAlternativesChroma( );
+#endif
 };
 
 

@@ -205,6 +205,9 @@ void Slice::initSlice()
   m_jointCbCrSignFlag    = false;
 #endif
   m_enableTMVPFlag       = true;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  resetTileGroupAlfEnabledFlag();
+#endif
 }
 
 void Slice::setDefaultClpRng( const SPS& sps )

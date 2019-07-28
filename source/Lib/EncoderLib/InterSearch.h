@@ -322,6 +322,9 @@ public:
 #endif
   void resetSavedAffineMotion();
   void storeAffineMotion( Mv acAffineMv[2][3], int16_t affineRefIdx[2], EAffineModel affineType, int gbiIdx );
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+  bool searchBv(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xBv, int yBv, int ctuSize);
+#endif
 protected:
 
   /// sub-function for motion vector refinement used in fractional-pel accuracy

@@ -846,7 +846,11 @@ void DecLib::xActivateParameterSets()
     m_cSAO.create( sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA) );
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
     m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+    m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc(), sps->getMaxCUHeight() );
+#else
     m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc() );
+#endif
     if (sps->getUseReshaper())
     {
       m_cReshaper.createDec(sps->getBitDepth(CHANNEL_TYPE_LUMA));

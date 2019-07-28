@@ -50,6 +50,11 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O1170_IBC_VIRTUAL_BUFFER                     1 // JVET-O1170/O1171: IBC virtual buffer
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+#define JVET_O1170_CHECK_BV_AT_DECODER                    1 // For decoder to check if a BV is valid or not
+#endif
+
 #define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
 
 #define JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE        1

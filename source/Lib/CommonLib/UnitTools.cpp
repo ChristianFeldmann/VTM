@@ -1649,6 +1649,8 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
     return false;
   }
 }
+
+#if !JVET_O1170_IBC_VIRTUAL_BUFFER
 // for ibc pu validation
 bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize)
 {
@@ -1726,6 +1728,7 @@ bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, i
   return true;
 
 }// for ibc pu validation
+#endif
 
 static int xGetDistScaleFactor(const int &iCurrPOC, const int &iCurrRefPOC, const int &iColPOC, const int &iColRefPOC)
 {

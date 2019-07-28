@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0265_TPM_SIMPLIFICATION                     1 // JVET-O0265/JVET-O0629/JVET-O0418/JVET-O0329/JVET-O0378/JVET-O0411/JVET-O0279:Simplified motion field storage for TPM
+
 #define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
 
 #define JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE        1

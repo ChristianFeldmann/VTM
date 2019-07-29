@@ -2398,7 +2398,11 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
   }
 #endif
 
+#if JVET_O0046_DQ_SIGNALLING
+  if( cu.lwidth() > 64 || cu.lheight() > 64 || cbfLuma || cbfChroma )
+#else   
   if( cbfLuma || cbfChroma )
+#endif
   {
     if( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded )
     {

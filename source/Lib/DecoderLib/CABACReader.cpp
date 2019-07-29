@@ -2793,38 +2793,20 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 
 void CABACReader::isp_mode( CodingUnit& cu )
 {
-  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() || cu.bdpcmMode )
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) )
   {
     cu.ispMode = NOT_INTRA_SUBPARTITIONS;
     return;
   }
 
-  const ISPType allowedSplits = CU::canUseISPSplit( cu, getFirstComponentOfChannel( cu.chType ) );
-  if( allowedSplits == NOT_INTRA_SUBPARTITIONS )
-  {
-    cu.ispMode = NOT_INTRA_SUBPARTITIONS;
-    return;
-  }
+  int symbol = m_BinDecoder.decodeBin(Ctx::ISPMode(0));
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__ISP_MODE_FLAG );
-  cu.ispMode = NOT_INTRA_SUBPARTITIONS;
-  int symbol = m_BinDecoder.decodeBin( Ctx::ISPMode( 0 ) );
 
   if( symbol )
   {
-    if( allowedSplits == HOR_INTRA_SUBPARTITIONS )
-    {
-      cu.ispMode = HOR_INTRA_SUBPARTITIONS;
-    }
-    else if( allowedSplits == VER_INTRA_SUBPARTITIONS )
-    {
-      cu.ispMode = VER_INTRA_SUBPARTITIONS;
-    }
-    else
-    {
-      RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__ISP_SPLIT_FLAG );
-      cu.ispMode = 1 + m_BinDecoder.decodeBin( Ctx::ISPMode( 1 ) );
-    }
+    RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__ISP_SPLIT_FLAG );
+    cu.ispMode = 1 + m_BinDecoder.decodeBin( Ctx::ISPMode( 1 ) );
   }
   DTRACE( g_trace_ctx, D_SYNTAX, "intra_subPartitions() etype=%d pos=(%d,%d) ispIdx=%d\n", cu.chType, cu.blocks[cu.chType].x, cu.blocks[cu.chType].y, (int)cu.ispMode );
 }

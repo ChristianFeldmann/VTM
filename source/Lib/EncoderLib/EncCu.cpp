@@ -2141,6 +2141,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
           }
           m_CABACEstimator->getCtx() = ctxStart;
+#if JVET_O0249_MERGE_SYNTAX
+          pu.regularMergeFlag = false;
+#endif
           uint64_t fracBits = m_pcInterSearch->xCalcPuMeBits(pu);
           double cost = (double)sadValue + (double)fracBits * sqrtLambdaForFirstPassIntra;
           insertPos = -1;
@@ -2159,6 +2162,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       if ( pu.cs->sps->getUseMMVD() )
       {
         cu.mmvdSkip = true;
+#if JVET_O0249_MERGE_SYNTAX
+        pu.regularMergeFlag = true;
+#endif
         const int tempNum = (mergeCtx.numValidMergeCand > 1) ? MMVD_ADD_NUM : MMVD_ADD_NUM >> 1;
         for (int mmvdMergeCand = 0; mmvdMergeCand < tempNum; mmvdMergeCand++)
         {
@@ -2304,11 +2310,17 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       else if (RdModeList[uiMrgHADIdx].isMMVD)
       {
         cu.mmvdSkip = true;
+#if JVET_O0249_MERGE_SYNTAX
+        pu.regularMergeFlag = true;
+#endif
         mergeCtx.setMmvdMergeCandiInfo(pu, uiMergeCand);
       }
       else
       {
         cu.mmvdSkip = false;
+#if JVET_O0249_MERGE_SYNTAX
+        pu.regularMergeFlag = true;
+#endif
         mergeCtx.setMergeInfo(pu, uiMergeCand);
       }
       PU::spanMotionInfo( pu, mergeCtx );

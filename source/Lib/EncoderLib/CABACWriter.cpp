@@ -684,6 +684,7 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
     m_BinEncoder.encodeBin(CU::isIBC(cu) ? 1 : 0, Ctx::IBCFlag(ctxidx));
     DTRACE(g_trace_ctx, D_SYNTAX, "ibc() ctx=%d cu.predMode=%d\n", ctxidx, cu.predMode);
     }
+#if !JVET_O0249_MERGE_SYNTAX
     if (CU::isInter(cu))
     {
       if (!cu.cs->slice->getSPS()->getUseMMVD() && (cu.firstPU->lwidth() * cu.firstPU->lheight() == 32))
@@ -709,7 +710,9 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
         }
       }
     }
+#endif
   }
+#if !JVET_O0249_MERGE_SYNTAX
   if (cu.skip && !cu.cs->slice->getSPS()->getIBCFlag())
   {
     if (!cu.cs->slice->getSPS()->getUseMMVD() && (cu.firstPU->lwidth() * cu.firstPU->lheight() == 32))
@@ -735,6 +738,7 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
       }
     }
   }
+#endif
 }
 
 
@@ -1451,6 +1455,9 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
   }
   if( pu.mergeFlag )
   {
+#if JVET_O0249_MERGE_SYNTAX
+    merge_data(pu);
+#else
     if (CU::isIBC(*pu.cu))
     {
       merge_idx(pu);
@@ -1478,6 +1485,7 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       else
         merge_idx    ( pu );
     }
+#endif
   }
   else if (CU::isIBC(*pu.cu))
   {
@@ -1579,10 +1587,12 @@ void CABACWriter::smvd_mode( const PredictionUnit& pu )
 
 void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
 {
+#if !JVET_O0249_MERGE_SYNTAX
   if ( cu.firstPU->mergeFlag && (cu.firstPU->mmvdMergeFlag || cu.mmvdSkip) )
   {
     return;
   }
+#endif
 
 #if JVET_O0220_METHOD1_SUBBLK_FLAG_PARSING
   if ( !cu.cs->slice->isIntra() && (cu.slice->getMaxNumAffineMergeCand() > 0) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
@@ -1623,6 +1633,7 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "merge_flag() merge=%d pos=(%d,%d) size=%dx%d\n", pu.mergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height );
 
+#if !JVET_O0249_MERGE_SYNTAX
   if (pu.mergeFlag && CU::isIBC(*pu.cu))
   {
     return;
@@ -1652,7 +1663,56 @@ void CABACWriter::merge_flag( const PredictionUnit& pu )
       }
     }
   }
+#endif
 }
+
+#if JVET_O0249_MERGE_SYNTAX
+void CABACWriter::merge_data(const PredictionUnit& pu)
+{
+  if (CU::isIBC(*pu.cu))
+  {
+    merge_idx(pu);
+    return;
+  }
+  subblock_merge_flag(*pu.cu);
+  if (pu.cu->affine)
+  {
+    merge_idx(pu);
+    return;
+  }
+  const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB();
+  const bool ciipAvailable = pu.cs->sps->getUseMHIntra() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
+  if (pu.cu->lwidth() * pu.cu->lheight() >= 64
+    && (triangleAvailable || ciipAvailable))
+  {
+    m_BinEncoder.encodeBin(pu.regularMergeFlag, Ctx::RegularMergeFlag(pu.cu->skip ? 0 : 1));
+  }
+  if (pu.regularMergeFlag)
+  {
+    if (pu.cs->sps->getUseMMVD())
+    {
+      m_BinEncoder.encodeBin(pu.mmvdMergeFlag, Ctx::MmvdFlag(0));
+      DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+    }
+    if (pu.mmvdMergeFlag || pu.cu->mmvdSkip)
+    {
+      mmvd_merge_idx(pu);
+    }
+    else
+    {
+      merge_idx(pu);
+    }
+  }
+  else
+  {
+    if (triangleAvailable && ciipAvailable)
+    {
+      MHIntra_flag(pu);
+    }
+    merge_idx(pu);
+  }
+}
+#endif
 
 void CABACWriter::imv_mode( const CodingUnit& cu )
 {
@@ -1960,6 +2020,7 @@ void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
     CHECK(pu.mhIntraFlag == true, "invalid MHIntra and skip");
     return;
   }
+#if !JVET_O0249_MERGE_SYNTAX
   if (pu.mmvdMergeFlag)
   {
     CHECK(pu.mhIntraFlag == true, "invalid MHIntra and mmvd");
@@ -1975,6 +2036,7 @@ void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
     CHECK(pu.mhIntraFlag == true, "invalid MHIntra and blk");
     return;
   }
+#endif
   m_BinEncoder.encodeBin(pu.mhIntraFlag, Ctx::MHIntraFlag());
   DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() MHIntra=%d pos=(%d,%d) size=%dx%d\n", pu.mhIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
 }

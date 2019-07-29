@@ -536,9 +536,8 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
   if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
   {
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
-#if MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1
-    WRITE_UVLC( param.numAlternativesChroma - 1, "alf_chroma_num_alts_minus1" );
-#endif
+    if( MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1 )
+      WRITE_UVLC( param.numAlternativesChroma - 1, "alf_chroma_num_alts_minus1" );
     for( int altIdx=0; altIdx < param.numAlternativesChroma; ++altIdx )
     {
       WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_CHROMA][altIdx], "alf_nonlinear_enable_flag_chroma" );

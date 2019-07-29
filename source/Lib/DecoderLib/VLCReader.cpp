@@ -2185,7 +2185,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
       if (pcSlice->getLmcsEnabledFlag())
       {
+#if JVET_O0428_LMCS_CLEANUP
+        READ_CODE(2, uiCode, "slice_lmcs_aps_id");
+#else
         READ_CODE(5, uiCode, "slice_lmcs_aps_id");
+#endif
         
         pcSlice->setLmcsAPSId(uiCode);
 #if !JVET_O1109_UNFIY_CRS

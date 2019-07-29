@@ -1494,7 +1494,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       WRITE_FLAG( pcSlice->getLmcsEnabledFlag()? 1 : 0, "slice_lmcs_enabled_flag");
       if (pcSlice->getLmcsEnabledFlag())
       {
+#if JVET_O0428_LMCS_CLEANUP
+        WRITE_CODE(pcSlice->getLmcsAPSId(), 2, "slice_lmcs_aps_id");
+#else
         WRITE_CODE(pcSlice->getLmcsAPSId(), 5, "slice_lmcs_aps_id");
+#endif
 #if !JVET_O1109_UNFIY_CRS
         if (!(pcSlice->getSPS()->getUseDualITree() && pcSlice->isIntra()))
 #endif

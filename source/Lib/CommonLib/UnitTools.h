@@ -78,7 +78,9 @@ namespace CU
   PartSplit getSplitAtDepth           (const CodingUnit& cu, const unsigned depth);
 
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   uint32_t getNumNonZeroCoeffNonTs         ( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
+#endif
   uint32_t getNumNonZeroCoeffNonTsCorner8x8( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
 #if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
   bool  isPredRegDiffFromTB(const CodingUnit& cu, const ComponentID compID);
@@ -209,7 +211,9 @@ namespace PU
 // TU tools
 namespace TU
 {
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   uint32_t getNumNonZeroCoeffsNonTS       (const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true);
+#endif
   uint32_t getNumNonZeroCoeffsNonTSCorner8x8( const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true );
   bool isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID);
   bool getCbf                         (const TransformUnit &tu, const ComponentID &compID);

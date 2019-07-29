@@ -1523,6 +1523,18 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           xCheckDQP( *tempCS, partitioner );
 
           // Check if low frequency non-separable transform (LFNST) is too expensive
+#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+          const bool skipLfnst = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA ) :
+                              ( cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA ) ) :
+                              ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA && cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA );
+          if( lfnstIdx && skipLfnst )
+          {
+            if( cuCtx.lastScanPos[ COMPONENT_Y ] > -1 || cuCtx.lastScanPos[ COMPONENT_Cb ] > -1 || cuCtx.lastScanPos[ COMPONENT_Cr ] > -1 )
+            {
+              tempCS->cost = MAX_DOUBLE;
+            }
+          }
+#else
           const int nonZeroCoeffThr = CS::isDualITree( *tempCS ) ? ( isLuma( partitioner.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
           if( lfnstIdx && cuCtx.numNonZeroCoeffNonTs <= nonZeroCoeffThr )
           {
@@ -1531,6 +1543,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
               tempCS->cost = MAX_DOUBLE;
             }
           }
+#endif
 
           if( mtsFlag == 0 && lfnstIdx == 0 )
           {

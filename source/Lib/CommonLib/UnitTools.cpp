@@ -250,6 +250,7 @@ bool CU::hasNonTsCodedBlock( const CodingUnit& cu )
   return hasAnyNonTSCoded;
 }
 
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
 uint32_t CU::getNumNonZeroCoeffNonTs( const CodingUnit& cu, const bool lumaFlag, const bool chromaFlag )
 {
   uint32_t count = 0;
@@ -260,6 +261,7 @@ uint32_t CU::getNumNonZeroCoeffNonTs( const CodingUnit& cu, const bool lumaFlag,
 
   return count;
 }
+#endif
 
 #if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
 uint32_t CU::getNumNonZeroCoeffNonTsCorner8x8( const CodingUnit& cu, const bool lumaFlag, const bool chromaFlag )
@@ -4640,6 +4642,7 @@ bool TU::hasCrossCompPredInfo( const TransformUnit &tu, const ComponentID &compI
     (!CU::isIntra(*tu.cu) || PU::isChromaIntraModeCrossCheckMode(*tu.cs->getPU(tu.blocks[compID].pos(), toChannelType(compID)))));
 }
 
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
 uint32_t TU::getNumNonZeroCoeffsNonTS( const TransformUnit& tu, const bool bLuma, const bool bChroma )
 {
   uint32_t count = 0;
@@ -4660,6 +4663,7 @@ uint32_t TU::getNumNonZeroCoeffsNonTS( const TransformUnit& tu, const bool bLuma
   }
   return count;
 }
+#endif
 #if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
 uint32_t TU::getNumNonZeroCoeffsNonTSCorner8x8( const TransformUnit& tu, const bool lumaFlag, const bool chromaFlag )
 {

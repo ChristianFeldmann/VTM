@@ -732,6 +732,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 
   WRITE_UVLC( pcSPS->getBitDepth(CHANNEL_TYPE_LUMA) - 8,                      "bit_depth_luma_minus8" );
+#if JVET_O0919_TS_MIN_QP
+  WRITE_UVLC( pcSPS->getMinQpMinus4(CHANNEL_TYPE_LUMA),                      "min_qp_luma_minus4" );
+#endif
 
   const bool         chromaEnabled         = isChromaEnabled(format);
   WRITE_UVLC( chromaEnabled ? (pcSPS->getBitDepth(CHANNEL_TYPE_CHROMA) - 8):0,  "bit_depth_chroma_minus8" );

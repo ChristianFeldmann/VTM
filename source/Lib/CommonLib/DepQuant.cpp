@@ -679,7 +679,11 @@ namespace DQIntern
   {
     CHECKD( lambda <= 0.0, "Lambda must be greater than 0" );
 
+#if JVET_O0919_TS_MIN_QP
+    const int         qpDQ                  = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
+#else
     const int         qpDQ                  = cQP.Qp + 1;
+#endif
     const int         qpPer                 = qpDQ / 6;
     const int         qpRem                 = qpDQ - 6 * qpPer;
     const SPS&        sps                   = *tu.cs->sps;
@@ -748,7 +752,11 @@ namespace DQIntern
     }
 
     //----- set dequant parameters -----
+#if JVET_O0919_TS_MIN_QP
+    const int         qpDQ                  = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
+#else
     const int         qpDQ                  = cQP.Qp + 1;
+#endif
     const int         qpPer                 = qpDQ / 6;
     const int         qpRem                 = qpDQ - 6 * qpPer;
     const SPS&        sps                   = *tu.cs->sps;
@@ -1721,7 +1729,11 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
   if( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID)) )
   {
     //===== scaling matrix ====
+#if JVET_O0919_TS_MIN_QP
+    const int         qpDQ            = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
+#else
     const int         qpDQ            = cQP.Qp + 1;
+#endif
     const int         qpPer           = qpDQ / 6;
     const int         qpRem           = qpDQ - 6 * qpPer;
     const CompArea    &rect           = tu.blocks[compID];
@@ -1744,7 +1756,11 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
 {
   if( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID)) )
   {
+#if JVET_O0919_TS_MIN_QP
+    const int         qpDQ            = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
+#else
     const int         qpDQ            = cQP.Qp + 1;
+#endif
     const int         qpPer           = qpDQ / 6;
     const int         qpRem           = qpDQ - 6 * qpPer;
     const CompArea    &rect           = tu.blocks[compID];

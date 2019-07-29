@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0616_400_CHROMA_SUPPORT                     1 // JVET-O0616: Various chroma format support in VVC
+
 #define JVET_O0265_TPM_SIMPLIFICATION                     1 // JVET-O0265/JVET-O0629/JVET-O0418/JVET-O0329/JVET-O0378/JVET-O0411/JVET-O0279:Simplified motion field storage for TPM
 
 #define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
@@ -428,8 +430,7 @@ enum ISPType
   NOT_INTRA_SUBPARTITIONS       = 0,
   HOR_INTRA_SUBPARTITIONS       = 1,
   VER_INTRA_SUBPARTITIONS       = 2,
-  NUM_INTRA_SUBPARTITIONS_MODES = 3,
-  CAN_USE_VER_AND_HORL_SPLITS   = 4
+  NUM_INTRA_SUBPARTITIONS_MODES = 3
 };
 
 enum SbtIdx

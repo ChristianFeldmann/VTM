@@ -536,9 +536,8 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
   if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
   {
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
-#if MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1
-    WRITE_UVLC( param.numAlternativesChroma - 1, "alf_chroma_num_alts_minus1" );
-#endif
+    if( MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1 )
+      WRITE_UVLC( param.numAlternativesChroma - 1, "alf_chroma_num_alts_minus1" );
     for( int altIdx=0; altIdx < param.numAlternativesChroma; ++altIdx )
     {
       WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_CHROMA][altIdx], "alf_nonlinear_enable_flag_chroma" );
@@ -1250,7 +1249,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
 
         const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) * 2 ;
-        truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
+#if JVET_O0616_400_CHROMA_SUPPORT
+        if (chromaEnabled)
+        {
+#endif
+          truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
+#if JVET_O0616_400_CHROMA_SUPPORT
+        }
+#endif
         if (alfChromaIdc)
         {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
@@ -1492,7 +1498,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #if !JVET_O1109_UNFIY_CRS
         if (!(pcSlice->getSPS()->getUseDualITree() && pcSlice->isIntra()))
 #endif
-          WRITE_FLAG(pcSlice->getLmcsChromaResidualScaleFlag(), "slice_chroma_residual_scale_flag");
+#if JVET_O0616_400_CHROMA_SUPPORT
+          if (chromaEnabled)
+          {
+#endif
+            WRITE_FLAG(pcSlice->getLmcsChromaResidualScaleFlag(), "slice_chroma_residual_scale_flag");
+#if JVET_O0616_400_CHROMA_SUPPORT
+          }
+#endif
       }
     }
 

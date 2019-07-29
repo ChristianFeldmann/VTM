@@ -860,11 +860,11 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
   if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
   {
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
-#if MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1
-    READ_UVLC( code, "alf_chroma_num_alts_minus1" );
-#else
-    code = 0;
-#endif
+    if( MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1 )
+      READ_UVLC( code, "alf_chroma_num_alts_minus1" );
+    else
+      code = 0;
+
     param.numAlternativesChroma = code + 1;
 
     for( int altIdx=0; altIdx < param.numAlternativesChroma; ++altIdx )
@@ -1808,7 +1808,18 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 		
 		
         pcSlice->setAlfAPSs(apsId);
-        alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
+#if JVET_O0616_400_CHROMA_SUPPORT
+        if (bChroma)
+        {
+#endif
+          alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
+#if JVET_O0616_400_CHROMA_SUPPORT
+        }
+        else
+        {
+          alfChromaIdc = 0;
+        }
+#endif
         if (alfChromaIdc)
         {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
@@ -2181,9 +2192,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         if (!(sps->getUseDualITree() && pcSlice->isIntra()))
         {
 #endif
+#if JVET_O0616_400_CHROMA_SUPPORT
+        if (bChroma)
+        {
+#endif
           READ_FLAG(uiCode, "slice_chroma_residual_scale_flag");                
           pcSlice->setLmcsChromaResidualScaleFlag(uiCode == 1);
-#if !JVET_O1109_UNFIY_CRS
+#if !JVET_O1109_UNFIY_CRS || JVET_O0616_400_CHROMA_SUPPORT
         }
         else
         {

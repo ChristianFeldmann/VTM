@@ -98,8 +98,8 @@ namespace CU
   PartSplit getISPType                ( const CodingUnit &cu,                         const ComponentID compID );
   bool      isISPLast                 ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
   bool      isISPFirst                ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
-  ISPType   canUseISPSplit            ( const CodingUnit &cu,                         const ComponentID compID );
-  ISPType   canUseISPSplit            ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
+  bool      canUseISP                 ( const CodingUnit &cu,                         const ComponentID compID );
+  bool      canUseISP                 ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
   uint32_t  getISPSplitDim            ( const int width, const int height, const PartSplit ispType );
 
   PUTraverser traversePUs             (      CodingUnit& cu);

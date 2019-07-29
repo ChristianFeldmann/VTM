@@ -383,7 +383,7 @@ bool CU::isISPFirst( const CodingUnit &cu, const CompArea &tuArea, const Compone
   return tuArea == cu.firstTU->blocks[compID];
 }
 
-ISPType CU::canUseISPSplit( const CodingUnit &cu, const ComponentID compID )
+bool CU::canUseISP( const CodingUnit &cu, const ComponentID compID )
 {
   const int width     = cu.blocks[compID].width;
   const int height    = cu.blocks[compID].height;
@@ -392,35 +392,18 @@ ISPType CU::canUseISPSplit( const CodingUnit &cu, const ComponentID compID )
 #else
   const int maxTrSize = MAX_TB_SIZEY;
 #endif
-  return CU::canUseISPSplit( width, height, maxTrSize );
+  return CU::canUseISP( width, height, maxTrSize );
 }
 
-ISPType CU::canUseISPSplit( const int width, const int height, const int maxTrSize )
+bool CU::canUseISP( const int width, const int height, const int maxTrSize )
 {
-  bool widthCannotBeUsed = false, heightCannotBeUsed = false;
-
-  const uint32_t minTuSizeForISP = MIN_TB_SIZEY;
-  bool  notEnoughSamplesToSplit = ( g_aucLog2[width] + g_aucLog2[height] <= ( g_aucLog2[minTuSizeForISP] << 1 ) );
-  bool  cuSizeLargerThanMaxTrSize = width  > maxTrSize || height > maxTrSize;
-  widthCannotBeUsed  = cuSizeLargerThanMaxTrSize || notEnoughSamplesToSplit;
-  heightCannotBeUsed = cuSizeLargerThanMaxTrSize || notEnoughSamplesToSplit;
-
-  if( !widthCannotBeUsed && !heightCannotBeUsed )
+  bool  notEnoughSamplesToSplit = ( g_aucLog2[width] + g_aucLog2[height] <= ( g_aucLog2[MIN_TB_SIZEY] << 1 ) );
+  bool  cuSizeLargerThanMaxTrSize = width > maxTrSize || height > maxTrSize;
+  if ( notEnoughSamplesToSplit || cuSizeLargerThanMaxTrSize )
   {
-    return CAN_USE_VER_AND_HORL_SPLITS; //both splits can be used
+    return false;
   }
-  else if( widthCannotBeUsed && !heightCannotBeUsed )
-  {
-    return VER_INTRA_SUBPARTITIONS; //only the vertical split can be performed
-  }
-  else if( !widthCannotBeUsed && heightCannotBeUsed )
-  {
-    return HOR_INTRA_SUBPARTITIONS; //only the horizontal split can be performed
-  }
-  else
-  {
-    return NOT_INTRA_SUBPARTITIONS; //neither of the splits can be used
-  }
+  return true;
 }
 
 uint32_t CU::getISPSplitDim( const int width, const int height, const PartSplit ispType )

@@ -860,11 +860,11 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
   if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
   {
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
-#if MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1
-    READ_UVLC( code, "alf_chroma_num_alts_minus1" );
-#else
-    code = 0;
-#endif
+    if( MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1 )
+      READ_UVLC( code, "alf_chroma_num_alts_minus1" );
+    else
+      code = 0;
+
     param.numAlternativesChroma = code + 1;
 
     for( int altIdx=0; altIdx < param.numAlternativesChroma; ++altIdx )

@@ -287,11 +287,11 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
   int shift5 = std::max<int>(1, (bitDepth - 11));
 
   __m128i zero = _mm_setzero_si128();
-  __m128i SumAbsGXTmp = _mm_setzero_si128();
-  __m128i SumDIXTmp = _mm_setzero_si128();
-  __m128i SumAbsGYTmp = _mm_setzero_si128();
-  __m128i SumDIYTmp = _mm_setzero_si128();
-  __m128i SumSignGyGxTmp = _mm_setzero_si128();
+  __m128i sumAbsGXTmp = _mm_setzero_si128();
+  __m128i sumDIXTmp = _mm_setzero_si128();
+  __m128i sumAbsGYTmp = _mm_setzero_si128();
+  __m128i sumDIYTmp = _mm_setzero_si128();
+  __m128i sumSignGyGxTmp = _mm_setzero_si128();
   Pel tmpStore[8];
   for (int y = 0; y < 6; y++)
   {
@@ -314,11 +314,11 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
     __m128i dIY = _mm_or_si128(_mm_and_si128(maskYgt, subTemp1), _mm_and_si128(maskYlt, _mm_sub_epi16(zero, subTemp1)));
     __m128i signGY_GX = _mm_or_si128(_mm_and_si128(maskYgt, packTempX), _mm_and_si128(maskYlt, _mm_sub_epi16(zero, packTempX)));
 
-    SumAbsGXTmp = _mm_add_epi16(SumAbsGXTmp, gX);
-    SumDIXTmp = _mm_add_epi16(SumDIXTmp, dIX);
-    SumAbsGYTmp = _mm_add_epi16(SumAbsGYTmp, gY);
-    SumDIYTmp = _mm_add_epi16(SumDIYTmp, dIY);
-    SumSignGyGxTmp = _mm_add_epi16(SumSignGyGxTmp, signGY_GX);
+    sumAbsGXTmp = _mm_add_epi16(sumAbsGXTmp, gX);
+    sumDIXTmp = _mm_add_epi16(sumDIXTmp, dIX);
+    sumAbsGYTmp = _mm_add_epi16(sumAbsGYTmp, gY);
+    sumDIYTmp = _mm_add_epi16(sumDIYTmp, dIY);
+    sumSignGyGxTmp = _mm_add_epi16(sumSignGyGxTmp, signGY_GX);
     srcY0Tmp += src0Stride;
     srcY1Tmp += src1Stride;
     gradX0 += widthG;
@@ -326,15 +326,15 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
     gradY0 += widthG;
     gradY1 += widthG;
   }
-  _mm_storeu_si128((__m128i *)tmpStore, SumAbsGXTmp);
+  _mm_storeu_si128((__m128i *)tmpStore, sumAbsGXTmp);
   *sumAbsGX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, SumAbsGYTmp);
+  _mm_storeu_si128((__m128i *)tmpStore, sumAbsGYTmp);
   *sumAbsGY = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, SumDIXTmp);
+  _mm_storeu_si128((__m128i *)tmpStore, sumDIXTmp);
   *sumDIX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, SumDIYTmp);
+  _mm_storeu_si128((__m128i *)tmpStore, sumDIYTmp);
   *sumDIY = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, SumSignGyGxTmp);
+  _mm_storeu_si128((__m128i *)tmpStore, sumSignGyGxTmp);
   *sumSignGY_GX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
 }
 #endif

@@ -1043,9 +1043,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setSameCQPTableForAllChromaFlag(m_sameCQPTableForAllChroma);
   for (int i = 0; i < (m_sameCQPTableForAllChroma ? 1 : 3); i++)
   {
-    sps.setNumPtsInCQPTableMinus1(i, (int)m_deltaInValMinus1[i].size() - 1);
-    sps.setDeltaInValMinus1(i, m_deltaInValMinus1[i]);
-    sps.setDeltaOutVal(i, m_deltaOutVal[i]);
+    sps.setNumPtsInCQPTableMinus1(i, (int)m_deltaQpInValMinus1[i].size() - 1);
+    sps.setDeltaQpInValMinus1(i, m_deltaQpInValMinus1[i]);
+    sps.setDeltaOutVal(i, m_deltaQpOutVal[i]);
   }
   sps.derivedChromaQPMappingTables();
 #endif

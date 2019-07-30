@@ -1247,15 +1247,15 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     for (int i = 0; i < (pcSPS->getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
     {
       READ_UVLC(uiCode, "num_points_in_qp_table_minus1"); pcSPS->setNumPtsInCQPTableMinus1(i,uiCode);
-      std::vector<int> deltaInValMinus1(pcSPS->getNumPtsInCQPTableMinus1(i) + 1);
-      std::vector<int> deltaOutVal(pcSPS->getNumPtsInCQPTableMinus1(i) + 1);
+      std::vector<int> deltaQpInValMinus1(pcSPS->getNumPtsInCQPTableMinus1(i) + 1);
+      std::vector<int> deltaQpOutVal(pcSPS->getNumPtsInCQPTableMinus1(i) + 1);
       for (int j = 0; j <= pcSPS->getNumPtsInCQPTableMinus1(i); j++)
       {
-        READ_UVLC(uiCode, "delta_qp_in_val_minus1");  deltaInValMinus1[j] = uiCode; 
-        READ_UVLC(uiCode, "delta_qp_out_val");        deltaOutVal[j] = uiCode; 
+        READ_UVLC(uiCode, "delta_qp_in_val_minus1");  deltaQpInValMinus1[j] = uiCode; 
+        READ_UVLC(uiCode, "delta_qp_out_val");        deltaQpOutVal[j] = uiCode; 
       }
-      pcSPS->setDeltaInValMinus1(i, deltaInValMinus1);
-      pcSPS->setDeltaOutVal(i, deltaOutVal);
+      pcSPS->setDeltaQpInValMinus1(i, deltaQpInValMinus1);
+      pcSPS->setDeltaOutVal(i, deltaQpOutVal);
     }
     pcSPS->derivedChromaQPMappingTables();
   }

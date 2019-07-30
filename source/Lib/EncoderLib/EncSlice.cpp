@@ -118,7 +118,7 @@ EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
     const ComponentID compID = ComponentID( compIdx );
     int chromaQPOffset       = slice->getPPS()->getQpOffset( compID ) + slice->getSliceChromaQpDelta( compID );
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-    int qpc = slice->getSPS()->getMappedChromaQPValue(compID, iQP) + chromaQPOffset;
+    int qpc = slice->getSPS()->getMappedChromaQpValue(compID, iQP) + chromaQPOffset;
 #else
     int qpc                  = ( iQP + chromaQPOffset < 0 ) ? iQP : getScaledChromaQP( iQP + chromaQPOffset, m_pcCfg->getChromaFormatIdc() );
 #endif
@@ -301,7 +301,7 @@ static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, 
       } // savedLumaQP < 0
 
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-      const int lumaChromaMappingDQP = savedLumaQP - pcSlice->getSPS()->getMappedChromaQPValue(compID, savedLumaQP);
+      const int lumaChromaMappingDQP = savedLumaQP - pcSlice->getSPS()->getMappedChromaQpValue(compID, savedLumaQP);
 #else
       const int lumaChromaMappingDQP = savedLumaQP - getScaledChromaQP (savedLumaQP, pcEncCfg->getChromaFormatIdc());
 #endif

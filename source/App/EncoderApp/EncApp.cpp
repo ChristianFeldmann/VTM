@@ -172,9 +172,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSameCQPTableForAllChroma(m_sameCQPTableForAllChroma);
   for (int i = 0; i < (m_sameCQPTableForAllChroma ? 1 : 3); i++)
   {
-    m_cEncLib.setNumPtsInCQPTableMinus1(i, (int)m_deltaInValMinus1[i].size() - 1);
-    m_cEncLib.setDeltaInValMinus1(i, m_deltaInValMinus1[i]);
-    m_cEncLib.setDeltaOutVal(i, m_deltaOutVal[i]);
+    m_cEncLib.setNumPtsInCQPTableMinus1(i, (int)m_deltaQpInValMinus1[i].size() - 1);
+    m_cEncLib.setDeltaInValMinus1(i, m_deltaQpInValMinus1[i]);
+    m_cEncLib.setDeltaOutVal(i, m_deltaQpOutVal[i]);
   }
 #endif
   m_cEncLib.setPad                                               ( m_aiPad );

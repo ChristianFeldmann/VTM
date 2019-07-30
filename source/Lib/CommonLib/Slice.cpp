@@ -1478,8 +1478,8 @@ SPS::SPS()
   ::memset(m_usedByCurrPicLtSPSFlag, 0, sizeof(m_usedByCurrPicLtSPSFlag));
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   m_numPtsInCQPTableMinus1[0] = 0;
-  m_deltaInValMinus1[0] = { 0 };
-  m_deltaOutVal[0] = { 0 };
+  m_deltaQpInValMinus1[0] = { 0 };
+  m_deltaQpOutVal[0] = { 0 };
 #endif
 }
 
@@ -1530,23 +1530,23 @@ void SPS::derivedChromaQPMappingTables()
       CHECK(qpOutVal[j] < -qpBdOffsetC || qpOutVal[j] > MAX_QP, "qpOutVal out of range");
     }
 
-    m_chromaQPMappingTables[i][qpInVal[0]] = qpOutVal[0];
+    m_chromaQpMappingTables[i][qpInVal[0]] = qpOutVal[0];
     for (int k = qpInVal[0] - 1; k >= -qpBdOffsetC; k--)
     {
-      m_chromaQPMappingTables[i][k] = Clip3(-qpBdOffsetC, MAX_QP, m_chromaQPMappingTables[i][k + 1] - 1);
+      m_chromaQpMappingTables[i][k] = Clip3(-qpBdOffsetC, MAX_QP, m_chromaQpMappingTables[i][k + 1] - 1);
     }
     for (int j = 0; j < numPtsInCQPTableMinus1; j++)
     {
       int sh = (getDeltaInValMinus1(i, j + 1) + 1 + 1) >> 1;
       for (int k = qpInVal[j] + 1, m = 1; k <= qpInVal[j + 1]; k++, m++)
       {
-        m_chromaQPMappingTables[i][k] = m_chromaQPMappingTables[i][qpInVal[j]]
+        m_chromaQpMappingTables[i][k] = m_chromaQpMappingTables[i][qpInVal[j]]
           + (getDeltaOutVal(i, j + 1) * m + sh) / (getDeltaInValMinus1(i, j + 1) + 1);
       }
     }
     for (int k = qpInVal[numPtsInCQPTableMinus1]+1; k <= MAX_QP; k++)
     {
-      m_chromaQPMappingTables[i][k] = Clip3(-qpBdOffsetC, MAX_QP, m_chromaQPMappingTables[i][k - 1] + 1);
+      m_chromaQpMappingTables[i][k] = Clip3(-qpBdOffsetC, MAX_QP, m_chromaQpMappingTables[i][k - 1] + 1);
     }
   }
 }

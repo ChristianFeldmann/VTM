@@ -206,8 +206,8 @@ protected:
   bool      m_useIdentityTableForNon420Chroma;
   bool      m_sameCQPTableForAllChroma;
   int       m_numPtsInCQPTableMinus1[MAX_NUM_CQP_MAPPING_TABLES];
-  std::vector<int>  m_deltaInValMinus1[MAX_NUM_CQP_MAPPING_TABLES];
-  std::vector<int>  m_deltaOutVal[MAX_NUM_CQP_MAPPING_TABLES];
+  std::vector<int>  m_deltaQpInValMinus1[MAX_NUM_CQP_MAPPING_TABLES];
+  std::vector<int>  m_deltaQpOutVal[MAX_NUM_CQP_MAPPING_TABLES];
 #endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                                  ///< QP offset for intra slice (integer)

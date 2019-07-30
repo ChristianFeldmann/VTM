@@ -93,7 +93,7 @@ QpParam::QpParam(const int           qpy,
   {
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
     int qpi = Clip3(-qpBdOffset, MAX_QP, qpy);
-    baseQp = sps->getMappedChromaQPValue(compID, qpi);
+    baseQp = sps->getMappedChromaQpValue(compID, qpi);
     baseQp = Clip3(-qpBdOffset, MAX_QP, baseQp + chromaQPOffset) + qpBdOffset;
 #else
     baseQp = Clip3( -qpBdOffset, (chromaQPMappingTableSize - 1), qpy + chromaQPOffset );

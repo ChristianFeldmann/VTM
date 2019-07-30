@@ -1940,28 +1940,28 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     cfg_qpInValCr.values = { 0 };
     cfg_qpInValCbCr.values = { 0 };
   }
-  m_deltaInValMinus1[0].resize(cfg_qpInValCb.values.size());
-  m_deltaOutVal[0].resize(cfg_qpOutValCb.values.size());
+  m_deltaQpInValMinus1[0].resize(cfg_qpInValCb.values.size());
+  m_deltaQpOutVal[0].resize(cfg_qpOutValCb.values.size());
   for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
   {
-    m_deltaInValMinus1[0][i] = (i == 0) ? cfg_qpInValCb.values[i] + 6*(m_internalBitDepth[CHANNEL_TYPE_CHROMA]-8) : cfg_qpInValCb.values[i] - cfg_qpInValCb.values[i - 1] - 1;
-    m_deltaOutVal[0][i] = (i == 0) ? cfg_qpOutValCb.values[i] + 6*(m_internalBitDepth[CHANNEL_TYPE_CHROMA]-8) : cfg_qpOutValCb.values[i] - cfg_qpOutValCb.values[i - 1];
+    m_deltaQpInValMinus1[0][i] = (i == 0) ? cfg_qpInValCb.values[i] + 6*(m_internalBitDepth[CHANNEL_TYPE_CHROMA]-8) : cfg_qpInValCb.values[i] - cfg_qpInValCb.values[i - 1] - 1;
+    m_deltaQpOutVal[0][i] = (i == 0) ? cfg_qpOutValCb.values[i] + 6*(m_internalBitDepth[CHANNEL_TYPE_CHROMA]-8) : cfg_qpOutValCb.values[i] - cfg_qpOutValCb.values[i - 1];
   }
   if (!m_sameCQPTableForAllChroma)
   {
-    m_deltaInValMinus1[1].resize(cfg_qpInValCr.values.size());
-    m_deltaOutVal[1].resize(cfg_qpOutValCr.values.size());
+    m_deltaQpInValMinus1[1].resize(cfg_qpInValCr.values.size());
+    m_deltaQpOutVal[1].resize(cfg_qpOutValCr.values.size());
     for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
     {
-      m_deltaInValMinus1[1][i] = (i == 0) ? cfg_qpInValCr.values[i] : cfg_qpInValCr.values[i] - cfg_qpInValCr.values[i - 1] - 1;
-      m_deltaOutVal[1][i] = (i == 0) ? cfg_qpOutValCr.values[i] : cfg_qpOutValCr.values[i] - cfg_qpOutValCr.values[i - 1];
+      m_deltaQpInValMinus1[1][i] = (i == 0) ? cfg_qpInValCr.values[i] : cfg_qpInValCr.values[i] - cfg_qpInValCr.values[i - 1] - 1;
+      m_deltaQpOutVal[1][i] = (i == 0) ? cfg_qpOutValCr.values[i] : cfg_qpOutValCr.values[i] - cfg_qpOutValCr.values[i - 1];
     }
-    m_deltaInValMinus1[2].resize(cfg_qpInValCbCr.values.size());
-    m_deltaOutVal[2].resize(cfg_qpOutValCbCr.values.size());
+    m_deltaQpInValMinus1[2].resize(cfg_qpInValCbCr.values.size());
+    m_deltaQpOutVal[2].resize(cfg_qpOutValCbCr.values.size());
     for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
     {
-      m_deltaInValMinus1[2][i] = (i == 0) ? cfg_qpInValCbCr.values[i] : cfg_qpInValCbCr.values[i] - cfg_qpInValCbCr.values[i - 1] - 1;
-      m_deltaOutVal[2][i] = (i == 0) ? cfg_qpOutValCbCr.values[i] : cfg_qpOutValCbCr.values[i] - cfg_qpOutValCbCr.values[i - 1];
+      m_deltaQpInValMinus1[2][i] = (i == 0) ? cfg_qpInValCbCr.values[i] : cfg_qpInValCbCr.values[i] - cfg_qpInValCbCr.values[i - 1] - 1;
+      m_deltaQpOutVal[2][i] = (i == 0) ? cfg_qpOutValCbCr.values[i] : cfg_qpOutValCbCr.values[i] - cfg_qpOutValCbCr.values[i - 1];
     }
   }
 #endif

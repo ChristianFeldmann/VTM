@@ -81,7 +81,9 @@ namespace CU
 #endif
 
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   uint32_t getNumNonZeroCoeffNonTs         ( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
+#endif
   uint32_t getNumNonZeroCoeffNonTsCorner8x8( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
 #if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
   bool  isPredRegDiffFromTB(const CodingUnit& cu, const ComponentID compID);
@@ -101,8 +103,8 @@ namespace CU
   PartSplit getISPType                ( const CodingUnit &cu,                         const ComponentID compID );
   bool      isISPLast                 ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
   bool      isISPFirst                ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
-  ISPType   canUseISPSplit            ( const CodingUnit &cu,                         const ComponentID compID );
-  ISPType   canUseISPSplit            ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
+  bool      canUseISP                 ( const CodingUnit &cu,                         const ComponentID compID );
+  bool      canUseISP                 ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
   uint32_t  getISPSplitDim            ( const int width, const int height, const PartSplit ispType );
 
   PUTraverser traversePUs             (      CodingUnit& cu);
@@ -212,7 +214,9 @@ namespace PU
 // TU tools
 namespace TU
 {
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   uint32_t getNumNonZeroCoeffsNonTS       (const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true);
+#endif
   uint32_t getNumNonZeroCoeffsNonTSCorner8x8( const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true );
   bool isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID);
   bool getCbf                         (const TransformUnit &tu, const ComponentID &compID);

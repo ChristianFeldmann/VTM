@@ -339,49 +339,21 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
   {
     mtsUsageFlag = 0;
   }
-  int nOptionsForISP = ( sps.getUseISP() && cu.mtsFlag == 0 && cu.lfnstIdx == 0 ) ? NUM_INTRA_SUBPARTITIONS_MODES : 1;
-  double bestCurrentCost = bestCostSoFar;
 
-  int ispOptions[NUM_INTRA_SUBPARTITIONS_MODES] = { 0 };
-  if( nOptionsForISP > 1 )
-  {
+  double bestCurrentCost = bestCostSoFar;
 #if MAX_TB_SIZE_SIGNALLING
-    auto splitsThatCanBeUsedForISP = CU::canUseISPSplit( width, height, cu.cs->sps->getMaxTbSize() );
+  bool testISP = sps.getUseISP() && cu.mtsFlag == 0 && cu.lfnstIdx == 0 && CU::canUseISP( width, height, cu.cs->sps->getMaxTbSize() );
 #else
-    auto splitsThatCanBeUsedForISP = CU::canUseISPSplit( width, height, MAX_TB_SIZEY );
+  bool testISP = sps.getUseISP() && cu.mtsFlag == 0 && cu.lfnstIdx == 0 && CU::canUseISP( width, height, MAX_TB_SIZEY );
 #endif
-    if( splitsThatCanBeUsedForISP == CAN_USE_VER_AND_HORL_SPLITS )
-    {
-      const CodingUnit* cuLeft  = cu.ispMode != NOT_INTRA_SUBPARTITIONS ? cs.getCU( cs.area.blocks[partitioner.chType].pos().offset( -1, 0 ), partitioner.chType ) : nullptr;
-      const CodingUnit* cuAbove = cu.ispMode != NOT_INTRA_SUBPARTITIONS ? cs.getCU( cs.area.blocks[partitioner.chType].pos().offset( 0, -1 ), partitioner.chType ) : nullptr;
-      bool ispHorIsFirstTest = CU::firstTestISPHorSplit( width, height, COMPONENT_Y, cuLeft, cuAbove );
-      if( ispHorIsFirstTest )
-      {
-        ispOptions[1] = HOR_INTRA_SUBPARTITIONS;
-        ispOptions[2] = VER_INTRA_SUBPARTITIONS;
-      }
-      else
-      {
-        ispOptions[1] = VER_INTRA_SUBPARTITIONS;
-        ispOptions[2] = HOR_INTRA_SUBPARTITIONS;
-      }
-    }
-    else if( splitsThatCanBeUsedForISP == HOR_INTRA_SUBPARTITIONS )
-    {
-      nOptionsForISP = 2;
-      ispOptions[1] = HOR_INTRA_SUBPARTITIONS;
-    }
-    else if( splitsThatCanBeUsedForISP == VER_INTRA_SUBPARTITIONS )
-    {
-      nOptionsForISP = 2;
-      ispOptions[1] = VER_INTRA_SUBPARTITIONS;
-    }
-    else
-    {
-      nOptionsForISP = 1;
-    }
+  bool ispHorIsFirstTest = testISP ? CU::firstTestISPHorSplit( width, height, COMPONENT_Y, nullptr, nullptr ) : true;
+  int ispOptions[] = { NOT_INTRA_SUBPARTITIONS, HOR_INTRA_SUBPARTITIONS, VER_INTRA_SUBPARTITIONS };
+  if ( !ispHorIsFirstTest )
+  {
+    ispOptions[1] = VER_INTRA_SUBPARTITIONS;
+    ispOptions[2] = HOR_INTRA_SUBPARTITIONS;
   }
-  if( nOptionsForISP > 1 )
+  if( testISP )
   {
     //variables for the full RD list without MRL modes
     m_rdModeListWithoutMrl      .clear();
@@ -602,7 +574,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             }
           }
         }
-        if( nOptionsForISP > 1 )
+        if ( testISP )
         {
           //we save the list with no mrl modes to keep only the Hadamard selected modes (no mpms)
           m_rdModeListWithoutMrl = uiRdModeList;
@@ -716,7 +688,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
               CandCostList.push_back(0);
             }
           }
-          if( nOptionsForISP > 1 )
+          if ( testISP )
           {
             //we add the ISP MPMs to the list without mrl modes
             m_rdModeListWithoutMrlHor = m_rdModeListWithoutMrl;
@@ -727,7 +699,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
               m_rdModeListWithoutMrlVer[k].ispMod = VER_INTRA_SUBPARTITIONS;
             }
             static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM>* listPointer;
-            for( int k = 1; k < nOptionsForISP; k++ )
+            for( int k = 1; k < NUM_INTRA_SUBPARTITIONS_MODES; k++ )
             {
               cu.ispMode = ispOptions[k];
               listPointer = &( cu.ispMode == HOR_INTRA_SUBPARTITIONS ? m_rdModeListWithoutMrlHor : m_rdModeListWithoutMrlVer );
@@ -812,14 +784,14 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       }
     }
 
-    if( nOptionsForISP > 1 ) // we remove the non-MPMs from the ISP lists
+    if( testISP ) // we remove the non-MPMs from the ISP lists
     {
       static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeListCopyHor = m_rdModeListWithoutMrlHor;
       m_rdModeListWithoutMrlHor.clear();
       static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeListCopyVer = m_rdModeListWithoutMrlVer;
       m_rdModeListWithoutMrlVer.clear();
       static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> *listPointerCopy, *listPointer;
-      for( int ispOptionIdx = 1; ispOptionIdx < nOptionsForISP; ispOptionIdx++ )
+      for( int ispOptionIdx = 1; ispOptionIdx < NUM_INTRA_SUBPARTITIONS_MODES; ispOptionIdx++ )
       {
         cu.ispMode = ispOptions[ispOptionIdx];
         //we get the mpm cand list
@@ -866,7 +838,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       if (maxSize > 0)
       {
         uiRdModeList.resize(std::min<size_t>(uiRdModeList.size(), maxSize));
-        if (nOptionsForISP > 1)
+        if ( testISP )
         {
           m_rdModeListWithoutMrlHor.resize(std::min<size_t>(m_rdModeListWithoutMrlHor.size(), maxSize));
           m_rdModeListWithoutMrlVer.resize(std::min<size_t>(m_rdModeListWithoutMrlVer.size(), maxSize));
@@ -889,7 +861,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       }
     }
 
-    if ( nOptionsForISP > 1 )
+    if ( testISP )
     {
       //we create a single full RD list that includes all intra modes using regular intra, MRL and ISP
       auto* firstIspList  = ispOptions[1] == HOR_INTRA_SUBPARTITIONS ? &m_rdModeListWithoutMrlHor : &m_rdModeListWithoutMrlVer;
@@ -1908,7 +1880,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
   const bool           bUseCrossCPrediction = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isChroma( compID ) && PU::isChromaIntraModeCrossCheckMode( pu ) && checkCrossCPrediction;
   const bool           ccUseRecoResi        = m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate();
-  const bool           ispSplitIsAllowed    = sps.getUseISP() && CU::canUseISPSplit( *tu.cu, compID );
+  const bool           ispSplitIsAllowed    = sps.getUseISP() && CU::canUseISP( *tu.cu, compID );
 
 
   //===== init availability pattern =====

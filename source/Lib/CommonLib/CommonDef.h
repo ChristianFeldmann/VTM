@@ -263,8 +263,13 @@ static const int FAST_UDI_MAX_RDMODE_NUM = (NUM_LUMA_MODE + MAX_NUM_MIP_MODE); /
 
 static const int MAX_LFNST_COEF_NUM =                              16;
 
+#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+static const int LFNST_LAST_SIG_LUMA =                              1;
+static const int LFNST_LAST_SIG_CHROMA =                            1;
+#else
 static const int LFNST_SIG_NZ_LUMA =                                1;
 static const int LFNST_SIG_NZ_CHROMA =                              1;
+#endif
 
 static const int NUM_LFNST_NUM_PER_SET =                            3;
 

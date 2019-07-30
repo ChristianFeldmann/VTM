@@ -51,6 +51,7 @@
 #include <cassert>
 
 
+
 #define JVET_O0159_10BITTCTABLE_DEBLOCKING                1 // tc table for 10-bit video
 
 #define JVET_O0061_MV_THR_DEBLOCKING                      1 // a deblocking mv threshold of half pel
@@ -58,7 +59,6 @@
 #define JVET_O0220_METHOD1_SUBBLK_FLAG_PARSING            1 // JVET-O0220 method-1: Parse merge_subblock_flag conditioned on MaxNumSubblockMergeCand
 
 #define JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP          1 // JVET-O0263/ JVET-O0220: Syntax cleanup on subblock merge
-
 
 #define JVET_O0046_DQ_SIGNALLING                          1 // JVET-O0046: Move delta-QP earlier for 64x64 VPDU processing, applied to CUs >64x64 only
 

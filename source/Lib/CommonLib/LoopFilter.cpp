@@ -722,7 +722,11 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     if( 0 <= miQ.refIdx[0] ) { mvQ0 = miQ.mv[0]; }
     if( 0 <= miQ.refIdx[1] ) { mvQ1 = miQ.mv[1]; }
 
+#if JVET_O0061_MV_THR_DEBLOCKING
+    int nThreshold = (1 << MV_FRACTIONAL_BITS_INTERNAL) >> 1;
+#else
     int nThreshold = 1 << MV_FRACTIONAL_BITS_INTERNAL;
+#endif
     unsigned uiBs = 0;
 
     //th can be optimized
@@ -774,7 +778,11 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   Mv mvP0 = miP.mv[0];
   Mv mvQ0 = miQ.mv[0];
 
+#if JVET_O0061_MV_THR_DEBLOCKING
+  int nThreshold = (1 << MV_FRACTIONAL_BITS_INTERNAL) >> 1;
+#else
   int nThreshold = 1 << MV_FRACTIONAL_BITS_INTERNAL;
+#endif
   return ( ( abs( mvQ0.getHor() - mvP0.getHor() ) >= nThreshold ) || ( abs( mvQ0.getVer() - mvP0.getVer() ) >= nThreshold ) ) ? (tmpBs + 1) : tmpBs;
 }
 

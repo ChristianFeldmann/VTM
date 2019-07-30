@@ -844,14 +844,13 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
     WRITE_FLAG(pcSPS->getSameCQPTableForAllChromaFlag(), "same_qp_table_for_chroma");
-    for (int i = 0; i < pcSPS->getSameCQPTableForAllChromaFlag() ? 1 : 3; i++)
+    for (int i = 0; i < (pcSPS->getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
     {
-      WRITE_UVLC(pcSPS->getNumPtsInCQPTableMinus[i], "num_points_in_qp_table_minus1");
-
-      for (int j = 0; j <= pcSPS->getNumPtsInCQPTableMinus[i]; j++)
+      WRITE_UVLC(pcSPS->getNumPtsInCQPTableMinus1(i), "num_points_in_qp_table_minus1"); 
+      for (int j = 0; j <= pcSPS->getNumPtsInCQPTableMinus1(i); j++)
       {
-        WRITE_UVLC(pcSPS->getDeltaInValMinus1[i][j], "delta_qp_in_val_minus1");
-        WRITE_UVLC(pcSPS->getDeltaOutVal[i][j], "delta_qp_out_val");
+        WRITE_UVLC(pcSPS->getDeltaInValMinus1(i,j),  "delta_qp_in_val_minus1");
+        WRITE_UVLC(pcSPS->getDeltaOutVal(i, j),       "delta_qp_out_val");
       }
     }
   }

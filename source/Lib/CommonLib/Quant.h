@@ -84,14 +84,22 @@ struct QpParam
 private:
 
   QpParam(const int           qpy,
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+          const ComponentID   compID,
+#else
           const ChannelType   chType,
+#endif
           const int           qpBdOffset,
 #if JVET_O0919_TS_MIN_QP
           const int           minQpPrimeTsMinus4,
 #endif
           const int           chromaQPOffset,
           const ChromaFormat  chFmt,
-          const int           dqp );
+          const int           dqp 
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+        , const SPS           *sps
+#endif
+  );
 
 public:
 

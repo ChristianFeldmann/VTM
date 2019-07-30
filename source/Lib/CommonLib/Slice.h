@@ -815,7 +815,7 @@ private:
   bool              m_MIP;
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   bool              m_sameCQPTableForAllChromaFlag;
-  int               m_numPtsInCQPTable[MAX_NUM_CQP_MAPPING_TABLES];
+  int               m_numPtsInCQPTableMinus1[MAX_NUM_CQP_MAPPING_TABLES];
   std::vector<int>  m_deltaInValMinus1[MAX_NUM_CQP_MAPPING_TABLES];
   std::vector<int>  m_deltaOutVal[MAX_NUM_CQP_MAPPING_TABLES];
   std::map<int,int> m_chromaQPMappingTables[MAX_NUM_CQP_MAPPING_TABLES];
@@ -1083,16 +1083,18 @@ public:
   void      setUseWPBiPred        ( bool b )                                        { m_useWeightedBiPred = b; }
 #endif
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  bool      setSameCQPTableForAllChromaFlag (bool b)                                { m_sameCQPTableForAllChromaFlag = b;  }
+  void      setSameCQPTableForAllChromaFlag (bool b)                                { m_sameCQPTableForAllChromaFlag = b;  }
   bool      getSameCQPTableForAllChromaFlag()                             const     { return m_sameCQPTableForAllChromaFlag; }
-  bool      setNumPtsInCQPTableMinus1             (int tableIdx, int n)                   { m_numPtsInCQPTableMinus1[tableIdx] = n; }
-  bool      getNumPtsInCQPTableMinus1(int tableIdx)                             const     { return m_numPtsInCQPTableMinus1[tableIdx]; }
-  bool      setDeltaInValMinus1             (int tableIdx, int idx, int n)          { m_deltaInValMinus1[tableIdx][idx] = n; }
-  bool      getDeltaInValMinus1(int tableIdx, int idx)                    const     { return m_deltaInValMinus1[tableIdx][idx]; }
-  bool      setDeltaOutVal(int tableIdx, int idx, int n)                            { m_deltaOutVal[tableIdx][idx] = n; }
-  bool      getDeltaOutVal(int tableIdx, int idx)                         const     { return m_deltaOutVal[tableIdx][idx]; }
+  void      setNumPtsInCQPTableMinus1             (int tableIdx, int n)                   { m_numPtsInCQPTableMinus1[tableIdx] = n; }
+  int       getNumPtsInCQPTableMinus1(int tableIdx)                             const     { return m_numPtsInCQPTableMinus1[tableIdx]; }
+  void      setDeltaInValMinus1(int tableIdx, std::vector<int> &inVals) { m_deltaInValMinus1[tableIdx] = inVals; }
+  void      setDeltaInValMinus1             (int tableIdx, int idx, int n)          { m_deltaInValMinus1[tableIdx][idx] = n; }
+  int       getDeltaInValMinus1(int tableIdx, int idx)                    const     { return m_deltaInValMinus1[tableIdx][idx]; }
+  void      setDeltaOutVal(int tableIdx, std::vector<int> &outVals) { m_deltaOutVal[tableIdx] = outVals; }
+  void      setDeltaOutVal(int tableIdx, int idx, int n)                            { m_deltaOutVal[tableIdx][idx] = n; }
+  int       getDeltaOutVal(int tableIdx, int idx)                         const     { return m_deltaOutVal[tableIdx][idx]; }
 
-  int       getMappedChromaQPValue          (ComponentID compID, const int qpVal)   { return m_chromaQPMappingTables[m_sameCQPTableForAllChromaFlag ? 0 : compID - 1][qpVal];  }
+  int       getMappedChromaQPValue          (ComponentID compID, const int qpVal)  const  { return m_chromaQPMappingTables[m_sameCQPTableForAllChromaFlag ? 0 : (int)compID - 1].at(qpVal);  }
   void      derivedChromaQPMappingTables();
 #endif
 };

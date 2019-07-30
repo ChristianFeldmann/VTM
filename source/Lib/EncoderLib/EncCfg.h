@@ -239,6 +239,12 @@ protected:
   int       m_numReorderPics[MAX_TLAYER];
 
   int       m_iQP;                              //  if (AdaptiveQP == OFF)
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  bool      m_sameCQPTableForAllChroma;
+  int       m_numPtsInCQPTableMinus1[MAX_NUM_CQP_MAPPING_TABLES];
+  std::vector<int>  m_deltaInValMinus1[MAX_NUM_CQP_MAPPING_TABLES];
+  std::vector<int>  m_deltaOutVal[MAX_NUM_CQP_MAPPING_TABLES];
+#endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                    ///< QP offset for intra slice (integer)
   int       m_lambdaFromQPEnable;               ///< enable lambda derivation from QP
@@ -780,6 +786,18 @@ public:
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   void      setIntraQPOffset                ( int   i )         { m_intraQPOffset = i; }
   void      setLambdaFromQPEnable           ( bool  b )         { m_lambdaFromQPEnable = b; }
+#endif
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  void      setSameCQPTableForAllChroma(bool b) { m_sameCQPTableForAllChroma = b; }
+  bool      getSameCQPTableForAllChroma()                             const { return m_sameCQPTableForAllChroma; }
+  void      setNumPtsInCQPTableMinus1(int tableIdx, int n) { m_numPtsInCQPTableMinus1[tableIdx] = n; }
+  int       getNumPtsInCQPTableMinus1(int tableIdx)                             const { return m_numPtsInCQPTableMinus1[tableIdx]; }
+  void      setDeltaInValMinus1(int tableIdx, std::vector<int> &inVals) { m_deltaInValMinus1[tableIdx] = inVals; }
+  void      setDeltaInValMinus1(int tableIdx, int idx, int n) { m_deltaInValMinus1[tableIdx][idx] = n; }
+  int       getDeltaInValMinus1(int tableIdx, int idx)                    const { return m_deltaInValMinus1[tableIdx][idx]; }
+  void      setDeltaOutVal(int tableIdx, std::vector<int> &outVals) { m_deltaOutVal[tableIdx] = outVals; }
+  void      setDeltaOutVal(int tableIdx, int idx, int n) { m_deltaOutVal[tableIdx][idx] = n; }
+  int       getDeltaOutVal(int tableIdx, int idx)                         const { return m_deltaOutVal[tableIdx][idx]; }
 #endif
   void      setPad                          ( int*  iPad                   )      { for ( int i = 0; i < 2; i++ ) m_aiPad[i] = iPad[i]; }
 

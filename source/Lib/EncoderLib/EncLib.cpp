@@ -1039,6 +1039,16 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setLtRefPicPocLsbSps(k, 0);
     sps.setUsedByCurrPicLtSPSFlag(k, 0);
   }
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  sps.setSameCQPTableForAllChromaFlag(m_sameCQPTableForAllChroma);
+  for (int i = 0; i < (m_sameCQPTableForAllChroma ? 1 : 3); i++)
+  {
+    sps.setNumPtsInCQPTableMinus1(i, (int)m_deltaInValMinus1[i].size() - 1);
+    sps.setDeltaInValMinus1(i, m_deltaInValMinus1[i]);
+    sps.setDeltaOutVal(i, m_deltaOutVal[i]);
+  }
+  sps.derivedChromaQPMappingTables();
+#endif
 
 #if U0132_TARGET_BITS_SATURATION
   if( getPictureTimingSEIEnabled() || getDecodingUnitInfoSEIEnabled() || getCpbSaturationEnabled() )

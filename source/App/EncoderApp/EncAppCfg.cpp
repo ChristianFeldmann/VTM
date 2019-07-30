@@ -714,7 +714,19 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<int>  cfg_lumaLeveltoDQPMappingLuma       (0, std::numeric_limits<int>::max(), 0, LUMA_LEVEL_TO_DQP_LUT_MAXSIZE, defaultLumaLevelTodQp_LumaChangePoints, sizeof(defaultLumaLevelTodQp_LumaChangePoints)/sizeof(int));
   uint32_t lumaLevelToDeltaQPMode;
 #endif
-
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  //const int qpInVals[] = { 25, 33, 43 };
+  //const int qpOutVals[] = { 25, 32, 37 };
+  const int qpInVals[] = { 8, 25, 33, 43 };
+  const int qpOutVals[] = { 8, 26, 33, 38 };
+  SMultiValueInput<int> cfg_qpInValCb(0, 63, 0, 64, qpInVals, sizeof(qpInVals)/sizeof(int));
+  SMultiValueInput<int> cfg_qpOutValCb(0, 63, 0, 64, qpOutVals, sizeof(qpOutVals) / sizeof(int)); 
+  const int zeroVector[] = { 0 };
+  SMultiValueInput<int> cfg_qpInValCr(0, 63, 0, 64, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpOutValCr(0, 63, 0, 64, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpInValCbCr(0, 63, 0, 64, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpOutValCbCr(0, 63, 0, 64, zeroVector, 1);
+#endif
   const uint32_t defaultInputKneeCodes[3]  = { 600, 800, 900 };
   const uint32_t defaultOutputKneeCodes[3] = { 100, 250, 450 };
   SMultiValueInput<uint32_t> cfg_kneeSEIInputKneePointValue      (1,  999, 0, 999, defaultInputKneeCodes,  sizeof(defaultInputKneeCodes )/sizeof(uint32_t));
@@ -1018,7 +1030,16 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LumaLevelToDeltaQPMappingLuma",                   cfg_lumaLeveltoDQPMappingLuma,  cfg_lumaLeveltoDQPMappingLuma, "Luma to Delta QP Mapping - luma thresholds")
   ("LumaLevelToDeltaQPMappingDQP",                    cfg_lumaLeveltoDQPMappingQP,  cfg_lumaLeveltoDQPMappingQP, "Luma to Delta QP Mapping - DQP values")
 #endif
-
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  ("UseIdentityTableForNon420Chroma",                 m_useIdentityTableForNon420Chroma,                 true, "True: Indicates that 422/444 chroma uses identity chroma QP mapping tables; False: explicit Qp table may be specified in config")
+  ("SameCQPTablesForAllChroma",                       m_sameCQPTableForAllChroma,                        true, "0: Different tables for Cb, Cr and joint Cb-Cr components, 1 (default): Same tables for all three chroma components")
+  ("QpInValCb",                                       cfg_qpInValCb,                            cfg_qpInValCb, "Input coordinates for the QP table for Cb component")
+  ("QpOutValCb",                                      cfg_qpOutValCb,                          cfg_qpOutValCb, "Output coordinates for the QP table for Cb component")
+  ("QpInValCr",                                       cfg_qpInValCr,                            cfg_qpInValCr, "Input coordinates for the QP table for Cr component")
+  ("QpOutValCr",                                      cfg_qpOutValCr,                          cfg_qpOutValCr, "Output coordinates for the QP table for Cr component")
+  ("QpInValCbCr",                                     cfg_qpInValCbCr,                        cfg_qpInValCbCr, "Input coordinates for the QP table for joint Cb-Cr component")
+  ("QpOutValCbCr",                                    cfg_qpOutValCbCr,                      cfg_qpOutValCbCr, "Output coordinates for the QP table for joint Cb-Cr component")
+#endif
   ("CbQpOffset,-cbqpofs",                             m_cbQpOffset,                                         0, "Chroma Cb QP Offset")
   ("CrQpOffset,-crqpofs",                             m_crQpOffset,                                         0, "Chroma Cr QP Offset")
   ("CbQpOffsetDualTree",                              m_cbQpOffsetDualTree,                                 0, "Chroma Cb QP Offset for dual tree")
@@ -1904,6 +1925,43 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     for(uint32_t i=0; i<cfg_lumaLeveltoDQPMappingLuma.values.size(); i++)
     {
       m_lumaLevelToDeltaQPMapping.mapping[i]=std::pair<int,int>(cfg_lumaLeveltoDQPMappingLuma.values[i], cfg_lumaLeveltoDQPMappingQP.values[i]);
+    }
+  }
+#endif
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+
+  CHECK(cfg_qpInValCb.values.size() != cfg_qpOutValCb.values.size(), "Chroma QP table for Cb is incomplete.");
+  CHECK(cfg_qpInValCr.values.size() != cfg_qpOutValCr.values.size(), "Chroma QP table for Cr is incomplete.");
+  CHECK(cfg_qpInValCbCr.values.size() != cfg_qpOutValCbCr.values.size(), "Chroma QP table for CbCr is incomplete.");
+  if (m_useIdentityTableForNon420Chroma && m_chromaFormatIDC != CHROMA_420) 
+  {
+    m_sameCQPTableForAllChroma = true;
+    cfg_qpInValCb.values = { 0 };
+    cfg_qpInValCr.values = { 0 };
+    cfg_qpInValCbCr.values = { 0 };
+  }
+  m_deltaInValMinus1[0].resize(cfg_qpInValCb.values.size());
+  m_deltaOutVal[0].resize(cfg_qpOutValCb.values.size());
+  for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
+  {
+    m_deltaInValMinus1[0][i] = (i == 0) ? cfg_qpInValCb.values[i] + 6*(m_internalBitDepth[CHANNEL_TYPE_CHROMA]-8) : cfg_qpInValCb.values[i] - cfg_qpInValCb.values[i - 1] - 1;
+    m_deltaOutVal[0][i] = (i == 0) ? cfg_qpOutValCb.values[i] + 6*(m_internalBitDepth[CHANNEL_TYPE_CHROMA]-8) : cfg_qpOutValCb.values[i] - cfg_qpOutValCb.values[i - 1];
+  }
+  if (!m_sameCQPTableForAllChroma)
+  {
+    m_deltaInValMinus1[1].resize(cfg_qpInValCr.values.size());
+    m_deltaOutVal[1].resize(cfg_qpOutValCr.values.size());
+    for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
+    {
+      m_deltaInValMinus1[1][i] = (i == 0) ? cfg_qpInValCr.values[i] : cfg_qpInValCr.values[i] - cfg_qpInValCr.values[i - 1] - 1;
+      m_deltaOutVal[1][i] = (i == 0) ? cfg_qpOutValCr.values[i] : cfg_qpOutValCr.values[i] - cfg_qpOutValCr.values[i - 1];
+    }
+    m_deltaInValMinus1[2].resize(cfg_qpInValCbCr.values.size());
+    m_deltaOutVal[2].resize(cfg_qpOutValCbCr.values.size());
+    for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
+    {
+      m_deltaInValMinus1[2][i] = (i == 0) ? cfg_qpInValCbCr.values[i] : cfg_qpInValCbCr.values[i] - cfg_qpInValCbCr.values[i - 1] - 1;
+      m_deltaOutVal[2][i] = (i == 0) ? cfg_qpOutValCbCr.values[i] : cfg_qpOutValCbCr.values[i] - cfg_qpOutValCbCr.values[i - 1];
     }
   }
 #endif

@@ -63,23 +63,39 @@
 // ====================================================================================================================
 
 QpParam::QpParam(const int           qpy,
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+                 const ComponentID   compID,
+#else
                  const ChannelType   chType,
+#endif
                  const int           qpBdOffset,
 #if JVET_O0919_TS_MIN_QP
                  const int           minQpPrimeTsMinus4,
 #endif
                  const int           chromaQPOffset,
                  const ChromaFormat  chFmt,
-                 const int           dqp )
+                 const int           dqp 
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+              ,  const SPS           *sps
+#endif
+)
 {
   int baseQp;
-
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  if (isLuma(compID))
+#else
   if(isLuma(chType))
+#endif
   {
     baseQp = qpy + qpBdOffset;
   }
   else
   {
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+    int qpi = Clip3(-qpBdOffset, MAX_QP, qpy);
+    baseQp = sps->getMappedChromaQPValue(compID, qpi);
+    baseQp = Clip3(-qpBdOffset, MAX_QP, baseQp + chromaQPOffset) + qpBdOffset;
+#else
     baseQp = Clip3( -qpBdOffset, (chromaQPMappingTableSize - 1), qpy + chromaQPOffset );
 
     if(baseQp < 0)
@@ -90,6 +106,7 @@ QpParam::QpParam(const int           qpy,
     {
       baseQp = getScaledChromaQP(baseQp, chFmt) + qpBdOffset;
     }
+#endif
   }
 
   baseQp = Clip3( 0, MAX_QP+qpBdOffset, baseQp + dqp );
@@ -147,9 +164,17 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
   int dqp = 0;
 
 #if JVET_O0919_TS_MIN_QP
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getMinQpPrimeTsMinus4(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps);
+#else
   *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, toChannelType(compID), tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getMinQpPrimeTsMinus4(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp);
+#endif
+#else
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps);
 #else
   *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, toChannelType(compID), tu.cs->sps->getQpBDOffset(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp);
+#endif
 #endif
 }
 

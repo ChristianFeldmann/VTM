@@ -1454,7 +1454,7 @@ void CABACWriter::end_of_ctu( const CodingUnit& cu, CUCtx& cuCtx )
 }
 
 #if JVET_O0119_BASE_PALETTE_444
-void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, uint32_t NumComp, CUCtx& cuCtx)
+void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, uint32_t numComp, CUCtx& cuCtx)
 {
 	const SPS&        sps = *(cu.cs->sps);
 	TransformUnit&   tu = *cu.firstTU;
@@ -1479,7 +1479,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
 		exp_golomb_eqprob(cu.curPLTSize[compBegin] - reusedPLTnum, 0);
 	}
 
-	for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 	{
 		for (int idx = cu.reusePLTSize[compBegin]; idx < cu.curPLTSize[compBegin]; idx++)
 		{
@@ -1628,7 +1628,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
 
 	uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
 	uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
-	for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 	{
 		ComponentID compID = (ComponentID)comp;
 		for (strPos = 0; strPos < endPos; strPos++)
@@ -1692,18 +1692,18 @@ void CABACWriter::xEncodePLTPredIndicator(const CodingUnit& cu, uint32_t uiMaxPL
 		exp_golomb_eqprob(1, 0);
 	}
 }
-Pel CABACWriter::writePLTIndex(const CodingUnit& cu, uint32_t idx, PelBuf& PLTIdx, PLTtypeBuf& PLTrunType, int maxSymbol, ComponentID compBegin)
+Pel CABACWriter::writePLTIndex(const CodingUnit& cu, uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin)
 {
 	uint32_t posy = m_puiScanOrder[idx].y;
 	uint32_t posx = m_puiScanOrder[idx].x;
-	Pel siCurLevel = (PLTIdx.at(posx, posy) == cu.curPLTSize[compBegin]) ? (maxSymbol - 1) : PLTIdx.at(posx, posy);
+	Pel siCurLevel = (paletteIdx.at(posx, posy) == cu.curPLTSize[compBegin]) ? (maxSymbol - 1) : paletteIdx.at(posx, posy);
 	if (idx) // R0348: remove index redundancy
 	{
 		uint32_t prevposy = m_puiScanOrder[idx - 1].y;
 		uint32_t prevposx = m_puiScanOrder[idx - 1].x;
-		if (PLTrunType.at(prevposx, prevposy) == PLT_RUN_INDEX)
+		if (paletteRunType.at(prevposx, prevposy) == PLT_RUN_INDEX)
 		{
-			Pel siLeftLevel = PLTIdx.at(prevposx, prevposy); // left index
+			Pel siLeftLevel = paletteIdx.at(prevposx, prevposy); // left index
 			if (siLeftLevel == cu.curPLTSize[compBegin]) // escape mode
 			{
 				siLeftLevel = maxSymbol - 1;
@@ -1720,8 +1720,8 @@ Pel CABACWriter::writePLTIndex(const CodingUnit& cu, uint32_t idx, PelBuf& PLTId
 			if (cu.useRotation[compBegin])
 			{
 				assert(prevposx > 0);
-				siAboveLevel = PLTIdx.at(posx - 1, posy);
-				if (PLTIdx.at(posx - 1, posy) == cu.curPLTSize[compBegin]) // escape mode
+				siAboveLevel = paletteIdx.at(posx - 1, posy);
+				if (paletteIdx.at(posx - 1, posy) == cu.curPLTSize[compBegin]) // escape mode
 				{
 					siAboveLevel = maxSymbol - 1;
 				}
@@ -1729,8 +1729,8 @@ Pel CABACWriter::writePLTIndex(const CodingUnit& cu, uint32_t idx, PelBuf& PLTId
 			else
 			{
 				assert(prevposy > 0);
-				siAboveLevel = PLTIdx.at(posx, posy - 1);
-				if (PLTIdx.at(posx, posy - 1) == cu.curPLTSize[compBegin]) // escape mode
+				siAboveLevel = paletteIdx.at(posx, posy - 1);
+				if (paletteIdx.at(posx, posy - 1) == cu.curPLTSize[compBegin]) // escape mode
 				{
 					siAboveLevel = maxSymbol - 1;
 				}

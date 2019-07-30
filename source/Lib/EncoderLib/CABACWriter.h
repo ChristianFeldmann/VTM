@@ -110,10 +110,10 @@ public:
   void        mip_pred_modes            ( const CodingUnit&             cu );
   void        mip_pred_mode             ( const PredictionUnit&         pu );
 #if JVET_O0119_BASE_PALETTE_444
-  void        cu_palette_info			( const CodingUnit& cu, ComponentID compBegin, uint32_t NumComp, CUCtx& cuCtx);
+  void        cu_palette_info			( const CodingUnit& cu, ComponentID compBegin, uint32_t numComp, CUCtx& cuCtx);
   void        cu_run_val				( uint32_t uiRun, PLTRunMode runtype, const uint32_t uiPltIdx, const uint32_t uiMaxRun);
   void        encodeRunType				( const CodingUnit&  cu, PLTtypeBuf& runType, uint32_t idx, ScanElement *refScanOrder, ComponentID compBegin);
-  Pel         writePLTIndex			( const CodingUnit& cu, uint32_t idx, PelBuf& PLTIdx, PLTtypeBuf& PLTrunType, int maxSymbol, ComponentID compBegin);
+  Pel         writePLTIndex			( const CodingUnit& cu, uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin);
 #endif
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( const PredictionUnit&         pu );

@@ -1462,7 +1462,7 @@ void IntraSearch::xEncPCM(CodingStructure &cs, Partitioner& partitioner, const C
 }
 
 #if JVET_O0119_BASE_PALETTE_444
-void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp)
+void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
 {
 	CodingUnit &cu = *cs.getCU(partitioner.chType);
 	TransformUnit &tu = *cs.getTU(partitioner.chType);
@@ -1480,17 +1480,17 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
 	bool *pRunType = tu.get_vRunType(compBegin);
 	cu.lastPLTSize[compBegin] = cs.prevPLT.curPLTSize[compBegin];
 	//derive palette
-	derivePLTLossy(cs, partitioner, compBegin, NumComp);
-	reorderPLT(cs, partitioner, compBegin, NumComp);
+	derivePLTLossy(cs, partitioner, compBegin, numComp);
+	reorderPLT(cs, partitioner, compBegin, numComp);
 
 	//calculate palette index
-	preCalcPLTIndex(cs, partitioner, compBegin, NumComp);
+	preCalcPLTIndex(cs, partitioner, compBegin, numComp);
 	//derive run
 	uint64_t uiBits = MAX_UINT;
-	deriveRunAndCalcBits(cs, partitioner, compBegin, NumComp, PLT_SCAN_HORTRAV, uiBits);
+	deriveRunAndCalcBits(cs, partitioner, compBegin, numComp, PLT_SCAN_HORTRAV, uiBits);
 	if ((cu.curPLTSize[compBegin] + cu.useEscape[compBegin]) > 1)
 	{
-		deriveRunAndCalcBits(cs, partitioner, compBegin, NumComp, PLT_SCAN_VERTRAV, uiBits);
+		deriveRunAndCalcBits(cs, partitioner, compBegin, numComp, PLT_SCAN_VERTRAV, uiBits);
 	}
 	cu.useRotation[compBegin] = m_bBestScanRotationMode;
 	memcpy(pRunType, m_runTypeRD, sizeof(bool)*uiWidth*uiHeight);
@@ -1507,7 +1507,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
 			}
 			else
 			{
-				for (uint32_t compID = compBegin; compID < (compBegin + NumComp); compID++)
+				for (uint32_t compID = compBegin; compID < (compBegin + numComp); compID++)
 				{
 					CompArea  area = cu.blocks[compID];
 					PelBuf    recBuf = cs.getRecoBuf(area);
@@ -1535,7 +1535,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
 	cs.fracBits = MAX_UINT;
 	cs.cost = MAX_DOUBLE;
 	Distortion distortion = 0;
-	for (uint32_t comp = compBegin; comp < (compBegin + NumComp); comp++)
+	for (uint32_t comp = compBegin; comp < (compBegin + numComp); comp++)
 	{
 		const ComponentID compID = ComponentID(comp);
 		CPelBuf reco = cs.getRecoBuf(compID);
@@ -1570,7 +1570,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
 	cs.setDecomp(area);
 	cs.picture->getRecoBuf(area).copyFrom(cs.getRecoBuf(area));
 }
-void IntraSearch::deriveRunAndCalcBits(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp, PLTScanMode pltScanMode, uint64_t& uiMinBits)
+void IntraSearch::deriveRunAndCalcBits(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, uint64_t& uiMinBits)
 {
 	CodingUnit &cu = *cs.getCU(partitioner.chType);
 	TransformUnit &tu = *cs.getTU(partitioner.chType);
@@ -1582,7 +1582,7 @@ void IntraSearch::deriveRunAndCalcBits(CodingStructure& cs, Partitioner& partiti
 	cu.useRotation[compBegin] = (pltScanMode == PLT_SCAN_VERTRAV); // JC: rotate
 
 	m_puiScanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(uiWidth)][gp_sizeIdxInfo->idxFrom(uiHeight)];
-	deriveRun(cs, partitioner, compBegin, NumComp);
+	deriveRun(cs, partitioner, compBegin);
 
 	m_CABACEstimator->getCtx() = PLTCtx(m_orgCtxRD);
 	m_CABACEstimator->resetBits();
@@ -1590,7 +1590,7 @@ void IntraSearch::deriveRunAndCalcBits(CodingStructure& cs, Partitioner& partiti
 	CUCtx cuCtx;
 	cuCtx.isDQPCoded = true;
 	cuCtx.isChromaQpAdjCoded = true;
-	m_CABACEstimator->cu_palette_info(cu, compBegin, NumComp, cuCtx);
+	m_CABACEstimator->cu_palette_info(cu, compBegin, numComp, cuCtx);
 	uint64_t nBitsTemp = m_CABACEstimator->getEstFracBits();
 	if (uiMinBits > nBitsTemp)
 	{
@@ -1600,7 +1600,7 @@ void IntraSearch::deriveRunAndCalcBits(CodingStructure& cs, Partitioner& partiti
 		uiMinBits = nBitsTemp;
 	}
 }
-void IntraSearch::deriveRun(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp)
+void IntraSearch::deriveRun(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin)
 {
 	CodingUnit &cu = *cs.getCU(partitioner.chType);
 	TransformUnit &tu = *cs.getTU(partitioner.chType);
@@ -1666,7 +1666,7 @@ void IntraSearch::deriveRun(CodingStructure& cs, Partitioner& partitioner, Compo
 	}
 	assert(uiIdx == uiTotal);
 }
-double IntraSearch::getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t strPos, PLTRunMode PaletteRunMode, uint64_t* indexBits, uint64_t* runBits, ComponentID compBegin)
+double IntraSearch::getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t strPos, PLTRunMode paletteRunMode, uint64_t* indexBits, uint64_t* runBits, ComponentID compBegin)
 {
 	TransformUnit&   tu = *cu.firstTU;
 	uint32_t uiHeight = cu.block(compBegin).height;
@@ -1681,7 +1681,7 @@ double IntraSearch::getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t str
 	m_CABACEstimator->encodeRunType(cu, runType, strPos, m_puiScanOrder, compBegin);
 	uint64_t RunTypeBits = m_CABACEstimator->getEstFracBits();
 	uint32_t curLevel = 0;
-	switch (PaletteRunMode)
+	switch (paletteRunMode)
 	{
 	case PLT_RUN_INDEX:
 		curLevel = m_CABACEstimator->writePLTIndex(cu, strPos, curPLTIdx, runType, uiIndexMaxSize, compBegin);
@@ -1700,7 +1700,7 @@ double IntraSearch::getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t str
 	double dCostPerPixel = (double)m_CABACEstimator->getEstFracBits() / (double)run;
 	return dCostPerPixel;
 }
-void IntraSearch::preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp)
+void IntraSearch::preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
 {
 	CodingUnit &cu = *cs.getCU(partitioner.chType);
 	TransformUnit &tu = *cs.getTU(partitioner.chType);
@@ -1713,7 +1713,7 @@ void IntraSearch::preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner,
 	uint32_t uiWidth = cu.block(compBegin).width;
 
 	CPelBuf   orgBuf[3];
-	for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 	{
 		CompArea  area = cu.blocks[comp];
 		if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
@@ -1727,7 +1727,7 @@ void IntraSearch::preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner,
 	}
 
 	PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
-	int iErrorLimit = NumComp * g_uhPLTQuant[cu.qp];
+	int iErrorLimit = numComp * g_uhPLTQuant[cu.qp];
 
 	uint32_t uiBestIdx = 0;
 
@@ -1743,7 +1743,7 @@ void IntraSearch::preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner,
 			while (uiPLTIdx < cu.curPLTSize[compBegin])
 			{
 				uint32_t uiAbsError = 0, pX, pY;
-				for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+				for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 				{
 					pX = (comp > 0 && compBegin == COMPONENT_Y) ? (uiX >> scaleX) : uiX;
 					pY = (comp > 0 && compBegin == COMPONENT_Y) ? (uiY >> scaleY) : uiY;
@@ -1768,19 +1768,19 @@ void IntraSearch::preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner,
 			{
 				curPLTIdx.at(uiX, uiY) = cu.curPLTSize[compBegin];
 				cu.useEscape[compBegin] = true;
-				calcPixelPred(cs, partitioner, uiY, uiX, compBegin, NumComp);
+				calcPixelPred(cs, partitioner, uiY, uiX, compBegin, numComp);
 			}
 
 		}
 	}
 }
-void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, uint32_t uiY, uint32_t uiX, ComponentID compBegin, uint32_t NumComp)
+void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, uint32_t uiY, uint32_t uiX, ComponentID compBegin, uint32_t numComp)
 {
 	CodingUnit &cu = *cs.getCU(partitioner.chType);
 	TransformUnit &tu = *cs.getTU(partitioner.chType);
 
 	CPelBuf   orgBuf[3];
-	for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 	{
 		CompArea  area = cu.blocks[comp];
 		if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
@@ -1801,7 +1801,7 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
 	int rightShiftOffset[3];
 	int InvquantiserRightShift[3];
 	int iAdd[3];
-	for (uint32_t ch = compBegin; ch < (compBegin + NumComp); ch++)
+	for (uint32_t ch = compBegin; ch < (compBegin + numComp); ch++)
 	{
 		QpParam cQP(tu, ComponentID(ch));
 		iQP[ch] = cQP.Qp;
@@ -1817,7 +1817,7 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
 	uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, cs.sps->getChromaFormatIdc());
 	uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, cs.sps->getChromaFormatIdc());
 
-	for (uint32_t ch = compBegin; ch < (compBegin + NumComp); ch++)
+	for (uint32_t ch = compBegin; ch < (compBegin + numComp); ch++)
 	{
 		const int  channelBitDepth = cu.cs->sps->getBitDepth(toChannelType((ComponentID)ch));
 		CompArea  area = cu.blocks[ch];
@@ -1841,7 +1841,7 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
 		}
 	}
 }
-void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp)
+void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
 {
 	CodingUnit &cu = *cs.getCU(partitioner.chType);
 	const int  channelBitDepth_L = cs.sps->getBitDepth(CHANNEL_TYPE_LUMA);
@@ -1853,7 +1853,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 	uint32_t uiWidth = cu.block(compBegin).width;
 
 	CPelBuf   orgBuf[3];
-	for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 	{
 		CompArea  area = cu.blocks[comp];
 		if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
@@ -1883,19 +1883,19 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 		for (uint32_t uiX = 0; uiX < uiWidth; uiX++)
 		{
 			uint32_t paOrig[3], pX, pY;
-			for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+			for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 			{
 				pX = (comp > 0 && compBegin == COMPONENT_Y) ? (uiX >> scaleX) : uiX;
 				pY = (comp > 0 && compBegin == COMPONENT_Y) ? (uiY >> scaleY) : uiY;
 				paOrig[comp] = orgBuf[comp].at(pX, pY);
 			}
-			sElement.setAll(paOrig, compBegin, NumComp);
-			int besti = last, bestSAD = (last == -1) ? MAX_UINT : psList[last].getSAD(sElement, cs.sps->getBitDepths(), compBegin, NumComp);
+			sElement.setAll(paOrig, compBegin, numComp);
+			int besti = last, bestSAD = (last == -1) ? MAX_UINT : psList[last].getSAD(sElement, cs.sps->getBitDepths(), compBegin, numComp);
 			if (bestSAD)
 			{
 				for (int i = uiIdx - 1; i >= 0; i--)
 				{
-					uint32_t sad = psList[i].getSAD(sElement, cs.sps->getBitDepths(), compBegin, NumComp);
+					uint32_t sad = psList[i].getSAD(sElement, cs.sps->getBitDepths(), compBegin, numComp);
 					if (sad < bestSAD)
 					{
 						bestSAD = sad;
@@ -1904,14 +1904,14 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 					}
 				}
 			}
-			if (besti >= 0 && psList[besti].almostEqualData(sElement, iErrorLimit, cs.sps->getBitDepths(), compBegin, NumComp))
+			if (besti >= 0 && psList[besti].almostEqualData(sElement, iErrorLimit, cs.sps->getBitDepths(), compBegin, numComp))
 			{
-				psList[besti].addElement(sElement, compBegin, NumComp);
+				psList[besti].addElement(sElement, compBegin, numComp);
 				last = besti;
 			}
 			else
 			{
-				psList[uiIdx].copyDataFrom(sElement, compBegin, NumComp);
+				psList[uiIdx].copyDataFrom(sElement, compBegin, numComp);
 				psList[uiIdx].uiCnt = 1;
 				last = uiIdx;
 				uiIdx++;
@@ -1922,7 +1922,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 	for (int i = 0; i < uiDictMaxSize; i++)
 	{
 		pListSort[i].uiCnt = 0;
-		pListSort[i].resetAll(compBegin, NumComp);
+		pListSort[i].resetAll(compBegin, numComp);
 	}
 
 	//bubble sorting
@@ -1936,7 +1936,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 			{
 				if (psList[i].uiCnt > pListSort[j - 1].uiCnt)
 				{
-					pListSort[j].copyAllFrom(pListSort[j - 1], compBegin, NumComp);
+					pListSort[j].copyAllFrom(pListSort[j - 1], compBegin, numComp);
 					uiDictMaxSize = std::min(uiDictMaxSize + 1, (uint32_t)MAXPLTSIZE);
 				}
 				else
@@ -1944,13 +1944,13 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 					break;
 				}
 			}
-			pListSort[j].copyAllFrom(psList[i], compBegin, NumComp);
+			pListSort[j].copyAllFrom(psList[i], compBegin, numComp);
 		}
 	}
 
 	uint32_t uiPLTSize = 0;
 	uint64_t numColorBits = 0;
-	for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 	{
 		numColorBits += (comp > 0) ? channelBitDepth_C : channelBitDepth_L;
 	}
@@ -1961,7 +1961,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 		if (pListSort[i].uiCnt)
 		{
 			int iHalf = pListSort[i].uiCnt >> 1;
-			for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+			for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 			{
 				cu.curPLT[comp][uiPLTSize] = (pListSort[i].uiSumData[comp] + iHalf) / pListSort[i].uiCnt;
 			}
@@ -1970,7 +1970,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 			if (iErrorLimit)
 			{
 				double pal[MAX_NUM_COMPONENT], err = 0.0, bestCost = 0.0;
-				for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+				for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 				{
 					const int shift = (comp > 0) ? pcmShiftRight_C : pcmShiftRight_L;
 					pal[comp] = pListSort[i].uiSumData[comp] / (double)pListSort[i].uiCnt;
@@ -1982,7 +1982,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 				for (int t = 0; t < cs.prevPLT.curPLTSize[compBegin]; t++)
 				{
 					double cost = 0.0;
-					for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+					for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 					{
 						const int shift = (comp > 0) ? pcmShiftRight_C : pcmShiftRight_L;
 						err = pal[comp] - cs.prevPLT.curPLT[comp][t];
@@ -1997,7 +1997,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 				}
 				if (best != -1)
 				{
-					for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+					for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 					{
 						cu.curPLT[comp][uiPLTSize] = cs.prevPLT.curPLT[comp][best];
 					}
@@ -2014,7 +2014,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 				for (int t = 0; t<uiPLTSize; t++)
 				{
 					bool bDuplicateTmp = true;
-					for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+					for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 					{
 						bDuplicateTmp = bDuplicateTmp && (cu.curPLT[comp][uiPLTSize] == cu.curPLT[comp][t]);
 					}

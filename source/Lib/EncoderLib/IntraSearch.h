@@ -154,8 +154,8 @@ public:
   void estIntraPredChromaQT       ( CodingUnit &cu, Partitioner& pm, const double maxCostAllowed = MAX_DOUBLE );
   void IPCMSearch                 (CodingStructure &cs, Partitioner& partitioner);
 #if JVET_O0119_BASE_PALETTE_444
-  void PLTSearch				  ( CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp);
-  void deriveRunAndCalcBits		  ( CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp, PLTScanMode pltScanMode, uint64_t& uiBits);
+  void PLTSearch				  ( CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+  void deriveRunAndCalcBits		  ( CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, uint64_t& uiBits);
 #endif
   uint64_t xFracModeBitsIntra     (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
 
@@ -194,11 +194,11 @@ protected:
 
   double m_bestCostNonMip;
 #if JVET_O0119_BASE_PALETTE_444
-  void   deriveRun(CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp);
-  double getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t strPos, PLTRunMode PaletteRunMode, uint64_t* indexBits, uint64_t* runBits, ComponentID compBegin);
-  void       derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp);
-  void       calcPixelPred(CodingStructure& cs, Partitioner& partitioner, uint32_t uiY, uint32_t uiX, ComponentID compBegin, uint32_t NumComp);
-  void       preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp);
+  void   deriveRun(CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin);
+  double getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t strPos, PLTRunMode paletteRunMode, uint64_t* indexBits, uint64_t* runBits, ComponentID compBegin);
+  void       derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+  void       calcPixelPred(CodingStructure& cs, Partitioner& partitioner, uint32_t uiY, uint32_t uiX, ComponentID compBegin, uint32_t numComp);
+  void       preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
 #endif
 };// END CLASS DEFINITION EncSearch
 

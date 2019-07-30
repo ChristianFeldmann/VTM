@@ -200,7 +200,7 @@ public:
 #if JVET_O0119_BASE_PALETTE_444
   PLTBuf prevPLT;
   void resetPrevPLT(PLTBuf& prevPLT);
-  void reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NUM_COMPONENT], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t NumComp, bool jointPLT);
+  void reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NUM_COMPONENT], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT);
 #endif
 private:
 

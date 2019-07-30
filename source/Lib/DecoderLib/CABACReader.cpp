@@ -604,30 +604,30 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
 
 #if JVET_O0119_BASE_PALETTE_444
   uint32_t compBegin;
-  uint32_t NumComp;
+  uint32_t numComp;
   bool jointPLT = false;
   if (CS::isDualITree(*cu.cs))
   {
 	  if (isLuma(partitioner.chType))
 	  {
 		  compBegin = COMPONENT_Y;
-		  NumComp = 1;
+		  numComp = 1;
 	  }
 	  else
 	  {
 		  compBegin = COMPONENT_Cb;
-		  NumComp = 2;
+		  numComp = 2;
 	  }
   }
   else
   {
 	  compBegin = COMPONENT_Y;
-	  NumComp = 3;
+	  numComp = 3;
 	  jointPLT = true;
   }
   if (CU::isPLT(cu))
   {
-	  cs.reorderPrevPLT(cs.prevPLT, cu.curPLTSize, cu.curPLT, cu.reuseflag, compBegin, NumComp, jointPLT);
+	  cs.reorderPrevPLT(cs.prevPLT, cu.curPLTSize, cu.curPLT, cu.reuseflag, compBegin, numComp, jointPLT);
   }
 #endif
   DTRACE( g_trace_ctx, D_QP, "x=%d, y=%d, w=%d, h=%d, qp=%d\n", cu.Y().x, cu.Y().y, cu.Y().width, cu.Y().height, cu.qp );
@@ -1599,7 +1599,7 @@ bool CABACReader::end_of_ctu( CodingUnit& cu, CUCtx& cuCtx )
 }
 
 #if JVET_O0119_BASE_PALETTE_444
-void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_t NumComp, CUCtx& cuCtx)
+void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_t numComp, CUCtx& cuCtx)
 {
 	const SPS&        sps = *(cu.cs->sps);
 	TransformUnit&   tu = *cu.firstTU;
@@ -1616,7 +1616,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
 	{
 		if (cu.reuseflag[compBegin][idx])
 		{
-			for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+			for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 			{
 				cu.curPLT[comp][curPLTidx] = cu.cs->prevPLT.curPLT[comp][idx];
 			}
@@ -1632,7 +1632,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
 	}
 
 	cu.curPLTSize[compBegin] = curPLTidx + recievedPLTnum;
-	for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 	{
 		for (int idx = curPLTidx; idx < cu.curPLTSize[compBegin]; idx++)
 		{
@@ -1821,7 +1821,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
 
 	uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
 	uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
-	for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 	{
 		ComponentID compID = (ComponentID)comp;
 		for (strPos = 0; strPos < endPos; strPos++)
@@ -1883,7 +1883,7 @@ void CABACReader::xDecodePLTPredIndicator(CodingUnit& cu, uint32_t uiMaxPLTSize,
 		}
 	}
 }
-void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel siCurLevel, uint32_t idx, PelBuf& PLTIdx, PLTtypeBuf& PLTrunType, int maxSymbol, ComponentID compBegin)
+void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel siCurLevel, uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin)
 {
 	uint32_t uiSymbol;
 	int iRefLevel = MAX_INT;
@@ -1893,10 +1893,10 @@ void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel siCurLevel, uint32_t idx, 
 	{
 		uint32_t prevposy = m_puiScanOrder[idx - 1].y;
 		uint32_t prevposx = m_puiScanOrder[idx - 1].x;
-		if (PLTrunType.at(prevposx, prevposy) == PLT_RUN_INDEX)
+		if (paletteRunType.at(prevposx, prevposy) == PLT_RUN_INDEX)
 		{
-			iRefLevel = PLTIdx.at(prevposx, prevposy);
-			if (PLTIdx.at(prevposx, prevposy) == cu.curPLTSize[compBegin]) // escape
+			iRefLevel = paletteIdx.at(prevposx, prevposy);
+			if (paletteIdx.at(prevposx, prevposy) == cu.curPLTSize[compBegin]) // escape
 			{
 				iRefLevel = maxSymbol - 1;
 			}
@@ -1906,8 +1906,8 @@ void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel siCurLevel, uint32_t idx, 
 			if (cu.useRotation[compBegin])
 			{
 				assert(prevposx > 0);
-				iRefLevel = PLTIdx.at(posx - 1, posy);
-				if (PLTIdx.at(posx - 1, posy) == cu.curPLTSize[compBegin]) // escape mode
+				iRefLevel = paletteIdx.at(posx - 1, posy);
+				if (paletteIdx.at(posx - 1, posy) == cu.curPLTSize[compBegin]) // escape mode
 				{
 					iRefLevel = maxSymbol - 1;
 				}
@@ -1915,8 +1915,8 @@ void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel siCurLevel, uint32_t idx, 
 			else
 			{
 				assert(prevposy > 0);
-				iRefLevel = PLTIdx.at(posx, posy - 1);
-				if (PLTIdx.at(posx, posy - 1) == cu.curPLTSize[compBegin]) // escape mode
+				iRefLevel = paletteIdx.at(posx, posy - 1);
+				if (paletteIdx.at(posx, posy - 1) == cu.curPLTSize[compBegin]) // escape mode
 				{
 					iRefLevel = maxSymbol - 1;
 				}
@@ -1929,7 +1929,7 @@ void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel siCurLevel, uint32_t idx, 
 	{
 		uiSymbol++;
 	}
-	PLTIdx.at(posx, posy) = uiSymbol;
+	paletteIdx.at(posx, posy) = uiSymbol;
 }
 uint32_t  CABACReader::cu_run_val(PLTRunMode runtype, const uint32_t uiPltIdx, const uint32_t uiMaxRun)
 {

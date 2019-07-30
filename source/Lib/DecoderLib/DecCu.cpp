@@ -400,7 +400,7 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
 }
 
 #if JVET_O0119_BASE_PALETTE_444
-void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t NumComp)
+void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
 {
 	const SPS&        sps = *(cu.cs->sps);
 	TransformUnit&   tu = *cu.firstTU;
@@ -416,7 +416,7 @@ void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t NumComp)
 	{
 		for (uint32_t uiX = 0; uiX < uiWidth; uiX++)
 		{
-			for (uint32_t compID = compBegin; compID < (compBegin + NumComp); compID++)
+			for (uint32_t compID = compBegin; compID < (compBegin + numComp); compID++)
 			{
 				const int  channelBitDepth = cu.cs->sps->getBitDepth(toChannelType((ComponentID)compID));
 				const CompArea &area = cu.blocks[compID];
@@ -468,7 +468,7 @@ void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t NumComp)
 			}
 		}
 	}
-	for (uint32_t compID = compBegin; compID < (compBegin + NumComp); compID++)
+	for (uint32_t compID = compBegin; compID < (compBegin + numComp); compID++)
 	{
 		const CompArea &area = cu.blocks[compID];
 		PelBuf piPicReco = cu.cs->getRecoBuf(area);

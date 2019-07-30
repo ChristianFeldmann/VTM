@@ -601,25 +601,25 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 #endif
 #if JVET_O0119_BASE_PALETTE_444
   uint32_t compBegin;
-  uint32_t NumComp;
+  uint32_t numComp;
   bool jointPLT = false;
   if (CS::isDualITree(*bestCS))
   {
 	  if (isLuma(partitioner.chType))
 	  {
 		  compBegin = COMPONENT_Y;
-		  NumComp = 1;
+		  numComp = 1;
 	  }
 	  else
 	  {
 		  compBegin = COMPONENT_Cb;
-		  NumComp = 2;
+		  numComp = 2;
 	  }
   }
   else
   {
 	  compBegin = COMPONENT_Y;
-	  NumComp = 3;
+	  numComp = 3;
 	  jointPLT = true;
   }
   SplitSeries splitmode = -1;
@@ -627,7 +627,7 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   Pel		bestLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT for partition
   uint32_t	curLastPLTSize[MAX_NUM_COMPONENT];
   Pel		curLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT if no partition
-  for (int i = compBegin; i < (compBegin + NumComp); i++)
+  for (int i = compBegin; i < (compBegin + numComp); i++)
   {
 	  ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
 	  bestLastPLTSize[comID] = 0;
@@ -695,7 +695,7 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   do
   {
 #if JVET_O0119_BASE_PALETTE_444
-	for (int i = compBegin; i < (compBegin + NumComp); i++)
+	for (int i = compBegin; i < (compBegin + numComp); i++)
 	{
 		ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
 		tempCS->prevPLT.curPLTSize[comID] = curLastPLTSize[comID];
@@ -817,7 +817,7 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 		  splitmode = bestCS->cus[0]->splitSeries;
 		  const CodingUnit&     cu = *bestCS->cus.front();
 		  cu.cs->prevPLT = bestCS->prevPLT;
-		  for (int i = compBegin; i < (compBegin + NumComp); i++)
+		  for (int i = compBegin; i < (compBegin + numComp); i++)
 		  {
 			  ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
 			  bestLastPLTSize[comID] = bestCS->cus[0]->cs->prevPLT.curPLTSize[comID];
@@ -894,17 +894,17 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   {
 	  if (bestCS->cus[0]->predMode == MODE_PLT)
 	  {
-		  for (int i = compBegin; i < (compBegin + NumComp); i++)
+		  for (int i = compBegin; i < (compBegin + numComp); i++)
 		  {
 			  ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
 			  bestCS->prevPLT.curPLTSize[comID] = curLastPLTSize[comID];
 			  memcpy(bestCS->prevPLT.curPLT[i], curLastPLT[i], curLastPLTSize[comID] * sizeof(Pel));
 		  }
-		  bestCS->reorderPrevPLT(bestCS->prevPLT, bestCS->cus[0]->curPLTSize, bestCS->cus[0]->curPLT, bestCS->cus[0]->reuseflag, compBegin, NumComp, jointPLT);
+		  bestCS->reorderPrevPLT(bestCS->prevPLT, bestCS->cus[0]->curPLTSize, bestCS->cus[0]->curPLT, bestCS->cus[0]->reuseflag, compBegin, numComp, jointPLT);
 	  }
 	  else
 	  {
-		  for (int i = compBegin; i<(compBegin + NumComp); i++)
+		  for (int i = compBegin; i<(compBegin + numComp); i++)
 		  {
 			  ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
 			  bestCS->prevPLT.curPLTSize[comID] = curLastPLTSize[comID];
@@ -914,7 +914,7 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   }
   else
   {
-	  for (int i = compBegin; i<(compBegin + NumComp); i++)
+	  for (int i = compBegin; i<(compBegin + numComp); i++)
 	  {
 		  ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
 		  bestCS->prevPLT.curPLTSize[comID] = bestLastPLTSize[comID];

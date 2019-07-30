@@ -2009,7 +2009,7 @@ bool IntraPrediction::calIndexRun(CodingStructure &cs, Partitioner& partitioner,
 	}
 	return true;
 }
-void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp)
+void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
 {
 	CodingUnit &cu = *cs.getCU(partitioner.chType);
 
@@ -2036,7 +2036,7 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 		for (curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
 		{
 			bool matchTmp = true;
-			for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+			for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 			{
 				matchTmp = matchTmp && (cu.curPLT[comp][curidx] == cs.prevPLT.curPLT[comp][predidx]);
 			}
@@ -2051,7 +2051,7 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 		{
 			cu.reuseflag[compBegin][predidx] = true;
 			curPLTpred[curidx] = true;
-			for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+			for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 			{
 				curPLTtmp[comp][reusePLTSizetmp] = cs.prevPLT.curPLT[comp][predidx];
 			}
@@ -2064,7 +2064,7 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 	{
 		if (!curPLTpred[curidx])
 		{
-			for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+			for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 			{
 				curPLTtmp[comp][PLTSizetmp] = cu.curPLT[comp][curidx];
 			}
@@ -2074,7 +2074,7 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 	assert(PLTSizetmp == cu.curPLTSize[compBegin]);
 	for (int curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
 	{
-		for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+		for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 		{
 			cu.curPLT[comp][curidx] = curPLTtmp[comp][curidx];
 		}

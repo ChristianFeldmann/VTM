@@ -731,13 +731,13 @@ void CodingStructure::resetPrevPLT(PLTBuf& prevPLT)
 	}
 }
 
-void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NUM_COMPONENT], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t NumComp, bool jointPLT)
+void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NUM_COMPONENT], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT)
 {
 	Pel stuffedPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
 	uint32_t tempCurPLTsize[MAX_NUM_COMPONENT];
 	uint32_t stuffPLTsize[MAX_NUM_COMPONENT];
 
-	for (int i = compBegin; i < (compBegin + NumComp); i++)
+	for (int i = compBegin; i < (compBegin + numComp); i++)
 	{
 		ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
 		tempCurPLTsize[comID] = curPLTSize[comID];
@@ -745,7 +745,7 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NU
 		memcpy(stuffedPLT[i], curPLT[i], curPLTSize[comID] * sizeof(Pel));
 	}
 
-	for (int ch = compBegin; ch < (compBegin + NumComp); ch++)
+	for (int ch = compBegin; ch < (compBegin + numComp); ch++)
 	{
 		ComponentID comID = jointPLT ? (ComponentID)compBegin : ((ch > 0) ? COMPONENT_Cb : COMPONENT_Y);
 		if (ch > 1) break;
@@ -770,7 +770,7 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NU
 		}
 	}
 
-	for (int i = compBegin; i < (compBegin + NumComp); i++)
+	for (int i = compBegin; i < (compBegin + numComp); i++)
 	{
 		ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
 		prevPLT.curPLTSize[comID] = curPLTSize[comID] + stuffPLTsize[comID];

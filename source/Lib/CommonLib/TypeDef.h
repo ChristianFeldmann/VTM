@@ -1039,24 +1039,24 @@ public:
 		uiData[0] = uiData[1] = uiData[2] = 0;
 		uiSumData[0] = uiSumData[1] = uiSumData[2] = 0;
 	}
-	void resetAll(ComponentID compBegin, uint32_t NumComp) {
+	void resetAll(ComponentID compBegin, uint32_t numComp) {
 		uiShift = uiLastCnt = 0;
-		for (int ch = compBegin; ch < (compBegin + NumComp); ch++)
+		for (int ch = compBegin; ch < (compBegin + numComp); ch++)
 		{
 			uiData[ch] = 0;
 			uiSumData[ch] = 0;
 		}
 	}
-	void setAll(uint32_t* ui, ComponentID compBegin, uint32_t NumComp) {
-		for (int ch = compBegin; ch < (compBegin + NumComp); ch++)
+	void setAll(uint32_t* ui, ComponentID compBegin, uint32_t numComp) {
+		for (int ch = compBegin; ch < (compBegin + numComp); ch++)
 		{
 			uiData[ch] = ui[ch];
 		}
 	}
-	bool almostEqualData(SortingElement sElement, int iErrorLimit, const BitDepths& bitDepths, ComponentID compBegin, uint32_t NumComp)
+	bool almostEqualData(SortingElement sElement, int iErrorLimit, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
 	{
 		bool bAlmostEqual = true;
-		for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+		for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 		{		
 			ChannelType chType = (comp > 0) ? CHANNEL_TYPE_CHROMA : CHANNEL_TYPE_LUMA;
 			if ((std::abs(uiData[comp] - sElement.uiData[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH)) > iErrorLimit)
@@ -1067,37 +1067,37 @@ public:
 		}
 		return bAlmostEqual;
 	}
-	uint32_t getSAD(SortingElement sElement, const BitDepths& bitDepths, ComponentID compBegin, uint32_t NumComp)
+	uint32_t getSAD(SortingElement sElement, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
 	{
 		uint32_t uiSAD = 0;
-		for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+		for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 		{		
 			ChannelType chType = (comp > 0) ? CHANNEL_TYPE_CHROMA : CHANNEL_TYPE_LUMA;
 			uiSAD += (std::abs(uiData[comp] - sElement.uiData[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH));
 		}
 		return uiSAD;
 	}
-	void copyDataFrom(SortingElement sElement, ComponentID compBegin, uint32_t NumComp) {
-		for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+	void copyDataFrom(SortingElement sElement, ComponentID compBegin, uint32_t numComp) {
+		for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 		{
 			uiData[comp] = sElement.uiData[comp];
 			uiSumData[comp] = uiData[comp];
 		}
 		uiShift = 0; uiLastCnt = 1;
 	}
-	void copyAllFrom(SortingElement sElement, ComponentID compBegin, uint32_t NumComp) {
-		copyDataFrom(sElement, compBegin, NumComp);
+	void copyAllFrom(SortingElement sElement, ComponentID compBegin, uint32_t numComp) {
+		copyDataFrom(sElement, compBegin, numComp);
 		uiCnt = sElement.uiCnt;
-		for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+		for (int comp = compBegin; comp < (compBegin + numComp); comp++)
 		{
 			uiSumData[comp] = sElement.uiSumData[comp];
 		}
 		uiLastCnt = sElement.uiLastCnt; uiShift = sElement.uiShift;
 	}
-	void addElement(const SortingElement& sElement, ComponentID compBegin, uint32_t NumComp)
+	void addElement(const SortingElement& sElement, ComponentID compBegin, uint32_t numComp)
 	{
 		uiCnt++;
-		for (int i = compBegin; i<(compBegin + NumComp); i++)
+		for (int i = compBegin; i<(compBegin + numComp); i++)
 		{
 			uiSumData[i] += sElement.uiData[i];
 		}
@@ -1105,7 +1105,7 @@ public:
 		{
 			uint32_t uiRnd = 1 << uiShift;
 			uiShift++;
-			for (int i = compBegin; i<(compBegin + NumComp); i++)
+			for (int i = compBegin; i<(compBegin + numComp); i++)
 			{
 				uiData[i] = (uiSumData[i] + uiRnd) >> uiShift;
 			}

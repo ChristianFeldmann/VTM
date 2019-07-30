@@ -97,7 +97,7 @@ void EncCu::create( EncCfg* encCfg )
   {
     m_pTempCS[w] = new CodingStructure*  [numHeights];
     m_pBestCS[w] = new CodingStructure*  [numHeights];
-    #if JVET_O0050_LOCAL_DUAL_TREE
+#if JVET_O0050_LOCAL_DUAL_TREE
     m_pTempCS2[w] = new CodingStructure* [numHeights];
     m_pBestCS2[w] = new CodingStructure* [numHeights];
 #endif

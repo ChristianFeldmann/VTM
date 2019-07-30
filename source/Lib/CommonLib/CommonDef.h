@@ -176,6 +176,16 @@ static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 static const int MIP_MAX_WIDTH =                                   64;
 static const int MIP_MAX_HEIGHT =                                  64;
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+static const int MAX_NUM_ALF_ALTERNATIVES_CHROMA =                  8;
+#endif
+static const int MAX_NUM_ALF_CLASSES         =                     25;
+static const int MAX_NUM_ALF_LUMA_COEFF      =                     13;
+static const int MAX_NUM_ALF_CHROMA_COEFF    =                      7;
+static const int MAX_ALF_FILTER_LENGTH       =                      7;
+static const int MAX_NUM_ALF_COEFF           =                     MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1;
+static const int MAX_ALF_PADDING_SIZE        =                      4;
+
 static const int ALF_FIXED_FILTER_NUM        =                     64;
 static const int ALF_CTB_MAX_NUM_APS         =                      6;
 static const int NUM_FIXED_FILTER_SETS       =                     16;
@@ -253,8 +263,13 @@ static const int FAST_UDI_MAX_RDMODE_NUM = (NUM_LUMA_MODE + MAX_NUM_MIP_MODE); /
 
 static const int MAX_LFNST_COEF_NUM =                              16;
 
+#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+static const int LFNST_LAST_SIG_LUMA =                              1;
+static const int LFNST_LAST_SIG_CHROMA =                            1;
+#else
 static const int LFNST_SIG_NZ_LUMA =                                1;
 static const int LFNST_SIG_NZ_CHROMA =                              1;
+#endif
 
 static const int NUM_LFNST_NUM_PER_SET =                            3;
 
@@ -325,7 +340,6 @@ static const int LAST_SIGNIFICANT_GROUPS =                         14;
 static const int MAX_GR_ORDER_RESIDUAL =                           10;
 
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
-
 
 static const int MMVD_REFINE_STEP =                                 8; ///< max number of distance step
 static const int MMVD_MAX_REFINE_NUM =                              (MMVD_REFINE_STEP * 4); ///< max number of candidate from a base candidate
@@ -453,6 +467,11 @@ static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1)
 static constexpr int MV_BITS =                                   18;
 static constexpr int MV_MAX =              (1 << (MV_BITS - 1)) - 1;
 static constexpr int MV_MIN =                 -(1 << (MV_BITS - 1));
+
+#if JVET_O0567_MVDRange_Constraint
+static const int MVD_MAX =                            (1 << 17) - 1;
+static const int MVD_MIN =                               -(1 << 17);
+#endif
 
 static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;

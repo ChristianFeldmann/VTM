@@ -427,6 +427,18 @@ class CUCtx
 {
 public:
   CUCtx()              : isDQPCoded(false), isChromaQpAdjCoded(false),
+#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+                         qgStart(false)
+                         {
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+                           violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
+                           violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+#endif
+                           lastScanPos[COMPONENT_Y ] = -1;
+                           lastScanPos[COMPONENT_Cb] = -1;
+                           lastScanPos[COMPONENT_Cr] = -1;
+                         }
+#else
                          qgStart(false),
 #if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
                          numNonZeroCoeffNonTs(0)
@@ -437,8 +449,21 @@ public:
 #else
                          numNonZeroCoeffNonTs(0) {}
 #endif
+#endif
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
                          qgStart(false),
+#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+                         qp(_qp)
+                         {
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+                           violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
+                           violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+#endif
+                           lastScanPos[COMPONENT_Y ] = -1;
+                           lastScanPos[COMPONENT_Cb] = -1;
+                           lastScanPos[COMPONENT_Cr] = -1;
+                         }
+#else
 #if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
                          numNonZeroCoeffNonTs(0), qp(_qp)
                          {
@@ -448,12 +473,17 @@ public:
 #else
                          numNonZeroCoeffNonTs(0), qp(_qp) {}
 #endif
+#endif
   ~CUCtx() {}
 public:
   bool      isDQPCoded;
   bool      isChromaQpAdjCoded;
   bool      qgStart;
+#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+  int       lastScanPos[MAX_NUM_COMPONENT];
+#else
   uint32_t  numNonZeroCoeffNonTs;
+#endif
   int8_t    qp;                   // used as a previous(last) QP and for QP prediction
 #if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   bool      violatesLfnstConstrained[MAX_NUM_CHANNEL_TYPE];
@@ -502,9 +532,9 @@ namespace DeriveCtx
 {
 void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* canSplit = nullptr );
 #if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
-unsigned CtxQtCbf     ( const ComponentID compID, const bool prevCbCbf = false, const int ispIdx = 0 );
+unsigned CtxQtCbf     ( const ComponentID compID, const bool prevCbf = false, const int ispIdx = 0 );
 #else
-unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
+unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbf = false, const int ispIdx = 0 );
 #endif
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );

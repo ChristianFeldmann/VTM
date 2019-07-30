@@ -236,18 +236,18 @@ void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, u
 }
 
 #if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
-unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const bool prevCbCbf, const int ispIdx )
+unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const bool prevCbf, const int ispIdx )
 #else
-unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf, const int ispIdx )
+unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, const bool prevCbf, const int ispIdx )
 #endif
 {
   if( ispIdx && isLuma( compID ) )
   {
-    return 2 + (int)prevCbCbf;
+    return 2 + (int)prevCbf;
   }
   if( compID == COMPONENT_Cr )
   {
-    return ( prevCbCbf ? 1 : 0 );
+    return ( prevCbf ? 1 : 0 );
   }
 #if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
   return 0;

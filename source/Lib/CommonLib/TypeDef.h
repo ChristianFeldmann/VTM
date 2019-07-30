@@ -50,6 +50,16 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0159_10BITTCTABLE_DEBLOCKING                1 // tc table for 10-bit video
+
+#define JVET_O0061_MV_THR_DEBLOCKING                      1 // a deblocking mv threshold of half pel
+
+#define JVET_O0046_DQ_SIGNALLING                          1 // JVET-O0046: Move delta-QP earlier for 64x64 VPDU processing, applied to CUs >64x64 only
+
+#define JVET_O0616_400_CHROMA_SUPPORT                     1 // JVET-O0616: Various chroma format support in VVC
+
+#define JVET_O0265_TPM_SIMPLIFICATION                     1 // JVET-O0265/JVET-O0629/JVET-O0418/JVET-O0329/JVET-O0378/JVET-O0411/JVET-O0279:Simplified motion field storage for TPM
+
 #define JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT  1 // JVET-O0409: exclude coded_subblock_flag from counting context-coded bins in transform skip
 
 #define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
@@ -89,6 +99,8 @@
 #define JVET_O0105_ICT                                    1 // JVET-O0105: inter-chroma transform (ICT) as extension of joint chroma coding (JCC)
 #define JVET_O0543_ICT_ICU_ONLY                           1 // JVET-O0543: ICT only in Intra CUs (was Intra slices, modified during adoption)
 #define JVET_N0288_PROPOSAL1                              1   // JVET-N0288 Proposal 1
+
+#define JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB     1 // JVET-O0090 test 2: CTB selection of ALF alternative chroma filters
 
 #define JVET_O0216_ALF_COEFF_EG3                          1 // JVET-O0216/O0302/O0648: using EG3 for ALF coefficients coding
 
@@ -138,6 +150,9 @@
 
 #define JVET_O0280_SIMD_TRIANGLE_WEIGHTING                1 // JVET-O0280: SIMD implementation for weighted sample prediction process of triangle prediction mode
 
+#define JVET_O0379_SPEEDUP_TPM_ENCODER                    1 // JVET_O0379: Speedup mode decision process for triangle prediction mode
+
+#define JVET_O0364_PADDING                                1 // JVET-O0364 Part 2: clean up padding process in intra prediction
 #define JVET_O0364_PDPC_DC                                1 // JVET-O0364 Part 4: align PDPC process for DC with the one for Planar
 #define JVET_O0364_PDPC_ANGULAR                           1 // JVET-O0364 Part 5: simplify PDPC process for angular modes
 
@@ -157,11 +172,14 @@
 
 #define JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG           1 // JVET-O1140 slice level disable flag for BDOF and DMVR
 
+#define JVET_O0567_MVDRange_Constraint                    1 // JVET-O0567: constrain the signalled MVD value to the range of [-2^17, 2^17-1]
 
 #define JVET_O0596_CBF_SIG_ALIGN_TO_SPEC                  1 // JVET-O0596 align cbf signaling with specification
 #define JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX             1 // JVET-O0193/JVET-O0375: remove transform depth in cbf context modeling
 
 #define JVET_O0594_BDOF_REF_SAMPLE_PADDING                1 // JVET-O0594/O0252/O0506/O0615/O0624: BDOF reference sample padding using the nearest integer sample position
+
+#define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
@@ -425,8 +443,7 @@ enum ISPType
   NOT_INTRA_SUBPARTITIONS       = 0,
   HOR_INTRA_SUBPARTITIONS       = 1,
   VER_INTRA_SUBPARTITIONS       = 2,
-  NUM_INTRA_SUBPARTITIONS_MODES = 3,
-  CAN_USE_VER_AND_HORL_SPLITS   = 4
+  NUM_INTRA_SUBPARTITIONS_MODES = 3
 };
 
 enum SbtIdx
@@ -1413,179 +1430,6 @@ struct XUCache
 };
 
 #define SIGN(x) ( (x) >= 0 ? 1 : -1 )
-
-#define MAX_NUM_ALF_CLASSES             25
-#define MAX_NUM_ALF_LUMA_COEFF          13
-#define MAX_NUM_ALF_CHROMA_COEFF        7
-#define MAX_ALF_FILTER_LENGTH           7
-#define MAX_NUM_ALF_COEFF               (MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1)
-#define MAX_ALF_PADDING_SIZE            4
-
-enum AlfFilterType
-{
-  ALF_FILTER_5,
-  ALF_FILTER_7,
-  ALF_NUM_OF_FILTER_TYPES
-};
-
-struct AlfFilterShape
-{
-  AlfFilterShape( int size )
-    : filterLength( size ),
-    numCoeff( size * size / 4 + 1 ),
-    filterSize( size * size / 2 + 1 )
-  {
-    if( size == 5 )
-    {
-      pattern = {
-                 0,
-             1,  2,  3,
-         4,  5,  6,  5,  4,
-             3,  2,  1,
-                 0
-      };
-
-      weights = {
-                 2,
-              2, 2, 2,
-           2, 2, 1, 1
-      };
-#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
-      golombIdx = {
-                 0,
-              0, 1, 0,
-           0, 1, 2, 2
-      };
-#endif
-
-      filterType = ALF_FILTER_5;
-    }
-    else if( size == 7 )
-    {
-      pattern = {
-                     0,
-                 1,  2,  3,
-             4,  5,  6,  7,  8,
-         9, 10, 11, 12, 11, 10, 9,
-             8,  7,  6,  5,  4,
-                 3,  2,  1,
-                     0
-      };
-
-      weights = {
-                    2,
-                2,  2,  2,
-            2,  2,  2,  2,  2,
-        2,  2,  2,  1,  1
-      };
-#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
-      golombIdx = {
-                    0,
-                 0, 1, 0,
-              0, 1, 2, 1, 0,
-           0, 1, 2, 3, 3
-      };
-#endif
-
-      filterType = ALF_FILTER_7;
-    }
-    else
-    {
-      filterType = ALF_NUM_OF_FILTER_TYPES;
-      CHECK( 0, "Wrong ALF filter shape" );
-    }
-  }
-
-  AlfFilterType filterType;
-  int filterLength;
-  int numCoeff;      //TO DO: check whether we need both numCoeff and filterSize
-  int filterSize;
-  std::vector<int> pattern;
-  std::vector<int> weights;
-#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
-  std::vector<int> golombIdx;
-#endif
-};
-
-struct AlfSliceParam
-{
-  bool                         enabledFlag[MAX_NUM_COMPONENT];                          // alf_slice_enable_flag, alf_chroma_idc
-  bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE];                     // alf_nonlinear_enable_flag[Luma/Chroma]
-  short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
-  short                        lumaClipp[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_clipp_luma_[i][j]
-  short                        chromaCoeff[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_coeff_chroma[i]
-  short                        chromaClipp[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_clipp_chroma[i]
-  short                        filterCoeffDeltaIdx[MAX_NUM_ALF_CLASSES];                // filter_coeff_delta[i]
-  bool                         alfLumaCoeffFlag[MAX_NUM_ALF_CLASSES];                   // alf_luma_coeff_flag[i]
-  int                          numLumaFilters;                                          // number_of_filters_minus1 + 1
-  bool                         alfLumaCoeffDeltaFlag;                                   // alf_luma_coeff_delta_flag
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-  bool                         alfLumaCoeffDeltaPredictionFlag;                         // alf_luma_coeff_delta_prediction_flag
-#endif
-  std::vector<AlfFilterShape>* filterShapes;
-  int                          tLayer;
-  bool                         newFilterFlag[MAX_NUM_CHANNEL_TYPE];
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-  int                          fixedFilterPattern;
-  int                          fixedFilterIdx[MAX_NUM_ALF_CLASSES];
-  int                          fixedFilterSetIndex;
-#endif
-
-  AlfSliceParam()
-  {
-    reset();
-  }
-
-  void reset()
-  {
-    std::memset( enabledFlag, false, sizeof( enabledFlag ) );
-    std::memset( nonLinearFlag, false, sizeof( nonLinearFlag ) );
-    std::memset( lumaCoeff, 0, sizeof( lumaCoeff ) );
-    std::memset( lumaClipp, 0, sizeof( lumaClipp ) );
-    std::memset( chromaCoeff, 0, sizeof( chromaCoeff ) );
-    std::memset( chromaClipp, 0, sizeof( chromaClipp ) );
-    std::memset( filterCoeffDeltaIdx, 0, sizeof( filterCoeffDeltaIdx ) );
-    std::memset( alfLumaCoeffFlag, true, sizeof( alfLumaCoeffFlag ) );
-    numLumaFilters = 1;
-    alfLumaCoeffDeltaFlag = false;
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-    alfLumaCoeffDeltaPredictionFlag = false;
-#endif
-    tLayer = 0;
-    memset(newFilterFlag, 0, sizeof(newFilterFlag));
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-    fixedFilterPattern = 0;
-    std::memset(fixedFilterIdx, 0, sizeof(fixedFilterIdx));
-    fixedFilterSetIndex = 0;
-#endif
-  }
-
-  const AlfSliceParam& operator = ( const AlfSliceParam& src )
-  {
-    std::memcpy( enabledFlag, src.enabledFlag, sizeof( enabledFlag ) );
-    std::memcpy( nonLinearFlag, src.nonLinearFlag, sizeof( nonLinearFlag ) );
-    std::memcpy( lumaCoeff, src.lumaCoeff, sizeof( lumaCoeff ) );
-    std::memcpy( lumaClipp, src.lumaClipp, sizeof( lumaClipp ) );
-    std::memcpy( chromaCoeff, src.chromaCoeff, sizeof( chromaCoeff ) );
-    std::memcpy( chromaClipp, src.chromaClipp, sizeof( chromaClipp ) );
-    std::memcpy( filterCoeffDeltaIdx, src.filterCoeffDeltaIdx, sizeof( filterCoeffDeltaIdx ) );
-    std::memcpy( alfLumaCoeffFlag, src.alfLumaCoeffFlag, sizeof( alfLumaCoeffFlag ) );
-    numLumaFilters = src.numLumaFilters;
-    alfLumaCoeffDeltaFlag = src.alfLumaCoeffDeltaFlag;
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-    alfLumaCoeffDeltaPredictionFlag = src.alfLumaCoeffDeltaPredictionFlag;
-#endif
-    filterShapes = src.filterShapes;
-    tLayer = src.tLayer;
-    std::memcpy(newFilterFlag, src.newFilterFlag, sizeof(newFilterFlag));
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-    fixedFilterPattern = src.fixedFilterPattern;
-    std::memcpy(fixedFilterIdx, src.fixedFilterIdx, sizeof(fixedFilterIdx));
-    fixedFilterSetIndex = src.fixedFilterSetIndex;
-#endif
-    return *this;
-  }
-};
 
 //! \}
 

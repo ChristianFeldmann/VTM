@@ -486,14 +486,18 @@ void HLSWriter::codeAPS( APS* pcAPS )
 
 void HLSWriter::codeAlfAps( APS* pcAPS )
 {
-  AlfSliceParam param = pcAPS->getAlfAPSParam();
+  AlfParam param = pcAPS->getAlfAPSParam();
 
   WRITE_FLAG(param.newFilterFlag[CHANNEL_TYPE_LUMA], "alf_luma_new_filter");
   WRITE_FLAG(param.newFilterFlag[CHANNEL_TYPE_CHROMA], "alf_chroma_new_filter");
 
   if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
   {
-    WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_LUMA], "alf_luma_clip");
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_LUMA][0], "alf_luma_clip" );
+#else
+    WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_LUMA], "alf_luma_clip" );
+#endif
 
     xWriteTruncBinCode(param.numLumaFilters - 1, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
     if (param.numLumaFilters > 1)
@@ -522,13 +526,27 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
       }
     }
 #endif
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    alfFilter(param, false, 0);
+#else
     alfFilter(param, false);
+#endif
 
   }
   if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
   {
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    if( MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1 )
+      WRITE_UVLC( param.numAlternativesChroma - 1, "alf_chroma_num_alts_minus1" );
+    for( int altIdx=0; altIdx < param.numAlternativesChroma; ++altIdx )
+    {
+      WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_CHROMA][altIdx], "alf_nonlinear_enable_flag_chroma" );
+      alfFilter(param, true, altIdx);
+    }
+#else
     WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_CHROMA], "alf_chroma_clip");
       alfFilter(param, true);
+#endif
   }
 }
 
@@ -1231,7 +1249,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
 
         const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) * 2 ;
-        truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
+#if JVET_O0616_400_CHROMA_SUPPORT
+        if (chromaEnabled)
+        {
+#endif
+          truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
+#if JVET_O0616_400_CHROMA_SUPPORT
+        }
+#endif
         if (alfChromaIdc)
         {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
@@ -1469,11 +1494,22 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       WRITE_FLAG( pcSlice->getLmcsEnabledFlag()? 1 : 0, "slice_lmcs_enabled_flag");
       if (pcSlice->getLmcsEnabledFlag())
       {
+#if JVET_O0428_LMCS_CLEANUP
+        WRITE_CODE(pcSlice->getLmcsAPSId(), 2, "slice_lmcs_aps_id");
+#else
         WRITE_CODE(pcSlice->getLmcsAPSId(), 5, "slice_lmcs_aps_id");
+#endif
 #if !JVET_O1109_UNFIY_CRS
         if (!(pcSlice->getSPS()->getUseDualITree() && pcSlice->isIntra()))
 #endif
-          WRITE_FLAG(pcSlice->getLmcsChromaResidualScaleFlag(), "slice_chroma_residual_scale_flag");
+#if JVET_O0616_400_CHROMA_SUPPORT
+          if (chromaEnabled)
+          {
+#endif
+            WRITE_FLAG(pcSlice->getLmcsChromaResidualScaleFlag(), "slice_chroma_residual_scale_flag");
+#if JVET_O0616_400_CHROMA_SUPPORT
+          }
+#endif
       }
     }
 
@@ -1801,17 +1837,21 @@ void HLSWriter::alfGolombEncode( int coeff, int k, const bool signed_coeff )
   }
 }
 
-void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChroma )
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx )
+#else
+void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma )
+#endif
 {
   if( !isChroma )
   {
-    WRITE_FLAG( alfSliceParam.alfLumaCoeffDeltaFlag, "alf_luma_coeff_delta_flag" );
+    WRITE_FLAG( alfParam.alfLumaCoeffDeltaFlag, "alf_luma_coeff_delta_flag" );
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-    if( !alfSliceParam.alfLumaCoeffDeltaFlag )
+    if( !alfParam.alfLumaCoeffDeltaFlag )
     {
-      if( alfSliceParam.numLumaFilters > 1 )
+      if( alfParam.numLumaFilters > 1 )
       {
-        WRITE_FLAG( alfSliceParam.alfLumaCoeffDeltaPredictionFlag, "alf_luma_coeff_delta_prediction_flag" );
+        WRITE_FLAG( alfParam.alfLumaCoeffDeltaPredictionFlag, "alf_luma_coeff_delta_prediction_flag" );
       }
     }
 #endif
@@ -1822,15 +1862,20 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
   memset( bitsCoeffScan, 0, sizeof( bitsCoeffScan ) );
   const int maxGolombIdx = AdaptiveLoopFilter::getMaxGolombIdx( alfShape.filterType );
 #endif
-  const short* coeff = isChroma ? alfSliceParam.chromaCoeff : alfSliceParam.lumaCoeff;
-  const short* clipp = isChroma ? alfSliceParam.chromaClipp : alfSliceParam.lumaClipp;
-  const int numFilters = isChroma ? 1 : alfSliceParam.numLumaFilters;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  const short* coeff = isChroma ? alfParam.chromaCoeff[altIdx] : alfParam.lumaCoeff;
+  const short* clipp = isChroma ? alfParam.chromaClipp[altIdx] : alfParam.lumaClipp;
+#else
+  const short* coeff = isChroma ? alfParam.chromaCoeff : alfParam.lumaCoeff;
+  const short* clipp = isChroma ? alfParam.chromaClipp : alfParam.lumaClipp;
+#endif
+  const int numFilters = isChroma ? 1 : alfParam.numLumaFilters;
 
   // vlc for all
 #if !JVET_O0216_ALF_COEFF_EG3 
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( isChroma || !alfSliceParam.alfLumaCoeffDeltaFlag || alfSliceParam.alfLumaCoeffFlag[ind] )
+    if( isChroma || !alfParam.alfLumaCoeffDeltaFlag || alfParam.alfLumaCoeffFlag[ind] )
     {
       for( int i = 0; i < alfShape.numCoeff - 1; i++ )
       {
@@ -1862,11 +1907,11 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
 #endif
   if( !isChroma )
   {
-    if( alfSliceParam.alfLumaCoeffDeltaFlag )
+    if( alfParam.alfLumaCoeffDeltaFlag )
     {
       for( int ind = 0; ind < numFilters; ++ind )
       {
-        WRITE_FLAG( alfSliceParam.alfLumaCoeffFlag[ind], "alf_luma_coeff_flag[i]" );
+        WRITE_FLAG( alfParam.alfLumaCoeffFlag[ind], "alf_luma_coeff_flag[i]" );
       }
     }
   }
@@ -1874,7 +1919,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
-    if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.alfLumaCoeffDeltaFlag )
+    if( !isChroma && !alfParam.alfLumaCoeffFlag[ind] && alfParam.alfLumaCoeffDeltaFlag )
     {
       continue;
     }
@@ -1890,7 +1935,11 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
   }
 
   // Clipping values coding
-  if( alfSliceParam.nonLinearFlag[isChroma] )
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  if( alfParam.nonLinearFlag[isChroma][altIdx] )
+#else
+  if( alfParam.nonLinearFlag[isChroma] )
+#endif
   {
 #if JVET_O0064_SIMP_ALF_CLIP_CODING
     for (int ind = 0; ind < numFilters; ++ind)
@@ -1912,7 +1961,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
     {
       memcpy( recCoeff, coeff, sizeof(short) * numFilters * MAX_NUM_ALF_LUMA_COEFF );
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-      if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
+      if( alfParam.alfLumaCoeffDeltaPredictionFlag )
       {
         for( int i = 1; i < numFilters; i++ )
         {
@@ -1927,7 +1976,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
     // vlc for all
     for( int ind = 0; ind < numFilters; ++ind )
     {
-      if( isChroma || !alfSliceParam.alfLumaCoeffDeltaFlag || alfSliceParam.alfLumaCoeffFlag[ind] )
+      if( isChroma || !alfParam.alfLumaCoeffDeltaFlag || alfParam.alfLumaCoeffFlag[ind] )
       {
         for( int i = 0; i < alfShape.numCoeff - 1; i++ )
         {
@@ -1962,7 +2011,7 @@ void HLSWriter::alfFilter( const AlfSliceParam& alfSliceParam, const bool isChro
     // Filter coefficients
     for( int ind = 0; ind < numFilters; ++ind )
     {
-      if( !isChroma && !alfSliceParam.alfLumaCoeffFlag[ind] && alfSliceParam.alfLumaCoeffDeltaFlag )
+      if( !isChroma && !alfParam.alfLumaCoeffFlag[ind] && alfParam.alfLumaCoeffDeltaFlag )
       {
         continue;
       }

@@ -260,9 +260,14 @@ public:
   static const CtxSet   ImvFlag;
   static const CtxSet   GBiIdx;
   static const CtxSet   ctbAlfFlag;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  static const CtxSet   ctbAlfAlternative;
+#endif
   static const CtxSet   AlfUseLatestFilt;
   static const CtxSet   AlfUseTemporalFilt;
+#if !JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   static const CtxSet   Alf;
+#endif
   static const CtxSet   MHIntraFlag;
   static const CtxSet   SmvdFlag;
   static const CtxSet   IBCFlag;
@@ -274,6 +279,9 @@ public:
   // NOTE: The contained CtxSet's should directly follow each other in the initalization list;
   //       otherwise, you will copy more elements than you want !!!
   static const CtxSet   Sao;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  static const CtxSet   Alf;
+#endif
 
 public:
   static const std::vector<uint8_t>&  getInitTable( unsigned initId );

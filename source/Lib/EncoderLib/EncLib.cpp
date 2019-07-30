@@ -338,11 +338,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     m_cInterSearch[jId].setTempBuffers( m_cIntraSearch[jId].getSplitCSBuf(), m_cIntraSearch[jId].getFullCSBuf(), m_cIntraSearch[jId].getSaveCSBuf() );
   }
 #else  // ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
-  m_cCuEncoder.   init( this, sps0 
-#if JVET_O0119_BASE_PALETTE_444
-	  , &m_cReshaper
-#endif
-  );
+  m_cCuEncoder.   init( this, sps0 );
 
   // initialize transform & quantization class
   m_cTrQuant.init( nullptr,

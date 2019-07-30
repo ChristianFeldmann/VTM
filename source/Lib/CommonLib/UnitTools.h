@@ -76,6 +76,9 @@ namespace CU
   void addPUs                         (      CodingUnit& cu);
 
   PartSplit getSplitAtDepth           (const CodingUnit& cu, const unsigned depth);
+#if JVET_O0050_LOCAL_DUAL_TREE
+  ModeType  getModeTypeAtDepth        (const CodingUnit& cu, const unsigned depth);
+#endif
 
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
   uint32_t getNumNonZeroCoeffNonTs         ( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );

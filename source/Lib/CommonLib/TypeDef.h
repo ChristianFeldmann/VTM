@@ -89,6 +89,7 @@
 #define JVET_N0288_PROPOSAL1                              1   // JVET-N0288 Proposal 1
 
 #define JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB     1 // JVET-O0090 test 2: CTB selection of ALF alternative chroma filters
+#define JVET_O0050_LOCAL_DUAL_TREE                        1 // JVET-O0050: avoid small intra chroma block by a "local dual-tree" technique
 
 #define JVET_O0216_ALF_COEFF_EG3                          1 // JVET-O0216/O0302/O0648: using EG3 for ALF coefficients coding
 
@@ -381,6 +382,9 @@ typedef       uint32_t            Intermediate_UInt; ///< used as intermediate v
 #endif
 
 typedef       uint64_t          SplitSeries;       ///< used to encoded the splits that caused a particular CU size
+#if JVET_O0050_LOCAL_DUAL_TREE
+typedef       uint64_t          ModeTypeSeries;    ///< used to encoded the ModeType at different split depth
+#endif
 
 typedef       uint64_t        Distortion;        ///< distortion measurement
 
@@ -501,6 +505,22 @@ enum ChannelType
   CHANNEL_TYPE_CHROMA  = 1,
   MAX_NUM_CHANNEL_TYPE = 2
 };
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+enum TreeType
+{
+  TREE_D = 0, //default tree status (for single-tree slice, TREE_D means joint tree; for dual-tree I slice, TREE_D means TREE_L for luma and TREE_C for chroma)
+  TREE_L = 1, //separate tree only contains luma (may split)
+  TREE_C = 2, //separate tree only contains chroma (not split), to avoid small chroma block
+};
+
+enum ModeType
+{
+  MODE_TYPE_ALL = 0, //all modes can try
+  MODE_TYPE_INTER = 1, //can try inter
+  MODE_TYPE_INTRA = 2, //can try intra, ibc, palette
+};
+#endif
 
 #define CH_L CHANNEL_TYPE_LUMA
 #define CH_C CHANNEL_TYPE_CHROMA

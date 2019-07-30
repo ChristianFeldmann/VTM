@@ -409,11 +409,18 @@ void DecCu::xDecodePCMTexture(TransformUnit &tu, const ComponentID compID)
 */
 void DecCu::xReconPCM(TransformUnit &tu)
 {
+#if !JVET_O0050_LOCAL_DUAL_TREE
   const CodingStructure *cs = tu.cs;
+#endif
   const ChannelType chType = tu.chType;
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  ComponentID compStr = (tu.cu->isSepTree() && !isLuma( chType )) ? COMPONENT_Cb : COMPONENT_Y;
+  ComponentID compEnd = (tu.cu->isSepTree() && isLuma( chType )) ? COMPONENT_Y : COMPONENT_Cr;
+#else
   ComponentID compStr = (CS::isDualITree(*cs) && !isLuma(chType)) ? COMPONENT_Cb: COMPONENT_Y;
   ComponentID compEnd = (CS::isDualITree(*cs) && isLuma(chType)) ? COMPONENT_Y : COMPONENT_Cr;
+#endif
   for( ComponentID compID = compStr; compID <= compEnd; compID = ComponentID(compID+1) )
   {
 

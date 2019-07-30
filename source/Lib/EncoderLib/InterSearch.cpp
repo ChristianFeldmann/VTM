@@ -6574,7 +6574,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
   if (bCheckFull)
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    TransformUnit &tu = csFull->addTU(CS::getArea( cs, currArea, partitioner.chType ), partitioner.chType);
+#else
     TransformUnit &tu = csFull->addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
+#endif
     tu.depth          = currDepth;
     tu.mtsIdx         = MTS_DCT2_DCT2;
     tu.checkTuNoResidual( partitioner.currPartIdx() );
@@ -6614,7 +6618,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     saveCS.picture = cs.picture;
     saveCS.area.repositionTo(currArea);
     saveCS.clearTUs();
+#if JVET_O0050_LOCAL_DUAL_TREE
+    TransformUnit & bestTU = saveCS.addTU(CS::getArea(cs, currArea, partitioner.chType), partitioner.chType);
+#else
     TransformUnit & bestTU = saveCS.addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
+#endif
 
     for( uint32_t c = 0; c < numTBlocks; c++ )
     {
@@ -7316,6 +7324,10 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   m_pcRdCost->setChromaFormat(cs.sps->getChromaFormatIdc());
 
   CodingUnit &cu = *cs.getCU( partitioner.chType );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( cu.predMode == MODE_INTER )
+    CHECK( cu.isSepTree(), "CU with Inter mode must be in single tree" );
+#endif
 
   const ChromaFormat format     = cs.area.chromaFormat;;
   const int  numValidComponents = getNumberValidComponents(format);
@@ -7338,7 +7350,11 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
 
     // add an empty TU
+#if JVET_O0050_LOCAL_DUAL_TREE
+    cs.addTU(CS::getArea(cs, cs.area, partitioner.chType), partitioner.chType);
+#else
     cs.addTU(CS::isDualITree(cs) ? cu : cs.area, partitioner.chType);
+#endif
     Distortion distortion = 0;
 
     for (int comp = 0; comp < numValidComponents; comp++)

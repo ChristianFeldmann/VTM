@@ -169,13 +169,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setLambdaFromQPEnable                                ( m_lambdaFromQPEnable );
 #endif
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  m_cEncLib.setSameCQPTableForAllChroma(m_sameCQPTableForAllChroma);
-  for (int i = 0; i < (m_sameCQPTableForAllChroma ? 1 : 3); i++)
-  {
-    m_cEncLib.setNumPtsInCQPTableMinus1(i, (int)m_deltaQpInValMinus1[i].size() - 1);
-    m_cEncLib.setDeltaInValMinus1(i, m_deltaQpInValMinus1[i]);
-    m_cEncLib.setDeltaOutVal(i, m_deltaQpOutVal[i]);
-  }
+  m_cEncLib.setChromaQpMappingTableParams                         (m_chromaQpMappingTableParams);
+
 #endif
   m_cEncLib.setPad                                               ( m_aiPad );
 

@@ -1456,9 +1456,6 @@ SPS::SPS()
 , m_LadfIntervalLowerBound    { 0 }
 #endif
 , m_MIP                       ( false )
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-, m_sameCQPTableForAllChromaFlag ( false )
-#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
@@ -1476,11 +1473,6 @@ SPS::SPS()
 
   ::memset(m_ltRefPicPocLsbSps, 0, sizeof(m_ltRefPicPocLsbSps));
   ::memset(m_usedByCurrPicLtSPSFlag, 0, sizeof(m_usedByCurrPicLtSPSFlag));
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  m_numPtsInCQPTableMinus1[0] = 0;
-  m_deltaQpInValMinus1[0] = { 0 };
-  m_deltaQpOutVal[0] = { 0 };
-#endif
 }
 
 SPS::~SPS()
@@ -1508,20 +1500,31 @@ const int SPS::m_winUnitX[]={1,2,2,1};
 const int SPS::m_winUnitY[]={1,2,1,1};
 
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-void SPS::derivedChromaQPMappingTables()
+void ChromaQpMappingTable::setParams(const ChromaQpMappingTableParams &params, const int qpBdOffset)
+{
+  m_qpBdOffset = qpBdOffset;
+  m_sameCQPTableForAllChromaFlag = params.m_sameCQPTableForAllChromaFlag;
+  for (int i = 0; i < MAX_NUM_CQP_MAPPING_TABLES; i++)
+  {
+    m_numPtsInCQPTableMinus1[i] = params.m_numPtsInCQPTableMinus1[i];
+    m_deltaQpInValMinus1[i] = params.m_deltaQpInValMinus1[i];
+    m_deltaQpOutVal[i] = params.m_deltaQpOutVal[i];
+  }
+}
+void ChromaQpMappingTable::derivedChromaQPMappingTables()
 {
   for (int i = 0; i < (getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
   {
-    const int qpBdOffsetC = this->getQpBDOffset(CHANNEL_TYPE_CHROMA);
+    const int qpBdOffsetC = m_qpBdOffset;
     const int numPtsInCQPTableMinus1 = getNumPtsInCQPTableMinus1(i);
     std::vector<int> qpInVal(numPtsInCQPTableMinus1 + 1), qpOutVal(numPtsInCQPTableMinus1 + 1);
 
-    qpInVal[0] = -qpBdOffsetC + getDeltaInValMinus1(i, 0);
-    qpOutVal[0] = -qpBdOffsetC + getDeltaOutVal(i, 0);
+    qpInVal[0] = -qpBdOffsetC + getDeltaQpInValMinus1(i, 0);
+    qpOutVal[0] = -qpBdOffsetC + getDeltaQpOutVal(i, 0);
     for (int j = 1; j <= getNumPtsInCQPTableMinus1(i); j++)
     {
-      qpInVal[j] = qpInVal[j - 1] + getDeltaInValMinus1(i, j) + 1;
-      qpOutVal[j] = qpOutVal[j - 1] + getDeltaOutVal(i, j);
+      qpInVal[j] = qpInVal[j - 1] + getDeltaQpInValMinus1(i, j) + 1;
+      qpOutVal[j] = qpOutVal[j - 1] + getDeltaQpOutVal(i, j);
     }
 
     for (int j = 0; j <= getNumPtsInCQPTableMinus1(i); j++)
@@ -1537,11 +1540,11 @@ void SPS::derivedChromaQPMappingTables()
     }
     for (int j = 0; j < numPtsInCQPTableMinus1; j++)
     {
-      int sh = (getDeltaInValMinus1(i, j + 1) + 1 + 1) >> 1;
+      int sh = (getDeltaQpInValMinus1(i, j + 1) + 1 + 1) >> 1;
       for (int k = qpInVal[j] + 1, m = 1; k <= qpInVal[j + 1]; k++, m++)
       {
         m_chromaQpMappingTables[i][k] = m_chromaQpMappingTables[i][qpInVal[j]]
-          + (getDeltaOutVal(i, j + 1) * m + sh) / (getDeltaInValMinus1(i, j + 1) + 1);
+          + (getDeltaQpOutVal(i, j + 1) * m + sh) / (getDeltaQpInValMinus1(i, j + 1) + 1);
       }
     }
     for (int k = qpInVal[numPtsInCQPTableMinus1]+1; k <= MAX_QP; k++)

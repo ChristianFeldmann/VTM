@@ -1243,20 +1243,22 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
-    READ_FLAG(uiCode, "same_qp_table_for_chroma");        pcSPS->setSameCQPTableForAllChromaFlag(uiCode);
-    for (int i = 0; i < (pcSPS->getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
+    ChromaQpMappingTableParams chromaQpMappingTableParams;
+    READ_FLAG(uiCode, "same_qp_table_for_chroma");        chromaQpMappingTableParams.setSameCQPTableForAllChromaFlag(uiCode);
+    for (int i = 0; i < (chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
     {
-      READ_UVLC(uiCode, "num_points_in_qp_table_minus1"); pcSPS->setNumPtsInCQPTableMinus1(i,uiCode);
-      std::vector<int> deltaQpInValMinus1(pcSPS->getNumPtsInCQPTableMinus1(i) + 1);
-      std::vector<int> deltaQpOutVal(pcSPS->getNumPtsInCQPTableMinus1(i) + 1);
-      for (int j = 0; j <= pcSPS->getNumPtsInCQPTableMinus1(i); j++)
+      READ_UVLC(uiCode, "num_points_in_qp_table_minus1"); chromaQpMappingTableParams.setNumPtsInCQPTableMinus1(i,uiCode);
+      std::vector<int> deltaQpInValMinus1(chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i) + 1);
+      std::vector<int> deltaQpOutVal(chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i) + 1);
+      for (int j = 0; j <= chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i); j++)
       {
         READ_UVLC(uiCode, "delta_qp_in_val_minus1");  deltaQpInValMinus1[j] = uiCode; 
         READ_UVLC(uiCode, "delta_qp_out_val");        deltaQpOutVal[j] = uiCode; 
       }
-      pcSPS->setDeltaQpInValMinus1(i, deltaQpInValMinus1);
-      pcSPS->setDeltaOutVal(i, deltaQpOutVal);
+      chromaQpMappingTableParams.setDeltaQpInValMinus1(i, deltaQpInValMinus1);
+      chromaQpMappingTableParams.setDeltaQpOutVal(i, deltaQpOutVal);
     }
+    pcSPS->setChromaQpMappingTableFromParams(chromaQpMappingTableParams, pcSPS->getQpBDOffset(CHANNEL_TYPE_CHROMA));
     pcSPS->derivedChromaQPMappingTables();
   }
 #endif

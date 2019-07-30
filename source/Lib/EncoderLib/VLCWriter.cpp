@@ -843,14 +843,16 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
-    WRITE_FLAG(pcSPS->getSameCQPTableForAllChromaFlag(), "same_qp_table_for_chroma");
-    for (int i = 0; i < (pcSPS->getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
+    const ChromaQpMappingTable& chromaQpMappingTable = pcSPS->getChromaQpMappingTable();
+    WRITE_FLAG(chromaQpMappingTable.getSameCQPTableForAllChromaFlag(), "same_qp_table_for_chroma");
+    for (int i = 0; i < (chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
     {
-      WRITE_UVLC(pcSPS->getNumPtsInCQPTableMinus1(i), "num_points_in_qp_table_minus1"); 
-      for (int j = 0; j <= pcSPS->getNumPtsInCQPTableMinus1(i); j++)
+      WRITE_UVLC(chromaQpMappingTable.getNumPtsInCQPTableMinus1(i), "num_points_in_qp_table_minus1"); 
+
+      for (int j = 0; j <= chromaQpMappingTable.getNumPtsInCQPTableMinus1(i); j++)
       {
-        WRITE_UVLC(pcSPS->getDeltaInValMinus1(i,j),  "delta_qp_in_val_minus1");
-        WRITE_UVLC(pcSPS->getDeltaOutVal(i, j),       "delta_qp_out_val");
+        WRITE_UVLC(chromaQpMappingTable.getDeltaQpInValMinus1(i,j),  "delta_qp_in_val_minus1");
+        WRITE_UVLC(chromaQpMappingTable.getDeltaQpOutVal(i, j),       "delta_qp_out_val");
       }
     }
   }

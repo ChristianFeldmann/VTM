@@ -1040,13 +1040,7 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setUsedByCurrPicLtSPSFlag(k, 0);
   }
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  sps.setSameCQPTableForAllChromaFlag(m_sameCQPTableForAllChroma);
-  for (int i = 0; i < (m_sameCQPTableForAllChroma ? 1 : 3); i++)
-  {
-    sps.setNumPtsInCQPTableMinus1(i, (int)m_deltaQpInValMinus1[i].size() - 1);
-    sps.setDeltaQpInValMinus1(i, m_deltaQpInValMinus1[i]);
-    sps.setDeltaOutVal(i, m_deltaQpOutVal[i]);
-  }
+  sps.setChromaQpMappingTableFromParams(m_chromaQpMappingTableParams, sps.getQpBDOffset(CHANNEL_TYPE_CHROMA));
   sps.derivedChromaQPMappingTables();
 #endif
 

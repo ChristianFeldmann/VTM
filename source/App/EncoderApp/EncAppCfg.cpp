@@ -1032,7 +1032,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   ("UseIdentityTableForNon420Chroma",                 m_useIdentityTableForNon420Chroma,                 true, "True: Indicates that 422/444 chroma uses identity chroma QP mapping tables; False: explicit Qp table may be specified in config")
-  ("SameCQPTablesForAllChroma",                       m_sameCQPTableForAllChroma,                        true, "0: Different tables for Cb, Cr and joint Cb-Cr components, 1 (default): Same tables for all three chroma components")
+  ("SameCQPTablesForAllChroma",                       m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag,                        true, "0: Different tables for Cb, Cr and joint Cb-Cr components, 1 (default): Same tables for all three chroma components")
   ("QpInValCb",                                       cfg_qpInValCb,                            cfg_qpInValCb, "Input coordinates for the QP table for Cb component")
   ("QpOutValCb",                                      cfg_qpOutValCb,                          cfg_qpOutValCb, "Output coordinates for the QP table for Cb component")
   ("QpInValCr",                                       cfg_qpInValCr,                            cfg_qpInValCr, "Input coordinates for the QP table for Cr component")
@@ -1935,33 +1935,36 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   CHECK(cfg_qpInValCbCr.values.size() != cfg_qpOutValCbCr.values.size(), "Chroma QP table for CbCr is incomplete.");
   if (m_useIdentityTableForNon420Chroma && m_chromaFormatIDC != CHROMA_420) 
   {
-    m_sameCQPTableForAllChroma = true;
+    m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag = true;
     cfg_qpInValCb.values = { 0 };
     cfg_qpInValCr.values = { 0 };
     cfg_qpInValCbCr.values = { 0 };
   }
-  m_deltaQpInValMinus1[0].resize(cfg_qpInValCb.values.size());
-  m_deltaQpOutVal[0].resize(cfg_qpOutValCb.values.size());
+  m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0].resize(cfg_qpInValCb.values.size());
+  m_chromaQpMappingTableParams.m_deltaQpOutVal[0].resize(cfg_qpOutValCb.values.size());
+  m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (int)cfg_qpOutValCb.values.size()-1;
   for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
   {
-    m_deltaQpInValMinus1[0][i] = (i == 0) ? cfg_qpInValCb.values[i] + 6*(m_internalBitDepth[CHANNEL_TYPE_CHROMA]-8) : cfg_qpInValCb.values[i] - cfg_qpInValCb.values[i - 1] - 1;
-    m_deltaQpOutVal[0][i] = (i == 0) ? cfg_qpOutValCb.values[i] + 6*(m_internalBitDepth[CHANNEL_TYPE_CHROMA]-8) : cfg_qpOutValCb.values[i] - cfg_qpOutValCb.values[i - 1];
+    m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0][i] = (i == 0) ? cfg_qpInValCb.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpInValCb.values[i] - cfg_qpInValCb.values[i - 1] - 1;
+    m_chromaQpMappingTableParams.m_deltaQpOutVal[0][i] = (i == 0) ? cfg_qpOutValCb.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpOutValCb.values[i] - cfg_qpOutValCb.values[i - 1];
   }
-  if (!m_sameCQPTableForAllChroma)
+  if (!m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag)
   {
-    m_deltaQpInValMinus1[1].resize(cfg_qpInValCr.values.size());
-    m_deltaQpOutVal[1].resize(cfg_qpOutValCr.values.size());
+    m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1].resize(cfg_qpInValCr.values.size());
+    m_chromaQpMappingTableParams.m_deltaQpOutVal[1].resize(cfg_qpOutValCr.values.size());
+    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (int)cfg_qpOutValCr.values.size()-1;
     for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
     {
-      m_deltaQpInValMinus1[1][i] = (i == 0) ? cfg_qpInValCr.values[i] : cfg_qpInValCr.values[i] - cfg_qpInValCr.values[i - 1] - 1;
-      m_deltaQpOutVal[1][i] = (i == 0) ? cfg_qpOutValCr.values[i] : cfg_qpOutValCr.values[i] - cfg_qpOutValCr.values[i - 1];
+      m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1][i] = (i == 0) ? cfg_qpInValCr.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpInValCr.values[i] - cfg_qpInValCr.values[i - 1] - 1;
+      m_chromaQpMappingTableParams.m_deltaQpOutVal[1][i] = (i == 0) ? cfg_qpOutValCr.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpOutValCr.values[i] - cfg_qpOutValCr.values[i - 1];
     }
-    m_deltaQpInValMinus1[2].resize(cfg_qpInValCbCr.values.size());
-    m_deltaQpOutVal[2].resize(cfg_qpOutValCbCr.values.size());
-    for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
+    m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2].resize(cfg_qpInValCbCr.values.size());
+    m_chromaQpMappingTableParams.m_deltaQpOutVal[2].resize(cfg_qpOutValCbCr.values.size());
+    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[2] = (int)cfg_qpOutValCbCr.values.size()-1;
+    for (int i = 0; i < cfg_qpInValCbCr.values.size(); i++)
     {
-      m_deltaQpInValMinus1[2][i] = (i == 0) ? cfg_qpInValCbCr.values[i] : cfg_qpInValCbCr.values[i] - cfg_qpInValCbCr.values[i - 1] - 1;
-      m_deltaQpOutVal[2][i] = (i == 0) ? cfg_qpOutValCbCr.values[i] : cfg_qpOutValCbCr.values[i] - cfg_qpOutValCbCr.values[i - 1];
+      m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2][i] = (i == 0) ? cfg_qpInValCbCr.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpInValCbCr.values[i] - cfg_qpInValCbCr.values[i - 1] - 1;
+      m_chromaQpMappingTableParams.m_deltaQpOutVal[2][i] = (i == 0) ? cfg_qpOutValCbCr.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpOutValCbCr.values[i] - cfg_qpOutValCbCr.values[i - 1];
     }
   }
 #endif

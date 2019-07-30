@@ -204,10 +204,7 @@ protected:
   int       m_iQP;                                            ///< QP value of key-picture (integer)
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   bool      m_useIdentityTableForNon420Chroma;
-  bool      m_sameCQPTableForAllChroma;
-  int       m_numPtsInCQPTableMinus1[MAX_NUM_CQP_MAPPING_TABLES];
-  std::vector<int>  m_deltaQpInValMinus1[MAX_NUM_CQP_MAPPING_TABLES];
-  std::vector<int>  m_deltaQpOutVal[MAX_NUM_CQP_MAPPING_TABLES];
+  ChromaQpMappingTableParams m_chromaQpMappingTableParams;
 #endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                                  ///< QP offset for intra slice (integer)

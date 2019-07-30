@@ -171,7 +171,7 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
 #endif
 #else
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps);
+  *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, tu.jointCbCr ? JOINT_CbCr : compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps);
 #else
   *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, toChannelType(compID), tu.cs->sps->getQpBDOffset(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp);
 #endif

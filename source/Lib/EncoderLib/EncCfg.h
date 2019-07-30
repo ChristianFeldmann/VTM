@@ -240,10 +240,7 @@ protected:
 
   int       m_iQP;                              //  if (AdaptiveQP == OFF)
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  bool      m_sameCQPTableForAllChroma;
-  int       m_numPtsInCQPTableMinus1[MAX_NUM_CQP_MAPPING_TABLES];
-  std::vector<int>  m_deltaQpInValMinus1[MAX_NUM_CQP_MAPPING_TABLES];
-  std::vector<int>  m_deltaQpOutVal[MAX_NUM_CQP_MAPPING_TABLES];
+  ChromaQpMappingTableParams m_chromaQpMappingTableParams;
 #endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                    ///< QP offset for intra slice (integer)
@@ -788,17 +785,9 @@ public:
   void      setLambdaFromQPEnable           ( bool  b )         { m_lambdaFromQPEnable = b; }
 #endif
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  void      setSameCQPTableForAllChroma(bool b)                             { m_sameCQPTableForAllChroma = b; }
-  bool      getSameCQPTableForAllChroma()                             const { return m_sameCQPTableForAllChroma; }
-  void      setNumPtsInCQPTableMinus1(int tableIdx, int n)                  { m_numPtsInCQPTableMinus1[tableIdx] = n; }
-  int       getNumPtsInCQPTableMinus1(int tableIdx)                   const { return m_numPtsInCQPTableMinus1[tableIdx]; }
-  void      setDeltaInValMinus1(int tableIdx, std::vector<int> &inVals)     { m_deltaQpInValMinus1[tableIdx] = inVals; }
-  void      setDeltaInValMinus1(int tableIdx, int idx, int n)               { m_deltaQpInValMinus1[tableIdx][idx] = n; }
-  int       getDeltaInValMinus1(int tableIdx, int idx)                const { return m_deltaQpInValMinus1[tableIdx][idx]; }
-  void      setDeltaOutVal(int tableIdx, std::vector<int> &outVals)         { m_deltaQpOutVal[tableIdx] = outVals; }
-  void      setDeltaOutVal(int tableIdx, int idx, int n)                    { m_deltaQpOutVal[tableIdx][idx] = n; }
-  int       getDeltaOutVal(int tableIdx, int idx)                     const { return m_deltaQpOutVal[tableIdx][idx]; }
+  void      setChromaQpMappingTableParams   (const ChromaQpMappingTableParams &params) { m_chromaQpMappingTableParams = params; }
 #endif
+
   void      setPad                          ( int*  iPad                   )      { for ( int i = 0; i < 2; i++ ) m_aiPad[i] = iPad[i]; }
 
   int       getMaxRefPicNum                 ()                              { return m_iMaxRefPicNum;           }

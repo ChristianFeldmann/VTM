@@ -3047,29 +3047,37 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
   {
     if( cctx.isSigGroup() )
     {
+#if !JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT
       if( cctx.isContextCoded() )
       {
+#endif
         m_BinEncoder.encodeBin( 1, cctx.sigGroupCtxId( true ) );
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sigGroup() bin=%d ctx=%d\n", 1, cctx.sigGroupCtxId() );
+#if !JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT
       }
       else
       {
         m_BinEncoder.encodeBinEP( 1 );
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sigGroup() EPbin=%d\n", 1 );
       }
+#endif
     }
     else
     {
+#if !JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT
       if( cctx.isContextCoded() )
       {
+#endif
         m_BinEncoder.encodeBin( 0, cctx.sigGroupCtxId( true ) );
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sigGroup() bin=%d ctx=%d\n", 0, cctx.sigGroupCtxId() );
+#if !JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT
       }
       else
       {
         m_BinEncoder.encodeBinEP( 0 );
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sigGroup() EPbin=%d\n", 0 );
       }
+#endif
       return;
     }
   }

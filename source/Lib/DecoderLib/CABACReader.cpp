@@ -3208,16 +3208,20 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
   bool sigGroup = cctx.isLastSubSet() && cctx.noneSigGroup();
   if( !sigGroup )
   {
+#if !JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT
     if( cctx.isContextCoded() )
     {
+#endif
       sigGroup = m_BinDecoder.decodeBin( cctx.sigGroupCtxId( true ) );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sigGroup() bin=%d ctx=%d\n", sigGroup, cctx.sigGroupCtxId() );
+#if !JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT
     }
     else
     {
       sigGroup = m_BinDecoder.decodeBinEP( );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sigGroup() EPbin=%d\n", sigGroup );
     }
+#endif
   }
   if( sigGroup )
   {

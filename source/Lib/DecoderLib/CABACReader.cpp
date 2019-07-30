@@ -608,26 +608,26 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   bool jointPLT = false;
   if (CS::isDualITree(*cu.cs))
   {
-	  if (isLuma(partitioner.chType))
-	  {
-		  compBegin = COMPONENT_Y;
-		  numComp = 1;
-	  }
-	  else
-	  {
-		  compBegin = COMPONENT_Cb;
-		  numComp = 2;
-	  }
+    if (isLuma(partitioner.chType))
+    {
+      compBegin = COMPONENT_Y;
+      numComp = 1;
+    }
+    else
+    {
+      compBegin = COMPONENT_Cb;
+      numComp = 2;
+    }
   }
   else
   {
-	  compBegin = COMPONENT_Y;
-	  numComp = 3;
-	  jointPLT = true;
+    compBegin = COMPONENT_Y;
+    numComp = 3;
+    jointPLT = true;
   }
   if (CU::isPLT(cu))
   {
-	  cs.reorderPrevPLT(cs.prevPLT, cu.curPLTSize, cu.curPLT, cu.reuseflag, compBegin, numComp, jointPLT);
+    cs.reorderPrevPLT(cs.prevPLT, cu.curPLTSize, cu.curPLT, cu.reuseflag, compBegin, numComp, jointPLT);
   }
 #endif
   DTRACE( g_trace_ctx, D_QP, "x=%d, y=%d, w=%d, h=%d, qp=%d\n", cu.Y().x, cu.Y().y, cu.Y().width, cu.Y().height, cu.qp );
@@ -755,23 +755,23 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
 #if JVET_O0119_BASE_PALETTE_444
   if (CU::isPLT(cu))
   {
-	  cs.addTU(cu, partitioner.chType);
-	  if (CS::isDualITree(*cu.cs))
-	  {
-		  if (isLuma(partitioner.chType))
-		  {
-			  cu_palette_info(cu, COMPONENT_Y, 1, cuCtx);
-		  }
-		  if (cu.chromaFormat != CHROMA_400 && (partitioner.chType == CHANNEL_TYPE_CHROMA))
-		  {
-			  cu_palette_info(cu, COMPONENT_Cb, 2, cuCtx);
-		  }
-	  }
-	  else
-	  {
-		  cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
-	  }
-	  return end_of_ctu(cu, cuCtx);
+    cs.addTU(cu, partitioner.chType);
+    if (CS::isDualITree(*cu.cs))
+    {
+      if (isLuma(partitioner.chType))
+      {
+        cu_palette_info(cu, COMPONENT_Y, 1, cuCtx);
+      }
+      if (cu.chromaFormat != CHROMA_400 && (partitioner.chType == CHANNEL_TYPE_CHROMA))
+      {
+        cu_palette_info(cu, COMPONENT_Cb, 2, cuCtx);
+      }
+    }
+    else
+    {
+      cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
+    }
+    return end_of_ctu(cu, cuCtx);
   }
 #endif
   bdpcm_mode( cu, ComponentID( partitioner.chType ) );
@@ -1027,13 +1027,13 @@ void CABACReader::pred_mode( CodingUnit& cu )
       }
       }
 #if JVET_O0119_BASE_PALETTE_444
-	  if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-	  {
-		  if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
-		  {
-			  cu.predMode = MODE_PLT;
-		  }
-	  }
+    if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+    {
+      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+      {
+        cu.predMode = MODE_PLT;
+      }
+    }
 #endif
     }
     else
@@ -1042,13 +1042,13 @@ void CABACReader::pred_mode( CodingUnit& cu )
       {
         cu.predMode = MODE_INTRA;
 #if JVET_O0119_BASE_PALETTE_444
-		if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-		{
-			if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
-			{
-				cu.predMode = MODE_PLT;
-			}
-		}
+    if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+    {
+      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+      {
+        cu.predMode = MODE_PLT;
+      }
+    }
 #endif
       }
       else
@@ -1072,28 +1072,28 @@ void CABACReader::pred_mode( CodingUnit& cu )
   else
   {
 #if JVET_O0119_BASE_PALETTE_444
-	  if ( cu.cs->slice->isIntra() || (cu.lwidth() == 4 && cu.lheight() == 4) )
-	  {
-		cu.predMode = MODE_INTRA;
-		if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-		{
-			if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
-			{
-				  cu.predMode = MODE_PLT;
-			}
-		}
-	  }
-	  else
-	  {
-		cu.predMode = m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))) ? MODE_INTRA : MODE_INTER;
-		if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-		{
-			if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
-			{
-				  cu.predMode = MODE_PLT;
-			}
-		}
-	  }
+    if ( cu.cs->slice->isIntra() || (cu.lwidth() == 4 && cu.lheight() == 4) )
+    {
+    cu.predMode = MODE_INTRA;
+    if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+    {
+      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+      {
+          cu.predMode = MODE_PLT;
+      }
+    }
+    }
+    else
+    {
+    cu.predMode = m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))) ? MODE_INTRA : MODE_INTER;
+    if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+    {
+      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+      {
+          cu.predMode = MODE_PLT;
+      }
+    }
+    }
 #else
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) || m_BinDecoder.decodeBin( Ctx::PredMode( DeriveCtx::CtxPredModeFlag( cu ) ) ) )
     {
@@ -1601,402 +1601,402 @@ bool CABACReader::end_of_ctu( CodingUnit& cu, CUCtx& cuCtx )
 #if JVET_O0119_BASE_PALETTE_444
 void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_t numComp, CUCtx& cuCtx)
 {
-	const SPS&        sps = *(cu.cs->sps);
-	TransformUnit&   tu = *cu.firstTU;
-	int curPLTidx = 0;
+  const SPS&        sps = *(cu.cs->sps);
+  TransformUnit&   tu = *cu.firstTU;
+  int curPLTidx = 0;
 
-	cu.lastPLTSize[compBegin] = cu.cs->prevPLT.curPLTSize[compBegin];
+  cu.lastPLTSize[compBegin] = cu.cs->prevPLT.curPLTSize[compBegin];
 
-	if (cu.lastPLTSize[compBegin])
-	{
-		xDecodePLTPredIndicator(cu, MAXPLTSIZE, compBegin);
-	}
+  if (cu.lastPLTSize[compBegin])
+  {
+    xDecodePLTPredIndicator(cu, MAXPLTSIZE, compBegin);
+  }
 
-	for (int idx = 0; idx < cu.lastPLTSize[compBegin]; idx++)
-	{
-		if (cu.reuseflag[compBegin][idx])
-		{
-			for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-			{
-				cu.curPLT[comp][curPLTidx] = cu.cs->prevPLT.curPLT[comp][idx];
-			}
-			curPLTidx++;
-		}
-	}
+  for (int idx = 0; idx < cu.lastPLTSize[compBegin]; idx++)
+  {
+    if (cu.reuseflag[compBegin][idx])
+    {
+      for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+      {
+        cu.curPLT[comp][curPLTidx] = cu.cs->prevPLT.curPLT[comp][idx];
+      }
+      curPLTidx++;
+    }
+  }
 
-	uint32_t recievedPLTnum = 0;
+  uint32_t recievedPLTnum = 0;
 
-	if (curPLTidx < MAXPLTSIZE)
-	{
-		recievedPLTnum = exp_golomb_eqprob(0);
-	}
+  if (curPLTidx < MAXPLTSIZE)
+  {
+    recievedPLTnum = exp_golomb_eqprob(0);
+  }
 
-	cu.curPLTSize[compBegin] = curPLTidx + recievedPLTnum;
-	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-	{
-		for (int idx = curPLTidx; idx < cu.curPLTSize[compBegin]; idx++)
-		{
-			ComponentID compID = (ComponentID)comp;
-			const int  channelBitDepth = sps.getBitDepth(toChannelType(compID));
-			cu.curPLT[compID][idx] = m_BinDecoder.decodeBinsEP(channelBitDepth);
-		}
-	}
-	cu.useEscape[compBegin] = true; // JC 
-	if (cu.curPLTSize[compBegin] > 0)
-	{
-		uint32_t uiCode = 0;
-		uiCode = m_BinDecoder.decodeBinEP();
-		cu.useEscape[compBegin] = (uiCode != 0);
-	}
-	uint32_t indexMaxSize = cu.useEscape[compBegin] ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
-	//encode index map
-	PLTtypeBuf    runType = tu.getrunType(compBegin);
-	PelBuf    runLength = tu.getrunLength(compBegin);
-	PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
-	uint32_t  uiHeight = cu.block(compBegin).height;
-	uint32_t  uiWidth = cu.block(compBegin).width;
+  cu.curPLTSize[compBegin] = curPLTidx + recievedPLTnum;
+  for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+  {
+    for (int idx = curPLTidx; idx < cu.curPLTSize[compBegin]; idx++)
+    {
+      ComponentID compID = (ComponentID)comp;
+      const int  channelBitDepth = sps.getBitDepth(toChannelType(compID));
+      cu.curPLT[compID][idx] = m_BinDecoder.decodeBinsEP(channelBitDepth);
+    }
+  }
+  cu.useEscape[compBegin] = true; // JC 
+  if (cu.curPLTSize[compBegin] > 0)
+  {
+    uint32_t uiCode = 0;
+    uiCode = m_BinDecoder.decodeBinEP();
+    cu.useEscape[compBegin] = (uiCode != 0);
+  }
+  uint32_t indexMaxSize = cu.useEscape[compBegin] ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
+  //encode index map
+  PLTtypeBuf    runType = tu.getrunType(compBegin);
+  PelBuf    runLength = tu.getrunLength(compBegin);
+  PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
+  uint32_t  uiHeight = cu.block(compBegin).height;
+  uint32_t  uiWidth = cu.block(compBegin).width;
 
-	int iNumCopyIndexRuns = -1;
-	bool lastRunType = 0;
-	uint32_t uiNumIndices = 0;
-	uint32_t uiAdjust = 0;
-	uint32_t symbol = 0;
-	std::list<int> lParsedIdxList;
-	if (indexMaxSize > 1)
-	{
-		uint32_t currParam = 3 + ((indexMaxSize) >> 3);
-		uiNumIndices = m_BinDecoder.decodeRemAbsEP(currParam, false, MAX_NUM_CHANNEL_TYPE); // JC: number of indices (INDEX RUN)
-		uiNumIndices++;
-		iNumCopyIndexRuns = uiNumIndices;
-		while (uiNumIndices--)
-		{
-			xReadTruncBinCode(symbol, indexMaxSize - uiAdjust);
-			uiAdjust = 1;
-			lParsedIdxList.push_back(symbol);
-		}
-		lastRunType = m_BinDecoder.decodeBin(Ctx::RunTypeFlag());
-		parseScanRotationModeFlag(cu, compBegin);
-		uiAdjust = 0;
-	}
-	else
-	{
-		cu.useRotation[compBegin] = false;
-	}
+  int iNumCopyIndexRuns = -1;
+  bool lastRunType = 0;
+  uint32_t uiNumIndices = 0;
+  uint32_t uiAdjust = 0;
+  uint32_t symbol = 0;
+  std::list<int> lParsedIdxList;
+  if (indexMaxSize > 1)
+  {
+    uint32_t currParam = 3 + ((indexMaxSize) >> 3);
+    uiNumIndices = m_BinDecoder.decodeRemAbsEP(currParam, false, MAX_NUM_CHANNEL_TYPE); // JC: number of indices (INDEX RUN)
+    uiNumIndices++;
+    iNumCopyIndexRuns = uiNumIndices;
+    while (uiNumIndices--)
+    {
+      xReadTruncBinCode(symbol, indexMaxSize - uiAdjust);
+      uiAdjust = 1;
+      lParsedIdxList.push_back(symbol);
+    }
+    lastRunType = m_BinDecoder.decodeBin(Ctx::RunTypeFlag());
+    parseScanRotationModeFlag(cu, compBegin);
+    uiAdjust = 0;
+  }
+  else
+  {
+    cu.useRotation[compBegin] = false;
+  }
 
-	if (cu.useEscape[compBegin] && cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded)
-	{
-		if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
-		{
-			cu_qp_delta(cu, cuCtx.qp, cu.qp);
-			cuCtx.qp = cu.qp;
-			cuCtx.isDQPCoded = true;
-		}
-	}
+  if (cu.useEscape[compBegin] && cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded)
+  {
+    if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
+    {
+      cu_qp_delta(cu, cuCtx.qp, cu.qp);
+      cuCtx.qp = cu.qp;
+      cuCtx.isDQPCoded = true;
+    }
+  }
 #if JVET_O1168_CU_CHROMA_QP_OFFSET
-	if (cu.useEscape[compBegin] && cu.cs->slice->getUseChromaQpAdj() && !cuCtx.isChromaQpAdjCoded)
+  if (cu.useEscape[compBegin] && cu.cs->slice->getUseChromaQpAdj() && !cuCtx.isChromaQpAdjCoded)
 #else
-	if (cu.cs->slice->getUseChromaQpAdj() && !cu.transQuantBypass && !cuCtx.isChromaQpAdjCoded)
+  if (cu.cs->slice->getUseChromaQpAdj() && !cu.transQuantBypass && !cuCtx.isChromaQpAdjCoded)
 #endif
-	{
-		if (!CS::isDualITree(*tu.cs) || isChroma(tu.chType))
-		{
-			cu_chroma_qp_offset(cu);
-			cuCtx.isChromaQpAdjCoded = true;
-		}
-	}
+  {
+    if (!CS::isDualITree(*tu.cs) || isChroma(tu.chType))
+    {
+      cu_chroma_qp_offset(cu);
+      cuCtx.isChromaQpAdjCoded = true;
+    }
+  }
 
 
-	m_puiScanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(uiWidth)][gp_sizeIdxInfo->idxFrom(uiHeight)];
-	uint32_t strPos = 0;
-	uint32_t endPos = uiHeight * uiWidth;
-	while (strPos < endPos)
-	{
-		uint32_t posy = m_puiScanOrder[strPos].y;
-		uint32_t posx = m_puiScanOrder[strPos].x;
-		uint32_t posyprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].y;
-		uint32_t posxprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].x;
+  m_puiScanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(uiWidth)][gp_sizeIdxInfo->idxFrom(uiHeight)];
+  uint32_t strPos = 0;
+  uint32_t endPos = uiHeight * uiWidth;
+  while (strPos < endPos)
+  {
+    uint32_t posy = m_puiScanOrder[strPos].y;
+    uint32_t posx = m_puiScanOrder[strPos].x;
+    uint32_t posyprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].y;
+    uint32_t posxprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].x;
 
-		if (indexMaxSize > 1)
-		{
-			if (((posy == 0) && !cu.useRotation[compBegin]) || ((posx == 0) && cu.useRotation[compBegin]))
-			{
-				runType.at(posx, posy) = PLT_RUN_INDEX;
-			}
-			else if (strPos != 0 && runType.at(posxprev, posyprev) == PLT_RUN_COPY)
-			{
-				runType.at(posx, posy) = PLT_RUN_INDEX;
-			}
-			else
-			{
-				if (iNumCopyIndexRuns && strPos < endPos - 1) // JC: if uiNumIndices (decoder will know this value) == 0 - > only CopyAbove, if strPos == endPos - 1, the last RunType was already coded
-				{
-					runType.at(posx, posy) = (m_BinDecoder.decodeBin(Ctx::RunTypeFlag()));
-				}
-				else
-				{
-					if (strPos == endPos - 1 && iNumCopyIndexRuns)
-					{
-						runType.at(posx, posy) = PLT_RUN_INDEX;
-					}
-					else
-					{
-						runType.at(posx, posy) = PLT_RUN_COPY;
-					}
-				}
-			}
-		}
-		else
-		{
-			runType.at(posx, posy) = PLT_RUN_INDEX;
-		}
+    if (indexMaxSize > 1)
+    {
+      if (((posy == 0) && !cu.useRotation[compBegin]) || ((posx == 0) && cu.useRotation[compBegin]))
+      {
+        runType.at(posx, posy) = PLT_RUN_INDEX;
+      }
+      else if (strPos != 0 && runType.at(posxprev, posyprev) == PLT_RUN_COPY)
+      {
+        runType.at(posx, posy) = PLT_RUN_INDEX;
+      }
+      else
+      {
+        if (iNumCopyIndexRuns && strPos < endPos - 1) // JC: if uiNumIndices (decoder will know this value) == 0 - > only CopyAbove, if strPos == endPos - 1, the last RunType was already coded
+        {
+          runType.at(posx, posy) = (m_BinDecoder.decodeBin(Ctx::RunTypeFlag()));
+        }
+        else
+        {
+          if (strPos == endPos - 1 && iNumCopyIndexRuns)
+          {
+            runType.at(posx, posy) = PLT_RUN_INDEX;
+          }
+          else
+          {
+            runType.at(posx, posy) = PLT_RUN_COPY;
+          }
+        }
+      }
+    }
+    else
+    {
+      runType.at(posx, posy) = PLT_RUN_INDEX;
+    }
 
-		Pel siCurLevel = 0;
-		if (runType.at(posx, posy) == PLT_RUN_INDEX)
-		{
-			if (!lParsedIdxList.empty())
-			{
-				siCurLevel = lParsedIdxList.front();
-				lParsedIdxList.pop_front();
-			}
-			else
-			{
-				siCurLevel = 0;
-			}
-			xAdjustPLTIndex(cu, siCurLevel, strPos, curPLTIdx, runType, indexMaxSize, compBegin);
-		}
+    Pel siCurLevel = 0;
+    if (runType.at(posx, posy) == PLT_RUN_INDEX)
+    {
+      if (!lParsedIdxList.empty())
+      {
+        siCurLevel = lParsedIdxList.front();
+        lParsedIdxList.pop_front();
+      }
+      else
+      {
+        siCurLevel = 0;
+      }
+      xAdjustPLTIndex(cu, siCurLevel, strPos, curPLTIdx, runType, indexMaxSize, compBegin);
+    }
 
-		if (indexMaxSize > 1)
-		{
-			bool bLastRun;
-			iNumCopyIndexRuns -= (runType.at(posx, posy) == PLT_RUN_INDEX);
-			bLastRun = iNumCopyIndexRuns == 0 && runType.at(posx, posy) == lastRunType;
-			if (!bLastRun)
-			{
-				runLength.at(posx, posy) = cu_run_val((PLTRunMode)runType.at(posx, posy), siCurLevel, endPos - strPos - iNumCopyIndexRuns - 1 - lastRunType) + 1;
-			}
-			else
-			{
-				runLength.at(posx, posy) = endPos - strPos;
-			}
+    if (indexMaxSize > 1)
+    {
+      bool bLastRun;
+      iNumCopyIndexRuns -= (runType.at(posx, posy) == PLT_RUN_INDEX);
+      bLastRun = iNumCopyIndexRuns == 0 && runType.at(posx, posy) == lastRunType;
+      if (!bLastRun)
+      {
+        runLength.at(posx, posy) = cu_run_val((PLTRunMode)runType.at(posx, posy), siCurLevel, endPos - strPos - iNumCopyIndexRuns - 1 - lastRunType) + 1;
+      }
+      else
+      {
+        runLength.at(posx, posy) = endPos - strPos;
+      }
 
-		}
-		else
-		{
-			runLength.at(posx, posy) = endPos - strPos;
-		}
+    }
+    else
+    {
+      runLength.at(posx, posy) = endPos - strPos;
+    }
 
-		//assign run information
-		for (int runidx = 1; runidx < runLength.at(posx, posy); runidx++)
-		{
-			int PosYrun, PosXrun;
-			PosYrun = m_puiScanOrder[strPos + runidx].y;
-			PosXrun = m_puiScanOrder[strPos + runidx].x;
-			runType.at(PosXrun, PosYrun) = runType.at(posx, posy);
-			runLength.at(PosXrun, PosYrun) = runLength.at(posx, posy);
-		}
+    //assign run information
+    for (int runidx = 1; runidx < runLength.at(posx, posy); runidx++)
+    {
+      int PosYrun, PosXrun;
+      PosYrun = m_puiScanOrder[strPos + runidx].y;
+      PosXrun = m_puiScanOrder[strPos + runidx].x;
+      runType.at(PosXrun, PosYrun) = runType.at(posx, posy);
+      runLength.at(PosXrun, PosYrun) = runLength.at(posx, posy);
+    }
 
-		uint32_t PosYrun;
-		uint32_t PosXrun;
-		if (runType.at(posx, posy) == PLT_RUN_INDEX)
-		{
-			for (uint32_t idx = 1; idx < runLength.at(posx, posy); idx++)
-			{
-				PosYrun = m_puiScanOrder[strPos + idx].y;
-				PosXrun = m_puiScanOrder[strPos + idx].x;
-				curPLTIdx.at(PosXrun, PosYrun) = curPLTIdx.at(posx, posy);
-			}
-		}
-		else if (runType.at(posx, posy) == PLT_RUN_COPY)
-		{
-			for (uint32_t idx = 0; idx < runLength.at(posx, posy); idx++)
-			{
-				PosYrun = m_puiScanOrder[strPos + idx].y;
-				PosXrun = m_puiScanOrder[strPos + idx].x;
-				curPLTIdx.at(PosXrun, PosYrun) = (cu.useRotation[compBegin]) ? curPLTIdx.at(PosXrun - 1, PosYrun) : curPLTIdx.at(PosXrun, PosYrun - 1);
-			}
-		}
-		strPos += (runLength.at(posx, posy));
-	}
-	assert(strPos == endPos);
+    uint32_t PosYrun;
+    uint32_t PosXrun;
+    if (runType.at(posx, posy) == PLT_RUN_INDEX)
+    {
+      for (uint32_t idx = 1; idx < runLength.at(posx, posy); idx++)
+      {
+        PosYrun = m_puiScanOrder[strPos + idx].y;
+        PosXrun = m_puiScanOrder[strPos + idx].x;
+        curPLTIdx.at(PosXrun, PosYrun) = curPLTIdx.at(posx, posy);
+      }
+    }
+    else if (runType.at(posx, posy) == PLT_RUN_COPY)
+    {
+      for (uint32_t idx = 0; idx < runLength.at(posx, posy); idx++)
+      {
+        PosYrun = m_puiScanOrder[strPos + idx].y;
+        PosXrun = m_puiScanOrder[strPos + idx].x;
+        curPLTIdx.at(PosXrun, PosYrun) = (cu.useRotation[compBegin]) ? curPLTIdx.at(PosXrun - 1, PosYrun) : curPLTIdx.at(PosXrun, PosYrun - 1);
+      }
+    }
+    strPos += (runLength.at(posx, posy));
+  }
+  assert(strPos == endPos);
 
-	uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
-	uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
-	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-	{
-		ComponentID compID = (ComponentID)comp;
-		for (strPos = 0; strPos < endPos; strPos++)
-		{
-			uint32_t posy = m_puiScanOrder[strPos].y;
-			uint32_t posx = m_puiScanOrder[strPos].x;
-			if (curPLTIdx.at(posx, posy) == cu.curPLTSize[compBegin])
-			{
-				{
-					PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)comp);
-					if (compID == COMPONENT_Y || compBegin != COMPONENT_Y)
-					{
-						escapeValue.at(posx, posy) = exp_golomb_eqprob(3);
-						assert(escapeValue.at(posx, posy) < (1 << (cu.cs->sps->getBitDepth(toChannelType((ComponentID)comp)) + 1)));
-					}
-					if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && posy % (1 << scaleY) == 0 && posx % (1 << scaleX) == 0)
-					{
-						uint32_t posxC = posx >> scaleX;
-						uint32_t posyC = posy >> scaleY;
-						escapeValue.at(posxC, posyC) = exp_golomb_eqprob(3);
-						assert(escapeValue.at(posxC, posyC) < (1 << (cu.cs->sps->getBitDepth(toChannelType(compID)) + 1)));
-					}
-				}
-			}
-		}
-	}
+  uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
+  uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
+  for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+  {
+    ComponentID compID = (ComponentID)comp;
+    for (strPos = 0; strPos < endPos; strPos++)
+    {
+      uint32_t posy = m_puiScanOrder[strPos].y;
+      uint32_t posx = m_puiScanOrder[strPos].x;
+      if (curPLTIdx.at(posx, posy) == cu.curPLTSize[compBegin])
+      {
+        {
+          PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)comp);
+          if (compID == COMPONENT_Y || compBegin != COMPONENT_Y)
+          {
+            escapeValue.at(posx, posy) = exp_golomb_eqprob(3);
+            assert(escapeValue.at(posx, posy) < (1 << (cu.cs->sps->getBitDepth(toChannelType((ComponentID)comp)) + 1)));
+          }
+          if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && posy % (1 << scaleY) == 0 && posx % (1 << scaleX) == 0)
+          {
+            uint32_t posxC = posx >> scaleX;
+            uint32_t posyC = posy >> scaleY;
+            escapeValue.at(posxC, posyC) = exp_golomb_eqprob(3);
+            assert(escapeValue.at(posxC, posyC) < (1 << (cu.cs->sps->getBitDepth(toChannelType(compID)) + 1)));
+          }
+        }
+      }
+    }
+  }
 
 }
 void CABACReader::parseScanRotationModeFlag(CodingUnit& cu, ComponentID compBegin)
 {
-	cu.useRotation[compBegin] = m_BinDecoder.decodeBin(Ctx::RotationFlag());
+  cu.useRotation[compBegin] = m_BinDecoder.decodeBin(Ctx::RotationFlag());
 }
 void CABACReader::xDecodePLTPredIndicator(CodingUnit& cu, uint32_t uiMaxPLTSize, ComponentID compBegin)
 {
-	uint32_t uiSymbol, uiNumPLTPredicted = 0, idx = 0;
+  uint32_t uiSymbol, uiNumPLTPredicted = 0, idx = 0;
 
-	uiSymbol = exp_golomb_eqprob(0);
+  uiSymbol = exp_golomb_eqprob(0);
 
-	if (uiSymbol != 1)
-	{
-		while (idx < cu.lastPLTSize[compBegin] && uiNumPLTPredicted < uiMaxPLTSize)
-		{
-			if (idx > 0)
-			{
-				uiSymbol = exp_golomb_eqprob(0);
-			}
-			if (uiSymbol == 1)
-			{
-				break;
-			}
+  if (uiSymbol != 1)
+  {
+    while (idx < cu.lastPLTSize[compBegin] && uiNumPLTPredicted < uiMaxPLTSize)
+    {
+      if (idx > 0)
+      {
+        uiSymbol = exp_golomb_eqprob(0);
+      }
+      if (uiSymbol == 1)
+      {
+        break;
+      }
 
-			if (uiSymbol)
-			{
-				idx += uiSymbol - 1;
-			}
-			cu.reuseflag[compBegin][idx] = 1;
-			uiNumPLTPredicted++;
-			idx++;
-		}
-	}
+      if (uiSymbol)
+      {
+        idx += uiSymbol - 1;
+      }
+      cu.reuseflag[compBegin][idx] = 1;
+      uiNumPLTPredicted++;
+      idx++;
+    }
+  }
 }
 void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel siCurLevel, uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin)
 {
-	uint32_t uiSymbol;
-	int iRefLevel = MAX_INT;
-	uint32_t posy = m_puiScanOrder[idx].y;
-	uint32_t posx = m_puiScanOrder[idx].x;
-	if (idx)
-	{
-		uint32_t prevposy = m_puiScanOrder[idx - 1].y;
-		uint32_t prevposx = m_puiScanOrder[idx - 1].x;
-		if (paletteRunType.at(prevposx, prevposy) == PLT_RUN_INDEX)
-		{
-			iRefLevel = paletteIdx.at(prevposx, prevposy);
-			if (paletteIdx.at(prevposx, prevposy) == cu.curPLTSize[compBegin]) // escape
-			{
-				iRefLevel = maxSymbol - 1;
-			}
-		}
-		else
-		{
-			if (cu.useRotation[compBegin])
-			{
-				assert(prevposx > 0);
-				iRefLevel = paletteIdx.at(posx - 1, posy);
-				if (paletteIdx.at(posx - 1, posy) == cu.curPLTSize[compBegin]) // escape mode
-				{
-					iRefLevel = maxSymbol - 1;
-				}
-			}
-			else
-			{
-				assert(prevposy > 0);
-				iRefLevel = paletteIdx.at(posx, posy - 1);
-				if (paletteIdx.at(posx, posy - 1) == cu.curPLTSize[compBegin]) // escape mode
-				{
-					iRefLevel = maxSymbol - 1;
-				}
-			}
-		}
-		maxSymbol--;
-	}
-	uiSymbol = siCurLevel;
-	if (siCurLevel >= iRefLevel) // include escape mode 
-	{
-		uiSymbol++;
-	}
-	paletteIdx.at(posx, posy) = uiSymbol;
+  uint32_t uiSymbol;
+  int iRefLevel = MAX_INT;
+  uint32_t posy = m_puiScanOrder[idx].y;
+  uint32_t posx = m_puiScanOrder[idx].x;
+  if (idx)
+  {
+    uint32_t prevposy = m_puiScanOrder[idx - 1].y;
+    uint32_t prevposx = m_puiScanOrder[idx - 1].x;
+    if (paletteRunType.at(prevposx, prevposy) == PLT_RUN_INDEX)
+    {
+      iRefLevel = paletteIdx.at(prevposx, prevposy);
+      if (paletteIdx.at(prevposx, prevposy) == cu.curPLTSize[compBegin]) // escape
+      {
+        iRefLevel = maxSymbol - 1;
+      }
+    }
+    else
+    {
+      if (cu.useRotation[compBegin])
+      {
+        assert(prevposx > 0);
+        iRefLevel = paletteIdx.at(posx - 1, posy);
+        if (paletteIdx.at(posx - 1, posy) == cu.curPLTSize[compBegin]) // escape mode
+        {
+          iRefLevel = maxSymbol - 1;
+        }
+      }
+      else
+      {
+        assert(prevposy > 0);
+        iRefLevel = paletteIdx.at(posx, posy - 1);
+        if (paletteIdx.at(posx, posy - 1) == cu.curPLTSize[compBegin]) // escape mode
+        {
+          iRefLevel = maxSymbol - 1;
+        }
+      }
+    }
+    maxSymbol--;
+  }
+  uiSymbol = siCurLevel;
+  if (siCurLevel >= iRefLevel) // include escape mode 
+  {
+    uiSymbol++;
+  }
+  paletteIdx.at(posx, posy) = uiSymbol;
 }
 uint32_t  CABACReader::cu_run_val(PLTRunMode runtype, const uint32_t uiPltIdx, const uint32_t uiMaxRun)
 {
-	uint32_t ruiSymbol = 0;
-	if (runtype == PLT_RUN_COPY)
-	{
-	}
-	else
-	{
-		g_ucRunLeftLut[0] = (uiPltIdx < PLT_RUN_MSB_IDX_CTX_T1 ? 0 : (uiPltIdx < PLT_RUN_MSB_IDX_CTX_T2 ? 1 : 2));
-	}
-	ruiSymbol = xReadTruncMsbP1RefinementBits(runtype, uiMaxRun, PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE);
-	return ruiSymbol;
+  uint32_t ruiSymbol = 0;
+  if (runtype == PLT_RUN_COPY)
+  {
+  }
+  else
+  {
+    g_ucRunLeftLut[0] = (uiPltIdx < PLT_RUN_MSB_IDX_CTX_T1 ? 0 : (uiPltIdx < PLT_RUN_MSB_IDX_CTX_T2 ? 1 : 2));
+  }
+  ruiSymbol = xReadTruncMsbP1RefinementBits(runtype, uiMaxRun, PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE);
+  return ruiSymbol;
 }
 uint32_t CABACReader::xReadTruncUnarySymbol(PLTRunMode runtype, uint32_t uiMax, uint32_t uiCtxT)
 {
-	if (uiMax == 0)
-		return 0;
+  if (uiMax == 0)
+    return 0;
 
-	uint8_t *ucCtxLut;
-	ucCtxLut = (runtype == PLT_RUN_INDEX) ? g_ucRunLeftLut : g_ucRunTopLut;
-	uint32_t uiBin, uiIdx = 0;
-	do
-	{
-		if (uiIdx > uiCtxT)
-			uiBin = m_BinDecoder.decodeBinEP();
-		else
-		{
-			uiBin = m_BinDecoder.decodeBin(
-				(uiIdx <= uiCtxT)
-				? ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiIdx]) : Ctx::CopyRunModel(ucCtxLut[uiIdx]))
-				: ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiCtxT]) : Ctx::CopyRunModel(ucCtxLut[uiCtxT])));
-			//        uiIdx <= uiCtxT? pcSCModel[ucCtxLut[uiIdx]] : pcSCModel[ucCtxLut[uiCtxT]] RExt__DECODER_DEBUG_BIT_STATISTICS_PASS_OPT_ARG(whichStat) );
-		}
-		uiIdx++;
-	} while (uiBin && uiIdx < uiMax);
+  uint8_t *ucCtxLut;
+  ucCtxLut = (runtype == PLT_RUN_INDEX) ? g_ucRunLeftLut : g_ucRunTopLut;
+  uint32_t uiBin, uiIdx = 0;
+  do
+  {
+    if (uiIdx > uiCtxT)
+      uiBin = m_BinDecoder.decodeBinEP();
+    else
+    {
+      uiBin = m_BinDecoder.decodeBin(
+        (uiIdx <= uiCtxT)
+        ? ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiIdx]) : Ctx::CopyRunModel(ucCtxLut[uiIdx]))
+        : ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiCtxT]) : Ctx::CopyRunModel(ucCtxLut[uiCtxT])));
+      //        uiIdx <= uiCtxT? pcSCModel[ucCtxLut[uiIdx]] : pcSCModel[ucCtxLut[uiCtxT]] RExt__DECODER_DEBUG_BIT_STATISTICS_PASS_OPT_ARG(whichStat) );
+    }
+    uiIdx++;
+  } while (uiBin && uiIdx < uiMax);
 
-	return (uiBin && uiIdx == uiMax) ? uiMax : uiIdx - 1;
+  return (uiBin && uiIdx == uiMax) ? uiMax : uiIdx - 1;
 }
 uint32_t CABACReader::xReadTruncMsbP1RefinementBits(PLTRunMode runtype, uint32_t uiMax, uint32_t uiCtxT)
 {
-	if (uiMax == 0)
-	{
-		return 0;
-	}
-	uint32_t uiSymbol;
-	uint32_t uiMsbP1 = xReadTruncUnarySymbol(runtype, g_getMsbP1Idx(uiMax), uiCtxT);
-	if (uiMsbP1 > 1)
-	{
-		uint32_t uiNumBins = g_getMsbP1Idx(uiMax);
-		if (uiMsbP1 < uiNumBins)
-		{
-			uint32_t uiBits = uiMsbP1 - 1;
-			uiSymbol = m_BinDecoder.decodeBinsEP(uiBits);
-			uiSymbol |= (1 << uiBits);
-		}
-		else
-		{
-			uint32_t curValue = 1 << (uiNumBins - 1);
-			xReadTruncBinCode(uiSymbol, uiMax + 1 - curValue);
-			uiSymbol += curValue;
-		}
-	}
-	else
-		uiSymbol = uiMsbP1;
+  if (uiMax == 0)
+  {
+    return 0;
+  }
+  uint32_t uiSymbol;
+  uint32_t uiMsbP1 = xReadTruncUnarySymbol(runtype, g_getMsbP1Idx(uiMax), uiCtxT);
+  if (uiMsbP1 > 1)
+  {
+    uint32_t uiNumBins = g_getMsbP1Idx(uiMax);
+    if (uiMsbP1 < uiNumBins)
+    {
+      uint32_t uiBits = uiMsbP1 - 1;
+      uiSymbol = m_BinDecoder.decodeBinsEP(uiBits);
+      uiSymbol |= (1 << uiBits);
+    }
+    else
+    {
+      uint32_t curValue = 1 << (uiNumBins - 1);
+      xReadTruncBinCode(uiSymbol, uiMax + 1 - curValue);
+      uiSymbol += curValue;
+    }
+  }
+  else
+    uiSymbol = uiMsbP1;
 
-	return uiSymbol;
+  return uiSymbol;
 }
 #endif
 

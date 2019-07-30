@@ -132,51 +132,51 @@ public:
         }
         break;
 #if JVET_O0119_BASE_PALETTE_444
-	  case SCAN_TRAV_HOR:
-	  {
-		  if (m_line % 2 == 0)
-		  {
-			  if (m_column == (m_blockWidth - 1))
-			  {
-				  m_line++;
-				  m_column = m_blockWidth - 1;
-			  }
-			  else m_column++;
-		  }
-		  else
-		  {
-			  if (m_column == 0)
-			  {
-				  m_line++;
-				  m_column = 0;
-			  }
-			  else m_column--;
-		  }
-	  }
-	  break;
-	  //------------------------------------------------
-	  case SCAN_TRAV_VER:
-	  {
-		  if (m_column % 2 == 0)
-		  {
-			  if (m_line == (m_blockHeight - 1))
-			  {
-				  m_column++;
-				  m_line = m_blockHeight - 1;
-			  }
-			  else m_line++;
-		  }
-		  else
-		  {
-			  if (m_line == 0)
-			  {
-				  m_column++;
-				  m_line = 0;
-			  }
-			  else m_line--;
-		  }
-	  }
-	  break;
+      case SCAN_TRAV_HOR:
+      {
+        if (m_line % 2 == 0)
+        {
+          if (m_column == (m_blockWidth - 1))
+          {
+            m_line++;
+            m_column = m_blockWidth - 1;
+        }
+        else m_column++;
+        }
+        else
+        {
+          if (m_column == 0)
+          {
+            m_line++;
+            m_column = 0;
+          }
+          else m_column--;
+        }
+      }
+      break;
+
+      case SCAN_TRAV_VER:
+      {
+        if (m_column % 2 == 0)
+        {
+          if (m_line == (m_blockHeight - 1))
+          {
+            m_column++;
+            m_line = m_blockHeight - 1;
+          }
+          else m_line++;
+        }
+        else
+        {
+          if (m_line == 0)
+          {
+            m_column++;
+            m_line = 0;
+          }
+          else m_line--;
+        }
+      }
+      break;
 #endif
       //------------------------------------------------
 
@@ -820,26 +820,26 @@ uint8_t g_ucRunLeftLut[5] = { 0, 3, 3, 4, 4 };
 uint8_t g_ucMsbP1Idx[256];
 static void g_initMsbP1IdxLut()
 {
-	g_ucMsbP1Idx[0] = 0; g_ucMsbP1Idx[1] = 1;
-	uint32_t val = 2;
-	for (uint32_t idx = 2; idx <= 8; idx++)
-	{
-		for (int i = val - 1; i >= 0; i--)
-		{
-			g_ucMsbP1Idx[val++] = idx;
-		}
-	}
+  g_ucMsbP1Idx[0] = 0; g_ucMsbP1Idx[1] = 1;
+  uint32_t val = 2;
+  for (uint32_t idx = 2; idx <= 8; idx++)
+  {
+    for (int i = val - 1; i >= 0; i--)
+    {
+      g_ucMsbP1Idx[val++] = idx;
+    }
+  }
 }
 
 uint8_t g_getMsbP1Idx(uint32_t uiVal)
 {
-	uint8_t idx = 0;
-	while (uiVal > 255)
-	{
-		uiVal >>= 8;
-		idx += 8;
-	}
-	return idx + g_ucMsbP1Idx[uiVal];
+  uint8_t idx = 0;
+  while (uiVal > 255)
+  {
+    uiVal >>= 8;
+    idx += 8;
+  }
+  return idx + g_ucMsbP1Idx[uiVal];
 }
 #endif
 //! \}

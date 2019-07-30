@@ -731,7 +731,7 @@ void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const Component
 #if JVET_O0119_BASE_PALETTE_444
   if (CU::isPLT(cu))
   {
-	  return;
+    return;
   }
 #endif
   const CompArea& ca = cu.block(compID);

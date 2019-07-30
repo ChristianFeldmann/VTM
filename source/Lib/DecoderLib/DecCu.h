@@ -93,7 +93,7 @@ protected:
 
   void xDeriveCUMV        ( CodingUnit&      cu );
 #if JVET_O0119_BASE_PALETTE_444
-  void xReconPLT		  ( CodingUnit &cu, ComponentID compBegin, uint32_t numComp);
+  void xReconPLT          ( CodingUnit &cu, ComponentID compBegin, uint32_t numComp);
 #endif
   PelStorage        *m_tmpStorageLCU;
 private:

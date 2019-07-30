@@ -165,7 +165,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       {
         cabacReader.initCtxModels( *slice );
 #if JVET_O0119_BASE_PALETTE_444
-		cs.resetPrevPLT(cs.prevPLT);
+        cs.resetPrevPLT(cs.prevPLT);
 #endif
       }
       pic->m_prevQP[0] = pic->m_prevQP[1] = slice->getSliceQp();
@@ -177,7 +177,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       {
         cabacReader.initCtxModels( *slice );
 #if JVET_O0119_BASE_PALETTE_444
-		cs.resetPrevPLT(cs.prevPLT);
+        cs.resetPrevPLT(cs.prevPLT);
 #endif
       }
       if( cs.getCURestricted( pos.offset(0, -1), pos, slice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )

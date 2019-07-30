@@ -605,23 +605,23 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 #if JVET_O0119_BASE_PALETTE_444
   if (CU::isPLT(cu))
   {
-	  if (CS::isDualITree(*cu.cs))
-	  {
-		  if (isLuma(partitioner.chType))
-		  {
-			  cu_palette_info(cu, COMPONENT_Y, 1, cuCtx);
-		  }
-		  if (cu.chromaFormat != CHROMA_400 && (partitioner.chType == CHANNEL_TYPE_CHROMA))
-		  {
-			  cu_palette_info(cu, COMPONENT_Cb, 2, cuCtx);
-		  }
-	  }
-	  else
-	  {
-		  cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
-	  }
-	  end_of_ctu(cu, cuCtx);
-	  return;
+    if (CS::isDualITree(*cu.cs))
+    {
+      if (isLuma(partitioner.chType))
+      {
+        cu_palette_info(cu, COMPONENT_Y, 1, cuCtx);
+      }
+      if (cu.chromaFormat != CHROMA_400 && (partitioner.chType == CHANNEL_TYPE_CHROMA))
+      {
+        cu_palette_info(cu, COMPONENT_Cb, 2, cuCtx);
+      }
+    }
+    else
+    {
+      cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
+    }
+    end_of_ctu(cu, cuCtx);
+    return;
   }
 #endif
   bdpcm_mode( cu, ComponentID( partitioner.chType ) );
@@ -770,23 +770,23 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
       m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
       }
 #if JVET_O0119_BASE_PALETTE_444
-	  if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-	  {
-		  m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
-	  }
+    if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+    {
+      m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
+    }
 #endif
     }
     else
     {
 #if JVET_O0119_BASE_PALETTE_444
-	  m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
-	  if (CU::isIntra(cu) || CU::isPLT(cu))
-	  {
-		  if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-		  m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
-	  }
-	  else
-	  {
+    m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
+    if (CU::isIntra(cu) || CU::isPLT(cu))
+    {
+      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+      m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
+    }
+    else
+    {
 #else
       m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
       if (!CU::isIntra(cu))
@@ -809,17 +809,17 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) )
     {
 #if JVET_O0119_BASE_PALETTE_444
-	  if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-		  m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
+    if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+      m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
 #endif
       return;
     }
     m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
 #if JVET_O0119_BASE_PALETTE_444
-	if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-	{
-		m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
-	}
+  if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+  {
+    m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
+  }
 #endif
   }
 }
@@ -1456,398 +1456,398 @@ void CABACWriter::end_of_ctu( const CodingUnit& cu, CUCtx& cuCtx )
 #if JVET_O0119_BASE_PALETTE_444
 void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, uint32_t numComp, CUCtx& cuCtx)
 {
-	const SPS&        sps = *(cu.cs->sps);
-	TransformUnit&   tu = *cu.firstTU;
+  const SPS&        sps = *(cu.cs->sps);
+  TransformUnit&   tu = *cu.firstTU;
 
-	uint32_t indexMaxSize = cu.useEscape[compBegin] ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
+  uint32_t indexMaxSize = cu.useEscape[compBegin] ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
 
 
-	if (cu.lastPLTSize[compBegin])
-	{
-		xEncodePLTPredIndicator(cu, MAXPLTSIZE, compBegin);
-	}
+  if (cu.lastPLTSize[compBegin])
+  {
+    xEncodePLTPredIndicator(cu, MAXPLTSIZE, compBegin);
+  }
 
-	uint32_t reusedPLTnum = 0;
-	for (int idx = 0; idx < cu.lastPLTSize[compBegin]; idx++)
-	{
-		if (cu.reuseflag[compBegin][idx])
-			reusedPLTnum++;
-	}
+  uint32_t reusedPLTnum = 0;
+  for (int idx = 0; idx < cu.lastPLTSize[compBegin]; idx++)
+  {
+    if (cu.reuseflag[compBegin][idx])
+      reusedPLTnum++;
+  }
 
-	if (reusedPLTnum < MAXPLTSIZE)
-	{
-		exp_golomb_eqprob(cu.curPLTSize[compBegin] - reusedPLTnum, 0);
-	}
+  if (reusedPLTnum < MAXPLTSIZE)
+  {
+    exp_golomb_eqprob(cu.curPLTSize[compBegin] - reusedPLTnum, 0);
+  }
 
-	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-	{
-		for (int idx = cu.reusePLTSize[compBegin]; idx < cu.curPLTSize[compBegin]; idx++)
-		{
-			ComponentID compID = (ComponentID)comp;
-			const int  channelBitDepth = sps.getBitDepth(toChannelType(compID));
-			m_BinEncoder.encodeBinsEP(cu.curPLT[comp][idx], channelBitDepth);
-		}
-	}
-	uint32_t signalEscape = (cu.useEscape[compBegin]) ? 1 : 0;
-	if (cu.curPLTSize[compBegin] > 0)
-	{
-		m_BinEncoder.encodeBinEP(signalEscape);
-	}
-	//encode index map
-	PLTtypeBuf    runType = tu.getrunType(compBegin);
-	PelBuf    runLength = tu.getrunLength(compBegin);
-	PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
-	uint32_t uiHeight = cu.block(compBegin).height;
-	uint32_t uiWidth = cu.block(compBegin).width;
+  for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+  {
+    for (int idx = cu.reusePLTSize[compBegin]; idx < cu.curPLTSize[compBegin]; idx++)
+    {
+      ComponentID compID = (ComponentID)comp;
+      const int  channelBitDepth = sps.getBitDepth(toChannelType(compID));
+      m_BinEncoder.encodeBinsEP(cu.curPLT[comp][idx], channelBitDepth);
+    }
+  }
+  uint32_t signalEscape = (cu.useEscape[compBegin]) ? 1 : 0;
+  if (cu.curPLTSize[compBegin] > 0)
+  {
+    m_BinEncoder.encodeBinEP(signalEscape);
+  }
+  //encode index map
+  PLTtypeBuf    runType = tu.getrunType(compBegin);
+  PelBuf    runLength = tu.getrunLength(compBegin);
+  PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
+  uint32_t uiHeight = cu.block(compBegin).height;
+  uint32_t uiWidth = cu.block(compBegin).width;
 
-	m_puiScanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(uiWidth)][gp_sizeIdxInfo->idxFrom(uiHeight)];
+  m_puiScanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(uiWidth)][gp_sizeIdxInfo->idxFrom(uiHeight)];
 
-	uint32_t total = uiHeight * uiWidth;
+  uint32_t total = uiHeight * uiWidth;
 
-	int iLastRunPos = -1;
-	uint32_t lastRunType = 0;
-	uint32_t uiNumIndices = 0;
-	std::vector<int> vIdxPos, vParsedIdx;
-	vIdxPos.reserve(total);
-	vParsedIdx.reserve(total);
-	if (indexMaxSize > 1)
-	{
-		int idx = 0, run = 0;
-		while (idx < total)
-		{
-			uint32_t posy = m_puiScanOrder[idx].y;
-			uint32_t posx = m_puiScanOrder[idx].x;
-			if (runType.at(posx, posy) == PLT_RUN_INDEX)
-			{
-				vIdxPos.push_back(idx);
-				uiNumIndices++;
-			}
-			lastRunType = runType.at(posx, posy);
-			iLastRunPos = idx;
-			run = runLength.at(posx, posy);
-			idx += run;
-		}
-		uint32_t currParam = 3 + ((indexMaxSize) >> 3);
-		uint32_t uiMappedValue;
-		assert(uiNumIndices);
-		assert(uiNumIndices > 0);
-		uiMappedValue = uiNumIndices - 1;
-		m_BinEncoder.encodeRemAbsEP(uiMappedValue, currParam, false, MAX_NUM_CHANNEL_TYPE); // JC: code number of indices (PLT_RUN_INDEX)
-		auto vIdxPosEnd = vIdxPos.end();
-		for (auto iter = vIdxPos.begin(); iter != vIdxPosEnd; ++iter)
-		{
-			vParsedIdx.push_back( writePLTIndex(cu, *iter, curPLTIdx, runType, indexMaxSize, compBegin));
-		}
-		m_BinEncoder.encodeBin(lastRunType, Ctx::RunTypeFlag());
-		codeScanRotationModeFlag(cu, compBegin);
-	}
-	else
-	{
-		assert(!cu.useRotation[compBegin]);
-	}
+  int iLastRunPos = -1;
+  uint32_t lastRunType = 0;
+  uint32_t uiNumIndices = 0;
+  std::vector<int> vIdxPos, vParsedIdx;
+  vIdxPos.reserve(total);
+  vParsedIdx.reserve(total);
+  if (indexMaxSize > 1)
+  {
+    int idx = 0, run = 0;
+    while (idx < total)
+    {
+      uint32_t posy = m_puiScanOrder[idx].y;
+      uint32_t posx = m_puiScanOrder[idx].x;
+      if (runType.at(posx, posy) == PLT_RUN_INDEX)
+      {
+        vIdxPos.push_back(idx);
+        uiNumIndices++;
+      }
+      lastRunType = runType.at(posx, posy);
+      iLastRunPos = idx;
+      run = runLength.at(posx, posy);
+      idx += run;
+    }
+    uint32_t currParam = 3 + ((indexMaxSize) >> 3);
+    uint32_t uiMappedValue;
+    assert(uiNumIndices);
+    assert(uiNumIndices > 0);
+    uiMappedValue = uiNumIndices - 1;
+    m_BinEncoder.encodeRemAbsEP(uiMappedValue, currParam, false, MAX_NUM_CHANNEL_TYPE); // JC: code number of indices (PLT_RUN_INDEX)
+    auto vIdxPosEnd = vIdxPos.end();
+    for (auto iter = vIdxPos.begin(); iter != vIdxPosEnd; ++iter)
+    {
+      vParsedIdx.push_back( writePLTIndex(cu, *iter, curPLTIdx, runType, indexMaxSize, compBegin));
+    }
+    m_BinEncoder.encodeBin(lastRunType, Ctx::RunTypeFlag());
+    codeScanRotationModeFlag(cu, compBegin);
+  }
+  else
+  {
+    assert(!cu.useRotation[compBegin]);
+  }
 
-	if (cu.useEscape[compBegin] && cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded)
-	{
-		if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
-		{
-			cu_qp_delta(cu, cuCtx.qp, cu.qp);
-			cuCtx.qp = cu.qp;
-			cuCtx.isDQPCoded = true;
-		}
-	}
+  if (cu.useEscape[compBegin] && cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded)
+  {
+    if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
+    {
+      cu_qp_delta(cu, cuCtx.qp, cu.qp);
+      cuCtx.qp = cu.qp;
+      cuCtx.isDQPCoded = true;
+    }
+  }
 #if JVET_O1168_CU_CHROMA_QP_OFFSET
-	if ( cu.useEscape[compBegin] && cu.cs->slice->getUseChromaQpAdj() && !cuCtx.isChromaQpAdjCoded)
+  if ( cu.useEscape[compBegin] && cu.cs->slice->getUseChromaQpAdj() && !cuCtx.isChromaQpAdjCoded)
 #else
-	if (cu.cs->slice->getUseChromaQpAdj() && !cu.transQuantBypass && !cuCtx.isChromaQpAdjCoded)
+  if (cu.cs->slice->getUseChromaQpAdj() && !cu.transQuantBypass && !cuCtx.isChromaQpAdjCoded)
 #endif
-	{
-		if (!CS::isDualITree(*tu.cs) || isChroma(tu.chType))
-		{
-			cu_chroma_qp_offset(cu);
-			cuCtx.isChromaQpAdjCoded = true;
-		}
-	}
+  {
+    if (!CS::isDualITree(*tu.cs) || isChroma(tu.chType))
+    {
+      cu_chroma_qp_offset(cu);
+      cuCtx.isChromaQpAdjCoded = true;
+    }
+  }
 
-	uint32_t strPos = 0;
-	uint32_t endPos = uiHeight * uiWidth;
-	auto vParsedIdxEnd = vParsedIdx.end();
-	auto vParsedIdxIter = vParsedIdx.begin();
-	while (strPos < endPos)
-	{
-		uint32_t posy = m_puiScanOrder[strPos].y;
-		uint32_t posx = m_puiScanOrder[strPos].x;
-		uint32_t posyprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].y;
-		uint32_t posxprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].x;
+  uint32_t strPos = 0;
+  uint32_t endPos = uiHeight * uiWidth;
+  auto vParsedIdxEnd = vParsedIdx.end();
+  auto vParsedIdxIter = vParsedIdx.begin();
+  while (strPos < endPos)
+  {
+    uint32_t posy = m_puiScanOrder[strPos].y;
+    uint32_t posx = m_puiScanOrder[strPos].x;
+    uint32_t posyprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].y;
+    uint32_t posxprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].x;
 
-		if (indexMaxSize > 1)
-		{
-			if (((posy == 0) && !cu.useRotation[compBegin]) || ((posx == 0) && cu.useRotation[compBegin]))
+    if (indexMaxSize > 1)
+    {
+      if (((posy == 0) && !cu.useRotation[compBegin]) || ((posx == 0) && cu.useRotation[compBegin]))
 
-			{
-				assert(runType.at(posx, posy) == PLT_RUN_INDEX);
-			}
-			else if (strPos != 0 && runType.at(posxprev, posyprev) == PLT_RUN_COPY)
-			{
-				assert(runType.at(posx, posy) == PLT_RUN_INDEX);
-			}
-			else
-			{
-				if (uiNumIndices && strPos < endPos - 1) // if uiNumIndices (decoder will know this value) == 0 - > only CopyAbove, if strPos == endPos - 1, the last RunType was already coded
-				{
-					m_BinEncoder.encodeBin((runType.at(posx, posy)), Ctx::RunTypeFlag());
-				}
-			}
-		}
+      {
+        assert(runType.at(posx, posy) == PLT_RUN_INDEX);
+      }
+      else if (strPos != 0 && runType.at(posxprev, posyprev) == PLT_RUN_COPY)
+      {
+        assert(runType.at(posx, posy) == PLT_RUN_INDEX);
+      }
+      else
+      {
+        if (uiNumIndices && strPos < endPos - 1) // if uiNumIndices (decoder will know this value) == 0 - > only CopyAbove, if strPos == endPos - 1, the last RunType was already coded
+        {
+          m_BinEncoder.encodeBin((runType.at(posx, posy)), Ctx::RunTypeFlag());
+        }
+      }
+    }
 
-		Pel siCurLevel = 0;
-		if (runType.at(posx, posy) == PLT_RUN_INDEX)
-		{
-			if (vParsedIdxIter != vParsedIdxEnd)
-			{
-				siCurLevel = *vParsedIdxIter++;
-			}
-			else
-			{
-				siCurLevel = 0;
-			}
-		}
+    Pel siCurLevel = 0;
+    if (runType.at(posx, posy) == PLT_RUN_INDEX)
+    {
+      if (vParsedIdxIter != vParsedIdxEnd)
+      {
+        siCurLevel = *vParsedIdxIter++;
+      }
+      else
+      {
+        siCurLevel = 0;
+      }
+    }
 
-		if (indexMaxSize > 1)
-		{
-			if (iLastRunPos != strPos)
-			{
-				uiNumIndices -= (runType.at(posx, posy) == PLT_RUN_INDEX);
-				cu_run_val(runLength.at(posx, posy) - 1, (PLTRunMode)runType.at(posx, posy), siCurLevel, endPos - strPos - uiNumIndices - 1 - lastRunType);
-			}
+    if (indexMaxSize > 1)
+    {
+      if (iLastRunPos != strPos)
+      {
+        uiNumIndices -= (runType.at(posx, posy) == PLT_RUN_INDEX);
+        cu_run_val(runLength.at(posx, posy) - 1, (PLTRunMode)runType.at(posx, posy), siCurLevel, endPos - strPos - uiNumIndices - 1 - lastRunType);
+      }
 
-		}
+    }
 
-		strPos += (runLength.at(posx, posy));
-	}
-	assert(strPos == endPos);
+    strPos += (runLength.at(posx, posy));
+  }
+  assert(strPos == endPos);
 
-	uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
-	uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
-	for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-	{
-		ComponentID compID = (ComponentID)comp;
-		for (strPos = 0; strPos < endPos; strPos++)
-		{
-			uint32_t posy = m_puiScanOrder[strPos].y;
-			uint32_t posx = m_puiScanOrder[strPos].x;
-			if (curPLTIdx.at(posx, posy) == cu.curPLTSize[compBegin])
-			{
-				{
-					PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)comp);
-					if (compID == COMPONENT_Y || compBegin != COMPONENT_Y)
-					{
-						exp_golomb_eqprob((unsigned)escapeValue.at(posx, posy), 3);
-					}
-					if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && posy % (1 << scaleY) == 0 && posx % (1 << scaleX) == 0)
-					{
-						uint32_t posxC = posx >> scaleX;
-						uint32_t posyC = posy >> scaleY;
-						exp_golomb_eqprob((unsigned)escapeValue.at(posxC, posyC), 3);
-					}
-				}
-			}
-		}
-	}
+  uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
+  uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
+  for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+  {
+    ComponentID compID = (ComponentID)comp;
+    for (strPos = 0; strPos < endPos; strPos++)
+    {
+      uint32_t posy = m_puiScanOrder[strPos].y;
+      uint32_t posx = m_puiScanOrder[strPos].x;
+      if (curPLTIdx.at(posx, posy) == cu.curPLTSize[compBegin])
+      {
+        {
+          PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)comp);
+          if (compID == COMPONENT_Y || compBegin != COMPONENT_Y)
+          {
+            exp_golomb_eqprob((unsigned)escapeValue.at(posx, posy), 3);
+          }
+          if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && posy % (1 << scaleY) == 0 && posx % (1 << scaleX) == 0)
+          {
+            uint32_t posxC = posx >> scaleX;
+            uint32_t posyC = posy >> scaleY;
+            exp_golomb_eqprob((unsigned)escapeValue.at(posxC, posyC), 3);
+          }
+        }
+      }
+    }
+  }
 
 }
 void CABACWriter::codeScanRotationModeFlag(const CodingUnit& cu, ComponentID compBegin)
 {
-	m_BinEncoder.encodeBin((cu.useRotation[compBegin]), Ctx::RotationFlag());
+  m_BinEncoder.encodeBin((cu.useRotation[compBegin]), Ctx::RotationFlag());
 }
 void CABACWriter::xEncodePLTPredIndicator(const CodingUnit& cu, uint32_t uiMaxPLTSize, ComponentID compBegin)
 {
-	int lastPredIdx = -1;
-	uint32_t run = 0;
-	uint32_t uiNumPLTPredicted = 0;
-	for (uint32_t idx = 0; idx < cu.lastPLTSize[compBegin]; idx++)
-	{
-		if (cu.reuseflag[compBegin][idx])
-		{
-			uiNumPLTPredicted++;
-			lastPredIdx = idx;
-		}
-	}
+  int lastPredIdx = -1;
+  uint32_t run = 0;
+  uint32_t uiNumPLTPredicted = 0;
+  for (uint32_t idx = 0; idx < cu.lastPLTSize[compBegin]; idx++)
+  {
+    if (cu.reuseflag[compBegin][idx])
+    {
+      uiNumPLTPredicted++;
+      lastPredIdx = idx;
+    }
+  }
 
-	int idx = 0;
-	while (idx <= lastPredIdx)
-	{
-		if (cu.reuseflag[compBegin][idx])
-		{
-			exp_golomb_eqprob(run ? run + 1 : run, 0);
-			run = 0;
-		}
-		else
-		{
-			run++;
-		}
-		idx++;
-	}
-	if ((uiNumPLTPredicted < uiMaxPLTSize && lastPredIdx + 1 < cu.lastPLTSize[compBegin]) || !uiNumPLTPredicted)
-	{
-		exp_golomb_eqprob(1, 0);
-	}
+  int idx = 0;
+  while (idx <= lastPredIdx)
+  {
+    if (cu.reuseflag[compBegin][idx])
+    {
+      exp_golomb_eqprob(run ? run + 1 : run, 0);
+      run = 0;
+    }
+    else
+    {
+      run++;
+    }
+    idx++;
+  }
+  if ((uiNumPLTPredicted < uiMaxPLTSize && lastPredIdx + 1 < cu.lastPLTSize[compBegin]) || !uiNumPLTPredicted)
+  {
+    exp_golomb_eqprob(1, 0);
+  }
 }
 Pel CABACWriter::writePLTIndex(const CodingUnit& cu, uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin)
 {
-	uint32_t posy = m_puiScanOrder[idx].y;
-	uint32_t posx = m_puiScanOrder[idx].x;
-	Pel siCurLevel = (paletteIdx.at(posx, posy) == cu.curPLTSize[compBegin]) ? (maxSymbol - 1) : paletteIdx.at(posx, posy);
-	if (idx) // R0348: remove index redundancy
-	{
-		uint32_t prevposy = m_puiScanOrder[idx - 1].y;
-		uint32_t prevposx = m_puiScanOrder[idx - 1].x;
-		if (paletteRunType.at(prevposx, prevposy) == PLT_RUN_INDEX)
-		{
-			Pel siLeftLevel = paletteIdx.at(prevposx, prevposy); // left index
-			if (siLeftLevel == cu.curPLTSize[compBegin]) // escape mode
-			{
-				siLeftLevel = maxSymbol - 1;
-			}
-			assert(siLeftLevel != siCurLevel);
-			if (siCurLevel > siLeftLevel)
-			{
-				siCurLevel--;
-			}
-		}
-		else
-		{
-			Pel siAboveLevel;
-			if (cu.useRotation[compBegin])
-			{
-				assert(prevposx > 0);
-				siAboveLevel = paletteIdx.at(posx - 1, posy);
-				if (paletteIdx.at(posx - 1, posy) == cu.curPLTSize[compBegin]) // escape mode
-				{
-					siAboveLevel = maxSymbol - 1;
-				}
-			}
-			else
-			{
-				assert(prevposy > 0);
-				siAboveLevel = paletteIdx.at(posx, posy - 1);
-				if (paletteIdx.at(posx, posy - 1) == cu.curPLTSize[compBegin]) // escape mode
-				{
-					siAboveLevel = maxSymbol - 1;
-				}
-			}
-			assert(siCurLevel != siAboveLevel);
-			if (siCurLevel > siAboveLevel)
-			{
-				siCurLevel--;
-			}
-		}
-		maxSymbol--;
-	}
-	assert(maxSymbol > 0);
-	assert(siCurLevel >= 0);
-	assert(maxSymbol > siCurLevel);
-	if (maxSymbol > 1)
-	{
-		xWriteTruncBinCode(siCurLevel, maxSymbol);
-	}
-	return siCurLevel;
+  uint32_t posy = m_puiScanOrder[idx].y;
+  uint32_t posx = m_puiScanOrder[idx].x;
+  Pel siCurLevel = (paletteIdx.at(posx, posy) == cu.curPLTSize[compBegin]) ? (maxSymbol - 1) : paletteIdx.at(posx, posy);
+  if (idx) // R0348: remove index redundancy
+  {
+    uint32_t prevposy = m_puiScanOrder[idx - 1].y;
+    uint32_t prevposx = m_puiScanOrder[idx - 1].x;
+    if (paletteRunType.at(prevposx, prevposy) == PLT_RUN_INDEX)
+    {
+      Pel siLeftLevel = paletteIdx.at(prevposx, prevposy); // left index
+      if (siLeftLevel == cu.curPLTSize[compBegin]) // escape mode
+      {
+        siLeftLevel = maxSymbol - 1;
+      }
+      assert(siLeftLevel != siCurLevel);
+      if (siCurLevel > siLeftLevel)
+      {
+        siCurLevel--;
+      }
+    }
+    else
+    {
+      Pel siAboveLevel;
+      if (cu.useRotation[compBegin])
+      {
+        assert(prevposx > 0);
+        siAboveLevel = paletteIdx.at(posx - 1, posy);
+        if (paletteIdx.at(posx - 1, posy) == cu.curPLTSize[compBegin]) // escape mode
+        {
+          siAboveLevel = maxSymbol - 1;
+        }
+      }
+      else
+      {
+        assert(prevposy > 0);
+        siAboveLevel = paletteIdx.at(posx, posy - 1);
+        if (paletteIdx.at(posx, posy - 1) == cu.curPLTSize[compBegin]) // escape mode
+        {
+          siAboveLevel = maxSymbol - 1;
+        }
+      }
+      assert(siCurLevel != siAboveLevel);
+      if (siCurLevel > siAboveLevel)
+      {
+        siCurLevel--;
+      }
+    }
+    maxSymbol--;
+  }
+  assert(maxSymbol > 0);
+  assert(siCurLevel >= 0);
+  assert(maxSymbol > siCurLevel);
+  if (maxSymbol > 1)
+  {
+    xWriteTruncBinCode(siCurLevel, maxSymbol);
+  }
+  return siCurLevel;
 }
 
 void CABACWriter::encodeRunType(const CodingUnit&  cu, PLTtypeBuf& runType, uint32_t idx, ScanElement *refScanOrder, ComponentID compBegin)
 {
-	if (refScanOrder)
-	{
-		m_puiScanOrder = refScanOrder;
-	}
-	uint32_t posy = m_puiScanOrder[idx].y;
-	uint32_t posx = m_puiScanOrder[idx].x;
-	uint32_t posyprev = (idx == 0) ? 0 : m_puiScanOrder[idx - 1].y;
-	uint32_t posxprev = (idx == 0) ? 0 : m_puiScanOrder[idx - 1].x;
+  if (refScanOrder)
+  {
+    m_puiScanOrder = refScanOrder;
+  }
+  uint32_t posy = m_puiScanOrder[idx].y;
+  uint32_t posx = m_puiScanOrder[idx].x;
+  uint32_t posyprev = (idx == 0) ? 0 : m_puiScanOrder[idx - 1].y;
+  uint32_t posxprev = (idx == 0) ? 0 : m_puiScanOrder[idx - 1].x;
 
-	if (((posy == 0) && !cu.useRotation[compBegin]) || ((posx == 0) && cu.useRotation[compBegin]))
-	{
-		assert(runType.at(posx, posy) == PLT_RUN_INDEX);
-	}
-	else if (idx != 0 && runType.at(posxprev, posyprev) == PLT_RUN_COPY)
-	{
-		assert(runType.at(posx, posy) == PLT_RUN_INDEX);
-	}
-	else
-	{
-		m_BinEncoder.encodeBin((runType.at(posx, posy)), Ctx::RunTypeFlag());
-	}
+  if (((posy == 0) && !cu.useRotation[compBegin]) || ((posx == 0) && cu.useRotation[compBegin]))
+  {
+    assert(runType.at(posx, posy) == PLT_RUN_INDEX);
+  }
+  else if (idx != 0 && runType.at(posxprev, posyprev) == PLT_RUN_COPY)
+  {
+    assert(runType.at(posx, posy) == PLT_RUN_INDEX);
+  }
+  else
+  {
+    m_BinEncoder.encodeBin((runType.at(posx, posy)), Ctx::RunTypeFlag());
+  }
 }
 
 void CABACWriter::cu_run_val(uint32_t uiRun, PLTRunMode runtype, const uint32_t uiPltIdx, const uint32_t uiMaxRun)
 {
-	if (runtype == PLT_RUN_COPY)
-	{
-	}
-	else
-	{
-		g_ucRunLeftLut[0] = (uiPltIdx < PLT_RUN_MSB_IDX_CTX_T1 ? 0 : (uiPltIdx < PLT_RUN_MSB_IDX_CTX_T2 ? 1 : 2));
-	}
-	xWriteTruncMsbP1RefinementBits(uiRun, runtype, uiMaxRun, PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE);
+  if (runtype == PLT_RUN_COPY)
+  {
+  }
+  else
+  {
+    g_ucRunLeftLut[0] = (uiPltIdx < PLT_RUN_MSB_IDX_CTX_T1 ? 0 : (uiPltIdx < PLT_RUN_MSB_IDX_CTX_T2 ? 1 : 2));
+  }
+  xWriteTruncMsbP1RefinementBits(uiRun, runtype, uiMaxRun, PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE);
 }
 uint32_t CABACWriter::xWriteTruncMsbP1(uint32_t uiSymbol, PLTRunMode runtype, uint32_t uiMax, uint32_t uiCtxT)
 {
-	if (uiMax == 0)
-		return 0;
+  if (uiMax == 0)
+    return 0;
 
-	uint8_t *ucCtxLut;
-	ucCtxLut = (runtype == PLT_RUN_INDEX) ? g_ucRunLeftLut : g_ucRunTopLut;
+  uint8_t *ucCtxLut;
+  ucCtxLut = (runtype == PLT_RUN_INDEX) ? g_ucRunLeftLut : g_ucRunTopLut;
 
-	uint32_t uiMsbP1;
-	for (uiMsbP1 = 0; uiSymbol > 0; uiMsbP1++)
-	{
-		uiSymbol >>= 1;
-		if (uiMsbP1 > uiCtxT)
-		{
-			m_BinEncoder.encodeBinEP(1);
-		}
-		else
-			m_BinEncoder.encodeBin(1, (uiMsbP1 <= uiCtxT)
-				? ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiMsbP1]) : Ctx::CopyRunModel(ucCtxLut[uiMsbP1]))
-				: ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiCtxT]) : Ctx::CopyRunModel(ucCtxLut[uiCtxT])));
-	}
-	assert(uiMsbP1 <= uiMax);
-	if (uiMsbP1 < uiMax)
-	{
-		if (uiMsbP1 > uiCtxT)
-		{
-			m_BinEncoder.encodeBinEP(0);
-		}
-		else
-			m_BinEncoder.encodeBin(0, uiMsbP1 <= uiCtxT
-				? ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiMsbP1]) : Ctx::CopyRunModel(ucCtxLut[uiMsbP1]))
-				: ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiCtxT]) : Ctx::CopyRunModel(ucCtxLut[uiCtxT])));
+  uint32_t uiMsbP1;
+  for (uiMsbP1 = 0; uiSymbol > 0; uiMsbP1++)
+  {
+    uiSymbol >>= 1;
+    if (uiMsbP1 > uiCtxT)
+    {
+      m_BinEncoder.encodeBinEP(1);
+    }
+    else
+      m_BinEncoder.encodeBin(1, (uiMsbP1 <= uiCtxT)
+        ? ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiMsbP1]) : Ctx::CopyRunModel(ucCtxLut[uiMsbP1]))
+        : ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiCtxT]) : Ctx::CopyRunModel(ucCtxLut[uiCtxT])));
+  }
+  assert(uiMsbP1 <= uiMax);
+  if (uiMsbP1 < uiMax)
+  {
+    if (uiMsbP1 > uiCtxT)
+    {
+      m_BinEncoder.encodeBinEP(0);
+    }
+    else
+      m_BinEncoder.encodeBin(0, uiMsbP1 <= uiCtxT
+        ? ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiMsbP1]) : Ctx::CopyRunModel(ucCtxLut[uiMsbP1]))
+        : ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ucCtxLut[uiCtxT]) : Ctx::CopyRunModel(ucCtxLut[uiCtxT])));
 
-		//m_pcBinIf->encodeBin(0, uiMsbP1 <= uiCtxT? pcSCModel[ucCtxLut[uiMsbP1]] : pcSCModel[ucCtxLut[uiCtxT]]);
-	}
-	return uiMsbP1;
+    //m_pcBinIf->encodeBin(0, uiMsbP1 <= uiCtxT? pcSCModel[ucCtxLut[uiMsbP1]] : pcSCModel[ucCtxLut[uiCtxT]]);
+  }
+  return uiMsbP1;
 }
 
 void CABACWriter::xWriteTruncMsbP1RefinementBits(uint32_t uiSymbol, PLTRunMode runtype, uint32_t uiMax, uint32_t uiCtxT)
 {
-	if (uiMax == 0)
-		return;
+  if (uiMax == 0)
+    return;
 
-	uint32_t uiMsbP1 = xWriteTruncMsbP1(uiSymbol, runtype, g_getMsbP1Idx(uiMax), uiCtxT);
-	if (uiMsbP1 > 1)
-	{
-		uint32_t uiNumBins = g_getMsbP1Idx(uiMax);
-		if (uiMsbP1 < uiNumBins)
-		{
+  uint32_t uiMsbP1 = xWriteTruncMsbP1(uiSymbol, runtype, g_getMsbP1Idx(uiMax), uiCtxT);
+  if (uiMsbP1 > 1)
+  {
+    uint32_t uiNumBins = g_getMsbP1Idx(uiMax);
+    if (uiMsbP1 < uiNumBins)
+    {
 
-			uint32_t uiBits = uiMsbP1 - 1;
-			m_BinEncoder.encodeBinsEP(uiSymbol & ((1 << uiBits) - 1), uiBits);
-		}
-		else
-		{
-			uint32_t curValue = 1 << (uiNumBins - 1);
-			xWriteTruncBinCode(uiSymbol - curValue, uiMax + 1 - curValue);
-		}
-	}
+      uint32_t uiBits = uiMsbP1 - 1;
+      m_BinEncoder.encodeBinsEP(uiSymbol & ((1 << uiBits) - 1), uiBits);
+    }
+    else
+    {
+      uint32_t curValue = 1 << (uiNumBins - 1);
+      xWriteTruncBinCode(uiSymbol - curValue, uiMax + 1 - curValue);
+    }
+  }
 }
 
 #endif

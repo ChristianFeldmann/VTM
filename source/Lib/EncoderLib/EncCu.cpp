@@ -605,34 +605,34 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   bool jointPLT = false;
   if (CS::isDualITree(*bestCS))
   {
-	  if (isLuma(partitioner.chType))
-	  {
-		  compBegin = COMPONENT_Y;
-		  numComp = 1;
-	  }
-	  else
-	  {
-		  compBegin = COMPONENT_Cb;
-		  numComp = 2;
-	  }
+    if (isLuma(partitioner.chType))
+    {
+      compBegin = COMPONENT_Y;
+      numComp = 1;
+    }
+    else
+    {
+      compBegin = COMPONENT_Cb;
+      numComp = 2;
+    }
   }
   else
   {
-	  compBegin = COMPONENT_Y;
-	  numComp = 3;
-	  jointPLT = true;
+    compBegin = COMPONENT_Y;
+    numComp = 3;
+    jointPLT = true;
   }
   SplitSeries splitmode = -1;
-  uint32_t	bestLastPLTSize[MAX_NUM_COMPONENT];
-  Pel		bestLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT for partition
-  uint32_t	curLastPLTSize[MAX_NUM_COMPONENT];
-  Pel		curLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT if no partition
+  uint32_t  bestLastPLTSize[MAX_NUM_COMPONENT];
+  Pel       bestLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT for partition
+  uint32_t  curLastPLTSize[MAX_NUM_COMPONENT];
+  Pel       curLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT if no partition
   for (int i = compBegin; i < (compBegin + numComp); i++)
   {
-	  ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
-	  bestLastPLTSize[comID] = 0;
-	  curLastPLTSize[comID] = tempCS->prevPLT.curPLTSize[comID];
-	  memcpy(curLastPLT[i], tempCS->prevPLT.curPLT[i], tempCS->prevPLT.curPLTSize[comID] * sizeof(Pel));
+    ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+    bestLastPLTSize[comID] = 0;
+    curLastPLTSize[comID] = tempCS->prevPLT.curPLTSize[comID];
+    memcpy(curLastPLT[i], tempCS->prevPLT.curPLT[i], tempCS->prevPLT.curPLTSize[comID] * sizeof(Pel));
   }
 #endif
 
@@ -695,12 +695,12 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   do
   {
 #if JVET_O0119_BASE_PALETTE_444
-	for (int i = compBegin; i < (compBegin + numComp); i++)
-	{
-		ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
-		tempCS->prevPLT.curPLTSize[comID] = curLastPLTSize[comID];
-		memcpy(tempCS->prevPLT.curPLT[i], curLastPLT[i], curLastPLTSize[comID] * sizeof(Pel));
-	}
+  for (int i = compBegin; i < (compBegin + numComp); i++)
+  {
+    ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+    tempCS->prevPLT.curPLTSize[comID] = curLastPLTSize[comID];
+    memcpy(tempCS->prevPLT.curPLT[i], curLastPLT[i], curLastPLTSize[comID] * sizeof(Pel));
+  }
 #endif
     EncTestMode currTestMode = m_modeCtrl->currTestMode();
 
@@ -789,10 +789,10 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
       xCheckIntraPCM( tempCS, bestCS, partitioner, currTestMode );
     }
 #if JVET_O0119_BASE_PALETTE_444
-	else if (currTestMode.type == ETM_PALETTE)
-	{
-	  xCheckPLT( tempCS, bestCS, partitioner, currTestMode );
-	}
+  else if (currTestMode.type == ETM_PALETTE)
+  {
+    xCheckPLT( tempCS, bestCS, partitioner, currTestMode );
+  }
 #endif
     else if (currTestMode.type == ETM_IBC)
     {
@@ -805,27 +805,27 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     else if( isModeSplit( currTestMode ) )
     {
 #if JVET_O0119_BASE_PALETTE_444
-		if (bestCS->cus.size() != 0)
-		{
-			splitmode = bestCS->cus[0]->splitSeries;
-		}
+    if (bestCS->cus.size() != 0)
+    {
+      splitmode = bestCS->cus[0]->splitSeries;
+    }
 #endif
       xCheckModeSplit( tempCS, bestCS, partitioner, currTestMode );
 #if JVET_O0119_BASE_PALETTE_444
-	  if (splitmode != bestCS->cus[0]->splitSeries)
-	  {
-		  splitmode = bestCS->cus[0]->splitSeries;
-		  const CodingUnit&     cu = *bestCS->cus.front();
-		  cu.cs->prevPLT = bestCS->prevPLT;
-		  for (int i = compBegin; i < (compBegin + numComp); i++)
-		  {
-			  ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
-			  bestLastPLTSize[comID] = bestCS->cus[0]->cs->prevPLT.curPLTSize[comID];
-			  memcpy(bestLastPLT[i], bestCS->cus[0]->cs->prevPLT.curPLT[i], bestCS->cus[0]->cs->prevPLT.curPLTSize[comID] * sizeof(Pel));
-		  }
-	  }
+    if (splitmode != bestCS->cus[0]->splitSeries)
+    {
+      splitmode = bestCS->cus[0]->splitSeries;
+      const CodingUnit&     cu = *bestCS->cus.front();
+      cu.cs->prevPLT = bestCS->prevPLT;
+      for (int i = compBegin; i < (compBegin + numComp); i++)
+      {
+        ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+        bestLastPLTSize[comID] = bestCS->cus[0]->cs->prevPLT.curPLTSize[comID];
+        memcpy(bestLastPLT[i], bestCS->cus[0]->cs->prevPLT.curPLT[i], bestCS->cus[0]->cs->prevPLT.curPLTSize[comID] * sizeof(Pel));
+      }
+    }
 #endif
-	}
+  }
     else
     {
       THROW( "Don't know how to handle mode: type = " << currTestMode.type << ", options = " << currTestMode.opts );
@@ -892,34 +892,34 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 #if JVET_O0119_BASE_PALETTE_444
   if (bestCS->cus.size() == 1) // no partition
   {
-	  if (bestCS->cus[0]->predMode == MODE_PLT)
-	  {
-		  for (int i = compBegin; i < (compBegin + numComp); i++)
-		  {
-			  ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
-			  bestCS->prevPLT.curPLTSize[comID] = curLastPLTSize[comID];
-			  memcpy(bestCS->prevPLT.curPLT[i], curLastPLT[i], curLastPLTSize[comID] * sizeof(Pel));
-		  }
-		  bestCS->reorderPrevPLT(bestCS->prevPLT, bestCS->cus[0]->curPLTSize, bestCS->cus[0]->curPLT, bestCS->cus[0]->reuseflag, compBegin, numComp, jointPLT);
-	  }
-	  else
-	  {
-		  for (int i = compBegin; i<(compBegin + numComp); i++)
-		  {
-			  ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
-			  bestCS->prevPLT.curPLTSize[comID] = curLastPLTSize[comID];
-			  memcpy(bestCS->prevPLT.curPLT[i], curLastPLT[i], bestCS->prevPLT.curPLTSize[comID] * sizeof(Pel));
-		  }
-	  }
+    if (bestCS->cus[0]->predMode == MODE_PLT)
+    {
+      for (int i = compBegin; i < (compBegin + numComp); i++)
+      {
+        ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+        bestCS->prevPLT.curPLTSize[comID] = curLastPLTSize[comID];
+        memcpy(bestCS->prevPLT.curPLT[i], curLastPLT[i], curLastPLTSize[comID] * sizeof(Pel));
+      }
+      bestCS->reorderPrevPLT(bestCS->prevPLT, bestCS->cus[0]->curPLTSize, bestCS->cus[0]->curPLT, bestCS->cus[0]->reuseflag, compBegin, numComp, jointPLT);
+    }
+    else
+    {
+      for (int i = compBegin; i<(compBegin + numComp); i++)
+      {
+        ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+        bestCS->prevPLT.curPLTSize[comID] = curLastPLTSize[comID];
+        memcpy(bestCS->prevPLT.curPLT[i], curLastPLT[i], bestCS->prevPLT.curPLTSize[comID] * sizeof(Pel));
+      }
+    }
   }
   else
   {
-	  for (int i = compBegin; i<(compBegin + numComp); i++)
-	  {
-		  ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
-		  bestCS->prevPLT.curPLTSize[comID] = bestLastPLTSize[comID];
-		  memcpy(bestCS->prevPLT.curPLT[i], bestLastPLT[i], bestCS->prevPLT.curPLTSize[comID] * sizeof(Pel));
-	  }
+    for (int i = compBegin; i<(compBegin + numComp); i++)
+    {
+      ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+      bestCS->prevPLT.curPLTSize[comID] = bestLastPLTSize[comID];
+      memcpy(bestCS->prevPLT.curPLT[i], bestLastPLT[i], bestCS->prevPLT.curPLTSize[comID] * sizeof(Pel));
+    }
   }
   const CodingUnit&     cu = *bestCS->cus.front();
   cu.cs->prevPLT = bestCS->prevPLT;
@@ -1817,91 +1817,91 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
 #if JVET_O0119_BASE_PALETTE_444
 void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
 {
-	tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
-	CodingUnit &cu = tempCS->addCU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
-	partitioner.setCUData(cu);
-	cu.slice = tempCS->slice;
-	cu.tileIdx = tempCS->picture->brickMap->getBrickIdxRsMap(tempCS->area.lumaPos());
-	cu.skip = false;
-	cu.mmvdSkip = false;
-	cu.predMode = MODE_PLT;
+  tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
+  CodingUnit &cu = tempCS->addCU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
+  partitioner.setCUData(cu);
+  cu.slice = tempCS->slice;
+  cu.tileIdx = tempCS->picture->brickMap->getBrickIdxRsMap(tempCS->area.lumaPos());
+  cu.skip = false;
+  cu.mmvdSkip = false;
+  cu.predMode = MODE_PLT;
 
-	cu.transQuantBypass = encTestMode.lossless;
-	cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
-	cu.qp = encTestMode.qp;
-	cu.ipcm = false;
-	cu.bdpcmMode = 0;
+  cu.transQuantBypass = encTestMode.lossless;
+  cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
+  cu.qp = encTestMode.qp;
+  cu.ipcm = false;
+  cu.bdpcmMode = 0;
 
-	tempCS->addPU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
-	tempCS->addTU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
-	// Search
-	tempCS->dist = 0;	
-	if (CS::isDualITree(*tempCS))
-	{
-		if (isLuma(partitioner.chType))
-		{
-			m_pcIntraSearch->PLTSearch(*tempCS, partitioner, COMPONENT_Y, 1);
-		}
-		if (tempCS->area.chromaFormat != CHROMA_400 && (partitioner.chType == CHANNEL_TYPE_CHROMA))
-		{
-			m_pcIntraSearch->PLTSearch(*tempCS, partitioner, COMPONENT_Cb, 2);
-		}
-	}
-	else
-	{
-		m_pcIntraSearch->PLTSearch(*tempCS, partitioner, COMPONENT_Y, 3);
-	}
+  tempCS->addPU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
+  tempCS->addTU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
+  // Search
+  tempCS->dist = 0;  
+  if (CS::isDualITree(*tempCS))
+  {
+    if (isLuma(partitioner.chType))
+    {
+      m_pcIntraSearch->PLTSearch(*tempCS, partitioner, COMPONENT_Y, 1);
+    }
+    if (tempCS->area.chromaFormat != CHROMA_400 && (partitioner.chType == CHANNEL_TYPE_CHROMA))
+    {
+      m_pcIntraSearch->PLTSearch(*tempCS, partitioner, COMPONENT_Cb, 2);
+    }
+  }
+  else
+  {
+    m_pcIntraSearch->PLTSearch(*tempCS, partitioner, COMPONENT_Y, 3);
+  }
 
 
-	m_CABACEstimator->getCtx() = m_CurrCtx->start;
-	m_CABACEstimator->resetBits();
-	if (tempCS->pps->getTransquantBypassEnabledFlag())
-	{
-		m_CABACEstimator->cu_transquant_bypass_flag(cu);
-	}
+  m_CABACEstimator->getCtx() = m_CurrCtx->start;
+  m_CABACEstimator->resetBits();
+  if (tempCS->pps->getTransquantBypassEnabledFlag())
+  {
+    m_CABACEstimator->cu_transquant_bypass_flag(cu);
+  }
 
-	if ((!cu.cs->slice->isIntra() || cu.cs->slice->getSPS()->getIBCFlag())
-		&& cu.Y().valid())
-	{
-		m_CABACEstimator->cu_skip_flag(cu);
-	}
-	m_CABACEstimator->pred_mode(cu);
+  if ((!cu.cs->slice->isIntra() || cu.cs->slice->getSPS()->getIBCFlag())
+    && cu.Y().valid())
+  {
+    m_CABACEstimator->cu_skip_flag(cu);
+  }
+  m_CABACEstimator->pred_mode(cu);
 
-	// signaling
-	CUCtx cuCtx;
-	cuCtx.isDQPCoded = true;
-	cuCtx.isChromaQpAdjCoded = true;
-	if (CS::isDualITree(*tempCS))
-	{
-		if (isLuma(partitioner.chType))
-		{
-			m_CABACEstimator->cu_palette_info(cu, COMPONENT_Y, 1, cuCtx);
-		}
-		if (tempCS->area.chromaFormat != CHROMA_400 && (partitioner.chType == CHANNEL_TYPE_CHROMA))
-		{
-			m_CABACEstimator->cu_palette_info(cu, COMPONENT_Cb, 2, cuCtx);
-		}
-	}
-	else
-	{
-		m_CABACEstimator->cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
-	}
-	tempCS->fracBits = m_CABACEstimator->getEstFracBits();
-	tempCS->cost = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
+  // signaling
+  CUCtx cuCtx;
+  cuCtx.isDQPCoded = true;
+  cuCtx.isChromaQpAdjCoded = true;
+  if (CS::isDualITree(*tempCS))
+  {
+    if (isLuma(partitioner.chType))
+    {
+      m_CABACEstimator->cu_palette_info(cu, COMPONENT_Y, 1, cuCtx);
+    }
+    if (tempCS->area.chromaFormat != CHROMA_400 && (partitioner.chType == CHANNEL_TYPE_CHROMA))
+    {
+      m_CABACEstimator->cu_palette_info(cu, COMPONENT_Cb, 2, cuCtx);
+    }
+  }
+  else
+  {
+    m_CABACEstimator->cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
+  }
+  tempCS->fracBits = m_CABACEstimator->getEstFracBits();
+  tempCS->cost = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
 
-	xEncodeDontSplit(*tempCS, partitioner);
-	xCheckDQP(*tempCS, partitioner);
-	xCalDebCost(*tempCS, partitioner);
-	tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
+  xEncodeDontSplit(*tempCS, partitioner);
+  xCheckDQP(*tempCS, partitioner);
+  xCalDebCost(*tempCS, partitioner);
+  tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
 
-	const Area curr_cu_area = cu.block(getFirstComponentOfChannel(partitioner.chType));
-	cu.slice->m_mapPltCost[curr_cu_area.pos()][curr_cu_area.size()] = tempCS->cost;
+  const Area curr_cu_area = cu.block(getFirstComponentOfChannel(partitioner.chType));
+  cu.slice->m_mapPltCost[curr_cu_area.pos()][curr_cu_area.size()] = tempCS->cost;
 #if WCG_EXT
-	DTRACE_MODE_COST(*tempCS, m_pcRdCost->getLambda(true));
+  DTRACE_MODE_COST(*tempCS, m_pcRdCost->getLambda(true));
 #else
-	DTRACE_MODE_COST(*tempCS, m_pcRdCost->getLambda());
+  DTRACE_MODE_COST(*tempCS, m_pcRdCost->getLambda());
 #endif
-	xCheckBestMode(tempCS, bestCS, partitioner, encTestMode);
+  xCheckBestMode(tempCS, bestCS, partitioner, encTestMode);
 }
 #endif
 
@@ -4518,9 +4518,9 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
 
     if( CU::isIntra( cu ) 
 #if JVET_O0119_BASE_PALETTE_444
-	|| CU::isPLT(cu)
+    || CU::isPLT(cu)
 #endif
-	)
+    )
     {
       xReconIntraQT( cu );
     }

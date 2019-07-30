@@ -1395,7 +1395,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   bool bCheckPLTRatio = m_pcCfg->getIntraPeriod() != 1 && pcSlice->isIRAP();
   if (bCheckPLTRatio)
   {
-	  doPlt = true;
+    doPlt = true;
   }
 #endif
 
@@ -1436,27 +1436,27 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #if JVET_O0119_BASE_PALETTE_444
   if (bCheckPLTRatio)
   {
-	  int total_area = 0;
-	  int plt_area = 0;
-	  for (auto apu : pcPic->cs->pus)
-	  {
-		  for (int i = 0; i < MAX_NUM_TBLOCKS; ++i)
-		  {
-			  int pu_area = apu->blocks[i].width * apu->blocks[i].height;
-			  if (apu->blocks[i].width > 0 && apu->blocks[i].height > 0)
-			  {
-				  total_area += pu_area;
-				  if (CU::isPLT(*apu->cu) || CU::isIBC(*apu->cu))
-				  {
-					  plt_area += pu_area;
-				  }
-				  break;
-			  }
+    int totalArea = 0;
+    int pltArea = 0;
+    for (auto apu : pcPic->cs->pus)
+    {
+      for (int i = 0; i < MAX_NUM_TBLOCKS; ++i)
+      {
+        int pu_area = apu->blocks[i].width * apu->blocks[i].height;
+        if (apu->blocks[i].width > 0 && apu->blocks[i].height > 0)
+        {
+          totalArea += pu_area;
+          if (CU::isPLT(*apu->cu) || CU::isIBC(*apu->cu))
+          {
+            pltArea += pu_area;
+          }
+          break;
+        }
 
-		  }
-	  }
-	  if (plt_area * PLT_FAST_RATIO < total_area)
-		  doPlt = false;
+      }
+    }
+    if (pltArea * PLT_FAST_RATIO < totalArea)
+      doPlt = false;
   }
 #endif
 }
@@ -1636,7 +1636,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     {
       pCABACWriter->initCtxModels( *pcSlice );
 #if JVET_O0119_BASE_PALETTE_444
-	  cs.resetPrevPLT(cs.prevPLT);
+      cs.resetPrevPLT(cs.prevPLT);
 #endif
       prevQP[0] = prevQP[1] = pcSlice->getSliceQp();
     }
@@ -1645,7 +1645,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       // reset and then update contexts to the state at the end of the top-right CTU (if within current slice and tile).
       pCABACWriter->initCtxModels( *pcSlice );
 #if JVET_O0119_BASE_PALETTE_444
-	  cs.resetPrevPLT(cs.prevPLT);
+      cs.resetPrevPLT(cs.prevPLT);
 #endif
       if( cs.getCURestricted( pos.offset(0, -1), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
       {
@@ -1932,7 +1932,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       {
         m_CABACWriter->initCtxModels( *pcSlice );
 #if JVET_O0119_BASE_PALETTE_444
-		cs.resetPrevPLT(cs.prevPLT);
+        cs.resetPrevPLT(cs.prevPLT);
 #endif
       }
     }
@@ -1942,8 +1942,8 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       if (ctuTsAddr != startCtuTsAddr) // if it is the first CTU, then the entropy coder has already been reset
       {
         m_CABACWriter->initCtxModels( *pcSlice );
-#if	JVET_O0119_BASE_PALETTE_444		
-		cs.resetPrevPLT(cs.prevPLT);
+#if JVET_O0119_BASE_PALETTE_444
+        cs.resetPrevPLT(cs.prevPLT);
 #endif
       }
       if( cs.getCURestricted( pos.offset( 0, -1 ), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )

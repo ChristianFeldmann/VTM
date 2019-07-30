@@ -783,7 +783,7 @@ private:
   unsigned          m_wrapAroundOffset;
   unsigned          m_IBCFlag;
 #if JVET_O0119_BASE_PALETTE_444
-  unsigned			m_PLTMode;
+  unsigned          m_PLTMode;
 #endif
 
   bool              m_lumaReshapeEnable;
@@ -1004,8 +1004,8 @@ public:
   void                    setIBCFlag(unsigned IBCFlag)                                                    { m_IBCFlag = IBCFlag; }
   unsigned                getIBCFlag() const                                                              { return m_IBCFlag; }
 #if JVET_O0119_BASE_PALETTE_444
-  void					  setPLTMode(unsigned PLTMode)													  { m_PLTMode = PLTMode; }
-  unsigned				  getPLTMode() const															  { return m_PLTMode; }
+  void                    setPLTMode(unsigned PLTMode)                                                    { m_PLTMode = PLTMode; }
+  unsigned                getPLTMode() const                                                              { return m_PLTMode; }
 #endif
   void                    setUseSBT( bool b )                                                             { m_SBT = b; }
   bool                    getUseSBT() const                                                               { return m_SBT; }
@@ -1860,7 +1860,7 @@ protected:
   Picture*              xGetLongTermRefPic(PicList& rcListPic, int poc, bool pocHasMsb);
 #if JVET_O0119_BASE_PALETTE_444
 public:
-	std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost;
+  std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost;
 private:
 #endif
 };// END CLASS DEFINITION Slice

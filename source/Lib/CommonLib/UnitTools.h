@@ -60,7 +60,7 @@ namespace CU
   bool isInter                        (const CodingUnit &cu);
   bool isIBC                          (const CodingUnit &cu);
 #if JVET_O0119_BASE_PALETTE_444
-  bool isPLT						  (const CodingUnit &cu);
+  bool isPLT                          (const CodingUnit &cu);
 #endif
   bool isRDPCMEnabled                 (const CodingUnit &cu);
   bool isLosslessCoded                (const CodingUnit &cu);

@@ -110,10 +110,10 @@ public:
   void        mip_pred_modes            ( const CodingUnit&             cu );
   void        mip_pred_mode             ( const PredictionUnit&         pu );
 #if JVET_O0119_BASE_PALETTE_444
-  void        cu_palette_info			( const CodingUnit& cu, ComponentID compBegin, uint32_t numComp, CUCtx& cuCtx);
-  void        cu_run_val				( uint32_t uiRun, PLTRunMode runtype, const uint32_t uiPltIdx, const uint32_t uiMaxRun);
-  void        encodeRunType				( const CodingUnit&  cu, PLTtypeBuf& runType, uint32_t idx, ScanElement *refScanOrder, ComponentID compBegin);
-  Pel         writePLTIndex			( const CodingUnit& cu, uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin);
+  void        cu_palette_info           ( const CodingUnit& cu, ComponentID compBegin, uint32_t numComp, CUCtx& cuCtx);
+  void        cu_run_val                ( uint32_t uiRun, PLTRunMode runtype, const uint32_t uiPltIdx, const uint32_t uiMaxRun);
+  void        encodeRunType             ( const CodingUnit&  cu, PLTtypeBuf& runType, uint32_t idx, ScanElement *refScanOrder, ComponentID compBegin);
+  Pel         writePLTIndex             ( const CodingUnit& cu, uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin);
 #endif
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( const PredictionUnit&         pu );
@@ -193,10 +193,10 @@ private:
 
   void  xWriteTruncBinCode(uint32_t uiSymbol, uint32_t uiMaxSymbol);
 #if JVET_O0119_BASE_PALETTE_444
-  void		  codeScanRotationModeFlag	(const CodingUnit& cu, ComponentID compBegin);
-  void        xEncodePLTPredIndicator	(const CodingUnit& cu, uint32_t uiMaxPLTSize, ComponentID compBegin);
-  uint32_t	  xWriteTruncMsbP1			(uint32_t uiSymbol, PLTRunMode runtype, uint32_t uiMax, uint32_t uiCtxT);
-  void        xWriteTruncMsbP1RefinementBits(uint32_t uiSymbol, PLTRunMode runtype, uint32_t uiMax, uint32_t uiCtxT);
+  void        codeScanRotationModeFlag  ( const CodingUnit& cu, ComponentID compBegin);
+  void        xEncodePLTPredIndicator   ( const CodingUnit& cu, uint32_t uiMaxPLTSize, ComponentID compBegin);
+  uint32_t    xWriteTruncMsbP1          ( uint32_t uiSymbol, PLTRunMode runtype, uint32_t uiMax, uint32_t uiCtxT);
+  void        xWriteTruncMsbP1RefinementBits  ( uint32_t uiSymbol, PLTRunMode runtype, uint32_t uiMax, uint32_t uiCtxT);
 #endif
 private:
   BinEncIf&         m_BinEncoder;

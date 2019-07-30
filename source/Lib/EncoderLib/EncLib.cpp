@@ -940,7 +940,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
   sps.setUseDMVR                            ( m_DMVR );
 #if JVET_O0119_BASE_PALETTE_444
-  sps.setPLTMode							( m_PLTMode);
+  sps.setPLTMode                            ( m_PLTMode);
 #endif
   sps.setIBCFlag                            ( m_IBCMode);
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );

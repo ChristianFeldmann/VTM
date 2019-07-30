@@ -874,8 +874,8 @@ public:
   void      setRDPCM                     ( bool b )       { m_RdpcmMode = b; }
   bool      getRDPCM                     ()         const { return m_RdpcmMode; }
 #if JVET_O0119_BASE_PALETTE_444
-  void      setPLTMode					 ( unsigned n)	  { m_PLTMode = n; }
-  unsigned  getPLTMode					 ()		    const { return m_PLTMode; }
+  void      setPLTMode                   ( unsigned n)    { m_PLTMode = n; }
+  unsigned  getPLTMode                   ()         const { return m_PLTMode; }
 #endif
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }

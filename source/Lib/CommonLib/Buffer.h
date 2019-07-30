@@ -165,11 +165,11 @@ typedef AreaBuf<      MotionInfo>  MotionBuf;
 typedef AreaBuf<const MotionInfo> CMotionBuf;
 
 #if JVET_O0119_BASE_PALETTE_444
-typedef AreaBuf<      TCoeff>  PLTescapeBuf;
+typedef AreaBuf<      TCoeff> PLTescapeBuf;
 typedef AreaBuf<const TCoeff> CPLTescapeBuf;
 
-typedef AreaBuf<      bool>	   PLTtypeBuf;
-typedef AreaBuf<const bool>	  CPLTtypeBuf;
+typedef AreaBuf<      bool> PLTtypeBuf;
+typedef AreaBuf<const bool> CPLTtypeBuf;
 #endif
 
 #define SIZE_AWARE_PER_EL_OP( OP, INC )                     \

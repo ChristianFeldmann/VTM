@@ -1272,14 +1272,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 	}
 	READ_FLAG(uiCode, "gbi_flag");                               pcSPS->setUseGBi(uiCode != 0);
 #if JVET_O0119_BASE_PALETTE_444
-	if (pcSPS->getChromaFormatIdc() == CHROMA_444)
-	{
-		READ_FLAG(uiCode, "plt_flag");                                    pcSPS->setPLTMode(uiCode != 0);
-	}
-	else
-	{
-		pcSPS->setPLTMode(false);
-	}
+  if (pcSPS->getChromaFormatIdc() == CHROMA_444)
+  {
+    READ_FLAG(uiCode, "plt_flag");                                    pcSPS->setPLTMode(uiCode != 0);
+  }
+  else
+  {
+    pcSPS->setPLTMode(false);
+  }
 #endif
   READ_FLAG(uiCode, "ibc_flag");                                    pcSPS->setIBCFlag(uiCode);
   // KJS: sps_ciip_enabled_flag

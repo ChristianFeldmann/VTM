@@ -116,14 +116,14 @@ protected:
   int m_topRefLength;
   int m_leftRefLength;
 #if JVET_O0119_BASE_PALETTE_444
-  ScanElement*          m_puiScanOrder;
-  bool					m_bBestScanRotationMode;
-  Ctx					m_storeCtx_Run;
-  Ctx					m_storeCtx_RunIndex;
-  Ctx					m_storeCtx_RunCopy; 
-  Ctx					m_orgCtxRD;
-  bool					*m_runTypeRD;
-  Pel					*m_runLengthRD;
+  ScanElement* m_puiScanOrder;
+  bool         m_bBestScanRotationMode;
+  Ctx          m_storeCtx_Run;
+  Ctx          m_storeCtx_RunIndex;
+  Ctx          m_storeCtx_RunCopy; 
+  Ctx          m_orgCtxRD;
+  bool         *m_runTypeRD;
+  Pel          *m_runLengthRD;
 #endif
   // prediction
   void xPredIntraPlanar           ( const CPelBuf &pSrc, PelBuf &pDst );
@@ -175,9 +175,9 @@ public:
   void switchBuffer               (const PredictionUnit &pu, ComponentID compID, PelBuf srcBuff, Pel *dst);
   void geneIntrainterPred         (const CodingUnit &cu);
 #if JVET_O0119_BASE_PALETTE_444
-  void       reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
-  bool       calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t uiStartPos, uint32_t uiTotal, uint32_t &uiRun, ComponentID compBegin);
-  bool       calIndexRun(CodingStructure &cs, Partitioner& partitioner, uint32_t uiStartPos, uint32_t uiTotal, uint32_t &uiRun, ComponentID compBegin);
+  void reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+  bool calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t uiStartPos, uint32_t uiTotal, uint32_t &uiRun, ComponentID compBegin);
+  bool calIndexRun(CodingStructure &cs, Partitioner& partitioner, uint32_t uiStartPos, uint32_t uiTotal, uint32_t &uiRun, ComponentID compBegin);
 #endif
 };
 

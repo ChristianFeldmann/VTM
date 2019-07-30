@@ -50,8 +50,8 @@
 // ---------------------------------------------------------------------------
 #if JVET_O0119_BASE_PALETTE_444
 struct PLTBuf {
-	uint32_t       curPLTSize[MAX_NUM_COMPONENT];
-	Pel            curPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
+  uint32_t       curPLTSize[MAX_NUM_COMPONENT];
+  Pel            curPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
 };
 #endif
 inline Position recalcPosition(const ChromaFormat _cf, const ComponentID srcCId, const ComponentID dstCId, const Position &pos)
@@ -329,7 +329,7 @@ struct CodingUnit : public UnitArea
   uint8_t        ispMode;
 #if JVET_O0119_BASE_PALETTE_444
   bool           useEscape[MAX_NUM_COMPONENT];
-  bool			 useRotation[MAX_NUM_COMPONENT];
+  bool           useRotation[MAX_NUM_COMPONENT];
   bool           reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
   uint32_t       lastPLTSize[MAX_NUM_COMPONENT];
   uint32_t       reusePLTSize[MAX_NUM_COMPONENT];
@@ -495,17 +495,17 @@ struct TransformUnit : public UnitArea
         int       getChromaAdj( )                 const;
         void      setChromaAdj(int i);
 #if JVET_O0119_BASE_PALETTE_444
-		 PelBuf			getcurPLTIdx(const ComponentID id);
-  const CPelBuf			getcurPLTIdx(const ComponentID id) const;
-		 PelBuf			getrunLength(const ComponentID id);
-  const CPelBuf			getrunLength(const ComponentID id) const;
-		 PLTtypeBuf		getrunType(const ComponentID id);
-  const CPLTtypeBuf		getrunType(const ComponentID id) const;
-		 PLTescapeBuf	getescapeValue(const ComponentID id);
-  const CPLTescapeBuf   getescapeValue(const ComponentID id) const;
-		Pel*  get_vPLTIdx(const ComponentID id);
-		Pel*  get_vRunLength(const ComponentID id);
-		bool* get_vRunType(const ComponentID id);
+         PelBuf   getcurPLTIdx(const ComponentID id);
+  const CPelBuf   getcurPLTIdx(const ComponentID id) const;
+         PelBuf   getrunLength(const ComponentID id);
+  const CPelBuf   getrunLength(const ComponentID id) const;
+         PLTtypeBuf   getrunType(const ComponentID id);
+  const CPLTtypeBuf   getrunType(const ComponentID id) const;
+         PLTescapeBuf getescapeValue(const ComponentID id);
+  const CPLTescapeBuf getescapeValue(const ComponentID id) const;
+        Pel*      getPLTIndex(const ComponentID id);
+        Pel*      getRunLens(const ComponentID id);
+        bool*     getRunTypes(const ComponentID id);
 #endif
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM

@@ -291,7 +291,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMmvdDisNum                                        (m_MmvdDisNum);
   m_cEncLib.setRDPCM                                              ( m_RdpcmMode );
 #if JVET_O0119_BASE_PALETTE_444
-  m_cEncLib.setPLTMode											 ( m_PLTMode);
+  m_cEncLib.setPLTMode                                           ( m_PLTMode);
 #endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );

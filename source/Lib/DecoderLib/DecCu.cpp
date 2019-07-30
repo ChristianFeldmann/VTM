@@ -134,11 +134,11 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         prevTmpPos = currCU.shareParentPos;
       }
 #if JVET_O0119_BASE_PALETTE_444
-	  if (currCU.predMode != MODE_INTRA && currCU.predMode != MODE_PLT && currCU.Y().valid())
+      if (currCU.predMode != MODE_INTRA && currCU.predMode != MODE_PLT && currCU.Y().valid())
 #else
       if (currCU.predMode != MODE_INTRA && currCU.Y().valid())
 #endif
-	  {
+      {
         xDeriveCUMV(currCU);
       }
       switch( currCU.predMode )
@@ -148,7 +148,7 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         xReconInter( currCU );
         break;
 #if JVET_O0119_BASE_PALETTE_444
-	  case MODE_PLT:
+      case MODE_PLT:
 #endif
       case MODE_INTRA:
         xReconIntraQT( currCU );
@@ -370,22 +370,22 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
 #if JVET_O0119_BASE_PALETTE_444
   if (CU::isPLT(cu))
   {
-	  if (CS::isDualITree(*cu.cs))
-	  {
-		  if (cu.chType == CHANNEL_TYPE_LUMA)
-		  {
-			  xReconPLT(cu, COMPONENT_Y, 1);
-		  }
-		  if (cu.chromaFormat != CHROMA_400 && (cu.chType == CHANNEL_TYPE_CHROMA))
-		  {
-			  xReconPLT(cu, COMPONENT_Cb, 2);
-		  }
-	  }
-	  else
-	  {
-		  xReconPLT(cu, COMPONENT_Y, 3);
-	  }
-	  return;
+    if (CS::isDualITree(*cu.cs))
+    {
+      if (cu.chType == CHANNEL_TYPE_LUMA)
+      {
+        xReconPLT(cu, COMPONENT_Y, 1);
+      }
+      if (cu.chromaFormat != CHROMA_400 && (cu.chType == CHANNEL_TYPE_CHROMA))
+      {
+        xReconPLT(cu, COMPONENT_Cb, 2);
+      }
+    }
+    else
+    {
+      xReconPLT(cu, COMPONENT_Y, 3);
+    }
+    return;
   }
 #endif
   const uint32_t numChType = ::getNumberValidChannels( cu.chromaFormat );
@@ -402,79 +402,79 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
 #if JVET_O0119_BASE_PALETTE_444
 void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
 {
-	const SPS&        sps = *(cu.cs->sps);
-	TransformUnit&   tu = *cu.firstTU;
-	PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
+  const SPS&        sps = *(cu.cs->sps);
+  TransformUnit&   tu = *cu.firstTU;
+  PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
 
-	uint32_t uiHeight = cu.block(compBegin).height;
-	uint32_t uiWidth = cu.block(compBegin).width;
+  uint32_t uiHeight = cu.block(compBegin).height;
+  uint32_t uiWidth = cu.block(compBegin).width;
 
-	//recon. pixels
-	uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
-	uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
-	for (uint32_t uiY = 0; uiY < uiHeight; uiY++)
-	{
-		for (uint32_t uiX = 0; uiX < uiWidth; uiX++)
-		{
-			for (uint32_t compID = compBegin; compID < (compBegin + numComp); compID++)
-			{
-				const int  channelBitDepth = cu.cs->sps->getBitDepth(toChannelType((ComponentID)compID));
-				const CompArea &area = cu.blocks[compID];
+  //recon. pixels
+  uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
+  uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
+  for (uint32_t uiY = 0; uiY < uiHeight; uiY++)
+  {
+    for (uint32_t uiX = 0; uiX < uiWidth; uiX++)
+    {
+      for (uint32_t compID = compBegin; compID < (compBegin + numComp); compID++)
+      {
+        const int  channelBitDepth = cu.cs->sps->getBitDepth(toChannelType((ComponentID)compID));
+        const CompArea &area = cu.blocks[compID];
 
-				PelBuf piPicReco = cu.cs->getRecoBuf(area);
-				PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)compID);
-				if (curPLTIdx.at(uiX, uiY) == cu.curPLTSize[compBegin])
-				{
-					Pel iValue;
-					QpParam cQP(tu, (ComponentID)compID);
+        PelBuf piPicReco = cu.cs->getRecoBuf(area);
+        PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)compID);
+        if (curPLTIdx.at(uiX, uiY) == cu.curPLTSize[compBegin])
+        {
+          Pel iValue;
+          QpParam cQP(tu, (ComponentID)compID);
 
-					int iQP = cQP.Qp;
-					int iQPrem = iQP % 6;
-					int iQPper = iQP / 6;
-					if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)
-					{
-						int InvquantiserRightShift = IQUANT_SHIFT;
-						int iAdd = 1 << (InvquantiserRightShift - 1);
-						iValue = ((((escapeValue.at(uiX, uiY)*g_invQuantScales[0][iQPrem]) << iQPper) + iAdd) >> InvquantiserRightShift);
-						iValue = Pel(ClipBD<int>(iValue, channelBitDepth));
-						piPicReco.at(uiX, uiY) = iValue;
-					}
-					else if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && uiY % (1 << scaleY) == 0 && uiX % (1 << scaleX) == 0)
-					{
-						uint32_t PosYC = uiY >> scaleY;
-						uint32_t PosXC = uiX >> scaleX;
-						int InvquantiserRightShift = IQUANT_SHIFT;
-						int iAdd = 1 << (InvquantiserRightShift - 1);
-						iValue = ((((escapeValue.at(PosXC, PosYC)*g_invQuantScales[0][iQPrem]) << iQPper) + iAdd) >> InvquantiserRightShift);
-						iValue = Pel(ClipBD<int>(iValue, channelBitDepth));
-						piPicReco.at(PosXC, PosYC) = iValue;
+          int iQP = cQP.Qp;
+          int iQPrem = iQP % 6;
+          int iQPper = iQP / 6;
+          if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)
+          {
+            int InvquantiserRightShift = IQUANT_SHIFT;
+            int iAdd = 1 << (InvquantiserRightShift - 1);
+            iValue = ((((escapeValue.at(uiX, uiY)*g_invQuantScales[0][iQPrem]) << iQPper) + iAdd) >> InvquantiserRightShift);
+            iValue = Pel(ClipBD<int>(iValue, channelBitDepth));
+            piPicReco.at(uiX, uiY) = iValue;
+          }
+          else if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && uiY % (1 << scaleY) == 0 && uiX % (1 << scaleX) == 0)
+          {
+            uint32_t PosYC = uiY >> scaleY;
+            uint32_t PosXC = uiX >> scaleX;
+            int InvquantiserRightShift = IQUANT_SHIFT;
+            int iAdd = 1 << (InvquantiserRightShift - 1);
+            iValue = ((((escapeValue.at(PosXC, PosYC)*g_invQuantScales[0][iQPrem]) << iQPper) + iAdd) >> InvquantiserRightShift);
+            iValue = Pel(ClipBD<int>(iValue, channelBitDepth));
+            piPicReco.at(PosXC, PosYC) = iValue;
 
-					}
-				}
-				else
-				{
-					uint32_t curIdx = curPLTIdx.at(uiX, uiY);
-					if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)
-					{
-						piPicReco.at(uiX, uiY) = cu.curPLT[compID][curIdx];
-					}
-					else if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && uiY % (1 << scaleY) == 0 && uiX % (1 << scaleX) == 0)
-					{
-						uint32_t PosYC = uiY >> scaleY;
-						uint32_t PosXC = uiX >> scaleX;
-						piPicReco.at(PosXC, PosYC) = cu.curPLT[compID][curIdx];
-					}
-				}
-			}
-		}
-	}
-	for (uint32_t compID = compBegin; compID < (compBegin + numComp); compID++)
-	{
-		const CompArea &area = cu.blocks[compID];
-		PelBuf piPicReco = cu.cs->getRecoBuf(area);
-		cu.cs->picture->getRecoBuf(area).copyFrom(piPicReco);
-		cu.cs->setDecomp(area);
-	}
+          }
+        }
+        else
+        {
+          uint32_t curIdx = curPLTIdx.at(uiX, uiY);
+          if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)
+          {
+            piPicReco.at(uiX, uiY) = cu.curPLT[compID][curIdx];
+          }
+          else if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && uiY % (1 << scaleY) == 0 && uiX % (1 << scaleX) == 0)
+          {
+            uint32_t PosYC = uiY >> scaleY;
+            uint32_t PosXC = uiX >> scaleX;
+            piPicReco.at(PosXC, PosYC) = cu.curPLT[compID][curIdx];
+          }
+        }
+      }
+    }
+  }
+  for (uint32_t compID = compBegin; compID < (compBegin + numComp); compID++)
+  {
+    const CompArea &area = cu.blocks[compID];
+    PelBuf piPicReco = cu.cs->getRecoBuf(area);
+    cu.cs->picture->getRecoBuf(area).copyFrom(piPicReco);
+    cu.cs->setDecomp(area);
+  }
 }
 #endif
 /** Function for deriving reconstructed luma/chroma samples of a PCM mode CU.

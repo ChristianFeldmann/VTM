@@ -902,7 +902,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
   ( "RDPCM",                                          m_RdpcmMode,                                       false, "RDPCM")
 #if JVET_O0119_BASE_PALETTE_444
-  ("PLT",											  m_PLTMode,										   0u, "PLTMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
+  ("PLT",                                             m_PLTMode,                                           0u, "PLTMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
 #endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
@@ -2185,9 +2185,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
 #if JVET_O0119_BASE_PALETTE_444
-	xConfirmPara( m_PLTMode, "PLT Mode only allowed with NEXT profile");
+    xConfirmPara( m_PLTMode, "PLT Mode only allowed with NEXT profile");
 #endif
-	xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
+    xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
     xConfirmPara( m_HashME, "Hash motion estimation only allowed with NEXT profile" );
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
     xConfirmPara( m_MTS, "MTS only allowed with NEXT profile" );

@@ -2450,12 +2450,16 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     trianglecandHasNoResidual[mergeCand] = false;
   }
 
+#if JVET_O0379_SPEEDUP_TPM_ENCODER
+  bool bestIsSkip = false;
+#else
   bool bestIsSkip;
   CodingUnit* cuTemp = bestCS->getCU(partitioner.chType);
   if (cuTemp)
     bestIsSkip = m_pcEncCfg->getUseFastDecisionForMerge() ? bestCS->getCU(partitioner.chType)->rootCbf == 0 : false;
   else
     bestIsSkip = false;
+#endif
   uint8_t                                         numTriangleCandidate   = TRIANGLE_MAX_NUM_CANDS;
   uint8_t                                         triangleNumMrgSATDCand = TRIANGLE_MAX_NUM_SATD_CANDS;
   PelUnitBuf                                      triangleBuffer[TRIANGLE_MAX_NUM_UNI_CANDS];
@@ -2464,10 +2468,12 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   static_vector<double,  TRIANGLE_MAX_NUM_CANDS> tianglecandCostList;
   uint8_t                                         numTriangleCandComb = slice.getMaxNumTriangleCand() * (slice.getMaxNumTriangleCand() - 1) * 2;
 
+#if !JVET_O0379_SPEEDUP_TPM_ENCODER
   if( auto blkCache = dynamic_cast< CacheBlkInfoCtrl* >( m_modeCtrl ) )
   {
     bestIsSkip |= blkCache->isSkip( tempCS->area );
   }
+#endif
 
   DistParam distParam;
   const bool useHadamard = !encTestMode.lossless && !tempCS->slice->getDisableSATDForRD();
@@ -2511,6 +2517,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     }
   }
 
+#if JVET_O0379_SPEEDUP_TPM_ENCODER
+  triangleNumMrgSATDCand = min(triangleNumMrgSATDCand, numTriangleCandComb);
+#else
   bool tempBufSet = bestIsSkip ? false : true;
   triangleNumMrgSATDCand = bestIsSkip ? TRIANGLE_MAX_NUM_CANDS : TRIANGLE_MAX_NUM_SATD_CANDS;
   triangleNumMrgSATDCand = min(triangleNumMrgSATDCand, numTriangleCandComb);
@@ -2522,6 +2531,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     }
   }
   else
+#endif
   {
     CodingUnit &cu      = tempCS->addCU( tempCS->area, partitioner.chType );
 
@@ -2665,6 +2675,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
           tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
           return;
         }
+#if JVET_O0379_SPEEDUP_TPM_ENCODER
+        tempCS->getPredBuf().copyFrom( triangleWeightedBuffer[mergeCand] );
+#else
         if( tempBufSet )
         {
           tempCS->getPredBuf().copyFrom( triangleWeightedBuffer[mergeCand] );
@@ -2676,7 +2689,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
           PelUnitBuf predBuf         = tempCS->getPredBuf();
           m_pcInterSearch->weightedTriangleBlk( pu, splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
         }
-
+#endif
         xEncodeInterResidual( tempCS, bestCS, partitioner, encTestMode, noResidualPass, ( noResidualPass == 0 ? &trianglecandHasNoResidual[mergeCand] : NULL ) );
 
         if (m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip)

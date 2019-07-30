@@ -955,6 +955,22 @@ void DecLib::xActivateParameterSets()
        deleteSEIs(m_SEIs);
      }
   }
+
+#if JVET_O0244_DELTA_POC
+  Slice *pSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
+  const SPS *sps = pSlice->getSPS();
+  const PPS *pps = pSlice->getPPS();
+
+  if( !sps->getUseWP() )
+  {
+    CHECK( pps->getUseWP(), "When sps_weighted_pred_flag is equal to 0, the value of pps_weighted_pred_flag shall be equal to 0." );
+  }
+
+  if( !sps->getUseWPBiPred() )
+  {
+    CHECK( pps->getWPBiPred(), "When sps_weighted_bipred_flag is equal to 0, the value of pps_weighted_bipred_flag shall be equal to 0." );
+  }
+#endif
 }
 
 

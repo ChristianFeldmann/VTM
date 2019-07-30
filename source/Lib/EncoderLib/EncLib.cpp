@@ -979,6 +979,11 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setPCMBitDepth (ChannelType(channelType), m_PCMBitDepth[channelType]         );
   }
 
+#if JVET_O0244_DELTA_POC
+  sps.setUseWP( m_useWeightedPred );
+  sps.setUseWPBiPred( m_useWeightedBiPred );
+#endif
+
   sps.setSAOEnabledFlag( m_bUseSAO );
 
   sps.setMaxTLayers( m_maxTempLayer );

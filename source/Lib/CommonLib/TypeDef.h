@@ -150,6 +150,7 @@
 
 #define JVET_O0379_SPEEDUP_TPM_ENCODER                    1 // JVET_O0379: Speedup mode decision process for triangle prediction mode
 
+#define JVET_O0364_PADDING                                1 // JVET-O0364 Part 2: clean up padding process in intra prediction
 #define JVET_O0364_PDPC_DC                                1 // JVET-O0364 Part 4: align PDPC process for DC with the one for Planar
 #define JVET_O0364_PDPC_ANGULAR                           1 // JVET-O0364 Part 5: simplify PDPC process for angular modes
 

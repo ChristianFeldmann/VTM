@@ -657,11 +657,11 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   if (intraPredAngle < 0)
   {
 #if JVET_O0364_PADDING
-    for (int x = 0; x <= pDst.width + 1 + multiRefIdx; x++)
+    for (int x = 0; x <= width + 1 + multiRefIdx; x++)
     {
       refAbove[x + height] = pSrc.at(x, 0);
     }
-    for (int y = 0; y <= pDst.height + 1 + multiRefIdx; y++)
+    for (int y = 0; y <= height + 1 + multiRefIdx; y++)
     {
       refLeft[y + width] = pSrc.at(0, y);
     }
@@ -669,7 +669,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     refSide = bIsModeVer ? refLeft + width : refAbove + height;
 
     // Extend the Main reference to the left.
-    int sizeSide = bIsModeVer ? pDst.height : pDst.width;
+    int sizeSide = bIsModeVer ? height : width;
     for (int k = -sizeSide; k <= -1; k++)
     {
       refMain[k] = refSide[std::min((-k * invAngle + 256) >> 9, sizeSide)];

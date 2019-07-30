@@ -2910,7 +2910,11 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
           bool nonZeroCoeffNonTsCorner8x8 = CU::getNumNonZeroCoeffNonTsCorner8x8( cu, lumaFlag, chromaFlag ) > 0;
 #endif
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+#if JVET_O0050_LOCAL_DUAL_TREE
+    const bool skipLfnst                  = cu.isSepTree() ? ( isLuma( cu.chType ) ? ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA ) :
+#else
     const bool skipLfnst                  = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA ) :
+#endif
                                           ( cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA ) ) :
                                           ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA && cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA );
 #else

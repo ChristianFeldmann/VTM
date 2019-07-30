@@ -1813,7 +1813,11 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
           // Check if low frequency non-separable transform (LFNST) is too expensive
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+#if JVET_O0050_LOCAL_DUAL_TREE
+          const bool skipLfnst = cu.isSepTree() ? ( isLuma( cu.chType ) ? ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA ) :
+#else
           const bool skipLfnst = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA ) :
+#endif
                               ( cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA ) ) :
                               ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA && cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA );
           if( lfnstIdx && skipLfnst )

@@ -1701,7 +1701,11 @@ void CABACReader::subblock_merge_flag( CodingUnit& cu )
     return;
   }
 
+#if JVET_O0220_METHOD1_SUBBLK_FLAG_PARSING
+  if ( !cu.cs->slice->isIntra() && (cu.slice->getMaxNumAffineMergeCand() > 0) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+#else
   if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getUseAffine() || cu.cs->sps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+#endif
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__AFFINE_FLAG );
 
@@ -3208,16 +3212,20 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
   bool sigGroup = cctx.isLastSubSet() && cctx.noneSigGroup();
   if( !sigGroup )
   {
+#if !JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT
     if( cctx.isContextCoded() )
     {
+#endif
       sigGroup = m_BinDecoder.decodeBin( cctx.sigGroupCtxId( true ) );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sigGroup() bin=%d ctx=%d\n", sigGroup, cctx.sigGroupCtxId() );
+#if !JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT
     }
     else
     {
       sigGroup = m_BinDecoder.decodeBinEP( );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sigGroup() EPbin=%d\n", sigGroup );
     }
+#endif
   }
   if( sigGroup )
   {

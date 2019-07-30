@@ -92,6 +92,9 @@ protected:
   void xDecodeInterTU     ( TransformUnit&   tu, const ComponentID compID );
 
   void xDeriveCUMV        ( CodingUnit&      cu );
+#if JVET_O0119_BASE_PALETTE_444
+  void xReconPLT		  ( CodingUnit &cu, ComponentID compBegin, uint32_t NumComp);
+#endif
   PelStorage        *m_tmpStorageLCU;
 private:
   TrQuant*          m_pcTrQuant;

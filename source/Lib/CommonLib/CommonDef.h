@@ -469,6 +469,14 @@ static const int CSCALE_FP_PREC =                                11;
 static const int  NEIG_NUM_LOG  =                                 6;
 static const int  NEIG_NUM =                      1 << NEIG_NUM_LOG;
 #endif
+#if JVET_O0119_BASE_PALETTE_444
+static const int MAXPLTPREDSIZE = 63;
+static const int MAXPLTSIZE = 31;
+static const int PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE = 4;
+static const int PLT_RUN_MSB_IDX_CTX_T1 = 1;
+static const int PLT_RUN_MSB_IDX_CTX_T2 = 3;
+static const int PLT_FAST_RATIO = 100;
+#endif
 #if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
 static const int  EPBIN_WEIGHT_FACTOR =                           4;
 #endif

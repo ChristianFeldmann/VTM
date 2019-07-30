@@ -153,6 +153,10 @@ public:
   bool estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm, const double bestCostSoFar  = MAX_DOUBLE, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false );
   void estIntraPredChromaQT       ( CodingUnit &cu, Partitioner& pm, const double maxCostAllowed = MAX_DOUBLE );
   void IPCMSearch                 (CodingStructure &cs, Partitioner& partitioner);
+#if JVET_O0119_BASE_PALETTE_444
+  void PLTSearch				  ( CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp);
+  void deriveRunAndCalcBits		  ( CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp, PLTScanMode pltScanMode, uint64_t& uiBits);
+#endif
   uint64_t xFracModeBitsIntra     (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
 
 protected:
@@ -189,6 +193,13 @@ protected:
   void reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double thresholdHadCostConv);
 
   double m_bestCostNonMip;
+#if JVET_O0119_BASE_PALETTE_444
+  void   deriveRun(CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp);
+  double getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t strPos, PLTRunMode PaletteRunMode, uint64_t* indexBits, uint64_t* runBits, ComponentID compBegin);
+  void       derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp);
+  void       calcPixelPred(CodingStructure& cs, Partitioner& partitioner, uint32_t uiY, uint32_t uiX, ComponentID compBegin, uint32_t NumComp);
+  void       preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t NumComp);
+#endif
 };// END CLASS DEFINITION EncSearch
 
 //! \}

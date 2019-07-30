@@ -197,6 +197,11 @@ public:
 
   void addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS>& lut, const MotionInfo &mi);
 
+#if JVET_O0119_BASE_PALETTE_444
+  PLTBuf prevPLT;
+  void resetPrevPLT(PLTBuf& prevPLT);
+  void reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NUM_COMPONENT], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t NumComp, bool jointPLT);
+#endif
 private:
 
   // needed for TU encoding
@@ -224,7 +229,10 @@ private:
 
   TCoeff *m_coeffs [ MAX_NUM_COMPONENT ];
   Pel    *m_pcmbuf [ MAX_NUM_COMPONENT ];
-
+#if JVET_O0119_BASE_PALETTE_444
+  bool   *m_runType  [MAX_NUM_COMPONENT];
+  Pel    *m_runLength[MAX_NUM_COMPONENT];
+#endif
   int     m_offsets[ MAX_NUM_COMPONENT ];
 
   MotionInfo *m_motionBuf;

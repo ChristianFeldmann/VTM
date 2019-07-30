@@ -863,6 +863,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #endif
   }
   WRITE_FLAG( pcSPS->getUseGBi() ? 1 : 0,                                                      "gbi_flag" );
+#if JVET_O0119_BASE_PALETTE_444
+  if (pcSPS->getChromaFormatIdc() == CHROMA_444)
+  {
+	  WRITE_FLAG(pcSPS->getPLTMode() ? 1 : 0, "plt_flag");
+  }
+#endif
   WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0,                                                      "ibc_flag");
 
   // KJS: sps_ciip_enabled_flag

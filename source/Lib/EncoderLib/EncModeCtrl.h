@@ -64,6 +64,9 @@ enum EncTestModeType
   ETM_MERGE_TRIANGLE,
   ETM_INTRA,
   ETM_IPCM,
+#if JVET_O0119_BASE_PALETTE_444
+  ETM_PALETTE,  
+#endif
   ETM_SPLIT_QT,
   ETM_SPLIT_BT_H,
   ETM_SPLIT_BT_V,
@@ -465,6 +468,10 @@ private:
   BestEncodingInfo ***m_bestEncInfo[MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
   TCoeff             *m_pCoeff;
   Pel                *m_pPcmBuf;
+#if JVET_O0119_BASE_PALETTE_444
+  bool               *m_runType;
+  Pel                *m_runLength;
+#endif
   CodingStructure     m_dummyCS;
   XUCache             m_dummyCache;
 #if ENABLE_SPLIT_PARALLELISM

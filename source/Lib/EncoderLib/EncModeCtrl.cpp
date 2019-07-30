@@ -768,13 +768,25 @@ void BestEncInfoCache::init( const Slice &slice )
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
   m_pCoeff  = new TCoeff[numCoeff*MAX_NUM_TUS];
   m_pPcmBuf = new Pel   [numCoeff*MAX_NUM_TUS];
+#if JVET_O0119_BASE_PALETTE_444
+  m_runType   = new bool[numCoeff*MAX_NUM_TUS];
+  m_runLength = new Pel [numCoeff*MAX_NUM_TUS];
+#endif
 #else
   m_pCoeff  = new TCoeff[numCoeff];
   m_pPcmBuf = new Pel   [numCoeff];
+#if JVET_O0119_BASE_PALETTE_444
+  m_runType   = new bool[numCoeff];
+  m_runLength = new Pel [numCoeff];
+#endif
 #endif
 
   TCoeff *coeffPtr = m_pCoeff;
   Pel    *pcmPtr   = m_pPcmBuf;
+#if JVET_O0119_BASE_PALETTE_444
+  bool   *runTypePtr   = m_runType;
+  Pel    *runLengthPtr = m_runLength;
+#endif
 
   m_dummyCS.pcv = m_slice_bencinf->getPPS()->pcv;
 
@@ -790,6 +802,10 @@ void BestEncInfoCache::init( const Slice &slice )
           {
             TCoeff *coeff[MAX_NUM_TBLOCKS] = { 0, };
             Pel    *pcmbf[MAX_NUM_TBLOCKS] = { 0, };
+#if JVET_O0119_BASE_PALETTE_444
+			bool   *runType[MAX_NUM_TBLOCKS]   = { 0, };
+			Pel    *runLength[MAX_NUM_TBLOCKS] = { 0, };
+#endif
 
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
             for( int i = 0; i < MAX_NUM_TUS; i++ )
@@ -801,10 +817,18 @@ void BestEncInfoCache::init( const Slice &slice )
               {
                 coeff[i] = coeffPtr; coeffPtr += area.blocks[i].area();
                 pcmbf[i] = pcmPtr;   pcmPtr += area.blocks[i].area();
-              }
+#if JVET_O0119_BASE_PALETTE_444
+				runType[i]   = runTypePtr;	 runTypePtr += area.blocks[i].area();
+				runLength[i] = runLengthPtr; runLengthPtr += area.blocks[i].area();
+#endif
+			  }
 
               tu.cs = &m_dummyCS;
+#if JVET_O0119_BASE_PALETTE_444
+			  tu.init(coeff, pcmbf, runLength, runType);
+#else
               tu.init(coeff, pcmbf);
+#endif
             }
 #else
             const UnitArea &area = m_bestEncInfo[x][y][wIdx][hIdx]->tu;
@@ -813,10 +837,18 @@ void BestEncInfoCache::init( const Slice &slice )
             {
               coeff[i] = coeffPtr; coeffPtr += area.blocks[i].area();
               pcmbf[i] =   pcmPtr;   pcmPtr += area.blocks[i].area();
-            }
+#if JVET_O0119_BASE_PALETTE_444
+			  runType[i] = runTypePtr;     runTypePtr += area.blocks[i].area();
+			  runLength[i] = runLengthPtr; runLengthPtr += area.blocks[i].area();
+#endif
+			}
 
             m_bestEncInfo[x][y][wIdx][hIdx]->tu.cs = &m_dummyCS;
+#if JVET_O0119_BASE_PALETTE_444
+			m_bestEncInfo[x][y][wIdx][hIdx]->tu.init(coeff, pcmbf, runLength, runType);
+#else
             m_bestEncInfo[x][y][wIdx][hIdx]->tu.init( coeff, pcmbf );
+#endif
 #endif
           }
         }
@@ -1083,7 +1115,9 @@ void EncModeCtrlMTnoRQT::initCTUEncoding( const Slice &slice )
   }
 }
 
-
+#if JVET_O0119_BASE_PALETTE_444
+extern bool doPlt;
+#endif
 void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStructure& cs )
 {
   // Min/max depth
@@ -1311,8 +1345,20 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 #endif
     // add intra modes
     m_ComprCUCtxList.back().testModes.push_back( { ETM_IPCM,  ETO_STANDARD, qp, lossless } );
-    m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp, lossless } );
-    // add ibc mode to intra path
+#if JVET_O0119_BASE_PALETTE_444
+	if (cs.slice->getSPS()->getPLTMode() && cs.slice->isIRAP() && doPlt)
+	{
+		m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE, ETO_STANDARD, qp, lossless });
+	}
+#endif
+	m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp, lossless } );
+#if JVET_O0119_BASE_PALETTE_444
+	if (cs.slice->getSPS()->getPLTMode() && !cs.slice->isIRAP() && doPlt)
+	{
+		m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE,  ETO_STANDARD, qp, lossless });
+	}
+#endif	
+	// add ibc mode to intra path
     if (cs.sps->getIBCFlag() && checkIbc)
     {
       m_ComprCUCtxList.back().testModes.push_back({ ETM_IBC,         ETO_STANDARD,  qp, lossless });
@@ -1526,9 +1572,37 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         }
       }
     }
-
+#if JVET_O0119_BASE_PALETTE_444
+	if (bestMode.type == ETM_PALETTE && !slice.isIRAP()) // inter slice
+	{
+		return false;
+	}
+#endif
     return true;
   }
+#if JVET_O0119_BASE_PALETTE_444
+  else if (encTestmode.type == ETM_PALETTE)
+  {
+	  if (partitioner.currArea().lumaSize().width > 64 || partitioner.currArea().lumaSize().height > 64)
+	  {
+		  return false;
+	  }
+	  const Area curr_cu = CS::getArea(cs, cs.area, partitioner.chType).blocks[getFirstComponentOfChannel(partitioner.chType)];
+	  try
+	  {
+		  double stored_cost = slice.m_mapPltCost.at(curr_cu.pos()).at(curr_cu.size());
+		  if (bestMode.type != ETM_INVALID && stored_cost > cuECtx.bestCS->cost)
+		  {
+			  return false;
+		  }
+	  }
+	  catch (const std::out_of_range &)
+	  {
+		  // do nothing if no stored cost value was found.
+	  }
+	  return true;
+  }
+#endif
   else if( encTestmode.type == ETM_IPCM )
   {
     if( getFastDeltaQp() )

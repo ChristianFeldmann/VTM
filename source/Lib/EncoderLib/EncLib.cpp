@@ -338,7 +338,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     m_cInterSearch[jId].setTempBuffers( m_cIntraSearch[jId].getSplitCSBuf(), m_cIntraSearch[jId].getFullCSBuf(), m_cIntraSearch[jId].getSaveCSBuf() );
   }
 #else  // ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
-  m_cCuEncoder.   init( this, sps0 );
+  m_cCuEncoder.   init( this, sps0 
+#if JVET_O0119_BASE_PALETTE_444
+	  , &m_cReshaper
+#endif
+  );
 
   // initialize transform & quantization class
   m_cTrQuant.init( nullptr,
@@ -939,7 +943,9 @@ void EncLib::xInitSPS(SPS &sps)
 #endif
   sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
   sps.setUseDMVR                            ( m_DMVR );
-
+#if JVET_O0119_BASE_PALETTE_444
+  sps.setPLTMode							( m_PLTMode);
+#endif
   sps.setIBCFlag                            ( m_IBCMode);
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.    
+
 #define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
 
 #define JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE        1
@@ -552,7 +554,12 @@ enum PredMode
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
   MODE_IBC                   = 2,     ///< ibc-prediction mode
+#if JVET_O0119_BASE_PALETTE_444
+  MODE_PLT = 3,     ///< plt-prediction mode
+  NUMBER_OF_PREDICTION_MODES = 4,
+#else
   NUMBER_OF_PREDICTION_MODES = 3,
+#endif
 };
 
 /// reference list index
@@ -678,6 +685,10 @@ enum MESearchMethod
 enum CoeffScanType
 {
   SCAN_DIAG = 0,        ///< up-right diagonal scan
+#if JVET_O0119_BASE_PALETTE_444
+  SCAN_TRAV_HOR = 1,
+  SCAN_TRAV_VER = 2,
+#endif
   SCAN_NUMBER_OF_TYPES
 };
 
@@ -999,6 +1010,110 @@ struct BitDepths
   int recon[MAX_NUM_CHANNEL_TYPE]; ///< the bit depth as indicated in the SPS
 };
 
+#if JVET_O0119_BASE_PALETTE_444
+#define PLT_ENCBITDEPTH  8
+enum PLTRunMode
+{
+	PLT_RUN_INDEX = 0,
+	PLT_RUN_COPY = 1,
+	NUM_PLT_RUN = 2
+};
+enum PLTScanMode
+{
+	PLT_SCAN_HORTRAV = 0,
+	PLT_SCAN_VERTRAV = 1,
+	NUM_PLT_SCAN = 2
+};
+class SortingElement
+{
+public:
+	uint32_t uiCnt;
+	int uiData[3];
+	int uiShift, uiLastCnt, uiSumData[3];
+	inline bool operator<(const SortingElement &other) const
+	{
+		return uiCnt > other.uiCnt;
+	}
+	SortingElement() {
+		uiCnt = uiShift = uiLastCnt = 0;
+		uiData[0] = uiData[1] = uiData[2] = 0;
+		uiSumData[0] = uiSumData[1] = uiSumData[2] = 0;
+	}
+	void resetAll(ComponentID compBegin, uint32_t NumComp) {
+		uiShift = uiLastCnt = 0;
+		for (int ch = compBegin; ch < (compBegin + NumComp); ch++)
+		{
+			uiData[ch] = 0;
+			uiSumData[ch] = 0;
+		}
+	}
+	void setAll(uint32_t* ui, ComponentID compBegin, uint32_t NumComp) {
+		for (int ch = compBegin; ch < (compBegin + NumComp); ch++)
+		{
+			uiData[ch] = ui[ch];
+		}
+	}
+	bool almostEqualData(SortingElement sElement, int iErrorLimit, const BitDepths& bitDepths, ComponentID compBegin, uint32_t NumComp)
+	{
+		bool bAlmostEqual = true;
+		for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+		{		
+			ChannelType chType = (comp > 0) ? CHANNEL_TYPE_CHROMA : CHANNEL_TYPE_LUMA;
+			if ((std::abs(uiData[comp] - sElement.uiData[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH)) > iErrorLimit)
+			{
+				bAlmostEqual = false;
+				break;
+			}
+		}
+		return bAlmostEqual;
+	}
+	uint32_t getSAD(SortingElement sElement, const BitDepths& bitDepths, ComponentID compBegin, uint32_t NumComp)
+	{
+		uint32_t uiSAD = 0;
+		for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+		{		
+			ChannelType chType = (comp > 0) ? CHANNEL_TYPE_CHROMA : CHANNEL_TYPE_LUMA;
+			uiSAD += (std::abs(uiData[comp] - sElement.uiData[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH));
+		}
+		return uiSAD;
+	}
+	void copyDataFrom(SortingElement sElement, ComponentID compBegin, uint32_t NumComp) {
+		for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+		{
+			uiData[comp] = sElement.uiData[comp];
+			uiSumData[comp] = uiData[comp];
+		}
+		uiShift = 0; uiLastCnt = 1;
+	}
+	void copyAllFrom(SortingElement sElement, ComponentID compBegin, uint32_t NumComp) {
+		copyDataFrom(sElement, compBegin, NumComp);
+		uiCnt = sElement.uiCnt;
+		for (int comp = compBegin; comp < (compBegin + NumComp); comp++)
+		{
+			uiSumData[comp] = sElement.uiSumData[comp];
+		}
+		uiLastCnt = sElement.uiLastCnt; uiShift = sElement.uiShift;
+	}
+	void addElement(const SortingElement& sElement, ComponentID compBegin, uint32_t NumComp)
+	{
+		uiCnt++;
+		for (int i = compBegin; i<(compBegin + NumComp); i++)
+		{
+			uiSumData[i] += sElement.uiData[i];
+		}
+		if (uiCnt>1 && uiCnt == 2 * uiLastCnt)
+		{
+			uint32_t uiRnd = 1 << uiShift;
+			uiShift++;
+			for (int i = compBegin; i<(compBegin + NumComp); i++)
+			{
+				uiData[i] = (uiSumData[i] + uiRnd) >> uiShift;
+			}
+			uiLastCnt = uiCnt;
+		}
+	}
+};
+#endif
 /// parameters for deblocking filter
 struct LFCUParam
 {

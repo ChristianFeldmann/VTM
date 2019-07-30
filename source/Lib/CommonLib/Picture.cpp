@@ -932,6 +932,9 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcs
   }
 }
 
+#if JVET_O0119_BASE_PALETTE_444
+bool doPlt = true;
+#endif
 void Picture::allocateNewSlice()
 {
   slices.push_back(new Slice);

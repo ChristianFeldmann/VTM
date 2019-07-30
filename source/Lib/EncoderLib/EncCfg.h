@@ -299,6 +299,9 @@ protected:
   bool      m_MMVD;
   int       m_MmvdDisNum;
   bool      m_RdpcmMode;
+#if JVET_O0119_BASE_PALETTE_444
+  unsigned  m_PLTMode;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -870,6 +873,10 @@ public:
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
   void      setRDPCM                     ( bool b )       { m_RdpcmMode = b; }
   bool      getRDPCM                     ()         const { return m_RdpcmMode; }
+#if JVET_O0119_BASE_PALETTE_444
+  void      setPLTMode					 ( unsigned n)	  { m_PLTMode = n; }
+  unsigned  getPLTMode					 ()		    const { return m_PLTMode; }
+#endif
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }
   void      setIBCLocalSearchRangeX         (unsigned n)     { m_IBCLocalSearchRangeX = n; }

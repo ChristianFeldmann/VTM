@@ -248,6 +248,13 @@ public:
   static const CtxSet   MTSIndex;
   static const CtxSet   TransquantBypassFlag;
   static const CtxSet   LFNSTIdx;
+#if JVET_O0119_BASE_PALETTE_444
+  static const CtxSet   PLTFlag;
+  static const CtxSet   RotationFlag;
+  static const CtxSet   RunTypeFlag;
+  static const CtxSet   IdxRunModel;    
+  static const CtxSet   CopyRunModel;    
+#endif
   static const CtxSet   RdpcmFlag;
   static const CtxSet   RdpcmDir;
   static const CtxSet   SbtFlag;
@@ -274,6 +281,9 @@ public:
   // NOTE: The contained CtxSet's should directly follow each other in the initalization list;
   //       otherwise, you will copy more elements than you want !!!
   static const CtxSet   Sao;
+#if JVET_O0119_BASE_PALETTE_444
+  static const CtxSet   Palette;
+#endif
 
 public:
   static const std::vector<uint8_t>&  getInitTable( unsigned initId );

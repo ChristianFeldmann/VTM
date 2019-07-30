@@ -679,6 +679,48 @@ const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
   {   8,   8, },
 } );
 
+#if JVET_O0119_BASE_PALETTE_444
+const CtxSet ContextSetCfg::PLTFlag = ContextSetCfg::addCtxSet
+({
+	{ 146 },
+	{ 146 },
+	{ 147 },
+	{ 1 }
+});
+
+const CtxSet ContextSetCfg::RotationFlag = ContextSetCfg::addCtxSet
+({
+	{ 153 },
+	{ 138 },
+	{ 168 },
+	{ 5 }
+});
+
+const CtxSet ContextSetCfg::RunTypeFlag = ContextSetCfg::addCtxSet
+({
+	{ 167 },
+	{ 167 },
+	{ 167 },
+	{ 8 }
+});
+
+const CtxSet ContextSetCfg::IdxRunModel = ContextSetCfg::addCtxSet
+({
+	{ 157, 169, 138, 170, 155 },
+	{ 186, 169, 166, 186, 185 },
+	{ 155, 168, 167, 155, 154 },
+	{ 5,   6,   5,   9,  10 }
+});
+
+const CtxSet ContextSetCfg::CopyRunModel = ContextSetCfg::addCtxSet
+({
+	{ 187, 172, 156 },
+	{ 187, 187, 185 },
+	{ 201, 171, 155 },
+	{ 0,   5,   5 }
+});
+#endif
+
 const CtxSet ContextSetCfg::RdpcmFlag = ContextSetCfg::addCtxSet
 ({
   { CNU, CNU, },
@@ -905,6 +947,9 @@ const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_Ini
 
 
 // combined sets
+#if JVET_O0119_BASE_PALETTE_444 
+const CtxSet ContextSetCfg::Palette = { ContextSetCfg::RotationFlag, ContextSetCfg::RunTypeFlag, ContextSetCfg::IdxRunModel, ContextSetCfg::CopyRunModel };
+#endif
 const CtxSet ContextSetCfg::Sao = { ContextSetCfg::SaoMergeFlag, ContextSetCfg::SaoTypeIdx };
 
 const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::AlfUseLatestFilt, ContextSetCfg::AlfUseTemporalFilt };

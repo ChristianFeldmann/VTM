@@ -59,6 +59,7 @@ void         destroyROM();
 // Data structure related table & variable
 // ====================================================================================================================
 
+
 // flexible conversion from relative to absolute index
 struct ScanElement
 {
@@ -230,6 +231,14 @@ extern bool g_mctsDecCheckEnabled;
 class  Mv;
 extern Mv   g_reusedUniMVs[32][32][8][8][2][33];
 extern bool g_isReusedUniMVsFilled[32][32][8][8];
+#endif
+
+#if JVET_O0119_BASE_PALETTE_444
+extern const uint8_t g_uhPLTQuant[52];
+extern uint8_t g_ucRunTopLut[5];
+extern uint8_t g_ucRunLeftLut[5];
+extern uint8_t g_ucMsbP1Idx[256];
+extern uint8_t g_getMsbP1Idx(uint32_t uiVal);
 #endif
 
 #endif  //__TCOMROM__

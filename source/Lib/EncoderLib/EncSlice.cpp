@@ -329,6 +329,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 {
   double dQP;
   double dLambda;
+#if JVET_O0119_BASE_PALETTE_444
+  pcPic->cs->resetPrevPLT(pcPic->cs->prevPLT);
+#endif
 
   rpcSlice = pcPic->slices[0];
   rpcSlice->setSliceBits(0);
@@ -1284,6 +1287,9 @@ void EncSlice::calCostSliceI(Picture* pcPic) // TODO: this only analyses the fir
 
 /** \param pcPic   picture class
  */
+#if JVET_O0119_BASE_PALETTE_444
+extern bool doPlt;
+#endif
 void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP )
 {
   // if bCompressEntireSlice is true, then the entire slice (not slice segment) is compressed,
@@ -1385,6 +1391,14 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   }
 #endif // ENABLE_QPA
 
+#if JVET_O0119_BASE_PALETTE_444
+  bool bCheckPLTRatio = m_pcCfg->getIntraPeriod() != 1 && pcSlice->isIRAP();
+  if (bCheckPLTRatio)
+  {
+	  doPlt = true;
+  }
+#endif
+
 #if ENABLE_WPP_PARALLELISM
   bool bUseThreads = m_pcCfg->getNumWppThreads() > 1;
   if( bUseThreads )
@@ -1419,8 +1433,32 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   m_pcInterSearch->resetUniMvList();
 #endif 
   encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
+#if JVET_O0119_BASE_PALETTE_444
+  if (bCheckPLTRatio)
+  {
+	  int total_area = 0;
+	  int plt_area = 0;
+	  for (auto apu : pcPic->cs->pus)
+	  {
+		  for (int i = 0; i < MAX_NUM_TBLOCKS; ++i)
+		  {
+			  int pu_area = apu->blocks[i].width * apu->blocks[i].height;
+			  if (apu->blocks[i].width > 0 && apu->blocks[i].height > 0)
+			  {
+				  total_area += pu_area;
+				  if (CU::isPLT(*apu->cu) || CU::isIBC(*apu->cu))
+				  {
+					  plt_area += pu_area;
+				  }
+				  break;
+			  }
 
-
+		  }
+	  }
+	  if (plt_area * PLT_FAST_RATIO < total_area)
+		  doPlt = false;
+  }
+#endif
 }
 
 void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr )
@@ -1597,12 +1635,18 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     if (ctuRsAddr == firstCtuRsAddrOfTile)
     {
       pCABACWriter->initCtxModels( *pcSlice );
+#if JVET_O0119_BASE_PALETTE_444
+	  cs.resetPrevPLT(cs.prevPLT);
+#endif
       prevQP[0] = prevQP[1] = pcSlice->getSliceQp();
     }
     else if (ctuXPosInCtus == tileXPosInCtus && pEncLib->getEntropyCodingSyncEnabledFlag())
     {
       // reset and then update contexts to the state at the end of the top-right CTU (if within current slice and tile).
       pCABACWriter->initCtxModels( *pcSlice );
+#if JVET_O0119_BASE_PALETTE_444
+	  cs.resetPrevPLT(cs.prevPLT);
+#endif
       if( cs.getCURestricted( pos.offset(0, -1), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
       {
         // Top-right is available, we use it.
@@ -1887,6 +1931,9 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       if (ctuTsAddr != startCtuTsAddr) // if it is the first CTU, then the entropy coder has already been reset
       {
         m_CABACWriter->initCtxModels( *pcSlice );
+#if JVET_O0119_BASE_PALETTE_444
+		cs.resetPrevPLT(cs.prevPLT);
+#endif
       }
     }
     else if (ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled)
@@ -1895,6 +1942,9 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       if (ctuTsAddr != startCtuTsAddr) // if it is the first CTU, then the entropy coder has already been reset
       {
         m_CABACWriter->initCtxModels( *pcSlice );
+#if	JVET_O0119_BASE_PALETTE_444		
+		cs.resetPrevPLT(cs.prevPLT);
+#endif
       }
       if( cs.getCURestricted( pos.offset( 0, -1 ), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
       {

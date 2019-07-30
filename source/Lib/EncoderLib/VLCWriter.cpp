@@ -876,6 +876,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if ( pcSPS->getUseAffine() )
   {
     WRITE_FLAG( pcSPS->getUseAffineType() ? 1 : 0,                                             "affine_type_flag" );
+#if JVET_O0070_PROF
+    WRITE_FLAG( pcSPS->getUsePROF() ? 1 : 0,                                                   "sps_prof_enabled_flag" );
+#endif
 #if JVET_O0438_SPS_AFFINE_AMVR_FLAG
     WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                                     "sps_affine_amvr_enabled_flag" );
 #endif

@@ -2290,6 +2290,13 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
   }
 
   {
+#if JVET_O0070_PROF
+    if (pu.cu->cs->bestParent != nullptr && pu.cu->cs->bestParent->getCU(CHANNEL_TYPE_LUMA) != nullptr && pu.cu->cs->bestParent->getCU(CHANNEL_TYPE_LUMA)->affine == false)
+    {
+      m_skipPROF = true;
+    }
+    m_encOnly = true;
+#endif
     // motion estimation only evaluates luma component
     m_maxCompIDToPred = MAX_NUM_COMPONENT;
 //    m_maxCompIDToPred = COMPONENT_Y;
@@ -3037,6 +3044,10 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
       PU::spanMotionInfo( pu, mergeCtx );
     }
 
+#if JVET_O0070_PROF
+    m_skipPROF = false;
+    m_encOnly = false;
+#endif
     //  MC
     PelUnitBuf predBuf = pu.cs->getPredBuf(pu);
     if ( gbiIdx == GBI_DEFAULT || !m_affineMotion.affine4ParaAvail || !m_affineMotion.affine6ParaAvail )
@@ -3267,6 +3278,9 @@ Distortion InterSearch::xGetAffineTemplateCost( PredictionUnit& pu, PelUnitBuf& 
   const bool bi = pu.cu->slice->testWeightPred() && pu.cu->slice->getSliceType()==P_SLICE;
   Mv mv[3];
   memcpy(mv, acMvCand, sizeof(mv));
+#if JVET_O0070_PROF
+  m_iRefListIdx = eRefPicList;
+#endif
   xPredAffineBlk(COMPONENT_Y, pu, picRef, mv, predBuf, bi, pu.cu->slice->clpRng(COMPONENT_Y));
   if( bi )
   {
@@ -4896,6 +4910,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   {
 	  tryBipred = 1;
     pu.interDir = 3;
+#if JVET_O0070_PROF
+    m_isBi = true;
+#endif
     // Set as best list0 and list1
     iRefIdxBi[0] = iRefIdx[0];
     iRefIdxBi[1] = iRefIdx[1];
@@ -5096,6 +5113,9 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
       }
     } // for loop-iter
     }
+#if JVET_O0070_PROF
+    m_isBi = false;
+#endif
   } // if (B_SLICE)
 
   pu.mv    [REF_PIC_LIST_0] = Mv();
@@ -5369,6 +5389,9 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
 
   PelUnitBuf  origBufTmp = m_tmpStorageLCU.getBuf( UnitAreaRelative( *pu.cu, pu ) );
   enum DFunc distFunc = (pu.cu->transQuantBypass || pu.cs->slice->getDisableSATDForRD()) ? DF_SAD : DF_HAD;
+#if JVET_O0070_PROF
+  m_iRefListIdx = eRefPicList;
+#endif
 
   // if Bi, set to ( 2 * Org - ListX )
   if ( bBi )

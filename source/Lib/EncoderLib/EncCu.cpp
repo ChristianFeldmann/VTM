@@ -1228,7 +1228,13 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       bestSubCS->sharedBndPos.y = (m_shareState == SHARING) ? m_shareBndPosY : tempSubCS->area.Y().lumaPos().y;
       bestSubCS->sharedBndSize.width = (m_shareState == SHARING) ? m_shareBndSizeW : tempSubCS->area.lwidth();
       bestSubCS->sharedBndSize.height = (m_shareState == SHARING) ? m_shareBndSizeH : tempSubCS->area.lheight();
+#if JVET_O0070_PROF
+      tempSubCS->bestParent = bestSubCS->bestParent = bestCS;
+#endif
       xCompressCU( tempSubCS, bestSubCS, partitioner );
+#if JVET_O0070_PROF
+      tempSubCS->bestParent = bestSubCS->bestParent = nullptr;
+#endif
 
       if( bestSubCS->cost == MAX_DOUBLE )
       {

@@ -108,6 +108,15 @@ protected:
                              Mv(-2, 2), Mv(-1, 2), Mv(0, 2), Mv(1, 2), Mv(2, 2) };
   uint64_t m_SADsArray[((2 * DMVR_NUM_ITERATION) + 1) * ((2 * DMVR_NUM_ITERATION) + 1)];
 
+#if JVET_O0070_PROF
+  Pel                  m_gradBuf[2][2][(MAX_CU_SIZE + 2) * (MAX_CU_SIZE + 2)];
+  int                  dMvBuf[2][16 * 2];
+  bool                 m_applyPROF[2];
+  bool                 m_skipPROF;
+  bool                 m_encOnly;
+  bool                 m_isBi;
+#endif
+
   Pel*                 m_gradX0;
   Pel*                 m_gradY0;
   Pel*                 m_gradX1;
@@ -144,6 +153,9 @@ protected:
   void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied, PelUnitBuf* yuvDstTmp = NULL );
 #else
   void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied );
+#endif
+#if JVET_O0070_PROF
+  void xApplyBiPROF             (const PredictionUnit& pu, const CPelBuf& pcYuvSrc0, const CPelBuf& pcYuvSrc1, PelBuf& pcYuvDst, const ClpRng& clpRng);
 #endif
   void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng );
 

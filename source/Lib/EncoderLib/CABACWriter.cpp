@@ -1584,7 +1584,11 @@ void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
     return;
   }
 
+#if JVET_O0220_METHOD1_SUBBLK_FLAG_PARSING
+  if ( !cu.cs->slice->isIntra() && (cu.slice->getMaxNumAffineMergeCand() > 0) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+#else
   if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getUseAffine() || cu.cs->sps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+#endif
   {
     unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
 #if JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG

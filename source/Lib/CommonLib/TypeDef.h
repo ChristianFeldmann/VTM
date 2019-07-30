@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0159_10BITTCTABLE_DEBLOCKING                1 // tc table for 10-bit video
+
 #define JVET_O0061_MV_THR_DEBLOCKING                      1 // a deblocking mv threshold of half pel
 
 #define JVET_O0046_DQ_SIGNALLING                          1 // JVET-O0046: Move delta-QP earlier for 64x64 VPDU processing, applied to CUs >64x64 only

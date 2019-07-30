@@ -1090,15 +1090,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setBitDepth(CHANNEL_TYPE_LUMA, 8 + uiCode);
 
   pcSPS->setQpBDOffset(CHANNEL_TYPE_LUMA, (int) (6*uiCode) );
-#if JVET_O0919_TS_MIN_QP
-  READ_UVLC(     uiCode, "min_qp_luma_minus4" );
-  pcSPS->setMinQpMinus4(CHANNEL_TYPE_LUMA, uiCode);
-#endif
 
   READ_UVLC( uiCode,    "bit_depth_chroma_minus8" );
   CHECK(uiCode > 8, "Invalid chroma bit depth signalled");
   pcSPS->setBitDepth(CHANNEL_TYPE_CHROMA, 8 + uiCode);
   pcSPS->setQpBDOffset(CHANNEL_TYPE_CHROMA,  (int) (6*uiCode) );
+
+#if JVET_O0919_TS_MIN_QP
+  READ_UVLC(     uiCode, "min_qp_prime_ts_minus4" );
+  pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA, uiCode);
+#endif
 
   READ_UVLC( uiCode,    "log2_max_pic_order_cnt_lsb_minus4" );   pcSPS->setBitsForPOC( 4 + uiCode );
   CHECK(uiCode > 12, "Invalid code");

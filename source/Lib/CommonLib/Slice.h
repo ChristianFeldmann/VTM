@@ -933,8 +933,8 @@ public:
   int                     getQpBDOffset(ChannelType type) const                                           { return m_qpBDOffset[type];                                           }
   void                    setQpBDOffset(ChannelType type, int i)                                          { m_qpBDOffset[type] = i;                                              }
 #if JVET_O0919_TS_MIN_QP
-  int                     getMinQpMinus4(ChannelType type) const                                         { return m_minQpMinus4[type];                                           }
-  void                    setMinQpMinus4(ChannelType type, int i)                                        { m_minQpMinus4[type] = i;                                              }
+  int                     getMinQpPrimeTsMinus4(ChannelType type) const                                         { return m_minQpMinus4[type];                                           }
+  void                    setMinQpPrimeTsMinus4(ChannelType type, int i)                                        { m_minQpMinus4[type] = i;                                              }
 #endif
 
   void                    setSAOEnabledFlag(bool bVal)                                                    { m_saoEnabledFlag = bVal;                                                    }

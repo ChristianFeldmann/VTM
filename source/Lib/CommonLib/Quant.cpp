@@ -66,7 +66,7 @@ QpParam::QpParam(const int           qpy,
                  const ChannelType   chType,
                  const int           qpBdOffset,
 #if JVET_O0919_TS_MIN_QP
-                 const int           minQpMinus4,
+                 const int           minQpPrimeTsMinus4,
 #endif
                  const int           chromaQPOffset,
                  const ChromaFormat  chFmt,
@@ -103,7 +103,7 @@ QpParam::QpParam(const int           qpy,
 
   if( isLuma( chType ) )
   {
-    baseQpTS = std::max(baseQpTS , 4 + minQpMinus4);
+    baseQpTS = std::max(baseQpTS , 4 + minQpPrimeTsMinus4);
   }
 
   Qps[1]  = baseQpTS;
@@ -147,7 +147,7 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
   int dqp = 0;
 
 #if JVET_O0919_TS_MIN_QP
-  *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, toChannelType(compID), tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getMinQpMinus4(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp);
+  *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, toChannelType(compID), tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getMinQpPrimeTsMinus4(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp);
 #else
   *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, toChannelType(compID), tu.cs->sps->getQpBDOffset(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp);
 #endif
@@ -422,8 +422,8 @@ void Quant::dequant(const TransformUnit &tu,
   const int  iTransformShift        = (bClipTransformShiftTo0 ? std::max<int>(0, originalTransformShift) : originalTransformShift) + (needSqrtAdjustment?-1:0);
 
 #if JVET_O0919_TS_MIN_QP
-  const int QP_per = cQP.per( tu.mtsIdx==MTS_SKIP && isLuma(compID) );
-  const int QP_rem = cQP.rem( tu.mtsIdx==MTS_SKIP && isLuma(compID) );
+  const int QP_per = cQP.per(isTransformSkip);
+  const int QP_rem = cQP.rem(isTransformSkip);
 #else
   const int QP_per = cQP.per;
   const int QP_rem = cQP.rem;

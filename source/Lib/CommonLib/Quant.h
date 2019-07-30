@@ -65,7 +65,11 @@ struct TrQuantParams
 };
 
 /// QP struct
+#if JVET_O0919_TS_MIN_QP
+class QpParam
+#else
 struct QpParam
+#endif
 {
 #if JVET_O0919_TS_MIN_QP
   int Qps[2];
@@ -83,7 +87,7 @@ private:
           const ChannelType   chType,
           const int           qpBdOffset,
 #if JVET_O0919_TS_MIN_QP
-          const int           qpBdOffsetInput,
+          const int           minQpPrimeTsMinus4,
 #endif
           const int           chromaQPOffset,
           const ChromaFormat  chFmt,

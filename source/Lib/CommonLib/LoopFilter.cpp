@@ -364,6 +364,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     }
   }
 
+#if !JVET_O0060_4x4_deblocking
   if (edgeDir == EDGE_HOR)
   {
     if (!((cu.block(COMPONENT_Y).y % 8) == 0))
@@ -374,7 +375,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     if (!((cu.block(COMPONENT_Y).x % 8) == 0))
       return;
   }
-
+#endif
 
   std::sort( edgeIdx.begin(), edgeIdx.end() );
   int prevEdgeIdx = -1;
@@ -472,8 +473,22 @@ void LoopFilter::xSetMaxFilterLengthPQFromTransformSizes( const DeblockEdgeDir e
 
           if ( comp == COMPONENT_Y )
           {
+#if JVET_O0060_4x4_deblocking
+            bool smallBlock = (sizePSide <= 4) || (sizeQSide <= 4);
+            if (smallBlock)
+            {
+              m_maxFilterLengthQ[cIdx][ctuXOff + x][ctuYOff] = 1;
+              m_maxFilterLengthP[cIdx][ctuXOff + x][ctuYOff] = 1;
+            }
+            else
+            {
+              m_maxFilterLengthQ[cIdx][ctuXOff + x][ctuYOff] = (sizeQSide >= 32) ? 7 : 3;
+              m_maxFilterLengthP[cIdx][ctuXOff + x][ctuYOff] = (sizePSide >= 32) ? 7 : 3;
+            }
+#else
             m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff] = ( sizeQSide >= 32 ) ? 7 : 3;
             m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff] = ( sizePSide >= 32 ) ? 7 : 3;
+#endif
           }
           else
           {
@@ -508,8 +523,22 @@ void LoopFilter::xSetMaxFilterLengthPQFromTransformSizes( const DeblockEdgeDir e
 
           if ( comp == COMPONENT_Y )
           {
+#if JVET_O0060_4x4_deblocking
+            bool smallBlock = (sizePSide <= 4) || (sizeQSide <= 4);
+            if (smallBlock)
+            {
+              m_maxFilterLengthQ[cIdx][ctuXOff][ctuYOff + y] = 1;
+              m_maxFilterLengthP[cIdx][ctuXOff][ctuYOff + y] = 1;
+            }
+            else
+            {
+              m_maxFilterLengthQ[cIdx][ctuXOff][ctuYOff + y] = (sizeQSide >= 32) ? 7 : 3;
+              m_maxFilterLengthP[cIdx][ctuXOff][ctuYOff + y] = (sizePSide >= 32) ? 7 : 3;
+            }
+#else
             m_maxFilterLengthQ[cIdx][ctuXOff][ctuYOff+y] = ( sizeQSide >= 32 ) ? 7 : 3;
             m_maxFilterLengthP[cIdx][ctuXOff][ctuYOff+y] = ( sizePSide >= 32 ) ? 7 : 3;
+#endif
           }
           else
           {
@@ -546,6 +575,13 @@ void LoopFilter::xSetMaxFilterLengthPQForCodingSubBlocks( const DeblockEdgeDir e
               m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = std::min<int>(m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y], 5);
             }
           }
+#if JVET_O0060_4x4_deblocking
+          else if (y > 0 && (m_transformEdge[cIdx][ctuXOff + x][ctuYOff + y - 4] || ((y + 4) >= areaPu.height) || m_transformEdge[cIdx][ctuXOff + x][ctuYOff + y + 4])) // adjacent to transform edge  +/- 4
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff + x][ctuYOff + y] = 1;
+            m_maxFilterLengthP[cIdx][ctuXOff + x][ctuYOff + y] = 1;
+          }
+#endif
           else if (y > 0 && ( m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y-8] || (( y + 8 ) >= areaPu.height) || m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y+8] )) // adjacent to transform edge on 8x8 grid
           {
             m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = 2;
@@ -573,6 +609,13 @@ void LoopFilter::xSetMaxFilterLengthPQForCodingSubBlocks( const DeblockEdgeDir e
               m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = std::min<int>(m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y], 5);
             }
           }
+#if JVET_O0060_4x4_deblocking
+          else if (x > 0 && (m_transformEdge[cIdx][ctuXOff + x - 4][ctuYOff + y] || ((x + 4) >= areaPu.width) || m_transformEdge[cIdx][ctuXOff + x + 4][ctuYOff + y])) // adjacent to transform edge +/- 4
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff + x][ctuYOff + y] = 1;
+            m_maxFilterLengthP[cIdx][ctuXOff + x][ctuYOff + y] = 1;
+          }
+#endif
           else if ( x > 0 && ( m_transformEdge[cIdx][ctuXOff+x-8][ctuYOff+y] || ( (x + 8) >= areaPu.width ) || m_transformEdge[cIdx][ctuXOff+x+8][ctuYOff+y] ) ) // adjacent to transform edge on 8x8 grid
           {
             m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = 2;
@@ -866,6 +909,17 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
     pos.x += xoffset;
     pos.y += yoffset;
 
+#if JVET_O0060_4x4_deblocking
+    // Deblock luma boundaries on 4x4 grid only
+    if (edgeDir == EDGE_HOR && (pos.y % 4) != 0)
+    {
+      continue;
+    }
+    if (edgeDir == EDGE_VER && (pos.x % 4) != 0)
+    {
+      continue;
+    }
+#else
     // Deblock luma boundaries on 8x8 grid only
     if ( edgeDir == EDGE_HOR && ( pos.y % 8 ) != 0 )
     {
@@ -875,7 +929,7 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
     {
       continue;
     }
-
+#endif
     uiBsAbsIdx = getRasterIdx( pos, pcv );
     uiBs = BsGet(m_aapucBS[edgeDir][uiBsAbsIdx], COMPONENT_Y);
 
@@ -1032,8 +1086,18 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
 
         if( d < iBeta )
         {
+#if JVET_O0060_4x4_deblocking
+          bool bFilterP = false;
+          bool bFilterQ = false;
+          if (maxFilterLengthP > 1 && maxFilterLengthQ > 1)
+          {
+            bFilterP = (dp < iSideThreshold);
+            bFilterQ = (dq < iSideThreshold);
+          }
+#else
           const bool bFilterP = (dp < iSideThreshold);
           const bool bFilterQ = (dq < iSideThreshold);
+#endif
           bool sw = false;
           if (maxFilterLengthP > 2 && maxFilterLengthQ > 2)
           {

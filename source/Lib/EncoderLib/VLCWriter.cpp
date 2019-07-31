@@ -829,7 +829,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
 #if MAX_TB_SIZE_SIGNALLING
 #if JVET_O0545_MAX_TB_SIGNALLING
-  WRITE_UVLC( pcSPS->getLog2MaxTbSize() - 5,                                 "sps_max_luma_transform_size_64_flag" );
+  WRITE_FLAG( (pcSPS->getLog2MaxTbSize() - 5) ? 1 : 0,                       "sps_max_luma_transform_size_64_flag" );
 #else
   // KJS: Not in syntax
   WRITE_UVLC( pcSPS->getLog2MaxTbSize() - 2,                                 "log2_max_luma_transform_block_size_minus2" );

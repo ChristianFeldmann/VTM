@@ -1222,7 +1222,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
 #if MAX_TB_SIZE_SIGNALLING
 #if JVET_O0545_MAX_TB_SIGNALLING
-  READ_UVLC( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( uiCode + 5 );
+  READ_FLAG( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( (uiCode ? 1 : 0) + 5 );
 #else
   // KJS: Not in syntax
   READ_UVLC( uiCode, "log2_max_luma_transform_block_size_minus2" ); pcSPS->setLog2MaxTbSize( uiCode + 2 );

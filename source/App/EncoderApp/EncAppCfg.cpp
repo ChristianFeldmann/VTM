@@ -715,17 +715,17 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   uint32_t lumaLevelToDeltaQPMode;
 #endif
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  //const int qpInVals[] = { 25, 33, 43 };
-  //const int qpOutVals[] = { 25, 32, 37 };
+  //const int qpInVals[] = { 25, 33, 43 };  // Without incorporating CQP offset of 1
+  //const int qpOutVals[] = { 25, 32, 37 }; // Without incorporating CQP offset of 1
   const int qpInVals[] = { 8, 25, 33, 43 };
   const int qpOutVals[] = { 8, 26, 33, 38 };
-  SMultiValueInput<int> cfg_qpInValCb(0, 63, 0, 64, qpInVals, sizeof(qpInVals)/sizeof(int));
-  SMultiValueInput<int> cfg_qpOutValCb(0, 63, 0, 64, qpOutVals, sizeof(qpOutVals) / sizeof(int)); 
+  SMultiValueInput<int> cfg_qpInValCb(-48, 63, 0, 112, qpInVals, sizeof(qpInVals)/sizeof(int));
+  SMultiValueInput<int> cfg_qpOutValCb(-48, 63, 0, 112, qpOutVals, sizeof(qpOutVals) / sizeof(int)); 
   const int zeroVector[] = { 0 };
-  SMultiValueInput<int> cfg_qpInValCr(0, 63, 0, 64, zeroVector, 1);
-  SMultiValueInput<int> cfg_qpOutValCr(0, 63, 0, 64, zeroVector, 1);
-  SMultiValueInput<int> cfg_qpInValCbCr(0, 63, 0, 64, zeroVector, 1);
-  SMultiValueInput<int> cfg_qpOutValCbCr(0, 63, 0, 64, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpInValCr(-48, 63, 0, 112, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpOutValCr(-48, 63, 0, 112, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpInValCbCr(-48, 63, 0, 112, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpOutValCbCr(-48, 63, 0, 112, zeroVector, 1);
 #endif
   const uint32_t defaultInputKneeCodes[3]  = { 600, 800, 900 };
   const uint32_t defaultOutputKneeCodes[3] = { 100, 250, 450 };
@@ -1943,10 +1943,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0].resize(cfg_qpInValCb.values.size());
   m_chromaQpMappingTableParams.m_deltaQpOutVal[0].resize(cfg_qpOutValCb.values.size());
   m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (int)cfg_qpOutValCb.values.size()-1;
+  int qpBdOffsetC = 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8);
   for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
   {
-    m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0][i] = (i == 0) ? cfg_qpInValCb.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpInValCb.values[i] - cfg_qpInValCb.values[i - 1] - 1;
-    m_chromaQpMappingTableParams.m_deltaQpOutVal[0][i] = (i == 0) ? cfg_qpOutValCb.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpOutValCb.values[i] - cfg_qpOutValCb.values[i - 1];
+    CHECK(cfg_qpInValCb.values[i] < -qpBdOffsetC || cfg_qpInValCb.values[i] > MAX_QP, "Some entries cfg_qpInValCb are out of valid range of -qpBdOffsetC to 63, inclusive.");
+    CHECK(cfg_qpOutValCb.values[i] < -qpBdOffsetC || cfg_qpOutValCb.values[i] > MAX_QP, "Some entries cfg_qpOutValCb are out of valid range of -qpBdOffsetC to 63, inclusive.");
+    m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0][i] = (i == 0) ? cfg_qpInValCb.values[i] + qpBdOffsetC : cfg_qpInValCb.values[i] - cfg_qpInValCb.values[i - 1] - 1;
+    m_chromaQpMappingTableParams.m_deltaQpOutVal[0][i] = (i == 0) ? cfg_qpOutValCb.values[i] + qpBdOffsetC : cfg_qpOutValCb.values[i] - cfg_qpOutValCb.values[i - 1];
   }
   if (!m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag)
   {
@@ -1955,16 +1958,20 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (int)cfg_qpOutValCr.values.size()-1;
     for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
     {
-      m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1][i] = (i == 0) ? cfg_qpInValCr.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpInValCr.values[i] - cfg_qpInValCr.values[i - 1] - 1;
-      m_chromaQpMappingTableParams.m_deltaQpOutVal[1][i] = (i == 0) ? cfg_qpOutValCr.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpOutValCr.values[i] - cfg_qpOutValCr.values[i - 1];
+      CHECK(cfg_qpInValCr.values[i] < -qpBdOffsetC || cfg_qpInValCr.values[i] > MAX_QP, "Some entries cfg_qpInValCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
+      CHECK(cfg_qpOutValCr.values[i] < -qpBdOffsetC || cfg_qpOutValCr.values[i] > MAX_QP, "Some entries cfg_qpOutValCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
+      m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1][i] = (i == 0) ? cfg_qpInValCr.values[i] + qpBdOffsetC : cfg_qpInValCr.values[i] - cfg_qpInValCr.values[i - 1] - 1;
+      m_chromaQpMappingTableParams.m_deltaQpOutVal[1][i] = (i == 0) ? cfg_qpOutValCr.values[i] + qpBdOffsetC : cfg_qpOutValCr.values[i] - cfg_qpOutValCr.values[i - 1];
     }
     m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2].resize(cfg_qpInValCbCr.values.size());
     m_chromaQpMappingTableParams.m_deltaQpOutVal[2].resize(cfg_qpOutValCbCr.values.size());
     m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[2] = (int)cfg_qpOutValCbCr.values.size()-1;
     for (int i = 0; i < cfg_qpInValCbCr.values.size(); i++)
     {
-      m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2][i] = (i == 0) ? cfg_qpInValCbCr.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpInValCbCr.values[i] - cfg_qpInValCbCr.values[i - 1] - 1;
-      m_chromaQpMappingTableParams.m_deltaQpOutVal[2][i] = (i == 0) ? cfg_qpOutValCbCr.values[i] + 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8) : cfg_qpOutValCbCr.values[i] - cfg_qpOutValCbCr.values[i - 1];
+      CHECK(cfg_qpInValCbCr.values[i] < -qpBdOffsetC || cfg_qpInValCbCr.values[i] > MAX_QP, "Some entries cfg_qpInValCbCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
+      CHECK(cfg_qpOutValCbCr.values[i] < -qpBdOffsetC || cfg_qpOutValCbCr.values[i] > MAX_QP, "Some entries cfg_qpOutValCbCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
+      m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2][i] = (i == 0) ? cfg_qpInValCbCr.values[i] + qpBdOffsetC : cfg_qpInValCbCr.values[i] - cfg_qpInValCbCr.values[i - 1] - 1;
+      m_chromaQpMappingTableParams.m_deltaQpOutVal[2][i] = (i == 0) ? cfg_qpOutValCbCr.values[i] + qpBdOffsetC : cfg_qpOutValCbCr.values[i] - cfg_qpOutValCbCr.values[i - 1];
     }
   }
 #endif

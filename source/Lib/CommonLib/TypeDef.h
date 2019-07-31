@@ -185,7 +185,6 @@
 
 #define JVET_O0376_SPS_JCCR_FLAG                          1 // JVET-O0376: add the JCCR control flag in SPS
 #define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
->>>>>>> 243e9792ed2dfbab7dcf6eed249505aa9a790c80
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 

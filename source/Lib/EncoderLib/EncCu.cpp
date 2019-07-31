@@ -1393,7 +1393,12 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
   int    bestMtsFlag             =   0;
   int    bestLfnstIdx            =   0;
 
+#if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
+  const int  maxLfnstIdx         = ( CS::isDualITree( *tempCS ) && partitioner.chType == CHANNEL_TYPE_CHROMA && ( partitioner.currArea().lwidth() < 8 || partitioner.currArea().lheight() < 8 ) )
+                                   || ( partitioner.currArea().lwidth() > MAX_TB_SIZEY || partitioner.currArea().lheight() > MAX_TB_SIZEY ) ? 0 : 2;
+#else
   const int  maxLfnstIdx         = CS::isDualITree( *tempCS ) && partitioner.chType == CHANNEL_TYPE_CHROMA && ( partitioner.currArea().lwidth() < 8 || partitioner.currArea().lheight() < 8 ) ? 0 : 2;
+#endif
   bool       skipOtherLfnst      = false;
   int        startLfnstIdx       = 0;
   int        endLfnstIdx         = sps.getUseLFNST() ? maxLfnstIdx : 0;

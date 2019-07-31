@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE          1 // JVET-O0213: Block size restriction of LFNST to maximum transform size
+
 #define JVET_O0244_DELTA_POC                              1 // JVET-O0244: weighted prediction in SPS and delta POC
 
 #define JVET_O0159_10BITTCTABLE_DEBLOCKING                1 // tc table for 10-bit video

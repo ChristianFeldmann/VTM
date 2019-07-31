@@ -50,6 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE          1 // JVET-O0213: Block size restriction of LFNST to maximum transform size
+
+#define JVET_O0244_DELTA_POC                              1 // JVET-O0244: weighted prediction in SPS and delta POC
 
 #define JVET_O1153_INTRA_CHROMAMODE_CODING                1  //JVET-O1153: simplified intra chromamode coding
 
@@ -59,6 +62,10 @@
 
 #define JVET_O0220_METHOD1_SUBBLK_FLAG_PARSING            1 // JVET-O0220 method-1: Parse merge_subblock_flag conditioned on MaxNumSubblockMergeCand
 
+#define JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP          1 // JVET-O0263/ JVET-O0220: Syntax cleanup on subblock merge
+
+#define JVET_O0060_4x4_deblocking                         1 // deblock on 4x4 grid
+
 #define JVET_O0046_DQ_SIGNALLING                          1 // JVET-O0046: Move delta-QP earlier for 64x64 VPDU processing, applied to CUs >64x64 only
 
 #define JVET_O0616_400_CHROMA_SUPPORT                     1 // JVET-O0616: Various chroma format support in VVC
@@ -66,6 +73,8 @@
 #define JVET_O0265_TPM_SIMPLIFICATION                     1 // JVET-O0265/JVET-O0629/JVET-O0418/JVET-O0329/JVET-O0378/JVET-O0411/JVET-O0279:Simplified motion field storage for TPM
 
 #define JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT  1 // JVET-O0409: exclude coded_subblock_flag from counting context-coded bins in transform skip
+
+#define JVET_O0057_ALTHPELIF                              1  //AMVR_HPEL
 
 #define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
 
@@ -182,7 +191,7 @@
 #define JVET_O0596_CBF_SIG_ALIGN_TO_SPEC                  1 // JVET-O0596 align cbf signaling with specification
 #define JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX             1 // JVET-O0193/JVET-O0375: remove transform depth in cbf context modeling
 #define JVET_O0681_DIS_BPWA_CIIP                          1 // JVET-O0681 disable BCW for CIIP, method 2 inherit BCW index
-
+#define JVET_O0249_MERGE_SYNTAX                           1 // JVET-O0249: merge syntax change 
 #define JVET_O0594_BDOF_REF_SAMPLE_PADDING                1 // JVET-O0594/O0252/O0506/O0615/O0624: BDOF reference sample padding using the nearest integer sample position
 
 #define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
@@ -973,8 +982,14 @@ enum EncModeFeature
 enum ImvMode
 {
   IMV_OFF = 0,
+#if JVET_O0057_ALTHPELIF
+  IMV_FPEL,
+  IMV_4PEL,
+  IMV_HPEL,
+#else
   IMV_DEFAULT,
   IMV_4PEL,
+#endif
   NUM_IMV_MODES
 };
 

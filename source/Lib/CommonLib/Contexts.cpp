@@ -258,10 +258,17 @@ const CtxSet ContextSetCfg::MergeFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::RegularMergeFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_O0249_MERGE_SYNTAX
+  { 159, 126 },
+  { 143, 111 },
+  { 154, 154 },
+  {   6,   5 }
+#else
   { 142, 125, },
   { 141, 110, },
   { CNU, CNU, },
   {   4,   4, },
+#endif
 });
 
 const CtxSet ContextSetCfg::MergeIdx = ContextSetCfg::addCtxSet
@@ -274,10 +281,17 @@ const CtxSet ContextSetCfg::MergeIdx = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MmvdFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_O0249_MERGE_SYNTAX
+  { 108, },
+  { 108, },
+  { 154, },
+  {   5, },
+#else
   { 109, },
   { 124, },
   { CNU, },
   {   5, },
+#endif
 });
 
 const CtxSet ContextSetCfg::MmvdMergeIdx = ContextSetCfg::addCtxSet
@@ -404,10 +418,17 @@ const CtxSet ContextSetCfg::SubblockMergeFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::AffineFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_O0249_MERGE_SYNTAX
+  { 180, 169, 186 },
+  { 195, 168, 155 },
+  { 154, 154, 154 },
+  {   5,   4,   4 }
+#else
   { 183, 185, 187, },
   { 168, 169, 171, },
   { CNU, CNU, CNU, },
   {   4,   4,   4, },
+#endif
 });
 
 const CtxSet ContextSetCfg::AffineType = ContextSetCfg::addCtxSet
@@ -783,6 +804,15 @@ const CtxSet ContextSetCfg::ChromaQpAdjIdc = ContextSetCfg::addCtxSet
   { DWS, },
 });
 
+#if JVET_O0057_ALTHPELIF
+const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
+({
+  { 212, 180, 183, 242, 242, },
+  { 213, 166, 198, 244, 244, },
+  { CNU, 182, CNU, CNU, CNU, },
+  {   1,   5,   1,   0,   0, },
+});
+#else
 const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
 ({
   { 212, 180, 183, 242, },
@@ -790,6 +820,7 @@ const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
   { CNU, 182, CNU, CNU, },
   {   1,   5,   1,   0, },
 });
+#endif
 
 const CtxSet ContextSetCfg::ctbAlfFlag = ContextSetCfg::addCtxSet
 ({
@@ -827,10 +858,17 @@ const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_O0249_MERGE_SYNTAX
+  { 184, },
+  { 184, },
+  { 154, },
+  {   1, },
+#else
   { 184, },
   { 185, },
   { CNU, },
   {   0, },
+#endif
 });
 
 

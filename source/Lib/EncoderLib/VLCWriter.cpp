@@ -158,7 +158,7 @@ void AUDWriter::codeAUD(OutputBitstream& bs, const int pictureType)
 }
 
 #if JVET_O0244_DELTA_POC
-void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, bool deltaPocMinus1 )
+void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc )
 #else
 void HLSWriter::xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount)
 #endif
@@ -186,7 +186,7 @@ void HLSWriter::xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTerm
       }
       unsigned int absDeltaValue = (deltaValue < 0) ? 0 - deltaValue : deltaValue;
 #if JVET_O0244_DELTA_POC
-      if( deltaPocMinus1 )
+      if( isForbiddenZeroDeltaPoc )
       {
         CHECK( !absDeltaValue, "Zero delta POC is not used without WP" );
         WRITE_UVLC( absDeltaValue - 1, "abs_delta_poc_st[ listIdx ][ rplsIdx ][ i ]" );

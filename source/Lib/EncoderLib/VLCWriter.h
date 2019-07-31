@@ -112,7 +112,7 @@ public:
 
 private:
 #if JVET_O0244_DELTA_POC
-  void xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, bool deltaPocMinus1 );
+  void xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc );
 #else
   void xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount);
 #endif

@@ -1351,7 +1351,63 @@ void CABACReader::intra_chroma_pred_modes( CodingUnit& cu )
     intra_chroma_pred_mode( *pu );
   }
 }
+#if JVET_O1153_INTRA_CHROMAMODE_CODING
+bool CABACReader::intra_chroma_lmc_mode(PredictionUnit& pu)
+{
+  int lmModeList[10];
+  PU::getLMSymbolList(pu, lmModeList);
 
+  int symbol = m_BinDecoder.decodeBin(Ctx::IntraChromaPredMode(0));
+
+  if (symbol == 0)
+  {
+    pu.intraDir[1] = lmModeList[symbol];
+    CHECK(pu.intraDir[1] != LM_CHROMA_IDX, "should be LM_CHROMA");
+  }
+  else
+  {
+    symbol += m_BinDecoder.decodeBinEP();
+    pu.intraDir[1] = lmModeList[symbol];
+  }
+  return true; //it will only enter this function for LMC modes, so always return true ;
+}
+
+void CABACReader::intra_chroma_pred_mode(PredictionUnit& pu)
+{
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__INTRA_DIR_ANG, pu.cu->blocks[pu.chType].lumaSize(), CHANNEL_TYPE_CHROMA);
+  // LM chroma mode
+#if JVET_O1124_ALLOW_CCLM_COND
+  if (pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed())
+#else
+  if (pu.cs->sps->getUseLMChroma())
+#endif
+  {
+    bool isLMCMode = m_BinDecoder.decodeBin(Ctx::CclmModeFlag(0)) ? true : false;
+    if (isLMCMode)
+    {
+      intra_chroma_lmc_mode(pu);
+      return;
+    }
+  }
+
+  if (m_BinDecoder.decodeBin(Ctx::IntraChromaPredMode(0)) == 0)
+  {
+    pu.intraDir[1] = DM_CHROMA_IDX;
+    return;
+  }
+
+  unsigned candId = m_BinDecoder.decodeBinsEP(2);
+
+  unsigned chromaCandModes[NUM_CHROMA_MODE];
+  PU::getIntraChromaCandModes(pu, chromaCandModes);
+
+  CHECK(candId >= NUM_CHROMA_MODE, "Chroma prediction mode index out of bounds");
+  CHECK(PU::isLMCMode(chromaCandModes[candId]), "The intra dir cannot be LM_CHROMA for this path");
+  CHECK(chromaCandModes[candId] == DM_CHROMA_IDX, "The intra dir cannot be DM_CHROMA for this path");
+
+  pu.intraDir[1] = chromaCandModes[candId];
+}
+#else
 bool CABACReader::intra_chroma_lmc_mode( PredictionUnit& pu )
 {
   int lmModeList[10];
@@ -1398,7 +1454,7 @@ void CABACReader::intra_chroma_pred_mode( PredictionUnit& pu )
 
   pu.intraDir[1] = chromaCandModes[ candId ];
 }
-
+#endif
 void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& cuCtx )
 {
   if (!CU::isIntra(cu))

@@ -1810,7 +1810,18 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 		
 		
         pcSlice->setAlfAPSs(apsId);
-        alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
+#if JVET_O0616_400_CHROMA_SUPPORT
+        if (bChroma)
+        {
+#endif
+          alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
+#if JVET_O0616_400_CHROMA_SUPPORT
+        }
+        else
+        {
+          alfChromaIdc = 0;
+        }
+#endif
         if (alfChromaIdc)
         {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
@@ -2198,16 +2209,24 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
       if (pcSlice->getLmcsEnabledFlag())
       {
+#if JVET_O0428_LMCS_CLEANUP
+        READ_CODE(2, uiCode, "slice_lmcs_aps_id");
+#else
         READ_CODE(5, uiCode, "slice_lmcs_aps_id");
+#endif
         
         pcSlice->setLmcsAPSId(uiCode);
 #if !JVET_O1109_UNFIY_CRS
         if (!(sps->getUseDualITree() && pcSlice->isIntra()))
         {
 #endif
+#if JVET_O0616_400_CHROMA_SUPPORT
+        if (bChroma)
+        {
+#endif
           READ_FLAG(uiCode, "slice_chroma_residual_scale_flag");                
           pcSlice->setLmcsChromaResidualScaleFlag(uiCode == 1);
-#if !JVET_O1109_UNFIY_CRS
+#if !JVET_O1109_UNFIY_CRS || JVET_O0616_400_CHROMA_SUPPORT
         }
         else
         {

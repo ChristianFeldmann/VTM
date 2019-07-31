@@ -2037,12 +2037,19 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
     if (!pcSlice->isIntra())
     {
-
+#if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
+      if (sps->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag() && !sps->getUseAffine()) // ATMVP only
+#else
       if ( sps->getSBTMVPEnabledFlag() && !sps->getUseAffine() ) // ATMVP only
+#endif
       {
         pcSlice->setMaxNumAffineMergeCand( 1 );
       }
+#if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
+      else if (!(sps->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag()) && !sps->getUseAffine())// both off
+#else
       else if ( !sps->getSBTMVPEnabledFlag() && !sps->getUseAffine() ) // both off
+#endif
       {
         pcSlice->setMaxNumAffineMergeCand( 0 );
       }

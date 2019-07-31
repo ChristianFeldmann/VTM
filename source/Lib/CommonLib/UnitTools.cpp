@@ -804,8 +804,8 @@ int PU::getLMSymbolList(const PredictionUnit &pu, int *modeList)
 {
   int idx = 0;
 
-  modeList[ idx++ ] = LM_CHROMA_IDX;
-    modeList[ idx++ ] = -1;
+  modeList[idx++] = LM_CHROMA_IDX;
+  modeList[idx++] = -1;
   modeList[idx++] = MDLM_L_IDX;
   modeList[idx++] = MDLM_T_IDX;
   return idx;

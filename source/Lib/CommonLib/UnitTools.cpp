@@ -788,26 +788,27 @@ bool PU::isLMCModeEnabled(const PredictionUnit &pu, unsigned mode)
   }
   return false;
 }
-#if JVET_O1153_INTRA_CHROMAMODE_CODING
-int PU::getLMSymbolList(const PredictionUnit &pu, int *pModeList)
-{
-  int iIdx = 0;
 
-  pModeList[iIdx++] = LM_CHROMA_IDX;
-  pModeList[iIdx++] = MDLM_L_IDX;
-  pModeList[iIdx++] = MDLM_T_IDX;
-  return iIdx;
+#if JVET_O1153_INTRA_CHROMAMODE_CODING
+int PU::getLMSymbolList(const PredictionUnit &pu, int *modeList)
+{
+  int idx = 0;
+
+  modeList[idx++] = LM_CHROMA_IDX;
+  modeList[idx++] = MDLM_L_IDX;
+  modeList[idx++] = MDLM_T_IDX;
+  return idx;
 }
 #else
-int PU::getLMSymbolList(const PredictionUnit &pu, int *pModeList)
+int PU::getLMSymbolList(const PredictionUnit &pu, int *modeList)
 {
-  int iIdx = 0;
+  int idx = 0;
 
-  pModeList[ iIdx++ ] = LM_CHROMA_IDX;
-    pModeList[ iIdx++ ] = -1;
-  pModeList[iIdx++] = MDLM_L_IDX;
-  pModeList[iIdx++] = MDLM_T_IDX;
-  return iIdx;
+  modeList[ idx++ ] = LM_CHROMA_IDX;
+    modeList[ idx++ ] = -1;
+  modeList[idx++] = MDLM_L_IDX;
+  modeList[idx++] = MDLM_T_IDX;
+  return idx;
 }
 #endif
 

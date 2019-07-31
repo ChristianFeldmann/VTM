@@ -68,89 +68,89 @@ enum PLTScanMode
 class SortingElement
 {
 public:
-  uint32_t uiCnt;
-  int uiData[3];
-  int uiShift, uiLastCnt, uiSumData[3];
+  uint32_t cnt;
+  int data[3];
+  int shift, lastCnt, sumData[3];
   inline bool operator<(const SortingElement &other) const
   {
-    return uiCnt > other.uiCnt;
+    return cnt > other.cnt;
   }
   SortingElement() {
-    uiCnt = uiShift = uiLastCnt = 0;
-    uiData[0] = uiData[1] = uiData[2] = 0;
-    uiSumData[0] = uiSumData[1] = uiSumData[2] = 0;
+    cnt = shift = lastCnt = 0;
+    data[0] = data[1] = data[2] = 0;
+    sumData[0] = sumData[1] = sumData[2] = 0;
   }
   void resetAll(ComponentID compBegin, uint32_t numComp) {
-    uiShift = uiLastCnt = 0;
+    shift = lastCnt = 0;
     for (int ch = compBegin; ch < (compBegin + numComp); ch++)
     {
-      uiData[ch] = 0;
-      uiSumData[ch] = 0;
+      data[ch] = 0;
+      sumData[ch] = 0;
     }
   }
   void setAll(uint32_t* ui, ComponentID compBegin, uint32_t numComp) {
     for (int ch = compBegin; ch < (compBegin + numComp); ch++)
     {
-      uiData[ch] = ui[ch];
+      data[ch] = ui[ch];
     }
   }
-  bool almostEqualData(SortingElement sElement, int iErrorLimit, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
+  bool almostEqualData(SortingElement element, int errorLimit, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
   {
-    bool bAlmostEqual = true;
+    bool almostEqual = true;
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       ChannelType chType = (comp > 0) ? CHANNEL_TYPE_CHROMA : CHANNEL_TYPE_LUMA;
-      if ((std::abs(uiData[comp] - sElement.uiData[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH)) > iErrorLimit)
+      if ((std::abs(data[comp] - element.data[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH)) > errorLimit)
       {
-        bAlmostEqual = false;
+        almostEqual = false;
         break;
       }
     }
-    return bAlmostEqual;
+    return almostEqual;
   }
-  uint32_t getSAD(SortingElement sElement, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
+  uint32_t getSAD(SortingElement element, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
   {
-    uint32_t uiSAD = 0;
+    uint32_t sumAd = 0;
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       ChannelType chType = (comp > 0) ? CHANNEL_TYPE_CHROMA : CHANNEL_TYPE_LUMA;
-      uiSAD += (std::abs(uiData[comp] - sElement.uiData[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH));
+      sumAd += (std::abs(data[comp] - element.data[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH));
     }
-    return uiSAD;
+    return sumAd;
   }
-  void copyDataFrom(SortingElement sElement, ComponentID compBegin, uint32_t numComp) {
+  void copyDataFrom(SortingElement element, ComponentID compBegin, uint32_t numComp) {
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
-      uiData[comp] = sElement.uiData[comp];
-      uiSumData[comp] = uiData[comp];
+      data[comp] = element.data[comp];
+      sumData[comp] = data[comp];
     }
-    uiShift = 0; uiLastCnt = 1;
+    shift = 0; lastCnt = 1;
   }
-  void copyAllFrom(SortingElement sElement, ComponentID compBegin, uint32_t numComp) {
-    copyDataFrom(sElement, compBegin, numComp);
-    uiCnt = sElement.uiCnt;
+  void copyAllFrom(SortingElement element, ComponentID compBegin, uint32_t numComp) {
+    copyDataFrom(element, compBegin, numComp);
+    cnt = element.cnt;
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
-      uiSumData[comp] = sElement.uiSumData[comp];
+      sumData[comp] = element.sumData[comp];
     }
-    uiLastCnt = sElement.uiLastCnt; uiShift = sElement.uiShift;
+    lastCnt = element.lastCnt; shift = element.shift;
   }
-  void addElement(const SortingElement& sElement, ComponentID compBegin, uint32_t numComp)
+  void addElement(const SortingElement& element, ComponentID compBegin, uint32_t numComp)
   {
-    uiCnt++;
+    cnt++;
     for (int i = compBegin; i<(compBegin + numComp); i++)
     {
-      uiSumData[i] += sElement.uiData[i];
+      sumData[i] += element.data[i];
     }
-    if (uiCnt>1 && uiCnt == 2 * uiLastCnt)
+    if (cnt>1 && cnt == 2 * lastCnt)
     {
-      uint32_t uiRnd = 1 << uiShift;
-      uiShift++;
+      uint32_t rnd = 1 << shift;
+      shift++;
       for (int i = compBegin; i<(compBegin + numComp); i++)
       {
-        uiData[i] = (uiSumData[i] + uiRnd) >> uiShift;
+        data[i] = (sumData[i] + rnd) >> shift;
       }
-      uiLastCnt = uiCnt;
+      lastCnt = cnt;
     }
   }
 };
@@ -251,7 +251,7 @@ public:
   void IPCMSearch                 (CodingStructure &cs, Partitioner& partitioner);
 #if JVET_O0119_BASE_PALETTE_444
   void PLTSearch                  ( CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
-  void deriveRunAndCalcBits       ( CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, uint64_t& uiBits);
+  void deriveRunAndCalcBits       ( CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, uint64_t& bits);
 #endif
   uint64_t xFracModeBitsIntra     (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
 
@@ -292,9 +292,9 @@ protected:
 #if JVET_O0119_BASE_PALETTE_444
   void   deriveRun(CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin);
   double getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t strPos, PLTRunMode paletteRunMode, uint64_t* indexBits, uint64_t* runBits, ComponentID compBegin);
-  void       derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
-  void       calcPixelPred(CodingStructure& cs, Partitioner& partitioner, uint32_t uiY, uint32_t uiX, ComponentID compBegin, uint32_t numComp);
-  void       preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+  void   derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+  void   calcPixelPred(CodingStructure& cs, Partitioner& partitioner, uint32_t yPos, uint32_t xPos, ComponentID compBegin, uint32_t numComp);
+  void   preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
 #endif
 };// END CLASS DEFINITION EncSearch
 

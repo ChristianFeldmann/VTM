@@ -1392,8 +1392,8 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #endif // ENABLE_QPA
 
 #if JVET_O0119_BASE_PALETTE_444
-  bool bCheckPLTRatio = m_pcCfg->getIntraPeriod() != 1 && pcSlice->isIRAP();
-  if (bCheckPLTRatio)
+  bool checkPLTRatio = m_pcCfg->getIntraPeriod() != 1 && pcSlice->isIRAP();
+  if (checkPLTRatio)
   {
     doPlt = true;
   }
@@ -1434,7 +1434,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #endif 
   encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
 #if JVET_O0119_BASE_PALETTE_444
-  if (bCheckPLTRatio)
+  if (checkPLTRatio)
   {
     int totalArea = 0;
     int pltArea = 0;
@@ -1442,13 +1442,13 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
     {
       for (int i = 0; i < MAX_NUM_TBLOCKS; ++i)
       {
-        int pu_area = apu->blocks[i].width * apu->blocks[i].height;
+        int puArea = apu->blocks[i].width * apu->blocks[i].height;
         if (apu->blocks[i].width > 0 && apu->blocks[i].height > 0)
         {
-          totalArea += pu_area;
+          totalArea += puArea;
           if (CU::isPLT(*apu->cu) || CU::isIBC(*apu->cu))
           {
-            pltArea += pu_area;
+            pltArea += puArea;
           }
           break;
         }

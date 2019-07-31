@@ -402,67 +402,67 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
 #if JVET_O0119_BASE_PALETTE_444
 void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
 {
-  const SPS&        sps = *(cu.cs->sps);
+  const SPS&       sps = *(cu.cs->sps);
   TransformUnit&   tu = *cu.firstTU;
   PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
 
-  uint32_t uiHeight = cu.block(compBegin).height;
-  uint32_t uiWidth = cu.block(compBegin).width;
+  uint32_t height = cu.block(compBegin).height;
+  uint32_t width = cu.block(compBegin).width;
 
   //recon. pixels
   uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
   uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
-  for (uint32_t uiY = 0; uiY < uiHeight; uiY++)
+  for (uint32_t y = 0; y < height; y++)
   {
-    for (uint32_t uiX = 0; uiX < uiWidth; uiX++)
+    for (uint32_t x = 0; x < width; x++)
     {
       for (uint32_t compID = compBegin; compID < (compBegin + numComp); compID++)
       {
         const int  channelBitDepth = cu.cs->sps->getBitDepth(toChannelType((ComponentID)compID));
         const CompArea &area = cu.blocks[compID];
 
-        PelBuf piPicReco = cu.cs->getRecoBuf(area);
-        PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)compID);
-        if (curPLTIdx.at(uiX, uiY) == cu.curPLTSize[compBegin])
+        PelBuf       picReco   = cu.cs->getRecoBuf(area);
+        PLTescapeBuf escapeValue = tu.getescapeValue((ComponentID)compID);
+        if (curPLTIdx.at(x, y) == cu.curPLTSize[compBegin])
         {
-          Pel iValue;
+          Pel value;
           QpParam cQP(tu, (ComponentID)compID);
 
-          int iQP = cQP.Qp;
-          int iQPrem = iQP % 6;
-          int iQPper = iQP / 6;
+          int qp = cQP.Qp;
+          int qpRem = qp % 6;
+          int qpPer = qp / 6;
           if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)
           {
-            int InvquantiserRightShift = IQUANT_SHIFT;
-            int iAdd = 1 << (InvquantiserRightShift - 1);
-            iValue = ((((escapeValue.at(uiX, uiY)*g_invQuantScales[0][iQPrem]) << iQPper) + iAdd) >> InvquantiserRightShift);
-            iValue = Pel(ClipBD<int>(iValue, channelBitDepth));
-            piPicReco.at(uiX, uiY) = iValue;
+            int invquantiserRightShift = IQUANT_SHIFT;
+            int add = 1 << (invquantiserRightShift - 1);
+            value = ((((escapeValue.at(x, y)*g_invQuantScales[0][qpRem]) << qpPer) + add) >> invquantiserRightShift);
+            value = Pel(ClipBD<int>(value, channelBitDepth));
+            picReco.at(x, y) = value;
           }
-          else if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && uiY % (1 << scaleY) == 0 && uiX % (1 << scaleX) == 0)
+          else if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && y % (1 << scaleY) == 0 && x % (1 << scaleX) == 0)
           {
-            uint32_t PosYC = uiY >> scaleY;
-            uint32_t PosXC = uiX >> scaleX;
-            int InvquantiserRightShift = IQUANT_SHIFT;
-            int iAdd = 1 << (InvquantiserRightShift - 1);
-            iValue = ((((escapeValue.at(PosXC, PosYC)*g_invQuantScales[0][iQPrem]) << iQPper) + iAdd) >> InvquantiserRightShift);
-            iValue = Pel(ClipBD<int>(iValue, channelBitDepth));
-            piPicReco.at(PosXC, PosYC) = iValue;
+            uint32_t posYC = y >> scaleY;
+            uint32_t posXC = x >> scaleX;
+            int invquantiserRightShift = IQUANT_SHIFT;
+            int add = 1 << (invquantiserRightShift - 1);
+            value = ((((escapeValue.at(posXC, posYC)*g_invQuantScales[0][qpRem]) << qpPer) + add) >> invquantiserRightShift);
+            value = Pel(ClipBD<int>(value, channelBitDepth));
+            picReco.at(posXC, posYC) = value;
 
           }
         }
         else
         {
-          uint32_t curIdx = curPLTIdx.at(uiX, uiY);
+          uint32_t curIdx = curPLTIdx.at(x, y);
           if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)
           {
-            piPicReco.at(uiX, uiY) = cu.curPLT[compID][curIdx];
+            picReco.at(x, y) = cu.curPLT[compID][curIdx];
           }
-          else if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && uiY % (1 << scaleY) == 0 && uiX % (1 << scaleX) == 0)
+          else if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && y % (1 << scaleY) == 0 && x % (1 << scaleX) == 0)
           {
-            uint32_t PosYC = uiY >> scaleY;
-            uint32_t PosXC = uiX >> scaleX;
-            piPicReco.at(PosXC, PosYC) = cu.curPLT[compID][curIdx];
+            uint32_t posYC = y >> scaleY;
+            uint32_t posXC = x >> scaleX;
+            picReco.at(posXC, posYC) = cu.curPLT[compID][curIdx];
           }
         }
       }
@@ -471,8 +471,8 @@ void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
   for (uint32_t compID = compBegin; compID < (compBegin + numComp); compID++)
   {
     const CompArea &area = cu.blocks[compID];
-    PelBuf piPicReco = cu.cs->getRecoBuf(area);
-    cu.cs->picture->getRecoBuf(area).copyFrom(piPicReco);
+    PelBuf picReco = cu.cs->getRecoBuf(area);
+    cu.cs->picture->getRecoBuf(area).copyFrom(picReco);
     cu.cs->setDecomp(area);
   }
 }

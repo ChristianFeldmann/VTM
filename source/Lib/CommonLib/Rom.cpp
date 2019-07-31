@@ -831,15 +831,15 @@ static void g_initMsbP1IdxLut()
   }
 }
 
-uint8_t g_getMsbP1Idx(uint32_t uiVal)
+uint8_t g_getMsbP1Idx(uint32_t val)
 {
   uint8_t idx = 0;
-  while (uiVal > 255)
+  while (val > 255)
   {
-    uiVal >>= 8;
+    val >>= 8;
     idx += 8;
   }
-  return idx + g_ucMsbP1Idx[uiVal];
+  return idx + g_ucMsbP1Idx[val];
 }
 #endif
 //! \}

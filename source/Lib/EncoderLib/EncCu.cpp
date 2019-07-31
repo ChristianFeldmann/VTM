@@ -1894,8 +1894,8 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
   xCalDebCost(*tempCS, partitioner);
   tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
 
-  const Area curr_cu_area = cu.block(getFirstComponentOfChannel(partitioner.chType));
-  cu.slice->m_mapPltCost[curr_cu_area.pos()][curr_cu_area.size()] = tempCS->cost;
+  const Area currCuArea = cu.block(getFirstComponentOfChannel(partitioner.chType));
+  cu.slice->m_mapPltCost[currCuArea.pos()][currCuArea.size()] = tempCS->cost;
 #if WCG_EXT
   DTRACE_MODE_COST(*tempCS, m_pcRdCost->getLambda(true));
 #else

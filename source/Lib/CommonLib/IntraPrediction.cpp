@@ -1937,75 +1937,75 @@ void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, co
 }
 
 #if JVET_O0119_BASE_PALETTE_444
-bool IntraPrediction::calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t uiStartPos, uint32_t uiTotal, uint32_t &uiRun, ComponentID compBegin)
+bool IntraPrediction::calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin)
 {
-  CodingUnit &cu = *cs.getCU(partitioner.chType);
+  CodingUnit    &cu = *cs.getCU(partitioner.chType);
   TransformUnit &tu = *cs.getTU(partitioner.chType);
-  PelBuf curPLTIdx = tu.getcurPLTIdx(compBegin);
-  PLTtypeBuf runType = tu.getrunType(compBegin);
+  PelBuf     curPLTIdx = tu.getcurPLTIdx(compBegin);
+  PLTtypeBuf runType   = tu.getrunType(compBegin);
 
-  uint32_t uiIdx = uiStartPos;
-  uint32_t uiX;
-  uint32_t uiY;
+  uint32_t idx = startPos;
+  uint32_t xPos;
+  uint32_t yPos;
   bool valid = false;
-  uiRun = 0;
-  while (uiIdx < uiTotal)
+  run = 0;
+  while (idx < total)
   {
-    uiX = m_puiScanOrder[uiIdx].x;
-    uiY = m_puiScanOrder[uiIdx].y;
-    runType.at(uiX, uiY) = PLT_RUN_COPY;
+    xPos = m_puiScanOrder[idx].x;
+    yPos = m_puiScanOrder[idx].y;
+    runType.at(xPos, yPos) = PLT_RUN_COPY;
 
-    if (uiY == 0 && !cu.useRotation[compBegin])
+    if (yPos == 0 && !cu.useRotation[compBegin])
     {
       return false;
     }
-    if (uiX == 0 && cu.useRotation[compBegin])
+    if (xPos == 0 && cu.useRotation[compBegin])
     {
       return false;
     }
-    if (!cu.useRotation[compBegin] && curPLTIdx.at(uiX, uiY) == curPLTIdx.at(uiX, uiY - 1))
+    if (!cu.useRotation[compBegin] && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPos, yPos - 1))
     {
-      uiRun++;
+      run++;
       valid = true;
     }
-    else if (cu.useRotation[compBegin] && curPLTIdx.at(uiX, uiY) == curPLTIdx.at(uiX - 1, uiY))
+    else if (cu.useRotation[compBegin] && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPos - 1, yPos))
     {
-      uiRun++;
+      run++;
       valid = true;
     }
     else
     {
       break;
     }
-    uiIdx++;
+    idx++;
   }
   return valid;
 }
-bool IntraPrediction::calIndexRun(CodingStructure &cs, Partitioner& partitioner, uint32_t uiStartPos, uint32_t uiTotal, uint32_t &uiRun, ComponentID compBegin)
+bool IntraPrediction::calIndexRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin)
 {
   TransformUnit &tu = *cs.getTU(partitioner.chType);
-  PelBuf curPLTIdx = tu.getcurPLTIdx(compBegin);
-  PLTtypeBuf runType = tu.getrunType(compBegin);
+  PelBuf     curPLTIdx = tu.getcurPLTIdx(compBegin);
+  PLTtypeBuf runType   = tu.getrunType(compBegin);
 
-  uiRun = 1;
-  uint32_t uiIdx = uiStartPos;
-  while (uiIdx < uiTotal)
+  run = 1;
+  uint32_t idx = startPos;
+  while (idx < total)
   {
-    uint32_t uiX = m_puiScanOrder[uiIdx].x;
-    uint32_t uiY = m_puiScanOrder[uiIdx].y;
-    runType.at(uiX, uiY) = PLT_RUN_INDEX;
+    uint32_t xPos = m_puiScanOrder[idx].x;
+    uint32_t yPos = m_puiScanOrder[idx].y;
+    runType.at(xPos, yPos) = PLT_RUN_INDEX;
 
-    uint32_t uiXprev = uiIdx == 0 ? 0 : m_puiScanOrder[uiIdx - 1].x;
-    uint32_t uiYprev = uiIdx == 0 ? 0 : m_puiScanOrder[uiIdx - 1].y;
-    if (uiIdx > uiStartPos && curPLTIdx.at(uiX, uiY) == curPLTIdx.at(uiXprev, uiYprev))
+    uint32_t xPrev = idx == 0 ? 0 : m_puiScanOrder[idx - 1].x;
+    uint32_t yPrev = idx == 0 ? 0 : m_puiScanOrder[idx - 1].y;
+    if (idx > startPos && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPrev, yPrev))
     {
-      uiRun++;
+      run++;
     }
-    else if (uiIdx > uiStartPos)
+    else if (idx > startPos)
     {
       break;
     }
-    uiIdx++;
+    idx++;
   }
   return true;
 }
@@ -2014,7 +2014,7 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
   CodingUnit &cu = *cs.getCU(partitioner.chType);
 
   uint32_t       reusePLTSizetmp = 0;
-  uint32_t       PLTSizetmp = 0;
+  uint32_t       pltSizetmp = 0;
   Pel            curPLTtmp[MAX_NUM_COMPONENT][MAXPLTSIZE];
   bool           curPLTpred[MAXPLTPREDSIZE];
 
@@ -2056,7 +2056,7 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
         curPLTtmp[comp][reusePLTSizetmp] = cs.prevPLT.curPLT[comp][predidx];
       }
       reusePLTSizetmp++;
-      PLTSizetmp++;
+      pltSizetmp++;
     }
   }
   cu.reusePLTSize[compBegin] = reusePLTSizetmp;
@@ -2066,12 +2066,12 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     {
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
-        curPLTtmp[comp][PLTSizetmp] = cu.curPLT[comp][curidx];
+        curPLTtmp[comp][pltSizetmp] = cu.curPLT[comp][curidx];
       }
-      PLTSizetmp++;
+      pltSizetmp++;
     }
   }
-  assert(PLTSizetmp == cu.curPLTSize[compBegin]);
+  assert(pltSizetmp == cu.curPLTSize[compBegin]);
   for (int curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
   {
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)

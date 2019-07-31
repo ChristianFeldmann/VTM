@@ -176,8 +176,8 @@ public:
   void geneIntrainterPred         (const CodingUnit &cu);
 #if JVET_O0119_BASE_PALETTE_444
   void reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
-  bool calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t uiStartPos, uint32_t uiTotal, uint32_t &uiRun, ComponentID compBegin);
-  bool calIndexRun(CodingStructure &cs, Partitioner& partitioner, uint32_t uiStartPos, uint32_t uiTotal, uint32_t &uiRun, ComponentID compBegin);
+  bool calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin);
+  bool calIndexRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin);
 #endif
 };
 

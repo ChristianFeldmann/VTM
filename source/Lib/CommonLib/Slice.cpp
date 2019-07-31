@@ -1423,6 +1423,10 @@ SPS::SPS()
 #if MAX_TB_SIZE_SIGNALLING
 , m_log2MaxTbSize             (  6)
 #endif
+#if JVET_O0244_DELTA_POC
+, m_useWeightPred             (false)
+, m_useWeightedBiPred         (false)
+#endif
 , m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
 , m_scalingListEnabledFlag    (false)

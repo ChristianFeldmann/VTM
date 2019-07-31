@@ -445,16 +445,16 @@ struct ChromaQpMappingTableParams {
     m_deltaQpOutVal[0] = { 0 };
   }
 
-  void      setSameCQPTableForAllChromaFlag(bool b) { m_sameCQPTableForAllChromaFlag = b; }
+  void      setSameCQPTableForAllChromaFlag(bool b)                             { m_sameCQPTableForAllChromaFlag = b; }
   bool      getSameCQPTableForAllChromaFlag()                             const { return m_sameCQPTableForAllChromaFlag; }
-  void      setNumPtsInCQPTableMinus1(int tableIdx, int n) { m_numPtsInCQPTableMinus1[tableIdx] = n; }
+  void      setNumPtsInCQPTableMinus1(int tableIdx, int n)                      { m_numPtsInCQPTableMinus1[tableIdx] = n; }
   int       getNumPtsInCQPTableMinus1(int tableIdx)                       const { return m_numPtsInCQPTableMinus1[tableIdx]; }
-  void      setDeltaQpInValMinus1(int tableIdx, std::vector<int> &inVals) { m_deltaQpInValMinus1[tableIdx] = inVals; }
-  void      setDeltaQpInValMinus1(int tableIdx, int idx, int n) { m_deltaQpInValMinus1[tableIdx][idx] = n; }
-  int       getDeltaQpInValMinus1(int tableIdx, int idx)                    const { return m_deltaQpInValMinus1[tableIdx][idx]; }
-  void      setDeltaQpOutVal(int tableIdx, std::vector<int> &outVals) { m_deltaQpOutVal[tableIdx] = outVals; }
-  void      setDeltaQpOutVal(int tableIdx, int idx, int n) { m_deltaQpOutVal[tableIdx][idx] = n; }
-  int       getDeltaQpOutVal(int tableIdx, int idx)                         const { return m_deltaQpOutVal[tableIdx][idx]; }
+  void      setDeltaQpInValMinus1(int tableIdx, std::vector<int> &inVals)       { m_deltaQpInValMinus1[tableIdx] = inVals; }
+  void      setDeltaQpInValMinus1(int tableIdx, int idx, int n)                 { m_deltaQpInValMinus1[tableIdx][idx] = n; }
+  int       getDeltaQpInValMinus1(int tableIdx, int idx)                  const { return m_deltaQpInValMinus1[tableIdx][idx]; }
+  void      setDeltaQpOutVal(int tableIdx, std::vector<int> &outVals)           { m_deltaQpOutVal[tableIdx] = outVals; }
+  void      setDeltaQpOutVal(int tableIdx, int idx, int n)                      { m_deltaQpOutVal[tableIdx][idx] = n; }
+  int       getDeltaQpOutVal(int tableIdx, int idx)                       const { return m_deltaQpOutVal[tableIdx][idx]; }
 };
 struct ChromaQpMappingTable : ChromaQpMappingTableParams
 {
@@ -1114,7 +1114,7 @@ public:
   void      setUseWPBiPred        ( bool b )                                        { m_useWeightedBiPred = b; }
 #endif
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  void      setChromaQpMappingTableFromParams(ChromaQpMappingTableParams &params, const int qpBdOffset)   { m_chromaQpMappingTable.setParams(params, qpBdOffset); }
+  void      setChromaQpMappingTableFromParams(const ChromaQpMappingTableParams &params, const int qpBdOffset)   { m_chromaQpMappingTable.setParams(params, qpBdOffset); }
   void      derivedChromaQPMappingTables()                                          { m_chromaQpMappingTable.derivedChromaQPMappingTables(); }
   const ChromaQpMappingTable& getChromaQpMappingTable()                   const     { return m_chromaQpMappingTable;}
   int       getMappedChromaQpValue(ComponentID compID, int qpVal)         const     { return m_chromaQpMappingTable.getMappedChromaQpValue(compID, qpVal); }

@@ -53,9 +53,6 @@ CDTrace *g_trace_ctx = NULL;
 #endif
 bool g_mctsDecCheckEnabled = false;
 
-#if JVET_O0119_BASE_PALETTE_444
-static void g_initMsbP1IdxLut();
-#endif
 //! \ingroup CommonLib
 //! \{
 
@@ -270,9 +267,6 @@ void initROM()
 {
   int c;
 
-#if JVET_O0119_BASE_PALETTE_444
-  g_initMsbP1IdxLut();
-#endif
   // g_aucConvertToBit[ x ]: log2(x/4), if x=4 -> 0, x=8 -> 1, x=16 -> 2, ...
   // g_aucLog2[ x ]: log2(x), if x=1 -> 0, x=2 -> 1, x=4 -> 2, x=8 -> 3, x=16 -> 4, ...
   ::memset(g_aucLog2, 0, sizeof(g_aucLog2));
@@ -817,29 +811,5 @@ bool g_isReusedUniMVsFilled[32][32][8][8];
 const uint8_t g_uhPLTQuant[52] = { 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 24, 23, 25, 26, 28, 29, 31, 32, 34, 36, 37, 39, 41, 42, 45 };
 uint8_t g_ucRunTopLut[5] = { 0, 1, 1, 2, 2 };
 uint8_t g_ucRunLeftLut[5] = { 0, 3, 3, 4, 4 };
-uint8_t g_ucMsbP1Idx[256];
-static void g_initMsbP1IdxLut()
-{
-  g_ucMsbP1Idx[0] = 0; g_ucMsbP1Idx[1] = 1;
-  uint32_t val = 2;
-  for (uint32_t idx = 2; idx <= 8; idx++)
-  {
-    for (int i = val - 1; i >= 0; i--)
-    {
-      g_ucMsbP1Idx[val++] = idx;
-    }
-  }
-}
-
-uint8_t g_getMsbP1Idx(uint32_t val)
-{
-  uint8_t idx = 0;
-  while (val > 255)
-  {
-    val >>= 8;
-    idx += 8;
-  }
-  return idx + g_ucMsbP1Idx[val];
-}
 #endif
 //! \}

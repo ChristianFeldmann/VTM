@@ -1828,10 +1828,10 @@ void CABACWriter::xWriteTruncMsbP1RefinementBits(uint32_t symbol, PLTRunMode run
   if (maxVal == 0)
     return;
 
-  uint32_t msbP1 = xWriteTruncMsbP1(symbol, runtype, g_getMsbP1Idx(maxVal), uiCtxT);
+  uint32_t msbP1 = xWriteTruncMsbP1(symbol, runtype, floorLog2(maxVal) + 1, uiCtxT);
   if (msbP1 > 1)
   {
-    uint32_t numBins = g_getMsbP1Idx(maxVal);
+    uint32_t numBins = floorLog2(maxVal) + 1;
     if (msbP1 < numBins)
     {
 

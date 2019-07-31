@@ -237,8 +237,6 @@ extern bool g_isReusedUniMVsFilled[32][32][8][8];
 extern const uint8_t g_uhPLTQuant[52];
 extern uint8_t g_ucRunTopLut[5];
 extern uint8_t g_ucRunLeftLut[5];
-extern uint8_t g_ucMsbP1Idx[256];
-extern uint8_t g_getMsbP1Idx(uint32_t val);
 #endif
 
 #endif  //__TCOMROM__

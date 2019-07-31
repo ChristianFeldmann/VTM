@@ -1976,10 +1976,10 @@ uint32_t CABACReader::xReadTruncMsbP1RefinementBits(PLTRunMode runtype, uint32_t
     return 0;
   }
   uint32_t symbol;
-  uint32_t msbP1 = xReadTruncUnarySymbol(runtype, g_getMsbP1Idx(maxVal), ctxT);
+  uint32_t msbP1 = xReadTruncUnarySymbol(runtype, floorLog2(maxVal) + 1, ctxT);
   if (msbP1 > 1)
   {
-    uint32_t numBins = g_getMsbP1Idx(maxVal);
+    uint32_t numBins = floorLog2(maxVal) + 1;
     if (msbP1 < numBins)
     {
       uint32_t bits = msbP1 - 1;

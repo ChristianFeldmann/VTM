@@ -1498,7 +1498,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
   uint32_t   height = cu.block(compBegin).height;
   uint32_t   width = cu.block(compBegin).width;
 
-  m_puiScanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];
+  m_scanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];
   uint32_t total = height * width;
   int lastRunPos = -1;
   uint32_t lastRunType = 0;
@@ -1511,8 +1511,8 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
     int idx = 0, run = 0;
     while (idx < total)
     {
-      uint32_t posy = m_puiScanOrder[idx].y;
-      uint32_t posx = m_puiScanOrder[idx].x;
+      uint32_t posy = m_scanOrder[idx].y;
+      uint32_t posx = m_scanOrder[idx].x;
       if (runType.at(posx, posy) == PLT_RUN_INDEX)
       {
         idxPos.push_back(idx);
@@ -1570,10 +1570,10 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
   auto parsedIdxIter = parsedIdx.begin();
   while (strPos < endPos)
   {
-    uint32_t posy = m_puiScanOrder[strPos].y;
-    uint32_t posx = m_puiScanOrder[strPos].x;
-    uint32_t posyprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].y;
-    uint32_t posxprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].x;
+    uint32_t posy = m_scanOrder[strPos].y;
+    uint32_t posx = m_scanOrder[strPos].x;
+    uint32_t posyprev = strPos == 0 ? 0 : m_scanOrder[strPos - 1].y;
+    uint32_t posxprev = strPos == 0 ? 0 : m_scanOrder[strPos - 1].x;
 
     if (indexMaxSize > 1)
     {
@@ -1629,8 +1629,8 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
     ComponentID compID = (ComponentID)comp;
     for (strPos = 0; strPos < endPos; strPos++)
     {
-      uint32_t posy = m_puiScanOrder[strPos].y;
-      uint32_t posx = m_puiScanOrder[strPos].x;
+      uint32_t posy = m_scanOrder[strPos].y;
+      uint32_t posx = m_scanOrder[strPos].x;
       if (curPLTIdx.at(posx, posy) == cu.curPLTSize[compBegin])
       {
         {
@@ -1690,13 +1690,13 @@ void CABACWriter::xEncodePLTPredIndicator(const CodingUnit& cu, uint32_t maxPLTS
 }
 Pel CABACWriter::writePLTIndex(const CodingUnit& cu, uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin)
 {
-  uint32_t posy = m_puiScanOrder[idx].y;
-  uint32_t posx = m_puiScanOrder[idx].x;
+  uint32_t posy = m_scanOrder[idx].y;
+  uint32_t posx = m_scanOrder[idx].x;
   Pel curLevel = (paletteIdx.at(posx, posy) == cu.curPLTSize[compBegin]) ? (maxSymbol - 1) : paletteIdx.at(posx, posy);
   if (idx) // R0348: remove index redundancy
   {
-    uint32_t prevposy = m_puiScanOrder[idx - 1].y;
-    uint32_t prevposx = m_puiScanOrder[idx - 1].x;
+    uint32_t prevposy = m_scanOrder[idx - 1].y;
+    uint32_t prevposx = m_scanOrder[idx - 1].x;
     if (paletteRunType.at(prevposx, prevposy) == PLT_RUN_INDEX)
     {
       Pel leftLevel = paletteIdx.at(prevposx, prevposy); // left index
@@ -1753,12 +1753,12 @@ void CABACWriter::encodeRunType(const CodingUnit&  cu, PLTtypeBuf& runType, uint
 {
   if (refScanOrder)
   {
-    m_puiScanOrder = refScanOrder;
+    m_scanOrder = refScanOrder;
   }
-  uint32_t posy = m_puiScanOrder[idx].y;
-  uint32_t posx = m_puiScanOrder[idx].x;
-  uint32_t posyprev = (idx == 0) ? 0 : m_puiScanOrder[idx - 1].y;
-  uint32_t posxprev = (idx == 0) ? 0 : m_puiScanOrder[idx - 1].x;
+  uint32_t posy = m_scanOrder[idx].y;
+  uint32_t posx = m_scanOrder[idx].x;
+  uint32_t posyprev = (idx == 0) ? 0 : m_scanOrder[idx - 1].y;
+  uint32_t posxprev = (idx == 0) ? 0 : m_scanOrder[idx - 1].x;
 
   if (((posy == 0) && !cu.useRotation[compBegin]) || ((posx == 0) && cu.useRotation[compBegin]))
   {
@@ -1781,7 +1781,7 @@ void CABACWriter::cu_run_val(uint32_t run, PLTRunMode runtype, const uint32_t pa
   }
   else
   {
-    g_ucRunLeftLut[0] = (paletteIdx < PLT_RUN_MSB_IDX_CTX_T1 ? 0 : (paletteIdx < PLT_RUN_MSB_IDX_CTX_T2 ? 1 : 2));
+    g_paletteRunLeftLut[0] = (paletteIdx < PLT_RUN_MSB_IDX_CTX_T1 ? 0 : (paletteIdx < PLT_RUN_MSB_IDX_CTX_T2 ? 1 : 2));
   }
   xWriteTruncMsbP1RefinementBits(run, runtype, maxRun, PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE);
 }
@@ -1791,7 +1791,7 @@ uint32_t CABACWriter::xWriteTruncMsbP1(uint32_t symbol, PLTRunMode runtype, uint
     return 0;
 
   uint8_t *ctxLut;
-  ctxLut = (runtype == PLT_RUN_INDEX) ? g_ucRunLeftLut : g_ucRunTopLut;
+  ctxLut = (runtype == PLT_RUN_INDEX) ? g_paletteRunLeftLut : g_paletteRunTopLut;
 
   uint32_t msbP1;
   for (msbP1 = 0; symbol > 0; msbP1++)

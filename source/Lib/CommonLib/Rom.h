@@ -234,9 +234,9 @@ extern bool g_isReusedUniMVsFilled[32][32][8][8];
 #endif
 
 #if JVET_O0119_BASE_PALETTE_444
-extern const uint8_t g_uhPLTQuant[52];
-extern uint8_t g_ucRunTopLut[5];
-extern uint8_t g_ucRunLeftLut[5];
+extern const uint8_t g_paletteQuant[52];
+extern uint8_t g_paletteRunTopLut[5];
+extern uint8_t g_paletteRunLeftLut[5];
 #endif
 
 #endif  //__TCOMROM__

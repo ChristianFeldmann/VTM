@@ -1019,258 +1019,258 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, bool commonInfPresen
 
 void HLSyntaxReader::parseSPS(SPS* pcSPS)
 {
-	uint32_t  uiCode;
+  uint32_t  uiCode;
 
 #if ENABLE_TRACING
-	xTraceSPSHeader();
+  xTraceSPSHeader();
 #endif
-	READ_CODE(4, uiCode, "sps_decoding_parameter_set_id");       pcSPS->setDecodingParameterSetId(uiCode);
-	READ_CODE(3, uiCode, "sps_max_sub_layers_minus1");          pcSPS->setMaxTLayers(uiCode + 1);
-	CHECK(uiCode > 6, "Invalid maximum number of T-layer signalled");
-	READ_CODE(5, uiCode, "sps_reserved_zero_5bits");
-	CHECK(uiCode != 0, "sps_reserved_zero_5bits not equal to zero");
+  READ_CODE(4, uiCode, "sps_decoding_parameter_set_id");       pcSPS->setDecodingParameterSetId(uiCode);
+  READ_CODE(3, uiCode, "sps_max_sub_layers_minus1");          pcSPS->setMaxTLayers(uiCode + 1);
+  CHECK(uiCode > 6, "Invalid maximum number of T-layer signalled");
+  READ_CODE(5, uiCode, "sps_reserved_zero_5bits");
+  CHECK(uiCode != 0, "sps_reserved_zero_5bits not equal to zero");
 
-	parseProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
+  parseProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
 
-	READ_UVLC(uiCode, "sps_seq_parameter_set_id");           pcSPS->setSPSId(uiCode);
+  READ_UVLC(uiCode, "sps_seq_parameter_set_id");           pcSPS->setSPSId(uiCode);
 
-	READ_UVLC(uiCode, "chroma_format_idc");                  pcSPS->setChromaFormatIdc(ChromaFormat(uiCode));
-	CHECK(uiCode > 3, "Invalid chroma format signalled");
+  READ_UVLC(uiCode, "chroma_format_idc");                  pcSPS->setChromaFormatIdc(ChromaFormat(uiCode));
+  CHECK(uiCode > 3, "Invalid chroma format signalled");
 
 
 
-	if (pcSPS->getChromaFormatIdc() == CHROMA_444)
-	{
-		READ_FLAG(uiCode, "separate_colour_plane_flag");        CHECK(uiCode != 0, "Invalid code");
-	}
+  if (pcSPS->getChromaFormatIdc() == CHROMA_444)
+  {
+    READ_FLAG(uiCode, "separate_colour_plane_flag");        CHECK(uiCode != 0, "Invalid code");
+  }
 
-	READ_UVLC(uiCode, "pic_width_in_luma_samples");          pcSPS->setPicWidthInLumaSamples(uiCode);
-	READ_UVLC(uiCode, "pic_height_in_luma_samples");         pcSPS->setPicHeightInLumaSamples(uiCode);
+  READ_UVLC(uiCode, "pic_width_in_luma_samples");          pcSPS->setPicWidthInLumaSamples(uiCode);
+  READ_UVLC(uiCode, "pic_height_in_luma_samples");         pcSPS->setPicHeightInLumaSamples(uiCode);
 
-	// KJS: not removing yet
-	READ_FLAG(uiCode, "conformance_window_flag");
-	if (uiCode != 0)
-	{
-		Window &conf = pcSPS->getConformanceWindow();
-		READ_UVLC(uiCode, "conf_win_left_offset");               conf.setWindowLeftOffset(uiCode * SPS::getWinUnitX(pcSPS->getChromaFormatIdc()));
-		READ_UVLC(uiCode, "conf_win_right_offset");              conf.setWindowRightOffset(uiCode * SPS::getWinUnitX(pcSPS->getChromaFormatIdc()));
-		READ_UVLC(uiCode, "conf_win_top_offset");                conf.setWindowTopOffset(uiCode * SPS::getWinUnitY(pcSPS->getChromaFormatIdc()));
-		READ_UVLC(uiCode, "conf_win_bottom_offset");             conf.setWindowBottomOffset(uiCode * SPS::getWinUnitY(pcSPS->getChromaFormatIdc()));
-	}
+  // KJS: not removing yet
+  READ_FLAG(uiCode, "conformance_window_flag");
+  if (uiCode != 0)
+  {
+    Window &conf = pcSPS->getConformanceWindow();
+    READ_UVLC(uiCode, "conf_win_left_offset");               conf.setWindowLeftOffset(uiCode * SPS::getWinUnitX(pcSPS->getChromaFormatIdc()));
+    READ_UVLC(uiCode, "conf_win_right_offset");              conf.setWindowRightOffset(uiCode * SPS::getWinUnitX(pcSPS->getChromaFormatIdc()));
+    READ_UVLC(uiCode, "conf_win_top_offset");                conf.setWindowTopOffset(uiCode * SPS::getWinUnitY(pcSPS->getChromaFormatIdc()));
+    READ_UVLC(uiCode, "conf_win_bottom_offset");             conf.setWindowBottomOffset(uiCode * SPS::getWinUnitY(pcSPS->getChromaFormatIdc()));
+  }
 
-	READ_UVLC(uiCode, "bit_depth_luma_minus8");
-	CHECK(uiCode > 8, "Invalid luma bit depth signalled");
-	pcSPS->setBitDepth(CHANNEL_TYPE_LUMA, 8 + uiCode);
+  READ_UVLC(uiCode, "bit_depth_luma_minus8");
+  CHECK(uiCode > 8, "Invalid luma bit depth signalled");
+  pcSPS->setBitDepth(CHANNEL_TYPE_LUMA, 8 + uiCode);
 
-	pcSPS->setQpBDOffset(CHANNEL_TYPE_LUMA, (int)(6 * uiCode));
+  pcSPS->setQpBDOffset(CHANNEL_TYPE_LUMA, (int)(6 * uiCode));
 
-	READ_UVLC(uiCode, "bit_depth_chroma_minus8");
-	CHECK(uiCode > 8, "Invalid chroma bit depth signalled");
-	pcSPS->setBitDepth(CHANNEL_TYPE_CHROMA, 8 + uiCode);
-	pcSPS->setQpBDOffset(CHANNEL_TYPE_CHROMA, (int)(6 * uiCode));
+  READ_UVLC(uiCode, "bit_depth_chroma_minus8");
+  CHECK(uiCode > 8, "Invalid chroma bit depth signalled");
+  pcSPS->setBitDepth(CHANNEL_TYPE_CHROMA, 8 + uiCode);
+  pcSPS->setQpBDOffset(CHANNEL_TYPE_CHROMA, (int)(6 * uiCode));
 
-	READ_UVLC(uiCode, "log2_max_pic_order_cnt_lsb_minus4");   pcSPS->setBitsForPOC(4 + uiCode);
-	CHECK(uiCode > 12, "Invalid code");
-	READ_FLAG(uiCode, "sps_idr_rpl_present_flag"); pcSPS->setIDRRefParamListPresent((bool)uiCode);
-	// KJS: Marakech decision: sub-layers added back
-	uint32_t subLayerOrderingInfoPresentFlag;
-	READ_FLAG(subLayerOrderingInfoPresentFlag, "sps_sub_layer_ordering_info_present_flag");
+  READ_UVLC(uiCode, "log2_max_pic_order_cnt_lsb_minus4");   pcSPS->setBitsForPOC(4 + uiCode);
+  CHECK(uiCode > 12, "Invalid code");
+  READ_FLAG(uiCode, "sps_idr_rpl_present_flag"); pcSPS->setIDRRefParamListPresent((bool)uiCode);
+  // KJS: Marakech decision: sub-layers added back
+  uint32_t subLayerOrderingInfoPresentFlag;
+  READ_FLAG(subLayerOrderingInfoPresentFlag, "sps_sub_layer_ordering_info_present_flag");
 
-	for (uint32_t i = 0; i <= pcSPS->getMaxTLayers() - 1; i++)
-	{
-		READ_UVLC(uiCode, "sps_max_dec_pic_buffering_minus1[i]");
-		pcSPS->setMaxDecPicBuffering(uiCode + 1, i);
-		READ_UVLC(uiCode, "sps_max_num_reorder_pics[i]");
-		pcSPS->setNumReorderPics(uiCode, i);
-		READ_UVLC(uiCode, "sps_max_latency_increase_plus1[i]");
-		pcSPS->setMaxLatencyIncreasePlus1(uiCode, i);
+  for (uint32_t i = 0; i <= pcSPS->getMaxTLayers() - 1; i++)
+  {
+    READ_UVLC(uiCode, "sps_max_dec_pic_buffering_minus1[i]");
+    pcSPS->setMaxDecPicBuffering(uiCode + 1, i);
+    READ_UVLC(uiCode, "sps_max_num_reorder_pics[i]");
+    pcSPS->setNumReorderPics(uiCode, i);
+    READ_UVLC(uiCode, "sps_max_latency_increase_plus1[i]");
+    pcSPS->setMaxLatencyIncreasePlus1(uiCode, i);
 
-		if (!subLayerOrderingInfoPresentFlag)
-		{
-			for (i++; i <= pcSPS->getMaxTLayers() - 1; i++)
-			{
-				pcSPS->setMaxDecPicBuffering(pcSPS->getMaxDecPicBuffering(0), i);
-				pcSPS->setNumReorderPics(pcSPS->getNumReorderPics(0), i);
-				pcSPS->setMaxLatencyIncreasePlus1(pcSPS->getMaxLatencyIncreasePlus1(0), i);
-			}
-			break;
-		}
-	}
+    if (!subLayerOrderingInfoPresentFlag)
+    {
+      for (i++; i <= pcSPS->getMaxTLayers() - 1; i++)
+      {
+        pcSPS->setMaxDecPicBuffering(pcSPS->getMaxDecPicBuffering(0), i);
+        pcSPS->setNumReorderPics(pcSPS->getNumReorderPics(0), i);
+        pcSPS->setMaxLatencyIncreasePlus1(pcSPS->getMaxLatencyIncreasePlus1(0), i);
+      }
+      break;
+    }
+  }
 
-	READ_FLAG(uiCode, "long_term_ref_pics_flag");          pcSPS->setLongTermRefsPresent(uiCode);
-	READ_FLAG(uiCode, "rpl1_copy_from_rpl0_flag");
-	pcSPS->setRPL1CopyFromRPL0Flag(uiCode);
+  READ_FLAG(uiCode, "long_term_ref_pics_flag");          pcSPS->setLongTermRefsPresent(uiCode);
+  READ_FLAG(uiCode, "rpl1_copy_from_rpl0_flag");
+  pcSPS->setRPL1CopyFromRPL0Flag(uiCode);
 
-	//Read candidate for List0
-	READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[0]");
-	uint32_t numberOfRPL = uiCode;
-	pcSPS->createRPLList0(numberOfRPL);
-	RPLList* rplList = pcSPS->getRPLList0();
-	ReferencePictureList* rpl;
-	for (uint32_t ii = 0; ii < numberOfRPL; ii++)
-	{
-		rpl = rplList->getReferencePictureList(ii);
-		parseRefPicList(pcSPS, rpl);
-	}
+  //Read candidate for List0
+  READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[0]");
+  uint32_t numberOfRPL = uiCode;
+  pcSPS->createRPLList0(numberOfRPL);
+  RPLList* rplList = pcSPS->getRPLList0();
+  ReferencePictureList* rpl;
+  for (uint32_t ii = 0; ii < numberOfRPL; ii++)
+  {
+    rpl = rplList->getReferencePictureList(ii);
+    parseRefPicList(pcSPS, rpl);
+  }
 
-	//Read candidate for List1
-	if (!pcSPS->getRPL1CopyFromRPL0Flag())
-	{
-		READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[1]");
-		numberOfRPL = uiCode;
-		pcSPS->createRPLList1(numberOfRPL);
-		rplList = pcSPS->getRPLList1();
-		for (uint32_t ii = 0; ii < numberOfRPL; ii++)
-		{
-			rpl = rplList->getReferencePictureList(ii);
-			parseRefPicList(pcSPS, rpl);
-		}
-	}
-	else
-	{
-		numberOfRPL = pcSPS->getNumRPL0();
-		pcSPS->createRPLList1(numberOfRPL);
-		RPLList* rplListSource = pcSPS->getRPLList0();
-		RPLList* rplListDest = pcSPS->getRPLList1();
-		for (uint32_t ii = 0; ii < numberOfRPL; ii++)
-			copyRefPicList(pcSPS, rplListSource->getReferencePictureList(ii), rplListDest->getReferencePictureList(ii));
-	}
+  //Read candidate for List1
+  if (!pcSPS->getRPL1CopyFromRPL0Flag())
+  {
+    READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[1]");
+    numberOfRPL = uiCode;
+    pcSPS->createRPLList1(numberOfRPL);
+    rplList = pcSPS->getRPLList1();
+    for (uint32_t ii = 0; ii < numberOfRPL; ii++)
+    {
+      rpl = rplList->getReferencePictureList(ii);
+      parseRefPicList(pcSPS, rpl);
+    }
+  }
+  else
+  {
+    numberOfRPL = pcSPS->getNumRPL0();
+    pcSPS->createRPLList1(numberOfRPL);
+    RPLList* rplListSource = pcSPS->getRPLList0();
+    RPLList* rplListDest = pcSPS->getRPLList1();
+    for (uint32_t ii = 0; ii < numberOfRPL; ii++)
+      copyRefPicList(pcSPS, rplListSource->getReferencePictureList(ii), rplListDest->getReferencePictureList(ii));
+  }
 
-	unsigned  minQT[3] = { 0, 0, 0 };
-	unsigned  maxBTD[3] = { 0, 0, 0 };
+  unsigned  minQT[3] = { 0, 0, 0 };
+  unsigned  maxBTD[3] = { 0, 0, 0 };
 
-	unsigned  maxBTSize[3] = { 0, 0, 0 };
-	unsigned  maxTTSize[3] = { 0, 0, 0 };
-	READ_FLAG(uiCode, "qtbtt_dual_tree_intra_flag");             pcSPS->setUseDualITree(uiCode);
-	READ_UVLC(uiCode, "log2_ctu_size_minus2");                   pcSPS->setCTUSize(1 << (uiCode + 2));
-	pcSPS->setMaxCodingDepth(uiCode);
-	pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode);
-	pcSPS->setMaxCUWidth(pcSPS->getCTUSize());
-	pcSPS->setMaxCUHeight(pcSPS->getCTUSize());
+  unsigned  maxBTSize[3] = { 0, 0, 0 };
+  unsigned  maxTTSize[3] = { 0, 0, 0 };
+  READ_FLAG(uiCode, "qtbtt_dual_tree_intra_flag");             pcSPS->setUseDualITree(uiCode);
+  READ_UVLC(uiCode, "log2_ctu_size_minus2");                   pcSPS->setCTUSize(1 << (uiCode + 2));
+  pcSPS->setMaxCodingDepth(uiCode);
+  pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode);
+  pcSPS->setMaxCUWidth(pcSPS->getCTUSize());
+  pcSPS->setMaxCUHeight(pcSPS->getCTUSize());
 
-	READ_UVLC(uiCode, "log2_min_luma_coding_block_size_minus2");
-	int log2MinCUSize = uiCode + 2;
-	pcSPS->setLog2MinCodingBlockSize(log2MinCUSize);
-	READ_FLAG(uiCode, "partition_constraints_override_enabled_flag"); pcSPS->setSplitConsOverrideEnabledFlag(uiCode);
-	READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_tile_group_luma");      minQT[0] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
-	READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_tile_group");      minQT[1] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
-	READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_tile_group");     maxBTD[1] = uiCode;
-	READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_tile_group_luma");     maxBTD[0] = uiCode;
+  READ_UVLC(uiCode, "log2_min_luma_coding_block_size_minus2");
+  int log2MinCUSize = uiCode + 2;
+  pcSPS->setLog2MinCodingBlockSize(log2MinCUSize);
+  READ_FLAG(uiCode, "partition_constraints_override_enabled_flag"); pcSPS->setSplitConsOverrideEnabledFlag(uiCode);
+  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_tile_group_luma");      minQT[0] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
+  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_tile_group");      minQT[1] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
+  READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_tile_group");     maxBTD[1] = uiCode;
+  READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_tile_group_luma");     maxBTD[0] = uiCode;
 
-	maxTTSize[0] = maxBTSize[0] = minQT[0];
-	if (maxBTD[0] != 0)
-	{
-		READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_tile_group_luma");     maxBTSize[0] <<= uiCode;
-		READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_tile_group_luma");     maxTTSize[0] <<= uiCode;
-	}
-	maxTTSize[1] = maxBTSize[1] = minQT[1];
-	if (maxBTD[1] != 0)
-	{
-		READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_inter_tile_group");     maxBTSize[1] <<= uiCode;
-		READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_inter_tile_group");     maxTTSize[1] <<= uiCode;
-	}
-	if (pcSPS->getUseDualITree())
-	{
-		READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_tile_group_chroma"); minQT[2] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
-		READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_tile_group_chroma"); maxBTD[2] = uiCode;
-		maxTTSize[2] = maxBTSize[2] = minQT[2];
-		if (maxBTD[2] != 0)
-		{
-			READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_tile_group_chroma");       maxBTSize[2] <<= uiCode;
-			READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_tile_group_chroma");       maxTTSize[2] <<= uiCode;
-		}
-	}
+  maxTTSize[0] = maxBTSize[0] = minQT[0];
+  if (maxBTD[0] != 0)
+  {
+    READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_tile_group_luma");     maxBTSize[0] <<= uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_tile_group_luma");     maxTTSize[0] <<= uiCode;
+  }
+  maxTTSize[1] = maxBTSize[1] = minQT[1];
+  if (maxBTD[1] != 0)
+  {
+    READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_inter_tile_group");     maxBTSize[1] <<= uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_inter_tile_group");     maxTTSize[1] <<= uiCode;
+  }
+  if (pcSPS->getUseDualITree())
+  {
+    READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_tile_group_chroma"); minQT[2] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
+    READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_tile_group_chroma"); maxBTD[2] = uiCode;
+    maxTTSize[2] = maxBTSize[2] = minQT[2];
+    if (maxBTD[2] != 0)
+    {
+      READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_tile_group_chroma");       maxBTSize[2] <<= uiCode;
+      READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_tile_group_chroma");       maxTTSize[2] <<= uiCode;
+    }
+  }
 
-	pcSPS->setMinQTSizes(minQT);
-	pcSPS->setMaxBTDepth(maxBTD[1], maxBTD[0], maxBTD[2]);
-	pcSPS->setMaxBTSize(maxBTSize[1], maxBTSize[0], maxBTSize[2]);
-	pcSPS->setMaxTTSize(maxTTSize[1], maxTTSize[0], maxTTSize[2]);
+  pcSPS->setMinQTSizes(minQT);
+  pcSPS->setMaxBTDepth(maxBTD[1], maxBTD[0], maxBTD[2]);
+  pcSPS->setMaxBTSize(maxBTSize[1], maxBTSize[0], maxBTSize[2]);
+  pcSPS->setMaxTTSize(maxTTSize[1], maxTTSize[0], maxTTSize[2]);
 
 
 #if MAX_TB_SIZE_SIGNALLING
-	// KJS: Not in syntax
-	READ_UVLC(uiCode, "log2_max_luma_transform_block_size_minus2"); pcSPS->setLog2MaxTbSize(uiCode + 2);
+  // KJS: Not in syntax
+  READ_UVLC(uiCode, "log2_max_luma_transform_block_size_minus2"); pcSPS->setLog2MaxTbSize(uiCode + 2);
 #endif
-	READ_FLAG(uiCode, "sps_sao_enabled_flag");                      pcSPS->setSAOEnabledFlag(uiCode ? true : false);
-	READ_FLAG(uiCode, "sps_alf_enabled_flag");                      pcSPS->setALFEnabledFlag(uiCode ? true : false);
+  READ_FLAG(uiCode, "sps_sao_enabled_flag");                      pcSPS->setSAOEnabledFlag(uiCode ? true : false);
+  READ_FLAG(uiCode, "sps_alf_enabled_flag");                      pcSPS->setALFEnabledFlag(uiCode ? true : false);
 
-	READ_FLAG(uiCode, "sps_pcm_enabled_flag");                          pcSPS->setPCMEnabledFlag(uiCode ? true : false);
-	if (pcSPS->getPCMEnabledFlag())
-	{
-		READ_CODE(4, uiCode, "pcm_sample_bit_depth_luma_minus1");          pcSPS->setPCMBitDepth(CHANNEL_TYPE_LUMA, 1 + uiCode);
-		READ_CODE(4, uiCode, "pcm_sample_bit_depth_chroma_minus1");        pcSPS->setPCMBitDepth(CHANNEL_TYPE_CHROMA, 1 + uiCode);
-		READ_UVLC(uiCode, "log2_min_pcm_luma_coding_block_size_minus3");   pcSPS->setPCMLog2MinSize(uiCode + 3);
-		READ_UVLC(uiCode, "log2_diff_max_min_pcm_luma_coding_block_size"); pcSPS->setPCMLog2MaxSize(uiCode + pcSPS->getPCMLog2MinSize());
-		READ_FLAG(uiCode, "pcm_loop_filter_disable_flag");                 pcSPS->setPCMFilterDisableFlag(uiCode ? true : false);
-	}
+  READ_FLAG(uiCode, "sps_pcm_enabled_flag");                          pcSPS->setPCMEnabledFlag(uiCode ? true : false);
+  if (pcSPS->getPCMEnabledFlag())
+  {
+    READ_CODE(4, uiCode, "pcm_sample_bit_depth_luma_minus1");          pcSPS->setPCMBitDepth(CHANNEL_TYPE_LUMA, 1 + uiCode);
+    READ_CODE(4, uiCode, "pcm_sample_bit_depth_chroma_minus1");        pcSPS->setPCMBitDepth(CHANNEL_TYPE_CHROMA, 1 + uiCode);
+    READ_UVLC(uiCode, "log2_min_pcm_luma_coding_block_size_minus3");   pcSPS->setPCMLog2MinSize(uiCode + 3);
+    READ_UVLC(uiCode, "log2_diff_max_min_pcm_luma_coding_block_size"); pcSPS->setPCMLog2MaxSize(uiCode + pcSPS->getPCMLog2MinSize());
+    READ_FLAG(uiCode, "pcm_loop_filter_disable_flag");                 pcSPS->setPCMFilterDisableFlag(uiCode ? true : false);
+  }
 
 #if JVET_O1136_TS_BDPCM_SIGNALLING
-	READ_FLAG(uiCode, "sps_transform_skip_enabled_flag"); pcSPS->setTransformSkipEnabledFlag(uiCode ? true : false);
-	if (pcSPS->getTransformSkipEnabledFlag())
-	{
-		READ_FLAG(uiCode, "sps_bdpcm_enabled_flag"); pcSPS->setBDPCMEnabledFlag(uiCode ? true : false);
-	}
+  READ_FLAG(uiCode, "sps_transform_skip_enabled_flag"); pcSPS->setTransformSkipEnabledFlag(uiCode ? true : false);
+  if (pcSPS->getTransformSkipEnabledFlag())
+  {
+    READ_FLAG(uiCode, "sps_bdpcm_enabled_flag"); pcSPS->setBDPCMEnabledFlag(uiCode ? true : false);
+  }
 #endif
 
-	if (pcSPS->getCTUSize() + 2 * (1 << pcSPS->getLog2MinCodingBlockSize()) <= pcSPS->getPicWidthInLumaSamples())
-	{
-		READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag(uiCode ? true : false);
+  if (pcSPS->getCTUSize() + 2 * (1 << pcSPS->getLog2MinCodingBlockSize()) <= pcSPS->getPicWidthInLumaSamples())
+  {
+    READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag(uiCode ? true : false);
 
-		if (pcSPS->getWrapAroundEnabledFlag())
-		{
-			READ_UVLC(uiCode, "sps_ref_wraparound_offset_minus1");               pcSPS->setWrapAroundOffset((uiCode + 1)*(1 << pcSPS->getLog2MinCodingBlockSize()));
-		}
-	}
-	else
-	{
-		pcSPS->setWrapAroundEnabledFlag(0);
-	}
+    if (pcSPS->getWrapAroundEnabledFlag())
+    {
+      READ_UVLC(uiCode, "sps_ref_wraparound_offset_minus1");               pcSPS->setWrapAroundOffset((uiCode + 1)*(1 << pcSPS->getLog2MinCodingBlockSize()));
+    }
+  }
+  else
+  {
+    pcSPS->setWrapAroundEnabledFlag(0);
+  }
 
 
-	READ_FLAG(uiCode, "sps_temporal_mvp_enabled_flag");                  pcSPS->setSPSTemporalMVPEnabledFlag(uiCode);
+  READ_FLAG(uiCode, "sps_temporal_mvp_enabled_flag");                  pcSPS->setSPSTemporalMVPEnabledFlag(uiCode);
 
-	if (pcSPS->getSPSTemporalMVPEnabledFlag())
-	{
-		READ_FLAG(uiCode, "sps_sbtmvp_enabled_flag");                   pcSPS->setSBTMVPEnabledFlag(uiCode != 0);
-	}
-	else
-	{
-		pcSPS->setSBTMVPEnabledFlag(false);
-	}
+  if (pcSPS->getSPSTemporalMVPEnabledFlag())
+  {
+    READ_FLAG(uiCode, "sps_sbtmvp_enabled_flag");                   pcSPS->setSBTMVPEnabledFlag(uiCode != 0);
+  }
+  else
+  {
+    pcSPS->setSBTMVPEnabledFlag(false);
+  }
 
-	READ_FLAG(uiCode, "sps_amvr_enabled_flag");                     pcSPS->setAMVREnabledFlag(uiCode != 0);
+  READ_FLAG(uiCode, "sps_amvr_enabled_flag");                     pcSPS->setAMVREnabledFlag(uiCode != 0);
 
-	READ_FLAG(uiCode, "sps_bdof_enabled_flag");                      pcSPS->setBDOFEnabledFlag(uiCode != 0);
+  READ_FLAG(uiCode, "sps_bdof_enabled_flag");                      pcSPS->setBDOFEnabledFlag(uiCode != 0);
 #if !JVET_O0438_SPS_AFFINE_AMVR_FLAG
-	READ_FLAG(uiCode, "sps_affine_amvr_enabled_flag");             pcSPS->setAffineAmvrEnabledFlag(uiCode != 0);
+  READ_FLAG(uiCode, "sps_affine_amvr_enabled_flag");             pcSPS->setAffineAmvrEnabledFlag(uiCode != 0);
 #endif
-	READ_FLAG(uiCode, "sps_dmvr_enable_flag");                        pcSPS->setUseDMVR(uiCode != 0);
-	READ_FLAG(uiCode, "sps_mmvd_enable_flag");                        pcSPS->setUseMMVD(uiCode != 0);
-	// KJS: sps_cclm_enabled_flag
-	READ_FLAG(uiCode, "lm_chroma_enabled_flag");                 pcSPS->setUseLMChroma(uiCode != 0);
-	if (pcSPS->getUseLMChroma() && pcSPS->getChromaFormatIdc() == CHROMA_420)
-	{
-		READ_FLAG(uiCode, "sps_cclm_collocated_chroma_flag");        pcSPS->setCclmCollocatedChromaFlag(uiCode != 0);
-	}
+  READ_FLAG(uiCode, "sps_dmvr_enable_flag");                        pcSPS->setUseDMVR(uiCode != 0);
+  READ_FLAG(uiCode, "sps_mmvd_enable_flag");                        pcSPS->setUseMMVD(uiCode != 0);
+  // KJS: sps_cclm_enabled_flag
+  READ_FLAG(uiCode, "lm_chroma_enabled_flag");                 pcSPS->setUseLMChroma(uiCode != 0);
+  if (pcSPS->getUseLMChroma() && pcSPS->getChromaFormatIdc() == CHROMA_420)
+  {
+    READ_FLAG(uiCode, "sps_cclm_collocated_chroma_flag");        pcSPS->setCclmCollocatedChromaFlag(uiCode != 0);
+  }
 
-	READ_FLAG(uiCode, "mts_enabled_flag");                       pcSPS->setUseMTS(uiCode != 0);
-	if (pcSPS->getUseMTS())
-	{
-		READ_FLAG(uiCode, "mts_intra_enabled_flag");               pcSPS->setUseIntraMTS(uiCode != 0);
-		READ_FLAG(uiCode, "mts_inter_enabled_flag");               pcSPS->setUseInterMTS(uiCode != 0);
-	}
-	READ_FLAG(uiCode, "lfnst_enabled_flag");                        pcSPS->setUseLFNST(uiCode != 0);
-	READ_FLAG(uiCode, "smvd_flag");                                   pcSPS->setUseSMVD(uiCode != 0);
-	// KJS: sps_affine_enabled_flag
-	READ_FLAG(uiCode, "affine_flag");                            pcSPS->setUseAffine(uiCode != 0);
-	if (pcSPS->getUseAffine())
-	{
-		READ_FLAG(uiCode, "affine_type_flag");                       pcSPS->setUseAffineType(uiCode != 0);
+  READ_FLAG(uiCode, "mts_enabled_flag");                       pcSPS->setUseMTS(uiCode != 0);
+  if (pcSPS->getUseMTS())
+  {
+    READ_FLAG(uiCode, "mts_intra_enabled_flag");               pcSPS->setUseIntraMTS(uiCode != 0);
+    READ_FLAG(uiCode, "mts_inter_enabled_flag");               pcSPS->setUseInterMTS(uiCode != 0);
+  }
+  READ_FLAG(uiCode, "lfnst_enabled_flag");                        pcSPS->setUseLFNST(uiCode != 0);
+  READ_FLAG(uiCode, "smvd_flag");                                   pcSPS->setUseSMVD(uiCode != 0);
+  // KJS: sps_affine_enabled_flag
+  READ_FLAG(uiCode, "affine_flag");                            pcSPS->setUseAffine(uiCode != 0);
+  if (pcSPS->getUseAffine())
+  {
+    READ_FLAG(uiCode, "affine_type_flag");                       pcSPS->setUseAffineType(uiCode != 0);
 #if JVET_O0438_SPS_AFFINE_AMVR_FLAG
-		READ_FLAG(uiCode, "sps_affine_amvr_enabled_flag");           pcSPS->setAffineAmvrEnabledFlag(uiCode != 0);
+    READ_FLAG(uiCode, "sps_affine_amvr_enabled_flag");           pcSPS->setAffineAmvrEnabledFlag(uiCode != 0);
 #endif
-	}
-	READ_FLAG(uiCode, "gbi_flag");                               pcSPS->setUseGBi(uiCode != 0);
+  }
+  READ_FLAG(uiCode, "gbi_flag");                               pcSPS->setUseGBi(uiCode != 0);
 #if JVET_O0119_BASE_PALETTE_444
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
@@ -1788,8 +1788,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
           READ_CODE(5, uiCode, "tile_group_aps_id");
           apsId[i] = uiCode;
         }
-		
-		
+    
+    
         pcSlice->setAlfAPSs(apsId);
         alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
         if (alfChromaIdc)

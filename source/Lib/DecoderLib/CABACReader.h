@@ -190,7 +190,7 @@ private:
   BinDecoderBase& m_BinDecoder;
   InputBitstream* m_Bitstream;
 #if JVET_O0119_BASE_PALETTE_444
-  ScanElement*    m_puiScanOrder;
+  ScanElement*    m_scanOrder;
 #endif
 };
 

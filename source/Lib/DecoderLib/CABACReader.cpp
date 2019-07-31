@@ -1706,15 +1706,15 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   }
 
 
-  m_puiScanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];
+  m_scanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];
   uint32_t strPos = 0;
   uint32_t endPos = height * width;
   while (strPos < endPos)
   {
-    uint32_t posy = m_puiScanOrder[strPos].y;
-    uint32_t posx = m_puiScanOrder[strPos].x;
-    uint32_t posyprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].y;
-    uint32_t posxprev = strPos == 0 ? 0 : m_puiScanOrder[strPos - 1].x;
+    uint32_t posy = m_scanOrder[strPos].y;
+    uint32_t posx = m_scanOrder[strPos].x;
+    uint32_t posyprev = strPos == 0 ? 0 : m_scanOrder[strPos - 1].y;
+    uint32_t posxprev = strPos == 0 ? 0 : m_scanOrder[strPos - 1].x;
 
     if (indexMaxSize > 1)
     {
@@ -1789,8 +1789,8 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
     for (int runidx = 1; runidx < runLength.at(posx, posy); runidx++)
     {
       int posYrun, posXrun;
-      posYrun = m_puiScanOrder[strPos + runidx].y;
-      posXrun = m_puiScanOrder[strPos + runidx].x;
+      posYrun = m_scanOrder[strPos + runidx].y;
+      posXrun = m_scanOrder[strPos + runidx].x;
       runType.at(posXrun, posYrun) = runType.at(posx, posy);
       runLength.at(posXrun, posYrun) = runLength.at(posx, posy);
     }
@@ -1801,8 +1801,8 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
     {
       for (uint32_t idx = 1; idx < runLength.at(posx, posy); idx++)
       {
-        posYrun = m_puiScanOrder[strPos + idx].y;
-        posXrun = m_puiScanOrder[strPos + idx].x;
+        posYrun = m_scanOrder[strPos + idx].y;
+        posXrun = m_scanOrder[strPos + idx].x;
         curPLTIdx.at(posXrun, posYrun) = curPLTIdx.at(posx, posy);
       }
     }
@@ -1810,8 +1810,8 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
     {
       for (uint32_t idx = 0; idx < runLength.at(posx, posy); idx++)
       {
-        posYrun = m_puiScanOrder[strPos + idx].y;
-        posXrun = m_puiScanOrder[strPos + idx].x;
+        posYrun = m_scanOrder[strPos + idx].y;
+        posXrun = m_scanOrder[strPos + idx].x;
         curPLTIdx.at(posXrun, posYrun) = (cu.useRotation[compBegin]) ? curPLTIdx.at(posXrun - 1, posYrun) : curPLTIdx.at(posXrun, posYrun - 1);
       }
     }
@@ -1826,8 +1826,8 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
     ComponentID compID = (ComponentID)comp;
     for (strPos = 0; strPos < endPos; strPos++)
     {
-      uint32_t posy = m_puiScanOrder[strPos].y;
-      uint32_t posx = m_puiScanOrder[strPos].x;
+      uint32_t posy = m_scanOrder[strPos].y;
+      uint32_t posx = m_scanOrder[strPos].x;
       if (curPLTIdx.at(posx, posy) == cu.curPLTSize[compBegin])
       {
         {
@@ -1887,12 +1887,12 @@ void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel curLevel, uint32_t idx, Pe
 {
   uint32_t symbol;
   int refLevel = MAX_INT;
-  uint32_t posy = m_puiScanOrder[idx].y;
-  uint32_t posx = m_puiScanOrder[idx].x;
+  uint32_t posy = m_scanOrder[idx].y;
+  uint32_t posx = m_scanOrder[idx].x;
   if (idx)
   {
-    uint32_t prevposy = m_puiScanOrder[idx - 1].y;
-    uint32_t prevposx = m_puiScanOrder[idx - 1].x;
+    uint32_t prevposy = m_scanOrder[idx - 1].y;
+    uint32_t prevposx = m_scanOrder[idx - 1].x;
     if (paletteRunType.at(prevposx, prevposy) == PLT_RUN_INDEX)
     {
       refLevel = paletteIdx.at(prevposx, prevposy);
@@ -1939,7 +1939,7 @@ uint32_t  CABACReader::cu_run_val(PLTRunMode runtype, const uint32_t paletteIdx,
   }
   else
   {
-    g_ucRunLeftLut[0] = (paletteIdx < PLT_RUN_MSB_IDX_CTX_T1 ? 0 : (paletteIdx < PLT_RUN_MSB_IDX_CTX_T2 ? 1 : 2));
+    g_paletteRunLeftLut[0] = (paletteIdx < PLT_RUN_MSB_IDX_CTX_T1 ? 0 : (paletteIdx < PLT_RUN_MSB_IDX_CTX_T2 ? 1 : 2));
   }
   symbol = xReadTruncMsbP1RefinementBits(runtype, maxRun, PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE);
   return symbol;
@@ -1950,7 +1950,7 @@ uint32_t CABACReader::xReadTruncUnarySymbol(PLTRunMode runtype, uint32_t maxVal,
     return 0;
 
   uint8_t *ctxLut;
-  ctxLut = (runtype == PLT_RUN_INDEX) ? g_ucRunLeftLut : g_ucRunTopLut;
+  ctxLut = (runtype == PLT_RUN_INDEX) ? g_paletteRunLeftLut : g_paletteRunTopLut;
   uint32_t bin, idx = 0;
   do
   {

@@ -1951,8 +1951,8 @@ bool IntraPrediction::calCopyRun(CodingStructure &cs, Partitioner& partitioner, 
   run = 0;
   while (idx < total)
   {
-    xPos = m_puiScanOrder[idx].x;
-    yPos = m_puiScanOrder[idx].y;
+    xPos = m_scanOrder[idx].x;
+    yPos = m_scanOrder[idx].y;
     runType.at(xPos, yPos) = PLT_RUN_COPY;
 
     if (yPos == 0 && !cu.useRotation[compBegin])
@@ -1991,12 +1991,12 @@ bool IntraPrediction::calIndexRun(CodingStructure &cs, Partitioner& partitioner,
   uint32_t idx = startPos;
   while (idx < total)
   {
-    uint32_t xPos = m_puiScanOrder[idx].x;
-    uint32_t yPos = m_puiScanOrder[idx].y;
+    uint32_t xPos = m_scanOrder[idx].x;
+    uint32_t yPos = m_scanOrder[idx].y;
     runType.at(xPos, yPos) = PLT_RUN_INDEX;
 
-    uint32_t xPrev = idx == 0 ? 0 : m_puiScanOrder[idx - 1].x;
-    uint32_t yPrev = idx == 0 ? 0 : m_puiScanOrder[idx - 1].y;
+    uint32_t xPrev = idx == 0 ? 0 : m_scanOrder[idx - 1].x;
+    uint32_t yPrev = idx == 0 ? 0 : m_scanOrder[idx - 1].y;
     if (idx > startPos && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPrev, yPrev))
     {
       run++;

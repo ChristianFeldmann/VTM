@@ -68,9 +68,6 @@ enum PLTScanMode
 class SortingElement
 {
 public:
-  int sumData[3];
-  //int data[3];
-  //int shift, lastCnt, sumData[3];
   inline bool operator<(const SortingElement &other) const
   {
     return cnt > other.cnt;
@@ -83,8 +80,9 @@ public:
   uint32_t  getCnt() const        { return cnt; }
   void      setCnt(uint32_t val)  { cnt = val; }
   int       getSumData (int id) const   { return sumData[id]; }
-  int       setSumData(int id, int val) { sumData[id] = val; }
-  void resetAll(ComponentID compBegin, uint32_t numComp) {
+
+  void resetAll(ComponentID compBegin, uint32_t numComp) 
+  {
     shift = lastCnt = 0;
     for (int ch = compBegin; ch < (compBegin + numComp); ch++)
     {
@@ -92,7 +90,8 @@ public:
       sumData[ch] = 0;
     }
   }
-  void setAll(uint32_t* ui, ComponentID compBegin, uint32_t numComp) {
+  void setAll(uint32_t* ui, ComponentID compBegin, uint32_t numComp) 
+  {
     for (int ch = compBegin; ch < (compBegin + numComp); ch++)
     {
       data[ch] = ui[ch];
@@ -122,7 +121,8 @@ public:
     }
     return sumAd;
   }
-  void copyDataFrom(SortingElement element, ComponentID compBegin, uint32_t numComp) {
+  void copyDataFrom(SortingElement element, ComponentID compBegin, uint32_t numComp) 
+  {
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       data[comp] = element.data[comp];
@@ -130,7 +130,8 @@ public:
     }
     shift = 0; lastCnt = 1;
   }
-  void copyAllFrom(SortingElement element, ComponentID compBegin, uint32_t numComp) {
+  void copyAllFrom(SortingElement element, ComponentID compBegin, uint32_t numComp) 
+  {
     copyDataFrom(element, compBegin, numComp);
     cnt = element.cnt;
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
@@ -159,8 +160,7 @@ public:
   }
 private: 
   uint32_t cnt;
-  int data[3];
-  int shift, lastCnt; 
+  int shift, lastCnt, data[3], sumData[3];
 };
 #endif
 /// encoder search class

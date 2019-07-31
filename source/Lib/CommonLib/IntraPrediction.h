@@ -116,11 +116,11 @@ protected:
   int m_topRefLength;
   int m_leftRefLength;
 #if JVET_O0119_BASE_PALETTE_444
-  ScanElement* m_puiScanOrder;
-  bool         m_bBestScanRotationMode;
-  Ctx          m_storeCtx_Run;
-  Ctx          m_storeCtx_RunIndex;
-  Ctx          m_storeCtx_RunCopy; 
+  ScanElement* m_scanOrder;
+  bool         m_bestScanRotationMode;
+  Ctx          m_storeCtxRun;
+  Ctx          m_storeCtxRunIndex;
+  Ctx          m_storeCtxRunCopy; 
   Ctx          m_orgCtxRD;
   bool         *m_runTypeRD;
   Pel          *m_runLengthRD;
